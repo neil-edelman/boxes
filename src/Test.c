@@ -1,3 +1,11 @@
+/* This is a test for timing of linked-list sorts and LinkSort.h, a generic
+ linked-list sorting header. Outputs concurrent.tsv, qsort.tsv, serial.tsv,
+ sort.p (gnuplot script,) and, assuming you have gnuplot installed, sort.eps.
+
+ @author	Neil
+ @version	1.0; 2016-11
+ @since		1.0; 2016-11 */
+
 #include <stdlib.h>	/* EXIT_SUCCESS */
 #include <stdio.h>	/* fprintf */
 #include <time.h>	/* clock */
@@ -73,23 +81,6 @@ static int Key_compare(const void *a_key, const void *b_key) {
 	const struct Key *a = (struct Key *)a_key, *b = (struct Key *)b_key;
 	return a->key - b->key;
 }
-
-/*static void Foo_out(const struct FooFirsts *const this) {
-	struct Foo *iter;
-	int is_first;
-	
-	printf("x: ");
-	for(iter = this->x_first, is_first = -1; iter; iter = iter->x_next) {
-		printf("%s%d", is_first ? "[ " : ", ", iter->x);
-		is_first = 0;
-	}
-	printf(" ]\ny: ");
-	for(iter = this->y_first, is_first = -1; iter; iter = iter->y_next) {
-		printf("%s%d", is_first ? "[ " : ", ", iter->y);
-		is_first = 0;
-	}
-	printf(" ]\n");
-}*/
 
 /** @implements	SortFn */
 static void concurrent(struct FooFirsts *const this) {
@@ -308,7 +299,7 @@ int main(void) {
 				}
 				fprintf(stderr, " done.\n");
 				fprintf(fp, "%u\t%f\t%f\n", samples, mean_ms, sqrt(ssdm / (n - 1)));
-				/* loop until the precess is taking too long */
+				/* loop until the process is taking too long */
 				if(mean_ms >= impatient_ms) break;
 			}
 

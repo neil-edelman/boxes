@@ -1,9 +1,9 @@
 /** Copyright 2016 Neil Edelman, distributed under the terms of the MIT License;
  < https://opensource.org/licenses/MIT >.
 
- ANSI C89 generic sort of doubly linked-List. You must #define the required
- constants before including this file; they are undefined at the end of the
- this file for convenience when including multiple link types.
+ Generic sort of doubly linked-List. You must #define the required constants
+ before including this file; they are undefined at the end of the this file for
+ convenience when including multiple link types.
 
  @param LINK_NAME Name
  NameLinkSort() will be generated, only 1 word; required;
@@ -20,9 +20,6 @@
  @author	Neil
  @version	1.0; 2016-11
  @since		1.0; 2016-11 */
-
-#include <stdlib.h>
-#include <stdio.h>
 
 /* check defines */
 
@@ -95,8 +92,8 @@
 #define T_(thing) CAT(LINK_NAME, thing)
 #define PRIVATE_T_(thing) PCAT(LINK_NAME, thing)
 #define T_NAME QUOTE(LINK_NAME)
-typedef LINK_TYPE PRIVATE_T_(ElementType);
-#define T PRIVATE_T_(ElementType)
+typedef LINK_TYPE PRIVATE_T_(Type);
+#define T PRIVATE_T_(Type)
 
 /* typedef a comparison function */
 typedef int (*T_(LinkCompare))(const T *, const T *);
@@ -116,13 +113,13 @@ struct PRIVATE_T_(LinkRun) {
              = 2^{runs+1} - 2
  2^bits      = 2 (r^runs - 1)
  runs        = log(2^{bits-1} + 1) / log 2
- runs       <= bits, bits > 1
+ runs       <= 2^{bits - 1}, 2^{bits + 1} > 0
  fixme: will crash if you call the same function multiple, simultaneous, times;
  it's okay to call different functions via different includes in the same file.
  There needs to be some management of resources for multi-threading, perhaps
  some dynamic allocation? */
 static struct PRIVATE_T_(LinkRuns) {
-	struct PRIVATE_T_(LinkRun) run[sizeof(size_t) << 3];
+	struct PRIVATE_T_(LinkRun) run[(sizeof(size_t) << 3) - 1];
 	size_t run_no;
 } PRIVATE_T_(runs);
 
