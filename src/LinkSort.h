@@ -1,21 +1,22 @@
 /** Copyright 2016 Neil Edelman, distributed under the terms of the MIT License;
  < https://opensource.org/licenses/MIT >.
- 
- ANSI C89 generic sort doubly linked-List. You must #define the required
+
+ ANSI C89 generic sort of doubly linked-List. You must #define the required
  constants before including this file; they are undefined at the end of the
- this file for convinience when including mutiple link types.
- 
+ this file for convenience when including multiple link types.
+
  @param LINK_NAME Name
  NameLinkSort() will be generated, only 1 word; required;
  @param LINK_TYPE struct Name
  because in C, a type does not have to be a single word; required;
  @param LINK_PREV prev
  @param LINK_NEXT next
- within the structure LINK_TYPE, previous and next fields; required;
+ within the structure LINK_TYPE, previous and next fields; required. Does not
+ do checks that they are valid;
  @param LINK_COMPARATOR LINK_NAMEComparator
  a comparator function taking two pointers to LINK_TYPE and returning an int;
  required.
- 
+
  @author	Neil
  @version	1.0; 2016-11
  @since		1.0; 2016-11 */
@@ -111,29 +112,30 @@ struct PRIVATE_T_(LinkRun) {
 };
 
 /* Store the maximum capacity for the indexing with size_t. (Overkill, really.)
-
  range(runs) = Sum_{k=0}^runs 2^{runs-k} - 1
              = 2^{runs+1} - 2
  2^bits      = 2 (r^runs - 1)
  runs        = log(2^{bits-1} + 1) / log 2
  runs       <= bits, bits > 1
-
- fixme: very bad if we are doing multi-threading; have an option that
- replicates this as needed. */
+ fixme: will crash if you call the same function multiple, simultaneous, times;
+ it's okay to call different functions via different includes in the same file.
+ There needs to be some management of resources for multi-threading, perhaps
+ some dynamic allocation? */
 static struct PRIVATE_T_(LinkRuns) {
 	struct PRIVATE_T_(LinkRun) run[sizeof(size_t) << 3];
 	size_t run_no;
 } PRIVATE_T_(runs);
 
 /* generated prototypes */
-T *T_(LinkSort)(T *const this);
+void T_(LinkSort)(T **const);
 
 /** Inserts the first element from the larger of two sorted runs, then merges
  the rest. \cite{Peters2002Timsort}, via \cite{McIlroy1993Optimistic}, does
  long merges by galloping, but we don't have random access to the data. In
- practice, this is 2% slower on randomly distrubuted keys when the array size
- is over 500 000; ramdomly distributed keys have high insertion times. It's
- (potentially much) faster when the keys have structure: observed, [-2%, 500%].
+ practice, this is 2% slower on randomly distributed keys when the linked-list
+ size is over 500 000; randomly distributed keys have high insertion times that
+ to well in standard merging. However, it's (potentially much) faster when the
+ keys have structure: observed, [-2%, 500%].
  <p>
  Assumes array contains at least 2 elements and there are at least two runs. */
 static void PRIVATE_T_(natural_merge)(void) {
@@ -146,8 +148,8 @@ static void PRIVATE_T_(natural_merge)(void) {
 	if(run_a->size <= run_b->size) {
 		T *prev_chosen;
 
-		/* run a is smaller: downwards insert b.head followed by upwards merge
-		 to (probabilistically) get the O(1) splicing as soon as possible */
+		/* run a is smaller: downwards insert b.head followed by upwards
+		 merge */
 
 		/* insert the first element of b downwards into a */
 		for( ; ; ) {
@@ -245,12 +247,15 @@ static void PRIVATE_T_(natural_merge)(void) {
 }
 
 /** Greedy natural insertion-merge sort on doubly-linked lists.
- @return	The new head of the list. */
-T *T_(LinkSort)(T *const this) {
+ @param phead	A pointer to the head of the list, which is a pointer to
+ 				LIST_TYPE; the head of the list will, in general, change,
+ 				unless it's the smallest item. */
+void T_(LinkSort)(T **const phead) {
+	T *head;
 	/* new_run is an index into link_runs, a temporary sorting structure;
 	 head is first smallest, tail is last largest */
 	struct PRIVATE_T_(LinkRun) *new_run;
-	/* part of the state machine for classifying points wrt their neigbors */
+	/* part of the state machine for classifying points wrt their neighbours */
 	enum { UNSURE, INCREASING, DECREASING } mono;
 	/* the data that we are sorting */
 	T *a, *b, *c, *first_iso_a;
@@ -260,14 +265,14 @@ T *T_(LinkSort)(T *const this) {
 	/* the value of the comparison */
 	int comp;
 
-	if(!this) return 0; /* ensure we have an 'a' */
+	if(!phead || !(head = *phead)) return; /* ensure we have an 'a' */
 
 	/* reset the state machine and output to just 'a' in the first run */
 	mono = UNSURE;
 	PRIVATE_T_(runs).run_no = 1;
 	new_run = PRIVATE_T_(runs).run + 0, run_count = 1;
 	new_run->size = 1;
-	a = first_iso_a = new_run->head = new_run->tail = this;
+	a = first_iso_a = new_run->head = new_run->tail = head;
 
 	for(b = a->LINK_NEXT; b; a = b, b = c) {
 
@@ -277,7 +282,7 @@ T *T_(LinkSort)(T *const this) {
 		comp = PRIVATE_T_(compare)(a, b);
 
 		/* state machine that considers runs in both directions -- in practice,
-		 slighly slower than only considering increasing runs on most cases;
+		 slightly slower than only considering increasing runs on most cases;
 		 however, I would hate to see my code replaced with one line; reverse
 		 order is 15 times faster, but it's not likely */
 		if(comp < 0) { /* a < b, increasing -- good */
@@ -326,9 +331,9 @@ T *T_(LinkSort)(T *const this) {
 	if(mono == INCREASING) new_run->tail = a;
 	new_run->tail->LINK_NEXT = new_run->head->LINK_PREV = 0;
 
-	/* clean up the rest; when only one run, propogate link_runs[0] to this */
+	/* clean up the rest; when only one run, propagate link_runs[0] to head */
 	while(PRIVATE_T_(runs).run_no > 1) PRIVATE_T_(natural_merge)();
-	return PRIVATE_T_(runs).run[0].head;
+	*phead = PRIVATE_T_(runs).run[0].head;
 }
 
 #undef LINK_NAME
