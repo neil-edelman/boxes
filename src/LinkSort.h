@@ -15,11 +15,19 @@
  do checks that they are valid;
  @param LINK_COMPARATOR LINK_NAMEComparator
  a comparator function taking two pointers to LINK_TYPE and returning an int;
- required.
+ required,
+ @param LINK_STATIC_EXTRA_STORAGE
+ this keeps O(log n) space needed for greedy natural merge sort in a static
+ global parameter so you don't have to create it repeatedly (probably
+ 1520 Bytes on a 64 Bit machine, tests have shown that this is negligible.)
+ However, if you call this exact NameLinkSort() concurrently with this
+ parameter on, it will result in undefined behaviour.
 
  @author	Neil
  @version	1.0; 2016-11
  @since		1.0; 2016-11 */
+
+#include <stddef.h>	/* size_t */
 
 /* check defines */
 
@@ -113,18 +121,18 @@ struct PRIVATE_T_(LinkRun) {
              = 2^{runs+1} - 2
  2^bits      = 2 (r^runs - 1)
  runs        = log(2^{bits-1} + 1) / log 2
- runs       <= 2^{bits - 1}, 2^{bits + 1} > 0
- fixme: will crash if you call the same function multiple, simultaneous, times;
- it's okay to call different functions via different includes in the same file.
- There needs to be some management of resources for multi-threading, perhaps
- some dynamic allocation? */
-static struct PRIVATE_T_(LinkRuns) {
+ runs       <= 2^{bits - 1}, 2^{bits + 1} > 0 */
+struct PRIVATE_T_(LinkRuns) {
 	struct PRIVATE_T_(LinkRun) run[(sizeof(size_t) << 3) - 1];
 	size_t run_no;
-} PRIVATE_T_(runs);
+}
+#ifdef LINK_STATIC_EXTRA_STORAGE
+PRIVATE_T_(runs)
+#endif
+;
 
 /* generated prototypes */
-void T_(LinkSort)(T **const);
+static void T_(LinkSort)(T **const);
 
 /** Inserts the first element from the larger of two sorted runs, then merges
  the rest. \cite{Peters2002Timsort}, via \cite{McIlroy1993Optimistic}, does
@@ -135,9 +143,8 @@ void T_(LinkSort)(T **const);
  keys have structure: observed, [-2%, 500%].
  <p>
  Assumes array contains at least 2 elements and there are at least two runs. */
-static void PRIVATE_T_(natural_merge)(void) {
-	struct PRIVATE_T_(LinkRun) *const run_a = PRIVATE_T_(runs).run
-		+ PRIVATE_T_(runs).run_no - 2;
+static void PRIVATE_T_(natural_merge)(struct PRIVATE_T_(LinkRuns) *const runs) {
+	struct PRIVATE_T_(LinkRun) *const run_a = runs->run + runs->run_no - 2;
 	struct PRIVATE_T_(LinkRun) *const run_b = run_a + 1;
 	T *a = run_a->tail, *b = run_b->head;
 	T *chosen;
@@ -239,7 +246,7 @@ static void PRIVATE_T_(natural_merge)(void) {
 	}
 
 	run_a->size += run_b->size;
-	PRIVATE_T_(runs).run_no--;
+	runs->run_no--;
 
 }
 
@@ -247,7 +254,12 @@ static void PRIVATE_T_(natural_merge)(void) {
  @param phead	A pointer to the head of the list, which is a pointer to
  				LIST_TYPE; the head of the list will, in general, change,
  				unless it's the smallest item. */
-void T_(LinkSort)(T **const phead) {
+static void T_(LinkSort)(T **const phead) {
+#ifndef LINK_STATIC_EXTRA_STORAGE
+	/* allocate enough space on the stack for the maximum possible runs */
+	struct PRIVATE_T_(LinkRuns) PRIVATE_T_(runs);
+#endif
+	/* simulate call-by-reference */
 	T *head;
 	/* new_run is an index into link_runs, a temporary sorting structure;
 	 head is first smallest, tail is last largest */
@@ -316,7 +328,7 @@ void T_(LinkSort)(T **const phead) {
 
 		/* greedy merge: keeps space to O(log n) instead of O(n) */
 		for(rc = run_count; !(rc & 1) && PRIVATE_T_(runs).run_no >= 2; rc >>= 1)
-			PRIVATE_T_(natural_merge)();
+			PRIVATE_T_(natural_merge)(&PRIVATE_T_(runs));
 		/* reset the state machine and output to just 'b' at the next run */
 		mono = UNSURE;
 		new_run = PRIVATE_T_(runs).run + PRIVATE_T_(runs).run_no++, run_count++;
@@ -329,7 +341,8 @@ void T_(LinkSort)(T **const phead) {
 	new_run->tail->LINK_NEXT = new_run->head->LINK_PREV = 0;
 
 	/* clean up the rest; when only one run, propagate link_runs[0] to head */
-	while(PRIVATE_T_(runs).run_no > 1) PRIVATE_T_(natural_merge)();
+	while(PRIVATE_T_(runs).run_no > 1)
+		PRIVATE_T_(natural_merge)(&PRIVATE_T_(runs));
 	*phead = PRIVATE_T_(runs).run[0].head;
 }
 
@@ -338,3 +351,4 @@ void T_(LinkSort)(T **const phead) {
 #undef LINK_PREV
 #undef LINK_NEXT
 #undef LINK_COMPARATOR
+#undef LINK_STATIC_EXTRA_STORAGE
