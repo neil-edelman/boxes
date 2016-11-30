@@ -15,7 +15,7 @@
  do checks that they are valid;
  @param LINK_COMPARATOR LINK_NAMEComparator
  a comparator function taking two pointers to LINK_TYPE and returning an int;
- required,
+ required;
  @param LINK_STATIC_EXTRA_STORAGE
  this keeps O(log n) space needed for greedy natural merge sort in a static
  global parameter so you don't have to create it repeatedly (probably
@@ -143,8 +143,8 @@ static void T_(LinkSort)(T **const);
  keys have structure: observed, [-2%, 500%].
  <p>
  Assumes array contains at least 2 elements and there are at least two runs. */
-static void PRIVATE_T_(natural_merge)(struct PRIVATE_T_(LinkRuns) *const runs) {
-	struct PRIVATE_T_(LinkRun) *const run_a = runs->run + runs->run_no - 2;
+static void PRIVATE_T_(natural_merge)(struct PRIVATE_T_(LinkRuns) *const rs) {
+	struct PRIVATE_T_(LinkRun) *const run_a = rs->run + rs->run_no - 2;
 	struct PRIVATE_T_(LinkRun) *const run_b = run_a + 1;
 	T *a = run_a->tail, *b = run_b->head;
 	T *chosen;
@@ -246,7 +246,7 @@ static void PRIVATE_T_(natural_merge)(struct PRIVATE_T_(LinkRuns) *const runs) {
 	}
 
 	run_a->size += run_b->size;
-	runs->run_no--;
+	rs->run_no--;
 
 }
 
