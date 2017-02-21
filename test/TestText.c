@@ -33,9 +33,9 @@ int main(int argc, char *argv[]) {
 	} while(0);
 	switch(error) {
 		case E_NO_ERR: break;
-		case E_ERRNO: perror("Text"); break;
+		case E_ERRNO: perror(fn); break;
 		case E_UNEXPECTED:
-			fprintf(stderr, "Text: %s.\n", TextGetError(text)); break;
+			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text)); break;
 	}
 	{
 		printf("Destroying Text: \"%s,\"\n", fn);

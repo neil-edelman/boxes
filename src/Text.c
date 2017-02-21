@@ -1,7 +1,7 @@
 /** Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- Gets the whole text file and has basic functions for parsing.
+ For reading and parsing text files.
 
  @param TEXT_DEBUG
  Prints things to stderr.
@@ -75,7 +75,7 @@ static int        global_errno_copy;
 struct Text {
 	char *filename;
 	char *buffer;
-	size_t size, capacity[2];
+	size_t buffer_size, buffer_capacity[2];
 	enum Error error;
 	int errno_copy;
 };
@@ -114,14 +114,14 @@ struct Text *Text(char *const fn) {
 	}
 
 	/* fill */
-	this->filename    = (char *)(this + 1);
+	this->filename           = (char *)(this + 1);
 	memcpy(this->filename, fn, fn_size);
-	this->buffer      = 0;
-	this->size        = 0;
-	this->capacity[0] = fibonacci11;
-	this->capacity[1] = fibonacci12;
-	this->error       = E_NO_ERROR;
-	this->errno_copy  = 0;
+	this->buffer             = 0;
+	this->buffer_size        = 0;
+	this->buffer_capacity[0] = fibonacci11;
+	this->buffer_capacity[1] = fibonacci12;
+	this->error              = E_NO_ERROR;
+	this->errno_copy         = 0;
 
 	/* open */
 	if(!(fp = fopen(fn, "r"))) {
@@ -132,11 +132,11 @@ struct Text *Text(char *const fn) {
 	}
 
 	debug(this, "cons", "new, capacity %d, opened \"%s.\"\n",
-		this->capacity[0], fn);
+		this->buffer_capacity[0], fn);
 
 	/* allocate buffer; there is no real way to portably and correctly get the
 	 number of characters in a text file, so allocate incrementally */
-	if(!(this->buffer = malloc(this->capacity[0] * sizeof *this->buffer))) {
+	if(!(this->buffer = malloc(this->buffer_capacity[0]*sizeof*this->buffer))) {
 		Text_(&this);
 		global_error = E_ERRNO;
 		global_errno_copy = errno;
@@ -145,12 +145,15 @@ struct Text *Text(char *const fn) {
 		return 0;
 	}
 
+	/* allocate offsets */
+	/* fixme */
+
 	/* read */
-	while(size = (this->capacity[0] - cursor > INT_MAX) ?
-		INT_MAX : (int)(this->capacity[0] - cursor),
+	while(size = (this->buffer_capacity[0] - cursor > INT_MAX) ?
+		INT_MAX : (int)(this->buffer_capacity[0] - cursor),
 		fgets(this->buffer + cursor, size, fp)) {
 		cursor += strlen(this->buffer + cursor);
-		if(cursor >= this->capacity[0] - 1 && !up_capacity(this)) {
+		if(cursor >= this->buffer_capacity[0] - 1 && !up_capacity(this)) {
 			global_error = this->error;
 			if(fclose(fp) == EOF) perror(fn); /* unreported error */
 			Text_(&this);
@@ -210,22 +213,23 @@ static int up_capacity(struct Text *const this) {
 	void *buffer;
 
 	/* fibonacci */
-	c0 = this->capacity[0];
-	c1 = this->capacity[1];
+	c0 = this->buffer_capacity[0];
+	c1 = this->buffer_capacity[1];
 	if(c0 == (size_t)-1) { this->error = E_OVERFLOW; return 0; }
 	c0 ^= c1;
 	c1 ^= c0;
 	c0 ^= c1;
 	c1 += c0;
 	if(c1 <= c0) c1 = (size_t)-1;
-	debug(this, "up_capacity", "capacity %lu->%lu.\n", this->capacity[0], c0);
+	debug(this, "up_capacity", "capacity %lu->%lu.\n",
+		this->buffer_capacity[0], c0);
 	if(!(buffer = realloc(this->buffer, c0 * sizeof *this->buffer))) {
 		this->error = E_ERRNO, this->errno_copy = errno;
 		return 0;
 	}
 	this->buffer = buffer;
-	this->capacity[0] = c0;
-	this->capacity[1] = c1;
+	this->buffer_capacity[0] = c0;
+	this->buffer_capacity[1] = c1;
 
 	return -1;
 }
