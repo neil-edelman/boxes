@@ -49,7 +49,7 @@
 
 
 
-/* for allocating splits */
+/* for allocating recursively */
 static const unsigned fibonacci6  = 8;
 static const unsigned fibonacci7  = 13;
 
@@ -62,7 +62,8 @@ enum Error {
 	E_ERRNO,
 	E_PARAMETER,
 	E_OVERFLOW,
-	E_SYNTAX
+	E_SYNTAX,
+	E_ASSERT
 };
 
 static const char *const error_explination[] = {
@@ -70,7 +71,8 @@ static const char *const error_explination[] = {
 	0,
 	"parameter out-of-range",
 	"overflow",
-	"syntax error"
+	"syntax error",
+	"assertion failed"
 };
 
 /* globals */
@@ -79,15 +81,23 @@ static enum Error global_error = E_NO_ERROR;
 static int        global_errno_copy;
 
 struct Text {
+	struct Text *up;
+	size_t up_begin, up_end;
 	char *name;
 	char *buffer;
 	size_t buffer_size, buffer_capacity[2];
+	struct Text *downs;
+	size_t downs_size, downs_capacity[2];
 	enum Error error;
 	int errno_copy;
 };
 
 /* private */
 
+static struct Text *Text(char *const name);
+static struct Text *Text_string_recursive(struct Text *const up,
+	const size_t up_begin, const size_t up_end, char *const name,
+	char *const str);
 static int buffer_capacity_up(struct Text *const this);
 static void debug(struct Text *const this, const char *const fn,
 	const char *const fmt, ...);
@@ -104,50 +114,28 @@ static void debug(struct Text *const this, const char *const fn,
 struct Text *TextFile(char *const fn) {
 	struct Text *this;
 	FILE *fp;
-	size_t fn_size, cursor = 0;
+	size_t cursor = 0;
 	int size, err;
 
 	/* param check */
-	if(!fn || !fn[0]) {
-		global_error = E_PARAMETER;
-		return 0;
-	}
-	fn_size = strlen(fn) + 1;
+	if(!fn || !fn[0])
+		{ global_error = E_PARAMETER; return 0; }
 
-	/* allocate */
-	if(!(this = malloc(sizeof *this + fn_size))) {
-		global_error = E_ERRNO;
-		global_errno_copy = errno;
-		return 0;
-	}
-
-	/* fill */
-	this->name                = (char *)(this + 1);
-	memcpy(this->name, fn, fn_size);
-	this->buffer              = 0;
-	this->buffer_size         = 0;
-	this->buffer_capacity[0]  = fibonacci11;
-	this->buffer_capacity[1]  = fibonacci12;
-	this->error               = E_NO_ERROR;
-	this->errno_copy          = 0;
+	/* generic constructor */
+	if(!(this = Text(fn)))
+		{ global_error = E_ERRNO, global_errno_copy = errno; return 0; }
 
 	/* open */
 	if(!(fp = fopen(fn, "r"))) {
-		global_error = E_ERRNO;
-		global_errno_copy = errno;
+		global_error = E_ERRNO, global_errno_copy = errno;
 		Text_(&this);
 		return 0;
 	}
 
-	debug(this, "cons", "new, capacity %d, opened, \"%s.\"\n",
-		this->buffer_capacity[0], fn);
-
 	/* allocate buffer; there is no real way to portably and correctly get the
 	 number of characters in a text file, so allocate incrementally */
-	if(!(this->buffer = malloc(this->buffer_capacity[0]*sizeof*this->buffer))) {
-		Text_(&this);
-		global_error = E_ERRNO;
-		global_errno_copy = errno;
+	if(!(this->buffer=malloc(this->buffer_capacity[0] *sizeof *this->buffer))) {
+		global_error = E_ERRNO, global_errno_copy = errno;
 		if(fclose(fp) == EOF) perror(fn); /* unreported error */
 		Text_(&this);
 		return 0;
@@ -182,35 +170,20 @@ struct Text *TextFile(char *const fn) {
  {name}. */
 struct Text *TextString(char *const name, char *const str) {
 	struct Text *this;
-	size_t name_size, str_size;
+	size_t str_size;
 
 	if(!str || !name) return 0;
 
-	name_size = strlen(name) + 1;
-	str_size  = strlen(str)  + 1;
+	str_size = strlen(str) + 1; /* danger */
 
-	if(!(this = malloc(sizeof *this + name_size))) {
-		global_error = E_ERRNO;
-		global_errno_copy = errno;
-		return 0;
-	}
+	if(!(this = Text(name)))
+		{ global_error = E_ERRNO, global_errno_copy = errno; return 0; }
 
-	this->name               = (char *)(this + 1);
-	memcpy(this->name, name, name_size);
-	this->buffer             = 0;
-	this->buffer_size        = 0;
-	this->buffer_capacity[0] = name_size + fibonacci11;
-	this->buffer_capacity[1] = name_size + fibonacci12;
-	this->error               = E_NO_ERROR;
-	this->errno_copy          = 0;
+	this->buffer_capacity[0] += str_size; /* danger */
+	this->buffer_capacity[1] += str_size; /* danger */
 
-	debug(this, "cons", "new, capacity %d, title, \"%s.\"\n",
-		this->buffer_capacity[0], name);
-
-	if(!(this->buffer = malloc(this->buffer_capacity[0]*sizeof*this->buffer))) {
-		Text_(&this);
-		global_error = E_ERRNO;
-		global_errno_copy = errno;
+	if(!(this->buffer=malloc(this->buffer_capacity[0] * sizeof *this->buffer))){
+		global_error = E_ERRNO, global_errno_copy = errno;
 		Text_(&this);
 		return 0;
 	}
@@ -221,12 +194,18 @@ struct Text *TextString(char *const name, char *const str) {
 
 /** Destructs a {Text}. */
 void Text_(struct Text **const this_ptr) {
-	struct Text *this;
+	struct Text *this, *child;
+	size_t i;
 
 	if(!this_ptr || !(this = *this_ptr)) return;
 
 	debug(this, "~", "erase \"%s.\"\n", this->name);
 
+	for(i = 0; i < this->downs_size; i++) {
+		child = this->downs + i;
+		Text_(&child);
+	}
+	free(this->downs);
 	free(this->buffer);
 	free(this);
 
@@ -264,9 +243,10 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 
 	for(p = 0; p < patterns_size; p++) {
 		pattern = patterns + p;
-		printf("matching(\"%s\"..\"%s\").\n", pattern->begin, pattern->end);
+		printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n", pattern->begin,
+			pattern->end, this->buffer);
 		if(!(pos = strstr(this->buffer, pattern->begin))) continue;
-		printf("begin \"%.40s\".\n", pos);
+		/*printf("begin \"%.40s..\".\n", pos);*/
 		/* this happens when first_pos is [abcdefg] and [cdef] is matched */
 		if(first_pos && pos >= first_pos) continue;
 		/* else it's the first */
@@ -276,7 +256,7 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 		begin_length = strlen(pattern->begin);
 		replace_pos = pos + strlen(pattern->begin);
 		replace = *replace_pos, *replace_pos = '\0', is_replace = -1;
-		printf("now first \"%.40s\".\n", pos);
+		/*printf("now first \"%.40s..\".\n", pos);*/
 	}
 	/* didn't find any patterns */
 	if(!first_pat) return 0;
@@ -289,12 +269,14 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 		replace = *replace_pos, *replace_pos = '\0';
 	}
 	/* copy first_pos into a separate temporary buffer */
-	printf("first_pos: \"%s\" from %lu to %lu.\n", first_pos,
-		first_pos - this->buffer, replace_pos - this->buffer);
+	/*printf("first_pos: \"%s\" from %lu to %lu.\n", first_pos,
+		first_pos - this->buffer, replace_pos - this->buffer);*/
+	if(!Text_string_recursive(this, (size_t)(first_pos - this->buffer),
+		(size_t)(replace_pos - this->buffer), "yo", first_pos))
 	/* reset the buffer back to normal */
 	*replace_pos = replace;
-	printf("now buffer \"%.40s\" and first \"%s\" at \"%.40s\".\n",
-		this->buffer, first_pat ? first_pat->begin : "(null)", first_pos);
+	/*printf("now buffer \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
+		this->buffer, first_pat ? first_pat->begin : "(null)", first_pos);*/
 
 	return -1;
 }
@@ -303,6 +285,75 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 
 /************
  * Private. */
+
+/** Constructs a generic buffer, but buffer is null to give the calling fn room
+ to expand; set it to something. If returning 0, there was a allocation error,
+ and {errno} is set. */
+static struct Text *Text(char *const name) {
+	struct Text *this;
+	size_t name_size;
+
+	name_size = strlen(name) + 1;
+	if(!(this = malloc(sizeof *this + name_size))) return 0;
+	this->up                 = 0;
+	this->up_begin           = 0;
+	this->up_end             = 0;
+	this->name               = (char *)(this + 1);
+	memcpy(this->name, name, name_size);
+	this->buffer             = 0;
+	this->buffer_size        = 0;
+	this->buffer_capacity[0] = fibonacci11;
+	this->buffer_capacity[1] = fibonacci12;
+	this->downs              = 0;
+	this->downs_size         = 0;
+	this->downs_capacity[0]  = fibonacci6;
+	this->downs_capacity[1]  = fibonacci7;
+	this->error              = E_NO_ERROR;
+	this->errno_copy         = 0;
+
+	if(!(this->downs = malloc(this->downs_capacity[0] * sizeof *this->downs)))
+		{ Text_(&this); return 0; }
+
+	debug(this, "cons", "new, \"%s,\" capacity %d.\n", name,
+		this->buffer_capacity[0]);
+
+	return this;
+}
+
+static struct Text *Text_string_recursive(struct Text *const up,
+	const size_t up_begin, const size_t up_end, char *const name,
+	char *const str) {
+	struct Text *this;
+	size_t str_size;
+
+	if(!str || !name) return 0;
+
+	str_size = strlen(str) + 1; /* danger */
+
+	if(up && str_size != up_end - up_begin + 1) {
+		up->error = E_ASSERT;
+		return 0;
+	}
+
+	if(!(this = Text(name)))
+		{ up->error = E_ERRNO, up->errno_copy = errno; return 0; }
+
+	this->up       = up;
+	this->up_begin = up_begin;
+	this->up_end   = up_end;
+	this->buffer_capacity[0] += str_size; /* danger */
+	this->buffer_capacity[1] += str_size; /* danger */
+
+	if(!(this->buffer=malloc(this->buffer_capacity[0] * sizeof *this->buffer))){
+		up->error = E_ERRNO, up->errno_copy = errno;
+		Text_(&this);
+		return 0;
+	}
+	memcpy(this->buffer, str, str_size);
+	printf("recursive: %s\n", this->buffer);
+
+	return this;
+}
 
 /** Ensures buffer capacity.
  @return	Success.
