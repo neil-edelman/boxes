@@ -63,7 +63,8 @@ enum Error {
 	E_PARAMETER,
 	E_OVERFLOW,
 	E_SYNTAX,
-	E_ASSERT
+	E_ASSERT,
+	E_PARENT
 };
 
 static const char *const error_explination[] = {
@@ -72,7 +73,8 @@ static const char *const error_explination[] = {
 	"parameter out-of-range",
 	"overflow",
 	"syntax error",
-	"assertion failed"
+	"assertion failed",
+	"null parent"
 };
 
 /* globals */
@@ -97,7 +99,8 @@ struct Text {
 static struct Text *Text(char *const name);
 static struct Text *Text_string_recursive(struct Text *const up,
 	const size_t up_begin, const size_t up_end, char *const str);
-static int buffer_capacity_up(struct Text *const this);
+static int buffer_capacity_up(struct Text *const this,
+	const size_t *const size_ptr);
 static int downs_capacity_up(struct Text *const this);
 static void debug(struct Text *const this, const char *const fn,
 	const char *const fmt, ...);
@@ -146,7 +149,8 @@ struct Text *TextFile(char *const fn) {
 		INT_MAX : (int)(this->buffer_capacity[0] - cursor),
 		fgets(this->buffer + cursor, size, fp)) {
 		cursor += strlen(this->buffer + cursor);
-		if(cursor >= this->buffer_capacity[0] - 1 && !buffer_capacity_up(this)){
+		if(cursor >= this->buffer_capacity[0] - 1
+			&& !buffer_capacity_up(this, 0)) {
 			global_error = this->error;
 			if(fclose(fp) == EOF) perror(fn); /* unreported error */
 			Text_(&this);
@@ -210,9 +214,25 @@ void Text_(struct Text **const this_ptr) {
 }
 
 /** Gets a string from the text; valid until the text size changes. */
-char *TextGetString(struct Text *const this) {
+char *TextGetBuffer(struct Text *const this) {
 	if(!this) return 0;
 	return this->buffer;
+}
+
+const char *TextGetParentBuffer(struct Text *const this) {
+	if(!this) return 0;
+	if(!this->up) { this->error = E_PARENT; return 0; }
+	return this->up->buffer;
+}
+
+size_t TextGetParentStart(struct Text *const this) {
+	if(!this) return 0;
+	return this->up_begin;
+}
+
+size_t TextGetParentEnd(struct Text *const this) {
+	if(!this) return 0;
+	return this->up_end;
 }
 
 /** @return		The last error associated with {this} (can be null.) */
@@ -235,7 +255,7 @@ const char *TextGetError(struct Text *const this) {
 					array. All patterns must have {begin} and {transform}, but
 					{end} is optional; where missing, it will just call
 					{transform} with {begin}. */
-int TextMatch(struct Text *this, struct TextPattern *const patterns,
+int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 	const size_t patterns_size) {
 	struct TextPattern *pattern; size_t p;
 	char *s0;
@@ -248,7 +268,7 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 	if(!this) return 0;
 
 	for(p = 0; p < patterns_size; p++) {
-		pattern = patterns + p;
+		pattern = (struct TextPattern *)patterns + p;
 		/*printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
 			pattern->begin, pattern->end, this->buffer);*/
 		if(!(s0 = strstr(this->buffer, pattern->begin))) continue;
@@ -292,6 +312,88 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 		this->buffer, first_pat ? first_pat->begin : "(null)", first_pos);*/
 
 	return -1;
+}
+
+/** Ensures that we have a buffer of at least {capacity}. All pointers to the
+ buffer will potentially change.
+ @return	Success.
+ @throws	E_OVERFLOW, E_ERRNO */
+int TextEnsureCapacity(struct Text *const this, const size_t capacity) {
+	if(!this) return 0;
+	return buffer_capacity_up(this, &capacity);
+}
+
+/** E ch, e: p(e.key) -> a(e.value) */
+void TextForEachPassed(struct Text *const this, TextPredicate p, TextAction a) {
+	struct Text *down;
+	unsigned i;
+	for(i = 0; i < this->downs_size; i++) {
+		down = this->downs[i];
+		if(!p || p(down->name)) a(down);
+	}
+}
+
+static const char *const start_str     = "[ ";
+static const char *const end_str       = " ]";
+static const char *const alter_end_str = "...]";
+static const char *const ass_str       = "->";
+static const char *const null_str      = "Null";
+
+struct SuperCat {
+	char *print, *cursor;
+	size_t left;
+	int is_truncated;
+};
+static void super_cat_init(struct SuperCat *const cat,
+	char *const print, const size_t print_size) {
+	cat->print = cat->cursor = print;
+	cat->left = print_size;
+	cat->is_truncated = 0;
+	print[0] = '\0';
+}
+static void super_cat(struct SuperCat *const cat,
+	const char *const append) {
+	size_t lu_took; int took;
+	if(cat->is_truncated) return;
+	took = snprintf(cat->cursor, cat->left, "%s", append);
+	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
+	if(took == 0) { return; }
+	if((lu_took=took)>=cat->left) {cat->is_truncated=-1,lu_took=cat->left-1;}
+	cat->cursor += lu_took, cat->left -= lu_took;
+}
+
+static void to_string_recursive(struct Text *const this, struct SuperCat *cat_ptr) {
+	unsigned i;
+	char key[80];
+	if(snprintf(key, sizeof key, "%s", this->buffer) > (int)sizeof key) {
+		const unsigned key_size = sizeof key;
+		key[key_size - 4] = '.',key[key_size - 3] = '.',key[key_size - 2] = '.';
+	}
+	super_cat(cat_ptr, start_str);
+	super_cat(cat_ptr, this->name);
+	super_cat(cat_ptr, ass_str);
+	super_cat(cat_ptr, key);
+	for(i = 0; i < this->downs_size; i++) {
+		to_string_recursive(this->downs[i], cat_ptr);
+	}
+	super_cat(cat_ptr, end_str);
+}
+
+/** Prints the Text in a static buffer; one can print 4 things at once before
+ it overwrites. */
+char *TextToString(struct Text *const this) {
+	static char buffer[4][2048];
+	static int buffer_i;
+	struct SuperCat cat;
+	super_cat_init(&cat, buffer[buffer_i],
+		sizeof *buffer / sizeof **buffer);
+	buffer_i++, buffer_i &= 3;
+	if(!this) {
+		super_cat(&cat, null_str);
+		return cat.print;
+	}
+	to_string_recursive(this, &cat);
+	return cat.print;
 }
 
 
@@ -347,7 +449,7 @@ static struct Text *Text_string_recursive(struct Text *const up,
 		return 0;
 	}
 
-	if(!(this = Text("nemo")))
+	if(!(this = Text("_nemo")))
 		{ up->error = E_ERRNO, up->errno_copy = errno; return 0; }
 
 	this->up       = up;
@@ -368,21 +470,29 @@ static struct Text *Text_string_recursive(struct Text *const up,
 }
 
 /** Ensures buffer capacity.
+ @param size_ptr	Can be null, in which case the capacity increases one level
+					in size. If it is not, the capacity increases at or beyond
+					this number.
  @return	Success.
  @throws	E_OVERFLOW, E_ERRNO */
-static int buffer_capacity_up(struct Text *const this) {
+static int buffer_capacity_up(struct Text *const this,
+	const size_t *const size_ptr) {
 	size_t c0, c1;
+	int is_up = size_ptr ? 0 : -1;
 	char *buffer;
 
 	/* fibonacci */
 	c0 = this->buffer_capacity[0];
 	c1 = this->buffer_capacity[1];
-	if(c0 == (size_t)-1) { this->error = E_OVERFLOW; return 0; }
-	c0 ^= c1;
-	c1 ^= c0;
-	c0 ^= c1;
-	c1 += c0;
-	if(c1 <= c0) c1 = (size_t)-1;
+	while(is_up || (size_ptr && c0 < *size_ptr)) {
+		if(c0 == (size_t)-1) { this->error = E_OVERFLOW; return 0; }
+		c0 ^= c1;
+		c1 ^= c0;
+		c0 ^= c1;
+		c1 += c0;
+		if(c1 <= c0) c1 = (size_t)-1;
+		is_up = 0;
+	}
 	debug(this, "buffer_capacity_up","%lu->%lu.\n",this->buffer_capacity[0],c0);
 	if(!(buffer = realloc(this->buffer, c0 * sizeof *this->buffer))) {
 		this->error = E_ERRNO, this->errno_copy = errno;

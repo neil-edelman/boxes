@@ -10,6 +10,7 @@
 #include <stdlib.h>	/* rand, EXIT_* */
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp */
+#include <ctype.h>	/* isspace */
 #include "../src/Text.h"
 
 /*#define LIST_NAME Text
@@ -18,33 +19,42 @@
 
 struct TextList *list;*/
 
+static void trim(char *const str) {
+	char *e = str + strlen(str) - 1, *s = str;
+	while(e > str && isspace(*e)) e--;
+	e++, *e = '\0';
+	while(isspace(*s)) s++;
+	if(s - str) memmove(str, s, (size_t)(e - s + 1));
+}
+
 /** @implments	Transform */
 static void url(struct Text *const match) {
-	printf("url: \"%s\".\n", TextGetString(match));
+	trim(TextGetBuffer(match));
+	/*printf("url: \"%s\".\n", TextGetBuffer(match));*/
 }
 /** @implments	Transform */
 static void each(struct Text *const match) {
-	printf("each: \"%s\".\n", TextGetString(match));
+	printf("each: \"%s\".\n", TextGetBuffer(match));
 }
 /** @implments	Transform */
 static void em(struct Text *const match) {
-	printf("em: \"%s\".\n", TextGetString(match));
+	printf("em: \"%s\".\n", TextGetBuffer(match));
 }
 /** @implments	Transform */
 static void amp(struct Text *const match) {
-	printf("amp: \"%s\".\n", TextGetString(match));
+	printf("amp: \"%s\".\n", TextGetBuffer(match));
 }
 /** @implments	Transform */
 static void lt(struct Text *const match) {
-	printf("lt: \"%s\".\n", TextGetString(match));
+	printf("lt: \"%s\".\n", TextGetBuffer(match));
 }
 /** @implments	Transform */
 static void gt(struct Text *const match) {
-	printf("gt: \"%s\".\n", TextGetString(match));
+	printf("gt: \"%s\".\n", TextGetBuffer(match));
 }
 static void new_docs(struct Text *const); /* needs TextPattern */
 
-static struct TextPattern tp_docs[] = {
+static const struct TextPattern tp_docs[] = {
 	{ "/** ", "*/", &new_docs }
 }, tp_each[] = {
 	{ "@", 0, &each }
@@ -58,8 +68,9 @@ static struct TextPattern tp_docs[] = {
 
 /** @implments	Transform */
 static void new_docs(struct Text *const sub) {
-	printf("new_docs: \"%s\".\n", TextGetString(sub));
-	TextMatch(sub, tp_inner, sizeof tp_inner / sizeof *tp_inner); /* error? */
+	/*printf("new_docs: \"%s\".\n", TextGetBuffer(sub));*/
+	/* fixme: each */
+	TextMatch(sub, tp_inner, sizeof tp_inner / sizeof *tp_inner);
 }
 
 /** The is a test of Text.
@@ -87,6 +98,7 @@ int main(int argc, char *argv[]) {
 		if(!(text = TextFile(fn))) { error = E_TEXT; break; }
 		if(!TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
 			{ error = E_TEXT; break; }
+		printf("%s\n", TextToString(text));
 
 	} while(0);
 	switch(error) {
