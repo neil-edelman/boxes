@@ -212,6 +212,12 @@ void Text_(struct Text **const this_ptr) {
 	*this_ptr = 0;
 }
 
+/** Gets a string from the text; valid until the text size changes. */
+char *TextGetString(struct Text *const this) {
+	if(!this) return 0;
+	return this->buffer;
+}
+
 /** @return		The last error associated with {this} (can be null.) */
 const char *TextGetError(struct Text *const this) {
 	const char *str;
@@ -231,9 +237,11 @@ const char *TextGetError(struct Text *const this) {
  					encompasses another pattern, it should be before in the
 					array. All patterns must have {begin} and {transform}, but
 					{end} is optional; where missing, it will just call
-					{transform} with {begin}. */
+					{transform} with {begin}.
+ @param find_name	Searches though text to find a name. Can be null, in which
+					case, the name will be "null" (sic.) */
 int TextMatch(struct Text *this, struct TextPattern *const patterns,
-	const size_t patterns_size) {
+	const size_t patterns_size, const StringOperator find_name) {
 	struct TextPattern *pattern, *first_pat = 0;
 	size_t p, begin_length;
 	int is_replace = 0;
@@ -250,7 +258,7 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 		/* this happens when first_pos is [abcdefg] and [cdef] is matched */
 		if(first_pos && pos >= first_pos) continue;
 		/* else it's the first */
-		first_pat = pattern, first_pos = pos;
+		first_pat = pattern, first_pos = pos + strlen(pattern->begin);
 		/* move the temporary null ahead */
 		if(is_replace) *replace_pos = replace;
 		begin_length = strlen(pattern->begin);
@@ -265,14 +273,16 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 		*replace_pos = replace;
 		if(!(pos = strstr(replace_pos, first_pat->end)))
 			{ this->error = E_SYNTAX; return 0; }
-		replace_pos = pos + strlen(first_pat->end);
+		replace_pos = pos/* + strlen(first_pat->end) <- don't want the 'end' */;
 		replace = *replace_pos, *replace_pos = '\0';
 	}
 	/* copy first_pos into a separate temporary buffer */
 	/*printf("first_pos: \"%s\" from %lu to %lu.\n", first_pos,
 		first_pos - this->buffer, replace_pos - this->buffer);*/
+	/* fixme: call find_name; find_name will go to the end and search for a
+	 function, transform it into a temp buffer */
 	if(!Text_string_recursive(this, (size_t)(first_pos - this->buffer),
-		(size_t)(replace_pos - this->buffer), "yo", first_pos))
+		(size_t)(replace_pos - this->buffer), "null", first_pos)) return 0;
 	/* reset the buffer back to normal */
 	*replace_pos = replace;
 	/*printf("now buffer \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
@@ -350,7 +360,7 @@ static struct Text *Text_string_recursive(struct Text *const up,
 		return 0;
 	}
 	memcpy(this->buffer, str, str_size);
-	printf("recursive: %s\n", this->buffer);
+	printf("recursive: \"%s\"\n", this->buffer);
 
 	return this;
 }
