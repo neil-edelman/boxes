@@ -241,7 +241,7 @@ const char *TextGetError(struct Text *const this) {
  @param find_name	Searches though text to find a name. Can be null, in which
 					case, the name will be "null" (sic.) */
 int TextMatch(struct Text *this, struct TextPattern *const patterns,
-	const size_t patterns_size, const StringOperator find_name) {
+	const size_t patterns_size, const StringOperator find_name_after) {
 	struct TextPattern *pattern, *first_pat = 0;
 	size_t p, begin_length;
 	int is_replace = 0;
@@ -276,6 +276,7 @@ int TextMatch(struct Text *this, struct TextPattern *const patterns,
 		replace_pos = pos/* + strlen(first_pat->end) <- don't want the 'end' */;
 		replace = *replace_pos, *replace_pos = '\0';
 	}
+	/*  */
 	/* copy first_pos into a separate temporary buffer */
 	/*printf("first_pos: \"%s\" from %lu to %lu.\n", first_pos,
 		first_pos - this->buffer, replace_pos - this->buffer);*/
