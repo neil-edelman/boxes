@@ -12,46 +12,62 @@
 #include <string.h>	/* strcmp */
 #include "../src/Text.h"
 
-#define LIST_NAME Text
+/*#define LIST_NAME Text
 #define LIST_TYPE struct Text *
 #include "../../List/src/List.h"
 
+struct TextList *list;*/
+
 /** @implments	Transform */
-static void new_docs(char *const match) {
-	printf("splits_docs: \"%s\".\n", match);
+static void url(struct Text *const match) {
+	printf("url: \"%s\".\n", TextGetString(match));
 }
 /** @implments	Transform */
-static void url(char *const match) {
-	printf("url: \"%s\".\n", match);
+static void each(struct Text *const match) {
+	printf("each: \"%s\".\n", TextGetString(match));
 }
 /** @implments	Transform */
-static void each(char *const match) {
-	printf("each: \"%s\".\n", match);
+static void em(struct Text *const match) {
+	printf("em: \"%s\".\n", TextGetString(match));
 }
 /** @implments	Transform */
-static void em(char *const match) {
-	printf("em: \"%s\".\n", match);
+static void amp(struct Text *const match) {
+	printf("amp: \"%s\".\n", TextGetString(match));
 }
 /** @implments	Transform */
-static void amp(char *const match) {
-	printf("amp: \"%s\".\n", match);
+static void lt(struct Text *const match) {
+	printf("lt: \"%s\".\n", TextGetString(match));
 }
 /** @implments	Transform */
-static void lt(char *const match) {
-	printf("lt: \"%s\".\n", match);
+static void gt(struct Text *const match) {
+	printf("gt: \"%s\".\n", TextGetString(match));
 }
+static void new_docs(struct Text *const); /* needs TextPattern */
+
+static struct TextPattern tp_docs[] = {
+	{ "/** ", "*/", &new_docs }
+}, tp_each[] = {
+	{ "@", 0, &each }
+}, tp_inner[] = {
+	{ "\\url{", "}", &url },
+	{ "{", "}", &em },
+	{ "&", 0, &amp },
+	{ "<", 0, &lt },
+	{ ">", 0, &gt }
+};
+
 /** @implments	Transform */
-static void gt(char *const match) {
-	printf("gt: \"%s\".\n", match);
+static void new_docs(struct Text *const sub) {
+	printf("new_docs: \"%s\".\n", TextGetString(sub));
+	TextMatch(sub, tp_inner, sizeof tp_inner / sizeof *tp_inner); /* error? */
 }
 
 /** The is a test of Text.
  @param argc	Count
  @param argv	Vector. */
 int main(int argc, char *argv[]) {
-	enum { E_NO_ERR, E_ERRNO, E_UNEXPECTED } error = E_NO_ERR;
+	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
 	struct Text *text = 0;
-	struct TextList *list = 0;
 	char *fn;
 
 	if(argc != 2) {
@@ -63,35 +79,27 @@ int main(int argc, char *argv[]) {
 	}
 
 	do {
-		struct TextPattern tp_docs[] = {
-			{ "/** ", "*/", &new_docs }
-		}, tp_each[] = {
-			{ "@", 0, &each }
-		}, tp_inner[] = {
-			{ "\\url{", "}", &url },
-			{ "{", "}", &em },
-			{ "&", 0, &amp },
-			{ "<", 0, &lt },
-			{ ">", 0, &gt }
-		};
 
-		if((text = TextFile("!@#$%%^&*()`\n"))) { error = E_UNEXPECTED; break; }
-		printf("Text(\"!@#$%%^&*()`\\n\"): %s.\n", TextGetError(text));
-		if(!(text = TextFile(fn))) { error = E_UNEXPECTED; break; }
-		TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs, 0);
-		TextMatch(text, tp_each, sizeof tp_each / sizeof *tp_each, 0);
-		TextMatch(text, tp_inner, sizeof tp_inner / sizeof *tp_inner, 0);
+		/*if(!(list = TextList())) { error = E_LIST; break; }*/
+		/*if((text = TextFile("!@#$%%^&*()`\n"))) { error = E_UNEXPECTED;
+		 break; }
+		printf("Text(\"!@#$%%^&*()`\\n\"): %s.\n", TextGetError(text));*/
+		if(!(text = TextFile(fn))) { error = E_TEXT; break; }
+		if(!TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
+			{ error = E_TEXT; break; }
 
 	} while(0);
 	switch(error) {
 		case E_NO_ERR: break;
 		case E_ERRNO: perror(fn); break;
-		case E_UNEXPECTED:
+		case E_TEXT:
 			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text)); break;
+		/*case E_LIST:
+			fprintf(stderr, "%s: %s.\n", fn, TextListGetError(list)); break;*/
 	}
 	{
-		printf("Destroying Text: \"%s,\"\n", fn);
 		Text_(&text);
+		/*TextList_(&list);*/
 	}
 
 	fprintf(stderr, "Done all tests; %s.\n", error ? "FAILED" : "SUCCEDED");
