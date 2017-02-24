@@ -28,41 +28,29 @@ static void trim(char *const str) {
 }
 
 /** @implments	TextAction */
-static void url(struct Text *const match) {
-	trim(TextGetBuffer(match));
-	/*printf("url: \"%s\".\n", TextGetBuffer(match));*/
-}
-/** @implments	TextAction */
 static void each(struct Text *const match) {
 	printf("each: \"%s\".\n", TextGetBuffer(match));
 }
-/** @implments	TextAction */
-static void em(struct Text *const this) {
-#if 0
-	char *str = TextGetBuffer(this), *copy;
-	size_t str_size = strlen(str) + 1;
-
-	if(!(copy = strdup(str))) return;
-	if(!TextEnsureCapacity(this, str_size + 9)) { free(copy); return; }
-	/* {str} is no longer valid */
-	sprintf(TextGetBuffer(this), "<em>%s</em>", copy);
-	free(copy);
-#else
-	TextAdd(this, "<em>%s</em>");
-#endif
+/** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
+ @implments	TextAction */
+static void url(struct Text *const this) {
+	trim(TextGetBuffer(this));
+	TextAdd(this, "<a href = \"%s\">%s</a>");
+}
+/** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
+ @implments	TextAction */
+static void cite(struct Text *const this) {
+	trim(TextGetBuffer(this));
+	TextAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
 }
 /** @implments	TextAction */
-static void amp(struct Text *const match) {
-	printf("amp: \"%s\".\n", TextGetBuffer(match));
-}
+static void em(struct Text *const this) { TextAdd(this, "<em>%s</em>"); }
 /** @implments	TextAction */
-static void lt(struct Text *const match) {
-	printf("lt: \"%s\".\n", TextGetBuffer(match));
-}
+static void amp(struct Text *const this) { TextAdd(this, "&amp;"); }
 /** @implments	TextAction */
-static void gt(struct Text *const match) {
-	printf("gt: \"%s\".\n", TextGetBuffer(match));
-}
+static void lt(struct Text *const this) { TextAdd(this, "&lt;"); }
+/** @implments	TextAction */
+static void gt(struct Text *const this) { TextAdd(this, "&gt"); }
 static void new_docs(struct Text *const); /* needs TextPattern */
 
 static const struct TextPattern tp_docs[] = {
@@ -71,6 +59,7 @@ static const struct TextPattern tp_docs[] = {
 	{ "@", 0, &each }
 }, tp_inner[] = {
 	{ "\\url{", "}", &url },
+	{ "\\cite{", "}", &cite },
 	{ "{", "}", &em },
 	{ "&", 0, &amp },
 	{ "<", 0, &lt },

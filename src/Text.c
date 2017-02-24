@@ -1,4 +1,4 @@
-/** A{ahh} Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
+/** \cite{ahh} Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  For reading and parsing text files.
@@ -248,6 +248,8 @@ const char *TextGetError(struct Text *const this) {
 	return str;
 }
 
+
+
 /** Transforms {this} according to all specified {patterns} array of
  {patterns_size}.
  @param patterns	An array of {TextPattern}; when the {begin} of a pattern
@@ -258,61 +260,67 @@ const char *TextGetError(struct Text *const this) {
 int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 	const size_t patterns_size) {
 	struct TextPattern *pattern; size_t p;
-	char *s0;
-	struct Match {
-		struct TextPattern *pattern;
-		struct Expression { char *s0, *s1; } exp0, exp1;
-	} match = { 0, { 0, 0 }, { 0, 0 } };
-	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
+	char *s0, *b;
 
 	if(!this) return 0;
 
-	for(p = 0; p < patterns_size; p++) {
-		pattern = (struct TextPattern *)patterns + p;
-		printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
-			pattern->begin, pattern->end, this->buffer);
-		if(!(s0 = strstr(this->buffer, pattern->begin))) continue;
-		/* this happens when first_pos is [abcdefg] and [cdef] is matched */
-		if(match.pattern && s0 >= match.exp0.s0) continue;
-		/* remove the temporary null */
-		if(replace.is) { *replace.pos = replace.stored, replace.is = 0; }
-		/* replace match with this match, since it's the first */
-		match.pattern = pattern;
-		match.exp0.s0 = s0;
-		match.exp0.s1 = s0 + strlen(pattern->begin);
-		/* put in temporary null */
-		replace.is = -1, replace.pos = match.exp0.s1,
-			replace.stored = *replace.pos, *replace.pos = '\0';
+	b = this->buffer;
+	while(b && *b) {
+		struct Match {
+			struct TextPattern *pattern;
+			struct Expression { char *s0, *s1; } exp0, exp1;
+		} match = { 0, { 0, 0 }, { 0, 0 } };
+		struct Replace { int is; char *pos; char stored; } replace = { 0,0,0 };
+
+		for(p = 0; p < patterns_size; p++) {
+			pattern = (struct TextPattern *)patterns + p;
+			/*printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
+				pattern->begin, pattern->end, b);*/
+			if(!(s0 = strstr(b, pattern->begin))) continue;
+			/* this happens when first_pos is [abcdefg] and [cdef] is matched */
+			if(match.pattern && s0 >= match.exp0.s0) continue;
+			/* remove the temporary null */
+			if(replace.is) { *replace.pos = replace.stored, replace.is = 0; }
+			/* replace match with this match, since it's the first */
+			match.pattern = pattern;
+			match.exp0.s0 = s0;
+			match.exp0.s1 = s0 + strlen(pattern->begin);
+			/* put in temporary null */
+			replace.is = -1, replace.pos = match.exp0.s1,
+				replace.stored = *replace.pos, *replace.pos = '\0';
+		}
+		/* didn't find any patterns */
+		if(!match.pattern) break;
+		/* if the {first_pat} has an ending, move the cursor to ending */
+		if(match.pattern->end) {
+			/* temp replacement of stored char */
+			*replace.pos = replace.stored, replace.is = 0;
+			/* search for the ending */
+			if(!(match.exp1.s0 = strstr(match.exp0.s1, match.pattern->end)))
+				{ this->error = E_SYNTAX; return 0; }
+			match.exp1.s1 = match.exp1.s0 + strlen(match.pattern->end);
+			/* put in temporary null */
+			replace.is = -1, replace.pos = match.exp1.s0,
+				replace.stored = *replace.pos, *replace.pos = '\0';
+		}
+		printf("match: \"%.*s\" \"%.30s...\" \"%.*s\"\n",
+			(int)(match.exp0.s1 - match.exp0.s0), match.exp0.s0,
+			match.exp0.s1,
+			(int)(match.exp1.s1 - match.exp1.s0), match.exp1.s0);
+		/* allocate the recursion; set the buffer back to how it was */
+		if(this->downs_size >= this->downs_capacity[0]
+			&& !downs_capacity_up(this)) return 0;
+		if(!(this->downs[this->downs_size++] = Text_string_recursive(this,
+			(size_t)(match.exp0.s0 - this->buffer),
+			(size_t)(match.exp1.s1 - this->buffer), match.exp0.s1)))
+			{ *replace.pos = replace.stored; return 0; }
+		*replace.pos = replace.stored;
+		/* call pattern function on the duplicated substring */
+		match.pattern->transform(this->downs[this->downs_size - 1]);
+		/*printf("now buffer \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
+			this->buffer, first_pat ? first_pat->begin : "(null)", first_pos);*/
+		b = match.exp1.s1;
 	}
-	/* didn't find any patterns */
-	if(!match.pattern) return 0; /* fixme!!! are we returning success or iterating? */
-	/* if the {first_pat} has an ending, move the cursor to ending */
-	if(match.pattern->end) {
-		/* temp replacement of stored char */
-		*replace.pos = replace.stored, replace.is = 0;
-		/* search for the ending */
-		if(!(match.exp1.s0 = strstr(match.exp0.s1, match.pattern->end)))
-			{ this->error = E_SYNTAX; return 0; }
-		match.exp1.s1 = match.exp1.s0 + strlen(match.pattern->end);
-		/* put in temporary null */
-		replace.is = -1, replace.pos = match.exp1.s0,
-			replace.stored = *replace.pos, *replace.pos = '\0';
-	}
-	printf("match: \"%.*s\" ... \"%.*s\"\n",
-		(int)(match.exp0.s1 - match.exp0.s0), match.exp0.s0,
-		(int)(match.exp1.s1 - match.exp1.s0), match.exp1.s0);
-	/* allocate the recursion; set the buffer back to how it was */
-	if(this->downs_size >= this->downs_capacity[0]
-		&& !downs_capacity_up(this)) return 0;
-	if(!(this->downs[this->downs_size++] = Text_string_recursive(this,
-		(size_t)(match.exp0.s0 - this->buffer),
-		(size_t)(match.exp1.s1 - this->buffer), match.exp0.s1)))
-		{ *replace.pos = replace.stored; return 0; }
-	*replace.pos = replace.stored;
-	/* call pattern function on the duplicated substring */
-	match.pattern->transform(this->downs[this->downs_size - 1]);
-	/*printf("now buffer \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
-		this->buffer, first_pat ? first_pat->begin : "(null)", first_pos);*/
 
 	return -1;
 }
@@ -409,24 +417,22 @@ char *TextAdd(struct Text *const this, char *const fmt) {
 	if(!this) return 0;
 	str = this->buffer, str_len = strlen(str);
 	if(!(copy = strdup(str))) return 0;
-	printf("***%s***copy:***%s***%lu***%s\n", str, copy, str_len, fmt);
+	
 	/* count */
 	for(p = fmt; *p; p++) {
-		if(*p != '%') { copy_len++; printf("%c: %lu\n", *p, copy_len); continue; }
+		if(*p != '%') { copy_len++; continue; }
 		switch(*++p) {
 			case '%': copy_len++; break;
-			case 's': copy_len += str_len; printf("+%lu = %lu\n", str_len, copy_len); break;
+			case 's': copy_len += str_len; break;
 		}
 	}
 	/* allocate */
 	copy_size = copy_len + 1;
-	printf("calculate %lu size\n", copy_size);
 	if(!buffer_capacity_up(this, &copy_size)) { free(copy); return 0; };
 	/* new string */
 	str = this->buffer;
-	printf("before: <%s>\n", str);
 	for(p = fmt; *p; p++) {
-		if(*p != '%') { *str++ = *p; printf("<%s>\n", this->buffer); continue; }
+		if(*p != '%') { *str++ = *p; continue; }
 		switch(*++p) {
 			case '%': *str++ = *p; break;
 			case 's': memcpy(str, copy, str_len), str += str_len; break;
@@ -490,8 +496,8 @@ static struct Text *Text_string_recursive(struct Text *const up,
 		up->error = E_ASSERT;
 		return 0;
 	}
-	printf("Text_string_rec: up %s, up_begin %lu, up_end %lu, \"%s\".\n",
-		TextToString(up), up_begin, up_end, str);
+	/*printf("Text_string_rec: up %s, up_begin %lu, up_end %lu, \"%s\".\n",
+		TextToString(up), up_begin, up_end, str);*/
 
 	if(!(this = Text("_nemo")))
 		{ up->error = E_ERRNO, up->errno_copy = errno; return 0; }
