@@ -9,7 +9,7 @@
 
 #include <stdlib.h>	/* rand, EXIT_* */
 #include <stdio.h>  /* fprintf */
-#include <string.h>	/* strcmp */
+#include <string.h>	/* strcmp strdup */
 #include <ctype.h>	/* isspace */
 #include "../src/Text.h"
 
@@ -27,28 +27,39 @@ static void trim(char *const str) {
 	if(s - str) memmove(str, s, (size_t)(e - s + 1));
 }
 
-/** @implments	Transform */
+/** @implments	TextAction */
 static void url(struct Text *const match) {
 	trim(TextGetBuffer(match));
 	/*printf("url: \"%s\".\n", TextGetBuffer(match));*/
 }
-/** @implments	Transform */
+/** @implments	TextAction */
 static void each(struct Text *const match) {
 	printf("each: \"%s\".\n", TextGetBuffer(match));
 }
-/** @implments	Transform */
-static void em(struct Text *const match) {
-	printf("em: \"%s\".\n", TextGetBuffer(match));
+/** @implments	TextAction */
+static void em(struct Text *const this) {
+#if 0
+	char *str = TextGetBuffer(this), *copy;
+	size_t str_size = strlen(str) + 1;
+
+	if(!(copy = strdup(str))) return;
+	if(!TextEnsureCapacity(this, str_size + 9)) { free(copy); return; }
+	/* {str} is no longer valid */
+	sprintf(TextGetBuffer(this), "<em>%s</em>", copy);
+	free(copy);
+#else
+	TextAdd(this, "<em>%s</em>");
+#endif
 }
-/** @implments	Transform */
+/** @implments	TextAction */
 static void amp(struct Text *const match) {
 	printf("amp: \"%s\".\n", TextGetBuffer(match));
 }
-/** @implments	Transform */
+/** @implments	TextAction */
 static void lt(struct Text *const match) {
 	printf("lt: \"%s\".\n", TextGetBuffer(match));
 }
-/** @implments	Transform */
+/** @implments	TextAction */
 static void gt(struct Text *const match) {
 	printf("gt: \"%s\".\n", TextGetBuffer(match));
 }
@@ -66,7 +77,7 @@ static const struct TextPattern tp_docs[] = {
 	{ ">", 0, &gt }
 };
 
-/** @implments	Transform */
+/** @implments	TextAction */
 static void new_docs(struct Text *const sub) {
 	/*printf("new_docs: \"%s\".\n", TextGetBuffer(sub));*/
 	/* fixme: each */

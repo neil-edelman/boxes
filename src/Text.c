@@ -1,4 +1,4 @@
-/** Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
+/** A{ahh} Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  For reading and parsing text files.
@@ -269,8 +269,8 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 
 	for(p = 0; p < patterns_size; p++) {
 		pattern = (struct TextPattern *)patterns + p;
-		/*printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
-			pattern->begin, pattern->end, this->buffer);*/
+		printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
+			pattern->begin, pattern->end, this->buffer);
 		if(!(s0 = strstr(this->buffer, pattern->begin))) continue;
 		/* this happens when first_pos is [abcdefg] and [cdef] is matched */
 		if(match.pattern && s0 >= match.exp0.s0) continue;
@@ -298,6 +298,9 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 		replace.is = -1, replace.pos = match.exp1.s0,
 			replace.stored = *replace.pos, *replace.pos = '\0';
 	}
+	printf("match: \"%.*s\" ... \"%.*s\"\n",
+		(int)(match.exp0.s1 - match.exp0.s0), match.exp0.s0,
+		(int)(match.exp1.s1 - match.exp1.s0), match.exp1.s0);
 	/* allocate the recursion; set the buffer back to how it was */
 	if(this->downs_size >= this->downs_capacity[0]
 		&& !downs_capacity_up(this)) return 0;
@@ -396,6 +399,45 @@ char *TextToString(struct Text *const this) {
 	return cat.print;
 }
 
+/** Shortcut to add something to the text.
+ @param fmt	Accepts %% as '%' and %s as the original string.
+ @return	The new address of the string, which may have changed. */
+char *TextAdd(struct Text *const this, char *const fmt) {
+	char *str, *copy, *p;
+	size_t str_len, copy_len = 0, copy_size;
+
+	if(!this) return 0;
+	str = this->buffer, str_len = strlen(str);
+	if(!(copy = strdup(str))) return 0;
+	printf("***%s***copy:***%s***%lu***%s\n", str, copy, str_len, fmt);
+	/* count */
+	for(p = fmt; *p; p++) {
+		if(*p != '%') { copy_len++; printf("%c: %lu\n", *p, copy_len); continue; }
+		switch(*++p) {
+			case '%': copy_len++; break;
+			case 's': copy_len += str_len; printf("+%lu = %lu\n", str_len, copy_len); break;
+		}
+	}
+	/* allocate */
+	copy_size = copy_len + 1;
+	printf("calculate %lu size\n", copy_size);
+	if(!buffer_capacity_up(this, &copy_size)) { free(copy); return 0; };
+	/* new string */
+	str = this->buffer;
+	printf("before: <%s>\n", str);
+	for(p = fmt; *p; p++) {
+		if(*p != '%') { *str++ = *p; printf("<%s>\n", this->buffer); continue; }
+		switch(*++p) {
+			case '%': *str++ = *p; break;
+			case 's': memcpy(str, copy, str_len), str += str_len; break;
+		}
+	}
+	*str = '\0';
+	/* free */
+	free(copy);
+	return this->buffer;
+}
+
 
 
 /************
@@ -448,6 +490,8 @@ static struct Text *Text_string_recursive(struct Text *const up,
 		up->error = E_ASSERT;
 		return 0;
 	}
+	printf("Text_string_rec: up %s, up_begin %lu, up_end %lu, \"%s\".\n",
+		TextToString(up), up_begin, up_end, str);
 
 	if(!(this = Text("_nemo")))
 		{ up->error = E_ERRNO, up->errno_copy = errno; return 0; }
@@ -493,6 +537,7 @@ static int buffer_capacity_up(struct Text *const this,
 		if(c1 <= c0) c1 = (size_t)-1;
 		is_up = 0;
 	}
+	if(this->buffer_capacity[0] >= c0) return -1; /* it's already that size */
 	debug(this, "buffer_capacity_up","%lu->%lu.\n",this->buffer_capacity[0],c0);
 	if(!(buffer = realloc(this->buffer, c0 * sizeof *this->buffer))) {
 		this->error = E_ERRNO, this->errno_copy = errno;
