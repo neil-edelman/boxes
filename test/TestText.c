@@ -99,6 +99,7 @@ int main(int argc, char *argv[]) {
 		if(!TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
 			{ error = E_TEXT; break; }
 		printf("%s\n", TextToString(text));
+		TextOutput(text, stdout);
 
 	} while(0);
 	switch(error) {

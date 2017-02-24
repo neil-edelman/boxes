@@ -1,4 +1,4 @@
-/** \cite{ahh} Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
+/** Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  For reading and parsing text files.
@@ -261,17 +261,19 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 	const size_t patterns_size) {
 	struct TextPattern *pattern; size_t p;
 	char *s0, *b;
+	struct Match {
+		struct TextPattern *pattern;
+		struct Expression { char *s0, *s1; } exp0, exp1;
+	} match;
+	struct Replace { int is; char *pos; char stored; } replace = { 0,0,0 };
 
 	if(!this) return 0;
 
 	b = this->buffer;
-	while(b && *b) {
-		struct Match {
-			struct TextPattern *pattern;
-			struct Expression { char *s0, *s1; } exp0, exp1;
-		} match = { 0, { 0, 0 }, { 0, 0 } };
-		struct Replace { int is; char *pos; char stored; } replace = { 0,0,0 };
-
+	do {
+		/* reset {match} */
+		match.pattern = 0, match.exp0.s0 = 0, match.exp0.s1 = 0,
+			match.exp1.s0 = 0, match.exp1.s1 = 0;
 		for(p = 0; p < patterns_size; p++) {
 			pattern = (struct TextPattern *)patterns + p;
 			/*printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
@@ -320,7 +322,7 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 		/*printf("now buffer \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
 			this->buffer, first_pat ? first_pat->begin : "(null)", first_pos);*/
 		b = match.exp1.s1;
-	}
+	} while(b);
 
 	return -1;
 }
@@ -442,6 +444,21 @@ char *TextAdd(struct Text *const this, char *const fmt) {
 	/* free */
 	free(copy);
 	return this->buffer;
+}
+
+void TextOutput(struct Text *const this, FILE *fp) {
+	struct Text *down;
+	size_t i;
+	char *cursor;
+	if(!this) return;
+	cursor = this->buffer;
+	for(i = 0; i < this->downs_size; i++) {
+		down = this->downs[i];
+		fprintf(fp, "%.*s", (int)(this->buffer+down->up_begin-cursor), cursor);
+		TextOutput(down, fp);
+		cursor = this->buffer + down->up_end;
+	}
+	fprintf(fp, "%s", cursor);
 }
 
 

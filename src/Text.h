@@ -23,3 +23,4 @@ int TextEnsureCapacity(struct Text *const this, const size_t capacity);
 void TextForEachPassed(struct Text *const this, TextPredicate p, TextAction a);
 char *TextToString(struct Text *const this);
 char *TextAdd(struct Text *const this, char *const fmt);
+void TextOutput(struct Text *const this, FILE *fp);
