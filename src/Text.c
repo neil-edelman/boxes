@@ -454,11 +454,12 @@ void TextOutput(struct Text *const this, FILE *fp) {
 	cursor = this->buffer;
 	for(i = 0; i < this->downs_size; i++) {
 		down = this->downs[i];
-		fprintf(fp, "%.*s", (int)(this->buffer+down->up_begin-cursor), cursor);
+		fprintf(fp, "[%.*s]\\", (int)(this->buffer+down->up_begin-cursor), cursor);
 		TextOutput(down, fp);
+		fprintf(fp, "/");
 		cursor = this->buffer + down->up_end;
 	}
-	fprintf(fp, "%s", cursor);
+	fprintf(fp, "[%s].", cursor);
 }
 
 
