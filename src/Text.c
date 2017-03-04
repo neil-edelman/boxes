@@ -57,6 +57,8 @@ static const unsigned fibonacci7  = 13;
 static const unsigned fibonacci11 = 89;
 static const unsigned fibonacci12 = 144;
 
+static char *const anonymous = "_nemo";
+
 enum Error {
 	E_NO_ERROR,
 	E_ERRNO,
@@ -96,9 +98,10 @@ struct Text {
 
 /* private */
 
-static struct Text *Text(char *const name);
+static struct Text *Text(const char *const name);
 static struct Text *Text_string_recursive(struct Text *const up,
-	const size_t up_begin, const size_t up_end, char *const str);
+	const char *const key, char *const value,
+	const size_t up_begin, const size_t up_end);	
 static int buffer_capacity_up(struct Text *const this,
 	const size_t *const size_ptr);
 static int downs_capacity_up(struct Text *const this);
@@ -251,7 +254,7 @@ const char *TextGetError(struct Text *const this) {
 
 
 /** Transforms {this} according to all specified {patterns} array of
- {patterns_size}.
+ {patterns_size}. This allocates new children as needed to go with the matches.
  @param patterns	An array of {TextPattern}; when the {begin} of a pattern
  					encompasses another pattern, it should be before in the
 					array. All patterns must have {begin} and {transform}, but
@@ -313,8 +316,8 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 		if(this->downs_size >= this->downs_capacity[0]
 			&& !downs_capacity_up(this)) return 0;
 		if(!(this->downs[this->downs_size++] = Text_string_recursive(this,
-			(size_t)(match.exp0.s0 - this->buffer),
-			(size_t)(match.exp1.s1 - this->buffer), match.exp0.s1)))
+			anonymous, match.exp0.s1, (size_t)(match.exp0.s0 - this->buffer),
+			(size_t)(match.exp1.s1 - this->buffer))))
 			{ *replace.pos = replace.stored; return 0; }
 		*replace.pos = replace.stored;
 		/* call pattern function on the duplicated substring */
@@ -325,6 +328,69 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 	} while(b);
 
 	return -1;
+}
+
+/** Manually make a new child out of {key_begin -> value_begin} having a length
+ of {key_length} and {value_length}, respectfully. The elements are copied from
+ this string, so they can be overlapping.
+ @param key_begin	Can be null, in which case {key_length} is ignored and the
+					key will have an anonymous name.
+ @return	Success. */
+int TextNewChild(struct Text *const this,
+	char *const key_begin, const size_t key_length,
+	char *const value_begin, const size_t value_length) {
+	int is_key_dup = 0;
+	char *key = 0, *value = 0;
+	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
+	enum { NC_NO_ERR, NC_ERRNO, NC_EXTERIOR } error = NC_NO_ERR;
+
+	if(!this) return 0;
+	if(/*(key_begin && (key_begin < this->buffer
+		|| key_begin + key_length >= this->buffer + this->buffer_size))
+		|| */value_begin < this->buffer
+		|| value_begin + value_length >= this->buffer + this->buffer_size)
+		return this->error = E_PARAMETER, 0;
+
+	do { /* try */
+		/* lazy -- throw memory at it -- key */
+		if(!key_begin) {
+			key = anonymous;
+		} else {
+			replace.is = -1, replace.pos = key_begin + key_length,
+				replace.stored = *replace.pos, *replace.pos = '\0';
+			if(!(key = strdup(key_begin))) { error = NC_ERRNO; break; }
+			is_key_dup = -1;
+			*replace.pos = replace.stored, replace.is = 0;
+		}
+		/* value */
+		replace.is = -1, replace.pos = value_begin + value_length,
+			replace.stored = *replace.pos, *replace.pos = '\0';
+		if(!(value = strdup(value_begin))) { error = NC_ERRNO; break; }
+		*replace.pos = replace.stored, replace.is = 0;
+
+		/* allocate the recursion; set the buffer back to how it was */
+		if(this->downs_size >= this->downs_capacity[0]
+			&& !downs_capacity_up(this)
+			&& !(this->downs[this->downs_size++] = Text_string_recursive(this,
+			key, value, (size_t)(value_begin - this->buffer),
+			(size_t)(value_begin + value_length - this->buffer))))
+			{ error = NC_EXTERIOR; break; }
+
+	} while(0);
+
+	{ /* finally */
+		if(replace.is) *replace.pos = replace.stored;
+		if(is_key_dup) free(key);
+		free(value);
+	}
+
+	switch(error) { /* catch */
+		case NC_NO_ERR: break;
+		case NC_ERRNO: this->error = E_ERRNO, this->errno_copy = errno; break;
+		case NC_EXTERIOR: break;
+	}
+
+	return error ? 0 : -1;
 }
 
 /** Ensures that we have a buffer of at least {capacity}. All pointers to the
@@ -469,8 +535,9 @@ void TextOutput(struct Text *const this, FILE *fp) {
 
 /** Constructs a generic buffer, but buffer is null to give the calling fn room
  to expand; set it to something. If returning 0, there was a allocation error,
- and {errno} is set. */
-static struct Text *Text(char *const name) {
+ and {errno} is set, but it doesn't and can't set the error condition; it is
+ the responsability of the caller. */
+static struct Text *Text(const char *const name) {
 	struct Text *this;
 	size_t name_size;
 
@@ -501,14 +568,18 @@ static struct Text *Text(char *const name) {
 	return this;
 }
 
+/** Allocates a child under {up} with key-value {key}->{value} going from
+ {up_begin} to {up_end} in the origional string; the key-value does not have to
+ be the same size as the length of the string or come from the buffer at all. */
 static struct Text *Text_string_recursive(struct Text *const up,
-	const size_t up_begin, const size_t up_end, char *const str) {
+	const char *const key, char *const value,
+	const size_t up_begin, const size_t up_end) {
 	struct Text *this;
 	size_t str_size;
 
-	if(!str) return 0;
+	if(!value) return 0;
 
-	str_size = strlen(str) + 1; /* danger */
+	str_size = strlen(value) + 1; /* danger */
 
 	if(up && str_size > up_end - up_begin + 1) {
 		up->error = E_ASSERT;
@@ -517,7 +588,7 @@ static struct Text *Text_string_recursive(struct Text *const up,
 	/*printf("Text_string_rec: up %s, up_begin %lu, up_end %lu, \"%s\".\n",
 		TextToString(up), up_begin, up_end, str);*/
 
-	if(!(this = Text("_nemo")))
+	if(!(this = Text(key)))
 		{ up->error = E_ERRNO, up->errno_copy = errno; return 0; }
 
 	this->up       = up;
@@ -531,7 +602,7 @@ static struct Text *Text_string_recursive(struct Text *const up,
 		Text_(&this);
 		return 0;
 	}
-	memcpy(this->buffer, str, str_size);
+	memcpy(this->buffer, value, str_size);
 	/*printf("recursive: \"%s\"\n", this->buffer);*/
 
 	return this;

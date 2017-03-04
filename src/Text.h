@@ -19,6 +19,9 @@ void Text_(struct Text **const this_ptr);
 const char *TextGetError(struct Text *const this);
 int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 	const size_t patterns_size);
+int TextNewChild(struct Text *const this,
+	char *const key_begin, const size_t key_length,
+	char *const value_begin, const size_t value_length);	
 int TextEnsureCapacity(struct Text *const this, const size_t capacity);
 void TextForEachPassed(struct Text *const this, TextPredicate p, TextAction a);
 char *TextToString(struct Text *const this);
