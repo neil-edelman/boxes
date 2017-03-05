@@ -17,14 +17,161 @@
 #include <ctype.h>	/* isspace */
 #include "../src/Text.h"
 
-/*#define LIST_NAME Text
-#define LIST_TYPE struct Text *
-#include "../../List/src/List.h"
+/* static const char *const things_in_header[] = {
+	"author", "version", "since", "fixme"
+};	static const char *const things_in_fn[] = {
+	"return", "throws", "implements", "fixme", "author"
+}; */
 
-struct TextList *list;*/
+/***********************
+ * General text-things */
 
+/** Moves a copy of white-space trimmed at the beginning and end to {str}. */
+static void trim(char *const str) {
+	char *e = str + strlen(str) - 1, *s = str;
+	while(e > str && isspace(*e)) e--;
+	e++, *e = '\0';
+	while(isspace(*s)) s++;
+	if(s - str) memmove(str, s, (size_t)(e - s + 1));
+}
 
+/** @return		Is the character pointed to by {s} in the string {str} the
+				first on the line? */
+static int is_first_on_line(const char *const str, const char *s) {
+	if(str >= s) return -1;
+	s--;
+	while(s >= str) {
+		if(*s == '\0' || *s == '\n') return -1;
+		if(!isspace(*s)) return 0;
+		s--;
+	}
+	return -1;
+}
 
+/** @return		The number of characters in a word starting at {str}. */
+static size_t word_length(char *str) {
+	char *s = str;
+	while(isalnum(*s)) s++;
+	return s - str;
+}
+
+/**********************************
+ * These go in TextPattern array. */
+
+/** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
+ @implements	TextAction */
+static void url(struct Text *const this) {
+	trim(TextGetBuffer(this));
+	TextAdd(this, "<a href = \"%s\">%s</a>");
+}
+/** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
+ @implements	TextAction */
+static void cite(struct Text *const this) {
+	trim(TextGetBuffer(this));
+	TextAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
+}
+/** @implements	TextAction */
+static void em(struct Text *const this) { TextAdd(this, "<em>%s</em>"); }
+/** @implements	TextAction */
+static void amp(struct Text *const this) { TextAdd(this, "&amp;"); }
+/** @implements	TextAction */
+static void lt(struct Text *const this) { TextAdd(this, "&lt;"); }
+/** @implements	TextAction */
+static void gt(struct Text *const this) { TextAdd(this, "&gt"); }
+static void new_docs(struct Text *const); /* prototype: recursive TextPattern */
+
+static const struct TextPattern tp_docs[] = {
+	{ "/** ", "*/", &new_docs }
+}, tp_inner[] = {
+	{ "\\url{", "}", &url },
+	{ "\\cite{", "}", &cite },
+	{ "{", "}", &em },
+	{ "&", 0, &amp },
+	{ "<", 0, &lt },
+	{ ">", 0, &gt }
+};
+
+/** @implements	TextAction */
+static void new_docs(struct Text *const this) {
+	char *const text_buf = TextGetBuffer(this);
+	struct Text *doc;
+	char *s0, *s1;
+	int is_first, is_last;
+	size_t key_length;
+	char *key;
+	char desc[10] = "_desc"; /* the first part that has no @ */
+
+	/* match delineated be each */
+	for(is_first = -1, is_last = 0, s0 = s1 = text_buf; !is_last; ) {
+		/* skip the embedded 'each's */
+		while((s1 = strpbrk(s1, "@")) && !is_first_on_line(text_buf, s1)) s1++;
+		if(!s1) is_last = -1, s1 = s0 + strlen(s0);
+		if(is_first) {
+			key = desc, key_length = strlen(desc);
+		} else {
+			key = s0, key_length = word_length(s0), s0 += key_length;
+		}
+		fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n", (int)key_length, key, (int)(s1 - s0), s0);
+		if(!(doc = TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
+			{ fprintf(stderr, "new_docs: %s.\n", TextGetError(this)); return; }
+		TextMatch(doc, tp_inner, sizeof tp_inner / sizeof *tp_inner);
+
+		is_first = 0;
+		s0 = s1 = s1 + 1;
+	}
+
+	/* **************************here************************************* */
+	/* str = strpbrk(TextGetParentBuffer()[TextGetParentEnd()], "{;") if(!{)
+	 * *str = '\0', parse_generic() */
+	/*printf("new_docs: \"%s\".\n", TextGetBuffer(sub));*/
+	/*TextMatch(this, tp_inner, sizeof tp_inner / sizeof *tp_inner);*/
+}
+
+/*           *
+ *************/
+
+/** The is a test of Text.
+ @param argc	Count
+ @param argv	Vector. */
+int main(int argc, char *argv[]) {
+	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
+	struct Text *text_buf = 0;
+	char *fn;
+
+	if(argc != 2) {
+		/*fn = "src/Test.c";*/
+		fprintf(stderr, "Needs <filename>.\n");
+		return EXIT_FAILURE;
+	} else {
+		fn = argv[1];
+	}
+
+	do {
+
+		if(!(text_buf = TextFile(fn))) { error = E_TEXT; break; }
+		/* parse for " / * * " */
+		if(!TextMatch(text_buf, tp_docs, sizeof tp_docs / sizeof *tp_docs))
+			{ error = E_TEXT; break; }
+		/*printf("***%s***\n", TextToString(text));*/
+		TextXML(text_buf, stdout);
+
+	} while(0);
+	switch(error) {
+		case E_NO_ERR: break;
+		case E_ERRNO: perror(fn); break;
+		case E_TEXT:
+			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text_buf)); break;
+	}
+	{
+		Text_(&text_buf);
+	}
+
+	fprintf(stderr, "Done all tests; %s.\n", error ? "FAILED" : "SUCCEDED");
+
+	return error ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+#if 0
 
 /** Returns between str and peren or null. */
 static char *match_opening_perenthesis(const char *const str, char *peren) {
@@ -91,146 +238,24 @@ static char *prev_function_part(char *a) {
 	return a + 1;
 }
 
-static int is_first_on_line(const char *const str, const char *s) {
-	if(s <= str) return -1;
-	s--;
-	while(s <= str) {
-		if(*s == '\0' || *s == '\n') return -1;
-		if(!isspace(*s)) return 0;
-		s--;
-	}
-	return -1;
+
+/******/
+
+static void print_text(struct Hash *const h) {
+	print_parsed_paragraph(h->value);
 }
 
-
-
-
-
-
-
-
-
-
-static void trim(char *const str) {
-	char *e = str + strlen(str) - 1, *s = str;
-	while(e > str && isspace(*e)) e--;
-	e++, *e = '\0';
-	while(isspace(*s)) s++;
-	if(s - str) memmove(str, s, (size_t)(e - s + 1));
+static void print_header_text(struct Hash *const h) {
+	printf("<h3>");
+	print_parsed(h->key);
+	printf("</h3>\n");
+	print_parsed_paragraph(h->value);
 }
 
-/** @implments	TextAction */
-static void each(struct Text *const match) {
-	printf("each: \"%s\".\n", TextGetBuffer(match));
+static void print_desc_list(struct Hash *const h) {
+	printf("\t<dt>%s</dt>\n", h->key);
+	printf("\t<dd>%s</dd>\n", h->value);
 }
-/** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
- @implments	TextAction */
-static void url(struct Text *const this) {
-	trim(TextGetBuffer(this));
-	TextAdd(this, "<a href = \"%s\">%s</a>");
-}
-/** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
- @implments	TextAction */
-static void cite(struct Text *const this) {
-	trim(TextGetBuffer(this));
-	TextAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
-}
-/** @implments	TextAction */
-static void em(struct Text *const this) { TextAdd(this, "<em>%s</em>"); }
-/** @implments	TextAction */
-static void amp(struct Text *const this) { TextAdd(this, "&amp;"); }
-/** @implments	TextAction */
-static void lt(struct Text *const this) { TextAdd(this, "&lt;"); }
-/** @implments	TextAction */
-static void gt(struct Text *const this) { TextAdd(this, "&gt"); }
-static void new_docs(struct Text *const); /* needs TextPattern */
-
-static const struct TextPattern tp_docs[] = {
-	{ "/** ", "*/", &new_docs }
-}, tp_each[] = {
-	{ "@", 0, &each }
-}, tp_inner[] = {
-	{ "\\url{", "}", &url },
-	{ "\\cite{", "}", &cite },
-	{ "{", "}", &em },
-	{ "&", 0, &amp },
-	{ "<", 0, &lt },
-	{ ">", 0, &gt }
-};
-
-/* static const char *const things_in_header[] = {
-	"author", "version", "since", "fixme"
- };	static const char *const things_in_fn[] = {
- "return", "throws", "implements", "fixme", "author"
- };
- static void print_text(struct Hash *const h) {
- print_parsed_paragraph(h->value);
- }
-
- static void print_header_text(struct Hash *const h) {
- printf("<h3>");
- print_parsed(h->key);
- printf("</h3>\n");
- print_parsed_paragraph(h->value);
- }
-
- static void print_desc_list(struct Hash *const h) {
- printf("\t<dt>%s</dt>\n", h->key);
- printf("\t<dd>%s</dd>\n", h->value);
- }
- */
-
-/** @implments	TextAction */
-static void new_docs(struct Text *const sub) {
-	/* **************************here************************************* */
-	/* str = strpbrk(TextGetParentBuffer()[TextGetParentEnd()], "{;") if(!{)
-	 * *str = '\0', parse_generic() */
-	/*printf("new_docs: \"%s\".\n", TextGetBuffer(sub));*/
-	/* fixme: each */
-	TextMatch(sub, tp_inner, sizeof tp_inner / sizeof *tp_inner);
-}
-
-/** The is a test of Text.
- @param argc	Count
- @param argv	Vector. */
-int main(int argc, char *argv[]) {
-	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
-	struct Text *text = 0;
-	char *fn;
-
-	if(argc != 2) {
-		/*fn = "src/Test.c";*/
-		fprintf(stderr, "Needs <filename>.\n");
-		return EXIT_FAILURE;
-	} else {
-		fn = argv[1];
-	}
-
-	do {
-
-		if(!(text = TextFile(fn))) { error = E_TEXT; break; }
-		if(!TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
-			{ error = E_TEXT; break; }
-		printf("***%s***\n", TextToString(text));
-		TextOutput(text, stdout);
-
-	} while(0);
-	switch(error) {
-		case E_NO_ERR: break;
-		case E_ERRNO: perror(fn); break;
-		case E_TEXT:
-			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text)); break;
-	}
-	{
-		Text_(&text);
-	}
-
-	fprintf(stderr, "Done all tests; %s.\n", error ? "FAILED" : "SUCCEDED");
-
-	return error ? EXIT_FAILURE : EXIT_SUCCESS;
-}
-
-#if 0
 
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
  "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! Could

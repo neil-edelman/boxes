@@ -11,7 +11,7 @@
  @version	1.0; 2017-02
  @since		1.0; 2017-02 */
 
-#define TEXT_DEBUG
+/*#define TEXT_DEBUG*/
 
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* fprintf */
@@ -57,8 +57,6 @@ static const unsigned fibonacci7  = 13;
 static const unsigned fibonacci11 = 89;
 static const unsigned fibonacci12 = 144;
 
-static char *const anonymous = "_nemo";
-
 enum Error {
 	E_NO_ERROR,
 	E_ERRNO,
@@ -89,7 +87,7 @@ struct Text {
 	size_t up_begin, up_end;
 	char *name;
 	char *buffer;
-	size_t buffer_size, buffer_capacity[2];
+	size_t /*buffer_size,*/ buffer_capacity[2];
 	struct Text **downs;
 	size_t downs_size, downs_capacity[2];
 	enum Error error;
@@ -105,6 +103,7 @@ static struct Text *Text_string_recursive(struct Text *const up,
 static int buffer_capacity_up(struct Text *const this,
 	const size_t *const size_ptr);
 static int downs_capacity_up(struct Text *const this);
+static char *anonymous_volatile_name(void);
 static void debug(struct Text *const this, const char *const fn,
 	const char *const fmt, ...);
 
@@ -308,7 +307,7 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 			replace.is = -1, replace.pos = match.exp1.s0,
 				replace.stored = *replace.pos, *replace.pos = '\0';
 		}
-		printf("match: \"%.*s\" \"%.30s...\" \"%.*s\"\n",
+		debug(this, "TextMatch", "match: \"%.*s\" \"%.30s...\" \"%.*s\"\n",
 			(int)(match.exp0.s1 - match.exp0.s0), match.exp0.s0,
 			match.exp0.s1,
 			(int)(match.exp1.s1 - match.exp1.s0), match.exp1.s0);
@@ -316,7 +315,8 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 		if(this->downs_size >= this->downs_capacity[0]
 			&& !downs_capacity_up(this)) return 0;
 		if(!(this->downs[this->downs_size++] = Text_string_recursive(this,
-			anonymous, match.exp0.s1, (size_t)(match.exp0.s0 - this->buffer),
+			anonymous_volatile_name(), match.exp0.s1,
+			(size_t)(match.exp0.s0 - this->buffer),
 			(size_t)(match.exp1.s1 - this->buffer))))
 			{ *replace.pos = replace.stored; return 0; }
 		*replace.pos = replace.stored;
@@ -335,62 +335,63 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
  this string, so they can be overlapping.
  @param key_begin	Can be null, in which case {key_length} is ignored and the
 					key will have an anonymous name.
- @return	Success. */
-int TextNewChild(struct Text *const this,
-	char *const key_begin, const size_t key_length,
-	char *const value_begin, const size_t value_length) {
+ @return	Success.
+ @throws	E_PARAMETER */
+struct Text *TextNewChild(struct Text *const this,
+	char *const key, const size_t key_length,
+	char *const value, const size_t value_length) {
 	int is_key_dup = 0;
-	char *key = 0, *value = 0;
+	char *kcpy = 0, *vcpy = 0;
+	struct Text *down = 0;
 	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
 	enum { NC_NO_ERR, NC_ERRNO, NC_EXTERIOR } error = NC_NO_ERR;
 
 	if(!this) return 0;
-	if(/*(key_begin && (key_begin < this->buffer
-		|| key_begin + key_length >= this->buffer + this->buffer_size))
-		|| */value_begin < this->buffer
-		|| value_begin + value_length >= this->buffer + this->buffer_size)
-		return this->error = E_PARAMETER, 0;
+	if(value < this->buffer
+		|| value + value_length >= this->buffer + strlen(this->buffer) + 1)
+		{ this->error = E_PARAMETER; return 0; }
 
 	do { /* try */
 		/* lazy -- throw memory at it -- key */
-		if(!key_begin) {
-			key = anonymous;
+		if(!key) {
+			kcpy = anonymous_volatile_name();
 		} else {
-			replace.is = -1, replace.pos = key_begin + key_length,
+			replace.is = -1, replace.pos = key + key_length,
 				replace.stored = *replace.pos, *replace.pos = '\0';
-			if(!(key = strdup(key_begin))) { error = NC_ERRNO; break; }
+			if(!(kcpy = strdup(key))) { error = NC_ERRNO; break; }
 			is_key_dup = -1;
 			*replace.pos = replace.stored, replace.is = 0;
 		}
 		/* value */
-		replace.is = -1, replace.pos = value_begin + value_length,
+		replace.is = -1, replace.pos = value + value_length,
 			replace.stored = *replace.pos, *replace.pos = '\0';
-		if(!(value = strdup(value_begin))) { error = NC_ERRNO; break; }
+		if(!(vcpy = strdup(value))) { error = NC_ERRNO; break; }
 		*replace.pos = replace.stored, replace.is = 0;
 
 		/* allocate the recursion; set the buffer back to how it was */
-		if(this->downs_size >= this->downs_capacity[0]
-			&& !downs_capacity_up(this)
-			&& !(this->downs[this->downs_size++] = Text_string_recursive(this,
-			key, value, (size_t)(value_begin - this->buffer),
-			(size_t)(value_begin + value_length - this->buffer))))
+		if((this->downs_size >= this->downs_capacity[0]
+			&& !downs_capacity_up(this))
+			|| !(down = Text_string_recursive(this, kcpy, vcpy,
+			(size_t)(value - this->buffer),
+			(size_t)(value + value_length - this->buffer))))
 			{ error = NC_EXTERIOR; break; }
+		this->downs[this->downs_size++] = down;
 
 	} while(0);
 
 	{ /* finally */
 		if(replace.is) *replace.pos = replace.stored;
-		if(is_key_dup) free(key);
-		free(value);
+		if(is_key_dup) free(kcpy);
+		free(vcpy);
 	}
 
 	switch(error) { /* catch */
 		case NC_NO_ERR: break;
 		case NC_ERRNO: this->error = E_ERRNO, this->errno_copy = errno; break;
-		case NC_EXTERIOR: break;
+		case NC_EXTERIOR: break; /* already set error */
 	}
 
-	return error ? 0 : -1;
+	return down;
 }
 
 /** Ensures that we have a buffer of at least {capacity}. All pointers to the
@@ -512,20 +513,40 @@ char *TextAdd(struct Text *const this, char *const fmt) {
 	return this->buffer;
 }
 
-void TextOutput(struct Text *const this, FILE *fp) {
+/** XML is wierd. */
+static void xml(struct Text *const this, FILE *fp, const int is_top) {
 	struct Text *down;
-	size_t i;
+	unsigned i;
+
+	if(!is_top) fprintf(fp, "<key><![CDATA[%s]]></key>\n", this->name);
+	fprintf(fp, "<dict>\n");
+	fprintf(fp, "<key><![CDATA[%s]]></key>\n", this->name);
+	fprintf(fp, "<string><![CDATA[%s]]></string>\n", this->buffer);
+	for(i = 0; i < this->downs_size; i++) {
+		down = this->downs[i];
+		xml(down, fp, 0);
+	}
+	fprintf(fp, "</dict>\n");
+}
+
+void TextXML(struct Text *const this, FILE *fp) {
+	/*size_t i;
 	char *cursor;
 	if(!this) return;
 	cursor = this->buffer;
 	for(i = 0; i < this->downs_size; i++) {
 		down = this->downs[i];
 		fprintf(fp, "[%.*s]\\", (int)(this->buffer+down->up_begin-cursor), cursor);
-		TextOutput(down, fp);
+		TextXML(down, fp);
 		fprintf(fp, "/");
 		cursor = this->buffer + down->up_end;
 	}
-	fprintf(fp, "[%s].", cursor);
+	fprintf(fp, "[%s].", cursor);*/
+	fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	fprintf(fp, "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n");
+	fprintf(fp, "<plist version=\"1.0\">\n");
+	xml(this, fp, -1);
+	fprintf(fp, "</plist>\n");
 }
 
 
@@ -549,7 +570,7 @@ static struct Text *Text(const char *const name) {
 	this->name               = (char *)(this + 1);
 	memcpy(this->name, name, name_size);
 	this->buffer             = 0;
-	this->buffer_size        = 0;
+	/*this->buffer_size        = 0;*/
 	this->buffer_capacity[0] = fibonacci11;
 	this->buffer_capacity[1] = fibonacci12;
 	this->downs              = 0;
@@ -671,6 +692,13 @@ static int downs_capacity_up(struct Text *const this) {
 	this->downs_capacity[1] = c1;
 
 	return -1;
+}
+
+static char *anonymous_volatile_name(void) {
+	static char anon[64];
+	static unsigned i = 0;
+	sprintf(anon, "_nemo%u", ++i);
+	return anon;
 }
 
 /** Private debug messages from list functions; turn on using {LIST_DEBUG}. */
