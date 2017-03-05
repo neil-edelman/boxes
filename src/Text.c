@@ -84,7 +84,8 @@ static int        global_errno_copy;
 
 struct Text {
 	struct Text *up;
-	size_t up_begin, up_end;
+	int is_up_value;
+	size_t up_begin, up_end; /* only valid if is_up_value */
 	char *name;
 	char *buffer;
 	size_t /*buffer_size,*/ buffer_capacity[2];
@@ -98,8 +99,8 @@ struct Text {
 
 static struct Text *Text(const char *const name);
 static struct Text *Text_string_recursive(struct Text *const up,
-	const char *const key, char *const value,
-	const size_t up_begin, const size_t up_end);	
+	const char *const key, char *const value, const int is_up_value,
+	const size_t up_begin, const size_t up_end);
 static int buffer_capacity_up(struct Text *const this,
 	const size_t *const size_ptr);
 static int downs_capacity_up(struct Text *const this);
@@ -226,10 +227,15 @@ char *TextGetValue(struct Text *const this) {
 	return this->buffer;
 }
 
-char *TextGetParentBuffer(struct Text *const this) {
+char *TextGetParentValue(struct Text *const this) {
 	if(!this) return 0;
 	if(!this->up) { this->error = E_PARENT; return 0; }
 	return this->up->buffer;
+}
+
+int TextGetIsWithinParentValue(struct Text *const this) {
+	if(!this) return 0;
+	return this->is_up_value;
 }
 
 size_t TextGetParentStart(struct Text *const this) {
@@ -320,7 +326,7 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 		if(this->downs_size >= this->downs_capacity[0]
 			&& !downs_capacity_up(this)) return 0;
 		if(!(this->downs[this->downs_size++] = Text_string_recursive(this,
-			anonymous_volatile_name(), match.exp0.s1,
+			anonymous_volatile_name(), match.exp0.s1, -1,
 			(size_t)(match.exp0.s0 - this->buffer),
 			(size_t)(match.exp1.s1 - this->buffer))))
 			{ *replace.pos = replace.stored; return 0; }
@@ -345,16 +351,17 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 struct Text *TextNewChild(struct Text *const this,
 	char *const key, const size_t key_length,
 	char *const value, const size_t value_length) {
-	int is_key_dup = 0;
+	int is_key_dup = 0, is_within = 0;
 	char *kcpy = 0, *vcpy = 0;
 	struct Text *down = 0;
 	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
 	enum { NC_NO_ERR, NC_ERRNO, NC_EXTERIOR } error = NC_NO_ERR;
 
 	if(!this) return 0;
-	if(value < this->buffer
-		|| value + value_length >= this->buffer + strlen(this->buffer) + 1)
-		{ this->error = E_PARAMETER; return 0; }
+	if(value >= this->buffer
+		&& value + value_length <= this->buffer + strlen(this->buffer))
+		is_within = -1;
+	/*	{ this->error = E_PARAMETER; return 0; }*/
 
 	do { /* try */
 		/* lazy -- throw memory at it -- key */
@@ -376,9 +383,9 @@ struct Text *TextNewChild(struct Text *const this,
 		/* allocate the recursion; set the buffer back to how it was */
 		if((this->downs_size >= this->downs_capacity[0]
 			&& !downs_capacity_up(this))
-			|| !(down = Text_string_recursive(this, kcpy, vcpy,
-			(size_t)(value - this->buffer),
-			(size_t)(value + value_length - this->buffer))))
+			|| !(down = Text_string_recursive(this, kcpy, vcpy, is_within,
+			(size_t)(is_within ? (value - this->buffer) : 0),
+			(size_t)(is_within ? (value + value_length - this->buffer) : 0))))
 			{ error = NC_EXTERIOR; break; }
 		this->downs[this->downs_size++] = down;
 
@@ -534,6 +541,7 @@ static struct Text *Text(const char *const name) {
 	name_size = strlen(name) + 1;
 	if(!(this = malloc(sizeof *this + name_size))) return 0;
 	this->up                 = 0;
+	this->is_up_value        = 0;
 	this->up_begin           = 0;
 	this->up_end             = 0;
 	this->name               = (char *)(this + 1);
@@ -562,7 +570,7 @@ static struct Text *Text(const char *const name) {
  {up_begin} to {up_end} in the origional string; the key-value does not have to
  be the same size as the length of the string or come from the buffer at all. */
 static struct Text *Text_string_recursive(struct Text *const up,
-	const char *const key, char *const value,
+	const char *const key, char *const value, const int is_up_value,
 	const size_t up_begin, const size_t up_end) {
 	struct Text *this;
 	size_t str_size;
@@ -571,7 +579,7 @@ static struct Text *Text_string_recursive(struct Text *const up,
 
 	str_size = strlen(value) + 1; /* danger */
 
-	if(up && str_size > up_end - up_begin + 1) {
+	if(up && is_up_value && str_size > up_end - up_begin + 1) {
 		up->error = E_ASSERT;
 		return 0;
 	}
@@ -581,9 +589,10 @@ static struct Text *Text_string_recursive(struct Text *const up,
 	if(!(this = Text(key)))
 		{ up->error = E_ERRNO, up->errno_copy = errno; return 0; }
 
-	this->up       = up;
-	this->up_begin = up_begin;
-	this->up_end   = up_end;
+	this->up          = up;
+	this->is_up_value = is_up_value ? -1       : 0;
+	this->up_begin    = is_up_value ? up_begin : 0;
+	this->up_end      = is_up_value ? up_end   : 0;
 	this->buffer_capacity[0] += str_size; /* danger */
 	this->buffer_capacity[1] += str_size; /* danger */
 

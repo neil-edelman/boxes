@@ -44,7 +44,7 @@ static void xml_recursive(struct Text *const this, const int is_top) {
 	printf("</key>\n<string>");
 	cdata(TextGetValue(this));
 	printf("</string>\n");
-	if(!is_top) {
+	if(!is_top && TextGetIsWithinParentValue(this)) {
 		printf("<key>begin</key><integer>%lu</integer>\n"
 			"<key>end</key><integer>%lu</integer>\n",
 			TextGetParentStart(this), TextGetParentEnd(this));
@@ -273,18 +273,18 @@ static const struct TextPattern tp_docs[] = {
 /** @implements	TextAction */
 static void new_docs(struct Text *const this) {
 	char *const text_buf = TextGetValue(this);
-	struct Text *doc;
+	struct Text *doc, *fn_child;
 	char *s0, *s1;
 	int is_first, is_last;
 	size_t key_length;
 	char *key;
 	char desc[10] = "_desc"; /* the first part that has no @ */
+	char filename[10] = "_filename";
 	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
-	char *fn = 0;
 
 	/* search for function immediately below */
 	do {
-		char *buf = TextGetParentBuffer(this);
+		char *buf = TextGetParentValue(this);
 		char *start, *end;
 
 		if(!buf) break;
@@ -295,13 +295,14 @@ static void new_docs(struct Text *const this) {
 		if(!end || *end != '{') break;
 		replace.is = -1, replace.pos = end, replace.stored = *replace.pos,
 			*replace.pos = '\0';
-		if(!(fn = strdup(start))) break;
-		trim(fn);
-		fprintf(stderr, "!!!<%s>\n", fn);
+		fprintf(stderr, "!!!<%s> fixme: break up\n", start);
+		if(!(fn_child = TextNewChild(this, filename, strlen(filename),
+			start, strlen(start)))) { fprintf(stderr,
+			"new_docs: parsing function, %s.\n", TextGetError(this)); break; }
+		trim(TextGetValue(fn_child));
 	} while(0);
 	{
 		if(replace.is) *replace.pos = replace.stored, replace.is = 0;
-		free(fn);
 	}
 	
 #if 0
