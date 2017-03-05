@@ -2,10 +2,6 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  This is a test of Text; call it with a .c file.
- 
- @fixme		Needs to split '@', current sol'n doesn't cut it; new sol'n needed.
-			How about "TestSplit(char split, ...)", or just use strchr and have
-			new child exposed, NewChildFromBuffer(key, value).
 
  @author	Neil
  @version	3.0; 2016-08
@@ -23,6 +19,9 @@
 	"return", "throws", "implements", "fixme", "author"
 }; */
 
+/***************
+ * XML testing */
+
 /** Write a bunch of XML CDATA. */
 static void cdata(char *const str) {
 	char *a = str, *b;
@@ -34,6 +33,7 @@ static void cdata(char *const str) {
 	printf("%s]]>", a);
 }
 
+/* prototype -- calls recursively */
 static void print_text(struct Text *const);
 
 /** XML is wierd. */
@@ -51,11 +51,7 @@ static void xml_recursive(struct Text *const this, const int is_top) {
 			"<key>end</key><integer>%lu</integer>\n",
 			TextGetParentStart(this), TextGetParentEnd(this));
 	}
-	TextForEachPassed(this, 0, &print_text);
-	/*for(i = 0; i < this->downs_size; i++) {
-		down = this->downs[i];
-		xml(down, fp, 0);
-	}*/
+	TextForEachTrue(this, 0, &print_text);
 	printf("</dict>\n");
 }
 
@@ -63,18 +59,6 @@ static void xml_recursive(struct Text *const this, const int is_top) {
 static void print_text(struct Text *const this) { xml_recursive(this, 0); }
 
 static void xml(struct Text *const this) {
-	/*size_t i;
-	 char *cursor;
-	 if(!this) return;
-	 cursor = this->buffer;
-	 for(i = 0; i < this->downs_size; i++) {
-	 down = this->downs[i];
-	 fprintf(fp, "[%.*s]\\", (int)(this->buffer+down->up_begin-cursor), cursor);
-	 TextXML(down, fp);
-	 fprintf(fp, "/");
-	 cursor = this->buffer + down->up_end;
-	 }
-	 fprintf(fp, "[%s].", cursor);*/
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	printf("<!DOCTYPE plist>\n");
 	printf("<plist version=\"1.0\">\n");
@@ -114,8 +98,8 @@ static size_t word_length(char *str) {
 	return s - str;
 }
 
-/**********************************
- * These go in TextPattern array. */
+/***************************************************************
+ * These go in a TextPattern array for calling in {TextMatch}. */
 
 /** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
  @implements	TextAction */
@@ -170,7 +154,8 @@ static void new_docs(struct Text *const this) {
 		} else {
 			key = s0, key_length = word_length(s0), s0 += key_length;
 		}
-		fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n", (int)key_length, key, (int)(s1 - s0), s0);
+		/* fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n",
+			(int)key_length, key, (int)(s1 - s0), s0); */
 		if(!(doc = TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
 			{ fprintf(stderr, "new_docs: %s.\n", TextGetError(this)); return; }
 		TextMatch(doc, tp_inner, sizeof tp_inner / sizeof *tp_inner);
@@ -179,15 +164,10 @@ static void new_docs(struct Text *const this) {
 		s0 = s1 = s1 + 1;
 	}
 
-	/* **************************here************************************* */
-	/* str = strpbrk(TextGetParentBuffer()[TextGetParentEnd()], "{;") if(!{)
-	 * *str = '\0', parse_generic() */
-	/*printf("new_docs: \"%s\".\n", TextGetBuffer(sub));*/
-	/*TextMatch(this, tp_inner, sizeof tp_inner / sizeof *tp_inner);*/
 }
 
-/*           *
- *************/
+/******************
+ * Main programme */
 
 /** The is a test of Text.
  @param argc	Count
@@ -208,7 +188,7 @@ int main(int argc, char *argv[]) {
 	do {
 
 		if(!(text_buf = TextFile(fn))) { error = E_TEXT; break; }
-		/* parse for " / * * " */
+		/* parse for " / * * "; it recursively calls things as appropriate */
 		if(!TextMatch(text_buf, tp_docs, sizeof tp_docs / sizeof *tp_docs))
 			{ error = E_TEXT; break; }
 		/*printf("***%s***\n", TextToString(text));*/
@@ -327,7 +307,7 @@ static char *parse_generics(char *const fn) {
 	unsigned gen_i_g, gen_i_n, i; /* generics get substituted backwards */
 	char *a, *b, *c, *generic, *name;
 	size_t fn_len;
-	
+
 	fn_len = strlen(fn);
 	if(fn_len >= sizeof temp
 	   || (size_t)(buffer + sizeof buffer / sizeof *buffer - buffer_pos + 1)
@@ -378,7 +358,7 @@ static char *parse_generics(char *const fn) {
 	/* printf("*** adding \"%s\"\n", a); */
 	strcpy(buffer_pos, a);
 	buffer_pos += strlen(a) + 1;
-	
+
 	return start_of_buffer;
 }
 

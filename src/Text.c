@@ -409,7 +409,7 @@ int TextEnsureCapacity(struct Text *const this, const size_t capacity) {
 }
 
 /** E ch, e: p(e.key) -> a(e.value) */
-void TextForEachPassed(struct Text *const this, TextPredicate p, TextAction a) {
+void TextForEachTrue(struct Text *const this, TextPredicate p, TextAction a) {
 	struct Text *down;
 	unsigned i;
 	for(i = 0; i < this->downs_size; i++) {
