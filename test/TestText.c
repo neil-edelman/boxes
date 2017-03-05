@@ -22,13 +22,13 @@
 /***************
  * XML testing */
 
-/** Write a bunch of XML CDATA. */
+/** Write a bunch of XML CDATA. FIXME */
 static void cdata(char *const str) {
 	char *a = str, *b;
 	printf("<![CDATA[");
 	while((b = strstr(a, "]]>"))) {
 		printf("%.*s]]]]><![CDATA[>", (int)(b - a), a);
-		a += 3;
+		a = b + 3 /* ]]>.length */;
 	}
 	printf("%s]]>", a);
 }
@@ -36,12 +36,10 @@ static void cdata(char *const str) {
 /* prototype -- calls recursively */
 static void print_text(struct Text *const);
 
-/** XML is wierd. */
+/** XML is weird. */
 static void xml_recursive(struct Text *const this, const int is_top) {
 	if(!is_top) printf("<key><![CDATA[%s]]></key>\n", TextGetKey(this));
-	printf("<dict>\n");
-	/* fixme: %s has "]]>" it will fail, go through strstr and  */
-	printf("<key>");
+	printf("<dict>\n<key>");
 	cdata(TextGetKey(this));
 	printf("</key>\n<string>");
 	cdata(TextGetValue(this));
@@ -98,165 +96,12 @@ static size_t word_length(char *str) {
 	return s - str;
 }
 
-/***************************************************************
- * These go in a TextPattern array for calling in {TextMatch}. */
-
-/** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
- @implements	TextAction */
-static void url(struct Text *const this) {
-	trim(TextGetValue(this));
-	TextAdd(this, "<a href = \"%s\">%s</a>");
-}
-/** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
- @implements	TextAction */
-static void cite(struct Text *const this) {
-	trim(TextGetValue(this));
-	TextAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
-}
-/** @implements	TextAction */
-static void em(struct Text *const this) { TextAdd(this, "<em>%s</em>"); }
-/** @implements	TextAction */
-static void amp(struct Text *const this) { TextAdd(this, "&amp;"); }
-/** @implements	TextAction */
-static void lt(struct Text *const this) { TextAdd(this, "&lt;"); }
-/** @implements	TextAction */
-static void gt(struct Text *const this) { TextAdd(this, "&gt"); }
-static void new_docs(struct Text *const); /* prototype: recursive TextPattern */
-
-static const struct TextPattern tp_docs[] = {
-	{ "/** ", "*/", &new_docs }
-}, tp_inner[] = {
-	{ "\\url{", "}", &url },
-	{ "\\cite{", "}", &cite },
-	{ "{", "}", &em },
-	{ "&", 0, &amp },
-	{ "<", 0, &lt },
-	{ ">", 0, &gt }
-};
-
-/** @implements	TextAction */
-static void new_docs(struct Text *const this) {
-	char *const text_buf = TextGetValue(this);
-	struct Text *doc;
-	char *s0, *s1;
-	int is_first, is_last;
-	size_t key_length;
-	char *key;
-	char desc[10] = "_desc"; /* the first part that has no @ */
-
-	/* match delineated be each */
-	for(is_first = -1, is_last = 0, s0 = s1 = text_buf; !is_last; ) {
-		/* skip the embedded 'each's */
-		while((s1 = strpbrk(s1, "@")) && !is_first_on_line(text_buf, s1)) s1++;
-		if(!s1) is_last = -1, s1 = s0 + strlen(s0);
-		if(is_first) {
-			key = desc, key_length = strlen(desc);
-		} else {
-			key = s0, key_length = word_length(s0), s0 += key_length;
-		}
-		/* fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n",
-			(int)key_length, key, (int)(s1 - s0), s0); */
-		if(!(doc = TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
-			{ fprintf(stderr, "new_docs: %s.\n", TextGetError(this)); return; }
-		TextMatch(doc, tp_inner, sizeof tp_inner / sizeof *tp_inner);
-
-		is_first = 0;
-		s0 = s1 = s1 + 1;
-	}
-
-}
-
-/******************
- * Main programme */
-
-/** The is a test of Text.
- @param argc	Count
- @param argv	Vector. */
-int main(int argc, char *argv[]) {
-	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
-	struct Text *text_buf = 0;
-	char *fn;
-
-	if(argc != 2) {
-		/*fn = "src/Test.c";*/
-		fprintf(stderr, "Needs <filename>.\n");
-		return EXIT_FAILURE;
-	} else {
-		fn = argv[1];
-	}
-
-	do {
-
-		if(!(text_buf = TextFile(fn))) { error = E_TEXT; break; }
-		/* parse for " / * * "; it recursively calls things as appropriate */
-		if(!TextMatch(text_buf, tp_docs, sizeof tp_docs / sizeof *tp_docs))
-			{ error = E_TEXT; break; }
-		/*printf("***%s***\n", TextToString(text));*/
-		xml(text_buf);
-
-	} while(0);
-	switch(error) {
-		case E_NO_ERR: break;
-		case E_ERRNO: perror(fn); break;
-		case E_TEXT:
-			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text_buf)); break;
-	}
-	{
-		Text_(&text_buf);
-	}
-
-	fprintf(stderr, "Done all tests; %s.\n", error ? "FAILED" : "SUCCEDED");
-
-	return error ? EXIT_FAILURE : EXIT_SUCCESS;
-}
-
-#if 0
-
-/** Returns between str and peren or null. */
-static char *match_opening_perenthesis(const char *const str, char *peren) {
-	unsigned stack = 0;
-	while(str < peren) {
-		switch(*peren) {
-			case '\0': return 0;
-			case ')': stack++; break;
-			case '(': stack--; break;
-			default: break;
-		}
-		if(!stack) return peren;
-		peren--;
-	}
-	return 0;
-}
-
-/** \see{prev_fuction_part}, except generics */
-static char *prev_generic_part(const char *const str, char *a) {
-	int is_one = 0;
-	if(a <= str) return 0;
-	if(*a == '_') a++; /* starting */
-	if(*--a != '_') return 0;
-	a--;
-	while(isalnum(*a)) {
-		if(a <= str) return 0;
-		a--;
-		is_one = -1;
-	}
-	/*if(is_one) printf("prev_g ret: '%s'\n", a + 1);*/
-	return is_one ? a + 1 : 0;
-}
+/***************************
+ * Parsing a function name */
 
 /** Function-like chars? */
 static int isfunction(int c) {
 	return isalnum(c) || c == '_' || c == '<' || c == '>';
-}
-
-static void cutoff_generic(char *a) {
-	while(isalnum(*a)) a++;
-	*a = '\0';
-}
-
-static void cutoff_name(char *a) {
-	while(isfunction(*a)) a++;
-	*a = '\0';
 }
 
 /** Searches backwards from the previous char to {a}, hits a function, and
@@ -277,23 +122,47 @@ static char *prev_function_part(char *a) {
 	return a + 1;
 }
 
-
-/******/
-
-static void print_text(struct Hash *const h) {
-	print_parsed_paragraph(h->value);
+/** Starting from the end of a function, this retrieves the previous generic
+ part. */
+static char *prev_generic_part(const char *const str, char *a) {
+	int is_one = 0;
+	if(a <= str) return 0;
+	if(*a == '_') a++; /* starting */
+	if(*--a != '_') return 0;
+	a--;
+	while(isalnum(*a)) {
+		if(a <= str) return 0;
+		a--;
+		is_one = -1;
+	}
+	/*if(is_one) printf("prev_g ret: '%s'\n", a + 1);*/
+	return is_one ? a + 1 : 0;
 }
 
-static void print_header_text(struct Hash *const h) {
-	printf("<h3>");
-	print_parsed(h->key);
-	printf("</h3>\n");
-	print_parsed_paragraph(h->value);
+static void cutoff_generic(char *a) {
+	while(isalnum(*a)) a++;
+	*a = '\0';
 }
 
-static void print_desc_list(struct Hash *const h) {
-	printf("\t<dt>%s</dt>\n", h->key);
-	printf("\t<dd>%s</dd>\n", h->value);
+static void cutoff_name(char *a) {
+	while(isfunction(*a)) a++;
+	*a = '\0';
+}
+
+/** Returns between str and peren or null. */
+static char *match_opening_perenthesis(const char *const str, char *peren) {
+	unsigned stack = 0;
+	while(str < peren) {
+		switch(*peren) {
+			case '\0': return 0;
+			case ')': stack++; break;
+			case '(': stack--; break;
+			default: break;
+		}
+		if(!stack) return peren;
+		peren--;
+	}
+	return 0;
 }
 
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
@@ -301,13 +170,14 @@ static void print_desc_list(struct Hash *const h) {
  create a new static buffer, or just return the argument if it's not
  modified. */
 static char *parse_generics(char *const fn) {
+#if 0
 	char *start_of_buffer = buffer_pos;
 	char temp[2048];
 	struct { char *generic, *name; } gen[16], *g; /* one generic */
 	unsigned gen_i_g, gen_i_n, i; /* generics get substituted backwards */
 	char *a, *b, *c, *generic, *name;
 	size_t fn_len;
-
+	
 	fn_len = strlen(fn);
 	if(fn_len >= sizeof temp
 	   || (size_t)(buffer + sizeof buffer / sizeof *buffer - buffer_pos + 1)
@@ -358,9 +228,210 @@ static char *parse_generics(char *const fn) {
 	/* printf("*** adding \"%s\"\n", a); */
 	strcpy(buffer_pos, a);
 	buffer_pos += strlen(a) + 1;
-
+	
 	return start_of_buffer;
+#endif
+	return 0;
 }
+
+/***************************************************************
+ * These go in a TextPattern array for calling in {TextMatch}. */
+
+/** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
+ @implements	TextAction */
+static void url(struct Text *const this) {
+	trim(TextGetValue(this));
+	TextAdd(this, "<a href = \"%s\">%s</a>");
+}
+/** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
+ @implements	TextAction */
+static void cite(struct Text *const this) {
+	trim(TextGetValue(this));
+	TextAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
+}
+/** @implements	TextAction */
+static void em(struct Text *const this) { TextAdd(this, "<em>%s</em>"); }
+/** @implements	TextAction */
+static void amp(struct Text *const this) { TextAdd(this, "&amp;"); }
+/** @implements	TextAction */
+static void lt(struct Text *const this) { TextAdd(this, "&lt;"); }
+/** @implements	TextAction */
+static void gt(struct Text *const this) { TextAdd(this, "&gt"); }
+static void new_docs(struct Text *const); /* prototype: recursive TextPattern */
+
+static const struct TextPattern tp_docs[] = {
+	{ "/""** ", "*/", &new_docs }
+}, tp_inner[] = {
+	{ "\\url{", "}", &url },
+	{ "\\cite{", "}", &cite },
+	{ "{", "}", &em },
+	{ "&", 0, &amp },
+	{ "<", 0, &lt },
+	{ ">", 0, &gt }
+};
+
+/** @implements	TextAction */
+static void new_docs(struct Text *const this) {
+	char *const text_buf = TextGetValue(this);
+	struct Text *doc;
+	char *s0, *s1;
+	int is_first, is_last;
+	size_t key_length;
+	char *key;
+	char desc[10] = "_desc"; /* the first part that has no @ */
+	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
+	char *fn = 0;
+
+	/* search for function immediately below */
+	do {
+		char *buf = TextGetParentBuffer(this);
+		char *start, *end;
+
+		if(!buf) break;
+		start = buf + TextGetParentEnd(this);
+		/* fixme: actually parse; this does most cases, but I can think of many
+		 more that it utterly fails */
+		end = strpbrk(start, ";{/#");
+		if(!end || *end != '{') break;
+		replace.is = -1, replace.pos = end, replace.stored = *replace.pos,
+			*replace.pos = '\0';
+		if(!(fn = strdup(start))) break;
+		trim(fn);
+		fprintf(stderr, "!!!<%s>\n", fn);
+	} while(0);
+	{
+		if(replace.is) *replace.pos = replace.stored, replace.is = 0;
+		free(fn);
+	}
+	
+#if 0
+	if(is_fn_search
+	   && ch->hash_no
+	   && (fn = strpbrk(cursor, ";{/"))
+	   /* fn is a {, means a fn is near? */
+	   && *fn == '{'
+	   && (!end || fn < end)
+	   /* cursor < fn, start from the end: "(args)" of "void *fn(args)" */
+	   && (*fn = '\0', cursor = trim(cursor),
+		   rperen = strrchr(cursor, ')'))
+	   && (lperen = match_opening_perenthesis(cursor, rperen))
+	   /* fn:"void fn", args:"args" of "void *fn0args0" */
+	   && (args = parse_generics(trim(lperen)))
+	   && (*lperen++ = '\0', *rperen = '\0',
+		   fn = parse_generics(trim(cursor)))
+	   /* return_value:"void *" and fn:"fn" of copy "args0void *0fn0" */
+	   && (return_value = fn, strlen(fn))
+	   ) {
+		/* fn_name is the last isfunction */
+		for(fn_name = fn + strlen(fn) - 1;
+			isspace(*fn_name) && fn_name > fn;
+			fn_name--);
+		for( ; isfunction(*fn_name) && fn_name > fn; fn_name--);
+		fn_name++;
+		/* break apart */
+		if((fn_name = buffer_split(fn_name))) {
+			/* fprintf(stderr, "return value: <%s> fn name: <%s>\n", return_value, fn_name); */
+			trim(return_value);
+			/* place them in hash */
+			ch_put(ch, "_return", return_value);
+			ch_put(ch, "_fn",     fn_name);
+			ch_put(ch, "_args",   args);
+		}
+#endif
+
+	/* match delineated be each */
+	for(is_first = -1, is_last = 0, s0 = s1 = text_buf; !is_last; ) {
+		/* skip the embedded 'each's */
+		while((s1 = strpbrk(s1, "@")) && !is_first_on_line(text_buf, s1)) s1++;
+		if(!s1) is_last = -1, s1 = s0 + strlen(s0);
+		if(is_first) {
+			key = desc, key_length = strlen(desc);
+		} else {
+			key = s0, key_length = word_length(s0), s0 += key_length;
+		}
+		/* fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n",
+			(int)key_length, key, (int)(s1 - s0), s0); */
+		if(!(doc = TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
+			{ fprintf(stderr, "new_docs: %s.\n", TextGetError(this)); return; }
+		trim(TextGetValue(doc));
+		TextMatch(doc, tp_inner, sizeof tp_inner / sizeof *tp_inner);
+
+		is_first = 0;
+		s0 = s1 = s1 + 1;
+	}
+
+}
+
+/******************
+ * Main programme */
+
+/** The is a test of Text.
+ @param argc	Count
+ @param argv	Vector. */
+int main(int argc, char *argv[]) {
+	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
+	struct Text *text = 0;
+	char *fn;
+
+	if(argc != 2) {
+		/*fn = "src/Test.c";*/
+		fprintf(stderr, "Needs <filename>.\n");
+		return EXIT_FAILURE;
+	} else {
+		fn = argv[1];
+	}
+
+	do {
+
+		if(!(text = TextFile(fn))) { error = E_TEXT; break; }
+		/* parse for " / * * "; it recursively calls things as appropriate */
+		if(!TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
+			{ error = E_TEXT; break; }
+		/*printf("***%s***\n", TextToString(text));*/
+#if 1
+		xml(text);
+#else
+		TextForEachTrue(text, );
+#endif
+
+	} while(0);
+	switch(error) {
+		case E_NO_ERR: break;
+		case E_ERRNO: perror(fn); break;
+		case E_TEXT:
+			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text)); break;
+	}
+	{
+		Text_(&text);
+	}
+
+	fprintf(stderr, "Done all tests; %s.\n", error ? "FAILED" : "SUCCEDED");
+
+	return error ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+#if 0
+
+
+
+/******/
+
+static void print_text(struct Hash *const h) {
+	print_parsed_paragraph(h->value);
+}
+
+static void print_header_text(struct Hash *const h) {
+	printf("<h3>");
+	print_parsed(h->key);
+	printf("</h3>\n");
+	print_parsed_paragraph(h->value);
+}
+
+static void print_desc_list(struct Hash *const h) {
+	printf("\t<dt>%s</dt>\n", h->key);
+	printf("\t<dd>%s</dd>\n", h->value);
+}
+
 
 int main(int argc, char **argv) {
 	struct _SuperCat cat;

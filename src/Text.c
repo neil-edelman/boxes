@@ -226,7 +226,7 @@ char *TextGetValue(struct Text *const this) {
 	return this->buffer;
 }
 
-const char *TextGetParentBuffer(struct Text *const this) {
+char *TextGetParentBuffer(struct Text *const this) {
 	if(!this) return 0;
 	if(!this->up) { this->error = E_PARENT; return 0; }
 	return this->up->buffer;
@@ -272,7 +272,7 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 		struct TextPattern *pattern;
 		struct Expression { char *s0, *s1; } exp0, exp1;
 	} match;
-	struct Replace { int is; char *pos; char stored; } replace = { 0,0,0 };
+	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
 
 	if(!this) return 0;
 

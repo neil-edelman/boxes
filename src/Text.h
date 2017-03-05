@@ -13,7 +13,7 @@ struct Text *TextFile(char *const fn);
 struct Text *TextString(char *const name, char *const str);
 char *TextGetKey(struct Text *const this);
 char *TextGetValue(struct Text *const this);
-const char *TextGetParentBuffer(struct Text *const this);
+char *TextGetParentBuffer(struct Text *const this);
 size_t TextGetParentStart(struct Text *const this);
 size_t TextGetParentEnd(struct Text *const this);
 void Text_(struct Text **const this_ptr);
