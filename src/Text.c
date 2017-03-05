@@ -513,6 +513,17 @@ char *TextAdd(struct Text *const this, char *const fmt) {
 	return this->buffer;
 }
 
+/** Write a bunch of XML CDATA. */
+static void cdata(FILE *fp, char *const str) {
+	char *a = str, *b;
+	fprintf(fp, "<![CDATA[");
+	while((b = strstr(a, "]]>"))) {
+		fprintf(fp, "%.*s]]]]><![CDATA[>", (int)(b - a), a);
+		a += 3;
+	}
+	fprintf(fp, "%s]]>", a);
+}
+
 /** XML is wierd. */
 static void xml(struct Text *const this, FILE *fp, const int is_top) {
 	struct Text *down;
@@ -520,8 +531,18 @@ static void xml(struct Text *const this, FILE *fp, const int is_top) {
 
 	if(!is_top) fprintf(fp, "<key><![CDATA[%s]]></key>\n", this->name);
 	fprintf(fp, "<dict>\n");
-	fprintf(fp, "<key><![CDATA[%s]]></key>\n", this->name);
-	fprintf(fp, "<string><![CDATA[%s]]></string>\n", this->buffer);
+	/* fixme: %s has "]]>" it will fail, go through strstr and  */
+	fprintf(fp, "<key>");
+	cdata(fp, this->name);
+	fprintf(fp, "</key>\n");
+	fprintf(fp, "<string>");
+	cdata(fp, this->buffer);
+	fprintf(fp, "</string>\n");
+	if(!is_top) {
+		fprintf(fp, "<key>begin</key><integer>%lu</integer>\n"
+			"<key>end</key><integer>%lu</integer>\n",
+			this->up_begin, this->up_end);
+	}
 	for(i = 0; i < this->downs_size; i++) {
 		down = this->downs[i];
 		xml(down, fp, 0);
@@ -543,7 +564,7 @@ void TextXML(struct Text *const this, FILE *fp) {
 	}
 	fprintf(fp, "[%s].", cursor);*/
 	fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-	fprintf(fp, "<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n");
+	fprintf(fp, "<!DOCTYPE plist>\n");
 	fprintf(fp, "<plist version=\"1.0\">\n");
 	xml(this, fp, -1);
 	fprintf(fp, "</plist>\n");
