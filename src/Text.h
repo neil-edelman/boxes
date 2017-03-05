@@ -11,7 +11,8 @@ struct TextPattern {
 
 struct Text *TextFile(char *const fn);
 struct Text *TextString(char *const name, char *const str);
-char *TextGetBuffer(struct Text *const this);
+char *TextGetKey(struct Text *const this);
+char *TextGetValue(struct Text *const this);
 const char *TextGetParentBuffer(struct Text *const this);
 size_t TextGetParentStart(struct Text *const this);
 size_t TextGetParentEnd(struct Text *const this);
@@ -26,4 +27,3 @@ int TextEnsureCapacity(struct Text *const this, const size_t capacity);
 void TextForEachPassed(struct Text *const this, TextPredicate p, TextAction a);
 char *TextToString(struct Text *const this);
 char *TextAdd(struct Text *const this, char *const fmt);
-void TextXML(struct Text *const this, FILE *fp);

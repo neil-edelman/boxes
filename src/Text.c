@@ -215,8 +215,13 @@ void Text_(struct Text **const this_ptr) {
 	*this_ptr = 0;
 }
 
+char *TextGetKey(struct Text *const this) {
+	if(!this) return 0;
+	return this->name;
+}
+
 /** Gets a string from the text; valid until the text size changes. */
-char *TextGetBuffer(struct Text *const this) {
+char *TextGetValue(struct Text *const this) {
 	if(!this) return 0;
 	return this->buffer;
 }
@@ -476,7 +481,7 @@ char *TextToString(struct Text *const this) {
 	return cat.print;
 }
 
-/** Shortcut to add something to the text.
+/** Shortcut to add something to the text when editing it.
  @param fmt	Accepts %% as '%' and %s as the original string.
  @return	The new address of the string, which may have changed. */
 char *TextAdd(struct Text *const this, char *const fmt) {
@@ -511,63 +516,6 @@ char *TextAdd(struct Text *const this, char *const fmt) {
 	/* free */
 	free(copy);
 	return this->buffer;
-}
-
-/** Write a bunch of XML CDATA. */
-static void cdata(FILE *fp, char *const str) {
-	char *a = str, *b;
-	fprintf(fp, "<![CDATA[");
-	while((b = strstr(a, "]]>"))) {
-		fprintf(fp, "%.*s]]]]><![CDATA[>", (int)(b - a), a);
-		a += 3;
-	}
-	fprintf(fp, "%s]]>", a);
-}
-
-/** XML is wierd. */
-static void xml(struct Text *const this, FILE *fp, const int is_top) {
-	struct Text *down;
-	unsigned i;
-
-	if(!is_top) fprintf(fp, "<key><![CDATA[%s]]></key>\n", this->name);
-	fprintf(fp, "<dict>\n");
-	/* fixme: %s has "]]>" it will fail, go through strstr and  */
-	fprintf(fp, "<key>");
-	cdata(fp, this->name);
-	fprintf(fp, "</key>\n");
-	fprintf(fp, "<string>");
-	cdata(fp, this->buffer);
-	fprintf(fp, "</string>\n");
-	if(!is_top) {
-		fprintf(fp, "<key>begin</key><integer>%lu</integer>\n"
-			"<key>end</key><integer>%lu</integer>\n",
-			this->up_begin, this->up_end);
-	}
-	for(i = 0; i < this->downs_size; i++) {
-		down = this->downs[i];
-		xml(down, fp, 0);
-	}
-	fprintf(fp, "</dict>\n");
-}
-
-void TextXML(struct Text *const this, FILE *fp) {
-	/*size_t i;
-	char *cursor;
-	if(!this) return;
-	cursor = this->buffer;
-	for(i = 0; i < this->downs_size; i++) {
-		down = this->downs[i];
-		fprintf(fp, "[%.*s]\\", (int)(this->buffer+down->up_begin-cursor), cursor);
-		TextXML(down, fp);
-		fprintf(fp, "/");
-		cursor = this->buffer + down->up_end;
-	}
-	fprintf(fp, "[%s].", cursor);*/
-	fprintf(fp, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-	fprintf(fp, "<!DOCTYPE plist>\n");
-	fprintf(fp, "<plist version=\"1.0\">\n");
-	xml(this, fp, -1);
-	fprintf(fp, "</plist>\n");
 }
 
 

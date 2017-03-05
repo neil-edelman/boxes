@@ -23,6 +23,65 @@
 	"return", "throws", "implements", "fixme", "author"
 }; */
 
+/** Write a bunch of XML CDATA. */
+static void cdata(char *const str) {
+	char *a = str, *b;
+	printf("<![CDATA[");
+	while((b = strstr(a, "]]>"))) {
+		printf("%.*s]]]]><![CDATA[>", (int)(b - a), a);
+		a += 3;
+	}
+	printf("%s]]>", a);
+}
+
+static void print_text(struct Text *const);
+
+/** XML is wierd. */
+static void xml_recursive(struct Text *const this, const int is_top) {
+	if(!is_top) printf("<key><![CDATA[%s]]></key>\n", TextGetKey(this));
+	printf("<dict>\n");
+	/* fixme: %s has "]]>" it will fail, go through strstr and  */
+	printf("<key>");
+	cdata(TextGetKey(this));
+	printf("</key>\n<string>");
+	cdata(TextGetValue(this));
+	printf("</string>\n");
+	if(!is_top) {
+		printf("<key>begin</key><integer>%lu</integer>\n"
+			"<key>end</key><integer>%lu</integer>\n",
+			TextGetParentStart(this), TextGetParentEnd(this));
+	}
+	TextForEachPassed(this, 0, &print_text);
+	/*for(i = 0; i < this->downs_size; i++) {
+		down = this->downs[i];
+		xml(down, fp, 0);
+	}*/
+	printf("</dict>\n");
+}
+
+/** @implements	TextAction */
+static void print_text(struct Text *const this) { xml_recursive(this, 0); }
+
+static void xml(struct Text *const this) {
+	/*size_t i;
+	 char *cursor;
+	 if(!this) return;
+	 cursor = this->buffer;
+	 for(i = 0; i < this->downs_size; i++) {
+	 down = this->downs[i];
+	 fprintf(fp, "[%.*s]\\", (int)(this->buffer+down->up_begin-cursor), cursor);
+	 TextXML(down, fp);
+	 fprintf(fp, "/");
+	 cursor = this->buffer + down->up_end;
+	 }
+	 fprintf(fp, "[%s].", cursor);*/
+	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	printf("<!DOCTYPE plist>\n");
+	printf("<plist version=\"1.0\">\n");
+	xml_recursive(this, -1);
+	printf("</plist>\n");
+}
+
 /***********************
  * General text-things */
 
@@ -61,13 +120,13 @@ static size_t word_length(char *str) {
 /** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
  @implements	TextAction */
 static void url(struct Text *const this) {
-	trim(TextGetBuffer(this));
+	trim(TextGetValue(this));
 	TextAdd(this, "<a href = \"%s\">%s</a>");
 }
 /** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
  @implements	TextAction */
 static void cite(struct Text *const this) {
-	trim(TextGetBuffer(this));
+	trim(TextGetValue(this));
 	TextAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
 }
 /** @implements	TextAction */
@@ -93,7 +152,7 @@ static const struct TextPattern tp_docs[] = {
 
 /** @implements	TextAction */
 static void new_docs(struct Text *const this) {
-	char *const text_buf = TextGetBuffer(this);
+	char *const text_buf = TextGetValue(this);
 	struct Text *doc;
 	char *s0, *s1;
 	int is_first, is_last;
@@ -153,7 +212,7 @@ int main(int argc, char *argv[]) {
 		if(!TextMatch(text_buf, tp_docs, sizeof tp_docs / sizeof *tp_docs))
 			{ error = E_TEXT; break; }
 		/*printf("***%s***\n", TextToString(text));*/
-		TextXML(text_buf, stdout);
+		xml(text_buf);
 
 	} while(0);
 	switch(error) {
