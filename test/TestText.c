@@ -67,15 +67,6 @@ static void xml(struct Text *const this) {
 /***********************
  * General text-things */
 
-/** Moves a copy of white-space trimmed at the beginning and end to {str}. */
-static void trim(char *const str) {
-	char *e = str + strlen(str) - 1, *s = str;
-	while(e > str && isspace(*e)) e--;
-	e++, *e = '\0';
-	while(isspace(*s)) s++;
-	if(s - str) memmove(str, s, (size_t)(e - s + 1));
-}
-
 /** @return		Is the character pointed to by {s} in the string {str} the
 				first on the line? */
 static int is_first_on_line(const char *const str, const char *s) {
@@ -101,26 +92,34 @@ static size_t word_length(char *str) {
 
 /** Function-like chars? */
 static int isfunction(int c) {
-	return isalnum(c) || c == '_' || c == '<' || c == '>';
+	/* generics or escape; "<>&;" also have meaning, but we hopefully will be
+	 far from that */
+	return isalnum(c) || c == '_' || c == '<' || c == '>' || c == ';'
+		|| c == '&';
 }
 
-/** Returns between str and peren or null. */
-static char *match_opening_perenthesis(const char *const str, char *peren) {
+/** Returns a matching closing parethesis for the {left} or null if it couldn't
+ find one. */
+static char *match_parenthesis(char *const left) {
 	unsigned stack = 0;
-	while(str < peren) {
-		switch(*peren) {
-			case '\0': return 0;
-			case ')': stack++; break;
-			case '(': stack--; break;
-			default: break;
-		}
-		if(!stack) return peren;
-		peren--;
+	char l, r;
+	char *s = left;
+
+	switch(l = *left) {
+		case '[': r = ']'; break;
+		case '{': r = '}'; break;
+		case '(': r = ')'; break;
+		case '<': r = '>'; break;
+		case '`': r = '\'';break;
+		default: return 0;
+	}
+	while(*s) {
+		if(*s == l) stack++;
+		else if(*s == r && !--stack) return s;
+		s++;
 	}
 	return 0;
 }
-
-
 
 /** Searches backwards from the previous char to {a}, hits a function, and
  stops when it hits the end of something that looks function-like -- only call
@@ -159,7 +158,7 @@ static char *prev_generic_part(const char *const str, char *a) {
 
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
  "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! */
-static char *parse_generics(struct Text *const this) {
+static int parse_generics(struct Text *const this) {
 	struct Text *a = 0;
 	struct Generic { char *type, *name; } generics[16], *generic;
 	const size_t generics_size = sizeof generics / sizeof *generics;
@@ -194,7 +193,6 @@ static char *parse_generics(struct Text *const this) {
 			/* all the text up to the generic is unchanged */
 			len = generics[types_size - 1].type - start;
 			if(!TextCat(a, start, &len)) { e = E_A; break; }
-			fprintf(stderr, "begin %lu \"%s\"\n", len, TextGetValue(a));
 			/* reverse the reversal */
 			for(i = types_size; i; i--) {
 				size_t type_len, name_len;
@@ -205,8 +203,8 @@ static char *parse_generics(struct Text *const this) {
 				type_len = type_end - generic->type;
 				for(name_end = generic->name; isfunction(*name_end);name_end++);
 				name_len = name_end - generic->name;
-				fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
-					generic->type, (int)name_len, generic->name);
+				/*fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
+					generic->type, (int)name_len, generic->name);*/
 				/* fixme: TextPrintf(temp, "<%s>%s", ...); */
 				/* fixme: <, >, are verboten in html */
 				if(!TextCat(a, "<", 0)
@@ -216,13 +214,14 @@ static char *parse_generics(struct Text *const this) {
 					{ e = E_A; break; }
 			}
 			if(e) break;
-			fprintf(stderr, "so far \"%s\"\n", TextGetValue(a));
 			/* advance */
 			start = end;
 		}
 		if(e) break;
 		/* copy the rest (probably nothing) */
 		if(!TextCat(a, start, 0)) { e = E_A; break; }
+		/* copy the temporary a to this */
+		if(!TextCopy(this, TextGetValue(a), 0)) { e = E_A; break; }
 	} while(0);
 	switch(e) {
 		case E_NO: break;
@@ -231,12 +230,12 @@ static char *parse_generics(struct Text *const this) {
 		case E_GAVE_UP: fprintf(stderr, "parse_generics: syntax error.\n");
 			break;
 	}
-	fprintf(stderr, "parse_generics: <%s>\n\n", TextGetValue(a));
-	{
+	/*fprintf(stderr, "parse_generics: <%s>\n\n", TextGetValue(a));*/
+	{ /* finally */
 		Text_(&a);
 	}
 
-	return 0;/*e ? 0 : -1;*/
+	return e ? 0 : -1;
 }
 
 /***************************************************************
@@ -245,13 +244,13 @@ static char *parse_generics(struct Text *const this) {
 /** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
  @implements	TextAction */
 static void url(struct Text *const this) {
-	trim(TextGetValue(this));
+	TextTrim(this);
 	TextAdd(this, "<a href = \"%s\">%s</a>");
 }
 /** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
  @implements	TextAction */
 static void cite(struct Text *const this) {
-	trim(TextGetValue(this));
+	TextTrim(this);
 	TextAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
 }
 /** @implements	TextAction */
@@ -277,22 +276,20 @@ static const struct TextPattern tp_docs[] = {
 
 /** @implements	TextAction */
 static void new_docs(struct Text *const this) {
-	char *const text_buf = TextGetValue(this);
 	struct Text *doc_text, *sig_text;
-	char *sig;
+	char *const text_buf = TextGetValue(this);
 	char *s0, *s1;
 	int is_first, is_last;
 	size_t key_length;
 	char *key;
-	/* the first part that has no @, so we don't know what to call it */
-	char desc_key[] = "_desc";
-	char signature_key[] = "_signature";
+	char desc_key[] = "_desc", signature_key[] = "_signature",
+		return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
 	struct TextCut cut = { 0, 0, 0 };
 
 	/* search for function immediately below */
 	do {
 		char *buf = TextGetParentValue(this);
-		char *start, *end;
+		char *start, *end, *sig, *opening, *closing;
 
 		if(!buf) break;
 		start = buf + TextGetParentEnd(this);
@@ -303,52 +300,35 @@ static void new_docs(struct Text *const this) {
 		TextCut(&cut, end);
 		if(!(sig_text = TextNewChild(this, signature_key, strlen(signature_key),
 			start, strlen(start)))) { fprintf(stderr,
-			"new_docs: parsing function, %s.\n", TextGetError(this)); break; }
-		sig = TextGetValue(sig_text);
-		trim(sig);
-		fprintf(stderr, "!!!<%s> fixme: break up\n", sig);
-		parse_generics(sig_text);
+			"new_docs: parsing signature, %s.\n", TextGetError(this)); break; }
+		TextTrim(sig_text);
+		/* parse for (very author-cetric, sorry!) generics */
+		if(!(parse_generics(sig_text))) break;
+		/* split the signature into to separate parts */
+		if(!(sig = TextGetValue(sig_text)) || !(opening = strchr(sig, '('))
+			|| opening == sig || !(closing = match_parenthesis(opening))) break;
+		/* select what looks like a function name */
+		for(s1 = opening - 1; s1 > sig && !isfunction(*s1) && *s1; s1--); s1++;
+		for(s0 = s1 - 1; s0 > sig && isfunction(*s0); s0--);
+		if(s0 == sig) break;
+		s0++;
+		/* return type is all the stuff ahead of the function name */
+		fprintf(stderr, "new_docs: \"%.*s\", \"%.*s\", \"%.*s\"\n",
+			(int)(s0 - sig), sig, (int)(s1 - s0), s0,
+			(int)(closing - opening - 1), opening + 1);
+		/* { _signature } = { _return, _fn, _args }; sorry fans of the old
+		 syntax; the most impotant is fn, goes last */
+		if(!TextNewChild(this, return_key, strlen(return_key), sig,
+			(size_t)(s0 - sig)) || !TextNewChild(this, args_key,
+			strlen(args_key), opening + 1, (size_t)(closing - opening - 1))
+			|| !TextNewChild(this, fn_key, strlen(fn_key), s0,
+			(size_t)(s1 - s0))) break;
 	} while(0);
-	{
+	{ /* finnally */
 		TextUncut(&cut);
 	}
-	
-#if 0
-	if(is_fn_search
-	   && ch->hash_no
-	   && (fn = strpbrk(cursor, ";{/"))
-	   /* fn is a {, means a fn is near? */
-	   && *fn == '{'
-	   && (!end || fn < end)
-	   /* cursor < fn, start from the end: "(args)" of "void *fn(args)" */
-	   && (*fn = '\0', cursor = trim(cursor),
-		   rperen = strrchr(cursor, ')'))
-	   && (lperen = match_opening_perenthesis(cursor, rperen))
-	   /* fn:"void fn", args:"args" of "void *fn0args0" */
-	   && (args = parse_generics(trim(lperen)))
-	   && (*lperen++ = '\0', *rperen = '\0',
-		   fn = parse_generics(trim(cursor)))
-	   /* return_value:"void *" and fn:"fn" of copy "args0void *0fn0" */
-	   && (return_value = fn, strlen(fn))
-	   ) {
-		/* fn_name is the last isfunction */
-		for(fn_name = fn + strlen(fn) - 1;
-			isspace(*fn_name) && fn_name > fn;
-			fn_name--);
-		for( ; isfunction(*fn_name) && fn_name > fn; fn_name--);
-		fn_name++;
-		/* break apart */
-		if((fn_name = buffer_split(fn_name))) {
-			/* fprintf(stderr, "return value: <%s> fn name: <%s>\n", return_value, fn_name); */
-			trim(return_value);
-			/* place them in hash */
-			ch_put(ch, "_return", return_value);
-			ch_put(ch, "_fn",     fn_name);
-			ch_put(ch, "_args",   args);
-		}
-#endif
 
-	/* match delineated be each */
+	/* match delineated be each, '@' */
 	for(is_first = -1, is_last = 0, s0 = s1 = text_buf; !is_last; ) {
 		/* skip the embedded 'each's */
 		while((s1 = strpbrk(s1, "@")) && !is_first_on_line(text_buf, s1)) s1++;
@@ -363,7 +343,7 @@ static void new_docs(struct Text *const this) {
 		if(!(doc_text
 			= TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
 			{ fprintf(stderr, "new_docs: %s.\n", TextGetError(this)); return; }
-		trim(TextGetValue(doc_text));
+		TextTrim(doc_text);
 		TextMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
 
 		is_first = 0;

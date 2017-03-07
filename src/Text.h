@@ -26,9 +26,12 @@ size_t TextGetParentEnd(struct Text *const this);
 void Text_(struct Text **const this_ptr);
 const char *TextGetError(struct Text *const this);
 int TextCat(struct Text *const this, char *const cat,
-			const size_t *const cat_len_ptr);
-int TextMatch(struct Text *this, const struct TextPattern *const patterns,
+	const size_t *const cat_len_ptr);
+int TextCopy(struct Text *const this, char *const str,
+	const size_t *const str_len_ptr);
+int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size);
+void TextTrim(struct Text *const this);
 struct Text *TextNewChild(struct Text *const this,
 	char *const key_begin, const size_t key_length,
 	char *const value_begin, const size_t value_length);	

@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <string.h>	/* strerror */
 #include <limits.h>	/* INT_MAX */
+#include <ctype.h>	/* isspace */
 #ifdef TEXT_DEBUG /* <-- */
 #include <stdarg.h>
 #endif /* --> */
@@ -221,7 +222,7 @@ char *TextGetKey(struct Text *const this) {
 	return this->name;
 }
 
-/** Gets a string from the text; valid until the text size changes. */
+/** Gets a string from the text; volatile; valid until the text size changes. */
 char *TextGetValue(struct Text *const this) {
 	if(!this) return 0;
 	return this->buffer;
@@ -263,7 +264,7 @@ const char *TextGetError(struct Text *const this) {
 
 /** Concatenates {*cat_len_ptr} characters (or all the string if it is null) of
  {cat} onto the buffer in {this}.
- @fixme		Hmm, maybe there should be a buffer_len?
+ @fixme		Hmm, maybe there should be a buffer_len for this?
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextCat(struct Text *const this, char *const cat,
@@ -281,6 +282,22 @@ int TextCat(struct Text *const this, char *const cat,
 	return -1;
 }
 
+/** Replaces the buffer of {this} with {str} up to the pointed-to {str_len_ptr},
+ or, if null, the entire string. */
+int TextCopy(struct Text *const this, char *const str,
+	const size_t *const str_len_ptr) {
+	size_t str_len, new_size;
+
+	if(!this) return 0;
+	if(!str) return this->error = E_PARAMETER, 0;
+	str_len = str_len_ptr ? *str_len_ptr : strlen(str);
+	new_size = str_len + 1; /* danger */
+	if(!buffer_capacity_up(this, &new_size)) return 0;
+	memcpy(this->buffer, str, str_len);
+	this->buffer[str_len] = '\0';
+	return -1;
+}
+
 /** Transforms {this} according to all specified {patterns} array of
  {patterns_size}. This allocates new children as needed to go with the matches.
  @param patterns	An array of {TextPattern}; when the {begin} of a pattern
@@ -288,7 +305,7 @@ int TextCat(struct Text *const this, char *const cat,
 					array. All patterns must have {begin} and {transform}, but
 					{end} is optional; where missing, it will just call
 					{transform} with {begin}. */
-int TextMatch(struct Text *this, const struct TextPattern *const patterns,
+int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size) {
 	struct TextPattern *pattern; size_t p;
 	char *s0, *b;
@@ -357,6 +374,19 @@ int TextMatch(struct Text *this, const struct TextPattern *const patterns,
 	} while(b);
 
 	return -1;
+}
+
+/** White-space trims the buffer associated with {this}. */
+void TextTrim(struct Text *const this) {
+	char *str, *a, *z;
+
+	if(!this) return;
+	str = this->buffer;
+	z = str + strlen(str) - 1, a = str;
+	while(z > str && isspace(*z)) z--;
+	z++, *z = '\0';
+	while(isspace(*a)) a++;
+	if(a - str) memmove(str, a, (size_t)(z - a + 1));
 }
 
 /** Manually make a new child out of {key_begin -> value_begin} having a length
