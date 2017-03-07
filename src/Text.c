@@ -261,7 +261,25 @@ const char *TextGetError(struct Text *const this) {
 	return str;
 }
 
+/** Concatenates {*cat_len_ptr} characters (or all the string if it is null) of
+ {cat} onto the buffer in {this}.
+ @fixme		Hmm, maybe there should be a buffer_len?
+ @return	Success.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
+int TextCat(struct Text *const this, char *const cat,
+	const size_t *const cat_len_ptr) {
+	size_t old_len, cat_len, new_size;
 
+	if(!this) return 0;
+	if(!cat) return this->error = E_PARAMETER, 0;
+	old_len = strlen(this->buffer);
+	cat_len = cat_len_ptr ? *cat_len_ptr : strlen(cat);
+	new_size = old_len + cat_len + 1; /* danger */
+	if(!buffer_capacity_up(this, &new_size)) return 0;
+	memcpy(this->buffer + old_len, cat, cat_len);
+	this->buffer[new_size - 1] = '\0';
+	return -1;
+}
 
 /** Transforms {this} according to all specified {patterns} array of
  {patterns_size}. This allocates new children as needed to go with the matches.
@@ -525,6 +543,20 @@ char *TextAdd(struct Text *const this, char *const fmt) {
 	return this->buffer;
 }
 
+void TextCut(struct TextCut *const r, char *const cut) {
+	if(!r || !cut || r->is) return;
+	r->is = -1;
+	r->pos = cut;
+	r->stored = *cut;
+	*cut = '\0';
+}
+
+void TextUncut(struct TextCut *const r) {
+	if(!r || !r->is) return;
+	r->is = 0;
+	*r->pos = r->stored;
+}
+
 
 
 /************
@@ -547,7 +579,6 @@ static struct Text *Text(const char *const name) {
 	this->name               = (char *)(this + 1);
 	memcpy(this->name, name, name_size);
 	this->buffer             = 0;
-	/*this->buffer_size        = 0;*/
 	this->buffer_capacity[0] = fibonacci11;
 	this->buffer_capacity[1] = fibonacci12;
 	this->downs              = 0;

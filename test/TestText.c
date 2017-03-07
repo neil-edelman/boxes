@@ -104,51 +104,6 @@ static int isfunction(int c) {
 	return isalnum(c) || c == '_' || c == '<' || c == '>';
 }
 
-/** Searches backwards from the previous char to {a}, hits a function, and
- stops when it hits the end of something that looks function-like -- only call
- when you know it has a '('. */
-static char *prev_function_part(char *a) {
-	const int is_peren = *a == ')' ? -1 : 0;
-	/*printf("prev_f '%s'\n", a);*/
-	a--;
-	/*while(!isfunction(*a)) { if(*a == '(') return 0; a--; }*/
-	while(isspace(*a)) a--;
-	if(!is_peren && *a != ',') return 0; /* the only thing we expect: , */
-	if(is_peren  && *a == ',') return a + 1; /* eg, "(AddIf,)" */
-	a--;
-	while(isspace(*a)) a--;
-	while(isfunction(*a)) a--;
-	/*printf("pfp ret: '%s'\n", a + 1);*/
-	return a + 1;
-}
-
-/** Starting from the end of a function, this retrieves the previous generic
- part. */
-static char *prev_generic_part(const char *const str, char *a) {
-	int is_one = 0;
-	if(a <= str) return 0;
-	if(*a == '_') a++; /* starting */
-	if(*--a != '_') return 0;
-	a--;
-	while(isalnum(*a)) {
-		if(a <= str) return 0;
-		a--;
-		is_one = -1;
-	}
-	/*if(is_one) printf("prev_g ret: '%s'\n", a + 1);*/
-	return is_one ? a + 1 : 0;
-}
-
-static void cutoff_generic(char *a) {
-	while(isalnum(*a)) a++;
-	*a = '\0';
-}
-
-static void cutoff_name(char *a) {
-	while(isfunction(*a)) a++;
-	*a = '\0';
-}
-
 /** Returns between str and peren or null. */
 static char *match_opening_perenthesis(const char *const str, char *peren) {
 	unsigned stack = 0;
@@ -165,73 +120,123 @@ static char *match_opening_perenthesis(const char *const str, char *peren) {
 	return 0;
 }
 
+
+
+/** Searches backwards from the previous char to {a}, hits a function, and
+ stops when it hits the end of something that looks function-like -- only call
+ when you know it has a '('. Called by \see{parse_generics}. */
+static char *prev_function_part(char *a) {
+	const int is_peren = *a == ')' ? -1 : 0;
+	/*printf("prev_f '%s'\n", a);*/
+	a--;
+	/*while(!isfunction(*a)) { if(*a == '(') return 0; a--; }*/
+	while(isspace(*a)) a--;
+	if(!is_peren && *a != ',') return 0; /* the only thing we expect: , */
+	if(is_peren  && *a == ',') return a + 1; /* eg, "(AddIf,)" */
+	a--;
+	while(isspace(*a)) a--;
+	while(isfunction(*a)) a--;
+	/*printf("pfp ret: '%s'\n", a + 1);*/
+	return a + 1;
+}
+
+/** Starting from the end of a function, this retrieves the previous generic
+ part. Called by \see{parse_generics}. */
+static char *prev_generic_part(const char *const str, char *a) {
+	int is_one = 0;
+	if(a <= str) return 0;
+	if(*a == '_') a++; /* starting */
+	if(*--a != '_') return 0;
+	a--;
+	while(isalnum(*a)) {
+		if(a <= str) return 0;
+		a--;
+		is_one = -1;
+	}
+	/*if(is_one) printf("prev_g ret: '%s'\n", a + 1);*/
+	return is_one ? a + 1 : 0;
+}
+
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
- "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! Could
- create a new static buffer, or just return the argument if it's not
- modified. */
-static char *parse_generics(char *const fn) {
-#if 0
-	char *start_of_buffer = buffer_pos;
-	char temp[2048];
-	struct { char *generic, *name; } gen[16], *g; /* one generic */
-	unsigned gen_i_g, gen_i_n, i; /* generics get substituted backwards */
-	char *a, *b, *c, *generic, *name;
-	size_t fn_len;
-	
-	fn_len = strlen(fn);
-	if(fn_len >= sizeof temp
-	   || (size_t)(buffer + sizeof buffer / sizeof *buffer - buffer_pos + 1)
-	   < sizeof temp / sizeof *temp) {
-		fprintf(stderr, "%32s: this was not parsed for generics because the "
-				"buffer was full.\n", fn);
-		return 0;
+ "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! */
+static char *parse_generics(struct Text *const this) {
+	struct Text *a = 0;
+	struct Generic { char *type, *name; } generics[16], *generic;
+	const size_t generics_size = sizeof generics / sizeof *generics;
+	size_t len;
+	char *const value = TextGetValue(this);
+	unsigned types_size, names_size, i;
+	char *start, *type, *name, *end;
+	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
+
+	do {
+		if(!(a = TextString("_temp", ""))) { e = E_A; break; }
+		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
+		 assume it won't be nested; work backwards */
+		start = value;
+		while((type = strstr(start, "_(")) && (name = strchr(type, ')'))) {
+			end = name + 1;
+			/* search types "_T_I_" backwards */
+			types_size = 0;
+			while((type = prev_generic_part(start, type))) {
+				if(types_size >= generics_size) { e = E_GAVE_UP; break; }
+				generics[types_size++].type = type;
+			}
+			if(e) break;
+			/* search "(foo, create)" backwards */
+			names_size = 0;
+			while((name = prev_function_part(name))) {
+				if(names_size >= generics_size) { e = E_GAVE_UP; break; }
+				generics[names_size++].name = name;
+			}
+			if(e) break;
+			if(!types_size || types_size != names_size) { e = E_GAVE_UP; break;}
+			/* all the text up to the generic is unchanged */
+			len = generics[types_size - 1].type - start;
+			if(!TextCat(a, start, &len)) { e = E_A; break; }
+			fprintf(stderr, "begin %lu \"%s\"\n", len, TextGetValue(a));
+			/* reverse the reversal */
+			for(i = types_size; i; i--) {
+				size_t type_len, name_len;
+				char *type_end, *name_end;
+				generic = generics + i - 1;
+				/* fixme: probably should have assigned these up top */
+				for(type_end = generic->type; isalnum(*type_end);   type_end++);
+				type_len = type_end - generic->type;
+				for(name_end = generic->name; isfunction(*name_end);name_end++);
+				name_len = name_end - generic->name;
+				fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
+					generic->type, (int)name_len, generic->name);
+				/* fixme: TextPrintf(temp, "<%s>%s", ...); */
+				/* fixme: <, >, are verboten in html */
+				if(!TextCat(a, "<", 0)
+					|| !TextCat(a, generic->type, &type_len)
+					|| !TextCat(a, ">", 0)
+					|| !TextCat(a, generic->name, &name_len))
+					{ e = E_A; break; }
+			}
+			if(e) break;
+			fprintf(stderr, "so far \"%s\"\n", TextGetValue(a));
+			/* advance */
+			start = end;
+		}
+		if(e) break;
+		/* copy the rest (probably nothing) */
+		if(!TextCat(a, start, 0)) { e = E_A; break; }
+	} while(0);
+	switch(e) {
+		case E_NO: break;
+		case E_A: fprintf(stderr, "parse_generics: temp buffer, %s.\n",
+			TextGetError(a)); break;
+		case E_GAVE_UP: fprintf(stderr, "parse_generics: syntax error.\n");
+			break;
 	}
-	strcpy(temp, fn);
-	a = temp;
-	/* parse into "gen" -- assume it won't be nested */
-	while((b = strstr(a, "_(")) && (c = strchr(b, ')'))) {
-		/*printf("interpret is here: (a='%s', b='%s')\n", a, b);*/
-		/* search "_T_I_" */
-		gen_i_g = 0;
-		generic = b;
-		while((generic = prev_generic_part(fn, generic))) {
-			if(gen_i_g >= sizeof gen / sizeof *gen) return 0;
-			gen[gen_i_g++].generic = generic;
-		}
-		/* search "(foo, create)" */
-		gen_i_n = 0;
-		name = c;
-		while((name = prev_function_part(name))) {
-			if(gen_i_n >= sizeof gen / sizeof *gen) return 0;
-			gen[gen_i_n++].name = name;
-		}
-		if(gen_i_g != gen_i_n) return 0; /* that's weird */
-		/* terminate strings; print into a permanent buffer */
-		/* printf("*** adding \"%.*s\"\n", (int)(gen[gen_i_g - 1].generic - a),
-		 a); */
-		sprintf(buffer_pos, "%.*s", (int)(gen[gen_i_g - 1].generic - a), a);
-		buffer_pos += strlen(buffer_pos);
-		for(i = gen_i_g; i; i--) {
-			g = gen + i - 1;
-			cutoff_generic(g->generic);
-			cutoff_name(g->name);
-			/* printf("*** adding \"<%s>%s\"\n", g->generic, g->name); */
-			sprintf(buffer_pos, "<%s>%s", g->generic, g->name);
-			buffer_pos += strlen(buffer_pos);
-		}
-		/* advance */
-		a = c + 1;
+	fprintf(stderr, "parse_generics: <%s>\n\n", TextGetValue(a));
+	{
+		Text_(&a);
 	}
-	/* just a copy is good, too! */
-	/*if(a == temp) return fn;*/ /* no generics */
-	/* copy the rest (probably nothing) */
-	/* printf("*** adding \"%s\"\n", a); */
-	strcpy(buffer_pos, a);
-	buffer_pos += strlen(a) + 1;
-	
-	return start_of_buffer;
-#endif
-	return 0;
+
+	return 0;/*e ? 0 : -1;*/
 }
 
 /***************************************************************
@@ -256,7 +261,7 @@ static void amp(struct Text *const this) { TextAdd(this, "&amp;"); }
 /** @implements	TextAction */
 static void lt(struct Text *const this) { TextAdd(this, "&lt;"); }
 /** @implements	TextAction */
-static void gt(struct Text *const this) { TextAdd(this, "&gt"); }
+static void gt(struct Text *const this) { TextAdd(this, "&gt;"); }
 static void new_docs(struct Text *const); /* prototype: recursive TextPattern */
 
 static const struct TextPattern tp_docs[] = {
@@ -273,14 +278,16 @@ static const struct TextPattern tp_docs[] = {
 /** @implements	TextAction */
 static void new_docs(struct Text *const this) {
 	char *const text_buf = TextGetValue(this);
-	struct Text *doc, *fn_child;
+	struct Text *doc_text, *sig_text;
+	char *sig;
 	char *s0, *s1;
 	int is_first, is_last;
 	size_t key_length;
 	char *key;
-	char desc[10] = "_desc"; /* the first part that has no @ */
-	char filename[10] = "_filename";
-	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
+	/* the first part that has no @, so we don't know what to call it */
+	char desc_key[] = "_desc";
+	char signature_key[] = "_signature";
+	struct TextCut cut = { 0, 0, 0 };
 
 	/* search for function immediately below */
 	do {
@@ -293,16 +300,17 @@ static void new_docs(struct Text *const this) {
 		 more that it utterly fails */
 		end = strpbrk(start, ";{/#");
 		if(!end || *end != '{') break;
-		replace.is = -1, replace.pos = end, replace.stored = *replace.pos,
-			*replace.pos = '\0';
-		fprintf(stderr, "!!!<%s> fixme: break up\n", start);
-		if(!(fn_child = TextNewChild(this, filename, strlen(filename),
+		TextCut(&cut, end);
+		if(!(sig_text = TextNewChild(this, signature_key, strlen(signature_key),
 			start, strlen(start)))) { fprintf(stderr,
 			"new_docs: parsing function, %s.\n", TextGetError(this)); break; }
-		trim(TextGetValue(fn_child));
+		sig = TextGetValue(sig_text);
+		trim(sig);
+		fprintf(stderr, "!!!<%s> fixme: break up\n", sig);
+		parse_generics(sig_text);
 	} while(0);
 	{
-		if(replace.is) *replace.pos = replace.stored, replace.is = 0;
+		TextUncut(&cut);
 	}
 	
 #if 0
@@ -346,16 +354,17 @@ static void new_docs(struct Text *const this) {
 		while((s1 = strpbrk(s1, "@")) && !is_first_on_line(text_buf, s1)) s1++;
 		if(!s1) is_last = -1, s1 = s0 + strlen(s0);
 		if(is_first) {
-			key = desc, key_length = strlen(desc);
+			key = desc_key, key_length = strlen(desc_key);
 		} else {
 			key = s0, key_length = word_length(s0), s0 += key_length;
 		}
 		/* fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n",
 			(int)key_length, key, (int)(s1 - s0), s0); */
-		if(!(doc = TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
+		if(!(doc_text
+			= TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
 			{ fprintf(stderr, "new_docs: %s.\n", TextGetError(this)); return; }
-		trim(TextGetValue(doc));
-		TextMatch(doc, tp_inner, sizeof tp_inner / sizeof *tp_inner);
+		trim(TextGetValue(doc_text));
+		TextMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
 
 		is_first = 0;
 		s0 = s1 = s1 + 1;
