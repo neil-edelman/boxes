@@ -17,7 +17,7 @@ struct TextCut {
 
 struct Text *Text(const char *const name);
 void Text_(struct Text **const this_ptr);
-char *TextGetKey(struct Text *const this);
+const char *TextGetKey(struct Text *const this);
 char *TextGetValue(struct Text *const this);
 struct Text *TextGetChildKey(struct Text *const this, const char *const key);
 char *TextGetParentValue(struct Text *const this);

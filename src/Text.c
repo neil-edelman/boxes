@@ -166,7 +166,8 @@ void Text_(struct Text **const this_ptr) {
 	*this_ptr = 0;
 }
 
-char *TextGetKey(struct Text *const this) {
+/** Gets the key. */
+const char *TextGetKey(struct Text *const this) {
 	if(!this) return 0;
 	return this->key;
 }
@@ -228,26 +229,26 @@ const char *TextGetError(struct Text *const this) {
 	return str;
 }
 
-/** Constructs an empty {Text} out of the filename, {fn}, having the name {fn}.
+/** Concatenates the value in {this} with the entre contents of the file, {fp}.
  @fixme		Assumes 8-bit encoding? :[ */
 int TextFile(struct Text *const this, FILE *const fp) {
-	size_t cursor = 0;
-	int size, err;
+	size_t cursor;
+	int err;
 
 	if(!this) return 0;
 	if(!fp) { this->error = E_PARAMETER; return 0; }
+	cursor = strlen(this->value);
 
 	/* read */
-	while(size = (this->value_capacity[0] - cursor > INT_MAX) ?
-		  INT_MAX : (int)(this->value_capacity[0] - cursor),
-		  fgets(this->value + cursor, size, fp)) {
+	while(fgets(this->value + cursor, (int)(this->value_capacity[0] - cursor),
+		fp)) {
 
 		/* cursor is always just ahead of the reading */
 		cursor += strlen(this->value + cursor);
 
 		/* allocate new space? */
 		if(cursor >= this->value_capacity[0] - 1
-		   && !value_capacity_up(this, 0)) {
+			&& !value_capacity_up(this, 0)) {
 			if(fclose(fp) == EOF) perror(this->key); /* unreported error */
 			return 0;
 		}

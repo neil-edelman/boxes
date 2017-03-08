@@ -23,8 +23,8 @@
  * XML testing */
 
 /** Write a bunch of XML CDATA. FIXME */
-static void cdata(char *const str) {
-	char *a = str, *b;
+static void cdata(const char *const str) {
+	const char *a = str, *b;
 	printf("<![CDATA[");
 	while((b = strstr(a, "]]>"))) {
 		printf("%.*s]]]]><![CDATA[>", (int)(b - a), a);
@@ -377,7 +377,7 @@ static void print_header(struct Text *const this) {
 		printf("<h1>%s</h1>\n", TextGetValue(sub));
 	}
 	if((sub = TextGetChildKey(this, "_desc"))) {
-		printf("%s", TextGetValue(sub));
+		printf("%s\n", TextGetValue(sub));
 	}
 }
 
