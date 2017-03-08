@@ -15,8 +15,8 @@ struct TextCut {
 	char stored;
 };
 
-struct Text *TextFile(char *const fn);
-struct Text *TextString(char *const name, char *const str);
+struct Text *Text(const char *const name);
+void Text_(struct Text **const this_ptr);
 char *TextGetKey(struct Text *const this);
 char *TextGetValue(struct Text *const this);
 struct Text *TextGetChildKey(struct Text *const this, const char *const key);
@@ -24,8 +24,8 @@ char *TextGetParentValue(struct Text *const this);
 int TextGetIsWithinParentValue(struct Text *const this);
 size_t TextGetParentStart(struct Text *const this);
 size_t TextGetParentEnd(struct Text *const this);
-void Text_(struct Text **const this_ptr);
 const char *TextGetError(struct Text *const this);
+int TextFile(struct Text *const this, FILE *const fp);
 int TextCat(struct Text *const this, char *const cat,
 	const size_t *const cat_len_ptr);
 int TextCopy(struct Text *const this, char *const str,

@@ -169,7 +169,7 @@ static int parse_generics(struct Text *const this) {
 	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
 
 	do {
-		if(!(a = TextString("_temp", ""))) { e = E_A; break; }
+		if(!(a = Text("_temp"))) { e = E_A; break; }
 		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
 		 assume it won't be nested; work backwards */
 		start = value;
@@ -347,7 +347,7 @@ static void new_docs(struct Text *const this) {
 
 		/* parse it for additional \foo{} */
 		TextMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
-		//TextString("_temp", "");
+		/*TextString("_temp", ""); . . . ********************/
 
 		is_first = 0;
 		s0 = s1 = s1 + 1;
@@ -385,9 +385,10 @@ static void print_header(struct Text *const this) {
  @param argc	Count
  @param argv	Vector. */
 int main(int argc, char *argv[]) {
-	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
 	struct Text *text = 0;
+	FILE *fp = 0;
 	char *fn;
+	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
 
 	if(argc != 2) {
 		/*fn = "src/Test.c";*/
@@ -399,7 +400,10 @@ int main(int argc, char *argv[]) {
 
 	do {
 
-		if(!(text = TextFile(fn))) { error = E_TEXT; break; }
+		if(!(text = Text("_docs_root"))) { error = E_TEXT; break; }
+		if(!(fp = fopen(fn, "r"))) { error = E_ERRNO; break; }
+		if(!TextFile(text, fp)) { error = E_TEXT; break; }
+		if(fclose(fp)) { error = E_ERRNO; break; }
 		/* parse for " / * * "; it recursively calls things as appropriate */
 		if(!TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
 			{ error = E_TEXT; break; }
@@ -420,6 +424,7 @@ int main(int argc, char *argv[]) {
 	}
 	{
 		Text_(&text);
+		fclose(fp);
 	}
 
 	fprintf(stderr, "Done all tests; %s.\n", error ? "FAILED" : "SUCCEDED");
