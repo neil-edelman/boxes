@@ -286,7 +286,7 @@ static void new_docs(struct Text *const this) {
 		return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
 	struct TextCut cut = { 0, 0, 0 };
 
-	/* search for function immediately below */
+	/* search for function signature immediately below */
 	do {
 		char *buf = TextGetParentValue(this);
 		char *start, *end, *sig, *opening, *closing;
@@ -313,9 +313,9 @@ static void new_docs(struct Text *const this) {
 		if(s0 == sig) break;
 		s0++;
 		/* return type is all the stuff ahead of the function name */
-		fprintf(stderr, "new_docs: \"%.*s\", \"%.*s\", \"%.*s\"\n",
+		/*fprintf(stderr, "new_docs: \"%.*s\", \"%.*s\", \"%.*s\"\n",
 			(int)(s0 - sig), sig, (int)(s1 - s0), s0,
-			(int)(closing - opening - 1), opening + 1);
+			(int)(closing - opening - 1), opening + 1);*/
 		/* { _signature } = { _return, _fn, _args }; sorry fans of the old
 		 syntax; the most impotant is fn, goes last */
 		if(!TextNewChild(this, return_key, strlen(return_key), sig,
@@ -344,7 +344,10 @@ static void new_docs(struct Text *const this) {
 			= TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
 			{ fprintf(stderr, "new_docs: %s.\n", TextGetError(this)); return; }
 		TextTrim(doc_text);
+
+		/* parse it for additional \foo{} */
 		TextMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
+		//TextString("_temp", "");
 
 		is_first = 0;
 		s0 = s1 = s1 + 1;
@@ -354,6 +357,29 @@ static void new_docs(struct Text *const this) {
 
 /******************
  * Main programme */
+
+/** Selects functions by looking for _fn.
+ @implements	TextPredicate */
+static int select_functions(struct Text *const this) {
+	return TextGetChildKey(this, "_fn") ? -1 : 0;
+}
+
+/** Does the inverse of \see{select_fuctions}.
+ @implements	TextPredicate */
+static int select_non_functions(struct Text *const this) {
+	return !select_functions(this);
+}
+
+/** Prints header (at the top of the page, supposedly.) */
+static void print_header(struct Text *const this) {
+	struct Text *sub;
+	if((sub = TextGetChildKey(this, "file"))) {
+		printf("<h1>%s</h1>\n", TextGetValue(sub));
+	}
+	if((sub = TextGetChildKey(this, "_desc"))) {
+		printf("%s", TextGetValue(sub));
+	}
+}
 
 /** The is a test of Text.
  @param argc	Count
@@ -378,10 +404,11 @@ int main(int argc, char *argv[]) {
 		if(!TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
 			{ error = E_TEXT; break; }
 		/*printf("***%s***\n", TextToString(text));*/
-#if 1
+#if 0
 		xml(text);
 #else
-		TextForEachTrue(text, );
+		/* print the header(s?) */
+		TextForEachTrue(text, &select_non_functions, &print_header);
 #endif
 
 	} while(0);

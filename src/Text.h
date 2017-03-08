@@ -1,7 +1,7 @@
 struct Text;
 
-typedef void (*TextAction)(struct Text *const match);
-typedef int (*TextPredicate)(const char *const);
+typedef void (*TextAction)(struct Text *const);
+typedef int (*TextPredicate)(struct Text *const);
 
 struct TextPattern {
 	char *begin;
@@ -19,6 +19,7 @@ struct Text *TextFile(char *const fn);
 struct Text *TextString(char *const name, char *const str);
 char *TextGetKey(struct Text *const this);
 char *TextGetValue(struct Text *const this);
+struct Text *TextGetChildKey(struct Text *const this, const char *const key);
 char *TextGetParentValue(struct Text *const this);
 int TextGetIsWithinParentValue(struct Text *const this);
 size_t TextGetParentStart(struct Text *const this);

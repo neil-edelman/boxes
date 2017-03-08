@@ -114,6 +114,8 @@ static void debug(struct Text *const this, const char *const fn,
 /**********
  * Public */
 
+///////////// TextFile and TextString -> Text, TextFile and TextCat take care
+
 /** Constructs an empty {Text} out of the filename, {fn}, having the name {fn}.
  @fixme		Assumes 8-bit encoding.
  @fixme		Hmmmm, Text() and TextFile()? can't decide wether to make it big or
@@ -226,6 +228,23 @@ char *TextGetKey(struct Text *const this) {
 char *TextGetValue(struct Text *const this) {
 	if(!this) return 0;
 	return this->buffer;
+}
+
+/** Does a short-circuit linear search of {this} for a child key that matches
+ {key}.
+ @return	The text or null if the key was not found. */
+struct Text *TextGetChildKey(struct Text *const this, const char *const key) {
+	struct Text *found = 0, *down;
+	size_t d;
+
+	if(!this || !key) return 0;
+	for(d = 0; d < this->downs_size; d++) {
+		down = this->downs[d];
+		if(strcmp(down->name, key)) continue;
+		found = down;
+		break;
+	}
+	return found;
 }
 
 char *TextGetParentValue(struct Text *const this) {
@@ -469,7 +488,7 @@ void TextForEachTrue(struct Text *const this, TextPredicate p, TextAction a) {
 	unsigned i;
 	for(i = 0; i < this->downs_size; i++) {
 		down = this->downs[i];
-		if(!p || p(down->name)) a(down);
+		if(!p || p(down)) a(down);
 	}
 }
 
