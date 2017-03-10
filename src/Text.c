@@ -231,21 +231,31 @@ int TextFileCat(struct Text *const this, FILE *const fp) {
 	return -1;
 }
 
-/** Overrides the buffer with a printf, \see{printf}. */
-int TextPrintf(struct Text *const this, const char *const fmt, ...) {
+/** Concatenates the buffer with a printf, \see{printf}. */
+int TextPrintfCat(struct Text *const this, const char *const fmt, ...) {
 	va_list argp;
 	char garbage;
-	size_t length;
+	int length;
+	size_t total_length;
 
 	if(!this) return 0;
 	if(!fmt) return this->error = E_PARAMETER, 0;
+
 	va_start(argp, fmt);
 	length = vsnprintf(&garbage, 0ul, fmt, argp);
 	va_end(argp);
-	if(!capacity_up(this, &length)) return 0;
+
+	if(length < 0) return this->error = E_ERRNO, this->errno_copy = errno, 0;
+	total_length = this->length + length;
+	if(total_length < (size_t)length) return this->error = E_OVERFLOW, 0;
+	if(!capacity_up(this, &total_length)) return 0;
+
 	va_start(argp, fmt);
-	vsnprintf(this->text, this->capacity[0], fmt, argp);
+	length = vsnprintf(this->text + this->length, this->capacity[0], fmt, argp);
 	va_end(argp);
+
+	if(length < 0) return this->error = E_ERRNO, this->errno_copy = errno, 0;
+	this->length += length;
 
 	return -1;
 }

@@ -125,7 +125,7 @@ static char *match_parenthesis(char *const left) {
 /** Searches backwards from the previous char to {a}, hits a function, and
  stops when it hits the end of something that looks function-like -- only call
  when you know it has a '('. Called by \see{parse_generics}. */
-static char *prev_function_part(char *a) {
+static const char *prev_function_part(const char *a) {
 	const int is_peren = *a == ')' ? -1 : 0;
 	/*printf("prev_f '%s'\n", a);*/
 	a--;
@@ -142,7 +142,7 @@ static char *prev_function_part(char *a) {
 
 /** Starting from the end of a function, this retrieves the previous generic
  part. Called by \see{parse_generics}. */
-static char *prev_generic_part(const char *const str, char *a) {
+static const char *prev_generic_part(const char *const str, const char *a) {
 	int is_one = 0;
 	if(a <= str) return 0;
 	if(*a == '_') a++; /* starting */
@@ -160,20 +160,19 @@ static char *prev_generic_part(const char *const str, char *a) {
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
  "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! */
 static int parse_generics(struct Relate *const this) {
-	struct Relates *r = 0;
-	struct Generic { char *type, *name; } generics[16], *generic;
+	struct Text *temp = 0;
+	struct Generic { const char *type, *name; } generics[16], *generic;
 	const size_t generics_size = sizeof generics / sizeof *generics;
-	size_t len;
-	struct Text *value = RelateGetValue(this);
+	struct Text *original = RelateGetValue(this);
 	unsigned types_size, names_size, i;
 	const char *start, *type, *name, *end;
 	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
 
 	do {
-		if(!(r = Relates("_temp"))) { e = E_A; break; }
+		if(!(temp = Text())) { e = E_A; break; }
 		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
 		 assume it won't be nested; work backwards */
-		start = TextToString(value);
+		start = TextToString(original);
 		while((type = strstr(start, "_(")) && (name = strchr(type, ')'))) {
 			end = name + 1;
 			/* search types "_T_I_" backwards */
@@ -192,12 +191,13 @@ static int parse_generics(struct Relate *const this) {
 			if(e) break;
 			if(!types_size || types_size != names_size) { e = E_GAVE_UP; break;}
 			/* all the text up to the generic is unchanged */
-			len = generics[types_size - 1].type - start;
-			if(!TableCat(r, start, &len)) { e = E_A; break; }
+			if(!TextNCat(temp, start,
+				(size_t)(generics[types_size-1].type - start)))
+				{ e = E_A; break; }
 			/* reverse the reversal */
 			for(i = types_size; i; i--) {
 				size_t type_len, name_len;
-				char *type_end, *name_end;
+				const char *type_end, *name_end;
 				generic = generics + i - 1;
 				/* fixme: probably should have assigned these up top */
 				for(type_end = generic->type; isalnum(*type_end);   type_end++);
@@ -206,13 +206,13 @@ static int parse_generics(struct Relate *const this) {
 				name_len = name_end - generic->name;
 				/*fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
 					generic->type, (int)name_len, generic->name);*/
-				/* fixme: TablePrintf(temp, "<%s>%s", ...); */
 				/* fixme: <, >, are verboten in html */
-				if(!TableCat(r, "<", 0)
-					|| !TableCat(r, generic->type, &type_len)
-					|| !TableCat(r, ">", 0)
-					|| !TableCat(r, generic->name, &name_len))
+				if(!TextPrintfCat(temp, "<%s>%s", generic->type, generic->name))
 					{ e = E_A; break; }
+				/*if(!TextCat(temp_val, "<")
+					|| !TextNCat(temp, generic->type, type_len)
+					|| !TextCat(temp, ">")
+					|| !TextNCat(temp, generic->name, name_len))*/
 			}
 			if(e) break;
 			/* advance */
@@ -220,20 +220,20 @@ static int parse_generics(struct Relate *const this) {
 		}
 		if(e) break;
 		/* copy the rest (probably nothing) */
-		if(!TableCat(r, start, 0)) { e = E_A; break; }
+		if(!TextCat(temp, start)) { e = E_A; break; }
 		/* copy the temporary a to this */
-		if(!TableCopy(this, TableGetValue(r), 0)) { e = E_A; break; }
+		if(!TextCopy(original, TextToString(temp))) { e = E_A; break; }
 	} while(0);
 	switch(e) {
 		case E_NO: break;
 		case E_A: fprintf(stderr, "parse_generics: temp buffer, %s.\n",
-			TableGetError(r)); break;
+			TextGetError(temp)); break;
 		case E_GAVE_UP: fprintf(stderr, "parse_generics: syntax error.\n");
 			break;
 	}
 	/*fprintf(stderr, "parse_generics: <%s>\n\n", TableGetValue(a));*/
 	{ /* finally */
-		Table_(&r);
+		Text_(&temp);
 	}
 
 	return e ? 0 : -1;
@@ -243,30 +243,30 @@ static int parse_generics(struct Relate *const this) {
  * These go in a TablePattern array for calling in {TableMatch}. */
 
 /** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
- @implements	TableAction */
-static void url(struct Table *const this) {
-	TableTrim(this);
-	TableAdd(this, "<a href = \"%s\">%s</a>");
+ @implements	TextAction */
+static void url(struct Text *const this) {
+	TextTrim(this), TextTransform(this, "<a href = \"%s\">%s</a>");
 }
 /** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
- @implements	TableAction */
-static void cite(struct Table *const this) {
-	TableTrim(this);
-	TableAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
+ @implements	TextAction */
+static void cite(struct Text *const this) {
+	TextTrim(this), TextTransform(this,
+		"<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
 }
-/** @implements	TableAction */
-static void em(struct Table *const this) { TableAdd(this, "<em>%s</em>"); }
-/** @implements	TableAction */
-static void amp(struct Table *const this) { TableAdd(this, "&amp;"); }
-/** @implements	TableAction */
-static void lt(struct Table *const this) { TableAdd(this, "&lt;"); }
-/** @implements	TableAction */
-static void gt(struct Table *const this) { TableAdd(this, "&gt;"); }
-static void new_docs(struct Table *const); /* prototype: recursive TablePattern */
+/** @implements	TextAction */
+static void em(struct Text *const this) { TextTransform(this, "<em>%s</em>"); }
+/** @implements	TextAction */
+static void amp(struct Text *const this) { TextCopy(this, "&amp;"); }
+/** @implements	TextAction */
+static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
+/** @implements	TextAction */
+static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
+/* prototype: recursive TablePattern */
+static void new_docs(struct Relate *const);
 
-static const struct TablePattern tp_docs[] = {
-	{ "/""** ", "*/", &new_docs }
-}, tp_inner[] = {
+static const struct TextPattern /*tp_docs[] = {
+	{ "/""** ", "*""/", &new_docs }
+},*/ tp_inner[] = {
 	{ "\\url{", "}", &url },
 	{ "\\cite{", "}", &cite },
 	{ "{", "}", &em },
@@ -275,8 +275,8 @@ static const struct TablePattern tp_docs[] = {
 	{ ">", 0, &gt }
 };
 
-/** @implements	TableAction */
-static void new_docs(struct Table *const this) {
+/** @implements	RelateAction */
+static void new_docs(struct Relate *const this) {
 	struct Table *doc_text, *sig_text;
 	char *const text_buf = TableGetValue(this);
 	char *s0, *s1;
@@ -412,7 +412,7 @@ int main(int argc, char *argv[]) {
 		xml(text);
 #else
 		/* print the header(s?) */
-		TableForEachTrue(text, &select_non_functions, &print_header);
+		RelateForEachTrueChild(r, &select_non_functions, &print_header);
 #endif
 
 	} while(0);
@@ -433,8 +433,6 @@ int main(int argc, char *argv[]) {
 }
 
 #if 0
-
-
 
 /******/
 
@@ -553,7 +551,7 @@ int main(int argc, char **argv) {
 			case E_NO: fprintf(stderr, "No error?\n"); break;
 			case E_ERRNO: perror(programme); break;
 			case E_MAX: fprintf(stderr, "A hard maximum was exceeded; consider "
-								"re-designing your C file?\n"); break;
+				"re-design?\n"); break;
 		}
 		return EXIT_FAILURE;
 	}
