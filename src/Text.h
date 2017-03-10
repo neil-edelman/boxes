@@ -1,4 +1,4 @@
-#ifndef HAVE_TEXT_H /* <-- gaurds */
+#ifndef HAVE_TEXT_H /* <-- guards */
 #define HAVE_TEXT_H
 
 struct Text;
@@ -12,6 +12,7 @@ struct TextPattern {
 
 struct Text *Text(void);
 void Text_(struct Text **const this_ptr);
+/* fixme: this should be removed */
 struct TextArray *TextArray(void);
 void TextArray_(struct TextArray **const this_ptr);
 const char *TextToString(struct Text *const this);

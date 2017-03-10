@@ -142,12 +142,12 @@ const char *RelatesGetError(struct Relates *const this) {
 /**********
  * Relate */
 
-/** Get key string. */
+/** Get key string; shortcut for {TextToString(RelateGetKey(this))}. */
 const char *RelateKey(struct Relate *const this) {
 	return this ? TextToString(this->key) : 0;
 }
 
-/** Get value string. */
+/** Get value string; shortcut for {TextToString(RelateGetValue(this))}. */
 const char *RelateValue(struct Relate *const this) {
 	return this ? TextToString(this->value) : 0;
 }
