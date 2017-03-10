@@ -1,7 +1,7 @@
 /** Copyright 2015 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- This is a test of Text; call it with a .c file.
+ This is a test of Table; call it with a .c file.
 
  @author	Neil
  @version	3.0; 2016-08
@@ -11,7 +11,7 @@
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp strdup */
 #include <ctype.h>	/* isspace */
-#include "../src/Text.h"
+#include "../src/Relates.h"
 
 /* static const char *const things_in_header[] = {
 	"author", "version", "since", "fixme"
@@ -33,30 +33,31 @@ static void cdata(const char *const str) {
 	printf("%s]]>", a);
 }
 
-/* prototype -- calls recursively */
-static void print_text(struct Text *const);
+/* prototype -- calls recursively
+ @implem */
+static void print_text(struct Relate *const);
 
 /** XML is weird. */
-static void xml_recursive(struct Text *const this, const int is_top) {
-	if(!is_top) printf("<key><![CDATA[%s]]></key>\n", TextGetKey(this));
+static void xml_recursive(struct Relate *const this, const int is_top) {
+	if(!is_top) printf("<key><![CDATA[%s]]></key>\n", RelateKey(this));
 	printf("<dict>\n<key>");
-	cdata(TextGetKey(this));
+	cdata(RelateKey(this));
 	printf("</key>\n<string>");
-	cdata(TextGetValue(this));
+	cdata(RelateValue(this));
 	printf("</string>\n");
-	if(!is_top && TextGetIsWithinParentValue(this)) {
+	/*if(!is_top && TableGetIsWithinParentValue(this)) {
 		printf("<key>begin</key><integer>%lu</integer>\n"
 			"<key>end</key><integer>%lu</integer>\n",
-			TextGetParentStart(this), TextGetParentEnd(this));
-	}
-	TextForEachTrue(this, 0, &print_text);
+			TableGetParentStart(this), TableGetParentEnd(this));
+	}*/
+	RelateForEachTrueChild(this, 0, &print_text);
 	printf("</dict>\n");
 }
 
-/** @implements	TextAction */
-static void print_text(struct Text *const this) { xml_recursive(this, 0); }
+/** @implements	TableAction */
+static void print_text(struct Relate *const this) { xml_recursive(this, 0); }
 
-static void xml(struct Text *const this) {
+static void xml(struct Relate *const this) {
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	printf("<!DOCTYPE plist>\n");
 	printf("<plist version=\"1.0\">\n");
@@ -158,21 +159,21 @@ static char *prev_generic_part(const char *const str, char *a) {
 
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
  "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! */
-static int parse_generics(struct Text *const this) {
-	struct Text *a = 0;
+static int parse_generics(struct Relate *const this) {
+	struct Relates *r = 0;
 	struct Generic { char *type, *name; } generics[16], *generic;
 	const size_t generics_size = sizeof generics / sizeof *generics;
 	size_t len;
-	char *const value = TextGetValue(this);
+	struct Text *value = RelateGetValue(this);
 	unsigned types_size, names_size, i;
-	char *start, *type, *name, *end;
+	const char *start, *type, *name, *end;
 	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
 
 	do {
-		if(!(a = Text("_temp"))) { e = E_A; break; }
+		if(!(r = Relates("_temp"))) { e = E_A; break; }
 		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
 		 assume it won't be nested; work backwards */
-		start = value;
+		start = TextToString(value);
 		while((type = strstr(start, "_(")) && (name = strchr(type, ')'))) {
 			end = name + 1;
 			/* search types "_T_I_" backwards */
@@ -192,7 +193,7 @@ static int parse_generics(struct Text *const this) {
 			if(!types_size || types_size != names_size) { e = E_GAVE_UP; break;}
 			/* all the text up to the generic is unchanged */
 			len = generics[types_size - 1].type - start;
-			if(!TextCat(a, start, &len)) { e = E_A; break; }
+			if(!TableCat(r, start, &len)) { e = E_A; break; }
 			/* reverse the reversal */
 			for(i = types_size; i; i--) {
 				size_t type_len, name_len;
@@ -205,12 +206,12 @@ static int parse_generics(struct Text *const this) {
 				name_len = name_end - generic->name;
 				/*fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
 					generic->type, (int)name_len, generic->name);*/
-				/* fixme: TextPrintf(temp, "<%s>%s", ...); */
+				/* fixme: TablePrintf(temp, "<%s>%s", ...); */
 				/* fixme: <, >, are verboten in html */
-				if(!TextCat(a, "<", 0)
-					|| !TextCat(a, generic->type, &type_len)
-					|| !TextCat(a, ">", 0)
-					|| !TextCat(a, generic->name, &name_len))
+				if(!TableCat(r, "<", 0)
+					|| !TableCat(r, generic->type, &type_len)
+					|| !TableCat(r, ">", 0)
+					|| !TableCat(r, generic->name, &name_len))
 					{ e = E_A; break; }
 			}
 			if(e) break;
@@ -219,51 +220,51 @@ static int parse_generics(struct Text *const this) {
 		}
 		if(e) break;
 		/* copy the rest (probably nothing) */
-		if(!TextCat(a, start, 0)) { e = E_A; break; }
+		if(!TableCat(r, start, 0)) { e = E_A; break; }
 		/* copy the temporary a to this */
-		if(!TextCopy(this, TextGetValue(a), 0)) { e = E_A; break; }
+		if(!TableCopy(this, TableGetValue(r), 0)) { e = E_A; break; }
 	} while(0);
 	switch(e) {
 		case E_NO: break;
 		case E_A: fprintf(stderr, "parse_generics: temp buffer, %s.\n",
-			TextGetError(a)); break;
+			TableGetError(r)); break;
 		case E_GAVE_UP: fprintf(stderr, "parse_generics: syntax error.\n");
 			break;
 	}
-	/*fprintf(stderr, "parse_generics: <%s>\n\n", TextGetValue(a));*/
+	/*fprintf(stderr, "parse_generics: <%s>\n\n", TableGetValue(a));*/
 	{ /* finally */
-		Text_(&a);
+		Table_(&r);
 	}
 
 	return e ? 0 : -1;
 }
 
 /***************************************************************
- * These go in a TextPattern array for calling in {TextMatch}. */
+ * These go in a TablePattern array for calling in {TableMatch}. */
 
 /** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
- @implements	TextAction */
-static void url(struct Text *const this) {
-	TextTrim(this);
-	TextAdd(this, "<a href = \"%s\">%s</a>");
+ @implements	TableAction */
+static void url(struct Table *const this) {
+	TableTrim(this);
+	TableAdd(this, "<a href = \"%s\">%s</a>");
 }
 /** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
- @implements	TextAction */
-static void cite(struct Text *const this) {
-	TextTrim(this);
-	TextAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
+ @implements	TableAction */
+static void cite(struct Table *const this) {
+	TableTrim(this);
+	TableAdd(this, "<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
 }
-/** @implements	TextAction */
-static void em(struct Text *const this) { TextAdd(this, "<em>%s</em>"); }
-/** @implements	TextAction */
-static void amp(struct Text *const this) { TextAdd(this, "&amp;"); }
-/** @implements	TextAction */
-static void lt(struct Text *const this) { TextAdd(this, "&lt;"); }
-/** @implements	TextAction */
-static void gt(struct Text *const this) { TextAdd(this, "&gt;"); }
-static void new_docs(struct Text *const); /* prototype: recursive TextPattern */
+/** @implements	TableAction */
+static void em(struct Table *const this) { TableAdd(this, "<em>%s</em>"); }
+/** @implements	TableAction */
+static void amp(struct Table *const this) { TableAdd(this, "&amp;"); }
+/** @implements	TableAction */
+static void lt(struct Table *const this) { TableAdd(this, "&lt;"); }
+/** @implements	TableAction */
+static void gt(struct Table *const this) { TableAdd(this, "&gt;"); }
+static void new_docs(struct Table *const); /* prototype: recursive TablePattern */
 
-static const struct TextPattern tp_docs[] = {
+static const struct TablePattern tp_docs[] = {
 	{ "/""** ", "*/", &new_docs }
 }, tp_inner[] = {
 	{ "\\url{", "}", &url },
@@ -274,38 +275,38 @@ static const struct TextPattern tp_docs[] = {
 	{ ">", 0, &gt }
 };
 
-/** @implements	TextAction */
-static void new_docs(struct Text *const this) {
-	struct Text *doc_text, *sig_text;
-	char *const text_buf = TextGetValue(this);
+/** @implements	TableAction */
+static void new_docs(struct Table *const this) {
+	struct Table *doc_text, *sig_text;
+	char *const text_buf = TableGetValue(this);
 	char *s0, *s1;
 	int is_first, is_last;
 	size_t key_length;
 	char *key;
 	char desc_key[] = "_desc", signature_key[] = "_signature",
 		return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
-	struct TextCut cut = { 0, 0, 0 };
+	struct TableCut cut = { 0, 0, 0 };
 
 	/* search for function signature immediately below */
 	do {
-		char *buf = TextGetParentValue(this);
+		char *buf = TableGetParentValue(this);
 		char *start, *end, *sig, *opening, *closing;
 
 		if(!buf) break;
-		start = buf + TextGetParentEnd(this);
+		start = buf + TableGetParentEnd(this);
 		/* fixme: actually parse; this does most cases, but I can think of many
 		 more that it utterly fails */
 		end = strpbrk(start, ";{/#");
 		if(!end || *end != '{') break;
-		TextCut(&cut, end);
-		if(!(sig_text = TextNewChild(this, signature_key, strlen(signature_key),
+		TableCut(&cut, end);
+		if(!(sig_text = TableNewChild(this, signature_key, strlen(signature_key),
 			start, strlen(start)))) { fprintf(stderr,
-			"new_docs: parsing signature, %s.\n", TextGetError(this)); break; }
-		TextTrim(sig_text);
+			"new_docs: parsing signature, %s.\n", TableGetError(this)); break; }
+		TableTrim(sig_text);
 		/* parse for (very author-cetric, sorry!) generics */
 		if(!(parse_generics(sig_text))) break;
 		/* split the signature into to separate parts */
-		if(!(sig = TextGetValue(sig_text)) || !(opening = strchr(sig, '('))
+		if(!(sig = TableGetValue(sig_text)) || !(opening = strchr(sig, '('))
 			|| opening == sig || !(closing = match_parenthesis(opening))) break;
 		/* select what looks like a function name */
 		for(s1 = opening - 1; s1 > sig && !isfunction(*s1) && *s1; s1--); s1++;
@@ -318,14 +319,14 @@ static void new_docs(struct Text *const this) {
 			(int)(closing - opening - 1), opening + 1);*/
 		/* { _signature } = { _return, _fn, _args }; sorry fans of the old
 		 syntax; the most impotant is fn, goes last */
-		if(!TextNewChild(this, return_key, strlen(return_key), sig,
-			(size_t)(s0 - sig)) || !TextNewChild(this, args_key,
+		if(!TableNewChild(this, return_key, strlen(return_key), sig,
+			(size_t)(s0 - sig)) || !TableNewChild(this, args_key,
 			strlen(args_key), opening + 1, (size_t)(closing - opening - 1))
-			|| !TextNewChild(this, fn_key, strlen(fn_key), s0,
+			|| !TableNewChild(this, fn_key, strlen(fn_key), s0,
 			(size_t)(s1 - s0))) break;
 	} while(0);
 	{ /* finnally */
-		TextUncut(&cut);
+		TableUncut(&cut);
 	}
 
 	/* match delineated be each, '@' */
@@ -341,13 +342,12 @@ static void new_docs(struct Text *const this) {
 		/* fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n",
 			(int)key_length, key, (int)(s1 - s0), s0); */
 		if(!(doc_text
-			= TextNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
-			{ fprintf(stderr, "new_docs: %s.\n", TextGetError(this)); return; }
-		TextTrim(doc_text);
+			= TableNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
+			{ fprintf(stderr, "new_docs: %s.\n", TableGetError(this)); return; }
+		TableTrim(doc_text);
 
 		/* parse it for additional \foo{} */
-		TextMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
-		/*TextString("_temp", ""); . . . ********************/
+		TableMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
 
 		is_first = 0;
 		s0 = s1 = s1 + 1;
@@ -359,33 +359,33 @@ static void new_docs(struct Text *const this) {
  * Main programme */
 
 /** Selects functions by looking for _fn.
- @implements	TextPredicate */
-static int select_functions(struct Text *const this) {
-	return TextGetChildKey(this, "_fn") ? -1 : 0;
+ @implements	TablePredicate */
+static int select_functions(struct Table *const this) {
+	return TableGetChildKey(this, "_fn") ? -1 : 0;
 }
 
 /** Does the inverse of \see{select_fuctions}.
- @implements	TextPredicate */
-static int select_non_functions(struct Text *const this) {
+ @implements	TablePredicate */
+static int select_non_functions(struct Table *const this) {
 	return !select_functions(this);
 }
 
 /** Prints header (at the top of the page, supposedly.) */
-static void print_header(struct Text *const this) {
-	struct Text *sub;
-	if((sub = TextGetChildKey(this, "file"))) {
-		printf("<h1>%s</h1>\n", TextGetValue(sub));
+static void print_header(struct Table *const this) {
+	struct Table *sub;
+	if((sub = TableGetChildKey(this, "file"))) {
+		printf("<h1>%s</h1>\n", TableGetValue(sub));
 	}
-	if((sub = TextGetChildKey(this, "_desc"))) {
-		printf("%s\n", TextGetValue(sub));
+	if((sub = TableGetChildKey(this, "_desc"))) {
+		printf("%s\n", TableGetValue(sub));
 	}
 }
 
-/** The is a test of Text.
+/** The is a test of Table.
  @param argc	Count
  @param argv	Vector. */
 int main(int argc, char *argv[]) {
-	struct Text *text = 0;
+	struct Table *text = 0;
 	FILE *fp = 0;
 	char *fn;
 	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
@@ -400,19 +400,19 @@ int main(int argc, char *argv[]) {
 
 	do {
 
-		if(!(text = Text("_docs_root"))) { error = E_TEXT; break; }
+		if(!(text = Table("_docs_root"))) { error = E_TEXT; break; }
 		if(!(fp = fopen(fn, "r"))) { error = E_ERRNO; break; }
-		if(!TextFile(text, fp)) { error = E_TEXT; break; }
+		if(!TableFile(text, fp)) { error = E_TEXT; break; }
 		if(fclose(fp)) { error = E_ERRNO; break; }
 		/* parse for " / * * "; it recursively calls things as appropriate */
-		if(!TextMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
+		if(!TableMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
 			{ error = E_TEXT; break; }
-		/*printf("***%s***\n", TextToString(text));*/
+		/*printf("***%s***\n", TableToString(text));*/
 #if 0
 		xml(text);
 #else
 		/* print the header(s?) */
-		TextForEachTrue(text, &select_non_functions, &print_header);
+		TableForEachTrue(text, &select_non_functions, &print_header);
 #endif
 
 	} while(0);
@@ -420,10 +420,10 @@ int main(int argc, char *argv[]) {
 		case E_NO_ERR: break;
 		case E_ERRNO: perror(fn); break;
 		case E_TEXT:
-			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text)); break;
+			fprintf(stderr, "%s: %s.\n", fn, TableGetError(text)); break;
 	}
 	{
-		Text_(&text);
+		Table_(&text);
 		fclose(fp);
 	}
 

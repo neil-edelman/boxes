@@ -1,219 +1,134 @@
 /** Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- For reading and parsing text files.
-
- @param TEXT_DEBUG
- Prints things to stderr.
+ A dynamic string.
 
  @file		Text
  @author	Neil
- @version	1.0; 2017-02
- @since		1.0; 2017-02 */
-
-/*#define TEXT_DEBUG*/
+ @version	1.0; 2017-03
+ @since		1.0; 2017-03 */
 
 #include <stdlib.h> /* malloc free */
-#include <stdio.h>  /* fprintf */
-#include <errno.h>
-#include <string.h>	/* strerror */
+#include <stdio.h>  /* FILE fgets fprintf */
+#include <errno.h>	/* errno */
+#include <string.h>	/* strerror memcpy */
 #include <limits.h>	/* INT_MAX */
 #include <ctype.h>	/* isspace */
-#ifdef TEXT_DEBUG /* <-- */
-#include <stdarg.h>
-#endif /* --> */
+#include <stdarg.h>	/* va_* */
 #include "Text.h"
 
-/* <-- ugly compiler-specific code, ie, MSVC/not-MSVC */
-#ifdef _UNUSED
-#undef _UNUSED
-#endif
-#ifndef _MSC_VER /* <-- not msvc */
-/* don't produce warnings, yet optimise away the obviously useless while? hmm,
- I have not seen a clean solution for this */
-#define _UNUSED(a) while(0 && (a));
-#else /* not msvc --><-- msvc: not a C89/90 compiler; needs a little help */
-#pragma warning(push)
-/* "Assignment within conditional expression." That is a C language feature
- that I use all the time and is perfectly valid. */
-#pragma warning(disable: 4706)
-/* "<ANSI/ISO name>: The POSIX name for this item is deprecated. Instead use
- the ISO C and C++ conformant name <ISO C11 name>." No. */
-#pragma warning(disable: 4996)
-/* the pre-compiler is a little too smart for it's own good,
- http://stackoverflow.com/questions/4851075/universally-compiler-independent-
- way-of-implementing-an-unused-macro-in-c-c . . . what does that even mean?
- that can't be valid C? but works with MSVC */
-#define _UNUSED(a) (void)(sizeof((a), 0))
-#endif /* msvc --> */
-/* ugly --> */
+static const size_t fibonacci6  = 8;
+static const size_t fibonacci7  = 13;
 
-
-
-/* for allocating recursively */
-static const unsigned fibonacci6  = 8;
-static const unsigned fibonacci7  = 13;
-
-/* for allocating value */
-static const unsigned fibonacci11 = 89;
-static const unsigned fibonacci12 = 144;
+static const size_t fibonacci11 = 89;
+static const size_t fibonacci12 = 144;
 
 enum Error {
 	E_NO_ERROR,
 	E_ERRNO,
 	E_PARAMETER,
 	E_OVERFLOW,
-	E_SYNTAX,
-	E_ASSERT,
-	E_PARENT
+	E_SYNTAX
 };
-
 static const char *const error_explination[] = {
 	"no error",
 	0,
 	"parameter out-of-range",
 	"overflow",
-	"syntax error",
-	"assertion failed",
-	"null parent"
+	"syntax error"
 };
-
-/* globals */
 
 static enum Error global_error = E_NO_ERROR;
 static int        global_errno_copy;
 
 struct Text {
-	struct Text *parent;
-	int is_value_in_parent;
-	size_t parent_begin, parent_end; /* only valid if is_value_in_parent */
-	char *key;
-	char *value;
-	size_t value_capacity[2];
-	struct Text **childs;
-	size_t childs_size, childs_capacity[2];
+	char *text;
+	size_t length, capacity[2];
 	enum Error error;
 	int errno_copy;
 };
 
-/* private */
+struct TextBraket {
+	int is;
+	const struct TextPattern *pattern;
+	struct { char *s0, *s1; } bra, ket;
+};
 
-static struct Text *Text_string_recursive(struct Text *const parent,
-	const char *const key, char *const value, const int is_value_in_parent,
-	const size_t parent_begin, const size_t parent_end);
-static int value_capacity_up(struct Text *const this,
-	const size_t *const size_ptr);
-static int childs_capacity_up(struct Text *const this);
-static char *anonymous_volatile_key(void);
-static void debug(struct Text *const this, const char *const fn,
-	const char *const fmt, ...);
+struct TextMatch {
+	struct Text *text;
+	char *start, *end;
+};
 
+struct TextMatches {
+	struct TextMatch *matches;
+	size_t size, capacity[2];
+	enum Error error;
+	int errno_copy;
+};
+
+struct TextCut {
+	int is;
+	char *pos;
+	char stored;
+};
+
+static void clear(struct Text *const this);
+static int cat(struct Text *const this, const char *const str,
+	const size_t str_len);
+static int capacity_up(struct Text *const this, const size_t *const len_ptr);
+static void text_matches(struct TextMatches *const this);
+static void text_matches_(struct TextMatches *const this);
+static struct TextMatch *text_matches_new(struct TextMatches *const this,
+	struct TextBraket *braket);
+static void text_cut(struct TextCut *const this, char *const pos);
+static void text_uncut(struct TextCut *const this);
+	
 
 
 /**********
  * Public */
 
-/** Constructs a generic, empty Text. */
-struct Text *Text(const char *const key) {
+/** @return	A new, blank Text, will be constructed.
+ @throws	E_ERRNO */
+struct Text *Text(void) {
 	struct Text *this;
-	size_t key_size;
-
-	key_size = strlen(key) + 1;
-	if(!(this = malloc(sizeof *this + key_size))) return 0;
-	this->parent             = 0;
-	this->is_value_in_parent = 0;
-	this->parent_begin       = 0;
-	this->parent_end         = 0;
-	this->key                = (char *)(this + 1);
-	memcpy(this->key, key, key_size);
-	this->value              = 0;
-	this->value_capacity[0]  = fibonacci11;
-	this->value_capacity[1]  = fibonacci12;
-	this->childs             = 0;
-	this->childs_size        = 0;
-	this->childs_capacity[0] = fibonacci6;
-	this->childs_capacity[1] = fibonacci7;
-	this->error              = E_NO_ERROR;
-	this->errno_copy         = 0;
-
-	if(!(this->childs = malloc(this->childs_capacity[0] * sizeof *this->childs))
-		|| !(this->value = malloc(this->value_capacity[0]
-		* sizeof *this->value))) {
-		global_error = E_ERRNO, global_errno_copy = errno;
+	if(!(this = malloc(sizeof *this))) {
+		global_error      = E_ERRNO;
+		global_errno_copy = errno;
 		Text_(&this);
 		return 0;
 	}
-
-	debug(this, "cons", "new, \"%s,\" capacity %d.\n", key,
-		this->value_capacity[0]);
-	return this;
+	this->text        = 0;
+	this->length      = 0;
+	this->capacity[0] = fibonacci11;
+	this->capacity[1] = fibonacci12;
+	this->error       = E_NO_ERROR;
+	this->errno_copy  = 0;
+	if(!(this->text = malloc(sizeof *this->text * this->capacity[0]))) {
+		global_error      = E_ERRNO;
+		global_errno_copy = errno;
+		Text_(&this);
+		return 0;
+	}
+	return clear(this), this;
 }
 
-/** Destructs a {Text}. */
+/** @param this_ptr	A pointer to Text that will be destructed. */
 void Text_(struct Text **const this_ptr) {
 	struct Text *this;
-	size_t i;
 
 	if(!this_ptr || !(this = *this_ptr)) return;
 
-	for(i = 0; i < this->childs_size; i++) Text_(&this->childs[i]);
-
-	debug(this, "~", "erase.\n");
-	free(this->childs);
-	free(this->value);
+	free(this->text);
 	free(this);
 
 	*this_ptr = 0;
 }
 
-/** Gets the key. */
-const char *TextGetKey(struct Text *const this) {
+/** Gets the string associated to {this}. */
+const char *TextToString(struct Text *const this) {
 	if(!this) return 0;
-	return this->key;
-}
-
-/** Gets a string from the text; volatile; valid until the text size changes. */
-char *TextGetValue(struct Text *const this) {
-	if(!this) return 0;
-	return this->value;
-}
-
-/** Does a short-circuit linear search of {this} for a child key that matches
- {key}.
- @return	The text or null if the key was not found. */
-struct Text *TextGetChildKey(struct Text *const this, const char *const key) {
-	struct Text *found = 0, *child;
-	size_t d;
-
-	if(!this || !key) return 0;
-	for(d = 0; d < this->childs_size; d++) {
-		child = this->childs[d];
-		if(strcmp(child->key, key)) continue;
-		found = child;
-		break;
-	}
-	return found;
-}
-
-char *TextGetParentValue(struct Text *const this) {
-	if(!this) return 0;
-	if(!this->parent) { this->error = E_PARENT; return 0; }
-	return this->parent->value;
-}
-
-int TextGetIsWithinParentValue(struct Text *const this) {
-	if(!this) return 0;
-	return this->is_value_in_parent;
-}
-
-size_t TextGetParentStart(struct Text *const this) {
-	if(!this) return 0;
-	return this->parent_begin;
-}
-
-size_t TextGetParentEnd(struct Text *const this) {
-	if(!this) return 0;
-	return this->parent_end;
+	return this->text;
 }
 
 /** @return		The last error associated with {this} (can be null.) */
@@ -226,161 +141,22 @@ const char *TextGetError(struct Text *const this) {
 	perrno = this ? &this->errno_copy : &global_errno_copy;
 	if(!(str = error_explination[*perr])) str = strerror(*perrno);
 	*perr = 0;
+
 	return str;
 }
 
-/** Concatenates the value in {this} with the entre contents of the file, {fp}.
- @fixme		Assumes 8-bit encoding? :[ */
-int TextFile(struct Text *const this, FILE *const fp) {
-	size_t cursor;
-	int err;
-
-	if(!this) return 0;
-	if(!fp) { this->error = E_PARAMETER; return 0; }
-	cursor = strlen(this->value);
-
-	/* read */
-	while(fgets(this->value + cursor, (int)(this->value_capacity[0] - cursor),
-		fp)) {
-
-		/* cursor is always just ahead of the reading */
-		cursor += strlen(this->value + cursor);
-
-		/* allocate new space? */
-		if(cursor >= this->value_capacity[0] - 1
-			&& !value_capacity_up(this, 0)) {
-			if(fclose(fp) == EOF) perror(this->key); /* unreported error */
-			return 0;
-		}
-	}
-	if((err = ferror(fp))) {
-		this->error = E_ERRNO, this->errno_copy = err;
-		return 0;
-	}
-
-	return -1;
+/** Clears the Text. */
+void TextClear(struct Text *const this) {
+	if(!this) return;
+	clear(this);
 }
 
-/** Concatenates {*cat_len_ptr} characters (or all the string if it is null) of
- {cat} onto the value in {this}.
- @fixme		Hmm, maybe there should be a value_len for this?
- @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
-int TextCat(struct Text *const this, char *const cat,
-	const size_t *const cat_len_ptr) {
-	size_t old_len, cat_len, new_size;
-
-	if(!this) return 0;
-	if(!cat) return this->error = E_PARAMETER, 0;
-	old_len = strlen(this->value);
-	cat_len = cat_len_ptr ? *cat_len_ptr : strlen(cat);
-	new_size = old_len + cat_len + 1; /* danger */
-	if(!value_capacity_up(this, &new_size)) return 0;
-	memcpy(this->value + old_len, cat, cat_len);
-	this->value[new_size - 1] = '\0';
-	return -1;
-}
-
-/** Replaces the value of {this} with {str} up to the pointed-to {str_len_ptr},
- or, if null, the entire string. */
-int TextCopy(struct Text *const this, char *const str,
-	const size_t *const str_len_ptr) {
-	size_t str_len, new_size;
-
-	if(!this) return 0;
-	if(!str) return this->error = E_PARAMETER, 0;
-	str_len = str_len_ptr ? *str_len_ptr : strlen(str);
-	new_size = str_len + 1; /* danger */
-	if(!value_capacity_up(this, &new_size)) return 0;
-	memcpy(this->value, str, str_len);
-	this->value[str_len] = '\0';
-	return -1;
-}
-
-/** Transforms {this} according to all specified {patterns} array of
- {patterns_size}. This allocates new children as needed to go with the matches.
- @param patterns	An array of {TextPattern}; when the {begin} of a pattern
- 					encompasses another pattern, it should be before in the
-					array. All patterns must have {begin} and {transform}, but
-					{end} is optional; where missing, it will just call
-					{transform} with {begin}. */
-int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
-	const size_t patterns_size) {
-	struct TextPattern *pattern; size_t p;
-	char *s0, *b;
-	struct Match {
-		struct TextPattern *pattern;
-		struct Expression { char *s0, *s1; } exp0, exp1;
-	} match;
-	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
-
-	if(!this) return 0;
-
-	b = this->value;
-	do {
-		/* reset {match} */
-		match.pattern = 0, match.exp0.s0 = 0, match.exp0.s1 = 0,
-			match.exp1.s0 = 0, match.exp1.s1 = 0;
-		for(p = 0; p < patterns_size; p++) {
-			pattern = (struct TextPattern *)patterns + p;
-			/*printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
-				pattern->begin, pattern->end, b);*/
-			if(!(s0 = strstr(b, pattern->begin))) continue;
-			/* this happens when first_pos is [abcdefg] and [cdef] is matched */
-			if(match.pattern && s0 >= match.exp0.s0) continue;
-			/* remove the temporary null */
-			if(replace.is) { *replace.pos = replace.stored, replace.is = 0; }
-			/* replace match with this match, since it's the first */
-			match.pattern = pattern;
-			match.exp0.s0 = s0;
-			match.exp0.s1 = s0 + strlen(pattern->begin);
-			/* put in temporary null */
-			replace.is = -1, replace.pos = match.exp0.s1,
-				replace.stored = *replace.pos, *replace.pos = '\0';
-		}
-		/* didn't find any patterns */
-		if(!match.pattern) break;
-		/* if the {first_pat} has an ending, move the cursor to ending */
-		if(match.pattern->end) {
-			/* temp replacement of stored char */
-			*replace.pos = replace.stored, replace.is = 0;
-			/* search for the ending */
-			if(!(match.exp1.s0 = strstr(match.exp0.s1, match.pattern->end)))
-				{ this->error = E_SYNTAX; return 0; }
-			match.exp1.s1 = match.exp1.s0 + strlen(match.pattern->end);
-			/* put in temporary null */
-			replace.is = -1, replace.pos = match.exp1.s0,
-				replace.stored = *replace.pos, *replace.pos = '\0';
-		}
-		debug(this, "TextMatch", "match: \"%.*s\" \"%.30s...\" \"%.*s\"\n",
-			(int)(match.exp0.s1 - match.exp0.s0), match.exp0.s0,
-			match.exp0.s1,
-			(int)(match.exp1.s1 - match.exp1.s0), match.exp1.s0);
-		/* allocate the recursion; set the value back to how it was */
-		if(this->childs_size >= this->childs_capacity[0]
-			&& !childs_capacity_up(this)) return 0;
-		if(!(this->childs[this->childs_size++] = Text_string_recursive(this,
-			anonymous_volatile_key(), match.exp0.s1, -1,
-			(size_t)(match.exp0.s0 - this->value),
-			(size_t)(match.exp1.s1 - this->value))))
-			{ *replace.pos = replace.stored; return 0; }
-		*replace.pos = replace.stored;
-		/* call pattern function on the duplicated substring */
-		match.pattern->transform(this->childs[this->childs_size - 1]);
-		/*printf("now value \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
-			this->value, first_pat ? first_pat->begin : "(null)", first_pos);*/
-		b = match.exp1.s1;
-	} while(b);
-
-	return -1;
-}
-
-/** White-space trims the value associated with {this}. */
+/** White-space trims the buffer associated with {this}. */
 void TextTrim(struct Text *const this) {
 	char *str, *a, *z;
 
 	if(!this) return;
-	str = this->value;
+	str = this->text;
 	z = str + strlen(str) - 1, a = str;
 	while(z > str && isspace(*z)) z--;
 	z++, *z = '\0';
@@ -388,249 +164,261 @@ void TextTrim(struct Text *const this) {
 	if(a - str) memmove(str, a, (size_t)(z - a + 1));
 }
 
-/** Manually make a new child out of {key_begin -> value_begin} having a length
- of {key_length} and {value_length}, respectfully. The elements are copied from
- this string, so they can be overlapping.
- @param key_begin	Can be null, in which case {key_length} is ignored and the
-					key will have an anonymous key.
+/** Replaces the value of {this} with {str}.
  @return	Success.
- @throws	E_PARAMETER */
-struct Text *TextNewChild(struct Text *const this,
-	char *const key, const size_t key_length,
-	char *const value, const size_t value_length) {
-	int is_key_dup = 0, is_within = 0;
-	char *kcpy = 0, *vcpy = 0;
-	struct Text *child = 0;
-	struct Replace { int is; char *pos; char stored; } replace = { 0, 0, 0 };
-	enum { NC_NO_ERR, NC_ERRNO, NC_EXTERIOR } error = NC_NO_ERR;
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+int TextCopy(struct Text *const this, const char *const str) {
+	if(!this) return 0;
+	if(!str) return this->error = E_PARAMETER, 0;
+	clear(this);
+	return cat(this, str, strlen(str));
+}
+
+/** Replaces the value of {this} with {str} up to the {str_len}. Does not do a
+ check to ensure that there are at least {str_len} bytes in the string.
+ @return	Success.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+int TextNCopy(struct Text *const this, const char *const str,
+	const size_t str_len) {
+	if(!this) return 0;
+	if(!str) return this->error = E_PARAMETER, 0;
+	clear(this);
+	return cat(this, str, str_len);
+}
+
+/** Concatenates {cat} onto the buffer in {this}.
+ @return	Success.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+int TextCat(struct Text *const this, const char *const str) {
+	if(!this) return 0;
+	if(!str) return this->error = E_PARAMETER, 0;
+	return cat(this, str, strlen(str));
+}
+
+/** Concatenates {cat_len} characters of {cat} onto the buffer in {this}. Does
+ not do a check to ensure that there are at least {str_len} bytes in the string.
+ @return	Success.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+int TextNCat(struct Text *const this, const char *const str,
+	const size_t str_len) {
+	if(!this) return 0;
+	if(!str) return this->error = E_PARAMETER, 0;
+	return cat(this, str, str_len);
+}
+
+/** Concatenates the contents of the text file, {fp}, after the read cursor, to
+ the buffer in {this}. On success, the read cursor will be at the end.
+ @return	Success.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+int TextFileCat(struct Text *const this, FILE *const fp) {
+	int to_get;
+	int e;
 
 	if(!this) return 0;
-	if(value >= this->value
-		&& value + value_length <= this->value + strlen(this->value))
-		is_within = -1;
-	/*	{ this->error = E_PARAMETER; return 0; }*/
+	if(!fp) { this->error = E_PARAMETER; return 0; }
 
-	do { /* try */
-		/* lazy -- throw memory at it -- key */
-		if(!key) {
-			kcpy = anonymous_volatile_key();
-		} else {
-			replace.is = -1, replace.pos = key + key_length,
-				replace.stored = *replace.pos, *replace.pos = '\0';
-			if(!(kcpy = strdup(key))) { error = NC_ERRNO; break; }
-			is_key_dup = -1;
-			*replace.pos = replace.stored, replace.is = 0;
-		}
-		/* value */
-		replace.is = -1, replace.pos = value + value_length,
-			replace.stored = *replace.pos, *replace.pos = '\0';
-		if(!(vcpy = strdup(value))) { error = NC_ERRNO; break; }
-		*replace.pos = replace.stored, replace.is = 0;
+	while(to_get = this->capacity[0] - this->length > INT_MAX ?
+		(int)(this->capacity[0] - this->length) : INT_MAX,
+		fgets(this->text + this->length, to_get, fp)) {
 
-		/* allocate the recursion; set the value back to how it was */
-		if((this->childs_size >= this->childs_capacity[0]
-			&& !childs_capacity_up(this))
-			|| !(child = Text_string_recursive(this, kcpy, vcpy, is_within,
-			(size_t)(is_within ? (value - this->value) : 0),
-			(size_t)(is_within ? (value + value_length - this->value) : 0))))
-			{ error = NC_EXTERIOR; break; }
-		this->childs[this->childs_size++] = child;
+		this->length += strlen(this->text + this->length);
 
-	} while(0);
-
-	{ /* finally */
-		if(replace.is) *replace.pos = replace.stored;
-		if(is_key_dup) free(kcpy);
-		free(vcpy);
+		if(this->length >= this->capacity[0] - 1 && !capacity_up(this, 0))
+			return 0;
 	}
+	if((e = ferror(fp))) return this->error = E_ERRNO, this->errno_copy = e, 0;
 
-	switch(error) { /* catch */
-		case NC_NO_ERR: break;
-		case NC_ERRNO: this->error = E_ERRNO, this->errno_copy = errno; break;
-		case NC_EXTERIOR: break; /* already set error */
-	}
-
-	return child;
+	return -1;
 }
 
-/** Ensures that we have a value of at least {capacity}. All pointers to the
- value will potentially change.
- @return	Success.
- @throws	E_OVERFLOW, E_ERRNO */
-int TextEnsureCapacity(struct Text *const this, const size_t capacity) {
+/** Overrides the buffer with a printf, \see{printf}. */
+int TextPrintf(struct Text *const this, const char *const fmt, ...) {
+	va_list argp;
+	char garbage;
+	size_t length;
+
 	if(!this) return 0;
-	return value_capacity_up(this, &capacity);
+	if(!fmt) return this->error = E_PARAMETER, 0;
+	va_start(argp, fmt);
+	length = vsnprintf(&garbage, 0ul, fmt, argp);
+	va_end(argp);
+	if(!capacity_up(this, &length)) return 0;
+	va_start(argp, fmt);
+	vsnprintf(this->text, this->capacity[0], fmt, argp);
+	va_end(argp);
+
+	return -1;
 }
 
-/** E ch, e: p(e.key) -> a(e.value) */
-void TextForEachTrue(struct Text *const this, TextPredicate p, TextAction a) {
-	struct Text *child;
-	unsigned i;
-	for(i = 0; i < this->childs_size; i++) {
-		child = this->childs[i];
-		if(!p || p(child)) a(child);
-	}
-}
-
-static const char *const start_str     = "[ ";
-static const char *const end_str       = " ]";
-static const char *const alter_end_str = "...]";
-static const char *const ass_str       = "->";
-static const char *const null_str      = "Null";
-
-struct SuperCat {
-	char *print, *cursor;
-	size_t left;
-	int is_truncated;
-};
-static void super_cat_init(struct SuperCat *const cat,
-	char *const print, const size_t print_size) {
-	cat->print = cat->cursor = print;
-	cat->left = print_size;
-	cat->is_truncated = 0;
-	print[0] = '\0';
-}
-static void super_cat(struct SuperCat *const cat,
-	const char *const append) {
-	size_t lu_took; int took;
-	if(cat->is_truncated) return;
-	took = snprintf(cat->cursor, cat->left, "%s", append);
-	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
-	if(took == 0) { return; }
-	if((lu_took=took)>=cat->left) {cat->is_truncated=-1,lu_took=cat->left-1;}
-	cat->cursor += lu_took, cat->left -= lu_took;
-}
-
-static void to_string_recursive(struct Text *const this,
-	struct SuperCat *cat_ptr) {
-	unsigned i;
-	char key[80];
-	if(snprintf(key, sizeof key, "%s", this->value) > (int)sizeof key) {
-		const unsigned key_size = sizeof key;
-		key[key_size - 4] = '.',key[key_size - 3] = '.',key[key_size - 2] = '.';
-	}
-	super_cat(cat_ptr, start_str);
-	super_cat(cat_ptr, this->key);
-	super_cat(cat_ptr, ass_str);
-	super_cat(cat_ptr, key);
-	for(i = 0; i < this->childs_size; i++) {
-		to_string_recursive(this->childs[i], cat_ptr);
-	}
-	super_cat(cat_ptr, end_str);
-}
-
-/** Prints the Text in a static value; one can print 4 things at once before
- it overwrites. */
-char *TextToString(struct Text *const this) {
-	static char value[4][2048];
-	static int value_i;
-	struct SuperCat cat;
-	super_cat_init(&cat, value[value_i], sizeof *value / sizeof **value);
-	value_i++, value_i &= 3;
-	if(!this) {
-		super_cat(&cat, null_str);
-		return cat.print;
-	}
-	to_string_recursive(this, &cat);
-	return cat.print;
-}
-
-/** Shortcut to add something to the text when editing it.
+/** Transforms the original text according to {fmt}.
  @param fmt	Accepts %% as '%' and %s as the original string.
- @return	The new address of the string, which may have changed. */
-char *TextAdd(struct Text *const this, char *const fmt) {
-	char *str, *copy, *p;
-	size_t str_len, copy_len = 0, copy_size;
+ @return	Success.
+ @throws	E_OVERFLOW, E_ERRNO, E_ASSERT */
+int TextTransform(struct Text *const this, char *const fmt) {
+	char *copy, *f, *t;
+	size_t copy_len = 0;
 
 	if(!this) return 0;
-	str = this->value, str_len = strlen(str);
-	if(!(copy = strdup(str))) return 0;
+	if(!(copy = strdup(this->text)))
+		return this->error = E_ERRNO, this->errno_copy = errno, 0;
 
 	/* count */
-	for(p = fmt; *p; p++) {
-		if(*p != '%') { copy_len++; continue; }
-		switch(*++p) {
+	for(f = fmt; *f; f++) {
+		if(*f != '%') { copy_len++; continue; }
+		switch(*++f) {
 			case '%': copy_len++; break;
-			case 's': copy_len += str_len; break;
+			case 's': copy_len += this->length; break;
 		}
 	}
 	/* allocate */
-	copy_size = copy_len + 1;
-	if(!value_capacity_up(this, &copy_size)) { free(copy); return 0; };
+	if(!capacity_up(this, &copy_len)) return free(copy), 0;
 	/* new string */
-	str = this->value;
-	for(p = fmt; *p; p++) {
-		if(*p != '%') { *str++ = *p; continue; }
-		switch(*++p) {
-			case '%': *str++ = *p; break;
-			case 's': memcpy(str, copy, str_len), str += str_len; break;
+	for(t = this->text, f = fmt; *f; f++) {
+		if(*f != '%') { *t++ = *f; continue; }
+		switch(*++f) {
+			case '%': *t++ = *f; break;
+			case 's': memcpy(this->text, copy, this->length), t += this->length;
+				break;
 		}
 	}
-	*str = '\0';
+	*t = '\0';
+	this->length = copy_len;
 	/* free */
 	free(copy);
-	return this->value;
+	return -1;
 }
 
-void TextCut(struct TextCut *const r, char *const cut) {
-	if(!r || !cut || r->is) return;
-	r->is = -1;
-	r->pos = cut;
-	r->stored = *cut;
-	*cut = '\0';
+/** Transforms {this} according to all specified {patterns} array of
+ {patterns_size}.
+ @param patterns	An array of {TextPattern}; when the {begin} of a pattern
+					encompasses another pattern, it should be before in the
+					array. All patterns must have {begin} and {transform}, but
+					{end} is optional; where missing, it will just call
+					{transform} with {begin}. */
+int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
+	const size_t patterns_size) {
+	struct Text *temp = 0;
+	const struct TextPattern *pattern; size_t p;
+	char *s0, *cursor;
+	struct TextBraket braket; /* working */
+	struct TextMatches matches; /* storage array */
+	struct TextMatch *match; /* one out of the array */
+	struct TextCut cut = { 0, 0, 0 };
+	enum { E_NO, E_MISSING, E_NEW, E_TEMP } e = E_NO;
+
+	if(!this) return 0;
+
+	text_matches(&matches);
+
+	cursor = this->text;
+	do {
+
+		/* search for the next pattern */
+		braket.is = 0;
+		for(p = 0; p < patterns_size; p++) {
+			pattern = patterns + p;
+			/*printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
+			 pattern->begin, pattern->end, b);*/
+			if(!(s0 = strstr(cursor, pattern->start))) continue;
+			/* this happens when first_pos is [abcdefg] and [cdef] is matched */
+			if(braket.is && s0 >= braket.bra.s0) continue;
+			text_uncut(&cut);
+			braket.is = -1;
+			braket.pattern = pattern;
+			braket.bra.s0 = s0;
+			braket.bra.s1 = s0 + strlen(pattern->start);
+			text_cut(&cut, braket.bra.s1);
+		}
+		if(!braket.is) break;
+
+		/* if the pattern has an ending, search for it */
+		if(braket.pattern->end) {
+			text_uncut(&cut);
+			if(!(braket.ket.s0 = strstr(braket.bra.s1, braket.pattern->end)))
+				{ this->error = E_SYNTAX; return 0; }
+			braket.ket.s1 = braket.ket.s0 + strlen(braket.pattern->end);
+			text_cut(&cut, braket.ket.s0);
+		}
+
+		/*printf("match: \"%.*s\" \"%.30s...\" \"%.*s\"\n",
+			  (int)(match.bra.s1 - match.bra.s0), match.bra.s0, match.bra.s1,
+			  (int)(match.ket.s1 - match.ket.s0), match.ket.s0);*/
+		/* allocate the recursion; set the value back to how it was */
+
+		if(!(match = text_matches_new(&matches, &braket))) { e = E_NEW; break; }
+		text_uncut(&cut);
+		braket.pattern->transform(match->text);
+		/*printf("now value \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
+		 this->value, first_pat ? first_pat->begin : "(null)", first_pos);*/
+		cursor = braket.ket.s1;
+	} while(cursor);
+
+	text_uncut(&cut);
+
+	switch(e) {
+		case E_NO:		break;
+		case E_MISSING:	this->error = E_SYNTAX; break;
+		case E_NEW:		this->error = matches.error,
+			this->errno_copy = matches.errno_copy; break;
+		default:		break;
+	}
+
+	/* now go though the matches and substitute them in */
+	do {
+		size_t i;
+		if(e) break;
+		if(!(temp = Text())) { e = E_TEMP; break; }
+		cursor = this->text;
+		for(i = 0; i < matches.size; i++) {
+			match = matches.matches + i;
+			cat(temp, cursor, (size_t)(match->start - cursor));
+			cat(temp, match->text->text, match->text->length);
+			cursor = match->end;
+		}
+		cat(temp, cursor, strlen(cursor));
+	} while(0);
+
+	switch(e) {
+		case E_NO:		break;
+		case E_TEMP:	this->error = temp ? temp->error : global_error,
+			this->errno_copy = temp ? temp->errno_copy : global_errno_copy;
+			break;
+		default:		break;
+	}
+
+	text_matches_(&matches);
+	Text_(&temp);
+
+	return e ? 0 : -1;
 }
 
-void TextUncut(struct TextCut *const r) {
-	if(!r || !r->is) return;
-	r->is = 0;
-	*r->pos = r->stored;
-}
+
 
 
 
 /************
  * Private. */
 
-/** Allocates a child under {parent} with key-value {key}->{value} going from
- {parent_begin} to {parent_end} in the origional string; the key-value does not
- have to be the same size as the length of the string or come from the value
- at all. */
-static struct Text *Text_string_recursive(struct Text *const parent,
-	const char *const key, char *const value, const int is_value_in_parent,
-	const size_t parent_begin, const size_t parent_end) {
-	struct Text *this;
-	size_t str_size;
+/** Clears the text. */
+static void clear(struct Text *const this) {
+	this->text[0] = '\0';
+	this->length  = 1;
+}
 
-	if(!value) return 0;
+/** @throws	E_ASSERT, E_OVERFLOW, E_ERRNO */
+static int cat(struct Text *const this, const char *const str,
+	const size_t str_len) {
+	const size_t old_len = this->length, new_len = old_len + str_len;
 
-	str_size = strlen(value) + 1; /* danger */
+	if(new_len == old_len) return -1;
+	if(new_len < old_len) return this->error = E_OVERFLOW, 0;
+	if(!capacity_up(this, &new_len)) return 0;
+	memcpy(this->text + old_len, str, str_len);
+	this->text[new_len] = '\0';
+	this->length = new_len;
 
-	if(parent && is_value_in_parent && str_size > parent_end - parent_begin+1) {
-		parent->error = E_ASSERT;
-		return 0;
-	}
-	/*printf("Text_string_rec: parent %s, parent_begin %lu, parent_end %lu, \"%s\".\n",
-		TextToString(parent), parent_begin, parent_end, str);*/
+	return -1;
 
-	if(!(this = Text(key)))
-		{ parent->error = E_ERRNO, parent->errno_copy = errno; return 0; }
-
-	this->parent          = parent;
-	this->is_value_in_parent = is_value_in_parent ? -1       : 0;
-	this->parent_begin    = is_value_in_parent ? parent_begin : 0;
-	this->parent_end      = is_value_in_parent ? parent_end   : 0;
-	this->value_capacity[0] += str_size; /* danger */
-	this->value_capacity[1] += str_size; /* danger */
-
-	if(!(this->value=malloc(this->value_capacity[0] * sizeof *this->value))){
-		parent->error = E_ERRNO, parent->errno_copy = errno;
-		Text_(&this);
-		return 0;
-	}
-	memcpy(this->value, value, str_size);
-	/*printf("recursive: \"%s\"\n", this->value);*/
-
-	return this;
 }
 
 /** Ensures value capacity.
@@ -639,82 +427,114 @@ static struct Text *Text_string_recursive(struct Text *const parent,
 					this number.
  @return	Success.
  @throws	E_OVERFLOW, E_ERRNO */
-static int value_capacity_up(struct Text *const this,
-	const size_t *const size_ptr) {
+static int capacity_up(struct Text *const this, const size_t *const len_ptr) {
 	size_t c0, c1;
-	char *value;
+	char *text;
 
 	/* fibonacci */
-	c0 = this->value_capacity[0];
-	c1 = this->value_capacity[1];
-	while(!size_ptr || c0 < *size_ptr) {
+	c0 = this->capacity[0];
+	c1 = this->capacity[1];
+	while(!len_ptr || c0 <= *len_ptr) {
 		if(c0 == (size_t)-1) { this->error = E_OVERFLOW; return 0; }
 		c0 ^= c1;
 		c1 ^= c0;
 		c0 ^= c1;
 		c1 += c0;
 		if(c1 <= c0) c1 = (size_t)-1;
-		if(!size_ptr) break;
+		if(!len_ptr) break;
 	}
-	if(this->value_capacity[0] >= c0) return -1; /* it's already that size */
-	debug(this, "value_capacity_up","%lu->%lu.\n",this->value_capacity[0],c0);
-	if(!(value = realloc(this->value, c0 * sizeof *this->value))) {
-		this->error = E_ERRNO, this->errno_copy = errno;
-		return 0;
-	}
-	this->value = value;
-	this->value_capacity[0] = c0;
-	this->value_capacity[1] = c1;
+	if(this->capacity[0] >= c0) return -1; /* it's already that size */
+	/*debug(this, "value_capacity_up","%lu->%lu.\n",this->value_capacity[0],c0);*/
+	if(!(text = realloc(this->text, c0 * sizeof *this->text)))
+		return this->error = E_ERRNO, this->errno_copy = errno, 0;
+	this->text = text, this->capacity[0] = c0, this->capacity[1] = c1;
 
 	return -1;
 }
 
-/** Ensures childs capacity.
- @return	Success.
- @throws	E_OVERFLOW, E_ERRNO */
-static int childs_capacity_up(struct Text *const this) {
-	size_t c0, c1;
-	struct Text **childs;
+/***************
+ * TextMatches */
 
-	/* fibonacci */
-	c0 = this->childs_capacity[0];
-	c1 = this->childs_capacity[1];
-	if(c0 == (size_t)-1) { this->error = E_OVERFLOW; return 0; }
+/** Initialise. */
+static void text_matches(struct TextMatches *const this) {
+	this->matches     = 0;
+	this->size        = 0;
+	this->capacity[0] = fibonacci6;
+	this->capacity[1] = fibonacci7;
+	this->error       = E_NO_ERROR;
+	this->errno_copy  = 0;
+}
+
+/** Destroy. */
+static void text_matches_(struct TextMatches *const this) {
+	size_t i;
+
+	for(i = 0; i < this->size; i++) {
+		Text_(&this->matches[i].text);
+		free(&this->matches[i]);
+	}
+	this->size = 0;
+}
+
+/** Increases the buffer size.
+ @throws	E_OVERFLOW, E_ERRNO */
+static int text_matches_capacity_up(struct TextMatches *const this) {
+	size_t c0, c1;
+	struct TextMatch *matches;
+
+	c0 = this->capacity[0];
+	c1 = this->capacity[1];
+	if(c0 == (size_t)-1) return this->error = E_OVERFLOW, 0;
 	c0 ^= c1;
 	c1 ^= c0;
 	c0 ^= c1;
 	c1 += c0;
 	if(c1 <= c0) c1 = (size_t)-1;
-	debug(this, "childs_capacity_up", "%lu->%lu.\n", this->childs_capacity[0],c0);
-	if(!(childs = realloc(this->childs, c0 * sizeof *this->childs))) {
-		this->error = E_ERRNO, this->errno_copy = errno;
-		return 0;
-	}
-	this->childs = childs;
-	this->childs_capacity[0] = c0;
-	this->childs_capacity[1] = c1;
+	if(!(matches = realloc(this->matches, c0 * sizeof *this->matches)))
+		return this->error = E_ERRNO, this->errno_copy = errno, 0;
+	this->matches = matches, this->capacity[0] = c0, this->capacity[1] = c1;
 
 	return -1;
 }
 
-static char *anonymous_volatile_key(void) {
-	static char anon[64];
-	static unsigned i = 0;
-	sprintf(anon, "_nemo%u", ++i);
-	return anon;
+/* new match */
+static struct TextMatch *text_matches_new(struct TextMatches *const this,
+	struct TextBraket *braket) {
+	struct TextMatch *match;
+	if(this->size >= this->capacity[0] && !text_matches_capacity_up(this))
+		return 0;
+	match = this->matches + this->size;
+	match->text  = 0;
+	match->start = braket->bra.s0;
+	match->end   = braket->pattern->end ? braket->ket.s1 : braket->bra.s1;
+	if(!(match->text = Text())) {
+		this->error = global_error, this->errno_copy = global_errno_copy;
+		return 0;
+	}
+	if(!cat(match->text, braket->bra.s1,
+		(size_t)(braket->pattern->end ? braket->ket.s0 - braket->bra.s1 : 0))) {
+		this->error = match->text->error;
+		this->errno_copy = match->text->errno_copy;
+		Text_(&match->text);
+		return 0;
+	}
+	this->size++;
+	return match;
 }
 
-/** Private debug messages from list functions; turn on using {LIST_DEBUG}. */
-static void debug(struct Text *const this, const char *const fn,
-	const char *const fmt, ...) {
-#ifdef TEXT_DEBUG
-	va_list parg;
+/*****************************************
+ * TextCut (just initialise to all zero) */
 
-	va_start(parg, fmt);
-	fprintf(stderr, "Text<%s>#%p.%s: ", this->key, (void *)this, fn);
-	vfprintf(stderr, fmt, parg);
-	va_end(parg);
-#else
-	_UNUSED(this); _UNUSED(fn); _UNUSED(fmt);
-#endif
+static void text_cut(struct TextCut *const this, char *const pos) {
+	if(this->is) return;
+	this->is = -1;
+	this->pos = pos;
+	this->stored = *pos;
+	*pos = '\0';
+}
+
+static void text_uncut(struct TextCut *const this) {
+	if(!this->is) return;
+	this->is = 0;
+	*this->pos = this->stored;
 }

@@ -29,7 +29,10 @@ OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
 
 CC   := gcc
-CF   := -Wall -Wextra -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
+CF   := -Wall -Wextra -Wall -Xlint -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
+-Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings -Wswitch \
+-Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
+-Wnested-externs -Wredundant-decls -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
 OF   :=
 
 # props Jakob Borg and Eldar Abusalimov
