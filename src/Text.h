@@ -3,7 +3,7 @@
 
 struct Text;
 
-typedef void (*TextAction)(struct Text *const);
+typedef void (*TextAction)(/*struct Text *const*/ void *const);
 
 struct TextPattern {
 	char *start, *end;
@@ -12,9 +12,6 @@ struct TextPattern {
 
 struct Text *Text(void);
 void Text_(struct Text **const this_ptr);
-/* fixme: this should be removed */
-struct TextArray *TextArray(void);
-void TextArray_(struct TextArray **const this_ptr);
 const char *TextToString(struct Text *const this);
 const char *TextGetError(struct Text *const this);
 void TextClear(struct Text *const this);

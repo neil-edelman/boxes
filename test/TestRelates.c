@@ -239,8 +239,8 @@ static int parse_generics(struct Relate *const this) {
 	return e ? 0 : -1;
 }
 
-/***************************************************************
- * These go in a TablePattern array for calling in {TableMatch}. */
+/*******************************************************
+ * These go in a Pattern array for calling in {Match}. */
 
 /** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
  @implements	TextAction */
@@ -261,21 +261,20 @@ static void amp(struct Text *const this) { TextCopy(this, "&amp;"); }
 static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
 /** @implements	TextAction */
 static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
-/* prototype: recursive TablePattern */
-static void new_docs(struct Relate *const);
 
-static const struct TextPattern /*tp_docs[] = {
-	{ "/""** ", "*""/", &new_docs }
-},*/ tp_inner[] = {
-	{ "\\url{", "}", &url },
-	{ "\\cite{", "}", &cite },
-	{ "{", "}", &em },
-	{ "&", 0, &amp },
-	{ "<", 0, &lt },
-	{ ">", 0, &gt }
+static const struct TextPattern tpattern[] = {
+	{ "\\url{",  "}", (TextAction)&url },
+	{ "\\cite{", "}", (TextAction)&cite },
+	{ "{",       "}", (TextAction)&em },
+	{ "&",       0,   (TextAction)&amp },
+	{ "<",       0,   (TextAction)&lt },
+	{ ">",       0,   (TextAction)&gt }
 };
 
-/** @implements	RelateAction */
+/** This is a {RelatePattern} instead of a {TextPattern} (more complex) because
+ it needs to spawn new {Relate}ions, and the Text doesn't know about relations.
+ Matches / * *   * / and calls {TextPattern} {tp} on those matches.
+ @implements	RelateAction */
 static void new_docs(struct Relate *const this) {
 	struct Table *doc_text, *sig_text;
 	char *const text_buf = TableGetValue(this);
@@ -284,14 +283,14 @@ static void new_docs(struct Relate *const this) {
 	size_t key_length;
 	char *key;
 	char desc_key[] = "_desc", signature_key[] = "_signature",
-		return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
+	return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
 	struct TableCut cut = { 0, 0, 0 };
-
+	
 	/* search for function signature immediately below */
 	do {
 		char *buf = TableGetParentValue(this);
 		char *start, *end, *sig, *opening, *closing;
-
+		
 		if(!buf) break;
 		start = buf + TableGetParentEnd(this);
 		/* fixme: actually parse; this does most cases, but I can think of many
@@ -307,7 +306,7 @@ static void new_docs(struct Relate *const this) {
 		if(!(parse_generics(sig_text))) break;
 		/* split the signature into to separate parts */
 		if(!(sig = TableGetValue(sig_text)) || !(opening = strchr(sig, '('))
-			|| opening == sig || !(closing = match_parenthesis(opening))) break;
+		   || opening == sig || !(closing = match_parenthesis(opening))) break;
 		/* select what looks like a function name */
 		for(s1 = opening - 1; s1 > sig && !isfunction(*s1) && *s1; s1--); s1++;
 		for(s0 = s1 - 1; s0 > sig && isfunction(*s0); s0--);
@@ -315,8 +314,8 @@ static void new_docs(struct Relate *const this) {
 		s0++;
 		/* return type is all the stuff ahead of the function name */
 		/*fprintf(stderr, "new_docs: \"%.*s\", \"%.*s\", \"%.*s\"\n",
-			(int)(s0 - sig), sig, (int)(s1 - s0), s0,
-			(int)(closing - opening - 1), opening + 1);*/
+		 (int)(s0 - sig), sig, (int)(s1 - s0), s0,
+		 (int)(closing - opening - 1), opening + 1);*/
 		/* { _signature } = { _return, _fn, _args }; sorry fans of the old
 		 syntax; the most impotant is fn, goes last */
 		if(!TableNewChild(this, return_key, strlen(return_key), sig,
@@ -328,7 +327,7 @@ static void new_docs(struct Relate *const this) {
 	{ /* finnally */
 		TableUncut(&cut);
 	}
-
+	
 	/* match delineated be each, '@' */
 	for(is_first = -1, is_last = 0, s0 = s1 = text_buf; !is_last; ) {
 		/* skip the embedded 'each's */
@@ -340,44 +339,53 @@ static void new_docs(struct Relate *const this) {
 			key = s0, key_length = word_length(s0), s0 += key_length;
 		}
 		/* fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n",
-			(int)key_length, key, (int)(s1 - s0), s0); */
+		 (int)key_length, key, (int)(s1 - s0), s0); */
 		if(!(doc_text
-			= TableNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
-			{ fprintf(stderr, "new_docs: %s.\n", TableGetError(this)); return; }
+			 = TableNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
+		{ fprintf(stderr, "new_docs: %s.\n", TableGetError(this)); return; }
 		TableTrim(doc_text);
-
+		
 		/* parse it for additional \foo{} */
 		TableMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
-
+		
 		is_first = 0;
 		s0 = s1 = s1 + 1;
 	}
-
+	
 }
+
+static const struct TextPattern rpattern[] = {
+	{ "/""** ", "*""/", (TextAction)&new_docs }
+	/* fixme: more robust, ie \* { / * * /, 0 }? */
+};
+
+
 
 /******************
  * Main programme */
 
 /** Selects functions by looking for _fn.
- @implements	TablePredicate */
-static int select_functions(struct Table *const this) {
-	return TableGetChildKey(this, "_fn") ? -1 : 0;
+ @implements	TablePredicate
+ @fixme			No; instead of the key being a child, make it the key; we can
+				do that now. */
+static int select_functions(struct Relate *const this) {
+	return RelateGetChildKey(this, "_fn") ? -1 : 0;
 }
 
 /** Does the inverse of \see{select_fuctions}.
  @implements	TablePredicate */
-static int select_non_functions(struct Table *const this) {
+static int select_non_functions(struct Relate *const this) {
 	return !select_functions(this);
 }
 
 /** Prints header (at the top of the page, supposedly.) */
-static void print_header(struct Table *const this) {
-	struct Table *sub;
-	if((sub = TableGetChildKey(this, "file"))) {
-		printf("<h1>%s</h1>\n", TableGetValue(sub));
+static void print_header(struct Relate *const this) {
+	struct Relate *sub;
+	if((sub = RelateGetChildKey(this, "file"))) {
+		printf("<h1>%s</h1>\n", RelateValue(sub));
 	}
-	if((sub = TableGetChildKey(this, "_desc"))) {
-		printf("%s\n", TableGetValue(sub));
+	if((sub = RelateGetChildKey(this, "_desc"))) {
+		printf("%s\n", RelateValue(sub));
 	}
 }
 
@@ -385,7 +393,9 @@ static void print_header(struct Table *const this) {
  @param argc	Count
  @param argv	Vector. */
 int main(int argc, char *argv[]) {
-	struct Table *text = 0;
+	struct Relates *text = 0;
+	struct Relate *text_root;
+	struct Text *text_root_value;
 	FILE *fp = 0;
 	char *fn;
 	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
@@ -400,12 +410,14 @@ int main(int argc, char *argv[]) {
 
 	do {
 
-		if(!(text = Table("_docs_root"))) { error = E_TEXT; break; }
+		if(!(text = Relates("_docs_root"))) { error = E_TEXT; break; }
+		text_root = RelatesGetRoot(text);
+		text_root_value = RelateGetValue(text_root);
 		if(!(fp = fopen(fn, "r"))) { error = E_ERRNO; break; }
-		if(!TableFile(text, fp)) { error = E_TEXT; break; }
+		if(!TextFileCat(text_root_value, fp)) { error = E_TEXT; break; }
 		if(fclose(fp)) { error = E_ERRNO; break; }
 		/* parse for " / * * "; it recursively calls things as appropriate */
-		if(!TableMatch(text, tp_docs, sizeof tp_docs / sizeof *tp_docs))
+		if(!RelateMatch(text_root, rp, sizeof rp / sizeof *rp))
 			{ error = E_TEXT; break; }
 		/*printf("***%s***\n", TableToString(text));*/
 #if 0

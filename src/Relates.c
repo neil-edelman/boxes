@@ -296,9 +296,7 @@ static int relate_grow(struct Relate *const this) {
 
 /** @return	Goes up the chain of {Relate} until it hits the {Relates}. */
 static struct Relates *to_relates(struct Relate *const this) {
-	const struct Relate *child = this;
-	for( ; ; ) {
-		if(child->parent.type == T_ROOT) return child->parent.p.root;
-		child = child->parent.p.relate;
-	}
+	const struct Relate *r;
+	for(r = this; r->parent.type == T_RELATE; r = r->parent.p.relate);
+	return r->parent.p.root;
 }
