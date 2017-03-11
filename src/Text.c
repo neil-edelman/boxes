@@ -66,11 +66,11 @@ struct TextMatches {
 	int errno_copy;
 };
 
-struct TextCut {
-	int is;
-	char *pos;
-	char stored;
-};
+static struct {
+	int is_valid;
+	struct Text *parent;
+	size_t start, end;
+} match_info;
 
 static void clear(struct Text *const this);
 static int cat(struct Text *const this, const char *const str,
@@ -79,10 +79,8 @@ static int capacity_up(struct Text *const this, const size_t *const len_ptr);
 static void text_matches(struct TextMatches *const this);
 static void text_matches_(struct TextMatches *const this);
 static struct TextMatch *text_matches_new(struct TextMatches *const this,
-	struct TextBraket *braket);
-static void text_cut(struct TextCut *const this, char *const pos);
-static void text_uncut(struct TextCut *const this);
-	
+	struct TextBraket *braket);	
+
 
 
 /**********
@@ -126,7 +124,7 @@ void Text_(struct Text **const this_ptr) {
 }
 
 /** Gets the string associated to {this}. */
-const char *TextToString(struct Text *const this) {
+const char *TextToString(const struct Text *const this) {
 	if(!this) return 0;
 	return this->text;
 }
@@ -217,12 +215,15 @@ int TextFileCat(struct Text *const this, FILE *const fp) {
 	if(!this) return 0;
 	if(!fp) { this->error = E_PARAMETER; return 0; }
 
-	while(to_get = this->capacity[0] - this->length > INT_MAX ?
+	while(to_get = this->capacity[0] - this->length < INT_MAX ?
 		(int)(this->capacity[0] - this->length) : INT_MAX,
 		fgets(this->text + this->length, to_get, fp)) {
+	/*while(to_get = this->capacity[0] - this->length,
+		fgets(this->text + this->length, to_get, fp)) {*/
 
 		this->length += strlen(this->text + this->length);
 
+		printf("length %lu capacity %lu\n", this->length, this->capacity[0]);
 		if(this->length >= this->capacity[0] - 1 && !capacity_up(this, 0))
 			return 0;
 	}
@@ -264,8 +265,9 @@ int TextPrintfCat(struct Text *const this, const char *const fmt, ...) {
  @param fmt	Accepts %% as '%' and %s as the original string.
  @return	Success.
  @throws	E_OVERFLOW, E_ERRNO, E_ASSERT */
-int TextTransform(struct Text *const this, char *const fmt) {
-	char *copy, *f, *t;
+int TextTransform(struct Text *const this, const char *fmt) {
+	char *copy, *t;
+	const char *f;
 	size_t copy_len = 0;
 
 	if(!this) return 0;
@@ -308,9 +310,9 @@ int TextTransform(struct Text *const this, char *const fmt) {
 int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size) {
 	struct Text *temp = 0;
-	const struct TextPattern *pattern; size_t p;
 	char *s0, *cursor;
-	struct TextBraket braket; /* working */
+	/* no, I don't use it uninitiased, but . . . whatever */
+	struct TextBraket braket = { 0, 0, {0, 0}, {0, 0} }; /* working */
 	struct TextMatches matches; /* storage array */
 	struct TextMatch *match; /* one out of the array */
 	struct TextCut cut = { 0, 0, 0 };
@@ -322,6 +324,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 
 	cursor = this->text;
 	do {
+		const struct TextPattern *pattern; size_t p;
 
 		/* search for the next pattern */
 		braket.is = 0;
@@ -332,22 +335,22 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 			if(!(s0 = strstr(cursor, pattern->start))) continue;
 			/* this happens when first_pos is [abcdefg] and [cdef] is matched */
 			if(braket.is && s0 >= braket.bra.s0) continue;
-			text_uncut(&cut);
+			TextUncut(&cut);
 			braket.is = -1;
 			braket.pattern = pattern;
 			braket.bra.s0 = s0;
 			braket.bra.s1 = s0 + strlen(pattern->start);
-			text_cut(&cut, braket.bra.s1);
+			TextCut(&cut, braket.bra.s1);
 		}
 		if(!braket.is) break;
 
 		/* if the pattern has an ending, search for it */
 		if(braket.pattern->end) {
-			text_uncut(&cut);
+			TextUncut(&cut);
 			if(!(braket.ket.s0 = strstr(braket.bra.s1, braket.pattern->end)))
 				{ this->error = E_SYNTAX; return 0; }
 			braket.ket.s1 = braket.ket.s0 + strlen(braket.pattern->end);
-			text_cut(&cut, braket.ket.s0);
+			TextCut(&cut, braket.ket.s0);
 		}
 
 		/*printf("match: \"%.*s\" \"%.30s...\" \"%.*s\"\n",
@@ -356,14 +359,21 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		/* allocate the recursion; set the value back to how it was */
 
 		if(!(match = text_matches_new(&matches, &braket))) { e = E_NEW; break; }
-		text_uncut(&cut);
+		TextUncut(&cut);
+		/* this assumes uni-process */
+		match_info.is_valid++;
+		match_info.parent = this;
+		match_info.start = braket.bra.s0 - this->text;
+		match_info.end = (braket.pattern->end ? braket.ket.s1 : braket.bra.s1)
+			- this->text;
 		braket.pattern->transform(match->text);
+		match_info.is_valid--;
 		/*printf("now value \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
 		 this->value, first_pat ? first_pat->begin : "(null)", first_pos);*/
 		cursor = braket.ket.s1;
 	} while(cursor);
 
-	text_uncut(&cut);
+	TextUncut(&cut);
 
 	switch(e) {
 		case E_NO:		break;
@@ -402,6 +412,35 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	return e ? 0 : -1;
 }
 
+/** When {TextMatch} finds a match, it also stores a global data on where the
+ match occurred within the parent. This gets that information. Don't call on
+ multi-threaded executions. If any pointers are null, ignores them. Useful for
+ match-handlers.
+ @return	Success; otherwise the values are invalid and will not be set. */
+int TextGetMatchParentInfo(struct Text **parent_ptr,
+	size_t *const start_ptr, size_t *const end_ptr) {
+	if(!match_info.is_valid) return 0;
+	if(parent_ptr) *parent_ptr = match_info.parent;
+	if(start_ptr)   *start_ptr = match_info.start;
+	if(end_ptr)       *end_ptr = match_info.end;
+	return -1;
+}
+
+/*****************************************
+ * TextCut (just initialise to all zero) */
+
+/** Stores the character at {pos} in {this} and terminates the string there. */
+void TextCut(struct TextCut *const this, char *const pos) {
+	if(this->is) return;
+	this->is = -1, this->pos = pos, this->stored = *pos, *pos = '\0';
+}
+/** If the string has been cut, undoes that. */
+void TextUncut(struct TextCut *const this) {
+	if(!this->is) return;
+	this->is = 0;
+	*this->pos = this->stored;
+}
+
 
 
 
@@ -412,7 +451,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 /** Clears the text. */
 static void clear(struct Text *const this) {
 	this->text[0] = '\0';
-	this->length  = 1;
+	this->length  = 0;
 }
 
 /** @throws	E_ASSERT, E_OVERFLOW, E_ERRNO */
@@ -420,12 +459,14 @@ static int cat(struct Text *const this, const char *const str,
 	const size_t str_len) {
 	const size_t old_len = this->length, new_len = old_len + str_len;
 
+	/*fprintf(stderr, "cat: '%.*s' -> '%s' old%lu new%lu\n", (int)str_len, str, this->text + old_len, old_len, new_len);*/
 	if(new_len == old_len) return -1;
 	if(new_len < old_len) return this->error = E_OVERFLOW, 0;
 	if(!capacity_up(this, &new_len)) return 0;
 	memcpy(this->text + old_len, str, str_len);
 	this->text[new_len] = '\0';
 	this->length = new_len;
+	/*fprintf(stderr, "cat: '%s'\n", this->text);*/
 
 	return -1;
 
@@ -530,21 +571,4 @@ static struct TextMatch *text_matches_new(struct TextMatches *const this,
 	}
 	this->size++;
 	return match;
-}
-
-/*****************************************
- * TextCut (just initialise to all zero) */
-
-static void text_cut(struct TextCut *const this, char *const pos) {
-	if(this->is) return;
-	this->is = -1;
-	this->pos = pos;
-	this->stored = *pos;
-	*pos = '\0';
-}
-
-static void text_uncut(struct TextCut *const this) {
-	if(!this->is) return;
-	this->is = 0;
-	*this->pos = this->stored;
 }

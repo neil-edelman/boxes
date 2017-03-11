@@ -66,6 +66,7 @@ struct Relate {
 	} parent;
 	/* node */
 	struct Text *key, *value;
+	struct RelateParent *key_parent, *value_parent;
 	/* recursive */
 	size_t size, capacity[2]; struct Relate **childs;
 };
@@ -88,9 +89,9 @@ struct Relates *Relates(const char *const root_name) {
 	struct Relates *this;
 	struct Parent parent;
 
-	if(!(this = malloc(sizeof *this)))
+	if(!(this = malloc(sizeof *this + sizeof *this->root)))
 		{ global_error = E_ERRNO, global_errno_copy = errno; return 0; }
-	this->root       = 0;
+	this->root       = (struct Relate *)(this + 1);
 	this->error      = E_NO_ERROR;
 	this->errno_copy = 0;
 	parent.type      = T_ROOT;
@@ -101,11 +102,13 @@ struct Relates *Relates(const char *const root_name) {
 		Relates_(&this);
 		return 0;
 	}
-	if(root_name && !TextCat(this->root->key, root_name)) {
+	if(root_name) {
+		if(!TextCat(this->root->key, root_name)) {
 		/* well . . . it's probably this */
 		global_error = E_ERRNO, global_errno_copy = errno;
 		Relates_(&this);
 		return 0;
+		}
 	}
 
 	return this;
@@ -160,6 +163,18 @@ struct Text *RelateGetKey(struct Relate *const this) {
 /** Get value. */
 struct Text *RelateGetValue(struct Relate *const this) {
 	return this ? this->value : 0;
+}
+
+/** Get {RelateParent}, a read-only structure that describes how the key is
+ derived from the parent. */
+const struct RelateParent *RelateGetKeyParent(struct Relate *const this) {
+	return this ? this->key_parent : 0;
+}
+
+/** Get {RelateParent}, a read-only structure that describes how the value is
+ derived from the parent. */
+const struct RelateParent *RelateGetValueParent(struct Relate *const this) {
+	return this ? this->value_parent : 0;
 }
 
 /** New child. */
@@ -241,7 +256,8 @@ static void relate_(struct Relate **const this_ptr) {
 	while(this->size) relate_(&this->childs[--this->size]);
 	Text_(&this->value);
 	Text_(&this->key);
-	free(this);
+	/* the root is included in {Relates} and should not be freed, otherwise, */
+	if(this->parent.type == T_RELATE) free(this);
 
 	*this_ptr = 0;
 }

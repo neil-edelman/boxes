@@ -263,44 +263,46 @@ static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
 static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
 
 static const struct TextPattern tpattern[] = {
-	{ "\\url{",  "}", (TextAction)&url },
-	{ "\\cite{", "}", (TextAction)&cite },
-	{ "{",       "}", (TextAction)&em },
-	{ "&",       0,   (TextAction)&amp },
-	{ "<",       0,   (TextAction)&lt },
-	{ ">",       0,   (TextAction)&gt }
+	{ "\\url{",  "}", &url },
+	{ "\\cite{", "}", &cite },
+	{ "{",       "}", &em },
+	{ "&",       0,   &amp },
+	{ "<",       0,   &lt },
+	{ ">",       0,   &gt }
 };
 
-/** This is a {RelatePattern} instead of a {TextPattern} (more complex) because
- it needs to spawn new {Relate}ions, and the Text doesn't know about relations.
- Matches / * *   * / and calls {TextPattern} {tp} on those matches.
+#if 0
+
+static struct Relate *new_doc_store; /* global for \see{new_docs} */
+
+/** Matches / * *   * / and calls {tpattern} on those matches. Needs
+ {new_doc_store} to be set.
  @implements	RelateAction */
-static void new_docs(struct Relate *const this) {
+static void new_docs(struct Text *const this) {
 	struct Table *doc_text, *sig_text;
-	char *const text_buf = TableGetValue(this);
 	char *s0, *s1;
 	int is_first, is_last;
 	size_t key_length;
 	char *key;
 	char desc_key[] = "_desc", signature_key[] = "_signature",
 	return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
-	struct TableCut cut = { 0, 0, 0 };
-	
+	struct TextCut cut = { 0, 0, 0 };
+
 	/* search for function signature immediately below */
 	do {
-		char *buf = TableGetParentValue(this);
-		char *start, *end, *sig, *opening, *closing;
-		
-		if(!buf) break;
-		start = buf + TableGetParentEnd(this);
-		/* fixme: actually parse; this does most cases, but I can think of many
-		 more that it utterly fails */
+		struct Text *parent;
+		size_t parent_end;
+		const char *start, *end, *sig, *opening, *closing;
+
+		TextGetMatchParentInfo(&parent, 0, &parent_end);
+		start = TextToString(parent) + parent_end;
+		/* fixme: actually parse; this is sufficient for most cases, I guess */
 		end = strpbrk(start, ";{/#");
 		if(!end || *end != '{') break;
-		TableCut(&cut, end);
-		if(!(sig_text = TableNewChild(this, signature_key, strlen(signature_key),
-			start, strlen(start)))) { fprintf(stderr,
-			"new_docs: parsing signature, %s.\n", TableGetError(this)); break; }
+		if(!(sig_text = RelateNewChild(new_doc_store))) { fprintf(stderr,
+			"new_docs: parsing signature, %s.\n", TextGetError(this)); break; }
+		, signature_key, strlen(signature_key),
+		start, strlen(start))))
 		TableTrim(sig_text);
 		/* parse for (very author-cetric, sorry!) generics */
 		if(!(parse_generics(sig_text))) break;
@@ -327,7 +329,7 @@ static void new_docs(struct Relate *const this) {
 	{ /* finnally */
 		TableUncut(&cut);
 	}
-	
+
 	/* match delineated be each, '@' */
 	for(is_first = -1, is_last = 0, s0 = s1 = text_buf; !is_last; ) {
 		/* skip the embedded 'each's */
@@ -344,20 +346,21 @@ static void new_docs(struct Relate *const this) {
 			 = TableNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
 		{ fprintf(stderr, "new_docs: %s.\n", TableGetError(this)); return; }
 		TableTrim(doc_text);
-		
+
 		/* parse it for additional \foo{} */
 		TableMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
-		
+
 		is_first = 0;
 		s0 = s1 = s1 + 1;
 	}
-	
+
 }
 
 static const struct TextPattern rpattern[] = {
-	{ "/""** ", "*""/", (TextAction)&new_docs }
+	{ "/""** ", "*""/", &new_docs }
 	/* fixme: more robust, ie \* { / * * /, 0 }? */
 };
+#endif
 
 
 
@@ -393,13 +396,14 @@ static void print_header(struct Relate *const this) {
  @param argc	Count
  @param argv	Vector. */
 int main(int argc, char *argv[]) {
-	struct Relates *text = 0;
-	struct Relate *text_root;
-	struct Text *text_root_value;
+	struct Relates *rs = 0;
+	struct Relate *rs_root;
+	struct Text *rs_root_value;
 	FILE *fp = 0;
 	char *fn;
-	enum { E_NO_ERR, E_ERRNO, E_TEXT/*, E_LIST*/ } error = E_NO_ERR;
+	enum { E_NO_ERR, E_ERRNO, E_RS, E_VALUE } error = E_NO_ERR;
 
+#if 0
 	if(argc != 2) {
 		/*fn = "src/Test.c";*/
 		fprintf(stderr, "Needs <filename>.\n");
@@ -407,21 +411,26 @@ int main(int argc, char *argv[]) {
 	} else {
 		fn = argv[1];
 	}
+#else
+	fn = "/Users/neil/Movies/Common/Text/src/Text.c"/*"../../src/Text.c"*/;
+#endif
 
 	do {
 
-		if(!(text = Relates("_docs_root"))) { error = E_TEXT; break; }
-		text_root = RelatesGetRoot(text);
-		text_root_value = RelateGetValue(text_root);
+		/* new Relates; getting values */
+		if(!(rs = Relates("_docs_root"))) { error = E_RS; break; }
+		rs_root = RelatesGetRoot(rs);
+		rs_root_value = RelateGetValue(rs_root);
+		/* opening {fn}; reading */
 		if(!(fp = fopen(fn, "r"))) { error = E_ERRNO; break; }
-		if(!TextFileCat(text_root_value, fp)) { error = E_TEXT; break; }
+		if(!TextFileCat(rs_root_value, fp)) { error = E_VALUE; break; }
 		if(fclose(fp)) { error = E_ERRNO; break; }
 		/* parse for " / * * "; it recursively calls things as appropriate */
-		if(!RelateMatch(text_root, rp, sizeof rp / sizeof *rp))
-			{ error = E_TEXT; break; }
+		/*if(!TextMatch(text_root, tpattern, sizeof tpattern / sizeof *tpattern))
+			{ error = E_TEXT; break; }*/
 		/*printf("***%s***\n", TableToString(text));*/
-#if 0
-		xml(text);
+#if 1
+		xml(rs_root);
 #else
 		/* print the header(s?) */
 		RelateForEachTrueChild(r, &select_non_functions, &print_header);
@@ -431,11 +440,13 @@ int main(int argc, char *argv[]) {
 	switch(error) {
 		case E_NO_ERR: break;
 		case E_ERRNO: perror(fn); break;
-		case E_TEXT:
-			fprintf(stderr, "%s: %s.\n", fn, TableGetError(text)); break;
+		case E_RS:
+			fprintf(stderr, "%s: %s.\n", fn, RelatesGetError(rs)); break;
+		case E_VALUE:
+			fprintf(stderr, "%s: %s.\n", fn, TextGetError(rs_root_value));break;
 	}
 	{
-		Table_(&text);
+		Relates_(&rs);
 		fclose(fp);
 	}
 
