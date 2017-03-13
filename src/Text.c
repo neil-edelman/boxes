@@ -60,10 +60,9 @@ struct TextMatch {
 };
 
 struct TextMatches {
+	struct Text *parent;
 	struct TextMatch *matches;
 	size_t size, capacity[2];
-	enum Error error;
-	int errno_copy;
 };
 
 static struct {
@@ -76,9 +75,10 @@ static void clear(struct Text *const this);
 static int cat(struct Text *const this, const char *const str,
 	const size_t str_len);
 static int capacity_up(struct Text *const this, const size_t *const len_ptr);
-static void text_matches(struct TextMatches *const this);
-static void text_matches_(struct TextMatches *const this);
-static struct TextMatch *text_matches_new(struct TextMatches *const this,
+static int Matches(struct TextMatches *const this, struct Text *const parent);
+static void Matches_(struct TextMatches *const this);
+static int Matches_capacity_up(struct TextMatches *const this);
+static struct TextMatch *Matches_new(struct TextMatches *const this,
 	struct TextBraket *braket);	
 
 
@@ -88,8 +88,9 @@ static struct TextMatch *text_matches_new(struct TextMatches *const this,
 
 /** @return	A new, blank Text, will be constructed.
  @throws	E_ERRNO */
-struct Text *Text(void) {
+struct Text *Text(const char *info) {
 	struct Text *this;
+	printf("Text %s\n", info);
 	if(!(this = malloc(sizeof *this))) {
 		global_error      = E_ERRNO;
 		global_errno_copy = errno;
@@ -209,21 +210,19 @@ int TextNCat(struct Text *const this, const char *const str,
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
 int TextFileCat(struct Text *const this, FILE *const fp) {
-	int to_get;
+	size_t to_get;
+	int to_get_int;
 	int e;
 
 	if(!this) return 0;
 	if(!fp) { this->error = E_PARAMETER; return 0; }
 
-	while(to_get = this->capacity[0] - this->length < INT_MAX ?
-		(int)(this->capacity[0] - this->length) : INT_MAX,
-		fgets(this->text + this->length, to_get, fp)) {
-	/*while(to_get = this->capacity[0] - this->length,
-		fgets(this->text + this->length, to_get, fp)) {*/
+	while(to_get = this->capacity[0] - this->length,
+		to_get_int = to_get < INT_MAX ? (int)(to_get) : INT_MAX,
+		fgets(this->text + this->length, to_get_int, fp)) {
 
 		this->length += strlen(this->text + this->length);
 
-		printf("length %lu capacity %lu\n", this->length, this->capacity[0]);
 		if(this->length >= this->capacity[0] - 1 && !capacity_up(this, 0))
 			return 0;
 	}
@@ -316,11 +315,9 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	struct TextMatches matches; /* storage array */
 	struct TextMatch *match; /* one out of the array */
 	struct TextCut cut = { 0, 0, 0 };
-	enum { E_NO, E_MISSING, E_NEW, E_TEMP } e = E_NO;
+	enum { E_NO, E_MISSING, E_BUMP, E_TEMP } e = E_NO;
 
-	if(!this) return 0;
-
-	text_matches(&matches);
+	if(!this || !Matches(&matches, this)) return 0;
 
 	cursor = this->text;
 	do {
@@ -358,7 +355,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 			  (int)(match.ket.s1 - match.ket.s0), match.ket.s0);*/
 		/* allocate the recursion; set the value back to how it was */
 
-		if(!(match = text_matches_new(&matches, &braket))) { e = E_NEW; break; }
+		if(!(match = Matches_new(&matches, &braket))) { e = E_BUMP; break; }
 		TextUncut(&cut);
 		/* this assumes uni-process */
 		match_info.is_valid++;
@@ -370,7 +367,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		match_info.is_valid--;
 		/*printf("now value \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
 		 this->value, first_pat ? first_pat->begin : "(null)", first_pos);*/
-		cursor = braket.ket.s1;
+		cursor = braket.pattern->end ? braket.ket.s1 : braket.bra.s1;
 	} while(cursor);
 
 	TextUncut(&cut);
@@ -378,8 +375,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	switch(e) {
 		case E_NO:		break;
 		case E_MISSING:	this->error = E_SYNTAX; break;
-		case E_NEW:		this->error = matches.error,
-			this->errno_copy = matches.errno_copy; break;
+		case E_BUMP:	break;
 		default:		break;
 	}
 
@@ -387,7 +383,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	do {
 		size_t i;
 		if(e) break;
-		if(!(temp = Text())) { e = E_TEMP; break; }
+		if(!(temp = Text("TextMatch temp"))) { e = E_TEMP; break; }
 		cursor = this->text;
 		for(i = 0; i < matches.size; i++) {
 			match = matches.matches + i;
@@ -406,7 +402,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		default:		break;
 	}
 
-	text_matches_(&matches);
+	Matches_(&matches);
 	Text_(&temp);
 
 	return e ? 0 : -1;
@@ -506,66 +502,72 @@ static int capacity_up(struct Text *const this, const size_t *const len_ptr) {
 /***************
  * TextMatches */
 
-/** Initialise. */
-static void text_matches(struct TextMatches *const this) {
+/** Initialise. All errors are bumped up to the parent; you can just return 0.
+ @return	Success.
+ @throws	E_ERRNO */
+static int Matches(struct TextMatches *const this, struct Text *const parent) {
+	this->parent      = parent;
 	this->matches     = 0;
 	this->size        = 0;
 	this->capacity[0] = fibonacci6;
 	this->capacity[1] = fibonacci7;
-	this->error       = E_NO_ERROR;
-	this->errno_copy  = 0;
+	if(!(this->matches = malloc(this->capacity[0] * sizeof *this->matches)))
+		return parent->error = E_ERRNO, parent->errno_copy = errno, 0;
+	return -1;
 }
 
 /** Destroy. */
-static void text_matches_(struct TextMatches *const this) {
+static void Matches_(struct TextMatches *const this) {
 	size_t i;
 
 	for(i = 0; i < this->size; i++) {
 		Text_(&this->matches[i].text);
-		free(&this->matches[i]);
 	}
+	free(this->matches);
+	this->matches = 0;
 	this->size = 0;
 }
 
 /** Increases the buffer size.
  @throws	E_OVERFLOW, E_ERRNO */
-static int text_matches_capacity_up(struct TextMatches *const this) {
+static int Matches_capacity_up(struct TextMatches *const this) {
 	size_t c0, c1;
 	struct TextMatch *matches;
 
 	c0 = this->capacity[0];
 	c1 = this->capacity[1];
-	if(c0 == (size_t)-1) return this->error = E_OVERFLOW, 0;
+	if(c0 == (size_t)-1) return this->parent->error = E_OVERFLOW, 0;
 	c0 ^= c1;
 	c1 ^= c0;
 	c0 ^= c1;
 	c1 += c0;
 	if(c1 <= c0) c1 = (size_t)-1;
 	if(!(matches = realloc(this->matches, c0 * sizeof *this->matches)))
-		return this->error = E_ERRNO, this->errno_copy = errno, 0;
+		return this->parent->error = E_ERRNO, this->parent->errno_copy=errno, 0;
+	printf("Matches__up: %lu -> %lu\n", this->capacity[0], c0);
 	this->matches = matches, this->capacity[0] = c0, this->capacity[1] = c1;
 
 	return -1;
 }
 
 /* new match */
-static struct TextMatch *text_matches_new(struct TextMatches *const this,
+static struct TextMatch *Matches_new(struct TextMatches *const this,
 	struct TextBraket *braket) {
 	struct TextMatch *match;
-	if(this->size >= this->capacity[0] && !text_matches_capacity_up(this))
-		return 0;
-	match = this->matches + this->size;
+	if(this->size >= this->capacity[0] && !Matches_capacity_up(this)) return 0;
+	match        = this->matches + this->size;
 	match->text  = 0;
 	match->start = braket->bra.s0;
 	match->end   = braket->pattern->end ? braket->ket.s1 : braket->bra.s1;
-	if(!(match->text = Text())) {
-		this->error = global_error, this->errno_copy = global_errno_copy;
+	if(!(match->text = Text("Matches_new"))) {
+		this->parent->error      = global_error;
+		this->parent->errno_copy = global_errno_copy;
 		return 0;
 	}
 	if(!cat(match->text, braket->bra.s1,
 		(size_t)(braket->pattern->end ? braket->ket.s0 - braket->bra.s1 : 0))) {
-		this->error = match->text->error;
-		this->errno_copy = match->text->errno_copy;
+		this->parent->error      = match->text->error;
+		this->parent->errno_copy = match->text->errno_copy;
 		Text_(&match->text);
 		return 0;
 	}

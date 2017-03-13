@@ -169,7 +169,7 @@ static int parse_generics(struct Relate *const this) {
 	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
 
 	do {
-		if(!(temp = Text())) { e = E_A; break; }
+		if(!(temp = Text("parse_generics"))) { e = E_A; break; }
 		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
 		 assume it won't be nested; work backwards */
 		start = TextToString(original);
@@ -412,7 +412,7 @@ int main(int argc, char *argv[]) {
 		fn = argv[1];
 	}
 #else
-	fn = "/Users/neil/Movies/Common/Text/src/Text.c"/*"../../src/Text.c"*/;
+	fn = "/Users/neil/Movies/Common/Text/src/Text.c";
 #endif
 
 	do {
@@ -426,8 +426,8 @@ int main(int argc, char *argv[]) {
 		if(!TextFileCat(rs_root_value, fp)) { error = E_VALUE; break; }
 		if(fclose(fp)) { error = E_ERRNO; break; }
 		/* parse for " / * * "; it recursively calls things as appropriate */
-		/*if(!TextMatch(text_root, tpattern, sizeof tpattern / sizeof *tpattern))
-			{ error = E_TEXT; break; }*/
+		if(!TextMatch(RelateGetValue(rs_root), tpattern, sizeof tpattern / sizeof *tpattern))
+			{ error = E_RS; break; }
 		/*printf("***%s***\n", TableToString(text));*/
 #if 1
 		xml(rs_root);

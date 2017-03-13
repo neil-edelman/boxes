@@ -236,7 +236,7 @@ static int relate(struct Relate *this, const struct Parent parent) {
 	this->capacity[1] = fibonacci7;
 	this->childs      = 0;
 
-	if(!(this->key = Text()) || !(this->value = Text())) return relate_(&this),
+	if(!(this->key = Text("key")) || !(this->value = Text("value"))) return relate_(&this),
 		to_relates(this)->error = global_error,
 		to_relates(this)->errno_copy = global_errno_copy, 0;
 	if(!(this->childs = malloc(this->capacity[0] * sizeof *this->childs)))
