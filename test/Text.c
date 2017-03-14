@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 
 	printf("Testing\n");
 	do {
-		if(!(t = Text("test"))
+		if(!(t = Text())
 			|| !TextNCopy(t, "TestText", 4))
 			{ e = E_T; break; }
 		if(strcmp(sup = "Test", str = TextToString(t)))

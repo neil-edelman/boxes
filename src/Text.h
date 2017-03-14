@@ -15,7 +15,7 @@ struct TextCut {
 	char *pos, stored;
 };
 
-struct Text *Text(const char *info/*void*/);
+struct Text *Text(void);
 void Text_(struct Text **const this_ptr);
 const char *TextToString(const struct Text *const this);
 const char *TextGetError(struct Text *const this);

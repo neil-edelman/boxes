@@ -8,7 +8,7 @@
  @version	1.0; 2017-03
  @since		1.0; 2017-03 */
 
-#define TEXT_DEBUG (-1)
+#define TEXT_DEBUG (0)
 
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* FILE fgets fprintf */
@@ -105,7 +105,7 @@ static void debug(struct Text *const this, const char *const fn,
 
 /** @return	A new, blank Text, will be constructed.
  @throws	E_ERRNO */
-struct Text *Text(const char *info) {
+struct Text *Text(void) {
 	struct Text *this;
 	if(!(this = malloc(sizeof *this))) {
 		global_error      = E_ERRNO;
@@ -410,7 +410,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		size_t i;
 		if(e) break;
 		cursor = this->text;
-		if(!(temp = Text("TextMatch temp"))) { e = E_TEMP; break; }
+		if(!(temp = Text())) { e = E_TEMP; break; }
 		for(i = 0; i < matches.size; i++) {
 			match = matches.matches + i;
 			if(!cat(temp, cursor, (size_t)(match->start - cursor))
@@ -601,7 +601,7 @@ static struct TextMatch *Matches_new(struct TextMatches *const this,
 	match->text  = 0;
 	match->start = braket->bra.s0;
 	match->end   = braket->pattern->end ? braket->ket.s1 : braket->bra.s1;
-	if(!(match->text = Text("Matches_new"))) {
+	if(!(match->text = Text())) {
 		this->parent->error      = global_error;
 		this->parent->errno_copy = global_errno_copy;
 		return 0;

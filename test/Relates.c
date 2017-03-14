@@ -169,7 +169,7 @@ static int parse_generics(struct Relate *const this) {
 	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
 
 	do {
-		if(!(temp = Text("parse_generics"))) { e = E_A; break; }
+		if(!(temp = Text())) { e = E_A; break; }
 		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
 		 assume it won't be nested; work backwards */
 		start = TextToString(original);

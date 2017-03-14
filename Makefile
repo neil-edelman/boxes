@@ -56,9 +56,13 @@ default: $(BDIR)/$(PROJ)
 	# . . . success; executable is in $(BDIR)/$(PROJ)
 
 # linking
-$(BDIR)/$(PROJ): $(OBJS) $(TOBJS)
+$(BDIR)/TestText: $(GDIR)/$(TDIR)/Text.o $(GDIR)/Text.o
 	@mkdir -p $(BDIR)
-	$(CC) $(CF) $(OF) $(OBJS) $(TOBJS) -o $@
+	$(CC) $(CF) $(OF) $(GDIR)/$(TDIR)/Text.o $(GDIR)/Text.o -o $@
+
+$(BDIR)/$(PROJ): $(OBJS)
+	@mkdir -p $(BDIR)
+	$(CC) $(CF) $(OF) $(OBJS) -o $@
 
 # compiling
 $(OBJS): $(GDIR)/%.o: $(SDIR)/%.c $(H)
