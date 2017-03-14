@@ -187,7 +187,9 @@ void RelateForEachTrueChild(struct Relate *const this,
 	RelatePredicate p, RelateAction a) {
 	struct Relate *child;
 	unsigned i;
+	printf("***RFETC: total %lu\n", this->size);
 	for(i = 0; i < this->size; i++) {
+		printf("***RFETC: %s\n", TextToString(this->childs[i]->key));
 		child = this->childs[i];
 		if(!p || p(child)) a(child);
 	}

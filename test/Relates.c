@@ -1,7 +1,7 @@
 /** Copyright 2015 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- This is a test of Table; call it with a .c file.
+ This is a test of Relates; call it with a .c file.
 
  @author	Neil
  @version	3.0; 2016-08
@@ -39,17 +39,17 @@ static void print_text(struct Relate *const);
 
 /** XML is weird. */
 static void xml_recursive(struct Relate *const this, const int is_top) {
+	const struct RelateParent *rp;
 	if(!is_top) printf("<key><![CDATA[%s]]></key>\n", RelateKey(this));
 	printf("<dict>\n<key>");
 	cdata(RelateKey(this));
 	printf("</key>\n<string>");
 	cdata(RelateValue(this));
 	printf("</string>\n");
-	/*if(!is_top && TableGetIsWithinParentValue(this)) {
+	if(!is_top && (rp = RelateGetValueParent(this)) && rp->is_within) {
 		printf("<key>begin</key><integer>%lu</integer>\n"
-			"<key>end</key><integer>%lu</integer>\n",
-			TableGetParentStart(this), TableGetParentEnd(this));
-	}*/
+			"<key>end</key><integer>%lu</integer>\n", rp->start, rp->end);
+	}
 	RelateForEachTrueChild(this, 0, &print_text);
 	printf("</dict>\n");
 }
@@ -400,7 +400,7 @@ int main(int argc, char *argv[]) {
 	struct Relate *rs_root;
 	struct Text *rs_root_value;
 	FILE *fp = 0;
-	char *fn;
+	const char *fn;
 	enum { E_NO_ERR, E_ERRNO, E_RS, E_VALUE } error = E_NO_ERR;
 
 #if 0

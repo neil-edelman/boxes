@@ -8,6 +8,8 @@
  @version	1.0; 2017-03
  @since		1.0; 2017-03 */
 
+#define TEXT_DEBUG (-1)
+
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* FILE fgets fprintf */
 #include <errno.h>	/* errno */
@@ -16,6 +18,19 @@
 #include <ctype.h>	/* isspace */
 #include <stdarg.h>	/* va_* */
 #include "Text.h"
+
+/* <-- ugly */
+#ifndef _MSC_VER /* <-- not msvc */
+#define _TEXT_UNUSED(a) while(0 && (a));
+#else /* not msvc --><-- msvc: not a C89/90 compiler; needs a little help */
+#pragma warning(push)
+/* "Assignment within conditional expression." No. */
+#pragma warning(disable: 4706)
+/* "<ANSI/ISO name>: The POSIX name for this item is deprecated." No. */
+#pragma warning(disable: 4996)
+#define _TEXT_UNUSED(a) (void)(sizeof((a), 0))
+#endif /* msvc --> */
+/* ugly --> */
 
 static const size_t fibonacci6  = 8;
 static const size_t fibonacci7  = 13;
@@ -79,7 +94,9 @@ static int Matches(struct TextMatches *const this, struct Text *const parent);
 static void Matches_(struct TextMatches *const this);
 static int Matches_capacity_up(struct TextMatches *const this);
 static struct TextMatch *Matches_new(struct TextMatches *const this,
-	struct TextBraket *braket);	
+	struct TextBraket *braket);
+static void debug(struct Text *const this, const char *const fn,
+	const char *const fmt, ...);
 
 
 
@@ -90,7 +107,6 @@ static struct TextMatch *Matches_new(struct TextMatches *const this,
  @throws	E_ERRNO */
 struct Text *Text(const char *info) {
 	struct Text *this;
-	printf("Text %s\n", info);
 	if(!(this = malloc(sizeof *this))) {
 		global_error      = E_ERRNO;
 		global_errno_copy = errno;
@@ -109,7 +125,9 @@ struct Text *Text(const char *info) {
 		Text_(&this);
 		return 0;
 	}
-	return clear(this), this;
+	clear(this);
+	debug(this, "Text", "constructed.\n");
+	return this;
 }
 
 /** @param this_ptr	A pointer to Text that will be destructed. */
@@ -118,6 +136,7 @@ void Text_(struct Text **const this_ptr) {
 
 	if(!this_ptr || !(this = *this_ptr)) return;
 
+	debug(this, "~Text", "destructing.\n");
 	free(this->text);
 	free(this);
 
@@ -160,7 +179,9 @@ void TextTrim(struct Text *const this) {
 	while(z > str && isspace(*z)) z--;
 	z++, *z = '\0';
 	while(isspace(*a)) a++;
-	if(a - str) memmove(str, a, (size_t)(z - a + 1));
+	/*if(a - str) memmove(str, a, (size_t)(z - a + 1));*/
+	this->length = (size_t)(z - a);
+	if(a - str) memmove(str, a, this->length + 1);
 }
 
 /** Replaces the value of {this} with {str}.
@@ -174,7 +195,9 @@ int TextCopy(struct Text *const this, const char *const str) {
 }
 
 /** Replaces the value of {this} with {str} up to the {str_len}. Does not do a
- check to ensure that there are at least {str_len} bytes in the string.
+ check to ensure that there are at least {str_len} bytes in the string. This
+ differs from strncpy in that it copies exactly {str_len} characters instead of
+ repeating null when it gets a zero. The string is always null-terminated.
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
 int TextNCopy(struct Text *const this, const char *const str,
@@ -228,6 +251,7 @@ int TextFileCat(struct Text *const this, FILE *const fp) {
 	}
 	if((e = ferror(fp))) return this->error = E_ERRNO, this->errno_copy = e, 0;
 
+	debug(this, "TextFileCat", "appended a file.\n");
 	return -1;
 }
 
@@ -257,6 +281,7 @@ int TextPrintfCat(struct Text *const this, const char *const fmt, ...) {
 	if(length < 0) return this->error = E_ERRNO, this->errno_copy = errno, 0;
 	this->length += length;
 
+	debug(this, "TextPrintfCat", "printed.\n");
 	return -1;
 }
 
@@ -287,15 +312,16 @@ int TextTransform(struct Text *const this, const char *fmt) {
 	for(t = this->text, f = fmt; *f; f++) {
 		if(*f != '%') { *t++ = *f; continue; }
 		switch(*++f) {
-			case '%': *t++ = *f; break;
-			case 's': memcpy(this->text, copy, this->length), t += this->length;
-				break;
+			case '%': *t++ = '%'; break;
+			case 's': memcpy(t, copy, this->length), t += this->length; break;
 		}
 	}
 	*t = '\0';
 	this->length = copy_len;
 	/* free */
 	free(copy);
+
+	debug(this, "TextTransform", "transformed.\n");
 	return -1;
 }
 
@@ -315,7 +341,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	struct TextMatches matches; /* storage array */
 	struct TextMatch *match; /* one out of the array */
 	struct TextCut cut = { 0, 0, 0 };
-	enum { E_NO, E_MISSING, E_BUMP, E_TEMP } e = E_NO;
+	enum { E_NO, E_MISSING, E_BUMP, E_TEMP, E_THIS } e = E_NO;
 
 	if(!this || !Matches(&matches, this)) return 0;
 
@@ -383,15 +409,19 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	do {
 		size_t i;
 		if(e) break;
-		if(!(temp = Text("TextMatch temp"))) { e = E_TEMP; break; }
 		cursor = this->text;
+		if(!(temp = Text("TextMatch temp"))) { e = E_TEMP; break; }
 		for(i = 0; i < matches.size; i++) {
 			match = matches.matches + i;
-			cat(temp, cursor, (size_t)(match->start - cursor));
-			cat(temp, match->text->text, match->text->length);
+			if(!cat(temp, cursor, (size_t)(match->start - cursor))
+				|| !cat(temp, match->text->text, match->text->length))
+				{ e = E_TEMP; break; }
 			cursor = match->end;
 		}
-		cat(temp, cursor, strlen(cursor));
+		if(e) break;
+		if(!cat(temp, cursor, strlen(cursor))) { e = E_TEMP; break; }
+		clear(this);
+		if(!cat(this, temp->text, temp->length)) { e = E_THIS; break; };
 	} while(0);
 
 	switch(e) {
@@ -399,12 +429,14 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		case E_TEMP:	this->error = temp ? temp->error : global_error,
 			this->errno_copy = temp ? temp->errno_copy : global_errno_copy;
 			break;
+		case E_THIS:	break;
 		default:		break;
 	}
 
 	Matches_(&matches);
 	Text_(&temp);
 
+	debug(this, "TextMatch", "matched.\n");
 	return e ? 0 : -1;
 }
 
@@ -455,14 +487,24 @@ static int cat(struct Text *const this, const char *const str,
 	const size_t str_len) {
 	const size_t old_len = this->length, new_len = old_len + str_len;
 
-	/*fprintf(stderr, "cat: '%.*s' -> '%s' old%lu new%lu\n", (int)str_len, str, this->text + old_len, old_len, new_len);*/
+	/*fprintf(stderr, "cat: '%s' <- '%.*s'; %lu <- %lu\n", this->text,
+		(int)str_len, str, old_len, new_len);*/
+
 	if(new_len == old_len) return -1;
 	if(new_len < old_len) return this->error = E_OVERFLOW, 0;
 	if(!capacity_up(this, &new_len)) return 0;
 	memcpy(this->text + old_len, str, str_len);
 	this->text[new_len] = '\0';
 	this->length = new_len;
-	/*fprintf(stderr, "cat: '%s'\n", this->text);*/
+
+/*******************************************/
+	if(strlen(this->text) != this->length) {
+		fprintf(stderr, "Error '%s' strlen %lu length %lu\n", this->text,
+			strlen(this->text), this->length);
+		exit(EXIT_FAILURE);
+	}
+	/*fprintf(stderr, "cat: '%s' <- '%.*s'; %lu <- %lu\n", this->text,
+		(int)str_len, str, this->length, str_len);*/
 
 	return -1;
 
@@ -573,4 +615,32 @@ static struct TextMatch *Matches_new(struct TextMatches *const this,
 	}
 	this->size++;
 	return match;
+}
+
+static void Matches_print(struct TextMatches *const this) {
+	size_t i;
+	if(!this) printf("null\n"); return;
+	printf("Matches {");
+	for(i = 0; i < this->size; i++) {
+		printf("%s\n\t%%.4s\"%s\"%.4s", i ? "," : "", this->matches->start,
+			this->matches->text->text, this->matches->end);
+	}
+	printf("\n}\n");
+}
+
+static void debug(struct Text *const this, const char *const fn,
+	const char *const fmt, ...) {
+#ifdef TEXT_DEBUG
+	const size_t length = this->text ? strlen(this->text) : 0;
+	va_list parg;
+
+	va_start(parg, fmt);
+	fprintf(stderr, "Text.%s[%.160s]: ", fn, this->text);
+	vfprintf(stderr, fmt, parg);
+	va_end(parg);
+	if(length != this->length) fprintf(stderr, "Text.length %lu but strlen %lu."
+		"\n", this->length, length), exit(EXIT_FAILURE);
+#else
+	_TEXT_UNUSED(this); _TEXT_UNUSED(fn); _TEXT_UNUSED(fmt);
+#endif
 }
