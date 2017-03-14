@@ -8,7 +8,7 @@
  @version	1.0; 2017-03
  @since		1.0; 2017-03 */
 
-#define TEXT_DEBUG (0)
+/*#define TEXT_DEBUG*/
 
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* FILE fgets fprintf */
