@@ -21,6 +21,7 @@ const char *TextToString(const struct Text *const this);
 const char *TextGetError(struct Text *const this);
 void TextClear(struct Text *const this);
 void TextTrim(struct Text *const this);
+struct Text *TextSplit(struct Text *const this, const size_t index);
 int TextCopy(struct Text *const this, const char *const str);
 int TextNCopy(struct Text *const this, const char *const str,
 	const size_t str_len);
@@ -29,13 +30,10 @@ int TextNCat(struct Text *const this, const char *const str,
 	const size_t cat_len);
 int TextFileCat(struct Text *const this, FILE *const fp);
 int TextPrintfCat(struct Text *const this, const char *const fmt, ...);
-struct Text *TextSplit(struct Text *const this, const size_t index);
 int TextTransform(struct Text *const this, const char *fmt);
 int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size);
 int TextGetMatchParentInfo(struct Text **const parent_ptr,
 	size_t *const start_ptr, size_t *const end_ptr);
-void TextCut(struct TextCut *const this, char *const pos);
-void TextUncut(struct TextCut *const this);
 
 #endif /* --> */

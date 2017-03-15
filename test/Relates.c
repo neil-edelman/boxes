@@ -210,10 +210,6 @@ static int parse_generics(struct Text *const this) {
 				/* fixme: <, >, are verboten in html */
 				if(!TextPrintfCat(temp, "<%s>%s", generic->type, generic->name))
 					{ e = E_A; break; }
-				/*if(!TextCat(temp_val, "<")
-					|| !TextNCat(temp, generic->type, type_len)
-					|| !TextCat(temp, ">")
-					|| !TextNCat(temp, generic->name, name_len))*/
 			}
 			if(e) break;
 			/* advance */

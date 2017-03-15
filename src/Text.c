@@ -90,6 +90,10 @@ static void clear(struct Text *const this);
 static int cat(struct Text *const this, const char *const str,
 	const size_t str_len);
 static int capacity_up(struct Text *const this, const size_t *const len_ptr);
+
+void t_cut(struct TextCut *const this, char *const pos);
+void t_uncut(struct TextCut *const this);
+	
 static int Matches(struct TextMatches *const this, struct Text *const parent);
 static void Matches_(struct TextMatches *const this);
 static int Matches_capacity_up(struct TextMatches *const this);
@@ -182,6 +186,24 @@ void TextTrim(struct Text *const this) {
 	/*if(a - str) memmove(str, a, (size_t)(z - a + 1));*/
 	this->length = (size_t)(z - a);
 	if(a - str) memmove(str, a, this->length + 1);
+}
+
+/** Spits {this} into two {Text}s at {index}.
+ @return	A separate {Text}.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
+struct Text *TextSplit(struct Text *const this, const size_t index) {
+	struct Text *split;
+	if(!this) return 0;
+	if(this->length < index) { this->error = E_PARAMETER; return 0; }
+	if(!(split = Text()) || cat(split, this->text+index, this->length-index)) {
+		this->error = global_error,           global_error = 0;
+		this->errno_copy = global_errno_copy, global_errno_copy = 0;
+		Text_(&split);
+		return 0;
+	}
+	this->text[index] = '\0';
+	this->length      = index;
+	return split;
 }
 
 /** Replaces the value of {this} with {str}.
@@ -285,24 +307,6 @@ int TextPrintfCat(struct Text *const this, const char *const fmt, ...) {
 	return -1;
 }
 
-/** Spits {this} into two {Text}s at {index}.
- @return	A separate {Text}.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
-struct Text *TextSplit(struct Text *const this, const size_t index) {
-	struct Text *split;
-	if(!this) return 0;
-	if(this->length < index) { this->error = E_PARAMETER; return 0; }
-	if(!(split = Text()) || cat(split, this->text+index, this->length-index)) {
-		this->error = global_error,           global_error = 0;
-		this->errno_copy = global_errno_copy, global_errno_copy = 0;
-		Text_(&split);
-		return 0;
-	}
-	this->text[index] = '\0';
-	this->length      = index;
-	return split;
-}
-
 /** Transforms the original text according to {fmt}.
  @param fmt	Accepts %% as '%' and %s as the original string.
  @return	Success.
@@ -376,22 +380,22 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 			if(!(s0 = strstr(cursor, pattern->start))) continue;
 			/* this happens when first_pos is [abcdefg] and [cdef] is matched */
 			if(braket.is && s0 >= braket.bra.s0) continue;
-			TextUncut(&cut);
+			t_uncut(&cut);
 			braket.is = -1;
 			braket.pattern = pattern;
 			braket.bra.s0 = s0;
 			braket.bra.s1 = s0 + strlen(pattern->start);
-			TextCut(&cut, braket.bra.s1);
+			t_cut(&cut, braket.bra.s1);
 		}
 		if(!braket.is) break;
 
 		/* if the pattern has an ending, search for it */
 		if(braket.pattern->end) {
-			TextUncut(&cut);
+			t_uncut(&cut);
 			if(!(braket.ket.s0 = strstr(braket.bra.s1, braket.pattern->end)))
 				{ this->error = E_SYNTAX; return 0; }
 			braket.ket.s1 = braket.ket.s0 + strlen(braket.pattern->end);
-			TextCut(&cut, braket.ket.s0);
+			t_cut(&cut, braket.ket.s0);
 		}
 
 		/*printf("match: \"%.*s\" \"%.30s...\" \"%.*s\"\n",
@@ -400,7 +404,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		/* allocate the recursion; set the value back to how it was */
 
 		if(!(match = Matches_new(&matches, &braket))) { e = E_BUMP; break; }
-		TextUncut(&cut);
+		t_uncut(&cut);
 		/* this assumes uni-process */
 		match_info.is_valid++;
 		match_info.parent = this;
@@ -414,7 +418,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		cursor = braket.pattern->end ? braket.ket.s1 : braket.bra.s1;
 	} while(cursor);
 
-	TextUncut(&cut);
+	t_uncut(&cut);
 
 	switch(e) {
 		case E_NO:		break;
@@ -422,6 +426,10 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		case E_BUMP:	break;
 		default:		break;
 	}
+
+#ifdef TEXT_DEBUG
+	Matches_print(matches);
+#endif
 
 	/* now go though the matches and substitute them in */
 	do {
@@ -472,21 +480,6 @@ int TextGetMatchParentInfo(struct Text **parent_ptr,
 	return -1;
 }
 
-/*****************************************
- * TextCut (just initialise to all zero) */
-
-/** Stores the character at {pos} in {this} and terminates the string there. */
-void TextCut(struct TextCut *const this, char *const pos) {
-	if(this->is) return;
-	this->is = -1, this->pos = pos, this->stored = *pos, *pos = '\0';
-}
-/** If the string has been cut, undoes that. */
-void TextUncut(struct TextCut *const this) {
-	if(!this->is) return;
-	this->is = 0;
-	*this->pos = this->stored;
-}
-
 
 
 
@@ -505,9 +498,6 @@ static int cat(struct Text *const this, const char *const str,
 	const size_t str_len) {
 	const size_t old_len = this->length, new_len = old_len + str_len;
 
-	/*fprintf(stderr, "cat: '%s' <- '%.*s'; %lu <- %lu\n", this->text,
-		(int)str_len, str, old_len, new_len);*/
-
 	if(new_len == old_len) return -1;
 	if(new_len < old_len) return this->error = E_OVERFLOW, 0;
 	if(!capacity_up(this, &new_len)) return 0;
@@ -515,14 +505,15 @@ static int cat(struct Text *const this, const char *const str,
 	this->text[new_len] = '\0';
 	this->length = new_len;
 
-/*******************************************/
+#ifdef TEXT_DEBUG
 	if(strlen(this->text) != this->length) {
 		fprintf(stderr, "Error '%s' strlen %lu length %lu\n", this->text,
 			strlen(this->text), this->length);
 		exit(EXIT_FAILURE);
 	}
-	/*fprintf(stderr, "cat: '%s' <- '%.*s'; %lu <- %lu\n", this->text,
-		(int)str_len, str, this->length, str_len);*/
+	fprintf(stderr, "cat: '%s' <- '%.*s'; %lu <- %lu\n", this->text,
+		(int)str_len, str, this->length, str_len);
+#endif
 
 	return -1;
 
@@ -557,6 +548,21 @@ static int capacity_up(struct Text *const this, const size_t *const len_ptr) {
 	this->text = text, this->capacity[0] = c0, this->capacity[1] = c1;
 
 	return -1;
+}
+
+/*****************************************
+ * TextCut (just initialise to all zero) */
+
+/** Stores the character at {pos} in {this} and terminates the string there. */
+void t_cut(struct TextCut *const this, char *const pos) {
+	if(this->is) return;
+	this->is = -1, this->pos = pos, this->stored = *pos, *pos = '\0';
+}
+/** If the string has been cut, undoes that. */
+void t_uncut(struct TextCut *const this) {
+	if(!this->is) return;
+	this->is = 0;
+	*this->pos = this->stored;
 }
 
 /***************
@@ -634,6 +640,7 @@ static struct TextMatch *Matches_new(struct TextMatches *const this,
 	return match;
 }
 
+#ifdef TEXT_DEBUG
 static void Matches_print(struct TextMatches *const this) {
 	size_t i;
 	if(!this) printf("null\n"); return;
@@ -644,6 +651,7 @@ static void Matches_print(struct TextMatches *const this) {
 	}
 	printf("\n}\n");
 }
+#endif
 
 static void debug(struct Text *const this, const char *const fn,
 	const char *const fmt, ...) {
