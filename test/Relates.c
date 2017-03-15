@@ -331,7 +331,7 @@ static void new_docs(struct Text *const this) {
 		struct Text *parent;
 		size_t parent_end;
 		/* more info on the parent for string searching for a function */
-		if(!TextGetMatchParentInfo(&parent, 0, &parent_end))
+		if(!TextGetMatchInfo(&parent, 0, &parent_end))
 			{ e = E_DIRECT; break; }
 		/* {relates} is a global {Relates} pointer, the children of which are
 		 supplied by this function */
@@ -349,6 +349,7 @@ static void new_docs(struct Text *const this) {
 				|| (function_size = function_end - function) < 3) break;
 			/* new {Text} for manipulating function */
 			signature = Text(), TextNCopy(signature, function, function_size-1);
+			if(!parse_generics(signature)) break;
 			printf("%s\n", TextToString(signature));
 			Text_(&signature);
 		}

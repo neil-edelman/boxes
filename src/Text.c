@@ -80,6 +80,11 @@ struct TextMatches {
 	size_t size, capacity[2];
 };
 
+struct TextCut {
+	int is;
+	char *pos, stored;
+};
+
 static struct {
 	int is_valid;
 	struct Text *parent;
@@ -277,7 +282,10 @@ int TextFileCat(struct Text *const this, FILE *const fp) {
 	return -1;
 }
 
-/** Concatenates the buffer with a printf, \see{printf}. */
+/** Concatenates the buffer with a printf, \see{printf}.
+ @fixme		Have a function that allows replacing in the middle,
+ TextPrintfCat(this, fmt, ...) -> TextPrintf(this, this.length, fmt, ...)
+ and TextInsert() . . . */
 int TextPrintfCat(struct Text *const this, const char *const fmt, ...) {
 	va_list argp;
 	char garbage;
@@ -471,7 +479,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
  multi-threaded executions. If any pointers are null, ignores them. Useful for
  match-handlers.
  @return	Success; otherwise the values are invalid and will not be set. */
-int TextGetMatchParentInfo(struct Text **parent_ptr,
+int TextGetMatchInfo(struct Text **parent_ptr,
 	size_t *const start_ptr, size_t *const end_ptr) {
 	if(!match_info.is_valid) return 0;
 	if(parent_ptr) *parent_ptr = match_info.parent;

@@ -10,11 +10,6 @@ struct TextPattern {
 	TextAction transform;
 };
 
-struct TextCut {
-	int is;
-	char *pos, stored;
-};
-
 struct Text *Text(void);
 void Text_(struct Text **const this_ptr);
 const char *TextToString(const struct Text *const this);
@@ -33,7 +28,7 @@ int TextPrintfCat(struct Text *const this, const char *const fmt, ...);
 int TextTransform(struct Text *const this, const char *fmt);
 int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size);
-int TextGetMatchParentInfo(struct Text **const parent_ptr,
+int TextGetMatchInfo(struct Text **const parent_ptr,
 	size_t *const start_ptr, size_t *const end_ptr);
 
 #endif /* --> */
