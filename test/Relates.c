@@ -208,8 +208,8 @@ static int parse_generics(struct Text *const this) {
 				/*fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
 					generic->type, (int)name_len, generic->name);*/
 				/* fixme: <, >, are verboten in html */
-				if(!TextPrintfCat(temp, "<%s>%s", generic->type, generic->name))
-					{ e = E_A; break; }
+				if(!TextPrintfCat(temp, "<%.*s>%.*s", type_len, generic->type,
+					name_len, generic->name)) { e = E_A; break; }
 			}
 			if(e) break;
 			/* advance */
@@ -322,7 +322,7 @@ static int parse_function_signature(const char *const function,
 /** Matches documents, / * *   * /, and places them in the global {relates}.
  @implements	TextAction */
 static void new_docs(struct Text *const this) {
-	struct Relate *docs;
+	struct Relate *docs = 0;
 	/*struct Text *fn_ret = 0, *fn_name = 0, *fn_args = 0;*/
 	enum { E_NO, E_DIRECT, E_RELATES } e = E_NO;
 
@@ -349,8 +349,10 @@ static void new_docs(struct Text *const this) {
 				|| (function_size = function_end - function) < 3) break;
 			/* new {Text} for manipulating function */
 			signature = Text(), TextNCopy(signature, function, function_size-1);
+			TextTrim(signature);
 			if(!parse_generics(signature)) break;
-			printf("%s\n", TextToString(signature));
+			printf("[%s]\n", TextToString(signature));
+			TextCopy(RelateGetKey(docs), TextToString(signature));
 			Text_(&signature);
 		}
 		
@@ -360,7 +362,7 @@ static void new_docs(struct Text *const this) {
 		case E_NO: break;
 		case E_DIRECT: fprintf(stderr, "new_docs: was directly called and not "
 			"part of TextMatch.\n"); break;
-		case E_RELATES: fprintf(stderr, "new_docs: %s.\n",
+		case E_RELATES: fprintf(stderr, "new_docs relates: %s.\n",
 			RelatesGetError(relates)); break;
 	}
 
@@ -391,7 +393,7 @@ static void new_docs(struct Text *const this) {
 		 (int)key_length, key, (int)(s1 - s0), s0); */
 		if(!(doc_text
 			 = TableNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
-		{ fprintf(stderr, "new_docs: %s.\n", TableGetError(this)); return; }
+			{ fprintf(stderr, "new_docs: %s.\n", TableGetError(this)); return; }
 		TableTrim(doc_text);
 
 		/* parse it for additional \foo{} */
@@ -416,20 +418,19 @@ static const size_t root_pattern_size = sizeof root_pattern/sizeof*root_pattern;
  * Main programme */
 
 /** Selects functions by looking for _fn.
- @implements	TablePredicate
- @fixme			No; instead of the key being a child, make it the key; we can
-				do that now. */
-static int select_functions(struct Relate *const this) {
-	return RelateGetChildKey(this, "_fn") ? -1 : 0;
+ @implements	RelatePredicate */
+static int select_functions(const struct Relate *const this) {
+	return RelateGetChildKey(this, "_signature") ? -1 : 0;
 }
 
 /** Does the inverse of \see{select_fuctions}.
- @implements	TablePredicate */
-static int select_non_functions(struct Relate *const this) {
+ @implements	RelatePredicate */
+static int select_non_functions(const struct Relate *const this) {
 	return !select_functions(this);
 }
 
-/** Prints header (at the top of the page, supposedly.) */
+/** Prints header (at the top of the page, supposedly.)
+ @implements	RelateAction */
 static void print_header(struct Relate *const this) {
 	struct Relate *sub;
 	if((sub = RelateGetChildKey(this, "file"))) {
@@ -438,7 +439,7 @@ static void print_header(struct Relate *const this) {
 	if((sub = RelateGetChildKey(this, "_desc"))) {
 		printf("%s\n", RelateValue(sub));
 	}
-	printf("entry: %s\n\n", RelateValue(this));
+	printf("entry: %s -> %s\n\n", RelateKey(this), RelateValue(this));
 }
 
 /** The is a test of Table.
@@ -454,7 +455,8 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr,"Needs a C file to be input; produces documentation.\n");
 		return EXIT_FAILURE;
 	}
-	fn = "/Users/neil/Movies/Common/Text/src/Text.c";
+	/*fn = "/Users/neil/Movies/Common/Text/src/Text.c";*/
+	fn = "/Users/neil/Movies/Common/List/src/List.h";
 
 	do {
 
@@ -470,8 +472,10 @@ int main(int argc, char *argv[]) {
 		/* parse for " / * * "; it recursively calls things as appropriate */
 		if(!TextMatch(text, root_pattern, root_pattern_size))
 			{ error = E_TEXT; break; }
-		printf("Text: '%.200s'\n", TextToString(text));
-		RelateForEachTrueChild(RelatesGetRoot(relates), 0, &print_header);
+		RelateForEachTrueChild(RelatesGetRoot(relates),
+			&select_non_functions, &print_header);
+		RelateForEachTrueChild(RelatesGetRoot(relates),
+			&select_functions, &print_header);
 		/*if(!TextMatch(text, tpattern, sizeof tpattern / sizeof *tpattern))
 			{ error = E_TEXT; break; }*/
 		/*printf("***%s***\n", TableToString(text));*/

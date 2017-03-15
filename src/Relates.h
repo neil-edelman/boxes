@@ -16,15 +16,15 @@ void Relates_(struct Relates **const this_ptr);
 struct Relate *RelatesGetRoot(struct Relates *const this);
 const char *RelatesGetError(struct Relates *const this);
 
-const char *RelateKey(struct Relate *const this);
-const char *RelateValue(struct Relate *const this);
-struct Text *RelateGetKey(struct Relate *const this);
-struct Text *RelateGetValue(struct Relate *const this);
-const struct RelateParent *RelateGetKeyParent(struct Relate *const this);
-const struct RelateParent *RelateGetValueParent(struct Relate *const this);
+const char *RelateKey(const struct Relate *const this);
+const char *RelateValue(const struct Relate *const this);
+struct Text *RelateGetKey(const struct Relate *const this);
+struct Text *RelateGetValue(const struct Relate *const this);
+const struct RelateParent *RelateGetKeyParent(const struct Relate *const this);
+const struct RelateParent *RelateGetValueParent(const struct Relate *const this);
 struct Relate *RelateNewChild(struct Relate *const this);
 void RelateForEachTrueChild(struct Relate *const this,
 	RelatePredicate p, RelateAction a);
-struct Relate *RelateGetChildKey(struct Relate *const this,
+struct Relate *RelateGetChildKey(const struct Relate *const this,
 	const char *const key);
-struct Text *RelateGetParentValue(struct Relate *const this);
+struct Text *RelateGetParentValue(const struct Relate *const this);

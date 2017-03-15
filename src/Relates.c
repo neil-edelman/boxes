@@ -148,34 +148,34 @@ const char *RelatesGetError(struct Relates *const this) {
  * Relate */
 
 /** Get key string; shortcut for {TextToString(RelateGetKey(this))}. */
-const char *RelateKey(struct Relate *const this) {
+const char *RelateKey(const struct Relate *const this) {
 	return this ? TextToString(this->key) : 0;
 }
 
 /** Get value string; shortcut for {TextToString(RelateGetValue(this))}. */
-const char *RelateValue(struct Relate *const this) {
+const char *RelateValue(const struct Relate *const this) {
 	return this ? TextToString(this->value) : 0;
 }
 
 /** Get key. */
-struct Text *RelateGetKey(struct Relate *const this) {
+struct Text *RelateGetKey(const struct Relate *const this) {
 	return this ? this->key : 0;
 }
 
 /** Get value. */
-struct Text *RelateGetValue(struct Relate *const this) {
+struct Text *RelateGetValue(const struct Relate *const this) {
 	return this ? this->value : 0;
 }
 
 /** Get {RelateParent}, a read-only structure that describes how the key is
  derived from the parent. */
-const struct RelateParent *RelateGetKeyParent(struct Relate *const this) {
+const struct RelateParent *RelateGetKeyParent(const struct Relate *const this) {
 	return this ? this->key_parent : 0;
 }
 
 /** Get {RelateParent}, a read-only structure that describes how the value is
  derived from the parent. */
-const struct RelateParent *RelateGetValueParent(struct Relate *const this) {
+const struct RelateParent *RelateGetValueParent(const struct Relate *const this) {
 	return this ? this->value_parent : 0;
 }
 
@@ -198,7 +198,7 @@ void RelateForEachTrueChild(struct Relate *const this,
 /** Does a short-circuit linear search of {this} for a child key that matches
  {key}.
  @return	The text or null if the key was not found. */
-struct Relate *RelateGetChildKey(struct Relate *const this,
+struct Relate *RelateGetChildKey(const struct Relate *const this,
 	const char *const key) {
 	struct Relate *child, *found = 0;
 	size_t d;
@@ -214,7 +214,7 @@ struct Relate *RelateGetChildKey(struct Relate *const this,
 }
 
 /** Gets the parent value of {this} or null if it is root. */
-struct Text *RelateGetParentValue(struct Relate *const this) {
+struct Text *RelateGetParentValue(const struct Relate *const this) {
 	if(!this || this->parent.type != T_RELATE) return 0;
 	return this->parent.p.relate->value;
 }
