@@ -586,7 +586,6 @@ static int Matches_capacity_up(struct TextMatches *const this) {
 	if(c1 <= c0) c1 = (size_t)-1;
 	if(!(matches = realloc(this->matches, c0 * sizeof *this->matches)))
 		return this->parent->error = E_ERRNO, this->parent->errno_copy=errno, 0;
-	printf("Matches__up: %lu -> %lu\n", this->capacity[0], c0);
 	this->matches = matches, this->capacity[0] = c0, this->capacity[1] = c1;
 
 	return -1;
@@ -622,7 +621,7 @@ static void Matches_print(struct TextMatches *const this) {
 	if(!this) printf("null\n"); return;
 	printf("Matches {");
 	for(i = 0; i < this->size; i++) {
-		printf("%s\n\t%%.4s\"%s\"%.4s", i ? "," : "", this->matches->start,
+		printf("%s\n\t%.4s\"%s\"%.4s", i ? "," : "", this->matches->start,
 			this->matches->text->text, this->matches->end);
 	}
 	printf("\n}\n");

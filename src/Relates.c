@@ -85,7 +85,7 @@ static struct Relates *to_relates(struct Relate *const this);
 /** Constructs a generic, {Text} with {root_name} as it's root name, or blank
  if null.
  @throws	E_PARAMETER, E_ERRNO */
-struct Relates *Relates(const char *const root_name) {
+struct Relates *Relates(void) {
 	struct Relates *this;
 	struct Parent parent;
 
@@ -102,6 +102,7 @@ struct Relates *Relates(const char *const root_name) {
 		Relates_(&this);
 		return 0;
 	}
+#if 0
 	if(root_name) {
 		if(!TextCat(this->root->key, root_name)) {
 		/* well . . . it's probably this */
@@ -110,6 +111,7 @@ struct Relates *Relates(const char *const root_name) {
 		return 0;
 		}
 	}
+#endif
 
 	return this;
 }
@@ -270,13 +272,14 @@ static struct Relate *relate_new(struct Relate *this) {
 	struct Relate *child;
 	struct Parent parent;
 	if(this->size >= this->capacity[0] && !relate_grow(this)) return 0;
-	if((child = malloc(sizeof *child))) {
+	if(!(child = malloc(sizeof *child))) {
 		to_relates(this)->error = E_ERRNO;
 		to_relates(this)->errno_copy = errno;
 		return 0;
 	}
 	parent.type     = T_RELATE;
 	parent.p.relate = this;
+	printf("b\n");
 	if(!relate(child, parent)) {
 		to_relates(this)->error = E_ERRNO;
 		to_relates(this)->errno_copy = errno;

@@ -13,6 +13,8 @@
 #include <ctype.h>	/* isspace */
 #include "../src/Relates.h"
 
+static struct Relates *relates;
+
 /* static const char *const things_in_header[] = {
 	"author", "version", "since", "fixme"
 };	static const char *const things_in_fn[] = {
@@ -271,14 +273,17 @@ static const struct TextPattern tpattern[] = {
 	{ ">",       0,   &gt }
 };
 
-#if 0
-
-static struct Relate *new_doc_store; /* global for \see{new_docs} */
-
-/** Matches / * *   * / and calls {tpattern} on those matches. Needs
- {new_doc_store} to be set.
- @implements	RelateAction */
+/** Matches documents, / * *   * /, and places them in the global {relates}.
+ @implements	TextAction */
 static void new_docs(struct Text *const this) {
+	struct Relate *root, *docs;
+
+	if(!(root = RelatesGetRoot(relates)) || !(docs = RelateNewChild(root))) {
+		fprintf(stderr, "new_docs: %s.\n", RelatesGetError(relates));
+		return;
+	}
+	TextCopy(RelateGetValue(docs), TextToString(this));
+#if 0
 	struct Table *doc_text, *sig_text;
 	char *s0, *s1;
 	int is_first, is_last;
@@ -353,14 +358,15 @@ static void new_docs(struct Text *const this) {
 		is_first = 0;
 		s0 = s1 = s1 + 1;
 	}
+#endif
 
 }
 
-static const struct TextPattern rpattern[] = {
+static const struct TextPattern root_pattern[] = {
 	{ "/""** ", "*""/", &new_docs }
 	/* fixme: more robust, ie \* { / * * /, 0 }? */
 };
-#endif
+static const size_t root_pattern_size = sizeof root_pattern/sizeof*root_pattern;
 
 
 
@@ -390,47 +396,47 @@ static void print_header(struct Relate *const this) {
 	if((sub = RelateGetChildKey(this, "_desc"))) {
 		printf("%s\n", RelateValue(sub));
 	}
+	printf("entry: %s\n\n", RelateValue(this));
 }
 
 /** The is a test of Table.
  @param argc	Count
  @param argv	Vector. */
 int main(int argc, char *argv[]) {
-	struct Relates *rs = 0;
-	struct Relate *rs_root;
-	struct Text *rs_root_value;
+	struct Text *text = 0;
 	FILE *fp = 0;
 	const char *fn;
-	enum { E_NO_ERR, E_ERRNO, E_RS, E_VALUE } error = E_NO_ERR;
+	enum { E_NO_ERR, E_ERRNO, E_TEXT, E_RELATES } error = E_NO_ERR;
 
-#if 0
-	if(argc != 2) {
-		/*fn = "src/Test.c";*/
-		fprintf(stderr, "Needs <filename>.\n");
+	if(argc > 1) {
+		fprintf(stderr,"Needs a C file to be input; produces documentation.\n");
 		return EXIT_FAILURE;
-	} else {
-		fn = argv[1];
 	}
-#else
 	fn = "/Users/neil/Movies/Common/Text/src/Text.c";
-#endif
 
 	do {
 
-		/* new Relates; getting values */
-		if(!(rs = Relates("_docs_root"))) { error = E_RS; break; }
-		rs_root = RelatesGetRoot(rs);
-		rs_root_value = RelateGetValue(rs_root);
-		/* opening {fn}; reading */
-		if(!(fp = fopen(fn, "r"))) { error = E_ERRNO; break; }
-		if(!TextFileCat(rs_root_value, fp)) { error = E_VALUE; break; }
-		if(fclose(fp)) { error = E_ERRNO; break; }
+		if(!(fp = fopen(fn, "r")))
+			{ error = E_ERRNO; break; }
+		if(!(text = Text()) || !TextFileCat(text, fp))
+			{ error = E_TEXT; break; }
+		if(fclose(fp))
+			{ error = E_ERRNO; break; }
+		fp = 0;
+		if(!(relates = Relates()))
+			{ error = E_RELATES; break; }
 		/* parse for " / * * "; it recursively calls things as appropriate */
-		if(!TextMatch(RelateGetValue(rs_root), tpattern, sizeof tpattern / sizeof *tpattern))
-			{ error = E_RS; break; }
+		if(!TextMatch(text, root_pattern, root_pattern_size))
+			{ error = E_TEXT; break; }
+		printf("Text: '%.200s'\n", TextToString(text));
+		RelateForEachTrueChild(RelatesGetRoot(relates), 0, &print_header);
+		/*if(!TextMatch(text, tpattern, sizeof tpattern / sizeof *tpattern))
+			{ error = E_TEXT; break; }*/
 		/*printf("***%s***\n", TableToString(text));*/
 #if 1
-		xml(rs_root);
+#if 0
+		xml();
+#endif
 #else
 		/* print the header(s?) */
 		RelateForEachTrueChild(r, &select_non_functions, &print_header);
@@ -440,13 +446,14 @@ int main(int argc, char *argv[]) {
 	switch(error) {
 		case E_NO_ERR: break;
 		case E_ERRNO: perror(fn); break;
-		case E_RS:
-			fprintf(stderr, "%s: %s.\n", fn, RelatesGetError(rs)); break;
-		case E_VALUE:
-			fprintf(stderr, "%s: %s.\n", fn, TextGetError(rs_root_value));break;
+		case E_TEXT:
+			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text)); break;
+		case E_RELATES:
+			fprintf(stderr, "%s: %s.\n", fn, RelatesGetError(relates)); break;
 	}
 	{
-		Relates_(&rs);
+		Relates_(&relates); /* global */
+		Text_(&text);
 		fclose(fp);
 	}
 
@@ -483,7 +490,7 @@ int main(int argc, char **argv) {
 	unsigned no_c = 0 /* chapter index */, i;
 	struct Chapter *ch = 0;
 	char *lperen, *rperen;
-	enum { E_NO, E_ERRNO, E_MAX } error = E_NO;
+	enum { E_NO, E_ERRNO, E_MAX, E_FN } error = E_NO;
 
 	char *cursor, *end, *fn, *args;
 	int is_in_comment = 0, is_fn_search  = 0;

@@ -11,7 +11,7 @@ struct RelateParent {
 	size_t start, end;
 };
 
-struct Relates *Relates(const char *const root_name);
+struct Relates *Relates(void);
 void Relates_(struct Relates **const this_ptr);
 struct Relate *RelatesGetRoot(struct Relates *const this);
 const char *RelatesGetError(struct Relates *const this);
