@@ -186,7 +186,7 @@ void TextTrim(struct Text *const this) {
 
 /** Replaces the value of {this} with {str}.
  @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextCopy(struct Text *const this, const char *const str) {
 	if(!this) return 0;
 	if(!str) return this->error = E_PARAMETER, 0;
@@ -199,7 +199,7 @@ int TextCopy(struct Text *const this, const char *const str) {
  differs from strncpy in that it copies exactly {str_len} characters instead of
  repeating null when it gets a zero. The string is always null-terminated.
  @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextNCopy(struct Text *const this, const char *const str,
 	const size_t str_len) {
 	if(!this) return 0;
@@ -210,7 +210,7 @@ int TextNCopy(struct Text *const this, const char *const str,
 
 /** Concatenates {cat} onto the buffer in {this}.
  @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextCat(struct Text *const this, const char *const str) {
 	if(!this) return 0;
 	if(!str) return this->error = E_PARAMETER, 0;
@@ -220,7 +220,7 @@ int TextCat(struct Text *const this, const char *const str) {
 /** Concatenates {cat_len} characters of {cat} onto the buffer in {this}. Does
  not do a check to ensure that there are at least {str_len} bytes in the string.
  @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextNCat(struct Text *const this, const char *const str,
 	const size_t str_len) {
 	if(!this) return 0;
@@ -231,7 +231,7 @@ int TextNCat(struct Text *const this, const char *const str,
 /** Concatenates the contents of the text file, {fp}, after the read cursor, to
  the buffer in {this}. On success, the read cursor will be at the end.
  @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO, E_ASSERT */
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextFileCat(struct Text *const this, FILE *const fp) {
 	size_t to_get;
 	int to_get_int;
@@ -285,10 +285,28 @@ int TextPrintfCat(struct Text *const this, const char *const fmt, ...) {
 	return -1;
 }
 
+/** Spits {this} into two {Text}s at {index}.
+ @return	A separate {Text}.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
+struct Text *TextSplit(struct Text *const this, const size_t index) {
+	struct Text *split;
+	if(!this) return 0;
+	if(this->length < index) { this->error = E_PARAMETER; return 0; }
+	if(!(split = Text()) || cat(split, this->text+index, this->length-index)) {
+		this->error = global_error,           global_error = 0;
+		this->errno_copy = global_errno_copy, global_errno_copy = 0;
+		Text_(&split);
+		return 0;
+	}
+	this->text[index] = '\0';
+	this->length      = index;
+	return split;
+}
+
 /** Transforms the original text according to {fmt}.
  @param fmt	Accepts %% as '%' and %s as the original string.
  @return	Success.
- @throws	E_OVERFLOW, E_ERRNO, E_ASSERT */
+ @throws	E_OVERFLOW, E_ERRNO */
 int TextTransform(struct Text *const this, const char *fmt) {
 	char *copy, *t;
 	const char *f;
@@ -482,7 +500,7 @@ static void clear(struct Text *const this) {
 	this->length  = 0;
 }
 
-/** @throws	E_ASSERT, E_OVERFLOW, E_ERRNO */
+/** @throws	E_OVERFLOW, E_ERRNO */
 static int cat(struct Text *const this, const char *const str,
 	const size_t str_len) {
 	const size_t old_len = this->length, new_len = old_len + str_len;
@@ -591,7 +609,7 @@ static int Matches_capacity_up(struct TextMatches *const this) {
 	return -1;
 }
 
-/* new match */
+/** Constructs new match within {this}. */
 static struct TextMatch *Matches_new(struct TextMatches *const this,
 	struct TextBraket *braket) {
 	struct TextMatch *match;

@@ -161,11 +161,10 @@ static const char *prev_generic_part(const char *const str, const char *a) {
 
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
  "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! */
-static int parse_generics(struct Relate *const this) {
+static int parse_generics(struct Text *const this) {
 	struct Text *temp = 0;
 	struct Generic { const char *type, *name; } generics[16], *generic;
 	const size_t generics_size = sizeof generics / sizeof *generics;
-	struct Text *original = RelateGetValue(this);
 	unsigned types_size, names_size, i;
 	const char *start, *type, *name, *end;
 	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
@@ -174,7 +173,7 @@ static int parse_generics(struct Relate *const this) {
 		if(!(temp = Text())) { e = E_A; break; }
 		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
 		 assume it won't be nested; work backwards */
-		start = TextToString(original);
+		start = TextToString(this);
 		while((type = strstr(start, "_(")) && (name = strchr(type, ')'))) {
 			end = name + 1;
 			/* search types "_T_I_" backwards */
@@ -224,7 +223,7 @@ static int parse_generics(struct Relate *const this) {
 		/* copy the rest (probably nothing) */
 		if(!TextCat(temp, start)) { e = E_A; break; }
 		/* copy the temporary a to this */
-		if(!TextCopy(original, TextToString(temp))) { e = E_A; break; }
+		if(!TextCopy(this, TextToString(temp))) { e = E_A; break; }
 	} while(0);
 	switch(e) {
 		case E_NO: break;
@@ -242,7 +241,7 @@ static int parse_generics(struct Relate *const this) {
 }
 
 /*******************************************************
- * These go in a Pattern array for calling in {Match}. */
+ * These go in a Pattern array for calling in {TextMatch}. */
 
 /** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
  @implements	TextAction */
@@ -265,6 +264,7 @@ static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
 static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
 
 static const struct TextPattern tpattern[] = {
+	/*{ "\\\\", 0, &backslash },? hmmm? */
 	{ "\\url{",  "}", &url },
 	{ "\\cite{", "}", &cite },
 	{ "{",       "}", &em },
@@ -273,44 +273,30 @@ static const struct TextPattern tpattern[] = {
 	{ ">",       0,   &gt }
 };
 
-/** Matches documents, / * *   * /, and places them in the global {relates}.
- @implements	TextAction */
-static void new_docs(struct Text *const this) {
-	struct Relate *root, *docs;
-
-	if(!(root = RelatesGetRoot(relates)) || !(docs = RelateNewChild(root))) {
-		fprintf(stderr, "new_docs: %s.\n", RelatesGetError(relates));
-		return;
-	}
-	TextCopy(RelateGetValue(docs), TextToString(this));
 #if 0
-	struct Table *doc_text, *sig_text;
-	char *s0, *s1;
-	int is_first, is_last;
-	size_t key_length;
-	char *key;
-	char desc_key[] = "_desc", signature_key[] = "_signature",
-	return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
-	struct TextCut cut = { 0, 0, 0 };
+struct StringPair { const char *a, *b; }; /* a <= b */
+/** Called from \see{new_docs}.
+ @param parts	Has three parts: return type, function name, and arguments.
+ @return		Whether the function was parsable. */
+static int parse_function_signature(const char *const function,
+	struct StringPair *const parts) {
+	struct Text *f;
+	size_t parent_end;
+	const char *start, *end, *sig, *opening, *closing;
 
-	/* search for function signature immediately below */
-	do {
-		struct Text *parent;
-		size_t parent_end;
-		const char *start, *end, *sig, *opening, *closing;
-
-		TextGetMatchParentInfo(&parent, 0, &parent_end);
-		start = TextToString(parent) + parent_end;
-		/* fixme: actually parse; this is sufficient for most cases, I guess */
-		end = strpbrk(start, ";{/#");
-		if(!end || *end != '{') break;
-		if(!(sig_text = RelateNewChild(new_doc_store))) { fprintf(stderr,
-			"new_docs: parsing signature, %s.\n", TextGetError(this)); break; }
-		, signature_key, strlen(signature_key),
-		start, strlen(start))))
-		TableTrim(sig_text);
-		/* parse for (very author-cetric, sorry!) generics */
-		if(!(parse_generics(sig_text))) break;
+	/* fixme: actually parse; this is sufficient for most cases, I guess */
+	{
+		size_t function_size;
+		const char *const function_end = strpbrk(function, ";{/#");
+		/* the minimum "A a(){" */
+		if(!function_end || *function_end != '{'
+			|| (function_size = function_end - function) < 3) return 0;
+		/* new {Text} for manipulating function */
+		f = Text();
+		TextNCopy(f, function, function_size - 1);
+	}
+	/* parse for (very author-cetric, sorry!) generics */
+	if(!(parse_generics(f))) return Text_(&f), 0;
 		/* split the signature into to separate parts */
 		if(!(sig = TableGetValue(sig_text)) || !(opening = strchr(sig, '('))
 		   || opening == sig || !(closing = match_parenthesis(opening))) break;
@@ -326,14 +312,73 @@ static void new_docs(struct Text *const this) {
 		/* { _signature } = { _return, _fn, _args }; sorry fans of the old
 		 syntax; the most impotant is fn, goes last */
 		if(!TableNewChild(this, return_key, strlen(return_key), sig,
-			(size_t)(s0 - sig)) || !TableNewChild(this, args_key,
-			strlen(args_key), opening + 1, (size_t)(closing - opening - 1))
-			|| !TableNewChild(this, fn_key, strlen(fn_key), s0,
-			(size_t)(s1 - s0))) break;
+						  (size_t)(s0 - sig)) || !TableNewChild(this, args_key,
+																strlen(args_key), opening + 1, (size_t)(closing - opening - 1))
+		   || !TableNewChild(this, fn_key, strlen(fn_key), s0,
+							 (size_t)(s1 - s0))) break;
 	} while(0);
 	{ /* finnally */
 		TableUncut(&cut);
 	}
+}
+#endif
+
+/** Matches documents, / * *   * /, and places them in the global {relates}.
+ @implements	TextAction */
+static void new_docs(struct Text *const this) {
+	struct Relate *docs;
+	/*struct Text *fn_ret = 0, *fn_name = 0, *fn_args = 0;*/
+	enum { E_NO, E_DIRECT, E_RELATES } e = E_NO;
+
+	do {
+		struct Relate *root;
+		struct Text *parent;
+		size_t parent_end;
+		/* more info on the parent for string searching for a function */
+		if(!TextGetMatchParentInfo(&parent, 0, &parent_end))
+			{ e = E_DIRECT; break; }
+		/* {relates} is a global {Relates} pointer, the children of which are
+		 supplied by this function */
+		if(!(root = RelatesGetRoot(relates)) || !(docs = RelateNewChild(root)))
+			{ e = E_RELATES; break; }
+		/* search for function signature immediately below {this};
+		 fixme: actually parse; this is sufficient for most cases, I guess */
+		{
+			struct Text *signature;
+			const char *const function = TextToString(parent) + parent_end;
+			const char *const function_end = strpbrk(function, ";{/#");
+			size_t function_size;
+			/* the minimum "A a(){" */
+			if(!function_end || *function_end != '{'
+				|| (function_size = function_end - function) < 3) break;
+			/* new {Text} for manipulating function */
+			signature = Text(), TextNCopy(signature, function, function_size-1);
+			printf("%s\n", TextToString(signature));
+			Text_(&signature);
+		}
+		
+	} while(0);
+	
+	switch(e) {
+		case E_NO: break;
+		case E_DIRECT: fprintf(stderr, "new_docs: was directly called and not "
+			"part of TextMatch.\n"); break;
+		case E_RELATES: fprintf(stderr, "new_docs: %s.\n",
+			RelatesGetError(relates)); break;
+	}
+
+#if 1
+	TextCopy(RelateGetValue(docs), TextToString(this));
+#else
+	struct Table *doc_text, *sig_text;
+	char *s0, *s1;
+	int is_first, is_last;
+	size_t key_length;
+	char *key;
+	char desc_key[] = "_desc", signature_key[] = "_signature",
+	return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
+	struct TextCut cut = { 0, 0, 0 };
+
 
 	/* match delineated be each, '@' */
 	for(is_first = -1, is_last = 0, s0 = s1 = text_buf; !is_last; ) {
@@ -364,7 +409,7 @@ static void new_docs(struct Text *const this) {
 
 static const struct TextPattern root_pattern[] = {
 	{ "/""** ", "*""/", &new_docs }
-	/* fixme: more robust, ie \* { / * * /, 0 }? */
+	/* fixme: more robust, ie \* { / * * /, 0 }?{\/} */
 };
 static const size_t root_pattern_size = sizeof root_pattern/sizeof*root_pattern;
 

@@ -29,6 +29,7 @@ int TextNCat(struct Text *const this, const char *const str,
 	const size_t cat_len);
 int TextFileCat(struct Text *const this, FILE *const fp);
 int TextPrintfCat(struct Text *const this, const char *const fmt, ...);
+struct Text *TextSplit(struct Text *const this, const size_t index);
 int TextTransform(struct Text *const this, const char *fmt);
 int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size);
