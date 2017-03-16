@@ -38,21 +38,35 @@ static const struct TextPattern tpattern[] = {
 };
 static const size_t tpattern_size = sizeof tpattern / sizeof *tpattern;
 
+/** @implements	TextPredicate */
+static int is_delim(const char *const str, const char *p) {
+	return *++p == '/' || 0 == str ? 0 : -1;
+}
+
 /** The is a test of Table.
  @param argc	Count
  @param argv	Vector. */
-int main(int argc, char *argv[]) {
+int main(void) {
 	FILE *fp = 0;
 	const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";
-	struct Text *t = 0;
+	struct Text *t = 0, *t1 = 0, *t2 = 0, *t3 = 0, *t4 = 0;
 	const char *str, *sup = 0;
 	enum { E_NO, E_T, E_ASRT, E_FP } e = E_NO;
 
 	printf("Testing\n");
 	do {
 		const char *s0, *s1;
-		if(!(t = Text())
-			|| !TextNCopy(t, "TestText", 4))
+		if(!(t = Text()))
+			{ e = E_T; break; }
+
+		if(!(fp = fopen(fn, "r")))
+			{ e = E_FP; break; }
+		if(!TextFileCat(t, fp) || !TextMatch(t, tpattern, tpattern_size))
+			{ e = E_T; break; }
+		printf("Text: %s", TextToString(t));
+		TextClear(t);
+
+		if(!(TextNCopy(t, "TestText", (size_t)4)))
 			{ e = E_T; break; }
 		if(strcmp(sup = "Test", str = TextToString(t)))
 			{ e = E_ASRT; break; }
@@ -66,8 +80,8 @@ int main(int argc, char *argv[]) {
 			str = TextToString(t)))
 			{ e = E_ASRT; break; }
 		printf("Text: %s\n", TextToString(t));
-
 		TextClear(t);
+
 		s0 = strchr(fn + 1, '/');
 		s1 = strchr(s0 + 1, '/');
 		TextBetweenCopy(t, s0, s1);
@@ -79,13 +93,27 @@ int main(int argc, char *argv[]) {
 		if(strcmp(sup = "/neil//Common/", str = TextToString(t)))
 			{ e = E_ASRT; break; }
 		printf("Text: %s\n", TextToString(t));
-
 		TextClear(t);
-		if(!(fp = fopen(fn, "r")))
-			{ e = E_FP; break; }
-		if(!TextFileCat(t, fp) || !TextMatch(t, tpattern, tpattern_size))
-			{ e = E_T; break; }
-		printf("Text: %s", TextToString(t));
+
+		TextCopy(t, "/foo//bar/qux//");
+		
+		printf("Text: '%s'\n", TextToString(t));
+		t1 = TextSplit(t, "/", &is_delim);
+		t2 = TextSplit(t1, "/", &is_delim);
+		t3 = TextSplit(t2, "/", &is_delim);
+		t4 = TextSplit(t3, "/", &is_delim);
+		printf("Text: '%s', '%s', '%s', '%s', '%s'.", TextToString(t),
+			TextToString(t1), TextToString(t2),
+			TextToString(t3), TextToString(t4));
+		if(strcmp(sup = "", str = TextToString(t))
+			|| strcmp(sup = "foo/", str = TextToString(t1))
+			|| strcmp(sup = "bar", str = TextToString(t2))
+			|| strcmp(sup = "qux/", str = TextToString(t3))
+		   /*|| (sup = "(null)", str = t4)*/)
+			{ e = E_ASRT; break; }
+		if(strcmp(sup = "foo/", str = TextToString(t1)))
+			{ e = E_ASRT; break; }
+		
 	} while(0);
 
 	switch(e) {
@@ -98,6 +126,8 @@ int main(int argc, char *argv[]) {
 
 	Text_(&t);
 	fclose(fp);
+	Text_(&t1);
+	Text_(&t2);
 
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }

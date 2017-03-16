@@ -198,21 +198,45 @@ void TextTrim(struct Text *const this) {
 	if(a - str) memmove(str, a, this->length + 1);
 }
 
-/** Spits {this} into two {Text}s at {index}.
- @return	A separate {Text}.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
-struct Text *TextSplit(struct Text *const this, const size_t index) {
+/** Spits {this} into two {Text} at the first {delims} that satisfy {pred}.
+ Ignores errors.
+ @param pred	Can be null, in which case, it behaves like true.
+ @return		A separate {Text} for the second half or null if it didn't find
+				any. */
+struct Text *TextSplit(struct Text *const this, const char *const delims,
+	const TextPredicate pred) {
 	struct Text *split;
-	if(!this) return 0;
-	if(this->length < index) { this->error = E_PARAMETER; return 0; }
-	if(!(split = Text()) || cat(split, this->text+index, this->length-index)) {
+	char *bork;
+
+	if(!this || !delims) return 0;
+
+	/* find */
+	bork = this->text;
+	while((bork = strpbrk(bork, delims))) {
+		if(pred && !pred(this->text, bork)) { bork++; continue; }
+		break;
+	}
+	if(!bork) return 0;
+
+	/* split at bork */
+	if(!(split = Text())) {
+		/* fixme: it doesn't do any good because we can't differentiate between
+		 zero return values */
 		this->error = global_error,           global_error = 0;
 		this->errno_copy = global_errno_copy, global_errno_copy = 0;
 		Text_(&split);
 		return 0;
 	}
-	this->text[index] = '\0';
-	this->length      = index;
+	printf("this len %lu, bork len %lu\n", this->length,
+		this->text + this->length - bork - 1);
+	if(!cat(split, bork + 1, (size_t)(this->text + this->length - bork - 1)))
+		return 0;
+	*bork        = '\0';
+	this->length = bork - this->text;
+
+	printf("'%s' %lu : '%s' %lu\n", this->text, this->length,
+		split->text, split->length);
+	debug(this, "TextSplit", "split.");
 	return split;
 }
 
@@ -677,6 +701,8 @@ static void Matches_print(struct TextMatches *const this) {
 			this->matches->text->text, this->matches->end);
 	}
 	printf("\n}\n");
+#else
+	_TEXT_UNUSED(this);
 #endif
 }
 

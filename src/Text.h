@@ -4,6 +4,7 @@
 struct Text;
 
 typedef void (*TextAction)(struct Text *const);
+typedef int (*TextPredicate)(const char *const string, const char *sub);
 
 struct TextPattern {
 	const char *start, *end;
@@ -16,7 +17,8 @@ const char *TextToString(const struct Text *const this);
 const char *TextGetError(struct Text *const this);
 void TextClear(struct Text *const this);
 void TextTrim(struct Text *const this);
-struct Text *TextSplit(struct Text *const this, const size_t index);
+struct Text *TextSplit(struct Text *const this, const char *const delims,
+	const TextPredicate pred);
 int TextCopy(struct Text *const this, const char *const str);
 int TextNCopy(struct Text *const this, const char *const str,
 	const size_t str_len);

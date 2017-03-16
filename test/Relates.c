@@ -71,7 +71,8 @@ static void xml(struct Relate *const this) {
  * General text-things */
 
 /** @return		Is the character pointed to by {s} in the string {str} the
-				first on the line? */
+				first on the line?
+ @implements	TextPredicate */
 static int is_first_on_line(const char *const str, const char *s) {
 	if(str >= s) return -1;
 	s--;
@@ -307,19 +308,20 @@ static int parse_function_signature(const char *const function,
 static void new_docs(struct Text *const this) {
 	struct Relate *docs = 0;
 	struct Text *signature = 0, *subsig = 0;
-	enum { E_NO, E_DIRECT, E_RELATES } e = E_NO;
+	enum { EF_NO, EF_DIRECT, EF_RELATES } ef = EF_NO;
 
+	/* find something that looks like a function declaration after {this}? */
 	do { /* try */
 		struct Relate *root;
 		struct Text *parent;
 		size_t parent_end;
 		/* more info on the parent for string searching for a function */
 		if(!TextGetMatchInfo(&parent, 0, &parent_end))
-			{ e = E_DIRECT; break; }
+			{ ef = EF_DIRECT; break; }
 		/* {relates} is a global {Relates} pointer, the children of which are
 		 supplied by this function */
 		if(!(root = RelatesGetRoot(relates)) || !(docs = RelateNewChild(root)))
-			{ e = E_RELATES; break; }
+			{ ef = EF_RELATES; break; }
 		/* search for function signature immediately below {this};
 		 fixme: actually parse; this is sufficient for most cases, I guess */
 		{
@@ -343,16 +345,18 @@ static void new_docs(struct Text *const this) {
 			for(fn0 = fn1; fn0 > ret0 && isfunction(*fn0); fn0--);
 			if(isfunction(*fn0)) break;
 			ret1 = fn0++;
-			/* the name is the key of the docs */
+			/* the function name is the key of the {docs} */
 			TextBetweenCopy(RelateGetKey(docs), fn0, fn1);
 			/* others go in sub-parts of docs; return value */
 			subsig = Text();
 			TextBetweenCopy(subsig, ret0, ret1);
+			TextTrim(subsig);
 			child = RelateNewChild(docs);
 			TextCopy(RelateGetKey(child), "_return");
 			TextCopy(RelateGetValue(child), TextToString(subsig));
 			/* and argument list */
 			TextBetweenCopy(subsig, p0 + 1, p1 - 1);
+			TextTrim(subsig);
 			child = RelateNewChild(docs);
 			TextCopy(RelateGetKey(child), "_args");
 			TextCopy(RelateGetValue(child), TextToString(subsig));
@@ -360,17 +364,24 @@ static void new_docs(struct Text *const this) {
 
 	} while(0);
 
-	switch(e) {
-		case E_NO: break;
-		case E_DIRECT: fprintf(stderr, "new_docs: was directly called and not "
+	switch(ef) {
+		case EF_NO: break;
+		case EF_DIRECT: fprintf(stderr, "new_docs: was directly called and not "
 			"part of TextMatch.\n"); break;
-		case E_RELATES: fprintf(stderr, "new_docs relates: %s.\n",
+		case EF_RELATES: fprintf(stderr, "new_docs relates: %s.\n",
 			RelatesGetError(relates)); break;
 	} { /* finally */
 		Text_(&subsig), Text_(&signature);
 	}
 
 #if 1
+	{
+		struct Text *each;
+		while((each = TextSplit(this, "@", &is_first_on_line))) {
+			
+		}
+	}
+	TextTrim(this);
 	TextCopy(RelateGetValue(docs), TextToString(this));
 #else
 	struct Table *doc_text, *sig_text;
@@ -461,7 +472,7 @@ int main(int argc, char *argv[]) {
 	const char *fn;
 	enum { E_NO_ERR, E_ERRNO, E_TEXT, E_RELATES } error = E_NO_ERR;
 
-	if(argc > 1) {
+	if(argc > 1 || argv == 0) {
 		fprintf(stderr,"Needs a C file to be input; produces documentation.\n");
 		return EXIT_FAILURE;
 	}
