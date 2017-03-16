@@ -198,17 +198,21 @@ void TextTrim(struct Text *const this) {
 	if(a - str) memmove(str, a, this->length + 1);
 }
 
-/** Spits {this} into two {Text} at the first {delims} that satisfy {pred}.
- Ignores errors.
- @param pred	Can be null, in which case, it behaves like true.
- @return		A separate {Text} for the second half or null if it didn't find
-				any. */
-struct Text *TextSplit(struct Text *const this, const char *const delims,
-	const TextPredicate pred) {
-	struct Text *split;
+/** Separates a new token at the first {delims} that satisfy {pred}. Behaves
+ like {strsep}.
+ @param token_ptr	A pointer that receives a new {Text} token or null if the
+					tokenisation is finished. You will have to call \see{Text_}.
+ @param pred		Can be null, in which case, it behaves like true.
+ @return			Success.
+ @throws			E_PARAMETER, E_OVERFLOW, E_ERRNO */
+int TextSplit(struct Text *const this, const char *const delims,
+	struct Text **const token_ptr, const TextPredicate pred) {
+	struct Text *token;
 	char *bork;
 
-	if(!this || !delims) return 0;
+	if(!this) return 0;
+	if(!token_ptr || !delims) return this->error = E_PARAMETER, 0;
+	*token_ptr = 0;
 
 	/* find */
 	bork = this->text;
@@ -216,28 +220,34 @@ struct Text *TextSplit(struct Text *const this, const char *const delims,
 		if(pred && !pred(this->text, bork)) { bork++; continue; }
 		break;
 	}
-	if(!bork) return 0;
-
+	if(!bork) return -1;
 	/* split at bork */
-	if(!(split = Text())) {
-		/* fixme: it doesn't do any good because we can't differentiate between
-		 zero return values */
-		this->error = global_error,           global_error = 0;
-		this->errno_copy = global_errno_copy, global_errno_copy = 0;
-		Text_(&split);
+	if(!(token = Text())) {
+		this->error = global_error, global_error = E_NO_ERROR;
+		this->errno_copy = global_errno_copy; global_errno_copy = 0;
 		return 0;
 	}
-	printf("this len %lu, bork len %lu\n", this->length,
-		this->text + this->length - bork - 1);
-	if(!cat(split, bork + 1, (size_t)(this->text + this->length - bork - 1)))
+	if(!cat(token, bork + 1, (size_t)(this->text + this->length - bork - 1))) {
+		this->error = token->error, token->error = E_NO_ERROR;
+		this->errno_copy = token->errno_copy, token->errno_copy = 0;
+		Text_(&token);
 		return 0;
+	}
+	/* truncate at bork */
 	*bork        = '\0';
 	this->length = bork - this->text;
+	/* now switch the pointers; the token is supposed to be the one in front */
+	{
+		char *const temp   = this->text;
+		size_t temp_length = this->length;
+		this->text = token->text, this->length = token->length;
+		token->text = temp,       token->length = temp_length;
+	}
+	/* assign the token_ptr to point at token */
+	*token_ptr = token;
 
-	printf("'%s' %lu : '%s' %lu\n", this->text, this->length,
-		split->text, split->length);
 	debug(this, "TextSplit", "split.");
-	return split;
+	return -1;
 }
 
 /** Replaces the value of {this} with {str}.

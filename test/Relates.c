@@ -309,11 +309,12 @@ static void new_docs(struct Text *const this) {
 	struct Relate *docs = 0;
 	struct Text *signature = 0, *subsig = 0;
 	enum { EF_NO, EF_DIRECT, EF_RELATES } ef = EF_NO;
+	enum { ES_NO, ES_SPLIT } es = ES_NO;
 
 	/* find something that looks like a function declaration after {this}? */
 	do { /* try */
-		struct Relate *root;
-		struct Text *parent;
+		struct Relate *root; /* of the Relates that we are building */
+		struct Text *parent; /* of the doc parsing tree */
 		size_t parent_end;
 		/* more info on the parent for string searching for a function */
 		if(!TextGetMatchInfo(&parent, 0, &parent_end))
@@ -375,14 +376,40 @@ static void new_docs(struct Text *const this) {
 	}
 
 #if 1
-	{
-		struct Text *each;
-		while((each = TextSplit(this, "@", &is_first_on_line))) {
-			
-		}
+	/* split the doc into '@'; place the first in 'desc' and all the others in
+	 their respective @<place> */
+	do { /* try */
+		struct Relate *child;
+		struct Text *each, *desc = 0;
+		int is_first = -1, is_last = 0, is_first_last = 0;
+		do {
+			if(!TextSplit(this, "@", &each, &is_first_on_line))
+				{ es = ES_SPLIT; break; }
+			if(!each)      each = this, is_last = -1;
+			if(is_first) {
+				desc = each, is_first = 0;
+				if(is_last) is_first_last = -1;
+				continue;
+			}
+			child = RelateNewChild(docs);
+			TextCopy(RelateGetValue(child), TextToString(each));
+			/*printf("!!! %s\n", TextToString(each));*/
+			if(!is_last) Text_(&each); /* remember each = this on is_last */
+		} while(!is_last/* && (Text_(&each), -1) ??it's exactly the same!!! */);
+		if(es) break;
+		TextTrim(desc);
+		TextCopy(RelateGetValue(docs), TextToString(desc));
+		if(!is_first_last) Text_(&desc);
+	} while(0);
+
+	switch(es) {
+		case ES_NO: break;
+		case ES_SPLIT: fprintf(stderr, "new_docs split: %s.\n",
+			TextGetError(this));
 	}
-	TextTrim(this);
-	TextCopy(RelateGetValue(docs), TextToString(this));
+
+	/*TextTrim(this);
+	TextCopy(RelateGetValue(docs), TextToString(this));*/
 #else
 	struct Table *doc_text, *sig_text;
 	char *s0, *s1;

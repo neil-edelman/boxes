@@ -17,8 +17,8 @@ const char *TextToString(const struct Text *const this);
 const char *TextGetError(struct Text *const this);
 void TextClear(struct Text *const this);
 void TextTrim(struct Text *const this);
-struct Text *TextSplit(struct Text *const this, const char *const delims,
-	const TextPredicate pred);
+int TextSplit(struct Text *const this, const char *const delims,
+	struct Text **const token_ptr, const TextPredicate pred);
 int TextCopy(struct Text *const this, const char *const str);
 int TextNCopy(struct Text *const this, const char *const str,
 	const size_t str_len);
