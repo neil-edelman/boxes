@@ -25,6 +25,6 @@ const struct RelateParent *RelateGetValueParent(const struct Relate *const this)
 struct Relate *RelateNewChild(struct Relate *const this);
 void RelateForEachTrueChild(struct Relate *const this,
 	RelatePredicate p, RelateAction a);
-struct Relate *RelateGetChildKey(const struct Relate *const this,
+struct Relate *RelateGetChild(const struct Relate *const this,
 	const char *const key);
 struct Text *RelateGetParentValue(const struct Relate *const this);

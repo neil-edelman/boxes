@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
 
 	printf("Testing\n");
 	do {
+		const char *s0, *s1;
 		if(!(t = Text())
 			|| !TextNCopy(t, "TestText", 4))
 			{ e = E_T; break; }
@@ -65,9 +66,23 @@ int main(int argc, char *argv[]) {
 			str = TextToString(t)))
 			{ e = E_ASRT; break; }
 		printf("Text: %s\n", TextToString(t));
+
+		TextClear(t);
+		s0 = strchr(fn + 1, '/');
+		s1 = strchr(s0 + 1, '/');
+		TextBetweenCopy(t, s0, s1);
+		if(strcmp(sup = "/neil/", str = TextToString(t)))
+			{ e = E_ASRT; break; }
+		s0 = strchr(s1 + 1, '/');
+		s1 = strchr(s0 + 1, '/');
+		TextBetweenCat(t, s0, s1);
+		if(strcmp(sup = "/neil//Common/", str = TextToString(t)))
+			{ e = E_ASRT; break; }
+		printf("Text: %s\n", TextToString(t));
+
+		TextClear(t);
 		if(!(fp = fopen(fn, "r")))
 			{ e = E_FP; break; }
-		TextClear(t);
 		if(!TextFileCat(t, fp) || !TextMatch(t, tpattern, tpattern_size))
 			{ e = E_T; break; }
 		printf("Text: %s", TextToString(t));

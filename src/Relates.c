@@ -198,7 +198,7 @@ void RelateForEachTrueChild(struct Relate *const this,
 /** Does a short-circuit linear search of {this} for a child key that matches
  {key}.
  @return	The text or null if the key was not found. */
-struct Relate *RelateGetChildKey(const struct Relate *const this,
+struct Relate *RelateGetChild(const struct Relate *const this,
 	const char *const key) {
 	struct Relate *child, *found = 0;
 	size_t d;

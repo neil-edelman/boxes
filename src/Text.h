@@ -20,9 +20,13 @@ struct Text *TextSplit(struct Text *const this, const size_t index);
 int TextCopy(struct Text *const this, const char *const str);
 int TextNCopy(struct Text *const this, const char *const str,
 	const size_t str_len);
+int TextBetweenCopy(struct Text *const this,
+	const char *const a, const char *const b);
 int TextCat(struct Text *const this, const char *const str);
 int TextNCat(struct Text *const this, const char *const str,
 	const size_t cat_len);
+int TextBetweenCat(struct Text *const this,
+	const char *const a, const char *const b);
 int TextFileCat(struct Text *const this, FILE *const fp);
 int TextPrintfCat(struct Text *const this, const char *const fmt, ...);
 int TextTransform(struct Text *const this, const char *fmt);

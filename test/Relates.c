@@ -96,17 +96,17 @@ static size_t word_length(char *str) {
 /** Function-like chars? */
 static int isfunction(int c) {
 	/* generics or escape; "<>&;" also have meaning, but we hopefully will be
-	 far from that */
+	 far from that, and C++, I'm sorry */
 	return isalnum(c) || c == '_' || c == '<' || c == '>' || c == ';'
 		|| c == '&';
 }
 
 /** Returns a matching closing parethesis for the {left} or null if it couldn't
  find one. */
-static char *match_parenthesis(char *const left) {
+static const char *match_parenthesis(const char *const left) {
 	unsigned stack = 0;
 	char l, r;
-	char *s = left;
+	const char *s = left;
 
 	switch(l = *left) {
 		case '[': r = ']'; break;
@@ -169,6 +169,7 @@ static int parse_generics(struct Text *const this) {
 	const char *start, *type, *name, *end;
 	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
 
+	if(!this) return 0;
 	do {
 		if(!(temp = Text())) { e = E_A; break; }
 		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
@@ -276,46 +277,28 @@ struct StringPair { const char *a, *b; }; /* a <= b */
  @return		Whether the function was parsable. */
 static int parse_function_signature(const char *const function,
 	struct StringPair *const parts) {
-	struct Text *f;
-	size_t parent_end;
+
 	const char *start, *end, *sig, *opening, *closing;
 
-	/* fixme: actually parse; this is sufficient for most cases, I guess */
-	{
-		size_t function_size;
-		const char *const function_end = strpbrk(function, ";{/#");
-		/* the minimum "A a(){" */
-		if(!function_end || *function_end != '{'
-			|| (function_size = function_end - function) < 3) return 0;
-		/* new {Text} for manipulating function */
-		f = Text();
-		TextNCopy(f, function, function_size - 1);
-	}
-	/* parse for (very author-cetric, sorry!) generics */
-	if(!(parse_generics(f))) return Text_(&f), 0;
-		/* split the signature into to separate parts */
-		if(!(sig = TableGetValue(sig_text)) || !(opening = strchr(sig, '('))
-		   || opening == sig || !(closing = match_parenthesis(opening))) break;
-		/* select what looks like a function name */
-		for(s1 = opening - 1; s1 > sig && !isfunction(*s1) && *s1; s1--); s1++;
-		for(s0 = s1 - 1; s0 > sig && isfunction(*s0); s0--);
-		if(s0 == sig) break;
-		s0++;
-		/* return type is all the stuff ahead of the function name */
-		/*fprintf(stderr, "new_docs: \"%.*s\", \"%.*s\", \"%.*s\"\n",
-		 (int)(s0 - sig), sig, (int)(s1 - s0), s0,
-		 (int)(closing - opening - 1), opening + 1);*/
-		/* { _signature } = { _return, _fn, _args }; sorry fans of the old
-		 syntax; the most impotant is fn, goes last */
-		if(!TableNewChild(this, return_key, strlen(return_key), sig,
-						  (size_t)(s0 - sig)) || !TableNewChild(this, args_key,
-																strlen(args_key), opening + 1, (size_t)(closing - opening - 1))
-		   || !TableNewChild(this, fn_key, strlen(fn_key), s0,
-							 (size_t)(s1 - s0))) break;
-	} while(0);
-	{ /* finnally */
-		TableUncut(&cut);
-	}
+	/* split the signature into to separate parts */
+	if(!(sig = TableGetValue(sig_text)) || !(opening = strchr(sig, '('))
+	   || opening == sig || !(closing = match_parenthesis(opening))) break;
+	/* select what looks like a function name */
+	for(s1 = opening - 1; s1 > sig && !isfunction(*s1) && *s1; s1--); s1++;
+	for(s0 = s1 - 1; s0 > sig && isfunction(*s0); s0--);
+	if(s0 == sig) break;
+	s0++;
+	/* return type is all the stuff ahead of the function name */
+	/*fprintf(stderr, "new_docs: \"%.*s\", \"%.*s\", \"%.*s\"\n",
+	 (int)(s0 - sig), sig, (int)(s1 - s0), s0,
+	 (int)(closing - opening - 1), opening + 1);*/
+	/* { _signature } = { _return, _fn, _args }; sorry fans of the old
+	 syntax; the most impotant is fn, goes last */
+	if(!TableNewChild(this, return_key, strlen(return_key), sig,
+		(size_t)(s0 - sig)) || !TableNewChild(this, args_key,
+		strlen(args_key), opening + 1, (size_t)(closing - opening - 1))
+		|| !TableNewChild(this, fn_key, strlen(fn_key), s0,
+		(size_t)(s1 - s0))) break;
 }
 #endif
 
@@ -323,10 +306,10 @@ static int parse_function_signature(const char *const function,
  @implements	TextAction */
 static void new_docs(struct Text *const this) {
 	struct Relate *docs = 0;
-	/*struct Text *fn_ret = 0, *fn_name = 0, *fn_args = 0;*/
+	struct Text *signature = 0, *subsig = 0;
 	enum { E_NO, E_DIRECT, E_RELATES } e = E_NO;
 
-	do {
+	do { /* try */
 		struct Relate *root;
 		struct Text *parent;
 		size_t parent_end;
@@ -340,30 +323,51 @@ static void new_docs(struct Text *const this) {
 		/* search for function signature immediately below {this};
 		 fixme: actually parse; this is sufficient for most cases, I guess */
 		{
-			struct Text *signature;
+			struct Relate *child;
 			const char *const function = TextToString(parent) + parent_end;
 			const char *const function_end = strpbrk(function, ";{/#");
 			size_t function_size;
-			/* the minimum "A a(){" */
+			const char *ret0, *ret1, *fn0, *fn1, *p0, *p1;
+			/* try to find the end; the minimum "A a(){" */
 			if(!function_end || *function_end != '{'
 				|| (function_size = function_end - function) < 3) break;
-			/* new {Text} for manipulating function */
+			/* new {Text} for the signature */
 			signature = Text(), TextNCopy(signature, function, function_size-1);
 			TextTrim(signature);
 			if(!parse_generics(signature)) break;
-			printf("[%s]\n", TextToString(signature));
-			TextCopy(RelateGetKey(docs), TextToString(signature));
-			Text_(&signature);
+			/* split it into, eg, {fn_sig} = {fn_ret}{fn_name}{p0}{fn_args}{p1}
+			 = "{ int * }{fn} {(}{ void }{)} other {" */
+			if(!(ret0 = TextToString(signature)) || !(p0 = strchr(ret0, '('))
+				|| !(p1 = match_parenthesis(p0))) break;
+			for(fn1 = p0 - 1; fn1 > ret0 && !isfunction(*fn1); fn1--);
+			for(fn0 = fn1; fn0 > ret0 && isfunction(*fn0); fn0--);
+			if(isfunction(*fn0)) break;
+			ret1 = fn0++;
+			/* the name is the key of the docs */
+			TextBetweenCopy(RelateGetKey(docs), fn0, fn1);
+			/* others go in sub-parts of docs; return value */
+			subsig = Text();
+			TextBetweenCopy(subsig, ret0, ret1);
+			child = RelateNewChild(docs);
+			TextCopy(RelateGetKey(child), "_return");
+			TextCopy(RelateGetValue(child), TextToString(subsig));
+			/* and argument list */
+			TextBetweenCopy(subsig, p0 + 1, p1 - 1);
+			child = RelateNewChild(docs);
+			TextCopy(RelateGetKey(child), "_args");
+			TextCopy(RelateGetValue(child), TextToString(subsig));
 		}
-		
+
 	} while(0);
-	
+
 	switch(e) {
 		case E_NO: break;
 		case E_DIRECT: fprintf(stderr, "new_docs: was directly called and not "
 			"part of TextMatch.\n"); break;
 		case E_RELATES: fprintf(stderr, "new_docs relates: %s.\n",
 			RelatesGetError(relates)); break;
+	} { /* finally */
+		Text_(&subsig), Text_(&signature);
 	}
 
 #if 1
@@ -420,7 +424,7 @@ static const size_t root_pattern_size = sizeof root_pattern/sizeof*root_pattern;
 /** Selects functions by looking for _fn.
  @implements	RelatePredicate */
 static int select_functions(const struct Relate *const this) {
-	return RelateGetChildKey(this, "_signature") ? -1 : 0;
+	return RelateGetChild(this, "_args") ? -1 : 0;
 }
 
 /** Does the inverse of \see{select_fuctions}.
@@ -432,14 +436,20 @@ static int select_non_functions(const struct Relate *const this) {
 /** Prints header (at the top of the page, supposedly.)
  @implements	RelateAction */
 static void print_header(struct Relate *const this) {
-	struct Relate *sub;
-	if((sub = RelateGetChildKey(this, "file"))) {
-		printf("<h1>%s</h1>\n", RelateValue(sub));
+	struct Relate *a;
+	if((a = RelateGetChild(this, "file"))) {
+		printf("<h1>%s</h1>\n", RelateValue(a));
 	}
-	if((sub = RelateGetChildKey(this, "_desc"))) {
-		printf("%s\n", RelateValue(sub));
+	if((a = RelateGetChild(this, "_desc"))) {
+		printf("%s\n", RelateValue(a));
 	}
-	printf("entry: %s -> %s\n\n", RelateKey(this), RelateValue(this));
+	if((a = RelateGetChild(this, "_return"))) {
+		printf("return type: '%s'\n", RelateValue(a));
+	}
+	if((a = RelateGetChild(this, "_args"))) {
+		printf("argument list: '%s'\n", RelateValue(a));
+	}
+	printf("entry: '%s' -> '%s'\n\n", RelateKey(this), RelateValue(this));
 }
 
 /** The is a test of Table.

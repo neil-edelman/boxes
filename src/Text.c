@@ -63,6 +63,8 @@ struct Text {
 	int errno_copy;
 };
 
+/* private structs */
+
 struct TextBraket {
 	int is;
 	const struct TextPattern *pattern;
@@ -91,6 +93,8 @@ static struct {
 	size_t start, end;
 } match_info;
 
+/* private prototypes */
+
 static void clear(struct Text *const this);
 static int cat(struct Text *const this, const char *const str,
 	const size_t str_len);
@@ -104,6 +108,7 @@ static void Matches_(struct TextMatches *const this);
 static int Matches_capacity_up(struct TextMatches *const this);
 static struct TextMatch *Matches_new(struct TextMatches *const this,
 	struct TextBraket *braket);
+static void Matches_print(struct TextMatches *const this);
 static void debug(struct Text *const this, const char *const fn,
 	const char *const fmt, ...);
 
@@ -235,6 +240,17 @@ int TextNCopy(struct Text *const this, const char *const str,
 	return cat(this, str, str_len);
 }
 
+/** Replaces the value of {this} with {[a, b]}. If {a} > {b}, then empty.
+ @return	Success.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
+int TextBetweenCopy(struct Text *const this,
+	const char *const a, const char *const b) {
+	if(!this) return 0;
+	if(!a || !b) return this->error = E_PARAMETER, 0;
+	clear(this);
+	return (a <= b) ? cat(this, a, (size_t)(b - a + 1)) : -1;
+}
+
 /** Concatenates {cat} onto the buffer in {this}.
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
@@ -253,6 +269,16 @@ int TextNCat(struct Text *const this, const char *const str,
 	if(!this) return 0;
 	if(!str) return this->error = E_PARAMETER, 0;
 	return cat(this, str, str_len);
+}
+
+/** Concatenates {this} with {[a, b]}. If {a} > {b}, then empty.
+ @return	Success.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
+int TextBetweenCat(struct Text *const this,
+	const char *const a, const char *const b) {
+	if(!this) return 0;
+	if(!a || !b) return this->error = E_PARAMETER, 0;
+	return (a <= b) ? cat(this, a, (size_t)(b - a + 1)) : -1;
 }
 
 /** Concatenates the contents of the text file, {fp}, after the read cursor, to
@@ -366,7 +392,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size) {
 	struct Text *temp = 0;
 	char *s0, *cursor;
-	/* no, I don't use it uninitiased, but . . . whatever */
+	/* no, I don't use it uninitialised, but . . . whatever */
 	struct TextBraket braket = { 0, 0, {0, 0}, {0, 0} }; /* working */
 	struct TextMatches matches; /* storage array */
 	struct TextMatch *match; /* one out of the array */
@@ -383,8 +409,6 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		braket.is = 0;
 		for(p = 0; p < patterns_size; p++) {
 			pattern = patterns + p;
-			/*printf("matching(\"%s\"..\"%s\") in \"%.30s..\".\n",
-			 pattern->begin, pattern->end, b);*/
 			if(!(s0 = strstr(cursor, pattern->start))) continue;
 			/* this happens when first_pos is [abcdefg] and [cdef] is matched */
 			if(braket.is && s0 >= braket.bra.s0) continue;
@@ -406,19 +430,16 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 			t_cut(&cut, braket.ket.s0);
 		}
 
-		/*printf("match: \"%.*s\" \"%.30s...\" \"%.*s\"\n",
-			  (int)(match.bra.s1 - match.bra.s0), match.bra.s0, match.bra.s1,
-			  (int)(match.ket.s1 - match.ket.s0), match.ket.s0);*/
 		/* allocate the recursion; set the value back to how it was */
-
 		if(!(match = Matches_new(&matches, &braket))) { e = E_BUMP; break; }
 		t_uncut(&cut);
-		/* this assumes uni-process */
-		match_info.is_valid++;
+		/* this assumes uni-process! */
 		match_info.parent = this;
 		match_info.start = braket.bra.s0 - this->text;
 		match_info.end = (braket.pattern->end ? braket.ket.s1 : braket.bra.s1)
 			- this->text;
+		/* call the handler */
+		match_info.is_valid++;
 		braket.pattern->transform(match->text);
 		match_info.is_valid--;
 		/*printf("now value \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
@@ -435,9 +456,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		default:		break;
 	}
 
-#ifdef TEXT_DEBUG
-	Matches_print(matches);
-#endif
+	Matches_print(&matches);
 
 	/* now go though the matches and substitute them in */
 	do {
@@ -648,8 +667,8 @@ static struct TextMatch *Matches_new(struct TextMatches *const this,
 	return match;
 }
 
-#ifdef TEXT_DEBUG
 static void Matches_print(struct TextMatches *const this) {
+#ifdef TEXT_DEBUG
 	size_t i;
 	if(!this) printf("null\n"); return;
 	printf("Matches {");
@@ -658,8 +677,8 @@ static void Matches_print(struct TextMatches *const this) {
 			this->matches->text->text, this->matches->end);
 	}
 	printf("\n}\n");
-}
 #endif
+}
 
 static void debug(struct Text *const this, const char *const fn,
 	const char *const fmt, ...) {
