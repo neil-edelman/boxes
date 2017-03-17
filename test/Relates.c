@@ -1,4 +1,4 @@
-/** Copyright 2015 Neil Edelman, distributed under the terms of the MIT License;
+/** 2015 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  This is a test of Relates; call it with a .c file.
@@ -15,55 +15,64 @@
 
 static struct Relates *relates;
 
-/* static const char *const things_in_header[] = {
-	"author", "version", "since", "fixme"
-};	static const char *const things_in_fn[] = {
-	"return", "throws", "implements", "fixme", "author"
-}; */
+/*****************************************
+ * This goes under \see{new_docs} for @. */
+
+typedef void (*RelatesField)(struct Relate *const parent, const struct Text *);
+
+/** @implements	RelatesField */
+static void new_child(struct Relate *const parent, const struct Text *text) {
+}
+/** @implements	RelatesField */
+static void top_key(struct Relate *const parent, const struct Text *text) {
+}
+
+static const struct EachMatch {
+	char *match;
+	RelatesField what;
+} each_head[] = {
+	{ "file",    &top_key },
+	{ "author",  &new_child },
+	{ "version", &new_child },
+	{ "since",   &new_child },
+	{ "fixme",   &new_child }
+}, each_fn[] = {
+	{ "return",  &new_child },
+	{ "throws",  &new_child },
+	{ "implements", &new_child },
+	{ "fixme",   &new_child },
+	{ "author",  &new_child }
+};
 
 /***************
  * XML testing */
 
-/** Write a bunch of XML CDATA. FIXME */
+/** Write a bunch of XML CDATA. */
 static void cdata(const char *const str) {
 	const char *a = str, *b;
 	printf("<![CDATA[");
 	while((b = strstr(a, "]]>"))) {
 		printf("%.*s]]]]><![CDATA[>", (int)(b - a), a);
-		a = b + 3 /* ]]>.length */;
+		a = b + 3 /* "]]>".length */;
 	}
 	printf("%s]]>", a);
 }
 
-/* prototype -- calls recursively
- @implem */
-static void print_text(struct Relate *const);
-
-/** XML is weird. */
-static void xml_recursive(struct Relate *const this, const int is_top) {
-	const struct RelateParent *rp;
-	if(!is_top) printf("<key><![CDATA[%s]]></key>\n", RelateKey(this));
-	printf("<dict>\n<key>");
-	cdata(RelateKey(this));
-	printf("</key>\n<string>");
-	cdata(RelateValue(this));
-	printf("</string>\n");
-	if(!is_top && (rp = RelateGetValueParent(this)) && rp->is_within) {
-		printf("<key>begin</key><integer>%lu</integer>\n"
-			"<key>end</key><integer>%lu</integer>\n", rp->start, rp->end);
-	}
-	RelateForEachTrueChild(this, 0, &print_text);
+/** People use this shit?
+ @implements	TextAction */
+static void xml_recursive(struct Relate *const this) {
+	printf("<key>"), cdata(RelateKey(this)), printf("</key>\n");
+	printf("<dict>\n<key>"), cdata(RelateKey(this)), printf("</key>\n");
+	printf("<string>"), cdata(RelateValue(this)), printf("</string>\n");
+	RelateForEachTrueChild(this, 0, &xml_recursive);
 	printf("</dict>\n");
 }
-
-/** @implements	TableAction */
-static void print_text(struct Relate *const this) { xml_recursive(this, 0); }
 
 static void xml(struct Relate *const this) {
 	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
 	printf("<!DOCTYPE plist>\n");
 	printf("<plist version=\"1.0\">\n");
-	xml_recursive(this, -1);
+	xml_recursive(this);
 	printf("</plist>\n");
 }
 
@@ -82,13 +91,6 @@ static int is_first_on_line(const char *const str, const char *s) {
 		s--;
 	}
 	return -1;
-}
-
-/** @return		The number of characters in a word starting at {str}. */
-static size_t word_length(char *str) {
-	char *s = str;
-	while(isalnum(*s)) s++;
-	return s - str;
 }
 
 /***************************
@@ -238,7 +240,7 @@ static int parse_generics(struct Text *const this) {
 	return e ? 0 : -1;
 }
 
-/*******************************************************
+/***********************************************************
  * These go in a Pattern array for calling in {TextMatch}. */
 
 /** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
@@ -253,6 +255,10 @@ static void cite(struct Text *const this) {
 		"<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
 }
 /** @implements	TextAction */
+static void see(struct Text *const this) {
+	TextTrim(this), TextTransform(this, "<a href = \"#%s\">%s</a>");
+}
+/** @implements	TextAction */
 static void em(struct Text *const this) { TextTransform(this, "<em>%s</em>"); }
 /** @implements	TextAction */
 static void amp(struct Text *const this) { TextCopy(this, "&amp;"); }
@@ -265,43 +271,12 @@ static const struct TextPattern tpattern[] = {
 	/*{ "\\\\", 0, &backslash },? hmmm? */
 	{ "\\url{",  "}", &url },
 	{ "\\cite{", "}", &cite },
+	{ "\\see{",  "}", &see },
 	{ "{",       "}", &em },
 	{ "&",       0,   &amp },
 	{ "<",       0,   &lt },
 	{ ">",       0,   &gt }
 };
-
-#if 0
-struct StringPair { const char *a, *b; }; /* a <= b */
-/** Called from \see{new_docs}.
- @param parts	Has three parts: return type, function name, and arguments.
- @return		Whether the function was parsable. */
-static int parse_function_signature(const char *const function,
-	struct StringPair *const parts) {
-
-	const char *start, *end, *sig, *opening, *closing;
-
-	/* split the signature into to separate parts */
-	if(!(sig = TableGetValue(sig_text)) || !(opening = strchr(sig, '('))
-	   || opening == sig || !(closing = match_parenthesis(opening))) break;
-	/* select what looks like a function name */
-	for(s1 = opening - 1; s1 > sig && !isfunction(*s1) && *s1; s1--); s1++;
-	for(s0 = s1 - 1; s0 > sig && isfunction(*s0); s0--);
-	if(s0 == sig) break;
-	s0++;
-	/* return type is all the stuff ahead of the function name */
-	/*fprintf(stderr, "new_docs: \"%.*s\", \"%.*s\", \"%.*s\"\n",
-	 (int)(s0 - sig), sig, (int)(s1 - s0), s0,
-	 (int)(closing - opening - 1), opening + 1);*/
-	/* { _signature } = { _return, _fn, _args }; sorry fans of the old
-	 syntax; the most impotant is fn, goes last */
-	if(!TableNewChild(this, return_key, strlen(return_key), sig,
-		(size_t)(s0 - sig)) || !TableNewChild(this, args_key,
-		strlen(args_key), opening + 1, (size_t)(closing - opening - 1))
-		|| !TableNewChild(this, fn_key, strlen(fn_key), s0,
-		(size_t)(s1 - s0))) break;
-}
-#endif
 
 /** Matches documents, / * *   * /, and places them in the global {relates}.
  @implements	TextAction */
@@ -310,6 +285,7 @@ static void new_docs(struct Text *const this) {
 	struct Text *signature = 0, *subsig = 0;
 	enum { EF_NO, EF_DIRECT, EF_RELATES } ef = EF_NO;
 	enum { ES_NO, ES_SPLIT } es = ES_NO;
+	enum { TOP_LEVEL, FUNCTION } where = TOP_LEVEL;
 
 	/* find something that looks like a function declaration after {this}? */
 	do { /* try */
@@ -319,10 +295,10 @@ static void new_docs(struct Text *const this) {
 		/* more info on the parent for string searching for a function */
 		if(!TextGetMatchInfo(&parent, 0, &parent_end))
 			{ ef = EF_DIRECT; break; }
-		/* {relates} is a global {Relates} pointer, the children of which are
-		 supplied by this function */
-		if(!(root = RelatesGetRoot(relates)) || !(docs = RelateNewChild(root)))
-			{ ef = EF_RELATES; break; }
+		/* {relates} is a global {Relates} pointer, the children are functions
+		 supplied by this function, but it assumes it's not a function for
+		 starting, and just cats to the file description */
+		root = docs = RelatesGetRoot(relates);
 		/* search for function signature immediately below {this};
 		 fixme: actually parse; this is sufficient for most cases, I guess */
 		{
@@ -346,6 +322,9 @@ static void new_docs(struct Text *const this) {
 			for(fn0 = fn1; fn0 > ret0 && isfunction(*fn0); fn0--);
 			if(isfunction(*fn0)) break;
 			ret1 = fn0++;
+			/* fairly certain that docs should go in it's own function child */
+			where = FUNCTION;
+			if(!(docs = RelateNewChild(root))) { ef = EF_RELATES; break; }
 			/* the function name is the key of the {docs} */
 			TextBetweenCopy(RelateGetKey(docs), fn0, fn1);
 			/* others go in sub-parts of docs; return value */
@@ -375,76 +354,42 @@ static void new_docs(struct Text *const this) {
 		Text_(&subsig), Text_(&signature);
 	}
 
-#if 1
+	/* parse it for additional \foo{} */
+	TextMatch(this, tpattern, sizeof tpattern / sizeof *tpattern);
+
 	/* split the doc into '@'; place the first in 'desc' and all the others in
 	 their respective @<place> */
 	do { /* try */
 		struct Relate *child;
 		struct Text *each, *desc = 0;
 		int is_first = -1, is_last = 0, is_first_last = 0;
-		do {
+		do { /* split @ */
 			if(!TextSplit(this, "@", &each, &is_first_on_line))
 				{ es = ES_SPLIT; break; }
-			if(!each)      each = this, is_last = -1;
+			if(!each) each = this, is_last = -1;
+			TextTrim(each);
 			if(is_first) {
 				desc = each, is_first = 0;
 				if(is_last) is_first_last = -1;
 				continue;
 			}
+			/******************* HERE fixme *********************/
+			/* while() { strncmp(each[], ) } ... */
 			child = RelateNewChild(docs);
-			TextCopy(RelateGetValue(child), TextToString(each));
-			/*printf("!!! %s\n", TextToString(each));*/
+			/*->fix*/TextCat(RelateGetValue(child), TextToString(each));
 			if(!is_last) Text_(&each); /* remember each = this on is_last */
 		} while(!is_last/* && (Text_(&each), -1) ??it's exactly the same!!! */);
 		if(es) break;
 		TextTrim(desc);
-		TextCopy(RelateGetValue(docs), TextToString(desc));
+		TextCat(RelateGetValue(docs), TextToString(desc));
 		if(!is_first_last) Text_(&desc);
 	} while(0);
 
-	switch(es) {
+	switch(es) { /* catch */
 		case ES_NO: break;
 		case ES_SPLIT: fprintf(stderr, "new_docs split: %s.\n",
 			TextGetError(this));
 	}
-
-	/*TextTrim(this);
-	TextCopy(RelateGetValue(docs), TextToString(this));*/
-#else
-	struct Table *doc_text, *sig_text;
-	char *s0, *s1;
-	int is_first, is_last;
-	size_t key_length;
-	char *key;
-	char desc_key[] = "_desc", signature_key[] = "_signature",
-	return_key[] = "_return", fn_key[] = "_fn", args_key[] = "_args";
-	struct TextCut cut = { 0, 0, 0 };
-
-
-	/* match delineated be each, '@' */
-	for(is_first = -1, is_last = 0, s0 = s1 = text_buf; !is_last; ) {
-		/* skip the embedded 'each's */
-		while((s1 = strpbrk(s1, "@")) && !is_first_on_line(text_buf, s1)) s1++;
-		if(!s1) is_last = -1, s1 = s0 + strlen(s0);
-		if(is_first) {
-			key = desc_key, key_length = strlen(desc_key);
-		} else {
-			key = s0, key_length = word_length(s0), s0 += key_length;
-		}
-		/* fprintf(stderr, "new_docs: \"%.*s\"->\"%.*s\"\n",
-		 (int)key_length, key, (int)(s1 - s0), s0); */
-		if(!(doc_text
-			 = TableNewChild(this, key, key_length, s0, (size_t)(s1 - s0))))
-			{ fprintf(stderr, "new_docs: %s.\n", TableGetError(this)); return; }
-		TableTrim(doc_text);
-
-		/* parse it for additional \foo{} */
-		TableMatch(doc_text, tp_inner, sizeof tp_inner / sizeof *tp_inner);
-
-		is_first = 0;
-		s0 = s1 = s1 + 1;
-	}
-#endif
 
 }
 
@@ -458,6 +403,13 @@ static const size_t root_pattern_size = sizeof root_pattern/sizeof*root_pattern;
 
 /******************
  * Main programme */
+
+/** @return		The number of characters in a word starting at {str}. */
+/*static size_t word_length(char *str) {
+	char *s = str;
+	while(isalnum(*s)) s++;
+	return s - str;
+}*/
 
 /** Selects functions by looking for _fn.
  @implements	RelatePredicate */
@@ -473,7 +425,7 @@ static int select_non_functions(const struct Relate *const this) {
 
 /** Prints header (at the top of the page, supposedly.)
  @implements	RelateAction */
-static void print_header(struct Relate *const this) {
+/*static void print_header(struct Relate *const this) {
 	struct Relate *a;
 	if((a = RelateGetChild(this, "file"))) {
 		printf("<h1>%s</h1>\n", RelateValue(a));
@@ -488,6 +440,15 @@ static void print_header(struct Relate *const this) {
 		printf("argument list: '%s'\n", RelateValue(a));
 	}
 	printf("entry: '%s' -> '%s'\n\n", RelateKey(this), RelateValue(this));
+}*/
+
+/** @implements	RelateAction */
+static void html(struct Relate *const this) {
+	printf("<key>%s</key>\n", RelateKey(this));
+	printf("<value>%s</value>\n", RelateValue(this));
+	printf("{\n");
+	RelateForEachTrueChild(this, 0, &html);
+	printf("}\n\n");
 }
 
 /** The is a test of Table.
@@ -496,18 +457,27 @@ static void print_header(struct Relate *const this) {
 int main(int argc, char *argv[]) {
 	struct Text *text = 0;
 	FILE *fp = 0;
+	int is_xml = 0;
 	const char *fn;
 	enum { E_NO_ERR, E_ERRNO, E_TEXT, E_RELATES } error = E_NO_ERR;
 
-	if(argc > 1 || argv == 0) {
-		fprintf(stderr,"Needs a C file to be input; produces documentation.\n");
-		return EXIT_FAILURE;
+	if(argc > 1) {
+		if(argc == 2 && !strcmp("xml", argv[1])) {
+			is_xml = -1;
+		} else {
+			fprintf(stderr,"Needs a C file to be input; produces documentation."
+				"\nThe default is to produce HTML, but you can specify [xml]\n"
+				"\n");
+			return EXIT_FAILURE;
+		}
 	}
+	/* FIXME: my debugger doesn't like calling with args or piping, hard code */
 	/*fn = "/Users/neil/Movies/Common/Text/src/Text.c";*/
 	fn = "/Users/neil/Movies/Common/List/src/List.h";
 
 	do {
 
+		/* read file */
 		if(!(fp = fopen(fn, "r")))
 			{ error = E_ERRNO; break; }
 		if(!(text = Text()) || !TextFileCat(text, fp))
@@ -515,28 +485,25 @@ int main(int argc, char *argv[]) {
 		if(fclose(fp))
 			{ error = E_ERRNO; break; }
 		fp = 0;
+
+		/* create nested associtave array in global {relates} */
 		if(!(relates = Relates()))
 			{ error = E_RELATES; break; }
+
 		/* parse for " / * * "; it recursively calls things as appropriate */
 		if(!TextMatch(text, root_pattern, root_pattern_size))
 			{ error = E_TEXT; break; }
-		RelateForEachTrueChild(RelatesGetRoot(relates),
-			&select_non_functions, &print_header);
-		RelateForEachTrueChild(RelatesGetRoot(relates),
-			&select_functions, &print_header);
-		/*if(!TextMatch(text, tpattern, sizeof tpattern / sizeof *tpattern))
-			{ error = E_TEXT; break; }*/
-		/*printf("***%s***\n", TableToString(text));*/
-#if 1
-#if 0
-		xml();
-#endif
-#else
-		/* print the header(s?) */
-		RelateForEachTrueChild(r, &select_non_functions, &print_header);
-#endif
+
+		if(is_xml) {
+			/* print out the whole xml of all the docs */
+			xml(RelatesGetRoot(relates));
+		} else {
+			html(RelatesGetRoot(relates));
+			/* print out html */
+		}
 
 	} while(0);
+
 	switch(error) {
 		case E_NO_ERR: break;
 		case E_ERRNO: perror(fn); break;
@@ -545,6 +512,7 @@ int main(int argc, char *argv[]) {
 		case E_RELATES:
 			fprintf(stderr, "%s: %s.\n", fn, RelatesGetError(relates)); break;
 	}
+
 	{
 		Relates_(&relates); /* global */
 		Text_(&text);
@@ -598,91 +566,6 @@ int main(int argc, char **argv) {
 
 	/* parse */
 	cursor = buffer;
-	do {
-		if(!is_in_comment) {
-			char *return_value, *fn_name;
-			/* could be \ before, in a string, but it will do for now */
-			/* two docs must not be on consecutive lines */
-			/* all fn must have docs, or else they are invisible */
-			/* the start of a docs comment */
-
-			end = strstr(cursor, "/" "** ");
-
-			/* laughably fragile: before going on, let one check that there's a
-			 function, and add it to the previous Chapter;
-			 fixme: put in fn! */
-			if(is_fn_search
-			   && ch->hash_no
-			   && (fn = strpbrk(cursor, ";{/"))
-			   /* fn is a {, means a fn is near? */
-			   && *fn == '{'
-			   && (!end || fn < end)
-			   /* cursor < fn, start from the end: "(args)" of "void *fn(args)" */
-			   && (*fn = '\0', cursor = trim(cursor),
-				   rperen = strrchr(cursor, ')'))
-			   && (lperen = match_opening_perenthesis(cursor, rperen))
-			   /* fn:"void fn", args:"args" of "void *fn0args0" */
-			   && (args = parse_generics(trim(lperen)))
-			   && (*lperen++ = '\0', *rperen = '\0',
-				   fn = parse_generics(trim(cursor)))
-			   /* return_value:"void *" and fn:"fn" of copy "args0void *0fn0" */
-			   && (return_value = fn, strlen(fn))
-			   ) {
-				/* fn_name is the last isfunction */
-				for(fn_name = fn + strlen(fn) - 1;
-					isspace(*fn_name) && fn_name > fn;
-					fn_name--);
-				for( ; isfunction(*fn_name) && fn_name > fn; fn_name--);
-				fn_name++;
-				/* break apart */
-				if((fn_name = buffer_split(fn_name))) {
-					/* fprintf(stderr, "return value: <%s> fn name: <%s>\n", return_value, fn_name); */
-					trim(return_value);
-					/* place them in hash */
-					ch_put(ch, "_return", return_value);
-					ch_put(ch, "_fn",     fn_name);
-					ch_put(ch, "_args",   args);
-				}
-			}
-
-			is_fn_search = 0;
-
-			/* get back to the start of the auto-doc */
-			if((end)) {
-				is_fn_search = 0; /* reset */
-				end += 4, is_in_comment = -1; /* for "/" "**" */
-				/* move to the next chapter */
-				if(no_c >= max_chapters) { error = E_MAX; break; }
-				init_chapter(ch = chapters + no_c++);
-			}
-			cursor = end;
-		} else {
-			/* could be \ before, in a string, but it will do for now */
-			end = strstr(cursor, "*" "/");
-			if(end) {
-				is_in_comment = 0;
-				*end = '\0';
-				is_fn_search = -1;
-			}
-			parse_each(ch, trim(cursor));
-			/*printf("<%s>\n", cursor);*/
-			cursor = end ? end + 2 : 0;
-		}
-	} while(cursor);
-
-	if(cursor) {
-		switch(error) {
-			case E_NO: fprintf(stderr, "No error?\n"); break;
-			case E_ERRNO: perror(programme); break;
-			case E_MAX: fprintf(stderr, "A hard maximum was exceeded; consider "
-				"re-design?\n"); break;
-		}
-		return EXIT_FAILURE;
-	}
-	if(!no_c) {
-		fprintf(stderr, "No Doc /" "** comments *" "/ found.\n");
-		return EXIT_FAILURE;
-	}
 
 	/* print header */
 	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "

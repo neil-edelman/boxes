@@ -60,9 +60,9 @@ $(BDIR)/TestText: $(GDIR)/$(TDIR)/Text.o $(GDIR)/Text.o
 	@mkdir -p $(BDIR)
 	$(CC) $(CF) $(OF) $(GDIR)/$(TDIR)/Text.o $(GDIR)/Text.o -o $@
 
-$(BDIR)/$(PROJ): $(OBJS)
+$(BDIR)/$(PROJ): $(OBJS) $(GDIR)/$(TDIR)/Relates.o
 	@mkdir -p $(BDIR)
-	$(CC) $(CF) $(OF) $(OBJS) -o $@
+	$(CC) $(CF) $(OF) $(OBJS) $(GDIR)/$(TDIR)/Relates.o -o $@
 
 # compiling
 $(OBJS): $(GDIR)/%.o: $(SDIR)/%.c $(H)
