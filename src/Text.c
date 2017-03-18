@@ -100,8 +100,8 @@ static int cat(struct Text *const this, const char *const str,
 	const size_t str_len);
 static int capacity_up(struct Text *const this, const size_t *const len_ptr);
 
-void t_cut(struct TextCut *const this, char *const pos);
-void t_uncut(struct TextCut *const this);
+static void t_cut(struct TextCut *const this, char *const pos);
+static void t_uncut(struct TextCut *const this);
 	
 static int Matches(struct TextMatches *const this, struct Text *const parent);
 static void Matches_(struct TextMatches *const this);
@@ -617,12 +617,12 @@ static int capacity_up(struct Text *const this, const size_t *const len_ptr) {
  * TextCut (just initialise to all zero) */
 
 /** Stores the character at {pos} in {this} and terminates the string there. */
-void t_cut(struct TextCut *const this, char *const pos) {
+static void t_cut(struct TextCut *const this, char *const pos) {
 	if(this->is) return;
 	this->is = -1, this->pos = pos, this->stored = *pos, *pos = '\0';
 }
 /** If the string has been cut, undoes that. */
-void t_uncut(struct TextCut *const this) {
+static void t_uncut(struct TextCut *const this) {
 	if(!this->is) return;
 	this->is = 0;
 	*this->pos = this->stored;

@@ -213,6 +213,12 @@ struct Relate *RelateGetChild(const struct Relate *const this,
 	return found;
 }
 
+/** Shortcut for {TextToString(RelateGetValue(RelateGetChild(this, key)))}. */
+const char *RelateGetChildValue(const struct Relate *const this,
+	const char *const key) {
+	return RelateValue(RelateGetChild(this, key));
+}
+
 /** Gets the parent value of {this} or null if it is root. */
 struct Text *RelateGetParentValue(const struct Relate *const this) {
 	if(!this || this->parent.type != T_RELATE) return 0;

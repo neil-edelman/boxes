@@ -28,7 +28,9 @@ static struct Relates *relates;
 typedef void (*RelatesField)(struct Relate *const parent,
 	const struct Text *key, const struct Text *value);
 
-/** @implements	RelatesField */
+/**
+ @fixme			Params needs an additional level.
+ @implements	RelatesField */
 static void new_child(struct Relate *const parent, const struct Text *key,
 	const struct Text *value) {
 	struct Relate *child;
@@ -91,38 +93,6 @@ static void parse_each(struct Text *const this, struct Relate *const parent,
 		return;
 	}
 	em->what(parent, key, this);
-}
-
-/***************
- * XML testing */
-
-/** Write a bunch of XML CDATA. */
-static void cdata(const char *const str) {
-	const char *a = str, *b;
-	printf("<![CDATA[");
-	while((b = strstr(a, "]]>"))) {
-		printf("%.*s]]]]><![CDATA[>", (int)(b - a), a);
-		a = b + 3 /* "]]>".length */;
-	}
-	printf("%s]]>", a);
-}
-
-/** People use this shit?
- @implements	TextAction */
-static void xml_recursive(struct Relate *const this) {
-	printf("<key>"), cdata(RelateKey(this)), printf("</key>\n");
-	printf("<dict>\n<key>"), cdata(RelateKey(this)), printf("</key>\n");
-	printf("<string>"), cdata(RelateValue(this)), printf("</string>\n");
-	RelateForEachTrueChild(this, 0, &xml_recursive);
-	printf("</dict>\n");
-}
-
-static void xml(struct Relate *const this) {
-	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-	printf("<!DOCTYPE plist>\n");
-	printf("<plist version=\"1.0\">\n");
-	xml_recursive(this);
-	printf("</plist>\n");
 }
 
 /***********************
@@ -464,42 +434,167 @@ static const size_t root_pattern_size = sizeof root_pattern/sizeof*root_pattern;
 
 
 
-/******************
- * Main programme */
+/*******
+ * XML */
 
-/** Selects functions by looking for _fn.
- @implements	RelatePredicate */
-/*static int select_functions(const struct Relate *const this) {
-	return RelateGetChild(this, "_args") ? -1 : 0;
-}*/
+/** Write a bunch of XML CDATA. */
+static void cdata(const char *const str) {
+	const char *a = str, *b;
+	printf("<![CDATA[");
+	while((b = strstr(a, "]]>"))) {
+		printf("%.*s]]]]><![CDATA[>", (int)(b - a), a);
+		a = b + 3 /* "]]>".length */;
+	}
+	printf("%s]]>", a);
+}
 
-/** Prints header (at the top of the page, supposedly.)
- @implements	RelateAction */
-/*static void print_header(struct Relate *const this) {
-	struct Relate *a;
-	if((a = RelateGetChild(this, "file"))) {
-		printf("<h1>%s</h1>\n", RelateValue(a));
-	}
-	if((a = RelateGetChild(this, "_desc"))) {
-		printf("%s\n", RelateValue(a));
-	}
-	if((a = RelateGetChild(this, "_return"))) {
-		printf("return type: '%s'\n", RelateValue(a));
-	}
-	if((a = RelateGetChild(this, "_args"))) {
-		printf("argument list: '%s'\n", RelateValue(a));
-	}
-	printf("entry: '%s' -> '%s'\n\n", RelateKey(this), RelateValue(this));
-}*/
+/** People use this shit?
+ @implements	TextAction */
+static void xml_recursive(struct Relate *const this) {
+	printf("<key>"), cdata(RelateKey(this)), printf("</key>\n");
+	printf("<dict>\n<key>"), cdata(RelateKey(this)), printf("</key>\n");
+	printf("<string>"), cdata(RelateValue(this)), printf("</string>\n");
+	RelateForEachTrueChild(this, 0, &xml_recursive);
+	printf("</dict>\n");
+}
+
+static void xml(struct Relate *const this) {
+	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	printf("<!DOCTYPE plist>\n");
+	printf("<plist version=\"1.0\">\n");
+	xml_recursive(this);
+	printf("</plist>\n");
+}
+
+/********
+ * Text */
 
 /** @implements	RelateAction */
-static void html(struct Relate *const this) {
+static void plain(struct Relate *const this) {
 	printf("<key>%s</key>\n", RelateKey(this));
 	printf("<value>%s</value>\n", RelateValue(this));
 	printf("{\n");
-	RelateForEachTrueChild(this, 0, &html);
+	RelateForEachTrueChild(this, 0, &plain);
 	printf("}\n\n");
 }
+
+/********
+ * HTML */
+
+/** Selects functions by looking for _args.
+ @implements	RelatePredicate */
+static int select_functions(const struct Relate *const this) {
+	return RelateGetChild(this, "_args") ? -1 : 0;
+}
+/* each_head[] = {
+ { "file",    &top_key },
+ { "param",   &new_child },
+ { "author",  &new_child },
+ { "version", &new_child },
+ { "since",   &new_child },
+ { "fixme",   &new_child }
+ }, each_fn[] = {
+ { "param",   &new_child },
+ { "return",  &new_child },
+ { "throws",  &new_child },
+ { "implements", &new_child },
+ { "fixme",   &new_child },
+ { "author",  &new_child }
+ };*/
+/** @implements	RelatePredicate */
+static int select_param(const struct Relate *const this) {
+	return strcmp("param", RelateKey(this)) ? 0 : -1;
+}
+/** @implements	RelatePredicate */
+static int select_author(const struct Relate *const this) {
+	return strcmp("author", RelateKey(this)) ? 0 : -1;
+}
+/** @implements	RelatePredicate */
+static int select_version(const struct Relate *const this) {
+	return strcmp("version", RelateKey(this)) ? 0 : -1;
+}
+/** @implements	RelatePredicate */
+static int select_since(const struct Relate *const this) {
+	return strcmp("since", RelateKey(this)) ? 0 : -1;
+}
+/** @implements	RelatePredicate */
+static int select_fixme(const struct Relate *const this) {
+	return strcmp("fixme", RelateKey(this)) ? 0 : -1;
+}
+
+/** @implements	RelateAction */
+static void print_value(struct Relate *const this) {
+	printf("%s\n\n", RelateValue(this));
+}
+/** @implements	RelateAction */
+static void print_args_list(struct Relate *const this) {
+	printf("\t<dd>%s</dd>\n", RelateValue(this));
+}
+/** @implements	RelateAction */
+static void print_function_table(struct Relate *const this) {
+	printf("<tr>\n"
+		"\t<td>%s</td>\n"
+		"\t<td><a href = \"#%s\">%s</a></td>\n"
+		"\t<td>%s</td>\n"
+		"</tr>\n", RelateGetChildValue(this, "_return"), RelateKey(this),
+		RelateKey(this), RelateGetChildValue(this, "_args"));
+}
+/** @implements	RelateAction */
+static void print_function_detail(struct Relate *const this) {
+	const char *s;
+	printf("<a name = \"%s\"><!-- --></a>\n"
+		"<h3>%s</h3>\n"
+		"<pre>%s <b>%s</b> (%s)</pre>\n"
+		"<dl>\n", RelateKey(this), RelateKey(this),
+		RelateGetChildValue(this, "_return"), RelateKey(this),
+		RelateGetChildValue(this, "_args"));
+	RelateForEachTrueChild(this, &select_param, &print_args_list);
+	if((s = RelateGetChildValue(this, "throws")))
+		printf("\t<dt>Exceptions</dt><dd>%s</dd>\n", s);
+	if((s = RelateGetChildValue(this, "implements")))
+		printf("\t<dt>Implements</dt><dd>%s</dd>\n", s);
+	if((s = RelateGetChildValue(this, "return")))
+		printf("\t<dt>Return</dt><dd>%s</dd>\n", s);
+	printf("</dl>\n"
+		"%s\n", RelateValue(this));
+}
+
+/** @implements	RelateAction */
+static void html(struct Relate *const this) {
+	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
+		   "\"http://www.w3.org/TR/html4/strict.dtd\">\n\n");
+	printf("<html>\n\n"
+		"<head>\n");
+	/*printf("<link rel = \"stylesheet\" type = \"text/css\" "
+		"href = \"stylesheet.css\">\n");*/
+	printf("<title>%s</title>\n", RelateKey(this));
+	printf("</head>\n\n"
+		"<body>\n\n");
+	printf("<h1>%s</h1>\n\n", RelateKey(this));
+	RelateForEachTrueChild(this, &select_author, &print_value);
+	RelateForEachTrueChild(this, &select_version, &print_value);
+	RelateForEachTrueChild(this, &select_since, &print_value);
+	printf("%s\n\n", RelateValue(this)); /* intro */
+	RelateForEachTrueChild(this, &select_param, &print_value);
+	RelateForEachTrueChild(this, &select_fixme, &print_value);
+	printf("\n\n"
+		"<h2>Function Summary</h2>\n\n"
+		"<table>\n"
+		"<tr><th>Return Type</th><th>Function Name</th>"
+		"<th>Argument List</th></tr>\n");
+	RelateForEachTrueChild(this, &select_functions, &print_function_table);
+	printf("</table>\n\n\n"
+		"<h2>Function Detail</h2>\n\n");
+	RelateForEachTrueChild(this, &select_functions, &print_function_detail);
+	printf("\n\n"
+		"</body>\n"
+		"</html>\n");
+}
+
+
+
+/******************
+ * Main programme */
 
 /** The is a test of Table.
  @param argc	Count
@@ -507,19 +602,34 @@ static void html(struct Relate *const this) {
 int main(int argc, char *argv[]) {
 	struct Text *text = 0;
 	FILE *fp = 0;
-	int is_xml = 0;
 	enum { E_NO_ERR, E_ERRNO, E_TEXT, E_RELATES } error = E_NO_ERR;
+	const struct {
+		const char *const str;
+		RelateAction fun;
+	} fmt[] = {
+		{ "html", &html },
+		{ "text", &plain },
+		{ "xml",  &xml }
+	}, *fmt_chosen = fmt;
+	const size_t fmt_size = sizeof fmt / sizeof *fmt;
 
 	if(argc > 1) {
-		if(argc == 2 && !strcmp("xml", argv[1])) {
-			is_xml = -1;
+		int arg_err = 0;
+		if(argc != 2) {
+			arg_err = -1;
 		} else {
+			size_t f;
+			for(f = 0; f < fmt_size && strcmp(fmt[f].str, argv[1]); f++);
+			if(f < fmt_size) fmt_chosen = fmt + f; else arg_err = -1;
+		}
+		if(arg_err) {
 			fprintf(stderr,"Needs a C file to be input; produces documentation."
-				"\nThe default is to produce HTML, but you can specify [xml]\n"
-				"\n");
+				"\nThe default is to produce HTML, but you can specify [html|"
+				"text|xml].\n\n");
 			return EXIT_FAILURE;
 		}
 	}
+	fprintf(stderr, "Format %s.\n\n", fmt_chosen->str);
 
 	do {
 
@@ -540,13 +650,8 @@ int main(int argc, char *argv[]) {
 		if(!TextMatch(text, root_pattern, root_pattern_size))
 			{ error = E_TEXT; break; }
 
-		if(is_xml) {
-			/* print out the whole xml of all the docs */
-			xml(RelatesGetRoot(relates));
-		} else {
-			html(RelatesGetRoot(relates));
-			/* print out html */
-		}
+		/* print out */
+		fmt_chosen->fun(RelatesGetRoot(relates));
 
 	} while(0);
 
@@ -569,112 +674,3 @@ int main(int argc, char *argv[]) {
 
 	return error ? EXIT_FAILURE : EXIT_SUCCESS;
 }
-
-#if 0
-
-/******/
-
-static void print_text(struct Hash *const h) {
-	print_parsed_paragraph(h->value);
-}
-
-static void print_header_text(struct Hash *const h) {
-	printf("<h3>");
-	print_parsed(h->key);
-	printf("</h3>\n");
-	print_parsed_paragraph(h->value);
-}
-
-static void print_desc_list(struct Hash *const h) {
-	printf("\t<dt>%s</dt>\n", h->key);
-	printf("\t<dd>%s</dd>\n", h->value);
-}
-
-
-int main(int argc, char **argv) {
-	struct _SuperCat cat;
-	static char buffer[0x40000];
-	char get[1024];
-	unsigned no_c = 0 /* chapter index */, i;
-	struct Chapter *ch = 0;
-	char *lperen, *rperen;
-	enum { E_NO, E_ERRNO, E_MAX, E_FN } error = E_NO;
-
-	char *cursor, *end, *fn, *args;
-	int is_in_comment = 0, is_fn_search  = 0;
-
-	if(argc > 1 || (!argv && argv)) { usage(); return EXIT_SUCCESS; }
-
-	/* read the whole buffer */
-	_super_cat_init(&cat, buffer, sizeof buffer / sizeof *buffer);
-	while(fgets(get, (int)sizeof get, stdin)) _super_cat(&cat, get);
-	if(ferror(stdin)) { perror("stdin"); return EXIT_FAILURE; }
-
-	/* parse */
-	cursor = buffer;
-
-	/* print header */
-	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
-		   "\"http://www.w3.org/TR/html4/strict.dtd\">\n\n");
-	printf("<html>\n\n");
-	printf("<head>\n");
-	printf("<link rel = \"stylesheet\" type = \"text/css\" "
-		   "href = \"stylesheet.css\">\n");
-	printf("<title>%s</title>\n", ch_get(chapters + 0, "file"));
-	printf("</head>\n\n");
-	printf("<body>\n");
-	printf("<h1>%s</h1>\n\n", ch_get(chapters + 0, "file"));
-	ch_for_each_passed(chapters + 0, &match_main,  &print_text);
-	ch_for_each_passed(chapters + 0, &match_param, &print_header_text);
-	ch_for_each_passed(chapters+0, &match_things_in_header, &print_header_text);
-	printf("<hr>\n\n");
-
-	/* print table */
-	printf("<!-- function summary -->\n\n");
-	printf("<table>\n");
-	printf("<tr><th colspan = 2><h2>Function Summary</h2></th></tr>\n");
-	for(i = 0; i < no_c; i++) {
-		ch = chapters + i;
-		if(!ch_get(ch, "_fn")) continue;
-		printf("<tr>\n");
-		printf("\t<td>%s</td>\n", ch_get(ch, "_return"));
-		printf("\t<td><a href = \"#%s\">%s</a>%s</td>\n", ch_get(ch, "_fn"),
-			   ch_get(ch, "_fn"), ch_get(ch, "_args"));
-		printf("</tr>\n");
-	}
-	printf("</table>\n");
-	printf("<hr>\n\n");
-
-	/* print details */
-	printf("<!-- function detail -->\n\n");
-	printf("<h2>Function Detail</h2>\n\n");
-	for(i = 0; i < no_c; i++) {
-		ch = chapters + i;
-		if(!ch_get(ch, "_fn")) continue;
-		printf("<a name = \"%s\"><!-- --></a>\n", ch_get(ch, "_fn"));
-		printf("<h3>%s</h3>\n", ch_get(ch, "_fn"));
-		printf("<pre>%s <b>%s</b> %s</pre>\n", ch_get(ch, "_return"),
-			   ch_get(ch, "_fn"), ch_get(ch, "_args"));
-		printf("<dl>\n");
-		ch_for_each_passed(ch, &match_param, &print_desc_list);
-		ch_for_each_passed(ch, &match_things_in_fn, &print_desc_list);
-		printf("</dl>\n");
-		ch_for_each_passed(ch, &match_main, &print_text);
-	}
-	printf("<hr>\n\n");
-
-	/* print closing */
-	printf("<hr>\n");
-	printf("</body>\n\n");
-	printf("</html>\n");
-
-	/* debug */
-	for(i = 0; i < no_c; i++) {
-		ch = chapters + i;
-		fprintf(stderr, "  __new chapter__\n");
-		ch_print(ch);
-	}
-
-	return error ? EXIT_FAILURE : EXIT_SUCCESS;
-}
-#endif
