@@ -344,7 +344,8 @@ int TextFileCat(struct Text *const this, FILE *const fp) {
 	return -1;
 }
 
-/** Concatenates the buffer with a printf, \see{printf}.
+/** Concatenates the buffer with a {printf},
+ \url{http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html}.
  @fixme		Have a function that allows replacing in the middle,
  TextPrintfCat(this, fmt, ...) -> TextPrintf(this, this.length, fmt, ...)
  and TextInsert() . . . */

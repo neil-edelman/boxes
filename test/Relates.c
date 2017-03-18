@@ -483,25 +483,12 @@ static void plain(struct Relate *const this) {
  * HTML */
 
 /** Selects functions by looking for _args.
+ @fixme			Have an option "--static".
  @implements	RelatePredicate */
 static int select_functions(const struct Relate *const this) {
-	return RelateGetChild(this, "_args") ? -1 : 0;
+	const char *const t = RelateValue(RelateGetChild(this, "_return"));
+	return t && strncmp("static", t, 6lu) ? -1 : 0;
 }
-/* each_head[] = {
- { "file",    &top_key },
- { "param",   &new_child },
- { "author",  &new_child },
- { "version", &new_child },
- { "since",   &new_child },
- { "fixme",   &new_child }
- }, each_fn[] = {
- { "param",   &new_child },
- { "return",  &new_child },
- { "throws",  &new_child },
- { "implements", &new_child },
- { "fixme",   &new_child },
- { "author",  &new_child }
- };*/
 /** @implements	RelatePredicate */
 static int select_param(const struct Relate *const this) {
 	return strcmp("param", RelateKey(this)) ? 0 : -1;
