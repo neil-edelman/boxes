@@ -84,7 +84,7 @@ static struct Relates *to_relates(struct Relate *const this);
 
 /** Constructs a generic, {Text} with {root_name} as it's root name, or blank
  if null.
- @throws	E_PARAMETER, E_ERRNO */
+ @throws E_PARAMETER, E_ERRNO */
 struct Relates *Relates(void) {
 	struct Relates *this;
 	struct Parent parent;
@@ -126,12 +126,12 @@ void Relates_(struct Relates **const this_ptr) {
 	*this_ptr = 0;
 }
 
-/** @return	The {Relate} root of the {Relates}. */
+/** @return The {Relate} root of the {Relates}. */
 struct Relate *RelatesGetRoot(struct Relates *const this) {
 	return this ? this->root : 0;
 }
 
-/** @return		The last error associated with {this} (can be null.) */
+/** @return The last error associated with {this} (can be null.) */
 const char *RelatesGetError(struct Relates *const this) {
 	const char *str;
 	enum Error *perr;
@@ -175,7 +175,8 @@ const struct RelateParent *RelateGetKeyParent(const struct Relate *const this) {
 
 /** Get {RelateParent}, a read-only structure that describes how the value is
  derived from the parent. */
-const struct RelateParent *RelateGetValueParent(const struct Relate *const this) {
+const struct RelateParent *RelateGetValueParent(const struct Relate *const
+	this) {
 	return this ? this->value_parent : 0;
 }
 
@@ -184,20 +185,33 @@ struct Relate *RelateNewChild(struct Relate *const this) {
 	return this ? relate_new(this) : 0;
 }
 
-/** E ch, e: p(r) -> a(r.value) */
-void RelateForEachTrueChild(struct Relate *const this,
+/** E {r} \in {this.children}, {p}({r}) -> {a}({r}) */
+void RelateForEachChildIf(struct Relate *const this,
 	RelatePredicate p, RelateAction a) {
 	struct Relate *child;
 	unsigned i;
+	if(!a) return;
 	for(i = 0; i < this->size; i++) {
 		child = this->childs[i];
 		if(!p || p(child)) a(child);
 	}
 }
 
+/** E {r} \in {this.children}, !strcmp({r.key}, {key}) -> {a}({r}) */
+void RelateForEachChildKey(struct Relate *const this,
+	const char *const key, RelateAction a) {
+	struct Relate *child;
+	unsigned i;
+	if(!key || !a) return;
+	for(i = 0; i < this->size; i++) {
+		child = this->childs[i];
+		if(!strcmp(TextToString(child->key), key)) a(child);
+	}
+}
+
 /** Does a short-circuit linear search of {this} for a child key that matches
  {key}.
- @return	The text or null if the key was not found. */
+ @return The text or null if the key was not found. */
 struct Relate *RelateGetChild(const struct Relate *const this,
 	const char *const key) {
 	struct Relate *child, *found = 0;
@@ -271,7 +285,7 @@ static void relate_(struct Relate **const this_ptr) {
 }
 
 /** Spawns a new child of {this}. The errors are propagated to the {Relates}.
- @throws	E_OVERFLOW, E_ERRNO */
+ @throws E_OVERFLOW, E_ERRNO */
 static struct Relate *relate_new(struct Relate *this) {
 	struct Relate *child;
 	struct Parent parent;
@@ -293,8 +307,8 @@ static struct Relate *relate_new(struct Relate *this) {
 }
 
 /** Grows child capacity of {this}. Should only be c
- @return	Success.
- @throws	E_OVERFLOW, E_ERRNO */
+ @return Success.
+ @throws E_OVERFLOW, E_ERRNO */
 static int relate_grow(struct Relate *const this) {
 	size_t c0, c1;
 	struct Relate **childs;
@@ -318,7 +332,7 @@ static int relate_grow(struct Relate *const this) {
 	return -1;
 }
 
-/** @return	Goes up the chain of {Relate} until it hits the {Relates}. */
+/** @return Goes up the chain of {Relate} until it hits the {Relates}. */
 static struct Relates *to_relates(struct Relate *const this) {
 	const struct Relate *r;
 	for(r = this; r->parent.type == T_RELATE; r = r->parent.p.relate);

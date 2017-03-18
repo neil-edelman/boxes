@@ -55,6 +55,7 @@ static const struct EachMatch {
 	{ "file",    &top_key },
 	{ "param",   &new_child },
 	{ "author",  &new_child },
+	{ "std",     &new_child },
 	{ "version", &new_child },
 	{ "since",   &new_child },
 	{ "fixme",   &new_child }
@@ -66,6 +67,7 @@ static const struct EachMatch {
 	{ "fixme",   &new_child },
 	{ "author",  &new_child },
 	{ "since",   &new_child }
+	/* fixme: deprecated */
 };
 static const size_t each_head_size = sizeof each_head / sizeof *each_head,
 	each_fn_size = sizeof each_fn / sizeof *each_fn;
@@ -240,7 +242,7 @@ static int parse_generics(struct Text *const this) {
 				/*fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
 					generic->type, (int)name_len, generic->name);*/
 				/* fixme: <, >, are verboten in html */
-				if(!TextPrintfCat(temp, "<%.*s>%.*s", type_len, generic->type,
+				if(!TextPrintCat(temp, "<%.*s>%.*s", type_len, generic->type,
 					name_len, generic->name)) { e = E_A; break; }
 			}
 			if(e) break;
@@ -455,7 +457,7 @@ static void xml_recursive(struct Relate *const this) {
 	printf("<key>"), cdata(RelateKey(this)), printf("</key>\n");
 	printf("<dict>\n<key>"), cdata(RelateKey(this)), printf("</key>\n");
 	printf("<string>"), cdata(RelateValue(this)), printf("</string>\n");
-	RelateForEachTrueChild(this, 0, &xml_recursive);
+	RelateForEachChildIf(this, 0, &xml_recursive);
 	printf("</dict>\n");
 }
 
@@ -475,48 +477,34 @@ static void plain(struct Relate *const this) {
 	printf("<key>%s</key>\n", RelateKey(this));
 	printf("<value>%s</value>\n", RelateValue(this));
 	printf("{\n");
-	RelateForEachTrueChild(this, 0, &plain);
+	RelateForEachChildIf(this, 0, &plain);
 	printf("}\n\n");
 }
 
-/********
- * HTML */
+/*************************************************
+ * HTML (okay, this would be easier with lamdas) */
 
 /** Selects functions by looking for _args.
- @fixme			Have an option "--static".
+ @fixme			Have an option "--static", or you could detect .h not _fn.
  @implements	RelatePredicate */
 static int select_functions(const struct Relate *const this) {
 	const char *const t = RelateValue(RelateGetChild(this, "_return"));
-	return t && strncmp("static", t, 6lu) ? -1 : 0;
+	return t && strncmp("static", t, 6lu) /* fixme: almost */ ? -1 : 0;
 }
-/** @implements	RelatePredicate */
-static int select_param(const struct Relate *const this) {
-	return strcmp("param", RelateKey(this)) ? 0 : -1;
-}
-/** @implements	RelatePredicate */
-static int select_author(const struct Relate *const this) {
-	return strcmp("author", RelateKey(this)) ? 0 : -1;
-}
-/** @implements	RelatePredicate */
-static int select_version(const struct Relate *const this) {
-	return strcmp("version", RelateKey(this)) ? 0 : -1;
-}
-/** @implements	RelatePredicate */
-static int select_since(const struct Relate *const this) {
-	return strcmp("since", RelateKey(this)) ? 0 : -1;
-}
-/** @implements	RelatePredicate */
-static int select_fixme(const struct Relate *const this) {
-	return strcmp("fixme", RelateKey(this)) ? 0 : -1;
-}
-
-/** @implements	RelateAction */
-static void print_value(struct Relate *const this) {
-	printf("%s\n\n", RelateValue(this));
+/** A generic print <dl>.
+ @implements	RelateAction */
+static void print_dl(struct Relate *const this) {
+	printf("\t<dt>%s:</dt><dd>%s</dd>\n", RelateKey(this), RelateValue(this));
 }
 /** @implements	RelateAction */
-static void print_args_list(struct Relate *const this) {
-	printf("\t<dd>%s</dd>\n", RelateValue(this));
+static void print_param_dl(struct Relate *const this) {
+	/* fixme! */
+	printf("\t<dt>parameter:</dt><dd>%s</dd>\n", RelateValue(this));
+}
+/** "std:" looks bad.
+ @implements	RelateAction */
+static void print_std_dl(struct Relate *const this) {
+	printf("\t<dt>minimum standard:</dt><dd>%s</dd>\n", RelateValue(this));
 }
 /** @implements	RelateAction */
 static void print_function_table(struct Relate *const this) {
@@ -529,25 +517,21 @@ static void print_function_table(struct Relate *const this) {
 }
 /** @implements	RelateAction */
 static void print_function_detail(struct Relate *const this) {
-	const char *s;
-	printf("<a name = \"%s\"><!-- --></a>\n"
+	printf("<div><a name = \"%s\"><!-- --></a>\n"
 		"<h3>%s</h3>\n"
 		"<pre>%s <b>%s</b> (%s)</pre>\n"
 		"%s\n"
-		"<dl>\n"
-		/*"\t<dt>Parameters Detail</dt>\n"*/, RelateKey(this), RelateKey(this),
+		"<dl>\n", RelateKey(this), RelateKey(this),
 		RelateGetChildValue(this, "_return"), RelateKey(this),
 		RelateGetChildValue(this, "_args"), RelateValue(this));
-	RelateForEachTrueChild(this, &select_param, &print_args_list);
-	if((s = RelateGetChildValue(this, "return")))
-		printf("<dt>Returns</dt><dd>%s</dd>\n", s);
-	if((s = RelateGetChildValue(this, "implements")))
-		printf("<dt>Implements</dt><dd>%s</dd>\n", s);
-	if((s = RelateGetChildValue(this, "throws")))
-		printf("<dt>Throws</dt><dd>%s</dd>\n", s);
-	if((s = RelateGetChildValue(this, "since")))
-		printf("<dt>Since</dt><dd>%s</dt>\n", s);
-	printf("</dl>\n");
+	RelateForEachChildKey(this, "param", &print_param_dl);
+	RelateForEachChildKey(this, "return", &print_dl);
+	RelateForEachChildKey(this, "implements", &print_dl);
+	RelateForEachChildKey(this, "throws", &print_dl);
+	RelateForEachChildKey(this, "author", &print_dl);
+	RelateForEachChildKey(this, "since", &print_dl);
+	RelateForEachChildKey(this, "fixme", &print_dl);
+	printf("</dl></div>\n\n");
 }
 
 /** @implements	RelateAction */
@@ -556,27 +540,45 @@ static void html(struct Relate *const this) {
 		   "\"http://www.w3.org/TR/html4/strict.dtd\">\n\n");
 	printf("<html>\n\n"
 		"<head>\n");
-	/*printf("<link rel = \"stylesheet\" type = \"text/css\" "
-		"href = \"stylesheet.css\">\n");*/
-	printf("<title>%s</title>\n", RelateKey(this));
-	printf("</head>\n\n"
-		"<body>\n\n");
-	printf("<h1>%s</h1>\n\n", RelateKey(this));
-	RelateForEachTrueChild(this, &select_author, &print_value);
-	RelateForEachTrueChild(this, &select_version, &print_value);
-	RelateForEachTrueChild(this, &select_since, &print_value);
-	printf("%s\n\n", RelateValue(this)); /* intro */
-	RelateForEachTrueChild(this, &select_param, &print_value);
-	RelateForEachTrueChild(this, &select_fixme, &print_value);
-	printf("\n\n"
+	printf("<!-- steal these colour values from JavaDocs -->\n");
+	printf("<style type = \"text/css\">\n"
+		"\ta:link,  a:visited { color: #4a6782; }\n"
+		"\ta:hover, a:focus   { color: #bb7a2a; }\n"
+		"\ta:active           { color: #4A6782; }\n"
+		"\ttr:nth-child(even) { background: #dee3e9; }\n"
+		"\tdiv {\n"
+		"\t\tmargin:  4px 0;\n"
+		"\t\tpadding: 0 4px 4px 4px;\n"
+		"\t}\n"
+		"\ttable    { width: 100%%; }\n"
+		"\ttd       { padding: 4px; }\n"
+		"\th1 h2 h3 { color: #2c4557; }\n"
+		"\th3 {\n"
+		"\t\tbackground-color: #dee3e9;\n"
+		"\t\tmargin:           0 -4px;\n"
+		"\t\tpadding:          4px;\n"
+		"\t}\n"
+		"</style>\n"
+		"<title>%s</title>\n"
+		"</head>\n\n"
+		"<body>\n\n"
+		"<h1>%s</h1>\n\n"
+		"%s\n\n<dl>\n", RelateKey(this), RelateKey(this), RelateValue(this));
+	RelateForEachChildKey(this, "std", &print_std_dl);
+	RelateForEachChildKey(this, "author", &print_dl);
+	RelateForEachChildKey(this, "version", &print_dl);
+	RelateForEachChildKey(this, "since", &print_dl);
+	RelateForEachChildKey(this, "fixme", &print_dl);
+	RelateForEachChildKey(this, "param", &print_param_dl);
+	printf("</dl>\n\n"
 		"<h2>Function Summary</h2>\n\n"
 		"<table>\n"
 		"<tr><th>Return Type</th><th>Function Name</th>"
 		"<th>Argument List</th></tr>\n");
-	RelateForEachTrueChild(this, &select_functions, &print_function_table);
+	RelateForEachChildIf(this, &select_functions, &print_function_table);
 	printf("</table>\n\n\n"
 		"<h2>Function Detail</h2>\n\n");
-	RelateForEachTrueChild(this, &select_functions, &print_function_detail);
+	RelateForEachChildIf(this, &select_functions, &print_function_detail);
 	printf("\n\n"
 		"</body>\n"
 		"</html>\n");

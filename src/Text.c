@@ -1,19 +1,32 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A dynamic string.
+ A dynamic string in Modified UTF-8,
+ \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. That is, this is a
+ wrapper around a standard C null-terminated string. This wrapper automatically
+ expands memory as needed. However, it is not safe for use by multiple threads.
 
  @file		Text.c
  @author	Neil
+ @std		C89/90
  @version	1.0; 2017-03
- @since		1.0; 2017-03 */
+ @since		1.0; 2017-03
+ @fixme		TextCodePointAt, TextCodePointCount, TextCharAt,
+ TextDelete(int start, int end), TextIndexOf(String str, int fromIndex),
+ TextInsert(...), lastIndexOf, length,
+ TextOffsetByCodePoints(int index, int codePointOffset),
+ TextReplace(int start, int end, String str),
+ TextSetCharAt, TextSubsequence?
+ @fixme		All the positions and sizes are in absolute bytes; not really what
+ you want for internationalisation.
+ @fixme		E_CODE_CHOPPED */
 
 /*#define TEXT_DEBUG*/
 
-#include <stdlib.h> /* malloc free */
-#include <stdio.h>  /* FILE fgets fprintf */
+#include <stdlib.h> /* malloc realloc free */
+#include <stdio.h>  /* FILE fgets ferror vsnprintf fprintf */
 #include <errno.h>	/* errno */
-#include <string.h>	/* strerror memcpy */
+#include <string.h>	/* strerror strlen memmove memcpy strpbrk strdup */
 #include <limits.h>	/* INT_MAX */
 #include <ctype.h>	/* isspace */
 #include <stdarg.h>	/* va_* */
@@ -144,7 +157,7 @@ struct Text *Text(void) {
 	return this;
 }
 
-/** @param this_ptr	A pointer to Text that will be destructed. */
+/** @param this_ptr: A pointer to Text that will be destructed. */
 void Text_(struct Text **const this_ptr) {
 	struct Text *this;
 
@@ -185,7 +198,7 @@ void TextClear(struct Text *const this) {
 	clear(this);
 }
 
-/** White-space trims the buffer associated with {this}. */
+/** White-space trims the buffer associated with {this} using {isspace}. */
 void TextTrim(struct Text *const this) {
 	char *str, *a, *z;
 
@@ -200,21 +213,23 @@ void TextTrim(struct Text *const this) {
 	if(a - str) memmove(str, a, this->length + 1);
 }
 
-/** Separates a new token at the first {delims} that satisfy {pred}. Behaves
- like {strsep}.
- @param token_ptr	A pointer that receives a new {Text} token or null if the
-					tokenisation is finished. You will have to call \see{Text_}.
- @param pred		Can be null, in which case, it behaves like true.
- @return			Success.
- @throws			E_PARAMETER, E_OVERFLOW, E_ERRNO */
+/** Separates a new token at the first {delims} that satisfy {pred}. For
+ {strsep} behaviour, the following is safe,
+ {while((TextSplit(this, " \n\t\v\f\r", &split, 0), split)) Text_(&split);}.
+ @param token_ptr: A pointer that receives a new {Text} token or null if the
+ tokenisation is finished. If non-null, one properly calls \see{Text_} on this
+ pointer.
+ @param pred: Can be null, in which case, it behaves like true.
+ @return Success.
+ @throws E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextSplit(struct Text *const this, const char *const delims,
 	struct Text **const token_ptr, const TextPredicate pred) {
 	struct Text *token;
 	char *bork;
 
 	if(!this) return 0;
-	if(!token_ptr || !delims) return this->error = E_PARAMETER, 0;
-	*token_ptr = 0;
+	if(!token_ptr || (*token_ptr = 0, !delims))
+		return this->error = E_PARAMETER, 0;
 
 	/* find */
 	bork = this->text;
@@ -266,6 +281,8 @@ int TextCopy(struct Text *const this, const char *const str) {
  check to ensure that there are at least {str_len} bytes in the string. This
  differs from strncpy in that it copies exactly {str_len} characters instead of
  repeating null when it gets a zero. The string is always null-terminated.
+ @fixme		Do a check.
+ @fixme		E_CHAR_PART -> size_t TextCodePoints(str, str_len)
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextNCopy(struct Text *const this, const char *const str,
@@ -287,7 +304,8 @@ int TextBetweenCopy(struct Text *const this,
 	return (a <= b) ? cat(this, a, (size_t)(b - a + 1)) : -1;
 }
 
-/** Concatenates {cat} onto the buffer in {this}.
+/** Concatenates {cat} onto the buffer in {this}. This is {<String>append} in
+ Java.
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextCat(struct Text *const this, const char *const str) {
@@ -346,10 +364,9 @@ int TextFileCat(struct Text *const this, FILE *const fp) {
 
 /** Concatenates the buffer with a {printf},
  \url{http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html}.
- @fixme		Have a function that allows replacing in the middle,
- TextPrintfCat(this, fmt, ...) -> TextPrintf(this, this.length, fmt, ...)
- and TextInsert() . . . */
-int TextPrintfCat(struct Text *const this, const char *const fmt, ...) {
+ @fixme Have a function that allows replacing in the middle,
+ TextPrintCat(this, fmt, ...) -> TextPrint(this, this.length, fmt, ...) */
+int TextPrint(struct Text *const this, const char *const fmt, ...) {
 	va_list argp;
 	char garbage;
 	int length;
@@ -379,9 +396,9 @@ int TextPrintfCat(struct Text *const this, const char *const fmt, ...) {
 }
 
 /** Transforms the original text according to {fmt}.
- @param fmt	Accepts %% as '%' and %s as the original string.
- @return	Success.
- @throws	E_OVERFLOW, E_ERRNO */
+ @param fmt: Accepts %% as '%' and %s as the original string.
+ @return Success.
+ @throws E_OVERFLOW, E_ERRNO */
 int TextTransform(struct Text *const this, const char *fmt) {
 	char *copy, *t;
 	const char *f;
@@ -420,11 +437,11 @@ int TextTransform(struct Text *const this, const char *fmt) {
 
 /** Transforms {this} according to all specified {patterns} array of
  {patterns_size}.
- @param patterns	An array of {TextPattern}; when the {begin} of a pattern
-					encompasses another pattern, it should be before in the
-					array. All patterns must have {begin} and {transform}, but
-					{end} is optional; where missing, it will just call
-					{transform} with {begin}. */
+ @fixme Detect when "()" and do closing_parens.
+ @param patterns: An array of {TextPattern}; when the {begin} of a pattern
+ encompasses another pattern, it should be before in the array. All patterns
+ must have {begin} and {transform}, but {end} is optional; where missing, it
+ will just call {transform} with {begin}. */
 int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size) {
 	struct Text *temp = 0;
@@ -534,7 +551,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
  match occurred within the parent. This gets that information. Don't call on
  multi-threaded executions. If any pointers are null, ignores them. Useful for
  match-handlers.
- @return	Success; otherwise the values are invalid and will not be set. */
+ @return Success; otherwise the values are invalid and will not be set. */
 int TextGetMatchInfo(struct Text **parent_ptr,
 	size_t *const start_ptr, size_t *const end_ptr) {
 	if(!match_info.is_valid) return 0;
@@ -557,7 +574,7 @@ static void clear(struct Text *const this) {
 	this->length  = 0;
 }
 
-/** @throws	E_OVERFLOW, E_ERRNO */
+/** @throws E_OVERFLOW, E_ERRNO */
 static int cat(struct Text *const this, const char *const str,
 	const size_t str_len) {
 	const size_t old_len = this->length, new_len = old_len + str_len;
@@ -584,11 +601,10 @@ static int cat(struct Text *const this, const char *const str,
 }
 
 /** Ensures value capacity.
- @param size_ptr	Can be null, in which case the capacity increases one level
-					in size. If it is not, the capacity increases at or beyond
-					this number.
- @return	Success.
- @throws	E_OVERFLOW, E_ERRNO */
+ @param size_ptr: Can be null, in which case the capacity increases one level
+in size. If it is not, the capacity increases at or beyond this number.
+ @return Success.
+ @throws E_OVERFLOW, E_ERRNO */
 static int capacity_up(struct Text *const this, const size_t *const len_ptr) {
 	size_t c0, c1;
 	char *text;
@@ -633,8 +649,8 @@ static void t_uncut(struct TextCut *const this) {
  * TextMatches */
 
 /** Initialise. All errors are bumped up to the parent; you can just return 0.
- @return	Success.
- @throws	E_ERRNO */
+ @return Success.
+ @throws E_ERRNO */
 static int Matches(struct TextMatches *const this, struct Text *const parent) {
 	this->parent      = parent;
 	this->matches     = 0;
@@ -659,7 +675,7 @@ static void Matches_(struct TextMatches *const this) {
 }
 
 /** Increases the buffer size.
- @throws	E_OVERFLOW, E_ERRNO */
+ @throws E_OVERFLOW, E_ERRNO */
 static int Matches_capacity_up(struct TextMatches *const this) {
 	size_t c0, c1;
 	struct TextMatch *matches;
