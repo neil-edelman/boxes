@@ -64,7 +64,8 @@ static const struct EachMatch {
 	{ "throws",  &new_child },
 	{ "implements", &new_child },
 	{ "fixme",   &new_child },
-	{ "author",  &new_child }
+	{ "author",  &new_child },
+	{ "since",   &new_child }
 };
 static const size_t each_head_size = sizeof each_head / sizeof *each_head,
 	each_fn_size = sizeof each_fn / sizeof *each_fn;
@@ -545,18 +546,21 @@ static void print_function_detail(struct Relate *const this) {
 	printf("<a name = \"%s\"><!-- --></a>\n"
 		"<h3>%s</h3>\n"
 		"<pre>%s <b>%s</b> (%s)</pre>\n"
-		"<dl>\n", RelateKey(this), RelateKey(this),
+		"%s\n"
+		"<dl>\n"
+		/*"\t<dt>Parameters Detail</dt>\n"*/, RelateKey(this), RelateKey(this),
 		RelateGetChildValue(this, "_return"), RelateKey(this),
-		RelateGetChildValue(this, "_args"));
+		RelateGetChildValue(this, "_args"), RelateValue(this));
 	RelateForEachTrueChild(this, &select_param, &print_args_list);
-	if((s = RelateGetChildValue(this, "throws")))
-		printf("\t<dt>Exceptions</dt><dd>%s</dd>\n", s);
-	if((s = RelateGetChildValue(this, "implements")))
-		printf("\t<dt>Implements</dt><dd>%s</dd>\n", s);
 	if((s = RelateGetChildValue(this, "return")))
-		printf("\t<dt>Return</dt><dd>%s</dd>\n", s);
-	printf("</dl>\n"
-		"%s\n", RelateValue(this));
+		printf("<dt>Returns</dt><dd>%s</dd>\n", s);
+	if((s = RelateGetChildValue(this, "implements")))
+		printf("<dt>Implements</dt><dd>%s</dd>\n", s);
+	if((s = RelateGetChildValue(this, "throws")))
+		printf("<dt>Throws</dt><dd>%s</dd>\n", s);
+	if((s = RelateGetChildValue(this, "since")))
+		printf("<dt>Since</dt><dd>%s</dt>\n", s);
+	printf("</dl>\n");
 }
 
 /** @implements	RelateAction */
