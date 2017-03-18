@@ -1,9 +1,9 @@
-/** Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
+/** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  A dynamic string.
 
- @file		Text
+ @file		Text.c
  @author	Neil
  @version	1.0; 2017-03
  @since		1.0; 2017-03 */
@@ -157,7 +157,9 @@ void Text_(struct Text **const this_ptr) {
 	*this_ptr = 0;
 }
 
-/** Gets the string associated to {this}. */
+/** Gets the string associated to {this}. Volatile, in the sense that it
+ exposes the buffer; specifically, not guaranteed to last between {Text} calls
+ to the same object. If you want a copy, do {strdup(TextToString(text))}. */
 const char *TextToString(const struct Text *const this) {
 	if(!this) return 0;
 	return this->text;

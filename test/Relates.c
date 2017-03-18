@@ -13,36 +13,85 @@
 #include <ctype.h>	/* isspace */
 #include "../src/Relates.h"
 
+/* https://www.programiz.com/c-programming/library-function/ctype.h/isspace */
+const char *const white_space = " \n\t\v\f\r";
+const char *const separates_param_value = "\n\t\v\f\r";
+/* FIXME: my debugger doesn't like calling with args or piping, hard code */
+const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";
+/*const char *const fn = "/Users/neil/Movies/Common/List/src/List.h";*/
+
 static struct Relates *relates;
 
 /*****************************************
  * This goes under \see{new_docs} for @. */
 
-typedef void (*RelatesField)(struct Relate *const parent, const struct Text *);
+typedef void (*RelatesField)(struct Relate *const parent,
+	const struct Text *key, const struct Text *value);
 
 /** @implements	RelatesField */
-static void new_child(struct Relate *const parent, const struct Text *text) {
+static void new_child(struct Relate *const parent, const struct Text *key,
+	const struct Text *value) {
+	struct Relate *child;
+	/*fprintf(stderr, "here: %s -> %s\n", TextToString(key),
+		TextToString(value));*/
+	child = RelateNewChild(parent);
+	TextCopy(RelateGetKey(child), TextToString(key));
+	TextCopy(RelateGetValue(child), TextToString(value));
 }
 /** @implements	RelatesField */
-static void top_key(struct Relate *const parent, const struct Text *text) {
+static void top_key(struct Relate *const parent, const struct Text *key,
+	const struct Text *value) {
+	do { break; } while(key);
+	/*fprintf(stderr, "HERE!!! %s\n", TextToString(value));*/
+	TextCat(RelateGetKey(parent), TextToString(value));
 }
 
 static const struct EachMatch {
-	char *match;
+	const char *word;
 	RelatesField what;
 } each_head[] = {
 	{ "file",    &top_key },
+	{ "param",   &new_child },
 	{ "author",  &new_child },
 	{ "version", &new_child },
 	{ "since",   &new_child },
 	{ "fixme",   &new_child }
 }, each_fn[] = {
+	{ "param",   &new_child },
 	{ "return",  &new_child },
 	{ "throws",  &new_child },
 	{ "implements", &new_child },
 	{ "fixme",   &new_child },
 	{ "author",  &new_child }
 };
+static const size_t each_head_size = sizeof each_head / sizeof *each_head,
+	each_fn_size = sizeof each_fn / sizeof *each_fn;
+
+/** Called from \see{new_docs}. */
+static void parse_each(struct Text *const this, struct Relate *const parent,
+	const struct EachMatch *const ems, const size_t ems_size) {
+	const struct EachMatch *em;
+	size_t e, key_sl;
+	struct Text *key;
+	const char *key_s;
+
+	/*printf("parse_@: '%s'\n", TextToString(this));*/
+	TextSplit(this, white_space, &key, 0);
+	if(!key) return;
+	TextTrim(this);
+	/* linear search */
+	key_s = TextToString(key);
+	key_sl = strlen(key_s);
+	for(e = 0; e < ems_size && ((em = ems + e, key_sl != strlen(em->word))
+		|| strncmp(em->word, key_s, key_sl)); e++);
+	if(e >= ems_size) {
+		fprintf(stderr, "Warning: unrecognised @-symbol, '%.*s.'\n",
+			(int)key_sl, key_s);
+		Text_(&key);
+		return;
+	}
+	em->what(parent, key, this);
+}
 
 /***************
  * XML testing */
@@ -132,17 +181,20 @@ static const char *match_parenthesis(const char *const left) {
  when you know it has a '('. Called by \see{parse_generics}. */
 static const char *prev_function_part(const char *a) {
 	const int is_peren = *a == ')' ? -1 : 0;
+	const char *b;
 	/*printf("prev_f '%s'\n", a);*/
 	a--;
-	/*while(!isfunction(*a)) { if(*a == '(') return 0; a--; }*/
 	while(isspace(*a)) a--;
 	if(!is_peren && *a != ',') return 0; /* the only thing we expect: , */
-	if(is_peren  && *a == ',') return a + 1; /* eg, "(AddIf,)" */
 	a--;
 	while(isspace(*a)) a--;
 	while(isfunction(*a)) a--;
+	b = a + 1;
+	/* look ahead to see if it's really a generic */
+	while(isspace(*a)) a--;
+	if(*a != '(' && *a != ',') return 0; /* not really */
 	/*printf("pfp ret: '%s'\n", a + 1);*/
-	return a + 1;
+	return b;
 }
 
 /** Starting from the end of a function, this retrieves the previous generic
@@ -179,7 +231,7 @@ static int parse_generics(struct Text *const this) {
 		 assume it won't be nested; work backwards */
 		start = TextToString(this);
 		while((type = strstr(start, "_(")) && (name = strchr(type, ')'))) {
-			end = name + 1;
+			end = name;
 			/* search types "_T_I_" backwards */
 			types_size = 0;
 			while((type = prev_generic_part(start, type))) {
@@ -194,10 +246,15 @@ static int parse_generics(struct Text *const this) {
 				generics[names_size++].name = name;
 			}
 			if(e) break;
-			if(!types_size || types_size != names_size) { e = E_GAVE_UP; break;}
+			/* doesn't look like a generic, just cat, continue to the next */
+			if(!types_size || types_size != names_size) {
+				if(!TextBetweenCat(temp, start, end))
+					{ e = E_A; break; }
+				start = end + 1;
+				continue;
+			}
 			/* all the text up to the generic is unchanged */
-			if(!TextNCat(temp, start,
-				(size_t)(generics[types_size-1].type - start)))
+			if(!TextBetweenCat(temp, start, generics[types_size-1].type))
 				{ e = E_A; break; }
 			/* reverse the reversal */
 			for(i = types_size; i; i--) {
@@ -217,7 +274,7 @@ static int parse_generics(struct Text *const this) {
 			}
 			if(e) break;
 			/* advance */
-			start = end;
+			start = end + 1;
 		}
 		if(e) break;
 		/* copy the rest (probably nothing) */
@@ -267,6 +324,9 @@ static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
 /** @implements	TextAction */
 static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
 
+/* fixme: have two passes; {<, >, &} and the others; as it stands, the text w/i
+ a pattern will not be escaped */
+
 static const struct TextPattern tpattern[] = {
 	/*{ "\\\\", 0, &backslash },? hmmm? */
 	{ "\\url{",  "}", &url },
@@ -277,6 +337,9 @@ static const struct TextPattern tpattern[] = {
 	{ "<",       0,   &lt },
 	{ ">",       0,   &gt }
 };
+
+/*****************************************************
+ * Also in a second pattern at the root of the file. */
 
 /** Matches documents, / * *   * /, and places them in the global {relates}.
  @implements	TextAction */
@@ -309,15 +372,16 @@ static void new_docs(struct Text *const this) {
 			const char *ret0, *ret1, *fn0, *fn1, *p0, *p1;
 			/* try to find the end; the minimum "A a(){" */
 			if(!function_end || *function_end != '{'
-				|| (function_size = function_end - function) < 3) break;
+			   || (function_size = function_end - function) < 3) break;
 			/* new {Text} for the signature */
 			signature = Text(), TextNCopy(signature, function, function_size-1);
 			TextTrim(signature);
 			if(!parse_generics(signature)) break;
 			/* split it into, eg, {fn_sig} = {fn_ret}{fn_name}{p0}{fn_args}{p1}
 			 = "{ int * }{fn} {(}{ void }{)} other {" */
-			if(!(ret0 = TextToString(signature)) || !(p0 = strchr(ret0, '('))
-				|| !(p1 = match_parenthesis(p0))) break;
+			if(!(ret0 = TextToString(signature))) {printf("B1\n");break;}
+			if(!(p0 = strchr(ret0, '('))) {printf("B2 '%s'\n", ret0); break;}
+			if(!(p1 = match_parenthesis(p0))) {printf("B3\n");break;}
 			for(fn1 = p0 - 1; fn1 > ret0 && !isfunction(*fn1); fn1--);
 			for(fn0 = fn1; fn0 > ret0 && isfunction(*fn0); fn0--);
 			if(isfunction(*fn0)) break;
@@ -360,7 +424,6 @@ static void new_docs(struct Text *const this) {
 	/* split the doc into '@'; place the first in 'desc' and all the others in
 	 their respective @<place> */
 	do { /* try */
-		struct Relate *child;
 		struct Text *each, *desc = 0;
 		int is_first = -1, is_last = 0, is_first_last = 0;
 		do { /* split @ */
@@ -373,10 +436,10 @@ static void new_docs(struct Text *const this) {
 				if(is_last) is_first_last = -1;
 				continue;
 			}
-			/******************* HERE fixme *********************/
-			/* while() { strncmp(each[], ) } ... */
-			child = RelateNewChild(docs);
-			/*->fix*/TextCat(RelateGetValue(child), TextToString(each));
+			/* now call @-handler */
+			parse_each(each, docs,
+				where == TOP_LEVEL ? each_head      : each_fn,
+				where == TOP_LEVEL ? each_head_size : each_fn_size);
 			if(!is_last) Text_(&each); /* remember each = this on is_last */
 		} while(!is_last/* && (Text_(&each), -1) ??it's exactly the same!!! */);
 		if(es) break;
@@ -404,24 +467,11 @@ static const size_t root_pattern_size = sizeof root_pattern/sizeof*root_pattern;
 /******************
  * Main programme */
 
-/** @return		The number of characters in a word starting at {str}. */
-/*static size_t word_length(char *str) {
-	char *s = str;
-	while(isalnum(*s)) s++;
-	return s - str;
-}*/
-
 /** Selects functions by looking for _fn.
  @implements	RelatePredicate */
-static int select_functions(const struct Relate *const this) {
+/*static int select_functions(const struct Relate *const this) {
 	return RelateGetChild(this, "_args") ? -1 : 0;
-}
-
-/** Does the inverse of \see{select_fuctions}.
- @implements	RelatePredicate */
-static int select_non_functions(const struct Relate *const this) {
-	return !select_functions(this);
-}
+}*/
 
 /** Prints header (at the top of the page, supposedly.)
  @implements	RelateAction */
@@ -458,7 +508,6 @@ int main(int argc, char *argv[]) {
 	struct Text *text = 0;
 	FILE *fp = 0;
 	int is_xml = 0;
-	const char *fn;
 	enum { E_NO_ERR, E_ERRNO, E_TEXT, E_RELATES } error = E_NO_ERR;
 
 	if(argc > 1) {
@@ -471,9 +520,6 @@ int main(int argc, char *argv[]) {
 			return EXIT_FAILURE;
 		}
 	}
-	/* FIXME: my debugger doesn't like calling with args or piping, hard code */
-	/*fn = "/Users/neil/Movies/Common/Text/src/Text.c";*/
-	fn = "/Users/neil/Movies/Common/List/src/List.h";
 
 	do {
 
