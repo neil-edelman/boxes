@@ -1,4 +1,4 @@
-/** Copyright 2016 Neil Edelman, distributed under the terms of the MIT License;
+/** 2016 Neil Edelman, distributed under the terms of the MIT License;
  < https://opensource.org/licenses/MIT >.
 
  Generic sort of doubly linked-List. You must #define the required constants
