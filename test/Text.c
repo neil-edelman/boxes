@@ -21,20 +21,11 @@ static void cite(struct Text *const this) {
 }
 /** @implements	TextAction */
 static void em(struct Text *const this) { TextTransform(this, "<em>%s</em>"); }
-/** @implements	TextAction */
-static void amp(struct Text *const this) { TextCopy(this, "&amp;"); }
-/** @implements	TextAction */
-static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
-/** @implements	TextAction */
-static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
 
 static const struct TextPattern tpattern[] = {
 	{ "\\url{",  "}", &url },
 	{ "\\cite{", "}", &cite },
-	{ "{",       "}", &em },
-	{ "&",       0,   &amp },
-	{ "<",       0,   &lt },
-	{ ">",       0,   &gt }
+	{ "{",       "}", &em }
 };
 static const size_t tpattern_size = sizeof tpattern / sizeof *tpattern;
 
@@ -57,25 +48,34 @@ int main(void) {
 	do {
 		unsigned s;
 		const char *s0, *s1;
+		printf("Text:\n");
 		if(!(t = Text()))
 			{ e = E_T; break; }
 
+#if 0
+		printf("\nTextFileCat:\n");
 		if(!(fp = fopen(fn, "r")))
 			{ e = E_FP; break; }
 		if(!TextFileCat(t, fp) || !TextMatch(t, tpattern, tpattern_size))
 			{ e = E_T; break; }
 		printf("Text: %s", TextToString(t));
 		TextClear(t);
+#endif
 
-		if(!(TextNCopy(t, "TestText", (size_t)4)))
+		printf("\nTextNCat:\n");
+		if(!(TextNCat(t, "TestText", (size_t)4)))
 			{ e = E_T; break; }
 		if(strcmp(sup = "Test", str = TextToString(t)))
 			{ e = E_ASRT; break; }
 		printf("Text: %s\n", TextToString(t));
+
+		printf("\nTextTransform:\n");
 		TextTransform(t, "\\url{%s%%%s} yo {YO}");
 		if(strcmp(sup = "\\url{Test%Test} yo {YO}", str = TextToString(t)))
 			{ e = E_ASRT; break; }
 		printf("Text: %s\n", TextToString(t));
+
+		printf("\nTextMatch:\n");
 		TextMatch(t, tpattern, tpattern_size);
 		if(strcmp(sup = "<a href = \"Test%Test\">Test%Test</a> yo <em>YO</em>",
 			str = TextToString(t)))
@@ -83,9 +83,10 @@ int main(void) {
 		printf("Text: %s\n", TextToString(t));
 		TextClear(t);
 
+		printf("\nTextBetweenCat:\n");
 		s0 = strchr(fn + 1, '/');
 		s1 = strchr(s0 + 1, '/');
-		TextBetweenCopy(t, s0, s1);
+		TextBetweenCat(t, s0, s1);
 		if(strcmp(sup = "/neil/", str = TextToString(t)))
 			{ e = E_ASRT; break; }
 		s0 = strchr(s1 + 1, '/');
@@ -96,11 +97,11 @@ int main(void) {
 		printf("Text: %s\n", TextToString(t));
 		TextClear(t);
 
-		TextCopy(t, "/foo///bar/qux//");
-		
+		printf("\nTextSplit:\n");
+		TextCat(t, "/foo///bar/qux//xxx");
 		printf("Text: '%s'\n", TextToString(t));
 		s = 0;
-		while(TextSplit(t, "/", &split, &is_delim), split) {
+		while((split = TextSplit(t, "/", &is_delim))) {
 			printf("TextSplit: '%s'\n", TextToString(split));
 			switch(s++) {
 				case 0: if(strcmp(sup = "", str = TextToString(split)))
@@ -114,6 +115,7 @@ int main(void) {
 				default: sup = "(null)", str = TextToString(split),
 					e = E_ASRT; break;
 			}
+			Text_(&split);
 			if(e) break;
 		}
 		if(e) break;

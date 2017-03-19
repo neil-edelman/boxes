@@ -37,8 +37,8 @@ static void new_child(struct Relate *const parent, const struct Text *key,
 	/*fprintf(stderr, "here: %s -> %s\n", TextToString(key),
 		TextToString(value));*/
 	child = RelateNewChild(parent);
-	TextCopy(RelateGetKey(child), TextToString(key));
-	TextCopy(RelateGetValue(child), TextToString(value));
+	TextCat(RelateGetKey(child), TextToString(key));
+	TextCat(RelateGetValue(child), TextToString(value));
 }
 /** @implements	RelatesField */
 static void top_key(struct Relate *const parent, const struct Text *key,
@@ -81,8 +81,10 @@ static void parse_each(struct Text *const this, struct Relate *const parent,
 	const char *key_s;
 
 	/*printf("parse_@: '%s'\n", TextToString(this));*/
-	TextSplit(this, white_space, &key, 0);
-	if(!key) return;
+	if(!(key = TextSplit(this, white_space, 0))) {
+		if(TextIsError(this)) fprintf(stderr,"Error: %s.\n",TextGetError(this));
+		return;
+	}
 	TextTrim(this);
 	/* linear search */
 	key_s = TextToString(key);
@@ -252,8 +254,9 @@ static int parse_generics(struct Text *const this) {
 		if(e) break;
 		/* copy the rest (probably nothing) */
 		if(!TextCat(temp, start)) { e = E_A; break; }
-		/* copy the temporary a to this */
-		if(!TextCopy(this, TextToString(temp))) { e = E_A; break; }
+		/* copy the temporary back to {this} */
+		TextClear(this);
+		if(!TextCat(this, TextToString(temp))) { e = E_A; break; }
 	} while(0);
 	switch(e) {
 		case E_NO: break;
@@ -291,11 +294,14 @@ static void see(struct Text *const this) {
 /** @implements	TextAction */
 static void em(struct Text *const this) { TextTransform(this, "<em>%s</em>"); }
 /** @implements	TextAction */
-static void amp(struct Text *const this) { TextCopy(this, "&amp;"); }
+static void amp(struct Text *const this)
+	{ TextClear(this), TextCat(this, "&amp;"); }
 /** @implements	TextAction */
-static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
+static void lt(struct Text *const this)
+	{ TextClear(this), TextCat(this, "&lt;"); }
 /** @implements	TextAction */
-static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
+static void gt(struct Text *const this)
+	{ TextClear(this), TextCat(this, "&gt;"); }
 
 /* fixme: have two passes; {<, >, &} and the others; as it stands, the text w/i
  a pattern will not be escaped */
@@ -325,59 +331,59 @@ static void new_docs(struct Text *const this) {
 
 	/* find something that looks like a function declaration after {this}? */
 	do { /* try */
-		struct Relate *root; /* of the Relates that we are building */
 		struct Text *parent; /* of the doc parsing tree */
 		size_t parent_end;
-		/* more info on the parent for string searching for a function */
-		if(!TextGetMatchInfo(&parent, 0, &parent_end))
-			{ ef = EF_DIRECT; break; }
+		struct Relate *child;
+		const char *function, *function_end;
+		const char *ret0, *ret1, *fn0, *fn1, *p0, *p1;
+
 		/* {relates} is a global {Relates} pointer, the children are functions
 		 supplied by this function, but it assumes it's not a function for
 		 starting, and just cats to the file description */
-		root = docs = RelatesGetRoot(relates);
+		docs = RelatesGetRoot(relates);
+		/* more info on the parent for string searching for a function */
+		if(!TextGetMatchInfo(&parent, 0, &parent_end))
+			{ ef = EF_DIRECT; break; }
+		function = TextToString(parent) + parent_end;
 		/* search for function signature immediately below {this};
 		 fixme: actually parse; this is sufficient for most cases, I guess */
-		{
-			struct Relate *child;
-			const char *const function = TextToString(parent) + parent_end;
-			const char *const function_end = strpbrk(function, ";{/#");
-			size_t function_size;
-			const char *ret0, *ret1, *fn0, *fn1, *p0, *p1;
-			/* try to find the end; the minimum "A a(){" */
-			if(!function_end || *function_end != '{'
-			   || (function_size = function_end - function) < 3) break;
-			/* new {Text} for the signature */
-			signature = Text(), TextNCopy(signature, function, function_size-1);
-			TextTrim(signature);
-			if(!parse_generics(signature)) break;
-			/* split it into, eg, {fn_sig} = {fn_ret}{fn_name}{p0}{fn_args}{p1}
-			 = "{ int * }{fn} {(}{ void }{)} other {" */
-			if(!(ret0 = TextToString(signature))) {printf("B1\n");break;}
-			if(!(p0 = strchr(ret0, '('))) {printf("B2 '%s'\n", ret0); break;}
-			if(!(p1 = match_parenthesis(p0))) {printf("B3\n");break;}
-			for(fn1 = p0 - 1; fn1 > ret0 && !isfunction(*fn1); fn1--);
-			for(fn0 = fn1; fn0 > ret0 && isfunction(*fn0); fn0--);
-			if(isfunction(*fn0)) break;
-			ret1 = fn0++;
-			/* fairly certain that docs should go in it's own function child */
-			where = FUNCTION;
-			if(!(docs = RelateNewChild(root))) { ef = EF_RELATES; break; }
-			/* the function name is the key of the {docs} */
-			TextBetweenCopy(RelateGetKey(docs), fn0, fn1);
-			/* others go in sub-parts of docs; return value */
-			subsig = Text();
-			TextBetweenCopy(subsig, ret0, ret1);
-			TextTrim(subsig);
-			child = RelateNewChild(docs);
-			TextCopy(RelateGetKey(child), "_return");
-			TextCopy(RelateGetValue(child), TextToString(subsig));
-			/* and argument list */
-			TextBetweenCopy(subsig, p0 + 1, p1 - 1);
-			TextTrim(subsig);
-			child = RelateNewChild(docs);
-			TextCopy(RelateGetKey(child), "_args");
-			TextCopy(RelateGetValue(child), TextToString(subsig));
-		}
+		/* try to find the end; the minimum "A a(){" */
+		if(!(function_end = strpbrk(function, ";{/#")) || *function_end != '{'
+			|| function_end - function < 6) break;
+		/* new {Text} for the signature */
+		signature = Text(), TextBetweenCat(signature, function, function_end-1);
+		TextTrim(signature);
+		if(!parse_generics(signature)) break;
+		/* split it into, eg, {fn_sig} = {fn_ret}{fn_name}{p0}{fn_args}{p1}
+		 = "{ int * }{fn} {(}{ void }{)} other {" */
+		/*printf("newdocs: %.40s\n", TextToString(signature));*/
+		if(!(ret0 = TextToString(signature)) ||
+			!(p0 = strchr(ret0, '(')) ||
+			!(p1 = match_parenthesis(p0))) break;
+		/*printf("ret0 %.200s\np0 %.30s\np1 %.30s\n", ret0, p0, p1);*/
+		for(fn1 = p0 - 1; fn1 > ret0 && !isfunction(*fn1); fn1--);
+		for(fn0 = fn1; fn0 > ret0 && isfunction(*fn0); fn0--);
+		if(isfunction(*fn0)) break;
+		ret1 = fn0++;
+		/* docs should go in it's own function child instead of in the root */
+		where = FUNCTION;
+		if(!(docs = RelateNewChild(docs))) { ef = EF_RELATES; break; }
+		/* the function name is the key of the {docs} */
+		TextBetweenCat(RelateGetKey(docs), fn0, fn1);
+		/* others go in sub-parts of docs; return value */
+		subsig = Text();
+		TextBetweenCat(subsig, ret0, ret1);
+		TextTrim(subsig);
+		child = RelateNewChild(docs);
+		TextCat(RelateGetKey(child), "_return");
+		TextCat(RelateGetValue(child), TextToString(subsig));
+		/* and argument list */
+		TextClear(subsig);
+		TextBetweenCat(subsig, p0 + 1, p1 - 1);
+		TextTrim(subsig);
+		child = RelateNewChild(docs);
+		TextCat(RelateGetKey(child), "_args");
+		TextCat(RelateGetValue(child), TextToString(subsig));
 
 	} while(0);
 
@@ -400,13 +406,11 @@ static void new_docs(struct Text *const this) {
 		struct Text *each, *desc = 0;
 		int is_first = -1, is_last = 0, is_first_last = 0;
 		do { /* split @ */
-			if(!TextSplit(this, "@", &each, &is_first_on_line))
-				{ es = ES_SPLIT; break; }
-			if(!each) each = this, is_last = -1;
+			if(!(each = TextSplit(this, "@", &is_first_on_line)))
+				each = this, is_last = -1;
 			TextTrim(each);
 			if(is_first) {
-				desc = each, is_first = 0;
-				if(is_last) is_first_last = -1;
+				desc = each, is_first = 0; if(is_last) is_first_last = -1;
 				continue;
 			}
 			/* now call @-handler */
@@ -414,7 +418,7 @@ static void new_docs(struct Text *const this) {
 				where == TOP_LEVEL ? each_head      : each_fn,
 				where == TOP_LEVEL ? each_head_size : each_fn_size);
 			if(!is_last) Text_(&each); /* remember each = this on is_last */
-		} while(!is_last/* && (Text_(&each), -1) ??it's exactly the same!!! */);
+		} while(!is_last /*&& (Text_(&each), -1) <- wtf */);
 		if(es) break;
 		TextTrim(desc);
 		TextCat(RelateGetValue(docs), TextToString(desc));
@@ -550,16 +554,19 @@ static void html(struct Relate *const this) {
 		"\t\tmargin:  4px 0;\n"
 		"\t\tpadding: 0 4px 4px 4px;\n"
 		"\t}\n"
-		"\ttable    { width: 100%%; }\n"
-		"\ttd       { padding: 4px; }\n"
-		"\th1 h2 h3 { color: #2c4557; }\n"
-		"\th3 {\n"
+		"\ttable      { width: 100%%; }\n"
+		"\ttd         { padding: 4px; }\n"
+		"\th1, h2, h3 { color: #2c4557; }\n"
+		"\th3, h1 {\n"
 		"\t\tbackground-color: #dee3e9;\n"
+		"\t\tpadding:          4px;\n"
+		"\t}\n"
+		"\th3 {\n"
 		"\t\tmargin:           0 -4px;\n"
 		"\t\tpadding:          4px;\n"
 		"\t}\n"
-		"</style>\n"
-		"<title>%s</title>\n"
+		"</style>\n");
+	printf("<title>%s</title>\n"
 		"</head>\n\n"
 		"<body>\n\n"
 		"<h1>%s</h1>\n\n"
@@ -603,7 +610,7 @@ int main(int argc, char *argv[]) {
 		{ "html", &html },
 		{ "text", &plain },
 		{ "xml",  &xml }
-	}, *fmt_chosen = fmt;
+	}, *fmt_chosen = fmt + 0;
 	const size_t fmt_size = sizeof fmt / sizeof *fmt;
 
 	if(argc > 1) {

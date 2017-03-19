@@ -2,7 +2,7 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {Relates} is a wrapper for the recursive {Relate}, which stores an association
- between key-value {Text} fields, and children {Relate}s.
+ between key-value {Text} fields, and children {Relate}s. \cite{{{}}}
 
  @file		Relates
  @author	Neil

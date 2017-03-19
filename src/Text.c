@@ -26,7 +26,7 @@
 #include <stdlib.h> /* malloc realloc free */
 #include <stdio.h>  /* FILE fgets ferror vsnprintf fprintf */
 #include <errno.h>	/* errno */
-#include <string.h>	/* strerror strlen memmove memcpy strpbrk strdup */
+#include <string.h>	/* strerror strlen memmove memcpy strpbrk strdup memchr */
 #include <limits.h>	/* INT_MAX */
 #include <ctype.h>	/* isspace */
 #include <stdarg.h>	/* va_* */
@@ -45,11 +45,37 @@
 #endif /* msvc --> */
 /* ugly --> */
 
+/* used in \see{Matches} */
 static const size_t fibonacci6  = 8;
 static const size_t fibonacci7  = 13;
 
+/* used in \see{Text} */
 static const size_t fibonacci11 = 89;
 static const size_t fibonacci12 = 144;
+
+/* used in \see{TextMatch}. */
+static const char right_side[256] = { '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', ')', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '>', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	']', '\0', '\0', '\0', '\0', '\'', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '}', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0',
+	'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0' };
 
 enum Error {
 	E_NO_ERROR,
@@ -112,10 +138,12 @@ static void clear(struct Text *const this);
 static int cat(struct Text *const this, const char *const str,
 	const size_t str_len);
 static int capacity_up(struct Text *const this, const size_t *const len_ptr);
+static void swap_texts(struct Text *const a, struct Text *const b);
+static char *alternate_root(char *const string, const int left,const int right);
 
 static void t_cut(struct TextCut *const this, char *const pos);
 static void t_uncut(struct TextCut *const this);
-	
+
 static int Matches(struct TextMatches *const this, struct Text *const parent);
 static void Matches_(struct TextMatches *const this);
 static int Matches_capacity_up(struct TextMatches *const this);
@@ -178,20 +206,6 @@ const char *TextToString(const struct Text *const this) {
 	return this->text;
 }
 
-/** @return		The last error associated with {this} (can be null.) */
-const char *TextGetError(struct Text *const this) {
-	const char *str;
-	enum Error *perr;
-	int *perrno;
-
-	perr   = this ? &this->error      : &global_error;
-	perrno = this ? &this->errno_copy : &global_errno_copy;
-	if(!(str = error_explination[*perr])) str = strerror(*perrno);
-	*perr = 0;
-
-	return str;
-}
-
 /** Clears the Text. */
 void TextClear(struct Text *const this) {
 	if(!this) return;
@@ -213,23 +227,19 @@ void TextTrim(struct Text *const this) {
 	if(a - str) memmove(str, a, this->length + 1);
 }
 
-/** Separates a new token at the first {delims} that satisfy {pred}. For
- {strsep} behaviour, the following is safe,
- {while((TextSplit(this, " \n\t\v\f\r", &split, 0), split)) Text_(&split);}.
- @param token_ptr: A pointer that receives a new {Text} token or null if the
- tokenisation is finished. If non-null, one properly calls \see{Text_} on this
- pointer.
+/** Separates a new token at the first {delims} that satisfy {pred}.
+ @return A new {Text} or null if the tokenisation is finished or an error
+ occurs. You must call \see{Text_} on this pointer if it is not null.
  @param pred: Can be null, in which case, it behaves like true.
- @return Success.
- @throws E_PARAMETER, E_OVERFLOW, E_ERRNO */
-int TextSplit(struct Text *const this, const char *const delims,
-	struct Text **const token_ptr, const TextPredicate pred) {
+ @throws See \see{TextIsError}; E_PARAMETER, E_OVERFLOW, E_ERRNO */
+struct Text *TextSplit(struct Text *const this, const char *const delims,
+	const TextPredicate pred) {
 	struct Text *token;
 	char *bork;
 
 	if(!this) return 0;
-	if(!token_ptr || (*token_ptr = 0, !delims))
-		return this->error = E_PARAMETER, 0;
+	if(!delims || !*delims)
+		{ this->error = E_PARAMETER; return 0; }
 
 	/* find */
 	bork = this->text;
@@ -237,7 +247,7 @@ int TextSplit(struct Text *const this, const char *const delims,
 		if(pred && !pred(this->text, bork)) { bork++; continue; }
 		break;
 	}
-	if(!bork) return -1;
+	if(!bork) return 0;
 	/* split at bork */
 	if(!(token = Text())) {
 		this->error = global_error, global_error = E_NO_ERROR;
@@ -253,59 +263,14 @@ int TextSplit(struct Text *const this, const char *const delims,
 	/* truncate at bork */
 	*bork        = '\0';
 	this->length = bork - this->text;
-	/* now switch the pointers; the token is supposed to be the one in front */
-	{
-		char *const temp   = this->text;
-		size_t temp_length = this->length;
-		this->text = token->text, this->length = token->length;
-		token->text = temp,       token->length = temp_length;
-	}
-	/* assign the token_ptr to point at token */
-	*token_ptr = token;
+	/* {this} is the truncated first token, and {token} is the rest: swap */
+	swap_texts(this, token);
 
 	debug(this, "TextSplit", "split.");
-	return -1;
+	return token;
 }
 
-/** Replaces the value of {this} with {str}.
- @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
-int TextCopy(struct Text *const this, const char *const str) {
-	if(!this) return 0;
-	if(!str) return this->error = E_PARAMETER, 0;
-	clear(this);
-	return cat(this, str, strlen(str));
-}
-
-/** Replaces the value of {this} with {str} up to the {str_len}. Does not do a
- check to ensure that there are at least {str_len} bytes in the string. This
- differs from strncpy in that it copies exactly {str_len} characters instead of
- repeating null when it gets a zero. The string is always null-terminated.
- @fixme		Do a check.
- @fixme		E_CHAR_PART -> size_t TextCodePoints(str, str_len)
- @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
-int TextNCopy(struct Text *const this, const char *const str,
-	const size_t str_len) {
-	if(!this) return 0;
-	if(!str) return this->error = E_PARAMETER, 0;
-	clear(this);
-	return cat(this, str, str_len);
-}
-
-/** Replaces the value of {this} with {[a, b]}. If {a} > {b}, then empty.
- @return	Success.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
-int TextBetweenCopy(struct Text *const this,
-	const char *const a, const char *const b) {
-	if(!this) return 0;
-	if(!a || !b) return this->error = E_PARAMETER, 0;
-	clear(this);
-	return (a <= b) ? cat(this, a, (size_t)(b - a + 1)) : -1;
-}
-
-/** Concatenates {cat} onto the buffer in {this}. This is {<String>append} in
- Java.
+/** Concatenates {cat} onto the buffer in {this}.
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextCat(struct Text *const this, const char *const str) {
@@ -314,15 +279,16 @@ int TextCat(struct Text *const this, const char *const str) {
 	return cat(this, str, strlen(str));
 }
 
-/** Concatenates {cat_len} characters of {cat} onto the buffer in {this}. Does
- not do a check to ensure that there are at least {str_len} bytes in the string.
+/** Concatenates up to {cat_len} characters of {cat} onto the buffer in {this}.
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextNCat(struct Text *const this, const char *const str,
 	const size_t str_len) {
+	const char *end;
 	if(!this) return 0;
 	if(!str) return this->error = E_PARAMETER, 0;
-	return cat(this, str, str_len);
+	end = memchr(str, 0, str_len);
+	return cat(this, str, end ? (size_t)(end - str) : str_len);
 }
 
 /** Concatenates {this} with {[a, b]}. If {a} > {b}, then empty.
@@ -362,11 +328,11 @@ int TextFileCat(struct Text *const this, FILE *const fp) {
 	return -1;
 }
 
-/** Concatenates the buffer with a {printf},
+/** Concatenates the buffer with a {printf};
  \url{http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html}.
  @fixme Have a function that allows replacing in the middle,
- TextPrintCat(this, fmt, ...) -> TextPrint(this, this.length, fmt, ...) */
-int TextPrint(struct Text *const this, const char *const fmt, ...) {
+ TextPrintCat(this, fmt, ...) -> TextPrint(this, n, fmt, ...) */
+int TextPrintCat(struct Text *const this, const char *const fmt, ...) {
 	va_list argp;
 	char garbage;
 	int length;
@@ -440,8 +406,8 @@ int TextTransform(struct Text *const this, const char *fmt) {
  @fixme Detect when "()" and do closing_parens.
  @param patterns: An array of {TextPattern}; when the {begin} of a pattern
  encompasses another pattern, it should be before in the array. All patterns
- must have {begin} and {transform}, but {end} is optional; where missing, it
- will just call {transform} with {begin}. */
+ must have a non-empty string, {begin}, and {TextAction}, {transform}; {end} is
+ optional; where missing, it will just call {transform} with {begin}. */
 int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size) {
 	struct Text *temp = 0;
@@ -477,8 +443,13 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 
 		/* if the pattern has an ending, search for it */
 		if(braket.pattern->end) {
+			/* determine if it's braces, then match them, else do plain */
+			const char left  = braket.bra.s1[-1];
+			const char right = right_side[(int)left];
 			t_uncut(&cut);
-			if(!(braket.ket.s0 = strstr(braket.bra.s1, braket.pattern->end)))
+			if(!(braket.ket.s0 = (right && right == *braket.pattern->end)
+				? alternate_root(braket.bra.s1 - 1, left, right)
+				: strstr(braket.bra.s1, braket.pattern->end)))
 				{ this->error = E_SYNTAX; return 0; }
 			braket.ket.s1 = braket.ket.s0 + strlen(braket.pattern->end);
 			t_cut(&cut, braket.ket.s0);
@@ -489,9 +460,9 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		t_uncut(&cut);
 		/* this assumes uni-process! */
 		match_info.parent = this;
-		match_info.start = braket.bra.s0 - this->text;
-		match_info.end = (braket.pattern->end ? braket.ket.s1 : braket.bra.s1)
-			- this->text;
+		match_info.start  = braket.bra.s0 - this->text;
+		match_info.end    = (braket.pattern->end ?
+			braket.ket.s1 : braket.bra.s1) - this->text;
 		/* call the handler */
 		match_info.is_valid++;
 		braket.pattern->transform(match->text);
@@ -499,6 +470,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		/*printf("now value \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
 		 this->value, first_pat ? first_pat->begin : "(null)", first_pos);*/
 		cursor = braket.pattern->end ? braket.ket.s1 : braket.bra.s1;
+
 	} while(cursor);
 
 	t_uncut(&cut);
@@ -512,7 +484,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 
 	Matches_print(&matches);
 
-	/* now go though the matches and substitute them in */
+	/* now go though the matches and substitute them in to {temp} */
 	do {
 		size_t i;
 		if(e) break;
@@ -527,14 +499,19 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 		}
 		if(e) break;
 		if(!cat(temp, cursor, strlen(cursor))) { e = E_TEMP; break; }
-		clear(this);
-		if(!cat(this, temp->text, temp->length)) { e = E_THIS; break; };
+		swap_texts(this, temp);
 	} while(0);
 
 	switch(e) {
 		case E_NO:		break;
-		case E_TEMP:	this->error = temp ? temp->error : global_error,
-			this->errno_copy = temp ? temp->errno_copy : global_errno_copy;
+		case E_TEMP:
+			/* propagate */
+			if(temp) {
+				this->error = temp->error, this->errno_copy = temp->errno_copy;
+			} else {
+				this->error = global_error, this->errno_copy =global_errno_copy,
+				global_error = E_NO_ERROR, global_errno_copy = 0;
+			}
 			break;
 		case E_THIS:	break;
 		default:		break;
@@ -543,7 +520,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	Matches_(&matches);
 	Text_(&temp);
 
-	debug(this, "TextMatch", "matched.\n");
+	debug(this, "TextMatch", "final matched.\n");
 	return e ? 0 : -1;
 }
 
@@ -559,6 +536,28 @@ int TextGetMatchInfo(struct Text **parent_ptr,
 	if(start_ptr)   *start_ptr = match_info.start;
 	if(end_ptr)       *end_ptr = match_info.end;
 	return -1;
+}
+
+/** @return Whether an error has occurred on {this}; can be null. */
+int TextIsError(struct Text *const this) {
+	return this ? (this->error ? -1 : 0) : (global_error ? -1 : 0);
+}
+
+/** Resets the error.
+ @return A lower-case string, (or in the case of a E_ERRNO, the first letter
+ has an extraneous upper case on most systems,) without any punctuation, that
+ explains the last error associated with {this}; can be null. */
+const char *TextGetError(struct Text *const this) {
+	const char *str;
+	enum Error *perr;
+	int *perrno;
+
+	perr   = this ? &this->error      : &global_error;
+	perrno = this ? &this->errno_copy : &global_errno_copy;
+	if(!(str = error_explination[*perr])) str = strerror(*perrno);
+	*perr = 0, *perrno = 0;
+
+	return str;
 }
 
 
@@ -597,7 +596,6 @@ static int cat(struct Text *const this, const char *const str,
 #endif
 
 	return -1;
-
 }
 
 /** Ensures value capacity.
@@ -630,8 +628,37 @@ static int capacity_up(struct Text *const this, const size_t *const len_ptr) {
 	return -1;
 }
 
-/*****************************************
- * TextCut (just initialise to all zero) */
+/** Switches the pointers of the two buffers; struct Text has file scope, so
+ this is reasonably safe, and avoids all the copying. */
+static void swap_texts(struct Text *const a, struct Text *const b) {
+	/* https://en.wikipedia.org/wiki/XOR_swap_algorithm */
+	{
+		char *const temp = a->text;
+		a->text = b->text;
+		b->text = temp;
+	} {
+		size_t temp = a->length;
+		a->length = b->length;
+		b->length = temp;
+	}
+}
+
+/** "[[[]]]", '[', ']', would return the last *char */
+static char *alternate_root(char *const string, const int left,const int right){
+	unsigned stack = 1;
+	char *s = string + 1;
+
+	if(*string != left) return s;
+	while(*s) {
+		if(*s == left) stack++;
+		else if(*s == right && !--stack) return s;
+		s++;
+	}
+	return 0;
+}
+
+/***********************************************
+ * TextCut (just initialise a new to all zero) */
 
 /** Stores the character at {pos} in {this} and terminates the string there. */
 static void t_cut(struct TextCut *const this, char *const pos) {
@@ -709,25 +736,29 @@ static struct TextMatch *Matches_new(struct TextMatches *const this,
 		this->parent->errno_copy = global_errno_copy;
 		return 0;
 	}
-	if(!cat(match->text, braket->bra.s1,
-		(size_t)(braket->pattern->end ? braket->ket.s0 - braket->bra.s1 : 0))) {
+	if(braket->pattern->end && !cat(match->text, braket->bra.s1,
+		(size_t)(braket->ket.s0 - braket->bra.s1))) {
 		this->parent->error      = match->text->error;
 		this->parent->errno_copy = match->text->errno_copy;
 		Text_(&match->text);
 		return 0;
 	}
+	/*printf("Matches_new: '%s'\n", TextToString(match->text));*/
 	this->size++;
 	return match;
 }
 
 static void Matches_print(struct TextMatches *const this) {
 #ifdef TEXT_DEBUG
-	size_t i;
-	if(!this) printf("null\n"); return;
+	struct TextMatch *match;
+	size_t m;
+	if(!this) { printf("null\n"); return; }
 	printf("Matches {");
-	for(i = 0; i < this->size; i++) {
-		printf("%s\n\t%.4s\"%s\"%.4s", i ? "," : "", this->matches->start,
-			this->matches->text->text, this->matches->end);
+	for(m = 0; m < this->size; m++) {
+		match = this->matches + m;
+		printf("%s\n\t'%.*s' -> '%s'",
+			m ? "," : "", (int)(match->end - match->start), match->start,
+			match->text->text);
 	}
 	printf("\n}\n");
 #else

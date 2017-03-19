@@ -14,16 +14,10 @@ struct TextPattern {
 struct Text *Text(void);
 void Text_(struct Text **const this_ptr);
 const char *TextToString(const struct Text *const this);
-const char *TextGetError(struct Text *const this);
 void TextClear(struct Text *const this);
 void TextTrim(struct Text *const this);
-int TextSplit(struct Text *const this, const char *const delims,
-	struct Text **const token_ptr, const TextPredicate pred);
-int TextCopy(struct Text *const this, const char *const str);
-int TextNCopy(struct Text *const this, const char *const str,
-	const size_t str_len);
-int TextBetweenCopy(struct Text *const this,
-	const char *const a, const char *const b);
+struct Text *TextSplit(struct Text *const this, const char *const delims,
+	const TextPredicate pred);
 int TextCat(struct Text *const this, const char *const str);
 int TextNCat(struct Text *const this, const char *const str,
 	const size_t cat_len);
@@ -36,5 +30,7 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	const size_t patterns_size);
 int TextGetMatchInfo(struct Text **const parent_ptr,
 	size_t *const start_ptr, size_t *const end_ptr);
+int TextIsError(struct Text *const this);
+const char *TextGetError(struct Text *const this);
 
-#endif /* --> */
+#endif /* guards --> */
