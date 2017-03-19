@@ -294,14 +294,11 @@ static void see(struct Text *const this) {
 /** @implements	TextAction */
 static void em(struct Text *const this) { TextTransform(this, "<em>%s</em>"); }
 /** @implements	TextAction */
-static void amp(struct Text *const this)
-	{ TextClear(this), TextCat(this, "&amp;"); }
+static void amp(struct Text *const this) { TextCopy(this, "&amp;"); }
 /** @implements	TextAction */
-static void lt(struct Text *const this)
-	{ TextClear(this), TextCat(this, "&lt;"); }
+static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
 /** @implements	TextAction */
-static void gt(struct Text *const this)
-	{ TextClear(this), TextCat(this, "&gt;"); }
+static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
 
 /* fixme: have two passes; {<, >, &} and the others; as it stands, the text w/i
  a pattern will not be escaped */

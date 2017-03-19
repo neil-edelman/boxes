@@ -270,6 +270,16 @@ struct Text *TextSplit(struct Text *const this, const char *const delims,
 	return token;
 }
 
+/** Replaces the value of {this} with {str}.
+ @return	Success.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
+int TextCopy(struct Text *const this, const char *const str) {
+	if(!this) return 0;
+	if(!str) return this->error = E_PARAMETER, 0;
+	clear(this);
+	return cat(this, str, strlen(str));
+}
+
 /** Concatenates {cat} onto the buffer in {this}.
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */

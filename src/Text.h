@@ -18,6 +18,7 @@ void TextClear(struct Text *const this);
 void TextTrim(struct Text *const this);
 struct Text *TextSplit(struct Text *const this, const char *const delims,
 	const TextPredicate pred);
+int TextCopy(struct Text *const this, const char *const str);
 int TextCat(struct Text *const this, const char *const str);
 int TextNCat(struct Text *const this, const char *const str,
 	const size_t cat_len);
