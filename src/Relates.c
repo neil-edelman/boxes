@@ -1,8 +1,8 @@
-/** Copyright 2017 Neil Edelman, distributed under the terms of the MIT License;
+/** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {Relates} is a wrapper for the recursive {Relate}, which stores an association
- between key-value {Text} fields, and children {Relate}s. \cite{{{}}}
+ between key-value {Text} fields, and children {Relate}s in a tree.
 
  @file		Relates
  @author	Neil
@@ -102,16 +102,6 @@ struct Relates *Relates(void) {
 		Relates_(&this);
 		return 0;
 	}
-#if 0
-	if(root_name) {
-		if(!TextCat(this->root->key, root_name)) {
-		/* well . . . it's probably this */
-		global_error = E_ERRNO, global_errno_copy = errno;
-		Relates_(&this);
-		return 0;
-		}
-	}
-#endif
 
 	return this;
 }

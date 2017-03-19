@@ -1,7 +1,8 @@
 /** 2015 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- This is a test of Relates; call it with a .c file.
+ This is a test of Relates that got out-of-hand; redirect a {.c} file that has
+ JavaDoc-style / * *, * /. 
 
  @author	Neil
  @version	3.0; 2016-08
@@ -15,27 +16,60 @@
 
 /* https://www.programiz.com/c-programming/library-function/ctype.h/isspace */
 const char *const white_space = " \n\t\v\f\r";
-const char *const separates_param_value = "\n\t\v\f\r";
-/* FIXME: my debugger doesn't like calling with args or piping, hard code */
+const char *const separates_param_value = ":\n\t\v\f\r"; /* fixme: not used */
+
+#ifdef DEBUG
+/* my debugger doesn't like calling with args or piping, hard code */
 const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";
 /*const char *const fn = "/Users/neil/Movies/Common/List/src/List.h";*/
+#else
+const char *const fn = "stdin";
+#endif
 
-static struct Relates *relates;
+/*************************
+ * Command line options. */
 
-/*****************************************
- * This goes under \see{new_docs} for @. */
+static void xml(struct Relate *const this);
+static void plain(struct Relate *const this);
+static void html(struct Relate *const this);
+
+const struct {
+	const char *const str;
+	const RelateAction fun;
+	const char *const generic_type_name;
+} fmt[] = {
+	{ "xml",  &xml,   "<%.*s>%.s" },
+	{ "text", &plain, "<%.*s>%.s" },
+	{ "html", &html,  "&lt;%.*s&gt;%.*s" }
+}, *fmt_chosen = fmt + 2;
+const size_t fmt_size = sizeof fmt / sizeof *fmt;
+
+/* global root */
+static struct Relates *root;
+
+/********************************************************
+ * This goes under \see{new_docs} for {TextStrip('@')}. */
 
 typedef void (*RelatesField)(struct Relate *const parent,
 	const struct Text *key, const struct Text *value);
 
-/**
- @fixme			Params needs an additional level.
- @implements	RelatesField */
+/** @implements	RelatesField */
 static void new_child(struct Relate *const parent, const struct Text *key,
 	const struct Text *value) {
 	struct Relate *child;
 	/*fprintf(stderr, "here: %s -> %s\n", TextToString(key),
 		TextToString(value));*/
+	child = RelateNewChild(parent);
+	TextCat(RelateGetKey(child), TextToString(key));
+	TextCat(RelateGetValue(child), TextToString(value));
+}
+/** @fixme
+ @implements	RelatesField */
+static void new_param_child(struct Relate *const parent, const struct Text *key,
+	const struct Text *value) {
+	struct Relate *child;
+	/*fprintf(stderr, "here: %s -> %s\n", TextToString(key),
+	 TextToString(value));*/
 	child = RelateNewChild(parent);
 	TextCat(RelateGetKey(child), TextToString(key));
 	TextCat(RelateGetValue(child), TextToString(value));
@@ -53,7 +87,7 @@ static const struct EachMatch {
 	RelatesField what;
 } each_head[] = {
 	{ "file",    &top_key },
-	{ "param",   &new_child },
+	{ "param",   &new_param_child },
 	{ "author",  &new_child },
 	{ "std",     &new_child },
 	{ "version", &new_child },
@@ -244,8 +278,8 @@ static int parse_generics(struct Text *const this) {
 				/*fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
 					generic->type, (int)name_len, generic->name);*/
 				/* fixme: <, >, are verboten in html */
-				if(!TextPrintCat(temp, "<%.*s>%.*s", type_len, generic->type,
-					name_len, generic->name)) { e = E_A; break; }
+				if(!TextPrintCat(temp, fmt_chosen->generic_type_name, type_len,
+					generic->type, name_len, generic->name)) { e = E_A; break; }
 			}
 			if(e) break;
 			/* advance */
@@ -299,23 +333,36 @@ static void amp(struct Text *const this) { TextCopy(this, "&amp;"); }
 static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
 /** @implements	TextAction */
 static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
+/** @implements	TextAction */
+static void paragraph(struct Text *const this){TextCopy(this, "\n</p>\n<p>\n");}
 
-/* fixme: have two passes; {<, >, &} and the others; as it stands, the text w/i
- a pattern will not be escaped */
-
-static const struct TextPattern tpattern[] = {
-	/*{ "\\\\", 0, &backslash },? hmmm? */
-	{ "\\url{",  "}", &url },
-	{ "\\cite{", "}", &cite },
-	{ "\\see{",  "}", &see },
-	{ "{",       "}", &em },
+static const struct TextPattern html_escape_pat[] = {
 	{ "&",       0,   &amp },
 	{ "<",       0,   &lt },
 	{ ">",       0,   &gt }
+}, html_text_pat[] = {
+	/*{ "\\\\", 0, &backslash },? hmmm? do I really need to put another level */
+	{ "\\url{",  "}", &url },
+	{ "\\cite{", "}", &cite },
+	{ "\\see{",  "}", &see },
+	{ "{",       "}", &em }
+}, html_paragraphise[] = {
+	{ "\n\n", 0, &paragraph },
+	{ "\n \n", 0, &paragraph }
 };
+static const size_t
+	html_escape_pat_size = sizeof html_escape_pat / sizeof *html_escape_pat,
+	html_text_pat_size = sizeof html_text_pat / sizeof *html_text_pat,
+	html_paragraphise_size = sizeof html_paragraphise/sizeof *html_paragraphise;
 
 /*****************************************************
  * Also in a second pattern at the root of the file. */
+
+/** Put it into html paragraphs. */
+static void paragraphise(struct Text *const this) {
+	TextTransform(this, "<p>\n%s\n</p>");
+	TextMatch(this, html_paragraphise, html_paragraphise_size);
+}
 
 /** Matches documents, / * *   * /, and places them in the global {relates}.
  @implements	TextAction */
@@ -337,7 +384,7 @@ static void new_docs(struct Text *const this) {
 		/* {relates} is a global {Relates} pointer, the children are functions
 		 supplied by this function, but it assumes it's not a function for
 		 starting, and just cats to the file description */
-		docs = RelatesGetRoot(relates);
+		docs = RelatesGetRoot(root);
 		/* more info on the parent for string searching for a function */
 		if(!TextGetMatchInfo(&parent, 0, &parent_end))
 			{ ef = EF_DIRECT; break; }
@@ -382,20 +429,22 @@ static void new_docs(struct Text *const this) {
 		TextCat(RelateGetKey(child), "_args");
 		TextCat(RelateGetValue(child), TextToString(subsig));
 
-	} while(0);
-
-	switch(ef) {
+	} while(0); switch(ef) {
 		case EF_NO: break;
 		case EF_DIRECT: fprintf(stderr, "new_docs: was directly called and not "
 			"part of TextMatch.\n"); break;
 		case EF_RELATES: fprintf(stderr, "new_docs relates: %s.\n",
-			RelatesGetError(relates)); break;
+			RelatesGetError(root)); break;
 	} { /* finally */
 		Text_(&subsig), Text_(&signature);
 	}
 
-	/* parse it for additional \foo{} */
-	TextMatch(this, tpattern, sizeof tpattern / sizeof *tpattern);
+	/* escape {this} while for "&<>" while we have it all together;
+	 fixme: have different ones for each global fmt */
+	TextMatch(this, html_escape_pat, html_escape_pat_size);
+	/* then parse for additional tokens -- we could do this together, but text
+	 inside the tokens would not be escaped; "&<>" is fairly orthogonal */
+	TextMatch(this, html_text_pat, html_text_pat_size);
 
 	/* split the doc into '@'; place the first in 'desc' and all the others in
 	 their respective @<place> */
@@ -418,6 +467,7 @@ static void new_docs(struct Text *const this) {
 		} while(!is_last /*&& (Text_(&each), -1) <- wtf */);
 		if(es) break;
 		TextTrim(desc);
+		paragraphise(desc);
 		TextCat(RelateGetValue(docs), TextToString(desc));
 		if(!is_first_last) Text_(&desc);
 	} while(0);
@@ -430,11 +480,11 @@ static void new_docs(struct Text *const this) {
 
 }
 
-static const struct TextPattern root_pattern[] = {
+static const struct TextPattern root_pat[] = {
 	{ "/""** ", "*""/", &new_docs }
 	/* fixme: more robust, ie \* { / * * /, 0 }?{\/} */
 };
-static const size_t root_pattern_size = sizeof root_pattern/sizeof*root_pattern;
+static const size_t root_pat_size = sizeof root_pat / sizeof *root_pat;
 
 
 
@@ -482,8 +532,8 @@ static void plain(struct Relate *const this) {
 	printf("}\n\n");
 }
 
-/*************************************************
- * HTML (okay, this would be easier with lamdas) */
+/**************************************************
+ * HTML (okay, this would be easier with lambdas) */
 
 /** Selects functions by looking for _args.
  @fixme			Have an option "--static", or you could detect .h not _fn.
@@ -553,8 +603,8 @@ static void html(struct Relate *const this) {
 		"\t}\n"
 		"\ttable      { width: 100%%; }\n"
 		"\ttd         { padding: 4px; }\n"
-		"\th1, h2, h3 { color: #2c4557; }\n"
 		"\th3, h1 {\n"
+		"\t\tcolor: #2c4557;\n"
 		"\t\tbackground-color: #dee3e9;\n"
 		"\t\tpadding:          4px;\n"
 		"\t}\n"
@@ -564,7 +614,7 @@ static void html(struct Relate *const this) {
 		"\t}\n"
 		"</style>\n");
 	printf("<title>%s</title>\n"
-		"</head>\n\n"
+		"</head>\n\n\n"
 		"<body>\n\n"
 		"<h1>%s</h1>\n\n"
 		"%s\n\n<dl>\n", RelateKey(this), RelateKey(this), RelateValue(this));
@@ -574,7 +624,7 @@ static void html(struct Relate *const this) {
 	RelateForEachChildKey(this, "since", &print_dl);
 	RelateForEachChildKey(this, "fixme", &print_dl);
 	RelateForEachChildKey(this, "param", &print_param_dl);
-	printf("</dl>\n\n"
+	printf("</dl>\n\n\n"
 		"<h2>Function Summary</h2>\n\n"
 		"<table>\n"
 		"<tr><th>Return Type</th><th>Function Name</th>"
@@ -583,7 +633,7 @@ static void html(struct Relate *const this) {
 	printf("</table>\n\n\n"
 		"<h2>Function Detail</h2>\n\n");
 	RelateForEachChildIf(this, &select_functions, &print_function_detail);
-	printf("\n\n"
+	printf("\n"
 		"</body>\n"
 		"</html>\n");
 }
@@ -600,15 +650,6 @@ int main(int argc, char *argv[]) {
 	struct Text *text = 0;
 	FILE *fp = 0;
 	enum { E_NO_ERR, E_ERRNO, E_TEXT, E_RELATES } error = E_NO_ERR;
-	const struct {
-		const char *const str;
-		RelateAction fun;
-	} fmt[] = {
-		{ "html", &html },
-		{ "text", &plain },
-		{ "xml",  &xml }
-	}, *fmt_chosen = fmt + 0;
-	const size_t fmt_size = sizeof fmt / sizeof *fmt;
 
 	if(argc > 1) {
 		int arg_err = 0;
@@ -631,43 +672,48 @@ int main(int argc, char *argv[]) {
 	do {
 
 		/* read file */
-		if(!(fp = fopen(fn, "r")))
-			{ error = E_ERRNO; break; }
-		if(!(text = Text()) || !TextFileCat(text, fp))
-			{ error = E_TEXT; break; }
-		if(fclose(fp))
-			{ error = E_ERRNO; break; }
+#ifdef DEBUG
+		if(!(fp = fopen(fn, "r"))) { error = E_ERRNO; break; }
+#else
+		fp = stdin;
+#endif
+		if(!(text = Text()) || !TextFileCat(text, fp)){ error = E_TEXT; break; }
+#ifdef DEBUG
+		if(fclose(fp)) { error = E_ERRNO; break; }
 		fp = 0;
+#endif
 
-		/* create nested associtave array in global {relates} */
-		if(!(relates = Relates()))
-			{ error = E_RELATES; break; }
+		/* create nested associative array in global {root} */
+		if(!(root = Relates())) { error = E_RELATES; break; }
 
 		/* parse for " / * * "; it recursively calls things as appropriate */
-		if(!TextMatch(text, root_pattern, root_pattern_size))
-			{ error = E_TEXT; break; }
+		if(!TextMatch(text, root_pat, root_pat_size)) { error = E_TEXT; break; }
 
 		/* print out */
-		fmt_chosen->fun(RelatesGetRoot(relates));
+		fmt_chosen->fun(RelatesGetRoot(root));
 
 	} while(0);
 
 	switch(error) {
 		case E_NO_ERR: break;
-		case E_ERRNO: perror(fn); break;
+		case E_ERRNO:
+			perror(fn);
+			break;
 		case E_TEXT:
 			fprintf(stderr, "%s: %s.\n", fn, TextGetError(text)); break;
 		case E_RELATES:
-			fprintf(stderr, "%s: %s.\n", fn, RelatesGetError(relates)); break;
+			fprintf(stderr, "%s: %s.\n", fn, RelatesGetError(root)); break;
 	}
 
 	{
-		Relates_(&relates); /* global */
+		Relates_(&root); /* global */
 		Text_(&text);
+#ifdef DEBUG
 		fclose(fp);
+#endif
 	}
 
-	fprintf(stderr, "Done all tests; %s.\n", error ? "FAILED" : "SUCCEDED");
+	/*fprintf(stderr, "Done all tests; %s.\n", error ? "FAILED" : "SUCCEDED");*/
 
 	return error ? EXIT_FAILURE : EXIT_SUCCESS;
 }

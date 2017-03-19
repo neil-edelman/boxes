@@ -5,6 +5,7 @@
  \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. That is, this is a
  wrapper around a standard C null-terminated string. This wrapper automatically
  expands memory as needed. However, it is not safe for use by multiple threads.
+ &&!
 
  @file		Text.c
  @author	Neil
@@ -270,7 +271,7 @@ struct Text *TextSplit(struct Text *const this, const char *const delims,
 	return token;
 }
 
-/** Replaces the value of {this} with {str}.
+/** Replaces the buffer in {this} with {str}.
  @return	Success.
  @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 int TextCopy(struct Text *const this, const char *const str) {
@@ -432,10 +433,10 @@ int TextMatch(struct Text *const this, const struct TextPattern *const patterns,
 	if(!this || !Matches(&matches, this)) return 0;
 
 	cursor = this->text;
-	do {
+	do { /* this is an actual do-loop! */
 		const struct TextPattern *pattern; size_t p;
 
-		/* search for the next pattern */
+		/* search for the next pattern O(n^2) */
 		braket.is = 0;
 		for(p = 0; p < patterns_size; p++) {
 			pattern = patterns + p;
