@@ -233,7 +233,7 @@ void TextTrim(struct Text *const this) {
  occurs. You must call \see{Text_} on this pointer if it is not null.
  @param pred: Can be null, in which case, it behaves like true.
  @throws See \see{TextIsError}; E_PARAMETER, E_OVERFLOW, E_ERRNO */
-struct Text *TextSplit(struct Text *const this, const char *const delims,
+struct Text *TextSep(struct Text *const this, const char *const delims,
 	const TextPredicate pred) {
 	struct Text *token;
 	char *bork;

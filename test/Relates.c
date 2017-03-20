@@ -16,12 +16,12 @@
 
 /* https://www.programiz.com/c-programming/library-function/ctype.h/isspace */
 const char *const white_space = " \n\t\v\f\r";
-const char *const separates_param_value = ":\n\t\v\f\r"; /* fixme: not used */
+const char *const separates_param_value = ":\n\t\v\f\r";
 
 #ifdef DEBUG
 /* my debugger doesn't like calling with args or piping, hard code */
-const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";
-/*const char *const fn = "/Users/neil/Movies/Common/List/src/List.h";*/
+/*const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";*/
+const char *const fn = "/Users/neil/Movies/Common/List/src/List.h";
 #else
 const char *const fn = "stdin";
 #endif
@@ -51,11 +51,11 @@ static struct Relates *root;
  * This goes under \see{new_docs} for {TextStrip('@')}. */
 
 typedef void (*RelatesField)(struct Relate *const parent,
-	const struct Text *key, const struct Text *value);
+	struct Text *const key, struct Text *const value);
 
 /** @implements	RelatesField */
-static void new_child(struct Relate *const parent, const struct Text *key,
-	const struct Text *value) {
+static void new_child(struct Relate *const parent, struct Text *const key,
+	struct Text *const value) {
 	struct Relate *child;
 	/*fprintf(stderr, "here: %s -> %s\n", TextToString(key),
 		TextToString(value));*/
@@ -63,20 +63,27 @@ static void new_child(struct Relate *const parent, const struct Text *key,
 	TextCat(RelateGetKey(child), TextToString(key));
 	TextCat(RelateGetValue(child), TextToString(value));
 }
-/** @fixme
- @implements	RelatesField */
-static void new_param_child(struct Relate *const parent, const struct Text *key,
-	const struct Text *value) {
-	struct Relate *child;
-	/*fprintf(stderr, "here: %s -> %s\n", TextToString(key),
-	 TextToString(value));*/
+/** @implements	RelatesField */
+static void new_arg_child(struct Relate *const parent, struct Text *const key,
+	struct Text *const value) {
+	struct Relate *child, *grandc;
+	struct Text *arg;
+	arg = TextSep(value, separates_param_value, 0);
+	TextTrim(value), TextTrim(arg);
 	child = RelateNewChild(parent);
-	TextCat(RelateGetKey(child), TextToString(key));
+	TextCat(RelateGetKey(child),   TextToString(key));
 	TextCat(RelateGetValue(child), TextToString(value));
+	if(!arg) return;
+	grandc = RelateNewChild(child);
+	TextCat(RelateGetKey(grandc),   "_arg");
+	TextCat(RelateGetValue(grandc), TextToString(arg));
+	if(TextIsError(arg))
+		fprintf(stderr, "new_arg_child arg: %s.\n", TextGetError(arg));
+	Text_(&arg);
 }
 /** @implements	RelatesField */
-static void top_key(struct Relate *const parent, const struct Text *key,
-	const struct Text *value) {
+static void top_key(struct Relate *const parent, struct Text *const key,
+	struct Text *const value) {
 	do { break; } while(key);
 	/*fprintf(stderr, "HERE!!! %s\n", TextToString(value));*/
 	TextCat(RelateGetKey(parent), TextToString(value));
@@ -87,16 +94,16 @@ static const struct EachMatch {
 	RelatesField what;
 } each_head[] = {
 	{ "file",    &top_key },
-	{ "param",   &new_param_child },
+	{ "param",   &new_arg_child },
 	{ "author",  &new_child },
 	{ "std",     &new_child },
 	{ "version", &new_child },
 	{ "since",   &new_child },
 	{ "fixme",   &new_child }
 }, each_fn[] = {
-	{ "param",   &new_child },
+	{ "param",   &new_arg_child },
 	{ "return",  &new_child },
-	{ "throws",  &new_child },
+	{ "throws",  &new_arg_child },
 	{ "implements", &new_child },
 	{ "fixme",   &new_child },
 	{ "author",  &new_child },
@@ -115,7 +122,7 @@ static void parse_each(struct Text *const this, struct Relate *const parent,
 	const char *key_s;
 
 	/*printf("parse_@: '%s'\n", TextToString(this));*/
-	if(!(key = TextSplit(this, white_space, 0))) {
+	if(!(key = TextSep(this, white_space, 0))) {
 		if(TextIsError(this)) fprintf(stderr,"Error: %s.\n",TextGetError(this));
 		return;
 	}
@@ -341,14 +348,13 @@ static const struct TextPattern html_escape_pat[] = {
 	{ "<",       0,   &lt },
 	{ ">",       0,   &gt }
 }, html_text_pat[] = {
-	/*{ "\\\\", 0, &backslash },? hmmm? do I really need to put another level */
 	{ "\\url{",  "}", &url },
 	{ "\\cite{", "}", &cite },
 	{ "\\see{",  "}", &see },
 	{ "{",       "}", &em }
 }, html_paragraphise[] = {
-	{ "\n\n", 0, &paragraph },
-	{ "\n \n", 0, &paragraph }
+	{ "\n\n",    0,   &paragraph },
+	{ "\n \n",   0,   &paragraph }
 };
 static const size_t
 	html_escape_pat_size = sizeof html_escape_pat / sizeof *html_escape_pat,
@@ -360,6 +366,7 @@ static const size_t
 
 /** Put it into html paragraphs. */
 static void paragraphise(struct Text *const this) {
+	/* well, that was easy */
 	TextTransform(this, "<p>\n%s\n</p>");
 	TextMatch(this, html_paragraphise, html_paragraphise_size);
 }
@@ -452,7 +459,7 @@ static void new_docs(struct Text *const this) {
 		struct Text *each, *desc = 0;
 		int is_first = -1, is_last = 0, is_first_last = 0;
 		do { /* split @ */
-			if(!(each = TextSplit(this, "@", &is_first_on_line)))
+			if(!(each = TextSep(this, "@", &is_first_on_line)))
 				each = this, is_last = -1;
 			TextTrim(each);
 			if(is_first) {
@@ -545,17 +552,15 @@ static int select_functions(const struct Relate *const this) {
 /** A generic print <dl>.
  @implements	RelateAction */
 static void print_dl(struct Relate *const this) {
-	printf("\t<dt>%s:</dt><dd>%s</dd>\n", RelateKey(this), RelateValue(this));
-}
-/** @implements	RelateAction */
-static void print_param_dl(struct Relate *const this) {
-	/* fixme! */
-	printf("\t<dt>parameter:</dt><dd>%s</dd>\n", RelateValue(this));
-}
-/** "std:" looks bad.
- @implements	RelateAction */
-static void print_std_dl(struct Relate *const this) {
-	printf("\t<dt>minimum standard:</dt><dd>%s</dd>\n", RelateValue(this));
+	const char *const arg = RelateValue(RelateGetChild(this, "_arg"));
+	const char *key = RelateKey(this);
+	if(!strcmp("param", key)) {
+		key = "parameter";
+	} if(!strcmp("std", key)) {
+		key = "minimum standard";
+	}
+	printf("\t<dt>%s:%s%s</dt>\n\t<dd>%s</dd>\n", key,
+		arg ? " " : "", arg ? arg : "", RelateValue(this));
 }
 /** @implements	RelateAction */
 static void print_function_table(struct Relate *const this) {
@@ -575,7 +580,7 @@ static void print_function_detail(struct Relate *const this) {
 		"<dl>\n", RelateKey(this), RelateKey(this),
 		RelateGetChildValue(this, "_return"), RelateKey(this),
 		RelateGetChildValue(this, "_args"), RelateValue(this));
-	RelateForEachChildKey(this, "param", &print_param_dl);
+	RelateForEachChildKey(this, "param", &print_dl);
 	RelateForEachChildKey(this, "return", &print_dl);
 	RelateForEachChildKey(this, "implements", &print_dl);
 	RelateForEachChildKey(this, "throws", &print_dl);
@@ -618,12 +623,12 @@ static void html(struct Relate *const this) {
 		"<body>\n\n"
 		"<h1>%s</h1>\n\n"
 		"%s\n\n<dl>\n", RelateKey(this), RelateKey(this), RelateValue(this));
-	RelateForEachChildKey(this, "std", &print_std_dl);
+	RelateForEachChildKey(this, "std", &print_dl);
 	RelateForEachChildKey(this, "author", &print_dl);
 	RelateForEachChildKey(this, "version", &print_dl);
 	RelateForEachChildKey(this, "since", &print_dl);
 	RelateForEachChildKey(this, "fixme", &print_dl);
-	RelateForEachChildKey(this, "param", &print_param_dl);
+	RelateForEachChildKey(this, "param", &print_dl);
 	printf("</dl>\n\n\n"
 		"<h2>Function Summary</h2>\n\n"
 		"<table>\n"
