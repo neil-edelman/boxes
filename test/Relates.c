@@ -303,11 +303,11 @@ static void html(struct Relate *const this) {
 static void new_child(struct Relate *const parent, struct Text *const key,
 	struct Text *const value) {
 	struct Relate *child;
-	/*fprintf(stderr, "here: %s -> %s\n", TextToString(key),
-		TextToString(value));*/
+	/*fprintf(stderr, "here: %s -> %s\n", TextGet(key),
+		TextGet(value));*/
 	child = RelateNewChild(parent);
-	TextCat(RelateGetKey(child), TextToString(key));
-	TextCat(RelateGetValue(child), TextToString(value));
+	TextCat(RelateGetKey(child), TextGet(key));
+	TextCat(RelateGetValue(child), TextGet(value));
 }
 /** @implements	RelatesField */
 static void new_arg_child(struct Relate *const parent, struct Text *const key,
@@ -317,12 +317,12 @@ static void new_arg_child(struct Relate *const parent, struct Text *const key,
 	arg = TextSep(value, separates_param_value, 0);
 	TextTrim(value), TextTrim(arg);
 	child = RelateNewChild(parent);
-	TextCat(RelateGetKey(child),   TextToString(key));
-	TextCat(RelateGetValue(child), TextToString(value));
+	TextCat(RelateGetKey(child),   TextGet(key));
+	TextCat(RelateGetValue(child), TextGet(value));
 	if(!arg) return;
 	grandc = RelateNewChild(child);
 	TextCat(RelateGetKey(grandc),   "_arg");
-	TextCat(RelateGetValue(grandc), TextToString(arg));
+	TextCat(RelateGetValue(grandc), TextGet(arg));
 	if(TextIsError(arg))
 		fprintf(stderr, "new_arg_child arg: %s.\n", TextGetError(arg));
 	Text_(&arg);
@@ -331,7 +331,7 @@ static void new_arg_child(struct Relate *const parent, struct Text *const key,
 static void top_key(struct Relate *const parent, struct Text *const key,
 	struct Text *const value) {
 	do { break; } while(key);
-	TextCat(RelateGetKey(parent), TextToString(value));
+	TextCat(RelateGetKey(parent), TextGet(value));
 }
 
 /** Called from \see{new_docs}. */
@@ -342,18 +342,18 @@ static void parse_each(struct Text *const this, struct Relate *const parent,
 	struct Text *key;
 	const char *key_s;
 
-	/*printf("parse_@: '%s'\n", TextToString(this));*/
+	/*printf("parse_@: '%s'\n", TextGet(this));*/
 	if(!(key = TextSep(this, white_space, 0))) {
 		if(TextIsError(this))
 			{ fprintf(stderr,"Error: %s.\n",TextGetError(this)); return; }
 		/* just a key and no value */
 		key = Text();
-		TextCat(key, TextToString(this));
+		TextCat(key, TextGet(this));
 		TextClear(this);
 	}
 	TextTrim(this);
 	/* linear search */
-	key_s = TextToString(key);
+	key_s = TextGet(key);
 	key_sl = strlen(key_s);
 	for(e = 0; e < ems_size && ((em = ems + e, key_sl != strlen(em->word))
 		|| strncmp(em->word, key_s, key_sl)); e++);
@@ -459,7 +459,7 @@ static int parse_generics(struct Text *const this) {
 		if(!(temp = Text())) { e = E_A; break; }
 		/* {<s0>bla bla T_I<s1>_(Destroy, World<s2>)<s3>};
 		 assume it won't be nested; work backwards */
-		s0 = TextToString(this);
+		s0 = TextGet(this);
 		while((s1 = strstr(s0, "_(")) && (s2 = strchr(s1, ')'))) {
 			s3 = s2 + 1;
 			/* search types "_T_I_" backwards */
@@ -500,7 +500,7 @@ static int parse_generics(struct Text *const this) {
 		if(!TextCat(temp, s0)) { e = E_A; break; }
 		/* copy the temporary back to {this} */
 		TextClear(this);
-		if(!TextCat(this, TextToString(temp))) { e = E_A; break; }
+		if(!TextCat(this, TextGet(temp))) { e = E_A; break; }
 	} while(0); /* catch */ switch(e) {
 		case E_NO: break;
 		case E_A: fprintf(stderr, "parse_generics: temp buffer, %s.\n",
@@ -510,7 +510,7 @@ static int parse_generics(struct Text *const this) {
 	} { /* finally */
 		Text_(&temp);
 	}
-	/*fprintf(stderr, "parse_generics: '%s'\n", TextToString(this));*/
+	/*fprintf(stderr, "parse_generics: '%s'\n", TextGet(this));*/
 
 	return e ? 0 : -1;
 }
@@ -544,7 +544,6 @@ static void new_docs(struct Text *const this) {
 	enum { ES_NO, ES_SPLIT } es = ES_NO;
 	enum { TOP_LEVEL, FUNCTION } where = TOP_LEVEL;
 
-	fprintf(stderr, "new_docs: '%.20s...'\n", TextToString(this));
 	/* find something that looks like a function declaration after {this}? */
 	do { /* try */
 		struct Text *parent; /* of the doc parsing tree */
@@ -560,20 +559,20 @@ static void new_docs(struct Text *const this) {
 		/* more info on the parent for string searching for a function */
 		if(!TextGetMatchInfo(&parent, 0, &parent_end))
 			{ ef = EF_DIRECT; break; }
-		function = TextToString(parent) + parent_end;
+		function = TextGet(parent) + parent_end;
 		/* search for function signature immediately below {this};
 		 fixme: actually parse; this is sufficient for most cases, I guess */
 		/* try to find the end; the minimum "A a(){" */
 		if(!(function_end = strpbrk(function, ";{/#")) || *function_end != '{'
 			|| function_end - function < 6) break;
 		/* new {Text} for the signature */
-		signature = Text(), TextBetweenCat(signature, function, function_end-1);
-		TextTrim(signature);
+		signature = Text();
+		TextTrim(TextBetweenCat(signature, function, function_end-1));
 		if(!parse_generics(signature)) break;
 		/* split it into, eg, {fn_sig} = {fn_ret}{fn_name}{p0}{fn_args}{p1}
 		 = "{ int * }{fn} {(}{ void }{)} other {" */
-		/*printf("newdocs: %.40s\n", TextToString(signature));*/
-		if(!(ret0 = TextToString(signature)) ||
+		/*printf("newdocs: %.40s\n", TextGet(signature));*/
+		if(!(ret0 = TextGet(signature)) ||
 			!(p0 = strchr(ret0, '(')) ||
 			!(p1 = match_parenthesis(p0))) break;
 		/*printf("ret0 %.200s\np0 %.30s\np1 %.30s\n", ret0, p0, p1);*/
@@ -588,18 +587,15 @@ static void new_docs(struct Text *const this) {
 		TextBetweenCat(RelateGetKey(docs), fn0, fn1);
 		/* others go in sub-parts of docs; return value */
 		subsig = Text();
-		TextBetweenCat(subsig, ret0, ret1);
-		TextTrim(subsig);
+		TextTrim(TextBetweenCat(subsig, ret0, ret1));
 		child = RelateNewChild(docs);
 		TextCat(RelateGetKey(child), "_return");
-		TextCat(RelateGetValue(child), TextToString(subsig));
+		TextCat(RelateGetValue(child), TextGet(subsig));
 		/* and argument list */
-		TextClear(subsig);
-		TextBetweenCat(subsig, p0 + 1, p1 - 1);
-		TextTrim(subsig);
+		TextTrim(TextBetweenCat(TextClear(subsig), p0 + 1, p1 - 1));
 		child = RelateNewChild(docs);
 		TextCat(RelateGetKey(child), "_args");
-		TextCat(RelateGetValue(child), TextToString(subsig));
+		TextCat(RelateGetValue(child), TextGet(subsig));
 
 	} while(0); switch(ef) {
 		case EF_NO: break;
@@ -611,12 +607,10 @@ static void new_docs(struct Text *const this) {
 		Text_(&subsig), Text_(&signature);
 	}
 
-	/* escape {this} while for "&<>" while we have it all together;
-	 fixme: have different ones for each global fmt */
-	TextMatch(this, html_escape_pat, html_escape_pat_size);
-	/* then parse for additional tokens -- we could do this together, but text
-	 inside the tokens would not be escaped; "&<>" is fairly orthogonal */
-	TextMatch(this, html_text_pat, html_text_pat_size);
+	/* escape {this} while for "&<>" while we have it all together; then parse
+	 for additional tokens */
+	TextMatch(TextMatch(this, html_escape_pat, html_escape_pat_size),
+		html_text_pat, html_text_pat_size);
 
 	/* split the doc into '@'; place the first in 'desc' and all the others in
 	 their respective @<place> */
@@ -640,7 +634,7 @@ static void new_docs(struct Text *const this) {
 		if(es) break;
 		TextTrim(desc);
 		paragraphise(desc);
-		TextCat(RelateGetValue(docs), TextToString(desc));
+		TextCat(RelateGetValue(docs), TextGet(desc));
 		if(!is_first_last) Text_(&desc);
 	} while(0);
 

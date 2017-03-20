@@ -58,61 +58,61 @@ int main(void) {
 			{ e = E_FP; break; }
 		if(!TextFileCat(t, fp) || !TextMatch(t, tpattern, tpattern_size))
 			{ e = E_T; break; }
-		printf("Text: %s", TextToString(t));
+		printf("Text: %s", TextGet(t));
 		TextClear(t);
 #endif
 
 		printf("\nTextNCat:\n");
 		if(!(TextNCat(t, "TestText", (size_t)4)))
 			{ e = E_T; break; }
-		if(strcmp(sup = "Test", str = TextToString(t)))
+		if(strcmp(sup = "Test", str = TextGet(t)))
 			{ e = E_ASRT; break; }
-		printf("Text: %s\n", TextToString(t));
+		printf("Text: %s\n", TextGet(t));
 
 		printf("\nTextTransform:\n");
 		TextTransform(t, "\\url{%s%%%s} yo {YO}");
-		if(strcmp(sup = "\\url{Test%Test} yo {YO}", str = TextToString(t)))
+		if(strcmp(sup = "\\url{Test%Test} yo {YO}", str = TextGet(t)))
 			{ e = E_ASRT; break; }
-		printf("Text: %s\n", TextToString(t));
+		printf("Text: %s\n", TextGet(t));
 
 		printf("\nTextMatch:\n");
 		TextMatch(t, tpattern, tpattern_size);
 		if(strcmp(sup = "<a href = \"Test%Test\">Test%Test</a> yo <em>YO</em>",
-			str = TextToString(t)))
+			str = TextGet(t)))
 			{ e = E_ASRT; break; }
-		printf("Text: %s\n", TextToString(t));
+		printf("Text: %s\n", TextGet(t));
 		TextClear(t);
 
 		printf("\nTextBetweenCat:\n");
 		s0 = strchr(fn + 1, '/');
 		s1 = strchr(s0 + 1, '/');
 		TextBetweenCat(t, s0, s1);
-		if(strcmp(sup = "/neil/", str = TextToString(t)))
+		if(strcmp(sup = "/neil/", str = TextGet(t)))
 			{ e = E_ASRT; break; }
 		s0 = strchr(s1 + 1, '/');
 		s1 = strchr(s0 + 1, '/');
 		TextBetweenCat(t, s0, s1);
-		if(strcmp(sup = "/neil//Common/", str = TextToString(t)))
+		if(strcmp(sup = "/neil//Common/", str = TextGet(t)))
 			{ e = E_ASRT; break; }
-		printf("Text: %s\n", TextToString(t));
+		printf("Text: %s\n", TextGet(t));
 		TextClear(t);
 
 		printf("\nTextSplit:\n");
 		TextCat(t, "/foo///bar/qux//xxx");
-		printf("Text: '%s'\n", TextToString(t));
+		printf("Text: '%s'\n", TextGet(t));
 		s = 0;
 		while((split = TextSplit(t, "/", &is_delim))) {
-			printf("TextSplit: '%s'\n", TextToString(split));
+			printf("TextSplit: '%s'\n", TextGet(split));
 			switch(s++) {
-				case 0: if(strcmp(sup = "", str = TextToString(split)))
+				case 0: if(strcmp(sup = "", str = TextGet(split)))
 					e = E_ASRT; break;
-				case 1: if(strcmp(sup = "foo//", str = TextToString(split)))
+				case 1: if(strcmp(sup = "foo//", str = TextGet(split)))
 					e = E_ASRT; break;
-				case 2: if(strcmp(sup = "bar", str = TextToString(split)))
+				case 2: if(strcmp(sup = "bar", str = TextGet(split)))
 					e = E_ASRT; break;
-				case 3: if(strcmp(sup = "qux/", str = TextToString(split)))
+				case 3: if(strcmp(sup = "qux/", str = TextGet(split)))
 					e = E_ASRT; break;
-				default: sup = "(null)", str = TextToString(split),
+				default: sup = "(null)", str = TextGet(split),
 					e = E_ASRT; break;
 			}
 			Text_(&split);

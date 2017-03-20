@@ -137,14 +137,14 @@ const char *RelatesGetError(struct Relates *const this) {
 /**********
  * Relate */
 
-/** Get key string; shortcut for {TextToString(RelateGetKey(this))}. */
+/** Get key string; shortcut for {TextGet(RelateGetKey(this))}. */
 const char *RelateKey(const struct Relate *const this) {
-	return this ? TextToString(this->key) : 0;
+	return this ? TextGet(this->key) : 0;
 }
 
-/** Get value string; shortcut for {TextToString(RelateGetValue(this))}. */
+/** Get value string; shortcut for {TextGet(RelateGetValue(this))}. */
 const char *RelateValue(const struct Relate *const this) {
-	return this ? TextToString(this->value) : 0;
+	return this ? TextGet(this->value) : 0;
 }
 
 /** Get key. */
@@ -195,7 +195,7 @@ void RelateForEachChildKey(struct Relate *const this,
 	if(!key || !a) return;
 	for(i = 0; i < this->size; i++) {
 		child = this->childs[i];
-		if(!strcmp(TextToString(child->key), key)) a(child);
+		if(!strcmp(TextGet(child->key), key)) a(child);
 	}
 }
 
@@ -210,14 +210,14 @@ struct Relate *RelateGetChild(const struct Relate *const this,
 	if(!this || !key) return 0;
 	for(d = 0; d < this->size; d++) {
 		child = this->childs[d];
-		if(strcmp(TextToString(child->key), key)) continue;
+		if(strcmp(TextGet(child->key), key)) continue;
 		found = child;
 		break;
 	}
 	return found;
 }
 
-/** Shortcut for {TextToString(RelateGetValue(RelateGetChild(this, key)))}. */
+/** Shortcut for {TextGet(RelateGetValue(RelateGetChild(this, key)))}. */
 const char *RelateGetChildValue(const struct Relate *const this,
 	const char *const key) {
 	return RelateValue(RelateGetChild(this, key));
