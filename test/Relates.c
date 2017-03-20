@@ -36,11 +36,11 @@ static void html(struct Relate *const this);
 const struct {
 	const char *const str;
 	const RelateAction fun;
-	const char *const generic_type_name;
+	const char *const open, *const close;
 } fmt[] = {
-	{ "xml",  &xml,   "<%.*s>%.s" },
-	{ "text", &plain, "<%.*s>%.s" },
-	{ "html", &html,  "&lt;%.*s&gt;%.*s" }
+	{ "xml",  &xml,   "<", ">" },
+	{ "text", &plain, "<", ">" },
+	{ "html", &html,  "&lt;", "&gt;" }
 }, *fmt_chosen = fmt + 2;
 const size_t fmt_size = sizeof fmt / sizeof *fmt;
 
@@ -195,106 +195,111 @@ static const char *match_parenthesis(const char *const left) {
 /** Searches backwards from the previous char to {a}, hits a function, and
  stops when it hits the end of something that looks function-like -- only call
  when you know it has a '('. Called by \see{parse_generics}. */
-static const char *prev_function_part(const char *a) {
+static int prev_function_part(const char **const pa, const char **const pb) {
+	const char *a = *pa;
 	const int is_peren = *a == ')' ? -1 : 0;
-	const char *b;
-	/*printf("prev_f '%s'\n", a);*/
+
 	a--;
 	while(isspace(*a)) a--;
-	if(!is_peren && *a != ',') return 0; /* the only thing we expect: , */
-	a--;
-	while(isspace(*a)) a--;
+	if(!is_peren) {
+		if(*a != ',') return 0; /* the only thing we expect: , */
+		a--;
+		while(isspace(*a)) a--;
+	}
+	*pb = a;
 	while(isfunction(*a)) a--;
-	b = a + 1;
-	/* look ahead to see if it's really a generic */
-	while(isspace(*a)) a--;
-	if(*a != '(' && *a != ',') return 0; /* not really */
-	/*printf("pfp ret: '%s'\n", a + 1);*/
-	return b;
+	*pa = a + 1;
+	while(isspace(*a)) a--; /* look behind to see if it's really a generic */
+
+	return (*a != '(' && *a != ',') ? 0 : -1;
 }
 
 /** Starting from the end of a function, this retrieves the previous generic
  part. Called by \see{parse_generics}. */
-static const char *prev_generic_part(const char *const str, const char *a) {
+static int prev_generic_part(const char *const str, const char **const pa,
+	const char **const pb) {
 	int is_one = 0;
+	const char *a = *pa;
+
 	if(a <= str) return 0;
 	if(*a == '_') a++; /* starting */
 	if(*--a != '_') return 0;
 	a--;
+	*pb = a;
 	while(isalnum(*a)) {
-		if(a <= str) return 0;
-		a--;
-		is_one = -1;
+		if(a <= str) return *pa = str, is_one ? -1 : 0;
+		a--, is_one = -1;
 	}
-	/*if(is_one) printf("prev_g ret: '%s'\n", a + 1);*/
-	return is_one ? a + 1 : 0;
+	*pa = ++a;
+
+	return is_one ? -1 : 0;
 }
 
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
  "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! */
 static int parse_generics(struct Text *const this) {
 	struct Text *temp = 0;
-	struct Generic { const char *type, *name; } generics[16], *generic;
+	struct Generic { const char *type, *tend, *name, *nend; }
+		generics[16], *generic;
 	const size_t generics_size = sizeof generics / sizeof *generics;
 	unsigned types_size, names_size, i;
-	const char *start, *type, *name, *end;
+	const char *s0, *s1, *s1end, *s2, *s2end, *s3;
 	enum { E_NO, E_A, E_GAVE_UP } e = E_NO;
 
 	if(!this) return 0;
 	do {
 		if(!(temp = Text())) { e = E_A; break; }
-		/* {<start>bla bla T_I<type>_(Destroy, World<name>)<end>};
+		/* {<s0>bla bla T_I<s1>_(Destroy, World<s2>)<s3>};
 		 assume it won't be nested; work backwards */
-		start = TextToString(this);
-		while((type = strstr(start, "_(")) && (name = strchr(type, ')'))) {
-			end = name;
+		s0 = TextToString(this);
+		while((s1 = strstr(s0, "_(")) && (s2 = strchr(s1, ')'))) {
+			s3 = s2 + 1;
 			/* search types "_T_I_" backwards */
 			types_size = 0;
-			while((type = prev_generic_part(start, type))) {
+			while((prev_generic_part(s0, &s1, &s1end))) {
 				if(types_size >= generics_size) { e = E_GAVE_UP; break; }
-				generics[types_size++].type = type;
-			}
-			if(e) break;
+				generic = generics + types_size++;
+				generic->type = s1, generic->tend = s1end;
+			} if(e) break;
 			/* search "(foo, create)" backwards */
 			names_size = 0;
-			while((name = prev_function_part(name))) {
+			while((prev_function_part(&s2, &s2end))) {
 				if(names_size >= generics_size) { e = E_GAVE_UP; break; }
-				generics[names_size++].name = name;
+				generic = generics + names_size++;
+				generic->name = s2, generic->nend = s2end;
+			} if(e) break;
+			/*for(i = types_size; i; i--) {
+				generic = generics + i - 1;
+				fprintf(stderr, "type: '%.*s'\n",
+					(int)(generic->tend - generic->type + 1), generic->type);
 			}
-			if(e) break;
+			for(i = names_size; i; i--) {
+				generic = generics + i - 1;
+				fprintf(stderr, "name: '%.*s'\n",
+					(int)(generic->nend - generic->name + 1), generic->name);
+			}*/
 			/* doesn't look like a generic, just cat, continue to the next */
 			if(!types_size || types_size != names_size) {
-				if(!TextBetweenCat(temp, start, end))
-					{ e = E_A; break; }
-				start = end + 1;
+				TextBetweenCat(temp, s0, s3 - 1);
+				s0 = s3;
 				continue;
 			}
 			/* all the text up to the generic is unchanged */
-			if(!TextBetweenCat(temp, start, generics[types_size-1].type))
-				{ e = E_A; break; }
+			TextBetweenCat(temp, s0, generics[types_size - 1].type - 1);
 			/* reverse the reversal */
 			for(i = types_size; i; i--) {
-				size_t type_len, name_len;
-				const char *type_end, *name_end;
 				generic = generics + i - 1;
-				/* fixme: probably should have assigned these up top */
-				for(type_end = generic->type; isalnum(*type_end);   type_end++);
-				type_len = type_end - generic->type;
-				for(name_end = generic->name; isfunction(*name_end);name_end++);
-				name_len = name_end - generic->name;
-				/*fprintf(stderr, "parse_generics: <%.*s>%.*s\n", (int)type_len,
-					generic->type, (int)name_len, generic->name);*/
-				/* fixme: <, >, are verboten in html */
-				if(!TextPrintCat(temp, fmt_chosen->generic_type_name, type_len,
-					generic->type, name_len, generic->name)) { e = E_A; break; }
-			}
-			if(e) break;
+				TextCat(temp, fmt_chosen->open);
+				TextBetweenCat(temp, generic->type, generic->tend);
+				TextCat(temp, fmt_chosen->close);
+				TextBetweenCat(temp, generic->name, generic->nend);
+			} if(e) break;
 			/* advance */
-			start = end + 1;
+			s0 = s3;
 		}
 		if(e) break;
 		/* copy the rest (probably nothing) */
-		if(!TextCat(temp, start)) { e = E_A; break; }
+		if(!TextCat(temp, s0)) { e = E_A; break; }
 		/* copy the temporary back to {this} */
 		TextClear(this);
 		if(!TextCat(this, TextToString(temp))) { e = E_A; break; }
@@ -310,6 +315,7 @@ static int parse_generics(struct Text *const this) {
 	{ /* finally */
 		Text_(&temp);
 	}
+	fprintf(stderr, "parse_generics: '%s'\n", TextToString(this));
 
 	return e ? 0 : -1;
 }
