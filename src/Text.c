@@ -4,19 +4,14 @@
  A dynamic string in Modified UTF-8,
  \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. That is, this is a
  wrapper around a standard C null-terminated string. This wrapper automatically
- expands memory as needed. However, it is not safe for use by multiple threads.
- &&!
+ expands memory as needed. This implementation is not synchronized.
 
  @file		Text.c
  @author	Neil
  @std		C89/90
  @version	1.0; 2017-03
  @since		1.0; 2017-03
- @fixme		TextCodePointAt, TextCodePointCount, TextCharAt,
- TextDelete(int start, int end), TextIndexOf(String str, int fromIndex),
- TextInsert(...), lastIndexOf, length,
- TextOffsetByCodePoints(int index, int codePointOffset),
- TextReplace(int start, int end, String str),
+ @fixme		TextCodePointCount, TextCharAt, TextDelete, TextInsert,
  TextSetCharAt, TextSubsequence?
  @fixme		All the positions and sizes are in absolute bytes; not really what
  you want for internationalisation.

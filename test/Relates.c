@@ -2,7 +2,7 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  This is a test of Relates that got out-of-hand; redirect a {.c} file that has
- JavaDoc-style / * *, * /. 
+ JavaDoc-style / * *, * /.
 
  @author	Neil
  @version	3.0; 2016-08
@@ -20,14 +20,21 @@ const char *const separates_param_value = ":\n\t\v\f\r";
 
 #ifdef DEBUG
 /* my debugger doesn't like calling with args or piping, hard code */
-/*const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";*/
-const char *const fn = "/Users/neil/Movies/Common/List/src/List.h";
+const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";
+/*const char *const fn = "/Users/neil/Movies/Common/List/src/List.h";*/
 #else
 const char *const fn = "stdin";
 #endif
 
-/*************************
- * Command line options. */
+/* global root */
+static struct Relates *root;
+
+
+
+
+
+/***************************************************
+ * Command line options implementing RelateAction. */
 
 static void xml(struct Relate *const this);
 static void plain(struct Relate *const this);
@@ -44,14 +51,253 @@ const struct {
 }, *fmt_chosen = fmt + 2;
 const size_t fmt_size = sizeof fmt / sizeof *fmt;
 
-/* global root */
-static struct Relates *root;
-
-/********************************************************
- * This goes under \see{new_docs} for {TextStrip('@')}. */
+/****************************************************
+ * Called from \see{new_docs} for {TextStrip('@')}. */
 
 typedef void (*RelatesField)(struct Relate *const parent,
 	struct Text *const key, struct Text *const value);
+
+static void new_child(struct Relate *const parent, struct Text *const key,
+	struct Text *const value);
+static void new_arg_child(struct Relate *const parent, struct Text *const key,
+	struct Text *const value);
+static void top_key(struct Relate *const parent, struct Text *const key,
+	struct Text *const value);
+
+static const struct EachMatch {
+	const char *word;
+	RelatesField what;
+} each_head[] = {
+	{ "file",    &top_key },
+	{ "param",   &new_arg_child },
+	{ "author",  &new_child },
+	{ "std",     &new_child },
+	{ "version", &new_child },
+	{ "since",   &new_child },
+	{ "fixme",   &new_child }
+}, each_fn[] = {
+	{ "param",   &new_arg_child },
+	{ "return",  &new_child },
+	{ "throws",  &new_arg_child },
+	{ "implements", &new_child },
+	{ "fixme",   &new_child },
+	{ "author",  &new_child },
+	{ "since",   &new_child },
+	{ "deprecated", &new_child },
+	{ "include", &new_child }
+};
+static const size_t each_head_size = sizeof each_head / sizeof *each_head,
+each_fn_size = sizeof each_fn / sizeof *each_fn;
+
+/***********************************************************
+ * These go in a Pattern array for calling in {TextMatch}. */
+
+/** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
+ @implements TextAction */
+static void html_url(struct Text *const this)
+	{ TextTrim(this), TextTransform(this, "<a href = \"%s\">%s</a>"); }
+/** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
+ @implements TextAction */
+static void html_cite(struct Text *const this)
+	{ TextTrim(this), TextTransform(this,
+	"<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>"); }
+/** @implements	TextAction */
+static void html_see(struct Text *const this)
+	{ TextTrim(this), TextTransform(this, "<a href = \"#%s\">%s</a>"); }
+/** @implements	TextAction */
+static void html_em(struct Text *const this)
+	{ TextTransform(this, "<em>%s</em>"); }
+/** @implements	TextAction */
+static void html_amp(struct Text *const this) { TextCopy(this, "&amp;"); }
+/** @implements	TextAction */
+static void html_lt(struct Text *const this) { TextCopy(this, "&lt;"); }
+/** @implements	TextAction */
+static void html_gt(struct Text *const this) { TextCopy(this, "&gt;"); }
+/** @implements	TextAction */
+static void html_paragraph(struct Text *const this)
+	{ TextCopy(this, "\n</p>\n<p>\n"); }
+
+static void new_docs(struct Text *const this);
+
+static const struct TextPattern html_escape_pat[] = {
+	{ "&",       0,   &html_amp },
+	{ "<",       0,   &html_lt },
+	{ ">",       0,   &html_gt }
+}, html_text_pat[] = {
+	{ "\\url{",  "}", &html_url },
+	{ "\\cite{", "}", &html_cite },
+	{ "\\see{",  "}", &html_see },
+	{ "{",       "}", &html_em }
+}, html_para_pat[] = {
+	{ "\n\n",    0,   &html_paragraph },
+	{ "\n \n",   0,   &html_paragraph }
+}, root_pat[] = {
+	{ "/""** ", "*""/", &new_docs }
+	/* fixme: more robust, ie \* { / * * /, 0 }?{\/} */
+};
+static const size_t
+	html_escape_pat_size = sizeof html_escape_pat / sizeof *html_escape_pat,
+	html_text_pat_size = sizeof html_text_pat / sizeof *html_text_pat,
+	html_para_pat_size = sizeof html_para_pat / sizeof *html_para_pat,
+	root_pat_size = sizeof root_pat / sizeof *root_pat;
+
+
+
+
+
+/**********************
+ * Different formats. */
+
+/** Selects functions.
+ @implements	RelatePredicate */
+static int select_functions(const struct Relate *const this) {
+	const char *const t = RelateValue(RelateGetChild(this, "_return"));
+	return t && (strncmp("static", t, 6lu) /* good enough */
+		|| RelateGetChild(this, "include")) ? -1 : 0;
+}
+
+/* fmt:XML */
+
+/** Write a bunch of XML CDATA; called by \see{xml_recusive}. */
+static void cdata(const char *const str) {
+	const char *a = str, *b;
+	printf("<![CDATA[");
+	while((b = strstr(a, "]]>"))) {
+		printf("%.*s]]]]><![CDATA[>", (int)(b - a), a);
+		a = b + 3 /* "]]>".length */;
+	}
+	printf("%s]]>", a);
+}
+/** XML is so complex.
+ @implements RelateAction */
+static void xml_recursive(struct Relate *const this) {
+	printf("<key>"), cdata(RelateKey(this)), printf("</key>\n");
+	printf("<dict>\n<key>"), cdata(RelateKey(this)), printf("</key>\n");
+	printf("<string>"), cdata(RelateValue(this)), printf("</string>\n");
+	RelateForEachChildIf(this, 0, &xml_recursive);
+	printf("</dict>\n");
+}
+/** @implements RelateAction */
+static void xml(struct Relate *const this) {
+	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+	printf("<!DOCTYPE plist>\n");
+	printf("<plist version=\"1.0\">\n");
+	xml_recursive(this);
+	printf("</plist>\n");
+}
+
+/* fmt:Text */
+
+/** @implements	RelateAction */
+static void plain(struct Relate *const this) {
+	printf("<key>%s</key>\n", RelateKey(this));
+	printf("<value>%s</value>\n", RelateValue(this));
+	printf("{\n");
+	RelateForEachChildIf(this, 0, &plain);
+	printf("}\n\n");
+}
+
+/* fmt:HTML */
+
+/** A generic print <dl>.
+ @implements	RelateAction */
+static void html_dl(struct Relate *const this) {
+	const char *const arg = RelateValue(RelateGetChild(this, "_arg"));
+	const char *key = RelateKey(this);
+	/* these are probably better expanded */
+	if(!strcmp("param", key)) {
+		key = "parameter";
+	} if(!strcmp("std", key)) {
+		key = "minimum standard";
+	}
+	printf("\t<dt>%s:%s%s</dt>\n\t<dd>%s</dd>\n", key,
+		   arg ? " " : "", arg ? arg : "", RelateValue(this));
+}
+/** @implements	RelateAction */
+static void html_function_table(struct Relate *const this) {
+	printf("<tr>\n"
+		"\t<td>%s</td>\n"
+		"\t<td><a href = \"#%s\">%s</a></td>\n"
+		"\t<td>%s</td>\n"
+		"</tr>\n", RelateGetChildValue(this, "_return"), RelateKey(this),
+		RelateKey(this), RelateGetChildValue(this, "_args"));
+}
+/** @implements	RelateAction */
+static void html_function_detail(struct Relate *const this) {
+	printf("<div><a name = \"%s\"><!-- --></a>\n"
+		"<h3>%s</h3>\n"
+		"<pre>%s <b>%s</b> (%s)</pre>\n"
+		"%s\n"
+		"<dl>\n", RelateKey(this), RelateKey(this),
+		RelateGetChildValue(this, "_return"), RelateKey(this),
+		RelateGetChildValue(this, "_args"), RelateValue(this));
+	RelateForEachChildKey(this, "param", &html_dl);
+	RelateForEachChildKey(this, "return", &html_dl);
+	RelateForEachChildKey(this, "implements", &html_dl);
+	RelateForEachChildKey(this, "throws", &html_dl);
+	RelateForEachChildKey(this, "author", &html_dl);
+	RelateForEachChildKey(this, "since", &html_dl);
+	RelateForEachChildKey(this, "fixme", &html_dl);
+	RelateForEachChildKey(this, "deprecated", &html_dl);
+	printf("</dl></div>\n\n");
+}
+/** @implements	RelateAction */
+static void html(struct Relate *const this) {
+	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
+		"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n");
+	printf("<html>\n\n"
+		"<head>\n");
+	printf("<!-- steal these colour values from JavaDocs -->\n");
+	printf("<style type = \"text/css\">\n"
+		"\ta:link,  a:visited { color: #4a6782; }\n"
+		"\ta:hover, a:focus   { color: #bb7a2a; }\n"
+		"\ta:active           { color: #4A6782; }\n"
+		"\ttr:nth-child(even) { background: #dee3e9; }\n"
+		"\tdiv {\n"
+		"\t\tmargin:  4px 0;\n"
+		"\t\tpadding: 0 4px 4px 4px;\n"
+		"\t}\n"
+		"\ttable      { width: 100%%; }\n"
+		"\ttd         { padding: 4px; }\n"
+		"\th3, h1 {\n"
+		"\t\tcolor: #2c4557;\n"
+		"\t\tbackground-color: #dee3e9;\n"
+		"\t\tpadding:          4px;\n"
+		"\t}\n"
+		"\th3 {\n"
+		"\t\tmargin:           0 -4px;\n"
+		"\t\tpadding:          4px;\n"
+		"\t}\n"
+		"</style>\n");
+	printf("<title>%s</title>\n"
+		"</head>\n\n\n"
+		"<body>\n\n"
+		"<h1>%s</h1>\n\n"
+		"%s\n\n<dl>\n", RelateKey(this), RelateKey(this), RelateValue(this));
+	RelateForEachChildKey(this, "std", &html_dl);
+	RelateForEachChildKey(this, "author", &html_dl);
+	RelateForEachChildKey(this, "version", &html_dl);
+	RelateForEachChildKey(this, "since", &html_dl);
+	RelateForEachChildKey(this, "fixme", &html_dl);
+	RelateForEachChildKey(this, "param", &html_dl);
+	printf("</dl>\n\n\n"
+		"<h2>Function Summary</h2>\n\n"
+		"<table>\n"
+		"<tr><th>Return Type</th><th>Function Name</th>"
+		"<th>Argument List</th></tr>\n");
+	RelateForEachChildIf(this, &select_functions, &html_function_table);
+	printf("</table>\n\n\n"
+		"<h2>Function Detail</h2>\n\n");
+	RelateForEachChildIf(this, &select_functions, &html_function_detail);
+	printf("\n"
+		"</body>\n"
+		"</html>\n");
+}
+
+
+
+/********************************
+ * {EachMatch}: {RelatesField}. */
 
 /** @implements	RelatesField */
 static void new_child(struct Relate *const parent, struct Text *const key,
@@ -85,33 +331,8 @@ static void new_arg_child(struct Relate *const parent, struct Text *const key,
 static void top_key(struct Relate *const parent, struct Text *const key,
 	struct Text *const value) {
 	do { break; } while(key);
-	/*fprintf(stderr, "HERE!!! %s\n", TextToString(value));*/
 	TextCat(RelateGetKey(parent), TextToString(value));
 }
-
-static const struct EachMatch {
-	const char *word;
-	RelatesField what;
-} each_head[] = {
-	{ "file",    &top_key },
-	{ "param",   &new_arg_child },
-	{ "author",  &new_child },
-	{ "std",     &new_child },
-	{ "version", &new_child },
-	{ "since",   &new_child },
-	{ "fixme",   &new_child }
-}, each_fn[] = {
-	{ "param",   &new_arg_child },
-	{ "return",  &new_child },
-	{ "throws",  &new_arg_child },
-	{ "implements", &new_child },
-	{ "fixme",   &new_child },
-	{ "author",  &new_child },
-	{ "since",   &new_child }
-	/* fixme: deprecated */
-};
-static const size_t each_head_size = sizeof each_head / sizeof *each_head,
-	each_fn_size = sizeof each_fn / sizeof *each_fn;
 
 /** Called from \see{new_docs}. */
 static void parse_each(struct Text *const this, struct Relate *const parent,
@@ -123,8 +344,12 @@ static void parse_each(struct Text *const this, struct Relate *const parent,
 
 	/*printf("parse_@: '%s'\n", TextToString(this));*/
 	if(!(key = TextSep(this, white_space, 0))) {
-		if(TextIsError(this)) fprintf(stderr,"Error: %s.\n",TextGetError(this));
-		return;
+		if(TextIsError(this))
+			{ fprintf(stderr,"Error: %s.\n",TextGetError(this)); return; }
+		/* just a key and no value */
+		key = Text();
+		TextCat(key, TextToString(this));
+		TextClear(this);
 	}
 	TextTrim(this);
 	/* linear search */
@@ -139,37 +364,22 @@ static void parse_each(struct Text *const this, struct Relate *const parent,
 		return;
 	}
 	em->what(parent, key, this);
+	Text_(&key);
 }
 
-/***********************
- * General text-things */
+/********************************************************************
+ * Everything here is called by \see{new_docs}, which is one of the *
+ * {TextPatterns}. The others are one-liners, we forget prototypes. */
 
-/** @return		Is the character pointed to by {s} in the string {str} the
-				first on the line?
- @implements	TextPredicate */
-static int is_first_on_line(const char *const str, const char *s) {
-	if(str >= s) return -1;
-	s--;
-	while(s >= str) {
-		if(*s == '\0' || *s == '\n') return -1;
-		if(!isspace(*s)) return 0;
-		s--;
-	}
-	return -1;
-}
-
-/***************************
- * Parsing a function name */
-
-/** Function-like chars? */
+/** Function-like chars? Called by \see{prev_function_part} and
+ \see{new_docs}. */
 static int isfunction(int c) {
 	/* generics or escape; "<>&;" also have meaning, but we hopefully will be
 	 far from that, and C++, I'm sorry */
 	return isalnum(c) || c == '_' || c == '<' || c == '>' || c == ';'
 		|| c == '&';
 }
-
-/** Returns a matching closing parethesis for the {left} or null if it couldn't
+/** Returns a matching closing parenthesis for the {left} or null if it couldn't
  find one. */
 static const char *match_parenthesis(const char *const left) {
 	unsigned stack = 0;
@@ -191,7 +401,6 @@ static const char *match_parenthesis(const char *const left) {
 	}
 	return 0;
 }
-
 /** Searches backwards from the previous char to {a}, hits a function, and
  stops when it hits the end of something that looks function-like -- only call
  when you know it has a '('. Called by \see{parse_generics}. */
@@ -213,7 +422,6 @@ static int prev_function_part(const char **const pa, const char **const pb) {
 
 	return (*a != '(' && *a != ',') ? 0 : -1;
 }
-
 /** Starting from the end of a function, this retrieves the previous generic
  part. Called by \see{parse_generics}. */
 static int prev_generic_part(const char *const str, const char **const pa,
@@ -234,9 +442,9 @@ static int prev_generic_part(const char *const str, const char **const pa,
 
 	return is_one ? -1 : 0;
 }
-
 /** This is a hack to go from, "struct T_(Foo) *T_I_(Foo, Create)," to
- "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! */
+ "struct <T>Foo *<T>Foo<I>Create"; which is entirely more readable! Called by
+ \see{new_docs}. */
 static int parse_generics(struct Text *const this) {
 	struct Text *temp = 0;
 	struct Generic { const char *type, *tend, *name, *nend; }
@@ -268,16 +476,6 @@ static int parse_generics(struct Text *const this) {
 				generic = generics + names_size++;
 				generic->name = s2, generic->nend = s2end;
 			} if(e) break;
-			/*for(i = types_size; i; i--) {
-				generic = generics + i - 1;
-				fprintf(stderr, "type: '%.*s'\n",
-					(int)(generic->tend - generic->type + 1), generic->type);
-			}
-			for(i = names_size; i; i--) {
-				generic = generics + i - 1;
-				fprintf(stderr, "name: '%.*s'\n",
-					(int)(generic->nend - generic->name + 1), generic->name);
-			}*/
 			/* doesn't look like a generic, just cat, continue to the next */
 			if(!types_size || types_size != names_size) {
 				TextBetweenCat(temp, s0, s3 - 1);
@@ -303,82 +501,42 @@ static int parse_generics(struct Text *const this) {
 		/* copy the temporary back to {this} */
 		TextClear(this);
 		if(!TextCat(this, TextToString(temp))) { e = E_A; break; }
-	} while(0);
-	switch(e) {
+	} while(0); /* catch */ switch(e) {
 		case E_NO: break;
 		case E_A: fprintf(stderr, "parse_generics: temp buffer, %s.\n",
 			TextGetError(temp)); break;
 		case E_GAVE_UP: fprintf(stderr, "parse_generics: syntax error.\n");
 			break;
-	}
-	/*fprintf(stderr, "parse_generics: <%s>\n\n", TableGetValue(a));*/
-	{ /* finally */
+	} { /* finally */
 		Text_(&temp);
 	}
-	fprintf(stderr, "parse_generics: '%s'\n", TextToString(this));
+	/*fprintf(stderr, "parse_generics: '%s'\n", TextToString(this));*/
 
 	return e ? 0 : -1;
 }
-
-/***********************************************************
- * These go in a Pattern array for calling in {TextMatch}. */
-
-/** Must be in rfc3986 format; \url{https://www.ietf.org/rfc/rfc3986.txt }.
- @implements	TextAction */
-static void url(struct Text *const this) {
-	TextTrim(this), TextTransform(this, "<a href = \"%s\">%s</a>");
-}
-/** Must be in query format; \url{ https://www.ietf.org/rfc/rfc3986.txt }.
- @implements	TextAction */
-static void cite(struct Text *const this) {
-	TextTrim(this), TextTransform(this,
-		"<a href = \"https://scholar.google.ca/scholar?q=%s\">%s</a>");
-}
-/** @implements	TextAction */
-static void see(struct Text *const this) {
-	TextTrim(this), TextTransform(this, "<a href = \"#%s\">%s</a>");
-}
-/** @implements	TextAction */
-static void em(struct Text *const this) { TextTransform(this, "<em>%s</em>"); }
-/** @implements	TextAction */
-static void amp(struct Text *const this) { TextCopy(this, "&amp;"); }
-/** @implements	TextAction */
-static void lt(struct Text *const this) { TextCopy(this, "&lt;"); }
-/** @implements	TextAction */
-static void gt(struct Text *const this) { TextCopy(this, "&gt;"); }
-/** @implements	TextAction */
-static void paragraph(struct Text *const this){TextCopy(this, "\n</p>\n<p>\n");}
-
-static const struct TextPattern html_escape_pat[] = {
-	{ "&",       0,   &amp },
-	{ "<",       0,   &lt },
-	{ ">",       0,   &gt }
-}, html_text_pat[] = {
-	{ "\\url{",  "}", &url },
-	{ "\\cite{", "}", &cite },
-	{ "\\see{",  "}", &see },
-	{ "{",       "}", &em }
-}, html_paragraphise[] = {
-	{ "\n\n",    0,   &paragraph },
-	{ "\n \n",   0,   &paragraph }
-};
-static const size_t
-	html_escape_pat_size = sizeof html_escape_pat / sizeof *html_escape_pat,
-	html_text_pat_size = sizeof html_text_pat / sizeof *html_text_pat,
-	html_paragraphise_size = sizeof html_paragraphise/sizeof *html_paragraphise;
-
-/*****************************************************
- * Also in a second pattern at the root of the file. */
-
-/** Put it into html paragraphs. */
+/** Put it into html paragraphs. Called by \see{new_docs}. */
 static void paragraphise(struct Text *const this) {
 	/* well, that was easy */
 	TextTransform(this, "<p>\n%s\n</p>");
-	TextMatch(this, html_paragraphise, html_paragraphise_size);
+	TextMatch(this, html_para_pat, html_para_pat_size);
 }
-
-/** Matches documents, / * *   * /, and places them in the global {relates}.
- @implements	TextAction */
+/** Called by \see{new_docs}.
+ @return Is the character pointed to by {s} in the string {str} the first on
+ the line?
+ @implements TextPredicate */
+static int is_first_on_line(const char *const str, const char *s) {
+	if(str >= s) return -1;
+	s--;
+	while(s >= str) {
+		if(*s == '\0' || *s == '\n') return -1;
+		if(!isspace(*s)) return 0;
+		s--;
+	}
+	return -1;
+}
+/** Matches documents, / * *   * /, and places them in the global {relates}. It
+ then transforms the children to whatever format is desired. In {root_pat}.
+ @implements TextAction */
 static void new_docs(struct Text *const this) {
 	struct Relate *docs = 0;
 	struct Text *signature = 0, *subsig = 0;
@@ -386,6 +544,7 @@ static void new_docs(struct Text *const this) {
 	enum { ES_NO, ES_SPLIT } es = ES_NO;
 	enum { TOP_LEVEL, FUNCTION } where = TOP_LEVEL;
 
+	fprintf(stderr, "new_docs: '%.20s...'\n", TextToString(this));
 	/* find something that looks like a function declaration after {this}? */
 	do { /* try */
 		struct Text *parent; /* of the doc parsing tree */
@@ -493,166 +652,12 @@ static void new_docs(struct Text *const this) {
 
 }
 
-static const struct TextPattern root_pat[] = {
-	{ "/""** ", "*""/", &new_docs }
-	/* fixme: more robust, ie \* { / * * /, 0 }?{\/} */
-};
-static const size_t root_pat_size = sizeof root_pat / sizeof *root_pat;
 
 
 
-/*******
- * XML */
 
-/** Write a bunch of XML CDATA. */
-static void cdata(const char *const str) {
-	const char *a = str, *b;
-	printf("<![CDATA[");
-	while((b = strstr(a, "]]>"))) {
-		printf("%.*s]]]]><![CDATA[>", (int)(b - a), a);
-		a = b + 3 /* "]]>".length */;
-	}
-	printf("%s]]>", a);
-}
-
-/** People use this shit?
- @implements	TextAction */
-static void xml_recursive(struct Relate *const this) {
-	printf("<key>"), cdata(RelateKey(this)), printf("</key>\n");
-	printf("<dict>\n<key>"), cdata(RelateKey(this)), printf("</key>\n");
-	printf("<string>"), cdata(RelateValue(this)), printf("</string>\n");
-	RelateForEachChildIf(this, 0, &xml_recursive);
-	printf("</dict>\n");
-}
-
-static void xml(struct Relate *const this) {
-	printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
-	printf("<!DOCTYPE plist>\n");
-	printf("<plist version=\"1.0\">\n");
-	xml_recursive(this);
-	printf("</plist>\n");
-}
-
-/********
- * Text */
-
-/** @implements	RelateAction */
-static void plain(struct Relate *const this) {
-	printf("<key>%s</key>\n", RelateKey(this));
-	printf("<value>%s</value>\n", RelateValue(this));
-	printf("{\n");
-	RelateForEachChildIf(this, 0, &plain);
-	printf("}\n\n");
-}
-
-/**************************************************
- * HTML (okay, this would be easier with lambdas) */
-
-/** Selects functions by looking for _args.
- @fixme			Have an option "--static", or you could detect .h not _fn.
- @implements	RelatePredicate */
-static int select_functions(const struct Relate *const this) {
-	const char *const t = RelateValue(RelateGetChild(this, "_return"));
-	return t && strncmp("static", t, 6lu) /* fixme: almost */ ? -1 : 0;
-}
-/** A generic print <dl>.
- @implements	RelateAction */
-static void print_dl(struct Relate *const this) {
-	const char *const arg = RelateValue(RelateGetChild(this, "_arg"));
-	const char *key = RelateKey(this);
-	if(!strcmp("param", key)) {
-		key = "parameter";
-	} if(!strcmp("std", key)) {
-		key = "minimum standard";
-	}
-	printf("\t<dt>%s:%s%s</dt>\n\t<dd>%s</dd>\n", key,
-		arg ? " " : "", arg ? arg : "", RelateValue(this));
-}
-/** @implements	RelateAction */
-static void print_function_table(struct Relate *const this) {
-	printf("<tr>\n"
-		"\t<td>%s</td>\n"
-		"\t<td><a href = \"#%s\">%s</a></td>\n"
-		"\t<td>%s</td>\n"
-		"</tr>\n", RelateGetChildValue(this, "_return"), RelateKey(this),
-		RelateKey(this), RelateGetChildValue(this, "_args"));
-}
-/** @implements	RelateAction */
-static void print_function_detail(struct Relate *const this) {
-	printf("<div><a name = \"%s\"><!-- --></a>\n"
-		"<h3>%s</h3>\n"
-		"<pre>%s <b>%s</b> (%s)</pre>\n"
-		"%s\n"
-		"<dl>\n", RelateKey(this), RelateKey(this),
-		RelateGetChildValue(this, "_return"), RelateKey(this),
-		RelateGetChildValue(this, "_args"), RelateValue(this));
-	RelateForEachChildKey(this, "param", &print_dl);
-	RelateForEachChildKey(this, "return", &print_dl);
-	RelateForEachChildKey(this, "implements", &print_dl);
-	RelateForEachChildKey(this, "throws", &print_dl);
-	RelateForEachChildKey(this, "author", &print_dl);
-	RelateForEachChildKey(this, "since", &print_dl);
-	RelateForEachChildKey(this, "fixme", &print_dl);
-	printf("</dl></div>\n\n");
-}
-
-/** @implements	RelateAction */
-static void html(struct Relate *const this) {
-	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
-		   "\"http://www.w3.org/TR/html4/strict.dtd\">\n\n");
-	printf("<html>\n\n"
-		"<head>\n");
-	printf("<!-- steal these colour values from JavaDocs -->\n");
-	printf("<style type = \"text/css\">\n"
-		"\ta:link,  a:visited { color: #4a6782; }\n"
-		"\ta:hover, a:focus   { color: #bb7a2a; }\n"
-		"\ta:active           { color: #4A6782; }\n"
-		"\ttr:nth-child(even) { background: #dee3e9; }\n"
-		"\tdiv {\n"
-		"\t\tmargin:  4px 0;\n"
-		"\t\tpadding: 0 4px 4px 4px;\n"
-		"\t}\n"
-		"\ttable      { width: 100%%; }\n"
-		"\ttd         { padding: 4px; }\n"
-		"\th3, h1 {\n"
-		"\t\tcolor: #2c4557;\n"
-		"\t\tbackground-color: #dee3e9;\n"
-		"\t\tpadding:          4px;\n"
-		"\t}\n"
-		"\th3 {\n"
-		"\t\tmargin:           0 -4px;\n"
-		"\t\tpadding:          4px;\n"
-		"\t}\n"
-		"</style>\n");
-	printf("<title>%s</title>\n"
-		"</head>\n\n\n"
-		"<body>\n\n"
-		"<h1>%s</h1>\n\n"
-		"%s\n\n<dl>\n", RelateKey(this), RelateKey(this), RelateValue(this));
-	RelateForEachChildKey(this, "std", &print_dl);
-	RelateForEachChildKey(this, "author", &print_dl);
-	RelateForEachChildKey(this, "version", &print_dl);
-	RelateForEachChildKey(this, "since", &print_dl);
-	RelateForEachChildKey(this, "fixme", &print_dl);
-	RelateForEachChildKey(this, "param", &print_dl);
-	printf("</dl>\n\n\n"
-		"<h2>Function Summary</h2>\n\n"
-		"<table>\n"
-		"<tr><th>Return Type</th><th>Function Name</th>"
-		"<th>Argument List</th></tr>\n");
-	RelateForEachChildIf(this, &select_functions, &print_function_table);
-	printf("</table>\n\n\n"
-		"<h2>Function Detail</h2>\n\n");
-	RelateForEachChildIf(this, &select_functions, &print_function_detail);
-	printf("\n"
-		"</body>\n"
-		"</html>\n");
-}
-
-
-
-/******************
- * Main programme */
+/*******************
+ * Main programme. */
 
 /** The is a test of Table.
  @param argc	Count
@@ -678,7 +683,7 @@ int main(int argc, char *argv[]) {
 			return EXIT_FAILURE;
 		}
 	}
-	fprintf(stderr, "Format %s.\n\n", fmt_chosen->str);
+	/*fprintf(stderr, "Format %s.\n\n", fmt_chosen->str);*/
 
 	do {
 

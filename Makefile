@@ -1,6 +1,6 @@
 # Makefile 1.2 (GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0)
 
-PROJ  := Text
+PROJ  := cdoc
 VA    := 1
 VB    := 0
 
@@ -10,6 +10,7 @@ TDIR  := test
 GDIR  := build
 BDIR  := bin
 BACK  := backup
+PREFIX := /usr/local
 
 # files in bdir
 INST  := $(PROJ)-$(VA)_$(VB)
@@ -77,7 +78,7 @@ $(TOBJS): $(GDIR)/$(TDIR)/%.o: $(TDIR)/%.c $(H)
 ######
 # phoney targets
 
-.PHONY: setup clean backup icon
+.PHONY: setup clean backup icon install uninstall
 
 clean:
 	-rm -f $(OBJS) $(TOBJS)
@@ -104,3 +105,10 @@ setup: default icon
 	hdiutil create $(BDIR)/$(INST)-MacOSX.dmg -volname "$(PROJ) $(VA).$(VB)" -srcfolder $(BDIR)/$(INST)
 	# or zip $(BDIR)/$(INST)-Win32.zip -r $(BDIR)/$(INST)
 	rm -R $(BDIR)/$(INST)
+
+install: default
+	@mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp $(BDIR)/$(PROJ) $(DESTDIR)$(PREFIX)/bin/$(PROJ)
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROJ)
