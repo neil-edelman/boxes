@@ -95,6 +95,7 @@ static const char *const error_explination[] = {
 static enum Error global_error = E_NO_ERROR;
 static int        global_errno_copy;
 
+/** The is the Text. */
 struct Text {
 	char *text;
 	size_t length, capacity[2];

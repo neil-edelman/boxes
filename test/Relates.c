@@ -48,7 +48,7 @@ static void top_key(struct Relate *const parent, struct Text *const key,
 
 static const struct EachMatch {
 	const char *word;
-	RelatesField what;
+	RelatesField action;
 } each_head[] = {
 	{ "file",    &top_key },
 	{ "param",   &new_arg_child },
@@ -68,8 +68,20 @@ static const struct EachMatch {
 	{ "deprecated", &new_child },
 	{ "include", &new_child }
 };
-static const size_t each_head_size = sizeof each_head / sizeof *each_head,
-each_fn_size = sizeof each_fn / sizeof *each_fn;
+/*static const size_t each_head_size = sizeof each_head / sizeof *each_head,
+each_fn_size = sizeof each_fn / sizeof *each_fn;*/
+
+/* {enum EachWhere} corresponds to {static each_matching}. */
+enum EachWhere { W_TOP_LEVEL, W_FUNCTION, W_STRUCT, W_TYPEDEF };
+static const struct EachMatching {
+	const struct EachMatch *match;
+	const size_t size;
+} each_matching[] = {
+	{ each_head, sizeof each_head / sizeof *each_head },
+	{ each_fn,   sizeof each_fn / sizeof *each_fn },
+	{ each_fn,   sizeof each_fn / sizeof *each_fn },
+	{ each_fn,   sizeof each_fn / sizeof *each_fn }
+};
 
 /***********************************************************
  * These go in a Pattern array for calling in {TextMatch}. */
@@ -185,6 +197,13 @@ static int select_functions(const struct Relate *const this) {
 	return t && (strncmp("static", t, 6lu) /* good enough */
 		|| RelateGetChild(this, "include")) ? -1 : 0;
 }
+/** Selects structs.
+ @implements	RelatePredicate */
+static int select_structs(const struct Relate *const this) {
+	const char *const t = RelateValue(RelateGetChild(this, "_struct"));
+	return t && (strncmp("static", t, 6lu) /* good enough */
+				 || RelateGetChild(this, "include")) ? -1 : 0;
+}
 
 /* fmt:XML */
 
@@ -289,6 +308,10 @@ static void html_dl(struct Relate *const this) {
 	printf("\t<dt>%s:%s%s</dt>\n\t<dd>%s</dd>\n", key,
 		   arg ? " " : "", arg ? arg : "", RelateValue(this));
 }
+/** @implemants RelateAction */
+static void html_struct(struct Relate *const this) {
+	printf("<p>FFFFFFOOOOOOOO!!</p>\n");
+}
 /** @implements	RelateAction */
 static void html_function_table(struct Relate *const this) {
 	printf("<tr>\n"
@@ -357,7 +380,9 @@ static void html(struct Relate *const this) {
 	RelateForEachChildKey(this, "fixme", &html_dl);
 	RelateForEachChildKey(this, "param", &html_dl);
 	printf("</dl>\n\n\n"
-		"<h2>Function Summary</h2>\n\n"
+		"<h2>Structures</h2>\n\n");
+	RelateForEachChildIf(this, &select_structs,   &html_struct);
+	printf("\n<h2>Function Summary</h2>\n\n"
 		"<table>\n"
 		"<tr><th>Return Type</th><th>Function Name</th>"
 		"<th>Argument List</th></tr>\n");
@@ -412,7 +437,7 @@ static void top_key(struct Relate *const parent, struct Text *const key,
 
 /** Called from \see{new_docs}. */
 static void parse_each(struct Text *const this, struct Relate *const parent,
-	const struct EachMatch *const ems, const size_t ems_size) {
+	const struct EachMatching *const ems) {
 	const struct EachMatch *em;
 	size_t e, key_sl;
 	struct Text *key;
@@ -428,18 +453,20 @@ static void parse_each(struct Text *const this, struct Relate *const parent,
 		TextClear(this);
 	}
 	TextTrim(this);
-	/* linear search */
+	/* {int e}, {struct EachMatching *ems} (meta info),
+	 {struct EachMatch *em} (one chosen symbol) to be matched with {key_s} */
 	key_s = TextGet(key);
 	key_sl = strlen(key_s);
-	for(e = 0; e < ems_size && ((em = ems + e, key_sl != strlen(em->word))
+	for(e = 0; e < ems->size
+		&& ((em = ems->match + e, key_sl != strlen(em->word))
 		|| strncmp(em->word, key_s, key_sl)); e++);
-	if(e >= ems_size) {
+	if(e >= ems->size) {
 		fprintf(stderr, "Warning: unrecognised @-symbol, '%.*s.'\n",
 			(int)key_sl, key_s);
 		Text_(&key);
 		return;
 	}
-	em->what(parent, key, this);
+	em->action(parent, key, this);
 	Text_(&key);
 }
 
@@ -616,63 +643,62 @@ static int is_first_on_line(const char *const str, const char *s) {
  @implements TextAction */
 static void new_docs(struct Text *const this) {
 	struct Relate *docs = 0;
-	struct Text *signature = 0, *subsig = 0;
+	struct Text *declare = 0, *subdeclare = 0;
 	enum { EF_NO, EF_DIRECT, EF_RELATES } ef = EF_NO;
 	enum { ES_NO, ES_SPLIT } es = ES_NO;
-	enum { TOP_LEVEL, FUNCTION } where = TOP_LEVEL;
+	enum EachWhere where = W_TOP_LEVEL;
 
 	/* find something that looks like a function declaration after {this}? */
 	do { /* try */
 		struct Text *parent; /* of the doc parsing tree */
 		size_t parent_end;
 		struct Relate *child;
-		const char *function, *function_end;
+		const char *search, *search_end;
 		const char *ret0, *ret1, *fn0, *fn1, *p0, *p1;
 
-		/* {relates} is a global {Relates} pointer, the children are functions
-		 supplied by this function, but it assumes it's not a function for
-		 starting, and just cats to the file description */
+		/* get all info */
 		docs = RelatesGetRoot(root);
-		/* more info on the parent for string searching for a function */
 		if(!TextGetMatchInfo(&parent, 0, &parent_end))
 			{ ef = EF_DIRECT; break; }
-		function = TextGet(parent) + parent_end;
-		/* search for function signature immediately below {this};
-		 fixme: actually parse; this is sufficient for most cases, I guess */
-		/* try to find the end; the minimum "A a(){" */
-		if(!(function_end = strpbrk(function, ";{/#")) || *function_end != '{'
-			|| function_end - function < 6) break;
-		/* new {Text} for the signature */
-		signature = Text();
-		TextTrim(TextBetweenCat(signature, function, function_end-1));
-		if(!parse_generics(signature)) break;
-		/* split it into, eg, {fn_sig} = {fn_ret}{fn_name}{p0}{fn_args}{p1}
+		search = TextGet(parent) + parent_end;
+		/* search for declarations immediately below {this} by seeing if
+		 there's a '{' before ';', (it works in most-ish cases, otherwise you
+		 would have to write a C-parser, I guess.) Minimum "A a(){", or else it
+		 adds it to the top header by {break}. */
+		/* fixme: typedef Foo (*foo)(bla); */
+		if(!(search_end = strpbrk(search, ";{/#")) || *search_end != '{'
+			|| search_end - search < 6) break;
+		TextTrim(TextBetweenCat(declare = Text(), search, search_end-1));
+		if(!parse_generics(declare)) break;
+		/* try to split, eg, {fn_sig} = {fn_ret}{fn_name}{p0}{fn_args}{p1}
 		 = "{ int * }{fn} {(}{ void }{)} other {" */
 		/*printf("newdocs: %.40s\n", TextGet(signature));*/
-		if(!(ret0 = TextGet(signature)) ||
-			!(p0 = strchr(ret0, '(')) ||
-			!(p1 = match_parenthesis(p0))) break;
+		ret0 = TextGet(declare);
+		/* doesn't look like a function */
+		if(!(p0 = strchr(ret0, '(')) || !(p1 = match_parenthesis(p0))) {
+			break;
+		}
 		/*printf("ret0 %.200s\np0 %.30s\np1 %.30s\n", ret0, p0, p1);*/
 		for(fn1 = p0 - 1; fn1 > ret0 && !isfunction(*fn1); fn1--);
 		for(fn0 = fn1; fn0 > ret0 && isfunction(*fn0); fn0--);
 		if(isfunction(*fn0)) break;
 		ret1 = fn0++;
 		/* docs should go in it's own function child instead of in the root */
-		where = FUNCTION;
+		where = W_FUNCTION;
 		if(!(docs = RelateNewChild(docs))) { ef = EF_RELATES; break; }
 		/* the function name is the key of the {docs} */
 		TextBetweenCat(RelateGetKey(docs), fn0, fn1);
 		/* others go in sub-parts of docs; return value */
-		subsig = Text();
-		TextTrim(TextBetweenCat(subsig, ret0, ret1));
+		subdeclare = Text();
+		TextTrim(TextBetweenCat(subdeclare, ret0, ret1));
 		child = RelateNewChild(docs);
 		TextCat(RelateGetKey(child), "_return");
-		TextCat(RelateGetValue(child), TextGet(subsig));
+		TextCat(RelateGetValue(child), TextGet(subdeclare));
 		/* and argument list */
-		TextTrim(TextBetweenCat(TextClear(subsig), p0 + 1, p1 - 1));
+		TextTrim(TextBetweenCat(TextClear(subdeclare), p0 + 1, p1 - 1));
 		child = RelateNewChild(docs);
 		TextCat(RelateGetKey(child), "_args");
-		TextCat(RelateGetValue(child), TextGet(subsig));
+		TextCat(RelateGetValue(child), TextGet(subdeclare));
 
 	} while(0); switch(ef) {
 		case EF_NO: break;
@@ -681,7 +707,7 @@ static void new_docs(struct Text *const this) {
 		case EF_RELATES: fprintf(stderr, "new_docs relates: %s.\n",
 			RelatesGetError(root)); break;
 	} { /* finally */
-		Text_(&subsig), Text_(&signature);
+		Text_(&subdeclare), Text_(&declare);
 	}
 
 	/* escape {this} while for "&<>" while we have it all together; then parse
@@ -696,6 +722,8 @@ static void new_docs(struct Text *const this) {
 	/* split the doc into '@'; place the first in 'desc' and all the others in
 	 their respective @<place> */
 	do { /* try */
+		/* we pick out the each match list based on where we are */
+		/*const struct EachMatching *const matching = ;*/
 		struct Text *each, *desc = 0;
 		int is_first = -1, is_last = 0, is_first_last = 0;
 		do { /* split @ */
@@ -707,9 +735,10 @@ static void new_docs(struct Text *const this) {
 				continue;
 			}
 			/* now call @-handler */
-			parse_each(each, docs,
-				where == TOP_LEVEL ? each_head      : each_fn,
-				where == TOP_LEVEL ? each_head_size : each_fn_size);
+			/*parse_each(each, docs,
+				what == TOP_LEVEL ? each_head      : each_fn,
+				what == TOP_LEVEL ? each_head_size : each_fn_size);*/
+			parse_each(each, docs, each_matching + where);
 			if(!is_last) Text_(&each); /* remember each = this on is_last */
 		} while(!is_last /*&& (Text_(&each), -1) <- wtf */);
 		if(es) break;
@@ -736,7 +765,7 @@ static void new_docs(struct Text *const this) {
 /*******************
  * Main programme. */
 
-/** The is a test of Table.
+/** The is a test of Relates.
  @param argc	Count
  @param argv	Vector. */
 int main(int argc, char *argv[]) {
@@ -756,7 +785,8 @@ int main(int argc, char *argv[]) {
 		if(arg_err) {
 			fprintf(stderr,"Needs a C file to be input; produces documentation."
 				"\nThe default is to produce HTML, but you can specify [html|"
-				"text|xml].\n\n");
+				"text|xml].\n\n"
+				"Eg, cat Foo.c Foo.h | cdocs text > Foo.txt\n\n");
 			return EXIT_FAILURE;
 		}
 	}
