@@ -33,24 +33,6 @@ static struct Relates *root;
 
 
 
-/***************************************************
- * Command line options implementing RelateAction. */
-
-static void xml(struct Relate *const this);
-static void plain(struct Relate *const this);
-static void html(struct Relate *const this);
-
-const struct {
-	const char *const str;
-	const RelateAction fun;
-	const char *const open, *const close;
-} fmt[] = {
-	{ "xml",  &xml,   "<", ">" },
-	{ "text", &plain, "<", ">" },
-	{ "html", &html,  "&lt;", "&gt;" }
-}, *fmt_chosen = fmt + 2;
-const size_t fmt_size = sizeof fmt / sizeof *fmt;
-
 /****************************************************
  * Called from \see{new_docs} for {TextStrip('@')}. */
 
@@ -107,6 +89,20 @@ static void html_see(struct Text *const this)
 /** @implements	TextAction */
 static void html_em(struct Text *const this)
 	{ TextTransform(this, "<em>%s</em>"); }
+
+/** @implements TextAction */
+static void plain_url(struct Text *const this)
+	{ TextTrim(this), TextTransform(this, "[ %s ]"); }
+/** @implements TextAction */
+static void plain_cite(struct Text *const this)
+	{ TextTrim(this), TextTransform(this, "[ %s ]"); }
+/** @implements	TextAction */
+static void plain_see(struct Text *const this)
+	{ TextTrim(this), TextTransform(this, "[ %s ]"); }
+/** @implements	TextAction */
+static void plain_em(struct Text *const this)
+	{ TextTransform(this, "_%s_"); }
+
 /** @implements	TextAction */
 static void html_amp(struct Text *const this) { TextCopy(this, "&amp;"); }
 /** @implements	TextAction */
@@ -123,6 +119,11 @@ static const struct TextPattern html_escape_pat[] = {
 	{ "&",       0,   &html_amp },
 	{ "<",       0,   &html_lt },
 	{ ">",       0,   &html_gt }
+}, plain_text_pat[] = {
+	{ "\\url{",  "}", &plain_url },
+	{ "\\cite{", "}", &plain_cite },
+	{ "\\see{",  "}", &plain_see },
+	{ "{",       "}", &plain_em }
 }, html_text_pat[] = {
 	{ "\\url{",  "}", &html_url },
 	{ "\\cite{", "}", &html_cite },
@@ -136,12 +137,41 @@ static const struct TextPattern html_escape_pat[] = {
 	/* fixme: more robust, ie \* { / * * /, 0 }?{\/} */
 };
 static const size_t
-	html_escape_pat_size = sizeof html_escape_pat / sizeof *html_escape_pat,
-	html_text_pat_size = sizeof html_text_pat / sizeof *html_text_pat,
-	html_para_pat_size = sizeof html_para_pat / sizeof *html_para_pat,
-	root_pat_size = sizeof root_pat / sizeof *root_pat;
+	/*html_escape_pat_size = sizeof html_escape_pat / sizeof *html_escape_pat,*/
+	/*plain_text_pat_size  = sizeof plain_text_pat / sizeof *plain_text_pat,*/
+	/*html_text_pat_size   = sizeof html_text_pat / sizeof *html_text_pat,*/
+	html_para_pat_size   = sizeof html_para_pat / sizeof *html_para_pat,
+	root_pat_size        = sizeof root_pat / sizeof *root_pat;
 
+/***************************************************
+ * Command line options implementing RelateAction. */
 
+static void xml(struct Relate *const this);
+static void plain(struct Relate *const this);
+static void html(struct Relate *const this);
+static void html_paragraphise(struct Text *const this);
+
+const struct {
+	const char *const  str;
+	const RelateAction fun;
+	const char *const open, *const close;
+	const TextAction   para;
+	const struct TextPattern *const escape;
+	const size_t escape_size;
+	const struct TextPattern *const text;
+	const size_t text_size;
+} fmt[] = {
+	{ "xml",  &xml,   "<",    ">",    0,
+		0,               0,
+		0,               0 },
+	{ "text", &plain, "<",    ">",    0,
+		0,               0,
+		plain_text_pat,  sizeof plain_text_pat / sizeof *plain_text_pat },
+	{ "html", &html,  "&lt;", "&gt;", &html_paragraphise,
+		html_escape_pat, sizeof html_escape_pat / sizeof *html_escape_pat,
+		html_text_pat,   sizeof html_text_pat / sizeof *html_text_pat }
+}, *fmt_chosen = fmt + 2;
+const size_t fmt_size = sizeof fmt / sizeof *fmt;
 
 
 
@@ -188,18 +218,64 @@ static void xml(struct Relate *const this) {
 
 /* fmt:Text */
 
+/** A generic print plain list item.
+ @implements	RelateAction */
+static void plain_dl(struct Relate *const this) {
+	const char *const arg = RelateValue(RelateGetChild(this, "_arg"));
+	const char *key = RelateKey(this);
+	/* these are probably better expanded */
+	if(!strcmp("param", key)) {
+		key = "parameter";
+	} if(!strcmp("std", key)) {
+		key = "minimum standard";
+	}
+	printf("%s%s%s -- %s\n\n", key,
+		arg ? ": " : "", arg ? arg : "", RelateValue(this));
+}
+/** @implements	RelateAction */
+static void plain_function_table(struct Relate *const this) {
+	printf("%s\t%s\t(%s)\n", RelateGetChildValue(this, "_return"),
+		RelateKey(this), RelateGetChildValue(this, "_args"));
+}
+/** @implements	RelateAction */
+static void plain_function_detail(struct Relate *const this) {
+	printf("### %s ###\n\n"
+		"%s %s(%s)\n\n"
+		"%s\n\n", RelateKey(this), RelateGetChildValue(this, "_return"),
+		RelateKey(this), RelateGetChildValue(this, "_args"), RelateValue(this));
+	RelateForEachChildKey(this, "param", &plain_dl);
+	RelateForEachChildKey(this, "return", &plain_dl);
+	RelateForEachChildKey(this, "implements", &plain_dl);
+	RelateForEachChildKey(this, "throws", &plain_dl);
+	RelateForEachChildKey(this, "author", &plain_dl);
+	RelateForEachChildKey(this, "since", &plain_dl);
+	RelateForEachChildKey(this, "fixme", &plain_dl);
+	RelateForEachChildKey(this, "deprecated", &plain_dl);
+	printf("\n\n");
+}
 /** @implements	RelateAction */
 static void plain(struct Relate *const this) {
-	printf("<key>%s</key>\n", RelateKey(this));
-	printf("<value>%s</value>\n", RelateValue(this));
-	printf("{\n");
-	RelateForEachChildIf(this, 0, &plain);
-	printf("}\n\n");
+	printf("# %s #\n\n"
+		   "%s\n\n", RelateKey(this), RelateValue(this));
+	RelateForEachChildKey(this, "std", &plain_dl);
+	RelateForEachChildKey(this, "author", &plain_dl);
+	RelateForEachChildKey(this, "version", &plain_dl);
+	RelateForEachChildKey(this, "since", &plain_dl);
+	RelateForEachChildKey(this, "fixme", &plain_dl);
+	RelateForEachChildKey(this, "param", &plain_dl);
+	printf("\n\n"
+		   "## Function Summary ##\n\n"
+		   "_Return Type_\t_Function Name_\t_Argument List_\n");
+	RelateForEachChildIf(this, &select_functions, &plain_function_table);
+	printf("\n\n\n"
+		   "## Function Detail ##\n\n");
+	RelateForEachChildIf(this, &select_functions, &plain_function_detail);
+	printf("\n");
 }
 
 /* fmt:HTML */
 
-/** A generic print <dl>.
+/** A generic print html <dl>.
  @implements	RelateAction */
 static void html_dl(struct Relate *const this) {
 	const char *const arg = RelateValue(RelateGetChild(this, "_arg"));
@@ -244,11 +320,11 @@ static void html_function_detail(struct Relate *const this) {
 /** @implements	RelateAction */
 static void html(struct Relate *const this) {
 	printf("<!doctype html public \"-//W3C//DTD HTML 4.01//EN\" "
-		"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n");
-	printf("<html>\n\n"
-		"<head>\n");
-	printf("<!-- steal these colour values from JavaDocs -->\n");
-	printf("<style type = \"text/css\">\n"
+		"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n"
+		"<html>\n\n"
+		"<head>\n"
+		"<!-- steal these colour values from JavaDocs -->\n"
+		"<style type = \"text/css\">\n"
 		"\ta:link,  a:visited { color: #4a6782; }\n"
 		"\ta:hover, a:focus   { color: #bb7a2a; }\n"
 		"\ta:active           { color: #4A6782; }\n"
@@ -258,8 +334,8 @@ static void html(struct Relate *const this) {
 		"\t\tpadding: 0 4px 4px 4px;\n"
 		"\t}\n"
 		"\ttable      { width: 100%%; }\n"
-		"\ttd         { padding: 4px; }\n"
-		"\th3, h1 {\n"
+		"\ttd         { padding: 4px; }\n");
+	printf("\th3, h1 {\n"
 		"\t\tcolor: #2c4557;\n"
 		"\t\tbackground-color: #dee3e9;\n"
 		"\t\tpadding:          4px;\n"
@@ -268,8 +344,8 @@ static void html(struct Relate *const this) {
 		"\t\tmargin:           0 -4px;\n"
 		"\t\tpadding:          4px;\n"
 		"\t}\n"
-		"</style>\n");
-	printf("<title>%s</title>\n"
+		"</style>\n"
+		"<title>%s</title>\n"
 		"</head>\n\n\n"
 		"<body>\n\n"
 		"<h1>%s</h1>\n\n"
@@ -514,8 +590,9 @@ static int parse_generics(struct Text *const this) {
 
 	return e ? 0 : -1;
 }
-/** Put it into html paragraphs. Called by \see{new_docs}. */
-static void paragraphise(struct Text *const this) {
+/** Put it into html paragraphs. Called by \see{new_docs}.
+ @implements TextAction */
+static void html_paragraphise(struct Text *const this) {
 	/* well, that was easy */
 	TextTransform(this, "<p>\n%s\n</p>");
 	TextMatch(this, html_para_pat, html_para_pat_size);
@@ -609,8 +686,12 @@ static void new_docs(struct Text *const this) {
 
 	/* escape {this} while for "&<>" while we have it all together; then parse
 	 for additional tokens */
-	TextMatch(TextMatch(this, html_escape_pat, html_escape_pat_size),
-		html_text_pat, html_text_pat_size);
+	if(fmt_chosen->escape)
+		TextMatch(this, fmt_chosen->escape, fmt_chosen->escape_size);
+	if(fmt_chosen->text)
+		TextMatch(this, fmt_chosen->text,   fmt_chosen->text_size);
+	/*TextMatch(TextMatch(this, html_escape_pat, html_escape_pat_size),
+		html_text_pat, html_text_pat_size);*/
 
 	/* split the doc into '@'; place the first in 'desc' and all the others in
 	 their respective @<place> */
@@ -632,8 +713,10 @@ static void new_docs(struct Text *const this) {
 			if(!is_last) Text_(&each); /* remember each = this on is_last */
 		} while(!is_last /*&& (Text_(&each), -1) <- wtf */);
 		if(es) break;
+		/* if it needs extra help paragraphing the description */
 		TextTrim(desc);
-		paragraphise(desc);
+		if(fmt_chosen->para) fmt_chosen->para(desc);
+		/* now stick {desc} as {docs} value, node of {root} */
 		TextCat(RelateGetValue(docs), TextGet(desc));
 		if(!is_first_last) Text_(&desc);
 	} while(0);

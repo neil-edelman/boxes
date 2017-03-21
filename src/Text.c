@@ -6,9 +6,11 @@
  wrapper that automatically expands memory as needed around a standard C
  null-terminated string.
 
- If an error occurs, these functions return a null pointer; all functions
- return immediately when a null pointer is passed to them. This means you can
- compose functions safely. See \see{TextIsError} and \see{TextGetError}.
+ \see{TextGet} exposes a read-only, null-terminated {char *}. If an error
+ occurs (with memory allocation, for example,) these functions shall return a
+ null pointer; all functions shall accept a null pointer being passed to them
+ and return null immediately: this means you can compose functions safely. See
+ \see{TextIsError} and \see{TextGetError}.
 
  @file		Text.c
  @author	Neil
@@ -21,8 +23,6 @@
  you want for internationalisation?
  @fixme		E_CODE_CHOPPED */
 
-/*#define TEXT_DEBUG*/
-
 #include <stdlib.h> /* malloc realloc free */
 #include <stdio.h>  /* FILE fgets ferror vsnprintf fprintf */
 #include <errno.h>	/* errno */
@@ -34,14 +34,14 @@
 
 /* <-- ugly */
 #ifndef _MSC_VER /* <-- not msvc */
-#define _TEXT_UNUSED(a) while(0 && (a));
+#define TEXT_UNUSED(a) while(0 && (a));
 #else /* not msvc --><-- msvc: not a C89/90 compiler; needs a little help */
 #pragma warning(push)
 /* "Assignment within conditional expression." No. */
 #pragma warning(disable: 4706)
 /* "<ANSI/ISO name>: The POSIX name for this item is deprecated." No. */
 #pragma warning(disable: 4996)
-#define _TEXT_UNUSED(a) (void)(sizeof((a), 0))
+#define TEXT_UNUSED(a) (void)(sizeof((a), 0))
 #endif /* msvc --> */
 /* ugly --> */
 
@@ -417,10 +417,11 @@ struct Text *TextTransform(struct Text *const this, const char *fmt) {
 /** Transforms {this} according to all specified {patterns} array of
  {patterns_size}.
  @return {this}.
- @param patterns: An array of {TextPattern}; when the {begin} of a pattern
- encompasses another pattern, it should be before in the array. All patterns
- must have a non-empty string, {begin}, and {TextAction}, {transform}; {end} is
- optional; where missing, it will just call {transform} with {begin}. */
+ @param patterns: An array of {TextPattern { const char *start, *end;
+ TextAction transform; }; when the {begin} of a pattern encompasses another
+ pattern, it should be before in the array. All patterns must have a non-empty
+ string, {begin}, and {TextAction}, {transform}; {end} is optional; where
+ missing, it will just call {transform} with {begin}. */
 struct Text *TextMatch(struct Text *const this,
 	const struct TextPattern *const patterns, const size_t patterns_size) {
 	struct Text *temp = 0;
@@ -438,7 +439,7 @@ struct Text *TextMatch(struct Text *const this,
 	do { /* this is an actual do-loop! */
 		const struct TextPattern *pattern; size_t p;
 
-		/* search for the next pattern O(n^2) */
+		/* search for the next pattern, short-circuit O(n^2) */
 		braket.is = 0;
 		for(p = 0; p < patterns_size; p++) {
 			pattern = patterns + p;
@@ -655,7 +656,7 @@ static void swap_texts(struct Text *const a, struct Text *const b) {
 	}
 }
 
-/** "[[[]]]", '[', ']', would return the last *char */
+/** {alternate_root("[[[foo]]]bar", '[', ']')}, would return {"]bar"} */
 static char *alternate_root(char *const string, const int left,const int right){
 	unsigned stack = 1;
 	char *s = string + 1;
@@ -773,6 +774,6 @@ static void debug(struct Text *const this, const char *const fn,
 	if(length != this->length) fprintf(stderr, "Text.length %lu but strlen %lu."
 		"\n", this->length, length), exit(EXIT_FAILURE);
 #else
-	_TEXT_UNUSED(this); _TEXT_UNUSED(fn); _TEXT_UNUSED(fmt);
+	TEXT_UNUSED(this); TEXT_UNUSED(fn); TEXT_UNUSED(fmt);
 #endif
 }
