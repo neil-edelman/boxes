@@ -4,8 +4,9 @@ neil dot edelman each mail dot mcgill dot ca
 
 Version 1.0.
 
-Associative array of strings. Mainly for doing transformations on
-text files.
+This is a dynamic text wrapper for C89/90 based on the the standard
+library. Intended to be used with Modified UTF-8. Relatively short.
+Nothing really special about it.
 
 License:
 
