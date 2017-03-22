@@ -6,12 +6,13 @@
 
  @file		Relates
  @author	Neil
+ @std		C89/90
  @version	1.0; 2017-02
  @since		1.0; 2017-02 */
 
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* fprintf */
-#include <errno.h>
+#include <errno.h>	/* errno */
 #include <string.h>	/* strerror */
 #include <limits.h>	/* INT_MAX */
 #include <ctype.h>	/* isspace */
