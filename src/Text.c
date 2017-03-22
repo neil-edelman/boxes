@@ -7,7 +7,7 @@
  null-terminated string.
 
  \see{TextGet} exposes a read-only, null-terminated {char *}. If an error
- occurs (with memory allocation, for example,) these functions shall return a
+ occurs, (with memory allocation, for example,) these functions shall return a
  null pointer; all functions shall accept a null pointer being passed to them
  and return null immediately: this means you can compose functions safely. See
  \see{TextIsError} and \see{TextGetError}.
@@ -95,7 +95,6 @@ static const char *const error_explination[] = {
 static enum Error global_error = E_NO_ERROR;
 static int        global_errno_copy;
 
-/** The is the Text. */
 struct Text {
 	char *text;
 	size_t length, capacity[2];
@@ -205,6 +204,12 @@ void Text_(struct Text **const this_ptr) {
 const char *TextGet(const struct Text *const this) {
 	if(!this) return 0;
 	return this->text;
+}
+
+/** @return Gets the length in bytes. */
+size_t TextGetLength(const struct Text *const this) {
+	if(!this) return 0;
+	return this->length;
 }
 
 /** Clears the Text.
@@ -473,17 +478,17 @@ struct Text *TextMatch(struct Text *const this,
 		/* allocate the recursion; set the value back to how it was */
 		if(!(match = Matches_new(&matches, &braket))) { e = E_BUMP; break; }
 		t_uncut(&cut);
-		/* this assumes uni-process! */
-		match_info.parent = this;
-		match_info.start  = braket.bra.s0 - this->text;
-		match_info.end    = (braket.pattern->end ?
-			braket.ket.s1 : braket.bra.s1) - this->text;
-		/* call the handler */
-		match_info.is_valid = -1; /* ++ (we _want_ them to be invalidated) */
-		braket.pattern->transform(match->text);
-		match_info.is_valid = 0; /* -- */
-		/*printf("now value \"%.40s..\" and first \"%s\" at \"%.40s..\".\n",
-		 this->value, first_pat ? first_pat->begin : "(null)", first_pos);*/
+		if(braket.pattern->transform) {
+			/* this assumes uni-process! */
+			match_info.parent = this;
+			match_info.start  = braket.bra.s0 - this->text;
+			match_info.end    = (braket.pattern->end ?
+				braket.ket.s1 : braket.bra.s1) - this->text;
+			/* call the handler */
+			match_info.is_valid = -1; /* ++ (we want them to be invalidated) */
+			braket.pattern->transform(match->text);
+			match_info.is_valid = 0; /* -- */
+		}
 		cursor = braket.pattern->end ? braket.ket.s1 : braket.bra.s1;
 
 	} while(cursor);

@@ -10,7 +10,8 @@ TDIR  := test
 GDIR  := build
 BDIR  := bin
 BACK  := backup
-PREFIX := /usr/local
+DDIR  := doc
+PREFIX:= /usr/local
 
 # files in bdir
 INST  := $(PROJ)-$(VA)_$(VB)
@@ -28,6 +29,7 @@ TEST  := $(call rwildcard, $(TDIR), *.c)
 H     := $(call rwildcard, $(SDIR), *.h) $(call rwildcard, $(TDIR), *.h)
 OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
+DOCS  := $(patsubst $(SDIR)/%.c, $(DDIR)/%.html, $(SRCS))
 
 CC   := gcc
 CF   := -Wall -Wextra -Wall -Xlint -Wno-format-y2k -W -Wstrict-prototypes -Wmissing-prototypes \
@@ -35,6 +37,7 @@ CF   := -Wall -Wextra -Wall -Xlint -Wno-format-y2k -W -Wstrict-prototypes -Wmiss
 -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
 -Wnested-externs -Wredundant-decls -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
 OF   :=
+CDOCS:= cdoc
 
 # props Jakob Borg and Eldar Abusalimov
 # $(ARGS) is all the extra arguments
@@ -53,7 +56,7 @@ endif
 ######
 # compiles the programme by default
 
-default: $(BDIR)/$(PROJ)
+default: $(BDIR)/$(PROJ) $(DOCS)
 	# . . . success; executable is in $(BDIR)/$(PROJ)
 
 # linking
@@ -75,10 +78,14 @@ $(TOBJS): $(GDIR)/$(TDIR)/%.o: $(TDIR)/%.c $(H)
 	@mkdir -p $(GDIR)/$(TDIR)
 	$(CC) $(CF) -c $(TDIR)/$*.c -o $@
 
+$(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
+	@mkdir -p $(DDIR)
+	cat $^ | $(CDOCS) > $@
+
 ######
 # phoney targets
 
-.PHONY: setup clean backup icon install uninstall
+.PHONY: setup clean backup icon install uninstall docs
 
 clean:
 	-rm -f $(OBJS) $(TOBJS)
@@ -97,7 +104,7 @@ icon: default
 	-Rez -append $(BDIR)/$(RSRC) -o $(BDIR)/$(PROJ)
 	-SetFile -a C $(BDIR)/$(PROJ)
 
-setup: default icon
+setup: default icon docs
 	@mkdir -p $(BDIR)/$(INST)
 	cp $(BDIR)/$(PROJ) readme.txt gpl.txt copying.txt $(BDIR)/$(INST)
 	rm -f $(BDIR)/$(INST)-MacOSX.dmg

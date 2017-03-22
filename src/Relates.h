@@ -1,15 +1,14 @@
 #include "Text.h"
 
+/* See \see{Relates} */
 struct Relates;
+/* See \see{RelatesGetRoot}, \see{RelatesNewChild} */
 struct Relate;
 
+/** Action function. */
 typedef void (*RelateAction)(struct Relate *const);
+/** Predicate function. */
 typedef int (*RelatePredicate)(const struct Relate *const);
-
-struct RelateParent {
-	int is_within;
-	size_t start, end;
-};
 
 struct Relates *Relates(void);
 void Relates_(struct Relates **const this_ptr);

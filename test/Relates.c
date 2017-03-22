@@ -2,8 +2,9 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  This is a test of Relates that got out-of-hand; redirect a {.c} file that has
- JavaDoc-style / * *, * /.
+ JavaDoc-style sort-of.
 
+ @file		test/Relates.c
  @author	Neil
  @version	3.0; 2016-08
  @since		3.0; 2016-08 */
@@ -67,20 +68,24 @@ static const struct EachMatch {
 	{ "since",   &new_child },
 	{ "deprecated", &new_child },
 	{ "include", &new_child }
+}, each_struct[] = {
+	{ "param",   &new_arg_child },
+	{ "fixme",   &new_child },
+	{ "author",  &new_child },
+	{ "since",   &new_child },
+	{ "deprecated", &new_child }
 };
-/*static const size_t each_head_size = sizeof each_head / sizeof *each_head,
-each_fn_size = sizeof each_fn / sizeof *each_fn;*/
 
 /* {enum EachWhere} corresponds to {static each_matching}. */
-enum EachWhere { W_TOP_LEVEL, W_FUNCTION, W_STRUCT, W_TYPEDEF };
+enum EachWhere { W_TOP_LEVEL, W_FUNCTION, W_STRUCT, W_PRIVATE };
 static const struct EachMatching {
 	const struct EachMatch *match;
 	const size_t size;
 } each_matching[] = {
-	{ each_head, sizeof each_head / sizeof *each_head },
-	{ each_fn,   sizeof each_fn / sizeof *each_fn },
-	{ each_fn,   sizeof each_fn / sizeof *each_fn },
-	{ each_fn,   sizeof each_fn / sizeof *each_fn }
+	{ each_head,   sizeof each_head   / sizeof *each_head },
+	{ each_fn,     sizeof each_fn     / sizeof *each_fn },
+	{ each_struct, sizeof each_struct / sizeof *each_struct },
+	{ each_struct, sizeof each_struct / sizeof *each_struct }
 };
 
 /***********************************************************
@@ -110,7 +115,7 @@ static void plain_cite(struct Text *const this)
 	{ TextTrim(this), TextTransform(this, "[ %s ]"); }
 /** @implements	TextAction */
 static void plain_see(struct Text *const this)
-	{ TextTrim(this), TextTransform(this, "[ %s ]"); }
+	{ TextTrim(this), TextTransform(this, "`%s`"); }
 /** @implements	TextAction */
 static void plain_em(struct Text *const this)
 	{ TextTransform(this, "_%s_"); }
@@ -145,13 +150,10 @@ static const struct TextPattern html_escape_pat[] = {
 	{ "\n\n",    0,   &html_paragraph },
 	{ "\n \n",   0,   &html_paragraph }
 }, root_pat[] = {
-	{ "/""** ", "*""/", &new_docs }
-	/* fixme: more robust, ie \* { / * * /, 0 }?{\/} */
+	{ "/""** ", "*""/", &new_docs },
+	{ "/""*", "*""/", 0 } /* regular comments; fixme: more robust */
 };
 static const size_t
-	/*html_escape_pat_size = sizeof html_escape_pat / sizeof *html_escape_pat,*/
-	/*plain_text_pat_size  = sizeof plain_text_pat / sizeof *plain_text_pat,*/
-	/*html_text_pat_size   = sizeof html_text_pat / sizeof *html_text_pat,*/
 	html_para_pat_size   = sizeof html_para_pat / sizeof *html_para_pat,
 	root_pat_size        = sizeof root_pat / sizeof *root_pat;
 
@@ -199,10 +201,10 @@ static int select_functions(const struct Relate *const this) {
 }
 /** Selects structs.
  @implements	RelatePredicate */
-static int select_structs(const struct Relate *const this) {
-	const char *const t = RelateValue(RelateGetChild(this, "_struct"));
+static int select_declarations(const struct Relate *const this) {
+	const char *const t = RelateValue(RelateGetChild(this, "_declare"));
 	return t && (strncmp("static", t, 6lu) /* good enough */
-				 || RelateGetChild(this, "include")) ? -1 : 0;
+		|| RelateGetChild(this, "include")) ? -1 : 0;
 }
 
 /* fmt:XML */
@@ -251,6 +253,22 @@ static void plain_dl(struct Relate *const this) {
 	printf("%s%s%s -- %s\n\n", key,
 		arg ? ": " : "", arg ? arg : "", RelateValue(this));
 }
+/** @implements RelateAction */
+static void plain_declare_list(struct Relate *const this) {
+	const struct Relate *const s = RelateGetChild(this, "_declare");
+	const char *const structure
+	= TextGetLength(RelateGetValue(s)) ? RelateValue(s) : 0;
+	printf("### %s ###\n\n"
+		   "%s%s%s\n\n"
+		   "%s\n", RelateKey(this), RelateKey(this),
+		   structure ? " " : "", structure ? structure : "", RelateValue(this));
+	RelateForEachChildKey(this, "param",      &plain_dl);
+	RelateForEachChildKey(this, "author",     &plain_dl);
+	RelateForEachChildKey(this, "since",      &plain_dl);
+	RelateForEachChildKey(this, "fixme",      &plain_dl);
+	RelateForEachChildKey(this, "deprecated", &plain_dl);
+	printf("\n\n");
+}
 /** @implements	RelateAction */
 static void plain_function_table(struct Relate *const this) {
 	printf("%s\t%s\t(%s)\n", RelateGetChildValue(this, "_return"),
@@ -262,20 +280,20 @@ static void plain_function_detail(struct Relate *const this) {
 		"%s %s(%s)\n\n"
 		"%s\n\n", RelateKey(this), RelateGetChildValue(this, "_return"),
 		RelateKey(this), RelateGetChildValue(this, "_args"), RelateValue(this));
-	RelateForEachChildKey(this, "param", &plain_dl);
-	RelateForEachChildKey(this, "return", &plain_dl);
+	RelateForEachChildKey(this, "param",      &plain_dl);
+	RelateForEachChildKey(this, "return",     &plain_dl);
 	RelateForEachChildKey(this, "implements", &plain_dl);
-	RelateForEachChildKey(this, "throws", &plain_dl);
-	RelateForEachChildKey(this, "author", &plain_dl);
-	RelateForEachChildKey(this, "since", &plain_dl);
-	RelateForEachChildKey(this, "fixme", &plain_dl);
+	RelateForEachChildKey(this, "throws",     &plain_dl);
+	RelateForEachChildKey(this, "author",     &plain_dl);
+	RelateForEachChildKey(this, "since",      &plain_dl);
+	RelateForEachChildKey(this, "fixme",      &plain_dl);
 	RelateForEachChildKey(this, "deprecated", &plain_dl);
 	printf("\n\n");
 }
 /** @implements	RelateAction */
 static void plain(struct Relate *const this) {
 	printf("# %s #\n\n"
-		   "%s\n\n", RelateKey(this), RelateValue(this));
+		"%s\n\n", RelateKey(this), RelateValue(this));
 	RelateForEachChildKey(this, "std", &plain_dl);
 	RelateForEachChildKey(this, "author", &plain_dl);
 	RelateForEachChildKey(this, "version", &plain_dl);
@@ -283,11 +301,14 @@ static void plain(struct Relate *const this) {
 	RelateForEachChildKey(this, "fixme", &plain_dl);
 	RelateForEachChildKey(this, "param", &plain_dl);
 	printf("\n\n"
-		   "## Function Summary ##\n\n"
-		   "_Return Type_\t_Function Name_\t_Argument List_\n");
+		"## Declarations ##\n\n");
+	RelateForEachChildIf(this, &select_declarations, &plain_declare_list);
+	printf("\n\n"
+		"## Function Summary ##\n\n"
+		"_Return Type_\t_Function Name_\t_Argument List_\n");
 	RelateForEachChildIf(this, &select_functions, &plain_function_table);
 	printf("\n\n\n"
-		   "## Function Detail ##\n\n");
+		"## Function Detail ##\n\n");
 	RelateForEachChildIf(this, &select_functions, &plain_function_detail);
 	printf("\n");
 }
@@ -306,11 +327,24 @@ static void html_dl(struct Relate *const this) {
 		key = "minimum standard";
 	}
 	printf("\t<dt>%s:%s%s</dt>\n\t<dd>%s</dd>\n", key,
-		   arg ? " " : "", arg ? arg : "", RelateValue(this));
+		arg ? " " : "", arg ? arg : "", RelateValue(this));
 }
-/** @implemants RelateAction */
-static void html_struct(struct Relate *const this) {
-	printf("<p>FFFFFFOOOOOOOO!!</p>\n");
+/** @implements RelateAction */
+static void html_declare_list(struct Relate *const this) {
+	const struct Relate *const s = RelateGetChild(this, "_declare");
+	const char *const structure
+		= TextGetLength(RelateGetValue(s)) ? RelateValue(s) : 0;
+	printf("<div><a name = \"%s\"><!-- --></a>\n"
+		"<h3>%s</h3>\n"
+		"<pre><b>%s</b>%s%s</pre>\n"
+		"%s<dl>\n", RelateKey(this), RelateKey(this), RelateKey(this),
+		structure ? " " : "", structure ? structure : "", RelateValue(this));
+	RelateForEachChildKey(this, "param", &html_dl);
+	RelateForEachChildKey(this, "author", &html_dl);
+	RelateForEachChildKey(this, "since", &html_dl);
+	RelateForEachChildKey(this, "fixme", &html_dl);
+	RelateForEachChildKey(this, "deprecated", &html_dl);
+	printf("</dl>\n</div>\n\n");
 }
 /** @implements	RelateAction */
 static void html_function_table(struct Relate *const this) {
@@ -326,8 +360,7 @@ static void html_function_detail(struct Relate *const this) {
 	printf("<div><a name = \"%s\"><!-- --></a>\n"
 		"<h3>%s</h3>\n"
 		"<pre>%s <b>%s</b> (%s)</pre>\n"
-		"%s\n"
-		"<dl>\n", RelateKey(this), RelateKey(this),
+		"%s<dl>\n", RelateKey(this), RelateKey(this),
 		RelateGetChildValue(this, "_return"), RelateKey(this),
 		RelateGetChildValue(this, "_args"), RelateValue(this));
 	RelateForEachChildKey(this, "param", &html_dl);
@@ -338,7 +371,7 @@ static void html_function_detail(struct Relate *const this) {
 	RelateForEachChildKey(this, "since", &html_dl);
 	RelateForEachChildKey(this, "fixme", &html_dl);
 	RelateForEachChildKey(this, "deprecated", &html_dl);
-	printf("</dl></div>\n\n");
+	printf("</dl>\n</div>\n\n");
 }
 /** @implements	RelateAction */
 static void html(struct Relate *const this) {
@@ -346,7 +379,7 @@ static void html(struct Relate *const this) {
 		"\"http://www.w3.org/TR/html4/strict.dtd\">\n\n"
 		"<html>\n\n"
 		"<head>\n"
-		"<!-- steal these colour values from JavaDocs -->\n"
+		"<!-- steal these colour values from JavaDocs; meh -->\n"
 		"<style type = \"text/css\">\n"
 		"\ta:link,  a:visited { color: #4a6782; }\n"
 		"\ta:hover, a:focus   { color: #bb7a2a; }\n"
@@ -372,7 +405,12 @@ static void html(struct Relate *const this) {
 		"</head>\n\n\n"
 		"<body>\n\n"
 		"<h1>%s</h1>\n\n"
-		"%s\n\n<dl>\n", RelateKey(this), RelateKey(this), RelateValue(this));
+		"<ul>\n"
+		"\t<li><a href = \"#_declarations\">Declarations</a></li>\n"
+		"\t<li><a href = \"#_summary\">Function Summary</a></li>\n"
+		"\t<li><a href = \"#_detail\">Function Detail</a></li>\n"
+		"</ul>\n\n"
+		"%s<dl>\n", RelateKey(this), RelateKey(this), RelateValue(this));
 	RelateForEachChildKey(this, "std", &html_dl);
 	RelateForEachChildKey(this, "author", &html_dl);
 	RelateForEachChildKey(this, "version", &html_dl);
@@ -380,16 +418,16 @@ static void html(struct Relate *const this) {
 	RelateForEachChildKey(this, "fixme", &html_dl);
 	RelateForEachChildKey(this, "param", &html_dl);
 	printf("</dl>\n\n\n"
-		"<h2>Structures</h2>\n\n");
-	RelateForEachChildIf(this, &select_structs,   &html_struct);
-	printf("\n<h2>Function Summary</h2>\n\n"
+		"<a name = \"_declarations\"><!-- --></a><h2>Declarations</h2>\n\n");
+	RelateForEachChildIf(this, &select_declarations, &html_declare_list);
+	printf("\n<a name = \"_summary\"><!-- --></a><h2>Function Summary</h2>\n\n"
 		"<table>\n"
 		"<tr><th>Return Type</th><th>Function Name</th>"
 		"<th>Argument List</th></tr>\n");
-	RelateForEachChildIf(this, &select_functions, &html_function_table);
+	RelateForEachChildIf(this, &select_functions,    &html_function_table);
 	printf("</table>\n\n\n"
-		"<h2>Function Detail</h2>\n\n");
-	RelateForEachChildIf(this, &select_functions, &html_function_detail);
+		"<a name = \"_detail\"><!-- --></a><h2>Function Detail</h2>\n\n");
+	RelateForEachChildIf(this, &select_functions,    &html_function_detail);
 	printf("\n"
 		"</body>\n"
 		"</html>\n");
@@ -404,8 +442,6 @@ static void html(struct Relate *const this) {
 static void new_child(struct Relate *const parent, struct Text *const key,
 	struct Text *const value) {
 	struct Relate *child;
-	/*fprintf(stderr, "here: %s -> %s\n", TextGet(key),
-		TextGet(value));*/
 	child = RelateNewChild(parent);
 	TextCat(RelateGetKey(child), TextGet(key));
 	TextCat(RelateGetValue(child), TextGet(value));
@@ -621,7 +657,7 @@ static int parse_generics(struct Text *const this) {
  @implements TextAction */
 static void html_paragraphise(struct Text *const this) {
 	/* well, that was easy */
-	TextTransform(this, "<p>\n%s\n</p>");
+	TextTransform(this, "<p>\n%s\n</p>\n");
 	TextMatch(this, html_para_pat, html_para_pat_size);
 }
 /** Called by \see{new_docs}.
@@ -648,7 +684,11 @@ static void new_docs(struct Text *const this) {
 	enum { ES_NO, ES_SPLIT } es = ES_NO;
 	enum EachWhere where = W_TOP_LEVEL;
 
-	/* find something that looks like a function declaration after {this}? */
+	/* defaults to writing to the preamble */
+	docs = RelatesGetRoot(root);
+
+	/* however, find something that looks like a declaration after {this} and
+	 switch {docs} to a new child */
 	do { /* try */
 		struct Text *parent; /* of the doc parsing tree */
 		size_t parent_end;
@@ -657,28 +697,31 @@ static void new_docs(struct Text *const this) {
 		const char *ret0, *ret1, *fn0, *fn1, *p0, *p1;
 
 		/* get all info */
-		docs = RelatesGetRoot(root);
 		if(!TextGetMatchInfo(&parent, 0, &parent_end))
 			{ ef = EF_DIRECT; break; }
 		search = TextGet(parent) + parent_end;
-		/* search for declarations immediately below {this} by seeing if
-		 there's a '{' before ';', (it works in most-ish cases, otherwise you
-		 would have to write a C-parser, I guess.) Minimum "A a(){", or else it
-		 adds it to the top header by {break}. */
-		/* fixme: typedef Foo (*foo)(bla); */
-		if(!(search_end = strpbrk(search, ";{/#")) || *search_end != '{'
-			|| search_end - search < 6) break;
-		TextTrim(TextBetweenCat(declare = Text(), search, search_end-1));
+		/* works in most-ish cases; ideally one would have to write a C-parser,
+		 I guess; minimum "A a(){". '#'include, '/'* */
+		if(!(search_end = strpbrk(search, ";{/#")) || search_end - search < 6
+			|| (*search_end != '{' && *search_end != ';')) break;
+		TextTrim(TextBetweenCat(declare = Text(), search, search_end - 1));
 		if(!parse_generics(declare)) break;
 		/* try to split, eg, {fn_sig} = {fn_ret}{fn_name}{p0}{fn_args}{p1}
 		 = "{ int * }{fn} {(}{ void }{)} other {" */
-		/*printf("newdocs: %.40s\n", TextGet(signature));*/
 		ret0 = TextGet(declare);
-		/* doesn't look like a function */
-		if(!(p0 = strchr(ret0, '(')) || !(p1 = match_parenthesis(p0))) {
+		/* doesn't look like a function; maybe it's a declaration? */
+		if(!(p0 = strchr(ret0, '(')) || !(p1 = match_parenthesis(p0))
+			|| /* fixme: skectch */ !strncmp("typedef", ret0, 7ul)) {
+			if(!(docs = RelateNewChild(docs))) { ef = EF_RELATES; break; }
+			TextCat(RelateGetKey(docs), ret0);
+			child = RelateNewChild(docs);
+			TextCat(RelateGetKey(child), "_declare");
+			/* the actual content of the struct, if available */
+			if(*search_end == '{' && (p1 = match_parenthesis(search_end)))
+				TextBetweenCat(RelateGetValue(child), search_end, p1);
 			break;
 		}
-		/*printf("ret0 %.200s\np0 %.30s\np1 %.30s\n", ret0, p0, p1);*/
+		/* otherwise, assume it's a function */
 		for(fn1 = p0 - 1; fn1 > ret0 && !isfunction(*fn1); fn1--);
 		for(fn0 = fn1; fn0 > ret0 && isfunction(*fn0); fn0--);
 		if(isfunction(*fn0)) break;
@@ -716,14 +759,10 @@ static void new_docs(struct Text *const this) {
 		TextMatch(this, fmt_chosen->escape, fmt_chosen->escape_size);
 	if(fmt_chosen->text)
 		TextMatch(this, fmt_chosen->text,   fmt_chosen->text_size);
-	/*TextMatch(TextMatch(this, html_escape_pat, html_escape_pat_size),
-		html_text_pat, html_text_pat_size);*/
 
 	/* split the doc into '@'; place the first in 'desc' and all the others in
 	 their respective @<place> */
 	do { /* try */
-		/* we pick out the each match list based on where we are */
-		/*const struct EachMatching *const matching = ;*/
 		struct Text *each, *desc = 0;
 		int is_first = -1, is_last = 0, is_first_last = 0;
 		do { /* split @ */
@@ -734,15 +773,10 @@ static void new_docs(struct Text *const this) {
 				desc = each, is_first = 0; if(is_last) is_first_last = -1;
 				continue;
 			}
-			/* now call @-handler */
-			/*parse_each(each, docs,
-				what == TOP_LEVEL ? each_head      : each_fn,
-				what == TOP_LEVEL ? each_head_size : each_fn_size);*/
 			parse_each(each, docs, each_matching + where);
 			if(!is_last) Text_(&each); /* remember each = this on is_last */
 		} while(!is_last /*&& (Text_(&each), -1) <- wtf */);
 		if(es) break;
-		/* if it needs extra help paragraphing the description */
 		TextTrim(desc);
 		if(fmt_chosen->para) fmt_chosen->para(desc);
 		/* now stick {desc} as {docs} value, node of {root} */

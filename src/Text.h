@@ -1,11 +1,19 @@
 #ifndef HAVE_TEXT_H /* <-- guards */
 #define HAVE_TEXT_H
 
+/** See \see{Text}. */
 struct Text;
 
+/** Action function. */
 typedef void (*TextAction)(struct Text *const);
+/** Predicate function. */
 typedef int (*TextPredicate)(const char *const string, const char *sub);
 
+/** Used in \see{TextMatch} as an array of patterns. Recognises brackets.
+ @param start: Must be at least one character.
+ @param end: can be null, in which case, {start} is the whole text.
+ @param transform: if {end}, copies a buffer ({start}, {end}) as argument;
+ can be null, it will just ignore. */
 struct TextPattern {
 	const char *start, *end;
 	TextAction transform;
@@ -14,6 +22,7 @@ struct TextPattern {
 struct Text *Text(void);
 void Text_(struct Text **const this_ptr);
 const char *TextGet(const struct Text *const this);
+size_t TextGetLength(const struct Text *const this);
 struct Text *TextClear(struct Text *const this);
 struct Text *TextTrim(struct Text *const this);
 struct Text *TextSep(struct Text *const this, const char *const delims,
