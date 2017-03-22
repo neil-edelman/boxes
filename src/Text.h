@@ -6,7 +6,10 @@ struct Text;
 
 /** Action function. */
 typedef void (*TextAction)(struct Text *const);
-/** Predicate function. */
+/** Predicate function.
+ @param string: The string.
+ @param sub: The position in the string which you must make a true/false
+ decision. Necessarily, {sub \in string}. */
 typedef int (*TextPredicate)(const char *const string, const char *sub);
 
 /** Used in \see{TextMatch} as an array of patterns. Recognises brackets.
