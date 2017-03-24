@@ -14,7 +14,7 @@
 
  @file		Text
  @author	Neil
- @std		C89/90
+ @std		C89/90; part of Common
  @version	1.0; 2017-03
  @since		1.0; 2017-03
  @fixme		TextCodePointCount, TextCharAt, TextDelete, TextInsert,
@@ -236,7 +236,10 @@ struct Text *TextTrim(struct Text *const this) {
 	return this;
 }
 
-/** Separates a new token at the first {delims} that satisfy {pred}.
+/** Separates a new token at the first {delims} that satisfy {pred}. Since
+ {Text} are necessarily non-null, this tests if it's an empty string;
+ therefore, this will differ from {strsep} slightly. For example, if the string
+ ends with a token in {delims}, the last empty string will not be returned.
  @return A new {Text} or null if the tokenisation is finished or an error
  occurs. You must call \see{Text_} on this pointer if it is not null.
  @param pred: Can be null, in which case, it behaves like true.
@@ -251,27 +254,30 @@ struct Text *TextSep(struct Text *const this, const char *const delims,
 		{ this->error = E_PARAMETER; return 0; }
 
 	/* find */
-	bork = this->text;
+	fprintf(stderr, "sep: '%s'\n", this->text);
+	if(*(bork = this->text) == '\0') return 0; /* empty string */
 	while((bork = strpbrk(bork, delims))) {
 		if(pred && !pred(this->text, bork)) { bork++; continue; }
 		break;
 	}
-	if(!bork) return 0;
 	/* split at bork */
 	if(!(token = Text())) {
 		this->error = global_error, global_error = E_NO_ERROR;
 		this->errno_copy = global_errno_copy; global_errno_copy = 0;
 		return 0;
 	}
-	if(!cat(token, bork + 1, (size_t)(this->text + this->length - bork - 1))) {
-		this->error = token->error, token->error = E_NO_ERROR;
-		this->errno_copy = token->errno_copy, token->errno_copy = 0;
-		Text_(&token);
-		return 0;
+	/* this will be true on all but the last */
+	if(bork) {
+		if(!cat(token, bork+1, (size_t)(this->text + this->length -(bork+1)))) {
+			this->error = token->error, token->error = E_NO_ERROR;
+			this->errno_copy = token->errno_copy, token->errno_copy = 0;
+			Text_(&token);
+			return 0;
+		}
+		/* truncate at bork */
+		*bork        = '\0';
+		this->length = bork - this->text;
 	}
-	/* truncate at bork */
-	*bork        = '\0';
-	this->length = bork - this->text;
 	/* {this} is the truncated first token, and {token} is the rest: swap */
 	swap_texts(this, token);
 

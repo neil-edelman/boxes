@@ -34,13 +34,13 @@ static int is_delim(const char *const str, const char *p) {
 	return *++p == '/' || 0 == str ? 0 : -1;
 }
 
-/** The is a test of Table.
+/** The is a test of Text.
  @param argc	Count
  @param argv	Vector. */
 int main(void) {
 	FILE *fp = 0;
 	const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";
-	struct Text *t = 0, *split = 0;
+	struct Text *t = 0, *sep = 0;
 	const char *str, *sup = 0;
 	enum { E_NO, E_T, E_ASRT, E_FP } e = E_NO;
 
@@ -101,24 +101,34 @@ int main(void) {
 		TextCat(t, "/foo///bar/qux//xxx");
 		printf("Text: '%s'\n", TextGet(t));
 		s = 0;
-		while((split = TextSplit(t, "/", &is_delim))) {
-			printf("TextSplit: '%s'\n", TextGet(split));
+		while((sep = TextSep(t, "/", &is_delim))) {
+			printf("TextSplit: '%s'\n", TextGet(sep));
 			switch(s++) {
-				case 0: if(strcmp(sup = "", str = TextGet(split)))
+				case 0: if(strcmp(sup = "", str = TextGet(sep)))
 					e = E_ASRT; break;
-				case 1: if(strcmp(sup = "foo//", str = TextGet(split)))
+				case 1: if(strcmp(sup = "foo//", str = TextGet(sep)))
 					e = E_ASRT; break;
-				case 2: if(strcmp(sup = "bar", str = TextGet(split)))
+				case 2: if(strcmp(sup = "bar", str = TextGet(sep)))
 					e = E_ASRT; break;
-				case 3: if(strcmp(sup = "qux/", str = TextGet(split)))
+				case 3: if(strcmp(sup = "qux/", str = TextGet(sep)))
 					e = E_ASRT; break;
-				default: sup = "(null)", str = TextGet(split),
+				case 4: if(strcmp(sup = "xxx", str = TextGet(sep)))
+					e = E_ASRT; break;
+				default: sup = "(null)", str = TextGet(sep),
 					e = E_ASRT; break;
 			}
-			Text_(&split);
+			Text_(&sep);
 			if(e) break;
 		}
 		if(e) break;
+		if(strcmp(sup = "", str = TextGet(t)))
+			{ e = E_ASRT; break; }
+
+		TextCat(t, "words separated by spaces -- and, punctuation!");
+		while((sep = TextSep(t, " .,;:!-", 0))) {
+			printf("token => \"%s\"\n", TextGet(sep));
+			Text_(&sep);
+		}
 
 	} while(0);
 
@@ -133,7 +143,7 @@ int main(void) {
 
 	Text_(&t);
 	fclose(fp);
-	Text_(&split);
+	Text_(&sep);
 
 	printf("Text tests %s.\n", e ? "FAILED" : "SUCCEEDED");
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
