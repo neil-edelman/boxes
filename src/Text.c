@@ -212,11 +212,10 @@ size_t TextGetLength(const struct Text *const this) {
 	return this->length;
 }
 
-/** Opposite of is empty, but we want to be able to handle null strings with
- one function.
- @return Does the string have content? namely, not the empty string and not
- null. */
-int TextIsContent(const struct Text *const this) {
+/** Opposite of {isEmpty}; the justification for it being this way is we want
+ to be say {TextHasContents(0) = 0}. Useful with \see{TextSep}.
+ @return True if the buffer is not empty. */
+int TextHasContent(const struct Text *const this) {
 	return !this || *this->text == '\0' ? 0 : -1;
 }
 

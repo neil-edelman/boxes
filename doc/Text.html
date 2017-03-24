@@ -58,7 +58,7 @@
 </p>
 <dl>
 	<dt>minimum standard:</dt>
-	<dd>C89/90</dd>
+	<dd>C89/90; part of Common</dd>
 	<dt>author:</dt>
 	<dd>Neil</dd>
 	<dt>version:</dt>
@@ -156,6 +156,11 @@ Used in <a href = "#TextMatch">TextMatch</a> as an array of patterns. Recognises
 <tr>
 	<td>size_t</td>
 	<td><a href = "#TextGetLength">TextGetLength</a></td>
+	<td>const struct Text *const this</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#TextHasContent">TextHasContent</a></td>
 	<td>const struct Text *const this</td>
 </tr>
 <tr>
@@ -293,6 +298,19 @@ Volatile, in the sense that it exposes the buffer; specifically, not
 </dl>
 </div>
 
+<div><a name = "TextHasContent"><!-- --></a>
+<h3>TextHasContent</h3>
+<pre>int <b>TextHasContent</b> (const struct Text *const this)</pre>
+<p>
+Opposite of <em>isEmpty</em>; the justification for it being this way is we want
+ to be say <em>TextHasContents(0) = 0</em>. Useful with <a href = "#TextSep">TextSep</a>.
+</p>
+<dl>
+	<dt>return:</dt>
+	<dd>True if the buffer is not empty.</dd>
+</dl>
+</div>
+
 <div><a name = "TextClear"><!-- --></a>
 <h3>TextClear</h3>
 <pre>struct Text * <b>TextClear</b> (struct Text *const this)</pre>
@@ -322,7 +340,10 @@ White-space trims the buffer associated with <em>this</em> using <em>isspace</em
 <pre>struct Text * <b>TextSep</b> (struct Text *const this, const char *const delims,
 	const TextPredicate pred)</pre>
 <p>
-Separates a new token at the first <em>delims</em> that satisfy <em>pred</em>.
+Separates a new token at the first <em>delims</em> that satisfy <em>pred</em>. Since
+ <em>Text</em> are necessarily non-null, this tests if it's an empty string;
+ therefore, this will differ from <em>strsep</em> slightly. For example, if the string
+ ends with a token in <em>delims</em>, the last empty string will not be returned.
 </p>
 <dl>
 	<dt>parameter: pred</dt>
