@@ -217,8 +217,7 @@ size_t TextGetLength(const struct Text *const this) {
  @return Does the string have content? namely, not the empty string and not
  null. */
 int TextIsContent(const struct Text *const this) {
-	if(!this) return 0;
-	return this->text[0] == '\0' ? -1 : 0;
+	return !this || *this->text == '\0' ? 0 : -1;
 }
 
 /** Clears the Text.
