@@ -129,6 +129,13 @@ int main(void) {
 			printf("token => \"%s\"\n", TextGet(sep));
 			Text_(&sep);
 		}
+		printf("original: '%s'\n", TextGet(t));
+		TextCat(t, "word");
+		while((sep = TextSep(t, " .,;:!-", 0))) {
+			printf("token => \"%s\"\n", TextGet(sep));
+			Text_(&sep);
+		}
+		printf("original: '%s'\n", TextGet(t));
 
 	} while(0);
 

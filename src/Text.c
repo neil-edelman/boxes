@@ -212,6 +212,15 @@ size_t TextGetLength(const struct Text *const this) {
 	return this->length;
 }
 
+/** Opposite of is empty, but we want to be able to handle null strings with
+ one function.
+ @return Does the string have content? namely, not the empty string and not
+ null. */
+int TextIsContent(const struct Text *const this) {
+	if(!this) return 0;
+	return this->text[0] == '\0' ? -1 : 0;
+}
+
 /** Clears the Text.
  @return {this}. */
 struct Text *TextClear(struct Text *const this) {
@@ -254,7 +263,6 @@ struct Text *TextSep(struct Text *const this, const char *const delims,
 		{ this->error = E_PARAMETER; return 0; }
 
 	/* find */
-	fprintf(stderr, "sep: '%s'\n", this->text);
 	if(*(bork = this->text) == '\0') return 0; /* empty string */
 	while((bork = strpbrk(bork, delims))) {
 		if(pred && !pred(this->text, bork)) { bork++; continue; }
