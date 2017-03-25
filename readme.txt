@@ -4,9 +4,10 @@ neil dot edelman each mail dot mcgill dot ca
 
 Version 1.0.
 
-This is a dynamic text wrapper for C89/90 based on the the standard
+This is a dynamic text wrapper for C89/90 based on the standard
 library. Intended to be used with Modified UTF-8. Relatively short.
-Nothing really special about it.
+Supports concatenation, separation, and matching. Uses no special
+format or optimizations. Simple.
 
 License:
 

@@ -1,6 +1,6 @@
 # Makefile 1.2 (GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0)
 
-PROJ  := cdoc
+PROJ  := TestText
 VA    := 1
 VB    := 0
 
@@ -11,7 +11,6 @@ GDIR  := build
 BDIR  := bin
 BACK  := backup
 DDIR  := doc
-PREFIX:= /usr/local
 
 # files in bdir
 INST  := $(PROJ)-$(VA)_$(VB)
@@ -60,13 +59,9 @@ default: $(BDIR)/$(PROJ) $(DOCS)
 	# . . . success; executable is in $(BDIR)/$(PROJ)
 
 # linking
-$(BDIR)/TestText: $(GDIR)/$(TDIR)/Text.o $(GDIR)/Text.o
+$(BDIR)/$(PROJ): $(OBJS) $(GDIR)/$(TDIR)/Text.o
 	@mkdir -p $(BDIR)
-	$(CC) $(CF) $(OF) $(GDIR)/$(TDIR)/Text.o $(GDIR)/Text.o -o $@
-
-$(BDIR)/$(PROJ): $(OBJS) $(GDIR)/$(TDIR)/Relates.o
-	@mkdir -p $(BDIR)
-	$(CC) $(CF) $(OF) $(OBJS) $(GDIR)/$(TDIR)/Relates.o -o $@
+	$(CC) $(CF) $(OF) $^ -o $@
 
 # compiling
 $(OBJS): $(GDIR)/%.o: $(SDIR)/%.c $(H)
@@ -112,10 +107,3 @@ setup: default icon docs
 	hdiutil create $(BDIR)/$(INST)-MacOSX.dmg -volname "$(PROJ) $(VA).$(VB)" -srcfolder $(BDIR)/$(INST)
 	# or zip $(BDIR)/$(INST)-Win32.zip -r $(BDIR)/$(INST)
 	rm -R $(BDIR)/$(INST)
-
-install: default
-	@mkdir -p $(DESTDIR)$(PREFIX)/bin
-	cp $(BDIR)/$(PROJ) $(DESTDIR)$(PREFIX)/bin/$(PROJ)
-
-uninstall:
-	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROJ)
