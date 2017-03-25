@@ -46,7 +46,7 @@ int main(void) {
 
 	printf("Testing\n");
 	do {
-		unsigned s;
+		unsigned s, i;
 		const char *s0, *s1;
 		printf("Text:\n");
 		if(!(t = Text()))
@@ -135,7 +135,12 @@ int main(void) {
 			printf("token => \"%s\"\n", TextGet(sep));
 			Text_(&sep);
 		}
-		printf("original: '%s'\n", TextGet(t));
+		printf("original: '%s'\n", TextGet(t)); /* hmm */
+		TextClear(t);
+
+		for(i = 0; i < 300; i++) {
+			TextPrintCat(t, "%c", '0' + i % 10);
+		}
 
 	} while(0);
 
