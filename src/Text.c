@@ -36,7 +36,7 @@
 
 /* <-- ugly */
 #ifndef _MSC_VER /* <-- not msvc */
-#define TEXT_UNUSED(a) while(0 && (a));
+#define TEXT_UNUSED(a) while(0 && (a))
 #else /* not msvc --><-- msvc: not a C89/90 compiler; needs a little help */
 #pragma warning(push)
 /* "Assignment within conditional expression." No. */
