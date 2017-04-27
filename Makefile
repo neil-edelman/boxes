@@ -1,4 +1,4 @@
-# Makefile 1.2 (GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0)
+# GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0
 
 PROJ  := Link
 VA    := 1
@@ -10,12 +10,14 @@ TDIR  := test
 GDIR  := build
 BDIR  := bin
 BACK  := backup
+DDIR  := doc
+PREFIX:= /usr/local
 
 # files in bdir
 INST  := $(PROJ)-$(VA)_$(VB)
 
 # extra stuff we should back up
-EXTRA := Link.xcodeproj
+EXTRA := Order.xcodeproj
 
 # John Graham-Cumming:
 # rwildcard is a recursive wildcard
@@ -27,10 +29,15 @@ TEST  := $(call rwildcard, $(TDIR), *.c)
 H     := $(call rwildcard, $(SDIR), *.h) $(call rwildcard, $(TDIR), *.h)
 OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
+DOCS  := $(patsubst $(SDIR)/%.h, $(DDIR)/%.html, $(H))
 
 CC   := gcc
-CF   := -Wall -Wextra -O3 -ffast-math -funroll-loops -pedantic -ansi -fopenmp # or -std=c99 -mwindows
-OF   :=
+CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
+-Wmissing-prototypes -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings \
+-Wswitch -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
+-Wnested-externs -Wredundant-decls -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
+OF   := # -framework OpenGL -framework GLUT or -lglut -lGLEW
+CDOC := cdoc
 
 # props Jakob Borg and Eldar Abusalimov
 # $(ARGS) is all the extra arguments
@@ -49,31 +56,41 @@ endif
 ######
 # compiles the programme by default
 
-default: $(BDIR)/$(PROJ)
+default: $(BDIR)/$(PROJ) $(DOCS)
+	# $^
 	# . . . success; executable is in $(BDIR)/$(PROJ)
 
 # linking
 $(BDIR)/$(PROJ): $(OBJS) $(TOBJS)
+	# linking rule
 	@mkdir -p $(BDIR)
-	$(CC) $(CF) $(OF) $(OBJS) $(TOBJS) -o $@
+	$(CC) $(CF) $(OF) $^ -o $@
 
 # compiling
 $(OBJS): $(GDIR)/%.o: $(SDIR)/%.c $(H)
+	# objs rule
 	@mkdir -p $(GDIR)
 	$(CC) $(CF) -c $(SDIR)/$*.c -o $@
 
 $(TOBJS): $(GDIR)/$(TDIR)/%.o: $(TDIR)/%.c $(H)
+	# tobjs rule
 	@mkdir -p $(GDIR)
 	@mkdir -p $(GDIR)/$(TDIR)
 	$(CC) $(CF) -c $(TDIR)/$*.c -o $@
 
+# $(SDIR)/%.c
+$(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
+	# docs rule
+	@mkdir -p $(DDIR)
+	cat $^ | $(CDOC) > $@
+
 ######
 # phoney targets
 
-.PHONY: setup clean backup icon
+.PHONY: setup clean backup icon install uninstall test
 
 clean:
-	-rm -f $(OBJS) $(TOBJS)
+	-rm -f $(OBJS) $(TOBJS) $(DOCS)
 	-rm -rf $(BDIR)/$(TDIR)
 
 backup:
@@ -97,3 +114,10 @@ setup: default icon
 	hdiutil create $(BDIR)/$(INST)-MacOSX.dmg -volname "$(PROJ) $(VA).$(VB)" -srcfolder $(BDIR)/$(INST)
 	# or zip $(BDIR)/$(INST)-Win32.zip -r $(BDIR)/$(INST)
 	rm -R $(BDIR)/$(INST)
+
+install: default
+	@mkdir -p $(DESTDIR)$(PREFIX)/bin
+	cp $(BDIR)/$(PROJ) $(DESTDIR)$(PREFIX)/bin/$(PROJ)
+
+uninstall:
+	rm -f $(DESTDIR)$(PREFIX)/bin/$(PROJ)
