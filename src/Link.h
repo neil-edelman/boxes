@@ -2,10 +2,13 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  A linked-list of an existing type. {<T>Link} surrounds {LINK_TYPE}, ({<T>},)
- with pointers that go forwards and backwards and makes available {<T>Linked},
- the head of the linked-list. The preprocessor macros are all undefined at the
- end of the file for convenience when including multiple Link types. Supports
- four different linked-lists orders in the same type, {[A, D]}.
+ with pointers that go forwards and backwards; also makes available
+ {<T>Linked}, the head of the linked-list. To initialise {<T>Linked}, just set
+ null; to delete it, just forget about it; specifically, as long as the you
+ don't access {<T>Link}s that have been assigned to another list, you are fine.
+ The preprocessor macros are all undefined at the end of the file for
+ convenience when including multiple Link types. Supports four different
+ linked-lists orders in the same type, {[A, D]}.
 
  @param LINK_NAME, LINK_TYPE
  The name that becomes {T} and a valid type associated therewith. Must each be
@@ -31,8 +34,9 @@
  slower or much faster.
 
  @param LINK_TEST
- Unit testing framework using {<T>LinkedTest}. Included in a separate header,
- {LinkTest.h}.
+ Unit testing framework using {<T>LinkedTest}, included in a separate header,
+ {LinkTest.h}. Must be defined equal to a random filler, satisfying
+ {<T>Action}.
 
  @title		Link.h
  @author	Neil
@@ -229,11 +233,14 @@ enum LinkOperation {
 
 /** Operates by side-effects only. */
 typedef void (*T_(Action))(T *const);
+
 /** Passed {T} and {param}, returns (non-zero) true or (zero) false. */
-typedef int  (*T_(Predicate))(T *const, void *);
+typedef int  (*T_(Predicate))(T *const, void *const);
+
 /** Compares two values and returns less then, equal to, or greater then
  zero. */
 typedef int  (*T_(Comparator))(const T *, const T *);
+
 #ifdef LINK_TO_STRING
 /** Responsible for turning {<T>} (the first argument) into a 9 {char}
  null-terminated output string (the second.) */
@@ -286,13 +293,11 @@ struct T_(Linked) {
 
 
 #ifdef LINK_TO_STRING /* <-- to string */
-/* Stuck here? Check that LINK_TO_STRING is a function implementing
- <T>ToString. */
+/* Check that {LINK_TO_STRING} is a function implementing {<T>ToString}. */
 static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
-/* fixme: prototype? */
 #endif /* to string --> */
 
-/* prototypes */
+/* Prototypes: needed for the next section, but undefined until later. */
 static void _T_(add)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem);
 static void _T_(remove)(struct T_(Linked) *const this,
@@ -336,6 +341,7 @@ static void _T_(remove)(struct T_(Linked) *const this,
 
 
 
+/** Private: add to first of list. */
 static void _T_(add)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
 #ifdef LINK_OPENMP /* <-- omp */
@@ -369,6 +375,7 @@ static void _T_(add)(struct T_(Linked) *const this,
 	}
 }
 
+/** Private: remove from list. */
 static void _T_(remove)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
 #ifdef LINK_OPENMP /* <-- omp */
@@ -448,8 +455,8 @@ static void T_(LinkedClear)(struct T_(Linked) *const this) {
  an {O(n log n)} sort that is adaptive and stable, it's not as good at sorting
  random data as Quicksort.
  @allow */
-static struct T_(Linked) *T_(LinkedSort)(struct T_(Linked) *const this) {
-	if(!this) return 0;
+static void T_(LinkedSort)(struct T_(Linked) *const this) {
+	assert(this);
 #ifdef LINK_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -479,10 +486,10 @@ static struct T_(Linked) *T_(LinkedSort)(struct T_(Linked) *const this) {
 		_T_LD_(natural, sort)(this);
 #endif /* d --> */
 	}
-	return this;
 }
 
-/** Sets the user-defined {param} of {this}. */
+/** Sets the user-defined {param} of {this}.
+ @allow */
 static void T_(LinkedSetParam)(struct T_(Linked) *const this,
 	void *const param) {
 	assert(this);
@@ -497,8 +504,19 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
 }
 
 #ifdef LINK_TEST /* <-- test */
-#include "LinkTest.h" /* need this file if one is going to run tests */
+#include "../test/TestLink.h" /* need this file if one is going to run tests */
 #endif /* test --> */
+
+/* So we don't have 'defined but not used' all over. */
+void _T_(bogus)(void);
+void _T_(bogus)(void) {
+	T_(LinkedAdd)(0, 0);
+	T_(LinkedRemove)(0, 0);
+	T_(LinkedClear)(0);
+	T_(LinkedSort)(0);
+	T_(LinkedSetParam)(0, 0);
+	T_(LinkGet)(0);
+}
 
 
 
@@ -589,9 +607,7 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
 
 
 
-/* private prototypes */
-
-/** Private. */
+/** Front link add in {<L>}. Private. */
 static void _T_L_(link, add)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
 	assert(this);
@@ -602,7 +618,7 @@ static void _T_L_(link, add)(struct T_(Linked) *const this,
 	this->L_(first) = elem;
 }
 
-/** Private. */
+/** Front link remove in {<L>}. Private. */
 static void _T_L_(link, remove)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
 	assert(this);
@@ -887,7 +903,8 @@ static void T_L_(Linked, Sort)(struct T_(Linked) *const this) {
  @return The first comparator that is not equal to zero, or 0 if they are
  equal; if one list is a sub-list starting at the same point of the other,
  returns -1 or 1. Null pointers count as lists that are before every other
- list; two null pointers are considered equal. */
+ list; two null pointers are considered equal.
+ @allow */
 static int T_L_(Linked, Compare)(const struct T_(Linked) *const this,
 	const struct T_(Linked) *const that) {
 	struct T_(Link) *a, *b;
@@ -911,100 +928,73 @@ static int T_L_(Linked, Compare)(const struct T_(Linked) *const this,
 	}
 }
 
-#if 0
-/** {this += a \mask b}
- @fixme How do we order {a} and {b} generally in linked-lists that are not this
- one? Maybe this is best? */
-static int _T_L_(combine, sequences)(struct T_(Linked) *const this,
+/** {this += a \mask b}. Prefers {a} to {b} when equal. Private. */
+static void _T_L_(boolean, seq)(struct T_(Linked) *const this,
 	struct T_(Linked) *const a, struct T_(Linked) *const b,
 	const enum LinkOperation mask) {
-	struct _T_(ListElement) *a_elem, *b_elem;
-	unsigned ai, bi;
-	int comp;
-
-	/* fixme: think about this */
-	if(!this || !a || !b) return 0;
-
-	ai = a->I_(first), bi = b->I_(first);
-	while(ai < a->size && bi < b->size) {
-		a_elem = a->array + ai;
-		b_elem = b->array + bi;
-		comp = _T_I_(elem, cmp)(&a_elem->data, &b_elem->data);
+	struct T_(Link) *ai, *bi, *t; /* iterator, temp */
+	int comp; /* comparator */
+	assert(this);
+	ai = a ? a->L_(first) : 0, bi = b ? b->L_(first) : 0;
+	while(ai && bi) {
+		comp = _T_L_(elem, cmp)(&ai->data, &bi->data);
 		if(comp < 0) {
-			if((mask & LO_SUBTRACTION_AB) && !_T_(add)(this, &a_elem->data))
-				return 0;
-			ai = a_elem->I_(next);
+			t = ai, ai = ai->L_(next);
+			if(mask & LO_SUBTRACTION_AB) _T_(remove)(a, t), _T_(add)(this, t);
 		} else if(comp > 0) {
-			if((mask & LO_SUBTRACTION_BA) && !_T_(add)(this, &b_elem->data))
-				return 0;
-			bi = b_elem->I_(next);
+			t = bi, bi = bi->L_(next);
+			if(mask & LO_SUBTRACTION_BA) _T_(remove)(b, t), _T_(add)(this, t);
 		} else {
-			if((mask & LO_INTERSECTION) && !_T_(add)(this, &a_elem->data))
-				return 0;
-			ai = a_elem->I_(next);
-			bi = b_elem->I_(next);
+			t = ai, ai = ai->L_(next), bi = bi->L_(next);
+			if(mask & LO_INTERSECTION) _T_(remove)(a, t), _T_(add)(this, t);
 		}
 	}
-	if((mask & LO_DEFAULT_A)) {
-		while(ai < a->size) {
-			a_elem = a->array + ai;
-			if(!_T_(add)(this, &a_elem->data)) return 0;
-			ai = a_elem->I_(next);
+	if(mask & LO_DEFAULT_A) {
+		while(ai) {
+			t = ai, ai = ai->L_(next);
+			_T_(remove)(a, t), _T_(add)(this, t);
 		}
 	}
 	if((mask & LO_DEFAULT_B)) {
-		while(bi < b->size) {
-			b_elem = b->array + bi;
-			if(!_T_(add)(this, &b_elem->data)) return 0;
-			bi = b_elem->I_(next);
+		while(bi) {
+			t = bi, bi = bi->L_(next);
+			_T_(remove)(b, t), _T_(add)(this, t);
 		}
 	}
-
-	return -1;
 }
 
-/** Subtracts {b} from {a} as a sequence and stores it in this. Set operations
- can be simulated by the sorting of the specified index. All indices are set to
- the same order, that of the index specified.
- @throws	LE_PARAMETER, LE_ERRNO */
-int T_I_(ListAdd, Subtraction)(struct T_(List) *const this,
-							   struct T_(List) *const a, struct T_(List) *const b) {
-	return _T_I_(combine, sequences)(this, a, b,
-									 LO_SUBTRACTION_AB | LO_DEFAULT_A);
+/** Subtracts {b} from {a} as a sequence and moves it to the head of {this}.
+ @allow */
+static void T_L_(LinkedMove, Subtraction)(struct T_(Linked) *const this,
+	struct T_(Linked) *const a, struct T_(Linked) *const b) {
+	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_DEFAULT_A);
 }
 
-/** Calculates {a} union {b} as a sequence, and stores it in this. Set
- operations can be simulated by the sorting of the specified index. All indices
- are set to the same order, that of the index specified. Union has an ambiguity
- about which item it should place first; it's always the lesser.
- @throws	LE_PARAMETER, LE_ERRNO */
-int T_I_(ListAdd, Union)(struct T_(List) *const this, struct T_(List) *const a,
-						 struct T_(List) *const b) {
-	return _T_I_(combine, sequences)(this, a, b, LO_SUBTRACTION_AB
-									 | LO_SUBTRACTION_BA | LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
+/** Calculate {a} union {b} as a sequence, and moves it to the head of {this}.
+ The equal items are always moved from {a}.
+ @allow */
+static void T_L_(LinkedMove, Union)(struct T_(Linked) *const this,
+	struct T_(Linked) *const a, struct T_(Linked) *const b) {
+	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+		| LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
-/** Calculates {a} intersection {b} as a sequence, and stores it in this. Set
- operations can be simulated by the sorting of the specified index. All indices
- are set to the same order, that of the index specified. The items added are
- always from {a}, where it makes a difference.
- @throws	LE_PARAMETER, LE_ERRNO */
-int T_I_(ListAdd, Intersection)(struct T_(List) *const this,
-								struct T_(List) *const a, struct T_(List) *const b) {
-	return _T_I_(combine, sequences)(this, a, b, LO_INTERSECTION);
+/** Calculate {a} intersection {b} as a sequence, and moves it to the head of
+ {this}. The items equal items are always moved from {a}.
+ @allow */
+static void T_L_(LinkedMove, Intersection)(struct T_(Linked) *const this,
+	struct T_(Linked) *const a, struct T_(Linked) *const b) {
+	_T_L_(boolean, seq)(this, a, b, LO_INTERSECTION);
 }
 
-/** Calculates {a} xor {b} as a sequence, and stores it in this. Set operations
- can be simulated by the sorting of the specified index. All indices are set to
- the same order, that of the index specified. Xor has an ambiguity about which
- item it should place first; it's always the lesser.
- @throws	LE_PARAMETER, LE_ERRNO */
-int T_I_(ListAdd, Xor)(struct T_(List) *const this, struct T_(List) *const a,
-					   struct T_(List) *const b) {
-	return _T_I_(combine, sequences)(this, a, b,
-									 LO_SUBTRACTION_AB | LO_SUBTRACTION_BA | LO_DEFAULT_A | LO_DEFAULT_B);
+/** Calculates {a} xor {b} as a sequence, and moves it to the head of {this}.
+ The equal items are always moved from {a}.
+ @allow */
+static void T_L_(LinkedMove, Xor)(struct T_(Linked) *const this,
+	struct T_(Linked) *const a, struct T_(Linked) *const b) {
+	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+		| LO_DEFAULT_A | LO_DEFAULT_B);
 }
-#endif
 
 #endif /* comp --> */
 
@@ -1016,7 +1006,7 @@ int T_I_(ListAdd, Xor)(struct T_(List) *const this, struct T_(List) *const a,
  after the already existing {recipient}. If the comparator is not set, the
  items are added to the head of {recipient}. #ifdef _LIST_COMPARATOR inside)
  @allow */
-static void T_L_(Link, MoveIf)(struct T_(Linked) *const this,
+static void T_L_(Linked, MoveIf)(struct T_(Linked) *const this,
 	struct T_(Linked) *const recipient, const T_(Predicate) predicate) {
 	struct T_(Link) *cursor, *next_cursor;
 	assert(this);
@@ -1032,7 +1022,7 @@ static void T_L_(Link, MoveIf)(struct T_(Linked) *const this,
  {<L>}. For more flexibility, use \see{<T>List<L>ShortCircuit}, which takes a
  {<T>Predicate}, and just return true.
  @allow */
-static void T_L_(Link, ForEach)(struct T_(Linked) *const this,
+static void T_L_(Linked, ForEach)(struct T_(Linked) *const this,
 	const T_(Action) action) {
 	struct T_(Link) *cursor;
 	assert(this);
@@ -1046,7 +1036,7 @@ static void T_L_(Link, ForEach)(struct T_(Linked) *const this,
  the {predicate} to return false, or null if the {predicate} is true for every
  case.
  @allow */
-static struct T_(Link) *T_L_(List, ShortCircuit)(struct T_(Linked) *const this,
+static struct T_(Link) *T_L_(Linked, ShortCircuit)(struct T_(Linked) *const this,
 	const T_(Predicate) predicate) {
 	struct T_(Link) *cursor;
 	assert(this);
@@ -1128,6 +1118,25 @@ static char *T_L_(Linked, ToString)(const struct T_(Linked) *const this) {
 #endif /* print --> */
 
 
+
+/* So we don't have 'defined but not used' all over. */
+void _T_L_(link, bogus)(void);
+void _T_L_(link, bogus)(void) {
+	T_L_(Link, GetNext)(0);
+	T_L_(Link, GetPrevious)(0);
+#ifdef _LINK_COMPARATOR /* <-- comp */
+	T_L_(Linked, Sort)(0);
+	T_L_(Linked, Compare)(0, 0);
+	T_L_(LinkedMove, Subtraction)(0, 0, 0);
+	T_L_(LinkedMove, Union)(0, 0, 0);
+	T_L_(LinkedMove, Intersection)(0, 0, 0);
+	T_L_(LinkedMove, Xor)(0, 0, 0);
+#endif /* comp --> */
+	T_L_(Linked, MoveIf)(0, 0, 0);
+	T_L_(Linked, ForEach)(0, 0);
+	T_L_(Linked, ShortCircuit)(0, 0);
+	T_L_(Linked, ToString)(0);
+}
 
 /* undefine stuff for the next */
 #undef _LINK_NAME

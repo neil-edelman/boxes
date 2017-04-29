@@ -4,7 +4,7 @@
  @author	Neil
  @std		C89/90
  @version	1.0; 2017-05
- @since		1.0; 2017-05 */
+ @since		1.0; 2017-05 scraped from TestList.h */
 
 #include <stdlib.h> /* EXIT_ malloc free */
 #include <stdio.h>  /* fprintf */
@@ -27,6 +27,11 @@ static int Foo_value_cmp(const struct Foo *a, const struct Foo *b) {
 static void Foo_to_string(const struct Foo *this, char (*const a)[9]) {
 	snprintf(*a, sizeof *a, "%.3d%.3s", this->key, this->value);
 }
+/** @implements <Foo>Action */
+static void Foo_filler(struct Foo *const this) {
+	this->key = (float)(rand() / (RAND_MAX + 1.0) * 99);
+	Orcish(this->value, sizeof this->value);
+}
 #define LINK_NAME Foo
 #define LINK_TYPE struct Foo
 #define LINK_A_NAME Key
@@ -34,6 +39,7 @@ static void Foo_to_string(const struct Foo *this, char (*const a)[9]) {
 #define LINK_B_NAME Value
 #define LINK_B_COMPARATOR &Foo_value_cmp
 #define LINK_TO_STRING &Foo_to_string
+#define LINK_TEST &Foo_filler
 #include "../src/Link.h"
 
 /** Entry point.
@@ -73,6 +79,7 @@ int main(void) {
 		case E_ASRT: fprintf(stderr,"Text: assert failed, '%s' but was '%s'.\n",
 			"", ""); break;
 	}
+	if(!FooLinkTest()) return printf("FAILED.\n"), EXIT_FAILURE;
 
 	printf("Tests %s.\n", e ? "FAILED" : "SUCCEEDED");
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
