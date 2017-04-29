@@ -1,21 +1,38 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A linked-list of an existing type. This supports four different linked-lists
- ({[A, D]}) per type. However, each type can be associated to at most one
- {Link} type, (without nesting.)
+ A linked-list of an existing type. {<T>Link} surrounds {LINK_TYPE}, ({<T>},)
+ with pointers that go forwards and backwards and makes available {<T>Linked},
+ the head of the linked-list. The preprocessor macros are all undefined at the
+ end of the file for convenience when including multiple Link types. Supports
+ four different linked-lists orders in the same type, {[A, D]}.
 
  @param LINK_NAME, LINK_TYPE
  The name that becomes {T} and a valid type associated therewith. Must each be
- present.
+ present before including.
+
  @param LINK_[A-D]_NAME, LINK_[A-D]_COMPARATOR
- The name that becomes {I}, a linked-list. One can have up to four, {[A, D]},
- linked-lists inside the same {struct}. You can define an optional comparator,
- an equivalence relation function implementing {<T>Comparator}. An inlined
- function takes full advantage of the fixed-function sort, {id est}, it should
- be a {static} function, if possible.
+ Each {LINK_[A-D]_NAME} becomes {L}. You can define an optional comparator, an
+ equivalence relation function implementing {<T>Comparator}. For speed, it
+ should be an inlined {static} function, if possible.
+
  @param LINK_TO_STRING
  Optional print function implementing {<T>ToString}.
+
+ @param LINK_DYNAMIC_STORAGE
+ This allocates {O(log n)}, space needed for merge sort on the stack every time
+ the List is sorted, instead of statically. This allows using the exact same
+ sort on different data concurrently without crashing, but it consumes more
+ resources.
+
+ @param LINK_OPENMP
+ Tries to parallelise the \see{<T>LinkedSort} sort using OpenMP. The results
+ vary depending on one's processor and the number of lists set; it could be
+ slower or much faster.
+
+ @param LINK_TEST
+ Unit testing framework using {<T>LinkedTest}. Included in a separate header,
+ {LinkTest.h}.
 
  @title		Link.h
  @author	Neil
@@ -144,52 +161,52 @@ typedef LINK_TYPE _T_(Type);
 #define T _T_(Type)
 
 /* [A, D] */
-#ifdef _IA_
-#undef _IA_
-#undef T_IA_
-#undef _T_IA_
+#ifdef LA_
+#undef LA_
+#undef T_LA_
+#undef _T_LA_
 #endif
-#ifdef _IB_
-#undef _IB_
-#undef T_IB_
-#undef _T_IB_
+#ifdef LB_
+#undef LB_
+#undef T_LB_
+#undef _T_LB_
 #endif
-#ifdef _IC_
-#undef _IC_
-#undef T_IC_
-#undef _T_IC_
+#ifdef LC_
+#undef LC_
+#undef T_LC_
+#undef _T_LC_
 #endif
-#ifdef _ID_
-#undef _ID_
-#undef T_ID_
-#undef _T_ID_
+#ifdef LD_
+#undef LD_
+#undef T_LD_
+#undef _T_LD_
 #endif
 #ifdef LINK_A_NAME
-#define _IA_(thing) PCAT(LINK_A_NAME, thing) /* data, exclusively */
-#define T_IA_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
+#define LA_(thing) PCAT(LINK_A_NAME, thing) /* data, exclusively */
+#define T_LA_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
 	CAT(LINK_A_NAME, thing2)) /* public fn's */
-#define _T_IA_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
+#define _T_LA_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
 	PCAT(LINK_A_NAME, thing2)) /* private fn's */
 #endif
 #ifdef LINK_B_NAME
-#define _IB_(thing) PCAT(LINK_B_NAME, thing)
-#define T_IB_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
+#define LB_(thing) PCAT(LINK_B_NAME, thing)
+#define T_LB_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
 	CAT(LINK_B_NAME, thing2))
-#define _T_IB_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
+#define _T_LB_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
 	PCAT(LINK_B_NAME, thing2))
 #endif
 #ifdef LINK_C_NAME
-#define _IC_(thing) PCAT(LINK_C_NAME, thing)
-#define T_IC_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
+#define LC_(thing) PCAT(LINK_C_NAME, thing)
+#define T_LC_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
 	CAT(LINK_C_NAME, thing2))
-#define _T_IC_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
+#define _T_LC_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
 	PCAT(LINK_C_NAME, thing2))
 #endif
 #ifdef LINK_D_NAME
-#define _ID_(thing) PCAT(LINK_D_NAME, thing)
-#define T_ID_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
+#define LD_(thing) PCAT(LINK_D_NAME, thing)
+#define T_LD_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
 	CAT(LINK_D_NAME, thing2))
-#define _T_ID_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
+#define _T_LD_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
 	PCAT(LINK_D_NAME, thing2))
 #endif
 
@@ -212,8 +229,8 @@ enum LinkOperation {
 
 /** Operates by side-effects only. */
 typedef void (*T_(Action))(T *const);
-/** Returns (non-zero) true or (zero) false. */
-typedef int  (*T_(Predicate))(T *const);
+/** Passed {T} and {param}, returns (non-zero) true or (zero) false. */
+typedef int  (*T_(Predicate))(T *const, void *);
 /** Compares two values and returns less then, equal to, or greater then
  zero. */
 typedef int  (*T_(Comparator))(const T *, const T *);
@@ -225,26 +242,26 @@ typedef void (*T_(ToString))(const T *, char (*const)[9]);
 
 
 
-/** Linked-list {<T>Link} derived from {<T>}. Intended to be used directly in
- {struct}s. Use the following functions to interact with it transparently. */
+/** A single link in the linked-list derived from {<T>}. Intended to be used
+ directly in {struct}s. Use the \see{<T>LinkGet} function to extract {<T>}. */
 struct T_(Link);
 struct T_(Link) {
 #ifdef LINK_A_NAME
-	struct T_(Link) *_IA_(prev), *_IA_(next);
+	struct T_(Link) *LA_(prev), *LA_(next);
 #endif
 #ifdef LINK_B_NAME
-	struct T_(Link) *_IB_(prev), *_IB_(next);
+	struct T_(Link) *LB_(prev), *LB_(next);
 #endif
 #ifdef LINK_C_NAME
-	struct T_(Link) *_IC_(prev), *_IC_(next);
+	struct T_(Link) *LC_(prev), *LC_(next);
 #endif
 #ifdef LIST_D_NAME
-	struct T_(Link) *_ID_(prev), *_ID_(next);
+	struct T_(Link) *LD_(prev), *LD_(next);
 #endif
 	T data;
 };
 
-/** Serves as an a head for a linked-list of {<T>Link}s. One instantiates
+/** Serves as an a head for a linked-list(s) of {<T>Link}s. One instantiates
  this by setting the pointers to null, for example,
  {struct FooLinked foolist = { 0 };} (Although \url{
  http://stackoverflow.com/questions/1538943/why-is-the-compiler-throwing-this-warning-missing-initializer-isnt-the-stru
@@ -252,17 +269,18 @@ struct T_(Link) {
 struct T_(Linked);
 struct T_(Linked) {
 #ifdef LINK_A_NAME
-	struct T_(Link) *_IA_(first);
+	struct T_(Link) *LA_(first);
 #endif
 #ifdef LINK_B_NAME
-	struct T_(Link) *_IB_(first);
+	struct T_(Link) *LB_(first);
 #endif
 #ifdef LINK_C_NAME
-	struct T_(Link) *_IC_(first);
+	struct T_(Link) *LC_(first);
 #endif
 #ifdef LIST_D_NAME
-	struct T_(Link) *_ID_(first);
+	struct T_(Link) *LD_(first);
 #endif
+	void *param;
 };
 
 
@@ -274,7 +292,11 @@ static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
 /* fixme: prototype? */
 #endif /* to string --> */
 
-
+/* prototypes */
+static void _T_(add)(struct T_(Linked) *const this,
+	struct T_(Link) *const elem);
+static void _T_(remove)(struct T_(Linked) *const this,
+	struct T_(Link) *const elem);
 
 /* Note to future self: recursive includes. The {_LINK_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!_LIST_NAME} section. These
@@ -314,53 +336,159 @@ static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
 
 
 
+/* should be another parameter: after */
+static void _T_(add)(struct T_(Linked) *const this,
+	struct T_(Link) *const elem) {
+#ifdef LINK_OPENMP /* <-- omp */
+	#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_OPENMP /* <-- omp */
+		#pragma omp section
+#endif /* omp --> */
+		_T_LA_(link, add)(this, elem);
+#endif /* a --> */
+#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_OPENMP /* <-- omp */
+		#pragma omp section
+#endif /* omp --> */
+		_T_LB_(link, add)(this, elem);
+#endif /* b --> */
+#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_OPENMP /* <-- omp */
+		#pragma omp section
+#endif /* omp --> */
+		_T_LC_(link, add)(this, elem);
+#endif /* c --> */
+#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_OPENMP /* <-- omp */
+		#pragma omp section
+#endif /* omp --> */
+		_T_LD_(link, add)(this, elem);
+#endif /* d --> */
+	}
+}
+
+static void _T_(remove)(struct T_(Linked) *const this,
+	struct T_(Link) *const elem) {
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LA_(link, remove)(this, elem);
+#endif /* a --> */
+#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LB_(link, remove)(this, elem);
+#endif /* b --> */
+#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LC_(link, remove)(this, elem);
+#endif /* c --> */
+#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LD_(link, remove)(this, elem);
+#endif /* d --> */
+	}
+}
+
 /** Initialises the contents of all links of {elem} at the first spot in {this}.
  Does not do any checks on {elem} and overwrites the data that was there.
  Specifically, it invokes undefined behaviour to one add {elem} to more than
  one list without removing it each time.
  @allow */
-static struct T_(Linked) *T_(LinkedAdd)(struct T_(Linked) *const this,
+static void T_(LinkedAdd)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
-	if(!this) return 0;
-	if(!elem) return this;
-#ifdef LINK_A_NAME
-	_T_IA_(link, init)(this, elem);
-#endif
-#ifdef LINK_B_NAME
-	_T_IB_(link, init)(this, elem);
-#endif
-#ifdef LINK_C_NAME
-	_T_IC_(link, init)(this, elem);
-#endif
-#ifdef LINK_D_NAME
-	_T_ID_(link, init)(this, elem);
-#endif
-	return this;
+	assert(this);
+	if(!elem) return;
+	_T_(add)(this, elem);
 }
 
 /** Removes {elem} from the {this}. The {elem} is now free to add to another
  list. Removing an element that was not added to {this} results in undefined
  behaviour.
  @allow */
-static struct T_(Linked) *T_(LinkedRemove)(struct T_(Linked) *const this,
+static void T_(LinkedRemove)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
-	if(!this) return 0;
-	if(!elem) return this;
+	assert(this);
+	if(!elem) return;
+	_T_(remove)(this, elem);
+}
+
+/** Clears all values from the linked-list.
+ @allow */
+static void T_(LinkedClear)(struct T_(Linked) *const this) {
+	assert(this);
 #ifdef LINK_A_NAME
-	_T_IA_(link, remove)(this, elem);
+	this->LA_(first) = 0;
 #endif
 #ifdef LINK_B_NAME
-	_T_IB_(link, remove)(this, elem);
+	this->LB_(first) = 0;
 #endif
 #ifdef LINK_C_NAME
-	_T_IC_(link, remove)(this, elem);
+	this->LC_(first) = 0;
 #endif
 #ifdef LINK_D_NAME
-	_T_ID_(link, remove)(this, elem);
+	this->LD_(first) = 0;
 #endif
+}
+
+/** Sorts all by greedy natural insertion-merge sort. Like doing
+ \see{<T>Linked<L>Sort} for all lists in link with comparators. Designed to be
+ an {O(n log n)} sort that is adaptive and stable, it's not as good at sorting
+ random data as Quicksort.
+ @allow */
+static struct T_(Linked) *T_(LinkedSort)(struct T_(Linked) *const this) {
+	if(!this) return 0;
+#ifdef LINK_OPENMP /* <-- omp */
+	#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_OPENMP /* <-- omp */
+		#pragma omp section
+#endif /* omp --> */
+		_T_LA_(natural, sort)(this);
+#endif /* a --> */
+#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_OPENMP /* <-- omp */
+		#pragma omp section
+#endif /* omp --> */
+		_T_LB_(natural, sort)(this);
+#endif /* b --> */
+#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_OPENMP /* <-- omp */
+		#pragma omp section
+#endif /* omp --> */
+		_T_LC_(natural, sort)(this);
+#endif /* c --> */
+#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_OPENMP /* <-- omp */
+		#pragma omp section
+#endif /* omp --> */
+		_T_LD_(natural, sort)(this);
+#endif /* d --> */
+	}
 	return this;
 }
 
+/** Sets the user-defined {param} of {this}. */
+static void T_(LinkedSetParam)(struct T_(Linked) *const this,
+	void *const param) {
+	assert(this);
+	this->param = param;
+}
 
 /** Get a pointer to the underlying data stored in {<T>}.
  @allow */
@@ -369,7 +497,7 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
 	return &this->data;
 }
 
-#ifdef LINK_FILLER /* <-- test */
+#ifdef LINK_TEST /* <-- test */
 #include "LinkTest.h" /* need this file if one is going to run tests */
 #endif /* test --> */
 
@@ -408,8 +536,14 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
 #ifdef LINK_D_COMPARATOR
 #undef LINK_D_COMPARATOR
 #endif
-#ifdef LINK_DYNAMIC_EXTRA_STORAGE
-#undef LINK_DYNAMIC_EXTRA_STORAGE
+#ifdef LINK_DYNAMIC_STORAGE
+#undef LINK_DYNAMIC_STORAGE
+#endif
+#ifdef LINK_OPENMP
+#undef LINK_OPENMP
+#endif
+#ifdef LINK_TEST
+#undef LINK_TEST
 #endif
 #ifdef _LINK_SORT_INTERNALS
 #undef _LINK_SORT_INTERNALS /* each List type has their own */
@@ -425,6 +559,8 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
 
 
 
+
+
 #else /* !_LINK_NAME --><-- _LINK_NAME
 
  Internally #included.
@@ -432,35 +568,84 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
  @param _LIST_NAME: A unique name; required;
  @param _LIST_COMPARATOR: an optional comparator. */
 
+
+
+
+
 /* After this block, the preprocessor replaces T_M_(X, Y) with
  LINK_NAMEX_LINK_NAMEY, _T_M_(X, Y) with _LINK_NAME_X__LINK_NAME_Y */
-#ifdef T_I_
-#undef T_I_
+#ifdef T_L_
+#undef T_L_
 #endif
-#ifdef _T_I_
-#undef _T_I_
+#ifdef _T_L_
+#undef _T_L_
 #endif
-#ifdef I_
-#undef I_
+#ifdef L_
+#undef L_
 #endif
-#define T_I_(thing1, thing2) CAT(CAT(LINK_NAME, thing1),CAT(_LINK_NAME, thing2))
-#define _T_I_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1),\
+#define T_L_(thing1, thing2) CAT(CAT(LINK_NAME, thing1),CAT(_LINK_NAME, thing2))
+#define _T_L_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1),\
 	PCAT(_LINK_NAME, thing2))
-#define I_(thing) PCAT(_LINK_NAME, thing)
+#define L_(thing) PCAT(_LINK_NAME, thing)
 
 
 
 /* private prototypes */
 
-/*static void grow(int *const a, int *const b);
-static void swap(int *const a, int *const b);
-static int difference(int *const a, int *const b);
-static int fn(const struct Order *const order);
-static void usage(void);*/
+/** Private. */
+static void _T_L_(link, add)(struct T_(Linked) *const this,
+	struct T_(Link) *const after, struct T_(Link) *const elem) {
+	assert(this);
+	assert(elem);
+	elem->L_(prev) = after;
+	if(after) {
+		elem->L_(next) = after->L_(next);
+		if(after->L_(next)) after->L_(next)->L_(prev) = elem;
+		after->L_(next) = elem;
+	} else {
+		elem->L_(next) = this->L_(first);
+		if(this->L_(first)) this->L_(first)->L_(prev) = elem;
+		this->L_(first) = elem;
+	}
+}
+
+/** Private. */
+static void _T_L_(link, remove)(struct T_(Linked) *const this,
+	struct T_(Link) *const elem) {
+	assert(this);
+	assert(elem);
+	if(elem->L_(prev)) {
+		elem->L_(prev)->L_(next) = elem->L_(next);
+	} else {
+		assert(this->L_(first) == elem);
+		this->L_(first) = elem->L_(next);
+	}
+	if(elem->L_(next)) {
+		elem->L_(next)->L_(prev) = elem->L_(prev);
+	}
+	elem->L_(prev) = 0;
+	elem->L_(next) = 0;
+}
+
+/** @return The next element after {this} in {<L>}. When {this} is the last
+ element, returns null.
+ @allow */
+static struct T_(Link) *T_L_(Link, GetNext)(struct T_(Link) *const this) {
+	assert(this);
+	return this->L_(next);
+}
+
+/** @return The previous element before {this} in {<L>}. When {this} is the
+ first item, returns null.
+ @allow */
+static struct T_(Link) *T_L_(Link, GetPrevious)(struct T_(Link) *const this) {
+	assert(this);
+	return this->L_(prev);
+}
 
 #ifdef _LINK_COMPARATOR /* <-- comp */
 
-static const T_(Comparator) _T_I_(elem, cmp) = (_LINK_COMPARATOR);
+static const T_(Comparator) _T_L_(elem, cmp) = (_LINK_COMPARATOR);
 
 /* Merge sort internals only once per translation unit. */
 
@@ -487,8 +672,7 @@ struct _T_(Runs) {
 
 #endif /* sort internals --> */
 
-
-static struct _T_(Runs) _T_I_(runs, elem);
+static struct _T_(Runs) _T_L_(runs, elem);
 
 /** Inserts the first element from the larger of two sorted runs, then merges
  the rest. \cite{Peters2002Timsort}, via \cite{McIlroy1993Optimistic}, does
@@ -498,7 +682,7 @@ static struct _T_(Runs) _T_I_(runs, elem);
  insertion times that to well in standard merging. However, it's (potentially
  much) faster when the keys have structure: observed, {[-2%, 500%]}. Assumes
  array contains at least 2 elements and there are at least two runs. */
-static void _T_I_(natural, merge)(struct _T_(Runs) *const r) {
+static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 	struct _T_(Run) *const run_a = r->run + r->run_no - 2;
 	struct _T_(Run) *const run_b = run_a + 1;
 	struct T_(Link) *a = run_a->tail, *b = run_b->head, *chosen;
@@ -513,42 +697,42 @@ static void _T_I_(natural, merge)(struct _T_(Runs) *const r) {
 
 		/* insert the first element of b downwards into a */
 		for( ; ; ) {
-			if(_T_I_(elem, cmp)(&a->data, &b->data) <= 0) {
+			if(_T_L_(elem, cmp)(&a->data, &b->data) <= 0) {
 				chosen = a;
-				a = a->I_(next);
+				a = a->L_(next);
 				break;
 			}
-			if(!a->I_(prev)) {
+			if(!a->L_(prev)) {
 				run_a->head = run_b->head;
 				chosen = b;
-				b = b->I_(next);
+				b = b->L_(next);
 				break;
 			}
-			a = a->I_(prev);
+			a = a->L_(prev);
 		}
 
 		/* merge upwards, while the lists are interleaved */
-		while(chosen->I_(next)) {
+		while(chosen->L_(next)) {
 			prev_chosen = chosen;
-			if(_T_I_(elem, cmp)(&a->data, &b->data) > 0) {
+			if(_T_L_(elem, cmp)(&a->data, &b->data) > 0) {
 				chosen = b;
-				b = b->I_(next);
+				b = b->L_(next);
 			} else {
 				chosen = a;
-				a = a->I_(next);
+				a = a->L_(next);
 			}
-			prev_chosen->I_(next) = chosen;
-			chosen->I_(prev) = prev_chosen;
+			prev_chosen->L_(next) = chosen;
+			chosen->L_(prev) = prev_chosen;
 		}
 
 		/* splice the one list left */
 		if(!a) {
-			b->I_(prev) = chosen;
-			chosen->I_(next) = b;
+			b->L_(prev) = chosen;
+			chosen->L_(next) = b;
 			run_a->tail = run_b->tail;
 		} else {
-			a->I_(prev) = chosen;
-			chosen->I_(next) = a;
+			a->L_(prev) = chosen;
+			chosen->L_(next) = a;
 		}
 
 	} else {
@@ -559,44 +743,44 @@ static void _T_I_(natural, merge)(struct _T_(Runs) *const r) {
 
 		/* insert the last element of a upwards into b */
 		for( ; ; ) {
-			if(_T_I_(elem, cmp)(&a->data, &b->data) <= 0) {
+			if(_T_L_(elem, cmp)(&a->data, &b->data) <= 0) {
 				chosen = b;
-				b = b->I_(prev);
+				b = b->L_(prev);
 				break;
 			}
 			/* here, a > b */
-			if(!b->I_(next)) {
+			if(!b->L_(next)) {
 				is_a_tail = -1;
 				chosen = a;
-				a = a->I_(prev);
+				a = a->L_(prev);
 				break;
 			}
-			b = b->I_(next);
+			b = b->L_(next);
 		}
 		if(!is_a_tail) run_a->tail = run_b->tail;
 
 		/* merge downwards, while the lists are interleaved */
-		while(chosen->I_(prev)) {
+		while(chosen->L_(prev)) {
 			next_chosen = chosen;
-			if(_T_I_(elem, cmp)(&a->data, &b->data) > 0) {
+			if(_T_L_(elem, cmp)(&a->data, &b->data) > 0) {
 				chosen = a;
-				a = a->I_(prev);
+				a = a->L_(prev);
 			} else {
 				chosen = b;
-				b = b->I_(prev);
+				b = b->L_(prev);
 			}
-			next_chosen->I_(prev) = chosen;
-			chosen->I_(next) = next_chosen;
+			next_chosen->L_(prev) = chosen;
+			chosen->L_(next) = next_chosen;
 		}
 
 		/* splice the one list left */
 		if(!a) {
-			b->I_(next) = chosen;
-			chosen->I_(prev) = b;
+			b->L_(next) = chosen;
+			chosen->L_(prev) = b;
 			run_a->head = run_b->head;
 		} else {
-			a->I_(next) = chosen;
-			chosen->I_(prev) = a;
+			a->L_(next) = chosen;
+			chosen->L_(prev) = a;
 		}
 
 	}
@@ -609,7 +793,7 @@ static void _T_I_(natural, merge)(struct _T_(Runs) *const r) {
  useless compares and I question whether a strict Pascal's triangle-shape
  would be optimum, or whether a long run should be put off merging until
  short runs have finished; it is quite simple as it is. */
-static void _T_I_(natural, sort)(struct T_(Linked) *const this) {
+static void _T_L_(natural, sort)(struct T_(Linked) *const this) {
 	/* new_run is an index into link_runs, a temporary sorting structure;
 	 head is first smallest, tail is last largest */
 	struct _T_(Run) *new_run;
@@ -624,21 +808,21 @@ static void _T_I_(natural, sort)(struct T_(Linked) *const this) {
 	int comp;
 
 	/* ensure we have an 'a' */
-	if(!(a = this->I_(first))) return;
+	if(!(a = this->L_(first))) return;
 
 	/* reset the state machine and output to just 'a' in the first run */
 	mono = UNSURE;
-	_T_I_(runs, elem).run_no = 1;
-	new_run = _T_I_(runs,elem).run + 0, run_count = 1;
+	_T_L_(runs, elem).run_no = 1;
+	new_run = _T_L_(runs,elem).run + 0, run_count = 1;
 	new_run->size = 1;
 	first_iso_a = new_run->head = new_run->tail = a;
 
-	for(b = a->I_(next); b; a = b, b = c) {
+	for(b = a->L_(next); b; a = b, b = c) {
 
 		/* b.next can be modified, and we always want the iteration original */
-		c = b->I_(next);
+		c = b->L_(next);
 
-		comp = _T_I_(elem, cmp)(&a->data, &b->data);
+		comp = _T_L_(elem, cmp)(&a->data, &b->data);
 
 		/* state machine that considers runs in both directions -- in practice,
 		 slightly slower than only considering increasing runs on most cases;
@@ -653,8 +837,8 @@ static void _T_I_(natural, sort)(struct T_(Linked) *const this) {
 		} else if(comp > 0) { /* decreasing; reverse preserving stability */
 			if(mono != INCREASING) { /* if increasing, inflection */
 				mono = DECREASING;
-				b->I_(next) = first_iso_a;
-				first_iso_a->I_(prev) = b;
+				b->L_(next) = first_iso_a;
+				first_iso_a->L_(prev) = b;
 				new_run->head = first_iso_a = b;
 				new_run->size++;
 				continue;
@@ -662,11 +846,11 @@ static void _T_I_(natural, sort)(struct T_(Linked) *const this) {
 			new_run->tail = a; /* terminating an increasing sequence */
 		} else { /* a == b */
 			if(mono == DECREASING) { /* extend */
-				struct T_(Link) *const a_next = a->I_(next);
-				b->I_(next) = a_next;
-				a_next->I_(prev) = b;
-				a->I_(next) = b;
-				b->I_(prev) = a;
+				struct T_(Link) *const a_next = a->L_(next);
+				b->L_(next) = a_next;
+				a_next->L_(prev) = b;
+				a->L_(next) = b;
+				b->L_(prev) = a;
 			} else { /* weakly increasing */
 				new_run->tail = b;
 			}
@@ -674,77 +858,333 @@ static void _T_I_(natural, sort)(struct T_(Linked) *const this) {
 			continue;
 		}
 		/* head and tail don't necessarily correspond to the first and last */
-		new_run->head->I_(prev) = new_run->tail->I_(next) = 0;
+		new_run->head->L_(prev) = new_run->tail->L_(next) = 0;
 
 		/* greedy merge: keeps space to O(log n) instead of O(n) */
-		for(rc = run_count; !(rc & 1) && _T_I_(runs,elem).run_no >= 2; rc >>= 1)
-			_T_I_(natural, merge)(&_T_I_(runs,elem));
+		for(rc = run_count; !(rc & 1) && _T_L_(runs,elem).run_no >= 2; rc >>= 1)
+			_T_L_(natural, merge)(&_T_L_(runs,elem));
 		/* reset the state machine and output to just 'b' at the next run */
 		mono = UNSURE;
-		new_run = _T_I_(runs,elem).run + _T_I_(runs,elem).run_no++, run_count++;
+		new_run = _T_L_(runs,elem).run + _T_L_(runs,elem).run_no++, run_count++;
 		new_run->size = 1;
 		new_run->head = new_run->tail = first_iso_a = b;
 	}
 
 	/* terminating the last increasing sequence */
 	if(mono == INCREASING) new_run->tail = a;
-		new_run->tail->I_(next) = new_run->head->I_(prev) = 0;
+		new_run->tail->L_(next) = new_run->head->L_(prev) = 0;
 
 	/* clean up the rest; when only one run, propagate link_runs[0] to head */
-	while(_T_I_(runs, elem).run_no > 1)
-		_T_I_(natural, merge)(&_T_I_(runs, elem));
-	/*this->I_(first) = _T_I_(runs,elem).run[0].head;
-	this->I_(last)  = _T_I_(runs,elem).run[0].tail;*/
-	this->I_(first) = _T_I_(runs,elem).run[0].head;
-
-#ifdef LINK_DEBUG_MERGE
-	printf("sorted by " QUOTE(_LIST_INDEX_NAME) ": %s. -->\n",
-		   T_I_(List, ToString)(this));
-#endif
+	while(_T_L_(runs, elem).run_no > 1)
+		_T_L_(natural, merge)(&_T_L_(runs, elem));
+	this->L_(first) = _T_L_(runs,elem).run[0].head;
 }
 
-/** Greedy natural insertion-merge sort on doubly-linked lists is very adaptive.
+/** Sorts {<L>}, but leaves the other lists alone. Requires that the link
+ comparator is set.
  @allow */
-static void T_I_(Linked, Sort)(struct T_(Linked) *const this) {
+static void T_L_(Linked, Sort)(struct T_(Linked) *const this) {
 	if(!this) return;
-	_T_I_(natural, sort)(this);
+	_T_L_(natural, sort)(this);
 }
+
+#if 0
+/* -----------------------here--------------------------- */
+
+/** {this += a mask b}
+ @fixme		Have a map like in \see{<T>ListAddIf}, except more complicated. How
+ do we order {a} and {b} generally in indices that are not this one?
+ Maybe this is best?
+ @throws	LE_PARAMETER, LE_COMPARATOR, LE_ERRNO */
+static int _T_I_(combine, sequences)(struct T_(List) *const this,
+									 struct T_(List) *const a, struct T_(List) *const b,
+									 const enum ListOperation mask) {
+	struct _T_(ListElement) *a_elem, *b_elem;
+	unsigned ai, bi;
+	int comp;
+	
+	/* because all the set operations are the same, might as well check them in
+	 one place; it simplifies the operations to a static lambda,
+	 { return combine(this, a, b, MASK); } */
+	if(!this) return 0;
+	if(!a || !b) { this->error = LE_PARAMETER; return 0; }
+	
+	ai = a->I_(first), bi = b->I_(first);
+	while(ai < a->size && bi < b->size) {
+		a_elem = a->array + ai;
+		b_elem = b->array + bi;
+		comp = _T_I_(elem, cmp)(&a_elem->data, &b_elem->data);
+		if(comp < 0) {
+			if((mask & LO_SUBTRACTION_AB) && !_T_(add)(this, &a_elem->data))
+				return 0;
+			ai = a_elem->I_(next);
+		} else if(comp > 0) {
+			if((mask & LO_SUBTRACTION_BA) && !_T_(add)(this, &b_elem->data))
+				return 0;
+			bi = b_elem->I_(next);
+		} else {
+			if((mask & LO_INTERSECTION) && !_T_(add)(this, &a_elem->data))
+				return 0;
+			ai = a_elem->I_(next);
+			bi = b_elem->I_(next);
+		}
+	}
+	if((mask & LO_DEFAULT_A)) {
+		while(ai < a->size) {
+			a_elem = a->array + ai;
+			if(!_T_(add)(this, &a_elem->data)) return 0;
+			ai = a_elem->I_(next);
+		}
+	}
+	if((mask & LO_DEFAULT_B)) {
+		while(bi < b->size) {
+			b_elem = b->array + bi;
+			if(!_T_(add)(this, &b_elem->data)) return 0;
+			bi = b_elem->I_(next);
+		}
+	}
+	
+	return -1;
+}
+
+/** Makes sure the cursor is arranged locally in-order by performing a linear
+ search.
+ @return	Success.
+ @throws	LE_CONSISTENCY */
+static int _T_I_(bump, order)(struct T_(List) *const this) {
+	struct _T_(ListElement) *const bump = this->array + this->cursor, *test,
+	*neighbour;
+	unsigned left_index, right_index;
+	int comp;
+	int is_found = 0;
+	
+	/* look to the right */
+	left_index = this->cursor;
+	right_index = this->array[left_index].I_(next);
+	while(right_index < this->size) {
+		test = this->array + right_index;
+		comp = _T_I_(elem, cmp)(&bump->data, &test->data);
+		if(comp > 0) {
+			left_index  = right_index;
+			right_index = test->I_(next);
+			is_found    = -1;
+		} else if(comp < 0) {
+			break;
+		} else {
+			is_found = -1;
+			break;
+		}
+	}
+	
+	/* look to the left */
+	if(!is_found) {
+		right_index = this->cursor;
+		left_index = this->array[left_index].I_(prev);
+		while(left_index < this->size) {
+			test = this->array + left_index;
+			comp = _T_I_(elem, cmp)(&bump->data, &test->data);
+			if(comp < 0) { /*!!! what?*/
+				right_index = left_index;
+				left_index  = test->I_(prev);
+			} else {
+				break;
+			}
+		}
+	}
+	
+	/* the element at the cursor is right where it ought to be */
+	if(right_index == this->cursor || left_index == this->cursor) return -1;
+	
+	/* take bump out of the linked-list */
+	if(bump->I_(prev) < this->size) {
+		this->array[bump->I_(prev)].I_(next) = bump->I_(next);
+	} else {
+		this->I_(first) = bump->I_(next);
+	}
+	if(bump->I_(next) < this->size) {
+		this->array[bump->I_(next)].I_(prev) = bump->I_(prev);
+	} else {
+		this->I_(last) = bump->I_(prev);
+	}
+	
+	/* insert bump in between left and right */
+	if(right_index >= this->size) {
+		if(left_index != this->I_(last)
+		   || left_index >= this->size
+		   || (neighbour = this->array + left_index)->I_(next) != (unsigned)-1
+		   ) { this->error = LE_CONSISTENCY; return 0; }
+		neighbour->I_(next) = this->I_(last) = this->cursor;
+	} else if(left_index >= this->size) {
+		if(right_index != this->I_(first)
+		   || right_index >= this->size
+		   || (neighbour = this->array + right_index)->I_(prev) != (unsigned)-1
+		   ) { this->error = LE_CONSISTENCY; return 0; }
+		neighbour->I_(prev) = this->I_(first) = this->cursor;
+	} else {
+		this->array[left_index].I_(next) =
+		this->array[right_index].I_(prev) = this->cursor;
+	}
+	bump->I_(prev) = left_index;
+	bump->I_(next) = right_index;
+	
+	return -1;
+}
+
+/** Compares two lists as sequences in the specified order.
+ @return	The first comparator that is not equal or 0 if they are equal;
+ {(-1, 1)} if they are different sizes but equal up to the {(this,
+ that)}. Null pointers count as lists that are before every other
+ list; two null pointers are equal. */
+int T_I_(List, Compare)(const struct T_(List) *const this,
+						const struct T_(List) *const that) {
+	struct _T_(ListElement) *this_elem, *that_elem;
+	unsigned i, this_i, that_i, bound;
+	int equal, diff;
+	
+	/* null counts as -\infty */
+	if(!this) {
+		if(!that) return 0;
+		else      return 1;
+	} else if(!that) {
+		return          -1;
+	}
+	
+	/* set up the bounds and what to return if all are equal */
+	if(this->size > that->size) {
+		bound = that->size;
+		equal = 1;
+	} else if(this->size < that->size) {
+		bound = this->size;
+		equal = -1;
+	} else {
+		bound = this->size;
+		equal = 0;
+	}
+	
+	/* compare element by element */
+	for(i = 0, this_i = this->I_(first), that_i = that->I_(first);
+		i < bound;
+		i++, this_i = this_elem->I_(next),
+		that_i = that_elem->I_(next)) {
+		/* assert this_i != -1, that_i != -1 */
+		this_elem = this->array + this_i;
+		that_elem = that->array + that_i;
+		if((diff = _T_I_(elem, cmp)(&this_elem->data, &that_elem->data)))
+			return diff;
+	}
+	
+	return equal;
+}
+
+/** Use when one changes the index key of one element under the cursor in an
+ otherwise sorted-by-key-list; the cursor will change to the updated position.
+ Does a linear search, therefore the running time's the same as sort when the
+ keys are in order, {O(n)}, but it has less overhead.
+ @return	Success.
+ @throws	LE_COMPARATOR, LE_OUT_OF_BOUNDS, LE_CONSISTENCY */
+int T_I_(List, Bump)(struct T_(List) *const this) {
+	if(!this) return 0;
+	if(this->cursor >= this->size) { this->error = LE_OUT_OF_BOUNDS; return 0; }
+	if(!_T_I_(bump, order)(this)) return 0;
+	
+	_T_(debug)(this, "bump-" QUOTE(_LIST_INDEX_NAME),
+			   "found a position here.\n");
+	return -1;
+}
+
+/** Subtracts {b} from {a} as a sequence and stores it in this. Set operations
+ can be simulated by the sorting of the specified index. All indices are set to
+ the same order, that of the index specified.
+ @throws	LE_PARAMETER, LE_ERRNO */
+int T_I_(ListAdd, Subtraction)(struct T_(List) *const this,
+							   struct T_(List) *const a, struct T_(List) *const b) {
+	return _T_I_(combine, sequences)(this, a, b,
+									 LO_SUBTRACTION_AB | LO_DEFAULT_A);
+}
+
+/** Calculates {a} union {b} as a sequence, and stores it in this. Set
+ operations can be simulated by the sorting of the specified index. All indices
+ are set to the same order, that of the index specified. Union has an ambiguity
+ about which item it should place first; it's always the lesser.
+ @throws	LE_PARAMETER, LE_ERRNO */
+int T_I_(ListAdd, Union)(struct T_(List) *const this, struct T_(List) *const a,
+						 struct T_(List) *const b) {
+	return _T_I_(combine, sequences)(this, a, b, LO_SUBTRACTION_AB
+									 | LO_SUBTRACTION_BA | LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
+}
+
+/** Calculates {a} intersection {b} as a sequence, and stores it in this. Set
+ operations can be simulated by the sorting of the specified index. All indices
+ are set to the same order, that of the index specified. The items added are
+ always from {a}, where it makes a difference.
+ @throws	LE_PARAMETER, LE_ERRNO */
+int T_I_(ListAdd, Intersection)(struct T_(List) *const this,
+								struct T_(List) *const a, struct T_(List) *const b) {
+	return _T_I_(combine, sequences)(this, a, b, LO_INTERSECTION);
+}
+
+/** Calculates {a} xor {b} as a sequence, and stores it in this. Set operations
+ can be simulated by the sorting of the specified index. All indices are set to
+ the same order, that of the index specified. Xor has an ambiguity about which
+ item it should place first; it's always the lesser.
+ @throws	LE_PARAMETER, LE_ERRNO */
+int T_I_(ListAdd, Xor)(struct T_(List) *const this, struct T_(List) *const a,
+					   struct T_(List) *const b) {
+	return _T_I_(combine, sequences)(this, a, b,
+									 LO_SUBTRACTION_AB | LO_SUBTRACTION_BA | LO_DEFAULT_A | LO_DEFAULT_B);
+}
+#endif
 
 #endif /* comp --> */
 
-static void _T_I_(link, init)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem) {
+/** Removes items from {this} and adds them to {recipient} if {predicate} is
+ null or true in the order specified by {<L>}. If {recipient} is null, then it
+ removes the elements.
+ (If the comparator is set and the two lists are in order, the resulting
+ {recipient} is also in order. If two elements are equal, {this} will come
+ after the already existing {recipient}. If the comparator is not set, the
+ items are added to the head of {recipient}. #ifdef _LIST_COMPARATOR inside)
+ @allow */
+static void T_L_(Link, MoveIf)(struct T_(Linked) *const this,
+	struct T_(Linked) *const recipient, const T_(Predicate) predicate) {
+	struct T_(Link) *cursor, *next_cursor;
 	assert(this);
-	assert(elem);
-	elem->I_(prev) = 0;
-	elem->I_(next) = this->I_(first);
-	if(this->I_(first)) this->I_(first)->I_(prev) = elem;
-	this->I_(first) = elem;
+	for(cursor = this->L_(first); cursor; cursor = next_cursor) {
+		next_cursor = cursor->L_(next);
+		if(predicate && !predicate(&cursor->data, this->param)) continue;
+		_T_(remove)(this, cursor);
+		if(recipient) _T_(add)(recipient, cursor);
+	}
 }
 
-static void _T_I_(link, remove)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem) {
+/** Performs {action} for each element in the list in the order specified by
+ {<L>}. For more flexibility, use \see{<T>List<L>ShortCircuit}, which takes a
+ {<T>Predicate}, and just return true.
+ @allow */
+static void T_L_(Link, ForEach)(struct T_(Linked) *const this,
+	const T_(Action) action) {
+	struct T_(Link) *cursor;
 	assert(this);
-	assert(elem);
-	if(elem->I_(prev)) {
-		elem->I_(prev)->I_(next) = elem->I_(next);
-	} else {
-		assert(this->I_(first) == elem);
-		this->I_(first) = elem->I_(next);
+	if(!action) return;
+	for(cursor = this->L_(first); cursor; cursor = cursor->L_(next)) {
+		action(&cursor->data);
 	}
-	if(elem->I_(next)) {
-		elem->I_(next)->I_(prev) = elem->I_(prev);
-	}
-	elem->I_(prev) = 0;
-	elem->I_(next) = 0;
 }
 
-
-
-
-
-/************
- * printing */
+/** @return The first {<T>} in the linked-list, ordered by {<L>}, that causes
+ the {predicate} to return false, or null if the {predicate} is true for every
+ case.
+ @allow */
+static struct T_(Link) *T_L_(List, ShortCircuit)(struct T_(Linked) *const this,
+	const T_(Predicate) predicate) {
+	struct T_(Link) *cursor;
+	assert(this);
+	if(!predicate) return 0;
+	for(cursor = this->L_(first); cursor; cursor = cursor->L_(next)) {
+		if(!predicate(&cursor->data, this->param)) return cursor;
+	}
+	return 0;
+}
 
 #ifdef LINK_TO_STRING /* <-- print */
 
@@ -783,9 +1223,10 @@ static void _list_super_cat(struct _ListSuperCat *const cat,
 #endif /* once --> */
 
 /** Prints the linked-list in a static buffer; one can print 4 things at once
- before it overwrites.
+ before it overwrites. One must set {LINK_TO_STRING} to a function implementing
+ {<T>ToString} to get this functionality.
  @allow */
-static char *T_I_(Linked, ToString)(const struct T_(Linked) *const this) {
+static char *T_L_(Linked, ToString)(const struct T_(Linked) *const this) {
 	static char buffer[4][256];
 	static int buffer_i;
 	struct _ListSuperCat cat;
@@ -797,7 +1238,7 @@ static char *T_I_(Linked, ToString)(const struct T_(Linked) *const this) {
 	_list_super_cat_init(&cat, buffer[buffer_i],
 		sizeof *buffer / sizeof **buffer - strlen(_link_alter_end));
 	buffer_i++, buffer_i &= 3;
-	if(!this || !(link = this->I_(first))) {
+	if(!this || !(link = this->L_(first))) {
 		_list_super_cat(&cat, _link_null);
 		return cat.print;
 	}
@@ -808,13 +1249,12 @@ static char *T_I_(Linked, ToString)(const struct T_(Linked) *const this) {
 		_T_(to_string)(&link->data, &scratch), scratch[8] = '\0';
 		_list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
-	} while((link = link->I_(next)));
+	} while((link = link->L_(next)));
 	sprintf(cat.cursor, "%s", cat.is_truncated ? _link_alter_end : _link_end);
 	return cat.print; /* static buffer */
 }
 
 #endif /* print --> */
-
 
 
 
@@ -824,4 +1264,4 @@ static char *T_I_(Linked, ToString)(const struct T_(Linked) *const this) {
 #undef _LINK_COMPARATOR
 #endif /* comp --> */
 
-#endif /* _LINK_NAME */
+#endif /* _LINK_NAME --> */
