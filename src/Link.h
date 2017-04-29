@@ -336,7 +336,6 @@ static void _T_(remove)(struct T_(Linked) *const this,
 
 
 
-/* should be another parameter: after */
 static void _T_(add)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
 #ifdef LINK_OPENMP /* <-- omp */
@@ -594,19 +593,13 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
 
 /** Private. */
 static void _T_L_(link, add)(struct T_(Linked) *const this,
-	struct T_(Link) *const after, struct T_(Link) *const elem) {
+	struct T_(Link) *const elem) {
 	assert(this);
 	assert(elem);
-	elem->L_(prev) = after;
-	if(after) {
-		elem->L_(next) = after->L_(next);
-		if(after->L_(next)) after->L_(next)->L_(prev) = elem;
-		after->L_(next) = elem;
-	} else {
-		elem->L_(next) = this->L_(first);
-		if(this->L_(first)) this->L_(first)->L_(prev) = elem;
-		this->L_(first) = elem;
-	}
+	elem->L_(prev) = 0;
+	elem->L_(next) = this->L_(first);
+	if(this->L_(first)) this->L_(first)->L_(prev) = elem;
+	this->L_(first) = elem;
 }
 
 /** Private. */
@@ -645,6 +638,8 @@ static struct T_(Link) *T_L_(Link, GetPrevious)(struct T_(Link) *const this) {
 
 #ifdef _LINK_COMPARATOR /* <-- comp */
 
+/* make sure that LINK_[A-D]_COMPARATOR is a function implementing
+ {<T>Comparator}. */
 static const T_(Comparator) _T_L_(elem, cmp) = (_LINK_COMPARATOR);
 
 /* Merge sort internals only once per translation unit. */
@@ -888,27 +883,48 @@ static void T_L_(Linked, Sort)(struct T_(Linked) *const this) {
 	_T_L_(natural, sort)(this);
 }
 
-#if 0
-/* -----------------------here--------------------------- */
+/** Compares two linked-lists as sequences in the order specified by {<L>}.
+ @return The first comparator that is not equal to zero, or 0 if they are
+ equal; if one list is a sub-list starting at the same point of the other,
+ returns -1 or 1. Null pointers count as lists that are before every other
+ list; two null pointers are considered equal. */
+static int T_L_(Linked, Compare)(const struct T_(Linked) *const this,
+	const struct T_(Linked) *const that) {
+	struct T_(Link) *a, *b;
+	int diff;
+	/* null counts as -\infty */
+	if(!this) {
+		return that ? 1 : 0;
+	} else if(!that) {
+		return -1;
+	}
+	/* compare element by element */
+	for(a = this->L_(first), b = that->L_(first); ;
+		a = a->L_(next), b = b->L_(next)) {
+		if(!a) {
+			return b ? 1 : 0;
+		} else if(!b) {
+			return -1;
+		} else if((diff = _T_L_(elem, cmp)(&a->data, &b->data))) {
+			return diff;
+		}
+	}
+}
 
-/** {this += a mask b}
- @fixme		Have a map like in \see{<T>ListAddIf}, except more complicated. How
- do we order {a} and {b} generally in indices that are not this one?
- Maybe this is best?
- @throws	LE_PARAMETER, LE_COMPARATOR, LE_ERRNO */
-static int _T_I_(combine, sequences)(struct T_(List) *const this,
-									 struct T_(List) *const a, struct T_(List) *const b,
-									 const enum ListOperation mask) {
+#if 0
+/** {this += a \mask b}
+ @fixme How do we order {a} and {b} generally in linked-lists that are not this
+ one? Maybe this is best? */
+static int _T_L_(combine, sequences)(struct T_(Linked) *const this,
+	struct T_(Linked) *const a, struct T_(Linked) *const b,
+	const enum LinkOperation mask) {
 	struct _T_(ListElement) *a_elem, *b_elem;
 	unsigned ai, bi;
 	int comp;
-	
-	/* because all the set operations are the same, might as well check them in
-	 one place; it simplifies the operations to a static lambda,
-	 { return combine(this, a, b, MASK); } */
-	if(!this) return 0;
-	if(!a || !b) { this->error = LE_PARAMETER; return 0; }
-	
+
+	/* fixme: think about this */
+	if(!this || !a || !b) return 0;
+
 	ai = a->I_(first), bi = b->I_(first);
 	while(ai < a->size && bi < b->size) {
 		a_elem = a->array + ai;
@@ -943,152 +959,7 @@ static int _T_I_(combine, sequences)(struct T_(List) *const this,
 			bi = b_elem->I_(next);
 		}
 	}
-	
-	return -1;
-}
 
-/** Makes sure the cursor is arranged locally in-order by performing a linear
- search.
- @return	Success.
- @throws	LE_CONSISTENCY */
-static int _T_I_(bump, order)(struct T_(List) *const this) {
-	struct _T_(ListElement) *const bump = this->array + this->cursor, *test,
-	*neighbour;
-	unsigned left_index, right_index;
-	int comp;
-	int is_found = 0;
-	
-	/* look to the right */
-	left_index = this->cursor;
-	right_index = this->array[left_index].I_(next);
-	while(right_index < this->size) {
-		test = this->array + right_index;
-		comp = _T_I_(elem, cmp)(&bump->data, &test->data);
-		if(comp > 0) {
-			left_index  = right_index;
-			right_index = test->I_(next);
-			is_found    = -1;
-		} else if(comp < 0) {
-			break;
-		} else {
-			is_found = -1;
-			break;
-		}
-	}
-	
-	/* look to the left */
-	if(!is_found) {
-		right_index = this->cursor;
-		left_index = this->array[left_index].I_(prev);
-		while(left_index < this->size) {
-			test = this->array + left_index;
-			comp = _T_I_(elem, cmp)(&bump->data, &test->data);
-			if(comp < 0) { /*!!! what?*/
-				right_index = left_index;
-				left_index  = test->I_(prev);
-			} else {
-				break;
-			}
-		}
-	}
-	
-	/* the element at the cursor is right where it ought to be */
-	if(right_index == this->cursor || left_index == this->cursor) return -1;
-	
-	/* take bump out of the linked-list */
-	if(bump->I_(prev) < this->size) {
-		this->array[bump->I_(prev)].I_(next) = bump->I_(next);
-	} else {
-		this->I_(first) = bump->I_(next);
-	}
-	if(bump->I_(next) < this->size) {
-		this->array[bump->I_(next)].I_(prev) = bump->I_(prev);
-	} else {
-		this->I_(last) = bump->I_(prev);
-	}
-	
-	/* insert bump in between left and right */
-	if(right_index >= this->size) {
-		if(left_index != this->I_(last)
-		   || left_index >= this->size
-		   || (neighbour = this->array + left_index)->I_(next) != (unsigned)-1
-		   ) { this->error = LE_CONSISTENCY; return 0; }
-		neighbour->I_(next) = this->I_(last) = this->cursor;
-	} else if(left_index >= this->size) {
-		if(right_index != this->I_(first)
-		   || right_index >= this->size
-		   || (neighbour = this->array + right_index)->I_(prev) != (unsigned)-1
-		   ) { this->error = LE_CONSISTENCY; return 0; }
-		neighbour->I_(prev) = this->I_(first) = this->cursor;
-	} else {
-		this->array[left_index].I_(next) =
-		this->array[right_index].I_(prev) = this->cursor;
-	}
-	bump->I_(prev) = left_index;
-	bump->I_(next) = right_index;
-	
-	return -1;
-}
-
-/** Compares two lists as sequences in the specified order.
- @return	The first comparator that is not equal or 0 if they are equal;
- {(-1, 1)} if they are different sizes but equal up to the {(this,
- that)}. Null pointers count as lists that are before every other
- list; two null pointers are equal. */
-int T_I_(List, Compare)(const struct T_(List) *const this,
-						const struct T_(List) *const that) {
-	struct _T_(ListElement) *this_elem, *that_elem;
-	unsigned i, this_i, that_i, bound;
-	int equal, diff;
-	
-	/* null counts as -\infty */
-	if(!this) {
-		if(!that) return 0;
-		else      return 1;
-	} else if(!that) {
-		return          -1;
-	}
-	
-	/* set up the bounds and what to return if all are equal */
-	if(this->size > that->size) {
-		bound = that->size;
-		equal = 1;
-	} else if(this->size < that->size) {
-		bound = this->size;
-		equal = -1;
-	} else {
-		bound = this->size;
-		equal = 0;
-	}
-	
-	/* compare element by element */
-	for(i = 0, this_i = this->I_(first), that_i = that->I_(first);
-		i < bound;
-		i++, this_i = this_elem->I_(next),
-		that_i = that_elem->I_(next)) {
-		/* assert this_i != -1, that_i != -1 */
-		this_elem = this->array + this_i;
-		that_elem = that->array + that_i;
-		if((diff = _T_I_(elem, cmp)(&this_elem->data, &that_elem->data)))
-			return diff;
-	}
-	
-	return equal;
-}
-
-/** Use when one changes the index key of one element under the cursor in an
- otherwise sorted-by-key-list; the cursor will change to the updated position.
- Does a linear search, therefore the running time's the same as sort when the
- keys are in order, {O(n)}, but it has less overhead.
- @return	Success.
- @throws	LE_COMPARATOR, LE_OUT_OF_BOUNDS, LE_CONSISTENCY */
-int T_I_(List, Bump)(struct T_(List) *const this) {
-	if(!this) return 0;
-	if(this->cursor >= this->size) { this->error = LE_OUT_OF_BOUNDS; return 0; }
-	if(!_T_I_(bump, order)(this)) return 0;
-	
-	_T_(debug)(this, "bump-" QUOTE(_LIST_INDEX_NAME),
-			   "found a position here.\n");
 	return -1;
 }
 
