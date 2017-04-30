@@ -272,16 +272,16 @@ struct T_(Link) {
 struct T_(Linked);
 struct T_(Linked) {
 #ifdef LINK_A_NAME
-	struct T_(Link) *LA_(first);
+	struct T_(Link) *LA_(first), *LA_(last);
 #endif
 #ifdef LINK_B_NAME
-	struct T_(Link) *LB_(first);
+	struct T_(Link) *LB_(first), *LB_(last);
 #endif
 #ifdef LINK_C_NAME
-	struct T_(Link) *LC_(first);
+	struct T_(Link) *LC_(first), *LC_(last);
 #endif
 #ifdef LIST_D_NAME
-	struct T_(Link) *LD_(first);
+	struct T_(Link) *LD_(first), *LD_(last);
 #endif
 	void *param;
 };
@@ -409,16 +409,16 @@ static void _T_(remove)(struct T_(Linked) *const this,
 static void _T_(clear)(struct T_(Linked) *const this) {
 	assert(this);
 #ifdef LINK_A_NAME
-	this->LA_(first) = 0;
+	this->LA_(first) = this->LA_(last) = 0;
 #endif
 #ifdef LINK_B_NAME
-	this->LB_(first) = 0;
+	this->LB_(first) = this->LB_(last) = 0;
 #endif
 #ifdef LINK_C_NAME
-	this->LC_(first) = 0;
+	this->LC_(first) = this->LC_(last) = 0;
 #endif
 #ifdef LINK_D_NAME
-	this->LD_(first) = 0;
+	this->LD_(first) = this->LD_(last) = 0;
 #endif
 }
 
@@ -620,15 +620,20 @@ void _T_(bogus)(void) {
 
 
 
-/** Front link add in {<L>}. Private. */
+/** Add to back in {<L>}. Private. */
 static void _T_L_(link, add)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
 	assert(this);
 	assert(elem);
-	elem->L_(prev) = 0;
-	elem->L_(next) = this->L_(first);
-	if(this->L_(first)) this->L_(first)->L_(prev) = elem;
-	this->L_(first) = elem;
+	elem->L_(prev) = this->L_(last);
+	elem->L_(next) = 0;
+	if(this->L_(last)) {
+		this->L_(last)->L_(next) = elem;
+	} else {
+		assert(!this->L_(first));
+		this->L_(first) = elem;
+	}
+	this->L_(last) = elem;
 }
 
 /** Front link remove in {<L>}. Private. */
@@ -644,6 +649,9 @@ static void _T_L_(link, remove)(struct T_(Linked) *const this,
 	}
 	if(elem->L_(next)) {
 		elem->L_(next)->L_(prev) = elem->L_(prev);
+	} else {
+		assert(this->L_(last) == elem);
+		this->L_(last) = elem->L_(prev);
 	}
 	elem->L_(prev) = 0;
 	elem->L_(next) = 0;
@@ -901,7 +909,8 @@ static void _T_L_(natural, sort)(struct T_(Linked) *const this) {
 	/* clean up the rest; when only one run, propagate link_runs[0] to head */
 	while(_T_L_(runs, elem).run_no > 1)
 		_T_L_(natural, merge)(&_T_L_(runs, elem));
-	this->L_(first) = _T_L_(runs,elem).run[0].head;
+	this->L_(first) = _T_L_(runs, elem).run[0].head;
+	this->L_(last)  = _T_L_(runs, elem).run[0].tail;
 }
 
 /** Sorts {<L>}, but leaves the other lists alone. Requires that the link
