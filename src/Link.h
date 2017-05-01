@@ -3,12 +3,9 @@
 
  A linked-list of an existing type. {<T>Link} surrounds {LINK_TYPE}, ({<T>},)
  with pointers that go forwards and backwards; also makes available
- {<T>Linked}, the head of the linked-list. To initialise {<T>Linked}, just set
- null; to delete it, just forget about it; specifically, as long as the you
- don't access {<T>Link}s that have been assigned to another list, you are fine.
- The preprocessor macros are all undefined at the end of the file for
- convenience when including multiple Link types. Supports four different
- linked-lists orders in the same type, {[A, D]}.
+ {<T>Linked}, the head of the linked-list. The preprocessor macros are all
+ undefined at the end of the file for convenience when including multiple Link
+ types. Supports four different linked-lists orders in the same type, {[A, D]}.
 
  @param LINK_NAME, LINK_TYPE
  The name that becomes {T} and a valid type associated therewith. Must each be
@@ -36,11 +33,19 @@
  {LinkTest.h}. Must be defined equal to a random filler, satisfying
  {<T>Action}.
 
+ @param NDEBUG
+ Has {assert}, therefore defining the marco {NDEBUG} turns off assertions for
+ release.
+
  @title		Link.h
  @author	Neil
  @std		C89/90
  @version	1.0; 2017-05
- @since		1.0; 2017-05 separated from List.h */
+ @since		1.0; 2017-05 separated from List.h
+ @fixme		Have specific public function flags to turn off functions so users
+ can turn off 'defined but not used' (eg, GCC {-Wunused-function}) warnings.
+ @fixme		{GCC} 4.2 has a bug with {-Wconversion} that causes {assert} to
+ emit a warning; cast? */
 
 
 
@@ -57,13 +62,13 @@
  This messily defines the "unused" macro.
  @author  Neil
  @std     C89/90
- @version 1.1; 2017-05
+ @version 1.2; 2017-05 GCC documentation says I can specifically use (void)
  @since   1.0; 2017-01 */
 #ifdef UNUSED
 #undef UNUSED
 #endif
 #ifndef _MSC_VER /* <-- not msvc */
-#define UNUSED(a) while(0 && (a));
+#define UNUSED(a) ((void)(a))
 #else /* not msvc --><-- msvc: not a C89/90 compiler; needs a little help */
 #pragma warning(push)
 /* "Assignment within conditional expression." No. */
@@ -102,6 +107,9 @@
 #endif
 #if defined(LINK_D_COMPARATOR) && !defined(LINK_D_NAME)
 #error List: LINK_D_COMPARATOR requires LINK_D_NAME.
+#endif
+#if defined(NDEBUG) && defined(LINK_TEST)
+#error List: cannot have LINK_TEST and NDEBUG.
 #endif
 
 
@@ -405,6 +413,43 @@ static void _T_(remove)(struct T_(Linked) *const this,
 	}
 }
 
+/** Private: move to new memory location. */
+static void _T_(move)(struct T_(Linked) *const this,
+	const struct T_(Link) *const old, struct T_(Link) *const new) {
+	assert(this);
+	assert(old);
+	assert(new);
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LA_(link, move)(this, old, new);
+#endif /* a --> */
+#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LB_(link, move)(this, old, new);
+#endif /* b --> */
+#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LC_(link, move)(this, old, new);
+#endif /* c --> */
+#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LD_(link, move)(this, old, new);
+#endif /* d --> */
+	}
+}
+
 /** Private: clear the list. */
 static void _T_(clear)(struct T_(Linked) *const this) {
 	assert(this);
@@ -432,10 +477,10 @@ static void T_(LinkedInit)(struct T_(Linked) *const this) {
 	this->param = 0;
 }
 
-/** Initialises the contents of all links of {elem} at the first spot in {this}.
- Does not do any checks on {elem} and overwrites the data that was there.
- Specifically, it invokes undefined behaviour to one add {elem} to more than
- one list without removing it each time.
+/** Initialises the contents of all links of {elem} and pushes it to {this}.
+ Does not do any checks on {elem} and overwrites the data that was there (it
+ is an initialisation.) Specifically, it invokes undefined behaviour to one add
+ {elem} to more than one list without removing it each time.
  @allow */
 static void T_(LinkedAdd)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
@@ -460,6 +505,17 @@ static void T_(LinkedRemove)(struct T_(Linked) *const this,
 static void T_(LinkedClear)(struct T_(Linked) *const this) {
 	assert(this);
 	_T_(clear)(this);
+}
+
+/** This allows you to move one element in memory of the list {this} from {old}
+ to {new}. This comes after you move it, that is, {old} is not de-referenced,
+ but {new} is. */
+static void T_(LinkedMove)(struct T_(Linked) *const this,
+	const struct T_(Link) *const old, struct T_(Link) *const new) {
+	assert(this);
+	assert(old);
+	assert(new);
+	_T_(move)(this, old, new);
 }
 
 /** Sorts all by greedy natural insertion-merge sort. Like doing
@@ -518,18 +574,6 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
 #ifdef LINK_TEST /* <-- test */
 #include "../test/TestLink.h" /* need this file if one is going to run tests */
 #endif /* test --> */
-
-/* So we don't have 'defined but not used' all over. */
-void _T_(bogus)(void);
-void _T_(bogus)(void) {
-	T_(LinkedInit)(0);
-	T_(LinkedAdd)(0, 0);
-	T_(LinkedRemove)(0, 0);
-	T_(LinkedClear)(0);
-	T_(LinkedSort)(0);
-	T_(LinkedSetParam)(0, 0);
-	T_(LinkGet)(0);
-}
 
 
 
@@ -655,6 +699,42 @@ static void _T_L_(link, remove)(struct T_(Linked) *const this,
 	}
 	elem->L_(prev) = 0;
 	elem->L_(next) = 0;
+}
+
+/** {old} is not de-referenced, but {new} is. */
+static void _T_L_(link, move)(struct T_(Linked) *const this,
+	const struct T_(Link) *const old, struct T_(Link) *const new) {
+	assert(this);
+	assert(old);
+	assert(new);
+	if(new->L_(prev)) {
+		assert(new->L_(prev)->L_(next) == old);
+		new->L_(prev)->L_(next) = new;
+	} else {
+		assert(this->L_(first) == old);
+		this->L_(first) = new;
+	}
+	if(new->L_(next)) {
+		assert(new->L_(next)->L_(prev) == old);
+		new->L_(next)->L_(prev) = new;
+	} else {
+		assert(this->L_(last) == old);
+		this->L_(last) = new;
+	}
+}
+
+/** @return A pointer to the first element.
+ @allow */
+static struct T_(Link) *T_L_(Linked, GetFirst)(struct T_(Linked) *const this) {
+	assert(this);
+	return this->L_(first);
+}
+
+/** @return A pointer to the last element.
+ @allow */
+static struct T_(Link) *T_L_(Linked, GetLast)(struct T_(Linked) *const this) {
+	assert(this);
+	return this->L_(last);
 }
 
 /** @return The next element after {this} in {<L>}. When {this} is the last
@@ -998,7 +1078,7 @@ static void _T_L_(boolean, seq)(struct T_(Linked) *const this,
 /** Subtracts {that} from {this} as a sequence and moves it to the head of
  {recipient}.
  @allow */
-static void T_L_(Linked, MoveSubtraction)(struct T_(Linked) *const this,
+static void T_L_(Linked, SubtractTo)(struct T_(Linked) *const this,
 	struct T_(Linked) *const that, struct T_(Linked) *const recipient) {
 	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB |LO_DEFAULT_A);
 }
@@ -1006,7 +1086,7 @@ static void T_L_(Linked, MoveSubtraction)(struct T_(Linked) *const this,
 /** Calculate {this} union {that} as a sequence, and moves it to the head of
  {recipient}. The equal items are always moved from {this}.
  @allow */
-static void T_L_(Linked, MoveUnion)(struct T_(Linked) *const this,
+static void T_L_(Linked, UnionTo)(struct T_(Linked) *const this,
 	struct T_(Linked) *const that, struct T_(Linked) *const recipient) {
 	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB
 		| LO_SUBTRACTION_BA | LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
@@ -1015,7 +1095,7 @@ static void T_L_(Linked, MoveUnion)(struct T_(Linked) *const this,
 /** Calculate {this} intersection {that} as a sequence, and moves it to the
  head of {recipient}. The items equal items are always moved from {this}.
  @allow */
-static void T_L_(Linked, MoveIntersection)(struct T_(Linked) *const this,
+static void T_L_(Linked, IntersectionTo)(struct T_(Linked) *const this,
 	struct T_(Linked) *const that, struct T_(Linked) *const recipient) {
 	_T_L_(boolean, seq)(recipient, this, that, LO_INTERSECTION);
 }
@@ -1023,7 +1103,7 @@ static void T_L_(Linked, MoveIntersection)(struct T_(Linked) *const this,
 /** Calculates {this} xor {that} as a sequence, and moves it to the head of
  {recipient}. The equal items are always moved from {this}.
  @allow */
-static void T_L_(Linked, MoveXor)(struct T_(Linked) *const this,
+static void T_L_(Linked, XorTo)(struct T_(Linked) *const this,
 	struct T_(Linked) *const that, struct T_(Linked) *const recipient) {
 	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB
 		| LO_SUBTRACTION_BA | LO_DEFAULT_A | LO_DEFAULT_B);
@@ -1039,7 +1119,7 @@ static void T_L_(Linked, MoveXor)(struct T_(Linked) *const this,
  after the already existing {recipient}. If the comparator is not set, the
  items are added to the head of {recipient}. #ifdef _LIST_COMPARATOR inside
  @allow */
-static void T_L_(Linked, MoveIf)(struct T_(Linked) *const this,
+static void T_L_(Linked, IfTo)(struct T_(Linked) *const this,
 	const T_(Predicate) predicate, struct T_(Linked) *const recipient) {
 	struct T_(Link) *cursor, *next_cursor;
 	assert(this);
@@ -1151,25 +1231,6 @@ static char *T_L_(Linked, ToString)(const struct T_(Linked) *const this) {
 #endif /* print --> */
 
 
-
-/* So we don't have 'defined but not used' all over. */
-void _T_L_(link, bogus)(void);
-void _T_L_(link, bogus)(void) {
-	T_L_(Link, GetNext)(0);
-	T_L_(Link, GetPrevious)(0);
-#ifdef _LINK_COMPARATOR /* <-- comp */
-	T_L_(Linked, Sort)(0);
-	T_L_(Linked, Compare)(0, 0);
-	T_L_(Linked, MoveSubtraction)(0, 0, 0);
-	T_L_(Linked, MoveUnion)(0, 0, 0);
-	T_L_(Linked, MoveIntersection)(0, 0, 0);
-	T_L_(Linked, MoveXor)(0, 0, 0);
-#endif /* comp --> */
-	T_L_(Linked, MoveIf)(0, 0, 0);
-	T_L_(Linked, ForEach)(0, 0);
-	T_L_(Linked, ShortCircuit)(0, 0);
-	T_L_(Linked, ToString)(0);
-}
 
 /* undefine stuff for the next */
 #undef _LINK_NAME

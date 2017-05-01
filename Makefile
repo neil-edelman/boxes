@@ -17,7 +17,7 @@ PREFIX:= /usr/local
 INST  := $(PROJ)-$(VA)_$(VB)
 
 # extra stuff we should back up
-EXTRA := Order.xcodeproj
+EXTRA := $(PROJ).xcodeproj
 
 # John Graham-Cumming:
 # rwildcard is a recursive wildcard

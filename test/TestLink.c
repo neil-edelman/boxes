@@ -45,42 +45,7 @@ static void Foo_filler(struct Foo *const this) {
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	struct FooLink foos[100];
-	const size_t foos_capacity = sizeof foos / sizeof *foos;
-	size_t foos_size = 0;
-	struct FooLinked a = { 0 };
-	enum { E_NO, E_F, E_ASRT } e = E_NO;
-
-	do {
-		unsigned i;
-		for(i = 0; i < foos_capacity; i++) {
-			struct Foo *foo = FooLinkGet(foos + i);
-			foo->key = (int)(rand() / (1.0 + RAND_MAX) * 1000.0);
-			Orcish(foo->value, sizeof foo->value);
-		}
-		while(foos_size < 10) FooLinkedAdd(&a, foos + foos_size), foos_size++;
-		printf("Unsorted:\nKey:   %s.\nValue: %s.\n", FooLinkedKeyToString(&a),
-			FooLinkedValueToString(&a));
-		FooLinkedKeySort(&a);
-		FooLinkedValueSort(&a);
-		printf("Sorted:\nKey:   %s.\nValue: %s.\n", FooLinkedKeyToString(&a),
-			FooLinkedValueToString(&a));
-		/*
-		printf("\nTextMatch:\n");
-		TextMatch(t, tpattern, tpattern_size);
-		if(strcmp(sup = "<a href = \"Test%Test\">Test%Test</a> yo <em>YO</em>",
-			str = TextGet(t))) { e = E_ASRT; break; }
-		printf("Text: %s\n", TextGet(t));
-		*/
-	} while(0); switch(e) {
-		case E_NO: break;
-		case E_F: fprintf(stderr, "Text exception.\n");
-			break;
-		case E_ASRT: fprintf(stderr,"Text: assert failed, '%s' but was '%s'.\n",
-			"", ""); break;
-	}
-	if(!FooLinkTest()) return printf("FAILED.\n"), EXIT_FAILURE;
-
-	printf("Tests %s.\n", e ? "FAILED" : "SUCCEEDED");
-	return e ? EXIT_FAILURE : EXIT_SUCCESS;
+	FooLinkTest();
+	printf("Test succeeded.\n");
+	return EXIT_SUCCESS;
 }
