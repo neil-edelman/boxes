@@ -34,8 +34,8 @@
  {<T>Action}.
 
  @param NDEBUG
- Has {assert}, therefore defining the marco {NDEBUG} turns off assertions for
- release.
+ Has {assert} in private functions, therefore defining the marco {NDEBUG} turns
+ off assertions.
 
  @title		Link.h
  @author	Neil
@@ -472,7 +472,7 @@ static void _T_(clear)(struct T_(Linked) *const this) {
  {<T>Link}s will be free to be be deleted or assigned to another {<T>Linked}.
  @allow */
 static void T_(LinkedInit)(struct T_(Linked) *const this) {
-	assert(this);
+	if(!this) return;
 	_T_(clear)(this);
 	this->param = 0;
 }
@@ -484,7 +484,7 @@ static void T_(LinkedInit)(struct T_(Linked) *const this) {
  @allow */
 static void T_(LinkedAdd)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
-	assert(this);
+	if(!this) return;
 	if(!elem) return;
 	_T_(add)(this, elem);
 }
@@ -495,15 +495,14 @@ static void T_(LinkedAdd)(struct T_(Linked) *const this,
  @allow */
 static void T_(LinkedRemove)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
-	assert(this);
-	if(!elem) return;
+	if(!this || !elem) return;
 	_T_(remove)(this, elem);
 }
 
 /** Clears all values from the linked-list.
  @allow */
 static void T_(LinkedClear)(struct T_(Linked) *const this) {
-	assert(this);
+	if(!this) return;
 	_T_(clear)(this);
 }
 
@@ -512,9 +511,7 @@ static void T_(LinkedClear)(struct T_(Linked) *const this) {
  but {new} is. */
 static void T_(LinkedMove)(struct T_(Linked) *const this,
 	const struct T_(Link) *const old, struct T_(Link) *const new) {
-	assert(this);
-	assert(old);
-	assert(new);
+	if(!this || !old || !new) return;
 	_T_(move)(this, old, new);
 }
 
@@ -524,7 +521,7 @@ static void T_(LinkedMove)(struct T_(Linked) *const this,
  random data as Quicksort.
  @allow */
 static void T_(LinkedSort)(struct T_(Linked) *const this) {
-	assert(this);
+	if(!this) return;
 #ifdef LINK_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -560,14 +557,14 @@ static void T_(LinkedSort)(struct T_(Linked) *const this) {
  @allow */
 static void T_(LinkedSetParam)(struct T_(Linked) *const this,
 	void *const param) {
-	assert(this);
+	if(!this) return;
 	this->param = param;
 }
 
-/** Get a pointer to the underlying data stored in {<T>}.
+/** Get a pointer to the underlying data stored in {this}.
  @allow */
 static T *T_(LinkGet)(struct T_(Link) *const this) {
-	assert(this);
+	if(!this) return 0;
 	return &this->data;
 }
 
@@ -726,14 +723,14 @@ static void _T_L_(link, move)(struct T_(Linked) *const this,
 /** @return A pointer to the first element.
  @allow */
 static struct T_(Link) *T_L_(Linked, GetFirst)(struct T_(Linked) *const this) {
-	assert(this);
+	if(!this) return 0;
 	return this->L_(first);
 }
 
 /** @return A pointer to the last element.
  @allow */
 static struct T_(Link) *T_L_(Linked, GetLast)(struct T_(Linked) *const this) {
-	assert(this);
+	if(!this) return 0;
 	return this->L_(last);
 }
 
@@ -741,7 +738,7 @@ static struct T_(Link) *T_L_(Linked, GetLast)(struct T_(Linked) *const this) {
  element, returns null.
  @allow */
 static struct T_(Link) *T_L_(Link, GetNext)(struct T_(Link) *const this) {
-	assert(this);
+	if(!this) return 0;
 	return this->L_(next);
 }
 
@@ -749,7 +746,7 @@ static struct T_(Link) *T_L_(Link, GetNext)(struct T_(Link) *const this) {
  first item, returns null.
  @allow */
 static struct T_(Link) *T_L_(Link, GetPrevious)(struct T_(Link) *const this) {
-	assert(this);
+	if(!this) return 0;
 	return this->L_(prev);
 }
 
@@ -1034,9 +1031,8 @@ static int T_L_(Linked, Compare)(const struct T_(Linked) *const this,
 static void _T_L_(boolean, seq)(struct T_(Linked) *const this,
 	struct T_(Linked) *const a, struct T_(Linked) *const b,
 	const enum LinkOperation mask) {
-	struct T_(Link) *ai, *bi, *t; /* iterator, temp */
+	struct T_(Link) *ai = a ? a->L_(first) : 0, *bi = b ? b->L_(first) : 0, *t; /* iterator, temp */
 	int comp; /* comparator */
-	ai = a ? a->L_(first) : 0, bi = b ? b->L_(first) : 0;
 	while(ai && bi) {
 		comp = _T_L_(elem, cmp)(&ai->data, &bi->data);
 		if(comp < 0) {
@@ -1122,7 +1118,7 @@ static void T_L_(Linked, XorTo)(struct T_(Linked) *const this,
 static void T_L_(Linked, IfTo)(struct T_(Linked) *const this,
 	const T_(Predicate) predicate, struct T_(Linked) *const recipient) {
 	struct T_(Link) *cursor, *next_cursor;
-	assert(this);
+	if(!this) return;
 	for(cursor = this->L_(first); cursor; cursor = next_cursor) {
 		next_cursor = cursor->L_(next);
 		if(predicate && !predicate(&cursor->data, this->param)) continue;
@@ -1138,8 +1134,7 @@ static void T_L_(Linked, IfTo)(struct T_(Linked) *const this,
 static void T_L_(Linked, ForEach)(struct T_(Linked) *const this,
 	const T_(Action) action) {
 	struct T_(Link) *cursor;
-	assert(this);
-	if(!action) return;
+	if(!this || !action) return;
 	for(cursor = this->L_(first); cursor; cursor = cursor->L_(next)) {
 		action(&cursor->data);
 	}
@@ -1152,8 +1147,7 @@ static void T_L_(Linked, ForEach)(struct T_(Linked) *const this,
 static struct T_(Link) *T_L_(Linked, ShortCircuit)(
 	struct T_(Linked) *const this, const T_(Predicate) predicate) {
 	struct T_(Link) *cursor;
-	assert(this);
-	if(!predicate) return 0;
+	if(!this || !predicate) return 0;
 	for(cursor = this->L_(first); cursor; cursor = cursor->L_(next)) {
 		if(!predicate(&cursor->data, this->param)) return cursor;
 	}
