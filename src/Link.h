@@ -35,7 +35,7 @@
 
  @param NDEBUG
  Has {assert} in private functions, therefore defining the marco {NDEBUG} turns
- off assertions.
+ off assertions and makes it run faster.
 
  @title		Link.h
  @author	Neil
@@ -467,6 +467,13 @@ static void _T_(clear)(struct T_(Linked) *const this) {
 #endif
 }
 
+/** Get a pointer to the underlying data stored in {this}.
+ @allow */
+static T *T_(LinkGet)(struct T_(Link) *const this) {
+	if(!this) return 0;
+	return &this->data;
+}
+
 /** Initialises the {Linked}. You do not have to do this for {static}
  duration variables. There is no deletion; once it is not needed, the
  {<T>Link}s will be free to be be deleted or assigned to another {<T>Linked}.
@@ -559,13 +566,6 @@ static void T_(LinkedSetParam)(struct T_(Linked) *const this,
 	void *const param) {
 	if(!this) return;
 	this->param = param;
-}
-
-/** Get a pointer to the underlying data stored in {this}.
- @allow */
-static T *T_(LinkGet)(struct T_(Link) *const this) {
-	if(!this) return 0;
-	return &this->data;
 }
 
 #ifdef LINK_TEST /* <-- test */
@@ -661,7 +661,7 @@ static T *T_(LinkGet)(struct T_(Link) *const this) {
 
 
 
-/** Add to back in {<L>}. Private. */
+/** Private: add to {last} in {<L>}. */
 static void _T_L_(link, add)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
 	assert(this);
@@ -677,7 +677,7 @@ static void _T_L_(link, add)(struct T_(Linked) *const this,
 	this->L_(last) = elem;
 }
 
-/** Front link remove in {<L>}. Private. */
+/** Private: link remove in {<L>}. */
 static void _T_L_(link, remove)(struct T_(Linked) *const this,
 	struct T_(Link) *const elem) {
 	assert(this);
@@ -698,7 +698,7 @@ static void _T_L_(link, remove)(struct T_(Linked) *const this,
 	elem->L_(next) = 0;
 }
 
-/** {old} is not de-referenced, but {new} is. */
+/** Private: {old} is not de-referenced, but {new} is. */
 static void _T_L_(link, move)(struct T_(Linked) *const this,
 	const struct T_(Link) *const old, struct T_(Link) *const new) {
 	assert(this);
@@ -720,20 +720,6 @@ static void _T_L_(link, move)(struct T_(Linked) *const this,
 	}
 }
 
-/** @return A pointer to the first element.
- @allow */
-static struct T_(Link) *T_L_(Linked, GetFirst)(struct T_(Linked) *const this) {
-	if(!this) return 0;
-	return this->L_(first);
-}
-
-/** @return A pointer to the last element.
- @allow */
-static struct T_(Link) *T_L_(Linked, GetLast)(struct T_(Linked) *const this) {
-	if(!this) return 0;
-	return this->L_(last);
-}
-
 /** @return The next element after {this} in {<L>}. When {this} is the last
  element, returns null.
  @allow */
@@ -748,6 +734,20 @@ static struct T_(Link) *T_L_(Link, GetNext)(struct T_(Link) *const this) {
 static struct T_(Link) *T_L_(Link, GetPrevious)(struct T_(Link) *const this) {
 	if(!this) return 0;
 	return this->L_(prev);
+}
+
+/** @return A pointer to the first element.
+ @allow */
+static struct T_(Link) *T_L_(Linked, GetFirst)(struct T_(Linked) *const this) {
+	if(!this) return 0;
+	return this->L_(first);
+}
+
+/** @return A pointer to the last element.
+ @allow */
+static struct T_(Link) *T_L_(Linked, GetLast)(struct T_(Linked) *const this) {
+	if(!this) return 0;
+	return this->L_(last);
 }
 
 #ifdef _LINK_COMPARATOR /* <-- comp */
@@ -1027,7 +1027,7 @@ static int T_L_(Linked, Compare)(const struct T_(Linked) *const this,
 	}
 }
 
-/** {this += a \mask b}. Prefers {a} to {b} when equal. Private. */
+/** Private: {this += a \mask b}. Prefers {a} to {b} when equal. */
 static void _T_L_(boolean, seq)(struct T_(Linked) *const this,
 	struct T_(Linked) *const a, struct T_(Linked) *const b,
 	const enum LinkOperation mask) {
@@ -1120,6 +1120,9 @@ static void T_L_(Linked, IfTo)(struct T_(Linked) *const this,
 	struct T_(Link) *cursor, *next_cursor;
 	if(!this) return;
 	for(cursor = this->L_(first); cursor; cursor = next_cursor) {
+		char str[9]; /* fixme: interesting . . . it crashes without printing */
+		_T_(to_string)(&cursor->data, &str);
+		printf(": %s\n", str);
 		next_cursor = cursor->L_(next);
 		if(predicate && !predicate(&cursor->data, this->param)) continue;
 		_T_(remove)(this, cursor);
@@ -1200,24 +1203,22 @@ static char *T_L_(Linked, ToString)(const struct T_(Linked) *const this) {
 	struct _ListSuperCat cat;
 	char scratch[9];
 	struct T_(Link) *link;
-	int is_first = 1, i = 0;
 	assert(strlen(_link_alter_end) >= strlen(_link_end));
 	assert(sizeof buffer > strlen(_link_alter_end));
 	_list_super_cat_init(&cat, buffer[buffer_i],
 		sizeof *buffer / sizeof **buffer - strlen(_link_alter_end));
 	buffer_i++, buffer_i &= 3;
-	if(!this || !(link = this->L_(first))) {
+	if(!this) {
 		_list_super_cat(&cat, _link_null);
 		return cat.print;
 	}
 	_list_super_cat(&cat, _link_start);
-	do {
-		i++;
-		if(!is_first) _list_super_cat(&cat, _link_sep); else is_first = 0;
+	for(link = this->L_(first); link; link = link->L_(next)) {
+		if(link != this->L_(first)) _list_super_cat(&cat, _link_sep);
 		_T_(to_string)(&link->data, &scratch), scratch[8] = '\0';
 		_list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
-	} while((link = link->L_(next)));
+	}
 	sprintf(cat.cursor, "%s", cat.is_truncated ? _link_alter_end : _link_end);
 	return cat.print; /* static buffer */
 }
