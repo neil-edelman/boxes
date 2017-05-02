@@ -1,14 +1,15 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A linked-list of an existing type. {<T>Link} surrounds {LINK_TYPE}, ({<T>},)
- with pointers that go forwards and backwards; also makes available
- {<T>Linked}, the head of the linked-list. The preprocessor macros are all
+ A linked-list of an existing type. {<T>LinkNode} surrounds {LINK_TYPE},
+ ({<T>},) with pointers that go forwards and backwards; also makes available
+ {<T>Link}, the head of the linked-list. The preprocessor macros are all
  undefined at the end of the file for convenience when including multiple Link
  types. Supports four different linked-lists orders in the same type, {[A, D]}.
 
  @param LINK_NAME, LINK_TYPE
- The name that becomes {T} and a valid type associated therewith. Must each be
+ The name that becomes {T} and a valid type associated therewith (should be
+ conformant to the maximum available length of identifiers.) Must each be
  present before including.
 
  @param LINK_[A-D]_NAME, LINK_[A-D]_COMPARATOR
@@ -29,7 +30,7 @@
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }.
 
  @param LINK_TEST
- Unit testing framework using {<T>LinkedTest}, included in a separate header,
+ Unit testing framework using {<T>LinkTest}, included in a separate header,
  {LinkTest.h}. Must be defined equal to a random filler, satisfying
  {<T>Action}.
 
@@ -257,39 +258,39 @@ typedef void (*T_(ToString))(const T *, char (*const)[9]);
 
 /** A single link in the linked-list derived from {<T>}. Intended to be used
  directly in {struct}s. Use the \see{<T>LinkGet} function to extract {<T>}. */
-struct T_(Link);
-struct T_(Link) {
+struct T_(LinkNode);
+struct T_(LinkNode) {
 #ifdef LINK_A_NAME
-	struct T_(Link) *LA_(prev), *LA_(next);
+	struct T_(LinkNode) *LA_(prev), *LA_(next);
 #endif
 #ifdef LINK_B_NAME
-	struct T_(Link) *LB_(prev), *LB_(next);
+	struct T_(LinkNode) *LB_(prev), *LB_(next);
 #endif
 #ifdef LINK_C_NAME
-	struct T_(Link) *LC_(prev), *LC_(next);
+	struct T_(LinkNode) *LC_(prev), *LC_(next);
 #endif
 #ifdef LIST_D_NAME
-	struct T_(Link) *LD_(prev), *LD_(next);
+	struct T_(LinkNode) *LD_(prev), *LD_(next);
 #endif
 	T data;
 };
 
-/** Serves as an a head for a linked-list(s) of {<T>Link}s. No initialisation
+/** Serves as an a head for linked-list(s) of {<T>LinkNode}. No initialisation
  is necessary when the variable is of {static} duration, otherwise use
- \see{<T>LinkedInit}. */
-struct T_(Linked);
-struct T_(Linked) {
+ \see{<T>LinkInit}. */
+struct T_(Link);
+struct T_(Link) {
 #ifdef LINK_A_NAME
-	struct T_(Link) *LA_(first), *LA_(last);
+	struct T_(LinkNode) *LA_(first), *LA_(last);
 #endif
 #ifdef LINK_B_NAME
-	struct T_(Link) *LB_(first), *LB_(last);
+	struct T_(LinkNode) *LB_(first), *LB_(last);
 #endif
 #ifdef LINK_C_NAME
-	struct T_(Link) *LC_(first), *LC_(last);
+	struct T_(LinkNode) *LC_(first), *LC_(last);
 #endif
 #ifdef LIST_D_NAME
-	struct T_(Link) *LD_(first), *LD_(last);
+	struct T_(LinkNode) *LD_(first), *LD_(last);
 #endif
 	void *param;
 };
@@ -302,10 +303,10 @@ static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
 #endif /* to string --> */
 
 /* Prototypes: needed for the next section, but undefined until later. */
-static void _T_(add)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem);
-static void _T_(remove)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem);
+static void _T_(add)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const elem);
+static void _T_(remove)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const elem);
 
 /* Note to future self: recursive includes. The {_LINK_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!_LIST_NAME} section. These
@@ -346,8 +347,8 @@ static void _T_(remove)(struct T_(Linked) *const this,
 
 
 /** Private: add to first of list. */
-static void _T_(add)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem) {
+static void _T_(add)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const elem) {
 #ifdef LINK_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -380,8 +381,8 @@ static void _T_(add)(struct T_(Linked) *const this,
 }
 
 /** Private: remove from list. */
-static void _T_(remove)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem) {
+static void _T_(remove)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const elem) {
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -414,8 +415,8 @@ static void _T_(remove)(struct T_(Linked) *const this,
 }
 
 /** Private: move to new memory location. */
-static void _T_(move)(struct T_(Linked) *const this,
-	const struct T_(Link) *const old, struct T_(Link) *const new) {
+static void _T_(move)(struct T_(Link) *const this,
+	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
 	assert(this);
 	assert(old);
 	assert(new);
@@ -451,7 +452,7 @@ static void _T_(move)(struct T_(Linked) *const this,
 }
 
 /** Private: clear the list. */
-static void _T_(clear)(struct T_(Linked) *const this) {
+static void _T_(clear)(struct T_(Link) *const this) {
 	assert(this);
 #ifdef LINK_A_NAME
 	this->LA_(first) = this->LA_(last) = 0;
@@ -469,16 +470,16 @@ static void _T_(clear)(struct T_(Linked) *const this) {
 
 /** Get a pointer to the underlying data stored in {this}.
  @allow */
-static T *T_(LinkGet)(struct T_(Link) *const this) {
+static T *T_(LinkNodeGetData)(struct T_(LinkNode) *const this) {
 	if(!this) return 0;
 	return &this->data;
 }
 
-/** Initialises the {Linked}. You do not have to do this for {static}
+/** Initialises the {Link}. You do not have to do this for {static}
  duration variables. There is no deletion; once it is not needed, the
- {<T>Link}s will be free to be be deleted or assigned to another {<T>Linked}.
+ {<T>LinkNode} will be free to be be deleted or assigned to another {<T>Link}.
  @allow */
-static void T_(LinkedInit)(struct T_(Linked) *const this) {
+static void T_(LinkInit)(struct T_(Link) *const this) {
 	if(!this) return;
 	_T_(clear)(this);
 	this->param = 0;
@@ -489,10 +490,9 @@ static void T_(LinkedInit)(struct T_(Linked) *const this) {
  is an initialisation.) Specifically, it invokes undefined behaviour to one add
  {elem} to more than one list without removing it each time.
  @allow */
-static void T_(LinkedAdd)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem) {
-	if(!this) return;
-	if(!elem) return;
+static void T_(LinkAdd)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const elem) {
+	if(!this || !elem) return;
 	_T_(add)(this, elem);
 }
 
@@ -500,15 +500,15 @@ static void T_(LinkedAdd)(struct T_(Linked) *const this,
  list. Removing an element that was not added to {this} results in undefined
  behaviour.
  @allow */
-static void T_(LinkedRemove)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem) {
+static void T_(LinkRemove)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const elem) {
 	if(!this || !elem) return;
 	_T_(remove)(this, elem);
 }
 
 /** Clears all values from the linked-list.
  @allow */
-static void T_(LinkedClear)(struct T_(Linked) *const this) {
+static void T_(LinkClear)(struct T_(Link) *const this) {
 	if(!this) return;
 	_T_(clear)(this);
 }
@@ -516,18 +516,18 @@ static void T_(LinkedClear)(struct T_(Linked) *const this) {
 /** This allows you to move one element in memory of the list {this} from {old}
  to {new}. This comes after you move it, that is, {old} is not de-referenced,
  but {new} is. */
-static void T_(LinkedMove)(struct T_(Linked) *const this,
-	const struct T_(Link) *const old, struct T_(Link) *const new) {
+static void T_(LinkMove)(struct T_(Link) *const this,
+	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
 	if(!this || !old || !new) return;
 	_T_(move)(this, old, new);
 }
 
 /** Sorts all by greedy natural insertion-merge sort. Like doing
- \see{<T>Linked<L>Sort} for all lists in link with comparators. Designed to be
+ \see{<T>Link<L>Sort} for all lists in link with comparators. Designed to be
  an {O(n log n)} sort that is adaptive and stable, it's not as good at sorting
  random data as Quicksort.
  @allow */
-static void T_(LinkedSort)(struct T_(Linked) *const this) {
+static void T_(LinkSort)(struct T_(Link) *const this) {
 	if(!this) return;
 #ifdef LINK_OPENMP /* <-- omp */
 	#pragma omp parallel sections
@@ -562,7 +562,7 @@ static void T_(LinkedSort)(struct T_(Linked) *const this) {
 
 /** Sets the user-defined {param} of {this}.
  @allow */
-static void T_(LinkedSetParam)(struct T_(Linked) *const this,
+static void T_(LinkSetParam)(struct T_(Link) *const this,
 	void *const param) {
 	if(!this) return;
 	this->param = param;
@@ -662,8 +662,8 @@ static void T_(LinkedSetParam)(struct T_(Linked) *const this,
 
 
 /** Private: add to {last} in {<L>}. */
-static void _T_L_(link, add)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem) {
+static void _T_L_(link, add)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const elem) {
 	assert(this);
 	assert(elem);
 	elem->L_(prev) = this->L_(last);
@@ -678,8 +678,8 @@ static void _T_L_(link, add)(struct T_(Linked) *const this,
 }
 
 /** Private: link remove in {<L>}. */
-static void _T_L_(link, remove)(struct T_(Linked) *const this,
-	struct T_(Link) *const elem) {
+static void _T_L_(link, remove)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const elem) {
 	assert(this);
 	assert(elem);
 	if(elem->L_(prev)) {
@@ -699,8 +699,8 @@ static void _T_L_(link, remove)(struct T_(Linked) *const this,
 }
 
 /** Private: {old} is not de-referenced, but {new} is. */
-static void _T_L_(link, move)(struct T_(Linked) *const this,
-	const struct T_(Link) *const old, struct T_(Link) *const new) {
+static void _T_L_(link, move)(struct T_(Link) *const this,
+	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
 	assert(this);
 	assert(old);
 	assert(new);
@@ -723,7 +723,8 @@ static void _T_L_(link, move)(struct T_(Linked) *const this,
 /** @return The next element after {this} in {<L>}. When {this} is the last
  element, returns null.
  @allow */
-static struct T_(Link) *T_L_(Link, GetNext)(struct T_(Link) *const this) {
+static struct T_(LinkNode) *T_L_(LinkNode, GetNext)(
+	struct T_(LinkNode) *const this) {
 	if(!this) return 0;
 	return this->L_(next);
 }
@@ -731,21 +732,22 @@ static struct T_(Link) *T_L_(Link, GetNext)(struct T_(Link) *const this) {
 /** @return The previous element before {this} in {<L>}. When {this} is the
  first item, returns null.
  @allow */
-static struct T_(Link) *T_L_(Link, GetPrevious)(struct T_(Link) *const this) {
+static struct T_(LinkNode) *T_L_(LinkNode, GetPrevious)(
+	struct T_(LinkNode) *const this) {
 	if(!this) return 0;
 	return this->L_(prev);
 }
 
 /** @return A pointer to the first element.
  @allow */
-static struct T_(Link) *T_L_(Linked, GetFirst)(struct T_(Linked) *const this) {
+static struct T_(LinkNode) *T_L_(Link, GetFirst)(struct T_(Link) *const this) {
 	if(!this) return 0;
 	return this->L_(first);
 }
 
 /** @return A pointer to the last element.
  @allow */
-static struct T_(Link) *T_L_(Linked, GetLast)(struct T_(Linked) *const this) {
+static struct T_(LinkNode) *T_L_(Link, GetLast)(struct T_(Link) *const this) {
 	if(!this) return 0;
 	return this->L_(last);
 }
@@ -764,7 +766,7 @@ static const T_(Comparator) _T_L_(elem, cmp) = (_LINK_COMPARATOR);
 /* A run is a temporary sequence of values in the array that is weakly
  increasing. */
 struct _T_(Run) {
-	struct T_(Link) *head, *tail;
+	struct T_(LinkNode) *head, *tail;
 	size_t size;
 };
 
@@ -794,12 +796,12 @@ static struct _T_(Runs) _T_L_(runs, elem);
 static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 	struct _T_(Run) *const run_a = r->run + r->run_no - 2;
 	struct _T_(Run) *const run_b = run_a + 1;
-	struct T_(Link) *a = run_a->tail, *b = run_b->head, *chosen;
+	struct T_(LinkNode) *a = run_a->tail, *b = run_b->head, *chosen;
 
 	/* fixme: we are doing one-to-many compares in some cases? */
 
 	if(run_a->size <= run_b->size) {
-		struct T_(Link) *prev_chosen;
+		struct T_(LinkNode) *prev_chosen;
 
 		/* run a is smaller: downwards insert b.head followed by upwards
 		 merge */
@@ -845,7 +847,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 		}
 
 	} else {
-		struct T_(Link) *next_chosen;
+		struct T_(LinkNode) *next_chosen;
 		int is_a_tail = 0;
 
 		/* run b is smaller; upwards insert followed by downwards merge */
@@ -902,14 +904,14 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
  useless compares and I question whether a strict Pascal's triangle-shape
  would be optimum, or whether a long run should be put off merging until
  short runs have finished; it is quite simple as it is. */
-static void _T_L_(natural, sort)(struct T_(Linked) *const this) {
+static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 	/* new_run is an index into link_runs, a temporary sorting structure;
 	 head is first smallest, tail is last largest */
 	struct _T_(Run) *new_run;
 	/* part of the state machine for classifying points wrt their neighbours */
 	enum { UNSURE, INCREASING, DECREASING } mono;
 	/* the data that we are sorting */
-	struct T_(Link) *a, *b, *c, *first_iso_a;
+	struct T_(LinkNode) *a, *b, *c, *first_iso_a;
 	/* run_count is different from link_runs.run_no in that it only increases;
 	 only used for calculating the path up the tree */
 	size_t run_count, rc;
@@ -955,7 +957,7 @@ static void _T_L_(natural, sort)(struct T_(Linked) *const this) {
 			new_run->tail = a; /* terminating an increasing sequence */
 		} else { /* a == b */
 			if(mono == DECREASING) { /* extend */
-				struct T_(Link) *const a_next = a->L_(next);
+				struct T_(LinkNode) *const a_next = a->L_(next);
 				b->L_(next) = a_next;
 				a_next->L_(prev) = b;
 				a->L_(next) = b;
@@ -993,7 +995,7 @@ static void _T_L_(natural, sort)(struct T_(Linked) *const this) {
 /** Sorts {<L>}, but leaves the other lists alone. Requires that the link
  comparator is set.
  @allow */
-static void T_L_(Linked, Sort)(struct T_(Linked) *const this) {
+static void T_L_(Link, Sort)(struct T_(Link) *const this) {
 	if(!this) return;
 	_T_L_(natural, sort)(this);
 }
@@ -1004,9 +1006,9 @@ static void T_L_(Linked, Sort)(struct T_(Linked) *const this) {
  returns -1 or 1. Null pointers count as lists that are before every other
  list; two null pointers are considered equal.
  @allow */
-static int T_L_(Linked, Compare)(const struct T_(Linked) *const this,
-	const struct T_(Linked) *const that) {
-	struct T_(Link) *a, *b;
+static int T_L_(Link, Compare)(const struct T_(Link) *const this,
+	const struct T_(Link) *const that) {
+	struct T_(LinkNode) *a, *b;
 	int diff;
 	/* null counts as -\infty */
 	if(!this) {
@@ -1028,10 +1030,10 @@ static int T_L_(Linked, Compare)(const struct T_(Linked) *const this,
 }
 
 /** Private: {this += a \mask b}. Prefers {a} to {b} when equal. */
-static void _T_L_(boolean, seq)(struct T_(Linked) *const this,
-	struct T_(Linked) *const a, struct T_(Linked) *const b,
+static void _T_L_(boolean, seq)(struct T_(Link) *const this,
+	struct T_(Link) *const a, struct T_(Link) *const b,
 	const enum LinkOperation mask) {
-	struct T_(Link) *ai = a ? a->L_(first) : 0, *bi = b ? b->L_(first) : 0, *t; /* iterator, temp */
+	struct T_(LinkNode) *ai = a ? a->L_(first) : 0, *bi = b ? b->L_(first) : 0, *t; /* iterator, temp */
 	int comp; /* comparator */
 	while(ai && bi) {
 		comp = _T_L_(elem, cmp)(&ai->data, &bi->data);
@@ -1074,16 +1076,16 @@ static void _T_L_(boolean, seq)(struct T_(Linked) *const this,
 /** Subtracts {that} from {this} as a sequence and moves it to the head of
  {recipient}.
  @allow */
-static void T_L_(Linked, SubtractTo)(struct T_(Linked) *const this,
-	struct T_(Linked) *const that, struct T_(Linked) *const recipient) {
+static void T_L_(Link, SubtractTo)(struct T_(Link) *const this,
+	struct T_(Link) *const that, struct T_(Link) *const recipient) {
 	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB |LO_DEFAULT_A);
 }
 
 /** Calculate {this} union {that} as a sequence, and moves it to the head of
  {recipient}. The equal items are always moved from {this}.
  @allow */
-static void T_L_(Linked, UnionTo)(struct T_(Linked) *const this,
-	struct T_(Linked) *const that, struct T_(Linked) *const recipient) {
+static void T_L_(Link, UnionTo)(struct T_(Link) *const this,
+	struct T_(Link) *const that, struct T_(Link) *const recipient) {
 	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB
 		| LO_SUBTRACTION_BA | LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
 }
@@ -1091,16 +1093,16 @@ static void T_L_(Linked, UnionTo)(struct T_(Linked) *const this,
 /** Calculate {this} intersection {that} as a sequence, and moves it to the
  head of {recipient}. The items equal items are always moved from {this}.
  @allow */
-static void T_L_(Linked, IntersectionTo)(struct T_(Linked) *const this,
-	struct T_(Linked) *const that, struct T_(Linked) *const recipient) {
+static void T_L_(Link, IntersectionTo)(struct T_(Link) *const this,
+	struct T_(Link) *const that, struct T_(Link) *const recipient) {
 	_T_L_(boolean, seq)(recipient, this, that, LO_INTERSECTION);
 }
 
 /** Calculates {this} xor {that} as a sequence, and moves it to the head of
  {recipient}. The equal items are always moved from {this}.
  @allow */
-static void T_L_(Linked, XorTo)(struct T_(Linked) *const this,
-	struct T_(Linked) *const that, struct T_(Linked) *const recipient) {
+static void T_L_(Link, XorTo)(struct T_(Link) *const this,
+	struct T_(Link) *const that, struct T_(Link) *const recipient) {
 	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB
 		| LO_SUBTRACTION_BA | LO_DEFAULT_A | LO_DEFAULT_B);
 }
@@ -1115,14 +1117,14 @@ static void T_L_(Linked, XorTo)(struct T_(Linked) *const this,
  after the already existing {recipient}. If the comparator is not set, the
  items are added to the head of {recipient}. #ifdef _LIST_COMPARATOR inside
  @allow */
-static void T_L_(Linked, IfTo)(struct T_(Linked) *const this,
-	const T_(Predicate) predicate, struct T_(Linked) *const recipient) {
-	struct T_(Link) *cursor, *next_cursor;
+static void T_L_(Link, IfTo)(struct T_(Link) *const this,
+	const T_(Predicate) predicate, struct T_(Link) *const recipient) {
+	struct T_(LinkNode) *cursor, *next_cursor;
+	/* FIXME: it doesn't work without this here; [1] doesn't work; why? */
+	/*char str[2];*/
+
 	if(!this) return;
 	for(cursor = this->L_(first); cursor; cursor = next_cursor) {
-		char str[9]; /* fixme: interesting . . . it crashes without printing */
-		_T_(to_string)(&cursor->data, &str);
-		printf(": %s\n", str);
 		next_cursor = cursor->L_(next);
 		if(predicate && !predicate(&cursor->data, this->param)) continue;
 		_T_(remove)(this, cursor);
@@ -1134,22 +1136,22 @@ static void T_L_(Linked, IfTo)(struct T_(Linked) *const this,
  {<L>}. For more flexibility, use \see{<T>List<L>ShortCircuit}, which takes a
  {<T>Predicate}, and just return true.
  @allow */
-static void T_L_(Linked, ForEach)(struct T_(Linked) *const this,
+static void T_L_(Link, ForEach)(struct T_(Link) *const this,
 	const T_(Action) action) {
-	struct T_(Link) *cursor;
+	struct T_(LinkNode) *cursor;
 	if(!this || !action) return;
 	for(cursor = this->L_(first); cursor; cursor = cursor->L_(next)) {
 		action(&cursor->data);
 	}
 }
 
-/** @return The first {<T>Link} in the linked-list, ordered by {<L>}, that
+/** @return The first {<T>LinkNode} in the linked-list, ordered by {<L>}, that
  causes the {predicate} with {<T>} as argument to return false, or null if the
  {predicate} is true for every case.
  @allow */
-static struct T_(Link) *T_L_(Linked, ShortCircuit)(
-	struct T_(Linked) *const this, const T_(Predicate) predicate) {
-	struct T_(Link) *cursor;
+static struct T_(LinkNode) *T_L_(Link, ShortCircuit)(
+	struct T_(Link) *const this, const T_(Predicate) predicate) {
+	struct T_(LinkNode) *cursor;
 	if(!this || !predicate) return 0;
 	for(cursor = this->L_(first); cursor; cursor = cursor->L_(next)) {
 		if(!predicate(&cursor->data, this->param)) return cursor;
@@ -1197,12 +1199,12 @@ static void _list_super_cat(struct _ListSuperCat *const cat,
  before it overwrites. One must set {LINK_TO_STRING} to a function implementing
  {<T>ToString} to get this functionality.
  @allow */
-static char *T_L_(Linked, ToString)(const struct T_(Linked) *const this) {
+static char *T_L_(Link, ToString)(const struct T_(Link) *const this) {
 	static char buffer[4][256];
 	static int buffer_i;
 	struct _ListSuperCat cat;
 	char scratch[9];
-	struct T_(Link) *link;
+	struct T_(LinkNode) *link;
 	assert(strlen(_link_alter_end) >= strlen(_link_end));
 	assert(sizeof buffer > strlen(_link_alter_end));
 	_list_super_cat_init(&cat, buffer[buffer_i],
