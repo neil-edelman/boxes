@@ -1,11 +1,11 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A linked-list of an existing type. {<T>LinkNode} surrounds {LINK_TYPE},
- ({<T>},) with pointers that go forwards and backwards; also makes available
- {<T>Link}, the head of the linked-list. The preprocessor macros are all
- undefined at the end of the file for convenience when including multiple Link
- types. Supports four different linked-lists orders in the same type, {[A, D]}.
+ {<T>Link} stores doubly-linked-list(s). {<T>Link} points to strings of
+ {<T>LinkNode}, of which data of type {<T>} must be set using {LINK_TYPE}.
+ Supports one to four different linked-list orders in the same type, {[A, D]},
+ set using {LINK_[A-D]_NAME}. The preprocessor macros are all undefined at the
+ end of the file for convenience when including multiple Link types.
 
  @param LINK_NAME, LINK_TYPE
  The name that becomes {T} and a valid type associated therewith (should be
@@ -97,6 +97,10 @@
 #endif
 
 /* A..D is just arbitrary; more could be added, just search: [A, D] */
+#if !defined(LINK_A_NAME) && !defined(LINK_B_NAME) \
+	&& !defined(LINK_C_NAME) && !defined(LINK_D_NAME)
+#error Link: must have at least one of LINK_[A-D]_NAME.
+#endif
 #if defined(LINK_A_COMPARATOR) && !defined(LINK_A_NAME)
 #error Link: LINK_A_COMPARATOR requires LINK_A_NAME.
 #endif
@@ -277,7 +281,7 @@ struct T_(LinkNode) {
 
 /** Serves as an a head for linked-list(s) of {<T>LinkNode}. No initialisation
  is necessary when the variable is of {static} duration, otherwise use
- \see{<T>LinkInit}. */
+ \see{<T>LinkClear}. */
 struct T_(Link);
 struct T_(Link) {
 #ifdef LINK_A_NAME
@@ -304,9 +308,9 @@ static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
 
 /* Prototypes: needed for the next section, but undefined until later. */
 static void _T_(add)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const elem);
+	struct T_(LinkNode) *const node);
 static void _T_(remove)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const elem);
+	struct T_(LinkNode) *const node);
 
 /* Note to future self: recursive includes. The {_LINK_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!_LIST_NAME} section. These
@@ -348,7 +352,7 @@ static void _T_(remove)(struct T_(Link) *const this,
 
 /** Private: add to first of list. */
 static void _T_(add)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const elem) {
+	struct T_(LinkNode) *const node) {
 #ifdef LINK_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -357,32 +361,32 @@ static void _T_(add)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LA_(link, add)(this, elem);
+		_T_LA_(link, add)(this, node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LB_(link, add)(this, elem);
+		_T_LB_(link, add)(this, node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LC_(link, add)(this, elem);
+		_T_LC_(link, add)(this, node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LD_(link, add)(this, elem);
+		_T_LD_(link, add)(this, node);
 #endif /* d --> */
 	}
 }
 
 /** Private: remove from list. */
 static void _T_(remove)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const elem) {
+	struct T_(LinkNode) *const node) {
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -391,25 +395,25 @@ static void _T_(remove)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LA_(link, remove)(this, elem);
+		_T_LA_(link, remove)(this, node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LB_(link, remove)(this, elem);
+		_T_LB_(link, remove)(this, node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LC_(link, remove)(this, elem);
+		_T_LC_(link, remove)(this, node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LD_(link, remove)(this, elem);
+		_T_LD_(link, remove)(this, node);
 #endif /* d --> */
 	}
 }
@@ -483,25 +487,25 @@ static void T_(LinkClear)(struct T_(Link) *const this) {
 	this->param = 0;
 }
 
-/** Initialises the contents of all links of {elem} and pushes it to {this}.
- Does not do any checks on {elem} and overwrites the data that was there (it
+/** Initialises the contents of all links of {node} and pushes it to {this}.
+ Does not do any checks on {node} and overwrites the data that was there (it
  is an initialisation.) Specifically, it invokes undefined behaviour to one add
- {elem} to more than one list without removing it each time.
+ {node} to more than one list without removing it each time.
  @allow */
 static void T_(LinkAdd)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const elem) {
-	if(!this || !elem) return;
-	_T_(add)(this, elem);
+	struct T_(LinkNode) *const node) {
+	if(!this || !node) return;
+	_T_(add)(this, node);
 }
 
-/** Removes {elem} from the {this}. The {elem} is now free to add to another
+/** Removes {node} from the {this}. The {node} is now free to add to another
  list. Removing an element that was not added to {this} results in undefined
  behaviour.
  @allow */
 static void T_(LinkRemove)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const elem) {
-	if(!this || !elem) return;
-	_T_(remove)(this, elem);
+	struct T_(LinkNode) *const node) {
+	if(!this || !node) return;
+	_T_(remove)(this, node);
 }
 
 /** This allows you to move one element in memory of the list {this} from {old}
@@ -672,7 +676,7 @@ static void _T_L_(link, add)(struct T_(Link) *const this,
 
 /* make sure that LINK_[A-D]_COMPARATOR is a function implementing
  {<T>Comparator}. */
-static const T_(Comparator) _T_L_(elem, cmp) = (_LINK_COMPARATOR);
+static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
 
 /** Private: add after {after} in order as soon as possible; more general than
  \see{<T>_link_<L>_add}. */
@@ -683,7 +687,7 @@ static void _T_L_(link, add_after)(struct T_(Link) *const this,
 	/* find where after */
 	{
 		struct T_(LinkNode) *feel = after ? after->L_(next) : this->L_(first);
-		while(feel && _T_L_(elem, cmp)(&node->data, &feel->data) > 0) {
+		while(feel && _T_L_(data, cmp)(&node->data, &feel->data) > 0) {
 			after = feel;
 			feel  = feel->L_(next);
 		}
@@ -808,6 +812,7 @@ struct _T_(Runs) {
 
 #endif /* sort internals --> */
 
+/* fixme: implement LINK_...STATic... */
 static struct _T_(Runs) _T_L_(runs, elem);
 
 /** Inserts the first element from the larger of two sorted runs, then merges
@@ -833,7 +838,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 
 		/* insert the first element of b downwards into a */
 		for( ; ; ) {
-			if(_T_L_(elem, cmp)(&a->data, &b->data) <= 0) {
+			if(_T_L_(data, cmp)(&a->data, &b->data) <= 0) {
 				chosen = a;
 				a = a->L_(next);
 				break;
@@ -850,7 +855,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 		/* merge upwards, while the lists are interleaved */
 		while(chosen->L_(next)) {
 			prev_chosen = chosen;
-			if(_T_L_(elem, cmp)(&a->data, &b->data) > 0) {
+			if(_T_L_(data, cmp)(&a->data, &b->data) > 0) {
 				chosen = b;
 				b = b->L_(next);
 			} else {
@@ -879,7 +884,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 
 		/* insert the last element of a upwards into b */
 		for( ; ; ) {
-			if(_T_L_(elem, cmp)(&a->data, &b->data) <= 0) {
+			if(_T_L_(data, cmp)(&a->data, &b->data) <= 0) {
 				chosen = b;
 				b = b->L_(prev);
 				break;
@@ -898,7 +903,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 		/* merge downwards, while the lists are interleaved */
 		while(chosen->L_(prev)) {
 			next_chosen = chosen;
-			if(_T_L_(elem, cmp)(&a->data, &b->data) > 0) {
+			if(_T_L_(data, cmp)(&a->data, &b->data) > 0) {
 				chosen = a;
 				a = a->L_(prev);
 			} else {
@@ -958,7 +963,7 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 		/* b.next can be modified, and we always want the iteration original */
 		c = b->L_(next);
 
-		comp = _T_L_(elem, cmp)(&a->data, &b->data);
+		comp = _T_L_(data, cmp)(&a->data, &b->data);
 
 		/* state machine that considers runs in both directions -- in practice,
 		 slightly slower than only considering increasing runs on most cases;
@@ -1048,7 +1053,7 @@ static int T_L_(Link, Compare)(const struct T_(Link) *const this,
 			return b ? 1 : 0;
 		} else if(!b) {
 			return -1;
-		} else if((diff = _T_L_(elem, cmp)(&a->data, &b->data))) {
+		} else if((diff = _T_L_(data, cmp)(&a->data, &b->data))) {
 			return diff;
 		}
 	}
@@ -1061,7 +1066,7 @@ static void _T_L_(boolean, seq)(struct T_(Link) *const this,
 	struct T_(LinkNode) *ai = a ? a->L_(first) : 0, *bi = b ? b->L_(first) : 0, *t; /* iterator, temp */
 	int comp; /* comparator */
 	while(ai && bi) {
-		comp = _T_L_(elem, cmp)(&ai->data, &bi->data);
+		comp = _T_L_(data, cmp)(&ai->data, &bi->data);
 		if(comp < 0) {
 			t = ai, ai = ai->L_(next);
 			if(mask & LO_SUBTRACTION_AB) {
