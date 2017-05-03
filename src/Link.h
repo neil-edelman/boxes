@@ -34,10 +34,6 @@
  {LinkTest.h}. Must be defined equal to a random filler, satisfying
  {<T>Action}.
 
- @param NDEBUG
- Has {assert} in private functions, therefore defining the marco {NDEBUG} turns
- off assertions and makes it run faster.
-
  @title		Link.h
  @author	Neil
  @std		C89/90
@@ -113,8 +109,8 @@
 #if defined(LINK_D_COMPARATOR) && !defined(LINK_D_NAME)
 #error List: LINK_D_COMPARATOR requires LINK_D_NAME.
 #endif
-#if defined(NDEBUG) && defined(LINK_TEST)
-#error List: cannot have LINK_TEST and NDEBUG.
+#ifndef LINK_TEST
+#define NDEBUG
 #endif
 
 
@@ -479,7 +475,8 @@ static T *T_(LinkNodeGetData)(struct T_(LinkNode) *const this) {
 	return &this->data;
 }
 
-/** Clears all values from the linked-list, thereby initialising the {Link}.
+/** Clears all values from the linked-list and {param}, thereby initialising
+ the {Link}.
  @allow */
 static void T_(LinkClear)(struct T_(Link) *const this) {
 	if(!this) return;
@@ -508,12 +505,12 @@ static void T_(LinkRemove)(struct T_(Link) *const this,
 	_T_(remove)(this, node);
 }
 
-/** Concatenates the elements of {this} onto {recipient} until {this} is
- empty. */
-static void T_(LinkCatTo)(struct T_(Link) *const this,
-	struct T_(Link) *const recipient) {
-	if(!this || this == recipient) return;
-	if(!recipient) { _T_(clear)(this); return; }
+/** Appends the elements of {from} onto {this}. If {this} is null, then it
+ removes elements. */
+static void T_(LinkTake)(struct T_(Link) *const this,
+	struct T_(Link) *const from) {
+	if(!from || from == this) return;
+	if(!this) { _T_(clear)(from); return; }
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -522,35 +519,35 @@ static void T_(LinkCatTo)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LA_(link, cat_to)(this, recipient);
+		_T_LA_(link, cat)(this, from);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LB_(link, cat_to)(this, recipient);
+		_T_LB_(link, cat)(this, from);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LC_(link, cat_to)(this, recipient);
+		_T_LC_(link, cat)(this, from);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LD_(link, cat_to)(this, recipient);
+		_T_LD_(link, cat)(this, from);
 #endif /* d --> */
 	}
 }
 
-/** Merges the elements of {this} into {recipient} in (local) order,
- {O(this.n + recipient.n)}; concatenates all lists that don't have a
+/** Merges the elements of {from} into {this} in (local) order,
+ {O(this.n + from.n)}; concatenates all lists that don't have a
  {LINK_[A-D]_COMPARATOR}, {O(1)}. */
-static void T_(LinkMergeTo)(struct T_(Link) *const this,
-	struct T_(Link) *const recipient) {
-	if(!this || this == recipient) return;
+static void T_(LinkTakeMerge)(struct T_(Link) *const this,
+	struct T_(Link) *const from) {
+	if(!from || from == this) return;
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -560,9 +557,9 @@ static void T_(LinkMergeTo)(struct T_(Link) *const this,
 #pragma omp section
 #endif /* omp --> */
 #ifdef LINK_A_COMPARATOR /* <-- comp */
-		_T_LA_(link, merge_to)(this, recipient);
+		_T_LA_(link, merge)(this, from);
 #else /* comp --><-- !comp */
-		_T_LA_(link, cat_to)(this, recipient);
+		_T_LA_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
@@ -570,9 +567,9 @@ static void T_(LinkMergeTo)(struct T_(Link) *const this,
 #pragma omp section
 #endif /* omp --> */
 #ifdef LINK_B_COMPARATOR /* <-- comp */
-		_T_LB_(link, merge_to)(this, recipient);
+		_T_LB_(link, merge)(this, from);
 #else /* comp --><-- !comp */
-		_T_LB_(link, cat_to)(this, recipient);
+		_T_LB_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
@@ -580,9 +577,9 @@ static void T_(LinkMergeTo)(struct T_(Link) *const this,
 #pragma omp section
 #endif /* omp --> */
 #ifdef LINK_C_COMPARATOR /* <-- comp */
-		_T_LC_(link, merge_to)(this, recipient);
+		_T_LC_(link, merge)(this, from);
 #else /* comp --><-- !comp */
-		_T_LC_(link, cat_to)(this, recipient);
+		_T_LC_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
@@ -590,9 +587,9 @@ static void T_(LinkMergeTo)(struct T_(Link) *const this,
 #pragma omp section
 #endif /* omp --> */
 #ifdef LINK_D_COMPARATOR /* <-- comp */
-		_T_LD_(link, merge_to)(this, recipient);
+		_T_LD_(link, merge)(this, from);
 #else /* comp --><-- !comp */
-		_T_LD_(link, cat_to)(this, recipient);
+		_T_LD_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* d --> */
 	}
@@ -783,21 +780,21 @@ static void _T_L_(link, remove)(struct T_(Link) *const this,
 	node->L_(next) = 0;
 }
 
-/** Private: cats all {this} to the tail of {recipient}; {this} will be
- empty after this. {O(1)}. */
-static void _T_L_(link, cat_to)(struct T_(Link) *const this,
-	struct T_(Link) *const recipient) {
+/** Private: cats all {from} to the tail of {this}; {from} will be empty after.
+ {O(1)}. */
+static void _T_L_(link, cat)(struct T_(Link) *const this,
+	struct T_(Link) *const from) {
 	assert(this);
-	assert(recipient);
-	assert(!this->L_(first) == !this->L_(last));
-	if(!this->L_(first)) return; /* there is nothing in {this} */
-	if(!recipient->L_(first)) { /* there is nothing in {recipient} */
-		recipient->L_(first) = this->L_(first);
+	assert(from);
+	assert(!from->L_(first) == !from->L_(last));
+	if(!from->L_(first)) return; /* there is nothing in {from} */
+	if(!this->L_(first)) { /* there is nothing in {this} */
+		this->L_(first) = from->L_(first);
 	} else { /* there is something in both */
-		recipient->L_(last)->L_(next) = this->L_(first);
+		this->L_(last)->L_(next) = from->L_(first);
 	}
-	recipient->L_(last) = this->L_(last);
-	this->L_(first) = this->L_(last) = 0;
+	this->L_(last) = from->L_(last);
+	from->L_(first) = from->L_(last) = 0;
 }
 
 #ifdef _LINK_COMPARATOR /* <-- comp */
@@ -808,32 +805,33 @@ static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
 
 /** Private: merges {this} into {recipient}; on equal elements, places {this}
  first. {O(n + m)}. */
-static void _T_L_(link, merge_to)(struct T_(Link) *const this,
-	struct T_(Link) *const recipient) {
-	struct T_(LinkNode) *tnode, *rnode;
+static void _T_L_(link, merge)(struct T_(Link) *const this,
+	struct T_(Link) *const from) {
+	struct T_(LinkNode) *tnode, *fnode;
 	assert(this);
-	assert(recipient);
-	rnode = recipient->L_(first);
-	while((tnode = this->L_(first))) {
-		while(rnode && _T_L_(data, cmp)(&tnode->data, &rnode->data) > 0)
-			rnode = rnode->L_(next);
-		if(!rnode) break; /* run past the end of {recipient} */
-		/* shift(this); {tnode} goes before {rnode} */
-		_T_L_(link, remove)(this, tnode);
-		tnode->L_(next) = rnode;
-		if((tnode->L_(prev) = rnode->L_(prev))) {
-			rnode->L_(prev)->L_(next) = tnode;
+	assert(from);
+	tnode = this->L_(first);
+	while((fnode = from->L_(first))) {
+		while(tnode && _T_L_(data, cmp)(&fnode->data, &tnode->data) > 0)
+			tnode = tnode->L_(next);
+		if(!tnode) break; /* run past the end of {this} */
+		/* shift(from); {fnode} goes before {tnode} */
+		_T_L_(link, remove)(from, fnode);
+		fnode->L_(next) = tnode;
+		if((fnode->L_(prev) = tnode->L_(prev))) {
+			tnode->L_(prev)->L_(next) = fnode;
 		} else {
 			/* this is the first, now */
-			assert(recipient->L_(first) == rnode);
-			recipient->L_(first) = tnode;
+			assert(this->L_(first) == tnode);
+			this->L_(first) = fnode;
 		}
 	}
-	_T_L_(link, cat_to)(this, recipient);
+	_T_L_(link, cat)(this, from);
 }
 
+#if 0
 /** Private: add after {after} in order as soon as possible; more general than
- \see{<T>_link_<L>_add}. */
+ \see{<T>_link_<L>_add}. (fixme: do we really need this?) */
 static void _T_L_(link, add_after)(struct T_(Link) *const this,
 	struct T_(LinkNode) *after, struct T_(LinkNode) *const node) {
 	assert(this);
@@ -861,6 +859,7 @@ static void _T_L_(link, add_after)(struct T_(Link) *const this,
 		this->L_(first) = node;
 	}
 }
+#endif
 
 #endif /* comp --> */
 
@@ -1155,8 +1154,7 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 	this->L_(last)  = _T_L_(runs, elem).run[0].tail;
 }
 
-/** Sorts {<L>}, but leaves the other lists alone. Requires that the link
- comparator is set.
+/** Sorts {<L>}, but leaves the other lists in the type alone.
  @allow */
 static void T_L_(Link, Sort)(struct T_(Link) *const this) {
 	if(!this) return;
@@ -1192,11 +1190,12 @@ static int T_L_(Link, Compare)(const struct T_(Link) *const this,
 	}
 }
 
-/** Private: {this += a \mask b}. Prefers {a} to {b} when equal. */
+/** Private: {this <- a \mask b}. Prefers {a} to {b} when equal. */
 static void _T_L_(boolean, seq)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b,
 	const enum LinkOperation mask) {
-	struct T_(LinkNode) *ai = a ? a->L_(first) : 0, *bi = b ? b->L_(first) : 0, *t; /* iterator, temp */
+	struct T_(LinkNode) *ai = a ? a->L_(first) : 0, *bi = b ? b->L_(first) : 0,
+		*t; /* iterator, temp */
 	int comp; /* comparator */
 	while(ai && bi) {
 		comp = _T_L_(data, cmp)(&ai->data, &bi->data);
@@ -1236,144 +1235,61 @@ static void _T_L_(boolean, seq)(struct T_(Link) *const this,
 	}
 }
 
-/** Subtracts {that} from {this} as a sequence and moves it to the head of
- {recipient}.
+/** Appends {that} with {b} subtracted from {a} as a sequence in {<L>}. If
+ {this} is null, then it removes elements.
  @allow */
-static void T_L_(Link, SubtractTo)(struct T_(Link) *const this,
-	struct T_(Link) *const that, struct T_(Link) *const recipient) {
-	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB |LO_DEFAULT_A);
+static void T_L_(Link, TakeSubtraction)(struct T_(Link) *const this,
+	struct T_(Link) *const a, struct T_(Link) *const b) {
+	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB |LO_DEFAULT_A);
 }
 
-/** Calculate {this} union {that} as a sequence, and moves it to the head of
- {recipient}. The equal items are always moved from {this}.
+/** Appends {this} with the union of {a} and {b} as a sequence in {<L>}. Equal
+ elements are moved from {a}. If {this} is null, then it removes elements.
  @allow */
-static void T_L_(Link, UnionTo)(struct T_(Link) *const this,
-	struct T_(Link) *const that, struct T_(Link) *const recipient) {
-	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB
-		| LO_SUBTRACTION_BA | LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
+static void T_L_(Link, TakeUnion)(struct T_(Link) *const this,
+	struct T_(Link) *const a, struct T_(Link) *const b) {
+	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+		| LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
-/** Calculate {this} intersection {that} as a sequence, and moves it to the
- head of {recipient}. The items equal items are always moved from {this}.
+/** Appends {this} with the intersection of {a} and {b} as a sequence in {<L>}.
+ Equal elements are moved from {a}. If {this} is null, then it removes elements.
  @allow */
-static void T_L_(Link, IntersectionTo)(struct T_(Link) *const this,
-	struct T_(Link) *const that, struct T_(Link) *const recipient) {
-	_T_L_(boolean, seq)(recipient, this, that, LO_INTERSECTION);
+static void T_L_(Link, TakeIntersection)(struct T_(Link) *const this,
+	struct T_(Link) *const a, struct T_(Link) *const b) {
+	_T_L_(boolean, seq)(this, a, b, LO_INTERSECTION);
 }
 
-/** Calculates {this} xor {that} as a sequence, and moves it to the head of
- {recipient}. The equal items are always moved from {this}.
+/** Appends {this} with {a} exclusive-or {b} as a sequence in {<L>}. Equal
+ elements are moved from {a}. If {this} is null, then it removes elements.
  @allow */
-static void T_L_(Link, XorTo)(struct T_(Link) *const this,
-	struct T_(Link) *const that, struct T_(Link) *const recipient) {
-	_T_L_(boolean, seq)(recipient, this, that, LO_SUBTRACTION_AB
-		| LO_SUBTRACTION_BA | LO_DEFAULT_A | LO_DEFAULT_B);
+static void T_L_(Link, TakeXor)(struct T_(Link) *const this,
+	struct T_(Link) *const a, struct T_(Link) *const b) {
+	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+		| LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
 #endif /* comp --> */
 
-/* prototype; fixme: lazy because it's the only function that calls other lists,
- hack */
-#ifdef LINK_A_COMPARATOR /* <-- a */
-static void _T_LA_(link, add_after)(struct T_(Link) *const this,
-	struct T_(LinkNode) *after, struct T_(LinkNode) *const node);
-#endif /* a --> */
-#ifdef LINK_B_COMPARATOR /* <-- b */
-static void _T_LB_(link, add_after)(struct T_(Link) *const this,
-	struct T_(LinkNode) *after, struct T_(LinkNode) *const node);
-#endif /* b --> */
-#ifdef LINK_C_COMPARATOR /* <-- c */
-static void _T_LC_(link, add_after)(struct T_(Link) *const this,
-	struct T_(LinkNode) *after, struct T_(LinkNode) *const node);
-#endif /* c --> */
-#ifdef LINK_D_COMPARATOR /* <-- d */
-static void _T_LD_(link, add_after)(struct T_(Link) *const this,
-	struct T_(LinkNode) *after, struct T_(LinkNode) *const node);
-#endif /* d --> */
-
-/** Removes items from {this} and adds them to {recipient} if {predicate} is
- null or true in the order specified by {<L>}. If {recipient} is null, then it
- removes the elements. Adds them in in local order of the first local maximum
- in {<L>}; specifically, if the two lists are in order, then the resulting list
- will be in order in {<L>}. If two items are equal, the item from {this} will
- come before the already existing item from {recipient}. If the any comparator
- is not set, the items are added to the tail of {recipient}.
+/** Appends {this} with {from} if {predicate} is null or true in the order
+ specified by {<L>}. If {this} is null, then it removes elements.
  @allow */
-static void T_L_(Link, ToIf)(struct T_(Link) *const this,
-	struct T_(Link) *const recipient, const T_(Predicate) predicate) {
+static void T_L_(Link, TakeIf)(struct T_(Link) *const this,
+	struct T_(Link) *const from, const T_(Predicate) predicate) {
 	struct T_(LinkNode) *cursor, *next_cursor;
-#ifdef LINK_A_COMPARATOR /* <-- a */
-	struct T_(LinkNode) *a = 0;
-#endif /* a --> */
-#ifdef LINK_B_COMPARATOR /* <-- b */
-	struct T_(LinkNode) *b = 0;
-#endif /* b --> */
-#ifdef LINK_C_COMPARATOR /* <-- c */
-	struct T_(LinkNode) *c = 0;
-#endif /* c --> */
-#ifdef LINK_D_COMPARATOR /* <-- d */
-	struct T_(LinkNode) *d = 0;
-#endif /* d --> */
-	if(!this || this == recipient) return;
-	for(cursor = this->L_(first); cursor; cursor = next_cursor) {
+	if(!from || from == this) return;
+	for(cursor = from->L_(first); cursor; cursor = next_cursor) {
 		next_cursor = cursor->L_(next);
-		if(predicate && !predicate(&cursor->data, this->param)) continue;
-		_T_(remove)(this, cursor);
-		if(!recipient) continue;
-		/*_T_(add)(recipient, cursor);*/
-		/* <-O(this.n) nah, that's boring,
-		 or we could keep them in order using O(this.n + recipient.n)-> */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp parallel sections
-#endif /* omp --> */
-		{
-#ifdef LINK_A_NAME /* <-- a */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-#ifdef LINK_A_COMPARATOR /* <-- comp */
-			_T_LA_(link, add_after)(recipient, a, cursor), a = cursor;
-#else /* comp --><-- !comp */
-			_T_LA_(link, add)(recipient, cursor);
-#endif /* !comp --> */
-#endif /* a --> */
-#ifdef LINK_B_NAME /* <-- b */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-#ifdef LINK_B_COMPARATOR /* <-- comp */
-			_T_LB_(link, add_after)(recipient, b, cursor), b = cursor;
-#else /* comp --><-- !comp */
-			_T_LB_(link, add)(recipient, cursor);
-#endif /* !comp --> */
-#endif /* b --> */
-#ifdef LINK_C_NAME /* <-- c */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-#ifdef LINK_C_COMPARATOR /* <-- comp */
-			_T_LC_(link, add_after)(recipient, c, cursor), c = cursor;
-#else /* comp --><-- !comp */
-			_T_LC_(link, add)(recipient, cursor);
-#endif /* !comp --> */
-#endif /* c --> */
-#ifdef LINK_D_NAME /* <-- d */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-#ifdef LINK_D_COMPARATOR /* <-- comp */
-			_T_LD_(link, add_after)(recipient, d, cursor), d = cursor;
-#else /* comp --><-- !comp */
-			_T_LD_(link, add)(recipient, cursor);
-#endif /* !comp --> */
-#endif /* d --> */
-		}
+		if(predicate && !predicate(&cursor->data, from->param)) continue;
+		_T_(remove)(from, cursor);
+		if(!this) continue;
+		_T_(add)(this, cursor);
 	}
 }
 
 /** Performs {action} for each element in the list in the order specified by
  {<L>}. For more flexibility, use \see{<T>List<L>ShortCircuit}, which takes a
- {<T>Predicate}, and just return true.
+ {<T>Predicate}, and return true.
  @allow */
 static void T_L_(Link, ForEach)(struct T_(Link) *const this,
 	const T_(Action) action) {
@@ -1468,7 +1384,7 @@ static char *T_L_(Link, ToString)(const struct T_(Link) *const this) {
 
 
 
-/* undefine stuff for the next */
+/* un-define stuff for the next */
 #undef _LINK_NAME
 #ifdef _LINK_COMPARATOR /* <-- comp */
 #undef _LINK_COMPARATOR

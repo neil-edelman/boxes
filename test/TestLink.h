@@ -315,18 +315,16 @@ static void _T_L_(test, interleave)(void) {
 	printf("Moving all odd a = %s to b = %s by " QUOTE(_LINK_NAME) ",\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	T_(LinkSetParam)(&a, &is_parity);
-	T_L_(Link, ToIf)(&a, &b, &_T_L_(every, second));
+	T_L_(Link, TakeIf)(&b, &a, &_T_L_(every, second));
 	printf("result a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
-	assert(_T_L_(verify, sort)(&a));
+	assert(_T_(in_order)(&a));
 	assert(_T_L_(verify, sort)(&b));
 	assert(!T_L_(Link, Compare)(&a, &b));
 	printf("Moving all a to b.\n");
-	T_L_(Link, ToIf)(&a, &b, 0);
+	T_L_(Link, TakeIf)(&b, &a, 0);
 	printf("Now a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
-	assert(_T_L_(verify, sort)(&a));
-	assert(_T_L_(verify, sort)(&b));
 	assert(_T_L_(count, elements)(&a) == 0);
 	assert(_T_L_(count, elements)(&b) == buf_size);
 	printf("Clear b.\n");
@@ -338,16 +336,13 @@ static void _T_L_(test, interleave)(void) {
 		T_(LinkAdd)(&a, item_a);
 	}
 	T_L_(Link, Sort)(&a);
-	printf("More random things added to a = %s.\n", T_L_(Link, ToString)(&a));
-	printf("Sort a, move even entries into b according to " QUOTE(_LINK_NAME)
-		".\n");
+	printf("More random things added to sorted by " QUOTE(_LINK_NAME)
+		" a = %s.\n", T_L_(Link, ToString)(&a));
+	printf("Move even entries into b according to " QUOTE(_LINK_NAME) ".\n");
 	T_(LinkSetParam)(&a, &is_parity);
 	is_parity = 0;
-	T_L_(Link, ToIf)(&a, &b, &_T_L_(every, second));
-	printf("a:\n");
-	_T_(print_all)(&a);
-	printf("b:\n");
-	_T_(print_all)(&b);
+	T_L_(Link, TakeIf)(&b, &a, &_T_L_(every, second));
+	printf("a: %s, b: %s.\n",T_L_(Link, ToString)(&a),T_L_(Link, ToString)(&b));
 	assert(_T_L_(verify, sort)(&a));
 	assert(_T_L_(verify, sort)(&b));
 }
