@@ -829,38 +829,6 @@ static void _T_L_(link, merge)(struct T_(Link) *const this,
 	_T_L_(link, cat)(this, from);
 }
 
-#if 0
-/** Private: add after {after} in order as soon as possible; more general than
- \see{<T>_link_<L>_add}. (fixme: do we really need this?) */
-static void _T_L_(link, add_after)(struct T_(Link) *const this,
-	struct T_(LinkNode) *after, struct T_(LinkNode) *const node) {
-	assert(this);
-	assert(node);
-	/* find where after */
-	{
-		struct T_(LinkNode) *feel = after ? after->L_(next) : this->L_(first);
-		while(feel && _T_L_(data, cmp)(&node->data, &feel->data) > 0) {
-			after = feel;
-			feel  = feel->L_(next);
-		}
-	}
-	node->L_(prev) = after;
-	if(after) {
-		if(!(node->L_(next) = after->L_(next))) {
-			assert(this->L_(last) == after);
-			this->L_(last) = node;
-		}
-		after->L_(next) = node;
-	} else {
-		if(!(node->L_(next) = this->L_(first))) {
-			/* this is the only element */
-			this->L_(last) = node;
-		}
-		this->L_(first) = node;
-	}
-}
-#endif
-
 #endif /* comp --> */
 
 /** Private: {old} is not de-referenced, but {new} is. */
