@@ -544,10 +544,12 @@ static void T_(LinkTake)(struct T_(Link) *const this,
 
 /** Merges the elements of {from} into {this} in (local) order,
  {O(this.n + from.n)}; concatenates all lists that don't have a
- {LINK_[A-D]_COMPARATOR}, {O(1)}. */
+ {LINK_[A-D]_COMPARATOR}, {O(1)}. If {this} is null, then it removes
+ elements. */
 static void T_(LinkTakeMerge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	if(!from || from == this) return;
+	if(!this) { _T_(clear)(from); return; }
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -596,7 +598,7 @@ static void T_(LinkTakeMerge)(struct T_(Link) *const this,
 }
 
 /** This allows you to move one element in memory of the list {this} from {old}
- to {new}. This comes after you move it, that is, {old} is not de-referenced,
+ to {new}. This comes after you move it; that is, {old} is not de-referenced,
  but {new} is. */
 static void T_(LinkMove)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
@@ -607,7 +609,7 @@ static void T_(LinkMove)(struct T_(Link) *const this,
 /** Sorts all by greedy natural insertion-merge sort. Like doing
  \see{<T>Link<L>Sort} for all lists in link with comparators. Designed to be
  an {O(n log n)} sort that is adaptive and stable, it's not as good at sorting
- random data as Quicksort.
+ random data as Quick Sort.
  @allow */
 static void T_(LinkSort)(struct T_(Link) *const this) {
 	if(!this) return;
@@ -871,14 +873,14 @@ static struct T_(LinkNode) *T_L_(LinkNode, GetPrevious)(
 	return this->L_(prev);
 }
 
-/** @return A pointer to the first element.
+/** @return A pointer to the first element of {this}.
  @allow */
 static struct T_(LinkNode) *T_L_(Link, GetFirst)(struct T_(Link) *const this) {
 	if(!this) return 0;
 	return this->L_(first);
 }
 
-/** @return A pointer to the last element.
+/** @return A pointer to the last element of {this}.
  @allow */
 static struct T_(LinkNode) *T_L_(Link, GetLast)(struct T_(Link) *const this) {
 	if(!this) return 0;
@@ -1122,7 +1124,7 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 	this->L_(last)  = _T_L_(runs, elem).run[0].tail;
 }
 
-/** Sorts {<L>}, but leaves the other lists in the type alone.
+/** Sorts {<L>}, but leaves the other lists in {<T>} alone.
  @allow */
 static void T_L_(Link, Sort)(struct T_(Link) *const this) {
 	if(!this) return;
@@ -1134,6 +1136,7 @@ static void T_L_(Link, Sort)(struct T_(Link) *const this) {
  equal; if one list is a sub-list starting at the same point of the other,
  returns -1 or 1. Null pointers count as lists that are before every other
  list; two null pointers are considered equal.
+ @implements <<T>Link>Comparator
  @allow */
 static int T_L_(Link, Compare)(const struct T_(Link) *const this,
 	const struct T_(Link) *const that) {
