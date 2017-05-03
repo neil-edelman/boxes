@@ -348,8 +348,8 @@ static void _T_L_(test, interleave)(void) {
 	_T_(print_all)(&a);
 	printf("b:\n");
 	_T_(print_all)(&b);
-	assert(_T_(in_order)(&a)); /* is this impossible? I'm leaning to yes . . . or maybe no? hmm, a is possible, b requires more space? */
-	assert(_T_(in_order)(&b));
+	assert(_T_L_(verify, sort)(&a));
+	assert(_T_L_(verify, sort)(&b));
 }
 
 #ifdef _LINK_COMPARATOR /* <-- compare */

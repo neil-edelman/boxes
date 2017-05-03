@@ -508,6 +508,96 @@ static void T_(LinkRemove)(struct T_(Link) *const this,
 	_T_(remove)(this, node);
 }
 
+/** Concatenates the elements of {this} onto {recipient} until {this} is
+ empty. */
+static void T_(LinkCatTo)(struct T_(Link) *const this,
+	struct T_(Link) *const recipient) {
+	if(!this || this == recipient) return;
+	if(!recipient) { _T_(clear)(this); return; }
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LA_(link, cat_to)(this, recipient);
+#endif /* a --> */
+#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LB_(link, cat_to)(this, recipient);
+#endif /* b --> */
+#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LC_(link, cat_to)(this, recipient);
+#endif /* c --> */
+#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LD_(link, cat_to)(this, recipient);
+#endif /* d --> */
+	}
+}
+
+/** Merges the elements of {this} into {recipient} in (local) order,
+ {O(this.n + recipient.n)}; concatenates all lists that don't have a
+ {LINK_[A-D]_COMPARATOR}, {O(1)}. */
+static void T_(LinkMergeTo)(struct T_(Link) *const this,
+	struct T_(Link) *const recipient) {
+	if(!this || this == recipient) return;
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+#ifdef LINK_A_COMPARATOR /* <-- comp */
+		_T_LA_(link, merge_to)(this, recipient);
+#else /* comp --><-- !comp */
+		_T_LA_(link, cat_to)(this, recipient);
+#endif /* !comp --> */
+#endif /* a --> */
+#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+#ifdef LINK_B_COMPARATOR /* <-- comp */
+		_T_LB_(link, merge_to)(this, recipient);
+#else /* comp --><-- !comp */
+		_T_LB_(link, cat_to)(this, recipient);
+#endif /* !comp --> */
+#endif /* b --> */
+#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+#ifdef LINK_C_COMPARATOR /* <-- comp */
+		_T_LC_(link, merge_to)(this, recipient);
+#else /* comp --><-- !comp */
+		_T_LC_(link, cat_to)(this, recipient);
+#endif /* !comp --> */
+#endif /* c --> */
+#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+#ifdef LINK_D_COMPARATOR /* <-- comp */
+		_T_LD_(link, merge_to)(this, recipient);
+#else /* comp --><-- !comp */
+		_T_LD_(link, cat_to)(this, recipient);
+#endif /* !comp --> */
+#endif /* d --> */
+	}
+}
+
 /** This allows you to move one element in memory of the list {this} from {old}
  to {new}. This comes after you move it, that is, {old} is not de-referenced,
  but {new} is. */
@@ -672,11 +762,75 @@ static void _T_L_(link, add)(struct T_(Link) *const this,
 	this->L_(last) = node;
 }
 
+/** Private: link remove in {<L>}. */
+static void _T_L_(link, remove)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const node) {
+	assert(this);
+	assert(node);
+	if(node->L_(prev)) {
+		node->L_(prev)->L_(next) = node->L_(next);
+	} else {
+		assert(this->L_(first) == node);
+		this->L_(first) = node->L_(next);
+	}
+	if(node->L_(next)) {
+		node->L_(next)->L_(prev) = node->L_(prev);
+	} else {
+		assert(this->L_(last) == node);
+		this->L_(last) = node->L_(prev);
+	}
+	node->L_(prev) = 0;
+	node->L_(next) = 0;
+}
+
+/** Private: cats all {this} to the tail of {recipient}; {this} will be
+ empty after this. {O(1)}. */
+static void _T_L_(link, cat_to)(struct T_(Link) *const this,
+	struct T_(Link) *const recipient) {
+	assert(this);
+	assert(recipient);
+	assert(!this->L_(first) == !this->L_(last));
+	if(!this->L_(first)) return; /* there is nothing in {this} */
+	if(!recipient->L_(first)) { /* there is nothing in {recipient} */
+		recipient->L_(first) = this->L_(first);
+	} else { /* there is something in both */
+		recipient->L_(last)->L_(next) = this->L_(first);
+	}
+	recipient->L_(last) = this->L_(last);
+	this->L_(first) = this->L_(last) = 0;
+}
+
 #ifdef _LINK_COMPARATOR /* <-- comp */
 
 /* make sure that LINK_[A-D]_COMPARATOR is a function implementing
  {<T>Comparator}. */
 static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
+
+/** Private: merges {this} into {recipient}; on equal elements, places {this}
+ first. {O(n + m)}. */
+static void _T_L_(link, merge_to)(struct T_(Link) *const this,
+	struct T_(Link) *const recipient) {
+	struct T_(LinkNode) *tnode, *rnode;
+	assert(this);
+	assert(recipient);
+	rnode = recipient->L_(first);
+	while((tnode = this->L_(first))) {
+		while(rnode && _T_L_(data, cmp)(&tnode->data, &rnode->data) > 0)
+			rnode = rnode->L_(next);
+		if(!rnode) break; /* run past the end of {recipient} */
+		/* shift(this); {tnode} goes before {rnode} */
+		_T_L_(link, remove)(this, tnode);
+		tnode->L_(next) = rnode;
+		if((tnode->L_(prev) = rnode->L_(prev))) {
+			rnode->L_(prev)->L_(next) = tnode;
+		} else {
+			/* this is the first, now */
+			assert(recipient->L_(first) == rnode);
+			recipient->L_(first) = tnode;
+		}
+	}
+	_T_L_(link, cat_to)(this, recipient);
+}
 
 /** Private: add after {after} in order as soon as possible; more general than
  \see{<T>_link_<L>_add}. */
@@ -709,27 +863,6 @@ static void _T_L_(link, add_after)(struct T_(Link) *const this,
 }
 
 #endif /* comp --> */
-
-/** Private: link remove in {<L>}. */
-static void _T_L_(link, remove)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const node) {
-	assert(this);
-	assert(node);
-	if(node->L_(prev)) {
-		node->L_(prev)->L_(next) = node->L_(next);
-	} else {
-		assert(this->L_(first) == node);
-		this->L_(first) = node->L_(next);
-	}
-	if(node->L_(next)) {
-		node->L_(next)->L_(prev) = node->L_(prev);
-	} else {
-		assert(this->L_(last) == node);
-		this->L_(last) = node->L_(prev);
-	}
-	node->L_(prev) = 0;
-	node->L_(next) = 0;
-}
 
 /** Private: {old} is not de-referenced, but {new} is. */
 static void _T_L_(link, move)(struct T_(Link) *const this,
@@ -812,7 +945,7 @@ struct _T_(Runs) {
 
 #endif /* sort internals --> */
 
-/* fixme: implement LINK_...STATic... */
+/* fixme: re-implement LINK_DYNAMIC_STORAGE */
 static struct _T_(Runs) _T_L_(runs, elem);
 
 /** Inserts the first element from the larger of two sorted runs, then merges
@@ -1160,11 +1293,11 @@ static void _T_LD_(link, add_after)(struct T_(Link) *const this,
 
 /** Removes items from {this} and adds them to {recipient} if {predicate} is
  null or true in the order specified by {<L>}. If {recipient} is null, then it
- removes the elements. Adds them in in local order of the first local maximum;
- specifically, if the two lists are in order, then the resulting list will be
- in order. If two items are equal, the item from {this} will come before the
- already existing item from {recipient}. If the any comparator is not set, the
- items are added to the tail of {recipient}.
+ removes the elements. Adds them in in local order of the first local maximum
+ in {<L>}; specifically, if the two lists are in order, then the resulting list
+ will be in order in {<L>}. If two items are equal, the item from {this} will
+ come before the already existing item from {recipient}. If the any comparator
+ is not set, the items are added to the tail of {recipient}.
  @allow */
 static void T_L_(Link, ToIf)(struct T_(Link) *const this,
 	struct T_(Link) *const recipient, const T_(Predicate) predicate) {
