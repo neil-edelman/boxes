@@ -257,7 +257,8 @@ typedef void (*T_(ToString))(const T *, char (*const)[9]);
 
 
 /** A single link in the linked-list derived from {<T>}. Intended to be used
- directly in {struct}s. Use the \see{<T>LinkGet} function to extract {<T>}. */
+ directly in {struct}s. Use the \see{<T>LinkNodeGetData} function to extract
+ {<T>}. */
 struct T_(LinkNode);
 struct T_(LinkNode) {
 #ifdef LINK_A_NAME
@@ -475,8 +476,7 @@ static T *T_(LinkNodeGetData)(struct T_(LinkNode) *const this) {
 	return &this->data;
 }
 
-/** Clears all values from the linked-list and {param}, thereby initialising
- the {Link}.
+/** Clears all values from {this}, thereby initialising the {<T>Link}.
  @allow */
 static void T_(LinkClear)(struct T_(Link) *const this) {
 	if(!this) return;
@@ -484,10 +484,11 @@ static void T_(LinkClear)(struct T_(Link) *const this) {
 	this->param = 0;
 }
 
-/** Initialises the contents of all links of {node} and pushes it to {this}.
- Does not do any checks on {node} and overwrites the data that was there (it
- is an initialisation.) Specifically, it invokes undefined behaviour to one add
- {node} to more than one list without removing it each time.
+/** Sets the contents of {node} to push it to {this}, thereby initialising the
+ non-{<T>} parts of {<T>LinkNode} (if {this} is not null.) Does not do any
+ checks on {node} and overwrites the data that was there. Specifically, it
+ invokes undefined behaviour to one add {node} to more than one list without
+ removing it each time.
  @allow */
 static void T_(LinkAdd)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
@@ -609,7 +610,7 @@ static void T_(LinkMove)(struct T_(Link) *const this,
 /** Sorts all by greedy natural insertion-merge sort. Like doing
  \see{<T>Link<L>Sort} for all lists in link with comparators. Designed to be
  an {O(n log n)} sort that is adaptive and stable, it's not as good at sorting
- random data as Quick Sort.
+ random data as QuickSort.
  @allow */
 static void T_(LinkSort)(struct T_(Link) *const this) {
 	if(!this) return;
