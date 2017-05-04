@@ -20,7 +20,8 @@
  should be an inlined {static} function, if possible.
 
  @param LINK_TO_STRING
- Optional print function implementing {<T>ToString}.
+ Optional print function implementing {<T>ToString} and making available
+ \see{<T>Link<L>ToString}. Currently, this uses the C99 function {vsnprintf}.
 
  @param LINK_DYNAMIC_STORAGE
  This allocates {O(log n)}, space needed for merge sort on the stack every time
@@ -53,9 +54,11 @@
 
 
 
+#include <stddef.h>	/* ptrdiff_t */
 #include <assert.h>	/* assert */
-
-
+#ifdef LINK_TO_STRING /* <-- print */
+#include <stdio.h>	/* vs[n]printf; fixme: C99 */
+#endif /* print --> */
 
 /* unused macro */
 #ifdef UNUSED
@@ -404,43 +407,6 @@ static void _T_(remove)(struct T_(Link) *const this,
 	}
 }
 
-/** Private: move to new memory location. */
-static void _T_(move)(struct T_(Link) *const this,
-	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
-	assert(this);
-	assert(old);
-	assert(new);
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp parallel sections
-#endif /* omp --> */
-	{
-#ifdef LINK_A_NAME /* <-- a */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LA_(link, move)(this, old, new);
-#endif /* a --> */
-#ifdef LINK_B_NAME /* <-- b */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LB_(link, move)(this, old, new);
-#endif /* b --> */
-#ifdef LINK_C_NAME /* <-- c */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LC_(link, move)(this, old, new);
-#endif /* c --> */
-#ifdef LINK_D_NAME /* <-- d */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LD_(link, move)(this, old, new);
-#endif /* d --> */
-	}
-}
-
 /** Private: clear the list. */
 static void _T_(clear)(struct T_(Link) *const this) {
 	assert(this);
@@ -456,21 +422,6 @@ static void _T_(clear)(struct T_(Link) *const this) {
 #ifdef LINK_D_NAME
 	this->LD_(first) = this->LD_(last) = 0;
 #endif
-}
-
-/** Private: used in \see{<T>LinkContiguousMove}. This would be a good function
- to inline. */
-static void _T_(block_move)(struct T_(LinkNode) *ptr, const void *const block,
-	const size_t size, const void *const new_block) {
-	assert(ptr);
-	assert(block);
-	assert(size);
-	assert(new_block);
-	if((void *)ptr < block) return;
-	if((char *)ptr >= (char *)block + size) return;
-	ptr = (struct T_(LinkNode) *)((char *)ptr - (char *)block
-		+ (char *)new_block);
-	assert((void *)ptr >= new_block && (char *)ptr < (char *)new_block + size);
 }
 
 /** Get a pointer to the underlying data stored in {this}.
@@ -657,18 +608,6 @@ static void T_(LinkSetParam)(struct T_(Link) *const this,
 static void T_(LinkMove)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
 	if(!this || !old || !new) return;
-	_T_(move)(this, old, new);
-}
-
-/** Use when {this} contains elements from an array of/containing {<T>LinkNode}
- in memory that switched from {old} to {new} with byte-size {byte_size}. If
- {this}, {old}, or {new} is null, doesn't do anything. For example, one must
- call this on a {<T>Link} that is (partially) backed with an array that has
- changed places due to a {realloc}. {O(n)}.
- @allow */
-static void T_(LinkContiguousMove)(struct T_(Link) *const this,
-	const void *const old, const size_t byte_size, void *const new) {
-	if(!this || !old || !byte_size || !new) return;
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -677,25 +616,71 @@ static void T_(LinkContiguousMove)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LA_(block, move)(this, old, byte_size, new);
+		_T_LA_(link, move)(this, old, new);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LB_(block, move)(this, old, byte_size, new);
+		_T_LB_(link, move)(this, old, new);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LC_(block, move)(this, old, byte_size, new);
+		_T_LC_(link, move)(this, old, new);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LD_(block, move)(this, old, byte_size, new);
+		_T_LD_(link, move)(this, old, new);
+#endif /* d --> */
+	}
+}
+
+/** Use when {this} contains elements from an array of/containing {<T>LinkNode}
+ in memory that switched from {old} to {new} with byte-size {byte_size}. If
+ {this}, {old}, or {new} is null, doesn't do anything. For example, one must
+ call this on a {<T>Link} that is (partially) backed with an array that has
+ changed places due to a {realloc}. {O(n)}.
+
+ Relies on not-strictly-defined behaviour because pointers are not necessarily
+ contiguous. It should be fine.
+ @allow */
+static void T_(LinkContiguousMove)(struct T_(Link) *const this,
+	const void *const old, const size_t byte_size, void *const new) {
+	const char *const cold = old;
+	const char *const cold_end = cold + byte_size;
+	const ptrdiff_t delta = (char *)new - cold;
+	if(!this || !old || !byte_size || !new || old == new) return;
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LA_(block, move)(this, cold, cold_end, delta);
+#endif /* a --> */
+#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LB_(block, move)(this, cold, cold_end, delta);
+#endif /* b --> */
+#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LC_(block, move)(this, cold, cold_end, delta);
+#endif /* c --> */
+#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LD_(block, move)(this, cold, cold_end, delta);
 #endif /* d --> */
 	}
 }
@@ -895,29 +880,39 @@ static void _T_L_(link, move)(struct T_(Link) *const this,
 	}
 }
 
-/** Private: when {realloc} changes your pointers. */
+/** Private: when {realloc} changes your pointers. I've tried to keep undefined
+ behaviour to a minimum.
+ @param [begin, end): Where the pointers have changed.
+ @param delta: the offset they have moved to in memory bytes. */
 static void _T_L_(block, move)(struct T_(Link) *const this,
-	const void *const old, const size_t byte_size, void *const new) {
-	struct T_(LinkNode) *node, *last;
+	const void *const begin, const void *const end, const ptrdiff_t delta) {
+	struct T_(LinkNode) *node;
 	assert(this);
-	assert(old);
-	assert(byte_size);
-	assert(new);
+	assert(begin);
+	assert(begin < end);
+	assert(delta);
 	assert(!this->L_(first) == !this->L_(last));
-	if(!this->L_(first)) return; /* empty */
-	_T_(block_move)(this->L_(first), old, byte_size, new);
-	_T_(block_move)(this->L_(last),  old, byte_size, new);
-	if((node = this->L_(first)) == this->L_(last)) return; /* 1 element */
-	/* special cases, first and last nodes */
-	assert(!node->L_(prev) && node->L_(next));
-	_T_(block_move)(node->L_(next), old, byte_size, new);
-	last = this->L_(last);
-	assert(last && last->L_(prev) && !last->L_(next));
-	_T_(block_move)(node->L_(prev), old, byte_size, new);
-	/* all the ones in-between */
-	while(node = node->L_(next), node != last) {
-		_T_(block_move)(node->L_(prev), old, byte_size, new);
-		_T_(block_move)(node->L_(next), old, byte_size, new);
+	/* empty -- done */
+	if(!this->L_(first)) return;
+	/* first and last pointer of {<T>List} */
+	if((void *)this->L_(first) >= begin && (void *)this->L_(first) < end) {
+		this->L_(first) += delta;
+	}
+	if((void *)this->L_(last) >= begin && (void *)this->L_(last) < end) {
+		this->L_(last) += delta;
+	}
+	/* all the others'; fixme: unoptimised */
+	for(node = this->L_(first); node; node = node->L_(next)) {
+		if(node->L_(prev)) {
+			if((void *)node->L_(prev) >= begin) {
+				if((void *)node->L_(prev) < end) {
+					node->L_(prev) += delta;
+				}
+			}
+		}
+		if(node->L_(next) && (void *)node->L_(next) >= begin && (void *)node->L_(next) < end) {
+			node->L_(next) += delta;
+		}
 	}
 }
 
@@ -1380,6 +1375,7 @@ static void _list_super_cat(struct _ListSuperCat *const cat,
 	const char *const append) {
 	size_t lu_took; int took;
 	if(cat->is_truncated) return;
+	/* fixme: snprintf is C99 */
 	took = snprintf(cat->cursor, cat->left, "%s", append);
 	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
 	if(took == 0) { return; }

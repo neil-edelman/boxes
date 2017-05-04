@@ -373,21 +373,17 @@ static void _T_L_(test, memory)(void) {
 	size_t i;
 	int is_parity;
 
+	assert(buf_a_size == buf_b_size);
+	assert(buf_a_size == buf_c_size);
 	T_(LinkClear)(&a), T_(LinkClear)(&b);
+	/* fill the items in buf_a */
 	for(i = 0; i < buf_a_size; i++) {
 		item_a = buf_a + i;
 		_T_(filler)(&item_a->data);
 	}
-	assert(buf_a_size == buf_b_size);
-	assert(buf_a_size == buf_c_size);
+	/* copy the items to buf_b */
 	memcpy(buf_b, buf_a, buf_a_size * sizeof *buf_a);
-	memcpy(buf_c, buf_a, buf_a_size * sizeof *buf_a);
-	printf("a:\n");
-	_T_L_(print, array)(buf_a, buf_a_size);
-	printf("b:\n");
-	_T_L_(print, array)(buf_a, buf_a_size);
-	printf("c:\n");
-	_T_L_(print, array)(buf_a, buf_a_size);
+	/* put all items in a */
 	for(i = 0; i < buf_a_size; i++) {
 		item_a = buf_a + i;
 		item_b = buf_b + i;
@@ -413,6 +409,7 @@ static void _T_L_(test, memory)(void) {
 	assert(T_L_(Link, Compare)(&a, 0) > 0);
 	assert(T_L_(Link, Compare)(0, &b) < 0);
 	assert(!T_L_(Link, Compare)(&a, &b));
+	/* Test done. */
 	printf("Moving all a to b.\n");
 	T_L_(Link, TakeIf)(&b, &a, 0);
 	printf("Now a = %s, b = %s.\n",
@@ -423,7 +420,7 @@ static void _T_L_(test, memory)(void) {
 	printf("Clear b.\n");
 	T_(LinkClear)(&b);
 	assert(_T_L_(count, elements)(&b) == 0);
-	/* Move */
+	/* Test done; move. */
 	for(i = 0; i < buf_a_size; i++) {
 		T_(LinkAdd)(&a, buf_a + i);
 		T_(LinkAdd)(&b, buf_b + i);
@@ -431,41 +428,37 @@ static void _T_L_(test, memory)(void) {
 	assert(_T_L_(exactly, elements)(&a, buf_a, buf_a_size));
 	assert(_T_L_(exactly, elements)(&b, buf_b, buf_b_size));
 	assert(!T_L_(Link, Compare)(&a, &b));
-	for(i = 0; i < buf_a_size; i += (i == buf_a_size - 1) ? 1 : 2) {
-		item_a = buf_a + i;
+	memset(buf_c, 0, sizeof *buf_c * buf_c_size);
+	for(i = 0; i < buf_b_size; i += 2) {
+		item_b = buf_b + i;
 		item_c = buf_c + i;
-		memcpy(item_c, item_a, sizeof *item_a);
-		memset(item_a, 0, sizeof *item_a);
-		T_(LinkMove)(&a, item_a, item_c);
+		memcpy(item_c, item_b, sizeof *item_a);
+		memset(item_b, 0, sizeof *item_b);
+		T_(LinkMove)(&b, item_b, item_c);
 	}
-
-	printf("a:\n");
-	_T_L_(print, array)(buf_a, buf_a_size);
-	printf("b:\n");
-	_T_L_(print, array)(buf_b, buf_b_size);
-	printf("c:\n");
-	_T_L_(print, array)(buf_c, buf_c_size);
-
-	printf("Testing memory relocation a = %s, b = %s.\n",
+	printf("Testing memory relocation with <" QUOTE(LINK_NAME)
+		">LinkMove: a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(!T_L_(Link, Compare)(&a, &b));
-
-#if 0
-	/*************************************************************/
+	/* Test done; ContiguousMove */
 	printf("a:\n");
 	_T_L_(print, array)(buf_a, buf_a_size);
 	printf("b:\n");
 	_T_L_(print, array)(buf_b, buf_b_size);
 	printf("c:\n");
 	_T_L_(print, array)(buf_c, buf_c_size);
-	
-	/* ContiguousMove */
-	memset(buf_a, 0, sizeof *buf_a * buf_a_size);
-	T_(LinkContiguousMove)(&a, buf_a, sizeof buf_a, buf_c);
+	memcpy(buf_c, buf_a, buf_a_size * sizeof *buf_b);
+	memset(buf_b, 0, sizeof *buf_b * buf_b_size);
+	printf("a:\n");
+	_T_L_(print, array)(buf_a, buf_a_size);
+	printf("b:\n");
+	_T_L_(print, array)(buf_b, buf_b_size);
+	printf("c:\n");
+	_T_L_(print, array)(buf_c, buf_c_size);
+	T_(LinkContiguousMove)(&b, buf_b, sizeof buf_b, buf_c);
 	printf("Testing contiguous memory relocation a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(!T_L_(Link, Compare)(&a, &b));
-#endif
 }
 
 #ifdef _LINK_COMPARATOR /* <-- compare */
