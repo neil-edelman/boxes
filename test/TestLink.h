@@ -108,16 +108,16 @@ static int _T_(in_order)(struct T_(Link) *const this) {
 	assert(this);
 	return -1
 #ifdef LINK_A_COMPARATOR
-		&& _T_LA_(verify, sort)(this)
+		&& _T_LA_(in, order)(this)
 #endif
 #ifdef LINK_B_COMPARATOR
-		&& _T_LB_(verify, sort)(this)
+		&& _T_LB_(in, order)(this)
 #endif
 #ifdef LINK_C_COMPARATOR
-		&& _T_LC_(verify, sort)(this)
+		&& _T_LC_(in, order)(this)
 #endif
 #ifdef LINK_D_COMPARATOR
-		&& _T_LD_(verify, sort)(this)
+		&& _T_LD_(in, order)(this)
 #endif
 		;
 }
@@ -167,14 +167,14 @@ static size_t _T_L_(count, elements)(struct T_(Link) *const this) {
 }
 
 /* Global count \see{<T>_count_<L>_another}. */
-size_t _T_L_(count, elems);
+size_t _T_L_(count, var);
 /** @implements <T>Action */
 static void _T_L_(count, another)(T *const this) {
 	UNUSED(this);
-	_T_L_(count, elems)++;
+	_T_L_(count, var)++;
 }
 
-/* for \see{_T_L_(exacty, elements)} */
+/* for \see{_T_L_(exactly, elements)} */
 struct T_L_(Link, Verify) {
 	size_t i;
 	const struct T_(LinkNode) *array;
@@ -201,10 +201,10 @@ static size_t _T_L_(exactly, elements)(struct T_(Link) *const this,
 	return !T_L_(Link, ShortCircuit)(this, &_T_L_(exactly, predicate));
 }
 
-/** \see{_T_L_(verify, sort)}.
+/** \see{_T_L_(in, order)}.
  @param param: (T *[1]), last element.
  @implements <T>Predicate */
-static int _T_L_(verify, predicate)(T *const this, void *const param) {
+static int _T_L_(order, predicate)(T *const this, void *const param) {
 	T **prev_one_array = param;
 	T *const prev = prev_one_array[0];
 	/*char scratch[9];
@@ -215,10 +215,10 @@ static int _T_L_(verify, predicate)(T *const this, void *const param) {
 	return 1;
 }
 /** Verifies sorting on index. */
-static int _T_L_(verify, sort)(struct T_(Link) *const this) {
+static int _T_L_(in, order)(struct T_(Link) *const this) {
 	T *one_array[] = { 0 };
 	T_(LinkSetParam)(this, one_array);
-	return !T_L_(Link, ShortCircuit)(this, &_T_L_(verify, predicate));
+	return !T_L_(Link, ShortCircuit)(this, &_T_L_(order, predicate));
 }
 
 /** Returns true. Used in \see{_T_L_(test, basic)}.
@@ -240,9 +240,11 @@ static int _T_L_(every, second)(T *const this, void *const param) {
 
 /* now tests */
 
-/** Basic: Init, Add, Remove, Sort, SetParam, GetNext, GetPrevious, Clear,
- ForEach, ShortCircut */
+/** Basic:
+ GetData, Clear, Add, Remove, Sort, SetParam, GetNext, GetPrevious, GetFirst, GetLast, <L>Sort, ForEach, ShortCircut, ToString */
 static void _T_L_(test, basic)(void) {
+	char str[9];
+	T *data;
 	struct T_(Link) a;
 	struct T_(LinkNode) buf[1000], *const new_buf = buf + 2,
 		*item_a, *item_b, *item_y, *item_z;
@@ -250,20 +252,59 @@ static void _T_L_(test, basic)(void) {
 	size_t i;
 	int is_parity = 1;
 
+	/* Clear */
+	T_(LinkClear)(0);
 	T_(LinkClear)(&a);
 	printf("Adding %lu elements to a.\n", buf_size);
+	/* Add */
+	T_(LinkAdd)(0, 0);
+	T_(LinkAdd)(&a, 0);
+	item_a = buf;
+	_T_(filler)(&item_a->data);
+	T_(LinkAdd)(0, item_a);
 	for(i = 0; i < buf_size; i++) {
 		item_a = buf + i;
 		_T_(filler)(&item_a->data);
 		T_(LinkAdd)(&a, item_a);
 	}
+	item_a = T_L_(Link, GetFirst)(&a);
+	assert(item_a);
+	/* GetData */
+	assert(!T_(LinkNodeGetData)(0));
+	data = T_(LinkNodeGetData)(item_a);
+	assert(data);
+	_T_(to_string)(data, &str);
+	printf("LinkNode get first data: %s.\n", str);
+	assert(memcmp(&buf[0].data, data, sizeof *data) == 0);
+	/* ShortCircuit */
 	printf("ShortCircuit: for all true returns null.\n");
+	assert(!T_L_(Link, ShortCircuit)(0, 0));
+	assert(!T_L_(Link, ShortCircuit)(0, &_T_L_(true, index)));
+	assert(!T_L_(Link, ShortCircuit)(&a, 0));
 	assert(!T_L_(Link, ShortCircuit)(&a, &_T_L_(true, index)));
 	printf("ShortCircuit: parity [ 1, 0, 1, ... ] ends on index 1.\n");
+	/* SetParam */
+	assert(!a.param);
+	T_(LinkSetParam)(0, 0);
+	assert(!a.param);
+	T_(LinkSetParam)(0, &is_parity);
+	assert(!a.param);
+	T_(LinkSetParam)(&a, 0);
+	assert(!a.param);
 	T_(LinkSetParam)(&a, &is_parity);
+	assert(a.param == &is_parity);
+	/* SetParam with ShortCircuit */
+	assert(!T_L_(Link, ShortCircuit)(0, 0));
+	assert(!T_L_(Link, ShortCircuit)(&a, 0));
+	assert(!T_L_(Link, ShortCircuit)(0, &_T_L_(every, second)));
 	assert(T_L_(Link, ShortCircuit)(&a, &_T_L_(every, second)) == buf + 1);
-	assert(_T_L_(exactly, elements)(&a, buf, buf_size));
+	/* GetNext, GetPrevious, GetFirst, GetLast */
 	printf("Removing 3 elements from a.\n");
+	assert(_T_L_(exactly, elements)(&a, buf, buf_size));
+	assert(!T_L_(Link, GetFirst)(0));
+	assert(!T_L_(Link, GetLast)(0));
+	assert(!T_L_(LinkNode, GetPrevious)(0));
+	assert(!T_L_(LinkNode, GetNext)(0));
 	item_a = T_L_(Link, GetFirst)(&a);
 	assert(!T_L_(LinkNode, GetPrevious)(item_a));
 	item_b = T_L_(LinkNode, GetNext)(item_a);
@@ -271,80 +312,124 @@ static void _T_L_(test, basic)(void) {
 	assert(!T_L_(LinkNode, GetNext)(item_z));
 	item_y = T_L_(LinkNode, GetPrevious)(item_z);
 	assert(item_a && item_b && item_y && item_z);
+	/* Remove */
+	T_(LinkRemove)(0, item_y);
 	T_(LinkRemove)(&a, item_y);
 	T_(LinkRemove)(&a, item_z);
 	T_(LinkRemove)(&a, item_b);
 	T_(LinkRemove)(&a, item_a);
 	assert(_T_L_(exactly, elements)(&a, new_buf, new_buf_size));
+	/* ForEach */
 	printf("Counting %lu elements.\n", new_buf_size);
-	_T_L_(count, elems) = 0;
+	_T_L_(count, var) = 0;
+	T_L_(Link, ForEach)(0, 0);
+	T_L_(Link, ForEach)(0, &_T_L_(count, another));
+	T_L_(Link, ForEach)(&a, 0);
 	T_L_(Link, ForEach)(&a, &_T_L_(count, another));
-	assert(_T_L_(count, elems) == new_buf_size);
+	assert(_T_L_(count, var) == new_buf_size);
 	assert(_T_L_(count, elements)(&a) == new_buf_size);
-	/* fixme: getFirst, getNext; getLast, getPrev */
+	/* <L>Sort */
 	printf("Sorting a only by " QUOTE(_LINK_NAME) ".\n");
+	T_L_(Link, Sort)(0);
 	T_L_(Link, Sort)(&a);
-	assert(_T_L_(verify, sort)(&a));
+	assert(_T_L_(in, order)(&a));
+	/* Sort */
+	printf("Sorting all.\n");
+	T_(LinkSort)(0);
+	T_(LinkSort)(&a);
+	assert(_T_(in_order)(&a));
+	/* ToString (unchecked) */
+	printf("ToString: null = %s; a = %s.\n",
+		T_L_(Link, ToString)(0), T_L_(Link, ToString)(&a));
 	printf("Clear.\n");
 	T_(LinkClear)(&a);
 	assert(!_T_L_(count, elements)(&a));
 }
 
-/* interleave: */
-static void _T_L_(test, interleave)(void) {
-	struct T_(Link) a, b;
-	struct T_(LinkNode) buf[1000], *item_a, *item_b;
-	const size_t buf_size = sizeof buf / sizeof *buf;
+/* interleave: (Take, Merge,) (Move,
+ ContiguousMove,)(Compare,
+ Subtraction, Union, Intersection, Xor, If,)
+ (GetData, Clear, Add,
+ Remove, Take, Merge,
+ \\ Sort,
+ SetParam, (Move,
+ ContiguousMove,) GetNext, GetPrevious, GetFirst, GetLast, <L>Sort, Compare,
+ Subtraction, Union, Intersection, Xor, If, ForEach, ShortCircut, ToString */
+static void _T_L_(test, memory)(void) {
+	struct T_(Link) a, b, c;
+	struct T_(LinkNode) buf_a[1000], buf_b[1000], buf_c[1000],
+		*item_a, *item_b, *item_c;
+	const size_t buf_a_size = sizeof buf_a / sizeof *buf_a,
+		buf_b_size = sizeof buf_b / sizeof *buf_b,
+		buf_c_size = sizeof buf_c / sizeof *buf_c;
 	size_t i;
-	int is_parity = 1;
+	int is_parity;
 
 	T_(LinkClear)(&a), T_(LinkClear)(&b);
-	assert(!(buf_size & 1));
-	for(i = 0; i < buf_size; i += 2) {
-		item_a = buf + i;
-		item_b = buf + i + 1;
+	for(i = 0; i < buf_a_size; i++) {
+		item_a = buf_a + i;
 		_T_(filler)(&item_a->data);
-		memcpy(&item_b->data, &item_a->data, sizeof item_a->data);
-		T_(LinkAdd)(&a, item_a);
-		T_(LinkAdd)(&a, item_b);
 	}
-	printf("Sorting a entirely.\n");
-	T_(LinkSort)(&a);
+	assert(buf_a_size == buf_b_size);
+	assert(buf_a_size == buf_c_size);
+	memcpy(buf_b, buf_a, buf_a_size * sizeof *buf_a);
+	memcpy(buf_c, buf_a, buf_a_size * sizeof *buf_a);
+	for(i = 0; i < buf_a_size; i++) {
+		item_a = buf_a + i;
+		item_b = buf_b + i;
+		T_(LinkAdd)(&a, item_a);
+		T_(LinkAdd)(&a, item_b); /* sic */
+	}
+	printf("Sorting a entirely on two arrays, a = %s.\n",
+		T_L_(Link, ToString)(&a));
+	T_(LinkSort)(&a); /* tests if stable */
 	assert(_T_(in_order)(&a));
 	/* now add all of the odd to list_b, remove all the even from list_a */
-	printf("Moving all odd a = %s to b = %s by " QUOTE(_LINK_NAME) ",\n",
+	printf("Spliting odd/even a = %s to b = %s by " QUOTE(_LINK_NAME) ",\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	T_(LinkSetParam)(&a, &is_parity);
+	is_parity = 0;
 	T_L_(Link, TakeIf)(&b, &a, &_T_L_(every, second));
 	printf("result a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(_T_(in_order)(&a));
-	assert(_T_L_(verify, sort)(&b));
+	assert(_T_L_(in, order)(&b)); /* only <L> is in order */
+	/* Compare (needs to be tested more!) */
+	assert(!T_L_(Link, Compare)(0, 0));
+	assert(T_L_(Link, Compare)(&a, 0) > 0);
+	assert(T_L_(Link, Compare)(0, &b) < 0);
 	assert(!T_L_(Link, Compare)(&a, &b));
 	printf("Moving all a to b.\n");
 	T_L_(Link, TakeIf)(&b, &a, 0);
 	printf("Now a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(_T_L_(count, elements)(&a) == 0);
-	assert(_T_L_(count, elements)(&b) == buf_size);
+	assert(_T_L_(count, elements)(&b) == buf_a_size + buf_b_size);
+	/* Clear (the rest) */
 	printf("Clear b.\n");
 	T_(LinkClear)(&b);
 	assert(_T_L_(count, elements)(&b) == 0);
-	for(i = 0; i < buf_size; i++) {
-		item_a = buf + i;
-		_T_(filler)(&item_a->data);
-		T_(LinkAdd)(&a, item_a);
+	/* Move */
+	printf("Testing memory relocation of one element at a time.\n");
+	for(i = 0; i < buf_a_size; i++) {
+		T_(LinkAdd)(&a, buf_a + i);
+		T_(LinkAdd)(&b, buf_b + i);
 	}
-	T_L_(Link, Sort)(&a);
-	printf("More random things added to sorted by " QUOTE(_LINK_NAME)
-		" a = %s.\n", T_L_(Link, ToString)(&a));
-	printf("Move even entries into b according to " QUOTE(_LINK_NAME) ".\n");
-	T_(LinkSetParam)(&a, &is_parity);
-	is_parity = 0;
-	T_L_(Link, TakeIf)(&b, &a, &_T_L_(every, second));
-	printf("a: %s, b: %s.\n",T_L_(Link, ToString)(&a),T_L_(Link, ToString)(&b));
-	assert(_T_L_(verify, sort)(&a));
-	assert(_T_L_(verify, sort)(&b));
+	assert(_T_L_(exactly, elements)(&a, buf_a, buf_a_size));
+	assert(_T_L_(exactly, elements)(&b, buf_b, buf_b_size));
+	assert(!T_L_(Link, Compare)(&a, &b));
+	for(i = 0; i < buf_a_size; i += (i == buf_a_size - 1) ? 1 : 2) {
+		item_a = buf_a + i;
+		item_c = buf_c + i;
+		memcpy(item_c, item_a, sizeof *item_a);
+		memset(item_a, 0, sizeof *item_a);
+		T_(LinkMove)(&a, item_a, item_c);
+	}
+	assert(!T_L_(Link, Compare)(&a, &b));
+	/* ContiguousMove */
+	memset(buf_a, 0, sizeof *buf_a * buf_a_size);
+	T_(LinkContiguousMove)(&a, buf_a, sizeof buf_a, buf_c);
+	assert(!T_L_(Link, Compare)(&a, &b));
 }
 
 #ifdef _LINK_COMPARATOR /* <-- compare */
@@ -519,7 +604,7 @@ static int _T_L_(test, bump)(void) {
 		printf("bump, %s.\n", T_I_(Link, ToString)(list));
 
 		/* one index _T_(in_order)(list) */
-		if(!_T_L_(verify, sort)(list)) { error = E_UNEXPECTED; break; }
+		if(!_T_L_(in, order)(list)) { error = E_UNEXPECTED; break; }
 
 	} while(0);
 	/* catch */ switch(error) {
@@ -614,7 +699,7 @@ static void _T_L_(test, list)(void) {
 	printf("Link<" QUOTE(LINK_NAME) "> linked-list "
 		   QUOTE(_LINK_NAME) ":\n");
 	_T_L_(test, basic)();
-	_T_L_(test, interleave)();
+	_T_L_(test, memory)();
 	 /*#ifdef _LINK_COMPARATOR
 	 && _T_L_(test, boolean)()
 	 && _T_L_(test, bump)()

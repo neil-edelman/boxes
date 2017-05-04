@@ -32,7 +32,7 @@
  @param LINK_TEST
  Unit testing framework using {<T>LinkTest}, included in a separate header,
  {LinkTest.h}. Must be defined equal to a random filler, satisfying
- {<T>Action}.
+ {<T>Action}. Also turns on {assert}.
 
  @title		Link.h
  @author	Neil
@@ -55,30 +55,11 @@
 
 
 
-/* <-- ugly
- This messily defines the "unused" macro.
- @author  Neil
- @std     C89/90
- @version 1.2; 2017-05 GCC documentation says I can specifically use (void)
- @since   1.0; 2017-01 */
+/* unused macro */
 #ifdef UNUSED
 #undef UNUSED
 #endif
-#ifndef _MSC_VER /* <-- not msvc */
 #define UNUSED(a) ((void)(a))
-#else /* not msvc --><-- msvc: not a C89/90 compiler; needs a little help */
-#pragma warning(push)
-/* "Assignment within conditional expression." No. */
-#pragma warning(disable: 4706)
-/* "<ANSI89/ISO90 name>: The POSIX name for this item is deprecated. Instead
- use the ISO C and C++ conformant name <ISO C++11 name>." */
-#pragma warning(disable: 4996)
-/* the VC pre-compiler is a little too smart for it's own good,
- http://stackoverflow.com/questions/4851075/universally-compiler-independent
- -way-of-implementing-an-unused-macro-in-c-c */
-#define UNUSED(a) (void)(sizeof((a), 0))
-#endif /* msvc --> */
-/* ugly --> */
 
 
 
@@ -350,6 +331,8 @@ static void _T_(remove)(struct T_(Link) *const this,
 /** Private: add to first of list. */
 static void _T_(add)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
+	assert(this);
+	assert(node);
 #ifdef LINK_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -384,6 +367,8 @@ static void _T_(add)(struct T_(Link) *const this,
 /** Private: remove from list. */
 static void _T_(remove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
+	assert(this);
+	assert(node);
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -485,10 +470,10 @@ static void T_(LinkClear)(struct T_(Link) *const this) {
 }
 
 /** Sets the contents of {node} to push it to {this}, thereby initialising the
- non-{<T>} parts of {<T>LinkNode} (if {this} is not null.) Does not do any
- checks on {node} and overwrites the data that was there. Specifically, it
- invokes undefined behaviour to one add {node} to more than one list without
- removing it each time.
+ non-{<T>} parts of {<T>LinkNode}. Does not do any checks on {node} and
+ overwrites the data that was there. Specifically, it invokes undefined
+ behaviour to one add {node} to more than one list without removing it each
+ time. If either {this} or {node} is null, it does nothing.
  @allow */
 static void T_(LinkAdd)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
@@ -498,7 +483,7 @@ static void T_(LinkAdd)(struct T_(Link) *const this,
 
 /** Removes {node} from the {this}. The {node} is now free to add to another
  list. Removing an element that was not added to {this} results in undefined
- behaviour.
+ behaviour. If either {this} or {node} is null, it does nothing.
  @allow */
 static void T_(LinkRemove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
@@ -507,7 +492,8 @@ static void T_(LinkRemove)(struct T_(Link) *const this,
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
- removes elements. */
+ removes elements.
+ @allow */
 static void T_(LinkTake)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	if(!from || from == this) return;
@@ -546,8 +532,9 @@ static void T_(LinkTake)(struct T_(Link) *const this,
 /** Merges the elements of {from} into {this} in (local) order,
  {O(this.n + from.n)}; concatenates all lists that don't have a
  {LINK_[A-D]_COMPARATOR}, {O(1)}. If {this} is null, then it removes
- elements. */
-static void T_(LinkTakeMerge)(struct T_(Link) *const this,
+ elements.
+ @allow */
+static void T_(LinkMerge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	if(!from || from == this) return;
 	if(!this) { _T_(clear)(from); return; }
@@ -598,15 +585,6 @@ static void T_(LinkTakeMerge)(struct T_(Link) *const this,
 	}
 }
 
-/** This allows you to move one element in memory of the list {this} from {old}
- to {new}. This comes after you move it; that is, {old} is not de-referenced,
- but {new} is. */
-static void T_(LinkMove)(struct T_(Link) *const this,
-	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
-	if(!this || !old || !new) return;
-	_T_(move)(this, old, new);
-}
-
 /** Sorts all by greedy natural insertion-merge sort. Like doing
  \see{<T>Link<L>Sort} for all lists in link with comparators. Designed to be
  an {O(n log n)} sort that is adaptive and stable, it's not as good at sorting
@@ -651,6 +629,28 @@ static void T_(LinkSetParam)(struct T_(Link) *const this,
 	void *const param) {
 	if(!this) return;
 	this->param = param;
+}
+
+/** Use when one {<T>LinkNode} of {this} has switched places in memory from
+ {old} to {new}. If {this}, {old}, or {new} is null, doesn't do anything.
+ {O(1)}.
+ @allow */
+static void T_(LinkMove)(struct T_(Link) *const this,
+	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
+	if(!this || !old || !new) return;
+	_T_(move)(this, old, new);
+}
+
+/** Use when {this} contains elements from an array of/containing {<T>LinkNode}
+ in memory that switched from {old} to {new} with byte-size {byte_size}. If
+ {this}, {old}, or {new} is null, doesn't do anything. For example, one must
+ call this on a {<T>Link} that is (partially) backed with an array that has
+ changed places due to a {realloc}. {O(n)}.
+ @allow */
+static void T_(LinkContiguousMove)(struct T_(Link) *const this,
+	const void *const old, const size_t byte_size, void *const new) {
+	if(!this || !old || !byte_size || !new) return;
+	assert(0);
 }
 
 #ifdef LINK_TEST /* <-- test */
@@ -704,14 +704,6 @@ static void T_(LinkSetParam)(struct T_(Link) *const this,
 #ifdef _LINK_SORT_INTERNALS
 #undef _LINK_SORT_INTERNALS /* each List type has their own */
 #endif
-
-
-
-/* <- ugly */
-#ifdef _MSC_VER /* <- MSVC */
-#pragma warning(pop)
-#endif /* MSVC -> */
-/* ugly -> */
 
 
 
@@ -1145,17 +1137,17 @@ static int T_L_(Link, Compare)(const struct T_(Link) *const this,
 	int diff;
 	/* null counts as -\infty */
 	if(!this) {
-		return that ? 1 : 0;
+		return that ? -1 : 0;
 	} else if(!that) {
-		return -1;
+		return 1;
 	}
 	/* compare element by element */
 	for(a = this->L_(first), b = that->L_(first); ;
 		a = a->L_(next), b = b->L_(next)) {
 		if(!a) {
-			return b ? 1 : 0;
+			return b ? -1 : 0;
 		} else if(!b) {
-			return -1;
+			return 1;
 		} else if((diff = _T_L_(data, cmp)(&a->data, &b->data))) {
 			return diff;
 		}
@@ -1296,7 +1288,7 @@ static const char *const _link_end       = " ]";
 static const char *const _link_alter_end = "...]";
 static const char *const _link_sep       = ", ";
 static const char *const _link_star      = "*";
-static const char *const _link_null      = "Null";
+static const char *const _link_null      = "null";
 
 struct _ListSuperCat {
 	char *print, *cursor;
