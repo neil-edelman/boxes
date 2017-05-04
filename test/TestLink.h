@@ -346,6 +346,14 @@ static void _T_L_(test, basic)(void) {
 	assert(!_T_L_(count, elements)(&a));
 }
 
+static void _T_L_(print, array)(const struct T_(LinkNode) *const buf, const size_t size) {
+	size_t i;
+	char str[9];
+	for(i = 0; i < size; i++) {
+		_T_(to_string)(&buf[i].data, &str);
+		printf("array[%lu] = %s\n", i, str);
+	}
+}
 /* interleave: (Take, Merge,) (Move,
  ContiguousMove,)(Compare,
  Subtraction, Union, Intersection, Xor, If,)
@@ -357,7 +365,7 @@ static void _T_L_(test, basic)(void) {
  Subtraction, Union, Intersection, Xor, If, ForEach, ShortCircut, ToString */
 static void _T_L_(test, memory)(void) {
 	struct T_(Link) a, b, c;
-	struct T_(LinkNode) buf_a[1000], buf_b[1000], buf_c[1000],
+	struct T_(LinkNode) buf_a[4], buf_b[4], buf_c[4],
 		*item_a, *item_b, *item_c;
 	const size_t buf_a_size = sizeof buf_a / sizeof *buf_a,
 		buf_b_size = sizeof buf_b / sizeof *buf_b,
@@ -374,6 +382,12 @@ static void _T_L_(test, memory)(void) {
 	assert(buf_a_size == buf_c_size);
 	memcpy(buf_b, buf_a, buf_a_size * sizeof *buf_a);
 	memcpy(buf_c, buf_a, buf_a_size * sizeof *buf_a);
+	printf("a:\n");
+	_T_L_(print, array)(buf_a, buf_a_size);
+	printf("b:\n");
+	_T_L_(print, array)(buf_a, buf_a_size);
+	printf("c:\n");
+	_T_L_(print, array)(buf_a, buf_a_size);
 	for(i = 0; i < buf_a_size; i++) {
 		item_a = buf_a + i;
 		item_b = buf_b + i;
@@ -410,7 +424,6 @@ static void _T_L_(test, memory)(void) {
 	T_(LinkClear)(&b);
 	assert(_T_L_(count, elements)(&b) == 0);
 	/* Move */
-	printf("Testing memory relocation of one element at a time.\n");
 	for(i = 0; i < buf_a_size; i++) {
 		T_(LinkAdd)(&a, buf_a + i);
 		T_(LinkAdd)(&b, buf_b + i);
@@ -425,11 +438,34 @@ static void _T_L_(test, memory)(void) {
 		memset(item_a, 0, sizeof *item_a);
 		T_(LinkMove)(&a, item_a, item_c);
 	}
+
+	printf("a:\n");
+	_T_L_(print, array)(buf_a, buf_a_size);
+	printf("b:\n");
+	_T_L_(print, array)(buf_b, buf_b_size);
+	printf("c:\n");
+	_T_L_(print, array)(buf_c, buf_c_size);
+
+	printf("Testing memory relocation a = %s, b = %s.\n",
+		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(!T_L_(Link, Compare)(&a, &b));
+
+#if 0
+	/*************************************************************/
+	printf("a:\n");
+	_T_L_(print, array)(buf_a, buf_a_size);
+	printf("b:\n");
+	_T_L_(print, array)(buf_b, buf_b_size);
+	printf("c:\n");
+	_T_L_(print, array)(buf_c, buf_c_size);
+	
 	/* ContiguousMove */
 	memset(buf_a, 0, sizeof *buf_a * buf_a_size);
 	T_(LinkContiguousMove)(&a, buf_a, sizeof buf_a, buf_c);
+	printf("Testing contiguous memory relocation a = %s, b = %s.\n",
+		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(!T_L_(Link, Compare)(&a, &b));
+#endif
 }
 
 #ifdef _LINK_COMPARATOR /* <-- compare */

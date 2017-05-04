@@ -1,11 +1,13 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>Link} stores doubly-linked-list(s). {<T>Link} points to strings of
- {<T>LinkNode}, of which data of type {<T>} must be set using {LINK_TYPE}.
- Supports one to four different linked-list orders in the same type, {[A, D]},
- set using {LINK_[A-D]_NAME}. The preprocessor macros are all undefined at the
- end of the file for convenience when including multiple Link types.
+ {<T>Link} stores doubly-linked-list(s) of {<T>LinkNode}, of which data of
+ type, {<T>}, must be set using {LINK_TYPE}. The {<T>LinkNode} storage is the
+ resposibility of the caller. Specifically, it does not have to be contiguous,
+ and it can be nestled in multiple, possibly different, {struct}s. Supports one
+ to four different linked-list orders in the same type, {[A, D]}, set using
+ {LINK_[A-D]_NAME}. The preprocessor macros are all undefined at the end of the
+ file for convenience when including multiple Link types.
 
  @param LINK_NAME, LINK_TYPE
  The name that becomes {T} and a valid type associated therewith (should be
@@ -32,7 +34,7 @@
  @param LINK_TEST
  Unit testing framework using {<T>LinkTest}, included in a separate header,
  {LinkTest.h}. Must be defined equal to a random filler, satisfying
- {<T>Action}. Also turns on {assert}.
+ {<T>Action}. Also, turns on {assert} private function testing.
 
  @title		Link.h
  @author	Neil
@@ -289,6 +291,8 @@ static void _T_(add)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node);
 static void _T_(remove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node);
+static void _T_(block_move)(struct T_(LinkNode) *ptr, const void *const block,
+	const size_t size, const void *const new_block);
 
 /* Note to future self: recursive includes. The {_LINK_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!_LIST_NAME} section. These
@@ -452,6 +456,21 @@ static void _T_(clear)(struct T_(Link) *const this) {
 #ifdef LINK_D_NAME
 	this->LD_(first) = this->LD_(last) = 0;
 #endif
+}
+
+/** Private: used in \see{<T>LinkContiguousMove}. This would be a good function
+ to inline. */
+static void _T_(block_move)(struct T_(LinkNode) *ptr, const void *const block,
+	const size_t size, const void *const new_block) {
+	assert(ptr);
+	assert(block);
+	assert(size);
+	assert(new_block);
+	if((void *)ptr < block) return;
+	if((char *)ptr >= (char *)block + size) return;
+	ptr = (struct T_(LinkNode) *)((char *)ptr - (char *)block
+		+ (char *)new_block);
+	assert((void *)ptr >= new_block && (char *)ptr < (char *)new_block + size);
 }
 
 /** Get a pointer to the underlying data stored in {this}.
@@ -650,7 +669,35 @@ static void T_(LinkMove)(struct T_(Link) *const this,
 static void T_(LinkContiguousMove)(struct T_(Link) *const this,
 	const void *const old, const size_t byte_size, void *const new) {
 	if(!this || !old || !byte_size || !new) return;
-	assert(0);
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LA_(block, move)(this, old, byte_size, new);
+#endif /* a --> */
+#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LB_(block, move)(this, old, byte_size, new);
+#endif /* b --> */
+#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LC_(block, move)(this, old, byte_size, new);
+#endif /* c --> */
+#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		_T_LD_(block, move)(this, old, byte_size, new);
+#endif /* d --> */
+	}
 }
 
 #ifdef LINK_TEST /* <-- test */
@@ -847,6 +894,33 @@ static void _T_L_(link, move)(struct T_(Link) *const this,
 		this->L_(last) = new;
 	}
 }
+
+/** Private: when {realloc} changes your pointers. */
+static void _T_L_(block, move)(struct T_(Link) *const this,
+	const void *const old, const size_t byte_size, void *const new) {
+	struct T_(LinkNode) *node, *last;
+	assert(this);
+	assert(old);
+	assert(byte_size);
+	assert(new);
+	assert(!this->L_(first) == !this->L_(last));
+	if(!this->L_(first)) return; /* empty */
+	_T_(block_move)(this->L_(first), old, byte_size, new);
+	_T_(block_move)(this->L_(last),  old, byte_size, new);
+	if((node = this->L_(first)) == this->L_(last)) return; /* 1 element */
+	/* special cases, first and last nodes */
+	assert(!node->L_(prev) && node->L_(next));
+	_T_(block_move)(node->L_(next), old, byte_size, new);
+	last = this->L_(last);
+	assert(last && last->L_(prev) && !last->L_(next));
+	_T_(block_move)(node->L_(prev), old, byte_size, new);
+	/* all the ones in-between */
+	while(node = node->L_(next), node != last) {
+		_T_(block_move)(node->L_(prev), old, byte_size, new);
+		_T_(block_move)(node->L_(next), old, byte_size, new);
+	}
+}
+
 
 /** @return The next element after {this} in {<L>}. When {this} is the last
  element, returns null.
