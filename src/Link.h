@@ -294,8 +294,6 @@ static void _T_(add)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node);
 static void _T_(remove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node);
-static void _T_(block_move)(struct T_(LinkNode) *ptr, const void *const block,
-	const size_t size, const void *const new_block);
 
 /* Note to future self: recursive includes. The {_LINK_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!_LIST_NAME} section. These
@@ -648,7 +646,7 @@ static void T_(LinkMove)(struct T_(Link) *const this,
  Relies on not-strictly-defined behaviour because pointers are not necessarily
  contiguous. It should be fine.
  @allow */
-static void T_(LinkContiguousMove)(struct T_(Link) *const this,
+static void T_(LinkBlockMove)(struct T_(Link) *const this,
 	const void *const old, const size_t byte_size, void *const new) {
 	const char *const cold = old;
 	const char *const cold_end = cold + byte_size;
@@ -880,12 +878,24 @@ static void _T_L_(link, move)(struct T_(Link) *const this,
 	}
 }
 
+static char _T_L_(get, list)(const struct T_(LinkNode) *const node);
+
+/* {ptr \in [begin, end) -> ptr += delta}. */
+static void _T_L_(block, move_one)(struct T_(LinkNode) **const node_ptr,
+	const void *const begin, const void *const end, const ptrdiff_t delta) {
+	const void *const ptr = *node_ptr;
+	if(ptr < begin) return;
+	if(ptr >= end) return;
+	*(char **)node_ptr += delta;
+}
+
 /** Private: when {realloc} changes your pointers. I've tried to keep undefined
  behaviour to a minimum.
  @param [begin, end): Where the pointers have changed.
  @param delta: the offset they have moved to in memory bytes. */
 static void _T_L_(block, move)(struct T_(Link) *const this,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
+	char a[9];
 	struct T_(LinkNode) *node;
 	assert(this);
 	assert(begin);
@@ -895,24 +905,17 @@ static void _T_L_(block, move)(struct T_(Link) *const this,
 	/* empty -- done */
 	if(!this->L_(first)) return;
 	/* first and last pointer of {<T>List} */
-	if((void *)this->L_(first) >= begin && (void *)this->L_(first) < end) {
-		this->L_(first) += delta;
-	}
-	if((void *)this->L_(last) >= begin && (void *)this->L_(last) < end) {
-		this->L_(last) += delta;
-	}
-	/* all the others'; fixme: unoptimised */
+	printf(QUOTE(_LINK_NAME) " first/last (%c, %c)", _T_L_(get, list)(this->L_(first)), _T_L_(get, list)(this->L_(last)));
+	_T_L_(block, move_one)(&this->L_(first), begin, end, delta);
+	_T_L_(block, move_one)(&this->L_(last),  begin, end, delta);
+	printf(" -> (%c, %c)\n", _T_L_(get, list)(this->L_(first)), _T_L_(get, list)(this->L_(last)));
+	/* all the others' */
 	for(node = this->L_(first); node; node = node->L_(next)) {
-		if(node->L_(prev)) {
-			if((void *)node->L_(prev) >= begin) {
-				if((void *)node->L_(prev) < end) {
-					node->L_(prev) += delta;
-				}
-			}
-		}
-		if(node->L_(next) && (void *)node->L_(next) >= begin && (void *)node->L_(next) < end) {
-			node->L_(next) += delta;
-		}
+		_T_(to_string)(&node->data, &a);
+		printf("node %s, (%c->%c<-%c)", a, _T_L_(get, list)(node->L_(prev)), _T_L_(get, list)(node), _T_L_(get, list)(node->L_(next)));
+		_T_L_(block, move_one)(&node->L_(prev), begin, end, delta);
+		_T_L_(block, move_one)(&node->L_(next), begin, end, delta);
+		printf(" -> (%c->%c<-%c)\n", _T_L_(get, list)(node->L_(prev)), _T_L_(get, list)(node), _T_L_(get, list)(node->L_(next)));
 	}
 }
 
