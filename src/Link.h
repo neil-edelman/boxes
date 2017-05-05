@@ -644,7 +644,7 @@ static void T_(LinkMove)(struct T_(Link) *const this,
  changed places due to a {realloc}. {O(n)}.
 
  Relies on not-strictly-defined behaviour because pointers are not necessarily
- contiguous. It should be fine.
+ contiguous. It should be fine in practice.
  @allow */
 static void T_(LinkBlockMove)(struct T_(Link) *const this,
 	const void *const old, const size_t byte_size, void *const new) {
@@ -886,6 +886,7 @@ static void _T_L_(block, move_one)(struct T_(LinkNode) **const node_ptr,
 	const void *const ptr = *node_ptr;
 	if(ptr < begin) return;
 	if(ptr >= end) return;
+	/*wth? fixme? printf("(%p += %ld)", (void *)*node_ptr, delta);*/
 	*(char **)node_ptr += delta;
 }
 

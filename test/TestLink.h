@@ -365,6 +365,7 @@ static char _T_L_(get, list)(const struct T_(LinkNode) *const node) {
 	} else if(!node) {
 		return '0';
 	}
+	/*printf("(%p ? %p, %p, %p)", (void *)node, (void *)_T_L_(buf, buf).x, (void *)_T_L_(buf, buf).y, (void *)_T_L_(buf, buf).z);*/
 	return '?';
 }
 static void _T_L_(check, list)(const struct T_(Link) *const this,
@@ -444,8 +445,6 @@ static void _T_L_(test, memory)(void) {
 	T_L_(Link, TakeIf)(&b, &a, 0);
 	printf("Now a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
-	printf("a:\n"), _T_(print_all)(&a);
-	printf("b:\n"), _T_(print_all)(&b);
 	assert(_T_L_(count, elements)(&a) == 0);
 	assert(_T_L_(count, elements)(&b) == 2 * LINK_BUFFER_SIZE);
 	/* Clear (the rest) */
@@ -475,16 +474,14 @@ static void _T_L_(test, memory)(void) {
 	printf("a: "), _T_L_(check, list)(&a, &_T_L_(verify, x));
 	printf("b: "), _T_L_(check, list)(&b, &_T_L_(verify, yz));
 	/* Test done; ContiguousMove */
-	printf("a:\n"), _T_(print_all)(&a);
-	printf("b:\n"), _T_(print_all)(&b);
 	memcpy(_T_L_(buf, buf).z, _T_L_(buf, buf).x, LINK_BUFFER_BYTES);
 	memset(_T_L_(buf, buf).x, 0, LINK_BUFFER_BYTES);
 	T_(LinkBlockMove)(&a, _T_L_(buf, buf).x, LINK_BUFFER_BYTES, _T_L_(buf, buf).z);
 	printf("Testing contiguous memory relocation a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(!T_L_(Link, Compare)(&a, &b));
-	_T_L_(check, list)(&a, &_T_L_(verify, x));
-	_T_L_(check, list)(&b, &_T_L_(verify, z));
+	printf("a: "), _T_L_(check, list)(&a, &_T_L_(verify, z));
+	printf("a:\n"), _T_(print_all)(&a);
 }
 
 #ifdef _LINK_COMPARATOR /* <-- compare */
