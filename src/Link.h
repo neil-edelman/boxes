@@ -237,16 +237,18 @@ typedef int  (*T_(Comparator))(const T *, const T *);
 #ifdef LINK_TO_STRING
 /** Responsible for turning {<T>} (the first argument) into a 9 {char}
  null-terminated output string (the second.) */
-typedef void (*T_(ToString))(const T *, char (*const)[9]);
+typedef void (*T_(ToString))(const T *const, char (*const)[9]);
 #endif
 
 
 
 /** A single link in the linked-list derived from {<T>}. Intended to be used
- directly in {struct}s. Use the \see{<T>LinkNodeGetData} function to extract
- {<T>}. */
+ directly in {struct}s. {<T>} is the first element of {<T>LinkNode}, thus
+ casting is entirely safe. */
 struct T_(LinkNode);
 struct T_(LinkNode) {
+	/* so we can cast the other way without the mess of {container_of} */
+	T data;
 #ifdef LINK_A_NAME
 	struct T_(LinkNode) *LA_(prev), *LA_(next);
 #endif
@@ -259,7 +261,6 @@ struct T_(LinkNode) {
 #ifdef LIST_D_NAME
 	struct T_(LinkNode) *LD_(prev), *LD_(next);
 #endif
-	T data;
 };
 
 /** Serves as an a head for linked-list(s) of {<T>LinkNode}. No initialisation
@@ -422,12 +423,13 @@ static void _T_(clear)(struct T_(Link) *const this) {
 #endif
 }
 
-/** Get a pointer to the underlying data stored in {this}.
+/* Get a pointer to the underlying data stored in {this}.
+ @deprecated Just cast either way.
  @allow */
-static T *T_(LinkNodeGetData)(struct T_(LinkNode) *const this) {
+/*static T *T_(LinkNodeGet)(struct T_(LinkNode) *const this) {
 	if(!this) return 0;
 	return &this->data;
-}
+}*/
 
 /** Clears all values from {this}, thereby initialising the {<T>Link}.
  @allow */
@@ -878,7 +880,7 @@ static void _T_L_(link, move)(struct T_(Link) *const this,
 	}
 }
 
-static char _T_L_(get, list)(const struct T_(LinkNode) *const node);
+/*static char _T_L_(get, list)(const struct T_(LinkNode) *const node);*/
 
 /* {ptr \in [begin, end) -> ptr += delta}. */
 static void _T_L_(block, move_one)(struct T_(LinkNode) **const node_ptr,
@@ -896,7 +898,7 @@ static void _T_L_(block, move_one)(struct T_(LinkNode) **const node_ptr,
  @param delta: the offset they have moved to in memory bytes. */
 static void _T_L_(block, move)(struct T_(Link) *const this,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
-	char a[9];
+	/*char a[9];*/
 	struct T_(LinkNode) *node;
 	assert(this);
 	assert(begin);
@@ -906,17 +908,17 @@ static void _T_L_(block, move)(struct T_(Link) *const this,
 	/* empty -- done */
 	if(!this->L_(first)) return;
 	/* first and last pointer of {<T>List} */
-	printf(QUOTE(_LINK_NAME) " first/last (%c, %c)", _T_L_(get, list)(this->L_(first)), _T_L_(get, list)(this->L_(last)));
+	/*printf(QUOTE(_LINK_NAME) " first/last (%c, %c)", _T_L_(get, list)(this->L_(first)), _T_L_(get, list)(this->L_(last)));*/
 	_T_L_(block, move_one)(&this->L_(first), begin, end, delta);
 	_T_L_(block, move_one)(&this->L_(last),  begin, end, delta);
-	printf(" -> (%c, %c)\n", _T_L_(get, list)(this->L_(first)), _T_L_(get, list)(this->L_(last)));
+	/*printf(" -> (%c, %c)\n", _T_L_(get, list)(this->L_(first)), _T_L_(get, list)(this->L_(last)));*/
 	/* all the others' */
 	for(node = this->L_(first); node; node = node->L_(next)) {
-		_T_(to_string)(&node->data, &a);
-		printf("node %s, (%c->%c<-%c)", a, _T_L_(get, list)(node->L_(prev)), _T_L_(get, list)(node), _T_L_(get, list)(node->L_(next)));
+		/*_T_(to_string)(&node->data, &a);
+		printf("node %s, (%c->%c<-%c)", a, _T_L_(get, list)(node->L_(prev)), _T_L_(get, list)(node), _T_L_(get, list)(node->L_(next)));*/
 		_T_L_(block, move_one)(&node->L_(prev), begin, end, delta);
 		_T_L_(block, move_one)(&node->L_(next), begin, end, delta);
-		printf(" -> (%c->%c<-%c)\n", _T_L_(get, list)(node->L_(prev)), _T_L_(get, list)(node), _T_L_(get, list)(node->L_(next)));
+		/*printf(" -> (%c->%c<-%c)\n", _T_L_(get, list)(node->L_(prev)), _T_L_(get, list)(node), _T_L_(get, list)(node->L_(next)));*/
 	}
 }
 

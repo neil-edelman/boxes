@@ -2,6 +2,11 @@
 
 #ifndef _LINK_NAME /* <-- !_LINK_NAME */
 
+#include <stdlib.h>	/* rand malloc */
+/* http://stackoverflow.com/questions/10269685/kernels-container-of-any-way-to-make-it-iso-conforming easy */
+#define container_of(ptr, type, member) \
+	((type *) ((char *)(ptr) - offsetof(type, member)))
+
 
 
 
@@ -12,6 +17,68 @@ static void _T_(print_all)(struct T_(Link) *const this);
 
 /* LIST_TEST must be a function that implements {<T>Action}. */
 static const T_(Action) _T_(filler) = (LINK_TEST);
+
+/* this is _not_ what to do! you would have a virtual table pointer in T; but
+ since we have no control over T, we have to hack */
+struct T_(LinkSloth) {
+	struct T_(LinkNode) node;
+	const char *(*sloth_speak)(const struct T_(LinkNode) *const);
+	char name[4];
+	unsigned lazy;
+};
+static const char *_T_(sloth_speak)(const struct T_(LinkNode) *const node) {
+	static char say[64];
+	char a[9];
+	const struct T_(LinkSloth) *const sloth = container_of(node, struct T_(LinkSloth), node);
+	_T_(to_string)(&node->data, &a);
+	snprintf(say, sizeof say, "%s sloth %s has stood still for %u hours", a, sloth->name, sloth->lazy);
+	return say;
+}
+static void T_(LinkSloth)(struct T_(LinkSloth) *const this, struct T_(Link) *const sloth_list) {
+	if(!this) return;
+	this->sloth_speak = &_T_(sloth_speak);
+	this->name[0] = ('Z' - 'A' + 1.0) * rand() / (RAND_MAX + 1.0) + 'A';
+	this->name[1] = ('z' - 'a' + 1.0) * rand() / (RAND_MAX + 1.0) + 'a';
+	this->name[2] = ('z' - 'a' + 1.0) * rand() / (RAND_MAX + 1.0) + 'a';
+	this->name[3] = '\0';
+	this->lazy = (unsigned)((100.0) * rand() / (RAND_MAX + 1.0) + 100.0);
+	T_(LinkAdd)(sloth_list, &this->node);
+}
+
+struct T_(LinkBear) {
+	struct T_(LinkNode) node;
+	const char *(*bear_speak)(const struct T_(LinkNode) *const);
+	char name[2];
+	unsigned ate;
+};
+static const char *_T_(bear_speak)(const struct T_(LinkNode) *const node) {
+	static char say[64];
+	char a[9];
+	const struct T_(LinkBear) *const bear = container_of(node, struct T_(LinkBear), node);
+	_T_(to_string)(&node->data, &a);
+	snprintf(say, sizeof say, "%s bear %s ate %d humans", a, bear->name, bear->ate);
+	return say;
+}
+static void T_(LinkBear)(struct T_(LinkBear) *const this, struct T_(Link) *const bear_list) {
+	if(!this) return;
+	this->bear_speak = &_T_(bear_speak);
+	this->name[0] = ('Z' - 'A' + 1.0) * rand() / (RAND_MAX + 1.0) + 'A';
+	this->name[1] = '\0';
+	this->ate = (unsigned)((1.0) * rand() / (RAND_MAX + 1.0) + 9.0);
+	T_(LinkAdd)(bear_list, &this->node);
+}
+/* @implements <T>Action */
+static void _T_(sloth_bear_speak)(T *const sb) {
+	char a[9];
+	const struct T_(LinkNode) *const node = container_of(sb, struct T_(LinkNode), data);
+	const struct Hack {
+		struct T_(LinkNode) node;
+		const char *(*speak)(const struct T_(LinkNode) *const);
+	} *const nodespeak = container_of(node, struct Hack, node);
+	_T_(to_string)(sb, &a);
+	printf("sloth_bear_speak: item %s\n", a);
+	nodespeak->speak(node);
+}
 
 #ifdef LINK_A_NAME /* <-- a */
 #define _LINK_NAME LINK_A_NAME
@@ -270,8 +337,9 @@ static void _T_L_(test, basic)(void) {
 	item_a = T_L_(Link, GetFirst)(&a);
 	assert(item_a);
 	/* GetData */
-	assert(!T_(LinkNodeGetData)(0));
-	data = T_(LinkNodeGetData)(item_a);
+	/*assert(!T_(LinkNodeGet)(0));
+	data = T_(LinkNodeGet)(item_a);*/
+	data = (T *)item_a;
 	assert(data);
 	_T_(to_string)(data, &str);
 	printf("LinkNode get first data: %s.\n", str);
@@ -474,6 +542,12 @@ static void _T_L_(test, memory)(void) {
 	printf("a: "), _T_L_(check, list)(&a, &_T_L_(verify, x));
 	printf("b: "), _T_L_(check, list)(&b, &_T_L_(verify, yz));
 	/* Test done; ContiguousMove */
+	/*for(i = 1; i < LINK_BUFFER_SIZE; i += 2) {
+		node_b = _T_L_(buf, buf).y + i;
+		node_c = _T_L_(buf, buf).z + i;
+		memcpy(node_b, node_b, sizeof *node_b);
+		memset(node_b, 0, sizeof *node_b); <- really what we want
+	}*/
 	memcpy(_T_L_(buf, buf).z, _T_L_(buf, buf).x, LINK_BUFFER_BYTES);
 	memset(_T_L_(buf, buf).x, 0, LINK_BUFFER_BYTES);
 	T_(LinkBlockMove)(&a, _T_L_(buf, buf).x, LINK_BUFFER_BYTES, _T_L_(buf, buf).z);
@@ -482,6 +556,26 @@ static void _T_L_(test, memory)(void) {
 	assert(!T_L_(Link, Compare)(&a, &b));
 	printf("a: "), _T_L_(check, list)(&a, &_T_L_(verify, z));
 	printf("a:\n"), _T_(print_all)(&a);
+}
+
+static void _T_L_(sloth, bear)(void) {
+	struct T_(Link) a;
+	struct T_(LinkSloth) sloth[4]/*, sloth2[8]*/;
+	struct T_(LinkBear) bear[4];
+	const size_t sloth1_size = sizeof sloth / sizeof *sloth,
+		/*sloth2_size = sizeof sloth2 / sizeof *sloth2,*/
+		bear_size = sizeof bear / sizeof *bear;
+	unsigned i;
+	printf("SlothBear:\n");
+	T_(LinkClear)(&a);
+	for(i = 0; i < sloth1_size; i++) T_(LinkSloth)(sloth + i, &a);
+	for(i = 0; i < bear_size; i++) T_(LinkBear)(bear + i, &a);
+	printf("SlothBear a = %s.\n", T_L_(Link, ToString)(&a));
+	T_(LinkSort)(&a);
+	printf("SlothBear a sorted by " QUOTE(_LINK_NAME) " = %s.\n",
+		T_L_(Link, ToString)(&a));
+	assert(_T_(in_order)(&a));
+	T_L_(Link, ForEach)(&a, &_T_(sloth_bear_speak));
 }
 
 #ifdef _LINK_COMPARATOR /* <-- compare */
@@ -745,6 +839,7 @@ static void _T_L_(test, list)(void) {
 		   QUOTE(_LINK_NAME) ":\n");
 	_T_L_(test, basic)();
 	_T_L_(test, memory)();
+	_T_L_(sloth, bear)();
 	 /*#ifdef _LINK_COMPARATOR
 	 && _T_L_(test, boolean)()
 	 && _T_L_(test, bump)()

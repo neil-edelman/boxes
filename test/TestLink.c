@@ -56,10 +56,96 @@ static void Foo_filler(struct Foo *const this) {
 #define LINK_TEST &Foo_filler
 #include "../src/Link.h"
 
+struct AnimalVt;
+struct Animal {
+	const struct AnimalVt *vt;
+	char name[16];
+};
+/** @implements <Animal>Comparator */
+static int Animal_name_cmp(const struct Animal *a, const struct Animal *b) {
+	return strcmp(a->name, b->name);
+}
+/** @implements <Foo>ToString */
+static void Animal_to_string(const struct Animal *this, char (*const a)[9]) {
+	snprintf(*a, sizeof *a, "%s", this->name);
+}
+#define LINK_NAME Animal
+#define LINK_TYPE struct Animal
+#define LINK_A_NAME Name
+#define LINK_A_COMPARATOR &Animal_name_cmp
+#define LINK_TO_STRING &Animal_to_string
+#include "../src/Link.h"
+struct Sloth {
+	struct AnimalLinkNode animal;
+	unsigned lazy;
+};
+struct Llama {
+	struct AnimalLinkNode animal;
+	unsigned chomps;
+};
+static void sloth_act(struct Animal *const animal) {
+	struct Sloth *const sloth = (struct Sloth *)animal;
+	printf("Sloth %s has been sleeping %u hours.\n", animal->name, sloth->lazy);
+}
+static void llama_act(struct Animal *const animal) {
+	struct Llama *const llama = (struct Llama *)animal;
+	printf("Llama %s has chomped %u fingers today.\n", animal->name, llama->chomps);
+}
+static const struct AnimalVt {
+	void (*const act)(struct Animal *const);
+} sloth_vt = { &sloth_act }, llama_vt = { &llama_act };
+static struct AnimalLink animals;
+static void Animal_init(struct AnimalLinkNode *const this) {
+	struct Animal *const animal = (struct Animal *)this;
+	Orcish(animal->name, sizeof animal->name);
+	animal->vt = 0;
+	AnimalLinkAdd(&animals, this);
+}
+static void Sloth_init(struct Sloth *const sloth) {
+	Animal_init(&sloth->animal);
+	sloth->animal.data.vt = &sloth_vt;
+	sloth->lazy = (unsigned)(100.0 * rand() / (RAND_MAX + 1.0) + 20.0);
+}
+static void Llama_init(struct Llama *const llama) {
+	Animal_init(&llama->animal);
+	llama->animal.data.vt = &llama_vt;
+	llama->chomps = (unsigned)(10.0 * rand() / (RAND_MAX + 1.0) + 1.0);
+}
+/* @implements AnimalAction */
+static void do_stuff(struct Animal *const this) {
+	this->vt->act(this);
+}
+
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
+	struct Sloth sloths[3];
+	const size_t sloths_size = sizeof sloths / sizeof *sloths;
+	struct Llama llamas[6];
+	const size_t llamas_size = sizeof llamas / sizeof *llamas;
+	struct Sloth others[9];
+	const size_t others_size = sizeof others / sizeof *others;
+	size_t i;
+
 	FooLinkTest();
-	printf("Test succeeded.\n");
+	printf("Test succeeded.\n\n");
+
+	assert(others_size >= sloths_size);
+	for(i = 0; i < sloths_size; i++) Sloth_init(sloths + i);
+	for(i = 0; i < llamas_size; i++) Llama_init(llamas + i);
+	printf("Unsorted: %s.\n", AnimalLinkNameToString(&animals));
+	AnimalLinkSort(&animals);
+	printf("Sorted: %s.\n", AnimalLinkNameToString(&animals));
+	AnimalLinkNameForEach(&animals, &do_stuff);
+	memcpy(others, sloths, sizeof sloths);
+	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '_';
+	printf("Moved sloths: %s.\n", AnimalLinkNameToString(&animals));
+	AnimalLinkBlockMove(&animals, sloths, sizeof sloths, others);
+	printf("Block move: %s.\n", AnimalLinkNameToString(&animals));
+	for(i = sloths_size; i < others_size; i++) Sloth_init(others + i);
+	printf("New sloths: %s.\n", AnimalLinkNameToString(&animals));
+	AnimalLinkSort(&animals);
+	printf("Sorted: %s.\n", AnimalLinkNameToString(&animals));
+	AnimalLinkNameForEach(&animals, &do_stuff);
 	return EXIT_SUCCESS;
 }
