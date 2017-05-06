@@ -25,6 +25,7 @@ name <ISO C++11 name>." */
 #elif __DJGPP__ /* MinGW --><-- DJGPP */
 #endif /* --> */
 
+/** Define class Foo */
 struct Foo {
 	int key;
 	char value[32];
@@ -56,7 +57,9 @@ static void Foo_filler(struct Foo *const this) {
 #define LINK_TEST &Foo_filler
 #include "../src/Link.h"
 
+/** Animal virtual functions. */
 struct AnimalVt;
+/** Define class Animal. */
 struct Animal {
 	const struct AnimalVt *vt;
 	int x;
@@ -146,7 +149,7 @@ static void Bear_init(struct Bear *const bear, const struct Llama *const llamas,
 	bear->animal.data.x = bear->riding->x;
 }
 /* @implements AnimalAction */
-static void do_stuff(struct Animal *const this) {
+static void act(struct Animal *const this) {
 	this->vt->act(this);
 }
 /** Test BlockMove. */
@@ -170,9 +173,9 @@ static void test_block_move() {
 	printf("Sorted: by name %s; by x %s.\n", AnimalLinkNameToString(&animals),
 		AnimalLinkXToString(&animals));
 	printf("By name:\n");
-	AnimalLinkNameForEach(&animals, &do_stuff);
+	AnimalLinkNameForEach(&animals, &act);
 	printf("By x:\n");
-	AnimalLinkXForEach(&animals, &do_stuff);
+	AnimalLinkXForEach(&animals, &act);
 	_Animal_in_order(&animals);
 	memcpy(others, sloths, sizeof sloths);
 	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '!';
@@ -185,9 +188,9 @@ static void test_block_move() {
 	printf("Sorted: by name %s; by x %s.\n", AnimalLinkNameToString(&animals),
 		AnimalLinkXToString(&animals));
 	printf("By name:\n");
-	AnimalLinkNameForEach(&animals, &do_stuff);
+	AnimalLinkNameForEach(&animals, &act);
 	printf("By x:\n");
-	AnimalLinkXForEach(&animals, &do_stuff);
+	AnimalLinkXForEach(&animals, &act);
 	_Animal_in_order(&animals);
 }
 
