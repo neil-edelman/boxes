@@ -339,40 +339,23 @@ static void _T_(remove)(struct T_(Link) *const this,
 
 
 
-/** Private: add to first of list. */
+/** Private: add to the end of the list. */
 static void _T_(add)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	assert(this);
 	assert(node);
-#ifdef LINK_OPENMP /* <-- omp */
-	#pragma omp parallel sections
-#endif /* omp --> */
-	{
 #ifdef LINK_A_NAME /* <-- a */
-#ifdef LINK_OPENMP /* <-- omp */
-		#pragma omp section
-#endif /* omp --> */
-		_T_LA_(link, add)(this, node);
+	_T_LA_(link, add)(this, node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-#ifdef LINK_OPENMP /* <-- omp */
-		#pragma omp section
-#endif /* omp --> */
-		_T_LB_(link, add)(this, node);
+	_T_LB_(link, add)(this, node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-#ifdef LINK_OPENMP /* <-- omp */
-		#pragma omp section
-#endif /* omp --> */
-		_T_LC_(link, add)(this, node);
+	_T_LC_(link, add)(this, node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-#ifdef LINK_OPENMP /* <-- omp */
-		#pragma omp section
-#endif /* omp --> */
-		_T_LD_(link, add)(this, node);
+	_T_LD_(link, add)(this, node);
 #endif /* d --> */
-	}
 }
 
 /** Private: remove from list. */
@@ -380,35 +363,18 @@ static void _T_(remove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	assert(this);
 	assert(node);
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp parallel sections
-#endif /* omp --> */
-	{
 #ifdef LINK_A_NAME /* <-- a */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LA_(link, remove)(this, node);
+	_T_LA_(link, remove)(this, node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LB_(link, remove)(this, node);
+	_T_LB_(link, remove)(this, node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LC_(link, remove)(this, node);
+	_T_LC_(link, remove)(this, node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LD_(link, remove)(this, node);
+	_T_LD_(link, remove)(this, node);
 #endif /* d --> */
-	}
 }
 
 /** Private: clear the list. */
@@ -905,7 +871,7 @@ struct _T_(Runs) {
 };
 #endif /* sort internals --> */
 
-/* Make sure that LINK_[A-D]_COMPARATOR is a function implementing
+/* Check that each of LINK_[A-D]_COMPARATOR are functions implementing
  {<T>Comparator}. */
 static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
 
