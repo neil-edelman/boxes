@@ -21,7 +21,7 @@
 
  @param LINK_TO_STRING
  Optional print function implementing {<T>ToString} and making available
- \see{<T>Link<L>ToString}. Currently, this uses the C99 function {vsnprintf}.
+ \see{<T>Link<L>ToString}.
 
  @param LINK_DYNAMIC_STORAGE
  This allocates {O(log n)}, space needed for merge sort on the stack every time
@@ -1390,8 +1390,7 @@ static void _list_super_cat(struct _ListSuperCat *const cat,
 	const char *const append) {
 	size_t lu_took; int took;
 	if(cat->is_truncated) return;
-	/* fixme: snprintf is C99 */
-	took = snprintf(cat->cursor, cat->left, "%s", append);
+	took = sprintf(cat->cursor, "%.*s", cat->left, append);
 	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
 	if(took == 0) { return; }
 	if((lu_took=took)>=cat->left) {cat->is_truncated=-1,lu_took=cat->left-1;}
