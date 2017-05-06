@@ -42,13 +42,13 @@
  @std		C89/90
  @version	1.0; 2017-05
  @since		1.0; 2017-05 separated from List.h
- @fixme {#pragma GCC diagnostic ignored "-Wunused-function"} short of manually
+ @fixme {#pragma GCC diagnostic ignored "-Wunused-function"}; short of manually
  selecting which functions, we can't do anything about it.
- @fixme {#pragma GCC diagnostic ignored "-Wconversion"} version 4.2 has a bug
+ @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2 has a bug
  with {-Wconversion} that causes {assert} to emit a spurious warnings on
  {LINK_TEST}.
- @fixme {#pragma warning(disable: 4706)} {MSVC} mistakenly thinks it's {Java}.
- @fixme {#pragma warning(disable: 4996)} {MSVC} mistakenly thinks it's {C++11}.
+ @fixme {#pragma warning(disable: 4706)}; {MSVC} mistakenly thinks it's {Java}.
+ @fixme {#pragma warning(disable: 4996)}; {MSVC} mistakenly thinks it's {C++11}.
  @fixme {bcc}, {mingw}, {clang}, {etc}. */
 
 
@@ -986,8 +986,10 @@ struct _T_(Runs) {
 
 #endif /* sort internals --> */
 
-/* fixme: re-implement LINK_DYNAMIC_STORAGE */
+#ifndef LINK_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls
+ exactly this function concurrently */
 static struct _T_(Runs) _T_L_(runs, elem);
+#endif /* not dynamic --> */
 
 /** Inserts the first element from the larger of two sorted runs, then merges
  the rest. \cite{Peters2002Timsort}, via \cite{McIlroy1993Optimistic}, does
@@ -1109,6 +1111,9 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
  would be optimum, or whether a long run should be put off merging until
  short runs have finished; it is quite simple as it is. */
 static void _T_L_(natural, sort)(struct T_(Link) *const this) {
+#ifdef LINK_DYNAMIC_STORAGE /* <-- dynamic: this is potentially half-a-KB */
+	static struct _T_(Runs) _T_L_(runs, elem);
+#endif /* dynamic --> */
 	/* new_run is an index into link_runs, a temporary sorting structure;
 	 head is first smallest, tail is last largest */
 	struct _T_(Run) *new_run;
