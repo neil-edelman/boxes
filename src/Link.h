@@ -884,15 +884,12 @@ static void _T_L_(link, move)(struct T_(Link) *const this,
 	}
 }
 
-/*static char _T_L_(get, list)(const struct T_(LinkNode) *const node);*/
-
-/* {ptr \in [begin, end) -> ptr += delta}. */
+/** Private: used in \see{_<T>_block_<L>_move}.
+ \${ptr \in [begin, end) -> ptr += delta}. */
 static void _T_L_(block, move_one)(struct T_(LinkNode) **const node_ptr,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	const void *const ptr = *node_ptr;
-	if(ptr < begin) return;
-	if(ptr >= end) return;
-	/*wth? fixme? printf("(%p += %ld)", (void *)*node_ptr, delta);*/
+	if(ptr < begin || ptr >= end) return;
 	*(char **)node_ptr += delta;
 }
 
@@ -902,7 +899,6 @@ static void _T_L_(block, move_one)(struct T_(LinkNode) **const node_ptr,
  @param delta: the offset they have moved to in memory bytes. */
 static void _T_L_(block, move)(struct T_(Link) *const this,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
-	/*char a[9];*/
 	struct T_(LinkNode) *node;
 	assert(this);
 	assert(begin);
@@ -912,17 +908,12 @@ static void _T_L_(block, move)(struct T_(Link) *const this,
 	/* empty -- done */
 	if(!this->L_(first)) return;
 	/* first and last pointer of {<T>List} */
-	/*printf(QUOTE(_LINK_NAME) " first/last (%c, %c)", _T_L_(get, list)(this->L_(first)), _T_L_(get, list)(this->L_(last)));*/
 	_T_L_(block, move_one)(&this->L_(first), begin, end, delta);
 	_T_L_(block, move_one)(&this->L_(last),  begin, end, delta);
-	/*printf(" -> (%c, %c)\n", _T_L_(get, list)(this->L_(first)), _T_L_(get, list)(this->L_(last)));*/
-	/* all the others' */
+	/* all the others' {<T>ListNode} */
 	for(node = this->L_(first); node; node = node->L_(next)) {
-		/*_T_(to_string)(&node->data, &a);
-		printf("node %s, (%c->%c<-%c)", a, _T_L_(get, list)(node->L_(prev)), _T_L_(get, list)(node), _T_L_(get, list)(node->L_(next)));*/
 		_T_L_(block, move_one)(&node->L_(prev), begin, end, delta);
 		_T_L_(block, move_one)(&node->L_(next), begin, end, delta);
-		/*printf(" -> (%c->%c<-%c)\n", _T_L_(get, list)(node->L_(prev)), _T_L_(get, list)(node), _T_L_(get, list)(node->L_(next)));*/
 	}
 }
 
@@ -1390,7 +1381,7 @@ static void _list_super_cat(struct _ListSuperCat *const cat,
 	const char *const append) {
 	size_t lu_took; int took;
 	if(cat->is_truncated) return;
-	took = sprintf(cat->cursor, "%.*s", cat->left, append);
+	took = sprintf(cat->cursor, "%.*s", (int)cat->left, append);
 	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
 	if(took == 0) { return; }
 	if((lu_took=took)>=cat->left) {cat->is_truncated=-1,lu_took=cat->left-1;}
