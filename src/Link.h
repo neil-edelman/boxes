@@ -394,14 +394,6 @@ static void _T_(clear)(struct T_(Link) *const this) {
 #endif
 }
 
-/* Get a pointer to the underlying data stored in {this}.
- @deprecated Just cast either way.
- @allow */
-/*static T *T_(LinkNodeGet)(struct T_(LinkNode) *const this) {
-	if(!this) return 0;
-	return &this->data;
-}*/
-
 /** Clears all values from {this}, thereby initialising the {<T>Link}.
  @allow */
 static void T_(LinkClear)(struct T_(Link) *const this) {
@@ -555,41 +547,46 @@ static void T_(LinkSetParam)(struct T_(Link) *const this,
 }
 
 /** Use when one {<T>LinkNode} of {this} has switched places in memory from
- {old} to {new}. If {this}, {old}, or {new} is null, doesn't do anything.
- {O(1)}.
+ {old_node} to {node}. If {this}, {node}, or {old_node} is null, doesn't do
+ anything. {O(1)}.
  @allow */
-static void T_(LinkMove)(struct T_(Link) *const this,
-	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
-	if(!this || !old || !new) return;
+static void T_(LinkMigrate)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const node,
+	const struct T_(LinkNode) *const old_node) {
+	if(!this || !node || !old_node) return;
 #ifdef LINK_A_NAME /* <-- a */
-	_T_LA_(link, memmove)(this, old, new);
+	_T_LA_(link, migrate)(this, node, old_node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-	_T_LB_(link, memmove)(this, old, new);
+	_T_LB_(link, migrate)(this, node, old_node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-	_T_LC_(link, memmove)(this, old, new);
+	_T_LC_(link, migrate)(this, node, old_node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-	_T_LD_(link, memmove)(this, old, new);
+	_T_LD_(link, migrate)(this, node, old_node);
 #endif /* d --> */
 }
 
 /** Use when {this} contains elements from an array of/containing {<T>LinkNode}
- in memory that switched from {old} to {new} with byte-size {byte_size}. If
- {this}, {old}, or {new} is null, doesn't do anything. For example, one must
- call this on a {<T>Link} that is (partially) backed with an array that has
- changed places due to a {realloc}. {O(n)}.
+ in memory that switched from {old_array} to {array} with byte-size
+ {array_size}. If {this}, {array}, or {old_array} is null, doesn't do anything.
+ {O(n)}.
 
- Relies on not-strictly-defined behaviour because pointers are not necessarily
- contiguous. It should be fine in practice.
+ For example, one must call this on a {<T>Link} that is (partially) backed with
+ an array that has changed places due to a {realloc}.
+
+ @fixme Relies on not-strictly-defined behaviour because pointers are not
+ necessarily contiguous in memory; it should be fine in practice. There is no
+ fix.
  @allow */
-static void T_(LinkBlockMove)(struct T_(Link) *const this,
-	const void *const old, const size_t byte_size, void *const new) {
-	const char *const cold = old;
-	const char *const cold_end = cold + byte_size;
-	const ptrdiff_t delta = (char *)new - cold;
-	if(!this || !old || !byte_size || !new || old == new) return;
+static void T_(LinkMigrateBlock)(struct T_(Link) *const this,
+	void *const array, const size_t array_size, const void *const old_array) {
+	const char *const cold = old_array;
+	const char *const cold_end = cold + array_size;
+	const ptrdiff_t delta = (char *)array - cold;
+	if(!this || !array || !array_size || !old_array || array == old_array)
+		return;
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -598,25 +595,25 @@ static void T_(LinkBlockMove)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LA_(block, move)(this, cold, cold_end, delta);
+		_T_LA_(block, migrate)(this, cold, cold_end, delta);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LB_(block, move)(this, cold, cold_end, delta);
+		_T_LB_(block, migrate)(this, cold, cold_end, delta);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LC_(block, move)(this, cold, cold_end, delta);
+		_T_LC_(block, migrate)(this, cold, cold_end, delta);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LD_(block, move)(this, cold, cold_end, delta);
+		_T_LD_(block, migrate)(this, cold, cold_end, delta);
 #endif /* d --> */
 	}
 }
@@ -681,7 +678,7 @@ static void T_(LinkBlockMove)(struct T_(Link) *const this,
 
  Internally #included.
 
- @param _LINK_NAME: A unique name; required;
+ @param _LINK_NAME: A unique name of the linked list; required;
  @param _LINK_COMPARATOR: an optional comparator. */
 
 
@@ -761,30 +758,29 @@ static void _T_L_(link, cat)(struct T_(Link) *const this,
 }
 
 /** Private: {old} is not de-referenced, but {new} is. */
-static void _T_L_(link, memmove)(struct T_(Link) *const this,
-	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
-	assert(this);
-	assert(old);
-	assert(new);
-	if(new->L_(prev)) {
-		assert(new->L_(prev)->L_(next) == old);
-		new->L_(prev)->L_(next) = new;
+static void _T_L_(link, migrate)(struct T_(Link) *const this,
+	struct T_(LinkNode) *const node,
+	const struct T_(LinkNode) *const old_node) {
+	assert(this && node &&old_node);
+	if(node->L_(prev)) {
+		assert(node->L_(prev)->L_(next) == old_node);
+		node->L_(prev)->L_(next) = node;
 	} else {
-		assert(this->L_(first) == old);
-		this->L_(first) = new;
+		assert(this->L_(first) == old_node);
+		this->L_(first) = node;
 	}
-	if(new->L_(next)) {
-		assert(new->L_(next)->L_(prev) == old);
-		new->L_(next)->L_(prev) = new;
+	if(node->L_(next)) {
+		assert(node->L_(next)->L_(prev) == old_node);
+		node->L_(next)->L_(prev) = node;
 	} else {
-		assert(this->L_(last) == old);
-		this->L_(last) = new;
+		assert(this->L_(last) == old_node);
+		this->L_(last) = node;
 	}
 }
 
-/** Private: used in \see{_<T>_block_<L>_move}.
+/** Private: used in \see{_<T>_block_<L>_migrate}.
  \${ptr \in [begin, end) -> ptr += delta}. */
-static void _T_L_(block, move_one)(struct T_(LinkNode) **const node_ptr,
+static void _T_L_(block, migrate_one)(struct T_(LinkNode) **const node_ptr,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	const void *const ptr = *node_ptr;
 	if(ptr < begin || ptr >= end) return;
@@ -795,7 +791,7 @@ static void _T_L_(block, move_one)(struct T_(LinkNode) **const node_ptr,
  behaviour to a minimum.
  @param [begin, end): Where the pointers have changed.
  @param delta: the offset they have moved to in memory bytes. */
-static void _T_L_(block, move)(struct T_(Link) *const this,
+static void _T_L_(block, migrate)(struct T_(Link) *const this,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	struct T_(LinkNode) *node;
 	assert(this);
@@ -806,12 +802,12 @@ static void _T_L_(block, move)(struct T_(Link) *const this,
 	/* empty -- done */
 	if(!this->L_(first)) return;
 	/* first and last pointer of {<T>List} */
-	_T_L_(block, move_one)(&this->L_(first), begin, end, delta);
-	_T_L_(block, move_one)(&this->L_(last),  begin, end, delta);
+	_T_L_(block, migrate_one)(&this->L_(first), begin, end, delta);
+	_T_L_(block, migrate_one)(&this->L_(last),  begin, end, delta);
 	/* all the others' {<T>ListNode} */
 	for(node = this->L_(first); node; node = node->L_(next)) {
-		_T_L_(block, move_one)(&node->L_(prev), begin, end, delta);
-		_T_L_(block, move_one)(&node->L_(next), begin, end, delta);
+		_T_L_(block, migrate_one)(&node->L_(prev), begin, end, delta);
+		_T_L_(block, migrate_one)(&node->L_(next), begin, end, delta);
 	}
 }
 

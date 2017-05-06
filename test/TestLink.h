@@ -2,83 +2,16 @@
 
 #ifndef _LINK_NAME /* <-- !_LINK_NAME */
 
-#include <stdlib.h>	/* rand malloc */
-/* http://stackoverflow.com/questions/10269685/kernels-container-of-any-way-to-make-it-iso-conforming easy */
-#define container_of(ptr, type, member) \
-	((type *) ((char *)(ptr) - offsetof(type, member)))
-
-
-
 
 
 /* prototype */
 static int _T_(in_order)(struct T_(Link) *const this);
+static int _T_(in_array)(struct T_(Link) *const this,
+	const struct T_(LinkNode) *const array, const size_t array_size);
 static void _T_(print_all)(struct T_(Link) *const this);
 
-/* LIST_TEST must be a function that implements {<T>Action}. */
+/* Check that LIST_TEST is a function implementing {<T>Action}. */
 static const T_(Action) _T_(filler) = (LINK_TEST);
-
-/* this is _not_ what to do! you would have a virtual table pointer in T; but
- since we have no control over T, we have to hack */
-struct T_(LinkSloth) {
-	struct T_(LinkNode) node;
-	const char *(*sloth_speak)(const struct T_(LinkNode) *const);
-	char name[4];
-	unsigned lazy;
-};
-static const char *_T_(sloth_speak)(const struct T_(LinkNode) *const node) {
-	static char say[64];
-	char a[9];
-	const struct T_(LinkSloth) *const sloth = container_of(node, struct T_(LinkSloth), node);
-	_T_(to_string)(&node->data, &a);
-	snprintf(say, sizeof say, "%s sloth %s has stood still for %u hours", a, sloth->name, sloth->lazy);
-	return say;
-}
-static void T_(LinkSloth)(struct T_(LinkSloth) *const this, struct T_(Link) *const sloth_list) {
-	if(!this) return;
-	this->sloth_speak = &_T_(sloth_speak);
-	this->name[0] = ('Z' - 'A' + 1.0) * rand() / (RAND_MAX + 1.0) + 'A';
-	this->name[1] = ('z' - 'a' + 1.0) * rand() / (RAND_MAX + 1.0) + 'a';
-	this->name[2] = ('z' - 'a' + 1.0) * rand() / (RAND_MAX + 1.0) + 'a';
-	this->name[3] = '\0';
-	this->lazy = (unsigned)((100.0) * rand() / (RAND_MAX + 1.0) + 100.0);
-	T_(LinkAdd)(sloth_list, &this->node);
-}
-
-struct T_(LinkBear) {
-	struct T_(LinkNode) node;
-	const char *(*bear_speak)(const struct T_(LinkNode) *const);
-	char name[2];
-	unsigned ate;
-};
-static const char *_T_(bear_speak)(const struct T_(LinkNode) *const node) {
-	static char say[64];
-	char a[9];
-	const struct T_(LinkBear) *const bear = container_of(node, struct T_(LinkBear), node);
-	_T_(to_string)(&node->data, &a);
-	snprintf(say, sizeof say, "%s bear %s ate %d humans", a, bear->name, bear->ate);
-	return say;
-}
-static void T_(LinkBear)(struct T_(LinkBear) *const this, struct T_(Link) *const bear_list) {
-	if(!this) return;
-	this->bear_speak = &_T_(bear_speak);
-	this->name[0] = ('Z' - 'A' + 1.0) * rand() / (RAND_MAX + 1.0) + 'A';
-	this->name[1] = '\0';
-	this->ate = (unsigned)((1.0) * rand() / (RAND_MAX + 1.0) + 9.0);
-	T_(LinkAdd)(bear_list, &this->node);
-}
-/* @implements <T>Action */
-static void _T_(sloth_bear_speak)(T *const sb) {
-	char a[9];
-	const struct T_(LinkNode) *const node = container_of(sb, struct T_(LinkNode), data);
-	const struct Hack {
-		struct T_(LinkNode) node;
-		const char *(*speak)(const struct T_(LinkNode) *const);
-	} *const nodespeak = container_of(node, struct Hack, node);
-	_T_(to_string)(sb, &a);
-	printf("sloth_bear_speak: item %s\n", a);
-	nodespeak->speak(node);
-}
 
 #ifdef LINK_A_NAME /* <-- a */
 #define _LINK_NAME LINK_A_NAME
@@ -171,9 +104,8 @@ static void T_(LinkTest)(void) {
 /* test helper functions */
 
 static int _T_(in_order)(struct T_(Link) *const this) {
-	UNUSED(this);
 	assert(this);
-	return -1
+	return 1
 #ifdef LINK_A_COMPARATOR
 		&& _T_LA_(in, order)(this)
 #endif
@@ -189,8 +121,26 @@ static int _T_(in_order)(struct T_(Link) *const this) {
 		;
 }
 
+static int _T_(in_array)(struct T_(Link) *const this,
+	const struct T_(LinkNode) *const array, const size_t array_size) {
+	/* overkill; only one would do */
+	return 1
+#ifdef LINK_A_COMPARATOR
+		&& _T_LA_(in, array)(this, array, array_size)
+#endif
+#ifdef LINK_B_COMPARATOR
+		&& _T_LB_(in, array)(this, array, array_size)
+#endif
+#ifdef LINK_C_COMPARATOR
+		&& _T_LC_(in, array)(this, array, array_size)
+#endif
+#ifdef LINK_D_COMPARATOR
+		&& _T_LD_(in, array)(this, array, array_size)
+#endif
+		;
+}
+
 static void _T_(print_all)(struct T_(Link) *const this) {
-	UNUSED(this);
 	assert(this);
 #ifdef LINK_A_NAME
 	printf(".%8s: %s.\n", QUOTE(LINK_A_NAME), T_LA_(Link, ToString)(this));
@@ -206,13 +156,19 @@ static void _T_(print_all)(struct T_(Link) *const this) {
 #endif
 }
 
-#else /* !index --><-- index */
+
+
+#else /* !_LINK_NAME --><-- _LINK_NAME */
+
+
 
 #ifdef _T_L_
 #undef _T_L_
 #endif
 #define _T_L_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
 	PCAT(_LINK_NAME, thing2))
+
+
 
 /* test helper functions that depend on <L> */
 
@@ -287,6 +243,14 @@ static int _T_L_(in, order)(struct T_(Link) *const this) {
 	T_(LinkSetParam)(this, one_array);
 	return !T_L_(Link, ShortCircuit)(this, &_T_L_(order, predicate));
 }
+/** All elements are in the same array? */
+static int _T_L_(in, array)(struct T_(Link) *const this,
+	const struct T_(LinkNode) *const array, const size_t array_size) {
+	struct T_(LinkNode) *item;
+	for(item = this->L_(first); item; item = item->L_(next))
+		if(item < array || item >= array + array_size) return 0;
+	return 1;
+}
 
 /** Returns true. Used in \see{_T_L_(test, basic)}.
  @implements <T>Predicate */
@@ -319,6 +283,8 @@ static void _T_L_(test, basic)(void) {
 	size_t i;
 	int is_parity = 1;
 
+	printf("Basic tests of " QUOTE(LINK_NAME) " linked-list " QUOTE(_LINK_NAME)
+		":\n");
 	/* Clear */
 	T_(LinkClear)(0);
 	T_(LinkClear)(&a);
@@ -336,9 +302,6 @@ static void _T_L_(test, basic)(void) {
 	}
 	item_a = T_L_(Link, GetFirst)(&a);
 	assert(item_a);
-	/* GetData */
-	/*assert(!T_(LinkNodeGet)(0));
-	data = T_(LinkNodeGet)(item_a);*/
 	data = (T *)item_a;
 	assert(data);
 	_T_(to_string)(data, &str);
@@ -402,9 +365,9 @@ static void _T_L_(test, basic)(void) {
 	T_L_(Link, Sort)(&a);
 	assert(_T_L_(in, order)(&a));
 	/* Sort */
-	printf("Sorting all.\n");
 	T_(LinkSort)(0);
 	T_(LinkSort)(&a);
+	printf("Sorting, a = %s.\n", T_L_(Link, ToString)(&a));
 	assert(_T_(in_order)(&a));
 	/* ToString (unchecked) */
 	printf("ToString: null = %s; a = %s.\n",
@@ -414,49 +377,6 @@ static void _T_L_(test, basic)(void) {
 	assert(!_T_L_(count, elements)(&a));
 }
 
-#define LINK_BUFFER_SIZE 4
-struct _T_L_(Link, Buffers) {
-	struct T_(LinkNode) x[LINK_BUFFER_SIZE], y[LINK_BUFFER_SIZE],
-		z[LINK_BUFFER_SIZE];
-} _T_L_(buf, buf);
-#define LINK_BUFFER_BYTES (sizeof(struct T_(LinkNode)) * LINK_BUFFER_SIZE)
-static char _T_L_(get, list)(const struct T_(LinkNode) *const node) {
-	if(node >= _T_L_(buf, buf).x
-		&& node < _T_L_(buf, buf).x + LINK_BUFFER_SIZE) {
-		return 'x';
-	} else if(node >= _T_L_(buf, buf).y
-		&& node < _T_L_(buf, buf).y + LINK_BUFFER_SIZE) {
-		return 'y';
-	} else if(node >= _T_L_(buf, buf).z
-		&& node < _T_L_(buf, buf).z + LINK_BUFFER_SIZE) {
-		return 'z';
-	} else if(!node) {
-		return '0';
-	}
-	/*printf("(%p ? %p, %p, %p)", (void *)node, (void *)_T_L_(buf, buf).x, (void *)_T_L_(buf, buf).y, (void *)_T_L_(buf, buf).z);*/
-	return '?';
-}
-static void _T_L_(check, list)(const struct T_(Link) *const this,
-	int (*const fn)(const int)) {
-	struct T_(LinkNode) *node, *prev = 0;
-	char a[9];
-	int char_list;
-	assert(this);
-	assert(!this->L_(first) == !this->L_(last));
-	for(node = this->L_(first); node; node = node->L_(next)) {
-		printf("");
-		assert(node->L_(prev) == prev);
-		_T_(to_string)(&node->data, &a);
-		prev = node;
-		char_list = _T_L_(get, list)(node);
-		printf("%c(%s)%s", char_list, a, node->L_(next) ? ", " : ".\n");
-		if(fn) assert(fn(char_list));
-	}
-	assert(this->L_(last) == prev);
-}
-static int _T_L_(verify, x)(const int a) { return a == 'x'; }
-static int _T_L_(verify, yz)(const int a) { return a == 'y' || a == 'z'; }
-static int _T_L_(verify, z)(const int a) { return a == 'z'; }
 /* interleave: (Take, Merge,) (Move,
  ContiguousMove,)(Compare,
  Subtraction, Union, Intersection, Xor, If,)
@@ -468,27 +388,22 @@ static int _T_L_(verify, z)(const int a) { return a == 'z'; }
  Subtraction, Union, Intersection, Xor, If, ForEach, ShortCircut, ToString */
 static void _T_L_(test, memory)(void) {
 	struct T_(Link) a, b;
-	struct T_(LinkNode) *node_a, *node_b, *node_c;
+	struct T_(LinkNode) buf[3][100], *node_a, *node_b, *node_c;
+	const size_t buf_size = sizeof buf[0] / sizeof *buf[0];
 	size_t i;
 	int is_parity;
 
+	printf("Memory tests of " QUOTE(LINK_NAME) " linked-list " QUOTE(_LINK_NAME) ":\n");
 	T_(LinkClear)(&a), T_(LinkClear)(&b);
-	/* fill the items in bufbuf.x */
-	for(i = 0; i < LINK_BUFFER_SIZE; i++) {
-		node_a = _T_L_(buf, buf).x + i;
-		_T_(filler)(&node_a->data);
-	}
-	/* copy the items to bufbuf.y */
-	memcpy(_T_L_(buf, buf).y, _T_L_(buf, buf).x, LINK_BUFFER_BYTES);
-	memset(&_T_L_(buf, buf).z, 0, LINK_BUFFER_BYTES);
-	/* put all items in a */
-	for(i = 0; i < LINK_BUFFER_SIZE; i++) {
-		node_a = _T_L_(buf, buf).x + i;
-		node_b = _T_L_(buf, buf).y + i;
-		T_(LinkAdd)(&a, node_a);
-		T_(LinkAdd)(&a, node_b);
-	}
-	T_(LinkSort)(&a); /* tests if stable */
+	/* fill the items in buf0 */
+	for(i = 0; i < buf_size; i++) node_a = buf[0]+i, _T_(filler)(&node_a->data);
+	/* copy the items to buf1; buf2 zeroed */
+	memcpy(buf[1], buf[0], buf_size * sizeof *buf[0]);
+	memset(&buf[2], 0, buf_size * sizeof *buf[2]);
+	/* put all items in buf0 and buf1 */
+	for(i = 0; i < buf_size; i++) T_(LinkAdd)(&a, buf[0] + i);
+	for(i = 0; i < buf_size; i++) T_(LinkAdd)(&a, buf[1] + i);
+	T_(LinkSort)(&a);
 	printf("Sorting, (backed by two arrays,) a = %s.\n",
 		T_L_(Link, ToString)(&a));
 	assert(_T_(in_order)(&a));
@@ -500,83 +415,45 @@ static void _T_L_(test, memory)(void) {
 	T_L_(Link, TakeIf)(&b, &a, &_T_L_(every, second));
 	printf("a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
-	printf("a:\n"), _T_(print_all)(&a);
-	printf("b:\n"), _T_(print_all)(&b);
+	/* tests stability of sort; false! only if all items different */
+	/*assert(_T_L_(in, array)(&a, buf[0], buf_size));*/
+	/*assert(_T_(in_array)(&b, buf[1], buf_size));*/
 	assert(_T_(in_order)(&a));
 	assert(_T_L_(in, order)(&b)); /* only <L> is in order */
-	/* Compare (needs to be tested more!) */
+	/* Compare */
 	assert(!T_L_(Link, Compare)(0, 0));
 	assert(T_L_(Link, Compare)(&a, 0) > 0);
 	assert(T_L_(Link, Compare)(0, &b) < 0);
 	assert(!T_L_(Link, Compare)(&a, &b));
 	/* Test done. */
-	printf("Moving all a to b.\n");
 	T_L_(Link, TakeIf)(&b, &a, 0);
-	printf("Now a = %s, b = %s.\n",
+	printf("Moving all a to b; a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(_T_L_(count, elements)(&a) == 0);
-	assert(_T_L_(count, elements)(&b) == 2 * LINK_BUFFER_SIZE);
+	assert(_T_L_(count, elements)(&b) == 2 * buf_size);
 	/* Clear (the rest) */
 	printf("Clear b.\n");
 	T_(LinkClear)(&b);
 	assert(_T_L_(count, elements)(&b) == 0);
 	/* Test done; move. */
-	for(i = 0; i < LINK_BUFFER_SIZE; i++) {
-		T_(LinkAdd)(&a, _T_L_(buf, buf).x + i);
-		T_(LinkAdd)(&b, _T_L_(buf, buf).y + i);
-	}
-	assert(_T_L_(exactly, elements)(&a, _T_L_(buf, buf).x, (size_t)LINK_BUFFER_SIZE));
-	assert(_T_L_(exactly, elements)(&b, _T_L_(buf, buf).y, (size_t)LINK_BUFFER_SIZE));
+	for(i = 0; i < buf_size; i++)
+		T_(LinkAdd)(&a, buf[0] + i), T_(LinkAdd)(&b, buf[1] + i);
+	assert(_T_L_(exactly, elements)(&a, buf[0], buf_size));
+	assert(_T_L_(exactly, elements)(&b, buf[1], buf_size));
 	assert(!T_L_(Link, Compare)(&a, &b));
-	memset(_T_L_(buf, buf).z, 0, LINK_BUFFER_BYTES);
-	for(i = 0; i < LINK_BUFFER_SIZE; i += 2) {
-		node_b = _T_L_(buf, buf).y + i;
-		node_c = _T_L_(buf, buf).z + i;
+	for(i = 0; i < buf_size; i += 2) {
+		node_b = buf[1] + i;
+		node_c = buf[2] + i;
 		memcpy(node_c, node_b, sizeof *node_b);
 		memset(node_b, 0, sizeof *node_b);
-		T_(LinkMove)(&b, node_b, node_c);
+		T_(LinkMigrate)(&b, node_c, node_b);
 	}
 	printf("Testing memory relocation with <" QUOTE(LINK_NAME)
-		">LinkMove: a = %s, b = %s.\n",
+		">LinkMigrate: a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	assert(!T_L_(Link, Compare)(&a, &b));
-	printf("a: "), _T_L_(check, list)(&a, &_T_L_(verify, x));
-	printf("b: "), _T_L_(check, list)(&b, &_T_L_(verify, yz));
-	/* Test done; ContiguousMove */
-	/*for(i = 1; i < LINK_BUFFER_SIZE; i += 2) {
-		node_b = _T_L_(buf, buf).y + i;
-		node_c = _T_L_(buf, buf).z + i;
-		memcpy(node_b, node_b, sizeof *node_b);
-		memset(node_b, 0, sizeof *node_b); <- really what we want
-	}*/
-	memcpy(_T_L_(buf, buf).z, _T_L_(buf, buf).x, LINK_BUFFER_BYTES);
-	memset(_T_L_(buf, buf).x, 0, LINK_BUFFER_BYTES);
-	T_(LinkBlockMove)(&a, _T_L_(buf, buf).x, LINK_BUFFER_BYTES, _T_L_(buf, buf).z);
-	printf("Testing contiguous memory relocation a = %s, b = %s.\n",
-		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
-	assert(!T_L_(Link, Compare)(&a, &b));
-	printf("a: "), _T_L_(check, list)(&a, &_T_L_(verify, z));
-	printf("a:\n"), _T_(print_all)(&a);
-}
-
-static void _T_L_(sloth, bear)(void) {
-	struct T_(Link) a;
-	struct T_(LinkSloth) sloth[4]/*, sloth2[8]*/;
-	struct T_(LinkBear) bear[4];
-	const size_t sloth1_size = sizeof sloth / sizeof *sloth,
-		/*sloth2_size = sizeof sloth2 / sizeof *sloth2,*/
-		bear_size = sizeof bear / sizeof *bear;
-	unsigned i;
-	printf("SlothBear:\n");
-	T_(LinkClear)(&a);
-	for(i = 0; i < sloth1_size; i++) T_(LinkSloth)(sloth + i, &a);
-	for(i = 0; i < bear_size; i++) T_(LinkBear)(bear + i, &a);
-	printf("SlothBear a = %s.\n", T_L_(Link, ToString)(&a));
-	T_(LinkSort)(&a);
-	printf("SlothBear a sorted by " QUOTE(_LINK_NAME) " = %s.\n",
-		T_L_(Link, ToString)(&a));
-	assert(_T_(in_order)(&a));
-	T_L_(Link, ForEach)(&a, &_T_(sloth_bear_speak));
+	assert(_T_(in_array)(&a, buf[0], buf_size));
+	assert(_T_(in_array)(&b, buf[1], buf_size << 1));
 }
 
 #ifdef _LINK_COMPARATOR /* <-- compare */
@@ -840,7 +717,6 @@ static void _T_L_(test, list)(void) {
 		   QUOTE(_LINK_NAME) ":\n");
 	_T_L_(test, basic)();
 	_T_L_(test, memory)();
-	_T_L_(sloth, bear)();
 	 /*#ifdef _LINK_COMPARATOR
 	 && _T_L_(test, boolean)()
 	 && _T_L_(test, bump)()
@@ -856,4 +732,4 @@ static void _T_L_(test, list)(void) {
 #undef _LINK_COMPARATOR
 #endif /* comp --> */
 
-#endif /* index --> */
+#endif /* _LINK_NAME --> */

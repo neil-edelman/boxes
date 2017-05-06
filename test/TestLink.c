@@ -163,6 +163,8 @@ static void test_block_move() {
 	struct Sloth others[9];
 	const size_t others_size = sizeof others / sizeof *others;
 	size_t i;
+
+	printf("Llama test:\n");
 	assert(others_size >= sloths_size);
 	for(i = 0; i < sloths_size; i++) Sloth_init(sloths + i);
 	for(i = 0; i < llamas_size; i++) Llama_init(llamas + i);
@@ -180,7 +182,7 @@ static void test_block_move() {
 	memcpy(others, sloths, sizeof sloths);
 	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '!';
 	printf("Moved sloths: %s.\n", AnimalLinkNameToString(&animals));
-	AnimalLinkBlockMove(&animals, sloths, sizeof sloths, others);
+	AnimalLinkMigrateBlock(&animals, others, sizeof sloths, sloths);
 	printf("Block move: %s.\n", AnimalLinkNameToString(&animals));
 	for(i = sloths_size; i < others_size; i++) Sloth_init(others + i);
 	printf("New sloths: %s.\n", AnimalLinkNameToString(&animals));

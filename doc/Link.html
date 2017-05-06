@@ -62,18 +62,20 @@ file for convenience when including multiple Link types.
 	<dt>since</dt>
 	<dd>1.0; 2017-05 separated from List.h</dd>
 	<dt>fixme</dt>
-	<dd><em>#pragma GCC diagnostic ignored "-Wunused-function"</em> short of manually
+	<dd><em>#pragma GCC diagnostic ignored "-Wunused-function"</em>; short of manually
  selecting which functions, we can't do anything about it.</dd>
 	<dt>fixme</dt>
-	<dd><em>#pragma GCC diagnostic ignored "-Wconversion"</em> version 4.2 has a bug
+	<dd><em>#pragma GCC diagnostic ignored "-Wconversion"</em>; version 4.2 has a bug
  with <em>-Wconversion</em> that causes <em>assert</em> to emit a spurious warnings on
  <em>LINK_TEST</em>.</dd>
 	<dt>fixme</dt>
-	<dd><em>#pragma warning(disable: 4706)</em> <em>MSVC</em> mistakenly thinks it's <em>Java</em>.</dd>
+	<dd><em>#pragma warning(disable: 4706)</em>; <em>MSVC</em> mistakenly thinks it's <em>Java</em>.</dd>
 	<dt>fixme</dt>
-	<dd><em>#pragma warning(disable: 4996)</em> <em>MSVC</em> mistakenly thinks it's <em>C++11</em>.</dd>
+	<dd><em>#pragma warning(disable: 4996)</em>; <em>MSVC</em> mistakenly thinks it's <em>C++11</em>.</dd>
 	<dt>fixme</dt>
 	<dd><em>bcc</em>, <em>mingw</em>, <em>clang</em>, <em>etc</em>.</dd>
+	<dt>fixme</dt>
+	<dd>Code duplication natural merge and take merge.</dd>
 	<dt>parameter: LINK_NAME, LINK_TYPE</dt>
 	<dd>The name that becomes <em>T</em> and a valid type associated therewith (should be
  conformant to the maximum available length of identifiers.) Must each be
@@ -84,7 +86,7 @@ file for convenience when including multiple Link types.
  should be an inlined <em>static</em> function, if possible.</dd>
 	<dt>parameter: LINK_TO_STRING</dt>
 	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em> and making available
- <a href = "#&lt;T&gt;Link&lt;L&gt;ToString">&lt;T&gt;Link&lt;L&gt;ToString</a>. Currently, this uses the C99 function <em>vsnprintf</em>.</dd>
+ <a href = "#&lt;T&gt;Link&lt;L&gt;ToString">&lt;T&gt;Link&lt;L&gt;ToString</a>.</dd>
 	<dt>parameter: LINK_DYNAMIC_STORAGE</dt>
 	<dd>This allocates <em>O(log n)</em>, space needed for merge sort on the stack every time
  the List is sorted, instead of statically. This allows using the exact same
@@ -350,7 +352,7 @@ behaviour. If either <em>this</em> or <em>node</em> is null, it does nothing.
 	struct &lt;T&gt;Link *const from)</pre>
 <p>
 Appends the elements of <em>from</em> onto <em>this</em>. If <em>this</em> is null, then it
-removes elements.
+removes elements. <em>O(1)</em>.
 </p>
 <dl>
 </dl>
@@ -361,10 +363,9 @@ removes elements.
 <pre>static void <b>&lt;T&gt;LinkMerge</b> (struct &lt;T&gt;Link *const this,
 	struct &lt;T&gt;Link *const from)</pre>
 <p>
-Merges the elements of <em>from</em> into <em>this</em> in (local) order,
+Merges the elements into <em>this</em> from <em>from</em> in (local) order,
 <em>O(this.n + from.n)</em>; concatenates all lists that don't have a
-<em>LINK_[A-D]_COMPARATOR</em>, <em>O(1)</em>. If <em>this</em> is null, then it removes
-elements.
+<em>LINK_[A-D]_COMPARATOR</em>. If <em>this</em> is null, then it removes elements.
 </p>
 <dl>
 </dl>
@@ -420,7 +421,7 @@ changed places due to a <em>realloc</em>. <em>O(n)</em>.
 </p>
 <p>
 Relies on not-strictly-defined behaviour because pointers are not necessarily
-contiguous. It should be fine in practice.
+contiguous in memory. It should be fine in practice.
 </p>
 <dl>
 </dl>
@@ -546,7 +547,9 @@ elements are moved from <em>a</em>. If <em>this</em> is null, then it removes el
 	struct &lt;T&gt;Link *const from, const &lt;T&gt;Predicate predicate)</pre>
 <p>
 Appends <em>this</em> with <em>from</em> if <em>predicate</em> is null or true in the order
-specified by <em>&lt;L&gt;</em>. If <em>this</em> is null, then it removes elements.
+specified by <em>&lt;L&gt;</em>. If <em>this</em> is null, then it removes elements. The non-<em>&lt;L&gt;</em>
+elements are forced to take the order of <em>&lt;L&gt;</em> in <em>this</em>; thus, copying to a
+temporary list and re-ordering may be beneficial.
 </p>
 <dl>
 </dl>
