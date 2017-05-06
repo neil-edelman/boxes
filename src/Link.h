@@ -61,7 +61,7 @@
 #include <stddef.h>	/* ptrdiff_t */
 #include <assert.h>	/* assert */
 #ifdef LINK_TO_STRING /* <-- print */
-#include <stdio.h>	/* vs[n]printf; fixme: C99 */
+#include <stdio.h>	/* sprintf */
 #endif /* print --> */
 
 /* unused macro */
