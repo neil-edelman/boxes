@@ -621,25 +621,25 @@ static void T_(LinkMove)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LA_(link, move)(this, old, new);
+		_T_LA_(link, memmove)(this, old, new);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LB_(link, move)(this, old, new);
+		_T_LB_(link, memmove)(this, old, new);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LC_(link, move)(this, old, new);
+		_T_LC_(link, memmove)(this, old, new);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LD_(link, move)(this, old, new);
+		_T_LD_(link, memmove)(this, old, new);
 #endif /* d --> */
 	}
 }
@@ -808,8 +808,6 @@ static void _T_L_(link, remove)(struct T_(Link) *const this,
 		assert(this->L_(last) == node);
 		this->L_(last) = node->L_(prev);
 	}
-	node->L_(prev) = 0;
-	node->L_(next) = 0;
 }
 
 /** Private: cats all {from} to the tail of {this}; {from} will be empty after.
@@ -818,53 +816,21 @@ static void _T_L_(link, cat)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	assert(this);
 	assert(from);
+	assert(!this->L_(first) == !this->L_(last));
 	assert(!from->L_(first) == !from->L_(last));
-	if(!from->L_(first)) return; /* there is nothing in {from} */
-	if(!this->L_(first)) { /* there is nothing in {this} */
+	if(!from->L_(first)) {        /* there is nothing in {from} */
+		return;
+	} else if(!this->L_(first)) { /* there is nothing in {this} */
 		this->L_(first) = from->L_(first);
-	} else { /* there is something in both */
+	} else {                      /* there is something in both */
 		this->L_(last)->L_(next) = from->L_(first);
 	}
 	this->L_(last) = from->L_(last);
 	from->L_(first) = from->L_(last) = 0;
 }
 
-#ifdef _LINK_COMPARATOR /* <-- comp */
-
-/* make sure that LINK_[A-D]_COMPARATOR is a function implementing
- {<T>Comparator}. */
-static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
-
-/** Private: merges {this} into {recipient}; on equal elements, places {this}
- first. {O(n + m)}. */
-static void _T_L_(link, merge)(struct T_(Link) *const this,
-	struct T_(Link) *const from) {
-	struct T_(LinkNode) *tnode, *fnode;
-	assert(this);
-	assert(from);
-	tnode = this->L_(first);
-	while((fnode = from->L_(first))) {
-		while(tnode && _T_L_(data, cmp)(&fnode->data, &tnode->data) > 0)
-			tnode = tnode->L_(next);
-		if(!tnode) break; /* run past the end of {this} */
-		/* shift(from); {fnode} goes before {tnode} */
-		_T_L_(link, remove)(from, fnode);
-		fnode->L_(next) = tnode;
-		if((fnode->L_(prev) = tnode->L_(prev))) {
-			tnode->L_(prev)->L_(next) = fnode;
-		} else {
-			/* this is the first, now */
-			assert(this->L_(first) == tnode);
-			this->L_(first) = fnode;
-		}
-	}
-	_T_L_(link, cat)(this, from);
-}
-
-#endif /* comp --> */
-
 /** Private: {old} is not de-referenced, but {new} is. */
-static void _T_L_(link, move)(struct T_(Link) *const this,
+static void _T_L_(link, memmove)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
 	assert(this);
 	assert(old);
@@ -953,18 +919,15 @@ static struct T_(LinkNode) *T_L_(Link, GetLast)(struct T_(Link) *const this) {
 
 #ifdef _LINK_COMPARATOR /* <-- comp */
 
-/* Merge sort internals only once per translation unit. */
-
-#ifndef _LINK_SORT_INTERNALS /* <!-- sort internals */
+#ifndef _LINK_SORT_INTERNALS /* <!-- sort internals only once per translation
+ unit */
 #define _LINK_SORT_INTERNALS
-
 /* A run is a temporary sequence of values in the array that is weakly
  increasing. */
 struct _T_(Run) {
 	struct T_(LinkNode) *head, *tail;
 	size_t size;
 };
-
 /* Store the maximum capacity for the indexing with size_t. (Overkill, really.)
  range(runs) = Sum_{k=0}^runs 2^{runs-k} - 1
              = 2^{runs+1} - 2
@@ -975,8 +938,36 @@ struct _T_(Runs) {
 	struct _T_(Run) run[(sizeof(size_t) << 3) - 1];
 	size_t run_no;
 };
-
 #endif /* sort internals --> */
+
+/* Make sure that LINK_[A-D]_COMPARATOR is a function implementing
+ {<T>Comparator}. */
+static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
+
+/** Private: merges {this} into {recipient} when we don't know anything about
+ the data; on equal elements, places {this} first. {O(n + m)}. */
+static void _T_L_(link, merge)(struct T_(Link) *const this,
+	struct T_(Link) *const from) {
+	struct T_(LinkNode) *t, *f;
+	assert(this);
+	assert(from);
+	t = this->L_(first);
+	while((f = from->L_(first))) {
+		while(t && _T_L_(data, cmp)(&f->data, &t->data) > 0)
+			t = t->L_(next);
+		if(!t) break; /* run past the end of {this} */
+		/* f = shift(from); {f} goes before {t}; fixme: redudant compare */
+		_T_L_(link, remove)(from, f);
+		f->L_(next) = t;
+		if((f->L_(prev) = t->L_(prev))) {
+			t->L_(prev)->L_(next) = f;
+		} else {
+			assert(this->L_(first) == t);
+			this->L_(first) = f;
+		}
+	}
+	_T_L_(link, cat)(this, from);
+}
 
 #ifndef LINK_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls
  exactly this function concurrently */
