@@ -85,10 +85,10 @@ static void Animal_filler(struct Animal *const this) {
 }
 #define LINK_NAME Animal
 #define LINK_TYPE struct Animal
-#define LINK_A_NAME Name
-#define LINK_A_COMPARATOR &Animal_name_cmp
-#define LINK_B_NAME X
-#define LINK_B_COMPARATOR &Animal_x_cmp
+#define LINK_C_NAME Name
+#define LINK_C_COMPARATOR &Animal_name_cmp
+#define LINK_D_NAME X
+#define LINK_D_COMPARATOR &Animal_x_cmp
 #define LINK_TO_STRING &Animal_to_string
 #define LINK_TEST &Animal_filler
 #include "../src/Link.h"

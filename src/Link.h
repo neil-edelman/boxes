@@ -49,7 +49,8 @@
  {LINK_TEST}.
  @fixme {#pragma warning(disable: 4706)}; {MSVC} mistakenly thinks it's {Java}.
  @fixme {#pragma warning(disable: 4996)}; {MSVC} mistakenly thinks it's {C++11}.
- @fixme {bcc}, {mingw}, {clang}, {etc}. */
+ @fixme {bcc}, {mingw}, {clang}, {etc}.
+ @fixme Code duplication natural merge and take merge. */
 
 
 
@@ -91,7 +92,7 @@
 #error Link: LINK_A_COMPARATOR requires LINK_A_NAME.
 #endif
 #if defined(LINK_B_COMPARATOR) && !defined(LINK_B_NAME)
-#error Link: LINK_B_COMPARATOR requires LIST_B_NAME.
+#error Link: LINK_B_COMPARATOR requires LINK_B_NAME.
 #endif
 #if defined(LINK_C_COMPARATOR) && !defined(LINK_C_NAME)
 #error List: LINK_C_COMPARATOR requires LINK_C_NAME.
@@ -105,8 +106,8 @@
 
 
 
-/* After this block, the preprocessor replaces T with LIST_TYPE, T_(X) with
- LIST_NAMEX, _T_(X) with _LIST_NAME_X, and T_NAME with the string
+/* After this block, the preprocessor replaces T with LINK_TYPE, T_(X) with
+ LINK_NAMEX, _T_(X) with _LINK_NAME_X, and T_NAME with the string
  version.
  http://c-faq.com/decl/namespace.html "All identifiers beginning with an
  underscore are reserved for ordinary identifiers (functions, variables,
@@ -262,7 +263,7 @@ struct T_(LinkNode) {
 #ifdef LINK_C_NAME
 	struct T_(LinkNode) *LC_(prev), *LC_(next);
 #endif
-#ifdef LIST_D_NAME
+#ifdef LINK_D_NAME
 	struct T_(LinkNode) *LD_(prev), *LD_(next);
 #endif
 };
@@ -281,7 +282,7 @@ struct T_(Link) {
 #ifdef LINK_C_NAME
 	struct T_(LinkNode) *LC_(first), *LC_(last);
 #endif
-#ifdef LIST_D_NAME
+#ifdef LINK_D_NAME
 	struct T_(LinkNode) *LD_(first), *LD_(last);
 #endif
 	void *param;
@@ -301,7 +302,7 @@ static void _T_(remove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node);
 
 /* Note to future self: recursive includes. The {_LINK_NAME} pre-processor flag
- controls this behaviour; we are currently in the {!_LIST_NAME} section. These
+ controls this behaviour; we are currently in the {!_LINK_NAME} section. These
  will get all the functions with {<I>} in them. */
 
 #ifdef LINK_A_NAME /* <-- a */
@@ -749,8 +750,8 @@ static void T_(LinkBlockMove)(struct T_(Link) *const this,
 
  Internally #included.
 
- @param _LIST_NAME: A unique name; required;
- @param _LIST_COMPARATOR: an optional comparator. */
+ @param _LINK_NAME: A unique name; required;
+ @param _LINK_COMPARATOR: an optional comparator. */
 
 
 
