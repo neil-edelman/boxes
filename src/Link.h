@@ -467,47 +467,29 @@ static void T_(LinkRemove)(struct T_(Link) *const this,
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
- removes elements.
+ removes elements. {O(1)}.
  @allow */
 static void T_(LinkTake)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	if(!from || from == this) return;
 	if(!this) { _T_(clear)(from); return; }
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp parallel sections
-#endif /* omp --> */
-	{
 #ifdef LINK_A_NAME /* <-- a */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LA_(link, cat)(this, from);
+	_T_LA_(link, cat)(this, from);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LB_(link, cat)(this, from);
+	_T_LB_(link, cat)(this, from);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LC_(link, cat)(this, from);
+	_T_LC_(link, cat)(this, from);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LD_(link, cat)(this, from);
+	_T_LD_(link, cat)(this, from);
 #endif /* d --> */
-	}
 }
 
-/** Merges the elements of {from} into {this} in (local) order,
+/** Merges the elements into {this} from {from} in (local) order,
  {O(this.n + from.n)}; concatenates all lists that don't have a
- {LINK_[A-D]_COMPARATOR}, {O(1)}. If {this} is null, then it removes
- elements.
+ {LINK_[A-D]_COMPARATOR}. If {this} is null, then it removes elements.
  @allow */
 static void T_(LinkMerge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
@@ -518,40 +500,40 @@ static void T_(LinkMerge)(struct T_(Link) *const this,
 #endif /* omp --> */
 	{
 #ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_A_COMPARATOR /* <-- comp */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-#ifdef LINK_A_COMPARATOR /* <-- comp */
 		_T_LA_(link, merge)(this, from);
 #else /* comp --><-- !comp */
 		_T_LA_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_B_COMPARATOR /* <-- comp */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-#ifdef LINK_B_COMPARATOR /* <-- comp */
 		_T_LB_(link, merge)(this, from);
 #else /* comp --><-- !comp */
 		_T_LB_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_C_COMPARATOR /* <-- comp */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-#ifdef LINK_C_COMPARATOR /* <-- comp */
 		_T_LC_(link, merge)(this, from);
 #else /* comp --><-- !comp */
 		_T_LC_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_D_COMPARATOR /* <-- comp */
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-#ifdef LINK_D_COMPARATOR /* <-- comp */
 		_T_LD_(link, merge)(this, from);
 #else /* comp --><-- !comp */
 		_T_LD_(link, cat)(this, from);
@@ -613,35 +595,18 @@ static void T_(LinkSetParam)(struct T_(Link) *const this,
 static void T_(LinkMove)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const old, struct T_(LinkNode) *const new) {
 	if(!this || !old || !new) return;
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp parallel sections
-#endif /* omp --> */
-	{
 #ifdef LINK_A_NAME /* <-- a */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LA_(link, memmove)(this, old, new);
+	_T_LA_(link, memmove)(this, old, new);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LB_(link, memmove)(this, old, new);
+	_T_LB_(link, memmove)(this, old, new);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LC_(link, memmove)(this, old, new);
+	_T_LC_(link, memmove)(this, old, new);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-#ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		_T_LD_(link, memmove)(this, old, new);
+	_T_LD_(link, memmove)(this, old, new);
 #endif /* d --> */
-	}
 }
 
 /** Use when {this} contains elements from an array of/containing {<T>LinkNode}
