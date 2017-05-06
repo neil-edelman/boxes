@@ -4,6 +4,9 @@ neil dot edelman each mail dot mcgill dot ca
 
 Version 1.0.
 
+src/Link.h is a generic linked-list in C89/90. Makefile links it
+with the tests. See doc/Link.html for documentation.
+
 License:
 
 The MIT License (MIT)
