@@ -12,10 +12,10 @@
 #include "Orcish.h"
 
 #ifdef __GNUC__ /* <-- GCC */
-#pragma GCC diagnostic ignored "-Wunused-function" /* doesn't work */
-#pragma GCC diagnostic ignored "-Wconversion"
+/*#pragma GCC diagnostic ignored "-Wunused-function"*/ /* doesn't work */
+/*#pragma GCC diagnostic ignored "-Wconversion"*/ /* I want this :[ assert */
 #elif _MSC_VER /* GCC --><-- MSVC: not a C89/90 compiler; needs a little help;
-Assignment within conditional expression." "<ANSI89/ISO90 name>: The POSIX
+"Assignment within conditional expression." "<ANSI89/ISO90 name>: The POSIX
 name for this item is deprecated. Instead use the ISO C and C++ conformant
 name <ISO C++11 name>." */
 #pragma warning(disable: 4706)

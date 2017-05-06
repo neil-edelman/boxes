@@ -437,9 +437,10 @@ static char _T_L_(get, list)(const struct T_(LinkNode) *const node) {
 	return '?';
 }
 static void _T_L_(check, list)(const struct T_(Link) *const this,
-	int (*const fn)(const char)) {
+	int (*const fn)(const int)) {
 	struct T_(LinkNode) *node, *prev = 0;
-	char a[9], char_list;
+	char a[9];
+	int char_list;
 	assert(this);
 	assert(!this->L_(first) == !this->L_(last));
 	for(node = this->L_(first); node; node = node->L_(next)) {
@@ -453,9 +454,9 @@ static void _T_L_(check, list)(const struct T_(Link) *const this,
 	}
 	assert(this->L_(last) == prev);
 }
-static int _T_L_(verify, x)(const char a) { return a == 'x'; }
-static int _T_L_(verify, yz)(const char a) { return a == 'y' || a == 'z'; }
-static int _T_L_(verify, z)(const char a) { return a == 'z'; }
+static int _T_L_(verify, x)(const int a) { return a == 'x'; }
+static int _T_L_(verify, yz)(const int a) { return a == 'y' || a == 'z'; }
+static int _T_L_(verify, z)(const int a) { return a == 'z'; }
 /* interleave: (Take, Merge,) (Move,
  ContiguousMove,)(Compare,
  Subtraction, Union, Intersection, Xor, If,)
@@ -524,8 +525,8 @@ static void _T_L_(test, memory)(void) {
 		T_(LinkAdd)(&a, _T_L_(buf, buf).x + i);
 		T_(LinkAdd)(&b, _T_L_(buf, buf).y + i);
 	}
-	assert(_T_L_(exactly, elements)(&a, _T_L_(buf, buf).x, LINK_BUFFER_SIZE));
-	assert(_T_L_(exactly, elements)(&b, _T_L_(buf, buf).y, LINK_BUFFER_SIZE));
+	assert(_T_L_(exactly, elements)(&a, _T_L_(buf, buf).x, (size_t)LINK_BUFFER_SIZE));
+	assert(_T_L_(exactly, elements)(&b, _T_L_(buf, buf).y, (size_t)LINK_BUFFER_SIZE));
 	assert(!T_L_(Link, Compare)(&a, &b));
 	memset(_T_L_(buf, buf).z, 0, LINK_BUFFER_BYTES);
 	for(i = 0; i < LINK_BUFFER_SIZE; i += 2) {

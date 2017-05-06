@@ -42,10 +42,13 @@
  @std		C89/90
  @version	1.0; 2017-05
  @since		1.0; 2017-05 separated from List.h
- @fixme		Have specific public function flags to turn off functions so users
- can turn off 'defined but not used' (eg, GCC {-Wunused-function}) warnings.
- @fixme		{GCC} 4.2 has a bug with {-Wconversion} that causes {assert} to
- emit a warning; cast? */
+ @fixme {#pragma GCC diagnostic ignored "-Wunused-function"} I'm counting on
+ unused {static} functions to be optimised out.
+ @fixme {#pragma GCC diagnostic ignored "-Wconversion"} version 4.2 has a bug
+ with {-Wconversion} that causes {assert} to emit a spurious warnings on
+ {LINK_TEST}.
+ @fixme {#pragma warning(disable: 4706)} MSVC mistakenly thinks it's {Java}.
+ @fixme {#pragma warning(disable: 4996)} MSVC mistakenly thinks it's {C++11}. */
 
 
 
