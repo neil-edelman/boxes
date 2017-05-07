@@ -10,21 +10,21 @@
  file for convenience when including multiple Link types.
 
  @param LINK_NAME, LINK_TYPE
- The name that becomes {T} and a valid type associated therewith (should be
- conformant to the maximum available length of identifiers.) Must each be
- present before including.
+ The name that literally becomes {<T>}, and a valid type associated therewith;
+ should be conformant to naming and to the maximum available length of
+ identifiers. Must each be present before including.
 
  @param LINK_[A-D]_NAME, LINK_[A-D]_COMPARATOR
- Each {LINK_[A-D]_NAME} becomes {L}. You can define an optional comparator, an
- equivalence relation function implementing {<T>Comparator}. For speed, it
- should be an inlined {static} function, if possible.
+ Each {LINK_[A-D]_NAME} literally becomes {<L>}. You can define an optional
+ comparator, an equivalence relation function implementing {<T>Comparator}. For
+ speed, it should be an inlined {static} function, if possible.
 
  @param LINK_TO_STRING
- Optional print function implementing {<T>ToString} and making available
+ Optional print function implementing {<T>ToString}; makes available
  \see{<T>Link<L>ToString}.
 
  @param LINK_DYNAMIC_STORAGE
- This allocates {O(log n)}, space needed for merge sort on the stack every time
+ This allocates {O(log n)} space needed for merge sort on the stack every time
  the List is sorted, instead of statically. This allows using the exact same
  sort on different data concurrently without crashing, but it consumes more
  resources.
@@ -35,7 +35,8 @@
  @param LINK_TEST
  Unit testing framework using {<T>LinkTest}, included in a separate header,
  {LinkTest.h}. Must be defined equal to a random filler, satisfying
- {<T>Action}. Also, turns on {assert} private function testing.
+ {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private function
+ integrity testing. Requires {LINK_TO_STRING}.
 
  @title		Link.h
  @author	Neil
@@ -49,8 +50,7 @@
  {LINK_TEST}.
  @fixme {#pragma warning(disable: 4706)}; {MSVC} mistakenly thinks it's {Java}.
  @fixme {#pragma warning(disable: 4996)}; {MSVC} mistakenly thinks it's {C++11}.
- @fixme {bcc}, {mingw}, {clang}, {etc}.
- @fixme Code duplication natural merge and take merge. */
+ @fixme {bcc}, {mingw}, {clang}, {etc}. */
 
 
 
@@ -99,6 +99,9 @@
 #endif
 #if defined(LINK_D_COMPARATOR) && !defined(LINK_D_NAME)
 #error List: LINK_D_COMPARATOR requires LINK_D_NAME.
+#endif
+#if defined(LINK_TEST) && !defined(LINK_TO_STRING)
+#error LINK_TEST requires LINK_TO_STRING.
 #endif
 #ifndef LINK_TEST
 #define NDEBUG
@@ -248,12 +251,21 @@ typedef void (*T_(ToString))(const T *const, char (*const)[9]);
 
 
 /** A single link in the linked-list derived from {<T>}. Intended to be used
- directly in {struct}s. {<T>} is the first element of {<T>LinkNode}, thus
- casting is entirely safe. */
+ directly in {struct}s. A {<T>LinkNode} can be reinterpreted (cast) to {<T>} as
+ a single element; that is, {<T>} shall be the first element of {<T>LinkNode}.
+ \${|    <T>LinkNode *node;
+ |    T *t;
+ |    for(node = <T>Link<L>GetFirst(link);
+ |        node;
+ |        node = <T>LinkNode<L>GetNext(node)) {
+ |        t = (T *)node;
+ |    }} or
+ \${|    static void for_all_fn(T *const t) {
+ |        struct <T>LinkNode *const node = (struct <T>LinkNode *)t;
+ |    }} */
 struct T_(LinkNode);
 struct T_(LinkNode) {
-	/* so we can cast the other way without the mess of {container_of} */
-	T data;
+	T data; /* 1st so we can cast without the mess of {container_of} */
 #ifdef LINK_A_NAME
 	struct T_(LinkNode) *LA_(prev), *LA_(next);
 #endif
@@ -394,7 +406,9 @@ static void _T_(clear)(struct T_(Link) *const this) {
 #endif
 }
 
-/** Clears all values from {this}, thereby initialising the {<T>Link}.
+/** Clears all values from {this}, thereby initialising the {<T>Link}. If it
+ contained a list, those values are free.
+ @order \Theta(1)
  @allow */
 static void T_(LinkClear)(struct T_(Link) *const this) {
 	if(!this) return;
@@ -407,6 +421,7 @@ static void T_(LinkClear)(struct T_(Link) *const this) {
  overwrites the data that was there. Specifically, it invokes undefined
  behaviour to one add {node} to more than one list without removing it each
  time. If either {this} or {node} is null, it does nothing.
+ @order \Theta(1)
  @allow */
 static void T_(LinkAdd)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
@@ -417,6 +432,7 @@ static void T_(LinkAdd)(struct T_(Link) *const this,
 /** Removes {node} from the {this}. The {node} is now free to add to another
  list. Removing an element that was not added to {this} results in undefined
  behaviour. If either {this} or {node} is null, it does nothing.
+ @order \Theta(1)
  @allow */
 static void T_(LinkRemove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
@@ -425,7 +441,10 @@ static void T_(LinkRemove)(struct T_(Link) *const this,
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
- removes elements. {O(1)}.
+ removes elements. Unlike the {<T>Link<L>Take*}, where the elements are
+ re-ordered based on {<L>}, (they would not be in-place, otherwise,) this
+ function concatenates all the elements in each linked-list order.
+ @order \Theta(1)
  @allow */
 static void T_(LinkTake)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
@@ -445,9 +464,10 @@ static void T_(LinkTake)(struct T_(Link) *const this,
 #endif /* d --> */
 }
 
-/** Merges the elements into {this} from {from} in (local) order,
- {O(this.n + from.n)}; concatenates all lists that don't have a
- {LINK_[A-D]_COMPARATOR}. If {this} is null, then it removes elements.
+/** Merges the elements into {this} from {from} in (local) order; concatenates
+ all lists that don't have a {LINK_[A-D]_COMPARATOR}. If {this} is null, then
+ it removes elements.
+ @order O({this}.n + {from}.n)
  @allow */
 static void T_(LinkMerge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
@@ -500,10 +520,10 @@ static void T_(LinkMerge)(struct T_(Link) *const this,
 	}
 }
 
-/** Sorts all by greedy natural insertion-merge sort. Like doing
- \see{<T>Link<L>Sort} for all lists in link with comparators. Designed to be
- an {O(n log n)} sort that is adaptive and stable, it's not as good at sorting
- random data as QuickSort.
+/** Performs a stable, adaptive sort. If {LINK_OPENMP} is defined, then it will
+ try to parallelise; otherwise it is equivalent to calling \see{<T>Link<L>Sort}
+ for all linked-lists with comparators.
+ @order \Omega({this}.n), O({this}.n log {this}.n)
  @allow */
 static void T_(LinkSort)(struct T_(Link) *const this) {
 	if(!this) return;
@@ -539,6 +559,7 @@ static void T_(LinkSort)(struct T_(Link) *const this) {
 }
 
 /** Sets the user-defined {param} of {this}.
+ @order \Theta(1)
  @allow */
 static void T_(LinkSetParam)(struct T_(Link) *const this,
 	void *const param) {
@@ -546,9 +567,9 @@ static void T_(LinkSetParam)(struct T_(Link) *const this,
 	this->param = param;
 }
 
-/** Use when one {<T>LinkNode} of {this} has switched places in memory from
- {old_node} to {node}. If {this}, {node}, or {old_node} is null, doesn't do
- anything. {O(1)}.
+/** Use when one {node} of {this} has switched places in memory from {old_node}
+ to {node}. If {this}, {node}, or {old_node} is null, doesn't do anything.
+ @order \Theta(1)
  @allow */
 static void T_(LinkMigrate)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node,
@@ -568,17 +589,16 @@ static void T_(LinkMigrate)(struct T_(Link) *const this,
 #endif /* d --> */
 }
 
-/** Use when {this} contains elements from an array of/containing {<T>LinkNode}
- in memory that switched from {old_array} to {array} with byte-size
- {array_size}. If {this}, {array}, or {old_array} is null, doesn't do anything.
- {O(n)}.
+/** When {this} contains elements from an array of/containing {<T>LinkNode} in
+ memory that switched from {old_array} to {array} with byte-size {array_size}.
+ If {this}, {array}, or {old_array} is null, doesn't do anything.
 
- For example, one must call this on a {<T>Link} that is (partially) backed with
- an array that has changed places due to a {realloc}.
+ Specifically, use when {this} is (partially) backed with an array that has
+ changed places due to a {realloc}.
 
+ @order \Theta(n)
  @fixme Relies on not-strictly-defined behaviour because pointers are not
- necessarily contiguous in memory; it should be fine in practice. There is no
- fix.
+ necessarily contiguous in memory; it should be fine in practice.
  @allow */
 static void T_(LinkMigrateBlock)(struct T_(Link) *const this,
 	void *const array, const size_t array_size, const void *const old_array) {
@@ -739,7 +759,7 @@ static void _T_L_(link, remove)(struct T_(Link) *const this,
 }
 
 /** Private: cats all {from} to the tail of {this}; {from} will be empty after.
- {O(1)}. */
+ @order \Theta(1) */
 static void _T_L_(link, cat)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	assert(this);
@@ -780,7 +800,7 @@ static void _T_L_(link, migrate)(struct T_(Link) *const this,
 
 /** Private: used in \see{_<T>_block_<L>_migrate}.
  \${ptr \in [begin, end) -> ptr += delta}. */
-static void _T_L_(block, migrate_one)(struct T_(LinkNode) **const node_ptr,
+static void _T_L_(block, migrate_node)(struct T_(LinkNode) **const node_ptr,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	const void *const ptr = *node_ptr;
 	if(ptr < begin || ptr >= end) return;
@@ -790,7 +810,8 @@ static void _T_L_(block, migrate_one)(struct T_(LinkNode) **const node_ptr,
 /** Private: when {realloc} changes your pointers. I've tried to keep undefined
  behaviour to a minimum.
  @param [begin, end): Where the pointers have changed.
- @param delta: the offset they have moved to in memory bytes. */
+ @param delta: the offset they have moved to in memory bytes.
+ @order \Theta(n) */
 static void _T_L_(block, migrate)(struct T_(Link) *const this,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	struct T_(LinkNode) *node;
@@ -802,18 +823,19 @@ static void _T_L_(block, migrate)(struct T_(Link) *const this,
 	/* empty -- done */
 	if(!this->L_(first)) return;
 	/* first and last pointer of {<T>List} */
-	_T_L_(block, migrate_one)(&this->L_(first), begin, end, delta);
-	_T_L_(block, migrate_one)(&this->L_(last),  begin, end, delta);
+	_T_L_(block, migrate_node)(&this->L_(first), begin, end, delta);
+	_T_L_(block, migrate_node)(&this->L_(last),  begin, end, delta);
 	/* all the others' {<T>ListNode} */
 	for(node = this->L_(first); node; node = node->L_(next)) {
-		_T_L_(block, migrate_one)(&node->L_(prev), begin, end, delta);
-		_T_L_(block, migrate_one)(&node->L_(next), begin, end, delta);
+		_T_L_(block, migrate_node)(&node->L_(prev), begin, end, delta);
+		_T_L_(block, migrate_node)(&node->L_(next), begin, end, delta);
 	}
 }
 
 
 /** @return The next element after {this} in {<L>}. When {this} is the last
- element, returns null.
+ element or when {this} is null, returns null.
+ @order \Theta(1)
  @allow */
 static struct T_(LinkNode) *T_L_(LinkNode, GetNext)(
 	struct T_(LinkNode) *const this) {
@@ -822,7 +844,8 @@ static struct T_(LinkNode) *T_L_(LinkNode, GetNext)(
 }
 
 /** @return The previous element before {this} in {<L>}. When {this} is the
- first item, returns null.
+ first item or when {this} is null, returns null.
+ @order \Theta(1)
  @allow */
 static struct T_(LinkNode) *T_L_(LinkNode, GetPrevious)(
 	struct T_(LinkNode) *const this) {
@@ -831,6 +854,7 @@ static struct T_(LinkNode) *T_L_(LinkNode, GetPrevious)(
 }
 
 /** @return A pointer to the first element of {this}.
+ @order \Theta(1)
  @allow */
 static struct T_(LinkNode) *T_L_(Link, GetFirst)(struct T_(Link) *const this) {
 	if(!this) return 0;
@@ -838,6 +862,7 @@ static struct T_(LinkNode) *T_L_(Link, GetFirst)(struct T_(Link) *const this) {
 }
 
 /** @return A pointer to the last element of {this}.
+ @order \Theta(1)
  @allow */
 static struct T_(LinkNode) *T_L_(Link, GetLast)(struct T_(Link) *const this) {
 	if(!this) return 0;
@@ -850,17 +875,18 @@ static struct T_(LinkNode) *T_L_(Link, GetLast)(struct T_(Link) *const this) {
  unit */
 #define _LINK_SORT_INTERNALS
 /* A run is a temporary sequence of values in the array that is weakly
- increasing. */
+ increasing; we store it's size temporarily. */
 struct _T_(Run) {
 	struct T_(LinkNode) *head, *tail;
 	size_t size;
 };
-/* Store the maximum capacity for the indexing with size_t. (Overkill, really.)
+/* Store the maximum capacity for the indexing with {size_t}. (Much more then
+ we need, in most cases.) \${
  range(runs) = Sum_{k=0}^runs 2^{runs-k} - 1
              = 2^{runs+1} - 2
  2^bits      = 2 (r^runs - 1)
  runs        = log(2^{bits-1} + 1) / log 2
- runs       <= 2^{bits - 1}, 2^{bits + 1} > 0 */
+ runs       <= 2^{bits - 1}, 2^{bits + 1} > 0} */
 struct _T_(Runs) {
 	struct _T_(Run) run[(sizeof(size_t) << 3) - 1];
 	size_t run_no;
@@ -1112,6 +1138,7 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 }
 
 /** Sorts {<L>}, but leaves the other lists in {<T>} alone.
+ @order \Omega({this}.n), O({this}.n log {this}.n)
  @allow */
 static void T_L_(Link, Sort)(struct T_(Link) *const this) {
 	if(!this) return;
@@ -1120,9 +1147,8 @@ static void T_L_(Link, Sort)(struct T_(Link) *const this) {
 
 /** Compares two linked-lists as sequences in the order specified by {<L>}.
  @return The first comparator that is not equal to zero, or 0 if they are
- equal; if one list is a sub-list starting at the same point of the other,
- returns -1 or 1. Null pointers count as lists that are before every other
- list; two null pointers are considered equal.
+ equal. Two null pointers are considered equal.
+ @order \Theta(min({this}.n, {that}.n))
  @implements <<T>Link>Comparator
  @allow */
 static int T_L_(Link, Compare)(const struct T_(Link) *const this,
@@ -1148,7 +1174,8 @@ static int T_L_(Link, Compare)(const struct T_(Link) *const this,
 	}
 }
 
-/** Private: {this <- a \mask b}. Prefers {a} to {b} when equal. */
+/** Private: {this <- a \mask b}. Prefers {a} to {b} when equal.
+ @order O({a}.n + {b}.n) */
 static void _T_L_(boolean, seq)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b,
 	const enum LinkOperation mask) {
@@ -1195,6 +1222,7 @@ static void _T_L_(boolean, seq)(struct T_(Link) *const this,
 
 /** Appends {that} with {b} subtracted from {a} as a sequence in {<L>}. If
  {this} is null, then it removes elements.
+ @order O({a}.n + {b}.n)
  @allow */
 static void T_L_(Link, TakeSubtraction)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b) {
@@ -1203,6 +1231,7 @@ static void T_L_(Link, TakeSubtraction)(struct T_(Link) *const this,
 
 /** Appends {this} with the union of {a} and {b} as a sequence in {<L>}. Equal
  elements are moved from {a}. If {this} is null, then it removes elements.
+ @order O({a}.n + {b}.n)
  @allow */
 static void T_L_(Link, TakeUnion)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b) {
@@ -1212,6 +1241,7 @@ static void T_L_(Link, TakeUnion)(struct T_(Link) *const this,
 
 /** Appends {this} with the intersection of {a} and {b} as a sequence in {<L>}.
  Equal elements are moved from {a}. If {this} is null, then it removes elements.
+ @order O({a}.n + {b}.n)
  @allow */
 static void T_L_(Link, TakeIntersection)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b) {
@@ -1220,6 +1250,7 @@ static void T_L_(Link, TakeIntersection)(struct T_(Link) *const this,
 
 /** Appends {this} with {a} exclusive-or {b} as a sequence in {<L>}. Equal
  elements are moved from {a}. If {this} is null, then it removes elements.
+ @order O({a}.n + {b}.n)
  @allow */
 static void T_L_(Link, TakeXor)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b) {
@@ -1231,6 +1262,7 @@ static void T_L_(Link, TakeXor)(struct T_(Link) *const this,
 
 /** Appends {this} with {from} if {predicate} is null or true in the order
  specified by {<L>}. If {this} is null, then it removes elements.
+ @order ~ \Theta({this}.n) \times O({predicate})
  @allow */
 static void T_L_(Link, TakeIf)(struct T_(Link) *const this,
 	struct T_(Link) *const from, const T_(Predicate) predicate) {
@@ -1248,6 +1280,7 @@ static void T_L_(Link, TakeIf)(struct T_(Link) *const this,
 /** Performs {action} for each element in the list in the order specified by
  {<L>}. For more flexibility, use \see{<T>List<L>ShortCircuit}, which takes a
  {<T>Predicate}, and return true.
+ @order ~ \Theta({this}.n) \times O({action})
  @allow */
 static void T_L_(Link, ForEach)(struct T_(Link) *const this,
 	const T_(Action) action) {
@@ -1260,7 +1293,9 @@ static void T_L_(Link, ForEach)(struct T_(Link) *const this,
 
 /** @return The first {<T>LinkNode} in the linked-list, ordered by {<L>}, that
  causes the {predicate} with {<T>} as argument to return false, or null if the
- {predicate} is true for every case.
+ {predicate} is true for every case. If {this} or {predicate} is null, returns
+ null.
+ @order ~ O({this}.n) \times O({predicate})
  @allow */
 static struct T_(LinkNode) *T_L_(Link, ShortCircuit)(
 	struct T_(Link) *const this, const T_(Predicate) predicate) {
@@ -1308,9 +1343,11 @@ static void _list_super_cat(struct _ListSuperCat *const cat,
 }
 #endif /* once --> */
 
-/** Prints the linked-list in a static buffer; one can print 4 things at once
- before it overwrites. One must set {LINK_TO_STRING} to a function implementing
- {<T>ToString} to get this functionality.
+/** One can print 4 things at once before it overwrites. One must set
+ {LINK_TO_STRING} to a function implementing {<T>ToString} to get this
+ functionality.
+ @return Prints the {this} in a static buffer.
+ @order \Theta(1); it has a 255 character limit; every element takes some of it.
  @allow */
 static char *T_L_(Link, ToString)(const struct T_(Link) *const this) {
 	static char buffer[4][256];

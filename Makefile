@@ -90,7 +90,7 @@ $(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
 .PHONY: setup clean backup icon install uninstall test
 
 clean:
-	-rm -f $(OBJS) $(TOBJS) $(DOCS)
+	-rm -f $(OBJS) $(TOBJS) #$(DOCS)
 	-rm -rf $(BDIR)/$(TDIR)
 
 backup:

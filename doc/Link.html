@@ -53,6 +53,29 @@ to four different linked-list orders in the same type, <em>[A, D]</em>, set usin
 file for convenience when including multiple Link types.
 </p>
 <dl>
+	<dt>parameter: LINK_NAME, LINK_TYPE</dt>
+	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith;
+ should be conformant to naming and to the maximum available length of
+ identifiers. Must each be present before including.</dd>
+	<dt>parameter: LINK_[A-D]_NAME, LINK_[A-D]_COMPARATOR</dt>
+	<dd>Each <em>LINK_[A-D]_NAME</em> literally becomes <em>&lt;L&gt;</em>. You can define an optional
+ comparator, an equivalence relation function implementing <em>&lt;T&gt;Comparator</em>. For
+ speed, it should be an inlined <em>static</em> function, if possible.</dd>
+	<dt>parameter: LINK_TO_STRING</dt>
+	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
+ <a href = "#&lt;T&gt;Link&lt;L&gt;ToString">&lt;T&gt;Link&lt;L&gt;ToString</a>.</dd>
+	<dt>parameter: LINK_DYNAMIC_STORAGE</dt>
+	<dd>This allocates <em>O(log n)</em> space needed for merge sort on the stack every time
+ the List is sorted, instead of statically. This allows using the exact same
+ sort on different data concurrently without crashing, but it consumes more
+ resources.</dd>
+	<dt>parameter: LINK_OPENMP</dt>
+	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>.</dd>
+	<dt>parameter: LINK_TEST</dt>
+	<dd>Unit testing framework using <em>&lt;T&gt;LinkTest</em>, included in a separate header,
+ <em>LinkTest.h</em>. Must be defined equal to a random filler, satisfying
+ <em>&lt;T&gt;Action</em>. If <em>NDEBUG</em> is not defined, turns on <em>assert</em> private function
+ integrity testing. Requires <em>LINK_TO_STRING</em>.</dd>
 	<dt>minimum standard</dt>
 	<dd>C89/90</dd>
 	<dt>author</dt>
@@ -74,30 +97,6 @@ file for convenience when including multiple Link types.
 	<dd><em>#pragma warning(disable: 4996)</em>; <em>MSVC</em> mistakenly thinks it's <em>C++11</em>.</dd>
 	<dt>fixme</dt>
 	<dd><em>bcc</em>, <em>mingw</em>, <em>clang</em>, <em>etc</em>.</dd>
-	<dt>fixme</dt>
-	<dd>Code duplication natural merge and take merge.</dd>
-	<dt>parameter: LINK_NAME, LINK_TYPE</dt>
-	<dd>The name that becomes <em>T</em> and a valid type associated therewith (should be
- conformant to the maximum available length of identifiers.) Must each be
- present before including.</dd>
-	<dt>parameter: LINK_[A-D]_NAME, LINK_[A-D]_COMPARATOR</dt>
-	<dd>Each <em>LINK_[A-D]_NAME</em> becomes <em>L</em>. You can define an optional comparator, an
- equivalence relation function implementing <em>&lt;T&gt;Comparator</em>. For speed, it
- should be an inlined <em>static</em> function, if possible.</dd>
-	<dt>parameter: LINK_TO_STRING</dt>
-	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em> and making available
- <a href = "#&lt;T&gt;Link&lt;L&gt;ToString">&lt;T&gt;Link&lt;L&gt;ToString</a>.</dd>
-	<dt>parameter: LINK_DYNAMIC_STORAGE</dt>
-	<dd>This allocates <em>O(log n)</em>, space needed for merge sort on the stack every time
- the List is sorted, instead of statically. This allows using the exact same
- sort on different data concurrently without crashing, but it consumes more
- resources.</dd>
-	<dt>parameter: LINK_OPENMP</dt>
-	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>.</dd>
-	<dt>parameter: LINK_TEST</dt>
-	<dd>Unit testing framework using <em>&lt;T&gt;LinkTest</em>, included in a separate header,
- <em>LinkTest.h</em>. Must be defined equal to a random filler, satisfying
- <em>&lt;T&gt;Action</em>. Also, turns on <em>assert</em> private function testing.</dd>
 </dl>
 
 
@@ -150,8 +149,18 @@ null-terminated output string (the second.)
 <pre><b>struct &lt;T&gt;LinkNode</b></pre>
 <p>
 A single link in the linked-list derived from <em>&lt;T&gt;</em>. Intended to be used
-directly in <em>struct</em>s. <em>&lt;T&gt;</em> is the first element of <em>&lt;T&gt;LinkNode</em>, thus
-casting is entirely safe.
+directly in <em>struct</em>s. A <em>&lt;T&gt;LinkNode</em> can be reinterpreted (cast) to <em>&lt;T&gt;</em> as
+a single element; that is, <em>&lt;T&gt;</em> shall be the first element of <em>&lt;T&gt;LinkNode</em>.
+<pre>|    &lt;T&gt;LinkNode *node;
+|    T *t;
+|    for(node = &lt;T&gt;Link&lt;L&gt;GetFirst(link);
+|        node;
+|        node = &lt;T&gt;LinkNode&lt;L&gt;GetNext(node)) {
+|        t = (T *)node;
+|    }</pre> or
+<pre>|    static void for_all_fn(T *const t) {
+|        struct &lt;T&gt;LinkNode *const node = (struct &lt;T&gt;LinkNode *)t;
+|    }</pre>
 </p>
 <dl>
 </dl>
@@ -216,15 +225,16 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;LinkMove">&lt;T&gt;LinkMove</a></td>
+	<td><a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a></td>
 	<td>struct &lt;T&gt;Link *const this,
-	const struct &lt;T&gt;LinkNode *const old, struct &lt;T&gt;LinkNode *const new</td>
+	struct &lt;T&gt;LinkNode *const node,
+	const struct &lt;T&gt;LinkNode *const old_node</td>
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;LinkBlockMove">&lt;T&gt;LinkBlockMove</a></td>
+	<td><a href = "#&lt;T&gt;LinkMigrateBlock">&lt;T&gt;LinkMigrateBlock</a></td>
 	<td>struct &lt;T&gt;Link *const this,
-	const void *const old, const size_t byte_size, void *const new</td>
+	void *const array, const size_t array_size, const void *const old_array</td>
 </tr>
 <tr>
 	<td>static struct &lt;T&gt;LinkNode *</td>
@@ -312,9 +322,12 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 <h3>&lt;T&gt;LinkClear</h3>
 <pre>static void <b>&lt;T&gt;LinkClear</b> (struct &lt;T&gt;Link *const this)</pre>
 <p>
-Clears all values from <em>this</em>, thereby initialising the <em>&lt;T&gt;Link</em>.
+Clears all values from <em>this</em>, thereby initialising the <em>&lt;T&gt;Link</em>. If it
+contained a list, those values are free.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
@@ -330,6 +343,8 @@ behaviour to one add <em>node</em> to more than one list without removing it eac
 time. If either <em>this</em> or <em>node</em> is null, it does nothing.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
@@ -343,6 +358,8 @@ list. Removing an element that was not added to <em>this</em> results in undefin
 behaviour. If either <em>this</em> or <em>node</em> is null, it does nothing.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
@@ -352,9 +369,13 @@ behaviour. If either <em>this</em> or <em>node</em> is null, it does nothing.
 	struct &lt;T&gt;Link *const from)</pre>
 <p>
 Appends the elements of <em>from</em> onto <em>this</em>. If <em>this</em> is null, then it
-removes elements. <em>O(1)</em>.
+removes elements. Unlike the <em>&lt;T&gt;Link&lt;L&gt;Take*</em>, where the elements are
+re-ordered based on <em>&lt;L&gt;</em>, (they would not be in-place, otherwise,) this
+function concatenates all the elements in each linked-list order.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
@@ -363,11 +384,13 @@ removes elements. <em>O(1)</em>.
 <pre>static void <b>&lt;T&gt;LinkMerge</b> (struct &lt;T&gt;Link *const this,
 	struct &lt;T&gt;Link *const from)</pre>
 <p>
-Merges the elements into <em>this</em> from <em>from</em> in (local) order,
-<em>O(this.n + from.n)</em>; concatenates all lists that don't have a
-<em>LINK_[A-D]_COMPARATOR</em>. If <em>this</em> is null, then it removes elements.
+Merges the elements into <em>this</em> from <em>from</em> in (local) order; concatenates
+all lists that don't have a <em>LINK_[A-D]_COMPARATOR</em>. If <em>this</em> is null, then
+it removes elements.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>O(<em>this</em>.n + <em>from</em>.n)</dd>
 </dl>
 </div>
 
@@ -375,12 +398,13 @@ Merges the elements into <em>this</em> from <em>from</em> in (local) order,
 <h3>&lt;T&gt;LinkSort</h3>
 <pre>static void <b>&lt;T&gt;LinkSort</b> (struct &lt;T&gt;Link *const this)</pre>
 <p>
-Sorts all by greedy natural insertion-merge sort. Like doing
-<a href = "#&lt;T&gt;Link&lt;L&gt;Sort">&lt;T&gt;Link&lt;L&gt;Sort</a> for all lists in link with comparators. Designed to be
-an <em>O(n log n)</em> sort that is adaptive and stable, it's not as good at sorting
-random data as QuickSort.
+Performs a stable, adaptive sort. If <em>LINK_OPENMP</em> is defined, then it will
+try to parallelise; otherwise it is equivalent to calling <a href = "#&lt;T&gt;Link&lt;L&gt;Sort">&lt;T&gt;Link&lt;L&gt;Sort</a>
+for all linked-lists with comparators.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Omega;(<em>this</em>.n), O(<em>this</em>.n log <em>this</em>.n)</dd>
 </dl>
 </div>
 
@@ -392,38 +416,45 @@ random data as QuickSort.
 Sets the user-defined <em>param</em> of <em>this</em>.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;LinkMove"><!-- --></a>
-<h3>&lt;T&gt;LinkMove</h3>
-<pre>static void <b>&lt;T&gt;LinkMove</b> (struct &lt;T&gt;Link *const this,
-	const struct &lt;T&gt;LinkNode *const old, struct &lt;T&gt;LinkNode *const new)</pre>
+<div><a name = "&lt;T&gt;LinkMigrate"><!-- --></a>
+<h3>&lt;T&gt;LinkMigrate</h3>
+<pre>static void <b>&lt;T&gt;LinkMigrate</b> (struct &lt;T&gt;Link *const this,
+	struct &lt;T&gt;LinkNode *const node,
+	const struct &lt;T&gt;LinkNode *const old_node)</pre>
 <p>
-Use when one <em>&lt;T&gt;LinkNode</em> of <em>this</em> has switched places in memory from
-<em>old</em> to <em>new</em>. If <em>this</em>, <em>old</em>, or <em>new</em> is null, doesn't do anything.
-<em>O(1)</em>.
+Use when one <em>node</em> of <em>this</em> has switched places in memory from <em>old_node</em>
+to <em>node</em>. If <em>this</em>, <em>node</em>, or <em>old_node</em> is null, doesn't do anything.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;LinkBlockMove"><!-- --></a>
-<h3>&lt;T&gt;LinkBlockMove</h3>
-<pre>static void <b>&lt;T&gt;LinkBlockMove</b> (struct &lt;T&gt;Link *const this,
-	const void *const old, const size_t byte_size, void *const new)</pre>
+<div><a name = "&lt;T&gt;LinkMigrateBlock"><!-- --></a>
+<h3>&lt;T&gt;LinkMigrateBlock</h3>
+<pre>static void <b>&lt;T&gt;LinkMigrateBlock</b> (struct &lt;T&gt;Link *const this,
+	void *const array, const size_t array_size, const void *const old_array)</pre>
 <p>
-Use when <em>this</em> contains elements from an array of/containing <em>&lt;T&gt;LinkNode</em>
-in memory that switched from <em>old</em> to <em>new</em> with byte-size <em>byte_size</em>. If
-<em>this</em>, <em>old</em>, or <em>new</em> is null, doesn't do anything. For example, one must
-call this on a <em>&lt;T&gt;Link</em> that is (partially) backed with an array that has
-changed places due to a <em>realloc</em>. <em>O(n)</em>.
+When <em>this</em> contains elements from an array of/containing <em>&lt;T&gt;LinkNode</em> in
+memory that switched from <em>old_array</em> to <em>array</em> with byte-size <em>array_size</em>.
+If <em>this</em>, <em>array</em>, or <em>old_array</em> is null, doesn't do anything.
 </p>
 <p>
-Relies on not-strictly-defined behaviour because pointers are not necessarily
-contiguous in memory. It should be fine in practice.
+Specifically, use when <em>this</em> is (partially) backed with an array that has
+changed places due to a <em>realloc</em>.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Theta;(n)</dd>
+	<dt>fixme</dt>
+	<dd>Relies on not-strictly-defined behaviour because pointers are not
+ necessarily contiguous in memory; it should be fine in practice.</dd>
 </dl>
 </div>
 
@@ -433,7 +464,9 @@ contiguous in memory. It should be fine in practice.
 <dl>
 	<dt>return</dt>
 	<dd>The next element after <em>this</em> in <em>&lt;L&gt;</em>. When <em>this</em> is the last
- element, returns null.</dd>
+ element or when <em>this</em> is null, returns null.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
@@ -443,7 +476,9 @@ contiguous in memory. It should be fine in practice.
 <dl>
 	<dt>return</dt>
 	<dd>The previous element before <em>this</em> in <em>&lt;L&gt;</em>. When <em>this</em> is the
- first item, returns null.</dd>
+ first item or when <em>this</em> is null, returns null.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
@@ -453,6 +488,8 @@ contiguous in memory. It should be fine in practice.
 <dl>
 	<dt>return</dt>
 	<dd>A pointer to the first element of <em>this</em>.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
@@ -462,6 +499,8 @@ contiguous in memory. It should be fine in practice.
 <dl>
 	<dt>return</dt>
 	<dd>A pointer to the last element of <em>this</em>.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
@@ -472,6 +511,8 @@ contiguous in memory. It should be fine in practice.
 Sorts <em>&lt;L&gt;</em>, but leaves the other lists in <em>&lt;T&gt;</em> alone.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>&Omega;(<em>this</em>.n), O(<em>this</em>.n log <em>this</em>.n)</dd>
 </dl>
 </div>
 
@@ -485,11 +526,11 @@ Compares two linked-lists as sequences in the order specified by <em>&lt;L&gt;</
 <dl>
 	<dt>return</dt>
 	<dd>The first comparator that is not equal to zero, or 0 if they are
- equal; if one list is a sub-list starting at the same point of the other,
- returns -1 or 1. Null pointers count as lists that are before every other
- list; two null pointers are considered equal.</dd>
+ equal. Two null pointers are considered equal.</dd>
 	<dt>implements</dt>
 	<dd>&lt;&lt;T&gt;Link&gt;Comparator</dd>
+	<dt>order</dt>
+	<dd>&Theta;(min(<em>this</em>.n, <em>that</em>.n))</dd>
 </dl>
 </div>
 
@@ -502,6 +543,8 @@ Appends <em>that</em> with <em>b</em> subtracted from <em>a</em> as a sequence i
 <em>this</em> is null, then it removes elements.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>O(<em>a</em>.n + <em>b</em>.n)</dd>
 </dl>
 </div>
 
@@ -514,6 +557,8 @@ Appends <em>this</em> with the union of <em>a</em> and <em>b</em> as a sequence 
 elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>O(<em>a</em>.n + <em>b</em>.n)</dd>
 </dl>
 </div>
 
@@ -526,6 +571,8 @@ Appends <em>this</em> with the intersection of <em>a</em> and <em>b</em> as a se
 Equal elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>O(<em>a</em>.n + <em>b</em>.n)</dd>
 </dl>
 </div>
 
@@ -538,6 +585,8 @@ Appends <em>this</em> with <em>a</em> exclusive-or <em>b</em> as a sequence in <
 elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>O(<em>a</em>.n + <em>b</em>.n)</dd>
 </dl>
 </div>
 
@@ -547,11 +596,11 @@ elements are moved from <em>a</em>. If <em>this</em> is null, then it removes el
 	struct &lt;T&gt;Link *const from, const &lt;T&gt;Predicate predicate)</pre>
 <p>
 Appends <em>this</em> with <em>from</em> if <em>predicate</em> is null or true in the order
-specified by <em>&lt;L&gt;</em>. If <em>this</em> is null, then it removes elements. The non-<em>&lt;L&gt;</em>
-elements are forced to take the order of <em>&lt;L&gt;</em> in <em>this</em>; thus, copying to a
-temporary list and re-ordering may be beneficial.
+specified by <em>&lt;L&gt;</em>. If <em>this</em> is null, then it removes elements.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>~ &Theta;(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
 </dl>
 </div>
 
@@ -565,6 +614,8 @@ Performs <em>action</em> for each element in the list in the order specified by
 <em>&lt;T&gt;Predicate</em>, and return true.
 </p>
 <dl>
+	<dt>order</dt>
+	<dd>~ &Theta;(<em>this</em>.n) &times; O(<em>action</em>)</dd>
 </dl>
 </div>
 
@@ -575,7 +626,10 @@ Performs <em>action</em> for each element in the list in the order specified by
 	<dt>return</dt>
 	<dd>The first <em>&lt;T&gt;LinkNode</em> in the linked-list, ordered by <em>&lt;L&gt;</em>, that
  causes the <em>predicate</em> with <em>&lt;T&gt;</em> as argument to return false, or null if the
- <em>predicate</em> is true for every case.</dd>
+ <em>predicate</em> is true for every case. If <em>this</em> or <em>predicate</em> is null, returns
+ null.</dd>
+	<dt>order</dt>
+	<dd>~ O(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
 </dl>
 </div>
 
@@ -583,11 +637,15 @@ Performs <em>action</em> for each element in the list in the order specified by
 <h3>&lt;T&gt;Link&lt;L&gt;ToString</h3>
 <pre>static char * <b>&lt;T&gt;Link&lt;L&gt;ToString</b> (const struct &lt;T&gt;Link *const this)</pre>
 <p>
-Prints the linked-list in a static buffer; one can print 4 things at once
-before it overwrites. One must set <em>LINK_TO_STRING</em> to a function implementing
-<em>&lt;T&gt;ToString</em> to get this functionality.
+One can print 4 things at once before it overwrites. One must set
+<em>LINK_TO_STRING</em> to a function implementing <em>&lt;T&gt;ToString</em> to get this
+functionality.
 </p>
 <dl>
+	<dt>return</dt>
+	<dd>Prints the <em>this</em> in a static buffer.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1); it has a 255 character limit; every element takes some of it.</dd>
 </dl>
 </div>
 

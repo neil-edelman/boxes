@@ -139,7 +139,7 @@ static void Llama_init(struct Llama *const llama) {
 	llama->animal.data.vt = &llama_vt;
 	llama->chomps = (unsigned)(10.0 * rand() / (RAND_MAX + 1.0) + 1.0);
 }
-static void Bear_init(struct Bear *const bear, const struct Llama *const llamas,
+static void Bear_init(struct Bear *const bear, struct Llama *const llamas,
 	const size_t llamas_size) {
 	Animal_init(&bear->animal);
 	bear->animal.data.vt = &bear_vt;
@@ -153,7 +153,7 @@ static void act(struct Animal *const this) {
 	this->vt->act(this);
 }
 /** Test BlockMove. */
-static void test_block_move() {
+static void test_block_move(void) {
 	struct Sloth sloths[3];
 	const size_t sloths_size = sizeof sloths / sizeof *sloths;
 	struct Llama llamas[6];
