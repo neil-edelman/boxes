@@ -2,13 +2,14 @@
 
 #ifndef _LINK_NAME /* <-- !_LINK_NAME */
 
+#include <stdlib.h>	/* EXIT_SUCCESS rand */
+
 
 
 /* prototype */
 static int _T_(in_order)(struct T_(Link) *const this);
 static int _T_(in_array)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const array, const size_t array_size);
-static void _T_(print_all)(struct T_(Link) *const this);
 
 /* Check that LIST_TEST is a function implementing {<T>Action}. */
 static const T_(Action) _T_(filler) = (LINK_TEST);
@@ -140,22 +141,6 @@ static int _T_(in_array)(struct T_(Link) *const this,
 		;
 }
 
-static void _T_(print_all)(struct T_(Link) *const this) {
-	assert(this);
-#ifdef LINK_A_NAME
-	printf(".%8s: %s.\n", QUOTE(LINK_A_NAME), T_LA_(Link, ToString)(this));
-#endif
-#ifdef LINK_B_NAME
-	printf(".%8s: %s.\n", QUOTE(LINK_B_NAME), T_LB_(Link, ToString)(this));
-#endif
-#ifdef LINK_C_NAME
-	printf(".%8s: %s.\n", QUOTE(LINK_C_NAME), T_LC_(Link, ToString)(this));
-#endif
-#ifdef LINK_D_NAME
-	printf(".%8s: %s.\n", QUOTE(LINK_D_NAME), T_LD_(Link, ToString)(this));
-#endif
-}
-
 
 
 #else /* !_LINK_NAME --><-- _LINK_NAME */
@@ -197,7 +182,7 @@ static void _T_L_(count, another)(T *const this) {
 	_T_L_(count, var)++;
 }
 
-/* for \see{_T_L_(exactly, elements)} */
+/* For \see{_T_L_(exactly, elements)}. */
 struct T_L_(Link, Verify) {
 	size_t i;
 	const struct T_(LinkNode) *array;
@@ -271,8 +256,6 @@ static int _T_L_(every, second)(T *const this, void *const param) {
 
 /* now tests */
 
-/** Basic:
- GetData, Clear, Add, Remove, Sort, SetParam, GetNext, GetPrevious, GetFirst, GetLast, <L>Sort, ForEach, ShortCircut, ToString */
 static void _T_L_(test, basic)(void) {
 	char str[9];
 	T *data;
@@ -465,7 +448,7 @@ static void _T_L_(test, boolean)(void) {
 	memcpy(&x[0].ib.data, &x[0].a.data, sizeof x[0].a.data);
 	i = 0; do { _T_(filler)(&x[1].a.data); i++; }
 	while(i < limit && !_T_L_(data, cmp)(&x[0].a.data, &x[1].a.data));
-	assert(i < limit);
+	assert(i < limit); /* <- need to get more variety in {LINK_TEST} filler */
 	_T_(to_string)(&x[1].a.data, &x[1].str);
 	memcpy(&x[1].b.data,  &x[1].a.data, sizeof x[1].a.data);
 	memcpy(&x[1].ia.data, &x[1].a.data, sizeof x[1].a.data);
@@ -473,7 +456,7 @@ static void _T_L_(test, boolean)(void) {
 	i = 0; do { _T_(filler)(&x[2].a.data); i++; }
 	while(i < limit
 		&& (!_T_L_(data, cmp)(&x[0].a.data, &x[2].a.data) || !_T_L_(data, cmp)(&x[1].a.data, &x[2].a.data)));
-	assert(i < limit);
+	assert(i < limit); /* <- need to get more variety in {LINK_TEST} filler */
 	_T_(to_string)(&x[2].a.data, &x[2].str);
 	memcpy(&x[2].b.data,  &x[2].a.data, sizeof x[2].a.data);
 	memcpy(&x[2].ia.data, &x[2].a.data, sizeof x[2].a.data);
@@ -563,64 +546,40 @@ static void _T_L_(test, boolean)(void) {
 	assert(!T_L_(Link, Compare)(&c, &ic));
 }
 
-static int _T_L_(test, array)(void) {
-#if 0
-	struct T_(Link) *array_of_lists[16] = { 0 };
-	T t;
-	const unsigned array_of_lists_size
-		= sizeof array_of_lists / sizeof *array_of_lists;
-	unsigned i;
-	enum Error { E_NO, E_LIST, E_UNEXPECTED } error = E_NO;
+static void _T_L_(test, meta)(void) {
+	struct T_(LinkNode) nodes[256], *node = nodes;
+	const size_t nodes_size = sizeof nodes / sizeof *nodes;
+	struct T_(Link) links[32];
+	const size_t links_size = sizeof links / sizeof *links;
+	size_t i, nodes_left = nodes_size, links_left = links_size;
 
-	/* elimiates [-Wmaybe-uninitialized] on Linux 4.4.0-62-generic #83-Ubuntu,
-	 (I don't know what it's talking about) */
-	_T_(filler)(&t);
-
-	/* try */ do {
-		printf("Sorting arrays of lists of " T_NAME " by "
-			   QUOTE(_LIST_INDEX_NAME) ":\n");
-		for(i = 0; i < array_of_lists_size; i++) {
-			const unsigned j_limit = (unsigned)((float)rand() / RAND_MAX * 4);
-			unsigned j;
-			if(!(array_of_lists[i] = T_(Link)())) { error = E_LIST; break; }
-			for(j = 0; j < j_limit; j++) {
-				_T_(filler)(&t);
-				if(!T_(LinkAdd)(array_of_lists[i], &t)) { error = E_LIST;break;}
-			}
-			if(j != j_limit) break;
-			printf("%u. %s\n", i, T_I_(Link, ToString)(array_of_lists[i]));
-		}
-		if(i != array_of_lists_size) break;
-		printf("sorting with qsort,\n");
-		qsort(array_of_lists, (size_t)array_of_lists_size,
-			sizeof *array_of_lists, &_T_L_(qsort, cmp));
-		for(i = 0; i < array_of_lists_size; i++) {
-			printf("%u. %s\n", i, T_I_(Link, ToString)(array_of_lists[i]));
-			T_(LinkSetCursor)(array_of_lists[i], 0);
-		}
-		for(i = 0; i < array_of_lists_size - 1; i++) {
-			const T *const a = T_(LinkGet)(array_of_lists[i]);
-			const T *const b = T_(LinkGet)(array_of_lists[i+1]);
-			if(a && (!b || _T_L_(elem, cmp)(a, b) > 0))
-				{ error = E_UNEXPECTED; break; }
-			T_(Link_)(&array_of_lists[i]);
-			if(array_of_lists[i]) { error = E_UNEXPECTED; break; }
-		}
-		if(i != array_of_lists_size - 1) break;
-	} while(0);
-	/* catch */ switch(error) {
-		case E_NO: break;
-		case E_LIST:printf("Failed; message: %s.\n",
-			T_(LinkGetError)(array_of_lists[i])); break;
-		case E_UNEXPECTED: printf("Failed: unexpected result.\n"); break;
+	printf("An array of lists of " T_NAME ".\n");
+	for(i = 0; i < nodes_size; i++) _T_(filler)(&nodes[i].data);
+	while(links_left) {
+		struct T_(Link) *const link = links + links_size - links_left;
+		int take = (int)((double)nodes_left / links_left
+			+ 0.4 * (links_left - 1) * (2.0 * rand() / (1.0 + RAND_MAX) - 1.0));
+		if(take < 0) take = 0;
+		else if((size_t)take > nodes_left) take = (int)nodes_left;
+		nodes_left -= take;
+		T_(LinkClear)(link);
+		while(take) T_(LinkAdd)(link, node++), take--;
+		links_left--;
+		printf("%lu. %s\n", links_size - links_left,T_L_(Link, ToString)(link));
 	}
-	/* finally */ {
-		for(i = 0; i < array_of_lists_size; i++) T_(Link_)(&array_of_lists[i]);
+	printf("Sorting with qsort by " QUOTE(_LINK_NAME) ".\n");
+	qsort(links, links_size, sizeof *links,
+		(int (*)(const void *, const void *))&T_L_(Link, Compare));
+	for(i = 0; i < links_size; i++) {
+		printf("%lu. %s\n", i + 1, T_L_(Link, ToString)(links + i));
+		if(i) { /* like {strcmp} comparing the first letter -- good enough */
+			const struct T_(LinkNode) *const less = links[i - 1].L_(first),
+				*const more = links[i].L_(first);
+			if(!less) continue;
+			assert(more);
+			assert(_T_L_(data, cmp)(&less->data, &more->data) <= 0);
+		}
 	}
-
-	return error ? 0 : -1;
-#endif
-	return 1;
 }
 
 #endif /* compare --> */
@@ -632,10 +591,8 @@ static void _T_L_(test, list)(void) {
 	_T_L_(test, basic)();
 	_T_L_(test, memory)();
 	_T_L_(test, boolean)();
-	 /*#ifdef _LINK_COMPARATOR
-	 && _T_L_(test, bump)()
-	 && _T_L_(test, array)()
-	 #endif*/
+	_T_L_(test, meta)();
+	/* fixme: assumes {_LINK_COMPARATOR} is defined on all */
 }
 
 
