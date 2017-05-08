@@ -2,12 +2,16 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {<T>Link} stores doubly-linked-list(s) of {<T>LinkNode}, of which data of
- type, {<T>}, must be set using {LINK_TYPE}. The {<T>LinkNode} storage is the
- resposibility of the caller. Specifically, it does not have to be contiguous,
- and it can be nestled in multiple, possibly different, {struct}s. Supports one
- to four different linked-list orders in the same type, {[A, D]}, set using
- {LINK_[A-D]_NAME}. The preprocessor macros are all undefined at the end of the
- file for convenience when including multiple Link types.
+ type, {<T>}, must be set using {LINK_TYPE}. Supports one to four different
+ linked-list orders in the same type, {[A, D]}, set using {LINK_[A-D]_NAME}.
+ The preprocessor macros are all undefined at the end of the file for
+ convenience when including multiple {Link} types in the same file.
+
+ The {<T>LinkNode} storage is the responsibility of the caller. Specifically,
+ it does not have to be contiguous, and it can be nestled in multiple, possibly
+ different, structures. You can move (part) of the memory that is in an active
+ {Link} under some conditions, and still keep the integrity of the linked-list,
+ by \see{<T>LinkMigrate} or \see{<T>LinkMigrateBlock}.
 
  @param LINK_NAME, LINK_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
@@ -235,11 +239,12 @@ enum LinkOperation {
 /** Operates by side-effects only. */
 typedef void (*T_(Action))(T *const);
 
-/** Passed {T} and {param}, returns (non-zero) true or (zero) false. */
+/** Passed {T} and {param}, (see \see{<T>LinkSetParam},) returns (non-zero)
+ true or (zero) false. */
 typedef int  (*T_(Predicate))(T *const, void *const);
 
 /** Compares two values and returns less then, equal to, or greater then
- zero. */
+ zero. Should do so forming an equivalence relation with respect to {T}. */
 typedef int  (*T_(Comparator))(const T *, const T *);
 
 #ifdef LINK_TO_STRING
@@ -250,9 +255,10 @@ typedef void (*T_(ToString))(const T *const, char (*const)[9]);
 
 
 
-/** A single link in the linked-list derived from {<T>}. Intended to be used
- directly in {struct}s. A {<T>LinkNode} can be reinterpreted (cast) to {<T>} as
- a single element; that is, {<T>} shall be the first element of {<T>LinkNode}.
+/** A single link in the linked-list derived from {<T>}. Storage of this
+ structure is the responsibility of the caller. A {<T>LinkNode} can be
+ reinterpreted (cast) to {<T>} as a single element; that is, {<T>} shall be the
+ first element of {<T>LinkNode}.
  \${|    <T>LinkNode *node;
  |    T *t;
  |    for(node = <T>Link<L>GetFirst(link);

@@ -377,15 +377,6 @@ static void _T_L_(test, basic)(void) {
 	assert(!_T_L_(count, elements)(&a));
 }
 
-/* interleave: (Take, Merge,) (Move,
- ContiguousMove,)(Compare,
- Subtraction, Union, Intersection, Xor, If,)
- (GetData, Clear, Add,
- Remove, Take, Merge,
- \\ Sort,
- SetParam, (Move,
- ContiguousMove,) GetNext, GetPrevious, GetFirst, GetLast, <L>Sort, Compare,
- Subtraction, Union, Intersection, Xor, If, ForEach, ShortCircut, ToString */
 static void _T_L_(test, memory)(void) {
 	struct T_(Link) a, b;
 	struct T_(LinkNode) buf[3][100], *node_a, *node_b, *node_c;
@@ -416,7 +407,7 @@ static void _T_L_(test, memory)(void) {
 	T_L_(Link, TakeIf)(&b, &a, &_T_L_(every, second));
 	printf("a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
-	/* tests stability of sort; false! only if all items different */
+	/* tests stability of sort; false! only if all items unique */
 	/*assert(_T_L_(in, array)(&a, buf[0], buf_size));*/
 	/*assert(_T_(in_array)(&b, buf[1], buf_size));*/
 	assert(_T_(in_order)(&a));
@@ -459,14 +450,10 @@ static void _T_L_(test, memory)(void) {
 
 #ifdef _LINK_COMPARATOR /* <-- compare */
 
-/* boolean:
- T_(Link), T_(LinkAdd), T_I_(Link, ToString), T_I_(Link, Compare),
- T_I_(LinkAdd, Subtraction), T_(LinkClear), T_I_(LinkAdd, Union),
- T_I_(LinkAdd, Intersection), T_I_(LinkAdd, Xor), T_(Link_) */
-static int _T_L_(test, boolean)(void) {
+static void _T_L_(test, boolean)(void) {
 	struct T_(Link) a, b, c, ia, ib, ic;
 	struct Test { struct T_(LinkNode) a, b, ia, ib; char str[9]; } x[3];
-	unsigned i;
+	unsigned i; /* for not-getting into an infty loop */
 	const unsigned limit = 1000;
 
 	printf("Boolean set operations on " QUOTE(LINK_NAME) " linked-list "
@@ -507,142 +494,75 @@ static int _T_L_(test, boolean)(void) {
 	assert(T_L_(Link, Compare)(&c, &a) == -1);
 	assert(T_L_(Link, Compare)(&a, &a) == 0);
 	/* - */
-	printf("%s \\setminus %s\n", T_L_(Link, ToString)(&a),
+	printf("(a = %s) - (b = %s) =\n", T_L_(Link, ToString)(&a),
 		T_L_(Link, ToString)(&b));
 	T_L_(Link, TakeSubtraction)(&c, &a, &b);
-	printf("%s <- %s, %s.\n", T_L_(Link, ToString)(&a),
-		T_L_(Link, ToString)(&b), T_L_(Link, ToString)(&c));
+	printf("%s; (a = %s, b = %s.)\n", T_L_(Link, ToString)(&c),
+		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
 	T_(LinkAdd)(&ia, &x[0].ia);
 	T_(LinkAdd)(&ib, &x[0].ib), T_(LinkAdd)(&ib, &x[2].ib);
 	T_(LinkAdd)(&ic, &x[1].ia);
-	printf("Intend %s\n", T_L_(Link, ToString)(&ia));
 	assert(!T_L_(Link, Compare)(&a, &ia));
 	assert(!T_L_(Link, Compare)(&b, &ib));
 	assert(!T_L_(Link, Compare)(&c, &ic));
-	/* u */
 	T_(LinkClear)(&a), T_(LinkClear)(&b), T_(LinkClear)(&c);
 	T_(LinkClear)(&ia), T_(LinkClear)(&ib), T_(LinkClear)(&ic);
+	/* u */
 	T_(LinkAdd)(&a, &x[0].a), T_(LinkAdd)(&a, &x[1].a);
 	T_(LinkAdd)(&b, &x[0].b), T_(LinkAdd)(&b, &x[2].b);
-#if 0
-
-	if(!T_(LinkAdd)(intend_c, &y.t)
-		|| !T_I_(LinkAdd, Subtraction)(c, a, b))
-		{ error = E_LIST; break; }
-	if(intend_c->size != 1) exit(1);
-	if(T_I_(Link, Compare)(c, intend_c)) { error = E_UNEXPECTED; break; }
-	T_(LinkClear)(c);
-	T_(LinkClear)(intend_c);
-
-	/* u */
-	if(!T_(LinkAdd)(intend_c, &x.t)) { error = E_LIST; break; }
-	if(_T_L_(elem, cmp)(&y.t, &z.t) > 0) {
-		if(!T_(LinkAdd)(intend_c, &z.t)
-			|| !T_(LinkAdd)(intend_c, &y.t)) { error = E_LIST; break; }
+	printf("(a = %s) u (b = %s) =\n", T_L_(Link, ToString)(&a),
+		T_L_(Link, ToString)(&b));
+	T_L_(Link, TakeUnion)(&c, &a, &b);
+	printf("%s; (a = %s, b = %s.)\n", T_L_(Link, ToString)(&c),
+		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
+	T_(LinkAdd)(&ib, &x[0].ib);
+	T_(LinkAdd)(&ic, &x[0].ia);
+	if(_T_L_(data, cmp)(&x[1].ia.data, &x[2].ib.data) < 0) {
+		T_(LinkAdd)(&ic, &x[1].ia), T_(LinkAdd)(&ic, &x[2].ib);
 	} else {
-		if(!T_(LinkAdd)(intend_c, &y.t)
-			|| !T_(LinkAdd)(intend_c, &z.t)) { error = E_LIST; break; }
+		T_(LinkAdd)(&ic, &x[2].ib), T_(LinkAdd)(&ic, &x[1].ia);
 	}
-	if(!T_I_(LinkAdd, Union)(c, a, b)) { error = E_LIST; break; }
-	printf("%s \\cup %s = %s.\n", T_I_(Link, ToString)(a),
-		T_I_(Link, ToString)(b), T_I_(Link, ToString)(c));
-	if(T_I_(Link, Compare)(intend_c, c)) { error = E_UNEXPECTED; break; }
-	T_(LinkClear)(c);
-	T_(LinkClear)(intend_c);
-
+	assert(!T_L_(Link, Compare)(&a, &ia));
+	assert(!T_L_(Link, Compare)(&b, &ib));
+	assert(!T_L_(Link, Compare)(&c, &ic));
+	T_(LinkClear)(&a), T_(LinkClear)(&b), T_(LinkClear)(&c);
+	T_(LinkClear)(&ia), T_(LinkClear)(&ib), T_(LinkClear)(&ic);
 	/* n */
-	if(!T_(LinkAdd)(intend_c, &x.t)
-		|| !T_I_(LinkAdd, Intersection)(c, a, b))
-		{ error = E_LIST; break; }
-	printf("%s \\cap %s = %s.\n", T_I_(Link, ToString)(a),
-		T_I_(Link, ToString)(b), T_I_(Link, ToString)(c));
-	if(T_I_(Link, Compare)(intend_c, c)) { error = E_UNEXPECTED; break; }
-	T_(LinkClear)(c);
-	T_(LinkClear)(intend_c);
-
+	T_(LinkAdd)(&a, &x[0].a), T_(LinkAdd)(&a, &x[1].a);
+	T_(LinkAdd)(&b, &x[0].b), T_(LinkAdd)(&b, &x[2].b);
+	printf("(a = %s) n (b = %s) =\n", T_L_(Link, ToString)(&a),
+		T_L_(Link, ToString)(&b));
+	T_L_(Link, TakeIntersection)(&c, &a, &b);
+	printf("%s; (a = %s, b = %s.)\n", T_L_(Link, ToString)(&c),
+		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
+	T_(LinkAdd)(&ia, &x[1].ia);
+	T_(LinkAdd)(&ib, &x[0].ib), T_(LinkAdd)(&ib, &x[2].ib);
+	T_(LinkAdd)(&ic, &x[0].ia);
+	assert(!T_L_(Link, Compare)(&a, &ia));
+	assert(!T_L_(Link, Compare)(&b, &ib));
+	assert(!T_L_(Link, Compare)(&c, &ic));
+	T_(LinkClear)(&a), T_(LinkClear)(&b), T_(LinkClear)(&c);
+	T_(LinkClear)(&ia), T_(LinkClear)(&ib), T_(LinkClear)(&ic);
 	/* xor */
-	if(_T_L_(elem, cmp)(&y.t, &z.t) > 0) {
-		if(!T_(LinkAdd)(intend_c, &z.t)
-			|| !T_(LinkAdd)(intend_c, &y.t)) { error = E_LIST; break; }
+	T_(LinkAdd)(&a, &x[0].a), T_(LinkAdd)(&a, &x[1].a);
+	T_(LinkAdd)(&b, &x[0].b), T_(LinkAdd)(&b, &x[2].b);
+	printf("(a = %s) xor (b = %s) =\n", T_L_(Link, ToString)(&a),
+		T_L_(Link, ToString)(&b));
+	T_L_(Link, TakeXor)(&c, &a, &b);
+	printf("%s; (a = %s, b = %s.)\n", T_L_(Link, ToString)(&c),
+		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
+	T_(LinkAdd)(&ia, &x[0].ia);
+	T_(LinkAdd)(&ib, &x[0].ib);
+	if(_T_L_(data, cmp)(&x[1].ia.data, &x[2].ib.data) < 0) {
+		T_(LinkAdd)(&ic, &x[1].ia), T_(LinkAdd)(&ic, &x[2].ib);
 	} else {
-		if(!T_(LinkAdd)(intend_c, &y.t)
-			|| !T_(LinkAdd)(intend_c, &z.t)) { error = E_LIST; break; }
+		T_(LinkAdd)(&ic, &x[2].ib), T_(LinkAdd)(&ic, &x[1].ia);
 	}
-	if(!T_I_(LinkAdd, Xor)(c, a, b))
-		{ error = E_LIST; break; }
-	printf("%s \\oplus %s = %s.\n", T_I_(Link, ToString)(a),
-		T_I_(Link, ToString)(b), T_I_(Link, ToString)(c));
-	if(T_I_(Link, Compare)(intend_c, c)) { error = E_UNEXPECTED; break; }
-	T_(LinkClear)(c);
-	T_(LinkClear)(intend_c);
-#endif
-	return 1;
+	assert(!T_L_(Link, Compare)(&a, &ia));
+	assert(!T_L_(Link, Compare)(&b, &ib));
+	assert(!T_L_(Link, Compare)(&c, &ic));
 }
 
-/* bumping:
- T_(Link), T_(LinkAdd), T_I_(Link, Sort), T_I_(Link, ToString),
- T_I_(Link, Bump), T_(LinkResetCursor), T_(LinkSetParam),
- T_I_(Link, ShortCircuit), T_(Link_) */
-static int _T_L_(test, bump)(void) {
-#if 0
-	struct T_(Link) *list = 0;
-	T t, *pt;
-	char str[9];
-	const unsigned limit = 5; /* small number: first, middle, last */
-	unsigned i;
-	enum Error { E_NO, E_LIST, E_UNEXPECTED, E_CURSOR } error = E_NO;
-
-	/* try */ do {
-
-		list = T_(Link)();
-		for(i = 0; i < limit; i++) {
-			_T_(filler)(&t);
-			if(!T_(LinkAdd)(list, &t)) { error = E_LIST; break; }
-		}
-		if(i < limit) break;
-
-		T_I_(Link, Sort)(list);
-
-		_T_(filler)(&t);
-		if(!(pt = T_(LinkAdd)(list, &t))) { error = E_LIST; break; }
-		_T_(to_string)(pt, &str);
-		printf("%s out-of-" QUOTE(_LIST_INDEX_NAME) "-place? %s;\n", str,
-			T_I_(Link, ToString)(list));
-
-		T_I_(Link, Bump)(list);
-		printf("bump, %s.\n", T_I_(Link, ToString)(list));
-
-		T_(LinkResetCursor)(list);
-		_T_(filler)(&t);
-		if(!(pt = T_(LinkAdd)(list, &t))) { error = E_LIST; break; }
-		_T_(to_string)(pt, &str);
-		printf("Added %s, %s;\n", str, T_I_(Link, ToString)(list));
-
-		T_I_(Link, Bump)(list);
-		printf("bump, %s.\n", T_I_(Link, ToString)(list));
-
-		/* one index _T_(in_order)(list) */
-		if(!_T_L_(in, order)(list)) { error = E_UNEXPECTED; break; }
-
-	} while(0);
-	/* catch */ switch(error) {
-		case E_NO: break;
-		case E_LIST:printf("Failed; message: %%s.\n"/*, T_(LinkGetError)(list)*/);break;
-		case E_UNEXPECTED: printf("Failed: unexpected result.\n"); break;
-		case E_CURSOR: printf("Failed: cursor position was wrong.\n"); break;
-	}
-	/* finally */ {
-		T_(Link_)(&list);
-	}
-
-	return error ? 0 : -1;
-#endif
-	return 1;
-}
-
-/* array:
- T_(Link), T_(LinkAdd), T_I_(Link, ToString), T_(LinkSetCursor), T_(LinkGet),
- T_(Link_) */
 static int _T_L_(test, array)(void) {
 #if 0
 	struct T_(Link) *array_of_lists[16] = { 0 };

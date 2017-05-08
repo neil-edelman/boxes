@@ -45,12 +45,17 @@ see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opens
 </p>
 <p>
 <em>&lt;T&gt;Link</em> stores doubly-linked-list(s) of <em>&lt;T&gt;LinkNode</em>, of which data of
-type, <em>&lt;T&gt;</em>, must be set using <em>LINK_TYPE</em>. The <em>&lt;T&gt;LinkNode</em> storage is the
-resposibility of the caller. Specifically, it does not have to be contiguous,
-and it can be nestled in multiple, possibly different, <em>struct</em>s. Supports one
-to four different linked-list orders in the same type, <em>[A, D]</em>, set using
-<em>LINK_[A-D]_NAME</em>. The preprocessor macros are all undefined at the end of the
-file for convenience when including multiple Link types.
+type, <em>&lt;T&gt;</em>, must be set using <em>LINK_TYPE</em>. Supports one to four different
+linked-list orders in the same type, <em>[A, D]</em>, set using <em>LINK_[A-D]_NAME</em>.
+The preprocessor macros are all undefined at the end of the file for
+convenience when including multiple <em>Link</em> types in the same file.
+</p>
+<p>
+The <em>&lt;T&gt;LinkNode</em> storage is the responsibility of the caller. Specifically,
+it does not have to be contiguous, and it can be nestled in multiple, possibly
+different, structures. You can move (part) of the memory that is in an active
+<em>Link</em> under some conditions, and still keep the integrity of the linked-list,
+by <a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a> or <a href = "#&lt;T&gt;LinkMigrateBlock">&lt;T&gt;LinkMigrateBlock</a>.
 </p>
 <dl>
 	<dt>parameter: LINK_NAME, LINK_TYPE</dt>
@@ -116,7 +121,8 @@ Operates by side-effects only.
 <h3>typedef int  (*&lt;T&gt;Predicate)(T *const, void *const)</h3>
 <pre><b>typedef int  (*&lt;T&gt;Predicate)(T *const, void *const)</b></pre>
 <p>
-Passed <em>T</em> and <em>param</em>, returns (non-zero) true or (zero) false.
+Passed <em>T</em> and <em>param</em>, (see <a href = "#&lt;T&gt;LinkSetParam">&lt;T&gt;LinkSetParam</a>,) returns (non-zero)
+true or (zero) false.
 </p>
 <dl>
 </dl>
@@ -127,7 +133,7 @@ Passed <em>T</em> and <em>param</em>, returns (non-zero) true or (zero) false.
 <pre><b>typedef int  (*&lt;T&gt;Comparator)(const T *, const T *)</b></pre>
 <p>
 Compares two values and returns less then, equal to, or greater then
-zero.
+zero. Should do so forming an equivalence relation with respect to <em>T</em>.
 </p>
 <dl>
 </dl>
@@ -148,9 +154,10 @@ null-terminated output string (the second.)
 <h3>struct &lt;T&gt;LinkNode</h3>
 <pre><b>struct &lt;T&gt;LinkNode</b></pre>
 <p>
-A single link in the linked-list derived from <em>&lt;T&gt;</em>. Intended to be used
-directly in <em>struct</em>s. A <em>&lt;T&gt;LinkNode</em> can be reinterpreted (cast) to <em>&lt;T&gt;</em> as
-a single element; that is, <em>&lt;T&gt;</em> shall be the first element of <em>&lt;T&gt;LinkNode</em>.
+A single link in the linked-list derived from <em>&lt;T&gt;</em>. Storage of this
+structure is the responsibility of the caller. A <em>&lt;T&gt;LinkNode</em> can be
+reinterpreted (cast) to <em>&lt;T&gt;</em> as a single element; that is, <em>&lt;T&gt;</em> shall be the
+first element of <em>&lt;T&gt;LinkNode</em>.
 <pre>|    &lt;T&gt;LinkNode *node;
 |    T *t;
 |    for(node = &lt;T&gt;Link&lt;L&gt;GetFirst(link);
