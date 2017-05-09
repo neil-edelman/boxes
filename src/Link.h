@@ -47,10 +47,8 @@
  @std		C89/90
  @version	1.0; 2017-05
  @since		1.0; 2017-05 separated from List.h
- @fixme {#pragma GCC diagnostic ignored "-Wunused-function"}; short of manually
- selecting which functions, we can't do anything about it.
- @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2 has a bug
- with {-Wconversion} that causes {assert} to emit a spurious warnings on
+ @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2.1 has a
+ bug with {-Wconversion} that causes {assert} to emit a spurious warnings on
  {LINK_TEST}.
  @fixme {#pragma warning(disable: 4706)}; {MSVC} mistakenly thinks it's {Java}.
  @fixme {#pragma warning(disable: 4996)}; {MSVC} mistakenly thinks it's {C++11}.
@@ -1143,7 +1141,8 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 	this->L_(last)  = _T_L_(runs, elem).run[0].tail;
 }
 
-/** Sorts {<L>}, but leaves the other lists in {<T>} alone.
+/** Sorts {<L>}, but leaves the other lists in {<T>} alone. Must have
+ {LINK_[A-D]_COMPARATOR} defined.
  @order \Omega({this}.n), O({this}.n log {this}.n)
  @allow */
 static void T_L_(Link, Sort)(struct T_(Link) *const this) {
@@ -1153,7 +1152,8 @@ static void T_L_(Link, Sort)(struct T_(Link) *const this) {
 
 /** Compares two linked-lists as sequences in the order specified by {<L>}.
  @return The first comparator that is not equal to zero, or 0 if they are
- equal. Two null pointers are considered equal.
+ equal. Two null pointers are considered equal. Must have
+ {LINK_[A-D]_COMPARATOR} defined.
  @order \Theta(min({this}.n, {that}.n))
  @implements <<T>Link>Comparator
  @allow */
@@ -1227,7 +1227,8 @@ static void _T_L_(boolean, seq)(struct T_(Link) *const this,
 }
 
 /** Appends {that} with {b} subtracted from {a} as a sequence in {<L>}. If
- {this} is null, then it removes elements.
+ {this} is null, then it removes elements. Must have {LINK_[A-D]_COMPARATOR}
+ defined.
  @order O({a}.n + {b}.n)
  @allow */
 static void T_L_(Link, TakeSubtraction)(struct T_(Link) *const this,
@@ -1236,7 +1237,8 @@ static void T_L_(Link, TakeSubtraction)(struct T_(Link) *const this,
 }
 
 /** Appends {this} with the union of {a} and {b} as a sequence in {<L>}. Equal
- elements are moved from {a}. If {this} is null, then it removes elements.
+ elements are moved from {a}. If {this} is null, then it removes elements. Must
+ have {LINK_[A-D]_COMPARATOR} defined.
  @order O({a}.n + {b}.n)
  @allow */
 static void T_L_(Link, TakeUnion)(struct T_(Link) *const this,
@@ -1247,6 +1249,7 @@ static void T_L_(Link, TakeUnion)(struct T_(Link) *const this,
 
 /** Appends {this} with the intersection of {a} and {b} as a sequence in {<L>}.
  Equal elements are moved from {a}. If {this} is null, then it removes elements.
+ Must have {LINK_[A-D]_COMPARATOR} defined.
  @order O({a}.n + {b}.n)
  @allow */
 static void T_L_(Link, TakeIntersection)(struct T_(Link) *const this,
@@ -1255,7 +1258,8 @@ static void T_L_(Link, TakeIntersection)(struct T_(Link) *const this,
 }
 
 /** Appends {this} with {a} exclusive-or {b} as a sequence in {<L>}. Equal
- elements are moved from {a}. If {this} is null, then it removes elements.
+ elements are moved from {a}. If {this} is null, then it removes elements. Must
+ have {LINK_[A-D]_COMPARATOR} defined.
  @order O({a}.n + {b}.n)
  @allow */
 static void T_L_(Link, TakeXor)(struct T_(Link) *const this,
@@ -1382,6 +1386,35 @@ static char *T_L_(Link, ToString)(const struct T_(Link) *const this) {
 }
 
 #endif /* print --> */
+
+/* prototype */
+static void _T_L_(unused, coda)(void);
+/** This silences unused function warnings from the pre-processor, but allows
+ optimisation, (hopefully.)
+ \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
+static void _T_L_(unused, link)(void) {
+	T_L_(LinkNode, GetNext)(0);
+	T_L_(LinkNode, GetPrevious)(0);
+	T_L_(Link, GetFirst)(0);
+	T_L_(Link, GetLast)(0);
+#ifdef _LINK_COMPARATOR /* <-- comp */
+	T_L_(Link, Sort)(0);
+	T_L_(Link, Compare)(0, 0);
+	T_L_(Link, TakeSubtraction)(0, 0, 0);
+	T_L_(Link, TakeUnion)(0, 0, 0);
+	T_L_(Link, TakeIntersection)(0, 0, 0);
+	T_L_(Link, TakeXor)(0, 0, 0);
+#endif /* comp --> */
+	T_L_(Link, TakeIf)(0, 0, 0);
+	T_L_(Link, ForEach)(0, 0);
+	T_L_(Link, ShortCircuit)(0, 0);
+#ifdef LINK_TO_STRING /* <-- string */
+	T_L_(Link, ToString)(0);
+#endif /* string --> */
+	_T_L_(unused, coda)();
+}
+/** {clang}'s pre-processor is clever? */
+static void _T_L_(unused, coda)(void) { _T_L_(unused, link)(); }
 
 
 

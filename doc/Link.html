@@ -90,11 +90,8 @@ by <a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a> or <a href = "#&lt
 	<dt>since</dt>
 	<dd>1.0; 2017-05 separated from List.h</dd>
 	<dt>fixme</dt>
-	<dd><em>#pragma GCC diagnostic ignored "-Wunused-function"</em>; short of manually
- selecting which functions, we can't do anything about it.</dd>
-	<dt>fixme</dt>
-	<dd><em>#pragma GCC diagnostic ignored "-Wconversion"</em>; version 4.2 has a bug
- with <em>-Wconversion</em> that causes <em>assert</em> to emit a spurious warnings on
+	<dd><em>#pragma GCC diagnostic ignored "-Wconversion"</em>; version 4.2.1 has a
+ bug with <em>-Wconversion</em> that causes <em>assert</em> to emit a spurious warnings on
  <em>LINK_TEST</em>.</dd>
 	<dt>fixme</dt>
 	<dd><em>#pragma warning(disable: 4706)</em>; <em>MSVC</em> mistakenly thinks it's <em>Java</em>.</dd>
@@ -515,7 +512,8 @@ changed places due to a <em>realloc</em>.
 <h3>&lt;T&gt;Link&lt;L&gt;Sort</h3>
 <pre>static void <b>&lt;T&gt;Link&lt;L&gt;Sort</b> (struct &lt;T&gt;Link *const this)</pre>
 <p>
-Sorts <em>&lt;L&gt;</em>, but leaves the other lists in <em>&lt;T&gt;</em> alone.
+Sorts <em>&lt;L&gt;</em>, but leaves the other lists in <em>&lt;T&gt;</em> alone. Must have
+<em>LINK_[A-D]_COMPARATOR</em> defined.
 </p>
 <dl>
 	<dt>order</dt>
@@ -533,7 +531,8 @@ Compares two linked-lists as sequences in the order specified by <em>&lt;L&gt;</
 <dl>
 	<dt>return</dt>
 	<dd>The first comparator that is not equal to zero, or 0 if they are
- equal. Two null pointers are considered equal.</dd>
+ equal. Two null pointers are considered equal. Must have
+ <em>LINK_[A-D]_COMPARATOR</em> defined.</dd>
 	<dt>implements</dt>
 	<dd>&lt;&lt;T&gt;Link&gt;Comparator</dd>
 	<dt>order</dt>
@@ -547,7 +546,8 @@ Compares two linked-lists as sequences in the order specified by <em>&lt;L&gt;</
 	struct &lt;T&gt;Link *const a, struct &lt;T&gt;Link *const b)</pre>
 <p>
 Appends <em>that</em> with <em>b</em> subtracted from <em>a</em> as a sequence in <em>&lt;L&gt;</em>. If
-<em>this</em> is null, then it removes elements.
+<em>this</em> is null, then it removes elements. Must have <em>LINK_[A-D]_COMPARATOR</em>
+defined.
 </p>
 <dl>
 	<dt>order</dt>
@@ -561,7 +561,8 @@ Appends <em>that</em> with <em>b</em> subtracted from <em>a</em> as a sequence i
 	struct &lt;T&gt;Link *const a, struct &lt;T&gt;Link *const b)</pre>
 <p>
 Appends <em>this</em> with the union of <em>a</em> and <em>b</em> as a sequence in <em>&lt;L&gt;</em>. Equal
-elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements.
+elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements. Must
+have <em>LINK_[A-D]_COMPARATOR</em> defined.
 </p>
 <dl>
 	<dt>order</dt>
@@ -576,6 +577,7 @@ elements are moved from <em>a</em>. If <em>this</em> is null, then it removes el
 <p>
 Appends <em>this</em> with the intersection of <em>a</em> and <em>b</em> as a sequence in <em>&lt;L&gt;</em>.
 Equal elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements.
+Must have <em>LINK_[A-D]_COMPARATOR</em> defined.
 </p>
 <dl>
 	<dt>order</dt>
@@ -589,7 +591,8 @@ Equal elements are moved from <em>a</em>. If <em>this</em> is null, then it remo
 	struct &lt;T&gt;Link *const a, struct &lt;T&gt;Link *const b)</pre>
 <p>
 Appends <em>this</em> with <em>a</em> exclusive-or <em>b</em> as a sequence in <em>&lt;L&gt;</em>. Equal
-elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements.
+elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements. Must
+have <em>LINK_[A-D]_COMPARATOR</em> defined.
 </p>
 <dl>
 	<dt>order</dt>
