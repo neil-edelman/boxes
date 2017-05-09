@@ -906,17 +906,20 @@ static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
 static void _T_L_(link, merge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	struct T_(LinkNode) *t, *f;
+	char a[9];
 	assert(this);
 	assert(from);
+	printf("link_<" QUOTE(LINK_NAME) ">_merge_<" QUOTE(_LINK_NAME) ">():\n");
 	t = this->L_(first);
 	while((f = from->L_(first))) {
 		while(t && _T_L_(data, cmp)(&f->data, &t->data) > 0)
-			t = t->L_(next);
+			printf("t %s, ", (_T_(to_string)(&t->data, &a), a)), t = t->L_(next);
 		if(!t) break; /* run past the end of {this} */
+		printf("f %s, ", (_T_(to_string)(&f->data, &a), a));
 		/* f = shift(from); {f} goes before {t}; fixme: redudant compare */
 		_T_L_(link, remove)(from, f);
 		f->L_(next) = t;
-		if((f->L_(prev) = t->L_(prev))) {
+		if(t->L_(prev)) {
 			t->L_(prev)->L_(next) = f;
 		} else {
 			assert(this->L_(first) == t);
@@ -924,6 +927,7 @@ static void _T_L_(link, merge)(struct T_(Link) *const this,
 		}
 	}
 	_T_L_(link, cat)(this, from);
+	printf("done.\n");
 }
 
 #ifndef LINK_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls

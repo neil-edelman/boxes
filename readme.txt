@@ -5,7 +5,9 @@ neil dot edelman each mail dot mcgill dot ca
 Version 1.0.
 
 src/Link.h is a generic linked-list in C89/90. Makefile links it
-with the tests. See doc/Link.html for documentation.
+with the tests. See doc/Link.html for documentation. This is C;
+there is little value in using it in a C++ project, and it won't
+work, anyway.
 
 License:
 

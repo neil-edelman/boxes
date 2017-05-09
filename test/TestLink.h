@@ -10,9 +10,22 @@
 static int _T_(in_order)(struct T_(Link) *const this);
 static int _T_(in_array)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const array, const size_t array_size);
+static int _T_(exactly_unordered)(struct T_(Link) *const this, const size_t n);
 
-/* Check that LIST_TEST is a function implementing {<T>Action}. */
+/* Check that LINK_TEST is a function implementing {<T>Action}. */
 static const T_(Action) _T_(filler) = (LINK_TEST);
+
+/* For \see{_T_L_(exactly, elements)}. */
+struct _T_(Verify) {
+	size_t i;
+	const struct T_(LinkNode) *array;
+	size_t array_no;
+};
+/* For \see{_T_L_(count, unordered)}. */
+struct _T_(Order) {
+	T *prev;
+	size_t count;
+};
 
 #ifdef LINK_A_NAME /* <-- a */
 #define _LINK_NAME LINK_A_NAME
@@ -141,6 +154,23 @@ static int _T_(in_array)(struct T_(Link) *const this,
 		;
 }
 
+static int _T_(exactly_unordered)(struct T_(Link) *const this, const size_t n) {
+	return 1
+#ifdef LINK_A_COMPARATOR
+		&& _T_LA_(count, unordered)(this) == n
+#endif
+#ifdef LINK_B_COMPARATOR
+		&& _T_LB_(count, unordered)(this) == n
+#endif
+#ifdef LINK_C_COMPARATOR
+		&& _T_LC_(count, unordered)(this) == n
+#endif
+#ifdef LINK_D_COMPARATOR
+		&& _T_LD_(count, unordered)(this) == n
+#endif
+		;
+}
+
 
 
 #else /* !_LINK_NAME --><-- _LINK_NAME */
@@ -182,17 +212,11 @@ static void _T_L_(count, another)(T *const this) {
 	_T_L_(count, var)++;
 }
 
-/* For \see{_T_L_(exactly, elements)}. */
-struct T_L_(Link, Verify) {
-	size_t i;
-	const struct T_(LinkNode) *array;
-	size_t array_no;
-};
 /** \see{_T_L_(exactly, elements)}
  @param param: struct <T>Link<L>Verify
  @implements <T>Predicate */
 static int _T_L_(exactly, predicate)(T *const this, void *const param) {
-	struct T_L_(Link, Verify) *lv = param;
+	struct _T_(Verify) *lv = param;
 	if(lv->array_no <= lv->i
 		|| memcmp(this, &lv->array[lv->i].data, sizeof *this))
 		return fprintf(stderr, "Failed at index %lu.\n", lv->i), 0;
@@ -202,7 +226,7 @@ static int _T_L_(exactly, predicate)(T *const this, void *const param) {
 /** Verifies that the elements are exactly as in {array}. */
 static size_t _T_L_(exactly, elements)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *array, const size_t array_no) {
-	struct T_L_(Link, Verify) lv = { 0, 0, 0 };
+	struct _T_(Verify) lv = { 0, 0, 0 };
 	lv.array    = array;
 	lv.array_no = array_no;
 	T_(LinkSetParam)(this, &lv);
@@ -228,6 +252,30 @@ static int _T_L_(in, order)(struct T_(Link) *const this) {
 	T_(LinkSetParam)(this, one_array);
 	return !T_L_(Link, ShortCircuit)(this, &_T_L_(order, predicate));
 }
+
+/** \see{_T_L_(count, unordered)}.
+ @param param: (struct _T_(Order) *).
+ @implements <T>Predicate */
+static int _T_L_(unorder, predicate)(T *const this, void *const param) {
+	struct _T_(Order) *info = param;
+	char a[9], b[9];
+	if(info->prev && _T_L_(data, cmp)(info->prev, this) > 0)
+		printf("Unorder %lu: %s > %s\n", ++info->count,
+		(_T_(to_string)(info->prev, &a), a), (_T_(to_string)(this, &b), b));
+	info->prev = this;
+	return 1;
+}
+/** How many of them are not in order?
+ @implements <T>Predicate */
+static size_t _T_L_(count, unordered)(struct T_(Link) *this) {
+	struct _T_(Order) info = { 0, 0 };
+	printf("Unordered-" QUOTE(LINK_NAME) "-" QUOTE(_LINK_NAME) ": %s.\n",
+		T_L_(Link, ToString)(this));
+	T_(LinkSetParam)(this, &info);
+	T_L_(Link, ShortCircuit)(this, &_T_L_(unorder, predicate));
+	return info.count;
+}
+
 /** All elements are in the same array? */
 static int _T_L_(in, array)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const array, const size_t array_size) {
@@ -546,6 +594,41 @@ static void _T_L_(test, boolean)(void) {
 	assert(!T_L_(Link, Compare)(&c, &ic));
 }
 
+static void _T_L_(test, order)(void) {
+	struct T_(LinkNode) buf[10], *node;
+	const size_t buf_size = sizeof buf / sizeof *buf;
+	struct T_(Link) a, b;
+	size_t i;
+	T_(LinkClear)(&a), T_(LinkClear)(&b);
+	for(i = 0; i < buf_size; i++) node = buf + i, _T_(filler)(&node->data);
+	for(i = 0; i < buf_size >> 1; i++) T_(LinkAdd)(&a, node--);
+	for( ; i < buf_size; i++) T_(LinkAdd)(&b, node--);
+	assert(_T_L_(count, elements)(&a) == buf_size >> 1);
+	assert(_T_L_(count, elements)(&b) == buf_size - (buf_size >> 1));
+	T_(LinkSort)(&a), T_(LinkSort)(&b);
+	T_(LinkTake)(&a, &b);
+	printf("Testing " QUOTE(LINK_NAME) "-" QUOTE(_LINK_NAME) " a, b for order "
+		"on <" QUOTE(LINK_NAME) ">LinkTake(a, b).\n");
+	assert(_T_L_(count, elements)(&a) == buf_size);
+	assert(_T_L_(count, elements)(&b) == 0);
+	/* technically, \${(1/2)^(buf_size/2+1)} change of getting this one wrong */
+	assert(_T_(exactly_unordered)(&a, (size_t)1));
+	/* done now merge */
+	T_(LinkClear)(&a), T_(LinkClear)(&b);
+	T_(LinkSort)(&a), T_(LinkSort)(&b);
+	node = buf;
+	for(i = 0; i < buf_size >> 1; i++) T_(LinkAdd)(&a, node++);
+	for( ; i < buf_size; i++) T_(LinkAdd)(&b, node++);
+	assert(_T_L_(count, elements)(&a) == buf_size >> 1);
+	assert(_T_L_(count, elements)(&b) == buf_size - (buf_size >> 1));
+	T_(LinkMerge)(&a, &b);
+	printf("Testing " QUOTE(LINK_NAME) "-" QUOTE(_LINK_NAME) " a, b for order "
+		"on <" QUOTE(LINK_NAME) ">LinkMerge(a, b).\n");
+	assert(_T_L_(count, elements)(&a) == buf_size);
+	assert(_T_L_(count, elements)(&b) == 0);
+	assert(_T_(in_order)(&a));
+}
+
 static void _T_L_(test, meta)(void) {
 	struct T_(LinkNode) nodes[256], *node = nodes;
 	const size_t nodes_size = sizeof nodes / sizeof *nodes;
@@ -591,6 +674,7 @@ static void _T_L_(test, list)(void) {
 	_T_L_(test, basic)();
 	_T_L_(test, memory)();
 	_T_L_(test, boolean)();
+	_T_L_(test, order)();
 	_T_L_(test, meta)();
 	/* fixme: assumes {_LINK_COMPARATOR} is defined on all */
 }
