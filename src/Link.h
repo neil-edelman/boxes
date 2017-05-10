@@ -651,6 +651,28 @@ static void T_(LinkMigrateBlock)(struct T_(Link) *const this,
 #include "../test/TestLink.h" /* need this file if one is going to run tests */
 #endif /* test --> */
 
+/* prototype */
+static void _T_(unused_coda)(void);
+/** This silences unused function warnings from the pre-processor, but allows
+ optimisation, (hopefully.)
+ \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
+static void _T_(unused_link)(void) {
+	T_(LinkClear)(0);
+	T_(LinkAdd)(0, 0);
+	T_(LinkRemove)(0, 0);
+	T_(LinkTake)(0, 0);
+	T_(LinkMerge)(0, 0);
+	T_(LinkSort)(0);
+	T_(LinkSetParam)(0, 0);
+	T_(LinkMigrate)(0, 0, 0); /* FIXME */
+	T_(LinkMigrateBlock)(0, 0, (size_t)0, 0);
+	_T_(unused_coda)();
+}
+/** {clang}'s pre-processor is clever? */
+static void _T_(unused_coda)(void) { _T_(unused_link)(); }
+
+
+
 
 
 /* un-define all macros */
@@ -906,9 +928,6 @@ struct _T_(Runs) {
  {<T>Comparator}. */
 static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
 
-/* fixme */
-static char *T_L_(Link, ToString)(const struct T_(Link) *const this);
-
 /** Private: merges {from} into {this} when we don't know anything about the
  data; on equal elements, places {this} first.
  @order {O(n + m)}. */
@@ -917,9 +936,6 @@ static void _T_L_(link, merge)(struct T_(Link) *const this,
 	struct T_(LinkNode) *a, *b; /* {a} ~ {this}, {b} ~ {from} */
 	assert(this);
 	assert(from);
-	printf("<" QUOTE(LINK_NAME) ">_link_<" QUOTE(_LINK_NAME)
-		">_merge():\n -- a = %s <- b = %s.\n",
-		T_L_(Link, ToString)(this), T_L_(Link, ToString)(from));
 	if(!(b = from->L_(first))) {
 		/* {from} empty; declare success */
 		return;
@@ -932,24 +948,18 @@ static void _T_L_(link, merge)(struct T_(Link) *const this,
 		for( ; ; ) {
 			if(_T_L_(data, cmp)(&a->data, &b->data) < 0) {
 				a->L_(prev) = last, last = last->L_(next) = a;
-				if(!(a = a->L_(next))) {
-					b->L_(prev) = last, last->L_(next) = b,
-						this->L_(last) = from->L_(last);
-					break;
-				}
+				if(!(a = a->L_(next)))
+					{ b->L_(prev) = last, last->L_(next) = b,
+					this->L_(last) = from->L_(last); break; }
 			} else {
 				b->L_(prev) = last, last = last->L_(next) = b;
-				if(!(b = b->L_(next))) {
-					a->L_(prev) = last, last->L_(next) = a;
-					break;
-				}
+				if(!(b = b->L_(next)))
+					{ a->L_(prev) = last, last->L_(next) = a; break; }
 			}
 			this->L_(first) = nemo.L_(next);
 		}
 	}
 	from->L_(first) = from->L_(last) = 0;
-	printf(" -- a = %s <- b = %s.\n",
-		T_L_(Link, ToString)(this), T_L_(Link, ToString)(from));
 }
 
 #ifndef LINK_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls

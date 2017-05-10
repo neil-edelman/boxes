@@ -112,7 +112,6 @@ static void T_(LinkTest)(void) {
 #ifdef LINK_D_NAME
 	_T_LD_(test, list)();
 #endif
-	fprintf(stderr, "Done tests of Link<" T_NAME ">.\n\n");
 }
 
 /* test helper functions */
@@ -406,6 +405,7 @@ static void _T_L_(test, basic)(void) {
 	printf("Clear.\n");
 	T_(LinkClear)(&a);
 	assert(!_T_L_(count, elements)(&a));
+	printf("\n");
 }
 
 static void _T_L_(test, memory)(void) {
@@ -477,6 +477,7 @@ static void _T_L_(test, memory)(void) {
 	assert(!T_L_(Link, Compare)(&a, &b));
 	assert(_T_(in_array)(&a, buf[0], buf_size));
 	assert(_T_(in_array)(&b, buf[1], buf_size << 1));
+	printf("\n");
 }
 
 #ifdef _LINK_COMPARATOR /* <-- compare */
@@ -592,10 +593,11 @@ static void _T_L_(test, boolean)(void) {
 	assert(!T_L_(Link, Compare)(&a, &ia));
 	assert(!T_L_(Link, Compare)(&b, &ib));
 	assert(!T_L_(Link, Compare)(&c, &ic));
+	printf("\n");
 }
 
 static void _T_L_(test, order)(void) {
-	struct T_(LinkNode) buf[10], *node;
+	struct T_(LinkNode) buf[30000], *node;
 	const size_t buf_size = sizeof buf / sizeof *buf;
 	struct T_(Link) a, b;
 	size_t i;
@@ -648,6 +650,7 @@ static void _T_L_(test, order)(void) {
 	assert(_T_L_(count, elements)(&a) == buf_size);
 	assert(_T_L_(count, elements)(&b) == 0);
 	assert(_T_(in_order)(&a));
+	printf("\n");
 }
 
 static void _T_L_(test, meta)(void) {
@@ -684,6 +687,7 @@ static void _T_L_(test, meta)(void) {
 			assert(_T_L_(data, cmp)(&less->data, &more->data) <= 0);
 		}
 	}
+	printf("\n");
 }
 
 #endif /* compare --> */
