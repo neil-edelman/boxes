@@ -9,6 +9,7 @@
 #include <stdlib.h> /* EXIT_ malloc free */
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp */
+#include <time.h>	/* clock */
 #include "Orcish.h"
 
 #ifdef __GNUC__ /* <-- GCC */
@@ -199,7 +200,9 @@ static void test_block_move(void) {
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
+	unsigned seed = (unsigned)clock();
 
+	srand(seed), rand(), printf("Seed %u.\n", seed);
 	FooLinkTest();
 	AnimalLinkTest();
 	test_block_move();
