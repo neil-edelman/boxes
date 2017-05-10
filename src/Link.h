@@ -915,25 +915,37 @@ static char *T_L_(Link, ToString)(const struct T_(Link) *const this);
 static void _T_L_(link, merge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	struct T_(LinkNode) *a, *b; /* {a} ~ {this}, {b} ~ {from} */
-	struct T_(LinkNode) nemo, *const first = &nemo, *last = first;
 	assert(this);
 	assert(from);
 	printf("<" QUOTE(LINK_NAME) ">_link_<" QUOTE(_LINK_NAME)
 		">_merge():\n -- a = %s <- b = %s.\n",
 		T_L_(Link, ToString)(this), T_L_(Link, ToString)(from));
-	a = this->L_(first), b = from->L_(first);
-	while(a && b) {
-		if(_T_L_(data, cmp)(&a->data, &b->data) < 0) {
-			a->L_(prev) = last, last = last->L_(next) = a, a = a->L_(next);
-		} else {
-			b->L_(prev) = last, last = last->L_(next) = b, b = b->L_(next);
-		}
-	}
-	this->L_(first) = nemo.L_(next);
-	if(a) {
-		a->L_(prev) = last, last->L_(next) = a;
+	if(!(b = from->L_(first))) {
+		/* {from} empty; declare success */
+		return;
+	} else if(!(a = this->L_(first))) {
+		/* assignment */
+		this->L_(first) = from->L_(first), this->L_(last) = from->L_(last);
 	} else {
-		b->L_(prev) = last, last->L_(next) = b, this->L_(last) = from->L_(last);
+		/* merge */
+		struct T_(LinkNode) nemo, *const first = &nemo, *last = first;
+		for( ; ; ) {
+			if(_T_L_(data, cmp)(&a->data, &b->data) < 0) {
+				a->L_(prev) = last, last = last->L_(next) = a;
+				if(!(a = a->L_(next))) {
+					b->L_(prev) = last, last->L_(next) = b,
+						this->L_(last) = from->L_(last);
+					break;
+				}
+			} else {
+				b->L_(prev) = last, last = last->L_(next) = b;
+				if(!(b = b->L_(next))) {
+					a->L_(prev) = last, last->L_(next) = a;
+					break;
+				}
+			}
+			this->L_(first) = nemo.L_(next);
+		}
 	}
 	from->L_(first) = from->L_(last) = 0;
 	printf(" -- a = %s <- b = %s.\n",
