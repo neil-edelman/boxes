@@ -469,7 +469,7 @@ static void _T_L_(test, memory)(void) {
 		node_c = buf[2] + i;
 		memcpy(node_c, node_b, sizeof *node_b);
 		memset(node_b, 0, sizeof *node_b);
-		T_(LinkMigrate)(&b, node_c, node_b);
+		T_(LinkMigrate)(&b, node_c);
 	}
 	printf("Testing memory relocation with <" QUOTE(LINK_NAME)
 		">LinkMigrate: a = %s, b = %s.\n",
@@ -596,8 +596,9 @@ static void _T_L_(test, boolean)(void) {
 	printf("\n");
 }
 
+/** @fixme Needs to test null and empty. */
 static void _T_L_(test, order)(void) {
-	struct T_(LinkNode) buf[30000], *node;
+	struct T_(LinkNode) buf[3000], *node;
 	const size_t buf_size = sizeof buf / sizeof *buf;
 	struct T_(Link) a, b;
 	size_t i;

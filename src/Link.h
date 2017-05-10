@@ -576,25 +576,24 @@ static void T_(LinkSetParam)(struct T_(Link) *const this,
 	this->param = param;
 }
 
-/** Use when one {node} of {this} has switched places in memory from {old_node}
- to {node}. If {this}, {node}, or {old_node} is null, doesn't do anything.
+/** Use when one {node} of {this} has switched places in memory. If {this} or
+ {node} is null, doesn't do anything.
  @order \Theta(1)
  @allow */
 static void T_(LinkMigrate)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const node,
-	const struct T_(LinkNode) *const old_node) {
-	if(!this || !node || !old_node) return;
+	struct T_(LinkNode) *const node) {
+	if(!this || !node) return;
 #ifdef LINK_A_NAME /* <-- a */
-	_T_LA_(link, migrate)(this, node, old_node);
+	_T_LA_(link, migrate)(this, node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-	_T_LB_(link, migrate)(this, node, old_node);
+	_T_LB_(link, migrate)(this, node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-	_T_LC_(link, migrate)(this, node, old_node);
+	_T_LC_(link, migrate)(this, node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-	_T_LD_(link, migrate)(this, node, old_node);
+	_T_LD_(link, migrate)(this, node);
 #endif /* d --> */
 }
 
@@ -664,7 +663,7 @@ static void _T_(unused_link)(void) {
 	T_(LinkMerge)(0, 0);
 	T_(LinkSort)(0);
 	T_(LinkSetParam)(0, 0);
-	T_(LinkMigrate)(0, 0, 0); /* FIXME */
+	T_(LinkMigrate)(0, 0);
 	T_(LinkMigrateBlock)(0, 0, (size_t)0, 0);
 	_T_(unused_coda)();
 }
@@ -810,21 +809,17 @@ static void _T_L_(link, cat)(struct T_(Link) *const this,
 
 /** Private: {old} is not de-referenced, but {new} is. */
 static void _T_L_(link, migrate)(struct T_(Link) *const this,
-	struct T_(LinkNode) *const node,
-	const struct T_(LinkNode) *const old_node) {
-	assert(this && node &&old_node);
+	struct T_(LinkNode) *const node) {
+	assert(this);
+	assert(node);
 	if(node->L_(prev)) {
-		assert(node->L_(prev)->L_(next) == old_node);
 		node->L_(prev)->L_(next) = node;
 	} else {
-		assert(this->L_(first) == old_node);
 		this->L_(first) = node;
 	}
 	if(node->L_(next)) {
-		assert(node->L_(next)->L_(prev) == old_node);
 		node->L_(next)->L_(prev) = node;
 	} else {
-		assert(this->L_(last) == old_node);
 		this->L_(last) = node;
 	}
 }
