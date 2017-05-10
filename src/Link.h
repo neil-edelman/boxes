@@ -468,6 +468,11 @@ static void T_(LinkTake)(struct T_(Link) *const this,
 #endif /* d --> */
 }
 
+/* fixme */
+#ifdef LINK_A_NAME
+static char *T_LA_(Link, ToString)(const struct T_(Link) *const this);
+#endif
+
 /** Merges the elements into {this} from {from} in (local) order; concatenates
  all lists that don't have a {LINK_[A-D]_COMPARATOR}. If {this} is null, then
  it removes elements.
@@ -901,33 +906,38 @@ struct _T_(Runs) {
  {<T>Comparator}. */
 static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
 
-/** Private: merges {this} into {recipient} when we don't know anything about
- the data; on equal elements, places {this} first. {O(n + m)}. */
+/* fixme */
+static char *T_L_(Link, ToString)(const struct T_(Link) *const this);
+
+/** Private: merges {from} into {this} when we don't know anything about the
+ data; on equal elements, places {this} first.
+ @order {O(n + m)}. */
 static void _T_L_(link, merge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
-	struct T_(LinkNode) *t, *f;
-	char a[9];
+	struct T_(LinkNode) *a, *b; /* {a} ~ {this}, {b} ~ {from} */
+	struct T_(LinkNode) nemo, *const first = &nemo, *last = first;
 	assert(this);
 	assert(from);
-	printf("link_<" QUOTE(LINK_NAME) ">_merge_<" QUOTE(_LINK_NAME) ">():\n");
-	t = this->L_(first);
-	while((f = from->L_(first))) {
-		while(t && _T_L_(data, cmp)(&f->data, &t->data) > 0)
-			printf("t %s, ", (_T_(to_string)(&t->data, &a), a)), t = t->L_(next);
-		if(!t) break; /* run past the end of {this} */
-		printf("f %s, ", (_T_(to_string)(&f->data, &a), a));
-		/* f = shift(from); {f} goes before {t}; fixme: redudant compare */
-		_T_L_(link, remove)(from, f);
-		f->L_(next) = t;
-		if(t->L_(prev)) {
-			t->L_(prev)->L_(next) = f;
+	printf("<" QUOTE(LINK_NAME) ">_link_<" QUOTE(_LINK_NAME)
+		">_merge():\n -- a = %s <- b = %s.\n",
+		T_L_(Link, ToString)(this), T_L_(Link, ToString)(from));
+	a = this->L_(first), b = from->L_(first);
+	while(a && b) {
+		if(_T_L_(data, cmp)(&a->data, &b->data) < 0) {
+			a->L_(prev) = last, last = last->L_(next) = a, a = a->L_(next);
 		} else {
-			assert(this->L_(first) == t);
-			this->L_(first) = f;
+			b->L_(prev) = last, last = last->L_(next) = b, b = b->L_(next);
 		}
 	}
-	_T_L_(link, cat)(this, from);
-	printf("done.\n");
+	this->L_(first) = nemo.L_(next);
+	if(a) {
+		a->L_(prev) = last, last->L_(next) = a;
+	} else {
+		b->L_(prev) = last, last->L_(next) = b, this->L_(last) = from->L_(last);
+	}
+	from->L_(first) = from->L_(last) = 0;
+	printf(" -- a = %s <- b = %s.\n",
+		T_L_(Link, ToString)(this), T_L_(Link, ToString)(from));
 }
 
 #ifndef LINK_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls

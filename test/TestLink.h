@@ -269,7 +269,7 @@ static int _T_L_(unorder, predicate)(T *const this, void *const param) {
  @implements <T>Predicate */
 static size_t _T_L_(count, unordered)(struct T_(Link) *this) {
 	struct _T_(Order) info = { 0, 0 };
-	printf("Unordered-" QUOTE(LINK_NAME) "-" QUOTE(_LINK_NAME) ": %s.\n",
+	printf("Unordered(" QUOTE(LINK_NAME) "-" QUOTE(_LINK_NAME) ": %s)\n",
 		T_L_(Link, ToString)(this));
 	T_(LinkSetParam)(this, &info);
 	T_L_(Link, ShortCircuit)(this, &_T_L_(unorder, predicate));
@@ -615,12 +615,33 @@ static void _T_L_(test, order)(void) {
 	assert(_T_(exactly_unordered)(&a, (size_t)1));
 	/* done now merge */
 	T_(LinkClear)(&a), T_(LinkClear)(&b);
-	T_(LinkSort)(&a), T_(LinkSort)(&b);
 	node = buf;
 	for(i = 0; i < buf_size >> 1; i++) T_(LinkAdd)(&a, node++);
 	for( ; i < buf_size; i++) T_(LinkAdd)(&b, node++);
+	T_(LinkSort)(&a), T_(LinkSort)(&b);
 	assert(_T_L_(count, elements)(&a) == buf_size >> 1);
 	assert(_T_L_(count, elements)(&b) == buf_size - (buf_size >> 1));
+	assert(_T_(in_order)(&a));
+	assert(_T_(in_order)(&b));
+	printf("Testing " QUOTE(LINK_NAME) "-" QUOTE(_LINK_NAME) " a, b for order "
+		"on <" QUOTE(LINK_NAME) ">LinkMerge(a, b): %s, %s.\n",
+		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
+#ifdef LINK_A_COMPARATOR
+	printf("By " QUOTE(LINK_A_NAME) ": a = %s, b = %s.\n",
+		T_LA_(Link, ToString)(&a), T_LA_(Link, ToString)(&b));
+#endif
+#ifdef LINK_B_COMPARATOR
+	printf("By " QUOTE(LINK_B_NAME) ": a = %s, b = %s.\n",
+		T_LB_(Link, ToString)(&a), T_LB_(Link, ToString)(&b));
+#endif
+#ifdef LINK_C_COMPARATOR
+	printf("By " QUOTE(LINK_C_NAME) ": a = %s, b = %s.\n",
+		T_LC_(Link, ToString)(&a), T_LC_(Link, ToString)(&b));
+#endif
+#ifdef LINK_D_COMPARATOR
+	printf("By " QUOTE(LINK_D_NAME) ": a = %s, b = %s.\n",
+		T_LD_(Link, ToString)(&a), T_LD_(Link, ToString)(&b));
+#endif
 	T_(LinkMerge)(&a, &b);
 	printf("Testing " QUOTE(LINK_NAME) "-" QUOTE(_LINK_NAME) " a, b for order "
 		"on <" QUOTE(LINK_NAME) ">LinkMerge(a, b).\n");
