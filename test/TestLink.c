@@ -4,7 +4,7 @@
  @author	Neil
  @std		C89/90
  @version	1.0; 2017-05
- @since		1.0; 2017-05 scraped from TestList.h */
+ @since		1.0; 2017-05 salvaged from TestList.h */
 
 #include <stdlib.h> /* EXIT_ malloc free */
 #include <stdio.h>  /* fprintf */
@@ -17,7 +17,6 @@
 #pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wdocumentation"
 #pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
-#pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
 #elif __GNUC__ /* clang --><-- GCC */
 #pragma GCC diagnostic ignored "-Wconversion"
 #elif __BORLANDC__ /* GCC --><-- BCC must be placed ahead of _MSC_VER */

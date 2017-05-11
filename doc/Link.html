@@ -78,7 +78,7 @@ by <a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a> or <a href = "#&lt
 	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>.</dd>
 	<dt>parameter: LINK_TEST</dt>
 	<dd>Unit testing framework using <em>&lt;T&gt;LinkTest</em>, included in a separate header,
- <em>LinkTest.h</em>. Must be defined equal to a random filler, satisfying
+ <em>../test/LinkTest.h</em>. Must be defined equal to a (random) filler, satisfying
  <em>&lt;T&gt;Action</em>. If <em>NDEBUG</em> is not defined, turns on <em>assert</em> private function
  integrity testing. Requires <em>LINK_TO_STRING</em>.</dd>
 	<dt>minimum standard</dt>
@@ -98,7 +98,8 @@ by <a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a> or <a href = "#&lt
  4996 not <em>C++11</em>.</dd>
 	<dt>fixme</dt>
 	<dd><em>clang</em>: <em>#pragma clang diagnostic ignored "-Wx"</em> where <em>x</em> is:
- <em>padded</em>; <em>documentation-unknown-command</em></dd>
+ <em>padded</em>; <em>documentation</em>; <em>documentation-unknown-command</em> it's not quite
+ <em>clang-tags</em>; 3.8 <em>disabled-macro-expansion</em> on <em>LINK_TEST</em>.</dd>
 </dl>
 
 

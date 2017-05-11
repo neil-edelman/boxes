@@ -38,7 +38,7 @@
 
  @param LINK_TEST
  Unit testing framework using {<T>LinkTest}, included in a separate header,
- {LinkTest.h}. Must be defined equal to a random filler, satisfying
+ {../test/LinkTest.h}. Must be defined equal to a (random) filler, satisfying
  {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private function
  integrity testing. Requires {LINK_TO_STRING}.
 
@@ -53,7 +53,8 @@
  uhm, thanks?; 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info;
  4996 not {C++11}.
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
- {padded}; {documentation-unknown-command}; 3.8 {disabled-macro-expansion} */
+ {padded}; {documentation}; {documentation-unknown-command} it's not quite
+ {clang-tags}; 3.8 {disabled-macro-expansion} on {LINK_TEST}. */
 
 /* Tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -62,6 +63,7 @@
  Microsoft Visual Studio Enterprise 2015 Version 14.0.25424.00 Update 3
  Borland 10.1 Embarcadero C++ 7.20 for Win32
  MinGW gcc version 4.9.3 (GCC) Win32
+ gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.4)
  clang version 3.8.0-2ubuntu4 (tags/RELEASE_380/final) */
 
 
@@ -85,17 +87,13 @@
 
 
 
-/* check defines */
-
+/* check defines; {[A, D]} is just arbitrary; more could be added */
 #ifndef LINK_NAME
 #error Link generic LINK_NAME undefined.
 #endif
-
 #ifndef LINK_TYPE
 #error Link generic LINK_TYPE undefined.
 #endif
-
-/* A..D is just arbitrary; more could be added, just search: [A, D] */
 #if !defined(LINK_A_NAME) && !defined(LINK_B_NAME) \
 	&& !defined(LINK_C_NAME) && !defined(LINK_D_NAME)
 #error Link: must have at least one of LINK_[A-D]_NAME.
@@ -119,9 +117,9 @@
 #define NDEBUG
 #endif
 #if defined(LINK_A_COMPARATOR) || defined(LINK_B_COMPARATOR) \
-	|| defined(LINK_C_COMPARATOR) || defined(LINK_D_COMPARATOR) /* <-- comp */
+	|| defined(LINK_C_COMPARATOR) || defined(LINK_D_COMPARATOR)
 #define LINK_SOME_COMPARATOR
-#endif /* comp --> */
+#endif
 
 
 
@@ -129,15 +127,7 @@
 
 /* After this block, the preprocessor replaces T with LINK_TYPE, T_(X) with
  LINK_NAMEX, PRIVATE_T_(X) with LINK_L_NAME_X, and T_NAME with the string
- version.
- http://c-faq.com/decl/namespace.html "All identifiers beginning with an
- underscore are reserved for ordinary identifiers (functions, variables,
- typedefs, enumeration constants) with file scope." "You may use identifiers
- consisting of an underscore followed by a digit or lower case letter at
- function, block, or prototype scope." I use a leading underscore to implement
- private functions or data in the hopes that it will not conflict with existing
- code.
- http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
+ version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
 #ifdef CAT
 #undef CAT
 #endif
@@ -179,7 +169,7 @@
 #define T_NAME QUOTE(LINK_NAME)
 
 /* Troubles with this line? check to ensure that LINK_TYPE is a valid type,
- whose definition is placed above <#include "Link.h">. */
+ whose definition is placed above {#include "Link.h"}. */
 typedef LINK_TYPE PRIVATE_T_(Type);
 #define T PRIVATE_T_(Type)
 
@@ -337,7 +327,7 @@ static void PRIVATE_T_(remove)(struct T_(Link) *const this,
 
 /* Note to future self: recursive includes. The {LINK_L_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!LINK_L_NAME} section. These
- will get all the functions with {<I>} in them. */
+ will get all the functions with {<L>} in them. */
 
 #ifdef LINK_A_NAME /* <-- a */
 #define LINK_L_NAME LINK_A_NAME
@@ -757,7 +747,8 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_link)(); }
 
 
 /* After this block, the preprocessor replaces T_M_(X, Y) with
- LINK_NAMEXLINK_L_NAMEY, PRIVATE_T_M_(X, Y) with LINK_L_NAME_X_LINK_L_NAME_Y */
+ LINK_NAMEXLINK_L_NAMEY, PRIVATE_T_M_(X, Y) with
+ link_LINK_L_NAME_X_LINK_L_NAME_Y */
 #ifdef T_L_
 #undef T_L_
 #endif
@@ -829,7 +820,7 @@ static void PRIVATE_T_L_(link, cat)(struct T_(Link) *const this,
 	from->L_(first) = from->L_(last) = 0;
 }
 
-/** Private: {old} is not de-referenced, but {new} is. */
+/** Private: when you've moved in memory just one thing. */
 static void PRIVATE_T_L_(link, migrate)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	assert(this);
