@@ -96,6 +96,6 @@ void Orcish(char *const name, const size_t name_size) {
 		strcat(str, suffixes[a]);
 	}
 
-	name[0] = toupper(name[0]);
+	name[0] = (char)toupper(name[0]);
 
 }

@@ -39,10 +39,10 @@ static int Foo_key_cmp(const struct Foo *a, const struct Foo *b) {
 static int Foo_value_cmp(const struct Foo *a, const struct Foo *b) {
 	return strcmp(a->value, b->value);
 }
-/** @std C99 {snprintf}
+/** Assumes {key} is {[0, 99]}.
  @implements <Foo>ToString */
 static void Foo_to_string(const struct Foo *this, char (*const a)[12]) {
-	snprintf(*a, sizeof *a, "%3.3d%.8s", this->key, this->value);
+	sprintf(*a, "%d%.9s", this->key, this->value);
 }
 /** @implements <Foo>Action */
 static void Foo_filler(struct Foo *const this) {
@@ -64,15 +64,21 @@ static void Foo_filler(struct Foo *const this) {
 static int Int_N_cmp(const int *a, const int *b) {
 	return (*b < *a) - (*a < *b);
 }
-/** @std C99 {snprintf}
+/** Assumes {[-9 999 999 999, 99 999 999 999]}.
  @implements <Int>ToString */
 static void Int_to_string(const int *this, char (*const a)[12]) {
-	snprintf(*a, sizeof *a, "%d", *this);
+	sprintf(*a, "%d", *this);
 }
+#if INT_MAX > 9999999999
+#define LINK_NUM_MAX 9999999999
+#else
+#define LINK_NUM_MAX INT_MAX
+#endif
 /** @implements <Int>Action */
 static void Int_filler(int *const this) {
-	*this = (float)((2.0 * rand() / (RAND_MAX + 1.0) - 1) * INT_MAX);
+	*this = (float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) * LINK_NUM_MAX);
 }
+#undef LINK_NUM_MAX
 #define LINK_NAME Int
 #define LINK_TYPE int
 #define LINK_A_NAME N
@@ -123,16 +129,16 @@ static int Animal_name_cmp(const struct Animal *a, const struct Animal *b) {
 static int Animal_x_cmp(const struct Animal *a, const struct Animal *b) {
 	return (b->x < a->x) - (a->x < b->x);
 }
-/** @std C99 {snprintf}
+/** Assumes {x \in [-99, 999]}.
  @implements <Animal>ToString */
 static void Animal_to_string(const struct Animal *this, char (*const a)[12]) {
-	snprintf(*a, sizeof *a, "%d%s", this->x, this->name);
+	sprintf(*a, "%d%.8s", this->x, this->name);
 }
 /* @implements <Animal>Action */
 static void Animal_filler(struct Animal *const this) {
 	Orcish(this->name, sizeof this->name);
 	this->vt = 0;
-	this->x  = (unsigned)(200.0 * rand() / (RAND_MAX + 1.0) - 100.0);
+	this->x  = (unsigned)(198.0 * rand() / (RAND_MAX + 1.0) - 99.0);
 }
 #define LINK_NAME Animal
 #define LINK_TYPE struct Animal

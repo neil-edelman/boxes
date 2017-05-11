@@ -90,12 +90,16 @@ by <a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a> or <a href = "#&lt
 	<dt>since</dt>
 	<dd>1.0; 2017-05 separated from List.h</dd>
 	<dt>fixme</dt>
-	<dd><em>#pragma GCC diagnostic ignored "-Wconversion"</em>; version 4.2.1 has a
+	<dd><em>#pragma GCC diagnostic ignored "-Wconversion"</em>; version 4.2[.1] has a
  bug with <em>-Wconversion</em> that causes <em>assert</em> to emit a spurious warnings on
  <em>LINK_TEST</em>.</dd>
 	<dt>fixme</dt>
 	<dd><em>MSVC</em> mistakenly thinks it's: <em>Java</em>, <em>#pragma warning(disable: 4706)</em>;
- <em>C++11</em>, <em>#pragma warning(disable: 4996)</em>.</dd>
+ <em>C++11</em>, <em>#pragma warning(disable: 4996)</em>.
+ 4464 contains '..' thanks, we know
+ 4710 not inlined info
+ 4820 padding info
+ 4996 C++11</dd>
 	<dt>fixme</dt>
 	<dd><em>bcc</em>, <em>mingw</em>, <em>clang</em>, <em>etc</em>.</dd>
 </dl>
@@ -135,11 +139,11 @@ zero. Should do so forming an equivalence relation with respect to <em>T</em>.
 </dl>
 </div>
 
-<div><a name = "typedef void (*&lt;T&gt;ToString)(const T *const, char (*const)[9])"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;ToString)(const T *const, char (*const)[9])</h3>
-<pre><b>typedef void (*&lt;T&gt;ToString)(const T *const, char (*const)[9])</b></pre>
+<div><a name = "typedef void (*&lt;T&gt;ToString)(const T *const, char (*const)[12])"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;ToString)(const T *const, char (*const)[12])</h3>
+<pre><b>typedef void (*&lt;T&gt;ToString)(const T *const, char (*const)[12])</b></pre>
 <p>
-Responsible for turning <em>&lt;T&gt;</em> (the first argument) into a 9 <em>char</em>
+Responsible for turning <em>&lt;T&gt;</em> (the first argument) into a 12 <em>char</em>
 null-terminated output string (the second.)
 </p>
 <dl>

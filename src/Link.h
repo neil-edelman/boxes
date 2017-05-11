@@ -44,7 +44,7 @@
 
  @title		Link.h
  @author	Neil
- @std		C89/90 ({LINK_TEST} uses {snprintf} that is C99)
+ @std		C89/90
  @version	1.0; 2017-05
  @since		1.0; 2017-05 separated from List.h
  @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2[.1] has a
