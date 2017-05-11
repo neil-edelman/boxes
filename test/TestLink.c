@@ -144,7 +144,7 @@ static void Animal_to_string(const struct Animal *this, char (*const a)[12]) {
 static void Animal_filler(struct Animal *const this) {
 	Orcish(this->name, sizeof this->name);
 	this->vt = 0;
-	this->x  = (unsigned)(198.0 * rand() / (RAND_MAX + 1.0) - 99.0);
+	this->x  = (int)(198.0 * rand() / (RAND_MAX + 1.0) - 99.0);
 }
 #define LINK_NAME Animal
 #define LINK_TYPE struct Animal

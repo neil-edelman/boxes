@@ -53,7 +53,7 @@
  uhm, thanks?; 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info;
  4996 not {C++11}.
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
- {padded}; {documentation-unknown-command} */
+ {padded}; {documentation-unknown-command}; 3.8 {disabled-macro-expansion} */
 
 /* Tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
