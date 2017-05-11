@@ -47,9 +47,9 @@
  @std		C89/90
  @version	1.0; 2017-05
  @since		1.0; 2017-05 separated from List.h
- @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2[.1] has a
- bug it to emit a spurious warnings on {LINK_TEST}.
- @fixme {MSVC #pragma warning(disable: x)}: 4464 contains '..' (uhm, thanks?);
+ @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2 {assert} bug
+ on {LINK_TEST}.
+ @fixme {MSVC #pragma warning(disable: x)}: 4464 contains '..' uhm, thanks?;
  4706 not {Java}; 4710, 4711 inlined info; 4820 padding info; 4996 not {C++11}.
  @fixme {bcc}, {mingw}, {clang}, {etc}. */
 
@@ -57,8 +57,8 @@
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
  Apple clang version 1.7 (tags/Apple/clang-77) (based on LLVM 2.9svn)
  gcc version 4.9.2 (Debian 4.9.2-10)
- 
- */
+ Microsoft Visual Studio Enterprise 2015 Version 14.0.25424.00 Update 3
+ Boreland 10.1 */
 
 
 

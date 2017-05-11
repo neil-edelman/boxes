@@ -14,12 +14,13 @@
 #include "Orcish.h"
 
 #ifdef __GNUC__ /* <-- GCC */
-#pragma GCC diagnostic ignored "-Wconversion" /* 4.2 libc assert bug */
-#elif _MSC_VER /* GCC --><-- MSVC: not a C89/90 compiler; needs a little help;
-"Assignment within conditional expression." "<ANSI89/ISO90 name>: The POSIX
-name for this item is deprecated. Instead use the ISO C and C++ conformant
-name <ISO C++11 name>." */
+#pragma GCC diagnostic ignored "-Wconversion"
+#elif _MSC_VER /* GCC --><-- MSVC */
+#pragma warning(disable: 4464)
 #pragma warning(disable: 4706)
+#pragma warning(disable: 4710)
+#pragma warning(disable: 4711)
+#pragma warning(disable: 4820)
 #pragma warning(disable: 4996)
 #elif __BORLANDC__ /* MSVC --><-- BCC */
 #elif __MINGW32__ /* BCC --><-- MinGW */
