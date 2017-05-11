@@ -46,7 +46,7 @@ static void Foo_to_string(const struct Foo *this, char (*const a)[12]) {
 }
 /** @implements <Foo>Action */
 static void Foo_filler(struct Foo *const this) {
-	this->key = (float)(rand() / (RAND_MAX + 1.0) * 99);
+	this->key = (int)(float)(rand() / (RAND_MAX + 1.0) * 99.0);
 	Orcish(this->value, sizeof this->value);
 }
 #define LINK_NAME Foo
@@ -76,7 +76,7 @@ static void Int_to_string(const int *this, char (*const a)[12]) {
 #endif
 /** @implements <Int>Action */
 static void Int_filler(int *const this) {
-	*this = (float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) * LINK_NUM_MAX);
+	*this = (int)(float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) *LINK_NUM_MAX);
 }
 #undef LINK_NUM_MAX
 #define LINK_NAME Int
@@ -104,7 +104,7 @@ static void Colour_to_string(const enum Colour *this, char (*const a)[12]) {
 }
 /** @implements <Colour>Action */
 static void Colour_filler(enum Colour *const this) {
-	*this = (float)(rand() / (RAND_MAX + 1.0) * colour_size);
+	*this = (int)(float)(rand() / (RAND_MAX + 1.0) * colour_size);
 }
 #define LINK_NAME Colour
 #define LINK_TYPE enum Colour

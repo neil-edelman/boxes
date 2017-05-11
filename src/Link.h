@@ -48,14 +48,9 @@
  @version	1.0; 2017-05
  @since		1.0; 2017-05 separated from List.h
  @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2[.1] has a
- bug with {-Wconversion} that causes {assert} to emit a spurious warnings on
- {LINK_TEST}.
- @fixme {MSVC} mistakenly thinks it's: {Java}, {#pragma warning(disable: 4706)};
- {C++11}, {#pragma warning(disable: 4996)}.
- 4464 contains '..' thanks, we know
- 4710 not inlined info
- 4820 padding info
- 4996 C++11
+ bug it to emit a spurious warnings on {LINK_TEST}.
+ @fixme {MSVC #pragma warning(disable: x)}: 4464 contains '..' (uhm, thanks?);
+ 4706 not {Java}; 4710 inlined info; 4820 padding info; 4996 not {C++11}
  @fixme {bcc}, {mingw}, {clang}, {etc}. */
 
 /* Tested with:
