@@ -90,18 +90,12 @@ by <a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a> or <a href = "#&lt
 	<dt>since</dt>
 	<dd>1.0; 2017-05 separated from List.h</dd>
 	<dt>fixme</dt>
-	<dd><em>#pragma GCC diagnostic ignored "-Wconversion"</em>; version 4.2[.1] has a
- bug with <em>-Wconversion</em> that causes <em>assert</em> to emit a spurious warnings on
- <em>LINK_TEST</em>.</dd>
+	<dd><em>GCC</em>: <em>#pragma GCC diagnostic ignored "-Wconversion"</em>; libc 4.2
+ <em>assert</em> bug on <em>LINK_TEST</em>.</dd>
 	<dt>fixme</dt>
-	<dd><em>MSVC</em> mistakenly thinks it's: <em>Java</em>, <em>#pragma warning(disable: 4706)</em>;
- <em>C++11</em>, <em>#pragma warning(disable: 4996)</em>.
- 4464 contains '..' thanks, we know
- 4710 not inlined info
- 4820 padding info
- 4996 C++11</dd>
-	<dt>fixme</dt>
-	<dd><em>bcc</em>, <em>mingw</em>, <em>clang</em>, <em>etc</em>.</dd>
+	<dd><em>MSVC</em>: <em>#pragma warning(disable: x)</em> where <em>x</em> is: 4464 contains '..'
+ uhm, thanks?; 4706 not <em>Java</em>; 4710, 4711 inlined info; 4820 padding info;
+ 4996 not <em>C++11</em>.</dd>
 </dl>
 
 
