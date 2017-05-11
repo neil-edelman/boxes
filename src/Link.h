@@ -50,15 +50,16 @@
  @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2 {assert} bug
  on {LINK_TEST}.
  @fixme {MSVC #pragma warning(disable: x)}: 4464 contains '..' uhm, thanks?;
- 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info; 4996 not {C++11}.
- @fixme {bcc}, {mingw}, {clang}, {etc}. */
+ 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info; 4996 not
+ {C++11}. */
 
 /* Tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
  Apple clang version 1.7 (tags/Apple/clang-77) (based on LLVM 2.9svn)
  gcc version 4.9.2 (Debian 4.9.2-10)
  Microsoft Visual Studio Enterprise 2015 Version 14.0.25424.00 Update 3
- Boreland 10.1 */
+ Borland 10.1 Embarcadero C++ 7.20 for Win32
+ MinGW gcc version 4.9.3 (GCC) */
 
 
 
@@ -623,30 +624,30 @@ static void T_(LinkMigrateBlock)(struct T_(Link) *const this,
 	if(!this || !array || !array_size || !old_array || array == old_array)
 		return;
 #ifdef LINK_OPENMP /* <-- omp */
-#pragma omp parallel sections
+	#pragma omp parallel sections
 #endif /* omp --> */
 	{
 #ifdef LINK_A_NAME /* <-- a */
 #ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
+		#pragma omp section
 #endif /* omp --> */
 		_T_LA_(block, migrate)(this, cold, cold_end, delta);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
+		#pragma omp section
 #endif /* omp --> */
 		_T_LB_(block, migrate)(this, cold, cold_end, delta);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
+		#pragma omp section
 #endif /* omp --> */
 		_T_LC_(block, migrate)(this, cold, cold_end, delta);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
-#pragma omp section
+		#pragma omp section
 #endif /* omp --> */
 		_T_LD_(block, migrate)(this, cold, cold_end, delta);
 #endif /* d --> */

@@ -15,15 +15,16 @@
 
 #ifdef __GNUC__ /* <-- GCC */
 #pragma GCC diagnostic ignored "-Wconversion"
-#elif _MSC_VER /* GCC --><-- MSVC */
+#elif __BORLANDC__ /* GCC --><-- BCC must be placed ahead, _MSC_VER is defined
+ to be 1300? */
+#elif _MSC_VER /* BCC --><-- MSVC */
 #pragma warning(disable: 4464)
 #pragma warning(disable: 4706)
 #pragma warning(disable: 4710)
 #pragma warning(disable: 4711)
 #pragma warning(disable: 4820)
 #pragma warning(disable: 4996)
-#elif __BORLANDC__ /* MSVC --><-- BCC */
-#elif __MINGW32__ /* BCC --><-- MinGW */
+#elif __MINGW32__ /* MSVC --><-- MinGW */
 #elif __DJGPP__ /* MinGW --><-- DJGPP */
 #endif /* --> */
 
