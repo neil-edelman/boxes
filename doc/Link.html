@@ -94,9 +94,8 @@ by <a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a> or <a href = "#&lt
  bug with <em>-Wconversion</em> that causes <em>assert</em> to emit a spurious warnings on
  <em>LINK_TEST</em>.</dd>
 	<dt>fixme</dt>
-	<dd><em>#pragma warning(disable: 4706)</em>; <em>MSVC</em> mistakenly thinks it's <em>Java</em>.</dd>
-	<dt>fixme</dt>
-	<dd><em>#pragma warning(disable: 4996)</em>; <em>MSVC</em> mistakenly thinks it's <em>C++11</em>.</dd>
+	<dd><em>MSVC</em> mistakenly thinks it's: <em>Java</em>, <em>#pragma warning(disable: 4706)</em>;
+ <em>C++11</em>, <em>#pragma warning(disable: 4996)</em>.</dd>
 	<dt>fixme</dt>
 	<dd><em>bcc</em>, <em>mingw</em>, <em>clang</em>, <em>etc</em>.</dd>
 </dl>
@@ -231,8 +230,7 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a></td>
 	<td>struct &lt;T&gt;Link *const this,
-	struct &lt;T&gt;LinkNode *const node,
-	const struct &lt;T&gt;LinkNode *const old_node</td>
+	struct &lt;T&gt;LinkNode *const node</td>
 </tr>
 <tr>
 	<td>static void</td>
@@ -428,11 +426,10 @@ Sets the user-defined <em>param</em> of <em>this</em>.
 <div><a name = "&lt;T&gt;LinkMigrate"><!-- --></a>
 <h3>&lt;T&gt;LinkMigrate</h3>
 <pre>static void <b>&lt;T&gt;LinkMigrate</b> (struct &lt;T&gt;Link *const this,
-	struct &lt;T&gt;LinkNode *const node,
-	const struct &lt;T&gt;LinkNode *const old_node)</pre>
+	struct &lt;T&gt;LinkNode *const node)</pre>
 <p>
-Use when one <em>node</em> of <em>this</em> has switched places in memory from <em>old_node</em>
-to <em>node</em>. If <em>this</em>, <em>node</em>, or <em>old_node</em> is null, doesn't do anything.
+Use when one <em>node</em> of <em>this</em> has switched places in memory. If <em>this</em> or
+<em>node</em> is null, doesn't do anything.
 </p>
 <dl>
 	<dt>order</dt>

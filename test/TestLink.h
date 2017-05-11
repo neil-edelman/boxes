@@ -7,10 +7,14 @@
 
 
 /* prototype */
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 static int _T_(in_order)(struct T_(Link) *const this);
+#endif /* comp --> */
 static int _T_(in_array)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const array, const size_t array_size);
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 static int _T_(exactly_unordered)(struct T_(Link) *const this, const size_t n);
+#endif /* comp --> */
 
 /* Check that LINK_TEST is a function implementing {<T>Action}. */
 static const T_(Action) _T_(filler) = (LINK_TEST);
@@ -60,7 +64,6 @@ struct _T_(Order) {
 #endif /* d --> */
 
 /** The linked-list will be tested on stdout.
- @return Success.
  @fixme This tests only a small coverage of code, expand it. */
 static void T_(LinkTest)(void) {
 	printf("Link<" T_NAME "> of type <" QUOTE(LINK_TYPE)
@@ -116,6 +119,7 @@ static void T_(LinkTest)(void) {
 
 /* test helper functions */
 
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 static int _T_(in_order)(struct T_(Link) *const this) {
 	assert(this);
 	return 1
@@ -133,27 +137,34 @@ static int _T_(in_order)(struct T_(Link) *const this) {
 #endif
 		;
 }
+#endif /* comp --> */
 
 static int _T_(in_array)(struct T_(Link) *const this,
 	const struct T_(LinkNode) *const array, const size_t array_size) {
+	assert(this);
+	assert(array);
+	assert(array_size);
 	/* overkill; only one would do */
 	return 1
-#ifdef LINK_A_COMPARATOR
+#ifdef LINK_A_NAME
 		&& _T_LA_(in, array)(this, array, array_size)
 #endif
-#ifdef LINK_B_COMPARATOR
+#ifdef LINK_B_NAME
 		&& _T_LB_(in, array)(this, array, array_size)
 #endif
-#ifdef LINK_C_COMPARATOR
+#ifdef LINK_C_NAME
 		&& _T_LC_(in, array)(this, array, array_size)
 #endif
-#ifdef LINK_D_COMPARATOR
+#ifdef LINK_D_NAME
 		&& _T_LD_(in, array)(this, array, array_size)
 #endif
 		;
 }
 
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 static int _T_(exactly_unordered)(struct T_(Link) *const this, const size_t n) {
+	assert(this);
+	UNUSED(n);
 	return 1
 #ifdef LINK_A_COMPARATOR
 		&& _T_LA_(count, unordered)(this) == n
@@ -169,6 +180,7 @@ static int _T_(exactly_unordered)(struct T_(Link) *const this, const size_t n) {
 #endif
 		;
 }
+#endif /* comp --> */
 
 
 
@@ -232,6 +244,7 @@ static size_t _T_L_(exactly, elements)(struct T_(Link) *const this,
 	return !T_L_(Link, ShortCircuit)(this, &_T_L_(exactly, predicate));
 }
 
+#ifdef _LINK_COMPARATOR /* <-- comp */
 /** \see{_T_L_(in, order)}.
  @param param: (T *[1]), last element.
  @implements <T>Predicate */
@@ -274,6 +287,7 @@ static size_t _T_L_(count, unordered)(struct T_(Link) *this) {
 	T_L_(Link, ShortCircuit)(this, &_T_L_(unorder, predicate));
 	return info.count;
 }
+#endif /* comp --> */
 
 /** All elements are in the same array? */
 static int _T_L_(in, array)(struct T_(Link) *const this,
@@ -389,6 +403,7 @@ static void _T_L_(test, basic)(void) {
 	T_L_(Link, ForEach)(&a, &_T_L_(count, another));
 	assert(_T_L_(count, var) == new_buf_size);
 	assert(_T_L_(count, elements)(&a) == new_buf_size);
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 	/* <L>Sort */
 	printf("Sorting a only by " QUOTE(_LINK_NAME) ".\n");
 	T_L_(Link, Sort)(0);
@@ -399,6 +414,7 @@ static void _T_L_(test, basic)(void) {
 	T_(LinkSort)(&a);
 	printf("Sorting, a = %s.\n", T_L_(Link, ToString)(&a));
 	assert(_T_(in_order)(&a));
+#endif /* comp --> */
 	/* ToString (unchecked) */
 	printf("ToString: null = %s; a = %s.\n",
 		T_L_(Link, ToString)(0), T_L_(Link, ToString)(&a));
@@ -426,10 +442,12 @@ static void _T_L_(test, memory)(void) {
 	/* put all items in buf0 and buf1 */
 	for(i = 0; i < buf_size; i++) T_(LinkAdd)(&a, buf[0] + i);
 	for(i = 0; i < buf_size; i++) T_(LinkAdd)(&a, buf[1] + i);
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 	T_(LinkSort)(&a);
 	printf("Sorting, (backed by two arrays,) a = %s.\n",
 		T_L_(Link, ToString)(&a));
 	assert(_T_(in_order)(&a));
+#endif /* comp --> */
 	/* now add all of the odd to list_b, remove all the even from list_a */
 	printf("Spliting odd/even a to b = %s by " QUOTE(_LINK_NAME) ";\n",
 		T_L_(Link, ToString)(&b));
@@ -438,16 +456,20 @@ static void _T_L_(test, memory)(void) {
 	T_L_(Link, TakeIf)(&b, &a, &_T_L_(every, second));
 	printf("a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 	/* tests stability of sort; false! only if all items unique */
 	/*assert(_T_L_(in, array)(&a, buf[0], buf_size));*/
 	/*assert(_T_(in_array)(&b, buf[1], buf_size));*/
 	assert(_T_(in_order)(&a));
 	assert(_T_L_(in, order)(&b)); /* only <L> is in order */
+#endif /* comp --> */
+#ifdef _LINK_COMPARATOR /* <-- comp */
 	/* Compare */
 	assert(!T_L_(Link, Compare)(0, 0));
 	assert(T_L_(Link, Compare)(&a, 0) > 0);
 	assert(T_L_(Link, Compare)(0, &b) < 0);
 	assert(!T_L_(Link, Compare)(&a, &b));
+#endif /* comp --> */
 	/* Test done. */
 	T_L_(Link, TakeIf)(&b, &a, 0);
 	printf("Moving all a to b; a = %s, b = %s.\n",
@@ -463,7 +485,9 @@ static void _T_L_(test, memory)(void) {
 		T_(LinkAdd)(&a, buf[0] + i), T_(LinkAdd)(&b, buf[1] + i);
 	assert(_T_L_(exactly, elements)(&a, buf[0], buf_size));
 	assert(_T_L_(exactly, elements)(&b, buf[1], buf_size));
+#ifdef _LINK_COMPARATOR /* <-- comp */
 	assert(!T_L_(Link, Compare)(&a, &b));
+#endif /* comp --> */
 	for(i = 0; i < buf_size; i += 2) {
 		node_b = buf[1] + i;
 		node_c = buf[2] + i;
@@ -474,7 +498,9 @@ static void _T_L_(test, memory)(void) {
 	printf("Testing memory relocation with <" QUOTE(LINK_NAME)
 		">LinkMigrate: a = %s, b = %s.\n",
 		T_L_(Link, ToString)(&a), T_L_(Link, ToString)(&b));
+#ifdef _LINK_COMPARATOR /* <-- comp */
 	assert(!T_L_(Link, Compare)(&a, &b));
+#endif /* comp --> */
 	assert(_T_(in_array)(&a, buf[0], buf_size));
 	assert(_T_(in_array)(&b, buf[1], buf_size << 1));
 	printf("\n");
@@ -488,7 +514,7 @@ static void _T_L_(test, boolean)(void) {
 	unsigned i; /* for not-getting into an infty loop */
 	const unsigned limit = 1000;
 
-	printf("Boolean set operations on " QUOTE(LINK_NAME) " linked-list "
+	printf("Boolean sequence operations on " QUOTE(LINK_NAME) " linked-list "
 		QUOTE(_LINK_NAME) ":\n");
 	/* distinct elements x, y, z */
 	_T_(filler)(&x[0].a.data), _T_(to_string)(&x[0].a.data, &x[0].str);
@@ -596,15 +622,19 @@ static void _T_L_(test, boolean)(void) {
 	printf("\n");
 }
 
-/** @fixme Needs to test null and empty. */
 static void _T_L_(test, order)(void) {
 	struct T_(LinkNode) buf[3000], *node;
 	const size_t buf_size = sizeof buf / sizeof *buf;
 	struct T_(Link) a, b;
 	size_t i;
 	T_(LinkClear)(&a), T_(LinkClear)(&b);
+	assert(T_L_(Link, Compare)(0, 0) == 0);
+	assert(T_L_(Link, Compare)(&a, 0) > 0);
+	assert(T_L_(Link, Compare)(0, &b) < 0);
+	assert(T_L_(Link, Compare)(&a, &b) == 0);
 	for(i = 0; i < buf_size; i++) node = buf + i, _T_(filler)(&node->data);
 	for(i = 0; i < buf_size >> 1; i++) T_(LinkAdd)(&a, node--);
+	assert(T_L_(Link, Compare)(&a, &b) > 0);
 	for( ; i < buf_size; i++) T_(LinkAdd)(&b, node--);
 	assert(_T_L_(count, elements)(&a) == buf_size >> 1);
 	assert(_T_L_(count, elements)(&b) == buf_size - (buf_size >> 1));
@@ -699,10 +729,11 @@ static void _T_L_(test, list)(void) {
 		   QUOTE(_LINK_NAME) ":\n");
 	_T_L_(test, basic)();
 	_T_L_(test, memory)();
+#ifdef _LINK_COMPARATOR /* <-- compare */
 	_T_L_(test, boolean)();
 	_T_L_(test, order)();
 	_T_L_(test, meta)();
-	/* fixme: assumes {_LINK_COMPARATOR} is defined on all */
+#endif /* compare --> */
 }
 
 

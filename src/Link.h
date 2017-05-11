@@ -50,8 +50,8 @@
  @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2.1 has a
  bug with {-Wconversion} that causes {assert} to emit a spurious warnings on
  {LINK_TEST}.
- @fixme {#pragma warning(disable: 4706)}; {MSVC} mistakenly thinks it's {Java}.
- @fixme {#pragma warning(disable: 4996)}; {MSVC} mistakenly thinks it's {C++11}.
+ @fixme {MSVC} mistakenly thinks it's: {Java}, {#pragma warning(disable: 4706)};
+ {C++11}, {#pragma warning(disable: 4996)}.
  @fixme {bcc}, {mingw}, {clang}, {etc}. */
 
 
@@ -108,6 +108,12 @@
 #ifndef LINK_TEST
 #define NDEBUG
 #endif
+#if defined(LINK_A_COMPARATOR) || defined(LINK_B_COMPARATOR) \
+	|| defined(LINK_C_COMPARATOR) || defined(LINK_D_COMPARATOR) /* <-- comp */
+#define _LINK_SOME_COMPARATOR
+#endif /* comp --> */
+
+
 
 
 
@@ -249,6 +255,8 @@ typedef int  (*T_(Comparator))(const T *, const T *);
 /** Responsible for turning {<T>} (the first argument) into a 9 {char}
  null-terminated output string (the second.) */
 typedef void (*T_(ToString))(const T *const, char (*const)[9]);
+/* Check that {LINK_TO_STRING} is a function implementing {<T>ToString}. */
+static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
 #endif
 
 
@@ -305,11 +313,6 @@ struct T_(Link) {
 };
 
 
-
-#ifdef LINK_TO_STRING /* <-- to string */
-/* Check that {LINK_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
-#endif /* to string --> */
 
 /* Prototypes: needed for the next section, but undefined until later. */
 static void _T_(add)(struct T_(Link) *const this,
@@ -468,11 +471,7 @@ static void T_(LinkTake)(struct T_(Link) *const this,
 #endif /* d --> */
 }
 
-/* fixme */
-#ifdef LINK_A_NAME
-static char *T_LA_(Link, ToString)(const struct T_(Link) *const this);
-#endif
-
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 /** Merges the elements into {this} from {from} in (local) order; concatenates
  all lists that don't have a {LINK_[A-D]_COMPARATOR}. If {this} is null, then
  it removes elements.
@@ -531,7 +530,8 @@ static void T_(LinkMerge)(struct T_(Link) *const this,
 
 /** Performs a stable, adaptive sort. If {LINK_OPENMP} is defined, then it will
  try to parallelise; otherwise it is equivalent to calling \see{<T>Link<L>Sort}
- for all linked-lists with comparators.
+ for all linked-lists with comparators. Requires one of {LINK_[A-D]_COMPARATOR}
+ be set.
  @order \Omega({this}.n), O({this}.n log {this}.n)
  @allow */
 static void T_(LinkSort)(struct T_(Link) *const this) {
@@ -540,25 +540,25 @@ static void T_(LinkSort)(struct T_(Link) *const this) {
 	#pragma omp parallel sections
 #endif /* omp --> */
 	{
-#ifdef LINK_A_NAME /* <-- a */
+#ifdef LINK_A_COMPARATOR /* <-- a */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
 		_T_LA_(natural, sort)(this);
 #endif /* a --> */
-#ifdef LINK_B_NAME /* <-- b */
+#ifdef LINK_B_COMPARATOR /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
 		_T_LB_(natural, sort)(this);
 #endif /* b --> */
-#ifdef LINK_C_NAME /* <-- c */
+#ifdef LINK_C_COMPARATOR /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
 		_T_LC_(natural, sort)(this);
 #endif /* c --> */
-#ifdef LINK_D_NAME /* <-- d */
+#ifdef LINK_D_COMPARATOR /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
@@ -566,6 +566,7 @@ static void T_(LinkSort)(struct T_(Link) *const this) {
 #endif /* d --> */
 	}
 }
+#endif /* comp --> */
 
 /** Sets the user-defined {param} of {this}.
  @order \Theta(1)
@@ -660,8 +661,10 @@ static void _T_(unused_link)(void) {
 	T_(LinkAdd)(0, 0);
 	T_(LinkRemove)(0, 0);
 	T_(LinkTake)(0, 0);
+#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
 	T_(LinkMerge)(0, 0);
 	T_(LinkSort)(0);
+#endif /* comp --> */
 	T_(LinkSetParam)(0, 0);
 	T_(LinkMigrate)(0, 0);
 	T_(LinkMigrateBlock)(0, 0, (size_t)0, 0);
@@ -715,6 +718,9 @@ static void _T_(unused_coda)(void) { _T_(unused_link)(); }
 #endif
 #ifdef LINK_TEST
 #undef LINK_TEST
+#endif
+#ifdef _LINK_SOME_COMPARATOR
+#undef _LINK_SOME_COMPARATOR
 #endif
 #ifdef _LINK_SORT_INTERNALS
 #undef _LINK_SORT_INTERNALS /* each List type has their own */

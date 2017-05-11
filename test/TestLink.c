@@ -10,11 +10,11 @@
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp */
 #include <time.h>	/* clock */
+#include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
 
 #ifdef __GNUC__ /* <-- GCC */
-/*#pragma GCC diagnostic ignored "-Wunused-function"*/ /* doesn't work */
-/*#pragma GCC diagnostic ignored "-Wconversion"*/ /* I want this :[ assert */
+#pragma GCC diagnostic ignored "-Wconversion" /* 4.2 libc assert bug */
 #elif _MSC_VER /* GCC --><-- MSVC: not a C89/90 compiler; needs a little help;
 "Assignment within conditional expression." "<ANSI89/ISO90 name>: The POSIX
 name for this item is deprecated. Instead use the ISO C and C++ conformant
@@ -26,7 +26,7 @@ name <ISO C++11 name>." */
 #elif __DJGPP__ /* MinGW --><-- DJGPP */
 #endif /* --> */
 
-/** Define class Foo */
+/** Define class {Foo} */
 struct Foo {
 	int key;
 	char value[32];
@@ -58,9 +58,56 @@ static void Foo_filler(struct Foo *const this) {
 #define LINK_TEST &Foo_filler
 #include "../src/Link.h"
 
-/** Animal virtual functions. */
+/* Class {Int} is a single {int}. */
+/** @implements <Int>Comparator */
+static int Int_N_cmp(const int *a, const int *b) {
+	return (*b < *a) - (*a < *b);
+}
+/** @implements <Int>ToString */
+static void Int_to_string(const int *this, char (*const a)[9]) {
+	snprintf(*a, sizeof *a, "%d", *this);
+}
+/** @implements <Int>Action */
+static void Int_filler(int *const this) {
+	*this = (float)((2.0 * rand() / (RAND_MAX + 1.0) - 1) * INT_MAX);
+}
+#define LINK_NAME Int
+#define LINK_TYPE int
+#define LINK_A_NAME N
+#define LINK_A_COMPARATOR &Int_N_cmp
+#define LINK_TO_STRING &Int_to_string
+#define LINK_TEST &Int_filler
+#include "../src/Link.h"
+
+/* Class {Colour} is an {enum}. */
+enum Colour { White, Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
+	Sienna, Brown, Yellow, Khaki, Gold, Olive, Lime, Green, Aqua, Cyan, Teal,
+	Salmon, Orange, Powder, Sky, Steel, Royal, Blue, Navy, Fuchsia, Pink,
+	Purple };
+static const char *const colour_names[] = { "White", "Silver", "Gray", "Black",
+	"Red", "Maroon", "Bisque", "Wheat", "Tan", "Sienna", "Brown", "Yellow",
+	"Khaki", "Gold", "Olive", "Lime", "Green", "Aqua", "Cyan", "Teal",
+	"Salmon", "Orange", "Powder", "Sky", "Steel", "Royal", "Blue", "Navy",
+	"Fuchsia", "Pink", "Purple" };
+static const size_t colour_size = sizeof colour_names / sizeof *colour_names;
+/** @implements <Colour>ToString */
+static void Colour_to_string(const enum Colour *this, char (*const a)[9]) {
+	sprintf(*a, "%s", colour_names[*this]);
+}
+/** @implements <Colour>Action */
+static void Colour_filler(enum Colour *const this) {
+	*this = (float)(rand() / (RAND_MAX + 1.0) * colour_size);
+}
+#define LINK_NAME Colour
+#define LINK_TYPE enum Colour
+#define LINK_A_NAME Declare
+#define LINK_TO_STRING &Colour_to_string
+#define LINK_TEST &Colour_filler
+#include "../src/Link.h"
+
+/** {Animal} virtual functions. */
 struct AnimalVt;
-/** Define class Animal. */
+/** Define class {Animal}. */
 struct Animal {
 	const struct AnimalVt *vt;
 	int x;
@@ -204,6 +251,8 @@ int main(void) {
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	FooLinkTest();
+	IntLinkTest();
+	ColourLinkTest();
 	AnimalLinkTest();
 	test_block_move();
 	printf("Test succeeded.\n\n");
