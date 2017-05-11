@@ -634,7 +634,7 @@ static void _T_L_(test, order)(void) {
 	assert(T_L_(Link, Compare)(&a, 0) > 0);
 	assert(T_L_(Link, Compare)(0, &b) < 0);
 	assert(T_L_(Link, Compare)(&a, &b) == 0);
-	for(i = 0; i < buf_size; i++) node++, _T_(filler)(&node->data);
+	for(i = 0; i < buf_size; i++) node = buf + i, _T_(filler)(&node->data);
 	for(i = 0; i < buf_size >> 1; i++) T_(LinkAdd)(&a, node--);
 	assert(T_L_(Link, Compare)(&a, &b) > 0);
 	for( ; i < buf_size; i++) T_(LinkAdd)(&b, node--);
