@@ -230,7 +230,8 @@ static int _T_L_(exactly, predicate)(T *const this, void *const param) {
 	struct _T_(Verify) *lv = param;
 	if(lv->array_no <= lv->i
 		|| memcmp(this, &lv->array[lv->i].data, sizeof *this))
-		return fprintf(stderr, "Failed at index %lu.\n", lv->i), 0;
+		return fprintf(stderr, "Failed at index %lu.\n", (unsigned long)lv->i),
+			0;
 	lv->i++;
 	return 1;
 }
@@ -272,7 +273,7 @@ static int _T_L_(unorder, predicate)(T *const this, void *const param) {
 	struct _T_(Order) *info = param;
 	char a[9], b[9];
 	if(info->prev && _T_L_(data, cmp)(info->prev, this) > 0)
-		printf("Unorder %lu: %s > %s\n", ++info->count,
+		printf("Unorder %lu: %s > %s\n", (unsigned long)(++info->count),
 		(_T_(to_string)(info->prev, &a), a), (_T_(to_string)(this, &b), b));
 	info->prev = this;
 	return 1;
@@ -332,7 +333,7 @@ static void _T_L_(test, basic)(void) {
 	/* Clear */
 	T_(LinkClear)(0);
 	T_(LinkClear)(&a);
-	printf("Adding %lu elements to a.\n", buf_size);
+	printf("Adding %lu elements to a.\n", (unsigned long)buf_size);
 	/* Add */
 	T_(LinkAdd)(0, 0);
 	T_(LinkAdd)(&a, 0);
@@ -395,7 +396,7 @@ static void _T_L_(test, basic)(void) {
 	T_(LinkRemove)(&a, item_a);
 	assert(_T_L_(exactly, elements)(&a, new_buf, new_buf_size));
 	/* ForEach */
-	printf("Counting %lu elements.\n", new_buf_size);
+	printf("Counting %lu elements.\n", (unsigned long)new_buf_size);
 	_T_L_(count, var) = 0;
 	T_L_(Link, ForEach)(0, 0);
 	T_L_(Link, ForEach)(0, &_T_L_(count, another));
@@ -703,13 +704,15 @@ static void _T_L_(test, meta)(void) {
 		T_(LinkClear)(link);
 		while(take) T_(LinkAdd)(link, node++), take--;
 		links_left--;
-		printf("%lu. %s\n", links_size - links_left,T_L_(Link, ToString)(link));
+		printf("%lu. %s\n", (unsigned long)(links_size - links_left),
+			T_L_(Link, ToString)(link));
 	}
 	printf("Sorting with qsort by " QUOTE(_LINK_NAME) ".\n");
 	qsort(links, links_size, sizeof *links,
 		(int (*)(const void *, const void *))&T_L_(Link, Compare));
 	for(i = 0; i < links_size; i++) {
-		printf("%lu. %s\n", i + 1, T_L_(Link, ToString)(links + i));
+		printf("%lu. %s\n", (unsigned long)(i + 1),
+			T_L_(Link, ToString)(links + i));
 		if(i) { /* like {strcmp} comparing the first letter -- good enough */
 			const struct T_(LinkNode) *const less = links[i - 1].L_(first),
 				*const more = links[i].L_(first);

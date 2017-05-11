@@ -54,6 +54,12 @@
  {C++11}, {#pragma warning(disable: 4996)}.
  @fixme {bcc}, {mingw}, {clang}, {etc}. */
 
+/* Tested with:
+ gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
+
+ 
+ */
+
 
 
 /* original #include in the user's C file, and not from calling recursively */
