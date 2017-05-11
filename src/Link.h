@@ -59,7 +59,7 @@
  gcc version 4.9.2 (Debian 4.9.2-10)
  Microsoft Visual Studio Enterprise 2015 Version 14.0.25424.00 Update 3
  Borland 10.1 Embarcadero C++ 7.20 for Win32
- MinGW gcc version 4.9.3 (GCC) */
+ MinGW gcc version 4.9.3 (GCC) Win32 */
 
 
 
