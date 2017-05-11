@@ -47,11 +47,11 @@
  @std		C89/90
  @version	1.0; 2017-05
  @since		1.0; 2017-05 separated from List.h
- @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2 {assert} bug
- on {LINK_TEST}.
- @fixme {MSVC #pragma warning(disable: x)}: 4464 contains '..' uhm, thanks?;
- 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info; 4996 not
- {C++11}. */
+ @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
+ {assert} bug on {LINK_TEST}.
+ @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
+ uhm, thanks?; 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info;
+ 4996 not {C++11}. */
 
 /* Tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
