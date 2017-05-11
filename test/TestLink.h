@@ -252,7 +252,7 @@ static size_t _T_L_(exactly, elements)(struct T_(Link) *const this,
 static int _T_L_(order, predicate)(T *const this, void *const param) {
 	T **prev_one_array = param;
 	T *const prev = prev_one_array[0];
-	/*char scratch[9];
+	/*char scratch[12];
 	_T_(to_string)(data, &scratch), scratch[8] = '\0';
 	printf("%s%s", prev ? " <= " : "", scratch);*/
 	if(prev && _T_L_(data, cmp)(prev, this) > 0) return 0;
@@ -271,7 +271,7 @@ static int _T_L_(in, order)(struct T_(Link) *const this) {
  @implements <T>Predicate */
 static int _T_L_(unorder, predicate)(T *const this, void *const param) {
 	struct _T_(Order) *info = param;
-	char a[9], b[9];
+	char a[12], b[12];
 	if(info->prev && _T_L_(data, cmp)(info->prev, this) > 0)
 		printf("Unorder %lu: %s > %s\n", (unsigned long)(++info->count),
 		(_T_(to_string)(info->prev, &a), a), (_T_(to_string)(this, &b), b));
@@ -319,7 +319,7 @@ static int _T_L_(every, second)(T *const this, void *const param) {
 /* now tests */
 
 static void _T_L_(test, basic)(void) {
-	char str[9];
+	char str[12];
 	T *data;
 	struct T_(Link) a;
 	struct T_(LinkNode) buf[1000], *const new_buf = buf + 2,
@@ -511,7 +511,7 @@ static void _T_L_(test, memory)(void) {
 
 static void _T_L_(test, boolean)(void) {
 	struct T_(Link) a, b, c, ia, ib, ic;
-	struct Test { struct T_(LinkNode) a, b, ia, ib; char str[9]; } x[3];
+	struct Test { struct T_(LinkNode) a, b, ia, ib; char str[12]; } x[3];
 	unsigned i; /* for not-getting into an infty loop */
 	const unsigned limit = 1000;
 

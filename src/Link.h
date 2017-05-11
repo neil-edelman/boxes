@@ -44,19 +44,24 @@
 
  @title		Link.h
  @author	Neil
- @std		C89/90
+ @std		C89/90 ({LINK_TEST} uses {snprintf} that is C99)
  @version	1.0; 2017-05
  @since		1.0; 2017-05 separated from List.h
- @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2.1 has a
+ @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2[.1] has a
  bug with {-Wconversion} that causes {assert} to emit a spurious warnings on
  {LINK_TEST}.
  @fixme {MSVC} mistakenly thinks it's: {Java}, {#pragma warning(disable: 4706)};
  {C++11}, {#pragma warning(disable: 4996)}.
+ 4464 contains '..' thanks, we know
+ 4710 not inlined info
+ 4820 padding info
+ 4996 C++11
  @fixme {bcc}, {mingw}, {clang}, {etc}. */
 
 /* Tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
-
+ Apple clang version 1.7 (tags/Apple/clang-77) (based on LLVM 2.9svn)
+ gcc version 4.9.2 (Debian 4.9.2-10)
  
  */
 
@@ -258,9 +263,9 @@ typedef int  (*T_(Predicate))(T *const, void *const);
 typedef int  (*T_(Comparator))(const T *, const T *);
 
 #ifdef LINK_TO_STRING
-/** Responsible for turning {<T>} (the first argument) into a 9 {char}
+/** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) */
-typedef void (*T_(ToString))(const T *const, char (*const)[9]);
+typedef void (*T_(ToString))(const T *const, char (*const)[12]);
 /* Check that {LINK_TO_STRING} is a function implementing {<T>ToString}. */
 static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
 #endif
@@ -1406,7 +1411,7 @@ static char *T_L_(Link, ToString)(const struct T_(Link) *const this) {
 	static char buffer[4][256];
 	static int buffer_i;
 	struct _ListSuperCat cat;
-	char scratch[9];
+	char scratch[12];
 	struct T_(LinkNode) *link;
 	assert(strlen(_link_alter_end) >= strlen(_link_end));
 	assert(sizeof buffer > strlen(_link_alter_end));

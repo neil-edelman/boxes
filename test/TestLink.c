@@ -39,9 +39,10 @@ static int Foo_key_cmp(const struct Foo *a, const struct Foo *b) {
 static int Foo_value_cmp(const struct Foo *a, const struct Foo *b) {
 	return strcmp(a->value, b->value);
 }
-/** @implements <Foo>ToString */
-static void Foo_to_string(const struct Foo *this, char (*const a)[9]) {
-	snprintf(*a, sizeof *a, "%.3d%.3s", this->key, this->value);
+/** @std C99 {snprintf}
+ @implements <Foo>ToString */
+static void Foo_to_string(const struct Foo *this, char (*const a)[12]) {
+	snprintf(*a, sizeof *a, "%3.3d%.8s", this->key, this->value);
 }
 /** @implements <Foo>Action */
 static void Foo_filler(struct Foo *const this) {
@@ -63,8 +64,9 @@ static void Foo_filler(struct Foo *const this) {
 static int Int_N_cmp(const int *a, const int *b) {
 	return (*b < *a) - (*a < *b);
 }
-/** @implements <Int>ToString */
-static void Int_to_string(const int *this, char (*const a)[9]) {
+/** @std C99 {snprintf}
+ @implements <Int>ToString */
+static void Int_to_string(const int *this, char (*const a)[12]) {
 	snprintf(*a, sizeof *a, "%d", *this);
 }
 /** @implements <Int>Action */
@@ -88,10 +90,10 @@ static const char *const colour_names[] = { "White", "Silver", "Gray", "Black",
 	"Red", "Maroon", "Bisque", "Wheat", "Tan", "Sienna", "Brown", "Yellow",
 	"Khaki", "Gold", "Olive", "Lime", "Green", "Aqua", "Cyan", "Teal",
 	"Salmon", "Orange", "Powder", "Sky", "Steel", "Royal", "Blue", "Navy",
-	"Fuchsia", "Pink", "Purple" };
+	"Fuchsia", "Pink", "Purple" }; /* max 11 letters */
 static const size_t colour_size = sizeof colour_names / sizeof *colour_names;
 /** @implements <Colour>ToString */
-static void Colour_to_string(const enum Colour *this, char (*const a)[9]) {
+static void Colour_to_string(const enum Colour *this, char (*const a)[12]) {
 	sprintf(*a, "%s", colour_names[*this]);
 }
 /** @implements <Colour>Action */
@@ -121,8 +123,9 @@ static int Animal_name_cmp(const struct Animal *a, const struct Animal *b) {
 static int Animal_x_cmp(const struct Animal *a, const struct Animal *b) {
 	return (b->x < a->x) - (a->x < b->x);
 }
-/** @implements <Animal>ToString */
-static void Animal_to_string(const struct Animal *this, char (*const a)[9]) {
+/** @std C99 {snprintf}
+ @implements <Animal>ToString */
+static void Animal_to_string(const struct Animal *this, char (*const a)[12]) {
 	snprintf(*a, sizeof *a, "%d%s", this->x, this->name);
 }
 /* @implements <Animal>Action */
