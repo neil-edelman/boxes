@@ -50,7 +50,7 @@
  @fixme {#pragma GCC diagnostic ignored "-Wconversion"}; version 4.2[.1] has a
  bug it to emit a spurious warnings on {LINK_TEST}.
  @fixme {MSVC #pragma warning(disable: x)}: 4464 contains '..' (uhm, thanks?);
- 4706 not {Java}; 4710 inlined info; 4820 padding info; 4996 not {C++11}
+ 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info; 4996 not {C++11}.
  @fixme {bcc}, {mingw}, {clang}, {etc}. */
 
 /* Tested with:

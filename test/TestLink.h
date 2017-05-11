@@ -394,7 +394,8 @@ static void _T_L_(test, basic)(void) {
 	T_(LinkRemove)(&a, item_z);
 	T_(LinkRemove)(&a, item_b);
 	T_(LinkRemove)(&a, item_a);
-	assert(_T_L_(exactly, elements)(&a, new_buf, new_buf_size));
+	assert(_T_L_(exactly, elements)(&a, new_buf, new_buf_size)),
+		UNUSED(new_buf), UNUSED(new_buf_size);
 	/* ForEach */
 	printf("Counting %lu elements.\n", (unsigned long)new_buf_size);
 	_T_L_(count, var) = 0;
@@ -624,7 +625,7 @@ static void _T_L_(test, boolean)(void) {
 }
 
 static void _T_L_(test, order)(void) {
-	struct T_(LinkNode) buf[3000], *node;
+	struct T_(LinkNode) buf[3000], *node = buf;
 	const size_t buf_size = sizeof buf / sizeof *buf;
 	struct T_(Link) a, b;
 	size_t i;
@@ -633,7 +634,7 @@ static void _T_L_(test, order)(void) {
 	assert(T_L_(Link, Compare)(&a, 0) > 0);
 	assert(T_L_(Link, Compare)(0, &b) < 0);
 	assert(T_L_(Link, Compare)(&a, &b) == 0);
-	for(i = 0; i < buf_size; i++) node = buf + i, _T_(filler)(&node->data);
+	for(i = 0; i < buf_size; i++) node++, _T_(filler)(&node->data);
 	for(i = 0; i < buf_size >> 1; i++) T_(LinkAdd)(&a, node--);
 	assert(T_L_(Link, Compare)(&a, &b) > 0);
 	for( ; i < buf_size; i++) T_(LinkAdd)(&b, node--);
@@ -717,7 +718,7 @@ static void _T_L_(test, meta)(void) {
 			const struct T_(LinkNode) *const less = links[i - 1].L_(first),
 				*const more = links[i].L_(first);
 			if(!less) continue;
-			assert(more);
+			assert(more), UNUSED(more);
 			assert(_T_L_(data, cmp)(&less->data, &more->data) <= 0);
 		}
 	}
