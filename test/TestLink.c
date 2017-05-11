@@ -110,7 +110,7 @@ static void Colour_to_string(const enum Colour *this, char (*const a)[12]) {
 }
 /** @implements <Colour>Action */
 static void Colour_filler(enum Colour *const this) {
-	*this = (int)(float)(rand() / (RAND_MAX + 1.0) * colour_size);
+	*this = (enum Colour)(float)(rand() / (RAND_MAX + 1.0) * colour_size);
 }
 #define LINK_NAME Colour
 #define LINK_TYPE enum Colour

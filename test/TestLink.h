@@ -703,7 +703,7 @@ static void PRIVATE_T_L_(test, meta)(void) {
 			+ 0.4 * (links_left - 1) * (2.0 * rand() / (1.0 + RAND_MAX) - 1.0));
 		if(take < 0) take = 0;
 		else if((size_t)take > nodes_left) take = (int)nodes_left;
-		nodes_left -= take;
+		nodes_left -= (size_t)take;
 		T_(LinkClear)(link);
 		while(take) T_(LinkAdd)(link, node++), take--;
 		links_left--;

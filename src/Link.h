@@ -242,14 +242,14 @@ typedef LINK_TYPE PRIVATE_T_(Type);
 enum LinkOperation {
 	LO_SUBTRACTION_AB = 1,
 	LO_SUBTRACTION_BA = 2,
-	LO_A, LO_B,
+	LO_A,
 	LO_INTERSECTION   = 4,
-	LO_C, LO_D, LO_E, LO_F,
+	LO_B, LO_C, LO_D,
 	LO_DEFAULT_A      = 8,
-	LO_G, LO_H, LO_I, LO_J, LO_K, LO_L, LO_M, LO_N,
+	LO_E, LO_F, LO_G, LO_H, LO_I, LO_J, LO_K,
 	LO_DEFAULT_B      = 16,
-	LO_O, LO_P, LO_Q, LO_R, LO_S, LO_T, LO_U, LO_V,
-	LO_W, LO_X, LO_Y, LO_Z, LO_AA, LO_AB, LO_AC, LO_AD
+	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
+	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
 };
 #endif /* LINK_H */
 
@@ -1374,36 +1374,37 @@ static struct T_(LinkNode) *T_L_(Link, ShortCircuit)(
 
 #ifdef LINK_TO_STRING /* <-- print */
 
-#ifndef _LINK_PRINT_THINGS /* <-- once inside translation unit */
-#define _LINK_PRINT_THINGS
+#ifndef LINK_PRINT_THINGS /* <-- once inside translation unit */
+#define LINK_PRINT_THINGS
 
-static const char *const _link_start     = "[ ";
-static const char *const _link_end       = " ]";
-static const char *const _link_alter_end = "...]";
-static const char *const _link_sep       = ", ";
-static const char *const _link_star      = "*";
-static const char *const _link_null      = "null";
+static const char *const link_cat_start     = "[ ";
+static const char *const link_cat_end       = " ]";
+static const char *const link_cat_alter_end = "...]";
+static const char *const link_cat_sep       = ", ";
+static const char *const link_cat_star      = "*";
+static const char *const link_cat_null      = "null";
 
-struct _ListSuperCat {
+struct List_SuperCat {
 	char *print, *cursor;
 	size_t left;
 	int is_truncated;
 };
-static void _list_super_cat_init(struct _ListSuperCat *const cat,
+static void list_super_cat_init(struct List_SuperCat *const cat,
 	char *const print, const size_t print_size) {
 	cat->print = cat->cursor = print;
 	cat->left = print_size;
 	cat->is_truncated = 0;
 	print[0] = '\0';
 }
-static void _list_super_cat(struct _ListSuperCat *const cat,
+static void list_super_cat(struct List_SuperCat *const cat,
 	const char *const append) {
 	size_t lu_took; int took;
 	if(cat->is_truncated) return;
 	took = sprintf(cat->cursor, "%.*s", (int)cat->left, append);
 	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
 	if(took == 0) { return; }
-	if((lu_took=took)>=cat->left) {cat->is_truncated=-1,lu_took=cat->left-1;}
+	if((lu_took = (size_t)took) >= cat->left)
+		cat->is_truncated = -1, lu_took = cat->left - 1;
 	cat->cursor += lu_took, cat->left -= lu_took;
 }
 #endif /* once --> */
@@ -1417,26 +1418,27 @@ static void _list_super_cat(struct _ListSuperCat *const cat,
 static char *T_L_(Link, ToString)(const struct T_(Link) *const this) {
 	static char buffer[4][256];
 	static int buffer_i;
-	struct _ListSuperCat cat;
+	struct List_SuperCat cat;
 	char scratch[12];
 	struct T_(LinkNode) *link;
-	assert(strlen(_link_alter_end) >= strlen(_link_end));
-	assert(sizeof buffer > strlen(_link_alter_end));
-	_list_super_cat_init(&cat, buffer[buffer_i],
-		sizeof *buffer / sizeof **buffer - strlen(_link_alter_end));
+	assert(strlen(link_cat_alter_end) >= strlen(link_cat_end));
+	assert(sizeof buffer > strlen(link_cat_alter_end));
+	list_super_cat_init(&cat, buffer[buffer_i],
+		sizeof *buffer / sizeof **buffer - strlen(link_cat_alter_end));
 	buffer_i++, buffer_i &= 3;
 	if(!this) {
-		_list_super_cat(&cat, _link_null);
+		list_super_cat(&cat, link_cat_null);
 		return cat.print;
 	}
-	_list_super_cat(&cat, _link_start);
+	list_super_cat(&cat, link_cat_start);
 	for(link = this->L_(first); link; link = link->L_(next)) {
-		if(link != this->L_(first)) _list_super_cat(&cat, _link_sep);
+		if(link != this->L_(first)) list_super_cat(&cat, link_cat_sep);
 		PRIVATE_T_(to_string)(&link->data, &scratch), scratch[8] = '\0';
-		_list_super_cat(&cat, scratch);
+		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
 	}
-	sprintf(cat.cursor, "%s", cat.is_truncated ? _link_alter_end : _link_end);
+	sprintf(cat.cursor, "%s",
+		cat.is_truncated ? link_cat_alter_end : link_cat_end);
 	return cat.print; /* static buffer */
 }
 
