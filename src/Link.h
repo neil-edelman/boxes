@@ -51,7 +51,9 @@
  {assert} bug on {LINK_TEST}.
  @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
  uhm, thanks?; 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info;
- 4996 not {C++11}. */
+ 4996 not {C++11}.
+ @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
+ {padded}; {documentation-unknown-command} */
 
 /* Tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -59,7 +61,8 @@
  gcc version 4.9.2 (Debian 4.9.2-10)
  Microsoft Visual Studio Enterprise 2015 Version 14.0.25424.00 Update 3
  Borland 10.1 Embarcadero C++ 7.20 for Win32
- MinGW gcc version 4.9.3 (GCC) Win32 */
+ MinGW gcc version 4.9.3 (GCC) Win32
+ clang version 3.8.0-2ubuntu4 (tags/RELEASE_380/final) */
 
 
 
@@ -237,11 +240,17 @@ typedef LINK_TYPE _T_(Type);
 #define _LINK_H
 /* combine_sets() operations bit-vector */
 enum LinkOperation {
-	LO_SUBTRACTION_AB	= 1,
-	LO_SUBTRACTION_BA	= 2,
-	LO_INTERSECTION		= 4,
-	LO_DEFAULT_A		= 8,
-	LO_DEFAULT_B		= 16
+	LO_SUBTRACTION_AB = 1,
+	LO_A,
+	LO_SUBTRACTION_BA = 2,
+	LO_B, LO_C,
+	LO_INTERSECTION   = 4,
+	LO_D, LO_E, LO_F, LO_G,
+	LO_DEFAULT_A      = 8,
+	LO_H, LO_I, LO_J, LO_K, LO_L, LO_M, LO_N, LO_O,
+	LO_DEFAULT_B      = 16,
+	LO_P, LO_Q, LO_R, LO_S, LO_T, LO_U, LO_V, LO_W,
+	LO_X, LO_Y, LO_Z, LO_AA, LO_AB, LO_AC, LO_AD, LO_AE
 };
 #endif /* _LINK_H */
 

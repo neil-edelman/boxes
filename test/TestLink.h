@@ -216,7 +216,7 @@ static size_t _T_L_(count, elements)(struct T_(Link) *const this) {
 }
 
 /* Global count \see{<T>_count_<L>_another}. */
-size_t _T_L_(count, var);
+static size_t _T_L_(count, var);
 /** @implements <T>Action */
 static void _T_L_(count, another)(T *const this) {
 	UNUSED(this);
