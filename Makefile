@@ -82,7 +82,7 @@ $(TOBJS): $(GDIR)/$(TDIR)/%.o: $(TDIR)/%.c $(H)
 $(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
 	# docs rule
 	@mkdir -p $(DDIR)
-	cat $^ | $(CDOC) > $@
+	-cat $^ | $(CDOC) > $@
 
 ######
 # phoney targets
