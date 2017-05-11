@@ -67,7 +67,7 @@
 
 
 /* original #include in the user's C file, and not from calling recursively */
-#if !defined(_LINK_NAME) /* <-- !_LINK_NAME */
+#if !defined(LINK_L_NAME) /* <-- !LINK_L_NAME */
 
 
 
@@ -120,7 +120,7 @@
 #endif
 #if defined(LINK_A_COMPARATOR) || defined(LINK_B_COMPARATOR) \
 	|| defined(LINK_C_COMPARATOR) || defined(LINK_D_COMPARATOR) /* <-- comp */
-#define _LINK_SOME_COMPARATOR
+#define LINK_SOME_COMPARATOR
 #endif /* comp --> */
 
 
@@ -128,7 +128,7 @@
 
 
 /* After this block, the preprocessor replaces T with LINK_TYPE, T_(X) with
- LINK_NAMEX, _T_(X) with _LINK_NAME_X, and T_NAME with the string
+ LINK_NAMEX, PRIVATE_T_(X) with LINK_L_NAME_X, and T_NAME with the string
  version.
  http://c-faq.com/decl/namespace.html "All identifiers beginning with an
  underscore are reserved for ordinary identifiers (functions, variables,
@@ -156,8 +156,8 @@
 #ifdef T_
 #undef T_
 #endif
-#ifdef _T_
-#undef _T_
+#ifdef PRIVATE_T_
+#undef PRIVATE_T_
 #endif
 #ifdef T_NAME
 #undef T_NAME
@@ -170,67 +170,67 @@
 #endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
-#define PCAT_(x, y) _ ## x ## _ ## y
+#define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(LINK_NAME, thing)
-#define _T_(thing) PCAT(LINK_NAME, thing)
+#define PRIVATE_T_(thing) PCAT(link, PCAT(LINK_NAME, thing))
 #define T_NAME QUOTE(LINK_NAME)
 
 /* Troubles with this line? check to ensure that LINK_TYPE is a valid type,
  whose definition is placed above <#include "Link.h">. */
-typedef LINK_TYPE _T_(Type);
-#define T _T_(Type)
+typedef LINK_TYPE PRIVATE_T_(Type);
+#define T PRIVATE_T_(Type)
 
 /* [A, D] */
 #ifdef LA_
 #undef LA_
 #undef T_LA_
-#undef _T_LA_
+#undef PRIVATE_T_LA_
 #endif
 #ifdef LB_
 #undef LB_
 #undef T_LB_
-#undef _T_LB_
+#undef PRIVATE_T_LB_
 #endif
 #ifdef LC_
 #undef LC_
 #undef T_LC_
-#undef _T_LC_
+#undef PRIVATE_T_LC_
 #endif
 #ifdef LD_
 #undef LD_
 #undef T_LD_
-#undef _T_LD_
+#undef PRIVATE_T_LD_
 #endif
 #ifdef LINK_A_NAME
 #define LA_(thing) PCAT(LINK_A_NAME, thing) /* data, exclusively */
 #define T_LA_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
 	CAT(LINK_A_NAME, thing2)) /* public fn's */
-#define _T_LA_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
-	PCAT(LINK_A_NAME, thing2)) /* private fn's */
+#define PRIVATE_T_LA_(thing1, thing2) PCAT(link, PCAT(PCAT(LINK_NAME, thing1), \
+	PCAT(LINK_A_NAME, thing2))) /* private fn's */
 #endif
 #ifdef LINK_B_NAME
 #define LB_(thing) PCAT(LINK_B_NAME, thing)
 #define T_LB_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
 	CAT(LINK_B_NAME, thing2))
-#define _T_LB_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
-	PCAT(LINK_B_NAME, thing2))
+#define PRIVATE_T_LB_(thing1, thing2) PCAT(link, PCAT(PCAT(LINK_NAME, thing1), \
+	PCAT(LINK_B_NAME, thing2)))
 #endif
 #ifdef LINK_C_NAME
 #define LC_(thing) PCAT(LINK_C_NAME, thing)
 #define T_LC_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
 	CAT(LINK_C_NAME, thing2))
-#define _T_LC_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
-	PCAT(LINK_C_NAME, thing2))
+#define PRIVATE_T_LC_(thing1, thing2) PCAT(link, PCAT(PCAT(LINK_NAME, thing1), \
+	PCAT(LINK_C_NAME, thing2)))
 #endif
 #ifdef LINK_D_NAME
 #define LD_(thing) PCAT(LINK_D_NAME, thing)
 #define T_LD_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
 	CAT(LINK_D_NAME, thing2))
-#define _T_LD_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1), \
-	PCAT(LINK_D_NAME, thing2))
+#define PRIVATE_T_LD_(thing1, thing2) PCAT(link, PCAT(PCAT(LINK_NAME, thing1), \
+	PCAT(LINK_D_NAME, thing2)))
 #endif
 
 
@@ -272,7 +272,7 @@ typedef int  (*T_(Comparator))(const T *, const T *);
  null-terminated output string (the second.) */
 typedef void (*T_(ToString))(const T *const, char (*const)[12]);
 /* Check that {LINK_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) _T_(to_string) = (LINK_TO_STRING);
+static const T_(ToString) PRIVATE_T_(to_string) = (LINK_TO_STRING);
 #endif
 
 
@@ -331,43 +331,43 @@ struct T_(Link) {
 
 
 /* Prototypes: needed for the next section, but undefined until later. */
-static void _T_(add)(struct T_(Link) *const this,
+static void PRIVATE_T_(add)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node);
-static void _T_(remove)(struct T_(Link) *const this,
+static void PRIVATE_T_(remove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node);
 
-/* Note to future self: recursive includes. The {_LINK_NAME} pre-processor flag
- controls this behaviour; we are currently in the {!_LINK_NAME} section. These
+/* Note to future self: recursive includes. The {LINK_L_NAME} pre-processor flag
+ controls this behaviour; we are currently in the {!LINK_L_NAME} section. These
  will get all the functions with {<I>} in them. */
 
 #ifdef LINK_A_NAME /* <-- a */
-#define _LINK_NAME LINK_A_NAME
+#define LINK_L_NAME LINK_A_NAME
 #ifdef LINK_A_COMPARATOR /* <-- comp */
-#define _LINK_COMPARATOR LINK_A_COMPARATOR
+#define LINK_L_COMPARATOR LINK_A_COMPARATOR
 #endif /* comp --> */
 #include "Link.h"
 #endif /* a --> */
 
 #ifdef LINK_B_NAME /* <-- b */
-#define _LINK_NAME LINK_B_NAME
+#define LINK_L_NAME LINK_B_NAME
 #ifdef LINK_B_COMPARATOR /* <-- comp */
-#define _LINK_COMPARATOR LINK_B_COMPARATOR
+#define LINK_L_COMPARATOR LINK_B_COMPARATOR
 #endif /* comp --> */
 #include "Link.h"
 #endif /* b --> */
 
 #ifdef LINK_C_NAME /* <-- c */
-#define _LINK_NAME LINK_C_NAME
+#define LINK_L_NAME LINK_C_NAME
 #ifdef LINK_C_COMPARATOR /* <-- comp */
-#define _LINK_COMPARATOR LINK_C_COMPARATOR
+#define LINK_L_COMPARATOR LINK_C_COMPARATOR
 #endif /* comp --> */
 #include "Link.h"
 #endif /* c --> */
 
 #ifdef LINK_D_NAME /* <-- d */
-#define _LINK_NAME LINK_D_NAME
+#define LINK_L_NAME LINK_D_NAME
 #ifdef LINK_D_COMPARATOR /* <-- comp */
-#define _LINK_COMPARATOR LINK_D_COMPARATOR
+#define LINK_L_COMPARATOR LINK_D_COMPARATOR
 #endif /* comp --> */
 #include "Link.h"
 #endif /* d --> */
@@ -375,45 +375,45 @@ static void _T_(remove)(struct T_(Link) *const this,
 
 
 /** Private: add to the end of the list. */
-static void _T_(add)(struct T_(Link) *const this,
+static void PRIVATE_T_(add)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	assert(this);
 	assert(node);
 #ifdef LINK_A_NAME /* <-- a */
-	_T_LA_(link, add)(this, node);
+	PRIVATE_T_LA_(link, add)(this, node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-	_T_LB_(link, add)(this, node);
+	PRIVATE_T_LB_(link, add)(this, node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-	_T_LC_(link, add)(this, node);
+	PRIVATE_T_LC_(link, add)(this, node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-	_T_LD_(link, add)(this, node);
+	PRIVATE_T_LD_(link, add)(this, node);
 #endif /* d --> */
 }
 
 /** Private: remove from list. */
-static void _T_(remove)(struct T_(Link) *const this,
+static void PRIVATE_T_(remove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	assert(this);
 	assert(node);
 #ifdef LINK_A_NAME /* <-- a */
-	_T_LA_(link, remove)(this, node);
+	PRIVATE_T_LA_(link, remove)(this, node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-	_T_LB_(link, remove)(this, node);
+	PRIVATE_T_LB_(link, remove)(this, node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-	_T_LC_(link, remove)(this, node);
+	PRIVATE_T_LC_(link, remove)(this, node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-	_T_LD_(link, remove)(this, node);
+	PRIVATE_T_LD_(link, remove)(this, node);
 #endif /* d --> */
 }
 
 /** Private: clear the list. */
-static void _T_(clear)(struct T_(Link) *const this) {
+static void PRIVATE_T_(clear)(struct T_(Link) *const this) {
 	assert(this);
 #ifdef LINK_A_NAME
 	this->LA_(first) = this->LA_(last) = 0;
@@ -435,7 +435,7 @@ static void _T_(clear)(struct T_(Link) *const this) {
  @allow */
 static void T_(LinkClear)(struct T_(Link) *const this) {
 	if(!this) return;
-	_T_(clear)(this);
+	PRIVATE_T_(clear)(this);
 	this->param = 0;
 }
 
@@ -449,7 +449,7 @@ static void T_(LinkClear)(struct T_(Link) *const this) {
 static void T_(LinkAdd)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	if(!this || !node) return;
-	_T_(add)(this, node);
+	PRIVATE_T_(add)(this, node);
 }
 
 /** Removes {node} from the {this}. The {node} is now free to add to another
@@ -460,7 +460,7 @@ static void T_(LinkAdd)(struct T_(Link) *const this,
 static void T_(LinkRemove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	if(!this || !node) return;
-	_T_(remove)(this, node);
+	PRIVATE_T_(remove)(this, node);
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
@@ -472,22 +472,22 @@ static void T_(LinkRemove)(struct T_(Link) *const this,
 static void T_(LinkTake)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	if(!from || from == this) return;
-	if(!this) { _T_(clear)(from); return; }
+	if(!this) { PRIVATE_T_(clear)(from); return; }
 #ifdef LINK_A_NAME /* <-- a */
-	_T_LA_(link, cat)(this, from);
+	PRIVATE_T_LA_(link, cat)(this, from);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-	_T_LB_(link, cat)(this, from);
+	PRIVATE_T_LB_(link, cat)(this, from);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-	_T_LC_(link, cat)(this, from);
+	PRIVATE_T_LC_(link, cat)(this, from);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-	_T_LD_(link, cat)(this, from);
+	PRIVATE_T_LD_(link, cat)(this, from);
 #endif /* d --> */
 }
 
-#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
+#ifdef LINK_SOME_COMPARATOR /* <-- comp */
 /** Merges the elements into {this} from {from} in (local) order; concatenates
  all lists that don't have a {LINK_[A-D]_COMPARATOR}. If {this} is null, then
  it removes elements.
@@ -496,7 +496,7 @@ static void T_(LinkTake)(struct T_(Link) *const this,
 static void T_(LinkMerge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	if(!from || from == this) return;
-	if(!this) { _T_(clear)(from); return; }
+	if(!this) { PRIVATE_T_(clear)(from); return; }
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -506,9 +506,9 @@ static void T_(LinkMerge)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LA_(link, merge)(this, from);
+		PRIVATE_T_LA_(link, merge)(this, from);
 #else /* comp --><-- !comp */
-		_T_LA_(link, cat)(this, from);
+		PRIVATE_T_LA_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
@@ -516,9 +516,9 @@ static void T_(LinkMerge)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LB_(link, merge)(this, from);
+		PRIVATE_T_LB_(link, merge)(this, from);
 #else /* comp --><-- !comp */
-		_T_LB_(link, cat)(this, from);
+		PRIVATE_T_LB_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
@@ -526,9 +526,9 @@ static void T_(LinkMerge)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LC_(link, merge)(this, from);
+		PRIVATE_T_LC_(link, merge)(this, from);
 #else /* comp --><-- !comp */
-		_T_LC_(link, cat)(this, from);
+		PRIVATE_T_LC_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
@@ -536,9 +536,9 @@ static void T_(LinkMerge)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		_T_LD_(link, merge)(this, from);
+		PRIVATE_T_LD_(link, merge)(this, from);
 #else /* comp --><-- !comp */
-		_T_LD_(link, cat)(this, from);
+		PRIVATE_T_LD_(link, cat)(this, from);
 #endif /* !comp --> */
 #endif /* d --> */
 	}
@@ -560,25 +560,25 @@ static void T_(LinkSort)(struct T_(Link) *const this) {
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LA_(natural, sort)(this);
+		PRIVATE_T_LA_(natural, sort)(this);
 #endif /* a --> */
 #ifdef LINK_B_COMPARATOR /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LB_(natural, sort)(this);
+		PRIVATE_T_LB_(natural, sort)(this);
 #endif /* b --> */
 #ifdef LINK_C_COMPARATOR /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LC_(natural, sort)(this);
+		PRIVATE_T_LC_(natural, sort)(this);
 #endif /* c --> */
 #ifdef LINK_D_COMPARATOR /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LD_(natural, sort)(this);
+		PRIVATE_T_LD_(natural, sort)(this);
 #endif /* d --> */
 	}
 }
@@ -601,16 +601,16 @@ static void T_(LinkMigrate)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	if(!this || !node) return;
 #ifdef LINK_A_NAME /* <-- a */
-	_T_LA_(link, migrate)(this, node);
+	PRIVATE_T_LA_(link, migrate)(this, node);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
-	_T_LB_(link, migrate)(this, node);
+	PRIVATE_T_LB_(link, migrate)(this, node);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
-	_T_LC_(link, migrate)(this, node);
+	PRIVATE_T_LC_(link, migrate)(this, node);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
-	_T_LD_(link, migrate)(this, node);
+	PRIVATE_T_LD_(link, migrate)(this, node);
 #endif /* d --> */
 }
 
@@ -640,25 +640,25 @@ static void T_(LinkMigrateBlock)(struct T_(Link) *const this,
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LA_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_LA_(block, migrate)(this, cold, cold_end, delta);
 #endif /* a --> */
 #ifdef LINK_B_NAME /* <-- b */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LB_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_LB_(block, migrate)(this, cold, cold_end, delta);
 #endif /* b --> */
 #ifdef LINK_C_NAME /* <-- c */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LC_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_LC_(block, migrate)(this, cold, cold_end, delta);
 #endif /* c --> */
 #ifdef LINK_D_NAME /* <-- d */
 #ifdef LINK_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		_T_LD_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_LD_(block, migrate)(this, cold, cold_end, delta);
 #endif /* d --> */
 	}
 }
@@ -668,26 +668,26 @@ static void T_(LinkMigrateBlock)(struct T_(Link) *const this,
 #endif /* test --> */
 
 /* prototype */
-static void _T_(unused_coda)(void);
+static void PRIVATE_T_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void _T_(unused_link)(void) {
+static void PRIVATE_T_(unused_link)(void) {
 	T_(LinkClear)(0);
 	T_(LinkAdd)(0, 0);
 	T_(LinkRemove)(0, 0);
 	T_(LinkTake)(0, 0);
-#ifdef _LINK_SOME_COMPARATOR /* <-- comp */
+#ifdef LINK_SOME_COMPARATOR /* <-- comp */
 	T_(LinkMerge)(0, 0);
 	T_(LinkSort)(0);
 #endif /* comp --> */
 	T_(LinkSetParam)(0, 0);
 	T_(LinkMigrate)(0, 0);
 	T_(LinkMigrateBlock)(0, 0, (size_t)0, 0);
-	_T_(unused_coda)();
+	PRIVATE_T_(unused_coda)();
 }
 /** {clang}'s pre-processor is clever? */
-static void _T_(unused_coda)(void) { _T_(unused_link)(); }
+static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_link)(); }
 
 
 
@@ -735,8 +735,8 @@ static void _T_(unused_coda)(void) { _T_(unused_link)(); }
 #ifdef LINK_TEST
 #undef LINK_TEST
 #endif
-#ifdef _LINK_SOME_COMPARATOR
-#undef _LINK_SOME_COMPARATOR
+#ifdef LINK_SOME_COMPARATOR
+#undef LINK_SOME_COMPARATOR
 #endif
 #ifdef _LINK_SORT_INTERNALS
 #undef _LINK_SORT_INTERNALS /* each List type has their own */
@@ -746,37 +746,38 @@ static void _T_(unused_coda)(void) { _T_(unused_link)(); }
 
 
 
-#else /* !_LINK_NAME --><-- _LINK_NAME
+#else /* !LINK_L_NAME --><-- LINK_L_NAME
 
  Internally #included.
 
- @param _LINK_NAME: A unique name of the linked list; required;
- @param _LINK_COMPARATOR: an optional comparator. */
+ @param LINK_L_NAME: A unique name of the linked list; required;
+ @param LINK_L_COMPARATOR: an optional comparator. */
 
 
 
 
 
 /* After this block, the preprocessor replaces T_M_(X, Y) with
- LINK_NAMEX_LINK_NAMEY, _T_M_(X, Y) with _LINK_NAME_X__LINK_NAME_Y */
+ LINK_NAMEXLINK_L_NAMEY, PRIVATE_T_M_(X, Y) with LINK_L_NAME_X_LINK_L_NAME_Y */
 #ifdef T_L_
 #undef T_L_
 #endif
-#ifdef _T_L_
-#undef _T_L_
+#ifdef PRIVATE_T_L_
+#undef PRIVATE_T_L_
 #endif
 #ifdef L_
 #undef L_
 #endif
-#define T_L_(thing1, thing2) CAT(CAT(LINK_NAME, thing1),CAT(_LINK_NAME, thing2))
-#define _T_L_(thing1, thing2) CAT(PCAT(LINK_NAME, thing1),\
-	PCAT(_LINK_NAME, thing2))
-#define L_(thing) PCAT(_LINK_NAME, thing)
+#define T_L_(thing1, thing2) CAT(CAT(LINK_NAME, thing1), \
+	CAT(LINK_L_NAME, thing2))
+#define PRIVATE_T_L_(thing1, thing2) PCAT(link, PCAT(PCAT(LINK_NAME, thing1), \
+	PCAT(LINK_L_NAME, thing2)))
+#define L_(thing) PCAT(LINK_L_NAME, thing)
 
 
 
 /** Private: add to {this.last} in {<L>}. */
-static void _T_L_(link, add)(struct T_(Link) *const this,
+static void PRIVATE_T_L_(link, add)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	assert(this);
 	assert(node);
@@ -792,7 +793,7 @@ static void _T_L_(link, add)(struct T_(Link) *const this,
 }
 
 /** Private: link remove in {<L>}. */
-static void _T_L_(link, remove)(struct T_(Link) *const this,
+static void PRIVATE_T_L_(link, remove)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	assert(this);
 	assert(node);
@@ -812,7 +813,7 @@ static void _T_L_(link, remove)(struct T_(Link) *const this,
 
 /** Private: cats all {from} to the tail of {this}; {from} will be empty after.
  @order \Theta(1) */
-static void _T_L_(link, cat)(struct T_(Link) *const this,
+static void PRIVATE_T_L_(link, cat)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	assert(this);
 	assert(from);
@@ -830,7 +831,7 @@ static void _T_L_(link, cat)(struct T_(Link) *const this,
 }
 
 /** Private: {old} is not de-referenced, but {new} is. */
-static void _T_L_(link, migrate)(struct T_(Link) *const this,
+static void PRIVATE_T_L_(link, migrate)(struct T_(Link) *const this,
 	struct T_(LinkNode) *const node) {
 	assert(this);
 	assert(node);
@@ -848,7 +849,8 @@ static void _T_L_(link, migrate)(struct T_(Link) *const this,
 
 /** Private: used in \see{_<T>_block_<L>_migrate}.
  \${ptr \in [begin, end) -> ptr += delta}. */
-static void _T_L_(block, migrate_node)(struct T_(LinkNode) **const node_ptr,
+static void PRIVATE_T_L_(block, migrate_node)(
+	struct T_(LinkNode) **const node_ptr,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	const void *const ptr = *node_ptr;
 	if(ptr < begin || ptr >= end) return;
@@ -860,7 +862,7 @@ static void _T_L_(block, migrate_node)(struct T_(LinkNode) **const node_ptr,
  @param [begin, end): Where the pointers have changed.
  @param delta: the offset they have moved to in memory bytes.
  @order \Theta(n) */
-static void _T_L_(block, migrate)(struct T_(Link) *const this,
+static void PRIVATE_T_L_(block, migrate)(struct T_(Link) *const this,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	struct T_(LinkNode) *node;
 	assert(this);
@@ -871,12 +873,12 @@ static void _T_L_(block, migrate)(struct T_(Link) *const this,
 	/* empty -- done */
 	if(!this->L_(first)) return;
 	/* first and last pointer of {<T>List} */
-	_T_L_(block, migrate_node)(&this->L_(first), begin, end, delta);
-	_T_L_(block, migrate_node)(&this->L_(last),  begin, end, delta);
+	PRIVATE_T_L_(block, migrate_node)(&this->L_(first), begin, end, delta);
+	PRIVATE_T_L_(block, migrate_node)(&this->L_(last),  begin, end, delta);
 	/* all the others' {<T>ListNode} */
 	for(node = this->L_(first); node; node = node->L_(next)) {
-		_T_L_(block, migrate_node)(&node->L_(prev), begin, end, delta);
-		_T_L_(block, migrate_node)(&node->L_(next), begin, end, delta);
+		PRIVATE_T_L_(block, migrate_node)(&node->L_(prev), begin, end, delta);
+		PRIVATE_T_L_(block, migrate_node)(&node->L_(next), begin, end, delta);
 	}
 }
 
@@ -917,14 +919,14 @@ static struct T_(LinkNode) *T_L_(Link, GetLast)(struct T_(Link) *const this) {
 	return this->L_(last);
 }
 
-#ifdef _LINK_COMPARATOR /* <-- comp */
+#ifdef LINK_L_COMPARATOR /* <-- comp */
 
 #ifndef _LINK_SORT_INTERNALS /* <!-- sort internals only once per translation
  unit */
 #define _LINK_SORT_INTERNALS
 /* A run is a temporary sequence of values in the array that is weakly
  increasing; we store it's size temporarily. */
-struct _T_(Run) {
+struct PRIVATE_T_(Run) {
 	struct T_(LinkNode) *head, *tail;
 	size_t size;
 };
@@ -935,20 +937,20 @@ struct _T_(Run) {
  2^bits      = 2 (r^runs - 1)
  runs        = log(2^{bits-1} + 1) / log 2
  runs       <= 2^{bits - 1}, 2^{bits + 1} > 0} */
-struct _T_(Runs) {
-	struct _T_(Run) run[(sizeof(size_t) << 3) - 1];
+struct PRIVATE_T_(Runs) {
+	struct PRIVATE_T_(Run) run[(sizeof(size_t) << 3) - 1];
 	size_t run_no;
 };
 #endif /* sort internals --> */
 
 /* Check that each of LINK_[A-D]_COMPARATOR are functions implementing
  {<T>Comparator}. */
-static const T_(Comparator) _T_L_(data, cmp) = (_LINK_COMPARATOR);
+static const T_(Comparator) PRIVATE_T_L_(data, cmp) = (LINK_L_COMPARATOR);
 
 /** Private: merges {from} into {this} when we don't know anything about the
  data; on equal elements, places {this} first.
  @order {O(n + m)}. */
-static void _T_L_(link, merge)(struct T_(Link) *const this,
+static void PRIVATE_T_L_(link, merge)(struct T_(Link) *const this,
 	struct T_(Link) *const from) {
 	struct T_(LinkNode) *a, *b; /* {a} ~ {this}, {b} ~ {from} */
 	assert(this);
@@ -963,7 +965,7 @@ static void _T_L_(link, merge)(struct T_(Link) *const this,
 		/* merge */
 		struct T_(LinkNode) nemo, *const first = &nemo, *last = first;
 		for( ; ; ) {
-			if(_T_L_(data, cmp)(&a->data, &b->data) < 0) {
+			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) < 0) {
 				a->L_(prev) = last, last = last->L_(next) = a;
 				if(!(a = a->L_(next)))
 					{ b->L_(prev) = last, last->L_(next) = b,
@@ -981,7 +983,7 @@ static void _T_L_(link, merge)(struct T_(Link) *const this,
 
 #ifndef LINK_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls
  exactly this function concurrently */
-static struct _T_(Runs) _T_L_(runs, elem);
+static struct PRIVATE_T_(Runs) PRIVATE_T_L_(runs, elem);
 #endif /* not dynamic --> */
 
 /** Inserts the first element from the larger of two sorted runs, then merges
@@ -992,9 +994,9 @@ static struct _T_(Runs) _T_L_(runs, elem);
  insertion times that to well in standard merging. However, it's (potentially
  much) faster when the keys have structure: observed, {[-2%, 500%]}. Assumes
  array contains at least 2 elements and there are at least two runs. */
-static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
-	struct _T_(Run) *const run_a = r->run + r->run_no - 2;
-	struct _T_(Run) *const run_b = run_a + 1;
+static void PRIVATE_T_L_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
+	struct PRIVATE_T_(Run) *const run_a = r->run + r->run_no - 2;
+	struct PRIVATE_T_(Run) *const run_b = run_a + 1;
 	struct T_(LinkNode) *a = run_a->tail, *b = run_b->head, *chosen;
 
 	/* fixme: we are doing one-to-many compares in some cases? */
@@ -1007,7 +1009,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 
 		/* insert the first element of b downwards into a */
 		for( ; ; ) {
-			if(_T_L_(data, cmp)(&a->data, &b->data) <= 0) {
+			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) <= 0) {
 				chosen = a;
 				a = a->L_(next);
 				break;
@@ -1024,7 +1026,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 		/* merge upwards, while the lists are interleaved */
 		while(chosen->L_(next)) {
 			prev_chosen = chosen;
-			if(_T_L_(data, cmp)(&a->data, &b->data) > 0) {
+			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) > 0) {
 				chosen = b;
 				b = b->L_(next);
 			} else {
@@ -1053,7 +1055,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 
 		/* insert the last element of a upwards into b */
 		for( ; ; ) {
-			if(_T_L_(data, cmp)(&a->data, &b->data) <= 0) {
+			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) <= 0) {
 				chosen = b;
 				b = b->L_(prev);
 				break;
@@ -1072,7 +1074,7 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
 		/* merge downwards, while the lists are interleaved */
 		while(chosen->L_(prev)) {
 			next_chosen = chosen;
-			if(_T_L_(data, cmp)(&a->data, &b->data) > 0) {
+			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) > 0) {
 				chosen = a;
 				a = a->L_(prev);
 			} else {
@@ -1103,13 +1105,13 @@ static void _T_L_(natural, merge)(struct _T_(Runs) *const r) {
  useless compares and I question whether a strict Pascal's triangle-shape
  would be optimum, or whether a long run should be put off merging until
  short runs have finished; it is quite simple as it is. */
-static void _T_L_(natural, sort)(struct T_(Link) *const this) {
+static void PRIVATE_T_L_(natural, sort)(struct T_(Link) *const this) {
 #ifdef LINK_DYNAMIC_STORAGE /* <-- dynamic: this is potentially half-a-KB */
-	static struct _T_(Runs) _T_L_(runs, elem);
+	static struct PRIVATE_T_(Runs) PRIVATE_T_L_(runs, elem);
 #endif /* dynamic --> */
 	/* new_run is an index into link_runs, a temporary sorting structure;
 	 head is first smallest, tail is last largest */
-	struct _T_(Run) *new_run;
+	struct PRIVATE_T_(Run) *new_run;
 	/* part of the state machine for classifying points wrt their neighbours */
 	enum { UNSURE, INCREASING, DECREASING } mono;
 	/* the data that we are sorting */
@@ -1125,8 +1127,8 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 
 	/* reset the state machine and output to just 'a' in the first run */
 	mono = UNSURE;
-	_T_L_(runs, elem).run_no = 1;
-	new_run = _T_L_(runs,elem).run + 0, run_count = 1;
+	PRIVATE_T_L_(runs, elem).run_no = 1;
+	new_run = PRIVATE_T_L_(runs,elem).run + 0, run_count = 1;
 	new_run->size = 1;
 	first_iso_a = new_run->head = new_run->tail = a;
 
@@ -1135,7 +1137,7 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 		/* b.next can be modified, and we always want the iteration original */
 		c = b->L_(next);
 
-		comp = _T_L_(data, cmp)(&a->data, &b->data);
+		comp = PRIVATE_T_L_(data, cmp)(&a->data, &b->data);
 
 		/* state machine that considers runs in both directions -- in practice,
 		 slightly slower than only considering increasing runs on most cases;
@@ -1174,11 +1176,12 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 		new_run->head->L_(prev) = new_run->tail->L_(next) = 0;
 
 		/* greedy merge: keeps space to O(log n) instead of O(n) */
-		for(rc = run_count; !(rc & 1) && _T_L_(runs,elem).run_no >= 2; rc >>= 1)
-			_T_L_(natural, merge)(&_T_L_(runs,elem));
+		for(rc=run_count; !(rc & 1)&&PRIVATE_T_L_(runs,elem).run_no>=2; rc >>=1)
+			PRIVATE_T_L_(natural, merge)(&PRIVATE_T_L_(runs,elem));
 		/* reset the state machine and output to just 'b' at the next run */
 		mono = UNSURE;
-		new_run = _T_L_(runs,elem).run + _T_L_(runs,elem).run_no++, run_count++;
+		new_run = PRIVATE_T_L_(runs,elem).run +
+			PRIVATE_T_L_(runs,elem).run_no++, run_count++;
 		new_run->size = 1;
 		new_run->head = new_run->tail = first_iso_a = b;
 	}
@@ -1188,10 +1191,10 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
 		new_run->tail->L_(next) = new_run->head->L_(prev) = 0;
 
 	/* clean up the rest; when only one run, propagate link_runs[0] to head */
-	while(_T_L_(runs, elem).run_no > 1)
-		_T_L_(natural, merge)(&_T_L_(runs, elem));
-	this->L_(first) = _T_L_(runs, elem).run[0].head;
-	this->L_(last)  = _T_L_(runs, elem).run[0].tail;
+	while(PRIVATE_T_L_(runs, elem).run_no > 1)
+		PRIVATE_T_L_(natural, merge)(&PRIVATE_T_L_(runs, elem));
+	this->L_(first) = PRIVATE_T_L_(runs, elem).run[0].head;
+	this->L_(last)  = PRIVATE_T_L_(runs, elem).run[0].tail;
 }
 
 /** Sorts {<L>}, but leaves the other lists in {<T>} alone. Must have
@@ -1200,7 +1203,7 @@ static void _T_L_(natural, sort)(struct T_(Link) *const this) {
  @allow */
 static void T_L_(Link, Sort)(struct T_(Link) *const this) {
 	if(!this) return;
-	_T_L_(natural, sort)(this);
+	PRIVATE_T_L_(natural, sort)(this);
 }
 
 /** Compares two linked-lists as sequences in the order specified by {<L>}.
@@ -1227,7 +1230,7 @@ static int T_L_(Link, Compare)(const struct T_(Link) *const this,
 			return b ? -1 : 0;
 		} else if(!b) {
 			return 1;
-		} else if((diff = _T_L_(data, cmp)(&a->data, &b->data))) {
+		} else if((diff = PRIVATE_T_L_(data, cmp)(&a->data, &b->data))) {
 			return diff;
 		}
 	}
@@ -1235,46 +1238,46 @@ static int T_L_(Link, Compare)(const struct T_(Link) *const this,
 
 /** Private: {this <- a \mask b}. Prefers {a} to {b} when equal.
  @order O({a}.n + {b}.n) */
-static void _T_L_(boolean, seq)(struct T_(Link) *const this,
+static void PRIVATE_T_L_(boolean, seq)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b,
 	const enum LinkOperation mask) {
 	struct T_(LinkNode) *ai = a ? a->L_(first) : 0, *bi = b ? b->L_(first) : 0,
 		*t; /* iterator, temp */
 	int comp; /* comparator */
 	while(ai && bi) {
-		comp = _T_L_(data, cmp)(&ai->data, &bi->data);
+		comp = PRIVATE_T_L_(data, cmp)(&ai->data, &bi->data);
 		if(comp < 0) {
 			t = ai, ai = ai->L_(next);
 			if(mask & LO_SUBTRACTION_AB) {
-				_T_(remove)(a, t);
-				if(this) _T_(add)(this, t);
+				PRIVATE_T_(remove)(a, t);
+				if(this) PRIVATE_T_(add)(this, t);
 			}
 		} else if(comp > 0) {
 			t = bi, bi = bi->L_(next);
 			if(mask & LO_SUBTRACTION_BA) {
-				_T_(remove)(b, t);
-				if(this) _T_(add)(this, t);
+				PRIVATE_T_(remove)(b, t);
+				if(this) PRIVATE_T_(add)(this, t);
 			}
 		} else {
 			t = ai, ai = ai->L_(next), bi = bi->L_(next);
 			if(mask & LO_INTERSECTION) {
-				_T_(remove)(a, t);
-				if(this) _T_(add)(this, t);
+				PRIVATE_T_(remove)(a, t);
+				if(this) PRIVATE_T_(add)(this, t);
 			}
 		}
 	}
 	if(mask & LO_DEFAULT_A) {
 		while(ai) {
 			t = ai, ai = ai->L_(next);
-			_T_(remove)(a, t);
-			if(this) _T_(add)(this, t);
+			PRIVATE_T_(remove)(a, t);
+			if(this) PRIVATE_T_(add)(this, t);
 		}
 	}
 	if((mask & LO_DEFAULT_B)) {
 		while(bi) {
 			t = bi, bi = bi->L_(next);
-			_T_(remove)(b, t);
-			if(this) _T_(add)(this, t);
+			PRIVATE_T_(remove)(b, t);
+			if(this) PRIVATE_T_(add)(this, t);
 		}
 	}
 }
@@ -1286,7 +1289,7 @@ static void _T_L_(boolean, seq)(struct T_(Link) *const this,
  @allow */
 static void T_L_(Link, TakeSubtraction)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b) {
-	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB |LO_DEFAULT_A);
+	PRIVATE_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB |LO_DEFAULT_A);
 }
 
 /** Appends {this} with the union of {a} and {b} as a sequence in {<L>}. Equal
@@ -1296,7 +1299,7 @@ static void T_L_(Link, TakeSubtraction)(struct T_(Link) *const this,
  @allow */
 static void T_L_(Link, TakeUnion)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b) {
-	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+	PRIVATE_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
 		| LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
@@ -1307,7 +1310,7 @@ static void T_L_(Link, TakeUnion)(struct T_(Link) *const this,
  @allow */
 static void T_L_(Link, TakeIntersection)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b) {
-	_T_L_(boolean, seq)(this, a, b, LO_INTERSECTION);
+	PRIVATE_T_L_(boolean, seq)(this, a, b, LO_INTERSECTION);
 }
 
 /** Appends {this} with {a} exclusive-or {b} as a sequence in {<L>}. Equal
@@ -1317,7 +1320,7 @@ static void T_L_(Link, TakeIntersection)(struct T_(Link) *const this,
  @allow */
 static void T_L_(Link, TakeXor)(struct T_(Link) *const this,
 	struct T_(Link) *const a, struct T_(Link) *const b) {
-	_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+	PRIVATE_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
 		| LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
@@ -1334,9 +1337,9 @@ static void T_L_(Link, TakeIf)(struct T_(Link) *const this,
 	for(cursor = from->L_(first); cursor; cursor = next_cursor) {
 		next_cursor = cursor->L_(next);
 		if(predicate && !predicate(&cursor->data, from->param)) continue;
-		_T_(remove)(from, cursor);
+		PRIVATE_T_(remove)(from, cursor);
 		if(!this) continue;
-		_T_(add)(this, cursor);
+		PRIVATE_T_(add)(this, cursor);
 	}
 }
 
@@ -1430,7 +1433,7 @@ static char *T_L_(Link, ToString)(const struct T_(Link) *const this) {
 	_list_super_cat(&cat, _link_start);
 	for(link = this->L_(first); link; link = link->L_(next)) {
 		if(link != this->L_(first)) _list_super_cat(&cat, _link_sep);
-		_T_(to_string)(&link->data, &scratch), scratch[8] = '\0';
+		PRIVATE_T_(to_string)(&link->data, &scratch), scratch[8] = '\0';
 		_list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
 	}
@@ -1441,16 +1444,16 @@ static char *T_L_(Link, ToString)(const struct T_(Link) *const this) {
 #endif /* print --> */
 
 /* prototype */
-static void _T_L_(unused, coda)(void);
+static void PRIVATE_T_L_(unused, coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void _T_L_(unused, link)(void) {
+static void PRIVATE_T_L_(unused, link)(void) {
 	T_L_(LinkNode, GetNext)(0);
 	T_L_(LinkNode, GetPrevious)(0);
 	T_L_(Link, GetFirst)(0);
 	T_L_(Link, GetLast)(0);
-#ifdef _LINK_COMPARATOR /* <-- comp */
+#ifdef LINK_L_COMPARATOR /* <-- comp */
 	T_L_(Link, Sort)(0);
 	T_L_(Link, Compare)(0, 0);
 	T_L_(Link, TakeSubtraction)(0, 0, 0);
@@ -1464,17 +1467,17 @@ static void _T_L_(unused, link)(void) {
 #ifdef LINK_TO_STRING /* <-- string */
 	T_L_(Link, ToString)(0);
 #endif /* string --> */
-	_T_L_(unused, coda)();
+	PRIVATE_T_L_(unused, coda)();
 }
 /** {clang}'s pre-processor is clever? */
-static void _T_L_(unused, coda)(void) { _T_L_(unused, link)(); }
+static void PRIVATE_T_L_(unused, coda)(void) { PRIVATE_T_L_(unused, link)(); }
 
 
 
 /* un-define stuff for the next */
-#undef _LINK_NAME
-#ifdef _LINK_COMPARATOR /* <-- comp */
-#undef _LINK_COMPARATOR
+#undef LINK_L_NAME
+#ifdef LINK_L_COMPARATOR /* <-- comp */
+#undef LINK_L_COMPARATOR
 #endif /* comp --> */
 
-#endif /* _LINK_NAME --> */
+#endif /* LINK_L_NAME --> */

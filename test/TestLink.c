@@ -13,10 +13,10 @@
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
 
-#ifdef __GNUC__ /* <-- GCC */
+#ifdef __clang__ /* <-- clang must be placed ahead of __GNUC__ */
+#elif __GNUC__ /* clang --><-- GCC */
 #pragma GCC diagnostic ignored "-Wconversion"
-#elif __BORLANDC__ /* GCC --><-- BCC must be placed ahead, _MSC_VER is defined
- to be 1300? */
+#elif __BORLANDC__ /* GCC --><-- BCC must be placed ahead of _MSC_VER */
 #elif _MSC_VER /* BCC --><-- MSVC */
 #pragma warning(disable: 4464)
 #pragma warning(disable: 4706)
@@ -166,12 +166,14 @@ struct Bear {
 /** @implements <Animal>Action */
 static void sloth_act(struct Animal *const animal) {
 	struct Sloth *const sloth = (struct Sloth *)animal;
-	printf("Sloth %s at %d has been sleeping %u hours.\n", animal->name, animal->x, sloth->lazy);
+	printf("Sloth %s at %d has been sleeping %u hours.\n",
+		animal->name, animal->x, sloth->lazy);
 }
 /** @implements <Animal>Action */
 static void llama_act(struct Animal *const animal) {
 	struct Llama *const llama = (struct Llama *)animal;
-	printf("Llama %s at %d has chomped %u fingers today.\n", animal->name, animal->x, llama->chomps);
+	printf("Llama %s at %d has chomped %u fingers today.\n",
+		animal->name, animal->x, llama->chomps);
 }
 /** @implements <Animal>Action */
 static void bear_act(struct Animal *const animal) {
@@ -237,7 +239,7 @@ static void test_block_move(void) {
 	AnimalLinkNameForEach(&animals, &act);
 	printf("By x:\n");
 	AnimalLinkXForEach(&animals, &act);
-	_Animal_in_order(&animals);
+	link_Animal_in_order(&animals);
 	memcpy(others, sloths, sizeof sloths);
 	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '!';
 	printf("Moved sloths: %s.\n", AnimalLinkNameToString(&animals));
@@ -252,7 +254,7 @@ static void test_block_move(void) {
 	AnimalLinkNameForEach(&animals, &act);
 	printf("By x:\n");
 	AnimalLinkXForEach(&animals, &act);
-	_Animal_in_order(&animals);
+	link_Animal_in_order(&animals);
 }
 
 /** Entry point.
