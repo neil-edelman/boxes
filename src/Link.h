@@ -241,16 +241,15 @@ typedef LINK_TYPE PRIVATE_T_(Type);
 /* combine_sets() operations bit-vector */
 enum LinkOperation {
 	LO_SUBTRACTION_AB = 1,
-	LO_A,
 	LO_SUBTRACTION_BA = 2,
-	LO_B, LO_C,
+	LO_A, LO_B,
 	LO_INTERSECTION   = 4,
-	LO_D, LO_E, LO_F, LO_G,
+	LO_C, LO_D, LO_E, LO_F,
 	LO_DEFAULT_A      = 8,
-	LO_H, LO_I, LO_J, LO_K, LO_L, LO_M, LO_N, LO_O,
+	LO_G, LO_H, LO_I, LO_J, LO_K, LO_L, LO_M, LO_N,
 	LO_DEFAULT_B      = 16,
-	LO_P, LO_Q, LO_R, LO_S, LO_T, LO_U, LO_V, LO_W,
-	LO_X, LO_Y, LO_Z, LO_AA, LO_AB, LO_AC, LO_AD, LO_AE
+	LO_O, LO_P, LO_Q, LO_R, LO_S, LO_T, LO_U, LO_V,
+	LO_W, LO_X, LO_Y, LO_Z, LO_AA, LO_AB, LO_AC, LO_AD
 };
 #endif /* LINK_H */
 

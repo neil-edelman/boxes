@@ -15,6 +15,9 @@
 
 #ifdef __clang__ /* <-- clang must be placed ahead of __GNUC__ */
 #pragma clang diagnostic ignored "-Wpadded"
+#pragma clang diagnostic ignored "-Wdocumentation"
+#pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
+#pragma clang diagnostic ignored "-Wdisabled-macro-expansion"
 #elif __GNUC__ /* clang --><-- GCC */
 #pragma GCC diagnostic ignored "-Wconversion"
 #elif __BORLANDC__ /* GCC --><-- BCC must be placed ahead of _MSC_VER */
