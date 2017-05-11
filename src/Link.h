@@ -236,8 +236,8 @@ typedef LINK_TYPE PRIVATE_T_(Type);
 
 
 /* constants across multiple includes in the same translation unit */
-#ifndef _LINK_H /* <-- _LINK_H */
-#define _LINK_H
+#ifndef LINK_H /* <-- LINK_H */
+#define LINK_H
 /* combine_sets() operations bit-vector */
 enum LinkOperation {
 	LO_SUBTRACTION_AB = 1,
@@ -252,7 +252,7 @@ enum LinkOperation {
 	LO_P, LO_Q, LO_R, LO_S, LO_T, LO_U, LO_V, LO_W,
 	LO_X, LO_Y, LO_Z, LO_AA, LO_AB, LO_AC, LO_AD, LO_AE
 };
-#endif /* _LINK_H */
+#endif /* LINK_H */
 
 
 
@@ -738,8 +738,8 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_link)(); }
 #ifdef LINK_SOME_COMPARATOR
 #undef LINK_SOME_COMPARATOR
 #endif
-#ifdef _LINK_SORT_INTERNALS
-#undef _LINK_SORT_INTERNALS /* each List type has their own */
+#ifdef LINK_SORT_INTERNALS
+#undef LINK_SORT_INTERNALS /* each List type has their own */
 #endif
 
 
@@ -921,9 +921,9 @@ static struct T_(LinkNode) *T_L_(Link, GetLast)(struct T_(Link) *const this) {
 
 #ifdef LINK_L_COMPARATOR /* <-- comp */
 
-#ifndef _LINK_SORT_INTERNALS /* <!-- sort internals only once per translation
+#ifndef LINK_SORT_INTERNALS /* <!-- sort internals only once per translation
  unit */
-#define _LINK_SORT_INTERNALS
+#define LINK_SORT_INTERNALS
 /* A run is a temporary sequence of values in the array that is weakly
  increasing; we store it's size temporarily. */
 struct PRIVATE_T_(Run) {

@@ -14,6 +14,7 @@
 #include "Orcish.h"
 
 #ifdef __clang__ /* <-- clang must be placed ahead of __GNUC__ */
+#pragma clang diagnostic ignored "-Wpadded"
 #elif __GNUC__ /* clang --><-- GCC */
 #pragma GCC diagnostic ignored "-Wconversion"
 #elif __BORLANDC__ /* GCC --><-- BCC must be placed ahead of _MSC_VER */
