@@ -1,0 +1,476 @@
+# Link.h #
+
+2017 Neil Edelman, distributed under the terms of the MIT License;
+ see readme.txt, or [ https://opensource.org/licenses/MIT ].
+
+ _<T>Link_ stores doubly-linked-list(s) of _<T>LinkNode_, of which data of
+ type, _<T>_, must be set using _LINK_TYPE_. Supports one to four different
+ linked-list orders in the same type, _[A, D]_, set using _LINK_[A-D]_NAME_.
+ The preprocessor macros are all undefined at the end of the file for
+ convenience when including multiple _Link_ types in the same file.
+
+ The _<T>LinkNode_ storage is the responsibility of the caller. Specifically,
+ it does not have to be contiguous, and it can be nestled in multiple, possibly
+ different, structures. You can move (part) of the memory that is in an active
+ _Link_ under some conditions, and still keep the integrity of the linked-list,
+ by `<T>LinkMigrate` or `<T>LinkMigrateBlock`.
+
+parameter: LINK_NAME, LINK_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
+ should be conformant to naming and to the maximum available length of
+ identifiers. Must each be present before including.
+
+parameter: LINK_[A-D]_NAME, LINK_[A-D]_COMPARATOR -- Each _LINK_[A-D]_NAME_ literally becomes _<L>_. You can define an optional
+ comparator, an equivalence relation function implementing _<T>Comparator_. For
+ speed, it should be an inlined _static_ function, if possible.
+
+parameter: LINK_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
+ `<T>Link<L>ToString`.
+
+parameter: LINK_DYNAMIC_STORAGE -- This allocates _O(log n)_ space needed for merge sort on the stack every time
+ the List is sorted, instead of statically. This allows using the exact same
+ sort on different data concurrently without crashing, but it consumes more
+ resources.
+
+parameter: LINK_OPENMP -- Tries to parallelise using _OpenMP_, [ http://www.openmp.org/ ].
+
+parameter: LINK_TEST -- Unit testing framework using _<T>LinkTest_, included in a separate header,
+ _../test/LinkTest.h_. Must be defined equal to a (random) filler, satisfying
+ _<T>Action_. If _NDEBUG_ is not defined, turns on _assert_ private function
+ integrity testing. Requires _LINK_TO_STRING_.
+
+minimum standard: C89/90
+
+author: Neil
+
+version: 1.0; 2017-05
+
+since: 1.0; 2017-05 separated from List.h
+
+fixme: _GCC_: _#pragma GCC diagnostic ignored "-Wconversion"_; libc 4.2
+ _assert_ bug on _LINK_TEST_.
+
+fixme: _MSVC_: _#pragma warning(disable: x)_ where _x_ is: 4464 contains '..'
+ uhm, thanks?; 4706 not _Java_; 4710, 4711 inlined info; 4820 padding info;
+ 4996 not _C++11_.
+
+fixme: _clang_: _#pragma clang diagnostic ignored "-Wx"_ where _x_ is:
+ _padded_; _documentation_; _documentation-unknown-command_ it's not quite
+ _clang-tags_; 3.8 _disabled-macro-expansion_ on _LINK_TEST_.
+
+
+
+## Declarations ##
+
+### typedef void (*<T>Action)(T *const) ###
+
+typedef void (*<T>Action)(T *const)
+
+Operates by side-effects only.
+
+
+### typedef int  (*<T>Predicate)(T *const, void *const) ###
+
+typedef int  (*<T>Predicate)(T *const, void *const)
+
+Passed _T_ and _param_, (see `<T>LinkSetParam`,) returns (non-zero)
+ true or (zero) false.
+
+
+### typedef int  (*<T>Comparator)(const T *, const T *) ###
+
+typedef int  (*<T>Comparator)(const T *, const T *)
+
+Compares two values and returns less then, equal to, or greater then
+ zero. Should do so forming an equivalence relation with respect to _T_.
+
+
+### typedef void (*<T>ToString)(const T *const, char (*const)[12]) ###
+
+typedef void (*<T>ToString)(const T *const, char (*const)[12])
+
+Responsible for turning _<T>_ (the first argument) into a 12 _char_
+ null-terminated output string (the second.)
+
+
+### struct <T>LinkNode ###
+
+struct <T>LinkNode
+
+A single link in the linked-list derived from _<T>_. Storage of this
+ structure is the responsibility of the caller. A _<T>LinkNode_ can be
+ reinterpreted (cast) to _<T>_ as a single element; that is, _<T>_ shall be the
+ first element of _<T>LinkNode_.
+ |    <T>LinkNode *node;
+ |    T *t;
+ |    for(node = <T>Link<L>GetFirst(link);
+ |        node;
+ |        node = <T>LinkNode<L>GetNext(node)) {
+ |        t = (T *)node;
+ |    } or
+ |    static void for_all_fn(T *const t) {
+ |        struct <T>LinkNode *const node = (struct <T>LinkNode *)t;
+ |    }
+
+
+### struct <T>Link ###
+
+struct <T>Link
+
+Serves as an a head for linked-list(s) of _<T>LinkNode_. No initialisation
+ is necessary when the variable is of _static_ duration, otherwise use
+ `<T>LinkClear`.
+
+
+
+
+## Function Summary ##
+
+_Return Type_	_Function Name_	_Argument List_
+static void	<T>LinkClear	(struct <T>Link *const this)
+static void	<T>LinkAdd	(struct <T>Link *const this,
+	struct <T>LinkNode *const node)
+static void	<T>LinkRemove	(struct <T>Link *const this,
+	struct <T>LinkNode *const node)
+static void	<T>LinkTake	(struct <T>Link *const this,
+	struct <T>Link *const from)
+static void	<T>LinkMerge	(struct <T>Link *const this,
+	struct <T>Link *const from)
+static void	<T>LinkSort	(struct <T>Link *const this)
+static void	<T>LinkSetParam	(struct <T>Link *const this,
+	void *const param)
+static void	<T>LinkMigrate	(struct <T>Link *const this,
+	struct <T>LinkNode *const node)
+static void	<T>LinkMigrateBlock	(struct <T>Link *const this,
+	void *const array, const size_t array_size, const void *const old_array)
+static struct <T>LinkNode *	<T>LinkNode<L>GetNext	(struct <T>LinkNode *const this)
+static struct <T>LinkNode *	<T>LinkNode<L>GetPrevious	(struct <T>LinkNode *const this)
+static struct <T>LinkNode *	<T>Link<L>GetFirst	(struct <T>Link *const this)
+static struct <T>LinkNode *	<T>Link<L>GetLast	(struct <T>Link *const this)
+static void	<T>Link<L>Sort	(struct <T>Link *const this)
+static int	<T>Link<L>Compare	(const struct <T>Link *const this,
+	const struct <T>Link *const that)
+static void	<T>Link<L>TakeSubtraction	(struct <T>Link *const this,
+	struct <T>Link *const a, struct <T>Link *const b)
+static void	<T>Link<L>TakeUnion	(struct <T>Link *const this,
+	struct <T>Link *const a, struct <T>Link *const b)
+static void	<T>Link<L>TakeIntersection	(struct <T>Link *const this,
+	struct <T>Link *const a, struct <T>Link *const b)
+static void	<T>Link<L>TakeXor	(struct <T>Link *const this,
+	struct <T>Link *const a, struct <T>Link *const b)
+static void	<T>Link<L>TakeIf	(struct <T>Link *const this,
+	struct <T>Link *const from, const <T>Predicate predicate)
+static void	<T>Link<L>ForEach	(struct <T>Link *const this,
+	const <T>Action action)
+static struct <T>LinkNode *	<T>Link<L>ShortCircuit	(struct <T>Link *const this, const <T>Predicate predicate)
+static char *	<T>Link<L>ToString	(const struct <T>Link *const this)
+
+
+
+## Function Detail ##
+
+### <T>LinkClear ###
+
+static void <T>LinkClear(struct <T>Link *const this)
+
+Clears all values from _this_, thereby initialising the _<T>Link_. If it
+ contained a list, those values are free.
+
+order: \Theta(1)
+
+
+
+### <T>LinkAdd ###
+
+static void <T>LinkAdd(struct <T>Link *const this,
+	struct <T>LinkNode *const node)
+
+Sets the contents of _node_ to push it to _this_, thereby initialising the
+ non-_<T>_ parts of _<T>LinkNode_. Does not do any checks on _node_ and
+ overwrites the data that was there. Specifically, it invokes undefined
+ behaviour to one add _node_ to more than one list without removing it each
+ time. If either _this_ or _node_ is null, it does nothing.
+
+order: \Theta(1)
+
+
+
+### <T>LinkRemove ###
+
+static void <T>LinkRemove(struct <T>Link *const this,
+	struct <T>LinkNode *const node)
+
+Removes _node_ from the _this_. The _node_ is now free to add to another
+ list. Removing an element that was not added to _this_ results in undefined
+ behaviour. If either _this_ or _node_ is null, it does nothing.
+
+order: \Theta(1)
+
+
+
+### <T>LinkTake ###
+
+static void <T>LinkTake(struct <T>Link *const this,
+	struct <T>Link *const from)
+
+Appends the elements of _from_ onto _this_. If _this_ is null, then it
+ removes elements. Unlike the _<T>Link<L>Take*_, where the elements are
+ re-ordered based on _<L>_, (they would not be in-place, otherwise,) this
+ function concatenates all the elements in each linked-list order.
+
+order: \Theta(1)
+
+
+
+### <T>LinkMerge ###
+
+static void <T>LinkMerge(struct <T>Link *const this,
+	struct <T>Link *const from)
+
+Merges the elements into _this_ from _from_ in (local) order; concatenates
+ all lists that don't have a _LINK_[A-D]_COMPARATOR_. If _this_ is null, then
+ it removes elements.
+
+order: O(_this_.n + _from_.n)
+
+
+
+### <T>LinkSort ###
+
+static void <T>LinkSort(struct <T>Link *const this)
+
+Performs a stable, adaptive sort. If _LINK_OPENMP_ is defined, then it will
+ try to parallelise; otherwise it is equivalent to calling `<T>Link<L>Sort`
+ for all linked-lists with comparators. Requires one of _LINK_[A-D]_COMPARATOR_
+ be set.
+
+order: \Omega(_this_.n), O(_this_.n log _this_.n)
+
+
+
+### <T>LinkSetParam ###
+
+static void <T>LinkSetParam(struct <T>Link *const this,
+	void *const param)
+
+Sets the user-defined _param_ of _this_.
+
+order: \Theta(1)
+
+
+
+### <T>LinkMigrate ###
+
+static void <T>LinkMigrate(struct <T>Link *const this,
+	struct <T>LinkNode *const node)
+
+Use when one _node_ of _this_ has switched places in memory. If _this_ or
+ _node_ is null, doesn't do anything.
+
+order: \Theta(1)
+
+
+
+### <T>LinkMigrateBlock ###
+
+static void <T>LinkMigrateBlock(struct <T>Link *const this,
+	void *const array, const size_t array_size, const void *const old_array)
+
+When _this_ contains elements from an array of/containing _<T>LinkNode_ in
+ memory that switched from _old_array_ to _array_ with byte-size _array_size_.
+ If _this_, _array_, or _old_array_ is null, doesn't do anything.
+
+ Specifically, use when _this_ is (partially) backed with an array that has
+ changed places due to a _realloc_.
+
+order: \Theta(n)
+
+fixme: Relies on not-strictly-defined behaviour because pointers are not
+ necessarily contiguous in memory; it should be fine in practice.
+
+
+
+### <T>LinkNode<L>GetNext ###
+
+static struct <T>LinkNode * <T>LinkNode<L>GetNext(struct <T>LinkNode *const this)
+
+
+
+return: The next element after _this_ in _<L>_. When _this_ is the last
+ element or when _this_ is null, returns null.
+
+order: \Theta(1)
+
+
+
+### <T>LinkNode<L>GetPrevious ###
+
+static struct <T>LinkNode * <T>LinkNode<L>GetPrevious(struct <T>LinkNode *const this)
+
+
+
+return: The previous element before _this_ in _<L>_. When _this_ is the
+ first item or when _this_ is null, returns null.
+
+order: \Theta(1)
+
+
+
+### <T>Link<L>GetFirst ###
+
+static struct <T>LinkNode * <T>Link<L>GetFirst(struct <T>Link *const this)
+
+
+
+return: A pointer to the first element of _this_.
+
+order: \Theta(1)
+
+
+
+### <T>Link<L>GetLast ###
+
+static struct <T>LinkNode * <T>Link<L>GetLast(struct <T>Link *const this)
+
+
+
+return: A pointer to the last element of _this_.
+
+order: \Theta(1)
+
+
+
+### <T>Link<L>Sort ###
+
+static void <T>Link<L>Sort(struct <T>Link *const this)
+
+Sorts _<L>_, but leaves the other lists in _<T>_ alone. Must have
+ _LINK_[A-D]_COMPARATOR_ defined.
+
+order: \Omega(_this_.n), O(_this_.n log _this_.n)
+
+
+
+### <T>Link<L>Compare ###
+
+static int <T>Link<L>Compare(const struct <T>Link *const this,
+	const struct <T>Link *const that)
+
+Compares two linked-lists as sequences in the order specified by _<L>_.
+
+return: The first comparator that is not equal to zero, or 0 if they are
+ equal. Two null pointers are considered equal. Must have
+ _LINK_[A-D]_COMPARATOR_ defined.
+
+implements: <<T>Link>Comparator
+
+order: \Theta(min(_this_.n, _that_.n))
+
+
+
+### <T>Link<L>TakeSubtraction ###
+
+static void <T>Link<L>TakeSubtraction(struct <T>Link *const this,
+	struct <T>Link *const a, struct <T>Link *const b)
+
+Appends _that_ with _b_ subtracted from _a_ as a sequence in _<L>_. If
+ _this_ is null, then it removes elements. Must have _LINK_[A-D]_COMPARATOR_
+ defined.
+
+order: O(_a_.n + _b_.n)
+
+
+
+### <T>Link<L>TakeUnion ###
+
+static void <T>Link<L>TakeUnion(struct <T>Link *const this,
+	struct <T>Link *const a, struct <T>Link *const b)
+
+Appends _this_ with the union of _a_ and _b_ as a sequence in _<L>_. Equal
+ elements are moved from _a_. If _this_ is null, then it removes elements. Must
+ have _LINK_[A-D]_COMPARATOR_ defined.
+
+order: O(_a_.n + _b_.n)
+
+
+
+### <T>Link<L>TakeIntersection ###
+
+static void <T>Link<L>TakeIntersection(struct <T>Link *const this,
+	struct <T>Link *const a, struct <T>Link *const b)
+
+Appends _this_ with the intersection of _a_ and _b_ as a sequence in _<L>_.
+ Equal elements are moved from _a_. If _this_ is null, then it removes elements.
+ Must have _LINK_[A-D]_COMPARATOR_ defined.
+
+order: O(_a_.n + _b_.n)
+
+
+
+### <T>Link<L>TakeXor ###
+
+static void <T>Link<L>TakeXor(struct <T>Link *const this,
+	struct <T>Link *const a, struct <T>Link *const b)
+
+Appends _this_ with _a_ exclusive-or _b_ as a sequence in _<L>_. Equal
+ elements are moved from _a_. If _this_ is null, then it removes elements. Must
+ have _LINK_[A-D]_COMPARATOR_ defined.
+
+order: O(_a_.n + _b_.n)
+
+
+
+### <T>Link<L>TakeIf ###
+
+static void <T>Link<L>TakeIf(struct <T>Link *const this,
+	struct <T>Link *const from, const <T>Predicate predicate)
+
+Appends _this_ with _from_ if _predicate_ is null or true in the order
+ specified by _<L>_. If _this_ is null, then it removes elements.
+
+order: ~ \Theta(_this_.n) \times O(_predicate_)
+
+
+
+### <T>Link<L>ForEach ###
+
+static void <T>Link<L>ForEach(struct <T>Link *const this,
+	const <T>Action action)
+
+Performs _action_ for each element in the list in the order specified by
+ _<L>_. For more flexibility, use `<T>List<L>ShortCircuit`, which takes a
+ _<T>Predicate_, and return true.
+
+order: ~ \Theta(_this_.n) \times O(_action_)
+
+
+
+### <T>Link<L>ShortCircuit ###
+
+static struct <T>LinkNode * <T>Link<L>ShortCircuit(struct <T>Link *const this, const <T>Predicate predicate)
+
+
+
+return: The first _<T>LinkNode_ in the linked-list, ordered by _<L>_, that
+ causes the _predicate_ with _<T>_ as argument to return false, or null if the
+ _predicate_ is true for every case. If _this_ or _predicate_ is null, returns
+ null.
+
+order: ~ O(_this_.n) \times O(_predicate_)
+
+
+
+### <T>Link<L>ToString ###
+
+static char * <T>Link<L>ToString(const struct <T>Link *const this)
+
+One can print 4 things at once before it overwrites. One must set
+ _LINK_TO_STRING_ to a function implementing _<T>ToString_ to get this
+ functionality.
+
+return: Prints the _this_ in a static buffer.
+
+order: \Theta(1); it has a 255 character limit; every element takes some of it.
+
+
+
+
