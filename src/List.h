@@ -113,7 +113,7 @@
 #if defined(LIST_TEST) && !defined(LIST_TO_STRING)
 #error LIST_TEST requires LIST_TO_STRING.
 #endif
-#ifndef LIST_TEST
+#ifndef LIST_TEST /* fixme: affects code past inclusion */
 #define NDEBUG
 #endif
 #if defined(LIST_UA_COMPARATOR) || defined(LIST_UB_COMPARATOR) \
@@ -750,8 +750,8 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 
 
 
-/* After this block, the preprocessor replaces T_M_(X, Y) with
- LIST_NAMEXLIST_U_NAMEY, PRIVATE_T_M_(X, Y) with
+/* After this block, the preprocessor replaces T_U_(X, Y) with
+ LIST_NAMEXLIST_U_NAMEY, PRIVATE_T_U_(X, Y) with
  list_LIST_U_NAME_X_LIST_U_NAME_Y */
 #ifdef T_U_
 #undef T_U_
@@ -975,11 +975,6 @@ static void PRIVATE_T_U_(list, merge)(struct T_(List) *const this,
 	from->U_(first) = from->U_(last) = 0;
 }
 
-#ifndef LIST_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls
- exactly this function concurrently */
-static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
-#endif /* not dynamic --> */
-
 /** Inserts the first element from the larger of two sorted runs, then merges
  the rest. \cite{Peters2002Timsort}, via \cite{McIlroy1993Optimistic}, does
  long merges by galloping, but we don't have random access to the data. In
@@ -1094,6 +1089,11 @@ static void PRIVATE_T_U_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 	run_a->size += run_b->size;
 	r->run_no--;
 }
+
+#ifndef LIST_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls
+exactly this function concurrently */
+static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
+#endif /* not dynamic --> */
 
 /** It's kind of experimental. It hasn't been optimised; I think it does
  useless compares and I question whether a strict Pascal's triangle-shape
