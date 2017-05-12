@@ -1,0 +1,476 @@
+# List.h #
+
+2017 Neil Edelman, distributed under the terms of the MIT License;
+ see readme.txt, or [ https://opensource.org/licenses/MIT ].
+
+ _<T>List_ stores doubly-linked-list(s) of _<T>ListNode_, of which data of
+ type, _<T>_, must be set using _LIST_TYPE_. Supports one to four different
+ orders in the same type, _[A, D]_, set using _LIST_U[A-D]_NAME_. The
+ preprocessor macros are all undefined at the end of the file for convenience
+ when including multiple _List_ types in the same file.
+
+ The _<T>ListNode_ storage is the responsibility of the caller. Specifically,
+ it does not have to be contiguous, and it can be nestled in multiple, possibly
+ different, structures. You can move (part) of the memory that is in an active
+ _List_ under some conditions, and still keep the integrity of the linked-list;
+ see `<T>ListMigrate` or `<T>ListMigrateBlock`.
+
+parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
+ should be conformant to naming and to the maximum available length of
+ identifiers. Must each be present before including.
+
+parameter: LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR -- Each _LIST_U[A-D]_NAME_ literally becomes, _<U>_, an order. You can define an
+ optional comparator, an equivalence relation function implementing
+ _<T>Comparator_.
+
+parameter: LIST_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
+ `<T>List<U>ToString`.
+
+parameter: LIST_DYNAMIC_STORAGE -- This allocates _O(log n)_ space needed for merge sort on the stack every time
+ the List is sorted, instead of statically. This allows using the exact same
+ sort on different data concurrently without crashing, but it consumes more
+ resources.
+
+parameter: LIST_OPENMP -- Tries to parallelise using _OpenMP_, [ http://www.openmp.org/ ].
+
+parameter: LIST_TEST -- Unit testing framework using _<T>ListTest_, included in a separate header,
+ _../test/ListTest.h_. Must be defined equal to a (random) filler, satisfying
+ _<T>Action_. If _NDEBUG_ is not defined, turns on _assert_ private function
+ integrity testing. Requires _LIST_TO_STRING_.
+
+minimum standard: C89/90
+
+author: Neil
+
+version: 1.0; 2017-05
+
+since: 1.0; 2017-05 separated from List.h
+
+fixme: _GCC_: _#pragma GCC diagnostic ignored "-Wconversion"_; libc 4.2
+ _assert_ bug on _LIST_TEST_.
+
+fixme: _MSVC_: _#pragma warning(disable: x)_ where _x_ is: 4464 contains '..'
+ uhm, thanks?; 4706 not _Java_; 4710, 4711 inlined info; 4820 padding info;
+ 4996 not _C++11_.
+
+fixme: _clang_: _#pragma clang diagnostic ignored "-Wx"_ where _x_ is:
+ _padded_; _documentation_; _documentation-unknown-command_ it's not quite
+ _clang-tags_; 3.8 _disabled-macro-expansion_ on _toupper_ in _LIST_TEST_.
+
+
+
+## Declarations ##
+
+### typedef void (*<T>Action)(T *const) ###
+
+typedef void (*<T>Action)(T *const)
+
+Operates by side-effects only.
+
+
+### typedef int  (*<T>Predicate)(T *const, void *const) ###
+
+typedef int  (*<T>Predicate)(T *const, void *const)
+
+Passed _T_ and _param_, (see `<T>ListSetParam`,) returns (non-zero)
+ true or (zero) false.
+
+
+### typedef int  (*<T>Comparator)(const T *, const T *) ###
+
+typedef int  (*<T>Comparator)(const T *, const T *)
+
+Compares two values and returns less then, equal to, or greater then
+ zero. Should do so forming an equivalence relation with respect to _T_.
+
+
+### typedef void (*<T>ToString)(const T *const, char (*const)[12]) ###
+
+typedef void (*<T>ToString)(const T *const, char (*const)[12])
+
+Responsible for turning _<T>_ (the first argument) into a 12 _char_
+ null-terminated output string (the second.)
+
+
+### struct <T>ListNode ###
+
+struct <T>ListNode
+
+A single link in the linked-list derived from _<T>_. Storage of this
+ structure is the responsibility of the caller. A _<T>ListNode_ can be
+ reinterpreted (cast) to _<T>_ as a single element; that is, _<T>_ shall be the
+ first element of _<T>ListNode_.
+ |    <T>ListNode *node;
+ |    T *t;
+ |    for(node = <T>List<U>GetFirst(list);
+ |        node;
+ |        node = <T>ListNode<U>GetNext(node)) {
+ |        t = (T *)node;
+ |    } or
+ |    static void for_all_fn(T *const t) {
+ |        struct <T>ListNode *const node = (struct <T>ListNode *)t;
+ |    }
+
+
+### struct <T>List ###
+
+struct <T>List
+
+Serves as an a head for linked-list(s) of _<T>ListNode_. No initialisation
+ is necessary when the variable is of _static_ duration, otherwise use
+ `<T>ListClear`.
+
+
+
+
+## Function Summary ##
+
+_Return Type_	_Function Name_	_Argument List_
+static void	<T>ListClear	(struct <T>List *const this)
+static void	<T>ListAdd	(struct <T>List *const this,
+	struct <T>ListNode *const node)
+static void	<T>ListRemove	(struct <T>List *const this,
+	struct <T>ListNode *const node)
+static void	<T>ListTake	(struct <T>List *const this,
+	struct <T>List *const from)
+static void	<T>ListMerge	(struct <T>List *const this,
+	struct <T>List *const from)
+static void	<T>ListSort	(struct <T>List *const this)
+static void	<T>ListSetParam	(struct <T>List *const this,
+	void *const param)
+static void	<T>ListMigrate	(struct <T>List *const this,
+	struct <T>ListNode *const node)
+static void	<T>ListMigrateBlock	(struct <T>List *const this,
+	void *const array, const size_t array_size, const void *const old_array)
+static struct <T>ListNode *	<T>ListNode<U>GetNext	(struct <T>ListNode *const this)
+static struct <T>ListNode *	<T>ListNode<U>GetPrevious	(struct <T>ListNode *const this)
+static struct <T>ListNode *	<T>List<U>GetFirst	(struct <T>List *const this)
+static struct <T>ListNode *	<T>List<U>GetLast	(struct <T>List *const this)
+static void	<T>List<U>Sort	(struct <T>List *const this)
+static int	<T>List<U>Compare	(const struct <T>List *const this,
+	const struct <T>List *const that)
+static void	<T>List<U>TakeSubtraction	(struct <T>List *const this,
+	struct <T>List *const a, struct <T>List *const b)
+static void	<T>List<U>TakeUnion	(struct <T>List *const this,
+	struct <T>List *const a, struct <T>List *const b)
+static void	<T>List<U>TakeIntersection	(struct <T>List *const this,
+	struct <T>List *const a, struct <T>List *const b)
+static void	<T>List<U>TakeXor	(struct <T>List *const this,
+	struct <T>List *const a, struct <T>List *const b)
+static void	<T>List<U>TakeIf	(struct <T>List *const this,
+	struct <T>List *const from, const <T>Predicate predicate)
+static void	<T>List<U>ForEach	(struct <T>List *const this,
+	const <T>Action action)
+static struct <T>ListNode *	<T>List<U>ShortCircuit	(struct <T>List *const this, const <T>Predicate predicate)
+static char *	<T>List<U>ToString	(const struct <T>List *const this)
+
+
+
+## Function Detail ##
+
+### <T>ListClear ###
+
+static void <T>ListClear(struct <T>List *const this)
+
+Clears all values from _this_, thereby initialising the _<T>List_. If it
+ contained a list, those values are free.
+
+order: \Theta(1)
+
+
+
+### <T>ListAdd ###
+
+static void <T>ListAdd(struct <T>List *const this,
+	struct <T>ListNode *const node)
+
+Sets the contents of _node_ to push it to _this_, thereby initialising the
+ non-_<T>_ parts of _<T>ListNode_. Does not do any checks on _node_ and
+ overwrites the data that was there. Specifically, it invokes undefined
+ behaviour to one add _node_ to more than one list without removing it each
+ time. If either _this_ or _node_ is null, it does nothing.
+
+order: \Theta(1)
+
+
+
+### <T>ListRemove ###
+
+static void <T>ListRemove(struct <T>List *const this,
+	struct <T>ListNode *const node)
+
+Removes _node_ from the _this_. The _node_ is now free to add to another
+ list. Removing an element that was not added to _this_ results in undefined
+ behaviour. If either _this_ or _node_ is null, it does nothing.
+
+order: \Theta(1)
+
+
+
+### <T>ListTake ###
+
+static void <T>ListTake(struct <T>List *const this,
+	struct <T>List *const from)
+
+Appends the elements of _from_ onto _this_. If _this_ is null, then it
+ removes elements. Unlike the _<T>List<U>Take*_, where the elements are
+ re-ordered based on _<U>_, (they would not be in-place, otherwise,) this
+ function concatenates all the elements in each linked-list order.
+
+order: \Theta(1)
+
+
+
+### <T>ListMerge ###
+
+static void <T>ListMerge(struct <T>List *const this,
+	struct <T>List *const from)
+
+Merges the elements into _this_ from _from_ in (local) order; concatenates
+ all lists that don't have a _LIST_U[A-D]_COMPARATOR_. If _this_ is null, then
+ it removes elements.
+
+order: O(_this_.n + _from_.n)
+
+
+
+### <T>ListSort ###
+
+static void <T>ListSort(struct <T>List *const this)
+
+Performs a stable, adaptive sort. If _LIST_OPENMP_ is defined, then it will
+ try to parallelise; otherwise it is equivalent to calling `<T>List<U>Sort`
+ for all linked-lists with comparators. Requires one of _LIST_U[A-D]_COMPARATOR_
+ be set.
+
+order: \Omega(_this_.n), O(_this_.n log _this_.n)
+
+
+
+### <T>ListSetParam ###
+
+static void <T>ListSetParam(struct <T>List *const this,
+	void *const param)
+
+Sets the user-defined _param_ of _this_.
+
+order: \Theta(1)
+
+
+
+### <T>ListMigrate ###
+
+static void <T>ListMigrate(struct <T>List *const this,
+	struct <T>ListNode *const node)
+
+Use when one _node_ of _this_ has switched places in memory. If _this_ or
+ _node_ is null, doesn't do anything.
+
+order: \Theta(1)
+
+
+
+### <T>ListMigrateBlock ###
+
+static void <T>ListMigrateBlock(struct <T>List *const this,
+	void *const array, const size_t array_size, const void *const old_array)
+
+When _this_ contains elements from an array of/containing _<T>ListNode_ in
+ memory that switched from _old_array_ to _array_ with byte-size _array_size_.
+ If _this_, _array_, or _old_array_ is null, doesn't do anything.
+
+ Specifically, use when _this_ is (partially) backed with an array that has
+ changed places due to a _realloc_.
+
+order: \Theta(n)
+
+fixme: Relies on not-strictly-defined behaviour because pointers are not
+ necessarily contiguous in memory; it should be fine in practice.
+
+
+
+### <T>ListNode<U>GetNext ###
+
+static struct <T>ListNode * <T>ListNode<U>GetNext(struct <T>ListNode *const this)
+
+
+
+return: The next element after _this_ in _<U>_. When _this_ is the last
+ element or when _this_ is null, returns null.
+
+order: \Theta(1)
+
+
+
+### <T>ListNode<U>GetPrevious ###
+
+static struct <T>ListNode * <T>ListNode<U>GetPrevious(struct <T>ListNode *const this)
+
+
+
+return: The previous element before _this_ in _<U>_. When _this_ is the
+ first item or when _this_ is null, returns null.
+
+order: \Theta(1)
+
+
+
+### <T>List<U>GetFirst ###
+
+static struct <T>ListNode * <T>List<U>GetFirst(struct <T>List *const this)
+
+
+
+return: A pointer to the first element of _this_.
+
+order: \Theta(1)
+
+
+
+### <T>List<U>GetLast ###
+
+static struct <T>ListNode * <T>List<U>GetLast(struct <T>List *const this)
+
+
+
+return: A pointer to the last element of _this_.
+
+order: \Theta(1)
+
+
+
+### <T>List<U>Sort ###
+
+static void <T>List<U>Sort(struct <T>List *const this)
+
+Sorts _<U>_, but leaves the other lists in _<T>_ alone. Must have
+ _LIST_U[A-D]_COMPARATOR_ defined.
+
+order: \Omega(_this_.n), O(_this_.n log _this_.n)
+
+
+
+### <T>List<U>Compare ###
+
+static int <T>List<U>Compare(const struct <T>List *const this,
+	const struct <T>List *const that)
+
+Compares two linked-lists as sequences in the order specified by _<U>_.
+
+return: The first comparator that is not equal to zero, or 0 if they are
+ equal. Two null pointers are considered equal. Must have
+ _LIST_U[A-D]_COMPARATOR_ defined.
+
+implements: <<T>List>Comparator
+
+order: \Theta(min(_this_.n, _that_.n))
+
+
+
+### <T>List<U>TakeSubtraction ###
+
+static void <T>List<U>TakeSubtraction(struct <T>List *const this,
+	struct <T>List *const a, struct <T>List *const b)
+
+Appends _that_ with _b_ subtracted from _a_ as a sequence in _<U>_. If
+ _this_ is null, then it removes elements. Must have _LIST_U[A-D]_COMPARATOR_
+ defined.
+
+order: O(_a_.n + _b_.n)
+
+
+
+### <T>List<U>TakeUnion ###
+
+static void <T>List<U>TakeUnion(struct <T>List *const this,
+	struct <T>List *const a, struct <T>List *const b)
+
+Appends _this_ with the union of _a_ and _b_ as a sequence in _<U>_. Equal
+ elements are moved from _a_. If _this_ is null, then it removes elements. Must
+ have _LIST_U[A-D]_COMPARATOR_ defined.
+
+order: O(_a_.n + _b_.n)
+
+
+
+### <T>List<U>TakeIntersection ###
+
+static void <T>List<U>TakeIntersection(struct <T>List *const this,
+	struct <T>List *const a, struct <T>List *const b)
+
+Appends _this_ with the intersection of _a_ and _b_ as a sequence in _<U>_.
+ Equal elements are moved from _a_. If _this_ is null, then it removes elements.
+ Must have _LIST_U[A-D]_COMPARATOR_ defined.
+
+order: O(_a_.n + _b_.n)
+
+
+
+### <T>List<U>TakeXor ###
+
+static void <T>List<U>TakeXor(struct <T>List *const this,
+	struct <T>List *const a, struct <T>List *const b)
+
+Appends _this_ with _a_ exclusive-or _b_ as a sequence in _<U>_. Equal
+ elements are moved from _a_. If _this_ is null, then it removes elements. Must
+ have _LIST_U[A-D]_COMPARATOR_ defined.
+
+order: O(_a_.n + _b_.n)
+
+
+
+### <T>List<U>TakeIf ###
+
+static void <T>List<U>TakeIf(struct <T>List *const this,
+	struct <T>List *const from, const <T>Predicate predicate)
+
+Appends _this_ with _from_ if _predicate_ is null or true in the order
+ specified by _<U>_. If _this_ is null, then it removes elements.
+
+order: ~ \Theta(_this_.n) \times O(_predicate_)
+
+
+
+### <T>List<U>ForEach ###
+
+static void <T>List<U>ForEach(struct <T>List *const this,
+	const <T>Action action)
+
+Performs _action_ for each element in the list in the order specified by
+ _<U>_. For more flexibility, use `<T>List<U>ShortCircuit`, which takes a
+ _<T>Predicate_, and return true.
+
+order: ~ \Theta(_this_.n) \times O(_action_)
+
+
+
+### <T>List<U>ShortCircuit ###
+
+static struct <T>ListNode * <T>List<U>ShortCircuit(struct <T>List *const this, const <T>Predicate predicate)
+
+
+
+return: The first _<T>ListNode_ in the linked-list, ordered by _<U>_, that
+ causes the _predicate_ with _<T>_ as argument to return false, or null if the
+ _predicate_ is true for every case. If _this_ or _predicate_ is null, returns
+ null.
+
+order: ~ O(_this_.n) \times O(_predicate_)
+
+
+
+### <T>List<U>ToString ###
+
+static char * <T>List<U>ToString(const struct <T>List *const this)
+
+One can print 4 things at once before it overwrites. One must set
+ _LIST_TO_STRING_ to a function implementing _<T>ToString_ to get this
+ functionality.
+
+return: Prints the _this_ in a static buffer.
+
+order: \Theta(1); it has a 255 character limit; every element takes some of it.
+
+
+
+
