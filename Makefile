@@ -1,6 +1,6 @@
 # GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0
 
-PROJ  := Link
+PROJ  := List
 VA    := 1
 VB    := 0
 
@@ -57,7 +57,6 @@ endif
 # compiles the programme by default
 
 default: $(BDIR)/$(PROJ) $(DOCS)
-	# $^
 	# . . . success; executable is in $(BDIR)/$(PROJ)
 
 # linking

@@ -1,6 +1,6 @@
-/** Unit test of Link.c.
+/** Unit test of List.c.
 
- @file		TestLink
+ @file		TestList
  @author	Neil
  @std		C89/90
  @version	1.0; 2017-05
@@ -54,15 +54,15 @@ static void Foo_filler(struct Foo *const this) {
 	this->key = (int)(float)(rand() / (RAND_MAX + 1.0) * 99.0);
 	Orcish(this->value, sizeof this->value);
 }
-#define LINK_NAME Foo
-#define LINK_TYPE struct Foo
-#define LINK_A_NAME Key
-#define LINK_A_COMPARATOR &Foo_key_cmp
-#define LINK_B_NAME Value
-#define LINK_B_COMPARATOR &Foo_value_cmp
-#define LINK_TO_STRING &Foo_to_string
-#define LINK_TEST &Foo_filler
-#include "../src/Link.h"
+#define LIST_NAME Foo
+#define LIST_TYPE struct Foo
+#define LIST_A_NAME Key
+#define LIST_A_COMPARATOR &Foo_key_cmp
+#define LIST_B_NAME Value
+#define LIST_B_COMPARATOR &Foo_value_cmp
+#define LIST_TO_STRING &Foo_to_string
+#define LIST_TEST &Foo_filler
+#include "../src/List.h"
 
 /* Class {Int} is a single {int}. */
 /** @implements <Int>Comparator */
@@ -75,22 +75,22 @@ static void Int_to_string(const int *this, char (*const a)[12]) {
 	sprintf(*a, "%d", *this);
 }
 #if INT_MAX > 9999999999
-#define LINK_NUM_MAX 9999999999
+#define LIST_NUM_MAX 9999999999
 #else
-#define LINK_NUM_MAX INT_MAX
+#define LIST_NUM_MAX INT_MAX
 #endif
 /** @implements <Int>Action */
 static void Int_filler(int *const this) {
-	*this = (int)(float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) *LINK_NUM_MAX);
+	*this = (int)(float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) *LIST_NUM_MAX);
 }
-#undef LINK_NUM_MAX
-#define LINK_NAME Int
-#define LINK_TYPE int
-#define LINK_A_NAME N
-#define LINK_A_COMPARATOR &Int_N_cmp
-#define LINK_TO_STRING &Int_to_string
-#define LINK_TEST &Int_filler
-#include "../src/Link.h"
+#undef LIST_NUM_MAX
+#define LIST_NAME Int
+#define LIST_TYPE int
+#define LIST_A_NAME N
+#define LIST_A_COMPARATOR &Int_N_cmp
+#define LIST_TO_STRING &Int_to_string
+#define LIST_TEST &Int_filler
+#include "../src/List.h"
 
 /* Class {Colour} is an {enum}. */
 enum Colour { White, Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
@@ -111,12 +111,12 @@ static void Colour_to_string(const enum Colour *this, char (*const a)[12]) {
 static void Colour_filler(enum Colour *const this) {
 	*this = (enum Colour)(float)(rand() / (RAND_MAX + 1.0) * colour_size);
 }
-#define LINK_NAME Colour
-#define LINK_TYPE enum Colour
-#define LINK_A_NAME Declare
-#define LINK_TO_STRING &Colour_to_string
-#define LINK_TEST &Colour_filler
-#include "../src/Link.h"
+#define LIST_NAME Colour
+#define LIST_TYPE enum Colour
+#define LIST_A_NAME Declare
+#define LIST_TO_STRING &Colour_to_string
+#define LIST_TEST &Colour_filler
+#include "../src/List.h"
 
 /** {Animal} virtual functions. */
 struct AnimalVt;
@@ -145,25 +145,25 @@ static void Animal_filler(struct Animal *const this) {
 	this->vt = 0;
 	this->x  = (int)(198.0 * rand() / (RAND_MAX + 1.0) - 99.0);
 }
-#define LINK_NAME Animal
-#define LINK_TYPE struct Animal
-#define LINK_C_NAME Name
-#define LINK_C_COMPARATOR &Animal_name_cmp
-#define LINK_D_NAME X
-#define LINK_D_COMPARATOR &Animal_x_cmp
-#define LINK_TO_STRING &Animal_to_string
-#define LINK_TEST &Animal_filler
-#include "../src/Link.h"
+#define LIST_NAME Animal
+#define LIST_TYPE struct Animal
+#define LIST_C_NAME Name
+#define LIST_C_COMPARATOR &Animal_name_cmp
+#define LIST_D_NAME X
+#define LIST_D_COMPARATOR &Animal_x_cmp
+#define LIST_TO_STRING &Animal_to_string
+#define LIST_TEST &Animal_filler
+#include "../src/List.h"
 struct Sloth {
-	struct AnimalLinkNode animal;
+	struct AnimalListNode animal;
 	unsigned lazy;
 };
 struct Llama {
-	struct AnimalLinkNode animal;
+	struct AnimalListNode animal;
 	unsigned chomps;
 };
 struct Bear {
-	struct AnimalLinkNode animal;
+	struct AnimalListNode animal;
 	struct Animal *riding;
 };
 /** @implements <Animal>Action */
@@ -188,10 +188,10 @@ static const struct AnimalVt {
 	void (*const act)(struct Animal *const);
 } sloth_vt = { &sloth_act }, llama_vt = { &llama_act }, bear_vt = { &bear_act };
 /* the linked-list */
-static struct AnimalLink animals;
-static void Animal_init(struct AnimalLinkNode *const this) {
+static struct AnimalList animals;
+static void Animal_init(struct AnimalListNode *const this) {
 	Animal_filler((struct Animal *)this);
-	AnimalLinkAdd(&animals, this);
+	AnimalListAdd(&animals, this);
 }
 static void Sloth_init(struct Sloth *const sloth) {
 	Animal_init(&sloth->animal);
@@ -233,31 +233,31 @@ static void test_block_move(void) {
 	for(i = 0; i < sloths_size; i++) Sloth_init(sloths + i);
 	for(i = 0; i < llamas_size; i++) Llama_init(llamas + i);
 	for(i = 0; i < bears_size; i++)  Bear_init(bears + i, llamas, llamas_size);
-	printf("Unsorted: by name %s; by x %s.\n", AnimalLinkNameToString(&animals),
-		AnimalLinkXToString(&animals));
-	AnimalLinkSort(&animals);
-	printf("Sorted: by name %s; by x %s.\n", AnimalLinkNameToString(&animals),
-		AnimalLinkXToString(&animals));
+	printf("Unsorted: by name %s; by x %s.\n", AnimalListNameToString(&animals),
+		AnimalListXToString(&animals));
+	AnimalListSort(&animals);
+	printf("Sorted: by name %s; by x %s.\n", AnimalListNameToString(&animals),
+		AnimalListXToString(&animals));
 	printf("By name:\n");
-	AnimalLinkNameForEach(&animals, &act);
+	AnimalListNameForEach(&animals, &act);
 	printf("By x:\n");
-	AnimalLinkXForEach(&animals, &act);
-	link_Animal_in_order(&animals);
+	AnimalListXForEach(&animals, &act);
+	list_Animal_in_order(&animals);
 	memcpy(others, sloths, sizeof sloths);
 	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '!';
-	printf("Moved sloths: %s.\n", AnimalLinkNameToString(&animals));
-	AnimalLinkMigrateBlock(&animals, others, sizeof sloths, sloths);
-	printf("Block move: %s.\n", AnimalLinkNameToString(&animals));
+	printf("Moved sloths: %s.\n", AnimalListNameToString(&animals));
+	AnimalListMigrateBlock(&animals, others, sizeof sloths, sloths);
+	printf("Block move: %s.\n", AnimalListNameToString(&animals));
 	for(i = sloths_size; i < others_size; i++) Sloth_init(others + i);
-	printf("New sloths: %s.\n", AnimalLinkNameToString(&animals));
-	AnimalLinkSort(&animals);
-	printf("Sorted: by name %s; by x %s.\n", AnimalLinkNameToString(&animals),
-		AnimalLinkXToString(&animals));
+	printf("New sloths: %s.\n", AnimalListNameToString(&animals));
+	AnimalListSort(&animals);
+	printf("Sorted: by name %s; by x %s.\n", AnimalListNameToString(&animals),
+		AnimalListXToString(&animals));
 	printf("By name:\n");
-	AnimalLinkNameForEach(&animals, &act);
+	AnimalListNameForEach(&animals, &act);
 	printf("By x:\n");
-	AnimalLinkXForEach(&animals, &act);
-	link_Animal_in_order(&animals);
+	AnimalListXForEach(&animals, &act);
+	list_Animal_in_order(&animals);
 }
 
 /** Entry point.
@@ -266,10 +266,10 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	FooLinkTest();
-	IntLinkTest();
-	ColourLinkTest();
-	AnimalLinkTest();
+	FooListTest();
+	IntListTest();
+	ColourListTest();
+	AnimalListTest();
 	test_block_move();
 	printf("Test succeeded.\n\n");
 

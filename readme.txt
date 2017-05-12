@@ -4,10 +4,12 @@ neil dot edelman each mail dot mcgill dot ca
 
 Version 1.0.
 
-src/Link.h is a generic linked-list in C89/90. Makefile links it
-with the tests. See doc/Link.html for documentation. This is C;
-there is little value in using it in a C++ project, and it won't
-work, anyway.
+Defining T by LIST_TYPE, src/List.h makes available a generic,
+type-safe, <T>List: the head of linked-list(s) of <T>ListNode. These
+can potentially be part different structures. Makefile links it
+with the tests. See doc/List.html for documentation. This is C89+
+code; C++ has templates, and there is little value in using it in
+a C++ project.
 
 License:
 
