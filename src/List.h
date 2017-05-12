@@ -3,29 +3,29 @@
 
  {<T>List} stores doubly-linked-list(s) of {<T>ListNode}, of which data of
  type, {<T>}, must be set using {LIST_TYPE}. Supports one to four different
- linked-list orders in the same type, {[A, D]}, set using {LIST_[A-D]_NAME}.
- The preprocessor macros are all undefined at the end of the file for
- convenience when including multiple {List} types in the same file.
+ orders in the same type, {[A, D]}, set using {LIST_U[A-D]_NAME}. The
+ preprocessor macros are all undefined at the end of the file for convenience
+ when including multiple {List} types in the same file.
 
  The {<T>ListNode} storage is the responsibility of the caller. Specifically,
  it does not have to be contiguous, and it can be nestled in multiple, possibly
  different, structures. You can move (part) of the memory that is in an active
- {List} under some conditions, and still keep the integrity of the linked-list,
- by \see{<T>ListMigrate} or \see{<T>ListMigrateBlock}.
+ {List} under some conditions, and still keep the integrity of the linked-list;
+ see \see{<T>ListMigrate} or \see{<T>ListMigrateBlock}.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
  identifiers. Must each be present before including.
 
- @param LIST_[A-D]_NAME, LIST_[A-D]_COMPARATOR
- Each {LIST_[A-D]_NAME} literally becomes {<L>}. You can define an optional
- comparator, an equivalence relation function implementing {<T>Comparator}. For
- speed, it should be an inlined {static} function, if possible.
+ @param LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
+ Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order. You can define an
+ optional comparator, an equivalence relation function implementing
+ {<T>Comparator}.
 
  @param LIST_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
- \see{<T>List<L>ToString}.
+ \see{<T>List<U>ToString}.
 
  @param LIST_DYNAMIC_STORAGE
  This allocates {O(log n)} space needed for merge sort on the stack every time
@@ -54,9 +54,9 @@
  4996 not {C++11}.
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
  {padded}; {documentation}; {documentation-unknown-command} it's not quite
- {clang-tags}; 3.8 {disabled-macro-expansion} on {LIST_TEST}. */
+ {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}. */
 
-/* Tested with:
+/* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
  Apple clang version 1.7 (tags/Apple/clang-77) (based on LLVM 2.9svn)
  gcc version 4.9.2 (Debian 4.9.2-10)
@@ -69,7 +69,7 @@
 
 
 /* original #include in the user's C file, and not from calling recursively */
-#if !defined(LIST_L_NAME) /* <-- !LIST_L_NAME */
+#if !defined(LIST_U_NAME) /* <-- !LIST_U_NAME */
 
 
 
@@ -94,21 +94,21 @@
 #ifndef LIST_TYPE
 #error List generic LIST_TYPE undefined.
 #endif
-#if !defined(LIST_A_NAME) && !defined(LIST_B_NAME) \
-	&& !defined(LIST_C_NAME) && !defined(LIST_D_NAME)
-#error List: must have at least one of LIST_[A-D]_NAME.
+#if !defined(LIST_UA_NAME) && !defined(LIST_UB_NAME) \
+	&& !defined(LIST_UC_NAME) && !defined(LIST_UD_NAME)
+#error List: must have at least one of LIST_U[A-D]_NAME.
 #endif
-#if defined(LIST_A_COMPARATOR) && !defined(LIST_A_NAME)
-#error List: LIST_A_COMPARATOR requires LIST_A_NAME.
+#if defined(LIST_UA_COMPARATOR) && !defined(LIST_UA_NAME)
+#error List: LIST_UA_COMPARATOR requires LIST_UA_NAME.
 #endif
-#if defined(LIST_B_COMPARATOR) && !defined(LIST_B_NAME)
-#error List: LIST_B_COMPARATOR requires LIST_B_NAME.
+#if defined(LIST_UB_COMPARATOR) && !defined(LIST_UB_NAME)
+#error List: LIST_UB_COMPARATOR requires LIST_UB_NAME.
 #endif
-#if defined(LIST_C_COMPARATOR) && !defined(LIST_C_NAME)
-#error List: LIST_C_COMPARATOR requires LIST_C_NAME.
+#if defined(LIST_UC_COMPARATOR) && !defined(LIST_UC_NAME)
+#error List: LIST_UC_COMPARATOR requires LIST_UC_NAME.
 #endif
-#if defined(LIST_D_COMPARATOR) && !defined(LIST_D_NAME)
-#error List: LIST_D_COMPARATOR requires LIST_D_NAME.
+#if defined(LIST_UD_COMPARATOR) && !defined(LIST_UD_NAME)
+#error List: LIST_UD_COMPARATOR requires LIST_UD_NAME.
 #endif
 #if defined(LIST_TEST) && !defined(LIST_TO_STRING)
 #error LIST_TEST requires LIST_TO_STRING.
@@ -116,8 +116,8 @@
 #ifndef LIST_TEST
 #define NDEBUG
 #endif
-#if defined(LIST_A_COMPARATOR) || defined(LIST_B_COMPARATOR) \
-	|| defined(LIST_C_COMPARATOR) || defined(LIST_D_COMPARATOR)
+#if defined(LIST_UA_COMPARATOR) || defined(LIST_UB_COMPARATOR) \
+	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR)
 #define LIST_SOME_COMPARATOR
 #endif
 
@@ -126,7 +126,7 @@
 
 
 /* After this block, the preprocessor replaces T with LIST_TYPE, T_(X) with
- LIST_NAMEX, PRIVATE_T_(X) with LIST_L_NAME_X, and T_NAME with the string
+ LIST_NAMEX, PRIVATE_T_(X) with LIST_U_NAME_X, and T_NAME with the string
  version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
 #ifdef CAT
 #undef CAT
@@ -174,53 +174,53 @@ typedef LIST_TYPE PRIVATE_T_(Type);
 #define T PRIVATE_T_(Type)
 
 /* [A, D] */
-#ifdef LA_
-#undef LA_
-#undef T_LA_
-#undef PRIVATE_T_LA_
+#ifdef UA_
+#undef UA_
+#undef T_UA_
+#undef PRIVATE_T_UA_
 #endif
-#ifdef LB_
-#undef LB_
-#undef T_LB_
-#undef PRIVATE_T_LB_
+#ifdef UB_
+#undef UB_
+#undef T_UB_
+#undef PRIVATE_T_UB_
 #endif
-#ifdef LC_
-#undef LC_
-#undef T_LC_
-#undef PRIVATE_T_LC_
+#ifdef UC_
+#undef UC_
+#undef T_UC_
+#undef PRIVATE_T_UC_
 #endif
-#ifdef LD_
-#undef LD_
-#undef T_LD_
-#undef PRIVATE_T_LD_
+#ifdef UD_
+#undef UD_
+#undef T_UD_
+#undef PRIVATE_T_UD_
 #endif
-#ifdef LIST_A_NAME
-#define LA_(thing) PCAT(LIST_A_NAME, thing) /* data, exclusively */
-#define T_LA_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
-	CAT(LIST_A_NAME, thing2)) /* public fn's */
-#define PRIVATE_T_LA_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-	PCAT(LIST_A_NAME, thing2))) /* private fn's */
+#ifdef LIST_UA_NAME
+#define UA_(thing) PCAT(LIST_UA_NAME, thing) /* data, exclusively */
+#define T_UA_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
+	CAT(LIST_UA_NAME, thing2)) /* public fn's */
+#define PRIVATE_T_UA_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	PCAT(LIST_UA_NAME, thing2))) /* private fn's */
 #endif
-#ifdef LIST_B_NAME
-#define LB_(thing) PCAT(LIST_B_NAME, thing)
-#define T_LB_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
-	CAT(LIST_B_NAME, thing2))
-#define PRIVATE_T_LB_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-	PCAT(LIST_B_NAME, thing2)))
+#ifdef LIST_UB_NAME
+#define UB_(thing) PCAT(LIST_UB_NAME, thing)
+#define T_UB_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
+	CAT(LIST_UB_NAME, thing2))
+#define PRIVATE_T_UB_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	PCAT(LIST_UB_NAME, thing2)))
 #endif
-#ifdef LIST_C_NAME
-#define LC_(thing) PCAT(LIST_C_NAME, thing)
-#define T_LC_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
-	CAT(LIST_C_NAME, thing2))
-#define PRIVATE_T_LC_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-	PCAT(LIST_C_NAME, thing2)))
+#ifdef LIST_UC_NAME
+#define UC_(thing) PCAT(LIST_UC_NAME, thing)
+#define T_UC_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
+	CAT(LIST_UC_NAME, thing2))
+#define PRIVATE_T_UC_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	PCAT(LIST_UC_NAME, thing2)))
 #endif
-#ifdef LIST_D_NAME
-#define LD_(thing) PCAT(LIST_D_NAME, thing)
-#define T_LD_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
-	CAT(LIST_D_NAME, thing2))
-#define PRIVATE_T_LD_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-	PCAT(LIST_D_NAME, thing2)))
+#ifdef LIST_UD_NAME
+#define UD_(thing) PCAT(LIST_UD_NAME, thing)
+#define T_UD_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
+	CAT(LIST_UD_NAME, thing2))
+#define PRIVATE_T_UD_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	PCAT(LIST_UD_NAME, thing2)))
 #endif
 
 
@@ -228,7 +228,8 @@ typedef LIST_TYPE PRIVATE_T_(Type);
 /* constants across multiple includes in the same translation unit */
 #ifndef LIST_H /* <-- LIST_H */
 #define LIST_H
-/* combine_sets() operations bit-vector */
+/* combine_sets() operations bit-vector; dummy {LO_?}: {clang -Weverything}
+ complains that it is not closed under union, a very valid point. */
 enum ListOperation {
 	LO_SUBTRACTION_AB = 1,
 	LO_SUBTRACTION_BA = 2,
@@ -256,13 +257,16 @@ typedef int  (*T_(Predicate))(T *const, void *const);
  zero. Should do so forming an equivalence relation with respect to {T}. */
 typedef int  (*T_(Comparator))(const T *, const T *);
 
-#ifdef LIST_TO_STRING
+#ifdef LIST_TO_STRING /* <-- string */
+
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) */
 typedef void (*T_(ToString))(const T *const, char (*const)[12]);
+
 /* Check that {LIST_TO_STRING} is a function implementing {<T>ToString}. */
 static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
-#endif
+
+#endif /* string --> */
 
 
 
@@ -272,9 +276,9 @@ static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
  first element of {<T>ListNode}.
  \${|    <T>ListNode *node;
  |    T *t;
- |    for(node = <T>List<L>GetFirst(list);
+ |    for(node = <T>List<U>GetFirst(list);
  |        node;
- |        node = <T>ListNode<L>GetNext(node)) {
+ |        node = <T>ListNode<U>GetNext(node)) {
  |        t = (T *)node;
  |    }} or
  \${|    static void for_all_fn(T *const t) {
@@ -283,17 +287,17 @@ static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 struct T_(ListNode);
 struct T_(ListNode) {
 	T data; /* 1st so we can cast without the mess of {container_of} */
-#ifdef LIST_A_NAME
-	struct T_(ListNode) *LA_(prev), *LA_(next);
+#ifdef LIST_UA_NAME
+	struct T_(ListNode) *UA_(prev), *UA_(next);
 #endif
-#ifdef LIST_B_NAME
-	struct T_(ListNode) *LB_(prev), *LB_(next);
+#ifdef LIST_UB_NAME
+	struct T_(ListNode) *UB_(prev), *UB_(next);
 #endif
-#ifdef LIST_C_NAME
-	struct T_(ListNode) *LC_(prev), *LC_(next);
+#ifdef LIST_UC_NAME
+	struct T_(ListNode) *UC_(prev), *UC_(next);
 #endif
-#ifdef LIST_D_NAME
-	struct T_(ListNode) *LD_(prev), *LD_(next);
+#ifdef LIST_UD_NAME
+	struct T_(ListNode) *UD_(prev), *UD_(next);
 #endif
 };
 
@@ -302,17 +306,17 @@ struct T_(ListNode) {
  \see{<T>ListClear}. */
 struct T_(List);
 struct T_(List) {
-#ifdef LIST_A_NAME
-	struct T_(ListNode) *LA_(first), *LA_(last);
+#ifdef LIST_UA_NAME
+	struct T_(ListNode) *UA_(first), *UA_(last);
 #endif
-#ifdef LIST_B_NAME
-	struct T_(ListNode) *LB_(first), *LB_(last);
+#ifdef LIST_UB_NAME
+	struct T_(ListNode) *UB_(first), *UB_(last);
 #endif
-#ifdef LIST_C_NAME
-	struct T_(ListNode) *LC_(first), *LC_(last);
+#ifdef LIST_UC_NAME
+	struct T_(ListNode) *UC_(first), *UC_(last);
 #endif
-#ifdef LIST_D_NAME
-	struct T_(ListNode) *LD_(first), *LD_(last);
+#ifdef LIST_UD_NAME
+	struct T_(ListNode) *UD_(first), *UD_(last);
 #endif
 	void *param;
 };
@@ -325,38 +329,38 @@ static void PRIVATE_T_(add)(struct T_(List) *const this,
 static void PRIVATE_T_(remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
 
-/* Note to future self: recursive includes. The {LIST_L_NAME} pre-processor flag
- controls this behaviour; we are currently in the {!LIST_L_NAME} section. These
- will get all the functions with {<L>} in them. */
+/* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor flag
+ controls this behaviour; we are currently in the {!LIST_U_NAME} section. These
+ will get all the functions with {<U>} in them. */
 
-#ifdef LIST_A_NAME /* <-- a */
-#define LIST_L_NAME LIST_A_NAME
-#ifdef LIST_A_COMPARATOR /* <-- comp */
-#define LIST_L_COMPARATOR LIST_A_COMPARATOR
+#ifdef LIST_UA_NAME /* <-- a */
+#define LIST_U_NAME LIST_UA_NAME
+#ifdef LIST_UA_COMPARATOR /* <-- comp */
+#define LIST_U_COMPARATOR LIST_UA_COMPARATOR
 #endif /* comp --> */
 #include "List.h"
 #endif /* a --> */
 
-#ifdef LIST_B_NAME /* <-- b */
-#define LIST_L_NAME LIST_B_NAME
-#ifdef LIST_B_COMPARATOR /* <-- comp */
-#define LIST_L_COMPARATOR LIST_B_COMPARATOR
+#ifdef LIST_UB_NAME /* <-- b */
+#define LIST_U_NAME LIST_UB_NAME
+#ifdef LIST_UB_COMPARATOR /* <-- comp */
+#define LIST_U_COMPARATOR LIST_UB_COMPARATOR
 #endif /* comp --> */
 #include "List.h"
 #endif /* b --> */
 
-#ifdef LIST_C_NAME /* <-- c */
-#define LIST_L_NAME LIST_C_NAME
-#ifdef LIST_C_COMPARATOR /* <-- comp */
-#define LIST_L_COMPARATOR LIST_C_COMPARATOR
+#ifdef LIST_UC_NAME /* <-- c */
+#define LIST_U_NAME LIST_UC_NAME
+#ifdef LIST_UC_COMPARATOR /* <-- comp */
+#define LIST_U_COMPARATOR LIST_UC_COMPARATOR
 #endif /* comp --> */
 #include "List.h"
 #endif /* c --> */
 
-#ifdef LIST_D_NAME /* <-- d */
-#define LIST_L_NAME LIST_D_NAME
-#ifdef LIST_D_COMPARATOR /* <-- comp */
-#define LIST_L_COMPARATOR LIST_D_COMPARATOR
+#ifdef LIST_UD_NAME /* <-- d */
+#define LIST_U_NAME LIST_UD_NAME
+#ifdef LIST_UD_COMPARATOR /* <-- comp */
+#define LIST_U_COMPARATOR LIST_UD_COMPARATOR
 #endif /* comp --> */
 #include "List.h"
 #endif /* d --> */
@@ -368,17 +372,17 @@ static void PRIVATE_T_(add)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
-#ifdef LIST_A_NAME /* <-- a */
-	PRIVATE_T_LA_(list, add)(this, node);
+#ifdef LIST_UA_NAME /* <-- a */
+	PRIVATE_T_UA_(list, add)(this, node);
 #endif /* a --> */
-#ifdef LIST_B_NAME /* <-- b */
-	PRIVATE_T_LB_(list, add)(this, node);
+#ifdef LIST_UB_NAME /* <-- b */
+	PRIVATE_T_UB_(list, add)(this, node);
 #endif /* b --> */
-#ifdef LIST_C_NAME /* <-- c */
-	PRIVATE_T_LC_(list, add)(this, node);
+#ifdef LIST_UC_NAME /* <-- c */
+	PRIVATE_T_UC_(list, add)(this, node);
 #endif /* c --> */
-#ifdef LIST_D_NAME /* <-- d */
-	PRIVATE_T_LD_(list, add)(this, node);
+#ifdef LIST_UD_NAME /* <-- d */
+	PRIVATE_T_UD_(list, add)(this, node);
 #endif /* d --> */
 }
 
@@ -387,34 +391,34 @@ static void PRIVATE_T_(remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
-#ifdef LIST_A_NAME /* <-- a */
-	PRIVATE_T_LA_(list, remove)(this, node);
+#ifdef LIST_UA_NAME /* <-- a */
+	PRIVATE_T_UA_(list, remove)(this, node);
 #endif /* a --> */
-#ifdef LIST_B_NAME /* <-- b */
-	PRIVATE_T_LB_(list, remove)(this, node);
+#ifdef LIST_UB_NAME /* <-- b */
+	PRIVATE_T_UB_(list, remove)(this, node);
 #endif /* b --> */
-#ifdef LIST_C_NAME /* <-- c */
-	PRIVATE_T_LC_(list, remove)(this, node);
+#ifdef LIST_UC_NAME /* <-- c */
+	PRIVATE_T_UC_(list, remove)(this, node);
 #endif /* c --> */
-#ifdef LIST_D_NAME /* <-- d */
-	PRIVATE_T_LD_(list, remove)(this, node);
+#ifdef LIST_UD_NAME /* <-- d */
+	PRIVATE_T_UD_(list, remove)(this, node);
 #endif /* d --> */
 }
 
 /** Private: clear the list. */
 static void PRIVATE_T_(clear)(struct T_(List) *const this) {
 	assert(this);
-#ifdef LIST_A_NAME
-	this->LA_(first) = this->LA_(last) = 0;
+#ifdef LIST_UA_NAME
+	this->UA_(first) = this->UA_(last) = 0;
 #endif
-#ifdef LIST_B_NAME
-	this->LB_(first) = this->LB_(last) = 0;
+#ifdef LIST_UB_NAME
+	this->UB_(first) = this->UB_(last) = 0;
 #endif
-#ifdef LIST_C_NAME
-	this->LC_(first) = this->LC_(last) = 0;
+#ifdef LIST_UC_NAME
+	this->UC_(first) = this->UC_(last) = 0;
 #endif
-#ifdef LIST_D_NAME
-	this->LD_(first) = this->LD_(last) = 0;
+#ifdef LIST_UD_NAME
+	this->UD_(first) = this->UD_(last) = 0;
 #endif
 }
 
@@ -453,8 +457,8 @@ static void T_(ListRemove)(struct T_(List) *const this,
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
- removes elements. Unlike the {<T>List<L>Take*}, where the elements are
- re-ordered based on {<L>}, (they would not be in-place, otherwise,) this
+ removes elements. Unlike the {<T>List<U>Take*}, where the elements are
+ re-ordered based on {<U>}, (they would not be in-place, otherwise,) this
  function concatenates all the elements in each linked-list order.
  @order \Theta(1)
  @allow */
@@ -462,23 +466,23 @@ static void T_(ListTake)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	if(!from || from == this) return;
 	if(!this) { PRIVATE_T_(clear)(from); return; }
-#ifdef LIST_A_NAME /* <-- a */
-	PRIVATE_T_LA_(list, cat)(this, from);
+#ifdef LIST_UA_NAME /* <-- a */
+	PRIVATE_T_UA_(list, cat)(this, from);
 #endif /* a --> */
-#ifdef LIST_B_NAME /* <-- b */
-	PRIVATE_T_LB_(list, cat)(this, from);
+#ifdef LIST_UB_NAME /* <-- b */
+	PRIVATE_T_UB_(list, cat)(this, from);
 #endif /* b --> */
-#ifdef LIST_C_NAME /* <-- c */
-	PRIVATE_T_LC_(list, cat)(this, from);
+#ifdef LIST_UC_NAME /* <-- c */
+	PRIVATE_T_UC_(list, cat)(this, from);
 #endif /* c --> */
-#ifdef LIST_D_NAME /* <-- d */
-	PRIVATE_T_LD_(list, cat)(this, from);
+#ifdef LIST_UD_NAME /* <-- d */
+	PRIVATE_T_UD_(list, cat)(this, from);
 #endif /* d --> */
 }
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 /** Merges the elements into {this} from {from} in (local) order; concatenates
- all lists that don't have a {LIST_[A-D]_COMPARATOR}. If {this} is null, then
+ all lists that don't have a {LIST_U[A-D]_COMPARATOR}. If {this} is null, then
  it removes elements.
  @order O({this}.n + {from}.n)
  @allow */
@@ -490,52 +494,52 @@ static void T_(ListMerge)(struct T_(List) *const this,
 #pragma omp parallel sections
 #endif /* omp --> */
 	{
-#ifdef LIST_A_NAME /* <-- a */
-#ifdef LIST_A_COMPARATOR /* <-- comp */
+#ifdef LIST_UA_NAME /* <-- a */
+#ifdef LIST_UA_COMPARATOR /* <-- comp */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LA_(list, merge)(this, from);
+		PRIVATE_T_UA_(list, merge)(this, from);
 #else /* comp --><-- !comp */
-		PRIVATE_T_LA_(list, cat)(this, from);
+		PRIVATE_T_UA_(list, cat)(this, from);
 #endif /* !comp --> */
 #endif /* a --> */
-#ifdef LIST_B_NAME /* <-- b */
-#ifdef LIST_B_COMPARATOR /* <-- comp */
+#ifdef LIST_UB_NAME /* <-- b */
+#ifdef LIST_UB_COMPARATOR /* <-- comp */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LB_(list, merge)(this, from);
+		PRIVATE_T_UB_(list, merge)(this, from);
 #else /* comp --><-- !comp */
-		PRIVATE_T_LB_(list, cat)(this, from);
+		PRIVATE_T_UB_(list, cat)(this, from);
 #endif /* !comp --> */
 #endif /* b --> */
-#ifdef LIST_C_NAME /* <-- c */
-#ifdef LIST_C_COMPARATOR /* <-- comp */
+#ifdef LIST_UC_NAME /* <-- c */
+#ifdef LIST_UC_COMPARATOR /* <-- comp */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LC_(list, merge)(this, from);
+		PRIVATE_T_UC_(list, merge)(this, from);
 #else /* comp --><-- !comp */
-		PRIVATE_T_LC_(list, cat)(this, from);
+		PRIVATE_T_UC_(list, cat)(this, from);
 #endif /* !comp --> */
 #endif /* c --> */
-#ifdef LIST_D_NAME /* <-- d */
-#ifdef LIST_D_COMPARATOR /* <-- comp */
+#ifdef LIST_UD_NAME /* <-- d */
+#ifdef LIST_UD_COMPARATOR /* <-- comp */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LD_(list, merge)(this, from);
+		PRIVATE_T_UD_(list, merge)(this, from);
 #else /* comp --><-- !comp */
-		PRIVATE_T_LD_(list, cat)(this, from);
+		PRIVATE_T_UD_(list, cat)(this, from);
 #endif /* !comp --> */
 #endif /* d --> */
 	}
 }
 
 /** Performs a stable, adaptive sort. If {LIST_OPENMP} is defined, then it will
- try to parallelise; otherwise it is equivalent to calling \see{<T>List<L>Sort}
- for all linked-lists with comparators. Requires one of {LIST_[A-D]_COMPARATOR}
+ try to parallelise; otherwise it is equivalent to calling \see{<T>List<U>Sort}
+ for all linked-lists with comparators. Requires one of {LIST_U[A-D]_COMPARATOR}
  be set.
  @order \Omega({this}.n), O({this}.n log {this}.n)
  @allow */
@@ -545,29 +549,29 @@ static void T_(ListSort)(struct T_(List) *const this) {
 	#pragma omp parallel sections
 #endif /* omp --> */
 	{
-#ifdef LIST_A_COMPARATOR /* <-- a */
+#ifdef LIST_UA_COMPARATOR /* <-- a */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LA_(natural, sort)(this);
+		PRIVATE_T_UA_(natural, sort)(this);
 #endif /* a --> */
-#ifdef LIST_B_COMPARATOR /* <-- b */
+#ifdef LIST_UB_COMPARATOR /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LB_(natural, sort)(this);
+		PRIVATE_T_UB_(natural, sort)(this);
 #endif /* b --> */
-#ifdef LIST_C_COMPARATOR /* <-- c */
+#ifdef LIST_UC_COMPARATOR /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LC_(natural, sort)(this);
+		PRIVATE_T_UC_(natural, sort)(this);
 #endif /* c --> */
-#ifdef LIST_D_COMPARATOR /* <-- d */
+#ifdef LIST_UD_COMPARATOR /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LD_(natural, sort)(this);
+		PRIVATE_T_UD_(natural, sort)(this);
 #endif /* d --> */
 	}
 }
@@ -589,17 +593,17 @@ static void T_(ListSetParam)(struct T_(List) *const this,
 static void T_(ListMigrate)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	if(!this || !node) return;
-#ifdef LIST_A_NAME /* <-- a */
-	PRIVATE_T_LA_(list, migrate)(this, node);
+#ifdef LIST_UA_NAME /* <-- a */
+	PRIVATE_T_UA_(list, migrate)(this, node);
 #endif /* a --> */
-#ifdef LIST_B_NAME /* <-- b */
-	PRIVATE_T_LB_(list, migrate)(this, node);
+#ifdef LIST_UB_NAME /* <-- b */
+	PRIVATE_T_UB_(list, migrate)(this, node);
 #endif /* b --> */
-#ifdef LIST_C_NAME /* <-- c */
-	PRIVATE_T_LC_(list, migrate)(this, node);
+#ifdef LIST_UC_NAME /* <-- c */
+	PRIVATE_T_UC_(list, migrate)(this, node);
 #endif /* c --> */
-#ifdef LIST_D_NAME /* <-- d */
-	PRIVATE_T_LD_(list, migrate)(this, node);
+#ifdef LIST_UD_NAME /* <-- d */
+	PRIVATE_T_UD_(list, migrate)(this, node);
 #endif /* d --> */
 }
 
@@ -625,29 +629,29 @@ static void T_(ListMigrateBlock)(struct T_(List) *const this,
 	#pragma omp parallel sections
 #endif /* omp --> */
 	{
-#ifdef LIST_A_NAME /* <-- a */
+#ifdef LIST_UA_NAME /* <-- a */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LA_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_UA_(block, migrate)(this, cold, cold_end, delta);
 #endif /* a --> */
-#ifdef LIST_B_NAME /* <-- b */
+#ifdef LIST_UB_NAME /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LB_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_UB_(block, migrate)(this, cold, cold_end, delta);
 #endif /* b --> */
-#ifdef LIST_C_NAME /* <-- c */
+#ifdef LIST_UC_NAME /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LC_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_UC_(block, migrate)(this, cold, cold_end, delta);
 #endif /* c --> */
-#ifdef LIST_D_NAME /* <-- d */
+#ifdef LIST_UD_NAME /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_LD_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_UD_(block, migrate)(this, cold, cold_end, delta);
 #endif /* d --> */
 	}
 }
@@ -675,7 +679,7 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListMigrateBlock)(0, 0, (size_t)0, 0);
 	PRIVATE_T_(unused_coda)();
 }
-/** {clang}'s pre-processor is clever? */
+/** {clang}'s pre-processor is not fooled if you have one function. */
 static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 
 
@@ -691,29 +695,29 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 #ifdef LIST_FILLER
 #undef LIST_FILLER
 #endif
-#ifdef LIST_A_NAME
-#undef LIST_A_NAME
+#ifdef LIST_UA_NAME
+#undef LIST_UA_NAME
 #endif
-#ifdef LIST_A_COMPARATOR
-#undef LIST_A_COMPARATOR
+#ifdef LIST_UA_COMPARATOR
+#undef LIST_UA_COMPARATOR
 #endif
-#ifdef LIST_B_NAME
-#undef LIST_B_NAME
+#ifdef LIST_UB_NAME
+#undef LIST_UB_NAME
 #endif
-#ifdef LIST_B_COMPARATOR
-#undef LIST_B_COMPARATOR
+#ifdef LIST_UB_COMPARATOR
+#undef LIST_UB_COMPARATOR
 #endif
-#ifdef LIST_C_NAME
-#undef LIST_C_NAME
+#ifdef LIST_UC_NAME
+#undef LIST_UC_NAME
 #endif
-#ifdef LIST_C_COMPARATOR
-#undef LIST_C_COMPARATOR
+#ifdef LIST_UC_COMPARATOR
+#undef LIST_UC_COMPARATOR
 #endif
-#ifdef LIST_D_NAME
-#undef LIST_D_NAME
+#ifdef LIST_UD_NAME
+#undef LIST_UD_NAME
 #endif
-#ifdef LIST_D_COMPARATOR
-#undef LIST_D_COMPARATOR
+#ifdef LIST_UD_COMPARATOR
+#undef LIST_UD_COMPARATOR
 #endif
 #ifdef LIST_DYNAMIC_STORAGE
 #undef LIST_DYNAMIC_STORAGE
@@ -735,111 +739,111 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 
 
 
-#else /* !LIST_L_NAME --><-- LIST_L_NAME
+#else /* !LIST_U_NAME --><-- LIST_U_NAME
 
  Internally #included.
 
- @param LIST_L_NAME: A unique name of the linked list; required;
- @param LIST_L_COMPARATOR: an optional comparator. */
+ @param LIST_U_NAME: A unique name of the linked list; required;
+ @param LIST_U_COMPARATOR: an optional comparator. */
 
 
 
 
 
 /* After this block, the preprocessor replaces T_M_(X, Y) with
- LIST_NAMEXLIST_L_NAMEY, PRIVATE_T_M_(X, Y) with
- list_LIST_L_NAME_X_LIST_L_NAME_Y */
-#ifdef T_L_
-#undef T_L_
+ LIST_NAMEXLIST_U_NAMEY, PRIVATE_T_M_(X, Y) with
+ list_LIST_U_NAME_X_LIST_U_NAME_Y */
+#ifdef T_U_
+#undef T_U_
 #endif
-#ifdef PRIVATE_T_L_
-#undef PRIVATE_T_L_
+#ifdef PRIVATE_T_U_
+#undef PRIVATE_T_U_
 #endif
-#ifdef L_
-#undef L_
+#ifdef U_
+#undef U_
 #endif
-#define T_L_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
-	CAT(LIST_L_NAME, thing2))
-#define PRIVATE_T_L_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-	PCAT(LIST_L_NAME, thing2)))
-#define L_(thing) PCAT(LIST_L_NAME, thing)
+#define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
+	CAT(LIST_U_NAME, thing2))
+#define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	PCAT(LIST_U_NAME, thing2)))
+#define U_(thing) PCAT(LIST_U_NAME, thing)
 
 
 
-/** Private: add to {this.last} in {<L>}. */
-static void PRIVATE_T_L_(list, add)(struct T_(List) *const this,
+/** Private: add to {this.last} in {<U>}. */
+static void PRIVATE_T_U_(list, add)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
-	node->L_(prev) = this->L_(last);
-	node->L_(next) = 0;
-	if(this->L_(last)) {
-		this->L_(last)->L_(next) = node;
+	node->U_(prev) = this->U_(last);
+	node->U_(next) = 0;
+	if(this->U_(last)) {
+		this->U_(last)->U_(next) = node;
 	} else {
-		assert(!this->L_(first));
-		this->L_(first) = node;
+		assert(!this->U_(first));
+		this->U_(first) = node;
 	}
-	this->L_(last) = node;
+	this->U_(last) = node;
 }
 
-/** Private: list remove in {<L>}. */
-static void PRIVATE_T_L_(list, remove)(struct T_(List) *const this,
+/** Private: list remove in {<U>}. */
+static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
-	if(node->L_(prev)) {
-		node->L_(prev)->L_(next) = node->L_(next);
+	if(node->U_(prev)) {
+		node->U_(prev)->U_(next) = node->U_(next);
 	} else {
-		assert(this->L_(first) == node);
-		this->L_(first) = node->L_(next);
+		assert(this->U_(first) == node);
+		this->U_(first) = node->U_(next);
 	}
-	if(node->L_(next)) {
-		node->L_(next)->L_(prev) = node->L_(prev);
+	if(node->U_(next)) {
+		node->U_(next)->U_(prev) = node->U_(prev);
 	} else {
-		assert(this->L_(last) == node);
-		this->L_(last) = node->L_(prev);
+		assert(this->U_(last) == node);
+		this->U_(last) = node->U_(prev);
 	}
 }
 
 /** Private: cats all {from} to the tail of {this}; {from} will be empty after.
  @order \Theta(1) */
-static void PRIVATE_T_L_(list, cat)(struct T_(List) *const this,
+static void PRIVATE_T_U_(list, cat)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	assert(this);
 	assert(from);
-	assert(!this->L_(first) == !this->L_(last));
-	assert(!from->L_(first) == !from->L_(last));
-	if(!from->L_(first)) {        /* there is nothing in {from} */
+	assert(!this->U_(first) == !this->U_(last));
+	assert(!from->U_(first) == !from->U_(last));
+	if(!from->U_(first)) {        /* there is nothing in {from} */
 		return;
-	} else if(!this->L_(first)) { /* there is nothing in {this} */
-		this->L_(first) = from->L_(first);
+	} else if(!this->U_(first)) { /* there is nothing in {this} */
+		this->U_(first) = from->U_(first);
 	} else {                      /* there is something in both */
-		this->L_(last)->L_(next) = from->L_(first);
+		this->U_(last)->U_(next) = from->U_(first);
 	}
-	this->L_(last) = from->L_(last);
-	from->L_(first) = from->L_(last) = 0;
+	this->U_(last) = from->U_(last);
+	from->U_(first) = from->U_(last) = 0;
 }
 
 /** Private: when you've moved in memory just one thing. */
-static void PRIVATE_T_L_(list, migrate)(struct T_(List) *const this,
+static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
-	if(node->L_(prev)) {
-		node->L_(prev)->L_(next) = node;
+	if(node->U_(prev)) {
+		node->U_(prev)->U_(next) = node;
 	} else {
-		this->L_(first) = node;
+		this->U_(first) = node;
 	}
-	if(node->L_(next)) {
-		node->L_(next)->L_(prev) = node;
+	if(node->U_(next)) {
+		node->U_(next)->U_(prev) = node;
 	} else {
-		this->L_(last) = node;
+		this->U_(last) = node;
 	}
 }
 
-/** Private: used in \see{_<T>_block_<L>_migrate}.
+/** Private: used in \see{_<T>_block_<U>_migrate}.
  \${ptr \in [begin, end) -> ptr += delta}. */
-static void PRIVATE_T_L_(block, migrate_node)(
+static void PRIVATE_T_U_(block, migrate_node)(
 	struct T_(ListNode) **const node_ptr,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	const void *const ptr = *node_ptr;
@@ -852,64 +856,64 @@ static void PRIVATE_T_L_(block, migrate_node)(
  @param [begin, end): Where the pointers have changed.
  @param delta: the offset they have moved to in memory bytes.
  @order \Theta(n) */
-static void PRIVATE_T_L_(block, migrate)(struct T_(List) *const this,
+static void PRIVATE_T_U_(block, migrate)(struct T_(List) *const this,
 	const void *const begin, const void *const end, const ptrdiff_t delta) {
 	struct T_(ListNode) *node;
 	assert(this);
 	assert(begin);
 	assert(begin < end);
 	assert(delta);
-	assert(!this->L_(first) == !this->L_(last));
+	assert(!this->U_(first) == !this->U_(last));
 	/* empty -- done */
-	if(!this->L_(first)) return;
+	if(!this->U_(first)) return;
 	/* first and last pointer of {<T>List} */
-	PRIVATE_T_L_(block, migrate_node)(&this->L_(first), begin, end, delta);
-	PRIVATE_T_L_(block, migrate_node)(&this->L_(last),  begin, end, delta);
+	PRIVATE_T_U_(block, migrate_node)(&this->U_(first), begin, end, delta);
+	PRIVATE_T_U_(block, migrate_node)(&this->U_(last),  begin, end, delta);
 	/* all the others' {<T>ListNode} */
-	for(node = this->L_(first); node; node = node->L_(next)) {
-		PRIVATE_T_L_(block, migrate_node)(&node->L_(prev), begin, end, delta);
-		PRIVATE_T_L_(block, migrate_node)(&node->L_(next), begin, end, delta);
+	for(node = this->U_(first); node; node = node->U_(next)) {
+		PRIVATE_T_U_(block, migrate_node)(&node->U_(prev), begin, end, delta);
+		PRIVATE_T_U_(block, migrate_node)(&node->U_(next), begin, end, delta);
 	}
 }
 
 
-/** @return The next element after {this} in {<L>}. When {this} is the last
+/** @return The next element after {this} in {<U>}. When {this} is the last
  element or when {this} is null, returns null.
  @order \Theta(1)
  @allow */
-static struct T_(ListNode) *T_L_(ListNode, GetNext)(
+static struct T_(ListNode) *T_U_(ListNode, GetNext)(
 	struct T_(ListNode) *const this) {
 	if(!this) return 0;
-	return this->L_(next);
+	return this->U_(next);
 }
 
-/** @return The previous element before {this} in {<L>}. When {this} is the
+/** @return The previous element before {this} in {<U>}. When {this} is the
  first item or when {this} is null, returns null.
  @order \Theta(1)
  @allow */
-static struct T_(ListNode) *T_L_(ListNode, GetPrevious)(
+static struct T_(ListNode) *T_U_(ListNode, GetPrevious)(
 	struct T_(ListNode) *const this) {
 	if(!this) return 0;
-	return this->L_(prev);
+	return this->U_(prev);
 }
 
 /** @return A pointer to the first element of {this}.
  @order \Theta(1)
  @allow */
-static struct T_(ListNode) *T_L_(List, GetFirst)(struct T_(List) *const this) {
+static struct T_(ListNode) *T_U_(List, GetFirst)(struct T_(List) *const this) {
 	if(!this) return 0;
-	return this->L_(first);
+	return this->U_(first);
 }
 
 /** @return A pointer to the last element of {this}.
  @order \Theta(1)
  @allow */
-static struct T_(ListNode) *T_L_(List, GetLast)(struct T_(List) *const this) {
+static struct T_(ListNode) *T_U_(List, GetLast)(struct T_(List) *const this) {
 	if(!this) return 0;
-	return this->L_(last);
+	return this->U_(last);
 }
 
-#ifdef LIST_L_COMPARATOR /* <-- comp */
+#ifdef LIST_U_COMPARATOR /* <-- comp */
 
 #ifndef LIST_SORT_INTERNALS /* <!-- sort internals only once per translation
  unit */
@@ -933,47 +937,47 @@ struct PRIVATE_T_(Runs) {
 };
 #endif /* sort internals --> */
 
-/* Check that each of LIST_[A-D]_COMPARATOR are functions implementing
+/* Check that each of LIST_U[A-D]_COMPARATOR are functions implementing
  {<T>Comparator}. */
-static const T_(Comparator) PRIVATE_T_L_(data, cmp) = (LIST_L_COMPARATOR);
+static const T_(Comparator) PRIVATE_T_U_(data, cmp) = (LIST_U_COMPARATOR);
 
 /** Private: merges {from} into {this} when we don't know anything about the
  data; on equal elements, places {this} first.
  @order {O(n + m)}. */
-static void PRIVATE_T_L_(list, merge)(struct T_(List) *const this,
+static void PRIVATE_T_U_(list, merge)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	struct T_(ListNode) *a, *b; /* {a} ~ {this}, {b} ~ {from} */
 	assert(this);
 	assert(from);
-	if(!(b = from->L_(first))) {
+	if(!(b = from->U_(first))) {
 		/* {from} empty; declare success */
 		return;
-	} else if(!(a = this->L_(first))) {
+	} else if(!(a = this->U_(first))) {
 		/* assignment */
-		this->L_(first) = from->L_(first), this->L_(last) = from->L_(last);
+		this->U_(first) = from->U_(first), this->U_(last) = from->U_(last);
 	} else {
 		/* merge */
 		struct T_(ListNode) nemo, *const first = &nemo, *last = first;
 		for( ; ; ) {
-			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) < 0) {
-				a->L_(prev) = last, last = last->L_(next) = a;
-				if(!(a = a->L_(next)))
-					{ b->L_(prev) = last, last->L_(next) = b,
-					this->L_(last) = from->L_(last); break; }
+			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) < 0) {
+				a->U_(prev) = last, last = last->U_(next) = a;
+				if(!(a = a->U_(next)))
+					{ b->U_(prev) = last, last->U_(next) = b,
+					this->U_(last) = from->U_(last); break; }
 			} else {
-				b->L_(prev) = last, last = last->L_(next) = b;
-				if(!(b = b->L_(next)))
-					{ a->L_(prev) = last, last->L_(next) = a; break; }
+				b->U_(prev) = last, last = last->U_(next) = b;
+				if(!(b = b->U_(next)))
+					{ a->U_(prev) = last, last->U_(next) = a; break; }
 			}
-			this->L_(first) = nemo.L_(next);
+			this->U_(first) = nemo.U_(next);
 		}
 	}
-	from->L_(first) = from->L_(last) = 0;
+	from->U_(first) = from->U_(last) = 0;
 }
 
 #ifndef LIST_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls
  exactly this function concurrently */
-static struct PRIVATE_T_(Runs) PRIVATE_T_L_(runs, elem);
+static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
 #endif /* not dynamic --> */
 
 /** Inserts the first element from the larger of two sorted runs, then merges
@@ -984,7 +988,7 @@ static struct PRIVATE_T_(Runs) PRIVATE_T_L_(runs, elem);
  insertion times that to well in standard merging. However, it's (potentially
  much) faster when the keys have structure: observed, {[-2%, 500%]}. Assumes
  array contains at least 2 elements and there are at least two runs. */
-static void PRIVATE_T_L_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
+static void PRIVATE_T_U_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 	struct PRIVATE_T_(Run) *const run_a = r->run + r->run_no - 2;
 	struct PRIVATE_T_(Run) *const run_b = run_a + 1;
 	struct T_(ListNode) *a = run_a->tail, *b = run_b->head, *chosen;
@@ -999,42 +1003,42 @@ static void PRIVATE_T_L_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 
 		/* insert the first element of b downwards into a */
 		for( ; ; ) {
-			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) <= 0) {
+			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) <= 0) {
 				chosen = a;
-				a = a->L_(next);
+				a = a->U_(next);
 				break;
 			}
-			if(!a->L_(prev)) {
+			if(!a->U_(prev)) {
 				run_a->head = run_b->head;
 				chosen = b;
-				b = b->L_(next);
+				b = b->U_(next);
 				break;
 			}
-			a = a->L_(prev);
+			a = a->U_(prev);
 		}
 
 		/* merge upwards, while the lists are interleaved */
-		while(chosen->L_(next)) {
+		while(chosen->U_(next)) {
 			prev_chosen = chosen;
-			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) > 0) {
+			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) > 0) {
 				chosen = b;
-				b = b->L_(next);
+				b = b->U_(next);
 			} else {
 				chosen = a;
-				a = a->L_(next);
+				a = a->U_(next);
 			}
-			prev_chosen->L_(next) = chosen;
-			chosen->L_(prev) = prev_chosen;
+			prev_chosen->U_(next) = chosen;
+			chosen->U_(prev) = prev_chosen;
 		}
 
 		/* splice the one list left */
 		if(!a) {
-			b->L_(prev) = chosen;
-			chosen->L_(next) = b;
+			b->U_(prev) = chosen;
+			chosen->U_(next) = b;
 			run_a->tail = run_b->tail;
 		} else {
-			a->L_(prev) = chosen;
-			chosen->L_(next) = a;
+			a->U_(prev) = chosen;
+			chosen->U_(next) = a;
 		}
 
 	} else {
@@ -1045,44 +1049,44 @@ static void PRIVATE_T_L_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 
 		/* insert the last element of a upwards into b */
 		for( ; ; ) {
-			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) <= 0) {
+			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) <= 0) {
 				chosen = b;
-				b = b->L_(prev);
+				b = b->U_(prev);
 				break;
 			}
 			/* here, a > b */
-			if(!b->L_(next)) {
+			if(!b->U_(next)) {
 				is_a_tail = -1;
 				chosen = a;
-				a = a->L_(prev);
+				a = a->U_(prev);
 				break;
 			}
-			b = b->L_(next);
+			b = b->U_(next);
 		}
 		if(!is_a_tail) run_a->tail = run_b->tail;
 
 		/* merge downwards, while the lists are interleaved */
-		while(chosen->L_(prev)) {
+		while(chosen->U_(prev)) {
 			next_chosen = chosen;
-			if(PRIVATE_T_L_(data, cmp)(&a->data, &b->data) > 0) {
+			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) > 0) {
 				chosen = a;
-				a = a->L_(prev);
+				a = a->U_(prev);
 			} else {
 				chosen = b;
-				b = b->L_(prev);
+				b = b->U_(prev);
 			}
-			next_chosen->L_(prev) = chosen;
-			chosen->L_(next) = next_chosen;
+			next_chosen->U_(prev) = chosen;
+			chosen->U_(next) = next_chosen;
 		}
 
 		/* splice the one list left */
 		if(!a) {
-			b->L_(next) = chosen;
-			chosen->L_(prev) = b;
+			b->U_(next) = chosen;
+			chosen->U_(prev) = b;
 			run_a->head = run_b->head;
 		} else {
-			a->L_(next) = chosen;
-			chosen->L_(prev) = a;
+			a->U_(next) = chosen;
+			chosen->U_(prev) = a;
 		}
 
 	}
@@ -1095,9 +1099,9 @@ static void PRIVATE_T_L_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
  useless compares and I question whether a strict Pascal's triangle-shape
  would be optimum, or whether a long run should be put off merging until
  short runs have finished; it is quite simple as it is. */
-static void PRIVATE_T_L_(natural, sort)(struct T_(List) *const this) {
+static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
 #ifdef LIST_DYNAMIC_STORAGE /* <-- dynamic: this is potentially half-a-KB */
-	static struct PRIVATE_T_(Runs) PRIVATE_T_L_(runs, elem);
+	static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
 #endif /* dynamic --> */
 	/* new_run is an index into list_runs, a temporary sorting structure;
 	 head is first smallest, tail is last largest */
@@ -1113,21 +1117,21 @@ static void PRIVATE_T_L_(natural, sort)(struct T_(List) *const this) {
 	int comp;
 
 	/* ensure we have an 'a' */
-	if(!(a = this->L_(first))) return;
+	if(!(a = this->U_(first))) return;
 
 	/* reset the state machine and output to just 'a' in the first run */
 	mono = UNSURE;
-	PRIVATE_T_L_(runs, elem).run_no = 1;
-	new_run = PRIVATE_T_L_(runs,elem).run + 0, run_count = 1;
+	PRIVATE_T_U_(runs, elem).run_no = 1;
+	new_run = PRIVATE_T_U_(runs,elem).run + 0, run_count = 1;
 	new_run->size = 1;
 	first_iso_a = new_run->head = new_run->tail = a;
 
-	for(b = a->L_(next); b; a = b, b = c) {
+	for(b = a->U_(next); b; a = b, b = c) {
 
 		/* b.next can be modified, and we always want the iteration original */
-		c = b->L_(next);
+		c = b->U_(next);
 
-		comp = PRIVATE_T_L_(data, cmp)(&a->data, &b->data);
+		comp = PRIVATE_T_U_(data, cmp)(&a->data, &b->data);
 
 		/* state machine that considers runs in both directions -- in practice,
 		 slightly slower than only considering increasing runs on most cases;
@@ -1142,8 +1146,8 @@ static void PRIVATE_T_L_(natural, sort)(struct T_(List) *const this) {
 		} else if(comp > 0) { /* decreasing; reverse preserving stability */
 			if(mono != INCREASING) { /* if increasing, inflection */
 				mono = DECREASING;
-				b->L_(next) = first_iso_a;
-				first_iso_a->L_(prev) = b;
+				b->U_(next) = first_iso_a;
+				first_iso_a->U_(prev) = b;
 				new_run->head = first_iso_a = b;
 				new_run->size++;
 				continue;
@@ -1151,11 +1155,11 @@ static void PRIVATE_T_L_(natural, sort)(struct T_(List) *const this) {
 			new_run->tail = a; /* terminating an increasing sequence */
 		} else { /* a == b */
 			if(mono == DECREASING) { /* extend */
-				struct T_(ListNode) *const a_next = a->L_(next);
-				b->L_(next) = a_next;
-				a_next->L_(prev) = b;
-				a->L_(next) = b;
-				b->L_(prev) = a;
+				struct T_(ListNode) *const a_next = a->U_(next);
+				b->U_(next) = a_next;
+				a_next->U_(prev) = b;
+				a->U_(next) = b;
+				b->U_(prev) = a;
 			} else { /* weakly increasing */
 				new_run->tail = b;
 			}
@@ -1163,47 +1167,47 @@ static void PRIVATE_T_L_(natural, sort)(struct T_(List) *const this) {
 			continue;
 		}
 		/* head and tail don't necessarily correspond to the first and last */
-		new_run->head->L_(prev) = new_run->tail->L_(next) = 0;
+		new_run->head->U_(prev) = new_run->tail->U_(next) = 0;
 
 		/* greedy merge: keeps space to O(log n) instead of O(n) */
-		for(rc=run_count; !(rc & 1)&&PRIVATE_T_L_(runs,elem).run_no>=2; rc >>=1)
-			PRIVATE_T_L_(natural, merge)(&PRIVATE_T_L_(runs,elem));
+		for(rc=run_count; !(rc & 1)&&PRIVATE_T_U_(runs,elem).run_no>=2; rc >>=1)
+			PRIVATE_T_U_(natural, merge)(&PRIVATE_T_U_(runs,elem));
 		/* reset the state machine and output to just 'b' at the next run */
 		mono = UNSURE;
-		new_run = PRIVATE_T_L_(runs,elem).run +
-			PRIVATE_T_L_(runs,elem).run_no++, run_count++;
+		new_run = PRIVATE_T_U_(runs,elem).run +
+			PRIVATE_T_U_(runs,elem).run_no++, run_count++;
 		new_run->size = 1;
 		new_run->head = new_run->tail = first_iso_a = b;
 	}
 
 	/* terminating the last increasing sequence */
 	if(mono == INCREASING) new_run->tail = a;
-		new_run->tail->L_(next) = new_run->head->L_(prev) = 0;
+		new_run->tail->U_(next) = new_run->head->U_(prev) = 0;
 
 	/* clean up the rest; when only one run, propagate list_runs[0] to head */
-	while(PRIVATE_T_L_(runs, elem).run_no > 1)
-		PRIVATE_T_L_(natural, merge)(&PRIVATE_T_L_(runs, elem));
-	this->L_(first) = PRIVATE_T_L_(runs, elem).run[0].head;
-	this->L_(last)  = PRIVATE_T_L_(runs, elem).run[0].tail;
+	while(PRIVATE_T_U_(runs, elem).run_no > 1)
+		PRIVATE_T_U_(natural, merge)(&PRIVATE_T_U_(runs, elem));
+	this->U_(first) = PRIVATE_T_U_(runs, elem).run[0].head;
+	this->U_(last)  = PRIVATE_T_U_(runs, elem).run[0].tail;
 }
 
-/** Sorts {<L>}, but leaves the other lists in {<T>} alone. Must have
- {LIST_[A-D]_COMPARATOR} defined.
+/** Sorts {<U>}, but leaves the other lists in {<T>} alone. Must have
+ {LIST_U[A-D]_COMPARATOR} defined.
  @order \Omega({this}.n), O({this}.n log {this}.n)
  @allow */
-static void T_L_(List, Sort)(struct T_(List) *const this) {
+static void T_U_(List, Sort)(struct T_(List) *const this) {
 	if(!this) return;
-	PRIVATE_T_L_(natural, sort)(this);
+	PRIVATE_T_U_(natural, sort)(this);
 }
 
-/** Compares two linked-lists as sequences in the order specified by {<L>}.
+/** Compares two linked-lists as sequences in the order specified by {<U>}.
  @return The first comparator that is not equal to zero, or 0 if they are
  equal. Two null pointers are considered equal. Must have
- {LIST_[A-D]_COMPARATOR} defined.
+ {LIST_U[A-D]_COMPARATOR} defined.
  @order \Theta(min({this}.n, {that}.n))
  @implements <<T>List>Comparator
  @allow */
-static int T_L_(List, Compare)(const struct T_(List) *const this,
+static int T_U_(List, Compare)(const struct T_(List) *const this,
 	const struct T_(List) *const that) {
 	struct T_(ListNode) *a, *b;
 	int diff;
@@ -1214,13 +1218,13 @@ static int T_L_(List, Compare)(const struct T_(List) *const this,
 		return 1;
 	}
 	/* compare element by element */
-	for(a = this->L_(first), b = that->L_(first); ;
-		a = a->L_(next), b = b->L_(next)) {
+	for(a = this->U_(first), b = that->U_(first); ;
+		a = a->U_(next), b = b->U_(next)) {
 		if(!a) {
 			return b ? -1 : 0;
 		} else if(!b) {
 			return 1;
-		} else if((diff = PRIVATE_T_L_(data, cmp)(&a->data, &b->data))) {
+		} else if((diff = PRIVATE_T_U_(data, cmp)(&a->data, &b->data))) {
 			return diff;
 		}
 	}
@@ -1228,28 +1232,28 @@ static int T_L_(List, Compare)(const struct T_(List) *const this,
 
 /** Private: {this <- a \mask b}. Prefers {a} to {b} when equal.
  @order O({a}.n + {b}.n) */
-static void PRIVATE_T_L_(boolean, seq)(struct T_(List) *const this,
+static void PRIVATE_T_U_(boolean, seq)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b,
 	const enum ListOperation mask) {
-	struct T_(ListNode) *ai = a ? a->L_(first) : 0, *bi = b ? b->L_(first) : 0,
+	struct T_(ListNode) *ai = a ? a->U_(first) : 0, *bi = b ? b->U_(first) : 0,
 		*t; /* iterator, temp */
 	int comp; /* comparator */
 	while(ai && bi) {
-		comp = PRIVATE_T_L_(data, cmp)(&ai->data, &bi->data);
+		comp = PRIVATE_T_U_(data, cmp)(&ai->data, &bi->data);
 		if(comp < 0) {
-			t = ai, ai = ai->L_(next);
+			t = ai, ai = ai->U_(next);
 			if(mask & LO_SUBTRACTION_AB) {
 				PRIVATE_T_(remove)(a, t);
 				if(this) PRIVATE_T_(add)(this, t);
 			}
 		} else if(comp > 0) {
-			t = bi, bi = bi->L_(next);
+			t = bi, bi = bi->U_(next);
 			if(mask & LO_SUBTRACTION_BA) {
 				PRIVATE_T_(remove)(b, t);
 				if(this) PRIVATE_T_(add)(this, t);
 			}
 		} else {
-			t = ai, ai = ai->L_(next), bi = bi->L_(next);
+			t = ai, ai = ai->U_(next), bi = bi->U_(next);
 			if(mask & LO_INTERSECTION) {
 				PRIVATE_T_(remove)(a, t);
 				if(this) PRIVATE_T_(add)(this, t);
@@ -1258,74 +1262,74 @@ static void PRIVATE_T_L_(boolean, seq)(struct T_(List) *const this,
 	}
 	if(mask & LO_DEFAULT_A) {
 		while(ai) {
-			t = ai, ai = ai->L_(next);
+			t = ai, ai = ai->U_(next);
 			PRIVATE_T_(remove)(a, t);
 			if(this) PRIVATE_T_(add)(this, t);
 		}
 	}
 	if((mask & LO_DEFAULT_B)) {
 		while(bi) {
-			t = bi, bi = bi->L_(next);
+			t = bi, bi = bi->U_(next);
 			PRIVATE_T_(remove)(b, t);
 			if(this) PRIVATE_T_(add)(this, t);
 		}
 	}
 }
 
-/** Appends {that} with {b} subtracted from {a} as a sequence in {<L>}. If
- {this} is null, then it removes elements. Must have {LIST_[A-D]_COMPARATOR}
+/** Appends {that} with {b} subtracted from {a} as a sequence in {<U>}. If
+ {this} is null, then it removes elements. Must have {LIST_U[A-D]_COMPARATOR}
  defined.
  @order O({a}.n + {b}.n)
  @allow */
-static void T_L_(List, TakeSubtraction)(struct T_(List) *const this,
+static void T_U_(List, TakeSubtraction)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b) {
-	PRIVATE_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB |LO_DEFAULT_A);
+	PRIVATE_T_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB |LO_DEFAULT_A);
 }
 
-/** Appends {this} with the union of {a} and {b} as a sequence in {<L>}. Equal
+/** Appends {this} with the union of {a} and {b} as a sequence in {<U>}. Equal
  elements are moved from {a}. If {this} is null, then it removes elements. Must
- have {LIST_[A-D]_COMPARATOR} defined.
+ have {LIST_U[A-D]_COMPARATOR} defined.
  @order O({a}.n + {b}.n)
  @allow */
-static void T_L_(List, TakeUnion)(struct T_(List) *const this,
+static void T_U_(List, TakeUnion)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b) {
-	PRIVATE_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+	PRIVATE_T_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
 		| LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
-/** Appends {this} with the intersection of {a} and {b} as a sequence in {<L>}.
+/** Appends {this} with the intersection of {a} and {b} as a sequence in {<U>}.
  Equal elements are moved from {a}. If {this} is null, then it removes elements.
- Must have {LIST_[A-D]_COMPARATOR} defined.
+ Must have {LIST_U[A-D]_COMPARATOR} defined.
  @order O({a}.n + {b}.n)
  @allow */
-static void T_L_(List, TakeIntersection)(struct T_(List) *const this,
+static void T_U_(List, TakeIntersection)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b) {
-	PRIVATE_T_L_(boolean, seq)(this, a, b, LO_INTERSECTION);
+	PRIVATE_T_U_(boolean, seq)(this, a, b, LO_INTERSECTION);
 }
 
-/** Appends {this} with {a} exclusive-or {b} as a sequence in {<L>}. Equal
+/** Appends {this} with {a} exclusive-or {b} as a sequence in {<U>}. Equal
  elements are moved from {a}. If {this} is null, then it removes elements. Must
- have {LIST_[A-D]_COMPARATOR} defined.
+ have {LIST_U[A-D]_COMPARATOR} defined.
  @order O({a}.n + {b}.n)
  @allow */
-static void T_L_(List, TakeXor)(struct T_(List) *const this,
+static void T_U_(List, TakeXor)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b) {
-	PRIVATE_T_L_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+	PRIVATE_T_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
 		| LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
 #endif /* comp --> */
 
 /** Appends {this} with {from} if {predicate} is null or true in the order
- specified by {<L>}. If {this} is null, then it removes elements.
+ specified by {<U>}. If {this} is null, then it removes elements.
  @order ~ \Theta({this}.n) \times O({predicate})
  @allow */
-static void T_L_(List, TakeIf)(struct T_(List) *const this,
+static void T_U_(List, TakeIf)(struct T_(List) *const this,
 	struct T_(List) *const from, const T_(Predicate) predicate) {
 	struct T_(ListNode) *cursor, *next_cursor;
 	if(!from || from == this) return;
-	for(cursor = from->L_(first); cursor; cursor = next_cursor) {
-		next_cursor = cursor->L_(next);
+	for(cursor = from->U_(first); cursor; cursor = next_cursor) {
+		next_cursor = cursor->U_(next);
 		if(predicate && !predicate(&cursor->data, from->param)) continue;
 		PRIVATE_T_(remove)(from, cursor);
 		if(!this) continue;
@@ -1334,30 +1338,30 @@ static void T_L_(List, TakeIf)(struct T_(List) *const this,
 }
 
 /** Performs {action} for each element in the list in the order specified by
- {<L>}. For more flexibility, use \see{<T>List<L>ShortCircuit}, which takes a
+ {<U>}. For more flexibility, use \see{<T>List<U>ShortCircuit}, which takes a
  {<T>Predicate}, and return true.
  @order ~ \Theta({this}.n) \times O({action})
  @allow */
-static void T_L_(List, ForEach)(struct T_(List) *const this,
+static void T_U_(List, ForEach)(struct T_(List) *const this,
 	const T_(Action) action) {
 	struct T_(ListNode) *cursor;
 	if(!this || !action) return;
-	for(cursor = this->L_(first); cursor; cursor = cursor->L_(next)) {
+	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
 		action(&cursor->data);
 	}
 }
 
-/** @return The first {<T>ListNode} in the linked-list, ordered by {<L>}, that
+/** @return The first {<T>ListNode} in the linked-list, ordered by {<U>}, that
  causes the {predicate} with {<T>} as argument to return false, or null if the
  {predicate} is true for every case. If {this} or {predicate} is null, returns
  null.
  @order ~ O({this}.n) \times O({predicate})
  @allow */
-static struct T_(ListNode) *T_L_(List, ShortCircuit)(
+static struct T_(ListNode) *T_U_(List, ShortCircuit)(
 	struct T_(List) *const this, const T_(Predicate) predicate) {
 	struct T_(ListNode) *cursor;
 	if(!this || !predicate) return 0;
-	for(cursor = this->L_(first); cursor; cursor = cursor->L_(next)) {
+	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
 		if(!predicate(&cursor->data, this->param)) return cursor;
 	}
 	return 0;
@@ -1406,7 +1410,7 @@ static void list_super_cat(struct List_SuperCat *const cat,
  @return Prints the {this} in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
  @allow */
-static char *T_L_(List, ToString)(const struct T_(List) *const this) {
+static char *T_U_(List, ToString)(const struct T_(List) *const this) {
 	static char buffer[4][256];
 	static int buffer_i;
 	struct List_SuperCat cat;
@@ -1422,8 +1426,8 @@ static char *T_L_(List, ToString)(const struct T_(List) *const this) {
 		return cat.print;
 	}
 	list_super_cat(&cat, list_cat_start);
-	for(list = this->L_(first); list; list = list->L_(next)) {
-		if(list != this->L_(first)) list_super_cat(&cat, list_cat_sep);
+	for(list = this->U_(first); list; list = list->U_(next)) {
+		if(list != this->U_(first)) list_super_cat(&cat, list_cat_sep);
 		PRIVATE_T_(to_string)(&list->data, &scratch), scratch[8] = '\0';
 		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
@@ -1436,40 +1440,40 @@ static char *T_L_(List, ToString)(const struct T_(List) *const this) {
 #endif /* print --> */
 
 /* prototype */
-static void PRIVATE_T_L_(unused, coda)(void);
+static void PRIVATE_T_U_(unused, coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void PRIVATE_T_L_(unused, list)(void) {
-	T_L_(ListNode, GetNext)(0);
-	T_L_(ListNode, GetPrevious)(0);
-	T_L_(List, GetFirst)(0);
-	T_L_(List, GetLast)(0);
-#ifdef LIST_L_COMPARATOR /* <-- comp */
-	T_L_(List, Sort)(0);
-	T_L_(List, Compare)(0, 0);
-	T_L_(List, TakeSubtraction)(0, 0, 0);
-	T_L_(List, TakeUnion)(0, 0, 0);
-	T_L_(List, TakeIntersection)(0, 0, 0);
-	T_L_(List, TakeXor)(0, 0, 0);
+static void PRIVATE_T_U_(unused, list)(void) {
+	T_U_(ListNode, GetNext)(0);
+	T_U_(ListNode, GetPrevious)(0);
+	T_U_(List, GetFirst)(0);
+	T_U_(List, GetLast)(0);
+#ifdef LIST_U_COMPARATOR /* <-- comp */
+	T_U_(List, Sort)(0);
+	T_U_(List, Compare)(0, 0);
+	T_U_(List, TakeSubtraction)(0, 0, 0);
+	T_U_(List, TakeUnion)(0, 0, 0);
+	T_U_(List, TakeIntersection)(0, 0, 0);
+	T_U_(List, TakeXor)(0, 0, 0);
 #endif /* comp --> */
-	T_L_(List, TakeIf)(0, 0, 0);
-	T_L_(List, ForEach)(0, 0);
-	T_L_(List, ShortCircuit)(0, 0);
+	T_U_(List, TakeIf)(0, 0, 0);
+	T_U_(List, ForEach)(0, 0);
+	T_U_(List, ShortCircuit)(0, 0);
 #ifdef LIST_TO_STRING /* <-- string */
-	T_L_(List, ToString)(0);
+	T_U_(List, ToString)(0);
 #endif /* string --> */
-	PRIVATE_T_L_(unused, coda)();
+	PRIVATE_T_U_(unused, coda)();
 }
-/** {clang}'s pre-processor is clever? */
-static void PRIVATE_T_L_(unused, coda)(void) { PRIVATE_T_L_(unused, list)(); }
+/** {clang}'s pre-processor is not fooled. */
+static void PRIVATE_T_U_(unused, coda)(void) { PRIVATE_T_U_(unused, list)(); }
 
 
 
 /* un-define stuff for the next */
-#undef LIST_L_NAME
-#ifdef LIST_L_COMPARATOR /* <-- comp */
-#undef LIST_L_COMPARATOR
+#undef LIST_U_NAME
+#ifdef LIST_U_COMPARATOR /* <-- comp */
+#undef LIST_U_COMPARATOR
 #endif /* comp --> */
 
-#endif /* LIST_L_NAME --> */
+#endif /* LIST_U_NAME --> */

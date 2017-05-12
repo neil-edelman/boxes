@@ -56,10 +56,10 @@ static void Foo_filler(struct Foo *const this) {
 }
 #define LIST_NAME Foo
 #define LIST_TYPE struct Foo
-#define LIST_A_NAME Key
-#define LIST_A_COMPARATOR &Foo_key_cmp
-#define LIST_B_NAME Value
-#define LIST_B_COMPARATOR &Foo_value_cmp
+#define LIST_UA_NAME Key
+#define LIST_UA_COMPARATOR &Foo_key_cmp
+#define LIST_UB_NAME Value
+#define LIST_UB_COMPARATOR &Foo_value_cmp
 #define LIST_TO_STRING &Foo_to_string
 #define LIST_TEST &Foo_filler
 #include "../src/List.h"
@@ -86,8 +86,8 @@ static void Int_filler(int *const this) {
 #undef LIST_NUM_MAX
 #define LIST_NAME Int
 #define LIST_TYPE int
-#define LIST_A_NAME N
-#define LIST_A_COMPARATOR &Int_N_cmp
+#define LIST_UA_NAME N
+#define LIST_UA_COMPARATOR &Int_N_cmp
 #define LIST_TO_STRING &Int_to_string
 #define LIST_TEST &Int_filler
 #include "../src/List.h"
@@ -113,7 +113,7 @@ static void Colour_filler(enum Colour *const this) {
 }
 #define LIST_NAME Colour
 #define LIST_TYPE enum Colour
-#define LIST_A_NAME Declare
+#define LIST_UA_NAME Declare
 #define LIST_TO_STRING &Colour_to_string
 #define LIST_TEST &Colour_filler
 #include "../src/List.h"
@@ -147,10 +147,10 @@ static void Animal_filler(struct Animal *const this) {
 }
 #define LIST_NAME Animal
 #define LIST_TYPE struct Animal
-#define LIST_C_NAME Name
-#define LIST_C_COMPARATOR &Animal_name_cmp
-#define LIST_D_NAME X
-#define LIST_D_COMPARATOR &Animal_x_cmp
+#define LIST_UC_NAME Name
+#define LIST_UC_COMPARATOR &Animal_name_cmp
+#define LIST_UD_NAME X
+#define LIST_UD_COMPARATOR &Animal_x_cmp
 #define LIST_TO_STRING &Animal_to_string
 #define LIST_TEST &Animal_filler
 #include "../src/List.h"
