@@ -1372,9 +1372,9 @@ static struct T_(ListNode) *T_U_(List, ShortCircuit)(
 #ifndef LIST_PRINT_THINGS /* <-- once inside translation unit */
 #define LIST_PRINT_THINGS
 
-static const char *const list_cat_start     = "[ ";
-static const char *const list_cat_end       = " ]";
-static const char *const list_cat_alter_end = "...]";
+static const char *const list_cat_start     = "{ ";
+static const char *const list_cat_end       = " }";
+static const char *const list_cat_alter_end = "...}";
 static const char *const list_cat_sep       = ", ";
 static const char *const list_cat_star      = "*";
 static const char *const list_cat_null      = "null";
@@ -1404,7 +1404,7 @@ static void list_super_cat(struct List_SuperCat *const cat,
 }
 #endif /* once --> */
 
-/** One can print 4 things at once before it overwrites. One must set
+/** Can print 4 things at once before it overwrites. One must set
  {LIST_TO_STRING} to a function implementing {<T>ToString} to get this
  functionality.
  @return Prints the {this} in a static buffer.
@@ -1428,7 +1428,8 @@ static char *T_U_(List, ToString)(const struct T_(List) *const this) {
 	list_super_cat(&cat, list_cat_start);
 	for(list = this->U_(first); list; list = list->U_(next)) {
 		if(list != this->U_(first)) list_super_cat(&cat, list_cat_sep);
-		PRIVATE_T_(to_string)(&list->data, &scratch), scratch[8] = '\0';
+		PRIVATE_T_(to_string)(&list->data, &scratch),
+			scratch[sizeof scratch - 1] = '\0';
 		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
 	}
