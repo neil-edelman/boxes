@@ -139,7 +139,7 @@ static int Animal_x_cmp(const struct Animal *a, const struct Animal *b) {
 static void Animal_to_string(const struct Animal *this, char (*const a)[12]) {
 	sprintf(*a, "%d%.8s", this->x, this->name);
 }
-/* @implements <Animal>Action */
+/** @implements <Animal>Action */
 static void Animal_filler(struct Animal *const this) {
 	Orcish(this->name, sizeof this->name);
 	this->vt = 0;
@@ -271,7 +271,7 @@ int main(void) {
 	ColourListTest();
 	AnimalListTest();
 	test_block_move();
-	printf("Test succeeded.\n\n");
+	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
 }
