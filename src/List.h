@@ -841,7 +841,7 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 	}
 }
 
-/** Private: used in \see{_<T>_block_<U>_migrate}.
+/** Private: used in \see{<T>_block_<U>_migrate}.
  \${ptr \in [begin, end) -> ptr += delta}. */
 static void PRIVATE_T_U_(block, migrate_node)(
 	struct T_(ListNode) **const node_ptr,
@@ -875,6 +875,7 @@ static void PRIVATE_T_U_(block, migrate)(struct T_(List) *const this,
 		PRIVATE_T_U_(block, migrate_node)(&node->U_(next), begin, end, delta);
 	}
 }
+
 
 
 /** @return The next element after {this} in {<U>}. When {this} is the last
