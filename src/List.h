@@ -36,6 +36,10 @@
  @param LIST_OPENMP
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }.
 
+ @param LIST_MIGRATE_SELF
+ Use if <T> is self-referential. (Thinking about the easiest way to do this;
+ not implemented yet.)
+
  @param LIST_TEST
  Unit testing framework using {<T>ListTest}, included in a separate header,
  {../test/ListTest.h}. Must be defined equal to a (random) filler, satisfying
@@ -113,7 +117,8 @@
 #if defined(LIST_TEST) && !defined(LIST_TO_STRING)
 #error LIST_TEST requires LIST_TO_STRING.
 #endif
-#ifndef LIST_TEST /* fixme: affects code past inclusion */
+#if !defined(LIST_TEST) && !defined(NDEBUG)
+#define LIST_NDEBUG
 #define NDEBUG
 #endif
 #if defined(LIST_UA_COMPARATOR) || defined(LIST_UB_COMPARATOR) \
@@ -689,6 +694,16 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 /* un-define all macros */
 #undef LIST_NAME
 #undef LIST_TYPE
+#undef CAT
+#undef CAT_
+#undef PCAT
+#undef PCAT_
+#undef T
+#undef T_
+#undef PRIVATE_T_
+#undef T_NAME
+#undef QUOTE
+#undef QUOTE_
 #ifdef LIST_TO_STRING
 #undef LIST_TO_STRING
 #endif
@@ -727,6 +742,10 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 #endif
 #ifdef LIST_TEST
 #undef LIST_TEST
+#endif
+#ifdef LIST_NDEBUG
+#undef LIST_NDEBUG
+#undef NDEBUG
 #endif
 #ifdef LIST_SOME_COMPARATOR
 #undef LIST_SOME_COMPARATOR
