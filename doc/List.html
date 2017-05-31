@@ -53,7 +53,7 @@ when including multiple <em>List</em> types in the same file.
 <p>
 The <em>&lt;T&gt;ListNode</em> storage is the responsibility of the caller. Specifically,
 it does not have to be contiguous, and it can be nestled in multiple, possibly
-different, structures. You can move (part) of the memory that is in an active
+different, structures. One can move (part) of the memory that is in an active
 <em>List</em> under some conditions, and still keep the integrity of the linked-list;
 see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a> or <a href = "#&lt;T&gt;ListMigrateBlock">&lt;T&gt;ListMigrateBlock</a>.
 </p>
@@ -63,7 +63,7 @@ see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a> or <a href = "#&l
  should be conformant to naming and to the maximum available length of
  identifiers. Must each be present before including.</dd>
 	<dt>parameter: LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR</dt>
-	<dd>Each <em>LIST_U[A-D]_NAME</em> literally becomes, <em>&lt;U&gt;</em>, an order. You can define an
+	<dd>Each <em>LIST_U[A-D]_NAME</em> literally becomes, <em>&lt;U&gt;</em>, an order. One can define an
  optional comparator, an equivalence relation function implementing
  <em>&lt;T&gt;Comparator</em>.</dd>
 	<dt>parameter: LIST_TO_STRING</dt>
@@ -76,6 +76,9 @@ see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a> or <a href = "#&l
  resources.</dd>
 	<dt>parameter: LIST_OPENMP</dt>
 	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>.</dd>
+	<dt>parameter: LIST_SELF_MIGRATE</dt>
+	<dd>Use if &lt;T&gt; is self-referential; it must be defined as a function implementing
+ <em>&lt;T&gt;SelfMigrate</em>.</dd>
 	<dt>parameter: LIST_TEST</dt>
 	<dd>Unit testing framework using <em>&lt;T&gt;ListTest</em>, included in a separate header,
  <em>../test/ListTest.h</em>. Must be defined equal to a (random) filler, satisfying
@@ -104,6 +107,16 @@ see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a> or <a href = "#&l
 
 
 <a name = "_declarations"><!-- --></a><h2>Declarations</h2>
+
+<div><a name = "struct ListMigrate"><!-- --></a>
+<h3>struct ListMigrate</h3>
+<pre><b>struct ListMigrate</b></pre>
+<p>
+Contains information about a <em>realloc</em>.
+</p>
+<dl>
+</dl>
+</div>
 
 <div><a name = "typedef void (*&lt;T&gt;Action)(T *const)"><!-- --></a>
 <h3>typedef void (*&lt;T&gt;Action)(T *const)</h3>
@@ -143,6 +156,17 @@ zero. Should do so forming an equivalence relation with respect to <em>T</em>.
 <p>
 Responsible for turning <em>&lt;T&gt;</em> (the first argument) into a 12 <em>char</em>
 null-terminated output string (the second.)
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*&lt;T&gt;SelfMigrate)(const struct ListMigrate *const, T *const)"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;SelfMigrate)(const struct ListMigrate *const, T *const)</h3>
+<pre><b>typedef void (*&lt;T&gt;SelfMigrate)(const struct ListMigrate *const, T *const)</b></pre>
+<p>
+User-defined self-referential memory re-allocation fuction; should call
+<a href = "#&lt;T&gt;ListSelfMigrate">&lt;T&gt;ListSelfMigrate</a> on all the self-referential pointers.
 </p>
 <dl>
 </dl>
@@ -239,6 +263,12 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 	<td><a href = "#&lt;T&gt;ListMigrateBlock">&lt;T&gt;ListMigrateBlock</a></td>
 	<td>struct &lt;T&gt;List *const this,
 	void *const array, const size_t array_size, const void *const old_array</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;ListMigrateSelf">&lt;T&gt;ListMigrateSelf</a></td>
+	<td>const struct ListMigrate *const migrate,
+	T **const t_ptr</td>
 </tr>
 <tr>
 	<td>static struct &lt;T&gt;ListNode *</td>
@@ -462,6 +492,21 @@ changed places due to a <em>realloc</em>.
 </dl>
 </div>
 
+<div><a name = "&lt;T&gt;ListMigrateSelf"><!-- --></a>
+<h3>&lt;T&gt;ListMigrateSelf</h3>
+<pre>static void <b>&lt;T&gt;ListMigrateSelf</b> (const struct ListMigrate *const migrate,
+	T **const t_ptr)</pre>
+<p>
+<em>LIST_SELF_MIGRATE</em> callback should call this function with the address of
+any self-referential node pointers to make sure that they are updated on
+<em>realloc</em>.
+</p>
+<dl>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
 <div><a name = "&lt;T&gt;ListNode&lt;U&gt;GetNext"><!-- --></a>
 <h3>&lt;T&gt;ListNode&lt;U&gt;GetNext</h3>
 <pre>static struct &lt;T&gt;ListNode * <b>&lt;T&gt;ListNode&lt;U&gt;GetNext</b> (struct &lt;T&gt;ListNode *const this)</pre>
@@ -647,7 +692,7 @@ Performs <em>action</em> for each element in the list in the order specified by
 <h3>&lt;T&gt;List&lt;U&gt;ToString</h3>
 <pre>static char * <b>&lt;T&gt;List&lt;U&gt;ToString</b> (const struct &lt;T&gt;List *const this)</pre>
 <p>
-One can print 4 things at once before it overwrites. One must set
+Can print 4 things at once before it overwrites. One must set
 <em>LIST_TO_STRING</em> to a function implementing <em>&lt;T&gt;ToString</em> to get this
 functionality.
 </p>

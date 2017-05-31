@@ -9,7 +9,7 @@
 
  The {<T>ListNode} storage is the responsibility of the caller. Specifically,
  it does not have to be contiguous, and it can be nestled in multiple, possibly
- different, structures. You can move (part) of the memory that is in an active
+ different, structures. One can move (part) of the memory that is in an active
  {List} under some conditions, and still keep the integrity of the linked-list;
  see \see{<T>ListMigrate} or \see{<T>ListMigrateBlock}.
 
@@ -19,7 +19,7 @@
  identifiers. Must each be present before including.
 
  @param LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
- Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order. You can define an
+ Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order. One can define an
  optional comparator, an equivalence relation function implementing
  {<T>Comparator}.
 
@@ -36,9 +36,9 @@
  @param LIST_OPENMP
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }.
 
- @param LIST_MIGRATE_SELF
- Use if <T> is self-referential. (Thinking about the easiest way to do this;
- not implemented yet.)
+ @param LIST_SELF_MIGRATE
+ Use if <T> is self-referential; it must be defined as a function implementing
+ {<T>SelfMigrate}.
 
  @param LIST_TEST
  Unit testing framework using {<T>ListTest}, included in a separate header,
@@ -247,6 +247,14 @@ enum ListOperation {
 	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
 	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
 };
+
+/** Contains information about a {realloc}. */
+struct ListMigrate;
+struct ListMigrate {
+	const void *begin, *end; /* old pointers */
+	ptrdiff_t delta;
+};
+
 #endif /* LIST_H */
 
 
@@ -272,6 +280,17 @@ typedef void (*T_(ToString))(const T *const, char (*const)[12]);
 static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 
 #endif /* string --> */
+
+#ifdef LIST_SELF_MIGRATE
+
+/** User-defined self-referential memory re-allocation fuction; should call
+ \see{<T>ListSelfMigrate} on all the self-referential pointers. */
+typedef void (*T_(SelfMigrate))(const struct ListMigrate *const, T *const);
+
+/* Check that {LIST_SELF_MIGRATE} is a function implementing {<T>SelfMigrate}.*/
+static const T_(SelfMigrate) PRIVATE_T_(self_migrate) = (LIST_SELF_MIGRATE);
+
+#endif
 
 
 
@@ -333,6 +352,8 @@ static void PRIVATE_T_(add)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
 static void PRIVATE_T_(remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
+static void PRIVATE_T_(migrate)(const struct ListMigrate *const migrate,
+	struct T_(ListNode) **const node_ptr);
 
 /* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!LIST_U_NAME} section. These
@@ -625,11 +646,14 @@ static void T_(ListMigrate)(struct T_(List) *const this,
  @allow */
 static void T_(ListMigrateBlock)(struct T_(List) *const this,
 	void *const array, const size_t array_size, const void *const old_array) {
-	const char *const cold = old_array;
-	const char *const cold_end = cold + array_size;
-	const ptrdiff_t delta = (char *)array - cold;
+	struct ListMigrate migrate;
 	if(!this || !array || !array_size || !old_array || array == old_array)
 		return;
+	/* @param [begin, end): Where the pointers have changed.
+	 @param delta: the offset they have moved to in memory bytes. */
+	migrate.begin = old_array;
+	migrate.end   = (const char *)old_array + array_size;
+	migrate.delta = (const char *)array - (const char *)old_array;
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -638,27 +662,47 @@ static void T_(ListMigrateBlock)(struct T_(List) *const this,
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UA_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_UA_(block, migrate)(this, &migrate);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UB_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_UB_(block, migrate)(this, &migrate);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UC_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_UC_(block, migrate)(this, &migrate);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UD_(block, migrate)(this, cold, cold_end, delta);
+		PRIVATE_T_UD_(block, migrate)(this, &migrate);
 #endif /* d --> */
 	}
+}
+
+/** Private: used in \see{<T>_block_<U>_migrate} and
+ \see{<T>ListNodeSelfMigrate}. \${ptr \in [begin, end) -> ptr += delta}. */
+static void PRIVATE_T_(migrate)(const struct ListMigrate *const migrate,
+	struct T_(ListNode) **const node_ptr) {
+	const void *const ptr = *node_ptr;
+	if(ptr < migrate->begin || ptr >= migrate->end) return;
+	*(char **)node_ptr += migrate->delta;
+}
+
+/** {LIST_SELF_MIGRATE} callback should call this function with the address of
+ any self-referential node pointers to make sure that they are updated on
+ {realloc}.
+ @fixme Untested.
+ @allow */
+static void T_(ListMigrateSelf)(const struct ListMigrate *const migrate,
+	T **const t_ptr) {
+	if(!migrate) return;
+	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
 }
 
 #ifdef LIST_TEST /* <-- test */
@@ -682,9 +726,10 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListSetParam)(0, 0);
 	T_(ListMigrate)(0, 0);
 	T_(ListMigrateBlock)(0, 0, (size_t)0, 0);
+	T_(ListMigrateSelf)(0, 0);
 	PRIVATE_T_(unused_coda)();
 }
-/** {clang}'s pre-processor is not fooled if you have one function. */
+/** {clang}'s pre-processor is not fooled if one has one function. */
 static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 
 
@@ -843,7 +888,8 @@ static void PRIVATE_T_U_(list, cat)(struct T_(List) *const this,
 	from->U_(first) = from->U_(last) = 0;
 }
 
-/** Private: when you've moved in memory just one thing. */
+/** Private: when one has moved just one thing in memory.
+ @order O(1) */
 static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
@@ -860,38 +906,33 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 	}
 }
 
-/** Private: used in \see{<T>_block_<U>_migrate}.
- \${ptr \in [begin, end) -> ptr += delta}. */
-static void PRIVATE_T_U_(block, migrate_node)(
-	struct T_(ListNode) **const node_ptr,
-	const void *const begin, const void *const end, const ptrdiff_t delta) {
-	const void *const ptr = *node_ptr;
-	if(ptr < begin || ptr >= end) return;
-	*(char **)node_ptr += delta;
-}
-
-/** Private: when {realloc} changes your pointers. I've tried to keep undefined
+/** Private: callback when {realloc} changes pointers. Tried to keep undefined
  behaviour to a minimum.
- @param [begin, end): Where the pointers have changed.
- @param delta: the offset they have moved to in memory bytes.
  @order \Theta(n) */
 static void PRIVATE_T_U_(block, migrate)(struct T_(List) *const this,
-	const void *const begin, const void *const end, const ptrdiff_t delta) {
+	const struct ListMigrate *const migrate) {
 	struct T_(ListNode) *node;
 	assert(this);
-	assert(begin);
-	assert(begin < end);
-	assert(delta);
+	assert(migrate);
+	assert(migrate->begin);
+	assert(migrate->begin < migrate->end);
+	assert(migrate->delta);
 	assert(!this->U_(first) == !this->U_(last));
 	/* empty -- done */
 	if(!this->U_(first)) return;
 	/* first and last pointer of {<T>List} */
-	PRIVATE_T_U_(block, migrate_node)(&this->U_(first), begin, end, delta);
-	PRIVATE_T_U_(block, migrate_node)(&this->U_(last),  begin, end, delta);
+	PRIVATE_T_(migrate)(migrate, &this->U_(first));
+	PRIVATE_T_(migrate)(migrate, &this->U_(last));
 	/* all the others' {<T>ListNode} */
 	for(node = this->U_(first); node; node = node->U_(next)) {
-		PRIVATE_T_U_(block, migrate_node)(&node->U_(prev), begin, end, delta);
-		PRIVATE_T_U_(block, migrate_node)(&node->U_(next), begin, end, delta);
+		PRIVATE_T_(migrate)(migrate, &node->U_(prev));
+		PRIVATE_T_(migrate)(migrate, &node->U_(next));
+#ifdef LIST_SELF_MIGRATE
+		/* only need to do this once; kind of arbitrary which index it
+		 piggybacks on */
+		PRIVATE_T_(self_migrate)(migrate, &node->data);
+#undef LIST_SELF_MIGRATE
+#endif
 	}
 }
 

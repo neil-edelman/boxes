@@ -26,10 +26,11 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst 
 # select all automatically
 SRCS  := $(call rwildcard, $(SDIR), *.c) # or *.java
 TEST  := $(call rwildcard, $(TDIR), *.c)
+H_SRC := $(call rwildcard, $(SDIR), *.h)
 H     := $(call rwildcard, $(SDIR), *.h) $(call rwildcard, $(TDIR), *.h)
 OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
-DOCS  := $(patsubst $(SDIR)/%.h, $(DDIR)/%.html, $(H))
+DOCS  := $(patsubst $(SDIR)/%.h, $(DDIR)/%.html, $(H_SRC))
 
 CC   := gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
@@ -82,6 +83,7 @@ $(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
 	# docs rule
 	@mkdir -p $(DDIR)
 	-cat $^ | $(CDOC) > $@
+	-cat $^ | $(CDOC) text > $(DDIR)/$*.txt
 
 ######
 # phoney targets
