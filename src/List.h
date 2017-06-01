@@ -285,10 +285,11 @@ static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 
 /** User-defined self-referential memory re-allocation fuction; should call
  \see{<T>ListSelfMigrate} on all the self-referential pointers. */
-typedef void (*T_(SelfMigrate))(const struct ListMigrate *const, T *const);
+typedef void (*T_(ListSelfMigrate))(struct T_(List) *const this,
+	const struct ListMigrate *const migrate);
 
 /* Check that {LIST_SELF_MIGRATE} is a function implementing {<T>SelfMigrate}.*/
-static const T_(SelfMigrate) PRIVATE_T_(self_migrate) = (LIST_SELF_MIGRATE);
+static const T_(ListSelfMigrate) PRIVATE_T_(self_migrate) = (LIST_SELF_MIGRATE);
 
 #endif
 
@@ -682,6 +683,12 @@ static void T_(ListMigrateBlock)(struct T_(List) *const this,
 #endif /* omp --> */
 		PRIVATE_T_UD_(block, migrate)(this, &migrate);
 #endif /* d --> */
+#ifdef LIST_SELF_MIGRATE /* <-- self */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		PRIVATE_T_(self_migrate)(this, &migrate);
+#endif /* self --> */
 	}
 }
 
@@ -701,7 +708,6 @@ static void PRIVATE_T_(migrate)(const struct ListMigrate *const migrate,
  @allow */
 static void T_(ListMigrateSelf)(const struct ListMigrate *const migrate,
 	T **const t_ptr) {
-	if(!migrate) return;
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
 }
 
@@ -927,12 +933,6 @@ static void PRIVATE_T_U_(block, migrate)(struct T_(List) *const this,
 	for(node = this->U_(first); node; node = node->U_(next)) {
 		PRIVATE_T_(migrate)(migrate, &node->U_(prev));
 		PRIVATE_T_(migrate)(migrate, &node->U_(next));
-#ifdef LIST_SELF_MIGRATE
-		/* only need to do this once; kind of arbitrary which index it
-		 piggybacks on */
-		PRIVATE_T_(self_migrate)(migrate, &node->data);
-#undef LIST_SELF_MIGRATE
-#endif
 	}
 }
 

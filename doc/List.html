@@ -161,9 +161,12 @@ null-terminated output string (the second.)
 </dl>
 </div>
 
-<div><a name = "typedef void (*&lt;T&gt;SelfMigrate)(const struct ListMigrate *const, T *const)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;SelfMigrate)(const struct ListMigrate *const, T *const)</h3>
-<pre><b>typedef void (*&lt;T&gt;SelfMigrate)(const struct ListMigrate *const, T *const)</b></pre>
+<div><a name = "typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
+	const struct ListMigrate *const migrate)"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
+	const struct ListMigrate *const migrate)</h3>
+<pre><b>typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
+	const struct ListMigrate *const migrate)</b></pre>
 <p>
 User-defined self-referential memory re-allocation fuction; should call
 <a href = "#&lt;T&gt;ListSelfMigrate">&lt;T&gt;ListSelfMigrate</a> on all the self-referential pointers.

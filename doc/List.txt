@@ -102,9 +102,11 @@ Responsible for turning _<T>_ (the first argument) into a 12 _char_
  null-terminated output string (the second.)
 
 
-### typedef void (*<T>SelfMigrate)(const struct ListMigrate *const, T *const) ###
+### typedef void (*<T>ListSelfMigrate)(struct <T>List *const this,
+	const struct ListMigrate *const migrate) ###
 
-typedef void (*<T>SelfMigrate)(const struct ListMigrate *const, T *const)
+typedef void (*<T>ListSelfMigrate)(struct <T>List *const this,
+	const struct ListMigrate *const migrate)
 
 User-defined self-referential memory re-allocation fuction; should call
  `<T>ListSelfMigrate` on all the self-referential pointers.
