@@ -337,15 +337,15 @@ static void PRIVATE_T_U_(test, basic)(void) {
 	T_(ListClear)(&a);
 	printf("Adding %lu elements to a.\n", (unsigned long)buf_size);
 	/* Add */
-	T_(ListAdd)(0, 0);
-	T_(ListAdd)(&a, 0);
+	T_(ListPush)(0, 0);
+	T_(ListPush)(&a, 0);
 	item_a = buf;
 	PRIVATE_T_(filler)(&item_a->data);
-	T_(ListAdd)(0, item_a);
+	T_(ListPush)(0, item_a);
 	for(i = 0; i < buf_size; i++) {
 		item_a = buf + i;
 		PRIVATE_T_(filler)(&item_a->data);
-		T_(ListAdd)(&a, item_a);
+		T_(ListPush)(&a, item_a);
 	}
 	item_a = T_U_(List, GetFirst)(&a);
 	assert(item_a);
@@ -444,8 +444,8 @@ static void PRIVATE_T_U_(test, memory)(void) {
 	memcpy(buf[1], buf[0], buf_size * sizeof *buf[0]);
 	memset(&buf[2], 0, buf_size * sizeof *buf[2]);
 	/* put all items in buf0 and buf1 */
-	for(i = 0; i < buf_size; i++) T_(ListAdd)(&a, buf[0] + i);
-	for(i = 0; i < buf_size; i++) T_(ListAdd)(&a, buf[1] + i);
+	for(i = 0; i < buf_size; i++) T_(ListPush)(&a, buf[0] + i);
+	for(i = 0; i < buf_size; i++) T_(ListPush)(&a, buf[1] + i);
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 	T_(ListSort)(&a);
 	printf("Sorting, (backed by two arrays,) a = %s.\n",
@@ -486,7 +486,7 @@ static void PRIVATE_T_U_(test, memory)(void) {
 	assert(PRIVATE_T_U_(count, elements)(&b) == 0);
 	/* Test done; move. */
 	for(i = 0; i < buf_size; i++)
-		T_(ListAdd)(&a, buf[0] + i), T_(ListAdd)(&b, buf[1] + i);
+		T_(ListPush)(&a, buf[0] + i), T_(ListPush)(&b, buf[1] + i);
 	assert(PRIVATE_T_U_(exactly, elements)(&a, buf[0], buf_size));
 	assert(PRIVATE_T_U_(exactly, elements)(&b, buf[1], buf_size));
 #ifdef LIST_U_COMPARATOR /* <-- comp */
@@ -545,8 +545,8 @@ static void PRIVATE_T_U_(test, boolean)(void) {
 	/* add to the sequences a, b */
 	T_(ListClear)(&a), T_(ListClear)(&b), T_(ListClear)(&c);
 	T_(ListClear)(&ia), T_(ListClear)(&ib), T_(ListClear)(&ic);
-	T_(ListAdd)(&a, &x[0].a), T_(ListAdd)(&a, &x[1].a);
-	T_(ListAdd)(&b, &x[0].b), T_(ListAdd)(&b, &x[2].b);
+	T_(ListPush)(&a, &x[0].a), T_(ListPush)(&a, &x[1].a);
+	T_(ListPush)(&b, &x[0].b), T_(ListPush)(&b, &x[2].b);
 	printf("Two " QUOTE(LIST_U_NAME) "-sequences, %s and %s.\n",
 		   T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
 	/* verify comparing things first */
@@ -561,28 +561,28 @@ static void PRIVATE_T_U_(test, boolean)(void) {
 	T_U_(List, TakeSubtraction)(&c, &a, &b);
 	printf("%s; (a = %s, b = %s.)\n", T_U_(List, ToString)(&c),
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
-	T_(ListAdd)(&ia, &x[0].ia);
-	T_(ListAdd)(&ib, &x[0].ib), T_(ListAdd)(&ib, &x[2].ib);
-	T_(ListAdd)(&ic, &x[1].ia);
+	T_(ListPush)(&ia, &x[0].ia);
+	T_(ListPush)(&ib, &x[0].ib), T_(ListPush)(&ib, &x[2].ib);
+	T_(ListPush)(&ic, &x[1].ia);
 	assert(!T_U_(List, Compare)(&a, &ia));
 	assert(!T_U_(List, Compare)(&b, &ib));
 	assert(!T_U_(List, Compare)(&c, &ic));
 	T_(ListClear)(&a), T_(ListClear)(&b), T_(ListClear)(&c);
 	T_(ListClear)(&ia), T_(ListClear)(&ib), T_(ListClear)(&ic);
 	/* u */
-	T_(ListAdd)(&a, &x[0].a), T_(ListAdd)(&a, &x[1].a);
-	T_(ListAdd)(&b, &x[0].b), T_(ListAdd)(&b, &x[2].b);
+	T_(ListPush)(&a, &x[0].a), T_(ListPush)(&a, &x[1].a);
+	T_(ListPush)(&b, &x[0].b), T_(ListPush)(&b, &x[2].b);
 	printf("(a = %s) u (b = %s) =\n", T_U_(List, ToString)(&a),
 		T_U_(List, ToString)(&b));
 	T_U_(List, TakeUnion)(&c, &a, &b);
 	printf("%s; (a = %s, b = %s.)\n", T_U_(List, ToString)(&c),
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
-	T_(ListAdd)(&ib, &x[0].ib);
-	T_(ListAdd)(&ic, &x[0].ia);
+	T_(ListPush)(&ib, &x[0].ib);
+	T_(ListPush)(&ic, &x[0].ia);
 	if(PRIVATE_T_U_(data, cmp)(&x[1].ia.data, &x[2].ib.data) < 0) {
-		T_(ListAdd)(&ic, &x[1].ia), T_(ListAdd)(&ic, &x[2].ib);
+		T_(ListPush)(&ic, &x[1].ia), T_(ListPush)(&ic, &x[2].ib);
 	} else {
-		T_(ListAdd)(&ic, &x[2].ib), T_(ListAdd)(&ic, &x[1].ia);
+		T_(ListPush)(&ic, &x[2].ib), T_(ListPush)(&ic, &x[1].ia);
 	}
 	assert(!T_U_(List, Compare)(&a, &ia));
 	assert(!T_U_(List, Compare)(&b, &ib));
@@ -590,35 +590,35 @@ static void PRIVATE_T_U_(test, boolean)(void) {
 	T_(ListClear)(&a), T_(ListClear)(&b), T_(ListClear)(&c);
 	T_(ListClear)(&ia), T_(ListClear)(&ib), T_(ListClear)(&ic);
 	/* n */
-	T_(ListAdd)(&a, &x[0].a), T_(ListAdd)(&a, &x[1].a);
-	T_(ListAdd)(&b, &x[0].b), T_(ListAdd)(&b, &x[2].b);
+	T_(ListPush)(&a, &x[0].a), T_(ListPush)(&a, &x[1].a);
+	T_(ListPush)(&b, &x[0].b), T_(ListPush)(&b, &x[2].b);
 	printf("(a = %s) n (b = %s) =\n", T_U_(List, ToString)(&a),
 		T_U_(List, ToString)(&b));
 	T_U_(List, TakeIntersection)(&c, &a, &b);
 	printf("%s; (a = %s, b = %s.)\n", T_U_(List, ToString)(&c),
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
-	T_(ListAdd)(&ia, &x[1].ia);
-	T_(ListAdd)(&ib, &x[0].ib), T_(ListAdd)(&ib, &x[2].ib);
-	T_(ListAdd)(&ic, &x[0].ia);
+	T_(ListPush)(&ia, &x[1].ia);
+	T_(ListPush)(&ib, &x[0].ib), T_(ListPush)(&ib, &x[2].ib);
+	T_(ListPush)(&ic, &x[0].ia);
 	assert(!T_U_(List, Compare)(&a, &ia));
 	assert(!T_U_(List, Compare)(&b, &ib));
 	assert(!T_U_(List, Compare)(&c, &ic));
 	T_(ListClear)(&a), T_(ListClear)(&b), T_(ListClear)(&c);
 	T_(ListClear)(&ia), T_(ListClear)(&ib), T_(ListClear)(&ic);
 	/* xor */
-	T_(ListAdd)(&a, &x[0].a), T_(ListAdd)(&a, &x[1].a);
-	T_(ListAdd)(&b, &x[0].b), T_(ListAdd)(&b, &x[2].b);
+	T_(ListPush)(&a, &x[0].a), T_(ListPush)(&a, &x[1].a);
+	T_(ListPush)(&b, &x[0].b), T_(ListPush)(&b, &x[2].b);
 	printf("(a = %s) xor (b = %s) =\n", T_U_(List, ToString)(&a),
 		T_U_(List, ToString)(&b));
 	T_U_(List, TakeXor)(&c, &a, &b);
 	printf("%s; (a = %s, b = %s.)\n", T_U_(List, ToString)(&c),
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
-	T_(ListAdd)(&ia, &x[0].ia);
-	T_(ListAdd)(&ib, &x[0].ib);
+	T_(ListPush)(&ia, &x[0].ia);
+	T_(ListPush)(&ib, &x[0].ib);
 	if(PRIVATE_T_U_(data, cmp)(&x[1].ia.data, &x[2].ib.data) < 0) {
-		T_(ListAdd)(&ic, &x[1].ia), T_(ListAdd)(&ic, &x[2].ib);
+		T_(ListPush)(&ic, &x[1].ia), T_(ListPush)(&ic, &x[2].ib);
 	} else {
-		T_(ListAdd)(&ic, &x[2].ib), T_(ListAdd)(&ic, &x[1].ia);
+		T_(ListPush)(&ic, &x[2].ib), T_(ListPush)(&ic, &x[1].ia);
 	}
 	assert(!T_U_(List, Compare)(&a, &ia));
 	assert(!T_U_(List, Compare)(&b, &ib));
@@ -637,9 +637,9 @@ static void PRIVATE_T_U_(test, order)(void) {
 	assert(T_U_(List, Compare)(0, &b) < 0);
 	assert(T_U_(List, Compare)(&a, &b) == 0);
 	for(i = 0; i < buf_size; i++) node = buf + i, PRIVATE_T_(filler)(&node->data);
-	for(i = 0; i < buf_size >> 1; i++) T_(ListAdd)(&a, node--);
+	for(i = 0; i < buf_size >> 1; i++) T_(ListPush)(&a, node--);
 	assert(T_U_(List, Compare)(&a, &b) > 0);
-	for( ; i < buf_size; i++) T_(ListAdd)(&b, node--);
+	for( ; i < buf_size; i++) T_(ListPush)(&b, node--);
 	assert(PRIVATE_T_U_(count, elements)(&a) == buf_size >> 1);
 	assert(PRIVATE_T_U_(count, elements)(&b) == buf_size - (buf_size >> 1));
 	T_(ListSort)(&a), T_(ListSort)(&b);
@@ -653,8 +653,8 @@ static void PRIVATE_T_U_(test, order)(void) {
 	/* done now merge */
 	T_(ListClear)(&a), T_(ListClear)(&b);
 	node = buf;
-	for(i = 0; i < buf_size >> 1; i++) T_(ListAdd)(&a, node++);
-	for( ; i < buf_size; i++) T_(ListAdd)(&b, node++);
+	for(i = 0; i < buf_size >> 1; i++) T_(ListPush)(&a, node++);
+	for( ; i < buf_size; i++) T_(ListPush)(&b, node++);
 	T_(ListSort)(&a), T_(ListSort)(&b);
 	assert(PRIVATE_T_U_(count, elements)(&a) == buf_size >> 1);
 	assert(PRIVATE_T_U_(count, elements)(&b) == buf_size - (buf_size >> 1));
@@ -705,7 +705,7 @@ static void PRIVATE_T_U_(test, meta)(void) {
 		else if((size_t)take > nodes_left) take = (int)nodes_left;
 		nodes_left -= (size_t)take;
 		T_(ListClear)(list);
-		while(take) T_(ListAdd)(list, node++), take--;
+		while(take) T_(ListPush)(list, node++), take--;
 		lists_left--;
 		printf("%lu. %s\n", (unsigned long)(lists_size - lists_left),
 			T_U_(List, ToString)(list));

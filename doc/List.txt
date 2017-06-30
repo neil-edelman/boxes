@@ -13,7 +13,8 @@
  it does not have to be contiguous, and it can be nestled in multiple, possibly
  different, structures. One can move (part) of the memory that is in an active
  _List_ under some conditions, and still keep the integrity of the linked-list;
- see `<T>ListMigrate` or `<T>ListMigrateBlock`.
+ see `<T>ListMigrate` or `<T>ListMigrateBlock`.This is a shortcut to
+ _for(l = <T>List<U>GetFirst; l; l = <T>ListNode<U>GetNext)_.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
@@ -45,7 +46,7 @@ minimum standard: C89/90
 
 author: Neil
 
-version: 1.0; 2017-05
+version: 1.1; 2017-06 split Add into Push and Unshift
 
 since: 1.0; 2017-05 separated from List.h
 
@@ -59,6 +60,8 @@ fixme: _MSVC_: _#pragma warning(disable: x)_ where _x_ is: 4464 contains '..'
 fixme: _clang_: _#pragma clang diagnostic ignored "-Wx"_ where _x_ is:
  _padded_; _documentation_; _documentation-unknown-command_ it's not quite
  _clang-tags_; 3.8 _disabled-macro-expansion_ on _toupper_ in _LIST_TEST_.
+
+fixme: Unwritten.
 
 
 
@@ -147,7 +150,9 @@ Serves as an a head for linked-list(s) of _<T>ListNode_. No initialisation
 
 _Return Type_	_Function Name_	_Argument List_
 static void	<T>ListClear	(struct <T>List *const this)
-static void	<T>ListAdd	(struct <T>List *const this,
+static void	<T>ListPush	(struct <T>List *const this,
+	struct <T>ListNode *const node)
+static void	<T>ListUnshift	(struct <T>List *const this,
 	struct <T>ListNode *const node)
 static void	<T>ListRemove	(struct <T>List *const this,
 	struct <T>ListNode *const node)
@@ -201,18 +206,35 @@ order: \Theta(1)
 
 
 
-### <T>ListAdd ###
+### <T>ListPush ###
 
-static void <T>ListAdd(struct <T>List *const this,
+static void <T>ListPush(struct <T>List *const this,
 	struct <T>ListNode *const node)
 
-Sets the contents of _node_ to push it to _this_, thereby initialising the
- non-_<T>_ parts of _<T>ListNode_. Does not do any checks on _node_ and
- overwrites the data that was there. Specifically, it invokes undefined
- behaviour to one add _node_ to more than one list without removing it each
- time. If either _this_ or _node_ is null, it does nothing.
+Sets the contents of _node_ to add it to _this_ at the end, thereby
+ initialising the non-_<T>_ parts of _<T>ListNode_. Does not do any checks on
+ _node_ and overwrites the data that was there. Specifically, it invokes
+ undefined behaviour to one add _node_ to more than one list without removing
+ it each time. If either _this_ or _node_ is null, it does nothing.
 
 order: \Theta(1)
+
+
+
+### <T>ListUnshift ###
+
+static void <T>ListUnshift(struct <T>List *const this,
+	struct <T>ListNode *const node)
+
+Sets the contents of _node_ to add it to _this_ at the beginning, thereby
+ initialising the non-_<T>_ parts of _<T>ListNode_. Does not do any checks on
+ _node_ and overwrites the data that was there. Specifically, it invokes
+ undefined behaviour to one add _node_ to more than one list without removing
+ it each time. If either _this_ or _node_ is null, it does nothing.
+
+order: \Theta(1)
+
+fixme: Untested.
 
 
 

@@ -57,6 +57,10 @@ different, structures. One can move (part) of the memory that is in an active
 <em>List</em> under some conditions, and still keep the integrity of the linked-list;
 see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a> or <a href = "#&lt;T&gt;ListMigrateBlock">&lt;T&gt;ListMigrateBlock</a>.
 </p>
+<p>
+This is a shortcut to
+<em>for(l = &lt;T&gt;List&lt;U&gt;GetFirst; l; l = &lt;T&gt;ListNode&lt;U&gt;GetNext)</em>.
+</p>
 <dl>
 	<dt>parameter: LIST_NAME, LIST_TYPE</dt>
 	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith;
@@ -89,7 +93,7 @@ see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a> or <a href = "#&l
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>1.0; 2017-05</dd>
+	<dd>1.1; 2017-06 split Add into Push and Unshift</dd>
 	<dt>since</dt>
 	<dd>1.0; 2017-05 separated from List.h</dd>
 	<dt>fixme</dt>
@@ -103,6 +107,8 @@ see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a> or <a href = "#&l
 	<dd><em>clang</em>: <em>#pragma clang diagnostic ignored "-Wx"</em> where <em>x</em> is:
  <em>padded</em>; <em>documentation</em>; <em>documentation-unknown-command</em> it's not quite
  <em>clang-tags</em>; 3.8 <em>disabled-macro-expansion</em> on <em>toupper</em> in <em>LIST_TEST</em>.</dd>
+	<dt>fixme</dt>
+	<dd>Unwritten.</dd>
 </dl>
 
 
@@ -222,7 +228,13 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;ListAdd">&lt;T&gt;ListAdd</a></td>
+	<td><a href = "#&lt;T&gt;ListPush">&lt;T&gt;ListPush</a></td>
+	<td>struct &lt;T&gt;List *const this,
+	struct &lt;T&gt;ListNode *const node</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;ListUnshift">&lt;T&gt;ListUnshift</a></td>
 	<td>struct &lt;T&gt;List *const this,
 	struct &lt;T&gt;ListNode *const node</td>
 </tr>
@@ -368,20 +380,39 @@ contained a list, those values are free.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;ListAdd"><!-- --></a>
-<h3>&lt;T&gt;ListAdd</h3>
-<pre>static void <b>&lt;T&gt;ListAdd</b> (struct &lt;T&gt;List *const this,
+<div><a name = "&lt;T&gt;ListPush"><!-- --></a>
+<h3>&lt;T&gt;ListPush</h3>
+<pre>static void <b>&lt;T&gt;ListPush</b> (struct &lt;T&gt;List *const this,
 	struct &lt;T&gt;ListNode *const node)</pre>
 <p>
-Sets the contents of <em>node</em> to push it to <em>this</em>, thereby initialising the
-non-<em>&lt;T&gt;</em> parts of <em>&lt;T&gt;ListNode</em>. Does not do any checks on <em>node</em> and
-overwrites the data that was there. Specifically, it invokes undefined
-behaviour to one add <em>node</em> to more than one list without removing it each
-time. If either <em>this</em> or <em>node</em> is null, it does nothing.
+Sets the contents of <em>node</em> to add it to <em>this</em> at the end, thereby
+initialising the non-<em>&lt;T&gt;</em> parts of <em>&lt;T&gt;ListNode</em>. Does not do any checks on
+<em>node</em> and overwrites the data that was there. Specifically, it invokes
+undefined behaviour to one add <em>node</em> to more than one list without removing
+it each time. If either <em>this</em> or <em>node</em> is null, it does nothing.
 </p>
 <dl>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ListUnshift"><!-- --></a>
+<h3>&lt;T&gt;ListUnshift</h3>
+<pre>static void <b>&lt;T&gt;ListUnshift</b> (struct &lt;T&gt;List *const this,
+	struct &lt;T&gt;ListNode *const node)</pre>
+<p>
+Sets the contents of <em>node</em> to add it to <em>this</em> at the beginning, thereby
+initialising the non-<em>&lt;T&gt;</em> parts of <em>&lt;T&gt;ListNode</em>. Does not do any checks on
+<em>node</em> and overwrites the data that was there. Specifically, it invokes
+undefined behaviour to one add <em>node</em> to more than one list without removing
+it each time. If either <em>this</em> or <em>node</em> is null, it does nothing.
+</p>
+<dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
 </dl>
 </div>
 

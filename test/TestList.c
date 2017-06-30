@@ -191,7 +191,7 @@ static const struct AnimalVt {
 static struct AnimalList animals;
 static void Animal_init(struct AnimalListNode *const this) {
 	Animal_filler((struct Animal *)this);
-	AnimalListAdd(&animals, this);
+	AnimalListPush(&animals, this);
 }
 static void Sloth_init(struct Sloth *const sloth) {
 	Animal_init(&sloth->animal);

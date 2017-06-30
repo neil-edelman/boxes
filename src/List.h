@@ -49,7 +49,7 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	1.0; 2017-05
+ @version	1.1; 2017-06 split Add into Push and Unshift
  @since		1.0; 2017-05 separated from List.h
  @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
  {assert} bug on {LIST_TEST}.
@@ -349,7 +349,9 @@ struct T_(List) {
 
 
 /* Prototypes: needed for the next section, but undefined until later. */
-static void PRIVATE_T_(add)(struct T_(List) *const this,
+static void PRIVATE_T_(push)(struct T_(List) *const this,
+	struct T_(ListNode) *const node);
+static void PRIVATE_T_(unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
 static void PRIVATE_T_(remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
@@ -394,22 +396,41 @@ static void PRIVATE_T_(migrate)(const struct ListMigrate *const migrate,
 
 
 
-/** Private: add to the end of the list. */
-static void PRIVATE_T_(add)(struct T_(List) *const this,
+/** Private: push to the end of the list. */
+static void PRIVATE_T_(push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
 #ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, add)(this, node);
+	PRIVATE_T_UA_(list, push)(this, node);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, add)(this, node);
+	PRIVATE_T_UB_(list, push)(this, node);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, add)(this, node);
+	PRIVATE_T_UC_(list, push)(this, node);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, add)(this, node);
+	PRIVATE_T_UD_(list, push)(this, node);
+#endif /* d --> */
+}
+
+/** Private: unshift to the beginning of the list. */
+static void PRIVATE_T_(unshift)(struct T_(List) *const this,
+	struct T_(ListNode) *const node) {
+	assert(this);
+	assert(node);
+#ifdef LIST_UA_NAME /* <-- a */
+	PRIVATE_T_UA_(list, unshift)(this, node);
+#endif /* a --> */
+#ifdef LIST_UB_NAME /* <-- b */
+	PRIVATE_T_UB_(list, unshift)(this, node);
+#endif /* b --> */
+#ifdef LIST_UC_NAME /* <-- c */
+	PRIVATE_T_UC_(list, unshift)(this, node);
+#endif /* c --> */
+#ifdef LIST_UD_NAME /* <-- d */
+	PRIVATE_T_UD_(list, unshift)(this, node);
 #endif /* d --> */
 }
 
@@ -459,17 +480,31 @@ static void T_(ListClear)(struct T_(List) *const this) {
 	this->param = 0;
 }
 
-/** Sets the contents of {node} to push it to {this}, thereby initialising the
- non-{<T>} parts of {<T>ListNode}. Does not do any checks on {node} and
- overwrites the data that was there. Specifically, it invokes undefined
- behaviour to one add {node} to more than one list without removing it each
- time. If either {this} or {node} is null, it does nothing.
+/** Sets the contents of {node} to add it to {this} at the end, thereby
+ initialising the non-{<T>} parts of {<T>ListNode}. Does not do any checks on
+ {node} and overwrites the data that was there. Specifically, it invokes
+ undefined behaviour to one add {node} to more than one list without removing
+ it each time. If either {this} or {node} is null, it does nothing.
  @order \Theta(1)
  @allow */
-static void T_(ListAdd)(struct T_(List) *const this,
+static void T_(ListPush)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	if(!this || !node) return;
-	PRIVATE_T_(add)(this, node);
+	PRIVATE_T_(push)(this, node);
+}
+
+/** Sets the contents of {node} to add it to {this} at the beginning, thereby
+ initialising the non-{<T>} parts of {<T>ListNode}. Does not do any checks on
+ {node} and overwrites the data that was there. Specifically, it invokes
+ undefined behaviour to one add {node} to more than one list without removing
+ it each time. If either {this} or {node} is null, it does nothing.
+ @order \Theta(1)
+ @fixme Untested.
+ @allow */
+static void T_(ListUnshift)(struct T_(List) *const this,
+	struct T_(ListNode) *const node) {
+	if(!this || !node) return;
+	PRIVATE_T_(unshift)(this, node);
 }
 
 /** Removes {node} from the {this}. The {node} is now free to add to another
@@ -722,7 +757,8 @@ static void PRIVATE_T_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PRIVATE_T_(unused_list)(void) {
 	T_(ListClear)(0);
-	T_(ListAdd)(0, 0);
+	T_(ListPush)(0, 0);
+	T_(ListUnshift)(0, 0);
 	T_(ListRemove)(0, 0);
 	T_(ListTake)(0, 0);
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
@@ -841,7 +877,7 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 
 
 /** Private: add to {this.last} in {<U>}. */
-static void PRIVATE_T_U_(list, add)(struct T_(List) *const this,
+static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
@@ -854,6 +890,22 @@ static void PRIVATE_T_U_(list, add)(struct T_(List) *const this,
 		this->U_(first) = node;
 	}
 	this->U_(last) = node;
+}
+
+/** Private: add before {this.first} in {<U>}. */
+static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
+	struct T_(ListNode) *const node) {
+	assert(this);
+	assert(node);
+	node->U_(prev) = 0;
+	node->U_(next) = this->U_(first);
+	if(this->U_(first)) {
+		this->U_(first)->U_(prev) = node;
+	} else {
+		assert(!this->U_(last));
+		this->U_(last) = node;
+	}
+	this->U_(first) = node;
 }
 
 /** Private: list remove in {<U>}. */
@@ -973,6 +1025,10 @@ static struct T_(ListNode) *T_U_(List, GetLast)(struct T_(List) *const this) {
 	if(!this) return 0;
 	return this->U_(last);
 }
+
+/** This is a shortcut to
+ {for(l = <T>List<U>GetFirst; l; l = <T>ListNode<U>GetNext)}.
+ @fixme Unwritten. */
 
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 
@@ -1305,19 +1361,19 @@ static void PRIVATE_T_U_(boolean, seq)(struct T_(List) *const this,
 			t = ai, ai = ai->U_(next);
 			if(mask & LO_SUBTRACTION_AB) {
 				PRIVATE_T_(remove)(a, t);
-				if(this) PRIVATE_T_(add)(this, t);
+				if(this) PRIVATE_T_(push)(this, t);
 			}
 		} else if(comp > 0) {
 			t = bi, bi = bi->U_(next);
 			if(mask & LO_SUBTRACTION_BA) {
 				PRIVATE_T_(remove)(b, t);
-				if(this) PRIVATE_T_(add)(this, t);
+				if(this) PRIVATE_T_(push)(this, t);
 			}
 		} else {
 			t = ai, ai = ai->U_(next), bi = bi->U_(next);
 			if(mask & LO_INTERSECTION) {
 				PRIVATE_T_(remove)(a, t);
-				if(this) PRIVATE_T_(add)(this, t);
+				if(this) PRIVATE_T_(push)(this, t);
 			}
 		}
 	}
@@ -1325,14 +1381,14 @@ static void PRIVATE_T_U_(boolean, seq)(struct T_(List) *const this,
 		while(ai) {
 			t = ai, ai = ai->U_(next);
 			PRIVATE_T_(remove)(a, t);
-			if(this) PRIVATE_T_(add)(this, t);
+			if(this) PRIVATE_T_(push)(this, t);
 		}
 	}
 	if((mask & LO_DEFAULT_B)) {
 		while(bi) {
 			t = bi, bi = bi->U_(next);
 			PRIVATE_T_(remove)(b, t);
-			if(this) PRIVATE_T_(add)(this, t);
+			if(this) PRIVATE_T_(push)(this, t);
 		}
 	}
 }
@@ -1394,7 +1450,7 @@ static void T_U_(List, TakeIf)(struct T_(List) *const this,
 		if(predicate && !predicate(&cursor->data, from->param)) continue;
 		PRIVATE_T_(remove)(from, cursor);
 		if(!this) continue;
-		PRIVATE_T_(add)(this, cursor);
+		PRIVATE_T_(push)(this, cursor);
 	}
 }
 
