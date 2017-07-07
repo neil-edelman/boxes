@@ -684,9 +684,10 @@ static void T_(ListMigrate)(struct T_(List) *const this,
  @fixme Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
  @allow */
-#define ORIGINAL
+/*#define ORIGINAL*/
 #ifdef ORIGINAL
 static void T_(ListMigrateBlock)(struct T_(List) *const this,
+	const struct Migrate *const info,
 	void *const array, const size_t array_size, const void *const old_array) {
 	struct Migrate migrat, *migrate = &migrat;
 	if(!this || !array || !array_size || !old_array || array == old_array)
@@ -696,6 +697,9 @@ static void T_(ListMigrateBlock)(struct T_(List) *const this,
 	migrat.begin = old_array;
 	migrat.end   = (const char *)old_array + array_size;
 	migrat.delta = (const char *)array - (const char *)old_array;
+	printf("*** migrate: %p-%p -> %p; info %p-%p -> %p\n", migrate->begin,
+		migrate->end, (void *)migrate->delta, info->begin, info->end,
+		(void *)info->delta);
 #else
 static void T_(ListMigrateBlock)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
@@ -779,7 +783,7 @@ static void PRIVATE_T_(unused_list)(void) {
 #endif /* comp --> */
 	T_(ListSetParam)(0, 0);
 	T_(ListMigrate)(0, 0);
-	T_(ListMigrateBlock)(0, 0, 0, 0);
+	T_(ListMigrateBlock)(0, 0/*, 0, 0, 0*/);
 	T_(ListMigrateSelf)(0, 0);
 	PRIVATE_T_(unused_coda)();
 }

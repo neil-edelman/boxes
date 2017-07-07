@@ -251,10 +251,10 @@ static void test_block_move(void) {
 	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '!';
 	printf("Moved sloths: %s.\n", AnimalListNameToString(&animals));
 	migrate.begin = sloths;
-	migrate.end   = sloths + sizeof sloths;
+	migrate.end   = (const char *)sloths + sizeof sloths;
 	migrate.delta = (const char *)others - (const char *)sloths;
 #ifdef ORIGINAL
-	AnimalListMigrateBlock(&animals, &others, sizeof sloths, &sloths);
+	AnimalListMigrateBlock(&animals, &migrate, &others, sizeof sloths, &sloths);
 #else
 	AnimalListMigrateBlock(&animals, &migrate);
 #endif
