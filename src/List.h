@@ -684,16 +684,24 @@ static void T_(ListMigrate)(struct T_(List) *const this,
  @fixme Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
  @allow */
+#define ORIGINAL
+#ifdef ORIGINAL
 static void T_(ListMigrateBlock)(struct T_(List) *const this,
 	void *const array, const size_t array_size, const void *const old_array) {
-	struct Migrate migrate;
+	struct Migrate migrat, *migrate = &migrat;
 	if(!this || !array || !array_size || !old_array || array == old_array)
 		return;
 	/* @param [begin, end): Where the pointers have changed.
 	 @param delta: the offset they have moved to in memory bytes. */
-	migrate.begin = old_array;
-	migrate.end   = (const char *)old_array + array_size;
-	migrate.delta = (const char *)array - (const char *)old_array;
+	migrat.begin = old_array;
+	migrat.end   = (const char *)old_array + array_size;
+	migrat.delta = (const char *)array - (const char *)old_array;
+#else
+static void T_(ListMigrateBlock)(struct T_(List) *const this,
+	const struct Migrate *const migrate) {
+	if(!this || !migrate) return;
+#endif
+
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -702,31 +710,31 @@ static void T_(ListMigrateBlock)(struct T_(List) *const this,
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UA_(block, migrate)(this, &migrate);
+		PRIVATE_T_UA_(block, migrate)(this, migrate);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UB_(block, migrate)(this, &migrate);
+		PRIVATE_T_UB_(block, migrate)(this, migrate);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UC_(block, migrate)(this, &migrate);
+		PRIVATE_T_UC_(block, migrate)(this, migrate);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UD_(block, migrate)(this, &migrate);
+		PRIVATE_T_UD_(block, migrate)(this, migrate);
 #endif /* d --> */
 #ifdef LIST_SELF_MIGRATE /* <-- self */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_(self_migrate)(this, &migrate);
+		PRIVATE_T_(self_migrate)(this, migrate);
 #endif /* self --> */
 	}
 }
@@ -771,7 +779,7 @@ static void PRIVATE_T_(unused_list)(void) {
 #endif /* comp --> */
 	T_(ListSetParam)(0, 0);
 	T_(ListMigrate)(0, 0);
-	T_(ListMigrateBlock)(0, 0, (size_t)0, 0);
+	T_(ListMigrateBlock)(0, 0, 0, 0);
 	T_(ListMigrateSelf)(0, 0);
 	PRIVATE_T_(unused_coda)();
 }

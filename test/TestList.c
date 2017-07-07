@@ -182,7 +182,7 @@ static void llama_act(struct Animal *const animal) {
 static void bear_act(struct Animal *const animal) {
 	struct Bear *const bear = (struct Bear *)animal;
 	printf("Bear %s at %d is riding on llama %s.\n", animal->name, animal->x,
-		bear->riding->name);
+		   bear->riding ? bear->riding->name : "no llama");
 }
 static const struct AnimalVt {
 	void (*const act)(struct Animal *const);
@@ -207,10 +207,13 @@ static void Bear_init(struct Bear *const bear, struct Llama *const llamas,
 	const size_t llamas_size) {
 	Animal_init(&bear->animal);
 	bear->animal.data.vt = &bear_vt;
+	bear->riding = 0;
+#if 0
 	bear->riding = (struct Animal *)(llamas
 		+ (unsigned)((double)llamas_size * rand() / (RAND_MAX + 1.0)));
 	/* Overwrite to make the Bear and the Llama the same. */
 	bear->animal.data.x = bear->riding->x;
+#endif
 }
 /* @implements AnimalAction */
 static void act(struct Animal *const this) {
@@ -218,6 +221,7 @@ static void act(struct Animal *const this) {
 }
 /** Test BlockMove. */
 static void test_block_move(void) {
+	struct Migrate migrate;
 	struct Sloth sloths[3];
 	const size_t sloths_size = sizeof sloths / sizeof *sloths;
 	struct Llama llamas[6];
@@ -246,7 +250,14 @@ static void test_block_move(void) {
 	memcpy(others, sloths, sizeof sloths);
 	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '!';
 	printf("Moved sloths: %s.\n", AnimalListNameToString(&animals));
-	AnimalListMigrateBlock(&animals, others, sizeof sloths, sloths);
+	migrate.begin = sloths;
+	migrate.end   = sloths + sizeof sloths;
+	migrate.delta = (const char *)others - (const char *)sloths;
+#ifdef ORIGINAL
+	AnimalListMigrateBlock(&animals, &others, sizeof sloths, &sloths);
+#else
+	AnimalListMigrateBlock(&animals, &migrate);
+#endif
 	printf("Block move: %s.\n", AnimalListNameToString(&animals));
 	for(i = sloths_size; i < others_size; i++) Sloth_init(others + i);
 	printf("New sloths: %s.\n", AnimalListNameToString(&animals));
