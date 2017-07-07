@@ -81,6 +81,7 @@
 #include <assert.h>	/* assert */
 #ifdef LIST_TO_STRING /* <-- print */
 #include <stdio.h>	/* sprintf */
+#include <string.h>	/* strlen */
 #endif /* print --> */
 
 /* unused macro */
@@ -248,12 +249,15 @@ enum ListOperation {
 	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
 };
 
+#ifndef MIGRATE /* <-- migrate */
+#define MIGRATE
 /** Contains information about a {realloc}. */
-struct ListMigrate;
-struct ListMigrate {
+struct Migrate;
+struct Migrate {
 	const void *begin, *end; /* old pointers */
 	ptrdiff_t delta;
 };
+#endif /* migrate --> */
 
 #endif /* LIST_H */
 
@@ -286,7 +290,7 @@ static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 /** User-defined self-referential memory re-allocation fuction; should call
  \see{<T>ListSelfMigrate} on all the self-referential pointers. */
 typedef void (*T_(ListSelfMigrate))(struct T_(List) *const this,
-	const struct ListMigrate *const migrate);
+	const struct Migrate *const migrate);
 
 /* Check that {LIST_SELF_MIGRATE} is a function implementing {<T>SelfMigrate}.*/
 static const T_(ListSelfMigrate) PRIVATE_T_(self_migrate) = (LIST_SELF_MIGRATE);
@@ -355,7 +359,7 @@ static void PRIVATE_T_(unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
 static void PRIVATE_T_(remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
-static void PRIVATE_T_(migrate)(const struct ListMigrate *const migrate,
+static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	struct T_(ListNode) **const node_ptr);
 
 /* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor flag
@@ -682,7 +686,7 @@ static void T_(ListMigrate)(struct T_(List) *const this,
  @allow */
 static void T_(ListMigrateBlock)(struct T_(List) *const this,
 	void *const array, const size_t array_size, const void *const old_array) {
-	struct ListMigrate migrate;
+	struct Migrate migrate;
 	if(!this || !array || !array_size || !old_array || array == old_array)
 		return;
 	/* @param [begin, end): Where the pointers have changed.
@@ -729,7 +733,7 @@ static void T_(ListMigrateBlock)(struct T_(List) *const this,
 
 /** Private: used in \see{<T>_block_<U>_migrate} and
  \see{<T>ListNodeSelfMigrate}. \${ptr \in [begin, end) -> ptr += delta}. */
-static void PRIVATE_T_(migrate)(const struct ListMigrate *const migrate,
+static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	struct T_(ListNode) **const node_ptr) {
 	const void *const ptr = *node_ptr;
 	if(ptr < migrate->begin || ptr >= migrate->end) return;
@@ -741,7 +745,7 @@ static void PRIVATE_T_(migrate)(const struct ListMigrate *const migrate,
  {realloc}.
  @fixme Untested.
  @allow */
-static void T_(ListMigrateSelf)(const struct ListMigrate *const migrate,
+static void T_(ListMigrateSelf)(const struct Migrate *const migrate,
 	T **const t_ptr) {
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
 }
@@ -829,6 +833,9 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 #endif
 #ifdef LIST_TEST
 #undef LIST_TEST
+#endif
+#ifdef LIST_DEBUG
+#undef LIST_DEBUG
 #endif
 #ifdef LIST_NDEBUG
 #undef LIST_NDEBUG
@@ -952,6 +959,10 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
+#ifdef LIST_DEBUG
+	fprintf(stderr, "List<" QUOTE(LIST_NAME) "#%p: moved entry at #%p.\n",
+		(void *)this, (void *)node);
+#endif
 	if(node->U_(prev)) {
 		node->U_(prev)->U_(next) = node;
 	} else {
@@ -968,7 +979,7 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
  behaviour to a minimum.
  @order \Theta(n) */
 static void PRIVATE_T_U_(block, migrate)(struct T_(List) *const this,
-	const struct ListMigrate *const migrate) {
+	const struct Migrate *const migrate) {
 	struct T_(ListNode) *node;
 	assert(this);
 	assert(migrate);
@@ -976,6 +987,11 @@ static void PRIVATE_T_U_(block, migrate)(struct T_(List) *const this,
 	assert(migrate->begin < migrate->end);
 	assert(migrate->delta);
 	assert(!this->U_(first) == !this->U_(last));
+#ifdef LIST_DEBUG
+	fprintf(stderr, "List<" QUOTE(LIST_NAME)
+		"#%p: moved entries at #%p-#%p by %lu.\n", migrate->begin, migrate->end,
+		(void *)migrate->delta);
+#endif
 	/* empty -- done */
 	if(!this->U_(first)) return;
 	/* first and last pointer of {<T>List} */

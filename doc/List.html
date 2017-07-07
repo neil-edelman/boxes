@@ -114,9 +114,9 @@ This is a shortcut to
 
 <a name = "_declarations"><!-- --></a><h2>Declarations</h2>
 
-<div><a name = "struct ListMigrate"><!-- --></a>
-<h3>struct ListMigrate</h3>
-<pre><b>struct ListMigrate</b></pre>
+<div><a name = "struct Migrate"><!-- --></a>
+<h3>struct Migrate</h3>
+<pre><b>struct Migrate</b></pre>
 <p>
 Contains information about a <em>realloc</em>.
 </p>
@@ -168,11 +168,11 @@ null-terminated output string (the second.)
 </div>
 
 <div><a name = "typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
-	const struct ListMigrate *const migrate)"><!-- --></a>
+	const struct Migrate *const migrate)"><!-- --></a>
 <h3>typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
-	const struct ListMigrate *const migrate)</h3>
+	const struct Migrate *const migrate)</h3>
 <pre><b>typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
-	const struct ListMigrate *const migrate)</b></pre>
+	const struct Migrate *const migrate)</b></pre>
 <p>
 User-defined self-referential memory re-allocation fuction; should call
 <a href = "#&lt;T&gt;ListSelfMigrate">&lt;T&gt;ListSelfMigrate</a> on all the self-referential pointers.
@@ -282,7 +282,7 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListMigrateSelf">&lt;T&gt;ListMigrateSelf</a></td>
-	<td>const struct ListMigrate *const migrate,
+	<td>const struct Migrate *const migrate,
 	T **const t_ptr</td>
 </tr>
 <tr>
@@ -528,7 +528,7 @@ changed places due to a <em>realloc</em>.
 
 <div><a name = "&lt;T&gt;ListMigrateSelf"><!-- --></a>
 <h3>&lt;T&gt;ListMigrateSelf</h3>
-<pre>static void <b>&lt;T&gt;ListMigrateSelf</b> (const struct ListMigrate *const migrate,
+<pre>static void <b>&lt;T&gt;ListMigrateSelf</b> (const struct Migrate *const migrate,
 	T **const t_ptr)</pre>
 <p>
 <em>LIST_SELF_MIGRATE</em> callback should call this function with the address of

@@ -67,9 +67,9 @@ fixme: Unwritten.
 
 ## Declarations ##
 
-### struct ListMigrate ###
+### struct Migrate ###
 
-struct ListMigrate
+struct Migrate
 
 Contains information about a _realloc_.
 
@@ -106,10 +106,10 @@ Responsible for turning _<T>_ (the first argument) into a 12 _char_
 
 
 ### typedef void (*<T>ListSelfMigrate)(struct <T>List *const this,
-	const struct ListMigrate *const migrate) ###
+	const struct Migrate *const migrate) ###
 
 typedef void (*<T>ListSelfMigrate)(struct <T>List *const this,
-	const struct ListMigrate *const migrate)
+	const struct Migrate *const migrate)
 
 User-defined self-referential memory re-allocation fuction; should call
  `<T>ListSelfMigrate` on all the self-referential pointers.
@@ -167,7 +167,7 @@ static void	<T>ListMigrate	(struct <T>List *const this,
 	struct <T>ListNode *const node)
 static void	<T>ListMigrateBlock	(struct <T>List *const this,
 	void *const array, const size_t array_size, const void *const old_array)
-static void	<T>ListMigrateSelf	(const struct ListMigrate *const migrate,
+static void	<T>ListMigrateSelf	(const struct Migrate *const migrate,
 	T **const t_ptr)
 static struct <T>ListNode *	<T>ListNode<U>GetNext	(struct <T>ListNode *const this)
 static struct <T>ListNode *	<T>ListNode<U>GetPrevious	(struct <T>ListNode *const this)
@@ -335,7 +335,7 @@ fixme: Relies on not-strictly-defined behaviour because pointers are not
 
 ### <T>ListMigrateSelf ###
 
-static void <T>ListMigrateSelf(const struct ListMigrate *const migrate,
+static void <T>ListMigrateSelf(const struct Migrate *const migrate,
 	T **const t_ptr)
 
 _LIST_SELF_MIGRATE_ callback should call this function with the address of
