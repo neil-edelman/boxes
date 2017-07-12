@@ -80,9 +80,6 @@ This is a shortcut to
  resources.</dd>
 	<dt>parameter: LIST_OPENMP</dt>
 	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>.</dd>
-	<dt>parameter: LIST_SELF_MIGRATE</dt>
-	<dd>Use if &lt;T&gt; is self-referential; it must be defined as a function implementing
- <em>&lt;T&gt;SelfMigrate</em>.</dd>
 	<dt>parameter: LIST_TEST</dt>
 	<dd>Unit testing framework using <em>&lt;T&gt;ListTest</em>, included in a separate header,
  <em>../test/ListTest.h</em>. Must be defined equal to a (random) filler, satisfying
@@ -93,9 +90,10 @@ This is a shortcut to
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>1.1; 2017-06 split Add into Push and Unshift</dd>
+	<dd>1.2; 2017-07 made migrate simpler</dd>
 	<dt>since</dt>
-	<dd>1.0; 2017-05 separated from List.h</dd>
+	<dd>1.1; 2017-06 split Add into Push and Unshift
+			1.0; 2017-05 separated from List.h</dd>
 	<dt>fixme</dt>
 	<dd><em>GCC</em>: <em>#pragma GCC diagnostic ignored "-Wconversion"</em>; libc 4.2
  <em>assert</em> bug on <em>LIST_TEST</em>.</dd>
@@ -134,12 +132,22 @@ Operates by side-effects only.
 </dl>
 </div>
 
-<div><a name = "typedef int  (*&lt;T&gt;Predicate)(T *const, void *const)"><!-- --></a>
-<h3>typedef int  (*&lt;T&gt;Predicate)(T *const, void *const)</h3>
-<pre><b>typedef int  (*&lt;T&gt;Predicate)(T *const, void *const)</b></pre>
+<div><a name = "typedef int  (*&lt;T&gt;Predicate)(T *const)"><!-- --></a>
+<h3>typedef int  (*&lt;T&gt;Predicate)(T *const)</h3>
+<pre><b>typedef int  (*&lt;T&gt;Predicate)(T *const)</b></pre>
 <p>
-Passed <em>T</em> and <em>param</em>, (see <a href = "#&lt;T&gt;ListSetParam">&lt;T&gt;ListSetParam</a>,) returns (non-zero)
-true or (zero) false.
+Passed <em>T</em>, returns (non-zero) true or (zero) false.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef int (*&lt;T&gt;BiPredicate)(T *const, void *const)"><!-- --></a>
+<h3>typedef int (*&lt;T&gt;BiPredicate)(T *const, void *const)</h3>
+<pre><b>typedef int (*&lt;T&gt;BiPredicate)(T *const, void *const)</b></pre>
+<p>
+Passed <em>T</em> and a user-defined pointer value, returns (non-zero) true or
+(zero) false.
 </p>
 <dl>
 </dl>
@@ -167,20 +175,6 @@ null-terminated output string (the second.)
 </dl>
 </div>
 
-<div><a name = "typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
-	const struct Migrate *const migrate)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
-	const struct Migrate *const migrate)</h3>
-<pre><b>typedef void (*&lt;T&gt;ListSelfMigrate)(struct &lt;T&gt;List *const this,
-	const struct Migrate *const migrate)</b></pre>
-<p>
-User-defined self-referential memory re-allocation fuction; should call
-<a href = "#&lt;T&gt;ListSelfMigrate">&lt;T&gt;ListSelfMigrate</a> on all the self-referential pointers.
-</p>
-<dl>
-</dl>
-</div>
-
 <div><a name = "struct &lt;T&gt;ListNode"><!-- --></a>
 <h3>struct &lt;T&gt;ListNode</h3>
 <pre><b>struct &lt;T&gt;ListNode</b></pre>
@@ -191,10 +185,9 @@ reinterpreted (cast) to <em>&lt;T&gt;</em> as a single element; that is, <em>&lt
 first element of <em>&lt;T&gt;ListNode</em>.
 <pre>|    &lt;T&gt;ListNode *node;
 |    T *t;
-|    for(node = &lt;T&gt;List&lt;U&gt;GetFirst(list);
-|        node;
-|        node = &lt;T&gt;ListNode&lt;U&gt;GetNext(node)) {
-|        t = (T *)node;
+|    for(t = &lt;T&gt;List&lt;U&gt;GetFirst(list);
+|        t;
+|        t = &lt;T&gt;Node&lt;U&gt;GetNext(node)) {
 |    }</pre> or
 <pre>|    static void for_all_fn(T *const t) {
 |        struct &lt;T&gt;ListNode *const node = (struct &lt;T&gt;ListNode *)t;
@@ -241,8 +234,7 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListRemove">&lt;T&gt;ListRemove</a></td>
-	<td>struct &lt;T&gt;List *const this,
-	struct &lt;T&gt;ListNode *const node</td>
+	<td>struct &lt;T&gt;List *const this, T *const data</td>
 </tr>
 <tr>
 	<td>static void</td>
@@ -263,45 +255,33 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;ListSetParam">&lt;T&gt;ListSetParam</a></td>
-	<td>struct &lt;T&gt;List *const this,
-	void *const param</td>
-</tr>
-<tr>
-	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a></td>
 	<td>struct &lt;T&gt;List *const this,
-	struct &lt;T&gt;ListNode *const node</td>
+	const struct Migrate *const migrate</td>
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;ListMigrateBlock">&lt;T&gt;ListMigrateBlock</a></td>
-	<td>struct &lt;T&gt;List *const this,
-	void *const array, const size_t array_size, const void *const old_array</td>
-</tr>
-<tr>
-	<td>static void</td>
-	<td><a href = "#&lt;T&gt;ListMigrateSelf">&lt;T&gt;ListMigrateSelf</a></td>
+	<td><a href = "#&lt;T&gt;Migrate">&lt;T&gt;Migrate</a></td>
 	<td>const struct Migrate *const migrate,
 	T **const t_ptr</td>
 </tr>
 <tr>
-	<td>static struct &lt;T&gt;ListNode *</td>
-	<td><a href = "#&lt;T&gt;ListNode&lt;U&gt;GetNext">&lt;T&gt;ListNode&lt;U&gt;GetNext</a></td>
-	<td>struct &lt;T&gt;ListNode *const this</td>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;Node&lt;U&gt;GetNext">&lt;T&gt;Node&lt;U&gt;GetNext</a></td>
+	<td>T *const this</td>
 </tr>
 <tr>
-	<td>static struct &lt;T&gt;ListNode *</td>
-	<td><a href = "#&lt;T&gt;ListNode&lt;U&gt;GetPrevious">&lt;T&gt;ListNode&lt;U&gt;GetPrevious</a></td>
-	<td>struct &lt;T&gt;ListNode *const this</td>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;Node&lt;U&gt;GetPrevious">&lt;T&gt;Node&lt;U&gt;GetPrevious</a></td>
+	<td>T *const this</td>
 </tr>
 <tr>
-	<td>static struct &lt;T&gt;ListNode *</td>
+	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;GetFirst">&lt;T&gt;List&lt;U&gt;GetFirst</a></td>
 	<td>struct &lt;T&gt;List *const this</td>
 </tr>
 <tr>
-	<td>static struct &lt;T&gt;ListNode *</td>
+	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;GetLast">&lt;T&gt;List&lt;U&gt;GetLast</a></td>
 	<td>struct &lt;T&gt;List *const this</td>
 </tr>
@@ -348,14 +328,27 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 </tr>
 <tr>
 	<td>static void</td>
+	<td><a href = "#&lt;T&gt;List&lt;U&gt;BiTakeIf">&lt;T&gt;List&lt;U&gt;BiTakeIf</a></td>
+	<td>struct &lt;T&gt;List *const this,
+	struct &lt;T&gt;List *const from, const &lt;T&gt;BiPredicate bipredicate,
+	void *const param</td>
+</tr>
+<tr>
+	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;ForEach">&lt;T&gt;List&lt;U&gt;ForEach</a></td>
 	<td>struct &lt;T&gt;List *const this,
 	const &lt;T&gt;Action action</td>
 </tr>
 <tr>
-	<td>static struct &lt;T&gt;ListNode *</td>
+	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;ShortCircuit">&lt;T&gt;List&lt;U&gt;ShortCircuit</a></td>
 	<td>struct &lt;T&gt;List *const this, const &lt;T&gt;Predicate predicate</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;List&lt;U&gt;BiShortCircuit">&lt;T&gt;List&lt;U&gt;BiShortCircuit</a></td>
+	<td>struct &lt;T&gt;List *const this,
+	const &lt;T&gt;BiPredicate bipredicate, void *const param</td>
 </tr>
 <tr>
 	<td>static char *</td>
@@ -418,12 +411,11 @@ it each time. If either <em>this</em> or <em>node</em> is null, it does nothing.
 
 <div><a name = "&lt;T&gt;ListRemove"><!-- --></a>
 <h3>&lt;T&gt;ListRemove</h3>
-<pre>static void <b>&lt;T&gt;ListRemove</b> (struct &lt;T&gt;List *const this,
-	struct &lt;T&gt;ListNode *const node)</pre>
+<pre>static void <b>&lt;T&gt;ListRemove</b> (struct &lt;T&gt;List *const this, T *const data)</pre>
 <p>
-Removes <em>node</em> from the <em>this</em>. The <em>node</em> is now free to add to another
+Removes <em>data</em> from the <em>this</em>. The <em>data</em> is now free to add to another
 list. Removing an element that was not added to <em>this</em> results in undefined
-behaviour. If either <em>this</em> or <em>node</em> is null, it does nothing.
+behaviour. If either <em>this</em> or <em>data</em> is null, it does nothing.
 </p>
 <dl>
 	<dt>order</dt>
@@ -477,47 +469,25 @@ be set.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;ListSetParam"><!-- --></a>
-<h3>&lt;T&gt;ListSetParam</h3>
-<pre>static void <b>&lt;T&gt;ListSetParam</b> (struct &lt;T&gt;List *const this,
-	void *const param)</pre>
-<p>
-Sets the user-defined <em>param</em> of <em>this</em>.
-</p>
-<dl>
-	<dt>order</dt>
-	<dd>&Theta;(1)</dd>
-</dl>
-</div>
-
 <div><a name = "&lt;T&gt;ListMigrate"><!-- --></a>
 <h3>&lt;T&gt;ListMigrate</h3>
 <pre>static void <b>&lt;T&gt;ListMigrate</b> (struct &lt;T&gt;List *const this,
-	struct &lt;T&gt;ListNode *const node)</pre>
-<p>
-Use when one <em>node</em> of <em>this</em> has switched places in memory. If <em>this</em> or
-<em>node</em> is null, doesn't do anything.
-</p>
-<dl>
-	<dt>order</dt>
-	<dd>&Theta;(1)</dd>
-</dl>
-</div>
-
-<div><a name = "&lt;T&gt;ListMigrateBlock"><!-- --></a>
-<h3>&lt;T&gt;ListMigrateBlock</h3>
-<pre>static void <b>&lt;T&gt;ListMigrateBlock</b> (struct &lt;T&gt;List *const this,
-	void *const array, const size_t array_size, const void *const old_array)</pre>
+	const struct Migrate *const migrate)</pre>
 <p>
 When <em>this</em> contains elements from an array of/containing <em>&lt;T&gt;ListNode</em> in
-memory that switched from <em>old_array</em> to <em>array</em> with byte-size <em>array_size</em>.
-If <em>this</em>, <em>array</em>, or <em>old_array</em> is null, doesn't do anything.
+memory that switched due to a <em>realloc</em>. If <em>this</em> or <em>migrate</em> is null,
+doesn't do anything.
 </p>
 <p>
 Specifically, use when <em>this</em> is (partially) backed with an array that has
-changed places due to a <em>realloc</em>.
+changed places due to a <em>realloc</em>. This changes the list structure itself; you
+may need more changes due to the structure contained in the list,
+<a href = "#&lt;T&gt;Migrate">&lt;T&gt;Migrate</a>.
 </p>
 <dl>
+	<dt>parameter: migrate</dt>
+	<dd>A <em>struct</em> containing the old array start and end as a
+ <em>void *</em> and delta as <em>ptrdiff_t</em>.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(n)</dd>
 	<dt>fixme</dt>
@@ -526,14 +496,14 @@ changed places due to a <em>realloc</em>.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;ListMigrateSelf"><!-- --></a>
-<h3>&lt;T&gt;ListMigrateSelf</h3>
-<pre>static void <b>&lt;T&gt;ListMigrateSelf</b> (const struct Migrate *const migrate,
+<div><a name = "&lt;T&gt;Migrate"><!-- --></a>
+<h3>&lt;T&gt;Migrate</h3>
+<pre>static void <b>&lt;T&gt;Migrate</b> (const struct Migrate *const migrate,
 	T **const t_ptr)</pre>
 <p>
-<em>LIST_SELF_MIGRATE</em> callback should call this function with the address of
-any self-referential node pointers to make sure that they are updated on
-<em>realloc</em>.
+Call this function with the address of any self-referential node pointers
+contained in the data itself, to make sure that they are updated on <em>realloc</em>.
+To update the list, see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a>.
 </p>
 <dl>
 	<dt>fixme</dt>
@@ -541,10 +511,12 @@ any self-referential node pointers to make sure that they are updated on
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;ListNode&lt;U&gt;GetNext"><!-- --></a>
-<h3>&lt;T&gt;ListNode&lt;U&gt;GetNext</h3>
-<pre>static struct &lt;T&gt;ListNode * <b>&lt;T&gt;ListNode&lt;U&gt;GetNext</b> (struct &lt;T&gt;ListNode *const this)</pre>
+<div><a name = "&lt;T&gt;Node&lt;U&gt;GetNext"><!-- --></a>
+<h3>&lt;T&gt;Node&lt;U&gt;GetNext</h3>
+<pre>static T * <b>&lt;T&gt;Node&lt;U&gt;GetNext</b> (T *const this)</pre>
 <dl>
+	<dt>parameter: this</dt>
+	<dd>Must be in a <em>List</em> as a <em>&lt;T&gt;ListNode</em>.</dd>
 	<dt>return</dt>
 	<dd>The next element after <em>this</em> in <em>&lt;U&gt;</em>. When <em>this</em> is the last
  element or when <em>this</em> is null, returns null.</dd>
@@ -553,10 +525,12 @@ any self-referential node pointers to make sure that they are updated on
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;ListNode&lt;U&gt;GetPrevious"><!-- --></a>
-<h3>&lt;T&gt;ListNode&lt;U&gt;GetPrevious</h3>
-<pre>static struct &lt;T&gt;ListNode * <b>&lt;T&gt;ListNode&lt;U&gt;GetPrevious</b> (struct &lt;T&gt;ListNode *const this)</pre>
+<div><a name = "&lt;T&gt;Node&lt;U&gt;GetPrevious"><!-- --></a>
+<h3>&lt;T&gt;Node&lt;U&gt;GetPrevious</h3>
+<pre>static T * <b>&lt;T&gt;Node&lt;U&gt;GetPrevious</b> (T *const this)</pre>
 <dl>
+	<dt>parameter: this</dt>
+	<dd>Must be in a <em>List</em> as a <em>&lt;T&gt;ListNode</em>.</dd>
 	<dt>return</dt>
 	<dd>The previous element before <em>this</em> in <em>&lt;U&gt;</em>. When <em>this</em> is the
  first item or when <em>this</em> is null, returns null.</dd>
@@ -567,7 +541,7 @@ any self-referential node pointers to make sure that they are updated on
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;GetFirst"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;GetFirst</h3>
-<pre>static struct &lt;T&gt;ListNode * <b>&lt;T&gt;List&lt;U&gt;GetFirst</b> (struct &lt;T&gt;List *const this)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;GetFirst</b> (struct &lt;T&gt;List *const this)</pre>
 <dl>
 	<dt>return</dt>
 	<dd>A pointer to the first element of <em>this</em>.</dd>
@@ -578,7 +552,7 @@ any self-referential node pointers to make sure that they are updated on
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;GetLast"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;GetLast</h3>
-<pre>static struct &lt;T&gt;ListNode * <b>&lt;T&gt;List&lt;U&gt;GetLast</b> (struct &lt;T&gt;List *const this)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;GetLast</b> (struct &lt;T&gt;List *const this)</pre>
 <dl>
 	<dt>return</dt>
 	<dd>A pointer to the last element of <em>this</em>.</dd>
@@ -693,14 +667,28 @@ specified by <em>&lt;U&gt;</em>. If <em>this</em> is null, then it removes eleme
 </dl>
 </div>
 
+<div><a name = "&lt;T&gt;List&lt;U&gt;BiTakeIf"><!-- --></a>
+<h3>&lt;T&gt;List&lt;U&gt;BiTakeIf</h3>
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;BiTakeIf</b> (struct &lt;T&gt;List *const this,
+	struct &lt;T&gt;List *const from, const &lt;T&gt;BiPredicate bipredicate,
+	void *const param)</pre>
+<p>
+Appends <em>this</em> with <em>from</em> if <em>bipredicate</em> is null or true in the order
+specified by <em>&lt;U&gt;</em>. If <em>this</em> is null, then it removes elements.
+</p>
+<dl>
+	<dt>order</dt>
+	<dd>~ &Theta;(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
+</dl>
+</div>
+
 <div><a name = "&lt;T&gt;List&lt;U&gt;ForEach"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;ForEach</h3>
 <pre>static void <b>&lt;T&gt;List&lt;U&gt;ForEach</b> (struct &lt;T&gt;List *const this,
 	const &lt;T&gt;Action action)</pre>
 <p>
 Performs <em>action</em> for each element in the list in the order specified by
-<em>&lt;U&gt;</em>. For more flexibility, use <a href = "#&lt;T&gt;List&lt;U&gt;ShortCircuit">&lt;T&gt;List&lt;U&gt;ShortCircuit</a>, which takes a
-<em>&lt;T&gt;Predicate</em>, and return true.
+<em>&lt;U&gt;</em>. You can not delete the data, see <a href = "#&lt;T&gt;List&lt;U&gt;TakeIf">&lt;T&gt;List&lt;U&gt;TakeIf</a>.
 </p>
 <dl>
 	<dt>order</dt>
@@ -710,13 +698,28 @@ Performs <em>action</em> for each element in the list in the order specified by
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;ShortCircuit"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;ShortCircuit</h3>
-<pre>static struct &lt;T&gt;ListNode * <b>&lt;T&gt;List&lt;U&gt;ShortCircuit</b> (struct &lt;T&gt;List *const this, const &lt;T&gt;Predicate predicate)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;ShortCircuit</b> (struct &lt;T&gt;List *const this, const &lt;T&gt;Predicate predicate)</pre>
 <dl>
 	<dt>return</dt>
-	<dd>The first <em>&lt;T&gt;ListNode</em> in the linked-list, ordered by <em>&lt;U&gt;</em>, that
- causes the <em>predicate</em> with <em>&lt;T&gt;</em> as argument to return false, or null if the
+	<dd>The first <em>&lt;T&gt;</em> in the linked-list, ordered by <em>&lt;U&gt;</em>, that causes
+ the <em>predicate</em> with <em>&lt;T&gt;</em> as argument to return false, or null if the
  <em>predicate</em> is true for every case. If <em>this</em> or <em>predicate</em> is null, returns
  null.</dd>
+	<dt>order</dt>
+	<dd>~ O(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;List&lt;U&gt;BiShortCircuit"><!-- --></a>
+<h3>&lt;T&gt;List&lt;U&gt;BiShortCircuit</h3>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;BiShortCircuit</b> (struct &lt;T&gt;List *const this,
+	const &lt;T&gt;BiPredicate bipredicate, void *const param)</pre>
+<dl>
+	<dt>return</dt>
+	<dd>The first <em>&lt;T&gt;</em> in the linked-list, ordered by <em>&lt;U&gt;</em>, that
+ causes the <em>bipredicate</em> with <em>&lt;T&gt;</em> and <em>param</em> as arguments to return false,
+ or null if the <em>bipredicate</em> is true for every case. If <em>this</em> or
+ <em>bipredicate</em> is null, returns null.</dd>
 	<dt>order</dt>
 	<dd>~ O(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
 </dl>

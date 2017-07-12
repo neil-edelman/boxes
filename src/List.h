@@ -36,10 +36,6 @@
  @param LIST_OPENMP
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }.
 
- @param LIST_SELF_MIGRATE
- Use if <T> is self-referential; it must be defined as a function implementing
- {<T>SelfMigrate}.
-
  @param LIST_TEST
  Unit testing framework using {<T>ListTest}, included in a separate header,
  {../test/ListTest.h}. Must be defined equal to a (random) filler, satisfying
@@ -49,8 +45,9 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	1.1; 2017-06 split Add into Push and Unshift
- @since		1.0; 2017-05 separated from List.h
+ @version	1.2; 2017-07 made migrate simpler
+ @since		1.1; 2017-06 split Add into Push and Unshift
+			1.0; 2017-05 separated from List.h
  @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
  {assert} bug on {LIST_TEST}.
  @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
@@ -266,9 +263,12 @@ struct Migrate {
 /** Operates by side-effects only. */
 typedef void (*T_(Action))(T *const);
 
-/** Passed {T} and {param}, (see \see{<T>ListSetParam},) returns (non-zero)
- true or (zero) false. */
-typedef int  (*T_(Predicate))(T *const, void *const);
+/** Passed {T}, returns (non-zero) true or (zero) false. */
+typedef int  (*T_(Predicate))(T *const);
+
+/** Passed {T} and a user-defined pointer value, returns (non-zero) true or
+ (zero) false. */
+typedef int (*T_(BiPredicate))(T *const, void *const);
 
 /** Compares two values and returns less then, equal to, or greater then
  zero. Should do so forming an equivalence relation with respect to {T}. */
@@ -285,18 +285,6 @@ static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 
 #endif /* string --> */
 
-#ifdef LIST_SELF_MIGRATE
-
-/** User-defined self-referential memory re-allocation fuction; should call
- \see{<T>ListSelfMigrate} on all the self-referential pointers. */
-typedef void (*T_(ListSelfMigrate))(struct T_(List) *const this,
-	const struct Migrate *const migrate);
-
-/* Check that {LIST_SELF_MIGRATE} is a function implementing {<T>SelfMigrate}.*/
-static const T_(ListSelfMigrate) PRIVATE_T_(self_migrate) = (LIST_SELF_MIGRATE);
-
-#endif
-
 
 
 /** A single link in the linked-list derived from {<T>}. Storage of this
@@ -305,10 +293,9 @@ static const T_(ListSelfMigrate) PRIVATE_T_(self_migrate) = (LIST_SELF_MIGRATE);
  first element of {<T>ListNode}.
  \${|    <T>ListNode *node;
  |    T *t;
- |    for(node = <T>List<U>GetFirst(list);
- |        node;
- |        node = <T>ListNode<U>GetNext(node)) {
- |        t = (T *)node;
+ |    for(t = <T>List<U>GetFirst(list);
+ |        t;
+ |        t = <T>Node<U>GetNext(node)) {
  |    }} or
  \${|    static void for_all_fn(T *const t) {
  |        struct <T>ListNode *const node = (struct <T>ListNode *)t;
@@ -347,7 +334,6 @@ struct T_(List) {
 #ifdef LIST_UD_NAME
 	struct T_(ListNode) *UD_(first), *UD_(last);
 #endif
-	void *param;
 };
 
 
@@ -481,7 +467,6 @@ static void PRIVATE_T_(clear)(struct T_(List) *const this) {
 static void T_(ListClear)(struct T_(List) *const this) {
 	if(!this) return;
 	PRIVATE_T_(clear)(this);
-	this->param = 0;
 }
 
 /** Sets the contents of {node} to add it to {this} at the end, thereby
@@ -511,15 +496,14 @@ static void T_(ListUnshift)(struct T_(List) *const this,
 	PRIVATE_T_(unshift)(this, node);
 }
 
-/** Removes {node} from the {this}. The {node} is now free to add to another
+/** Removes {data} from the {this}. The {data} is now free to add to another
  list. Removing an element that was not added to {this} results in undefined
- behaviour. If either {this} or {node} is null, it does nothing.
+ behaviour. If either {this} or {data} is null, it does nothing.
  @order \Theta(1)
  @allow */
-static void T_(ListRemove)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
-	if(!this || !node) return;
-	PRIVATE_T_(remove)(this, node);
+static void T_(ListRemove)(struct T_(List) *const this, T *const data) {
+	if(!this || !data) return;
+	PRIVATE_T_(remove)(this, (struct T_(ListNode) *)(void *)data);
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
@@ -643,48 +627,22 @@ static void T_(ListSort)(struct T_(List) *const this) {
 }
 #endif /* comp --> */
 
-/** Sets the user-defined {param} of {this}.
- @order \Theta(1)
- @allow */
-static void T_(ListSetParam)(struct T_(List) *const this,
-	void *const param) {
-	if(!this) return;
-	this->param = param;
-}
-
-/** Use when one {node} of {this} has switched places in memory. If {this} or
- {node} is null, doesn't do anything.
- @order \Theta(1)
- @allow */
-static void T_(ListMigrate)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
-	if(!this || !node) return;
-#ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, migrate)(this, node);
-#endif /* a --> */
-#ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, migrate)(this, node);
-#endif /* b --> */
-#ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, migrate)(this, node);
-#endif /* c --> */
-#ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, migrate)(this, node);
-#endif /* d --> */
-}
-
 /** When {this} contains elements from an array of/containing {<T>ListNode} in
- memory that switched from {old_array} to {array} with byte-size {array_size}.
- If {this}, {array}, or {old_array} is null, doesn't do anything.
+ memory that switched due to a {realloc}. If {this} or {migrate} is null,
+ doesn't do anything.
 
  Specifically, use when {this} is (partially) backed with an array that has
- changed places due to a {realloc}.
+ changed places due to a {realloc}. This changes the list structure itself; you
+ may need more changes due to the structure contained in the list,
+ \see{<T>Migrate}.
 
+ @param migrate: A {struct} containing the old array start and end as a
+ {void *} and delta as {ptrdiff_t}.
  @order \Theta(n)
  @fixme Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
  @allow */
-static void T_(ListMigrateBlock)(struct T_(List) *const this,
+static void T_(ListMigrate)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
 	if(!this || !migrate) return;
 #ifdef LIST_OPENMP /* <-- omp */
@@ -695,37 +653,31 @@ static void T_(ListMigrateBlock)(struct T_(List) *const this,
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UA_(block, migrate)(this, migrate);
+		PRIVATE_T_UA_(list, migrate)(this, migrate);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UB_(block, migrate)(this, migrate);
+		PRIVATE_T_UB_(list, migrate)(this, migrate);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UC_(block, migrate)(this, migrate);
+		PRIVATE_T_UC_(list, migrate)(this, migrate);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UD_(block, migrate)(this, migrate);
+		PRIVATE_T_UD_(list, migrate)(this, migrate);
 #endif /* d --> */
-#ifdef LIST_SELF_MIGRATE /* <-- self */
-#ifdef LIST_OPENMP /* <-- omp */
-#pragma omp section
-#endif /* omp --> */
-		PRIVATE_T_(self_migrate)(this, migrate);
-#endif /* self --> */
 	}
 }
 
-/** Private: used in \see{<T>_block_<U>_migrate} and
- \see{<T>ListNodeSelfMigrate}. \${ptr \in [begin, end) -> ptr += delta}. */
+/** Private: used in \see{<T>_list_<U>_migrate} and \see{<T>Migrate}.
+ \${ptr \in [begin, end) -> ptr += delta}. */
 static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	struct T_(ListNode) **const node_ptr) {
 	const void *const ptr = *node_ptr;
@@ -733,13 +685,14 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	*(char **)node_ptr += migrate->delta;
 }
 
-/** {LIST_SELF_MIGRATE} callback should call this function with the address of
- any self-referential node pointers to make sure that they are updated on
- {realloc}.
+/** Call this function with the address of any self-referential node pointers
+ contained in the data itself, to make sure that they are updated on {realloc}.
+ To update the list, see \see{<T>ListMigrate}.
  @fixme Untested.
  @allow */
-static void T_(ListMigrateSelf)(const struct Migrate *const migrate,
+static void T_(Migrate)(const struct Migrate *const migrate,
 	T **const t_ptr) {
+	if(!migrate || !t_ptr || !*t_ptr) return;
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
 }
 
@@ -762,10 +715,8 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListMerge)(0, 0);
 	T_(ListSort)(0);
 #endif /* comp --> */
-	T_(ListSetParam)(0, 0);
 	T_(ListMigrate)(0, 0);
-	T_(ListMigrateBlock)(0, 0/*, 0, 0, 0*/);
-	T_(ListMigrateSelf)(0, 0);
+	T_(Migrate)(0, 0);
 	PRIVATE_T_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
@@ -946,32 +897,10 @@ static void PRIVATE_T_U_(list, cat)(struct T_(List) *const this,
 	from->U_(first) = from->U_(last) = 0;
 }
 
-/** Private: when one has moved just one thing in memory.
- @order O(1) */
-static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
-	assert(this);
-	assert(node);
-#ifdef LIST_DEBUG
-	fprintf(stderr, "List<" QUOTE(LIST_NAME) "#%p: moved entry at #%p.\n",
-		(void *)this, (void *)node);
-#endif
-	if(node->U_(prev)) {
-		node->U_(prev)->U_(next) = node;
-	} else {
-		this->U_(first) = node;
-	}
-	if(node->U_(next)) {
-		node->U_(next)->U_(prev) = node;
-	} else {
-		this->U_(last) = node;
-	}
-}
-
 /** Private: callback when {realloc} changes pointers. Tried to keep undefined
  behaviour to a minimum.
  @order \Theta(n) */
-static void PRIVATE_T_U_(block, migrate)(struct T_(List) *const this,
+static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
 	struct T_(ListNode) *node;
 	assert(this);
@@ -1001,38 +930,40 @@ static void PRIVATE_T_U_(block, migrate)(struct T_(List) *const this,
 
 /** @return The next element after {this} in {<U>}. When {this} is the last
  element or when {this} is null, returns null.
+ @param this: Must be in a {List} as a {<T>ListNode}.
  @order \Theta(1)
  @allow */
-static struct T_(ListNode) *T_U_(ListNode, GetNext)(
-	struct T_(ListNode) *const this) {
-	if(!this) return 0;
-	return this->U_(next);
+static T *T_U_(Node, GetNext)(T *const this) {
+	struct T_(ListNode) *const node = (struct T_(ListNode) *const)(void *)this;
+	if(!node || !node->U_(next)) return 0;
+	return &node->U_(next)->data;
 }
 
 /** @return The previous element before {this} in {<U>}. When {this} is the
  first item or when {this} is null, returns null.
+ @param this: Must be in a {List} as a {<T>ListNode}.
  @order \Theta(1)
  @allow */
-static struct T_(ListNode) *T_U_(ListNode, GetPrevious)(
-	struct T_(ListNode) *const this) {
-	if(!this) return 0;
-	return this->U_(prev);
+static T *T_U_(Node, GetPrevious)(T *const this) {
+	struct T_(ListNode) *const node = (struct T_(ListNode) *const)(void *)this;
+	if(!node || !node->U_(prev)) return 0;
+	return &node->U_(prev)->data;
 }
 
 /** @return A pointer to the first element of {this}.
  @order \Theta(1)
  @allow */
-static struct T_(ListNode) *T_U_(List, GetFirst)(struct T_(List) *const this) {
-	if(!this) return 0;
-	return this->U_(first);
+static T *T_U_(List, GetFirst)(struct T_(List) *const this) {
+	if(!this || !this->U_(first)) return 0;
+	return &this->U_(first)->data;
 }
 
 /** @return A pointer to the last element of {this}.
  @order \Theta(1)
  @allow */
-static struct T_(ListNode) *T_U_(List, GetLast)(struct T_(List) *const this) {
-	if(!this) return 0;
-	return this->U_(last);
+static T *T_U_(List, GetLast)(struct T_(List) *const this) {
+	if(!this || !this->U_(last)) return 0;
+	return &this->U_(last)->data;
 }
 
 /** This is a shortcut to
@@ -1456,7 +1387,25 @@ static void T_U_(List, TakeIf)(struct T_(List) *const this,
 	if(!from || from == this) return;
 	for(cursor = from->U_(first); cursor; cursor = next_cursor) {
 		next_cursor = cursor->U_(next);
-		if(predicate && !predicate(&cursor->data, from->param)) continue;
+		if(predicate && !predicate(&cursor->data)) continue;
+		PRIVATE_T_(remove)(from, cursor);
+		if(!this) continue;
+		PRIVATE_T_(push)(this, cursor);
+	}
+}
+
+/** Appends {this} with {from} if {bipredicate} is null or true in the order
+ specified by {<U>}. If {this} is null, then it removes elements.
+ @order ~ \Theta({this}.n) \times O({predicate})
+ @allow */
+static void T_U_(List, BiTakeIf)(struct T_(List) *const this,
+	struct T_(List) *const from, const T_(BiPredicate) bipredicate,
+	void *const param) {
+	struct T_(ListNode) *cursor, *next_cursor;
+	if(!from || from == this) return;
+	for(cursor = from->U_(first); cursor; cursor = next_cursor) {
+		next_cursor = cursor->U_(next);
+		if(bipredicate && !bipredicate(&cursor->data, param)) continue;
 		PRIVATE_T_(remove)(from, cursor);
 		if(!this) continue;
 		PRIVATE_T_(push)(this, cursor);
@@ -1464,8 +1413,7 @@ static void T_U_(List, TakeIf)(struct T_(List) *const this,
 }
 
 /** Performs {action} for each element in the list in the order specified by
- {<U>}. For more flexibility, use \see{<T>List<U>ShortCircuit}, which takes a
- {<T>Predicate}, and return true.
+ {<U>}. You can not delete the data, see \see{<T>List<U>TakeIf}.
  @order ~ \Theta({this}.n) \times O({action})
  @allow */
 static void T_U_(List, ForEach)(struct T_(List) *const this,
@@ -1477,18 +1425,34 @@ static void T_U_(List, ForEach)(struct T_(List) *const this,
 	}
 }
 
-/** @return The first {<T>ListNode} in the linked-list, ordered by {<U>}, that
- causes the {predicate} with {<T>} as argument to return false, or null if the
+/** @return The first {<T>} in the linked-list, ordered by {<U>}, that causes
+ the {predicate} with {<T>} as argument to return false, or null if the
  {predicate} is true for every case. If {this} or {predicate} is null, returns
  null.
  @order ~ O({this}.n) \times O({predicate})
  @allow */
-static struct T_(ListNode) *T_U_(List, ShortCircuit)(
+static T *T_U_(List, ShortCircuit)(
 	struct T_(List) *const this, const T_(Predicate) predicate) {
 	struct T_(ListNode) *cursor;
 	if(!this || !predicate) return 0;
 	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
-		if(!predicate(&cursor->data, this->param)) return cursor;
+		if(!predicate(&cursor->data)) return &cursor->data;
+	}
+	return 0;
+}
+
+/** @return The first {<T>} in the linked-list, ordered by {<U>}, that
+ causes the {bipredicate} with {<T>} and {param} as arguments to return false,
+ or null if the {bipredicate} is true for every case. If {this} or
+ {bipredicate} is null, returns null.
+ @order ~ O({this}.n) \times O({predicate})
+ @allow */
+static T *T_U_(List, BiShortCircuit)(struct T_(List) *const this,
+	const T_(BiPredicate) bipredicate, void *const param) {
+	struct T_(ListNode) *cursor;
+	if(!this || !bipredicate) return 0;
+	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
+		if(!bipredicate(&cursor->data, param)) return &cursor->data;
 	}
 	return 0;
 }
@@ -1572,8 +1536,8 @@ static void PRIVATE_T_U_(unused, coda)(void);
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PRIVATE_T_U_(unused, list)(void) {
-	T_U_(ListNode, GetNext)(0);
-	T_U_(ListNode, GetPrevious)(0);
+	T_U_(Node, GetNext)(0);
+	T_U_(Node, GetPrevious)(0);
 	T_U_(List, GetFirst)(0);
 	T_U_(List, GetLast)(0);
 #ifdef LIST_U_COMPARATOR /* <-- comp */
@@ -1585,8 +1549,10 @@ static void PRIVATE_T_U_(unused, list)(void) {
 	T_U_(List, TakeXor)(0, 0, 0);
 #endif /* comp --> */
 	T_U_(List, TakeIf)(0, 0, 0);
+	T_U_(List, BiTakeIf)(0, 0, 0, 0);
 	T_U_(List, ForEach)(0, 0);
 	T_U_(List, ShortCircuit)(0, 0);
+	T_U_(List, BiShortCircuit)(0, 0, 0);
 #ifdef LIST_TO_STRING /* <-- string */
 	T_U_(List, ToString)(0);
 #endif /* string --> */

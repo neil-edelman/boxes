@@ -34,9 +34,6 @@ parameter: LIST_DYNAMIC_STORAGE -- This allocates _O(log n)_ space needed for me
 
 parameter: LIST_OPENMP -- Tries to parallelise using _OpenMP_, [ http://www.openmp.org/ ].
 
-parameter: LIST_SELF_MIGRATE -- Use if <T> is self-referential; it must be defined as a function implementing
- _<T>SelfMigrate_.
-
 parameter: LIST_TEST -- Unit testing framework using _<T>ListTest_, included in a separate header,
  _../test/ListTest.h_. Must be defined equal to a (random) filler, satisfying
  _<T>Action_. If _NDEBUG_ is not defined, turns on _assert_ private function
@@ -46,9 +43,10 @@ minimum standard: C89/90
 
 author: Neil
 
-version: 1.1; 2017-06 split Add into Push and Unshift
+version: 1.2; 2017-07 made migrate simpler
 
-since: 1.0; 2017-05 separated from List.h
+since: 1.1; 2017-06 split Add into Push and Unshift
+			1.0; 2017-05 separated from List.h
 
 fixme: _GCC_: _#pragma GCC diagnostic ignored "-Wconversion"_; libc 4.2
  _assert_ bug on _LIST_TEST_.
@@ -81,12 +79,19 @@ typedef void (*<T>Action)(T *const)
 Operates by side-effects only.
 
 
-### typedef int  (*<T>Predicate)(T *const, void *const) ###
+### typedef int  (*<T>Predicate)(T *const) ###
 
-typedef int  (*<T>Predicate)(T *const, void *const)
+typedef int  (*<T>Predicate)(T *const)
 
-Passed _T_ and _param_, (see `<T>ListSetParam`,) returns (non-zero)
- true or (zero) false.
+Passed _T_, returns (non-zero) true or (zero) false.
+
+
+### typedef int (*<T>BiPredicate)(T *const, void *const) ###
+
+typedef int (*<T>BiPredicate)(T *const, void *const)
+
+Passed _T_ and a user-defined pointer value, returns (non-zero) true or
+ (zero) false.
 
 
 ### typedef int  (*<T>Comparator)(const T *, const T *) ###
@@ -105,16 +110,6 @@ Responsible for turning _<T>_ (the first argument) into a 12 _char_
  null-terminated output string (the second.)
 
 
-### typedef void (*<T>ListSelfMigrate)(struct <T>List *const this,
-	const struct Migrate *const migrate) ###
-
-typedef void (*<T>ListSelfMigrate)(struct <T>List *const this,
-	const struct Migrate *const migrate)
-
-User-defined self-referential memory re-allocation fuction; should call
- `<T>ListSelfMigrate` on all the self-referential pointers.
-
-
 ### struct <T>ListNode ###
 
 struct <T>ListNode
@@ -125,10 +120,9 @@ A single link in the linked-list derived from _<T>_. Storage of this
  first element of _<T>ListNode_.
  |    <T>ListNode *node;
  |    T *t;
- |    for(node = <T>List<U>GetFirst(list);
- |        node;
- |        node = <T>ListNode<U>GetNext(node)) {
- |        t = (T *)node;
+ |    for(t = <T>List<U>GetFirst(list);
+ |        t;
+ |        t = <T>Node<U>GetNext(node)) {
  |    } or
  |    static void for_all_fn(T *const t) {
  |        struct <T>ListNode *const node = (struct <T>ListNode *)t;
@@ -154,25 +148,20 @@ static void	<T>ListPush	(struct <T>List *const this,
 	struct <T>ListNode *const node)
 static void	<T>ListUnshift	(struct <T>List *const this,
 	struct <T>ListNode *const node)
-static void	<T>ListRemove	(struct <T>List *const this,
-	struct <T>ListNode *const node)
+static void	<T>ListRemove	(struct <T>List *const this, T *const data)
 static void	<T>ListTake	(struct <T>List *const this,
 	struct <T>List *const from)
 static void	<T>ListMerge	(struct <T>List *const this,
 	struct <T>List *const from)
 static void	<T>ListSort	(struct <T>List *const this)
-static void	<T>ListSetParam	(struct <T>List *const this,
-	void *const param)
 static void	<T>ListMigrate	(struct <T>List *const this,
-	struct <T>ListNode *const node)
-static void	<T>ListMigrateBlock	(struct <T>List *const this,
-	void *const array, const size_t array_size, const void *const old_array)
-static void	<T>ListMigrateSelf	(const struct Migrate *const migrate,
+	const struct Migrate *const migrate)
+static void	<T>Migrate	(const struct Migrate *const migrate,
 	T **const t_ptr)
-static struct <T>ListNode *	<T>ListNode<U>GetNext	(struct <T>ListNode *const this)
-static struct <T>ListNode *	<T>ListNode<U>GetPrevious	(struct <T>ListNode *const this)
-static struct <T>ListNode *	<T>List<U>GetFirst	(struct <T>List *const this)
-static struct <T>ListNode *	<T>List<U>GetLast	(struct <T>List *const this)
+static T *	<T>Node<U>GetNext	(T *const this)
+static T *	<T>Node<U>GetPrevious	(T *const this)
+static T *	<T>List<U>GetFirst	(struct <T>List *const this)
+static T *	<T>List<U>GetLast	(struct <T>List *const this)
 static void	<T>List<U>Sort	(struct <T>List *const this)
 static int	<T>List<U>Compare	(const struct <T>List *const this,
 	const struct <T>List *const that)
@@ -186,9 +175,14 @@ static void	<T>List<U>TakeXor	(struct <T>List *const this,
 	struct <T>List *const a, struct <T>List *const b)
 static void	<T>List<U>TakeIf	(struct <T>List *const this,
 	struct <T>List *const from, const <T>Predicate predicate)
+static void	<T>List<U>BiTakeIf	(struct <T>List *const this,
+	struct <T>List *const from, const <T>BiPredicate bipredicate,
+	void *const param)
 static void	<T>List<U>ForEach	(struct <T>List *const this,
 	const <T>Action action)
-static struct <T>ListNode *	<T>List<U>ShortCircuit	(struct <T>List *const this, const <T>Predicate predicate)
+static T *	<T>List<U>ShortCircuit	(struct <T>List *const this, const <T>Predicate predicate)
+static T *	<T>List<U>BiShortCircuit	(struct <T>List *const this,
+	const <T>BiPredicate bipredicate, void *const param)
 static char *	<T>List<U>ToString	(const struct <T>List *const this)
 
 
@@ -240,12 +234,11 @@ fixme: Untested.
 
 ### <T>ListRemove ###
 
-static void <T>ListRemove(struct <T>List *const this,
-	struct <T>ListNode *const node)
+static void <T>ListRemove(struct <T>List *const this, T *const data)
 
-Removes _node_ from the _this_. The _node_ is now free to add to another
+Removes _data_ from the _this_. The _data_ is now free to add to another
  list. Removing an element that was not added to _this_ results in undefined
- behaviour. If either _this_ or _node_ is null, it does nothing.
+ behaviour. If either _this_ or _data_ is null, it does nothing.
 
 order: \Theta(1)
 
@@ -291,40 +284,22 @@ order: \Omega(_this_.n), O(_this_.n log _this_.n)
 
 
 
-### <T>ListSetParam ###
-
-static void <T>ListSetParam(struct <T>List *const this,
-	void *const param)
-
-Sets the user-defined _param_ of _this_.
-
-order: \Theta(1)
-
-
-
 ### <T>ListMigrate ###
 
 static void <T>ListMigrate(struct <T>List *const this,
-	struct <T>ListNode *const node)
-
-Use when one _node_ of _this_ has switched places in memory. If _this_ or
- _node_ is null, doesn't do anything.
-
-order: \Theta(1)
-
-
-
-### <T>ListMigrateBlock ###
-
-static void <T>ListMigrateBlock(struct <T>List *const this,
-	void *const array, const size_t array_size, const void *const old_array)
+	const struct Migrate *const migrate)
 
 When _this_ contains elements from an array of/containing _<T>ListNode_ in
- memory that switched from _old_array_ to _array_ with byte-size _array_size_.
- If _this_, _array_, or _old_array_ is null, doesn't do anything.
+ memory that switched due to a _realloc_. If _this_ or _migrate_ is null,
+ doesn't do anything.
 
  Specifically, use when _this_ is (partially) backed with an array that has
- changed places due to a _realloc_.
+ changed places due to a _realloc_. This changes the list structure itself; you
+ may need more changes due to the structure contained in the list,
+ `<T>Migrate`.
+
+parameter: migrate -- A _struct_ containing the old array start and end as a
+ _void *_ and delta as _ptrdiff_t_.
 
 order: \Theta(n)
 
@@ -333,24 +308,26 @@ fixme: Relies on not-strictly-defined behaviour because pointers are not
 
 
 
-### <T>ListMigrateSelf ###
+### <T>Migrate ###
 
-static void <T>ListMigrateSelf(const struct Migrate *const migrate,
+static void <T>Migrate(const struct Migrate *const migrate,
 	T **const t_ptr)
 
-_LIST_SELF_MIGRATE_ callback should call this function with the address of
- any self-referential node pointers to make sure that they are updated on
- _realloc_.
+Call this function with the address of any self-referential node pointers
+ contained in the data itself, to make sure that they are updated on _realloc_.
+ To update the list, see `<T>ListMigrate`.
 
 fixme: Untested.
 
 
 
-### <T>ListNode<U>GetNext ###
+### <T>Node<U>GetNext ###
 
-static struct <T>ListNode * <T>ListNode<U>GetNext(struct <T>ListNode *const this)
+static T * <T>Node<U>GetNext(T *const this)
 
 
+
+parameter: this -- Must be in a _List_ as a _<T>ListNode_.
 
 return: The next element after _this_ in _<U>_. When _this_ is the last
  element or when _this_ is null, returns null.
@@ -359,11 +336,13 @@ order: \Theta(1)
 
 
 
-### <T>ListNode<U>GetPrevious ###
+### <T>Node<U>GetPrevious ###
 
-static struct <T>ListNode * <T>ListNode<U>GetPrevious(struct <T>ListNode *const this)
+static T * <T>Node<U>GetPrevious(T *const this)
 
 
+
+parameter: this -- Must be in a _List_ as a _<T>ListNode_.
 
 return: The previous element before _this_ in _<U>_. When _this_ is the
  first item or when _this_ is null, returns null.
@@ -374,7 +353,7 @@ order: \Theta(1)
 
 ### <T>List<U>GetFirst ###
 
-static struct <T>ListNode * <T>List<U>GetFirst(struct <T>List *const this)
+static T * <T>List<U>GetFirst(struct <T>List *const this)
 
 
 
@@ -386,7 +365,7 @@ order: \Theta(1)
 
 ### <T>List<U>GetLast ###
 
-static struct <T>ListNode * <T>List<U>GetLast(struct <T>List *const this)
+static T * <T>List<U>GetLast(struct <T>List *const this)
 
 
 
@@ -488,14 +467,26 @@ order: ~ \Theta(_this_.n) \times O(_predicate_)
 
 
 
+### <T>List<U>BiTakeIf ###
+
+static void <T>List<U>BiTakeIf(struct <T>List *const this,
+	struct <T>List *const from, const <T>BiPredicate bipredicate,
+	void *const param)
+
+Appends _this_ with _from_ if _bipredicate_ is null or true in the order
+ specified by _<U>_. If _this_ is null, then it removes elements.
+
+order: ~ \Theta(_this_.n) \times O(_predicate_)
+
+
+
 ### <T>List<U>ForEach ###
 
 static void <T>List<U>ForEach(struct <T>List *const this,
 	const <T>Action action)
 
 Performs _action_ for each element in the list in the order specified by
- _<U>_. For more flexibility, use `<T>List<U>ShortCircuit`, which takes a
- _<T>Predicate_, and return true.
+ _<U>_. You can not delete the data, see `<T>List<U>TakeIf`.
 
 order: ~ \Theta(_this_.n) \times O(_action_)
 
@@ -503,14 +494,30 @@ order: ~ \Theta(_this_.n) \times O(_action_)
 
 ### <T>List<U>ShortCircuit ###
 
-static struct <T>ListNode * <T>List<U>ShortCircuit(struct <T>List *const this, const <T>Predicate predicate)
+static T * <T>List<U>ShortCircuit(struct <T>List *const this, const <T>Predicate predicate)
 
 
 
-return: The first _<T>ListNode_ in the linked-list, ordered by _<U>_, that
- causes the _predicate_ with _<T>_ as argument to return false, or null if the
+return: The first _<T>_ in the linked-list, ordered by _<U>_, that causes
+ the _predicate_ with _<T>_ as argument to return false, or null if the
  _predicate_ is true for every case. If _this_ or _predicate_ is null, returns
  null.
+
+order: ~ O(_this_.n) \times O(_predicate_)
+
+
+
+### <T>List<U>BiShortCircuit ###
+
+static T * <T>List<U>BiShortCircuit(struct <T>List *const this,
+	const <T>BiPredicate bipredicate, void *const param)
+
+
+
+return: The first _<T>_ in the linked-list, ordered by _<U>_, that
+ causes the _bipredicate_ with _<T>_ and _param_ as arguments to return false,
+ or null if the _bipredicate_ is true for every case. If _this_ or
+ _bipredicate_ is null, returns null.
 
 order: ~ O(_this_.n) \times O(_predicate_)
 

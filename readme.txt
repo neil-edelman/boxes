@@ -2,8 +2,6 @@ Copyright (C) 2017 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
-Version 1.1.
-
 Defining T by LIST_TYPE, src/List.h makes available a generic,
 type-safe, <T>List: the head of linked-list(s) of <T>ListNode. These
 can potentially be part different structures. Makefile links it

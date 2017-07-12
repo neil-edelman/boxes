@@ -10,8 +10,8 @@
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 static int PRIVATE_T_(in_order)(struct T_(List) *const this);
 #endif /* comp --> */
-static int PRIVATE_T_(in_array)(struct T_(List) *const this,
-	const struct T_(ListNode) *const array, const size_t array_size);
+/*static int PRIVATE_T_(in_array)(struct T_(List) *const this,
+	const struct T_(ListNode) *const array, const size_t array_size);*/
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 static int PRIVATE_T_(exactly_unordered)(struct T_(List) *const this,
 	const size_t n);
@@ -140,6 +140,7 @@ static int PRIVATE_T_(in_order)(struct T_(List) *const this) {
 }
 #endif /* comp --> */
 
+#if 0
 static int PRIVATE_T_(in_array)(struct T_(List) *const this,
 	const struct T_(ListNode) *const array, const size_t array_size) {
 	assert(this);
@@ -161,6 +162,7 @@ static int PRIVATE_T_(in_array)(struct T_(List) *const this,
 #endif
 		;
 }
+#endif
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 static int PRIVATE_T_(exactly_unordered)(struct T_(List) *const this,
@@ -202,7 +204,7 @@ static int PRIVATE_T_(exactly_unordered)(struct T_(List) *const this,
 
 /** \see{PRIVATE_T_U_(count, elements)}
  @param param: (size_t *)
- @implements <T>Predicate */
+ @implements <T>BiPredicate */
 static int PRIVATE_T_U_(count, predicate)(T *const this, void *const param) {
 	size_t count = *(size_t *)param;
 	UNUSED(this);
@@ -212,8 +214,7 @@ static int PRIVATE_T_U_(count, predicate)(T *const this, void *const param) {
 /** Counts the elements. */
 static size_t PRIVATE_T_U_(count, elements)(struct T_(List) *const this) {
 	size_t count = 0;
-	T_(ListSetParam)(this, &count);
-	T_U_(List, ShortCircuit)(this, &PRIVATE_T_U_(count, predicate));
+	T_U_(List, BiShortCircuit)(this, &PRIVATE_T_U_(count, predicate), &count);
 	return count;
 }
 
@@ -243,14 +244,14 @@ static size_t PRIVATE_T_U_(exactly, elements)(struct T_(List) *const this,
 	struct PRIVATE_T_(Verify) lv = { 0, 0, 0 };
 	lv.array    = array;
 	lv.array_no = array_no;
-	T_(ListSetParam)(this, &lv);
-	return !T_U_(List, ShortCircuit)(this, &PRIVATE_T_U_(exactly, predicate));
+	return !T_U_(List, BiShortCircuit)(this, &PRIVATE_T_U_(exactly, predicate),
+		&lv);
 }
 
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 /** \see{PRIVATE_T_U_(in, order)}.
  @param param: (T *[1]), last element.
- @implements <T>Predicate */
+ @implements <T>BiPredicate */
 static int PRIVATE_T_U_(order, predicate)(T *const this, void *const param) {
 	T **prev_one_array = param;
 	T *const prev = prev_one_array[0];
@@ -264,13 +265,13 @@ static int PRIVATE_T_U_(order, predicate)(T *const this, void *const param) {
 /** Verifies sorting on index. */
 static int PRIVATE_T_U_(in, order)(struct T_(List) *const this) {
 	T *one_array[] = { 0 };
-	T_(ListSetParam)(this, one_array);
-	return !T_U_(List, ShortCircuit)(this, &PRIVATE_T_U_(order, predicate));
+	return !T_U_(List, BiShortCircuit)(this, &PRIVATE_T_U_(order, predicate),
+		one_array);
 }
 
 /** \see{PRIVATE_T_U_(count, unordered)}.
  @param param: (struct PRIVATE_T_(Order) *).
- @implements <T>Predicate */
+ @implements <T>BiPredicate */
 static int PRIVATE_T_U_(unorder, predicate)(T *const this, void *const param) {
 	struct PRIVATE_T_(Order) *info = param;
 	char a[12], b[12];
@@ -280,18 +281,17 @@ static int PRIVATE_T_U_(unorder, predicate)(T *const this, void *const param) {
 	info->prev = this;
 	return 1;
 }
-/** How many of them are not in order?
- @implements <T>Predicate */
+/** How many of them are not in order? */
 static size_t PRIVATE_T_U_(count, unordered)(struct T_(List) *this) {
 	struct PRIVATE_T_(Order) info = { 0, 0 };
 	printf("Unordered(" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ": %s)\n",
 		T_U_(List, ToString)(this));
-	T_(ListSetParam)(this, &info);
-	T_U_(List, ShortCircuit)(this, &PRIVATE_T_U_(unorder, predicate));
+	T_U_(List, BiShortCircuit)(this, &PRIVATE_T_U_(unorder, predicate), &info);
 	return info.count;
 }
 #endif /* comp --> */
 
+#if 0
 /** All elements are in the same array? */
 static int PRIVATE_T_U_(in, array)(struct T_(List) *const this,
 	const struct T_(ListNode) *const array, const size_t array_size) {
@@ -300,16 +300,17 @@ static int PRIVATE_T_U_(in, array)(struct T_(List) *const this,
 		if(item < array || item >= array + array_size) return 0;
 	return 1;
 }
+#endif
 
 /** Returns true. Used in \see{PRIVATE_T_U_(test, basic)}.
  @implements <T>Predicate */
-static int PRIVATE_T_U_(true, index)(T *const this, void *const param) {
-	UNUSED(this); UNUSED(param);
+static int PRIVATE_T_U_(true, index)(T *const this) {
+	UNUSED(this);
 	return 1;
 }
 /** Used in \see{PRIVATE_T_U_(test, basic)}.
  @param param: (int *), boolean.
- @implements <T>Predicate */
+ @implements <T>BiPredicate */
 static int PRIVATE_T_U_(every, second)(T *const this, void *const param) {
 	int *const pbinary = param;
 	UNUSED(this);
@@ -322,10 +323,9 @@ static int PRIVATE_T_U_(every, second)(T *const this, void *const param) {
 
 static void PRIVATE_T_U_(test, basic)(void) {
 	char str[12];
-	T *data;
+	T *data, *item_a, *item_b, *item_y, *item_z;
 	struct T_(List) a;
-	struct T_(ListNode) buf[1000], *const new_buf = buf + 2,
-		*item_a, *item_b, *item_y, *item_z;
+	struct T_(ListNode) buf[1000], *const new_buf = buf + 2, *node;
 	const size_t buf_size = sizeof buf / sizeof *buf, new_buf_size = buf_size-4;
 	size_t i;
 	int is_parity = 1;
@@ -339,17 +339,17 @@ static void PRIVATE_T_U_(test, basic)(void) {
 	/* Add */
 	T_(ListPush)(0, 0);
 	T_(ListPush)(&a, 0);
-	item_a = buf;
-	PRIVATE_T_(filler)(&item_a->data);
-	T_(ListPush)(0, item_a);
+	node = buf;
+	PRIVATE_T_(filler)(&node->data);
+	T_(ListPush)(0, node);
 	for(i = 0; i < buf_size; i++) {
-		item_a = buf + i;
-		PRIVATE_T_(filler)(&item_a->data);
-		T_(ListPush)(&a, item_a);
+		node = buf + i;
+		PRIVATE_T_(filler)(&node->data);
+		T_(ListPush)(&a, node);
 	}
 	item_a = T_U_(List, GetFirst)(&a);
 	assert(item_a);
-	data = (T *)item_a;
+	data = item_a;
 	assert(data);
 	PRIVATE_T_(to_string)(data, &str);
 	printf("ListNode get first data: %s.\n", str);
@@ -361,34 +361,26 @@ static void PRIVATE_T_U_(test, basic)(void) {
 	assert(!T_U_(List, ShortCircuit)(&a, 0));
 	assert(!T_U_(List, ShortCircuit)(&a, &PRIVATE_T_U_(true, index)));
 	printf("ShortCircuit: parity [ 1, 0, 1, ... ] ends on index 1.\n");
-	/* SetParam */
-	assert(!a.param);
-	T_(ListSetParam)(0, 0);
-	assert(!a.param);
-	T_(ListSetParam)(0, &is_parity);
-	assert(!a.param);
-	T_(ListSetParam)(&a, 0);
-	assert(!a.param);
-	T_(ListSetParam)(&a, &is_parity);
-	assert(a.param == &is_parity);
-	/* SetParam with ShortCircuit */
-	assert(!T_U_(List, ShortCircuit)(0, 0));
-	assert(!T_U_(List, ShortCircuit)(&a, 0));
-	assert(!T_U_(List, ShortCircuit)(0, &PRIVATE_T_U_(every, second)));
-	assert(T_U_(List, ShortCircuit)(&a, &PRIVATE_T_U_(every, second)) == buf + 1);
+	/* BiShortCircuit */
+	assert(!T_U_(List, BiShortCircuit)(0, 0, 0));
+	assert(!T_U_(List, BiShortCircuit)(&a, 0, 0));
+	assert(!T_U_(List, BiShortCircuit)(0, &PRIVATE_T_U_(every, second), 0));
+	is_parity = 1;
+	assert(T_U_(List, BiShortCircuit)(&a, &PRIVATE_T_U_(every, second),
+		&is_parity) == (T *)(buf + 1));
 	/* GetNext, GetPrevious, GetFirst, GetLast */
 	printf("Removing 3 elements from a.\n");
 	assert(PRIVATE_T_U_(exactly, elements)(&a, buf, buf_size));
 	assert(!T_U_(List, GetFirst)(0));
 	assert(!T_U_(List, GetLast)(0));
-	assert(!T_U_(ListNode, GetPrevious)(0));
-	assert(!T_U_(ListNode, GetNext)(0));
+	assert(!T_U_(Node, GetPrevious)(0));
+	assert(!T_U_(Node, GetNext)(0));
 	item_a = T_U_(List, GetFirst)(&a);
-	assert(!T_U_(ListNode, GetPrevious)(item_a));
-	item_b = T_U_(ListNode, GetNext)(item_a);
+	assert(!T_U_(Node, GetPrevious)(item_a));
+	item_b = T_U_(Node, GetNext)(item_a);
 	item_z = T_U_(List, GetLast)(&a);
-	assert(!T_U_(ListNode, GetNext)(item_z));
-	item_y = T_U_(ListNode, GetPrevious)(item_z);
+	assert(!T_U_(Node, GetNext)(item_z));
+	item_y = T_U_(Node, GetPrevious)(item_z);
 	assert(item_a && item_b && item_y && item_z);
 	/* Remove */
 	T_(ListRemove)(0, item_y);
@@ -430,7 +422,7 @@ static void PRIVATE_T_U_(test, basic)(void) {
 
 static void PRIVATE_T_U_(test, memory)(void) {
 	struct T_(List) a, b;
-	struct T_(ListNode) buf[3][100], *node_a, *node_b, *node_c;
+	struct T_(ListNode) buf[3][100], *node;
 	const size_t buf_size = sizeof buf[0] / sizeof *buf[0];
 	size_t i;
 	int is_parity;
@@ -439,7 +431,8 @@ static void PRIVATE_T_U_(test, memory)(void) {
 		QUOTE(LIST_U_NAME) ":\n");
 	T_(ListClear)(&a), T_(ListClear)(&b);
 	/* fill the items in buf0 */
-	for(i = 0; i < buf_size; i++) node_a = buf[0]+i, PRIVATE_T_(filler)(&node_a->data);
+	for(i = 0; i < buf_size; i++)
+		node = buf[0] + i, PRIVATE_T_(filler)(&node->data);
 	/* copy the items to buf1; buf2 zeroed */
 	memcpy(buf[1], buf[0], buf_size * sizeof *buf[0]);
 	memset(&buf[2], 0, buf_size * sizeof *buf[2]);
@@ -455,9 +448,8 @@ static void PRIVATE_T_U_(test, memory)(void) {
 	/* now add all of the odd to list_b, remove all the even from list_a */
 	printf("Spliting odd/even a to b = %s by " QUOTE(LIST_U_NAME) ";\n",
 		T_U_(List, ToString)(&b));
-	T_(ListSetParam)(&a, &is_parity);
 	is_parity = 0;
-	T_U_(List, TakeIf)(&b, &a, &PRIVATE_T_U_(every, second));
+	T_U_(List, BiTakeIf)(&b, &a, &PRIVATE_T_U_(every, second), &is_parity);
 	printf("a = %s, b = %s.\n",
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
@@ -492,6 +484,8 @@ static void PRIVATE_T_U_(test, memory)(void) {
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 	assert(!T_U_(List, Compare)(&a, &b));
 #endif /* comp --> */
+#if 0
+	/* this is not what ListMigrate does anymore */
 	for(i = 0; i < buf_size; i += 2) {
 		node_b = buf[1] + i;
 		node_c = buf[2] + i;
@@ -508,6 +502,7 @@ static void PRIVATE_T_U_(test, memory)(void) {
 	assert(PRIVATE_T_(in_array)(&a, buf[0], buf_size));
 	assert(PRIVATE_T_(in_array)(&b, buf[1], buf_size << 1));
 	printf("\n");
+#endif
 }
 
 #ifdef LIST_U_COMPARATOR /* <-- compare */

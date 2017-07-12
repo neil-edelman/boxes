@@ -251,7 +251,7 @@ static void test_block_move(void) {
 		migrate.begin = sloths;
 		migrate.end   = (const char *)sloths + sizeof sloths;
 		migrate.delta = (const char *)others - (const char *)sloths;
-		AnimalListMigrateBlock(&animals, &migrate);
+		AnimalListMigrate(&animals, &migrate);
 	}
 	printf("Block move: %s.\n", AnimalListNameToString(&animals));
 	for(i = sloths_size; i < others_size; i++) Sloth_init(others + i);
