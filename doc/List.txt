@@ -13,8 +13,7 @@
  it does not have to be contiguous, and it can be nestled in multiple, possibly
  different, structures. One can move (part) of the memory that is in an active
  _List_ under some conditions, and still keep the integrity of the linked-list;
- see `<T>ListMigrate` or `<T>ListMigrateBlock`.This is a shortcut to
- _for(l = <T>List<U>GetFirst; l; l = <T>ListNode<U>GetNext)_.
+ see `<T>ListMigrate` or `<T>ListMigrateBlock`.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
@@ -59,8 +58,6 @@ fixme: _clang_: _#pragma clang diagnostic ignored "-Wx"_ where _x_ is:
  _padded_; _documentation_; _documentation-unknown-command_ it's not quite
  _clang-tags_; 3.8 _disabled-macro-expansion_ on _toupper_ in _LIST_TEST_.
 
-fixme: Unwritten.
-
 
 
 ## Declarations ##
@@ -77,6 +74,13 @@ Contains information about a _realloc_.
 typedef void (*<T>Action)(T *const)
 
 Operates by side-effects only.
+
+
+### typedef void (*<T>BiAction)(T *const, void *const) ###
+
+typedef void (*<T>BiAction)(T *const, void *const)
+
+Takes along a param.
 
 
 ### typedef int  (*<T>Predicate)(T *const) ###
@@ -180,6 +184,8 @@ static void	<T>List<U>BiTakeIf	(struct <T>List *const this,
 	void *const param)
 static void	<T>List<U>ForEach	(struct <T>List *const this,
 	const <T>Action action)
+static void	<T>List<U>BiForEach	(struct <T>List *const this,
+	const <T>BiAction biaction, void *const param)
 static T *	<T>List<U>ShortCircuit	(struct <T>List *const this, const <T>Predicate predicate)
 static T *	<T>List<U>BiShortCircuit	(struct <T>List *const this,
 	const <T>BiPredicate bipredicate, void *const param)
@@ -489,6 +495,20 @@ Performs _action_ for each element in the list in the order specified by
  _<U>_. You can not delete the data, see `<T>List<U>TakeIf`.
 
 order: ~ \Theta(_this_.n) \times O(_action_)
+
+
+
+### <T>List<U>BiForEach ###
+
+static void <T>List<U>BiForEach(struct <T>List *const this,
+	const <T>BiAction biaction, void *const param)
+
+Performs _biaction_ for each element in the list in the order specified by
+ _<U>_.
+
+order: ~ \Theta(_this_.n) \times O(_action_)
+
+fixme: Untested.
 
 
 

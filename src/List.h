@@ -263,6 +263,9 @@ struct Migrate {
 /** Operates by side-effects only. */
 typedef void (*T_(Action))(T *const);
 
+/** Takes along a param. */
+typedef void (*T_(BiAction))(T *const, void *const);
+
 /** Passed {T}, returns (non-zero) true or (zero) false. */
 typedef int  (*T_(Predicate))(T *const);
 
@@ -966,10 +969,6 @@ static T *T_U_(List, GetLast)(struct T_(List) *const this) {
 	return &this->U_(last)->data;
 }
 
-/** This is a shortcut to
- {for(l = <T>List<U>GetFirst; l; l = <T>ListNode<U>GetNext)}.
- @fixme Unwritten. */
-
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 
 #ifndef LIST_SORT_INTERNALS /* <!-- sort internals only once per translation
@@ -1425,6 +1424,20 @@ static void T_U_(List, ForEach)(struct T_(List) *const this,
 	}
 }
 
+/** Performs {biaction} for each element in the list in the order specified by
+ {<U>}.
+ @order ~ \Theta({this}.n) \times O({action})
+ @fixme Untested.
+ @allow */
+static void T_U_(List, BiForEach)(struct T_(List) *const this,
+	const T_(BiAction) biaction, void *const param) {
+	struct T_(ListNode) *cursor;
+	if(!this || !biaction) return;
+	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
+		biaction(&cursor->data, param);
+	}
+}
+
 /** @return The first {<T>} in the linked-list, ordered by {<U>}, that causes
  the {predicate} with {<T>} as argument to return false, or null if the
  {predicate} is true for every case. If {this} or {predicate} is null, returns
@@ -1551,6 +1564,7 @@ static void PRIVATE_T_U_(unused, list)(void) {
 	T_U_(List, TakeIf)(0, 0, 0);
 	T_U_(List, BiTakeIf)(0, 0, 0, 0);
 	T_U_(List, ForEach)(0, 0);
+	T_U_(List, BiForEach)(0, 0, 0);
 	T_U_(List, ShortCircuit)(0, 0);
 	T_U_(List, BiShortCircuit)(0, 0, 0);
 #ifdef LIST_TO_STRING /* <-- string */
