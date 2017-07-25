@@ -160,8 +160,6 @@ static void	<T>ListMerge	(struct <T>List *const this,
 static void	<T>ListSort	(struct <T>List *const this)
 static void	<T>ListMigrate	(struct <T>List *const this,
 	const struct Migrate *const migrate)
-static void	<T>Migrate	(const struct Migrate *const migrate,
-	T **const t_ptr)
 static T *	<T>Node<U>GetNext	(T *const this)
 static T *	<T>Node<U>GetPrevious	(T *const this)
 static T *	<T>List<U>GetFirst	(struct <T>List *const this)
@@ -311,19 +309,6 @@ order: \Theta(n)
 
 fixme: Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
-
-
-
-### <T>Migrate ###
-
-static void <T>Migrate(const struct Migrate *const migrate,
-	T **const t_ptr)
-
-Call this function with the address of any self-referential node pointers
- contained in the data itself, to make sure that they are updated on _realloc_.
- To update the list, see `<T>ListMigrate`.
-
-fixme: Untested.
 
 
 

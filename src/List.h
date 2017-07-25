@@ -688,16 +688,17 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	*(char **)node_ptr += migrate->delta;
 }
 
-/** Call this function with the address of any self-referential node pointers
+/* Call this function with the address of any self-referential node pointers
  contained in the data itself, to make sure that they are updated on {realloc}.
  To update the list, see \see{<T>ListMigrate}.
  @fixme Untested.
- @allow */
-static void T_(Migrate)(const struct Migrate *const migrate,
+ @allow
+ @depreciated Use {<T>SetMigrate} in {Set.h}. */
+/*static void T_(Migrate)(const struct Migrate *const migrate,
 	T **const t_ptr) {
 	if(!migrate || !t_ptr || !*t_ptr) return;
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
-}
+}*/
 
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* need this file if one is going to run tests */
@@ -719,7 +720,7 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
-	T_(Migrate)(0, 0);
+	/*T_(Migrate)(0, 0);*/
 	PRIVATE_T_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */

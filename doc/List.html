@@ -264,12 +264,6 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 	const struct Migrate *const migrate</td>
 </tr>
 <tr>
-	<td>static void</td>
-	<td><a href = "#&lt;T&gt;Migrate">&lt;T&gt;Migrate</a></td>
-	<td>const struct Migrate *const migrate,
-	T **const t_ptr</td>
-</tr>
-<tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;Node&lt;U&gt;GetNext">&lt;T&gt;Node&lt;U&gt;GetNext</a></td>
 	<td>T *const this</td>
@@ -503,21 +497,6 @@ may need more changes due to the structure contained in the list,
 	<dt>fixme</dt>
 	<dd>Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.</dd>
-</dl>
-</div>
-
-<div><a name = "&lt;T&gt;Migrate"><!-- --></a>
-<h3>&lt;T&gt;Migrate</h3>
-<pre>static void <b>&lt;T&gt;Migrate</b> (const struct Migrate *const migrate,
-	T **const t_ptr)</pre>
-<p>
-Call this function with the address of any self-referential node pointers
-contained in the data itself, to make sure that they are updated on <em>realloc</em>.
-To update the list, see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a>.
-</p>
-<dl>
-	<dt>fixme</dt>
-	<dd>Untested.</dd>
 </dl>
 </div>
 
