@@ -647,7 +647,12 @@ static void T_(ListSort)(struct T_(List) *const this) {
  @allow */
 static void T_(ListMigrate)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
-	if(!this || !migrate) return;
+	if(!this || !migrate || !migrate->delta) return;
+#ifdef LIST_DEBUG
+	fprintf(stderr, "List<" QUOTE(LIST_NAME)
+		"#%p: moved entries at #%p-#%p by %lu.\n", (void *)this,
+		migrate->begin, migrate->end, (long unsigned)migrate->delta);
+#endif
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -834,8 +839,7 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 /** Private: add to {this.last} in {<U>}. */
 static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
-	assert(this);
-	assert(node);
+	assert(this && node);
 	node->U_(prev) = this->U_(last);
 	node->U_(next) = 0;
 	if(this->U_(last)) {
@@ -850,8 +854,7 @@ static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
 /** Private: add before {this.first} in {<U>}. */
 static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
-	assert(this);
-	assert(node);
+	assert(this && node);
 	node->U_(prev) = 0;
 	node->U_(next) = this->U_(first);
 	if(this->U_(first)) {
@@ -866,8 +869,7 @@ static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 /** Private: list remove in {<U>}. */
 static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
-	assert(this);
-	assert(node);
+	assert(this && node);
 	if(node->U_(prev)) {
 		node->U_(prev)->U_(next) = node->U_(next);
 	} else {
@@ -886,10 +888,8 @@ static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
  @order \Theta(1) */
 static void PRIVATE_T_U_(list, cat)(struct T_(List) *const this,
 	struct T_(List) *const from) {
-	assert(this);
-	assert(from);
-	assert(!this->U_(first) == !this->U_(last));
-	assert(!from->U_(first) == !from->U_(last));
+	assert(this && from && !this->U_(first) == !this->U_(last)
+		&& !from->U_(first) == !from->U_(last));
 	if(!from->U_(first)) {        /* there is nothing in {from} */
 		return;
 	} else if(!this->U_(first)) { /* there is nothing in {this} */
@@ -907,17 +907,8 @@ static void PRIVATE_T_U_(list, cat)(struct T_(List) *const this,
 static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
 	struct T_(ListNode) *node;
-	assert(this);
-	assert(migrate);
-	assert(migrate->begin);
-	assert(migrate->begin < migrate->end);
-	assert(migrate->delta);
-	assert(!this->U_(first) == !this->U_(last));
-#ifdef LIST_DEBUG
-	fprintf(stderr, "List<" QUOTE(LIST_NAME)
-		"#%p: moved entries at #%p-#%p by %lu.\n", migrate->begin, migrate->end,
-		(void *)migrate->delta);
-#endif
+	assert(this && migrate && migrate->begin && migrate->begin < migrate->end
+		&&migrate->delta && !this->U_(first) == !this->U_(last));
 	/* empty -- done */
 	if(!this->U_(first)) return;
 	/* first and last pointer of {<T>List} */
