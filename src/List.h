@@ -1404,14 +1404,15 @@ static void T_U_(List, BiTakeIf)(struct T_(List) *const this,
 }
 
 /** Performs {action} for each element in the list in the order specified by
- {<U>}. You can not delete the data, see \see{<T>List<U>TakeIf}.
+ {<U>}. You can tranfer or delete the data, or see \see{<T>List<U>TakeIf}.
  @order ~ \Theta({this}.n) \times O({action})
  @allow */
 static void T_U_(List, ForEach)(struct T_(List) *const this,
 	const T_(Action) action) {
-	struct T_(ListNode) *cursor;
+	struct T_(ListNode) *cursor, *next;
 	if(!this || !action) return;
-	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
+	for(cursor = this->U_(first); cursor; cursor = next) {
+		next = cursor->U_(next);
 		action(&cursor->data);
 	}
 }
