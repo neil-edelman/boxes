@@ -835,6 +835,23 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 
 
 
+/** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
+ You do not want cycles! */
+static void PRIVATE_T_U_(cycle, crash)(const struct T_(List) *const this) {
+#ifdef LIST_DEBUG
+	struct T_(ListNode) *turtle, *hare;
+	assert(this);
+	assert(!this->U_(first) == !this->U_(last));
+	if(!(turtle = hare = this->U_(first))) return;
+	for( ; (hare = hare->U_(next)) && (hare = hare->U_(next)); ) {
+		turtle = turtle->U_(next);
+		assert(turtle != hare);
+	}
+#else
+	UNUSED(this);
+#endif
+}
+
 /** Private: add to {this.last} in {<U>}. */
 static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
@@ -848,6 +865,7 @@ static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
 		this->U_(first) = node;
 	}
 	this->U_(last) = node;
+	PRIVATE_T_U_(cycle, crash)(this);
 }
 
 /** Private: add before {this.first} in {<U>}. */
@@ -863,6 +881,7 @@ static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 		this->U_(last) = node;
 	}
 	this->U_(first) = node;
+	PRIVATE_T_U_(cycle, crash)(this);
 }
 
 /** Private: list remove in {<U>}. */
@@ -898,6 +917,7 @@ static void PRIVATE_T_U_(list, cat)(struct T_(List) *const this,
 	}
 	this->U_(last) = from->U_(last);
 	from->U_(first) = from->U_(last) = 0;
+	PRIVATE_T_U_(cycle, crash)(this);
 }
 
 /** Private: callback when {realloc} changes pointers. Tried to keep undefined
@@ -918,6 +938,7 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 		PRIVATE_T_(migrate)(migrate, &node->U_(prev));
 		PRIVATE_T_(migrate)(migrate, &node->U_(next));
 	}
+	PRIVATE_T_U_(cycle, crash)(this);
 }
 
 
@@ -1562,6 +1583,7 @@ static void PRIVATE_T_U_(unused, list)(void) {
 #ifdef LIST_TO_STRING /* <-- string */
 	T_U_(List, ToString)(0);
 #endif /* string --> */
+	PRIVATE_T_U_(cycle, crash)(0);
 	PRIVATE_T_U_(unused, coda)();
 }
 /** {clang}'s pre-processor is not fooled. */
