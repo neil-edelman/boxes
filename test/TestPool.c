@@ -130,17 +130,16 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
-
 #if 0
 /***********/
 
-struct FooVt;
-struct Foo {
- 	const struct FooVt *vt;
+struct BarVt;
+struct Bar {
+ 	const struct BarVt *vt;
  	unsigned key;
 };
-#define LIST_NAME Foo
-#define LIST_TYPE struct Foo
+#define LIST_NAME Bar
+#define LIST_TYPE struct Bar
 #include "List.h" /* or whatever */
 static unsigned auto_key = 128;
 static void Foo_filler(struct Foo *const foo, const struct FooVt *const vt) {
@@ -190,7 +189,7 @@ struct FooA *FooA(int number) {
 struct FooB *FooB(char letter) {
  	struct FooB *b;
  	if(letter < 'a' || letter > 'z') return fprintf(stderr,
-													"Letter %c out-of-range.\n", letter), 0;
+		"Letter %c out-of-range.\n", letter), 0;
  	if(!(b = malloc(sizeof *b))) return perror("FooB"), 0;
  	Foo_filler(&b->foo, &B_vt);
  	b->letter = letter;

@@ -126,7 +126,7 @@ static void PRIVATE_T_(test_random)(void) {
 	struct T_(Pool) *a;
 	size_t i;
 	/* random */
-	a = T_(Pool)(&PRIVATE_T_(migrate), a);
+	a = T_(Pool)(&PRIVATE_T_(migrate), (void *)1/* stub */);
 	/* this parameter controls how many iterations */
 	i = 1000;
 	while(i--) {
@@ -135,9 +135,9 @@ static void PRIVATE_T_(test_random)(void) {
 		double r = rand() / (RAND_MAX + 1.0);
 		size_t size = a->size;
 		/* this parameter controls how big the pool wants to be */
-		if(r > size / 10.0) {
+		if(r > size / 100.0) {
 			assert((node = T_(PoolNew)(a))
-				   || (printf("Error: %s.\n", T_(PoolGetError)(a)), 0));
+				|| (printf("Error: %s.\n", T_(PoolGetError)(a)), 0));
 			PRIVATE_T_(filler)(node);
 			PRIVATE_T_(to_string)(node, &str);
 			printf("Created %s.\n", str);
@@ -145,11 +145,11 @@ static void PRIVATE_T_(test_random)(void) {
 			size_t idx = rand() / (RAND_MAX + 1.0) * size;
 			if(!T_(PoolIsElement)(a, idx)) continue;
 			assert((node = T_(PoolGetElement)(a, idx))
-				   || (printf("Error getting: %s.\n", T_(PoolGetError)(a)), 0));
+				|| (printf("Error getting: %s.\n", T_(PoolGetError)(a)), 0));
 			PRIVATE_T_(to_string)(node, &str);
 			printf("Removing %s at %lu.\n", str, (unsigned long)idx);
 			assert(T_(PoolRemove)(a, node)
-				   || (printf("Error removing: %s.\n", T_(PoolGetError)(a)), 0));
+				|| (printf("Error removing: %s.\n", T_(PoolGetError)(a)), 0));
 		}
 		printf("%s.\n", T_(PoolToString)(a));
 		PRIVATE_T_(valid_state)(a);
