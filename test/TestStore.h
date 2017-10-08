@@ -4,7 +4,7 @@
 static void T_(StoreTest)(void);
 static void PRIVATE_T_(test_basic)(void);
 
-/* STORE_TEST must be a function that implements STORE_TYPEAction. */
+/* STORE_TEST must be a function that implements <T>Action. */
 static const T_(Action) PRIVATE_T_(filler) = (STORE_TEST);
 
 
@@ -48,18 +48,13 @@ static void PRIVATE_T_(valid_state)(const struct T_(Store) *const a) {
 	assert(a->size == 0 || a->array[a->size - 1].prev == store_not_part);
 }
 
-/** @implements <T>Action */
-static void PRIVATE_T_(print)(T *const this) {
-	char a[12];
-	PRIVATE_T_(to_string)(this, &a);
-	printf("Element %s.\n", a);
-}
-
-/** @implements StoreMigrate */
-static void PRIVATE_T_(migrate)(const struct Migrate *const info) {
-	assert(info);
-	printf("migrate #%p-%p -> %p\n", info->begin, info->end,
+/** @implements Migrate */
+static void PRIVATE_T_(migrate)(const void *parent,
+	const struct Migrate *const info) {
+	assert(parent && info);
+	printf("#%p migrate #%p-%p -> %p\n", parent, info->begin, info->end,
 		(void *)info->delta);
+	/* fixme: check */
 }
 
 static void PRIVATE_T_(test_basic)(void) {
@@ -67,14 +62,17 @@ static void PRIVATE_T_(test_basic)(void) {
 	T test[5], *testp;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
+	const char *err;
 	enum { CREATE, DESTROY };
 
 	for(i = 0; i < test_size; i++) PRIVATE_T_(filler)(test + i);
 	printf("Constructor:\n");
 	assert(T_(StoreIsEmpty)(a));
-	a = T_(Store)();
-	printf("%s\n", T_(StoreToString)(a));
+	a = T_(Store)(&PRIVATE_T_(migrate), (void *)1 /* stub */);
+	err = T_(StoreGetError)(a);
+	printf("%s: %s.\n", T_(StoreToString)(a), err);
 	assert(a);
+	assert(!strcmp("no error", err));
 	assert(T_(StoreIsEmpty)(a));
 
 	printf("Adding %lu elements:\n", (unsigned long)test_size);
@@ -105,8 +103,7 @@ static void PRIVATE_T_(test_basic)(void) {
 	printf("Now: %s.\n", T_(StoreToString)(a));
 	assert(!T_(StoreRemove)(a, testp));
 	printf("(Deliberate) error: %s.\n", T_(StoreGetError)(a));
-	printf("Store migrate.\n");
-	T_(StoreSetMigrate)(a, &PRIVATE_T_(migrate));
+	printf("Store reserve.\n");
 	T_(StoreReserve)(a, (size_t)100);
 	assert(a->capacity[0] >= 100);
 	for(i = 0; i < 100; i++) {
@@ -115,7 +112,6 @@ static void PRIVATE_T_(test_basic)(void) {
 		PRIVATE_T_(filler)(testp);
 	}
 	printf("%s.\n", T_(StoreToString)(a));
-	T_(StoreForEach)(a, &PRIVATE_T_(print));
 	printf("Clear:\n");
 	T_(StoreClear)(a);
 	printf("%s.\n", T_(StoreToString)(a));
@@ -130,7 +126,7 @@ static void PRIVATE_T_(test_random)(void) {
 	struct T_(Store) *a;
 	size_t i;
 	/* random */
-	a = T_(Store)();
+	a = T_(Store)(&PRIVATE_T_(migrate), a);
 	/* this parameter controls how many iterations */
 	i = 1000;
 	while(i--) {

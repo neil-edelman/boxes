@@ -3,87 +3,17 @@
 
  {<T>Store} is a dynamic array that stores unordered {<T>}, which must be set
  using {STORE_TYPE}. When using polymorphic data types, providing a contiguous
- array for each concrete type is better for cache performance.
- 
- \${
- struct FooVt;
- struct Foo {
- 	const struct FooVt *vt;
- 	unsigned key;
- };
- #define LIST_NAME Foo
- #define LIST_TYPE struct Foo
- #include "List.h"
- static unsigned auto_key = 128;
- static void Foo_filler(struct Foo *const foo, const struct FooVt *const vt) {
- 	foo->vt  = vt;
- 	foo->key = auto_key++;
- }
-
- typedef void (*FooAction))(struct Foo *const);
- struct FooVt {
- 	FooAction transmogrify;
- };
- 
- struct FooA {
- 	struct FooListNode foo;
- 	int number;
- };
- #define STORE_NAME A
- #define STORE_TYPE struct FooA
- #include "Store.h"
- static struct AStore a_store;
- static void A_transmogrify(struct FooA *const a) {
- 	printf("Key%u %i!\n", a->foo.key, a->number);
- }
- static struct FooVt A_vt = { &A_transmogrify };
- 
- struct FooB {
- 	struct FooListNode foo;
- 	char letter;
- };
- #define STORE_NAME B
- #define STORE_TYPE struct FooB
- #include "Store.h"
- static struct BStore b_store;
- static void B_transmogrify(struct FooB *const b) {
- 	printf("Foo%u %c!\n", a->foo.key, b->letter);
- }
- static struct FooVt B_vt = { &B_transmogrify };
- 
- struct FooA *FooA(int number) {
- 	struct FooA *a;
- 	if(!(a = malloc(sizeof *a))) return perror("FooA"), 0;
- 	Foo_filler(&a->foo, &A_vt);
- 	a->number = number;
- 	return a;
- }
- 
- struct FooB *FooB(char letter) {
- 	struct FooB *b;
- 	if(letter < 'a' || letter > 'z') return fprintf(stderr,
- 		"Letter %c out-of-range.\n", letter), 0;
- 	if(!(b = malloc(sizeof *b))) return perror("FooB"), 0;
- 	Foo_filler(&b->foo, &B_vt);
- 	b->letter = letter;
- 	return b;
- }
- 
- }
-
- The {<T>Store} is initially contiguous, but removing an
+ array for each concrete type is better for cache performance. Removing an
  element is done lazily through a queue internal to the store; as such, indices
- will remain the same throughout the lifetime of the data. Resising incurs
- amortised cost, done though a Fibonacci sequence. Note that, while the indices
- remain fixed, the pointers do not necessarily; one must store a migrate
- function with \see{<T>StoreSetMigrate} to take care of any pointers to data
- that are active when the {<T>Store} is re-allocated. As such, {<T>Store} is not
- synchronised. The preprocessor macros are all undefined at the end of the file
- for convenience when including multiple store types in the same file.
+ will remain the same throughout the lifetime of the data. You cannot shrink
+ the size of this data type, only cause it to grow. Resizing incurs amortised
+ cost, done though a Fibonacci sequence. {<T>Store} is not synchronised. The
+ preprocessor macros are all undefined at the end of the file for convenience
+ when including multiple store types in the same file.
 
  @param STORE_NAME
  This literally becomes {<T>}. As it's used in function names, this should
- comply with naming rules; required.
+ comply with naming rules and be unique; required.
 
  @param STORE_TYPE
  The type associated with {<T>}. Has to be a valid type, accessible to the
@@ -94,7 +24,7 @@
  \see{<T>StoreToString}.
 
  @param STORE_DEBUG
- Prints information to {stdout}.
+ Prints information to {stderr}. Requires {STORE_TO_STRING}.
 
  @param STORE_TEST
  Unit testing framework using {<T>StoreTest}, included in a separate header,
@@ -142,8 +72,8 @@
 #ifndef STORE_TYPE
 #error Store generic STORE_TYPE undefined.
 #endif
-#if defined(STORE_DEBUG) && !defined(STORE_TO_STRING)
-#error Store: STORE_DEBUG requires STORE_TO_STRING.
+#if (defined(STORE_DEBUG) || defined(STORE_TEST)) && !defined(STORE_TO_STRING)
+#error Store: STORE_DEBUG and STORE_TEST require STORE_TO_STRING.
 #endif
 #if !defined(STORE_TEST) && !defined(NDEBUG)
 #define STORE_NDEBUG
@@ -234,20 +164,7 @@ static const char *const store_error_explination[] = {
 
 /* global for constructor allocation errors */
 static enum StoreError store_global_error;
-static int           store_global_errno_copy;
-
-#ifndef MIGRATE /* <-- migrate */
-#define MIGRATE
-/** Contains information about a {realloc}. */
-struct Migrate;
-struct Migrate {
-	const void *begin, *end; /* old pointers */
-	ptrdiff_t delta;
-};
-#endif /* migrate --> */
-
-/** Calls on {realloc} with \see{<T>StoreSetMigrate}. */
-typedef void (*Migrate)(const struct Migrate *const info);
+static int             store_global_errno_copy;
 
 #endif /* STORE_H --> */
 
@@ -277,12 +194,26 @@ static const T_(ToString) PRIVATE_T_(to_string) = (STORE_TO_STRING);
 
 #endif /* string --> */
 
+#ifndef MIGRATE /* <-- migrate */
+#define MIGRATE
+/** Contains information about a {realloc}. */
+struct Migrate;
+struct Migrate {
+	const void *begin, *end; /* old pointers */
+	ptrdiff_t delta;
+};
+/** Calls on {realloc}. */
+typedef void (*Migrate)(const void *parent,
+	const struct Migrate *const migrate);
+#endif /* migrate --> */
+
+
 
 
 /* Store element. */
 struct PRIVATE_T_(Element) {
 	T data; /* has to be the first element for convenience */
-	size_t prev, next; /* removed queue */
+	size_t prev, next; /* removed offset queue */
 };
 
 /** The store. To instantiate, see \see{<T>Store}. */
@@ -294,7 +225,8 @@ struct T_(Store) {
 	size_t head, tail; /* removed queue */
 	enum StoreError error; /* errors defined by enum StoreError */
 	int errno_copy; /* copy of errno when when error == E_ERRNO */
-	Migrate migrate; /* called when change memory addresses if present */
+	Migrate migrate; /* called to update on resizing */
+	void *parent; /* what to call migrate on */
 };
 
 
@@ -340,13 +272,18 @@ static int PRIVATE_T_(reserve)(struct T_(Store) *const this,
 	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
-	/* Migrate function, if it is defined and it changed memory locations. */
-	if(this->migrate && this->array != array) {
-		struct Migrate migrate;
-		migrate.begin = this->array;
-		migrate.end   = (const char *)this->array + this->size * sizeof *array;
-		migrate.delta = (const char *)array - (const char *)this->array;
-		this->migrate(&migrate);
+	/* Migrate parent class. This is _ugly_ af, and ensures
+	 in-interoperablility. I think it violates pedantic strict-ANSI. It
+	 subverts type-safety. It doesn't allow moving of temporary pointers. It is
+	 awful. However, it is so convenient for the caller not to have to worry
+	 about moving memory blocks. */
+	if(this->array != array) {
+		struct Migrate m;
+		m.begin = (const char *)this->array;
+		m.end   = (const char *)this->array + this->size * sizeof *array;
+		m.delta = (const char *)array - (const char *)this->array;
+		PRIVATE_T_(debug)(this, "reserve", "calling migrate.\n");
+		this->migrate(this->parent, &m);
 	}
 	this->array = array;
 	this->capacity[0] = c0;
@@ -422,7 +359,8 @@ static void PRIVATE_T_(trim_removed)(struct T_(Store) *const this) {
 	}
 }
 
-/** Destructor for Store.
+/** Destructor for Store. Make sure that the store's contents will not be
+ accessed anymore.
  @param thisp: A reference to the object that is to be deleted; it will be store
  to null. If it is already null or it points to null, doesn't do anything.
  @order \Theta(1)
@@ -437,12 +375,20 @@ static void T_(Store_)(struct T_(Store) **const thisp) {
 }
 
 /** Constructs an empty Store with capacity Fibonacci6, which is 8.
- @return A new Store.
- @throws STORE_ERRNO: Use {StoreError(0)} to get the error.
+ @param migrate: The ADT parent's {Migrate} function.
+ @param parent: The parent itself. You can not have multiple parents. You
+ cannot change a parent. If you need this flexibility, create a new store.
+ @return A new Store for the polymorphic variable {parent}.
+ @throws STORE_PARAMETER, STORE_ERRNO: Use {StoreError(0)} to get the error.
  @order \Theta(1)
  @allow */
-static struct T_(Store) *T_(Store)(void) {
+static struct T_(Store) *T_(Store)(const Migrate migrate, void *const parent) {
 	struct T_(Store) *this;
+	if(!migrate || !parent) {
+		store_global_error = STORE_PARAMETER;
+		store_global_errno_copy = 0;
+		return 0;
+	}
 	if(!(this = malloc(sizeof(struct T_(Store))))) {
 		store_global_error = STORE_ERRNO;
 		store_global_errno_copy = errno;
@@ -455,7 +401,8 @@ static struct T_(Store) *T_(Store)(void) {
 	this->head = this->tail = store_null;
 	this->error        = STORE_NO_ERROR;
 	this->errno_copy   = 0;
-	this->migrate      = 0;
+	this->migrate      = migrate;
+	this->parent       = parent;
 	if(!(this->array = malloc(this->capacity[0] * sizeof *this->array))) {
 		T_(Store_)(&this);
 		store_global_error = STORE_ERRNO;
@@ -502,33 +449,24 @@ static int T_(StoreIsElement)(struct T_(Store) *const this, const size_t idx) {
 	return 1;
 }
 
-/** Stores a callback when the position of the store changes internally. This
- should call \see{<T>Migrate} on all the pointers that are active.
- @param migrate: Store to null to turn off.
+/** Gets an existing element by index.
+ @param this: If {this} is null, returns null.
+ @param idx: Index.
+ @return If failed, returns a null pointer and the error condition will be set.
+ @throws STORE_OUT_OF_BOUNDS
  @order \Theta(1)
  @allow */
-static void T_(StoreSetMigrate)(struct T_(Store) *const this,
-	const Migrate migrate) {
-	if(!this) return;
-	this->migrate = migrate;
+static T *T_(StoreGetElement)(struct T_(Store) *const this, const size_t idx) {
+	struct PRIVATE_T_(Element) *elem;
+	if(!this) return 0;
+	if(idx >= this->size
+	   || (elem = this->array + idx, elem->prev != store_not_part))
+	{ this->error = STORE_OUT_OF_BOUNDS; return 0; }
+	return &elem->data;
 }
 
-/** This allows custom pointers to be corrected on {realloc} in the
- \see{<T>StoreSetMigrate} handler.
- @param pointer: A pointer to a pointer-to-<T>.
- @order \Theta(1)
- @fixme Untested.
- @allow */
-static void T_(Migrate)(const struct Migrate *const migrate, T **const pointer){
-	void *t;
-	if(!migrate || !pointer) return;
-	t = *pointer;
-	if(t < migrate->begin || t >= migrate->end) return;
-	*(char **)pointer += migrate->delta;
-}
-
-/** Increases the capacity of this Store to ensure that it can hold at least the
- number of elements specified by the {min_capacity}.
+/** Increases the capacity of this Store to ensure that it can hold at least
+ the number of elements specified by the {min_capacity}.
  @param this: If {this} is null, returns false.
  @return True if the capacity increase was viable; otherwise the store is not
  touched and the error condition is store.
@@ -539,14 +477,14 @@ static int T_(StoreReserve)(struct T_(Store) *const this,
 	const size_t min_capacity) {
 	if(!this) return 0;
 	if(!PRIVATE_T_(reserve)(this, min_capacity)) return 0;
-	PRIVATE_T_(debug)(this, "Reserve", "store store size to %u to contain %u.\n",
+	PRIVATE_T_(debug)(this, "Reserve","store store size to %u to contain %u.\n",
 		this->capacity[0], min_capacity);
 	return 1;
 }
 
 /** Gets an uninitialised new element.
  @param this: If {this} is null, returns null.
- @return If failed, returns a null pointer and the error condition will be store.
+ @return If failed, returns a null pointer and the error condition will be set.
  @throws STORE_OVERFLOW, STORE_ERRNO
  @order amortised O(1)
  @allow */
@@ -584,67 +522,6 @@ static int T_(StoreRemove)(struct T_(Store) *const this, T *const data) {
 	return 1;
 }
 
-/** Gets an existing element by index.
- @param this: If {this} is null, returns null.
- @param idx: Index.
- @return If failed, returns a null pointer and the error condition will be store.
- @throws STORE_OUT_OF_BOUNDS
- @order \Theta(1)
- @allow */
-static T *T_(StoreGetElement)(struct T_(Store) *const this, const size_t idx) {
-	struct PRIVATE_T_(Element) *elem;
-	if(!this) return 0;
-	if(idx >= this->size
-		|| (elem = this->array + idx, elem->prev != store_not_part))
-		{ this->error = STORE_OUT_OF_BOUNDS; return 0; }
-	return &elem->data;
-}
-
-/** Gets an index out of an existing element. Calling on an {element} that is
- not in {this} will give garbage.
- @order \Theta(1)
- @allow */
-static size_t T_(StoreGetIndex)(struct T_(Store) *const this,
-	const T *const element) {
-	return (const struct PRIVATE_T_(Element) *)(void *)element - this->array;
-}
-
-/** General iterator is a {size_t}.
- @param iterator_ptr: Store it to zero; this gets incremented. To delete in-place,
- call {<T>StoreGetNext} first, then call \see{<T>StoreRemove} with the first.
- @return The next {T} or null if there are none left.
- @allow */
-static T *T_(StoreGetNext)(struct T_(Store) *const this,
-	size_t *const iterator_ptr) {
-	struct PRIVATE_T_(Element) *elem = 0;
-	if(!iterator_ptr || !this) return 0;
-	for( ; ; ) {
-		if(*iterator_ptr >= this->size) { *iterator_ptr = 0; return 0; }
-		elem = this->array + (*iterator_ptr)++;
-		if(elem->prev != store_not_part) break;
-	}
-	return &elem->data;
-}
-
-/** Reverse iterator.
- @param iterator_ptr: Store it to zero initially; this gets decremented.
- @return The previous {T} or null if there are no more.
- @allow */
-static T *T_(StoreGetPrevious)(struct T_(Store) *const this,
-	size_t *const iterator_ptr) {
-	struct PRIVATE_T_(Element) *elem = 0;
-	if(!iterator_ptr || !this || !this->size) return 0;
-	for( ; ; ) {
-		/* this will not go into an infinite loop because all size > 0 have at
-		 least one element */
-		if(!*iterator_ptr || *iterator_ptr >= this->size)
-			*iterator_ptr = this->size;
-			elem = this->array + --(*iterator_ptr);
-			if(elem->prev != store_not_part) break;
-	}
-	return &elem->data;
-}
-
 /** Removes all data from {this}.
  @order \Theta(1)
  @allow */
@@ -654,83 +531,6 @@ static void T_(StoreClear)(struct T_(Store) *const this) {
 	this->head = this->tail = store_null;
 	PRIVATE_T_(debug)(this, "Clear", "cleared.\n");
 }
-
-/** For each element.
- @order \Theta({this}.n) \times O({action}) where
- |{this}| <= {this}.n <= |{this}+{this}.deleted|.
- @allow */
-static void T_(StoreForEach)(struct T_(Store) *const this, const T_(Action) action){
-	size_t i;
-	if(!this || !action) return;
-	for(i = 0; i < this->size; i++) {
-		if(this->array[i].prev != store_not_part) continue;
-		action(&this->array[i].data);
-	}
-}
-
-/** Performs {biaction} for each element in the list.
- @param param: The argument.
- @order ~ \Theta({this}.n) \times O({action})
- @fixme Untested.
- @allow */
-static void T_(StoreBiForEach)(struct T_(Store) *const this,
-	const T_(BiAction) biaction, void *const param) {
-	size_t i;
-	if(!this || !biaction) return;
-	for(i = 0; i < this->size; i++) {
-		if(this->array[i].prev != store_not_part) continue;
-		biaction(&this->array[i].data, param);
-	}
-}
-
-/** @return A {<T>} in the {Store} that causes the {predicate} to return false,
- or null if the {predicate} is true for every case. If {this} or {predicate} is
- null, returns null.
- @order ~ O({this}.n) \times O({predicate}) where
- |{this}| <= {this}.n <= |{this}+{this}.deleted|.
- @fixme Untested.
- @allow */
-static T *T_(StoreShortCircuit)(struct T_(Store) *const this,
-	const T_(Predicate) predicate) {
-	struct PRIVATE_T_(Element) *elem;
-	size_t i;
-	if(!this || !predicate) return 0;
-	for(i = 0; i < this->size; i++) {
-		elem = this->array + i;
-		if(elem->prev != store_not_part) continue;
-		if(!predicate(&elem->data)) return &elem->data;
-	}
-	return 0;
-}
-
-/** @return A {<T>} in the {Store} that causes the {predicate} to return false,
- or null if the {bipredicate} is true for every case. If {this} or
- {bipredicate} is null, returns null.
- @order ~ O({this}.n) \times O({predicate}) where
- |{this}| <= {this}.n <= |{this}+{this}.deleted|.
- @fixme Untested.
- @allow */
-static T *T_(StoreBiShortCircuit)(struct T_(Store) *const this,
-	const T_(BiPredicate) bipredicate, void *const param) {
-	struct PRIVATE_T_(Element) *elem;
-	size_t i;
-	if(!this || !bipredicate) return 0;
-	for(i = 0; i < this->size; i++) {
-		elem = this->array + i;
-		if(elem->prev != store_not_part) continue;
-		if(!bipredicate(&elem->data, param)) return &elem->data;
-	}
-	return 0;
-}
-
-/* int (*T_(FilterMap))(const T *const domain, T *const image);
- Maps {this} onto a new {Store} through {filter_map}. If {filter_map} returns
- false, the element is not included.
- T_(Store) *T_(StoreFilterMap)(const struct T_(Store) *const this, const T_(FilterMap) filter_map) <- no, this is a subset of {StoreReduce}? */
-
-/* void (*T_(Fold))(const T *const this, void *const result)
- Fold-left, but you really want to use associative operators. Nah! MapReduce parallel!
- void T_(StoreReduce)(const struct T_(Store) *const this, const T_U_(Fold) fold, U *const result) */
 
 #ifdef STORE_TO_STRING /* <-- print */
 
@@ -818,24 +618,15 @@ static void PRIVATE_T_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PRIVATE_T_(unused_set)(void) {
 	T_(Store_)(0);
-	T_(Store)();
+	T_(Store)(0, 0);
 	T_(StoreGetError)(0);
 	T_(StoreIsEmpty)(0);
 	T_(StoreIsElement)(0, (size_t)0);
-	T_(StoreSetMigrate)(0, 0);
-	T_(Migrate)(0, 0);
+	T_(StoreGetElement)(0, (size_t)0);
 	T_(StoreReserve)(0, (size_t)0);
 	T_(StoreNew)(0);
 	T_(StoreRemove)(0, 0);
-	T_(StoreGetElement)(0, (size_t)0);
-	T_(StoreGetIndex)(0, 0);
-	T_(StoreGetPrevious)(0, 0);
-	T_(StoreGetNext)(0, 0);
 	T_(StoreClear)(0);
-	T_(StoreForEach)(0, 0);
-	T_(StoreBiForEach)(0, 0, 0);
-	T_(StoreShortCircuit)(0, 0);
-	T_(StoreBiShortCircuit)(0, 0, 0);
 #ifdef STORE_TO_STRING
 	T_(StoreToString)(0);
 #endif

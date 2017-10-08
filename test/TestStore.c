@@ -121,16 +121,17 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	ASetTest();
-	FooSetTest();
-	IntSetTest();
-	ColourSetTest();
+	AStoreTest();
+	FooStoreTest();
+	IntStoreTest();
+	ColourStoreTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
 }
 
 
+#if 0
 /***********/
 
 struct FooVt;
@@ -195,3 +196,4 @@ struct FooB *FooB(char letter) {
  	b->letter = letter;
  	return b;
 }
+#endif
