@@ -29,17 +29,17 @@ static void A_filler(struct A *const this) {
 	this->value[3] = '\0';
 	Orcish(this->value, sizeof this->value);
 }
-#define STORE_NAME A
-#define STORE_TYPE struct A
-#define STORE_TO_STRING &A_to_string
-#define STORE_TEST &A_filler
-#include "../src/Store.h"
+#define POOL_NAME A
+#define POOL_TYPE struct A
+#define POOL_TO_STRING &A_to_string
+#define POOL_TEST &A_filler
+#include "../src/Pool.h"
 /** Assumes {key} is {[0, 99]}.
  @implements <Foo>ToString */
 static void A_to_string(const struct A *this, char (*const a)[12]) {
 	/* unusal */
-	const struct store_A_Element *const elem
-		= (const struct store_A_Element *)(void *)this;
+	const struct pool_A_Element *const elem
+		= (const struct pool_A_Element *)(void *)this;
 	sprintf(*a, "%ld<%s>%ld", elem->prev, this->value, elem->next);
 }
 
@@ -58,12 +58,12 @@ static void Foo_filler(struct Foo *const this) {
 	this->key = (int)(float)(rand() / (RAND_MAX + 1.0) * 99.0);
 	Orcish(this->value, sizeof this->value);
 }
-#define STORE_NAME Foo
-#define STORE_TYPE struct Foo
-#define STORE_TO_STRING &Foo_to_string
-#define STORE_TEST &Foo_filler
-#define STORE_DEBUG
-#include "../src/Store.h"
+#define POOL_NAME Foo
+#define POOL_TYPE struct Foo
+#define POOL_TO_STRING &Foo_to_string
+#define POOL_TEST &Foo_filler
+#define POOL_DEBUG
+#include "../src/Pool.h"
 
 /* Class {Int} is a single {int}. */
 /** Assumes {[-9 999 999 999, 99 999 999 999]}.
@@ -82,11 +82,11 @@ static void Int_filler(int *const this) {
 	*this = (int)(float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) *LIST_NUM_MAX);
 }
 #undef LIST_NUM_MAX
-#define STORE_NAME Int
-#define STORE_TYPE int
-#define STORE_TO_STRING &Int_to_string
-#define STORE_TEST &Int_filler
-#include "../src/Store.h"
+#define POOL_NAME Int
+#define POOL_TYPE int
+#define POOL_TO_STRING &Int_to_string
+#define POOL_TEST &Int_filler
+#include "../src/Pool.h"
 
 /* Class {Colour} is an {enum}. */
 enum Colour { White, Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
@@ -107,11 +107,11 @@ static void Colour_to_string(const enum Colour *this, char (*const a)[12]) {
 static void Colour_filler(enum Colour *const this) {
 	*this = (enum Colour)(float)(rand() / (RAND_MAX + 1.0) * colour_size);
 }
-#define STORE_NAME Colour
-#define STORE_TYPE enum Colour
-#define STORE_TO_STRING &Colour_to_string
-#define STORE_TEST &Colour_filler
-#include "../src/Store.h"
+#define POOL_NAME Colour
+#define POOL_TYPE enum Colour
+#define POOL_TO_STRING &Colour_to_string
+#define POOL_TEST &Colour_filler
+#include "../src/Pool.h"
 
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
@@ -121,10 +121,10 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	AStoreTest();
-	FooStoreTest();
-	IntStoreTest();
-	ColourStoreTest();
+	APoolTest();
+	FooPoolTest();
+	IntPoolTest();
+	ColourPoolTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
@@ -157,10 +157,10 @@ struct FooA {
  	struct FooListNode foo;
  	int number;
 };
-#define STORE_NAME A
-#define STORE_TYPE struct FooA
-#include "Store.h"
-static struct AStore a_store;
+#define POOL_NAME A
+#define POOL_TYPE struct FooA
+#include "Pool.h"
+static struct APool a_pool;
 static void A_transmogrify(struct FooA *const a) {
  	printf("Key%u %i!\n", a->foo.key, a->number);
 }
@@ -170,10 +170,10 @@ struct FooB {
  	struct FooListNode foo;
  	char letter;
 };
-#define STORE_NAME B
-#define STORE_TYPE struct FooB
-#include "Store.h"
-static struct BStore b_store;
+#define POOL_NAME B
+#define POOL_TYPE struct FooB
+#include "Pool.h"
+static struct BPool b_pool;
 static void B_transmogrify(struct FooB *const b) {
  	printf("Foo%u %c!\n", a->foo.key, b->letter);
 }

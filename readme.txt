@@ -2,8 +2,8 @@ Copyright (C) 2017 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
-Generic backing Store. See doc/Store.html for documentation. The
-stand-alone source is src/Store.h.
+Generic backing store. See doc/Pool.html for documentation. The
+stand-alone source is src/Pool.h.
 
 License:
 
