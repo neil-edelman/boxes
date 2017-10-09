@@ -2,9 +2,8 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {<T>Pool} is a dynamic array that stores unordered {<T>}, which must be set
- using {POOL_TYPE}. When using polymorphic data types, providing a contiguous
- array for each concrete type is better for cache performance. Removing an
- element is done lazily through a linked-list internal to the pool; as such,
+ using {POOL_TYPE}. Intended to be used with polymorphic data types. Removing
+ an element is done lazily through a linked-list internal to the pool; as such,
  indices will remain the same throughout the lifetime of the data. You cannot
  shrink the size of this data type, only cause it to grow. Resizing incurs
  amortised cost, done though a Fibonacci sequence. {<T>Pool} is not
@@ -174,16 +173,6 @@ static int            pool_global_errno_copy;
 /** Operates by side-effects only. */
 typedef void (*T_(Action))(T *const element);
 
-/** Takes along a param. */
-typedef void (*T_(BiAction))(T *const, void *const);
-
-/** Returns (non-zero) true or (zero) false. */
-typedef int  (*T_(Predicate))(T *const element);
-
-/** Passed {T} and a user-defined pointer value, returns (non-zero) true or
- (zero) false. */
-typedef int (*T_(BiPredicate))(T *const, void *const);
-
 #ifdef POOL_TO_STRING /* <-- string */
 
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
@@ -273,11 +262,11 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
-	/* Migrate parent class. This is _ugly_ af, and ensures
-	 in-interoperablility. I think it violates pedantic strict-ANSI. It
-	 subverts type-safety. It doesn't allow moving of temporary pointers. It is
-	 awful. However, it is so convenient for the caller not to have to worry
-	 about moving memory blocks. */
+	/* Migrate parent class. This is _ugly_, and ensures in-interoperablility.
+	 I think it violates pedantic strict-ANSI. It subverts type-safety. It
+	 doesn't allow moving of temporary pointers. It is awful. However, it is so
+	 convenient for the caller not to have to worry about moving memory
+	 blocks. */
 	if(this->array != array) {
 		struct Migrate m;
 		m.begin = (const char *)this->array;

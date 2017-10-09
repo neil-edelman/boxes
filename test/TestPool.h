@@ -85,21 +85,27 @@ static void PRIVATE_T_(test_basic)(void) {
 	printf("Now: %s.\n", T_(PoolToString)(a));
 
 	printf("Remove last:\n");
-	assert(((testp = T_(PoolGetElement)(a, test_size - 2))
-		&& T_(PoolRemove)(a, testp))
-		|| (printf("Error: %s.\n", T_(PoolGetError(a))), 0));
+	if((testp = T_(PoolGetElement)(a, test_size - 2))
+		&& !T_(PoolRemove)(a, testp)) {
+		printf("Error: %s.\n", T_(PoolGetError(a))), assert(0);
+		return;
+	}
 	printf("Now: %s.\n", T_(PoolToString)(a));
 	assert(!T_(PoolRemove)(a, testp));
 	printf("(Deliberate) error: %s.\n", T_(PoolGetError)(a));
-	assert(((testp = T_(PoolGetElement)(a, test_size - 3))
-		&& T_(PoolRemove)(a, testp))
-		|| (printf("Error: %s.\n", T_(PoolGetError(a))), 0));
+	if((testp = T_(PoolGetElement)(a, test_size - 3))
+		&& !T_(PoolRemove)(a, testp)) {
+		printf("Error: %s.\n", T_(PoolGetError(a))), assert(0);
+		return;
+	}
 	printf("Now: %s.\n", T_(PoolToString)(a));
 	assert(!T_(PoolRemove)(a, testp));
 	printf("(Deliberate) error: %s.\n", T_(PoolGetError)(a));
-	assert(((testp = T_(PoolGetElement)(a, test_size - 1))
-		&& T_(PoolRemove)(a, testp))
-		|| (printf("Error: %s.\n", T_(PoolGetError(a))), 0));
+	if((testp = T_(PoolGetElement)(a, test_size - 1))
+		&& !T_(PoolRemove)(a, testp)) {
+		printf("Error: %s.\n", T_(PoolGetError(a))), assert(0);
+		return;
+	}
 	printf("Now: %s.\n", T_(PoolToString)(a));
 	assert(!T_(PoolRemove)(a, testp));
 	printf("(Deliberate) error: %s.\n", T_(PoolGetError)(a));
@@ -136,16 +142,20 @@ static void PRIVATE_T_(test_random)(void) {
 		size_t size = a->size;
 		/* this parameter controls how big the pool wants to be */
 		if(r > size / 100.0) {
-			assert((node = T_(PoolNew)(a))
-				|| (printf("Error: %s.\n", T_(PoolGetError)(a)), 0));
+			if(!(node = T_(PoolNew)(a))) {
+				printf("Error: %s.\n", T_(PoolGetError)(a)), assert(0);
+				return;
+			}
 			PRIVATE_T_(filler)(node);
 			PRIVATE_T_(to_string)(node, &str);
 			printf("Created %s.\n", str);
 		} else {
 			size_t idx = rand() / (RAND_MAX + 1.0) * size;
 			if(!T_(PoolIsElement)(a, idx)) continue;
-			assert((node = T_(PoolGetElement)(a, idx))
-				|| (printf("Error getting: %s.\n", T_(PoolGetError)(a)), 0));
+			if(!(node = T_(PoolGetElement)(a, idx))) {
+				printf("Error getting: %s.\n", T_(PoolGetError)(a)), assert(0);
+				return;
+			}
 			PRIVATE_T_(to_string)(node, &str);
 			printf("Removing %s at %lu.\n", str, (unsigned long)idx);
 			assert(T_(PoolRemove)(a, node)
