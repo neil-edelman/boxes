@@ -1,17 +1,13 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>List} stores doubly-linked-list(s) of {<T>ListNode}, of which data of
- type, {<T>}, must be set using {LIST_TYPE}. Supports one to four different
- orders in the same type, {[A, D]}, set using {LIST_U[A-D]_NAME}. The
- preprocessor macros are all undefined at the end of the file for convenience
- when including multiple {List} types in the same file.
-
- The {<T>ListNode} storage is the responsibility of the caller. Specifically,
- it does not have to be contiguous, and it can be nestled in multiple, possibly
- different, structures. One can move (part) of the memory that is in an active
- {List} under some conditions, and still keep the integrity of the linked-list;
- see \see{<T>ListMigrate} or \see{<T>ListMigrateBlock}.
+ {<T>List} organises doubly-linked-list(s) of {<T>ListNode}, of which data of
+ type, {<T>}, must be set using {LIST_TYPE}. The {<T>ListNode} storage is the
+ responsibility of the caller; that means it can be nestled in multiple
+ structures. Compatible with {Pool}. Supports one to four different orders in
+ the same type, {[A, D]}, set using {LIST_U[A-D]_NAME}. The preprocessor macros
+ are all undefined at the end of the file for convenience when including
+ multiple {List} types in the same file.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
@@ -27,11 +23,11 @@
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>List<U>ToString}.
 
- @param LIST_DYNAMIC_STORAGE
- This allocates {O(log n)} space needed for merge sort on the stack every time
- the List is sorted, instead of statically. This allows using the exact same
- sort on different data concurrently without crashing, but it consumes more
- resources.
+ @param LIST_STATIC_STORAGE
+ This allocates {O(log max n)} space needed for merge sort statically, instead
+ of stack every time the List is sorted. This does not allow it to sort data
+ concurrently without crashing, but it consumes less space on the stack; about
+ half-a-kilobyte.
 
  @param LIST_OPENMP
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }.
@@ -777,8 +773,8 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 #ifdef LIST_UD_COMPARATOR
 #undef LIST_UD_COMPARATOR
 #endif
-#ifdef LIST_DYNAMIC_STORAGE
-#undef LIST_DYNAMIC_STORAGE
+#ifdef LIST_STATIC_STORAGE
+#undef LIST_STATIC_STORAGE
 #endif
 #ifdef LIST_OPENMP
 #undef LIST_OPENMP
@@ -1158,8 +1154,8 @@ static void PRIVATE_T_U_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 	r->run_no--;
 }
 
-#ifndef LIST_DYNAMIC_STORAGE /* <-- not dynamic: it will crash if it calls
-exactly this function concurrently */
+#ifdef LIST_STATIC_STORAGE /* <-- static: it will crash if it calls exactly
+this function concurrently */
 static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
 #endif /* not dynamic --> */
 
@@ -1168,7 +1164,7 @@ static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
  would be optimum, or whether a long run should be put off merging until
  short runs have finished; it is quite simple as it is. */
 static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
-#ifdef LIST_DYNAMIC_STORAGE /* <-- dynamic: this is potentially half-a-KB */
+#ifndef LIST_STATIC_STORAGE /* <-- dynamic: this is potentially half-a-KB */
 	static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
 #endif /* dynamic --> */
 	/* new_run is an index into list_runs, a temporary sorting structure;

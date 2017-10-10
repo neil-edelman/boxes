@@ -3,17 +3,13 @@
 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or [ https://opensource.org/licenses/MIT ].
 
- _<T>List_ stores doubly-linked-list(s) of _<T>ListNode_, of which data of
- type, _<T>_, must be set using _LIST_TYPE_. Supports one to four different
- orders in the same type, _[A, D]_, set using _LIST_U[A-D]_NAME_. The
- preprocessor macros are all undefined at the end of the file for convenience
- when including multiple _List_ types in the same file.
-
- The _<T>ListNode_ storage is the responsibility of the caller. Specifically,
- it does not have to be contiguous, and it can be nestled in multiple, possibly
- different, structures. One can move (part) of the memory that is in an active
- _List_ under some conditions, and still keep the integrity of the linked-list;
- see `<T>ListMigrate` or `<T>ListMigrateBlock`.
+ _<T>List_ organises doubly-linked-list(s) of _<T>ListNode_, of which data of
+ type, _<T>_, must be set using _LIST_TYPE_. The _<T>ListNode_ storage is the
+ responsibility of the caller; that means it can be nestled in multiple
+ structures. Compatible with _Pool_. Supports one to four different orders in
+ the same type, _[A, D]_, set using _LIST_U[A-D]_NAME_. The preprocessor macros
+ are all undefined at the end of the file for convenience when including
+ multiple _List_ types in the same file.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
@@ -26,10 +22,10 @@ parameter: LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR -- Each _LIST_U[A-D]_NAME_ l
 parameter: LIST_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
  `<T>List<U>ToString`.
 
-parameter: LIST_DYNAMIC_STORAGE -- This allocates _O(log n)_ space needed for merge sort on the stack every time
- the List is sorted, instead of statically. This allows using the exact same
- sort on different data concurrently without crashing, but it consumes more
- resources.
+parameter: LIST_STATIC_STORAGE -- This allocates _O(log max n)_ space needed for merge sort statically, instead
+ of stack every time the List is sorted. This does not allow it to sort data
+ concurrently without crashing, but it consumes less space on the stack; about
+ half-a-kilobyte.
 
 parameter: LIST_OPENMP -- Tries to parallelise using _OpenMP_, [ http://www.openmp.org/ ].
 
