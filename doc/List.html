@@ -47,10 +47,10 @@ see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opens
 <em>&lt;T&gt;List</em> organises doubly-linked-list(s) of <em>&lt;T&gt;ListNode</em>, of which data of
 type, <em>&lt;T&gt;</em>, must be set using <em>LIST_TYPE</em>. The <em>&lt;T&gt;ListNode</em> storage is the
 responsibility of the caller; that means it can be nestled in multiple
-structures. Compatible with <em>Pool</em>. Supports one to four different orders in
-the same type, <em>[A, D]</em>, set using <em>LIST_U[A-D]_NAME</em>. The preprocessor macros
-are all undefined at the end of the file for convenience when including
-multiple <em>List</em> types in the same file.
+structures. Supports one to four different orders in the same type, <em>[A, D]</em>,
+set using <em>LIST_U[A-D]_NAME</em>. The preprocessor macros are all undefined at the
+end of the file for convenience when including multiple <em>List</em> types in the
+same file.
 </p>
 <dl>
 	<dt>parameter: LIST_NAME, LIST_TYPE</dt>
@@ -68,7 +68,7 @@ multiple <em>List</em> types in the same file.
 	<dd>This allocates <em>O(log max n)</em> space needed for merge sort statically, instead
  of stack every time the List is sorted. This does not allow it to sort data
  concurrently without crashing, but it consumes less space on the stack; about
- half-a-kilobyte.</dd>
+ half-a-kilobyte, depending on <em>size_t</em>.</dd>
 	<dt>parameter: LIST_OPENMP</dt>
 	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>.</dd>
 	<dt>parameter: LIST_TEST</dt>
@@ -106,6 +106,19 @@ multiple <em>List</em> types in the same file.
 <pre><b>struct Migrate</b></pre>
 <p>
 Contains information about a <em>realloc</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*Migrate)(void *const parent,
+	const struct Migrate *const migrate)"><!-- --></a>
+<h3>typedef void (*Migrate)(void *const parent,
+	const struct Migrate *const migrate)</h3>
+<pre><b>typedef void (*Migrate)(void *const parent,
+	const struct Migrate *const migrate)</b></pre>
+<p>
+Function call on <em>realloc</em>.
 </p>
 <dl>
 </dl>
@@ -255,14 +268,8 @@ is necessary when the variable is of <em>static</em> duration, otherwise use
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>void *const void_this,
 	const struct Migrate *const migrate</td>
-</tr>
-<tr>
-	<td>static void</td>
-	<td><a href = "#&lt;T&gt;Migrate">&lt;T&gt;Migrate</a></td>
-	<td>const struct Migrate *const migrate,
-	T **const t_ptr</td>
 </tr>
 <tr>
 	<td>static T *</td>
@@ -476,7 +483,7 @@ be set.
 
 <div><a name = "&lt;T&gt;ListMigrate"><!-- --></a>
 <h3>&lt;T&gt;ListMigrate</h3>
-<pre>static void <b>&lt;T&gt;ListMigrate</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;ListMigrate</b> (void *const void_this,
 	const struct Migrate *const migrate)</pre>
 <p>
 When <em>this</em> contains elements from an array of/containing <em>&lt;T&gt;ListNode</em> in
@@ -490,29 +497,19 @@ may need more changes due to the structure contained in the list,
 <a href = "#&lt;T&gt;Migrate">&lt;T&gt;Migrate</a>.
 </p>
 <dl>
+	<dt>parameter: void_this</dt>
+	<dd>A <em>struct &lt;T&gt;List *const</em> cast as <em>void *const</em> for
+ implementing <em>Migrate</em>.</dd>
 	<dt>parameter: migrate</dt>
 	<dd>A <em>struct</em> containing the old array start and end as a
  <em>void *</em> and delta as <em>ptrdiff_t</em>.</dd>
+	<dt>implements</dt>
+	<dd>Migrate</dd>
 	<dt>order</dt>
 	<dd>&Theta;(n)</dd>
 	<dt>fixme</dt>
 	<dd>Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.</dd>
-</dl>
-</div>
-
-<div><a name = "&lt;T&gt;Migrate"><!-- --></a>
-<h3>&lt;T&gt;Migrate</h3>
-<pre>static void <b>&lt;T&gt;Migrate</b> (const struct Migrate *const migrate,
-	T **const t_ptr)</pre>
-<p>
-Call this function with the address of any self-referential node pointers
-contained in the data itself, to make sure that they are updated on <em>realloc</em>.
-To update the list, see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a>.
-</p>
-<dl>
-	<dt>fixme</dt>
-	<dd>Untested.</dd>
 </dl>
 </div>
 

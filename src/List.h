@@ -4,10 +4,10 @@
  {<T>List} organises doubly-linked-list(s) of {<T>ListNode}, of which data of
  type, {<T>}, must be set using {LIST_TYPE}. The {<T>ListNode} storage is the
  responsibility of the caller; that means it can be nestled in multiple
- structures. Compatible with {Pool}. Supports one to four different orders in
- the same type, {[A, D]}, set using {LIST_U[A-D]_NAME}. The preprocessor macros
- are all undefined at the end of the file for convenience when including
- multiple {List} types in the same file.
+ structures. Supports one to four different orders in the same type, {[A, D]},
+ set using {LIST_U[A-D]_NAME}. The preprocessor macros are all undefined at the
+ end of the file for convenience when including multiple {List} types in the
+ same file.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
@@ -17,7 +17,8 @@
  @param LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
  Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order. One can define an
  optional comparator, an equivalence relation function implementing
- {<T>Comparator}.
+ {<T>Comparator}. If you don't specify a {LIST_U[A-D]_NAME}, you have one order
+ and can specify {LIST_U_COMPARATOR}.
 
  @param LIST_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
@@ -27,7 +28,7 @@
  This allocates {O(log max n)} space needed for merge sort statically, instead
  of stack every time the List is sorted. This does not allow it to sort data
  concurrently without crashing, but it consumes less space on the stack; about
- half-a-kilobyte.
+ half-a-kilobyte, depending on {size_t}.
 
  @param LIST_OPENMP
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }.
@@ -93,9 +94,20 @@
 #error List generic LIST_TYPE undefined.
 #endif
 #if !defined(LIST_UA_NAME) && !defined(LIST_UB_NAME) \
-	&& !defined(LIST_UC_NAME) && !defined(LIST_UD_NAME)
-#error List: must have at least one of LIST_U[A-D]_NAME.
+	&& !defined(LIST_UC_NAME) && !defined(LIST_UD_NAME) /* <-- anon */
+#define LIST_U_NAME
+#define LIST_U_DO_NOT_UNDEF
+#else /* anon --><-- !anon */
+#ifdef LIST_U_COMPARATOR /* <-- err */
+#error List: LIST_U_COMPARATOR while LIST_U[A-D]_NAME; use LIST_U[A-D]_COMPARATOR.
+#endif /* err --> */
+#ifdef LIST_U_NAME
+#undef LIST_U_NAME
 #endif
+#ifdef LIST_U_DO_NOT_UNDEF
+#undef LIST_U_DO_NOT_UNDEF
+#endif
+#endif /* !anon --> */
 #if defined(LIST_UA_COMPARATOR) && !defined(LIST_UA_NAME)
 #error List: LIST_UA_COMPARATOR requires LIST_UA_NAME.
 #endif
@@ -116,8 +128,11 @@
 #define NDEBUG
 #endif
 #if defined(LIST_UA_COMPARATOR) || defined(LIST_UB_COMPARATOR) \
-	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR)
+	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR) \
+	|| defined(LIST_U_COMPARATOR)
 #define LIST_SOME_COMPARATOR
+#else
+#undef LIST_SOME_COMPARATOR
 #endif
 
 
@@ -173,6 +188,11 @@ typedef LIST_TYPE PRIVATE_T_(Type);
 #define T PRIVATE_T_(Type)
 
 /* [A, D] */
+#ifdef U_
+#undef U_
+#undef T_U_
+#undef PRIVATE_T_U_
+#endif
 #ifdef UA_
 #undef UA_
 #undef T_UA_
@@ -193,12 +213,18 @@ typedef LIST_TYPE PRIVATE_T_(Type);
 #undef T_UD_
 #undef PRIVATE_T_UD_
 #endif
+#ifdef LIST_U_NAME
+#define U_(thing) PCAT(LIST_U_NAME, thing) /* data, exclusively */
+#define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2) /*public fn's*/
+#define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	thing2)) /* private fn's */
+#endif
 #ifdef LIST_UA_NAME
-#define UA_(thing) PCAT(LIST_UA_NAME, thing) /* data, exclusively */
+#define UA_(thing) PCAT(LIST_UA_NAME, thing)
 #define T_UA_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
-	CAT(LIST_UA_NAME, thing2)) /* public fn's */
+	CAT(LIST_UA_NAME, thing2))
 #define PRIVATE_T_UA_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-	PCAT(LIST_UA_NAME, thing2))) /* private fn's */
+	PCAT(LIST_UA_NAME, thing2)))
 #endif
 #ifdef LIST_UB_NAME
 #define UB_(thing) PCAT(LIST_UB_NAME, thing)
@@ -250,6 +276,9 @@ struct Migrate {
 	const void *begin, *end; /* old pointers */
 	ptrdiff_t delta;
 };
+/** Function call on {realloc}. */
+typedef void (*Migrate)(void *const parent,
+	const struct Migrate *const migrate);
 #endif /* migrate --> */
 
 #endif /* LIST_H */
@@ -302,6 +331,9 @@ static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 struct T_(ListNode);
 struct T_(ListNode) {
 	T data; /* 1st so we can cast without the mess of {container_of} */
+#ifdef LIST_U_NAME
+	struct T_(ListNode) *U_(prev), *U_(next);
+#endif
 #ifdef LIST_UA_NAME
 	struct T_(ListNode) *UA_(prev), *UA_(next);
 #endif
@@ -321,6 +353,9 @@ struct T_(ListNode) {
  \see{<T>ListClear}. */
 struct T_(List);
 struct T_(List) {
+#ifdef LIST_U_NAME
+	struct T_(ListNode) *U_(first), *U_(last);
+#endif
 #ifdef LIST_UA_NAME
 	struct T_(ListNode) *UA_(first), *UA_(last);
 #endif
@@ -350,6 +385,10 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 /* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!LIST_U_NAME} section. These
  will get all the functions with {<U>} in them. */
+
+#ifdef LIST_U_NAME /* <-- nemo */
+#include "List.h"
+#endif /* nemo --> */
 
 #ifdef LIST_UA_NAME /* <-- a */
 #define LIST_U_NAME LIST_UA_NAME
@@ -390,6 +429,9 @@ static void PRIVATE_T_(push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
+#ifdef LIST_U_NAME /* <-- nemo */
+	PRIVATE_T_U_(list, push)(this, node);
+#endif /* nemo --> */
 #ifdef LIST_UA_NAME /* <-- a */
 	PRIVATE_T_UA_(list, push)(this, node);
 #endif /* a --> */
@@ -409,6 +451,9 @@ static void PRIVATE_T_(unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
+#ifdef LIST_U_NAME /* <-- nemo */
+	PRIVATE_T_U_(list, unshift)(this, node);
+#endif /* nemo --> */
 #ifdef LIST_UA_NAME /* <-- a */
 	PRIVATE_T_UA_(list, unshift)(this, node);
 #endif /* a --> */
@@ -428,6 +473,9 @@ static void PRIVATE_T_(remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
+#ifdef LIST_U_NAME /* <-- nemo */
+	PRIVATE_T_U_(list, remove)(this, node);
+#endif /* nemo --> */
 #ifdef LIST_UA_NAME /* <-- a */
 	PRIVATE_T_UA_(list, remove)(this, node);
 #endif /* a --> */
@@ -445,6 +493,9 @@ static void PRIVATE_T_(remove)(struct T_(List) *const this,
 /** Private: clear the list. */
 static void PRIVATE_T_(clear)(struct T_(List) *const this) {
 	assert(this);
+#ifdef LIST_U_NAME
+	this->U_(first) = this->U_(last) = 0;
+#endif
 #ifdef LIST_UA_NAME
 	this->UA_(first) = this->UA_(last) = 0;
 #endif
@@ -515,6 +566,9 @@ static void T_(ListTake)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	if(!from || from == this) return;
 	if(!this) { PRIVATE_T_(clear)(from); return; }
+#ifdef LIST_U_NAME /* <-- nemo */
+	PRIVATE_T_U_(list, cat)(this, from);
+#endif /* nemo --> */
 #ifdef LIST_UA_NAME /* <-- a */
 	PRIVATE_T_UA_(list, cat)(this, from);
 #endif /* a --> */
@@ -539,6 +593,13 @@ static void T_(ListMerge)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	if(!from || from == this) return;
 	if(!this) { PRIVATE_T_(clear)(from); return; }
+#ifdef LIST_U_NAME /* <-- nemo */
+#ifdef LIST_U_COMPARATOR /* <-- comp */
+	PRIVATE_T_U_(list, merge)(this, from);
+#else /* comp --><-- !comp */
+	PRIVATE_T_U_(list, cat)(this, from);
+#endif /* !comp --> */
+#endif /* nemo --> */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -594,6 +655,9 @@ static void T_(ListMerge)(struct T_(List) *const this,
  @allow */
 static void T_(ListSort)(struct T_(List) *const this) {
 	if(!this) return;
+#ifdef LIST_U_COMPARATOR /* <-- nemo */
+	PRIVATE_T_U_(natural, sort)(this);
+#endif /* nemo --> */
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -626,23 +690,20 @@ static void T_(ListSort)(struct T_(List) *const this) {
 }
 #endif /* comp --> */
 
-/** When {this} contains elements from an array of/containing {<T>ListNode} in
- memory that switched due to a {realloc}. If {this} or {migrate} is null,
- doesn't do anything.
-
- Specifically, use when {this} is (partially) backed with an array that has
- changed places due to a {realloc}. This changes the list structure itself; you
- may need more changes due to the structure contained in the list,
- \see{<T>Migrate}.
-
- @param migrate: A {struct} containing the old array start and end as a
- {void *} and delta as {ptrdiff_t}.
+/** Adjusts the pointers when supplied with a {Migrate} parametre, when {this}
+ contains {<T>ListNode} elements from memory that switched due to a {realloc}.
+ If {this} or {migrate} is null, doesn't do anything.
+ @param void_this: A {struct <T>List *const} cast as {void *const} for
+ implementing {Migrate}.
+ @param migrate: A {struct} coming from a {Migrate} function.
  @order \Theta(n)
+ @implements Migrate
  @fixme Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
  @allow */
-static void T_(ListMigrate)(struct T_(List) *const this,
+static void T_(ListMigrate)(void *const void_this,
 	const struct Migrate *const migrate) {
+	struct T_(List) *const this = void_this;
 	if(!this || !migrate || !migrate->delta) return;
 #ifdef LIST_DEBUG
 	fprintf(stderr, "List<" QUOTE(LIST_NAME)
@@ -689,16 +750,17 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	*(char **)node_ptr += migrate->delta;
 }
 
-/** Call this function with the address of any self-referential node pointers
+/* * This is important, sometimes, but a real pain to describe.
+ Call this function with the address of any self-referential node pointers
  contained in the data itself, to make sure that they are updated on {realloc}.
  To update the list, see \see{<T>ListMigrate}.
  @fixme Untested.
  @allow */
-static void T_(Migrate)(const struct Migrate *const migrate,
+/*static void T_(Migrate)(const struct Migrate *const migrate,
 	T **const t_ptr) {
 	if(!migrate || !t_ptr || !*t_ptr) return;
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
-}
+}*/
 
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* need this file if one is going to run tests */
@@ -720,7 +782,7 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
-	T_(Migrate)(0, 0);
+	/*T_(Migrate)(0, 0);*/
 	PRIVATE_T_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
@@ -748,6 +810,15 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 #endif
 #ifdef LIST_FILLER
 #undef LIST_FILLER
+#endif
+#ifdef LIST_U_DO_NOT_UNDEF
+#undef LIST_U_DO_NOT_UNDEF
+#endif
+#ifdef LIST_U_NAME
+#undef LIST_U_NAME
+#endif
+#ifdef LIST_U_COMPARATOR
+#undef LIST_U_COMPARATOR
 #endif
 #ifdef LIST_UA_NAME
 #undef LIST_UA_NAME
@@ -1588,9 +1659,11 @@ static void PRIVATE_T_U_(unused, coda)(void) { PRIVATE_T_U_(unused, list)(); }
 
 
 /* un-define stuff for the next */
+#ifndef LIST_U_DO_NOT_UNDEF /* <-- undef */
 #undef LIST_U_NAME
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 #undef LIST_U_COMPARATOR
 #endif /* comp --> */
+#endif /* undef --> */
 
 #endif /* LIST_U_NAME --> */

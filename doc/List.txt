@@ -6,10 +6,10 @@
  _<T>List_ organises doubly-linked-list(s) of _<T>ListNode_, of which data of
  type, _<T>_, must be set using _LIST_TYPE_. The _<T>ListNode_ storage is the
  responsibility of the caller; that means it can be nestled in multiple
- structures. Compatible with _Pool_. Supports one to four different orders in
- the same type, _[A, D]_, set using _LIST_U[A-D]_NAME_. The preprocessor macros
- are all undefined at the end of the file for convenience when including
- multiple _List_ types in the same file.
+ structures. Supports one to four different orders in the same type, _[A, D]_,
+ set using _LIST_U[A-D]_NAME_. The preprocessor macros are all undefined at the
+ end of the file for convenience when including multiple _List_ types in the
+ same file.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
@@ -25,7 +25,7 @@ parameter: LIST_TO_STRING -- Optional print function implementing _<T>ToString_;
 parameter: LIST_STATIC_STORAGE -- This allocates _O(log max n)_ space needed for merge sort statically, instead
  of stack every time the List is sorted. This does not allow it to sort data
  concurrently without crashing, but it consumes less space on the stack; about
- half-a-kilobyte.
+ half-a-kilobyte, depending on _size_t_.
 
 parameter: LIST_OPENMP -- Tries to parallelise using _OpenMP_, [ http://www.openmp.org/ ].
 
@@ -63,6 +63,15 @@ fixme: _clang_: _#pragma clang diagnostic ignored "-Wx"_ where _x_ is:
 struct Migrate
 
 Contains information about a _realloc_.
+
+
+### typedef void (*Migrate)(void *const parent,
+	const struct Migrate *const migrate) ###
+
+typedef void (*Migrate)(void *const parent,
+	const struct Migrate *const migrate)
+
+Function call on _realloc_.
 
 
 ### typedef void (*<T>Action)(T *const) ###
@@ -154,10 +163,8 @@ static void	<T>ListTake	(struct <T>List *const this,
 static void	<T>ListMerge	(struct <T>List *const this,
 	struct <T>List *const from)
 static void	<T>ListSort	(struct <T>List *const this)
-static void	<T>ListMigrate	(struct <T>List *const this,
+static void	<T>ListMigrate	(void *const void_this,
 	const struct Migrate *const migrate)
-static void	<T>Migrate	(const struct Migrate *const migrate,
-	T **const t_ptr)
 static T *	<T>Node<U>GetNext	(T *const this)
 static T *	<T>Node<U>GetPrevious	(T *const this)
 static T *	<T>List<U>GetFirst	(struct <T>List *const this)
@@ -288,7 +295,7 @@ order: \Omega(_this_.n), O(_this_.n log _this_.n)
 
 ### <T>ListMigrate ###
 
-static void <T>ListMigrate(struct <T>List *const this,
+static void <T>ListMigrate(void *const void_this,
 	const struct Migrate *const migrate)
 
 When _this_ contains elements from an array of/containing _<T>ListNode_ in
@@ -300,26 +307,18 @@ When _this_ contains elements from an array of/containing _<T>ListNode_ in
  may need more changes due to the structure contained in the list,
  `<T>Migrate`.
 
+parameter: void_this -- A _struct <T>List *const_ cast as _void *const_ for
+ implementing _Migrate_.
+
 parameter: migrate -- A _struct_ containing the old array start and end as a
  _void *_ and delta as _ptrdiff_t_.
+
+implements: Migrate
 
 order: \Theta(n)
 
 fixme: Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
-
-
-
-### <T>Migrate ###
-
-static void <T>Migrate(const struct Migrate *const migrate,
-	T **const t_ptr)
-
-Call this function with the address of any self-referential node pointers
- contained in the data itself, to make sure that they are updated on _realloc_.
- To update the list, see `<T>ListMigrate`.
-
-fixme: Untested.
 
 
 
