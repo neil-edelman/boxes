@@ -9,15 +9,17 @@
  structures. Supports one to four different orders in the same type, _[A, D]_,
  set using _LIST_U[A-D]_NAME_. The preprocessor macros are all undefined at the
  end of the file for convenience when including multiple _List_ types in the
- same file.
+ same file. Random _LIST_*_ macros should be avoided.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
  identifiers. Must each be present before including.
 
-parameter: LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR -- Each _LIST_U[A-D]_NAME_ literally becomes, _<U>_, an order. One can define an
- optional comparator, an equivalence relation function implementing
- _<T>Comparator_.
+parameter: LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR -- Each _LIST_U[A-D]_NAME_ literally becomes, _<U>_, an order. If you only need
+ one order, you can skip it's name and define it anonymously, _<U>_ will be
+ empty. One can define an optional comparator, an equivalence relation function
+ implementing _<T>Comparator_; _LIST_COMPARATOR_ is used when you define the
+ name anonymously.
 
 parameter: LIST_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
  `<T>List<U>ToString`.
@@ -298,20 +300,14 @@ order: \Omega(_this_.n), O(_this_.n log _this_.n)
 static void <T>ListMigrate(void *const void_this,
 	const struct Migrate *const migrate)
 
-When _this_ contains elements from an array of/containing _<T>ListNode_ in
- memory that switched due to a _realloc_. If _this_ or _migrate_ is null,
- doesn't do anything.
-
- Specifically, use when _this_ is (partially) backed with an array that has
- changed places due to a _realloc_. This changes the list structure itself; you
- may need more changes due to the structure contained in the list,
- `<T>Migrate`.
+Adjusts the pointers when supplied with a _Migrate_ parameter, when _this_
+ contains _<T>ListNode_ elements from memory that switched due to a _realloc_.
+ If _this_ or _migrate_ is null, doesn't do anything.
 
 parameter: void_this -- A _struct <T>List *const_ cast as _void *const_ for
  implementing _Migrate_.
 
-parameter: migrate -- A _struct_ containing the old array start and end as a
- _void *_ and delta as _ptrdiff_t_.
+parameter: migrate -- A _struct_ coming from a _Migrate_ function.
 
 implements: Migrate
 

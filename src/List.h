@@ -7,18 +7,19 @@
  structures. Supports one to four different orders in the same type, {[A, D]},
  set using {LIST_U[A-D]_NAME}. The preprocessor macros are all undefined at the
  end of the file for convenience when including multiple {List} types in the
- same file.
+ same file. Random {LIST_*} macros should be avoided.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
  identifiers. Must each be present before including.
 
- @param LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
- Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order. One can define an
- optional comparator, an equivalence relation function implementing
- {<T>Comparator}. If you don't specify a {LIST_U[A-D]_NAME}, you have one order
- and can specify {LIST_U_COMPARATOR}.
+ @param LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
+ Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order. If you only need
+ one order, you can skip it's name and define it anonymously, {<U>} will be
+ empty. One can define an optional comparator, an equivalence relation function
+ implementing {<T>Comparator}; {LIST_COMPARATOR} is used when you define the
+ name anonymously.
 
  @param LIST_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
@@ -66,7 +67,8 @@
 
 
 
-/* original #include in the user's C file, and not from calling recursively */
+/* original #include in the user's C file, and not from calling recursively
+ (all "LIST_*" names are assumed to be reserved) */
 #if !defined(LIST_U_NAME) /* <-- !LIST_U_NAME */
 
 
@@ -93,21 +95,6 @@
 #ifndef LIST_TYPE
 #error List generic LIST_TYPE undefined.
 #endif
-#if !defined(LIST_UA_NAME) && !defined(LIST_UB_NAME) \
-	&& !defined(LIST_UC_NAME) && !defined(LIST_UD_NAME) /* <-- anon */
-#define LIST_U_NAME
-#define LIST_U_DO_NOT_UNDEF
-#else /* anon --><-- !anon */
-#ifdef LIST_U_COMPARATOR /* <-- err */
-#error List: LIST_U_COMPARATOR while LIST_U[A-D]_NAME; use LIST_U[A-D]_COMPARATOR.
-#endif /* err --> */
-#ifdef LIST_U_NAME
-#undef LIST_U_NAME
-#endif
-#ifdef LIST_U_DO_NOT_UNDEF
-#undef LIST_U_DO_NOT_UNDEF
-#endif
-#endif /* !anon --> */
 #if defined(LIST_UA_COMPARATOR) && !defined(LIST_UA_NAME)
 #error List: LIST_UA_COMPARATOR requires LIST_UA_NAME.
 #endif
@@ -120,6 +107,19 @@
 #if defined(LIST_UD_COMPARATOR) && !defined(LIST_UD_NAME)
 #error List: LIST_UD_COMPARATOR requires LIST_UD_NAME.
 #endif
+/* Put the anonymous one-order implicit macro into {UA} for convenience. */
+#if !defined(LIST_UA_NAME) && !defined(LIST_UB_NAME) \
+	&& !defined(LIST_UC_NAME) && !defined(LIST_UD_NAME) /* <-- anon */
+#define LIST_U_ANONYMOUS
+#define LIST_UA_NAME
+#ifdef LIST_COMPARATOR
+#define LIST_UA_COMPARATOR LIST_COMPARATOR
+#endif
+#else /* anon --><-- !anon */
+#ifdef LIST_COMPARATOR
+#error List: LIST_COMPARATOR can only be defined anonymously; use LIST_U[A-D]_COMPARATOR.
+#endif
+#endif /* !anon --> */
 #if defined(LIST_TEST) && !defined(LIST_TO_STRING)
 #error LIST_TEST requires LIST_TO_STRING.
 #endif
@@ -128,11 +128,8 @@
 #define NDEBUG
 #endif
 #if defined(LIST_UA_COMPARATOR) || defined(LIST_UB_COMPARATOR) \
-	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR) \
-	|| defined(LIST_U_COMPARATOR)
+	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR)
 #define LIST_SOME_COMPARATOR
-#else
-#undef LIST_SOME_COMPARATOR
 #endif
 
 
@@ -188,11 +185,6 @@ typedef LIST_TYPE PRIVATE_T_(Type);
 #define T PRIVATE_T_(Type)
 
 /* [A, D] */
-#ifdef U_
-#undef U_
-#undef T_U_
-#undef PRIVATE_T_U_
-#endif
 #ifdef UA_
 #undef UA_
 #undef T_UA_
@@ -213,12 +205,7 @@ typedef LIST_TYPE PRIVATE_T_(Type);
 #undef T_UD_
 #undef PRIVATE_T_UD_
 #endif
-#ifdef LIST_U_NAME
-#define U_(thing) PCAT(LIST_U_NAME, thing) /* data, exclusively */
-#define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2) /*public fn's*/
-#define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-	thing2)) /* private fn's */
-#endif
+/* data exclusively, public f'ns, and private f'ns */
 #ifdef LIST_UA_NAME
 #define UA_(thing) PCAT(LIST_UA_NAME, thing)
 #define T_UA_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
@@ -331,9 +318,6 @@ static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 struct T_(ListNode);
 struct T_(ListNode) {
 	T data; /* 1st so we can cast without the mess of {container_of} */
-#ifdef LIST_U_NAME
-	struct T_(ListNode) *U_(prev), *U_(next);
-#endif
 #ifdef LIST_UA_NAME
 	struct T_(ListNode) *UA_(prev), *UA_(next);
 #endif
@@ -353,9 +337,6 @@ struct T_(ListNode) {
  \see{<T>ListClear}. */
 struct T_(List);
 struct T_(List) {
-#ifdef LIST_U_NAME
-	struct T_(ListNode) *U_(first), *U_(last);
-#endif
 #ifdef LIST_UA_NAME
 	struct T_(ListNode) *UA_(first), *UA_(last);
 #endif
@@ -385,10 +366,6 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 /* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor flag
  controls this behaviour; we are currently in the {!LIST_U_NAME} section. These
  will get all the functions with {<U>} in them. */
-
-#ifdef LIST_U_NAME /* <-- nemo */
-#include "List.h"
-#endif /* nemo --> */
 
 #ifdef LIST_UA_NAME /* <-- a */
 #define LIST_U_NAME LIST_UA_NAME
@@ -429,9 +406,6 @@ static void PRIVATE_T_(push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
-#ifdef LIST_U_NAME /* <-- nemo */
-	PRIVATE_T_U_(list, push)(this, node);
-#endif /* nemo --> */
 #ifdef LIST_UA_NAME /* <-- a */
 	PRIVATE_T_UA_(list, push)(this, node);
 #endif /* a --> */
@@ -451,9 +425,6 @@ static void PRIVATE_T_(unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
-#ifdef LIST_U_NAME /* <-- nemo */
-	PRIVATE_T_U_(list, unshift)(this, node);
-#endif /* nemo --> */
 #ifdef LIST_UA_NAME /* <-- a */
 	PRIVATE_T_UA_(list, unshift)(this, node);
 #endif /* a --> */
@@ -473,9 +444,6 @@ static void PRIVATE_T_(remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
 	assert(node);
-#ifdef LIST_U_NAME /* <-- nemo */
-	PRIVATE_T_U_(list, remove)(this, node);
-#endif /* nemo --> */
 #ifdef LIST_UA_NAME /* <-- a */
 	PRIVATE_T_UA_(list, remove)(this, node);
 #endif /* a --> */
@@ -493,9 +461,6 @@ static void PRIVATE_T_(remove)(struct T_(List) *const this,
 /** Private: clear the list. */
 static void PRIVATE_T_(clear)(struct T_(List) *const this) {
 	assert(this);
-#ifdef LIST_U_NAME
-	this->U_(first) = this->U_(last) = 0;
-#endif
 #ifdef LIST_UA_NAME
 	this->UA_(first) = this->UA_(last) = 0;
 #endif
@@ -566,9 +531,6 @@ static void T_(ListTake)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	if(!from || from == this) return;
 	if(!this) { PRIVATE_T_(clear)(from); return; }
-#ifdef LIST_U_NAME /* <-- nemo */
-	PRIVATE_T_U_(list, cat)(this, from);
-#endif /* nemo --> */
 #ifdef LIST_UA_NAME /* <-- a */
 	PRIVATE_T_UA_(list, cat)(this, from);
 #endif /* a --> */
@@ -584,6 +546,7 @@ static void T_(ListTake)(struct T_(List) *const this,
 }
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
+
 /** Merges the elements into {this} from {from} in (local) order; concatenates
  all lists that don't have a {LIST_U[A-D]_COMPARATOR}. If {this} is null, then
  it removes elements.
@@ -593,13 +556,6 @@ static void T_(ListMerge)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	if(!from || from == this) return;
 	if(!this) { PRIVATE_T_(clear)(from); return; }
-#ifdef LIST_U_NAME /* <-- nemo */
-#ifdef LIST_U_COMPARATOR /* <-- comp */
-	PRIVATE_T_U_(list, merge)(this, from);
-#else /* comp --><-- !comp */
-	PRIVATE_T_U_(list, cat)(this, from);
-#endif /* !comp --> */
-#endif /* nemo --> */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -647,6 +603,7 @@ static void T_(ListMerge)(struct T_(List) *const this,
 	}
 }
 
+#ifndef LIST_U_ANONYMOUS /* <-- !anon; already has ListSort, T_U_(List, Sort) */
 /** Performs a stable, adaptive sort. If {LIST_OPENMP} is defined, then it will
  try to parallelise; otherwise it is equivalent to calling \see{<T>List<U>Sort}
  for all linked-lists with comparators. Requires one of {LIST_U[A-D]_COMPARATOR}
@@ -655,9 +612,6 @@ static void T_(ListMerge)(struct T_(List) *const this,
  @allow */
 static void T_(ListSort)(struct T_(List) *const this) {
 	if(!this) return;
-#ifdef LIST_U_COMPARATOR /* <-- nemo */
-	PRIVATE_T_U_(natural, sort)(this);
-#endif /* nemo --> */
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -688,9 +642,12 @@ static void T_(ListSort)(struct T_(List) *const this) {
 #endif /* d --> */
 	}
 }
+#endif /* !anon --> */
+
 #endif /* comp --> */
 
-/** Adjusts the pointers when supplied with a {Migrate} parametre, when {this}
+
+/** Adjusts the pointers when supplied with a {Migrate} parameter, when {this}
  contains {<T>ListNode} elements from memory that switched due to a {realloc}.
  If {this} or {migrate} is null, doesn't do anything.
  @param void_this: A {struct <T>List *const} cast as {void *const} for
@@ -811,14 +768,11 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 #ifdef LIST_FILLER
 #undef LIST_FILLER
 #endif
-#ifdef LIST_U_DO_NOT_UNDEF
-#undef LIST_U_DO_NOT_UNDEF
+#ifdef LIST_COMPARATOR
+#undef LIST_COMPARATOR
 #endif
-#ifdef LIST_U_NAME
-#undef LIST_U_NAME
-#endif
-#ifdef LIST_U_COMPARATOR
-#undef LIST_U_COMPARATOR
+#ifdef LIST_U_ANONYMOUS
+#undef LIST_U_ANONYMOUS
 #endif
 #ifdef LIST_UA_NAME
 #undef LIST_UA_NAME
@@ -1624,11 +1578,11 @@ static char *T_U_(List, ToString)(const struct T_(List) *const this) {
 #endif /* print --> */
 
 /* prototype */
-static void PRIVATE_T_U_(unused, coda)(void);
+static void PRIVATE_T_U_(sub_unused, coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void PRIVATE_T_U_(unused, list)(void) {
+static void PRIVATE_T_U_(sub_unused, list)(void) {
 	T_U_(Node, GetNext)(0);
 	T_U_(Node, GetPrevious)(0);
 	T_U_(List, GetFirst)(0);
@@ -1651,19 +1605,19 @@ static void PRIVATE_T_U_(unused, list)(void) {
 	T_U_(List, ToString)(0);
 #endif /* string --> */
 	PRIVATE_T_U_(cycle, crash)(0);
-	PRIVATE_T_U_(unused, coda)();
+	PRIVATE_T_U_(sub_unused, coda)();
 }
 /** {clang}'s pre-processor is not fooled. */
-static void PRIVATE_T_U_(unused, coda)(void) { PRIVATE_T_U_(unused, list)(); }
+static void PRIVATE_T_U_(sub_unused, coda)(void) {
+	PRIVATE_T_U_(sub_unused, list)();
+}
 
 
 
 /* un-define stuff for the next */
-#ifndef LIST_U_DO_NOT_UNDEF /* <-- undef */
 #undef LIST_U_NAME
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 #undef LIST_U_COMPARATOR
 #endif /* comp --> */
-#endif /* undef --> */
 
 #endif /* LIST_U_NAME --> */

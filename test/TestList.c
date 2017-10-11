@@ -66,7 +66,7 @@ static void Foo_filler(struct Foo *const this) {
 
 /* Class {Int} is a single {int}. */
 /** @implements <Int>Comparator */
-static int Int_N_cmp(const int *a, const int *b) {
+static int Int_cmp(const int *a, const int *b) {
 	return (*b < *a) - (*a < *b);
 }
 /** Assumes {[-9 999 999 999, 99 999 999 999]}.
@@ -86,8 +86,7 @@ static void Int_filler(int *const this) {
 #undef LIST_NUM_MAX
 #define LIST_NAME Int
 #define LIST_TYPE int
-#define LIST_UA_NAME N
-#define LIST_UA_COMPARATOR &Int_N_cmp
+#define LIST_COMPARATOR &Int_cmp
 #define LIST_TO_STRING &Int_to_string
 #define LIST_TEST &Int_filler
 #include "../src/List.h"
@@ -113,7 +112,7 @@ static void Colour_filler(enum Colour *const this) {
 }
 #define LIST_NAME Colour
 #define LIST_TYPE enum Colour
-#define LIST_UA_NAME Declare
+/*#define LIST_UA_NAME Declare*/
 #define LIST_TO_STRING &Colour_to_string
 #define LIST_TEST &Colour_filler
 #include "../src/List.h"
