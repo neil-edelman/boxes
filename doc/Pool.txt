@@ -124,10 +124,10 @@ static struct <T>Pool * <T>Pool(const Migrate migrate, void *const parent)
 
 Constructs an empty _Pool_ with capacity Fibonacci6, which is 8.
 
-parameter: migrate -- The ADT parent's _Migrate_ function.
+parameter: migrate -- The ADT parent's _Migrate_ function; required.
 
 parameter: parent -- The parent itself; to have multiple parents, implement an
- intermediary _Migrate_ function that takes multiple values.
+ intermediary _Migrate_ function that takes multiple values; required.
 
 return: A new _Pool_ for the polymorphic variable _parent_.
 

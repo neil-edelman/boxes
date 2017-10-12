@@ -262,11 +262,9 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
-	/* Migrate parent class. This is _ugly_, and ensures in-interoperablility.
-	 I think it violates pedantic strict-ANSI. It subverts type-safety. It
-	 doesn't allow moving of temporary pointers. It is awful. However, it is so
-	 convenient for the caller not to have to worry about moving memory
-	 blocks. */
+	/* Migrate parent class. Violates pedantic strict-ANSI? Subverts
+	 type-safety? However, it is so convenient for the caller not to have to
+	 worry about moving memory blocks. */
 	if(this->array != array) {
 		struct Migrate migrate;
 		migrate.begin = this->array;
@@ -365,9 +363,9 @@ static void T_(Pool_)(struct T_(Pool) **const thisp) {
 }
 
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
- @param migrate: The ADT parent's {Migrate} function.
+ @param migrate: The ADT parent's {Migrate} function; required.
  @param parent: The parent itself; to have multiple parents, implement an
- intermediary {Migrate} function that takes multiple values.
+ intermediary {Migrate} function that takes multiple values; required.
  @return A new {Pool} for the polymorphic variable {parent}.
  @throws POOL_PARAMETER, POOL_ERRNO: Use {PoolError(0)} to get the error.
  @order \Theta(1)

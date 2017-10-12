@@ -231,10 +231,10 @@ Constructs an empty <em>Pool</em> with capacity Fibonacci6, which is 8.
 </p>
 <dl>
 	<dt>parameter: migrate</dt>
-	<dd>The ADT parent's <em>Migrate</em> function.</dd>
+	<dd>The ADT parent's <em>Migrate</em> function; required.</dd>
 	<dt>parameter: parent</dt>
 	<dd>The parent itself; to have multiple parents, implement an
- intermediary <em>Migrate</em> function that takes multiple values.</dd>
+ intermediary <em>Migrate</em> function that takes multiple values; required.</dd>
 	<dt>return</dt>
 	<dd>A new <em>Pool</em> for the polymorphic variable <em>parent</em>.</dd>
 	<dt>throws: POOL_PARAMETER, POOL_ERRNO</dt>
