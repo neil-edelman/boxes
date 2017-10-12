@@ -966,7 +966,7 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
 	struct T_(ListNode) *node;
 	assert(this && migrate && migrate->begin && migrate->begin < migrate->end
-		&&migrate->delta && !this->U_(first) == !this->U_(last));
+		&& migrate->delta && !this->U_(first) == !this->U_(last));
 	/* empty -- done */
 	if(!this->U_(first)) return;
 	/* first and last pointer of {<T>List} */
