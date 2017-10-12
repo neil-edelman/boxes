@@ -192,8 +192,8 @@ struct Migrate {
 	const void *begin, *end; /* old pointers */
 	ptrdiff_t delta;
 };
-/** Calls on {realloc}. */
-typedef void (*Migrate)(const void *parent,
+/** Function call on {realloc}. */
+typedef void (*Migrate)(void *const parent,
 	const struct Migrate *const migrate);
 #endif /* migrate --> */
 
@@ -269,7 +269,7 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 	 blocks. */
 	if(this->array != array) {
 		struct Migrate m;
-		m.begin = (const char *)this->array;
+		m.begin = this->array;
 		m.end   = (const char *)this->array + this->size * sizeof *array;
 		m.delta = (const char *)array - (const char *)this->array;
 		PRIVATE_T_(debug)(this, "reserve", "calling migrate.\n");

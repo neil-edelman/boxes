@@ -49,7 +49,7 @@ static void PRIVATE_T_(valid_state)(const struct T_(Pool) *const a) {
 }
 
 /** @implements Migrate */
-static void PRIVATE_T_(migrate)(const void *parent,
+static void PRIVATE_T_(migrate)(void *const parent,
 	const struct Migrate *const info) {
 	assert(parent && info);
 	printf("#%p migrate #%p-%p -> %p\n", parent, info->begin, info->end,
