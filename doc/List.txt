@@ -6,10 +6,10 @@
  _<T>List_ organises doubly-linked-list(s) of _<T>ListNode_, of which data of
  type, _<T>_, must be set using _LIST_TYPE_. The _<T>ListNode_ storage is the
  responsibility of the caller; that means it can be nestled in multiple
- structures. Supports one to four different orders in the same type, _[A, D]_,
- set using _LIST_U[A-D]_NAME_. The preprocessor macros are all undefined at the
- end of the file for convenience when including multiple _List_ types in the
- same file. Random _LIST_*_ macros should be avoided.
+ structures. Supports one to four different orders in the same type. The
+ preprocessor macros are all undefined at the end of the file for convenience
+ when including multiple _List_ types in the same file. Random _LIST_*_ macros
+ should be avoided.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
@@ -40,9 +40,10 @@ minimum standard: C89/90
 
 author: Neil
 
-version: 1.2; 2017-07 made migrate simpler
+version: 1.3; 2017-10 anonymous orders
 
-since: 1.1; 2017-06 split Add into Push and Unshift
+since: 1.2; 2017-07 made migrate simpler
+			1.1; 2017-06 split Add into Push and Unshift
 			1.0; 2017-05 separated from List.h
 
 fixme: _GCC_: _#pragma GCC diagnostic ignored "-Wconversion"_; libc 4.2
