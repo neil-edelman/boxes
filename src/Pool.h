@@ -2,13 +2,15 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {<T>Pool} is a dynamic array that stores unordered {<T>}, which must be set
- using {POOL_TYPE}. Intended to be used with polymorphic data types. Removing
- an element is done lazily through a linked-list internal to the pool; as such,
- indices will remain the same throughout the lifetime of the data. You cannot
- shrink the size of this data type, only cause it to grow. Resizing incurs
- amortised cost, done though a Fibonacci sequence. {<T>Pool} is not
- synchronised. The preprocessor macros are all undefined at the end of the file
- for convenience when including multiple pool types in the same file.
+ using {POOL_TYPE}. Use of {Pool} with polymorphic data types instead of
+ allocating using {malloc} causes decreased fragmentation and is generally much
+ more cache-friendly. Removing an element is done lazily through a linked-list
+ internal to the pool; as such, indices will remain the same throughout the
+ lifetime of the data. You cannot shrink the size of this data type, only cause
+ it to grow. Resizing incurs amortised cost, done though a Fibonacci sequence.
+ {<T>Pool} is not synchronised. The preprocessor macros are all undefined at
+ the end of the file for convenience when including multiple pool types in the
+ same file.
 
  @param POOL_NAME
  This literally becomes {<T>}. As it's used in function names, this should
@@ -216,7 +218,7 @@ struct T_(Pool) {
 	enum PoolError error; /* errors defined by enum PoolError */
 	int errno_copy; /* copy of errno when when error == E_ERRNO */
 	Migrate migrate; /* called to update on resizing */
-	void *parent; /* what to call migrate on */
+	void *parent; /* migrate parameter */
 };
 
 
@@ -268,12 +270,12 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 	 convenient for the caller not to have to worry about moving memory
 	 blocks. */
 	if(this->array != array) {
-		struct Migrate m;
-		m.begin = this->array;
-		m.end   = (const char *)this->array + this->size * sizeof *array;
-		m.delta = (const char *)array - (const char *)this->array;
+		struct Migrate migrate;
+		migrate.begin = this->array;
+		migrate.end   = (const char *)this->array + this->size * sizeof *array;
+		migrate.delta = (const char *)array - (const char *)this->array;
 		PRIVATE_T_(debug)(this, "reserve", "calling migrate.\n");
-		this->migrate(this->parent, &m);
+		this->migrate(this->parent, &migrate);
 	}
 	this->array = array;
 	this->capacity[0] = c0;
