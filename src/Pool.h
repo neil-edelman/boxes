@@ -2,9 +2,7 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {<T>Pool} is a dynamic array that stores unordered {<T>}, which must be set
- using {POOL_TYPE}. Use of {Pool} with polymorphic data types instead of
- allocating using {malloc} causes decreased fragmentation and is generally much
- more cache-friendly. Removing an element is done lazily through a linked-list
+ using {POOL_TYPE}. Removing an element is done lazily through a linked-list
  internal to the pool; as such, indices will remain the same throughout the
  lifetime of the data. You cannot shrink the size of this data type, only cause
  it to grow. Resizing incurs amortised cost, done though a Fibonacci sequence.
@@ -172,13 +170,13 @@ static int            pool_global_errno_copy;
 
 
 
-/** Operates by side-effects only. */
+/** Operates by side-effects only. Used for {POOL_TEST}. */
 typedef void (*T_(Action))(T *const element);
 
 #ifdef POOL_TO_STRING /* <-- string */
 
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) */
+ null-terminated output string (the second.) Used for {POOL_TO_STRING}. */
 typedef void (*T_(ToString))(const T *, char (*const)[12]);
 
 /* Check that {POOL_TO_STRING} is a function implementing {<T>ToString}. */
@@ -368,8 +366,8 @@ static void T_(Pool_)(struct T_(Pool) **const thisp) {
 
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
  @param migrate: The ADT parent's {Migrate} function.
- @param parent: The parent itself. You can not have multiple parents. You
- cannot change a parent. If you need this flexibility, create a new pool.
+ @param parent: The parent itself; to have multiple parents, implement an
+ intermediary {Migrate} function that takes multiple values.
  @return A new {Pool} for the polymorphic variable {parent}.
  @throws POOL_PARAMETER, POOL_ERRNO: Use {PoolError(0)} to get the error.
  @order \Theta(1)

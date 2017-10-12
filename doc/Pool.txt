@@ -1,0 +1,269 @@
+# Pool.h #
+
+2016 Neil Edelman, distributed under the terms of the MIT License;
+ see readme.txt, or [ https://opensource.org/licenses/MIT ].
+
+ _<T>Pool_ is a dynamic array that stores unordered _<T>_, which must be set
+ using _POOL_TYPE_. Removing an element is done lazily through a linked-list
+ internal to the pool; as such, indices will remain the same throughout the
+ lifetime of the data. You cannot shrink the size of this data type, only cause
+ it to grow. Resizing incurs amortised cost, done though a Fibonacci sequence.
+ _<T>Pool_ is not synchronised. The preprocessor macros are all undefined at
+ the end of the file for convenience when including multiple pool types in the
+ same file.
+
+parameter: POOL_NAME -- This literally becomes _<T>_. As it's used in function names, this should
+ comply with naming rules and be unique; required.
+
+parameter: POOL_TYPE -- The type associated with _<T>_. Has to be a valid type, accessible to the
+ compiler at the time of inclusion; required.
+
+parameter: POOL_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
+ `<T>PoolToString`.
+
+parameter: POOL_DEBUG -- Prints information to _stderr_. Requires _POOL_TO_STRING_.
+
+parameter: POOL_TEST -- Unit testing framework using _<T>PoolTest_, included in a separate header,
+ _../test/PoolTest.h_. Must be defined equal to a (random) filler function,
+ satisfying _<T>Action_. If _NDEBUG_ is not defined, turns on _assert_ private
+ function integrity testing. Requires _POOL_TO_STRING_.
+
+minimum standard: C89/90
+
+author: Neil
+
+version: 1.5; 2017-10 Pool; made migrate automatic
+
+since: 1.4; 2017-07 made migrate simpler
+			1.3; 2017-05 split _List_ from _Pool_; much simpler
+			1.2; 2017-01 almost-redundant functions simplified
+			1.1; 2016-11 multi-index
+			1.0; 2016-08 permute
+
+
+
+## Declarations ##
+
+### typedef void (*<T>Action)(T *const element) ###
+
+typedef void (*<T>Action)(T *const element)
+
+Operates by side-effects only. Used for _POOL_TEST_.
+
+
+### typedef void (*<T>ToString)(const T *, char (*const)[12]) ###
+
+typedef void (*<T>ToString)(const T *, char (*const)[12])
+
+Responsible for turning _<T>_ (the first argument) into a 12 _char_
+ null-terminated output string (the second.) Used for _POOL_TO_STRING_.
+
+
+### struct Migrate ###
+
+struct Migrate
+
+Contains information about a _realloc_.
+
+
+### typedef void (*Migrate)(void *const parent,
+	const struct Migrate *const migrate) ###
+
+typedef void (*Migrate)(void *const parent,
+	const struct Migrate *const migrate)
+
+Function call on _realloc_.
+
+
+### struct <T>Pool ###
+
+struct <T>Pool
+
+The pool. To instantiate, see `<T>Pool`.
+
+
+
+
+## Function Summary ##
+
+_Return Type_	_Function Name_	_Argument List_
+static void	<T>Pool_	(struct <T>Pool **const thisp)
+static struct <T>Pool *	<T>Pool	(const Migrate migrate, void *const parent)
+static const char *	<T>PoolGetError	(struct <T>Pool *const this)
+static size_t	<T>PoolIsEmpty	(const struct <T>Pool *const this)
+static int	<T>PoolIsElement	(struct <T>Pool *const this, const size_t idx)
+static T *	<T>PoolGetElement	(struct <T>Pool *const this, const size_t idx)
+static int	<T>PoolReserve	(struct <T>Pool *const this,
+	const size_t min_capacity)
+static T *	<T>PoolNew	(struct <T>Pool *const this)
+static int	<T>PoolRemove	(struct <T>Pool *const this, T *const data)
+static void	<T>PoolClear	(struct <T>Pool *const this)
+static const char *	<T>PoolToString	(const struct <T>Pool *const this)
+
+
+
+## Function Detail ##
+
+### <T>Pool_ ###
+
+static void <T>Pool_(struct <T>Pool **const thisp)
+
+Destructor for Pool. Make sure that the pool's contents will not be
+ accessed anymore.
+
+parameter: thisp -- A reference to the object that is to be deleted; it will be pool
+ to null. If it is already null or it points to null, doesn't do anything.
+
+order: \Theta(1)
+
+
+
+### <T>Pool ###
+
+static struct <T>Pool * <T>Pool(const Migrate migrate, void *const parent)
+
+Constructs an empty _Pool_ with capacity Fibonacci6, which is 8.
+
+parameter: migrate -- The ADT parent's _Migrate_ function.
+
+parameter: parent -- The parent itself; to have multiple parents, implement an
+ intermediary _Migrate_ function that takes multiple values.
+
+return: A new _Pool_ for the polymorphic variable _parent_.
+
+throws: POOL_PARAMETER, POOL_ERRNO -- Use _PoolError(0)_ to get the error.
+
+order: \Theta(1)
+
+
+
+### <T>PoolGetError ###
+
+static const char * <T>PoolGetError(struct <T>Pool *const this)
+
+See what's the error if something goes wrong. Resets the error.
+
+return: The last error string.
+
+order: \Theta(1)
+
+
+
+### <T>PoolIsEmpty ###
+
+static size_t <T>PoolIsEmpty(const struct <T>Pool *const this)
+
+
+
+parameter: this -- If _this_ is null, returns true.
+
+return: Is the pool empty?
+
+order: \Theta(1)
+
+
+
+### <T>PoolIsElement ###
+
+static int <T>PoolIsElement(struct <T>Pool *const this, const size_t idx)
+
+Is _idx_ a valid index for _this_.
+
+order: \Theta(1)
+
+
+
+### <T>PoolGetElement ###
+
+static T * <T>PoolGetElement(struct <T>Pool *const this, const size_t idx)
+
+Gets an existing element by index.
+
+parameter: this -- If _this_ is null, returns null.
+
+parameter: idx -- Index.
+
+return: If failed, returns a null pointer and the error condition will be set.
+
+throws: POOL_OUT_OF_BOUNDS
+
+order: \Theta(1)
+
+
+
+### <T>PoolReserve ###
+
+static int <T>PoolReserve(struct <T>Pool *const this,
+	const size_t min_capacity)
+
+Increases the capacity of this Pool to ensure that it can hold at least
+ the number of elements specified by the _min_capacity_.
+
+parameter: this -- If _this_ is null, returns false.
+
+return: True if the capacity increase was viable; otherwise the pool is not
+ touched and the error condition is pool.
+
+throws: POOL_ERRNO, POOL_OVERFLOW
+
+order: \Omega(1), O(_capacity_)
+
+
+
+### <T>PoolNew ###
+
+static T * <T>PoolNew(struct <T>Pool *const this)
+
+Gets an uninitialised new element.
+
+parameter: this -- If _this_ is null, returns null.
+
+return: If failed, returns a null pointer and the error condition will be set.
+
+throws: POOL_OVERFLOW, POOL_ERRNO
+
+order: amortised O(1)
+
+
+
+### <T>PoolRemove ###
+
+static int <T>PoolRemove(struct <T>Pool *const this, T *const data)
+
+Removes an element associated with _data_ from _this_.
+
+parameter: this -- If _this_ is null, returns false.
+
+return: Success.
+
+throws: POOL_OUT_OF_BOUNDS
+
+order: amortised O(1)
+
+
+
+### <T>PoolClear ###
+
+static void <T>PoolClear(struct <T>Pool *const this)
+
+Removes all data from _this_.
+
+order: \Theta(1)
+
+
+
+### <T>PoolToString ###
+
+static const char * <T>PoolToString(const struct <T>Pool *const this)
+
+Can print 4 things at once before it overwrites. One must pool
+ _POOL_TO_STRING_ to a function implementing _<T>ToString_ to get this
+ functionality.
+
+return: Prints _this_ in a static buffer.
+
+order: \Theta(1); it has a 255 character limit; every element takes some of it.
+
+
+
+
