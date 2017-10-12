@@ -113,6 +113,107 @@ static void Colour_filler(enum Colour *const this) {
 #define POOL_TEST &Colour_filler
 #include "../src/Pool.h"
 
+/***********/
+
+struct BarVt;
+struct Bar {
+ 	const struct BarVt *vt;
+ 	unsigned key;
+};
+#define LIST_NAME Bar
+#define LIST_TYPE struct Bar
+#include "List.h"
+static unsigned auto_key = 128;
+static void Bar_filler(struct Bar *const bar, const struct BarVt *const vt) {
+ 	bar->vt  = vt;
+ 	bar->key = auto_key++;
+}
+struct BarVt {
+ 	BarAction transmogrify;
+};
+static void transmogrify(struct Bar *const bar) {
+	bar->vt->transmogrify(bar);
+}
+
+struct BarA {
+ 	struct BarListNode bar;
+ 	int number;
+};
+#define POOL_NAME BarA
+#define POOL_TYPE struct BarA
+#include "../src/Pool.h"
+static void A_transmogrify(struct BarA *const a) {
+ 	printf("Key%u %i!\n", a->bar.data.key, a->number);
+}
+static struct BarVt A_vt = { (BarAction)&A_transmogrify };
+static void BarA_filler(struct BarA *const bar_a) {
+	Bar_filler(&bar_a->bar.data, &A_vt);
+	bar_a->number = (int)(100.0 * rand() / RAND_MAX);
+}
+
+struct BarB {
+ 	struct BarListNode bar;
+ 	char letter;
+};
+#define POOL_NAME BarB
+#define POOL_TYPE struct BarB
+#include "../src/Pool.h"
+static void B_transmogrify(struct BarB *const b) {
+ 	printf("Key%u %c!\n", b->bar.data.key, b->letter);
+}
+static struct BarVt B_vt = { (BarAction)&B_transmogrify };
+static void BarB_filler(struct BarB *const bar_b) {
+	Bar_filler(&bar_b->bar.data, &B_vt);
+	bar_b->letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
+}
+
+/*static struct BarA *BarA(int number) {
+ 	struct BarA *a;
+ 	if(!(a = malloc(sizeof *a))) { perror("BarA"); return 0; }
+ 	Bar_filler(&a->bar.data, &A_vt);
+ 	a->number = number;
+ 	return a;
+}
+
+static struct BarB *BarB(char letter) {
+ 	struct BarB *b;
+ 	if(letter < 'a' || letter > 'z')
+		{ fprintf(stderr, "Letter %c out-of-range.\n", letter); return 0; }
+ 	if(!(b = malloc(sizeof *b)))
+		{ perror("BarB"); return 0; }
+ 	Bar_filler(&b->bar.data, &B_vt);
+ 	b->letter = letter;
+ 	return b;
+}*/
+
+static void BarPoolTest(void) {
+	struct BarList bar;
+	struct BarAPool *a_pool = 0;
+	struct BarBPool *b_pool = 0;
+	enum { NO, A, B } e = NO;
+	do {
+		struct BarA *a;
+		struct BarB *b;
+		BarListClear(&bar);
+		if(!(a_pool = BarAPool(&BarListMigrate, &bar))) { e = A; break; }
+		if(!(a = BarAPoolNew(a_pool))) { e = A; break; }
+		BarA_filler(a);
+		BarListPush(&bar, &a->bar);
+		if(!(b_pool = BarBPool(&BarListMigrate, &bar))) { e = B; break; }
+		if(!(b = BarBPoolNew(b_pool))) { e = B; break; }
+		BarB_filler(b);
+		BarListPush(&bar, &b->bar);
+		BarListForEach(&bar, &transmogrify);
+	} while(0); switch(e) {
+		case NO: break;
+		case A: fprintf(stderr, "A: %s.\n", BarAPoolGetError(a_pool)); break;
+		case B: fprintf(stderr, "B: %s.\n", BarBPoolGetError(b_pool)); break;
+	} {
+		BarBPool_(&b_pool);
+		BarAPool_(&a_pool);
+	}
+}
+
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
  @param argv: The arguments.
@@ -125,74 +226,8 @@ int main(void) {
 	FooPoolTest();
 	IntPoolTest();
 	ColourPoolTest();
+	BarPoolTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
 }
-
-#if 0
-/***********/
-
-struct BarVt;
-struct Bar {
- 	const struct BarVt *vt;
- 	unsigned key;
-};
-#define LIST_NAME Bar
-#define LIST_TYPE struct Bar
-#include "List.h" /* or whatever */
-static unsigned auto_key = 128;
-static void Foo_filler(struct Foo *const foo, const struct FooVt *const vt) {
- 	foo->vt  = vt;
- 	foo->key = auto_key++;
-}
-
-typedef void (*FooAction))(struct Foo *const);
-struct FooVt {
- 	FooAction transmogrify;
-};
-
-struct FooA {
- 	struct FooListNode foo;
- 	int number;
-};
-#define POOL_NAME A
-#define POOL_TYPE struct FooA
-#include "Pool.h"
-static struct APool a_pool;
-static void A_transmogrify(struct FooA *const a) {
- 	printf("Key%u %i!\n", a->foo.key, a->number);
-}
-static struct FooVt A_vt = { &A_transmogrify };
-
-struct FooB {
- 	struct FooListNode foo;
- 	char letter;
-};
-#define POOL_NAME B
-#define POOL_TYPE struct FooB
-#include "Pool.h"
-static struct BPool b_pool;
-static void B_transmogrify(struct FooB *const b) {
- 	printf("Foo%u %c!\n", a->foo.key, b->letter);
-}
-static struct FooVt B_vt = { &B_transmogrify };
-
-struct FooA *FooA(int number) {
- 	struct FooA *a;
- 	if(!(a = malloc(sizeof *a))) return perror("FooA"), 0;
- 	Foo_filler(&a->foo, &A_vt);
- 	a->number = number;
- 	return a;
-}
-
-struct FooB *FooB(char letter) {
- 	struct FooB *b;
- 	if(letter < 'a' || letter > 'z') return fprintf(stderr,
-		"Letter %c out-of-range.\n", letter), 0;
- 	if(!(b = malloc(sizeof *b))) return perror("FooB"), 0;
- 	Foo_filler(&b->foo, &B_vt);
- 	b->letter = letter;
- 	return b;
-}
-#endif

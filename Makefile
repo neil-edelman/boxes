@@ -36,7 +36,7 @@ CC   := clang#gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
 -Wmissing-prototypes -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings \
 -Wswitch -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
--Wnested-externs -Wredundant-decls -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
+-Wnested-externs -Wredundant-decls -Wfatal-errors -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c99 -mwindows
 OF   := # -framework OpenGL -framework GLUT or -lglut -lGLEW
 CDOC := cdoc
 
