@@ -108,7 +108,7 @@
 #if defined(LIST_UD_COMPARATOR) && !defined(LIST_UD_NAME)
 #error List: LIST_UD_COMPARATOR requires LIST_UD_NAME.
 #endif
-/* Put the anonymous one-order implicit macro into {UA} for convenience. */
+/* Anonymous one-order implicit macro into {UA} for convenience and brevity. */
 #if !defined(LIST_UA_NAME) && !defined(LIST_UB_NAME) \
 	&& !defined(LIST_UC_NAME) && !defined(LIST_UD_NAME) /* <-- anon */
 #define LIST_U_ANONYMOUS
@@ -207,6 +207,14 @@ typedef LIST_TYPE PRIVATE_T_(Type);
 #undef PRIVATE_T_UD_
 #endif
 /* data exclusively, public f'ns, and private f'ns */
+
+#ifdef LIST_U_ANONYMOUS /* <-- anon: "empty macro arguments were standardized
+in C99" */
+#define UA_(thing) PCAT(anonymous, thing)
+#define T_UA_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2)
+#define PRIVATE_T_UA_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	CAT(_, thing2)))
+#else /* anon --><-- !anon */
 #ifdef LIST_UA_NAME
 #define UA_(thing) PCAT(LIST_UA_NAME, thing)
 #define T_UA_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
@@ -235,6 +243,7 @@ typedef LIST_TYPE PRIVATE_T_(Type);
 #define PRIVATE_T_UD_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	PCAT(LIST_UD_NAME, thing2)))
 #endif
+#endif /* !anon --> */
 
 
 
@@ -849,11 +858,19 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 #ifdef U_
 #undef U_
 #endif
+#ifdef LIST_U_ANONYMOUS /* <-- anon: "empty macro arguments were standardized
+in C99" */
+#define U_(thing) PCAT(anonymous, thing)
+#define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2)
+#define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	CAT(_, thing2)))
+#else /* anon --><-- !anon */
+#define U_(thing) PCAT(LIST_U_NAME, thing)
 #define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
 	CAT(LIST_U_NAME, thing2))
 #define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	PCAT(LIST_U_NAME, thing2)))
-#define U_(thing) PCAT(LIST_U_NAME, thing)
+#endif /* !anon --> */
 
 
 

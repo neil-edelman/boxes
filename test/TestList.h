@@ -195,8 +195,14 @@ static int PRIVATE_T_(exactly_unordered)(struct T_(List) *const this,
 #ifdef PRIVATE_T_U_
 #undef PRIVATE_T_U_
 #endif
+#ifdef LIST_U_ANONYMOUS /* <-- anon: "empty macro arguments were standardized
+in C99" */
+#define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+	CAT(_, thing2)))
+#else /* anon --><-- !anon */
 #define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	PCAT(LIST_U_NAME, thing2)))
+#endif /* !anon --> */
 
 
 

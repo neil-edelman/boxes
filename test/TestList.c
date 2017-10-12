@@ -14,9 +14,11 @@
 #include "Orcish.h"
 
 #ifdef __clang__ /* <-- clang must be placed ahead of __GNUC__ */
+#if __clang_major__ > 2 /* fixme: this is not how you do it; I don't know how */
 #pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wdocumentation"
 #pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
+#endif
 #elif __GNUC__ /* clang --><-- GCC */
 #pragma GCC diagnostic ignored "-Wconversion"
 #elif __BORLANDC__ /* GCC --><-- BCC must be placed ahead of _MSC_VER */
