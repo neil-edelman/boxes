@@ -3,13 +3,13 @@
 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or [ https://opensource.org/licenses/MIT ].
 
- _<T>List_ organises doubly-linked-list(s) of _<T>ListNode_, of which data of
- type, _<T>_, must be set using _LIST_TYPE_. The _<T>ListNode_ storage is the
- responsibility of the caller; that means it can be nestled in multiple
- structures. Supports one to four different orders in the same type. The
- preprocessor macros are all undefined at the end of the file for convenience
- when including multiple _List_ types in the same file. Random _LIST_*_ macros
- should be avoided.
+ _<T>List_ organises doubly-linked-list(s) of _<T>ListNode_, (not plain _<T>_,)
+ of which data of type, _<T>_, must be set using _LIST_TYPE_. The _<T>ListNode_
+ storage is the responsibility of the caller; that means it can be nestled in
+ multiple structures. Supports one to four different orders in the same type.
+ The preprocessor macros are all undefined at the end of the file for
+ convenience when including multiple _List_ types in the same file. Random
+ _LIST_*_ macros should be avoided.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
@@ -77,51 +77,6 @@ typedef void (*Migrate)(void *const parent,
 Function call on _realloc_.
 
 
-### typedef void (*<T>Action)(T *const) ###
-
-typedef void (*<T>Action)(T *const)
-
-Operates by side-effects only.
-
-
-### typedef void (*<T>BiAction)(T *const, void *const) ###
-
-typedef void (*<T>BiAction)(T *const, void *const)
-
-Takes along a param.
-
-
-### typedef int  (*<T>Predicate)(T *const) ###
-
-typedef int  (*<T>Predicate)(T *const)
-
-Passed _T_, returns (non-zero) true or (zero) false.
-
-
-### typedef int (*<T>BiPredicate)(T *const, void *const) ###
-
-typedef int (*<T>BiPredicate)(T *const, void *const)
-
-Passed _T_ and a user-defined pointer value, returns (non-zero) true or
- (zero) false.
-
-
-### typedef int  (*<T>Comparator)(const T *, const T *) ###
-
-typedef int  (*<T>Comparator)(const T *, const T *)
-
-Compares two values and returns less then, equal to, or greater then
- zero. Should do so forming an equivalence relation with respect to _T_.
-
-
-### typedef void (*<T>ToString)(const T *const, char (*const)[12]) ###
-
-typedef void (*<T>ToString)(const T *const, char (*const)[12])
-
-Responsible for turning _<T>_ (the first argument) into a 12 _char_
- null-terminated output string (the second.)
-
-
 ### struct <T>ListNode ###
 
 struct <T>ListNode
@@ -148,6 +103,98 @@ struct <T>List
 Serves as an a head for linked-list(s) of _<T>ListNode_. No initialisation
  is necessary when the variable is of _static_ duration, otherwise use
  `<T>ListClear`.
+
+
+### typedef void (*<T>Action)(T *const) ###
+
+typedef void (*<T>Action)(T *const)
+
+Takes _<T>_.
+
+
+### typedef void (*<T>BiAction)(T *const, void *const) ###
+
+typedef void (*<T>BiAction)(T *const, void *const)
+
+Takes _<T>_ and <void *>.
+
+
+### typedef void (*<T>ListAction)(struct <T>List *const) ###
+
+typedef void (*<T>ListAction)(struct <T>List *const)
+
+Takes _<T>List_.
+
+
+### typedef void (*<T>ListItemAction)(struct <T>List *const, T *const) ###
+
+typedef void (*<T>ListItemAction)(struct <T>List *const, T *const)
+
+Takes _<T>List_ and _<T>_.
+
+
+### typedef void (*<T>ListNodeAction)(struct <T>List *const,
+	struct <T>ListNode *const) ###
+
+typedef void (*<T>ListNodeAction)(struct <T>List *const,
+	struct <T>ListNode *const)
+
+Takes _<T>List_ and _<T>ListNode_.
+
+
+### typedef void (*<T>BiListAction)(struct <T>List *const,
+	struct <T>List *const) ###
+
+typedef void (*<T>BiListAction)(struct <T>List *const,
+	struct <T>List *const)
+
+Takes two _<T>List_.
+
+
+### typedef void (*<T>TriListAction)(struct <T>List *const,
+	struct <T>List *const, struct <T>List *const) ###
+
+typedef void (*<T>TriListAction)(struct <T>List *const,
+	struct <T>List *const, struct <T>List *const)
+
+Takes three _<T>List_.
+
+
+### typedef T *(*<T>UnaryOperator)(T *const) ###
+
+typedef T *(*<T>UnaryOperator)(T *const)
+
+Takes _<T>_ and returns _<T>_.
+
+
+### typedef int (*<T>Predicate)(T *const) ###
+
+typedef int (*<T>Predicate)(T *const)
+
+Takes _<T>_, returns (non-zero) true or (zero) false.
+
+
+### typedef int (*<T>BiPredicate)(T *const, void *const) ###
+
+typedef int (*<T>BiPredicate)(T *const, void *const)
+
+Takes _<T>_ and _void *_, returns (non-zero) true or (zero) false.
+
+
+### typedef int (*<T>Comparator)(const T *, const T *) ###
+
+typedef int (*<T>Comparator)(const T *, const T *)
+
+Compares two _<T>_ values and returns less then, equal to, or greater then
+ zero. Should do so forming an equivalence relation with respect to _<T>_.
+
+
+### typedef void (*<T>ToString)(const T *const, char (*const)[12]) ###
+
+typedef void (*<T>ToString)(const T *const, char (*const)[12])
+
+Responsible for turning _<T>_ (the first argument) into a 12 _char_
+ null-terminated output string (the second.)
 
 
 
@@ -192,7 +239,8 @@ static void	<T>List<U>ForEach	(struct <T>List *const this,
 	const <T>Action action)
 static void	<T>List<U>BiForEach	(struct <T>List *const this,
 	const <T>BiAction biaction, void *const param)
-static T *	<T>List<U>ShortCircuit	(struct <T>List *const this, const <T>Predicate predicate)
+static T *	<T>List<U>ShortCircuit	(struct <T>List *const this,
+	const <T>Predicate predicate)
 static T *	<T>List<U>BiShortCircuit	(struct <T>List *const this,
 	const <T>BiPredicate bipredicate, void *const param)
 static char *	<T>List<U>ToString	(const struct <T>List *const this)
@@ -207,6 +255,8 @@ static void <T>ListClear(struct <T>List *const this)
 
 Clears all values from _this_, thereby initialising the _<T>List_. If it
  contained a list, those values are free.
+
+implements: <T>ListAction
 
 order: \Theta(1)
 
@@ -223,6 +273,8 @@ Sets the contents of _node_ to add it to _this_ at the end, thereby
  undefined behaviour to one add _node_ to more than one list without removing
  it each time. If either _this_ or _node_ is null, it does nothing.
 
+implements: <T>ListNodeAction
+
 order: \Theta(1)
 
 
@@ -238,6 +290,8 @@ Sets the contents of _node_ to add it to _this_ at the beginning, thereby
  undefined behaviour to one add _node_ to more than one list without removing
  it each time. If either _this_ or _node_ is null, it does nothing.
 
+implements: <T>ListNodeAction
+
 order: \Theta(1)
 
 fixme: Untested.
@@ -252,6 +306,8 @@ Removes _data_ from the _this_. The _data_ is now free to add to another
  list. Removing an element that was not added to _this_ results in undefined
  behaviour. If either _this_ or _data_ is null, it does nothing.
 
+implements: <T>ListItemAction
+
 order: \Theta(1)
 
 
@@ -262,9 +318,11 @@ static void <T>ListTake(struct <T>List *const this,
 	struct <T>List *const from)
 
 Appends the elements of _from_ onto _this_. If _this_ is null, then it
- removes elements. Unlike the _<T>List<U>Take*_, where the elements are
+ removes elements. Unlike the _<T>TriListAction_, where the elements are
  re-ordered based on _<U>_, (they would not be in-place, otherwise,) this
  function concatenates all the elements in each linked-list order.
+
+implements: <T>BiListAction
 
 order: \Theta(1)
 
@@ -279,6 +337,8 @@ Merges the elements into _this_ from _from_ in (local) order; concatenates
  all lists that don't have a _LIST_U[A-D]_COMPARATOR_. If _this_ is null, then
  it removes elements.
 
+implements: <T>BiListAction
+
 order: O(_this_.n + _from_.n)
 
 
@@ -291,6 +351,8 @@ Performs a stable, adaptive sort. If _LIST_OPENMP_ is defined, then it will
  try to parallelise; otherwise it is equivalent to calling `<T>List<U>Sort`
  for all linked-lists with comparators. Requires one of _LIST_U[A-D]_COMPARATOR_
  be set.
+
+implements: <T>ListAction
 
 order: \Omega(_this_.n), O(_this_.n log _this_.n)
 
@@ -305,8 +367,7 @@ Adjusts the pointers when supplied with a _Migrate_ parameter, when _this_
  contains _<T>ListNode_ elements from memory that switched due to a _realloc_.
  If _this_ or _migrate_ is null, doesn't do anything.
 
-parameter: void_this -- A _struct <T>List *const_ cast as _void *const_ for
- implementing _Migrate_.
+parameter: void_this -- A _struct <T>List *const_ cast as _void *const_.
 
 parameter: migrate -- A _struct_ coming from a _Migrate_ function.
 
@@ -330,6 +391,8 @@ parameter: this -- Must be in a _List_ as a _<T>ListNode_.
 return: The next element after _this_ in _<U>_. When _this_ is the last
  element or when _this_ is null, returns null.
 
+implements: <T>UnaryOperator
+
 order: \Theta(1)
 
 
@@ -344,6 +407,8 @@ parameter: this -- Must be in a _List_ as a _<T>ListNode_.
 
 return: The previous element before _this_ in _<U>_. When _this_ is the
  first item or when _this_ is null, returns null.
+
+implements: <T>UnaryOperator
 
 order: \Theta(1)
 
@@ -380,6 +445,8 @@ static void <T>List<U>Sort(struct <T>List *const this)
 Sorts _<U>_, but leaves the other lists in _<T>_ alone. Must have
  _LIST_U[A-D]_COMPARATOR_ defined.
 
+implements: <T>ListAction
+
 order: \Omega(_this_.n), O(_this_.n log _this_.n)
 
 
@@ -410,6 +477,8 @@ Appends _that_ with _b_ subtracted from _a_ as a sequence in _<U>_. If
  _this_ is null, then it removes elements. Must have _LIST_U[A-D]_COMPARATOR_
  defined.
 
+implements: <T>TriListAction
+
 order: O(_a_.n + _b_.n)
 
 
@@ -422,6 +491,8 @@ static void <T>List<U>TakeUnion(struct <T>List *const this,
 Appends _this_ with the union of _a_ and _b_ as a sequence in _<U>_. Equal
  elements are moved from _a_. If _this_ is null, then it removes elements. Must
  have _LIST_U[A-D]_COMPARATOR_ defined.
+
+implements: <T>TriListAction
 
 order: O(_a_.n + _b_.n)
 
@@ -436,6 +507,8 @@ Appends _this_ with the intersection of _a_ and _b_ as a sequence in _<U>_.
  Equal elements are moved from _a_. If _this_ is null, then it removes elements.
  Must have _LIST_U[A-D]_COMPARATOR_ defined.
 
+implements: <T>TriListAction
+
 order: O(_a_.n + _b_.n)
 
 
@@ -448,6 +521,8 @@ static void <T>List<U>TakeXor(struct <T>List *const this,
 Appends _this_ with _a_ exclusive-or _b_ as a sequence in _<U>_. Equal
  elements are moved from _a_. If _this_ is null, then it removes elements. Must
  have _LIST_U[A-D]_COMPARATOR_ defined.
+
+implements: <T>TriListAction
 
 order: O(_a_.n + _b_.n)
 
@@ -506,7 +581,8 @@ fixme: Untested.
 
 ### <T>List<U>ShortCircuit ###
 
-static T * <T>List<U>ShortCircuit(struct <T>List *const this, const <T>Predicate predicate)
+static T * <T>List<U>ShortCircuit(struct <T>List *const this,
+	const <T>Predicate predicate)
 
 
 
