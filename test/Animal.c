@@ -1,7 +1,4 @@
-/*#include <stdlib.h>*/ /* EXIT_ malloc free srand rand */
-#include <stdio.h>  /* fprintf */
-/*#include <string.h>*/	/* strcmp */
-/*#include <time.h>*/	/* clock */
+#include <stdio.h>	/* *printf */
 #include <assert.h>	/* assert */
 #include "Orcish.h"
 #include "Animal.h"
@@ -124,9 +121,9 @@ struct Animals *Animals(void) {
 	a->emus   = 0;
 	do {
 		if(!(a->sloths = SlothPool(&AnimalListMigrate, &a->list)))
-		{ e = SLOTH; break; }
+			{ e = SLOTH; break; }
 		if(!(a->emus = EmuPool(&AnimalListMigrate, &a->list)))
-		{ e = EMU; break; }
+			{ e = EMU; break; }
 	} while(0); switch(e) {
 		case NO: break;
 		case SLOTH:
@@ -162,7 +159,7 @@ struct Emu *AnimalsEmu(struct Animals *const animals) {
 	AnimalListPush(&animals->list, &emu->animal);
 	return emu;
 }
-/** @implements <Animal, size_t *>BiAction */
+/** @implements <Animal, [size_t *]>BiAction */
 static void Animal_count(struct Animal *const animal, void *const pcount) {
 	assert(animal && pcount);
 	(*(size_t *)pcount)++;
