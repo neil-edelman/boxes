@@ -15,6 +15,7 @@
 #include <time.h>	/* clock */
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
+#include "Animal.h"
 
 /** Define class {A} */
 struct A {
@@ -113,104 +114,28 @@ static void Colour_filler(enum Colour *const this) {
 #define POOL_TEST &Colour_filler
 #include "../src/Pool.h"
 
-/***********/
-
-struct BarVt;
-struct Bar {
- 	const struct BarVt *vt;
- 	unsigned key;
-};
-#define LIST_NAME Bar
-#define LIST_TYPE struct Bar
-#include "List.h"
-static unsigned auto_key = 128;
-static void Bar_filler(struct Bar *const bar, const struct BarVt *const vt) {
- 	bar->vt  = vt;
- 	bar->key = auto_key++;
-}
-struct BarVt {
- 	BarAction transmogrify;
-};
-static void transmogrify(struct Bar *const bar) {
-	bar->vt->transmogrify(bar);
-}
-
-struct BarA {
- 	struct BarListNode bar;
- 	int number;
-};
-#define POOL_NAME BarA
-#define POOL_TYPE struct BarA
-#include "../src/Pool.h"
-static void A_transmogrify(struct BarA *const a) {
- 	printf("Key%u %i!\n", a->bar.data.key, a->number);
-}
-static struct BarVt A_vt = { (BarAction)&A_transmogrify };
-static void BarA_filler(struct BarA *const bar_a) {
-	Bar_filler(&bar_a->bar.data, &A_vt);
-	bar_a->number = (int)(100.0 * rand() / RAND_MAX);
-}
-
-struct BarB {
- 	struct BarListNode bar;
- 	char letter;
-};
-#define POOL_NAME BarB
-#define POOL_TYPE struct BarB
-#include "../src/Pool.h"
-static void B_transmogrify(struct BarB *const b) {
- 	printf("Key%u %c!\n", b->bar.data.key, b->letter);
-}
-static struct BarVt B_vt = { (BarAction)&B_transmogrify };
-static void BarB_filler(struct BarB *const bar_b) {
-	Bar_filler(&bar_b->bar.data, &B_vt);
-	bar_b->letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
-}
-
-/*static struct BarA *BarA(int number) {
- 	struct BarA *a;
- 	if(!(a = malloc(sizeof *a))) { perror("BarA"); return 0; }
- 	Bar_filler(&a->bar.data, &A_vt);
- 	a->number = number;
- 	return a;
-}
-
-static struct BarB *BarB(char letter) {
- 	struct BarB *b;
- 	if(letter < 'a' || letter > 'z')
-		{ fprintf(stderr, "Letter %c out-of-range.\n", letter); return 0; }
- 	if(!(b = malloc(sizeof *b)))
-		{ perror("BarB"); return 0; }
- 	Bar_filler(&b->bar.data, &B_vt);
- 	b->letter = letter;
- 	return b;
-}*/
-
-static void BarPoolTest(void) {
-	struct BarList bar;
-	struct BarAPool *a_pool = 0;
-	struct BarBPool *b_pool = 0;
-	enum { NO, A, B } e = NO;
+static void AnimalsTest(void) {
+	struct Animals *a = 0;
+	enum { ERR_NO, ERR_ANIMALS } e = ERR_NO;
 	do {
-		struct BarA *a;
-		struct BarB *b;
-		BarListClear(&bar);
-		if(!(a_pool = BarAPool(&BarListMigrate, &bar))) { e = A; break; }
-		if(!(a = BarAPoolNew(a_pool))) { e = A; break; }
-		BarA_filler(a);
-		BarListPush(&bar, &a->bar);
-		if(!(b_pool = BarBPool(&BarListMigrate, &bar))) { e = B; break; }
-		if(!(b = BarBPoolNew(b_pool))) { e = B; break; }
-		BarB_filler(b);
-		BarListPush(&bar, &b->bar);
-		BarListForEach(&bar, &transmogrify);
+		unsigned i;
+		if(!(a = Animals())) { e = ERR_ANIMALS; break; }
+		for(i = 0; i < 100; i++) {
+			if(rand() > RAND_MAX >> 1) {
+				if(!AnimalsEmu(a)) { e = ERR_ANIMALS; break; }
+			} else {
+				if(!AnimalsSloth(a)) { e = ERR_ANIMALS; break; }
+			}
+		}
+		if(e) break;
+		AnimalsTransmogrify(a);
+		AnimalsClear(a);
+		Animals_(&a);
 	} while(0); switch(e) {
-		case NO: break;
-		case A: fprintf(stderr, "A: %s.\n", BarAPoolGetError(a_pool)); break;
-		case B: fprintf(stderr, "B: %s.\n", BarBPoolGetError(b_pool)); break;
+		case ERR_NO: break;
+		case ERR_ANIMALS: break; /* already printed */
 	} {
-		BarBPool_(&b_pool);
-		BarAPool_(&a_pool);
+		Animals_(&a);
 	}
 }
 
@@ -226,7 +151,7 @@ int main(void) {
 	FooPoolTest();
 	IntPoolTest();
 	ColourPoolTest();
-	BarPoolTest();
+	AnimalsTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

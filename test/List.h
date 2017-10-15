@@ -1,13 +1,13 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>List} organises doubly-linked-list(s) of {<T>ListNode}, of which data of
- type, {<T>}, must be set using {LIST_TYPE}. The {<T>ListNode} storage is the
- responsibility of the caller; that means it can be nestled in multiple
- structures. Supports one to four different orders in the same type. The
- preprocessor macros are all undefined at the end of the file for convenience
- when including multiple {List} types in the same file. Random {LIST_*} macros
- should be avoided.
+ {<T>List} organises doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},)
+ of which data of type, {<T>}, must be set using {LIST_TYPE}. The {<T>ListNode}
+ storage is the responsibility of the caller; that means it can be nestled in
+ multiple structures. Supports one to four different orders in the same type.
+ The preprocessor macros are all undefined at the end of the file for
+ convenience when including multiple {List} types in the same file. Random
+ {LIST_*} macros should be avoided.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
@@ -282,36 +282,6 @@ typedef void (*Migrate)(void *const parent,
 
 
 
-/** Operates by side-effects only. */
-typedef void (*T_(Action))(T *const);
-
-/** Takes along a param. */
-typedef void (*T_(BiAction))(T *const, void *const);
-
-/** Passed {T}, returns (non-zero) true or (zero) false. */
-typedef int  (*T_(Predicate))(T *const);
-
-/** Passed {T} and a user-defined pointer value, returns (non-zero) true or
- (zero) false. */
-typedef int (*T_(BiPredicate))(T *const, void *const);
-
-/** Compares two values and returns less then, equal to, or greater then
- zero. Should do so forming an equivalence relation with respect to {T}. */
-typedef int  (*T_(Comparator))(const T *, const T *);
-
-#ifdef LIST_TO_STRING /* <-- string */
-
-/** Responsible for turning {<T>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) */
-typedef void (*T_(ToString))(const T *const, char (*const)[12]);
-
-/* Check that {LIST_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
-
-#endif /* string --> */
-
-
-
 /** A single link in the linked-list derived from {<T>}. Storage of this
  structure is the responsibility of the caller. A {<T>ListNode} can be
  reinterpreted (cast) to {<T>} as a single element; that is, {<T>} shall be the
@@ -363,6 +333,56 @@ struct T_(List) {
 
 
 
+/** Takes {<T>}. */
+typedef void (*T_(Action))(T *const);
+
+/** Takes {<T>} and <void *>. */
+typedef void (*T_(BiAction))(T *const, void *const);
+
+/** Takes {<T>List}. */
+typedef void (*T_(ListAction))(struct T_(List) *const);
+
+/** Takes {<T>List} and {<T>}. */
+typedef void (*T_(ListItemAction))(struct T_(List) *const, T *const);
+
+/** Takes {<T>List} and {<T>ListNode}. */
+typedef void (*T_(ListNodeAction))(struct T_(List) *const,
+	struct T_(ListNode) *const);
+
+/** Takes two {<T>List}. */
+typedef void (*T_(BiListAction))(struct T_(List) *const,
+	struct T_(List) *const);
+
+/** Takes three {<T>List}. */
+typedef void (*T_(TriListAction))(struct T_(List) *const,
+	struct T_(List) *const, struct T_(List) *const);
+
+/** Takes {<T>} and returns {<T>}. */
+typedef T *(*T_(UnaryOperator))(T *const);
+
+/** Takes {<T>}, returns (non-zero) true or (zero) false. */
+typedef int (*T_(Predicate))(T *const);
+
+/** Takes {<T>} and {void *}, returns (non-zero) true or (zero) false. */
+typedef int (*T_(BiPredicate))(T *const, void *const);
+
+/** Compares two {<T>} values and returns less then, equal to, or greater then
+ zero. Should do so forming an equivalence relation with respect to {<T>}. */
+typedef int (*T_(Comparator))(const T *, const T *);
+
+#ifdef LIST_TO_STRING /* <-- string */
+
+/** Responsible for turning {<T>} (the first argument) into a 12 {char}
+ null-terminated output string (the second.) */
+typedef void (*T_(ToString))(const T *const, char (*const)[12]);
+
+/* Check that {LIST_TO_STRING} is a function implementing {<T>ToString}. */
+static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
+
+#endif /* string --> */
+
+
+
 /* Prototypes: needed for the next section, but undefined until later. */
 static void PRIVATE_T_(push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
@@ -411,7 +431,8 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 
 
 
-/** Private: push to the end of the list. */
+/** Private: push to the end of the list.
+ @implements <T>ListNodeAction */
 static void PRIVATE_T_(push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
@@ -430,7 +451,8 @@ static void PRIVATE_T_(push)(struct T_(List) *const this,
 #endif /* d --> */
 }
 
-/** Private: unshift to the beginning of the list. */
+/** Private: unshift to the beginning of the list.
+ @implements <T>ListNodeAction */
 static void PRIVATE_T_(unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
@@ -449,7 +471,8 @@ static void PRIVATE_T_(unshift)(struct T_(List) *const this,
 #endif /* d --> */
 }
 
-/** Private: remove from list. */
+/** Private: remove from list.
+ @implements <T>ListNodeAction */
 static void PRIVATE_T_(remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this);
@@ -468,7 +491,8 @@ static void PRIVATE_T_(remove)(struct T_(List) *const this,
 #endif /* d --> */
 }
 
-/** Private: clear the list. */
+/** Private: clear the list.
+ @implements <T>ListAction */
 static void PRIVATE_T_(clear)(struct T_(List) *const this) {
 	assert(this);
 #ifdef LIST_UA_NAME
@@ -487,6 +511,7 @@ static void PRIVATE_T_(clear)(struct T_(List) *const this) {
 
 /** Clears all values from {this}, thereby initialising the {<T>List}. If it
  contained a list, those values are free.
+ @implements <T>ListAction
  @order \Theta(1)
  @allow */
 static void T_(ListClear)(struct T_(List) *const this) {
@@ -499,6 +524,7 @@ static void T_(ListClear)(struct T_(List) *const this) {
  {node} and overwrites the data that was there. Specifically, it invokes
  undefined behaviour to one add {node} to more than one list without removing
  it each time. If either {this} or {node} is null, it does nothing.
+ @implements <T>ListNodeAction
  @order \Theta(1)
  @allow */
 static void T_(ListPush)(struct T_(List) *const this,
@@ -512,6 +538,7 @@ static void T_(ListPush)(struct T_(List) *const this,
  {node} and overwrites the data that was there. Specifically, it invokes
  undefined behaviour to one add {node} to more than one list without removing
  it each time. If either {this} or {node} is null, it does nothing.
+ @implements <T>ListNodeAction
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -524,6 +551,7 @@ static void T_(ListUnshift)(struct T_(List) *const this,
 /** Removes {data} from the {this}. The {data} is now free to add to another
  list. Removing an element that was not added to {this} results in undefined
  behaviour. If either {this} or {data} is null, it does nothing.
+ @implements <T>ListItemAction
  @order \Theta(1)
  @allow */
 static void T_(ListRemove)(struct T_(List) *const this, T *const data) {
@@ -532,9 +560,10 @@ static void T_(ListRemove)(struct T_(List) *const this, T *const data) {
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
- removes elements. Unlike the {<T>List<U>Take*}, where the elements are
+ removes elements. Unlike the {<T>TriListAction}, where the elements are
  re-ordered based on {<U>}, (they would not be in-place, otherwise,) this
  function concatenates all the elements in each linked-list order.
+ @implements <T>BiListAction
  @order \Theta(1)
  @allow */
 static void T_(ListTake)(struct T_(List) *const this,
@@ -560,6 +589,7 @@ static void T_(ListTake)(struct T_(List) *const this,
 /** Merges the elements into {this} from {from} in (local) order; concatenates
  all lists that don't have a {LIST_U[A-D]_COMPARATOR}. If {this} is null, then
  it removes elements.
+ @implements <T>BiListAction
  @order O({this}.n + {from}.n)
  @allow */
 static void T_(ListMerge)(struct T_(List) *const this,
@@ -618,6 +648,7 @@ static void T_(ListMerge)(struct T_(List) *const this,
  try to parallelise; otherwise it is equivalent to calling \see{<T>List<U>Sort}
  for all linked-lists with comparators. Requires one of {LIST_U[A-D]_COMPARATOR}
  be set.
+ @implements <T>ListAction
  @order \Omega({this}.n), O({this}.n log {this}.n)
  @allow */
 static void T_(ListSort)(struct T_(List) *const this) {
@@ -660,11 +691,10 @@ static void T_(ListSort)(struct T_(List) *const this) {
 /** Adjusts the pointers when supplied with a {Migrate} parameter, when {this}
  contains {<T>ListNode} elements from memory that switched due to a {realloc}.
  If {this} or {migrate} is null, doesn't do anything.
- @param void_this: A {struct <T>List *const} cast as {void *const} for
- implementing {Migrate}.
+ @param void_this: A {struct <T>List *const} cast as {void *const}.
  @param migrate: A {struct} coming from a {Migrate} function.
- @order \Theta(n)
  @implements Migrate
+ @order \Theta(n)
  @fixme Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
  @allow */
@@ -875,7 +905,8 @@ in C99" */
 
 
 /** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
- You do not want cycles! */
+ You do not want cycles!
+ @implements <T>ListAction */
 static void PRIVATE_T_U_(cycle, crash)(const struct T_(List) *const this) {
 #ifdef LIST_DEBUG
 	struct T_(ListNode) *turtle, *hare;
@@ -891,7 +922,8 @@ static void PRIVATE_T_U_(cycle, crash)(const struct T_(List) *const this) {
 #endif
 }
 
-/** Private: add to {this.last} in {<U>}. */
+/** Private: add to {this.last} in {<U>}.
+ @implements <T>ListNodeAction */
 static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this && node);
@@ -907,7 +939,8 @@ static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
 	PRIVATE_T_U_(cycle, crash)(this);
 }
 
-/** Private: add before {this.first} in {<U>}. */
+/** Private: add before {this.first} in {<U>}.
+ @implements <T>ListNodeAction */
 static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this && node);
@@ -923,7 +956,8 @@ static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 	PRIVATE_T_U_(cycle, crash)(this);
 }
 
-/** Private: list remove in {<U>}. */
+/** Private: list remove in {<U>}.
+ @implements <T>ListNodeAction */
 static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this && node);
@@ -942,6 +976,7 @@ static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
 }
 
 /** Private: cats all {from} to the tail of {this}; {from} will be empty after.
+ @implements <T>BiListAction
  @order \Theta(1) */
 static void PRIVATE_T_U_(list, cat)(struct T_(List) *const this,
 	struct T_(List) *const from) {
@@ -985,6 +1020,7 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 /** @return The next element after {this} in {<U>}. When {this} is the last
  element or when {this} is null, returns null.
  @param this: Must be in a {List} as a {<T>ListNode}.
+ @implements <T>UnaryOperator
  @order \Theta(1)
  @allow */
 static T *T_U_(Node, GetNext)(T *const this) {
@@ -996,6 +1032,7 @@ static T *T_U_(Node, GetNext)(T *const this) {
 /** @return The previous element before {this} in {<U>}. When {this} is the
  first item or when {this} is null, returns null.
  @param this: Must be in a {List} as a {<T>ListNode}.
+ @implements <T>UnaryOperator
  @order \Theta(1)
  @allow */
 static T *T_U_(Node, GetPrevious)(T *const this) {
@@ -1050,6 +1087,7 @@ static const T_(Comparator) PRIVATE_T_U_(data, cmp) = (LIST_U_COMPARATOR);
 
 /** Private: merges {from} into {this} when we don't know anything about the
  data; on equal elements, places {this} first.
+ @implements <T>BiListAction
  @order {O(n + m)}. */
 static void PRIVATE_T_U_(list, merge)(struct T_(List) *const this,
 	struct T_(List) *const from) {
@@ -1205,7 +1243,8 @@ static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
 /** It's kind of experimental. It hasn't been optimised; I think it does
  useless compares and I question whether a strict Pascal's triangle-shape
  would be optimum, or whether a long run should be put off merging until
- short runs have finished; it is quite simple as it is. */
+ short runs have finished; it is quite simple as it is.
+ @implements <T>ListAction */
 static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
 #ifndef LIST_STATIC_STORAGE /* <-- dynamic: this is potentially half-a-KB */
 	static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
@@ -1300,6 +1339,7 @@ static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
 
 /** Sorts {<U>}, but leaves the other lists in {<T>} alone. Must have
  {LIST_U[A-D]_COMPARATOR} defined.
+ @implements <T>ListAction
  @order \Omega({this}.n), O({this}.n log {this}.n)
  @allow */
 static void T_U_(List, Sort)(struct T_(List) *const this) {
@@ -1311,8 +1351,8 @@ static void T_U_(List, Sort)(struct T_(List) *const this) {
  @return The first comparator that is not equal to zero, or 0 if they are
  equal. Two null pointers are considered equal. Must have
  {LIST_U[A-D]_COMPARATOR} defined.
- @order \Theta(min({this}.n, {that}.n))
  @implements <<T>List>Comparator
+ @order \Theta(min({this}.n, {that}.n))
  @allow */
 static int T_U_(List, Compare)(const struct T_(List) *const this,
 	const struct T_(List) *const that) {
@@ -1338,6 +1378,7 @@ static int T_U_(List, Compare)(const struct T_(List) *const this,
 }
 
 /** Private: {this <- a \mask b}. Prefers {a} to {b} when equal.
+ @implements <T>TriListAction
  @order O({a}.n + {b}.n) */
 static void PRIVATE_T_U_(boolean, seq)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b,
@@ -1386,6 +1427,7 @@ static void PRIVATE_T_U_(boolean, seq)(struct T_(List) *const this,
 /** Appends {that} with {b} subtracted from {a} as a sequence in {<U>}. If
  {this} is null, then it removes elements. Must have {LIST_U[A-D]_COMPARATOR}
  defined.
+ @implements <T>TriListAction
  @order O({a}.n + {b}.n)
  @allow */
 static void T_U_(List, TakeSubtraction)(struct T_(List) *const this,
@@ -1396,6 +1438,7 @@ static void T_U_(List, TakeSubtraction)(struct T_(List) *const this,
 /** Appends {this} with the union of {a} and {b} as a sequence in {<U>}. Equal
  elements are moved from {a}. If {this} is null, then it removes elements. Must
  have {LIST_U[A-D]_COMPARATOR} defined.
+ @implements <T>TriListAction
  @order O({a}.n + {b}.n)
  @allow */
 static void T_U_(List, TakeUnion)(struct T_(List) *const this,
@@ -1407,6 +1450,7 @@ static void T_U_(List, TakeUnion)(struct T_(List) *const this,
 /** Appends {this} with the intersection of {a} and {b} as a sequence in {<U>}.
  Equal elements are moved from {a}. If {this} is null, then it removes elements.
  Must have {LIST_U[A-D]_COMPARATOR} defined.
+ @implements <T>TriListAction
  @order O({a}.n + {b}.n)
  @allow */
 static void T_U_(List, TakeIntersection)(struct T_(List) *const this,
@@ -1417,6 +1461,7 @@ static void T_U_(List, TakeIntersection)(struct T_(List) *const this,
 /** Appends {this} with {a} exclusive-or {b} as a sequence in {<U>}. Equal
  elements are moved from {a}. If {this} is null, then it removes elements. Must
  have {LIST_U[A-D]_COMPARATOR} defined.
+ @implements <T>TriListAction
  @order O({a}.n + {b}.n)
  @allow */
 static void T_U_(List, TakeXor)(struct T_(List) *const this,
@@ -1496,8 +1541,8 @@ static void T_U_(List, BiForEach)(struct T_(List) *const this,
  null.
  @order ~ O({this}.n) \times O({predicate})
  @allow */
-static T *T_U_(List, ShortCircuit)(
-	struct T_(List) *const this, const T_(Predicate) predicate) {
+static T *T_U_(List, ShortCircuit)(struct T_(List) *const this,
+	const T_(Predicate) predicate) {
 	struct T_(ListNode) *cursor;
 	if(!this || !predicate) return 0;
 	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
