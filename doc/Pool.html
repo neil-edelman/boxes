@@ -177,6 +177,12 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 	<td>struct &lt;T&gt;Pool *const this, const size_t idx</td>
 </tr>
 <tr>
+	<td>static size_t</td>
+	<td><a href = "#&lt;T&gt;PoolGetIndex">&lt;T&gt;PoolGetIndex</a></td>
+	<td>struct &lt;T&gt;Pool *const this,
+	const T *const element</td>
+</tr>
+<tr>
 	<td>static int</td>
 	<td><a href = "#&lt;T&gt;PoolReserve">&lt;T&gt;PoolReserve</a></td>
 	<td>struct &lt;T&gt;Pool *const this,
@@ -300,6 +306,22 @@ Gets an existing element by index.
 	<dd>POOL_OUT_OF_BOUNDS</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;PoolGetIndex"><!-- --></a>
+<h3>&lt;T&gt;PoolGetIndex</h3>
+<pre>static size_t <b>&lt;T&gt;PoolGetIndex</b> (struct &lt;T&gt;Pool *const this,
+	const T *const element)</pre>
+<p>
+Gets an index given an element. If the element is not part of the <em>Pool</em>,
+behaviour is undefined.
+</p>
+<dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
 </dl>
 </div>
 

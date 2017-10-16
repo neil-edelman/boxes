@@ -93,6 +93,8 @@ static const char *	<T>PoolGetError	(struct <T>Pool *const this)
 static size_t	<T>PoolIsEmpty	(const struct <T>Pool *const this)
 static int	<T>PoolIsElement	(struct <T>Pool *const this, const size_t idx)
 static T *	<T>PoolGetElement	(struct <T>Pool *const this, const size_t idx)
+static size_t	<T>PoolGetIndex	(struct <T>Pool *const this,
+	const T *const element)
 static int	<T>PoolReserve	(struct <T>Pool *const this,
 	const size_t min_capacity)
 static T *	<T>PoolNew	(struct <T>Pool *const this)
@@ -188,6 +190,20 @@ return: If failed, returns a null pointer and the error condition will be set.
 throws: POOL_OUT_OF_BOUNDS
 
 order: \Theta(1)
+
+
+
+### <T>PoolGetIndex ###
+
+static size_t <T>PoolGetIndex(struct <T>Pool *const this,
+	const T *const element)
+
+Gets an index given an element. If the element is not part of the _Pool_,
+ behaviour is undefined.
+
+order: \Theta(1)
+
+fixme: Untested.
 
 
 

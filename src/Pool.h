@@ -448,9 +448,19 @@ static T *T_(PoolGetElement)(struct T_(Pool) *const this, const size_t idx) {
 	struct PRIVATE_T_(Element) *elem;
 	if(!this) return 0;
 	if(idx >= this->size
-	   || (elem = this->array + idx, elem->prev != pool_not_part))
-	{ this->error = POOL_OUT_OF_BOUNDS; return 0; }
+		|| (elem = this->array + idx, elem->prev != pool_not_part))
+		{ this->error = POOL_OUT_OF_BOUNDS; return 0; }
 	return &elem->data;
+}
+
+/** Gets an index given an element. If the element is not part of the {Pool},
+ behaviour is undefined.
+ @order \Theta(1)
+ @fixme Untested.
+ @allow */
+static size_t T_(PoolGetIndex)(struct T_(Pool) *const this,
+	const T *const element) {
+	return (struct PRIVATE_T_(Element) *)(void *)element - this->array;
 }
 
 /** Increases the capacity of this Pool to ensure that it can hold at least
@@ -611,6 +621,7 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(PoolIsEmpty)(0);
 	T_(PoolIsElement)(0, (size_t)0);
 	T_(PoolGetElement)(0, (size_t)0);
+	T_(PoolGetIndex)(0, 0);
 	T_(PoolReserve)(0, (size_t)0);
 	T_(PoolNew)(0);
 	T_(PoolRemove)(0, 0);
