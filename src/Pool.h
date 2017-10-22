@@ -437,7 +437,8 @@ static int T_(PoolIsElement)(struct T_(Pool) *const this, const size_t idx) {
 	return 1;
 }
 
-/** Gets an existing element by index.
+/** Gets an existing element by index. Causing something to be added to the
+ {Pool} may invalidate this pointer.
  @param this: If {this} is null, returns null.
  @param idx: Index.
  @return If failed, returns a null pointer and the error condition will be set.
