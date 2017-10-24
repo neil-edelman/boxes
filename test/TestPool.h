@@ -67,13 +67,13 @@ static void PRIVATE_T_(test_basic)(void) {
 
 	for(i = 0; i < test_size; i++) PRIVATE_T_(filler)(test + i);
 	printf("Constructor:\n");
-	assert(T_(PoolIsEmpty)(a));
+	assert(!T_(PoolElement)(a));
 	a = T_(Pool)(&PRIVATE_T_(migrate), (void *)1 /* stub */);
 	err = T_(PoolGetError)(a);
 	printf("%s: %s.\n", T_(PoolToString)(a), err);
 	assert(a);
 	assert(!strcmp("no error", err));
-	assert(T_(PoolIsEmpty)(a));
+	assert(!T_(PoolElement)(a));
 
 	printf("Adding %lu elements:\n", (unsigned long)test_size);
 	for(i = 0; i < test_size; i++) {
@@ -81,7 +81,7 @@ static void PRIVATE_T_(test_basic)(void) {
 		assert(testp);
 		memcpy(testp, test + i, sizeof *test);
 	}
-	assert(!T_(PoolIsEmpty)(a));
+	assert(T_(PoolElement)(a));
 	printf("Now: %s.\n", T_(PoolToString)(a));
 
 	printf("Remove last:\n");

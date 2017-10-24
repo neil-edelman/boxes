@@ -75,13 +75,14 @@ same file.
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>1.5; 2017-10 Pool; made migrate automatic</dd>
+	<dd>2017-10 Replaced <em>PoolIsEmpty</em> by <em>PoolElement</em>, much more useful.</dd>
 	<dt>since</dt>
-	<dd>1.4; 2017-07 made migrate simpler
-			1.3; 2017-05 split <em>List</em> from <em>Pool</em>; much simpler
-			1.2; 2017-01 almost-redundant functions simplified
-			1.1; 2016-11 multi-index
-			1.0; 2016-08 permute</dd>
+	<dd>2017-10 Renamed Pool; made migrate automatic.
+			2017-07 Made migrate simpler.
+			2017-05 Split <em>List</em> from <em>Pool</em>; much simpler.
+			2017-01 Almost-redundant functions simplified.
+			2016-11 Multi-index.
+			2016-08 Permute.</dd>
 </dl>
 
 
@@ -162,8 +163,8 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 	<td>struct &lt;T&gt;Pool *const this</td>
 </tr>
 <tr>
-	<td>static size_t</td>
-	<td><a href = "#&lt;T&gt;PoolIsEmpty">&lt;T&gt;PoolIsEmpty</a></td>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;PoolElement">&lt;T&gt;PoolElement</a></td>
 	<td>const struct &lt;T&gt;Pool *const this</td>
 </tr>
 <tr>
@@ -264,16 +265,19 @@ See what's the error if something goes wrong. Resets the error.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;PoolIsEmpty"><!-- --></a>
-<h3>&lt;T&gt;PoolIsEmpty</h3>
-<pre>static size_t <b>&lt;T&gt;PoolIsEmpty</b> (const struct &lt;T&gt;Pool *const this)</pre>
+<div><a name = "&lt;T&gt;PoolElement"><!-- --></a>
+<h3>&lt;T&gt;PoolElement</h3>
+<pre>static T * <b>&lt;T&gt;PoolElement</b> (const struct &lt;T&gt;Pool *const this)</pre>
 <dl>
-	<dt>parameter: this</dt>
-	<dd>If <em>this</em> is null, returns true.</dd>
 	<dt>return</dt>
-	<dd>Is the pool empty?</dd>
+	<dd>One value from the pool or null if the pool is empty. It selects
+ the position in the memory which is farthest from the start of the buffer
+ deterministically. Generally, you can't select which element you want, but if
+ the pool has been treated like a stack, this is peek.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
 </dl>
 </div>
 
@@ -293,7 +297,8 @@ Is <em>idx</em> a valid index for <em>this</em>.
 <h3>&lt;T&gt;PoolGetElement</h3>
 <pre>static T * <b>&lt;T&gt;PoolGetElement</b> (struct &lt;T&gt;Pool *const this, const size_t idx)</pre>
 <p>
-Gets an existing element by index.
+Gets an existing element by index. Causing something to be added to the
+<em>Pool</em> may invalidate this pointer.
 </p>
 <dl>
 	<dt>parameter: this</dt>

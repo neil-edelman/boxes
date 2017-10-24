@@ -34,12 +34,13 @@
  @title		Pool.h
  @std		C89/90
  @author	Neil
- @version	1.5; 2017-10 Pool; made migrate automatic
- @since		1.4; 2017-07 made migrate simpler
-			1.3; 2017-05 split {List} from {Pool}; much simpler
-			1.2; 2017-01 almost-redundant functions simplified
-			1.1; 2016-11 multi-index
-			1.0; 2016-08 permute */
+ @version	2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
+ @since		2017-10 Renamed Pool; made migrate automatic.
+			2017-07 Made migrate simpler.
+			2017-05 Split {List} from {Pool}; much simpler.
+			2017-01 Almost-redundant functions simplified.
+			2016-11 Multi-index.
+			2016-08 Permute. */
 
 
 
@@ -416,13 +417,16 @@ static const char *T_(PoolGetError)(struct T_(Pool) *const this) {
 	return str;
 }
 
-/** @return	Is the pool empty?
- @param this: If {this} is null, returns true.
+/** @return	One value from the pool or null if the pool is empty. It selects
+ the position in the memory which is farthest from the start of the buffer
+ deterministically. Generally, you can't select which element you want, but if
+ the pool has been treated like a stack, this is peek.
  @order \Theta(1)
+ @fixme Untested.
  @allow */
-static size_t T_(PoolIsEmpty)(const struct T_(Pool) *const this) {
-	if(!this) return 1;
-	return this->size ? 0 : 1;
+static T *T_(PoolElement)(const struct T_(Pool) *const this) {
+	if(!this || !this->size) return 0;
+	return &this->array[this->size - 1].data;
 }
 
 /** Is {idx} a valid index for {this}.
@@ -619,7 +623,7 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(Pool_)(0);
 	T_(Pool)(0, 0);
 	T_(PoolGetError)(0);
-	T_(PoolIsEmpty)(0);
+	T_(PoolElement)(0);
 	T_(PoolIsElement)(0, (size_t)0);
 	T_(PoolGetElement)(0, (size_t)0);
 	T_(PoolGetIndex)(0, 0);
