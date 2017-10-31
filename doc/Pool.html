@@ -88,27 +88,6 @@ same file.
 
 <a name = "_declarations"><!-- --></a><h2>Declarations</h2>
 
-<div><a name = "typedef void (*&lt;T&gt;Action)(T *const element)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;Action)(T *const element)</h3>
-<pre><b>typedef void (*&lt;T&gt;Action)(T *const element)</b></pre>
-<p>
-Operates by side-effects only. Used for <em>POOL_TEST</em>.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])</h3>
-<pre><b>typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])</b></pre>
-<p>
-Responsible for turning <em>&lt;T&gt;</em> (the first argument) into a 12 <em>char</em>
-null-terminated output string (the second.) Used for <em>POOL_TO_STRING</em>.
-</p>
-<dl>
-</dl>
-</div>
-
 <div><a name = "struct Migrate"><!-- --></a>
 <h3>struct Migrate</h3>
 <pre><b>struct Migrate</b></pre>
@@ -127,6 +106,40 @@ Contains information about a <em>realloc</em>.
 	const struct Migrate *const migrate)</b></pre>
 <p>
 Function call on <em>realloc</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*&lt;T&gt;Action)(T *const element)"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;Action)(T *const element)</h3>
+<pre><b>typedef void (*&lt;T&gt;Action)(T *const element)</b></pre>
+<p>
+Operates by side-effects only. Used for <em>POOL_TEST</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*&lt;T&gt;PoolMigrateElement)(T *const element,
+	const struct Migrate *const migrate)"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;PoolMigrateElement)(T *const element,
+	const struct Migrate *const migrate)</h3>
+<pre><b>typedef void (*&lt;T&gt;PoolMigrateElement)(T *const element,
+	const struct Migrate *const migrate)</b></pre>
+<p>
+Given to <a href = "#&lt;T&gt;PoolMigrate">&lt;T&gt;PoolMigrate</a> by the migrate function of another <em>Pool</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])</h3>
+<pre><b>typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])</b></pre>
+<p>
+Responsible for turning <em>&lt;T&gt;</em> (the first argument) into a 12 <em>char</em>
+null-terminated output string (the second.) Used for <em>POOL_TO_STRING</em>.
 </p>
 <dl>
 </dl>
@@ -205,6 +218,18 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 	<td>struct &lt;T&gt;Pool *const this</td>
 </tr>
 <tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;PoolMigrateEach">&lt;T&gt;PoolMigrateEach</a></td>
+	<td>struct &lt;T&gt;Pool *const this,
+	const &lt;T&gt;PoolMigrateElement handler, const struct Migrate *const migrate</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;PoolMigratePointer">&lt;T&gt;PoolMigratePointer</a></td>
+	<td>T **const node_ptr,
+	const struct Migrate *const migrate</td>
+</tr>
+<tr>
 	<td>static const char *</td>
 	<td><a href = "#&lt;T&gt;PoolToString">&lt;T&gt;PoolToString</a></td>
 	<td>const struct &lt;T&gt;Pool *const this</td>
@@ -238,10 +263,11 @@ Constructs an empty <em>Pool</em> with capacity Fibonacci6, which is 8.
 </p>
 <dl>
 	<dt>parameter: migrate</dt>
-	<dd>The ADT parent's <em>Migrate</em> function; required.</dd>
+	<dd>The ADT parent's <em>Migrate</em> function.</dd>
 	<dt>parameter: parent</dt>
 	<dd>The parent itself; to have multiple parents, implement an
- intermediary <em>Migrate</em> function that takes multiple values; required.</dd>
+ intermediary <em>Migrate</em> function that takes multiple values; required if
+ <em>migrate</em> is specified.</dd>
 	<dt>return</dt>
 	<dd>A new <em>Pool</em> for the polymorphic variable <em>parent</em>.</dd>
 	<dt>throws: POOL_PARAMETER, POOL_ERRNO</dt>
@@ -396,6 +422,45 @@ Removes all data from <em>this</em>.
 <dl>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;PoolMigrateEach"><!-- --></a>
+<h3>&lt;T&gt;PoolMigrateEach</h3>
+<pre>static void <b>&lt;T&gt;PoolMigrateEach</b> (struct &lt;T&gt;Pool *const this,
+	const &lt;T&gt;PoolMigrateElement handler, const struct Migrate *const migrate)</pre>
+<p>
+Use when the pool has pointers to another pool in the <em>Migrate</em> function of
+the other pool (passed when creating the other pool.)
+</p>
+<dl>
+	<dt>parameter: handler</dt>
+	<dd>Has the responsibility of calling <a href = "#&lt;T&gt;PoolMigratePointer">&lt;T&gt;PoolMigratePointer</a>
+ on all pointers affected by the <em>realloc</em>.</dd>
+	<dt>parameter: migrate</dt>
+	<dd>Should only be called in a <em>Migrate</em> function; pass the
+ <em>migrate</em> parameter.</dd>
+	<dt>order</dt>
+	<dd>O(<em>greatest size</em>)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;PoolMigratePointer"><!-- --></a>
+<h3>&lt;T&gt;PoolMigratePointer</h3>
+<pre>static void <b>&lt;T&gt;PoolMigratePointer</b> (T **const node_ptr,
+	const struct Migrate *const migrate)</pre>
+<p>
+Use this inside the function that is passed to <a href = "#&lt;T&gt;PoolMigrateEach">&lt;T&gt;PoolMigrateEach</a>.
+Allows pointers to the pool to be updated. It doesn't affect pointers not in
+the <em>realloc</em>ed region.
+</p>
+<dl>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
 </dl>
 </div>
 

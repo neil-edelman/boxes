@@ -171,20 +171,6 @@ static int            pool_global_errno_copy;
 
 
 
-/** Operates by side-effects only. Used for {POOL_TEST}. */
-typedef void (*T_(Action))(T *const element);
-
-#ifdef POOL_TO_STRING /* <-- string */
-
-/** Responsible for turning {<T>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) Used for {POOL_TO_STRING}. */
-typedef void (*T_(ToString))(const T *, char (*const)[12]);
-
-/* Check that {POOL_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) PRIVATE_T_(to_string) = (POOL_TO_STRING);
-
-#endif /* string --> */
-
 #ifndef MIGRATE /* <-- migrate */
 #define MIGRATE
 /** Contains information about a {realloc}. */
@@ -198,6 +184,25 @@ typedef void (*Migrate)(void *const parent,
 	const struct Migrate *const migrate);
 #endif /* migrate --> */
 
+
+
+/** Operates by side-effects only. Used for {POOL_TEST}. */
+typedef void (*T_(Action))(T *const element);
+
+/** Given to \see{<T>PoolMigrate} by the migrate function of another {Pool}. */
+typedef void (*T_(PoolMigrateElement))(T *const element,
+	const struct Migrate *const migrate);
+
+#ifdef POOL_TO_STRING /* <-- string */
+
+/** Responsible for turning {<T>} (the first argument) into a 12 {char}
+ null-terminated output string (the second.) Used for {POOL_TO_STRING}. */
+typedef void (*T_(ToString))(const T *, char (*const)[12]);
+
+/* Check that {POOL_TO_STRING} is a function implementing {<T>ToString}. */
+static const T_(ToString) PRIVATE_T_(to_string) = (POOL_TO_STRING);
+
+#endif /* string --> */
 
 
 
@@ -266,7 +271,7 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 	/* Migrate parent class. Violates pedantic strict-ANSI? Subverts
 	 type-safety? However, it is so convenient for the caller not to have to
 	 worry about moving memory blocks. */
-	if(this->array != array) {
+	if(this->array != array && this->migrate) {
 		struct Migrate migrate;
 		migrate.begin = this->array;
 		migrate.end   = (const char *)this->array + this->size * sizeof *array;
@@ -364,16 +369,17 @@ static void T_(Pool_)(struct T_(Pool) **const thisp) {
 }
 
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
- @param migrate: The ADT parent's {Migrate} function; required.
+ @param migrate: The ADT parent's {Migrate} function.
  @param parent: The parent itself; to have multiple parents, implement an
- intermediary {Migrate} function that takes multiple values; required.
+ intermediary {Migrate} function that takes multiple values; required if
+ {migrate} is specified.
  @return A new {Pool} for the polymorphic variable {parent}.
  @throws POOL_PARAMETER, POOL_ERRNO: Use {PoolError(0)} to get the error.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(const Migrate migrate, void *const parent) {
 	struct T_(Pool) *this;
-	if(!migrate || !parent) {
+	if(!migrate ^ !parent) {
 		pool_global_error = POOL_PARAMETER;
 		pool_global_errno_copy = 0;
 		return 0;
@@ -535,6 +541,44 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
 	PRIVATE_T_(debug)(this, "Clear", "cleared.\n");
 }
 
+/** Use when the pool has pointers to another pool in the {Migrate} function of
+ the other pool (passed when creating the other pool.)
+ @param handler: Has the responsibility of calling \see{<T>PoolMigratePointer}
+ on all pointers affected by the {realloc}.
+ @param migrate: Should only be called in a {Migrate} function; pass the
+ {migrate} parameter.
+ @order O({greatest size})
+ @fixme Untested.
+ @allow */
+static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
+	const T_(PoolMigrateElement) handler, const struct Migrate *const migrate) {
+	size_t i;
+	struct PRIVATE_T_(Element) *e;
+	if(!this) return;
+	if(!migrate || !handler) { this->error = POOL_PARAMETER; return; }
+	for(i = 0; i < this->size; i++) {
+		e = this->array + i;
+		if(e->prev != pool_not_part) continue;
+		handler(&e->data, migrate);
+	}
+}
+
+/** Use this inside the function that is passed to \see{<T>PoolMigrateEach}.
+ Allows pointers to the pool to be updated. It doesn't affect pointers not in
+ the {realloc}ed region.
+ @order O(1)
+ @fixme Untested.
+ @allow */
+static void T_(PoolMigratePointer)(T **const node_ptr,
+	const struct Migrate *const migrate) {
+	const void *ptr;
+	if(!node_ptr
+		|| !(ptr = *node_ptr)
+		|| ptr < migrate->begin
+		|| ptr >= migrate->end) return;
+	*(char **)node_ptr += migrate->delta;
+}
+
 #ifdef POOL_TO_STRING /* <-- print */
 
 #ifndef POOL_PRINT_THINGS /* <-- once inside translation unit */
@@ -631,6 +675,8 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(PoolNew)(0);
 	T_(PoolRemove)(0, 0);
 	T_(PoolClear)(0);
+	T_(PoolMigrateEach)(0, 0, 0);
+	T_(PoolMigratePointer)(0, 0);
 #ifdef POOL_TO_STRING
 	T_(PoolToString)(0);
 #endif

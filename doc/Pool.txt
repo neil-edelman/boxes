@@ -45,21 +45,6 @@ since: 2017-10 Renamed Pool; made migrate automatic.
 
 ## Declarations ##
 
-### typedef void (*<T>Action)(T *const element) ###
-
-typedef void (*<T>Action)(T *const element)
-
-Operates by side-effects only. Used for _POOL_TEST_.
-
-
-### typedef void (*<T>ToString)(const T *, char (*const)[12]) ###
-
-typedef void (*<T>ToString)(const T *, char (*const)[12])
-
-Responsible for turning _<T>_ (the first argument) into a 12 _char_
- null-terminated output string (the second.) Used for _POOL_TO_STRING_.
-
-
 ### struct Migrate ###
 
 struct Migrate
@@ -74,6 +59,30 @@ typedef void (*Migrate)(void *const parent,
 	const struct Migrate *const migrate)
 
 Function call on _realloc_.
+
+
+### typedef void (*<T>Action)(T *const element) ###
+
+typedef void (*<T>Action)(T *const element)
+
+Operates by side-effects only. Used for _POOL_TEST_.
+
+
+### typedef void (*<T>PoolMigrateElement)(T *const element,
+	const struct Migrate *const migrate) ###
+
+typedef void (*<T>PoolMigrateElement)(T *const element,
+	const struct Migrate *const migrate)
+
+Given to `<T>PoolMigrate` by the migrate function of another _Pool_.
+
+
+### typedef void (*<T>ToString)(const T *, char (*const)[12]) ###
+
+typedef void (*<T>ToString)(const T *, char (*const)[12])
+
+Responsible for turning _<T>_ (the first argument) into a 12 _char_
+ null-terminated output string (the second.) Used for _POOL_TO_STRING_.
 
 
 ### struct <T>Pool ###
@@ -101,6 +110,10 @@ static int	<T>PoolReserve	(struct <T>Pool *const this,
 static T *	<T>PoolNew	(struct <T>Pool *const this)
 static int	<T>PoolRemove	(struct <T>Pool *const this, T *const data)
 static void	<T>PoolClear	(struct <T>Pool *const this)
+static void	<T>PoolMigrateEach	(struct <T>Pool *const this,
+	const <T>PoolMigrateElement handler, const struct Migrate *const migrate)
+static void	<T>PoolMigratePointer	(T **const node_ptr,
+	const struct Migrate *const migrate)
 static const char *	<T>PoolToString	(const struct <T>Pool *const this)
 
 
@@ -127,10 +140,11 @@ static struct <T>Pool * <T>Pool(const Migrate migrate, void *const parent)
 
 Constructs an empty _Pool_ with capacity Fibonacci6, which is 8.
 
-parameter: migrate -- The ADT parent's _Migrate_ function; required.
+parameter: migrate -- The ADT parent's _Migrate_ function.
 
 parameter: parent -- The parent itself; to have multiple parents, implement an
- intermediary _Migrate_ function that takes multiple values; required.
+ intermediary _Migrate_ function that takes multiple values; required if
+ _migrate_ is specified.
 
 return: A new _Pool_ for the polymorphic variable _parent_.
 
@@ -270,6 +284,41 @@ static void <T>PoolClear(struct <T>Pool *const this)
 Removes all data from _this_.
 
 order: \Theta(1)
+
+
+
+### <T>PoolMigrateEach ###
+
+static void <T>PoolMigrateEach(struct <T>Pool *const this,
+	const <T>PoolMigrateElement handler, const struct Migrate *const migrate)
+
+Use when the pool has pointers to another pool in the _Migrate_ function of
+ the other pool (passed when creating the other pool.)
+
+parameter: handler -- Has the responsibility of calling `<T>PoolMigratePointer`
+ on all pointers affected by the _realloc_.
+
+parameter: migrate -- Should only be called in a _Migrate_ function; pass the
+ _migrate_ parameter.
+
+order: O(_greatest size_)
+
+fixme: Untested.
+
+
+
+### <T>PoolMigratePointer ###
+
+static void <T>PoolMigratePointer(T **const node_ptr,
+	const struct Migrate *const migrate)
+
+Use this inside the function that is passed to `<T>PoolMigrateEach`.
+ Allows pointers to the pool to be updated. It doesn't affect pointers not in
+ the _realloc_ed region.
+
+order: O(1)
+
+fixme: Untested.
 
 
 
