@@ -4,9 +4,9 @@
  {<T>List} organises doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},)
  of which data of type, {<T>}, must be set using {LIST_TYPE}. The {<T>ListNode}
  storage is the responsibility of the caller; that means it can be nestled in
- multiple structures. Supports one to four different orders in the same type.
- The preprocessor macros are all undefined at the end of the file for
- convenience when including multiple {List} types in the same file. Random
+ multiple polymorphic structures. Supports one to four different orders in the
+ same type. The preprocessor macros are all undefined at the end of the file
+ for convenience when including multiple {List} types in the same file. Random
  {LIST_*} macros should be avoided.
 
  @param LIST_NAME, LIST_TYPE
@@ -283,18 +283,8 @@ typedef void (*Migrate)(void *const parent,
 
 
 /** A single link in the linked-list derived from {<T>}. Storage of this
- structure is the responsibility of the caller. A {<T>ListNode} can be
- reinterpreted (cast) to {<T>} as a single element; that is, {<T>} shall be the
- first element of {<T>ListNode}.
- \${|    <T>ListNode *node;
- |    T *t;
- |    for(t = <T>List<U>GetFirst(list);
- |        t;
- |        t = <T>Node<U>GetNext(node)) {
- |    }} or
- \${|    static void for_all_fn(T *const t) {
- |        struct <T>ListNode *const node = (struct <T>ListNode *)t;
- |    }} */
+ structure is the responsibility of the caller. The {<T>} is stored in the
+ element {data}. */
 struct T_(ListNode);
 struct T_(ListNode) {
 	T data; /* 1st so we can cast without the mess of {container_of} */
@@ -519,33 +509,35 @@ static void T_(ListClear)(struct T_(List) *const this) {
 	PRIVATE_T_(clear)(this);
 }
 
-/** Sets the contents of {node} to add it to {this} at the end, thereby
- initialising the non-{<T>} parts of {<T>ListNode}. Does not do any checks on
- {node} and overwrites the data that was there. Specifically, it invokes
- undefined behaviour to one add {node} to more than one list without removing
- it each time. If either {this} or {node} is null, it does nothing.
+/** Initialises the contents of {node} to add it to the end of {this}. If
+ either {this} or {node} is null, it does nothing.
+ @param node: Must be a {<T>ListNode} with an internal {<T>} not associated to
+ any list; this associates the {<T>ListNode} with the list until it is removed,
+ see \see{<T>ListRemove} or \see{<T>ListClear}.
  @implements <T>ListNodeAction
  @order \Theta(1)
  @allow */
-static void T_(ListPush)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
+static void T_(ListPush)(struct T_(List) *const this, T *const node) {
+	struct T_(ListNode) *const n
+		= (struct T_(ListNode) *const)(void *const)node;
 	if(!this || !node) return;
-	PRIVATE_T_(push)(this, node);
+	PRIVATE_T_(push)(this, n);
 }
 
-/** Sets the contents of {node} to add it to {this} at the beginning, thereby
- initialising the non-{<T>} parts of {<T>ListNode}. Does not do any checks on
- {node} and overwrites the data that was there. Specifically, it invokes
- undefined behaviour to one add {node} to more than one list without removing
- it each time. If either {this} or {node} is null, it does nothing.
+/** Initialises the contents of {node} to add it to the beginning of {this}. If
+ either {this} or {node} is null, it does nothing.
+ @param node: Must be a {<T>ListNode} with an internal {<T>} not associated to
+ any list; this associates the {<T>ListNode} with the list until it is removed,
+ see \see{<T>ListRemove} or \see{<T>ListClear}.
  @implements <T>ListNodeAction
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListUnshift)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
+static void T_(ListUnshift)(struct T_(List) *const this, T *const node) {
+	struct T_(ListNode) *const n
+		= (struct T_(ListNode) *const)(void *const)node;
 	if(!this || !node) return;
-	PRIVATE_T_(unshift)(this, node);
+	PRIVATE_T_(unshift)(this, n);
 }
 
 /** Removes {data} from the {this}. The {data} is now free to add to another

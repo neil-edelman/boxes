@@ -190,23 +190,23 @@ static const struct AnimalVt {
 } sloth_vt = { &sloth_act }, llama_vt = { &llama_act }, bear_vt = { &bear_act };
 /* the linked-list */
 static struct AnimalList animals;
-static void Animal_init(struct AnimalListNode *const this) {
-	Animal_filler((struct Animal *)this);
+static void Animal_init(struct Animal *const this) {
+	Animal_filler(this);
 	AnimalListPush(&animals, this);
 }
 static void Sloth_init(struct Sloth *const sloth) {
-	Animal_init(&sloth->animal);
+	Animal_filler(&sloth->animal.data);
 	sloth->animal.data.vt = &sloth_vt;
 	sloth->lazy = (unsigned)(100.0 * rand() / (RAND_MAX + 1.0) + 20.0);
 }
 static void Llama_init(struct Llama *const llama) {
-	Animal_init(&llama->animal);
+	Animal_init(&llama->animal.data);
 	llama->animal.data.vt = &llama_vt;
 	llama->chomps = (unsigned)(10.0 * rand() / (RAND_MAX + 1.0) + 1.0);
 }
 static void Bear_init(struct Bear *const bear, struct Llama *const llamas,
 	const size_t llamas_size) {
-	Animal_init(&bear->animal);
+	Animal_init(&bear->animal.data);
 	bear->animal.data.vt = &bear_vt;
 	bear->riding = (struct Animal *)(llamas
 		+ (unsigned)((double)llamas_size * rand() / (RAND_MAX + 1.0)));

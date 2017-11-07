@@ -47,9 +47,9 @@ see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opens
 <em>&lt;T&gt;List</em> organises doubly-linked-list(s) of <em>&lt;T&gt;ListNode</em>, (not plain <em>&lt;T&gt;</em>,)
 of which data of type, <em>&lt;T&gt;</em>, must be set using <em>LIST_TYPE</em>. The <em>&lt;T&gt;ListNode</em>
 storage is the responsibility of the caller; that means it can be nestled in
-multiple structures. Supports one to four different orders in the same type.
-The preprocessor macros are all undefined at the end of the file for
-convenience when including multiple <em>List</em> types in the same file. Random
+multiple polymorphic structures. Supports one to four different orders in the
+same type. The preprocessor macros are all undefined at the end of the file
+for convenience when including multiple <em>List</em> types in the same file. Random
 <em>LIST_*</em> macros should be avoided.
 </p>
 <dl>
@@ -132,18 +132,8 @@ Function call on <em>realloc</em>.
 <pre><b>struct &lt;T&gt;ListNode</b></pre>
 <p>
 A single link in the linked-list derived from <em>&lt;T&gt;</em>. Storage of this
-structure is the responsibility of the caller. A <em>&lt;T&gt;ListNode</em> can be
-reinterpreted (cast) to <em>&lt;T&gt;</em> as a single element; that is, <em>&lt;T&gt;</em> shall be the
-first element of <em>&lt;T&gt;ListNode</em>.
-<pre>|    &lt;T&gt;ListNode *node;
-|    T *t;
-|    for(t = &lt;T&gt;List&lt;U&gt;GetFirst(list);
-|        t;
-|        t = &lt;T&gt;Node&lt;U&gt;GetNext(node)) {
-|    }</pre> or
-<pre>|    static void for_all_fn(T *const t) {
-|        struct &lt;T&gt;ListNode *const node = (struct &lt;T&gt;ListNode *)t;
-|    }</pre>
+structure is the responsibility of the caller. The <em>&lt;T&gt;</em> is stored in the
+element <em>data</em>.
 </p>
 <dl>
 </dl>
@@ -305,14 +295,12 @@ null-terminated output string (the second.)
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListPush">&lt;T&gt;ListPush</a></td>
-	<td>struct &lt;T&gt;List *const this,
-	struct &lt;T&gt;ListNode *const node</td>
+	<td>struct &lt;T&gt;List *const this, T *const node</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListUnshift">&lt;T&gt;ListUnshift</a></td>
-	<td>struct &lt;T&gt;List *const this,
-	struct &lt;T&gt;ListNode *const node</td>
+	<td>struct &lt;T&gt;List *const this, T *const node</td>
 </tr>
 <tr>
 	<td>static void</td>
@@ -461,16 +449,16 @@ contained a list, those values are free.
 
 <div><a name = "&lt;T&gt;ListPush"><!-- --></a>
 <h3>&lt;T&gt;ListPush</h3>
-<pre>static void <b>&lt;T&gt;ListPush</b> (struct &lt;T&gt;List *const this,
-	struct &lt;T&gt;ListNode *const node)</pre>
+<pre>static void <b>&lt;T&gt;ListPush</b> (struct &lt;T&gt;List *const this, T *const node)</pre>
 <p>
-Sets the contents of <em>node</em> to add it to <em>this</em> at the end, thereby
-initialising the non-<em>&lt;T&gt;</em> parts of <em>&lt;T&gt;ListNode</em>. Does not do any checks on
-<em>node</em> and overwrites the data that was there. Specifically, it invokes
-undefined behaviour to one add <em>node</em> to more than one list without removing
-it each time. If either <em>this</em> or <em>node</em> is null, it does nothing.
+Initialises the contents of <em>node</em> to add it to the end of <em>this</em>. If
+either <em>this</em> or <em>node</em> is null, it does nothing.
 </p>
 <dl>
+	<dt>parameter: node</dt>
+	<dd>Must be a <em>&lt;T&gt;ListNode</em> with an internal <em>&lt;T&gt;</em> not associated to
+ any list; this associates the <em>&lt;T&gt;ListNode</em> with the list until it is removed,
+ see <a href = "#&lt;T&gt;ListRemove">&lt;T&gt;ListRemove</a> or <a href = "#&lt;T&gt;ListClear">&lt;T&gt;ListClear</a>.</dd>
 	<dt>implements</dt>
 	<dd>&lt;T&gt;ListNodeAction</dd>
 	<dt>order</dt>
@@ -480,16 +468,16 @@ it each time. If either <em>this</em> or <em>node</em> is null, it does nothing.
 
 <div><a name = "&lt;T&gt;ListUnshift"><!-- --></a>
 <h3>&lt;T&gt;ListUnshift</h3>
-<pre>static void <b>&lt;T&gt;ListUnshift</b> (struct &lt;T&gt;List *const this,
-	struct &lt;T&gt;ListNode *const node)</pre>
+<pre>static void <b>&lt;T&gt;ListUnshift</b> (struct &lt;T&gt;List *const this, T *const node)</pre>
 <p>
-Sets the contents of <em>node</em> to add it to <em>this</em> at the beginning, thereby
-initialising the non-<em>&lt;T&gt;</em> parts of <em>&lt;T&gt;ListNode</em>. Does not do any checks on
-<em>node</em> and overwrites the data that was there. Specifically, it invokes
-undefined behaviour to one add <em>node</em> to more than one list without removing
-it each time. If either <em>this</em> or <em>node</em> is null, it does nothing.
+Initialises the contents of <em>node</em> to add it to the beginning of <em>this</em>. If
+either <em>this</em> or <em>node</em> is null, it does nothing.
 </p>
 <dl>
+	<dt>parameter: node</dt>
+	<dd>Must be a <em>&lt;T&gt;ListNode</em> with an internal <em>&lt;T&gt;</em> not associated to
+ any list; this associates the <em>&lt;T&gt;ListNode</em> with the list until it is removed,
+ see <a href = "#&lt;T&gt;ListRemove">&lt;T&gt;ListRemove</a> or <a href = "#&lt;T&gt;ListClear">&lt;T&gt;ListClear</a>.</dd>
 	<dt>implements</dt>
 	<dd>&lt;T&gt;ListNodeAction</dd>
 	<dt>order</dt>

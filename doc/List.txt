@@ -6,9 +6,9 @@
  _<T>List_ organises doubly-linked-list(s) of _<T>ListNode_, (not plain _<T>_,)
  of which data of type, _<T>_, must be set using _LIST_TYPE_. The _<T>ListNode_
  storage is the responsibility of the caller; that means it can be nestled in
- multiple structures. Supports one to four different orders in the same type.
- The preprocessor macros are all undefined at the end of the file for
- convenience when including multiple _List_ types in the same file. Random
+ multiple polymorphic structures. Supports one to four different orders in the
+ same type. The preprocessor macros are all undefined at the end of the file
+ for convenience when including multiple _List_ types in the same file. Random
  _LIST_*_ macros should be avoided.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
@@ -82,18 +82,8 @@ Function call on _realloc_.
 struct <T>ListNode
 
 A single link in the linked-list derived from _<T>_. Storage of this
- structure is the responsibility of the caller. A _<T>ListNode_ can be
- reinterpreted (cast) to _<T>_ as a single element; that is, _<T>_ shall be the
- first element of _<T>ListNode_.
- |    <T>ListNode *node;
- |    T *t;
- |    for(t = <T>List<U>GetFirst(list);
- |        t;
- |        t = <T>Node<U>GetNext(node)) {
- |    } or
- |    static void for_all_fn(T *const t) {
- |        struct <T>ListNode *const node = (struct <T>ListNode *)t;
- |    }
+ structure is the responsibility of the caller. The _<T>_ is stored in the
+ element _data_.
 
 
 ### struct <T>List ###
@@ -203,10 +193,8 @@ Responsible for turning _<T>_ (the first argument) into a 12 _char_
 
 _Return Type_	_Function Name_	_Argument List_
 static void	<T>ListClear	(struct <T>List *const this)
-static void	<T>ListPush	(struct <T>List *const this,
-	struct <T>ListNode *const node)
-static void	<T>ListUnshift	(struct <T>List *const this,
-	struct <T>ListNode *const node)
+static void	<T>ListPush	(struct <T>List *const this, T *const node)
+static void	<T>ListUnshift	(struct <T>List *const this, T *const node)
 static void	<T>ListRemove	(struct <T>List *const this, T *const data)
 static void	<T>ListTake	(struct <T>List *const this,
 	struct <T>List *const from)
@@ -264,14 +252,14 @@ order: \Theta(1)
 
 ### <T>ListPush ###
 
-static void <T>ListPush(struct <T>List *const this,
-	struct <T>ListNode *const node)
+static void <T>ListPush(struct <T>List *const this, T *const node)
 
-Sets the contents of _node_ to add it to _this_ at the end, thereby
- initialising the non-_<T>_ parts of _<T>ListNode_. Does not do any checks on
- _node_ and overwrites the data that was there. Specifically, it invokes
- undefined behaviour to one add _node_ to more than one list without removing
- it each time. If either _this_ or _node_ is null, it does nothing.
+Initialises the contents of _node_ to add it to the end of _this_. If
+ either _this_ or _node_ is null, it does nothing.
+
+parameter: node -- Must be a _<T>ListNode_ with an internal _<T>_ not associated to
+ any list; this associates the _<T>ListNode_ with the list until it is removed,
+ see `<T>ListRemove` or `<T>ListClear`.
 
 implements: <T>ListNodeAction
 
@@ -281,14 +269,14 @@ order: \Theta(1)
 
 ### <T>ListUnshift ###
 
-static void <T>ListUnshift(struct <T>List *const this,
-	struct <T>ListNode *const node)
+static void <T>ListUnshift(struct <T>List *const this, T *const node)
 
-Sets the contents of _node_ to add it to _this_ at the beginning, thereby
- initialising the non-_<T>_ parts of _<T>ListNode_. Does not do any checks on
- _node_ and overwrites the data that was there. Specifically, it invokes
- undefined behaviour to one add _node_ to more than one list without removing
- it each time. If either _this_ or _node_ is null, it does nothing.
+Initialises the contents of _node_ to add it to the beginning of _this_. If
+ either _this_ or _node_ is null, it does nothing.
+
+parameter: node -- Must be a _<T>ListNode_ with an internal _<T>_ not associated to
+ any list; this associates the _<T>ListNode_ with the list until it is removed,
+ see `<T>ListRemove` or `<T>ListClear`.
 
 implements: <T>ListNodeAction
 
