@@ -471,7 +471,8 @@ static T *T_(PoolGetElement)(struct T_(Pool) *const this, const size_t idx) {
  @allow */
 static size_t T_(PoolGetIndex)(struct T_(Pool) *const this,
 	const T *const element) {
-	return (struct PRIVATE_T_(Element) *)(void *)element - this->array;
+	return (const struct PRIVATE_T_(Element) *)(const void *)element
+		- this->array;
 }
 
 /** Increases the capacity of this Pool to ensure that it can hold at least

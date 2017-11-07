@@ -40,7 +40,7 @@ static void A_filler(struct A *const this) {
 static void A_to_string(const struct A *this, char (*const a)[12]) {
 	/* unusal */
 	const struct pool_A_Element *const elem
-		= (const struct pool_A_Element *)(void *)this;
+		= (const struct pool_A_Element *)(const void *)this;
 	sprintf(*a, "%ld<%s>%ld", elem->prev, this->value, elem->next);
 }
 
