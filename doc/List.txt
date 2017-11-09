@@ -204,8 +204,6 @@ static void	<T>ListMerge	(struct <T>List *const this,
 static void	<T>ListSort	(struct <T>List *const this)
 static void	<T>ListMigrate	(void *const void_this,
 	const struct Migrate *const migrate)
-static void	<T>ListMigratePointer	(T **const t_ptr,
-	const struct Migrate *const migrate)
 static void	<T>List<U>MigrateEach	(struct <T>List *const this,
 	const <T>ListMigrateElement handler, const struct Migrate *const migrate)
 static T *	<T>Node<U>GetNext	(T *const this)
@@ -376,20 +374,6 @@ fixme: Relies on not-strictly-defined behaviour because pointers are not
 
 
 
-### <T>ListMigratePointer ###
-
-static void <T>ListMigratePointer(T **const t_ptr,
-	const struct Migrate *const migrate)
-
-Use this inside the function that is passed to `<T>List<U>MigrateEach`.
- Allows _realloc_ custom pointers inside the data to be updated. It doesn't
- affect pointers not in the _realloc_ed region. To update the underlying list,
- see `<T>ListMigrate`.
-
-fixme: Untested.
-
-
-
 ### <T>List<U>MigrateEach ###
 
 static void <T>List<U>MigrateEach(struct <T>List *const this,
@@ -397,7 +381,8 @@ static void <T>List<U>MigrateEach(struct <T>List *const this,
 
 Calls _handler_ on every element that is part of the list. This allows
  _<T>_ elements in the list to contain pointers to moving structures due to a
- _realloc_. If _this_, _handler_, or _migrate_ is null, doesn't do anything.
+ _realloc_, using the sub-types's _Migrate_ function. If _this_, _handler_, or
+ _migrate_ is null, doesn't do anything.
 
 parameter: handler -- Has the responsibility of calling `<T>ListMigratePointer`
  on all pointers affected by the _realloc_ of this handler.

@@ -743,17 +743,18 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	*(char **)node_ptr += migrate->delta;
 }
 
-/** Use this inside the function that is passed to \see{<T>List<U>MigrateEach}.
+/* * Use this inside the function that is passed to \see{<T>List<U>MigrateEach}.
  Allows {realloc} custom pointers inside the data to be updated. It doesn't
  affect pointers not in the {realloc}ed region. To update the underlying list,
  see \see{<T>ListMigrate}.
  @fixme Untested.
+ @fixme Not really useful.
  @allow */
-static void T_(ListMigratePointer)(T **const t_ptr,
+/*static void T_(ListMigratePointer)(T **const t_ptr,
 	const struct Migrate *const migrate) {
 	if(!migrate || !t_ptr || !*t_ptr) return;
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
-}
+}*/
 
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* need this file if one is going to run tests */
@@ -775,7 +776,7 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
-	T_(ListMigratePointer)(0, 0);
+	/*T_(ListMigratePointer)(0, 0);*/
 	/*T_(Migrate)(0, 0);*/
 	PRIVATE_T_(unused_coda)();
 }
@@ -1016,7 +1017,8 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 
 /** Calls {handler} on every element that is part of the list. This allows
  {<T>} elements in the list to contain pointers to moving structures due to a
- {realloc}. If {this}, {handler}, or {migrate} is null, doesn't do anything.
+ {realloc}, using the sub-types's {Migrate} function. If {this}, {handler}, or
+ {migrate} is null, doesn't do anything.
  @param handler: Has the responsibility of calling \see{<T>ListMigratePointer}
  on all pointers affected by the {realloc} of this handler.
  @order \Theta(n)
