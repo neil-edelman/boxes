@@ -95,6 +95,16 @@ Serves as an a head for linked-list(s) of _<T>ListNode_. No initialisation
  `<T>ListClear`.
 
 
+### typedef void (*<T>ListMigrateElement)(T *const element,
+	const struct Migrate *const migrate) ###
+
+typedef void (*<T>ListMigrateElement)(T *const element,
+	const struct Migrate *const migrate)
+
+Calls `<T>ListMigratePointer`, given to `<T>List<U>MigrateEach`, in
+ the handler for the _Migrate_.
+
+
 ### typedef void (*<T>Action)(T *const) ###
 
 typedef void (*<T>Action)(T *const)
@@ -123,15 +133,6 @@ typedef void (*<T>ListItemAction)(struct <T>List *const, T *const)
 Takes _<T>List_ and _<T>_.
 
 
-### typedef void (*<T>ListNodeAction)(struct <T>List *const,
-	struct <T>ListNode *const) ###
-
-typedef void (*<T>ListNodeAction)(struct <T>List *const,
-	struct <T>ListNode *const)
-
-Takes _<T>List_ and _<T>ListNode_.
-
-
 ### typedef void (*<T>BiListAction)(struct <T>List *const,
 	struct <T>List *const) ###
 
@@ -147,7 +148,7 @@ Takes two _<T>List_.
 typedef void (*<T>TriListAction)(struct <T>List *const,
 	struct <T>List *const, struct <T>List *const)
 
-Takes three _<T>List_.
+Takes three _<T>List_s.
 
 
 ### typedef T *(*<T>UnaryOperator)(T *const) ###
@@ -203,6 +204,10 @@ static void	<T>ListMerge	(struct <T>List *const this,
 static void	<T>ListSort	(struct <T>List *const this)
 static void	<T>ListMigrate	(void *const void_this,
 	const struct Migrate *const migrate)
+static void	<T>ListMigratePointer	(T **const t_ptr,
+	const struct Migrate *const migrate)
+static void	<T>List<U>MigrateEach	(struct <T>List *const this,
+	const <T>ListMigrateElement handler, const struct Migrate *const migrate)
 static T *	<T>Node<U>GetNext	(T *const this)
 static T *	<T>Node<U>GetPrevious	(T *const this)
 static T *	<T>List<U>GetFirst	(struct <T>List *const this)
@@ -351,13 +356,16 @@ order: \Omega(_this_.n), O(_this_.n log _this_.n)
 static void <T>ListMigrate(void *const void_this,
 	const struct Migrate *const migrate)
 
-Adjusts the pointers when supplied with a _Migrate_ parameter, when _this_
- contains _<T>ListNode_ elements from memory that switched due to a _realloc_.
- If _this_ or _migrate_ is null, doesn't do anything.
+Adjusts the pointers internal to the _<T>List_ when supplied with a
+ _Migrate_ parameter, when _this_ contains _<T>ListNode_ elements from memory
+ that switched due to a _realloc_. If _this_ or _migrate_ is null, doesn't do
+ anything.
 
-parameter: void_this -- A _struct <T>List *const_ cast as _void *const_.
+parameter: void_this -- A _struct <T>List *const_ cast as _void *const_ to satisfy
+ _Migrate_.
 
-parameter: migrate -- A _struct_ coming from a _Migrate_ function.
+parameter: migrate -- Should only be called in a _Migrate_ function; pass the
+ _migrate_ parameter.
 
 implements: Migrate
 
@@ -365,6 +373,36 @@ order: \Theta(n)
 
 fixme: Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
+
+
+
+### <T>ListMigratePointer ###
+
+static void <T>ListMigratePointer(T **const t_ptr,
+	const struct Migrate *const migrate)
+
+Use this inside the function that is passed to `<T>List<U>MigrateEach`.
+ Allows _realloc_ custom pointers inside the data to be updated. It doesn't
+ affect pointers not in the _realloc_ed region. To update the underlying list,
+ see `<T>ListMigrate`.
+
+fixme: Untested.
+
+
+
+### <T>List<U>MigrateEach ###
+
+static void <T>List<U>MigrateEach(struct <T>List *const this,
+	const <T>ListMigrateElement handler, const struct Migrate *const migrate)
+
+Calls _handler_ on every element that is part of the list. This allows
+ _<T>_ elements in the list to contain pointers to moving structures due to a
+ _realloc_. If _this_, _handler_, or _migrate_ is null, doesn't do anything.
+
+parameter: handler -- Has the responsibility of calling `<T>ListMigratePointer`
+ on all pointers affected by the _realloc_ of this handler.
+
+order: \Theta(n)
 
 
 

@@ -323,6 +323,11 @@ struct T_(List) {
 
 
 
+/** Calls \see{<T>ListMigratePointer}, given to \see{<T>List<U>MigrateEach}, in
+ the handler for the {Migrate}. */
+typedef void (*T_(ListMigrateElement))(T *const element,
+	const struct Migrate *const migrate);
+
 /** Takes {<T>}. */
 typedef void (*T_(Action))(T *const);
 
@@ -335,15 +340,11 @@ typedef void (*T_(ListAction))(struct T_(List) *const);
 /** Takes {<T>List} and {<T>}. */
 typedef void (*T_(ListItemAction))(struct T_(List) *const, T *const);
 
-/** Takes {<T>List} and {<T>ListNode}. */
-typedef void (*T_(ListNodeAction))(struct T_(List) *const,
-	struct T_(ListNode) *const);
-
 /** Takes two {<T>List}. */
 typedef void (*T_(BiListAction))(struct T_(List) *const,
 	struct T_(List) *const);
 
-/** Takes three {<T>List}. */
+/** Takes three {<T>List}s. */
 typedef void (*T_(TriListAction))(struct T_(List) *const,
 	struct T_(List) *const, struct T_(List) *const);
 
@@ -680,11 +681,14 @@ static void T_(ListSort)(struct T_(List) *const this) {
 #endif /* comp --> */
 
 
-/** Adjusts the pointers when supplied with a {Migrate} parameter, when {this}
- contains {<T>ListNode} elements from memory that switched due to a {realloc}.
- If {this} or {migrate} is null, doesn't do anything.
- @param void_this: A {struct <T>List *const} cast as {void *const}.
- @param migrate: A {struct} coming from a {Migrate} function.
+/** Adjusts the pointers internal to the {<T>List} when supplied with a
+ {Migrate} parameter, when {this} contains {<T>ListNode} elements from memory
+ that switched due to a {realloc}. If {this} or {migrate} is null, doesn't do
+ anything.
+ @param void_this: A {struct <T>List *const} cast as {void *const} to satisfy
+ {Migrate}.
+ @param migrate: Should only be called in a {Migrate} function; pass the
+ {migrate} parameter.
  @implements Migrate
  @order \Theta(n)
  @fixme Relies on not-strictly-defined behaviour because pointers are not
@@ -730,7 +734,7 @@ static void T_(ListMigrate)(void *const void_this,
 	}
 }
 
-/** Private: used in \see{<T>_list_<U>_migrate} and \see{<T>Migrate}.
+/** Private: used in \see{<T>_list_<U>_migrate} and \see{<T>ListMigratePointer}.
  \${ptr \in [begin, end) -> ptr += delta}. */
 static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	struct T_(ListNode) **const node_ptr) {
@@ -739,17 +743,17 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	*(char **)node_ptr += migrate->delta;
 }
 
-/* * This is important, sometimes, but a real pain to describe.
- Call this function with the address of any self-referential node pointers
- contained in the data itself, to make sure that they are updated on {realloc}.
- To update the list, see \see{<T>ListMigrate}.
+/** Use this inside the function that is passed to \see{<T>List<U>MigrateEach}.
+ Allows {realloc} custom pointers inside the data to be updated. It doesn't
+ affect pointers not in the {realloc}ed region. To update the underlying list,
+ see \see{<T>ListMigrate}.
  @fixme Untested.
  @allow */
-/*static void T_(Migrate)(const struct Migrate *const migrate,
-	T **const t_ptr) {
+static void T_(ListMigratePointer)(T **const t_ptr,
+	const struct Migrate *const migrate) {
 	if(!migrate || !t_ptr || !*t_ptr) return;
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
-}*/
+}
 
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* need this file if one is going to run tests */
@@ -771,6 +775,7 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
+	T_(ListMigratePointer)(0, 0);
 	/*T_(Migrate)(0, 0);*/
 	PRIVATE_T_(unused_coda)();
 }
@@ -1008,6 +1013,24 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 }
 
 
+
+/** Calls {handler} on every element that is part of the list. This allows
+ {<T>} elements in the list to contain pointers to moving structures due to a
+ {realloc}. If {this}, {handler}, or {migrate} is null, doesn't do anything.
+ @param handler: Has the responsibility of calling \see{<T>ListMigratePointer}
+ on all pointers affected by the {realloc} of this handler.
+ @order \Theta(n)
+ @allow */
+static void T_U_(List, MigrateEach)(struct T_(List) *const this,
+	const T_(ListMigrateElement) handler, const struct Migrate *const migrate) {
+	struct T_(ListNode) *cursor, *next;
+	if(!this || !handler || !migrate) return;
+	for(cursor = this->U_(first); cursor; cursor = next) {
+		next = cursor->U_(next);
+		handler(&cursor->data, migrate);
+	}
+	PRIVATE_T_U_(cycle, crash)(this);
+}
 
 /** @return The next element after {this} in {<U>}. When {this} is the last
  element or when {this} is null, returns null.
@@ -1656,6 +1679,7 @@ static void PRIVATE_T_U_(sub_unused, list)(void) {
 	T_U_(List, BiForEach)(0, 0, 0);
 	T_U_(List, ShortCircuit)(0, 0);
 	T_U_(List, BiShortCircuit)(0, 0, 0);
+	T_U_(List, MigrateEach)(0, 0, 0);
 #ifdef LIST_TO_STRING /* <-- string */
 	T_U_(List, ToString)(0);
 #endif /* string --> */
