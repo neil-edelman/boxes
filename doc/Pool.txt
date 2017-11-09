@@ -74,7 +74,8 @@ Operates by side-effects only. Used for _POOL_TEST_.
 typedef void (*<T>PoolMigrateElement)(T *const element,
 	const struct Migrate *const migrate)
 
-Given to `<T>PoolMigrate` by the migrate function of another _Pool_.
+Given to `<T>PoolMigrateEach` by the migrate function of another
+ _Pool_.
 
 
 ### typedef void (*<T>ToString)(const T *, char (*const)[12]) ###

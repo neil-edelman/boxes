@@ -189,7 +189,8 @@ typedef void (*Migrate)(void *const parent,
 /** Operates by side-effects only. Used for {POOL_TEST}. */
 typedef void (*T_(Action))(T *const element);
 
-/** Given to \see{<T>PoolMigrate} by the migrate function of another {Pool}. */
+/** Given to \see{<T>PoolMigrateEach} by the migrate function of another
+ {Pool}. */
 typedef void (*T_(PoolMigrateElement))(T *const element,
 	const struct Migrate *const migrate);
 
