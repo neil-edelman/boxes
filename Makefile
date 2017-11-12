@@ -1,6 +1,6 @@
 # GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0
 
-PROJ  := Pool
+PROJ  := Stack
 VA    := 1
 VB    := 0
 

@@ -314,7 +314,6 @@ static const char *T_(StackGetError)(struct T_(Stack) *const this) {
 
 /** @return The current size of the stack.
  @order \Theta(1)
- @fixme Untested.
  @allow */
 static size_t T_(StackGetSize)(const struct T_(Stack) *const this) {
 	if(!this) return 0;
@@ -338,7 +337,6 @@ static T *T_(StackGetElement)(struct T_(Stack) *const this, const size_t idx) {
 /** @return The last value to be added or null if the stack is empty. The
  pointer is valid until the stack gets bigger.
  @order \Theta(1)
- @fixme Untested.
  @allow */
 static T *T_(StackPeek)(const struct T_(Stack) *const this) {
 	if(!this || !this->size) return 0;
@@ -349,7 +347,6 @@ static T *T_(StackPeek)(const struct T_(Stack) *const this) {
  bigger.
  @return One value from the stack or null if the stack is empty.
  @order \Theta(1)
- @fixme Untested.
  @allow */
 static T *T_(StackPop)(struct T_(Stack) *const this) {
 	if(!this || !this->size) return 0;
@@ -359,7 +356,6 @@ static T *T_(StackPop)(struct T_(Stack) *const this) {
 /** Gets an index given an element. If the element is not part of the {Stack},
  behaviour is undefined.
  @order \Theta(1)
- @fixme Untested.
  @allow */
 static size_t T_(StackGetIndex)(struct T_(Stack) *const this,
 	const T *const element) {

@@ -165,8 +165,6 @@ return: The current size of the stack.
 
 order: \Theta(1)
 
-fixme: Untested.
-
 
 
 ### <T>StackGetElement ###
@@ -199,8 +197,6 @@ return: The last value to be added or null if the stack is empty. The
 
 order: \Theta(1)
 
-fixme: Untested.
-
 
 
 ### <T>StackPop ###
@@ -214,8 +210,6 @@ return: One value from the stack or null if the stack is empty.
 
 order: \Theta(1)
 
-fixme: Untested.
-
 
 
 ### <T>StackGetIndex ###
@@ -227,8 +221,6 @@ Gets an index given an element. If the element is not part of the _Stack_,
  behaviour is undefined.
 
 order: \Theta(1)
-
-fixme: Untested.
 
 
 
