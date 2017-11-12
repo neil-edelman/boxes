@@ -522,11 +522,9 @@ static int T_(PoolRemove)(struct T_(Pool) *const this, T *const data) {
 	size_t e;
 	if(!this || !data) return 0;
 	elem = (struct PRIVATE_T_(Element) *)(void *)data;
-	if(elem < this->array
-		|| this->array + this->size <= elem
-		|| elem->prev != pool_not_part)
-		return this->error = POOL_OUT_OF_BOUNDS, 0;
 	e = elem - this->array;
+	if(elem < this->array || e >= this->size || elem->prev != pool_not_part)
+		return this->error = POOL_OUT_OF_BOUNDS, 0;
 	PRIVATE_T_(enqueue_removed)(this, e);
 	if(e >= this->size - 1) PRIVATE_T_(trim_removed)(this);
 	PRIVATE_T_(debug)(this, "Remove", "removing %lu.\n", (unsigned long)e);
