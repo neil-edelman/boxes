@@ -225,6 +225,12 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 	const &lt;T&gt;StackMigrateElement handler, const struct Migrate *const migrate</td>
 </tr>
 <tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;MigratePointer">&lt;T&gt;MigratePointer</a></td>
+	<td>T **const node_ptr,
+	const struct Migrate *const migrate</td>
+</tr>
+<tr>
 	<td>static const char *</td>
 	<td><a href = "#&lt;T&gt;StackToString">&lt;T&gt;StackToString</a></td>
 	<td>const struct &lt;T&gt;Stack *const this</td>
@@ -439,6 +445,23 @@ of the other datatype.
  <em>migrate</em> parameter.</dd>
 	<dt>order</dt>
 	<dd>O(<em>greatest size</em>)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;MigratePointer"><!-- --></a>
+<h3>&lt;T&gt;MigratePointer</h3>
+<pre>static void <b>&lt;T&gt;MigratePointer</b> (T **const node_ptr,
+	const struct Migrate *const migrate)</pre>
+<p>
+Use this inside the function that is passed to the (generally other's)
+migrate function. Allows pointers to the pool to be updated. It doesn't affect
+pointers not in the <em>realloc</em>ed region.
+</p>
+<dl>
+	<dt>order</dt>
+	<dd>O(1)</dd>
 	<dt>fixme</dt>
 	<dd>Untested.</dd>
 </dl>

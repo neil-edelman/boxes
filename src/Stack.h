@@ -438,6 +438,22 @@ static void T_(StackMigrateEach)(struct T_(Stack) *const this,
 	}
 }
 
+/** Use this inside the function that is passed to the (generally other's)
+ migrate function. Allows pointers to the pool to be updated. It doesn't affect
+ pointers not in the {realloc}ed region.
+ @order O(1)
+ @fixme Untested.
+ @allow */
+static void T_(MigratePointer)(T **const node_ptr,
+	const struct Migrate *const migrate) {
+	const void *ptr;
+	if(!node_ptr
+	   || !(ptr = *node_ptr)
+	   || ptr < migrate->begin
+	   || ptr >= migrate->end) return;
+	*(char **)node_ptr += migrate->delta;
+}
+
 #ifdef STACK_TO_STRING /* <-- print */
 
 #ifndef STACK_PRINT_THINGS /* <-- once inside translation unit */
@@ -535,6 +551,7 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(StackClear)(0);
 	T_(StackForEach)(0, 0);
 	T_(StackMigrateEach)(0, 0, 0);
+	T_(MigratePointer)(0, 0);
 #ifdef STACK_TO_STRING
 	T_(StackToString)(0);
 #endif

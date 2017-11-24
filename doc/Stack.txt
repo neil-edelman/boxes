@@ -109,6 +109,8 @@ static void	<T>StackForEach	(struct <T>Stack *const this,
 	const <T>Action action)
 static void	<T>StackMigrateEach	(struct <T>Stack *const this,
 	const <T>StackMigrateElement handler, const struct Migrate *const migrate)
+static void	<T>MigratePointer	(T **const node_ptr,
+	const struct Migrate *const migrate)
 static const char *	<T>StackToString	(const struct <T>Stack *const this)
 
 
@@ -300,6 +302,21 @@ parameter: migrate -- Should only be called in a _Migrate_ function; pass the
  _migrate_ parameter.
 
 order: O(_greatest size_)
+
+fixme: Untested.
+
+
+
+### <T>MigratePointer ###
+
+static void <T>MigratePointer(T **const node_ptr,
+	const struct Migrate *const migrate)
+
+Use this inside the function that is passed to the (generally other's)
+ migrate function. Allows pointers to the pool to be updated. It doesn't affect
+ pointers not in the _realloc_ed region.
+
+order: O(1)
 
 fixme: Untested.
 
