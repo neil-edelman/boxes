@@ -59,6 +59,9 @@ for convenience when including multiple <em>&lt;T&gt;Stack</em> types in the sam
 	<dt>parameter: STACK_TYPE</dt>
 	<dd>The type associated with <em>&lt;T&gt;</em>. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.</dd>
+	<dt>parameter: STACK_MIGRATE</dt>
+	<dd>If set, the constructor has two extra arguments that allow it to be part of a
+ larger data structure without referencing the <em>&lt;T&gt;Stack</em>.</dd>
 	<dt>parameter: STACK_TO_STRING</dt>
 	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
  <a href = "#&lt;T&gt;StackToString">&lt;T&gt;StackToString</a>.</dd>
@@ -74,7 +77,7 @@ for convenience when including multiple <em>&lt;T&gt;Stack</em> types in the sam
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>2017-11 Forked from Pool.</dd>
+	<dd>2017-11 Added STACK_MIGRATE.</dd>
 	<dt>since</dt>
 	<dd>2017-11 Forked from Pool.</dd>
 </dl>
@@ -159,6 +162,11 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;Stack_">&lt;T&gt;Stack_</a></td>
 	<td>struct &lt;T&gt;Stack **const thisp</td>
+</tr>
+<tr>
+	<td>static struct &lt;T&gt;Stack *</td>
+	<td><a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a></td>
+	<td>const Migrate migrate, void *const parent</td>
 </tr>
 <tr>
 	<td>static struct &lt;T&gt;Stack *</td>
@@ -258,6 +266,25 @@ accessed anymore.
 
 <div><a name = "&lt;T&gt;Stack"><!-- --></a>
 <h3>&lt;T&gt;Stack</h3>
+<pre>static struct &lt;T&gt;Stack * <b>&lt;T&gt;Stack</b> (const Migrate migrate, void *const parent)</pre>
+<p>
+Constructs an empty <em>Stack</em> with capacity Fibonacci6, which is 8. This
+is the constructor if STACK_MIGRATE is specifed.
+</p>
+<dl>
+	<dt>parameter: migrate, parent</dt>
+	<dd>Can be both null.</dd>
+	<dt>return</dt>
+	<dd>A new <em>Stack</em>.</dd>
+	<dt>throws: STACK_PARAMETER, STACK_ERRNO</dt>
+	<dd>Use <em>StackError(0)</em> to get the error.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;Stack"><!-- --></a>
+<h3>&lt;T&gt;Stack</h3>
 <pre>static struct &lt;T&gt;Stack * <b>&lt;T&gt;Stack</b> (void)</pre>
 <p>
 Constructs an empty <em>Stack</em> with capacity Fibonacci6, which is 8.
@@ -265,7 +292,7 @@ Constructs an empty <em>Stack</em> with capacity Fibonacci6, which is 8.
 <dl>
 	<dt>return</dt>
 	<dd>A new <em>Stack</em>.</dd>
-	<dt>throws: STACK_PARAMETER, STACK_ERRNO</dt>
+	<dt>throws: STACK_ERRNO</dt>
 	<dd>Use <em>StackError(0)</em> to get the error.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>

@@ -17,6 +17,10 @@
  The type associated with {<T>}. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
+ @param STACK_MIGRATE
+ If set, the constructor has two extra arguments that allow it to be part of a
+ larger data structure without referencing the {<T>Stack}.
+
  @param STACK_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>StackToString}.
@@ -33,7 +37,7 @@
  @title		Stack.h
  @std		C89/90
  @author	Neil
- @version	2017-11 Forked from Pool.
+ @version	2017-11 Added STACK_MIGRATE.
  @since		2017-11 Forked from Pool. */
 
 
@@ -205,6 +209,10 @@ struct T_(Stack) {
 	size_t size;
 	enum StackError error; /* errors defined by enum StackError */
 	int errno_copy; /* copy of errno when when error == E_ERRNO */
+#ifdef STACK_MIGRATE
+	Migrate migrate; /* called to update on resizing */
+	void *parent; /* migrate parameter */
+#endif
 };
 
 
@@ -248,6 +256,20 @@ static int PRIVATE_T_(reserve)(struct T_(Stack) *const this,
 	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
+#ifdef STACK_MIGRATE
+	/* Migrate parent class. Violates pedantic strict-ANSI? Subverts
+	 type-safety? However, it is so convenient for the caller not to have to
+	 worry about moving memory blocks. */
+	if(this->array != array && this->migrate) {
+		struct Migrate migrate;
+		migrate.begin = this->array;
+		migrate.end   = (const char *)this->array + this->size * sizeof *array;
+		migrate.delta = (const char *)array - (const char *)this->array;
+		PRIVATE_T_(debug)(this, "reserve", "calling migrate.\n");
+		assert(this->parent);
+		this->migrate(this->parent, &migrate);
+	}
+#endif
 	this->array = array;
 	this->capacity[0] = c0;
 	this->capacity[1] = c1;
@@ -269,12 +291,8 @@ static void T_(Stack_)(struct T_(Stack) **const thisp) {
 	*thisp = 0;
 }
 
-/** Constructs an empty {Stack} with capacity Fibonacci6, which is 8.
- @return A new {Stack}.
- @throws STACK_PARAMETER, STACK_ERRNO: Use {StackError(0)} to get the error.
- @order \Theta(1)
- @allow */
-static struct T_(Stack) *T_(Stack)(void) {
+/** Private constructor called from either \see{<T>Stack}. */
+static struct T_(Stack) *PRIVATE_T_(stack)(void) {
 	struct T_(Stack) *this;
 	if(!(this = malloc(sizeof *this))) {
 		stack_global_error = STACK_ERRNO;
@@ -296,6 +314,37 @@ static struct T_(Stack) *T_(Stack)(void) {
 	PRIVATE_T_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
 	return this;
 }
+
+#ifdef STACK_MIGRATE /* <-- migrate */
+/** Constructs an empty {Stack} with capacity Fibonacci6, which is 8. This
+ is the constructor if STACK_MIGRATE is specifed.
+ @param migrate, parent: Can be both null.
+ @return A new {Stack}.
+ @throws STACK_PARAMETER, STACK_ERRNO: Use {StackError(0)} to get the error.
+ @order \Theta(1)
+ @allow */
+static struct T_(Stack) *T_(Stack)(const Migrate migrate, void *const parent) {
+	struct T_(Pool) *this;
+	if(!migrate ^ !parent) {
+		pool_global_error = POOL_PARAMETER;
+		pool_global_errno_copy = 0;
+		return 0;
+	}
+	if(!(this = PRIVATE_T_(stack)())) return 0;
+	this->migrate = migrate;
+	this->parent = parent;
+	return this;
+}
+#else /* migrate --><-- !migrate */
+/** Constructs an empty {Stack} with capacity Fibonacci6, which is 8.
+ @return A new {Stack}.
+ @throws STACK_ERRNO: Use {StackError(0)} to get the error.
+ @order \Theta(1)
+ @allow */
+static struct T_(Stack) *T_(Stack)(void) {
+	return PRIVATE_T_(stack)();
+}
+#endif /* migrate --> */
 
 /** See what's the error if something goes wrong. Resets the error.
  @return The last error string.

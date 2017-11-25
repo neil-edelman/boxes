@@ -17,6 +17,9 @@ parameter: STACK_NAME -- This literally becomes _<T>_. As it's used in function 
 parameter: STACK_TYPE -- The type associated with _<T>_. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
+parameter: STACK_MIGRATE -- If set, the constructor has two extra arguments that allow it to be part of a
+ larger data structure without referencing the _<T>Stack_.
+
 parameter: STACK_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
  `<T>StackToString`.
 
@@ -31,7 +34,7 @@ minimum standard: C89/90
 
 author: Neil
 
-version: 2017-11 Forked from Pool.
+version: 2017-11 Added STACK_MIGRATE.
 
 since: 2017-11 Forked from Pool.
 
@@ -93,6 +96,7 @@ The stack. To instantiate, see `<T>Stack`.
 
 _Return Type_	_Function Name_	_Argument List_
 static void	<T>Stack_	(struct <T>Stack **const thisp)
+static struct <T>Stack *	<T>Stack	(const Migrate migrate, void *const parent)
 static struct <T>Stack *	<T>Stack	(void)
 static const char *	<T>StackGetError	(struct <T>Stack *const this)
 static size_t	<T>StackGetSize	(const struct <T>Stack *const this)
@@ -133,13 +137,30 @@ order: \Theta(1)
 
 ### <T>Stack ###
 
+static struct <T>Stack * <T>Stack(const Migrate migrate, void *const parent)
+
+Constructs an empty _Stack_ with capacity Fibonacci6, which is 8. This
+ is the constructor if STACK_MIGRATE is specifed.
+
+parameter: migrate, parent -- Can be both null.
+
+return: A new _Stack_.
+
+throws: STACK_PARAMETER, STACK_ERRNO -- Use _StackError(0)_ to get the error.
+
+order: \Theta(1)
+
+
+
+### <T>Stack ###
+
 static struct <T>Stack * <T>Stack(void)
 
 Constructs an empty _Stack_ with capacity Fibonacci6, which is 8.
 
 return: A new _Stack_.
 
-throws: STACK_PARAMETER, STACK_ERRNO -- Use _StackError(0)_ to get the error.
+throws: STACK_ERRNO -- Use _StackError(0)_ to get the error.
 
 order: \Theta(1)
 
