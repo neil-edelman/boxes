@@ -322,9 +322,10 @@ static struct T_(Stack) *PRIVATE_T_(stack)(void) {
  @return A new {Stack}.
  @throws STACK_PARAMETER, STACK_ERRNO: Use {StackError(0)} to get the error.
  @order \Theta(1)
+ @fixme Untested.
  @allow */
 static struct T_(Stack) *T_(Stack)(const Migrate migrate, void *const parent) {
-	struct T_(Pool) *this;
+	struct T_(Stack) *this;
 	if(!migrate ^ !parent) {
 		pool_global_error = POOL_PARAMETER;
 		pool_global_errno_copy = 0;

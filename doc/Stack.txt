@@ -150,6 +150,8 @@ throws: STACK_PARAMETER, STACK_ERRNO -- Use _StackError(0)_ to get the error.
 
 order: \Theta(1)
 
+fixme: Untested.
+
 
 
 ### <T>Stack ###
