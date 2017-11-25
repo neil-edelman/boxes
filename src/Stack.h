@@ -589,7 +589,11 @@ static void PRIVATE_T_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PRIVATE_T_(unused_set)(void) {
 	T_(Stack_)(0);
+#ifdef STACK_MIGRATE
+	T_(Stack)(0, 0);
+#else
 	T_(Stack)();
+#endif	
 	T_(StackGetError)(0);
 	T_(StackGetSize)(0);
 	T_(StackGetElement)(0, 0);
