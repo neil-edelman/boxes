@@ -464,7 +464,7 @@ static void T_(StackForEach)(struct T_(Stack) *const this,
 	size_t i = 0;
 	if(!this) return;
 	if(!action) { this->error = STACK_PARAMETER; return; }
-	while(i < this->size) action(this->array + i);
+	while(i < this->size) action(this->array + i++);
 }
 
 /** Use when the stack has pointers to another stack in the {Migrate} function
