@@ -6,11 +6,11 @@
  _<T>Pool_ is a dynamic array that stores unordered _<T>_, which must be set
  using _POOL_TYPE_. Removing an element is done lazily through a linked-list
  internal to the pool; as such, indices will remain the same throughout the
- lifetime of the data. You cannot shrink the size of this data type, only cause
- it to grow. Resizing incurs amortised cost, done though a Fibonacci sequence.
- _<T>Pool_ is not synchronised. The preprocessor macros are all undefined at
- the end of the file for convenience when including multiple pool types in the
- same file.
+ lifetime of the data. You cannot shrink the capacity of this data type, only
+ cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
+ sequence. _<T>Pool_ is not synchronised. The preprocessor macros are all
+ undefined at the end of the file for convenience when including multiple pool
+ types in the same file.
 
 parameter: POOL_NAME -- This literally becomes _<T>_. As it's used in function names, this should
  comply with naming rules and be unique; required.
@@ -103,6 +103,7 @@ static struct <T>Pool *	<T>Pool	(const Migrate migrate, void *const parent)
 static const char *	<T>PoolGetError	(struct <T>Pool *const this)
 static T *	<T>PoolElement	(const struct <T>Pool *const this)
 static int	<T>PoolIsElement	(struct <T>Pool *const this, const size_t idx)
+static int	<T>PoolIsValid	(const T *const data)
 static T *	<T>PoolGetElement	(struct <T>Pool *const this, const size_t idx)
 static size_t	<T>PoolGetIndex	(struct <T>Pool *const this,
 	const T *const element)
@@ -113,7 +114,7 @@ static int	<T>PoolRemove	(struct <T>Pool *const this, T *const data)
 static void	<T>PoolClear	(struct <T>Pool *const this)
 static void	<T>PoolMigrateEach	(struct <T>Pool *const this,
 	const <T>PoolMigrateElement handler, const struct Migrate *const migrate)
-static void	<T>PoolMigratePointer	(T **const node_ptr,
+static void	<T>MigratePointer	(T **const node_ptr,
 	const struct Migrate *const migrate)
 static const char *	<T>PoolToString	(const struct <T>Pool *const this)
 
@@ -125,7 +126,7 @@ static const char *	<T>PoolToString	(const struct <T>Pool *const this)
 
 static void <T>Pool_(struct <T>Pool **const thisp)
 
-Destructor for Pool. Make sure that the pool's contents will not be
+Destructor for _Pool_. Make sure that the pool's contents will not be
  accessed anymore.
 
 parameter: thisp -- A reference to the object that is to be deleted; it will be pool
@@ -188,7 +189,20 @@ fixme: Untested.
 
 static int <T>PoolIsElement(struct <T>Pool *const this, const size_t idx)
 
-Is _idx_ a valid index for _this_.
+Is _idx_ a valid index for _this_?
+
+order: \Theta(1)
+
+
+
+### <T>PoolIsValid ###
+
+static int <T>PoolIsValid(const T *const data)
+
+Is _data_ still a valid element? Use when you have a pointer to an element,
+ but you're not sure if it's been deleted. One can not use it on a _realloc_ed
+ or not part of a _Pool_ pointer. If you delete and add another one,
+ _<T>_PoolIsValid may return true.
 
 order: \Theta(1)
 
@@ -308,14 +322,14 @@ fixme: Untested.
 
 
 
-### <T>PoolMigratePointer ###
+### <T>MigratePointer ###
 
-static void <T>PoolMigratePointer(T **const node_ptr,
+static void <T>MigratePointer(T **const node_ptr,
 	const struct Migrate *const migrate)
 
-Use this inside the function that is passed to `<T>PoolMigrateEach`.
- Allows pointers to the pool to be updated. It doesn't affect pointers not in
- the _realloc_ed region.
+Use this inside the function that is passed to the (generally other's)
+ migrate function. Allows pointers to the pool to be updated. It doesn't affect
+ pointers not in the _realloc_ed region.
 
 order: O(1)
 

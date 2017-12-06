@@ -4,11 +4,11 @@
  {<T>Pool} is a dynamic array that stores unordered {<T>}, which must be set
  using {POOL_TYPE}. Removing an element is done lazily through a linked-list
  internal to the pool; as such, indices will remain the same throughout the
- lifetime of the data. You cannot shrink the size of this data type, only cause
- it to grow. Resizing incurs amortised cost, done though a Fibonacci sequence.
- {<T>Pool} is not synchronised. The preprocessor macros are all undefined at
- the end of the file for convenience when including multiple pool types in the
- same file.
+ lifetime of the data. You cannot shrink the capacity of this data type, only
+ cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
+ sequence. {<T>Pool} is not synchronised. The preprocessor macros are all
+ undefined at the end of the file for convenience when including multiple pool
+ types in the same file.
 
  @param POOL_NAME
  This literally becomes {<T>}. As it's used in function names, this should
@@ -278,6 +278,7 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 		migrate.end   = (const char *)this->array + this->size * sizeof *array;
 		migrate.delta = (const char *)array - (const char *)this->array;
 		PRIVATE_T_(debug)(this, "reserve", "calling migrate.\n");
+		assert(this->parent);
 		this->migrate(this->parent, &migrate);
 	}
 	this->array = array;
@@ -354,7 +355,7 @@ static void PRIVATE_T_(trim_removed)(struct T_(Pool) *const this) {
 	}
 }
 
-/** Destructor for Pool. Make sure that the pool's contents will not be
+/** Destructor for {Pool}. Make sure that the pool's contents will not be
  accessed anymore.
  @param thisp: A reference to the object that is to be deleted; it will be pool
  to null. If it is already null or it points to null, doesn't do anything.
@@ -385,7 +386,7 @@ static struct T_(Pool) *T_(Pool)(const Migrate migrate, void *const parent) {
 		pool_global_errno_copy = 0;
 		return 0;
 	}
-	if(!(this = malloc(sizeof(struct T_(Pool))))) {
+	if(!(this = malloc(sizeof *this))) {
 		pool_global_error = POOL_ERRNO;
 		pool_global_errno_copy = errno;
 		return 0;
@@ -424,7 +425,7 @@ static const char *T_(PoolGetError)(struct T_(Pool) *const this) {
 	return str;
 }
 
-/** @return	One value from the pool or null if the pool is empty. It selects
+/** @return One value from the pool or null if the pool is empty. It selects
  the position in the memory which is farthest from the start of the buffer
  deterministically. Generally, you can't select which element you want, but if
  the pool has been treated like a stack, this is peek.
@@ -436,7 +437,7 @@ static T *T_(PoolElement)(const struct T_(Pool) *const this) {
 	return &this->array[this->size - 1].data;
 }
 
-/** Is {idx} a valid index for {this}.
+/** Is {idx} a valid index for {this}?
  @order \Theta(1)
  @allow */
 static int T_(PoolIsElement)(struct T_(Pool) *const this, const size_t idx) {
@@ -445,6 +446,19 @@ static int T_(PoolIsElement)(struct T_(Pool) *const this, const size_t idx) {
 	if(idx >= this->size
 		|| (elem = this->array + idx, elem->prev != pool_not_part))
 		return 0;
+	return 1;
+}
+
+/** Is {data} still a valid element? Use when you have a pointer to an element,
+ but you're not sure if it's been deleted. One can not use it on a {realloc}ed
+ or not part of a {Pool} pointer. If you delete and add another one,
+ {<T>}PoolIsValid may return true.
+ @order \Theta(1)
+ @allow */
+static int T_(PoolIsValid)(const T *const data) {
+	const struct PRIVATE_T_(Element) *const elem
+		= (struct PRIVATE_T_(Element) *)(void *)data;
+	if(!elem || elem->prev != pool_not_part) return 0;
 	return 1;
 }
 
@@ -563,13 +577,13 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
 	}
 }
 
-/** Use this inside the function that is passed to \see{<T>PoolMigrateEach}.
- Allows pointers to the pool to be updated. It doesn't affect pointers not in
- the {realloc}ed region.
+/** Use this inside the function that is passed to the (generally other's)
+ migrate function. Allows pointers to the pool to be updated. It doesn't affect
+ pointers not in the {realloc}ed region.
  @order O(1)
  @fixme Untested.
  @allow */
-static void T_(PoolMigratePointer)(T **const node_ptr,
+static void T_(MigratePointer)(T **const node_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
 	if(!node_ptr
@@ -669,6 +683,7 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(PoolGetError)(0);
 	T_(PoolElement)(0);
 	T_(PoolIsElement)(0, (size_t)0);
+	T_(PoolIsValid)(0);
 	T_(PoolGetElement)(0, (size_t)0);
 	T_(PoolGetIndex)(0, 0);
 	T_(PoolReserve)(0, (size_t)0);
@@ -676,7 +691,7 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(PoolRemove)(0, 0);
 	T_(PoolClear)(0);
 	T_(PoolMigrateEach)(0, 0, 0);
-	T_(PoolMigratePointer)(0, 0);
+	T_(MigratePointer)(0, 0);
 #ifdef POOL_TO_STRING
 	T_(PoolToString)(0);
 #endif

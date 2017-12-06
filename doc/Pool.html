@@ -47,11 +47,11 @@ see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opens
 <em>&lt;T&gt;Pool</em> is a dynamic array that stores unordered <em>&lt;T&gt;</em>, which must be set
 using <em>POOL_TYPE</em>. Removing an element is done lazily through a linked-list
 internal to the pool; as such, indices will remain the same throughout the
-lifetime of the data. You cannot shrink the size of this data type, only cause
-it to grow. Resizing incurs amortised cost, done though a Fibonacci sequence.
-<em>&lt;T&gt;Pool</em> is not synchronised. The preprocessor macros are all undefined at
-the end of the file for convenience when including multiple pool types in the
-same file.
+lifetime of the data. You cannot shrink the capacity of this data type, only
+cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
+sequence. <em>&lt;T&gt;Pool</em> is not synchronised. The preprocessor macros are all
+undefined at the end of the file for convenience when including multiple pool
+types in the same file.
 </p>
 <dl>
 	<dt>parameter: POOL_NAME</dt>
@@ -187,6 +187,11 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 	<td>struct &lt;T&gt;Pool *const this, const size_t idx</td>
 </tr>
 <tr>
+	<td>static int</td>
+	<td><a href = "#&lt;T&gt;PoolIsValid">&lt;T&gt;PoolIsValid</a></td>
+	<td>const T *const data</td>
+</tr>
+<tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;PoolGetElement">&lt;T&gt;PoolGetElement</a></td>
 	<td>struct &lt;T&gt;Pool *const this, const size_t idx</td>
@@ -226,7 +231,7 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;PoolMigratePointer">&lt;T&gt;PoolMigratePointer</a></td>
+	<td><a href = "#&lt;T&gt;MigratePointer">&lt;T&gt;MigratePointer</a></td>
 	<td>T **const node_ptr,
 	const struct Migrate *const migrate</td>
 </tr>
@@ -244,7 +249,7 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 <h3>&lt;T&gt;Pool_</h3>
 <pre>static void <b>&lt;T&gt;Pool_</b> (struct &lt;T&gt;Pool **const thisp)</pre>
 <p>
-Destructor for Pool. Make sure that the pool's contents will not be
+Destructor for <em>Pool</em>. Make sure that the pool's contents will not be
 accessed anymore.
 </p>
 <dl>
@@ -312,7 +317,22 @@ See what's the error if something goes wrong. Resets the error.
 <h3>&lt;T&gt;PoolIsElement</h3>
 <pre>static int <b>&lt;T&gt;PoolIsElement</b> (struct &lt;T&gt;Pool *const this, const size_t idx)</pre>
 <p>
-Is <em>idx</em> a valid index for <em>this</em>.
+Is <em>idx</em> a valid index for <em>this</em>?
+</p>
+<dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;PoolIsValid"><!-- --></a>
+<h3>&lt;T&gt;PoolIsValid</h3>
+<pre>static int <b>&lt;T&gt;PoolIsValid</b> (const T *const data)</pre>
+<p>
+Is <em>data</em> still a valid element? Use when you have a pointer to an element,
+but you're not sure if it's been deleted. One can not use it on a <em>realloc</em>ed
+or not part of a <em>Pool</em> pointer. If you delete and add another one,
+<em>&lt;T&gt;</em>PoolIsValid may return true.
 </p>
 <dl>
 	<dt>order</dt>
@@ -448,14 +468,14 @@ the other pool (passed when creating the other pool.)
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;PoolMigratePointer"><!-- --></a>
-<h3>&lt;T&gt;PoolMigratePointer</h3>
-<pre>static void <b>&lt;T&gt;PoolMigratePointer</b> (T **const node_ptr,
+<div><a name = "&lt;T&gt;MigratePointer"><!-- --></a>
+<h3>&lt;T&gt;MigratePointer</h3>
+<pre>static void <b>&lt;T&gt;MigratePointer</b> (T **const node_ptr,
 	const struct Migrate *const migrate)</pre>
 <p>
-Use this inside the function that is passed to <a href = "#&lt;T&gt;PoolMigrateEach">&lt;T&gt;PoolMigrateEach</a>.
-Allows pointers to the pool to be updated. It doesn't affect pointers not in
-the <em>realloc</em>ed region.
+Use this inside the function that is passed to the (generally other's)
+migrate function. Allows pointers to the pool to be updated. It doesn't affect
+pointers not in the <em>realloc</em>ed region.
 </p>
 <dl>
 	<dt>order</dt>
