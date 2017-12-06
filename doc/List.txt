@@ -158,9 +158,9 @@ typedef T *(*<T>UnaryOperator)(T *const)
 Takes _<T>_ and returns _<T>_.
 
 
-### typedef int (*<T>Predicate)(T *const) ###
+### typedef int (*<T>Predicate)(const T *const) ###
 
-typedef int (*<T>Predicate)(T *const)
+typedef int (*<T>Predicate)(const T *const)
 
 Takes _<T>_, returns (non-zero) true or (zero) false.
 

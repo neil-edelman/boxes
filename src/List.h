@@ -352,7 +352,7 @@ typedef void (*T_(TriListAction))(struct T_(List) *const,
 typedef T *(*T_(UnaryOperator))(T *const);
 
 /** Takes {<T>}, returns (non-zero) true or (zero) false. */
-typedef int (*T_(Predicate))(T *const);
+typedef int (*T_(Predicate))(const T *const);
 
 /** Takes {<T>} and {void *}, returns (non-zero) true or (zero) false. */
 typedef int (*T_(BiPredicate))(T *const, void *const);

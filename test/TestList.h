@@ -315,7 +315,7 @@ static int PRIVATE_T_U_(in, array)(struct T_(List) *const this,
 
 /** Returns true. Used in \see{PRIVATE_T_U_(test, basic)}.
  @implements <T>Predicate */
-static int PRIVATE_T_U_(true, index)(T *const this) {
+static int PRIVATE_T_U_(true, index)(const T *const this) {
 	UNUSED(this);
 	return 1;
 }
