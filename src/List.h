@@ -919,6 +919,23 @@ static void PRIVATE_T_U_(cycle, crash)(const struct T_(List) *const this) {
 #endif
 }
 
+/** Goes though all {this} U and makes sure it contains {count} element {data}
+ when in debug mode. */
+static void PRIVATE_T_U_(contains, count)(const struct T_(List) *const this,
+	const struct T_(ListNode) *const elem, const size_t count) {
+#ifdef LIST_DEBUG
+	struct T_(ListNode) *turtle;
+	size_t c = 0;
+	assert(this && elem);
+	assert(!this->U_(first) == !this->U_(last));
+	for(turtle = this->U_(first); turtle; turtle = turtle->U_(next))
+		if(turtle == elem) c++;
+	assert(c == count);
+#else
+	UNUSED(this), UNUSED(elem), UNUSED(count);
+#endif
+}
+
 /** Private: add to {this.last} in {<U>}.
  @implements <T>ListNodeAction */
 static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
@@ -958,6 +975,7 @@ static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this && node);
+	PRIVATE_T_U_(contains, count)(this, node, 1);
 	if(node->U_(prev)) {
 		node->U_(prev)->U_(next) = node->U_(next);
 	} else {
