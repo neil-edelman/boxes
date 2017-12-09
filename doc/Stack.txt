@@ -128,8 +128,8 @@ static void <T>Stack_(struct <T>Stack **const thisp)
 Destructor for _Stack_. Make sure that the stack's contents will not be
  accessed anymore.
 
-parameter: thisp -- A reference to the object that is to be deleted; it will be stack
- to null. If it is already null or it points to null, doesn't do anything.
+parameter: thisp -- A reference to the object that is to be deleted; it will be
+ stack to null. If it is already null or it points to null, doesn't do anything.
 
 order: \Theta(1)
 
@@ -336,7 +336,7 @@ static void <T>MigratePointer(T **const node_ptr,
 	const struct Migrate *const migrate)
 
 Use this inside the function that is passed to the (generally other's)
- migrate function. Allows pointers to the pool to be updated. It doesn't affect
+ migrate function. Allows pointers to the stack to be updated. It doesn't affect
  pointers not in the _realloc_ed region.
 
 order: O(1)

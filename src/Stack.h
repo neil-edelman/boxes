@@ -121,7 +121,7 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(STACK_NAME, thing)
-#define PRIVATE_T_(thing) PCAT(pool, PCAT(STACK_NAME, thing))
+#define PRIVATE_T_(thing) PCAT(stack, PCAT(STACK_NAME, thing))
 #define T_NAME QUOTE(STACK_NAME)
 
 /* Troubles with this line? check to ensure that STACK_TYPE is a valid type,
@@ -278,8 +278,8 @@ static int PRIVATE_T_(reserve)(struct T_(Stack) *const this,
 
 /** Destructor for {Stack}. Make sure that the stack's contents will not be
  accessed anymore.
- @param thisp: A reference to the object that is to be deleted; it will be stack
- to null. If it is already null or it points to null, doesn't do anything.
+ @param thisp: A reference to the object that is to be deleted; it will be
+ stack to null. If it is already null or it points to null, doesn't do anything.
  @order \Theta(1)
  @allow */
 static void T_(Stack_)(struct T_(Stack) **const thisp) {
@@ -327,8 +327,8 @@ static struct T_(Stack) *PRIVATE_T_(stack)(void) {
 static struct T_(Stack) *T_(Stack)(const Migrate migrate, void *const parent) {
 	struct T_(Stack) *this;
 	if(!migrate ^ !parent) {
-		pool_global_error = POOL_PARAMETER;
-		pool_global_errno_copy = 0;
+		stack_global_error = STACK_PARAMETER;
+		stack_global_errno_copy = 0;
 		return 0;
 	}
 	if(!(this = PRIVATE_T_(stack)())) return 0;
@@ -489,7 +489,7 @@ static void T_(StackMigrateEach)(struct T_(Stack) *const this,
 }
 
 /** Use this inside the function that is passed to the (generally other's)
- migrate function. Allows pointers to the pool to be updated. It doesn't affect
+ migrate function. Allows pointers to the stack to be updated. It doesn't affect
  pointers not in the {realloc}ed region.
  @order O(1)
  @fixme Untested.

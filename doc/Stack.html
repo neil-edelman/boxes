@@ -257,8 +257,8 @@ accessed anymore.
 </p>
 <dl>
 	<dt>parameter: thisp</dt>
-	<dd>A reference to the object that is to be deleted; it will be stack
- to null. If it is already null or it points to null, doesn't do anything.</dd>
+	<dd>A reference to the object that is to be deleted; it will be
+ stack to null. If it is already null or it points to null, doesn't do anything.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -485,7 +485,7 @@ of the other datatype.
 	const struct Migrate *const migrate)</pre>
 <p>
 Use this inside the function that is passed to the (generally other's)
-migrate function. Allows pointers to the pool to be updated. It doesn't affect
+migrate function. Allows pointers to the stack to be updated. It doesn't affect
 pointers not in the <em>realloc</em>ed region.
 </p>
 <dl>
