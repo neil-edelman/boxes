@@ -629,6 +629,9 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
 #undef T_NAME
 #undef QUOTE
 #undef QUOTE_
+#ifdef STACK_MIGRATE
+#undef STACK_MIGRATE
+#endif
 #ifdef STACK_TO_STRING
 #undef STACK_TO_STRING
 #endif
