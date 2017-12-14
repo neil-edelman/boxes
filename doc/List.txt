@@ -204,7 +204,7 @@ static void	<T>ListMerge	(struct <T>List *const this,
 static void	<T>ListSort	(struct <T>List *const this)
 static void	<T>ListMigrate	(void *const void_this,
 	const struct Migrate *const migrate)
-static void	<T>ListMigratePointer	(T **const t_ptr,
+static void	<T>MigratePointer	(T **const t_ptr,
 	const struct Migrate *const migrate)
 static void	<T>List<U>MigrateEach	(struct <T>List *const this,
 	const <T>ListMigrateElement handler, const struct Migrate *const migrate)
@@ -376,15 +376,14 @@ fixme: Relies on not-strictly-defined behaviour because pointers are not
 
 
 
-### <T>ListMigratePointer ###
+### <T>MigratePointer ###
 
-static void <T>ListMigratePointer(T **const t_ptr,
+static void <T>MigratePointer(T **const t_ptr,
 	const struct Migrate *const migrate)
 
-Use this inside the function that is passed to `<T>List<U>MigrateEach`.
- Allows _realloc_ custom pointers inside the data to be updated. It doesn't
- affect pointers not in the _realloc_ed region. To update the underlying list,
- see `<T>ListMigrate`. Use to fix reallocated pointers.
+Use this inside the function that is passed to `<T>List<U>MigrateEach`
+ to fix reallocated pointers. It doesn't affect pointers not in the _realloc_ed
+ region. To update the underlying list, see `<T>ListMigrate`.
 
 fixme: Untested.
 

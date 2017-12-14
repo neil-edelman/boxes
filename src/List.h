@@ -743,13 +743,12 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	*(char **)node_ptr += migrate->delta;
 }
 
-/** Use this inside the function that is passed to \see{<T>List<U>MigrateEach}.
- Allows {realloc} custom pointers inside the data to be updated. It doesn't
- affect pointers not in the {realloc}ed region. To update the underlying list,
- see \see{<T>ListMigrate}. Use to fix reallocated pointers.
+/** Use this inside the function that is passed to \see{<T>List<U>MigrateEach}
+ to fix reallocated pointers. It doesn't affect pointers not in the {realloc}ed
+ region. To update the underlying list, see \see{<T>ListMigrate}.
  @fixme Untested.
  @allow */
-static void T_(ListMigratePointer)(T **const t_ptr,
+static void T_(MigratePointer)(T **const t_ptr,
 	const struct Migrate *const migrate) {
 	if(!migrate || !t_ptr || !*t_ptr) return;
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
@@ -775,7 +774,7 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
-	T_(ListMigratePointer)(0, 0);
+	T_(MigratePointer)(0, 0);
 	/*T_(Migrate)(0, 0);*/
 	PRIVATE_T_(unused_coda)();
 }

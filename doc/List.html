@@ -333,7 +333,7 @@ null-terminated output string (the second.)
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;ListMigratePointer">&lt;T&gt;ListMigratePointer</a></td>
+	<td><a href = "#&lt;T&gt;MigratePointer">&lt;T&gt;MigratePointer</a></td>
 	<td>T **const t_ptr,
 	const struct Migrate *const migrate</td>
 </tr>
@@ -595,15 +595,14 @@ anything.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;ListMigratePointer"><!-- --></a>
-<h3>&lt;T&gt;ListMigratePointer</h3>
-<pre>static void <b>&lt;T&gt;ListMigratePointer</b> (T **const t_ptr,
+<div><a name = "&lt;T&gt;MigratePointer"><!-- --></a>
+<h3>&lt;T&gt;MigratePointer</h3>
+<pre>static void <b>&lt;T&gt;MigratePointer</b> (T **const t_ptr,
 	const struct Migrate *const migrate)</pre>
 <p>
-Use this inside the function that is passed to <a href = "#&lt;T&gt;List&lt;U&gt;MigrateEach">&lt;T&gt;List&lt;U&gt;MigrateEach</a>.
-Allows <em>realloc</em> custom pointers inside the data to be updated. It doesn't
-affect pointers not in the <em>realloc</em>ed region. To update the underlying list,
-see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a>. Use to fix reallocated pointers.
+Use this inside the function that is passed to <a href = "#&lt;T&gt;List&lt;U&gt;MigrateEach">&lt;T&gt;List&lt;U&gt;MigrateEach</a>
+to fix reallocated pointers. It doesn't affect pointers not in the <em>realloc</em>ed
+region. To update the underlying list, see <a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a>.
 </p>
 <dl>
 	<dt>fixme</dt>
