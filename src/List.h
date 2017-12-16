@@ -43,10 +43,11 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	1.3; 2017-10 anonymous orders
- @since		1.2; 2017-07 made migrate simpler
-			1.1; 2017-06 split Add into Push and Unshift
-			1.0; 2017-05 separated from List.h
+ @version	2017-12 Type information on backing.
+ @since		2017-10 Anonymous orders.
+			2017-07 Made migrate simpler.
+			2017-06 Split Add into Push and Unshift.
+			2017-05 Separated from backing.
  @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
  {assert} bug on {LIST_TEST}.
  @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
@@ -264,7 +265,9 @@ enum ListOperation {
 	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
 	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
 };
+#endif /* LIST_H */
 
+/* Also left in the same translation unit. */
 #ifndef MIGRATE /* <-- migrate */
 #define MIGRATE
 /** Contains information about a {realloc}. */
@@ -273,12 +276,7 @@ struct Migrate {
 	const void *begin, *end; /* old pointers */
 	ptrdiff_t delta;
 };
-/** Function call on {realloc}. */
-typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate);
 #endif /* migrate --> */
-
-#endif /* LIST_H */
 
 
 
@@ -685,18 +683,15 @@ static void T_(ListSort)(struct T_(List) *const this) {
  {Migrate} parameter, when {this} contains {<T>ListNode} elements from memory
  that switched due to a {realloc}. If {this} or {migrate} is null, doesn't do
  anything.
- @param void_this: A {struct <T>List *const} cast as {void *const} to satisfy
- {Migrate}.
  @param migrate: Should only be called in a {Migrate} function; pass the
  {migrate} parameter.
- @implements Migrate
+ @implements <T>Migrate
  @order \Theta(n)
  @fixme Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
  @allow */
-static void T_(ListMigrate)(void *const void_this,
+static void T_(ListMigrate)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
-	struct T_(List) *const this = void_this;
 	if(!this || !migrate || !migrate->delta) return;
 #ifdef LIST_DEBUG
 	fprintf(stderr, "List<" QUOTE(LIST_NAME)

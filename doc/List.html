@@ -83,11 +83,12 @@ for convenience when including multiple <em>List</em> types in the same file. Ra
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>1.3; 2017-10 anonymous orders</dd>
+	<dd>2017-12 Type information on backing.</dd>
 	<dt>since</dt>
-	<dd>1.2; 2017-07 made migrate simpler
-			1.1; 2017-06 split Add into Push and Unshift
-			1.0; 2017-05 separated from List.h</dd>
+	<dd>2017-10 Anonymous orders.
+			2017-07 Made migrate simpler.
+			2017-06 Split Add into Push and Unshift.
+			2017-05 Separated from backing.</dd>
 	<dt>fixme</dt>
 	<dd><em>GCC</em>: <em>#pragma GCC diagnostic ignored "-Wconversion"</em>; libc 4.2
  <em>assert</em> bug on <em>LIST_TEST</em>.</dd>
@@ -109,19 +110,6 @@ for convenience when including multiple <em>List</em> types in the same file. Ra
 <pre><b>struct Migrate</b></pre>
 <p>
 Contains information about a <em>realloc</em>.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)"><!-- --></a>
-<h3>typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)</h3>
-<pre><b>typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)</b></pre>
-<p>
-Function call on <em>realloc</em>.
 </p>
 <dl>
 </dl>
@@ -328,7 +316,7 @@ null-terminated output string (the second.)
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a></td>
-	<td>void *const void_this,
+	<td>struct &lt;T&gt;List *const this,
 	const struct Migrate *const migrate</td>
 </tr>
 <tr>
@@ -570,7 +558,7 @@ be set.
 
 <div><a name = "&lt;T&gt;ListMigrate"><!-- --></a>
 <h3>&lt;T&gt;ListMigrate</h3>
-<pre>static void <b>&lt;T&gt;ListMigrate</b> (void *const void_this,
+<pre>static void <b>&lt;T&gt;ListMigrate</b> (struct &lt;T&gt;List *const this,
 	const struct Migrate *const migrate)</pre>
 <p>
 Adjusts the pointers internal to the <em>&lt;T&gt;List</em> when supplied with a
@@ -579,14 +567,11 @@ that switched due to a <em>realloc</em>. If <em>this</em> or <em>migrate</em> is
 anything.
 </p>
 <dl>
-	<dt>parameter: void_this</dt>
-	<dd>A <em>struct &lt;T&gt;List *const</em> cast as <em>void *const</em> to satisfy
- <em>Migrate</em>.</dd>
 	<dt>parameter: migrate</dt>
 	<dd>Should only be called in a <em>Migrate</em> function; pass the
  <em>migrate</em> parameter.</dd>
 	<dt>implements</dt>
-	<dd>Migrate</dd>
+	<dd>&lt;T&gt;Migrate</dd>
 	<dt>order</dt>
 	<dd>&Theta;(n)</dd>
 	<dt>fixme</dt>
