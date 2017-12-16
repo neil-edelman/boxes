@@ -18,6 +18,10 @@ parameter: POOL_NAME -- This literally becomes _<T>_. As it's used in function n
 parameter: POOL_TYPE -- The type associated with _<T>_. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
+parameter: POOL_MIGRATE -- Optional type association with _<S>_. If set, the constructor has two extra
+ arguments that allow it to be part of a larger data structure without
+ referencing the _<T>Pool_ directly. Can be _void_ to turn off type checking.
+
 parameter: POOL_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
  `<T>PoolToString`.
 
@@ -32,9 +36,10 @@ minimum standard: C89/90
 
 author: Neil
 
-version: 2017-10 Replaced _PoolIsEmpty_ by _PoolElement_, much more useful.
+version: 2017-12 Introduced POOL_MIGRATE for type-safety.
 
-since: 2017-10 Renamed Pool; made migrate automatic.
+since: 2017-10 Replaced _PoolIsEmpty_ by _PoolElement_, much more useful.
+			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
 			2017-05 Split _List_ from _Pool_; much simpler.
 			2017-01 Almost-redundant functions simplified.
@@ -50,15 +55,6 @@ since: 2017-10 Renamed Pool; made migrate automatic.
 struct Migrate
 
 Contains information about a _realloc_.
-
-
-### typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate) ###
-
-typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)
-
-Function call on _realloc_.
 
 
 ### typedef void (*<T>Action)(T *const element) ###
@@ -86,6 +82,15 @@ Responsible for turning _<T>_ (the first argument) into a 12 _char_
  null-terminated output string (the second.) Used for _POOL_TO_STRING_.
 
 
+### typedef void (*<T>Migrate)(S *const parent,
+	const struct Migrate *const migrate) ###
+
+typedef void (*<T>Migrate)(S *const parent,
+	const struct Migrate *const migrate)
+
+Function call on _realloc_.
+
+
 ### struct <T>Pool ###
 
 struct <T>Pool
@@ -99,7 +104,8 @@ The pool. To instantiate, see `<T>Pool`.
 
 _Return Type_	_Function Name_	_Argument List_
 static void	<T>Pool_	(struct <T>Pool **const thisp)
-static struct <T>Pool *	<T>Pool	(const Migrate migrate, void *const parent)
+static struct <T>Pool *	<T>Pool	(const <T>Migrate migrate, S *const parent)
+static struct <T>Pool *	<T>Pool	(void)
 static const char *	<T>PoolGetError	(struct <T>Pool *const this)
 static T *	<T>PoolElement	(const struct <T>Pool *const this)
 static int	<T>PoolIsElement	(struct <T>Pool *const this, const size_t idx)
@@ -138,7 +144,7 @@ order: \Theta(1)
 
 ### <T>Pool ###
 
-static struct <T>Pool * <T>Pool(const Migrate migrate, void *const parent)
+static struct <T>Pool * <T>Pool(const <T>Migrate migrate, S *const parent)
 
 Constructs an empty _Pool_ with capacity Fibonacci6, which is 8.
 
@@ -151,6 +157,20 @@ parameter: parent -- The parent itself; to have multiple parents, implement an
 return: A new _Pool_ for the polymorphic variable _parent_.
 
 throws: POOL_PARAMETER, POOL_ERRNO -- Use _PoolError(0)_ to get the error.
+
+order: \Theta(1)
+
+
+
+### <T>Pool ###
+
+static struct <T>Pool * <T>Pool(void)
+
+Constructs an empty _Pool_ with capacity Fibonacci6, which is 8.
+
+return: A new _Pool_.
+
+throws: POOL_ERRNO -- Use _<T>PoolError(0)_ to get the error.
 
 order: \Theta(1)
 
@@ -176,8 +196,7 @@ static T * <T>PoolElement(const struct <T>Pool *const this)
 
 return: One value from the pool or null if the pool is empty. It selects
  the position in the memory which is farthest from the start of the buffer
- deterministically. Generally, you can't select which element you want, but if
- the pool has been treated like a stack, this is peek.
+ deterministically.
 
 order: \Theta(1)
 

@@ -24,6 +24,7 @@ struct Sloth {
 };
 #define POOL_NAME Sloth
 #define POOL_TYPE struct Sloth
+#define POOL_MIGRATE struct AnimalList
 #include "../src/Pool.h"
 
 /* An Emu is an Animal. */
@@ -33,6 +34,7 @@ struct Emu {
 };
 #define POOL_NAME Emu
 #define POOL_TYPE struct Emu
+#define POOL_MIGRATE struct AnimalList
 #include "../src/Pool.h"
 
 /* Animals list with backing. */
@@ -144,7 +146,7 @@ struct Sloth *AnimalsSloth(struct Animals *const animals) {
 	}
 	Animal_filler(&sloth->animal.data, &Sloth_vt);
 	sloth->hours_slept = (int)(10.0 * rand() / RAND_MAX) + 4;
-	AnimalListPush(&animals->list, &sloth->animal);
+	AnimalListPush(&animals->list, &sloth->animal.data);
 	return sloth;
 }
 struct Emu *AnimalsEmu(struct Animals *const animals) {
@@ -156,7 +158,7 @@ struct Emu *AnimalsEmu(struct Animals *const animals) {
 	}
 	Animal_filler(&emu->animal.data, &Emu_vt);
 	emu->favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
-	AnimalListPush(&animals->list, &emu->animal);
+	AnimalListPush(&animals->list, &emu->animal.data);
 	return emu;
 }
 /** @implements <Animal, [size_t *]>BiAction */

@@ -4,9 +4,9 @@
  {<T>List} organises doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},)
  of which data of type, {<T>}, must be set using {LIST_TYPE}. The {<T>ListNode}
  storage is the responsibility of the caller; that means it can be nestled in
- multiple structures. Supports one to four different orders in the same type.
- The preprocessor macros are all undefined at the end of the file for
- convenience when including multiple {List} types in the same file. Random
+ multiple polymorphic structures. Supports one to four different orders in the
+ same type. The preprocessor macros are all undefined at the end of the file
+ for convenience when including multiple {List} types in the same file. Random
  {LIST_*} macros should be avoided.
 
  @param LIST_NAME, LIST_TYPE
@@ -264,7 +264,9 @@ enum ListOperation {
 	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
 	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
 };
+#endif /* LIST_H */
 
+/* Also left in the same translation unit. */
 #ifndef MIGRATE /* <-- migrate */
 #define MIGRATE
 /** Contains information about a {realloc}. */
@@ -273,28 +275,13 @@ struct Migrate {
 	const void *begin, *end; /* old pointers */
 	ptrdiff_t delta;
 };
-/** Function call on {realloc}. */
-typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate);
 #endif /* migrate --> */
-
-#endif /* LIST_H */
 
 
 
 /** A single link in the linked-list derived from {<T>}. Storage of this
- structure is the responsibility of the caller. A {<T>ListNode} can be
- reinterpreted (cast) to {<T>} as a single element; that is, {<T>} shall be the
- first element of {<T>ListNode}.
- \${|    <T>ListNode *node;
- |    T *t;
- |    for(t = <T>List<U>GetFirst(list);
- |        t;
- |        t = <T>Node<U>GetNext(node)) {
- |    }} or
- \${|    static void for_all_fn(T *const t) {
- |        struct <T>ListNode *const node = (struct <T>ListNode *)t;
- |    }} */
+ structure is the responsibility of the caller. The {<T>} is stored in the
+ element {data}. */
 struct T_(ListNode);
 struct T_(ListNode) {
 	T data; /* 1st so we can cast without the mess of {container_of} */
@@ -333,6 +320,11 @@ struct T_(List) {
 
 
 
+/** Calls \see{<T>ListMigratePointer}, given to \see{<T>List<U>MigrateEach}, in
+ the handler for the {Migrate}. */
+typedef void (*T_(ListMigrateElement))(T *const element,
+	const struct Migrate *const migrate);
+
 /** Takes {<T>}. */
 typedef void (*T_(Action))(T *const);
 
@@ -345,15 +337,11 @@ typedef void (*T_(ListAction))(struct T_(List) *const);
 /** Takes {<T>List} and {<T>}. */
 typedef void (*T_(ListItemAction))(struct T_(List) *const, T *const);
 
-/** Takes {<T>List} and {<T>ListNode}. */
-typedef void (*T_(ListNodeAction))(struct T_(List) *const,
-	struct T_(ListNode) *const);
-
 /** Takes two {<T>List}. */
 typedef void (*T_(BiListAction))(struct T_(List) *const,
 	struct T_(List) *const);
 
-/** Takes three {<T>List}. */
+/** Takes three {<T>List}s. */
 typedef void (*T_(TriListAction))(struct T_(List) *const,
 	struct T_(List) *const, struct T_(List) *const);
 
@@ -361,7 +349,7 @@ typedef void (*T_(TriListAction))(struct T_(List) *const,
 typedef T *(*T_(UnaryOperator))(T *const);
 
 /** Takes {<T>}, returns (non-zero) true or (zero) false. */
-typedef int (*T_(Predicate))(T *const);
+typedef int (*T_(Predicate))(const T *const);
 
 /** Takes {<T>} and {void *}, returns (non-zero) true or (zero) false. */
 typedef int (*T_(BiPredicate))(T *const, void *const);
@@ -519,33 +507,35 @@ static void T_(ListClear)(struct T_(List) *const this) {
 	PRIVATE_T_(clear)(this);
 }
 
-/** Sets the contents of {node} to add it to {this} at the end, thereby
- initialising the non-{<T>} parts of {<T>ListNode}. Does not do any checks on
- {node} and overwrites the data that was there. Specifically, it invokes
- undefined behaviour to one add {node} to more than one list without removing
- it each time. If either {this} or {node} is null, it does nothing.
+/** Initialises the contents of {node} to add it to the end of {this}. If
+ either {this} or {node} is null, it does nothing.
+ @param node: Must be a {<T>ListNode} with an internal {<T>} not associated to
+ any list; this associates the {<T>ListNode} with the list until it is removed,
+ see \see{<T>ListRemove} or \see{<T>ListClear}.
  @implements <T>ListNodeAction
  @order \Theta(1)
  @allow */
-static void T_(ListPush)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
+static void T_(ListPush)(struct T_(List) *const this, T *const node) {
+	struct T_(ListNode) *const n
+		= (struct T_(ListNode) *const)(void *const)node;
 	if(!this || !node) return;
-	PRIVATE_T_(push)(this, node);
+	PRIVATE_T_(push)(this, n);
 }
 
-/** Sets the contents of {node} to add it to {this} at the beginning, thereby
- initialising the non-{<T>} parts of {<T>ListNode}. Does not do any checks on
- {node} and overwrites the data that was there. Specifically, it invokes
- undefined behaviour to one add {node} to more than one list without removing
- it each time. If either {this} or {node} is null, it does nothing.
+/** Initialises the contents of {node} to add it to the beginning of {this}. If
+ either {this} or {node} is null, it does nothing.
+ @param node: Must be a {<T>ListNode} with an internal {<T>} not associated to
+ any list; this associates the {<T>ListNode} with the list until it is removed,
+ see \see{<T>ListRemove} or \see{<T>ListClear}.
  @implements <T>ListNodeAction
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListUnshift)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
+static void T_(ListUnshift)(struct T_(List) *const this, T *const node) {
+	struct T_(ListNode) *const n
+		= (struct T_(ListNode) *const)(void *const)node;
 	if(!this || !node) return;
-	PRIVATE_T_(unshift)(this, node);
+	PRIVATE_T_(unshift)(this, n);
 }
 
 /** Removes {data} from the {this}. The {data} is now free to add to another
@@ -688,19 +678,19 @@ static void T_(ListSort)(struct T_(List) *const this) {
 #endif /* comp --> */
 
 
-/** Adjusts the pointers when supplied with a {Migrate} parameter, when {this}
- contains {<T>ListNode} elements from memory that switched due to a {realloc}.
- If {this} or {migrate} is null, doesn't do anything.
- @param void_this: A {struct <T>List *const} cast as {void *const}.
- @param migrate: A {struct} coming from a {Migrate} function.
- @implements Migrate
+/** Adjusts the pointers internal to the {<T>List} when supplied with a
+ {Migrate} parameter, when {this} contains {<T>ListNode} elements from memory
+ that switched due to a {realloc}. If {this} or {migrate} is null, doesn't do
+ anything.
+ @param migrate: Should only be called in a {Migrate} function; pass the
+ {migrate} parameter.
+ @implements <T>Migrate
  @order \Theta(n)
  @fixme Relies on not-strictly-defined behaviour because pointers are not
  necessarily contiguous in memory; it should be fine in practice.
  @allow */
-static void T_(ListMigrate)(void *const void_this,
+static void T_(ListMigrate)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
-	struct T_(List) *const this = void_this;
 	if(!this || !migrate || !migrate->delta) return;
 #ifdef LIST_DEBUG
 	fprintf(stderr, "List<" QUOTE(LIST_NAME)
@@ -738,7 +728,7 @@ static void T_(ListMigrate)(void *const void_this,
 	}
 }
 
-/** Private: used in \see{<T>_list_<U>_migrate} and \see{<T>Migrate}.
+/** Private: used in \see{<T>_list_<U>_migrate} and \see{<T>ListMigratePointer}.
  \${ptr \in [begin, end) -> ptr += delta}. */
 static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	struct T_(ListNode) **const node_ptr) {
@@ -747,17 +737,16 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	*(char **)node_ptr += migrate->delta;
 }
 
-/* * This is important, sometimes, but a real pain to describe.
- Call this function with the address of any self-referential node pointers
- contained in the data itself, to make sure that they are updated on {realloc}.
- To update the list, see \see{<T>ListMigrate}.
+/** Use this inside the function that is passed to \see{<T>List<U>MigrateEach}
+ to fix reallocated pointers. It doesn't affect pointers not in the {realloc}ed
+ region. To update the underlying list, see \see{<T>ListMigrate}.
  @fixme Untested.
  @allow */
-/*static void T_(Migrate)(const struct Migrate *const migrate,
-	T **const t_ptr) {
+static void T_(MigratePointer)(T **const t_ptr,
+	const struct Migrate *const migrate) {
 	if(!migrate || !t_ptr || !*t_ptr) return;
 	PRIVATE_T_(migrate)(migrate, (struct T_(ListNode) **const)t_ptr);
-}*/
+}
 
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* need this file if one is going to run tests */
@@ -779,6 +768,7 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
+	T_(MigratePointer)(0, 0);
 	/*T_(Migrate)(0, 0);*/
 	PRIVATE_T_(unused_coda)();
 }
@@ -922,6 +912,23 @@ static void PRIVATE_T_U_(cycle, crash)(const struct T_(List) *const this) {
 #endif
 }
 
+/** Goes though all {this} U and makes sure it contains {count} element {data}
+ when in debug mode. */
+static void PRIVATE_T_U_(contains, count)(const struct T_(List) *const this,
+	const struct T_(ListNode) *const elem, const size_t count) {
+#ifdef LIST_DEBUG
+	struct T_(ListNode) *turtle;
+	size_t c = 0;
+	assert(this && elem);
+	assert(!this->U_(first) == !this->U_(last));
+	for(turtle = this->U_(first); turtle; turtle = turtle->U_(next))
+		if(turtle == elem) c++;
+	assert(c == count);
+#else
+	UNUSED(this), UNUSED(elem), UNUSED(count);
+#endif
+}
+
 /** Private: add to {this.last} in {<U>}.
  @implements <T>ListNodeAction */
 static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
@@ -961,6 +968,7 @@ static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this && node);
+	PRIVATE_T_U_(contains, count)(this, node, 1);
 	if(node->U_(prev)) {
 		node->U_(prev)->U_(next) = node->U_(next);
 	} else {
@@ -1016,6 +1024,25 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
 }
 
 
+
+/** Calls {handler} on every element that is part of the list. This allows
+ {<T>} elements in the list to contain pointers to moving structures due to a
+ {realloc}, using the sub-types's {Migrate} function. If {this}, {handler}, or
+ {migrate} is null, doesn't do anything.
+ @param handler: Has the responsibility of calling \see{<T>ListMigratePointer}
+ on all pointers affected by the {realloc} of this handler.
+ @order \Theta(n)
+ @allow */
+static void T_U_(List, MigrateEach)(struct T_(List) *const this,
+	const T_(ListMigrateElement) handler, const struct Migrate *const migrate) {
+	struct T_(ListNode) *cursor, *next;
+	if(!this || !handler || !migrate) return;
+	for(cursor = this->U_(first); cursor; cursor = next) {
+		next = cursor->U_(next);
+		handler(&cursor->data, migrate);
+	}
+	PRIVATE_T_U_(cycle, crash)(this);
+}
 
 /** @return The next element after {this} in {<U>}. When {this} is the last
  element or when {this} is null, returns null.
@@ -1664,6 +1691,7 @@ static void PRIVATE_T_U_(sub_unused, list)(void) {
 	T_U_(List, BiForEach)(0, 0, 0);
 	T_U_(List, ShortCircuit)(0, 0);
 	T_U_(List, BiShortCircuit)(0, 0, 0);
+	T_U_(List, MigrateEach)(0, 0, 0);
 #ifdef LIST_TO_STRING /* <-- string */
 	T_U_(List, ToString)(0);
 #endif /* string --> */

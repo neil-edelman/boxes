@@ -18,6 +18,11 @@
  The type associated with {<T>}. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
+ @param POOL_MIGRATE
+ Optional type association with {<S>}. If set, the constructor has two extra
+ arguments that allow it to be part of a larger data structure without
+ referencing the {<T>Pool} directly. Can be {void} to turn off type checking.
+
  @param POOL_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>PoolToString}.
@@ -34,8 +39,9 @@
  @title		Pool.h
  @std		C89/90
  @author	Neil
- @version	2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
- @since		2017-10 Renamed Pool; made migrate automatic.
+ @version	2017-12 Introduced POOL_MIGRATE for type-safety.
+ @since		2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
+			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
 			2017-05 Split {List} from {Pool}; much simpler.
 			2017-01 Almost-redundant functions simplified.
@@ -169,8 +175,7 @@ static int            pool_global_errno_copy;
 
 #endif /* POOL_H --> */
 
-
-
+/* Also left in the same translation unit. */
 #ifndef MIGRATE /* <-- migrate */
 #define MIGRATE
 /** Contains information about a {realloc}. */
@@ -179,10 +184,9 @@ struct Migrate {
 	const void *begin, *end; /* old pointers */
 	ptrdiff_t delta;
 };
-/** Function call on {realloc}. */
-typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate);
 #endif /* migrate --> */
+
+
 
 
 
@@ -205,6 +209,19 @@ static const T_(ToString) PRIVATE_T_(to_string) = (POOL_TO_STRING);
 
 #endif /* string --> */
 
+#ifdef POOL_MIGRATE /* <-- pool migrate */
+
+/* Troubles with this line? check to ensure that POOL_MIGRATE is a valid type,
+ whose definition is placed above {#include "Stack.h"}. */
+typedef POOL_MIGRATE PRIVATE_T_(ParentType);
+#define S PRIVATE_T_(ParentType)
+
+/** Function call on {realloc}. */
+typedef void (*T_(Migrate))(S *const parent,
+	const struct Migrate *const migrate);
+
+#endif /* pool migrate --> */
+
 
 
 /* Pool element. */
@@ -222,8 +239,10 @@ struct T_(Pool) {
 	size_t head, tail; /* removed queue */
 	enum PoolError error; /* errors defined by enum PoolError */
 	int errno_copy; /* copy of errno when when error == E_ERRNO */
-	Migrate migrate; /* called to update on resizing */
-	void *parent; /* migrate parameter */
+#ifdef POOL_MIGRATE
+	T_(Migrate) migrate; /* called to update on resizing */
+	S *parent; /* migrate parameter */
+#endif
 };
 
 
@@ -269,9 +288,8 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
-	/* Migrate parent class. Violates pedantic strict-ANSI? Subverts
-	 type-safety? However, it is so convenient for the caller not to have to
-	 worry about moving memory blocks. */
+#ifdef POOL_MIGRATE /* <-- migrate */
+	/* Migrate parent class. Violates pedantic strict-ANSI? */
 	if(this->array != array && this->migrate) {
 		struct Migrate migrate;
 		migrate.begin = this->array;
@@ -281,6 +299,7 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 		assert(this->parent);
 		this->migrate(this->parent, &migrate);
 	}
+#endif /* migrate --> */
 	this->array = array;
 	this->capacity[0] = c0;
 	this->capacity[1] = c1;
@@ -370,22 +389,9 @@ static void T_(Pool_)(struct T_(Pool) **const thisp) {
 	*thisp = 0;
 }
 
-/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
- @param migrate: The ADT parent's {Migrate} function.
- @param parent: The parent itself; to have multiple parents, implement an
- intermediary {Migrate} function that takes multiple values; required if
- {migrate} is specified.
- @return A new {Pool} for the polymorphic variable {parent}.
- @throws POOL_PARAMETER, POOL_ERRNO: Use {PoolError(0)} to get the error.
- @order \Theta(1)
- @allow */
-static struct T_(Pool) *T_(Pool)(const Migrate migrate, void *const parent) {
+/** Private constructor called from either \see{<T>Pool}. */
+static struct T_(Pool) *PRIVATE_T_(pool)(void) {
 	struct T_(Pool) *this;
-	if(!migrate ^ !parent) {
-		pool_global_error = POOL_PARAMETER;
-		pool_global_errno_copy = 0;
-		return 0;
-	}
 	if(!(this = malloc(sizeof *this))) {
 		pool_global_error = POOL_ERRNO;
 		pool_global_errno_copy = errno;
@@ -398,8 +404,6 @@ static struct T_(Pool) *T_(Pool)(const Migrate migrate, void *const parent) {
 	this->head = this->tail = pool_null;
 	this->error        = POOL_NO_ERROR;
 	this->errno_copy   = 0;
-	this->migrate      = migrate;
-	this->parent       = parent;
 	if(!(this->array = malloc(this->capacity[0] * sizeof *this->array))) {
 		T_(Pool_)(&this);
 		pool_global_error = POOL_ERRNO;
@@ -409,6 +413,39 @@ static struct T_(Pool) *T_(Pool)(const Migrate migrate, void *const parent) {
 	PRIVATE_T_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
 	return this;
 }
+
+#ifdef POOL_MIGRATE /* <-- migrate */
+/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
+ @param migrate: The ADT parent's {Migrate} function.
+ @param parent: The parent itself; to have multiple parents, implement an
+ intermediary {Migrate} function that takes multiple values; required if
+ {migrate} is specified.
+ @return A new {Pool} for the polymorphic variable {parent}.
+ @throws POOL_PARAMETER, POOL_ERRNO: Use {PoolError(0)} to get the error.
+ @order \Theta(1)
+ @allow */
+static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, S *const parent) {
+	struct T_(Pool) *this;
+	if(!migrate ^ !parent) {
+		pool_global_error = POOL_PARAMETER;
+		pool_global_errno_copy = 0;
+		return 0;
+	}
+	if(!(this = PRIVATE_T_(pool)())) return 0;
+	this->migrate      = migrate;
+	this->parent       = parent;
+	return this;
+}
+#else /* migrate --><-- !migrate */
+/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
+ @return A new {Pool}.
+ @throws POOL_ERRNO: Use {<T>PoolError(0)} to get the error.
+ @order \Theta(1)
+ @allow */
+static struct T_(Pool) *T_(Pool)(void) {
+	return PRIVATE_T_(pool)();
+}
+#endif /* migrate --> */
 
 /** See what's the error if something goes wrong. Resets the error.
  @return The last error string.
@@ -427,8 +464,7 @@ static const char *T_(PoolGetError)(struct T_(Pool) *const this) {
 
 /** @return One value from the pool or null if the pool is empty. It selects
  the position in the memory which is farthest from the start of the buffer
- deterministically. Generally, you can't select which element you want, but if
- the pool has been treated like a stack, this is peek.
+ deterministically.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -679,7 +715,11 @@ static void PRIVATE_T_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PRIVATE_T_(unused_set)(void) {
 	T_(Pool_)(0);
+#ifdef POOL_MIGRATE
 	T_(Pool)(0, 0);
+#else
+	T_(Pool)();
+#endif
 	T_(PoolGetError)(0);
 	T_(PoolElement)(0);
 	T_(PoolIsElement)(0, (size_t)0);

@@ -60,6 +60,10 @@ types in the same file.
 	<dt>parameter: POOL_TYPE</dt>
 	<dd>The type associated with <em>&lt;T&gt;</em>. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.</dd>
+	<dt>parameter: POOL_MIGRATE</dt>
+	<dd>Optional type association with <em>&lt;S&gt;</em>. If set, the constructor has two extra
+ arguments that allow it to be part of a larger data structure without
+ referencing the <em>&lt;T&gt;Pool</em> directly. Can be <em>void</em> to turn off type checking.</dd>
 	<dt>parameter: POOL_TO_STRING</dt>
 	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
  <a href = "#&lt;T&gt;PoolToString">&lt;T&gt;PoolToString</a>.</dd>
@@ -75,9 +79,10 @@ types in the same file.
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>2017-10 Replaced <em>PoolIsEmpty</em> by <em>PoolElement</em>, much more useful.</dd>
+	<dd>2017-12 Introduced POOL_MIGRATE for type-safety.</dd>
 	<dt>since</dt>
-	<dd>2017-10 Renamed Pool; made migrate automatic.
+	<dd>2017-10 Replaced <em>PoolIsEmpty</em> by <em>PoolElement</em>, much more useful.
+			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
 			2017-05 Split <em>List</em> from <em>Pool</em>; much simpler.
 			2017-01 Almost-redundant functions simplified.
@@ -93,19 +98,6 @@ types in the same file.
 <pre><b>struct Migrate</b></pre>
 <p>
 Contains information about a <em>realloc</em>.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)"><!-- --></a>
-<h3>typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)</h3>
-<pre><b>typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)</b></pre>
-<p>
-Function call on <em>realloc</em>.
 </p>
 <dl>
 </dl>
@@ -146,6 +138,19 @@ null-terminated output string (the second.) Used for <em>POOL_TO_STRING</em>.
 </dl>
 </div>
 
+<div><a name = "typedef void (*&lt;T&gt;Migrate)(S *const parent,
+	const struct Migrate *const migrate)"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;Migrate)(S *const parent,
+	const struct Migrate *const migrate)</h3>
+<pre><b>typedef void (*&lt;T&gt;Migrate)(S *const parent,
+	const struct Migrate *const migrate)</b></pre>
+<p>
+Function call on <em>realloc</em>.
+</p>
+<dl>
+</dl>
+</div>
+
 <div><a name = "struct &lt;T&gt;Pool"><!-- --></a>
 <h3>struct &lt;T&gt;Pool</h3>
 <pre><b>struct &lt;T&gt;Pool</b></pre>
@@ -169,7 +174,12 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 <tr>
 	<td>static struct &lt;T&gt;Pool *</td>
 	<td><a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a></td>
-	<td>const Migrate migrate, void *const parent</td>
+	<td>const &lt;T&gt;Migrate migrate, S *const parent</td>
+</tr>
+<tr>
+	<td>static struct &lt;T&gt;Pool *</td>
+	<td><a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a></td>
+	<td>void</td>
 </tr>
 <tr>
 	<td>static const char *</td>
@@ -263,7 +273,7 @@ accessed anymore.
 
 <div><a name = "&lt;T&gt;Pool"><!-- --></a>
 <h3>&lt;T&gt;Pool</h3>
-<pre>static struct &lt;T&gt;Pool * <b>&lt;T&gt;Pool</b> (const Migrate migrate, void *const parent)</pre>
+<pre>static struct &lt;T&gt;Pool * <b>&lt;T&gt;Pool</b> (const &lt;T&gt;Migrate migrate, S *const parent)</pre>
 <p>
 Constructs an empty <em>Pool</em> with capacity Fibonacci6, which is 8.
 </p>
@@ -278,6 +288,22 @@ Constructs an empty <em>Pool</em> with capacity Fibonacci6, which is 8.
 	<dd>A new <em>Pool</em> for the polymorphic variable <em>parent</em>.</dd>
 	<dt>throws: POOL_PARAMETER, POOL_ERRNO</dt>
 	<dd>Use <em>PoolError(0)</em> to get the error.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;Pool"><!-- --></a>
+<h3>&lt;T&gt;Pool</h3>
+<pre>static struct &lt;T&gt;Pool * <b>&lt;T&gt;Pool</b> (void)</pre>
+<p>
+Constructs an empty <em>Pool</em> with capacity Fibonacci6, which is 8.
+</p>
+<dl>
+	<dt>return</dt>
+	<dd>A new <em>Pool</em>.</dd>
+	<dt>throws: POOL_ERRNO</dt>
+	<dd>Use <em>&lt;T&gt;PoolError(0)</em> to get the error.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -304,8 +330,7 @@ See what's the error if something goes wrong. Resets the error.
 	<dt>return</dt>
 	<dd>One value from the pool or null if the pool is empty. It selects
  the position in the memory which is farthest from the start of the buffer
- deterministically. Generally, you can't select which element you want, but if
- the pool has been treated like a stack, this is peek.</dd>
+ deterministically.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 	<dt>fixme</dt>

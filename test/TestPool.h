@@ -48,14 +48,17 @@ static void PRIVATE_T_(valid_state)(const struct T_(Pool) *const a) {
 	assert(a->size == 0 || a->array[a->size - 1].prev == pool_not_part);
 }
 
+#ifdef POOL_MIGRATE /* <-- migrate */
+static S dummy_parent;
 /** @implements Migrate */
-static void PRIVATE_T_(migrate)(void *const parent,
+static void PRIVATE_T_(migrate)(S *const parent,
 	const struct Migrate *const info) {
-	assert(parent && info);
+	assert(parent && parent == dummy_parent && info);
 	printf("#%p migrate #%p-%p -> %p\n", parent, info->begin, info->end,
 		(void *)info->delta);
 	/* fixme: check */
 }
+#endif /* migrate --> */
 
 static void PRIVATE_T_(test_basic)(void) {
 	struct T_(Pool) *a = 0;
@@ -68,7 +71,11 @@ static void PRIVATE_T_(test_basic)(void) {
 	for(i = 0; i < test_size; i++) PRIVATE_T_(filler)(test + i);
 	printf("Constructor:\n");
 	assert(!T_(PoolElement)(a));
-	a = T_(Pool)(&PRIVATE_T_(migrate), (void *)1 /* stub */);
+#ifdef POOL_MIGRATE
+	a = T_(Pool)(&PRIVATE_T_(migrate), &dummy_parent);
+#else
+	a = T_(Pool)();
+#endif
 	err = T_(PoolGetError)(a);
 	printf("%s: %s.\n", T_(PoolToString)(a), err);
 	assert(a);
@@ -132,7 +139,11 @@ static void PRIVATE_T_(test_random)(void) {
 	struct T_(Pool) *a;
 	size_t i;
 	/* random */
-	a = T_(Pool)(&PRIVATE_T_(migrate), (void *)1/* stub */);
+#ifdef POOL_MIGRATE
+	a = T_(Pool)(&PRIVATE_T_(migrate), &dummy_parent);
+#else
+	a = T_(Pool)();
+#endif
 	/* this parameter controls how many iterations */
 	i = 1000;
 	while(i--) {
@@ -170,8 +181,11 @@ static void PRIVATE_T_(test_random)(void) {
 static void T_(PoolTest)(void) {
 	printf("Pool<" T_NAME ">: of type <" QUOTE(POOL_TYPE)
 		"> was created using: "
+#ifdef POOL_MIGRATE
+		"POOL_MIGRATE<" QUOTE(POOL_MIGRATE) ">; "
+#endif
 #ifdef POOL_TO_STRING
-		"TYPE_TO_STRING<" QUOTE(POOL_TO_STRING) ">; "
+		"POOL_TO_STRING<" QUOTE(POOL_TO_STRING) ">; "
 #endif
 #ifdef POOL_TEST
 		"POOL_TEST<" QUOTE(POOL_TEST) ">; "
