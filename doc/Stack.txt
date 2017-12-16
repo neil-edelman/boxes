@@ -17,8 +17,9 @@ parameter: STACK_NAME -- This literally becomes _<T>_. As it's used in function 
 parameter: STACK_TYPE -- The type associated with _<T>_. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
-parameter: STACK_MIGRATE -- If set, the constructor has two extra arguments that allow it to be part of a
- larger data structure without referencing the _<T>Stack_.
+parameter: STACK_MIGRATE -- Optional type association with _<S>_. If set, the constructor has two extra
+ arguments that allow it to be part of a larger data structure without
+ referencing the _<T>Stack_ directly. Can be _void_ to turn off type checking.
 
 parameter: STACK_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
  `<T>StackToString`.
@@ -34,9 +35,10 @@ minimum standard: C89/90
 
 author: Neil
 
-version: 2017-11 Added STACK_MIGRATE.
+version: 2017-12 Changed STACK_MIGRATE for type-safety.
 
-since: 2017-11 Forked from Pool.
+since: 2017-11 Added STACK_MIGRATE.
+			2017-11 Forked from Pool.
 
 
 
@@ -47,15 +49,6 @@ since: 2017-11 Forked from Pool.
 struct Migrate
 
 Contains information about a _realloc_.
-
-
-### typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate) ###
-
-typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)
-
-Function call on _realloc_.
 
 
 ### typedef void (*<T>Action)(T *const element) ###
@@ -83,6 +76,15 @@ Responsible for turning _<T>_ (the first argument) into a 12 _char_
  null-terminated output string (the second.) Used for _STACK_TO_STRING_.
 
 
+### typedef void (*<T>Migrate)(S *const parent,
+	const struct Migrate *const migrate) ###
+
+typedef void (*<T>Migrate)(S *const parent,
+	const struct Migrate *const migrate)
+
+Function call on _realloc_.
+
+
 ### struct <T>Stack ###
 
 struct <T>Stack
@@ -96,7 +98,7 @@ The stack. To instantiate, see `<T>Stack`.
 
 _Return Type_	_Function Name_	_Argument List_
 static void	<T>Stack_	(struct <T>Stack **const thisp)
-static struct <T>Stack *	<T>Stack	(const Migrate migrate, void *const parent)
+static struct <T>Stack *	<T>Stack	(const <T>Migrate migrate, S *const parent)
 static struct <T>Stack *	<T>Stack	(void)
 static const char *	<T>StackGetError	(struct <T>Stack *const this)
 static size_t	<T>StackGetSize	(const struct <T>Stack *const this)
@@ -137,10 +139,10 @@ order: \Theta(1)
 
 ### <T>Stack ###
 
-static struct <T>Stack * <T>Stack(const Migrate migrate, void *const parent)
+static struct <T>Stack * <T>Stack(const <T>Migrate migrate, S *const parent)
 
 Constructs an empty _Stack_ with capacity Fibonacci6, which is 8. This
- is the constructor if STACK_MIGRATE is specifed.
+ is the constructor if STACK_MIGRATE is specified.
 
 parameter: migrate, parent -- Can be both null.
 
@@ -162,7 +164,7 @@ Constructs an empty _Stack_ with capacity Fibonacci6, which is 8.
 
 return: A new _Stack_.
 
-throws: STACK_ERRNO -- Use _StackError(0)_ to get the error.
+throws: STACK_ERRNO -- Use _<T>StackError(0)_ to get the error.
 
 order: \Theta(1)
 

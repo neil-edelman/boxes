@@ -111,8 +111,11 @@ static void PRIVATE_T_(test_random)(void) {
 static void T_(StackTest)(void) {
 	printf("Stack<" T_NAME ">: of type <" QUOTE(STACK_TYPE)
 		"> was created using: "
+#ifdef POOL_MIGRATE
+		"POOL_MIGRATE<" QUOTE(POOL_MIGRATE) ">; "
+#endif
 #ifdef STACK_TO_STRING
-		"TYPE_TO_STRING<" QUOTE(STACK_TO_STRING) ">; "
+		"STACK_TO_STRING<" QUOTE(STACK_TO_STRING) ">; "
 #endif
 #ifdef STACK_TEST
 		"STACK_TEST<" QUOTE(STACK_TEST) ">; "

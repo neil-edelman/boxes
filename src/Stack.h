@@ -18,8 +18,9 @@
  compiler at the time of inclusion; required.
 
  @param STACK_MIGRATE
- If set, the constructor has two extra arguments that allow it to be part of a
- larger data structure without referencing the {<T>Stack}.
+ Optional type association with {<S>}. If set, the constructor has two extra
+ arguments that allow it to be part of a larger data structure without
+ referencing the {<T>Stack} directly. Can be {void} to turn off type checking.
 
  @param STACK_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
@@ -37,8 +38,9 @@
  @title		Stack.h
  @std		C89/90
  @author	Neil
- @version	2017-11 Added STACK_MIGRATE.
- @since		2017-11 Forked from Pool. */
+ @version	2017-12 Changed STACK_MIGRATE for type-safety.
+ @since		2017-11 Added STACK_MIGRATE.
+			2017-11 Forked from Pool. */
 
 
 
@@ -96,6 +98,9 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
+#ifdef S
+#undef S
+#endif
 #ifdef T
 #undef T
 #endif
@@ -133,7 +138,7 @@ typedef STACK_TYPE PRIVATE_T_(Type);
 
 
 
-/* constants across multiple includes in the same translation unit */
+/* Constants across multiple includes in the same translation unit. */
 #ifndef STACK_H /* <-- STACK_H */
 #define STACK_H
 
@@ -163,8 +168,7 @@ static int             stack_global_errno_copy;
 
 #endif /* STACK_H --> */
 
-
-
+/* Also left in the same translation unit. */
 #ifndef MIGRATE /* <-- migrate */
 #define MIGRATE
 /** Contains information about a {realloc}. */
@@ -173,10 +177,9 @@ struct Migrate {
 	const void *begin, *end; /* old pointers */
 	ptrdiff_t delta;
 };
-/** Function call on {realloc}. */
-typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate);
 #endif /* migrate --> */
+
+
 
 
 
@@ -199,6 +202,19 @@ static const T_(ToString) PRIVATE_T_(to_string) = (STACK_TO_STRING);
 
 #endif /* string --> */
 
+#ifdef STACK_MIGRATE /* <-- stack migrate */
+
+/* Troubles with this line? check to ensure that STACK_MIGRATE is a valid type,
+ whose definition is placed above {#include "Stack.h"}. */
+typedef STACK_MIGRATE PRIVATE_T_(ParentType);
+#define S PRIVATE_T_(ParentType)
+
+/** Function call on {realloc}. */
+typedef void (*T_(Migrate))(S *const parent,
+	const struct Migrate *const migrate);
+
+#endif /* stack migrate --> */
+
 
 
 /** The stack. To instantiate, see \see{<T>Stack}. */
@@ -210,8 +226,8 @@ struct T_(Stack) {
 	enum StackError error; /* errors defined by enum StackError */
 	int errno_copy; /* copy of errno when when error == E_ERRNO */
 #ifdef STACK_MIGRATE
-	Migrate migrate; /* called to update on resizing */
-	void *parent; /* migrate parameter */
+	T_(Migrate) migrate; /* called to update on resizing */
+	S *parent; /* migrate parameter */
 #endif
 };
 
@@ -256,10 +272,8 @@ static int PRIVATE_T_(reserve)(struct T_(Stack) *const this,
 	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
-#ifdef STACK_MIGRATE
-	/* Migrate parent class. Violates pedantic strict-ANSI? Subverts
-	 type-safety? However, it is so convenient for the caller not to have to
-	 worry about moving memory blocks. */
+#ifdef STACK_MIGRATE /* <-- migrate */
+	/* Migrate parent class. Violates pedantic strict-ANSI? */
 	if(this->array != array && this->migrate) {
 		struct Migrate migrate;
 		migrate.begin = this->array;
@@ -269,7 +283,7 @@ static int PRIVATE_T_(reserve)(struct T_(Stack) *const this,
 		assert(this->parent);
 		this->migrate(this->parent, &migrate);
 	}
-#endif
+#endif /* migrate --> */
 	this->array = array;
 	this->capacity[0] = c0;
 	this->capacity[1] = c1;
@@ -317,14 +331,14 @@ static struct T_(Stack) *PRIVATE_T_(stack)(void) {
 
 #ifdef STACK_MIGRATE /* <-- migrate */
 /** Constructs an empty {Stack} with capacity Fibonacci6, which is 8. This
- is the constructor if STACK_MIGRATE is specifed.
+ is the constructor if STACK_MIGRATE is specified.
  @param migrate, parent: Can be both null.
  @return A new {Stack}.
  @throws STACK_PARAMETER, STACK_ERRNO: Use {StackError(0)} to get the error.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static struct T_(Stack) *T_(Stack)(const Migrate migrate, void *const parent) {
+static struct T_(Stack) *T_(Stack)(const T_(Migrate) migrate, S *const parent) {
 	struct T_(Stack) *this;
 	if(!migrate ^ !parent) {
 		stack_global_error = STACK_PARAMETER;
@@ -339,7 +353,7 @@ static struct T_(Stack) *T_(Stack)(const Migrate migrate, void *const parent) {
 #else /* migrate --><-- !migrate */
 /** Constructs an empty {Stack} with capacity Fibonacci6, which is 8.
  @return A new {Stack}.
- @throws STACK_ERRNO: Use {StackError(0)} to get the error.
+ @throws STACK_ERRNO: Use {<T>StackError(0)} to get the error.
  @order \Theta(1)
  @allow */
 static struct T_(Stack) *T_(Stack)(void) {
@@ -631,6 +645,9 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
 #undef QUOTE_
 #ifdef STACK_MIGRATE
 #undef STACK_MIGRATE
+#endif
+#ifdef S
+#undef S
 #endif
 #ifdef STACK_TO_STRING
 #undef STACK_TO_STRING

@@ -60,8 +60,9 @@ for convenience when including multiple <em>&lt;T&gt;Stack</em> types in the sam
 	<dd>The type associated with <em>&lt;T&gt;</em>. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.</dd>
 	<dt>parameter: STACK_MIGRATE</dt>
-	<dd>If set, the constructor has two extra arguments that allow it to be part of a
- larger data structure without referencing the <em>&lt;T&gt;Stack</em>.</dd>
+	<dd>Optional type association with <em>&lt;S&gt;</em>. If set, the constructor has two extra
+ arguments that allow it to be part of a larger data structure without
+ referencing the <em>&lt;T&gt;Stack</em> directly. Can be <em>void</em> to turn off type checking.</dd>
 	<dt>parameter: STACK_TO_STRING</dt>
 	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
  <a href = "#&lt;T&gt;StackToString">&lt;T&gt;StackToString</a>.</dd>
@@ -77,9 +78,10 @@ for convenience when including multiple <em>&lt;T&gt;Stack</em> types in the sam
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>2017-11 Added STACK_MIGRATE.</dd>
+	<dd>2017-12 Changed STACK_MIGRATE for type-safety.</dd>
 	<dt>since</dt>
-	<dd>2017-11 Forked from Pool.</dd>
+	<dd>2017-11 Added STACK_MIGRATE.
+			2017-11 Forked from Pool.</dd>
 </dl>
 
 
@@ -90,19 +92,6 @@ for convenience when including multiple <em>&lt;T&gt;Stack</em> types in the sam
 <pre><b>struct Migrate</b></pre>
 <p>
 Contains information about a <em>realloc</em>.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)"><!-- --></a>
-<h3>typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)</h3>
-<pre><b>typedef void (*Migrate)(void *const parent,
-	const struct Migrate *const migrate)</b></pre>
-<p>
-Function call on <em>realloc</em>.
 </p>
 <dl>
 </dl>
@@ -143,6 +132,19 @@ null-terminated output string (the second.) Used for <em>STACK_TO_STRING</em>.
 </dl>
 </div>
 
+<div><a name = "typedef void (*&lt;T&gt;Migrate)(S *const parent,
+	const struct Migrate *const migrate)"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;Migrate)(S *const parent,
+	const struct Migrate *const migrate)</h3>
+<pre><b>typedef void (*&lt;T&gt;Migrate)(S *const parent,
+	const struct Migrate *const migrate)</b></pre>
+<p>
+Function call on <em>realloc</em>.
+</p>
+<dl>
+</dl>
+</div>
+
 <div><a name = "struct &lt;T&gt;Stack"><!-- --></a>
 <h3>struct &lt;T&gt;Stack</h3>
 <pre><b>struct &lt;T&gt;Stack</b></pre>
@@ -166,7 +168,7 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 <tr>
 	<td>static struct &lt;T&gt;Stack *</td>
 	<td><a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a></td>
-	<td>const Migrate migrate, void *const parent</td>
+	<td>const &lt;T&gt;Migrate migrate, S *const parent</td>
 </tr>
 <tr>
 	<td>static struct &lt;T&gt;Stack *</td>
@@ -266,10 +268,10 @@ accessed anymore.
 
 <div><a name = "&lt;T&gt;Stack"><!-- --></a>
 <h3>&lt;T&gt;Stack</h3>
-<pre>static struct &lt;T&gt;Stack * <b>&lt;T&gt;Stack</b> (const Migrate migrate, void *const parent)</pre>
+<pre>static struct &lt;T&gt;Stack * <b>&lt;T&gt;Stack</b> (const &lt;T&gt;Migrate migrate, S *const parent)</pre>
 <p>
 Constructs an empty <em>Stack</em> with capacity Fibonacci6, which is 8. This
-is the constructor if STACK_MIGRATE is specifed.
+is the constructor if STACK_MIGRATE is specified.
 </p>
 <dl>
 	<dt>parameter: migrate, parent</dt>
@@ -295,7 +297,7 @@ Constructs an empty <em>Stack</em> with capacity Fibonacci6, which is 8.
 	<dt>return</dt>
 	<dd>A new <em>Stack</em>.</dd>
 	<dt>throws: STACK_ERRNO</dt>
-	<dd>Use <em>StackError(0)</em> to get the error.</dd>
+	<dd>Use <em>&lt;T&gt;StackError(0)</em> to get the error.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
