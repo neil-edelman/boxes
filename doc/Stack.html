@@ -107,6 +107,16 @@ Operates by side-effects only. Used for <em>STACK_TEST</em>.
 </dl>
 </div>
 
+<div><a name = "typedef void (*&lt;T&gt;BiAction)(T *const element, void *const)"><!-- --></a>
+<h3>typedef void (*&lt;T&gt;BiAction)(T *const element, void *const)</h3>
+<pre><b>typedef void (*&lt;T&gt;BiAction)(T *const element, void *const)</b></pre>
+<p>
+Operates by side-effects only.
+</p>
+<dl>
+</dl>
+</div>
+
 <div><a name = "typedef void (*&lt;T&gt;StackMigrateElement)(T *const element,
 	const struct Migrate *const migrate)"><!-- --></a>
 <h3>typedef void (*&lt;T&gt;StackMigrateElement)(T *const element,
@@ -227,6 +237,12 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 	<td><a href = "#&lt;T&gt;StackForEach">&lt;T&gt;StackForEach</a></td>
 	<td>struct &lt;T&gt;Stack *const this,
 	const &lt;T&gt;Action action</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;StackBiForEach">&lt;T&gt;StackBiForEach</a></td>
+	<td>struct &lt;T&gt;Stack *const this,
+	const &lt;T&gt;BiAction biaction, void *const param</td>
 </tr>
 <tr>
 	<td>static void</td>
@@ -446,6 +462,23 @@ Removes all data from <em>this</em>.
 <h3>&lt;T&gt;StackForEach</h3>
 <pre>static void <b>&lt;T&gt;StackForEach</b> (struct &lt;T&gt;Stack *const this,
 	const &lt;T&gt;Action action)</pre>
+<p>
+Iterates though the <em>Stack</em> and calls <em>action</em> on all the elements.
+</p>
+<dl>
+	<dt>throws</dt>
+	<dd>STACK_PARAMETER</dd>
+	<dt>order</dt>
+	<dd>O(<em>size</em>) O(<em>action</em>)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;StackBiForEach"><!-- --></a>
+<h3>&lt;T&gt;StackBiForEach</h3>
+<pre>static void <b>&lt;T&gt;StackBiForEach</b> (struct &lt;T&gt;Stack *const this,
+	const &lt;T&gt;BiAction biaction, void *const param)</pre>
 <p>
 Iterates though the <em>Stack</em> and calls <em>action</em> on all the elements.
 </p>

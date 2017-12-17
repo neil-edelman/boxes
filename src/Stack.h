@@ -186,6 +186,9 @@ struct Migrate {
 /** Operates by side-effects only. Used for {STACK_TEST}. */
 typedef void (*T_(Action))(T *const element);
 
+/** Operates by side-effects only. */
+typedef void (*T_(BiAction))(T *const element, void *const);
+
 /** Given to \see{<T>StackMigrateEach} by the migrate function of another
  datatype. */
 typedef void (*T_(StackMigrateElement))(T *const element,
@@ -481,6 +484,19 @@ static void T_(StackForEach)(struct T_(Stack) *const this,
 	while(i < this->size) action(this->array + i++);
 }
 
+/** Iterates though the {Stack} and calls {action} on all the elements.
+ @throws STACK_PARAMETER
+ @order O({size}) O({action})
+ @fixme Untested.
+ @allow */
+static void T_(StackBiForEach)(struct T_(Stack) *const this,
+	const T_(BiAction) biaction, void *const param) {
+	size_t i = 0;
+	if(!this) return;
+	if(!biaction) { this->error = STACK_PARAMETER; return; }
+	while(i < this->size) biaction(this->array + i++, param);
+}
+
 /** Use when the stack has pointers to another stack in the {Migrate} function
  of the other datatype.
  @param handler: Has the responsibility of calling the other data type's
@@ -618,6 +634,7 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(StackNew)(0);
 	T_(StackClear)(0);
 	T_(StackForEach)(0, 0);
+	T_(StackBiForEach)(0, 0, 0);
 	T_(StackMigrateEach)(0, 0, 0);
 	T_(MigratePointer)(0, 0);
 #ifdef STACK_TO_STRING

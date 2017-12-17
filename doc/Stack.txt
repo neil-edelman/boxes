@@ -58,6 +58,13 @@ typedef void (*<T>Action)(T *const element)
 Operates by side-effects only. Used for _STACK_TEST_.
 
 
+### typedef void (*<T>BiAction)(T *const element, void *const) ###
+
+typedef void (*<T>BiAction)(T *const element, void *const)
+
+Operates by side-effects only.
+
+
 ### typedef void (*<T>StackMigrateElement)(T *const element,
 	const struct Migrate *const migrate) ###
 
@@ -113,6 +120,8 @@ static T *	<T>StackNew	(struct <T>Stack *const this)
 static void	<T>StackClear	(struct <T>Stack *const this)
 static void	<T>StackForEach	(struct <T>Stack *const this,
 	const <T>Action action)
+static void	<T>StackBiForEach	(struct <T>Stack *const this,
+	const <T>BiAction biaction, void *const param)
 static void	<T>StackMigrateEach	(struct <T>Stack *const this,
 	const <T>StackMigrateElement handler, const struct Migrate *const migrate)
 static void	<T>MigratePointer	(T **const node_ptr,
@@ -301,6 +310,21 @@ order: \Theta(1)
 
 static void <T>StackForEach(struct <T>Stack *const this,
 	const <T>Action action)
+
+Iterates though the _Stack_ and calls _action_ on all the elements.
+
+throws: STACK_PARAMETER
+
+order: O(_size_) O(_action_)
+
+fixme: Untested.
+
+
+
+### <T>StackBiForEach ###
+
+static void <T>StackBiForEach(struct <T>Stack *const this,
+	const <T>BiAction biaction, void *const param)
 
 Iterates though the _Stack_ and calls _action_ on all the elements.
 
