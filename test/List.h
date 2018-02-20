@@ -43,10 +43,11 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	1.3; 2017-10 anonymous orders
- @since		1.2; 2017-07 made migrate simpler
-			1.1; 2017-06 split Add into Push and Unshift
-			1.0; 2017-05 separated from List.h
+ @version	2017-12 Type information on backing.
+ @since		2017-10 Anonymous orders.
+			2017-07 Made migrate simpler.
+			2017-06 Split Add into Push and Unshift.
+			2017-05 Separated from backing.
  @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
  {assert} bug on {LIST_TEST}.
  @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
@@ -968,7 +969,7 @@ static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this && node);
-	PRIVATE_T_U_(contains, count)(this, node, 1);
+	PRIVATE_T_U_(contains, count)(this, node, (size_t)1l);
 	if(node->U_(prev)) {
 		node->U_(prev)->U_(next) = node->U_(next);
 	} else {
