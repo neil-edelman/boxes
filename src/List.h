@@ -969,7 +969,7 @@ static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
 static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this && node);
-	PRIVATE_T_U_(contains, count)(this, node, 1);
+	PRIVATE_T_U_(contains, count)(this, node, (size_t)1l);
 	if(node->U_(prev)) {
 		node->U_(prev)->U_(next) = node->U_(next);
 	} else {
