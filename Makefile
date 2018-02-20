@@ -1,6 +1,6 @@
 # Makefile 1.2 (GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0)
 
-PROJ  := TestText
+PROJ  := Text
 VA    := 1
 VB    := 0
 
