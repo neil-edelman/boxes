@@ -104,18 +104,24 @@ int main(void) {
 		while((sep = TextSep(t, "/", &is_delim))) {
 			printf("TextSplit: '%s'\n", TextGet(sep));
 			switch(s++) {
-				case 0: if(strcmp(sup = "", str = TextGet(sep)))
-					e = E_ASRT; break;
-				case 1: if(strcmp(sup = "foo//", str = TextGet(sep)))
-					e = E_ASRT; break;
-				case 2: if(strcmp(sup = "bar", str = TextGet(sep)))
-					e = E_ASRT; break;
-				case 3: if(strcmp(sup = "qux/", str = TextGet(sep)))
-					e = E_ASRT; break;
-				case 4: if(strcmp(sup = "xxx", str = TextGet(sep)))
-					e = E_ASRT; break;
-				default: sup = "(null)", str = TextGet(sep),
-					e = E_ASRT; break;
+				case 0:
+					if(strcmp(sup = "", str = TextGet(sep))) e = E_ASRT;
+					break;
+				case 1:
+					if(strcmp(sup = "foo//", str = TextGet(sep))) e = E_ASRT;
+					break;
+				case 2:
+					if(strcmp(sup = "bar", str = TextGet(sep))) e = E_ASRT;
+					break;
+				case 3:
+					if(strcmp(sup = "qux/", str = TextGet(sep))) e = E_ASRT;
+					break;
+				case 4:
+					if(strcmp(sup = "xxx", str = TextGet(sep))) e = E_ASRT;
+					break;
+				default:
+					sup = "(null)", str = TextGet(sep), e = E_ASRT;
+					break;
 			}
 			Text_(&sep);
 			if(e) break;
