@@ -25,6 +25,10 @@
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>List<U>ToString}.
 
+ @param LIST_ALREADY_ACTION, LIST_ALREADY_BIACTION, LIST_ALREADY_UNARY_OPERATOR, LIST_ALREADY_PREDICATE, LIST_ALREADY_BIPEDICATE, LIST_ALREADY_COMPARATOR, LIST_ALREADY_TO_STRING
+ These {typedef}s are not preceded by {List} and may clash with an existing
+ {typedef}. However, they must be compatible with the {typedef}s in this file.
+
  @param LIST_STATIC_STORAGE
  This allocates {O(log max n)} space needed for merge sort statically, instead
  of stack every time the List is sorted. This does not allow it to sort data
@@ -321,30 +325,11 @@ struct T_(List) {
 
 
 
-/** Calls \see{<T>ListMigratePointer}, given to \see{<T>List<U>MigrateEach}, in
- the handler for the {Migrate}. */
-typedef void (*T_(ListMigrateElement))(T *const element,
-	const struct Migrate *const migrate);
-
 /** Takes {<T>}. */
 typedef void (*T_(Action))(T *const);
 
 /** Takes {<T>} and <void *>. */
 typedef void (*T_(BiAction))(T *const, void *const);
-
-/** Takes {<T>List}. */
-typedef void (*T_(ListAction))(struct T_(List) *const);
-
-/** Takes {<T>List} and {<T>}. */
-typedef void (*T_(ListItemAction))(struct T_(List) *const, T *const);
-
-/** Takes two {<T>List}. */
-typedef void (*T_(BiListAction))(struct T_(List) *const,
-	struct T_(List) *const);
-
-/** Takes three {<T>List}s. */
-typedef void (*T_(TriListAction))(struct T_(List) *const,
-	struct T_(List) *const, struct T_(List) *const);
 
 /** Takes {<T>} and returns {<T>}. */
 typedef T *(*T_(UnaryOperator))(T *const);
@@ -369,6 +354,25 @@ typedef void (*T_(ToString))(const T *const, char (*const)[12]);
 static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 
 #endif /* string --> */
+
+/** Calls \see{<T>ListMigratePointer}, given to \see{<T>List<U>MigrateEach}, in
+ the handler for the {Migrate}. */
+typedef void (*T_(ListMigrateElement))(T *const element,
+	const struct Migrate *const migrate);
+
+/** Takes {<T>List}. */
+typedef void (*T_(ListAction))(struct T_(List) *const);
+
+/** Takes two {<T>List}. */
+typedef void (*T_(ListBiAction))(struct T_(List) *const,
+	struct T_(List) *const);
+
+/** Takes three {<T>List}s. */
+typedef void (*T_(ListTriAction))(struct T_(List) *const,
+	struct T_(List) *const, struct T_(List) *const);
+
+/** Takes {<T>List} and {<T>}. */
+typedef void (*T_(ListItemAction))(struct T_(List) *const, T *const);
 
 
 

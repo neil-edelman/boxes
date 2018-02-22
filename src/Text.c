@@ -354,14 +354,14 @@ struct Text *TextBetweenCat(struct Text *const this,
 
 /** Concatenates the contents of the text file, {fp}, after the read cursor, to
  the buffer in {this}. On success, the read cursor will be at the end.
- @param fp: If it is null, this doesn't do anything.
- @return {this}.
- @throws E_OVERFLOW, E_ERRNO */
+ @return	{this}.
+ @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
 struct Text *TextFileCat(struct Text *const this, FILE *const fp) {
 	size_t to_get;
 	int to_get_int;
 	int e;
-	if(!this || !fp) return 0;
+	if(!this) return 0;
+	if(!fp) { this->error = E_PARAMETER; return 0; }
 	while(to_get = this->capacity[0] - this->length,
 		to_get_int = to_get < INT_MAX ? (int)(to_get) : INT_MAX,
 		fgets(this->text + this->length, to_get_int, fp)) {
@@ -397,7 +397,7 @@ int TextFileLineCat(struct Text *const this, FILE *const fp) {
 			return 0;
 	}
 	if((e = ferror(fp)))
-		{ this->error = E_ERRNO, this->errno_copy = e; return 0; }
+	{ this->error = E_ERRNO, this->errno_copy = e; return 0; }
 	debug(this, "TextFileLineCat",
 		"appended a line from file descriptor %d.\n", (long)fp);
 	/* Exactly the same as if we'd had an {length_init != length_final}. */

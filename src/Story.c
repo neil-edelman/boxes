@@ -35,6 +35,7 @@
 #include <stdio.h>  /* fprintf fopen */
 #include <string.h>	/* strerror */
 #include <limits.h>	/* INT_MAX */
+#include <errno.h>	/* errno */
 #include "Text.h"
 #include "Story.h"
 
@@ -45,13 +46,13 @@
 
 #define POOL_NAME Text
 #define POOL_TYPE struct Text *
-#include "Pool.h" /* Defines {TextPool}. */
+#include "Pool.h" /* Defines {TextPool} as a pool of pointers-to-Text. */
 
-#define LIST_NAME Line
+#define LIST_NAME Text
 #define LIST_TYPE struct TextPool *
 #include "List.h" /* Defines {LineList}. */
 
-enum Error {
+/*enum Error {
 	E_NO_ERROR,
 	E_ERRNO,
 	E_PARAMETER,
@@ -64,15 +65,15 @@ static const char *const error_explination[] = {
 	"error on line"
 };
 static enum Error global_error = E_NO_ERROR;
-static int        global_errno_copy;
+static int        global_errno_copy;*/
 
 
 
 struct Story {
 	struct LineList lines;
-	struct TextPool texts;
-	int errno_copy;
-	enum Error error;
+	struct TextPool *texts;
+	/*int errno_copy;
+	enum Error error;*/
 };
 
 /** @implements Metric */
@@ -139,8 +140,13 @@ struct Story *Story(void) {
 		return 0;
 	}
 	LineListClear(&story->lines);
-	story->error = E_NO_ERROR;
+	story->texts = 0;
 	fprintf(stderr, "Story: new, #%p.\n", (void *)story);
+	if(!(story->texts = TextPool())) {
+		fprintf(stderr, "Texts: %s.\n", TextPoolGetError(0));
+		Story_(&story);
+		return 0;
+	}
 	return story;
 }
 
@@ -153,27 +159,12 @@ struct Story *StoryFileCat(struct Story *const this, FILE *const fp) {
 	if(!this || !fp) return 0;
 	printf("StoryFileCat:\n");
 	for( ; ; ) {
-		if(!(line = Text())) { this->error = E_ERRNO; return 0; }
+		if(!(line = Text())) return 0;
 		if(!TextFileLineCat(line, fp)) break;
 		printf("<%s>\n", TextGet(line));
-		Line
+		text = TextPoolNew(this->texts);
 		Text_(&line);
 	}
 	debug(this, "StoryFileCat", "appended a file.\n");
 	return this;
-}
-
-/** Resets the error flag.
- @return A lower-case string, (or in the case of a E_ERRNO, the first letter
- has an extraneous upper case on most systems,) without any punctuation, that
- explains the last error associated with {this}; can be null. */
-const char *StoryGetError(struct Story *const this) {
-	const char *str;
-	enum Error *perr;
-	int *perrno;	
-	perr   = this ? &this->error      : &global_error;
-	perrno = this ? &this->errno_copy : &global_errno_copy;
-	if(!(str = error_explination[*perr])) str = strerror(*perrno);
-	*perr = 0, *perrno = 0;
-	return str;
 }
