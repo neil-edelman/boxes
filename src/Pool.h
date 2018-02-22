@@ -190,8 +190,11 @@ struct Migrate {
 
 
 
-/** Operates by side-effects only. Used for {POOL_TEST}. */
+#ifdef POOL_TEST /* <-- test */
+/** Operates by side-effects only. Used only for {POOL_TEST} and not defined
+ otherwise; can cause problems because it's not preceded by {Pool}. */
 typedef void (*T_(Action))(T *const element);
+#endif /* test --> */
 
 /** Given to \see{<T>PoolMigrateEach} by the migrate function of another
  {Pool}. */
