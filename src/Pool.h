@@ -496,7 +496,7 @@ static int T_(PoolIsElement)(struct T_(Pool) *const this, const size_t idx) {
  @allow */
 static int T_(PoolIsValid)(const T *const data) {
 	const struct PRIVATE_T_(Element) *const elem
-		= (struct PRIVATE_T_(Element) *)(void *)data;
+		= (const struct PRIVATE_T_(Element) *const)(const void *const)data;
 	if(!elem || elem->prev != pool_not_part) return 0;
 	return 1;
 }
