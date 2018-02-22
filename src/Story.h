@@ -1,11 +1,8 @@
-/** \see{Story}.
- @param
- @fixme
- @author
- @since
- @deprecated */
+#include <stdio.h> /* for FILE */
+
 struct Story;
 
-struct Story *Story();
-void Story_(struct Story **storyptr);
-char *StoryGetVar(const struct Story *story);
+struct Story *Story(void);
+void Story_(struct Story **pstory);
+struct Story *StoryFileCat(struct Story *const this, FILE *const fp);
+const char *StoryGetError(struct Story *const this);
