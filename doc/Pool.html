@@ -107,7 +107,8 @@ Contains information about a <em>realloc</em>.
 <h3>typedef void (*&lt;T&gt;Action)(T *const element)</h3>
 <pre><b>typedef void (*&lt;T&gt;Action)(T *const element)</b></pre>
 <p>
-Operates by side-effects only. Used for <em>POOL_TEST</em>.
+Operates by side-effects only. Used only for <em>POOL_TEST</em> and not defined
+otherwise; can cause problems because it's not preceded by <em>Pool</em>.
 </p>
 <dl>
 </dl>

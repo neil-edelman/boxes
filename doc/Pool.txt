@@ -61,7 +61,8 @@ Contains information about a _realloc_.
 
 typedef void (*<T>Action)(T *const element)
 
-Operates by side-effects only. Used for _POOL_TEST_.
+Operates by side-effects only. Used only for _POOL_TEST_ and not defined
+ otherwise; can cause problems because it's not preceded by _Pool_.
 
 
 ### typedef void (*<T>PoolMigrateElement)(T *const element,
