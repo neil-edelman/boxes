@@ -43,8 +43,9 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	2017-12 Type information on backing.
- @since		2017-10 Anonymous orders.
+ @version	2018-02 Eliminated the need for {<T>List} by {C} hacking.
+ @since		2017-12 Type information on backing.
+			2017-10 Anonymous orders.
 			2017-07 Made migrate simpler.
 			2017-06 Split Add into Push and Unshift.
 			2017-05 Separated from backing.
@@ -280,24 +281,28 @@ struct Migrate {
 
 
 
+/* List position. */
+struct PRIVATE_T_(X) {
+#ifdef LIST_UA_NAME
+	struct PRIVATE_T_(X) *UA_(prev), *UA_(next);
+#endif
+#ifdef LIST_UB_NAME
+	struct PRIVATE_T_(X) *UB_(prev), *UB_(next);
+#endif
+#ifdef LIST_UC_NAME
+	struct PRIVATE_T_(X) *UC_(prev), *UC_(next);
+#endif
+#ifdef LIST_UD_NAME
+	struct PRIVATE_T_(X) *UD_(prev), *UD_(next);
+#endif
+};
 /** A single link in the linked-list derived from {<T>}. Storage of this
  structure is the responsibility of the caller. The {<T>} is stored in the
  element {data}. */
 struct T_(ListNode);
 struct T_(ListNode) {
 	T data; /* 1st so we can cast without the mess of {container_of} */
-#ifdef LIST_UA_NAME
-	struct T_(ListNode) *UA_(prev), *UA_(next);
-#endif
-#ifdef LIST_UB_NAME
-	struct T_(ListNode) *UB_(prev), *UB_(next);
-#endif
-#ifdef LIST_UC_NAME
-	struct T_(ListNode) *UC_(prev), *UC_(next);
-#endif
-#ifdef LIST_UD_NAME
-	struct T_(ListNode) *UD_(prev), *UD_(next);
-#endif
+	struct PRIVATE_T_(X) x;
 };
 
 /** Serves as an a head for linked-list(s) of {<T>ListNode}. No initialisation
@@ -305,18 +310,9 @@ struct T_(ListNode) {
  \see{<T>ListClear}. */
 struct T_(List);
 struct T_(List) {
-#ifdef LIST_UA_NAME
-	struct T_(ListNode) *UA_(first), *UA_(last);
-#endif
-#ifdef LIST_UB_NAME
-	struct T_(ListNode) *UB_(first), *UB_(last);
-#endif
-#ifdef LIST_UC_NAME
-	struct T_(ListNode) *UC_(first), *UC_(last);
-#endif
-#ifdef LIST_UD_NAME
-	struct T_(ListNode) *UD_(first), *UD_(last);
-#endif
+	/* The reason there's two instead of one is because we rely on null values
+	 to determine the ends of the list. This allows easy differentiation. */
+	struct PRIVATE_T_(X) first, last;
 };
 
 
@@ -375,16 +371,13 @@ static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
 /* Prototypes: needed for the next section, but undefined until later. */
 static void PRIVATE_T_(push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node);
-static void PRIVATE_T_(unshift)(struct T_(List) *const this,
-	struct T_(ListNode) *const node);
-static void PRIVATE_T_(remove)(struct T_(List) *const this,
-	struct T_(ListNode) *const node);
+static void PRIVATE_T_(remove)(struct T_(ListNode) *const node);
 static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 	struct T_(ListNode) **const node_ptr);
 
-/* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor flag
- controls this behaviour; we are currently in the {!LIST_U_NAME} section. These
- will get all the functions with {<U>} in them. */
+/* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor
+ flag controls this behaviour; we are currently in the {!LIST_U_NAME} section.
+ These will get all the functions with {<U>} in them from below. */
 
 #ifdef LIST_UA_NAME /* <-- a */
 #define LIST_U_NAME LIST_UA_NAME
@@ -420,81 +413,99 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 
 
 
+/** Private: add after. */
+static void PRIVATE_T_(add_after)(struct PRIVATE_T_(X) *const anchor,
+	struct T_(ListNode) *const node) {
+	assert(anchor && node && anchor != &node->x);
+#ifdef LIST_UA_NAME /* <-- a */
+	PRIVATE_T_UA_(list, add_after)(anchor, node);
+#endif /* a --> */
+#ifdef LIST_UB_NAME /* <-- b */
+	PRIVATE_T_UB_(list, add_after)(anchor, node);
+#endif /* b --> */
+#ifdef LIST_UC_NAME /* <-- c */
+	PRIVATE_T_UC_(list, add_after)(anchor, node);
+#endif /* c --> */
+#ifdef LIST_UD_NAME /* <-- d */
+	PRIVATE_T_UD_(list, add_after)(anchor, node);
+#endif /* d --> */
+}
+
+/** Private: add before. */
+static void PRIVATE_T_(add_before)(struct PRIVATE_T_(X) *const anchor,
+	struct T_(ListNode) *const node) {
+	assert(anchor && node && anchor != &node->x);
+#ifdef LIST_UA_NAME /* <-- a */
+	PRIVATE_T_UA_(list, add_before)(anchor, node);
+#endif /* a --> */
+#ifdef LIST_UB_NAME /* <-- b */
+	PRIVATE_T_UB_(list, add_before)(anchor, node);
+#endif /* b --> */
+#ifdef LIST_UC_NAME /* <-- c */
+	PRIVATE_T_UC_(list, add_before)(anchor, node);
+#endif /* c --> */
+#ifdef LIST_UD_NAME /* <-- d */
+	PRIVATE_T_UD_(list, add_before)(anchor, node);
+#endif /* d --> */
+}
+
 /** Private: push to the end of the list.
  @implements <T>ListNodeAction */
 static void PRIVATE_T_(push)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
-	assert(this);
-	assert(node);
-#ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, push)(this, node);
-#endif /* a --> */
-#ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, push)(this, node);
-#endif /* b --> */
-#ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, push)(this, node);
-#endif /* c --> */
-#ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, push)(this, node);
-#endif /* d --> */
+	assert(this && node);
+	PRIVATE_T_(add_before)(&this->last, node);
 }
 
 /** Private: unshift to the beginning of the list.
  @implements <T>ListNodeAction */
 static void PRIVATE_T_(unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
-	assert(this);
-	assert(node);
-#ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, unshift)(this, node);
-#endif /* a --> */
-#ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, unshift)(this, node);
-#endif /* b --> */
-#ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, unshift)(this, node);
-#endif /* c --> */
-#ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, unshift)(this, node);
-#endif /* d --> */
+	assert(this && node);
+	PRIVATE_T_(add_after)(&this->first, node);
 }
 
 /** Private: remove from list.
  @implements <T>ListNodeAction */
-static void PRIVATE_T_(remove)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
-	assert(this);
+static void PRIVATE_T_(remove)(struct T_(ListNode) *const node) {
 	assert(node);
 #ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, remove)(this, node);
+	PRIVATE_T_UA_(list, remove)(node);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, remove)(this, node);
+	PRIVATE_T_UB_(list, remove)(node);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, remove)(this, node);
+	PRIVATE_T_UC_(list, remove)(node);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, remove)(this, node);
+	PRIVATE_T_UD_(list, remove)(node);
 #endif /* d --> */
 }
 
-/** Private: clear the list.
+/** Private: clears and initialises.
  @implements <T>ListAction */
 static void PRIVATE_T_(clear)(struct T_(List) *const this) {
 	assert(this);
 #ifdef LIST_UA_NAME
-	this->UA_(first) = this->UA_(last) = 0;
+	this->first.UA_(prev) = this->last.UA_(next) = 0;
+	this->first.UA_(next) = &this->last;
+	this->last.UA_(prev) = &this->first;
 #endif
 #ifdef LIST_UB_NAME
-	this->UB_(first) = this->UB_(last) = 0;
+	this->first.UB_(prev) = this->last.UB_(next) = 0;
+	this->first.UB_(next) = &this->last;
+	this->last.UB_(prev) = &this->first;
 #endif
 #ifdef LIST_UC_NAME
-	this->UC_(first) = this->UC_(last) = 0;
+	this->first.UC_(prev) = this->last.UC_(next) = 0;
+	this->first.UC_(next) = &this->last;
+	this->last.UC_(prev) = &this->first;
 #endif
 #ifdef LIST_UD_NAME
-	this->UD_(first) = this->UD_(last) = 0;
+	this->first.UD_(prev) = this->last.UD_(next) = 0;
+	this->first.UD_(next) = &this->last;
+	this->last.UD_(prev) = &this->first;
 #endif
 }
 
@@ -539,21 +550,22 @@ static void T_(ListUnshift)(struct T_(List) *const this, T *const node) {
 	PRIVATE_T_(unshift)(this, n);
 }
 
-/** Removes {data} from the {this}. The {data} is now free to add to another
- list. Removing an element that was not added to {this} results in undefined
- behaviour. If either {this} or {data} is null, it does nothing.
+/** Given an item from the list . . . */
+
+/** Removes {data} from the list. The {data} is now free to add to another
+ list. Removing an element that was not added to a list results in undefined
+ behaviour. If {data} is null, it does nothing.
  @implements <T>ListItemAction
  @order \Theta(1)
  @allow */
-static void T_(ListRemove)(struct T_(List) *const this, T *const data) {
-	if(!this || !data) return;
-	PRIVATE_T_(remove)(this, (struct T_(ListNode) *)(void *)data);
+static void T_(ListRemove)(T *const data) {
+	if(!data) return;
+	PRIVATE_T_(remove)((struct T_(ListNode) *)(void *)data);
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
- removes elements. Unlike the {<T>TriListAction}, where the elements are
- re-ordered based on {<U>}, (they would not be in-place, otherwise,) this
- function concatenates all the elements in each linked-list order.
+ removes elements. Unlike \see{<T>List<U>TakeIf} and all other selective
+ choosing functions, this function preserves two or more orders.
  @implements <T>BiListAction
  @order \Theta(1)
  @allow */
@@ -762,7 +774,7 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListClear)(0);
 	T_(ListPush)(0, 0);
 	T_(ListUnshift)(0, 0);
-	T_(ListRemove)(0, 0);
+	T_(ListRemove)(0);
 	T_(ListTake)(0, 0);
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 	T_(ListMerge)(0, 0);
@@ -898,24 +910,23 @@ in C99" */
 /** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
  You do not want cycles!
  @implements <T>ListAction */
-static void PRIVATE_T_U_(cycle, crash)(const struct T_(List) *const this) {
+static void PRIVATE_T_U_(cycle, crash)(const struct PRIVATE_T_(X) *const node) {
 #ifdef LIST_DEBUG
-	struct T_(ListNode) *turtle, *hare;
+	struct PRIVATE_T_(X) *turtle, *hare;
 	assert(this);
-	assert(!this->U_(first) == !this->U_(last));
-	if(!(turtle = hare = this->U_(first))) return;
-	for( ; (hare = hare->U_(next)) && (hare = hare->U_(next)); ) {
-		turtle = turtle->U_(next);
+	for(turtle = node; turtle->U_(prev); turtle = turtle->U_(prev));
+	for(hare = turtle->U_(next); (turtle = turtle->U_(next),
+		hare = hare->U_(next)) && (hare = hare->U_(next)); ) {
 		assert(turtle != hare);
 	}
 #else
-	UNUSED(this);
+	UNUSED(node);
 #endif
 }
 
 /** Goes though all {this} U and makes sure it contains {count} element {data}
  when in debug mode. */
-static void PRIVATE_T_U_(contains, count)(const struct T_(List) *const this,
+/*static void PRIVATE_T_U_(contains, count)(const struct T_(List) *const this,
 	const struct T_(ListNode) *const elem, const size_t count) {
 #ifdef LIST_DEBUG
 	struct T_(ListNode) *turtle;
@@ -928,60 +939,38 @@ static void PRIVATE_T_U_(contains, count)(const struct T_(List) *const this,
 #else
 	UNUSED(this), UNUSED(elem), UNUSED(count);
 #endif
+}*/
+
+/** Private: add {node} after {anchor}. */
+static void PRIVATE_T_U_(list, add_after)(struct PRIVATE_T_(X) *const anchor, struct T_(ListNode) *const node) {
+	assert(anchor && node && anchor != &node->x
+		&& anchor->U_(prev) && anchor->U_(next));
+	node->x.U_(prev) = anchor;
+	node->x.U_(next) = anchor->U_(next);
+	anchor->U_(next)->U_(prev) = &node->x;
+	anchor->U_(next) = &node->x;
+	PRIVATE_T_U_(cycle, crash)(&node->x);
 }
 
-/** Private: add to {this.last} in {<U>}.
- @implements <T>ListNodeAction */
-static void PRIVATE_T_U_(list, push)(struct T_(List) *const this,
+/** Private: add {node} before {anchor}. */
+static void PRIVATE_T_U_(list, add_before)(struct PRIVATE_T_(X) *const anchor,
 	struct T_(ListNode) *const node) {
-	assert(this && node);
-	node->U_(prev) = this->U_(last);
-	node->U_(next) = 0;
-	if(this->U_(last)) {
-		this->U_(last)->U_(next) = node;
-	} else {
-		assert(!this->U_(first));
-		this->U_(first) = node;
-	}
-	this->U_(last) = node;
-	PRIVATE_T_U_(cycle, crash)(this);
-}
-
-/** Private: add before {this.first} in {<U>}.
- @implements <T>ListNodeAction */
-static void PRIVATE_T_U_(list, unshift)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
-	assert(this && node);
-	node->U_(prev) = 0;
-	node->U_(next) = this->U_(first);
-	if(this->U_(first)) {
-		this->U_(first)->U_(prev) = node;
-	} else {
-		assert(!this->U_(last));
-		this->U_(last) = node;
-	}
-	this->U_(first) = node;
-	PRIVATE_T_U_(cycle, crash)(this);
+	assert(anchor && node && anchor != &node->x
+		&& anchor->U_(prev) && anchor->U_(next));
+	node->x.U_(prev) = anchor->U_(prev);
+	node->x.U_(next) = anchor;
+	anchor->U_(prev)->U_(next) = &node->x;
+	anchor->U_(prev) = &node->x;
+	PRIVATE_T_U_(cycle, crash)(&node->x);
 }
 
 /** Private: list remove in {<U>}.
  @implements <T>ListNodeAction */
-static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
-	assert(this && node);
-	PRIVATE_T_U_(contains, count)(this, node, (size_t)1l);
-	if(node->U_(prev)) {
-		node->U_(prev)->U_(next) = node->U_(next);
-	} else {
-		assert(this->U_(first) == node);
-		this->U_(first) = node->U_(next);
-	}
-	if(node->U_(next)) {
-		node->U_(next)->U_(prev) = node->U_(prev);
-	} else {
-		assert(this->U_(last) == node);
-		this->U_(last) = node->U_(prev);
-	}
+static void PRIVATE_T_U_(list, remove)(struct T_(ListNode) *const node) {
+	assert(node && node->x.U_(prev) && node->x.U_(next));
+	node->x.U_(prev)->U_(next) = node->x.U_(next);
+	node->x.U_(next)->U_(prev) = node->x.U_(prev);
+	node->x.U_(prev) = node->x.U_(next) = 0; /* Just to be clean. */
 }
 
 /** Private: cats all {from} to the tail of {this}; {from} will be empty after.
@@ -989,18 +978,18 @@ static void PRIVATE_T_U_(list, remove)(struct T_(List) *const this,
  @order \Theta(1) */
 static void PRIVATE_T_U_(list, cat)(struct T_(List) *const this,
 	struct T_(List) *const from) {
-	assert(this && from && !this->U_(first) == !this->U_(last)
-		&& !from->U_(first) == !from->U_(last));
-	if(!from->U_(first)) {        /* there is nothing in {from} */
-		return;
-	} else if(!this->U_(first)) { /* there is nothing in {this} */
-		this->U_(first) = from->U_(first);
-	} else {                      /* there is something in both */
-		this->U_(last)->U_(next) = from->U_(first);
-	}
-	this->U_(last) = from->U_(last);
-	from->U_(first) = from->U_(last) = 0;
-	PRIVATE_T_U_(cycle, crash)(this);
+	assert(this && from && !this->first.U_(prev) && this->first.U_(next)
+		&& this->last.U_(prev) && !this->last.U_(next)
+		&& !from->first.U_(prev) && from->first.U_(next)
+		&& from->last.U_(prev) && !from->last.U_(next));
+	from->first.U_(next)->U_(prev) = this->last.U_(prev);
+	this->last.U_(prev)->U_(next) = from->first.U_(next);
+	from->last.U_(prev)->U_(next) = &this->last;
+	this->last.U_(prev) = from->last.U_(prev);
+	from->first.U_(next) = &from->last;
+	from->last.U_(prev) = &from->first;
+	PRIVATE_T_U_(cycle, crash)(&this->first);
+	PRIVATE_T_U_(cycle, crash)(&from->first);
 }
 
 /** Private: callback when {realloc} changes pointers. Tried to keep undefined
