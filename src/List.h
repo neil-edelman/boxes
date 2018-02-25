@@ -120,7 +120,7 @@
 #endif
 #else /* anon --><-- !anon */
 #ifdef LIST_COMPARATOR
-#error List: LIST_COMPARATOR can only be defined anonymously; use LIST_U[A-D]_COMPARATOR.
+#error List: LIST_COMPARATOR can only be anonymous; use LIST_U[A-D]_COMPARATOR.
 #endif
 #endif /* !anon --> */
 #if defined(LIST_TEST) && !defined(LIST_TO_STRING)
@@ -140,7 +140,7 @@
 
 
 /* After this block, the preprocessor replaces T with LIST_TYPE, T_(X) with
- LIST_NAMEX, PRIVATE_T_(X) with LIST_U_NAME_X, and T_NAME with the string
+ LIST_NAMEX, PT_(X) with LIST_U_NAME_X, and T_NAME with the string
  version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
 #ifdef CAT
 #undef CAT
@@ -160,8 +160,8 @@
 #ifdef T_
 #undef T_
 #endif
-#ifdef PRIVATE_T_
-#undef PRIVATE_T_
+#ifdef PT_
+#undef PT_
 #endif
 #ifdef T_NAME
 #undef T_NAME
@@ -179,70 +179,70 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(LIST_NAME, thing)
-#define PRIVATE_T_(thing) PCAT(list, PCAT(LIST_NAME, thing))
+#define PT_(thing) PCAT(list, PCAT(LIST_NAME, thing)) /* {private <T>} */
 #define T_NAME QUOTE(LIST_NAME)
 
 /* Troubles with this line? check to ensure that LIST_TYPE is a valid type,
  whose definition is placed above {#include "List.h"}. */
-typedef LIST_TYPE PRIVATE_T_(Type);
-#define T PRIVATE_T_(Type)
+typedef LIST_TYPE PT_(Type);
+#define T PT_(Type)
 
 /* [A, D] */
 #ifdef UA_
 #undef UA_
 #undef T_UA_
-#undef PRIVATE_T_UA_
+#undef PT_UA_
 #endif
 #ifdef UB_
 #undef UB_
 #undef T_UB_
-#undef PRIVATE_T_UB_
+#undef PT_UB_
 #endif
 #ifdef UC_
 #undef UC_
 #undef T_UC_
-#undef PRIVATE_T_UC_
+#undef PT_UC_
 #endif
 #ifdef UD_
 #undef UD_
 #undef T_UD_
-#undef PRIVATE_T_UD_
+#undef PT_UD_
 #endif
-/* data exclusively, public f'ns, and private f'ns */
 
-#ifdef LIST_U_ANONYMOUS /* <-- anon: "empty macro arguments were standardized
-in C99" */
+/* Data exclusively, public f'ns, and private f'ns. */
+#ifdef LIST_U_ANONYMOUS /* <-- anon: "Empty macro arguments were standardized
+ in C99," workaround. */
 #define UA_(thing) PCAT(anonymous, thing)
 #define T_UA_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2)
-#define PRIVATE_T_UA_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+#define PT_UA_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	CAT(_, thing2)))
 #else /* anon --><-- !anon */
 #ifdef LIST_UA_NAME
 #define UA_(thing) PCAT(LIST_UA_NAME, thing)
 #define T_UA_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
 	CAT(LIST_UA_NAME, thing2))
-#define PRIVATE_T_UA_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+#define PT_UA_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	PCAT(LIST_UA_NAME, thing2)))
 #endif
 #ifdef LIST_UB_NAME
 #define UB_(thing) PCAT(LIST_UB_NAME, thing)
 #define T_UB_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
 	CAT(LIST_UB_NAME, thing2))
-#define PRIVATE_T_UB_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+#define PT_UB_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	PCAT(LIST_UB_NAME, thing2)))
 #endif
 #ifdef LIST_UC_NAME
 #define UC_(thing) PCAT(LIST_UC_NAME, thing)
 #define T_UC_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
 	CAT(LIST_UC_NAME, thing2))
-#define PRIVATE_T_UC_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+#define PT_UC_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	PCAT(LIST_UC_NAME, thing2)))
 #endif
 #ifdef LIST_UD_NAME
 #define UD_(thing) PCAT(LIST_UD_NAME, thing)
 #define T_UD_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
 	CAT(LIST_UD_NAME, thing2))
-#define PRIVATE_T_UD_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+#define PT_UD_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	PCAT(LIST_UD_NAME, thing2)))
 #endif
 #endif /* !anon --> */
@@ -274,7 +274,7 @@ enum ListOperation {
 /** Contains information about a {realloc}. */
 struct Migrate;
 struct Migrate {
-	const void *begin, *end; /* old pointers */
+	const void *begin, *end; /* Old pointers. */
 	ptrdiff_t delta;
 };
 #endif /* migrate --> */
@@ -282,18 +282,18 @@ struct Migrate {
 
 
 /* List position. */
-struct PRIVATE_T_(X) {
+struct PT_(X) {
 #ifdef LIST_UA_NAME
-	struct PRIVATE_T_(X) *UA_(prev), *UA_(next);
+	struct PT_(X) *UA_(prev), *UA_(next);
 #endif
 #ifdef LIST_UB_NAME
-	struct PRIVATE_T_(X) *UB_(prev), *UB_(next);
+	struct PT_(X) *UB_(prev), *UB_(next);
 #endif
 #ifdef LIST_UC_NAME
-	struct PRIVATE_T_(X) *UC_(prev), *UC_(next);
+	struct PT_(X) *UC_(prev), *UC_(next);
 #endif
 #ifdef LIST_UD_NAME
-	struct PRIVATE_T_(X) *UD_(prev), *UD_(next);
+	struct PT_(X) *UD_(prev), *UD_(next);
 #endif
 };
 /** A single link in the linked-list derived from {<T>}. Storage of this
@@ -301,8 +301,8 @@ struct PRIVATE_T_(X) {
  element {data}. */
 struct T_(ListNode);
 struct T_(ListNode) {
-	T data; /* 1st so we can cast without the mess of {container_of} */
-	struct PRIVATE_T_(X) x;
+	T data; /* Must be first. */
+	struct PT_(X) x;
 };
 
 /** Serves as an a head for linked-list(s) of {<T>ListNode}. No initialisation
@@ -312,7 +312,7 @@ struct T_(List);
 struct T_(List) {
 	/* The reason there's two instead of one is because we rely on null values
 	 to determine the ends of the list. This allows easy differentiation. */
-	struct PRIVATE_T_(X) first, last;
+	struct PT_(X) first, last;
 };
 
 
@@ -362,32 +362,30 @@ typedef int (*T_(Comparator))(const T *, const T *);
 typedef void (*T_(ToString))(const T *const, char (*const)[12]);
 
 /* Check that {LIST_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) PRIVATE_T_(to_string) = (LIST_TO_STRING);
+static const T_(ToString) PT_(to_string) = (LIST_TO_STRING);
 
 #endif /* string --> */
 
 
 
 /** {container_of}. */
-static struct T_(ListNode) *PRIVATE_T_(node_hold_x)
-	(const struct PRIVATE_T_(X) *const x) {
+static struct T_(ListNode) *PT_(node_hold_x)(const struct PT_(X) *const x) {
 	return (struct T_(ListNode) *)(void *)
-		((char *)x - offsetof(struct T_(ListNode),x));
+		((char *)x - offsetof(struct T_(ListNode), x));
 }
 
-/** {container_of}. */
-static struct T_(ListNode) *PRIVATE_T_(node_hold_data)
+/** {container_of}; just cast. */
+static struct T_(ListNode) *PT_(node_hold_data)
 	(const T *const data) {
 	return (struct T_(ListNode) *)(void *)data;
 }
 
 /* Prototypes: needed for the next section, but undefined until later. */
-static void PRIVATE_T_(valid_state)(const struct T_(List) *const this);
-static void PRIVATE_T_(push)(struct T_(List) *const this,
-	struct T_(ListNode) *const node);
-static void PRIVATE_T_(remove)(struct T_(ListNode) *const node);
-static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
-	struct PRIVATE_T_(X) **const x_ptr);
+static void PT_(valid_state)(const struct T_(List) *const this);
+static void PT_(push)(struct T_(List) *const this, struct PT_(X) *const x);
+static void PT_(remove)(struct PT_(X) *const x);
+static void PT_(migrate)(const struct Migrate *const migrate,
+	struct PT_(X) **const x_ptr);
 
 /* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor
  flag controls this behaviour; we are currently in the {!LIST_U_NAME} section.
@@ -428,98 +426,97 @@ static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
 
 
 /** Assert valid state. */
-static void PRIVATE_T_(valid_state)(const struct T_(List) *const this) {
+static void PT_(valid_state)(const struct T_(List) *const this) {
 #ifdef LIST_DEBUG
 	assert(this);
 #ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(valid, state)(this);
+	PT_UA_(valid, state)(this);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(valid, state)(this);
+	PT_UB_(valid, state)(this);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(valid, state)(this);
+	PT_UC_(valid, state)(this);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(valid, state)(this);
+	PT_UD_(valid, state)(this);
 #endif /* d --> */
 #endif
 	UNUSED(this);
 }
 
 /** Private: add after. */
-static void PRIVATE_T_(add_after)(struct PRIVATE_T_(X) *const anchor,
+static void PT_(add_after)(struct PT_(X) *const anchor,
 	struct T_(ListNode) *const node) {
 	assert(anchor && node && anchor != &node->x);
 #ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, add_after)(anchor, node);
+	PT_UA_(list, add_after)(anchor, node);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, add_after)(anchor, node);
+	PT_UB_(list, add_after)(anchor, node);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, add_after)(anchor, node);
+	PT_UC_(list, add_after)(anchor, node);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, add_after)(anchor, node);
+	PT_UD_(list, add_after)(anchor, node);
 #endif /* d --> */
 }
 
 /** Private: add before. */
-static void PRIVATE_T_(add_before)(struct PRIVATE_T_(X) *const anchor,
-	struct T_(ListNode) *const node) {
-	assert(anchor && node && anchor != &node->x);
+static void PT_(add_before)(struct PT_(X) *const anchor,
+	struct PT_(X) *const x) {
+	assert(anchor && x && anchor != x);
 #ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, add_before)(anchor, node);
+	PT_UA_(list, add_before)(anchor, x);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, add_before)(anchor, node);
+	PT_UB_(list, add_before)(anchor, x);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, add_before)(anchor, node);
+	PT_UC_(list, add_before)(anchor, x);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, add_before)(anchor, node);
+	PT_UD_(list, add_before)(anchor, x);
 #endif /* d --> */
 }
 
 /** Private: push to the end of the list.
  @implements <T>ListNodeAction */
-static void PRIVATE_T_(push)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
-	assert(this && node);
-	PRIVATE_T_(add_before)(&this->last, node);
+static void PT_(push)(struct T_(List) *const this,
+	struct PT_(X) *const x) {
+	assert(this && x);
+	PT_(add_before)(&this->last, x);
 }
 
 /** Private: unshift to the beginning of the list.
  @implements <T>ListNodeAction */
-static void PRIVATE_T_(unshift)(struct T_(List) *const this,
+static void PT_(unshift)(struct T_(List) *const this,
 	struct T_(ListNode) *const node) {
 	assert(this && node);
-	PRIVATE_T_(add_after)(&this->first, node);
+	PT_(add_after)(&this->first, node);
 }
 
 /** Private: remove from list.
  @implements <T>ListNodeAction */
-static void PRIVATE_T_(remove)(struct T_(ListNode) *const node) {
-	assert(node);
+static void PT_(remove)(struct PT_(X) *const x) {
 #ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, remove)(node);
+	PT_UA_(list, remove)(x);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, remove)(node);
+	PT_UB_(list, remove)(x);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, remove)(node);
+	PT_UC_(list, remove)(x);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, remove)(node);
+	PT_UD_(list, remove)(x);
 #endif /* d --> */
 }
 
 /** Private: clears and initialises.
  @implements <T>ListAction */
-static void PRIVATE_T_(clear)(struct T_(List) *const this) {
+static void PT_(clear)(struct T_(List) *const this) {
 	assert(this);
 #ifdef LIST_UA_NAME
 	this->first.UA_(prev) = this->last.UA_(next) = 0;
@@ -550,7 +547,7 @@ static void PRIVATE_T_(clear)(struct T_(List) *const this) {
  @allow */
 static void T_(ListClear)(struct T_(List) *const this) {
 	if(!this) return;
-	PRIVATE_T_(clear)(this);
+	PT_(clear)(this);
 }
 
 /** Initialises the contents of {node} to add it to the end of {this}. If
@@ -563,7 +560,7 @@ static void T_(ListClear)(struct T_(List) *const this) {
  @allow */
 static void T_(ListPush)(struct T_(List) *const this, T *const data) {
 	if(!this || !data) return;
-	PRIVATE_T_(push)(this, PRIVATE_T_(node_hold_data)(data));
+	PT_(push)(this, &PT_(node_hold_data)(data)->x);
 }
 
 /** Initialises the contents of {node} to add it to the beginning of {this}. If
@@ -577,7 +574,7 @@ static void T_(ListPush)(struct T_(List) *const this, T *const data) {
  @allow */
 static void T_(ListUnshift)(struct T_(List) *const this, T *const data) {
 	if(!this || !data) return;
-	PRIVATE_T_(unshift)(this, PRIVATE_T_(node_hold_data)(data));
+	PT_(unshift)(this, PT_(node_hold_data)(data));
 }
 
 /** Given an item from the list . . . */
@@ -590,7 +587,7 @@ static void T_(ListUnshift)(struct T_(List) *const this, T *const data) {
  @allow */
 static void T_(ListRemove)(T *const data) {
 	if(!data) return;
-	PRIVATE_T_(remove)(PRIVATE_T_(node_hold_data)(data));
+	PT_(remove)(&PT_(node_hold_data)(data)->x);
 }
 
 /** Appends the elements of {from} onto {this}. If {this} is null, then it
@@ -602,18 +599,18 @@ static void T_(ListRemove)(T *const data) {
 static void T_(ListTake)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	if(!from || from == this) return;
-	if(!this) { PRIVATE_T_(clear)(from); return; }
+	if(!this) { PT_(clear)(from); return; }
 #ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, cat)(&this->last, from);
+	PT_UA_(list, cat)(&this->last, from);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, cat)(&this->last, from);
+	PT_UB_(list, cat)(&this->last, from);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, cat)(&this->last, from);
+	PT_UC_(list, cat)(&this->last, from);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, cat)(&this->last, from);
+	PT_UD_(list, cat)(&this->last, from);
 #endif /* d --> */
 }
 
@@ -626,16 +623,16 @@ static void T_(ListNodeTake)(struct T_(ListNode) *const element,
 	struct T_(List) *const from) {
 	if(!element || !from) return;
 #ifdef LIST_UA_NAME /* <-- a */
-	PRIVATE_T_UA_(list, cat)(&element->x, from);
+	PT_UA_(list, cat)(&element->x, from);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PRIVATE_T_UB_(list, cat)(&element->x, from);
+	PT_UB_(list, cat)(&element->x, from);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PRIVATE_T_UC_(list, cat)(&element->x, from);
+	PT_UC_(list, cat)(&element->x, from);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PRIVATE_T_UD_(list, cat)(&element->x, from);
+	PT_UD_(list, cat)(&element->x, from);
 #endif /* d --> */
 }
 
@@ -651,7 +648,7 @@ static void T_(ListNodeTake)(struct T_(ListNode) *const element,
 static void T_(ListMerge)(struct T_(List) *const this,
 	struct T_(List) *const from) {
 	if(!from || from == this) return;
-	if(!this) { PRIVATE_T_(clear)(from); return; }
+	if(!this) { PT_(clear)(from); return; }
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp parallel sections
 #endif /* omp --> */
@@ -661,9 +658,9 @@ static void T_(ListMerge)(struct T_(List) *const this,
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UA_(list, merge)(this, from);
+		PT_UA_(list, merge)(this, from);
 #else /* comp --><-- !comp */
-		PRIVATE_T_UA_(list, cat)(this, from);
+		PT_UA_(list, cat)(this, from);
 #endif /* !comp --> */
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
@@ -671,9 +668,9 @@ static void T_(ListMerge)(struct T_(List) *const this,
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UB_(list, merge)(this, from);
+		PT_UB_(list, merge)(this, from);
 #else /* comp --><-- !comp */
-		PRIVATE_T_UB_(list, cat)(this, from);
+		PT_UB_(list, cat)(this, from);
 #endif /* !comp --> */
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
@@ -681,9 +678,9 @@ static void T_(ListMerge)(struct T_(List) *const this,
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UC_(list, merge)(this, from);
+		PT_UC_(list, merge)(this, from);
 #else /* comp --><-- !comp */
-		PRIVATE_T_UC_(list, cat)(this, from);
+		PT_UC_(list, cat)(this, from);
 #endif /* !comp --> */
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
@@ -691,9 +688,9 @@ static void T_(ListMerge)(struct T_(List) *const this,
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UD_(list, merge)(this, from);
+		PT_UD_(list, merge)(this, from);
 #else /* comp --><-- !comp */
-		PRIVATE_T_UD_(list, cat)(this, from);
+		PT_UD_(list, cat)(this, from);
 #endif /* !comp --> */
 #endif /* d --> */
 	}
@@ -717,25 +714,25 @@ static void T_(ListSort)(struct T_(List) *const this) {
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UA_(natural, sort)(this);
+		PT_UA_(natural, sort)(this);
 #endif /* a --> */
 #ifdef LIST_UB_COMPARATOR /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UB_(natural, sort)(this);
+		PT_UB_(natural, sort)(this);
 #endif /* b --> */
 #ifdef LIST_UC_COMPARATOR /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UC_(natural, sort)(this);
+		PT_UC_(natural, sort)(this);
 #endif /* c --> */
 #ifdef LIST_UD_COMPARATOR /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UD_(natural, sort)(this);
+		PT_UD_(natural, sort)(this);
 #endif /* d --> */
 	}
 }
@@ -771,33 +768,33 @@ static void T_(ListMigrate)(struct T_(List) *const this,
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UA_(list, migrate)(this, migrate);
+		PT_UA_(list, migrate)(this, migrate);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UB_(list, migrate)(this, migrate);
+		PT_UB_(list, migrate)(this, migrate);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UC_(list, migrate)(this, migrate);
+		PT_UC_(list, migrate)(this, migrate);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PRIVATE_T_UD_(list, migrate)(this, migrate);
+		PT_UD_(list, migrate)(this, migrate);
 #endif /* d --> */
 	}
 }
 
 /** Private: used in \see{<T>_list_<U>_migrate} and \see{<T>ListMigratePointer}.
  \${ptr \in [begin, end) -> ptr += delta}. */
-static void PRIVATE_T_(migrate)(const struct Migrate *const migrate,
-	struct PRIVATE_T_(X) **const x_ptr) {
+static void PT_(migrate)(const struct Migrate *const migrate,
+	struct PT_(X) **const x_ptr) {
 	const void *const x = *x_ptr;
 	if(x < migrate->begin || x >= migrate->end) return;
 	*(char **)x_ptr += migrate->delta;
@@ -812,7 +809,7 @@ static void T_(MigratePointer)(T **const t_ptr,
 	const struct Migrate *const migrate) {
 	if(!migrate || !t_ptr || !*t_ptr) return;
 	/* X is (mostly) how we pass it; just getting turned into a {char *}. */
-	PRIVATE_T_(migrate)(migrate, (struct PRIVATE_T_(X) **const)t_ptr);
+	PT_(migrate)(migrate, (struct PT_(X) **const)t_ptr);
 }
 
 #ifdef LIST_TEST /* <-- test */
@@ -820,11 +817,11 @@ static void T_(MigratePointer)(T **const t_ptr,
 #endif /* test --> */
 
 /* prototype */
-static void PRIVATE_T_(unused_coda)(void);
+static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void PRIVATE_T_(unused_list)(void) {
+static void PT_(unused_list)(void) {
 	T_(ListClear)(0);
 	T_(ListPush)(0, 0);
 	T_(ListUnshift)(0, 0);
@@ -837,10 +834,10 @@ static void PRIVATE_T_(unused_list)(void) {
 	T_(ListMigrate)(0, 0);
 	T_(MigratePointer)(0, 0);
 	/*T_(Migrate)(0, 0);*/
-	PRIVATE_T_(unused_coda)();
+	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
-static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
+static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 
 
 
@@ -855,7 +852,7 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 #undef PCAT_
 #undef T
 #undef T_
-#undef PRIVATE_T_
+#undef PT_
 #undef T_NAME
 #undef QUOTE
 #undef QUOTE_
@@ -934,13 +931,13 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 
 
 /* After this block, the preprocessor replaces T_U_(X, Y) with
- LIST_NAMEXLIST_U_NAMEY, PRIVATE_T_U_(X, Y) with
+ LIST_NAMEXLIST_U_NAMEY, PT_U_(X, Y) with
  list_LIST_U_NAME_X_LIST_U_NAME_Y */
 #ifdef T_U_
 #undef T_U_
 #endif
-#ifdef PRIVATE_T_U_
-#undef PRIVATE_T_U_
+#ifdef PT_U_
+#undef PT_U_
 #endif
 #ifdef U_
 #undef U_
@@ -949,20 +946,20 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_list)(); }
 in C99" */
 #define U_(thing) PCAT(anonymous, thing)
 #define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2)
-#define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+#define PT_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	CAT(_, thing2)))
 #else /* anon --><-- !anon */
 #define U_(thing) PCAT(LIST_U_NAME, thing)
 #define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
 	CAT(LIST_U_NAME, thing2))
-#define PRIVATE_T_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
+#define PT_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
 	PCAT(LIST_U_NAME, thing2)))
 #endif /* !anon --> */
 
 
 
 /** Assert valid state. */
-static void PRIVATE_T_U_(valid, state)(const struct T_(List) *const this) {
+static void PT_U_(valid, state)(const struct T_(List) *const this) {
 #ifdef LIST_DEBUG
 	assert(this && !this->first.U_(prev) && this->first.U_(next)
 		&& this->last.U_(prev) && !this->last.U_(prev));
@@ -973,9 +970,9 @@ static void PRIVATE_T_U_(valid, state)(const struct T_(List) *const this) {
 /** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
  You do not want cycles!
  @implements <T>ListAction */
-static void PRIVATE_T_U_(cycle, crash)(const struct PRIVATE_T_(X) *const node) {
+static void PT_U_(cycle, crash)(const struct PT_(X) *const node) {
 #ifdef LIST_DEBUG
-	struct PRIVATE_T_(X) *turtle, *hare;
+	struct PT_(X) *turtle, *hare;
 	assert(this);
 	for(turtle = node; turtle->U_(prev); turtle = turtle->U_(prev));
 	for(hare = turtle->U_(next); (turtle = turtle->U_(next),
@@ -989,7 +986,7 @@ static void PRIVATE_T_U_(cycle, crash)(const struct PRIVATE_T_(X) *const node) {
 
 /** Goes though all {this} U and makes sure it contains {count} element {data}
  when in debug mode. */
-/*static void PRIVATE_T_U_(contains, count)(const struct T_(List) *const this,
+/*static void PT_U_(contains, count)(const struct T_(List) *const this,
 	const struct T_(ListNode) *const elem, const size_t count) {
 #ifdef LIST_DEBUG
 	struct T_(ListNode) *turtle;
@@ -1005,35 +1002,34 @@ static void PRIVATE_T_U_(cycle, crash)(const struct PRIVATE_T_(X) *const node) {
 }*/
 
 /** Private: add {node} after {anchor}. */
-static void PRIVATE_T_U_(list, add_after)(struct PRIVATE_T_(X) *const anchor, struct T_(ListNode) *const node) {
+static void PT_U_(list, add_after)(struct PT_(X) *const anchor, struct T_(ListNode) *const node) {
 	assert(anchor && node && anchor != &node->x
 		&& anchor->U_(prev) && anchor->U_(next));
 	node->x.U_(prev) = anchor;
 	node->x.U_(next) = anchor->U_(next);
 	anchor->U_(next)->U_(prev) = &node->x;
 	anchor->U_(next) = &node->x;
-	PRIVATE_T_U_(cycle, crash)(&node->x);
+	PT_U_(cycle, crash)(&node->x);
 }
 
 /** Private: add {node} before {anchor}. */
-static void PRIVATE_T_U_(list, add_before)(struct PRIVATE_T_(X) *const anchor,
-	struct T_(ListNode) *const node) {
-	assert(anchor && node && anchor != &node->x
-		&& anchor->U_(prev) && anchor->U_(next));
-	node->x.U_(prev) = anchor->U_(prev);
-	node->x.U_(next) = anchor;
-	anchor->U_(prev)->U_(next) = &node->x;
-	anchor->U_(prev) = &node->x;
-	PRIVATE_T_U_(cycle, crash)(&node->x);
+static void PT_U_(list, add_before)(struct PT_(X) *const anchor,
+	struct PT_(X) *const x) {
+	assert(anchor && x && anchor != x && anchor->U_(prev) && anchor->U_(next));
+	x->U_(prev) = anchor->U_(prev);
+	x->U_(next) = anchor;
+	anchor->U_(prev)->U_(next) = x;
+	anchor->U_(prev) = x;
+	PT_U_(cycle, crash)(x);
 }
 
 /** Private: list remove in {<U>}.
  @implements <T>ListNodeAction */
-static void PRIVATE_T_U_(list, remove)(struct T_(ListNode) *const node) {
-	assert(node && node->x.U_(prev) && node->x.U_(next));
-	node->x.U_(prev)->U_(next) = node->x.U_(next);
-	node->x.U_(next)->U_(prev) = node->x.U_(prev);
-	node->x.U_(prev) = node->x.U_(next) = 0; /* Just to be clean. */
+static void PT_U_(list, remove)(struct PT_(X) *const x) {
+	assert(x->U_(prev) && x->U_(next));
+	x->U_(prev)->U_(next) = x->U_(next);
+	x->U_(next)->U_(prev) = x->U_(prev);
+	x->U_(prev) = x->U_(next) = 0; /* Just to be clean. */
 }
 
 /** Private: cats all {from} in front of {x}, (don't cat {first}, instead
@@ -1041,7 +1037,7 @@ static void PRIVATE_T_U_(list, remove)(struct T_(ListNode) *const node) {
  because that will just erase the list.
  @implements <T>BiListAction
  @order \Theta(1) */
-static void PRIVATE_T_U_(list, cat)(struct PRIVATE_T_(X) *const x,
+static void PT_U_(list, cat)(struct PT_(X) *const x,
 	struct T_(List) *const from) {
 	assert(x && from && x->U_(prev) &&
 		!from->first.U_(prev) && from->first.U_(next)
@@ -1052,23 +1048,23 @@ static void PRIVATE_T_U_(list, cat)(struct PRIVATE_T_(X) *const x,
 	x->U_(prev) = from->last.U_(prev);
 	from->first.U_(next) = &from->last;
 	from->last.U_(prev) = &from->first;
-	PRIVATE_T_U_(cycle, crash)(x);
-	PRIVATE_T_U_(cycle, crash)(&from->first);
+	PT_U_(cycle, crash)(x);
+	PT_U_(cycle, crash)(&from->first);
 }
 
 /** Private: callback when {realloc} changes pointers. Tried to keep undefined
  behaviour to a minimum.
  @order \Theta(n) */
-static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
+static void PT_U_(list, migrate)(struct T_(List) *const this,
 	const struct Migrate *const migrate) {
-	struct PRIVATE_T_(X) *x;
+	struct PT_(X) *x;
 	assert(this && migrate && migrate->begin && migrate->begin < migrate->end
 		&& migrate->delta && this);
 	for(x = &this->first; x; x = x->U_(next)) {
-		PRIVATE_T_(migrate)(migrate, &x->U_(prev));
-		PRIVATE_T_(migrate)(migrate, &x->U_(next));
+		PT_(migrate)(migrate, &x->U_(prev));
+		PT_(migrate)(migrate, &x->U_(next));
 	}
-	PRIVATE_T_U_(cycle, crash)(&this->first);
+	PT_U_(cycle, crash)(&this->first);
 }
 
 
@@ -1083,13 +1079,13 @@ static void PRIVATE_T_U_(list, migrate)(struct T_(List) *const this,
  @allow */
 static void T_U_(List, MigrateEach)(struct T_(List) *const this,
 	const T_(ListMigrateElement) handler, const struct Migrate *const migrate) {
-	struct PRIVATE_T_(X) *cursor, *next;
+	struct PT_(X) *cursor, *next;
 	if(!this || !handler || !migrate) return;
 	for(cursor = &this->first; cursor; cursor = next) {
 		next = cursor->U_(next); /* Careful for user casters. */
-		handler(&PRIVATE_T_(node_hold_x)(cursor)->data, migrate);
+		handler(&PT_(node_hold_x)(cursor)->data, migrate);
 	}
-	PRIVATE_T_U_(cycle, crash)(&this->first);
+	PT_U_(cycle, crash)(&this->first);
 }
 
 /** @return The next element after {this} in {<U>}. When {this} is the last
@@ -1099,9 +1095,9 @@ static void T_U_(List, MigrateEach)(struct T_(List) *const this,
  @order \Theta(1)
  @allow */
 static T *T_U_(Node, GetNext)(T *const data) {
-	struct T_(ListNode) *const node = PRIVATE_T_(node_hold_data)(data);
+	struct T_(ListNode) *const node = PT_(node_hold_data)(data);
 	if(!node || !node->x.U_(next)) return 0;
-	return &PRIVATE_T_(node_hold_x)(node->x.U_(next))->data;
+	return &PT_(node_hold_x)(node->x.U_(next))->data;
 }
 
 /** @return The previous element before {this} in {<U>}. When {this} is the
@@ -1111,9 +1107,9 @@ static T *T_U_(Node, GetNext)(T *const data) {
  @order \Theta(1)
  @allow */
 static T *T_U_(Node, GetPrevious)(T *const data) {
-	struct T_(ListNode) *const node = PRIVATE_T_(node_hold_data)(data);
+	struct T_(ListNode) *const node = PT_(node_hold_data)(data);
 	if(!node || !node->x.U_(prev)) return 0;
-	return &PRIVATE_T_(node_hold_x)(node->x.U_(prev))->data;
+	return &PT_(node_hold_x)(node->x.U_(prev))->data;
 }
 
 /** @return A pointer to the first element of {this}.
@@ -1123,7 +1119,7 @@ static T *T_U_(List, GetFirst)(struct T_(List) *const this) {
 	if(!this) return 0;
 	assert(this->first.U_(next));
 	if(!this->first.U_(next)->U_(next)) return 0; /* Empty. */
-	return &PRIVATE_T_(node_hold_x)(this->first.U_(next))->data;
+	return &PT_(node_hold_x)(this->first.U_(next))->data;
 }
 
 /** @return A pointer to the last element of {this}.
@@ -1133,7 +1129,7 @@ static T *T_U_(List, GetLast)(struct T_(List) *const this) {
 	if(!this) return 0;
 	assert(this->last.U_(prev));
 	if(!this->last.U_(prev)->U_(prev)) return 0; /* Empty. */
-	return &PRIVATE_T_(node_hold_x)(this->last.U_(prev))->data;
+	return &PT_(node_hold_x)(this->last.U_(prev))->data;
 }
 
 #ifdef LIST_U_COMPARATOR /* <-- comp */
@@ -1143,8 +1139,8 @@ static T *T_U_(List, GetLast)(struct T_(List) *const this) {
 #define LIST_SORT_INTERNALS
 /* A run is a temporary sequence of values in the array that is weakly
  increasing; we store it's size temporarily. */
-struct PRIVATE_T_(Run) {
-	struct T_(ListNode) *head, *tail;
+struct PT_(Run) {
+	struct PT_(X) *head, *tail;
 	size_t size;
 };
 /* Store the maximum capacity for the indexing with {size_t}. (Much more then
@@ -1154,46 +1150,44 @@ struct PRIVATE_T_(Run) {
  2^bits      = 2 (r^runs - 1)
  runs        = log(2^{bits-1} + 1) / log 2
  runs       <= 2^{bits - 1}, 2^{bits + 1} > 0} */
-struct PRIVATE_T_(Runs) {
-	struct PRIVATE_T_(Run) run[(sizeof(size_t) << 3) - 1];
+struct PT_(Runs) {
+	struct PT_(Run) run[(sizeof(size_t) << 3) - 1];
 	size_t run_no;
 };
 #endif /* sort internals --> */
 
 /* Check that each of LIST_U[A-D]_COMPARATOR are functions implementing
  {<T>Comparator}. */
-static const T_(Comparator) PRIVATE_T_U_(data, cmp) = (LIST_U_COMPARATOR);
+static const T_(Comparator) PT_U_(data, cmp) = (LIST_U_COMPARATOR);
 
-/** Private: merges {from} into {this} when we don't know anything about the
- data; on equal elements, places {this} first.
+/** Private: merges {blist} into {alist} when we don't know anything about the
+ data; on equal elements, places {alist} first.
  @implements <T>BiListAction
  @order {O(n + m)}. */
-static void PRIVATE_T_U_(list, merge)(struct T_(List) *const this,
-	struct T_(List) *const from) {
-	struct PRIVATE_T_(X) *a, *b; /* {a} ~ {this}, {b} ~ {from} */
-	assert(this && from);
-	/* {from} empty. */
-	if(!(b = from->first.U_(next))->U_(next)) return;
-	/* {this} empty. */
-	if(!(a = this->first.U_(next))->U_(next))
-		{ PRIVATE_T_U_(list, cat)(&this->last, from); return; }
+static void PT_U_(list, merge)(struct T_(List) *const alist,
+	struct T_(List) *const blist) {
+	struct PT_(X) *hind, *a, *b;
+	assert(alist && blist);
+	/* {blist} empty -- that was easy. */
+	if(!(b = blist->first.U_(next))->U_(next)) return;
+	/* {alist} empty -- {O(1)} cat is more efficient. */
+	if(!(a = alist->first.U_(next))->U_(next))
+		{ PT_U_(list, cat)(&alist->last, blist); return; }
 	/* Merge */
-	struct T_(ListNode) nemo, *const first = &nemo, *last = first;
-	for( ; ; ) {
-		if(PRIVATE_T_U_(data, cmp)(&PRIVATE_T_(node_hold_x)(a)->data, &b->data) < 0) {
-			a->U_(prev) = last, last = last->U_(next) = a;
+	for(hind = &alist->first; ; ) {
+		if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
+			&PT_(node_hold_x)(b)->data) < 0) {
+			a->U_(prev) = hind, hind = hind->U_(next) = a;
 			if(!(a = a->U_(next)))
-				{ b->U_(prev) = last, last->U_(next) = b,
-				this->U_(last) = from->U_(last); break; }
+				{ b->U_(prev) = hind, hind->U_(next) = b,
+				alist->last.U_(prev) = blist->last.U_(prev); break; }
 		} else {
-			b->U_(prev) = last, last = last->U_(next) = b;
+			b->U_(prev) = hind, hind = hind->U_(next) = b;
 			if(!(b = b->U_(next)))
-				{ a->U_(prev) = last, last->U_(next) = a; break; }
+				{ a->U_(prev) = hind, hind->U_(next) = a; break; }
 		}
-		this->U_(first) = nemo.U_(next);
 	}
-	}
-	from->U_(first) = from->U_(last) = 0;
+	blist->first.U_(next) = &blist->last, blist->last.U_(prev) = &blist->first;
 }
 
 /** Inserts the first element from the larger of two sorted runs, then merges
@@ -1204,22 +1198,23 @@ static void PRIVATE_T_U_(list, merge)(struct T_(List) *const this,
  insertion times that to well in standard merging. However, it's (potentially
  much) faster when the keys have structure: observed, {[-2%, 500%]}. Assumes
  array contains at least 2 elements and there are at least two runs. */
-static void PRIVATE_T_U_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
-	struct PRIVATE_T_(Run) *const run_a = r->run + r->run_no - 2;
-	struct PRIVATE_T_(Run) *const run_b = run_a + 1;
-	struct T_(ListNode) *a = run_a->tail, *b = run_b->head, *chosen;
+static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
+	struct PT_(Run) *const run_a = r->run + r->run_no - 2;
+	struct PT_(Run) *const run_b = run_a + 1;
+	struct PT_(X) *a = run_a->tail, *b = run_b->head, *chosen;
 
 	/* fixme: we are doing one-to-many compares in some cases? */
 
 	if(run_a->size <= run_b->size) {
-		struct T_(ListNode) *prev_chosen;
+		struct PT_(X) *prev_chosen;
 
 		/* run a is smaller: downwards insert b.head followed by upwards
 		 merge */
 
 		/* insert the first element of b downwards into a */
 		for( ; ; ) {
-			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) <= 0) {
+			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
+				&PT_(node_hold_x)(b)->data) <= 0) {
 				chosen = a;
 				a = a->U_(next);
 				break;
@@ -1236,7 +1231,8 @@ static void PRIVATE_T_U_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 		/* merge upwards, while the lists are interleaved */
 		while(chosen->U_(next)) {
 			prev_chosen = chosen;
-			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) > 0) {
+			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
+				&PT_(node_hold_x)(b)->data) > 0) {
 				chosen = b;
 				b = b->U_(next);
 			} else {
@@ -1258,14 +1254,15 @@ static void PRIVATE_T_U_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 		}
 
 	} else {
-		struct T_(ListNode) *next_chosen;
+		struct PT_(X) *next_chosen;
 		int is_a_tail = 0;
 
 		/* run b is smaller; upwards insert followed by downwards merge */
 
 		/* insert the last element of a upwards into b */
 		for( ; ; ) {
-			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) <= 0) {
+			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
+				&PT_(node_hold_x)(b)->data) <= 0) {
 				chosen = b;
 				b = b->U_(prev);
 				break;
@@ -1284,7 +1281,8 @@ static void PRIVATE_T_U_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 		/* merge downwards, while the lists are interleaved */
 		while(chosen->U_(prev)) {
 			next_chosen = chosen;
-			if(PRIVATE_T_U_(data, cmp)(&a->data, &b->data) > 0) {
+			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
+				&PT_(node_hold_x)(b)->data) > 0) {
 				chosen = a;
 				a = a->U_(prev);
 			} else {
@@ -1313,7 +1311,7 @@ static void PRIVATE_T_U_(natural, merge)(struct PRIVATE_T_(Runs) *const r) {
 
 #ifdef LIST_STATIC_STORAGE /* <-- static: it will crash if it calls exactly
 this function concurrently */
-static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
+static struct PT_(Runs) PT_U_(runs, elem);
 #endif /* not dynamic --> */
 
 /** It's kind of experimental. It hasn't been optimised; I think it does
@@ -1321,17 +1319,17 @@ static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
  would be optimum, or whether a long run should be put off merging until
  short runs have finished; it is quite simple as it is.
  @implements <T>ListAction */
-static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
+static void PT_U_(natural, sort)(struct T_(List) *const this) {
 #ifndef LIST_STATIC_STORAGE /* <-- dynamic: this is potentially half-a-KB */
-	static struct PRIVATE_T_(Runs) PRIVATE_T_U_(runs, elem);
+	static struct PT_(Runs) PT_U_(runs, elem);
 #endif /* dynamic --> */
 	/* new_run is an index into list_runs, a temporary sorting structure;
 	 head is first smallest, tail is last largest */
-	struct PRIVATE_T_(Run) *new_run;
+	struct PT_(Run) *new_run;
 	/* part of the state machine for classifying points wrt their neighbours */
 	enum { UNSURE, INCREASING, DECREASING } mono;
 	/* the data that we are sorting */
-	struct T_(ListNode) *a, *b, *c, *first_iso_a;
+	struct PT_(X) *a, *b, *c, *first_iso_a;
 	/* run_count is different from list_runs.run_no in that it only increases;
 	 only used for calculating the path up the tree */
 	size_t run_count, rc;
@@ -1339,21 +1337,22 @@ static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
 	int comp;
 
 	/* ensure we have an 'a' */
-	if(!(a = this->U_(first))) return;
+	if(!(a = this->first.U_(next))->U_(next)) return;
 
 	/* reset the state machine and output to just 'a' in the first run */
 	mono = UNSURE;
-	PRIVATE_T_U_(runs, elem).run_no = 1;
-	new_run = PRIVATE_T_U_(runs,elem).run + 0, run_count = 1;
+	PT_U_(runs, elem).run_no = 1;
+	new_run = PT_U_(runs,elem).run + 0, run_count = 1;
 	new_run->size = 1;
 	first_iso_a = new_run->head = new_run->tail = a;
 
-	for(b = a->U_(next); b; a = b, b = c) {
+	for(b = a->U_(next); b->U_(next); a = b, b = c) {
 
 		/* b.next can be modified, and we always want the iteration original */
 		c = b->U_(next);
 
-		comp = PRIVATE_T_U_(data, cmp)(&a->data, &b->data);
+		comp = PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
+			&PT_(node_hold_x)(b)->data);
 
 		/* state machine that considers runs in both directions -- in practice,
 		 slightly slower than only considering increasing runs on most cases;
@@ -1377,7 +1376,7 @@ static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
 			new_run->tail = a; /* terminating an increasing sequence */
 		} else { /* a == b */
 			if(mono == DECREASING) { /* extend */
-				struct T_(ListNode) *const a_next = a->U_(next);
+				struct PT_(X) *const a_next = a->U_(next);
 				b->U_(next) = a_next;
 				a_next->U_(prev) = b;
 				a->U_(next) = b;
@@ -1392,12 +1391,12 @@ static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
 		new_run->head->U_(prev) = new_run->tail->U_(next) = 0;
 
 		/* greedy merge: keeps space to O(log n) instead of O(n) */
-		for(rc=run_count; !(rc & 1)&&PRIVATE_T_U_(runs,elem).run_no>=2; rc >>=1)
-			PRIVATE_T_U_(natural, merge)(&PRIVATE_T_U_(runs,elem));
+		for(rc=run_count; !(rc & 1)&&PT_U_(runs,elem).run_no>=2; rc >>=1)
+			PT_U_(natural, merge)(&PT_U_(runs,elem));
 		/* reset the state machine and output to just 'b' at the next run */
 		mono = UNSURE;
-		new_run = PRIVATE_T_U_(runs,elem).run +
-			PRIVATE_T_U_(runs,elem).run_no++, run_count++;
+		new_run = PT_U_(runs,elem).run +
+			PT_U_(runs,elem).run_no++, run_count++;
 		new_run->size = 1;
 		new_run->head = new_run->tail = first_iso_a = b;
 	}
@@ -1407,10 +1406,10 @@ static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
 		new_run->tail->U_(next) = new_run->head->U_(prev) = 0;
 
 	/* clean up the rest; when only one run, propagate list_runs[0] to head */
-	while(PRIVATE_T_U_(runs, elem).run_no > 1)
-		PRIVATE_T_U_(natural, merge)(&PRIVATE_T_U_(runs, elem));
-	this->U_(first) = PRIVATE_T_U_(runs, elem).run[0].head;
-	this->U_(last)  = PRIVATE_T_U_(runs, elem).run[0].tail;
+	while(PT_U_(runs, elem).run_no > 1)
+		PT_U_(natural, merge)(&PT_U_(runs, elem));
+	this->first.U_(next) = PT_U_(runs, elem).run[0].head;
+	this->last.U_(prev)  = PT_U_(runs, elem).run[0].tail;
 }
 
 /** Sorts {<U>}, but leaves the other lists in {<T>} alone. Must have
@@ -1420,7 +1419,7 @@ static void PRIVATE_T_U_(natural, sort)(struct T_(List) *const this) {
  @allow */
 static void T_U_(List, Sort)(struct T_(List) *const this) {
 	if(!this) return;
-	PRIVATE_T_U_(natural, sort)(this);
+	PT_U_(natural, sort)(this);
 }
 
 /** Compares two linked-lists as sequences in the order specified by {<U>}.
@@ -1432,7 +1431,7 @@ static void T_U_(List, Sort)(struct T_(List) *const this) {
  @allow */
 static int T_U_(List, Compare)(const struct T_(List) *const this,
 	const struct T_(List) *const that) {
-	struct T_(ListNode) *a, *b;
+	struct PT_(X) *a, *b;
 	int diff;
 	/* null counts as -\infty */
 	if(!this) {
@@ -1441,13 +1440,15 @@ static int T_U_(List, Compare)(const struct T_(List) *const this,
 		return 1;
 	}
 	/* compare element by element */
-	for(a = this->U_(first), b = that->U_(first); ;
+	for(a = this->first.U_(next), b = that->first.U_(next); ;
 		a = a->U_(next), b = b->U_(next)) {
-		if(!a) {
-			return b ? -1 : 0;
-		} else if(!b) {
+		if(!a->U_(next)) {
+			return b->U_(next) ? -1 : 0;
+		} else if(!b->U_(next)) {
 			return 1;
-		} else if((diff = PRIVATE_T_U_(data, cmp)(&a->data, &b->data))) {
+		} else if((diff = PT_U_(data, cmp)
+			(&PT_(node_hold_x)(a)->data,
+			&PT_(node_hold_x)(b)->data))) {
 			return diff;
 		}
 	}
@@ -1456,46 +1457,47 @@ static int T_U_(List, Compare)(const struct T_(List) *const this,
 /** Private: {this <- a \mask b}. Prefers {a} to {b} when equal.
  @implements <T>TriListAction
  @order O({a}.n + {b}.n) */
-static void PRIVATE_T_U_(boolean, seq)(struct T_(List) *const this,
-	struct T_(List) *const a, struct T_(List) *const b,
+static void PT_U_(boolean, seq)(struct T_(List) *const this,
+	struct T_(List) *const alist, struct T_(List) *const blist,
 	const enum ListOperation mask) {
-	struct T_(ListNode) *ai = a ? a->U_(first) : 0, *bi = b ? b->U_(first) : 0,
-		*t; /* iterator, temp */
-	int comp; /* comparator */
-	while(ai && bi) {
-		comp = PRIVATE_T_U_(data, cmp)(&ai->data, &bi->data);
+	struct PT_(X) *a = alist ? alist->first.U_(next) : 0,
+		*b = blist ? blist->first.U_(next) : 0, *temp;
+	int comp;
+	while(a->U_(next) && b->U_(next)) {
+		comp = PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
+			&PT_(node_hold_x)(b)->data);
 		if(comp < 0) {
-			t = ai, ai = ai->U_(next);
+			temp = a, a = a->U_(next);
 			if(mask & LO_SUBTRACTION_AB) {
-				PRIVATE_T_(remove)(a, t);
-				if(this) PRIVATE_T_(push)(this, t);
+				PT_(remove)(temp);
+				if(this) PT_(push)(this, temp);
 			}
 		} else if(comp > 0) {
-			t = bi, bi = bi->U_(next);
+			temp = b, b = b->U_(next);
 			if(mask & LO_SUBTRACTION_BA) {
-				PRIVATE_T_(remove)(b, t);
-				if(this) PRIVATE_T_(push)(this, t);
+				PT_(remove)(temp);
+				if(this) PT_(push)(this, temp);
 			}
 		} else {
-			t = ai, ai = ai->U_(next), bi = bi->U_(next);
+			temp = a, a = a->U_(next), b = b->U_(next);
 			if(mask & LO_INTERSECTION) {
-				PRIVATE_T_(remove)(a, t);
-				if(this) PRIVATE_T_(push)(this, t);
+				PT_(remove)(temp);
+				if(this) PT_(push)(this, temp);
 			}
 		}
 	}
 	if(mask & LO_DEFAULT_A) {
-		while(ai) {
-			t = ai, ai = ai->U_(next);
-			PRIVATE_T_(remove)(a, t);
-			if(this) PRIVATE_T_(push)(this, t);
+		while(a) {
+			temp = a, a = a->U_(next);
+			PT_(remove)(temp);
+			if(this) PT_(push)(this, temp);
 		}
 	}
 	if((mask & LO_DEFAULT_B)) {
-		while(bi) {
-			t = bi, bi = bi->U_(next);
-			PRIVATE_T_(remove)(b, t);
-			if(this) PRIVATE_T_(push)(this, t);
+		while(b) {
+			temp = b, b = b->U_(next);
+			PT_(remove)(temp);
+			if(this) PT_(push)(this, temp);
 		}
 	}
 }
@@ -1508,7 +1510,7 @@ static void PRIVATE_T_U_(boolean, seq)(struct T_(List) *const this,
  @allow */
 static void T_U_(List, TakeSubtraction)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b) {
-	PRIVATE_T_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB |LO_DEFAULT_A);
+	PT_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_DEFAULT_A);
 }
 
 /** Appends {this} with the union of {a} and {b} as a sequence in {<U>}. Equal
@@ -1519,7 +1521,7 @@ static void T_U_(List, TakeSubtraction)(struct T_(List) *const this,
  @allow */
 static void T_U_(List, TakeUnion)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b) {
-	PRIVATE_T_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+	PT_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
 		| LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
@@ -1531,7 +1533,7 @@ static void T_U_(List, TakeUnion)(struct T_(List) *const this,
  @allow */
 static void T_U_(List, TakeIntersection)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b) {
-	PRIVATE_T_U_(boolean, seq)(this, a, b, LO_INTERSECTION);
+	PT_U_(boolean, seq)(this, a, b, LO_INTERSECTION);
 }
 
 /** Appends {this} with {a} exclusive-or {b} as a sequence in {<U>}. Equal
@@ -1542,7 +1544,7 @@ static void T_U_(List, TakeIntersection)(struct T_(List) *const this,
  @allow */
 static void T_U_(List, TakeXor)(struct T_(List) *const this,
 	struct T_(List) *const a, struct T_(List) *const b) {
-	PRIVATE_T_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
+	PT_U_(boolean, seq)(this, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
 		| LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
@@ -1554,14 +1556,12 @@ static void T_U_(List, TakeXor)(struct T_(List) *const this,
  @allow */
 static void T_U_(List, TakeIf)(struct T_(List) *const this,
 	struct T_(List) *const from, const T_(Predicate) predicate) {
-	struct T_(ListNode) *cursor, *next_cursor;
+	struct PT_(X) *x, *next_x;
 	if(!from || from == this) return;
-	for(cursor = from->U_(first); cursor; cursor = next_cursor) {
-		next_cursor = cursor->U_(next);
-		if(predicate && !predicate(&cursor->data)) continue;
-		PRIVATE_T_(remove)(from, cursor);
-		if(!this) continue;
-		PRIVATE_T_(push)(this, cursor);
+	for(x = from->first.U_(next); (next_x = x->U_(next)); x = next_x) {
+		if(predicate && !predicate(&PT_(node_hold_x)(x)->data)) continue;
+		PT_(remove)(x);
+		if(this) PT_(push)(this, x);
 	}
 }
 
@@ -1572,14 +1572,14 @@ static void T_U_(List, TakeIf)(struct T_(List) *const this,
 static void T_U_(List, BiTakeIf)(struct T_(List) *const this,
 	struct T_(List) *const from, const T_(BiPredicate) bipredicate,
 	void *const param) {
-	struct T_(ListNode) *cursor, *next_cursor;
+	struct PT_(X) *x, *next_x;
 	if(!from || from == this) return;
-	for(cursor = from->U_(first); cursor; cursor = next_cursor) {
-		next_cursor = cursor->U_(next);
-		if(bipredicate && !bipredicate(&cursor->data, param)) continue;
-		PRIVATE_T_(remove)(from, cursor);
+	for(x = from->first.U_(next); (next_x = x->U_(next)); x = next_x) {
+		if(bipredicate && !bipredicate(&PT_(node_hold_x)(x)->data, param))
+			continue;
+		PT_(remove)(x);
 		if(!this) continue;
-		PRIVATE_T_(push)(this, cursor);
+		PT_(push)(this, x);
 	}
 }
 
@@ -1589,12 +1589,10 @@ static void T_U_(List, BiTakeIf)(struct T_(List) *const this,
  @allow */
 static void T_U_(List, ForEach)(struct T_(List) *const this,
 	const T_(Action) action) {
-	struct T_(ListNode) *cursor, *next;
+	struct PT_(X) *x, *next_x;
 	if(!this || !action) return;
-	for(cursor = this->U_(first); cursor; cursor = next) {
-		next = cursor->U_(next);
-		action(&cursor->data);
-	}
+	for(x = this->first.U_(next); (next_x = x->U_(next)); x = next_x)
+		action(&PT_(node_hold_x)(x)->data);
 }
 
 /** Performs {biaction} for each element in the list in the order specified by
@@ -1604,11 +1602,10 @@ static void T_U_(List, ForEach)(struct T_(List) *const this,
  @allow */
 static void T_U_(List, BiForEach)(struct T_(List) *const this,
 	const T_(BiAction) biaction, void *const param) {
-	struct T_(ListNode) *cursor;
+	struct PT_(X) *x, *next_x;
 	if(!this || !biaction) return;
-	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
-		biaction(&cursor->data, param);
-	}
+	for(x = this->first.U_(next); (next_x = x->U_(next)); x = next_x)
+		biaction(&PT_(node_hold_x)(x)->data, param);
 }
 
 /** @return The first {<T>} in the linked-list, ordered by {<U>}, that causes
@@ -1619,11 +1616,11 @@ static void T_U_(List, BiForEach)(struct T_(List) *const this,
  @allow */
 static T *T_U_(List, ShortCircuit)(struct T_(List) *const this,
 	const T_(Predicate) predicate) {
-	struct T_(ListNode) *cursor;
+	struct PT_(X) *x, *next_x;
+	T *data;
 	if(!this || !predicate) return 0;
-	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
-		if(!predicate(&cursor->data)) return &cursor->data;
-	}
+	for(x = this->first.U_(next); (next_x = x->U_(next)); x = next_x)
+		if(data = &PT_(node_hold_x)(x)->data, !predicate(data)) return data;
 	return 0;
 }
 
@@ -1635,11 +1632,12 @@ static T *T_U_(List, ShortCircuit)(struct T_(List) *const this,
  @allow */
 static T *T_U_(List, BiShortCircuit)(struct T_(List) *const this,
 	const T_(BiPredicate) bipredicate, void *const param) {
-	struct T_(ListNode) *cursor;
+	struct PT_(X) *x, *next_x;
+	T *data;
 	if(!this || !bipredicate) return 0;
-	for(cursor = this->U_(first); cursor; cursor = cursor->U_(next)) {
-		if(!bipredicate(&cursor->data, param)) return &cursor->data;
-	}
+	for(x = this->first.U_(next); (next_x = x->U_(next)); x = next_x)
+		if(data = &PT_(node_hold_x)(x)->data, !bipredicate(data, param))
+			return data;
 	return 0;
 }
 
@@ -1691,7 +1689,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const this) {
 	static int buffer_i;
 	struct List_SuperCat cat;
 	char scratch[12];
-	struct PRIVATE_T_(X) *x;
+	struct PT_(X) *x;
 	assert(strlen(list_cat_alter_end) >= strlen(list_cat_end));
 	assert(sizeof buffer > strlen(list_cat_alter_end));
 	list_super_cat_init(&cat, buffer[buffer_i],
@@ -1704,7 +1702,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const this) {
 	list_super_cat(&cat, list_cat_start);
 	for(x = this->first.U_(next); x->U_(next); x = x->U_(next)) {
 		if(x != this->first.U_(next)) list_super_cat(&cat, list_cat_sep);
-		PRIVATE_T_(to_string)(&PRIVATE_T_(node_hold_x)(x)->data, &scratch),
+		PT_(to_string)(&PT_(node_hold_x)(x)->data, &scratch),
 			scratch[sizeof scratch - 1] = '\0';
 		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
@@ -1717,11 +1715,11 @@ static char *T_U_(List, ToString)(const struct T_(List) *const this) {
 #endif /* print --> */
 
 /* prototype */
-static void PRIVATE_T_U_(sub_unused, coda)(void);
+static void PT_U_(sub_unused, coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void PRIVATE_T_U_(sub_unused, list)(void) {
+static void PT_U_(sub_unused, list)(void) {
 	T_U_(Node, GetNext)(0);
 	T_U_(Node, GetPrevious)(0);
 	T_U_(List, GetFirst)(0);
@@ -1744,12 +1742,12 @@ static void PRIVATE_T_U_(sub_unused, list)(void) {
 #ifdef LIST_TO_STRING /* <-- string */
 	T_U_(List, ToString)(0);
 #endif /* string --> */
-	PRIVATE_T_U_(cycle, crash)(0);
-	PRIVATE_T_U_(sub_unused, coda)();
+	PT_U_(cycle, crash)(0);
+	PT_U_(sub_unused, coda)();
 }
 /** {clang}'s pre-processor is not fooled. */
-static void PRIVATE_T_U_(sub_unused, coda)(void) {
-	PRIVATE_T_U_(sub_unused, list)();
+static void PT_U_(sub_unused, coda)(void) {
+	PT_U_(sub_unused, list)();
 }
 
 

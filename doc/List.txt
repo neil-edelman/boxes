@@ -9,7 +9,8 @@
  multiple polymorphic structures. Supports one to four different orders in the
  same type. The preprocessor macros are all undefined at the end of the file
  for convenience when including multiple _List_ types in the same file. Random
- _LIST_*_ macros should be avoided.
+ _LIST_*_ macros should be avoided.Given an item from the list . . .Goes though all _this_ U and makes sure it contains _count_ element _data_
+ when in debug mode.
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
@@ -40,9 +41,10 @@ minimum standard: C89/90
 
 author: Neil
 
-version: 2017-12 Type information on backing.
+version: 2018-02 Eliminated the need for _<T>List_ by _C_ hacking.
 
-since: 2017-10 Anonymous orders.
+since: 2017-12 Type information on backing.
+			2017-10 Anonymous orders.
 			2017-07 Made migrate simpler.
 			2017-06 Split Add into Push and Unshift.
 			2017-05 Separated from backing.
@@ -186,10 +188,12 @@ Responsible for turning _<T>_ (the first argument) into a 12 _char_
 
 _Return Type_	_Function Name_	_Argument List_
 static void	<T>ListClear	(struct <T>List *const this)
-static void	<T>ListPush	(struct <T>List *const this, T *const node)
-static void	<T>ListUnshift	(struct <T>List *const this, T *const node)
-static void	<T>ListRemove	(struct <T>List *const this, T *const data)
+static void	<T>ListPush	(struct <T>List *const this, T *const data)
+static void	<T>ListUnshift	(struct <T>List *const this, T *const data)
+static void	<T>ListRemove	(T *const data)
 static void	<T>ListTake	(struct <T>List *const this,
+	struct <T>List *const from)
+static void	<T>ListNodeTake	(struct <T>ListNode *const element,
 	struct <T>List *const from)
 static void	<T>ListMerge	(struct <T>List *const this,
 	struct <T>List *const from)
@@ -200,8 +204,8 @@ static void	<T>MigratePointer	(T **const t_ptr,
 	const struct Migrate *const migrate)
 static void	<T>List<U>MigrateEach	(struct <T>List *const this,
 	const <T>ListMigrateElement handler, const struct Migrate *const migrate)
-static T *	<T>Node<U>GetNext	(T *const this)
-static T *	<T>Node<U>GetPrevious	(T *const this)
+static T *	<T>Node<U>GetNext	(T *const data)
+static T *	<T>Node<U>GetPrevious	(T *const data)
 static T *	<T>List<U>GetFirst	(struct <T>List *const this)
 static T *	<T>List<U>GetLast	(struct <T>List *const this)
 static void	<T>List<U>Sort	(struct <T>List *const this)
@@ -249,7 +253,7 @@ order: \Theta(1)
 
 ### <T>ListPush ###
 
-static void <T>ListPush(struct <T>List *const this, T *const node)
+static void <T>ListPush(struct <T>List *const this, T *const data)
 
 Initialises the contents of _node_ to add it to the end of _this_. If
  either _this_ or _node_ is null, it does nothing.
@@ -266,7 +270,7 @@ order: \Theta(1)
 
 ### <T>ListUnshift ###
 
-static void <T>ListUnshift(struct <T>List *const this, T *const node)
+static void <T>ListUnshift(struct <T>List *const this, T *const data)
 
 Initialises the contents of _node_ to add it to the beginning of _this_. If
  either _this_ or _node_ is null, it does nothing.
@@ -285,11 +289,11 @@ fixme: Untested.
 
 ### <T>ListRemove ###
 
-static void <T>ListRemove(struct <T>List *const this, T *const data)
+static void <T>ListRemove(T *const data)
 
-Removes _data_ from the _this_. The _data_ is now free to add to another
- list. Removing an element that was not added to _this_ results in undefined
- behaviour. If either _this_ or _data_ is null, it does nothing.
+Removes _data_ from the list. The _data_ is now free to add to another
+ list. Removing an element that was not added to a list results in undefined
+ behaviour. If _data_ is null, it does nothing.
 
 implements: <T>ListItemAction
 
@@ -303,13 +307,26 @@ static void <T>ListTake(struct <T>List *const this,
 	struct <T>List *const from)
 
 Appends the elements of _from_ onto _this_. If _this_ is null, then it
- removes elements. Unlike the _<T>TriListAction_, where the elements are
- re-ordered based on _<U>_, (they would not be in-place, otherwise,) this
- function concatenates all the elements in each linked-list order.
+ removes elements. Unlike `<T>List<U>TakeIf` and all other selective
+ choosing functions, this function preserves two or more orders.
 
 implements: <T>BiListAction
 
 order: \Theta(1)
+
+
+
+### <T>ListNodeTake ###
+
+static void <T>ListNodeTake(struct <T>ListNode *const element,
+	struct <T>List *const from)
+
+Appends the elements from _from_ before _element_. If _element_ or _from_
+ is null, doesn't do anything. The _from_ list will be empty at the end.
+
+order: \Theta(1)
+
+fixme: Untested.
 
 
 
@@ -397,7 +414,7 @@ order: \Theta(n)
 
 ### <T>Node<U>GetNext ###
 
-static T * <T>Node<U>GetNext(T *const this)
+static T * <T>Node<U>GetNext(T *const data)
 
 
 
@@ -414,7 +431,7 @@ order: \Theta(1)
 
 ### <T>Node<U>GetPrevious ###
 
-static T * <T>Node<U>GetPrevious(T *const this)
+static T * <T>Node<U>GetPrevious(T *const data)
 
 
 

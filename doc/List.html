@@ -52,6 +52,13 @@ same type. The preprocessor macros are all undefined at the end of the file
 for convenience when including multiple <em>List</em> types in the same file. Random
 <em>LIST_*</em> macros should be avoided.
 </p>
+<p>
+Given an item from the list . . .
+</p>
+<p>
+Goes though all <em>this</em> U and makes sure it contains <em>count</em> element <em>data</em>
+when in debug mode.
+</p>
 <dl>
 	<dt>parameter: LIST_NAME, LIST_TYPE</dt>
 	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith;
@@ -83,9 +90,10 @@ for convenience when including multiple <em>List</em> types in the same file. Ra
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>2017-12 Type information on backing.</dd>
+	<dd>2018-02 Eliminated the need for <em>&lt;T&gt;List</em> by <em>C</em> hacking.</dd>
 	<dt>since</dt>
-	<dd>2017-10 Anonymous orders.
+	<dd>2017-12 Type information on backing.
+			2017-10 Anonymous orders.
 			2017-07 Made migrate simpler.
 			2017-06 Split Add into Push and Unshift.
 			2017-05 Separated from backing.</dd>
@@ -284,22 +292,28 @@ null-terminated output string (the second.)
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListPush">&lt;T&gt;ListPush</a></td>
-	<td>struct &lt;T&gt;List *const this, T *const node</td>
+	<td>struct &lt;T&gt;List *const this, T *const data</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListUnshift">&lt;T&gt;ListUnshift</a></td>
-	<td>struct &lt;T&gt;List *const this, T *const node</td>
+	<td>struct &lt;T&gt;List *const this, T *const data</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListRemove">&lt;T&gt;ListRemove</a></td>
-	<td>struct &lt;T&gt;List *const this, T *const data</td>
+	<td>T *const data</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListTake">&lt;T&gt;ListTake</a></td>
 	<td>struct &lt;T&gt;List *const this,
+	struct &lt;T&gt;List *const from</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;ListNodeTake">&lt;T&gt;ListNodeTake</a></td>
+	<td>struct &lt;T&gt;ListNode *const element,
 	struct &lt;T&gt;List *const from</td>
 </tr>
 <tr>
@@ -334,12 +348,12 @@ null-terminated output string (the second.)
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;Node&lt;U&gt;GetNext">&lt;T&gt;Node&lt;U&gt;GetNext</a></td>
-	<td>T *const this</td>
+	<td>T *const data</td>
 </tr>
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;Node&lt;U&gt;GetPrevious">&lt;T&gt;Node&lt;U&gt;GetPrevious</a></td>
-	<td>T *const this</td>
+	<td>T *const data</td>
 </tr>
 <tr>
 	<td>static T *</td>
@@ -450,7 +464,7 @@ contained a list, those values are free.
 
 <div><a name = "&lt;T&gt;ListPush"><!-- --></a>
 <h3>&lt;T&gt;ListPush</h3>
-<pre>static void <b>&lt;T&gt;ListPush</b> (struct &lt;T&gt;List *const this, T *const node)</pre>
+<pre>static void <b>&lt;T&gt;ListPush</b> (struct &lt;T&gt;List *const this, T *const data)</pre>
 <p>
 Initialises the contents of <em>node</em> to add it to the end of <em>this</em>. If
 either <em>this</em> or <em>node</em> is null, it does nothing.
@@ -469,7 +483,7 @@ either <em>this</em> or <em>node</em> is null, it does nothing.
 
 <div><a name = "&lt;T&gt;ListUnshift"><!-- --></a>
 <h3>&lt;T&gt;ListUnshift</h3>
-<pre>static void <b>&lt;T&gt;ListUnshift</b> (struct &lt;T&gt;List *const this, T *const node)</pre>
+<pre>static void <b>&lt;T&gt;ListUnshift</b> (struct &lt;T&gt;List *const this, T *const data)</pre>
 <p>
 Initialises the contents of <em>node</em> to add it to the beginning of <em>this</em>. If
 either <em>this</em> or <em>node</em> is null, it does nothing.
@@ -490,11 +504,11 @@ either <em>this</em> or <em>node</em> is null, it does nothing.
 
 <div><a name = "&lt;T&gt;ListRemove"><!-- --></a>
 <h3>&lt;T&gt;ListRemove</h3>
-<pre>static void <b>&lt;T&gt;ListRemove</b> (struct &lt;T&gt;List *const this, T *const data)</pre>
+<pre>static void <b>&lt;T&gt;ListRemove</b> (T *const data)</pre>
 <p>
-Removes <em>data</em> from the <em>this</em>. The <em>data</em> is now free to add to another
-list. Removing an element that was not added to <em>this</em> results in undefined
-behaviour. If either <em>this</em> or <em>data</em> is null, it does nothing.
+Removes <em>data</em> from the list. The <em>data</em> is now free to add to another
+list. Removing an element that was not added to a list results in undefined
+behaviour. If <em>data</em> is null, it does nothing.
 </p>
 <dl>
 	<dt>implements</dt>
@@ -510,15 +524,30 @@ behaviour. If either <em>this</em> or <em>data</em> is null, it does nothing.
 	struct &lt;T&gt;List *const from)</pre>
 <p>
 Appends the elements of <em>from</em> onto <em>this</em>. If <em>this</em> is null, then it
-removes elements. Unlike the <em>&lt;T&gt;TriListAction</em>, where the elements are
-re-ordered based on <em>&lt;U&gt;</em>, (they would not be in-place, otherwise,) this
-function concatenates all the elements in each linked-list order.
+removes elements. Unlike <a href = "#&lt;T&gt;List&lt;U&gt;TakeIf">&lt;T&gt;List&lt;U&gt;TakeIf</a> and all other selective
+choosing functions, this function preserves two or more orders.
 </p>
 <dl>
 	<dt>implements</dt>
 	<dd>&lt;T&gt;BiListAction</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ListNodeTake"><!-- --></a>
+<h3>&lt;T&gt;ListNodeTake</h3>
+<pre>static void <b>&lt;T&gt;ListNodeTake</b> (struct &lt;T&gt;ListNode *const element,
+	struct &lt;T&gt;List *const from)</pre>
+<p>
+Appends the elements from <em>from</em> before <em>element</em>. If <em>element</em> or <em>from</em>
+is null, doesn't do anything. The <em>from</em> list will be empty at the end.
+</p>
+<dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
 </dl>
 </div>
 
@@ -616,7 +645,7 @@ Calls <em>handler</em> on every element that is part of the list. This allows
 
 <div><a name = "&lt;T&gt;Node&lt;U&gt;GetNext"><!-- --></a>
 <h3>&lt;T&gt;Node&lt;U&gt;GetNext</h3>
-<pre>static T * <b>&lt;T&gt;Node&lt;U&gt;GetNext</b> (T *const this)</pre>
+<pre>static T * <b>&lt;T&gt;Node&lt;U&gt;GetNext</b> (T *const data)</pre>
 <dl>
 	<dt>parameter: this</dt>
 	<dd>Must be in a <em>List</em> as a <em>&lt;T&gt;ListNode</em>.</dd>
@@ -632,7 +661,7 @@ Calls <em>handler</em> on every element that is part of the list. This allows
 
 <div><a name = "&lt;T&gt;Node&lt;U&gt;GetPrevious"><!-- --></a>
 <h3>&lt;T&gt;Node&lt;U&gt;GetPrevious</h3>
-<pre>static T * <b>&lt;T&gt;Node&lt;U&gt;GetPrevious</b> (T *const this)</pre>
+<pre>static T * <b>&lt;T&gt;Node&lt;U&gt;GetPrevious</b> (T *const data)</pre>
 <dl>
 	<dt>parameter: this</dt>
 	<dd>Must be in a <em>List</em> as a <em>&lt;T&gt;ListNode</em>.</dd>
