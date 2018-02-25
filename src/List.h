@@ -381,7 +381,6 @@ static struct T_(ListNode) *PT_(node_hold_data)
 }
 
 /* Prototypes: needed for the next section, but undefined until later. */
-static void PT_(valid_state)(const struct T_(List) *const this);
 static void PT_(push)(struct T_(List) *const this, struct PT_(X) *const x);
 static void PT_(remove)(struct PT_(X) *const x);
 static void PT_(migrate)(const struct Migrate *const migrate,
@@ -424,26 +423,6 @@ static void PT_(migrate)(const struct Migrate *const migrate,
 #endif /* d --> */
 
 
-
-/** Assert valid state. */
-static void PT_(valid_state)(const struct T_(List) *const this) {
-#ifdef LIST_DEBUG
-	assert(this);
-#ifdef LIST_UA_NAME /* <-- a */
-	PT_UA_(valid, state)(this);
-#endif /* a --> */
-#ifdef LIST_UB_NAME /* <-- b */
-	PT_UB_(valid, state)(this);
-#endif /* b --> */
-#ifdef LIST_UC_NAME /* <-- c */
-	PT_UC_(valid, state)(this);
-#endif /* c --> */
-#ifdef LIST_UD_NAME /* <-- d */
-	PT_UD_(valid, state)(this);
-#endif /* d --> */
-#endif
-	UNUSED(this);
-}
 
 /** Private: add after. */
 static void PT_(add_after)(struct PT_(X) *const anchor,
@@ -827,6 +806,7 @@ static void PT_(unused_list)(void) {
 	T_(ListUnshift)(0, 0);
 	T_(ListRemove)(0);
 	T_(ListTake)(0, 0);
+	T_(ListNodeTake)(0, 0);
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 	T_(ListMerge)(0, 0);
 	T_(ListSort)(0);
@@ -958,15 +938,6 @@ in C99" */
 
 
 
-/** Assert valid state. */
-static void PT_U_(valid, state)(const struct T_(List) *const this) {
-#ifdef LIST_DEBUG
-	assert(this && !this->first.U_(prev) && this->first.U_(next)
-		&& this->last.U_(prev) && !this->last.U_(prev));
-#endif
-	UNUSED(this);
-}
-
 /** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
  You do not want cycles!
  @implements <T>ListAction */
@@ -984,27 +955,9 @@ static void PT_U_(cycle, crash)(const struct PT_(X) *const node) {
 #endif
 }
 
-/** Goes though all {this} U and makes sure it contains {count} element {data}
- when in debug mode. */
-/*static void PT_U_(contains, count)(const struct T_(List) *const this,
-	const struct T_(ListNode) *const elem, const size_t count) {
-#ifdef LIST_DEBUG
-	struct T_(ListNode) *turtle;
-	size_t c = 0;
-	assert(this && elem);
-	assert(!this->U_(first) == !this->U_(last));
-	for(turtle = this->U_(first); turtle; turtle = turtle->U_(next))
-		if(turtle == elem) c++;
-	assert(c == count);
-#else
-	UNUSED(this), UNUSED(elem), UNUSED(count);
-#endif
-}*/
-
 /** Private: add {node} after {anchor}. */
 static void PT_U_(list, add_after)(struct PT_(X) *const anchor, struct T_(ListNode) *const node) {
-	assert(anchor && node && anchor != &node->x
-		&& anchor->U_(prev) && anchor->U_(next));
+	assert(anchor && node && anchor != &node->x && anchor->U_(next));
 	node->x.U_(prev) = anchor;
 	node->x.U_(next) = anchor->U_(next);
 	anchor->U_(next)->U_(prev) = &node->x;
@@ -1015,7 +968,7 @@ static void PT_U_(list, add_after)(struct PT_(X) *const anchor, struct T_(ListNo
 /** Private: add {node} before {anchor}. */
 static void PT_U_(list, add_before)(struct PT_(X) *const anchor,
 	struct PT_(X) *const x) {
-	assert(anchor && x && anchor != x && anchor->U_(prev) && anchor->U_(next));
+	assert(anchor && x && anchor != x && anchor->U_(prev));
 	x->U_(prev) = anchor->U_(prev);
 	x->U_(next) = anchor;
 	anchor->U_(prev)->U_(next) = x;
@@ -1095,9 +1048,12 @@ static void T_U_(List, MigrateEach)(struct T_(List) *const this,
  @order \Theta(1)
  @allow */
 static T *T_U_(Node, GetNext)(T *const data) {
-	struct T_(ListNode) *const node = PT_(node_hold_data)(data);
-	if(!node || !node->x.U_(next)) return 0;
-	return &PT_(node_hold_x)(node->x.U_(next))->data;
+	const struct PT_(X) *const x = &PT_(node_hold_data)(data)->x;
+	struct PT_(X) *next_x;
+	if(!data) return 0;
+	assert(x->U_(next));
+	if(!(next_x = x->U_(next))->U_(next)) return 0;
+	return &PT_(node_hold_x)(next_x)->data;
 }
 
 /** @return The previous element before {this} in {<U>}. When {this} is the
@@ -1107,9 +1063,12 @@ static T *T_U_(Node, GetNext)(T *const data) {
  @order \Theta(1)
  @allow */
 static T *T_U_(Node, GetPrevious)(T *const data) {
-	struct T_(ListNode) *const node = PT_(node_hold_data)(data);
-	if(!node || !node->x.U_(prev)) return 0;
-	return &PT_(node_hold_x)(node->x.U_(prev))->data;
+	const struct PT_(X) *const x = &PT_(node_hold_data)(data)->x;
+	struct PT_(X) *prev_x;
+	if(!data) return 0;
+	assert(x->U_(prev));
+	if(!(prev_x = x->U_(prev))->U_(prev)) return 0;
+	return &PT_(node_hold_x)(prev_x)->data;
 }
 
 /** @return A pointer to the first element of {this}.

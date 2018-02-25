@@ -140,30 +140,6 @@ static int PT_(in_order)(struct T_(List) *const this) {
 }
 #endif /* comp --> */
 
-#if 0
-static int PT_(in_array)(struct T_(List) *const this,
-	const struct T_(ListNode) *const array, const size_t array_size) {
-	assert(this);
-	assert(array);
-	assert(array_size);
-	/* overkill; only one would do */
-	return 1
-#ifdef LIST_UA_NAME
-		&& PT_UA_(in, array)(this, array, array_size)
-#endif
-#ifdef LIST_UB_NAME
-		&& PT_UB_(in, array)(this, array, array_size)
-#endif
-#ifdef LIST_UC_NAME
-		&& PT_UC_(in, array)(this, array, array_size)
-#endif
-#ifdef LIST_UD_NAME
-		&& PT_UD_(in, array)(this, array, array_size)
-#endif
-		;
-}
-#endif
-
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 static int PT_(exactly_unordered)(struct T_(List) *const this,
 	const size_t n) {
