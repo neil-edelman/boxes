@@ -25,12 +25,6 @@
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>List<U>ToString}.
 
- @param LIST_STATIC_STORAGE
- This allocates {O(log max n)} space needed for merge sort statically, instead
- of stack every time the List is sorted. This does not allow it to sort data
- concurrently without crashing, but it consumes less space on the stack; about
- half-a-kilobyte, depending on {size_t}.
-
  @param LIST_OPENMP
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }.
 
@@ -43,7 +37,9 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	2018-02 Eliminated the need for {<T>List} by {C} hacking.
+ @version	2018-02 Eliminated the need for unnecessarily {<T>List}.
+			Now you must initialise static variables with {<T>ListClear}.
+			Eliminated {LIST_STATIC_SORT}.
  @since		2017-12 Type information on backing.
 			2017-10 Anonymous orders.
 			2017-07 Made migrate simpler.
@@ -305,9 +301,8 @@ struct T_(ListNode) {
 	struct PT_(X) x;
 };
 
-/** Serves as an a head for linked-list(s) of {<T>ListNode}. No initialisation
- is necessary when the variable is of {static} duration, otherwise use
- \see{<T>ListClear}. */
+/** Serves as an a head for linked-list(s) of {<T>ListNode}. Use
+ \see{<T>ListClear} to initialise. */
 struct T_(List);
 struct T_(List) {
 	/* The reason there's two instead of one is because we rely on null values
@@ -813,7 +808,6 @@ static void PT_(unused_list)(void) {
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
 	T_(MigratePointer)(0, 0);
-	/*T_(Migrate)(0, 0);*/
 	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
@@ -871,9 +865,6 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 #endif
 #ifdef LIST_UD_COMPARATOR
 #undef LIST_UD_COMPARATOR
-#endif
-#ifdef LIST_STATIC_STORAGE
-#undef LIST_STATIC_STORAGE
 #endif
 #ifdef LIST_OPENMP
 #undef LIST_OPENMP
@@ -939,19 +930,18 @@ in C99" */
 
 
 /** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
- You do not want cycles!
- @implements <T>ListAction */
-static void PT_U_(cycle, crash)(const struct PT_(X) *const node) {
+ You do not want cycles! */
+static void PT_U_(cycle, crash)(const struct PT_(X) *const x) {
 #ifdef LIST_DEBUG
 	struct PT_(X) *turtle, *hare;
 	assert(this);
-	for(turtle = node; turtle->U_(prev); turtle = turtle->U_(prev));
+	for(turtle = x; turtle->U_(prev); turtle = turtle->U_(prev));
 	for(hare = turtle->U_(next); (turtle = turtle->U_(next),
 		hare = hare->U_(next)) && (hare = hare->U_(next)); ) {
 		assert(turtle != hare);
 	}
 #else
-	UNUSED(node);
+	UNUSED(x);
 #endif
 }
 
@@ -1161,15 +1151,12 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 	struct PT_(Run) *const run_a = r->run + r->run_no - 2;
 	struct PT_(Run) *const run_b = run_a + 1;
 	struct PT_(X) *a = run_a->tail, *b = run_b->head, *chosen;
-
+	assert(r->run_no >= 2);
 	/* fixme: we are doing one-to-many compares in some cases? */
-
 	if(run_a->size <= run_b->size) {
 		struct PT_(X) *prev_chosen;
-
 		/* run a is smaller: downwards insert b.head followed by upwards
 		 merge */
-
 		/* insert the first element of b downwards into a */
 		for( ; ; ) {
 			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
@@ -1186,7 +1173,6 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 			}
 			a = a->U_(prev);
 		}
-
 		/* merge upwards, while the lists are interleaved */
 		while(chosen->U_(next)) {
 			prev_chosen = chosen;
@@ -1201,7 +1187,6 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 			prev_chosen->U_(next) = chosen;
 			chosen->U_(prev) = prev_chosen;
 		}
-
 		/* splice the one list left */
 		if(!a) {
 			b->U_(prev) = chosen;
@@ -1211,13 +1196,10 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 			a->U_(prev) = chosen;
 			chosen->U_(next) = a;
 		}
-
 	} else {
 		struct PT_(X) *next_chosen;
 		int is_a_tail = 0;
-
 		/* run b is smaller; upwards insert followed by downwards merge */
-
 		/* insert the last element of a upwards into b */
 		for( ; ; ) {
 			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
@@ -1236,7 +1218,6 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 			b = b->U_(next);
 		}
 		if(!is_a_tail) run_a->tail = run_b->tail;
-
 		/* merge downwards, while the lists are interleaved */
 		while(chosen->U_(prev)) {
 			next_chosen = chosen;
@@ -1251,7 +1232,6 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 			next_chosen->U_(prev) = chosen;
 			chosen->U_(next) = next_chosen;
 		}
-
 		/* splice the one list left */
 		if(!a) {
 			b->U_(next) = chosen;
@@ -1263,68 +1243,67 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 		}
 
 	}
-
 	run_a->size += run_b->size;
 	r->run_no--;
 }
 
-#ifdef LIST_STATIC_STORAGE /* <-- static: it will crash if it calls exactly
-this function concurrently */
-static struct PT_(Runs) PT_U_(runs, elem);
-#endif /* not dynamic --> */
+#ifdef LIST_TEST /* <-- test */
+#ifdef LIST_TO_STRING
+static char *T_U_(List, ToString)(const struct T_(List) *const this);
+#endif
+static size_t PT_(count)(struct T_(List) *const this);
+#endif /* test --> */
 
 /** It's kind of experimental. It hasn't been optimised; I think it does
- useless compares and I question whether a strict Pascal's triangle-shape
- would be optimum, or whether a long run should be put off merging until
- short runs have finished; it is quite simple as it is.
+ useless compares. It's so beatiful.
  @implements <T>ListAction */
 static void PT_U_(natural, sort)(struct T_(List) *const this) {
-#ifndef LIST_STATIC_STORAGE /* <-- dynamic: this is potentially half-a-KB */
-	static struct PT_(Runs) PT_U_(runs, elem);
-#endif /* dynamic --> */
-	/* new_run is an index into list_runs, a temporary sorting structure;
-	 head is first smallest, tail is last largest */
+	/* This is potentially half-a-KB; we had an option to store as a global,
+	 but that was probably overkill. */
+	struct PT_(Runs) runs;
 	struct PT_(Run) *new_run;
-	/* part of the state machine for classifying points wrt their neighbours */
+	/* Part of the state machine for classifying points wrt their neighbours. */
 	enum { UNSURE, INCREASING, DECREASING } mono;
-	/* the data that we are sorting */
+	/* The data that we are sorting. */
 	struct PT_(X) *a, *b, *c, *first_iso_a;
-	/* run_count is different from list_runs.run_no in that it only increases;
-	 only used for calculating the path up the tree */
+	/* {run_count} is different from {runs.run_no} in that it only increases;
+	 only used for calculating the path up the tree. */
 	size_t run_count, rc;
-	/* the value of the comparison */
+	/* The value of the comparison. */
 	int comp;
-
-	/* ensure we have an 'a' */
-	if(!(a = this->first.U_(next))->U_(next)) return;
-
-	/* reset the state machine and output to just 'a' in the first run */
+#ifdef LIST_TEST /* <-- test */
+	size_t count = PT_(count)(this), count_after, num = 0;
+#ifdef LIST_TO_STRING
+	printf("Org: %s.\n", T_U_(List, ToString)(this));
+#endif
+#endif /* test --> */
+	/* Ensure we have at least two elements. */
+	if(!(b = (a = this->first.U_(next))->U_(next)) || !b) return;
+	/* Reset the state machine and output to just {a} in the first run. */
 	mono = UNSURE;
-	PT_U_(runs, elem).run_no = 1;
-	new_run = PT_U_(runs,elem).run + 0, run_count = 1;
+	runs.run_no = 1;
+	new_run = runs.run + 0, run_count = (size_t)1;
 	new_run->size = 1;
 	first_iso_a = new_run->head = new_run->tail = a;
-
-	for(b = a->U_(next); b->U_(next); a = b, b = c) {
-
-		/* b.next can be modified, and we always want the iteration original */
-		c = b->U_(next);
-
+	/* While {a} and {b} are elements (that are consecutive.) {c} may not be. */
+	for( ; (c = b->U_(next)); a = b, b = c) {
+#ifdef LIST_TEST /* <-- test */
+		num++;
+#endif /* test --> */
 		comp = PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
 			&PT_(node_hold_x)(b)->data);
-
-		/* state machine that considers runs in both directions -- in practice,
+		/* State machine that considers runs in both directions -- in practice,
 		 slightly slower than only considering increasing runs on most cases;
 		 however, I would hate to see my code replaced with one line; reverse
-		 order is 15 times faster, but it's not likely */
+		 order is 15 times faster, but it's not likely. */
 		if(comp < 0) { /* a < b, increasing -- good */
-			if(mono != DECREASING) { /* if decreasing, inflection */
+			if(mono != DECREASING) { /* If decreasing, inflection. */
 				mono = INCREASING;
 				new_run->size++;
 				continue;
 			}
-		} else if(comp > 0) { /* decreasing; reverse preserving stability */
-			if(mono != INCREASING) { /* if increasing, inflection */
+		} else if(comp > 0) { /* Decreasing; reverse preserving stability. */
+			if(mono != INCREASING) { /* If increasing, inflection. */
 				mono = DECREASING;
 				b->U_(next) = first_iso_a;
 				first_iso_a->U_(prev) = b;
@@ -1332,43 +1311,45 @@ static void PT_U_(natural, sort)(struct T_(List) *const this) {
 				new_run->size++;
 				continue;
 			}
-			new_run->tail = a; /* terminating an increasing sequence */
-		} else { /* a == b */
-			if(mono == DECREASING) { /* extend */
+			new_run->tail = a; /* Terminating an increasing sequence. */
+		} else { /* {a} == {b} */
+			if(mono == DECREASING) { /* Extend. */
 				struct PT_(X) *const a_next = a->U_(next);
 				b->U_(next) = a_next;
 				a_next->U_(prev) = b;
 				a->U_(next) = b;
 				b->U_(prev) = a;
-			} else { /* weakly increasing */
+			} else { /* Monotone or weakly increasing. */
 				new_run->tail = b;
 			}
 			new_run->size++;
 			continue;
 		}
-		/* head and tail don't necessarily correspond to the first and last */
+		/* Head and tail don't necessarily correspond to the first and last. */
 		new_run->head->U_(prev) = new_run->tail->U_(next) = 0;
-
-		/* greedy merge: keeps space to O(log n) instead of O(n) */
-		for(rc=run_count; !(rc & 1)&&PT_U_(runs,elem).run_no>=2; rc >>=1)
-			PT_U_(natural, merge)(&PT_U_(runs,elem));
-		/* reset the state machine and output to just 'b' at the next run */
+		/* Greedy merge: keeps space to {O(log n)} instead of {O(n)}. */
+		for(rc = run_count; !(rc & 1) && runs.run_no >= 2; rc >>= 1)
+			PT_U_(natural, merge)(&runs);
+		/* Reset the state machine and output to just {b} at the next run. */
 		mono = UNSURE;
-		new_run = PT_U_(runs,elem).run +
-			PT_U_(runs,elem).run_no++, run_count++;
+		new_run = runs.run + runs.run_no++, run_count++;
 		new_run->size = 1;
 		new_run->head = new_run->tail = first_iso_a = b;
 	}
-
-	/* terminating the last increasing sequence */
+	/* Terminating the last increasing sequence. */
 	if(mono == INCREASING) new_run->tail = a;
-		new_run->tail->U_(next) = new_run->head->U_(prev) = 0;
-
-	/* clean up the rest; when only one run, propagate list_runs[0] to head */
-	while(PT_U_(runs, elem).run_no > 1)
-		PT_U_(natural, merge)(&PT_U_(runs, elem));
-	this->first.U_(next) = PT_U_(runs, elem).run[0].head;
-	this->last.U_(prev)  = PT_U_(runs, elem).run[0].tail;
+	new_run->tail->U_(next) = new_run->head->U_(prev) = 0;
+	/* Clean up the rest; when only one run, propagate list_runs[0] to head. */
+	while(runs.run_no > 1) PT_U_(natural, merge)(&runs);
+	this->first.U_(next) = runs.run[0].head;
+	this->last.U_(prev)  = runs.run[0].tail;
+#ifdef LIST_TEST /* <-- test */
+#ifdef LIST_TO_STRING
+	printf("Now: %s.\n", T_U_(List, ToString)(this));
+#endif
+	count_after = PT_(count)(this);
+	assert(count == count_after);
+#endif /* test --> */
 }
 
 /** Sorts {<U>}, but leaves the other lists in {<T>} alone. Must have
@@ -1531,14 +1512,14 @@ static void T_U_(List, TakeIf)(struct T_(List) *const this,
 static void T_U_(List, BiTakeIf)(struct T_(List) *const this,
 	struct T_(List) *const from, const T_(BiPredicate) bipredicate,
 	void *const param) {
-	struct PT_(X) *x, *next_x;
+	struct PT_(X) *x, *next_x, *y;
 	if(!from || from == this) return;
+	y = from->first.U_(next);
 	for(x = from->first.U_(next); (next_x = x->U_(next)); x = next_x) {
 		if(bipredicate && !bipredicate(&PT_(node_hold_x)(x)->data, param))
 			continue;
 		PT_(remove)(x);
-		if(!this) continue;
-		PT_(push)(this, x);
+		if(this) PT_(push)(this, x);
 	}
 }
 

@@ -7,12 +7,10 @@
 
 
 /* prototype */
+static void PT_(legit)(const struct T_(List) *const this);
+static size_t PT_(count)(struct T_(List) *const this);
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 static int PT_(in_order)(struct T_(List) *const this);
-#endif /* comp --> */
-/*static int PT_(in_array)(struct T_(List) *const this,
-	const struct T_(ListNode) *const array, const size_t array_size);*/
-#ifdef LIST_SOME_COMPARATOR /* <-- comp */
 static int PT_(exactly_unordered)(struct T_(List) *const this,
 	const size_t n);
 #endif /* comp --> */
@@ -120,6 +118,62 @@ static void T_(ListTest)(void) {
 
 /* test helper functions */
 
+/** Assertion function for seeing if it is in a valid state.
+ @order O(n) */
+static void PT_(legit)(const struct T_(List) *const this) {
+	size_t count, index_count;
+	int is_valid = 0;
+	assert(this);
+#ifdef LIST_UA_NAME /* <-- a */
+	index_count = PT_UA_(legit, count)(this);
+	if(is_valid) assert(count == index_count);
+	else count = index_count, is_valid = 1;
+#endif /* a --> */
+#ifdef LIST_UB_NAME /* <-- b */
+	index_count = PT_UB_(legit, count)(this);
+	if(is_valid) assert(count == index_count);
+	else count = index_count, is_valid = 1;
+#endif /* b --> */
+#ifdef LIST_UC_NAME /* <-- c */
+	index_count = PT_UC_(legit, count)(this);
+	if(is_valid) assert(count == index_count);
+	else count = index_count, is_valid = 1;
+#endif /* c --> */
+#ifdef LIST_UD_NAME /* <-- d */
+	index_count = PT_UD_(legit, count)(this);
+	if(is_valid) assert(count == index_count);
+	else count = index_count, is_valid = 1;
+#endif /* d --> */
+}
+
+static size_t PT_(count)(struct T_(List) *const this) {
+	size_t count, index_count;
+	int is_valid = 0;
+	assert(this);
+#ifdef LIST_UA_NAME
+	index_count = PT_UA_(count, elements)(this);
+	if(is_valid) assert(count == index_count);
+	else count = index_count, is_valid = 1;
+#endif
+#ifdef LIST_UB_NAME
+	index_count = PT_UB_(count, elements)(this);
+	if(is_valid) assert(count == index_count);
+	else count = index_count, is_valid = 1;
+#endif
+#ifdef LIST_UC_NAME
+	index_count = PT_UC_(count, elements)(this);
+	if(is_valid) assert(count == index_count);
+	else count = index_count, is_valid = 1;
+#endif
+#ifdef LIST_UD_NAME
+	index_count = PT_UD_(count, elements)(this);
+	if(is_valid) assert(count == index_count);
+	else count = index_count, is_valid = 1;
+#endif
+	assert(is_valid);
+	return count;
+}
+
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 static int PT_(in_order)(struct T_(List) *const this) {
 	assert(this);
@@ -188,6 +242,47 @@ PCAT(LIST_U_NAME, thing2)))
 
 
 /* test helper functions that depend on <U> */
+
+/** This checks if the index is valid by counting forward then back.
+ @return Count. */
+static size_t PT_U_(legit, count)(const struct T_(List) *const this) {
+	size_t forward = 0, back = 0;
+	struct PT_(X) *turtle, *hare, *next;
+	assert(this && !this->first.U_(prev) && this->first.U_(next)
+		&& this->last.U_(prev) && !this->last.U_(next));
+	/* I just discovered the comma operator. Forgive me. */
+	/*for(hare = turtle = this->first.U_(next); (next = hare->U_(next))
+		&& (hare = next, forward++, turtle = turtle->U_(next),
+		next = hare->U_(next)); hare = next, forward++, assert(turtle != hare));
+	assert(&this->last == hare);
+	for(hare = turtle = this->last.U_(prev); (next = hare->U_(prev))
+		&& (hare = next, back++, turtle = turtle->U_(prev),
+		next = hare->U_(prev)); hare = next, back++, assert(turtle != hare));*/
+	hare = turtle = this->first.U_(next);
+	while((next = hare->U_(next))) {
+		hare = next;
+		forward++;
+		turtle = turtle->U_(next);
+		if(!(next = hare->U_(next))) break;
+		hare = next;
+		forward++;
+		assert(turtle != hare);
+	}
+	assert(&this->last == hare);
+	hare = turtle = this->last.U_(prev);
+	while((next = hare->U_(prev))) {
+		hare = next;
+		back++;
+		turtle = turtle->U_(prev);
+		if(!(next = hare->U_(prev))) break;
+		hare = next;
+		back++;
+		assert(turtle != hare);
+	}
+	assert(&this->first == hare);
+	assert(forward == back);
+	return forward;
+}
 
 /** \see{PT_U_(count, elements)}
  @param param: (size_t *)
@@ -338,6 +433,7 @@ static void PT_U_(test, basic)(void) {
 	assert(item_a);
 	data = item_a;
 	assert(data);
+	PT_(legit)(&a);
 	PT_(to_string)(data, &str);
 	printf("ListNode get first data: %s.\n", str);
 	assert(memcmp(&buf[0].data, data, sizeof *data) == 0);
@@ -386,6 +482,7 @@ static void PT_U_(test, basic)(void) {
 	T_U_(List, ForEach)(&a, &PT_U_(count, another));
 	assert(PT_U_(count, var) == new_buf_size);
 	assert(PT_U_(count, elements)(&a) == new_buf_size);
+	PT_(legit)(&a);
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 	/* <U>Sort */
 	printf("Sorting a only by " QUOTE(LIST_U_NAME) ".\n");
@@ -404,12 +501,13 @@ static void PT_U_(test, basic)(void) {
 	printf("Clear.\n");
 	T_(ListClear)(&a);
 	assert(!PT_U_(count, elements)(&a));
+	PT_(legit)(&a);
 	printf("\n");
 }
 
 static void PT_U_(test, memory)(void) {
 	struct T_(List) a, b;
-	struct T_(ListNode) buf[3][100], *node;
+	struct T_(ListNode) buf[3][10], *node;
 	const size_t buf_size = sizeof buf[0] / sizeof *buf[0];
 	size_t i;
 	int is_parity;
@@ -417,6 +515,7 @@ static void PT_U_(test, memory)(void) {
 	printf("Memory moving tests of " QUOTE(LIST_NAME) " linked-list "
 		QUOTE(LIST_U_NAME) ":\n");
 	T_(ListClear)(&a), T_(ListClear)(&b);
+	PT_(legit)(&a);
 	/* fill the items in buf0 */
 	for(i = 0; i < buf_size; i++)
 		node = buf[0] + i, PT_(filler)(&node->data);
@@ -425,9 +524,15 @@ static void PT_U_(test, memory)(void) {
 	memset(&buf[2], 0, buf_size * sizeof *buf[2]);
 	/* put all items in buf0 and buf1 */
 	for(i = 0; i < buf_size; i++) T_(ListPush)(&a, &buf[0][i].data);
-	for(i = 0; i < buf_size; i++) T_(ListPush)(&a, &buf[1][i].data);
+	PT_(legit)(&a);
+	for(i = 0; i < buf_size; i++) {
+		T_(ListPush)(&a, &buf[1][i].data);
+		PT_(legit)(&a);
+	}
+	assert(PT_(count)(&a) == buf_size << 1);
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 	T_(ListSort)(&a);
+	PT_(legit)(&a);
 	printf("Sorting, (backed by two arrays,) a = %s.\n",
 		T_U_(List, ToString)(&a));
 	assert(PT_(in_order)(&a));
@@ -436,13 +541,12 @@ static void PT_U_(test, memory)(void) {
 	printf("Spliting odd/even a to b = %s by " QUOTE(LIST_U_NAME) ";\n",
 		T_U_(List, ToString)(&b));
 	is_parity = 0;
+	PT_(legit)(&a);
+	PT_(legit)(&b);
 	T_U_(List, BiTakeIf)(&b, &a, &PT_U_(every, second), &is_parity);
 	printf("a = %s, b = %s.\n",
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
-	/* tests stability of sort; false! only if all items unique */
-	/*assert(PT_U_(in, array)(&a, buf[0], buf_size));*/
-	/*assert(PT_(in_array)(&b, buf[1], buf_size));*/
 	assert(PT_(in_order)(&a));
 	assert(PT_U_(in, order)(&b)); /* only <U> is in order */
 #endif /* comp --> */
@@ -493,6 +597,27 @@ static void PT_U_(test, memory)(void) {
 }
 
 #ifdef LIST_U_COMPARATOR /* <-- compare */
+
+static void PT_U_(test, sort)(void) {
+	struct T_(ListNode) buf[4], *node;
+	const size_t buf_size = sizeof buf / sizeof *buf;
+	size_t i, count;
+	struct T_(List) a;
+	printf("Sort test of " QUOTE(LIST_NAME) " linked-list "
+		QUOTE(LIST_U_NAME) ":\n");
+	T_(ListClear)(&a);
+	for(i = 0; i < buf_size; i++) {
+		node = buf + i;
+		PT_(filler)(&node->data);
+		T_(ListPush)(&a, &node->data);
+	}
+	count = PT_(count)(&a);
+	assert(count == buf_size);
+	T_U_(List, Sort)(&a);
+	count = PT_(count)(&a);
+	assert(count == buf_size);
+	PT_(legit)(&a);
+}
 
 static void PT_U_(test, boolean)(void) {
 	struct T_(List) a, b, c, ia, ib, ic;
@@ -717,6 +842,9 @@ static void PT_U_(test, meta)(void) {
 static void PT_U_(test, list)(void) {
 	printf("List<" QUOTE(LIST_NAME) "> linked-list "
 		   QUOTE(LIST_U_NAME) ":\n");
+#ifdef LIST_U_COMPARATOR /* <-- compare */
+	PT_U_(test, sort)();
+#endif /* compare --> */
 	PT_U_(test, basic)();
 	PT_U_(test, memory)();
 #ifdef LIST_U_COMPARATOR /* <-- compare */

@@ -9,8 +9,7 @@
  multiple polymorphic structures. Supports one to four different orders in the
  same type. The preprocessor macros are all undefined at the end of the file
  for convenience when including multiple _List_ types in the same file. Random
- _LIST_*_ macros should be avoided.Given an item from the list . . .Goes though all _this_ U and makes sure it contains _count_ element _data_
- when in debug mode.
+ _LIST_*_ macros should be avoided.Given an item from the list . . .
 
 parameter: LIST_NAME, LIST_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
@@ -24,11 +23,6 @@ parameter: LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR -- Each _
 
 parameter: LIST_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
  `<T>List<U>ToString`.
-
-parameter: LIST_STATIC_STORAGE -- This allocates _O(log max n)_ space needed for merge sort statically, instead
- of stack every time the List is sorted. This does not allow it to sort data
- concurrently without crashing, but it consumes less space on the stack; about
- half-a-kilobyte, depending on _size_t_.
 
 parameter: LIST_OPENMP -- Tries to parallelise using _OpenMP_, [ http://www.openmp.org/ ].
 
@@ -84,9 +78,8 @@ A single link in the linked-list derived from _<T>_. Storage of this
 
 struct <T>List
 
-Serves as an a head for linked-list(s) of _<T>ListNode_. No initialisation
- is necessary when the variable is of _static_ duration, otherwise use
- `<T>ListClear`.
+Serves as an a head for linked-list(s) of _<T>ListNode_. Use
+ `<T>ListClear` to initialise.
 
 
 ### typedef void (*<T>ListMigrateElement)(T *const element,

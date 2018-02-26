@@ -55,10 +55,6 @@ for convenience when including multiple <em>List</em> types in the same file. Ra
 <p>
 Given an item from the list . . .
 </p>
-<p>
-Goes though all <em>this</em> U and makes sure it contains <em>count</em> element <em>data</em>
-when in debug mode.
-</p>
 <dl>
 	<dt>parameter: LIST_NAME, LIST_TYPE</dt>
 	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith;
@@ -73,11 +69,6 @@ when in debug mode.
 	<dt>parameter: LIST_TO_STRING</dt>
 	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
  <a href = "#&lt;T&gt;List&lt;U&gt;ToString">&lt;T&gt;List&lt;U&gt;ToString</a>.</dd>
-	<dt>parameter: LIST_STATIC_STORAGE</dt>
-	<dd>This allocates <em>O(log max n)</em> space needed for merge sort statically, instead
- of stack every time the List is sorted. This does not allow it to sort data
- concurrently without crashing, but it consumes less space on the stack; about
- half-a-kilobyte, depending on <em>size_t</em>.</dd>
 	<dt>parameter: LIST_OPENMP</dt>
 	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>.</dd>
 	<dt>parameter: LIST_TEST</dt>
@@ -139,9 +130,8 @@ element <em>data</em>.
 <h3>struct &lt;T&gt;List</h3>
 <pre><b>struct &lt;T&gt;List</b></pre>
 <p>
-Serves as an a head for linked-list(s) of <em>&lt;T&gt;ListNode</em>. No initialisation
-is necessary when the variable is of <em>static</em> duration, otherwise use
-<a href = "#&lt;T&gt;ListClear">&lt;T&gt;ListClear</a>.
+Serves as an a head for linked-list(s) of <em>&lt;T&gt;ListNode</em>. Use
+<a href = "#&lt;T&gt;ListClear">&lt;T&gt;ListClear</a> to initialise.
 </p>
 <dl>
 </dl>
