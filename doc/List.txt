@@ -35,7 +35,9 @@ minimum standard: C89/90
 
 author: Neil
 
-version: 2018-02 Eliminated the need for _<T>List_ by _C_ hacking.
+version: 2018-02 Eliminated the need for unnecessarily _<T>List_.
+			Now you must initialise static variables with _<T>ListClear_.
+			Eliminated _LIST_STATIC_SORT_.
 
 since: 2017-12 Type information on backing.
 			2017-10 Anonymous orders.

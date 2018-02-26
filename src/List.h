@@ -1152,6 +1152,24 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 	struct PT_(Run) *const run_b = run_a + 1;
 	struct PT_(X) *a = run_a->tail, *b = run_b->head, *chosen;
 	assert(r->run_no >= 2);
+#if defined(LIST_TEST) && defined(LIST_TO_STRING)
+	{
+		struct PT_(Run) *runs[2];
+		unsigned run_sel;
+		char str[12];
+		runs[0] = run_a, runs[1] = run_b;
+		for(run_sel = 0; run_sel < sizeof runs / sizeof *runs; run_sel++) {
+			struct PT_(X) *i;
+			struct PT_(Run) *run = runs[run_sel];
+			for(i = run->head; i != run->tail; i = i->U_(next)) {
+				assert(i);
+				PT_(to_string)(&PT_(node_hold_x)(i)->data, &str);
+				printf("%s, ", str);
+			}
+			printf("(size %lu.)\n", run->size);
+		}
+	}
+#endif
 	/* fixme: we are doing one-to-many compares in some cases? */
 	if(run_a->size <= run_b->size) {
 		struct PT_(X) *prev_chosen;
@@ -1332,12 +1350,13 @@ static void PT_U_(natural, sort)(struct T_(List) *const this) {
 			PT_U_(natural, merge)(&runs);
 		/* Reset the state machine and output to just {b} at the next run. */
 		mono = UNSURE;
+		assert(runs.run_no < sizeof(runs.run) / sizeof(*runs.run));
 		new_run = runs.run + runs.run_no++, run_count++;
 		new_run->size = 1;
 		new_run->head = new_run->tail = first_iso_a = b;
 	}
 	/* Terminating the last increasing sequence. */
-	if(mono == INCREASING) new_run->tail = a;
+	if(mono == INCREASING) new_run->tail = b;
 	new_run->tail->U_(next) = new_run->head->U_(prev) = 0;
 	/* Clean up the rest; when only one run, propagate list_runs[0] to head. */
 	while(runs.run_no > 1) PT_U_(natural, merge)(&runs);
