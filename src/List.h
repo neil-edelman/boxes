@@ -364,14 +364,13 @@ static const T_(ToString) PT_(to_string) = (LIST_TO_STRING);
 
 
 /** {container_of}. */
-static struct T_(ListNode) *PT_(node_hold_x)(const struct PT_(X) *const x) {
+static struct T_(ListNode) *PT_(node_hold_x)(struct PT_(X) *const x) {
 	return (struct T_(ListNode) *)(void *)
 		((char *)x - offsetof(struct T_(ListNode), x));
 }
 
 /** {container_of}; just cast. */
-static struct T_(ListNode) *PT_(node_hold_data)
-	(const T *const data) {
+static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
 	return (struct T_(ListNode) *)(void *)data;
 }
 
@@ -1531,9 +1530,8 @@ static void T_U_(List, TakeIf)(struct T_(List) *const this,
 static void T_U_(List, BiTakeIf)(struct T_(List) *const this,
 	struct T_(List) *const from, const T_(BiPredicate) bipredicate,
 	void *const param) {
-	struct PT_(X) *x, *next_x, *y;
+	struct PT_(X) *x, *next_x;
 	if(!from || from == this) return;
-	y = from->first.U_(next);
 	for(x = from->first.U_(next); (next_x = x->U_(next)); x = next_x) {
 		if(bipredicate && !bipredicate(&PT_(node_hold_x)(x)->data, param))
 			continue;
