@@ -1083,6 +1083,40 @@ static T *T_U_(List, GetLast)(struct T_(List) *const this) {
 
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 
+/* Check that each of LIST_U[A-D]_COMPARATOR are functions implementing
+ {<T>Comparator}. */
+static const T_(Comparator) PT_U_(data, cmp) = (LIST_U_COMPARATOR);
+
+/** Private: merges {blist} into {alist} when we don't know anything about the
+ data; on equal elements, places {alist} first.
+ @implements <T>BiListAction
+ @order {O(n + m)}. */
+static void PT_U_(list, merge)(struct T_(List) *const alist,
+	struct T_(List) *const blist) {
+	struct PT_(X) *hind, *a, *b;
+	assert(alist && blist);
+	/* {blist} empty -- that was easy. */
+	if(!(b = blist->first.U_(next))->U_(next)) return;
+	/* {alist} empty -- {O(1)} cat is more efficient. */
+	if(!(a = alist->first.U_(next))->U_(next))
+	{ PT_U_(list, cat)(&alist->last, blist); return; }
+	/* Merge */
+	for(hind = &alist->first; ; ) {
+		if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
+			&PT_(node_hold_x)(b)->data) < 0) {
+			a->U_(prev) = hind, hind = hind->U_(next) = a;
+			if(!(a = a->U_(next)))
+			{ b->U_(prev) = hind, hind->U_(next) = b,
+				alist->last.U_(prev) = blist->last.U_(prev); break; }
+		} else {
+			b->U_(prev) = hind, hind = hind->U_(next) = b;
+			if(!(b = b->U_(next)))
+			{ a->U_(prev) = hind, hind->U_(next) = a; break; }
+		}
+	}
+	blist->first.U_(next) = &blist->last, blist->last.U_(prev) = &blist->first;
+}
+
 #ifndef LIST_SORT_INTERNALS /* <!-- sort internals only once per translation
  unit */
 #define LIST_SORT_INTERNALS
@@ -1105,38 +1139,20 @@ struct PT_(Runs) {
 };
 #endif /* sort internals --> */
 
-/* Check that each of LIST_U[A-D]_COMPARATOR are functions implementing
- {<T>Comparator}. */
-static const T_(Comparator) PT_U_(data, cmp) = (LIST_U_COMPARATOR);
-
-/** Private: merges {blist} into {alist} when we don't know anything about the
- data; on equal elements, places {alist} first.
- @implements <T>BiListAction
- @order {O(n + m)}. */
-static void PT_U_(list, merge)(struct T_(List) *const alist,
-	struct T_(List) *const blist) {
-	struct PT_(X) *hind, *a, *b;
-	assert(alist && blist);
-	/* {blist} empty -- that was easy. */
-	if(!(b = blist->first.U_(next))->U_(next)) return;
-	/* {alist} empty -- {O(1)} cat is more efficient. */
-	if(!(a = alist->first.U_(next))->U_(next))
-		{ PT_U_(list, cat)(&alist->last, blist); return; }
-	/* Merge */
-	for(hind = &alist->first; ; ) {
-		if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
-			&PT_(node_hold_x)(b)->data) < 0) {
-			a->U_(prev) = hind, hind = hind->U_(next) = a;
-			if(!(a = a->U_(next)))
-				{ b->U_(prev) = hind, hind->U_(next) = b,
-				alist->last.U_(prev) = blist->last.U_(prev); break; }
-		} else {
-			b->U_(prev) = hind, hind = hind->U_(next) = b;
-			if(!(b = b->U_(next)))
-				{ a->U_(prev) = hind, hind->U_(next) = a; break; }
-		}
-	}
-	blist->first.U_(next) = &blist->last, blist->last.U_(prev) = &blist->first;
+static void PT_U_(natural, print)(const struct PT_(Run) *const run) {
+	struct PT_(X) *x;
+	char str[12];
+	assert(run);
+	x = run->head;
+	assert(x);
+	do {
+		PT_(to_string)(&PT_(node_hold_x)(x)->data, &str);
+		printf("%s, ", str);
+		if(x == run->tail) break;
+		x = x->U_(next);
+		assert(x);
+	} while(1);
+	printf("(size %lu.)\n", run->size);
 }
 
 /** Inserts the first element from the larger of two sorted runs, then merges
@@ -1153,22 +1169,8 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 	struct PT_(X) *a = run_a->tail, *b = run_b->head, *chosen;
 	assert(r->run_no >= 2);
 #if defined(LIST_TEST) && defined(LIST_TO_STRING)
-	{
-		struct PT_(Run) *runs[2];
-		unsigned run_sel;
-		char str[12];
-		runs[0] = run_a, runs[1] = run_b;
-		for(run_sel = 0; run_sel < sizeof runs / sizeof *runs; run_sel++) {
-			struct PT_(X) *i;
-			struct PT_(Run) *run = runs[run_sel];
-			for(i = run->head; i != run->tail; i = i->U_(next)) {
-				assert(i);
-				PT_(to_string)(&PT_(node_hold_x)(i)->data, &str);
-				printf("%s, ", str);
-			}
-			printf("(size %lu.)\n", run->size);
-		}
-	}
+	PT_U_(natural, print)(run_a);
+	PT_U_(natural, print)(run_b);
 #endif
 	/* fixme: we are doing one-to-many compares in some cases? */
 	if(run_a->size <= run_b->size) {
@@ -1295,8 +1297,9 @@ static void PT_U_(natural, sort)(struct T_(List) *const this) {
 	printf("Org: %s.\n", T_U_(List, ToString)(this));
 #endif
 #endif /* test --> */
-	/* Ensure we have at least two elements. */
-	if(!(b = (a = this->first.U_(next))->U_(next)) || !b) return;
+	/* Needs an element. */
+	a = this->first.U_(next), assert(a);
+	if(!(b = a->U_(next))) return;
 	/* Reset the state machine and output to just {a} in the first run. */
 	mono = UNSURE;
 	runs.run_no = 1;
@@ -1304,7 +1307,7 @@ static void PT_U_(natural, sort)(struct T_(List) *const this) {
 	new_run->size = 1;
 	first_iso_a = new_run->head = new_run->tail = a;
 	/* While {a} and {b} are elements (that are consecutive.) {c} may not be. */
-	for( ; (c = b->U_(next)); a = b, b = c) {
+	for(c = b->U_(next); c; a = b, b = c, c = c->U_(next)) {
 #ifdef LIST_TEST /* <-- test */
 		num++;
 #endif /* test --> */
@@ -1356,10 +1359,12 @@ static void PT_U_(natural, sort)(struct T_(List) *const this) {
 		new_run->head = new_run->tail = first_iso_a = b;
 	}
 	/* Terminating the last increasing sequence. */
-	if(mono == INCREASING) new_run->tail = b;
+	if(mono == INCREASING) new_run->tail = a;
 	new_run->tail->U_(next) = new_run->head->U_(prev) = 0;
 	/* Clean up the rest; when only one run, propagate list_runs[0] to head. */
 	while(runs.run_no > 1) PT_U_(natural, merge)(&runs);
+	runs.run[0].head->U_(prev) = &this->first;
+	runs.run[0].tail->U_(next) = &this->last;
 	this->first.U_(next) = runs.run[0].head;
 	this->last.U_(prev)  = runs.run[0].tail;
 #ifdef LIST_TEST /* <-- test */

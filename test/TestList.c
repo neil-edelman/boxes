@@ -270,7 +270,7 @@ static void test_block_move(void) {
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	unsigned seed = (unsigned)clock();
+	unsigned seed = 12246/*(unsigned)clock()*/;
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	FooListTest();
