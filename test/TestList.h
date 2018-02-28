@@ -121,7 +121,7 @@ static void T_(ListTest)(void) {
 /** Assertion function for seeing if it is in a valid state.
  @order O(n) */
 static void PT_(legit)(const struct T_(List) *const this) {
-	size_t count, index_count;
+	size_t count = 0, index_count;
 	int is_valid = 0;
 	assert(this);
 #ifdef LIST_UA_NAME /* <-- a */
@@ -147,7 +147,7 @@ static void PT_(legit)(const struct T_(List) *const this) {
 }
 
 static size_t PT_(count)(struct T_(List) *const this) {
-	size_t count, index_count;
+	size_t count = 0, index_count;
 	int is_valid = 0;
 	assert(this);
 #ifdef LIST_UA_NAME
@@ -824,7 +824,7 @@ static void PT_U_(test, meta)(void) {
 		printf("%lu. %s\n", (unsigned long)(i + 1),
 			T_U_(List, ToString)(lists + i));
 		if(i) { /* like {strcmp} comparing the first letter -- good enough */
-			const struct PT_(X) *const less = lists[i - 1].first.U_(next),
+			struct PT_(X) *const less = lists[i - 1].first.U_(next),
 				*const more = lists[i].first.U_(next);
 			assert(less);
 			if(!less->U_(next)) continue;
