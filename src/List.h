@@ -1099,6 +1099,7 @@ static void PT_U_(list, merge)(struct T_(List) *const alist,
 	/* {alist} empty -- {O(1)} cat is more efficient. */
 	if(!(a = alist->first.U_(next))->U_(next))
 		{ PT_U_(list, cat)(&alist->last, blist); return; }
+	printf("merge\n");
 	/* Merge */
 	for(hind = &alist->first; ; ) {
 		if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,

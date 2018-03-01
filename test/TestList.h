@@ -7,6 +7,9 @@
 
 
 /* prototype */
+static void PT_(graph)(const struct T_(List) *const this,
+	const struct T_(ListNode) *const array, const size_t array_size,
+	const char *const fn);
 static void PT_(legit)(const struct T_(List) *const this);
 static size_t PT_(count)(struct T_(List) *const this);
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
@@ -117,6 +120,41 @@ static void T_(ListTest)(void) {
 }
 
 /* test helper functions */
+
+static void PT_(graph)(const struct T_(List) *const this,
+	const struct T_(ListNode) *const array, const size_t array_size,
+	const char *const fn) {
+	FILE *fp;
+	const struct T_(ListNode) *a;
+	char str[12];
+	size_t i;
+	assert(this && array && fn);
+	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	fprintf(fp, "digraph {\n"
+		"p%p [label=\"head\"];\n"
+		"p%p [label=\"tail\"];\n"
+		"node [shape=box];\n",
+		(void *)&this->first, (void *)&this->last);
+	for(i = 0; i < array_size; i++) {
+		a = array + i;
+		PT_(to_string)(&a->data, &str);
+		fprintf(fp, "p%p [label=\"%s\"];\n", (void *)(&a->x), str);
+	}
+#ifdef LIST_UA_NAME
+	PT_UA_(graph, index)(array, array_size, fp, "slategrey");
+#endif
+#ifdef LIST_UB_NAME
+	PT_UB_(graph, index)(array, array_size, fp, "royalblue");
+#endif
+#ifdef LIST_UC_NAME
+	PT_UC_(graph, index)(array, array_size, fp, "orchid");
+#endif
+#ifdef LIST_UD_NAME
+	PT_UD_(graph, index)(array, array_size, fp, "firebrick");
+#endif
+	fprintf(fp, "}\n");
+	fclose(fp);
+}
 
 /** Assertion function for seeing if it is in a valid state.
  @order O(n) */
@@ -242,6 +280,24 @@ PCAT(LIST_U_NAME, thing2)))
 
 
 /* test helper functions that depend on <U> */
+
+static void PT_U_(graph, index)(const struct T_(ListNode) *const array,
+	const size_t array_size, FILE *const fp, const char *const colour) {
+	const struct T_(ListNode) *a;
+	size_t i;
+	assert(array && fp && colour);
+	/*fprintf(fp, "subgraph %s {\n"
+		"style=filled;\n"
+		"color=%s;\n"
+		"node [style=filled,color=white];\n}\n", colour, colour);*/
+	for(i = 0; i < array_size; i++) {
+		a = array + i;
+		fprintf(fp, "p%p -> p%p [color=%s];\n"
+			"p%p -> p%p [color=%s4];\n",
+			(void *)(&a->x), (void *)(a->x.U_(next)), colour,
+			(void *)(&a->x), (void *)(a->x.U_(prev)), colour);
+	}
+}
 
 /** This checks if the index is valid by counting forward then back.
  @return Count. */
@@ -407,7 +463,7 @@ static void PT_U_(test, basic)(void) {
 	char str[12];
 	T *data, *item_a, *item_b, *item_y, *item_z;
 	struct T_(List) a;
-	struct T_(ListNode) buf[1000], *const new_buf = buf + 2, *node;
+	struct T_(ListNode) buf[100/*0*/], *const new_buf = buf + 2, *node;
 	const size_t buf_size = sizeof buf / sizeof *buf, new_buf_size = buf_size-4;
 	size_t i;
 	int is_parity = 1;
@@ -498,6 +554,9 @@ static void PT_U_(test, basic)(void) {
 	/* ToString (unchecked) */
 	printf("ToString: null = %s; a = %s.\n",
 		T_U_(List, ToString)(0), T_U_(List, ToString)(&a));
+	/* Output graphviz. */
+	PT_(graph)(&a, buf, buf_size,
+		"basic-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
 	printf("Clear.\n");
 	T_(ListClear)(&a);
 	assert(!PT_U_(count, elements)(&a));
@@ -788,8 +847,14 @@ static void PT_U_(test, order)(void) {
 	printf("By " QUOTE(LIST_UD_NAME) ": a = %s, b = %s.\n",
 		T_UD_(List, ToString)(&a), T_UD_(List, ToString)(&b));
 #endif
+	PT_(graph)(&a, buf, buf_size >> 1,
+			   "order-a-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
+	PT_(graph)(&b, buf + (buf_size >> 1), buf_size - (buf_size >> 1),
+			   "order-b-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
 	T_(ListMerge)(&a, &b);
-	PT_(legit)(&a); /* <-fails! */
+	PT_(graph)(&a, buf, buf_size,
+			   "order-merged-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
+	PT_(legit)(&a); /* <-fails/\ */
 	PT_(legit)(&b);
 	printf("Testing " QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) " a, b for order "
 		"on <" QUOTE(LIST_NAME) ">ListMerge(a, b).\n");
@@ -850,7 +915,7 @@ static void PT_U_(test, list)(void) {
 		   QUOTE(LIST_U_NAME) ":\n");
 	{
 		struct T_(List) a;
-		struct T_(ListNode) nodes[2];
+		struct T_(ListNode) nodes[5];
 		const size_t nodes_size = sizeof nodes / sizeof *nodes;
 		size_t i, count;
 		T_(ListClear)(&a);
@@ -860,6 +925,7 @@ static void PT_U_(test, list)(void) {
 		}
 		count = PT_(count)(&a);
 		assert(count == nodes_size);
+		PT_(graph)(&a, nodes, nodes_size, "test.gv");
 	}
 #ifdef LIST_U_COMPARATOR /* <-- compare */
 	PT_U_(test, sort)();
