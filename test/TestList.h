@@ -141,16 +141,16 @@ static void PT_(graph)(const struct T_(List) *const this,
 		fprintf(fp, "p%p [label=\"%s\"];\n", (void *)(&a->x), str);
 	}
 #ifdef LIST_UA_NAME
-	PT_UA_(graph, index)(array, array_size, fp, "slategrey");
+	PT_UA_(graph, index)(array, array_size, fp, "royalblue");
 #endif
 #ifdef LIST_UB_NAME
-	PT_UB_(graph, index)(array, array_size, fp, "royalblue");
+	PT_UB_(graph, index)(array, array_size, fp, "firebrick");
 #endif
 #ifdef LIST_UC_NAME
-	PT_UC_(graph, index)(array, array_size, fp, "orchid");
+	PT_UC_(graph, index)(array, array_size, fp, "darkseagreen");
 #endif
 #ifdef LIST_UD_NAME
-	PT_UD_(graph, index)(array, array_size, fp, "firebrick");
+	PT_UD_(graph, index)(array, array_size, fp, "orchid");
 #endif
 	fprintf(fp, "}\n");
 	fclose(fp);
