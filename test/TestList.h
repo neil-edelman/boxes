@@ -140,6 +140,7 @@ static void PT_(graph)(const struct T_(List) *const this,
 		PT_(to_string)(&a->data, &str);
 		fprintf(fp, "p%p [label=\"%s\"];\n", (void *)(&a->x), str);
 	}
+	fprintf(fp, "node [colour=red, style=filled];\n");
 #ifdef LIST_UA_NAME
 	PT_UA_(graph, index)(array, array_size, fp, "royalblue");
 #endif
@@ -925,7 +926,8 @@ static void PT_U_(test, list)(void) {
 		}
 		count = PT_(count)(&a);
 		assert(count == nodes_size);
-		PT_(graph)(&a, nodes, nodes_size, "test.gv");
+		PT_(graph)(&a, nodes, nodes_size,
+			"test-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
 	}
 #ifdef LIST_U_COMPARATOR /* <-- compare */
 	PT_U_(test, sort)();

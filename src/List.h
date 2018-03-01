@@ -1102,11 +1102,14 @@ static void PT_U_(list, merge)(struct T_(List) *const alist,
 	printf("merge\n");
 	/* Merge */
 	for(hind = &alist->first; ; ) {
+		T *adata = &PT_(node_hold_x)(a)->data;
+		T *bdata = &PT_(node_hold_x)(b)->data;
 		if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
 			&PT_(node_hold_x)(b)->data) < 0) {
 			a->U_(prev) = hind, hind = hind->U_(next) = a;
 			if(!(a = a->U_(next))->U_(next))
 				{ b->U_(prev) = hind, hind->U_(next) = b,
+				blist->last.U_(prev)->U_(next) = &alist->last,
 				alist->last.U_(prev) = blist->last.U_(prev); break; }
 		} else {
 			b->U_(prev) = hind, hind = hind->U_(next) = b;
