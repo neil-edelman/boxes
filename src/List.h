@@ -1098,19 +1098,19 @@ static void PT_U_(list, merge)(struct T_(List) *const alist,
 	if(!(b = blist->first.U_(next))->U_(next)) return;
 	/* {alist} empty -- {O(1)} cat is more efficient. */
 	if(!(a = alist->first.U_(next))->U_(next))
-	{ PT_U_(list, cat)(&alist->last, blist); return; }
+		{ PT_U_(list, cat)(&alist->last, blist); return; }
 	/* Merge */
 	for(hind = &alist->first; ; ) {
 		if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
 			&PT_(node_hold_x)(b)->data) < 0) {
 			a->U_(prev) = hind, hind = hind->U_(next) = a;
-			if(!(a = a->U_(next)))
-			{ b->U_(prev) = hind, hind->U_(next) = b,
+			if(!(a = a->U_(next))->U_(next))
+				{ b->U_(prev) = hind, hind->U_(next) = b,
 				alist->last.U_(prev) = blist->last.U_(prev); break; }
 		} else {
 			b->U_(prev) = hind, hind = hind->U_(next) = b;
-			if(!(b = b->U_(next)))
-			{ a->U_(prev) = hind, hind->U_(next) = a; break; }
+			if(!(b = b->U_(next))->U_(next))
+				{ a->U_(prev) = hind, hind->U_(next) = a; break; }
 		}
 	}
 	blist->first.U_(next) = &blist->last, blist->last.U_(prev) = &blist->first;
@@ -1426,6 +1426,7 @@ static void PT_U_(boolean, seq)(struct T_(List) *const this,
 	struct PT_(X) *a = alist ? alist->first.U_(next) : 0,
 		*b = blist ? blist->first.U_(next) : 0, *temp;
 	int comp;
+	assert(a && b);
 	while(a->U_(next) && b->U_(next)) {
 		comp = PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
 			&PT_(node_hold_x)(b)->data);
@@ -1450,15 +1451,13 @@ static void PT_U_(boolean, seq)(struct T_(List) *const this,
 		}
 	}
 	if(mask & LO_DEFAULT_A) {
-		while(a) {
-			temp = a, a = a->U_(next);
+		while((temp = a, a = a->U_(next))) {
 			PT_(remove)(temp);
 			if(this) PT_(push)(this, temp);
 		}
 	}
 	if((mask & LO_DEFAULT_B)) {
-		while(b) {
-			temp = b, b = b->U_(next);
+		while((temp = b, b = b->U_(next))) {
 			PT_(remove)(temp);
 			if(this) PT_(push)(this, temp);
 		}

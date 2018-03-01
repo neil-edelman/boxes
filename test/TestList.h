@@ -268,7 +268,7 @@ static size_t PT_U_(legit, count)(const struct T_(List) *const this) {
 		forward++;
 		assert(turtle != hare);
 	}
-	assert(&this->last == hare);
+	{ const struct PT_(X) *const last = &this->last; assert(last == hare); }
 	hare = turtle = this->last.U_(prev);
 	while((next = hare->U_(prev))) {
 		hare = next;
@@ -734,10 +734,10 @@ static void PT_U_(test, boolean)(void) {
 }
 
 static void PT_U_(test, order)(void) {
-	struct T_(ListNode) buf[3000], *node = buf;
+	struct T_(ListNode) buf[10/*000*/], *node = buf;
 	const size_t buf_size = sizeof buf / sizeof *buf;
 	struct T_(List) a, b;
-	size_t i;
+	size_t i, count;
 	T_(ListClear)(&a), T_(ListClear)(&b);
 	assert(T_U_(List, Compare)(0, 0) == 0);
 	assert(T_U_(List, Compare)(&a, 0) > 0);
@@ -755,7 +755,7 @@ static void PT_U_(test, order)(void) {
 		"on <" QUOTE(LIST_NAME) ">ListTake(a, b).\n");
 	assert(PT_U_(count, elements)(&a) == buf_size);
 	assert(PT_U_(count, elements)(&b) == 0);
-	/* technically, \${(1/2)^(buf_size/2+1)} change of getting this one wrong */
+	/* \${(1/2)^(buf_size/2+1)} chance of getting a false positive! \/ */
 	assert(PT_(exactly_unordered)(&a, (size_t)1));
 	/* done now merge */
 	T_(ListClear)(&a), T_(ListClear)(&b);
@@ -767,6 +767,8 @@ static void PT_U_(test, order)(void) {
 	assert(PT_U_(count, elements)(&b) == buf_size - (buf_size >> 1));
 	assert(PT_(in_order)(&a));
 	assert(PT_(in_order)(&b));
+	PT_(legit)(&a);
+	PT_(legit)(&b);
 	printf("Testing " QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) " a, b for order "
 		"on <" QUOTE(LIST_NAME) ">ListMerge(a, b): %s, %s.\n",
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
@@ -787,10 +789,14 @@ static void PT_U_(test, order)(void) {
 		T_UD_(List, ToString)(&a), T_UD_(List, ToString)(&b));
 #endif
 	T_(ListMerge)(&a, &b);
+	PT_(legit)(&a); /* <-fails! */
+	PT_(legit)(&b);
 	printf("Testing " QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) " a, b for order "
 		"on <" QUOTE(LIST_NAME) ">ListMerge(a, b).\n");
-	assert(PT_U_(count, elements)(&a) == buf_size);
-	assert(PT_U_(count, elements)(&b) == 0);
+	count = PT_U_(count, elements)(&a);
+	assert(count == buf_size);
+	count = PT_U_(count, elements)(&b);
+	assert(count == 0);
 	assert(PT_(in_order)(&a));
 	printf("\n");
 }
@@ -842,6 +848,19 @@ static void PT_U_(test, meta)(void) {
 static void PT_U_(test, list)(void) {
 	printf("List<" QUOTE(LIST_NAME) "> linked-list "
 		   QUOTE(LIST_U_NAME) ":\n");
+	{
+		struct T_(List) a;
+		struct T_(ListNode) nodes[2];
+		const size_t nodes_size = sizeof nodes / sizeof *nodes;
+		size_t i, count;
+		T_(ListClear)(&a);
+		for(i = 0; i < nodes_size; i++) {
+			PT_(filler)(&nodes[i].data);
+			T_(ListPush)(&a, &nodes[i].data);
+		}
+		count = PT_(count)(&a);
+		assert(count == nodes_size);
+	}
 #ifdef LIST_U_COMPARATOR /* <-- compare */
 	PT_U_(test, sort)();
 #endif /* compare --> */
