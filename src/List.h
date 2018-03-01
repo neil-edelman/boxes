@@ -375,7 +375,8 @@ static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
 }
 
 /* Prototypes: needed for the next section, but undefined until later. */
-static void PT_(push)(struct T_(List) *const this, struct PT_(X) *const x);
+static void PT_(add_before)(struct PT_(X) *const x, struct PT_(X) *const add);
+static void PT_(add_after)(struct PT_(X) *const x, struct PT_(X) *const add);
 static void PT_(remove)(struct PT_(X) *const x);
 static void PT_(migrate)(const struct Migrate *const migrate,
 	struct PT_(X) **const x_ptr);
@@ -418,56 +419,38 @@ static void PT_(migrate)(const struct Migrate *const migrate,
 
 
 
-/** Private: add after. */
-static void PT_(add_after)(struct PT_(X) *const anchor,
-	struct T_(ListNode) *const node) {
-	assert(anchor && node && anchor != &node->x);
+/** Private: add before {x}. */
+static void PT_(add_before)(struct PT_(X) *const x, struct PT_(X) *const add) {
+	assert(x && add && x != add);
 #ifdef LIST_UA_NAME /* <-- a */
-	PT_UA_(list, add_after)(anchor, node);
+	PT_UA_(add, before)(x, add);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PT_UB_(list, add_after)(anchor, node);
+	PT_UB_(add, before)(x, add);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PT_UC_(list, add_after)(anchor, node);
+	PT_UC_(add, before)(x, add);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PT_UD_(list, add_after)(anchor, node);
+	PT_UD_(add, before)(x, add);
 #endif /* d --> */
 }
 
-/** Private: add before. */
-static void PT_(add_before)(struct PT_(X) *const anchor,
-	struct PT_(X) *const x) {
-	assert(anchor && x && anchor != x);
+/** Private: add before {x}. */
+static void PT_(add_after)(struct PT_(X) *const x, struct PT_(X) *const add) {
+	assert(x && add && x != add);
 #ifdef LIST_UA_NAME /* <-- a */
-	PT_UA_(list, add_before)(anchor, x);
+	PT_UA_(add, after)(x, add);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PT_UB_(list, add_before)(anchor, x);
+	PT_UB_(add, after)(x, add);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PT_UC_(list, add_before)(anchor, x);
+	PT_UC_(add, after)(x, add);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PT_UD_(list, add_before)(anchor, x);
+	PT_UD_(add, after)(x, add);
 #endif /* d --> */
-}
-
-/** Private: push to the end of the list.
- @implements <T>ListNodeAction */
-static void PT_(push)(struct T_(List) *const this,
-	struct PT_(X) *const x) {
-	assert(this && x);
-	PT_(add_before)(&this->last, x);
-}
-
-/** Private: unshift to the beginning of the list.
- @implements <T>ListNodeAction */
-static void PT_(unshift)(struct T_(List) *const this,
-	struct T_(ListNode) *const node) {
-	assert(this && node);
-	PT_(add_after)(&this->first, node);
 }
 
 /** Private: remove from list.
@@ -533,7 +516,7 @@ static void T_(ListClear)(struct T_(List) *const this) {
  @allow */
 static void T_(ListPush)(struct T_(List) *const this, T *const data) {
 	if(!this || !data) return;
-	PT_(push)(this, &PT_(node_hold_data)(data)->x);
+	PT_(add_before)(&this->last, &PT_(node_hold_data)(data)->x);
 }
 
 /** Initialises the contents of {node} to add it to the beginning of {this}. If
@@ -547,7 +530,7 @@ static void T_(ListPush)(struct T_(List) *const this, T *const data) {
  @allow */
 static void T_(ListUnshift)(struct T_(List) *const this, T *const data) {
 	if(!this || !data) return;
-	PT_(unshift)(this, PT_(node_hold_data)(data));
+	PT_(add_after)(&this->first, &PT_(node_hold_data)(data)->x);
 }
 
 /** Given an item from the list . . . */
@@ -944,25 +927,24 @@ static void PT_U_(cycle, crash)(const struct PT_(X) *const x) {
 #endif
 }
 
-/** Private: add {node} after {anchor}. */
-static void PT_U_(list, add_after)(struct PT_(X) *const anchor, struct T_(ListNode) *const node) {
-	assert(anchor && node && anchor != &node->x && anchor->U_(next));
-	node->x.U_(prev) = anchor;
-	node->x.U_(next) = anchor->U_(next);
-	anchor->U_(next)->U_(prev) = &node->x;
-	anchor->U_(next) = &node->x;
-	PT_U_(cycle, crash)(&node->x);
+/** Private: add {add} before {x}. */
+static void PT_U_(add, before)(struct PT_(X) *const x,struct PT_(X) *const add){
+	assert(x && add && x != add && x->U_(prev));
+	add->U_(prev) = x->U_(prev);
+	add->U_(next) = x;
+	x->U_(prev)->U_(next) = add;
+	x->U_(prev) = add;
+	PT_U_(cycle, crash)(add);
 }
 
-/** Private: add {node} before {anchor}. */
-static void PT_U_(list, add_before)(struct PT_(X) *const anchor,
-	struct PT_(X) *const x) {
-	assert(anchor && x && anchor != x && anchor->U_(prev));
-	x->U_(prev) = anchor->U_(prev);
-	x->U_(next) = anchor;
-	anchor->U_(prev)->U_(next) = x;
-	anchor->U_(prev) = x;
-	PT_U_(cycle, crash)(x);
+/** Private: add {add} after {x}. */
+static void PT_U_(add, after)(struct PT_(X) *const x, struct PT_(X) *const add){
+	assert(x && add && x != add && x->U_(next));
+	add->U_(prev) = x;
+	add->U_(next) = x->U_(next);
+	x->U_(next)->U_(prev) = add;
+	x->U_(next) = add;
+	PT_U_(cycle, crash)(add);
 }
 
 /** Private: list remove in {<U>}.
@@ -1435,32 +1417,32 @@ static void PT_U_(boolean, seq)(struct T_(List) *const this,
 			temp = a, a = a->U_(next);
 			if(mask & LO_SUBTRACTION_AB) {
 				PT_(remove)(temp);
-				if(this) PT_(push)(this, temp);
+				if(this) PT_(add_before)(&this->last, temp);
 			}
 		} else if(comp > 0) {
 			temp = b, b = b->U_(next);
 			if(mask & LO_SUBTRACTION_BA) {
 				PT_(remove)(temp);
-				if(this) PT_(push)(this, temp);
+				if(this) PT_(add_before)(&this->last, temp);
 			}
 		} else {
 			temp = a, a = a->U_(next), b = b->U_(next);
 			if(mask & LO_INTERSECTION) {
 				PT_(remove)(temp);
-				if(this) PT_(push)(this, temp);
+				if(this) PT_(add_before)(&this->last, temp);
 			}
 		}
 	}
 	if(mask & LO_DEFAULT_A) {
 		while((temp = a, a = a->U_(next))) {
 			PT_(remove)(temp);
-			if(this) PT_(push)(this, temp);
+			if(this) PT_(add_before)(&this->last, temp);
 		}
 	}
 	if((mask & LO_DEFAULT_B)) {
 		while((temp = b, b = b->U_(next))) {
 			PT_(remove)(temp);
-			if(this) PT_(push)(this, temp);
+			if(this) PT_(add_before)(&this->last, temp);
 		}
 	}
 }
@@ -1524,7 +1506,7 @@ static void T_U_(List, TakeIf)(struct T_(List) *const this,
 	for(x = from->first.U_(next); (next_x = x->U_(next)); x = next_x) {
 		if(predicate && !predicate(&PT_(node_hold_x)(x)->data)) continue;
 		PT_(remove)(x);
-		if(this) PT_(push)(this, x);
+		if(this) PT_(add_before)(&this->last, x);
 	}
 }
 
@@ -1541,7 +1523,7 @@ static void T_U_(List, BiTakeIf)(struct T_(List) *const this,
 		if(bipredicate && !bipredicate(&PT_(node_hold_x)(x)->data, param))
 			continue;
 		PT_(remove)(x);
-		if(this) PT_(push)(this, x);
+		if(this) PT_(add_before)(&this->last, x);
 	}
 }
 

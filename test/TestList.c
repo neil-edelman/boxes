@@ -229,6 +229,7 @@ static void test_block_move(void) {
 	const size_t others_size = sizeof others / sizeof *others;
 	size_t i;
 
+	AnimalListClear(&animals);
 	printf("Llama test:\n");
 	assert(others_size >= sloths_size);
 	for(i = 0; i < sloths_size; i++) Sloth_init(sloths + i);
