@@ -142,16 +142,16 @@ static void PT_(graph)(const struct T_(List) *const this,
 	}
 	fprintf(fp, "node [colour=red, style=filled];\n");
 #ifdef LIST_UA_NAME
-	PT_UA_(graph, index)(array, array_size, fp, "royalblue");
+	PT_UA_(graph, index)(this, array, array_size, fp, "royalblue");
 #endif
 #ifdef LIST_UB_NAME
-	PT_UB_(graph, index)(array, array_size, fp, "firebrick");
+	PT_UB_(graph, index)(this, array, array_size, fp, "firebrick");
 #endif
 #ifdef LIST_UC_NAME
-	PT_UC_(graph, index)(array, array_size, fp, "darkseagreen");
+	PT_UC_(graph, index)(this, array, array_size, fp, "darkseagreen");
 #endif
 #ifdef LIST_UD_NAME
-	PT_UD_(graph, index)(array, array_size, fp, "orchid");
+	PT_UD_(graph, index)(this, array, array_size, fp, "orchid");
 #endif
 	fprintf(fp, "}\n");
 	fclose(fp);
@@ -269,35 +269,38 @@ in C99" */
 #define U_(thing) PCAT(anonymous, thing)
 #define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2)
 #define PT_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-CAT(_, thing2)))
+	CAT(_, thing2)))
 #else /* anon --><-- !anon */
 #define U_(thing) PCAT(LIST_U_NAME, thing)
 #define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), \
-CAT(LIST_U_NAME, thing2))
+	CAT(LIST_U_NAME, thing2))
 #define PT_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
-PCAT(LIST_U_NAME, thing2)))
+	PCAT(LIST_U_NAME, thing2)))
 #endif /* !anon --> */
 
 
 
 /* test helper functions that depend on <U> */
 
-static void PT_U_(graph, index)(const struct T_(ListNode) *const array,
-	const size_t array_size, FILE *const fp, const char *const colour) {
+static void PT_U_(graph, index)(const struct T_(List) *const this,
+	const struct T_(ListNode) *const array, const size_t array_size,
+	FILE *const fp, const char *const colour) {
 	const struct T_(ListNode) *a;
 	size_t i;
-	assert(array && fp && colour);
+	assert(this && array && fp && colour);
 	/*fprintf(fp, "subgraph %s {\n"
 		"style=filled;\n"
 		"color=%s;\n"
 		"node [style=filled,color=white];\n}\n", colour, colour);*/
-	for(i = 0; i < array_size; i++) {
-		a = array + i;
-		fprintf(fp, "p%p -> p%p [color=%s];\n"
-			"p%p -> p%p [color=%s4];\n",
-			(void *)(&a->x), (void *)(a->x.U_(next)), colour,
-			(void *)(&a->x), (void *)(a->x.U_(prev)), colour);
-	}
+	fprintf(fp, "p%p -> p%p [color=%s];\n"
+		"p%p -> p%p [color=%s4];\n",
+		(void *)&this->first, (void *)this->first.U_(next), colour,
+		(void *)&this->last, (void *)this->last.U_(prev), colour);
+	for(i = 0; i < array_size; i++)
+		a = array + i, fprintf(fp, "p%p -> p%p [color=%s];\n"
+		"p%p -> p%p [color=%s4];\n",
+		(void *)(&a->x), (void *)(a->x.U_(next)), colour,
+		(void *)(&a->x), (void *)(a->x.U_(prev)), colour);
 }
 
 /** This checks if the index is valid by counting forward then back.
@@ -849,12 +852,12 @@ static void PT_U_(test, order)(void) {
 		T_UD_(List, ToString)(&a), T_UD_(List, ToString)(&b));
 #endif
 	PT_(graph)(&a, buf, buf_size >> 1,
-			   "order-a-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
+			   "order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-a.gv");
 	PT_(graph)(&b, buf + (buf_size >> 1), buf_size - (buf_size >> 1),
-			   "order-b-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
+			   "order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-b.gv");
 	T_(ListMerge)(&a, &b);
 	PT_(graph)(&a, buf, buf_size,
-			   "order-merged-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
+			   "order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-merged-a.gv");
 	PT_(legit)(&a); /* <-fails/\ */
 	PT_(legit)(&b);
 	printf("Testing " QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) " a, b for order "
