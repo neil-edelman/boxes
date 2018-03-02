@@ -489,7 +489,7 @@ static void PT_U_(test, basic)(void) {
 		PT_(filler)(&node->data);
 		T_(ListPush)(&a, &node->data);
 	}
-	item_a = T_U_(List, GetFirst)(&a);
+	item_a = T_U_(List, First)(&a);
 	assert(item_a);
 	data = item_a;
 	assert(data);
@@ -511,19 +511,19 @@ static void PT_U_(test, basic)(void) {
 	is_parity = 1;
 	assert(T_U_(List, BiShortCircuit)(&a, &PT_U_(every, second),
 		&is_parity) == (T *)(buf + 1));
-	/* GetNext, GetPrevious, GetFirst, GetLast */
+	/* Next, Previous, First, Last */
 	printf("Removing 3 elements from a.\n");
 	assert(PT_U_(exactly, elements)(&a, buf, buf_size));
-	assert(!T_U_(List, GetFirst)(0));
-	assert(!T_U_(List, GetLast)(0));
-	assert(!T_U_(Node, GetPrevious)(0));
-	assert(!T_U_(Node, GetNext)(0));
-	item_a = T_U_(List, GetFirst)(&a);
-	assert(!T_U_(Node, GetPrevious)(item_a));
-	item_b = T_U_(Node, GetNext)(item_a);
-	item_z = T_U_(List, GetLast)(&a);
-	assert(!T_U_(Node, GetNext)(item_z));
-	item_y = T_U_(Node, GetPrevious)(item_z);
+	assert(!T_U_(List, First)(0));
+	assert(!T_U_(List, Last)(0));
+	assert(!T_U_(List, Previous)(0));
+	assert(!T_U_(List, Next)(0));
+	item_a = T_U_(List, First)(&a);
+	assert(!T_U_(List, Previous)(item_a));
+	item_b = T_U_(List, Next)(item_a);
+	item_z = T_U_(List, Last)(&a);
+	assert(!T_U_(List, Next)(item_z));
+	item_y = T_U_(List, Previous)(item_z);
 	assert(item_a && item_b && item_y && item_z);
 	/* Remove */
 	/*T_(ListRemove)(0, item_y);*/

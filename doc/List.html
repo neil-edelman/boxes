@@ -52,30 +52,30 @@ same type. The preprocessor macros are all undefined at the end of the file
 for convenience when including multiple <em>List</em> types in the same file. Random
 <em>LIST_*</em> macros should be avoided.
 </p>
-<p>
-Given an item from the list . . .
-</p>
 <dl>
 	<dt>parameter: LIST_NAME, LIST_TYPE</dt>
 	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith;
  should be conformant to naming and to the maximum available length of
  identifiers. Must each be present before including.</dd>
 	<dt>parameter: LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR</dt>
-	<dd>Each <em>LIST_U[A-D]_NAME</em> literally becomes, <em>&lt;U&gt;</em>, an order. If you only need
- one order, you can skip it's name and define it anonymously, <em>&lt;U&gt;</em> will be
- empty. One can define an optional comparator, an equivalence relation function
- implementing <em>&lt;T&gt;Comparator</em>; <em>LIST_COMPARATOR</em> is used when you define the
- name anonymously.</dd>
+	<dd>Each <em>LIST_U[A-D]_NAME</em> literally becomes, <em>&lt;U&gt;</em>, an order, and optional
+ comparator, <em>LIST_U[A-D]_COMPARATOR</em>, an equivalence relation function
+ implementing <em>&lt;T&gt;Comparator</em>. Not defining this implies one anonymous order
+ which one can set a comparator using <em>LIST_COMPARATOR</em>; <em>&lt;U&gt;</em> will be empty in
+ this case.</dd>
 	<dt>parameter: LIST_TO_STRING</dt>
 	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
  <a href = "#&lt;T&gt;List&lt;U&gt;ToString">&lt;T&gt;List&lt;U&gt;ToString</a>.</dd>
 	<dt>parameter: LIST_OPENMP</dt>
-	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>.</dd>
+	<dd>Tries to parallelise using <em>OpenMP</em>, <a href = "http://www.openmp.org/">http://www.openmp.org/</a>. This is
+ limited to some, usually multi-order, functions.</dd>
 	<dt>parameter: LIST_TEST</dt>
 	<dd>Unit testing framework using <em>&lt;T&gt;ListTest</em>, included in a separate header,
  <em>../test/ListTest.h</em>. Must be defined equal to a (random) filler, satisfying
  <em>&lt;T&gt;Action</em>. If <em>NDEBUG</em> is not defined, turns on <em>assert</em> private function
  integrity testing. Requires <em>LIST_TO_STRING</em>.</dd>
+	<dt>parameter: NDEBUG</dt>
+	<dd>Uses standard assertions, so turning this on will speed up the code.</dd>
 	<dt>minimum standard</dt>
 	<dd>C89/90</dd>
 	<dt>author</dt>
@@ -101,6 +101,11 @@ Given an item from the list . . .
 	<dd><em>clang</em>: <em>#pragma clang diagnostic ignored "-Wx"</em> where <em>x</em> is:
  <em>padded</em>; <em>documentation</em>; <em>documentation-unknown-command</em> it's not quite
  <em>clang-tags</em>; 3.8 <em>disabled-macro-expansion</em> on <em>toupper</em> in <em>LIST_TEST</em>.</dd>
+	<dt>fixme</dt>
+	<dd>We are on the fence about whether the insertion functions should take
+ <em>T</em> or <em>&lt;T&gt;ListNode</em>. Yes, you always have to have a node, <em>&lt;T&gt;ListNode</em> is
+ safer, otoh, if you remove something you can't add without casting. Also this
+ is the only place where we use it, so it's un-symmetric.</dd>
 </dl>
 
 
@@ -157,7 +162,7 @@ the handler for the <em>Migrate</em>.
 <h3>typedef void (*&lt;T&gt;Action)(T *const)</h3>
 <pre><b>typedef void (*&lt;T&gt;Action)(T *const)</b></pre>
 <p>
-Takes <em>&lt;T&gt;</em>.
+Takes <em>&lt;T&gt;</em>; used in <a href = "#&lt;T&gt;List&lt;U&gt;ForEach">&lt;T&gt;List&lt;U&gt;ForEach</a>.
 </p>
 <dl>
 </dl>
@@ -167,63 +172,7 @@ Takes <em>&lt;T&gt;</em>.
 <h3>typedef void (*&lt;T&gt;BiAction)(T *const, void *const)</h3>
 <pre><b>typedef void (*&lt;T&gt;BiAction)(T *const, void *const)</b></pre>
 <p>
-Takes <em>&lt;T&gt;</em> and &lt;void *&gt;.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*&lt;T&gt;ListAction)(struct &lt;T&gt;List *const)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;ListAction)(struct &lt;T&gt;List *const)</h3>
-<pre><b>typedef void (*&lt;T&gt;ListAction)(struct &lt;T&gt;List *const)</b></pre>
-<p>
-Takes <em>&lt;T&gt;List</em>.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*&lt;T&gt;ListItemAction)(struct &lt;T&gt;List *const, T *const)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;ListItemAction)(struct &lt;T&gt;List *const, T *const)</h3>
-<pre><b>typedef void (*&lt;T&gt;ListItemAction)(struct &lt;T&gt;List *const, T *const)</b></pre>
-<p>
-Takes <em>&lt;T&gt;List</em> and <em>&lt;T&gt;</em>.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*&lt;T&gt;BiListAction)(struct &lt;T&gt;List *const,
-	struct &lt;T&gt;List *const)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;BiListAction)(struct &lt;T&gt;List *const,
-	struct &lt;T&gt;List *const)</h3>
-<pre><b>typedef void (*&lt;T&gt;BiListAction)(struct &lt;T&gt;List *const,
-	struct &lt;T&gt;List *const)</b></pre>
-<p>
-Takes two <em>&lt;T&gt;List</em>.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*&lt;T&gt;TriListAction)(struct &lt;T&gt;List *const,
-	struct &lt;T&gt;List *const, struct &lt;T&gt;List *const)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;TriListAction)(struct &lt;T&gt;List *const,
-	struct &lt;T&gt;List *const, struct &lt;T&gt;List *const)</h3>
-<pre><b>typedef void (*&lt;T&gt;TriListAction)(struct &lt;T&gt;List *const,
-	struct &lt;T&gt;List *const, struct &lt;T&gt;List *const)</b></pre>
-<p>
-Takes three <em>&lt;T&gt;List</em>s.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef T *(*&lt;T&gt;UnaryOperator)(T *const)"><!-- --></a>
-<h3>typedef T *(*&lt;T&gt;UnaryOperator)(T *const)</h3>
-<pre><b>typedef T *(*&lt;T&gt;UnaryOperator)(T *const)</b></pre>
-<p>
-Takes <em>&lt;T&gt;</em> and returns <em>&lt;T&gt;</em>.
+Takes <em>&lt;T&gt;</em> and &lt;void *&gt;; used in <a href = "#&lt;T&gt;List&lt;U&gt;BiForEach">&lt;T&gt;List&lt;U&gt;BiForEach</a>.
 </p>
 <dl>
 </dl>
@@ -279,17 +228,17 @@ null-terminated output string (the second.)
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListClear">&lt;T&gt;ListClear</a></td>
-	<td>struct &lt;T&gt;List *const this</td>
+	<td>struct &lt;T&gt;List *const list</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListPush">&lt;T&gt;ListPush</a></td>
-	<td>struct &lt;T&gt;List *const this, T *const data</td>
+	<td>struct &lt;T&gt;List *const list, T *const data</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListUnshift">&lt;T&gt;ListUnshift</a></td>
-	<td>struct &lt;T&gt;List *const this, T *const data</td>
+	<td>struct &lt;T&gt;List *const list, T *const data</td>
 </tr>
 <tr>
 	<td>static void</td>
@@ -299,30 +248,29 @@ null-terminated output string (the second.)
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListTake">&lt;T&gt;ListTake</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const from</td>
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;ListNodeTake">&lt;T&gt;ListNodeTake</a></td>
-	<td>struct &lt;T&gt;ListNode *const element,
-	struct &lt;T&gt;List *const from</td>
+	<td><a href = "#&lt;T&gt;ListTakeBefore">&lt;T&gt;ListTakeBefore</a></td>
+	<td>T *const data, struct &lt;T&gt;List *const from</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListMerge">&lt;T&gt;ListMerge</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const from</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListSort">&lt;T&gt;ListSort</a></td>
-	<td>struct &lt;T&gt;List *const this</td>
+	<td>struct &lt;T&gt;List *const list</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;ListMigrate">&lt;T&gt;ListMigrate</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	const struct Migrate *const migrate</td>
 </tr>
 <tr>
@@ -334,105 +282,105 @@ null-terminated output string (the second.)
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;MigrateEach">&lt;T&gt;List&lt;U&gt;MigrateEach</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	const &lt;T&gt;ListMigrateElement handler, const struct Migrate *const migrate</td>
 </tr>
 <tr>
 	<td>static T *</td>
-	<td><a href = "#&lt;T&gt;Node&lt;U&gt;GetNext">&lt;T&gt;Node&lt;U&gt;GetNext</a></td>
+	<td><a href = "#&lt;T&gt;List&lt;U&gt;GetNext">&lt;T&gt;List&lt;U&gt;GetNext</a></td>
 	<td>T *const data</td>
 </tr>
 <tr>
 	<td>static T *</td>
-	<td><a href = "#&lt;T&gt;Node&lt;U&gt;GetPrevious">&lt;T&gt;Node&lt;U&gt;GetPrevious</a></td>
+	<td><a href = "#&lt;T&gt;List&lt;U&gt;GetPrevious">&lt;T&gt;List&lt;U&gt;GetPrevious</a></td>
 	<td>T *const data</td>
 </tr>
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;GetFirst">&lt;T&gt;List&lt;U&gt;GetFirst</a></td>
-	<td>struct &lt;T&gt;List *const this</td>
+	<td>struct &lt;T&gt;List *const list</td>
 </tr>
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;GetLast">&lt;T&gt;List&lt;U&gt;GetLast</a></td>
-	<td>struct &lt;T&gt;List *const this</td>
+	<td>struct &lt;T&gt;List *const list</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;Sort">&lt;T&gt;List&lt;U&gt;Sort</a></td>
-	<td>struct &lt;T&gt;List *const this</td>
+	<td>struct &lt;T&gt;List *const list</td>
 </tr>
 <tr>
 	<td>static int</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;Compare">&lt;T&gt;List&lt;U&gt;Compare</a></td>
-	<td>const struct &lt;T&gt;List *const this,
-	const struct &lt;T&gt;List *const that</td>
+	<td>const struct &lt;T&gt;List *const alist,
+	const struct &lt;T&gt;List *const blist</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;TakeSubtraction">&lt;T&gt;List&lt;U&gt;TakeSubtraction</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const a, struct &lt;T&gt;List *const b</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;TakeUnion">&lt;T&gt;List&lt;U&gt;TakeUnion</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const a, struct &lt;T&gt;List *const b</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;TakeIntersection">&lt;T&gt;List&lt;U&gt;TakeIntersection</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const a, struct &lt;T&gt;List *const b</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;TakeXor">&lt;T&gt;List&lt;U&gt;TakeXor</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const a, struct &lt;T&gt;List *const b</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;TakeIf">&lt;T&gt;List&lt;U&gt;TakeIf</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const from, const &lt;T&gt;Predicate predicate</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;BiTakeIf">&lt;T&gt;List&lt;U&gt;BiTakeIf</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const from, const &lt;T&gt;BiPredicate bipredicate,
 	void *const param</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;ForEach">&lt;T&gt;List&lt;U&gt;ForEach</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	const &lt;T&gt;Action action</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;BiForEach">&lt;T&gt;List&lt;U&gt;BiForEach</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	const &lt;T&gt;BiAction biaction, void *const param</td>
 </tr>
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;ShortCircuit">&lt;T&gt;List&lt;U&gt;ShortCircuit</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	const &lt;T&gt;Predicate predicate</td>
 </tr>
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;BiShortCircuit">&lt;T&gt;List&lt;U&gt;BiShortCircuit</a></td>
-	<td>struct &lt;T&gt;List *const this,
+	<td>struct &lt;T&gt;List *const list,
 	const &lt;T&gt;BiPredicate bipredicate, void *const param</td>
 </tr>
 <tr>
 	<td>static char *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;ToString">&lt;T&gt;List&lt;U&gt;ToString</a></td>
-	<td>const struct &lt;T&gt;List *const this</td>
+	<td>const struct &lt;T&gt;List *const list</td>
 </tr>
 </table>
 
@@ -441,14 +389,12 @@ null-terminated output string (the second.)
 
 <div><a name = "&lt;T&gt;ListClear"><!-- --></a>
 <h3>&lt;T&gt;ListClear</h3>
-<pre>static void <b>&lt;T&gt;ListClear</b> (struct &lt;T&gt;List *const this)</pre>
+<pre>static void <b>&lt;T&gt;ListClear</b> (struct &lt;T&gt;List *const list)</pre>
 <p>
-Clears all values from <em>this</em>, thereby initialising the <em>&lt;T&gt;List</em>. If it
-contained a list, those values are free.
+Clears and removes all values from <em>list</em>, thereby initialising the
+<em>&lt;T&gt;List</em>.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;ListAction</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -456,18 +402,16 @@ contained a list, those values are free.
 
 <div><a name = "&lt;T&gt;ListPush"><!-- --></a>
 <h3>&lt;T&gt;ListPush</h3>
-<pre>static void <b>&lt;T&gt;ListPush</b> (struct &lt;T&gt;List *const this, T *const data)</pre>
+<pre>static void <b>&lt;T&gt;ListPush</b> (struct &lt;T&gt;List *const list, T *const data)</pre>
 <p>
-Initialises the contents of <em>node</em> to add it to the end of <em>this</em>. If
-either <em>this</em> or <em>node</em> is null, it does nothing.
+Initialises the contents of the node which contains <em>data</em> to add it to the
+end of <em>list</em>. If either <em>list</em> or <em>data</em> is null, it does nothing.
 </p>
 <dl>
-	<dt>parameter: node</dt>
-	<dd>Must be a <em>&lt;T&gt;ListNode</em> with an internal <em>&lt;T&gt;</em> not associated to
- any list; this associates the <em>&lt;T&gt;ListNode</em> with the list until it is removed,
- see <a href = "#&lt;T&gt;ListRemove">&lt;T&gt;ListRemove</a> or <a href = "#&lt;T&gt;ListClear">&lt;T&gt;ListClear</a>.</dd>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;ListNodeAction</dd>
+	<dt>parameter: data</dt>
+	<dd>Must be inside of a <em>&lt;T&gt;ListNode</em> and not associated to any list;
+ this associates the <em>&lt;T&gt;ListNode</em> with the list until it is removed, see, for
+ example, <a href = "#&lt;T&gt;ListRemove">&lt;T&gt;ListRemove</a>.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -475,18 +419,16 @@ either <em>this</em> or <em>node</em> is null, it does nothing.
 
 <div><a name = "&lt;T&gt;ListUnshift"><!-- --></a>
 <h3>&lt;T&gt;ListUnshift</h3>
-<pre>static void <b>&lt;T&gt;ListUnshift</b> (struct &lt;T&gt;List *const this, T *const data)</pre>
+<pre>static void <b>&lt;T&gt;ListUnshift</b> (struct &lt;T&gt;List *const list, T *const data)</pre>
 <p>
-Initialises the contents of <em>node</em> to add it to the beginning of <em>this</em>. If
-either <em>this</em> or <em>node</em> is null, it does nothing.
+Initialises the contents of the node which contains <em>data</em> to add it to the
+beginning of <em>list</em>. If either <em>list</em> or <em>data</em> is null, it does nothing.
 </p>
 <dl>
 	<dt>parameter: node</dt>
-	<dd>Must be a <em>&lt;T&gt;ListNode</em> with an internal <em>&lt;T&gt;</em> not associated to
- any list; this associates the <em>&lt;T&gt;ListNode</em> with the list until it is removed,
- see <a href = "#&lt;T&gt;ListRemove">&lt;T&gt;ListRemove</a> or <a href = "#&lt;T&gt;ListClear">&lt;T&gt;ListClear</a>.</dd>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;ListNodeAction</dd>
+	<dd>Must be inside of a <em>&lt;T&gt;ListNode</em> and not associated to any list;
+ this associates the <em>&lt;T&gt;ListNode</em> with the list until it is removed, see, for
+ example, <a href = "#&lt;T&gt;ListRemove">&lt;T&gt;ListRemove</a>.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 	<dt>fixme</dt>
@@ -503,8 +445,6 @@ list. Removing an element that was not added to a list results in undefined
 behaviour. If <em>data</em> is null, it does nothing.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;ListItemAction</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -512,28 +452,26 @@ behaviour. If <em>data</em> is null, it does nothing.
 
 <div><a name = "&lt;T&gt;ListTake"><!-- --></a>
 <h3>&lt;T&gt;ListTake</h3>
-<pre>static void <b>&lt;T&gt;ListTake</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;ListTake</b> (struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const from)</pre>
 <p>
-Appends the elements of <em>from</em> onto <em>this</em>. If <em>this</em> is null, then it
+Appends the elements of <em>from</em> onto <em>list</em>. If <em>list</em> is null, then it
 removes elements. Unlike <a href = "#&lt;T&gt;List&lt;U&gt;TakeIf">&lt;T&gt;List&lt;U&gt;TakeIf</a> and all other selective
 choosing functions, this function preserves two or more orders.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;BiListAction</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;ListNodeTake"><!-- --></a>
-<h3>&lt;T&gt;ListNodeTake</h3>
-<pre>static void <b>&lt;T&gt;ListNodeTake</b> (struct &lt;T&gt;ListNode *const element,
-	struct &lt;T&gt;List *const from)</pre>
+<div><a name = "&lt;T&gt;ListTakeBefore"><!-- --></a>
+<h3>&lt;T&gt;ListTakeBefore</h3>
+<pre>static void <b>&lt;T&gt;ListTakeBefore</b> (T *const data, struct &lt;T&gt;List *const from)</pre>
 <p>
-Appends the elements from <em>from</em> before <em>element</em>. If <em>element</em> or <em>from</em>
-is null, doesn't do anything. The <em>from</em> list will be empty at the end.
+Appends the elements from <em>from</em> before <em>data</em>. If <em>data</em> or <em>from</em>
+is null, doesn't do anything. If <em>data</em> is not part of a valid list, results
+are undefined. The <em>from</em> list will be empty at the end.
 </p>
 <dl>
 	<dt>order</dt>
@@ -545,46 +483,39 @@ is null, doesn't do anything. The <em>from</em> list will be empty at the end.
 
 <div><a name = "&lt;T&gt;ListMerge"><!-- --></a>
 <h3>&lt;T&gt;ListMerge</h3>
-<pre>static void <b>&lt;T&gt;ListMerge</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;ListMerge</b> (struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const from)</pre>
 <p>
-Merges the elements into <em>this</em> from <em>from</em> in (local) order; concatenates
-all lists that don't have a <em>LIST_U[A-D]_COMPARATOR</em>. If <em>this</em> is null, then
-it removes elements.
+Merges the elements into <em>list</em> from <em>from</em> in, (local, it doesn't sort
+them first, see <a href = "#&lt;T&gt;ListSort">&lt;T&gt;ListSort</a>,) order; concatenates all lists that don't
+have a <em>LIST_U[A-D]_COMPARATOR</em>. If <em>list</em> is null, then it removes elements.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;BiListAction</dd>
 	<dt>order</dt>
-	<dd>O(<em>this</em>.n + <em>from</em>.n)</dd>
+	<dd>O(<em>list</em>.n + <em>from</em>.n)</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;ListSort"><!-- --></a>
 <h3>&lt;T&gt;ListSort</h3>
-<pre>static void <b>&lt;T&gt;ListSort</b> (struct &lt;T&gt;List *const this)</pre>
+<pre>static void <b>&lt;T&gt;ListSort</b> (struct &lt;T&gt;List *const list)</pre>
 <p>
-Performs a stable, adaptive sort. If <em>LIST_OPENMP</em> is defined, then it will
-try to parallelise; otherwise it is equivalent to calling <a href = "#&lt;T&gt;List&lt;U&gt;Sort">&lt;T&gt;List&lt;U&gt;Sort</a>
-for all linked-lists with comparators. Requires one of <em>LIST_U[A-D]_COMPARATOR</em>
-be set.
+Performs a stable, adaptive sort on all orders which have comparators.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;ListAction</dd>
 	<dt>order</dt>
-	<dd>&Omega;(<em>this</em>.n), O(<em>this</em>.n log <em>this</em>.n)</dd>
+	<dd>&Omega;(<em>list</em>.n), O(<em>list</em>.n log <em>list</em>.n)</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;ListMigrate"><!-- --></a>
 <h3>&lt;T&gt;ListMigrate</h3>
-<pre>static void <b>&lt;T&gt;ListMigrate</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;ListMigrate</b> (struct &lt;T&gt;List *const list,
 	const struct Migrate *const migrate)</pre>
 <p>
 Adjusts the pointers internal to the <em>&lt;T&gt;List</em> when supplied with a
-<em>Migrate</em> parameter, when <em>this</em> contains <em>&lt;T&gt;ListNode</em> elements from memory
-that switched due to a <em>realloc</em>. If <em>this</em> or <em>migrate</em> is null, doesn't do
+<em>Migrate</em> parameter, when <em>list</em> contains <em>&lt;T&gt;ListNode</em> elements from memory
+that switched due to a <em>realloc</em>. If <em>list</em> or <em>migrate</em> is null, doesn't do
 anything.
 </p>
 <dl>
@@ -618,12 +549,12 @@ region. To update the underlying list, see <a href = "#&lt;T&gt;ListMigrate">&lt
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;MigrateEach"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;MigrateEach</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;MigrateEach</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;MigrateEach</b> (struct &lt;T&gt;List *const list,
 	const &lt;T&gt;ListMigrateElement handler, const struct Migrate *const migrate)</pre>
 <p>
 Calls <em>handler</em> on every element that is part of the list. This allows
 <em>&lt;T&gt;</em> elements in the list to contain pointers to moving structures due to a
-<em>realloc</em>, using the sub-types's <em>Migrate</em> function. If <em>this</em>, <em>handler</em>, or
+<em>realloc</em>, using the sub-types's <em>Migrate</em> function. If <em>list</em>, <em>handler</em>, or
 <em>migrate</em> is null, doesn't do anything.
 </p>
 <dl>
@@ -635,33 +566,33 @@ Calls <em>handler</em> on every element that is part of the list. This allows
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;Node&lt;U&gt;GetNext"><!-- --></a>
-<h3>&lt;T&gt;Node&lt;U&gt;GetNext</h3>
-<pre>static T * <b>&lt;T&gt;Node&lt;U&gt;GetNext</b> (T *const data)</pre>
+<div><a name = "&lt;T&gt;List&lt;U&gt;GetNext"><!-- --></a>
+<h3>&lt;T&gt;List&lt;U&gt;GetNext</h3>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;GetNext</b> (T *const data)</pre>
 <dl>
-	<dt>parameter: this</dt>
-	<dd>Must be in a <em>List</em> as a <em>&lt;T&gt;ListNode</em>.</dd>
+	<dt>parameter: data</dt>
+	<dd>Must be part of a <em>List</em>. If <em>data</em> is not part of a valid
+ list or has migrated locations due to a backing <em>realloc</em>, this function is
+ undefined.</dd>
 	<dt>return</dt>
-	<dd>The next element after <em>this</em> in <em>&lt;U&gt;</em>. When <em>this</em> is the last
- element or when <em>this</em> is null, returns null.</dd>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;UnaryOperator</dd>
+	<dd>The next element in <em>&lt;U&gt;</em>. When <em>data</em> is the last element, returns
+ null.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;Node&lt;U&gt;GetPrevious"><!-- --></a>
-<h3>&lt;T&gt;Node&lt;U&gt;GetPrevious</h3>
-<pre>static T * <b>&lt;T&gt;Node&lt;U&gt;GetPrevious</b> (T *const data)</pre>
+<div><a name = "&lt;T&gt;List&lt;U&gt;GetPrevious"><!-- --></a>
+<h3>&lt;T&gt;List&lt;U&gt;GetPrevious</h3>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;GetPrevious</b> (T *const data)</pre>
 <dl>
-	<dt>parameter: this</dt>
-	<dd>Must be in a <em>List</em> as a <em>&lt;T&gt;ListNode</em>.</dd>
+	<dt>parameter: data</dt>
+	<dd>Must be part of a <em>List</em>. If <em>data</em> is not part of a valid
+ list or has migrated locations due to a backing <em>realloc</em>, this function is
+ undefined.</dd>
 	<dt>return</dt>
-	<dd>The previous element before <em>this</em> in <em>&lt;U&gt;</em>. When <em>this</em> is the
- first item or when <em>this</em> is null, returns null.</dd>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;UnaryOperator</dd>
+	<dd>The previous element in <em>&lt;U&gt;</em>. When <em>data</em> is the first element,
+ returns null.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -669,10 +600,10 @@ Calls <em>handler</em> on every element that is part of the list. This allows
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;GetFirst"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;GetFirst</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;GetFirst</b> (struct &lt;T&gt;List *const this)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;GetFirst</b> (struct &lt;T&gt;List *const list)</pre>
 <dl>
 	<dt>return</dt>
-	<dd>A pointer to the first element of <em>this</em>.</dd>
+	<dd>A pointer to the first element of <em>list</em>.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -680,10 +611,10 @@ Calls <em>handler</em> on every element that is part of the list. This allows
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;GetLast"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;GetLast</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;GetLast</b> (struct &lt;T&gt;List *const this)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;GetLast</b> (struct &lt;T&gt;List *const list)</pre>
 <dl>
 	<dt>return</dt>
-	<dd>A pointer to the last element of <em>this</em>.</dd>
+	<dd>A pointer to the last element of <em>list</em>.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -691,50 +622,46 @@ Calls <em>handler</em> on every element that is part of the list. This allows
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;Sort"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;Sort</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;Sort</b> (struct &lt;T&gt;List *const this)</pre>
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;Sort</b> (struct &lt;T&gt;List *const list)</pre>
 <p>
-Sorts <em>&lt;U&gt;</em>, but leaves the other lists in <em>&lt;T&gt;</em> alone. Must have
-<em>LIST_U[A-D]_COMPARATOR</em> defined.
+Sorts <em>&lt;U&gt;</em>, but leaves the other lists in <em>&lt;T&gt;</em> alone. Must have a
+comparator defined for the index.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;ListAction</dd>
 	<dt>order</dt>
-	<dd>&Omega;(<em>this</em>.n), O(<em>this</em>.n log <em>this</em>.n)</dd>
+	<dd>&Omega;(<em>list</em>.n), O(<em>list</em>.n log <em>list</em>.n)</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;Compare"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;Compare</h3>
-<pre>static int <b>&lt;T&gt;List&lt;U&gt;Compare</b> (const struct &lt;T&gt;List *const this,
-	const struct &lt;T&gt;List *const that)</pre>
+<pre>static int <b>&lt;T&gt;List&lt;U&gt;Compare</b> (const struct &lt;T&gt;List *const alist,
+	const struct &lt;T&gt;List *const blist)</pre>
 <p>
 Compares two linked-lists as sequences in the order specified by <em>&lt;U&gt;</em>.
 </p>
 <dl>
 	<dt>return</dt>
 	<dd>The first comparator that is not equal to zero, or 0 if they are
- equal. Two null pointers are considered equal. Must have
- <em>LIST_U[A-D]_COMPARATOR</em> defined.</dd>
+ equal. Two null pointers are considered equal. Must have a comparator defined
+ for this index.</dd>
 	<dt>implements</dt>
 	<dd>&lt;&lt;T&gt;List&gt;Comparator</dd>
 	<dt>order</dt>
-	<dd>&Theta;(min(<em>this</em>.n, <em>that</em>.n))</dd>
+	<dd>&Theta;(min(<em>alist</em>.n, <em>blist</em>.n))</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;TakeSubtraction"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;TakeSubtraction</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeSubtraction</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeSubtraction</b> (struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const a, struct &lt;T&gt;List *const b)</pre>
 <p>
 Appends <em>that</em> with <em>b</em> subtracted from <em>a</em> as a sequence in <em>&lt;U&gt;</em>. If
-<em>this</em> is null, then it removes elements. Must have <em>LIST_U[A-D]_COMPARATOR</em>
+<em>list</em> is null, then it removes elements. Must have <em>LIST_U[A-D]_COMPARATOR</em>
 defined.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;TriListAction</dd>
 	<dt>order</dt>
 	<dd>O(<em>a</em>.n + <em>b</em>.n)</dd>
 </dl>
@@ -742,16 +669,14 @@ defined.
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;TakeUnion"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;TakeUnion</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeUnion</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeUnion</b> (struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const a, struct &lt;T&gt;List *const b)</pre>
 <p>
-Appends <em>this</em> with the union of <em>a</em> and <em>b</em> as a sequence in <em>&lt;U&gt;</em>. Equal
-elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements. Must
+Appends <em>list</em> with the union of <em>a</em> and <em>b</em> as a sequence in <em>&lt;U&gt;</em>. Equal
+elements are moved from <em>a</em>. If <em>list</em> is null, then it removes elements. Must
 have <em>LIST_U[A-D]_COMPARATOR</em> defined.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;TriListAction</dd>
 	<dt>order</dt>
 	<dd>O(<em>a</em>.n + <em>b</em>.n)</dd>
 </dl>
@@ -759,16 +684,14 @@ have <em>LIST_U[A-D]_COMPARATOR</em> defined.
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;TakeIntersection"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;TakeIntersection</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeIntersection</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeIntersection</b> (struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const a, struct &lt;T&gt;List *const b)</pre>
 <p>
-Appends <em>this</em> with the intersection of <em>a</em> and <em>b</em> as a sequence in <em>&lt;U&gt;</em>.
-Equal elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements.
+Appends <em>list</em> with the intersection of <em>a</em> and <em>b</em> as a sequence in <em>&lt;U&gt;</em>.
+Equal elements are moved from <em>a</em>. If <em>list</em> is null, then it removes elements.
 Must have <em>LIST_U[A-D]_COMPARATOR</em> defined.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;TriListAction</dd>
 	<dt>order</dt>
 	<dd>O(<em>a</em>.n + <em>b</em>.n)</dd>
 </dl>
@@ -776,16 +699,14 @@ Must have <em>LIST_U[A-D]_COMPARATOR</em> defined.
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;TakeXor"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;TakeXor</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeXor</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeXor</b> (struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const a, struct &lt;T&gt;List *const b)</pre>
 <p>
-Appends <em>this</em> with <em>a</em> exclusive-or <em>b</em> as a sequence in <em>&lt;U&gt;</em>. Equal
-elements are moved from <em>a</em>. If <em>this</em> is null, then it removes elements. Must
+Appends <em>list</em> with <em>a</em> exclusive-or <em>b</em> as a sequence in <em>&lt;U&gt;</em>. Equal
+elements are moved from <em>a</em>. If <em>list</em> is null, then it removes elements. Must
 have <em>LIST_U[A-D]_COMPARATOR</em> defined.
 </p>
 <dl>
-	<dt>implements</dt>
-	<dd>&lt;T&gt;TriListAction</dd>
 	<dt>order</dt>
 	<dd>O(<em>a</em>.n + <em>b</em>.n)</dd>
 </dl>
@@ -793,36 +714,36 @@ have <em>LIST_U[A-D]_COMPARATOR</em> defined.
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;TakeIf"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;TakeIf</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeIf</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;TakeIf</b> (struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const from, const &lt;T&gt;Predicate predicate)</pre>
 <p>
-Appends <em>this</em> with <em>from</em> if <em>predicate</em> is null or true in the order
-specified by <em>&lt;U&gt;</em>. If <em>this</em> is null, then it removes elements.
+Appends <em>list</em> with <em>from</em> if <em>predicate</em> is null or true in the order
+specified by <em>&lt;U&gt;</em>. If <em>list</em> is null, then it removes elements.
 </p>
 <dl>
 	<dt>order</dt>
-	<dd>~ &Theta;(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
+	<dd>~ &Theta;(<em>list</em>.n) &times; O(<em>predicate</em>)</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;BiTakeIf"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;BiTakeIf</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;BiTakeIf</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;BiTakeIf</b> (struct &lt;T&gt;List *const list,
 	struct &lt;T&gt;List *const from, const &lt;T&gt;BiPredicate bipredicate,
 	void *const param)</pre>
 <p>
-Appends <em>this</em> with <em>from</em> if <em>bipredicate</em> is null or true in the order
-specified by <em>&lt;U&gt;</em>. If <em>this</em> is null, then it removes elements.
+Appends <em>list</em> with <em>from</em> if <em>bipredicate</em> is null or true in the order
+specified by <em>&lt;U&gt;</em>. If <em>list</em> is null, then it removes elements.
 </p>
 <dl>
 	<dt>order</dt>
-	<dd>~ &Theta;(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
+	<dd>~ &Theta;(<em>list</em>.n) &times; O(<em>predicate</em>)</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;ForEach"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;ForEach</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;ForEach</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;ForEach</b> (struct &lt;T&gt;List *const list,
 	const &lt;T&gt;Action action)</pre>
 <p>
 Performs <em>action</em> for each element in the list in the order specified by
@@ -830,13 +751,13 @@ Performs <em>action</em> for each element in the list in the order specified by
 </p>
 <dl>
 	<dt>order</dt>
-	<dd>~ &Theta;(<em>this</em>.n) &times; O(<em>action</em>)</dd>
+	<dd>~ &Theta;(<em>list</em>.n) &times; O(<em>action</em>)</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;BiForEach"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;BiForEach</h3>
-<pre>static void <b>&lt;T&gt;List&lt;U&gt;BiForEach</b> (struct &lt;T&gt;List *const this,
+<pre>static void <b>&lt;T&gt;List&lt;U&gt;BiForEach</b> (struct &lt;T&gt;List *const list,
 	const &lt;T&gt;BiAction biaction, void *const param)</pre>
 <p>
 Performs <em>biaction</em> for each element in the list in the order specified by
@@ -844,7 +765,7 @@ Performs <em>biaction</em> for each element in the list in the order specified b
 </p>
 <dl>
 	<dt>order</dt>
-	<dd>~ &Theta;(<em>this</em>.n) &times; O(<em>action</em>)</dd>
+	<dd>~ &Theta;(<em>list</em>.n) &times; O(<em>action</em>)</dd>
 	<dt>fixme</dt>
 	<dd>Untested.</dd>
 </dl>
@@ -852,37 +773,37 @@ Performs <em>biaction</em> for each element in the list in the order specified b
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;ShortCircuit"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;ShortCircuit</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;ShortCircuit</b> (struct &lt;T&gt;List *const this,
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;ShortCircuit</b> (struct &lt;T&gt;List *const list,
 	const &lt;T&gt;Predicate predicate)</pre>
 <dl>
 	<dt>return</dt>
 	<dd>The first <em>&lt;T&gt;</em> in the linked-list, ordered by <em>&lt;U&gt;</em>, that causes
  the <em>predicate</em> with <em>&lt;T&gt;</em> as argument to return false, or null if the
- <em>predicate</em> is true for every case. If <em>this</em> or <em>predicate</em> is null, returns
+ <em>predicate</em> is true for every case. If <em>list</em> or <em>predicate</em> is null, returns
  null.</dd>
 	<dt>order</dt>
-	<dd>~ O(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
+	<dd>~ O(<em>list</em>.n) &times; O(<em>predicate</em>)</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;BiShortCircuit"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;BiShortCircuit</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;BiShortCircuit</b> (struct &lt;T&gt;List *const this,
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;BiShortCircuit</b> (struct &lt;T&gt;List *const list,
 	const &lt;T&gt;BiPredicate bipredicate, void *const param)</pre>
 <dl>
 	<dt>return</dt>
 	<dd>The first <em>&lt;T&gt;</em> in the linked-list, ordered by <em>&lt;U&gt;</em>, that
  causes the <em>bipredicate</em> with <em>&lt;T&gt;</em> and <em>param</em> as arguments to return false,
- or null if the <em>bipredicate</em> is true for every case. If <em>this</em> or
+ or null if the <em>bipredicate</em> is true for every case. If <em>list</em> or
  <em>bipredicate</em> is null, returns null.</dd>
 	<dt>order</dt>
-	<dd>~ O(<em>this</em>.n) &times; O(<em>predicate</em>)</dd>
+	<dd>~ O(<em>list</em>.n) &times; O(<em>predicate</em>)</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;ToString"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;ToString</h3>
-<pre>static char * <b>&lt;T&gt;List&lt;U&gt;ToString</b> (const struct &lt;T&gt;List *const this)</pre>
+<pre>static char * <b>&lt;T&gt;List&lt;U&gt;ToString</b> (const struct &lt;T&gt;List *const list)</pre>
 <p>
 Can print 4 things at once before it overwrites. One must set
 <em>LIST_TO_STRING</em> to a function implementing <em>&lt;T&gt;ToString</em> to get this
@@ -890,7 +811,7 @@ functionality.
 </p>
 <dl>
 	<dt>return</dt>
-	<dd>Prints the <em>this</em> in a static buffer.</dd>
+	<dd>Prints the <em>list</em> in a static buffer.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1); it has a 255 character limit; every element takes some of it.</dd>
 </dl>
