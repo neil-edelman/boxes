@@ -15,18 +15,19 @@
  identifiers. Must each be present before including.
 
  @param LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
- Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order. If you only need
- one order, you can skip it's name and define it anonymously, {<U>} will be
- empty. One can define an optional comparator, an equivalence relation function
- implementing {<T>Comparator}; {LIST_COMPARATOR} is used when you define the
- name anonymously.
+ Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order, and optional
+ comparator, {LIST_U[A-D]_COMPARATOR}, an equivalence relation function
+ implementing {<T>Comparator}. Not defining this implies one anonymous order
+ which one can set a comparator using {LIST_COMPARATOR}; {<U>} will be empty in
+ this case.
 
  @param LIST_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>List<U>ToString}.
 
  @param LIST_OPENMP
- Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }.
+ Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }. This is
+ limited to some, usually multi-order, functions.
 
  @param LIST_TEST
  Unit testing framework using {<T>ListTest}, included in a separate header,
@@ -52,7 +53,10 @@
  4996 not {C++11}.
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
  {padded}; {documentation}; {documentation-unknown-command} it's not quite
- {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}. */
+ {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
+ @fixme {<PT>X} is actually independent of {T}; this allows a lot of private
+ functions to be included once, but it messes up out file.
+ */
 
 /* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -66,8 +70,8 @@
 
 
 
-/* original #include in the user's C file, and not from calling recursively
- (all "LIST_*" names are assumed to be reserved) */
+/* Original #include in the user's C file, and not from calling recursively;
+ all "LIST_*" names are assumed to be reserved. */
 #if !defined(LIST_U_NAME) /* <-- !LIST_U_NAME */
 
 
@@ -245,10 +249,10 @@ typedef LIST_TYPE PT_(Type);
 
 
 
-/* constants across multiple includes in the same translation unit */
+/* Constants across multiple includes in the same translation unit. */
 #ifndef LIST_H /* <-- LIST_H */
 #define LIST_H
-/* combine_sets() operations bit-vector; dummy {LO_?}: {clang -Weverything}
+/* \see{combine_sets} operations bit-vector; dummy {LO_?}: {clang -Weverything}
  complains that it is not closed under union, a very valid point. */
 enum ListOperation {
 	LO_SUBTRACTION_AB = 1,
@@ -297,7 +301,7 @@ struct PT_(X) {
  element {data}. */
 struct T_(ListNode);
 struct T_(ListNode) {
-	T data; /* Must be first. */
+	T data; /* Must be first, \see{<PT>node_hold_data}. */
 	struct PT_(X) x;
 };
 
