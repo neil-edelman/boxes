@@ -134,7 +134,7 @@ static void PT_(graph)(const struct T_(List) *const this,
 		"p%p [label=\"head\"];\n"
 		"p%p [label=\"tail\"];\n"
 		"node [shape=box];\n",
-		(void *)&this->first, (void *)&this->last);
+		(void *)&this->head, (void *)&this->tail);
 	for(i = 0; i < array_size; i++) {
 		a = array + i;
 		PT_(to_string)(&a->data, &str);
@@ -294,8 +294,8 @@ static void PT_U_(graph, index)(const struct T_(List) *const this,
 		"node [style=filled,color=white];\n}\n", colour, colour);*/
 	fprintf(fp, "p%p -> p%p [color=%s];\n"
 		"p%p -> p%p [color=%s4];\n",
-		(void *)&this->first, (void *)this->first.U_(next), colour,
-		(void *)&this->last, (void *)this->last.U_(prev), colour);
+		(void *)&this->head, (void *)this->head.U_(next), colour,
+		(void *)&this->tail, (void *)this->tail.U_(prev), colour);
 	for(i = 0; i < array_size; i++)
 		a = array + i, fprintf(fp, "p%p -> p%p [color=%s];\n"
 		"p%p -> p%p [color=%s4];\n",
@@ -308,17 +308,17 @@ static void PT_U_(graph, index)(const struct T_(List) *const this,
 static size_t PT_U_(legit, count)(const struct T_(List) *const this) {
 	size_t forward = 0, back = 0;
 	struct PT_(X) *turtle, *hare, *next;
-	assert(this && !this->first.U_(prev) && this->first.U_(next)
-		&& this->last.U_(prev) && !this->last.U_(next));
+	assert(this && !this->head.U_(prev) && this->head.U_(next)
+		&& this->tail.U_(prev) && !this->tail.U_(next));
 	/* I just discovered the comma operator. Forgive me. */
-	/*for(hare = turtle = this->first.U_(next); (next = hare->U_(next))
+	/*for(hare = turtle = this->head.U_(next); (next = hare->U_(next))
 		&& (hare = next, forward++, turtle = turtle->U_(next),
 		next = hare->U_(next)); hare = next, forward++, assert(turtle != hare));
-	assert(&this->last == hare);
-	for(hare = turtle = this->last.U_(prev); (next = hare->U_(prev))
+	assert(&this->tail == hare);
+	for(hare = turtle = this->tail.U_(prev); (next = hare->U_(prev))
 		&& (hare = next, back++, turtle = turtle->U_(prev),
 		next = hare->U_(prev)); hare = next, back++, assert(turtle != hare));*/
-	hare = turtle = this->first.U_(next);
+	hare = turtle = this->head.U_(next);
 	while((next = hare->U_(next))) {
 		hare = next;
 		forward++;
@@ -328,8 +328,8 @@ static size_t PT_U_(legit, count)(const struct T_(List) *const this) {
 		forward++;
 		assert(turtle != hare);
 	}
-	{ const struct PT_(X) *const last = &this->last; assert(last == hare); }
-	hare = turtle = this->last.U_(prev);
+	{ const struct PT_(X) *const tail = &this->tail; assert(tail == hare); }
+	hare = turtle = this->tail.U_(prev);
 	while((next = hare->U_(prev))) {
 		hare = next;
 		back++;
@@ -339,7 +339,7 @@ static size_t PT_U_(legit, count)(const struct T_(List) *const this) {
 		back++;
 		assert(turtle != hare);
 	}
-	assert(&this->first == hare);
+	assert(&this->head == hare);
 	assert(forward == back);
 	return forward;
 }
@@ -438,7 +438,7 @@ static size_t PT_U_(count, unordered)(struct T_(List) *this) {
 static int PT_U_(in, array)(struct T_(List) *const this,
 	const struct T_(ListNode) *const array, const size_t array_size) {
 	struct T_(ListNode) *item;
-	for(item = this->U_(first); item; item = item->U_(next))
+	for(item = this->U_(head); item; item = item->U_(next))
 		if(item < array || item >= array + array_size) return 0;
 	return 1;
 }
@@ -899,8 +899,8 @@ static void PT_U_(test, meta)(void) {
 		printf("%lu. %s\n", (unsigned long)(i + 1),
 			T_U_(List, ToString)(lists + i));
 		if(i) { /* like {strcmp} comparing the first letter -- good enough */
-			struct PT_(X) *const less = lists[i - 1].first.U_(next),
-				*const more = lists[i].first.U_(next);
+			struct PT_(X) *const less = lists[i - 1].head.U_(next),
+				*const more = lists[i].head.U_(next);
 			assert(less);
 			if(!less->U_(next)) continue;
 			assert(more && more->U_(next)), UNUSED(more);
