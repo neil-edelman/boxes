@@ -319,6 +319,7 @@ struct T_(List) {
 	 from everything else and reduces the number of arguments that we have to
 	 pass. It is also a very awkward system. */
 	struct PT_(X) head, tail;
+	/*T *iterator[4];*/
 };
 
 
@@ -521,35 +522,43 @@ static void T_(ListClear)(struct T_(List) *const list) {
 	PT_(clear)(list);
 }
 
-/** Initialises the contents of the node which contains {data} to add it to the
- end of {list}. If either {list} or {data} is null, it does nothing.
- @param data: Must be inside of a {<T>ListNode} and not associated to any list;
+/** Initialises the contents of the node which contains {add} to add it to the
+ end of {list}. If either {list} or {add} is null, it does nothing.
+ @param add: Must be inside of a {<T>ListNode} and not associated to any list;
  this associates the {<T>ListNode} with the list until it is removed, see, for
  example, \see{<T>ListRemove}.
  @order \Theta(1)
  @allow */
-static void T_(ListPush)(struct T_(List) *const list, T *const data){
-	if(!list || !data) return;
-	PT_(add_before)(&list->tail, &PT_(node_hold_data)(data)->x);
+static void T_(ListPush)(struct T_(List) *const list, T *const add) {
+	if(!list || !add) return;
+	PT_(add_before)(&list->tail, &PT_(node_hold_data)(add)->x);
 }
 
-/** Initialises the contents of the node which contains {data} to add it to the
- beginning of {list}. If either {list} or {data} is null, it does nothing.
+/** Initialises the contents of the node which contains {add} to add it to the
+ beginning of {list}. If either {list} or {add} is null, it does nothing.
  @param node: Must be inside of a {<T>ListNode} and not associated to any list;
  this associates the {<T>ListNode} with the list until it is removed, see, for
  example, \see{<T>ListRemove}.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListUnshift)(struct T_(List) *const list, T *const data) {
-	if(!list || !data) return;
-	PT_(add_after)(&list->head, &PT_(node_hold_data)(data)->x);
+static void T_(ListUnshift)(struct T_(List) *const list, T *const add) {
+	if(!list || !add) return;
+	PT_(add_after)(&list->head, &PT_(node_hold_data)(add)->x);
 }
 
 /* @fixme Given an item from the list . . . Careful!!! the pool could change
  the values. Maybe Pool should have PoolNewWithParent? It's kind of useless. */
 
-/*static void T_(ListDataPush)(T *const here, T *const data) { } */
+static void T_(ListAddBefore)(T *const data, T *const add) {
+	if(!data || !add) return;
+	PT_(add_before)(&PT_(node_hold_data)(data)->x,&PT_(node_hold_data)(add)->x);
+}
+
+static void T_(ListAddAfter)(T *const data, T *const add) {
+	if(!data || !add) return;
+	PT_(add_after)(&PT_(node_hold_data)(data)->x, &PT_(node_hold_data)(add)->x);
+}
 
 /* @fixme unique Remove duplicate values */
 
@@ -1489,6 +1498,7 @@ static void T_U_(List, TakeIf)(struct T_(List) *const list,
 /** Appends {list} with {from} if {bipredicate} is null or true in the order
  specified by {<U>}. If {list} is null, then it removes elements.
  @order ~ \Theta({list}.n) \times O({predicate})
+ @fixme Void. No.
  @allow */
 static void T_U_(List, BiTakeIf)(struct T_(List) *const list,
 	struct T_(List) *const from, const T_(BiPredicate) bipredicate,
@@ -1520,6 +1530,7 @@ static void T_U_(List, ForEach)(struct T_(List) *const list,
  iterating.
  @order ~ \Theta({list}.n) \times O({biaction})
  @fixme Untested.
+ @fixme Void. No.
  @allow */
 static void T_U_(List, BiForEach)(struct T_(List) *const list,
 	const T_(BiAction) biaction, void *const param) {
@@ -1550,6 +1561,7 @@ static T *T_U_(List, ShortCircuit)(struct T_(List) *const list,
  or null if the {bipredicate} is true for every case. If {list} or
  {bipredicate} is null, returns null.
  @order ~ O({list}.n) \times O({predicate})
+ @fixme Void. No.
  @allow */
 static T *T_U_(List, BiShortCircuit)(struct T_(List) *const list,
 	const T_(BiPredicate) bipredicate, void *const param) {
