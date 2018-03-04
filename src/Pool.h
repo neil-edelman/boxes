@@ -796,7 +796,9 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(PoolRemove)(0, 0);
 	T_(PoolClear)(0);
 	T_(PoolMigrateEach)(0, 0, 0);
+#ifndef POOL_NO_MIGRATE_POINTER /* <-- no */
 	T_(MigratePointer)(0, 0);
+#endif /* no --> */
 #ifdef POOL_TO_STRING
 	T_(PoolToString)(0);
 #endif
