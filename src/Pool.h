@@ -18,10 +18,18 @@
  The type associated with {<T>}. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
- @param POOL_MIGRATE
- Optional type association with {<S>}. If set, the constructor has two extra
+ @param POOL_PARENT
+ Optional type association with {<P>}. If set, the constructor has two extra
  arguments that allow it to be part of a larger data structure without
  referencing the {<T>Pool} directly. Can be {void} to turn off type checking.
+
+ @param POOL_UPDATE
+ Optional type association with {<U>}. If set, the function
+ \see{<T>PoolNewUpdate} becomes available, intended for a local iterator
+ update on migrate.
+
+ @param POOL_NO_MIGRATE_POINTER
+ By default, it supplies \see{<T>MigratePointer}, but it may conflict.
 
  @param POOL_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
@@ -39,7 +47,7 @@
  @title		Pool.h
  @std		C89/90
  @author	Neil
- @version	2017-12 Introduced POOL_MIGRATE for type-safety.
+ @version	2017-12 Introduced POOL_PARENT for type-safety.
  @since		2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
 			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
@@ -58,9 +66,9 @@
 #include <stdio.h>	/* snprintf */
 #endif /* print --> */
 #include <errno.h>	/* errno */
-#ifdef POOL_DEBUG
+#ifdef POOL_DEBUG /* <-- debug */
 #include <stdarg.h>	/* for print */
-#endif /* calls --> */
+#endif /* debug --> */
 
 
 
@@ -190,6 +198,12 @@ struct Migrate {
 
 
 
+#ifdef POOL_TEST /* <-- test */
+/** Operates by side-effects only. Used only for {POOL_TEST} and not defined
+ otherwise; can cause problems because it's not preceded by {Pool}. */
+typedef void (*T_(Action))(T *const element);
+#endif /* test --> */
+
 /** Given to \see{<T>PoolMigrateEach} by the migrate function of another
  {Pool}. */
 typedef void (*T_(PoolMigrateElement))(T *const element,
@@ -206,18 +220,22 @@ static const T_(ToString) PRIVATE_T_(to_string) = (POOL_TO_STRING);
 
 #endif /* string --> */
 
-#ifdef POOL_MIGRATE /* <-- pool migrate */
-
-/* Troubles with this line? check to ensure that POOL_MIGRATE is a valid type,
- whose definition is placed above {#include "Stack.h"}. */
-typedef POOL_MIGRATE PRIVATE_T_(ParentType);
-#define S PRIVATE_T_(ParentType)
-
+#ifdef POOL_PARENT /* <-- parent */
+/* Troubles with this line? check to ensure that POOL_PARENT is a valid type,
+ whose definition is placed above {#include "Pool.h"}. */
+typedef POOL_PARENT PRIVATE_T_(ParentType);
+#define P PRIVATE_T_(ParentType)
 /** Function call on {realloc}. */
-typedef void (*T_(Migrate))(S *const parent,
+typedef void (*T_(Migrate))(P *const parent,
 	const struct Migrate *const migrate);
+#endif /* parent --> */
 
-#endif /* pool migrate --> */
+#ifdef POOL_UPDATE /* <-- update */
+/* Troubles with this line? check to ensure that POOL_UPDATE is a valid type,
+ whose definition is placed above {#include "Pool.h"}. */
+typedef POOL_UPDATE PRIVATE_T_(UpdateType);
+#define U PRIVATE_T_(UpdateType)
+#endif /* update --> */
 
 
 
@@ -236,9 +254,9 @@ struct T_(Pool) {
 	size_t head, tail; /* removed queue */
 	enum PoolError error; /* errors defined by enum PoolError */
 	int errno_copy; /* copy of errno when when error == E_ERRNO */
-#ifdef POOL_MIGRATE
+#ifdef POOL_PARENT
 	T_(Migrate) migrate; /* called to update on resizing */
-	S *parent; /* migrate parameter */
+	P *parent; /* migrate parameter */
 #endif
 };
 
@@ -259,11 +277,15 @@ static void PRIVATE_T_(debug)(struct T_(Pool) *const this,
 #endif
 }
 
-/** Ensures capacity.
+/* * Ensures capacity.
  @return Success.
  @throws POOL_OVERFLOW, POOL_ERRNO */
 static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
-	const size_t min_capacity) {
+	const size_t min_capacity
+#ifdef POOL_UPDATE /* <-- update */
+	, U **const update_ptr
+#endif /* update --> */
+	) {
 	size_t c0, c1;
 	struct PRIVATE_T_(Element) *array;
 	const size_t max_size = (pool_null - 1) / sizeof *array;
@@ -285,16 +307,25 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
-#ifdef POOL_MIGRATE /* <-- migrate */
-	/* Migrate parent class. Violates pedantic strict-ANSI? */
+#if defined(POOL_PARENT) || defined(POOL_UPDATE) /* <-- migrate */
 	if(this->array != array && this->migrate) {
+		/* Migrate parent class. Violates pedantic strict-ANSI? */
 		struct Migrate migrate;
 		migrate.begin = this->array;
 		migrate.end   = (const char *)this->array + this->size * sizeof *array;
 		migrate.delta = (const char *)array - (const char *)this->array;
+#ifdef POOL_PARENT /* <-- parent */
 		PRIVATE_T_(debug)(this, "reserve", "calling migrate.\n");
 		assert(this->parent);
 		this->migrate(this->parent, &migrate);
+#endif /* parent --> */
+#ifdef POOL_UPDATE /* <-- update */
+		if(update_ptr) {
+			const void *const i = *update_ptr;
+			if(i >= migrate.begin && i < migrate.end)
+				*(char **)update_ptr += migrate.delta;
+		}
+#endif /* update --> */
 	}
 #endif /* migrate --> */
 	this->array = array;
@@ -411,7 +442,7 @@ static struct T_(Pool) *PRIVATE_T_(pool)(void) {
 	return this;
 }
 
-#ifdef POOL_MIGRATE /* <-- migrate */
+#ifdef POOL_PARENT /* <-- parent */
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
  @param migrate: The ADT parent's {Migrate} function.
  @param parent: The parent itself; to have multiple parents, implement an
@@ -421,7 +452,7 @@ static struct T_(Pool) *PRIVATE_T_(pool)(void) {
  @throws POOL_PARAMETER, POOL_ERRNO: Use {PoolError(0)} to get the error.
  @order \Theta(1)
  @allow */
-static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, S *const parent) {
+static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, P *const parent) {
 	struct T_(Pool) *this;
 	if(!migrate ^ !parent) {
 		pool_global_error = POOL_PARAMETER;
@@ -433,7 +464,7 @@ static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, S *const parent) {
 	this->parent       = parent;
 	return this;
 }
-#else /* migrate --><-- !migrate */
+#else /* parent --><-- !parent */
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
  @return A new {Pool}.
  @throws POOL_ERRNO: Use {<T>PoolError(0)} to get the error.
@@ -442,7 +473,7 @@ static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, S *const parent) {
 static struct T_(Pool) *T_(Pool)(void) {
 	return PRIVATE_T_(pool)();
 }
-#endif /* migrate --> */
+#endif /* parent --> */
 
 /** See what's the error if something goes wrong. Resets the error.
  @return The last error string.
@@ -490,7 +521,7 @@ static int T_(PoolIsElement)(struct T_(Pool) *const this, const size_t idx) {
  @allow */
 static int T_(PoolIsValid)(const T *const data) {
 	const struct PRIVATE_T_(Element) *const elem
-		= (struct PRIVATE_T_(Element) *)(void *)data;
+		= (const struct PRIVATE_T_(Element) *const)(const void *const)data;
 	if(!elem || elem->prev != pool_not_part) return 0;
 	return 1;
 }
@@ -534,7 +565,11 @@ static size_t T_(PoolGetIndex)(struct T_(Pool) *const this,
 static int T_(PoolReserve)(struct T_(Pool) *const this,
 	const size_t min_capacity) {
 	if(!this) return 0;
-	if(!PRIVATE_T_(reserve)(this, min_capacity)) return 0;
+	if(!PRIVATE_T_(reserve)(this, min_capacity
+#ifdef POOL_UPDATE /* <-- update */
+		, 0
+#endif /* update --> */
+		)) return 0;
 	PRIVATE_T_(debug)(this, "Reserve","pool pool size to %u to contain %u.\n",
 		this->capacity[0], min_capacity);
 	return 1;
@@ -550,13 +585,41 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
 	struct PRIVATE_T_(Element) *elem;
 	if(!this) return 0;
 	if(!(elem = PRIVATE_T_(dequeue_removed)(this))) {
-		if(!PRIVATE_T_(reserve)(this, this->size + 1)) return 0;
+		if(!PRIVATE_T_(reserve)(this, this->size + 1
+#ifdef POOL_UPDATE /* <-- update */
+			, 0
+#endif /* update --> */
+			)) return 0;
 		elem = this->array + this->size++;
 		elem->prev = elem->next = pool_not_part;
 	}
 	PRIVATE_T_(debug)(this, "New", "added.\n");
 	return &elem->data;
 }
+
+#ifdef POOL_UPDATE /* <-- update */
+/** Gets an uninitialised new element and updates the {update_ptr} if it is
+ within the memory region that was changed. Must have {POOL_PARENT} defined.
+ @param this: If {this} is null, returns null.
+ @param iterator_ptr: Pointer to update on migration.
+ @return If failed, returns a null pointer and the error condition will be set.
+ @throws POOL_OVERFLOW, POOL_ERRNO
+ @order amortised O(1)
+ @fixme Untested.
+ @allow */
+static T *T_(PoolUpdateNew)(struct T_(Pool) *const this,
+	U **const update_ptr) {
+	struct PRIVATE_T_(Element) *elem;
+	if(!this) return 0;
+	if(!(elem = PRIVATE_T_(dequeue_removed)(this))) {
+		if(!PRIVATE_T_(reserve)(this, this->size + 1, update_ptr)) return 0;
+		elem = this->array + this->size++;
+		elem->prev = elem->next = pool_not_part;
+	}
+	PRIVATE_T_(debug)(this, "New", "added.\n");
+	return &elem->data;
+}
+#endif /* update --> */
 
 /** Removes an element associated with {data} from {this}.
  @param this: If {this} is null, returns false.
@@ -610,21 +673,23 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
 	}
 }
 
+#ifndef POOL_NO_MIGRATE_POINTER /* <-- no */
 /** Use this inside the function that is passed to the (generally other's)
  migrate function. Allows pointers to the pool to be updated. It doesn't affect
  pointers not in the {realloc}ed region.
  @order O(1)
  @fixme Untested.
  @allow */
-static void T_(MigratePointer)(T **const node_ptr,
+static void T_(MigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
-	if(!node_ptr
-		|| !(ptr = *node_ptr)
+	if(!data_ptr
+		|| !(ptr = *data_ptr)
 		|| ptr < migrate->begin
 		|| ptr >= migrate->end) return;
-	*(char **)node_ptr += migrate->delta;
+	*(char **)data_ptr += migrate->delta;
 }
+#endif /* no --> */
 
 #ifdef POOL_TO_STRING /* <-- print */
 
@@ -702,17 +767,17 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const this) {
 #endif /* print --> */
 
 #ifdef POOL_TEST /* <-- test */
-#include "../test/TestPool.h" /* need this file if one is going to run tests */
+#include "../test/TestPool.h" /* Need this file if one is going to run tests. */
 #endif /* test --> */
 
-/* prototype */
+/* Prototype. */
 static void PRIVATE_T_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PRIVATE_T_(unused_set)(void) {
 	T_(Pool_)(0);
-#ifdef POOL_MIGRATE
+#ifdef POOL_PARENT
 	T_(Pool)(0, 0);
 #else
 	T_(Pool)();
@@ -725,10 +790,15 @@ static void PRIVATE_T_(unused_set)(void) {
 	T_(PoolGetIndex)(0, 0);
 	T_(PoolReserve)(0, (size_t)0);
 	T_(PoolNew)(0);
+#ifdef POOL_UPDATE /* <-- update */
+	T_(PoolUpdateNew)(0, 0);
+#endif /* update --> */
 	T_(PoolRemove)(0, 0);
 	T_(PoolClear)(0);
 	T_(PoolMigrateEach)(0, 0, 0);
+#ifndef POOL_NO_MIGRATE_POINTER /* <-- no */
 	T_(MigratePointer)(0, 0);
+#endif /* no --> */
 #ifdef POOL_TO_STRING
 	T_(PoolToString)(0);
 #endif
@@ -739,7 +809,7 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
 
 
 
-/* un-define all macros */
+/* Un-define all macros. */
 #undef POOL_NAME
 #undef POOL_TYPE
 #undef CAT
@@ -764,4 +834,19 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
 #endif
 #ifdef POOL_TEST
 #undef POOL_TEST
+#endif
+#ifdef POOL_PARENT
+#undef POOL_PARENT
+#endif
+#ifdef POOL_UPDATE
+#undef POOL_UPDATE
+#endif
+#ifdef POOL_NO_MIGRATE_POINTER
+#undef POOL_NO_MIGRATE_POINTER
+#endif
+#ifdef P
+#undef P
+#endif
+#ifdef U
+#undef U
 #endif

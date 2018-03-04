@@ -354,8 +354,9 @@ struct Text *TextBetweenCat(struct Text *const this,
 
 /** Concatenates the contents of the text file, {fp}, after the read cursor, to
  the buffer in {this}. On success, the read cursor will be at the end.
- @return	{this}.
- @throws	E_PARAMETER, E_OVERFLOW, E_ERRNO */
+ @return {this}.
+ @throws E_PARAMETER, E_OVERFLOW, E_ERRNO
+ @deprecated Use {StoryFileCat} for more performance and line numbers. */
 struct Text *TextFileCat(struct Text *const this, FILE *const fp) {
 	size_t to_get;
 	int to_get_int;
@@ -378,7 +379,9 @@ struct Text *TextFileCat(struct Text *const this, FILE *const fp) {
 /** Concatenates one line on the text file, {fp}, after the read cursor, to the
  buffer in {this}. On success, the read cursor will be at the end.
  @param fp: If this is null, this returns 0.
- @return .
+ @return On true, the file had more lines and a line was stored. If false, the
+ file does not have more lines or an error occured; use \see{TextIsError} to
+ differentiate.
  @throws E_OVERFLOW, E_ERRNO */
 int TextFileLineCat(struct Text *const this, FILE *const fp) {
 	size_t to_get;

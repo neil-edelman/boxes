@@ -17,7 +17,7 @@ PREFIX:= /usr/local
 INST  := $(PROJ)-$(VA)_$(VB)
 
 # extra stuff we should back up
-EXTRA := Foo.xcodeproj
+EXTRA := $(PROJ).xcodeproj
 
 # John Graham-Cumming:
 # rwildcard is a recursive wildcard
@@ -56,14 +56,16 @@ endif
 ######
 # compiles the programme by default
 
-default: $(BDIR)/$(PROJ) $(DOCS)
+default: $(BDIR)/$(PROJ)
 	# . . . success; executable is in $(BDIR)/$(PROJ)
 
+docs: $(DOCS)
+
 # linking
-$(BDIR)/$(PROJ): $(OBJS)
+$(BDIR)/$(PROJ): $(OBJS) $(TOBJS)
 	# linking rule
 	@mkdir -p $(BDIR)
-	$(CC) $(CF) $(OF) $(OBJS) -o $@
+	$(CC) $(CF) $(OF) $(OBJS) $(TOBJS) -o $@
 
 # compiling
 $(OBJS): $(GDIR)/%.o: $(SDIR)/%.c $(H)
@@ -85,7 +87,7 @@ $(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
 ######
 # phoney targets
 
-.PHONY: setup clean backup icon install uninstall test
+.PHONY: setup clean backup icon install uninstall test docs
 
 clean:
 	-rm -f $(OBJS) $(TOBJS) $(DOCS)

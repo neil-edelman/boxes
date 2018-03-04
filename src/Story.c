@@ -2,7 +2,7 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  A {Story} is composed of {Text} in a way that makes them easy and fast to
- edit large strings.
+ edit large strings. Requires {List}, {Pool}, and {Text}.
 
  ${
  Text a = [ "foo bar\n\n", "baz\n", "qux" ]
@@ -29,28 +29,35 @@
  @author	Neil
  @std		C89/90
  @version	2018-01
- @since		2018-01 */
+ @since		2018-01
+ @fixme This is a good way of error reporting; very short. Propagate. */
+
+#define STORY_DEBUG
 
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* fprintf fopen */
 #include <string.h>	/* strerror */
 #include <limits.h>	/* INT_MAX */
 #include <errno.h>	/* errno */
-#include "Text.h"
+#ifdef STORY_DEBUG /* <-- debug */
+#include <stdarg.h>	/* va_* */
+#endif /* debug --> */
 #include "Story.h"
 
-/* @fixme {Text} is a fixed length, and we could do it with one less level of
- indirection. {Text} is outside this class and I don't know how best to get
- it? Wait, it's C, privacy doesn't exist in the same compilation unit; relying
- on mangled names to access them directly is a hack, but possible. */
+struct Line {
+	struct Text *text;
+	size_t no;
+};
+#define LIST_NAME Line
+#define LIST_TYPE struct Line
+#include "List.h" /* Defines {LineList} and {LineListNode}. */
 
-#define POOL_NAME Text
-#define POOL_TYPE struct Text *
-#include "Pool.h" /* Defines {TextPool} as a pool of pointers-to-Text. */
-
-#define LIST_NAME Text
-#define LIST_TYPE struct TextPool *
-#include "List.h" /* Defines {LineList}. */
+#define POOL_NAME Line
+#define POOL_TYPE struct LineListNode
+#define POOL_PARENT struct LineList
+#define POOL_UPDATE struct Line
+#define POOL_NO_MIGRATE_POINTER
+#include "Pool.h" /* Defines {TextPool}. */
 
 /*enum Error {
 	E_NO_ERROR,
@@ -71,54 +78,23 @@ static int        global_errno_copy;*/
 
 struct Story {
 	struct LineList lines;
-	struct TextPool *texts;
-	/*int errno_copy;
-	enum Error error;*/
+	struct LinePool *pool;
 };
-
-/** @implements Metric */
-static int difference(int *const a, int *const b) {
-	return *a - *b;
-}
 
 /** Prints debug information if {STORY_DEBUG} is turned on, otherwise it does
  nothing and should be optimised out. */
 static void debug(struct Story *const this, const char *const fn,
 	const char *const fmt, ...) {
 #ifdef STORY_DEBUG
-	const size_t length = this->text ? strlen(this->text) : 0;
 	va_list parg;
 	va_start(parg, fmt);
-	fprintf(stderr, "Text.%s: ", fn);
+	fprintf(stderr, "Story.%s: ", fn);
 	vfprintf(stderr, fmt, parg);
 	va_end(parg);
 #else
-	UNUSED(this); UNUSED(fn); UNUSED(fmt);
+	UNUSED(fn); UNUSED(fmt);
 #endif
-}
-
-/** Entry point.
- @param argc: The number of arguments, starting with the programme name.
- @param argv: The arguments.
- @return Either EXIT_SUCCESS or EXIT_FAILURE. */
-int main(void) {
-	struct Story *story = 0;
-	enum { E_NO, E_STDERR, E_STORY } e = E_NO;
-	do {
-		FILE *fp;
-		if(!(fp = fopen("../../src/Story.h", "r"))) { e = E_STDERR; break; }
-		if(!(story = Story())) { e = E_STORY; break; }
-		StoryFileCat(story, fp);
-		Story_(&story);
-	} while(0); switch(e) {
-		case E_NO:
-			break;
-		case E_STDERR:
-			perror("Story"); break;
-		case E_STORY:
-			fprintf(stderr, "Error: %s.\n", StoryGetError(story)); break;
-	}
-	return e ? EXIT_FAILURE : EXIT_SUCCESS;
+	UNUSED(this);
 }
 
 /** Destructor.
@@ -127,6 +103,7 @@ void Story_(struct Story **const story_ptr) {
 	struct Story *story;
 	if(!story_ptr || !(story = *story_ptr)) return;
 	fprintf(stderr, "~Story: erase, #%p.\n", (void *)story);
+	LinePool_(&story->pool);
 	free(story), story = *story_ptr = 0;
 }
 
@@ -140,10 +117,10 @@ struct Story *Story(void) {
 		return 0;
 	}
 	LineListClear(&story->lines);
-	story->texts = 0;
+	story->pool = 0;
 	fprintf(stderr, "Story: new, #%p.\n", (void *)story);
-	if(!(story->texts = TextPool())) {
-		fprintf(stderr, "Texts: %s.\n", TextPoolGetError(0));
+	if(!(story->pool = LinePool(&LineListMigrate, &story->lines))) {
+		fprintf(stderr, "Story: %s.\n", LinePoolGetError(0));
 		Story_(&story);
 		return 0;
 	}
@@ -152,19 +129,85 @@ struct Story *Story(void) {
 
 /** Concatenates the contents of the text file, {fp}, after the active line.
  One {Line} per line. On success, the read cursor will be at the end.
- @return {this}.
- @throws E_PARAMETER, E_OVERFLOW, E_ERRNO */
-struct Story *StoryFileCat(struct Story *const this, FILE *const fp) {
-	struct Text *line;
+ @return Success.
+ @throws E_OVERFLOW, E_ERRNO */
+int StoryFileCat(struct Story *const this, FILE *const fp) {
+	struct Text *text = 0;
+	struct LineListNode *line;
+	size_t no = 0;
+	enum { E_NO, E_TEXT, E_LINES } e = E_NO;
 	if(!this || !fp) return 0;
-	printf("StoryFileCat:\n");
 	for( ; ; ) {
-		if(!(line = Text())) return 0;
-		if(!TextFileLineCat(line, fp)) break;
-		printf("<%s>\n", TextGet(line));
-		text = TextPoolNew(this->texts);
-		Text_(&line);
+		if(!(text = Text())) { e = E_TEXT; break; }
+		if(!TextFileLineCat(text, fp)) break;
+		no++;
+		if(!(line = LinePoolNew(this->pool))) { e = E_LINES; break; }
+		line->data.text = text;
+		line->data.no = no;
+		LineListPush(&this->lines, &line->data);
+	} switch(e) {
+		case E_NO:
+			if(!TextIsError(text)) break;
+			e = E_TEXT;
+		case E_TEXT:
+			fprintf(stderr, "Text: %s.\n", TextGetError(text));
+			break;
+		case E_LINES:
+			fprintf(stderr,"Line: %s.\n",LinePoolGetError(this->pool));
+			break;
 	}
-	debug(this, "StoryFileCat", "appended a file.\n");
-	return this;
+	/* The last line is empty and does not have any references; must delete
+	 (deleting a null does nothing.) */
+	Text_(&text);
+	if(!e) debug(this, "FileCat", "appended a file.\n");
+	return !e;
+}
+
+int StoryWrite(struct Story *const this, FILE *const fp) {
+	struct Line *line;
+	if(!this || !fp) return 0;
+	for(line = LineListFirst(&this->lines); line; line = LineListNext(line)) {
+		if(fputs(TextGet(line->text), fp) == EOF) return 0;
+	}
+	return 1;
+}
+
+/** Executes {pred(text line, index)} for all lines and deletes those that
+ return false. */
+void StoryKeepIf(struct Story *const this, const StoryLinePredicate pred) {
+	struct Line *line, *nextline;
+	/*size_t number = 1;*/
+	if(!this || !pred) return;
+	for(line = LineListFirst(&this->lines); line; line = nextline) {
+		nextline = LineListNext(line);
+		if(pred(line->text, line->no)) { /*number++;*/ continue; }
+		LineListRemove(line);
+		Text_(&line->text);
+		LinePoolRemove(this->pool, (struct LineListNode *)line);
+	}
+}
+
+void StorySplit(struct Story *const this, const char *delims,
+	const TextPredicate pred) {
+	struct Line *line;
+	struct LineListNode *pool;
+	struct Text *text;
+	if(!this) return;
+	for(line = LineListFirst(&this->lines); line; line = LineListNext(line)) {
+		while((text = TextSep(line->text, delims, pred))) {
+			if(!(pool = LinePoolUpdateNew(this->pool, &line))) {
+				Text_(&text);
+				fprintf(stderr, "StorySplit: %s.\n",
+					LinePoolGetError(this->pool));
+				return;
+			}
+			pool->data.text = text;
+			pool->data.no = line->no;
+			LineListAddBefore(line, &pool->data);
+		}
+		if(TextIsError(line->text)) {
+			fprintf(stderr, "StorySplit: %s.\n", TextGetError(line->text));
+			return;
+		}
+	}
 }
