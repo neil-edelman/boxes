@@ -28,6 +28,9 @@
  \see{<T>PoolNewUpdate} becomes available, intended for a local iterator
  update on migrate.
 
+ @param POOL_NO_MIGRATE_POINTER
+ By default, it supplies \see{<T>MigratePointer}, but it may conflict.
+
  @param POOL_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>PoolToString}.
@@ -670,21 +673,23 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
 	}
 }
 
+#ifndef POOL_NO_MIGRATE_POINTER /* <-- no */
 /** Use this inside the function that is passed to the (generally other's)
  migrate function. Allows pointers to the pool to be updated. It doesn't affect
  pointers not in the {realloc}ed region.
  @order O(1)
  @fixme Untested.
  @allow */
-static void T_(MigratePointer)(T **const node_ptr,
+static void T_(MigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
-	if(!node_ptr
-		|| !(ptr = *node_ptr)
+	if(!data_ptr
+		|| !(ptr = *data_ptr)
 		|| ptr < migrate->begin
 		|| ptr >= migrate->end) return;
-	*(char **)node_ptr += migrate->delta;
+	*(char **)data_ptr += migrate->delta;
 }
+#endif /* no --> */
 
 #ifdef POOL_TO_STRING /* <-- print */
 
