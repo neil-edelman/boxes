@@ -18,8 +18,9 @@ static int PT_(exactly_unordered)(struct T_(List) *const this,
 	const size_t n);
 #endif /* comp --> */
 
-/* Check that LIST_TEST is a function implementing {<T>Action}. */
-static const T_(Action) PT_(filler) = (LIST_TEST);
+/* Check that LIST_TEST is a function implementing {<T>Action}, viz,
+ {void (*)(T *const)}. */
+static void (*const PT_(filler))(T *const) = (LIST_TEST);
 
 /* For \see{PT_U_(exactly, elements)}. */
 struct PT_(Verify) {

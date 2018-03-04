@@ -331,26 +331,26 @@ struct T_(List) {
 
 /** Calls \see{<T>ListMigratePointer}, given to \see{<T>List<U>MigrateEach}, in
  the handler for the {Migrate}. */
-typedef void (*T_(ListMigrateElement))(T *const element,
+typedef void (*PT_(ListMigrateElement))(T *const element,
 	const struct Migrate *const migrate);
 
 /** Takes {<T>}; used in \see{<T>List<U>ForEach}. */
-typedef void (*T_(Action))(T *const);
+typedef void (*PT_(Action))(T *const);
 
 /** Takes {<T>} and <void *>; used in \see{<T>List<U>BiForEach}. */
-typedef void (*T_(BiAction))(T *const, void *const);
+typedef void (*PT_(BiAction))(T *const, void *const);
 
 /** Takes {<T>}, returns (non-zero) true or (zero) false. */
-typedef int (*T_(Predicate))(const T *const);
+typedef int (*PT_(Predicate))(const T *const);
 
 /** Takes {<T>} and {void *}, returns (non-zero) true or (zero) false. */
-typedef int (*T_(BiPredicate))(T *const, void *const);
+typedef int (*PT_(BiPredicate))(T *const, void *const);
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 
 /** Compares two {<T>} values and returns less then, equal to, or greater then
  zero. Should do so forming an equivalence relation with respect to {<T>}. */
-typedef int (*T_(Comparator))(const T *, const T *);
+typedef int (*PT_(Comparator))(const T *, const T *);
 
 #endif /* comp --> */
 
@@ -358,10 +358,10 @@ typedef int (*T_(Comparator))(const T *, const T *);
 
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) */
-typedef void (*T_(ToString))(const T *const, char (*const)[12]);
+typedef void (*PT_(ToString))(const T *const, char (*const)[12]);
 
 /* Check that {LIST_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) PT_(to_string) = (LIST_TO_STRING);
+static const PT_(ToString) PT_(to_string) = (LIST_TO_STRING);
 
 #endif /* string --> */
 
@@ -1020,7 +1020,7 @@ static void PT_U_(list, migrate)(struct T_(List) *const list,
  @order \Theta(n)
  @allow */
 static void T_U_(List, MigrateEach)(struct T_(List) *const list,
-	const T_(ListMigrateElement) handler, const struct Migrate *const migrate) {
+	const PT_(ListMigrateElement) handler, const struct Migrate *const migrate){
 	struct PT_(X) *x, *next_x;
 	if(!list || !handler || !migrate) return;
 	for(x = &list->head; x; x = next_x) {
@@ -1110,7 +1110,7 @@ static T *T_U_(List, Pop)(struct T_(List) *const list) {
 
 /* Check that each of {LIST_COMPARATOR} and {LIST_U[A-D]_COMPARATOR} are
  functions implementing {<T>Comparator}. */
-static const T_(Comparator) PT_U_(data, cmp) = (LIST_U_COMPARATOR);
+static const PT_(Comparator) PT_U_(data, cmp) = (LIST_U_COMPARATOR);
 
 /** Private: merges {blist} into {alist} when we don't know anything about the
  data; on equal elements, places {alist} first.
@@ -1536,7 +1536,7 @@ static void T_U_(List, TakeXor)(struct T_(List) *const list,
  @order ~ \Theta({list}.n) \times O({predicate})
  @allow */
 static void T_U_(List, TakeIf)(struct T_(List) *const list,
-	struct T_(List) *const from, const T_(Predicate) predicate) {
+	struct T_(List) *const from, const PT_(Predicate) predicate) {
 	struct PT_(X) *x, *next_x;
 	if(!from || from == list) return;
 	for(x = from->head.U_(next); (next_x = x->U_(next)); x = next_x) {
@@ -1552,7 +1552,7 @@ static void T_U_(List, TakeIf)(struct T_(List) *const list,
  @fixme Void. No.
  @allow */
 static void T_U_(List, BiTakeIf)(struct T_(List) *const list,
-	struct T_(List) *const from, const T_(BiPredicate) bipredicate,
+	struct T_(List) *const from, const PT_(BiPredicate) bipredicate,
 	void *const param) {
 	struct PT_(X) *x, *next_x;
 	if(!from || from == list) return;
@@ -1569,7 +1569,7 @@ static void T_U_(List, BiTakeIf)(struct T_(List) *const list,
  @order ~ \Theta({list}.n) \times O({action})
  @allow */
 static void T_U_(List, ForEach)(struct T_(List) *const list,
-	const T_(Action) action) {
+	const PT_(Action) action) {
 	struct PT_(X) *x, *next_x;
 	if(!list || !action) return;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
@@ -1584,7 +1584,7 @@ static void T_U_(List, ForEach)(struct T_(List) *const list,
  @fixme Void. No.
  @allow */
 static void T_U_(List, BiForEach)(struct T_(List) *const list,
-	const T_(BiAction) biaction, void *const param) {
+	const PT_(BiAction) biaction, void *const param) {
 	struct PT_(X) *x, *next_x;
 	if(!list || !biaction) return;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
@@ -1598,7 +1598,7 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
  @order ~ O({list}.n) \times O({predicate})
  @allow */
 static T *T_U_(List, ShortCircuit)(struct T_(List) *const list,
-	const T_(Predicate) predicate) {
+	const PT_(Predicate) predicate) {
 	struct PT_(X) *x, *next_x;
 	T *data;
 	if(!list || !predicate) return 0;
@@ -1615,7 +1615,7 @@ static T *T_U_(List, ShortCircuit)(struct T_(List) *const list,
  @fixme Void. No.
  @allow */
 static T *T_U_(List, BiShortCircuit)(struct T_(List) *const list,
-	const T_(BiPredicate) bipredicate, void *const param) {
+	const PT_(BiPredicate) bipredicate, void *const param) {
 	struct PT_(X) *x, *next_x;
 	T *data;
 	if(!list || !bipredicate) return 0;
