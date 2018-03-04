@@ -805,7 +805,9 @@ static void PT_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
+#ifndef LIST_NO_MIGRATE_POINTER /* <-- no */
 	T_(MigratePointer)(0, 0);
+#endif /* no --> */
 	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
