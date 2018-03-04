@@ -122,9 +122,9 @@ static void AnimalsTest(void) {
 		if(!(a = Animals())) { e = ERR_ANIMALS; break; }
 		for(i = 0; i < 100; i++) {
 			if(rand() > RAND_MAX >> 1) {
-				if(!AnimalsEmu(a)) { e = ERR_ANIMALS; break; }
+				if(!Emu(a)) { e = ERR_ANIMALS; break; }
 			} else {
-				if(!AnimalsSloth(a)) { e = ERR_ANIMALS; break; }
+				if(!Sloth(a)) { e = ERR_ANIMALS; break; }
 			}
 		}
 		if(e) break;

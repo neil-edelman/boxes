@@ -17,27 +17,27 @@ struct Animal {
 #define LIST_TYPE struct Animal
 #include "List.h"
 
-/* A Sloth is an Animal. */
+/* Class Sloth extends Animal. */
 struct Sloth {
  	struct AnimalListNode animal;
  	unsigned hours_slept;
 };
 #define POOL_NAME Sloth
 #define POOL_TYPE struct Sloth
-#define POOL_MIGRATE struct AnimalList
+#define POOL_PARENT struct AnimalList
 #include "../src/Pool.h"
 
-/* An Emu is an Animal. */
+/* Class Emu extends Animal. */
 struct Emu {
  	struct AnimalListNode animal;
  	char favourite_letter;
 };
 #define POOL_NAME Emu
 #define POOL_TYPE struct Emu
-#define POOL_MIGRATE struct AnimalList
+#define POOL_PARENT struct AnimalList
 #include "../src/Pool.h"
 
-/* Animals list with backing. */
+/* Animal list with backing. */
 struct Animals {
 	struct AnimalList list;
 	struct SlothPool *sloths;
@@ -61,13 +61,13 @@ static void Animal_delete(struct Animal *const animal,
 static void Sloth_delete(struct Animals *const animals,
 	struct Sloth *const sloth) {
 	printf("Bye %s.\n", sloth->animal.data.name);
-	AnimalListRemove(&animals->list, &sloth->animal.data);
+	AnimalListRemove(&sloth->animal.data);
 	SlothPoolRemove(animals->sloths, sloth);
 }
 static void Emu_delete(struct Animals *const animals,
 	struct Emu *const emu) {
 	printf("Bye %s.\n", emu->animal.data.name);
-	AnimalListRemove(&animals->list, &emu->animal.data);
+	AnimalListRemove(&emu->animal.data);
 	EmuPoolRemove(animals->emus, emu);
 }
 /** @implements <Animal>Action */
@@ -137,7 +137,7 @@ struct Animals *Animals(void) {
 	} if(e) Animals_(&a);
 	return a;
 }
-struct Sloth *AnimalsSloth(struct Animals *const animals) {
+struct Sloth *Sloth(struct Animals *const animals) {
 	struct Sloth *sloth;
 	if(!animals) return 0;
 	if(!(sloth = SlothPoolNew(animals->sloths))) {
@@ -149,7 +149,7 @@ struct Sloth *AnimalsSloth(struct Animals *const animals) {
 	AnimalListPush(&animals->list, &sloth->animal.data);
 	return sloth;
 }
-struct Emu *AnimalsEmu(struct Animals *const animals) {
+struct Emu *Emu(struct Animals *const animals) {
 	struct Emu *emu;
 	if(!animals) return 0;
 	if(!(emu = EmuPoolNew(animals->emus))) {
