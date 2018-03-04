@@ -768,7 +768,7 @@ static void PT_(migrate)(const struct Migrate *const migrate,
 	*(char **)x_ptr += migrate->delta;
 }
 
-#ifndef POOL_NO_MIGRATE_POINTER /* <-- no */
+#ifndef LIST_NO_MIGRATE_POINTER /* <-- no */
 /** Use this inside the function that is passed to \see{<T>List<U>MigrateEach}
  to fix reallocated pointers. It doesn't affect pointers not in the {realloc}ed
  region. To update the underlying list, see \see{<T>ListMigrate}.
