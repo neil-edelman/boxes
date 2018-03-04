@@ -331,7 +331,7 @@ struct T_(List) {
 
 /** Calls \see{<T>ListMigratePointer}, given to \see{<T>List<U>MigrateEach}, in
  the handler for the {Migrate}. */
-typedef void (*PT_(ListMigrateElement))(T *const element,
+typedef void (*T_(ListMigrateElement))(T *const element,
 	const struct Migrate *const migrate);
 
 /** Takes {<T>}; used in \see{<T>List<U>ForEach}. */
@@ -1020,7 +1020,7 @@ static void PT_U_(list, migrate)(struct T_(List) *const list,
  @order \Theta(n)
  @allow */
 static void T_U_(List, MigrateEach)(struct T_(List) *const list,
-	const PT_(ListMigrateElement) handler, const struct Migrate *const migrate){
+	const T_(ListMigrateElement) handler, const struct Migrate *const migrate){
 	struct PT_(X) *x, *next_x;
 	if(!list || !handler || !migrate) return;
 	for(x = &list->head; x; x = next_x) {
