@@ -62,7 +62,10 @@
  safer, otoh, if you remove something you can't add without casting. Also this
  is the only place where we use it, so it's un-symmetric.
  @fixme Migrate could _still_ be less confusing and more efficient.
- @fixme Void pointers in {<T>List<U>BiAction} are not effective. */
+ @fixme Void pointers in {<T>List<U>BiAction} are not effective.
+ @fixme {typedef}s are sometimes getting in the way of including multiple
+ instances of {LIST_NAME} with other files. Easy fix: eliminate {typedef}s that
+ don't grep {$List*}. */
 
 /* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -319,7 +322,6 @@ struct T_(List) {
 	 from everything else and reduces the number of arguments that we have to
 	 pass. It is also a very awkward system. */
 	struct PT_(X) head, tail;
-	/*T *iterator[4];*/
 };
 
 
@@ -514,7 +516,7 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 }
 
 /** Clears and removes all values from {list}, thereby initialising the
- {<T>List}.
+ {<T>List}. All previous values are un-associated.
  @order \Theta(1)
  @allow */
 static void T_(ListClear)(struct T_(List) *const list) {
@@ -523,22 +525,9 @@ static void T_(ListClear)(struct T_(List) *const list) {
 }
 
 /** Initialises the contents of the node which contains {add} to add it to the
- end of {list}. If either {list} or {add} is null, it does nothing.
- @param add: Must be inside of a {<T>ListNode} and not associated to any list;
- this associates the {<T>ListNode} with the list until it is removed, see, for
- example, \see{<T>ListRemove}.
- @order \Theta(1)
- @allow */
-static void T_(ListPush)(struct T_(List) *const list, T *const add) {
-	if(!list || !add) return;
-	PT_(add_before)(&list->tail, &PT_(node_hold_data)(add)->x);
-}
-
-/** Initialises the contents of the node which contains {add} to add it to the
  beginning of {list}. If either {list} or {add} is null, it does nothing.
- @param node: Must be inside of a {<T>ListNode} and not associated to any list;
- this associates the {<T>ListNode} with the list until it is removed, see, for
- example, \see{<T>ListRemove}.
+ @param add: Must be inside of a {<T>ListNode} and not associated to any list;
+ this associates the {<T>ListNode} with the list.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -547,24 +536,48 @@ static void T_(ListUnshift)(struct T_(List) *const list, T *const add) {
 	PT_(add_after)(&list->head, &PT_(node_hold_data)(add)->x);
 }
 
-/* @fixme Given an item from the list . . . Careful!!! the pool could change
- the values. Maybe Pool should have PoolNewWithParent? It's kind of useless. */
+/** Initialises the contents of the node which contains {add} to add it to the
+ end of {list}. If either {list} or {add} is null, it does nothing.
+ @param add: Must be inside of a {<T>ListNode} and not associated to any list;
+ this associates the {<T>ListNode} with the list.
+ @order \Theta(1)
+ @allow */
+static void T_(ListPush)(struct T_(List) *const list, T *const add) {
+	if(!list || !add) return;
+	PT_(add_before)(&list->tail, &PT_(node_hold_data)(add)->x);
+}
 
+/** \see{<T>ListUnshift} with {data}. Initialises the contents of the node
+ which contains {add} to add it immediately before {data}. If either {data} or
+ {add} is null, it does nothing.
+ @param data: Must be part of a list.
+ @param add: Must be inside of a {<T>ListNode} and not associated to any list;
+ this associates the {<T>ListNode} with the list.
+ @order \Theta(1)
+ @fixme Untested.
+ @allow */
 static void T_(ListAddBefore)(T *const data, T *const add) {
 	if(!data || !add) return;
 	PT_(add_before)(&PT_(node_hold_data)(data)->x,&PT_(node_hold_data)(add)->x);
 }
 
+/** \see{<T>ListPush} with {data}. Initialises the contents of the node which
+ contains {add} to add it immediately after {data}. If either {data} or {add}
+ is null, it does nothing.
+ @param data: Must be part of a list.
+ @param add: Must be inside of a {<T>ListNode} and not associated to any list;
+ this associates the {<T>ListNode} with the list.
+ @order \Theta(1)
+ @fixme Untested.
+ @allow */
 static void T_(ListAddAfter)(T *const data, T *const add) {
 	if(!data || !add) return;
 	PT_(add_after)(&PT_(node_hold_data)(data)->x, &PT_(node_hold_data)(add)->x);
 }
 
-/* @fixme unique Remove duplicate values */
-
-/** Removes {data} from the list. The {data} is now free to add to another
- list. Removing an element that was not added to a list results in undefined
- behaviour. If {data} is null, it does nothing.
+/** Un-associates {data} from the list; consequently, the {data} is free to add
+ to another list or delete. Removing an element that was not added to a list
+ results in undefined behaviour. If {data} is null, it does nothing.
  @order \Theta(1)
  @allow */
 static void T_(ListRemove)(T *const data) {
@@ -775,8 +788,10 @@ static void PT_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_list)(void) {
 	T_(ListClear)(0);
-	T_(ListPush)(0, 0);
 	T_(ListUnshift)(0, 0);
+	T_(ListPush)(0, 0);
+	T_(ListAddBefore)(0, 0);
+	T_(ListAddAfter)(0, 0);
 	T_(ListRemove)(0);
 	T_(ListTake)(0, 0);
 	T_(ListTakeBefore)(0, 0);
@@ -1055,6 +1070,30 @@ static T *T_U_(List, Last)(struct T_(List) *const list) {
 	assert(list->tail.U_(prev));
 	if(!list->tail.U_(prev)->U_(prev)) return 0; /* Empty. */
 	return &PT_(node_hold_x)(list->tail.U_(prev))->data;
+}
+
+/** Un-associates the first element in the order {<U>} with the list, if the
+ list is not empty.
+ @return The erstwhile first element or null if the list was empty.
+ @fixme Untested. */
+static T *T_U_(List, Shift)(struct T_(List) *const list) {
+	struct PT_(X) *x;
+	if(!list) return 0;
+	if(!(x = list->head.U_(next))->U_(next)) return 0;
+	PT_(remove)(x);
+	return &PT_(node_hold_x)(x)->data;
+}
+
+/** Un-associates the last element in the order {<U>} with the list, if the
+ list is not empty.
+ @return The erstwhile last element or null if the list was empty.
+ @fixme Untested. */
+static T *T_U_(List, Pop)(struct T_(List) *const list) {
+	struct PT_(X) *x;
+	if(!list) return 0;
+	if(!(x = list->tail.U_(prev))->U_(prev)) return 0;
+	PT_(remove)(x);
+	return &PT_(node_hold_x)(x)->data;
 }
 
 #ifdef LIST_U_COMPARATOR /* <-- comp */
@@ -1391,6 +1430,8 @@ static int T_U_(List, Compare)(const struct T_(List) *const alist,
 	}
 }
 
+/* @fixme {P_T_(List, Unique)} remove duplicate values. */
+
 /** Private: {list <- a \mask b}. Prefers {a} to {b} when equal.
  @order O({a}.n + {b}.n) */
 static void PT_U_(boolean, seq)(struct T_(List) *const list,
@@ -1657,6 +1698,8 @@ static void PT_U_(sub_unused, list)(void) {
 	T_U_(List, Previous)(0);
 	T_U_(List, First)(0);
 	T_U_(List, Last)(0);
+	T_U_(List, Shift)(0);
+	T_U_(List, Pop)(0);
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 	T_U_(List, Sort)(0);
 	T_U_(List, Compare)(0, 0);

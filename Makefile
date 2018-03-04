@@ -36,7 +36,7 @@ CC   := clang #gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
 -Wmissing-prototypes -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings \
 -Wswitch -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \
--Wnested-externs -Wredundant-decls -Wfatal-errors -O3 -ffast-math -funroll-loops -pedantic -std=c89 #-ansi # or -std=c99 -mwindows
+-Wnested-externs -Wredundant-decls -Wfatal-errors -O3 -ffast-math -funroll-loops -pedantic -ansi # or -std=c89 -std=c99 -mwindows
 OF   := # -framework OpenGL -framework GLUT or -lglut -lGLEW
 CDOC := cdoc
 
@@ -57,8 +57,10 @@ endif
 ######
 # compiles the programme by default
 
-default: $(BDIR)/$(PROJ) $(DOCS)
+default: $(BDIR)/$(PROJ)
 	# . . . success; executable is in $(BDIR)/$(PROJ)
+
+docs: $(DOCS)
 
 # linking
 $(BDIR)/$(PROJ): $(OBJS) $(TOBJS)
@@ -88,10 +90,10 @@ $(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
 ######
 # phoney targets
 
-.PHONY: setup clean backup icon install uninstall test
+.PHONY: setup clean backup icon install uninstall test docs
 
 clean:
-	-rm -f $(OBJS) $(TOBJS) #$(DOCS)
+	-rm -f $(OBJS) $(TOBJS) $(DOCS)
 	-rm -rf $(BDIR)/$(TDIR)
 
 backup:
