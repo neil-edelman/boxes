@@ -29,6 +29,9 @@
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }. This is
  limited to some, usually multi-order, functions.
 
+ @param LIST_NO_MIGRATE_POINTER
+ By default, it supplies \see{<T>MigratePointer}, but it may conflict.
+
  @param LIST_TEST
  Unit testing framework using {<T>ListTest}, included in a separate header,
  {../test/ListTest.h}. Must be defined equal to a (random) filler, satisfying
@@ -765,6 +768,7 @@ static void PT_(migrate)(const struct Migrate *const migrate,
 	*(char **)x_ptr += migrate->delta;
 }
 
+#ifndef POOL_NO_MIGRATE_POINTER /* <-- no */
 /** Use this inside the function that is passed to \see{<T>List<U>MigrateEach}
  to fix reallocated pointers. It doesn't affect pointers not in the {realloc}ed
  region. To update the underlying list, see \see{<T>ListMigrate}.
@@ -776,6 +780,7 @@ static void T_(MigratePointer)(T **const t_ptr,
 	/* X is (mostly) how we pass it; just getting turned into a {char *}. */
 	PT_(migrate)(migrate, (struct PT_(X) **const)t_ptr);
 }
+#endif /* no --> */
 
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* Need this file if one is going to run tests. */
@@ -867,6 +872,9 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 #endif
 #ifdef LIST_DEBUG
 #undef LIST_DEBUG
+#endif
+#ifdef LIST_NO_MIGRATE_POINTER
+#undef LIST_NO_MIGRATE_POINTER
 #endif
 #ifdef LIST_NDEBUG
 #undef LIST_NDEBUG
