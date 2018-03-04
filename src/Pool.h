@@ -839,6 +839,9 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
 #ifdef POOL_UPDATE
 #undef POOL_UPDATE
 #endif
+#ifdef POOL_NO_MIGRATE_POINTER
+#undef POOL_NO_MIGRATE_POINTER
+#endif
 #ifdef P
 #undef P
 #endif
