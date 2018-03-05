@@ -334,7 +334,10 @@ struct T_(List) {
 typedef void (*T_(ListMigrateElement))(T *const element,
 	const struct Migrate *const migrate);
 
-/** Takes {<T>}; used in \see{<T>List<U>ForEach}. */
+/** Takes {<T>}; used in \see{<T>List<U>ForEach}. This definition is about the
+ {LIST_NAME} type, that is, it is without the prefix {List}; to avoid namespace
+ collisions, this is private, meaning the name is mangled. If you want this
+ definition, re-declare it as {<T>Action}. */
 typedef void (*PT_(Action))(T *const);
 
 /** Takes {<T>} and <void *>; used in \see{<T>List<U>BiForEach}. */
