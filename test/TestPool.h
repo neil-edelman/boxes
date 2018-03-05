@@ -2,15 +2,15 @@
 
 /* prototype */
 static void T_(PoolTest)(void);
-static void PRIVATE_T_(test_basic)(void);
+static void PT_(test_basic)(void);
 
-/* POOL_TEST must be a function that implements <T>Action. */
-static const T_(Action) PRIVATE_T_(filler) = (POOL_TEST);
+/* POOL_TEST must be a function that implements <PT>Action. */
+static const PT_(Action) PT_(filler) = (POOL_TEST);
 
 
 
-static void PRIVATE_T_(valid_state)(const struct T_(Pool) *const a) {
-	struct PRIVATE_T_(Element) *elem;
+static void PT_(valid_state)(const struct T_(Pool) *const a) {
+	struct PT_(Element) *elem;
 	size_t i, remove_start = 0, remove_end = 0, remove_both = 0,remove_data = 0;
 	size_t r0, r1;
 	enum { SDATA, SNULL, SNOT } r0_class, r1_class;
@@ -18,7 +18,7 @@ static void PRIVATE_T_(valid_state)(const struct T_(Pool) *const a) {
 	assert(a->size <= a->capacity[0]);
 	assert(a->capacity[0] < a->capacity[1] || (a->capacity[0] == a->capacity[1]
 		&& a->capacity[1]
-		== (pool_null - 1) / sizeof(struct PRIVATE_T_(Element))));
+		== (pool_null - 1) / sizeof(struct PT_(Element))));
 	assert((a->head == pool_null) == (a->tail == pool_null));
 	for(i = 0; i < a->size; i++) {
 		elem = a->array + i;
@@ -51,7 +51,7 @@ static void PRIVATE_T_(valid_state)(const struct T_(Pool) *const a) {
 #ifdef POOL_MIGRATE /* <-- migrate */
 static S dummy_parent;
 /** @implements Migrate */
-static void PRIVATE_T_(migrate)(S *const parent,
+static void PT_(migrate)(S *const parent,
 	const struct Migrate *const info) {
 	assert(parent && parent == dummy_parent && info);
 	printf("#%p migrate #%p-%p -> %p\n", parent, info->begin, info->end,
@@ -60,7 +60,7 @@ static void PRIVATE_T_(migrate)(S *const parent,
 }
 #endif /* migrate --> */
 
-static void PRIVATE_T_(test_basic)(void) {
+static void PT_(test_basic)(void) {
 	struct T_(Pool) *a = 0;
 	T test[5], *testp;
 	const size_t test_size = sizeof test / sizeof *test;
@@ -68,11 +68,11 @@ static void PRIVATE_T_(test_basic)(void) {
 	const char *err;
 	enum { CREATE, DESTROY };
 
-	for(i = 0; i < test_size; i++) PRIVATE_T_(filler)(test + i);
+	for(i = 0; i < test_size; i++) PT_(filler)(test + i);
 	printf("Constructor:\n");
 	assert(!T_(PoolElement)(a));
 #ifdef POOL_MIGRATE
-	a = T_(Pool)(&PRIVATE_T_(migrate), &dummy_parent);
+	a = T_(Pool)(&PT_(migrate), &dummy_parent);
 #else
 	a = T_(Pool)();
 #endif
@@ -122,7 +122,7 @@ static void PRIVATE_T_(test_basic)(void) {
 	for(i = 0; i < 100; i++) {
 		testp = T_(PoolNew)(a);
 		assert(testp);
-		PRIVATE_T_(filler)(testp);
+		PT_(filler)(testp);
 	}
 	printf("%s.\n", T_(PoolToString)(a));
 	printf("Clear:\n");
@@ -135,12 +135,12 @@ static void PRIVATE_T_(test_basic)(void) {
 	assert(!a);
 }
 
-static void PRIVATE_T_(test_random)(void) {
+static void PT_(test_random)(void) {
 	struct T_(Pool) *a;
 	size_t i;
 	/* random */
 #ifdef POOL_MIGRATE
-	a = T_(Pool)(&PRIVATE_T_(migrate), &dummy_parent);
+	a = T_(Pool)(&PT_(migrate), &dummy_parent);
 #else
 	a = T_(Pool)();
 #endif
@@ -157,8 +157,8 @@ static void PRIVATE_T_(test_random)(void) {
 				printf("Error: %s.\n", T_(PoolGetError)(a)), assert(0);
 				return;
 			}
-			PRIVATE_T_(filler)(node);
-			PRIVATE_T_(to_string)(node, &str);
+			PT_(filler)(node);
+			PT_(to_string)(node, &str);
 			printf("Created %s.\n", str);
 		} else {
 			size_t idx = rand() / (RAND_MAX + 1.0) * size;
@@ -167,13 +167,13 @@ static void PRIVATE_T_(test_random)(void) {
 				printf("Error getting: %s.\n", T_(PoolGetError)(a)), assert(0);
 				return;
 			}
-			PRIVATE_T_(to_string)(node, &str);
+			PT_(to_string)(node, &str);
 			printf("Removing %s at %lu.\n", str, (unsigned long)idx);
 			assert(T_(PoolRemove)(a, node)
 				|| (printf("Error removing: %s.\n", T_(PoolGetError)(a)), 0));
 		}
 		printf("%s.\n", T_(PoolToString)(a));
-		PRIVATE_T_(valid_state)(a);
+		PT_(valid_state)(a);
 	}
 }
 
@@ -194,7 +194,7 @@ static void T_(PoolTest)(void) {
 		"DEBUG; "
 #endif
 		"testing:\n");
-	PRIVATE_T_(test_basic)();
-	PRIVATE_T_(test_random)();
+	PT_(test_basic)();
+	PT_(test_random)();
 	fprintf(stderr, "Done tests of Pool<" T_NAME ">.\n\n");
 }

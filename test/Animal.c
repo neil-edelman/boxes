@@ -43,6 +43,8 @@ struct Animals {
 	struct SlothPool *sloths;
 	struct EmuPool *emus;
 };
+
+typedef void (*AnimalAction)(struct Animal *const);
 typedef void (*AnimalsAction)(struct Animals *const, struct Animal *const);
 
 /*********/
