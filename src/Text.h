@@ -35,7 +35,7 @@ size_t TextGetLength(const struct Text *const this);
 size_t TextCodePointCount(const struct Text *const this);
 int TextHasContent(const struct Text *const this);
 struct Text *TextClear(struct Text *const this);
-struct Text *TestRightTrim(struct Text *const this);
+struct Text *TextRightTrim(struct Text *const this);
 struct Text *TextTrim(struct Text *const this);
 struct Text *TextSep(struct Text *const this, const char *delims,
 	const TextPredicate pred);
