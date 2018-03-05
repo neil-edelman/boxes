@@ -198,24 +198,27 @@ struct Migrate {
 
 
 
-#ifdef POOL_TEST /* <-- test */
-/* Operates by side-effects only. Used only for {POOL_TEST}. */
-typedef void (*PT_(Action))(T *const element);
-#endif /* test --> */
-
 /** Given to \see{<T>PoolMigrateEach} by the migrate function of another
  {Pool}. */
 typedef void (*T_(PoolMigrateElement))(T *const element,
 	const struct Migrate *const migrate);
 
+#ifdef POOL_TEST /* <-- test */
+/* Operates by side-effects only. Used only for {POOL_TEST}. This definition is
+ about the {POOL_NAME} type, that is, it is without the prefix {Pool}; to avoid
+ namespace collisions, this is private, meaning the name is mangled. If you
+ want this definition, re-declare it as {<T>Action}. */
+typedef void (*PT_(Action))(T *const element);
+#endif /* test --> */
+
 #ifdef POOL_TO_STRING /* <-- string */
 
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) Used for {POOL_TO_STRING}. */
-typedef void (*T_(ToString))(const T *, char (*const)[12]);
+typedef void (*PT_(ToString))(const T *, char (*const)[12]);
 
 /* Check that {POOL_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) PT_(to_string) = (POOL_TO_STRING);
+static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 
 #endif /* string --> */
 
