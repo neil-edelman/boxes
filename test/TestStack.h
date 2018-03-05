@@ -2,21 +2,21 @@
 
 /* prototype */
 static void T_(StackTest)(void);
-static void PRIVATE_T_(test_basic)(void);
+static void PT_(test_basic)(void);
 
 /* STACK_TEST must be a function that implements <T>Action. */
-static const T_(Action) PRIVATE_T_(filler) = (STACK_TEST);
+static const PT_(Action) PT_(filler) = (STACK_TEST);
 
 
 
-static void PRIVATE_T_(valid_state)(const struct T_(Stack) *const a) {
+static void PT_(valid_state)(const struct T_(Stack) *const a) {
 	if(!a) return; /* null is valid */
 	assert(a->size <= a->capacity[0]);
 	assert(a->capacity[0] < a->capacity[1] || (a->capacity[0] == a->capacity[1]
 		&& a->capacity[1] == (size_t)(-1) / sizeof(T)));
 }
 
-static void PRIVATE_T_(test_basic)(void) {
+static void PT_(test_basic)(void) {
 	struct T_(Stack) *a = 0;
 	T test[5], *testp;
 	const size_t test_size = sizeof test / sizeof *test;
@@ -24,7 +24,7 @@ static void PRIVATE_T_(test_basic)(void) {
 	const char *err;
 	enum { CREATE, DESTROY };
 
-	for(i = 0; i < test_size; i++) PRIVATE_T_(filler)(test + i);
+	for(i = 0; i < test_size; i++) PT_(filler)(test + i);
 	printf("Constructor:\n");
 	assert(!T_(StackPop)(a));
 	assert(!T_(StackPeek)(a));
@@ -63,7 +63,7 @@ static void PRIVATE_T_(test_basic)(void) {
 	for(i = 0; i < 100; i++) {
 		testp = T_(StackNew)(a);
 		assert(testp);
-		PRIVATE_T_(filler)(testp);
+		PT_(filler)(testp);
 	}
 	printf("%s.\n", T_(StackToString)(a));
 	printf("Clear:\n");
@@ -76,7 +76,7 @@ static void PRIVATE_T_(test_basic)(void) {
 	assert(!a);
 }
 
-static void PRIVATE_T_(test_random)(void) {
+static void PT_(test_random)(void) {
 	struct T_(Stack) *a;
 	size_t i;
 	/* random */
@@ -94,16 +94,16 @@ static void PRIVATE_T_(test_random)(void) {
 				printf("Error: %s.\n", T_(StackGetError)(a)), assert(0);
 				return;
 			}
-			PRIVATE_T_(filler)(node);
-			PRIVATE_T_(to_string)(node, &str);
+			PT_(filler)(node);
+			PT_(to_string)(node, &str);
 			printf("Created %s.\n", str);
 		} else {
 			if(!T_(StackPop)(a)) continue;
-			PRIVATE_T_(to_string)(node, &str);
+			PT_(to_string)(node, &str);
 			printf("Removing %s.\n", str);
 		}
 		printf("%s.\n", T_(StackToString)(a));
-		PRIVATE_T_(valid_state)(a);
+		PT_(valid_state)(a);
 	}
 }
 
@@ -124,7 +124,7 @@ static void T_(StackTest)(void) {
 		"DEBUG; "
 #endif
 		"testing:\n");
-	PRIVATE_T_(test_basic)();
-	PRIVATE_T_(test_random)();
+	PT_(test_basic)();
+	PT_(test_random)();
 	fprintf(stderr, "Done tests of Stack<" T_NAME ">.\n\n");
 }

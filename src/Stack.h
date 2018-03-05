@@ -40,7 +40,8 @@
  @author	Neil
  @version	2017-12 Changed STACK_MIGRATE for type-safety.
  @since		2017-11 Added STACK_MIGRATE.
-			2017-11 Forked from Pool. */
+			2017-11 Forked from Pool.
+ @fixme		Add {<T>StackUpdateNew}. Change {STACK_MIGRATE}. */
 
 
 
@@ -84,7 +85,7 @@
 
 
 /* After this block, the preprocessor replaces T with STACK_TYPE, T_(X) with
- STACK_NAMEX, PRIVATE_T_(X) with STACK_U_NAME_X, and T_NAME with the string
+ STACK_NAMEX, PT_(X) with STACK_U_NAME_X, and T_NAME with the string
  version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
 #ifdef CAT
 #undef CAT
@@ -107,8 +108,8 @@
 #ifdef T_
 #undef T_
 #endif
-#ifdef PRIVATE_T_
-#undef PRIVATE_T_
+#ifdef PT_
+#undef PT_
 #endif
 #ifdef T_NAME
 #undef T_NAME
@@ -126,13 +127,13 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(STACK_NAME, thing)
-#define PRIVATE_T_(thing) PCAT(stack, PCAT(STACK_NAME, thing))
+#define PT_(thing) PCAT(stack, PCAT(STACK_NAME, thing))
 #define T_NAME QUOTE(STACK_NAME)
 
 /* Troubles with this line? check to ensure that STACK_TYPE is a valid type,
  whose definition is placed above {#include "Stack.h"}. */
-typedef STACK_TYPE PRIVATE_T_(Type);
-#define T PRIVATE_T_(Type)
+typedef STACK_TYPE PT_(Type);
+#define T PT_(Type)
 
 
 
@@ -183,25 +184,28 @@ struct Migrate {
 
 
 
-/** Operates by side-effects only. Used for {STACK_TEST}. */
-typedef void (*T_(Action))(T *const element);
-
-/** Operates by side-effects only. */
-typedef void (*T_(BiAction))(T *const element, void *const);
-
 /** Given to \see{<T>StackMigrateEach} by the migrate function of another
  datatype. */
 typedef void (*T_(StackMigrateElement))(T *const element,
 	const struct Migrate *const migrate);
 
+/** Operates by side-effects only. This definition is about the {STACK_NAME}
+ type, that is, it is without the prefix {Stack}; to avoid namespace
+ collisions, this is private, meaning the name is mangled. If you want this
+ definition, re-declare it as {<T>Action}. */
+typedef void (*PT_(Action))(T *const element);
+
+/** Operates by side-effects only. */
+typedef void (*PT_(BiAction))(T *const element, void *const);
+
 #ifdef STACK_TO_STRING /* <-- string */
 
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) Used for {STACK_TO_STRING}. */
-typedef void (*T_(ToString))(const T *, char (*const)[12]);
+typedef void (*PT_(ToString))(const T *, char (*const)[12]);
 
 /* Check that {STACK_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) PRIVATE_T_(to_string) = (STACK_TO_STRING);
+static const PT_(ToString) PT_(to_string) = (STACK_TO_STRING);
 
 #endif /* string --> */
 
@@ -209,11 +213,11 @@ static const T_(ToString) PRIVATE_T_(to_string) = (STACK_TO_STRING);
 
 /* Troubles with this line? check to ensure that STACK_MIGRATE is a valid type,
  whose definition is placed above {#include "Stack.h"}. */
-typedef STACK_MIGRATE PRIVATE_T_(ParentType);
-#define S PRIVATE_T_(ParentType)
+typedef STACK_MIGRATE PT_(ParentType);
+#define S PT_(ParentType)
 
 /** Function call on {realloc}. */
-typedef void (*T_(Migrate))(S *const parent,
+typedef void (*PT_(Migrate))(S *const parent,
 	const struct Migrate *const migrate);
 
 #endif /* stack migrate --> */
@@ -237,7 +241,7 @@ struct T_(Stack) {
 
 
 /** Debug messages from stack functions; turn on using {STACK_DEBUG}. */
-static void PRIVATE_T_(debug)(struct T_(Stack) *const this,
+static void PT_(debug)(struct T_(Stack) *const this,
 	const char *const fn, const char *const fmt, ...) {
 #ifdef STACK_DEBUG
 	/* \url{ http://c-faq.com/varargs/vprintf.html } */
@@ -254,7 +258,7 @@ static void PRIVATE_T_(debug)(struct T_(Stack) *const this,
 /** Ensures capacity.
  @return Success.
  @throws STACK_OVERFLOW, STACK_ERRNO */
-static int PRIVATE_T_(reserve)(struct T_(Stack) *const this,
+static int PT_(reserve)(struct T_(Stack) *const this,
 	const size_t min_capacity) {
 	size_t c0, c1;
 	T *array;
@@ -272,7 +276,7 @@ static int PRIVATE_T_(reserve)(struct T_(Stack) *const this,
 	}
 	if(!(array = realloc(this->array, c0 * sizeof *this->array)))
 		return this->error = STACK_ERRNO, this->errno_copy = errno, 0;
-	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
+	PT_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
 #ifdef STACK_MIGRATE /* <-- migrate */
@@ -282,7 +286,7 @@ static int PRIVATE_T_(reserve)(struct T_(Stack) *const this,
 		migrate.begin = this->array;
 		migrate.end   = (const char *)this->array + this->size * sizeof *array;
 		migrate.delta = (const char *)array - (const char *)this->array;
-		PRIVATE_T_(debug)(this, "reserve", "calling migrate.\n");
+		PT_(debug)(this, "reserve", "calling migrate.\n");
 		assert(this->parent);
 		this->migrate(this->parent, &migrate);
 	}
@@ -302,14 +306,14 @@ static int PRIVATE_T_(reserve)(struct T_(Stack) *const this,
 static void T_(Stack_)(struct T_(Stack) **const thisp) {
 	struct T_(Stack) *this;
 	if(!thisp || !(this = *thisp)) return;
-	PRIVATE_T_(debug)(this, "Delete", "erasing.\n");
+	PT_(debug)(this, "Delete", "erasing.\n");
 	free(this->array);
 	free(this);
 	*thisp = 0;
 }
 
 /** Private constructor called from either \see{<T>Stack}. */
-static struct T_(Stack) *PRIVATE_T_(stack)(void) {
+static struct T_(Stack) *PT_(stack)(void) {
 	struct T_(Stack) *this;
 	if(!(this = malloc(sizeof *this))) {
 		stack_global_error = STACK_ERRNO;
@@ -328,7 +332,7 @@ static struct T_(Stack) *PRIVATE_T_(stack)(void) {
 		stack_global_errno_copy = errno;
 		return 0;
 	}
-	PRIVATE_T_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
+	PT_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
 	return this;
 }
 
@@ -348,7 +352,7 @@ static struct T_(Stack) *T_(Stack)(const T_(Migrate) migrate, S *const parent) {
 		stack_global_errno_copy = 0;
 		return 0;
 	}
-	if(!(this = PRIVATE_T_(stack)())) return 0;
+	if(!(this = PT_(stack)())) return 0;
 	this->migrate = migrate;
 	this->parent = parent;
 	return this;
@@ -360,7 +364,7 @@ static struct T_(Stack) *T_(Stack)(const T_(Migrate) migrate, S *const parent) {
  @order \Theta(1)
  @allow */
 static struct T_(Stack) *T_(Stack)(void) {
-	return PRIVATE_T_(stack)();
+	return PT_(stack)();
 }
 #endif /* migrate --> */
 
@@ -440,8 +444,8 @@ static size_t T_(StackGetIndex)(struct T_(Stack) *const this,
 static int T_(StackReserve)(struct T_(Stack) *const this,
 	const size_t min_capacity) {
 	if(!this) return 0;
-	if(!PRIVATE_T_(reserve)(this, min_capacity)) return 0;
-	PRIVATE_T_(debug)(this, "Reserve","stack stack size to %u to contain %u.\n",
+	if(!PT_(reserve)(this, min_capacity)) return 0;
+	PT_(debug)(this, "Reserve","stack stack size to %u to contain %u.\n",
 		this->capacity[0], min_capacity);
 	return 1;
 }
@@ -456,9 +460,9 @@ static int T_(StackReserve)(struct T_(Stack) *const this,
 static T *T_(StackNew)(struct T_(Stack) *const this) {
 	T *elem;
 	if(!this) return 0;
-	if(!PRIVATE_T_(reserve)(this, this->size + 1)) return 0;
+	if(!PT_(reserve)(this, this->size + 1)) return 0;
 	elem = this->array + this->size++;
-	PRIVATE_T_(debug)(this, "New", "added.\n");
+	PT_(debug)(this, "New", "added.\n");
 	return elem;
 }
 
@@ -468,7 +472,7 @@ static T *T_(StackNew)(struct T_(Stack) *const this) {
 static void T_(StackClear)(struct T_(Stack) *const this) {
 	if(!this) return;
 	this->size = 0;
-	PRIVATE_T_(debug)(this, "Clear", "cleared.\n");
+	PT_(debug)(this, "Clear", "cleared.\n");
 }
 
 /** Iterates though the {Stack} and calls {action} on all the elements.
@@ -477,7 +481,7 @@ static void T_(StackClear)(struct T_(Stack) *const this) {
  @fixme Untested.
  @allow */
 static void T_(StackForEach)(struct T_(Stack) *const this,
-	const T_(Action) action) {
+	const PT_(Action) action) {
 	size_t i = 0;
 	if(!this) return;
 	if(!action) { this->error = STACK_PARAMETER; return; }
@@ -490,7 +494,7 @@ static void T_(StackForEach)(struct T_(Stack) *const this,
  @fixme Untested.
  @allow */
 static void T_(StackBiForEach)(struct T_(Stack) *const this,
-	const T_(BiAction) biaction, void *const param) {
+	const PT_(BiAction) biaction, void *const param) {
 	size_t i = 0;
 	if(!this) return;
 	if(!biaction) { this->error = STACK_PARAMETER; return; }
@@ -596,7 +600,7 @@ static const char *T_(StackToString)(const struct T_(Stack) *const this) {
 	stack_super_cat(&cat, stack_cat_start);
 	for(i = 0; i < this->size; i++) {
 		if(!is_first) stack_super_cat(&cat, stack_cat_sep); else is_first = 0;
-		PRIVATE_T_(to_string)(this->array + i, &scratch),
+		PT_(to_string)(this->array + i, &scratch),
 		scratch[sizeof scratch - 1] = '\0';
 		stack_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
@@ -613,11 +617,11 @@ static const char *T_(StackToString)(const struct T_(Stack) *const this) {
 #endif /* test --> */
 
 /* prototype */
-static void PRIVATE_T_(unused_coda)(void);
+static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void PRIVATE_T_(unused_set)(void) {
+static void PT_(unused_set)(void) {
 	T_(Stack_)(0);
 #ifdef STACK_MIGRATE
 	T_(Stack)(0, 0);
@@ -640,10 +644,10 @@ static void PRIVATE_T_(unused_set)(void) {
 #ifdef STACK_TO_STRING
 	T_(StackToString)(0);
 #endif
-	PRIVATE_T_(unused_coda)();
+	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if you have one function. */
-static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
+static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
 
@@ -656,7 +660,7 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
 #undef PCAT_
 #undef T
 #undef T_
-#undef PRIVATE_T_
+#undef PT_
 #undef T_NAME
 #undef QUOTE
 #undef QUOTE_
