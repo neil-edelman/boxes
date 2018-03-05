@@ -39,23 +39,34 @@
 #include <errno.h>	/* errno */
 #include "../src/Story.h"
 
-/** @implements StoryLinePredicate */
-static int show(const struct Text *const text, const size_t position) {
-	assert(text);
-	printf("Line %lu: %s", (long unsigned)position, TextGet(text));
+/** @implements LineAction */
+static void show(struct Line *const line) {
+	assert(line);
+	printf("Line %lu: <%s>.\n", (long unsigned)LineNo(line),TextGet(LineText(line)));
+}
+
+/** @implements LineAction */
+static void rtrim(struct Line *const line) {
+	assert(line);
+	TextRightTrim(LineText(line));
+}
+
+/** @implements LinePredicate */
+static int collapse_para(struct Line *const line) {
+	struct Line *const prev = LinePrevious(line);
+	assert(line);
+	printf("\"%s\".%lu -> \"%s\".%lu\n",
+		TextGet(LineText(prev)), (long unsigned)LineNo(prev),
+		TextGet(LineText(line)), (long unsigned)LineNo(line));
+	if(TextGet(LineText(line))[0] != '\0') return 1;
+	if(!prev || TextGet(LineText(prev))[0] == '\0') return 0;
 	return 1;
 }
 
-/** @implements StoryLinePredicate */
-static int delete(const struct Text *const text, const size_t position) {
-	assert(text);
-	if(rand() < RAND_MAX >> 1) {
-		printf("Deleting line %lu: %s", (long unsigned)position, TextGet(text));
-		return 0;
-	} else {
-		printf("Keeping line %lu: %s", (long unsigned)position, TextGet(text));
-		return 1;
-	}
+/** @implements LineAction */
+static void reinsert_newlines(struct Line *const line) {
+	assert(line);
+	TextCat(LineText(line), "\n");
 }
 
 /** Entry point.
@@ -64,20 +75,27 @@ static int delete(const struct Text *const text, const size_t position) {
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	struct Story *story = 0;
-	FILE *read = 0, *write = 0;
+	FILE *fp = 0;
 	enum { E_NO, E_STDERR, E_STORY } e = E_NO;
 	do {
-		if(!(read = fopen("../../src/Story.h", "r"))) { e = E_STDERR; break; }
+
 		if(!(story = Story())) { e = E_STORY; break; }
-		StoryFileCat(story, read);
-		fclose(read), read = 0;
-		StoryKeepIf(story, &show);
-		StoryKeepIf(story, &delete);
-		StoryKeepIf(story, &show);
-		if(!(write = fopen("../../result.txt", "w"))) { e = E_STDERR; break; }
+
+		if(!(fp = fopen("../../src/Story.h", "r"))) { e = E_STDERR; break; }
+		StoryFileCat(story, fp);
+		fclose(fp), fp = 0;
+
+		StoryForEach(story, &rtrim);
+		StoryKeepIf(story, &collapse_para);
+
 		StorySplit(story, 0, 0);
-		if(!StoryWrite(story, write)) { e = E_STORY; break; };
-		StoryKeepIf(story, &show);
+		StoryForEach(story, &show);
+		StoryForEach(story, &reinsert_newlines);
+
+		if(!(fp = fopen("../../result.txt", "w"))) { e = E_STDERR; break; }
+		if(!StoryWrite(story, fp)) { e = E_STORY; break; };
+		fclose(fp), fp = 0;
+
 	} while(0); switch(e) {
 		case E_NO:
 			break;
@@ -85,10 +103,8 @@ int main(void) {
 			perror("SdtErr"); break;
 		case E_STORY:
 			perror("Story"); break;
-			/*fprintf(stderr, "Error: %s.\n", StoryGetError(story)); break;*/
 	} {
-		fclose(read);
-		fclose(write);
+		fclose(fp);
 		Story_(&story);
 	}
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;

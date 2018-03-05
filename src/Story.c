@@ -44,6 +44,9 @@
 #endif /* debug --> */
 #include "Story.h"
 
+/** Each story is made up of lines. You can stick whatever you want in here,
+ including new-lines or not. */
+struct Line;
 struct Line {
 	struct Text *text;
 	size_t no;
@@ -56,23 +59,8 @@ struct Line {
 #define POOL_TYPE struct LineListNode
 #define POOL_PARENT struct LineList
 #define POOL_UPDATE struct Line
-#define POOL_NO_MIGRATE_POINTER
+#define POOL_NO_MIGRATE_POINTER /* @fixme Ugly hack. */
 #include "Pool.h" /* Defines {TextPool}. */
-
-/*enum Error {
-	E_NO_ERROR,
-	E_ERRNO,
-	E_PARAMETER,
-	E_LINE
-};
-static const char *const error_explination[] = {
-	"no error",
-	0,
-	"parameter out-of-range",
-	"error on line"
-};
-static enum Error global_error = E_NO_ERROR;
-static int        global_errno_copy;*/
 
 
 
@@ -127,8 +115,31 @@ struct Story *Story(void) {
 	return story;
 }
 
+/** Accessor for text. */
+struct Text *LineText(const struct Line *const line) {
+	if(!line) return 0;
+	return line->text;
+}
+
+/** Accessor for line number. */
+size_t LineNo(const struct Line *const line) {
+	if(!line) return 0;
+	return line->no;
+}
+
+/** Mutator for line number. */
+void LineSetNo(struct Line *const line, const size_t no) {
+	if(!line) return;
+	line->no = no;
+}
+
+struct Line *LinePrevious(struct Line *const line) {
+	return LineListPrevious(line);
+}
+
 /** Concatenates the contents of the text file, {fp}, after the active line.
- One {Line} per line. On success, the read cursor will be at the end.
+ One {Line} per line, preserving newlines. On success, the read cursor will be
+ at the end.
  @return Success.
  @throws E_OVERFLOW, E_ERRNO */
 int StoryFileCat(struct Story *const this, FILE *const fp) {
@@ -163,6 +174,7 @@ int StoryFileCat(struct Story *const this, FILE *const fp) {
 	return !e;
 }
 
+/** Writes the file {fp} with the story {this}. */
 int StoryWrite(struct Story *const this, FILE *const fp) {
 	struct Line *line;
 	if(!this || !fp) return 0;
@@ -172,21 +184,33 @@ int StoryWrite(struct Story *const this, FILE *const fp) {
 	return 1;
 }
 
-/** Executes {pred(text line, index)} for all lines and deletes those that
- return false. */
-void StoryKeepIf(struct Story *const this, const StoryLinePredicate pred) {
+/** Executes {action(line text, line number)} for all lines. If {this} or
+ {action} is null, returns. */
+void StoryForEach(struct Story *const this, const LineAction action) {
+	struct Line *line;
+	if(!this || !action) return;
+	for(line = LineListFirst(&this->lines); line; line = LineListNext(line))
+		action(line);
+}
+
+/** Executes {pred(line text, line number)} for all lines and deletes those
+ that return false. If {this} or {pred} is null, returns. */
+void StoryKeepIf(struct Story *const this, const LinePredicate pred) {
 	struct Line *line, *nextline;
-	/*size_t number = 1;*/
 	if(!this || !pred) return;
 	for(line = LineListFirst(&this->lines); line; line = nextline) {
 		nextline = LineListNext(line);
-		if(pred(line->text, line->no)) { /*number++;*/ continue; }
+		if(pred(line)) continue;
 		LineListRemove(line);
 		Text_(&line->text);
 		LinePoolRemove(this->pool, (struct LineListNode *)line);
 	}
 }
 
+/*struct Text *LastText(struct Text *text) {
+}*/
+
+/** Does {TextSplit} for all lines. */
 void StorySplit(struct Story *const this, const char *delims,
 	const TextPredicate pred) {
 	struct Line *line;

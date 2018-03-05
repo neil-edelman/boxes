@@ -98,7 +98,7 @@
 
 
 /* After this block, the preprocessor replaces T with POOL_TYPE, T_(X) with
- POOL_NAMEX, PRIVATE_T_(X) with POOL_U_NAME_X, and T_NAME with the string
+ POOL_NAMEX, PT_(X) with POOL_U_NAME_X, and T_NAME with the string
  version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
 #ifdef CAT
 #undef CAT
@@ -118,8 +118,8 @@
 #ifdef T_
 #undef T_
 #endif
-#ifdef PRIVATE_T_
-#undef PRIVATE_T_
+#ifdef PT_
+#undef PT_
 #endif
 #ifdef T_NAME
 #undef T_NAME
@@ -137,13 +137,13 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(POOL_NAME, thing)
-#define PRIVATE_T_(thing) PCAT(pool, PCAT(POOL_NAME, thing))
+#define PT_(thing) PCAT(pool, PCAT(POOL_NAME, thing))
 #define T_NAME QUOTE(POOL_NAME)
 
 /* Troubles with this line? check to ensure that POOL_TYPE is a valid type,
  whose definition is placed above {#include "Pool.h"}. */
-typedef POOL_TYPE PRIVATE_T_(Type);
-#define T PRIVATE_T_(Type)
+typedef POOL_TYPE PT_(Type);
+#define T PT_(Type)
 
 
 
@@ -198,33 +198,35 @@ struct Migrate {
 
 
 
-#ifdef POOL_TEST /* <-- test */
-/** Operates by side-effects only. Used only for {POOL_TEST} and not defined
- otherwise; can cause problems because it's not preceded by {Pool}. */
-typedef void (*T_(Action))(T *const element);
-#endif /* test --> */
-
 /** Given to \see{<T>PoolMigrateEach} by the migrate function of another
  {Pool}. */
 typedef void (*T_(PoolMigrateElement))(T *const element,
 	const struct Migrate *const migrate);
 
+#ifdef POOL_TEST /* <-- test */
+/* Operates by side-effects only. Used only for {POOL_TEST}. This definition is
+ about the {POOL_NAME} type, that is, it is without the prefix {Pool}; to avoid
+ namespace collisions, this is private, meaning the name is mangled. If you
+ want this definition, re-declare it as {<T>Action}. */
+typedef void (*PT_(Action))(T *const element);
+#endif /* test --> */
+
 #ifdef POOL_TO_STRING /* <-- string */
 
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) Used for {POOL_TO_STRING}. */
-typedef void (*T_(ToString))(const T *, char (*const)[12]);
+typedef void (*PT_(ToString))(const T *, char (*const)[12]);
 
 /* Check that {POOL_TO_STRING} is a function implementing {<T>ToString}. */
-static const T_(ToString) PRIVATE_T_(to_string) = (POOL_TO_STRING);
+static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 
 #endif /* string --> */
 
 #ifdef POOL_PARENT /* <-- parent */
 /* Troubles with this line? check to ensure that POOL_PARENT is a valid type,
  whose definition is placed above {#include "Pool.h"}. */
-typedef POOL_PARENT PRIVATE_T_(ParentType);
-#define P PRIVATE_T_(ParentType)
+typedef POOL_PARENT PT_(ParentType);
+#define P PT_(ParentType)
 /** Function call on {realloc}. */
 typedef void (*T_(Migrate))(P *const parent,
 	const struct Migrate *const migrate);
@@ -233,14 +235,14 @@ typedef void (*T_(Migrate))(P *const parent,
 #ifdef POOL_UPDATE /* <-- update */
 /* Troubles with this line? check to ensure that POOL_UPDATE is a valid type,
  whose definition is placed above {#include "Pool.h"}. */
-typedef POOL_UPDATE PRIVATE_T_(UpdateType);
-#define U PRIVATE_T_(UpdateType)
+typedef POOL_UPDATE PT_(UpdateType);
+#define U PT_(UpdateType)
 #endif /* update --> */
 
 
 
 /* Pool element. */
-struct PRIVATE_T_(Element) {
+struct PT_(Element) {
 	T data; /* has to be the first element for convenience */
 	size_t prev, next; /* removed offset queue */
 };
@@ -248,7 +250,7 @@ struct PRIVATE_T_(Element) {
 /** The pool. To instantiate, see \see{<T>Pool}. */
 struct T_(Pool);
 struct T_(Pool) {
-	struct PRIVATE_T_(Element) *array;
+	struct PT_(Element) *array;
 	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next */
 	size_t size; /* including removed */
 	size_t head, tail; /* removed queue */
@@ -263,7 +265,7 @@ struct T_(Pool) {
 
 
 /** Debug messages from pool functions; turn on using {POOL_DEBUG}. */
-static void PRIVATE_T_(debug)(struct T_(Pool) *const this,
+static void PT_(debug)(struct T_(Pool) *const this,
 	const char *const fn, const char *const fmt, ...) {
 #ifdef POOL_DEBUG
 	/* \url{ http://c-faq.com/varargs/vprintf.html } */
@@ -280,14 +282,14 @@ static void PRIVATE_T_(debug)(struct T_(Pool) *const this,
 /* * Ensures capacity.
  @return Success.
  @throws POOL_OVERFLOW, POOL_ERRNO */
-static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
+static int PT_(reserve)(struct T_(Pool) *const this,
 	const size_t min_capacity
 #ifdef POOL_UPDATE /* <-- update */
 	, U **const update_ptr
 #endif /* update --> */
 	) {
 	size_t c0, c1;
-	struct PRIVATE_T_(Element) *array;
+	struct PT_(Element) *array;
 	const size_t max_size = (pool_null - 1) / sizeof *array;
 	assert(this);
 	assert(this->size <= this->capacity[0]);
@@ -304,7 +306,7 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 	}
 	if(!(array = realloc(this->array, c0 * sizeof *this->array)))
 		return this->error = POOL_ERRNO, this->errno_copy = errno, 0;
-	PRIVATE_T_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
+	PT_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
 #if defined(POOL_PARENT) || defined(POOL_UPDATE) /* <-- migrate */
@@ -315,7 +317,7 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 		migrate.end   = (const char *)this->array + this->size * sizeof *array;
 		migrate.delta = (const char *)array - (const char *)this->array;
 #ifdef POOL_PARENT /* <-- parent */
-		PRIVATE_T_(debug)(this, "reserve", "calling migrate.\n");
+		PT_(debug)(this, "reserve", "calling migrate.\n");
 		assert(this->parent);
 		this->migrate(this->parent, &migrate);
 #endif /* parent --> */
@@ -336,9 +338,9 @@ static int PRIVATE_T_(reserve)(struct T_(Pool) *const this,
 
 /** We are very lazy and we just enqueue the removed for later elements.
  @param idx: Must be a valid index. */
-static void PRIVATE_T_(enqueue_removed)(struct T_(Pool) *const this,
+static void PT_(enqueue_removed)(struct T_(Pool) *const this,
 	const size_t e) {
-	struct PRIVATE_T_(Element) *elem;
+	struct PT_(Element) *elem;
 	assert(this);
 	assert(e < this->size);
 	elem = this->array + e;
@@ -349,7 +351,7 @@ static void PRIVATE_T_(enqueue_removed)(struct T_(Pool) *const this,
 		assert(this->head == pool_null);
 		this->head = this->tail = e;
 	} else {
-		struct PRIVATE_T_(Element) *const last = this->array + this->tail;
+		struct PT_(Element) *const last = this->array + this->tail;
 		assert(last->next == pool_null);
 		last->next = this->tail = e;
 	}
@@ -357,9 +359,9 @@ static void PRIVATE_T_(enqueue_removed)(struct T_(Pool) *const this,
 }
 
 /** Dequeues a removed element, or if the queue is empty, returns null. */
-static struct PRIVATE_T_(Element) *PRIVATE_T_(dequeue_removed)(
+static struct PT_(Element) *PT_(dequeue_removed)(
 	struct T_(Pool) *const this) {
-	struct PRIVATE_T_(Element) *elem;
+	struct PT_(Element) *elem;
 	size_t e;
 	assert(this);
 	assert((this->head == pool_null) == (this->tail == pool_null));
@@ -370,7 +372,7 @@ static struct PRIVATE_T_(Element) *PRIVATE_T_(dequeue_removed)(
 	if((this->head = elem->next) == pool_null) {
 		this->head = this->tail = pool_null;
 	} else {
-		struct PRIVATE_T_(Element) *const next = this->array + elem->next;
+		struct PT_(Element) *const next = this->array + elem->next;
 		assert(elem->next < this->size);
 		next->prev = pool_null;
 	}
@@ -380,8 +382,8 @@ static struct PRIVATE_T_(Element) *PRIVATE_T_(dequeue_removed)(
 
 /** Gets rid of the removed elements at the tail of the list. Each remove has
  potentially one delete in the worst case, it just gets differed a bit. */
-static void PRIVATE_T_(trim_removed)(struct T_(Pool) *const this) {
-	struct PRIVATE_T_(Element) *elem, *prev, *next;
+static void PT_(trim_removed)(struct T_(Pool) *const this) {
+	struct PT_(Element) *elem, *prev, *next;
 	size_t e;
 	assert(this);
 	while(this->size
@@ -411,14 +413,14 @@ static void PRIVATE_T_(trim_removed)(struct T_(Pool) *const this) {
 static void T_(Pool_)(struct T_(Pool) **const thisp) {
 	struct T_(Pool) *this;
 	if(!thisp || !(this = *thisp)) return;
-	PRIVATE_T_(debug)(this, "Delete", "erasing.\n");
+	PT_(debug)(this, "Delete", "erasing.\n");
 	free(this->array);
 	free(this);
 	*thisp = 0;
 }
 
 /** Private constructor called from either \see{<T>Pool}. */
-static struct T_(Pool) *PRIVATE_T_(pool)(void) {
+static struct T_(Pool) *PT_(pool)(void) {
 	struct T_(Pool) *this;
 	if(!(this = malloc(sizeof *this))) {
 		pool_global_error = POOL_ERRNO;
@@ -438,7 +440,7 @@ static struct T_(Pool) *PRIVATE_T_(pool)(void) {
 		pool_global_errno_copy = errno;
 		return 0;
 	}
-	PRIVATE_T_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
+	PT_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
 	return this;
 }
 
@@ -459,7 +461,7 @@ static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, P *const parent) {
 		pool_global_errno_copy = 0;
 		return 0;
 	}
-	if(!(this = PRIVATE_T_(pool)())) return 0;
+	if(!(this = PT_(pool)())) return 0;
 	this->migrate      = migrate;
 	this->parent       = parent;
 	return this;
@@ -471,7 +473,7 @@ static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, P *const parent) {
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(void) {
-	return PRIVATE_T_(pool)();
+	return PT_(pool)();
 }
 #endif /* parent --> */
 
@@ -505,7 +507,7 @@ static T *T_(PoolElement)(const struct T_(Pool) *const this) {
  @order \Theta(1)
  @allow */
 static int T_(PoolIsElement)(struct T_(Pool) *const this, const size_t idx) {
-	struct PRIVATE_T_(Element) *elem;
+	struct PT_(Element) *elem;
 	if(!this) return 0;
 	if(idx >= this->size
 		|| (elem = this->array + idx, elem->prev != pool_not_part))
@@ -520,8 +522,8 @@ static int T_(PoolIsElement)(struct T_(Pool) *const this, const size_t idx) {
  @order \Theta(1)
  @allow */
 static int T_(PoolIsValid)(const T *const data) {
-	const struct PRIVATE_T_(Element) *const elem
-		= (const struct PRIVATE_T_(Element) *const)(const void *const)data;
+	const struct PT_(Element) *const elem
+		= (const struct PT_(Element) *const)(const void *const)data;
 	if(!elem || elem->prev != pool_not_part) return 0;
 	return 1;
 }
@@ -535,7 +537,7 @@ static int T_(PoolIsValid)(const T *const data) {
  @order \Theta(1)
  @allow */
 static T *T_(PoolGetElement)(struct T_(Pool) *const this, const size_t idx) {
-	struct PRIVATE_T_(Element) *elem;
+	struct PT_(Element) *elem;
 	if(!this) return 0;
 	if(idx >= this->size
 		|| (elem = this->array + idx, elem->prev != pool_not_part))
@@ -550,7 +552,7 @@ static T *T_(PoolGetElement)(struct T_(Pool) *const this, const size_t idx) {
  @allow */
 static size_t T_(PoolGetIndex)(struct T_(Pool) *const this,
 	const T *const element) {
-	return (const struct PRIVATE_T_(Element) *)(const void *)element
+	return (const struct PT_(Element) *)(const void *)element
 		- this->array;
 }
 
@@ -565,12 +567,12 @@ static size_t T_(PoolGetIndex)(struct T_(Pool) *const this,
 static int T_(PoolReserve)(struct T_(Pool) *const this,
 	const size_t min_capacity) {
 	if(!this) return 0;
-	if(!PRIVATE_T_(reserve)(this, min_capacity
+	if(!PT_(reserve)(this, min_capacity
 #ifdef POOL_UPDATE /* <-- update */
 		, 0
 #endif /* update --> */
 		)) return 0;
-	PRIVATE_T_(debug)(this, "Reserve","pool pool size to %u to contain %u.\n",
+	PT_(debug)(this, "Reserve","pool pool size to %u to contain %u.\n",
 		this->capacity[0], min_capacity);
 	return 1;
 }
@@ -582,10 +584,10 @@ static int T_(PoolReserve)(struct T_(Pool) *const this,
  @order amortised O(1)
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const this) {
-	struct PRIVATE_T_(Element) *elem;
+	struct PT_(Element) *elem;
 	if(!this) return 0;
-	if(!(elem = PRIVATE_T_(dequeue_removed)(this))) {
-		if(!PRIVATE_T_(reserve)(this, this->size + 1
+	if(!(elem = PT_(dequeue_removed)(this))) {
+		if(!PT_(reserve)(this, this->size + 1
 #ifdef POOL_UPDATE /* <-- update */
 			, 0
 #endif /* update --> */
@@ -593,7 +595,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
 		elem = this->array + this->size++;
 		elem->prev = elem->next = pool_not_part;
 	}
-	PRIVATE_T_(debug)(this, "New", "added.\n");
+	PT_(debug)(this, "New", "added.\n");
 	return &elem->data;
 }
 
@@ -609,14 +611,14 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
  @allow */
 static T *T_(PoolUpdateNew)(struct T_(Pool) *const this,
 	U **const update_ptr) {
-	struct PRIVATE_T_(Element) *elem;
+	struct PT_(Element) *elem;
 	if(!this) return 0;
-	if(!(elem = PRIVATE_T_(dequeue_removed)(this))) {
-		if(!PRIVATE_T_(reserve)(this, this->size + 1, update_ptr)) return 0;
+	if(!(elem = PT_(dequeue_removed)(this))) {
+		if(!PT_(reserve)(this, this->size + 1, update_ptr)) return 0;
 		elem = this->array + this->size++;
 		elem->prev = elem->next = pool_not_part;
 	}
-	PRIVATE_T_(debug)(this, "New", "added.\n");
+	PT_(debug)(this, "New", "added.\n");
 	return &elem->data;
 }
 #endif /* update --> */
@@ -628,16 +630,16 @@ static T *T_(PoolUpdateNew)(struct T_(Pool) *const this,
  @order amortised O(1)
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const this, T *const data) {
-	struct PRIVATE_T_(Element) *elem;
+	struct PT_(Element) *elem;
 	size_t e;
 	if(!this || !data) return 0;
-	elem = (struct PRIVATE_T_(Element) *)(void *)data;
+	elem = (struct PT_(Element) *)(void *)data;
 	e = elem - this->array;
 	if(elem < this->array || e >= this->size || elem->prev != pool_not_part)
 		return this->error = POOL_OUT_OF_BOUNDS, 0;
-	PRIVATE_T_(enqueue_removed)(this, e);
-	if(e >= this->size - 1) PRIVATE_T_(trim_removed)(this);
-	PRIVATE_T_(debug)(this, "Remove", "removing %lu.\n", (unsigned long)e);
+	PT_(enqueue_removed)(this, e);
+	if(e >= this->size - 1) PT_(trim_removed)(this);
+	PT_(debug)(this, "Remove", "removing %lu.\n", (unsigned long)e);
 	return 1;
 }
 
@@ -648,7 +650,7 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
 	if(!this) return;
 	this->size = 0;
 	this->head = this->tail = pool_null;
-	PRIVATE_T_(debug)(this, "Clear", "cleared.\n");
+	PT_(debug)(this, "Clear", "cleared.\n");
 }
 
 /** Use when the pool has pointers to another pool in the {Migrate} function of
@@ -663,7 +665,7 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
 static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
 	const T_(PoolMigrateElement) handler, const struct Migrate *const migrate) {
 	size_t i;
-	struct PRIVATE_T_(Element) *e;
+	struct PT_(Element) *e;
 	if(!this) return;
 	if(!migrate || !handler) { this->error = POOL_PARAMETER; return; }
 	for(i = 0; i < this->size; i++) {
@@ -754,7 +756,7 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const this) {
 	for(i = 0; i < this->size; i++) {
 		if(this->array[i].prev != pool_not_part) continue;
 		if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
-		PRIVATE_T_(to_string)(&this->array[i].data, &scratch),
+		PT_(to_string)(&this->array[i].data, &scratch),
 		scratch[sizeof scratch - 1] = '\0';
 		pool_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
@@ -771,11 +773,11 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const this) {
 #endif /* test --> */
 
 /* Prototype. */
-static void PRIVATE_T_(unused_coda)(void);
+static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void PRIVATE_T_(unused_set)(void) {
+static void PT_(unused_set)(void) {
 	T_(Pool_)(0);
 #ifdef POOL_PARENT
 	T_(Pool)(0, 0);
@@ -802,10 +804,10 @@ static void PRIVATE_T_(unused_set)(void) {
 #ifdef POOL_TO_STRING
 	T_(PoolToString)(0);
 #endif
-	PRIVATE_T_(unused_coda)();
+	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if you have one function. */
-static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
+static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
 
@@ -818,7 +820,7 @@ static void PRIVATE_T_(unused_coda)(void) { PRIVATE_T_(unused_set)(); }
 #undef PCAT_
 #undef T
 #undef T_
-#undef PRIVATE_T_
+#undef PT_
 #undef T_NAME
 #undef QUOTE
 #undef QUOTE_
