@@ -252,11 +252,10 @@ struct Text *TextClear(struct Text *const this) {
  @fixme Untested. */
 struct Text *TextRightTrim(struct Text *const this) {
 	char *str, *z;
-	if(!this) return 0;
-	if(!this->length) return this;
+	if(!this || !this->length) return this;
 	str = this->text;
 	z = str + this->length - 1;
-	while(z > str && isspace(*z)) z--;
+	while(z >= str && isspace(*z)) z--;
 	z++, *z = '\0';
 	this->length = (size_t)(z - str);
 	return this;
@@ -266,11 +265,10 @@ struct Text *TextRightTrim(struct Text *const this) {
  @return {this}. */
 struct Text *TextTrim(struct Text *const this) {
 	char *str, *a, *z;
-	if(!this) return 0;
-	if(!this->length) return this;
+	if(!this || !this->length) return this;
 	str = this->text;
 	z = str + this->length - 1, a = str;
-	while(z > str && isspace(*z)) z--;
+	while(z >= str && isspace(*z)) z--;
 	z++, *z = '\0';
 	while(isspace(*a)) a++;
 	this->length = (size_t)(z - a);
