@@ -65,10 +65,7 @@
  safer, otoh, if you remove something you can't add without casting. Also this
  is the only place where we use it, so it's un-symmetric.
  @fixme Migrate could _still_ be less confusing and more efficient.
- @fixme Void pointers in {<T>List<U>BiAction} are not effective.
- @fixme {typedef}s are sometimes getting in the way of including multiple
- instances of {LIST_NAME} with other files. Easy fix: eliminate {typedef}s that
- don't grep {$List*}. */
+ @fixme Void pointers in {<T>List<U>BiAction} are not effective. */
 
 /* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
