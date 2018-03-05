@@ -246,14 +246,29 @@ struct Text *TextClear(struct Text *const this) {
 	clear(this); return this;
 }
 
+/** White-space trims the buffer associated with {this} using {isspace} only on
+ the right.
+ @return {this}. */
+struct Text *TestRightTrim(struct Text *const this) {
+	char *str, *z;
+	if(!this) return 0;
+	if(!this->length) return this;
+	str = this->text;
+	z = str + this->length - 1;
+	while(z > str && isspace(*z)) z--;
+	z++, *z = '\0';
+	this->length = (size_t)(z - str);
+	return this;
+}
+
 /** White-space trims the buffer associated with {this} using {isspace}.
  @return {this}. */
 struct Text *TextTrim(struct Text *const this) {
 	char *str, *a, *z;
-
 	if(!this) return 0;
+	if(!this->length) return this;
 	str = this->text;
-	z = str + strlen(str) - 1, a = str;
+	z = str + this->length - 1, a = str;
 	while(z > str && isspace(*z)) z--;
 	z++, *z = '\0';
 	while(isspace(*a)) a++;

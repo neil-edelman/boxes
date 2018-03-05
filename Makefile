@@ -55,8 +55,10 @@ endif
 ######
 # compiles the programme by default
 
-default: $(BDIR)/$(PROJ) $(DOCS)
+default: $(BDIR)/$(PROJ)
 	# . . . success; executable is in $(BDIR)/$(PROJ)
+
+docs: $(DOCS)
 
 # linking
 $(BDIR)/$(PROJ): $(OBJS) $(GDIR)/$(TDIR)/Text.o
