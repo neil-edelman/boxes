@@ -1,7 +1,7 @@
 /** Copyright 2015 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- This is a test of Text.
+ This is a test of Text. It is not complete by any means.
 
  @author	Neil
  @version	1.0; 2017-03
@@ -10,6 +10,7 @@
 #include <stdlib.h>	/* EXIT_* */
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp */
+#include <assert.h>
 #include "../src/Text.h"
 
 static void url(struct Text *const this) {
@@ -38,132 +39,116 @@ static int is_delim(const char *const str, const char *p) {
  @param argc	Count
  @param argv	Vector. */
 int main(void) {
+#if 0
 	FILE *fp = 0;
+#endif
 	const char *const fn = "/Users/neil/Movies/Common/Text/src/Text.c";
 	struct Text *t = 0, *sep = 0;
 	const char *str, *sup = 0;
-	enum { E_NO, E_T, E_ASRT, E_FP } e = E_NO;
+	size_t s, i;
+	const char *s0, *s1;
 
-	printf("Testing\n");
-	do {
-		unsigned s, i;
-		const char *s0, *s1;
-		printf("Text:\n");
-		if(!(t = Text()))
-			{ e = E_T; break; }
+	printf("Testing:\n");
+
+	t = Text();
+	assert(t);
 
 #if 0
-		printf("\nTextFileCat:\n");
-		if(!(fp = fopen(fn, "r")))
-			{ e = E_FP; break; }
-		if(!TextFileCat(t, fp) || !TextMatch(t, tpattern, tpattern_size))
-			{ e = E_T; break; }
+	printf("TextFileCat:\n");
+	errno = 0; {
+		if(!(fp = fopen(fn, "r"))) break;
+		if(!TextMatch(TextFileCat(t, fp), tpattern, tpattern_size));
 		printf("Text: %s", TextGet(t));
 		TextClear(t);
-#endif
-
-		printf("\nTextNCat:\n");
-		if(!(TextNCat(t, "TestText", (size_t)4)))
-			{ e = E_T; break; }
-		if(strcmp(sup = "Test", str = TextGet(t)))
-			{ e = E_ASRT; break; }
-		printf("Text: %s\n", TextGet(t));
-
-		printf("\nTextTransform:\n");
-		TextTransform(t, "\\url{%s%%%s} yo {YO}");
-		if(strcmp(sup = "\\url{Test%Test} yo {YO}", str = TextGet(t)))
-			{ e = E_ASRT; break; }
-		printf("Text: %s\n", TextGet(t));
-
-		printf("\nTextMatch:\n");
-		TextMatch(t, tpattern, tpattern_size);
-		if(strcmp(sup = "<a href = \"Test%Test\">Test%Test</a> yo <em>YO</em>",
-			str = TextGet(t)))
-			{ e = E_ASRT; break; }
-		printf("Text: %s\n", TextGet(t));
-		TextClear(t);
-
-		printf("\nTextBetweenCat:\n");
-		s0 = strchr(fn + 1, '/');
-		s1 = strchr(s0 + 1, '/');
-		TextBetweenCat(t, s0, s1);
-		if(strcmp(sup = "/neil/", str = TextGet(t)))
-			{ e = E_ASRT; break; }
-		s0 = strchr(s1 + 1, '/');
-		s1 = strchr(s0 + 1, '/');
-		TextBetweenCat(t, s0, s1);
-		if(strcmp(sup = "/neil//Common/", str = TextGet(t)))
-			{ e = E_ASRT; break; }
-		printf("Text: %s\n", TextGet(t));
-		TextClear(t);
-
-		printf("\nTextSplit:\n");
-		TextCat(t, "/foo///bar/qux//xxx");
-		printf("Text: '%s'\n", TextGet(t));
-		s = 0;
-		while((sep = TextSep(t, "/", &is_delim))) {
-			printf("TextSplit: '%s'\n", TextGet(sep));
-			switch(s++) {
-				case 0:
-					if(strcmp(sup = "", str = TextGet(sep))) e = E_ASRT;
-					break;
-				case 1:
-					if(strcmp(sup = "foo//", str = TextGet(sep))) e = E_ASRT;
-					break;
-				case 2:
-					if(strcmp(sup = "bar", str = TextGet(sep))) e = E_ASRT;
-					break;
-				case 3:
-					if(strcmp(sup = "qux/", str = TextGet(sep))) e = E_ASRT;
-					break;
-				case 4:
-					if(strcmp(sup = "xxx", str = TextGet(sep))) e = E_ASRT;
-					break;
-				default:
-					sup = "(null)", str = TextGet(sep), e = E_ASRT;
-					break;
-			}
-			Text_(&sep);
-			if(e) break;
-		}
-		if(e) break;
-		if(strcmp(sup = "", str = TextGet(t)))
-			{ e = E_ASRT; break; }
-
-		TextCat(t, "words separated by spaces -- and, punctuation!");
-		while((sep = TextSep(t, " .,;:!-", 0))) {
-			printf("token => \"%s\"\n", TextGet(sep));
-			Text_(&sep);
-		}
-		printf("original: '%s'\n", TextGet(t));
-		TextCat(t, "word");
-		while((sep = TextSep(t, " .,;:!-", 0))) {
-			printf("token => \"%s\"\n", TextGet(sep));
-			Text_(&sep);
-		}
-		printf("original: '%s'\n", TextGet(t)); /* hmm */
-		TextClear(t);
-
-		for(i = 0; i < 300; i++) {
-			TextPrintCat(t, "%c", '0' + i % 10);
-		}
-
-	} while(0);
-
-	switch(e) {
-		case E_NO: break;
-		case E_T: fprintf(stderr, "Text exception: %s.\n", TextGetError(t));
-			break;
-		case E_ASRT: fprintf(stderr,"Text: assert failed, '%s' but was '%s'.\n",
-			sup, str); break;
-		case E_FP: ferror(fp); break;
+	} while(0); if(errno) {
+		perror("TextFileCat");
 	}
+	fclose(fp);
+#endif
+	printf("TextNCat:\n");
+	TextNCat(t, "TestText", (size_t)4);
+	printf("Text: %s\n", TextGet(t));
+	assert((str = TextGet(t)) && !strcmp(sup = "Test", str));
+
+	printf("TextTransform:\n");
+	TextTransform(t, "\\url{%s%%%s} yo {YO}");
+	printf("Text: %s\n", TextGet(t));
+	assert((str = TextGet(t)) && !strcmp(sup = "\\url{Test%Test} yo {YO}",str));
+
+	printf("TextMatch:\n");
+	TextMatch(t, tpattern, tpattern_size);
+	printf("Text: %s\n", TextGet(t));
+	assert((str = TextGet(t)) && !strcmp(sup
+		= "<a href = \"Test%Test\">Test%Test</a> yo <em>YO</em>", str));
+	TextClear(t);
+
+	printf("TextBetweenCat:\n");
+	s0 = strchr(fn + 1, '/');
+	s1 = strchr(s0 + 1, '/');
+	TextBetweenCat(t, s0, s1);
+	assert((str = TextGet(t)) && !strcmp(sup = "/neil/", str));
+	s0 = strchr(s1 + 1, '/');
+	s1 = strchr(s0 + 1, '/');
+	TextBetweenCat(t, s0, s1);
+	assert((str = TextGet(t)) && !strcmp(sup = "/neil//Common/", str));
+	printf("Text: %s\n", TextGet(t));
+	TextClear(t);
+
+	printf("TextSep:\n");
+	TextCat(t, "/foo///bar/qux//xxx");
+	printf("Text: '%s'\n", TextGet(t));
+	assert(t);
+	s = 0;
+	printf("entering\n");
+	while((sep = TextSep(&t, "/", &is_delim))) {
+		printf("here\n");
+		printf("TextSep: '%s' '%s'\n", TextGet(sep), TextGet(t));
+		switch(s++) {
+			case 0:
+				assert((str = TextGet(sep)) && !strcmp(sup = "", str));
+				break;
+			case 1:
+				assert((str = TextGet(sep)) && !strcmp(sup = "foo//", str));
+				break;
+			case 2:
+				assert((str = TextGet(sep)) && !strcmp(sup = "bar", str));
+				break;
+			case 3:
+				assert((str = TextGet(sep)) && !strcmp(sup = "qux/", str));
+				break;
+			case 4:
+				assert((str = TextGet(sep)) && !strcmp(sup = "xxx", str));
+				break;
+			default:
+				assert((str = TextGet(sep), 0));
+				break;
+		}
+		Text_(&sep);
+	}
+	assert(!t);
+
+	t = Text();
+	TextCat(t, "words separated by spaces -- and, punctuation!!!");
+	printf("original: \"%s\"\n", TextGet(t));
+	TextCat(t, "word!!!");
+	printf("modified: \"%s\"\n", TextGet(t));
+	s = 0;
+	while((sep = TextSep(&t, " .,;:!-", 0))) {
+		s++;
+		printf("token => \"%s\"\n", TextGet(sep));
+		Text_(&sep);
+	}
+	assert(s == 16 && !t);
+
+	t = Text();
+	for(i = 0; i < 300; i++) TextPrintCat(t, "%c", '0' + i % 10);
+	printf("t: \"%s\"\n", TextGet(t));
+	s = TextLength(t);
+	assert(s == 300);
 
 	Text_(&t);
-	fclose(fp);
-	Text_(&sep);
+	assert(!t && !sep);
 
-	printf("Text tests %s.\n", e ? "FAILED" : "SUCCEEDED");
-	return e ? EXIT_FAILURE : EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
 

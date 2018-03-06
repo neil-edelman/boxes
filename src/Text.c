@@ -199,7 +199,7 @@ const char *TextGet(const struct Text *const this) {
 
 /** @return Gets the length in bytes, not code-points.
  @order O(1) */
-size_t TextGetLength(const struct Text *const this) {
+size_t TextLength(const struct Text *const this) {
 	if(!this) return 0;
 	return this->length;
 }
@@ -276,52 +276,48 @@ struct Text *TextTrim(struct Text *const this) {
 	return this;
 }
 
-/** Separates a new token at the first {delims} that satisfy {pred}.
- @return A new {Text} or null if the tokenisation is finished or an error
- occurs. You must call \see{Text_} on this pointer if it is not null.
- @param delims: If null, uses {POSIX} white-space to separate.
- @param pred: Can be null, in which case, it behaves like true.
- @throws E_OVERFLOW, E_ERRNO
- @fixme Since {Text} are necessarily non-null, this tests if it's an empty
- string; therefore, this will differ from {strsep} slightly (in a Bad way.)
- Namely, if the string ends with a token in {delims}, the last empty string
- will not be returned. */
-struct Text *TextSep(struct Text *const this, const char *delims,
+/** Separates a new token at the first of the {delims} that satisfy {pred}.
+ @return If {this_ptr} or {this} is null, returns null. Otherwise, you must
+ call \see{Text_} on this pointer. If no tokens are found in {this}, {this} is
+ destroyed and the entire {Text} is returned.
+ @param delims: If null, uses {POSIX} white-space to separate, ({Python}
+ {split(' ')}.)
+ @param pred: Can be null, in which case, it behaves like {true}.
+ @throws E_OVERFLOW, E_ERRNO */
+struct Text *TextSep(struct Text **const this_ptr, const char *delims,
 	const TextPredicate pred) {
-	struct Text *token;
+	struct Text *this, *token;
 	char *bork;
-
-	if(!this) return 0;
+	if(!this_ptr || !(this = *this_ptr)) return 0;
 	if(!delims || !*delims) delims = " \f\n\r\t\v";
-
-	/* find */
-	if(*(bork = this->text) == '\0') return 0; /* empty string */
-	while((bork = strpbrk(bork, delims))) {
-		if(pred && !pred(this->text, bork)) { bork++; continue; }
-		break;
+	/* Find. */
+	for(bork = this->text; (bork = strpbrk(bork, delims)); bork++) {
+		if(!pred || pred(this->text, bork)) break;
 	}
-	/* split at bork */
+	/* Not found. Just return the original. */
+	if(!bork) {
+		*this_ptr = 0;
+		return this;
+	}
+	/* Or else new text for the split at {bork}. This is a lot of wasted space
+	 for large strings.
+	 @fixme The error handling is lame; use {errno}? */
 	if(!(token = Text())) {
 		this->error = global_error, global_error = E_NO_ERROR;
 		this->errno_copy = global_errno_copy; global_errno_copy = 0;
 		return 0;
 	}
-	/* this will be true on all but the last */
-	if(bork) {
-		if(!cat(token, bork+1, (size_t)(this->text + this->length -(bork+1)))) {
-			this->error = token->error, token->error = E_NO_ERROR;
-			this->errno_copy = token->errno_copy, token->errno_copy = 0;
-			Text_(&token);
-			return 0;
-		}
-		/* truncate at bork */
-		*bork        = '\0';
-		this->length = bork - this->text;
+	if(!cat(token, bork + 1, (size_t)(this->text + this->length - (bork + 1)))){
+		this->error = token->error, this->errno_copy = token->errno_copy;
+		Text_(&token);
+		return 0;
 	}
-	/* {this} is the truncated first token, and {token} is the rest: swap */
+	/* Truncate at {bork}. */
+	*bork        = '\0';
+	this->length = bork - this->text;
+	/* {this} is the truncated first token, and {token} is the rest: swap. */
 	swap_texts(this, token);
-
-	debug(this, "TextSplit", "split.");
+	debug(this, "TextSep", "split.");
 	return token;
 }
 

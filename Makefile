@@ -61,7 +61,7 @@ default: $(BDIR)/$(PROJ)
 docs: $(DOCS)
 
 # linking
-$(BDIR)/$(PROJ): $(OBJS) $(GDIR)/$(TDIR)/Text.o
+$(BDIR)/$(PROJ): $(OBJS) $(TOBJS)
 	@mkdir -p $(BDIR)
 	$(CC) $(CF) $(OF) $^ -o $@
 
@@ -85,7 +85,7 @@ $(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
 .PHONY: setup clean backup icon install uninstall docs
 
 clean:
-	-rm -f $(OBJS) $(TOBJS)
+	-rm -f $(OBJS) $(TOBJS) $(DOCS)
 	-rm -rf $(BDIR)/$(TDIR)
 
 backup:
