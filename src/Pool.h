@@ -28,9 +28,6 @@
  \see{<T>PoolNewUpdate} becomes available, intended for a local iterator
  update on migrate.
 
- @param POOL_NO_MIGRATE_POINTER
- By default, it supplies \see{<T>MigratePointer}, but it may conflict.
-
  @param POOL_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>PoolToString}.
@@ -675,14 +672,13 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
 	}
 }
 
-#ifndef POOL_NO_MIGRATE_POINTER /* <-- no */
 /** Use this inside the function that is passed to the (generally other's)
  migrate function. Allows pointers to the pool to be updated. It doesn't affect
  pointers not in the {realloc}ed region.
  @order O(1)
  @fixme Untested.
  @allow */
-static void T_(MigratePointer)(T **const data_ptr,
+static void T_(PoolMigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
 	if(!data_ptr
@@ -691,7 +687,6 @@ static void T_(MigratePointer)(T **const data_ptr,
 		|| ptr >= migrate->end) return;
 	*(char **)data_ptr += migrate->delta;
 }
-#endif /* no --> */
 
 #ifdef POOL_TO_STRING /* <-- print */
 
@@ -798,9 +793,7 @@ static void PT_(unused_set)(void) {
 	T_(PoolRemove)(0, 0);
 	T_(PoolClear)(0);
 	T_(PoolMigrateEach)(0, 0, 0);
-#ifndef POOL_NO_MIGRATE_POINTER /* <-- no */
-	T_(MigratePointer)(0, 0);
-#endif /* no --> */
+	T_(PoolMigratePointer)(0, 0);
 #ifdef POOL_TO_STRING
 	T_(PoolToString)(0);
 #endif
@@ -842,9 +835,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif
 #ifdef POOL_UPDATE
 #undef POOL_UPDATE
-#endif
-#ifdef POOL_NO_MIGRATE_POINTER
-#undef POOL_NO_MIGRATE_POINTER
 #endif
 #ifdef P
 #undef P
