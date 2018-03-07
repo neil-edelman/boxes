@@ -29,9 +29,6 @@
  Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }. This is
  limited to some, usually multi-order, functions.
 
- @param LIST_NO_MIGRATE_POINTER
- By default, it supplies \see{<T>MigratePointer}, but it may conflict.
-
  @param LIST_TEST
  Unit testing framework using {<T>ListTest}, included in a separate header,
  {../test/ListTest.h}. Must be defined equal to a (random) filler, satisfying
@@ -100,7 +97,7 @@
 
 
 
-/* check defines; {[A, D]} is just arbitrary; more could be added */
+/* Check defines; {[A, D]} is just arbitrary; more could be added. */
 #ifndef LIST_NAME
 #error List generic LIST_NAME undefined.
 #endif
@@ -520,6 +517,7 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 
 /** Clears and removes all values from {list}, thereby initialising the
  {<T>List}. All previous values are un-associated.
+ @param list: if null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(ListClear)(struct T_(List) *const list) {
@@ -540,9 +538,11 @@ static void T_(ListUnshift)(struct T_(List) *const list, T *const add) {
 }
 
 /** Initialises the contents of the node which contains {add} to add it to the
- end of {list}. If either {list} or {add} is null, it does nothing.
- @param add: Must be inside of a {<T>ListNode} and not associated to any list;
- this associates the {<T>ListNode} with the list.
+ end of {list}.
+ @param list: If null, does nothing.
+ @param add:  If null, does nothing, otherwise must be inside of a
+ {<T>ListNode} and not associated to any list; this associates the
+ {<T>ListNode} that {add} is a part of with {list}, if it exists.
  @order \Theta(1)
  @allow */
 static void T_(ListPush)(struct T_(List) *const list, T *const add) {
@@ -550,12 +550,12 @@ static void T_(ListPush)(struct T_(List) *const list, T *const add) {
 	PT_(add_before)(&list->tail, &PT_(node_hold_data)(add)->x);
 }
 
-/** \see{<T>ListUnshift} with {data}. Initialises the contents of the node
- which contains {add} to add it immediately before {data}. If either {data} or
- {add} is null, it does nothing.
- @param data: Must be part of a list.
- @param add: Must be inside of a {<T>ListNode} and not associated to any list;
- this associates the {<T>ListNode} with the list.
+/** Initialises the contents of the node which contains {add} to add it
+ immediately before {data}.
+ @param data: If null, does nothing, otherwise must be part of a list.
+ @param add: If null, does nothing, otherwise must be inside of a {<T>ListNode}
+ and not associated to any list; this associates the {<T>ListNode} with the
+ list of which {data} is a part, if it exists.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -564,12 +564,12 @@ static void T_(ListAddBefore)(T *const data, T *const add) {
 	PT_(add_before)(&PT_(node_hold_data)(data)->x,&PT_(node_hold_data)(add)->x);
 }
 
-/** \see{<T>ListPush} with {data}. Initialises the contents of the node which
- contains {add} to add it immediately after {data}. If either {data} or {add}
- is null, it does nothing.
- @param data: Must be part of a list.
- @param add: Must be inside of a {<T>ListNode} and not associated to any list;
- this associates the {<T>ListNode} with the list.
+/** Initialises the contents of the node which contains {add} to add it
+ immediately after {data}.
+ @param data: If null, does nothing, otherwise must be part of a list.
+ @param add: If null, does nothing, otherwise must be inside of a {<T>ListNode}
+ and not associated to any list; this associates the {<T>ListNode} with the
+ list of which {data} is a part, if it exists.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -580,7 +580,8 @@ static void T_(ListAddAfter)(T *const data, T *const add) {
 
 /** Un-associates {data} from the list; consequently, the {data} is free to add
  to another list or delete. Removing an element that was not added to a list
- results in undefined behaviour. If {data} is null, it does nothing.
+ results in undefined behaviour.
+ @param data: If null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(ListRemove)(T *const data) {
@@ -588,9 +589,12 @@ static void T_(ListRemove)(T *const data) {
 	PT_(remove)(&PT_(node_hold_data)(data)->x);
 }
 
-/** Appends the elements of {from} onto {list}. If {list} is null, then it
- removes elements. Unlike \see{<T>List<U>TakeIf} and all other selective
- choosing functions, this function preserves two or more orders.
+/** Appends the elements of {from} onto {list}. Unlike \see{<T>List<U>TakeIf}
+ and all other selective choosing functions, that is, the ones with {<U>}, this
+ function preserves two or more orders.
+ @param list: If null, then it removes elements.
+ @param from: If null, it does nothing, otherwise this list will be empty on
+ return.
  @order \Theta(1)
  @allow */
 static void T_(ListTake)(struct T_(List) *const list,
@@ -600,9 +604,11 @@ static void T_(ListTake)(struct T_(List) *const list,
 	PT_(add_list_before)(&list->tail, from);
 }
 
-/** Appends the elements from {from} before {data}. If {data} or {from}
- is null, doesn't do anything. If {data} is not part of a valid list, results
- are undefined. The {from} list will be empty at the end.
+/** Appends the elements from {from} before {data}.
+ @param data: If null, does nothing, otherwise if not part of a valid list,
+ results are undefined.
+ @param from: If null, does nothing, otherwise this list will be empty on
+ return.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -613,9 +619,11 @@ static void T_(ListTakeBefore)(T *const data, struct T_(List) *const from) {
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 
-/** Merges the elements into {list} from {from} in, (local, it doesn't sort
- them first, see \see{<T>ListSort},) order; concatenates all lists that don't
- have a {LIST_U[A-D]_COMPARATOR}. If {list} is null, then it removes elements.
+/** Merges the elements from {from} into {list}. This uses local order and it
+ doesn't sort them first; see \see{<T>ListSort}. Concatenates all lists that
+ don't have a {LIST_COMPARATOR} or {LIST_U[A-D]_COMPARATOR}.
+ @param list: if null, then it removes elements.
+ @param from: if null, does nothing.
  @order O({list}.n + {from}.n)
  @allow */
 static void T_(ListMerge)(struct T_(List) *const list,
@@ -671,6 +679,7 @@ static void T_(ListMerge)(struct T_(List) *const list,
 
 #ifndef LIST_U_ANONYMOUS /* <-- !anon; already has ListSort, T_U_(List, Sort) */
 /** Performs a stable, adaptive sort on all orders which have comparators.
+ @param list: If null, does nothing.
  @order \Omega({list}.n), O({list}.n log {list}.n)
  @allow */
 static void T_(ListSort)(struct T_(List) *const list) {
@@ -711,17 +720,17 @@ static void T_(ListSort)(struct T_(List) *const list) {
 
 /** Adjusts the pointers internal to the {<T>List} when supplied with a
  {Migrate} parameter, when {list} contains {<T>ListNode} elements from memory
- that switched due to a {realloc}. If {list} or {migrate} is null, doesn't do
- anything.
- @param migrate: Should only be called in a {Migrate} function; pass the
- {migrate} parameter.
+ that switched due to a {realloc}.
+ @param list: If null, does nothing.
+ @param migrate: If null, does nothing. Should only be called in a {Migrate}
+ function; pass the {migrate} parameter.
  @implements <T>Migrate
  @order \Theta(n)
- @fixme Relies on not-strictly-defined behaviour because pointers are not
- necessarily contiguous in memory; it should be fine in practice.
  @allow */
 static void T_(ListMigrate)(struct T_(List) *const list,
 	const struct Migrate *const migrate) {
+	/* Relies on not-strictly-defined behaviour because pointers are not
+	 necessarily contiguous in memory; it should be fine in practice. */
 	if(!list || !migrate || !migrate->delta) return;
 #ifdef LIST_DEBUG
 	fprintf(stderr, "List<" QUOTE(LIST_NAME)
@@ -768,25 +777,10 @@ static void PT_(migrate)(const struct Migrate *const migrate,
 	*(char **)x_ptr += migrate->delta;
 }
 
-#ifndef LIST_NO_MIGRATE_POINTER /* <-- no */
-/** Use this inside the function that is passed to \see{<T>List<U>MigrateEach}
- to fix reallocated pointers. It doesn't affect pointers not in the {realloc}ed
- region. To update the underlying list, see \see{<T>ListMigrate}.
- @fixme Untested.
- @allow */
-static void T_(MigratePointer)(T **const t_ptr,
-	const struct Migrate *const migrate) {
-	if(!migrate || !t_ptr || !*t_ptr) return;
-	/* X is (mostly) how we pass it; just getting turned into a {char *}. */
-	PT_(migrate)(migrate, (struct PT_(X) **const)t_ptr);
-}
-#endif /* no --> */
-
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* Need this file if one is going to run tests. */
 #endif /* test --> */
 
-/* prototype */
 static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
@@ -805,9 +799,6 @@ static void PT_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListMigrate)(0, 0);
-#ifndef LIST_NO_MIGRATE_POINTER /* <-- no */
-	T_(MigratePointer)(0, 0);
-#endif /* no --> */
 	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
@@ -874,9 +865,6 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 #endif
 #ifdef LIST_DEBUG
 #undef LIST_DEBUG
-#endif
-#ifdef LIST_NO_MIGRATE_POINTER
-#undef LIST_NO_MIGRATE_POINTER
 #endif
 #ifdef LIST_NDEBUG
 #undef LIST_NDEBUG
@@ -968,8 +956,7 @@ static void PT_U_(add, after)(struct PT_(X) *const x, struct PT_(X) *const add){
 	PT_U_(cycle, crash)(add);
 }
 
-/** Private: list remove in {<U>}.
- @implements <T>ListNodeAction */
+/** Private: list remove in {<U>}. */
 static void PT_U_(list, remove)(struct PT_(X) *const x) {
 	assert(x->U_(prev) && x->U_(next));
 	x->U_(prev)->U_(next) = x->U_(next);
@@ -1013,11 +1000,11 @@ static void PT_U_(list, migrate)(struct T_(List) *const list,
 
 /** Calls {handler} on every element that is part of the list. This allows
  {<T>} elements in the list to contain pointers to moving structures due to a
- {realloc}, using the sub-types's {Migrate} function. If {list}, {handler}, or
- {migrate} is null, doesn't do anything.
- @param handler: Has the responsibility of calling \see{<T>ListMigratePointer}
- on all pointers affected by the {realloc} of this handler.
- @order \Theta(n)
+ {realloc}.
+ @param list, migrate: If null, does nothing.
+ @param handler: If null, does nothing, otherwise has the responsibility of
+ calling the pointers' migrate functions.
+ @order \Theta({list}.n \times {handler})
  @allow */
 static void T_U_(List, MigrateEach)(struct T_(List) *const list,
 	const T_(ListMigrateElement) handler, const struct Migrate *const migrate){
@@ -1030,9 +1017,9 @@ static void T_U_(List, MigrateEach)(struct T_(List) *const list,
 	PT_U_(cycle, crash)(&list->head);
 }
 
-/** @param data: Must be part of a {List}. If {data} is not part of a valid
+/** @param data: Must be part of a {List}. If {data} are not part of a valid
  list or has migrated locations due to a backing {realloc}, this function is
- undefined.
+ undefined. If null, returns null.
  @return The next element in {<U>}. When {data} is the last element, returns
  null.
  @order \Theta(1)
@@ -1046,9 +1033,9 @@ static T *T_U_(List, Next)(T *const data) {
 	return &PT_(node_hold_x)(next_x)->data;
 }
 
-/** @param data: Must be part of a {List}. If {data} is not part of a valid
+/** @param data: Must be part of a {List}. If {data} are not part of a valid
  list or has migrated locations due to a backing {realloc}, this function is
- undefined.
+ undefined. If null, returns null.
  @return The previous element in {<U>}. When {data} is the first element,
  returns null.
  @order \Theta(1)
@@ -1062,7 +1049,8 @@ static T *T_U_(List, Previous)(T *const data) {
 	return &PT_(node_hold_x)(prev_x)->data;
 }
 
-/** @return A pointer to the first element of {list}.
+/** @param list: If null, returns null.
+ @return A pointer to the first element of {list}.
  @order \Theta(1)
  @allow */
 static T *T_U_(List, First)(struct T_(List) *const list) {
@@ -1072,7 +1060,8 @@ static T *T_U_(List, First)(struct T_(List) *const list) {
 	return &PT_(node_hold_x)(list->head.U_(next))->data;
 }
 
-/** @return A pointer to the last element of {list}.
+/** @param list: If null, returns null.
+ @return A pointer to the last element of {list}.
  @order \Theta(1)
  @allow */
 static T *T_U_(List, Last)(struct T_(List) *const list) {
@@ -1084,6 +1073,7 @@ static T *T_U_(List, Last)(struct T_(List) *const list) {
 
 /** Un-associates the first element in the order {<U>} with the list, if the
  list is not empty.
+ @param list: If null, returns null.
  @return The erstwhile first element or null if the list was empty.
  @fixme Untested. */
 static T *T_U_(List, Shift)(struct T_(List) *const list) {
@@ -1096,6 +1086,7 @@ static T *T_U_(List, Shift)(struct T_(List) *const list) {
 
 /** Un-associates the last element in the order {<U>} with the list, if the
  list is not empty.
+ @param list: If null, returns null.
  @return The erstwhile last element or null if the list was empty.
  @fixme Untested. */
 static T *T_U_(List, Pop)(struct T_(List) *const list) {
@@ -1109,7 +1100,7 @@ static T *T_U_(List, Pop)(struct T_(List) *const list) {
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 
 /* Check that each of {LIST_COMPARATOR} and {LIST_U[A-D]_COMPARATOR} are
- functions implementing {<T>Comparator}. */
+ functions implementing {<PT>Comparator}. */
 static const PT_(Comparator) PT_U_(data, cmp) = (LIST_U_COMPARATOR);
 
 /** Private: merges {blist} into {alist} when we don't know anything about the
