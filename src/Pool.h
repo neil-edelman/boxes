@@ -59,10 +59,10 @@
 #include <stdlib.h>	/* malloc free qsort */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy (memmove strerror strcpy memcmp in PoolTest.h) */
+#include <errno.h>	/* errno */
 #ifdef POOL_TO_STRING /* <-- print */
 #include <stdio.h>	/* snprintf */
 #endif /* print --> */
-#include <errno.h>	/* errno */
 #ifdef POOL_DEBUG /* <-- debug */
 #include <stdarg.h>	/* for print */
 #endif /* debug --> */
@@ -149,35 +149,12 @@ typedef POOL_TYPE PT_(Type);
 /* constants across multiple includes in the same translation unit */
 #ifndef POOL_H /* <-- POOL_H */
 #define POOL_H
-
 static const size_t pool_fibonacci6 = 8;
 static const size_t pool_fibonacci7 = 13;
 static const size_t pool_not_part   = (size_t)-1;
 /** Used as a null pointer with indices; {Pool} will not allow the size to be
  this big. */
 static const size_t pool_null       = (size_t)-2;
-
-/* designated initializers are C99; this is safe because C has rules for enum
- default initialisers */
-enum PoolError {
-	POOL_NO_ERROR,
-	POOL_ERRNO,
-	POOL_PARAMETER,
-	POOL_OUT_OF_BOUNDS,
-	POOL_OVERFLOW
-};
-static const char *const pool_error_explination[] = {
-	/*[POOL_NO_ERROR]      =*/ "no error",
-	/*[POOL_ERRNO]         =*/ 0, /* <- get errno */
-	/*[POOL_PARAMETER]     =*/ "parameter out-of-range",
-	/*[POOL_OUT_OF_BOUNDS] =*/ "out-of-bounds",
-	/*[POOL_OVERFLOW]      =*/ "overflow"
-};
-
-/* global for constructor allocation errors */
-static enum PoolError pool_global_error;
-static int            pool_global_errno_copy;
-
 #endif /* POOL_H --> */
 
 /* Also left in the same translation unit. */
@@ -209,14 +186,11 @@ typedef void (*PT_(Action))(T *const element);
 #endif /* test --> */
 
 #ifdef POOL_TO_STRING /* <-- string */
-
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) Used for {POOL_TO_STRING}. */
 typedef void (*PT_(ToString))(const T *, char (*const)[12]);
-
 /* Check that {POOL_TO_STRING} is a function implementing {<T>ToString}. */
 static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
-
 #endif /* string --> */
 
 #ifdef POOL_PARENT /* <-- parent */
@@ -251,8 +225,6 @@ struct T_(Pool) {
 	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next */
 	size_t size; /* including removed */
 	size_t head, tail; /* removed queue */
-	enum PoolError error; /* errors defined by enum PoolError */
-	int errno_copy; /* copy of errno when when error == E_ERRNO */
 #ifdef POOL_PARENT
 	T_(Migrate) migrate; /* called to update on resizing */
 	P *parent; /* migrate parameter */
@@ -277,8 +249,10 @@ static void PT_(debug)(struct T_(Pool) *const this,
 }
 
 /* * Ensures capacity.
- @return Success.
- @throws POOL_OVERFLOW, POOL_ERRNO */
+ @return Success; otherwise, {errno} will be set.
+ @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
+ @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}. */
 static int PT_(reserve)(struct T_(Pool) *const this,
 	const size_t min_capacity
 #ifdef POOL_UPDATE /* <-- update */
@@ -294,15 +268,14 @@ static int PT_(reserve)(struct T_(Pool) *const this,
 	assert(this->capacity[1] < pool_null);
 	assert(pool_null < pool_not_part);
 	if(this->capacity[0] >= min_capacity) return 1;
-	if(max_size < min_capacity) return this->error = POOL_OVERFLOW, 0; 
+	if(max_size < min_capacity) return errno = ERANGE, 0;
 	c0 = this->capacity[0];
 	c1 = this->capacity[1];
 	while(c0 < min_capacity) {
 		c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0;
 		if(c1 <= c0 || c1 > max_size) c1 = max_size;
 	}
-	if(!(array = realloc(this->array, c0 * sizeof *this->array)))
-		return this->error = POOL_ERRNO, this->errno_copy = errno, 0;
+	if(!(array = realloc(this->array, c0 * sizeof *this->array))) return 0;
 	PT_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
@@ -320,8 +293,8 @@ static int PT_(reserve)(struct T_(Pool) *const this,
 #endif /* parent --> */
 #ifdef POOL_UPDATE /* <-- update */
 		if(update_ptr) {
-			const void *const i = *update_ptr;
-			if(i >= migrate.begin && i < migrate.end)
+			const void *const u = *update_ptr;
+			if(u >= migrate.begin && u < migrate.end)
 				*(char **)update_ptr += migrate.delta;
 		}
 #endif /* update --> */
@@ -403,7 +376,7 @@ static void PT_(trim_removed)(struct T_(Pool) *const this) {
 
 /** Destructor for {Pool}. Make sure that the pool's contents will not be
  accessed anymore.
- @param thisp: A reference to the object that is to be deleted; it will be pool
+ @param thisp: A reference to the object that is to be deleted; it will be set
  to null. If it is already null or it points to null, doesn't do anything.
  @order \Theta(1)
  @allow */
@@ -416,82 +389,60 @@ static void T_(Pool_)(struct T_(Pool) **const thisp) {
 	*thisp = 0;
 }
 
-/** Private constructor called from either \see{<T>Pool}. */
+/** Private constructor called from either \see{<T>Pool}.
+ @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}. */
 static struct T_(Pool) *PT_(pool)(void) {
 	struct T_(Pool) *this;
-	if(!(this = malloc(sizeof *this))) {
-		pool_global_error = POOL_ERRNO;
-		pool_global_errno_copy = errno;
-		return 0;
-	}
+	if(!(this = malloc(sizeof *this))) return 0;
 	this->array        = 0;
 	this->capacity[0]  = pool_fibonacci6;
 	this->capacity[1]  = pool_fibonacci7;
 	this->size         = 0;
 	this->head = this->tail = pool_null;
-	this->error        = POOL_NO_ERROR;
-	this->errno_copy   = 0;
-	if(!(this->array = malloc(this->capacity[0] * sizeof *this->array))) {
-		T_(Pool_)(&this);
-		pool_global_error = POOL_ERRNO;
-		pool_global_errno_copy = errno;
-		return 0;
-	}
+	if(!(this->array = malloc(this->capacity[0] * sizeof *this->array)))
+		{ T_(Pool_)(&this); return 0; }
 	PT_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
 	return this;
 }
 
 #ifdef POOL_PARENT /* <-- parent */
-/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
- @param migrate: The ADT parent's {Migrate} function.
- @param parent: The parent itself; to have multiple parents, implement an
- intermediary {Migrate} function that takes multiple values; required if
- {migrate} is specified.
- @return A new {Pool} for the polymorphic variable {parent}.
- @throws POOL_PARAMETER, POOL_ERRNO: Use {PoolError(0)} to get the error.
+/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8. Requires
+ {POOL_PARENT}.
+ @param migrate: The parent's {Migrate} function.
+ @param parent: The parent; to have multiple parents, implement an intermediary
+ {Migrate} function that takes multiple values; required if {migrate} is
+ specified.
+ @return A new {Pool} for one of the polymorphic variables in {parent}, or null
+ and {errno} will be set.
+ @throws EDOM: If one and not the other arguments is null.
+ @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, P *const parent) {
 	struct T_(Pool) *this;
-	if(!migrate ^ !parent) {
-		pool_global_error = POOL_PARAMETER;
-		pool_global_errno_copy = 0;
-		return 0;
-	}
-	if(!(this = PT_(pool)())) return 0;
+	if(!migrate ^ !parent) { errno = EDOM; return 0; }
+	if(!(this = PT_(pool)())) return 0; /* ENOMEM */
 	this->migrate      = migrate;
 	this->parent       = parent;
 	return this;
 }
 #else /* parent --><-- !parent */
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
- @return A new {Pool}.
- @throws POOL_ERRNO: Use {<T>PoolError(0)} to get the error.
+ @return A new {Pool} or null and {errno} will be set.
+ @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(void) {
-	return PT_(pool)();
+	return PT_(pool)(); /* ENOMEM */
 }
 #endif /* parent --> */
 
-/** See what's the error if something goes wrong. Resets the error.
- @return The last error string.
- @order \Theta(1)
- @allow */
-static const char *T_(PoolGetError)(struct T_(Pool) *const this) {
-	const char *str;
-	enum PoolError *perr;
-	int *perrno;
-	perr   = this ? &this->error      : &pool_global_error;
-	perrno = this ? &this->errno_copy : &pool_global_errno_copy;
-	if(!(str = pool_error_explination[*perr])) str = strerror(*perrno);
-	*perr = 0;
-	return str;
-}
-
-/** @return One value from the pool or null if the pool is empty. It selects
- the position in the memory which is farthest from the start of the buffer
- deterministically.
+/** @param this: If null, returns null.
+ @return One value from the pool or null if the pool is empty. It selects
+ the position deterministically.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -515,7 +466,7 @@ static int T_(PoolIsElement)(struct T_(Pool) *const this, const size_t idx) {
 /** Is {data} still a valid element? Use when you have a pointer to an element,
  but you're not sure if it's been deleted. One can not use it on a {realloc}ed
  or not part of a {Pool} pointer. If you delete and add another one,
- {<T>}PoolIsValid may return true.
+ {<T>}PoolIsValid may return true, but may not be the element that one expects.
  @order \Theta(1)
  @allow */
 static int T_(PoolIsValid)(const T *const data) {
@@ -526,11 +477,11 @@ static int T_(PoolIsValid)(const T *const data) {
 }
 
 /** Gets an existing element by index. Causing something to be added to the
- {Pool} may invalidate this pointer.
+ {Pool} may invalidate this pointer because of a {realloc}.
  @param this: If {this} is null, returns null.
  @param idx: Index.
- @return If failed, returns a null pointer and the error condition will be set.
- @throws POOL_OUT_OF_BOUNDS
+ @return If failed, returns a null pointer {errno} will be set.
+ @throws EDOM: {idx} out of bounds.
  @order \Theta(1)
  @allow */
 static T *T_(PoolGetElement)(struct T_(Pool) *const this, const size_t idx) {
@@ -538,12 +489,14 @@ static T *T_(PoolGetElement)(struct T_(Pool) *const this, const size_t idx) {
 	if(!this) return 0;
 	if(idx >= this->size
 		|| (elem = this->array + idx, elem->prev != pool_not_part))
-		{ this->error = POOL_OUT_OF_BOUNDS; return 0; }
+		{ errno = EDOM; return 0; }
 	return &elem->data;
 }
 
-/** Gets an index given an element. If the element is not part of the {Pool},
- behaviour is undefined.
+/** Gets an index given {element}.
+ @param element: If the element is not part of the {Pool}, behaviour is
+ undefined.
+ @return An index.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -557,8 +510,10 @@ static size_t T_(PoolGetIndex)(struct T_(Pool) *const this,
  the number of elements specified by the {min_capacity}.
  @param this: If {this} is null, returns false.
  @return True if the capacity increase was viable; otherwise the pool is not
- touched and the error condition is pool.
- @throws POOL_ERRNO, POOL_OVERFLOW
+ touched and {errno} is set.
+ @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
+ @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order \Omega(1), O({capacity})
  @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const this,
@@ -568,7 +523,7 @@ static int T_(PoolReserve)(struct T_(Pool) *const this,
 #ifdef POOL_UPDATE /* <-- update */
 		, 0
 #endif /* update --> */
-		)) return 0;
+		)) return 0; /* ERANGE, ENOMEM */
 	PT_(debug)(this, "Reserve","pool pool size to %u to contain %u.\n",
 		this->capacity[0], min_capacity);
 	return 1;
@@ -576,8 +531,10 @@ static int T_(PoolReserve)(struct T_(Pool) *const this,
 
 /** Gets an uninitialised new element.
  @param this: If {this} is null, returns null.
- @return If failed, returns a null pointer and the error condition will be set.
- @throws POOL_OVERFLOW, POOL_ERRNO
+ @return If failed, returns a null pointer {errno} will be set.
+ @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
+ @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order amortised O(1)
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const this) {
@@ -588,7 +545,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
 #ifdef POOL_UPDATE /* <-- update */
 			, 0
 #endif /* update --> */
-			)) return 0;
+			)) return 0; /* ERANGE, ENOMEM */
 		elem = this->array + this->size++;
 		elem->prev = elem->next = pool_not_part;
 	}
@@ -598,11 +555,13 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
 
 #ifdef POOL_UPDATE /* <-- update */
 /** Gets an uninitialised new element and updates the {update_ptr} if it is
- within the memory region that was changed. Must have {POOL_PARENT} defined.
+ within the memory region that was changed. Must have {POOL_UPDATE} defined.
  @param this: If {this} is null, returns null.
  @param iterator_ptr: Pointer to update on migration.
  @return If failed, returns a null pointer and the error condition will be set.
- @throws POOL_OVERFLOW, POOL_ERRNO
+ @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
+ @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order amortised O(1)
  @fixme Untested.
  @allow */
@@ -611,7 +570,8 @@ static T *T_(PoolUpdateNew)(struct T_(Pool) *const this,
 	struct PT_(Element) *elem;
 	if(!this) return 0;
 	if(!(elem = PT_(dequeue_removed)(this))) {
-		if(!PT_(reserve)(this, this->size + 1, update_ptr)) return 0;
+		if(!PT_(reserve)(this, this->size + 1, update_ptr))
+			return 0; /* ERANGE, ENOMEM */
 		elem = this->array + this->size++;
 		elem->prev = elem->next = pool_not_part;
 	}
@@ -621,9 +581,9 @@ static T *T_(PoolUpdateNew)(struct T_(Pool) *const this,
 #endif /* update --> */
 
 /** Removes an element associated with {data} from {this}.
- @param this: If {this} is null, returns false.
- @return Success.
- @throws POOL_OUT_OF_BOUNDS
+ @param this, data: If null, returns false.
+ @return Success, otherwise {errno} will be set.
+ @throws EDOM: {data} is not part of {list}.
  @order amortised O(1)
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const this, T *const data) {
@@ -633,7 +593,7 @@ static int T_(PoolRemove)(struct T_(Pool) *const this, T *const data) {
 	elem = (struct PT_(Element) *)(void *)data;
 	e = elem - this->array;
 	if(elem < this->array || e >= this->size || elem->prev != pool_not_part)
-		return this->error = POOL_OUT_OF_BOUNDS, 0;
+		return errno = EDOM, 0;
 	PT_(enqueue_removed)(this, e);
 	if(e >= this->size - 1) PT_(trim_removed)(this);
 	PT_(debug)(this, "Remove", "removing %lu.\n", (unsigned long)e);
@@ -652,30 +612,26 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
 
 /** Use when the pool has pointers to another pool in the {Migrate} function of
  the other pool (passed when creating the other pool.)
- @param handler: Has the responsibility of calling \see{<T>PoolMigratePointer}
- on all pointers affected by the {realloc}.
- @param migrate: Should only be called in a {Migrate} function; pass the
- {migrate} parameter.
+ @param this: If null, does nothing.
+ @param handler: If null, does nothing, otherwise has the responsibility of
+ calling \see{<T>PoolMigratePointer} on all pointers affected by the {realloc}.
+ @param migrate: If null, does nothing. Should only be called in a {Migrate}
+ function; pass the {migrate} parameter.
  @order O({greatest size})
  @fixme Untested.
  @allow */
 static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
 	const T_(PoolMigrateElement) handler, const struct Migrate *const migrate) {
-	size_t i;
-	struct PT_(Element) *e;
-	if(!this) return;
-	if(!migrate || !handler) { this->error = POOL_PARAMETER; return; }
-	for(i = 0; i < this->size; i++) {
-		e = this->array + i;
-		if(e->prev != pool_not_part) continue;
-		handler(&e->data, migrate);
-	}
+	struct PT_(Element) *e, *end;
+	if(!this || !migrate || !handler) return;
+	for(e = this->array, end = e + this->size; e < end; e++)
+		if(e->prev == pool_not_part) handler(&e->data, migrate);
 }
 
 /** Use this inside the function that is passed to the (generally other's)
  migrate function. Allows pointers to the pool to be updated. It doesn't affect
  pointers not in the {realloc}ed region.
- @order O(1)
+ @order \Omega(1)
  @fixme Untested.
  @allow */
 static void T_(PoolMigratePointer)(T **const data_ptr,
@@ -779,7 +735,6 @@ static void PT_(unused_set)(void) {
 #else
 	T_(Pool)();
 #endif
-	T_(PoolGetError)(0);
 	T_(PoolElement)(0);
 	T_(PoolIsElement)(0, (size_t)0);
 	T_(PoolIsValid)(0);

@@ -65,9 +65,9 @@ static void PT_(test_basic)(void) {
 	T test[5], *testp;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
-	const char *err;
 	enum { CREATE, DESTROY };
 
+	errno = 0;
 	for(i = 0; i < test_size; i++) PT_(filler)(test + i);
 	printf("Constructor:\n");
 	assert(!T_(PoolElement)(a));
@@ -76,10 +76,7 @@ static void PT_(test_basic)(void) {
 #else
 	a = T_(Pool)();
 #endif
-	err = T_(PoolGetError)(a);
-	printf("%s: %s.\n", T_(PoolToString)(a), err);
 	assert(a);
-	assert(!strcmp("no error", err));
 	assert(!T_(PoolElement)(a));
 
 	printf("Adding %lu elements:\n", (unsigned long)test_size);
@@ -94,28 +91,29 @@ static void PT_(test_basic)(void) {
 	printf("Remove last:\n");
 	if((testp = T_(PoolGetElement)(a, test_size - 2))
 		&& !T_(PoolRemove)(a, testp)) {
-		printf("Error: %s.\n", T_(PoolGetError(a))), assert(0);
+		perror("Error"), assert(0);
 		return;
 	}
 	printf("Now: %s.\n", T_(PoolToString)(a));
 	assert(!T_(PoolRemove)(a, testp));
-	printf("(Deliberate) error: %s.\n", T_(PoolGetError)(a));
+	assert(errno);
+	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	if((testp = T_(PoolGetElement)(a, test_size - 3))
 		&& !T_(PoolRemove)(a, testp)) {
-		printf("Error: %s.\n", T_(PoolGetError(a))), assert(0);
+		perror("Error"), assert(0);
 		return;
 	}
 	printf("Now: %s.\n", T_(PoolToString)(a));
 	assert(!T_(PoolRemove)(a, testp));
-	printf("(Deliberate) error: %s.\n", T_(PoolGetError)(a));
+	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	if((testp = T_(PoolGetElement)(a, test_size - 1))
 		&& !T_(PoolRemove)(a, testp)) {
-		printf("Error: %s.\n", T_(PoolGetError(a))), assert(0);
+		perror("Error"), assert(0);
 		return;
 	}
 	printf("Now: %s.\n", T_(PoolToString)(a));
 	assert(!T_(PoolRemove)(a, testp));
-	printf("(Deliberate) error: %s.\n", T_(PoolGetError)(a));
+	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	printf("Pool reserve.\n");
 	T_(PoolReserve)(a, (size_t)100);
 	assert(a->capacity[0] >= 100);
@@ -154,7 +152,7 @@ static void PT_(test_random)(void) {
 		/* this parameter controls how big the pool wants to be */
 		if(r > size / 100.0) {
 			if(!(node = T_(PoolNew)(a))) {
-				printf("Error: %s.\n", T_(PoolGetError)(a)), assert(0);
+				perror("Error"), assert(0);
 				return;
 			}
 			PT_(filler)(node);
@@ -164,13 +162,15 @@ static void PT_(test_random)(void) {
 			size_t idx = rand() / (RAND_MAX + 1.0) * size;
 			if(!T_(PoolIsElement)(a, idx)) continue;
 			if(!(node = T_(PoolGetElement)(a, idx))) {
-				printf("Error getting: %s.\n", T_(PoolGetError)(a)), assert(0);
+				perror("Error"), assert(0);
 				return;
 			}
 			PT_(to_string)(node, &str);
 			printf("Removing %s at %lu.\n", str, (unsigned long)idx);
-			assert(T_(PoolRemove)(a, node)
-				|| (printf("Error removing: %s.\n", T_(PoolGetError)(a)), 0));
+			{
+				const int ret = T_(PoolRemove)(a, node);
+				assert(ret || (perror("Removing"), 0));
+			}
 		}
 		printf("%s.\n", T_(PoolToString)(a));
 		PT_(valid_state)(a);

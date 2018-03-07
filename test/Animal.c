@@ -118,34 +118,23 @@ void Animals_(struct Animals **const animalsp) {
 /** Constructor. */
 struct Animals *Animals(void) {
 	struct Animals *a;
-	enum { NO, SLOTH, EMU } e = NO;
+	int e;
 	if(!(a = malloc(sizeof *a))) { perror("Animals"); Animals_(&a); return 0; }
 	AnimalListClear(&a->list);
 	a->sloths = 0;
 	a->emus   = 0;
-	do {
-		if(!(a->sloths = SlothPool(&AnimalListMigrate, &a->list)))
-			{ e = SLOTH; break; }
-		if(!(a->emus = EmuPool(&AnimalListMigrate, &a->list)))
-			{ e = EMU; break; }
-	} while(0); switch(e) {
-		case NO: break;
-		case SLOTH:
-			fprintf(stderr, "SlothPool: %s.\n", SlothPoolGetError(a->sloths));
-			break;
-		case EMU:
-			fprintf(stderr, "EmuPool: %s.\n", EmuPoolGetError(a->emus));
-			break;
+	e = errno = 0; do {
+		if(!(a->sloths = SlothPool(&AnimalListMigrate, &a->list))) break;
+		if(!(a->emus = EmuPool(&AnimalListMigrate, &a->list))) break;
+	} while(0); if((e = errno)) {
+		perror("Animals");
 	} if(e) Animals_(&a);
 	return a;
 }
 struct Sloth *Sloth(struct Animals *const animals) {
 	struct Sloth *sloth;
 	if(!animals) return 0;
-	if(!(sloth = SlothPoolNew(animals->sloths))) {
-		fprintf(stderr, "Sloth: %s.\n", SlothPoolGetError(animals->sloths));
-		return 0;
-	}
+	if(!(sloth = SlothPoolNew(animals->sloths))) { perror("Sloth"); return 0; }
 	Animal_filler(&sloth->animal.data, &Sloth_vt);
 	sloth->hours_slept = (int)(10.0 * rand() / RAND_MAX) + 4;
 	AnimalListPush(&animals->list, &sloth->animal.data);
@@ -154,10 +143,7 @@ struct Sloth *Sloth(struct Animals *const animals) {
 struct Emu *Emu(struct Animals *const animals) {
 	struct Emu *emu;
 	if(!animals) return 0;
-	if(!(emu = EmuPoolNew(animals->emus))) {
-		fprintf(stderr, "Emu: %s.\n", EmuPoolGetError(animals->emus));
-		return 0;
-	}
+	if(!(emu = EmuPoolNew(animals->emus))) { perror("Sloth"); return 0; }
 	Animal_filler(&emu->animal.data, &Emu_vt);
 	emu->favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
 	AnimalListPush(&animals->list, &emu->animal.data);
