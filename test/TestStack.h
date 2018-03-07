@@ -21,23 +21,24 @@ static void PT_(test_basic)(void) {
 	T test[5], *testp;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
-	const char *err;
 	enum { CREATE, DESTROY };
 
+	errno = 0;
 	for(i = 0; i < test_size; i++) PT_(filler)(test + i);
 	printf("Constructor:\n");
 	assert(!T_(StackPop)(a));
 	assert(!T_(StackPeek)(a));
 	assert(!T_(StackGetElement)(a, 0));
 	a = T_(Stack)();
-	err = T_(StackGetError)(a);
-	printf("%s: %s.\n", T_(StackToString)(a), err);
+	printf("Stack: %s.\n", T_(StackToString)(a));
 	assert(a);
-	assert(!strcmp("no error", err));
+	assert(!errno);
 	assert(!T_(StackPop)(a));
 	assert(!T_(StackPeek)(a));
 	assert(!T_(StackGetElement)(a, 0));
-	printf("(Deliberate) error: %s.\n", T_(StackGetError)(a));
+	printf("(Deliberate) error: %s.\n", strerror(errno));
+	assert(errno);
+	errno = 0;
 
 	printf("Adding %lu elements:\n", (unsigned long)test_size);
 	for(i = 0; i < test_size; i++) {
@@ -48,12 +49,12 @@ static void PT_(test_basic)(void) {
 
 	printf("Remove last:\n");
 	if(!(testp = T_(StackPop)(a))) {
-		printf("Error: %s.\n", T_(StackGetError(a))), assert(0);
+		perror("Error"), assert(0);
 		return;
 	}
 	printf("Now: %s.\n", T_(StackToString)(a));
 	if(!(testp = T_(StackPop)(a))) {
-		printf("Error: %s.\n", T_(StackGetError(a))), assert(0);
+		perror("Error"), assert(0);
 		return;
 	}
 	printf("Now: %s.\n", T_(StackToString)(a));
@@ -91,7 +92,7 @@ static void PT_(test_random)(void) {
 		/* this parameter controls how big the pool wants to be */
 		if(r > size / 100.0) {
 			if(!(node = T_(StackNew)(a))) {
-				printf("Error: %s.\n", T_(StackGetError)(a)), assert(0);
+				perror("Error"), assert(0);
 				return;
 			}
 			PT_(filler)(node);

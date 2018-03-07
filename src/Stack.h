@@ -2,12 +2,13 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {<T>Stack} is a dynamic array that stores unordered {<T>} in a stack; that is,
- the most basic variable array. Indices will remain the same throughout the
- lifetime of the data, but expanding the data may change the pointers. You
- cannot shrink the capacity of this data type, only cause it to grow. Resizing
- incurs amortised cost, done though a Fibonacci sequence. {<T>Stack} is not
- synchronised. The preprocessor macros are all undefined at the end of the file
- for convenience when including multiple {<T>Stack} types in the same file.
+ the most basic variable array. The array is packed, with no other extraneous
+ information. Indices will remain the same throughout the lifetime of the data,
+ but expanding the data may change the pointers. You cannot shrink the capacity
+ of this data type, only cause it to grow. Resizing incurs amortised cost, done
+ though a Fibonacci sequence. {<T>Stack} is not synchronised. The preprocessor
+ macros are all undefined at the end of the file for convenience when including
+ multiple {<T>Stack} types in the same file.
 
  @param STACK_NAME
  This literally becomes {<T>}. As it's used in function names, this should
@@ -17,10 +18,15 @@
  The type associated with {<T>}. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
- @param STACK_MIGRATE
- Optional type association with {<S>}. If set, the constructor has two extra
+ @param STACK_PARENT
+ Optional type association with {<P>}. If set, the constructor has two extra
  arguments that allow it to be part of a larger data structure without
  referencing the {<T>Stack} directly. Can be {void} to turn off type checking.
+
+ @param STACK_UPDATE
+ Optional type association with {<U>}. If set, the function
+ \see{<T>StackUpdateNew} becomes available, intended for a local iterator
+ update on migrate.
 
  @param STACK_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
@@ -36,12 +42,12 @@
  {assert} private function integrity testing. Requires {STACK_TO_STRING}.
 
  @title		Stack.h
- @std		C89/90
+ @std		C89
  @author	Neil
- @version	2017-12 Changed STACK_MIGRATE for type-safety.
- @since		2017-11 Added STACK_MIGRATE.
-			2017-11 Forked from Pool.
- @fixme		Add {<T>StackUpdateNew}. Change {STACK_MIGRATE}. */
+ @version	2018-02 Made it like POOL.
+			2017-12 Changed STACK_PARENT for type-safety.
+ @since		2017-11 Added STACK_PARENT.
+			2017-11 Forked from Pool. */
 
 
 
@@ -54,16 +60,8 @@
 #endif /* print --> */
 #include <errno.h>	/* errno */
 #ifdef STACK_DEBUG
-#include <stdarg.h>	/* for print */
+#include <stdarg.h>	/* for debug print */
 #endif /* calls --> */
-
-
-
-/* unused macro */
-#ifdef UNUSED
-#undef UNUSED
-#endif
-#define UNUSED(a) ((void)(a))
 
 
 
@@ -99,8 +97,11 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef S
-#undef S
+#ifdef P
+#undef P
+#endif
+#ifdef U
+#undef U
 #endif
 #ifdef T
 #undef T
@@ -130,43 +131,18 @@
 #define PT_(thing) PCAT(stack, PCAT(STACK_NAME, thing))
 #define T_NAME QUOTE(STACK_NAME)
 
-/* Troubles with this line? check to ensure that STACK_TYPE is a valid type,
+/* Troubles with this line? check to ensure that {STACK_TYPE} is a valid type,
  whose definition is placed above {#include "Stack.h"}. */
 typedef STACK_TYPE PT_(Type);
 #define T PT_(Type)
 
 
 
-
-
 /* Constants across multiple includes in the same translation unit. */
 #ifndef STACK_H /* <-- STACK_H */
 #define STACK_H
-
 static const size_t stack_fibonacci6 = 8;
 static const size_t stack_fibonacci7 = 13;
-
-/* designated initializers are C99; this is safe because C has rules for enum
- default initialisers */
-enum StackError {
-	STACK_NO_ERROR,
-	STACK_ERRNO,
-	STACK_PARAMETER,
-	STACK_OUT_OF_BOUNDS,
-	STACK_OVERFLOW
-};
-static const char *const stack_error_explination[] = {
-	/*[STACK_NO_ERROR]      =*/ "no error",
-	/*[STACK_ERRNO]         =*/ 0, /* <- get errno */
-	/*[STACK_PARAMETER]     =*/ "parameter out-of-range",
-	/*[STACK_OUT_OF_BOUNDS] =*/ "out-of-bounds",
-	/*[STACK_OVERFLOW]      =*/ "overflow"
-};
-
-/* global for constructor allocation errors */
-static enum StackError stack_global_error;
-static int             stack_global_errno_copy;
-
 #endif /* STACK_H --> */
 
 /* Also left in the same translation unit. */
@@ -175,12 +151,10 @@ static int             stack_global_errno_copy;
 /** Contains information about a {realloc}. */
 struct Migrate;
 struct Migrate {
-	const void *begin, *end; /* old pointers */
+	const void *begin, *end; /* Old pointers. */
 	ptrdiff_t delta;
 };
 #endif /* migrate --> */
-
-
 
 
 
@@ -199,28 +173,29 @@ typedef void (*PT_(Action))(T *const element);
 typedef void (*PT_(BiAction))(T *const element, void *const);
 
 #ifdef STACK_TO_STRING /* <-- string */
-
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) Used for {STACK_TO_STRING}. */
 typedef void (*PT_(ToString))(const T *, char (*const)[12]);
-
 /* Check that {STACK_TO_STRING} is a function implementing {<T>ToString}. */
 static const PT_(ToString) PT_(to_string) = (STACK_TO_STRING);
-
 #endif /* string --> */
 
-#ifdef STACK_MIGRATE /* <-- stack migrate */
-
-/* Troubles with this line? check to ensure that STACK_MIGRATE is a valid type,
- whose definition is placed above {#include "Stack.h"}. */
-typedef STACK_MIGRATE PT_(ParentType);
-#define S PT_(ParentType)
-
+#ifdef STACK_PARENT /* <-- parent */
+/* Troubles with this line? check to ensure that {STACK_PARENT} is a valid
+ type, whose definition is placed above {#include "Stack.h"}. */
+typedef STACK_PARENT PT_(ParentType);
+#define P PT_(ParentType)
 /** Function call on {realloc}. */
-typedef void (*PT_(Migrate))(S *const parent,
+typedef void (*PT_(Migrate))(P *const parent,
 	const struct Migrate *const migrate);
+#endif /* parent --> */
 
-#endif /* stack migrate --> */
+#ifdef STACK_UPDATE /* <-- update */
+/* Troubles with this line? check to ensure that {STACK_UPDATE} is a valid
+ type, whose definition is placed above {#include "Stack.h"}. */
+typedef STACK_UPDATE PT_(UpdateType);
+#define U PT_(UpdateType)
+#endif /* update --> */
 
 
 
@@ -228,13 +203,11 @@ typedef void (*PT_(Migrate))(S *const parent,
 struct T_(Stack);
 struct T_(Stack) {
 	T *array;
-	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next */
+	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next. */
 	size_t size;
-	enum StackError error; /* errors defined by enum StackError */
-	int errno_copy; /* copy of errno when when error == E_ERRNO */
-#ifdef STACK_MIGRATE
-	T_(Migrate) migrate; /* called to update on resizing */
-	S *parent; /* migrate parameter */
+#ifdef STACK_PARENT
+	T_(Migrate) migrate; /* Called to update on resizing. */
+	P *parent; /* Migrate parameter. */
 #endif
 };
 
@@ -251,44 +224,57 @@ static void PT_(debug)(struct T_(Stack) *const this,
 	vfprintf(stderr, fmt, argp);
 	va_end(argp);
 #else
-	UNUSED(this); UNUSED(fn); UNUSED(fmt);
+	(void)(this), (void)(fn), (void)(fmt);
 #endif
 }
 
 /** Ensures capacity.
  @return Success.
- @throws STACK_OVERFLOW, STACK_ERRNO */
+ @throws ERANGE: Tried allocating more then can fit in {size_t}.
+ @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}. */
 static int PT_(reserve)(struct T_(Stack) *const this,
-	const size_t min_capacity) {
+	const size_t min_capacity
+#ifdef POOL_UPDATE /* <-- update */
+	, U **const update_ptr
+#endif /* update --> */
+	) {
 	size_t c0, c1;
 	T *array;
 	const size_t max_size = (size_t)(-1) / sizeof *array;
-	assert(this);
-	assert(this->size <= this->capacity[0]);
-	assert(this->capacity[0] <= this->capacity[1]);
+	assert(this && this->size <= this->capacity[0]
+		&& this->capacity[0] <= this->capacity[1]);
 	if(this->capacity[0] >= min_capacity) return 1;
-	if(max_size < min_capacity) return this->error = STACK_OVERFLOW, 0; 
+	if(max_size < min_capacity) return errno = ERANGE, 0; 
 	c0 = this->capacity[0];
 	c1 = this->capacity[1];
 	while(c0 < min_capacity) {
 		c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0;
 		if(c1 <= c0 || c1 > max_size) c1 = max_size;
 	}
-	if(!(array = realloc(this->array, c0 * sizeof *this->array)))
-		return this->error = STACK_ERRNO, this->errno_copy = errno, 0;
+	if(!(array = realloc(this->array, c0 * sizeof *this->array))) return 0;
 	PT_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
-#ifdef STACK_MIGRATE /* <-- migrate */
-	/* Migrate parent class. Violates pedantic strict-ANSI? */
+#if defined(STACK_PARENT) || defined(STACK_UPDATE) /* <-- migrate */
 	if(this->array != array && this->migrate) {
+		/* Migrate parent class. Violates pedantic strict-ANSI? */
 		struct Migrate migrate;
 		migrate.begin = this->array;
 		migrate.end   = (const char *)this->array + this->size * sizeof *array;
 		migrate.delta = (const char *)array - (const char *)this->array;
+#ifdef STACK_PARENT /* <-- parent */
 		PT_(debug)(this, "reserve", "calling migrate.\n");
 		assert(this->parent);
 		this->migrate(this->parent, &migrate);
+#endif /* parent --> */
+#ifdef STACK_UPDATE /* <-- update */
+		if(update_ptr) {
+			const void *const u = *update_ptr;
+			if(u >= migrate.begin && u < migrate.end)
+				*(char **)update_ptr += migrate.delta;
+		}
+#endif /* update --> */
 	}
 #endif /* migrate --> */
 	this->array = array;
@@ -299,8 +285,8 @@ static int PT_(reserve)(struct T_(Stack) *const this,
 
 /** Destructor for {Stack}. Make sure that the stack's contents will not be
  accessed anymore.
- @param thisp: A reference to the object that is to be deleted; it will be
- stack to null. If it is already null or it points to null, doesn't do anything.
+ @param thisp: A reference to the object that is to be deleted; it will be set
+ to null. If it is already null or it points to null, doesn't do anything.
  @order \Theta(1)
  @allow */
 static void T_(Stack_)(struct T_(Stack) **const thisp) {
@@ -312,78 +298,58 @@ static void T_(Stack_)(struct T_(Stack) **const thisp) {
 	*thisp = 0;
 }
 
-/** Private constructor called from either \see{<T>Stack}. */
+/** Private constructor called from either \see{<T>Stack}.
+ @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}. */
 static struct T_(Stack) *PT_(stack)(void) {
 	struct T_(Stack) *this;
-	if(!(this = malloc(sizeof *this))) {
-		stack_global_error = STACK_ERRNO;
-		stack_global_errno_copy = errno;
-		return 0;
-	}
+	if(!(this = malloc(sizeof *this))) return 0;
 	this->array        = 0;
 	this->capacity[0]  = stack_fibonacci6;
 	this->capacity[1]  = stack_fibonacci7;
 	this->size         = 0;
-	this->error        = STACK_NO_ERROR;
-	this->errno_copy   = 0;
-	if(!(this->array = malloc(this->capacity[0] * sizeof *this->array))) {
-		T_(Stack_)(&this);
-		stack_global_error = STACK_ERRNO;
-		stack_global_errno_copy = errno;
+	if(!(this->array = malloc(this->capacity[0] * sizeof *this->array)))
 		return 0;
-	}
 	PT_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
 	return this;
 }
 
-#ifdef STACK_MIGRATE /* <-- migrate */
+#ifdef STACK_PARENT /* <-- parent */
 /** Constructs an empty {Stack} with capacity Fibonacci6, which is 8. This
- is the constructor if STACK_MIGRATE is specified.
- @param migrate, parent: Can be both null.
- @return A new {Stack}.
- @throws STACK_PARAMETER, STACK_ERRNO: Use {StackError(0)} to get the error.
+ is the constructor if {STACK_PARENT} is specified.
+ @param migrate: The parent's {Migrate} function.
+ @param parent: The parent; to have multiple parents, implement an intermediary
+ {Migrate} function that takes multiple values; required if {migrate} is
+ specified.
+ @return A new {Stack} or null and {errno} may be set.
+ @throws ERANGE: If one and not the other arguments is null.
+ @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static struct T_(Stack) *T_(Stack)(const T_(Migrate) migrate, S *const parent) {
+static struct T_(Stack) *T_(Stack)(const T_(Migrate) migrate, P *const parent) {
 	struct T_(Stack) *this;
-	if(!migrate ^ !parent) {
-		stack_global_error = STACK_PARAMETER;
-		stack_global_errno_copy = 0;
-		return 0;
-	}
-	if(!(this = PT_(stack)())) return 0;
+	if(!migrate ^ !parent) { errno = ERANGE; return 0; }
+	if(!(this = PT_(stack)())) return 0; /* ENOMEM? */
 	this->migrate = migrate;
-	this->parent = parent;
+	this->parent  = parent;
 	return this;
 }
-#else /* migrate --><-- !migrate */
+#else /* parent --><-- !parent */
 /** Constructs an empty {Stack} with capacity Fibonacci6, which is 8.
- @return A new {Stack}.
- @throws STACK_ERRNO: Use {<T>StackError(0)} to get the error.
+ @return A new {Stack} or null and {errno} may be set.
+ @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
 static struct T_(Stack) *T_(Stack)(void) {
-	return PT_(stack)();
+	return PT_(stack)(); /* ENOMEM? */
 }
-#endif /* migrate --> */
+#endif /* !parent --> */
 
-/** See what's the error if something goes wrong. Resets the error.
- @return The last error string.
- @order \Theta(1)
- @allow */
-static const char *T_(StackGetError)(struct T_(Stack) *const this) {
-	const char *str;
-	enum StackError *perr;
-	int *perrno;
-	perr   = this ? &this->error      : &stack_global_error;
-	perrno = this ? &this->errno_copy : &stack_global_errno_copy;
-	if(!(str = stack_error_explination[*perr])) str = strerror(*perrno);
-	*perr = 0;
-	return str;
-}
-
-/** @return The current size of the stack.
+/** @param this: If null, returns zero.
+ @return The current size of the stack.
  @order \Theta(1)
  @allow */
 static size_t T_(StackGetSize)(const struct T_(Stack) *const this) {
@@ -395,18 +361,30 @@ static size_t T_(StackGetSize)(const struct T_(Stack) *const this) {
  {Stack} may invalidate this pointer.
  @param this: If {this} is null, returns null.
  @param idx: Index.
- @return If failed, returns a null pointer and the error condition will be set.
- @throws STACK_OUT_OF_BOUNDS
+ @return Success, otherwise {errno} will be set.
+ @throws EDOM: {idx} out of bounds.
  @order \Theta(1)
  @allow */
 static T *T_(StackGetElement)(struct T_(Stack) *const this, const size_t idx) {
 	if(!this) return 0;
-	if(idx >= this->size) { this->error = STACK_OUT_OF_BOUNDS; return 0; }
+	if(idx >= this->size) { errno = EDOM; return 0; }
 	return this->array + idx;
 }
 
-/** @return The last value to be added or null if the stack is empty. The
- pointer is valid until the stack gets bigger.
+/** Gets an index given an {element}.
+ @param element: If the element is not part of the {Stack}, behaviour is
+ undefined.
+ @return An index.
+ @order \Theta(1)
+ @allow */
+static size_t T_(StackGetIndex)(struct T_(Stack) *const this,
+		const T *const element) {
+	return element - this->array;
+}
+
+/** @param this: If {this} is null, returns null.
+ @return The last value to be added or null if the stack is empty. The pointer
+ is valid until the stack gets bigger.
  @order \Theta(1)
  @allow */
 static T *T_(StackPeek)(const struct T_(Stack) *const this) {
@@ -414,9 +392,10 @@ static T *T_(StackPeek)(const struct T_(Stack) *const this) {
 	return this->array + this->size - 1;
 }
 
-/** Decreases the size of the stack. The pointer is valid until the stack gets
- bigger.
- @return One value from the stack or null if the stack is empty.
+/** Decreases the size of the stack.
+ @return Value from the the top of the stack that is removed or null if the
+ stack is empty. The pointer is valid until the stack gets bigger, and you may
+ need to duplicate it for permanent storage.
  @order \Theta(1)
  @allow */
 static T *T_(StackPop)(struct T_(Stack) *const this) {
@@ -424,49 +403,75 @@ static T *T_(StackPop)(struct T_(Stack) *const this) {
 	return this->array + --this->size;
 }
 
-/** Gets an index given an element. If the element is not part of the {Stack},
- behaviour is undefined.
- @order \Theta(1)
- @allow */
-static size_t T_(StackGetIndex)(struct T_(Stack) *const this,
-	const T *const element) {
-	return element - this->array;
-}
-
 /** Increases the capacity of this Stack to ensure that it can hold at least
  the number of elements specified by the {min_capacity}.
  @param this: If {this} is null, returns false.
  @return True if the capacity increase was viable; otherwise the stack is not
- touched and the error condition is stack.
- @throws STACK_ERRNO, STACK_OVERFLOW
+ touched and {errno} may be set.
+ @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
+ @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order \Omega(1), O({capacity})
  @allow */
 static int T_(StackReserve)(struct T_(Stack) *const this,
 	const size_t min_capacity) {
 	if(!this) return 0;
-	if(!PT_(reserve)(this, min_capacity)) return 0;
-	PT_(debug)(this, "Reserve","stack stack size to %u to contain %u.\n",
+	if(!PT_(reserve)(this, min_capacity
+#ifdef STACK_UPDATE /* <-- update */
+		, 0
+#endif /* update --> */
+		)) return 0; /* ERANGE, ENOMEM? */
+	PT_(debug)(this, "Reserve", "stack stack size to %u to contain %u.\n",
 		this->capacity[0], min_capacity);
 	return 1;
 }
 
-/** Gets an uninitialised new element at the end of the stack. May move the
- stack to a new memory location to fit the new size.
+/** Gets an uninitialised new element at the end of the {Stack}. May move the
+ {Stack} to a new memory location to fit the new size.
  @param this: If {this} is null, returns null.
- @return If failed, returns a null pointer and the error condition will be set.
- @throws STACK_OVERFLOW, STACK_ERRNO
+ @return A new, un-initialised, element, or null and {errno} may be set.
+ @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
+ @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
  @order amortised O(1)
  @allow */
 static T *T_(StackNew)(struct T_(Stack) *const this) {
 	T *elem;
 	if(!this) return 0;
-	if(!PT_(reserve)(this, this->size + 1)) return 0;
+	if(!PT_(reserve)(this, this->size + 1
+#ifdef STACK_UPDATE /* <-- update */
+		, 0
+#endif /* update --> */
+		)) return 0; /* ERANGE, ENOMEM? */
 	elem = this->array + this->size++;
 	PT_(debug)(this, "New", "added.\n");
 	return elem;
 }
 
+#ifdef STACK_UPDATE /* <-- update */
+/** Gets an uninitialised new element and updates the {update_ptr} if it is
+ within the memory region that was changed. Must have {STACK_UPDATE} defined.
+ @param this: If {this} is null, returns null.
+ @param iterator_ptr: Pointer to update on migration.
+ @return A new, un-initialised, element, or null and {errno} may be set.
+ @throws ERANGE: Tried allocating more then can fit in {size_t}.
+ @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
+ {IEEE Std 1003.1-2001}.
+ @order amortised O(1)
+ @fixme Untested.
+ @allow */
+static T *T_(StackUpdateNew)(struct T_(Stack) *const this,
+	U **const update_ptr) {
+	if(!this) return 0;
+	if(!PT_(reserve)(this, this->size + 1, update_ptr))
+			return 0; /* ERANGE, ENOMEM? */
+	PT_(debug)(this, "New", "added.\n");
+	return this->array + this->size++;
+}
+#endif /* update --> */
+
 /** Removes all data from {this}.
+ @param this: if null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(StackClear)(struct T_(Stack) *const this) {
@@ -475,67 +480,67 @@ static void T_(StackClear)(struct T_(Stack) *const this) {
 	PT_(debug)(this, "Clear", "cleared.\n");
 }
 
-/** Iterates though the {Stack} and calls {action} on all the elements.
- @throws STACK_PARAMETER
- @order O({size}) O({action})
+/** Iterates though the {Stack} from the top and calls {action} on all the
+ elements.
+ @param this, action: If null, does nothing.
+ @order O({size} \times {action})
  @fixme Untested.
  @allow */
 static void T_(StackForEach)(struct T_(Stack) *const this,
 	const PT_(Action) action) {
-	size_t i = 0;
-	if(!this) return;
-	if(!action) { this->error = STACK_PARAMETER; return; }
-	while(i < this->size) action(this->array + i++);
+	T *a, *head;
+	if(!this || !action) return;
+	for(head = this->array, a = head + this->size - 1; a >= head; a--)
+		action(a);
 }
 
-/** Iterates though the {Stack} and calls {action} on all the elements.
- @throws STACK_PARAMETER
- @order O({size}) O({action})
+/** Iterates though the {Stack} from the top and calls {biaction} on all the
+ elements with {param} as the second element.
+ @param this, action: If null, does nothing.
+ @order O({size} \times {action})
  @fixme Untested.
  @allow */
 static void T_(StackBiForEach)(struct T_(Stack) *const this,
 	const PT_(BiAction) biaction, void *const param) {
-	size_t i = 0;
-	if(!this) return;
-	if(!biaction) { this->error = STACK_PARAMETER; return; }
-	while(i < this->size) biaction(this->array + i++, param);
+	T *a, *head;
+	if(!this || !biaction) return;
+	for(head = this->array, a = head + this->size - 1; a >= head; a--)
+		biaction(a, param);
 }
 
 /** Use when the stack has pointers to another stack in the {Migrate} function
- of the other datatype.
- @param handler: Has the responsibility of calling the other data type's
- migrate pointer function on all pointers affected by the {realloc}.
- @param migrate: Should only be called in a {Migrate} function; pass the
- {migrate} parameter.
+ of the other datatype (passed when creating the other datatype.)
+ @param this: If null, does nothing.
+ @param handler: If null, does nothing, otherwise has the responsibility of
+ calling the other data type's migrate pointer function on all pointers
+ affected by the {realloc}.
+ @param migrate: If null, does nothing. Should only be called in a {Migrate}
+ function; pass the {migrate} parameter.
  @order O({greatest size})
  @fixme Untested.
  @allow */
 static void T_(StackMigrateEach)(struct T_(Stack) *const this,
 	const T_(StackMigrateElement) handler, const struct Migrate *const migrate){
-	size_t i;
-	T *e;
-	if(!this) return;
-	if(!handler || !migrate) { this->error = STACK_PARAMETER; return; }
-	for(i = 0; i < this->size; i++) {
-		e = this->array + i;
+	T *e, *end;
+	if(!this || !migrate || !handler) return;
+	for(e = this->array, end = e + this->size; e < end; e++)
 		handler(e, migrate);
-	}
 }
 
 /** Use this inside the function that is passed to the (generally other's)
- migrate function. Allows pointers to the stack to be updated. It doesn't affect
- pointers not in the {realloc}ed region.
+ migrate function. Allows pointers to the stack to be updated. It doesn't
+ affect pointers not in the {realloc}ed region.
  @order O(1)
  @fixme Untested.
  @allow */
-static void T_(MigratePointer)(T **const node_ptr,
+static void T_(StackMigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
-	if(!node_ptr
-	   || !(ptr = *node_ptr)
+	if(!data_ptr
+	   || !(ptr = *data_ptr)
 	   || ptr < migrate->begin
 	   || ptr >= migrate->end) return;
-	*(char **)node_ptr += migrate->delta;
+	*(char **)data_ptr += migrate->delta;
 }
 
 #ifdef STACK_TO_STRING /* <-- print */
@@ -623,24 +628,26 @@ static void PT_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_set)(void) {
 	T_(Stack_)(0);
-#ifdef STACK_MIGRATE
+#ifdef STACK_PARENT
 	T_(Stack)(0, 0);
 #else
 	T_(Stack)();
 #endif	
-	T_(StackGetError)(0);
 	T_(StackGetSize)(0);
 	T_(StackGetElement)(0, 0);
+	T_(StackGetIndex)(0, 0);
 	T_(StackPeek)(0);
 	T_(StackPop)(0);
-	T_(StackGetIndex)(0, 0);
 	T_(StackReserve)(0, 0);
 	T_(StackNew)(0);
+#ifdef STACK_UPDATE /* <-- update */
+	T_(StackUpdateNew)(0, 0);
+#endif /* update --> */
 	T_(StackClear)(0);
 	T_(StackForEach)(0, 0);
 	T_(StackBiForEach)(0, 0, 0);
 	T_(StackMigrateEach)(0, 0, 0);
-	T_(MigratePointer)(0, 0);
+	T_(StackMigratePointer)(0, 0);
 #ifdef STACK_TO_STRING
 	T_(StackToString)(0);
 #endif
@@ -652,8 +659,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
 /* un-define all macros */
-#undef STACK_NAME
-#undef STACK_TYPE
 #undef CAT
 #undef CAT_
 #undef PCAT
@@ -664,11 +669,16 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T_NAME
 #undef QUOTE
 #undef QUOTE_
-#ifdef STACK_MIGRATE
-#undef STACK_MIGRATE
+#ifdef P
+#undef P
 #endif
-#ifdef S
-#undef S
+#undef STACK_NAME
+#undef STACK_TYPE
+#ifdef STACK_PARENT
+#undef STACK_PARENT
+#endif
+#ifdef STACK_UPDATE
+#undef STACK_UPDATE
 #endif
 #ifdef STACK_TO_STRING
 #undef STACK_TO_STRING
@@ -676,10 +686,10 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #ifdef STACK_DEBUG
 #undef STACK_DEBUG
 #endif
+#ifdef STACK_TEST
+#undef STACK_TEST
+#endif
 #ifdef STACK_NDEBUG
 #undef STACK_NDEBUG
 #undef NDEBUG
-#endif
-#ifdef STACK_TEST
-#undef STACK_TEST
 #endif
