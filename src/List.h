@@ -57,10 +57,6 @@
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
  {padded}; {documentation}; {documentation-unknown-command} it's not quite
  {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
- @fixme We are on the fence about whether the insertion functions should take
- {T} or {<T>ListNode}. Yes, you always have to have a node, {<T>ListNode} is
- safer, otoh, if you remove something you can't add without casting. Also this
- is the only place where we use it, so it's un-symmetric.
  @fixme Migrate could _still_ be less confusing and more efficient.
  @fixme Void pointers in {<T>List<U>BiAction} are not effective. */
 
@@ -1155,22 +1151,6 @@ struct PT_(Runs) {
 };
 #endif /* sort internals --> */
 
-static void PT_U_(natural, print)(const struct PT_(Run) *const run) {
-	struct PT_(X) *x;
-	char str[12];
-	assert(run);
-	x = run->head;
-	assert(x);
-	do {
-		PT_(to_string)(&PT_(node_hold_x)(x)->data, &str);
-		printf("%s, ", str);
-		if(x == run->tail) break;
-		x = x->U_(next);
-		assert(x);
-	} while(1);
-	printf("(size %lu.)\n", run->size);
-}
-
 /** Inserts the first element from the larger of two sorted runs, then merges
  the rest. \cite{Peters2002Timsort}, via \cite{McIlroy1993Optimistic}, does
  long merges by galloping, but we don't have random access to the data. In
@@ -1183,10 +1163,6 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 	struct PT_(Run) *const run_b = run_a + 1;
 	struct PT_(X) *a = run_a->tail, *b = run_b->head, *chosen;
 	assert(r->run_no >= 2);
-#if defined(LIST_TEST) && defined(LIST_TO_STRING)
-	PT_U_(natural, print)(run_a);
-	PT_U_(natural, print)(run_b);
-#endif
 	/* fixme: we are doing one-to-many compares in some cases? */
 	if(run_a->size <= run_b->size) {
 		struct PT_(X) *prev_chosen;
@@ -1282,13 +1258,6 @@ static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
 	r->run_no--;
 }
 
-#ifdef LIST_TEST /* <-- test */
-#ifdef LIST_TO_STRING
-static char *T_U_(List, ToString)(const struct T_(List) *const list);
-#endif
-static size_t PT_(count)(struct T_(List) *const list);
-#endif /* test --> */
-
 /** It's kind of experimental. It hasn't been optimised; I think it does
  useless compares. It's so beautiful. */
 static void PT_U_(natural, sort)(struct T_(List) *const list) {
@@ -1305,12 +1274,6 @@ static void PT_U_(natural, sort)(struct T_(List) *const list) {
 	size_t run_count, rc;
 	/* The value of the comparison. */
 	int comp;
-#ifdef LIST_TEST /* <-- test */
-	size_t count = PT_(count)(list), count_after, num = 0;
-#ifdef LIST_TO_STRING
-	printf("Org: %s.\n", T_U_(List, ToString)(list));
-#endif
-#endif /* test --> */
 	/* Needs an element. */
 	a = list->head.U_(next), assert(a);
 	if(!(b = a->U_(next))) return;
@@ -1322,9 +1285,6 @@ static void PT_U_(natural, sort)(struct T_(List) *const list) {
 	first_iso_a = new_run->head = new_run->tail = a;
 	/* While {a} and {b} are elements (that are consecutive.) {c} may not be. */
 	for(c = b->U_(next); c; a = b, b = c, c = c->U_(next)) {
-#ifdef LIST_TEST /* <-- test */
-		num++;
-#endif /* test --> */
 		comp = PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
 			&PT_(node_hold_x)(b)->data);
 		/* State machine that considers runs in both directions -- in practice,
@@ -1381,17 +1341,11 @@ static void PT_U_(natural, sort)(struct T_(List) *const list) {
 	runs.run[0].tail->U_(next) = &list->tail;
 	list->head.U_(next) = runs.run[0].head;
 	list->tail.U_(prev)  = runs.run[0].tail;
-#ifdef LIST_TEST /* <-- test */
-#ifdef LIST_TO_STRING
-	printf("Now: %s.\n", T_U_(List, ToString)(list));
-#endif
-	count_after = PT_(count)(list);
-	assert(count == count_after);
-#endif /* test --> */
 }
 
 /** Sorts {<U>}, but leaves the other lists in {<T>} alone. Must have a
  comparator defined for the index.
+ @param list: if null, does nothing.
  @order \Omega({list}.n), O({list}.n log {list}.n)
  @allow */
 static void T_U_(List, Sort)(struct T_(List) *const list) {
@@ -1401,8 +1355,8 @@ static void T_U_(List, Sort)(struct T_(List) *const list) {
 
 /** Compares two linked-lists as sequences in the order specified by {<U>}.
  @return The first comparator that is not equal to zero, or 0 if they are
- equal. Two null pointers are considered equal. Must have a comparator defined
- for this index.
+ equal. Null is considered as before everything else; two null pointers are
+ considered equal. Must have a comparator defined for this index.
  @implements <<T>List>Comparator
  @order \Theta(min({alist}.n, {blist}.n))
  @allow */
@@ -1479,8 +1433,9 @@ static void PT_U_(boolean, seq)(struct T_(List) *const list,
 	}
 }
 
-/** Appends {list} with {b} subtracted from {a} as a sequence in {<U>}. If
- {list} is null, then it removes elements. Must have a comparator defined.
+/** Appends {list} with {b} subtracted from {a} as a sequence in {<U>}. Must
+ have a comparator defined.
+ @param list: If null, then it removes elements.
  @order O({a}.n + {b}.n)
  @allow */
 static void T_U_(List, TakeSubtraction)(struct T_(List) *const list,
@@ -1489,8 +1444,8 @@ static void T_U_(List, TakeSubtraction)(struct T_(List) *const list,
 }
 
 /** Appends {list} with the union of {a} and {b} as a sequence in {<U>}. Equal
- elements are moved from {a}. If {list} is null, then it removes elements. Must
- have a comparator defined.
+ elements are moved from {a}.
+ @param list: If null, then it removes elements.
  @order O({a}.n + {b}.n)
  @allow */
 static void T_U_(List, TakeUnion)(struct T_(List) *const list,
@@ -1500,8 +1455,8 @@ static void T_U_(List, TakeUnion)(struct T_(List) *const list,
 }
 
 /** Appends {list} with the intersection of {a} and {b} as a sequence in {<U>}.
- Equal elements are moved from {a}. If {list} is null, then it removes elements.
- Must have a comparator defined.
+ Equal elements are moved from {a}.
+ @param list: If null, then it removes elements.
  @order O({a}.n + {b}.n)
  @allow */
 static void T_U_(List, TakeIntersection)(struct T_(List) *const list,
@@ -1510,8 +1465,8 @@ static void T_U_(List, TakeIntersection)(struct T_(List) *const list,
 }
 
 /** Appends {list} with {a} exclusive-or {b} as a sequence in {<U>}. Equal
- elements are moved from {a}. If {list} is null, then it removes elements. Must
- have a comparator defined.
+ elements are moved from {a}.
+ @param list: If null, then it removes elements.
  @order O({a}.n + {b}.n)
  @allow */
 static void T_U_(List, TakeXor)(struct T_(List) *const list,
@@ -1523,7 +1478,9 @@ static void T_U_(List, TakeXor)(struct T_(List) *const list,
 #endif /* comp --> */
 
 /** Appends {list} with {from} if {predicate} is null or true in the order
- specified by {<U>}. If {list} is null, then it removes elements.
+ specified by {<U>}.
+ @param list: If null, then it removes elements.
+ @param from: If null, does nothing.
  @order ~ \Theta({list}.n) \times O({predicate})
  @allow */
 static void T_U_(List, TakeIf)(struct T_(List) *const list,
@@ -1538,7 +1495,9 @@ static void T_U_(List, TakeIf)(struct T_(List) *const list,
 }
 
 /** Appends {list} with {from} if {bipredicate} is null or true in the order
- specified by {<U>}. If {list} is null, then it removes elements.
+ specified by {<U>}.
+ @param list: If null, then it removes elements.
+ @param from: If null, does nothing.
  @order ~ \Theta({list}.n) \times O({predicate})
  @fixme Void. No.
  @allow */
@@ -1555,8 +1514,9 @@ static void T_U_(List, BiTakeIf)(struct T_(List) *const list,
 	}
 }
 
-/** Performs {action} for each element in the list in the order specified by
+/** Performs {action} for each element in {list} in the order specified by
  {<U>}.
+ @param list, action: If null, does nothing.
  @order ~ \Theta({list}.n) \times O({action})
  @allow */
 static void T_U_(List, ForEach)(struct T_(List) *const list,
@@ -1570,6 +1530,8 @@ static void T_U_(List, ForEach)(struct T_(List) *const list,
 /** Performs {biaction} for each element in the list in the order specified by
  {<U>}. Do not modify the memory addresses of the elements while the list is
  iterating.
+ @param list, action: If null, does nothing.
+ @param param: Used as the second parameter of {biaction}.
  @order ~ \Theta({list}.n) \times O({biaction})
  @fixme Untested.
  @fixme Void. No.
@@ -1582,10 +1544,10 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
 		biaction(&PT_(node_hold_x)(x)->data, param);
 }
 
-/** @return The first {<T>} in the linked-list, ordered by {<U>}, that causes
- the {predicate} with {<T>} as argument to return false, or null if the
- {predicate} is true for every case. If {list} or {predicate} is null, returns
- null.
+/** @param list, predicate: If null, returns null.
+ @return The first {<T>} in the linked-list, ordered by {<U>}, that causes the
+ {predicate} with {<T>} as argument to return false, or null if the {predicate}
+ is true for every case.
  @order ~ O({list}.n) \times O({predicate})
  @allow */
 static T *T_U_(List, ShortCircuit)(struct T_(List) *const list,
@@ -1598,10 +1560,11 @@ static T *T_U_(List, ShortCircuit)(struct T_(List) *const list,
 	return 0;
 }
 
-/** @return The first {<T>} in the linked-list, ordered by {<U>}, that
+/** @param list, bipredicate: If null, returns null.
+ @param param: Used as the second parameter of {bipredicate}.
+ @return The first {<T>} in the linked-list, ordered by {<U>}, that
  causes the {bipredicate} with {<T>} and {param} as arguments to return false,
- or null if the {bipredicate} is true for every case. If {list} or
- {bipredicate} is null, returns null.
+ or null if the {bipredicate} is true for every case.
  @order ~ O({list}.n) \times O({predicate})
  @fixme Void. No.
  @allow */
@@ -1729,7 +1692,7 @@ static void PT_U_(sub_unused, coda)(void) {
 
 
 
-/* un-define stuff for the next */
+/* Un-define stuff for the next. */
 #undef LIST_U_NAME
 #ifdef LIST_U_COMPARATOR /* <-- comp */
 #undef LIST_U_COMPARATOR
