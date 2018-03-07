@@ -44,8 +44,9 @@
  @title		Pool.h
  @std		C89/90
  @author	Neil
- @version	2017-12 Introduced POOL_PARENT for type-safety.
- @since		2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
+ @version	2018-02 Errno instead of custom errors.
+ @since		2017-12 Introduced POOL_PARENT for type-safety.
+			2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
 			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
 			2017-05 Split {List} from {Pool}; much simpler.
@@ -415,14 +416,14 @@ static struct T_(Pool) *PT_(pool)(void) {
  specified.
  @return A new {Pool} for one of the polymorphic variables in {parent}, or null
  and {errno} will be set.
- @throws EDOM: If one and not the other arguments is null.
+ @throws ERANGE: If one and not the other arguments is null.
  @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
  {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, P *const parent) {
 	struct T_(Pool) *this;
-	if(!migrate ^ !parent) { errno = EDOM; return 0; }
+	if(!migrate ^ !parent) { errno = ERANGE; return 0; }
 	if(!(this = PT_(pool)())) return 0; /* ENOMEM */
 	this->migrate      = migrate;
 	this->parent       = parent;
