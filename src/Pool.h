@@ -221,7 +221,7 @@ struct T_(Pool) {
 	size_t size; /* Including removed. */
 	size_t head, tail; /* Removed queue. */
 #ifdef POOL_PARENT
-	T_(Migrate) migrate; /* Called to update on resizing. */
+	PT_(Migrate) migrate; /* Called to update on resizing. */
 	P *parent; /* Migrate parameter. */
 #endif
 };
@@ -412,7 +412,7 @@ static struct T_(Pool) *PT_(pool)(void) {
  {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
-static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, P *const parent) {
+static struct T_(Pool) *T_(Pool)(const PT_(Migrate) migrate, P *const parent) {
 	struct T_(Pool) *this;
 	if(!migrate ^ !parent) { errno = ERANGE; return 0; }
 	if(!(this = PT_(pool)())) return 0; /* ENOMEM? */
