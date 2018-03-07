@@ -57,7 +57,7 @@
 
 
 #include <stddef.h>	/* ptrdiff_t */
-#include <stdlib.h>	/* malloc free qsort */
+#include <stdlib.h>	/* malloc realloc free qsort */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy (memmove strerror strcpy memcmp in PoolTest.h) */
 #include <errno.h>	/* errno */
@@ -65,7 +65,7 @@
 #include <stdio.h>	/* snprintf */
 #endif /* print --> */
 #ifdef POOL_DEBUG /* <-- debug */
-#include <stdarg.h>	/* for print */
+#include <stdarg.h>	/* for print debug */
 #endif /* debug --> */
 
 
@@ -253,7 +253,7 @@ static void PT_(debug)(struct T_(Pool) *const this,
  @return Success; otherwise, {errno} will be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}. */
+ {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}. */
 static int PT_(reserve)(struct T_(Pool) *const this,
 	const size_t min_capacity
 #ifdef POOL_UPDATE /* <-- update */
@@ -276,7 +276,8 @@ static int PT_(reserve)(struct T_(Pool) *const this,
 		c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0;
 		if(c1 <= c0 || c1 > max_size) c1 = max_size;
 	}
-	if(!(array = realloc(this->array, c0 * sizeof *this->array))) return 0;
+	if(!(array = realloc(this->array, c0 * sizeof *this->array)))
+		{ if(!errno) errno = -1; return 0; }
 	PT_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
@@ -392,7 +393,7 @@ static void T_(Pool_)(struct T_(Pool) **const thisp) {
 
 /** Private constructor called from either \see{<T>Pool}.
  @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
- {IEEE Std 1003.1-2001}. */
+ {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}. */
 static struct T_(Pool) *PT_(pool)(void) {
 	struct T_(Pool) *this;
 	if(!(this = malloc(sizeof *this))) return 0;
@@ -402,7 +403,7 @@ static struct T_(Pool) *PT_(pool)(void) {
 	this->size         = 0;
 	this->head = this->tail = pool_null;
 	if(!(this->array = malloc(this->capacity[0] * sizeof *this->array)))
-		{ T_(Pool_)(&this); return 0; }
+		{ if(!errno) errno = -1; return 0; }
 	PT_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
 	return this;
 }
@@ -433,7 +434,7 @@ static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, P *const parent) {
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
  @return A new {Pool} or null and {errno} will be set.
  @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(void) {
@@ -514,7 +515,7 @@ static size_t T_(PoolGetIndex)(struct T_(Pool) *const this,
  touched and {errno} is set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}.
  @order \Omega(1), O({capacity})
  @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const this,
@@ -535,7 +536,7 @@ static int T_(PoolReserve)(struct T_(Pool) *const this,
  @return If failed, returns a null pointer {errno} will be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}.
  @order amortised O(1)
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const this) {
@@ -562,7 +563,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
  @return If failed, returns a null pointer and the error condition will be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}..
  @order amortised O(1)
  @fixme Untested.
  @allow */
