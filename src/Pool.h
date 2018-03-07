@@ -25,7 +25,7 @@
 
  @param POOL_UPDATE
  Optional type association with {<U>}. If set, the function
- \see{<T>PoolNewUpdate} becomes available, intended for a local iterator
+ \see{<T>PoolUpdateNew} becomes available, intended for a local iterator
  update on migrate.
 
  @param POOL_TO_STRING
@@ -42,7 +42,7 @@
  function integrity testing. Requires {POOL_TO_STRING}.
 
  @title		Pool.h
- @std		C89/90
+ @std		C89
  @author	Neil
  @version	2018-02 Errno instead of custom errors.
  @since		2017-12 Introduced POOL_PARENT for type-safety.
@@ -67,14 +67,6 @@
 #ifdef POOL_DEBUG /* <-- debug */
 #include <stdarg.h>	/* for print debug */
 #endif /* debug --> */
-
-
-
-/* unused macro */
-#ifdef UNUSED
-#undef UNUSED
-#endif
-#define UNUSED(a) ((void)(a))
 
 
 
@@ -110,6 +102,12 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
+#ifdef P
+#undef P
+#endif
+#ifdef U
+#undef U
+#endif
 #ifdef T
 #undef T
 #endif
@@ -138,16 +136,14 @@
 #define PT_(thing) PCAT(pool, PCAT(POOL_NAME, thing))
 #define T_NAME QUOTE(POOL_NAME)
 
-/* Troubles with this line? check to ensure that POOL_TYPE is a valid type,
+/* Troubles with this line? check to ensure that {POOL_TYPE} is a valid type,
  whose definition is placed above {#include "Pool.h"}. */
 typedef POOL_TYPE PT_(Type);
 #define T PT_(Type)
 
 
 
-
-
-/* constants across multiple includes in the same translation unit */
+/* Constants across multiple includes in the same translation unit. */
 #ifndef POOL_H /* <-- POOL_H */
 #define POOL_H
 static const size_t pool_fibonacci6 = 8;
@@ -164,12 +160,10 @@ static const size_t pool_null       = (size_t)-2;
 /** Contains information about a {realloc}. */
 struct Migrate;
 struct Migrate {
-	const void *begin, *end; /* old pointers */
+	const void *begin, *end; /* Old pointers. */
 	ptrdiff_t delta;
 };
 #endif /* migrate --> */
-
-
 
 
 
@@ -195,17 +189,17 @@ static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 #endif /* string --> */
 
 #ifdef POOL_PARENT /* <-- parent */
-/* Troubles with this line? check to ensure that POOL_PARENT is a valid type,
+/* Troubles with this line? check to ensure that {POOL_PARENT} is a valid type,
  whose definition is placed above {#include "Pool.h"}. */
 typedef POOL_PARENT PT_(ParentType);
 #define P PT_(ParentType)
 /** Function call on {realloc}. */
-typedef void (*T_(Migrate))(P *const parent,
+typedef void (*PT_(Migrate))(P *const parent,
 	const struct Migrate *const migrate);
 #endif /* parent --> */
 
 #ifdef POOL_UPDATE /* <-- update */
-/* Troubles with this line? check to ensure that POOL_UPDATE is a valid type,
+/* Troubles with this line? check to ensure that {POOL_UPDATE} is a valid type,
  whose definition is placed above {#include "Pool.h"}. */
 typedef POOL_UPDATE PT_(UpdateType);
 #define U PT_(UpdateType)
@@ -223,12 +217,12 @@ struct PT_(Element) {
 struct T_(Pool);
 struct T_(Pool) {
 	struct PT_(Element) *array;
-	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next */
-	size_t size; /* including removed */
-	size_t head, tail; /* removed queue */
+	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next. */
+	size_t size; /* Including removed. */
+	size_t head, tail; /* Removed queue. */
 #ifdef POOL_PARENT
-	T_(Migrate) migrate; /* called to update on resizing */
-	P *parent; /* migrate parameter */
+	T_(Migrate) migrate; /* Called to update on resizing. */
+	P *parent; /* Migrate parameter. */
 #endif
 };
 
@@ -245,15 +239,15 @@ static void PT_(debug)(struct T_(Pool) *const this,
 	vfprintf(stderr, fmt, argp);
 	va_end(argp);
 #else
-	UNUSED(this); UNUSED(fn); UNUSED(fmt);
+	(void)(this), (void)(fn), (void)(fmt);
 #endif
 }
 
 /* * Ensures capacity.
  @return Success; otherwise, {errno} will be set.
- @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
+ @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}. */
+ {IEEE Std 1003.1-2001}. */
 static int PT_(reserve)(struct T_(Pool) *const this,
 	const size_t min_capacity
 #ifdef POOL_UPDATE /* <-- update */
@@ -263,11 +257,9 @@ static int PT_(reserve)(struct T_(Pool) *const this,
 	size_t c0, c1;
 	struct PT_(Element) *array;
 	const size_t max_size = (pool_null - 1) / sizeof *array;
-	assert(this);
-	assert(this->size <= this->capacity[0]);
-	assert(this->capacity[0] <= this->capacity[1]);
-	assert(this->capacity[1] < pool_null);
-	assert(pool_null < pool_not_part);
+	assert(this && this->size <= this->capacity[0]
+		&& this->capacity[0] <= this->capacity[1]
+		&& this->capacity[1] < pool_null && pool_null < pool_not_part);
 	if(this->capacity[0] >= min_capacity) return 1;
 	if(max_size < min_capacity) return errno = ERANGE, 0;
 	c0 = this->capacity[0];
@@ -276,8 +268,7 @@ static int PT_(reserve)(struct T_(Pool) *const this,
 		c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0;
 		if(c1 <= c0 || c1 > max_size) c1 = max_size;
 	}
-	if(!(array = realloc(this->array, c0 * sizeof *this->array)))
-		{ if(!errno) errno = -1; return 0; }
+	if(!(array = realloc(this->array, c0 * sizeof *this->array))) return 0;
 	PT_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
@@ -393,7 +384,7 @@ static void T_(Pool_)(struct T_(Pool) **const thisp) {
 
 /** Private constructor called from either \see{<T>Pool}.
  @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
- {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}. */
+ {IEEE Std 1003.1-2001}. */
 static struct T_(Pool) *PT_(pool)(void) {
 	struct T_(Pool) *this;
 	if(!(this = malloc(sizeof *this))) return 0;
@@ -403,20 +394,19 @@ static struct T_(Pool) *PT_(pool)(void) {
 	this->size         = 0;
 	this->head = this->tail = pool_null;
 	if(!(this->array = malloc(this->capacity[0] * sizeof *this->array)))
-		{ if(!errno) errno = -1; return 0; }
+		return 0;
 	PT_(debug)(this, "New", "capacity %d.\n", this->capacity[0]);
 	return this;
 }
 
 #ifdef POOL_PARENT /* <-- parent */
-/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8. Requires
- {POOL_PARENT}.
+/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8. This is
+ the constructor if {POOL_PARENT} is specified.
  @param migrate: The parent's {Migrate} function.
  @param parent: The parent; to have multiple parents, implement an intermediary
  {Migrate} function that takes multiple values; required if {migrate} is
  specified.
- @return A new {Pool} for one of the polymorphic variables in {parent}, or null
- and {errno} will be set.
+ @return A new {Pool} or null and {errno} may be set.
  @throws ERANGE: If one and not the other arguments is null.
  @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
  {IEEE Std 1003.1-2001}.
@@ -425,20 +415,20 @@ static struct T_(Pool) *PT_(pool)(void) {
 static struct T_(Pool) *T_(Pool)(const T_(Migrate) migrate, P *const parent) {
 	struct T_(Pool) *this;
 	if(!migrate ^ !parent) { errno = ERANGE; return 0; }
-	if(!(this = PT_(pool)())) return 0; /* ENOMEM */
-	this->migrate      = migrate;
-	this->parent       = parent;
+	if(!(this = PT_(pool)())) return 0; /* ENOMEM? */
+	this->migrate = migrate;
+	this->parent  = parent;
 	return this;
 }
 #else /* parent --><-- !parent */
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
- @return A new {Pool} or null and {errno} will be set.
+ @return A new {Pool} or null and {errno} may be set.
  @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
- {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}.
+ {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(void) {
-	return PT_(pool)(); /* ENOMEM */
+	return PT_(pool)(); /* ENOMEM? */
 }
 #endif /* parent --> */
 
@@ -512,10 +502,10 @@ static size_t T_(PoolGetIndex)(struct T_(Pool) *const this,
  the number of elements specified by the {min_capacity}.
  @param this: If {this} is null, returns false.
  @return True if the capacity increase was viable; otherwise the pool is not
- touched and {errno} is set.
+ touched and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}.
+ {IEEE Std 1003.1-2001}.
  @order \Omega(1), O({capacity})
  @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const this,
@@ -525,18 +515,19 @@ static int T_(PoolReserve)(struct T_(Pool) *const this,
 #ifdef POOL_UPDATE /* <-- update */
 		, 0
 #endif /* update --> */
-		)) return 0; /* ERANGE, ENOMEM */
-	PT_(debug)(this, "Reserve","pool pool size to %u to contain %u.\n",
+		)) return 0; /* ERANGE, ENOMEM? */
+	PT_(debug)(this, "Reserve", "pool pool size to %u to contain %u.\n",
 		this->capacity[0], min_capacity);
 	return 1;
 }
 
-/** Gets an uninitialised new element.
+/** Gets an uninitialised new element at the end of the {Pool}. May move the
+ {Pool} to a new memory location to fit the new size.
  @param this: If {this} is null, returns null.
- @return If failed, returns a null pointer {errno} will be set.
+ @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}.
+ {IEEE Std 1003.1-2001}.
  @order amortised O(1)
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const this) {
@@ -547,7 +538,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
 #ifdef POOL_UPDATE /* <-- update */
 			, 0
 #endif /* update --> */
-			)) return 0; /* ERANGE, ENOMEM */
+			)) return 0; /* ERANGE, ENOMEM? */
 		elem = this->array + this->size++;
 		elem->prev = elem->next = pool_not_part;
 	}
@@ -560,10 +551,10 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
  within the memory region that was changed. Must have {POOL_UPDATE} defined.
  @param this: If {this} is null, returns null.
  @param iterator_ptr: Pointer to update on migration.
- @return If failed, returns a null pointer and the error condition will be set.
- @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
+ @return A new, un-initialised, element, or null and {errno} may be set.
+ @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}; guaranteed to set it, even if it is {-1}..
+ {IEEE Std 1003.1-2001}.
  @order amortised O(1)
  @fixme Untested.
  @allow */
@@ -573,7 +564,7 @@ static T *T_(PoolUpdateNew)(struct T_(Pool) *const this,
 	if(!this) return 0;
 	if(!(elem = PT_(dequeue_removed)(this))) {
 		if(!PT_(reserve)(this, this->size + 1, update_ptr))
-			return 0; /* ERANGE, ENOMEM */
+			return 0; /* ERANGE, ENOMEM? */
 		elem = this->array + this->size++;
 		elem->prev = elem->next = pool_not_part;
 	}
@@ -603,6 +594,7 @@ static int T_(PoolRemove)(struct T_(Pool) *const this, T *const data) {
 }
 
 /** Removes all data from {this}.
+ @param this: if null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(PoolClear)(struct T_(Pool) *const this) {
@@ -613,10 +605,11 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
 }
 
 /** Use when the pool has pointers to another pool in the {Migrate} function of
- the other pool (passed when creating the other pool.)
+ the other datatype (passed when creating the other datatype.)
  @param this: If null, does nothing.
  @param handler: If null, does nothing, otherwise has the responsibility of
- calling \see{<T>PoolMigratePointer} on all pointers affected by the {realloc}.
+ calling the other data type's migrate pointer function on all pointers
+ affected by the {realloc}.
  @param migrate: If null, does nothing. Should only be called in a {Migrate}
  function; pass the {migrate} parameter.
  @order O({greatest size})
@@ -762,8 +755,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
 /* Un-define all macros. */
-#undef POOL_NAME
-#undef POOL_TYPE
 #undef CAT
 #undef CAT_
 #undef PCAT
@@ -774,28 +765,30 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T_NAME
 #undef QUOTE
 #undef QUOTE_
-#ifdef POOL_TO_STRING
-#undef POOL_TO_STRING
+#ifdef P
+#undef P
 #endif
-#ifdef POOL_DEBUG
-#undef POOL_DEBUG
+#ifdef U
+#undef U
 #endif
-#ifdef POOL_NDEBUG
-#undef POOL_NDEBUG
-#undef NDEBUG
-#endif
-#ifdef POOL_TEST
-#undef POOL_TEST
-#endif
+#undef POOL_NAME
+#undef POOL_TYPE
 #ifdef POOL_PARENT
 #undef POOL_PARENT
 #endif
 #ifdef POOL_UPDATE
 #undef POOL_UPDATE
 #endif
-#ifdef P
-#undef P
+#ifdef POOL_TO_STRING
+#undef POOL_TO_STRING
 #endif
-#ifdef U
-#undef U
+#ifdef POOL_DEBUG
+#undef POOL_DEBUG
+#endif
+#ifdef POOL_TEST
+#undef POOL_TEST
+#endif
+#ifdef POOL_NDEBUG
+#undef POOL_NDEBUG
+#undef NDEBUG
 #endif
