@@ -1,0 +1,23 @@
+digraph {
+	subgraph cluster_Animals {
+		style = filled;
+		color = lightgrey;
+		node [style = filled, color = white];
+		Animals -> Sloth;
+		Animals -> Emu;
+		Emu -> BadEmu;
+		Animals -> Llama;
+		Animals -> Lemur;
+		Animals -> Bear;
+		Llama -> Lemur;
+		Llama -> Bear;
+		label = "Animals";
+	}
+	Animals [label="AnimalList\n(<List>Animal)"];
+	Sloth [label="SlothPool\n(<Pool>SlothListNode)"];
+	Emu [label="EmuPool\n(<Pool>EmuListNode)"];
+	BadEmu [label="BadEmuPool\n(<Pool>BadEmuListNode)"];
+	Llama [label="LlamaPool\n(<Pool>LlamaListNode)"];
+	Lemur [label="LemurPool\n(<Pool>LemurListNode)"];
+	Bear [label="BearListNode[2]"];
+}
