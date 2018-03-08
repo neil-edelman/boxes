@@ -7,7 +7,7 @@ there's no one obvious way to do object-oriented things in {C}. We
 focus on the case where you have some collection of objects of
 different types and you want to iterate and do something depending
 on the type. In this example, it separates the storage, ({Pool},)
-from the data structure, ({List}). Pool and List are generics
+from the data structure, ({List}.) Pool and List are generics
 controlled by the pre-processor. We have a virtual table for all
 virtual functions. All this is wrapped up in {src/Animal.c} and
 tested in {test/Animals.c}.
