@@ -1,23 +1,60 @@
 digraph {
+	fontname = "Bitstream Vera Sans";
+	fontsize = 8;
+	node [
+		fontname = "Bitstream Vera Sans",
+		fontsize = 8,
+		shape = "record"
+	];
+	edge [
+		fontname = "Bitstream Vera Sans",
+		fontsize = 8,
+	];
 	subgraph cluster_Animals {
+		label = "Animals";
 		style = filled;
 		color = lightgrey;
-		node [style = filled, color = white];
-		Animals -> Sloth;
-		Animals -> Emu;
-		Emu -> BadEmu;
-		Animals -> Llama;
-		Animals -> Lemur;
-		Animals -> Bear;
-		Llama -> Lemur;
-		Llama -> Bear;
-		label = "Animals";
+		node [style = filled, fillcolor = white];
+
+		Animal [ label = "{Animal|\<Animal\>List|AnimalList animals}" ];
+		Sloth [ label = "{Sloth|\<\<Sloth\>ListNode\>Pool|SlothPool sloths}" ];
+		Emu [ label = "{Emu|\<\<Emu\>ListNode\>Pool|EmuPool emus}"];
+		BadEmu [label=" {BadEmu|\<\<BadEmu\>ListNode\>Pool|BadEmuPool bad_emus}"];
+		Llama [label="{Llama|\<\<Llama\>ListNode\>Pool|LlamaPool llamas}"];
+		Lemur [label="{Lemur|\<\<Lemur\>ListNode\>Pool|LemurPool lemurs}"];
+		Bear [label="{Bear||BearListNode[] bears}"];
+		Riding [label="{Riding|\<Riding\>Pool|RidingPool riding}"];
+
+		# inheretance -- first section of the node
+		# nested {struct}s
+		edge [ arrowhead = "onormal" ];
+		Sloth -> Animal;
+		Emu -> Animal;
+		BadEmu -> Emu;
+		Llama -> Animal;
+		Lemur -> Animal;
+		Bear -> Animal;
+		Bear -> Riding;
+		Lemur -> Riding;
+		BadEmu -> Riding;
+		Llama -> Riding;
+
+		# composition -- second section of the node
+		# when the memory changes locations due to a {realloc}, this should update
+		edge [ arrowhead = "diamond" ];
+		Sloth -> Animal;
+		Emu -> Animal;
+		BadEmu -> Animal;
+		Llama -> Animal;
+		Lemur -> Animal;
+		edge [ dir = "both" ];
+		Bear -> Riding;
+		Lemur -> Riding;
+		BadEmu -> Riding;
+		Llama -> Riding;
+
+		# Riding
+		#Llama -> Lemur;
+		#Llama -> Bear;
 	}
-	Animals [label="AnimalList\n(<List>Animal)"];
-	Sloth [label="SlothPool\n(<Pool>SlothListNode)"];
-	Emu [label="EmuPool\n(<Pool>EmuListNode)"];
-	BadEmu [label="BadEmuPool\n(<Pool>BadEmuListNode)"];
-	Llama [label="LlamaPool\n(<Pool>LlamaListNode)"];
-	Lemur [label="LemurPool\n(<Pool>LemurListNode)"];
-	Bear [label="BearListNode[2]"];
 }
