@@ -4,7 +4,8 @@
 #include "Animal.h"
 
 enum Colour { PINK, RED, BLUE, YELLOW, BEIGE, COLOUR_END };
-static const char *const colours[] = { "pink", "red", "blue","yellow","beige" };
+static const char *const colours[] = { "pink", "red", "blue","yellow", "beige"};
+enum { BOTTOM, TOP, RIDING_END };
 
 /* Abstract class Animal. */
 struct AnimalVt;
@@ -38,10 +39,8 @@ struct Emu {
 #include "Pool.h"
 
 /* Class Riding. */
-struct RidingVt;
 struct Riding {
-	const struct RidingVt *vt;
-	struct Animal *riding[2];
+	struct Animal *bottom, *top;
 };
 #define POOL_NAME Riding
 #define POOL_TYPE struct Riding
@@ -65,8 +64,8 @@ struct Llama {
 	struct Riding *riding;
 	unsigned chomps;
 };
-#define POOL_NAME Emu
-#define POOL_TYPE struct Emu
+#define POOL_NAME Llama
+#define POOL_TYPE struct Llama
 #define POOL_PARENT struct AnimalList
 #include "Pool.h"
 
@@ -106,6 +105,7 @@ typedef void (*AnimalsAction)(struct Animals *const, struct Animal *const);
 /*********/
 
 struct AnimalVt {
+	const char kind[16];
 	AnimalsAction delete;
 	AnimalAction act/*transmogrify*/;
 };
@@ -161,48 +161,77 @@ static void Animal_act(struct Animal *const animal) {
 	animal->vt->act(animal);
 }
 static void Sloth_act(struct Sloth *const sloth) {
-	printf("Sloth %s has favourite colour %s and has been sleeping %u hours.\n",
-		sloth->animal.data.name, colours[sloth->animal.data.colour],
-		sloth->hours_slept);
+	printf("%s %s has favourite colour %s and has been sleeping %u hours.\n",
+		sloth->animal.data.vt->kind, sloth->animal.data.name,
+		colours[sloth->animal.data.colour], sloth->hours_slept);
 }
 static void Emu_act(struct Emu *const emu) {
-	printf("Emu %s has favourite colour %s and favourite letter %c.\n",
-		emu->animal.data.name, colours[emu->animal.data.colour],
-		emu->favourite_letter);
+	printf("%s %s has favourite colour %s and favourite letter %c.\n",
+		emu->animal.data.vt->kind, emu->animal.data.name,
+		colours[emu->animal.data.colour], emu->favourite_letter);
 }
 static void BadEmu_act(struct BadEmu *const bad_emu) {
-	char riding[256] = ;
-	printf("Emu %s has favourite colour %s and favourite letter %c; "
-		"he is mumbling \"%s.\"%s\n", bad_emu->emu.animal.data.name,
-		colours[bad_emu->emu.animal.data.colour], bad_emu->emu.favourite_letter
-		bad_emu->muhaha, riding);
+	char riding[64] = "";
+	if(bad_emu->riding) {
+		struct Animal *const bottom = bad_emu->riding->bottom;
+		assert(bottom);
+		sprintf(riding, " They are riding on %s the %s.",
+			bottom->name, bottom->vt->kind);
+	}
+	printf("%s %s has favourite colour %s and favourite letter %c; "
+		"he is mumbling \"%s.\"%s\n", bad_emu->emu.animal.data.vt->kind,
+		bad_emu->emu.animal.data.name, colours[bad_emu->emu.animal.data.colour],
+		bad_emu->emu.favourite_letter, bad_emu->muhaha, riding);
 }
 static void Lemur_act(struct Lemur *const lemur) {
-	printf("Lemur %s.\n", lemur->animal.data.name);
+	printf("%s %s.\n", lemur->animal.data.vt->kind, lemur->animal.data.name);
 }
-static void llama_act(struct Animal *const animal) {
-	struct Llama *const llama = (struct Llama *)animal;
-	printf("Llama %s at %d has chomped %u fingers today.\n",
-		animal->name, animal->x, llama->chomps);
+static void Llama_act(struct Llama *const llama) {
+	printf("%s %s has chomped %u fingers today.\n", llama->animal.data.vt->kind,
+		llama->animal.data.name, llama->chomps);
 }
-static void bear_act(struct Animal *const animal) {
-	struct Bear *const bear = (struct Bear *)animal;
-	printf("Bear %s at %d is riding on llama %s.\n", animal->name, animal->x,
-		   bear->riding ? bear->riding->name : "no llama");
+static void Bear_act(struct Bear *const bear) {
+	char riding[64] = "chilling";
+	if(bear->riding) {
+		struct Animal *const bottom = bear->riding->bottom;
+		assert(bottom);
+		sprintf(riding, "riding on %s the %s",
+			bottom->name, bottom->vt->kind);
+	}
+	printf("Bear %s is %s.\n", bear->animal.data.vt->kind,
+		bear->animal.data.name, riding);
 }
 
 /* Static data containing the functions defined above. */
 static struct AnimalVt Sloth_vt = {
+	"Sloth",
 	(AnimalsAction)&Sloth_delete,
 	(AnimalAction)&Sloth_act
 };
 static struct AnimalVt Emu_vt = {
+	"Emu",
 	(AnimalsAction)&Emu_delete,
 	(AnimalAction)&Emu_act
 };
 static struct AnimalVt BadEmu_vt = {
+	"Emu",
 	(AnimalsAction)&BadEmu_delete,
 	(AnimalAction)&BadEmu_act
+};
+static struct AnimalVt Lemur_vt = {
+	"Lemur",
+	(AnimalsAction)&Lemur_delete,
+	(AnimalAction)&Lemur_act
+};
+static struct AnimalVt Llama_vt = {
+	"Llama",
+	(AnimalsAction)&Llama_delete,
+	(AnimalAction)&Llama_act
+};
+static struct AnimalVt Bear_vt = {
+	"Bear",
+	(AnimalsAction)&Bear_delete,
+	(AnimalAction)&Bear_act
 };
 
 
@@ -227,23 +256,38 @@ void Animals_(struct Animals **const animalsp) {
 /** Constructor. */
 struct Animals *Animals(void) {
 	struct Animals *a;
-	int e;
+	struct Bear *bear, *end;
+	int is_success = 0;
 	if(!(a = malloc(sizeof *a))) { perror("Animals"); Animals_(&a); return 0; }
 	AnimalListClear(&a->list);
 	a->sloths = 0;
 	a->emus   = 0;
-	e = errno = 0; do {
-		if(!(a->sloths = SlothPool(&AnimalListMigrate, &a->list))) break;
-		if(!(a->emus = EmuPool(&AnimalListMigrate, &a->list))) break;
-	} while(0); if((e = errno)) {
+	a->riding = 0;
+	a->bad_emus = 0;
+	a->llamas = 0;
+	a->lemurs = 0;
+	for(bear = a->bears, end = bear + sizeof(((struct Animals *)0)->bears)
+		/ sizeof(*((struct Animals *)0)->bears); bear < end; bear++)
+		bear->is_active = 0;
+	errno = 0; do {
+		if(!(a->sloths = SlothPool(&AnimalListMigrate, &a->list))
+			|| !(a->emus = EmuPool(&AnimalListMigrate, &a->list))
+			|| !(a->riding = RidingPool(0, 0)) /* @fixme */
+			|| !(a->bad_emus = BadEmuPool(&AnimalListMigrate, &a->list))
+			|| !(a->llamas = LlamaPool(&AnimalListMigrate, &a->list))
+			|| !(a->lemurs = LemurPool(&AnimalListMigrate, &a->list))
+		) break;
+		is_success = 1;
+	} while(0); if(!is_success) {
 		perror("Animals");
-	} if(e) Animals_(&a);
+		Animals_(&a);
+	}
 	return a;
 }
 struct Sloth *Sloth(struct Animals *const animals) {
 	struct Sloth *sloth;
 	if(!animals) return 0;
-	if(!(sloth = SlothPoolNew(animals->sloths))) { perror("Sloth"); return 0; }
+	if(!(sloth = SlothPoolNew(animals->sloths))) return 0;
 	Animal_filler(&sloth->animal.data, &Sloth_vt);
 	sloth->hours_slept = (int)(10.0 * rand() / RAND_MAX) + 4;
 	AnimalListPush(&animals->list, &sloth->animal.data);
@@ -252,23 +296,60 @@ struct Sloth *Sloth(struct Animals *const animals) {
 struct Emu *Emu(struct Animals *const animals) {
 	struct Emu *emu;
 	if(!animals) return 0;
-	if(!(emu = EmuPoolNew(animals->emus))) { perror("Sloth"); return 0; }
+	if(!(emu = EmuPoolNew(animals->emus))) return 0;
 	Animal_filler(&emu->animal.data, &Emu_vt);
 	emu->favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
 	AnimalListPush(&animals->list, &emu->animal.data);
 	return emu;
 }
+struct BadEmu *BadEmu(struct Animals *const animals) {
+	struct BadEmu *emu;
+	if(!animals) return 0;
+	if(!(emu = BadEmuPoolNew(animals->bad_emus))) return 0;
+	Animal_filler(&emu->emu.animal.data, &BadEmu_vt);
+	emu->emu.favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
+	emu->riding = 0;
+	Orcish(emu->muhaha, sizeof emu->muhaha);
+	AnimalListPush(&animals->list, &emu->emu.animal.data);
+	return emu;
+}
+struct Llama *Llama(struct Animals *const animals) {
+	struct Llama *llama;
+	if(!animals) return 0;
+	if(!(llama = LlamaPoolNew(animals->llamas))) return 0;
+	Animal_filler(&llama->animal.data, &Llama_vt);
+	llama->riding = 0;
+	llama->chomps = 5 + 10 * rand() / RAND_MAX;
+	AnimalListPush(&animals->list, &llama->animal.data);
+	return llama;
+}
+struct Lemur *Lemur(struct Animals *const animals) {
+	struct Lemur *lemur;
+	if(!animals) return 0;
+	if(!(lemur = LemurPoolNew(animals->lemurs))) return 0;
+	Animal_filler(&lemur->animal.data, &Lemur_vt);
+	AnimalListPush(&animals->list, &lemur->animal.data);
+	return lemur;
+}
+void Bear(struct Animals *const animals, struct Bear *const bear) {
+	if(!animals || !bear) return;
+	Animal_filler(&bear->animal.data, &Bear_vt);
+	bear->is_active = 1;
+	bear->riding = 0;
+	AnimalListPush(&animals->list, &bear->animal.data);
+}
+
 /** @implements <Animal, [size_t *]>BiAction */
 static void Animal_count(struct Animal *const animal, void *const pcount) {
 	assert(animal && pcount);
 	(*(size_t *)pcount)++;
 }
-void AnimalsTransmogrify(struct Animals *const animals) {
+void AnimalsAct(struct Animals *const animals) {
 	size_t count = 0;
 	if(!animals) return;
 	AnimalListBiForEach(&animals->list, &Animal_count, &count);
 	printf("There are %lu animals.\n", (long unsigned)count);
-	AnimalListForEach(&animals->list, &Animal_transmogrify);
+	AnimalListForEach(&animals->list, &Animal_act);
 }
 void AnimalsClear(struct Animals *const animals) {
 	if(!animals) return;
