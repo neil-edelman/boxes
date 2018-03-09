@@ -1,18 +1,13 @@
-/** Unit test of Animal.c.
+/** Unit test of Animals.c.
 
- @file		Animals
+ @file		Animal
  @author	Neil
- @std		C89/90
- @version	1.0; 20xx-xx
- @since		1.0; 20xx-xx
- @param
- @fixme
- @deprecated */
+ @std		C89/90 */
 
 #include <stdlib.h> /* EXIT_ */
 #include <stdio.h>  /* printf */
 #include <time.h>	/* clock */
-#include "../src/Animal.h"
+#include "../src/Animals.h"
 
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
@@ -31,7 +26,6 @@ int main(void) {
 		if(!(a = Animals())) break;
 		for(i = 0; i < animal_no; i++) {
 			float r = (float)(rand() / ((double)RAND_MAX + 1));
-			printf("Add.\n");
 			if(r < 0.25f) {
 				if(!Sloth(a)) break;
 			} else if(r < 0.45f) {

@@ -154,7 +154,7 @@ static const size_t pool_not_part   = (size_t)-1;
 static const size_t pool_null       = (size_t)-2;
 #endif /* POOL_H --> */
 
-/* Also left in the same translation unit. */
+/* One time in the same translation unit. */
 #ifndef MIGRATE /* <-- migrate */
 #define MIGRATE
 /** Contains information about a {realloc}. */
@@ -411,7 +411,8 @@ static struct T_(Pool) *PT_(pool)(void) {
  {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
-static struct T_(Pool) *T_(Pool)(const PT_(MigrateParent) migrate, P *const parent) {
+static struct T_(Pool) *T_(Pool)(const PT_(MigrateParent) migrate,
+	P *const parent) {
 	struct T_(Pool) *this;
 	if(!migrate ^ !parent) { errno = ERANGE; return 0; }
 	if(!(this = PT_(pool)())) return 0; /* ENOMEM? */

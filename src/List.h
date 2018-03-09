@@ -270,7 +270,7 @@ enum ListOperation {
 };
 #endif /* LIST_H */
 
-/* Also left in the same translation unit. */
+/* One time in the same translation unit. */
 #ifndef MIGRATE /* <-- migrate */
 #define MIGRATE
 /** Contains information about a {realloc}. */
@@ -340,22 +340,17 @@ typedef int (*PT_(Predicate))(const T *const);
 typedef int (*PT_(BiPredicate))(T *const, void *const);
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
-
 /** Compares two {<T>} values and returns less then, equal to, or greater then
  zero. Should do so forming an equivalence relation with respect to {<T>}. */
 typedef int (*PT_(Comparator))(const T *, const T *);
-
 #endif /* comp --> */
 
 #ifdef LIST_TO_STRING /* <-- string */
-
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) */
 typedef void (*PT_(ToString))(const T *const, char (*const)[12]);
-
 /* Check that {LIST_TO_STRING} is a function implementing {<T>ToString}. */
 static const PT_(ToString) PT_(to_string) = (LIST_TO_STRING);
-
 #endif /* string --> */
 
 

@@ -2,7 +2,7 @@
 #include <assert.h>	/* assert */
 #include <string.h>	/* strncpy */
 #include "Orcish.h"
-#include "Animal.h"
+#include "Animals.h"
 
 enum Colour { PINK, RED, BLUE, YELLOW, BEIGE, COLOUR_END };
 static const char *const colours[] = { "pink", "red", "blue","yellow", "beige"};
@@ -18,7 +18,8 @@ struct Animal {
 static const size_t animal_name_size = sizeof ((struct Animal *)0)->name
 	/ sizeof *((struct Animal *)0)->name;
 /* This just gets a static field. */
-static void Animal_to_string(const struct Animal *const animal, char (*const a)[12]) {
+static void Animal_to_string(const struct Animal *const animal,
+	char (*const a)[12]) {
 	strncpy(*a, animal->name, sizeof *a / sizeof **a);
 }
 #define LIST_NAME Animal
@@ -32,7 +33,7 @@ struct Ref {
 };
 #define POOL_NAME Ref
 #define POOL_TYPE struct Ref
-#define POOL_PARENT struct RefPool /* More efficient to follow the pointers. */
+/*#define POOL_PARENT struct RefPool*/ /* More efficient to follow the pointers. */
 #include "Pool.h"
 
 /* Class Sloth extends Animal. */
@@ -266,11 +267,11 @@ static void animal_riding_migrate(struct Animals *const a,
 #endif
 
 /** @implements <Ref>Migrate */
-static void ref_migrate(struct RefPool *const this,
+/*static void ref_migrate(struct RefPool *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	
-}
+}*/
 
 /** Only called from constructors of children. */
 static void Animal_filler(struct Animal *const animal,
@@ -309,7 +310,7 @@ struct Animals *Animals(void) {
 		/* @fixme Maybe AnimalListMigrate should not be there? Maybe
 		 <EmuListNode>Migrate(EmuListNode) which would be in List? Then
 		 wouldn't need second parameter, could make it a define? */
-		if(!(c = "refs", a->refs = RefPool(&ref_migrate, a->refs))
+		if(!(c = "refs", a->refs = RefPool(/*&ref_migrate, a->refs*/))
 			||!(c="sloths", a->sloths = SlothPool(&AnimalListMigrate, &a->list))
 			|| !(c="emus", a->emus = EmuPool(&AnimalListMigrate, &a->list))
 			/*|| !(a->bad_emus = BadEmuPool(&animal_riding_migrate, a))
