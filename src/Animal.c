@@ -46,45 +46,49 @@ struct Emu {
 #define POOL_PARENT struct AnimalList
 #include "Pool.h"
 
-/* Class Riding. */
-struct Riding {
-	struct Riding *mount;
+/* Class Mount. */
+struct Mount {
+	struct Mount *mount;
 };
-#define POOL_NAME Riding
-#define POOL_TYPE struct Riding
-#define POOL_PARENT struct Animals
+#define POOL_NAME Mount
+#define POOL_TYPE struct Mount
+/*#define POOL_PARENT struct Animals*/
+#define POOL_PARENT struct AnimalList
 #include "Pool.h"
 
 /* Class BadEmu extends Emu. */
 struct BadEmu {
 	struct Emu emu;
-	struct Riding top_of;
+	struct Mount top_of;
 	char muhaha[12];
 };
 #define POOL_NAME BadEmu
 #define POOL_TYPE struct BadEmu
-#define POOL_PARENT struct Animals
+/*#define POOL_PARENT struct Animals*/
+#define POOL_PARENT struct AnimalList
 #include "Pool.h"
 
 /* Class Llama extends Animal. */
 struct Llama {
 	struct AnimalListNode animal;
-	struct Riding bottom_of;
+	struct Mount bottom_of;
 	unsigned chomps;
 };
 #define POOL_NAME Llama
 #define POOL_TYPE struct Llama
-#define POOL_PARENT struct Animals
+/*#define POOL_PARENT struct Animals*/
+#define POOL_PARENT struct AnimalList
 #include "Pool.h"
 
 /* Class Lemur extends Animal. */
 struct Lemur {
 	struct AnimalListNode animal;
-	struct Riding top_of;
+	struct Mount top_of;
 };
 #define POOL_NAME Lemur
 #define POOL_TYPE struct Lemur
-#define POOL_PARENT struct Animals
+/*#define POOL_PARENT struct Animals*/
+#define POOL_PARENT struct AnimalList
 #include "Pool.h"
 
 /* Class Bear extends Animal. We have always two or less, so we don't need to
@@ -92,7 +96,7 @@ struct Lemur {
 struct Bear {
 	struct AnimalListNode animal;
 	int is_active;
-	struct Riding *top_of;
+	struct Mount top_of;
 };
 
 /* Animal list with backing. These are the storage structures. */
@@ -100,7 +104,7 @@ struct Animals {
 	struct AnimalList list;
 	struct SlothPool *sloths;
 	struct EmuPool *emus;
-	struct RidingPool *riding;
+	struct MountPool *riding;
 	struct BadEmuPool *bad_emus;
 	struct LlamaPool *llamas;
 	struct LemurPool *lemurs;
@@ -181,11 +185,11 @@ static void Emu_act(struct Emu *const emu) {
 }
 static void BadEmu_act(struct BadEmu *const bad_emu) {
 	char riding[64] = "";
-	if(bad_emu->riding) {
-		struct Animal *const bottom = bad_emu->riding->bottom;
-		assert(bottom);
-		sprintf(riding, " They are riding on %s the %s.",
-			bottom->name, bottom->vt->kind);
+	if(bad_emu->top_of.mount) {
+		struct Mount *const steed = bad_emu->top_of.mount;
+		assert(steed);
+		/*sprintf(riding, " They are riding on %s the %s.",
+			bottom->name, bottom->vt->kind); @fixme */
 	}
 	printf("%s %s has favourite colour %s and favourite letter %c; "
 		"he is mumbling \"%s.\"%s\n", bad_emu->emu.animal.data.vt->kind,
@@ -201,11 +205,11 @@ static void Llama_act(struct Llama *const llama) {
 }
 static void Bear_act(struct Bear *const bear) {
 	char riding[64] = "chilling";
-	if(bear->riding) {
-		struct Animal *const bottom = bear->riding->bottom;
-		assert(bottom);
-		sprintf(riding, "riding on %s the %s",
-			bottom->name, bottom->vt->kind);
+	if(bear->top_of.mount) {
+		struct Mount *const steed = bear->top_of.mount;
+		assert(steed);
+		/*sprintf(riding, "riding on %s the %s",
+			steed->name, steed->vt->kind); @fixme */
 	}
 	printf("%s %s is %s.\n", bear->animal.data.vt->kind,
 		bear->animal.data.name, riding);
@@ -245,15 +249,18 @@ static struct AnimalVt Bear_vt = {
 
 /************/
 
-/** Called from Riding.
+#if 0
+/** Called from Mount.
  @implements <Animals>Migrate */
 static void animal_riding_migrate(struct Animals *const a,
 	const struct Migrate *const migrate) {
-	fprintf(stderr, "animal_riding_migrate: %s.\n", AnimalListToString(&a->list));
+	fprintf(stderr, "animal_riding_migrate: %s.\n",
+		AnimalListToString(&a->list));
 	assert(a && migrate);
 	/* @fixme Something's wrong. */
 	AnimalListMigrate(&a->list, migrate);
 }
+#endif
 
 /** Only called from constructors of children. */
 static void Animal_filler(struct Animal *const animal,
@@ -291,10 +298,13 @@ struct Animals *Animals(void) {
 	errno = 0; do {
 		if(!(a->sloths = SlothPool(&AnimalListMigrate, &a->list))
 			|| !(a->emus = EmuPool(&AnimalListMigrate, &a->list))
-			|| !(a->riding = RidingPool(0, 0)) /* @fixme */
-			|| !(a->bad_emus = BadEmuPool(&animal_riding_migrate, a))
+			|| !(a->riding = MountPool(0, 0)) /* @fixme */
+			/*|| !(a->bad_emus = BadEmuPool(&animal_riding_migrate, a))
 			|| !(a->llamas = LlamaPool(&animal_riding_migrate, a))
-			|| !(a->lemurs = LemurPool(&animal_riding_migrate, a))
+			|| !(a->lemurs = LemurPool(&animal_riding_migrate, a))*/
+			|| !(a->bad_emus = BadEmuPool(&AnimalListMigrate, &a->list))
+			|| !(a->llamas = LlamaPool(&AnimalListMigrate, &a->list))
+			|| !(a->lemurs = LemurPool(&AnimalListMigrate, &a->list))
 		) break;
 		is_success = 1;
 	} while(0); if(!is_success) {
@@ -327,7 +337,7 @@ struct BadEmu *BadEmu(struct Animals *const animals) {
 	if(!(emu = BadEmuPoolNew(animals->bad_emus))) return 0;
 	Animal_filler(&emu->emu.animal.data, &BadEmu_vt);
 	emu->emu.favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
-	emu->riding = 0;
+	emu->top_of.mount = 0;
 	Orcish(emu->muhaha, sizeof emu->muhaha);
 	AnimalListPush(&animals->list, &emu->emu.animal.data);
 	return emu;
@@ -337,7 +347,7 @@ struct Llama *Llama(struct Animals *const animals) {
 	if(!animals) return 0;
 	if(!(llama = LlamaPoolNew(animals->llamas))) return 0;
 	Animal_filler(&llama->animal.data, &Llama_vt);
-	llama->riding = 0;
+	llama->bottom_of.mount = 0;
 	llama->chomps = 5 + 10 * rand() / RAND_MAX;
 	AnimalListPush(&animals->list, &llama->animal.data);
 	return llama;
@@ -359,7 +369,7 @@ void Bear(struct Animals *const animals, const unsigned no, const char *const na
 	if(name) strncpy(bear->animal.data.name, name, animal_name_size - 1),
 		bear->animal.data.name[animal_name_size - 1] = '\0';
 	bear->is_active = 1;
-	bear->riding = 0;
+	bear->top_of.mount = 0;
 	AnimalListPush(&animals->list, &bear->animal.data);
 }
 

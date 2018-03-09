@@ -167,16 +167,15 @@ struct Migrate {
 
 
 
-/** Given to the custom migrate function of another data type. Used only for
- {POOL_TEST}. This definition is about the {POOL_NAME} type, that is, it is
- without the prefix {Pool}; to avoid namespace collisions, this is private,
- meaning the name is mangled. If you want this definition, re-declare it as
- {<T>Migrate}. */
+/** Given to the custom migrate function of another data type. This definition
+ is about the {POOL_NAME} type, that is, it is without the prefix {Pool}; to
+ avoid namespace collisions, this is private, meaning the name is mangled. If
+ you want this definition, re-declare it as {<T>Migrate}. */
 typedef void (*PT_(Migrate))(T *const element,
 	const struct Migrate *const migrate);
 
 #ifdef POOL_TEST /* <-- test */
-/* Operates by side-effects only. */
+/* Operates by side-effects only. Used only for {POOL_TEST}. */
 typedef void (*PT_(Action))(T *const element);
 #endif /* test --> */
 

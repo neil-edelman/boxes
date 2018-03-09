@@ -302,7 +302,7 @@ struct PT_(X) {
  element {data}. */
 struct T_(ListNode);
 struct T_(ListNode) {
-	T data; /* Must be first, \see{<T>_node_hold_data}. */
+	T data;
 	struct PT_(X) x;
 };
 
@@ -366,7 +366,7 @@ static struct T_(ListNode) *PT_(node_hold_x)(struct PT_(X) *const x) {
 		((char *)x - offsetof(struct T_(ListNode), x));
 }
 
-/** {container_of}; just cast. */
+/** {container_of}. */
 static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
 	return (struct T_(ListNode) *)(void *)
 		((char *)data - offsetof(struct T_(ListNode), data));
