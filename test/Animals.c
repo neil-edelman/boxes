@@ -31,6 +31,7 @@ int main(void) {
 		if(!(a = Animals())) break;
 		for(i = 0; i < animal_no; i++) {
 			float r = (float)(rand() / ((double)RAND_MAX + 1));
+			printf("Add.\n");
 			if(r < 0.25f) {
 				if(!Sloth(a)) break;
 			} else if(r < 0.45f) {
