@@ -320,14 +320,14 @@ struct T_(List) {
 
 
 /** Calls \see{<T>ListMigratePointer}, given to \see{<T>List<U>MigrateEach}, in
- the handler for the {Migrate}. */
-typedef void (*T_(ListMigrateElement))(T *const element,
+ the handler for the {Migrate}. This definition is about the {LIST_NAME} type,
+ that is, it is without the prefix {List}; to avoid namespace collisions, this
+ is private, meaning the name is mangled. If you want this definition,
+ re-declare it as {<T>MigrateElement}. */
+typedef void (*PT_(Migrate))(T *const element,
 	const struct Migrate *const migrate);
 
-/** Takes {<T>}; used in \see{<T>List<U>ForEach}. This definition is about the
- {LIST_NAME} type, that is, it is without the prefix {List}; to avoid namespace
- collisions, this is private, meaning the name is mangled. If you want this
- definition, re-declare it as {<T>Action}. */
+/** Takes {<T>}; used in \see{<T>List<U>ForEach}. */
 typedef void (*PT_(Action))(T *const);
 
 /** Takes {<T>} and <void *>; used in \see{<T>List<U>BiForEach}. */
@@ -368,7 +368,8 @@ static struct T_(ListNode) *PT_(node_hold_x)(struct PT_(X) *const x) {
 
 /** {container_of}; just cast. */
 static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
-	return (struct T_(ListNode) *)(void *)data;
+	return (struct T_(ListNode) *)(void *)
+		((char *)data - offsetof(struct T_(ListNode), data));
 }
 
 /* Prototypes: needed for the next section, but undefined until later. */
@@ -1004,7 +1005,7 @@ static void PT_U_(list, migrate)(struct T_(List) *const list,
  @order \Theta({list}.n \times {handler})
  @allow */
 static void T_U_(List, MigrateEach)(struct T_(List) *const list,
-	const T_(ListMigrateElement) handler, const struct Migrate *const migrate){
+	const PT_(Migrate) handler, const struct Migrate *const migrate) {
 	struct PT_(X) *x, *next_x;
 	if(!list || !handler || !migrate) return;
 	for(x = &list->head; x; x = next_x) {

@@ -31,27 +31,21 @@ int main(void) {
 		if(!(a = Animals())) break;
 		for(i = 0; i < animal_no; i++) {
 			float r = (float)(rand() / ((double)RAND_MAX + 1));
-			printf("%f\n", r);
 			if(r < 0.25f) {
-				printf("Sloth\n");
 				if(!Sloth(a)) break;
 			} else if(r < 0.45f) {
-				printf("Emu\n");
 				if(!Emu(a)) break;
 			} else if(r < 0.55) {
-				printf("BadEmu\n");
 				if(!BadEmu(a)) break;
 			} else if(r < 0.8) {
-				printf("Llama\n");
 				if(!Llama(a)) break;
-				printf("go\n");
 			} else {
-				printf("Lemur\n");
 				if(!Lemur(a)) break;
-				printf("go\n");
 			}
 		}
 		if(i != animal_no) break;
+		Bear(a, 0, "Winnie");
+		Bear(a, 1, "Napoloen");
 		/* fixme: bear. */
 		AnimalsAct(a);
 		AnimalsClear(a);
