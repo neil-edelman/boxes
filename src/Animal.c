@@ -40,7 +40,7 @@ struct Emu {
 
 /* Class Riding. */
 struct Riding {
-	struct Animal *bottom, *top;
+	struct Riding *mount;
 };
 #define POOL_NAME Riding
 #define POOL_TYPE struct Riding
@@ -50,7 +50,7 @@ struct Riding {
 /* Class BadEmu extends Emu. */
 struct BadEmu {
 	struct Emu emu;
-	struct Riding *riding;
+	struct Riding top_of;
 	char muhaha[12];
 };
 #define POOL_NAME BadEmu
@@ -61,7 +61,7 @@ struct BadEmu {
 /* Class Llama extends Animal. */
 struct Llama {
 	struct AnimalListNode animal;
-	struct Riding *riding;
+	struct Riding bottom_of;
 	unsigned chomps;
 };
 #define POOL_NAME Llama
@@ -72,7 +72,7 @@ struct Llama {
 /* Class Lemur extends Animal. */
 struct Lemur {
 	struct AnimalListNode animal;
-	struct Riding *riding;
+	struct Riding top_of;
 };
 #define POOL_NAME Lemur
 #define POOL_TYPE struct Lemur
@@ -84,7 +84,7 @@ struct Lemur {
 struct Bear {
 	struct AnimalListNode animal;
 	int is_active;
-	struct Riding *riding;
+	struct Riding *top_of;
 };
 
 /* Animal list with backing. These are the storage structures. */
