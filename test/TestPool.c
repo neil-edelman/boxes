@@ -15,7 +15,6 @@
 #include <time.h>	/* clock */
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
-#include "Animal.h"
 
 /** Define class {A} */
 struct A {
@@ -72,12 +71,12 @@ static void Foo_filler(struct Foo *const this) {
 static void Int_to_string(const int *this, char (*const a)[12]) {
 	sprintf(*a, "%d", *this);
 }
+#include <limits.h>	/* INT_MAX */
 #if INT_MAX > 9999999999
 #define LIST_NUM_MAX 9999999999
 #else
 #define LIST_NUM_MAX INT_MAX
 #endif
-#include <limits.h>	/* INT_MAX */
 /** @implements <Int>Action */
 static void Int_filler(int *const this) {
 	*this = (int)(float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) *LIST_NUM_MAX);
@@ -114,31 +113,6 @@ static void Colour_filler(enum Colour *const this) {
 #define POOL_TEST &Colour_filler
 #include "../src/Pool.h"
 
-static void AnimalsTest(void) {
-	struct Animals *a = 0;
-	enum { ERR_NO, ERR_ANIMALS } e = ERR_NO;
-	do {
-		unsigned i;
-		if(!(a = Animals())) { e = ERR_ANIMALS; break; }
-		for(i = 0; i < 100; i++) {
-			if(rand() > RAND_MAX >> 1) {
-				if(!Emu(a)) { e = ERR_ANIMALS; break; }
-			} else {
-				if(!Sloth(a)) { e = ERR_ANIMALS; break; }
-			}
-		}
-		if(e) break;
-		AnimalsTransmogrify(a);
-		AnimalsClear(a);
-		Animals_(&a);
-	} while(0); switch(e) {
-		case ERR_NO: break;
-		case ERR_ANIMALS: break; /* already printed */
-	} {
-		Animals_(&a);
-	}
-}
-
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
  @param argv: The arguments.
@@ -151,7 +125,6 @@ int main(void) {
 	FooPoolTest();
 	IntPoolTest();
 	ColourPoolTest();
-	AnimalsTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

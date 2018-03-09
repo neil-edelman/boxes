@@ -167,16 +167,15 @@ struct Migrate {
 
 
 
-/** Given to \see{<T>PoolMigrateEach} by the migrate function of another
- {Pool}. */
-typedef void (*T_(PoolMigrateElement))(T *const element,
+/** Given to the custom migrate function of another data type. This definition
+ is about the {POOL_NAME} type, that is, it is without the prefix {Pool}; to
+ avoid namespace collisions, this is private, meaning the name is mangled. If
+ you want this definition, re-declare it as {<T>Migrate}. */
+typedef void (*PT_(Migrate))(T *const element,
 	const struct Migrate *const migrate);
 
 #ifdef POOL_TEST /* <-- test */
-/* Operates by side-effects only. Used only for {POOL_TEST}. This definition is
- about the {POOL_NAME} type, that is, it is without the prefix {Pool}; to avoid
- namespace collisions, this is private, meaning the name is mangled. If you
- want this definition, re-declare it as {<T>Action}. */
+/* Operates by side-effects only. Used only for {POOL_TEST}. */
 typedef void (*PT_(Action))(T *const element);
 #endif /* test --> */
 
@@ -194,7 +193,7 @@ static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 typedef POOL_PARENT PT_(ParentType);
 #define P PT_(ParentType)
 /** Function call on {realloc}. */
-typedef void (*PT_(Migrate))(P *const parent,
+typedef void (*PT_(MigrateParent))(P *const parent,
 	const struct Migrate *const migrate);
 #endif /* parent --> */
 
@@ -209,8 +208,8 @@ typedef POOL_UPDATE PT_(UpdateType);
 
 /* Pool element. */
 struct PT_(Element) {
-	T data; /* has to be the first element for convenience */
-	size_t prev, next; /* removed offset queue */
+	T data; /* The data. @fixme Has the be first, lame. */
+	size_t prev, next; /* Removed offset queue. */
 };
 
 /** The pool. To instantiate, see \see{<T>Pool}. */
@@ -221,7 +220,7 @@ struct T_(Pool) {
 	size_t size; /* Including removed. */
 	size_t head, tail; /* Removed queue. */
 #ifdef POOL_PARENT
-	PT_(Migrate) migrate; /* Called to update on resizing. */
+	PT_(MigrateParent) migrate; /* Called to update on resizing. */
 	P *parent; /* Migrate parameter. */
 #endif
 };
@@ -412,7 +411,7 @@ static struct T_(Pool) *PT_(pool)(void) {
  {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
-static struct T_(Pool) *T_(Pool)(const PT_(Migrate) migrate, P *const parent) {
+static struct T_(Pool) *T_(Pool)(const PT_(MigrateParent) migrate, P *const parent) {
 	struct T_(Pool) *this;
 	if(!migrate ^ !parent) { errno = ERANGE; return 0; }
 	if(!(this = PT_(pool)())) return 0; /* ENOMEM? */
@@ -605,7 +604,7 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
 }
 
 /** Use when the pool has pointers to another pool in the {Migrate} function of
- the other datatype (passed when creating the other datatype.)
+ the other data type (passed when creating the other data type.)
  @param this: If null, does nothing.
  @param handler: If null, does nothing, otherwise has the responsibility of
  calling the other data type's migrate pointer function on all pointers
@@ -616,7 +615,7 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
  @fixme Untested.
  @allow */
 static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
-	const T_(PoolMigrateElement) handler, const struct Migrate *const migrate) {
+	const PT_(Migrate) handler, const struct Migrate *const migrate) {
 	struct PT_(Element) *e, *end;
 	if(!this || !migrate || !handler) return;
 	for(e = this->array, end = e + this->size; e < end; e++)
