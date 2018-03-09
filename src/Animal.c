@@ -1,5 +1,6 @@
 #include <stdio.h>	/* *printf */
 #include <assert.h>	/* assert */
+#include <string.h>	/* strncpy */
 #include "Orcish.h"
 #include "Animal.h"
 
@@ -14,8 +15,15 @@ struct Animal {
 	char name[16];
 	enum Colour colour;
 };
+static const size_t animal_name_size = sizeof ((struct Animal *)0)->name
+	/ sizeof *((struct Animal *)0)->name;
+/* This just gets a static field. */
+static void Animal_to_string(const struct Animal *const animal, char (*const a)[12]) {
+	strncpy(*a, animal->name, sizeof *a / sizeof **a);
+}
 #define LIST_NAME Animal
 #define LIST_TYPE struct Animal
+#define LIST_TO_STRING &Animal_to_string
 #include "List.h"
 
 /* Class Sloth extends Animal. */
@@ -44,7 +52,7 @@ struct Riding {
 };
 #define POOL_NAME Riding
 #define POOL_TYPE struct Riding
-#define POOL_PARENT struct AnimalList
+#define POOL_PARENT struct Animals
 #include "Pool.h"
 
 /* Class BadEmu extends Emu. */
@@ -55,7 +63,7 @@ struct BadEmu {
 };
 #define POOL_NAME BadEmu
 #define POOL_TYPE struct BadEmu
-#define POOL_PARENT struct AnimalList
+#define POOL_PARENT struct Animals
 #include "Pool.h"
 
 /* Class Llama extends Animal. */
@@ -66,7 +74,7 @@ struct Llama {
 };
 #define POOL_NAME Llama
 #define POOL_TYPE struct Llama
-#define POOL_PARENT struct AnimalList
+#define POOL_PARENT struct Animals
 #include "Pool.h"
 
 /* Class Lemur extends Animal. */
@@ -76,7 +84,7 @@ struct Lemur {
 };
 #define POOL_NAME Lemur
 #define POOL_TYPE struct Lemur
-#define POOL_PARENT struct AnimalList
+#define POOL_PARENT struct Animals
 #include "Pool.h"
 
 /* Class Bear extends Animal. We have always two or less, so we don't need to
@@ -98,6 +106,7 @@ struct Animals {
 	struct LemurPool *lemurs;
 	struct Bear bears[2];
 };
+static const unsigned no_bears = sizeof(((struct Animals *)0)->bears) / sizeof(*((struct Animals *)0)->bears);
 
 typedef void (*AnimalAction)(struct Animal *const);
 typedef void (*AnimalsAction)(struct Animals *const, struct Animal *const);
@@ -198,7 +207,7 @@ static void Bear_act(struct Bear *const bear) {
 		sprintf(riding, "riding on %s the %s",
 			bottom->name, bottom->vt->kind);
 	}
-	printf("Bear %s is %s.\n", bear->animal.data.vt->kind,
+	printf("%s %s is %s.\n", bear->animal.data.vt->kind,
 		bear->animal.data.name, riding);
 }
 
@@ -234,8 +243,17 @@ static struct AnimalVt Bear_vt = {
 	(AnimalAction)&Bear_act
 };
 
-
 /************/
+
+/** Called from Riding.
+ @implements <Animals>Migrate */
+static void animal_riding_migrate(struct Animals *const a,
+	const struct Migrate *const migrate) {
+	fprintf(stderr, "animal_riding_migrate: %s.\n", AnimalListToString(&a->list));
+	assert(a && migrate);
+	/* @fixme Something's wrong. */
+	AnimalListMigrate(&a->list, migrate);
+}
 
 /** Only called from constructors of children. */
 static void Animal_filler(struct Animal *const animal,
@@ -266,6 +284,7 @@ struct Animals *Animals(void) {
 	a->bad_emus = 0;
 	a->llamas = 0;
 	a->lemurs = 0;
+	printf("there are %u bears\n", no_bears);
 	for(bear = a->bears, end = bear + sizeof(((struct Animals *)0)->bears)
 		/ sizeof(*((struct Animals *)0)->bears); bear < end; bear++)
 		bear->is_active = 0;
@@ -273,9 +292,9 @@ struct Animals *Animals(void) {
 		if(!(a->sloths = SlothPool(&AnimalListMigrate, &a->list))
 			|| !(a->emus = EmuPool(&AnimalListMigrate, &a->list))
 			|| !(a->riding = RidingPool(0, 0)) /* @fixme */
-			|| !(a->bad_emus = BadEmuPool(&AnimalListMigrate, &a->list))
-			|| !(a->llamas = LlamaPool(&AnimalListMigrate, &a->list))
-			|| !(a->lemurs = LemurPool(&AnimalListMigrate, &a->list))
+			|| !(a->bad_emus = BadEmuPool(&animal_riding_migrate, a))
+			|| !(a->llamas = LlamaPool(&animal_riding_migrate, a))
+			|| !(a->lemurs = LemurPool(&animal_riding_migrate, a))
 		) break;
 		is_success = 1;
 	} while(0); if(!is_success) {
@@ -331,9 +350,14 @@ struct Lemur *Lemur(struct Animals *const animals) {
 	AnimalListPush(&animals->list, &lemur->animal.data);
 	return lemur;
 }
-void Bear(struct Animals *const animals, struct Bear *const bear) {
-	if(!animals || !bear) return;
+void Bear(struct Animals *const animals, const unsigned no, const char *const name) {
+	struct Bear *bear;
+	if(!animals || no >= no_bears) return;
+	bear = animals->bears + no;
+	if(bear->is_active) { fprintf(stderr, "Bear is active.\n"); return; }
 	Animal_filler(&bear->animal.data, &Bear_vt);
+	if(name) strncpy(bear->animal.data.name, name, animal_name_size - 1),
+		bear->animal.data.name[animal_name_size - 1] = '\0';
 	bear->is_active = 1;
 	bear->riding = 0;
 	AnimalListPush(&animals->list, &bear->animal.data);

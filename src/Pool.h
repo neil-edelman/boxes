@@ -167,15 +167,16 @@ struct Migrate {
 
 
 
-/** Given to the custom migrate function of another data type. This definition
- is about the {POOL_NAME} type, that is, it is without the prefix {Pool}; to
- avoid namespace collisions, this is private, meaning the name is mangled. If
- you want this definition, re-declare it as {<T>MigrateElement}.*/
-typedef void (*PT_(MigrateElement))(T *const element,
+/** Given to the custom migrate function of another data type. Used only for
+ {POOL_TEST}. This definition is about the {POOL_NAME} type, that is, it is
+ without the prefix {Pool}; to avoid namespace collisions, this is private,
+ meaning the name is mangled. If you want this definition, re-declare it as
+ {<T>Migrate}. */
+typedef void (*PT_(Migrate))(T *const element,
 	const struct Migrate *const migrate);
 
 #ifdef POOL_TEST /* <-- test */
-/* Operates by side-effects only. Used only for {POOL_TEST}. */
+/* Operates by side-effects only. */
 typedef void (*PT_(Action))(T *const element);
 #endif /* test --> */
 
@@ -193,7 +194,7 @@ static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 typedef POOL_PARENT PT_(ParentType);
 #define P PT_(ParentType)
 /** Function call on {realloc}. */
-typedef void (*PT_(Migrate))(P *const parent,
+typedef void (*PT_(MigrateParent))(P *const parent,
 	const struct Migrate *const migrate);
 #endif /* parent --> */
 
@@ -208,8 +209,8 @@ typedef POOL_UPDATE PT_(UpdateType);
 
 /* Pool element. */
 struct PT_(Element) {
-	T data; /* has to be the first element for convenience */
-	size_t prev, next; /* removed offset queue */
+	T data; /* The data. @fixme Has the be first, lame. */
+	size_t prev, next; /* Removed offset queue. */
 };
 
 /** The pool. To instantiate, see \see{<T>Pool}. */
@@ -220,7 +221,7 @@ struct T_(Pool) {
 	size_t size; /* Including removed. */
 	size_t head, tail; /* Removed queue. */
 #ifdef POOL_PARENT
-	PT_(Migrate) migrate; /* Called to update on resizing. */
+	PT_(MigrateParent) migrate; /* Called to update on resizing. */
 	P *parent; /* Migrate parameter. */
 #endif
 };
@@ -401,8 +402,7 @@ static struct T_(Pool) *PT_(pool)(void) {
 #ifdef POOL_PARENT /* <-- parent */
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8. This is
  the constructor if {POOL_PARENT} is specified.
- @param migrate: The parent's {Migrate} function. If the data is
- contained only in the parent, this can be the the {<P>Migrate}
+ @param migrate: The parent's {Migrate} function.
  @param parent: The parent; to have multiple parents, implement an intermediary
  {Migrate} function that takes multiple values; required if {migrate} is
  specified.
@@ -412,7 +412,7 @@ static struct T_(Pool) *PT_(pool)(void) {
  {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
-static struct T_(Pool) *T_(Pool)(const PT_(Migrate) migrate, P *const parent) {
+static struct T_(Pool) *T_(Pool)(const PT_(MigrateParent) migrate, P *const parent) {
 	struct T_(Pool) *this;
 	if(!migrate ^ !parent) { errno = ERANGE; return 0; }
 	if(!(this = PT_(pool)())) return 0; /* ENOMEM? */
@@ -616,7 +616,7 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
  @fixme Untested.
  @allow */
 static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
-	const PT_(MigrateElement) handler, const struct Migrate *const migrate) {
+	const PT_(Migrate) handler, const struct Migrate *const migrate) {
 	struct PT_(Element) *e, *end;
 	if(!this || !migrate || !handler) return;
 	for(e = this->array, end = e + this->size; e < end; e++)
