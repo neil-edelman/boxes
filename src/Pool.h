@@ -6,9 +6,11 @@
  internal to the pool; as such, indices will remain the same throughout the
  lifetime of the data. You cannot shrink the capacity of this data type, only
  cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
- sequence. {<T>Pool} is not synchronised. The preprocessor macros are all
- undefined at the end of the file for convenience when including multiple pool
- types in the same file.
+ sequence.
+
+ Intended for use in backing polymorphic data-types. {<T>Pool} is not
+ synchronised. The preprocessor macros are all undefined at the end of the file
+ for convenience when including multiple pool types in the same file.
 
  @param POOL_NAME
  This literally becomes {<T>}. As it's used in function names, this should
@@ -18,15 +20,27 @@
  The type associated with {<T>}. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
- @param POOL_PARENT
+ @param POOL_PARENT_OLD_TYPE
  Optional type association with {<P>}. If set, the constructor has two extra
  arguments that allow it to be part of a larger data structure without
  referencing the {<T>Pool} directly. Can be {void} to turn off type checking.
 
- @param POOL_UPDATE
+ @param POOL_UPDATE_OLD_TYPE
  Optional type association with {<U>}. If set, the function
  \see{<T>PoolUpdateNew} becomes available, intended for a local iterator
  update on migrate.
+
+ @param POOL_MIGRATE_EACH
+ Optional function implementing {<PT>Migrate} that updates each element on
+ memory move. For example, if {<T>} is {ListNode}, then one probably wants
+ {<<T>ListNode>Migrate}, or a {<PT>Migrate} that calls it.
+
+ @param POOL_MIGRATE_ALL_TYPE
+ Optional type {<P>}, (for parent, but you don't have to use it this way.) When
+ one may have pointers to the data that is contained in the {Pool} outside that
+ cannot be accessed inside the {Pool}. It adds an element to the constructor,
+ {<P>MigrateParent }
+ and stores that to 
 
  @param POOL_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
@@ -45,14 +59,16 @@
  @std		C89
  @author	Neil
  @version	2018-02 Errno instead of custom errors.
- @since		2017-12 Introduced POOL_PARENT for type-safety.
+ @since		2017-12 Introduced POOL_PARENT_OLD_TYPE for type-safety.
 			2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
 			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
 			2017-05 Split {List} from {Pool}; much simpler.
 			2017-01 Almost-redundant functions simplified.
 			2016-11 Multi-index.
-			2016-08 Permute. */
+			2016-08 Permute.
+ @fixme It is possible to add always at the first spot that's available in
+ {O(1)}, it just needs some thought. */
 
 
 
@@ -167,17 +183,26 @@ struct Migrate {
 
 
 
-/** Given to the custom migrate function of another data type. This definition
- is about the {POOL_NAME} type, that is, it is without the prefix {Pool}; to
- avoid namespace collisions, this is private, meaning the name is mangled. If
- you want this definition, re-declare it as {<T>Migrate}. */
+#ifdef POOL_MIGRATE_EACH /* <-- migrate */
+/** This is the migrate function for {<T>}. This definition is about the
+ {POOL_NAME} type, that is, it is without the prefix {Pool}; to avoid namespace
+ collisions, this is private, meaning the name is mangled. If you want this
+ definition, re-declare it as {<T>Migrate}. */
 typedef void (*PT_(Migrate))(T *const element,
 	const struct Migrate *const migrate);
+/* Check that {POOL_MIGRATE_EACH} is a function implementing {<PT>Migrate}. */
+static const PT_(Migrate) PT_(migrate) = (POOL_MIGRATE_EACH);
+#endif /* migrate --> */
 
-#ifdef POOL_TEST /* <-- test */
-/* Operates by side-effects only. Used only for {POOL_TEST}. */
-typedef void (*PT_(Action))(T *const element);
-#endif /* test --> */
+#ifdef POOL_MIGRATE_ALL_TYPE /* <-- parent */
+/* Troubles with this line? check to ensure that {POOL_MIGRATE_ALL_TYPE} is a
+ valid type, whose definition is placed above {#include "Pool.h"}. */
+typedef POOL_MIGRATE_ALL_TYPE PT_(ParentType);
+#define P PT_(ParentType)
+/** Function call on {realloc} if {POOL_MIGRATE_ALL_TYPE} is defined. */
+typedef void (*PT_(MigrateParent))(P *const parent,
+	const struct Migrate *const migrate);
+#endif /* parent --> */
 
 #ifdef POOL_TO_STRING /* <-- string */
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
@@ -187,20 +212,15 @@ typedef void (*PT_(ToString))(const T *, char (*const)[12]);
 static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 #endif /* string --> */
 
-#ifdef POOL_PARENT /* <-- parent */
-/* Troubles with this line? check to ensure that {POOL_PARENT} is a valid type,
- whose definition is placed above {#include "Pool.h"}. */
-typedef POOL_PARENT PT_(ParentType);
-#define P PT_(ParentType)
-/** Function call on {realloc}. */
-typedef void (*PT_(MigrateParent))(P *const parent,
-	const struct Migrate *const migrate);
-#endif /* parent --> */
+#ifdef POOL_TEST /* <-- test */
+/* Operates by side-effects only. Used only for {POOL_TEST}. */
+typedef void (*PT_(Action))(T *const element);
+#endif /* test --> */
 
-#ifdef POOL_UPDATE /* <-- update */
-/* Troubles with this line? check to ensure that {POOL_UPDATE} is a valid type,
+#ifdef POOL_UPDATE_OLD_TYPE /* <-- update */
+/* Troubles with this line? check to ensure that {POOL_UPDATE_OLD_TYPE} is a valid type,
  whose definition is placed above {#include "Pool.h"}. */
-typedef POOL_UPDATE PT_(UpdateType);
+typedef POOL_UPDATE_OLD_TYPE PT_(UpdateType);
 #define U PT_(UpdateType)
 #endif /* update --> */
 
@@ -219,7 +239,7 @@ struct T_(Pool) {
 	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next. */
 	size_t size; /* Including removed. */
 	size_t head, tail; /* Removed queue. */
-#ifdef POOL_PARENT
+#ifdef POOL_PARENT_OLD_TYPE
 	PT_(MigrateParent) migrate; /* Called to update on resizing. */
 	P *parent; /* Migrate parameter. */
 #endif
@@ -249,7 +269,7 @@ static void PT_(debug)(struct T_(Pool) *const this,
  {IEEE Std 1003.1-2001}. */
 static int PT_(reserve)(struct T_(Pool) *const this,
 	const size_t min_capacity
-#ifdef POOL_UPDATE /* <-- update */
+#ifdef POOL_UPDATE_OLD_TYPE /* <-- update */
 	, U **const update_ptr
 #endif /* update --> */
 	) {
@@ -271,19 +291,19 @@ static int PT_(reserve)(struct T_(Pool) *const this,
 	PT_(debug)(this, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
 		(void *)this->array, (unsigned long)this->capacity[0], (void *)array,
 		(unsigned long)c0);
-#if defined(POOL_PARENT) || defined(POOL_UPDATE) /* <-- migrate */
+#if defined(POOL_PARENT_OLD_TYPE) || defined(POOL_UPDATE_OLD_TYPE) /* <-- migrate */
 	if(this->array != array && this->migrate) {
 		/* Migrate parent class. Violates pedantic strict-ANSI? */
 		struct Migrate migrate;
 		migrate.begin = this->array;
 		migrate.end   = (const char *)this->array + this->size * sizeof *array;
 		migrate.delta = (const char *)array - (const char *)this->array;
-#ifdef POOL_PARENT /* <-- parent */
+#ifdef POOL_PARENT_OLD_TYPE /* <-- parent */
 		PT_(debug)(this, "reserve", "calling migrate.\n");
 		assert(this->parent);
 		this->migrate(this->parent, &migrate);
 #endif /* parent --> */
-#ifdef POOL_UPDATE /* <-- update */
+#ifdef POOL_UPDATE_OLD_TYPE /* <-- update */
 		if(update_ptr) {
 			const void *const u = *update_ptr;
 			if(u >= migrate.begin && u < migrate.end)
@@ -398,9 +418,9 @@ static struct T_(Pool) *PT_(pool)(void) {
 	return this;
 }
 
-#ifdef POOL_PARENT /* <-- parent */
+#ifdef POOL_PARENT_OLD_TYPE /* <-- parent */
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8. This is
- the constructor if {POOL_PARENT} is specified.
+ the constructor if {POOL_PARENT_OLD_TYPE} is specified.
  @param migrate: The parent's {Migrate} function.
  @param parent: The parent; to have multiple parents, implement an intermediary
  {Migrate} function that takes multiple values; required if {migrate} is
@@ -512,7 +532,7 @@ static int T_(PoolReserve)(struct T_(Pool) *const this,
 	const size_t min_capacity) {
 	if(!this) return 0;
 	if(!PT_(reserve)(this, min_capacity
-#ifdef POOL_UPDATE /* <-- update */
+#ifdef POOL_UPDATE_OLD_TYPE /* <-- update */
 		, 0
 #endif /* update --> */
 		)) return 0; /* ERANGE, ENOMEM? */
@@ -535,7 +555,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
 	if(!this) return 0;
 	if(!(elem = PT_(dequeue_removed)(this))) {
 		if(!PT_(reserve)(this, this->size + 1
-#ifdef POOL_UPDATE /* <-- update */
+#ifdef POOL_UPDATE_OLD_TYPE /* <-- update */
 			, 0
 #endif /* update --> */
 			)) return 0; /* ERANGE, ENOMEM? */
@@ -546,9 +566,9 @@ static T *T_(PoolNew)(struct T_(Pool) *const this) {
 	return &elem->data;
 }
 
-#ifdef POOL_UPDATE /* <-- update */
+#ifdef POOL_UPDATE_OLD_TYPE /* <-- update */
 /** Gets an uninitialised new element and updates the {update_ptr} if it is
- within the memory region that was changed. Must have {POOL_UPDATE} defined.
+ within the memory region that was changed. Must have {POOL_UPDATE_OLD_TYPE} defined.
  @param this: If {this} is null, returns null.
  @param iterator_ptr: Pointer to update on migration.
  @return A new, un-initialised, element, or null and {errno} may be set.
@@ -725,7 +745,7 @@ static void PT_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_set)(void) {
 	T_(Pool_)(0);
-#ifdef POOL_PARENT
+#ifdef POOL_PARENT_OLD_TYPE
 	T_(Pool)(0, 0);
 #else
 	T_(Pool)();
@@ -737,7 +757,7 @@ static void PT_(unused_set)(void) {
 	T_(PoolGetIndex)(0, 0);
 	T_(PoolReserve)(0, (size_t)0);
 	T_(PoolNew)(0);
-#ifdef POOL_UPDATE /* <-- update */
+#ifdef POOL_UPDATE_OLD_TYPE /* <-- update */
 	T_(PoolUpdateNew)(0, 0);
 #endif /* update --> */
 	T_(PoolRemove)(0, 0);
@@ -773,11 +793,11 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif
 #undef POOL_NAME
 #undef POOL_TYPE
-#ifdef POOL_PARENT
-#undef POOL_PARENT
+#ifdef POOL_PARENT_OLD_TYPE
+#undef POOL_PARENT_OLD_TYPE
 #endif
-#ifdef POOL_UPDATE
-#undef POOL_UPDATE
+#ifdef POOL_UPDATE_OLD_TYPE
+#undef POOL_UPDATE_OLD_TYPE
 #endif
 #ifdef POOL_TO_STRING
 #undef POOL_TO_STRING
