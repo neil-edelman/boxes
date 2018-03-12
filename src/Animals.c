@@ -17,7 +17,6 @@ struct Animal {
 };
 static const size_t animal_name_size = sizeof ((struct Animal *)0)->name
 	/ sizeof *((struct Animal *)0)->name;
-/* This just gets a static field. */
 static void Animal_to_string(const struct Animal *const animal,
 	char (*const a)[12]) {
 	strncpy(*a, animal->name, sizeof *a / sizeof **a);
@@ -27,13 +26,19 @@ static void Animal_to_string(const struct Animal *const animal,
 #define LIST_TO_STRING &Animal_to_string
 #include "List.h"
 
-/* Class Ref. */
-struct Ref {
-	struct Animal *ref;
+/* Class Connect. */
+struct Connect {
+	struct Animal *steed, *mount;
 };
-#define POOL_NAME Ref
-#define POOL_TYPE struct Ref
-/*#define POOL_PARENT struct RefPool*/ /* More efficient to follow the pointers. */
+static void connect_migrate(struct Connect *const this,
+	const struct Migrate *const migrate) {
+	assert(this && migrate && this->steed && this->mount);
+	/**@fixme**/
+	assert(0);
+}
+#define POOL_NAME Connect
+#define POOL_TYPE struct Connect
+#define POOL_MIGRATE_EACH &connect_migrate
 #include "Pool.h"
 
 /* Class Sloth extends Animal. */
@@ -41,9 +46,14 @@ struct Sloth {
 	struct AnimalListNode animal;
 	unsigned hours_slept;
 };
+static void sloth_migrate(struct Sloth *const this,
+	const struct Migrate *const migrate) {
+	assert(this && migrate);
+	AnimalListNodeMigrate(&this->animal, migrate);
+}
 #define POOL_NAME Sloth
 #define POOL_TYPE struct Sloth
-#define POOL_PARENT struct AnimalList
+#define POOL_MIGRATE_EACH &sloth_migrate
 #include "Pool.h"
 
 /* Class Emu extends Animal. */
@@ -51,44 +61,61 @@ struct Emu {
 	struct AnimalListNode animal;
 	char favourite_letter;
 };
+static void emu_migrate(struct Emu *const this,
+	const struct Migrate *const migrate) {
+	assert(this && migrate);
+	AnimalListNodeMigrate(&this->animal, migrate);
+}
 #define POOL_NAME Emu
 #define POOL_TYPE struct Emu
-#define POOL_PARENT struct AnimalList
+#define POOL_MIGRATE_EACH &emu_migrate
 #include "Pool.h"
 
 /* Class BadEmu extends Emu. */
 struct BadEmu {
 	struct Emu emu;
-	struct Ref *mount;
+	struct Connect *mount;
 	char muhaha[12];
 };
+static void bad_emu_migrate(struct BadEmu *const this,
+	const struct Migrate *const migrate) {
+	assert(this && migrate);
+	AnimalListNodeMigrate(&this->emu.animal, migrate);
+}
 #define POOL_NAME BadEmu
 #define POOL_TYPE struct BadEmu
-/*#define POOL_PARENT struct Animals*/
-#define POOL_PARENT struct AnimalList
+#define POOL_MIGRATE_EACH &bad_emu_migrate
 #include "Pool.h"
 
 /* Class Llama extends Animal. */
 struct Llama {
 	struct AnimalListNode animal;
-	struct Ref *mount_of;
+	struct Connect *mount_of;
 	unsigned chomps;
 };
+static void llama_migrate(struct Llama *const this,
+	const struct Migrate *const migrate) {
+	assert(this && migrate);
+	AnimalListNodeMigrate(&this->animal, migrate);
+}
 #define POOL_NAME Llama
 #define POOL_TYPE struct Llama
-/*#define POOL_PARENT struct Animals*/
-#define POOL_PARENT struct AnimalList
+#define POOL_MIGRATE_EACH &llama_migrate
 #include "Pool.h"
 
 /* Class Lemur extends Animal. */
 struct Lemur {
 	struct AnimalListNode animal;
-	struct Ref *mount;
+	struct Connect *mount;
 };
+static void lemur_migrate(struct Lemur *const this,
+	const struct Migrate *const migrate) {
+	assert(this && migrate);
+	AnimalListNodeMigrate(&this->animal, migrate);
+}
 #define POOL_NAME Lemur
 #define POOL_TYPE struct Lemur
-/*#define POOL_PARENT struct Animals*/
-#define POOL_PARENT struct AnimalList
+#define POOL_MIGRATE_EACH &lemur_migrate
 #include "Pool.h"
 
 /* Class Bear extends Animal. We have always two or less, so we don't need to
@@ -96,13 +123,13 @@ struct Lemur {
 struct Bear {
 	struct AnimalListNode animal;
 	int is_active;
-	struct Ref *mount;
+	struct Connect *mount;
 };
 
 /* Animal list with backing. These are the storage structures. */
 struct Animals {
 	struct AnimalList list;
-	struct RefPool *refs;
+	struct ConnectPool *connects;
 	struct SlothPool *sloths;
 	struct EmuPool *emus;
 	struct BadEmuPool *bad_emus;
@@ -190,10 +217,10 @@ static void Emu_act(struct Emu *const emu) {
 static void BadEmu_act(struct BadEmu *const bad_emu) {
 	char riding[64] = "";
 	if(bad_emu->mount) {
-		struct Animal *const steed = bad_emu->mount->ref;
-		assert(steed);
+		struct Connect *const connect = bad_emu->mount;
+		assert(connect->steed && connect->mount == &bad_emu->emu.animal.data);
 		sprintf(riding, " They are riding on %s the %s.",
-			steed->name, steed->vt->kind);
+			connect->steed->name, connect->steed->vt->kind);
 	}
 	printf("%s %s has favourite colour %s and favourite letter %c; "
 		"he is mumbling \"%s.\"%s\n", bad_emu->emu.animal.data.vt->kind,
@@ -210,10 +237,10 @@ static void Llama_act(struct Llama *const llama) {
 static void Bear_act(struct Bear *const bear) {
 	char riding[64] = "chilling";
 	if(bear->mount) {
-		struct Animal *const steed = bear->mount->ref;
-		assert(steed);
+		struct Connect *const connect = bear->mount;
+		assert(connect->steed && connect->mount == &bear->animal.data);
 		sprintf(riding, "riding on %s the %s",
-			steed->name, steed->vt->kind);
+			connect->steed->name, connect->steed->vt->kind);
 	}
 	printf("%s %s is %s.\n", bear->animal.data.vt->kind,
 		bear->animal.data.name, riding);
@@ -253,26 +280,6 @@ static struct AnimalVt Bear_vt = {
 
 /************/
 
-#if 0
-/** Called from Mount.
- @implements <Animals>Migrate */
-static void animal_riding_migrate(struct Animals *const a,
-	const struct Migrate *const migrate) {
-	fprintf(stderr, "animal_riding_migrate: %s.\n",
-		AnimalListToString(&a->list));
-	assert(a && migrate);
-	/* @fixme Something's wrong. */
-	AnimalListMigrate(&a->list, migrate);
-}
-#endif
-
-/** @implements <Ref>Migrate */
-/*static void ref_migrate(struct RefPool *const this,
-	const struct Migrate *const migrate) {
-	assert(this && migrate);
-	
-}*/
-
 /** Only called from constructors of children. */
 static void Animal_filler(struct Animal *const animal,
 	const struct AnimalVt *const vt) {
@@ -297,33 +304,28 @@ struct Animals *Animals(void) {
 	const char *c = "null";
 	if(!(a = malloc(sizeof *a))) { perror("Animals"); Animals_(&a); return 0; }
 	AnimalListClear(&a->list);
-	a->refs   = 0;
-	a->sloths = 0;
-	a->emus   = 0;
-	a->bad_emus=0;
-	a->llamas = 0;
-	a->lemurs = 0;
-	for(bear = a->bears, end = bear + sizeof(((struct Animals *)0)->bears)
-		/ sizeof(*((struct Animals *)0)->bears); bear < end; bear++)
+	a->connects = 0;
+	a->sloths   = 0;
+	a->emus     = 0;
+	a->bad_emus = 0;
+	a->llamas   = 0;
+	a->lemurs   = 0;
+	for(bear = a->bears, end = bear + no_bears; bear < end; bear++)
 		bear->is_active = 0;
 	errno = 0; do {
 		/* @fixme Maybe AnimalListMigrate should not be there? Maybe
 		 <EmuListNode>Migrate(EmuListNode) which would be in List? Then
 		 wouldn't need second parameter, could make it a define? */
-		if(!(c = "refs", a->refs = RefPool(/*&ref_migrate, a->refs*/))
-			||!(c="sloths", a->sloths = SlothPool(&AnimalListMigrate, &a->list))
-			|| !(c="emus", a->emus = EmuPool(&AnimalListMigrate, &a->list))
-			/*|| !(a->bad_emus = BadEmuPool(&animal_riding_migrate, a))
-			|| !(a->llamas = LlamaPool(&animal_riding_migrate, a))
-			|| !(a->lemurs = LemurPool(&animal_riding_migrate, a))*/
-			|| !(c = "bad_emus", a->bad_emus = BadEmuPool(&AnimalListMigrate,
-			&a->list))
-			|| !(c="llamas",a->llamas = LlamaPool(&AnimalListMigrate, &a->list))
-			|| !(c="lemurs",a->lemurs = LemurPool(&AnimalListMigrate, &a->list))
+		if(!(c = "connects", a->connects = ConnectPool())
+			|| !(c = "sloths", a->sloths = SlothPool())
+			|| !(c = "emus", a->emus = EmuPool())
+			|| !(c = "bad_emus", a->bad_emus = BadEmuPool())
+			|| !(c = "llamas", a->llamas = LlamaPool())
+			|| !(c = "lemurs", a->lemurs = LemurPool())
 		) break;
 		is_success = 1;
 	} while(0); if(!is_success) {
-		fprintf(stderr, "Animals constructor calling %s: %s.\n",
+		fprintf(stderr, "Animals, constructing %s: %s.\n",
 			c, strerror(errno));
 		Animals_(&a);
 	}
