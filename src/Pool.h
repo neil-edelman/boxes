@@ -659,12 +659,12 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const this,
 			handler(&e->data, migrate);
 }
 
-/** Allows pointers to the pool to be updated. It doesn't affect pointers not
- in the {realloc}ed region.
+/** Passed a {migrate} paramerer, allows pointers to the pool to be updated. It
+ doesn't affect pointers not in the {realloc}ed region.
  @order \Omega(1)
  @fixme Untested.
  @allow */
-static void T_(PoolMigratePointer)(T **const data_ptr,
+static void T_(PoolMigratePointer)(T *const*const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
 	if(!data_ptr
