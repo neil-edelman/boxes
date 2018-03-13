@@ -26,22 +26,6 @@ static void Animal_to_string(const struct Animal *const animal,
 #define LIST_TO_STRING &Animal_to_string
 #include "List.h"
 
-/* Class Connect. */
-struct Connect {
-	struct Animal *steed, *mount;
-};
-static void Animal_mount_migrate(struct Animal *const animal, const struct Migrate *const migrate); /* prototype */
-static void connect_migrate(struct Connect *const this,
-	const struct Migrate *const migrate) {
-	assert(this && migrate && this->steed && this->mount);
-	Animal_mount_migrate(this->steed, migrate);
-	Animal_mount_migrate(this->mount, migrate);
-}
-#define POOL_NAME Connect
-#define POOL_TYPE struct Connect
-#define POOL_MIGRATE_EACH &connect_migrate
-#include "Pool.h"
-
 /* Class Sloth extends Animal. */
 struct Sloth {
 	struct AnimalListNode animal;
@@ -72,7 +56,35 @@ static void emu_migrate(struct Emu *const this,
 #define POOL_MIGRATE_EACH &emu_migrate
 #include "Pool.h"
 
-/* Class BadEmu extends Emu. */
+/* Class Mount. */
+struct Mounter;
+struct MountVt;
+struct Mount {
+	struct Mounter *steed, *rider;
+};
+static void mount_migrate(struct Mount *const mount,
+	const struct Migrate *const migrate) {
+	assert(mount && migrate && mount->steed && mount->rider);
+	Mount_migrate(mount->steed, migrate);
+	Mount_migrate(mount->rider, migrate);
+}
+#define POOL_NAME Mount
+#define POOL_TYPE struct Mount
+#define POOL_MIGRATE_EACH &mount_migrate
+#include "Pool.h"
+
+/* Class Steed extends Animal */
+struct Steed {
+	struct MountVt *vt;
+	struct Rider *rider;
+};
+/* Class Rider extends Animal */
+struct Rider {
+	struct MountVt *vt;
+	struct SteedVt *steed;
+};
+
+/* Class BadEmu extends Emu implements Rider. */
 struct BadEmu {
 	struct Emu emu;
 	struct Connect *mount;
@@ -88,9 +100,12 @@ static void bad_emu_migrate(struct BadEmu *const this,
 #define POOL_MIGRATE_EACH &bad_emu_migrate
 #include "Pool.h"
 
+struct SteedVt;
+
 /* Class Llama extends Animal. */
 struct Llama {
 	struct AnimalListNode animal;
+	struct SteedVt *vt;
 	struct Connect *steed;
 	unsigned chomps;
 };
@@ -107,6 +122,7 @@ static void llama_migrate(struct Llama *const this,
 /* Class Lemur extends Animal. */
 struct Lemur {
 	struct AnimalListNode animal;
+	struct MountVt *vt;
 	struct Connect *mount;
 };
 static void lemur_migrate(struct Lemur *const this,
@@ -124,6 +140,7 @@ static void lemur_migrate(struct Lemur *const this,
 struct Bear {
 	struct AnimalListNode animal;
 	int is_active;
+	struct MountVt *vt;
 	struct Connect *mount;
 };
 
@@ -151,8 +168,16 @@ struct AnimalVt {
 	const char kind[16];
 	AnimalsAction delete;
 	AnimalAction act/*transmogrify*/;
+};
+
+struct SteedVt {
+	AnimalConnectMigrate steed_migrate;
+	AnimalConnectField steed;
+};
+
+struct MountVt {
 	AnimalConnectMigrate mount_migrate;
-	AnimalConnectField steed, mount;
+	AnimalConnectField mount;
 };
 
 /** @implements <Animal, [Animals]>BiAction */
@@ -456,6 +481,19 @@ void Bear(struct Animals *const animals, const unsigned no, const char *const na
 	bear->is_active = 1;
 	bear->mount = 0;
 	AnimalListPush(&animals->list, &bear->animal.data);
+}
+
+/** Cause {a} to ride {b}. If {a} or {b} is null, causes that connection to be
+ broken.
+ @return Success. */
+int AnimalsRide(struct Animals *const animals, struct Animal *const a,
+	struct Animal *const b) {
+	struct Animal *erase;
+	if(!animals || !a && !b) return 0;
+	erase = a ? b ? 0 : a : 0;
+	if(erase) assert(0); /* @fixme */
+	if((steed = 
+	return 0;
 }
 
 /** @implements <Animal, [size_t *]>BiAction */
