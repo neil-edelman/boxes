@@ -30,11 +30,12 @@ static void Animal_to_string(const struct Animal *const animal,
 struct Connect {
 	struct Animal *steed, *mount;
 };
+static void Animal_mount_migrate(struct Animal *const animal, const struct Migrate *const migrate); /* prototype */
 static void connect_migrate(struct Connect *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate && this->steed && this->mount);
-	/**@fixme**/
-	assert(0);
+	Animal_mount_migrate(this->steed, migrate);
+	Animal_mount_migrate(this->mount, migrate);
 }
 #define POOL_NAME Connect
 #define POOL_TYPE struct Connect
@@ -90,7 +91,7 @@ static void bad_emu_migrate(struct BadEmu *const this,
 /* Class Llama extends Animal. */
 struct Llama {
 	struct AnimalListNode animal;
-	struct Connect *mount_of;
+	struct Connect *steed;
 	unsigned chomps;
 };
 static void llama_migrate(struct Llama *const this,
@@ -141,6 +142,8 @@ static const unsigned no_bears = sizeof(((struct Animals *)0)->bears) / sizeof(*
 
 typedef void (*AnimalAction)(struct Animal *const);
 typedef void (*AnimalsAction)(struct Animals *const, struct Animal *const);
+typedef struct Connect *const*(*AnimalConnectField)(const struct Animal *const);
+typedef void (*AnimalConnectMigrate)(struct Animal *const, const struct Migrate *const);
 
 /*********/
 
@@ -148,7 +151,10 @@ struct AnimalVt {
 	const char kind[16];
 	AnimalsAction delete;
 	AnimalAction act/*transmogrify*/;
+	AnimalConnectMigrate mount_migrate;
+	AnimalConnectField steed, mount;
 };
+
 /** @implements <Animal, [Animals]>BiAction */
 static void Animal_delete(struct Animal *const animal,
 	void *const void_animals) {
@@ -246,36 +252,100 @@ static void Bear_act(struct Bear *const bear) {
 		bear->animal.data.name, riding);
 }
 
+/** @implements AnimalConnectMigrate */
+static void Animal_mount_migrate(struct Animal *const animal, const struct Migrate *const migrate) {
+	assert(animal && animal->vt->mount_migrate);
+	animal->vt->mount_migrate(animal, migrate);
+}
+static void BadEmu_mount_migrate(struct BadEmu *const bad_emu, const struct Migrate *const migrate) {
+	ConnectPoolMigratePointer(&bad_emu->mount, migrate);
+}
+static void Lemur_mount_migrate(struct Lemur *const lemur, const struct Migrate *const migrate) {
+	ConnectPoolMigratePointer(&lemur->mount, migrate);
+}
+static void Llama_mount_migrate(struct Llama *const llama, const struct Migrate *const migrate) {
+	ConnectPoolMigratePointer(&llama->steed, migrate);
+}
+static void Bear_mount_migrate(struct Bear *const bear, const struct Migrate *const migrate) {
+	ConnectPoolMigratePointer(&bear->mount, migrate);
+}
+
+/** @implements AnimalConnectField */
+static struct Connect *const*Animal_steed(const struct Animal *const animal) {
+	AnimalConnectField steed;
+	assert(animal);
+	if(!(steed = animal->vt->steed)) return 0;
+	return steed(animal);
+}
+static struct Connect *const*Llama_steed(const struct Llama *const llama) {
+	return &llama->steed;
+}
+
+/** @implements AnimalConnectField */
+static struct Connect *const*Animal_mount(const struct Animal *const animal) {
+	AnimalConnectField mount;
+	assert(animal);
+	if(!(mount = animal->vt->mount)) return 0;
+	return mount(animal);
+}
+static struct Connect *const*BadEmu_mount(const struct BadEmu *const bad_emu) {
+	return &bad_emu->mount;
+}
+static struct Connect *const*Lemur_mount(const struct BadEmu *const lemur) {
+	return &lemur->mount;
+}
+static struct Connect *const*Bear_mount(const struct Bear *const bear) {
+	return &bear->mount;
+}
+
 /* Static data containing the functions defined above. */
 static struct AnimalVt Sloth_vt = {
 	"Sloth",
 	(AnimalsAction)&Sloth_delete,
-	(AnimalAction)&Sloth_act
+	(AnimalAction)&Sloth_act,
+	0,
+	0,
+	0
 };
 static struct AnimalVt Emu_vt = {
 	"Emu",
 	(AnimalsAction)&Emu_delete,
-	(AnimalAction)&Emu_act
+	(AnimalAction)&Emu_act,
+	0,
+	0,
+	0
 };
 static struct AnimalVt BadEmu_vt = {
 	"Emu",
 	(AnimalsAction)&BadEmu_delete,
-	(AnimalAction)&BadEmu_act
+	(AnimalAction)&BadEmu_act,
+	(AnimalConnectMigrate)&BadEmu_mount_migrate,
+	0,
+	(AnimalConnectField)&BadEmu_mount,
 };
 static struct AnimalVt Lemur_vt = {
 	"Lemur",
 	(AnimalsAction)&Lemur_delete,
-	(AnimalAction)&Lemur_act
+	(AnimalAction)&Lemur_act,
+	(AnimalConnectMigrate)&Lemur_mount_migrate,
+	0,
+	(AnimalConnectField)&Lemur_mount
 };
 static struct AnimalVt Llama_vt = {
 	"Llama",
 	(AnimalsAction)&Llama_delete,
-	(AnimalAction)&Llama_act
+	(AnimalAction)&Llama_act,
+	(AnimalConnectMigrate)&Llama_mount_migrate,
+	(AnimalConnectField)&Llama_steed,
+	0
 };
 static struct AnimalVt Bear_vt = {
 	"Bear",
 	(AnimalsAction)&Bear_delete,
-	(AnimalAction)&Bear_act
+	(AnimalAction)&Bear_act,
+	(AnimalConnectMigrate)Bear_mount_migrate,
+	0,
+	(AnimalConnectField)&Bear_mount,
 };
 
 /************/
@@ -301,7 +371,7 @@ struct Animals *Animals(void) {
 	struct Animals *a;
 	struct Bear *bear, *end;
 	int is_success = 0;
-	const char *c = "null";
+	const char *e = "null";
 	if(!(a = malloc(sizeof *a))) { perror("Animals"); Animals_(&a); return 0; }
 	AnimalListClear(&a->list);
 	a->connects = 0;
@@ -313,20 +383,17 @@ struct Animals *Animals(void) {
 	for(bear = a->bears, end = bear + no_bears; bear < end; bear++)
 		bear->is_active = 0;
 	errno = 0; do {
-		/* @fixme Maybe AnimalListMigrate should not be there? Maybe
-		 <EmuListNode>Migrate(EmuListNode) which would be in List? Then
-		 wouldn't need second parameter, could make it a define? */
-		if(!(c = "connects", a->connects = ConnectPool())
-			|| !(c = "sloths", a->sloths = SlothPool())
-			|| !(c = "emus", a->emus = EmuPool())
-			|| !(c = "bad_emus", a->bad_emus = BadEmuPool())
-			|| !(c = "llamas", a->llamas = LlamaPool())
-			|| !(c = "lemurs", a->lemurs = LemurPool())
+		if(!(e = "connects", a->connects = ConnectPool())
+			|| !(e = "sloths", a->sloths = SlothPool())
+			|| !(e = "emus", a->emus = EmuPool())
+			|| !(e = "bad_emus", a->bad_emus = BadEmuPool())
+			|| !(e = "llamas", a->llamas = LlamaPool())
+			|| !(e = "lemurs", a->lemurs = LemurPool())
 		) break;
 		is_success = 1;
 	} while(0); if(!is_success) {
 		fprintf(stderr, "Animals, constructing %s: %s.\n",
-			c, strerror(errno));
+			e, strerror(errno));
 		Animals_(&a);
 	}
 	return a;
@@ -365,7 +432,7 @@ struct Llama *Llama(struct Animals *const animals) {
 	if(!animals) return 0;
 	if(!(llama = LlamaPoolNew(animals->llamas))) return 0;
 	Animal_filler(&llama->animal.data, &Llama_vt);
-	llama->mount_of = 0;
+	llama->steed  = 0;
 	llama->chomps = 5 + 10 * rand() / RAND_MAX;
 	AnimalListPush(&animals->list, &llama->animal.data);
 	return llama;
