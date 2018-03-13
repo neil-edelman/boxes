@@ -57,16 +57,20 @@ static void emu_migrate(struct Emu *const this,
 #include "Pool.h"
 
 /* Class Mount. */
-struct Mounter;
 struct MountVt;
 struct Mount {
-	struct Mounter *steed, *rider;
+	struct MountVt *steed_vt, *rider_vt;
 };
 static void mount_migrate(struct Mount *const mount,
 	const struct Migrate *const migrate) {
-	assert(mount && migrate && mount->steed && mount->rider);
-	Mount_migrate(mount->steed, migrate);
-	Mount_migrate(mount->rider, migrate);
+	assert(mount && migrate && mount->steed_vt && mount->rider_vt);
+	mount_vt_migrate(mount->steed_vt, migrate);
+	mount_vt_migrate(mount->rider_vt, migrate);
+}
+static void mount_vt_migrate(struct MountVt *const mount_vt,
+	const struct Migrate *const migrate) {
+	assert(mount_vt && migrate);
+	mount_vt->get_mount...
 }
 #define POOL_NAME Mount
 #define POOL_TYPE struct Mount
