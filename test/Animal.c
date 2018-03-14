@@ -9,6 +9,10 @@
 #include <time.h>	/* clock */
 #include "../src/Animals.h"
 
+/*#define POOL_NAME AnimalRef
+#define POOL_TYPE const struct Animal *
+#include "../src/Pool.h" <- This is useless: memory move. */
+
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
  @param argv: The arguments.
@@ -21,29 +25,33 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 
 	do {
+		struct Animal *animal = 0;
+		struct Bear *w, *n;
 		const unsigned animal_no = 100;
 		unsigned i;
 		if(!(a = Animals())) break;
 		for(i = 0; i < animal_no; i++) {
 			float r = (float)(rand() / ((double)RAND_MAX + 1));
 			if(r < 0.25f) {
-				if(!Sloth(a)) break;
+				animal = (struct Animal *)Sloth(a);
 			} else if(r < 0.45f) {
-				if(!Emu(a)) break;
+				animal = (struct Animal *)Emu(a);
 			} else if(r < 0.55) {
-				if(!BadEmu(a)) break;
+				animal = (struct Animal *)BadEmu(a);
 			} else if(r < 0.8) {
-				if(!Llama(a)) break;
+				animal = (struct Animal *)Llama(a);
 			} else {
-				if(!Lemur(a)) break;
+				animal = (struct Animal *)Lemur(a);
 			}
+			if(!animal) break;
+			/*AnimalRide(a, );*/
 		}
 		if(i != animal_no) break;
-		Bear(a, 0, "Winnie");
-		Bear(a, 1, "Napoloen");
-		/* fixme: bear. */
+		w = Bear(a, 0, "Winnie");
+		n = Bear(a, 1, "Napoloen");
 		AnimalsAct(a);
 		AnimalsClear(a);
+		AnimalsRide(a, (struct Animal *)n, 0);
 		Animals_(&a);
 		is_success = 1;
 	} while(0); if(!is_success) {

@@ -9,7 +9,7 @@ struct Emu *Emu(struct Animals *const animals);
 struct BadEmu *BadEmu(struct Animals *const animals);
 struct Llama *Llama(struct Animals *const animals);
 struct Lemur *Lemur(struct Animals *const animals);
-void Bear(struct Animals *const animals, const unsigned no,
+struct Bear *Bear(struct Animals *const animals, const unsigned no,
 	const char *const name);
 int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 	struct Animal *const b);
