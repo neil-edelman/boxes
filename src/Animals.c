@@ -31,7 +31,7 @@ struct Mount;
 struct MountInfo {
 	struct Animal *animal;
 	struct Mount *steed_of, *riding;
-	enum Allowed { STEED = 1, RIDER = 2 } is_allowed;
+	enum Allowed { STEED = 1, RIDER = 2 } is_allowed; /* Bitfield. */
 };
 struct Mount {
 	struct MountInfo *steed, *rider;
@@ -162,7 +162,7 @@ struct AnimalVt {
 	AnimalMountInfo mount_info;
 };
 
-static void dismount(struct Mount **const pmount);
+static void dismount(struct Mount *const mount);
 
 /** @implements <Animal, [Animals]>BiAction */
 static void Animal_delete(struct Animal *const animal,
@@ -171,8 +171,8 @@ static void Animal_delete(struct Animal *const animal,
 	struct MountInfo *mount_info;
 	if(!animals || !animal) return;
 	if((mount_info = animal->vt->mount_info(animal))) {
-		dismount(&mount_info->steed_of);
-		dismount(&mount_info->riding);
+		if(mount_info->steed_of) dismount(mount_info->steed_of);
+		if(mount_info->riding)   dismount(mount_info->riding);
 	}
 	animal->vt->delete(animals, animal);
 }
@@ -359,11 +359,8 @@ static void mount_migrate(struct Mount *const mount,
 }
 
 /** Helper for delete. */
-static void dismount(struct Mount **const pmount) {
-	struct Mount *mount;
-	assert(pmount);
-	if(!(mount = *pmount)) return; /* Unmounted. */
-	assert(mount->steed && mount->rider);
+static void dismount(struct Mount *const mount) {
+	assert(mount && mount->steed && mount->rider);
 	printf("%s the %s dismounts %s the %s.\n", mount->rider->animal->name,
 		mount->rider->animal->vt->type, mount->steed->animal->name,
 		mount->steed->animal->vt->type);
@@ -499,11 +496,43 @@ struct Bear *Bear(struct Animals *const animals, const unsigned no,
 int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 	struct Animal *const b) {
 	struct Animal *erase;
+	struct MountInfo *steed = 0, *rider = 0;
+	struct Mount *mount;
 	if(!animals || (!a && !b)) return 0;
 	erase = a ? b ? 0 : a : 0;
-	if(erase) return 0; /* @fixme */
-	/*if((steed = */
-	return 0;
+	if(erase) {
+		/* One was null. */
+		const struct MountInfo *const mi = erase->vt->mount_info(erase);
+		if(!mi) return fprintf(stderr, "Animal %s the %s does not have mount "
+			"information.\n", erase->name, erase->vt->type), 0;
+		if(mi->riding)   dismount(mi->riding);
+		if(mi->steed_of) dismount(mi->steed_of);
+		assert(!mi->steed_of && !mi->riding);
+		return 1;
+	} else {
+		/* Both are full. */
+		struct MountInfo *const ami = a->vt->mount_info(a),
+			*const bmi = b->vt->mount_info(b);
+		if(!ami || !bmi) {
+		} if((ami->is_allowed & RIDER) && !ami->riding
+			&& (bmi->is_allowed & STEED) && !bmi->steed_of) {
+			steed = bmi, rider = ami;
+		} else if((ami->is_allowed & STEED) && !ami->steed_of
+			&& (bmi->is_allowed & RIDER) && !bmi->riding) {
+			steed = ami, rider = bmi;
+		}
+	}
+	if(!steed || !rider) return fprintf(stderr, "Animal %s the %s and "
+		"%s the %s do not understand your mount in this configuration.\n",
+		a->name, a->vt->type, b->name, b->vt->type), 0;
+	/* {steed} and {rider} are good. */
+	mount = MountPoolNew(animals->mounts);
+	mount->steed = steed, steed->steed_of = mount;
+	mount->rider = rider, rider->riding   = mount;
+	printf("%s the %s mounts %s the %s.\n", rider->animal->name,
+		rider->animal->vt->type, steed->animal->name, steed->animal->vt->type);
+	return 1;
+	
 }
 /** @implements <Animal, [size_t *]>BiAction */
 static void Animal_count(struct Animal *const animal, void *const pcount) {

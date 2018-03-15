@@ -11,7 +11,8 @@
 
 /*#define POOL_NAME AnimalRef
 #define POOL_TYPE const struct Animal *
-#include "../src/Pool.h" <- This is useless: memory move. */
+#include "../src/Pool.h" <- This is useless: memory move. Maybe we should make
+ it useful? */
 
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
@@ -50,8 +51,10 @@ int main(void) {
 		w = Bear(a, 0, "Winnie");
 		n = Bear(a, 1, "Napoloen");
 		AnimalsAct(a);
+		for(i = 100; i; i--) {
+		}
+		AnimalsRide(a, (struct Animal *)n, (struct Animal *)w);
 		AnimalsClear(a);
-		AnimalsRide(a, (struct Animal *)n, 0);
 		Animals_(&a);
 		is_success = 1;
 	} while(0); if(!is_success) {
