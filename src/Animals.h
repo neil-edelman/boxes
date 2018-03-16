@@ -15,3 +15,5 @@ int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 	struct Animal *const b);
 void AnimalsAct(struct Animals *const animals);
 void AnimalsClear(struct Animals *const animals);
+struct Animal *AnimalsFirst(struct Animals *const animals);
+struct Animal *AnimalsNext(struct Animal *const animal);

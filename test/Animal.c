@@ -1,8 +1,6 @@
-/** Unit test of Animals.c.
-
- @file		Animal
- @author	Neil
- @std		C89/90 */
+/** @title Animal
+ @author Neil
+ @std C89 */
 
 #include <stdlib.h> /* EXIT_ */
 #include <stdio.h>  /* printf */
@@ -12,55 +10,52 @@
 /*#define POOL_NAME AnimalRef
 #define POOL_TYPE const struct Animal *
 #include "../src/Pool.h" <- This is useless: memory move. Maybe we should make
- it useful? */
+ it useful? Have a function call on {<T>PoolUpdateNew}? */
 
-/** Entry point.
- @param argc: The number of arguments, starting with the programme name.
- @param argv: The arguments.
- @return Either EXIT_SUCCESS or EXIT_FAILURE. */
+/** (Incomplete) unit test of {Animals}. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
-	struct Animals *a = 0;
+	struct Animals *animals = 0;
 	int is_success = 0;
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 
 	do {
-		struct Animal *animal = 0;
+		struct Animal *a = 0, *prev_a = 0;
 		struct Bear *w, *n;
-		const unsigned animal_no = 100;
+		const unsigned animal_no = 10000;
 		unsigned i;
-		if(!(a = Animals())) break;
+		if(!(animals = Animals())) break;
 		for(i = 0; i < animal_no; i++) {
 			float r = (float)(rand() / ((double)RAND_MAX + 1));
 			if(r < 0.25f) {
-				animal = (struct Animal *)Sloth(a);
+				if(!Sloth(animals)) break;
 			} else if(r < 0.45f) {
-				animal = (struct Animal *)Emu(a);
+				if(!Emu(animals)) break;
 			} else if(r < 0.55) {
-				animal = (struct Animal *)BadEmu(a);
+				if(!BadEmu(animals)) break;
 			} else if(r < 0.8) {
-				animal = (struct Animal *)Llama(a);
+				if(!Llama(animals)) break;
 			} else {
-				animal = (struct Animal *)Lemur(a);
+				if(!Lemur(animals)) break;
 			}
-			if(!animal) break;
-			/*AnimalRide(a, );*/
 		}
 		if(i != animal_no) break;
-		w = Bear(a, 0, "Winnie");
-		n = Bear(a, 1, "Napoloen");
-		AnimalsAct(a);
-		for(i = 100; i; i--) {
+		w = Bear(animals, 0, "Winnie");
+		n = Bear(animals, 1, "Napoloen");
+		AnimalsAct(animals);
+		for(a = AnimalsFirst(animals); a; a = AnimalsNext(a)) {
+			if(prev_a && !AnimalsRide(animals, a, prev_a))
+				AnimalsRide(animals, prev_a, a);
+			prev_a = a;
 		}
-		AnimalsRide(a, (struct Animal *)n, (struct Animal *)w);
-		AnimalsClear(a);
-		Animals_(&a);
+		AnimalsClear(animals);
+		Animals_(&animals);
 		is_success = 1;
 	} while(0); if(!is_success) {
 		perror("Animals");
 	} {
-		Animals_(&a);
+		Animals_(&animals);
 	}
 
 	return is_success ? EXIT_SUCCESS : EXIT_FAILURE;

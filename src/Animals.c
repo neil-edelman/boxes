@@ -84,6 +84,7 @@ static void bad_emu_migrate(struct BadEmu *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	AnimalListNodeMigrate(&this->emu.animal, migrate);
+	this->mount_info.animal = &this->emu.animal.data; /* Update pointer. */
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
@@ -102,6 +103,7 @@ static void llama_migrate(struct Llama *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	AnimalListNodeMigrate(&this->animal, migrate);
+	this->mount_info.animal = &this->animal.data; /* Update pointer. */
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
@@ -119,6 +121,7 @@ static void lemur_migrate(struct Lemur *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	AnimalListNodeMigrate(&this->animal, migrate);
+	this->mount_info.animal = &this->animal.data; /* Update pointer. */
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
@@ -514,7 +517,7 @@ int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 		struct MountInfo *const ami = a->vt->mount_info(a),
 			*const bmi = b->vt->mount_info(b);
 		if(!ami || !bmi) {
-		} if((ami->is_allowed & RIDER) && !ami->riding
+		} else if((ami->is_allowed & RIDER) && !ami->riding
 			&& (bmi->is_allowed & STEED) && !bmi->steed_of) {
 			steed = bmi, rider = ami;
 		} else if((ami->is_allowed & STEED) && !ami->steed_of
@@ -522,9 +525,9 @@ int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 			steed = ami, rider = bmi;
 		}
 	}
-	if(!steed || !rider) return fprintf(stderr, "Animal %s the %s and "
+	if(!steed || !rider) return /*fprintf(stderr, "Animal %s the %s and "
 		"%s the %s do not understand your mount in this configuration.\n",
-		a->name, a->vt->type, b->name, b->vt->type), 0;
+		a->name, a->vt->type, b->name, b->vt->type),*/ 0;
 	/* {steed} and {rider} are good. */
 	mount = MountPoolNew(animals->mounts);
 	mount->steed = steed, steed->steed_of = mount;
@@ -549,4 +552,12 @@ void AnimalsAct(struct Animals *const animals) {
 void AnimalsClear(struct Animals *const animals) {
 	if(!animals) return;
 	AnimalListBiForEach(&animals->list, &Animal_delete, animals);
+}
+struct Animal *AnimalsFirst(struct Animals *const animals) {
+	if(!animals) return 0;
+	return AnimalListFirst(&animals->list);
+}
+struct Animal *AnimalsNext(struct Animal *const animal) {
+	if(!animal) return 0;
+	return AnimalListNext(animal);
 }
