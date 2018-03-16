@@ -639,6 +639,16 @@ static void T_(PoolClear)(struct T_(Pool) *const this) {
 	PT_(debug)(this, "Clear", "cleared.\n");
 }
 
+/** @param this: If null, returns false.
+ @return Whether the {<T>Pool} is empty.
+ @order \Theta(1)
+ @fixme Untested.
+ @allow */
+static int T_(PoolIsEmpty)(const struct T_(Pool) *const this) {
+	if(!this) return 0;
+	return this->size == 0;
+}
+
 /** Use when the pool has pointers to another pool in the {MigrateAll} function
  of the other data type.
  @param this: If null, does nothing.
@@ -777,6 +787,7 @@ static void PT_(unused_set)(void) {
 #endif /* update --> */
 	T_(PoolRemove)(0, 0);
 	T_(PoolClear)(0);
+	T_(PoolIsEmpty)(0);
 	T_(PoolMigrateEach)(0, 0, 0);
 	T_(PoolMigratePointer)(0, 0);
 #ifdef POOL_TO_STRING

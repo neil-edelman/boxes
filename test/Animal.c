@@ -7,11 +7,6 @@
 #include <time.h>	/* clock */
 #include "../src/Animals.h"
 
-/*#define POOL_NAME AnimalRef
-#define POOL_TYPE const struct Animal *
-#include "../src/Pool.h" <- This is useless: memory move. Maybe we should make
- it useful? Have a function call on {<T>PoolUpdateNew}? */
-
 /** (Incomplete) unit test of {Animals}. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
@@ -45,8 +40,8 @@ int main(void) {
 		n = Bear(animals, 1, "Napoloen");
 		AnimalsAct(animals);
 		for(a = AnimalsFirst(animals); a; a = AnimalsNext(a)) {
-			if(prev_a && !AnimalsRide(animals, a, prev_a))
-				AnimalsRide(animals, prev_a, a);
+			if(prev_a && !AnimalsRide(animals, prev_a, a))
+				AnimalsRide(animals, a, prev_a);
 			prev_a = a;
 		}
 		AnimalsClear(animals);

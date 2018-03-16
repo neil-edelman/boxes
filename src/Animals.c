@@ -165,7 +165,7 @@ struct AnimalVt {
 	AnimalMountInfo mount_info;
 };
 
-static void dismount(struct Mount *const mount);
+static void dismount(struct Animals *const animals, struct Mount *const mount);
 
 /** @implements <Animal, [Animals]>BiAction */
 static void Animal_delete(struct Animal *const animal,
@@ -174,8 +174,8 @@ static void Animal_delete(struct Animal *const animal,
 	struct MountInfo *mount_info;
 	if(!animals || !animal) return;
 	if((mount_info = animal->vt->mount_info(animal))) {
-		if(mount_info->steed_of) dismount(mount_info->steed_of);
-		if(mount_info->riding)   dismount(mount_info->riding);
+		if(mount_info->steed_of) dismount(animals, mount_info->steed_of);
+		if(mount_info->riding)   dismount(animals, mount_info->riding);
 	}
 	animal->vt->delete(animals, animal);
 }
@@ -289,7 +289,7 @@ static void Bear_act(struct Bear *const bear) {
 }
 
 /** @implements AnimalMountField */
-static struct MountInfo *Animal_mount(struct Animal *const animal) {
+static struct MountInfo *Animal_mount_info(struct Animal *const animal) {
 	assert(animal);
 	return animal->vt->mount_info(animal);
 }
@@ -297,16 +297,16 @@ static struct MountInfo *no_mount_info(struct Animal *const animal) {
 	(void)animal;
 	return 0;
 }
-static struct MountInfo *BadEmu_mount(struct BadEmu *const bad_emu) {
+static struct MountInfo *BadEmu_mount_info(struct BadEmu *const bad_emu) {
 	return &bad_emu->mount_info;
 }
-static struct MountInfo *Lemur_mount(struct Lemur *const lemur) {
+static struct MountInfo *Lemur_mount_info(struct Lemur *const lemur) {
 	return &lemur->mount_info;
 }
-static struct MountInfo *Llama_mount(struct Llama *const llama) {
+static struct MountInfo *Llama_mount_info(struct Llama *const llama) {
 	return &llama->mount_info;
 }
-static struct MountInfo *Bear_mount(struct Bear *const bear) {
+static struct MountInfo *Bear_mount_info(struct Bear *const bear) {
 	return &bear->mount_info;
 }
 
@@ -327,25 +327,25 @@ static struct AnimalVt BadEmu_vt = {
 	"Emu",
 	(AnimalsAction)&BadEmu_delete,
 	(AnimalAction)&BadEmu_act,
-	(AnimalMountInfo)&BadEmu_mount
+	(AnimalMountInfo)&BadEmu_mount_info
 };
 static struct AnimalVt Lemur_vt = {
 	"Lemur",
 	(AnimalsAction)&Lemur_delete,
 	(AnimalAction)&Lemur_act,
-	(AnimalMountInfo)&Lemur_mount
+	(AnimalMountInfo)&Lemur_mount_info
 };
 static struct AnimalVt Llama_vt = {
 	"Llama",
 	(AnimalsAction)&Llama_delete,
 	(AnimalAction)&Llama_act,
-	(AnimalMountInfo)&Llama_mount
+	(AnimalMountInfo)&Llama_mount_info
 };
 static struct AnimalVt Bear_vt = {
 	"Bear",
 	(AnimalsAction)&Bear_delete,
 	(AnimalAction)&Bear_act,
-	(AnimalMountInfo)&Bear_mount
+	(AnimalMountInfo)&Bear_mount_info
 };
 
 /** From before, waiting until {AnimalVt.mount_field} and {Animal_mount} was
@@ -354,22 +354,24 @@ static struct AnimalVt Bear_vt = {
  @implements <Mount>Migrate */
 static void mount_migrate(struct Mount *const mount,
 	const struct Migrate *const migrate) {
-	assert(mount && migrate && mount->steed && mount->rider);
-	MountPoolMigratePointer(&Animal_mount(mount->steed->animal)->steed_of,
+	assert(mount && migrate
+		&& mount->steed && Animal_mount_info(mount->steed->animal)
+		&& mount->rider && Animal_mount_info(mount->rider->animal));
+	MountPoolMigratePointer(&Animal_mount_info(mount->steed->animal)->steed_of,
 		migrate);
-	MountPoolMigratePointer(&Animal_mount(mount->rider->animal)->riding,
+	MountPoolMigratePointer(&Animal_mount_info(mount->rider->animal)->riding,
 		migrate);
 }
 
 /** Helper for delete. */
-static void dismount(struct Mount *const mount) {
-	assert(mount && mount->steed && mount->rider);
+static void dismount(struct Animals *const animals, struct Mount *const mount) {
+	assert(animals && mount && mount->steed && mount->rider);
 	printf("%s the %s dismounts %s the %s.\n", mount->rider->animal->name,
 		mount->rider->animal->vt->type, mount->steed->animal->name,
 		mount->steed->animal->vt->type);
 	mount->steed->steed_of = 0;
 	mount->rider->riding = 0;
-	/*MountPoolRemove(mount); @fixme!! */
+	MountPoolRemove(animals->mounts, mount);
 }
 
 /************/
@@ -391,12 +393,17 @@ static void MountInfo_filler(struct MountInfo *const this,
 	this->is_allowed = is_allowed;
 }
 /** Destructor. */
-void Animals_(struct Animals **const animalsp) {
+void Animals_(struct Animals **const panimals) {
 	struct Animals *animals;
-	if(!animalsp || !(animals = *animalsp)) return;
+	if(!panimals || !(animals = *panimals)) return;
 	AnimalListClear(&animals->list);
+	LemurPool_(&animals->lemurs);
+	LlamaPool_(&animals->llamas);
+	BadEmuPool_(&animals->bad_emus);
 	EmuPool_(&animals->emus);
 	SlothPool_(&animals->sloths);
+	MountPool_(&animals->mounts);
+	free(animals), *panimals = animals = 0;
 }
 /** Constructor. */
 struct Animals *Animals(void) {
@@ -501,15 +508,15 @@ int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 	struct Animal *erase;
 	struct MountInfo *steed = 0, *rider = 0;
 	struct Mount *mount;
-	if(!animals || (!a && !b)) return 0;
+	if(!animals || (!a && !b) || a == b) return 0;
 	erase = a ? b ? 0 : a : 0;
 	if(erase) {
 		/* One was null. */
 		const struct MountInfo *const mi = erase->vt->mount_info(erase);
 		if(!mi) return fprintf(stderr, "Animal %s the %s does not have mount "
 			"information.\n", erase->name, erase->vt->type), 0;
-		if(mi->riding)   dismount(mi->riding);
-		if(mi->steed_of) dismount(mi->steed_of);
+		if(mi->riding)   dismount(animals, mi->riding);
+		if(mi->steed_of) dismount(animals, mi->steed_of);
 		assert(!mi->steed_of && !mi->riding);
 		return 1;
 	} else {
@@ -552,6 +559,7 @@ void AnimalsAct(struct Animals *const animals) {
 void AnimalsClear(struct Animals *const animals) {
 	if(!animals) return;
 	AnimalListBiForEach(&animals->list, &Animal_delete, animals);
+	assert(MountPoolIsEmpty(animals->mounts));
 }
 struct Animal *AnimalsFirst(struct Animals *const animals) {
 	if(!animals) return 0;
