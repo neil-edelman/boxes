@@ -16,42 +16,41 @@ digraph {
 		color = lightgrey;
 		node [style = filled, fillcolor = white];
 
-		Animal [ label = "{Animal (\<Animal\>List)|-name\n-colour}" ];
-		Mount [ label = "{Mount (\<Mount\>Pool)|-steed\n-rider}" ]
-		MountInfo [label="{MountInfo |-animal\n-steed_of\n-riding\n-is_allowed}"]
-		Sloth [ label = "{Sloth (\<\<Sloth\>ListNode\>Pool)|-hours_slept}" ];
-		Emu [ label = "{Emu (\<\<Emu\>ListNode\>Pool)|-favourite_letter}"];
-		BadEmu [label="{BadEmu (\<\<BadEmu\>ListNode\>Pool)|-muhaha}"];
-		Llama [label="{Llama (\<\<Llama\>ListNode\>Pool)|-chomps}"];
-		Lemur [label="{Lemur (\<\<Lemur\>ListNode\>Pool)|}"];
-		Bear [label="{Bear (static)|}"];
+		Animal [ label = "{Animal as\n\<Animal\>List|-name\n-colour}" ];
+		Mount [ label = "{Mount as\n\<Mount\>Pool|-steed\n-rider}" ]
+		MountInfo [label="{MountInfo|-animal\n-steed_of\n-riding\n-is_allowed}"]
+		Sloth [ label = "{Sloth as\n\<Sloth\>Pool|-hours_slept}" ];
+		Emu [ label = "{Emu as\n\<Emu\>Pool|-favourite_letter}"];
+		BadEmu [label="{BadEmu as\n\<BadEmu\>Pool|-muhaha}"];
+		Llama [label="{Llama as\n\<Llama\>Pool|-chomps}"];
+		Lemur [label="{Lemur as\n\<Lemur\>Pool|}"];
+		Bear [label="{Bear as\nBear[]|}"];
+
+		{ rank = same; Sloth; Emu; Llama; Lemur; Bear; }
 
 		# inheritance (nested {struct}s)
-		edge [ arrowhead = "onormal" ];
-		Sloth -> Animal;
-		Emu -> Animal;
-		BadEmu -> Emu;
-		MountInfo -> BadEmu;
-		Llama -> Animal;
-		MountInfo -> Llama;
-		Lemur -> Animal;
-		MountInfo -> Lemur;
-		Bear -> Animal;
-		MountInfo -> Bear;
+		edge [ arrowtail = "onormal", dir = back ];
+		Animal -> Sloth;
+		Animal -> Emu -> BadEmu;
+		Animal -> Llama;
+		Animal ->Lemur;
+		Animal -> Bear;
+		edge [ arrowhead = "onormal", dir = forward ];
+		BadEmu -> MountInfo;
+		Llama -> MountInfo;
+		Lemur -> MountInfo;
+		Bear -> MountInfo;
 
 		# composition
 		# when the memory changes locations due to a {realloc}
 		# \each == _migrate
-		edge [ arrowhead = "diamond" ];
-		Sloth -> Animal [ label = "sloth%()" ];
-		Emu -> Animal [ label = "emu%()" ];
-		BadEmu -> Animal [ label = "bad_emu%()" ];
-		BadEmu -> MountInfo [ label = "bad_emu%()" ]
-		Llama -> Animal [ label = "llama%()" ];
-		Llama -> MountInfo [ label = "llama%()" ]
-		Lemur -> Animal [ label = "lemur%()" ];
-		Lemur -> MountInfo [ label = "lemur%()" ]
-		MountInfo -> Mount [ label = "bad_emu%()\nllama%()\nlemur%()" ];
-		Mount -> MountInfo [ label = "mount%()" ];
+		edge [ arrowtail = "diamond", dir = back ];
+		Animal -> Sloth [ label = "sloth%()" ];
+		Animal -> Emu  [ label = "emu%()" ];
+		Animal -> BadEmu [ label = "bad_emu%()" ];
+		Animal -> Llama [ label = "llama%()" ];
+		Animal -> Lemur [ label = "lemur%()" ];
+		Mount -> MountInfo [ label = "bad_emu%()\nllama%()\nlemur%()" ];
+		Animal -> Mount [ label = "mount%()" ];
 	}
 }

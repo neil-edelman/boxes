@@ -38,12 +38,12 @@ int main(void) {
 		if(i != animal_no) break;
 		w = Bear(animals, 0, "Winnie");
 		n = Bear(animals, 1, "Napoloen");
-		AnimalsAct(animals);
 		for(a = AnimalsFirst(animals); a; a = AnimalsNext(a)) {
 			if(prev_a && !AnimalsRide(animals, prev_a, a))
 				AnimalsRide(animals, a, prev_a);
 			prev_a = a;
 		}
+		AnimalsAct(animals);
 		AnimalsClear(animals);
 		Animals_(&animals);
 		is_success = 1;
