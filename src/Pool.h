@@ -1,7 +1,7 @@
 /** 2016 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>Pool} is a dynamic array that stores unordered {<T>}, which must be set
+ {<T>Pool} is a dynamic nodes that stores unordered {<T>}, which must be set
  using {POOL_TYPE}. Removing an element is done lazily through a linked-list
  internal to the pool; as such, indices will remain the same throughout the
  lifetime of the data. You cannot shrink the capacity of this data type, only
@@ -50,9 +50,6 @@
  {../test/PoolTest.h}. Must be defined equal to a (random) filler function,
  satisfying {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private
  function integrity testing. Requires {POOL_TO_STRING}.
-
- @param NDEBUG
- Uses standard assertions, so turning this on will speed up the code.
 
  @title		Pool.h
  @std		C89
@@ -163,10 +160,12 @@ typedef POOL_TYPE PT_(Type);
 #define POOL_H
 static const size_t pool_fibonacci6 = 8;
 static const size_t pool_fibonacci7 = 13;
-/* Is one of the endpoints of removed. */
-static const size_t pool_removed    = (size_t)-1;
-/* Used as a null pointer with indices; {pool_null - 1} is the maximum size. */
+/* Is a node that is not part of the deleted list; a different kind of null. */
+static const size_t pool_void       = (size_t)-1;
+/* Is a node on the edge of the deleted list. */
 static const size_t pool_null       = (size_t)-2;
+/* Maximum size; smaller then any special values. */
+static const size_t pool_max        = (size_t)-3;
 /* Removed offset queue. */
 struct PoolX { size_t prev, next; };
 #endif /* POOL_H --> */
@@ -188,7 +187,7 @@ struct Migrate {
  {POOL_TYPE} type, that is, it is without the prefix {Pool}; to avoid namespace
  collisions, this is private, meaning the name is mangled. If you want this
  definition, re-declare it. */
-typedef void (*PT_(Migrate))(T *const element,
+typedef void (*PT_(Migrate))(T *const data,
 	const struct Migrate *const migrate);
 #ifdef POOL_MIGRATE_EACH /* <-- migrate */
 /* Check that {POOL_MIGRATE_EACH} is a function implementing {<PT>Migrate},
@@ -225,12 +224,12 @@ static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 
 #ifdef POOL_TEST /* <-- test */
 /* Operates by side-effects only. Used only for {POOL_TEST}. */
-typedef void (*PT_(Action))(T *const element);
+typedef void (*PT_(Action))(T *const data);
 #endif /* test --> */
 
 
 
-/* Pool element containing the data. */
+/* Pool nodes containing the data. */
 struct PT_(Node) {
 	T data;
 	struct PoolX x;
@@ -239,7 +238,7 @@ struct PT_(Node) {
 /** The pool. To instantiate, see \see{<T>Pool}. */
 struct T_(Pool);
 struct T_(Pool) {
-	struct PT_(Node) *array;
+	struct PT_(Node) *nodes;
 	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next. */
 	size_t size; /* Including removed. */
 	struct PoolX removed;
@@ -250,12 +249,6 @@ struct T_(Pool) {
 };
 
 
-
-/** Private: {container_of}. */
-static struct PT_(Node) *PT_(node_hold_x)(struct PoolX *const x) {
-	return (struct PT_(Node) *)(void *)
-		((char *)x - offsetof(struct PT_(Node), x));
-}
 
 /** Private: {container_of}. */
 static struct PT_(Node) *PT_(node_hold_data)(T *const data) {
@@ -279,10 +272,9 @@ static void PT_(debug)(struct T_(Pool) *const pool,
 }
 
 /* * Ensures capacity.
- @return Success; otherwise, {errno} will be set.
+ @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}. */
+ @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say. */
 static int PT_(reserve)(struct T_(Pool) *const pool,
 	const size_t min_capacity
 #ifdef POOL_MIGRATE_UPDATE /* <-- update */
@@ -290,11 +282,13 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 #endif /* update --> */
 	) {
 	size_t c0, c1;
-	struct PT_(Node) *array;
-	const size_t max_size = (pool_null - 1) / sizeof *array;
+	struct PT_(Node) *nodes;
+	const size_t max_size = pool_max / sizeof *nodes;
 	assert(pool && pool->size <= pool->capacity[0]
 		&& pool->capacity[0] <= pool->capacity[1]
-		&& pool->capacity[1] < pool_null);
+		&& pool->capacity[1] <= pool_max
+		&& pool->removed.next == pool->removed.prev
+		&& pool->removed.next == pool_null);
 	if(pool->capacity[0] >= min_capacity) return 1;
 	if(max_size < min_capacity) return errno = ERANGE, 0;
 	c0 = pool->capacity[0];
@@ -303,25 +297,25 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0;
 		if(c1 <= c0 || c1 > max_size) c1 = max_size;
 	}
-	if(!(array = realloc(pool->array, c0 * sizeof *pool->array))) return 0;
-	PT_(debug)(pool, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
-		(void *)pool->array, (unsigned long)pool->capacity[0], (void *)array,
+	if(!(nodes = realloc(pool->nodes, c0 * sizeof *pool->nodes))) return 0;
+	PT_(debug)(pool, "reserve", "nodes#%p[%lu] -> #%p[%lu].\n",
+		(void *)pool->nodes, (unsigned long)pool->capacity[0], (void *)nodes,
 		(unsigned long)c0);
 #if defined(POOL_MIGRATE_EACH) || defined(POOL_MIGRATE_ALL) \
 	|| defined(POOL_MIGRATE_UPDATE) /* <-- migrate */
-	if(pool->array != array) {
+	if(pool->nodes != nodes) {
 		/* Migrate data; violates pedantic strict-ANSI? */
 		struct Migrate migrate;
-		migrate.begin = pool->array;
-		migrate.end   = (const char *)pool->array + pool->size * sizeof *array;
-		migrate.delta = (const char *)array - (const char *)pool->array;
+		migrate.begin = pool->nodes;
+		migrate.end   = (const char *)pool->nodes + pool->size * sizeof *nodes;
+		migrate.delta = (const char *)nodes - (const char *)pool->nodes;
 		PT_(debug)(pool, "reserve", "calling migrate.\n");
 #ifdef POOL_MIGRATE_EACH /* <-- each: Self-referential data. */
 		{
 			struct PT_(Node) *e, *end;
-			for(e = array, end = e + pool->size; e < end; e++) {
-				if(e->x.prev != pool_null) continue; /* Removed list. */
-				assert(e->x.next == pool_null);
+			for(e = nodes, end = e + pool->size; e < end; e++) {
+				if(e->x.prev != pool_void) continue; /* It's on removed list. */
+				assert(e->x.next == pool_void);
 				PT_(migrate_each)(&e->data, &migrate);
 			}
 		}
@@ -341,34 +335,36 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 #endif /* update --> */
 	}
 #endif /* migrate --> */
-	pool->array = array;
+	pool->nodes = nodes;
 	pool->capacity[0] = c0;
 	pool->capacity[1] = c1;
 	return 1;
 }
 
-/** We are very lazy and we just enqueue the removed for later elements.
- @param e: Must be a valid index.
- @fixme Change the order of the elements to fill the start first. */
+/** We are very lazy and we just enqueue the removed so that later data can
+ overwrite it.
+ @param n: Must be a valid index.
+ @fixme Change the order of the data to fill the start first. Tricky, but cache
+ performance will probably go up? Probably impossible to do in {O(1)}. */
 static void PT_(enqueue_removed)(struct T_(Pool) *const pool, const size_t n) {
-	struct PT_(Node) *const node = pool->array + n;
+	struct PT_(Node) *const node = pool->nodes + n;
 	assert(pool && n < pool->size);
 	/* Cannot be part of the removed pool already. */
-	assert(node->x.prev == pool_null && node->x.next == pool_null);
+	assert(node->x.prev == pool_void && node->x.next == pool_void);
 	if((node->x.prev = pool->removed.prev) == pool_null) {
 		/* The first {<PT>Node} removed. */
 		assert(pool->removed.next == pool_null);
-		node->x.prev = node->x.next = pool_removed;
-		pool->removed.next = pool->removed.prev = n;
+		pool->removed.prev = pool->removed.next = n;
 	} else {
-		struct PT_(Node) *const last = pool->array + pool->removed.prev;
-		assert(last->x.next == pool_removed);
+		/* Stick it on the end. */
+		struct PT_(Node) *const last = pool->nodes + pool->removed.prev;
+		assert(last->x.next == pool_null);
 		last->x.next = pool->removed.prev = n;
-		
 	}
+	node->x.next = pool_null;
 }
 
-/** Dequeues a removed element, or if the queue is empty, returns null. */
+/** Dequeues a removed node, or if the queue is empty, returns null. */
 static struct PT_(Node) *PT_(dequeue_removed)(
 	struct T_(Pool) *const pool) {
 	struct PT_(Node) *node;
@@ -376,40 +372,45 @@ static struct PT_(Node) *PT_(dequeue_removed)(
 	assert(pool &&
 		(pool->removed.next == pool_null) == (pool->removed.prev == pool_null));
 	if((n = pool->removed.next) == pool_null) return 0; /* No nodes removed. */
-	node = pool->array + n;
-	assert(node->x.prev == pool_removed && node->x.next != pool_null);
-	if((pool->removed.next = node->x.next) == pool_removed) {
+	node = pool->nodes + n;
+	assert(node->x.prev == pool_null && node->x.next != pool_void);
+	if((pool->removed.next = node->x.next) == pool_null) {
 		pool->removed.prev = pool->removed.next = pool_null;
 	} else {
-		struct PT_(Node) *const next = pool->array + node->x.next;
+		struct PT_(Node) *const next = pool->nodes + node->x.next;
 		assert(node->x.next < pool->size && next->x.prev == n);
-		next->x.prev = pool_removed;
+		next->x.prev = pool_null;
 	}
-	node->x.prev = node->x.next = pool_null;
+	node->x.prev = node->x.next = pool_void;
 	return node;
 }
 
-/** Gets rid of the removed elements at the tail of the list. Each remove has
- potentially one delete in the worst case, it just gets differed a bit. */
+/** Gets rid of the removed node at the tail of the list. Each remove has
+ potentially one delete in the worst case, it just gets amotized a bit. */
 static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 	struct PT_(Node) *node, *prev, *next;
 	size_t n;
 	assert(pool);
 	while(pool->size
-		&& (node = pool->array + (n = pool->size - 1))->x.prev != pool_null) {
-		if(node->x.prev == pool_removed) {
-			assert(pool->removed.next == n), pool->removed.next = node->next;
+		&& (node = pool->nodes + (n = pool->size - 1))->x.prev != pool_void) {
+		assert(node->x.next != pool_void);
+		if(node->x.prev == pool_null) { /* First. */
+			assert(pool->removed.next == n);
+			pool->removed.next = node->x.next;
 		} else {
-			assert(node->prev < pool->size), prev = pool->array + node->prev;
-			prev->next = node->next;
+			assert(node->x.prev < pool->size);
+			prev = pool->nodes + node->x.prev;
+			prev->x.next = node->x.next;
 		}
-		if(node->next == pool_null) {
-			assert(pool->tail == n), pool->tail = node->prev;
+		if(node->x.next == pool_null) { /* Last. */
+			assert(pool->removed.prev == n);
+			pool->removed.prev = node->x.prev;
 		} else {
-			assert(node->next < pool->size), next = pool->array + node->next;
-			next->prev = node->prev;
+			assert(node->x.next < pool->size);
+			next = pool->nodes + node->x.next;
+			next->x.prev = node->x.prev;
 		}
-		pool->size--, pool->removed_size--;
+		pool->size--;
 	}
 }
 
@@ -419,28 +420,27 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
  to null. If it is already null or it points to null, doesn't do anything.
  @order \Theta(1)
  @allow */
-static void T_(Pool_)(struct T_(Pool) **const poolp) {
+static void T_(Pool_)(struct T_(Pool) **const ppool) {
 	struct T_(Pool) *pool;
-	if(!poolp || !(pool = *poolp)) return;
+	if(!ppool || !(pool = *ppool)) return;
 	PT_(debug)(pool, "Delete", "erasing.\n");
-	free(pool->array);
+	free(pool->nodes);
 	free(pool);
-	*poolp = 0;
+	*ppool = 0;
 }
 
 /** Private constructor called from either \see{<T>Pool}.
- @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
- {IEEE Std 1003.1-2001}. */
+ @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say. */
 static struct T_(Pool) *PT_(pool)(void) {
 	struct T_(Pool) *pool;
-	assert(pool_null < pool_removed);
+	assert(pool_max < pool_null && pool_max < pool_void);
 	if(!(pool = malloc(sizeof *pool))) return 0;
-	pool->array        = 0;
+	pool->nodes        = 0;
 	pool->capacity[0]  = pool_fibonacci6;
 	pool->capacity[1]  = pool_fibonacci7;
 	pool->size         = 0;
-	pool->head = pool->tail = pool_null;
-	if(!(pool->array = malloc(pool->capacity[0] * sizeof *pool->array)))
+	pool->removed.prev = pool->removed.next = pool_null;
+	if(!(pool->nodes = malloc(pool->capacity[0] * sizeof *pool->nodes)))
 		return 0;
 	PT_(debug)(pool, "New", "capacity %d.\n", pool->capacity[0]);
 	return pool;
@@ -454,8 +454,7 @@ static struct T_(Pool) *PT_(pool)(void) {
  specified.
  @return A new {Pool} or null and {errno} may be set.
  @throws ERANGE: If one and not the other arguments is null.
- @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(const PT_(MigrateAll) migrate_all,
@@ -463,15 +462,14 @@ static struct T_(Pool) *T_(Pool)(const PT_(MigrateAll) migrate_all,
 	struct T_(Pool) *pool;
 	if(!migrate_all ^ !all) { errno = ERANGE; return 0; }
 	if(!(pool = PT_(pool)())) return 0; /* ENOMEM? */
-	pool->migrate_all = migrate;
-	pool->all  = all;
+	pool->migrate_all = migrate_all;
+	pool->all         = all;
 	return pool;
 }
 #else /* all --><-- !all */
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
  @return A new {Pool} or null and {errno} may be set.
- @throws ENOMEM: Technically, whatever {malloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(void) {
@@ -480,42 +478,29 @@ static struct T_(Pool) *T_(Pool)(void) {
 #endif /* all --> */
 
 /** @param pool: If null, returns null.
- @return One value from the pool or null if the pool is empty. It selects
+ @return One element from the pool or null if the pool is empty. It selects
  the position deterministically.
  @order \Theta(1)
  @fixme Untested.
  @allow */
 static T *T_(PoolElement)(const struct T_(Pool) *const pool) {
 	if(!pool || !pool->size) return 0;
-	return &pool->array[pool->size - 1].data;
+	return &pool->nodes[pool->size - 1].data;
 }
 
 /** Is {idx} a valid index for {pool}?
  @order \Theta(1)
  @allow */
 static int T_(PoolIsElement)(struct T_(Pool) *const pool, const size_t idx) {
-	struct PT_(Node) *elem;
+	struct PT_(Node) *data;
 	if(!pool) return 0;
 	if(idx >= pool->size
-		|| (elem = pool->array + idx, elem->prev != pool_not_part)) return 0;
-	return 1;
-}
-
-/** Is {data} still a valid element? Use when you have a pointer to an element,
- but you're not sure if it's been deleted. One can not use it on a {realloc}ed
- or not part of a {Pool} pointer. If you delete and add another one,
- {<T>}PoolIsValid may return true, but may not be the element that one expects.
- @order \Theta(1)
- @allow */
-static int T_(PoolIsValid)(const T *const data) {
-	const struct PT_(Node) *const elem
-		= (const struct PT_(Node) *const)(const void *const)data;
-	if(!elem || elem->prev != pool_not_part) return 0;
+		|| (data = pool->nodes + idx, data->x.prev != pool_void)) return 0;
 	return 1;
 }
 
 /** Gets an existing element by index. Causing something to be added to the
- {Pool} may invalidate this pointer because of a {realloc}.
+ {<T>Pool} may invalidate this pointer.
  @param pool: If {pool} is null, returns null.
  @param idx: Index.
  @return If failed, returns a null pointer {errno} will be set.
@@ -523,35 +508,31 @@ static int T_(PoolIsValid)(const T *const data) {
  @order \Theta(1)
  @allow */
 static T *T_(PoolGetElement)(struct T_(Pool) *const pool, const size_t idx) {
-	struct PT_(Node) *elem;
+	struct PT_(Node) *node;
 	if(!pool) return 0;
 	if(idx >= pool->size
-		|| (elem = pool->array + idx, elem->prev != pool_not_part))
+		|| (node = pool->nodes + idx, node->x.prev != pool_void))
 		{ errno = EDOM; return 0; }
-	return &elem->data;
+	return &node->data;
 }
 
-/** Gets an index given {element}.
- @param element: If the element is not part of the {Pool}, behaviour is
- undefined.
+/** Gets an index given {data}.
+ @param data: If the element is not part of the {Pool}, behaviour is undefined.
  @return An index.
  @order \Theta(1)
  @fixme Untested.
- @fixme {get_element(data)}.
  @allow */
-static size_t T_(PoolGetIndex)(struct T_(Pool) *const pool,
-	const T *const element) {
-	return (const struct PT_(Node) *)(const void *)element - pool->array;
+static size_t T_(PoolGetIndex)(struct T_(Pool) *const pool, T *const data) {
+	return PT_(node_hold_data)(data) - pool->nodes;
 }
 
 /** Increases the capacity of this Pool to ensure that it can hold at least
- the number of elements specified by the {min_capacity}.
+ the number of elements specified by {min_capacity}.
  @param pool: If {pool} is null, returns false.
  @return True if the capacity increase was viable; otherwise the pool is not
  touched and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
- @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
  @order \Omega(1), O({capacity})
  @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const pool,
@@ -562,92 +543,91 @@ static int T_(PoolReserve)(struct T_(Pool) *const pool,
 		, 0
 #endif /* update --> */
 		)) return 0; /* ERANGE, ENOMEM? */
-	PT_(debug)(pool, "Reserve", "pool pool size to %u to contain %u.\n",
+	PT_(debug)(pool, "Reserve", "pool size to %u to contain %u.\n",
 		pool->capacity[0], min_capacity);
 	return 1;
 }
 
-/** Gets an uninitialised new element at the end of the {Pool}. May move the
- {Pool} to a new memory location to fit the new size.
+/** Gets an uninitialised new element. May move the {Pool} to a new memory
+ location to fit the new size.
  @param pool: If {pool} is null, returns null.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
- @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
  @order amortised O(1)
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const pool) {
-	struct PT_(Node) *elem;
+	struct PT_(Node) *node;
 	if(!pool) return 0;
-	if(!(elem = PT_(dequeue_removed)(pool))) {
+	if(!(node = PT_(dequeue_removed)(pool))) {
 		if(!PT_(reserve)(pool, pool->size + 1
 #ifdef POOL_MIGRATE_ALL /* <-- all */
 			, 0
 #endif /* all --> */
 			)) return 0; /* ERANGE, ENOMEM? */
-		elem = pool->array + pool->size++;
-		elem->prev = elem->next = pool_not_part;
+		node = pool->nodes + pool->size++;
+		node->x.prev = node->x.next = pool_void;
 	}
 	PT_(debug)(pool, "New", "added.\n");
-	return &elem->data;
+	return &node->data;
 }
 
 #ifdef POOL_MIGRATE_UPDATE /* <-- update */
 /** Gets an uninitialised new element and updates the {update_ptr} if it is
  within the memory region that was changed. Must have {POOL_MIGRATE_UPDATE}
- defined.
+ defined. For example, when iterating a pointer and new element is needed that
+ could change the pointer.
  @param pool: If {pool} is null, returns null.
- @param iterator_ptr: Pointer to update on migration.
+ @param iterator_ptr: Pointer to update on memory move.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
- {IEEE Std 1003.1-2001}.
+ @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
  @order amortised O(1)
  @fixme Untested.
  @allow */
 static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool,
 	U **const update_ptr) {
-	struct PT_(Node) *elem;
+	struct PT_(Node) *node;
 	if(!pool) return 0;
-	if(!(elem = PT_(dequeue_removed)(pool))) {
+	if(!(node = PT_(dequeue_removed)(pool))) {
 		if(!PT_(reserve)(pool, pool->size + 1, update_ptr))
 			return 0; /* ERANGE, ENOMEM? */
-		elem = pool->array + pool->size++;
-		elem->prev = elem->next = pool_not_part;
+		node = pool->nodes + pool->size++;
+		node->prev = node->next = pool_void;
 	}
 	PT_(debug)(pool, "New", "added.\n");
-	return &elem->data;
+	return &node->data;
 }
 #endif /* update --> */
 
-/** Removes an element associated with {data} from {pool}.
+/** Removes {data} from {pool}.
  @param pool, data: If null, returns false.
  @return Success, otherwise {errno} will be set.
- @throws EDOM: {data} is not part of {list}.
+ @throws EDOM: {data} is not part of {pool}.
  @order amortised O(1)
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
-	struct PT_(Node) *elem;
-	size_t e;
+	struct PT_(Node) *node;
+	size_t n;
 	if(!pool || !data) return 0;
-	elem = (struct PT_(Node) *)(void *)data;
-	e = elem - pool->array;
-	if(elem < pool->array || e >= pool->size || elem->prev != pool_not_part)
+	node = PT_(node_hold_data)(data);
+	n = node - pool->nodes;
+	if(node < pool->nodes || n >= pool->size || node->x.prev != pool_void)
 		return errno = EDOM, 0;
-	PT_(enqueue_removed)(pool, e);
-	if(e >= pool->size - 1) PT_(trim_removed)(pool);
-	PT_(debug)(pool, "Remove", "removing %lu.\n", (unsigned long)e);
+	PT_(enqueue_removed)(pool, n);
+	if(n >= pool->size - 1) PT_(trim_removed)(pool);
+	PT_(debug)(pool, "Remove", "removing %lu.\n", (unsigned long)n);
 	return 1;
 }
 
-/** Removes all data from {pool}.
+/** Removes all from {pool}.
  @param pool: if null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	if(!pool) return;
 	pool->size = 0;
-	pool->head = pool->tail = pool_null;
+	pool->removed.prev = pool->removed.next = pool_null;
 	PT_(debug)(pool, "Clear", "cleared.\n");
 }
 
@@ -674,14 +654,14 @@ static int T_(PoolIsEmpty)(const struct T_(Pool) *const pool) {
  @allow */
 static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
 	const PT_(Migrate) handler, const struct Migrate *const migrate) {
-	struct PT_(Node) *e, *end;
+	struct PT_(Node) *node, *end;
 	if(!pool || !migrate || !handler) return;
-	for(e = pool->array, end = e + pool->size; e < end; e++)
-		if(e->prev == pool_not_part) assert(e->next == pool_not_part),
-			handler(&e->data, migrate);
+	for(node = pool->nodes, end = node + pool->size; node < end; node++)
+		if(node->x.prev == pool_void)
+			assert(node->x.next == pool_void), handler(&node->data, migrate);
 }
 
-/** Passed a {migrate} paramerer, allows pointers to the pool to be updated. It
+/** Passed a {migrate} parameter, allows pointers to the pool to be updated. It
  doesn't affect pointers not in the {realloc}ed region.
  @order \Omega(1)
  @fixme Untested.
@@ -757,9 +737,9 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	}
 	pool_super_cat(&cat, pool_cat_start);
 	for(i = 0; i < pool->size; i++) {
-		if(pool->array[i].prev != pool_not_part) continue;
+		if(pool->nodes[i].prev != pool_void) continue;
 		if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
-		PT_(to_string)(&pool->array[i].data, &scratch),
+		PT_(to_string)(&pool->nodes[i].data, &scratch),
 		scratch[sizeof scratch - 1] = '\0';
 		pool_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
@@ -789,7 +769,6 @@ static void PT_(unused_set)(void) {
 #endif
 	T_(PoolElement)(0);
 	T_(PoolIsElement)(0, (size_t)0);
-	T_(PoolIsValid)(0);
 	T_(PoolGetElement)(0, (size_t)0);
 	T_(PoolGetIndex)(0, 0);
 	T_(PoolReserve)(0, (size_t)0);

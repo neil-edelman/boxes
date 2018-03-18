@@ -35,9 +35,6 @@
  {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private function
  integrity testing. Requires {LIST_TO_STRING}.
 
- @param NDEBUG
- Uses standard assertions, so turning this on will speed up the code.
-
  @title		List.h
  @author	Neil
  @std		C89/90
