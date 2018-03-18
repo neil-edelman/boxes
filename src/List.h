@@ -1135,7 +1135,7 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 	struct PT_(Run) *const run_b = run_a + 1;
 	struct PT_(X) *a = run_a->tail, *b = run_b->head, *chosen;
 	assert(r->run_no >= 2);
-	/* fixme: we are doing one-to-many compares in some cases? */
+	/* @fixme We are doing one-to-many compares in some cases? */
 	if(run_a->size <= run_b->size) {
 		struct PT_(X) *prev_chosen;
 		/* run a is smaller: downwards insert b.head followed by upwards
