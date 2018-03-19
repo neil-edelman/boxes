@@ -8,7 +8,7 @@
  Provides one function, \see{Orcish}.
 
  @title		Orcish
- @std		ANSI C89/ISO C90
+ @std		C89
  @author	Neil
  @version	1.2, 2016-09
  @since		2014 */
