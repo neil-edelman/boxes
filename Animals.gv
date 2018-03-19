@@ -14,7 +14,7 @@ digraph {
 		label = "static";
 		color = grey;
 		fillcolor = clear;
-		AnimalVt [ label = "{AnimalVt|-type\l|-delete()\l-act\l-mount_info()\l}" ];
+		AnimalVt [ label = "{AnimalVt|-type\l|-delete()\l-act()\l-mount_info()\l}" ];
 	}
 	subgraph cluster_Animals {
 		label = "Animals";
@@ -24,7 +24,7 @@ digraph {
 
 		Animal [ label = "{Animal as\n\<Animal\>List|- name\l- colour\l}" ];
 		Mount [ label = "{Mount as\n\<Mount\>Pool|-steed: Animal\l-rider: Animal\l}" ]
-		MountInfo [label="{MountInfo|-animal\l-steed_of\l-riding\l-is_allowed\l}"]
+		MountInfo [label="{MountInfo|-steed_of: Mount\l-riding: Mount\l-is_allowed: bitfield\l}"]
 		Sloth [ label = "{Sloth as\n\<Sloth\>Pool|-hours_slept}" ];
 		Emu [ label = "{Emu as\n\<Emu\>Pool|-favourite_letter}"];
 		BadEmu [label="{BadEmu as\n\<BadEmu\>Pool|-muhaha}"];
@@ -61,8 +61,9 @@ digraph {
 
 		# association (pointers)
 		edge [ arrowtail = vee, dir = back, style = normal ];
+		edge [ dir = none, style = normal ];
 		AnimalVt -> Animal [ headlabel = "*  ", taillabel = "  1  " ];
-		Mount -> MountInfo [ headlabel = "2 ", taillabel = "0..1" ];
+		Mount -> MountInfo [ headlabel = "0..2", taillabel = "0..1" ];
 		Animal -> Mount [ headlabel = " 2  ", taillabel = "1     " ];
 	}
 }
