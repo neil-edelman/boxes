@@ -76,7 +76,7 @@
 #endif /* print --> */
 #ifdef POOL_DEBUG /* <-- debug */
 #include <stdarg.h>	/* for print debug */
-#endif /* debug --> */
+#endif /* debug --> (change) */
 
 
 
