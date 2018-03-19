@@ -1,8 +1,6 @@
 # GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0
 
 PROJ  := Pool
-VA    := 1
-VB    := 0
 
 # dirs
 SDIR  := src
@@ -14,7 +12,7 @@ DDIR  := doc
 PREFIX:= /usr/local
 
 # files in bdir
-INST  := $(PROJ)-$(VA)_$(VB)
+INST  := $(PROJ)-`date +%Y-%m-%d`
 
 # extra stuff we should back up
 EXTRA := $(PROJ).xcodeproj
@@ -113,7 +111,7 @@ setup: default icon
 	cp $(BDIR)/$(PROJ) readme.txt gpl.txt copying.txt $(BDIR)/$(INST)
 	rm -f $(BDIR)/$(INST)-MacOSX.dmg
 	# or rm -f $(BDIR)/$(INST)-Win32.zip
-	hdiutil create $(BDIR)/$(INST)-MacOSX.dmg -volname "$(PROJ) $(VA).$(VB)" -srcfolder $(BDIR)/$(INST)
+	hdiutil create $(BDIR)/$(INST)-MacOSX.dmg -volname "$(PROJ)" -srcfolder $(BDIR)/$(INST)
 	# or zip $(BDIR)/$(INST)-Win32.zip -r $(BDIR)/$(INST)
 	rm -R $(BDIR)/$(INST)
 
