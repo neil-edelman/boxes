@@ -80,7 +80,7 @@
 
 
 
-/* check defines */
+/* Check defines. */
 #ifndef POOL_NAME
 #error Pool generic POOL_NAME undefined.
 #endif
