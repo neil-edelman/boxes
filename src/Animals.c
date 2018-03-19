@@ -1,3 +1,11 @@
+/** Animals is polymoric class that includes several animal types. There is
+ also an interface-thing, where you can mount certain animals. For a more
+ detailed expliation, see \url{http://neil.chaosnet.org/code/Animals/}.
+
+ @title Animals
+ @author Neil
+ @std C89 */
+
 #include <stdio.h>	/* *printf */
 #include <assert.h>	/* assert */
 #include <string.h>	/* strncpy */
@@ -429,6 +437,7 @@ struct Animals *Animals(void) {
 	}
 	return a;
 }
+/** Random constructor for a {Sloth} in {animals}. */
 struct Sloth *Sloth(struct Animals *const animals) {
 	struct Sloth *sloth;
 	if(!animals) return 0;
@@ -438,6 +447,7 @@ struct Sloth *Sloth(struct Animals *const animals) {
 	AnimalListPush(&animals->list, &sloth->animal.data);
 	return sloth;
 }
+/** Random constructor for an {Emu} in {animals}. */
 struct Emu *Emu(struct Animals *const animals) {
 	struct Emu *emu;
 	if(!animals) return 0;
@@ -447,6 +457,7 @@ struct Emu *Emu(struct Animals *const animals) {
 	AnimalListPush(&animals->list, &emu->animal.data);
 	return emu;
 }
+/** Random constructor for a {BadEmu} in {animals}. */
 struct BadEmu *BadEmu(struct Animals *const animals) {
 	struct BadEmu *emu;
 	if(!animals) return 0;
@@ -458,6 +469,7 @@ struct BadEmu *BadEmu(struct Animals *const animals) {
 	AnimalListPush(&animals->list, &emu->emu.animal.data);
 	return emu;
 }
+/** Random constructor for a {Llama} in {animals}. */
 struct Llama *Llama(struct Animals *const animals) {
 	struct Llama *llama;
 	if(!animals) return 0;
@@ -468,6 +480,7 @@ struct Llama *Llama(struct Animals *const animals) {
 	AnimalListPush(&animals->list, &llama->animal.data);
 	return llama;
 }
+/** Random constructor for a {Lemur} in {animals}. */
 struct Lemur *Lemur(struct Animals *const animals) {
 	struct Lemur *lemur;
 	if(!animals) return 0;
@@ -477,6 +490,10 @@ struct Lemur *Lemur(struct Animals *const animals) {
 	AnimalListPush(&animals->list, &lemur->animal.data);
 	return lemur;
 }
+/** Constructor for a {Bear} in {animals}.
+ @param no: Has to be [0, 1]. You can not overwrite a {Bear} without deleting
+ it first.
+ @param name: Bears have non-random names. */
 struct Bear *Bear(struct Animals *const animals, const unsigned no,
 	const char *const name) {
 	struct Bear *bear;
@@ -492,8 +509,8 @@ struct Bear *Bear(struct Animals *const animals, const unsigned no,
 	return bear;
 }
 
-/** Cause {a} to ride {b}. If {a} or {b} is null, causes that connection to be
- broken.
+/** Cause {a} to try to ride {b}. If {a} or {b} is null, causes that connection
+ to be broken.
  @return Success. */
 int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 	struct Animal *const b) {
@@ -540,6 +557,7 @@ static void Animal_count(struct Animal *const animal, void *const pcount) {
 	assert(animal && pcount);
 	(*(size_t *)pcount)++;
 }
+/** Prints something out on all the {animals}. */
 void AnimalsAct(struct Animals *const animals) {
 	size_t count = 0;
 	if(!animals) return;
@@ -547,15 +565,19 @@ void AnimalsAct(struct Animals *const animals) {
 	printf("There are %lu animals.\n", (long unsigned)count);
 	AnimalListForEach(&animals->list, &Animal_act);
 }
+/** Clears all the {animals}. */
 void AnimalsClear(struct Animals *const animals) {
 	if(!animals) return;
 	AnimalListBiForEach(&animals->list, &Animal_delete, animals);
 	assert(MountPoolIsEmpty(animals->mounts));
 }
+/** @return The first animal in {animals} or null if it doesn't have any. Don't
+ add to {animals} while the iteration is still going. */
 struct Animal *AnimalsFirst(struct Animals *const animals) {
 	if(!animals) return 0;
 	return AnimalListFirst(&animals->list);
 }
+/** @return The next animal from {animal} or null if it is the last. */
 struct Animal *AnimalsNext(struct Animal *const animal) {
 	if(!animal) return 0;
 	return AnimalListNext(animal);

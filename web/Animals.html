@@ -1,0 +1,275 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<!-- steal these colour values from JavaDocs; meh -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>Animals</title>
+</head>
+
+
+<body>
+
+<h1>Animals</h1>
+
+<ul>
+	<li><a href = "#_declarations">Declarations</a></li>
+	<li><a href = "#_summary">Function Summary</a></li>
+	<li><a href = "#_detail">Function Detail</a></li>
+</ul>
+
+<p>
+Animals is polymoric class that includes several animal types. There is
+also an interface-thing, where you can mount certain animals. For a more
+detailed expliation, see <a href = "http://neil.chaosnet.org/code/Animals/">http://neil.chaosnet.org/code/Animals/</a>.
+</p>
+<dl>
+	<dt>minimum standard</dt>
+	<dd>C89</dd>
+	<dt>author</dt>
+	<dd>Neil</dd>
+</dl>
+
+
+<a name = "_declarations"><!-- --></a><h2>Declarations</h2>
+
+
+<a name = "_summary"><!-- --></a><h2>Function Summary</h2>
+
+<table>
+<tr><th>Return Type</th><th>Function Name</th><th>Argument List</th></tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#Animals_">Animals_</a></td>
+	<td>struct Animals **const panimals</td>
+</tr>
+<tr>
+	<td>struct Animals *</td>
+	<td><a href = "#Animals">Animals</a></td>
+	<td>void</td>
+</tr>
+<tr>
+	<td>struct Sloth *</td>
+	<td><a href = "#Sloth">Sloth</a></td>
+	<td>struct Animals *const animals</td>
+</tr>
+<tr>
+	<td>struct Emu *</td>
+	<td><a href = "#Emu">Emu</a></td>
+	<td>struct Animals *const animals</td>
+</tr>
+<tr>
+	<td>struct BadEmu *</td>
+	<td><a href = "#BadEmu">BadEmu</a></td>
+	<td>struct Animals *const animals</td>
+</tr>
+<tr>
+	<td>struct Llama *</td>
+	<td><a href = "#Llama">Llama</a></td>
+	<td>struct Animals *const animals</td>
+</tr>
+<tr>
+	<td>struct Lemur *</td>
+	<td><a href = "#Lemur">Lemur</a></td>
+	<td>struct Animals *const animals</td>
+</tr>
+<tr>
+	<td>struct Bear *</td>
+	<td><a href = "#Bear">Bear</a></td>
+	<td>struct Animals *const animals, const unsigned no,
+	const char *const name</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#AnimalsRide">AnimalsRide</a></td>
+	<td>struct Animals *const animals, struct Animal *const a,
+	struct Animal *const b</td>
+</tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#AnimalsAct">AnimalsAct</a></td>
+	<td>struct Animals *const animals</td>
+</tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#AnimalsClear">AnimalsClear</a></td>
+	<td>struct Animals *const animals</td>
+</tr>
+<tr>
+	<td>struct Animal *</td>
+	<td><a href = "#AnimalsFirst">AnimalsFirst</a></td>
+	<td>struct Animals *const animals</td>
+</tr>
+<tr>
+	<td>struct Animal *</td>
+	<td><a href = "#AnimalsNext">AnimalsNext</a></td>
+	<td>struct Animal *const animal</td>
+</tr>
+</table>
+
+
+<a name = "_detail"><!-- --></a><h2>Function Detail</h2>
+
+<div><a name = "Animals_"><!-- --></a>
+<h3>Animals_</h3>
+<pre>void <b>Animals_</b> (struct Animals **const panimals)</pre>
+<p>
+Destructor.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "Animals"><!-- --></a>
+<h3>Animals</h3>
+<pre>struct Animals * <b>Animals</b> (void)</pre>
+<p>
+Constructor.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "Sloth"><!-- --></a>
+<h3>Sloth</h3>
+<pre>struct Sloth * <b>Sloth</b> (struct Animals *const animals)</pre>
+<p>
+Random constructor for a <em>Sloth</em> in <em>animals</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "Emu"><!-- --></a>
+<h3>Emu</h3>
+<pre>struct Emu * <b>Emu</b> (struct Animals *const animals)</pre>
+<p>
+Random constructor for an <em>Emu</em> in <em>animals</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "BadEmu"><!-- --></a>
+<h3>BadEmu</h3>
+<pre>struct BadEmu * <b>BadEmu</b> (struct Animals *const animals)</pre>
+<p>
+Random constructor for a <em>BadEmu</em> in <em>animals</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "Llama"><!-- --></a>
+<h3>Llama</h3>
+<pre>struct Llama * <b>Llama</b> (struct Animals *const animals)</pre>
+<p>
+Random constructor for a <em>Llama</em> in <em>animals</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "Lemur"><!-- --></a>
+<h3>Lemur</h3>
+<pre>struct Lemur * <b>Lemur</b> (struct Animals *const animals)</pre>
+<p>
+Random constructor for a <em>Lemur</em> in <em>animals</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "Bear"><!-- --></a>
+<h3>Bear</h3>
+<pre>struct Bear * <b>Bear</b> (struct Animals *const animals, const unsigned no,
+	const char *const name)</pre>
+<p>
+Constructor for a <em>Bear</em> in <em>animals</em>.
+</p>
+<dl>
+	<dt>parameter: no</dt>
+	<dd>Has to be [0, 1]. You can not overwrite a <em>Bear</em> without deleting
+ it first.</dd>
+	<dt>parameter: name</dt>
+	<dd>Bears have non-random names.</dd>
+</dl>
+</div>
+
+<div><a name = "AnimalsRide"><!-- --></a>
+<h3>AnimalsRide</h3>
+<pre>int <b>AnimalsRide</b> (struct Animals *const animals, struct Animal *const a,
+	struct Animal *const b)</pre>
+<p>
+Cause <em>a</em> to try to ride <em>b</em>. If <em>a</em> or <em>b</em> is null, causes that connection
+to be broken.
+</p>
+<dl>
+	<dt>return</dt>
+	<dd>Success.</dd>
+</dl>
+</div>
+
+<div><a name = "AnimalsAct"><!-- --></a>
+<h3>AnimalsAct</h3>
+<pre>void <b>AnimalsAct</b> (struct Animals *const animals)</pre>
+<p>
+Prints something out on all the <em>animals</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "AnimalsClear"><!-- --></a>
+<h3>AnimalsClear</h3>
+<pre>void <b>AnimalsClear</b> (struct Animals *const animals)</pre>
+<p>
+Clears all the <em>animals</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "AnimalsFirst"><!-- --></a>
+<h3>AnimalsFirst</h3>
+<pre>struct Animal * <b>AnimalsFirst</b> (struct Animals *const animals)</pre>
+<dl>
+	<dt>return</dt>
+	<dd>The first animal in <em>animals</em> or null if it doesn't have any. Don't
+ add to <em>animals</em> while the iteration is still going.</dd>
+</dl>
+</div>
+
+<div><a name = "AnimalsNext"><!-- --></a>
+<h3>AnimalsNext</h3>
+<pre>struct Animal * <b>AnimalsNext</b> (struct Animal *const animal)</pre>
+<dl>
+	<dt>return</dt>
+	<dd>The next animal from <em>animal</em> or null if it is the last.</dd>
+</dl>
+</div>
+
+
+</body>
+</html>
