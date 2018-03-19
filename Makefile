@@ -5,7 +5,7 @@ makefile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 current_path := $(dir $(makefile_path))
 current_dir := $(notdir $(patsubst %/,%,$(current_path)))
 
-PROJ  := ${current_dir}
+PROJ := ${current_dir}
 
 # dirs
 SDIR  := src
