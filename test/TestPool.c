@@ -37,10 +37,10 @@ static void A_filler(struct A *const this) {
 /** Assumes {key} is {[0, 99]}.
  @implements <Foo>ToString */
 static void A_to_string(const struct A *this, char (*const a)[12]) {
-	/* unusal */
-	const struct pool_A_Element *const elem
-		= (const struct pool_A_Element *)(const void *)this;
-	sprintf(*a, "%ld<%s>%ld", elem->prev, this->value, elem->next);
+	/* Cheating. */
+	const struct pool_A_Node *const node
+		= (const struct pool_A_Node *)(const void *)this;
+	sprintf(*a, "%ld<%s>%ld", node->x.prev, this->value, node->x.next);
 }
 
 /** Define class {Foo} */

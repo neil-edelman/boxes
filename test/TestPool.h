@@ -10,27 +10,26 @@ static const PT_(Action) PT_(filler) = (POOL_TEST);
 
 
 static void PT_(valid_state)(const struct T_(Pool) *const a) {
-	struct PT_(Element) *elem;
+	struct PT_(Node) *node;
 	size_t i, remove_start = 0, remove_end = 0, remove_both = 0,remove_data = 0;
 	size_t r0, r1;
 	enum { SDATA, SNULL, SNOT } r0_class, r1_class;
 	if(!a) return; /* null is valid */
 	assert(a->size <= a->capacity[0]);
 	assert(a->capacity[0] < a->capacity[1] || (a->capacity[0] == a->capacity[1]
-		&& a->capacity[1]
-		== (pool_null - 1) / sizeof(struct PT_(Element))));
-	assert((a->head == pool_null) == (a->tail == pool_null));
+		&& a->capacity[1] == pool_max / sizeof(struct PT_(Node))));
+	assert((a->removed.next == pool_null) == (a->removed.prev == pool_null));
 	for(i = 0; i < a->size; i++) {
-		elem = a->array + i;
-		r0 = elem->prev;
-		r1 = elem->next;
+		node = a->nodes + i;
+		r0 = node->x.prev;
+		r1 = node->x.next;
 		/* five states: info:info, null:info, info:null, null:null, and not
 		 part of the removed queue; check for invalid states */
 		if(r0 == pool_null) r0_class = SNULL;
-		else if(r0 == pool_not_part) r0_class = SNOT;
+		else if(r0 == pool_void) r0_class = SNOT;
 		else r0_class = SDATA;
 		if(r1 == pool_null) r1_class = SNULL;
-		else if(r1 == pool_not_part) r1_class = SNOT;
+		else if(r1 == pool_void) r1_class = SNOT;
 		else r1_class = SDATA;
 		/* count */
 		if(r0_class == SNOT && r1_class == SNOT);
@@ -45,7 +44,7 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 		&& remove_end == 0)
 		|| (a->size > 2 && remove_both == 0 && remove_start == 1
 		&& remove_end == 1));
-	assert(a->size == 0 || a->array[a->size - 1].prev == pool_not_part);
+	assert(a->size == 0 || a->nodes[a->size - 1].x.prev == pool_void);
 }
 
 #ifdef POOL_MIGRATE /* <-- migrate */
