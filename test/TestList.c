@@ -188,14 +188,14 @@ static void bear_act(struct Animal *const animal) {
 static const struct AnimalVt {
 	void (*const act)(struct Animal *const);
 } sloth_vt = { &sloth_act }, llama_vt = { &llama_act }, bear_vt = { &bear_act };
-/* the linked-list */
+/* The linked-list. */
 static struct AnimalList animals;
 static void Animal_init(struct Animal *const this) {
 	Animal_filler(this);
 	AnimalListPush(&animals, this);
 }
 static void Sloth_init(struct Sloth *const sloth) {
-	Animal_filler(&sloth->animal.data);
+	Animal_init(&sloth->animal.data);
 	sloth->animal.data.vt = &sloth_vt;
 	sloth->lazy = (unsigned)(100.0 * rand() / (RAND_MAX + 1.0) + 20.0);
 }
@@ -219,14 +219,13 @@ static void act(struct Animal *const this) {
 }
 /** Test BlockMove. */
 static void test_block_move(void) {
-	struct Sloth sloths[3];
+	struct Sloth sloths[300], others[400];
 	const size_t sloths_size = sizeof sloths / sizeof *sloths;
-	struct Llama llamas[6];
-	const size_t llamas_size = sizeof llamas / sizeof *llamas;
-	struct Bear bears[2];
-	const size_t bears_size = sizeof bears / sizeof *bears;
-	struct Sloth others[9];
 	const size_t others_size = sizeof others / sizeof *others;
+	struct Llama llamas[600];
+	const size_t llamas_size = sizeof llamas / sizeof *llamas;
+	struct Bear bears[200];
+	const size_t bears_size = sizeof bears / sizeof *bears;
 	size_t i;
 
 	AnimalListClear(&animals);
@@ -253,7 +252,13 @@ static void test_block_move(void) {
 		migrate.begin = sloths;
 		migrate.end   = (const char *)sloths + sizeof sloths;
 		migrate.delta = (const char *)others - (const char *)sloths;
-		AnimalListMigrate(&animals, &migrate);
+		for(i = 0; i < sloths_size; i++) {
+			char a[12], b[12];
+			list_Animal_to_string(&sloths[i].animal.data, &a);
+			list_Animal_to_string(&others[i].animal.data, &b);
+			printf("Migrating %s -> %s.\n", a, b);
+			AnimalListNodeMigrate(&others[i].animal, &migrate);
+		}
 	}
 	printf("Block move: %s.\n", AnimalListNameToString(&animals));
 	for(i = sloths_size; i < others_size; i++) Sloth_init(others + i);
@@ -271,7 +276,7 @@ static void test_block_move(void) {
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	unsigned seed = 12246/*(unsigned)clock()*/;
+	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	FooListTest();

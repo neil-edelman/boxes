@@ -798,7 +798,7 @@ static void PT_U_(test, boolean)(void) {
 }
 
 static void PT_U_(test, order)(void) {
-	struct T_(ListNode) buf[10/*000*/], *node = buf;
+	struct T_(ListNode) buf[10000], *node = buf;
 	const size_t buf_size = sizeof buf / sizeof *buf;
 	struct T_(List) a, b;
 	size_t i, count;
