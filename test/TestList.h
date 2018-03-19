@@ -238,7 +238,7 @@ static int PT_(in_order)(struct T_(List) *const this) {
 static int PT_(exactly_unordered)(struct T_(List) *const this,
 	const size_t n) {
 	assert(this);
-	UNUSED(n);
+	(void)(n);
 	return 1
 #ifdef LIST_UA_COMPARATOR
 		&& PT_UA_(count, unordered)(this) == n
@@ -350,7 +350,7 @@ static size_t PT_U_(legit, count)(const struct T_(List) *const this) {
  @implements <T>BiPredicate */
 static int PT_U_(count, predicate)(T *const this, void *const param) {
 	size_t count = *(size_t *)param;
-	UNUSED(this);
+	(void)(this);
 	*(size_t *)param = ++count;
 	return 1;
 }
@@ -365,7 +365,7 @@ static size_t PT_U_(count, elements)(struct T_(List) *const this) {
 static size_t PT_U_(count, var);
 /** @implements <T>Action */
 static void PT_U_(count, another)(T *const this) {
-	UNUSED(this);
+	(void)(this);
 	PT_U_(count, var)++;
 }
 
@@ -448,7 +448,7 @@ static int PT_U_(in, array)(struct T_(List) *const this,
 /** Returns true. Used in \see{PT_U_(test, basic)}.
  @implements <T>Predicate */
 static int PT_U_(true, index)(const T *const this) {
-	UNUSED(this);
+	(void)(this);
 	return 1;
 }
 /** Used in \see{PT_U_(test, basic)}.
@@ -456,7 +456,7 @@ static int PT_U_(true, index)(const T *const this) {
  @implements <T>BiPredicate */
 static int PT_U_(every, second)(T *const this, void *const param) {
 	int *const pbinary = param;
-	UNUSED(this);
+	(void)(this);
 	return !(*pbinary = !*pbinary);
 }
 
@@ -532,8 +532,8 @@ static void PT_U_(test, basic)(void) {
 	T_(ListRemove)(item_z);
 	T_(ListRemove)(item_b);
 	T_(ListRemove)(item_a);
-	assert(PT_U_(exactly, elements)(&a, new_buf, new_buf_size)),
-		UNUSED(new_buf), UNUSED(new_buf_size);
+	assert(PT_U_(exactly, elements)(&a, new_buf, new_buf_size));
+	(void)(new_buf), (void)(new_buf_size);
 	/* ForEach */
 	printf("Counting %lu elements.\n", (unsigned long)new_buf_size);
 	PT_U_(count, var) = 0;
@@ -904,7 +904,7 @@ static void PT_U_(test, meta)(void) {
 				*const more = lists[i].head.U_(next);
 			assert(less);
 			if(!less->U_(next)) continue;
-			assert(more && more->U_(next)), UNUSED(more);
+			assert(more && more->U_(next)), (void)(more);
 			assert(PT_U_(data, cmp)(&PT_(node_hold_x)(less)->data,
 				&PT_(node_hold_x)(more)->data) <= 0);
 		}

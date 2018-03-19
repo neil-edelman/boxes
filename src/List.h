@@ -1,13 +1,16 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>List} organises doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},)
- of which data of type, {<T>}, must be set using {LIST_TYPE}. The {<T>ListNode}
- storage is the responsibility of the caller; that means it can be nestled in
- multiple polymorphic structures. Supports one to four different orders in the
- same type. The preprocessor macros are all undefined at the end of the file
- for convenience when including multiple {List} types in the same file. Random
- {LIST_*} macros should be avoided.
+ {<T>List} is an abstract data structure requiring {<T>ListNode} storage; one
+ can possibly store this as a sub-structure of larger, possibly different data.
+ Provides \see{<T>ListNodeMigrate} for self-referencing pointers that change as
+ the result of a memory relocation.
+
+ This is a doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},) of which
+ data of type, {<T>}, must be set using {LIST_TYPE}. Supports one to four
+ different orders in the same type. The preprocessor macros are all undefined
+ at the end of the file for convenience when including multiple {List} types in
+ the same file. Identifiers starting with {LIST_*} and {list_*} are reserved.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
@@ -54,8 +57,8 @@
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
  {padded}; {documentation}; {documentation-unknown-command} it's not quite
  {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
- @fixme Migrate could _still_ be less confusing and more efficient.
- @fixme Void pointers in {<T>List<U>BiAction} are not effective. */
+ @fixme Void pointers in {<T>List<U>BiAction} are not effective; have an
+ interface. While we're at it, {<T>ListNodeMigrate} should be an interface. */
 
 /* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -81,12 +84,6 @@
 #include <stdio.h>	/* sprintf */
 #include <string.h>	/* strlen */
 #endif /* print --> */
-
-/* unused macro */
-#ifdef UNUSED
-#undef UNUSED
-#endif
-#define UNUSED(a) ((void)(a))
 
 
 
@@ -913,7 +910,7 @@ static void PT_U_(cycle, crash)(const struct PT_(X) *const x) {
 		assert(turtle != hare);
 	}
 #else
-	UNUSED(x);
+	(void)(x);
 #endif
 }
 
