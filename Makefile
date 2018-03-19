@@ -1,6 +1,11 @@
 # GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0
 
-PROJ  := Pool
+# https://stackoverflow.com/questions/18136918/how-to-get-current-relative-directory-of-your-makefile
+makefile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+current_path := $(dir $(makefile_path))
+current_dir := $(notdir $(patsubst %/,%,$(current_path)))
+
+PROJ  := ${current_dir}
 
 # dirs
 SDIR  := src
@@ -111,7 +116,7 @@ setup: default icon
 	cp $(BDIR)/$(PROJ) readme.txt gpl.txt copying.txt $(BDIR)/$(INST)
 	rm -f $(BDIR)/$(INST)-MacOSX.dmg
 	# or rm -f $(BDIR)/$(INST)-Win32.zip
-	hdiutil create $(BDIR)/$(INST)-MacOSX.dmg -volname "$(PROJ)" -srcfolder $(BDIR)/$(INST)
+	hdiutil create $(BDIR)/$(INST)-MacOSX.dmg -volname "$(INST)" -srcfolder $(BDIR)/$(INST)
 	# or zip $(BDIR)/$(INST)-Win32.zip -r $(BDIR)/$(INST)
 	rm -R $(BDIR)/$(INST)
 
