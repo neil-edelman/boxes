@@ -11,7 +11,7 @@ more abstract data-type.  </p>
 by the pre-processor, in the sense that you define something, and
 include something, and the code for that one case is written
 automatically.  These are arguably preferable to turning off static
-type-checks by casting.</p>
+type-checking by using pointers-to-void.</p>
 
 <p> The inheritance, denoted by a clear arrow, is manifest in the
 code as nested <em>struct</em>s. By doing it this way, for example,
@@ -32,4 +32,7 @@ by, (<em>#define POOL_TYPE struct Emu</em>, <em>#define POOL_MIGRATE_EACH
 <em>&lt;Animal&gt;List</em>, notably, <em>AnimalListNodeMigrate()</em>.</p>
 
 <p> We have a static virtual table for all virtual functions,
-<em>AnimalVt</em>, one for each type of <em>Animal</em>.
+<em>AnimalVt</em>, one for each type of <em>Animal</em>. Note that
+the variables must be all private or all public, corresponding to
+putting the <em>struct</em> in the <em>.c</em> file or exporting
+it to the <em>.h</em> file.
