@@ -10,7 +10,7 @@
  @title		Orcish
  @std		C89
  @author	Neil
- @version	1.2, 2016-09
+ @version	2016-09
  @since		2014 */
 
 #include <stdlib.h> /* rand */
