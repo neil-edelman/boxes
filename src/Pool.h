@@ -6,7 +6,7 @@
  internal to the pool; as such, indices will remain the same throughout the
  lifetime of the data. You cannot shrink the capacity of this data type, only
  cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
- sequence.
+ sequence. VV!
 
  Intended for use in backing polymorphic data-types. {<T>Pool} is not
  synchronised. The preprocessor macros are all undefined at the end of the file
