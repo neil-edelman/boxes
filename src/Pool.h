@@ -1,7 +1,7 @@
 /** 2016 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>Pool} is a dynamic nodes that stores unordered {<T>}, which must be set
+ {<T>Pool} is a dynamic array that stores unordered {<T>}, which must be set
  using {POOL_TYPE}. Removing an element is done lazily through a linked-list
  internal to the pool; as such, indices will remain the same throughout the
  lifetime of the data. You cannot shrink the capacity of this data type, only
@@ -10,7 +10,7 @@
 
  Intended for use in backing polymorphic data-types. {<T>Pool} is not
  synchronised. The preprocessor macros are all undefined at the end of the file
- for convenience when including multiple pool types in the same file.
+ for convenience.
 
  @param POOL_NAME
  This literally becomes {<T>}. As it's used in function names, this should
@@ -62,9 +62,7 @@
 			2017-05 Split {List} from {Pool}; much simpler.
 			2017-01 Almost-redundant functions simplified.
 			2016-11 Multi-index.
-			2016-08 Permute.
- @fixme It is possible to add always at the first spot that's available in
- {O(1)}, it just needs some thought. */
+			2016-08 Permute. */
 
 
 
@@ -82,7 +80,7 @@
 
 
 
-/* check defines */
+/* Check defines. */
 #ifndef POOL_NAME
 #error Pool generic POOL_NAME undefined.
 #endif
@@ -365,8 +363,7 @@ static void PT_(enqueue_removed)(struct T_(Pool) *const pool, const size_t n) {
 }
 
 /** Dequeues a removed node, or if the queue is empty, returns null. */
-static struct PT_(Node) *PT_(dequeue_removed)(
-	struct T_(Pool) *const pool) {
+static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Pool) *const pool) {
 	struct PT_(Node) *node;
 	size_t n;
 	assert(pool &&
@@ -375,6 +372,7 @@ static struct PT_(Node) *PT_(dequeue_removed)(
 	node = pool->nodes + n;
 	assert(node->x.prev == pool_null && node->x.next != pool_void);
 	if((pool->removed.next = node->x.next) == pool_null) {
+		/* The last element. */
 		pool->removed.prev = pool->removed.next = pool_null;
 	} else {
 		struct PT_(Node) *const next = pool->nodes + node->x.next;
@@ -416,7 +414,7 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 
 /** Destructor for {Pool}. Make sure that the pool's contents will not be
  accessed anymore.
- @param poolp: A reference to the object that is to be deleted; it will be set
+ @param ppool: A reference to the object that is to be deleted; it will be set
  to null. If it is already null or it points to null, doesn't do anything.
  @order \Theta(1)
  @allow */
@@ -550,7 +548,7 @@ static int T_(PoolReserve)(struct T_(Pool) *const pool,
 
 /** Gets an uninitialised new element. May move the {Pool} to a new memory
  location to fit the new size.
- @param pool: If {pool} is null, returns null.
+ @param pool: If is null, returns null.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
  @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
@@ -737,7 +735,7 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	}
 	pool_super_cat(&cat, pool_cat_start);
 	for(i = 0; i < pool->size; i++) {
-		if(pool->nodes[i].prev != pool_void) continue;
+		if(pool->nodes[i].x.prev != pool_void) continue;
 		if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
 		PT_(to_string)(&pool->nodes[i].data, &scratch),
 		scratch[sizeof scratch - 1] = '\0';
