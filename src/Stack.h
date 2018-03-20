@@ -18,7 +18,7 @@
  The type associated with {<T>}. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.
 
- @param STACK_PARENT
+ @param STACK_PARENT  (@fixme Unused.)
  Optional type association with {<P>}. If set, the constructor has two extra
  arguments that allow it to be part of a larger data structure without
  referencing the {<T>Stack} directly. Can be {void} to turn off type checking.
@@ -157,11 +157,6 @@ struct Migrate {
 #endif /* migrate --> */
 
 
-
-/** Given to \see{<T>StackMigrateEach} by the migrate function of another
- datatype. */
-typedef void (*T_(StackMigrateElement))(T *const element,
-	const struct Migrate *const migrate);
 
 /** Operates by side-effects only. This definition is about the {STACK_NAME}
  type, that is, it is without the prefix {Stack}; to avoid namespace
@@ -519,21 +514,22 @@ static void T_(StackBiForEach)(struct T_(Stack) *const this,
  @order O({greatest size})
  @fixme Untested.
  @allow */
-static void T_(StackMigrateEach)(struct T_(Stack) *const this,
+/*static void T_(StackMigrateEach)(struct T_(Stack) *const this,
 	const T_(StackMigrateElement) handler, const struct Migrate *const migrate){
 	T *e, *end;
 	if(!this || !migrate || !handler) return;
 	for(e = this->array, end = e + this->size; e < end; e++)
 		handler(e, migrate);
-}
+}*/
 
-/** Use this inside the function that is passed to the (generally other's)
- migrate function. Allows pointers to the stack to be updated. It doesn't
- affect pointers not in the {realloc}ed region.
+/** This is intended for use in another's migrate each function. Allows
+ pointers to the stack to be updated. It doesn't affect pointers not in the
+ affected region.
+ @implements <T>StackMigrateElement
  @order O(1)
  @fixme Untested.
  @allow */
-static void T_(StackMigratePointer)(T **const data_ptr,
+static void T_(StackElementMigrate)(T **const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
 	if(!data_ptr
@@ -646,8 +642,7 @@ static void PT_(unused_set)(void) {
 	T_(StackClear)(0);
 	T_(StackForEach)(0, 0);
 	T_(StackBiForEach)(0, 0, 0);
-	T_(StackMigrateEach)(0, 0, 0);
-	T_(StackMigratePointer)(0, 0);
+	T_(StackElementMigrate)(0, 0);
 #ifdef STACK_TO_STRING
 	T_(StackToString)(0);
 #endif
