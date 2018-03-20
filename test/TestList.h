@@ -561,7 +561,7 @@ static void PT_U_(test, basic)(void) {
 		T_U_(List, ToString)(0), T_U_(List, ToString)(&a));
 	/* Output graphviz. */
 	PT_(graph)(&a, buf, buf_size,
-		"basic-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
+		"graph/basic-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
 	printf("Clear.\n");
 	T_(ListClear)(&a);
 	assert(!PT_U_(count, elements)(&a));
@@ -853,12 +853,12 @@ static void PT_U_(test, order)(void) {
 		T_UD_(List, ToString)(&a), T_UD_(List, ToString)(&b));
 #endif
 	PT_(graph)(&a, buf, buf_size >> 1,
-			   "order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-a.gv");
+		"graph/order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-a.gv");
 	PT_(graph)(&b, buf + (buf_size >> 1), buf_size - (buf_size >> 1),
-			   "order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-b.gv");
+		"graph/order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-b.gv");
 	T_(ListMerge)(&a, &b);
 	PT_(graph)(&a, buf, buf_size,
-			   "order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-merged-a.gv");
+		"graph/order-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) "-merged-a.gv");
 	PT_(legit)(&a); /* <-fails/\ */
 	PT_(legit)(&b);
 	printf("Testing " QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) " a, b for order "
@@ -931,7 +931,7 @@ static void PT_U_(test, list)(void) {
 		count = PT_(count)(&a);
 		assert(count == nodes_size);
 		PT_(graph)(&a, nodes, nodes_size,
-			"test-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
+			"graph/test-" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ".gv");
 	}
 #ifdef LIST_U_COMPARATOR /* <-- compare */
 	PT_U_(test, sort)();
