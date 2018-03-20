@@ -1,13 +1,16 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>List} organises doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},)
- of which data of type, {<T>}, must be set using {LIST_TYPE}. The {<T>ListNode}
- storage is the responsibility of the caller; that means it can be nestled in
- multiple polymorphic structures. Supports one to four different orders in the
- same type. The preprocessor macros are all undefined at the end of the file
- for convenience when including multiple {List} types in the same file. Random
- {LIST_*} macros should be avoided.
+ {<T>List} is an abstract data structure requiring {<T>ListNode} storage; one
+ can possibly store this as a sub-structure of larger, possibly different data.
+ Provides \see{<T>ListNodeMigrate} for self-referencing pointers that change as
+ the result of a memory relocation.
+
+ This is a doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},) of which
+ data of type, {<T>}, must be set using {LIST_TYPE}. Supports one to four
+ different orders in the same type. The preprocessor macros are all undefined
+ at the end of the file for convenience when including multiple {List} types in
+ the same file. Identifiers starting with {LIST_*} and {list_*} are reserved.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
@@ -35,9 +38,6 @@
  {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private function
  integrity testing. Requires {LIST_TO_STRING}.
 
- @param NDEBUG
- Uses standard assertions, so turning this on will speed up the code.
-
  @title		List.h
  @author	Neil
  @std		C89/90
@@ -57,8 +57,8 @@
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
  {padded}; {documentation}; {documentation-unknown-command} it's not quite
  {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
- @fixme Migrate could _still_ be less confusing and more efficient.
- @fixme Void pointers in {<T>List<U>BiAction} are not effective. */
+ @fixme Void pointers in {<T>List<U>BiAction} are not effective; have an
+ interface. While we're at it, {<T>ListNodeMigrate} should be an interface. */
 
 /* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -84,12 +84,6 @@
 #include <stdio.h>	/* sprintf */
 #include <string.h>	/* strlen */
 #endif /* print --> */
-
-/* unused macro */
-#ifdef UNUSED
-#undef UNUSED
-#endif
-#define UNUSED(a) ((void)(a))
 
 
 
@@ -270,7 +264,7 @@ enum ListOperation {
 };
 #endif /* LIST_H */
 
-/* Also left in the same translation unit. */
+/* One time in the same translation unit. */
 #ifndef MIGRATE /* <-- migrate */
 #define MIGRATE
 /** Contains information about a {realloc}. */
@@ -319,15 +313,10 @@ struct T_(List) {
 
 
 
-/** Calls \see{<T>ListMigratePointer}, given to \see{<T>List<U>MigrateEach}, in
- the handler for the {Migrate}. This definition is about the {LIST_NAME} type,
- that is, it is without the prefix {List}; to avoid namespace collisions, this
- is private, meaning the name is mangled. If you want this definition,
- re-declare it as {<T>MigrateElement}. */
-typedef void (*PT_(Migrate))(T *const element,
-	const struct Migrate *const migrate);
-
-/** Takes {<T>}; used in \see{<T>List<U>ForEach}. */
+/** Takes {<T>}; used in \see{<T>List<U>ForEach}. This definition is about the
+ {LIST_NAME} type, that is, it is without the prefix {List}; to avoid namespace
+ collisions, this is private, meaning the name is mangled. If you want this
+ definition, re-declare it. */
 typedef void (*PT_(Action))(T *const);
 
 /** Takes {<T>} and <void *>; used in \see{<T>List<U>BiForEach}. */
@@ -340,43 +329,48 @@ typedef int (*PT_(Predicate))(const T *const);
 typedef int (*PT_(BiPredicate))(T *const, void *const);
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
-
 /** Compares two {<T>} values and returns less then, equal to, or greater then
  zero. Should do so forming an equivalence relation with respect to {<T>}. */
 typedef int (*PT_(Comparator))(const T *, const T *);
-
 #endif /* comp --> */
 
 #ifdef LIST_TO_STRING /* <-- string */
-
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
  null-terminated output string (the second.) */
 typedef void (*PT_(ToString))(const T *const, char (*const)[12]);
-
 /* Check that {LIST_TO_STRING} is a function implementing {<T>ToString}. */
 static const PT_(ToString) PT_(to_string) = (LIST_TO_STRING);
-
 #endif /* string --> */
 
 
 
-/** {container_of}. */
+/** Private: {container_of}. */
 static struct T_(ListNode) *PT_(node_hold_x)(struct PT_(X) *const x) {
 	return (struct T_(ListNode) *)(void *)
 		((char *)x - offsetof(struct T_(ListNode), x));
 }
 
-/** {container_of}. */
+/** Private: {container_of}. */
 static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
 	return (struct T_(ListNode) *)(void *)
 		((char *)data - offsetof(struct T_(ListNode), data));
+}
+
+/** Private: used in \see{<PT>_order_<U>_migrate_each};
+ \${ptr \in [begin, end) -> ptr += delta}. */
+static int PT_(migrate)(struct PT_(X) **const x_ptr,
+	const struct Migrate *const migrate) {
+	const void *const x = *x_ptr;
+	assert(x_ptr);
+	if(x < migrate->begin || x >= migrate->end) return 0;
+	*(char **)x_ptr += migrate->delta;
+	return 1;
 }
 
 /* Prototypes: needed for the next section, but undefined until later. */
 static void PT_(add_before)(struct PT_(X) *const, struct PT_(X) *const);
 static void PT_(add_after)(struct PT_(X) *const, struct PT_(X) *const);
 static void PT_(remove)(struct PT_(X) *const);
-static void PT_(migrate)(const struct Migrate *const, struct PT_(X) **const);
 
 
 
@@ -422,16 +416,16 @@ static void PT_(migrate)(const struct Migrate *const, struct PT_(X) **const);
 static void PT_(add_before)(struct PT_(X) *const x, struct PT_(X) *const add) {
 	assert(x && add && x != add);
 #ifdef LIST_UA_NAME /* <-- a */
-	PT_UA_(add, before)(x, add);
+	PT_UA_(x, add_before)(x, add);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PT_UB_(add, before)(x, add);
+	PT_UB_(x, add_before)(x, add);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PT_UC_(add, before)(x, add);
+	PT_UC_(x, add_before)(x, add);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PT_UD_(add, before)(x, add);
+	PT_UD_(x, add_before)(x, add);
 #endif /* d --> */
 }
 
@@ -439,16 +433,16 @@ static void PT_(add_before)(struct PT_(X) *const x, struct PT_(X) *const add) {
 static void PT_(add_after)(struct PT_(X) *const x, struct PT_(X) *const add) {
 	assert(x && add && x != add);
 #ifdef LIST_UA_NAME /* <-- a */
-	PT_UA_(add, after)(x, add);
+	PT_UA_(x, add_after)(x, add);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PT_UB_(add, after)(x, add);
+	PT_UB_(x, add_after)(x, add);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PT_UC_(add, after)(x, add);
+	PT_UC_(x, add_after)(x, add);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PT_UD_(add, after)(x, add);
+	PT_UD_(x, add_after)(x, add);
 #endif /* d --> */
 }
 
@@ -456,16 +450,16 @@ static void PT_(add_after)(struct PT_(X) *const x, struct PT_(X) *const add) {
  @implements <T>ListNodeAction */
 static void PT_(remove)(struct PT_(X) *const x) {
 #ifdef LIST_UA_NAME /* <-- a */
-	PT_UA_(list, remove)(x);
+	PT_UA_(x, remove)(x);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PT_UB_(list, remove)(x);
+	PT_UB_(x, remove)(x);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PT_UC_(list, remove)(x);
+	PT_UC_(x, remove)(x);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PT_UD_(list, remove)(x);
+	PT_UD_(x, remove)(x);
 #endif /* d --> */
 }
 
@@ -499,16 +493,16 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 		struct T_(List) *const from) {
 	assert(x && from);
 #ifdef LIST_UA_NAME /* <-- a */
-	PT_UA_(list, cat)(x, from);
+	PT_UA_(x, cat)(x, from);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
-	PT_UB_(list, cat)(x, from);
+	PT_UB_(x, cat)(x, from);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
-	PT_UC_(list, cat)(x, from);
+	PT_UC_(x, cat)(x, from);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
-	PT_UD_(list, cat)(x, from);
+	PT_UD_(x, cat)(x, from);
 #endif /* d --> */
 }
 
@@ -715,25 +709,21 @@ static void T_(ListSort)(struct T_(List) *const list) {
 
 #endif /* comp --> */
 
-/** Adjusts the pointers internal to the {<T>List} when supplied with a
- {Migrate} parameter when {list} contains {<T>ListNode} elements from memory
- that switched due to a {realloc}.
+/** Adjusts one {<T>ListNode}'s internal pointers when supplied with a
+ {Migrate} parameter.
  @param list: If null, does nothing.
  @param migrate: If null, does nothing. Should only be called in a {Migrate}
  function; pass the {migrate} parameter.
- @implements <T>ListMigrate
+ @implements <<T>ListNode>Migrate
  @order \Theta(n)
  @allow */
-static void T_(ListMigrate)(struct T_(List) *const list,
+static void T_(ListNodeMigrate)(struct T_(ListNode) *const listnode,
 	const struct Migrate *const migrate) {
+	struct PT_(X) *x;
 	/* Relies on not-strictly-defined behaviour because pointers are not
 	 necessarily contiguous in memory; it should be fine in practice. */
-	if(!list || !migrate || !migrate->delta) return;
-#ifdef LIST_DEBUG
-	fprintf(stderr, "List<" QUOTE(LIST_NAME)
-		"#%p: moved entries at #%p-#%p by %lu.\n", (void *)list,
-		migrate->begin, migrate->end, (long unsigned)migrate->delta);
-#endif
+	if(!listnode || !migrate || !migrate->delta) return;
+	x = &listnode->x;
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -742,36 +732,27 @@ static void T_(ListMigrate)(struct T_(List) *const list,
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PT_UA_(list, migrate)(list, migrate);
+		PT_UA_(x, migrate)(x, migrate);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PT_UB_(list, migrate)(list, migrate);
+		PT_UB_(x, migrate)(x, migrate);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PT_UC_(list, migrate)(list, migrate);
+		PT_UC_(x, migrate)(x, migrate);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 		#pragma omp section
 #endif /* omp --> */
-		PT_UD_(list, migrate)(list, migrate);
+		PT_UD_(x, migrate)(x, migrate);
 #endif /* d --> */
 	}
-}
-
-/** Private: used in \see{<T>_list_<U>_migrate} and \see{<T>ListMigratePointer}.
- \${ptr \in [begin, end) -> ptr += delta}. */
-static void PT_(migrate)(const struct Migrate *const migrate,
-	struct PT_(X) **const x_ptr) {
-	const void *const x = *x_ptr;
-	if(x < migrate->begin || x >= migrate->end) return;
-	*(char **)x_ptr += migrate->delta;
 }
 
 #ifdef LIST_TEST /* <-- test */
@@ -795,7 +776,7 @@ static void PT_(unused_list)(void) {
 	T_(ListMerge)(0, 0);
 	T_(ListSort)(0);
 #endif /* comp --> */
-	T_(ListMigrate)(0, 0);
+	T_(ListNodeMigrate)(0, 0);
 	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
@@ -929,12 +910,13 @@ static void PT_U_(cycle, crash)(const struct PT_(X) *const x) {
 		assert(turtle != hare);
 	}
 #else
-	UNUSED(x);
+	(void)(x);
 #endif
 }
 
 /** Private: add {add} before {x}. */
-static void PT_U_(add, before)(struct PT_(X) *const x,struct PT_(X) *const add){
+static void PT_U_(x, add_before)(struct PT_(X) *const x,
+	struct PT_(X) *const add) {
 	assert(x && add && x != add && x->U_(prev));
 	add->U_(prev) = x->U_(prev);
 	add->U_(next) = x;
@@ -944,7 +926,8 @@ static void PT_U_(add, before)(struct PT_(X) *const x,struct PT_(X) *const add){
 }
 
 /** Private: add {add} after {x}. */
-static void PT_U_(add, after)(struct PT_(X) *const x, struct PT_(X) *const add){
+static void PT_U_(x, add_after)(struct PT_(X) *const x,
+	struct PT_(X) *const add) {
 	assert(x && add && x != add && x->U_(next));
 	add->U_(prev) = x;
 	add->U_(next) = x->U_(next);
@@ -954,7 +937,7 @@ static void PT_U_(add, after)(struct PT_(X) *const x, struct PT_(X) *const add){
 }
 
 /** Private: list remove in {<U>}. */
-static void PT_U_(list, remove)(struct PT_(X) *const x) {
+static void PT_U_(x, remove)(struct PT_(X) *const x) {
 	assert(x->U_(prev) && x->U_(next));
 	x->U_(prev)->U_(next) = x->U_(next);
 	x->U_(next)->U_(prev) = x->U_(prev);
@@ -965,7 +948,7 @@ static void PT_U_(list, remove)(struct PT_(X) *const x) {
  {head->next}); {from} will be empty after. Careful that {x} is not in {from}
  because that will just erase the list.
  @order \Theta(1) */
-static void PT_U_(list, cat)(struct PT_(X) *const x,
+static void PT_U_(x, cat)(struct PT_(X) *const x,
 	struct T_(List) *const from) {
 	assert(x && from && x->U_(prev) &&
 		!from->head.U_(prev) && from->head.U_(next)
@@ -980,39 +963,20 @@ static void PT_U_(list, cat)(struct PT_(X) *const x,
 	PT_U_(cycle, crash)(&from->head);
 }
 
-/** Private: callback when {realloc} changes pointers. Tried to keep undefined
- behaviour to a minimum.
- @order \Theta(n) */
-static void PT_U_(list, migrate)(struct T_(List) *const list,
+/** Private: callback when {realloc} changes pointers. Called in
+ \see{PT_(migrate_each)}.
+ @order \Theta(1) */
+static void PT_U_(x, migrate)(struct PT_(X) *const x,
 	const struct Migrate *const migrate) {
-	struct PT_(X) *x;
-	assert(list && migrate && migrate->begin && migrate->begin < migrate->end
-		&& migrate->delta && list);
-	for(x = &list->head; x; x = x->U_(next)) {
-		PT_(migrate)(migrate, &x->U_(prev));
-		PT_(migrate)(migrate, &x->U_(next));
-	}
-	PT_U_(cycle, crash)(&list->head);
-}
-
-/** 
- Calls {handler} on every element that is part of the list. This allows
- {<T>} elements in the list to contain pointers to moving structures due to a
- {realloc}.
- @param list, migrate: If null, does nothing.
- @param handler: If null, does nothing, otherwise has the responsibility of
- calling the pointers' migrate functions.
- @order \Theta({list}.n \times {handler})
- @allow */
-static void T_U_(List, MigrateEach)(struct T_(List) *const list,
-	const PT_(Migrate) handler, const struct Migrate *const migrate) {
-	struct PT_(X) *x, *next_x;
-	if(!list || !handler || !migrate) return;
-	for(x = &list->head; x; x = next_x) {
-		next_x = x->U_(next); /* Careful for user casters. */
-		handler(&PT_(node_hold_x)(x)->data, migrate);
-	}
-	PT_U_(cycle, crash)(&list->head);
+	int is;
+	assert(x && x->U_(prev) && x->U_(next) && migrate && migrate->begin
+		&& migrate->begin < migrate->end && migrate->delta);
+	/* If node out of the migration region, it must have node into. Otherwise,
+	 assume the other node is on the list of migrates. */
+	if(!PT_(migrate)(&x->U_(prev), migrate))
+		is = PT_(migrate)(&x->U_(prev)->U_(next), migrate), assert(is);
+	if(!PT_(migrate)(&x->U_(next), migrate))
+		is = PT_(migrate)(&x->U_(next)->U_(prev), migrate), assert(is);
 }
 
 /** @param data: Must be part of a {List}. If {data} are not part of a valid
@@ -1112,7 +1076,7 @@ static void PT_U_(list, merge)(struct T_(List) *const alist,
 	if(!(b = blist->head.U_(next))->U_(next)) return;
 	/* {alist} empty -- {O(1)} cat is more efficient. */
 	if(!(a = alist->head.U_(next))->U_(next))
-		{ PT_U_(list, cat)(&alist->tail, blist); return; }
+		{ PT_U_(x, cat)(&alist->tail, blist); return; }
 	/* Merge */
 	for(hind = &alist->head; ; ) {
 		if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
@@ -1160,12 +1124,12 @@ struct PT_(Runs) {
  linked-list size is over {500 000}; randomly distributed keys have high
  insertion times that to well in standard merging. However, it's (potentially
  much) faster when the keys have structure: observed, {[-2%, 500%]}. */
-static void PT_U_(natural, merge)(struct PT_(Runs) *const r) {
+static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 	struct PT_(Run) *const run_a = r->run + r->run_no - 2;
 	struct PT_(Run) *const run_b = run_a + 1;
 	struct PT_(X) *a = run_a->tail, *b = run_b->head, *chosen;
 	assert(r->run_no >= 2);
-	/* fixme: we are doing one-to-many compares in some cases? */
+	/* @fixme We are doing one-to-many compares in some cases? */
 	if(run_a->size <= run_b->size) {
 		struct PT_(X) *prev_chosen;
 		/* run a is smaller: downwards insert b.head followed by upwards
@@ -1326,7 +1290,7 @@ static void PT_U_(natural, sort)(struct T_(List) *const list) {
 		new_run->head->U_(prev) = new_run->tail->U_(next) = 0;
 		/* Greedy merge: keeps space to {O(log n)} instead of {O(n)}. */
 		for(rc = run_count; !(rc & 1) && runs.run_no >= 2; rc >>= 1)
-			PT_U_(natural, merge)(&runs);
+			PT_U_(runs, merge)(&runs);
 		/* Reset the state machine and output to just {b} at the next run. */
 		mono = UNSURE;
 		assert(runs.run_no < sizeof(runs.run) / sizeof(*runs.run));
@@ -1338,7 +1302,7 @@ static void PT_U_(natural, sort)(struct T_(List) *const list) {
 	if(mono == INCREASING) new_run->tail = a;
 	new_run->tail->U_(next) = new_run->head->U_(prev) = 0;
 	/* Clean up the rest; when only one run, propagate list_runs[0] to head. */
-	while(runs.run_no > 1) PT_U_(natural, merge)(&runs);
+	while(runs.run_no > 1) PT_U_(runs, merge)(&runs);
 	runs.run[0].head->U_(prev) = &list->head;
 	runs.run[0].tail->U_(next) = &list->tail;
 	list->head.U_(next) = runs.run[0].head;
@@ -1680,7 +1644,6 @@ static void PT_U_(sub_unused, list)(void) {
 	T_U_(List, BiForEach)(0, 0, 0);
 	T_U_(List, ShortCircuit)(0, 0);
 	T_U_(List, BiShortCircuit)(0, 0, 0);
-	T_U_(List, MigrateEach)(0, 0, 0);
 #ifdef LIST_TO_STRING /* <-- string */
 	T_U_(List, ToString)(0);
 #endif /* string --> */
