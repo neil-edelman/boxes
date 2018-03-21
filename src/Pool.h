@@ -439,7 +439,7 @@ static struct T_(Pool) *PT_(pool)(void) {
 	pool->size         = 0;
 	pool->removed.prev = pool->removed.next = pool_null;
 	if(!(pool->nodes = malloc(pool->capacity[0] * sizeof *pool->nodes)))
-		return 0;
+		{ T_(Pool_)(&pool); return 0; }
 	PT_(debug)(pool, "New", "capacity %d.\n", pool->capacity[0]);
 	return pool;
 }
