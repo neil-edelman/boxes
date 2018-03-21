@@ -9,8 +9,8 @@
  This is a doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},) of which
  data of type, {<T>}, must be set using {LIST_TYPE}. Supports one to four
  different orders in the same type. The preprocessor macros are all undefined
- at the end of the file for convenience when including multiple {List} types in
- the same file. Identifiers starting with {LIST_*} and {list_*} are reserved.
+ at the end of the file for convenience. Identifiers starting with {LIST_*} and
+ {list_*} are reserved.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
@@ -786,7 +786,7 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 
 
 
-/* un-define all macros */
+/* Un-define all macros. */
 #undef LIST_NAME
 #undef LIST_TYPE
 #undef CAT
@@ -852,7 +852,7 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 #undef LIST_SOME_COMPARATOR
 #endif
 #ifdef LIST_SORT_INTERNALS
-#undef LIST_SORT_INTERNALS /* each List type has their own */
+#undef LIST_SORT_INTERNALS /* Each List type has their own. */
 #endif
 
 
@@ -977,6 +977,7 @@ static void PT_U_(x, migrate)(struct PT_(X) *const x,
 		is = PT_(migrate)(&x->U_(prev)->U_(next), migrate), assert(is);
 	if(!PT_(migrate)(&x->U_(next), migrate))
 		is = PT_(migrate)(&x->U_(next)->U_(prev), migrate), assert(is);
+	(void)is;
 }
 
 /** @param data: Must be part of a {List}. If {data} are not part of a valid
@@ -1132,9 +1133,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 	/* @fixme We are doing one-to-many compares in some cases? */
 	if(run_a->size <= run_b->size) {
 		struct PT_(X) *prev_chosen;
-		/* run a is smaller: downwards insert b.head followed by upwards
-		 merge */
-		/* insert the first element of b downwards into a */
+		/* Run {a} is smaller: downwards insert {b.head} followed by upwards
+		 merge. Insert the first element of {b} downwards into {a}. */
 		for( ; ; ) {
 			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
 				&PT_(node_hold_x)(b)->data) <= 0) {
@@ -1150,7 +1150,7 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 			}
 			a = a->U_(prev);
 		}
-		/* merge upwards, while the lists are interleaved */
+		/* Merge upwards; while the lists are interleaved. */
 		while(chosen->U_(next)) {
 			prev_chosen = chosen;
 			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
@@ -1164,7 +1164,7 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 			prev_chosen->U_(next) = chosen;
 			chosen->U_(prev) = prev_chosen;
 		}
-		/* splice the one list left */
+		/* Splice the one list left. */
 		if(!a) {
 			b->U_(prev) = chosen;
 			chosen->U_(next) = b;
@@ -1176,8 +1176,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 	} else {
 		struct PT_(X) *next_chosen;
 		int is_a_tail = 0;
-		/* run b is smaller; upwards insert followed by downwards merge */
-		/* insert the last element of a upwards into b */
+		/* Run {b} is smaller; upwards insert followed by downwards merge.
+		 Insert the last element of {a} upwards into {b}. */
 		for( ; ; ) {
 			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
 				&PT_(node_hold_x)(b)->data) <= 0) {
@@ -1185,7 +1185,7 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 				b = b->U_(prev);
 				break;
 			}
-			/* here, a > b */
+			/* Here, {a > b}. */
 			if(!b->U_(next)) {
 				is_a_tail = -1;
 				chosen = a;
@@ -1195,7 +1195,7 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 			b = b->U_(next);
 		}
 		if(!is_a_tail) run_a->tail = run_b->tail;
-		/* merge downwards, while the lists are interleaved */
+		/* Merge downwards, while the lists are interleaved. */
 		while(chosen->U_(prev)) {
 			next_chosen = chosen;
 			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
@@ -1209,7 +1209,7 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 			next_chosen->U_(prev) = chosen;
 			chosen->U_(next) = next_chosen;
 		}
-		/* splice the one list left */
+		/* Splice the one list left. */
 		if(!a) {
 			b->U_(next) = chosen;
 			chosen->U_(prev) = b;
@@ -1257,7 +1257,7 @@ static void PT_U_(natural, sort)(struct T_(List) *const list) {
 		 slightly slower than only considering increasing runs on most cases;
 		 however, I would hate to see my code replaced with one line; reverse
 		 order is 15 times faster, but it's not likely. */
-		if(comp < 0) { /* a < b, increasing -- good */
+		if(comp < 0) { /* {a < b}, increasing -- good. */
 			if(mono != DECREASING) { /* If decreasing, inflection. */
 				mono = INCREASING;
 				new_run->size++;
@@ -1618,7 +1618,6 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 
 #endif /* print --> */
 
-/* prototype */
 static void PT_U_(sub_unused, coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
