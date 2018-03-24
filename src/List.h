@@ -900,7 +900,7 @@ in C99" */
 
 /** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
  You do not want cycles! */
-static void PT_U_(cycle, crash)(const struct PT_(X) *const x) {
+static void PT_U_(cycle, crash)(struct PT_(X) *const x) {
 #ifdef LIST_DEBUG
 	struct PT_(X) *turtle, *hare;
 	assert(x);
