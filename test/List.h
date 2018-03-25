@@ -755,6 +755,49 @@ static void T_(ListNodeMigrate)(struct T_(ListNode) *const listnode,
 	}
 }
 
+/** When you move the {<T>List}, because it's nodes need to have endpoints,
+ those pointers will be invalid. This corrects them.
+ @param list: If null, does nothing.
+ @order O(1)
+ @fixme Untested.
+ @allow */
+static void T_(ListSelfCorrect)(struct T_(List) *const list) {
+	if(!list) return;
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LIST_UA_NAME /* <-- a */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		list->head.UA_(next)->UA_(prev) = &list->head;
+		list->tail.UA_(prev)->UA_(next) = &list->tail;
+#endif /* a --> */
+#ifdef LIST_UB_NAME /* <-- b */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		list->head.UB_(next)->UB_(prev) = &list->head;
+		list->tail.UB_(prev)->UB_(next) = &list->tail;
+#endif /* b --> */
+#ifdef LIST_UC_NAME /* <-- c */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		list->head.UC_(next)->UC_(prev) = &list->head;
+		list->tail.UC_(prev)->UC_(next) = &list->tail;
+#endif /* c --> */
+#ifdef LIST_UD_NAME /* <-- d */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		list->head.UD_(next)->UD_(prev) = &list->head;
+		list->tail.UD_(prev)->UD_(next) = &list->tail;
+#endif /* d --> */
+	}
+}
+
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* Need this file if one is going to run tests. */
 #endif /* test --> */
@@ -777,6 +820,7 @@ static void PT_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(ListNodeMigrate)(0, 0);
+	T_(ListSelfCorrect)(0);
 	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
