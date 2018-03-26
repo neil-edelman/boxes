@@ -307,7 +307,11 @@ struct T_(List) {
 	/* {head.prev} and {tail.next} are always null. The nodes always have a
 	 non-null {head} and {tail}. This allows the inference of everything
 	 from everything else and reduces the number of arguments that we have to
-	 pass. It is also a very awkward system. */
+	 pass. \see{<T>ListSelfCorrect} uses the fact that {head} and {tail} are
+	 packed to determine whether a list is empty, therefore, {head, tail}
+	 cannot be separated or reversed; furthermore, you cannot have
+	 {sizeof data == 0} and call \see{<T>ListSelfCorrect}, though I don't see
+	 how you could do that. */
 	struct PT_(X) head, tail;
 };
 
@@ -755,8 +759,9 @@ static void T_(ListNodeMigrate)(struct T_(ListNode) *const listnode,
 	}
 }
 
-/** When you move the {<T>List}, because it's nodes need to have endpoints,
- those pointers will be invalid. This corrects them.
+/** One must call this whenever the {<T>List} changes memory locations, (not
+ the nodes.) This resets and corrects the two ends; the two ends become invalid
+ even when it's empty.
  @param list: If null, does nothing.
  @order O(1)
  @fixme Untested.
@@ -771,29 +776,25 @@ static void T_(ListSelfCorrect)(struct T_(List) *const list) {
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		list->head.UA_(next)->UA_(prev) = &list->head;
-		list->tail.UA_(prev)->UA_(next) = &list->tail;
+		PT_UA_(list, self_correct)(list);
 #endif /* a --> */
 #ifdef LIST_UB_NAME /* <-- b */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		list->head.UB_(next)->UB_(prev) = &list->head;
-		list->tail.UB_(prev)->UB_(next) = &list->tail;
+		PT_UB_(list, self_correct)(list);
 #endif /* b --> */
 #ifdef LIST_UC_NAME /* <-- c */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		list->head.UC_(next)->UC_(prev) = &list->head;
-		list->tail.UC_(prev)->UC_(next) = &list->tail;
+		PT_UC_(list, self_correct)(list);
 #endif /* c --> */
 #ifdef LIST_UD_NAME /* <-- d */
 #ifdef LIST_OPENMP /* <-- omp */
 #pragma omp section
 #endif /* omp --> */
-		list->head.UD_(next)->UD_(prev) = &list->head;
-		list->tail.UD_(prev)->UD_(next) = &list->tail;
+		PT_UD_(list, self_correct)(list);
 #endif /* d --> */
 	}
 }
@@ -1022,6 +1023,18 @@ static void PT_U_(x, migrate)(struct PT_(X) *const x,
 	if(!PT_(migrate)(&x->U_(next), migrate))
 		is = PT_(migrate)(&x->U_(next)->U_(prev), migrate), assert(is);
 	(void)is;
+}
+
+/** Private: when the actual list but not the data changes locations. */
+static void PT_U_(list, self_correct)(struct T_(List) *const list) {
+	if(list->head.U_(next) == list->tail.U_(prev) + 1) {
+		/* They are packed -> the list is empty. @fixme Test thoroughly! */
+		list->head.U_(next) = &list->tail;
+		list->tail.U_(prev) = &list->head;
+	} else {
+		list->head.U_(next)->U_(prev) = &list->head;
+		list->tail.U_(prev)->U_(next) = &list->tail;
+	}
 }
 
 /** @param data: Must be part of a {List}. If {data} are not part of a valid
