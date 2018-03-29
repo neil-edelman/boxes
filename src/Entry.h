@@ -1,14 +1,12 @@
 /** 2018 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<K,V>Entry} is an entry in {<K,V>Map}. This is a more specialised version of
- {<E>Map} where the key and the value are separate. Resembling more traditional
- associative arrays, maps between the {uint32_t} hash of {<K>} and one bucket,
- implemented as a {<K,V>List}. Requires the storage of . . . {<K,V>EntryNode}?
- Requires {Map.h}, which requires {List.h}, in the same directory.
- and {<K,V>Map} is a subset 
- an abstract data container implementing an associative array, or
- dictionary, requiring the storage of {<K>} and {<V>ListNode}. , and depends on {List.h}.
+ This, if you will, extends {<E>Map} to {<K,V>Map}. The entry for this map is
+ {<K,V>Entry}, which requires storage of {<K,V>EntryMapList}. This is a more
+ specialised version of {<E>Map} where the key and the value are separate,
+ resembling more traditional associative arrays. Maps between the {uint32_t}
+ hash of {<K>} and one bucket, implemented as a {<K,V>List}. Requires {Map.h},
+ which requires {List.h}, in the same directory.
 
  @param ENTRY_NAME
  A unique name associated with {<K,V>} that satisfies {C} naming rules when
@@ -148,6 +146,9 @@ struct KV_(Entry) {
 };
 
 
+
+static V *KV_(MapGetValue)(struct E_(Map) *const map, const K key) {
+}
 
 #ifdef ENTRY_TEST /* <-- test */
 #include "../test/TestEntry.h"
