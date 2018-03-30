@@ -159,9 +159,16 @@ static int PKV_(key_is_equal)(const K a, const K b) {
 #define MAP_KEY PKV_(KeyType)
 #define MAP_TYPE_TO_KEY &PKV_(get_key)
 #define MAP_IS_EQUAL &PKV_(key_is_equal)
-#define MAP_HASH &PKV_(key_hash)
+#define MAP_HASH (PE_(Hash))&PKV_(key_hash)
 #ifdef ENTRY_TO_STRING /* <-- string */
-#define MAP_TO_STRING ENTRY_TO_STRING
+/** Responsible for turning {<KV>} (the first argument) into a 12 {char}
+ null-terminated output string (the second.) */
+typedef void (*PKV_(EntryToString))(const struct KV_(Entry) *const,
+	char (*const)[12]);
+/* Check that {ENTRY_TO_STRING} is a function implementing
+ \see{<PKV>ToString}. */
+static const PKV_(EntryToString) PKV_(entry_to_string) = (ENTRY_TO_STRING);
+#define MAP_TO_STRING (PE_(ToString))&PKV_(entry_to_string);
 #endif /* string --> */
 #include "Map.h"
 
