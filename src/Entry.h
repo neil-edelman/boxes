@@ -7,7 +7,8 @@
  version of {<E>Map} where the key and the value are separate, resembling more
  traditional associative arrays. Maps between the {uint32_t} hash of {<K>} and
  one bucket, implemented internally as a {<K,V>List}. Requires {Map.h}, which
- requires {List.h}, in the same directory.
+ requires {List.h}, in the same directory. See {Map} for the rest of
+ documentation on {Map}.
 
  @param ENTRY_NAME
  A unique name associated with {<K,V>} that satisfies {C} naming rules when
@@ -31,8 +32,7 @@
  required.
 
  @param ENTRY_TO_STRING
- Optional print function implementing \see{<KV>ToString}; makes available
- \see{<KV>EntryToString}.
+ Optional print function implementing \see{<KV>ToString}; requires {ENTRY_TEST}.
 
  @param ENTRY_TEST
  Unit testing framework, included in a separate header, {../test/EntryTest.h}.
@@ -67,9 +67,9 @@
 #ifndef ENTRY_HASH
 #error Map generic ENTRY_HASH undefined.
 #endif
-/*#if defined(ENTRY_TEST) && !defined(ENTRY_TO_STRING)
-#error ENTRY_TEST requires ENTRY_TO_STRING.
-#endif*/
+#if defined(ENTRY_TEST) ^ defined(ENTRY_TO_STRING)
+#error ENTRY_TEST and ENTRY_TO_STRING are mutual.
+#endif
 #if !defined(ENTRY_TEST) && !defined(NDEBUG)
 #define ENTRY_NDEBUG
 #define NDEBUG
@@ -122,15 +122,32 @@ typedef ENTRY_KEY PKV_(KeyType);
 typedef ENTRY_VALUE PKV_(ValueType);
 #define V PKV_(ValueType)
 
+#ifdef ENTRY_TO_STRING /* <-- string */
+/** Just used for {ENTRY_TEST}. Responsible for turning {<KV>} (the first
+ argument) into a 12 {char} null-terminated output string (the second.) */
+typedef void (*PKV_(ToString))(const struct KV_(Entry) *, char (*const)[12]);
+/* Check that {ENTRY_TO_STRING} is a function implementing {<PKV>ToString}. */
+static const PKV_(ToString) PKV_(to_string) = (ENTRY_TO_STRING);
+#endif /* string --> */
+
+#ifdef ENTRY_TEST /* <-- test */
+/** Just used for {ENTRY_TEST}. */
+typedef void (*PKV_(Action))(struct KV_(Entry) *const);
+#endif /* test --> */
+
+
+
 /** An entry. Any changes to the {key} field and you must re-hash with
- {<P,K>EntryMapRehash}. */
+ {<P,K>MapRehash}. */
 struct KV_(Entry) {
 	K key;
 	V value;
 };
 
+
+
 /** An inverted equivalence relation between keys, where 0 means they are
- equivalent. Done this way because {strcmp}. */
+ equivalent. Done this way because {strcmp} is often used in this capacity. */
 typedef int (*PKV_(EntryCmp))(const K, const K);
 /* Check that {ENTRY_CMP} is a function implementing {<PKV>EntryCmp}. */
 static const PKV_(EntryCmp) PKV_(cmp) = (ENTRY_CMP);
@@ -192,7 +209,22 @@ static int PKV_(key_is_equal)(const K a, const K b) {
 
 
 
-/** @return The value asociated with the specified {key} or null if it didn't
+/** Private: {container_of} */
+static struct KV_(Entry) *PKV_(node_holds_value)(V *const v) {
+	return (struct KV_(Entry) *)(void *)
+		((char *)v - offsetof(struct KV_(Entry), value));
+}
+
+/** @param value: The value part of a key-value {<KV>Entry} pair.
+ @return The {<KV>Entry} pair.
+ @order \Omega(1)
+ @allow */
+static struct KV_(Entry) *KV_(EntryHoldsValue)(V *const value) {
+	if(!value) return 0;
+	return PKV_(node_holds_value)(value);
+}
+
+/** @return The value associated with the specified {key} or null if it didn't
  find it.
  @order Average \O(1), Worst \O(n)
  @allow */
@@ -213,6 +245,7 @@ static void PKV_(entry_unused_coda)(void);
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PKV_(entry_unused_map)(void) {
+	KV_(EntryHoldsValue)(0);
 	KV_(MapGetValue)(0, 0);
 	PKV_(entry_unused_coda)();
 }
