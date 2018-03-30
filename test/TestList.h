@@ -135,11 +135,11 @@ static void PT_(graph)(const struct T_(List) *const this,
 		"p%p [label=\"head\"];\n"
 		"p%p [label=\"tail\"];\n"
 		"node [shape=box];\n",
-		(void *)&this->head, (void *)&this->tail);
+		(const void *)&this->head, (const void *)&this->tail);
 	for(i = 0; i < array_size; i++) {
 		a = array + i;
 		PT_(to_string)(&a->data, &str);
-		fprintf(fp, "p%p [label=\"%s\"];\n", (void *)(&a->x), str);
+		fprintf(fp, "p%p [label=\"%s\"];\n", (const void *)&a->x, str);
 	}
 	fprintf(fp, "node [colour=red, style=filled];\n");
 #ifdef LIST_UA_NAME
@@ -295,13 +295,13 @@ static void PT_U_(graph, index)(const struct T_(List) *const this,
 		"node [style=filled,color=white];\n}\n", colour, colour);*/
 	fprintf(fp, "p%p -> p%p [color=%s];\n"
 		"p%p -> p%p [color=%s4];\n",
-		(void *)&this->head, (void *)this->head.U_(next), colour,
-		(void *)&this->tail, (void *)this->tail.U_(prev), colour);
+		(const void *)&this->head, (void *)this->head.U_(next), colour,
+		(const void *)&this->tail, (void *)this->tail.U_(prev), colour);
 	for(i = 0; i < array_size; i++)
 		a = array + i, fprintf(fp, "p%p -> p%p [color=%s];\n"
 		"p%p -> p%p [color=%s4];\n",
-		(void *)(&a->x), (void *)(a->x.U_(next)), colour,
-		(void *)(&a->x), (void *)(a->x.U_(prev)), colour);
+		(const void *)(&a->x), (void *)(a->x.U_(next)), colour,
+		(const void *)(&a->x), (void *)(a->x.U_(prev)), colour);
 }
 
 /** This checks if the index is valid by counting forward then back.
