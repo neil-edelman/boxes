@@ -217,7 +217,7 @@ typedef int (*PE_(IsEqual))(const K, const K);
 /* Check that {MAP_IS_EQUAL} is a function implementing {<PT>IsEqual}. */
 static const PE_(IsEqual) PE_(is_equal) = (MAP_IS_EQUAL);
 
-/** A map from {<K>} onto {int32_t}; should be as close as possible to a
+/** A map from {<K>} onto {uint32_t}; should be as close as possible to a
  discrete uniform distribution while satisfying the above for optimum
  performance. */
 typedef uint32_t (*PE_(Hash))(const K);

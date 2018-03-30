@@ -1,12 +1,13 @@
 /** 2018 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- This, if you will, extends {<E>Map} to {<K,V>Map}. The entry for this map is
- {<K,V>Entry}, which requires storage of {<K,V>EntryMapList}. This is a more
- specialised version of {<E>Map} where the key and the value are separate,
- resembling more traditional associative arrays. Maps between the {uint32_t}
- hash of {<K>} and one bucket, implemented as a {<K,V>List}. Requires {Map.h},
- which requires {List.h}, in the same directory.
+ This, if you will, extends {<E>Map} to {<K,V>Map}, and the entry for this map
+ is {<K,V>Entry}, which requires storage of {<K,V>MapNode}; as such, it defines
+ {<K,V>Entry}, {<K,V>Map}, and {<K,V>MapNode}. This is a more specialised
+ version of {<E>Map} where the key and the value are separate, resembling more
+ traditional associative arrays. Maps between the {uint32_t} hash of {<K>} and
+ one bucket, implemented internally as a {<K,V>List}. Requires {Map.h}, which
+ requires {List.h}, in the same directory.
 
  @param ENTRY_NAME
  A unique name associated with {<K,V>} that satisfies {C} naming rules when
@@ -100,25 +101,13 @@
 #ifdef PKV_
 #undef PKV_
 #endif
-#ifdef KV_NAME
-#undef KV_NAME
-#endif
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
 #define KV_(thing) CAT(ENTRY_NAME, thing)
 #define PKV PCAT(map, ENTRY_NAME) /* Used for list name. */
 #define PKV_(thing) PCAT(map, PCAT(ENTRY_NAME, thing)) /* {private <T>}. */
-#define KV_NAME QUOTE(ENTRY_NAME)
 
 /* Troubles with this line? check to ensure that {ENTRY_KEY} is a valid type,
  whose definition is placed above {#include "Entry.h"}. */
@@ -130,25 +119,91 @@ typedef ENTRY_KEY PKV_(KeyType);
 typedef ENTRY_VALUE PKV_(ValueType);
 #define V PKV_(ValueType)
 
-
-
-/* Constants across multiple includes in the same translation unit. */
-#ifndef ENTRY_H /* <-- ENTRY_H */
-#define ENTRY_H
-#endif /* ENTRY_H */
-
-
-
-/** An entry. */
+/** An entry. Any changes to the {key} field and you must re-hash with
+ {<P,K>EntryMapRehash}. */
 struct KV_(Entry) {
-	/*const*/ K key;
+	K key;
 	V value;
 };
 
+/** An inverted equivalence relation between keys, where 0 means they are
+ equivalent. Done this way because {strcmp}. */
+typedef int (*PKV_(EntryCmp))(const K, const K);
+/* Check that {ENTRY_CMP} is a function implementing {<PKV>EntryCmp}. */
+static const PKV_(EntryCmp) PKV_(cmp) = (ENTRY_CMP);
 
+/* In case one needs this prototype to be before the next line. */
+static uint32_t map_fnv_32a_str(const char *str);
 
-static V *KV_(MapGetValue)(struct E_(Map) *const map, const K key) {
+/** A map from {<K>} onto {uint32_t}; should be as close as possible to a
+ discrete uniform distribution while satisfying the above for optimum
+ performance. */
+typedef uint32_t (*PKV_(EntryHash))(const K);
+/* Check that {ENTRY_HASH} is a function implementing {<PKV>Hash}. */
+static const PKV_(EntryHash) PKV_(key_hash) = (ENTRY_HASH);
+
+/** Private: get the key. */
+static K PKV_(get_key)(const struct KV_(Entry) *const entry) {
+	return entry->key;
 }
+
+/** Private: get equality between keys. */
+static int PKV_(key_is_equal)(const K a, const K b) {
+	return !PKV_(cmp)(a, b);
+}
+
+/* This relies on {Map.h} which must be in the same directory. The resets all
+ the defines. Defines {<KV>Map} and {<KV>MapNode}. */
+#define MAP_NAME ENTRY_NAME
+#define MAP_TYPE struct KV_(Entry)
+#define MAP_KEY PKV_(KeyType)
+#define MAP_TYPE_TO_KEY &PKV_(get_key)
+#define MAP_IS_EQUAL &PKV_(key_is_equal)
+#define MAP_HASH &PKV_(key_hash)
+#ifdef ENTRY_TO_STRING /* <-- string */
+#define MAP_TO_STRING ENTRY_TO_STRING
+#endif /* string --> */
+#include "Map.h"
+
+/* Reset the defines. */
+#ifdef CAT
+#undef CAT
+#endif
+#ifdef CAT_
+#undef CAT_
+#endif
+#ifdef PCAT
+#undef PCAT
+#endif
+#ifdef PCAT_
+#undef PCAT_
+#endif
+#ifdef K
+#undef K
+#endif
+#ifdef V
+#undef V
+#endif
+#ifdef KV_
+#undef KV_
+#endif
+#ifdef PKV_
+#undef PKV_
+#endif
+#define CAT_(x, y) x ## y
+#define CAT(x, y) CAT_(x, y)
+#define PCAT_(x, y) x ## _ ## y
+#define PCAT(x, y) PCAT_(x, y)
+#define KV_(thing) CAT(ENTRY_NAME, thing)
+#define PKV PCAT(map, ENTRY_NAME) /* Used for list name. */
+#define PKV_(thing) PCAT(map, PCAT(ENTRY_NAME, thing)) /* {private <T>}. */
+#define K PKV_(KeyType)
+#define V PKV_(ValueType)
+
+
+
+/*static V *KV_(MapGetValue)(struct KV_(EntryMap) *const map, const K key) {
+}*/
 
 #ifdef ENTRY_TEST /* <-- test */
 #include "../test/TestEntry.h"
@@ -169,9 +224,6 @@ static V *KV_(MapGetValue)(struct E_(Map) *const map, const K key) {
 #undef KV_
 #undef PKV
 #undef PKV_
-#undef KV_NAME
-#undef QUOTE
-#undef QUOTE_
 #ifdef ENTRY_TEST
 #undef ENTRY_TEST
 #endif

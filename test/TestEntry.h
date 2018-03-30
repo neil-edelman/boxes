@@ -161,6 +161,7 @@ static void PE_(test_basic)(void) {
 	printf("Size reported by size: %lu; size counting bins: %lu; "
 		"test in size: %lu.\n", (unsigned long)E_(MapSize)(m),
 		(unsigned long)map_size, (unsigned long)test_in_size);
+	assert(E_(MapSize)(m) == map_size && map_size == test_in_size);
 	/* Collect stats. */
 	for(b = m->bins, b_end = b + (1 << m->log_bins); b < b_end; b++) {
 		double delta, x;
