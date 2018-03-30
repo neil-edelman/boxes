@@ -47,8 +47,8 @@ struct Test {
 }*/
 
 struct TestEntry;
-static void TestEntry_to_string(const struct TestEntry *const,
-	char (*const)[12]);
+/*static void TestEntry_to_string(const struct TestEntry *const,
+	char (*const)[12]);*/
 static void TestEntry_filler(struct TestEntry *const);
 
 #define ENTRY_NAME Test

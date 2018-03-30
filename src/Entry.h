@@ -32,7 +32,7 @@
 
  @param ENTRY_TO_STRING
  Optional print function implementing \see{<KV>ToString}; makes available
- \see{<KV>EntryToString} and {<KV>EntryMapToString}.
+ \see{<KV>EntryToString}.
 
  @param ENTRY_TEST
  Unit testing framework, included in a separate header, {../test/EntryTest.h}.
@@ -67,6 +67,9 @@
 #ifndef ENTRY_HASH
 #error Map generic ENTRY_HASH undefined.
 #endif
+/*#if defined(ENTRY_TEST) && !defined(ENTRY_TO_STRING)
+#error ENTRY_TEST requires ENTRY_TO_STRING.
+#endif*/
 #if !defined(ENTRY_TEST) && !defined(NDEBUG)
 #define ENTRY_NDEBUG
 #define NDEBUG
@@ -132,16 +135,6 @@ typedef int (*PKV_(EntryCmp))(const K, const K);
 /* Check that {ENTRY_CMP} is a function implementing {<PKV>EntryCmp}. */
 static const PKV_(EntryCmp) PKV_(cmp) = (ENTRY_CMP);
 
-/* In case one needs this prototype to be before the next line. */
-static uint32_t map_fnv_32a_str(const char *str);
-
-/** A map from {<K>} onto {uint32_t}; should be as close as possible to a
- discrete uniform distribution while satisfying the above for optimum
- performance. */
-typedef uint32_t (*PKV_(EntryHash))(const K);
-/* Check that {ENTRY_HASH} is a function implementing {<PKV>Hash}. */
-static const PKV_(EntryHash) PKV_(key_hash) = (ENTRY_HASH);
-
 /** Private: get the key. */
 static K PKV_(get_key)(const struct KV_(Entry) *const entry) {
 	return entry->key;
@@ -159,7 +152,7 @@ static int PKV_(key_is_equal)(const K a, const K b) {
 #define MAP_KEY PKV_(KeyType)
 #define MAP_TYPE_TO_KEY &PKV_(get_key)
 #define MAP_IS_EQUAL &PKV_(key_is_equal)
-#define MAP_HASH (const PE_(Hash))&PKV_(key_hash)
+#define MAP_HASH ENTRY_HASH
 #include "Map.h"
 
 /* Reset the defines. */
