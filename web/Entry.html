@@ -1,0 +1,184 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<!-- steal these colour values from JavaDocs; meh -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>Entry</title>
+</head>
+
+
+<body>
+
+<h1>Entry</h1>
+
+<ul>
+	<li><a href = "#_declarations">Declarations</a></li>
+	<li><a href = "#_summary">Function Summary</a></li>
+	<li><a href = "#_detail">Function Detail</a></li>
+</ul>
+
+<p>
+2018 Neil Edelman, distributed under the terms of the MIT License;
+see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
+</p>
+<p>
+This, if you will, extends <em>&lt;E&gt;Map</em> to <em>&lt;K,V&gt;Map</em>, and the entry for this map
+is <em>&lt;K,V&gt;Entry</em>, which requires storage of <em>&lt;K,V&gt;MapNode</em>; as such, it defines
+<em>&lt;K,V&gt;Entry</em>, <em>&lt;K,V&gt;Map</em>, and <em>&lt;K,V&gt;MapNode</em>. This is a more specialised
+version of <em>&lt;E&gt;Map</em> where the key and the value are separate, resembling more
+traditional associative arrays. Maps between the <em>uint32_t</em> hash of <em>&lt;K&gt;</em> and
+one bucket, implemented internally as a <em>&lt;K,V&gt;List</em>. Requires <em>Map.h</em>, which
+requires <em>List.h</em>, in the same directory. See <em>Map</em> for the rest of
+documentation on <em>Map</em>.
+</p>
+<dl>
+	<dt>parameter: ENTRY_NAME</dt>
+	<dd>A unique name associated with <em>&lt;K,V&gt;</em> that satisfies <em>C</em> naming rules when
+ mangled as <em>&lt;KV&gt;</em>; required.</dd>
+	<dt>parameter: ENTRY_KEY</dt>
+	<dd>This becomes <em>&lt;K&gt;</em>. A non-compound type, that is, it can be assigned. For
+ example, <em>char *</em>, <em>int</em>, or <em>struct *</em>, but not, <em>struct</em>; required.
+ (@fixme are all these restrictions necessary?)</dd>
+	<dt>parameter: ENTRY_VALUE</dt>
+	<dd>This becomes <em>&lt;V&gt;</em>; required.</dd>
+	<dt>parameter: ENTRY_CMP</dt>
+	<dd>A function satisfying <a href = "#&lt;PKV&gt;Compare">&lt;PKV&gt;Compare</a>. For example, if one's <em>ENTRY_KEY</em>
+ where <em>char *</em>, this might be <em>&amp;strcmp</em>; required.</dd>
+	<dt>parameter: ENTRY_HASH</dt>
+	<dd>A function satisfying <a href = "#&lt;PKV&gt;Hash">&lt;PKV&gt;Hash</a>. For example, if one's <em>ENTRY_KEY</em>
+ where <em>char *</em>, this might be <em>&amp;map_fnv_32a_str</em> supplied by <em>Map.h</em>;
+ required.</dd>
+	<dt>parameter: ENTRY_TO_STRING</dt>
+	<dd>Optional print function implementing <a href = "#&lt;KV&gt;ToString">&lt;KV&gt;ToString</a>; requires <em>ENTRY_TEST</em>.</dd>
+	<dt>parameter: ENTRY_TEST</dt>
+	<dd>Unit testing framework, included in a separate header, <em>../test/EntryTest.h</em>.
+ Must be defined equal to a (random) filler function, satisfying <em>&lt;PKV&gt;Action</em>.
+ If <em>NDEBUG</em> is not defined, turns on <em>assert</em> private function integrity
+ testing. Requires <em>MAP_TO_STRING</em>.</dd>
+	<dt>minimum standard</dt>
+	<dd>C89/90</dd>
+	<dt>author</dt>
+	<dd>Neil</dd>
+	<dt>version</dt>
+	<dd>2018-03</dd>
+</dl>
+
+
+<a name = "_declarations"><!-- --></a><h2>Declarations</h2>
+
+<div><a name = "typedef void (*&lt;PKV&gt;ToString)(const struct &lt;KV&gt;Entry *, char (*const)[12])"><!-- --></a>
+<h3>typedef void (*&lt;PKV&gt;ToString)(const struct &lt;KV&gt;Entry *, char (*const)[12])</h3>
+<pre><b>typedef void (*&lt;PKV&gt;ToString)(const struct &lt;KV&gt;Entry *, char (*const)[12])</b></pre>
+<p>
+Just used for <em>ENTRY_TEST</em>. Responsible for turning <em>&lt;KV&gt;</em> (the first
+argument) into a 12 <em>char</em> null-terminated output string (the second.)
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*&lt;PKV&gt;Action)(struct &lt;KV&gt;Entry *const)"><!-- --></a>
+<h3>typedef void (*&lt;PKV&gt;Action)(struct &lt;KV&gt;Entry *const)</h3>
+<pre><b>typedef void (*&lt;PKV&gt;Action)(struct &lt;KV&gt;Entry *const)</b></pre>
+<p>
+Just used for <em>ENTRY_TEST</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "struct &lt;KV&gt;Entry"><!-- --></a>
+<h3>struct &lt;KV&gt;Entry</h3>
+<pre><b>struct &lt;KV&gt;Entry</b> {
+	K key;
+	V value;
+}</pre>
+<p>
+An entry. Any changes to the <em>key</em> field and you must re-hash with
+<em>&lt;P,K&gt;MapRehash</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef int (*&lt;PKV&gt;EntryCmp)(const K, const K)"><!-- --></a>
+<h3>typedef int (*&lt;PKV&gt;EntryCmp)(const K, const K)</h3>
+<pre><b>typedef int (*&lt;PKV&gt;EntryCmp)(const K, const K)</b></pre>
+<p>
+An inverted equivalence relation between keys, where 0 means they are
+equivalent. Done this way because <em>strcmp</em> is often used in this capacity.
+</p>
+<dl>
+</dl>
+</div>
+
+
+<a name = "_summary"><!-- --></a><h2>Function Summary</h2>
+
+<table>
+<tr><th>Return Type</th><th>Function Name</th><th>Argument List</th></tr>
+<tr>
+	<td>static struct &lt;KV&gt;Entry *</td>
+	<td><a href = "#&lt;KV&gt;EntryHoldsValue">&lt;KV&gt;EntryHoldsValue</a></td>
+	<td>V *const value</td>
+</tr>
+<tr>
+	<td>static V *</td>
+	<td><a href = "#&lt;KV&gt;MapGetValue">&lt;KV&gt;MapGetValue</a></td>
+	<td>struct &lt;KV&gt;Map *const map, const K key</td>
+</tr>
+</table>
+
+
+<a name = "_detail"><!-- --></a><h2>Function Detail</h2>
+
+<div><a name = "&lt;KV&gt;EntryHoldsValue"><!-- --></a>
+<h3>&lt;KV&gt;EntryHoldsValue</h3>
+<pre>static struct &lt;KV&gt;Entry * <b>&lt;KV&gt;EntryHoldsValue</b> (V *const value)</pre>
+<dl>
+	<dt>parameter: value</dt>
+	<dd>The value part of a key-value <em>&lt;KV&gt;Entry</em> pair.</dd>
+	<dt>return</dt>
+	<dd>The <em>&lt;KV&gt;Entry</em> pair.</dd>
+	<dt>order</dt>
+	<dd>&Omega;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;KV&gt;MapGetValue"><!-- --></a>
+<h3>&lt;KV&gt;MapGetValue</h3>
+<pre>static V * <b>&lt;KV&gt;MapGetValue</b> (struct &lt;KV&gt;Map *const map, const K key)</pre>
+<dl>
+	<dt>return</dt>
+	<dd>The value associated with the specified <em>key</em> or null if it didn't
+ find it.</dd>
+	<dt>order</dt>
+	<dd>Average \O(1), Worst \O(n)</dd>
+</dl>
+</div>
+
+
+</body>
+</html>
