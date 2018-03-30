@@ -159,7 +159,7 @@ static int PKV_(key_is_equal)(const K a, const K b) {
 #define MAP_KEY PKV_(KeyType)
 #define MAP_TYPE_TO_KEY &PKV_(get_key)
 #define MAP_IS_EQUAL &PKV_(key_is_equal)
-#define MAP_HASH &PKV_(key_hash)
+#define MAP_HASH (const PE_(Hash))&PKV_(key_hash)
 #include "Map.h"
 
 /* Reset the defines. */

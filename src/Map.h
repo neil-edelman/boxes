@@ -279,8 +279,8 @@ static int PE_(grow)(struct E_(Map) *const map, const size_t entries) {
 	uint32_t items_ln2, c0, c1, mask, hash;
 	int is_moved;
 	unsigned log_bins;
-	char a[12];
-	
+	/*char a[12];*/
+
 	assert(map && map->log_bins < sizeof c0 * 8);
 	/* {c0} is the current number of bins. (*except zero, see below.) */
 	c0 = 1 << (uint32_t)(log_bins = map->log_bins);
@@ -319,8 +319,8 @@ static int PE_(grow)(struct E_(Map) *const map, const size_t entries) {
 			assert(new_bin >= end);
 			PE_(EntryListRemove)(i);
 			PE_(EntryListPush)(new_bin, i);
-			PE_(to_string)(i, &a);
-			/*printf("Entry %s with hash%u rehashed to %u -> %u.\n", a, PE_(node_holds_item)(i)->hash, (unsigned)(b - bins), (unsigned)(new_bin - bins));*/
+			/*PE_(to_string)(i, &a);
+			printf("Entry %s with hash%u rehashed to %u -> %u.\n", a, PE_(node_holds_item)(i)->hash, (unsigned)(b - bins), (unsigned)(new_bin - bins));*/
 		}
 	}
 	map->bins     = bins;
@@ -404,7 +404,6 @@ static E *E_(MapPut)(struct E_(Map) *const map, E *const entry) {
 	E *replaced;
 	struct PE_(EntryList) *bin;
 	K key;
-	char a[12];
 	if(!map || !entry) return 0;
 	/* We may need to grow. Not an error, just a warning that the hash table
 	 could not accommodate the load factor. What should we do? We are probably
@@ -422,7 +421,6 @@ static E *E_(MapPut)(struct E_(Map) *const map, E *const entry) {
 		/* New key. */
 		map->entries++;
 	}
-	PE_(to_string)(entry, &a);
 	PE_(EntryListPush)(bin, entry);
 	return replaced;
 }
