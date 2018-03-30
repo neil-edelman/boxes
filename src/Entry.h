@@ -192,12 +192,31 @@ static int PKV_(key_is_equal)(const K a, const K b) {
 
 
 
-/*static V *KV_(MapGetValue)(struct KV_(EntryMap) *const map, const K key) {
-}*/
+/** @return The value asociated with the specified {key} or null if it didn't
+ find it.
+ @order Average \O(1), Worst \O(n)
+ @allow */
+static V *KV_(MapGetValue)(struct KV_(Map) *const map, const K key) {
+	struct KV_(Entry) *kv;
+	if(!map || (kv = KV_(MapGet)(map, key))) return 0;
+	return &kv->value;
+}
+
+
 
 #ifdef ENTRY_TEST /* <-- test */
 #include "../test/TestEntry.h"
 #endif /* test --> */
+
+static void PKV_(entry_unused_coda)(void);
+/** This silences unused function warnings from the pre-processor, but allows
+ optimisation, (hopefully.)
+ \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
+static void PKV_(entry_unused_map)(void) {
+	KV_(MapGetValue)(0, 0);
+	PKV_(entry_unused_coda)();
+}
+static void PKV_(entry_unused_coda)(void) { PKV_(entry_unused_map)(); }
 
 /* Un-define all macros. */
 #undef ENTRY_NAME
