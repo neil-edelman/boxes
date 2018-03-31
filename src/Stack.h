@@ -223,7 +223,7 @@ static void PT_(debug)(struct T_(Stack) *const this,
 #endif
 }
 
-/** Ensures capacity.
+/* * Ensures capacity.
  @return Success.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws ENOMEM: Technically, whatever {realloc} sets it to, as this is
@@ -280,17 +280,17 @@ static int PT_(reserve)(struct T_(Stack) *const this,
 
 /** Destructor for {Stack}. Make sure that the stack's contents will not be
  accessed anymore.
- @param thisp: A reference to the object that is to be deleted; it will be set
+ @param pthis: A reference to the object that is to be deleted; it will be set
  to null. If it is already null or it points to null, doesn't do anything.
  @order \Theta(1)
  @allow */
-static void T_(Stack_)(struct T_(Stack) **const thisp) {
+static void T_(Stack_)(struct T_(Stack) **const pthis) {
 	struct T_(Stack) *this;
-	if(!thisp || !(this = *thisp)) return;
+	if(!pthis || !(this = *pthis)) return;
 	PT_(debug)(this, "Delete", "erasing.\n");
 	free(this->array);
 	free(this);
-	*thisp = 0;
+	*pthis = 0;
 }
 
 /** Private constructor called from either \see{<T>Stack}.
@@ -503,7 +503,7 @@ static void T_(StackBiForEach)(struct T_(Stack) *const this,
 		biaction(a, param);
 }
 
-/** Use when the stack has pointers to another stack in the {Migrate} function
+/* * Use when the stack has pointers to another stack in the {Migrate} function
  of the other datatype (passed when creating the other datatype.)
  @param this: If null, does nothing.
  @param handler: If null, does nothing, otherwise has the responsibility of
@@ -513,6 +513,7 @@ static void T_(StackBiForEach)(struct T_(Stack) *const this,
  function; pass the {migrate} parameter.
  @order O({greatest size})
  @fixme Untested.
+ @fixme Why would we use this? It's already not good for polymorphism.
  @allow */
 /*static void T_(StackMigrateEach)(struct T_(Stack) *const this,
 	const T_(StackMigrateElement) handler, const struct Migrate *const migrate){

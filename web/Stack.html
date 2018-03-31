@@ -45,12 +45,13 @@ see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opens
 </p>
 <p>
 <em>&lt;T&gt;Stack</em> is a dynamic array that stores unordered <em>&lt;T&gt;</em> in a stack; that is,
-the most basic variable array. Indices will remain the same throughout the
-lifetime of the data, but expanding the data may change the pointers. You
-cannot shrink the capacity of this data type, only cause it to grow. Resizing
-incurs amortised cost, done though a Fibonacci sequence. <em>&lt;T&gt;Stack</em> is not
-synchronised. The preprocessor macros are all undefined at the end of the file
-for convenience when including multiple <em>&lt;T&gt;Stack</em> types in the same file.
+the most basic variable array. The array is packed, with no other extraneous
+information. Indices will remain the same throughout the lifetime of the data,
+but expanding the data may change the pointers. You cannot shrink the capacity
+of this data type, only cause it to grow. Resizing incurs amortised cost, done
+though a Fibonacci sequence. <em>&lt;T&gt;Stack</em> is not synchronised. The preprocessor
+macros are all undefined at the end of the file for convenience when including
+multiple <em>&lt;T&gt;Stack</em> types in the same file.
 </p>
 <dl>
 	<dt>parameter: STACK_NAME</dt>
@@ -59,10 +60,14 @@ for convenience when including multiple <em>&lt;T&gt;Stack</em> types in the sam
 	<dt>parameter: STACK_TYPE</dt>
 	<dd>The type associated with <em>&lt;T&gt;</em>. Has to be a valid type, accessible to the
  compiler at the time of inclusion; required.</dd>
-	<dt>parameter: STACK_MIGRATE</dt>
-	<dd>Optional type association with <em>&lt;S&gt;</em>. If set, the constructor has two extra
+	<dt>parameter: STACK_PARENT  (@fixme Unused.)</dt>
+	<dd>Optional type association with <em>&lt;P&gt;</em>. If set, the constructor has two extra
  arguments that allow it to be part of a larger data structure without
  referencing the <em>&lt;T&gt;Stack</em> directly. Can be <em>void</em> to turn off type checking.</dd>
+	<dt>parameter: STACK_UPDATE</dt>
+	<dd>Optional type association with <em>&lt;U&gt;</em>. If set, the function
+ <a href = "#&lt;T&gt;StackUpdateNew">&lt;T&gt;StackUpdateNew</a> becomes available, intended for a local iterator
+ update on migrate.</dd>
 	<dt>parameter: STACK_TO_STRING</dt>
 	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
  <a href = "#&lt;T&gt;StackToString">&lt;T&gt;StackToString</a>.</dd>
@@ -74,13 +79,14 @@ for convenience when including multiple <em>&lt;T&gt;Stack</em> types in the sam
  function, satisfying <em>&lt;T&gt;Action</em>. If <em>NDEBUG</em> is not defined, turns on
  <em>assert</em> private function integrity testing. Requires <em>STACK_TO_STRING</em>.</dd>
 	<dt>minimum standard</dt>
-	<dd>C89/90</dd>
+	<dd>C89</dd>
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>2017-12 Changed STACK_MIGRATE for type-safety.</dd>
+	<dd>2018-02 Made it like POOL.
+			2017-12 Changed STACK_PARENT for type-safety.</dd>
 	<dt>since</dt>
-	<dd>2017-11 Added STACK_MIGRATE.
+	<dd>2017-11 Added STACK_PARENT.
 			2017-11 Forked from Pool.</dd>
 </dl>
 
@@ -97,19 +103,22 @@ Contains information about a <em>realloc</em>.
 </dl>
 </div>
 
-<div><a name = "typedef void (*&lt;T&gt;Action)(T *const element)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;Action)(T *const element)</h3>
-<pre><b>typedef void (*&lt;T&gt;Action)(T *const element)</b></pre>
+<div><a name = "typedef void (*&lt;PT&gt;Action)(T *const element)"><!-- --></a>
+<h3>typedef void (*&lt;PT&gt;Action)(T *const element)</h3>
+<pre><b>typedef void (*&lt;PT&gt;Action)(T *const element)</b></pre>
 <p>
-Operates by side-effects only. Used for <em>STACK_TEST</em>.
+Operates by side-effects only. This definition is about the <em>STACK_NAME</em>
+type, that is, it is without the prefix <em>Stack</em>; to avoid namespace
+collisions, this is private, meaning the name is mangled. If you want this
+definition, re-declare it as <em>&lt;T&gt;Action</em>.
 </p>
 <dl>
 </dl>
 </div>
 
-<div><a name = "typedef void (*&lt;T&gt;BiAction)(T *const element, void *const)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;BiAction)(T *const element, void *const)</h3>
-<pre><b>typedef void (*&lt;T&gt;BiAction)(T *const element, void *const)</b></pre>
+<div><a name = "typedef void (*&lt;PT&gt;BiAction)(T *const element, void *const)"><!-- --></a>
+<h3>typedef void (*&lt;PT&gt;BiAction)(T *const element, void *const)</h3>
+<pre><b>typedef void (*&lt;PT&gt;BiAction)(T *const element, void *const)</b></pre>
 <p>
 Operates by side-effects only.
 </p>
@@ -117,23 +126,9 @@ Operates by side-effects only.
 </dl>
 </div>
 
-<div><a name = "typedef void (*&lt;T&gt;StackMigrateElement)(T *const element,
-	const struct Migrate *const migrate)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;StackMigrateElement)(T *const element,
-	const struct Migrate *const migrate)</h3>
-<pre><b>typedef void (*&lt;T&gt;StackMigrateElement)(T *const element,
-	const struct Migrate *const migrate)</b></pre>
-<p>
-Given to <a href = "#&lt;T&gt;StackMigrateEach">&lt;T&gt;StackMigrateEach</a> by the migrate function of another
-datatype.
-</p>
-<dl>
-</dl>
-</div>
-
-<div><a name = "typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])</h3>
-<pre><b>typedef void (*&lt;T&gt;ToString)(const T *, char (*const)[12])</b></pre>
+<div><a name = "typedef void (*&lt;PT&gt;ToString)(const T *, char (*const)[12])"><!-- --></a>
+<h3>typedef void (*&lt;PT&gt;ToString)(const T *, char (*const)[12])</h3>
+<pre><b>typedef void (*&lt;PT&gt;ToString)(const T *, char (*const)[12])</b></pre>
 <p>
 Responsible for turning <em>&lt;T&gt;</em> (the first argument) into a 12 <em>char</em>
 null-terminated output string (the second.) Used for <em>STACK_TO_STRING</em>.
@@ -142,11 +137,11 @@ null-terminated output string (the second.) Used for <em>STACK_TO_STRING</em>.
 </dl>
 </div>
 
-<div><a name = "typedef void (*&lt;T&gt;Migrate)(S *const parent,
+<div><a name = "typedef void (*&lt;PT&gt;Migrate)(P *const parent,
 	const struct Migrate *const migrate)"><!-- --></a>
-<h3>typedef void (*&lt;T&gt;Migrate)(S *const parent,
+<h3>typedef void (*&lt;PT&gt;Migrate)(P *const parent,
 	const struct Migrate *const migrate)</h3>
-<pre><b>typedef void (*&lt;T&gt;Migrate)(S *const parent,
+<pre><b>typedef void (*&lt;PT&gt;Migrate)(P *const parent,
 	const struct Migrate *const migrate)</b></pre>
 <p>
 Function call on <em>realloc</em>.
@@ -173,22 +168,17 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;Stack_">&lt;T&gt;Stack_</a></td>
-	<td>struct &lt;T&gt;Stack **const thisp</td>
+	<td>struct &lt;T&gt;Stack **const pthis</td>
 </tr>
 <tr>
 	<td>static struct &lt;T&gt;Stack *</td>
 	<td><a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a></td>
-	<td>const &lt;T&gt;Migrate migrate, S *const parent</td>
+	<td>const &lt;T&gt;Migrate migrate, P *const parent</td>
 </tr>
 <tr>
 	<td>static struct &lt;T&gt;Stack *</td>
 	<td><a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a></td>
 	<td>void</td>
-</tr>
-<tr>
-	<td>static const char *</td>
-	<td><a href = "#&lt;T&gt;StackGetError">&lt;T&gt;StackGetError</a></td>
-	<td>struct &lt;T&gt;Stack *const this</td>
 </tr>
 <tr>
 	<td>static size_t</td>
@@ -201,6 +191,12 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 	<td>struct &lt;T&gt;Stack *const this, const size_t idx</td>
 </tr>
 <tr>
+	<td>static size_t</td>
+	<td><a href = "#&lt;T&gt;StackGetIndex">&lt;T&gt;StackGetIndex</a></td>
+	<td>struct &lt;T&gt;Stack *const this,
+		const T *const element</td>
+</tr>
+<tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;StackPeek">&lt;T&gt;StackPeek</a></td>
 	<td>const struct &lt;T&gt;Stack *const this</td>
@@ -209,12 +205,6 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;StackPop">&lt;T&gt;StackPop</a></td>
 	<td>struct &lt;T&gt;Stack *const this</td>
-</tr>
-<tr>
-	<td>static size_t</td>
-	<td><a href = "#&lt;T&gt;StackGetIndex">&lt;T&gt;StackGetIndex</a></td>
-	<td>struct &lt;T&gt;Stack *const this,
-	const T *const element</td>
 </tr>
 <tr>
 	<td>static int</td>
@@ -228,6 +218,12 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 	<td>struct &lt;T&gt;Stack *const this</td>
 </tr>
 <tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;StackUpdateNew">&lt;T&gt;StackUpdateNew</a></td>
+	<td>struct &lt;T&gt;Stack *const this,
+	U **const update_ptr</td>
+</tr>
+<tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;StackClear">&lt;T&gt;StackClear</a></td>
 	<td>struct &lt;T&gt;Stack *const this</td>
@@ -236,24 +232,18 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;StackForEach">&lt;T&gt;StackForEach</a></td>
 	<td>struct &lt;T&gt;Stack *const this,
-	const &lt;T&gt;Action action</td>
+	const &lt;PT&gt;Action action</td>
 </tr>
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;StackBiForEach">&lt;T&gt;StackBiForEach</a></td>
 	<td>struct &lt;T&gt;Stack *const this,
-	const &lt;T&gt;BiAction biaction, void *const param</td>
+	const &lt;PT&gt;BiAction biaction, void *const param</td>
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;StackMigrateEach">&lt;T&gt;StackMigrateEach</a></td>
-	<td>struct &lt;T&gt;Stack *const this,
-	const &lt;T&gt;StackMigrateElement handler, const struct Migrate *const migrate</td>
-</tr>
-<tr>
-	<td>static void</td>
-	<td><a href = "#&lt;T&gt;MigratePointer">&lt;T&gt;MigratePointer</a></td>
-	<td>T **const node_ptr,
+	<td><a href = "#&lt;T&gt;StackElementMigrate">&lt;T&gt;StackElementMigrate</a></td>
+	<td>T **const data_ptr,
 	const struct Migrate *const migrate</td>
 </tr>
 <tr>
@@ -268,15 +258,15 @@ The stack. To instantiate, see <a href = "#&lt;T&gt;Stack">&lt;T&gt;Stack</a>.
 
 <div><a name = "&lt;T&gt;Stack_"><!-- --></a>
 <h3>&lt;T&gt;Stack_</h3>
-<pre>static void <b>&lt;T&gt;Stack_</b> (struct &lt;T&gt;Stack **const thisp)</pre>
+<pre>static void <b>&lt;T&gt;Stack_</b> (struct &lt;T&gt;Stack **const pthis)</pre>
 <p>
 Destructor for <em>Stack</em>. Make sure that the stack's contents will not be
 accessed anymore.
 </p>
 <dl>
-	<dt>parameter: thisp</dt>
-	<dd>A reference to the object that is to be deleted; it will be
- stack to null. If it is already null or it points to null, doesn't do anything.</dd>
+	<dt>parameter: pthis</dt>
+	<dd>A reference to the object that is to be deleted; it will be set
+ to null. If it is already null or it points to null, doesn't do anything.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -284,18 +274,25 @@ accessed anymore.
 
 <div><a name = "&lt;T&gt;Stack"><!-- --></a>
 <h3>&lt;T&gt;Stack</h3>
-<pre>static struct &lt;T&gt;Stack * <b>&lt;T&gt;Stack</b> (const &lt;T&gt;Migrate migrate, S *const parent)</pre>
+<pre>static struct &lt;T&gt;Stack * <b>&lt;T&gt;Stack</b> (const &lt;T&gt;Migrate migrate, P *const parent)</pre>
 <p>
 Constructs an empty <em>Stack</em> with capacity Fibonacci6, which is 8. This
-is the constructor if STACK_MIGRATE is specified.
+is the constructor if <em>STACK_PARENT</em> is specified.
 </p>
 <dl>
-	<dt>parameter: migrate, parent</dt>
-	<dd>Can be both null.</dd>
+	<dt>parameter: migrate</dt>
+	<dd>The parent's <em>Migrate</em> function.</dd>
+	<dt>parameter: parent</dt>
+	<dd>The parent; to have multiple parents, implement an intermediary
+ <em>Migrate</em> function that takes multiple values; required if <em>migrate</em> is
+ specified.</dd>
 	<dt>return</dt>
-	<dd>A new <em>Stack</em>.</dd>
-	<dt>throws: STACK_PARAMETER, STACK_ERRNO</dt>
-	<dd>Use <em>StackError(0)</em> to get the error.</dd>
+	<dd>A new <em>Stack</em> or null and <em>errno</em> may be set.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>If one and not the other arguments is null.</dd>
+	<dt>throws: ENOMEM</dt>
+	<dd>Technically, whatever <em>malloc</em> sets it to, as this is
+ <em>IEEE Std 1003.1-2001</em>.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 	<dt>fixme</dt>
@@ -311,23 +308,10 @@ Constructs an empty <em>Stack</em> with capacity Fibonacci6, which is 8.
 </p>
 <dl>
 	<dt>return</dt>
-	<dd>A new <em>Stack</em>.</dd>
-	<dt>throws: STACK_ERRNO</dt>
-	<dd>Use <em>&lt;T&gt;StackError(0)</em> to get the error.</dd>
-	<dt>order</dt>
-	<dd>&Theta;(1)</dd>
-</dl>
-</div>
-
-<div><a name = "&lt;T&gt;StackGetError"><!-- --></a>
-<h3>&lt;T&gt;StackGetError</h3>
-<pre>static const char * <b>&lt;T&gt;StackGetError</b> (struct &lt;T&gt;Stack *const this)</pre>
-<p>
-See what's the error if something goes wrong. Resets the error.
-</p>
-<dl>
-	<dt>return</dt>
-	<dd>The last error string.</dd>
+	<dd>A new <em>Stack</em> or null and <em>errno</em> may be set.</dd>
+	<dt>throws: ENOMEM</dt>
+	<dd>Technically, whatever <em>malloc</em> sets it to, as this is
+ <em>IEEE Std 1003.1-2001</em>.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -337,6 +321,8 @@ See what's the error if something goes wrong. Resets the error.
 <h3>&lt;T&gt;StackGetSize</h3>
 <pre>static size_t <b>&lt;T&gt;StackGetSize</b> (const struct &lt;T&gt;Stack *const this)</pre>
 <dl>
+	<dt>parameter: this</dt>
+	<dd>If null, returns zero.</dd>
 	<dt>return</dt>
 	<dd>The current size of the stack.</dd>
 	<dt>order</dt>
@@ -357,9 +343,27 @@ Gets an existing element by index. Causing something to be added to the
 	<dt>parameter: idx</dt>
 	<dd>Index.</dd>
 	<dt>return</dt>
-	<dd>If failed, returns a null pointer and the error condition will be set.</dd>
-	<dt>throws</dt>
-	<dd>STACK_OUT_OF_BOUNDS</dd>
+	<dd>Success, otherwise <em>errno</em> will be set.</dd>
+	<dt>throws: EDOM</dt>
+	<dd><em>idx</em> out of bounds.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;StackGetIndex"><!-- --></a>
+<h3>&lt;T&gt;StackGetIndex</h3>
+<pre>static size_t <b>&lt;T&gt;StackGetIndex</b> (struct &lt;T&gt;Stack *const this,
+		const T *const element)</pre>
+<p>
+Gets an index given an <em>element</em>.
+</p>
+<dl>
+	<dt>parameter: element</dt>
+	<dd>If the element is not part of the <em>Stack</em>, behaviour is
+ undefined.</dd>
+	<dt>return</dt>
+	<dd>An index.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -369,9 +373,11 @@ Gets an existing element by index. Causing something to be added to the
 <h3>&lt;T&gt;StackPeek</h3>
 <pre>static T * <b>&lt;T&gt;StackPeek</b> (const struct &lt;T&gt;Stack *const this)</pre>
 <dl>
+	<dt>parameter: this</dt>
+	<dd>If <em>this</em> is null, returns null.</dd>
 	<dt>return</dt>
-	<dd>The last value to be added or null if the stack is empty. The
- pointer is valid until the stack gets bigger.</dd>
+	<dd>The last value to be added or null if the stack is empty. The pointer
+ is valid until the stack gets bigger.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -381,26 +387,13 @@ Gets an existing element by index. Causing something to be added to the
 <h3>&lt;T&gt;StackPop</h3>
 <pre>static T * <b>&lt;T&gt;StackPop</b> (struct &lt;T&gt;Stack *const this)</pre>
 <p>
-Decreases the size of the stack. The pointer is valid until the stack gets
-bigger.
+Decreases the size of the stack.
 </p>
 <dl>
 	<dt>return</dt>
-	<dd>One value from the stack or null if the stack is empty.</dd>
-	<dt>order</dt>
-	<dd>&Theta;(1)</dd>
-</dl>
-</div>
-
-<div><a name = "&lt;T&gt;StackGetIndex"><!-- --></a>
-<h3>&lt;T&gt;StackGetIndex</h3>
-<pre>static size_t <b>&lt;T&gt;StackGetIndex</b> (struct &lt;T&gt;Stack *const this,
-	const T *const element)</pre>
-<p>
-Gets an index given an element. If the element is not part of the <em>Stack</em>,
-behaviour is undefined.
-</p>
-<dl>
+	<dd>Value from the the top of the stack that is removed or null if the
+ stack is empty. The pointer is valid until the stack gets bigger, and you may
+ need to duplicate it for permanent storage.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -419,9 +412,12 @@ the number of elements specified by the <em>min_capacity</em>.
 	<dd>If <em>this</em> is null, returns false.</dd>
 	<dt>return</dt>
 	<dd>True if the capacity increase was viable; otherwise the stack is not
- touched and the error condition is stack.</dd>
-	<dt>throws</dt>
-	<dd>STACK_ERRNO, STACK_OVERFLOW</dd>
+ touched and <em>errno</em> may be set.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em> objects.</dd>
+	<dt>throws: ENOMEM</dt>
+	<dd>Technically, whatever <em>realloc</em> sets it to, as this is
+ <em>IEEE Std 1003.1-2001</em>.</dd>
 	<dt>order</dt>
 	<dd>&Omega;(1), O(<em>capacity</em>)</dd>
 </dl>
@@ -431,18 +427,48 @@ the number of elements specified by the <em>min_capacity</em>.
 <h3>&lt;T&gt;StackNew</h3>
 <pre>static T * <b>&lt;T&gt;StackNew</b> (struct &lt;T&gt;Stack *const this)</pre>
 <p>
-Gets an uninitialised new element at the end of the stack. May move the
-stack to a new memory location to fit the new size.
+Gets an uninitialised new element at the end of the <em>Stack</em>. May move the
+<em>Stack</em> to a new memory location to fit the new size.
 </p>
 <dl>
 	<dt>parameter: this</dt>
 	<dd>If <em>this</em> is null, returns null.</dd>
 	<dt>return</dt>
-	<dd>If failed, returns a null pointer and the error condition will be set.</dd>
-	<dt>throws</dt>
-	<dd>STACK_OVERFLOW, STACK_ERRNO</dd>
+	<dd>A new, un-initialised, element, or null and <em>errno</em> may be set.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em> objects.</dd>
+	<dt>throws: ENOMEM</dt>
+	<dd>Technically, whatever <em>realloc</em> sets it to, as this is
+ <em>IEEE Std 1003.1-2001</em>.</dd>
 	<dt>order</dt>
 	<dd>amortised O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;StackUpdateNew"><!-- --></a>
+<h3>&lt;T&gt;StackUpdateNew</h3>
+<pre>static T * <b>&lt;T&gt;StackUpdateNew</b> (struct &lt;T&gt;Stack *const this,
+	U **const update_ptr)</pre>
+<p>
+Gets an uninitialised new element and updates the <em>update_ptr</em> if it is
+within the memory region that was changed. Must have <em>STACK_UPDATE</em> defined.
+</p>
+<dl>
+	<dt>parameter: this</dt>
+	<dd>If <em>this</em> is null, returns null.</dd>
+	<dt>parameter: iterator_ptr</dt>
+	<dd>Pointer to update on migration.</dd>
+	<dt>return</dt>
+	<dd>A new, un-initialised, element, or null and <em>errno</em> may be set.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
+	<dt>throws: ENOMEM</dt>
+	<dd>Technically, whatever <em>realloc</em> sets it to, as this is
+ <em>IEEE Std 1003.1-2001</em>.</dd>
+	<dt>order</dt>
+	<dd>amortised O(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
 </dl>
 </div>
 
@@ -453,6 +479,8 @@ stack to a new memory location to fit the new size.
 Removes all data from <em>this</em>.
 </p>
 <dl>
+	<dt>parameter: this</dt>
+	<dd>if null, does nothing.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -461,15 +489,16 @@ Removes all data from <em>this</em>.
 <div><a name = "&lt;T&gt;StackForEach"><!-- --></a>
 <h3>&lt;T&gt;StackForEach</h3>
 <pre>static void <b>&lt;T&gt;StackForEach</b> (struct &lt;T&gt;Stack *const this,
-	const &lt;T&gt;Action action)</pre>
+	const &lt;PT&gt;Action action)</pre>
 <p>
-Iterates though the <em>Stack</em> and calls <em>action</em> on all the elements.
+Iterates though the <em>Stack</em> from the top and calls <em>action</em> on all the
+elements.
 </p>
 <dl>
-	<dt>throws</dt>
-	<dd>STACK_PARAMETER</dd>
+	<dt>parameter: this, action</dt>
+	<dd>If null, does nothing.</dd>
 	<dt>order</dt>
-	<dd>O(<em>size</em>) O(<em>action</em>)</dd>
+	<dd>O(<em>size</em> &times; <em>action</em>)</dd>
 	<dt>fixme</dt>
 	<dd>Untested.</dd>
 </dl>
@@ -478,52 +507,33 @@ Iterates though the <em>Stack</em> and calls <em>action</em> on all the elements
 <div><a name = "&lt;T&gt;StackBiForEach"><!-- --></a>
 <h3>&lt;T&gt;StackBiForEach</h3>
 <pre>static void <b>&lt;T&gt;StackBiForEach</b> (struct &lt;T&gt;Stack *const this,
-	const &lt;T&gt;BiAction biaction, void *const param)</pre>
+	const &lt;PT&gt;BiAction biaction, void *const param)</pre>
 <p>
-Iterates though the <em>Stack</em> and calls <em>action</em> on all the elements.
+Iterates though the <em>Stack</em> from the top and calls <em>biaction</em> on all the
+elements with <em>param</em> as the second element.
 </p>
 <dl>
-	<dt>throws</dt>
-	<dd>STACK_PARAMETER</dd>
+	<dt>parameter: this, action</dt>
+	<dd>If null, does nothing.</dd>
 	<dt>order</dt>
-	<dd>O(<em>size</em>) O(<em>action</em>)</dd>
+	<dd>O(<em>size</em> &times; <em>action</em>)</dd>
 	<dt>fixme</dt>
 	<dd>Untested.</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;StackMigrateEach"><!-- --></a>
-<h3>&lt;T&gt;StackMigrateEach</h3>
-<pre>static void <b>&lt;T&gt;StackMigrateEach</b> (struct &lt;T&gt;Stack *const this,
-	const &lt;T&gt;StackMigrateElement handler, const struct Migrate *const migrate)</pre>
-<p>
-Use when the stack has pointers to another stack in the <em>Migrate</em> function
-of the other datatype.
-</p>
-<dl>
-	<dt>parameter: handler</dt>
-	<dd>Has the responsibility of calling the other data type's
- migrate pointer function on all pointers affected by the <em>realloc</em>.</dd>
-	<dt>parameter: migrate</dt>
-	<dd>Should only be called in a <em>Migrate</em> function; pass the
- <em>migrate</em> parameter.</dd>
-	<dt>order</dt>
-	<dd>O(<em>greatest size</em>)</dd>
-	<dt>fixme</dt>
-	<dd>Untested.</dd>
-</dl>
-</div>
-
-<div><a name = "&lt;T&gt;MigratePointer"><!-- --></a>
-<h3>&lt;T&gt;MigratePointer</h3>
-<pre>static void <b>&lt;T&gt;MigratePointer</b> (T **const node_ptr,
+<div><a name = "&lt;T&gt;StackElementMigrate"><!-- --></a>
+<h3>&lt;T&gt;StackElementMigrate</h3>
+<pre>static void <b>&lt;T&gt;StackElementMigrate</b> (T **const data_ptr,
 	const struct Migrate *const migrate)</pre>
 <p>
-Use this inside the function that is passed to the (generally other's)
-migrate function. Allows pointers to the stack to be updated. It doesn't affect
-pointers not in the <em>realloc</em>ed region.
+This is intended for use in another's migrate each function. Allows
+pointers to the stack to be updated. It doesn't affect pointers not in the
+affected region.
 </p>
 <dl>
+	<dt>implements</dt>
+	<dd>&lt;T&gt;StackMigrateElement</dd>
 	<dt>order</dt>
 	<dd>O(1)</dd>
 	<dt>fixme</dt>
