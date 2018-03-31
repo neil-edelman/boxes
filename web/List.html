@@ -587,8 +587,9 @@ Adjusts one <em>&lt;T&gt;ListNode</em>'s internal pointers when supplied with a
 <h3>&lt;T&gt;ListSelfCorrect</h3>
 <pre>static void <b>&lt;T&gt;ListSelfCorrect</b> (struct &lt;T&gt;List *const list)</pre>
 <p>
-When you move the <em>&lt;T&gt;List</em>, because it's nodes need to have endpoints,
-those pointers will be invalid. This corrects them.
+One must call this whenever the <em>&lt;T&gt;List</em> changes memory locations, (not
+the nodes.) This resets and corrects the two ends; the two ends become invalid
+even when it's empty.
 </p>
 <dl>
 	<dt>parameter: list</dt>
