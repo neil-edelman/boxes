@@ -387,7 +387,7 @@ static int PE_(is_item)(E *const entry, void *const pkey_void) {
 /** @return The entry with the specified {key} or null if it didn't find it.
  @order Average \O(1), Worst \O(n)
  @allow */
-static E *E_(MapGet)(struct E_(Map) *const map, const K key) {
+static E *E_(MapGet)(struct E_(Map) *const map, K key) {
 	if(!map) return 0;
 	return PE_(EntryListBiShortCircuit)(PE_(get_bin)(map, PE_(hash)(key)),
 		&PE_(is_item), (void *)&key);
