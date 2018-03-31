@@ -2,12 +2,9 @@ Copyright (C) 2017 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
-Defining T by LIST_TYPE, src/List.h makes available a generic,
-type-safe, <T>List: the head of linked-list(s) of <T>ListNode. These
-can potentially be part different structures. Makefile links it
-with the tests. See doc/List.html for documentation. This is C89+
-code; C++ has templates, and there is little value in using it in
-a C++ project.
+{src/List.h} makes available a generic, type-safe, <T>List: the
+head of linked-list(s) of <T>ListNode. These can potentially be
+part different structures.
 
 License:
 
