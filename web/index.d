@@ -1,2 +1,3 @@
-An example of one way to do inheritance, interfaces-mixins, and
-generics in C.
+An example using <em>List</em> and <em>Pool</em> to do something
+like inheritance and generics in <em>C</em> using as much memory
+as needed.
