@@ -39,10 +39,20 @@
 #include <errno.h>	/* errno */
 #include "../src/Story.h"
 
+#define STACK_NAME Size
+#define STACK_TYPE size_t
+#include "Stack.h"
+
 /** @implements LineAction */
 static void show(struct Line *const line) {
 	assert(line);
 	printf("Line %lu: <%s>.\n", (long unsigned)LineNo(line),TextGet(LineText(line)));
+}
+
+/** @implements LineAction */
+static void trim(struct Line *const line) {
+	assert(line);
+	TextTrim(LineText(line));
 }
 
 /** @implements LineAction */
@@ -55,9 +65,9 @@ static void rtrim(struct Line *const line) {
 static int collapse_para(struct Line *const line) {
 	struct Line *const prev = LinePrevious(line);
 	assert(line);
-	printf("\"%s\".%lu -> \"%s\".%lu\n",
+	/*printf("\"%s\".%lu -> \"%s\".%lu\n",
 		TextGet(LineText(prev)), (long unsigned)LineNo(prev),
-		TextGet(LineText(line)), (long unsigned)LineNo(line));
+		TextGet(LineText(line)), (long unsigned)LineNo(line));*/
 	if(TextGet(LineText(line))[0] != '\0') return 1;
 	if(!prev || TextGet(LineText(prev))[0] == '\0') return 0;
 	return 1;
@@ -69,11 +79,37 @@ static void reinsert_newlines(struct Line *const line) {
 	TextCat(LineText(line), "\n");
 }
 
+/** @implements TextPredicate */
+static int no_empty(const char *const string, const char *sub) {
+	UNUSED(string);
+	return isspace(sub[1]) ? 0 : 1;
+}
+
+/** \cite{Wilber1998} \url{http://xxyxyz.org/line-breaking/}. */
+static void word_wrap(struct Line *const line) {
+	struct SizeStack *offsets = SizeStack();
+	struct Line *l;
+	size_t count, *o;
+	assert(line);
+	errno = 0; do { /* try */
+		if(!(o = SizeStackNew(offsets))) break;
+		*o = 0;
+		/* Count how many words in the paragraph. */
+		for(count = 0, l = line; l && TextLength(LineText(l));
+			l = LineNext(l), count++);
+	} while(0); if(errno) { /* catch */
+		perror("word_wrap");
+	} { /* finally */
+		SizeStack_(&offsets);
+	}
+}
+
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
  @param argv: The arguments.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
+	struct Text *foo, *text;
 	struct Story *story = 0;
 	FILE *fp = 0;
 	enum { E_NO, E_STDERR, E_STORY } e = E_NO;
@@ -85,16 +121,30 @@ int main(void) {
 		StoryFileCat(story, fp);
 		fclose(fp), fp = 0;
 
-		StoryForEach(story, &rtrim);
+		/* Delete newlines. */
+		StoryForEach(story, &trim);
+		/* Collapse multi-line paragraph indents. */
 		StoryKeepIf(story, &collapse_para);
-
-		StorySplit(story, 0, 0);
+		/* Move each word to a line. */
+		StorySplit(story, 0, &no_empty);
+		StoryForEach(story, &rtrim);
+		/* Prepare for output. */
 		StoryForEach(story, &show);
 		StoryForEach(story, &reinsert_newlines);
 
 		if(!(fp = fopen("../../result.txt", "w"))) { e = E_STDERR; break; }
 		if(!StoryWrite(story, fp)) { e = E_STORY; break; };
 		fclose(fp), fp = 0;
+
+		foo = Text();
+		TextCat(foo, "blue,red,,,green,");
+		printf("Foo: %s\n", TextGet(foo));
+		while((text = TextSep(&foo, ",", 0))) {
+			printf("Text: %s\n", TextGet(text));
+			Text_(&text);
+		}
+		assert(!foo);
+		printf("Foo: %s\n", TextGet(foo));
 
 	} while(0); switch(e) {
 		case E_NO:

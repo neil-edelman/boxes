@@ -12,10 +12,11 @@ typedef int (*LinePredicate)(struct Line *const);
 
 struct Story *Story(void);
 void Story_(struct Story **pstory);
-struct Text *LineText(const struct Line *const line);
+struct     Text *LineText(const struct Line *const line);
 size_t LineNo(const struct Line *const line);
 void LineSetNo(struct Line *const line, const size_t no);
 struct Line *LinePrevious(struct Line *const line);
+struct Line *LineNext(struct Line *const line);
 int StoryFileCat(struct Story *const this, FILE *const fp);
 int StoryWrite(struct Story *const this, FILE *const fp);
 void StoryForEach(struct Story *const this, const LineAction action);

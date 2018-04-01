@@ -133,8 +133,14 @@ void LineSetNo(struct Line *const line, const size_t no) {
 	line->no = no;
 }
 
+/** The previous line or null if there is no previous line. */
 struct Line *LinePrevious(struct Line *const line) {
 	return LineListPrevious(line);
+}
+
+/** @return The next line or null. */
+struct Line *LineNext(struct Line *const line) {
+	return LineListNext(line);
 }
 
 /** Concatenates the contents of the text file, {fp}, after the active line.
@@ -207,18 +213,15 @@ void StoryKeepIf(struct Story *const this, const LinePredicate pred) {
 	}
 }
 
-/*struct Text *LastText(struct Text *text) {
-}*/
-
 /** Does {TextSplit} for all lines. */
 void StorySplit(struct Story *const this, const char *delims,
 	const TextPredicate pred) {
-	struct Line *line;
+	struct Line *line, *empty;
 	struct LineListNode *pool;
 	struct Text *text;
 	if(!this) return;
 	for(line = LineListFirst(&this->lines); line; line = LineListNext(line)) {
-		while((text = TextSep(line->text, delims, pred))) {
+		while((text = TextSep(&line->text, delims, pred))) {
 			if(!(pool = LinePoolUpdateNew(this->pool, &line))) {
 				Text_(&text);
 				fprintf(stderr, "StorySplit: %s.\n",
@@ -229,9 +232,13 @@ void StorySplit(struct Story *const this, const char *delims,
 			pool->data.no = line->no;
 			LineListAddBefore(line, &pool->data);
 		}
-		if(TextIsError(line->text)) {
-			fprintf(stderr, "StorySplit: %s.\n", TextGetError(line->text));
+		empty = line;
+		if(empty->text) {
+			fprintf(stderr, "StorySplit: %s.\n", TextGetError(empty->text));
 			return;
 		}
+		line = LineListPrevious(empty);
+		LineListRemove(empty);
+		LinePoolRemove(this->pool, (struct LineListNode *)empty);
 	}
 }
