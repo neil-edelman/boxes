@@ -1,7 +1,7 @@
 /** Animals is polymoric class that includes several animal types. There is
  also an interface-thing, where you can mount certain animals. For a more
  detailed expliation, see
- \url{http://neil.chaosnet.org/code/Cdata/tests/Animals/}.
+ \url{http://neil.chaosnet.org/code/Ctools/tests/Animals/}.
 
  @title Animals
  @author Neil
