@@ -1,59 +1,47 @@
-#ifndef HAVE_TEXT_H /* <-- guards */
-#define HAVE_TEXT_H
+#ifndef STRING_H /* <-- guards */
+#define STRING_H
 
-/* unused macro */
-#ifdef UNUSED
-#undef UNUSED
-#endif
-#define UNUSED(a) ((void)(a))
+/** Struct to hold information about a string. */
+struct String {
+	char *text;
+	size_t length, capacity[2];
+	size_t no;
+};
 
-/** See \see{Text}. */
-struct Text;
 
 /** Action function. */
-typedef void (*TextAction)(struct Text *const);
+typedef void (*StringAction)(struct String *const);
 /** Predicate function.
  @param string: The string.
  @param sub: The position in the string which you must make a true/false
  decision. Necessarily, {sub \in string}. */
-typedef int (*TextPredicate)(const char *const string, const char *sub);
+typedef int (*StringPredicate)(const char *const string, const char *sub);
 
-/** Used in \see{TextMatch} as an array of patterns. Recognises brackets.
+/** Used in \see{StringMatch} as an array of patterns. Recognises brackets.
  @param start: Must be at least one character.
  @param end: can be null, in which case, {start} is the whole text.
  @param transform: if {end}, copies a buffer ({start}, {end}) as argument;
  can be null, it will just ignore. */
-struct TextPattern {
+struct StringPattern {
 	const char *start, *end;
-	TextAction transform;
+	StringAction transform;
 };
 
-struct Text *Text(void);
-void Text_(struct Text **const this_ptr);
-const char *TextGet(const struct Text *const this);
-size_t TextLength(const struct Text *const this);
-size_t TextCodePointCount(const struct Text *const this);
-int TextHasContent(const struct Text *const this);
-struct Text *TextClear(struct Text *const this);
-struct Text *TextRightTrim(struct Text *const this);
-struct Text *TextTrim(struct Text *const this);
-struct Text *TextSep(struct Text **const this, const char *delims,
-	const TextPredicate pred);
-struct Text *TextCopy(struct Text *const this, const char *const str);
-struct Text *TextCat(struct Text *const this, const char *const str);
-struct Text *TextNCat(struct Text *const this, const char *const str,
-	const size_t cat_len);
-struct Text *TextBetweenCat(struct Text *const this,
-	const char *const a, const char *const b);
-struct Text *TextFileCat(struct Text *const this, FILE *const fp);
-int TextFileLineCat(struct Text *const this, FILE *const fp);
-struct Text *TextPrintCat(struct Text *const this, const char *const fmt, ...);
-struct Text *TextTransform(struct Text *const this, const char *fmt);
-struct Text *TextMatch(struct Text *const this,
-	const struct TextPattern *const patterns, const size_t patterns_size);
-int TextGetMatchInfo(struct Text **const parent_ptr,
-	size_t *const start_ptr, size_t *const end_ptr);
-int TextIsError(struct Text *const this);
-const char *TextGetError(struct Text *const this);
+void String_(struct String *const);
+void String(struct String *const);
+struct String *StringClear(struct String *const);
+const char *StringGet(const struct String *const);
+size_t StringLength(const struct String *const);
+size_t StringCodePoints(const struct String *const);
+int StringHasContent(const struct String *const);
+struct String *StringRightTrim(struct String *const);
+struct String *StringTrim(struct String *const);
+struct String *StringCopy(struct String *const, const char *const);
+struct String *StringCat(struct String *const, const char *const);
+struct String *StringNCat(struct String *const, const char *const,const size_t);
+struct String *StringBetweenCat(struct String *const, const char *const,
+	const char *const);
+struct String *StringPrintCat(struct String *const, const char *const, ...);
+struct String *StringTransform(struct String *const, const char *);
 
 #endif /* guards --> */
