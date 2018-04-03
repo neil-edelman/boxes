@@ -19,7 +19,7 @@
 
  @title		String
  @author	Neil
- @std		C89/90
+ @std		C89/90 with C99 vsnprintf
  @version	2018-03 {Text -> String}; complete refactoring to work with {Text}.
  @since		2018-01
 			2017-03
@@ -27,13 +27,26 @@
  @fixme work with int instead of char, obverously. */
 
 #include <stdlib.h> /* malloc realloc free */
-#include <stdio.h>  /* vsnprintf */
-#include <string.h> /* strlen memmove memcpy strdup memchr */
+#include <string.h> /* strlen memmove memcpy memchr */
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
 #include <ctype.h>  /* isspace */
 #include <stdarg.h> /* va_* */
 #include "String.h"
+
+/* This function was standardised in C99. */
+int vsnprintf(char *s, size_t n, const char *format, va_list ap);
+
+/** {strdup} is a {POSIX.1-2017} extension. This is better. Used in
+ \see{StringTransform}.
+ @throws {malloc} errors: {IEEE Std 1003.1-2001}. */
+static void *memdup(const void *src, const size_t n) {
+	void *copy;
+	assert(src);
+	if(!(copy = malloc(n))) return 0;
+	memcpy(copy, src, n);
+	return copy;
+}
 
 /* Used in \see{text_length}. */
 static const size_t fibonacci11 = 89;
@@ -318,36 +331,44 @@ struct String *StringPrintCat(struct String *const string,
  {string}.
  @return {string}.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws {strdup/realloc} errors: {IEEE Std 1003.1-2001}. */
+ @throws {strdup/malloc/realloc} errors: {IEEE Std 1003.1-2001}. */
 struct String *StringTransform(struct String *const string, const char *fmt) {
-	char *copy, *t;
+	int is_old_ref = 0, is_old_dup = 0;
 	const char *f;
-	size_t copy_len = 0;
+	char *t, null_termiate = '\0', *old = &null_termiate;
+	size_t copy_len = 0, old_len = 0;
 	if(!string || !fmt) return string;
-	/* We have to free the temp var {copy}. */
-	if(!(copy = strdup(string->text))) return 0;
 	/* Count. */
+	old_len = string->length;
 	for(f = fmt; *f; f++) {
 		if(*f != '%') { copy_len++; continue; }
 		switch(*++f) {
 			case '%': copy_len++; break;
-			case 's': copy_len += string->length; break;
+			case 's': copy_len += old_len; is_old_ref = 1; break;
 		}
 	}
+	/* Copy the string into {old}. */
+	if(is_old_ref && string->text && string->text != '\0') {
+		assert(string->length > 0);
+		if(!(old = memdup(string->text, old_len + 1))) return 0;
+		is_old_dup = 1;
+	} else {
+		old_len = 0; /* Paranoid. */
+	}
 	/* Allocate. */
-	if(!text_length(string, copy_len)) { free(copy); return 0; }
+	if(!text_length(string, copy_len))
+		{ if(is_old_dup) free(old); return 0; }
 	/* New string is the transform. */
 	for(t = string->text, f = fmt; *f; f++) {
 		if(*f != '%') { *t++ = *f; continue; }
 		switch(*++f) {
 			case '%': *t++ = '%'; break;
-			case 's': memcpy(t, copy, string->length), t += string->length;
-				break;
+			case 's': memcpy(t, old, old_len), t += old_len; break;
 		}
 	}
 	*t = '\0';
 	string->length = copy_len;
-	/* Free temp var. */
-	free(copy);
+	/* Free {old}. */
+	if(is_old_dup) free(old);
 	return string;
 }
