@@ -22,7 +22,8 @@
  @std		C89/90
  @version	2018-03 {Text -> String}; complete refactoring to work with {Text}.
  @since		2018-01
-			2017-03 */
+			2017-03
+ @fixme uhh, {StringByteOffsetCodePoints()}? */
 
 #include <stdlib.h> /* malloc realloc free */
 #include <stdio.h>  /* vsnprintf */

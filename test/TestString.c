@@ -4,7 +4,7 @@
  This is a test of String.
 
  @author	Neil
- @version	2018-03 Refactored code to split up {String} and {Text}.
+ @version	2018-03 Re-factored code to split up {String} and {Text}.
  @since		2017-03 */
 
 #include <stdlib.h>	/* EXIT_* */
@@ -58,7 +58,7 @@ int main(void) {
 		*bit4x4 = "𐑫𐑣𐑟𐐥";
 	struct String s = { 0, 0, { 0, 0 } }, t;
 	const char *a, *b;
-	size_t i, bytes = 0, codep = 0;
+	size_t bytes = 0, codep = 0;
 
 	printf("Testing:\n");
 
@@ -85,20 +85,49 @@ int main(void) {
 	StringCat(&s, bit4x4), bytes += 4*4, codep += 4;
 	verify(&s, bytes, codep);
 	StringNCat(&s, bit1x30, (size_t)5), bytes += 5, codep += 5;
-	verify(&s, bytes, codep);	
+	verify(&s, bytes, codep);
 	StringBetweenCat(&s, bit1x30 + 10, bit1x30 + 20), bytes += 11, codep += 11;
-	verify(&s, bytes, codep);	
-	StringPrintCat(&s, "%s%s%.3s \t\n\f", bit2x2, bit4x4, bit1x30),
-		bytes += 2*2 + 4*4 + 3 + 4, codep += 2 + 4 + 3 + 4;
-	i = StringLength(&s);
-	printf("The string <%s> has %lu bytes.\n", StringGet(&s), (unsigned long)i);
-	assert(i == bytes);
-	i = StringCodePoints(&s);
-	printf("The string <%s> has %lu code-points.\n",
-		   StringGet(&s), (unsigned long)i);
-	assert(i == codep);
-	
-	
+	verify(&s, bytes, codep);
+	StringPrintCat(&s, "%s%s%.3s \t", bit2x2, bit4x4, bit1x30),
+		bytes += 2*2 + 4*4 + 3 + 2, codep += 2 + 4 + 3 + 2;
+	verify(&s, bytes, codep);
+	StringTransform(&s, "    %s%%%s\n\f");
+	bytes *= 2, bytes += 4 + 1 + 2, codep *= 2, codep += 4 + 1 + 2;
+	verify(&s, bytes, codep);
+	StringCopy(&t, StringGet(&s));
+	verify(&t, bytes, codep);
+	StringRightTrim(&t);
+	verify(&t, bytes - 4, codep - 4);
+	StringTrim(&s);
+	bytes -= 4 + 4, codep -= 4 + 4;
+	verify(&s, bytes, codep);
+
+	StringClear(&s);
+	verify(&s, 0, 0);
+	String_(&t);
+	verify(&t, 0, 0);
+	String_(&s);
+	verify(&s, 0, 0);
+
+	/*
+	void String_(struct String *const);
+	void String(struct String *const);
+	struct String *StringClear(struct String *const);
+	const char *StringGet(const struct String *const);
+	size_t StringLength(const struct String *const);
+	size_t StringCodePoints(const struct String *const);
+	int StringHasContent(const struct String *const);
+	struct String *StringRightTrim(struct String *const);
+	struct String *StringTrim(struct String *const);
+	struct String *StringCopy(struct String *const, const char *const);
+	struct String *StringCat(struct String *const, const char *const);
+	struct String *StringNCat(struct String *const, const char *const,const size_t);
+	struct String *StringBetweenCat(struct String *const, const char *const,
+									const char *const);
+	struct String *StringPrintCat(struct String *const, const char *const, ...);
+	struct String *StringTransform(struct String *const, const char *);
+	*/
+
 	/*printf("StringNCat:\n");
 	StringNCat(t, "TestString", (size_t)4);
 	printf("String: %s\n", StringGet(t));
