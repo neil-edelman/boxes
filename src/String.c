@@ -270,7 +270,7 @@ struct String *StringNCat(struct String *const string, const char *const str,
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
 struct String *StringBetweenCat(struct String *const string,
 	const char *const a, const char *const b) {
-	if(!string || !a || !b || a <= b) return string;
+	if(!string || !a || !b || a > b) return string;
 	/* @fixme ?? end = memchr(a, 0, (size_t)(b - a + 1));
 	 to make sure it doesn't contain nulls? do we want that? */
 	if(!cat(string, a, (size_t)(b - a + 1))) return 0;
