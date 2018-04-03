@@ -2,18 +2,17 @@ Copyright (C) 2016 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
-Version 1.0.
-
-This is a dynamic text wrapper for C89/90 based on the standard
-library. Intended to be used with Modified UTF-8. Relatively short.
-Supports concatenation, separation, and matching. Uses no special
-format or optimizations. Simple.
+This is a dynamic text wrapper for C89/90. In addition to storing
+the pointer to the string, we store the length, and capacity of the
+buffer. Intended to be used with Modified UTF-8. Relatively short.
+Uses no special format or optimizations, based on the standard
+library.
 
 License:
 
 The MIT License (MIT)
 
-Copyright (c) 2017 Neil Edelman
+Copyright (c) 2016 Neil Edelman
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
