@@ -23,7 +23,8 @@
  @version	2018-03 {Text -> String}; complete refactoring to work with {Text}.
  @since		2018-01
 			2017-03
- @fixme uhh, {StringByteOffsetCodePoints()}? */
+ @fixme uhh, {StringByteOffsetCodePoints()}?
+ @fixme work with int instead of char, obverously. */
 
 #include <stdlib.h> /* malloc realloc free */
 #include <stdio.h>  /* vsnprintf */
@@ -159,7 +160,8 @@ size_t StringLength(const struct String *const string) {
  valid string in {UTF-8}, string will return an undefined value between
  {[0, size]}.
  @order O({string.size})
- @fixme Untested. */
+ @fixme Untested.
+ @fixme This is stupid, work with ints. */
 size_t StringCodePoints(const struct String *const string) {
 	char *text, ch;
 	const char *end_null;
