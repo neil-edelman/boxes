@@ -20,5 +20,5 @@ int StoryFileCat(struct Story *const this, FILE *const fp);
 int StoryWrite(struct Story *const this, FILE *const fp);
 void StoryForEach(struct Story *const this, const LineAction action);
 void StoryKeepIf(struct Story *const this, const LinePredicate pred);
-void StorySplit(struct Story *const this, const char *delims,
-	const TextPredicate pred);
+/*void StorySplit(struct Story *const this, const char *delims,
+	const TextPredicate pred);*/
