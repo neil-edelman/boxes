@@ -22,7 +22,9 @@
  @std		C89/90
  @version	2018-03 {Text -> String}; complete refactoring to work with {Text}.
  @since		2018-01
-			2017-03 */
+			2017-03
+ @fixme uhh, {StringByteOffsetCodePoints()}?
+ @fixme work with int instead of char, obverously. */
 
 #include <stdlib.h> /* malloc realloc free */
 #include <stdio.h>  /* vsnprintf */
@@ -44,7 +46,6 @@ static void inactive(struct String *const string) {
 	string->length      = 0;
 	string->capacity[0] = 0;
 	string->capacity[1] = 0;
-	string->no          = 0;
 }
 
 /** Clears the text of an active {string}. */
@@ -108,8 +109,9 @@ void String_(struct String *const string) {
 }
 
 /** Use this if {string} is uninitialised. Sets the {String} text to be null,
- thus in a well-defined state. One can also do the initialisation
- {struct String s = { 0 }}, or equivalent, accomplishing the same thing.
+ thus in a well-defined state. Static {String} variables do not need
+ initialisation, though it will not hurt. Calling this on an active {string}
+ results in a memory leak.
  @param string: A string whose text will be set to null. If null, does nothing.
  @order O(1) */
 void String(struct String *const string) {
@@ -118,7 +120,7 @@ void String(struct String *const string) {
 }
 
 /** Erases the text of {string} so the text is empty. If the text of {string}
- is null, initilises an empty string.
+ is null, initialises an empty string.
  @param string: If null, returns null.
  @return {string}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}.
@@ -158,7 +160,8 @@ size_t StringLength(const struct String *const string) {
  valid string in {UTF-8}, string will return an undefined value between
  {[0, size]}.
  @order O({string.size})
- @fixme Untested. */
+ @fixme Untested.
+ @fixme This is stupid, work with ints. */
 size_t StringCodePoints(const struct String *const string) {
 	char *text, ch;
 	const char *end_null;
@@ -243,7 +246,8 @@ struct String *StringCat(struct String *const string, const char *const str) {
 	return string;
 }
 
-/** Concatenates up to {str_len} characters of {str} onto the text in {string}.
+/** Concatenates up to {str_len} bytes characters of {str} onto the text in
+ {string}.
  @param string: If null, returns null.
  @param str: If null, returns {string}.
  @param str_len: If the bytes one has access to is smaller then this value, the
@@ -269,7 +273,7 @@ struct String *StringNCat(struct String *const string, const char *const str,
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
 struct String *StringBetweenCat(struct String *const string,
 	const char *const a, const char *const b) {
-	if(!string || !a || !b || a <= b) return string;
+	if(!string || !a || !b || a > b) return string;
 	/* @fixme ?? end = memchr(a, 0, (size_t)(b - a + 1));
 	 to make sure it doesn't contain nulls? do we want that? */
 	if(!cat(string, a, (size_t)(b - a + 1))) return 0;

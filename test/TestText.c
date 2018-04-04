@@ -37,7 +37,7 @@
 #include <limits.h>	/* INT_MAX */
 #include <assert.h>	/* assert */
 #include <errno.h>	/* errno */
-#include "../src/Story.h"
+#include "../src/Text.h"
 
 #define STACK_NAME Size
 #define STACK_TYPE size_t

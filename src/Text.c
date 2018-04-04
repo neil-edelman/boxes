@@ -1,8 +1,10 @@
 /** 2018 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A {Text} is composed of {Text} in a way that makes them easy and fast to
- edit large strings. Requires {List}, {Pool}, and {Text}.
+ A {Text} is composed of {String} in a way that makes them easy to edit
+ strings. Requires {List}, {Pool}, and {String}.
+ Each {Text} is made up of lines. You can stick whatever you want in here,
+ including new-lines or not.
 
  ${
  Text a = [ "foo bar\n\n", "baz\n", "qux" ]
@@ -22,17 +24,14 @@
  a.substitute(b) = [ "faa bor\n\n", "boz\n", "qux" ]
  }
 
- @param STORY_DEBUG
- Prints debug information to {stderr}.
+ @param TEXT_TEST
+ 
 
  @title		Text
  @author	Neil
  @std		C89/90
  @version	2018-01
- @since		2018-01
- @fixme This is a good way of error reporting; very short. Propagate. */
-
-#define STORY_DEBUG
+ @since		2018-01 */
 
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* fprintf fopen */
@@ -43,29 +42,38 @@
 #include <stdarg.h>	/* va_* */
 #endif /* debug --> */
 
-/** Each story is made up of lines. You can stick whatever you want in here,
- including new-lines or not. */
-struct Line;
-struct Line {
-	size_t line;
-	char *string;
+#include "String.h"
+#include "Text.h"
+
+struct LineFile {
+	struct String line;
+	char *source;
+	size_t source_no;
 };
+
+struct LineNew {
+	struct String line;
+};
+
 #define LIST_NAME Line
-#define LIST_TYPE struct Line
+#define LIST_TYPE struct String
 #include "List.h" /* Defines {LineList} and {LineListNode}. */
 
 #define POOL_NAME Line
 #define POOL_TYPE struct LineListNode
-#define POOL_PARENT struct LineList
+#define POOL_MIGRATE_EACH &LineListNodeMigrate
 #define POOL_UPDATE struct Line
-#define POOL_NO_MIGRATE_POINTER /* @fixme Ugly hack. */
-#include "Pool.h" /* Defines {TextPool}. */
+#include "Pool.h" /* Defines {LinePool}. */
 
-
+#define POOL_NAME Strdup
+#define POOL_TYPE char *
+#define POOL_MIGRATE_ALL &strdup_migrate
+#include "Pool.h" /* Defines {StrdupPool}. */
 
 struct Text {
 	struct LineList lines;
-	struct LinePool *pool;
+	struct LinePool *lines_pool;
+	struct StrdupPool *sources;
 };
 
 /** Prints debug information if {STORY_DEBUG} is turned on, otherwise it does
@@ -116,6 +124,25 @@ struct Text *Text(void) {
 
 /* @fixme Replace with {split}. */
 #if 0
+
+/** Action function. */
+typedef void (*StringAction)(struct String *const);
+/** Predicate function.
+ @param string: The string.
+ @param sub: The position in the string which you must make a true/false
+ decision. Necessarily, {sub \in string}. */
+typedef int (*StringPredicate)(const char *const string, const char *sub);
+
+/** Used in \see{StringMatch} as an array of patterns. Recognises brackets.
+ @param start: Must be at least one character.
+ @param end: can be null, in which case, {start} is the whole text.
+ @param transform: if {end}, copies a buffer ({start}, {end}) as argument;
+ can be null, it will just ignore. */
+struct StringPattern {
+	const char *start, *end;
+	StringAction transform;
+};
+
 /** Separates a new token at the first of the {delims} that satisfy {pred}.
  @return If {string_ptr} or {string} is null, returns null. Otherwise, you must
  call \see{String_} on string pointer. If no tokens are found in {string}, {string} is

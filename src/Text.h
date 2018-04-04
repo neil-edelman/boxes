@@ -1,7 +1,6 @@
 #include <stdio.h> /* for FILE */
-#include "Text.h"
 
-struct Story;
+struct Text;
 struct Line;
 
 
