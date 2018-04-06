@@ -65,61 +65,45 @@ struct LineNew {
 #define POOL_UPDATE struct Line
 #include "Pool.h" /* Defines {LinePool}. */
 
-#define POOL_NAME Strdup
-#define POOL_TYPE char *
-#define POOL_MIGRATE_ALL &strdup_migrate
-#include "Pool.h" /* Defines {StrdupPool}. */
+struct Strdup {
+	struct Strdup *next;
+	/* String is stored here. */
+};
 
 struct Text {
 	struct LineList lines;
-	struct LinePool *lines_pool;
-	struct StrdupPool *sources;
+	struct LinePool *line_pool;
+	struct Strdup *sources;
 };
 
-/** Prints debug information if {STORY_DEBUG} is turned on, otherwise it does
- nothing and should be optimised out. */
-static void debug(struct Text *const this, const char *const fn,
-	const char *const fmt, ...) {
-#ifdef STORY_DEBUG
-	va_list parg;
-	va_start(parg, fmt);
-	fprintf(stderr, "Text.%s: ", fn);
-	vfprintf(stderr, fmt, parg);
-	va_end(parg);
-#else
-	UNUSED(fn); UNUSED(fmt);
-#endif
-	UNUSED(this);
-}
-
 /** Destructor.
- @param story_ptr A reference to the object that is to be deleted. */
-void Text_(struct Text **const story_ptr) {
-	struct Text *story;
-	if(!story_ptr || !(story = *story_ptr)) return;
-	fprintf(stderr, "~Text: erase, #%p.\n", (void *)story);
-	LinePool_(&story->pool);
-	free(story), story = *story_ptr = 0;
+ @param ptext: A reference to the object that is to be deleted. If null or
+ points to null, doesn't do anything. */
+void Text_(struct Text **const ptext) {
+	struct Text *text;
+	struct Strdup *s, *ns;
+	if(!ptext || !(text = *ptext)) return;
+	fprintf(stderr, "~Text: erase, #%p.\n", (void *)text);
+	LinePool_(&text->line_pool);
+	for(s = text->sources; s; s = ns) { ns = s->next; free(s); }
+	free(text), text = *ptext = 0;
 }
 
 /** Constructor.
  @return An object or a null pointer, if the object couldn't be created. */
 struct Text *Text(void) {
-	struct Text *story;
-	if(!(story = malloc(sizeof(struct Text)))) {
+	struct Text *text;
+	if(!(text = malloc(sizeof(struct Text)))) {
 		perror("Text constructor");
-		Text_(&story);
+		Text_(&text);
 		return 0;
 	}
-	LineListClear(&story->lines);
-	story->pool = 0;
-	fprintf(stderr, "Text: new, #%p.\n", (void *)story);
-	if(!(story->pool = LinePool(&LineListMigrate, &story->lines))) {
-		fprintf(stderr, "Text: %s.\n", LinePoolGetError(0));
-		Text_(&story);
-		return 0;
-	}
-	return story;
+	LineListClear(&text->lines);
+	text->line_pool = 0;
+	text->sources   = 0;
+	fprintf(stderr, "Text: new, #%p.\n", (void *)text);
+	if(!(text->line_pool = LinePool())) Text_(&text);
+	return text;
 }
 
 /* @fixme Replace with {split}. */
@@ -632,7 +616,7 @@ int TextFileCat(struct Text *const this, FILE *const fp) {
 	return !e;
 }
 
-/** Writes the file {fp} with the story {this}. */
+/** Writes the file {fp} with the text {this}. */
 int TextWrite(struct Text *const this, FILE *const fp) {
 	struct Line *line;
 	if(!this || !fp) return 0;
@@ -667,7 +651,7 @@ void TextKeepIf(struct Text *const this, const LinePredicate pred) {
 
 /** Does {TextSplit} for all lines. */
 void TextSplit(struct Text *const this, const char *delims,
-	const TextPredicate pred) {
+	const LinePredicate pred) {
 	struct Line *line, *empty;
 	struct LineListNode *pool;
 	struct Text *text;
