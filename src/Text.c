@@ -12,7 +12,7 @@
  a.split("a", " ") = [ "foo", "b", "r", "b", "z", "qux" ]
  a.strip(0) = [ "foo bar", "baz", "qux" ]
  a.strip("quxf ") =  [ "oo bar", "baz", "" ]
- a.empty.strip("quxf ") = [ "oo bar", "baz" ]
+ a.empty().strip("quxf ") = [ "oo bar", "baz" ]
  a.join(0) = [ "foo bar\n\n baz\n qux" ]
  a.join("") = [ "foo bar\n\nbaz\nqux" ]
  a.sort() = [ "baz\n", "foo bar\n\n", "qux" ]
