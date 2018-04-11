@@ -82,7 +82,7 @@ static void Int_filler(int *const this) {
 #include "../src/Stack.h"
 
 /* Class {Colour} is an {enum}. */
-enum Colour { White, Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
+enum Colour { White , Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
 	Sienna, Brown, Yellow, Khaki, Gold, Olive, Lime, Green, Aqua, Cyan, Teal,
 	Salmon, Orange, Powder, Sky, Steel, Royal, Blue, Navy, Fuchsia, Pink,
 	Purple };
