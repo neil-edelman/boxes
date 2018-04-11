@@ -428,7 +428,7 @@ static void T_(Pool_)(struct T_(Pool) **const ppool) {
 }
 
 /** Private constructor called from either \see{<T>Pool}.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
+ @throws {malloc} errors: {IEEE Std 1003.1-2001}. */
 static struct T_(Pool) *PT_(pool)(void) {
 	struct T_(Pool) *pool;
 	assert(pool_max < pool_null && pool_max < pool_void);
