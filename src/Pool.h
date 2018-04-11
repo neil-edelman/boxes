@@ -664,14 +664,14 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
  @order \Omega(1)
  @fixme Untested.
  @allow */
-static void T_(PoolMigratePointer)(const T **const data_ptr,
+static void T_(PoolMigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
 	if(!data_ptr
 		|| !(ptr = *data_ptr)
 		|| ptr < migrate->begin
 		|| ptr >= migrate->end) return;
-	*(const char **)data_ptr += migrate->delta;
+	*(char **)data_ptr += migrate->delta;
 }
 
 #ifdef POOL_TO_STRING /* <-- print */
