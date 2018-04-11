@@ -17,7 +17,7 @@ static void PT_(valid_state)(const struct T_(Stack) *const a) {
 }
 
 static void PT_(test_basic)(void) {
-	struct T_(Stack) *a = 0;
+	struct T_(Stack) a;
 	T test[5], *testp;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
@@ -26,72 +26,75 @@ static void PT_(test_basic)(void) {
 	errno = 0;
 	for(i = 0; i < test_size; i++) PT_(filler)(test + i);
 	printf("Constructor:\n");
-	assert(!T_(StackPop)(a));
-	assert(!T_(StackPeek)(a));
-	assert(!T_(StackGetElement)(a, 0));
-	a = T_(Stack)();
-	printf("Stack: %s.\n", T_(StackToString)(a));
-	assert(a);
-	assert(!errno);
-	assert(!T_(StackPop)(a));
-	assert(!T_(StackPeek)(a));
-	assert(!T_(StackGetElement)(a, 0));
+	if(!T_(Stack)(&a)) perror("a"), assert(0);
+	assert(!T_(StackPop)(&a));
+	assert(!T_(StackPeek)(&a));
+	assert(!T_(StackGetElement)(&a, 0));
 	printf("(Deliberate) error: %s.\n", strerror(errno));
-	assert(errno);
+	assert(errno == EDOM);
+	errno = 0;
+	printf("Stack: %s.\n", T_(StackToString)(&a));
+	/*assert(a);*/
+	assert(!errno);
+	assert(!T_(StackPop)(&a));
+	assert(!T_(StackPeek)(&a));
+	assert(!T_(StackGetElement)(&a, 0));
+	printf("(Deliberate) error: %s.\n", strerror(errno));
+	assert(errno == EDOM);
 	errno = 0;
 
 	printf("Adding %lu elements:\n", (unsigned long)test_size);
 	for(i = 0; i < test_size; i++) {
-		testp = T_(StackNew)(a);
+		testp = T_(StackNew)(&a);
 		assert(testp);
 		memcpy(testp, test + i, sizeof *test);
 	}
 
 	printf("Remove last:\n");
-	if(!(testp = T_(StackPop)(a))) {
+	if(!(testp = T_(StackPop)(&a))) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_(StackToString)(a));
-	if(!(testp = T_(StackPop)(a))) {
+	printf("Now: %s.\n", T_(StackToString)(&a));
+	if(!(testp = T_(StackPop)(&a))) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_(StackToString)(a));
+	printf("Now: %s.\n", T_(StackToString)(&a));
 	printf("Stack reserve.\n");
-	T_(StackReserve)(a, (size_t)100);
-	assert(a->capacity[0] >= 100);
+	T_(StackReserve)(&a, (size_t)100);
+	assert(a.capacity[0] >= 100);
 	for(i = 0; i < 100; i++) {
-		testp = T_(StackNew)(a);
+		testp = T_(StackNew)(&a);
 		assert(testp);
 		PT_(filler)(testp);
 	}
-	printf("%s.\n", T_(StackToString)(a));
+	printf("%s.\n", T_(StackToString)(&a));
 	printf("Clear:\n");
-	T_(StackClear)(a);
-	printf("%s.\n", T_(StackToString)(a));
-	assert(a->size == 0);
+	T_(StackClear)(&a);
+	printf("%s.\n", T_(StackToString)(&a));
+	assert(a.size == 0);
 
 	printf("Destructor:\n");
 	T_(Stack_)(&a);
-	assert(!a);
+	assert(a.size == 0);
 }
 
 static void PT_(test_random)(void) {
-	struct T_(Stack) *a;
+	struct T_(Stack) a;
 	size_t i;
 	/* random */
-	a = T_(Stack)();
+	T_(Stack)(&a);
 	/* this parameter controls how many iterations */
 	i = 1000;
 	while(i--) {
 		T *node;
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
-		size_t size = a->size;
+		size_t size = a.size;
 		/* this parameter controls how big the pool wants to be */
 		if(r > size / 100.0) {
-			if(!(node = T_(StackNew)(a))) {
+			if(!(node = T_(StackNew)(&a))) {
 				perror("Error"), assert(0);
 				return;
 			}
@@ -99,12 +102,12 @@ static void PT_(test_random)(void) {
 			PT_(to_string)(node, &str);
 			printf("Created %s.\n", str);
 		} else {
-			if(!T_(StackPop)(a)) continue;
+			if(!T_(StackPop)(&a)) continue;
 			PT_(to_string)(node, &str);
 			printf("Removing %s.\n", str);
 		}
-		printf("%s.\n", T_(StackToString)(a));
-		PT_(valid_state)(a);
+		printf("%s.\n", T_(StackToString)(&a));
+		PT_(valid_state)(&a);
 	}
 }
 

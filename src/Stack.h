@@ -3,10 +3,12 @@
 
  {<T>Stack} is a dynamic array that stores unordered {<T>} in a stack, which
  must be set using {STACK_TYPE}. This is the most basic variable array; the
- array is packed, with no other extraneous information. Indices will remain the
- same throughout the lifetime of the data, but expanding the data may change
- the pointers. You cannot shrink the capacity of this data type, only cause it
- to grow. Resizing incurs amortised cost, done though a Fibonacci sequence.
+ array is packed, with no other extraneous information. Use when one needs a
+ non-polymorphic simply accessable dynamic memory store. Indices will remain
+ the same throughout the lifetime of the data, but expanding the data may
+ change the pointers. You cannot shrink the capacity of this data type, only
+ cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
+ sequence.
 
  {<T>Stack} is not synchronised. The preprocessor macros are all undefined at
  the end of the file for convenience.
@@ -40,9 +42,10 @@
  @title		Stack.h
  @std		C89
  @author	Neil
- @version	2018-02 Made it like POOL.
+ @version	2018-03 Why have an extra level of indirection? Not like Pool.
+ @since		2018-02 Made it like POOL.
 			2017-12 Changed STACK_PARENT for type-safety.
- @since		2017-11 Added STACK_PARENT.
+			2017-11 Added STACK_PARENT.
 			2017-11 Forked from Pool. */
 
 
@@ -258,43 +261,42 @@ static int PT_(reserve)(struct T_(Stack) *const stack,
 	return 1;
 }
 
+static void PT_(init)(struct T_(Stack) *const stack) {
+	assert(stack);
+	stack->array        = 0;
+	stack->capacity[0]  = stack_fibonacci6;
+	stack->capacity[1]  = stack_fibonacci7;
+	stack->size         = 0;
+}
+
 /** Destructor for {Stack}. Make sure that the stack's contents will not be
  accessed anymore.
  @param pthis: A reference to the object that is to be deleted; it will be set
  to null. If it is already null or it points to null, doesn't do anything.
  @order \Theta(1)
  @allow */
-static void T_(Stack_)(struct T_(Stack) **const pstack) {
-	struct T_(Stack) *stack;
-	if(!pstack || !(stack = *pstack)) return;
+static void T_(Stack_)(struct T_(Stack) *const stack) {
+	if(!stack) return;
 	PT_(debug)(stack, "Delete", "erasing.\n");
 	free(stack->array);
-	free(stack);
-	*pstack = 0;
+	PT_(init)(stack);
 }
 
-/** Private constructor called from \see{<T>Stack}.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
-static struct T_(Stack) *PT_(stack)(void) {
-	struct T_(Stack) *stack;
-	if(!(stack = malloc(sizeof *stack))) return 0;
-	stack->array        = 0;
-	stack->capacity[0]  = stack_fibonacci6;
-	stack->capacity[1]  = stack_fibonacci7;
-	stack->size         = 0;
-	if(!(stack->array = malloc(stack->capacity[0] * sizeof *stack->array)))
-		return 0;
-	PT_(debug)(stack, "New", "capacity %d.\n", stack->capacity[0]);
-	return stack;
-}
-
-/** Constructs an empty {Stack} with capacity Fibonacci6, which is 8.
- @return A new {Stack} or null and {errno} may be set.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}.
+/** Initialises {stack} to an empty {Stack} with capacity Fibonacci6,
+ which is 8, and attempts to allocate that much space.
+ @param stack: If null, returns false.
+ @return Success or {errno} may be set. Whatever happens, {stack} will be in a
+ valid state.
+ @throws {malloc} errors: {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
-static struct T_(Stack) *T_(Stack)(void) {
-	return PT_(stack)(); /* ENOMEM? */
+static int T_(Stack)(struct T_(Stack) *const stack) {
+	if(!stack) return 0;
+	PT_(init)(stack);
+	if(!(stack->array = malloc(stack->capacity[0] * sizeof *stack->array)))
+		return 0; /* ENOMEM? */
+	PT_(debug)(stack, "New", "capacity %d.\n", stack->capacity[0]);
+	return 1;
 }
 
 /** @param stack: If null, returns zero.
@@ -563,7 +565,7 @@ static void PT_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_set)(void) {
 	T_(Stack_)(0);
-	T_(Stack)();
+	T_(Stack)(0);
 	T_(StackGetSize)(0);
 	T_(StackGetElement)(0, 0);
 	T_(StackGetIndex)(0, 0);
