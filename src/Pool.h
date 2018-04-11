@@ -6,7 +6,7 @@
  internal to the pool; as such, indices will remain the same throughout the
  lifetime of the data. You cannot shrink the capacity of this data type, only
  cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
- sequence. VV!
+ sequence.
 
  Intended for use in backing polymorphic data-types. {<T>Pool} is not
  synchronised. The preprocessor macros are all undefined at the end of the file
@@ -187,11 +187,11 @@ struct Migrate {
  definition, re-declare it. */
 typedef void (*PT_(Migrate))(T *const data,
 	const struct Migrate *const migrate);
-#ifdef POOL_MIGRATE_EACH /* <-- migrate */
+#ifdef POOL_MIGRATE_EACH /* <-- each */
 /* Check that {POOL_MIGRATE_EACH} is a function implementing {<PT>Migrate},
  whose definition is placed above {#include "Pool.h"}. */
 static const PT_(Migrate) PT_(migrate_each) = (POOL_MIGRATE_EACH);
-#endif /* migrate --> */
+#endif /* each --> */
 
 #ifdef POOL_MIGRATE_ALL /* <-- all */
 /* Troubles with this line? check to ensure that {POOL_MIGRATE_ALL} is a
@@ -272,7 +272,7 @@ static void PT_(debug)(struct T_(Pool) *const pool,
 /* * Ensures capacity.
  @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say. */
+ @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
 static int PT_(reserve)(struct T_(Pool) *const pool,
 	const size_t min_capacity
 #ifdef POOL_MIGRATE_UPDATE /* <-- update */
@@ -328,7 +328,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		if(update_ptr) {
 			const void *const u = *update_ptr;
 			if(u >= migrate.begin && u < migrate.end)
-				*(char **)update_ptr += migrate.delta;
+				*(char **const)update_ptr += migrate.delta;
 		}
 #endif /* update --> */
 	}
@@ -428,7 +428,7 @@ static void T_(Pool_)(struct T_(Pool) **const ppool) {
 }
 
 /** Private constructor called from either \see{<T>Pool}.
- @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say. */
+ @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
 static struct T_(Pool) *PT_(pool)(void) {
 	struct T_(Pool) *pool;
 	assert(pool_max < pool_null && pool_max < pool_void);
@@ -452,7 +452,7 @@ static struct T_(Pool) *PT_(pool)(void) {
  specified.
  @return A new {Pool} or null and {errno} may be set.
  @throws ERANGE: If one and not the other arguments is null.
- @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
+ @throws {realloc} errors: {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(const PT_(MigrateAll) migrate_all,
@@ -467,7 +467,7 @@ static struct T_(Pool) *T_(Pool)(const PT_(MigrateAll) migrate_all,
 #else /* all --><-- !all */
 /** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
  @return A new {Pool} or null and {errno} may be set.
- @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
+ @throws {realloc} errors: {IEEE Std 1003.1-2001}.
  @order \Theta(1)
  @allow */
 static struct T_(Pool) *T_(Pool)(void) {
@@ -530,7 +530,7 @@ static size_t T_(PoolGetIndex)(struct T_(Pool) *const pool, T *const data) {
  @return True if the capacity increase was viable; otherwise the pool is not
  touched and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
- @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
+ @throws {realloc} errors: {IEEE Std 1003.1-2001}.
  @order \Omega(1), O({capacity})
  @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const pool,
@@ -551,7 +551,7 @@ static int T_(PoolReserve)(struct T_(Pool) *const pool,
  @param pool: If is null, returns null.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
- @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
+ @throws {realloc} errors: {IEEE Std 1003.1-2001}.
  @order amortised O(1)
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const pool) {
@@ -579,7 +579,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
  @param iterator_ptr: Pointer to update on memory move.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws ENOMEM?: {IEEE Std 1003.1-2001}; C standard does not say.
+ @throws {realloc} errors: {IEEE Std 1003.1-2001}.
  @order amortised O(1)
  @fixme Untested.
  @allow */
@@ -639,8 +639,8 @@ static int T_(PoolIsEmpty)(const struct T_(Pool) *const pool) {
 	return pool->size == 0;
 }
 
-/** Use when the pool has pointers to another pool in the {MigrateAll} function
- of the other data type.
+/** Use when the pool has pointers to another memory move structure in the
+ {MigrateAll} function of the other data type.
  @param pool: If null, does nothing.
  @param handler: If null, does nothing, otherwise has the responsibility of
  calling the other data type's migrate pointer function on all pointers
@@ -664,7 +664,7 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
  @order \Omega(1)
  @fixme Untested.
  @allow */
-static void T_(PoolMigratePointer)(T *const*const data_ptr,
+static void T_(PoolMigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
 	if(!data_ptr
@@ -744,7 +744,7 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	}
 	sprintf(cat.cursor, "%s",
 		cat.is_truncated ? pool_cat_alter_end : pool_cat_end);
-	return cat.print; /* static buffer */
+	return cat.print; /* Static buffer. */
 }
 
 #endif /* print --> */
