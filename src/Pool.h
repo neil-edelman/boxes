@@ -237,8 +237,11 @@ struct PT_(Node) {
 struct T_(Pool);
 struct T_(Pool) {
 	struct PT_(Node) *nodes;
-	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next. */
-	size_t size; /* Including removed. */
+	/* {nodes} -> {capacity} -> {c[0] < c[1] || c[0] == c[1] == max_size}.
+	 Fibonacci, [0] is the capacity, [1] is next. */
+	size_t capacity[2];
+	/* {nodes} ? {size <= capacity[0]} : {size == 0}. Including removed. */
+	size_t size;
 	struct PoolX removed;
 #ifdef POOL_MIGRATE_ALL /* <-- all */
 	PT_(MigrateAll) migrate_all; /* Called to update on resizing. */
@@ -289,11 +292,16 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		&& pool->removed.next == pool_null);
 	if(pool->capacity[0] >= min_capacity) return 1;
 	if(max_size < min_capacity) return errno = ERANGE, 0;
-	c0 = pool->capacity[0];
-	c1 = pool->capacity[1];
+	if(!pool->nodes) {
+		c0 = pool_fibonacci6;
+		c1 = pool_fibonacci7;
+	} else {
+		c0 = pool->capacity[0];
+		c1 = pool->capacity[1];
+	}
 	while(c0 < min_capacity) {
 		c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0;
-		if(c1 <= c0 || c1 > max_size) c1 = max_size;
+		if(c1 > max_size || c1 <= c0) c1 = max_size;
 	}
 	if(!(nodes = realloc(pool->nodes, c0 * sizeof *pool->nodes))) return 0;
 	PT_(debug)(pool, "reserve", "nodes#%p[%lu] -> #%p[%lu].\n",
@@ -576,7 +584,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
  defined. For example, when iterating a pointer and new element is needed that
  could change the pointer.
  @param pool: If {pool} is null, returns null.
- @param iterator_ptr: Pointer to update on memory move.
+ @param update_ptr: Pointer to update on memory move.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}.
@@ -649,6 +657,7 @@ static int T_(PoolIsEmpty)(const struct T_(Pool) *const pool) {
  function; pass the {migrate} parameter.
  @order O({greatest size})
  @fixme Untested.
+ @fixme Migrate interface.
  @allow */
 static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
 	const PT_(Migrate) handler, const struct Migrate *const migrate) {
@@ -663,6 +672,7 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
  doesn't affect pointers not in the {realloc}ed region.
  @order \Omega(1)
  @fixme Untested.
+ @fixme Migrate interface.
  @allow */
 static void T_(PoolMigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
@@ -716,6 +726,7 @@ static void pool_super_cat(struct Pool_SuperCat *const cat,
  functionality.
  @return Prints {pool} in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
+ @fixme ToString interface.
  @allow */
 static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	static char buffer[4][256];
