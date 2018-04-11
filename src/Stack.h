@@ -46,12 +46,14 @@
  @since		2018-02 Made it like POOL.
 			2017-12 Changed STACK_PARENT for type-safety.
 			2017-11 Added STACK_PARENT.
-			2017-11 Forked from Pool. */
+			2017-11 Forked from Pool.
+ @fixme		Have initial setting. Check to make sure all the objects accept
+ array = 0; make array=0 the default state for simplicity. */
 
 
 
 #include <stddef.h>	/* ptrdiff_t */
-#include <stdlib.h>	/* malloc free qsort */
+#include <stdlib.h>	/* realloc free */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy (memmove strerror strcpy memcmp in StackTest.h) */
 #ifdef STACK_TO_STRING /* <-- print */
@@ -192,7 +194,10 @@ static const PT_(ToString) PT_(to_string) = (STACK_TO_STRING);
 struct T_(Stack);
 struct T_(Stack) {
 	T *array;
-	size_t capacity[2]; /* Fibonacci, [0] is the capacity, [1] is next. */
+	/* {array} -> {capacity} -> {c[0] < c[1] || c[0] == c[1] == max_size}.
+	 Fibonacci, [0] is the capacity, [1] is next. */
+	size_t capacity[2];
+	/* {nodes} ? {size <= capacity[0]} : {size == 0}. */
 	size_t size;
 };
 
@@ -225,12 +230,17 @@ static int PT_(reserve)(struct T_(Stack) *const stack,
 	assert(stack && stack->size <= stack->capacity[0]
 		&& stack->capacity[0] <= stack->capacity[1]);
 	if(stack->capacity[0] >= min_capacity) return 1;
-	if(max_size < min_capacity) return errno = ERANGE, 0; 
-	c0 = stack->capacity[0];
-	c1 = stack->capacity[1];
+	if(max_size < min_capacity) return errno = ERANGE, 0;
+	if(!stack->array) {
+		c0 = stack_fibonacci6;
+		c1 = stack_fibonacci7;
+	} else {
+		c0 = stack->capacity[0];
+		c1 = stack->capacity[1];
+	}
 	while(c0 < min_capacity) {
 		c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0;
-		if(c1 <= c0 || c1 > max_size) c1 = max_size;
+		if(c1 > max_size || c1 <= c0) c1 = max_size;
 	}
 	if(!(array = realloc(stack->array, c0 * sizeof *stack->array))) return 0;
 	PT_(debug)(stack, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
@@ -261,18 +271,17 @@ static int PT_(reserve)(struct T_(Stack) *const stack,
 	return 1;
 }
 
+/** Initialises {stack} to be empty and take no memory. */
 static void PT_(init)(struct T_(Stack) *const stack) {
 	assert(stack);
 	stack->array        = 0;
-	stack->capacity[0]  = stack_fibonacci6;
-	stack->capacity[1]  = stack_fibonacci7;
+	stack->capacity[0]  = 0;
+	stack->capacity[1]  = 0;
 	stack->size         = 0;
 }
 
-/** Destructor for {Stack}. Make sure that the stack's contents will not be
- accessed anymore.
- @param pthis: A reference to the object that is to be deleted; it will be set
- to null. If it is already null or it points to null, doesn't do anything.
+/** Destructor for {Stack}.
+ @param stack: If null or empty, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(Stack_)(struct T_(Stack) *const stack) {
@@ -282,21 +291,14 @@ static void T_(Stack_)(struct T_(Stack) *const stack) {
 	PT_(init)(stack);
 }
 
-/** Initialises {stack} to an empty {Stack} with capacity Fibonacci6,
- which is 8, and attempts to allocate that much space.
- @param stack: If null, returns false.
- @return Success or {errno} may be set. Whatever happens, {stack} will be in a
- valid state.
- @throws {malloc} errors: {IEEE Std 1003.1-2001}.
+/** Initialises {stack} to an empty {Stack}.
+ @param stack: If null, does nothing.
  @order \Theta(1)
  @allow */
-static int T_(Stack)(struct T_(Stack) *const stack) {
-	if(!stack) return 0;
+static void T_(Stack)(struct T_(Stack) *const stack) {
+	if(!stack) return;
 	PT_(init)(stack);
-	if(!(stack->array = malloc(stack->capacity[0] * sizeof *stack->array)))
-		return 0; /* ENOMEM? */
 	PT_(debug)(stack, "New", "capacity %d.\n", stack->capacity[0]);
-	return 1;
 }
 
 /** @param stack: If null, returns zero.
@@ -312,7 +314,7 @@ static size_t T_(StackGetSize)(const struct T_(Stack) *const stack) {
  {Stack} may invalidate this pointer.
  @param stack: If {stack} is null, returns null.
  @param idx: Index.
- @return Success, otherwise {errno} will be set.
+ @return The element, otherwise {errno} will be set if {stack} is non-null.
  @throws EDOM: {idx} out of bounds.
  @order \Theta(1)
  @allow */
@@ -323,6 +325,7 @@ static T *T_(StackGetElement)(struct T_(Stack) *const stack, const size_t idx) {
 }
 
 /** Gets an index given an {element}.
+ @param stack: If it is not a {Stack} or null, behaviour is undefined.
  @param element: If the element is not part of the {Stack}, behaviour is
  undefined.
  @return An index.
@@ -383,6 +386,7 @@ static int T_(StackReserve)(struct T_(Stack) *const stack,
 static T *T_(StackNew)(struct T_(Stack) *const stack) {
 	T *elem;
 	if(!stack) return 0;
+	if(sizeof(T) == 1 && stack->size == (size_t)-1) { errno = ERANGE; return 0;}
 	if(!PT_(reserve)(stack, stack->size + 1, 0)) return 0; /* ERANGE, ENOMEM? */
 	elem = stack->array + stack->size++;
 	PT_(debug)(stack, "New", "added.\n");
@@ -390,9 +394,9 @@ static T *T_(StackNew)(struct T_(Stack) *const stack) {
 }
 
 /** Gets an uninitialised new element and updates the {update_ptr} if it is
- within the memory region that was changed. Must have {STACK_UPDATE} defined.
+ within the memory region that was changed.
  @param stack: If {stack} is null, returns null.
- @param iterator_ptr: Pointer to update on migration.
+ @param update_ptr: Pointer to update on memory move.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}.
@@ -408,8 +412,9 @@ static T *T_(StackUpdateNew)(struct T_(Stack) *const stack,
 	return stack->array + stack->size++;
 }
 
-/** Removes all data from {stack}.
- @param stack: if null, does nothing.
+/** Removes all data from {stack}. Leaves the stack memory alone; if one wants
+ to remove memory, see \see{Stack_}.
+ @param stack: If null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(StackClear)(struct T_(Stack) *const stack) {
@@ -423,6 +428,7 @@ static void T_(StackClear)(struct T_(Stack) *const stack) {
  @param stack, action: If null, does nothing.
  @order O({size} \times {action})
  @fixme Untested.
+ @fixme Sequence interface.
  @allow */
 static void T_(StackForEach)(struct T_(Stack) *const stack,
 	const PT_(Action) action) {
@@ -436,7 +442,7 @@ static void T_(StackForEach)(struct T_(Stack) *const stack,
  @param stack, action: If null, does nothing.
  @order O({size} \times {action})
  @fixme Untested.
- @fixme Have interface.
+ @fixme BiSequence interface.
  @allow */
 static void T_(StackBiForEach)(struct T_(Stack) *const stack,
 	const PT_(BiAction) biaction, void *const param) {
@@ -456,6 +462,7 @@ static void T_(StackBiForEach)(struct T_(Stack) *const stack,
  function; pass the {migrate} parameter.
  @order O({size})
  @fixme Untested.
+ @fixme Migrate interface.
  @allow */
 static void T_(StackMigrateEach)(struct T_(Stack) *const stack,
 	const PT_(Migrate) handler, const struct Migrate *const migrate) {
@@ -469,6 +476,7 @@ static void T_(StackMigrateEach)(struct T_(Stack) *const stack,
  It doesn't affect pointers not in the {realloc}ed region.
  @order \Omega(1)
  @fixme Untested.
+ @fixme Migrate interface.
  @allow */
 static void T_(StackMigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
@@ -522,6 +530,7 @@ static void stack_super_cat(struct Stack_SuperCat *const cat,
  functionality.
  @return Prints {stack} in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
+ @fixme ToString interface?
  @allow */
 static const char *T_(StackToString)(const struct T_(Stack) *const stack) {
 	static char buffer[4][256];

@@ -26,7 +26,7 @@ static void PT_(test_basic)(void) {
 	errno = 0;
 	for(i = 0; i < test_size; i++) PT_(filler)(test + i);
 	printf("Constructor:\n");
-	if(!T_(Stack)(&a)) perror("a"), assert(0);
+	T_(Stack)(&a);
 	assert(!T_(StackPop)(&a));
 	assert(!T_(StackPeek)(&a));
 	assert(!T_(StackGetElement)(&a, 0));
