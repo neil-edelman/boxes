@@ -29,7 +29,7 @@ static void PT_(test_basic)(void) {
 	T_(Stack)(&a);
 	assert(!T_(StackPop)(&a));
 	assert(!T_(StackPeek)(&a));
-	assert(!T_(StackGetElement)(&a, 0));
+	assert(!T_(StackElement)(&a, 0));
 	printf("(Deliberate) error: %s.\n", strerror(errno));
 	assert(errno == EDOM);
 	errno = 0;
@@ -38,7 +38,7 @@ static void PT_(test_basic)(void) {
 	assert(!errno);
 	assert(!T_(StackPop)(&a));
 	assert(!T_(StackPeek)(&a));
-	assert(!T_(StackGetElement)(&a, 0));
+	assert(!T_(StackElement)(&a, 0));
 	printf("(Deliberate) error: %s.\n", strerror(errno));
 	assert(errno == EDOM);
 	errno = 0;
@@ -49,6 +49,11 @@ static void PT_(test_basic)(void) {
 		assert(testp);
 		memcpy(testp, test + i, sizeof *test);
 	}
+
+	printf("Iterating.\n");
+	testp = 0, i = 0;
+	while((testp = T_(StackNext)(&a, testp))) i++;
+	assert(i == T_(StackSize)(&a) && i == test_size);
 
 	printf("Remove last:\n");
 	if(!(testp = T_(StackPop)(&a))) {

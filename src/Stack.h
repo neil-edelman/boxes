@@ -305,7 +305,7 @@ static void T_(Stack)(struct T_(Stack) *const stack) {
  @return The current size of the stack.
  @order \Theta(1)
  @allow */
-static size_t T_(StackGetSize)(const struct T_(Stack) *const stack) {
+static size_t T_(StackSize)(const struct T_(Stack) *const stack) {
 	if(!stack) return 0;
 	return stack->size;
 }
@@ -318,7 +318,7 @@ static size_t T_(StackGetSize)(const struct T_(Stack) *const stack) {
  @throws EDOM: {idx} out of bounds.
  @order \Theta(1)
  @allow */
-static T *T_(StackGetElement)(struct T_(Stack) *const stack, const size_t idx) {
+static T *T_(StackElement)(struct T_(Stack) *const stack, const size_t idx) {
 	if(!stack) return 0;
 	if(idx >= stack->size) { errno = EDOM; return 0; }
 	return stack->array + idx;
@@ -331,8 +331,8 @@ static T *T_(StackGetElement)(struct T_(Stack) *const stack, const size_t idx) {
  @return An index.
  @order \Theta(1)
  @allow */
-static size_t T_(StackGetIndex)(struct T_(Stack) *const stack,
-		const T *const element) {
+static size_t T_(StackIndex)(struct T_(Stack) *const stack,
+	const T *const element) {
 	return element - stack->array;
 }
 
@@ -355,6 +355,20 @@ static T *T_(StackPeek)(const struct T_(Stack) *const stack) {
 static T *T_(StackPop)(struct T_(Stack) *const stack) {
 	if(!stack || !stack->size) return 0;
 	return stack->array + --stack->size;
+}
+
+/** Provides a way to iterate through the stack.
+ @param stack: If null, returns null.
+ @param prev: Set it to null to start the iteration.
+ @return A pointer to the next element or null if there are no more. If you add
+ to the stack, the pointer becomes invalid.
+ @order \Theta(1)
+ @allow */
+static T *T_(StackNext)(struct T_(Stack) *const stack, T *const prev) {
+	if(!stack || !stack->size) return 0;
+	if(!prev) return stack->array;
+	if((size_t)(prev - stack->array) + 1 >= stack->size) return 0;
+	return prev + 1;
 }
 
 /** Increases the capacity of this Stack to ensure that it can hold at least
@@ -575,11 +589,12 @@ static void PT_(unused_coda)(void);
 static void PT_(unused_set)(void) {
 	T_(Stack_)(0);
 	T_(Stack)(0);
-	T_(StackGetSize)(0);
-	T_(StackGetElement)(0, 0);
-	T_(StackGetIndex)(0, 0);
+	T_(StackSize)(0);
+	T_(StackElement)(0, 0);
+	T_(StackIndex)(0, 0);
 	T_(StackPeek)(0);
 	T_(StackPop)(0);
+	T_(StackNext)(0, 0);
 	T_(StackReserve)(0, 0);
 	T_(StackNew)(0);
 	T_(StackUpdateNew)(0, 0);
