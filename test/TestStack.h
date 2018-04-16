@@ -29,7 +29,7 @@ static void PT_(test_basic)(void) {
 	T_(Stack)(&a);
 	assert(!T_(StackPop)(&a));
 	assert(!T_(StackPeek)(&a));
-	assert(!T_(StackElement)(&a, 0));
+	assert(!T_(StackGet)(&a, 0));
 	printf("(Deliberate) error: %s.\n", strerror(errno));
 	assert(errno == EDOM);
 	errno = 0;
@@ -38,7 +38,7 @@ static void PT_(test_basic)(void) {
 	assert(!errno);
 	assert(!T_(StackPop)(&a));
 	assert(!T_(StackPeek)(&a));
-	assert(!T_(StackElement)(&a, 0));
+	assert(!T_(StackGet)(&a, 0));
 	printf("(Deliberate) error: %s.\n", strerror(errno));
 	assert(errno == EDOM);
 	errno = 0;

@@ -318,7 +318,7 @@ static size_t T_(StackSize)(const struct T_(Stack) *const stack) {
  @throws EDOM: {idx} out of bounds.
  @order \Theta(1)
  @allow */
-static T *T_(StackElement)(struct T_(Stack) *const stack, const size_t idx) {
+static T *T_(StackGet)(struct T_(Stack) *const stack, const size_t idx) {
 	if(!stack) return 0;
 	if(idx >= stack->size) { errno = EDOM; return 0; }
 	return stack->array + idx;
@@ -590,7 +590,7 @@ static void PT_(unused_set)(void) {
 	T_(Stack_)(0);
 	T_(Stack)(0);
 	T_(StackSize)(0);
-	T_(StackElement)(0, 0);
+	T_(StackGet)(0, 0);
 	T_(StackIndex)(0, 0);
 	T_(StackPeek)(0);
 	T_(StackPop)(0);
