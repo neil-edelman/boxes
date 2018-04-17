@@ -30,9 +30,6 @@
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>StackToString}.
 
- @param STACK_DEBUG
- Prints information to {stderr}. Requires {STACK_TO_STRING}.
-
  @param STACK_TEST
  Unit testing framework using {<T>StackTest}, included in a separate
  header, {../test/StackTest.h}. Must be defined equal to a (random) filler
@@ -60,9 +57,6 @@
 #include <stdio.h>	/* snprintf */
 #endif /* print --> */
 #include <errno.h>	/* errno */
-#ifdef STACK_DEBUG
-#include <stdarg.h>	/* for debug print */
-#endif /* calls --> */
 
 
 
@@ -73,8 +67,8 @@
 #ifndef STACK_TYPE
 #error Stack generic STACK_TYPE undefined.
 #endif
-#if (defined(STACK_DEBUG) || defined(STACK_TEST)) && !defined(STACK_TO_STRING)
-#error Stack: STACK_DEBUG and STACK_TEST require STACK_TO_STRING.
+#if defined(STACK_TEST) && !defined(STACK_TO_STRING)
+#error Stack: STACK_TEST requires STACK_TO_STRING.
 #endif
 #if !defined(STACK_TEST) && !defined(NDEBUG)
 #define STACK_NDEBUG
@@ -83,9 +77,8 @@
 
 
 
-/* After this block, the preprocessor replaces T with STACK_TYPE, T_(X) with
- STACK_NAMEX, PT_(X) with STACK_U_NAME_X, and T_NAME with the string
- version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
+/* Generics using the preprocessor;
+ \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -113,24 +106,12 @@
 #ifdef PT_
 #undef PT_
 #endif
-#ifdef T_NAME
-#undef T_NAME
-#endif
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(STACK_NAME, thing)
 #define PT_(thing) PCAT(stack, PCAT(STACK_NAME, thing))
-#define T_NAME QUOTE(STACK_NAME)
 
 /* Troubles with this line? check to ensure that {STACK_TYPE} is a valid type,
  whose definition is placed above {#include "Stack.h"}. */
@@ -159,10 +140,20 @@ struct Migrate {
 
 
 
-/** This is the migrate function for {<T>}. This definition is about the
- {STACK_TYPE} type, that is, it is without the prefix {Stack}; to avoid
- namespace collisions, this is private, meaning the name is mangled. If you
- want this definition, re-declare it. */
+/** The stack. To instantiate, see \see{<T>Stack}. */
+struct T_(Stack);
+struct T_(Stack) {
+	T *array;
+	/* {array} -> {capacity} -> {c[0] < c[1] || c[0] == c[1] == max_size}.
+	 Fibonacci, [0] is the capacity, [1] is next. */
+	size_t capacity[2];
+	/* {nodes} ? {size <= capacity[0]} : {size == 0}. */
+	size_t size;
+};
+
+
+
+/** This is the migrate function for {<T>}. */
 typedef void (*PT_(Migrate))(T *const data,
 	const struct Migrate *const migrate);
 #ifdef STACK_MIGRATE_EACH /* <-- each */
@@ -171,10 +162,7 @@ typedef void (*PT_(Migrate))(T *const data,
 static const PT_(Migrate) PT_(migrate_each) = (STACK_MIGRATE_EACH);
 #endif /* each --> */
 
-/** Operates by side-effects only. This definition is about the {STACK_NAME}
- type, that is, it is without the prefix {Stack}; to avoid namespace
- collisions, this is private, meaning the name is mangled. If you want this
- definition, re-declare it as {<T>Action}. */
+/** Operates by side-effects only. */
 typedef void (*PT_(Action))(T *const element);
 
 /** Operates by side-effects only. */
@@ -189,34 +177,6 @@ static const PT_(ToString) PT_(to_string) = (STACK_TO_STRING);
 #endif /* string --> */
 
 
-
-/** The stack. To instantiate, see \see{<T>Stack}. */
-struct T_(Stack);
-struct T_(Stack) {
-	T *array;
-	/* {array} -> {capacity} -> {c[0] < c[1] || c[0] == c[1] == max_size}.
-	 Fibonacci, [0] is the capacity, [1] is next. */
-	size_t capacity[2];
-	/* {nodes} ? {size <= capacity[0]} : {size == 0}. */
-	size_t size;
-};
-
-
-
-/** Debug messages from stack functions; turn on using {STACK_DEBUG}. */
-static void PT_(debug)(struct T_(Stack) *const stack,
-	const char *const fn, const char *const fmt, ...) {
-#ifdef STACK_DEBUG
-	/* \url{ http://c-faq.com/varargs/vprintf.html } */
-	va_list argp;
-	fprintf(stderr, "Stack<" T_NAME ">#%p.%s: ", (void *)stack, fn);
-	va_start(argp, fmt);
-	vfprintf(stderr, fmt, argp);
-	va_end(argp);
-#else
-	(void)(stack), (void)(fn), (void)(fmt);
-#endif
-}
 
 /** Ensures capacity.
  @return Success.
@@ -243,9 +203,6 @@ static int PT_(reserve)(struct T_(Stack) *const stack,
 		if(c1 > max_size || c1 <= c0) c1 = max_size;
 	}
 	if(!(array = realloc(stack->array, c0 * sizeof *stack->array))) return 0;
-	PT_(debug)(stack, "reserve", "array#%p[%lu] -> #%p[%lu].\n",
-		(void *)stack->array, (unsigned long)stack->capacity[0], (void *)array,
-		(unsigned long)c0);
 	if(stack->array != array) {
 		/* Migrate parent class. Violates pedantic strict-ANSI? */
 		struct Migrate migrate;
@@ -286,7 +243,6 @@ static void PT_(init)(struct T_(Stack) *const stack) {
  @allow */
 static void T_(Stack_)(struct T_(Stack) *const stack) {
 	if(!stack) return;
-	PT_(debug)(stack, "Delete", "erasing.\n");
 	free(stack->array);
 	PT_(init)(stack);
 }
@@ -298,7 +254,6 @@ static void T_(Stack_)(struct T_(Stack) *const stack) {
 static void T_(Stack)(struct T_(Stack) *const stack) {
 	if(!stack) return;
 	PT_(init)(stack);
-	PT_(debug)(stack, "New", "capacity %d.\n", stack->capacity[0]);
 }
 
 /** @param stack: If null, returns zero.
@@ -384,8 +339,6 @@ static int T_(StackReserve)(struct T_(Stack) *const stack,
 	const size_t min_capacity) {
 	if(!stack) return 0;
 	if(!PT_(reserve)(stack, min_capacity, 0)) return 0; /* ERANGE, ENOMEM? */
-	PT_(debug)(stack, "Reserve", "stack stack size to %u to contain %u.\n",
-		stack->capacity[0], min_capacity);
 	return 1;
 }
 
@@ -403,7 +356,6 @@ static T *T_(StackNew)(struct T_(Stack) *const stack) {
 	if(sizeof(T) == 1 && stack->size == (size_t)-1) { errno = ERANGE; return 0;}
 	if(!PT_(reserve)(stack, stack->size + 1, 0)) return 0; /* ERANGE, ENOMEM? */
 	elem = stack->array + stack->size++;
-	PT_(debug)(stack, "New", "added.\n");
 	return elem;
 }
 
@@ -422,7 +374,6 @@ static T *T_(StackUpdateNew)(struct T_(Stack) *const stack,
 	if(!stack) return 0;
 	if(!PT_(reserve)(stack, stack->size + 1, update_ptr))
 		return 0; /* ERANGE, ENOMEM? */
-	PT_(debug)(stack, "New", "added.\n");
 	return stack->array + stack->size++;
 }
 
@@ -434,7 +385,6 @@ static T *T_(StackUpdateNew)(struct T_(Stack) *const stack,
 static void T_(StackClear)(struct T_(Stack) *const stack) {
 	if(!stack) return;
 	stack->size = 0;
-	PT_(debug)(stack, "Clear", "cleared.\n");
 }
 
 /** Iterates though the {Stack} from the bottom and calls {action} on all the
@@ -621,9 +571,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T
 #undef T_
 #undef PT_
-#undef T_NAME
-#undef QUOTE
-#undef QUOTE_
 #ifdef P
 #undef P
 #endif
@@ -634,9 +581,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif
 #ifdef STACK_TO_STRING
 #undef STACK_TO_STRING
-#endif
-#ifdef STACK_DEBUG
-#undef STACK_DEBUG
 #endif
 #ifdef STACK_TEST
 #undef STACK_TEST

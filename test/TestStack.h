@@ -1,5 +1,21 @@
 /* intended to be included by Stack.h on STACK_TYPE_FILLER */
 
+/* Define macros. */
+#ifdef QUOTE
+#undef QUOTE
+#endif
+#ifdef QUOTE_
+#undef QUOTE_
+#endif
+#ifdef T_NAME
+#undef T_NAME
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+#define T_NAME QUOTE(STACK_NAME)
+
+
+
 /* prototype */
 static void T_(StackTest)(void);
 static void PT_(test_basic)(void);
@@ -129,11 +145,13 @@ static void T_(StackTest)(void) {
 #ifdef STACK_TEST
 		"STACK_TEST<" QUOTE(STACK_TEST) ">; "
 #endif
-#ifdef STACK_DEBUG
-		"DEBUG; "
-#endif
 		"testing:\n");
 	PT_(test_basic)();
 	PT_(test_random)();
 	fprintf(stderr, "Done tests of Stack<" T_NAME ">.\n\n");
 }
+
+/* Un-define all macros. */
+#undef QUOTE
+#undef QUOTE_
+#undef T_NAME
