@@ -4,6 +4,20 @@
 
 #include <stdlib.h>	/* EXIT_SUCCESS rand */
 
+/* Define macros. */
+#ifdef QUOTE
+#undef QUOTE
+#endif
+#ifdef QUOTE_
+#undef QUOTE_
+#endif
+#ifdef T_NAME
+#undef T_NAME
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+#define T_NAME QUOTE(LIST_NAME)
+
 
 
 /* prototype */
@@ -258,9 +272,17 @@ static int PT_(exactly_unordered)(struct T_(List) *const this,
 
 
 
-#else /* !LIST_U_NAME --><-- LIST_U_NAME */
+/* Un-define all macros. */
+#undef QUOTE
+#undef QUOTE_
+#undef T_NAME
 
 
+
+
+
+#else /* !LIST_U_NAME --><-- LIST_U_NAME
+ Internally #included. */
 
 #ifdef PT_U_
 #undef PT_U_

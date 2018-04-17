@@ -1,16 +1,15 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>List} is an abstract data structure requiring {<T>ListNode} storage; one
- can possibly store this as a sub-structure of larger, possibly different data.
- Provides \see{<T>ListNodeMigrate} for self-referencing pointers that change as
- the result of a memory relocation.
+ {<T>List} is a doubly-linked-list of {<T>ListNode}, of which data of type,
+ {<T>}, must be set using {LIST_TYPE}. This is an abstract data structure
+ requiring {<T>ListNode} storage, and can possibly store this as a
+ sub-structure of larger data-type. Provides \see{<T>ListNodeMigrate} for
+ self-referencing pointers that change as the result of a memory relocation
+ within the list.
 
- This is a doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},) of which
- data of type, {<T>}, must be set using {LIST_TYPE}. Supports one to four
- different orders in the same type. The preprocessor macros are all undefined
- at the end of the file for convenience. Identifiers starting with {LIST_*} and
- {list_*} are reserved.
+ Supports one to four different orders in the same type. The preprocessor
+ macros are all undefined at the end of the file for convenience.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith;
@@ -41,16 +40,18 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	2018-02 Eliminated the need for unnecessarily {<T>List}.
-			Now you must initialise static variables with {<T>ListClear}.
+ @version	2018-04 Two dynanic memory allocations have been collapsed into one;
+			one know the size, anyway, might as well make it a non-pointer.
+ @since		2018-02 Eliminated the need for unnecessarily {<T>List}.
+			Now one must initialise static variables with {<T>ListClear}.
 			Eliminated {LIST_STATIC_SORT}.
- @since		2017-12 Type information on backing.
+			2017-12 Type information on backing.
 			2017-10 Anonymous orders.
 			2017-07 Made migrate simpler.
 			2017-06 Split Add into Push and Unshift.
 			2017-05 Separated from backing.
  @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
- {assert} bug on {LIST_TEST}.
+ {assert} warnings on {LIST_TEST}.
  @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
  uhm, thanks?; 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info;
  4996 not {C++11}.
@@ -78,11 +79,11 @@
 
 
 
-#include <stddef.h>	/* ptrdiff_t offset_of */
-#include <assert.h>	/* assert */
+#include <stddef.h> /* ptrdiff_t offset_of */
+#include <assert.h> /* assert */
 #ifdef LIST_TO_STRING /* <-- print */
-#include <stdio.h>	/* sprintf */
-#include <string.h>	/* strlen */
+#include <stdio.h>  /* sprintf */
+#include <string.h> /* strlen */
 #endif /* print --> */
 
 
@@ -119,25 +120,22 @@
 #error List: LIST_COMPARATOR can only be anonymous; use LIST_U[A-D]_COMPARATOR.
 #endif
 #endif /* !anon --> */
-#if defined(LIST_TEST) && !defined(LIST_TO_STRING)
+#if defined(LIST_TEST) && !defined(LIST_TO_STRING) /* <-- error */
 #error LIST_TEST requires LIST_TO_STRING.
-#endif
-#if !defined(LIST_TEST) && !defined(NDEBUG)
+#endif /* error --> */
+#if !defined(LIST_TEST) && !defined(NDEBUG) /* <-- !assert */
 #define LIST_NDEBUG
 #define NDEBUG
-#endif
+#endif /* !assert --> */
 #if defined(LIST_UA_COMPARATOR) || defined(LIST_UB_COMPARATOR) \
-	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR)
+	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR) /* <-- some */
 #define LIST_SOME_COMPARATOR
-#endif
+#endif /* some --> */
 
 
 
-
-
-/* After this block, the preprocessor replaces T with LIST_TYPE, T_(X) with
- LIST_NAMEX, PT_(X) with LIST_U_NAME_X, and T_NAME with the string
- version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
+/* Generics using the preprocessor;
+ \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -159,24 +157,12 @@
 #ifdef PT_
 #undef PT_
 #endif
-#ifdef T_NAME
-#undef T_NAME
-#endif
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(LIST_NAME, thing)
 #define PT_(thing) PCAT(list, PCAT(LIST_NAME, thing)) /* {private <T>} */
-#define T_NAME QUOTE(LIST_NAME)
 
 /* Troubles with this line? check to ensure that {LIST_TYPE} is a valid type,
  whose definition is placed above {#include "List.h"}. */
@@ -275,6 +261,8 @@ struct Migrate {
 };
 #endif /* migrate --> */
 
+
+
 /* Private list position. */
 struct PT_(X) {
 #ifdef LIST_UA_NAME
@@ -309,9 +297,9 @@ struct T_(List) {
 	 from everything else and reduces the number of arguments that we have to
 	 pass. \see{<T>ListSelfCorrect} uses the fact that {head} and {tail} are
 	 packed to determine whether a list is empty, therefore, {head, tail}
-	 cannot be separated or reversed; furthermore, you cannot have
+	 cannot be separated or reversed; furthermore, one cannot have
 	 {sizeof data == 0} and call \see{<T>ListSelfCorrect}, though I don't see
-	 how you could do that. */
+	 how one could do that. */
 	struct PT_(X) head, tail;
 };
 
@@ -319,7 +307,7 @@ struct T_(List) {
 
 /** Takes {<T>}; used in \see{<T>List<U>ForEach}. This definition is about the
  {LIST_NAME} type, that is, it is without the prefix {List}; to avoid namespace
- collisions, this is private, meaning the name is mangled. If you want this
+ collisions, this is private, meaning the name is mangled. If one want this
  definition, re-declare it. */
 typedef void (*PT_(Action))(T *const);
 
@@ -841,9 +829,6 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 #undef T
 #undef T_
 #undef PT_
-#undef T_NAME
-#undef QUOTE
-#undef QUOTE_
 #ifdef LIST_TO_STRING
 #undef LIST_TO_STRING
 #endif
@@ -911,13 +896,7 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
  @param LIST_U_NAME: A unique name of the linked list; required;
  @param LIST_U_COMPARATOR: an optional comparator. */
 
-
-
-
-
-/* After this block, the preprocessor replaces T_U_(X, Y) with
- LIST_NAMEXLIST_U_NAMEY, PT_U_(X, Y) with
- list_LIST_U_NAME_X_LIST_U_NAME_Y */
+/* Generics using the preprocessor. */
 #ifdef T_U_
 #undef T_U_
 #endif
