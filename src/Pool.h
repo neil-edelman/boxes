@@ -40,9 +40,6 @@
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>PoolToString}.
 
- @param POOL_DEBUG
- Prints information to {stderr}. Requires {POOL_TO_STRING}.
-
  @param POOL_TEST
  Unit testing framework using {<T>PoolTest}, included in a separate header,
  {../test/PoolTest.h}. Must be defined equal to a (random) filler function,
@@ -52,8 +49,9 @@
  @title		Pool.h
  @std		C89
  @author	Neil
- @version	2018-02 Errno instead of custom errors.
- @since		2017-12 Introduced {POOL_PARENT} for type-safety.
+ @version	2018-04 Why have an extra level of indirection?
+ @since		2018-02 Errno instead of custom errors.
+			2017-12 Introduced {POOL_PARENT} for type-safety.
 			2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
 			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
@@ -65,28 +63,25 @@
 
 
 #include <stddef.h>	/* ptrdiff_t */
-#include <stdlib.h>	/* malloc realloc free qsort */
+#include <stdlib.h>	/* realloc free */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy (memmove strerror strcpy memcmp in PoolTest.h) */
 #include <errno.h>	/* errno */
 #ifdef POOL_TO_STRING /* <-- print */
 #include <stdio.h>	/* snprintf */
 #endif /* print --> */
-#ifdef POOL_DEBUG /* <-- debug */
-#include <stdarg.h>	/* for print debug */
-#endif /* debug --> */
 
 
 
 /* Check defines. */
-#ifndef POOL_NAME
+#ifndef POOL_NAME /* <-- error */
 #error Pool generic POOL_NAME undefined.
-#endif
-#ifndef POOL_TYPE
+#endif /* error --> */
+#ifndef POOL_TYPE /* <-- error */
 #error Pool generic POOL_TYPE undefined.
-#endif
-#if (defined(POOL_DEBUG) || defined(POOL_TEST)) && !defined(POOL_TO_STRING)
-#error Pool: POOL_DEBUG and POOL_TEST require POOL_TO_STRING.
+#endif /* --> */
+#if defined(POOL_TEST) && !defined(POOL_TO_STRING)
+#error Pool: POOL_TEST requires POOL_TO_STRING.
 #endif
 #if !defined(POOL_TEST) && !defined(NDEBUG)
 #define POOL_NDEBUG
@@ -255,21 +250,6 @@ static struct PT_(Node) *PT_(node_hold_data)(T *const data) {
 		((char *)data - offsetof(struct PT_(Node), data));
 }
 
-/** Debug messages from pool functions; turn on using {POOL_DEBUG}. */
-static void PT_(debug)(struct T_(Pool) *const pool,
-	const char *const fn, const char *const fmt, ...) {
-#ifdef POOL_DEBUG
-	/* \url{ http://c-faq.com/varargs/vprintf.html } */
-	va_list argp;
-	fprintf(stderr, "Pool<" T_NAME ">#%p.%s: ", (void *)pool, fn);
-	va_start(argp, fmt);
-	vfprintf(stderr, fmt, argp);
-	va_end(argp);
-#else
-	(void)(pool), (void)(fn), (void)(fmt);
-#endif
-}
-
 /* * Ensures capacity.
  @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
@@ -302,9 +282,6 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		if(c1 > max_size || c1 <= c0) c1 = max_size;
 	}
 	if(!(nodes = realloc(pool->nodes, c0 * sizeof *pool->nodes))) return 0;
-	PT_(debug)(pool, "reserve", "nodes#%p[%lu] -> #%p[%lu].\n",
-		(void *)pool->nodes, (unsigned long)pool->capacity[0], (void *)nodes,
-		(unsigned long)c0);
 #if defined(POOL_MIGRATE_EACH) || defined(POOL_MIGRATE_ALL) \
 	|| defined(POOL_MIGRATE_UPDATE) /* <-- migrate */
 	if(pool->nodes != nodes) {
@@ -313,7 +290,6 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		migrate.begin = pool->nodes;
 		migrate.end   = (const char *)pool->nodes + pool->size * sizeof *nodes;
 		migrate.delta = (const char *)nodes - (const char *)pool->nodes;
-		PT_(debug)(pool, "reserve", "calling migrate.\n");
 #ifdef POOL_MIGRATE_EACH /* <-- each: Self-referential data. */
 		{
 			struct PT_(Node) *e, *end;
@@ -427,7 +403,6 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 static void T_(Pool_)(struct T_(Pool) **const ppool) {
 	struct T_(Pool) *pool;
 	if(!ppool || !(pool = *ppool)) return;
-	PT_(debug)(pool, "Delete", "erasing.\n");
 	free(pool->nodes);
 	free(pool);
 	*ppool = 0;
@@ -446,7 +421,6 @@ static struct T_(Pool) *PT_(pool)(void) {
 	pool->removed.prev = pool->removed.next = pool_null;
 	if(!(pool->nodes = malloc(pool->capacity[0] * sizeof *pool->nodes)))
 		{ T_(Pool_)(&pool); return 0; }
-	PT_(debug)(pool, "New", "capacity %d.\n", pool->capacity[0]);
 	return pool;
 }
 
@@ -547,8 +521,6 @@ static int T_(PoolReserve)(struct T_(Pool) *const pool,
 		, 0
 #endif /* update --> */
 		)) return 0; /* ERANGE, ENOMEM? */
-	PT_(debug)(pool, "Reserve", "pool size to %u to contain %u.\n",
-		pool->capacity[0], min_capacity);
 	return 1;
 }
 
@@ -572,7 +544,6 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
 		node = pool->nodes + pool->size++;
 		node->x.prev = node->x.next = pool_void;
 	}
-	PT_(debug)(pool, "New", "added.\n");
 	return &node->data;
 }
 
@@ -599,7 +570,6 @@ static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool,
 		node = pool->nodes + pool->size++;
 		node->prev = node->next = pool_void;
 	}
-	PT_(debug)(pool, "New", "added.\n");
 	return &node->data;
 }
 #endif /* update --> */
@@ -620,7 +590,6 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 		return errno = EDOM, 0;
 	PT_(enqueue_removed)(pool, n);
 	if(n >= pool->size - 1) PT_(trim_removed)(pool);
-	PT_(debug)(pool, "Remove", "removing %lu.\n", (unsigned long)n);
 	return 1;
 }
 
@@ -632,7 +601,6 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	if(!pool) return;
 	pool->size = 0;
 	pool->removed.prev = pool->removed.next = pool_null;
-	PT_(debug)(pool, "Clear", "cleared.\n");
 }
 
 /** @param pool: If null, returns false.
@@ -825,9 +793,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif
 #ifdef POOL_TO_STRING
 #undef POOL_TO_STRING
-#endif
-#ifdef POOL_DEBUG
-#undef POOL_DEBUG
 #endif
 #ifdef POOL_TEST
 #undef POOL_TEST
