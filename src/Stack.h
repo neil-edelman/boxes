@@ -4,14 +4,12 @@
  {<T>Stack} is a dynamic array that stores unordered {<T>} in a stack, which
  must be set using {STACK_TYPE}. This is the most basic variable array; the
  array is packed, with no other extraneous information. Use when one needs a
- non-polymorphic simply accessable dynamic memory store. Indices will remain
- the same throughout the lifetime of the data, but expanding the data may
- change the pointers. You cannot shrink the capacity of this data type, only
- cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
- sequence.
-
- {<T>Stack} is not synchronised. The preprocessor macros are all undefined at
- the end of the file for convenience.
+ simply accessable dynamic memory store that only allows adding and deleting at
+ the top. Indices will remain the same throughout the lifetime of the data, but
+ expanding the data may change the pointers. You cannot shrink the capacity of
+ this data type, only cause it to grow. Resizing incurs amortised cost, done
+ though a Fibonacci sequence. {<T>Stack} is not synchronised. The preprocessor
+ macros are all undefined at the end of the file for convenience.
 
  @param STACK_NAME
  This literally becomes {<T>}. As it's used in function names, this should
@@ -90,12 +88,6 @@
 #endif
 #ifdef PCAT_
 #undef PCAT_
-#endif
-#ifdef P
-#undef P
-#endif
-#ifdef U
-#undef U
 #endif
 #ifdef T
 #undef T
@@ -303,7 +295,7 @@ static T *T_(StackPeek)(const struct T_(Stack) *const stack) {
 
 /** Decreases the size of the stack.
  @return Value from the the top of the stack that is removed or null if the
- stack is empty. The pointer is valid until the stack gets bigger, and you may
+ stack is empty. The pointer is valid until the stack gets bigger, and one may
  need to duplicate it for permanent storage.
  @order \Theta(1)
  @allow */
@@ -315,7 +307,7 @@ static T *T_(StackPop)(struct T_(Stack) *const stack) {
 /** Provides a way to iterate through the stack.
  @param stack: If null, returns null.
  @param prev: Set it to null to start the iteration.
- @return A pointer to the next element or null if there are no more. If you add
+ @return A pointer to the next element or null if there are no more. If one add
  to the stack, the pointer becomes invalid.
  @order \Theta(1)
  @allow */
@@ -558,7 +550,7 @@ static void PT_(unused_set)(void) {
 #endif
 	PT_(unused_coda)();
 }
-/** {clang}'s pre-processor is not fooled if you have one function. */
+/** {clang}'s pre-processor is not fooled if one have one function. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
@@ -571,9 +563,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T
 #undef T_
 #undef PT_
-#ifdef P
-#undef P
-#endif
 #undef STACK_NAME
 #undef STACK_TYPE
 #ifdef STACK_MIGRATE_EACH
