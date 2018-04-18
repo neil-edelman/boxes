@@ -1,4 +1,4 @@
-/* intended to be included by Pool.h on POOL_TYPE_FILLER */
+/* Intended to be included by {Pool.h} on {POOL_TYPE_FILLER}. */
 
 /* Define macros. */
 #ifdef QUOTE

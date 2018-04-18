@@ -2,26 +2,27 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {<T>Pool} is a dynamic array that stores unordered {<T>} in a memory pool,
- which must be set using {POOL_TYPE}. Removing an element is done lazily
- through a linked-list internal to the pool; as such, indices will remain the
- same throughout the lifetime of the data. You cannot shrink the capacity of
- this data type, only cause it to grow. Resizing incurs amortised cost, done
- though a Fibonacci sequence. Intended for use in backing polymorphic
- data-types. {<T>Pool} is not synchronised. The preprocessor macros are all
- undefined at the end of the file for convenience.
+ which must be set using {POOL_TYPE}. You cannot shrink the capacity of this
+ data type, only cause it to grow. Resizing incurs amortised cost, done though
+ a Fibonacci sequence. {<T>Pool} is not synchronised. The preprocessor macros
+ are all undefined at the end of the file for convenience.
 
- @param POOL_NAME
- This literally becomes {<T>}. As it's used in function names, this should
- comply with naming rules and be unique; required.
+ @param POOL_NAME, POOL_TYPE
+ The name that literally becomes {<T>}, and a valid type associated therewith,
+ accessible to the compiler at the time of inclusion; should be conformant to
+ naming and to the maximum available length of identifiers. Must each be
+ present before including.
 
- @param POOL_TYPE
- The type associated with {<T>}. Has to be a valid type, accessible to the
- compiler at the time of inclusion; required.
+ @param POOL_STACK @fixme
+ Removing an element is normally done lazily through a linked-list internal to
+ the pool. With this defined, there is no such linked-list; the data will be
+ packed and one can only remove items by \see{<T>PoolPop}.
 
  @param POOL_MIGRATE_EACH
- Optional function implementing {<PT>Migrate}. On memory move, this definition
- will call {POOL_MIGRATE_EACH} with all {<T>} in {<T>Pool}. Use when your data
- is self-referential, like a linked-list.
+ Optional function implementing {<PT>Migrate}. Indices will remain the same
+ throughout the lifetime of the data, but pointers may change on {realloc}
+ expansion. This definition will call {POOL_MIGRATE_EACH} with all {<T>} in
+ {<T>Pool}. Use when your data is self-referential, like a linked-list.
 
  @param POOL_MIGRATE_ALL
  Optional type {<A>}. When one may have pointers to the data that is contained
@@ -32,9 +33,8 @@
  call \see{<T>MigratePointer} or some migrate function for all references.
 
  @param POOL_MIGRATE_UPDATE
- Optional type association with {<U>}. If set, the function
- \see{<T>PoolUpdateNew} becomes available, intended for a local iterator
- update on memory move.
+ Optional type association with {<S>}. {<S>} should be a super-type of {<T>}.
+ If not set, {<S>} is {<T>}. Used in \see{<T>PoolUpdateNew}.
 
  @param POOL_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
@@ -49,9 +49,11 @@
  @title		Pool.h
  @std		C89
  @author	Neil
- @version	2018-04 Why have an extra level of indirection?
- @since		2018-02 Errno instead of custom errors.
+ @version	2018-04 Merged {Stack} into {Pool} again; too much duplicate code.
+ @since		2018-03 Why have an extra level of indirection?
+			2018-02 Errno instead of custom errors.
 			2017-12 Introduced {POOL_PARENT} for type-safety.
+			2017-11 Forked {Stack} from {Pool}.
 			2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
 			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
@@ -75,24 +77,23 @@
 
 /* Check defines. */
 #ifndef POOL_NAME /* <-- error */
-#error Pool generic POOL_NAME undefined.
+#error Generic POOL_NAME undefined.
 #endif /* error --> */
 #ifndef POOL_TYPE /* <-- error */
-#error Pool generic POOL_TYPE undefined.
+#error Generic POOL_TYPE undefined.
 #endif /* --> */
-#if defined(POOL_TEST) && !defined(POOL_TO_STRING)
-#error Pool: POOL_TEST requires POOL_TO_STRING.
-#endif
-#if !defined(POOL_TEST) && !defined(NDEBUG)
+#if defined(POOL_TEST) && !defined(POOL_TO_STRING) /* <-- error */
+#error POOL_TEST requires POOL_TO_STRING.
+#endif /* error --> */
+#if !defined(POOL_TEST) && !defined(NDEBUG) /* <-- ndebug */
 #define POOL_NDEBUG
 #define NDEBUG
-#endif
+#endif /* ndebug --> */
 
 
 
-/* After this block, the preprocessor replaces T with POOL_TYPE, T_(X) with
- POOL_NAMEX, PT_(X) with POOL_U_NAME_X, and T_NAME with the string
- version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
+/* Generics using the preprocessor;
+ \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -108,8 +109,8 @@
 #ifdef A
 #undef A
 #endif
-#ifdef U
-#undef U
+#ifdef S
+#undef S
 #endif
 #ifdef T
 #undef T
@@ -119,15 +120,6 @@
 #endif
 #ifdef PT_
 #undef PT_
-#endif
-#ifdef T_NAME
-#undef T_NAME
-#endif
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
 #endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
@@ -174,10 +166,7 @@ struct Migrate {
 
 
 
-/** This is the migrate function for {<T>}. This definition is about the
- {POOL_TYPE} type, that is, it is without the prefix {Pool}; to avoid namespace
- collisions, this is private, meaning the name is mangled. If you want this
- definition, re-declare it. */
+/** This is the migrate function for {<T>}. */
 typedef void (*PT_(Migrate))(T *const data,
 	const struct Migrate *const migrate);
 #ifdef POOL_MIGRATE_EACH /* <-- each */
@@ -191,8 +180,7 @@ static const PT_(Migrate) PT_(migrate_each) = (POOL_MIGRATE_EACH);
  valid type, whose definition is placed above {#include "Pool.h"}. */
 typedef POOL_MIGRATE_ALL PT_(MigrateAllType);
 #define A PT_(MigrateAllType)
-/** Function call on {realloc} if {POOL_MIGRATE_ALL} is defined. This
- definition is about the {POOL_MIGRATE_ALL} type. */
+/** Function call on {realloc} if {POOL_MIGRATE_ALL} is defined. */
 typedef void (*PT_(MigrateAll))(A *const all,
 	const struct Migrate *const migrate);
 #endif /* all --> */
@@ -201,8 +189,10 @@ typedef void (*PT_(MigrateAll))(A *const all,
 /* Troubles with this line? check to ensure that {POOL_MIGRATE_UPDATE} is a
  valid type, whose definition is placed above {#include "Pool.h"}. */
 typedef POOL_MIGRATE_UPDATE PT_(MigrateUpdateType);
-#define U PT_(MigrateUpdateType)
-#endif /* update --> */
+#define S PT_(MigrateUpdateType)
+#else /* update --><-- !update */
+#define S PT_(Type)
+#endif /* !update --> */
 
 #ifdef POOL_TO_STRING /* <-- string */
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
@@ -223,7 +213,9 @@ typedef void (*PT_(Action))(T *const data);
 /* Pool nodes containing the data. */
 struct PT_(Node) {
 	T data;
+#ifndef POOL_STACK /* <-- !stack */
 	struct PoolX x;
+#endif /* !stack --> */
 };
 
 /** The pool. To instantiate, see \see{<T>Pool}. */
@@ -235,7 +227,9 @@ struct T_(Pool) {
 	size_t capacity[2];
 	/* {nodes} ? {size <= capacity[0]} : {size == 0}. Including removed. */
 	size_t size;
+#ifndef POOL_STACK /* <-- !stack */
 	struct PoolX removed;
+#endif /* !stack --> */
 #ifdef POOL_MIGRATE_ALL /* <-- all */
 	PT_(MigrateAll) migrate_all; /* Called to update on resizing. */
 	A *all; /* Migrate parameter. */
@@ -255,11 +249,7 @@ static struct PT_(Node) *PT_(node_hold_data)(T *const data) {
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
 static int PT_(reserve)(struct T_(Pool) *const pool,
-	const size_t min_capacity
-#ifdef POOL_MIGRATE_UPDATE /* <-- update */
-	, U **const update_ptr
-#endif /* update --> */
-	) {
+	const size_t min_capacity, S **const update_ptr) {
 	size_t c0, c1;
 	struct PT_(Node) *nodes;
 	const size_t max_size = pool_max / sizeof *nodes;
@@ -269,7 +259,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		&& pool->removed.next == pool->removed.prev
 		&& pool->removed.next == pool_null);
 	if(pool->capacity[0] >= min_capacity) return 1;
-	if(max_size < min_capacity) return errno = ERANGE, 0;
+	if(min_capacity > max_size) return errno = ERANGE, 0;
 	if(!pool->nodes) {
 		c0 = pool_fibonacci6;
 		c1 = pool_fibonacci7;
@@ -282,8 +272,6 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		if(c1 > max_size || c1 <= c0) c1 = max_size;
 	}
 	if(!(nodes = realloc(pool->nodes, c0 * sizeof *pool->nodes))) return 0;
-#if defined(POOL_MIGRATE_EACH) || defined(POOL_MIGRATE_ALL) \
-	|| defined(POOL_MIGRATE_UPDATE) /* <-- migrate */
 	if(pool->nodes != nodes) {
 		/* Migrate data; violates pedantic strict-ANSI? */
 		struct Migrate migrate;
@@ -300,26 +288,25 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 			}
 		}
 #endif /* each --> */
-#ifdef POOL_MIGRATE_ALL /* <-- all: Random references. */
+#ifdef POOL_MIGRATE_ALL /* <-- all: random references. */
 		if(pool->migrate_all) {
 			assert(pool->all);
 			pool->migrate_all(pool->all, &migrate);
 		}
 #endif /* all --> */
-#ifdef POOL_MIGRATE_UPDATE /* <-- update: Usually iterator. */
 		if(update_ptr) {
 			const void *const u = *update_ptr;
 			if(u >= migrate.begin && u < migrate.end)
 				*(char **const)update_ptr += migrate.delta;
 		}
-#endif /* update --> */
 	}
-#endif /* migrate --> */
 	pool->nodes = nodes;
 	pool->capacity[0] = c0;
 	pool->capacity[1] = c1;
 	return 1;
 }
+
+#ifndef POOL_STACK /* <-- !stack */
 
 /** We are very lazy and we just enqueue the removed so that later data can
  overwrite it.
@@ -394,104 +381,97 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 	}
 }
 
-/** Destructor for {Pool}. Make sure that the pool's contents will not be
- accessed anymore.
- @param ppool: A reference to the object that is to be deleted; it will be set
- to null. If it is already null or it points to null, doesn't do anything.
- @order \Theta(1)
- @allow */
-static void T_(Pool_)(struct T_(Pool) **const ppool) {
-	struct T_(Pool) *pool;
-	if(!ppool || !(pool = *ppool)) return;
-	free(pool->nodes);
-	free(pool);
-	*ppool = 0;
+#endif /* !stack --> */
+
+/** Initialises {pool} to be empty and take no memory. */
+static void PT_(pool)(struct T_(Pool) *const pool) {
+	assert(pool);
+	pool->nodes        = 0;
+	pool->capacity[0]  = 0;
+	pool->capacity[1]  = 0;
+	pool->size         = 0;
+#ifndef POOL_STACK /* <-- !stack */
+	pool->removed.prev = pool->removed.next = pool_null;
+#endif /* !stack --> */
 }
 
-/** Private constructor called from either \see{<T>Pool}.
- @throws {malloc} errors: {IEEE Std 1003.1-2001}. */
-static struct T_(Pool) *PT_(pool)(void) {
-	struct T_(Pool) *pool;
-	assert(pool_max < pool_null && pool_max < pool_void);
-	if(!(pool = malloc(sizeof *pool))) return 0;
-	pool->nodes        = 0;
-	pool->capacity[0]  = pool_fibonacci6;
-	pool->capacity[1]  = pool_fibonacci7;
-	pool->size         = 0;
-	pool->removed.prev = pool->removed.next = pool_null;
-	if(!(pool->nodes = malloc(pool->capacity[0] * sizeof *pool->nodes)))
-		{ T_(Pool_)(&pool); return 0; }
-	return pool;
+/** Destructor for {pool}. All the {pool} contents should not be accessed
+ anymore and the {pool} takes no memory.
+ @param pool: If null, does nothing.
+ @order \Theta(1)
+ @allow */
+static void T_(Pool_)(struct T_(Pool) *const pool) {
+	if(!pool) return;
+	free(pool->nodes);
+	PT_(pool)(pool);
 }
 
 #ifdef POOL_MIGRATE_ALL /* <-- all */
-/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8. This is
- the constructor if {POOL_MIGRATE_ALL} is specified.
+/** Initialises {pool} to be empty. This is the constructor if
+ {POOL_MIGRATE_ALL} is specified.
+ @param pool: If null, does nothing.
  @param migrate_all: The general {<PT>MigrateAll} function.
- @param all: The general migrate parameter; required if {migrate_all} is
- specified.
- @return A new {Pool} or null and {errno} may be set.
- @throws ERANGE: If one and not the other arguments is null.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}.
+ @param all: The general migrate parameter.
  @order \Theta(1)
  @allow */
-static struct T_(Pool) *T_(Pool)(const PT_(MigrateAll) migrate_all,
-	A *const all) {
-	struct T_(Pool) *pool;
-	if(!migrate_all ^ !all) { errno = ERANGE; return 0; }
-	if(!(pool = PT_(pool)())) return 0; /* ENOMEM? */
+static void T_(Pool)(struct T_(Pool) *const pool,
+	const PT_(MigrateAll) migrate_all, A *const all) {
+	if(!pool) return;
+	PT_(pool)(pool);
 	pool->migrate_all = migrate_all;
 	pool->all         = all;
 	return pool;
 }
 #else /* all --><-- !all */
-/** Constructs an empty {Pool} with capacity Fibonacci6, which is 8.
- @return A new {Pool} or null and {errno} may be set.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}.
+/** Initialises {pool} to be empty. This is the constructor is
+ {POOL_MIGRATE_ALL} is not specified.
  @order \Theta(1)
  @allow */
-static struct T_(Pool) *T_(Pool)(void) {
-	return PT_(pool)(); /* ENOMEM? */
+static void T_(Pool)(struct T_(Pool) *const pool) {
+	if(!pool) return;
+	PT_(pool)(pool);
 }
 #endif /* all --> */
 
-/** @param pool: If null, returns null.
- @return One element from the pool or null if the pool is empty. It selects
- the position deterministically.
- @order \Theta(1)
- @fixme Untested.
- @allow */
-static T *T_(PoolElement)(const struct T_(Pool) *const pool) {
-	if(!pool || !pool->size) return 0;
-	return &pool->nodes[pool->size - 1].data;
-}
-
-/** Is {idx} a valid index for {pool}?
+#ifdef POOL_STACK /* <-- stack */
+/** If {POOL_STACK} is specified, otherwise it doesn't keep track of the size.
+ @param pool: If null, returns zero.
+ @return The current size of the stack.
  @order \Theta(1)
  @allow */
-static int T_(PoolIsElement)(struct T_(Pool) *const pool, const size_t idx) {
-	struct PT_(Node) *data;
+static size_t T_(StackSize)(const struct T_(Pool) *const pool) {
 	if(!pool) return 0;
-	if(idx >= pool->size
-		|| (data = pool->nodes + idx, data->x.prev != pool_void)) return 0;
+	return pool->size;
+}
+#endif /* stack --> */
+
+/** Private: is {idx} a valid index for {pool}?
+ @order \Theta(1)
+ @allow */
+static int T_(valid_index)(struct T_(Pool) *const pool, const size_t idx) {
+	assert(pool);
+	if(idx >= pool->size) return 0;
+#ifndef POOL_STACK /* <-- !stack */
+	{
+		struct PT_(Node) *const data = pool->nodes + idx;
+		if(data->x.prev != pool_void) return 0;
+	}
+#endif /* !stack --> */
 	return 1;
 }
 
 /** Gets an existing element by index. Causing something to be added to the
  {<T>Pool} may invalidate this pointer.
- @param pool: If {pool} is null, returns null.
+ @param pool: If null, returns null.
  @param idx: Index.
  @return If failed, returns a null pointer {errno} will be set.
- @throws EDOM: {idx} out of bounds.
+ @throws EDOM: not a valid {idx}.
  @order \Theta(1)
  @allow */
-static T *T_(PoolGetElement)(struct T_(Pool) *const pool, const size_t idx) {
-	struct PT_(Node) *node;
+static T *T_(PoolGet)(struct T_(Pool) *const pool, const size_t idx) {
 	if(!pool) return 0;
-	if(idx >= pool->size
-		|| (node = pool->nodes + idx, node->x.prev != pool_void))
-		{ errno = EDOM; return 0; }
-	return &node->data;
+	if(!T_(valid_index)(pool, idx)) { errno = EDOM; return 0; }
+	return &pool->nodes[idx].data;
 }
 
 /** Gets an index given {data}.
@@ -500,28 +480,77 @@ static T *T_(PoolGetElement)(struct T_(Pool) *const pool, const size_t idx) {
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static size_t T_(PoolGetIndex)(struct T_(Pool) *const pool, T *const data) {
+static size_t T_(PoolIndex)(struct T_(Pool) *const pool, T *const data) {
 	return PT_(node_hold_data)(data) - pool->nodes;
 }
 
-/** Increases the capacity of this Pool to ensure that it can hold at least
- the number of elements specified by {min_capacity}.
- @param pool: If {pool} is null, returns false.
- @return True if the capacity increase was viable; otherwise the pool is not
- touched and {errno} may be set.
- @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
- @throws {realloc} errors: {IEEE Std 1003.1-2001}.
- @order \Omega(1), O({capacity})
+/** @param pool: If null, returns null.
+ @return One element from the pool or null if the pool is empty. If
+ {POOL_STACK} was specified, this will be the last element added, otherwise, it
+ may not be, but it is deterministic. Causing something to be added to the
+ {pool} may invalidate this pointer.
+ @order \Theta(1)
+ @fixme Untested.
  @allow */
-static int T_(PoolReserve)(struct T_(Pool) *const pool,
-	const size_t min_capacity) {
-	if(!pool) return 0;
-	if(!PT_(reserve)(pool, min_capacity
-#ifdef POOL_MIGRATE_UPDATE /* <-- update */
-		, 0
-#endif /* update --> */
-		)) return 0; /* ERANGE, ENOMEM? */
-	return 1;
+static T *T_(PoolPeek)(const struct T_(Pool) *const pool) {
+	if(!pool || !pool->size) return 0;
+	return &pool->nodes[pool->size - 1].data;
+}
+
+/** The same value as \see{<T>PoolPeek}.
+ @param pool: If null, returns null.
+ @return Value from the the top of the {pool} that is removed or null if the
+ stack is empty. Causing something to be added to the {pool} may invalidate
+ this pointer.
+ @order \Theta(1) (amortized if not {POOL_STACK})
+ @allow */
+static T *T_(PoolPop)(struct T_(Pool) *const pool) {
+	T *data;
+	if(!pool || !pool->size) return 0;
+	data = &pool->nodes[--pool->size].data;
+#ifndef POOL_STACK /* <-- stack */
+	PT_(trim_removed)(pool);
+#endif /* stack --> */
+	return data;
+}
+
+/** Provides a way to iterate through the {pool}. It is safe to add or remove
+ an element from the {pool}.
+ @param stack: If null, returns null.
+ @param prev: Set it to null to start the iteration.
+ @return A pointer to the next element or null if there are no more. If one
+ adds to the stack, the pointer becomes invalid unless using
+ \see{PoolUpdateNew} with the return value as {update}.
+ @order \Theta(1) (or O(pool space that has been deleted) if not {POOL_STACK})
+ @allow */
+static T *T_(/*Pool*/StackNext)(struct T_(Pool) *const pool, T *const prev) {
+	struct PT_(Node) *node;
+	if(!pool || !pool->size) return 0;
+	if(!prev) return &pool->nodes[0].data;
+	node = PT_(node_hold_data)(prev);
+	if((size_t)(node - pool->nodes) >= pool->size - 1) return 0;
+	
+	///// @fixme: for pool
+	
+	
+	return &node[1].data;
+}
+
+/** Called from \see{<T>PoolNew} and \see{<T>PoolUpdateNew}. */
+static struct PT_(Node) *PT_(new)(struct T_(Pool) *const pool,
+	S **const update_ptr) {
+	struct PT_(Node) *node;
+	assert(pool);
+#ifndef POOL_STACK /* <-- !stack */
+	if((node = PT_(dequeue_removed)(pool))) return node;
+#endif /* !stack --> */
+	/* ERANGE, ENOMEM? */
+	if(!PT_(reserve)(pool, pool->size + 1, update_ptr)) return 0;
+	node = pool->nodes + pool->size++;
+#ifndef POOL_STACK /* <-- !stack */
+	node->x.prev = node->x.next = pool_void;
+#endif /* !stack --> */
+	return node;
 }
 
 /** Gets an uninitialised new element. May move the {Pool} to a new memory
@@ -534,25 +563,14 @@ static int T_(PoolReserve)(struct T_(Pool) *const pool,
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const pool) {
 	struct PT_(Node) *node;
-	if(!pool) return 0;
-	if(!(node = PT_(dequeue_removed)(pool))) {
-		if(!PT_(reserve)(pool, pool->size + 1
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-			, 0
-#endif /* all --> */
-			)) return 0; /* ERANGE, ENOMEM? */
-		node = pool->nodes + pool->size++;
-		node->x.prev = node->x.next = pool_void;
-	}
+	if(!pool || (node = PT_(new)(pool, 0))) return 0;
 	return &node->data;
 }
 
-#ifdef POOL_MIGRATE_UPDATE /* <-- update */
 /** Gets an uninitialised new element and updates the {update_ptr} if it is
- within the memory region that was changed. Must have {POOL_MIGRATE_UPDATE}
- defined. For example, when iterating a pointer and new element is needed that
- could change the pointer.
- @param pool: If {pool} is null, returns null.
+ within the memory region that was changed. For example, when iterating a
+ pointer and new element is needed that could change the pointer.
+ @param pool: If null, returns null.
  @param update_ptr: Pointer to update on memory move.
  @return A new, un-initialised, element, or null and {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
@@ -560,23 +578,16 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
  @order amortised O(1)
  @fixme Untested.
  @allow */
-static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool,
-	U **const update_ptr) {
+static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool, S **const update_ptr) {
 	struct PT_(Node) *node;
-	if(!pool) return 0;
-	if(!(node = PT_(dequeue_removed)(pool))) {
-		if(!PT_(reserve)(pool, pool->size + 1, update_ptr))
-			return 0; /* ERANGE, ENOMEM? */
-		node = pool->nodes + pool->size++;
-		node->prev = node->next = pool_void;
-	}
+	if(!pool || (node = PT_(new)(pool, update_ptr))) return 0;
 	return &node->data;
 }
-#endif /* update --> */
 
-/** Removes {data} from {pool}.
+#ifndef POOL_STACK /* <-- !stack */
+/** Removes {data} from {pool}. Only present if {POOL_STACK} is not defined.
  @param pool, data: If null, returns false.
- @return Success, otherwise {errno} will be set.
+ @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is not part of {pool}.
  @order amortised O(1)
  @allow */
@@ -592,25 +603,38 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	if(n >= pool->size - 1) PT_(trim_removed)(pool);
 	return 1;
 }
+#endif /* !stack --> */
 
-/** Removes all from {pool}.
- @param pool: if null, does nothing.
+/** Removes all from {pool}, but leaves the {pool} memory alone; if one wants
+ to remove memory, see \see{Pool_}.
+ @param pool: If null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	if(!pool) return;
 	pool->size = 0;
+#ifndef POOL_STACK /* <-- !stack */
 	pool->removed.prev = pool->removed.next = pool_null;
+#endif /* !stack --> */
 }
 
-/** @param pool: If null, returns false.
- @return Whether the {<T>Pool} is empty.
- @order \Theta(1)
+/** Iterates though {pool} from the bottom and calls {action} on all the
+ elements. The topology of the list can not change while in this function.
+ @param stack, action: If null, does nothing.
+ @order O({size} \times {action})
  @fixme Untested.
+ @fixme Sequence interface.
  @allow */
-static int T_(PoolIsEmpty)(const struct T_(Pool) *const pool) {
-	if(!pool) return 0;
-	return pool->size == 0;
+static void T_(PoolForEach)(struct T_(Pool) *const pool,
+	const PT_(Action) action) {
+	struct PT_(Node) *a, *end;
+	if(!pool || !action) return;
+	for(a = pool->nodes, end = a + pool->size; a < end; a++) {
+#ifndef POOL_STACK /* <-- !stack */
+		if(a->x.prev != pool_void) continue;
+#endif /* !stack --> */
+		action(&a->data);
+	}
 }
 
 /** Use when the pool has pointers to another memory move structure in the
@@ -774,11 +798,9 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T
 #undef T_
 #undef PT_
+#undef S
 #ifdef A
 #undef A
-#endif
-#ifdef U
-#undef U
 #endif
 #undef POOL_NAME
 #undef POOL_TYPE
