@@ -1,16 +1,14 @@
 /** 2016 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>Pool} is a dynamic array that stores unordered {<T>}, which must be set
- using {POOL_TYPE}. Removing an element is done lazily through a linked-list
- internal to the pool; as such, indices will remain the same throughout the
- lifetime of the data. You cannot shrink the capacity of this data type, only
- cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
- sequence.
-
- Intended for use in backing polymorphic data-types. {<T>Pool} is not
- synchronised. The preprocessor macros are all undefined at the end of the file
- for convenience.
+ {<T>Pool} is a dynamic array that stores unordered {<T>} in a memory pool,
+ which must be set using {POOL_TYPE}. Removing an element is done lazily
+ through a linked-list internal to the pool; as such, indices will remain the
+ same throughout the lifetime of the data. You cannot shrink the capacity of
+ this data type, only cause it to grow. Resizing incurs amortised cost, done
+ though a Fibonacci sequence. Intended for use in backing polymorphic
+ data-types. {<T>Pool} is not synchronised. The preprocessor macros are all
+ undefined at the end of the file for convenience.
 
  @param POOL_NAME
  This literally becomes {<T>}. As it's used in function names, this should
@@ -808,9 +806,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T
 #undef T_
 #undef PT_
-#undef T_NAME
-#undef QUOTE
-#undef QUOTE_
 #ifdef A
 #undef A
 #endif
