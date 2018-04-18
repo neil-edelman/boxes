@@ -1,5 +1,21 @@
 /* intended to be included by Pool.h on POOL_TYPE_FILLER */
 
+/* Define macros. */
+#ifdef QUOTE
+#undef QUOTE
+#endif
+#ifdef QUOTE_
+#undef QUOTE_
+#endif
+#ifdef T_NAME
+#undef T_NAME
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+#define T_NAME QUOTE(STACK_NAME)
+
+
+
 /* prototype */
 static void T_(PoolTest)(void);
 static void PT_(test_basic)(void);
@@ -197,3 +213,8 @@ static void T_(PoolTest)(void) {
 	PT_(test_random)();
 	fprintf(stderr, "Done tests of Pool<" T_NAME ">.\n\n");
 }
+
+/* Un-define all macros. */
+#undef QUOTE
+#undef QUOTE_
+#undef T_NAME
