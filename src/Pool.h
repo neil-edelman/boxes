@@ -13,7 +13,7 @@
  naming and to the maximum available length of identifiers. Must each be
  present before including.
 
- @param POOL_STACK @fixme
+ @param POOL_STACK
  Removing an element is normally done lazily through a linked-list internal to
  the pool. With this defined, there is no such linked-list; the data will be
  packed and one can only remove items by \see{<T>PoolPop}.
@@ -49,7 +49,8 @@
  @title		Pool.h
  @std		C89
  @author	Neil
- @version	2018-04 Merged {Stack} into {Pool} again; too much duplicate code.
+ @version	2018-04 Merged {Stack} into {Pool} again;
+			augh ifdefs, but too much duplicate code.
  @since		2018-03 Why have an extra level of indirection?
 			2018-02 Errno instead of custom errors.
 			2017-12 Introduced {POOL_PARENT} for type-safety.
@@ -255,9 +256,11 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 	const size_t max_size = pool_max / sizeof *nodes;
 	assert(pool && pool->size <= pool->capacity[0]
 		&& pool->capacity[0] <= pool->capacity[1]
-		&& pool->capacity[1] <= pool_max
-		&& pool->removed.next == pool->removed.prev
+		&& pool->capacity[1] <= pool_max);
+#ifndef POOL_STACK /* <-- !stack */
+	assert(pool->removed.next == pool->removed.prev
 		&& pool->removed.next == pool_null);
+#endif /* !stack --> */
 	if(pool->capacity[0] >= min_capacity) return 1;
 	if(min_capacity > max_size) return errno = ERANGE, 0;
 	if(!pool->nodes) {
@@ -420,7 +423,6 @@ static void T_(Pool)(struct T_(Pool) *const pool,
 	PT_(pool)(pool);
 	pool->migrate_all = migrate_all;
 	pool->all         = all;
-	return pool;
 }
 #else /* all --><-- !all */
 /** Initialises {pool} to be empty. This is the constructor is
@@ -439,39 +441,76 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
  @return The current size of the stack.
  @order \Theta(1)
  @allow */
-static size_t T_(StackSize)(const struct T_(Pool) *const pool) {
+static size_t T_(PoolSize)(const struct T_(Pool) *const pool) {
 	if(!pool) return 0;
 	return pool->size;
 }
 #endif /* stack --> */
 
+#ifndef POOL_STACK /* <-- !stack */
+/** Removes {data} from {pool}. Only present if {POOL_STACK} is not defined.
+ @param pool, data: If null, returns false.
+ @return Success, otherwise {errno} will be set for valid input.
+ @throws EDOM: {data} is not part of {pool}.
+ @order amortised O(1)
+ @allow */
+static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
+	struct PT_(Node) *node;
+	size_t n;
+	if(!pool || !data) return 0;
+	node = PT_(node_hold_data)(data);
+	n = node - pool->nodes;
+	if(node < pool->nodes || n >= pool->size || node->x.prev != pool_void)
+		return errno = EDOM, 0;
+		PT_(enqueue_removed)(pool, n);
+	if(n >= pool->size - 1) PT_(trim_removed)(pool);
+	return 1;
+}
+#endif /* !stack --> */
+
+/** Removes all from {pool}, but leaves the {pool} memory alone; if one wants
+ to remove memory, see \see{Pool_}.
+ @param pool: If null, does nothing.
+ @order \Theta(1)
+ @allow */
+static void T_(PoolClear)(struct T_(Pool) *const pool) {
+	if(!pool) return;
+	pool->size = 0;
+#ifndef POOL_STACK /* <-- !stack */
+	pool->removed.prev = pool->removed.next = pool_null;
+#endif /* !stack --> */
+}
+
 /** Private: is {idx} a valid index for {pool}?
  @order \Theta(1)
  @allow */
-static int T_(valid_index)(struct T_(Pool) *const pool, const size_t idx) {
+static struct PT_(Node) *T_(valid_index)(struct T_(Pool) *const pool,
+	const size_t idx) {
 	assert(pool);
 	if(idx >= pool->size) return 0;
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef POOL_STACK /* <-- stack */
+	return pool->nodes + idx;
+#else /* stack --><-- !stack */
 	{
-		struct PT_(Node) *const data = pool->nodes + idx;
-		if(data->x.prev != pool_void) return 0;
+		struct PT_(Node) *const node = pool->nodes + idx;
+		return node->x.prev == pool_void ? node : 0;
 	}
 #endif /* !stack --> */
-	return 1;
 }
 
 /** Gets an existing element by index. Causing something to be added to the
  {<T>Pool} may invalidate this pointer.
  @param pool: If null, returns null.
  @param idx: Index.
- @return If failed, returns a null pointer {errno} will be set.
- @throws EDOM: not a valid {idx}.
+ @return If failed, returns a null pointer.
  @order \Theta(1)
  @allow */
 static T *T_(PoolGet)(struct T_(Pool) *const pool, const size_t idx) {
 	if(!pool) return 0;
-	if(!T_(valid_index)(pool, idx)) { errno = EDOM; return 0; }
-	return &pool->nodes[idx].data;
+	{
+		struct PT_(Node) *const node = T_(valid_index)(pool, idx);
+		return node ? &node->data : 0;
+	}
 }
 
 /** Gets an index given {data}.
@@ -514,26 +553,38 @@ static T *T_(PoolPop)(struct T_(Pool) *const pool) {
 	return data;
 }
 
-/** Provides a way to iterate through the {pool}. It is safe to add or remove
- an element from the {pool}.
- @param stack: If null, returns null.
+/** Provides a way to iterate through the {pool}. If {<T> = <S>}, it is safe to
+ add using {PoolUpdateNew} with the return value as {update}. If {POOL_STACK}
+ is not defined, it is safe to remove an element,
+ @param pool: If null, returns null. If {prev} is not from this {pool} and not
+ null, returns null.
  @param prev: Set it to null to start the iteration.
- @return A pointer to the next element or null if there are no more. If one
- adds to the stack, the pointer becomes invalid unless using
- \see{PoolUpdateNew} with the return value as {update}.
+ @return A pointer to the next element or null if there are no more.
  @order \Theta(1) (or O(pool space that has been deleted) if not {POOL_STACK})
  @allow */
-static T *T_(/*Pool*/StackNext)(struct T_(Pool) *const pool, T *const prev) {
-	struct PT_(Node) *node;
-	if(!pool || !pool->size) return 0;
-	if(!prev) return &pool->nodes[0].data;
-	node = PT_(node_hold_data)(prev);
-	if((size_t)(node - pool->nodes) >= pool->size - 1) return 0;
-	
-	///// @fixme: for pool
-	
-	
-	return &node[1].data;
+static T *T_(PoolNext)(struct T_(Pool) *const pool, T *const prev) {
+	if(!pool) return 0;
+	{
+		struct PT_(Node) *node;
+		size_t idx;
+		const size_t size = pool->size;
+		if(!prev) {
+			node = pool->nodes;
+			idx = 0;
+		} else {
+			node = PT_(node_hold_data)(prev) + 1;
+			idx = (size_t)(node - pool->nodes);
+		}
+#ifdef POOL_STACK /* <-- stack */
+		if(idx < size) return &node->data;
+#else /* stack --><-- !stack */
+		while(idx < size) {
+			if(node->x.prev == pool_void) return &node->data;
+			node++, idx++;
+		}
+#endif /* !stack */
+	}
+	return 0;
 }
 
 /** Called from \see{<T>PoolNew} and \see{<T>PoolUpdateNew}. */
@@ -563,7 +614,7 @@ static struct PT_(Node) *PT_(new)(struct T_(Pool) *const pool,
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const pool) {
 	struct PT_(Node) *node;
-	if(!pool || (node = PT_(new)(pool, 0))) return 0;
+	if(!pool || !(node = PT_(new)(pool, 0))) return 0;
 	return &node->data;
 }
 
@@ -582,40 +633,6 @@ static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool, S **const update_ptr) {
 	struct PT_(Node) *node;
 	if(!pool || (node = PT_(new)(pool, update_ptr))) return 0;
 	return &node->data;
-}
-
-#ifndef POOL_STACK /* <-- !stack */
-/** Removes {data} from {pool}. Only present if {POOL_STACK} is not defined.
- @param pool, data: If null, returns false.
- @return Success, otherwise {errno} will be set for valid input.
- @throws EDOM: {data} is not part of {pool}.
- @order amortised O(1)
- @allow */
-static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
-	struct PT_(Node) *node;
-	size_t n;
-	if(!pool || !data) return 0;
-	node = PT_(node_hold_data)(data);
-	n = node - pool->nodes;
-	if(node < pool->nodes || n >= pool->size || node->x.prev != pool_void)
-		return errno = EDOM, 0;
-	PT_(enqueue_removed)(pool, n);
-	if(n >= pool->size - 1) PT_(trim_removed)(pool);
-	return 1;
-}
-#endif /* !stack --> */
-
-/** Removes all from {pool}, but leaves the {pool} memory alone; if one wants
- to remove memory, see \see{Pool_}.
- @param pool: If null, does nothing.
- @order \Theta(1)
- @allow */
-static void T_(PoolClear)(struct T_(Pool) *const pool) {
-	if(!pool) return;
-	pool->size = 0;
-#ifndef POOL_STACK /* <-- !stack */
-	pool->removed.prev = pool->removed.next = pool_null;
-#endif /* !stack --> */
 }
 
 /** Iterates though {pool} from the bottom and calls {action} on all the
@@ -653,9 +670,12 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
 	const PT_(Migrate) handler, const struct Migrate *const migrate) {
 	struct PT_(Node) *node, *end;
 	if(!pool || !migrate || !handler) return;
-	for(node = pool->nodes, end = node + pool->size; node < end; node++)
-		if(node->x.prev == pool_void)
-			assert(node->x.next == pool_void), handler(&node->data, migrate);
+	for(node = pool->nodes, end = node + pool->size; node < end; node++) {
+#ifndef POOL_STACK /* <-- !stack */
+		if(node->x.prev != pool_void) continue;
+#endif /* !stack --> */
+		handler(&node->data, migrate);
+	}
 }
 
 /** Passed a {migrate} parameter, allows pointers to the pool to be updated. It
@@ -736,7 +756,9 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	}
 	pool_super_cat(&cat, pool_cat_start);
 	for(i = 0; i < pool->size; i++) {
+#ifndef POOL_STACK /* <-- !stack */
 		if(pool->nodes[i].x.prev != pool_void) continue;
+#endif /* !stack --> */
 		if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
 		PT_(to_string)(&pool->nodes[i].data, &scratch),
 		scratch[sizeof scratch - 1] = '\0';
@@ -761,23 +783,25 @@ static void PT_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_set)(void) {
 	T_(Pool_)(0);
-#ifdef POOL_MIGRATE_ALL
-	T_(Pool)(0, 0);
-#else
-	T_(Pool)();
-#endif
-	T_(PoolElement)(0);
-	T_(PoolIsElement)(0, (size_t)0);
-	T_(PoolGetElement)(0, (size_t)0);
-	T_(PoolGetIndex)(0, 0);
-	T_(PoolReserve)(0, (size_t)0);
-	T_(PoolNew)(0);
-#ifdef POOL_MIGRATE_UPDATE /* <-- update */
-	T_(PoolUpdateNew)(0, 0);
-#endif /* update --> */
+#ifdef POOL_MIGRATE_ALL /* <-- all */
+	T_(Pool)(0, 0, 0);
+#else /* all --><-- !all */
+	T_(Pool)(0);
+#endif /* !all --> */
+#ifdef POOL_STACK /* <-- stack */
+	T_(PoolSize)(0);
+#else /* stack --><-- !stack */
 	T_(PoolRemove)(0, 0);
+#endif /* !stack --> */
 	T_(PoolClear)(0);
-	T_(PoolIsEmpty)(0);
+	T_(PoolGet)(0, 0);
+	T_(PoolIndex)(0, 0);
+	T_(PoolPeek)(0);
+	T_(PoolPop)(0);
+	T_(PoolNext)(0, 0);
+	T_(PoolNew)(0);
+	T_(PoolUpdateNew)(0, 0);
+	T_(PoolForEach)(0, 0);
 	T_(PoolMigrateEach)(0, 0, 0);
 	T_(PoolMigratePointer)(0, 0);
 #ifdef POOL_TO_STRING
@@ -804,6 +828,9 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif
 #undef POOL_NAME
 #undef POOL_TYPE
+#ifdef POOL_STACK
+#undef POOL_STACK
+#endif
 #ifdef POOL_MIGRATE_EACH
 #undef POOL_MIGRATE_EACH
 #endif

@@ -16,17 +16,13 @@
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
 
-/** Define class {A} */
+/** Define {A}. */
 struct A {
 	char value[4];
 };
 static void A_to_string(const struct A *this, char (*const a)[12]);
 /** @implements <Foo>Action */
 static void A_filler(struct A *const this) {
-	this->value[0] = (char)(rand() / (RAND_MAX + 1.0) * 26.0) + 'A';
-	this->value[1] = (char)(rand() / (RAND_MAX + 1.0) * 26.0) + 'a';
-	this->value[2] = (char)(rand() / (RAND_MAX + 1.0) * 26.0) + 'a';
-	this->value[3] = '\0';
 	Orcish(this->value, sizeof this->value);
 }
 #define POOL_NAME A
@@ -34,16 +30,23 @@ static void A_filler(struct A *const this) {
 #define POOL_TO_STRING &A_to_string
 #define POOL_TEST &A_filler
 #include "../src/Pool.h"
-/** Assumes {key} is {[0, 99]}.
- @implements <Foo>ToString */
+/** @implements <A>ToString */
 static void A_to_string(const struct A *this, char (*const a)[12]) {
-	/* Cheating. */
-	const struct pool_A_Node *const node
-		= (const struct pool_A_Node *)(const void *)this;
-	sprintf(*a, "%ld<%s>%ld", node->x.prev, this->value, node->x.next);
+	sprintf(*a, "%.11s", this->value);
 }
 
-/** Define class {Foo} */
+
+
+#define POOL_NAME B
+#define POOL_TYPE struct A
+#define POOL_STACK
+#define POOL_TO_STRING &A_to_string
+#define POOL_TEST &A_filler
+#include "../src/Pool.h"
+
+
+
+/** Define {Foo}. */
 struct Foo {
 	int key;
 	char value[32];
@@ -62,8 +65,18 @@ static void Foo_filler(struct Foo *const this) {
 #define POOL_TYPE struct Foo
 #define POOL_TO_STRING &Foo_to_string
 #define POOL_TEST &Foo_filler
-#define POOL_DEBUG
 #include "../src/Pool.h"
+
+
+
+#define POOL_NAME Bar
+#define POOL_TYPE struct Foo
+#define POOL_TO_STRING &Foo_to_string
+#define POOL_TEST &Foo_filler
+#define POOL_STACK
+#include "../src/Pool.h"
+
+
 
 /* Class {Int} is a single {int}. */
 /** Assumes {[-9 999 999 999, 99 999 999 999]}.
@@ -84,9 +97,12 @@ static void Int_filler(int *const this) {
 #undef LIST_NUM_MAX
 #define POOL_NAME Int
 #define POOL_TYPE int
+#define POOL_MIGRATE_ALL int /* This is bs. */
 #define POOL_TO_STRING &Int_to_string
 #define POOL_TEST &Int_filler
 #include "../src/Pool.h"
+
+
 
 /* Class {Colour} is an {enum}. */
 enum Colour { White, Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
@@ -101,6 +117,7 @@ static const char *const colour_names[] = { "White", "Silver", "Gray", "Black",
 static const size_t colour_size = sizeof colour_names / sizeof *colour_names;
 /** @implements <Colour>ToString */
 static void Colour_to_string(const enum Colour *this, char (*const a)[12]) {
+	assert(*this < colour_size);
 	sprintf(*a, "%s", colour_names[*this]);
 }
 /** @implements <Colour>Action */
@@ -113,18 +130,30 @@ static void Colour_filler(enum Colour *const this) {
 #define POOL_TEST &Colour_filler
 #include "../src/Pool.h"
 
+
+
+#define POOL_NAME ColourStack
+#define POOL_TYPE enum Colour
+#define POOL_TO_STRING &Colour_to_string
+#define POOL_TEST &Colour_filler
+#define POOL_STACK
+#include "../src/Pool.h"
+
+
+
 /** Entry point.
- @param argc: The number of arguments, starting with the programme name.
- @param argv: The arguments.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	APoolTest();
+	BPoolTest();
 	FooPoolTest();
+	BarPoolTest();
 	IntPoolTest();
 	ColourPoolTest();
+	ColourStackPoolTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
