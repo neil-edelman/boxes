@@ -37,13 +37,15 @@
  @title		Stack.h
  @std		C89
  @author	Neil
- @version	2018-03 Why have an extra level of indirection? Not like Pool.
+ @version	2018-03 Why have an extra level of indirection?
  @since		2018-02 Made it like POOL.
 			2017-12 Changed STACK_PARENT for type-safety.
 			2017-11 Added STACK_PARENT.
 			2017-11 Forked from Pool.
  @fixme		Have initial setting. Check to make sure all the objects accept
- array = 0; make array=0 the default state for simplicity. */
+ array = 0; make array=0 the default state for simplicity.
+ @deprecated 2018-04 Use Pool which has POOL_STACK; it's exactly the same, but
+ I don't have to update Pool and Stack anymore. */
 
 
 
@@ -51,14 +53,14 @@
 #include <stdlib.h>	/* realloc free */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy (memmove strerror strcpy memcmp in StackTest.h) */
+#include <errno.h>	/* errno */
 #ifdef STACK_TO_STRING /* <-- print */
 #include <stdio.h>	/* snprintf */
 #endif /* print --> */
-#include <errno.h>	/* errno */
 
 
 
-/* check defines */
+/* Check defines. */
 #ifndef STACK_NAME
 #error Stack generic STACK_NAME undefined.
 #endif
@@ -132,19 +134,6 @@ struct Migrate {
 
 
 
-/** The stack. To instantiate, see \see{<T>Stack}. */
-struct T_(Stack);
-struct T_(Stack) {
-	T *array;
-	/* {array} -> {capacity} -> {c[0] < c[1] || c[0] == c[1] == max_size}.
-	 Fibonacci, [0] is the capacity, [1] is next. */
-	size_t capacity[2];
-	/* {nodes} ? {size <= capacity[0]} : {size == 0}. */
-	size_t size;
-};
-
-
-
 /** This is the migrate function for {<T>}. */
 typedef void (*PT_(Migrate))(T *const data,
 	const struct Migrate *const migrate);
@@ -167,6 +156,19 @@ typedef void (*PT_(ToString))(const T *, char (*const)[12]);
 /* Check that {STACK_TO_STRING} is a function implementing {<T>ToString}. */
 static const PT_(ToString) PT_(to_string) = (STACK_TO_STRING);
 #endif /* string --> */
+
+
+
+/** The stack. To instantiate, see \see{<T>Stack}. */
+struct T_(Stack);
+struct T_(Stack) {
+	T *array;
+	/* {array} -> {capacity} -> {c[0] < c[1] || c[0] == c[1] == max_size}.
+	 Fibonacci, [0] is the capacity, [1] is next. */
+	size_t capacity[2];
+	/* {nodes} ? {size <= capacity[0]} : {size == 0}. */
+	size_t size;
+};
 
 
 

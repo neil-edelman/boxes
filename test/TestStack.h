@@ -1,4 +1,4 @@
-/* intended to be included by Stack.h on STACK_TYPE_FILLER */
+/* Intended to be included by {Stack.h} on {STACK_TYPE_FILLER}. */
 
 /* Define macros. */
 #ifdef QUOTE
