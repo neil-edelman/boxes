@@ -146,12 +146,12 @@ struct Bear {
 /* Animal list with backing. These are the storage structures. */
 struct Animals {
 	struct AnimalList list;
-	struct MountPool *mounts;
-	struct SlothPool *sloths;
-	struct EmuPool *emus;
-	struct BadEmuPool *bad_emus;
-	struct LlamaPool *llamas;
-	struct LemurPool *lemurs;
+	struct MountPool mounts;
+	struct SlothPool sloths;
+	struct EmuPool emus;
+	struct BadEmuPool bad_emus;
+	struct LlamaPool llamas;
+	struct LemurPool lemurs;
 	struct Bear bears[2];
 };
 static const unsigned no_bears = sizeof(((struct Animals *)0)->bears)
@@ -188,31 +188,31 @@ static void Sloth_delete(struct Animals *const animals,
 	struct Sloth *const sloth) {
 	printf("Bye %s.\n", sloth->animal.data.name);
 	AnimalListRemove(&sloth->animal.data);
-	SlothPoolRemove(animals->sloths, sloth);
+	SlothPoolRemove(&animals->sloths, sloth);
 }
 static void Emu_delete(struct Animals *const animals,
 	struct Emu *const emu) {
 	printf("Bye %s.\n", emu->animal.data.name);
 	AnimalListRemove(&emu->animal.data);
-	EmuPoolRemove(animals->emus, emu);
+	EmuPoolRemove(&animals->emus, emu);
 }
 static void BadEmu_delete(struct Animals *const animals,
 	struct BadEmu *const bad_emu) {
 	printf("%s dissapers in a puff of smoke.\n", bad_emu->emu.animal.data.name);
 	AnimalListRemove(&bad_emu->emu.animal.data);
-	BadEmuPoolRemove(animals->bad_emus, bad_emu);
+	BadEmuPoolRemove(&animals->bad_emus, bad_emu);
 }
 static void Lemur_delete(struct Animals *const animals,
 	struct Lemur *const lemur) {
 	printf("Bye %s.\n", lemur->animal.data.name);
 	AnimalListRemove(&lemur->animal.data);
-	LemurPoolRemove(animals->lemurs, lemur);
+	LemurPoolRemove(&animals->lemurs, lemur);
 }
 static void Llama_delete(struct Animals *const animals,
 	struct Llama *const llama) {
 	printf("Bye %s.\n", llama->animal.data.name);
 	AnimalListRemove(&llama->animal.data);
-	LlamaPoolRemove(animals->llamas, llama);
+	LlamaPoolRemove(&animals->llamas, llama);
 }
 static void Bear_delete(struct Animals *const animals,
 	struct Bear *const bear) {
@@ -373,7 +373,7 @@ static void dismount(struct Animals *const animals, struct Mount *const mount) {
 		mount->rider->vt->type, mount->steed->name, mount->steed->vt->type);
 	Animal_mount_info(mount->steed)->steed_of = 0;
 	Animal_mount_info(mount->rider)->riding = 0;
-	MountPoolRemove(animals->mounts, mount);
+	MountPoolRemove(&animals->mounts, mount);
 }
 
 /************/
@@ -410,39 +410,23 @@ void Animals_(struct Animals **const panimals) {
 struct Animals *Animals(void) {
 	struct Animals *a;
 	struct Bear *bear, *end;
-	int is_success = 0;
-	const char *e = "null";
 	if(!(a = malloc(sizeof *a))) { perror("Animals"); Animals_(&a); return 0; }
 	AnimalListClear(&a->list);
-	a->mounts   = 0;
-	a->sloths   = 0;
-	a->emus     = 0;
-	a->bad_emus = 0;
-	a->llamas   = 0;
-	a->lemurs   = 0;
+	MountPool(&a->mounts);
+	SlothPool(&a->sloths);
+	EmuPool(&a->emus);
+	BadEmuPool(&a->bad_emus);
+	LlamaPool(&a->llamas);
+	LemurPool(&a->lemurs);
 	for(bear = a->bears, end = bear + no_bears; bear < end; bear++)
 		bear->is_active = 0;
-	errno = 0; do {
-		if(!(e = "mount", a->mounts = MountPool())
-			|| !(e = "sloths", a->sloths = SlothPool())
-			|| !(e = "emus", a->emus = EmuPool())
-			|| !(e = "bad_emus", a->bad_emus = BadEmuPool())
-			|| !(e = "llamas", a->llamas = LlamaPool())
-			|| !(e = "lemurs", a->lemurs = LemurPool())
-		) break;
-		is_success = 1;
-	} while(0); if(!is_success) {
-		fprintf(stderr, "Animals, constructing %s: %s.\n",
-			e, strerror(errno));
-		Animals_(&a);
-	}
 	return a;
 }
 /** Random constructor for a {Sloth} in {animals}. */
 struct Sloth *Sloth(struct Animals *const animals) {
 	struct Sloth *sloth;
 	if(!animals) return 0;
-	if(!(sloth = SlothPoolNew(animals->sloths))) return 0;
+	if(!(sloth = SlothPoolNew(&animals->sloths))) return 0;
 	Animal_filler(&sloth->animal.data, &Sloth_vt);
 	sloth->hours_slept = (int)(10.0 * rand() / RAND_MAX) + 4;
 	AnimalListPush(&animals->list, &sloth->animal.data);
@@ -452,7 +436,7 @@ struct Sloth *Sloth(struct Animals *const animals) {
 struct Emu *Emu(struct Animals *const animals) {
 	struct Emu *emu;
 	if(!animals) return 0;
-	if(!(emu = EmuPoolNew(animals->emus))) return 0;
+	if(!(emu = EmuPoolNew(&animals->emus))) return 0;
 	Animal_filler(&emu->animal.data, &Emu_vt);
 	emu->favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
 	AnimalListPush(&animals->list, &emu->animal.data);
@@ -462,7 +446,7 @@ struct Emu *Emu(struct Animals *const animals) {
 struct BadEmu *BadEmu(struct Animals *const animals) {
 	struct BadEmu *emu;
 	if(!animals) return 0;
-	if(!(emu = BadEmuPoolNew(animals->bad_emus))) return 0;
+	if(!(emu = BadEmuPoolNew(&animals->bad_emus))) return 0;
 	Animal_filler(&emu->emu.animal.data, &BadEmu_vt);
 	emu->emu.favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
 	MountInfo_filler(&emu->mount_info, &emu->emu.animal.data, RIDER);
@@ -474,7 +458,7 @@ struct BadEmu *BadEmu(struct Animals *const animals) {
 struct Llama *Llama(struct Animals *const animals) {
 	struct Llama *llama;
 	if(!animals) return 0;
-	if(!(llama = LlamaPoolNew(animals->llamas))) return 0;
+	if(!(llama = LlamaPoolNew(&animals->llamas))) return 0;
 	Animal_filler(&llama->animal.data, &Llama_vt);
 	MountInfo_filler(&llama->mount_info, &llama->animal.data, STEED);
 	llama->chomps = 5 + 10 * rand() / RAND_MAX;
@@ -485,7 +469,7 @@ struct Llama *Llama(struct Animals *const animals) {
 struct Lemur *Lemur(struct Animals *const animals) {
 	struct Lemur *lemur;
 	if(!animals) return 0;
-	if(!(lemur = LemurPoolNew(animals->lemurs))) return 0;
+	if(!(lemur = LemurPoolNew(&animals->lemurs))) return 0;
 	Animal_filler(&lemur->animal.data, &Lemur_vt);
 	MountInfo_filler(&lemur->mount_info, &lemur->animal.data, RIDER);
 	AnimalListPush(&animals->list, &lemur->animal.data);
@@ -545,7 +529,7 @@ int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 		"%s the %s do not understand your mount in this configuration.\n",
 		a->name, a->vt->type, b->name, b->vt->type),*/ 0;
 	/* {steed} and {rider} are good. */
-	mount = MountPoolNew(animals->mounts);
+	mount = MountPoolNew(&animals->mounts);
 	mount->steed = steed, Animal_mount_info(steed)->steed_of = mount;
 	mount->rider = rider, Animal_mount_info(rider)->riding   = mount;
 	printf("%s the %s mounts %s the %s.\n", rider->name, rider->vt->type,
@@ -570,7 +554,7 @@ void AnimalsAct(struct Animals *const animals) {
 void AnimalsClear(struct Animals *const animals) {
 	if(!animals) return;
 	AnimalListBiForEach(&animals->list, &Animal_delete, animals);
-	assert(MountPoolIsEmpty(animals->mounts));
+	assert(!MountPoolPeek(&animals->mounts));
 }
 /** @return The first animal in {animals} or null if it doesn't have any. Don't
  add to {animals} while the iteration is still going. */
