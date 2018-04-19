@@ -85,41 +85,8 @@
 
 
 
-/* We are going to include {List.h} from {Map.h} but first we have to define
- {#define LIST_* E}. We are going to un-define all these anyway when we
- {#include "List.h"}. */
-#ifdef PCAT
-#undef PCAT
-#endif
-#ifdef PCAT_
-#undef PCAT_
-#endif
-#ifdef PE_
-#undef PE_
-#endif
-#define PCAT_(x, y) x ## _ ## y
-#define PCAT(x, y) PCAT_(x, y)
-#define PE_(thing) PCAT(map, PCAT(MAP_NAME, thing))
-
-/* Troubles with this line? check to ensure that {MAP_TYPE} is a valid type,
- whose definition is placed above {#include "Map.h"}. */
-typedef MAP_TYPE PE_(Entry);
-
-/* This relies on {List.h} which must be in the same directory. The resets all
- the defines. Defines {<PE>EntryList} and {<PE>EntryListNode}. */
-#define LIST_NAME PE_(Entry)
-#define LIST_TYPE PE_(Entry)
-#ifdef MAP_TO_STRING
-#define LIST_TO_STRING MAP_TO_STRING
-#define LIST_DEBUG
-#endif
-#include "List.h"
-
-
-
-/* After this block, the preprocessor replaces E with LIST_TYPE, T_(X) with
- LIST_NAMEX, PT_(X) with LIST_U_NAME_X, and T_NAME with the string
- version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
+/* Generics using the preprocessor;
+ \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -151,7 +118,27 @@ typedef MAP_TYPE PE_(Entry);
 #define E_(thing) CAT(MAP_NAME, thing)
 #define PE_(thing) PCAT(map, PCAT(MAP_NAME, thing)) /* {private <E>}. */
 
-#define E PE_(Entry) /* Re-define the above. */
+/* Troubles with this line? check to ensure that {MAP_TYPE} is a valid type,
+ whose definition is placed above {#include "Map.h"}. */
+typedef MAP_TYPE PE_(Entry);
+#define E PE_(Entry)
+
+/* Troubles with this line? check to ensure that {MAP_KEY} is a valid type,
+ whose definition is placed above {#include "Map.h"}. */
+typedef MAP_KEY PE_(Key);
+#define K PE_(Key)
+
+/* This relies on {List.h} which must be in the same directory.
+ Defines {<PE>EntryList} and {<PE>EntryListNode}. */
+#define LIST_NAME PE_(Entry)
+#define LIST_TYPE PE_(Entry)
+#ifdef MAP_TO_STRING
+#define LIST_TO_STRING MAP_TO_STRING
+#endif
+#define LIST_SUBTYPE
+#include "List.h"
+
+
 
 /** Storage of this structure is the responsibility of the caller. The {<E>} is
  stored in the element {node.data}. */
@@ -160,11 +147,6 @@ struct E_(MapNode) {
 	struct PE_(EntryListNode) node;
 	uint32_t hash;
 };
-
-/* Troubles with this line? check to ensure that {MAP_KEY} is a valid type,
- whose definition is placed above {#include "Map.h"}. */
-typedef MAP_KEY PE_(Key);
-#define K PE_(Key)
 
 
 
@@ -532,10 +514,16 @@ static void PE_(unused_coda)(void) { PE_(unused_map)(); }
 /* Un-define all macros. */
 #undef MAP_NAME
 #undef MAP_TYPE
+/* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
+ {PCAT_} conform, and {T}, {K}, and {E}, are not used. */
+#ifdef MAP_SUBTYPE /* <-- sub */
+#undef MAP_SUBTYPE
+#else /* sub --><-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
+#endif /* !sub --> */
 #undef K
 #undef E
 #undef E_

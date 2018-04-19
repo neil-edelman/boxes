@@ -77,9 +77,8 @@
 
 
 
-/* After this block, the preprocessor replaces T with LIST_TYPE, T_(X) with
- LIST_NAMEX, PT_(X) with LIST_U_NAME_X, and T_NAME with the string
- version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
+/* Generics using the preprocessor;
+ \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -170,6 +169,7 @@ static int PKV_(key_is_equal)(const K a, const K b) {
 #define MAP_TYPE_TO_KEY &PKV_(get_key)
 #define MAP_IS_EQUAL &PKV_(key_is_equal)
 #define MAP_HASH ENTRY_HASH
+#define MAP_SUBTYPE
 #include "Map.h"
 
 /* Reset the defines. */
@@ -257,10 +257,16 @@ static void PKV_(entry_unused_coda)(void) { PKV_(entry_unused_map)(); }
 #undef ENTRY_VALUE
 #undef ENTRY_CMP
 #undef ENTRY_HASH
+/* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
+ {PCAT_} conform, and {T}, {K}, {V}, and {E}, are not used. */
+#ifdef ENTRY_SUBTYPE /* <-- sub */
+#undef ENTRY_SUBTYPE
+#else /* sub --><-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
+#endif /* !sub --> */
 #undef K
 #undef V
 #undef KV_
