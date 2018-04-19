@@ -161,8 +161,8 @@ static int PKV_(key_is_equal)(const K a, const K b) {
 	return !PKV_(cmp)(a, b);
 }
 
-/* This relies on {Map.h} which must be in the same directory. The resets all
- the defines. Defines {<KV>Map} and {<KV>MapNode}. */
+/* This relies on {Map.h} which must be in the same directory.
+ Defines {<KV>Map} and {<KV>MapNode}. */
 #define MAP_NAME ENTRY_NAME
 #define MAP_TYPE struct KV_(Entry)
 #define MAP_KEY PKV_(KeyType)
@@ -171,41 +171,8 @@ static int PKV_(key_is_equal)(const K a, const K b) {
 #define MAP_HASH ENTRY_HASH
 #define MAP_SUBTYPE
 #include "Map.h"
-
-/* Reset the defines. */
-#ifdef CAT
-#undef CAT
-#endif
-#ifdef CAT_
-#undef CAT_
-#endif
-#ifdef PCAT
-#undef PCAT
-#endif
-#ifdef PCAT_
-#undef PCAT_
-#endif
-#ifdef K
-#undef K
-#endif
-#ifdef V
-#undef V
-#endif
-#ifdef KV_
-#undef KV_
-#endif
-#ifdef PKV_
-#undef PKV_
-#endif
-#define CAT_(x, y) x ## y
-#define CAT(x, y) CAT_(x, y)
-#define PCAT_(x, y) x ## _ ## y
-#define PCAT(x, y) PCAT_(x, y)
-#define KV_(thing) CAT(ENTRY_NAME, thing)
-#define PKV PCAT(map, ENTRY_NAME) /* Used for list name. */
-#define PKV_(thing) PCAT(map, PCAT(ENTRY_NAME, thing)) /* {private <T>}. */
+/* Messes with {K}; re-define it. */
 #define K PKV_(KeyType)
-#define V PKV_(ValueType)
 
 
 
