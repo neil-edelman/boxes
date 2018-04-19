@@ -813,10 +813,18 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
 /* Un-define all macros. */
+#undef POOL_NAME
+#undef POOL_TYPE
+/* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
+ {PCAT_} conform, and {T}, {S}, and {A}, are not used. */
+#ifdef POOL_SUBTYPE /* <-- sub */
+#undef POOL_SUBTYPE
+#else /* sub --><-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
+#endif /* !sub --> */
 #undef T
 #undef T_
 #undef PT_
@@ -824,8 +832,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #ifdef A
 #undef A
 #endif
-#undef POOL_NAME
-#undef POOL_TYPE
 #ifdef POOL_STACK
 #undef POOL_STACK
 #endif

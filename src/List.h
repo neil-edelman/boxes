@@ -823,10 +823,16 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 /* Un-define all macros. */
 #undef LIST_NAME
 #undef LIST_TYPE
+/* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
+ {PCAT_} conform, and {T} is not used. */
+#ifdef LIST_SUBTYPE /* <-- sub */
+#undef LIST_SUBTYPE
+#else /* sub --><-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
+#endif /* !sub --> */
 #undef T
 #undef T_
 #undef PT_
