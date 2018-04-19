@@ -204,10 +204,8 @@ typedef void (*PT_(ToString))(const T *, char (*const)[12]);
 static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 #endif /* string --> */
 
-#ifdef POOL_TEST /* <-- test */
-/* Operates by side-effects only. Used only for {POOL_TEST}. */
+/* Operates by side-effects only. */
 typedef void (*PT_(Action))(T *const data);
-#endif /* test --> */
 
 
 
