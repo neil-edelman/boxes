@@ -12,9 +12,10 @@
  macros are all undefined at the end of the file for convenience.
 
  @param LIST_NAME, LIST_TYPE
- The name that literally becomes {<T>}, and a valid type associated therewith;
- should be conformant to naming and to the maximum available length of
- identifiers. Must each be present before including.
+ The name that literally becomes {<T>}, and a valid type associated therewith,
+ accessible to the compiler at the time of inclusion; should be conformant to
+ naming and to the maximum available length of identifiers. Must each be
+ present before including.
 
  @param LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
  Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order, and optional
