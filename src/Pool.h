@@ -480,8 +480,7 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 }
 
 /** Private: is {idx} a valid index for {pool}?
- @order \Theta(1)
- @allow */
+ @order \Theta(1) */
 static struct PT_(Node) *T_(valid_index)(struct T_(Pool) *const pool,
 	const size_t idx) {
 	assert(pool);
