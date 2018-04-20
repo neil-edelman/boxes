@@ -134,17 +134,22 @@ struct G_(Edge) {
 	struct G_(Vertex) *to;
 };
 
-static void edge_to_string(const struct G_(Edge) *const e,
+/** @implements <<G>Edge>ToString */
+static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 	char (*const a)[12]) {
+#ifdef DIGRAPH_EDGE /* <-- edge */
+	PG_(e_to_string)(&e->info, a);
+#else /* edge --><-- !edge */
+	strcpy(*a, "edge");
 	(void)e;
-	strcpy(*a, "e");
+#endif /* !edge --> */
 }
 
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Edge)
 #define LIST_TYPE struct G_(Edge)
-#define LIST_TO_STRING &edge_to_string
 #define LIST_SUBTYPE
+#define LIST_TO_STRING &PG_(edge_to_string)
 #include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeListNode}. */
 
 /** Vertex. */
@@ -156,16 +161,20 @@ struct G_(Vertex) {
 	struct G_(EdgeList) out;
 };
 
-static void vertex_to_string(const struct G_(Vertex) *const v,
+static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	char (*const a)[12]) {
+#ifdef DIGRAPH_VERTEX /* <-- vertex */
+	PG_(vertex_to_string)(&v->info, a);
+#else /* vertex --><-- !vertex */
+	strcpy(*a, "vertex");
 	(void)v;
-	strcpy(*a, "v");
+#endif /* !vertex --> */
 }
 
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Vertex)
 #define LIST_TYPE struct G_(Vertex)
-#define LIST_TO_STRING &vertex_to_string
+#define LIST_TO_STRING &PG_(vertex_to_string)
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>VertexList} and {<G>VertexListNode}. */
 

@@ -13,16 +13,13 @@
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
 
+/* Test Blank. */
+
 #define DIGRAPH_NAME Blank
 #define DIGRAPH_TEST
 #include "../src/Digraph.h"
 
-#if 0 /* <-- 0 */
-
-#define POOL_NAME BlankVertex
-#define POOL_TYPE struct BlankVertex
-/*#define POOL_MIGRATE_EACH &DigraphVertexMigrate*/
-#include "Pool.h"
+/* Test Colour. */
 
 /* {Colour} is an {enum} that's used on {Edge}. */
 enum Colour { White , Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
@@ -72,7 +69,7 @@ static void E_filler(struct E *const e) {
 	Colour_filler(&e->colour);
 }
 
-#define DIGRAPH_NAME Foo
+#define DIGRAPH_NAME Colour
 #define DIGRAPH_VERTEX struct V
 #define DIGRAPH_EDGE struct E
 #define DIGRAPH_VERTEX_TO_STRING &V_to_string
@@ -81,8 +78,6 @@ static void E_filler(struct E *const e) {
 #define DIGRAPH_EDGE_TEST &E_filler
 #define DIGRAPH_TEST
 #include "../src/Digraph.h"
-
-#endif /* 0 --> */
 
 /** @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
