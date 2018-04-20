@@ -134,9 +134,15 @@ struct G_(Edge) {
 	struct G_(Vertex) *to;
 };
 
+static void edge_to_string(const struct G_(Edge) *const e, char (*const a)[12]) {
+	(void)e;
+	strcpy(*a, "e");
+}
+
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Edge)
 #define LIST_TYPE struct G_(Edge)
+#define LIST_TO_STRING &edge_to_string
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeListNode}. */
 
@@ -267,8 +273,12 @@ static void G_(DigraphEdgeInit)(struct G_(Edge) *const e,
 /** Don't add vertices that have already been added, undefined. */
 static void G_(DigraphAdd)(struct G_(Digraph) *const g,
 	struct G_(Vertex) *const v) {
+	struct G_(Vertex) *vtx = 0;
 	if(!g || !v) return;
 	G_(VertexListPush)(&g->vertices, v);
+	printf("DigraphAdd: %s.\n", G_(VertexListToString)(&g->vertices));
+	while((vtx = G_(VertexListNext)(vtx)))
+		printf("->%s\n", G_(EdgeListToString)(&vtx->out));
 }
 
 static void G_(DigraphVertexAdd)(struct G_(Vertex) *const v,
@@ -371,24 +381,24 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 #if defined(DIGRAPH_VERTEX) || defined(DIGRAPH_EDGE) /* <-- string */
 	char a[12];
 #endif /* string --> */
-	unsigned long v_no, v_to;
+	int v_no, v_to;
 	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n") < 0) return 0;
 	for(v =fv=G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
-		v_no = (unsigned long)(v - fv);
+		v_no = (int)((struct G_(VertexListNode) *)v - (struct G_(VertexListNode) *)fv);
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
 		PG_(v_to_string)(v, &a);
-		if(fprintf(fp, "\tv%lu [label=\"%s\"];\n", v_no, a) < 0) return 0;
+		if(fprintf(fp, "\tv%d [label=\"%s\"];\n", v_no, a) < 0) return 0;
 #else /* vertex --><-- !vertex */
-		if(fprintf(fp, "\tv%lu;\n", v_no) < 0) return 0;
+		if(fprintf(fp, "\tv%d;\n", v_no) < 0) return 0;
 #endif /* !vertex --> */
 		for(e = fe = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
-			v_to = (unsigned long)(e->to - fv);
+			v_to = (int)((struct G_(EdgeListNode) *)v - (struct G_(EdgeListNode) *)fv);
 #ifdef DIGRAPH_EDGE /* <-- edge */
 			PG_(e_to_string)(e, &a);
-			if(fprintf(fp, "\tv%lu -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
+			if(fprintf(fp, "\tv%d -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
 				< 0) return 0;
 #else /* edge --><-- !edge */
-			if(fprintf(fp, "\tv%lu -> v%lu;\n", v_no, v_to) < 0) return 0;
+			if(fprintf(fp, "\tv%d -> v%d;\n", v_no, v_to) < 0) return 0;
 #endif /* !edge --> */
 		}
 	}
@@ -411,6 +421,8 @@ static void PG_(unused)(void) {
 	G_(DigraphAdd)(0, 0);
 	G_(DigraphVertexAdd)(0, 0);
 	G_(DigraphOut)(0, 0);
+	G_(DigraphVertexInit)(0);
+	G_(DigraphEdgeInit)(0, 0);
 	PG_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if you have one function. */

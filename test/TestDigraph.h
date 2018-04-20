@@ -23,21 +23,23 @@ static void PG_(test_basic)(void) {
 
 static void PG_(test_random)(void) {
 	struct G_(Digraph) g;
-	struct G_(Vertex) vs[7], *v, *v1;
-	const size_t vs_size = sizeof vs / sizeof *vs;
+	struct G_(VertexListNode) vsn[7], *vn, *vn1;
+	const size_t vsn_size = sizeof vsn / sizeof *vsn;
 	const char *const fn = QUOTE(DIGRAPH_NAME) ".gv";
 	FILE *const fp = fopen(fn, "w");
 	int done = 0;
 	do {
 		if(!fp) break;
 		G_(Digraph)(&g);
-		for(v = vs, v1 = v + vs_size; v < v1; v++) {
-			G_(DigraphVertexInit(v)); /* @fixme add DIGRAPH_VERTEX */
+		for(vn = vsn, vn1 = vn + vsn_size; vn < vn1; vn++) {
+#ifdef DIGRAPH_VERTEX /* <-- vertex */
+			PG_(v_filler)(DigraphVertexInit(&vn->data));
+#else /* vertex --><-- !vertex */
+			G_(DigraphVertexInit(&vn->data));
+#endif /* !vertex --> */
+			G_(DigraphAdd)(&g, &vn->data);
 		}
-		for(v = vs, v1 = v + vs_size; v < v1 - 1; v++) {
-			G_(DigraphAdd)(&g, v);
-			printf("added %s\n", G_(VertexListToString)(&g.vertices));
-		}
+		
 		if(!G_(DigraphOut)(&g, fp)) break;
 		done = 1;
 	} while(0);
