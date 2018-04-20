@@ -1,15 +1,5 @@
 /* Intended to be included by {../src/Digraph.h} on {DIGRAPH_TEST}. */
 
-/* Define macros. */
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
-#endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
-
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
 static const PG_(VertexAction) PG_(e_filler) = (DIGRAPH_EDGE_TEST);
 #endif /* vertex --> */
@@ -32,6 +22,22 @@ static void PG_(test_basic)(void) {
 }
 
 static void PG_(test_random)(void) {
+	struct G_(Digraph) g;
+	struct G_(Vertex) vs[100];
+	const char *const fn = QUOTE(DIGRAPH_NAME) ".gv";
+	FILE *const fp = fopen(fn, "w");
+	int done = 0;
+	do {
+		if(!fp) break;
+		G_(Digraph)(&g);
+		G_(DigraphVertexInit(vs + 0)); /* @fixme */
+		G_(DigraphAdd)(&g, vs + 0);
+		if(!G_(DigraphOut)(&g, fp)) break;
+		done = 1;
+	} while(0);
+	if(!done) perror(fn);
+	fclose(fp);
+	if(!done) assert(0);
 }
 
 /** The list will be tested on stdout. */
@@ -65,5 +71,3 @@ static void G_(DigraphTest)(void) {
 }
 
 /* Un-define all macros. */
-#undef QUOTE
-#undef QUOTE_

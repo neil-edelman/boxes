@@ -2,8 +2,9 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {<G>Digraph} is an abstract directed graph represented by adjancency lists
- that is backed by {<G>Vertex} and {<G>Edge}. The preprocessor macros are all
- undefined at the end of the file for convenience.
+ that is backed by {<G>Vertex} and {<G>Edge}. It does very little except expose
+ the data types. The preprocessor macros are all undefined at the end of the
+ file for convenience.
 
  @param DIGRAPH_NAME
  This literally becomes {<G>}. As it's used in function names, this should
@@ -28,10 +29,11 @@
  @title		Digraph.h
  @std		C89
  @author	Neil
- @version	2018-04 Try. */
+ @version	2018-04 This is cool. */
 
 
 
+#include <stdio.h>  /* FILE for {<G>DigraphOut} */
 #include <assert.h>	/* assert */
 #include <stdio.h>	/* snprintf */
 #include <errno.h>	/* errno */
@@ -89,12 +91,20 @@
 #ifdef PG_
 #undef PG_
 #endif
+#ifdef QUOTE
+#undef QUOTE
+#endif
+#ifdef QUOTE_
+#undef QUOTE_
+#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
 #define G_(thing) CAT(DIGRAPH_NAME, thing)
 #define PG_(thing) PCAT(digraph, PCAT(DIGRAPH_NAME, thing))
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
 
 
 
@@ -127,7 +137,6 @@ struct G_(Edge) {
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Edge)
 #define LIST_TYPE struct G_(Edge)
-/*#define LIST_TO_STRING &*/
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeListNode}. */
 
@@ -143,7 +152,6 @@ struct G_(Vertex) {
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Vertex)
 #define LIST_TYPE struct G_(Vertex)
-/*#define LIST_TO_STRING &*/
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>VertexList} and {<G>VertexListNode}. */
 
@@ -151,6 +159,7 @@ struct G_(Vertex) {
 struct G_(Digraph);
 struct G_(Digraph) {
 	struct G_(VertexList) vertices;
+	struct G_(Vertex) *start;
 };
 
 
@@ -188,10 +197,16 @@ typedef void (*PG_(EdgeAction))(E *const);
 
 /** Called in \see{<G>Digraph_}.
  @implements <G>VertexAction */
-static void PG_(clear)(struct G_(Vertex) *const v) {
+static void PG_(v_clear)(struct G_(Vertex) *const v) {
 	assert(v);
 	G_(EdgeListClear)(&v->out);
 	/* @fixme And . . . destructor? */
+}
+
+/** Initialises it to empty. */
+static void PG_(clear)(struct G_(Digraph) *const g) {
+	G_(VertexListClear)(&g->vertices);
+	g->start = 0;
 }
 
 /** Destructor for {g}.
@@ -200,8 +215,8 @@ static void PG_(clear)(struct G_(Vertex) *const v) {
  @allow */
 static void G_(Digraph_)(struct G_(Digraph) *const g) {
 	if(!g) return;
-	G_(VertexListForEach)(&g->vertices, &PG_(clear));
-	G_(VertexListClear)(&g->vertices);
+	G_(VertexListForEach)(&g->vertices, &PG_(v_clear));
+	PG_(clear)(g);
 }
 
 /** Initialises {g} to an empty {Digraph}.
@@ -210,7 +225,33 @@ static void G_(Digraph_)(struct G_(Digraph) *const g) {
  @allow */
 static void G_(Digraph)(struct G_(Digraph) *const g) {
 	if(!g) return;
-	G_(VertexListClear)(&g->vertices);
+	PG_(clear)(g);
+}
+
+#ifdef DIGRAPH_VERTEX /* <-- vertex */
+static V *G_(DigraphVertexInit)(struct G_(Vertex) *const v) {
+	if(!v) return 0;
+	PG_(v_clear)(v);
+	return &v->info;
+}
+#else /* vertex --><-- !vertex */
+static void G_(DigraphVertexInit)(struct G_(Vertex) *const v) {
+	if(!v) return;
+	PG_(v_clear)(v);
+}
+#endif /* !vertex --> */
+
+/** Don't add vertices that have already been added, undefined. */
+static void G_(DigraphAdd)(struct G_(Digraph) *const g,
+	struct G_(Vertex) *const v) {
+	if(!g || !v) return;
+	G_(VertexListPush)(&g->vertices, v);
+}
+
+static void G_(DigraphVertexAdd)(struct G_(Vertex) *const v,
+	struct G_(Edge) *e) {
+	if(!v || !e) return;
+	G_(EdgeListPush)(&v->out, e);
 }
 
 #if 0 /* <-- 0 */
@@ -297,12 +338,27 @@ static void G_(StackForEach)(struct G_(Digraph) *const g,
  @param g: If null, does nothing.
  @param fp: File pointer.
  @return Success.
+ @throws {fprintf} errors: {IEEE Std 1003.1-2001}.
  @order O(|{vertices}| + |{edges}|)
  @allow */
-static int G_(DigraphOutput)(const struct G_(Digraph) *const g,
+static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 	FILE *const fp) {
-	char scratch[12];
-	return 0;
+	struct G_(Vertex) *v, *fv;
+	char a[12];
+	unsigned long v_no;
+	(void)a;
+	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n") < 0) return 0;
+	for(v =fv=G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
+		v_no = (unsigned long)(v - fv);
+#ifdef DIGRAPH_VERTEX /* <-- vertex */
+		PG_(v_to_string)(v, &a);
+		if(fprintf(fp, "\tp%p [label=\"%s\"];\n", v_no, a) < 0) return 0;
+#else /* vertex --><-- !vertex */
+		if(fprintf(fp, "\tv%lu;\n", v_no) < 0) return 0;
+#endif /* !vertex --> */
+	}
+	if(fprintf(fp, "}\n") < 0) return 0;
+	return 1;
 }
 
 #ifdef DIGRAPH_TEST /* <-- test */
@@ -317,7 +373,9 @@ static void PG_(unused_coda)(void);
 static void PG_(unused)(void) {
 	G_(Digraph_)(0);
 	G_(Digraph)(0);
-	G_(DigraphOutput)(0, 0);
+	G_(DigraphAdd)(0, 0);
+	G_(DigraphVertexAdd)(0, 0);
+	G_(DigraphOut)(0, 0);
 	PG_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if you have one function. */
@@ -338,6 +396,8 @@ static void PG_(unused_coda)(void) { PG_(unused)(); }
 #endif /* !sub --> */
 #undef G_
 #undef PG_
+#undef QUOTE
+#undef QUOTE_
 #ifdef V
 #undef V
 #endif
