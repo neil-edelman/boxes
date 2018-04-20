@@ -349,7 +349,7 @@ static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
 		((char *)data - offsetof(struct T_(ListNode), data));
 }
 
-/** Private: {container_of}. */
+/** Private: {container_of}; used for \see{<T>List<U>Next}, {etc}. */
 static const struct T_(ListNode) *
 	PT_(node_hold_const_data)(const T *const data) {
 	return (const struct T_(ListNode) *)(const void *)
