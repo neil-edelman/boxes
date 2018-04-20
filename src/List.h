@@ -42,7 +42,7 @@
  @author	Neil
  @std		C89/90
  @version	2018-04 Two dynanic memory allocations have been collapsed into one;
-			one know the size, anyway, might as well make it a non-pointer.
+			one knows the size, anyway, might as well make it a non-pointer.
  @since		2018-02 Eliminated the need for unnecessarily {<T>List}.
 			Now one must initialise static variables with {<T>ListClear}.
 			Eliminated {LIST_STATIC_SORT}.
@@ -347,6 +347,13 @@ static struct T_(ListNode) *PT_(node_hold_x)(struct PT_(X) *const x) {
 static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
 	return (struct T_(ListNode) *)(void *)
 		((char *)data - offsetof(struct T_(ListNode), data));
+}
+
+/** Private: {container_of}. */
+static const struct T_(ListNode) *
+	PT_(node_hold_const_data)(const T *const data) {
+	return (const struct T_(ListNode) *)(const void *)
+	((const char *)data - offsetof(struct T_(ListNode), data));
 }
 
 /** Private: used in \see{<PT>_order_<U>_migrate_each};
@@ -1030,8 +1037,8 @@ static void PT_U_(list, self_correct)(struct T_(List) *const list) {
  null.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Next)(T *const data) {
-	const struct PT_(X) *const x = &PT_(node_hold_data)(data)->x;
+static T *T_U_(List, Next)(const T *const data) {
+	const struct PT_(X) *const x = &PT_(node_hold_const_data)(data)->x;
 	struct PT_(X) *next_x;
 	if(!data) return 0;
 	assert(x->U_(next));
@@ -1046,8 +1053,8 @@ static T *T_U_(List, Next)(T *const data) {
  returns null.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Previous)(T *const data) {
-	const struct PT_(X) *const x = &PT_(node_hold_data)(data)->x;
+static T *T_U_(List, Previous)(const T *const data) {
+	const struct PT_(X) *const x = &PT_(node_hold_const_data)(data)->x;
 	struct PT_(X) *prev_x;
 	if(!data) return 0;
 	assert(x->U_(prev));
@@ -1059,7 +1066,7 @@ static T *T_U_(List, Previous)(T *const data) {
  @return A pointer to the first element of {list}.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, First)(struct T_(List) *const list) {
+static T *T_U_(List, First)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->head.U_(next));
 	if(!list->head.U_(next)->U_(next)) return 0; /* Empty. */
@@ -1070,7 +1077,7 @@ static T *T_U_(List, First)(struct T_(List) *const list) {
  @return A pointer to the last element of {list}.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Last)(struct T_(List) *const list) {
+static T *T_U_(List, Last)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->tail.U_(prev));
 	if(!list->tail.U_(prev)->U_(prev)) return 0; /* Empty. */
