@@ -134,7 +134,8 @@ struct G_(Edge) {
 	struct G_(Vertex) *to;
 };
 
-static void edge_to_string(const struct G_(Edge) *const e, char (*const a)[12]) {
+static void edge_to_string(const struct G_(Edge) *const e,
+	char (*const a)[12]) {
 	(void)e;
 	strcpy(*a, "e");
 }
@@ -155,7 +156,8 @@ struct G_(Vertex) {
 	struct G_(EdgeList) out;
 };
 
-static void vertex_to_string(const struct G_(Vertex) *const v, char (*const a)[12]) {
+static void vertex_to_string(const struct G_(Vertex) *const v,
+	char (*const a)[12]) {
 	(void)v;
 	strcpy(*a, "v");
 }
@@ -376,29 +378,27 @@ static void G_(StackForEach)(struct G_(Digraph) *const g,
  @allow */
 static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 	FILE *const fp) {
-	struct G_(Vertex) *v, *fv;
-	struct G_(Edge) *e, *fe;
-#if defined(DIGRAPH_VERTEX) || defined(DIGRAPH_EDGE) /* <-- string */
+	struct G_(Vertex) *v;
+	struct G_(Edge) *e;
 	char a[12];
-#endif /* string --> */
-	int v_no, v_to;
+	unsigned long v_no, v_to;
 	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n") < 0) return 0;
-	for(v =fv=G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
-		v_no = (int)((struct G_(VertexListNode) *)v - (struct G_(VertexListNode) *)fv);
+	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
+		v_no = (unsigned long)v;
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
 		PG_(v_to_string)(v, &a);
-		if(fprintf(fp, "\tv%d [label=\"%s\"];\n", v_no, a) < 0) return 0;
 #else /* vertex --><-- !vertex */
-		if(fprintf(fp, "\tv%d;\n", v_no) < 0) return 0;
+		*a = '\0';/*strcpy(a, "");*/
 #endif /* !vertex --> */
-		for(e = fe = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
-			v_to = (int)((struct G_(EdgeListNode) *)v - (struct G_(EdgeListNode) *)fv);
+		if(fprintf(fp, "\tv%lu [label=\"%s\"];\n", v_no, a) < 0) return 0;
+		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
+			v_to = (unsigned long)e->to;
 #ifdef DIGRAPH_EDGE /* <-- edge */
 			PG_(e_to_string)(e, &a);
-			if(fprintf(fp, "\tv%d -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
+			if(fprintf(fp, "\tv%lu -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
 				< 0) return 0;
 #else /* edge --><-- !edge */
-			if(fprintf(fp, "\tv%d -> v%d;\n", v_no, v_to) < 0) return 0;
+			if(fprintf(fp, "\tv%lu -> v%lu;\n", v_no, v_to) < 0) return 0;
 #endif /* !edge --> */
 		}
 	}
