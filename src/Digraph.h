@@ -149,9 +149,15 @@ struct G_(Vertex) {
 	struct G_(EdgeList) out;
 };
 
+static void vertex_to_string(const struct G_(Vertex) *const v, char (*const a)[12]) {
+	(void)v;
+	strcpy(*a, "v");
+}
+
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Vertex)
 #define LIST_TYPE struct G_(Vertex)
+#define LIST_TO_STRING &vertex_to_string
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>VertexList} and {<G>VertexListNode}. */
 
@@ -240,6 +246,23 @@ static void G_(DigraphVertexInit)(struct G_(Vertex) *const v) {
 	PG_(v_clear)(v);
 }
 #endif /* !vertex --> */
+
+#ifdef DIGRAPH_EDGE /* <-- edge */
+static V *G_(DigraphEdgeInit)(struct G_(Edge) *const e,
+	struct G_(Vertex) *const v) {
+	if(!v) return 0;
+	...
+	PG_(v_clear)(v);
+	return &v->info;
+}
+#else /* edge --><-- !edge */
+static void G_(DigraphEdgeInit)(struct G_(Edge) *const e,
+	struct G_(Vertex) *const v) {
+	if(!e || !v) return;
+	/* @fixme Check that v is in vertices. */
+	e->to = v;
+}
+#endif /* !edge --> */
 
 /** Don't add vertices that have already been added, undefined. */
 static void G_(DigraphAdd)(struct G_(Digraph) *const g,
@@ -344,18 +367,30 @@ static void G_(StackForEach)(struct G_(Digraph) *const g,
 static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 	FILE *const fp) {
 	struct G_(Vertex) *v, *fv;
+	struct G_(Edge) *e, *fe;
+#if defined(DIGRAPH_VERTEX) || defined(DIGRAPH_EDGE) /* <-- string */
 	char a[12];
-	unsigned long v_no;
-	(void)a;
+#endif /* string --> */
+	unsigned long v_no, v_to;
 	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n") < 0) return 0;
 	for(v =fv=G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		v_no = (unsigned long)(v - fv);
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
 		PG_(v_to_string)(v, &a);
-		if(fprintf(fp, "\tp%p [label=\"%s\"];\n", v_no, a) < 0) return 0;
+		if(fprintf(fp, "\tv%lu [label=\"%s\"];\n", v_no, a) < 0) return 0;
 #else /* vertex --><-- !vertex */
 		if(fprintf(fp, "\tv%lu;\n", v_no) < 0) return 0;
 #endif /* !vertex --> */
+		for(e = fe = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
+			v_to = (unsigned long)(e->to - fv);
+#ifdef DIGRAPH_EDGE /* <-- edge */
+			PG_(e_to_string)(e, &a);
+			if(fprintf(fp, "\tv%lu -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
+				< 0) return 0;
+#else /* edge --><-- !edge */
+			if(fprintf(fp, "\tv%lu -> v%lu;\n", v_no, v_to) < 0) return 0;
+#endif /* !edge --> */
+		}
 	}
 	if(fprintf(fp, "}\n") < 0) return 0;
 	return 1;
