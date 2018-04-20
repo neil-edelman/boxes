@@ -25,7 +25,9 @@ static void PG_(valid_state)(const struct G_(Digraph) *const g) {
 }
 
 static void PG_(test_basic)(void) {
+	struct G_(Digraph) g;
 	PG_(valid_state)(0);
+	G_(Digraph)(&g);
 	printf("Destructor:\n");
 }
 

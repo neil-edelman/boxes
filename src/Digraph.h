@@ -190,7 +190,8 @@ typedef void (*PG_(EdgeAction))(E *const);
  @implements <G>VertexAction */
 static void PG_(clear)(struct G_(Vertex) *const v) {
 	assert(v);
-	G_(EdgeList_)(&v->out);
+	G_(EdgeListClear)(&v->out);
+	/* @fixme And . . . destructor? */
 }
 
 /** Destructor for {g}.
@@ -199,8 +200,8 @@ static void PG_(clear)(struct G_(Vertex) *const v) {
  @allow */
 static void G_(Digraph_)(struct G_(Digraph) *const g) {
 	if(!g) return;
-	G_(VertexForEach)(&g->vertices, &PG_(clear));
-	G_(Vertex_)(&g->vertices);
+	G_(VertexListForEach)(&g->vertices, &PG_(clear));
+	G_(VertexListClear)(&g->vertices);
 }
 
 /** Initialises {g} to an empty {Digraph}.
@@ -209,7 +210,7 @@ static void G_(Digraph_)(struct G_(Digraph) *const g) {
  @allow */
 static void G_(Digraph)(struct G_(Digraph) *const g) {
 	if(!g) return;
-	G_(Vertex)(&g->vertices);
+	G_(VertexListClear)(&g->vertices);
 }
 
 #if 0 /* <-- 0 */
