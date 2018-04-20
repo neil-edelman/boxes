@@ -27,9 +27,9 @@ static void PG_(test_random)(void) {
 	int done = 0;
 	do {
 		struct G_(Digraph) g;
-		struct G_(VertexListNode) vns[7], *vn, *vn1;
+		struct G_(VertexListNode) vns[100], *vn, *vn1;
 		const size_t vns_size = sizeof vns / sizeof *vns;
-		struct G_(EdgeListNode) ens[5], *en, *en1;
+		struct G_(EdgeListNode) ens[200], *en, *en1;
 		const size_t ens_size = sizeof ens / sizeof *ens;
 		struct G_(Vertex) *v0, *v1;
 

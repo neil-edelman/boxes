@@ -402,7 +402,8 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 #endif /* !edge --> */
 		}
 	}
-	if(fprintf(fp, "}\n") < 0) return 0;
+	if(fprintf(fp, "\tnode [fillcolor = red];\n"
+		"}\n") < 0) return 0;
 	return 1;
 }
 
