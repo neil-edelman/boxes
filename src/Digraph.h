@@ -124,6 +124,37 @@ typedef DIGRAPH_EDGE PG_(Edge);
 
 
 
+#ifdef DIGRAPH_VERTEX_TO_STRING /* <-- v2string */
+/** Responsible for turning {<V>} (the first argument) into a 12 {char}
+ null-terminated output string (the second.) */
+typedef void (*PG_(VertexToString))(const V *, char (*const)[12]);
+/* Check that {DIGRAPH_VERTEX_TO_STRING} is a function implementing
+ {<PVE>VertexToString}. */
+static const PG_(VertexToString) PG_(v_to_string) =(DIGRAPH_VERTEX_TO_STRING);
+#endif /* v2string --> */
+
+#ifdef DIGRAPH_EDGE_TO_STRING /* <-- e2string */
+/** Responsible for turning {<E>} (the first argument) into a 12 {char}
+ null-terminated output string (the second.) */
+typedef void (*PG_(EdgeToString))(const E *, char (*const)[12]);
+/* Check that {DIGRAPH_EDGE_TO_STRING} is a function implementing
+ {<PVE>EdgeToString}. */
+static const PG_(EdgeToString) PG_(e_to_string) = (DIGRAPH_EDGE_TO_STRING);
+#endif /* e2string --> */
+
+#ifdef DIGRAPH_TEST /* <-- test */
+#ifdef DIGRAPH_VERTEX /* <-- vertex */
+/** Performs an action on a vertex-associated {<V>}. */
+typedef void (*PG_(VertexAction))(V *const);
+#endif /* vertex --> */
+#ifdef DIGRAPH_EDGE /* <-- edge */
+/** Performs an action on an edge-associated {<E>}. */
+typedef void (*PG_(EdgeAction))(E *const);
+#endif /* edge --> */
+#endif /* test -->*/
+
+
+
 /** Edge. */
 struct G_(Edge);
 struct G_(Vertex);
@@ -164,7 +195,7 @@ struct G_(Vertex) {
 static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	char (*const a)[12]) {
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
-	PG_(vertex_to_string)(&v->info, a);
+	PG_(v_to_string)(&v->info, a);
 #else /* vertex --><-- !vertex */
 	strcpy(*a, "vertex");
 	(void)v;
@@ -184,37 +215,6 @@ struct G_(Digraph) {
 	struct G_(VertexList) vertices;
 	struct G_(Vertex) *start;
 };
-
-
-
-#ifdef DIGRAPH_VERTEX_TO_STRING /* <-- v2string */
-/** Responsible for turning {<V>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) */
-typedef void (*PG_(VertexToString))(const V *, char (*const)[12]);
-/* Check that {DIGRAPH_VERTEX_TO_STRING} is a function implementing
- {<PVE>VertexToString}. */
-static const PG_(VertexToString) PG_(v_to_string) =(DIGRAPH_VERTEX_TO_STRING);
-#endif /* v2string --> */
-
-#ifdef DIGRAPH_EDGE_TO_STRING /* <-- e2string */
-/** Responsible for turning {<E>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) */
-typedef void (*PG_(EdgeToString))(const E *, char (*const)[12]);
-/* Check that {DIGRAPH_EDGE_TO_STRING} is a function implementing
- {<PVE>EdgeToString}. */
-static const PG_(EdgeToString) PG_(e_to_string) = (DIGRAPH_EDGE_TO_STRING);
-#endif /* e2string --> */
-
-#ifdef DIGRAPH_TEST /* <-- test */
-#ifdef DIGRAPH_VERTEX /* <-- vertex */
-/** Performs an action on a vertex-associated {<V>}. */
-typedef void (*PG_(VertexAction))(V *const);
-#endif /* vertex --> */
-#ifdef DIGRAPH_EDGE /* <-- edge */
-/** Performs an action on an edge-associated {<E>}. */
-typedef void (*PG_(EdgeAction))(E *const);
-#endif /* edge --> */
-#endif /* test -->*/
 
 
 
@@ -265,12 +265,11 @@ static void G_(DigraphVertexInit)(struct G_(Vertex) *const v) {
 #endif /* !vertex --> */
 
 #ifdef DIGRAPH_EDGE /* <-- edge */
-static V *G_(DigraphEdgeInit)(struct G_(Edge) *const e,
+static E *G_(DigraphEdgeInit)(struct G_(Edge) *const e,
 	struct G_(Vertex) *const v) {
-	if(!v) return 0;
-	...
-	PG_(v_clear)(v);
-	return &v->info;
+	if(!e || !v) return 0;
+	e->to = v;
+	return &e->info;
 }
 #else /* edge --><-- !edge */
 static void G_(DigraphEdgeInit)(struct G_(Edge) *const e,
@@ -395,7 +394,7 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		v_no = (unsigned long)v;
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
-		PG_(v_to_string)(v, &a);
+		PG_(v_to_string)(&v->info, &a);
 #else /* vertex --><-- !vertex */
 		*a = '\0';/*strcpy(a, "");*/
 #endif /* !vertex --> */
@@ -403,7 +402,7 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
 #ifdef DIGRAPH_EDGE /* <-- edge */
-			PG_(e_to_string)(e, &a);
+			PG_(e_to_string)(&e->info, &a);
 			if(fprintf(fp, "\tv%lu -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
 				< 0) return 0;
 #else /* edge --><-- !edge */

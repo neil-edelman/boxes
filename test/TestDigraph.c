@@ -34,7 +34,7 @@ static const char *const colour_names[] = { "White", "Silver", "Gray", "Black",
 static const size_t colour_size = sizeof colour_names / sizeof *colour_names;
 /** @implements <Colour>ToString */
 static void Colour_to_string(const enum Colour colour, char (*const a)[12]) {
-	assert(colour > colour_size);
+	assert(colour < colour_size);
 	sprintf(*a, "%s", colour_names[colour]);
 }
 /** @implements <Colour>Action */
@@ -85,7 +85,7 @@ int main(void) {
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	BlankDigraphTest();
-	/*FooDigraphTest();*/
+	ColourDigraphTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

@@ -1,7 +1,7 @@
 /* Intended to be included by {../src/Digraph.h} on {DIGRAPH_TEST}. */
 
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
-static const PG_(VertexAction) PG_(e_filler) = (DIGRAPH_EDGE_TEST);
+static const PG_(VertexAction) PG_(v_filler) = (DIGRAPH_VERTEX_TEST);
 #endif /* vertex --> */
 
 #ifdef DIGRAPH_EDGE /* <-- edge */
@@ -37,7 +37,7 @@ static void PG_(test_random)(void) {
 		G_(Digraph)(&g);
 		for(vn = vns, vn1 = vn + vns_size; vn < vn1; vn++) {
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
-			PG_(v_filler)(DigraphVertexInit(&vn->data));
+			PG_(v_filler)(G_(DigraphVertexInit)(&vn->data));
 #else /* vertex --><-- !vertex */
 			G_(DigraphVertexInit(&vn->data));
 #endif /* !vertex --> */
@@ -50,7 +50,7 @@ static void PG_(test_random)(void) {
 			v1 = &vns[idx1].data;
 			printf("v0: %lu; v1: %lu.\n", idx0, idx1);
 #ifdef DIGRAPH_EDGE /* <-- edge */
-			PG_(e_filler)(DigraphEdgeInit(&en->data, v1));
+			PG_(e_filler)(G_(DigraphEdgeInit)(&en->data, v1));
 #else /* edge --><-- !edge */
 			G_(DigraphEdgeInit(&en->data, v1));
 #endif /* !edge --> */
