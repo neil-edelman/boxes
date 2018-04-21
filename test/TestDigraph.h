@@ -17,14 +17,18 @@ static void PG_(valid_state)(const struct G_(Digraph) *const g) {
 static void PG_(test_basic)(void) {
 	struct G_(Digraph) g;
 	PG_(valid_state)(0);
+	printf("Constructor:\n");
 	G_(Digraph)(&g);
 	printf("Destructor:\n");
+	G_(Digraph_)(&g);
+	PG_(valid_state)(&g);
 }
 
 static void PG_(test_random)(void) {
 	const char *const fn = QUOTE(DIGRAPH_NAME) ".gv";
 	FILE *const fp = fopen(fn, "w");
 	int done = 0;
+	printf("Random:\n");
 	do {
 		struct G_(Digraph) g;
 		struct G_(VertexListNode) vns[100], *vn, *vn1;
@@ -41,21 +45,19 @@ static void PG_(test_random)(void) {
 #else /* vertex --><-- !vertex */
 			G_(DigraphVertexInit(&vn->data));
 #endif /* !vertex --> */
-			G_(DigraphAdd)(&g, &vn->data);
+			G_(DigraphVertexAdd)(&g, &vn->data);
 		}
 		for(en = ens, en1 = en + ens_size; en < en1; en++) {
 			size_t idx0 = (size_t)(rand() / (1.0 + RAND_MAX) * vns_size);
 			size_t idx1 = (size_t)(rand() / (1.0 + RAND_MAX) * vns_size);
 			v0 = &vns[idx0].data;
 			v1 = &vns[idx1].data;
-			printf("v0: %lu; v1: %lu.\n", idx0, idx1);
 #ifdef DIGRAPH_EDGE /* <-- edge */
 			PG_(e_filler)(G_(DigraphEdgeInit)(&en->data, v1));
 #else /* edge --><-- !edge */
 			G_(DigraphEdgeInit(&en->data, v1));
 #endif /* !edge --> */
-			printf("adding edge to v%lu\n", (struct G_(VertexListNode) *)v1 - vns);
-			G_(DigraphVertexAdd)(v0, &en->data);
+			G_(DigraphEdgeAdd)(v0, &en->data);
 		}
 		if(!G_(DigraphOut)(&g, fp)) break;
 		done = 1;
@@ -63,6 +65,7 @@ static void PG_(test_random)(void) {
 	if(!done) perror(fn);
 	fclose(fp);
 	if(!done) assert(0);
+	printf("See <%s>.\n", fn);
 }
 
 /** The list will be tested on stdout. */

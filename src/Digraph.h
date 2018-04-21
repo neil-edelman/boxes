@@ -223,7 +223,6 @@ struct G_(Digraph) {
 static void PG_(v_clear)(struct G_(Vertex) *const v) {
 	assert(v);
 	G_(EdgeListClear)(&v->out);
-	/* @fixme And . . . destructor? */
 }
 
 /** Initialises it to empty. */
@@ -252,19 +251,32 @@ static void G_(Digraph)(struct G_(Digraph) *const g) {
 }
 
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
+/** Initialises {v} to contain no edges.
+ @return The {<V>} part of the vertex. */
 static V *G_(DigraphVertexInit)(struct G_(Vertex) *const v) {
 	if(!v) return 0;
 	PG_(v_clear)(v);
 	return &v->info;
 }
 #else /* vertex --><-- !vertex */
+/** Initialises {v} to contain no edges. */
 static void G_(DigraphVertexInit)(struct G_(Vertex) *const v) {
 	if(!v) return;
 	PG_(v_clear)(v);
 }
 #endif /* !vertex --> */
 
+/** Undefined behaviour results from adding vertices that have already been
+ added. */
+static void G_(DigraphVertexAdd)(struct G_(Digraph) *const g,
+	struct G_(Vertex) *const v) {
+	if(!g || !v) return;
+	G_(VertexListPush)(&g->vertices, v);
+}
+
 #ifdef DIGRAPH_EDGE /* <-- edge */
+/** Initialises {e} to point to {v}.
+ @return The {<E>} part of the edge. */
 static E *G_(DigraphEdgeInit)(struct G_(Edge) *const e,
 	struct G_(Vertex) *const v) {
 	if(!e || !v) return 0;
@@ -272,6 +284,7 @@ static E *G_(DigraphEdgeInit)(struct G_(Edge) *const e,
 	return &e->info;
 }
 #else /* edge --><-- !edge */
+/** Initialises {e} to point to {v}. */
 static void G_(DigraphEdgeInit)(struct G_(Edge) *const e,
 	struct G_(Vertex) *const v) {
 	if(!e || !v) return;
@@ -280,21 +293,19 @@ static void G_(DigraphEdgeInit)(struct G_(Edge) *const e,
 }
 #endif /* !edge --> */
 
-/** Don't add vertices that have already been added, undefined. */
-static void G_(DigraphAdd)(struct G_(Digraph) *const g,
-	struct G_(Vertex) *const v) {
-	struct G_(Vertex) *vtx = 0;
-	if(!g || !v) return;
-	G_(VertexListPush)(&g->vertices, v);
-	printf("DigraphAdd: %s.\n", G_(VertexListToString)(&g->vertices));
-	while((vtx = G_(VertexListNext)(vtx)))
-		printf("->%s\n", G_(EdgeListToString)(&vtx->out));
-}
-
-static void G_(DigraphVertexAdd)(struct G_(Vertex) *const v,
+/** Undefined behaviour results from adding edges that have already been
+ added. */
+static void G_(DigraphEdgeAdd)(struct G_(Vertex) *const v,
 	struct G_(Edge) *e) {
 	if(!v || !e) return;
 	G_(EdgeListPush)(&v->out, e);
+}
+
+/** Sets the starting vertex. */
+static void G_(DigraphStart)(struct G_(Digraph) *const g,
+	struct G_(Vertex) *const start) {
+	if(!g) return;
+	g->start = start;
 }
 
 #if 0 /* <-- 0 */
@@ -398,7 +409,8 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 #else /* vertex --><-- !vertex */
 		*a = '\0';/*strcpy(a, "");*/
 #endif /* !vertex --> */
-		if(fprintf(fp, "\tv%lu [label=\"%s\"];\n", v_no, a) < 0) return 0;
+		if(fprintf(fp, "\tv%lu [label=\"%s\"%s];\n", v_no, a,
+			v == g->start ? " peripheries=2" : "") < 0) return 0;
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
 #ifdef DIGRAPH_EDGE /* <-- edge */
@@ -427,11 +439,12 @@ static void PG_(unused_coda)(void);
 static void PG_(unused)(void) {
 	G_(Digraph_)(0);
 	G_(Digraph)(0);
-	G_(DigraphAdd)(0, 0);
-	G_(DigraphVertexAdd)(0, 0);
-	G_(DigraphOut)(0, 0);
 	G_(DigraphVertexInit)(0);
+	G_(DigraphVertexAdd)(0, 0);
 	G_(DigraphEdgeInit)(0, 0);
+	G_(DigraphEdgeAdd)(0, 0);
+	G_(DigraphStart)(0, 0);
+	G_(DigraphOut)(0, 0);
 	PG_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if you have one function. */
