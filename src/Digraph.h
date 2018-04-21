@@ -250,6 +250,8 @@ static void G_(Digraph)(struct G_(Digraph) *const g) {
 	PG_(clear)(g);
 }
 
+/* @fixme Become part of VertexAdd */
+
 #ifdef DIGRAPH_VERTEX /* <-- vertex */
 /** Initialises {v} to contain no edges.
  @return The {<V>} part of the vertex. */
@@ -401,6 +403,7 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 	struct G_(Edge) *e;
 	char a[12];
 	unsigned long v_no, v_to;
+	if(!g || !fp) return 0;
 	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n") < 0) return 0;
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		v_no = (unsigned long)v;
