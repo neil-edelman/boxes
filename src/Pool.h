@@ -65,7 +65,7 @@
 
 
 
-#include <stddef.h>	/* ptrdiff_t */
+#include <stddef.h>	/* ptrdiff_t offset_of */
 #include <stdlib.h>	/* realloc free */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy (memmove strerror strcpy memcmp in PoolTest.h) */
