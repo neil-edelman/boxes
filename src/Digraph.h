@@ -178,7 +178,7 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	PG_(edata_to_string)(&e->data, a);
 #else /* edata --><-- !edata */
-	strcpy(*a, "edge");
+	strcpy(*a, "e");
 	(void)e;
 #endif /* !edata --> */
 }
@@ -199,13 +199,14 @@ struct G_(Vertex) {
 	struct G_(EdgeList) out;
 };
 
-/** @implements <<G>Vertex>ToString */
+/** @fixme Is this used???
+ @implements <<G>Vertex>ToString */
 static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	char (*const a)[12]) {
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	PG_(vdata_to_string)(&v->data, a);
 #else /* vdata --><-- !vdata */
-	strcpy(*a, "vertex");
+	strcpy(*a, "v");
 	(void)v;
 #endif /* !vdata --> */
 }
@@ -284,7 +285,7 @@ static void G_(DigraphVertexAdd)(struct G_(Digraph) *const g,
 	if(!v) return;
 	PG_(v_clear)(v);
 	if(!g) return;
-	if(G_(VertexListIsEmpty)(&g->vertices)) g->start = v;
+	if(!G_(VertexListFirst)(&g->vertices)) g->start = v;
 	G_(VertexListPush)(&g->vertices, v);
 }
 
@@ -365,11 +366,13 @@ static void PG_(unused_coda)(void);
 static void PG_(unused)(void) {
 	G_(Digraph_)(0);
 	G_(Digraph)(0);
+#ifdef DIGRAPH_VDATA /* <-- vdata */
 	G_(DigraphVertexData)(0);
+#endif /* vdata --> */
+#ifdef DIGRAPH_EDATA /* <-- edata */
 	G_(DigraphEdgeData)(0);
-	G_(DigraphVertexInit)(0);
+#endif /* edata --> */
 	G_(DigraphVertexAdd)(0, 0);
-	G_(DigraphEdgeInit)(0, 0);
 	G_(DigraphEdgeAdd)(0, 0, 0);
 	G_(DigraphSetStart)(0, 0);
 	G_(DigraphGetStart)(0);

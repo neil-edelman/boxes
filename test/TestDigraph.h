@@ -1,11 +1,11 @@
 /* Intended to be included by {../src/Digraph.h} on {DIGRAPH_TEST}. */
 
 #ifdef DIGRAPH_VDATA /* <-- vdata */
-static const PG_(VDataAction) PG_(v_filler) = (DIGRAPH_VDATA_TEST);
+static const PG_(VDataAction) PG_(vdata_filler) = (DIGRAPH_VDATA_TEST);
 #endif /* vdata --> */
 
 #ifdef DIGRAPH_EDATA /* <-- edata */
-static const PG_(EDataAction) PG_(e_filler) = (DIGRAPH_EDATA_TEST);
+static const PG_(EDataAction) PG_(edata_filler) = (DIGRAPH_EDATA_TEST);
 #endif /* edata --> */
 
 
@@ -40,8 +40,8 @@ static void PG_(test_random)(void) {
 		if(!fp) break;
 		G_(Digraph)(&g);
 		for(vn = vns, vn1 = vn + vns_size; vn < vn1; vn++) {
-			PG_(v_filler)(G_(DigraphVertexInit)(&vn->data));
 #ifdef DIGRAPH_VDATA /* <-- vdata */
+			PG_(vdata_filler)(G_(DigraphVertexData)(&vn->data));
 #endif /* vdata --> */
 			G_(DigraphVertexAdd)(&g, &vn->data);
 		}
@@ -51,11 +51,9 @@ static void PG_(test_random)(void) {
 			v0 = &vns[idx0].data;
 			v1 = &vns[idx1].data;
 #ifdef DIGRAPH_EDATA /* <-- edata */
-			PG_(e_filler)(G_(DigraphEdgeInit)(&en->data, v1));
-#else /* edata --><-- !edata */
-			G_(DigraphEdgeInit(&en->data, v1));
+			PG_(edata_filler)(G_(DigraphEdgeData)(&en->data));
 #endif /* !edata --> */
-			G_(DigraphEdgeAdd)(v0, &en->data);
+			G_(DigraphEdgeAdd)(&en->data, v0, v1);
 		}
 		if(!G_(DigraphOut)(&g, fp)) break;
 		done = 1;
@@ -107,5 +105,3 @@ static void G_(DigraphTest)(void) {
 	PG_(test_random)();
 	fprintf(stderr, "Done tests of Digraph<" QUOTE(DIGRAPH_NAME) ">.\n\n");
 }
-
-/* Un-define all macros. */

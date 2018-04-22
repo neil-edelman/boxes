@@ -71,12 +71,12 @@ static void E_filler(struct E *const e) {
 }
 
 #define DIGRAPH_NAME Colour
-#define DIGRAPH_VERTEX struct V
-#define DIGRAPH_EDGE struct E
-#define DIGRAPH_VERTEX_TO_STRING &V_to_string
-#define DIGRAPH_EDGE_TO_STRING &E_to_string
-#define DIGRAPH_VERTEX_TEST &V_filler
-#define DIGRAPH_EDGE_TEST &E_filler
+#define DIGRAPH_VDATA struct V
+#define DIGRAPH_EDATA struct E
+#define DIGRAPH_VDATA_TO_STRING &V_to_string
+#define DIGRAPH_EDATA_TO_STRING &E_to_string
+#define DIGRAPH_VDATA_TEST &V_filler
+#define DIGRAPH_EDATA_TEST &E_filler
 #define DIGRAPH_TEST
 #include "../src/Digraph.h"
 
@@ -127,8 +127,8 @@ static void state_to_string(const struct State *state, char (*const a)[12]) {
 	state->vt->to_string(state, a);
 }
 #define DIGRAPH_NAME State
-#define DIGRAPH_EDGE struct State
-#define DIGRAPH_EDGE_TO_STRING &state_to_string
+#define DIGRAPH_EDATA struct State
+#define DIGRAPH_EDATA_TO_STRING &state_to_string
 #include "../src/Digraph.h" /* StateDigraph, StateVertex, StateEdge. */
 
 /**
@@ -153,7 +153,8 @@ static const struct Literals *
 	return (const struct Literals *)(const void *)
 		((const char *)state
 		- offsetof(struct Literals, state_edge)
-		- offsetof(struct StateEdge, info));
+		- offsetof(struct StateEdge, data));
+		/* @fixme Almost certainly wrong. */
 }
 /** @implements StateMatch */
 static int literals_match(const struct State *state, const char *const match) {
@@ -181,7 +182,7 @@ static void Literals_(struct Literals *const l) {
 static int Literals(struct Literals *const l, const char *const match,
 	unsigned match_size) {
 	assert(l && match && match_size);
-	State(&l->state_edge.info, &literals_vt);
+	State(&l->state_edge.data, &literals_vt);
 	l->text = 0;
 	l->text_size = 0;
 	/* Copy the literals, with a null terminator, (debug use.) */
@@ -223,7 +224,6 @@ static enum CompileResult regex_compile(struct Regex *re,
 	do {
 		if(!(start = StateVertexPoolNew(&re->vertices))) break;
 		StateDigraphVertexAdd(&re->states, start);
-		StateDigraphStart(&re->states, start);
 		if(!(lit = LiteralsPoolNew(&re->literals))) break;
 		if(!Literals(lit, match, p)) break;
 		done = 1;
@@ -265,8 +265,9 @@ struct Regex *Regex(const char *const match) {
  @return The first point it matches or null if it doesn't. */
 const char *RegexMatch(const struct Regex *const re, const char *const match) {
 	if(!re || !match) return 0;
-	/* @fixme */
-	state_match(&re->states, match);
+	/* @fixme
+	get start state &re->states
+	state_match(, match);*/
 	return 0;
 }
 /** Appends {re} to {fp} in GraphViz format.
@@ -285,7 +286,7 @@ int RegexOut(const struct Regex *const re, FILE *const fp) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	struct Regex *re = 0;
-	const char *const fn = "test.gv";
+	const char *const fn = "regex.gv";
 	FILE *fp = 0;
 	const char *yes, *no;
 	int done = 0;
