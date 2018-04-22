@@ -1,12 +1,12 @@
 /* Intended to be included by {../src/Digraph.h} on {DIGRAPH_TEST}. */
 
-#ifdef DIGRAPH_VERTEX /* <-- vertex */
-static const PG_(VertexAction) PG_(v_filler) = (DIGRAPH_VERTEX_TEST);
-#endif /* vertex --> */
+#ifdef DIGRAPH_VDATA /* <-- vdata */
+static const PG_(VDataAction) PG_(v_filler) = (DIGRAPH_VDATA_TEST);
+#endif /* vdata --> */
 
-#ifdef DIGRAPH_EDGE /* <-- edge */
-static const PG_(EdgeAction) PG_(e_filler) = (DIGRAPH_EDGE_TEST);
-#endif /* edge --> */
+#ifdef DIGRAPH_EDATA /* <-- edata */
+static const PG_(EDataAction) PG_(e_filler) = (DIGRAPH_EDATA_TEST);
+#endif /* edata --> */
 
 
 
@@ -40,11 +40,9 @@ static void PG_(test_random)(void) {
 		if(!fp) break;
 		G_(Digraph)(&g);
 		for(vn = vns, vn1 = vn + vns_size; vn < vn1; vn++) {
-#ifdef DIGRAPH_VERTEX /* <-- vertex */
 			PG_(v_filler)(G_(DigraphVertexInit)(&vn->data));
-#else /* vertex --><-- !vertex */
-			G_(DigraphVertexInit(&vn->data));
-#endif /* !vertex --> */
+#ifdef DIGRAPH_VDATA /* <-- vdata */
+#endif /* vdata --> */
 			G_(DigraphVertexAdd)(&g, &vn->data);
 		}
 		for(en = ens, en1 = en + ens_size; en < en1; en++) {
@@ -52,11 +50,11 @@ static void PG_(test_random)(void) {
 			size_t idx1 = (size_t)(rand() / (1.0 + RAND_MAX) * vns_size);
 			v0 = &vns[idx0].data;
 			v1 = &vns[idx1].data;
-#ifdef DIGRAPH_EDGE /* <-- edge */
+#ifdef DIGRAPH_EDATA /* <-- edata */
 			PG_(e_filler)(G_(DigraphEdgeInit)(&en->data, v1));
-#else /* edge --><-- !edge */
+#else /* edata --><-- !edata */
 			G_(DigraphEdgeInit(&en->data, v1));
-#endif /* !edge --> */
+#endif /* !edata --> */
 			G_(DigraphEdgeAdd)(v0, &en->data);
 		}
 		if(!G_(DigraphOut)(&g, fp)) break;
@@ -66,6 +64,18 @@ static void PG_(test_random)(void) {
 	fclose(fp);
 	if(!done) assert(0);
 	printf("See <%s>.\n", fn);
+	/*
+		for(b = m->bins, b_end = b + (1 << m->log_bins); b < b_end; b++) {
+			for(i = PKV_(EntryListFirst(b); i; i = PKV_(EntryListNext)(i))) {
+				t = ((struct Test *)(void *)((char *)i
+											 - offsetof(struct Test, node)
+											 - offsetof(struct KV_(MapNode), node)
+											 - offsetof(struct PKV_(EntryListNode), data)));
+				assert(t->is_in);
+				map_size++;
+			}
+		}
+	 */
 }
 
 /** The list will be tested on stdout. */
@@ -74,7 +84,7 @@ static void G_(DigraphTest)(void) {
 #ifdef DIGRAPH_TEST
 		"DIGRAPH_TEST; "
 #endif
-#ifdef DIGRAPH_VERTEX
+#ifdef DIGRAPH_VDATA
 		"DIGRAPH_VERTEX<" QUOTE(DIGRAPH_VERTEX) ">; "
 #endif
 #ifdef DIGRAPH_VERTEX_TO_STRING
@@ -83,7 +93,7 @@ static void G_(DigraphTest)(void) {
 #ifdef DIGRAPH_VERTEX_TEST
 		"DIGRAPH_VERTEX_TEST<" QUOTE(DIGRAPH_VERTEX_TEST) ">; "
 #endif
-#ifdef DIGRAPH_EDGE
+#ifdef DIGRAPH_EDATA
 		"DIGRAPH_EDGE<" QUOTE(DIGRAPH_EDGE) ">; "
 #endif
 #ifdef DIGRAPH_EDGE_TO_STRING

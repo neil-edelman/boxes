@@ -100,6 +100,7 @@ struct State;
 typedef int (*StateMatch)(const struct State *state, const char *const match);
 typedef void (*StateToString)(const struct State *, char (*const)[12]);
 struct StateVt {
+	const char *debug;
 	const StateMatch match;
 	const StateToString to_string;
 };
@@ -114,10 +115,11 @@ struct State {
 static void State(struct State *const state, const struct StateVt *const vt) {
 	assert(state && vt);
 	state->vt = vt;
-	printf("State %p\n", (void *)vt);
+	printf("Subconstructor State %s\n", vt->debug);
 }
 /** @implements StateMatch */
-static int state_match(const struct State *const state, const char *const match) {
+static int state_match(const struct State *const state,
+	const char *const match) {
 	return state->vt->match(state, match);
 }
 /** @implements StateToString */
@@ -162,7 +164,8 @@ static int literals_match(const struct State *state, const char *const match) {
 static void literals_to_string(const struct State *state, char (*const a)[12]) {
 	state->vt->to_string(state, a);
 }
-static struct StateVt literals_vt = { literals_match, literals_to_string };
+static struct StateVt literals_vt
+	= { "Literals", literals_match, literals_to_string };
 /** Destructor.
  @implements <Literals>Action */
 static void Literals_(struct Literals *const l) {
