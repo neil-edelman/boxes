@@ -270,7 +270,9 @@ struct Regex *Regex(const char *const match) {
 /** Match {re}.
  @return The first point it matches or null if it doesn't. */
 const char *RegexMatch(const struct Regex *const re, const char *const match) {
+	struct StateVertex *s;
 	if(!re || !match) return 0;
+	s = StateDigraphGetStart(&re->states);
 	/* @fixme
 	get start state &re->states
 	state_match(, match);*/

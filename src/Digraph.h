@@ -311,7 +311,8 @@ static void G_(DigraphSetStart)(struct G_(Digraph) *const g,
 }
 
 /** Retrieves the starting vertex or null if {g} is empty or null. */
-static struct G_(Vertex) *G_(DigraphGetStart)(struct G_(Digraph) *const g) {
+static struct G_(Vertex) *G_(DigraphGetStart)(const struct G_(Digraph) *const g)
+{
 	if(!g) return 0;
 	return g->start;
 }
