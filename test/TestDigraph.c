@@ -267,15 +267,27 @@ struct Regex *Regex(const char *const match) {
 	}
 	return re;
 }
+/* Called in \see{RegexMatch}.
+ @fixme
+ @implements <State,char*>Predicate */
+/*int no_match() {} */
 /** Match {re}.
  @return The first point it matches or null if it doesn't. */
 const char *RegexMatch(const struct Regex *const re, const char *const match) {
 	struct StateVertex *s;
+	struct StateEdge *e;
+	const char *m;
 	if(!re || !match) return 0;
 	s = StateDigraphGetStart(&re->states);
-	/* @fixme
-	get start state &re->states
-	state_match(, match);*/
+	m = match;
+	while(s) {
+		/* if(!(e = StateEdgeListMatchShortCircuit(&s->out, &no_match, match)))
+		 return 0; /\ List doesn't have interfaces . . . yet? */
+		for(e = StateEdgeListFirst(&s->out); e; e = StateEdgeListNext(e)) {
+			if(state_match(&e->info, m)) return m; /* @fixme */
+		}
+		return 0; /* @fixme */
+	}
 	return 0;
 }
 /** Appends {re} to {fp} in GraphViz format.

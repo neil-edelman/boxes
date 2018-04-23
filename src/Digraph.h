@@ -194,7 +194,7 @@ struct G_(Vertex) {
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	V info;
 #endif /* vdata --> */
-	struct G_(EdgeList) edges;
+	struct G_(EdgeList) out;
 };
 /** @implements <<G>Vertex>ToString */
 static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
@@ -226,7 +226,7 @@ struct G_(Digraph) {
  @implements <G>VertexAction */
 static void PG_(v_clear)(struct G_(Vertex) *const v) {
 	assert(v);
-	G_(EdgeListClear)(&v->edges);
+	G_(EdgeListClear)(&v->out);
 }
 
 /** Sets the edge to point to {v}. Does nothing for edge data. */
@@ -299,7 +299,7 @@ static void G_(DigraphEdge)(struct G_(Edge) *e,
 	struct G_(Vertex) *const from, struct G_(Vertex) *const to) {
 	if(!e || !from || !to) return;
 	PG_(e_clear)(e, to);
-	G_(EdgeListPush)(&from->edges, e);
+	G_(EdgeListPush)(&from->out, e);
 }
 
 /** Sets the starting vertex. The starting vertex by default is the first
@@ -341,7 +341,7 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 #endif /* !vdata --> */
 		if(fprintf(fp, "\tv%lu [label=\"%s\"%s];\n", v_no, a,
 			v == g->start ? " peripheries=2" : "") < 0) return 0;
-		for(e = G_(EdgeListFirst)(&v->edges); e; e = G_(EdgeListNext)(e)) {
+		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
 #ifdef DIGRAPH_EDATA /* <-- edata */
 			PG_(edata_to_string)(&e->info, &a);
