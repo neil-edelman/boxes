@@ -166,12 +166,10 @@ typedef void (*PG_(EDataAction))(E *const);
 struct G_(Edge);
 struct G_(Vertex);
 struct G_(Edge) {
-	char a[8];
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	E info;
 #endif /* edata --> */
 	struct G_(Vertex) *to;
-	char b[8];
 };
 /** @implements <<G>Edge>ToString */
 static void PG_(edge_to_string)(const struct G_(Edge) *const e,
@@ -193,12 +191,10 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 /** Vertex. */
 struct G_(Vertex);
 struct G_(Vertex) {
-	char a[8];
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	V info;
 #endif /* vdata --> */
 	struct G_(EdgeList) edges;
-	char b[8];
 };
 /** @implements <<G>Vertex>ToString */
 static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
@@ -230,17 +226,13 @@ struct G_(Digraph) {
  @implements <G>VertexAction */
 static void PG_(v_clear)(struct G_(Vertex) *const v) {
 	assert(v);
-	strcpy(v->a, "<<vert");
 	G_(EdgeListClear)(&v->edges);
-	strcpy(v->b, "vert>>");
 }
 
 /** Sets the edge to point to {v}. Does nothing for edge data. */
 static void PG_(e_clear)(struct G_(Edge) *const e, struct G_(Vertex) *const v) {
 	assert(e);
-	strcpy(v->a, "<<edge");
 	e->to = v;
-	strcpy(v->b, "edge>>");
 }
 
 /** Initialises the graph to empty. */

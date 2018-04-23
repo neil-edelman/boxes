@@ -147,12 +147,9 @@ static void state_to_string(const struct State *state, char (*const a)[12]) {
  * {Literals} extends {StateEdge}.
  */
 struct Literals {
-	char a[8];
-	struct StateEdgeListNode edge_node;
-	char b[8];
+	struct StateEdgeListNode edge;
 	char *text;
 	unsigned text_size;
-	char c[8];
 };
 /** {container_of}. */
 static const struct Literals *
@@ -161,7 +158,7 @@ static const struct Literals *
 		((const char *)state
 		- offsetof(struct StateEdge, info)
 		- offsetof(struct StateEdgeListNode, data)
-		- offsetof(struct Literals, edge_node));
+		- offsetof(struct Literals, edge));
 }
 /** @implements StateMatch */
 static int literals_match(const struct State *state, const char *const match) {
@@ -189,12 +186,9 @@ static void Literals_(struct Literals *const l) {
 static int Literals(struct Literals *const l, const char *const match,
 	unsigned match_size) {
 	assert(l && match && match_size);
-	strcpy(l->a, "<<lit");
-	State(&l->edge_node.data.info, &literals_vt);
-	strcpy(l->b, "<<>>");
+	State(&l->edge.data.info, &literals_vt);
 	l->text = 0;
 	l->text_size = 0;
-	strcpy(l->c, "lit>>");
 	/* Copy the literals; null terminator even thought it's not really used. */
 	if(!(l->text = malloc(sizeof *match * (match_size + 1)))) return 0;
 	memcpy(l->text, match, match_size);
@@ -238,7 +232,7 @@ static enum CompileResult regex_compile(struct Regex *re,
 		StateDigraphVertex(&re->states, end);
 		if(!(lit = LiteralsPoolNew(&re->literals)) || !Literals(lit, match, p))
 			break;
-		/*@fixme ->*/StateDigraphEdge(&lit->edge_node.data, start, end);
+		StateDigraphEdge(&lit->edge.data, start, end);
 		done = 1;
 	} while(0); if(!done) return CR_RESOURCES_FAIL;
 	return CR_SUCCESS;
