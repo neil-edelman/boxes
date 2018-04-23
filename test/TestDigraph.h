@@ -43,7 +43,7 @@ static void PG_(test_random)(void) {
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 			PG_(vdata_filler)(G_(DigraphVertexData)(&vn->data));
 #endif /* vdata --> */
-			G_(DigraphVertexAdd)(&g, &vn->data);
+			G_(DigraphVertex)(&g, &vn->data);
 		}
 		for(en = ens, en1 = en + ens_size; en < en1; en++) {
 			size_t idx0 = (size_t)(rand() / (1.0 + RAND_MAX) * vns_size);
@@ -53,7 +53,7 @@ static void PG_(test_random)(void) {
 #ifdef DIGRAPH_EDATA /* <-- edata */
 			PG_(edata_filler)(G_(DigraphEdgeData)(&en->data));
 #endif /* !edata --> */
-			G_(DigraphEdgeAdd)(&en->data, v0, v1);
+			G_(DigraphEdge)(&en->data, v0, v1);
 		}
 		if(!G_(DigraphOut)(&g, fp)) break;
 		done = 1;

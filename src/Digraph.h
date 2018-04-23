@@ -166,23 +166,23 @@ typedef void (*PG_(EDataAction))(E *const);
 struct G_(Edge);
 struct G_(Vertex);
 struct G_(Edge) {
+	char a[8];
 #ifdef DIGRAPH_EDATA /* <-- edata */
-	E data;
+	E info;
 #endif /* edata --> */
 	struct G_(Vertex) *to;
+	char b[8];
 };
-
 /** @implements <<G>Edge>ToString */
 static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 	char (*const a)[12]) {
 #ifdef DIGRAPH_EDATA /* <-- edata */
-	PG_(edata_to_string)(&e->data, a);
+	PG_(edata_to_string)(&e->info, a);
 #else /* edata --><-- !edata */
 	strcpy(*a, "e");
 	(void)e;
 #endif /* !edata --> */
 }
-
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Edge)
 #define LIST_TYPE struct G_(Edge)
@@ -193,24 +193,23 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 /** Vertex. */
 struct G_(Vertex);
 struct G_(Vertex) {
+	char a[8];
 #ifdef DIGRAPH_VDATA /* <-- vdata */
-	V data;
+	V info;
 #endif /* vdata --> */
-	struct G_(EdgeList) out;
+	struct G_(EdgeList) edges;
+	char b[8];
 };
-
-/** @fixme Is this used???
- @implements <<G>Vertex>ToString */
+/** @implements <<G>Vertex>ToString */
 static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	char (*const a)[12]) {
 #ifdef DIGRAPH_VDATA /* <-- vdata */
-	PG_(vdata_to_string)(&v->data, a);
+	PG_(vdata_to_string)(&v->info, a);
 #else /* vdata --><-- !vdata */
 	strcpy(*a, "v");
 	(void)v;
 #endif /* !vdata --> */
 }
-
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Vertex)
 #define LIST_TYPE struct G_(Vertex)
@@ -227,11 +226,21 @@ struct G_(Digraph) {
 
 
 
-/** Called in \see{<G>Digraph_}. Does nothing for vertex data.
+/** Does nothing for vertex data.
  @implements <G>VertexAction */
 static void PG_(v_clear)(struct G_(Vertex) *const v) {
 	assert(v);
-	G_(EdgeListClear)(&v->out);
+	strcpy(v->a, "<<vert");
+	G_(EdgeListClear)(&v->edges);
+	strcpy(v->b, "vert>>");
+}
+
+/** Sets the edge to point to {v}. Does nothing for edge data. */
+static void PG_(e_clear)(struct G_(Edge) *const e, struct G_(Vertex) *const v) {
+	assert(e);
+	strcpy(v->a, "<<edge");
+	e->to = v;
+	strcpy(v->b, "edge>>");
 }
 
 /** Initialises the graph to empty. */
@@ -263,7 +272,7 @@ static void G_(Digraph)(struct G_(Digraph) *const g) {
 /** Given {vertex}, gets the associated vertex data; only present if
  {DIGRAPH_VDATA}. Doesn't consider null as a valid function argument. */
 static V *G_(DigraphVertexData)(struct G_(Vertex) *const vertex) {
-	return &vertex->data;
+	return &vertex->info;
 }
 #endif /* vdata --> */
 
@@ -271,7 +280,7 @@ static V *G_(DigraphVertexData)(struct G_(Vertex) *const vertex) {
 /** Given {edge}, gets the associated edge data; only present if
  {DIGRAPH_EDATA}. Doesn't consider null as a valid function argument. */
 static E *G_(DigraphEdgeData)(struct G_(Edge) *const edge) {
-	return &edge->data;
+	return &edge->info;
 }
 #endif /* edata --> */
 
@@ -280,24 +289,25 @@ static E *G_(DigraphEdgeData)(struct G_(Edge) *const edge) {
  @param g: If null, does nothing but initialise {v}.
  @param v: If null, does nothing, otherwise initialises to contain no edges;
  the vertex data is left alone. */
-static void G_(DigraphVertexAdd)(struct G_(Digraph) *const g,
+static void G_(DigraphVertex)(struct G_(Digraph) *const g,
 	struct G_(Vertex) *const v) {
 	if(!v) return;
 	PG_(v_clear)(v);
 	if(!g) return;
 	if(!G_(VertexListFirst)(&g->vertices)) g->start = v;
 	G_(VertexListPush)(&g->vertices, v);
+	printf("<G>DigraphVertex: new #%p.\n", (void *)v);
 }
 
 /** Undefined behaviour results from adding edges that have already been added.
  Initialises {e} to point to {from} to {to}.
  @param e, from, to: If any are null, does nothing.
  @param e: The edge data is left alone. */
-static void G_(DigraphEdgeAdd)(struct G_(Edge) *e,
+static void G_(DigraphEdge)(struct G_(Edge) *e,
 	struct G_(Vertex) *const from, struct G_(Vertex) *const to) {
 	if(!e || !from || !to) return;
-	e->to = to;
-	G_(EdgeListPush)(&from->out, e);
+	PG_(e_clear)(e, to);
+	G_(EdgeListPush)(&from->edges, e);
 }
 
 /** Sets the starting vertex. The starting vertex by default is the first
@@ -332,16 +342,16 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		v_no = (unsigned long)v;
 #ifdef DIGRAPH_VDATA /* <-- vdata */
-		PG_(vdata_to_string)(&v->data, &a);
+		PG_(vdata_to_string)(&v->info, &a);
 #else /* vdata --><-- !vdata */
 		*a = '\0';/*strcpy(a, "");*/
 #endif /* !vdata --> */
 		if(fprintf(fp, "\tv%lu [label=\"%s\"%s];\n", v_no, a,
 			v == g->start ? " peripheries=2" : "") < 0) return 0;
-		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
+		for(e = G_(EdgeListFirst)(&v->edges); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
 #ifdef DIGRAPH_EDATA /* <-- edata */
-			PG_(edata_to_string)(&e->data, &a);
+			PG_(edata_to_string)(&e->info, &a);
 			if(fprintf(fp, "\tv%lu -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
 				< 0) return 0;
 #else /* edata --><-- !edata */
@@ -372,8 +382,8 @@ static void PG_(unused)(void) {
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	G_(DigraphEdgeData)(0);
 #endif /* edata --> */
-	G_(DigraphVertexAdd)(0, 0);
-	G_(DigraphEdgeAdd)(0, 0, 0);
+	G_(DigraphVertex)(0, 0);
+	G_(DigraphEdge)(0, 0, 0);
 	G_(DigraphSetStart)(0, 0);
 	G_(DigraphGetStart)(0);
 	G_(DigraphOut)(0, 0);

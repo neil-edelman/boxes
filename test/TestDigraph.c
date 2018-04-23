@@ -109,12 +109,16 @@ struct StateVt {
  * Abstract {State}.
  */
 struct State {
+	char a[8];
 	const struct StateVt *vt;
+	char b[8];
 };
 /** Constructor; only called from it's children. */
 static void State(struct State *const state, const struct StateVt *const vt) {
 	assert(state && vt);
+	strcpy(state->a, "<<state");
 	state->vt = vt;
+	strcpy(state->b, "state>>");
 	printf("Subconstructor State %s\n", vt->debug);
 }
 /** @implements StateMatch */
@@ -143,18 +147,20 @@ static void state_to_string(const struct State *state, char (*const a)[12]) {
  * {Literals} extends {StateEdge}.
  */
 struct Literals {
-	struct StateEdge state_edge;
+	char a[8];
+	struct StateEdgeListNode edge_node;
+	char b[8];
 	char *text;
 	unsigned text_size;
+	char c[8];
 };
 /** {container_of}. */
 static const struct Literals *
 	literals_holds_state(const struct State *const state) {
 	return (const struct Literals *)(const void *)
 		((const char *)state
-		- offsetof(struct Literals, state_edge)
-		- offsetof(struct StateEdge, data));
-		/* @fixme Almost certainly wrong. */
+		- offsetof(struct StateEdge, info)
+		- offsetof(struct Literals, edge_node));
 }
 /** @implements StateMatch */
 static int literals_match(const struct State *state, const char *const match) {
@@ -163,7 +169,7 @@ static int literals_match(const struct State *state, const char *const match) {
 }
 /** @implements StateToString */
 static void literals_to_string(const struct State *state, char (*const a)[12]) {
-	state->vt->to_string(state, a);
+	sprintf(*a, "%.11s", literals_holds_state(state)->text);
 }
 static struct StateVt literals_vt
 	= { "Literals", literals_match, literals_to_string };
@@ -182,15 +188,18 @@ static void Literals_(struct Literals *const l) {
 static int Literals(struct Literals *const l, const char *const match,
 	unsigned match_size) {
 	assert(l && match && match_size);
-	State(&l->state_edge.data, &literals_vt);
+	strcpy(l->a, "<<lit");
+	State(&l->edge_node.data.info, &literals_vt);
+	strcpy(l->b, "<<>>");
 	l->text = 0;
 	l->text_size = 0;
-	/* Copy the literals, with a null terminator, (debug use.) */
+	strcpy(l->c, "lit>>");
+	/* Copy the literals; null terminator even thought it's not really used. */
 	if(!(l->text = malloc(sizeof *match * (match_size + 1)))) return 0;
 	memcpy(l->text, match, match_size);
 	l->text[match_size] = '\0';
 	l->text_size = match_size;
-	printf("Literals: <%s>:%lu\n", l->text, (unsigned long)l->text_size);
+	printf("Literals %p: <%s>:%lu\n", (void *)l, l->text, (unsigned long)l->text_size);
 	return 1;
 }
 #define POOL_NAME Literals
@@ -212,7 +221,7 @@ enum CompileResult { CR_SUCCESS, CR_RESOURCES_FAIL, CR_SYNTAX_FAIL };
 /** Called from \see{Regex}. */
 static enum CompileResult regex_compile(struct Regex *re,
 	const char *const match) {
-	struct StateVertex *start;
+	struct StateVertex *start, *end;
 	struct Literals *lit;
 	const char *m = match;
 	unsigned p = 0;
@@ -223,9 +232,12 @@ static enum CompileResult regex_compile(struct Regex *re,
 	printf("compile: <%s> upto: %u.\n", match, p);
 	do {
 		if(!(start = StateVertexPoolNew(&re->vertices))) break;
-		StateDigraphVertexAdd(&re->states, start);
-		if(!(lit = LiteralsPoolNew(&re->literals))) break;
-		if(!Literals(lit, match, p)) break;
+		StateDigraphVertex(&re->states, start);
+		if(!(end = StateVertexPoolNew(&re->vertices))) break;
+		StateDigraphVertex(&re->states, end);
+		if(!(lit = LiteralsPoolNew(&re->literals)) || !Literals(lit, match, p))
+			break;
+		/*@fixme ->*/StateDigraphEdge(&lit->edge_node.data, start, end);
 		done = 1;
 	} while(0); if(!done) return CR_RESOURCES_FAIL;
 	return CR_SUCCESS;
@@ -256,9 +268,8 @@ struct Regex *Regex(const char *const match) {
 	switch(cr) {
 		case CR_SUCCESS: break;
 		case CR_SYNTAX_FAIL: errno = EILSEQ;
-		case CR_RESOURCES_FAIL: Regex_(&re); printf("nooo\n");return 0;/*@fixme remove this*/
+		case CR_RESOURCES_FAIL: Regex_(&re);
 	}
-	printf("Made %d.\n", re->no);
 	return re;
 }
 /** Match {re}.
@@ -296,7 +307,6 @@ int main(void) {
 	/* Custom. */
 	do {
 		if(!(re = Regex("hi"))) break;
-		printf("okay, constructor good.\n");
 		if(!(fp = fopen(fn, "w"))) break;
 		if(!RegexOut(re, fp)) break;
 		yes = RegexMatch(re, "hithere");
