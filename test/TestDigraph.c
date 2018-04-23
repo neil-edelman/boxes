@@ -160,6 +160,7 @@ static const struct Literals *
 	return (const struct Literals *)(const void *)
 		((const char *)state
 		- offsetof(struct StateEdge, info)
+		- offsetof(struct StateEdgeListNode, data)
 		- offsetof(struct Literals, edge_node));
 }
 /** @implements StateMatch */
