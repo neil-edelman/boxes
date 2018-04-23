@@ -35,7 +35,8 @@
  @title		Digraph.h
  @std		C89
  @author	Neil
- @version	2018-04 This is cool. */
+ @version	2018-04 This is cool.
+ @fixme Have _another_ data type for the graph itself. */
 
 
 
@@ -217,7 +218,7 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 struct G_(Digraph);
 struct G_(Digraph) {
 	struct G_(VertexList) vertices;
-	struct G_(Vertex) *start;
+	struct G_(Vertex) *root;
 };
 
 
@@ -238,7 +239,7 @@ static void PG_(e_clear)(struct G_(Edge) *const e, struct G_(Vertex) *const v) {
 /** Initialises the graph to empty. */
 static void PG_(clear)(struct G_(Digraph) *const g) {
 	G_(VertexListClear)(&g->vertices);
-	g->start = 0;
+	g->root = 0;
 }
 
 /** Destructor for {g}.
@@ -286,7 +287,7 @@ static void G_(DigraphVertex)(struct G_(Digraph) *const g,
 	if(!v) return;
 	PG_(v_clear)(v);
 	if(!g) return;
-	if(!G_(VertexListFirst)(&g->vertices)) g->start = v;
+	if(!G_(VertexListFirst)(&g->vertices)) g->root = v;
 	G_(VertexListPush)(&g->vertices, v);
 	printf("<G>DigraphVertex: new #%p.\n", (void *)v);
 }
@@ -302,19 +303,21 @@ static void G_(DigraphEdge)(struct G_(Edge) *e,
 	G_(EdgeListPush)(&from->out, e);
 }
 
-/** Sets the starting vertex. The starting vertex by default is the first
- vertex. */
-static void G_(DigraphSetStart)(struct G_(Digraph) *const g,
-	struct G_(Vertex) *const start) {
-	if(!g) return;
-	g->start = start;
+/** Sets the starting vertex returned by \see{<G>DigraphGetRoot}. By default,
+ the root is the first vertex added.
+ @param g, root: If null, does nothing.
+ @param root: A vertex in the graph. Undefined behaviour if it is set to a
+ vertex not in the graph. */
+static void G_(DigraphSetRoot)(struct G_(Digraph) *const g,
+	struct G_(Vertex) *const root) {
+	if(!g || !root) return;
+	g->root = root;
 }
 
 /** Retrieves the starting vertex or null if {g} is empty or null. */
-static struct G_(Vertex) *G_(DigraphGetStart)(const struct G_(Digraph) *const g)
-{
+static struct G_(Vertex) *G_(DigraphGetRoot)(const struct G_(Digraph) *const g){
 	if(!g) return 0;
-	return g->start;
+	return g->root;
 }
 
 /** Appends {g} to {fp} in GraphViz format.
@@ -340,7 +343,7 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 		*a = '\0';/*strcpy(a, "");*/
 #endif /* !vdata --> */
 		if(fprintf(fp, "\tv%lu [label=\"%s\"%s];\n", v_no, a,
-			v == g->start ? " peripheries=2" : "") < 0) return 0;
+			v == g->root ? " peripheries=2" : "") < 0) return 0;
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
 #ifdef DIGRAPH_EDATA /* <-- edata */
@@ -377,8 +380,8 @@ static void PG_(unused)(void) {
 #endif /* edata --> */
 	G_(DigraphVertex)(0, 0);
 	G_(DigraphEdge)(0, 0, 0);
-	G_(DigraphSetStart)(0, 0);
-	G_(DigraphGetStart)(0);
+	G_(DigraphSetRoot)(0, 0);
+	G_(DigraphGetRoot)(0);
 	G_(DigraphOut)(0, 0);
 	PG_(unused_coda)();
 }

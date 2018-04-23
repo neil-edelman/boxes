@@ -97,7 +97,8 @@ int RegexOut(const struct Regex *const re, FILE *const fp);
  * State virtual table, referenced from {State}.
  */
 struct State;
-typedef int (*StateMatch)(const struct State *state, const char *const match);
+typedef const char *(*StateMatch)(const struct State *state,
+	const char *const match);
 typedef void (*StateToString)(const struct State *, char (*const)[12]);
 struct StateVt {
 	const char *debug;
@@ -122,7 +123,7 @@ static void State(struct State *const state, const struct StateVt *const vt) {
 	printf("Subconstructor State %s\n", vt->debug);
 }
 /** @implements StateMatch */
-static int state_match(const struct State *const state,
+static const char *state_match(const struct State *const state,
 	const char *const match) {
 	return state->vt->match(state, match);
 }
@@ -161,9 +162,10 @@ static const struct Literals *
 		- offsetof(struct Literals, edge));
 }
 /** @implements StateMatch */
-static int literals_match(const struct State *state, const char *const match) {
+static const char *literals_match(const struct State *state,
+	const char *const match) {
 	const struct Literals *l = literals_holds_state(state);
-	return !memcmp(l->text, match, l->text_size);
+	return memcmp(l->text, match, l->text_size) ? 0 : match + l->text_size;
 }
 /** @implements StateToString */
 static void literals_to_string(const struct State *state, char (*const a)[12]) {
@@ -276,15 +278,17 @@ struct Regex *Regex(const char *const match) {
 const char *RegexMatch(const struct Regex *const re, const char *const match) {
 	struct StateVertex *s;
 	struct StateEdge *e;
-	const char *m;
+	const char *m0, *m1;
 	if(!re || !match) return 0;
-	s = StateDigraphGetStart(&re->states);
-	m = match;
+	s = StateDigraphGetRoot(&re->states);
+	m0 = match;
 	while(s) {
 		/* if(!(e = StateEdgeListMatchShortCircuit(&s->out, &no_match, match)))
 		 return 0; /\ List doesn't have interfaces . . . yet? */
 		for(e = StateEdgeListFirst(&s->out); e; e = StateEdgeListNext(e)) {
-			if(state_match(&e->info, m)) return m; /* @fixme */
+			if((m1 = state_match(&e->info, m0))) {
+				return m1; /* @fixme */
+			}
 		}
 		return 0; /* @fixme */
 	}
