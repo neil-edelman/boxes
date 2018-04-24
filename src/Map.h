@@ -144,7 +144,7 @@ typedef MAP_KEY PE_(Key);
  stored in the element {node.data}. */
 struct E_(MapNode);
 struct E_(MapNode) {
-	struct PE_(EntryListNode) node;
+	struct PE_(EntryLink) node;
 	uint32_t hash;
 };
 
@@ -235,7 +235,7 @@ struct E_(Map) {
 static struct E_(MapNode) *PE_(node_holds_item)(E *const entry) {
 	return (struct E_(MapNode) *)(void *)
 		((char *)entry - offsetof(struct E_(MapNode), node)
-		- offsetof(struct PE_(EntryListNode), data));
+		- offsetof(struct PE_(EntryLink), data));
 }
 
 /** @return An {<E>List} associated to the {key}, given the {map}. */

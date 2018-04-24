@@ -52,7 +52,7 @@ static void PKV_(test_basic)(void) {
 				((char *)eject
 				- offsetof(struct Test, node)
 				- offsetof(struct KV_(MapNode), node)
-				- offsetof(struct PKV_(EntryListNode), data)))->is_in = 0;
+				- offsetof(struct PKV_(EntryLink), data)))->is_in = 0;
 		}
 	}
 	printf("Testing get from map.\n");
@@ -68,7 +68,7 @@ static void PKV_(test_basic)(void) {
 			t = ((struct Test *)(void *)((char *)i
 				- offsetof(struct Test, node)
 				- offsetof(struct KV_(MapNode), node)
-				- offsetof(struct PKV_(EntryListNode), data)));
+				- offsetof(struct PKV_(EntryLink), data)));
 			assert(t->is_in);
 			map_size++;
 		}
