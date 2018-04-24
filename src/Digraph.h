@@ -289,7 +289,6 @@ static void G_(DigraphVertex)(struct G_(Digraph) *const g,
 	if(!g) return;
 	if(!G_(VertexListFirst)(&g->vertices)) g->root = v;
 	G_(VertexListPush)(&g->vertices, v);
-	printf("<G>DigraphVertex: new #%p.\n", (void *)v);
 }
 
 /** Undefined behaviour results from adding edges that have already been added.

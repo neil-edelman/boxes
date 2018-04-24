@@ -171,13 +171,13 @@ static const char *literals_match(const struct Match *const match) {
 	if(memcmp(l->text, match->next, l->text_size)) return 0;
 	return match->next + l->text_size;
 }
-/** @implements StateToString */
+/** @implements TransitionToString */
 static void literals_to_string(const struct Transition *t, char (*const a)[12]){
 	sprintf(*a, "%.11s", literals_holds_transition(t)->text);
 }
 static struct TransitionVt literals_vt
 	= { "Literals", literals_match, literals_to_string };
-/** Destructor. (@fixme should be a virtual function.)
+/** Destructor.
  @implements <Literals>Action */
 static void Literals_(struct Literals *const l) {
 	if(!l) return;
@@ -246,8 +246,8 @@ static enum CompileResult regex_compile(struct Regex *re,
 /** Destructor. */
 void Regex_(struct Regex **const pre) {
 	struct Regex *re;
-	if(!pre || (re = *pre)) return;
-	printf("Releasing #%d.\n", re->no);
+	if(!pre || !(re = *pre)) return;
+	printf("~Regex: releasing #%d.\n", re->no);
 	LiteralsPoolForEach(&re->literals, &Literals_);
 	LiteralsPool_(&re->literals);
 	StateVertexPool_(&re->vertices);
