@@ -41,7 +41,7 @@
  @author	Neil
  @std		C89/90
  @version
- 2018-04 {<T>Link} has been shortened to {<T>Link}, thus potential
+ 2018-04 {<T>ListNode} has been shortened to {<T>Link}, thus potential
  namespace violations doubled. Two dynamic memory allocations have been
  collapsed into one by making it a non-pointer at the cost of readability.
  These changes are good for more complex data structures #including list.
