@@ -325,7 +325,7 @@ int RegexOut(const struct Regex *const re, FILE *const fp) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	struct Regex *re = 0;
-	const char *const fn = "regex.gv";
+	const char *const fn = "graphs/regex.gv";
 	FILE *fp = 0;
 	int done = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);

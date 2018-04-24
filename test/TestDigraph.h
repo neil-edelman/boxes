@@ -25,20 +25,19 @@ static void PG_(test_basic)(void) {
 }
 
 static void PG_(test_random)(void) {
-	const char *const fn = QUOTE(DIGRAPH_NAME) ".gv";
+	const char *const fn = "graphs/" QUOTE(DIGRAPH_NAME) ".gv";
 	FILE *const fp = fopen(fn, "w");
+	struct G_(Digraph) g;
+	struct G_(VertexLink) vns[100], *vn, *vn1;
+	const size_t vns_size = sizeof vns / sizeof *vns;
+	struct G_(EdgeLink) ens[200], *en, *en1;
+	const size_t ens_size = sizeof ens / sizeof *ens;
+	struct G_(Vertex) *v0, *v1;
 	int done = 0;
 	printf("Random:\n");
+	G_(Digraph)(&g);
 	do {
-		struct G_(Digraph) g;
-		struct G_(VertexLink) vns[100], *vn, *vn1;
-		const size_t vns_size = sizeof vns / sizeof *vns;
-		struct G_(EdgeLink) ens[200], *en, *en1;
-		const size_t ens_size = sizeof ens / sizeof *ens;
-		struct G_(Vertex) *v0, *v1;
-
 		if(!fp) break;
-		G_(Digraph)(&g);
 		for(vn = vns, vn1 = vn + vns_size; vn < vn1; vn++) {
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 			PG_(vdata_filler)(G_(DigraphVertexData)(&vn->data));
@@ -57,23 +56,12 @@ static void PG_(test_random)(void) {
 		}
 		if(!G_(DigraphOut)(&g, fp)) break;
 		done = 1;
-	} while(0);
-	if(!done) perror(fn);
-	fclose(fp);
-	if(!done) assert(0);
+	} while(0); if(!done) perror(fn); {
+		G_(Digraph_)(&g);
+		fclose(fp);
+		if(!done) assert(0);
+	}
 	printf("See <%s>.\n", fn);
-	/*
-		for(b = m->bins, b_end = b + (1 << m->log_bins); b < b_end; b++) {
-			for(i = PKV_(EntryListFirst(b); i; i = PKV_(EntryListNext)(i))) {
-				t = ((struct Test *)(void *)((char *)i
-											 - offsetof(struct Test, node)
-											 - offsetof(struct KV_(MapNode), node)
-											 - offsetof(struct PKV_(EntryLink), data)));
-				assert(t->is_in);
-				map_size++;
-			}
-		}
-	 */
 }
 
 /** The list will be tested on stdout. */

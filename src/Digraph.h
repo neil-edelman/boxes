@@ -168,7 +168,7 @@ struct G_(Edge);
 struct G_(Vertex);
 struct G_(Edge) {
 #ifdef DIGRAPH_EDATA /* <-- edata */
-	E info;
+	E info; /* In C11, this can be anonymous? */
 #endif /* edata --> */
 	struct G_(Vertex) *to;
 };
@@ -326,8 +326,7 @@ static struct G_(Vertex) *G_(DigraphGetRoot)(const struct G_(Digraph) *const g){
  @throws {fprintf} errors: {IEEE Std 1003.1-2001}.
  @order O(|{vertices}| + |{edges}|)
  @allow */
-static int G_(DigraphOut)(const struct G_(Digraph) *const g,
-	FILE *const fp) {
+static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	struct G_(Vertex) *v;
 	struct G_(Edge) *e;
 	char a[12];
