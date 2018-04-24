@@ -1,0 +1,69 @@
+digraph {
+	fontname = "Bitstream Vera Sans";
+	fontsize = 8;
+	node [
+		fontname = "Bitstream Vera Sans",
+		fontsize = 8,
+		shape = record
+	];
+	edge [
+		fontname = "Bitstream Vera Sans",
+		fontsize = 8,
+	];
+	subgraph cluster_AnimalVt {
+		label = "static";
+		color = grey;
+		fillcolor = clear;
+		AnimalVt [ label = "{AnimalVt|-type\l|-delete()\l-act()\l-mount_info()\l}" ];
+	}
+	subgraph cluster_Animals {
+		label = "Animals";
+		style = filled;
+		color = lightgrey;
+		node [style = filled, fillcolor = white];
+
+		Animal [ label = "{Animal as\n\<Animal\>List|- name\l- colour\l}" ];
+		Mount [ label = "{Mount as\n\<Mount\>Pool|-steed: Animal\l-rider: Animal\l}" ]
+		MountInfo [label="{MountInfo|-steed_of: Mount\l-riding: Mount\l-is_allowed: bitfield\l}"]
+		Sloth [ label = "{Sloth as\n\<Sloth\>Pool|-hours_slept}" ];
+		Emu [ label = "{Emu as\n\<Emu\>Pool|-favourite_letter}"];
+		BadEmu [label="{BadEmu as\n\<BadEmu\>Pool|-muhaha}"];
+		Llama [label="{Llama as\n\<Llama\>Pool|-chomps}"];
+		Lemur [label="{Lemur as\n\<Lemur\>Pool|}"];
+		Bear [label="{Bear as\nBear[]|}"];
+
+		#{ rank = same; Sloth; Emu; Llama; Lemur; Bear; }
+
+		# inheritance (nested {struct}s)
+		edge [ arrowtail = empty, dir = back ];
+		Animal -> Sloth;
+		Animal -> Emu -> BadEmu;
+		Animal -> Llama;
+		Animal ->Lemur;
+		Animal -> Bear;
+		edge [ arrowhead = empty, dir = forward ];
+		BadEmu -> MountInfo;
+		Llama -> MountInfo;
+		Lemur -> MountInfo;
+		Bear -> MountInfo;
+
+		# dependancy (migrate functions)
+		# \each == _migrate
+		#edge [ arrowtail = diamond, dir = back ];
+		edge [ arrowtail = vee, dir = back, style = dashed ]
+		Animal -> Sloth [ label = "sloth%()" ];
+		Animal -> Emu  [ label = "emu%()" ];
+		Animal -> BadEmu [ label = "bad_emu%()" ];
+		Animal -> Llama [ label = "llama%()" ];
+		Animal -> Lemur [ label = "lemur%()" ];
+		Mount -> MountInfo [ label = "bad_emu%()\nllama%()\nlemur%()" ];
+		Animal -> Mount [ label = "mount%()" ];
+
+		# association (pointers)
+		edge [ arrowtail = vee, dir = back, style = normal ];
+		edge [ dir = none, style = normal ];
+		AnimalVt -> Animal [ headlabel = "*  ", taillabel = "  1  " ];
+		Mount -> MountInfo [ headlabel = "0..2", taillabel = "0..1" ];
+		Animal -> Mount [ headlabel = " 2  ", taillabel = "1     " ];
+	}
+}
