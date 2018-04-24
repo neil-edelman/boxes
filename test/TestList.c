@@ -4,7 +4,7 @@
  @author	Neil
  @std		C89/90
  @version	1.0; 2017-05
- @since		1.0; 2017-05 salvaged from TestList.h */
+ @since		1.0; 2017-05 Salvaged from TestList.h */
 
 #include <stdlib.h> /* EXIT_ malloc free */
 #include <stdio.h>  /* fprintf */
@@ -156,15 +156,15 @@ static void Animal_filler(struct Animal *const this) {
 #define LIST_TEST &Animal_filler
 #include "../src/List.h"
 struct Sloth {
-	struct AnimalListNode animal;
+	struct AnimalLink animal;
 	unsigned lazy;
 };
 struct Llama {
-	struct AnimalListNode animal;
+	struct AnimalLink animal;
 	unsigned chomps;
 };
 struct Bear {
-	struct AnimalListNode animal;
+	struct AnimalLink animal;
 	struct Animal *riding;
 };
 /** @implements <Animal>Action */
@@ -257,7 +257,7 @@ static void test_block_move(void) {
 			list_Animal_to_string(&sloths[i].animal.data, &a);
 			list_Animal_to_string(&others[i].animal.data, &b);
 			printf("Migrating %s -> %s.\n", a, b);
-			AnimalListNodeMigrate(&others[i].animal, &migrate);
+			AnimalLinkMigrate(&others[i].animal, &migrate);
 		}
 	}
 	printf("Block move: %s.\n", AnimalListNameToString(&animals));

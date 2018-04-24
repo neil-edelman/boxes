@@ -22,7 +22,7 @@
 
 /* prototype */
 static void PT_(graph)(const struct T_(List) *const this,
-	const struct T_(ListNode) *const array, const size_t array_size,
+	const struct T_(Link) *const array, const size_t array_size,
 	const char *const fn);
 static void PT_(legit)(const struct T_(List) *const this);
 static size_t PT_(count)(struct T_(List) *const this);
@@ -39,7 +39,7 @@ static void (*const PT_(filler))(T *const) = (LIST_TEST);
 /* For \see{PT_U_(exactly, elements)}. */
 struct PT_(Verify) {
 	size_t i;
-	const struct T_(ListNode) *array;
+	const struct T_(Link) *array;
 	size_t array_no;
 };
 /* For \see{PT_U_(count, unordered)}. */
@@ -137,10 +137,10 @@ static void T_(ListTest)(void) {
 /* test helper functions */
 
 static void PT_(graph)(const struct T_(List) *const this,
-	const struct T_(ListNode) *const array, const size_t array_size,
+	const struct T_(Link) *const array, const size_t array_size,
 	const char *const fn) {
 	FILE *fp;
-	const struct T_(ListNode) *a;
+	const struct T_(Link) *a;
 	char str[12];
 	size_t i;
 	assert(this && array && fn);
@@ -306,9 +306,9 @@ in C99" */
 /* test helper functions that depend on <U> */
 
 static void PT_U_(graph, index)(const struct T_(List) *const this,
-	const struct T_(ListNode) *const array, const size_t array_size,
+	const struct T_(Link) *const array, const size_t array_size,
 	FILE *const fp, const char *const colour) {
-	const struct T_(ListNode) *a;
+	const struct T_(Link) *a;
 	size_t i;
 	assert(this && array && fp && colour);
 	/*fprintf(fp, "subgraph %s {\n"
@@ -405,7 +405,7 @@ static int PT_U_(exactly, predicate)(T *const this, void *const param) {
 }
 /** Verifies that the elements are exactly as in {array}. */
 static size_t PT_U_(exactly, elements)(struct T_(List) *const this,
-	const struct T_(ListNode) *array, const size_t array_no) {
+	const struct T_(Link) *array, const size_t array_no) {
 	struct PT_(Verify) lv = { 0, 0, 0 };
 	lv.array    = array;
 	lv.array_no = array_no;
@@ -459,8 +459,8 @@ static size_t PT_U_(count, unordered)(struct T_(List) *this) {
 #if 0
 /** All elements are in the same array? */
 static int PT_U_(in, array)(struct T_(List) *const this,
-	const struct T_(ListNode) *const array, const size_t array_size) {
-	struct T_(ListNode) *item;
+	const struct T_(Link) *const array, const size_t array_size) {
+	struct T_(Link) *item;
 	for(item = this->U_(head); item; item = item->U_(next))
 		if(item < array || item >= array + array_size) return 0;
 	return 1;
@@ -490,7 +490,7 @@ static void PT_U_(test, basic)(void) {
 	char str[12];
 	T *data, *item_a, *item_b, *item_y, *item_z;
 	struct T_(List) a;
-	struct T_(ListNode) buf[100/*0*/], *const new_buf = buf + 2, *node;
+	struct T_(Link) buf[100/*0*/], *const new_buf = buf + 2, *node;
 	const size_t buf_size = sizeof buf / sizeof *buf, new_buf_size = buf_size-4;
 	size_t i;
 	int is_parity = 1;
@@ -518,7 +518,7 @@ static void PT_U_(test, basic)(void) {
 	assert(data);
 	PT_(legit)(&a);
 	PT_(to_string)(data, &str);
-	printf("ListNode get first data: %s.\n", str);
+	printf("Link get first data: %s.\n", str);
 	assert(memcmp(&buf[0].data, data, sizeof *data) == 0);
 	/* ShortCircuit */
 	printf("ShortCircuit: for all true returns null.\n");
@@ -593,7 +593,7 @@ static void PT_U_(test, basic)(void) {
 
 static void PT_U_(test, memory)(void) {
 	struct T_(List) a, b;
-	struct T_(ListNode) buf[3][10], *node;
+	struct T_(Link) buf[3][10], *node;
 	const size_t buf_size = sizeof buf[0] / sizeof *buf[0];
 	size_t i;
 	int is_parity;
@@ -685,7 +685,7 @@ static void PT_U_(test, memory)(void) {
 #ifdef LIST_U_COMPARATOR /* <-- compare */
 
 static void PT_U_(test, sort)(void) {
-	struct T_(ListNode) buf[4], *node;
+	struct T_(Link) buf[4], *node;
 	const size_t buf_size = sizeof buf / sizeof *buf;
 	size_t i, count;
 	struct T_(List) a;
@@ -707,7 +707,7 @@ static void PT_U_(test, sort)(void) {
 
 static void PT_U_(test, boolean)(void) {
 	struct T_(List) a, b, c, ia, ib, ic;
-	struct Test { struct T_(ListNode) a, b, ia, ib; char str[12]; } x[3];
+	struct Test { struct T_(Link) a, b, ia, ib; char str[12]; } x[3];
 	unsigned i; /* for not-getting into an infty loop */
 	const unsigned limit = 1000;
 
@@ -820,7 +820,7 @@ static void PT_U_(test, boolean)(void) {
 }
 
 static void PT_U_(test, order)(void) {
-	struct T_(ListNode) buf[10000], *node = buf;
+	struct T_(Link) buf[10000], *node = buf;
 	const size_t buf_size = sizeof buf / sizeof *buf;
 	struct T_(List) a, b;
 	size_t i, count;
@@ -894,7 +894,7 @@ static void PT_U_(test, order)(void) {
 }
 
 static void PT_U_(test, meta)(void) {
-	struct T_(ListNode) nodes[256], *node = nodes;
+	struct T_(Link) nodes[256], *node = nodes;
 	const size_t nodes_size = sizeof nodes / sizeof *nodes;
 	struct T_(List) lists[32];
 	const size_t lists_size = sizeof lists / sizeof *lists;
@@ -942,7 +942,7 @@ static void PT_U_(test, list)(void) {
 		   QUOTE(LIST_U_NAME) ":\n");
 	{
 		struct T_(List) a;
-		struct T_(ListNode) nodes[5];
+		struct T_(Link) nodes[5];
 		const size_t nodes_size = sizeof nodes / sizeof *nodes;
 		size_t i, count;
 		T_(ListClear)(&a);
