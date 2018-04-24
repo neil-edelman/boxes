@@ -31,9 +31,9 @@ static void PG_(test_random)(void) {
 	printf("Random:\n");
 	do {
 		struct G_(Digraph) g;
-		struct G_(VertexListNode) vns[100], *vn, *vn1;
+		struct G_(VertexLink) vns[100], *vn, *vn1;
 		const size_t vns_size = sizeof vns / sizeof *vns;
-		struct G_(EdgeListNode) ens[200], *en, *en1;
+		struct G_(EdgeLink) ens[200], *en, *en1;
 		const size_t ens_size = sizeof ens / sizeof *ens;
 		struct G_(Vertex) *v0, *v1;
 
@@ -68,7 +68,7 @@ static void PG_(test_random)(void) {
 				t = ((struct Test *)(void *)((char *)i
 											 - offsetof(struct Test, node)
 											 - offsetof(struct KV_(MapNode), node)
-											 - offsetof(struct PKV_(EntryListNode), data)));
+											 - offsetof(struct PKV_(EntryLink), data)));
 				assert(t->is_in);
 				map_size++;
 			}

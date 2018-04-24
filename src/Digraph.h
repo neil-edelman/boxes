@@ -187,7 +187,7 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 #define LIST_TYPE struct G_(Edge)
 #define LIST_SUBTYPE
 #define LIST_TO_STRING &PG_(edge_to_string)
-#include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeListNode}. */
+#include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeLink}. */
 
 /** Vertex. */
 struct G_(Vertex);
@@ -212,7 +212,7 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 #define LIST_TYPE struct G_(Vertex)
 #define LIST_TO_STRING &PG_(vertex_to_string)
 #define LIST_SUBTYPE
-#include "List.h" /* Defines {<G>VertexList} and {<G>VertexListNode}. */
+#include "List.h" /* Defines {<G>VertexList} and {<G>VertexLink}. */
 
 /** The directed graph. To instantiate, see \see{<V>Digraph}. */
 struct G_(Digraph);

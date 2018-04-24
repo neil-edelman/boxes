@@ -1,12 +1,11 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>List} is a doubly-linked-list of {<T>ListNode}, of which data of type,
- {<T>}, must be set using {LIST_TYPE}. This is an abstract data structure
- requiring {<T>ListNode} storage, and can possibly store this as a
- sub-structure of larger data-type. Provides \see{<T>ListNodeMigrate} for
- self-referencing pointers that change as the result of a memory relocation
- within the list.
+ {<T>List} is a doubly-linked-list of {<T>Link}, of which data of type, {<T>},
+ must be set using {LIST_TYPE}. This is an abstract data structure requiring
+ {<T>Link} storage, and can possibly store this as a sub-structure of larger
+ data-type. Provides \see{<T>LinkMigrate} for self-referencing pointers that
+ change as the result of a memory relocation within the list.
 
  Supports one to four different orders in the same type. The preprocessor
  macros are all undefined at the end of the file for convenience.
@@ -41,16 +40,20 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	2018-04 Two dynanic memory allocations have been collapsed into one;
-			one knows the size, anyway, might as well make it a non-pointer.
- @since		2018-02 Eliminated the need for unnecessarily {<T>List}.
-			Now one must initialise static variables with {<T>ListClear}.
-			Eliminated {LIST_STATIC_SORT}.
-			2017-12 Type information on backing.
-			2017-10 Anonymous orders.
-			2017-07 Made migrate simpler.
-			2017-06 Split Add into Push and Unshift.
-			2017-05 Separated from backing.
+ @version
+ 2018-04 {<T>Link} has been shortened to {<T>Link}, thus potential
+ namespace violations doubled. Two dynamic memory allocations have been
+ collapsed into one by making it a non-pointer at the cost of readability.
+ These changes are good for more complex data structures #including list.
+ @since
+ 2018-02 Eliminated the need for unnecessarily {<T>List}. Now one
+ must initialise static variables with {<T>ListClear}. Eliminated
+ {LIST_STATIC_SORT}.
+ 2017-12 Type information on backing.
+ 2017-10 Anonymous orders.
+ 2017-07 Made migrate simpler.
+ 2017-06 Split Add into Push and Unshift.
+ 2017-05 Separated from backing.
  @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
  {assert} warnings on {LIST_TEST}.
  @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
@@ -59,8 +62,9 @@
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
  {padded}; {documentation}; {documentation-unknown-command} it's not quite
  {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
- @fixme Void pointers in {<T>List<U>BiAction} are not effective; have an
- interface. While we're at it, {<T>ListNodeMigrate} should be an interface. */
+ @fixme Non-const void pointers in {<T>List<U>BiAction} are not effective; have
+ an interface. While we're at it, {<T>LinkMigrate} should be an interface.
+ Everything should be an interface. */
 
 /* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -283,13 +287,13 @@ struct PT_(X) {
 /** A single link in the linked-list derived from {<T>}. Storage of this
  structure is the responsibility of the caller. The {<T>} is stored in the
  element {data}. */
-struct T_(ListNode);
-struct T_(ListNode) {
+struct T_(Link);
+struct T_(Link) {
 	T data;
 	struct PT_(X) x;
 };
 
-/** Serves as an a head for linked-list(s) of {<T>ListNode}. Use
+/** Serves as an a head for linked-list(s) of {<T>Link}. Use
  \see{<T>ListClear} to initialise. */
 struct T_(List);
 struct T_(List) {
@@ -338,22 +342,22 @@ static const PT_(ToString) PT_(to_string) = (LIST_TO_STRING);
 
 
 /** Private: {container_of}. */
-static struct T_(ListNode) *PT_(node_hold_x)(struct PT_(X) *const x) {
-	return (struct T_(ListNode) *)(void *)
-		((char *)x - offsetof(struct T_(ListNode), x));
+static struct T_(Link) *PT_(node_hold_x)(struct PT_(X) *const x) {
+	return (struct T_(Link) *)(void *)
+		((char *)x - offsetof(struct T_(Link), x));
 }
 
 /** Private: {container_of}. */
-static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
-	return (struct T_(ListNode) *)(void *)
-		((char *)data - offsetof(struct T_(ListNode), data));
+static struct T_(Link) *PT_(node_hold_data)(T *const data) {
+	return (struct T_(Link) *)(void *)
+		((char *)data - offsetof(struct T_(Link), data));
 }
 
 /** Private: {container_of}; used for \see{<T>List<U>Next}, {etc}. */
-static const struct T_(ListNode) *
+static const struct T_(Link) *
 	PT_(node_hold_const_data)(const T *const data) {
-	return (const struct T_(ListNode) *)(const void *)
-	((const char *)data - offsetof(struct T_(ListNode), data));
+	return (const struct T_(Link) *)(const void *)
+	((const char *)data - offsetof(struct T_(Link), data));
 }
 
 /** Private: used in \see{<PT>_order_<U>_migrate_each};
@@ -447,7 +451,7 @@ static void PT_(add_after)(struct PT_(X) *const x, struct PT_(X) *const add) {
 }
 
 /** Private: remove from list.
- @implements <T>ListNodeAction */
+ @implements <T>LinkAction */
 static void PT_(remove)(struct PT_(X) *const x) {
 #ifdef LIST_UA_NAME /* <-- a */
 	PT_UA_(x, remove)(x);
@@ -518,8 +522,8 @@ static void T_(ListClear)(struct T_(List) *const list) {
 
 /** Initialises the contents of the node which contains {add} to add it to the
  beginning of {list}. If either {list} or {add} is null, it does nothing.
- @param add: Must be inside of a {<T>ListNode} and not associated to any list;
- this associates the {<T>ListNode} with the list.
+ @param add: Must be inside of a {<T>Link} and not associated to any list;
+ this associates the {<T>Link} with the list.
  @order \Theta(1)
  @fixme Untested.
  @allow */
@@ -532,8 +536,8 @@ static void T_(ListUnshift)(struct T_(List) *const list, T *const add) {
  end of {list}.
  @param list: If null, does nothing.
  @param add:  If null, does nothing, otherwise must be inside of a
- {<T>ListNode} and not associated to any list; this associates the
- {<T>ListNode} that {add} is a part of with {list}, if it exists.
+ {<T>Link} and not associated to any list; this associates the
+ {<T>Link} that {add} is a part of with {list}, if it exists.
  @order \Theta(1)
  @allow */
 static void T_(ListPush)(struct T_(List) *const list, T *const add) {
@@ -544,8 +548,8 @@ static void T_(ListPush)(struct T_(List) *const list, T *const add) {
 /** Initialises the contents of the node which contains {add} to add it
  immediately before {data}.
  @param data: If null, does nothing, otherwise must be part of a list.
- @param add: If null, does nothing, otherwise must be inside of a {<T>ListNode}
- and not associated to any list; this associates the {<T>ListNode} with the
+ @param add: If null, does nothing, otherwise must be inside of a {<T>Link}
+ and not associated to any list; this associates the {<T>Link} with the
  list of which {data} is a part, if it exists.
  @order \Theta(1)
  @fixme Untested.
@@ -558,8 +562,8 @@ static void T_(ListAddBefore)(T *const data, T *const add) {
 /** Initialises the contents of the node which contains {add} to add it
  immediately after {data}.
  @param data: If null, does nothing, otherwise must be part of a list.
- @param add: If null, does nothing, otherwise must be inside of a {<T>ListNode}
- and not associated to any list; this associates the {<T>ListNode} with the
+ @param add: If null, does nothing, otherwise must be inside of a {<T>Link}
+ and not associated to any list; this associates the {<T>Link} with the
  list of which {data} is a part, if it exists.
  @order \Theta(1)
  @fixme Untested.
@@ -709,15 +713,15 @@ static void T_(ListSort)(struct T_(List) *const list) {
 
 #endif /* comp --> */
 
-/** Adjusts one {<T>ListNode}'s internal pointers when supplied with a
+/** Adjusts one {<T>Link}'s internal pointers when supplied with a
  {Migrate} parameter.
  @param list: If null, does nothing.
  @param migrate: If null, does nothing. Should only be called in a {Migrate}
  function; pass the {migrate} parameter.
- @implements <<T>ListNode>Migrate
+ @implements <<T>Link>Migrate
  @order \Theta(n)
  @allow */
-static void T_(ListNodeMigrate)(struct T_(ListNode) *const listnode,
+static void T_(LinkMigrate)(struct T_(Link) *const listnode,
 	const struct Migrate *const migrate) {
 	struct PT_(X) *x;
 	/* Relies on not-strictly-defined behaviour because pointers are not
@@ -816,7 +820,7 @@ static void PT_(unused_list)(void) {
 	T_(ListMerge)(0, 0);
 	T_(ListSort)(0);
 #endif /* comp --> */
-	T_(ListNodeMigrate)(0, 0);
+	T_(LinkMigrate)(0, 0);
 	T_(ListSelfCorrect)(0);
 	PT_(unused_coda)();
 }

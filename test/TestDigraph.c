@@ -89,91 +89,95 @@ static void E_filler(struct E *const e) {
 
 struct Regex;
 void Regex_(struct Regex **const pre);
-struct Regex *Regex(const char *const match);
+struct Regex *Regex(const char *const compile);
 const char *RegexMatch(const struct Regex *const re, const char *const match);
 int RegexOut(const struct Regex *const re, FILE *const fp);
 
-/**
- * State virtual table, referenced from {State}.
- */
-struct State;
-typedef const char *(*StateMatch)(const struct State *state,
-	const char *const match);
-typedef void (*StateToString)(const struct State *, char (*const)[12]);
-struct StateVt {
-	const char *debug;
-	const StateMatch match;
-	const StateToString to_string;
+/** Intermediary structures created when walking the graph of regex and
+ the remainder of the string that it's matched against. */
+struct Match {
+	const struct Transition *t;
+	const struct StateVertex *vertex;
+	const char *next;
 };
 
 /**
- * Abstract {State}.
+ * Transition virtual table, referenced from {Transition}. This forms the extra
+ * data on the pointed to by the edges of the digraph.
  */
-struct State {
-	char a[8];
-	const struct StateVt *vt;
-	char b[8];
+struct Transition;
+typedef const char *(*Match)(const struct Match *const);
+typedef void (*TransitionToString)(const struct Transition *, char(*const)[12]);
+struct TransitionVt {
+	const char *debug;
+	const Match match;
+	const TransitionToString to_string;
+};
+
+/**
+ * Abstract {Transition}. This forms extra data on the edge of the digraph.
+ */
+struct Transition {
+	const struct TransitionVt *vt;
 };
 /** Constructor; only called from it's children. */
-static void State(struct State *const state, const struct StateVt *const vt) {
-	assert(state && vt);
-	strcpy(state->a, "<<state");
-	state->vt = vt;
-	strcpy(state->b, "state>>");
-	printf("Subconstructor State %s\n", vt->debug);
+static void Transition(struct Transition *const t,
+	const struct TransitionVt *const vt) {
+	assert(t && vt);
+	t->vt = vt;
+	printf("Subconstructor Transition %s\n", vt->debug);
 }
-/** @implements StateMatch */
-static const char *state_match(const struct State *const state,
-	const char *const match) {
-	return state->vt->match(state, match);
+/** @implements TransitionToString */
+static void transition_to_string(const struct Transition *t,char(*const a)[12]){
+	t->vt->to_string(t, a);
 }
-/** @implements StateToString */
-static void state_to_string(const struct State *state, char (*const a)[12]) {
-	state->vt->to_string(state, a);
+/** @implements Match */
+static const char *transition_match(struct Match *const match) {
+	assert(match && match->t && match->vertex && match->next);
+	return match->t->vt->match(match);
 }
 #define DIGRAPH_NAME State
-#define DIGRAPH_EDATA struct State
-#define DIGRAPH_EDATA_TO_STRING &state_to_string
+#define DIGRAPH_EDATA struct Transition
+#define DIGRAPH_EDATA_TO_STRING &transition_to_string
 #include "../src/Digraph.h" /* StateDigraph, StateVertex, StateEdge. */
 
-/**
+/*
  * {StateVertex} container.
  */
-
 #define POOL_NAME StateVertex
 #define POOL_TYPE struct StateVertex
 #include "Pool.h"
 
 /**
- * {Literals} extends {StateEdge}.
+ * {Literals} extends {Transition} as {StateEdgeLink}.
  */
 struct Literals {
-	struct StateEdgeListNode edge;
+	struct StateEdgeLink edge;
 	char *text;
 	unsigned text_size;
 };
-/** {container_of}. */
-static const struct Literals *
-	literals_holds_state(const struct State *const state) {
+/** {container_of} (probably does nothing.) */
+static const struct Literals *literals_holds_transition(
+	const struct Transition *const t) {
 	return (const struct Literals *)(const void *)
-		((const char *)state
+		((const char *)t
 		- offsetof(struct StateEdge, info)
-		- offsetof(struct StateEdgeListNode, data)
+		- offsetof(struct StateEdgeLink, data)
 		- offsetof(struct Literals, edge));
 }
-/** @implements StateMatch */
-static const char *literals_match(const struct State *state,
-	const char *const match) {
-	const struct Literals *l = literals_holds_state(state);
-	return memcmp(l->text, match, l->text_size) ? 0 : match + l->text_size;
+/** @implements Match */
+static const char *literals_match(const struct Match *const match) {
+	const struct Literals *l = literals_holds_transition(match->t);
+	if(memcmp(l->text, match->next, l->text_size)) return 0;
+	return match->next + l->text_size;
 }
 /** @implements StateToString */
-static void literals_to_string(const struct State *state, char (*const a)[12]) {
-	sprintf(*a, "%.11s", literals_holds_state(state)->text);
+static void literals_to_string(const struct Transition *t, char (*const a)[12]){
+	sprintf(*a, "%.11s", literals_holds_transition(t)->text);
 }
-static struct StateVt literals_vt
+static struct TransitionVt literals_vt
 	= { "Literals", literals_match, literals_to_string };
-/** Destructor.
+/** Destructor. (@fixme should be a virtual function.)
  @implements <Literals>Action */
 static void Literals_(struct Literals *const l) {
 	if(!l) return;
@@ -188,7 +192,7 @@ static void Literals_(struct Literals *const l) {
 static int Literals(struct Literals *const l, const char *const match,
 	unsigned match_size) {
 	assert(l && match && match_size);
-	State(&l->edge.data.info, &literals_vt);
+	Transition(&l->edge.data.info, &literals_vt);
 	l->text = 0;
 	l->text_size = 0;
 	/* Copy the literals; null terminator even thought it's not really used. */
@@ -250,18 +254,18 @@ void Regex_(struct Regex **const pre) {
 	StateDigraph_(&re->states);
 }
 /** Constructor. */
-struct Regex *Regex(const char *const match) {
+struct Regex *Regex(const char *const compile) {
 	struct Regex *re;
 	enum CompileResult cr;
 	static int no;
-	if(!match) return 0;
+	if(!compile) return 0;
 	if(!(re = malloc(sizeof *re))) return 0;
 	re->no = ++no;
 	StateDigraph(&re->states);
 	StateVertexPool(&re->vertices);
 	LiteralsPool(&re->literals);
-	printf("Compiling %d: <%s>.\n", re->no, match);
-	cr = regex_compile(re, match);
+	printf("Compiling %d: <%s>.\n", re->no, compile);
+	cr = regex_compile(re, compile);
 	switch(cr) {
 		case CR_SUCCESS: break;
 		case CR_SYNTAX_FAIL: errno = EILSEQ;
@@ -269,29 +273,40 @@ struct Regex *Regex(const char *const match) {
 	}
 	return re;
 }
-/* Called in \see{RegexMatch}.
- @fixme
- @implements <State,char*>Predicate */
-/*int no_match() {} */
+/** Checks the outbound edges from {m->vertex} (part of a compiled DFA) for a
+ match on the string {m->next}.
+ @return The end of the match if it was a match or null.
+ @fixme implements <State,char*>Predicate,
+ if(!(e = StateEdgeListMatchShortCircuit(&s->out, &no_match, match))) would be
+ nice. List doesn't have interfaces . . . yet? */
+static int match_here(const struct StateVertex *const root, const char *const arg) {
+	struct Match m;
+	struct StateEdge *e;
+	const char *end;
+	enum { NOT_MATCHED, MATCHED } status = MATCHED;
+	m.t = 0, m.vertex = root, m.next = arg;
+	while(m.vertex) {
+		/* Finished when the vertex has degree zero. */
+		if(!(e = StateEdgeListFirst(&m.vertex->out))) break;
+		status = NOT_MATCHED;
+		do { /* Loop through all the edges out of this vertex. */
+			m.t = &e->info;
+			if(!(end = transition_match(&m))) continue;
+			m.vertex = e->to, m.next = end, status = MATCHED;
+			break;
+		} while((e = StateEdgeListNext(e)));
+		if(status == NOT_MATCHED) break;
+	}
+	return status == MATCHED ? 1 : 0;
+}
 /** Match {re}.
  @return The first point it matches or null if it doesn't. */
-const char *RegexMatch(const struct Regex *const re, const char *const match) {
-	struct StateVertex *s;
-	struct StateEdge *e;
-	const char *m0, *m1;
-	if(!re || !match) return 0;
-	s = StateDigraphGetRoot(&re->states);
-	m0 = match;
-	while(s) {
-		/* if(!(e = StateEdgeListMatchShortCircuit(&s->out, &no_match, match)))
-		 return 0; /\ List doesn't have interfaces . . . yet? */
-		for(e = StateEdgeListFirst(&s->out); e; e = StateEdgeListNext(e)) {
-			if((m1 = state_match(&e->info, m0))) {
-				return m1; /* @fixme */
-			}
-		}
-		return 0; /* @fixme */
-	}
+const char *RegexMatch(const struct Regex *const re, const char *const arg) {
+	const struct StateVertex *root;
+	const char *a;
+	if(!re || !arg) return 0;
+	root = StateDigraphGetRoot(&re->states);
+	for(a = arg; *a; a++) if(match_here(root, a)) return a;
 	return 0;
 }
 /** Appends {re} to {fp} in GraphViz format.
@@ -312,7 +327,6 @@ int main(void) {
 	struct Regex *re = 0;
 	const char *const fn = "regex.gv";
 	FILE *fp = 0;
-	const char *yes, *no;
 	int done = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	BlankDigraphTest();
@@ -322,9 +336,7 @@ int main(void) {
 		if(!(re = Regex("hi"))) break;
 		if(!(fp = fopen(fn, "w"))) break;
 		if(!RegexOut(re, fp)) break;
-		yes = RegexMatch(re, "hithere");
-		no = RegexMatch(re, "bye");
-		printf("yes <%s> no <%s>.\n", yes, no);
+		printf("hithere <%s>; null <%s>; hihi <%s>.\n", RegexMatch(re, "hithere"), RegexMatch(re, "bye"), RegexMatch(re, "therehihi"));
 		done = 1;
 	} while(0); if(!done) {
 		perror(fn);
