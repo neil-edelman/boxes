@@ -721,13 +721,13 @@ static void T_(ListSort)(struct T_(List) *const list) {
  @implements <<T>Link>Migrate
  @order \Theta(n)
  @allow */
-static void T_(LinkMigrate)(struct T_(Link) *const listnode,
+static void T_(LinkMigrate)(struct T_(Link) *const link,
 	const struct Migrate *const migrate) {
 	struct PT_(X) *x;
 	/* Relies on not-strictly-defined behaviour because pointers are not
 	 necessarily contiguous in memory; it should be fine in practice. */
-	if(!listnode || !migrate || !migrate->delta) return;
-	x = &listnode->x;
+	if(!link || !migrate || !migrate->delta) return;
+	x = &link->x;
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
