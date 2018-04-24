@@ -5,7 +5,10 @@
  that is backed by {<G>Vertex} and {<G>Edge}. It does very little except expose
  the data types. In particular, there only option by default to know if a graph
  contains an element is an exhaustive search. The preprocessor macros are all
- undefined at the end of the file for convenience.
+ undefined at the end of the file for convenience. Diagraphs are rooted (or
+ else one would have no way of entering the digraph deterministally,) so they
+ can be used as trees, DAGs, or any other graph-like structure, but one must
+ enforce the topology elsewhere.
 
  @param DIGRAPH_NAME
  This literally becomes {<G>}. As it's used in function names, this should
@@ -18,6 +21,7 @@
  structure that had visited in {DIGRAPH_VDATA}, or colour for graph colouring,
  or distance for Dijkstra's or A*. One can set a {start} vertex with
  \see{<G>DigraphStart}, but depending on the algorithm, one may need {is_sink}.
+ Currently, there is no data type for the graph itself.
 
  @param DIGRAPH_VDATA_TO_STRING, DIGRAPH_EDATA_TO_STRING
  Optional print function(s) implementing {<G>VDataToString} and
@@ -168,7 +172,7 @@ struct G_(Edge);
 struct G_(Vertex);
 struct G_(Edge) {
 #ifdef DIGRAPH_EDATA /* <-- edata */
-	E info; /* In C11, this can be anonymous? */
+	E info;
 #endif /* edata --> */
 	struct G_(Vertex) *to;
 };
@@ -357,6 +361,22 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 		"}\n") < 0) return 0;
 	return 1;
 }
+
+/*
+struct G_(Edge) {
+	E info;
+	struct G_(Vertex) *to;
+};
+struct G_(Vertex) {
+	V info;
+	struct G_(EdgeList) out;
+};
+struct G_(Digraph) {
+	struct G_(VertexList) vertices;
+	struct G_(Vertex) *root;
+};
+*/
+
 
 #ifdef DIGRAPH_TEST /* <-- test */
 #include "../test/TestDigraph.h" /* Need this file if running tests. */

@@ -143,6 +143,7 @@ static const char *transition_match(struct Match *const match) {
 
 /*
  * {StateVertex} container.
+ * @fixme Include Digraph migrate functions so we can have more than 8 vertices.
  */
 #define POOL_NAME StateVertex
 #define POOL_TYPE struct StateVertex
