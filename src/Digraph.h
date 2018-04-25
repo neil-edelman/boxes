@@ -362,21 +362,44 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	return 1;
 }
 
+
+
 /*
 struct G_(Edge) {
 	E info;
-	struct G_(Vertex) *to;
+v->	struct G_(Vertex) *to;
 };
 struct G_(Vertex) {
 	V info;
-	struct G_(EdgeList) out;
+e->	struct G_(EdgeList) out;
 };
 struct G_(Digraph) {
 	struct G_(VertexList) vertices;
-	struct G_(Vertex) *root;
+v->	struct G_(Vertex) *root;
 };
 */
 
+static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
+	const struct Migrate *const migrate) {
+	struct G_(Vertex) *v;
+	struct G_(Edge) *e;
+	if(!g || !migrate) return;
+	printf("Edge migrate all\n");
+	for(v = G_(VertexListFirst(&g->vertices)); g; v = G_(VertexListNext)(v)) {
+		printf("Vertex\n");
+		for(e = G_(EdgeListFirst(&v->out)); e; e = G_(EdgeListNext)(e)) {
+			G_(EdgeLinkMigrate)(e, migrate);
+		}
+	}
+}
+
+/*static void G_(DigraphVertexMigrate)(struct G_(Digraph) *const g,
+									 const struct Migrate *const migrate) {
+	printf("ohoh! " QUOTE(DIGRAPH_NAME) "DiagraphVertexMigrate.\n");
+	Migrate(g->root, migrate);
+	for(e = EdgeListFirst(g->edges)) {
+	}
+}*/
 
 #ifdef DIGRAPH_TEST /* <-- test */
 #include "../test/TestDigraph.h" /* Need this file if running tests. */
