@@ -60,7 +60,7 @@ struct Sloth {
 static void sloth_migrate(struct Sloth *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
-	AnimalLinkMigrate(&this->animal, migrate);
+	AnimalLinkMigrate(&this->animal.data, migrate);
 }
 #define POOL_NAME Sloth
 #define POOL_TYPE struct Sloth
@@ -75,7 +75,7 @@ struct Emu {
 static void emu_migrate(struct Emu *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
-	AnimalLinkMigrate(&this->animal, migrate);
+	AnimalLinkMigrate(&this->animal.data, migrate);
 }
 #define POOL_NAME Emu
 #define POOL_TYPE struct Emu
@@ -91,7 +91,7 @@ struct BadEmu {
 static void bad_emu_migrate(struct BadEmu *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
-	AnimalLinkMigrate(&this->emu.animal, migrate);
+	AnimalLinkMigrate(&this->emu.animal.data, migrate);
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
@@ -109,7 +109,7 @@ struct Llama {
 static void llama_migrate(struct Llama *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
-	AnimalLinkMigrate(&this->animal, migrate);
+	AnimalLinkMigrate(&this->animal.data, migrate);
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
@@ -126,7 +126,7 @@ struct Lemur {
 static void lemur_migrate(struct Lemur *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
-	AnimalLinkMigrate(&this->animal, migrate);
+	AnimalLinkMigrate(&this->animal.data, migrate);
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
