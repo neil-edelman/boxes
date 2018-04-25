@@ -379,27 +379,52 @@ v->	struct G_(Vertex) *root;
 };
 */
 
+
+/** The reason we use migrate all instead of each is the digraph is
+ singly-linked. This is possibly much more inefficient for a large number of
+ backing lists, (still the same asymptotic behaviour,) but it would be complex
+ and memory-intensive to doubly-link them.
+
+ Specifically, with {<super Edge>Pool} supply {<G>Digraph} as a
+ {POOL_MIGRATE_ALL} parameter; the constructor to the pool now takes this
+ migrate function, or a function that calls this function, and {g}. */
 static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
 	struct G_(Vertex) *v;
 	struct G_(Edge) *e;
 	if(!g || !migrate) return;
-	printf("Edge migrate all\n");
+	/* It's in compilation step; it doesn't really have to be pretty. */
+	printf("Digraph<"QUOTE(DIGRAPH_NAME)">::EdgeMigrateAll:\n");
 	for(v = G_(VertexListFirst(&g->vertices)); g; v = G_(VertexListNext)(v)) {
-		printf("Vertex\n");
+		printf(" Vertex\n");
 		for(e = G_(EdgeListFirst(&v->out)); e; e = G_(EdgeListNext)(e)) {
+			printf("  Edge.\n");
 			G_(EdgeLinkMigrate)(e, migrate);
 		}
 	}
 }
 
-/*static void G_(DigraphVertexMigrate)(struct G_(Digraph) *const g,
-									 const struct Migrate *const migrate) {
-	printf("ohoh! " QUOTE(DIGRAPH_NAME) "DiagraphVertexMigrate.\n");
-	Migrate(g->root, migrate);
-	for(e = EdgeListFirst(g->edges)) {
+/** The reason we use migrate all instead of each is the digraph is
+ singly-linked. This is possibly much more inefficient for a large number of
+ backing lists, (still the same asymptotic behaviour,) but it would be complex
+ and memory-intensive to doubly-link them.
+ 
+ Specifically, with {<super Vertex>Pool} supply {<G>Digraph} as a
+ {POOL_MIGRATE_ALL} parameter; the constructor to the pool now takes this
+ migrate function, or a function that calls this function, and {g}. */
+static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
+	const struct Migrate *const migrate) {
+	struct G_(Vertex) *v;
+	struct G_(Edge) *e;
+	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">VertexMigrateAll:\n");
+	G_(VertexLinkMigratePointer)(&g->root, migrate);
+	for(v = G_(VertexListFirst(&g->vertices)); v; v = G_(VertexListNext)(v)) {
+		G_(VertexLinkMigrate)(v, migrate);
+		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
+			G_(VertexLinkMigratePointer)(&e->to, migrate);
+		}
 	}
-}*/
+}
 
 #ifdef DIGRAPH_TEST /* <-- test */
 #include "../test/TestDigraph.h" /* Need this file if running tests. */

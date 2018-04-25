@@ -717,7 +717,7 @@ static void T_(ListSort)(struct T_(List) *const list) {
 
 /** Adjusts one {<T>Link}'s internal pointers when supplied with a
  {Migrate} parameter.
- @param list: If null, does nothing.
+ @param data: If null, does nothing.
  @param migrate: If null, does nothing. Should only be called in a {Migrate}
  function; pass the {migrate} parameter.
  @implements <<T>Link>Migrate
@@ -758,6 +758,18 @@ static void T_(LinkMigrate)(T *const data, const struct Migrate *const migrate){
 		PT_UD_(x, migrate)(x, migrate);
 #endif /* d --> */
 	}
+}
+
+/** Adjusts a pointer, {pdata}, to a {<T>Link}, given {migrate}.
+ @param pdata, migrate: If null, does nothing.
+ @fixme Untested. */
+static void T_(LinkMigratePointer)(T **const pdata,
+	const struct Migrate *const migrate) {
+	const void *data;
+	if(!pdata || !migrate) return;
+	data = *pdata;
+	if(data < migrate->begin || data >= migrate->end) return;
+	*(char **)pdata += migrate->delta;
 }
 
 /** One must call this whenever the {<T>List} changes memory locations, (not
@@ -822,6 +834,7 @@ static void PT_(unused_list)(void) {
 	T_(ListSort)(0);
 #endif /* comp --> */
 	T_(LinkMigrate)(0, 0);
+	T_(LinkMigratePointer)(0, 0);
 	T_(ListSelfCorrect)(0);
 	PT_(unused_coda)();
 }
