@@ -362,8 +362,6 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	return 1;
 }
 
-
-
 /*
 struct G_(Edge) {
 	E info;
@@ -379,7 +377,6 @@ v->	struct G_(Vertex) *root;
 };
 */
 
-
 /** The reason we use migrate all instead of each is the digraph is
  singly-linked. This is possibly much more inefficient for a large number of
  backing lists, (still the same asymptotic behaviour,) but it would be complex
@@ -393,9 +390,8 @@ static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
 	struct G_(Vertex) *v;
 	struct G_(Edge) *e;
 	if(!g || !migrate) return;
-	/* It's in compilation step; it doesn't really have to be pretty. */
 	printf("Digraph<"QUOTE(DIGRAPH_NAME)">::EdgeMigrateAll:\n");
-	for(v = G_(VertexListFirst(&g->vertices)); g; v = G_(VertexListNext)(v)) {
+	for(v = G_(VertexListFirst(&g->vertices)); v; v = G_(VertexListNext)(v)) {
 		printf(" Vertex\n");
 		for(e = G_(EdgeListFirst(&v->out)); e; e = G_(EdgeListNext)(e)) {
 			printf("  Edge.\n");
@@ -416,7 +412,7 @@ static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
 	struct G_(Vertex) *v;
 	struct G_(Edge) *e;
-	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">VertexMigrateAll:\n");
+	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");
 	G_(VertexLinkMigratePointer)(&g->root, migrate);
 	for(v = G_(VertexListFirst(&g->vertices)); v; v = G_(VertexListNext)(v)) {
 		G_(VertexLinkMigrate)(v, migrate);
@@ -449,6 +445,8 @@ static void PG_(unused)(void) {
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
 	G_(DigraphOut)(0, 0);
+	G_(DigraphEdgeMigrateAll)(0, 0);
+	G_(DigraphVertexMigrateAll)(0, 0);
 	PG_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if you have one function. */

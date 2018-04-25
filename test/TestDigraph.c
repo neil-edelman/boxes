@@ -143,16 +143,10 @@ static const char *transition_match(struct Match *const match) {
 
 /*
  * {StateVertex} container.
- * @fixme Include Digraph migrate functions so we can have more than 8 vertices.
  */
-static void vertex_migrate(struct StateVertex *const sv,
-	const struct Migrate *const migrate) {
-	/* AnimalLinkMigrate(&this->animal, migrate); */
-	/* MountPoolMigratePointer(&this->mount_info.riding, migrate); */
-}
 #define POOL_NAME StateVertex
 #define POOL_TYPE struct StateVertex
-#define POOL_MIGRATE_EACH &vertex_migrate
+#define POOL_MIGRATE_ALL struct StateDigraph
 #include "Pool.h"
 
 /**
@@ -212,7 +206,7 @@ static int Literals(struct Literals *const l, const char *const match,
 }
 #define POOL_NAME Literals
 #define POOL_TYPE struct Literals
-/*#define POOL_MIGRATE_ALL &sloth*/
+#define POOL_MIGRATE_ALL struct StateDigraph
 #include "Pool.h"
 
 /**
@@ -269,8 +263,8 @@ struct Regex *Regex(const char *const compile) {
 	if(!(re = malloc(sizeof *re))) return 0;
 	re->no = ++no;
 	StateDigraph(&re->states);
-	StateVertexPool(&re->vertices);
-	LiteralsPool(&re->literals);
+	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
+	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
 	printf("Compiling %d: <%s>.\n", re->no, compile);
 	cr = regex_compile(re, compile);
 	switch(cr) {
