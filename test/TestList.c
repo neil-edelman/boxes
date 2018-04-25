@@ -257,7 +257,7 @@ static void test_block_move(void) {
 			list_Animal_to_string(&sloths[i].animal.data, &a);
 			list_Animal_to_string(&others[i].animal.data, &b);
 			printf("Migrating %s -> %s.\n", a, b);
-			AnimalLinkMigrate(&others[i].animal, &migrate);
+			AnimalLinkMigrate(&others[i].animal.data, &migrate);
 		}
 	}
 	printf("Block move: %s.\n", AnimalListNameToString(&animals));

@@ -927,8 +927,8 @@ static void PT_U_(test, meta)(void) {
 			assert(less);
 			if(!less->U_(next)) continue;
 			assert(more && more->U_(next)), (void)(more);
-			assert(PT_U_(data, cmp)(&PT_(node_hold_x)(less)->data,
-				&PT_(node_hold_x)(more)->data) <= 0);
+			assert(PT_U_(data, cmp)(&PT_(node_holds_x)(less)->data,
+				&PT_(node_holds_x)(more)->data) <= 0);
 		}
 	}
 	printf("\n");
