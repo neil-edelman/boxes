@@ -251,7 +251,7 @@ static int make_literals(struct MakeRe *const make) {
 		struct Literals *const lit = LiteralsPoolNew(&make->re->literals);
 		struct StateVertex *const v = StateVertexPoolNew(&make->re->vertices);
 		StateDigraphVertex(&make->re->states, v);
-		if(!v || !lit || Literals(lit, make->from, make->to - make->from))
+		if(!v || !lit || !Literals(lit, make->from, make->to - make->from))
 			{ make->is_done = 1; return 0; }
 		StateDigraphEdge(&lit->edge.data, make->prev, v);
 		make->prev = v;
@@ -264,7 +264,7 @@ static int make_literals(struct MakeRe *const make) {
 static int regex_compile(struct Regex *re, const char *const compile) {
 	struct MakeRe make;
 	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
-	assert(re && compile);
+	assert(re && compile && !StateVertexListFirst(&re->states.vertices));
 	do { /* Try. */
 		struct StateVertex *const start = StateVertexPoolNew(&re->vertices),
 			*const end = StateVertexPoolNew(&re->vertices);
@@ -276,6 +276,7 @@ static int regex_compile(struct Regex *re, const char *const compile) {
 		StateDigraphVertex(&re->states, end);
 		if(!*make.c) break;
 		do {
+			printf("char: %c (0x%x.)\n", *make.c, (unsigned)*make.c);
 			/* If the escape sequence is the last character, the special
 			 characters temporarily lose their meaning. */
 			if(make.is_escape) { make.is_escape = 0; continue; }
@@ -305,10 +306,12 @@ static int regex_compile(struct Regex *re, const char *const compile) {
 		/* Make sure the parentheses are matched. */
 		if(make.nestle) { e = SYNTAX; break; }
 		/* One last call to clean up. */
-		if(!make_literals(&make)) { e = RESOURCES; break; }
+		printf("One last call to make_literals.\n");
+		if(!make_literals(&make)) { printf("make_literals fail\n"); e = RESOURCES; break; }
 	} while(0);
 	/* Syntax errors are our own errors, so we have to set {errno} ourselves. */
-	if(e == SYNTAX) errno = EILSEQ;
+	if(e == SYNTAX) { printf("syntax?\n"); errno = EILSEQ; }
+	printf("regex_compile: returning %d.\n", !e);
 	return !e;
 }
 
@@ -347,7 +350,7 @@ struct Regex *Regex(const char *const compile) {
 	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
 	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
 	printf("Regex<%s> constructor.\n", compile);
-	if(!regex_compile(re, compile)) Regex_(&re);
+	if(!regex_compile(re, compile)) printf("Regex: noooo.\n"), Regex_(&re);
 	return re;
 }
 

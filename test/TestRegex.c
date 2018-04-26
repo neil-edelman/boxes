@@ -40,7 +40,7 @@ static void test_literals(void) {
 	struct Regex *re = Regex("hi");
 	const char *const fn = "graphs/literals.gv";
 	FILE *fp = 0;
-	assert(re);
+	if(!re) perror("test_literals"), assert(0);
 	printf("hithere <%s>; null <%s>; hihi <%s>; null <%s>.\n",
 		RegexMatch(re, "hithere"),
 		RegexMatch(re, "bye"),
