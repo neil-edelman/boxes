@@ -23,7 +23,6 @@ static void test_null(void) {
 	struct Regex *re_null = Regex(0), *re_empty = Regex("");
 	const char *const fn = "graphs/empty.gv";
 	FILE *fp = 0;
-
 	assert(!re_null && re_empty);
 	printf("hithere <%s>; null <%s>; hihi <%s>;  <%s>.\n",
 		RegexMatch(re_empty, "hithere"),
@@ -41,7 +40,6 @@ static void test_literals(void) {
 	struct Regex *re = Regex("hi");
 	const char *const fn = "graphs/literals.gv";
 	FILE *fp = 0;
-
 	assert(re);
 	printf("hithere <%s>; null <%s>; hihi <%s>; null <%s>.\n",
 		RegexMatch(re, "hithere"),
@@ -76,7 +74,7 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	printf("Testing:\n");
-	test_null();
+	/*test_null();*/
 	test_literals();
 	test_regex();
 	return EXIT_SUCCESS;

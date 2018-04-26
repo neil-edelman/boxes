@@ -206,65 +206,6 @@ static int sieve_match(struct State *const state, const char match) {
 
 
 
-/* Compiling regular expressions into DFAs. */
-
-/** Temporary parenthetical variables; {[from, to)}. */
-struct Pair { const char *from, *to; };
-/** Initialiser. */
-static void Pair(struct Pair *const pair, const char *const both) {
-	assert(pair && both);
-	pair->from = pair->to = both;
-}
-/** Expander. */
-static void PairSetTo(struct Pair *const pair, const char *const to) {
-	assert(pair && to && pair->from >= to);
-	pair->to = to;
-}
-/** Query. */
-static int PairIsEmpty(const struct Pair *const pair) {
-	assert(pair && pair->from <= pair->to);
-	return pair->from >= pair->to;
-}
-#define POOL_NAME Pair
-#define POOL_TYPE struct Pair
-#define POOL_STACK
-#include "Pool.h"
-
-/**
- * All wrapped up one one object for convenience when compiling.
- */
-struct MakeRe {
-	struct StateDigraph *states;
-	struct PairPool pairs;
-	int is_in_text, is_escape;
-};
-/** Initialises {make} and clears {states}. */
-static void MakeRe(struct MakeRe *const make, struct StateDigraph *const states)
-{
-	assert(make && states);
-	make->states = states;
-	PairPool(&make->pairs);
-	make->is_in_text = 0;
-	make->is_escape  = 0;
-	/* Clear states. @fixme */
-	/*StateDigraphClear(states);*/
-}
-
-#if 0
-/** Helper for \see{re_compile}. */
-static void repeat(struct MakeRe *const make, int low, int high) {
-	assert(make && low >= 0 && (high == -1 || low < high));
-}
-
-/** Clears all memory and resets {make}. */
-static void MakeRe_(struct MakeRe *const make) {
-	if(!make) return;
-	PairStack_(&make->pairs);
-	make->is_in_text = 0;
-}
-
-#endif
-
 /**
  * Regular expression contains all the above.
  */
@@ -274,6 +215,102 @@ struct Regex {
 	struct StateVertexPool vertices;
 	struct LiteralsPool literals;
 };
+
+
+
+/**
+ * Temporary structure called on compiling regular expressions into DFAs. All
+ * wrapped up one one object for convenience.
+ */
+struct MakeRe {
+	struct Regex *re;
+	unsigned nestle;
+	const char *from, *to, *c;
+	struct StateVertex *prev;
+	int is_escape, is_done;
+};
+/** Initialises {make} and clears {states}. */
+static void MakeRe(struct MakeRe *const make, struct Regex *const re,
+	const char *const compile) {
+	assert(make && re && compile);
+	make->re = re;
+	make->nestle = 0;
+	make->from = make->to = make->c = compile; /* { [from, to) } */
+	make->is_escape = make->is_done = 0;
+	/*StateDigraphClear(&re->states);*/ /* @fixme Re-initailise! */
+	make->prev = StateVertexPoolNew(&re->vertices); /* @fixme int!!! */
+	StateDigraphVertex(&re->states, make->prev);
+}
+/** Check for literals at the end of a sequence.
+ @return Success.
+ @throws {realloc} errors. */
+static int make_literals(struct MakeRe *const make) {
+	assert(make);
+	make->to = make->c;
+	if(make->from < make->to) {
+		struct Literals *const lit = LiteralsPoolNew(&make->re->literals);
+		struct StateVertex *const v = StateVertexPoolNew(&make->re->vertices);
+		StateDigraphVertex(&make->re->states, v);
+		if(!v || !lit || Literals(lit, make->from, make->to - make->from))
+			{ make->is_done = 1; return 0; }
+		StateDigraphEdge(&lit->edge.data, make->prev, v);
+		make->prev = v;
+	}
+	make->from = make->to = make->c + 1;
+	return 1;
+}
+/** Called from \see{Regex}.
+ @returns Success, otherwise {errno} (may) be set. */
+static int regex_compile(struct Regex *re, const char *const compile) {
+	struct MakeRe make;
+	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
+	assert(re && compile);
+	do { /* Try. */
+		struct StateVertex *const start = StateVertexPoolNew(&re->vertices),
+			*const end = StateVertexPoolNew(&re->vertices);
+		/* Initialise start and end vertices. */
+		if(!start || !end) { e = RESOURCES; break; }
+		/* Parse; initialise the state-machine and the digraph. */
+		MakeRe(&make, re, compile);
+		StateDigraphVertex(&re->states, start);
+		StateDigraphVertex(&re->states, end);
+		if(!*make.c) break;
+		do {
+			/* If the escape sequence is the last character, the special
+			 characters temporarily lose their meaning. */
+			if(make.is_escape) { make.is_escape = 0; continue; }
+			/* Otherwise, switch on the meaning. */
+			switch(*make.c) {
+			case '\\': make.is_escape = 1; break;
+			case '|':
+			case '*':
+			case '+':
+			case '?':
+			case '{':
+			case '}': break;
+			case '(': /* Push and (possibly) literals. */
+				if(!make_literals(&make)) { e = RESOURCES; break; }
+				make.nestle++;
+				break;
+			case ')': /* Pop and (probably) literals. */
+				if(!make.nestle) { make.is_done = 1; e = SYNTAX; break; }
+				make.nestle--;
+				if(!make_literals(&make)) { e = RESOURCES; break; }
+				break;
+			case '\0': make.is_done = 1; break;
+			default: break;
+			}
+			if(make.is_done) break;
+		} while(*++make.c != '\0'); /* {c} \in {compile}. */
+		/* Make sure the parentheses are matched. */
+		if(make.nestle) { e = SYNTAX; break; }
+		/* One last call to clean up. */
+		if(!make_literals(&make)) { e = RESOURCES; break; }
+	} while(0);
+	/* Syntax errors are our own errors, so we have to set {errno} ourselves. */
+	if(e == SYNTAX) errno = EILSEQ;
+	return !e;
+}
 
 /** Destructor. One can destruct anything in a valid state, including null and
  zero, it just does nothing.
@@ -291,90 +328,11 @@ void Regex_(struct Regex **const pre) {
 	*pre = 0;
 }
 
-/** Called from \see{Regex}.
- @returns Success, otherwise {errno} (may) be set. */
-static int regex_compile(struct Regex *re, const char *const compile) {
-	struct MakeRe make;
-	const char *c = compile;
-	int is_done = 0;
-	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
-	assert(re && compile);
-	MakeRe(&make, &re->states); /* Initialise */
-	do { /* Try. */
-		struct Pair *const pair = PairPoolNew(&make.pairs), *p = pair;
-		struct Literals *lit;
-		if(!pair) { e = RESOURCES; break; }
-		Pair(pair, c); /* Start with implied pair around expression. */
-		while(*c) { /* {c} \in {compile}. */
-			/* If the escape sequence is the last character, the items
-			 temporarily lose their meaning. */
-			if(make.is_escape) {
-				make.is_escape = 0;
-				if(*c == '\0') break;
-				continue;
-			}
-			/* Otherwise, switch on the meaning. */
-			switch(*c) {
-			case '\\': make.is_escape = 1; break;
-			case '|': break;
-			case '*': break;
-			case '+': break;
-			case '?': break;
-				/* @fixme case '{', '}'' */
-				break;
-			case '(': /* Push and (possibly) literals. */
-				PairSetTo(p, c);
-				if(!PairIsEmpty(p)) {
-					if(!(lit = LiteralsPoolNew(&re->literals)))
-						{ is_done = 1; e = RESOURCES; break; }
-					Literals(lit, p->from, p->to - p->from);
-				}
-				Pair(pair, c + 1);
-				break;
-			case ')': /* Pop. */
-				if(PairPoolPop(&make.pairs) == pair)
-					{ is_done = 1; e = SYNTAX; break; }
-				assert(pair);
-				PairSetTo(pair, c - 1);
-				break;
-			case '\0': is_done = 1; break;
-			default: break;
-			}
-			if(is_done) break;
-			c++;
-		}
-		/* Make sure the parentheses are matched. */
-		if(PairPoolPop(&make.pairs) != pair) { e = SYNTAX; break; }
-	} while(0);
-	/* Syntax errors are our own errors, so we have to set {errno} ourselves. */
-	if(e == SYNTAX) errno = EILSEQ;
-	PairPool_(&make.pairs);
-	/*
-			int is_done = 0, is_escape = 0;
-			const char *byte;
-			printf("<<re_compile:\n");
-			assert(re && compile);
-			MakeRe(&make, &re->states);
-			}
-			printf("\nre_compile>>\n");
-			MakeRe_(&make);
-			return 1;
-
-		if(!(start = StateVertexPoolNew(&re->vertices))) {  break; }
-		StateDigraphVertex(&re->states, start);
-		if(!(end = StateVertexPoolNew(&re->vertices))) break;
-		StateDigraphVertex(&re->states, end);
-		if(!(lit = LiteralsPoolNew(&re->literals)) || !Literals(lit, compile,p))
-			break;
-		StateDigraphEdge(&lit->edge.data, start, end);
-	}*/
-	return !e;
-}
-/** Compiles a regex into an uninitalised or empty {re}.
+/** Compiles a regex into an initialised or empty {re}.
  @param re: If null, does nothing and returns false, otherwise on error, this
- is initailialised to empty. On success, requires \see{Regex_} destructor when
+ is initialised to empty. On success, requires \see{Regex_} destructor when
  done.
- @param compile: If null or empty, {re} is initailialised to empty and it
+ @param compile: If null or empty, {re} is initialised to empty and it
  returns true. Otherwise, this is a null-terminated modified UTF-8 string that
  gets compiled into a regular expression. (fixme: is this true?)
  @return Success.
