@@ -414,12 +414,34 @@ static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	struct G_(Edge) *e;
 	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");
 	G_(VertexLinkMigratePointer)(&g->root, migrate);
-	for(v = G_(VertexListFirst(&g->vertices)); v; v = G_(VertexListNext)(v)) {
+	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		G_(VertexLinkMigrate)(v, migrate);
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			G_(VertexLinkMigratePointer)(&e->to, migrate);
 		}
 	}
+}
+
+/** Used in subclasses. Slow.
+ @order O(|{vertices} + {edges}| * |{vertices}|) */
+static void PG_(valid_state)(const struct G_(Digraph) *const g) {
+	struct G_(Vertex) *v, *v1;
+	struct G_(Edge) *e;
+	int is_root = 1, is_edge;
+	if(!g) return;
+	if(g->root) is_root = 0;
+	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
+		if(g->root == v) is_root = 1;
+		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
+			is_edge = 0;
+			for(v1 = G_(VertexListFirst)(&g->vertices); v1;
+				v1 = G_(VertexListNext)(v)) {
+				if(e->to == v1) { is_edge = 1; break; }
+			}
+			assert(is_edge);
+		}
+	}
+	assert(is_root);
 }
 
 #ifdef DIGRAPH_TEST /* <-- test */
@@ -447,6 +469,7 @@ static void PG_(unused)(void) {
 	G_(DigraphOut)(0, 0);
 	G_(DigraphEdgeMigrateAll)(0, 0);
 	G_(DigraphVertexMigrateAll)(0, 0);
+	PG_(valid_state)(0);
 	PG_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if you have one function. */

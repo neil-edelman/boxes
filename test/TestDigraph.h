@@ -10,10 +10,6 @@ static const PG_(EDataAction) PG_(edata_filler) = (DIGRAPH_EDATA_TEST);
 
 
 
-static void PG_(valid_state)(const struct G_(Digraph) *const g) {
-	if(!g) return; /* null is valid */
-}
-
 static void PG_(test_basic)(void) {
 	struct G_(Digraph) g;
 	PG_(valid_state)(0);
@@ -54,6 +50,7 @@ static void PG_(test_random)(void) {
 #endif /* !edata --> */
 			G_(DigraphEdge)(&en->data, v0, v1);
 		}
+		/*PG_(valid_state)(&g);*/
 		if(!G_(DigraphOut)(&g, fp)) break;
 		done = 1;
 	} while(0); if(!done) perror(fn); {

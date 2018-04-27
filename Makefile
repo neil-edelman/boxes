@@ -29,9 +29,10 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst 
 SRCS  := $(call rwildcard, $(SDIR), *.c) # or *.java
 TEST  := $(call rwildcard, $(TDIR), *.c)
 H     := $(call rwildcard, $(SDIR), *.h) $(call rwildcard, $(TDIR), *.h)
+H_SRC := $(call rwildcard, $(SDIR), *.h)
 OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
-DOCS  := $(patsubst $(SDIR)/%.c, $(DDIR)/%.html, $(SRCS))
+DOCS  := $(patsubst $(SDIR)/%.h, $(DDIR)/%.html, $(H_SRC))
 
 CC   := clang
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
@@ -62,6 +63,7 @@ default: $(BDIR)/$(PROJ)
 	# . . . success; executable is in $(BDIR)/$(PROJ)
 
 docs: $(DOCS)
+	# $(DOCS)
 
 # linking
 $(BDIR)/$(PROJ): $(OBJS) $(TOBJS)
@@ -81,7 +83,7 @@ $(TOBJS): $(GDIR)/$(TDIR)/%.o: $(TDIR)/%.c $(H)
 	@mkdir -p $(GDIR)/$(TDIR)
 	$(CC) $(CF) -c $(TDIR)/$*.c -o $@
 
-$(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
+$(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
 	# docs rule
 	@mkdir -p $(DDIR)
 	cat $^ | $(CDOC) > $@
