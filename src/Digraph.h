@@ -424,7 +424,7 @@ static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 
 /** Used in subclasses. Slow.
  @order O(|{vertices} + {edges}| * |{vertices}|) */
-static void PG_(valid_state)(const struct G_(Digraph) *const g) {
+static void G_(DigraphValid)(const struct G_(Digraph) *const g) {
 	struct G_(Vertex) *v, *v1;
 	struct G_(Edge) *e;
 	int is_root = 1, is_edge;
@@ -470,7 +470,7 @@ static void PG_(unused)(void) {
 	G_(DigraphOut)(0, 0);
 	G_(DigraphEdgeMigrateAll)(0, 0);
 	G_(DigraphVertexMigrateAll)(0, 0);
-	PG_(valid_state)(0);
+	G_(DigraphValid)(0);
 	PG_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if you have one function. */

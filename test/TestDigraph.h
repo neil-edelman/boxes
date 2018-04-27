@@ -10,6 +10,10 @@ static const PG_(EDataAction) PG_(edata_filler) = (DIGRAPH_EDATA_TEST);
 
 
 
+static void PG_(valid_state)(const struct G_(Digraph) *const g) {
+	G_(DigraphValid)(g);
+}
+
 static void PG_(test_basic)(void) {
 	struct G_(Digraph) g;
 	PG_(valid_state)(0);
