@@ -230,16 +230,21 @@ struct MakeRe {
 	int is_escape, is_done;
 };
 /** Initialises {make} and clears {states}. */
-static void MakeRe(struct MakeRe *const make, struct Regex *const re,
+static int MakeRe(struct MakeRe *const make, struct Regex *const re,
 	const char *const compile) {
-	assert(make && re && compile);
+	assert(make && re && compile
+		&& !StateVertexListFirst(&re->states.vertices));
+	printf("MakeRe: starting <%s>.\n", compile);
 	make->re = re;
 	make->nestle = 0;
 	make->from = make->to = make->c = compile; /* { [from, to) } */
 	make->is_escape = make->is_done = 0;
-	/*StateDigraphClear(&re->states);*/ /* @fixme Re-initailise! */
-	make->prev = StateVertexPoolNew(&re->vertices); /* @fixme int!!! */
+	printf("MakeRe: making vertex.\n");
+	if(!(make->prev = StateVertexPoolNew(&re->vertices))) return 0;
+	printf("MakeRe: vertex to graph.\n");
 	StateDigraphVertex(&re->states, make->prev);
+	printf("MakeRe<%s>: finised setting up state machine.\n", compile);
+	return 1;
 }
 /** Check for literals at the end of a sequence.
  @return Success.
@@ -265,15 +270,11 @@ static int regex_compile(struct Regex *re, const char *const compile) {
 	struct MakeRe make;
 	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
 	assert(re && compile && !StateVertexListFirst(&re->states.vertices));
+	printf("regex_compile\n");
 	do { /* Try. */
-		struct StateVertex *const start = StateVertexPoolNew(&re->vertices),
-			*const end = StateVertexPoolNew(&re->vertices);
-		/* Initialise start and end vertices. */
-		if(!start || !end) { e = RESOURCES; break; }
 		/* Parse; initialise the state-machine and the digraph. */
-		MakeRe(&make, re, compile);
-		StateDigraphVertex(&re->states, start);
-		StateDigraphVertex(&re->states, end);
+		if(!MakeRe(&make, re, compile)) { e = RESOURCES; break; }
+		printf("c: MakeRe.\n");
 		if(!*make.c) break;
 		do {
 			printf("char: %c (0x%x.)\n", *make.c, (unsigned)*make.c);
@@ -322,7 +323,7 @@ static int regex_compile(struct Regex *re, const char *const compile) {
 void Regex_(struct Regex **const pre) {
 	struct Regex *re;
 	if(!pre || !(re = *pre)) return;
-	printf("~Regex: releasing %s.\n", re->title);
+	printf("~Regex<%s>.\n", re->title);
 	LiteralsPoolForEach(&re->literals, &Literals_);
 	LiteralsPool_(&re->literals);
 	StateVertexPool_(&re->vertices);
@@ -349,7 +350,7 @@ struct Regex *Regex(const char *const compile) {
 	StateDigraph(&re->states);
 	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
 	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
-	printf("Regex<%s> constructor.\n", compile);
+	printf("Regex<%s>.\n", compile);
 	if(!regex_compile(re, compile)) printf("Regex: noooo.\n"), Regex_(&re);
 	return re;
 }

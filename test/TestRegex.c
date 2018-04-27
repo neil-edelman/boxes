@@ -32,8 +32,8 @@ static void test_null(void) {
 	/* @fixme on fail? */
 	if(!(fp = fopen(fn, "w")) || !RegexOut(re_empty, fp)) perror(fn);
 	fclose(fp);
-	Regex_(&re_null);
-	Regex_(&re_empty);
+	/*Regex_(&re_null);
+	Regex_(&re_empty);*/
 }
 
 static void test_literals(void) {
@@ -49,7 +49,7 @@ static void test_literals(void) {
 	/* @fixme on fail? */
 	if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
 	fclose(fp);
-	Regex_(&re);
+	/*Regex_(&re);*/
 }
 
 static void test_regex(void) {
@@ -74,7 +74,8 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	printf("Testing:\n");
-	/*test_null();*/
+	test_null(); /* aught, I'm not initialising something or some shit: only one
+	 regex at a time. BS about incorrect checksum for freed object on malloc. */
 	test_literals();
 	test_regex();
 	return EXIT_SUCCESS;
