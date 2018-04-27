@@ -442,6 +442,7 @@ static void PG_(valid_state)(const struct G_(Digraph) *const g) {
 		}
 	}
 	assert(is_root);
+	(void)is_root, (void)is_edge;
 }
 
 #ifdef DIGRAPH_TEST /* <-- test */
