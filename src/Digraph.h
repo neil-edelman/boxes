@@ -414,7 +414,7 @@ static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	struct G_(Edge) *e;
 	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");
 	G_(VertexLinkMigratePointer)(&g->root, migrate);
-	for(v = G_(VertexListFirst(&g->vertices)); v; v = G_(VertexListNext)(v)) {
+	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		G_(VertexLinkMigrate)(v, migrate);
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			G_(VertexLinkMigratePointer)(&e->to, migrate);

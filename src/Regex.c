@@ -120,6 +120,9 @@ static void Literals_(struct Literals *const l) {
 	l->text_size = 0;
 }
 /** Constructor.
+ @param l: This is instantiated; any data will be erased.
+ @param arg, arg_size: The literal. A copy of this value is taken.
+ @param arg_size: Must be greater then zero.
  @return Success.
  @throws {malloc} errors. */
 static int Literals(struct Literals *const l, const char *const arg,
@@ -202,7 +205,7 @@ static int sieve_match(struct State *const state, const char match) {
 #define POOL_TYPE struct Sieve
 #define POOL_MIGRATE_ALL struct StateDigraph
 #include "Pool.h"
-#endif
+#endif /* Not used. */
 
 
 
@@ -324,10 +327,10 @@ void Regex_(struct Regex **const pre) {
 	struct Regex *re;
 	if(!pre || !(re = *pre)) return;
 	printf("~Regex<%s>.\n", re->title);
+	StateDigraph_(&re->states); /* Must come before we erase the backing. */
 	LiteralsPoolForEach(&re->literals, &Literals_);
 	LiteralsPool_(&re->literals);
 	StateVertexPool_(&re->vertices);
-	StateDigraph_(&re->states);
 	free(re);
 	*pre = 0;
 }

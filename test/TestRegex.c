@@ -24,16 +24,16 @@ static void test_null(void) {
 	const char *const fn = "graphs/empty.gv";
 	FILE *fp = 0;
 	assert(!re_null && re_empty);
-	printf("hithere <%s>; null <%s>; hihi <%s>;  <%s>.\n",
+	/*printf("hithere <%s>; null <%s>; hihi <%s>;  <%s>.\n",
 		RegexMatch(re_empty, "hithere"),
 		RegexMatch(re_empty, "bye"),
 		RegexMatch(re_empty, "therehihi"),
-		RegexMatch(re_empty, ""));
+		RegexMatch(re_empty, ""));*/
 	/* @fixme on fail? */
 	if(!(fp = fopen(fn, "w")) || !RegexOut(re_empty, fp)) perror(fn);
 	fclose(fp);
-	/*Regex_(&re_null);
-	Regex_(&re_empty);*/
+	Regex_(&re_null);
+	Regex_(&re_empty);
 }
 
 static void test_literals(void) {
@@ -49,7 +49,7 @@ static void test_literals(void) {
 	/* @fixme on fail? */
 	if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
 	fclose(fp);
-	/*Regex_(&re);*/
+	Regex_(&re);
 }
 
 static void test_regex(void) {
