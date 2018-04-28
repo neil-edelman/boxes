@@ -228,7 +228,7 @@ struct G_(Digraph) {
 
 
 /** Does nothing for vertex data.
- @implements <G>VertexAction */
+ @implements <<G>Vertex>Action */
 static void PG_(v_clear)(struct G_(Vertex) *const v) {
 	assert(v);
 	G_(EdgeListClear)(&v->out);
@@ -248,11 +248,12 @@ static void PG_(clear)(struct G_(Digraph) *const g) {
 
 /** Destructor for {g}.
  @param g: If null or empty, does nothing.
- @order O({vertices})
+ @order O(1)
  @allow */
 static void G_(Digraph_)(struct G_(Digraph) *const g) {
 	if(!g) return;
-	G_(VertexListForEach)(&g->vertices, &PG_(v_clear));
+	/* This step is not really necessary; clears data that is not valid.
+	G_(VertexListForEach)(&g->vertices, &PG_(v_clear)); */
 	PG_(clear)(g);
 }
 

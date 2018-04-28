@@ -327,10 +327,10 @@ void Regex_(struct Regex **const pre) {
 	struct Regex *re;
 	if(!pre || !(re = *pre)) return;
 	printf("~Regex<%s>.\n", re->title);
-	StateDigraph_(&re->states); /* Must come before we erase the backing. */
 	LiteralsPoolForEach(&re->literals, &Literals_);
 	LiteralsPool_(&re->literals);
 	StateVertexPool_(&re->vertices);
+	StateDigraph_(&re->states);
 	free(re);
 	*pre = 0;
 }
