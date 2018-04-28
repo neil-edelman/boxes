@@ -11,7 +11,24 @@ static const PG_(EDataAction) PG_(edata_filler) = (DIGRAPH_EDATA_TEST);
 
 
 static void PG_(valid_state)(const struct G_(Digraph) *const g) {
-	G_(DigraphValid)(g);
+	struct G_(Vertex) *v, *v1;
+	struct G_(Edge) *e;
+	int is_root = 1, is_edge;
+	if(!g) return;
+	if(g->root) is_root = 0;
+	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
+		if(g->root == v) is_root = 1;
+		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
+			is_edge = 0;
+			for(v1 = G_(VertexListFirst)(&g->vertices); v1;
+				v1 = G_(VertexListNext)(v)) {
+				if(e->to == v1) { is_edge = 1; break; }
+			}
+			assert(is_edge);
+		}
+	}
+	assert(is_root);
+	(void)is_root, (void)is_edge;
 }
 
 static void PG_(test_basic)(void) {
