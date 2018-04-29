@@ -221,101 +221,154 @@ struct Regex {
 
 
 
+/* Used in {MakeRe} for parentheses matching. */
+#define POOL_NAME Bra
+#define POOL_TYPE const char *
+#define POOL_STACK
+#include "Pool.h"
+
+/** Used to return status in {MakeRe} from {MakeReContext}. */
+enum MakeReStatus { SUCCESS, RESOURCES, SYNTAX };
+
+struct MakeRe;
+/** Used in {MakeRe} for context. */
+typedef enum MakeReStatus (*MakeReContext)(struct MakeRe *const);
+
 /**
  * Temporary structure called on compiling regular expressions into DFAs. All
  * wrapped up one one object for convenience.
  */
 struct MakeRe {
 	struct Regex *re;
-	unsigned nestle;
-	const char *from, *to, *c;
+	struct BraPool bras;
+	MakeReContext context;
+	const char *from, *to;
 	struct StateVertex *prev;
-	int is_escape, is_done;
 };
-/** Initialises {make} and clears {states}. */
-static int MakeRe(struct MakeRe *const make, struct Regex *const re,
-	const char *const compile) {
-	assert(make && re && compile
-		&& !StateVertexListFirst(&re->states.vertices));
-	printf("MakeRe: starting <%s>.\n", compile);
-	make->re = re;
-	make->nestle = 0;
-	make->from = make->to = make->c = compile; /* { [from, to) } */
-	make->is_escape = make->is_done = 0;
-	printf("MakeRe: making vertex.\n");
-	if(!(make->prev = StateVertexPoolNew(&re->vertices))) return 0;
-	printf("MakeRe: vertex to graph.\n");
-	StateDigraphVertex(&re->states, make->prev);
-	printf("MakeRe<%s>: finised setting up state machine.\n", compile);
-	return 1;
-}
+
 /** Check for literals at the end of a sequence.
- @return Success.
+ @return {MakeReStatus}.
  @throws {realloc} errors. */
-static int make_literals(struct MakeRe *const make) {
+static enum MakeReStatus make_literals(struct MakeRe *const make) {
 	assert(make);
-	make->to = make->c;
-	if(make->from < make->to) {
+	if(make->from < make->to) { /* At least one byte. */
 		struct Literals *const lit = LiteralsPoolNew(&make->re->literals);
 		struct StateVertex *const v = StateVertexPoolNew(&make->re->vertices);
 		StateDigraphVertex(&make->re->states, v);
 		if(!v || !lit || !Literals(lit, make->from, make->to - make->from))
-			{ make->is_done = 1; return 0; }
+			return RESOURCES;
 		StateDigraphEdge(&lit->edge.data, make->prev, v);
 		make->prev = v;
 	}
-	make->from = make->to = make->c + 1;
-	return 1;
+	return SUCCESS;
+}
+
+/** {3}{2,7}{4,}
+ @implements MakeReContext */
+/*static enum MakeReStatus curly_context(struct MakeRe *const make) {
+	assert(make);
+	return SUCCESS;
+}*/
+
+/** [] [^]
+ @implements MakeReContext *
+static enum MakeReStatus braces_context(struct MakeRe *const make) {
+	assert(make);
+	switch(*make->to) {
+	case ']': make->context = &normal_context;
+	case '\0': return SYNTAX;
+	}
+	return SUCCESS;
+}*/
+
+/** \d (digit,intern) \w (word,_,number,>255?) \s any separator?
+ \D \W \S \N(not a line break)
+ @implements MakeReContext */
+static enum MakeReStatus escape_context(struct MakeRe *const make) {
+	assert(make);
+	switch(*make->to) {
+		case '\0': return SYNTAX;
+		/*default:*/
+	}
+	return SUCCESS;
+}
+
+/** .|\ (capturing group, nah) (lazy ? eh) (lookarounds, meh)
+ @implements MakeReContext */
+static enum MakeReStatus normal_context(struct MakeRe *const make) {
+	const char **from, **bra;
+	assert(make);
+	printf("char: %c (0x%x.)\n", *make->to, (unsigned)*make->to);
+	switch(*make->to) {
+		case '\\': make->context = &escape_context; break;
+		case '|':
+		case '*':
+		case '+':
+		case '?':
+		case '{':
+		case '}': break;
+		case '(':
+			/* Even possible? */
+			if(!(from = BraPoolPeek(&make->bras))) return SYNTAX;
+			if(!make_literals(make) || !(bra = BraPoolNew(&make->bras)))
+				return RESOURCES;
+			*bra = make->to + 1;
+			break;
+		case ')':
+			if(!(bra = BraPoolPop(&make->bras))) return SYNTAX;
+			if(!make_literals(make)) return RESOURCES;
+			break;
+		case '\0': make->context = 0; break;
+		default: break;
+	}
+	return SUCCESS;
+}
+
+/** Initialises {make} and clears {states}.
+ @return {MakeReStatus}. */
+static enum MakeReStatus MakeRe(struct MakeRe *const make,
+	struct Regex *const re, const char *const compile) {
+	assert(make && re && compile
+		&& !StateVertexListFirst(&re->states.vertices));
+	/* Initialise. */
+	make->re = re;
+	BraPool(&make->bras);
+	make->context = &normal_context;
+	make->from = make->to = compile;
+	make->prev = 0;
+	/* Set up resources: implied parenthesis around all; starting state. */
+	if(!BraPoolNew(&make->bras)
+	   || !(make->prev = StateVertexPoolNew(&re->vertices))) return RESOURCES;
+	StateDigraphVertex(&re->states, make->prev);
+	printf("MakeRe<%s>: state machine ready.\n", compile);
+	return SUCCESS;
 }
 /** Called from \see{Regex}.
  @returns Success, otherwise {errno} (may) be set. */
 static int regex_compile(struct Regex *re, const char *const compile) {
 	struct MakeRe make;
-	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
+	enum MakeReStatus e = SUCCESS;
 	assert(re && compile && !StateVertexListFirst(&re->states.vertices));
-	printf("regex_compile\n");
+	printf("Regex<%s>::regex_compile.\n", compile);
 	do { /* Try. */
-		/* Parse; initialise the state-machine and the digraph. */
-		if(!MakeRe(&make, re, compile)) { e = RESOURCES; break; }
-		printf("c: MakeRe.\n");
-		if(!*make.c) break;
+		if((e = MakeRe(&make, re, compile)) != SUCCESS) break;
 		do {
-			printf("char: %c (0x%x.)\n", *make.c, (unsigned)*make.c);
-			/* If the escape sequence is the last character, the special
-			 characters temporarily lose their meaning. */
-			if(make.is_escape) { make.is_escape = 0; continue; }
-			/* Otherwise, switch on the meaning. */
-			switch(*make.c) {
-			case '\\': make.is_escape = 1; break;
-			case '|':
-			case '*':
-			case '+':
-			case '?':
-			case '{':
-			case '}': break;
-			case '(': /* Push and (possibly) literals. */
-				if(!make_literals(&make)) { e = RESOURCES; break; }
-				make.nestle++;
-				break;
-			case ')': /* Pop and (probably) literals. */
-				if(!make.nestle) { make.is_done = 1; e = SYNTAX; break; }
-				make.nestle--;
-				if(!make_literals(&make)) { e = RESOURCES; break; }
-				break;
-			case '\0': make.is_done = 1; break;
-			default: break;
-			}
-			if(make.is_done) break;
-		} while(*++make.c != '\0'); /* {c} \in {compile}. */
+			if((e = make.context(&make)) != SUCCESS) break;
+			if(!make.context) break;
+			make.to++;
+		} while(1);
+		if(e) break;
+		/* One last call to clean up the rest. */
+		if((e = make_literals(&make)) != SUCCESS) {printf("oh\n");break;}
 		/* Make sure the parentheses are matched. */
-		if(make.nestle) { e = SYNTAX; break; }
-		/* One last call to clean up. */
-		printf("One last call to make_literals.\n");
-		if(!make_literals(&make)) { printf("make_literals fail\n"); e = RESOURCES; break; }
-	} while(0);
+		if(!BraPoolPop(&make.bras) || BraPoolPeek(&make.bras))
+			{ e = SYNTAX; break; }
+	} while(0); {
+		BraPool_(&make.bras);
+	}
 	/* Syntax errors are our own errors, so we have to set {errno} ourselves. */
 	if(e == SYNTAX) { printf("syntax?\n"); errno = EILSEQ; }
-	printf("regex_compile: returning %d.\n", !e);
+	printf("regex_compile: e %d.\n", e);
 	return !e;
 }
 
@@ -335,14 +388,10 @@ void Regex_(struct Regex **const pre) {
 	*pre = 0;
 }
 
-/** Compiles a regex into an initialised or empty {re}.
- @param re: If null, does nothing and returns false, otherwise on error, this
- is initialised to empty. On success, requires \see{Regex_} destructor when
- done.
- @param compile: If null or empty, {re} is initialised to empty and it
- returns true. Otherwise, this is a null-terminated modified UTF-8 string that
- gets compiled into a regular expression. (fixme: is this true?)
- @return Success.
+/** Compiles a regular expression.
+ @param compile: If null, returns null. Otherwise, this is a null-terminated
+ modified UTF-8 string that gets compiled into a regular expression.
+ @return The regular expression. Requires freeing with \see{Regex_}.
  @throws {malloc/realloc} errors: {IEEE Std 1003.1-2001}.
  @throws EILSEQ: The {re} could not be compiled, (required since 1994
  Amendment 1 to C89 standard.) */
@@ -353,8 +402,7 @@ struct Regex *Regex(const char *const compile) {
 	StateDigraph(&re->states);
 	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
 	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
-	printf("Regex<%s>.\n", compile);
-	if(!regex_compile(re, compile)) printf("Regex: noooo.\n"), Regex_(&re);
+	if(!regex_compile(re, compile)) Regex_(&re);
 	return re;
 }
 
