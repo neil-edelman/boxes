@@ -4,6 +4,35 @@
  Regex, \cite{Thompson1968Regular}, Cox2007
  \url{ https://swtch.com/~rsc/regexp/regexp1.html }. We don't take exactly the
  same approach.
+ \url{ http://users.pja.edu.pl/~jms/qnx/help/watcom/wd/regexp.html }
+ \url{ http://www.cs.sfu.ca/~cameron/Teaching/384/99-3/regexp-plg.html }
+ \url{ http://matt.might.net/articles/parsing-regex-with-recursive-descent/ }.
+ 
+ <re> ::= <term> '|' <re> | <term>
+ <term> ::= { <factor> }
+ <factor> ::= <atom> <repeat> | <atom> | '^' | '$'
+ <repeat> ::= '*' | '+' | '?' | '{' <number> [ ',' [ <number> ] ] '}'
+ <atom> ::= <char> | '\' <char> | '(' <re> ')'
+
+ <re> ::= <branch> | <piece>
+ <branch> ::= <re> "|" <piece>
+ <piece> ::= <concatenation> | <expression>
+ <concatenation> ::= <piece> <expression>
+ <expression> ::= <star> | <plus> | <atom>
+ <star> ::=	<atom> "*"
+ <plus> ::=	<atom> "+"
+ <atom> ::= <group> | <any> | <bos> | <eos> | <char> | <set>
+ <group> ::= "(" <re> ")"
+ <any> ::= "."
+ <bos> ::= "^"
+ <eos> ::= "$"
+ <char> ::= any non metacharacter | "\" metacharacter
+ <set> ::= <positive-set> | <negative-set>
+ <positive-set> ::= "[" <set-items> "]"
+ <negative-set> ::= "[^" <set-items> "]"
+ <set-items> ::= <set-item> | <set-item> <set-items>
+ <set-items> ::= <range> | <char>
+ <range> ::= <char> "-" <char>
 
  @title		Regex
  @author	Neil
@@ -265,14 +294,14 @@ static enum MakeReStatus make_literals(struct MakeRe *const make) {
 
 /** {3}{2,7}{4,}
  @implements MakeReContext */
-/*static enum MakeReStatus curly_context(struct MakeRe *const make) {
+/*static enum MakeReStatus braces_context(struct MakeRe *const make) {
 	assert(make);
 	return SUCCESS;
 }*/
 
 /** [] [^]
  @implements MakeReContext *
-static enum MakeReStatus braces_context(struct MakeRe *const make) {
+static enum MakeReStatus brackets_context(struct MakeRe *const make) {
 	assert(make);
 	switch(*make->to) {
 	case ']': make->context = &normal_context;
@@ -308,7 +337,6 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 		case '{':
 		case '}': break;
 		case '(':
-			/* Even possible? */
 			if(!(from = BraPoolPeek(&make->bras))) return SYNTAX;
 			if(!make_literals(make) || !(bra = BraPoolNew(&make->bras)))
 				return RESOURCES;

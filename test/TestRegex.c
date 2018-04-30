@@ -19,40 +19,55 @@
 #include "../src/Regex.h"
 #include "Orcish.h"
 
-static void test_null(void) {
-	struct Regex *re_null = Regex(0), *re_empty = Regex("");
-	const char *const fn = "graphs/empty.gv";
-	FILE *fp = 0;
-	assert(!re_null && re_empty);
-	/*printf("hithere <%s>; null <%s>; hihi <%s>;  <%s>.\n",
-		RegexMatch(re_empty, "hithere"),
-		RegexMatch(re_empty, "bye"),
-		RegexMatch(re_empty, "therehihi"),
-		RegexMatch(re_empty, ""));*/
-	/* @fixme on fail? */
-	if(!(fp = fopen(fn, "w")) || !RegexOut(re_empty, fp)) perror(fn);
-	fclose(fp);
-	Regex_(&re_null);
-	Regex_(&re_empty);
-}
+static struct Result {
+	const char *compile, *match, *expected;
+} results[] = {
+	{ 0, 0, 0 },
+	{ "", "hi", "hi" },
+	{ "hi", "", 0 },
+	{ "hi", "this", "his" }
+};
+static const size_t results_size = sizeof results / sizeof *results;
 
-static void test_literals(void) {
-	struct Regex *re = Regex("hi");
-	const char *const fn = "graphs/literals.gv";
-	FILE *fp = 0;
-	if(!re) perror("test_literals"), assert(0);
-	printf("hithere <%s>; null <%s>; hihi <%s>; null <%s>.\n",
-		RegexMatch(re, "hithere"),
-		RegexMatch(re, "bye"),
-		RegexMatch(re, "therehihi"),
-		RegexMatch(re, ""));
-	/* @fixme on fail? */
-	if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
-	fclose(fp);
+static void re_assert(const struct Result *const r) {
+	FILE *fp;
+	struct Regex *re = Regex(r->compile);
+	const char *a;
+	assert(r);
+	if(r->match) {
+		printf("re_assert: checking that /%s/ ~= \"%s\" == \"%s\".\n",
+			r->compile, r->match, r->expected);
+		if(!re) { perror(r->compile); assert(0); return; }
+	} else {
+		printf("re_assert: checking that /%s/ does not compile.\n", r->compile);
+		{ assert(!re); perror(r->compile); return; }
+	}
+	a = RegexMatch(re, r->match);
+	if(r->expected) {
+		assert(!strcmp(r->expected, a));
+	} else {
+		assert(!a);
+	}
+	{
+		char fn[64] = "graphs/re", *f, *f_end;
+		const size_t fn_init = strlen(fn);
+		const char *ch;
+		for(f = fn + fn_init, f_end = fn + sizeof fn - 4; f < f_end; f++) {
+			ch = r->compile + (f - fn) - fn_init;
+			if(*ch == '\0') break;
+			if((*ch >= 'A' && *ch <= 'Z') || (*ch >= 'a' && *ch <= 'z')) {
+				*f = *ch;
+			} else {
+				*f = '_';
+			}
+		}
+		*f = '\0';
+		strcpy(f, ".gv");
+		if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
+	}
 	Regex_(&re);
 }
 
-static void test_regex(void) {
 	/*const char *bit1x30 = "all your base are belong to us",
 		*bit2x2 = "¥æ",
 		*bit3x7 = "煮爫禎ﬀﭖﳼﷺ",
@@ -67,16 +82,13 @@ static void test_regex(void) {
 	Regex_(&re_null);
 	Regex_(&re);
 	assert(!re_null && !re_empty && !re);*/
-}
 
 /** @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
+	struct Result *r, *r_end;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	printf("Testing:\n");
-	test_null(); /* aught, I'm not initialising something or some shit: only one
-	 regex at a time. BS about incorrect checksum for freed object on malloc. */
-	test_literals();
-	test_regex();
+	for(r = results, r_end = r + results_size; r < r_end; r++) re_assert(r);
 	return EXIT_SUCCESS;
 }
