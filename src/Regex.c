@@ -329,11 +329,12 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 	struct StateVertex *vtx;
 	enum MakeReStatus e = SUCCESS;
 	assert(make);
-	printf("char: %c (0x%x.)\n", *make->to, (unsigned)*make->to);
+	/*printf("char: %c (0x%x.)\n", *make->to, (unsigned)*make->to);*/
 	switch(*make->to) {
 		case '\\':
 			make->context = &escape_context; break;
-		case '|':
+		case '|': /* @fixme Test if /foo(|bar)/ escapes the parathesis;
+			I think it does. */
 			vtx = make->prev;
 			if((e = make_literals(make)) != SUCCESS) break;
 			make->from = make->to + 1;
@@ -343,7 +344,7 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 		case '+':
 		case '?':
 		case '{':
-		case '}': break;
+		case '}': break; /* @fixme Not implemented. */
 		case '(':
 			if(!(from = BraPoolPeek(&make->bras))) return SYNTAX;
 			if((e = make_literals(make)) != SUCCESS) break;
