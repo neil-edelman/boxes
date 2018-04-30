@@ -326,11 +326,19 @@ static enum MakeReStatus escape_context(struct MakeRe *const make) {
  @implements MakeReContext */
 static enum MakeReStatus normal_context(struct MakeRe *const make) {
 	const char **from, **bra;
+	struct StateVertex *vtx;
+	enum MakeReStatus e = SUCCESS;
 	assert(make);
 	printf("char: %c (0x%x.)\n", *make->to, (unsigned)*make->to);
 	switch(*make->to) {
-		case '\\': make->context = &escape_context; break;
+		case '\\':
+			make->context = &escape_context; break;
 		case '|':
+			vtx = make->prev;
+			if((e = make_literals(make)) != SUCCESS) break;
+			make->from = make->to + 1;
+			make->prev = vtx;
+			break;
 		case '*':
 		case '+':
 		case '?':
@@ -338,8 +346,8 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 		case '}': break;
 		case '(':
 			if(!(from = BraPoolPeek(&make->bras))) return SYNTAX;
-			if(!make_literals(make) || !(bra = BraPoolNew(&make->bras)))
-				return RESOURCES;
+			if((e = make_literals(make)) != SUCCESS) break;
+			if(!(bra = BraPoolNew(&make->bras))) return RESOURCES;
 			*bra = make->to + 1;
 			break;
 		case ')':
@@ -349,7 +357,7 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 		case '\0': make->context = 0; break;
 		default: break;
 	}
-	return SUCCESS;
+	return e;
 }
 
 /** Initialises {make} and clears {states}.

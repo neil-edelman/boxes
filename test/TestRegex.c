@@ -25,7 +25,8 @@ static struct Result {
 	{ 0, 0, 0 },
 	{ "", "hi", "hi" },
 	{ "hi", "", 0 },
-	{ "hi", "this", "his" }
+	{ "hi", "this", "his" },
+	{ "bar|baz", "foo baz", "baz" }
 };
 static const size_t results_size = sizeof results / sizeof *results;
 
@@ -42,13 +43,7 @@ static void re_assert(const struct Result *const r) {
 		printf("re_assert: checking that /%s/ does not compile.\n", r->compile);
 		{ assert(!re); perror(r->compile); return; }
 	}
-	a = RegexMatch(re, r->match);
-	if(r->expected) {
-		assert(!strcmp(r->expected, a));
-	} else {
-		assert(!a);
-	}
-	{
+	{ /* Output graph. */
 		char fn[64] = "graphs/re", *f, *f_end;
 		const size_t fn_init = strlen(fn);
 		const char *ch;
@@ -64,6 +59,13 @@ static void re_assert(const struct Result *const r) {
 		*f = '\0';
 		strcpy(f, ".gv");
 		if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
+		fclose(fp);
+	}
+	a = RegexMatch(re, r->match);
+	if(r->expected) {
+		assert(a && !strcmp(r->expected, a));
+	} else {
+		assert(!a);
 	}
 	Regex_(&re);
 }
