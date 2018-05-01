@@ -26,7 +26,10 @@ static struct Result {
 	{ "", "hi", "hi" },
 	{ "hi", "", 0 },
 	{ "hi", "this", "his" },
-	{ "bar|baz", "foo baz", "baz" }
+	{ "bar|baz", "foo baz", "baz" },
+	{ "((())", 0, 0 },
+	{ "(()))", 0, 0 },
+	{ "(())", "hi", "hi" }
 };
 static const size_t results_size = sizeof results / sizeof *results;
 
@@ -91,6 +94,7 @@ int main(void) {
 	struct Result *r, *r_end;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	printf("Testing:\n");
-	for(r = results, r_end = r + results_size; r < r_end; r++) re_assert(r);
+	for(r = results, r_end = r + results_size; r < r_end; r++)
+		printf("--\n"), re_assert(r);
 	return EXIT_SUCCESS;
 }

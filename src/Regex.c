@@ -14,8 +14,8 @@
  <repeat> ::= '*' | '+' | '?' | '{' <number> [ ',' [ <number> ] ] '}'
  <atom> ::= <char> | '\' <char> | '(' <re> ')'
 
- <re> ::= <branch> | <piece>
- <branch> ::= <re> "|" <piece>
+ <re> ::= <nestnch> | <piece>
+ <nestnch> ::= <re> "|" <piece>
  <piece> ::= <concatenation> | <expression>
  <concatenation> ::= <piece> <expression>
  <expression> ::= <star> | <plus> | <atom>
@@ -250,9 +250,19 @@ struct Regex {
 
 
 
+struct Nest {
+	const char *c;
+	struct StateVertex *start;
+};
+static void Nest(struct Nest *const nest, const char *const c,
+	struct StateVertex *const start) {
+	assert(nest && c && start);
+	nest->c = c;
+	nest->start = start;
+}
 /* Used in {MakeRe} for parentheses matching. */
-#define POOL_NAME Bra
-#define POOL_TYPE const char *
+#define POOL_NAME Nest
+#define POOL_TYPE struct Nest
 #define POOL_STACK
 #include "Pool.h"
 
@@ -269,13 +279,15 @@ typedef enum MakeReStatus (*MakeReContext)(struct MakeRe *const);
  */
 struct MakeRe {
 	struct Regex *re;
-	struct BraPool bras;
+	struct NestPool nests;
 	MakeReContext context;
 	const char *from, *to;
-	struct StateVertex *prev;
+	struct StateVertex *v;
 };
 
-/** Check for literals at the end of a sequence.
+/** Check for literals at the end of a sequence. If it finds any literals
+ between {make.from} and {make.to}, it builds an literals edge from {make.v} to
+ a new vertex, and makes the new vertex {make.v}.
  @return {MakeReStatus}.
  @throws {realloc} errors. */
 static enum MakeReStatus make_literals(struct MakeRe *const make) {
@@ -286,22 +298,22 @@ static enum MakeReStatus make_literals(struct MakeRe *const make) {
 		StateDigraphVertex(&make->re->states, v);
 		if(!v || !lit || !Literals(lit, make->from, make->to - make->from))
 			return RESOURCES;
-		StateDigraphEdge(&lit->edge.data, make->prev, v);
-		make->prev = v;
+		StateDigraphEdge(&lit->edge.data, make->v, v);
+		make->v = v;
 	}
 	return SUCCESS;
 }
 
 /** {3}{2,7}{4,}
  @implements MakeReContext */
-/*static enum MakeReStatus braces_context(struct MakeRe *const make) {
+/*static enum MakeReStatus nestces_context(struct MakeRe *const make) {
 	assert(make);
 	return SUCCESS;
 }*/
 
 /** [] [^]
  @implements MakeReContext *
-static enum MakeReStatus brackets_context(struct MakeRe *const make) {
+static enum MakeReStatus nestckets_context(struct MakeRe *const make) {
 	assert(make);
 	switch(*make->to) {
 	case ']': make->context = &normal_context;
@@ -325,7 +337,7 @@ static enum MakeReStatus escape_context(struct MakeRe *const make) {
 /** .|\ (capturing group, nah) (lazy ? eh) (lookarounds, meh)
  @implements MakeReContext */
 static enum MakeReStatus normal_context(struct MakeRe *const make) {
-	const char **from, **bra;
+	struct Nest *nest;
 	struct StateVertex *vtx;
 	enum MakeReStatus e = SUCCESS;
 	assert(make);
@@ -335,10 +347,10 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 			make->context = &escape_context; break;
 		case '|': /* @fixme Test if /foo(|bar)/ escapes the parathesis;
 			I think it does. */
-			vtx = make->prev;
+			vtx = make->v;
 			if((e = make_literals(make)) != SUCCESS) break;
 			make->from = make->to + 1;
-			make->prev = vtx;
+			make->v = vtx;
 			break;
 		case '*':
 		case '+':
@@ -346,14 +358,14 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 		case '{':
 		case '}': break; /* @fixme Not implemented. */
 		case '(':
-			if(!(from = BraPoolPeek(&make->bras))) return SYNTAX;
+			if(!NestPoolPeek(&make->nests)) return SYNTAX;
 			if((e = make_literals(make)) != SUCCESS) break;
-			if(!(bra = BraPoolNew(&make->bras))) return RESOURCES;
-			*bra = make->to + 1;
+			if(!(nest = NestPoolNew(&make->nests))) return RESOURCES;
+			Nest(nest, make->to + 1, make->v);
 			break;
 		case ')':
-			if(!(bra = BraPoolPop(&make->bras))) return SYNTAX;
-			if(!make_literals(make)) return RESOURCES;
+			if(!(nest = NestPoolPop(&make->nests))) return SYNTAX;
+			if((e = make_literals(make)) != SUCCESS) break;
 			break;
 		case '\0': make->context = 0; break;
 		default: break;
@@ -369,14 +381,14 @@ static enum MakeReStatus MakeRe(struct MakeRe *const make,
 		&& !StateVertexListFirst(&re->states.vertices));
 	/* Initialise. */
 	make->re = re;
-	BraPool(&make->bras);
+	NestPool(&make->nests);
 	make->context = &normal_context;
 	make->from = make->to = compile;
-	make->prev = 0;
+	make->v = 0;
 	/* Set up resources: implied parenthesis around all; starting state. */
-	if(!BraPoolNew(&make->bras)
-	   || !(make->prev = StateVertexPoolNew(&re->vertices))) return RESOURCES;
-	StateDigraphVertex(&re->states, make->prev);
+	if(!NestPoolNew(&make->nests)
+	   || !(make->v = StateVertexPoolNew(&re->vertices))) return RESOURCES;
+	StateDigraphVertex(&re->states, make->v);
 	printf("MakeRe<%s>: state machine ready.\n", compile);
 	return SUCCESS;
 }
@@ -396,12 +408,12 @@ static int regex_compile(struct Regex *re, const char *const compile) {
 		} while(1);
 		if(e) break;
 		/* One last call to clean up the rest. */
-		if((e = make_literals(&make)) != SUCCESS) {printf("oh\n");break;}
+		if((e = make_literals(&make)) != SUCCESS) break;
 		/* Make sure the parentheses are matched. */
-		if(!BraPoolPop(&make.bras) || BraPoolPeek(&make.bras))
+		if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))
 			{ e = SYNTAX; break; }
 	} while(0); {
-		BraPool_(&make.bras);
+		NestPool_(&make.nests);
 	}
 	/* Syntax errors are our own errors, so we have to set {errno} ourselves. */
 	if(e == SYNTAX) { printf("syntax?\n"); errno = EILSEQ; }
@@ -437,6 +449,7 @@ struct Regex *Regex(const char *const compile) {
 	if(!compile || !(re = malloc(sizeof *re))) return 0;
 	re->title = compile;
 	StateDigraph(&re->states);
+	/* @fixme Also temp {Nest} pointers! */
 	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
 	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
 	if(!regex_compile(re, compile)) Regex_(&re);
