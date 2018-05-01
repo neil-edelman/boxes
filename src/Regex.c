@@ -345,8 +345,7 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 	switch(*make->to) {
 		case '\\':
 			make->context = &escape_context; break;
-		case '|': /* @fixme Test if /foo(|bar)/ escapes the parathesis;
-			I think it does. */
+		case '|':
 			vtx = make->v;
 			if((e = make_literals(make)) != SUCCESS) break;
 			make->from = make->to + 1;
@@ -358,10 +357,12 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 		case '{':
 		case '}': break; /* @fixme Not implemented. */
 		case '(':
-			if(!NestPoolPeek(&make->nests)) return SYNTAX;
-			if((e = make_literals(make)) != SUCCESS) break;
-			if(!(nest = NestPoolNew(&make->nests))) return RESOURCES;
-			Nest(nest, make->to + 1, make->v);
+			if((e = make_literals(make)) != SUCCESS) break; /* Clean up. */
+			if(!(vtx = StateVertexPoolNew(&make->re->vertices))
+				|| !(nest = NestPoolNew(&make->nests))) return RESOURCES;
+			StateDigraphVertex(&make->re->states, vtx);
+			Nest(nest, make->to + 1, vtx);
+			make->v = vtx;
 			make->from = make->to + 1;
 			break;
 		case ')':
