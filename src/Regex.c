@@ -110,6 +110,33 @@ static const char *transition_match(struct Match *const match) {
 #define POOL_MIGRATE_ALL struct StateDigraph
 #include "Pool.h"
 
+/*
+ * {Empty} extends {Trasition}. (It's just the same data.)
+ */
+/** @implements Match */
+static const char *empty_match(const struct Match *const match) {
+	return match->next;
+}
+/** @implements TransitionToString */
+static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
+	sprintf(*a, "ε");
+	(void)e;
+}
+static struct TransitionVt empty_vt = { "Empty", empty_match, empty_to_string };
+/** Constructor.
+ @param e: This is instantiated; any data will be erased. */
+static void Empty(struct StateEdgeLink *const e) {
+	assert(e);
+	Transition(&e->data.info, &empty_vt);
+	printf("Empty.\n");
+}
+#define POOL_NAME Empty
+#define POOL_TYPE struct StateEdgeLink
+#define POOL_MIGRATE_ALL struct StateDigraph
+#include "Pool.h"
+
+
+
 /**
  * {Literals} extends {Transition} as {StateEdgeLink}.
  */
@@ -245,6 +272,7 @@ struct Regex {
 	const char *title;
 	struct StateDigraph states;
 	struct StateVertexPool vertices;
+	struct EmptyPool empties;
 	struct LiteralsPool literals;
 };
 
@@ -285,22 +313,32 @@ struct MakeRe {
 	struct StateVertex *v;
 };
 
-/** Check for literals at the end of a sequence. If it finds any literals
- between {make.from} and {make.to}, it builds an literals edge from {make.v} to
- a new vertex, and makes the new vertex {make.v}.
- @return {MakeReStatus}.
- @throws {realloc} errors. */
-static enum MakeReStatus make_literals(struct MakeRe *const make) {
+/** Updates the {make.v} to be a new state vertex and connects them by a
+ {Literals} edge from {make.from} to {make.to}. If the edge has zero content,
+ it instead creates an {Empty} edge.
+ @return {MakeReStatus}. */
+static enum MakeReStatus advance_literals(struct MakeRe *const make) {
+	struct StateVertex *v;
+	struct StateEdge *e;
 	assert(make);
+	printf("advance: left <%s>\n", make->to);
+	if(!(v = StateVertexPoolNew(&make->re->vertices))) return RESOURCES;
+	StateDigraphVertex(&make->re->states, v);
 	if(make->from < make->to) { /* At least one byte. */
 		struct Literals *const lit = LiteralsPoolNew(&make->re->literals);
-		struct StateVertex *const v = StateVertexPoolNew(&make->re->vertices);
-		StateDigraphVertex(&make->re->states, v);
-		if(!v || !lit || !Literals(lit, make->from, make->to - make->from))
+		if(!lit || !Literals(lit, make->from, make->to - make->from))
 			return RESOURCES;
-		StateDigraphEdge(&lit->edge.data, make->v, v);
-		make->v = v;
+		e = &lit->edge.data;
+	} else { /* We should make an empty edge. */
+		struct StateEdgeLink *const emp = EmptyPoolNew(&make->re->empties);
+		if(!emp) return RESOURCES;
+		Empty(emp);
+		e = &emp->data;
 	}
+	/* Connect and update. */
+	StateDigraphEdge(e, make->v, v);
+	make->v = v;
+	make->from = make->to + 1;
 	return SUCCESS;
 }
 
@@ -347,7 +385,7 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 			make->context = &escape_context; break;
 		case '|':
 			vtx = make->v;
-			if((e = make_literals(make)) != SUCCESS) break;
+			if((e = advance_literals(make)) != SUCCESS) break;
 			make->from = make->to + 1;
 			make->v = vtx;
 			break;
@@ -357,18 +395,13 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 		case '{':
 		case '}': break; /* @fixme Not implemented. */
 		case '(':
-			if((e = make_literals(make)) != SUCCESS) break; /* Clean up. */
-			if(!(vtx = StateVertexPoolNew(&make->re->vertices))
-				|| !(nest = NestPoolNew(&make->nests))) return RESOURCES;
-			StateDigraphVertex(&make->re->states, vtx);
-			Nest(nest, make->to + 1, vtx);
-			make->v = vtx;
-			make->from = make->to + 1;
+			if((e = advance_literals(make)) != SUCCESS) break; /* Clean up. */
+			if(!(nest = NestPoolNew(&make->nests))) return RESOURCES;
+			Nest(nest, make->from, make->v);
 			break;
 		case ')':
+			if((e = advance_literals(make)) != SUCCESS) break;
 			if(!(nest = NestPoolPop(&make->nests))) return SYNTAX;
-			if((e = make_literals(make)) != SUCCESS) break;
-			make->from = make->to + 1;
 			break;
 		case '\0': make->context = 0; break;
 		default: break;
@@ -406,12 +439,10 @@ static int regex_compile(struct Regex *re, const char *const compile) {
 		if((e = MakeRe(&make, re, compile)) != SUCCESS) break;
 		do {
 			if((e = make.context(&make)) != SUCCESS) break;
-			if(!make.context) break;
-			make.to++;
-		} while(1);
+		} while(make.context && (make.to++, 1));
 		if(e) break;
 		/* One last call to clean up the rest. */
-		if((e = make_literals(&make)) != SUCCESS) break;
+		if((e = advance_literals(&make)) != SUCCESS) break;
 		/* Make sure the parentheses are matched. */
 		if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))
 			{ e = SYNTAX; break; }
@@ -434,6 +465,7 @@ void Regex_(struct Regex **const pre) {
 	printf("~Regex<%s>.\n", re->title);
 	LiteralsPoolForEach(&re->literals, &Literals_);
 	LiteralsPool_(&re->literals);
+	EmptyPool_(&re->empties);
 	StateVertexPool_(&re->vertices);
 	StateDigraph_(&re->states);
 	free(re);
@@ -452,8 +484,10 @@ struct Regex *Regex(const char *const compile) {
 	if(!compile || !(re = malloc(sizeof *re))) return 0;
 	re->title = compile;
 	StateDigraph(&re->states);
-	/* @fixme Also temp {Nest} pointers! */
+	/* @fixme {StateDi...} replace with also function which updates temp
+	 values. */
 	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
+	EmptyPool(&re->empties, &StateDigraphEdgeMigrateAll, &re->states);
 	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
 	if(!regex_compile(re, compile)) Regex_(&re);
 	return re;
