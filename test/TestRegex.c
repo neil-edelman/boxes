@@ -32,7 +32,7 @@ static struct Result {
 	{ "(())", "hi", "hi" },
 	{ "bar|baz", "foo baz", "baz" },
 	{ "foo(|bar)", "foo", "foo" },
-	{ "a(b|c)|b(a)", "bad", "bad" }
+	{ "a(b|c)|ba(d)", "bad", "bad" }
 };
 static const size_t results_size = sizeof results / sizeof *results;
 

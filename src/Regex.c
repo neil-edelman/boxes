@@ -3,7 +3,7 @@
 
  Regex, \cite{Thompson1968Regular}, Cox2007
  \url{ https://swtch.com/~rsc/regexp/regexp1.html }. We don't take exactly the
- same approach.
+ same approach. (I think?)
  \url{ http://users.pja.edu.pl/~jms/qnx/help/watcom/wd/regexp.html }
  \url{ http://www.cs.sfu.ca/~cameron/Teaching/384/99-3/regexp-plg.html }
  \url{ http://matt.might.net/articles/parsing-regex-with-recursive-descent/ }.
@@ -70,7 +70,7 @@ struct Transition;
 typedef const char *(*Match)(const struct Match *const);
 typedef void (*TransitionToString)(const struct Transition *, char(*const)[12]);
 struct TransitionVt {
-	const char *debug;
+	const char *class;
 	const Match match;
 	const TransitionToString to_string;
 };
@@ -86,7 +86,7 @@ static void Transition(struct Transition *const t,
 	const struct TransitionVt *const vt) {
 	assert(t && vt);
 	t->vt = vt;
-	printf("super transition %s\n", vt->debug);
+	/*printf("super transition %s\n", vt->debug);*/
 }
 /** @implements TransitionToString */
 static void transition_to_string(const struct Transition *t,char(*const a)[12]){
@@ -426,12 +426,15 @@ static int init_compile_re(struct Regex *const re, const char *const compile) {
 
 	printf("Regex<%s> compiling.\n", re->title);
 	do { /* Try. */
-		/* Set up resources: implied parenthesis around all; starting state. */
-		if(!NestPoolNew(&make.nests)
-			|| !(make.v = StateVertexPoolNew(&make.re->vertices)))
-			{ e = RESOURCES; break; }
-		StateDigraphVertex(&make.re->states, make.v);	
-		do {
+		{ /* Set up starting state: implied parenthesis around all. */
+			struct Nest *nest;
+			if(!(make.v = StateVertexPoolNew(&make.re->vertices))
+				|| !(nest = NestPoolNew(&make.nests)))
+				{ e = RESOURCES; break; }
+			StateDigraphVertex(&make.re->states, make.v);
+			Nest(nest, make.to, make.v);
+		}
+		do { /* Main compiling loop. */
 			if((e = make.context(&make)) != SUCCESS) break;
 		} while(make.context && (make.to++, 1));
 		if(e) break;
@@ -440,7 +443,7 @@ static int init_compile_re(struct Regex *const re, const char *const compile) {
 		/* Make sure the parentheses are matched. */
 		if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))
 			{ e = SYNTAX; break; }
-	} while(0); if(e == SYNTAX) { /* Catch(SYNTAX). */
+	} while(0); if(e == SYNTAX) { /* Catch(SYNTAX) -- set {errno}. */
 		errno = EILSEQ;
 	} { /* Finally. */
 		NestPool_(&make.nests);
@@ -458,7 +461,6 @@ static enum MakeReStatus advance_literals(struct MakeRe *const make) {
 	struct StateVertex *v;
 	struct StateEdge *e;
 	assert(make);
-	printf("advance: left <%s>\n", make->to);
 	if(!(v = StateVertexPoolNew(&make->re->vertices))) return RESOURCES;
 	StateDigraphVertex(&make->re->states, v);
 	if(make->from < make->to) { /* At least one byte. */
@@ -485,18 +487,16 @@ static enum MakeReStatus advance_literals(struct MakeRe *const make) {
  @implements MakeReContext */
 static enum MakeReStatus normal_context(struct MakeRe *const make) {
 	struct Nest *nest;
-	struct StateVertex *vtx;
 	enum MakeReStatus e = SUCCESS;
-	assert(make);
+	assert(make && NestPoolPeek(&make->nests));
 	/*printf("char: %c (0x%x.)\n", *make->to, (unsigned)*make->to);*/
 	switch(*make->to) {
 		case '\\':
 			make->context = &escape_context; break;
 		case '|':
-			vtx = make->v;
 			if((e = advance_literals(make)) != SUCCESS) break;
 			make->from = make->to + 1;
-			make->v = vtx;
+			make->v = NestPoolPeek(&make->nests)->start;
 			break;
 		case '*':
 		case '+':
@@ -509,10 +509,13 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 			if((e = advance_literals(make)) != SUCCESS) break; /* Clean up. */
 			if(!(nest = NestPoolNew(&make->nests))) return RESOURCES;
 			Nest(nest, make->from, make->v);
+			printf("normal_context: '(': <%s>\n", make->from);
 			break;
 		case ')':
 			if((e = advance_literals(make)) != SUCCESS) break;
-			if(!(nest = NestPoolPop(&make->nests))) return SYNTAX;
+			if(!(nest = NestPoolPop(&make->nests))
+			   || !NestPoolPeek(&make->nests)) return SYNTAX;
+			printf("normal_context: ')': <%s>\n", make->from);
 			break;
 		case '\0': make->context = 0; break;
 		default: break;
