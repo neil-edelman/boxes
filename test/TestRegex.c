@@ -26,10 +26,11 @@ static struct Result {
 	{ "", "hi", "hi" },
 	{ "hi", "", 0 },
 	{ "hi", "this", "his" },
-	{ "bar|baz", "foo baz", "baz" },
 	{ "((())", 0, 0 },
 	{ "(()))", 0, 0 },
-	{ "(())", "hi", "hi" }
+	{ "(())", "hi", "hi" },
+	{ "bar|baz", "foo baz", "baz" },
+	{ "foo(|bar)", "foo", "foo" }
 };
 static const size_t results_size = sizeof results / sizeof *results;
 

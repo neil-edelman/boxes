@@ -362,10 +362,12 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 			if((e = make_literals(make)) != SUCCESS) break;
 			if(!(nest = NestPoolNew(&make->nests))) return RESOURCES;
 			Nest(nest, make->to + 1, make->v);
+			make->from = make->to + 1;
 			break;
 		case ')':
 			if(!(nest = NestPoolPop(&make->nests))) return SYNTAX;
 			if((e = make_literals(make)) != SUCCESS) break;
+			make->from = make->to + 1;
 			break;
 		case '\0': make->context = 0; break;
 		default: break;
