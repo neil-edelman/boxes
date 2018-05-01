@@ -107,7 +107,7 @@ static const char *transition_match(struct Match *const match) {
  */
 #define POOL_NAME StateVertex
 #define POOL_TYPE struct StateVertex
-#define POOL_MIGRATE_ALL struct StateDigraph
+#define POOL_MIGRATE_ALL struct MakeRe
 #include "Pool.h"
 
 /*
@@ -132,7 +132,7 @@ static void Empty(struct StateEdgeLink *const e) {
 }
 #define POOL_NAME Empty
 #define POOL_TYPE struct StateEdgeLink
-#define POOL_MIGRATE_ALL struct StateDigraph
+#define POOL_MIGRATE_ALL struct MakeRe
 #include "Pool.h"
 
 
@@ -210,7 +210,7 @@ static int Literals(struct Literals *const l, const char *const arg,
 }
 #define POOL_NAME Literals
 #define POOL_TYPE struct Literals
-#define POOL_MIGRATE_ALL struct StateDigraph
+#define POOL_MIGRATE_ALL struct MakeRe
 #include "Pool.h"
 
 /**
@@ -259,7 +259,7 @@ static int sieve_match(struct State *const state, const char match) {
 }
 #define POOL_NAME Sieve
 #define POOL_TYPE struct Sieve
-#define POOL_MIGRATE_ALL struct StateDigraph
+#define POOL_MIGRATE_ALL struct MakeRe
 #include "Pool.h"
 #endif /* Not used. */
 
@@ -277,7 +277,7 @@ struct Regex {
 };
 
 /* Private functions later on. */
-static int regex_compile(struct Regex *re, const char *const compile);
+static int init_compile_re(struct Regex *const re, const char *const compile);
 static int match_here(const struct StateVertex *const root,
 	const char *const arg);
 
@@ -308,14 +308,7 @@ void Regex_(struct Regex **const pre) {
 struct Regex *Regex(const char *const compile) {
 	struct Regex *re;
 	if(!compile || !(re = malloc(sizeof *re))) return 0;
-	re->title = compile;
-	StateDigraph(&re->states);
-	/* @fixme {StateDi...} replace with also function which updates temp
-	 values. */
-	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
-	EmptyPool(&re->empties, &StateDigraphEdgeMigrateAll, &re->states);
-	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
-	if(!regex_compile(re, compile)) Regex_(&re);
+	if(!init_compile_re(re, compile)) Regex_(&re);
 	return re;
 }
 
@@ -376,8 +369,6 @@ struct MakeRe;
 /** Used in {MakeRe} for context. */
 typedef enum MakeReStatus (*MakeReContext)(struct MakeRe *const);
 
-
-
 /**
  * Temporary structure called on compiling regular expressions into DFAs. All
  * wrapped up one one object for convenience.
@@ -390,28 +381,71 @@ struct MakeRe {
 	struct StateVertex *v;
 };
 
+/* Migrate functions. */
+/** @implements <MakeRe>Migrate */
+static void vertex_migrate(struct MakeRe *const make,
+	const struct Migrate *const migrate) {
+	assert(make);
+	printf("vertex_migrate: containing Regex<%s>\n", make->re->title);
+	StateDigraphVertexMigrateAll(&make->re->states, migrate);
+}
+/** @implements <MakeRe>Migrate */
+static void edge_migrate(struct MakeRe *const make,
+	const struct Migrate *const migrate) {
+	assert(make);
+	printf("edge_migrate: containing Regex<%s>\n", make->re->title);
+	StateDigraphEdgeMigrateAll(&make->re->states, migrate);
+}
+
 /* Prototypes defined later. */
+static enum MakeReStatus advance_literals(struct MakeRe *const make);
 static enum MakeReStatus normal_context(struct MakeRe *const make);
 static enum MakeReStatus escape_context(struct MakeRe *const make);
 
-/** Initialises {make} and clears {states}.
- @return {MakeReStatus}. */
-static enum MakeReStatus MakeRe(struct MakeRe *const make,
-	struct Regex *const re, const char *const compile) {
-	assert(make && re && compile
-		&& !StateVertexListFirst(&re->states.vertices));
-	/* Initialise. */
-	make->re = re;
-	NestPool(&make->nests);
-	make->context = &normal_context;
-	make->from = make->to = compile;
-	make->v = 0;
-	/* Set up resources: implied parenthesis around all; starting state. */
-	if(!NestPoolNew(&make->nests)
-	   || !(make->v = StateVertexPoolNew(&re->vertices))) return RESOURCES;
-	StateDigraphVertex(&re->states, make->v);
-	printf("MakeRe<%s>: state machine ready.\n", compile);
-	return SUCCESS;
+/** Private: initialises {re} with {compile} and compiles.
+ @return Success, otherwise (probably) {errno} is set; it always initialises
+ {re}. */
+static int init_compile_re(struct Regex *const re, const char *const compile) {
+	struct MakeRe make;
+	enum MakeReStatus e = SUCCESS;
+	assert(re && compile);
+
+	/* Initialise {re}. */
+	re->title = compile;
+	StateDigraph(&re->states);
+	StateVertexPool(&re->vertices, &vertex_migrate, &make);
+	EmptyPool(&re->empties, &edge_migrate, &make);
+	LiteralsPool(&re->literals, &edge_migrate, &make);
+
+	/* Initialise {make}, the {re} scaffolding. */
+	make.re = re;
+	NestPool(&make.nests);
+	make.context = &normal_context;
+	make.from = make.to = compile;
+	make.v = 0;
+
+	printf("Regex<%s> compiling.\n", re->title);
+	do { /* Try. */
+		/* Set up resources: implied parenthesis around all; starting state. */
+		if(!NestPoolNew(&make.nests)
+			|| !(make.v = StateVertexPoolNew(&make.re->vertices)))
+			{ e = RESOURCES; break; }
+		StateDigraphVertex(&make.re->states, make.v);	
+		do {
+			if((e = make.context(&make)) != SUCCESS) break;
+		} while(make.context && (make.to++, 1));
+		if(e) break;
+		/* One last call to clean up the rest. */
+		if((e = advance_literals(&make)) != SUCCESS) break;
+		/* Make sure the parentheses are matched. */
+		if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))
+			{ e = SYNTAX; break; }
+	} while(0); if(e == SYNTAX) { /* Catch(SYNTAX). */
+		errno = EILSEQ;
+	} { /* Finally. */
+		NestPool_(&make.nests);
+	}
+	return !e;
 }
 
 
@@ -517,32 +551,6 @@ static enum MakeReStatus nestckets_context(struct MakeRe *const make) {
 	return SUCCESS;
 }*/
 
-/** Called from \see{Regex}.
- @returns Success, otherwise {errno} (may) be set. */
-static int regex_compile(struct Regex *re, const char *const compile) {
-	struct MakeRe make;
-	enum MakeReStatus e = SUCCESS;
-	assert(re && compile && !StateVertexListFirst(&re->states.vertices));
-	printf("Regex<%s>::regex_compile.\n", compile);
-	do { /* Try. */
-		if((e = MakeRe(&make, re, compile)) != SUCCESS) break;
-		do {
-			if((e = make.context(&make)) != SUCCESS) break;
-		} while(make.context && (make.to++, 1));
-		if(e) break;
-		/* One last call to clean up the rest. */
-		if((e = advance_literals(&make)) != SUCCESS) break;
-		/* Make sure the parentheses are matched. */
-		if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))
-			{ e = SYNTAX; break; }
-	} while(0); {
-		NestPool_(&make.nests);
-	}
-	/* Syntax errors are our own errors, so we have to set {errno} ourselves. */
-	if(e == SYNTAX) { printf("syntax?\n"); errno = EILSEQ; }
-	printf("regex_compile: e %d.\n", e);
-	return !e;
-}
 
 /** Checks if the {root} of the DFA matches {arg}. Called in \see{RegexMatch}.
  @return The end of the match if it was a match or null.

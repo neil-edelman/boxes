@@ -273,7 +273,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		if(c1 > max_size || c1 <= c0) c1 = max_size;
 	}
 	if(!(nodes = realloc(pool->nodes, c0 * sizeof *pool->nodes))) return 0;
-	if(pool->nodes != nodes) {
+	if(pool->size && pool->nodes != nodes) {
 		/* Migrate data; violates pedantic strict-ANSI? */
 		struct Migrate migrate;
 		migrate.begin = pool->nodes;
