@@ -392,6 +392,8 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 		case '*':
 		case '+':
 		case '?':
+		case '^':
+		case '$':
 		case '{':
 		case '}': break; /* @fixme Not implemented. */
 		case '(':
