@@ -276,12 +276,85 @@ struct Regex {
 	struct LiteralsPool literals;
 };
 
+/* Private functions later on. */
+static int regex_compile(struct Regex *re, const char *const compile);
+static int match_here(const struct StateVertex *const root,
+	const char *const arg);
+
+/** Destructor. One can destruct anything in a valid state, including null and
+ zero, it just does nothing.
+ @param re: If null, does nothing, otherwise it is set to match zero characters
+ and frees the memory. */
+void Regex_(struct Regex **const pre) {
+	struct Regex *re;
+	if(!pre || !(re = *pre)) return;
+	printf("~Regex<%s>.\n", re->title);
+	LiteralsPoolForEach(&re->literals, &Literals_);
+	LiteralsPool_(&re->literals);
+	EmptyPool_(&re->empties);
+	StateVertexPool_(&re->vertices);
+	StateDigraph_(&re->states);
+	free(re);
+	*pre = 0;
+}
+
+/** Compiles a regular expression.
+ @param compile: If null, returns null. Otherwise, this is a null-terminated
+ modified UTF-8 string that gets compiled into a regular expression.
+ @return The regular expression. Requires freeing with \see{Regex_}.
+ @throws {malloc/realloc} errors: {IEEE Std 1003.1-2001}.
+ @throws EILSEQ: The {re} could not be compiled, (required since 1994
+ Amendment 1 to C89 standard.) */
+struct Regex *Regex(const char *const compile) {
+	struct Regex *re;
+	if(!compile || !(re = malloc(sizeof *re))) return 0;
+	re->title = compile;
+	StateDigraph(&re->states);
+	/* @fixme {StateDi...} replace with also function which updates temp
+	 values. */
+	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
+	EmptyPool(&re->empties, &StateDigraphEdgeMigrateAll, &re->states);
+	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
+	if(!regex_compile(re, compile)) Regex_(&re);
+	return re;
+}
+
+/** Match {re}.
+ @return The first point it matches or null if it doesn't. */
+const char *RegexMatch(const struct Regex *const re, const char *const arg) {
+	const struct StateVertex *root;
+	const char *a;
+	if(!re || !arg) return 0;
+	root = StateDigraphGetRoot(&re->states);
+	for(a = arg; *a; a++) if(match_here(root, a)) return a;
+	return 0;
+}
+
+/** Appends {re} to {fp} in GraphViz format.
+ @param re: If null, does nothing.
+ @param fp: File pointer.
+ @return Success.
+ @throws {fprintf} errors: {IEEE Std 1003.1-2001}.
+ @order O(|{vertices}| + |{edges}|)
+ @allow */
+int RegexOut(const struct Regex *const re, FILE *const fp) {
+	if(!re) return 0;
+	return StateDigraphOut(&re->states, fp);
+}
 
 
+
+/* Regular expressions compiling. */
+
+
+
+/** {Nest} is parentheses which contain a sub-RE. Every RE has at least one
+ implied {Nest} enclosing the RE. All {Nest} have one {start} vertex. */
 struct Nest {
 	const char *c;
 	struct StateVertex *start;
 };
+/** Constructor. */
 static void Nest(struct Nest *const nest, const char *const c,
 	struct StateVertex *const start) {
 	assert(nest && c && start);
@@ -294,12 +367,16 @@ static void Nest(struct Nest *const nest, const char *const c,
 #define POOL_STACK
 #include "Pool.h"
 
+
+
 /** Used to return status in {MakeRe} from {MakeReContext}. */
 enum MakeReStatus { SUCCESS, RESOURCES, SYNTAX };
 
 struct MakeRe;
 /** Used in {MakeRe} for context. */
 typedef enum MakeReStatus (*MakeReContext)(struct MakeRe *const);
+
+
 
 /**
  * Temporary structure called on compiling regular expressions into DFAs. All
@@ -312,6 +389,32 @@ struct MakeRe {
 	const char *from, *to;
 	struct StateVertex *v;
 };
+
+/* Prototypes defined later. */
+static enum MakeReStatus normal_context(struct MakeRe *const make);
+static enum MakeReStatus escape_context(struct MakeRe *const make);
+
+/** Initialises {make} and clears {states}.
+ @return {MakeReStatus}. */
+static enum MakeReStatus MakeRe(struct MakeRe *const make,
+	struct Regex *const re, const char *const compile) {
+	assert(make && re && compile
+		&& !StateVertexListFirst(&re->states.vertices));
+	/* Initialise. */
+	make->re = re;
+	NestPool(&make->nests);
+	make->context = &normal_context;
+	make->from = make->to = compile;
+	make->v = 0;
+	/* Set up resources: implied parenthesis around all; starting state. */
+	if(!NestPoolNew(&make->nests)
+	   || !(make->v = StateVertexPoolNew(&re->vertices))) return RESOURCES;
+	StateDigraphVertex(&re->states, make->v);
+	printf("MakeRe<%s>: state machine ready.\n", compile);
+	return SUCCESS;
+}
+
+
 
 /** Updates the {make.v} to be a new state vertex and connects them by a
  {Literals} edge from {make.from} to {make.to}. If the edge has zero content,
@@ -342,35 +445,7 @@ static enum MakeReStatus advance_literals(struct MakeRe *const make) {
 	return SUCCESS;
 }
 
-/** {3}{2,7}{4,}
- @implements MakeReContext */
-/*static enum MakeReStatus nestces_context(struct MakeRe *const make) {
-	assert(make);
-	return SUCCESS;
-}*/
 
-/** [] [^]
- @implements MakeReContext *
-static enum MakeReStatus nestckets_context(struct MakeRe *const make) {
-	assert(make);
-	switch(*make->to) {
-	case ']': make->context = &normal_context;
-	case '\0': return SYNTAX;
-	}
-	return SUCCESS;
-}*/
-
-/** \d (digit,intern) \w (word,_,number,>255?) \s any separator?
- \D \W \S \N(not a line break)
- @implements MakeReContext */
-static enum MakeReStatus escape_context(struct MakeRe *const make) {
-	assert(make);
-	switch(*make->to) {
-		case '\0': return SYNTAX;
-		/*default:*/
-	}
-	return SUCCESS;
-}
 
 /** .|\ (capturing group, nah) (lazy ? eh) (lookarounds, meh)
  @implements MakeReContext */
@@ -411,25 +486,37 @@ static enum MakeReStatus normal_context(struct MakeRe *const make) {
 	return e;
 }
 
-/** Initialises {make} and clears {states}.
- @return {MakeReStatus}. */
-static enum MakeReStatus MakeRe(struct MakeRe *const make,
-	struct Regex *const re, const char *const compile) {
-	assert(make && re && compile
-		&& !StateVertexListFirst(&re->states.vertices));
-	/* Initialise. */
-	make->re = re;
-	NestPool(&make->nests);
+/** \d (digit,intern) \w (word,_,number,>255?) \s any separator?
+ \D \W \S \N(not a line break)
+ @implements MakeReContext */
+static enum MakeReStatus escape_context(struct MakeRe *const make) {
+	assert(make);
+	switch(*make->to) {
+		case '\0': return SYNTAX;
+			/*default:*/
+	}
 	make->context = &normal_context;
-	make->from = make->to = compile;
-	make->v = 0;
-	/* Set up resources: implied parenthesis around all; starting state. */
-	if(!NestPoolNew(&make->nests)
-	   || !(make->v = StateVertexPoolNew(&re->vertices))) return RESOURCES;
-	StateDigraphVertex(&re->states, make->v);
-	printf("MakeRe<%s>: state machine ready.\n", compile);
 	return SUCCESS;
 }
+
+/** {3}{2,7}{4,}
+ @implements MakeReContext */
+/*static enum MakeReStatus nestces_context(struct MakeRe *const make) {
+	assert(make);
+	return SUCCESS;
+}*/
+
+/** [] [^]
+ @implements MakeReContext *
+static enum MakeReStatus nestckets_context(struct MakeRe *const make) {
+	assert(make);
+	switch(*make->to) {
+	case ']': make->context = &normal_context;
+	case '\0': return SYNTAX;
+	}
+	return SUCCESS;
+}*/
+
 /** Called from \see{Regex}.
  @returns Success, otherwise {errno} (may) be set. */
 static int regex_compile(struct Regex *re, const char *const compile) {
@@ -457,44 +544,6 @@ static int regex_compile(struct Regex *re, const char *const compile) {
 	return !e;
 }
 
-/** Destructor. One can destruct anything in a valid state, including null and
- zero, it just does nothing.
- @param re: If null, does nothing, otherwise it is set to match zero characters
- and frees the memory. */
-void Regex_(struct Regex **const pre) {
-	struct Regex *re;
-	if(!pre || !(re = *pre)) return;
-	printf("~Regex<%s>.\n", re->title);
-	LiteralsPoolForEach(&re->literals, &Literals_);
-	LiteralsPool_(&re->literals);
-	EmptyPool_(&re->empties);
-	StateVertexPool_(&re->vertices);
-	StateDigraph_(&re->states);
-	free(re);
-	*pre = 0;
-}
-
-/** Compiles a regular expression.
- @param compile: If null, returns null. Otherwise, this is a null-terminated
- modified UTF-8 string that gets compiled into a regular expression.
- @return The regular expression. Requires freeing with \see{Regex_}.
- @throws {malloc/realloc} errors: {IEEE Std 1003.1-2001}.
- @throws EILSEQ: The {re} could not be compiled, (required since 1994
- Amendment 1 to C89 standard.) */
-struct Regex *Regex(const char *const compile) {
-	struct Regex *re;
-	if(!compile || !(re = malloc(sizeof *re))) return 0;
-	re->title = compile;
-	StateDigraph(&re->states);
-	/* @fixme {StateDi...} replace with also function which updates temp
-	 values. */
-	StateVertexPool(&re->vertices, &StateDigraphVertexMigrateAll, &re->states);
-	EmptyPool(&re->empties, &StateDigraphEdgeMigrateAll, &re->states);
-	LiteralsPool(&re->literals, &StateDigraphEdgeMigrateAll, &re->states);
-	if(!regex_compile(re, compile)) Regex_(&re);
-	return re;
-}
-
 /** Checks if the {root} of the DFA matches {arg}. Called in \see{RegexMatch}.
  @return The end of the match if it was a match or null.
  @fixme implements <State,char*>Predicate,
@@ -520,26 +569,4 @@ static int match_here(const struct StateVertex *const root,
 		if(status == NOT_MATCHED) break;
 	}
 	return status == MATCHED ? 1 : 0;
-}
-/** Match {re}.
- @return The first point it matches or null if it doesn't. */
-const char *RegexMatch(const struct Regex *const re, const char *const arg) {
-	const struct StateVertex *root;
-	const char *a;
-	if(!re || !arg) return 0;
-	root = StateDigraphGetRoot(&re->states);
-	for(a = arg; *a; a++) if(match_here(root, a)) return a;
-	return 0;
-}
-
-/** Appends {re} to {fp} in GraphViz format.
- @param re: If null, does nothing.
- @param fp: File pointer.
- @return Success.
- @throws {fprintf} errors: {IEEE Std 1003.1-2001}.
- @order O(|{vertices}| + |{edges}|)
- @allow */
-int RegexOut(const struct Regex *const re, FILE *const fp) {
-	if(!re) return 0;
-	return StateDigraphOut(&re->states, fp);
 }

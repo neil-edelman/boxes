@@ -26,6 +26,7 @@ static struct Result {
 	{ "", "hi", "hi" },
 	{ "hi", "", 0 },
 	{ "hi", "this", "his" },
+	{ "\\h\\i", "this", "his" },
 	{ "((())", 0, 0 },
 	{ "(()))", 0, 0 },
 	{ "(())", "hi", "hi" },
