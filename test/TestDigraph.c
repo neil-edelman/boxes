@@ -247,8 +247,8 @@ static int m_compile(struct Machine *m, const char *const compile) {
 	NestPool(&np);
 	printf("compile: <%s>.\n", compile);
 	do { /* try */
-		if(!(n = NestPoolNew(&np)) || !(v = VertexPoolNew(&m->v))
-		   || !Nest(&np, VertexPoolIndex(&m->v, v))) break;
+		if(!(v = VertexPoolNew(&m->v))
+			|| !Nest(&np, VertexPoolIndex(&m->v, v))) break;
 		MachineDigraphPutVertex(&m->graph, v);
 		printf("vertices: %s.\n", MachineVertexListToString(&m->graph.vertices));
 		do {
@@ -258,7 +258,7 @@ static int m_compile(struct Machine *m, const char *const compile) {
 				case '\0': is_done = is_edge = 1; break;
 				default: if(!start) start = c; break;
 			}
-			/*if(is_edge) {
+			if(is_edge) {
 				struct MachineEdge *edge;
 				struct MachineVertex *v1 = VertexPoolNew(&m->v);
 				if(!v1) { e = RESOURCES; break; }
@@ -278,16 +278,16 @@ static int m_compile(struct Machine *m, const char *const compile) {
 				}
 				start = 0;
 				MachineDigraphPutEdge(edge, v, v1);
-			}*/
+			}
 		} while(c++, !is_done);
 		if(e) break;
-		if(!NestPoolPop(&np) || NestPoolPeek(&np)) { e = SYNTAX; break; }
+		if(!NestPoolPop(&np) || NestPoolPeek(&np)) { printf("shit\n");e = SYNTAX; break; }
 	} while(0); if(e == SYNTAX) { /* catch(SYNTAX) */
 		errno = EILSEQ;
 	} { /* finally */
 		NestPoolClear(&np);
 	}
-	printf("m_compile: returning %d\n", !e);
+	printf("m_compile: e %d\n", e);
 	return !e;
 }
 /** @implements <Machine>Migrate */

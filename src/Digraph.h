@@ -207,7 +207,7 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	PG_(vdata_to_string)(&v->info, a);
 #else /* vdata --><-- !vdata */
-	/***a = '\0';*/ strcpy(*a, "vtx"); /*Obvious. */
+	**a = '\0'; /* strcpy(*a, "vtx"); Obvious. */
 	(void)v;
 #endif /* !vdata --> */
 }
