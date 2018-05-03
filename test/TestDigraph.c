@@ -220,7 +220,7 @@ static struct Literals *Literals(struct LiteralsPool *const lp,
 struct Machine {
 	const char *title;
 	struct MachineDigraph graph;
-	struct VertexPool v;
+	struct VertexPool vs;
 	struct EmptyPool empties;
 	struct LiteralsPool literals;
 };
@@ -253,10 +253,15 @@ static int m_compile(struct Machine *m, const char *const compile) {
 	NestPool(&nest);
 	printf("compile: <%s>.\n", compile);
 	do { /* try */
+		struct pool_Vertex_Node *debug;
 		/* Starting vertex and nestle. */
-		if(!(v = VertexPoolNew(&m->v))
-			|| !Nest(&nest, VertexPoolIndex(&m->v, v))) break;
-		MachineDigraphPutVertex(&m->graph, v);
+		/* @fixme here is good!!! v.x[-1 -1] I'm stepping on
+		 MachineVertex instead of MachineVertexNode??? */
+		if(!(v = VertexPoolNew(&m->vs))
+			|| !Nest(&nest, VertexPoolIndex(&m->vs, v))) break;
+		debug = pool_Vertex_node_hold_data(v);
+		MachineDigraphPutVertex(&m->graph, v); /* <- look at this? */
+		/* /\ it's this; probably . . . I don't know? */
 		printf("vertices: %s.\n", MachineVertexListToString(&m->graph.vertices));
 		do {
 			/* @fixme {v} should be an argument to {VertexPoolUpdateNew}. */
@@ -270,7 +275,8 @@ static int m_compile(struct Machine *m, const char *const compile) {
 			}
 			if(is_edge) {
 				struct MachineEdge *edge;
-				struct MachineVertex *v1 = VertexPoolNew(&m->v);
+				/* @fixme But suddenly it's bullshit here. */
+				struct MachineVertex *v1 = VertexPoolNew(&m->vs);
 				if(!v1) { e = RESOURCES; break; }
 				printf("edge\n");
 				MachineDigraphPutVertex(&m->graph, v1);
@@ -290,13 +296,13 @@ static int m_compile(struct Machine *m, const char *const compile) {
 				MachineDigraphPutEdge(edge, v, v1);
 				if(is_open) {
 					is_open = 0, assert(!is_close);
-					printf("-- prev position %lu/%lu\n", (unsigned long)VertexPoolIndex(&m->v, v), m->v.size);
-					printf("-- assigning position %lu to vertex, %s\n", (unsigned long)VertexPoolIndex(&m->v, v1), VertexPoolToString(&m->v));
+					printf("-- prev position %lu/%lu\n", (unsigned long)VertexPoolIndex(&m->vs, v), m->vs.size);
+					printf("-- assigning position %lu to vertex, %s\n", (unsigned long)VertexPoolIndex(&m->vs, v1), VertexPoolToString(&m->vs));
 					{
-						struct MachineVertex *fuck = VertexPoolGet(&m->v, 0);
+						struct MachineVertex *fuck = VertexPoolGet(&m->vs, 0);
 						assert(fuck == v);
 					}
-					if(!Nest(&nest, VertexPoolIndex(&m->v, v1)))
+					if(!Nest(&nest, VertexPoolIndex(&m->vs, v1)))
 						{ e = RESOURCES; break; }
 					v = v1;
 				} else if(is_close) {
@@ -304,7 +310,7 @@ static int m_compile(struct Machine *m, const char *const compile) {
 					is_close = 0;
 					if(!(n = NestPoolPop(&nest))) { e = RESOURCES; break; }
 					printf("-- vertex index: %lu.\n", *n);
-					if(!(v = VertexPoolGet(&m->v, *n))) { printf("There is no %lu??\n", *n); e = SYNTAX; break; }
+					if(!(v = VertexPoolGet(&m->vs, *n))) { printf("There is no %lu??\n", *n); e = SYNTAX; break; }
 				}
 			}
 		} while(c++, !is_done);
@@ -342,7 +348,7 @@ static void Machine_(struct Machine **const pm) {
 	LiteralsPoolForEach(&m->literals, &Literals_);
 	LiteralsPool_(&m->literals);
 	EmptyPool_(&m->empties);
-	VertexPool_(&m->v);
+	VertexPool_(&m->vs);
 	MachineDigraph_(&m->graph);
 	*pm = 0;
 }
@@ -353,7 +359,7 @@ static struct Machine *Machine(const char *const compile) {
 	if(!(m = malloc(sizeof *m))) return 0;
 	m->title = compile;
 	MachineDigraph(&m->graph);
-	VertexPool(&m->v, &vertex_migrate, m);
+	VertexPool(&m->vs, &vertex_migrate, m);
 	EmptyPool(&m->empties, &edge_migrate, m);
 	LiteralsPool(&m->literals, &edge_migrate, m);
 	if(!m_compile(m, compile)) Machine_(&m);
