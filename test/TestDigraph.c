@@ -311,6 +311,7 @@ static void Machine_(struct Machine **const pm) {
 	printf("~Machine<%s>.\n", m->title);
 	LiteralsPoolForEach(&m->literals, &Literals_);
 	LiteralsPool_(&m->literals);
+	EmptyPool_(&m->empties);
 	VertexPool_(&m->v);
 	MachineDigraph_(&m->graph);
 }
