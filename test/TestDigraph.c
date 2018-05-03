@@ -163,9 +163,9 @@ static const struct Literals *literals_holds_transition(const struct
 	Transition *const t) {
 	return (const struct Literals *)(const void *)
 	((const char *)t
-	 - offsetof(struct MachineEdge, info)
-	 - offsetof(struct MachineEdgeLink, data)
-	 - offsetof(struct Literals, edge));
+		- offsetof(struct MachineEdge, info)
+		- offsetof(struct MachineEdgeLink, data)
+		- offsetof(struct Literals, edge));
 }
 /** @implements TransitionToString */
 static void literals_to_string(const struct Transition *t, char (*const a)[12]){
@@ -241,29 +241,32 @@ static int m_compile(struct Machine *m, const char *const compile) {
 	size_t *n;
 	struct MachineVertex *v;
 	const char *c = compile, *start = 0;
-	int is_done = 0, is_out = 0;
+	int is_done = 0, is_edge = 0;
 	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
 
 	NestPool(&np);
 	printf("compile: <%s>.\n", compile);
 	do { /* try */
 		if(!(n = NestPoolNew(&np)) || !(v = VertexPoolNew(&m->v))
-		   || Nest(&np, VertexPoolIndex(&m->v, v))) break;
+		   || !Nest(&np, VertexPoolIndex(&m->v, v))) break;
 		MachineDigraphVertex(&m->graph, v);
 		do {
+			printf("%c (%d)\n", *c, (int)*c);
 			switch(*c) {
-				case '\0': is_done = is_out = 1; break;
+				case '|': is_edge = 1; break;
+				case '\0': is_done = is_edge = 1; break;
 				default: if(!start) start = c; break;
 			}
-			if(is_out) {
+			if(is_edge) {
 				struct MachineEdge *edge;
 				struct MachineVertex *v1 = VertexPoolNew(&m->v);
 				if(!v1) { e = RESOURCES; break; }
-				MachineDigraphVertex(&m->graph, v);
-				is_out = 0;
+				printf("edge\n");
+				MachineDigraphVertex(&m->graph, v1);
+				is_edge = 0;
 				if(start && start < c - 1) {
 					struct Literals *lit;
-					if(!(lit = Literals(&m->literals, start, c - 1 - start)))
+					if(!(lit = Literals(&m->literals, start, c - start)))
 						{ e = RESOURCES; break; }
 					edge = &lit->edge.data;
 				} else {
@@ -277,12 +280,29 @@ static int m_compile(struct Machine *m, const char *const compile) {
 			}
 		} while(c++, !is_done);
 		if(e) break;
+		if(!NestPoolPop(&np) || NestPoolPeek(&np)) { e = SYNTAX; break; }
 	} while(0); if(e == SYNTAX) { /* catch(SYNTAX) */
 		errno = EILSEQ;
 	} { /* finally */
 		NestPoolClear(&np);
 	}
 	return !e;
+}
+/** @implements <Machine>Migrate */
+static void vertex_migrate(struct Machine *m,
+	const struct Migrate *const migrate) {
+	assert(m && migrate);
+	/*VertexPoolMigrate(&m->graph, migrate); no such thing */
+	/*MachineDigraphVertexMigrateAll(&m->graph, migrate);*/ /* no */
+	printf("vertex_migrate doom\n");
+	printf("%s.\n", MachineVertexListToString(&m->graph.vertices));
+}
+/** @implements <Machine>Migrate */
+static void edge_migrate(struct Machine *m,
+	const struct Migrate *const migrate) {
+	assert(m && migrate);
+	/*MachineDigraphEdgeMigrateAll(&m->graph, migrate);*/ /* no */
+	printf("edge_migrate doom\n");
 }
 /** Destructor. */
 static void Machine_(struct Machine **const pm) {
@@ -301,8 +321,9 @@ static struct Machine *Machine(const char *const compile) {
 	if(!(m = malloc(sizeof *m))) return 0;
 	m->title = compile;
 	MachineDigraph(&m->graph);
-	VertexPool(&m->v, &MachineDigraphVertexMigrateAll, m);
-	LiteralsPool(&m->literals, &MachineDigraphEdgeMigrateAll, m);
+	VertexPool(&m->v, &vertex_migrate, m);
+	EmptyPool(&m->empties, &edge_migrate, m);
+	LiteralsPool(&m->literals, &edge_migrate, m);
 	if(!m_compile(m, compile)) { Machine_(&m); perror(compile); }
 	return m;
 }
@@ -311,14 +332,14 @@ static struct Machine *Machine(const char *const compile) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	struct Machine *m = 0;
-	const char *const fn = "graphs/regex.gv";
+	const char *const fn = "graphs/machine.gv";
 	FILE *fp = 0;
 	int is_err = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	BlankDigraphTest();
 	ColourDigraphTest();
 	/* Custom. */
-	if(!(m = Machine("hi"))
+	if(!(m = Machine("hi(a|b|c)|d(e(f))"))
 		|| !(fp = fopen(fn, "w"))
 		|| !MachineDigraphOut(&m->graph, fp)) is_err = 1;
 	if(is_err) perror(fn);

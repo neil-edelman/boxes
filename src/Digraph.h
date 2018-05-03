@@ -182,7 +182,7 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	PG_(edata_to_string)(&e->info, a);
 #else /* edata --><-- !edata */
-	strcpy(*a, "e");
+	**a = '\0'; /* strcpy(*a, "edge"); Obvious. */
 	(void)e;
 #endif /* !edata --> */
 }
@@ -207,7 +207,7 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	PG_(vdata_to_string)(&v->info, a);
 #else /* vdata --><-- !vdata */
-	strcpy(*a, "v");
+	**a = '\0'; /* strcpy(*a, "vtx"); Obvious. */
 	(void)v;
 #endif /* !vdata --> */
 }
@@ -337,25 +337,18 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	char a[12];
 	unsigned long v_no, v_to;
 	if(!g || !fp) return 0;
-	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n") < 0) return 0;
+	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n"
+		"\tnode [shape=circle];\n") < 0) return 0;
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		v_no = (unsigned long)v;
-#ifdef DIGRAPH_VDATA /* <-- vdata */
-		PG_(vdata_to_string)(&v->info, &a);
-#else /* vdata --><-- !vdata */
-		*a = '\0';/*strcpy(a, "");*/
-#endif /* !vdata --> */
+		PG_(vertex_to_string)(v, &a);
 		if(fprintf(fp, "\tv%lu [label=\"%s\"%s];\n", v_no, a,
 			v == g->root ? " peripheries=2" : "") < 0) return 0;
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
-#ifdef DIGRAPH_EDATA /* <-- edata */
-			PG_(edata_to_string)(&e->info, &a);
+			PG_(edge_to_string)(e, &a);
 			if(fprintf(fp, "\tv%lu -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
 				< 0) return 0;
-#else /* edata --><-- !edata */
-			if(fprintf(fp, "\tv%lu -> v%lu;\n", v_no, v_to) < 0) return 0;
-#endif /* !edata --> */
 		}
 	}
 	if(fprintf(fp, "\tnode [fillcolor = red];\n"
