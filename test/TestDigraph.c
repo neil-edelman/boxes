@@ -249,7 +249,8 @@ static int m_compile(struct Machine *m, const char *const compile) {
 	do { /* try */
 		if(!(n = NestPoolNew(&np)) || !(v = VertexPoolNew(&m->v))
 		   || !Nest(&np, VertexPoolIndex(&m->v, v))) break;
-		MachineDigraphVertex(&m->graph, v);
+		MachineDigraphPutVertex(&m->graph, v);
+		printf("vertices: %s.\n", MachineVertexListToString(&m->graph.vertices));
 		do {
 			printf("%c (%d)\n", *c, (int)*c);
 			switch(*c) {
@@ -257,14 +258,14 @@ static int m_compile(struct Machine *m, const char *const compile) {
 				case '\0': is_done = is_edge = 1; break;
 				default: if(!start) start = c; break;
 			}
-			if(is_edge) {
+			/*if(is_edge) {
 				struct MachineEdge *edge;
 				struct MachineVertex *v1 = VertexPoolNew(&m->v);
 				if(!v1) { e = RESOURCES; break; }
 				printf("edge\n");
-				MachineDigraphVertex(&m->graph, v1);
+				MachineDigraphPutVertex(&m->graph, v1);
 				is_edge = 0;
-				if(start && start < c - 1) {
+				if(start && start < c) {
 					struct Literals *lit;
 					if(!(lit = Literals(&m->literals, start, c - start)))
 						{ e = RESOURCES; break; }
@@ -276,8 +277,8 @@ static int m_compile(struct Machine *m, const char *const compile) {
 					edge = &emp->data;
 				}
 				start = 0;
-				MachineDigraphEdge(edge, v, v1);
-			}
+				MachineDigraphPutEdge(edge, v, v1);
+			}*/
 		} while(c++, !is_done);
 		if(e) break;
 		if(!NestPoolPop(&np) || NestPoolPeek(&np)) { e = SYNTAX; break; }
@@ -286,6 +287,7 @@ static int m_compile(struct Machine *m, const char *const compile) {
 	} { /* finally */
 		NestPoolClear(&np);
 	}
+	printf("m_compile: returning %d\n", !e);
 	return !e;
 }
 /** @implements <Machine>Migrate */
@@ -314,6 +316,7 @@ static void Machine_(struct Machine **const pm) {
 	EmptyPool_(&m->empties);
 	VertexPool_(&m->v);
 	MachineDigraph_(&m->graph);
+	*pm = 0;
 }
 /** Constructor. */
 static struct Machine *Machine(const char *const compile) {
@@ -325,7 +328,7 @@ static struct Machine *Machine(const char *const compile) {
 	VertexPool(&m->v, &vertex_migrate, m);
 	EmptyPool(&m->empties, &edge_migrate, m);
 	LiteralsPool(&m->literals, &edge_migrate, m);
-	if(!m_compile(m, compile)) { Machine_(&m); perror(compile); }
+	if(!m_compile(m, compile)) Machine_(&m);
 	return m;
 }
 
@@ -343,7 +346,8 @@ int main(void) {
 	if(!(m = Machine("hi(a|b|c)|d(e(f))"))
 		|| !(fp = fopen(fn, "w"))
 		|| !MachineDigraphOut(&m->graph, fp)) is_err = 1;
-	if(is_err) perror(fn);
+	if(is_err) perror(fn), assert(0);
+	printf("The machine has %s vertices.\n", MachineVertexListToString(&m->graph.vertices));
 	fclose(fp);
 	Machine_(&m);
 	if(!is_err) printf("Test success.\n\n");

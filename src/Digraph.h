@@ -207,7 +207,7 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	PG_(vdata_to_string)(&v->info, a);
 #else /* vdata --><-- !vdata */
-	**a = '\0'; /* strcpy(*a, "vtx"); Obvious. */
+	/***a = '\0';*/ strcpy(*a, "vtx"); /*Obvious. */
 	(void)v;
 #endif /* !vdata --> */
 }
@@ -287,20 +287,23 @@ static E *G_(DigraphEdgeData)(struct G_(Edge) *const edge) {
  @param g: If null, does nothing but initialise {v}.
  @param v: If null, does nothing, otherwise initialises to contain no edges;
  the vertex data is left alone. */
-static void G_(DigraphVertex)(struct G_(Digraph) *const g,
+static void G_(DigraphPutVertex)(struct G_(Digraph) *const g,
 	struct G_(Vertex) *const v) {
+	char a[12];
 	if(!v) return;
 	PG_(v_clear)(v);
 	if(!g) return;
 	if(!G_(VertexListFirst)(&g->vertices)) g->root = v;
 	G_(VertexListPush)(&g->vertices, v);
+	PG_(vertex_to_string)(v, &a);
+	printf("digraph vertex %s.\n", a);
 }
 
 /** Undefined behaviour results from adding edges that have already been added.
  Initialises {e} to point to {from} to {to}.
  @param e, from, to: If any are null, does nothing.
  @param e: The edge data is left alone. */
-static void G_(DigraphEdge)(struct G_(Edge) *e,
+static void G_(DigraphPutEdge)(struct G_(Edge) *e,
 	struct G_(Vertex) *const from, struct G_(Vertex) *const to) {
 	if(!e || !from || !to) return;
 	PG_(e_clear)(e, to);
@@ -338,16 +341,16 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	unsigned long v_no, v_to;
 	if(!g || !fp) return 0;
 	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n"
-		"\tnode [shape=circle];\n") < 0) return 0;
+		"\tnode [shape = circle];\n") < 0) return 0;
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		v_no = (unsigned long)v;
 		PG_(vertex_to_string)(v, &a);
-		if(fprintf(fp, "\tv%lu [label=\"%s\"%s];\n", v_no, a,
-			v == g->root ? " peripheries=2" : "") < 0) return 0;
+		if(fprintf(fp, "\tv%lu [label = \"%s\"%s];\n", v_no, a,
+			v == g->root ? " peripheries = 2" : "") < 0) return 0;
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
 			PG_(edge_to_string)(e, &a);
-			if(fprintf(fp, "\tv%lu -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
+			if(fprintf(fp, "\tv%lu -> v%lu [label = \"%s\"];\n", v_no, v_to, a)
 				< 0) return 0;
 		}
 	}
@@ -434,8 +437,8 @@ static void PG_(unused)(void) {
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	G_(DigraphEdgeData)(0);
 #endif /* edata --> */
-	G_(DigraphVertex)(0, 0);
-	G_(DigraphEdge)(0, 0, 0);
+	G_(DigraphPutVertex)(0, 0);
+	G_(DigraphPutEdge)(0, 0, 0);
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
 	G_(DigraphOut)(0, 0);
