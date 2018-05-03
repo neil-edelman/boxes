@@ -118,12 +118,19 @@ static void transition_to_string(const struct Transition *t,char(*const a)[12]){
 #define DIGRAPH_EDATA_TO_STRING &transition_to_string
 #include "../src/Digraph.h" /* StateDigraph, StateVertex, StateEdge. */
 
+/* Debug: @fixme Doesn't get called. I think it should. */
+static void vertex_to_string(const struct MachineVertex *const v, char (*const a)[12]) {
+	(void)v;
+	/*strcpy(*a, "v");*/
+	sprintf(*a, "vxx");
+}
 /*
- * {StateVertex} container.
+ * {StateVertex} container. @fixme I don't think this is initialised?
  */
 #define POOL_NAME Vertex
 #define POOL_TYPE struct MachineVertex
 #define POOL_MIGRATE_ALL struct Machine
+#define POOL_TO_STRING &vertex_to_string
 #include "Pool.h"
 
 /**
@@ -131,7 +138,7 @@ static void transition_to_string(const struct Transition *t,char(*const a)[12]){
  */
 /** @implements TransitionToString */
 static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
-	sprintf(*a, "ε");
+	/*sprintf*/strcpy(*a, "ε");
 	(void)e;
 }
 static struct TransitionVt empty_vt = { "Empty", empty_to_string };
@@ -162,7 +169,7 @@ struct Literals {
 static const struct Literals *literals_holds_transition(const struct
 	Transition *const t) {
 	return (const struct Literals *)(const void *)
-	((const char *)t
+		((const char *)t
 		- offsetof(struct MachineEdge, info)
 		- offsetof(struct MachineEdgeLink, data)
 		- offsetof(struct Literals, edge));
@@ -237,24 +244,27 @@ static size_t *Nest(struct NestPool *const np, const size_t idx) {
 /** Called from \see{Regex}.
  @return Success, otherwise {errno} will (probably) be set. */
 static int m_compile(struct Machine *m, const char *const compile) {
-	struct NestPool np;
-	size_t *n;
+	struct NestPool nest;
 	struct MachineVertex *v;
 	const char *c = compile, *start = 0;
-	int is_done = 0, is_edge = 0;
+	int is_done = 0, is_edge = 0, is_open = 0, is_close = 0;
 	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
 
-	NestPool(&np);
+	NestPool(&nest);
 	printf("compile: <%s>.\n", compile);
 	do { /* try */
+		/* Starting vertex and nestle. */
 		if(!(v = VertexPoolNew(&m->v))
-			|| !Nest(&np, VertexPoolIndex(&m->v, v))) break;
+			|| !Nest(&nest, VertexPoolIndex(&m->v, v))) break;
 		MachineDigraphPutVertex(&m->graph, v);
 		printf("vertices: %s.\n", MachineVertexListToString(&m->graph.vertices));
 		do {
+			/* @fixme {v} should be an argument to {VertexPoolUpdateNew}. */
 			printf("%c (%d)\n", *c, (int)*c);
 			switch(*c) {
 				case '|': is_edge = 1; break;
+				case '(': is_edge = is_open = 1; break;
+				case ')': is_edge = is_close = 1; break;
 				case '\0': is_done = is_edge = 1; break;
 				default: if(!start) start = c; break;
 			}
@@ -278,14 +288,32 @@ static int m_compile(struct Machine *m, const char *const compile) {
 				}
 				start = 0;
 				MachineDigraphPutEdge(edge, v, v1);
+				if(is_open) {
+					is_open = 0, assert(!is_close);
+					printf("-- prev position %lu/%lu\n", (unsigned long)VertexPoolIndex(&m->v, v), m->v.size);
+					printf("-- assigning position %lu to vertex, %s\n", (unsigned long)VertexPoolIndex(&m->v, v1), VertexPoolToString(&m->v));
+					{
+						struct MachineVertex *fuck = VertexPoolGet(&m->v, 0);
+						assert(fuck == v);
+					}
+					if(!Nest(&nest, VertexPoolIndex(&m->v, v1)))
+						{ e = RESOURCES; break; }
+					v = v1;
+				} else if(is_close) {
+					size_t *n;
+					is_close = 0;
+					if(!(n = NestPoolPop(&nest))) { e = RESOURCES; break; }
+					printf("-- vertex index: %lu.\n", *n);
+					if(!(v = VertexPoolGet(&m->v, *n))) { printf("There is no %lu??\n", *n); e = SYNTAX; break; }
+				}
 			}
 		} while(c++, !is_done);
 		if(e) break;
-		if(!NestPoolPop(&np) || NestPoolPeek(&np)) { printf("shit\n");e = SYNTAX; break; }
+		if(!NestPoolPop(&nest) || NestPoolPeek(&nest)) { printf("shit\n");e = SYNTAX; break; }
 	} while(0); if(e == SYNTAX) { /* catch(SYNTAX) */
 		errno = EILSEQ;
 	} { /* finally */
-		NestPoolClear(&np);
+		NestPoolClear(&nest);
 	}
 	printf("m_compile: e %d\n", e);
 	return !e;
@@ -343,7 +371,7 @@ int main(void) {
 	BlankDigraphTest();
 	ColourDigraphTest();
 	/* Custom. */
-	if(!(m = Machine("hi(a|b|c)|d(e(f))"))
+	if(!(m = Machine(/*"hi(a|b|c)|d(e(f))"*/"hi(there|ii)"))
 		|| !(fp = fopen(fn, "w"))
 		|| !MachineDigraphOut(&m->graph, fp)) is_err = 1;
 	if(is_err) perror(fn), assert(0);
