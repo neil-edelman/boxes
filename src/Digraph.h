@@ -294,7 +294,7 @@ static void G_(DigraphPutVertex)(struct G_(Digraph) *const g,
 	PG_(v_clear)(v);
 	if(!g) return;
 	if(!G_(VertexListFirst)(&g->vertices)) g->root = v;
-	G_(VertexListPush)(&g->vertices, v);
+	G_(VertexListPush)(&g->vertices, v); /* <--- here it changes. */
 	PG_(vertex_to_string)(v, &a);
 	printf("digraph vertex %s.\n", a);
 }

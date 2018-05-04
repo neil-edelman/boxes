@@ -119,26 +119,26 @@ static void transition_to_string(const struct Transition *t,char(*const a)[12]){
 #include "../src/Digraph.h" /* StateDigraph, StateVertex, StateEdge. */
 
 /* Debug: @fixme Doesn't get called. I think it should. */
-static void vertex_to_string(const struct MachineVertex *const v, char (*const a)[12]) {
-	(void)v;
-	/*strcpy(*a, "v");*/
+static void vertex_to_string(const struct MachineVertexLink *const vl,
+	char (*const a)[12]) {
 	sprintf(*a, "vxx");
+	(void)vl;
 }
 /*
  * {StateVertex} container. @fixme I don't think this is initialised?
  */
 #define POOL_NAME Vertex
-#define POOL_TYPE struct MachineVertex
+#define POOL_TYPE struct MachineVertexLink
 #define POOL_MIGRATE_ALL struct Machine
 #define POOL_TO_STRING &vertex_to_string
 #include "Pool.h"
 
 /**
- * {Empty} extends {Transition} as {StateEdgeLink}.
+ * {Empty} extends {Transition}.
  */
 /** @implements TransitionToString */
 static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
-	/*sprintf*/strcpy(*a, "ε");
+	strcpy(*a, "ε");
 	(void)e;
 }
 static struct TransitionVt empty_vt = { "Empty", empty_to_string };
@@ -158,7 +158,7 @@ static struct MachineEdgeLink *Empty(struct EmptyPool *const ep) {
 }
 
 /**
- * {Literals} extends {Transition} as {StateEdgeLink}.
+ * {Literals} extends {Transition}.
  */
 struct Literals {
 	struct MachineEdgeLink edge;
@@ -241,11 +241,13 @@ static size_t *Nest(struct NestPool *const np, const size_t idx) {
 	return i;
 }
 
+static struct pool_Vertex_Node *debug;
+
 /** Called from \see{Regex}.
  @return Success, otherwise {errno} will (probably) be set. */
 static int m_compile(struct Machine *m, const char *const compile) {
 	struct NestPool nest;
-	struct MachineVertex *v;
+	struct MachineVertexLink *vl;
 	const char *c = compile, *start = 0;
 	int is_done = 0, is_edge = 0, is_open = 0, is_close = 0;
 	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
@@ -253,14 +255,13 @@ static int m_compile(struct Machine *m, const char *const compile) {
 	NestPool(&nest);
 	printf("compile: <%s>.\n", compile);
 	do { /* try */
-		struct pool_Vertex_Node *debug;
 		/* Starting vertex and nestle. */
 		/* @fixme here is good!!! v.x[-1 -1] I'm stepping on
 		 MachineVertex instead of MachineVertexNode??? */
-		if(!(v = VertexPoolNew(&m->vs))
-			|| !Nest(&nest, VertexPoolIndex(&m->vs, v))) break;
-		debug = pool_Vertex_node_hold_data(v);
-		MachineDigraphPutVertex(&m->graph, v); /* <- look at this? */
+		if(!(vl = VertexPoolNew(&m->vs))
+			|| !Nest(&nest, VertexPoolIndex(&m->vs, vl))) break;
+		debug = pool_Vertex_node_hold_data(vl);
+		MachineDigraphPutVertex(&m->graph, &vl->data); /* <- look at this? */
 		/* /\ it's this; probably . . . I don't know? */
 		printf("vertices: %s.\n", MachineVertexListToString(&m->graph.vertices));
 		do {
@@ -276,10 +277,10 @@ static int m_compile(struct Machine *m, const char *const compile) {
 			if(is_edge) {
 				struct MachineEdge *edge;
 				/* @fixme But suddenly it's bullshit here. */
-				struct MachineVertex *v1 = VertexPoolNew(&m->vs);
-				if(!v1) { e = RESOURCES; break; }
+				struct MachineVertexLink *vl1 = VertexPoolNew(&m->vs);
+				if(!vl1) { e = RESOURCES; break; }
 				printf("edge\n");
-				MachineDigraphPutVertex(&m->graph, v1);
+				MachineDigraphPutVertex(&m->graph, &vl1->data);
 				is_edge = 0;
 				if(start && start < c) {
 					struct Literals *lit;
@@ -293,24 +294,24 @@ static int m_compile(struct Machine *m, const char *const compile) {
 					edge = &emp->data;
 				}
 				start = 0;
-				MachineDigraphPutEdge(edge, v, v1);
+				MachineDigraphPutEdge(edge, &vl->data, &vl1->data);
 				if(is_open) {
 					is_open = 0, assert(!is_close);
-					printf("-- prev position %lu/%lu\n", (unsigned long)VertexPoolIndex(&m->vs, v), m->vs.size);
-					printf("-- assigning position %lu to vertex, %s\n", (unsigned long)VertexPoolIndex(&m->vs, v1), VertexPoolToString(&m->vs));
+					printf("-- prev position %lu/%lu\n", (unsigned long)VertexPoolIndex(&m->vs, vl), m->vs.size);
+					printf("-- assigning position %lu to vertex, %s\n", (unsigned long)VertexPoolIndex(&m->vs, vl1), VertexPoolToString(&m->vs));
 					{
-						struct MachineVertex *fuck = VertexPoolGet(&m->vs, 0);
-						assert(fuck == v);
+						struct MachineVertexLink *fuck = VertexPoolGet(&m->vs, 0);
+						assert(fuck == vl);
 					}
-					if(!Nest(&nest, VertexPoolIndex(&m->vs, v1)))
+					if(!Nest(&nest, VertexPoolIndex(&m->vs, vl1)))
 						{ e = RESOURCES; break; }
-					v = v1;
+					vl = vl1;
 				} else if(is_close) {
 					size_t *n;
 					is_close = 0;
 					if(!(n = NestPoolPop(&nest))) { e = RESOURCES; break; }
 					printf("-- vertex index: %lu.\n", *n);
-					if(!(v = VertexPoolGet(&m->vs, *n))) { printf("There is no %lu??\n", *n); e = SYNTAX; break; }
+					if(!(vl = VertexPoolGet(&m->vs, *n))) { printf("There is no %lu??\n", *n); e = SYNTAX; break; }
 				}
 			}
 		} while(c++, !is_done);
