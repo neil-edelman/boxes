@@ -225,59 +225,87 @@ struct Machine {
 	struct LiteralsPool literals;
 };
 
-/*
+/**
  * Temporary nesting for compiling.
  * Refers to index in the vertices pool.
  */
+struct Nest { size_t a, b; };
 #define POOL_NAME Nest
-#define POOL_TYPE size_t
+#define POOL_TYPE struct Nest
 #define POOL_STACK
 #include "Pool.h"
-static size_t *Nest(struct NestPool *const np, const size_t idx) {
-	size_t *i;
-	assert(np);
-	if(!(i = NestPoolNew(np))) return 0;
-	*i = idx;
-	return i;
+/** @param nest: A {NestPool}. Required.
+ @param a: An already existing vertex index to use as the opening.
+ @return Creates a new Nest or null.
+ @throws {realloc} errors. */
+static struct Nest *Nest(struct NestPool *const nest, const size_t a) {
+	struct Nest *n;
+	assert(nest);
+	if(!(n = NestPoolNew(nest))) return 0;
+	n->a = a;
+	n->b = (size_t)-1; /* By agreed upon convention, this is null. */
+	return n;
 }
 
-/** Called from \see{Regex}.
+/** Called from \see{Machine}.
  @return Success, otherwise {errno} will (probably) be set. */
 static int m_compile(struct Machine *m, const char *const compile) {
 	struct NestPool nest;
-	struct MachineVertexLink *vl;
-	const char *c = compile, *start = 0;
-	int is_done = 0, is_edge = 0, is_open = 0, is_close = 0;
+	struct Nest *n;
+	const char *c = compile, *c_start = 0;
+	enum { DONE = 1, POSSIBLY_EDGE = 2, EDGE = 4, OPEN = 8, CLOSE = 16 } flags;
 	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
 
 	NestPool(&nest);
-	printf("compile: <%s>.\n", compile);
+	printf("m_compile: <%s>.\n", compile);
 	do { /* try */
-		/* Starting vertex and nestle. */
-		if(!(vl = VertexPoolNew(&m->vs))
-			|| !Nest(&nest, VertexPoolIndex(&m->vs, vl))) break;
-		MachineDigraphPutVertex(&m->graph, &vl->data);
-		printf("vertices: %s.\n", MachineVertexListToString(&m->graph.vertices));
-		do {
-			/* @fixme {v} should be an argument to {VertexPoolUpdateNew}. */
+		{ /* Starting vertex and implied nestle. */
+			struct MachineVertexLink *vl = VertexPoolNew(&m->vs);
+			if(!vl || !Nest(&nest, VertexPoolIndex(&m->vs, vl)))
+				{ e = RESOURCES; break; }
+			MachineDigraphPutVertex(&m->graph, &vl->data);
+		}
+		do { /* For each byte. */
+			n = NestPoolPeek(&nest);
+			assert(n);
 			printf("%c (%d)\n", *c, (int)*c);
+			flags = 0;
 			switch(*c) {
-				case '|': is_edge = 1; break;
-				case '(': is_edge = is_open = 1; break;
-				case ')': is_edge = is_close = 1; break;
-				case '\0': is_done = is_edge = 1; break;
-				default: if(!start) start = c; break;
+				case '|': flags |= EDGE; break;
+				case '(': flags |= POSSIBLY_EDGE | OPEN; break;
+				case ')': flags |= EDGE | CLOSE; break;
+				case '\0': flags |= DONE | POSSIBLY_EDGE; break;
+				default: if(!c_start) c_start = c; break;
 			}
-			if(is_edge) {
+			if(!flags) continue;
+			if(flags & POSSIBLY_EDGE && c_start && c_start < c) flags |= EDGE;
+			if(flags & EDGE) {
 				struct MachineEdge *edge;
-				struct MachineVertexLink *vl1 = VertexPoolNew(&m->vs);
-				if(!vl1) { e = RESOURCES; break; }
+				struct MachineVertex *v, *v1;
 				printf("edge\n");
-				MachineDigraphPutVertex(&m->graph, &vl1->data);
-				is_edge = 0;
-				if(start && start < c) {
+				/* Obtain the vertices. */
+				{
+					struct MachineVertexLink *const vl
+						= VertexPoolGet(&m->vs, n->a);
+					assert(vl);
+					v = &vl->data;
+				}
+				if(n->b != (size_t)-1) { /* Already a terminating vertex. */
+					struct MachineVertexLink *const vl1
+						= VertexPoolGet(&m->vs, n->b);
+					assert(vl1);
+					v1 = &vl1->data;
+				} else { /* Make a terminating vertex. */
+					struct MachineVertexLink *const vl1 = VertexPoolNew(&m->vs);
+					if(!vl1) { e = RESOURCES; break; }
+					v1 = &vl1->data;
+					MachineDigraphPutVertex(&m->graph, v1);
+					n->b = VertexPoolIndex(&m->vs, vl1);
+				}
+				/* The edge. */
+				if(c_start && c_start < c) {
 					struct Literals *lit;
-					if(!(lit = Literals(&m->literals, start, c - start)))
+					if(!(lit = Literals(&m->literals, c_start, c - c_start)))
 						{ e = RESOURCES; break; }
 					edge = &lit->edge.data;
 				} else {
@@ -286,28 +314,24 @@ static int m_compile(struct Machine *m, const char *const compile) {
 						{ e = RESOURCES; break; }
 					edge = &emp->data;
 				}
-				start = 0;
-				MachineDigraphPutEdge(edge, &vl->data, &vl1->data);
-				if(is_open) {
-					is_open = 0, assert(!is_close);
-					printf("-- prev position %lu/%lu\n", (unsigned long)VertexPoolIndex(&m->vs, vl), m->vs.size);
-					printf("-- assigning position %lu to vertex, %s\n", (unsigned long)VertexPoolIndex(&m->vs, vl1), VertexPoolToString(&m->vs));
-					{
-						struct MachineVertexLink *fuck = VertexPoolGet(&m->vs, 0);
-						assert(fuck == vl);
-					}
-					if(!Nest(&nest, VertexPoolIndex(&m->vs, vl1)))
-						{ e = RESOURCES; break; }
-					vl = vl1;
-				} else if(is_close) {
-					size_t *n;
-					is_close = 0;
-					if(!(n = NestPoolPop(&nest))) { e = RESOURCES; break; }
-					printf("-- vertex index: %lu.\n", *n);
-					if(!(vl = VertexPoolGet(&m->vs, *n))) { printf("There is no %lu??\n", *n); e = SYNTAX; break; }
-				}
+				c_start = 0;
+				MachineDigraphPutEdge(edge, v, v1);
 			}
-		} while(c++, !is_done);
+			if(flags & OPEN) {
+				assert(!(flags & CLOSE));
+				if(!Nest(&nest, n->b == (size_t)-1 ? n->a : n->b)) { e = RESOURCES; break;}
+				/*printf("-- prev position %lu/%lu\n", (unsigned long)VertexPoolIndex(&m->vs, v), m->vs.size);
+				printf("-- assigning position %lu to vertex, %s\n", (unsigned long)VertexPoolIndex(&m->vs, vl1), VertexPoolToString(&m->vs));
+				{
+					struct MachineVertexLink *fuck = VertexPoolGet(&m->vs, 0);
+					assert(fuck == vl);
+				}*/
+			}
+			if(flags & CLOSE) {
+				NestPoolPop(&nest);
+				if(!NestPoolPeek(&nest)) { e = SYNTAX; break; }
+			}
+		} while(c++, !(flags & DONE)); /* For @ byte. */
 		if(e) break;
 		if(!NestPoolPop(&nest) || NestPoolPeek(&nest)) { e = SYNTAX; break; }
 	} while(0); if(e == SYNTAX) { /* catch(SYNTAX) */
