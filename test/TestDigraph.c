@@ -241,8 +241,6 @@ static size_t *Nest(struct NestPool *const np, const size_t idx) {
 	return i;
 }
 
-static struct pool_Vertex_Node *debug;
-
 /** Called from \see{Regex}.
  @return Success, otherwise {errno} will (probably) be set. */
 static int m_compile(struct Machine *m, const char *const compile) {
@@ -256,13 +254,9 @@ static int m_compile(struct Machine *m, const char *const compile) {
 	printf("compile: <%s>.\n", compile);
 	do { /* try */
 		/* Starting vertex and nestle. */
-		/* @fixme here is good!!! v.x[-1 -1] I'm stepping on
-		 MachineVertex instead of MachineVertexNode??? */
 		if(!(vl = VertexPoolNew(&m->vs))
 			|| !Nest(&nest, VertexPoolIndex(&m->vs, vl))) break;
-		debug = pool_Vertex_node_hold_data(vl);
-		MachineDigraphPutVertex(&m->graph, &vl->data); /* <- look at this? */
-		/* /\ it's this; probably . . . I don't know? */
+		MachineDigraphPutVertex(&m->graph, &vl->data);
 		printf("vertices: %s.\n", MachineVertexListToString(&m->graph.vertices));
 		do {
 			/* @fixme {v} should be an argument to {VertexPoolUpdateNew}. */
@@ -276,7 +270,6 @@ static int m_compile(struct Machine *m, const char *const compile) {
 			}
 			if(is_edge) {
 				struct MachineEdge *edge;
-				/* @fixme But suddenly it's bullshit here. */
 				struct MachineVertexLink *vl1 = VertexPoolNew(&m->vs);
 				if(!vl1) { e = RESOURCES; break; }
 				printf("edge\n");
@@ -316,7 +309,7 @@ static int m_compile(struct Machine *m, const char *const compile) {
 			}
 		} while(c++, !is_done);
 		if(e) break;
-		if(!NestPoolPop(&nest) || NestPoolPeek(&nest)) { printf("shit\n");e = SYNTAX; break; }
+		if(!NestPoolPop(&nest) || NestPoolPeek(&nest)) { e = SYNTAX; break; }
 	} while(0); if(e == SYNTAX) { /* catch(SYNTAX) */
 		errno = EILSEQ;
 	} { /* finally */
