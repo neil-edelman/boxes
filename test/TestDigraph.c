@@ -229,7 +229,7 @@ struct Machine {
  * Temporary nesting for compiling.
  * Refers to index in the vertices pool.
  */
-struct Nest { size_t a, b; };
+struct Nest { size_t v0i, v2i; };
 #define POOL_NAME Nest
 #define POOL_TYPE struct Nest
 #define POOL_STACK
@@ -238,12 +238,12 @@ struct Nest { size_t a, b; };
  @param a: An already existing vertex index to use as the opening.
  @return Creates a new Nest or null.
  @throws {realloc} errors. */
-static struct Nest *Nest(struct NestPool *const nest, const size_t a) {
+static struct Nest *Nest(struct NestPool *const nest, const size_t v0i) {
 	struct Nest *n;
 	assert(nest);
 	if(!(n = NestPoolNew(nest))) return 0;
-	n->a = a;
-	n->b = (size_t)-1; /* By agreed upon convention, this is null. */
+	n->v0i = v0i;
+	n->v2i = (size_t)-1; /* By agreed upon convention, this is null. */
 	return n;
 }
 
@@ -251,56 +251,67 @@ static struct Nest *Nest(struct NestPool *const nest, const size_t a) {
  @return Success, otherwise {errno} will (probably) be set. */
 static int m_compile(struct Machine *m, const char *const compile) {
 	struct NestPool nest;
-	struct Nest *n;
-	const char *c = compile, *c_start = 0;
-	enum { DONE = 1, POSSIBLY_EDGE = 2, EDGE = 4, OPEN = 8, CLOSE = 16 } flags;
 	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
 
 	NestPool(&nest);
 	printf("m_compile: <%s>.\n", compile);
 	do { /* try */
+		size_t v1i = 0;
+		int is_closing = 0; /* @fixme Ugly. */
+		struct Nest *n;
+		const char *c = compile, *c_start = 0;
+		enum { DONE = 1, FINAL = 2, EDGE = 4, OPEN = 8, CLOSE = 16 } flags;
 		{ /* Starting vertex and implied nestle. */
-			struct MachineVertexLink *vl = VertexPoolNew(&m->vs);
-			if(!vl || !Nest(&nest, VertexPoolIndex(&m->vs, vl)))
+			struct MachineVertexLink *start = VertexPoolNew(&m->vs);
+			if(!start || !Nest(&nest, VertexPoolIndex(&m->vs, start)))
 				{ e = RESOURCES; break; }
-			MachineDigraphPutVertex(&m->graph, &vl->data);
+			MachineDigraphPutVertex(&m->graph, &start->data);
 		}
 		do { /* For each byte. */
-			n = NestPoolPeek(&nest);
-			assert(n);
-			printf("%c (%d)\n", *c, (int)*c);
+			printf("__%c (%d)__\n", *c, (int)*c);
+			/* Set the flags. */
 			flags = 0;
 			switch(*c) {
-				case '|': flags |= EDGE; break;
-				case '(': flags |= POSSIBLY_EDGE | OPEN; break;
-				case ')': flags |= EDGE | CLOSE; break;
-				case '\0': flags |= DONE | POSSIBLY_EDGE; break;
+				case '|': flags |= FINAL; break;
+				case '(': flags |= OPEN; break;
+				case ')': flags |= CLOSE; break;
+				case '\0': flags |= DONE; break;
 				default: if(!c_start) c_start = c; break;
 			}
 			if(!flags) continue;
-			if(flags & POSSIBLY_EDGE && c_start && c_start < c) flags |= EDGE;
-			if(flags & EDGE) {
+			/* Retrieve nesting level; any literals always add an edge. */
+			n = NestPoolPeek(&nest), assert(n);
+			if(c_start) flags |= EDGE;
+			/* Add onto the graph. */
+			if(flags & FINAL && n->v2i == (size_t)-1) { /* Terminating v2. */
+				struct MachineVertexLink *const v2 = VertexPoolNew(&m->vs);
+				if(!v2) { e = RESOURCES; break; }
+				MachineDigraphPutVertex(&m->graph, &v2->data);
+				n->v2i = VertexPoolIndex(&m->vs, v2);
+				if(!is_closing) flags |= EDGE;
+				printf("final %c\n", *c);
+			}
+			is_closing = 0;
+			if(flags & EDGE) { /* Intermediary v1. */
 				struct MachineEdge *edge;
-				struct MachineVertex *v, *v1;
-				printf("edge\n");
-				/* Obtain the vertices. */
-				{
-					struct MachineVertexLink *const vl
-						= VertexPoolGet(&m->vs, n->a);
-					assert(vl);
-					v = &vl->data;
-				}
-				if(n->b != (size_t)-1) { /* Already a terminating vertex. */
-					struct MachineVertexLink *const vl1
-						= VertexPoolGet(&m->vs, n->b);
-					assert(vl1);
-					v1 = &vl1->data;
-				} else { /* Make a terminating vertex. */
-					struct MachineVertexLink *const vl1 = VertexPoolNew(&m->vs);
-					if(!vl1) { e = RESOURCES; break; }
-					v1 = &vl1->data;
+				struct MachineVertex *v0, *v1;
+				if(n->v2i != (size_t)-1) { /* v1 == v2 terminating. */
+					struct MachineVertexLink *const v1l
+						= VertexPoolGet(&m->vs, v1i = n->v2i);
+					assert(v1l);
+					v1 = &v1l->data;
+				} else { /* Make an intermediary vertex, v1. */
+					struct MachineVertexLink *const v1l = VertexPoolNew(&m->vs);
+					if(!v1l) { e = RESOURCES; break; }
+					v1 = &v1l->data;
+					v1i = VertexPoolIndex(&m->vs, v1l);
 					MachineDigraphPutVertex(&m->graph, v1);
-					n->b = VertexPoolIndex(&m->vs, vl1);
+				}
+				{ /* First vertex; after second because possibly invalidated. */
+					struct MachineVertexLink *const v0l
+						= VertexPoolGet(&m->vs, n->v0i);
+					assert(v0l);
+					v0 = &v0l->data;
 				}
 				/* The edge. */
 				if(c_start && c_start < c) {
@@ -315,20 +326,24 @@ static int m_compile(struct Machine *m, const char *const compile) {
 					edge = &emp->data;
 				}
 				c_start = 0;
-				MachineDigraphPutEdge(edge, v, v1);
+				MachineDigraphPutEdge(edge, v0, v1);
+				printf("edge %c\n", *c);
 			}
-			if(flags & OPEN) {
-				assert(!(flags & CLOSE));
-				/* @fixme This is super-sketchy and needs to be tested. */
-				if(!Nest(&nest, n->b == (size_t)-1 ? n->a : n->b))
-					{ e = RESOURCES; break; }
+			if(flags & OPEN) { /* Open parenthesis. */
+				assert(!(flags & CLOSE) && flags & EDGE);
+				if(!Nest(&nest, v1i)) { e = RESOURCES; break; }
+				printf("open\n");
 			}
-			if(flags & CLOSE) {
+			if(flags & CLOSE) { /* Close parenthesis. */
+				assert(!(flags & OPEN));
 				NestPoolPop(&nest);
 				if(!NestPoolPeek(&nest)) { e = SYNTAX; break; }
+				printf("close\n");
+				is_closing = 1;
 			}
 		} while(c++, !(flags & DONE)); /* For @ byte. */
 		if(e) break;
+		/* Verify the parentheses match. */
 		if(!NestPoolPop(&nest) || NestPoolPeek(&nest)) { e = SYNTAX; break; }
 	} while(0); if(e == SYNTAX) { /* catch(SYNTAX) */
 		errno = EILSEQ;
@@ -385,8 +400,11 @@ int main(void) {
 	struct Machines {
 		const char *machine, *fn;
 	} ms[] = {
+		{ "", "graphs/empty.gv" },
+		{ "hi", "graphs/trivial.gv" },
 		{ "hi(there|ii)", "graphs/simple.gv" },
-		{ "hi(a|b|c)|d(e(f))", "graphs/little.gv" }
+		{ "hi(a|b|c)|d(e(f))", "graphs/little.gv" },
+		{ "hi(|i|ii|iii)", "graphs/hii.gv" }
 	};
 	const size_t ms_size = sizeof ms / sizeof *ms;
 	size_t i;
