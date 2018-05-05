@@ -124,18 +124,46 @@ static void vertex_to_string(const struct MachineVertexLink *const vl,
 	sprintf(*a, "vxx");
 	(void)vl;
 }
+/** @implements <<<Machine>Vertex>Link>Migrate */
+static void vertex_migrate_each(struct MachineVertexLink *v,
+	const struct Migrate *const migrate) {
+	assert(v && migrate);
+	MachineVertexLinkMigrate(&v->data, migrate);
+}
+/** @implements <Machine>Migrateconst struct Migrate *const migrate */
+/*static void vertex_migrate_all(struct MachineDigraph *const m,
+	const struct Migrate *const migrate) {
+	MachineVertexLinkMigratePointer
+}*/
+/*VertexPoolMigrate(&m->graph, migrate); no such thing */
+/*MachineDigraphVertexMigrateAll(&m->graph, migrate);*/ /* no */
+/*printf("vertex_migrate doom --> %s.\n", MachineVertexListToString(&m->graph.vertices));*/
 /*
- * {StateVertex} container. @fixme I don't think this is initialised?
+ * {StateVertex} container.
  */
 #define POOL_NAME Vertex
 #define POOL_TYPE struct MachineVertexLink
-#define POOL_MIGRATE_ALL struct Machine
+#define POOL_MIGRATE_EACH &vertex_migrate_each
+#define POOL_MIGRATE_ALL struct MachineDigraph
 #define POOL_TO_STRING &vertex_to_string
 #include "Pool.h"
 
-/**
+/*
  * {Empty} extends {Transition}.
  */
+/** @implements <Machine>Migrate */
+/*static void edge_migrate(struct Machine *m,
+						 const struct Migrate *const migrate) {
+	assert(m && migrate);*/
+	/*MachineDigraphEdgeMigrateAll(&m->graph, migrate);*/ /* no */
+	/*printf("edge_migrate doom --> %s.\n", MachineVertexListToString(&m->graph.vertices));
+}*/
+/** @implements <<<Machine>Edge>Link>Migrate */
+static void empty_migrate_each(struct MachineEdgeLink *e,
+	const struct Migrate *const migrate) {
+	assert(e && migrate);
+	MachineEdgeLinkMigrate(&e->data, migrate);
+}
 /** @implements TransitionToString */
 static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
 	strcpy(*a, "ε");
@@ -144,7 +172,8 @@ static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
 static struct TransitionVt empty_vt = { "Empty", empty_to_string };
 #define POOL_NAME Empty
 #define POOL_TYPE struct MachineEdgeLink
-#define POOL_MIGRATE_ALL struct Machine
+#define POOL_MIGRATE_EACH &empty_migrate_each
+#define POOL_MIGRATE_ALL struct MachineDigraph
 #include "Pool.h"
 /** Constructor.
  @param e: This is instantiated; any data will be erased. */
@@ -174,6 +203,12 @@ static const struct Literals *literals_holds_transition(const struct
 		- offsetof(struct MachineEdgeLink, data)
 		- offsetof(struct Literals, edge));
 }
+/** @implements <Literals>Migrate */
+static void literals_migrate_each(struct Literals *l,
+	const struct Migrate *const migrate) {
+	assert(l && migrate);
+	MachineEdgeLinkMigrate(&l->edge.data, migrate);
+}
 /** @implements TransitionToString */
 static void literals_to_string(const struct Transition *t, char (*const a)[12]){
 	sprintf(*a, "%.11s", literals_holds_transition(t)->text);
@@ -181,7 +216,8 @@ static void literals_to_string(const struct Transition *t, char (*const a)[12]){
 static struct TransitionVt literals_vt = { "Literals", literals_to_string };
 #define POOL_NAME Literals
 #define POOL_TYPE struct Literals
-#define POOL_MIGRATE_ALL struct Machine
+#define POOL_MIGRATE_EACH &literals_migrate_each
+#define POOL_MIGRATE_ALL struct MachineDigraph
 #include "Pool.h"
 /** Destructor because this takes up resources, but doesn't do anything about
  the graph. */
@@ -353,21 +389,6 @@ static int m_compile(struct Machine *m, const char *const compile) {
 	printf("m_compile: e %d\n", e);
 	return !e;
 }
-/** @implements <Machine>Migrate */
-static void vertex_migrate(struct Machine *m,
-	const struct Migrate *const migrate) {
-	assert(m && migrate);
-	/*VertexPoolMigrate(&m->graph, migrate); no such thing */
-	/*MachineDigraphVertexMigrateAll(&m->graph, migrate);*/ /* no */
-	printf("vertex_migrate doom --> %s.\n", MachineVertexListToString(&m->graph.vertices));
-}
-/** @implements <Machine>Migrate */
-static void edge_migrate(struct Machine *m,
-	const struct Migrate *const migrate) {
-	assert(m && migrate);
-	/*MachineDigraphEdgeMigrateAll(&m->graph, migrate);*/ /* no */
-	printf("edge_migrate doom --> %s.\n", MachineVertexListToString(&m->graph.vertices));
-}
 /** Destructor. */
 static void Machine_(struct Machine **const pm) {
 	struct Machine *m;
@@ -387,9 +408,9 @@ static struct Machine *Machine(const char *const compile) {
 	if(!(m = malloc(sizeof *m))) return 0;
 	m->title = compile;
 	MachineDigraph(&m->graph);
-	VertexPool(&m->vs, &vertex_migrate, m);
-	EmptyPool(&m->empties, &edge_migrate, m);
-	LiteralsPool(&m->literals, &edge_migrate, m);
+	VertexPool(&m->vs, &MachineDigraphVertexMigrateAll, &m->graph);
+	EmptyPool(&m->empties, &MachineDigraphEdgeMigrateAll, &m->graph);
+	LiteralsPool(&m->literals, &MachineDigraphEdgeMigrateAll, &m->graph);
 	if(!m_compile(m, compile)) Machine_(&m);
 	return m;
 }
