@@ -173,7 +173,7 @@ static struct TransitionVt empty_vt = { "Empty", empty_to_string };
 #define POOL_NAME Empty
 #define POOL_TYPE struct MachineEdgeLink
 #define POOL_MIGRATE_EACH &empty_migrate_each
-#define POOL_MIGRATE_ALL struct MachineDigraph
+/*#define POOL_MIGRATE_ALL struct MachineDigraph*/
 #include "Pool.h"
 /** Constructor.
  @param e: This is instantiated; any data will be erased. */
@@ -217,7 +217,7 @@ static struct TransitionVt literals_vt = { "Literals", literals_to_string };
 #define POOL_NAME Literals
 #define POOL_TYPE struct Literals
 #define POOL_MIGRATE_EACH &literals_migrate_each
-#define POOL_MIGRATE_ALL struct MachineDigraph
+/*#define POOL_MIGRATE_ALL struct MachineDigraph*/
 #include "Pool.h"
 /** Destructor because this takes up resources, but doesn't do anything about
  the graph. */
@@ -409,8 +409,8 @@ static struct Machine *Machine(const char *const compile) {
 	m->title = compile;
 	MachineDigraph(&m->graph);
 	VertexPool(&m->vs, &MachineDigraphVertexMigrateAll, &m->graph);
-	EmptyPool(&m->empties, &MachineDigraphEdgeMigrateAll, &m->graph);
-	LiteralsPool(&m->literals, &MachineDigraphEdgeMigrateAll, &m->graph);
+	EmptyPool(&m->empties);
+	LiteralsPool(&m->literals);
 	if(!m_compile(m, compile)) Machine_(&m);
 	return m;
 }
@@ -426,7 +426,10 @@ int main(void) {
 		{ "hi(there|ii)", "graphs/simple.gv" },
 		{ "hi(a|b|c)|d(e(f))", "graphs/little.gv" },
 		{ "hi(|i|ii|iii)", "graphs/hii.gv" },
-		{ "a|b|c|d|e|f|g|h|i|j|k", "graphs/abc.gv" }
+		{ "a|b|c|d|e|f|g|h|i|j|k", "graphs/abc.gv" }, /* Vertex migrate. */
+		/* Edge migrate. */
+		{ "1(2(3(4)))", "graphs/one-two.gv" },
+		{ "1(2(3(4(5(6(7(8(9(10)))))))))", "graphs/one-two-three.gv" }
 	};
 	const size_t ms_size = sizeof ms / sizeof *ms;
 	size_t i;

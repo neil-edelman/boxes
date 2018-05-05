@@ -359,20 +359,19 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	return 1;
 }
 
-/*
+/* This is the pointers to memory that can change locations with MIGRATE:
 struct G_(Edge) {
-	E info;
+	[E info;]
 v->	struct G_(Vertex) *to;
 };
 struct G_(Vertex) {
-	V info;
+	[V info;]
 e->	struct G_(EdgeList) out;
 };
 struct G_(Digraph) {
 	struct G_(VertexList) vertices;
 v->	struct G_(Vertex) *root;
-};
-*/
+}; */
 
 /** The reason we use migrate all instead of each is the digraph is
  singly-linked. This is possibly much more inefficient for a large number of
@@ -381,7 +380,9 @@ v->	struct G_(Vertex) *root;
 
  Specifically, with {<super Edge>Pool} supply {<G>Digraph} as a
  {POOL_MIGRATE_ALL} parameter; the constructor to the pool now takes this
- migrate function, or a function that calls this function, and {g}. */
+ migrate function, or a function that calls this function, and {g}.
+ 
+ @fixme I don't think this is needed? */
 static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
 	struct G_(Vertex) *v;
@@ -397,28 +398,22 @@ static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
 	}
 }
 
-/** The reason we use migrate all instead of each is the digraph is
- singly-linked. This is possibly much more inefficient for a large number of
- backing lists, (still the same asymptotic behaviour,) but it would be complex
- and memory-intensive to doubly-link them.
- 
+/** Migrate {<G>Digraph g.<G>Vertex *root} and {<G>Digraph g
+ .\forall <G>VertexList vertices.\forall <G>EdgeList out.<G>Vertex *to}.
+
  Specifically, with {<super Vertex>Pool} supply {<G>Digraph} as a
  {POOL_MIGRATE_ALL} parameter; the constructor to the pool now takes this
- migrate function, or a function that calls this function, and {g}. */
+ migrate function, or a function that calls this function, and {g}.
+ @order \O({edges}) */
 static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
 	struct G_(Vertex) *v;
 	struct G_(Edge) *e;
 	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");
-	/* Migrate {<G>Digraph g.<G>Vertex *root} and
-	 {<G>Digraph g.\forall <G>VertexList vertices.\forall <G>EdgeList out
-	 .<G>Vertex *to}. */
 	G_(VertexLinkMigratePointer)(&g->root, migrate);
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
-		/*G_(VertexLinkMigrate)(v, migrate); <- ? */
-		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
+		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e))
 			G_(VertexLinkMigratePointer)(&e->to, migrate);
-		}
 	}
 }
 
