@@ -319,13 +319,9 @@ static int m_compile(struct Machine *m, const char *const compile) {
 			}
 			if(flags & OPEN) {
 				assert(!(flags & CLOSE));
-				if(!Nest(&nest, n->b == (size_t)-1 ? n->a : n->b)) { e = RESOURCES; break;}
-				/*printf("-- prev position %lu/%lu\n", (unsigned long)VertexPoolIndex(&m->vs, v), m->vs.size);
-				printf("-- assigning position %lu to vertex, %s\n", (unsigned long)VertexPoolIndex(&m->vs, vl1), VertexPoolToString(&m->vs));
-				{
-					struct MachineVertexLink *fuck = VertexPoolGet(&m->vs, 0);
-					assert(fuck == vl);
-				}*/
+				/* @fixme This is super-sketchy and needs to be tested. */
+				if(!Nest(&nest, n->b == (size_t)-1 ? n->a : n->b))
+					{ e = RESOURCES; break; }
 			}
 			if(flags & CLOSE) {
 				NestPoolPop(&nest);
@@ -348,15 +344,14 @@ static void vertex_migrate(struct Machine *m,
 	assert(m && migrate);
 	/*VertexPoolMigrate(&m->graph, migrate); no such thing */
 	/*MachineDigraphVertexMigrateAll(&m->graph, migrate);*/ /* no */
-	printf("vertex_migrate doom\n");
-	printf("%s.\n", MachineVertexListToString(&m->graph.vertices));
+	printf("vertex_migrate doom --> %s.\n", MachineVertexListToString(&m->graph.vertices));
 }
 /** @implements <Machine>Migrate */
 static void edge_migrate(struct Machine *m,
 	const struct Migrate *const migrate) {
 	assert(m && migrate);
 	/*MachineDigraphEdgeMigrateAll(&m->graph, migrate);*/ /* no */
-	printf("edge_migrate doom\n");
+	printf("edge_migrate doom --> %s.\n", MachineVertexListToString(&m->graph.vertices));
 }
 /** Destructor. */
 static void Machine_(struct Machine **const pm) {
@@ -387,21 +382,32 @@ static struct Machine *Machine(const char *const compile) {
 /** @return Error condition. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
-	struct Machine *m = 0;
-	const char *const fn = "graphs/machine.gv";
-	FILE *fp = 0;
-	int is_err = 0;
+	struct Machines {
+		const char *machine, *fn;
+	} ms[] = {
+		{ "hi(there|ii)", "graphs/simple.gv" },
+		{ "hi(a|b|c)|d(e(f))", "graphs/little.gv" }
+	};
+	const size_t ms_size = sizeof ms / sizeof *ms;
+	size_t i;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	BlankDigraphTest();
 	ColourDigraphTest();
 	/* Custom. */
-	if(!(m = Machine(/*"hi(a|b|c)|d(e(f))"*/"hi(there|ii)"))
-		|| !(fp = fopen(fn, "w"))
-		|| !MachineDigraphOut(&m->graph, fp)) is_err = 1;
-	if(is_err) perror(fn), assert(0);
-	printf("The machine has %s vertices.\n", MachineVertexListToString(&m->graph.vertices));
-	fclose(fp);
-	Machine_(&m);
-	if(!is_err) printf("Test success.\n\n");
-	return is_err ? EXIT_FAILURE : EXIT_SUCCESS;
+	for(i = 0; i < ms_size; i++) {
+		const struct Machines *const m = ms + i;
+		struct Machine *mach = Machine(m->machine);
+		FILE *fp;
+		if(!mach) { perror(m->machine); assert(0); break; }
+		fp = fopen(m->fn, "w");
+		if(!fp || !MachineDigraphOut(&mach->graph, fp)) {
+			perror(m->fn);
+		}
+		fclose(fp);
+		printf("The machine has %s vertices.\n",
+			MachineVertexListToString(&mach->graph.vertices));
+		Machine_(&mach);
+	}
+	printf("Test success.\n\n");
+	return EXIT_SUCCESS;
 }
