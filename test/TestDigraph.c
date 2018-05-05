@@ -404,7 +404,8 @@ int main(void) {
 		{ "hi", "graphs/trivial.gv" },
 		{ "hi(there|ii)", "graphs/simple.gv" },
 		{ "hi(a|b|c)|d(e(f))", "graphs/little.gv" },
-		{ "hi(|i|ii|iii)", "graphs/hii.gv" }
+		{ "hi(|i|ii|iii)", "graphs/hii.gv" },
+		{ "a|b|c|d|e|f|g|h|i|j|k", "graphs/abc.gv" }
 	};
 	const size_t ms_size = sizeof ms / sizeof *ms;
 	size_t i;
