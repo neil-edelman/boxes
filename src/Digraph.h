@@ -359,14 +359,14 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	return 1;
 }
 
-/* This is the pointers to memory that can change locations with MIGRATE:
+/* This is the pointers to memory that can change locations with MIGRATE_ALL:
 struct G_(Edge) {
 	[E info;]
 v->	struct G_(Vertex) *to;
 };
 struct G_(Vertex) {
 	[V info;]
-e->	struct G_(EdgeList) out;
+	struct G_(EdgeList) out;
 };
 struct G_(Digraph) {
 	struct G_(VertexList) vertices;
@@ -383,7 +383,7 @@ v->	struct G_(Vertex) *root;
  migrate function, or a function that calls this function, and {g}.
  
  @fixme I don't think this is needed? */
-static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
+/*static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
 	struct G_(Vertex) *v;
 	struct G_(Edge) *e;
@@ -396,7 +396,7 @@ static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
 			G_(EdgeLinkMigrate)(e, migrate);
 		}
 	}
-}
+}*/
 
 /** Migrate {<G>Digraph g.<G>Vertex *root} and {<G>Digraph g
  .\forall <G>VertexList vertices.\forall <G>EdgeList out.<G>Vertex *to}.
@@ -440,7 +440,7 @@ static void PG_(unused)(void) {
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
 	G_(DigraphOut)(0, 0);
-	G_(DigraphEdgeMigrateAll)(0, 0);
+	/*G_(DigraphEdgeMigrateAll)(0, 0);*/
 	G_(DigraphVertexMigrateAll)(0, 0);
 	PG_(unused_coda)();
 }

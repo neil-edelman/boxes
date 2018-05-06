@@ -173,7 +173,6 @@ static struct TransitionVt empty_vt = { "Empty", empty_to_string };
 #define POOL_NAME Empty
 #define POOL_TYPE struct MachineEdgeLink
 #define POOL_MIGRATE_EACH &empty_migrate_each
-/*#define POOL_MIGRATE_ALL struct MachineDigraph*/
 #include "Pool.h"
 /** Constructor.
  @param e: This is instantiated; any data will be erased. */
@@ -213,11 +212,15 @@ static void literals_migrate_each(struct Literals *l,
 static void literals_to_string(const struct Transition *t, char (*const a)[12]){
 	sprintf(*a, "%.11s", literals_holds_transition(t)->text);
 }
+static void literals_to_string2(const struct Literals *l, char (*const a)[12]) {
+	sprintf(*a, "%.11s", l->text);
+}
 static struct TransitionVt literals_vt = { "Literals", literals_to_string };
 #define POOL_NAME Literals
 #define POOL_TYPE struct Literals
 #define POOL_MIGRATE_EACH &literals_migrate_each
-/*#define POOL_MIGRATE_ALL struct MachineDigraph*/
+#define POOL_MIGRATE_ALL struct LiteralsPool
+#define POOL_TO_STRING &literals_to_string2
 #include "Pool.h"
 /** Destructor because this takes up resources, but doesn't do anything about
  the graph. */
@@ -401,6 +404,11 @@ static void Machine_(struct Machine **const pm) {
 	MachineDigraph_(&m->graph);
 	*pm = 0;
 }
+static void print_literals(struct LiteralsPool *const l,
+	const struct Migrate *const migrate) {
+	assert(l && migrate);
+	printf("*************print_literals: %s.\n", LiteralsPoolToString(l));
+}
 /** Constructor. */
 static struct Machine *Machine(const char *const compile) {
 	struct Machine *m;
@@ -410,7 +418,7 @@ static struct Machine *Machine(const char *const compile) {
 	MachineDigraph(&m->graph);
 	VertexPool(&m->vs, &MachineDigraphVertexMigrateAll, &m->graph);
 	EmptyPool(&m->empties);
-	LiteralsPool(&m->literals);
+	LiteralsPool(&m->literals, &print_literals, &m->literals);
 	if(!m_compile(m, compile)) Machine_(&m);
 	return m;
 }
