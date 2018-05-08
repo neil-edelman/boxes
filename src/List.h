@@ -812,6 +812,46 @@ static void T_(ListSelfCorrect)(struct T_(List) *const list) {
 	}
 }
 
+/** Debugging purposes. Turn {LIST_TEST} on. */
+static void T_(ListAudit)(const struct T_(List) *const list) {
+	size_t i, j;
+	int is_j;
+	if(!list) return;
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LIST_UA_NAME /* <-- a */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		i = PT_UA_(x, audit)(list);
+		if(is_j) assert(i == j); else (j = i, is_j = 1);
+#endif /* a --> */
+#ifdef LIST_UB_NAME /* <-- b */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		i = PT_UB_(x, audit)(list);
+		if(is_j) assert(i == j); else (j = i, is_j = 1);
+#endif /* b --> */
+#ifdef LIST_UC_NAME /* <-- c */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		i = PT_UC_(x, audit)(list);
+		if(is_j) assert(i == j); else (j = i, is_j = 1);
+#endif /* c --> */
+#ifdef LIST_UD_NAME /* <-- d */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		i = PT_UD_(x, audit)(list);
+		if(is_j) assert(i == j); else (j = i, is_j = 1);
+#endif /* d --> */
+	}
+}
+
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* Need this file if one is going to run tests. */
 #endif /* test --> */
@@ -836,6 +876,7 @@ static void PT_(unused_list)(void) {
 	T_(LinkMigrate)(0, 0);
 	T_(LinkMigratePointer)(0, 0);
 	T_(ListSelfCorrect)(0);
+	T_(ListAudit)(0);
 	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
@@ -968,6 +1009,18 @@ static void PT_U_(cycle, crash)(struct PT_(X) *const x) {
 #else
 	(void)(x);
 #endif
+}
+
+/** Private: audit index by going though it forwards then back.
+ @return Number of elements. */
+static size_t PT_U_(x, audit)(const struct T_(List) *const list) {
+	struct PT_(X) *emu;
+	size_t f = 0, b = 0;
+	assert(list);
+	for(emu = list->head.U_(next); emu->U_(next); emu = emu->U_(next)) f++;
+	for(emu = list->tail.U_(prev); emu->U_(prev); emu = emu->U_(prev)) b++;
+	assert(f == b);
+	return f;
 }
 
 /** Private: add {add} before {x}. */
