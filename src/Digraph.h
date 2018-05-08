@@ -409,11 +409,17 @@ static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
 	struct G_(Vertex) *v;
 	struct G_(Edge) *e;
+	if(!G_(VertexListFirst)(&g->vertices)) return;
 	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");
 	G_(VertexLinkMigratePointer)(&g->root, migrate);
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e))
 			G_(VertexLinkMigratePointer)(&e->to, migrate);
+	}
+	{
+		FILE *fp = fopen("graphs/tmp.gv", "w");
+		G_(DigraphOut)(g, fp);
+		fclose(fp);
 	}
 }
 
