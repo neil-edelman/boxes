@@ -186,11 +186,15 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 	(void)e;
 #endif /* !edata --> */
 }
+static void PG_(edge_un)(struct G_(Edge) *const unused) {
+	(void)unused;
+}
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Edge)
 #define LIST_TYPE struct G_(Edge)
 #define LIST_SUBTYPE
 #define LIST_TO_STRING &PG_(edge_to_string)
+#define LIST_TEST &PG_(edge_un)
 #include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeLink}. */
 
 /** Vertex. */
@@ -430,6 +434,7 @@ static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e))
 			G_(VertexLinkMigratePointer)(&e->to, migrate);
+		G_(EdgeListAudit)(&v->out);
 	}
 	{
 		FILE *fp = fopen("graphs/tmp.gv", "w");
