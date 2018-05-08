@@ -294,6 +294,11 @@ static int m_compile(struct Machine *m, const char *const compile) {
 
 	NestPool(&nest);
 	printf("m_compile: <%s>.\n", compile);
+	/*	{
+	 unsigned i;
+	for(i = 0; i < 10; i++) {
+		MachineDigraphPutVertex(&m->graph, &VertexPoolNew(&m->vs)->data);
+	}}*/
 	do { /* try */
 		size_t v1i = 0;
 		int is_closing = 0; /* @fixme Ugly. */
