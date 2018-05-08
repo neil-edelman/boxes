@@ -39,7 +39,7 @@ static void Animal_to_string(const struct Animal *const animal,
 struct Mount;
 struct MountInfo {
 	struct Mount *steed_of, *riding;
-	enum Allowed { STEED = 1, RIDER = 2 } is_allowed; /* Bitfield. */
+	enum Allowed { STEED = 1, RIDER = 2 } is_allowed; /* Bit-field. */
 };
 struct Mount {
 	struct Animal *steed, *rider;
