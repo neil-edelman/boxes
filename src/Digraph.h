@@ -211,12 +211,25 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	(void)v;
 #endif /* !vdata --> */
 }
+static void PG_(none)(struct G_(Vertex) *const unused) {
+	(void)unused;
+}
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Vertex)
 #define LIST_TYPE struct G_(Vertex)
 #define LIST_TO_STRING &PG_(vertex_to_string)
 #define LIST_SUBTYPE
+#define LIST_TEST &PG_(none)
 #include "List.h" /* Defines {<G>VertexList} and {<G>VertexLink}. */
+
+#ifdef QUOTE
+#undef QUOTE
+#endif
+#ifdef QUOTE_
+#undef QUOTE_
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
 
 /** The directed graph. To instantiate, see \see{<V>Digraph}. */
 struct G_(Digraph);
@@ -297,6 +310,7 @@ static void G_(DigraphPutVertex)(struct G_(Digraph) *const g,
 	G_(VertexListPush)(&g->vertices, v); /* <--- here it changes. */
 	PG_(vertex_to_string)(v, &a);
 	printf("digraph vertex %s.\n", a);
+	G_(VertexListAudit)(&g->vertices);
 }
 
 /** Undefined behaviour results from adding edges that have already been added.
@@ -308,6 +322,7 @@ static void G_(DigraphPutEdge)(struct G_(Edge) *e,
 	if(!e || !from || !to) return;
 	PG_(e_clear)(e, to);
 	G_(EdgeListPush)(&from->out, e);
+	/*G_(VertexListAudit)(&g->vertices);*/
 }
 
 /** Sets the starting vertex returned by \see{<G>DigraphGetRoot}. By default,
@@ -421,6 +436,7 @@ static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 		G_(DigraphOut)(g, fp);
 		fclose(fp);
 	}
+	G_(VertexListAudit)(&g->vertices);
 }
 
 #ifdef DIGRAPH_TEST /* <-- test */
