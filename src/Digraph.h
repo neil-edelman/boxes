@@ -171,6 +171,7 @@ typedef void (*PG_(EDataAction))(E *const);
 struct G_(Edge);
 struct G_(Vertex);
 struct G_(Edge) {
+	char debug[8];
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	E info;
 #endif /* edata --> */
@@ -200,6 +201,7 @@ static void PG_(edge_un)(struct G_(Edge) *const unused) {
 /** Vertex. */
 struct G_(Vertex);
 struct G_(Vertex) {
+	char debug[8];
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	V info;
 #endif /* vdata --> */
@@ -249,12 +251,14 @@ struct G_(Digraph) {
 static void PG_(v_clear)(struct G_(Vertex) *const v) {
 	assert(v);
 	G_(EdgeListClear)(&v->out);
+	strcpy(v->debug, "vertex");
 }
 
 /** Sets the edge to point to {v}. Does nothing for edge data. */
 static void PG_(e_clear)(struct G_(Edge) *const e, struct G_(Vertex) *const v) {
 	assert(e);
 	e->to = v;
+	strcpy(e->debug, "edge");
 }
 
 /** Initialises the graph to empty. */
@@ -326,7 +330,7 @@ static void G_(DigraphPutEdge)(struct G_(Edge) *e,
 	if(!e || !from || !to) return;
 	PG_(e_clear)(e, to);
 	G_(EdgeListPush)(&from->out, e);
-	/*G_(VertexListAudit)(&g->vertices);*/
+	G_(EdgeListAudit)(&from->out);
 }
 
 /** Sets the starting vertex returned by \see{<G>DigraphGetRoot}. By default,
@@ -378,45 +382,6 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	return 1;
 }
 
-/* This is the pointers to memory that can change locations with MIGRATE_ALL:
-struct G_(Edge) {
-	[E info;]
-v->	struct G_(Vertex) *to;
-};
-struct G_(Vertex) {
-	[V info;]
-	struct G_(EdgeList) out;
-};
-struct G_(Digraph) {
-	struct G_(VertexList) vertices;
-v->	struct G_(Vertex) *root;
-}; */
-
-/** The reason we use migrate all instead of each is the digraph is
- singly-linked. This is possibly much more inefficient for a large number of
- backing lists, (still the same asymptotic behaviour,) but it would be complex
- and memory-intensive to doubly-link them.
-
- Specifically, with {<super Edge>Pool} supply {<G>Digraph} as a
- {POOL_MIGRATE_ALL} parameter; the constructor to the pool now takes this
- migrate function, or a function that calls this function, and {g}.
- 
- @fixme I don't think this is needed? */
-/*static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
-	const struct Migrate *const migrate) {
-	struct G_(Vertex) *v;
-	struct G_(Edge) *e;
-	if(!g || !migrate) return;
-	printf("Digraph<"QUOTE(DIGRAPH_NAME)">::EdgeMigrateAll:\n");
-	for(v = G_(VertexListFirst(&g->vertices)); v; v = G_(VertexListNext)(v)) {
-		printf(" Vertex\n");
-		for(e = G_(EdgeListFirst(&v->out)); e; e = G_(EdgeListNext)(e)) {
-			printf("  Edge.\n");
-			G_(EdgeLinkMigrate)(e, migrate);
-		}
-	}
-}*/
-
 /** Migrate {<G>Digraph g.<G>Vertex *root} and {<G>Digraph g
  .\forall <G>VertexList vertices.\forall <G>EdgeList out.<G>Vertex *to}.
 
@@ -426,22 +391,15 @@ v->	struct G_(Vertex) *root;
  @order \O({edges}) */
 static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
-	struct G_(Vertex) *v;
-	struct G_(Edge) *e;
+	struct G_(Vertex) *v = 0;
+	struct G_(Edge) *e = 0;
 	if(!G_(VertexListFirst)(&g->vertices)) return;
-	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");
+	/*printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");*/
 	G_(VertexLinkMigratePointer)(&g->root, migrate);
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e))
 			G_(VertexLinkMigratePointer)(&e->to, migrate);
-		G_(EdgeListAudit)(&v->out);
 	}
-	{
-		FILE *fp = fopen("graphs/tmp.gv", "w");
-		G_(DigraphOut)(g, fp);
-		fclose(fp);
-	}
-	G_(VertexListAudit)(&g->vertices);
 }
 
 #ifdef DIGRAPH_TEST /* <-- test */

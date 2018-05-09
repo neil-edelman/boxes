@@ -129,6 +129,7 @@ static void vertex_migrate_each(struct MachineVertexLink *v,
 	const struct Migrate *const migrate) {
 	assert(v && migrate);
 	MachineVertexLinkMigrate(&v->data, migrate);
+	MachineEdgeListSelfCorrect(&v->data.out);
 }
 /** @implements <Machine>Migrateconst struct Migrate *const migrate */
 /*static void vertex_migrate_all(struct MachineDigraph *const m,
