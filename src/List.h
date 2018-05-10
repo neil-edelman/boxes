@@ -1018,7 +1018,6 @@ static size_t PT_U_(x, audit)(const struct T_(List) *const list) {
 	size_t f = 0, b = 0;
 	assert(list);
 	for(emu = list->head.U_(next); emu->U_(next); emu = emu->U_(next)) f++;
-
 	for(emu = list->tail.U_(prev); emu->U_(prev); emu = emu->U_(prev)) b++;
 	assert(f == b);
 	return f;
