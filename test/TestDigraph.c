@@ -82,7 +82,7 @@ static void E_filler(struct E *const e) {
 
 
 
-/* A more complex example using dynimic memory. */
+/* A more complex example using dynamic memory. */
 
 struct Machine;
 
@@ -118,12 +118,6 @@ static void transition_to_string(const struct Transition *t,char(*const a)[12]){
 #define DIGRAPH_EDATA_TO_STRING &transition_to_string
 #include "../src/Digraph.h" /* StateDigraph, StateVertex, StateEdge. */
 
-/* Debug: @fixme Doesn't get called. I think it should. */
-static void vertex_to_string(const struct MachineVertexLink *const vl,
-	char (*const a)[12]) {
-	sprintf(*a, "vxx");
-	(void)vl;
-}
 /** @implements <<<Machine>Vertex>Link>Migrate */
 static void vertex_migrate_each(struct MachineVertexLink *v,
 	const struct Migrate *const migrate) {
@@ -131,14 +125,6 @@ static void vertex_migrate_each(struct MachineVertexLink *v,
 	MachineVertexLinkMigrate(&v->data, migrate);
 	MachineEdgeListSelfCorrect(&v->data.out);
 }
-/** @implements <Machine>Migrateconst struct Migrate *const migrate */
-/*static void vertex_migrate_all(struct MachineDigraph *const m,
-	const struct Migrate *const migrate) {
-	MachineVertexLinkMigratePointer
-}*/
-/*VertexPoolMigrate(&m->graph, migrate); no such thing */
-/*MachineDigraphVertexMigrateAll(&m->graph, migrate);*/ /* no */
-/*printf("vertex_migrate doom --> %s.\n", MachineVertexListToString(&m->graph.vertices));*/
 /*
  * {StateVertex} container.
  */
@@ -146,19 +132,11 @@ static void vertex_migrate_each(struct MachineVertexLink *v,
 #define POOL_TYPE struct MachineVertexLink
 #define POOL_MIGRATE_EACH &vertex_migrate_each
 #define POOL_MIGRATE_ALL struct MachineDigraph
-#define POOL_TO_STRING &vertex_to_string
 #include "Pool.h"
 
 /*
  * {Empty} extends {Transition}.
  */
-/** @implements <Machine>Migrate */
-/*static void edge_migrate(struct Machine *m,
-						 const struct Migrate *const migrate) {
-	assert(m && migrate);*/
-	/*MachineDigraphEdgeMigrateAll(&m->graph, migrate);*/ /* no */
-	/*printf("edge_migrate doom --> %s.\n", MachineVertexListToString(&m->graph.vertices));
-}*/
 /** @implements <<<Machine>Edge>Link>Migrate */
 static void empty_migrate_each(struct MachineEdgeLink *e,
 	const struct Migrate *const migrate) {
@@ -295,11 +273,6 @@ static int m_compile(struct Machine *m, const char *const compile) {
 
 	NestPool(&nest);
 	printf("m_compile: <%s>.\n", compile);
-	/*	{
-	 unsigned i;
-	for(i = 0; i < 10; i++) {
-		MachineDigraphPutVertex(&m->graph, &VertexPoolNew(&m->vs)->data);
-	}}*/
 	do { /* try */
 		size_t v1i = 0;
 		int is_closing = 0; /* @fixme Ugly. */
@@ -442,7 +415,6 @@ int main(void) {
 		{ "hi(|i|ii|iii)", "graphs/hii.gv" },
 		{ "a|b|c|d|e|f|g|h|i|j|k", "graphs/abc.gv" }, /* Vertex migrate. */
 		/* Edge migrate. */
-		{ "1(2(3(4)))", "graphs/one-two.gv" },
 		{ "1(2(3(4(5(6(7(8(9(10)))))))))", "graphs/one-two-three.gv" }
 	};
 	const size_t ms_size = sizeof ms / sizeof *ms;

@@ -10,6 +10,12 @@
  can be used as trees, DAGs, or any other graph-like structure, but one must
  enforce the topology elsewhere.
 
+ If one wants to supply a dynamic {Pool} for the vertices, be sure to call
+ \see{<G>DigraphVertexMigrateAll} somewhere in the {POOL_MIGRATE_ALL}; also, if
+ a {Pool} is used for edges, than you must call {<G>VertexLinkMigrate} with
+ {data} and {EdgeListSelfCorrect} with {data.out} in the function suppiled by
+ {POOL_MIGRATE_EACH} for vertices.
+
  @param DIGRAPH_NAME
  This literally becomes {<G>}. As it's used in function names, this should
  comply with naming rules and be unique; required.
@@ -171,7 +177,6 @@ typedef void (*PG_(EDataAction))(E *const);
 struct G_(Edge);
 struct G_(Vertex);
 struct G_(Edge) {
-	char debug[8];
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	E info;
 #endif /* edata --> */
@@ -187,21 +192,16 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 	(void)e;
 #endif /* !edata --> */
 }
-static void PG_(edge_un)(struct G_(Edge) *const unused) {
-	(void)unused;
-}
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Edge)
 #define LIST_TYPE struct G_(Edge)
 #define LIST_SUBTYPE
 #define LIST_TO_STRING &PG_(edge_to_string)
-#define LIST_TEST &PG_(edge_un)
 #include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeLink}. */
 
 /** Vertex. */
 struct G_(Vertex);
 struct G_(Vertex) {
-	char debug[8];
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	V info;
 #endif /* vdata --> */
@@ -217,15 +217,11 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	(void)v;
 #endif /* !vdata --> */
 }
-static void PG_(none)(struct G_(Vertex) *const unused) {
-	(void)unused;
-}
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Vertex)
 #define LIST_TYPE struct G_(Vertex)
 #define LIST_TO_STRING &PG_(vertex_to_string)
 #define LIST_SUBTYPE
-#define LIST_TEST &PG_(none)
 #include "List.h" /* Defines {<G>VertexList} and {<G>VertexLink}. */
 
 #ifdef QUOTE
@@ -251,14 +247,12 @@ struct G_(Digraph) {
 static void PG_(v_clear)(struct G_(Vertex) *const v) {
 	assert(v);
 	G_(EdgeListClear)(&v->out);
-	strcpy(v->debug, "vertex");
 }
 
 /** Sets the edge to point to {v}. Does nothing for edge data. */
 static void PG_(e_clear)(struct G_(Edge) *const e, struct G_(Vertex) *const v) {
 	assert(e);
 	e->to = v;
-	strcpy(e->debug, "edge");
 }
 
 /** Initialises the graph to empty. */
@@ -425,7 +419,6 @@ static void PG_(unused)(void) {
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
 	G_(DigraphOut)(0, 0);
-	/*G_(DigraphEdgeMigrateAll)(0, 0);*/
 	G_(DigraphVertexMigrateAll)(0, 0);
 	PG_(unused_coda)();
 }
