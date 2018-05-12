@@ -20,19 +20,28 @@
 #include "Orcish.h"
 
 static struct Result {
-	const char *compile, *match, *expected;
+	const char *compile, *match, *expected, *gv;
 } results[] = {
-	{ 0, 0, 0 },
-	{ "", "hi", "hi" },
-	{ "hi", "", 0 },
-	{ "hi", "this", "his" },
-	{ "\\h\\i", "this", "his" },
-	{ "((())", 0, 0 },
-	{ "(()))", 0, 0 },
-	{ "(())", "hi", "hi" },
-	{ "bar|baz", "foo baz", "baz" },
-	{ "foo(|bar)", "foo", "foo" },
-	{ "a(b|c)|ba(d)", "bad", "bad" }
+	{ 0, 0, 0, 0 },
+	{ "", "hi", "hi", "graphs/empty.gv" },
+	{ "hi", "", 0, "graphs/trivial.gv" },
+	{ "hi", "this", "his", 0 },
+	{ "\\h\\i", "this", "his", 0 },
+	{ "((())", 0, 0, 0 },
+	{ "(()))", 0, 0, 0 },
+	{ "(())", "hi", "hi", 0 },
+	{ "bar|baz", "foo baz", "baz", "graphs/barbaz.gv" },
+	{ "foo(|bar)", "foo", "foo", "graphs/foobar.gv" },
+	{ "a(b|c)|ba(d)", "bad", "bad", "graphs/bad.gv" },
+	{ "(((())))", "hi", "hi", 0 }, /* >8 */
+	{ "hi(there|ii)", "okhiii", "hiii", "graphs/simple.gv" },
+	{ "hi(a|b|c)|d(e(f))", "hia", "hia", "graphs/little.gv" },
+	{ "hi(|i|ii|iii)", "hiii", "hiii", "graphs/hii.gv" },
+	/* Vertex migrate. */
+	{ "a|b|c|d|e|f|g|h|i|j|k", "k", "k", "graphs/abc.gv" },
+	/* Edge migrate. */
+	{ "1(2(3(4(5(6(7(8(9(10)))))))))", "12345678910", "12345678910",
+		"graphs/one-two-three.gv" }
 };
 static const size_t results_size = sizeof results / sizeof *results;
 
@@ -49,8 +58,8 @@ static void re_assert(const struct Result *const r) {
 		printf("re_assert: checking that /%s/ does not compile.\n", r->compile);
 		{ assert(!re); perror(r->compile); return; }
 	}
-	{ /* Output graph. */
-		char fn[64] = "graphs/re", *f, *f_end;
+	if(r->gv) { /* Output graph. */
+		/*char fn[64] = "graphs/re", *f, *f_end;
 		const size_t fn_init = strlen(fn);
 		const char *ch;
 		for(f = fn + fn_init, f_end = fn + sizeof fn - 4; f < f_end; f++) {
@@ -63,7 +72,8 @@ static void re_assert(const struct Result *const r) {
 			}
 		}
 		*f = '\0';
-		strcpy(f, ".gv");
+		strcpy(f, ".gv");*/
+		const char *fn = r->gv;
 		if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
 		fclose(fp);
 	}

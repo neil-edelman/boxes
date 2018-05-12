@@ -10,6 +10,12 @@
  can be used as trees, DAGs, or any other graph-like structure, but one must
  enforce the topology elsewhere.
 
+ If one wants to supply a dynamic {Pool} for the vertices, be sure to call
+ \see{<G>DigraphVertexMigrateAll} somewhere in the {POOL_MIGRATE_ALL}; also, if
+ a {Pool} is used for edges, than you must call {<G>VertexLinkMigrate} with
+ {data} and {EdgeListSelfCorrect} with {data.out} in the function suppiled by
+ {POOL_MIGRATE_EACH} for vertices.
+
  @param DIGRAPH_NAME
  This literally becomes {<G>}. As it's used in function names, this should
  comply with naming rules and be unique; required.
@@ -182,7 +188,7 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	PG_(edata_to_string)(&e->info, a);
 #else /* edata --><-- !edata */
-	strcpy(*a, "e");
+	**a = '\0'; /* strcpy(*a, "edge"); Obvious. */
 	(void)e;
 #endif /* !edata --> */
 }
@@ -207,7 +213,7 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 	PG_(vdata_to_string)(&v->info, a);
 #else /* vdata --><-- !vdata */
-	strcpy(*a, "v");
+	**a = '\0'; /* strcpy(*a, "vtx"); Obvious. */
 	(void)v;
 #endif /* !vdata --> */
 }
@@ -217,6 +223,15 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 #define LIST_TO_STRING &PG_(vertex_to_string)
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>VertexList} and {<G>VertexLink}. */
+
+#ifdef QUOTE
+#undef QUOTE
+#endif
+#ifdef QUOTE_
+#undef QUOTE_
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
 
 /** The directed graph. To instantiate, see \see{<V>Digraph}. */
 struct G_(Digraph);
@@ -287,24 +302,29 @@ static E *G_(DigraphEdgeData)(struct G_(Edge) *const edge) {
  @param g: If null, does nothing but initialise {v}.
  @param v: If null, does nothing, otherwise initialises to contain no edges;
  the vertex data is left alone. */
-static void G_(DigraphVertex)(struct G_(Digraph) *const g,
+static void G_(DigraphPutVertex)(struct G_(Digraph) *const g,
 	struct G_(Vertex) *const v) {
+	char a[12];
 	if(!v) return;
 	PG_(v_clear)(v);
 	if(!g) return;
 	if(!G_(VertexListFirst)(&g->vertices)) g->root = v;
-	G_(VertexListPush)(&g->vertices, v);
+	G_(VertexListPush)(&g->vertices, v); /* <--- here it changes. */
+	PG_(vertex_to_string)(v, &a);
+	printf("digraph vertex %s.\n", a);
+	G_(VertexListAudit)(&g->vertices);
 }
 
 /** Undefined behaviour results from adding edges that have already been added.
  Initialises {e} to point to {from} to {to}.
  @param e, from, to: If any are null, does nothing.
  @param e: The edge data is left alone. */
-static void G_(DigraphEdge)(struct G_(Edge) *e,
+static void G_(DigraphPutEdge)(struct G_(Edge) *e,
 	struct G_(Vertex) *const from, struct G_(Vertex) *const to) {
 	if(!e || !from || !to) return;
 	PG_(e_clear)(e, to);
 	G_(EdgeListPush)(&from->out, e);
+	G_(EdgeListAudit)(&from->out);
 }
 
 /** Sets the starting vertex returned by \see{<G>DigraphGetRoot}. By default,
@@ -337,25 +357,18 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	char a[12];
 	unsigned long v_no, v_to;
 	if(!g || !fp) return 0;
-	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n") < 0) return 0;
+	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n"
+		"\tnode [shape = circle];\n") < 0) return 0;
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		v_no = (unsigned long)v;
-#ifdef DIGRAPH_VDATA /* <-- vdata */
-		PG_(vdata_to_string)(&v->info, &a);
-#else /* vdata --><-- !vdata */
-		*a = '\0';/*strcpy(a, "");*/
-#endif /* !vdata --> */
-		if(fprintf(fp, "\tv%lu [label=\"%s\"%s];\n", v_no, a,
-			v == g->root ? " peripheries=2" : "") < 0) return 0;
+		PG_(vertex_to_string)(v, &a);
+		if(fprintf(fp, "\tv%lu [label = \"%s\"%s];\n", v_no, a,
+			v == g->root ? " peripheries = 2" : "") < 0) return 0;
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
-#ifdef DIGRAPH_EDATA /* <-- edata */
-			PG_(edata_to_string)(&e->info, &a);
-			if(fprintf(fp, "\tv%lu -> v%lu [label=\"%s\"];\n", v_no, v_to, a)
+			PG_(edge_to_string)(e, &a);
+			if(fprintf(fp, "\tv%lu -> v%lu [label = \"%s\"];\n", v_no, v_to, a)
 				< 0) return 0;
-#else /* edata --><-- !edata */
-			if(fprintf(fp, "\tv%lu -> v%lu;\n", v_no, v_to) < 0) return 0;
-#endif /* !edata --> */
 		}
 	}
 	if(fprintf(fp, "\tnode [fillcolor = red];\n"
@@ -363,63 +376,23 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	return 1;
 }
 
-/*
-struct G_(Edge) {
-	E info;
-v->	struct G_(Vertex) *to;
-};
-struct G_(Vertex) {
-	V info;
-e->	struct G_(EdgeList) out;
-};
-struct G_(Digraph) {
-	struct G_(VertexList) vertices;
-v->	struct G_(Vertex) *root;
-};
-*/
+/** Migrate {<G>Digraph g.<G>Vertex *root} and {<G>Digraph g
+ .\forall <G>VertexList vertices.\forall <G>EdgeList out.<G>Vertex *to}.
 
-/** The reason we use migrate all instead of each is the digraph is
- singly-linked. This is possibly much more inefficient for a large number of
- backing lists, (still the same asymptotic behaviour,) but it would be complex
- and memory-intensive to doubly-link them.
-
- Specifically, with {<super Edge>Pool} supply {<G>Digraph} as a
- {POOL_MIGRATE_ALL} parameter; the constructor to the pool now takes this
- migrate function, or a function that calls this function, and {g}. */
-static void G_(DigraphEdgeMigrateAll)(struct G_(Digraph) *const g,
-	const struct Migrate *const migrate) {
-	struct G_(Vertex) *v;
-	struct G_(Edge) *e;
-	if(!g || !migrate) return;
-	printf("Digraph<"QUOTE(DIGRAPH_NAME)">::EdgeMigrateAll:\n");
-	for(v = G_(VertexListFirst(&g->vertices)); v; v = G_(VertexListNext)(v)) {
-		printf(" Vertex\n");
-		for(e = G_(EdgeListFirst(&v->out)); e; e = G_(EdgeListNext)(e)) {
-			printf("  Edge.\n");
-			G_(EdgeLinkMigrate)(e, migrate);
-		}
-	}
-}
-
-/** The reason we use migrate all instead of each is the digraph is
- singly-linked. This is possibly much more inefficient for a large number of
- backing lists, (still the same asymptotic behaviour,) but it would be complex
- and memory-intensive to doubly-link them.
- 
  Specifically, with {<super Vertex>Pool} supply {<G>Digraph} as a
  {POOL_MIGRATE_ALL} parameter; the constructor to the pool now takes this
- migrate function, or a function that calls this function, and {g}. */
+ migrate function, or a function that calls this function, and {g}.
+ @order \O({edges}) */
 static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
-	struct G_(Vertex) *v;
-	struct G_(Edge) *e;
-	printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");
+	struct G_(Vertex) *v = 0;
+	struct G_(Edge) *e = 0;
+	if(!G_(VertexListFirst)(&g->vertices)) return;
+	/*printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");*/
 	G_(VertexLinkMigratePointer)(&g->root, migrate);
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
-		G_(VertexLinkMigrate)(v, migrate);
-		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
+		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e))
 			G_(VertexLinkMigratePointer)(&e->to, migrate);
-		}
 	}
 }
 
@@ -441,12 +414,11 @@ static void PG_(unused)(void) {
 #ifdef DIGRAPH_EDATA /* <-- edata */
 	G_(DigraphEdgeData)(0);
 #endif /* edata --> */
-	G_(DigraphVertex)(0, 0);
-	G_(DigraphEdge)(0, 0, 0);
+	G_(DigraphPutVertex)(0, 0);
+	G_(DigraphPutEdge)(0, 0, 0);
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
 	G_(DigraphOut)(0, 0);
-	G_(DigraphEdgeMigrateAll)(0, 0);
 	G_(DigraphVertexMigrateAll)(0, 0);
 	PG_(unused_coda)();
 }

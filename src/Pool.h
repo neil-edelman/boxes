@@ -273,7 +273,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		if(c1 > max_size || c1 <= c0) c1 = max_size;
 	}
 	if(!(nodes = realloc(pool->nodes, c0 * sizeof *pool->nodes))) return 0;
-	if(pool->size && pool->nodes != nodes) {
+	if(pool->nodes != nodes) {
 		/* Migrate data; violates pedantic strict-ANSI? */
 		struct Migrate migrate;
 		migrate.begin = pool->nodes;
@@ -481,7 +481,7 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 
 /** Private: is {idx} a valid index for {pool}?
  @order \Theta(1) */
-static struct PT_(Node) *T_(valid_index)(struct T_(Pool) *const pool,
+static struct PT_(Node) *PT_(valid_index)(struct T_(Pool) *const pool,
 	const size_t idx) {
 	assert(pool);
 	if(idx >= pool->size) return 0;
@@ -505,7 +505,7 @@ static struct PT_(Node) *T_(valid_index)(struct T_(Pool) *const pool,
 static T *T_(PoolGet)(struct T_(Pool) *const pool, const size_t idx) {
 	if(!pool) return 0;
 	{
-		struct PT_(Node) *const node = T_(valid_index)(pool, idx);
+		struct PT_(Node) *const node = PT_(valid_index)(pool, idx);
 		return node ? &node->data : 0;
 	}
 }

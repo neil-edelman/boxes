@@ -7,7 +7,7 @@
  \url{ http://users.pja.edu.pl/~jms/qnx/help/watcom/wd/regexp.html }
  \url{ http://www.cs.sfu.ca/~cameron/Teaching/384/99-3/regexp-plg.html }
  \url{ http://matt.might.net/articles/parsing-regex-with-recursive-descent/ }.
- 
+
  <re> ::= <term> '|' <re> | <term>
  <term> ::= { <factor> }
  <factor> ::= <atom> <repeat> | <atom> | '^' | '$'
@@ -53,30 +53,33 @@
 #include <stdint.h> /* C99 uint32_t */
 #include "Regex.h"
 
+/* Pre-define these constants. */
+struct Transition;
+typedef void (*TransitionToString)(const struct Transition *, char(*const)[12]);
+
 /**
  * Intermediary structure created when walking the graph of regex and the
- * remainder of the string that it's matched against.
+ * remainder of the string that it's matched against. Used in \see{match_here}.
  */
 struct Match {
-	const struct Transition *t;
-	const struct StateVertex *vertex;
+	const struct Transition *edge;
+	const struct MachineVertex *vertex;
 	const char *next;
 };
+typedef const char *(*Match)(const struct Match *const);
 
 /**
  * Transition virtual table, referenced from {Transition}.
  */
-struct Transition;
-typedef const char *(*Match)(const struct Match *const);
-typedef void (*TransitionToString)(const struct Transition *, char(*const)[12]);
 struct TransitionVt {
 	const char *class;
-	const Match match;
 	const TransitionToString to_string;
+	const Match match;
 };
 
 /**
- * Abstract {Transition}. This forms extra data on the edge of the digraph.
+ * Abstract {Transition}. This forms extra data on the edge of the {Machine}
+ * digraph.
  */
 struct Transition {
 	const struct TransitionVt *vt;
@@ -86,7 +89,6 @@ static void Transition(struct Transition *const t,
 	const struct TransitionVt *const vt) {
 	assert(t && vt);
 	t->vt = vt;
-	/*printf("super transition %s\n", vt->debug);*/
 }
 /** @implements TransitionToString */
 static void transition_to_string(const struct Transition *t,char(*const a)[12]){
@@ -94,79 +96,108 @@ static void transition_to_string(const struct Transition *t,char(*const a)[12]){
 }
 /** @implements Match */
 static const char *transition_match(struct Match *const match) {
-	assert(match && match->t && match->vertex && match->next);
-	return match->t->vt->match(match);
+	assert(match && match->edge && match->vertex && match->next);
+	return match->edge->vt->match(match);
 }
-#define DIGRAPH_NAME State
+/* {Transition \in MachineVertex, MachineEdge, \in MachineDigraph}. */
+#define DIGRAPH_NAME Machine
 #define DIGRAPH_EDATA struct Transition
 #define DIGRAPH_EDATA_TO_STRING &transition_to_string
-#include "../src/Digraph.h" /* StateDigraph, StateVertex, StateEdge. */
+#include "../src/Digraph.h"
 
+/** @implements <<<Machine>Vertex>Link>Migrate */
+static void vertex_migrate_each(struct MachineVertexLink *v,
+	const struct Migrate *const migrate) {
+	assert(v && migrate);
+	MachineVertexLinkMigrate(&v->data, migrate);
+	MachineEdgeListSelfCorrect(&v->data.out);
+}
 /*
- * {StateVertex} container.
+ * {MachineVertex} container. Vertices are states that correspond to {Match}.
+ * However, we don't need to store any data in them, just the edges.
  */
-#define POOL_NAME StateVertex
-#define POOL_TYPE struct StateVertex
-#define POOL_MIGRATE_ALL struct MakeRe
+#define POOL_NAME Vertex
+#define POOL_TYPE struct MachineVertexLink
+#define POOL_MIGRATE_EACH &vertex_migrate_each
+#define POOL_MIGRATE_ALL struct MachineDigraph
 #include "Pool.h"
 
 /*
- * {Empty} extends {Trasition}. (It's just the same data.)
+ * {Empty} extends {Transition}.
  */
+/** @implements <<<Machine>Edge>Link>Migrate */
+static void empty_migrate_each(struct MachineEdgeLink *e,
+	const struct Migrate *const migrate) {
+	assert(e && migrate);
+	MachineEdgeLinkMigrate(&e->data, migrate);
+}
+/** @implements TransitionToString */
+static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
+	strcpy(*a, "ε");
+	(void)e;
+}
 /** @implements Match */
 static const char *empty_match(const struct Match *const match) {
 	return match->next;
 }
-/** @implements TransitionToString */
-static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
-	sprintf(*a, "ε");
-	(void)e;
-}
-static struct TransitionVt empty_vt = { "Empty", empty_match, empty_to_string };
+static struct TransitionVt empty_vt
+	= { "Empty", &empty_to_string, &empty_match };
+#define POOL_NAME Empty
+#define POOL_TYPE struct MachineEdgeLink
+#define POOL_MIGRATE_EACH &empty_migrate_each
+#include "Pool.h"
 /** Constructor.
  @param e: This is instantiated; any data will be erased. */
-static void Empty(struct StateEdgeLink *const e) {
-	assert(e);
+static struct MachineEdgeLink *Empty(struct EmptyPool *const ep) {
+	struct MachineEdgeLink *e;
+	assert(ep);
+	if(!(e = EmptyPoolNew(ep))) return 0;
 	Transition(&e->data.info, &empty_vt);
 	printf("Empty.\n");
+	return e;
 }
-#define POOL_NAME Empty
-#define POOL_TYPE struct StateEdgeLink
-#define POOL_MIGRATE_ALL struct MakeRe
-#include "Pool.h"
-
-
 
 /**
- * {Literals} extends {Transition} as {StateEdgeLink}.
+ * {Literals} extends {Transition}.
  */
 struct Literals {
-	struct StateEdgeLink edge;
+	struct MachineEdgeLink edge;
 	char *text;
 	size_t text_size;
 };
 /** {container_of} (probably does nothing.) */
-static const struct Literals *literals_holds_transition(
-	const struct Transition *const t) {
+static const struct Literals *literals_holds_transition(const struct
+	Transition *const t) {
 	return (const struct Literals *)(const void *)
-	((const char *)t
-		- offsetof(struct StateEdge, info)
-		- offsetof(struct StateEdgeLink, data)
+		((const char *)t
+		- offsetof(struct MachineEdge, info)
+		- offsetof(struct MachineEdgeLink, data)
 		- offsetof(struct Literals, edge));
 }
-/** @implements Match */
-static const char *literals_match(const struct Match *const match) {
-	const struct Literals *l = literals_holds_transition(match->t);
-	if(memcmp(l->text, match->next, l->text_size)) return 0;
-	return match->next + l->text_size;
+/** @implements <Literals>Migrate */
+static void literals_migrate_each(struct Literals *l,
+	const struct Migrate *const migrate) {
+	assert(l && migrate);
+	MachineEdgeLinkMigrate(&l->edge.data, migrate);
 }
-/** @implements TransitionToString */
+/** @implements <Transition>ToString */
 static void literals_to_string(const struct Transition *t, char (*const a)[12]){
 	sprintf(*a, "%.11s", literals_holds_transition(t)->text);
 }
+/** @implements Match */
+static const char *literals_match(const struct Match *const match) {
+	const struct Literals *l = literals_holds_transition(match->edge);
+	if(memcmp(l->text, match->next, l->text_size)) return 0;
+	return match->next + l->text_size;
+}
 static struct TransitionVt literals_vt
-	= { "Literals", literals_match, literals_to_string };
-/** Destructor.
+	= { "Literals", &literals_to_string, &literals_match };
+#define POOL_NAME Literals
+#define POOL_TYPE struct Literals
+#define POOL_MIGRATE_EACH &literals_migrate_each
+#include "Pool.h"
+/** Destructor because this takes up resources, but doesn't do anything about
+ the graph.
  @implements <Literals>Action */
 static void Literals_(struct Literals *const l) {
 	if(!l) return;
@@ -176,27 +207,29 @@ static void Literals_(struct Literals *const l) {
 	l->text_size = 0;
 }
 /** Constructor.
- @param l: This is instantiated; any data will be erased.
- @param arg, arg_size: The literal. A copy of this value is taken.
- @param arg_size: Must be greater then zero.
+ @param text, text_size: The literal. A copy of this value is taken. Must have
+ a non-zero length.
  @return Success.
  @throws {malloc} errors. */
-static int Literals(struct Literals *const l, const char *const arg,
-	size_t arg_size) {
+static struct Literals *Literals(struct LiteralsPool *const lp,
+	const char *const text, size_t text_size) {
+	struct Literals *l;
 	const char *a, *a_end;
 	char *t;
 	int is_escaped;
-	assert(l && arg && arg_size);
+	assert(lp && text && text_size);
+	if(!(l = LiteralsPoolNew(lp))) return 0;
 	Transition(&l->edge.data.info, &literals_vt);
 	l->text = 0;
 	l->text_size = 0;
 	/* Copy the literals; null terminator even thought it's not really used. */
-	if(!(l->text = malloc(sizeof *arg * (arg_size + 1)))) return 0;
-	/* This was before escaping chars:
-	 memcpy(l->text, arg, arg_size);
-	 l->text[arg_size] = '\0';
-	 l->text_size = arg_size;*/
-	for(a=arg, a_end=a+arg_size, t = l->text, is_escaped = 0; a < a_end; a++) {
+	if(!(l->text = malloc(sizeof *text * (text_size + 1))))
+		{ LiteralsPoolPop(lp); return 0; }
+	/*memcpy(l->text, text, text_size);
+	l->text[text_size] = '\0';
+	l->text_size = text_size;*/
+	for(a = text, a_end = a + text_size, t = l->text, is_escaped = 0;
+		a < a_end; a++) {
 		assert(*a != '\0');
 		if(*a == '\\' && !is_escaped) { is_escaped = 1; continue; }
 		*t++ = *a;
@@ -206,17 +239,13 @@ static int Literals(struct Literals *const l, const char *const arg,
 	l->text_size = (size_t)(t - l->text);
 	printf("Literals %p: <%s>:%lu\n", (void *)l, l->text,
 		(unsigned long)l->text_size);
-	return 1;
+	return l;
 }
-#define POOL_NAME Literals
-#define POOL_TYPE struct Literals
-#define POOL_MIGRATE_ALL struct MakeRe
-#include "Pool.h"
 
+#if 0 /* Not used yet. */
 /**
  * {Sieve} extends {Transition}.
  */
-#if 0 /* Not used yet. */
 struct Sieve {
 	uint32_t bit[8]; /* Bit field, one byte, {256/32 = 8}. {!out} -> {bit}. */
 }
@@ -242,18 +271,18 @@ static void Sieve(void) {
 	bit_clear(state->bit);
 }
 /** Adds {match} to state. */
-static void sieve_add(struct State *const state, const char match) {
+static void sieve_add(struct Machine *const state, const char match) {
 	assert(state);
 	bit_set(state->bit, match);
 }
 /** Inverts the matches that will get though {state}.
  @fixme UTF-8 does not do as expecected. */
-static void sieve_invert(struct State *const state) {
+static void sieve_invert(struct Machine *const state) {
 	assert(state);
 	bit_invert(state->bit);
 }
 /** Tests {match} against {state}. */
-static int sieve_match(struct State *const state, const char match) {
+static int sieve_match(struct Machine *const state, const char match) {
 	assert(state);
 	return bit_test(state->bit, match);
 }
@@ -263,26 +292,18 @@ static int sieve_match(struct State *const state, const char match) {
 #include "Pool.h"
 #endif /* Not used. */
 
-
-
 /**
- * Regular expression contains all the above.
+ * {Regex} is composed of the things defined above.
  */
 struct Regex {
 	const char *title;
-	struct StateDigraph states;
-	struct StateVertexPool vertices;
+	struct MachineDigraph graph;
+	struct VertexPool vs;
 	struct EmptyPool empties;
 	struct LiteralsPool literals;
 };
 
-/* Private functions later on. */
-static int init_compile_re(struct Regex *const re, const char *const compile);
-static int match_here(const struct StateVertex *const root,
-	const char *const arg);
-
-/** Destructor. One can destruct anything in a valid state, including null and
- zero, it just does nothing.
+/** Destructor.
  @param re: If null, does nothing, otherwise it is set to match zero characters
  and frees the memory. */
 void Regex_(struct Regex **const pre) {
@@ -292,33 +313,200 @@ void Regex_(struct Regex **const pre) {
 	LiteralsPoolForEach(&re->literals, &Literals_);
 	LiteralsPool_(&re->literals);
 	EmptyPool_(&re->empties);
-	StateVertexPool_(&re->vertices);
-	StateDigraph_(&re->states);
-	free(re);
+	VertexPool_(&re->vs);
+	MachineDigraph_(&re->graph);
 	*pre = 0;
 }
 
+/*
+ * Temporary nesting for compiling.
+ * Refers to index in the vertices pool.
+ */
+struct Nest { size_t v0i, v2i; };
+#define POOL_NAME Nest
+#define POOL_TYPE struct Nest
+#define POOL_STACK
+#include "Pool.h"
+/** @param nest: A {NestPool}. Required.
+ @param a: An already existing vertex index to use as the opening.
+ @return Creates a new Nest or null.
+ @throws {realloc} errors. */
+static struct Nest *Nest(struct NestPool *const nest, const size_t v0i) {
+	struct Nest *n;
+	assert(nest);
+	if(!(n = NestPoolNew(nest))) return 0;
+	n->v0i = v0i;
+	n->v2i = (size_t)-1; /* By agreed upon convention, this is null. */
+	return n;
+}
+
+#if 0
+/** Used to return status in {compile_re}. */
+enum MakeReStatus { SUCCESS, RESOURCES, SYNTAX };
+struct MakeRe;
+/** Used in {MakeRe} for different contexts. */
+typedef enum MakeReStatus (*MakeReContext)(struct MakeRe *const);
+#endif
+
+/** Called from \see{Regex}.
+ @return Success, otherwise {errno} will (probably) be set. */
+static int re_compile(struct Regex *re, const char *const compile) {
+	struct NestPool nest;
+	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
+
+	NestPool(&nest);
+	printf("m_compile: <%s>.\n", compile);
+	do { /* try */
+		size_t v1i = 0;
+		int is_closing = 0; /* @fixme Ugly. */
+		struct Nest *n;
+		const char *c = compile, *c_start = 0;
+		enum { DONE = 1, FINAL = 2, EDGE = 4, OPEN = 8, CLOSE = 16 } flags;
+		{ /* Starting vertex and implied nestle. */
+			struct MachineVertexLink *start = VertexPoolNew(&re->vs);
+			if(!start || !Nest(&nest, VertexPoolIndex(&re->vs, start)))
+				{ e = RESOURCES; break; }
+			MachineDigraphPutVertex(&re->graph, &start->data);
+		}
+		do { /* For each byte. */
+			printf("__%c (%d)__\n", *c, (int)*c);
+			/* Set the flags. */
+			flags = 0;
+			switch(*c) {
+				case '|': flags |= FINAL; break;
+				case '(': flags |= OPEN; break;
+				case ')': flags |= CLOSE; break;
+				case '\0': flags |= DONE; break;
+				default: if(!c_start) c_start = c; break;
+			}
+			if(!flags) continue;
+			/* Retrieve nesting level; any literals always add an edge. */
+			n = NestPoolPeek(&nest), assert(n);
+			if(c_start) flags |= EDGE;
+			/* Add onto the graph. */
+			if(flags & FINAL && n->v2i == (size_t)-1) { /* Terminating v2. */
+				struct MachineVertexLink *const v2 = VertexPoolNew(&re->vs);
+				if(!v2) { e = RESOURCES; break; }
+				MachineDigraphPutVertex(&re->graph, &v2->data);
+				n->v2i = VertexPoolIndex(&re->vs, v2);
+				if(!is_closing) flags |= EDGE;
+				printf("final %c\n", *c);
+			}
+			is_closing = 0;
+			if(flags & EDGE) { /* Intermediary v1. */
+				struct MachineEdge *edge;
+				struct MachineVertex *v0, *v1;
+				if(n->v2i != (size_t)-1) { /* v1 == v2 terminating. */
+					struct MachineVertexLink *const v1l
+						= VertexPoolGet(&re->vs, v1i = n->v2i);
+					assert(v1l);
+					v1 = &v1l->data;
+				} else { /* Make an intermediary vertex, v1. */
+					struct MachineVertexLink *const v1l = VertexPoolNew(&re->vs);
+					if(!v1l) { e = RESOURCES; break; }
+					v1 = &v1l->data;
+					v1i = VertexPoolIndex(&re->vs, v1l);
+					MachineDigraphPutVertex(&re->graph, v1);
+				}
+				{ /* First vertex; after second because possibly invalidated. */
+					struct MachineVertexLink *const v0l
+						= VertexPoolGet(&re->vs, n->v0i);
+					assert(v0l);
+					v0 = &v0l->data;
+				}
+				/* The edge. */
+				if(c_start && c_start < c) {
+					struct Literals *lit;
+					if(!(lit = Literals(&re->literals, c_start, c - c_start)))
+						{ e = RESOURCES; break; }
+					edge = &lit->edge.data;
+				} else {
+					struct MachineEdgeLink *emp;
+					if(!(emp = Empty(&re->empties)))
+						{ e = RESOURCES; break; }
+					edge = &emp->data;
+				}
+				c_start = 0;
+				MachineDigraphPutEdge(edge, v0, v1);
+				printf("edge %c\n", *c);
+			}
+			if(flags & OPEN) { /* Open parenthesis. */
+				assert(!(flags & CLOSE) /*&& flags & EDGE @fixme Fails. Are you sure we need this? */);
+				if(!Nest(&nest, v1i)) { e = RESOURCES; break; }
+				printf("open\n");
+			}
+			if(flags & CLOSE) { /* Close parenthesis. */
+				assert(!(flags & OPEN));
+				NestPoolPop(&nest);
+				if(!NestPoolPeek(&nest)) { e = SYNTAX; break; }
+				printf("close\n");
+				is_closing = 1;
+			}
+		} while(c++, !(flags & DONE)); /* For @ byte. */
+		if(e) break;
+		/* Verify the parentheses match. */
+		if(!NestPoolPop(&nest) || NestPoolPeek(&nest)) { e = SYNTAX; break; }
+	} while(0); if(e == SYNTAX) { /* catch(SYNTAX) */
+		errno = EILSEQ;
+	} { /* finally */
+		NestPoolClear(&nest);
+	}
+	printf("m_compile: e %d\n", e);
+	return !e;
+}
 /** Compiles a regular expression.
  @param compile: If null, returns null. Otherwise, this is a null-terminated
  modified UTF-8 string that gets compiled into a regular expression.
  @return The regular expression. Requires freeing with \see{Regex_}.
  @throws {malloc/realloc} errors: {IEEE Std 1003.1-2001}.
- @throws EILSEQ: The {re} could not be compiled, (required since 1994
- Amendment 1 to C89 standard.) */
+ @throws EILSEQ: The {re} is not understood, (required since 1994 Amendment 1
+ to C89 standard.) */
 struct Regex *Regex(const char *const compile) {
 	struct Regex *re;
 	if(!compile || !(re = malloc(sizeof *re))) return 0;
-	if(!init_compile_re(re, compile)) Regex_(&re);
+	re->title = compile;
+	MachineDigraph(&re->graph);
+	VertexPool(&re->vs, &MachineDigraphVertexMigrateAll, &re->graph);
+	EmptyPool(&re->empties);
+	LiteralsPool(&re->literals);
+	if(!re_compile(re, compile)) Regex_(&re);
 	return re;
 }
 
-/** Match {re}.
+/** Checks if the {root} of the DFA matches {arg}. Called in \see{RegexMatch}.
+ @return The end of the match if it was a match or null.
+ @fixme implements <Machine,char*>Predicate,
+ if(!(e = MachineEdgeListMatchShortCircuit(&s->out, &no_match, match))) would be
+ nice. List doesn't have interfaces . . . yet? */
+static int match_here(const struct MachineVertex *const root,
+	const char *const arg) {
+	struct Match m;
+	struct MachineEdge *e;
+	const char *end;
+	enum { NOT_MATCHED, MATCHED } status = MATCHED;
+	m.edge = 0, m.vertex = root, m.next = arg;
+	while(m.vertex) {
+		/* Finished when the vertex has degree zero. */
+		if(!(e = MachineEdgeListFirst(&m.vertex->out))) break;
+		status = NOT_MATCHED;
+		do { /* Loop through all the edges out of this vertex. */
+			m.edge = &e->info;
+			if(!(end = transition_match(&m))) continue;
+			m.vertex = e->to, m.next = end, status = MATCHED;
+			break;
+		} while((e = MachineEdgeListNext(e)));
+		if(status == NOT_MATCHED) break;
+	}
+	return status == MATCHED ? 1 : 0;
+}
+/** Match {re} by performing a DFS in-order search on each character.
+ @param re, arg: If null, returns null.
  @return The first point it matches or null if it doesn't. */
 const char *RegexMatch(const struct Regex *const re, const char *const arg) {
-	const struct StateVertex *root;
+	const struct MachineVertex *root;
 	const char *a;
 	if(!re || !arg) return 0;
-	root = StateDigraphGetRoot(&re->states);
+	root = MachineDigraphGetRoot(&re->graph);
 	for(a = arg; *a; a++) if(match_here(root, a)) return a;
 	return 0;
 }
@@ -332,42 +520,35 @@ const char *RegexMatch(const struct Regex *const re, const char *const arg) {
  @allow */
 int RegexOut(const struct Regex *const re, FILE *const fp) {
 	if(!re) return 0;
-	return StateDigraphOut(&re->states, fp);
+	return MachineDigraphOut(&re->graph, fp);
 }
 
 
 
-/* Regular expressions compiling. */
 
 
 
-/** {Nest} is parentheses which contain a sub-RE. Every RE has at least one
- implied {Nest} enclosing the RE. All {Nest} have one {start} vertex. */
-struct Nest {
-	const char *c;
-	struct StateVertex *start;
-};
-/** Constructor. */
-static void Nest(struct Nest *const nest, const char *const c,
-	struct StateVertex *const start) {
-	assert(nest && c && start);
-	nest->c = c;
-	nest->start = start;
-}
-/* Used in {MakeRe} for parentheses matching. */
-#define POOL_NAME Nest
-#define POOL_TYPE struct Nest
-#define POOL_STACK
-#include "Pool.h"
 
 
 
-/** Used to return status in {MakeRe} from {MakeReContext}. */
-enum MakeReStatus { SUCCESS, RESOURCES, SYNTAX };
 
-struct MakeRe;
-/** Used in {MakeRe} for context. */
-typedef enum MakeReStatus (*MakeReContext)(struct MakeRe *const);
+
+
+
+
+
+
+
+
+
+#if 0
+
+
+/* Private functions later on. */
+static int init_compile_re(struct Regex *const re, const char *const compile);
+static int match_here(const struct MachineVertex *const root,
+	const char *const arg);
+
 
 /**
  * Temporary structure called on compiling regular expressions into DFAs. All
@@ -378,24 +559,8 @@ struct MakeRe {
 	struct NestPool nests;
 	MakeReContext context;
 	const char *from, *to;
-	struct StateVertex *v;
+	struct MachineVertex *v;
 };
-
-/* Migrate functions. */
-/** @implements <MakeRe>Migrate */
-static void vertex_migrate(struct MakeRe *const make,
-	const struct Migrate *const migrate) {
-	assert(make);
-	printf("vertex_migrate: containing Regex<%s>\n", make->re->title);
-	StateDigraphVertexMigrateAll(&make->re->states, migrate);
-}
-/** @implements <MakeRe>Migrate */
-static void edge_migrate(struct MakeRe *const make,
-	const struct Migrate *const migrate) {
-	assert(make);
-	printf("edge_migrate: containing Regex<%s>\n", make->re->title);
-	StateDigraphEdgeMigrateAll(&make->re->states, migrate);
-}
 
 /* Prototypes defined later. */
 static enum MakeReStatus advance_literals(struct MakeRe *const make);
@@ -412,8 +577,8 @@ static int init_compile_re(struct Regex *const re, const char *const compile) {
 
 	/* Initialise {re}. */
 	re->title = compile;
-	StateDigraph(&re->states);
-	StateVertexPool(&re->vertices, &vertex_migrate, &make);
+	MachineDigraph(&re->states);
+	MachineVertexPool(&re->vertices, &vertex_migrate, &make);
 	EmptyPool(&re->empties, &edge_migrate, &make);
 	LiteralsPool(&re->literals, &edge_migrate, &make);
 
@@ -428,10 +593,10 @@ static int init_compile_re(struct Regex *const re, const char *const compile) {
 	do { /* Try. */
 		{ /* Set up starting state: implied parenthesis around all. */
 			struct Nest *nest;
-			if(!(make.v = StateVertexPoolNew(&make.re->vertices))
+			if(!(make.v = MachineVertexPoolNew(&make.re->vertices))
 				|| !(nest = NestPoolNew(&make.nests)))
 				{ e = RESOURCES; break; }
-			StateDigraphVertex(&make.re->states, make.v);
+			MachineDigraphVertex(&make.re->states, make.v);
 			Nest(nest, make.to, make.v);
 		}
 		do { /* Main compiling loop. */
@@ -450,38 +615,6 @@ static int init_compile_re(struct Regex *const re, const char *const compile) {
 	}
 	return !e;
 }
-
-
-
-/** Updates the {make.v} to be a new state vertex and connects them by a
- {Literals} edge from {make.from} to {make.to}. If the edge has zero content,
- it instead creates an {Empty} edge.
- @return {MakeReStatus}. */
-static enum MakeReStatus advance_literals(struct MakeRe *const make) {
-	struct StateVertex *v;
-	struct StateEdge *e;
-	assert(make);
-	if(!(v = StateVertexPoolNew(&make->re->vertices))) return RESOURCES;
-	StateDigraphVertex(&make->re->states, v);
-	if(make->from < make->to) { /* At least one byte. */
-		struct Literals *const lit = LiteralsPoolNew(&make->re->literals);
-		if(!lit || !Literals(lit, make->from, make->to - make->from))
-			return RESOURCES;
-		e = &lit->edge.data;
-	} else { /* We should make an empty edge. */
-		struct StateEdgeLink *const emp = EmptyPoolNew(&make->re->empties);
-		if(!emp) return RESOURCES;
-		Empty(emp);
-		e = &emp->data;
-	}
-	/* Connect and update. */
-	StateDigraphEdge(e, make->v, v);
-	make->v = v;
-	make->from = make->to + 1;
-	return SUCCESS;
-}
-
-
 
 /** .|\ (capturing group, nah) (lazy ? eh) (lookarounds, meh)
  @implements MakeReContext */
@@ -538,14 +671,14 @@ static enum MakeReStatus escape_context(struct MakeRe *const make) {
 
 /** {3}{2,7}{4,}
  @implements MakeReContext */
-/*static enum MakeReStatus nestces_context(struct MakeRe *const make) {
+/*static enum MakeReStatus brace_context(struct MakeRe *const make) {
 	assert(make);
 	return SUCCESS;
 }*/
 
 /** [] [^]
  @implements MakeReContext *
-static enum MakeReStatus nestckets_context(struct MakeRe *const make) {
+static enum MakeReStatus brackets_context(struct MakeRe *const make) {
 	assert(make);
 	switch(*make->to) {
 	case ']': make->context = &normal_context;
@@ -554,30 +687,5 @@ static enum MakeReStatus nestckets_context(struct MakeRe *const make) {
 	return SUCCESS;
 }*/
 
+#endif
 
-/** Checks if the {root} of the DFA matches {arg}. Called in \see{RegexMatch}.
- @return The end of the match if it was a match or null.
- @fixme implements <State,char*>Predicate,
- if(!(e = StateEdgeListMatchShortCircuit(&s->out, &no_match, match))) would be
- nice. List doesn't have interfaces . . . yet? */
-static int match_here(const struct StateVertex *const root,
-	const char *const arg) {
-	struct Match m;
-	struct StateEdge *e;
-	const char *end;
-	enum { NOT_MATCHED, MATCHED } status = MATCHED;
-	m.t = 0, m.vertex = root, m.next = arg;
-	while(m.vertex) {
-		/* Finished when the vertex has degree zero. */
-		if(!(e = StateEdgeListFirst(&m.vertex->out))) break;
-		status = NOT_MATCHED;
-		do { /* Loop through all the edges out of this vertex. */
-			m.t = &e->info;
-			if(!(end = transition_match(&m))) continue;
-			m.vertex = e->to, m.next = end, status = MATCHED;
-			break;
-		} while((e = StateEdgeListNext(e)));
-		if(status == NOT_MATCHED) break;
-	}
-	return status == MATCHED ? 1 : 0;
-}
