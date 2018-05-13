@@ -387,7 +387,7 @@ const char *RegexMatch(const struct Regex *const re, const char *const arg) {
  @allow */
 int RegexOut(const struct Regex *const re, FILE *const fp) {
 	if(!re) return 0;
-	return MachineDigraphOut(&re->graph, fp);
+	return MachineDigraphOut(&re->graph, re->title, fp);
 }
 
 
@@ -502,8 +502,8 @@ static void escape_context(struct Make *const make) {
 	assert(make && !make->status && NestPoolPeek(&make->nests) && make->c);
 	printf("escape_context: %c (0x%x.)\n", *make->c, (unsigned)*make->c);
 	switch(*make->c) {
-		case '\0': make->status = SYNTAX, make->context = 0; return;
-			/*default:*/
+		case '\0': make->status |= SYNTAX, make->context = 0; return;
+		default: if(!make->c_from) make->c_from = make->c; break;
 	}
 	make->context = &normal_context;
 }
@@ -536,12 +536,10 @@ static int compile_re(struct Regex *re, const char *const compile) {
 	size_t v1i = 0;
 	assert(re && compile);
 	printf("compile_re: <%s>.\n", compile);
-	Make(&make, re, compile);
-	/* Main compiling loop. */
+	if(!Make(&make, re, compile)) return Make_(&make), 0;
 	do {
-		assert((make.status & (ERRNO | SYNTAX)) == 0);
+		assert((make.status & (ERRNO | SYNTAX | DONE)) == 0), make.status = 0;
 		/* Main compiling loop. */
-		make.status = 0;
 		make.context(&make);
 		if(!make.status) continue;
 		/* Something happened. Retrieve nesting level. */
@@ -554,8 +552,9 @@ static int compile_re(struct Regex *re, const char *const compile) {
 			if(!v2) { make.status |= ERRNO, make.context = 0; break; }
 			MachineDigraphPutVertex(&re->graph, &v2->data);
 			n->v2i = VertexPoolIndex(&re->vs, v2);
-			if(make.c >= compile || *(make.c - 1) != ')') make.status |= EDGE;
-			printf("final %c\n", *make.c);
+			/* Force it to make a, possibly empty, edge, sometimes. */
+			if(!(compile < make.c && make.c[-1] == ')')) make.status |= EDGE;
+			printf("branch %c\n", *make.c);
 		}
 		if(make.status & EDGE) { /* Intermediary v1. */
 			struct MachineEdge *edge;
@@ -567,14 +566,14 @@ static int compile_re(struct Regex *re, const char *const compile) {
 				v1 = &v1l->data;
 			} else { /* Make an intermediary vertex, v1. */
 				struct MachineVertexLink *const v1l = VertexPoolNew(&re->vs);
-				if(!v1l) { make.status = ERRNO, make.context = 0; break; }
+				if(!v1l) { make.status |= ERRNO, make.context = 0; break; }
 				v1 = &v1l->data;
 				v1i = VertexPoolIndex(&re->vs, v1l);
 				MachineDigraphPutVertex(&re->graph, v1);
 			}
 			{ /* First vertex; after second because possibly invalidated. */
 				struct MachineVertexLink *const v0l
-				= VertexPoolGet(&re->vs, n->v0i);
+					= VertexPoolGet(&re->vs, n->v0i);
 				assert(v0l);
 				v0 = &v0l->data;
 			}
@@ -582,13 +581,14 @@ static int compile_re(struct Regex *re, const char *const compile) {
 			if(make.c_from && make.c_from < make.c) {
 				struct Literals *const lit = Literals(&re->literals,
 					make.c_from, make.c - make.c_from);
-				if(!lit) { make.status = ERRNO, make.context = 0; break; }
+				if(!lit) { make.status |= ERRNO, make.context = 0; break; }
 				edge = &lit->edge.data;
 			} else {
 				struct MachineEdgeLink *emp = Empty(&re->empties);
-				if(!emp) { make.status = ERRNO, make.context = 0; break; }
+				if(!emp) { make.status |= ERRNO, make.context = 0; break; }
 				edge = &emp->data;
 			}
+			/* Reset the literal. */
 			make.c_from = 0;
 			MachineDigraphPutEdge(edge, v0, v1);
 			printf("edge %c\n", *make.c);
@@ -596,7 +596,7 @@ static int compile_re(struct Regex *re, const char *const compile) {
 		if(make.status & OPEN) { /* Open parenthesis. */
 			assert(!(make.status & CLOSE));
 			if(!Nest(&make.nests, v1i))
-				{ make.status = ERRNO, make.context = 0; break; }
+				{ make.status |= ERRNO, make.context = 0; break; }
 			printf("open\n");
 		}
 		if(make.status & CLOSE) { /* Close parenthesis. */
@@ -604,12 +604,15 @@ static int compile_re(struct Regex *re, const char *const compile) {
 			NestPoolPop(&make.nests);
 			/* Too many ')'. */
 			if(!NestPoolPeek(&make.nests))
-				{ make.status = SYNTAX, make.context = 0; break; }
+				{ make.status |= SYNTAX, make.context = 0; break; }
 			printf("close\n");
 		}
 	} while(make.context && (make.c++, 1));
+	/* Verify the parentheses match. */
+	if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))
+		make.status |= SYNTAX;
 	/* Catch(SYNTAX) -- set {errno}. */
-	if(make.status == SYNTAX) errno = EILSEQ;
+	if(make.status & SYNTAX) assert(!(make.status & ERRNO)), errno = EILSEQ;
 	/* Finally. */
 	Make_(&make);
 	printf("compile_re: <%s> make.status 0x%x\n", compile, make.status);

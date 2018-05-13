@@ -26,7 +26,7 @@ static struct Result {
 	{ "", "hi", "hi", "graphs/empty.gv" },
 	{ "hi", "", 0, "graphs/trivial.gv" },
 	{ "hi", "this", "his", 0 },
-	{ "\\h\\i", "this", "his", 0 },
+	{ "\\h\\i", "this", "his", "graphs/escapes.gv" },
 	{ "((())", 0, 0, 0 },
 	{ "(()))", 0, 0, 0 },
 	{ "(())", "hi", "hi", 0 },
@@ -50,33 +50,19 @@ static void re_assert(const struct Result *const r) {
 	struct Regex *re = Regex(r->compile);
 	const char *a;
 	assert(r);
+	if(r->gv) { /* Output graph. */
+		const char *fn = r->gv;
+		if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
+		else printf("Output graph <%s>.\n", fn);
+		fclose(fp);
+	}
 	if(r->match) {
 		printf("re_assert: checking that /%s/ ~= \"%s\" == \"%s\".\n",
 			r->compile, r->match, r->expected);
 		if(!re) { perror(r->compile); assert(0); return; }
 	} else {
 		printf("re_assert: checking that /%s/ does not compile.\n", r->compile);
-		{ assert(!re); perror(r->compile); return; }
-	}
-	if(r->gv) { /* Output graph. */
-		/*char fn[64] = "graphs/re", *f, *f_end;
-		const size_t fn_init = strlen(fn);
-		const char *ch;
-		for(f = fn + fn_init, f_end = fn + sizeof fn - 4; f < f_end; f++) {
-			ch = r->compile + (f - fn) - fn_init;
-			if(*ch == '\0') break;
-			if((*ch >= 'A' && *ch <= 'Z') || (*ch >= 'a' && *ch <= 'z')) {
-				*f = *ch;
-			} else {
-				*f = '_';
-			}
-		}
-		*f = '\0';
-		strcpy(f, ".gv");*/
-		const char *fn = r->gv;
-		if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
-		else printf("Output graph <%s>.\n", fn);
-		fclose(fp);
+			{ assert(!re); perror(r->compile); return; }
 	}
 	a = RegexMatch(re, r->match);
 	if(r->expected) {
