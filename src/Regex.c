@@ -318,142 +318,9 @@ void Regex_(struct Regex **const pre) {
 	*pre = 0;
 }
 
-/*
- * Temporary nesting for compiling.
- * Refers to index in the vertices pool.
- */
-struct Nest { size_t v0i, v2i; };
-#define POOL_NAME Nest
-#define POOL_TYPE struct Nest
-#define POOL_STACK
-#include "Pool.h"
-/** @param nest: A {NestPool}. Required.
- @param a: An already existing vertex index to use as the opening.
- @return Creates a new Nest or null.
- @throws {realloc} errors. */
-static struct Nest *Nest(struct NestPool *const nest, const size_t v0i) {
-	struct Nest *n;
-	assert(nest);
-	if(!(n = NestPoolNew(nest))) return 0;
-	n->v0i = v0i;
-	n->v2i = (size_t)-1; /* By agreed upon convention, this is null. */
-	return n;
-}
+/* Defined at eof. */
+static int compile_re(struct Regex *re, const char *const compile);
 
-#if 0
-/** Used to return status in {compile_re}. */
-enum MakeReStatus { SUCCESS, RESOURCES, SYNTAX };
-struct MakeRe;
-/** Used in {MakeRe} for different contexts. */
-typedef enum MakeReStatus (*MakeReContext)(struct MakeRe *const);
-#endif
-
-/** Called from \see{Regex}.
- @return Success, otherwise {errno} will (probably) be set. */
-static int re_compile(struct Regex *re, const char *const compile) {
-	struct NestPool nest;
-	enum { SUCCESS, RESOURCES, SYNTAX } e = SUCCESS;
-
-	NestPool(&nest);
-	printf("m_compile: <%s>.\n", compile);
-	do { /* try */
-		size_t v1i = 0;
-		int is_closing = 0; /* @fixme Ugly. */
-		struct Nest *n;
-		const char *c = compile, *c_start = 0;
-		enum { DONE = 1, FINAL = 2, EDGE = 4, OPEN = 8, CLOSE = 16 } flags;
-		{ /* Starting vertex and implied nestle. */
-			struct MachineVertexLink *start = VertexPoolNew(&re->vs);
-			if(!start || !Nest(&nest, VertexPoolIndex(&re->vs, start)))
-				{ e = RESOURCES; break; }
-			MachineDigraphPutVertex(&re->graph, &start->data);
-		}
-		do { /* For each byte. */
-			printf("__%c (%d)__\n", *c, (int)*c);
-			/* Set the flags. */
-			flags = 0;
-			switch(*c) {
-				case '|': flags |= FINAL; break;
-				case '(': flags |= OPEN; break;
-				case ')': flags |= CLOSE; break;
-				case '\0': flags |= DONE; break;
-				default: if(!c_start) c_start = c; break;
-			}
-			if(!flags) continue;
-			/* Retrieve nesting level; any literals always add an edge. */
-			n = NestPoolPeek(&nest), assert(n);
-			if(c_start) flags |= EDGE;
-			/* Add onto the graph. */
-			if(flags & FINAL && n->v2i == (size_t)-1) { /* Terminating v2. */
-				struct MachineVertexLink *const v2 = VertexPoolNew(&re->vs);
-				if(!v2) { e = RESOURCES; break; }
-				MachineDigraphPutVertex(&re->graph, &v2->data);
-				n->v2i = VertexPoolIndex(&re->vs, v2);
-				if(!is_closing) flags |= EDGE;
-				printf("final %c\n", *c);
-			}
-			is_closing = 0;
-			if(flags & EDGE) { /* Intermediary v1. */
-				struct MachineEdge *edge;
-				struct MachineVertex *v0, *v1;
-				if(n->v2i != (size_t)-1) { /* v1 == v2 terminating. */
-					struct MachineVertexLink *const v1l
-						= VertexPoolGet(&re->vs, v1i = n->v2i);
-					assert(v1l);
-					v1 = &v1l->data;
-				} else { /* Make an intermediary vertex, v1. */
-					struct MachineVertexLink *const v1l = VertexPoolNew(&re->vs);
-					if(!v1l) { e = RESOURCES; break; }
-					v1 = &v1l->data;
-					v1i = VertexPoolIndex(&re->vs, v1l);
-					MachineDigraphPutVertex(&re->graph, v1);
-				}
-				{ /* First vertex; after second because possibly invalidated. */
-					struct MachineVertexLink *const v0l
-						= VertexPoolGet(&re->vs, n->v0i);
-					assert(v0l);
-					v0 = &v0l->data;
-				}
-				/* The edge. */
-				if(c_start && c_start < c) {
-					struct Literals *lit;
-					if(!(lit = Literals(&re->literals, c_start, c - c_start)))
-						{ e = RESOURCES; break; }
-					edge = &lit->edge.data;
-				} else {
-					struct MachineEdgeLink *emp;
-					if(!(emp = Empty(&re->empties)))
-						{ e = RESOURCES; break; }
-					edge = &emp->data;
-				}
-				c_start = 0;
-				MachineDigraphPutEdge(edge, v0, v1);
-				printf("edge %c\n", *c);
-			}
-			if(flags & OPEN) { /* Open parenthesis. */
-				assert(!(flags & CLOSE) /*&& flags & EDGE @fixme Fails. Are you sure we need this? */);
-				if(!Nest(&nest, v1i)) { e = RESOURCES; break; }
-				printf("open\n");
-			}
-			if(flags & CLOSE) { /* Close parenthesis. */
-				assert(!(flags & OPEN));
-				NestPoolPop(&nest);
-				if(!NestPoolPeek(&nest)) { e = SYNTAX; break; }
-				printf("close\n");
-				is_closing = 1;
-			}
-		} while(c++, !(flags & DONE)); /* For @ byte. */
-		if(e) break;
-		/* Verify the parentheses match. */
-		if(!NestPoolPop(&nest) || NestPoolPeek(&nest)) { e = SYNTAX; break; }
-	} while(0); if(e == SYNTAX) { /* catch(SYNTAX) */
-		errno = EILSEQ;
-	} { /* finally */
-		NestPoolClear(&nest);
-	}
-	printf("m_compile: e %d\n", e);
-	return !e;
-}
 /** Compiles a regular expression.
  @param compile: If null, returns null. Otherwise, this is a null-terminated
  modified UTF-8 string that gets compiled into a regular expression.
@@ -469,7 +336,7 @@ struct Regex *Regex(const char *const compile) {
 	VertexPool(&re->vs, &MachineDigraphVertexMigrateAll, &re->graph);
 	EmptyPool(&re->empties);
 	LiteralsPool(&re->literals);
-	if(!re_compile(re, compile)) Regex_(&re);
+	if(!compile_re(re, compile)) Regex_(&re);
 	return re;
 }
 
@@ -525,160 +392,131 @@ int RegexOut(const struct Regex *const re, FILE *const fp) {
 
 
 
+/*
+ * The rest is for compiling a regular expression.
+ */
 
 
 
+/**
+ * Temporary nesting for compiling. Refers to index in the vertices pool.
+ */
+struct Nest { size_t v0i, v2i; const char *arg; };
+#define POOL_NAME Nest
+#define POOL_TYPE struct Nest
+#define POOL_STACK
+#include "Pool.h"
+/** Private constructor.
+ @param nest: A {NestPool}. Required.
+ @param a: An already existing vertex index to use as the opening.
+ @return Creates a new Nest or null.
+ @throws {realloc} errors. */
+static struct Nest *Nest(struct NestPool *const nest, const size_t v0i) {
+	struct Nest *n;
+	assert(nest);
+	if(!(n = NestPoolNew(nest))) return 0;
+	n->v0i = v0i;
+	n->v2i = (size_t)-1; /* By agreed upon convention, this is null. */
+	return n;
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-
-
-/* Private functions later on. */
-static int init_compile_re(struct Regex *const re, const char *const compile);
-static int match_here(const struct MachineVertex *const root,
-	const char *const arg);
-
+struct Make;
+/** Definition of {MakeContext}. */
+typedef void (*MakeContext)(struct Make *const);
 
 /**
  * Temporary structure called on compiling regular expressions into DFAs. All
  * wrapped up one one object for convenience.
  */
-struct MakeRe {
+struct Make {
 	struct Regex *re;
 	struct NestPool nests;
-	MakeReContext context;
-	const char *from, *to;
-	struct MachineVertex *v;
+	MakeContext context;
+	const char *c_from, *c;
+	enum {
+		ERRNO = 1,
+		SYNTAX = 2,
+		BRANCH = 4,
+		EDGE = 8,
+		OPEN = 16,
+		CLOSE = 32
+	} status;
 };
 
-/* Prototypes defined later. */
-static enum MakeReStatus advance_literals(struct MakeRe *const make);
-static enum MakeReStatus normal_context(struct MakeRe *const make);
-static enum MakeReStatus escape_context(struct MakeRe *const make);
+/* Prototypes defined later, used now. */
+static void normal_context(struct Make *const make);
+static void escape_context(struct Make *const make);
 
-/** Private: initialises {re} with {compile} and compiles.
- @return Success, otherwise (probably) {errno} is set; it always initialises
- {re}. */
-static int init_compile_re(struct Regex *const re, const char *const compile) {
-	struct MakeRe make;
-	enum MakeReStatus e = SUCCESS;
-	assert(re && compile);
+/** Private initialiser. */
+static int Make(struct Make *const make,
+	struct Regex *const re, const char *const compile) {
+	struct MachineVertexLink *start;
+	assert(make && re && compile && !MachineDigraphGetRoot(&re->graph));
+	make->re = re;
+	NestPool(&make->nests);
+	make->context = &normal_context;
+	make->c_from = 0;
+	make->c = compile;
+	make->status = 0;
+	/* Set up starting state: implied parenthesis around all. */
+	if(!(start = VertexPoolNew(&make->re->vs))) return 0;
+	MachineDigraphPutVertex(&make->re->graph, &start->data);
+	if(!Nest(&make->nests, VertexPoolIndex(&make->re->vs, start))) return 0;
+	return 1;
+}
 
-	/* Initialise {re}. */
-	re->title = compile;
-	MachineDigraph(&re->states);
-	MachineVertexPool(&re->vertices, &vertex_migrate, &make);
-	EmptyPool(&re->empties, &edge_migrate, &make);
-	LiteralsPool(&re->literals, &edge_migrate, &make);
-
-	/* Initialise {make}, the {re} scaffolding. */
-	make.re = re;
-	NestPool(&make.nests);
-	make.context = &normal_context;
-	make.from = make.to = compile;
-	make.v = 0;
-
-	printf("Regex<%s> compiling.\n", re->title);
-	do { /* Try. */
-		{ /* Set up starting state: implied parenthesis around all. */
-			struct Nest *nest;
-			if(!(make.v = MachineVertexPoolNew(&make.re->vertices))
-				|| !(nest = NestPoolNew(&make.nests)))
-				{ e = RESOURCES; break; }
-			MachineDigraphVertex(&make.re->states, make.v);
-			Nest(nest, make.to, make.v);
-		}
-		do { /* Main compiling loop. */
-			if((e = make.context(&make)) != SUCCESS) break;
-		} while(make.context && (make.to++, 1));
-		if(e) break;
-		/* One last call to clean up the rest. */
-		if((e = advance_literals(&make)) != SUCCESS) break;
-		/* Make sure the parentheses are matched. */
-		if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))
-			{ e = SYNTAX; break; }
-	} while(0); if(e == SYNTAX) { /* Catch(SYNTAX) -- set {errno}. */
-		errno = EILSEQ;
-	} { /* Finally. */
-		NestPool_(&make.nests);
-	}
-	return !e;
+/** Private destructor. */
+static void Make_(struct Make *const make) {
+	assert(make);
+	NestPool_(&make->nests);
+	make->context = 0;
 }
 
 /** .|\ (capturing group, nah) (lazy ? eh) (lookarounds, meh)
- @implements MakeReContext */
-static enum MakeReStatus normal_context(struct MakeRe *const make) {
-	struct Nest *nest;
-	enum MakeReStatus e = SUCCESS;
-	assert(make && NestPoolPeek(&make->nests));
-	/*printf("char: %c (0x%x.)\n", *make->to, (unsigned)*make->to);*/
-	switch(*make->to) {
-		case '\\':
-			make->context = &escape_context; break;
-		case '|':
-			if((e = advance_literals(make)) != SUCCESS) break;
-			make->from = make->to + 1;
-			make->v = NestPoolPeek(&make->nests)->start;
-			break;
-		case '*':
-		case '+':
-		case '?':
-		case '^':
-		case '$':
-		case '{':
-		case '}': break; /* @fixme Not implemented. */
-		case '(':
-			if((e = advance_literals(make)) != SUCCESS) break; /* Clean up. */
-			if(!(nest = NestPoolNew(&make->nests))) return RESOURCES;
-			Nest(nest, make->from, make->v);
-			printf("normal_context: '(': <%s>\n", make->from);
-			break;
-		case ')':
-			if((e = advance_literals(make)) != SUCCESS) break;
-			if(!(nest = NestPoolPop(&make->nests))
-			   || !NestPoolPeek(&make->nests)) return SYNTAX;
-			printf("normal_context: ')': <%s>\n", make->from);
-			break;
-		case '\0': make->context = 0; break;
-		default: break;
+ @implements MakeContext */
+static void normal_context(struct Make *const make) {
+	assert(make && !make->status && NestPoolPeek(&make->nests) && make->c);
+	printf("normal_context: %c (0x%x.)\n", *make->c, (unsigned)*make->c);
+	switch(*make->c) {
+	case '\\': make->context = &escape_context; break;
+	case '|': make->status |= BRANCH; break;
+	case '(': make->status |= OPEN; break;
+	case ')': make->status |= CLOSE; break;
+	case '*':
+	case '+':
+	case '?':
+	case '^':
+	case '$':
+	case '{':
+	case '}': break; /* @fixme Not implemented. */
+	case '\0': make->context = 0; break;
+	default: if(!make->c_from) make->c_from = make->c; break; /*Start literal.*/
 	}
-	return e;
 }
 
 /** \d (digit,intern) \w (word,_,number,>255?) \s any separator?
  \D \W \S \N(not a line break)
- @implements MakeReContext */
-static enum MakeReStatus escape_context(struct MakeRe *const make) {
-	assert(make);
-	switch(*make->to) {
-		case '\0': return SYNTAX;
+ @implements MakeContext */
+static void escape_context(struct Make *const make) {
+	assert(make && !make->status && NestPoolPeek(&make->nests) && make->c);
+	printf("normal_context: %c (0x%x.)\n", *make->c, (unsigned)*make->c);
+	switch(*make->c) {
+		case '\0': make->status = SYNTAX, make->context = 0; return;
 			/*default:*/
 	}
 	make->context = &normal_context;
-	return SUCCESS;
 }
 
 /** {3}{2,7}{4,}
- @implements MakeReContext */
-/*static enum MakeReStatus brace_context(struct MakeRe *const make) {
+ @implements MakeContext */
+/*static enum MakeStatus brace_context(struct Make *const make) {
 	assert(make);
 	return SUCCESS;
 }*/
 
 /** [] [^]
- @implements MakeReContext *
-static enum MakeReStatus brackets_context(struct MakeRe *const make) {
+ @implements MakeContext *
+static enum MakeStatus brackets_context(struct Make *const make) {
 	assert(make);
 	switch(*make->to) {
 	case ']': make->context = &normal_context;
@@ -687,5 +525,92 @@ static enum MakeReStatus brackets_context(struct MakeRe *const make) {
 	return SUCCESS;
 }*/
 
-#endif
-
+/** Private: initialises {re} with {compile} and compiles. Called from
+ \see{Regex}.
+ @return Success, otherwise {errno} will (probably) be set; it always
+ initialises {re}. */
+static int compile_re(struct Regex *re, const char *const compile) {
+	struct Make make;
+	struct Nest *n;
+	size_t v1i = 0;
+	assert(re && compile);
+	printf("compile_re: <%s>.\n", compile);
+	Make(&make, re, compile);
+	/* Main compiling loop. */
+	do {
+		assert((make.status & (ERRNO | SYNTAX)) == 0);
+		/* Main compiling loop. */
+		make.status = 0;
+		make.context(&make);
+		if(!make.status) continue;
+		/* Something happened. Retrieve nesting level. */
+		n = NestPoolPeek(&make.nests), assert(n);
+		/* Any literals always add an edge. */
+		if(make.c_from) make.status |= EDGE;
+		/* Add onto the graph. */
+		if(make.status & BRANCH && n->v2i == (size_t)-1) { /* Terminating v2. */
+			struct MachineVertexLink *const v2 = VertexPoolNew(&re->vs);
+			if(!v2) { make.status = ERRNO, make.context = 0; break; }
+			MachineDigraphPutVertex(&re->graph, &v2->data);
+			n->v2i = VertexPoolIndex(&re->vs, v2);
+			if(make.c >= compile || *(make.c - 1) != ')') make.status |= EDGE;
+			printf("final %c\n", *make.c);
+		}
+		if(make.status & EDGE) { /* Intermediary v1. */
+			struct MachineEdge *edge;
+			struct MachineVertex *v0, *v1;
+			if(n->v2i != (size_t)-1) { /* v1 == v2 terminating. */
+				struct MachineVertexLink *const v1l
+					= VertexPoolGet(&re->vs, v1i = n->v2i);
+				assert(v1l);
+				v1 = &v1l->data;
+			} else { /* Make an intermediary vertex, v1. */
+				struct MachineVertexLink *const v1l = VertexPoolNew(&re->vs);
+				if(!v1l) { make.status = ERRNO, make.context = 0; break; }
+				v1 = &v1l->data;
+				v1i = VertexPoolIndex(&re->vs, v1l);
+				MachineDigraphPutVertex(&re->graph, v1);
+			}
+			{ /* First vertex; after second because possibly invalidated. */
+				struct MachineVertexLink *const v0l
+				= VertexPoolGet(&re->vs, n->v0i);
+				assert(v0l);
+				v0 = &v0l->data;
+			}
+			/* The edge. */
+			if(make.c_from && make.c_from < make.c) {
+				struct Literals *const lit = Literals(&re->literals,
+					make.c_from, make.c - make.c_from);
+				if(!lit) { make.status = ERRNO, make.context = 0; break; }
+				edge = &lit->edge.data;
+			} else {
+				struct MachineEdgeLink *emp = Empty(&re->empties);
+				if(!emp) { make.status = ERRNO, make.context = 0; break; }
+				edge = &emp->data;
+			}
+			make.c_from = 0;
+			MachineDigraphPutEdge(edge, v0, v1);
+			printf("edge %c\n", *make.c);
+		}
+		if(make.status & OPEN) { /* Open parenthesis. */
+			assert(!(make.status & CLOSE));
+			if(!Nest(&make.nests, v1i))
+				{ make.status = ERRNO, make.context = 0; break; }
+			printf("open\n");
+		}
+		if(make.status & CLOSE) { /* Close parenthesis. */
+			assert(!(make.status & OPEN));
+			NestPoolPop(&make.nests);
+			/* Too many ')'. */
+			if(!NestPoolPeek(&make.nests))
+				{ make.status = SYNTAX, make.context = 0; break; }
+			printf("close\n");
+		}
+	} while(make.context && (make.c++, 1));
+	/* Catch(SYNTAX) -- set {errno}. */
+	if(make.status == SYNTAX) errno = EILSEQ;
+	/* Finally. */
+	Make_(&make);
+	printf("compile_re: <%s> make.status %d\n", compile, make.status);
+	return !(make.status & (ERRNO | SYNTAX));
+}

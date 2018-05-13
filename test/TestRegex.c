@@ -75,6 +75,7 @@ static void re_assert(const struct Result *const r) {
 		strcpy(f, ".gv");*/
 		const char *fn = r->gv;
 		if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
+		else printf("Output graph <%s>.\n", fn);
 		fclose(fp);
 	}
 	a = RegexMatch(re, r->match);
