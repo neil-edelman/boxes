@@ -283,7 +283,10 @@ static void G_(Digraph)(struct G_(Digraph) *const g) {
 
 #ifdef DIGRAPH_VDATA /* <-- vdata */
 /** Given {vertex}, gets the associated vertex data; only present if
- {DIGRAPH_VDATA}. Doesn't consider null as a valid function argument. */
+ {DIGRAPH_VDATA}.
+ @param vertex: Doesn't consider null as a valid function argument.
+ @order \Theta(1)
+ @allow */
 static V *G_(DigraphVertexData)(struct G_(Vertex) *const vertex) {
 	return &vertex->info;
 }
@@ -291,7 +294,10 @@ static V *G_(DigraphVertexData)(struct G_(Vertex) *const vertex) {
 
 #ifdef DIGRAPH_EDATA /* <-- edata */
 /** Given {edge}, gets the associated edge data; only present if
- {DIGRAPH_EDATA}. Doesn't consider null as a valid function argument. */
+ {DIGRAPH_EDATA}.
+ @param edge: Doesn't consider null as a valid function argument.
+ @order \Theta(1)
+ @allow */
 static E *G_(DigraphEdgeData)(struct G_(Edge) *const edge) {
 	return &edge->info;
 }
@@ -301,7 +307,9 @@ static E *G_(DigraphEdgeData)(struct G_(Edge) *const edge) {
  added. Adds {v} as an isolated vertex in {g}.
  @param g: If null, does nothing but initialise {v}.
  @param v: If null, does nothing, otherwise initialises to contain no edges;
- the vertex data is left alone. */
+ the vertex data is left alone.
+ @order \Theta(1)
+ @allow */
 static void G_(DigraphPutVertex)(struct G_(Digraph) *const g,
 	struct G_(Vertex) *const v) {
 	char a[12];
@@ -318,7 +326,9 @@ static void G_(DigraphPutVertex)(struct G_(Digraph) *const g,
 /** Undefined behaviour results from adding edges that have already been added.
  Initialises {e} to point to {from} to {to}.
  @param e, from, to: If any are null, does nothing.
- @param e: The edge data is left alone. */
+ @param e: The edge data is left alone.
+ @order \Theta(1)
+ @allow */
 static void G_(DigraphPutEdge)(struct G_(Edge) *e,
 	struct G_(Vertex) *const from, struct G_(Vertex) *const to) {
 	if(!e || !from || !to) return;
@@ -331,14 +341,18 @@ static void G_(DigraphPutEdge)(struct G_(Edge) *e,
  the root is the first vertex added.
  @param g, root: If null, does nothing.
  @param root: A vertex in the graph. Undefined behaviour if it is set to a
- vertex not in the graph. */
+ vertex not in the graph.
+ @order \Theta(1)
+ @allow */
 static void G_(DigraphSetRoot)(struct G_(Digraph) *const g,
 	struct G_(Vertex) *const root) {
 	if(!g || !root) return;
 	g->root = root;
 }
 
-/** Retrieves the starting vertex or null if {g} is empty or null. */
+/** Retrieves the starting vertex or null if {g} is empty or null.
+ @order \Theta(1)
+ @allow */
 static struct G_(Vertex) *G_(DigraphGetRoot)(const struct G_(Digraph) *const g){
 	if(!g) return 0;
 	return g->root;
@@ -382,7 +396,8 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
  Specifically, with {<super Vertex>Pool} supply {<G>Digraph} as a
  {POOL_MIGRATE_ALL} parameter; the constructor to the pool now takes this
  migrate function, or a function that calls this function, and {g}.
- @order \O({edges}) */
+ @order \O({edges})
+ @allow */
 static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	const struct Migrate *const migrate) {
 	struct G_(Vertex) *v = 0;
