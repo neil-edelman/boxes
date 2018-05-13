@@ -434,12 +434,13 @@ struct Make {
 	MakeContext context;
 	const char *c_from, *c;
 	enum {
-		ERRNO = 1,
-		SYNTAX = 2,
-		BRANCH = 4,
-		EDGE = 8,
-		OPEN = 16,
-		CLOSE = 32
+		DONE = 1,
+		ERRNO = 2,
+		SYNTAX = 4,
+		BRANCH = 8,
+		EDGE = 16,
+		OPEN = 32,
+		CLOSE = 64
 	} status;
 };
 
@@ -489,7 +490,7 @@ static void normal_context(struct Make *const make) {
 	case '$':
 	case '{':
 	case '}': break; /* @fixme Not implemented. */
-	case '\0': make->context = 0; break;
+	case '\0': make->status |= DONE, make->context = 0; break;
 	default: if(!make->c_from) make->c_from = make->c; break; /*Start literal.*/
 	}
 }
@@ -499,7 +500,7 @@ static void normal_context(struct Make *const make) {
  @implements MakeContext */
 static void escape_context(struct Make *const make) {
 	assert(make && !make->status && NestPoolPeek(&make->nests) && make->c);
-	printf("normal_context: %c (0x%x.)\n", *make->c, (unsigned)*make->c);
+	printf("escape_context: %c (0x%x.)\n", *make->c, (unsigned)*make->c);
 	switch(*make->c) {
 		case '\0': make->status = SYNTAX, make->context = 0; return;
 			/*default:*/
@@ -550,7 +551,7 @@ static int compile_re(struct Regex *re, const char *const compile) {
 		/* Add onto the graph. */
 		if(make.status & BRANCH && n->v2i == (size_t)-1) { /* Terminating v2. */
 			struct MachineVertexLink *const v2 = VertexPoolNew(&re->vs);
-			if(!v2) { make.status = ERRNO, make.context = 0; break; }
+			if(!v2) { make.status |= ERRNO, make.context = 0; break; }
 			MachineDigraphPutVertex(&re->graph, &v2->data);
 			n->v2i = VertexPoolIndex(&re->vs, v2);
 			if(make.c >= compile || *(make.c - 1) != ')') make.status |= EDGE;
@@ -611,6 +612,6 @@ static int compile_re(struct Regex *re, const char *const compile) {
 	if(make.status == SYNTAX) errno = EILSEQ;
 	/* Finally. */
 	Make_(&make);
-	printf("compile_re: <%s> make.status %d\n", compile, make.status);
+	printf("compile_re: <%s> make.status 0x%x\n", compile, make.status);
 	return !(make.status & (ERRNO | SYNTAX));
 }
