@@ -360,12 +360,14 @@ static struct G_(Vertex) *G_(DigraphGetRoot)(const struct G_(Digraph) *const g){
 
 /** Appends {g} to {fp} in GraphViz format.
  @param g: If null, does nothing.
+ @param title: If null, ignored, otherwise an escaped title.
  @param fp: File pointer.
  @return Success.
  @throws {fprintf} errors: {IEEE Std 1003.1-2001}.
  @order O(|{vertices}| + |{edges}|)
  @allow */
-static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
+static int G_(DigraphOut)(const struct G_(Digraph) *const g,
+	const char *const title, FILE *const fp) {
 	struct G_(Vertex) *v;
 	struct G_(Edge) *e;
 	char a[12];
@@ -373,6 +375,10 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g, FILE *const fp) {
 	if(!g || !fp) return 0;
 	if(fprintf(fp, "digraph " QUOTE(DIGRAPH_NAME) " {\n"
 		"\tnode [shape = circle];\n") < 0) return 0;
+	if(title) {
+		fprintf(fp, "\tlabelloc = \"t\";\n"
+			"\tlabel = \"%s\";\n", title);
+	}
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		v_no = (unsigned long)v;
 		PG_(vertex_to_string)(v, &a);
@@ -433,7 +439,7 @@ static void PG_(unused)(void) {
 	G_(DigraphPutEdge)(0, 0, 0);
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
-	G_(DigraphOut)(0, 0);
+	G_(DigraphOut)(0, 0, 0);
 	G_(DigraphVertexMigrateAll)(0, 0);
 	PG_(unused_coda)();
 }

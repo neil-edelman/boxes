@@ -429,7 +429,7 @@ int main(void) {
 		FILE *fp;
 		if(!mach) { perror(m->machine); assert(0); break; }
 		fp = fopen(m->fn, "w");
-		if(!fp || !MachineDigraphOut(&mach->graph, fp)) {
+		if(!fp || !MachineDigraphOut(&mach->graph, 0, fp)) {
 			perror(m->fn);
 		}
 		fclose(fp);

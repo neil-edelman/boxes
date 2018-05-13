@@ -72,7 +72,7 @@ static void PG_(test_random)(void) {
 			G_(DigraphPutEdge)(&en->data, v0, v1);
 		}
 		/*PG_(valid_state)(&g);*/
-		if(!G_(DigraphOut)(&g, fp)) break;
+		if(!G_(DigraphOut)(&g, 0, fp)) break;
 		done = 1;
 	} while(0); if(!done) perror(fn); {
 		G_(Digraph_)(&g);
