@@ -7,9 +7,6 @@ static const PKV_(Action) PKV_(filler) = (ENTRY_TEST);
 
 
 
-#ifdef KV_NAME
-#undef KV_NAME
-#endif
 #ifdef QUOTE
 #undef QUOTE
 #endif
@@ -18,7 +15,6 @@ static const PKV_(Action) PKV_(filler) = (ENTRY_TEST);
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
-#define KV_NAME QUOTE(ENTRY_NAME)
 
 
 
@@ -108,7 +104,7 @@ static void PKV_(test_basic)(void) {
 
 /** The list will be tested on stdout. */
 static void KV_(EntryTest)(void) {
-	printf("<" KV_NAME ">Entry: of type <"
+	printf("<" QUOTE(ENTRY_NAME) ">Entry: of type <"
 		QUOTE(ENTRY_KEY) "," QUOTE(ENTRY_VALUE) "> was created using: "
 		"ENTRY_CMP <" QUOTE(ENTRY_CMP) ">; "
 		"ENTRY_HASH <" QUOTE(ENTRY_HASH) ">; "
@@ -116,9 +112,8 @@ static void KV_(EntryTest)(void) {
 		"ENTRY_TEST<" QUOTE(ENTRY_TEST) ">; "
 		"testing:\n");
 	PKV_(test_basic)();
-	fprintf(stderr, "Done tests of Set<" KV_NAME ">.\n\n");
+	fprintf(stderr, "Done tests of Set<" QUOTE(ENTRY_NAME) ">.\n\n");
 }
 
-#undef KV_NAME
 #undef QUOTE
 #undef QUOTE_

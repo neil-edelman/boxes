@@ -53,19 +53,19 @@
 
 /* Check defines. */
 #ifndef ENTRY_NAME
-#error Entry generic ENTRY_NAME undefined.
+#error Generic ENTRY_NAME undefined.
 #endif
 #ifndef ENTRY_KEY
-#error Map generic ENTRY_KEY undefined.
+#error Generic ENTRY_KEY undefined.
 #endif
 #ifndef ENTRY_VALUE
-#error Map generic ENTRY_VALUE undefined.
+#error Generic ENTRY_VALUE undefined.
 #endif
 #ifndef ENTRY_CMP
-#error Map generic ENTRY_CMP undefined.
+#error Generic ENTRY_CMP undefined.
 #endif
 #ifndef ENTRY_HASH
-#error Map generic ENTRY_HASH undefined.
+#error Generic ENTRY_HASH undefined.
 #endif
 #if defined(ENTRY_TEST) ^ defined(ENTRY_TO_STRING)
 #error ENTRY_TEST and ENTRY_TO_STRING are mutual.
