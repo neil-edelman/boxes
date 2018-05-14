@@ -1,17 +1,24 @@
 /** 2018 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<E>Map} is an abstract data container of a hash table, associative array, or
- dictionary, requiring the storage of {<E>MapNode} or structures therewith.
- Depends on {List.h} being in the same directory as {Map.h}. Use when {<E>}
- contains the constant key within the data.
+ {<E>Map} is an associative array abstract data type, (hash table,) of which a
+ subset of {K \in E} is used as a unique key, specified by {MAP_KEY}. Adding an
+ element with the same {K} causes the old data to be ejected, see
+ \see{<E>MapPut}. The key is then hashed to a {uint32_t} and placed in a bucket
+ implemented as a power-of-two dynamically allocated array of lists for easy
+ rehashing. As such, depends on {List.h} being in the same directory as
+ {Map.h}. This requires the storage of {<E>MapNode} or structures therewith.
+
+ Use when {<E>} contains the key within the data. For a key-value store which
+ requires fewer parameters and is closer to a dictionary, see {<K,V>Entry},
+ which is sort of a subclass, if you will.
 
  @param MAP_NAME
  A unique (among {Map}) name associated with {<E>} that satisfies {C} naming
  rules when mangled; required.
 
  @param MAP_TYPE
- This type becomes {<E>}. To have a linked hash map, you can specify a
+ This type becomes {<E>}. To have a linked hash map, one can specify a
  {<T>ListNode}; required.
 
  @param MAP_KEY
@@ -38,7 +45,7 @@
  If {NDEBUG} is not defined, turns on {assert} private function integrity
  testing. Requires {MAP_TO_STRING}.
 
- @fixme MAP_DEFAULT -- instead of null so you can do, {<E>MapGet(key)->value}.
+ @fixme MAP_DEFAULT -- instead of null so one can do, {<E>MapGet(key)->value}.
 
  @title		Map
  @author	Neil
