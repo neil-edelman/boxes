@@ -1,7 +1,7 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- Regex, \cite{Thompson1968Regular}, Cox2007
+ Regular expression pattern, \cite{Thompson1968Regular}, Cox2007
  \url{ https://swtch.com/~rsc/regexp/regexp1.html }. We don't take exactly the
  same approach. (I think?)
  \url{ http://users.pja.edu.pl/~jms/qnx/help/watcom/wd/regexp.html }
@@ -34,12 +34,12 @@
  <set-items> ::= <range> | <char>
  <range> ::= <char> "-" <char>
 
- @title		Regex
+ @title		Pattern
  @author	Neil
  @std		C89 with C99 stdint.h
  @version	2018-04
  @since
- 2018-04 Conglomerated into {Regex}. */
+ 2018-04 Conglomerated into {Pattern}. */
 
 /*#include <stddef.h>*/	/* ptrdiff_t offset_of */
 /*#include <stdlib.h>*/ /* malloc realloc free */
@@ -51,7 +51,7 @@
 #include <ctype.h>  /* isspace */
 #include <stdarg.h> /* va_* */
 #include <stdint.h> /* C99 uint32_t */
-#include "Regex.h"
+#include "Pattern.h"
 
 /* Pre-define these constants. */
 struct Transition;
@@ -293,9 +293,9 @@ static int sieve_match(struct Machine *const state, const char match) {
 #endif /* Not used. */
 
 /**
- * {Regex} is composed of the things defined above.
+ * {Pattern} is composed of the things defined above.
  */
-struct Regex {
+struct Pattern {
 	const char *title;
 	struct MachineDigraph graph;
 	struct VertexPool vs;
@@ -306,10 +306,10 @@ struct Regex {
 /** Destructor.
  @param re: If null, does nothing, otherwise it is set to match zero characters
  and frees the memory. */
-void Regex_(struct Regex **const pre) {
-	struct Regex *re;
+void Pattern_(struct Pattern **const pre) {
+	struct Pattern *re;
 	if(!pre || !(re = *pre)) return;
-	printf("~Regex<%s>.\n", re->title);
+	printf("~Pattern<%s>.\n", re->title);
 	LiteralsPoolForEach(&re->literals, &Literals_);
 	LiteralsPool_(&re->literals);
 	EmptyPool_(&re->empties);
@@ -319,28 +319,28 @@ void Regex_(struct Regex **const pre) {
 }
 
 /* Defined at eof. */
-static int compile_re(struct Regex *re, const char *const compile);
+static int compile_re(struct Pattern *re, const char *const compile);
 
 /** Compiles a regular expression.
  @param compile: If null, returns null. Otherwise, this is a null-terminated
  modified UTF-8 string that gets compiled into a regular expression.
- @return The regular expression. Requires freeing with \see{Regex_}.
+ @return The regular expression. Requires freeing with \see{Pattern_}.
  @throws {malloc/realloc} errors: {IEEE Std 1003.1-2001}.
  @throws EILSEQ: The {re} is not understood, (required since 1994 Amendment 1
  to C89 standard.) */
-struct Regex *Regex(const char *const compile) {
-	struct Regex *re;
+struct Pattern *Pattern(const char *const compile) {
+	struct Pattern *re;
 	if(!compile || !(re = malloc(sizeof *re))) return 0;
 	re->title = compile;
 	MachineDigraph(&re->graph);
 	VertexPool(&re->vs, &MachineDigraphVertexMigrateAll, &re->graph);
 	EmptyPool(&re->empties);
 	LiteralsPool(&re->literals);
-	if(!compile_re(re, compile)) Regex_(&re);
+	if(!compile_re(re, compile)) Pattern_(&re);
 	return re;
 }
 
-/** Checks if the {root} of the DFA matches {arg}. Called in \see{RegexMatch}.
+/** Checks if the {root} of the DFA matches {arg}. Called in \see{PatternMatch}.
  @return The end of the match if it was a match or null.
  @fixme implements <Machine,char*>Predicate,
  if(!(e = MachineEdgeListMatchShortCircuit(&s->out, &no_match, match))) would be
@@ -369,7 +369,7 @@ static int match_here(const struct MachineVertex *const root,
 /** Match {re} by performing a DFS in-order search on each character.
  @param re, arg: If null, returns null.
  @return The first point it matches or null if it doesn't. */
-const char *RegexMatch(const struct Regex *const re, const char *const arg) {
+const char *PatternMatch(const struct Pattern *const re, const char *const arg) {
 	const struct MachineVertex *root;
 	const char *a;
 	if(!re || !arg) return 0;
@@ -385,7 +385,7 @@ const char *RegexMatch(const struct Regex *const re, const char *const arg) {
  @throws {fprintf} errors: {IEEE Std 1003.1-2001}.
  @order O(|{vertices}| + |{edges}|)
  @allow */
-int RegexOut(const struct Regex *const re, FILE *const fp) {
+int PatternOut(const struct Pattern *const re, FILE *const fp) {
 	if(!re) return 0;
 	return MachineDigraphOut(&re->graph, re->title, fp);
 }
@@ -429,7 +429,7 @@ typedef void (*MakeContext)(struct Make *const);
  * wrapped up one one object for convenience.
  */
 struct Make {
-	struct Regex *re;
+	struct Pattern *re;
 	struct NestPool nests;
 	MakeContext context;
 	const char *c_from, *c;
@@ -450,7 +450,7 @@ static void escape_context(struct Make *const make);
 
 /** Private initialiser. */
 static int Make(struct Make *const make,
-	struct Regex *const re, const char *const compile) {
+	struct Pattern *const re, const char *const compile) {
 	struct MachineVertexLink *start;
 	assert(make && re && compile && !MachineDigraphGetRoot(&re->graph));
 	make->re = re;
@@ -526,11 +526,13 @@ static enum MakeStatus brackets_context(struct Make *const make) {
 	return SUCCESS;
 }*/
 
+/** Gets the index of  */
+
 /** Private: initialises {re} with {compile} and compiles. Called from
- \see{Regex}.
+ \see{Pattern}.
  @return Success, otherwise {errno} will (probably) be set; it always
  initialises {re}. */
-static int compile_re(struct Regex *re, const char *const compile) {
+static int compile_re(struct Pattern *re, const char *const compile) {
 	struct Make make;
 	struct Nest *n;
 	size_t v1i = 0;

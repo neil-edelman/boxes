@@ -16,7 +16,7 @@
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp */
 #include <assert.h>
-#include "../src/Regex.h"
+#include "../src/Pattern.h"
 #include "Orcish.h"
 
 static struct Result {
@@ -47,12 +47,12 @@ static const size_t results_size = sizeof results / sizeof *results;
 
 static void re_assert(const struct Result *const r) {
 	FILE *fp;
-	struct Regex *re = Regex(r->compile);
+	struct Pattern *re = Pattern(r->compile);
 	const char *a;
 	assert(r);
 	if(r->gv) { /* Output graph. */
 		const char *fn = r->gv;
-		if(!(fp = fopen(fn, "w")) || !RegexOut(re, fp)) perror(fn);
+		if(!(fp = fopen(fn, "w")) || !PatternOut(re, fp)) perror(fn);
 		else printf("Output graph <%s>.\n", fn);
 		fclose(fp);
 	}
@@ -64,13 +64,13 @@ static void re_assert(const struct Result *const r) {
 		printf("re_assert: checking that /%s/ does not compile.\n", r->compile);
 			{ assert(!re); perror(r->compile); return; }
 	}
-	a = RegexMatch(re, r->match);
+	a = PatternMatch(re, r->match);
 	if(r->expected) {
 		assert(a && !strcmp(r->expected, a));
 	} else {
 		assert(!a);
 	}
-	Regex_(&re);
+	Pattern_(&re);
 }
 
 	/*const char *bit1x30 = "all your base are belong to us",
@@ -78,14 +78,14 @@ static void re_assert(const struct Result *const r) {
 		*bit3x7 = "煮爫禎ﬀﭖﳼﷺ",
 		*bit4x4 = "𐑫𐑣𐑟𐐥";
 	const char *str1 = "hellohithere", *str2 = "thsdoesnot", *m;
-	if((m = RegexMatch(re, str1))) printf("matches <%s> <%s>\n", str1, m);
+	if((m = PatternMatch(re, str1))) printf("matches <%s> <%s>\n", str1, m);
 	else assert(0);
 	printf("str2: <%s>\n", str2);
-	if((m = RegexMatch(re, str2)))
+	if((m = PatternMatch(re, str2)))
 		printf("matches <%s> <%s>\n", str2, m), assert(0);
 
-	Regex_(&re_null);
-	Regex_(&re);
+	Pattern_(&re_null);
+	Pattern_(&re);
 	assert(!re_null && !re_empty && !re);*/
 
 /** @return Either EXIT_SUCCESS or EXIT_FAILURE. */
