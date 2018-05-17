@@ -383,7 +383,7 @@ static void G_(DigraphSort)(struct G_(Digraph) *g) {
 	{
 		struct G_(Vertex) *v;
 		for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v))
-			G_(VertexEdgeSort)(&v->out);
+			G_(EdgeListSort)(&v->out);
 	}
 #endif /* ecmp --> */
 }
