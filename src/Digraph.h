@@ -470,6 +470,10 @@ static void PG_(unused)(void) {
 	G_(DigraphPutEdge)(0, 0, 0);
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
+#if defined(DIGRAPH_VDATA_COMPARATOR) || defined(DIGRAPH_EDATA_COMPARATOR)
+	/* <-- sort */
+	G_(DigraphSort)(0);
+#endif /* sort --> */
 	G_(DigraphOut)(0, 0, 0);
 	G_(DigraphVertexMigrateAll)(0, 0);
 	PG_(unused_coda)();
