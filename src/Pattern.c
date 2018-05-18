@@ -1,38 +1,11 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- Regular expression pattern, \cite{Thompson1968Regular}, Cox2007
- \url{ https://swtch.com/~rsc/regexp/regexp1.html }. We don't take exactly the
- same approach. (I think?)
- \url{ http://users.pja.edu.pl/~jms/qnx/help/watcom/wd/regexp.html }
- \url{ http://www.cs.sfu.ca/~cameron/Teaching/384/99-3/regexp-plg.html }
+ Regular expression pattern, \cite{Thompson1968Regular}, \cite{Cox2007},
+ \url{ https://swtch.com/~rsc/regexp/regexp1.html },
+ \url{ http://users.pja.edu.pl/~jms/qnx/help/watcom/wd/regexp.html },
+ \url{ http://www.cs.sfu.ca/~cameron/Teaching/384/99-3/regexp-plg.html },
  \url{ http://matt.might.net/articles/parsing-regex-with-recursive-descent/ }.
-
- <re> ::= <term> '|' <re> | <term>
- <term> ::= { <factor> }
- <factor> ::= <atom> <repeat> | <atom> | '^' | '$'
- <repeat> ::= '*' | '+' | '?' | '{' <number> [ ',' [ <number> ] ] '}'
- <atom> ::= <char> | '\' <char> | '(' <re> ')'
-
- <re> ::= <nestnch> | <piece>
- <nestnch> ::= <re> "|" <piece>
- <piece> ::= <concatenation> | <expression>
- <concatenation> ::= <piece> <expression>
- <expression> ::= <star> | <plus> | <atom>
- <star> ::=	<atom> "*"
- <plus> ::=	<atom> "+"
- <atom> ::= <group> | <any> | <bos> | <eos> | <char> | <set>
- <group> ::= "(" <re> ")"
- <any> ::= "."
- <bos> ::= "^"
- <eos> ::= "$"
- <char> ::= any non metacharacter | "\" metacharacter
- <set> ::= <positive-set> | <negative-set>
- <positive-set> ::= "[" <set-items> "]"
- <negative-set> ::= "[^" <set-items> "]"
- <set-items> ::= <set-item> | <set-item> <set-items>
- <set-items> ::= <range> | <char>
- <range> ::= <char> "-" <char>
 
  @title		Pattern
  @author	Neil
@@ -53,13 +26,20 @@
 #include <stdint.h> /* C99 uint32_t */
 #include "Pattern.h"
 
-/* Pre-define these constants. */
 struct Transition;
+/** Mostly used as a debug tool, eg, printing graphs. */
 typedef void (*TransitionToString)(const struct Transition *, char(*const)[12]);
+/** A total order on {Transition}. */
+typedef int (*TransitionComparator)(const struct Transition *,
+	const struct Transition *);
+/** Maps to a {size_t} for comparison in {TransitionComparator}, eg, the length
+ for ranking which branch gets tried first. */
+typedef size_t (*TransitionOrder)(const struct Transition *);
 
 /**
- * Intermediary structure created when walking the graph of regex and the
- * remainder of the string that it's matched against. Used in \see{match_here}.
+ * Intermediary structure created when walking the graph of regular expression
+ * and the remainder of the string that it's matched against. Used in
+ * \see{match_here}.
  */
 struct Match {
 	const struct Transition *edge;
@@ -75,6 +55,7 @@ struct TransitionVt {
 	const char *class;
 	const TransitionToString to_string;
 	const Match match;
+	const TransitionOrder order;
 };
 
 /**
@@ -90,7 +71,7 @@ static void Transition(struct Transition *const t,
 	assert(t && vt);
 	t->vt = vt;
 }
-/** @implements TransitionToString */
+/** @implements <Transition>ToString */
 static void transition_to_string(const struct Transition *t,char(*const a)[12]){
 	t->vt->to_string(t, a);
 }
@@ -99,10 +80,19 @@ static const char *transition_match(struct Match *const match) {
 	assert(match && match->edge && match->vertex && match->next);
 	return match->edge->vt->match(match);
 }
+/** Sorts on decresing size.
+ @implements <Transition>Comparator */
+static int transition_cmp(const struct Transition *a,
+	const struct Transition *b) {
+	const size_t a_order = a->vt->order(a), b_order = b->vt->order(b);
+	assert(a && b);
+	return (b_order > a_order) - (a_order > b_order);
+}
 /* {Transition \in MachineVertex, MachineEdge, \in MachineDigraph}. */
 #define DIGRAPH_NAME Machine
 #define DIGRAPH_EDATA struct Transition
 #define DIGRAPH_EDATA_TO_STRING &transition_to_string
+#define DIGRAPH_EDATA_COMPARATOR &transition_cmp
 #include "../src/Digraph.h"
 
 /** @implements <<<Machine>Vertex>Link>Migrate */
@@ -131,7 +121,7 @@ static void empty_migrate_each(struct MachineEdgeLink *e,
 	assert(e && migrate);
 	MachineEdgeLinkMigrate(&e->data, migrate);
 }
-/** @implements TransitionToString */
+/** @implements <Transition>ToString */
 static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
 	strcpy(*a, "ε");
 	(void)e;
@@ -140,8 +130,14 @@ static void empty_to_string(const struct Transition *e, char (*const a)[12]) {
 static const char *empty_match(const struct Match *const match) {
 	return match->next;
 }
+/** Empty is relegated to the very back.
+ @implements <Transition>Order */
+static size_t empty_order(const struct Transition *e) {
+	(void)e;
+	return 0;
+}
 static struct TransitionVt empty_vt
-	= { "Empty", &empty_to_string, &empty_match };
+	= { "Empty", &empty_to_string, &empty_match, &empty_order };
 #define POOL_NAME Empty
 #define POOL_TYPE struct MachineEdgeLink
 #define POOL_MIGRATE_EACH &empty_migrate_each
@@ -190,8 +186,12 @@ static const char *literals_match(const struct Match *const match) {
 	if(memcmp(l->text, match->next, l->text_size)) return 0;
 	return match->next + l->text_size;
 }
+/** @implements <Transition>Order */
+static size_t literals_order(const struct Transition *t) {
+	return literals_holds_transition(t)->text_size;
+}
 static struct TransitionVt literals_vt
-	= { "Literals", &literals_to_string, &literals_match };
+	= { "Literals", &literals_to_string, &literals_match, &literals_order };
 #define POOL_NAME Literals
 #define POOL_TYPE struct Literals
 #define POOL_MIGRATE_EACH &literals_migrate_each
@@ -369,7 +369,7 @@ static int match_here(const struct MachineVertex *const root,
 /** Match {re} by performing a DFS in-order search on each character.
  @param re, arg: If null, returns null.
  @return The first point it matches or null if it doesn't. */
-const char *PatternMatch(const struct Pattern *const re, const char *const arg) {
+const char *PatternMatch(const struct Pattern *const re, const char *const arg){
 	const struct MachineVertex *root;
 	const char *a;
 	if(!re || !arg) return 0;
@@ -609,6 +609,7 @@ static int compile_re(struct Pattern *re, const char *const compile) {
 				{ make.status |= SYNTAX, make.context = 0; break; }
 			printf("close\n");
 		}
+		MachineDigraphSort(&make.re->graph);
 	} while(make.context && (make.c++, 1));
 	/* Verify the parentheses match. */
 	if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))

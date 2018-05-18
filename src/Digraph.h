@@ -33,6 +33,9 @@
  Optional print function(s) implementing {<G>VDataToString} and
  {<G>EDataToString}.
 
+ @param DIGRAPH_VDATA_COMPARATOR, DIGRAPH_EDATA_COMPARATOR
+ Optional, gives \see{<G>DigraphSort}.
+
  @param DIGRAPH_TEST, DIGRAPH_VDATA_TEST, DIGRAPH_EDATA_TEST
  Unit testing framework using {<G>DigraphTest}, included in a separate header,
  {../test/DigraphTest.h}. If {DIGRAPH_TEST},
@@ -61,10 +64,12 @@
 #ifndef DIGRAPH_NAME /* <-- error */
 #error Generic DIGRAPH_NAME undefined.
 #endif /* error --> */
-#if defined(DIGRAPH_VDATA_TO_STRING) && !defined(DIGRAPH_VDATA) \
-	|| defined(DIGRAPH_EDATA_TO_STRING) && !defined(DIGRAPH_EDATA)
+#if (defined(DIGRAPH_VDATA_TO_STRING) || defined(DIGRAPH_VDATA_COMPARATOR)) \
+	&& !defined(DIGRAPH_VDATA) \
+	|| (defined(DIGRAPH_EDATA_TO_STRING) || defined(DIGRAPH_EDATA_COMPARATOR)) \
+	&& !defined(DIGRAPH_EDATA)
 	/* <-- error */
-#error DATA_TO_STRING without DATA.
+#error DATA_TO_STRING or DATA_COMPARATOR without DATA.
 #endif /* error --> */
 #ifdef DIGRAPH_TEST /* <-- test */
 #if defined(DIGRAPH_VDATA) && !defined(DIGRAPH_VDATA_TEST) || \
@@ -192,11 +197,26 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 	(void)e;
 #endif /* !edata --> */
 }
+#ifdef DIGRAPH_EDATA_COMPARATOR /* <-- ecmp: synecdoche for {E}. */
+typedef int (*PG_(EDataComparator))(const E *, const E *);
+/* Check that {DIGRAPH_EDATA_COMPARATOR} is a function implementing
+ {<PVE>EDataComparator}. */
+static const PG_(EDataComparator) PG_(edata_comparator)
+	= (DIGRAPH_EDATA_COMPARATOR);
+/** @implements <<G>Edge>Comparator */
+static int PG_(edge_comparator)(const struct G_(Edge) *a,
+	const struct G_(Edge) *b) {
+	return PG_(edata_comparator)(&a->info, &b->info);
+}
+#endif /* ecmp --> */
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Edge)
 #define LIST_TYPE struct G_(Edge)
-#define LIST_SUBTYPE
 #define LIST_TO_STRING &PG_(edge_to_string)
+#ifdef DIGRAPH_EDATA_COMPARATOR /* <-- ecmp */
+#define LIST_COMPARATOR &PG_(edge_comparator)
+#endif /* ecmp --> */
+#define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeLink}. */
 
 /** Vertex. */
@@ -217,10 +237,25 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	(void)v;
 #endif /* !vdata --> */
 }
+#ifdef DIGRAPH_VDATA_COMPARATOR /* <-- ecmp: synecdoche for {V}. */
+typedef int (*PG_(VDataComparator))(const V *, const V *);
+/* Check that {DIGRAPH_VDATA_COMPARATOR} is a function implementing
+ {<PVE>VDataComparator}. */
+static const PG_(VDataComparator) PG_(vdata_comparator)
+	= (DIGRAPH_VDATA_COMPARATOR);
+/** @implements <<G>Vertex>Comparator */
+static int PG_(vertex_comparator)(const struct G_(Vertex) *a,
+	const struct G_(Vertex) *b) {
+	return PG_(vdata_comparator)(&a->info, &b->info);
+}
+#endif /* ecmp --> */
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Vertex)
 #define LIST_TYPE struct G_(Vertex)
 #define LIST_TO_STRING &PG_(vertex_to_string)
+#ifdef DIGRAPH_VDATA_COMPARATOR /* <-- vcmp */
+#define LIST_COMPARATOR PG_(vertex_comparator)
+#endif /* vcmp --> */
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>VertexList} and {<G>VertexLink}. */
 
@@ -317,10 +352,9 @@ static void G_(DigraphPutVertex)(struct G_(Digraph) *const g,
 	PG_(v_clear)(v);
 	if(!g) return;
 	if(!G_(VertexListFirst)(&g->vertices)) g->root = v;
-	G_(VertexListPush)(&g->vertices, v); /* <--- here it changes. */
+	G_(VertexListPush)(&g->vertices, v);
 	PG_(vertex_to_string)(v, &a);
-	printf("digraph vertex %s.\n", a);
-	G_(VertexListAudit)(&g->vertices);
+	/* printf("digraph vertex %s.\n", a); G_(VertexListAudit)(&g->vertices); */
 }
 
 /** Undefined behaviour results from adding edges that have already been added.
@@ -357,6 +391,27 @@ static struct G_(Vertex) *G_(DigraphGetRoot)(const struct G_(Digraph) *const g){
 	if(!g) return 0;
 	return g->root;
 }
+
+#if defined(DIGRAPH_VDATA_COMPARATOR) || defined(DIGRAPH_EDATA_COMPARATOR)
+	/* <-- sort */
+/** Sorts the digraph according to {DIGRAPH_VDATA_COMPARATOR} and
+ {DIGRAPH_EDATA_COMPARATOR}, whichever is defined.
+ @order n log n
+ @fixme Untested. */
+static void G_(DigraphSort)(struct G_(Digraph) *g) {
+	if(!g) return;
+#ifdef DIGRAPH_VDATA_COMPARATOR /* <-- vcmp */
+	G_(VertexListSort)(&g->vertices);
+#endif /* vcmp --> */
+#ifdef DIGRAPH_EDATA_COMPARATOR /* <-- ecmp */
+	{
+		struct G_(Vertex) *v;
+		for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v))
+			G_(EdgeListSort)(&v->out);
+	}
+#endif /* ecmp --> */
+}
+#endif /* sort --> */
 
 /** Appends {g} to {fp} in GraphViz format.
  @param g: If null, does nothing.
@@ -439,6 +494,10 @@ static void PG_(unused)(void) {
 	G_(DigraphPutEdge)(0, 0, 0);
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
+#if defined(DIGRAPH_VDATA_COMPARATOR) || defined(DIGRAPH_EDATA_COMPARATOR)
+	/* <-- sort */
+	G_(DigraphSort)(0);
+#endif /* sort --> */
 	G_(DigraphOut)(0, 0, 0);
 	G_(DigraphVertexMigrateAll)(0, 0);
 	PG_(unused_coda)();

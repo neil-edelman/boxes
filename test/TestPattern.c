@@ -41,7 +41,8 @@ static struct Result {
 	{ "a|b|c|d|e|f|g|h|i|j|k", "k", "k", "graphs/abc.gv" },
 	/* Edge migrate. */
 	{ "1(2(3(4(5(6(7(8(9(10)))))))))", "12345678910", "12345678910",
-		"graphs/one-two-three.gv" }
+		"graphs/one-two-three.gv" },
+	{ "|aa|bbbb|ccc", "", 0, "graphs/order.gv" }
 };
 static const size_t results_size = sizeof results / sizeof *results;
 
