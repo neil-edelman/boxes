@@ -197,12 +197,24 @@ static void PG_(edge_to_string)(const struct G_(Edge) *const e,
 	(void)e;
 #endif /* !edata --> */
 }
+#ifdef DIGRAPH_EDATA_COMPARATOR /* <-- ecmp: synecdoche for {E}. */
+typedef int (*PG_(EDataComparator))(const E *, const E *);
+/* Check that {DIGRAPH_EDATA_COMPARATOR} is a function implementing
+ {<PVE>EDataComparator}. */
+static const PG_(EDataComparator) PG_(edata_comparator)
+	= (DIGRAPH_EDATA_COMPARATOR);
+/** @implements <<G>Edge>Comparator */
+static int PG_(edge_comparator)(const struct G_(Edge) *a,
+	const struct G_(Edge) *b) {
+	return PG_(edata_comparator)(&a->info, &b->info);
+}
+#endif /* ecmp --> */
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Edge)
 #define LIST_TYPE struct G_(Edge)
 #define LIST_TO_STRING &PG_(edge_to_string)
 #ifdef DIGRAPH_EDATA_COMPARATOR /* <-- ecmp */
-#define LIST_COMPARATOR DIGRAPH_EDATA_COMPARATOR
+#define LIST_COMPARATOR &PG_(edge_comparator)
 #endif /* ecmp --> */
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>EdgeList} and {<G>EdgeLink}. */
@@ -225,12 +237,24 @@ static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	(void)v;
 #endif /* !vdata --> */
 }
+#ifdef DIGRAPH_VDATA_COMPARATOR /* <-- ecmp: synecdoche for {V}. */
+typedef int (*PG_(VDataComparator))(const V *, const V *);
+/* Check that {DIGRAPH_VDATA_COMPARATOR} is a function implementing
+ {<PVE>VDataComparator}. */
+static const PG_(VDataComparator) PG_(vdata_comparator)
+	= (DIGRAPH_VDATA_COMPARATOR);
+/** @implements <<G>Vertex>Comparator */
+static int PG_(vertex_comparator)(const struct G_(Vertex) *a,
+	const struct G_(Vertex) *b) {
+	return PG_(vdata_comparator)(&a->info, &b->info);
+}
+#endif /* ecmp --> */
 /* This relies on {List.h} which must be in the same directory. */
 #define LIST_NAME G_(Vertex)
 #define LIST_TYPE struct G_(Vertex)
 #define LIST_TO_STRING &PG_(vertex_to_string)
 #ifdef DIGRAPH_VDATA_COMPARATOR /* <-- vcmp */
-#define LIST_COMPARATOR DIGRAPH_VDATA_COMPARATOR
+#define LIST_COMPARATOR PG_(vertex_comparator)
 #endif /* vcmp --> */
 #define LIST_SUBTYPE
 #include "List.h" /* Defines {<G>VertexList} and {<G>VertexLink}. */
