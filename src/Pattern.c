@@ -7,6 +7,9 @@
  \url{ http://www.cs.sfu.ca/~cameron/Teaching/384/99-3/regexp-plg.html },
  \url{ http://matt.might.net/articles/parsing-regex-with-recursive-descent/ }.
 
+ This is not the most efficient way, therefore I'm cutting my sunk costs and
+ bailing out. {re2c} is much better.
+
  @title		Pattern
  @author	Neil
  @std		C89 with C99 stdint.h
@@ -454,7 +457,8 @@ typedef void (*MakeContext)(struct Make *const);
  * wrapped up one one object for convenience.
  */
 struct Make {
-	struct Pattern *re;
+	struct Pattern *p;
+	size_t vi;
 	struct NestPool nests;
 	MakeContext context;
 	const char *c_from, *c;
@@ -475,19 +479,21 @@ static void escape_context(struct Make *const make);
 
 /** Private initialiser. */
 static int Make(struct Make *const make,
-	struct Pattern *const re, const char *const compile) {
+	struct Pattern *const p, const char *const compile) {
 	struct MachineVertexLink *start;
-	assert(make && re && compile && !MachineDigraphGetRoot(&re->graph));
-	make->re = re;
+	assert(make && p && compile && !MachineDigraphGetRoot(&p->graph));
+	make->p = p;
+	make->vi = (size_t)-1;
 	NestPool(&make->nests);
 	make->context = &normal_context;
 	make->c_from = 0;
 	make->c = compile;
 	make->status = 0;
 	/* Set up starting state: implied parenthesis around all. */
-	if(!(start = VertexPoolNew(&make->re->vs))) return 0;
-	MachineDigraphPutVertex(&make->re->graph, &start->data);
-	if(!Nest(&make->nests, VertexPoolIndex(&make->re->vs, start))) return 0;
+	if(!(start = VertexPoolNew(&make->p->vs))) return 0;
+	MachineDigraphPutVertex(&make->p->graph, &start->data);
+	if(!Nest(&make->nests, VertexPoolIndex(&make->p->vs, start))) return 0;
+	make->vi = VertexPoolIndex(&make->p->vs, start);
 	return 1;
 }
 
@@ -551,7 +557,26 @@ static enum MakeStatus brackets_context(struct Make *const make) {
 	return SUCCESS;
 }*/
 
-/** Gets the index of  */
+/** Gets the index of . . . */
+
+/*struct DiIndex { size_t a, b; };*/
+
+/** Thompson's construction, @cite{Aho1986}. */
+
+/*static void empty(struct Make *const make) {
+	struct MachineVertexLink *q, *final;
+	struct MachineEdgeLink *emp;
+	assert(make);
+	q = VertexPoolGet(&make->p->vs, make->vi);
+	assert(q);
+	if(!(final = VertexPoolNew(&make->p->vs))
+		|| !(emp = Empty(&make->p->empties)))
+		{ make->status |= ERRNO, make->context = 0; return; }
+	MachineDigraphPutVertex(&make->p->graph, &final->data);
+	MachineDigraphPutEdge(&emp->data, &q->data, &final->data);
+}*/
+
+/* Why am I doing this???? */
 
 /** Private: initialises {re} with {compile} and compiles. Called from
  \see{Pattern}.
@@ -634,7 +659,7 @@ static int compile_re(struct Pattern *re, const char *const compile) {
 				{ make.status |= SYNTAX, make.context = 0; break; }
 			printf("close\n");
 		}
-		MachineDigraphSort(&make.re->graph);
+		MachineDigraphSort(&make.p->graph);
 	} while(make.context && (make.c++, 1));
 	/* Verify the parentheses match. */
 	if(!NestPoolPop(&make.nests) || NestPoolPeek(&make.nests))
