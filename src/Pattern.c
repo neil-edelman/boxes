@@ -88,8 +88,24 @@ static int transition_cmp(const struct Transition *a,
 	assert(a && b);
 	return (b_order > a_order) - (a_order > b_order);
 }
+/*
+ * Closure of vertices indices, used in the digraph.
+ */
+#define POOL_NAME Index
+#define POOL_TYPE size_t
+#define POOL_STACK
+#include "Pool.h"
+
+static void vertex_to_string(const struct IndexPool *v, char (*const a)[12]) {
+	/*char num[64];*/
+	assert(v && a);
+	sprintf(*a, "a");
+}
+
 /* {Transition \in MachineVertex, MachineEdge, \in MachineDigraph}. */
 #define DIGRAPH_NAME Machine
+#define DIGRAPH_VDATA struct IndexPool
+#define DIGRAPH_VDATA_TO_STRING &vertex_to_string
 #define DIGRAPH_EDATA struct Transition
 #define DIGRAPH_EDATA_TO_STRING &transition_to_string
 #define DIGRAPH_EDATA_COMPARATOR &transition_cmp
@@ -397,6 +413,15 @@ int PatternOut(const struct Pattern *const re, FILE *const fp) {
  */
 
 
+
+/*
+ * First, scan the input and decide what each thing means.
+ */
+
+/*void scan(struct Make *const make) {
+	assert(make);
+	
+}*/
 
 /**
  * Temporary nesting for compiling. Refers to index in the vertices pool.

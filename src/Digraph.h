@@ -230,12 +230,12 @@ struct G_(Vertex) {
 /** @implements <<G>Vertex>ToString */
 static void PG_(vertex_to_string)(const struct G_(Vertex) *const v,
 	char (*const a)[12]) {
-#ifdef DIGRAPH_VDATA /* <-- vdata */
+#ifdef DIGRAPH_VDATA_TO_STRING /* <-- vdata2str */
 	PG_(vdata_to_string)(&v->info, a);
-#else /* vdata --><-- !vdata */
+#else /* vdata2str --><-- !vdata2str */
 	**a = '\0'; /* strcpy(*a, "vtx"); Obvious. */
 	(void)v;
-#endif /* !vdata --> */
+#endif /* !vdata2str --> */
 }
 #ifdef DIGRAPH_VDATA_COMPARATOR /* <-- ecmp: synecdoche for {V}. */
 typedef int (*PG_(VDataComparator))(const V *, const V *);
