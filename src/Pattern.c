@@ -89,7 +89,8 @@ static int transition_cmp(const struct Transition *a,
 	return (b_order > a_order) - (a_order > b_order);
 }
 /*
- * Closure of vertices indices, used in the digraph.
+ * Closure of vertices indices, used in the digraph vertices.
+ * @fixme Maybe better as empty edges?
  */
 #define POOL_NAME Index
 #define POOL_TYPE size_t
@@ -165,7 +166,6 @@ static struct MachineEdgeLink *Empty(struct EmptyPool *const ep) {
 	assert(ep);
 	if(!(e = EmptyPoolNew(ep))) return 0;
 	Transition(&e->data.info, &empty_vt);
-	printf("Empty.\n");
 	return e;
 }
 
