@@ -17,25 +17,40 @@
  can compose functions safely without
  \url{ https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming) }.
 
+ This is a very small file with not a lot of editing features, but one can use
+ \see{StringGet} and to build up a new {String} with \see{StringCat} using
+ one's favourite regular expressions tool.
+
+ @param STRING_STRICT_ANSI
+ Does not define \see{StringPrintCat} because it uses {vsnprintf} which was
+ standardised in {C99}. For example, this may be an issue with older {MSVC}
+ compilers.
+
  @title		String
  @author	Neil
  @std		C89/90 with C99 vsnprintf
  @version	2018-03 {Text -> String}; complete refactoring to work with {Text}.
  @since		2018-01
 			2017-03
- @fixme uhh, {StringByteOffsetCodePoints()}?
- @fixme work with int instead of char, obverously. */
+ @fixme {StringByteOffsetCodePoints()}?
+ @fixme Test {STRING_STRICT_ANSI}. */
 
 #include <stdlib.h> /* malloc realloc free */
 #include <string.h> /* strlen memmove memcpy memchr */
 #include <errno.h>  /* errno */
 #include <assert.h> /* assert */
 #include <ctype.h>  /* isspace */
+#ifndef STRING_STRICT_ANSI /* <-- !STRING_STRICT_ANSI */
 #include <stdarg.h> /* va_* */
+#endif /* !STRING_STRICT_ANSI --> */
 #include "String.h"
+
+#ifndef STRING_STRICT_ANSI /* <-- !STRING_STRICT_ANSI */
 
 /* This function was standardised in C99. */
 int vsnprintf(char *s, size_t n, const char *format, va_list ap);
+
+#endif /* !STRING_STRICT_ANSI --> */
 
 /** {strdup} is a {POSIX.1-2017} extension. This is better. Used in
  \see{StringTransform}.
@@ -167,14 +182,14 @@ size_t StringLength(const struct String *const string) {
 	return string->length;
 }
 
-/** @param string: if null, returns zero.
+/** @param string: If null, returns zero.
  @return How many code-points in
  \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. If it is not a
  valid string in {UTF-8}, string will return an undefined value between
  {[0, size]}.
  @order O({string.size})
  @fixme Untested.
- @fixme This is stupid, work with ints. */
+ @fixme Work with {int} instead of {char} to speed this up? */
 size_t StringCodePoints(const struct String *const string) {
 	char *text, ch;
 	const char *end_null;
@@ -260,12 +275,13 @@ struct String *StringCat(struct String *const string, const char *const str) {
 }
 
 /** Concatenates up to {str_len} bytes characters of {str} onto the text in
- {string}.
+ {string}. The responsibility lies with the caller to check for chopped
+ code-points.
  @param string: If null, returns null.
  @param str: If null, returns {string}.
  @param str_len: If the bytes one has access to is smaller then this value, the
  results are technically undefined, if using a compiler mode before {C11}.
- \url{ https://stackoverflow.com/questions/47315902/is-it-legal-to-call-memchr-with-a-too-long-length-if-you-know-the-character-wil?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa }
+ \url{ https://stackoverflow.com/questions/47315902/is-it-legal-to-call-memchr-with-a-too-long-length-if-you-know-the-character-wil }
  @return {string}.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
@@ -293,8 +309,11 @@ struct String *StringBetweenCat(struct String *const string,
 	return string;
 }
 
+#ifndef STRING_STRICT_ANSI /* <-- !STRING_STRICT_ANSI */
+
 /** Concatenates the text with an {fprintf};
  \url{http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html}.
+ If {STRING_STRICT_ANSI} is defined, this function is not defined.
  @param string: If null, returns null.
  @param fmt: If null, returns {string}.
  @return {string}.
@@ -324,6 +343,8 @@ struct String *StringPrintCat(struct String *const string,
 	string->length += length;
 	return string;
 }
+
+#endif /* !STRING_STRICT_ANSI --> */
 
 /** Transforms the original text according to {fmt}.
  @param string: If null, returns null.

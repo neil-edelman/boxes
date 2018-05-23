@@ -21,7 +21,9 @@ struct String *StringCat(struct String *const, const char *const);
 struct String *StringNCat(struct String *const, const char *const,const size_t);
 struct String *StringBetweenCat(struct String *const, const char *const,
 	const char *const);
+#ifndef STRING_STRICT_ANSI /* <-- !STRING_STRICT_ANSI */
 struct String *StringPrintCat(struct String *const, const char *const, ...);
+#endif /* !STRING_STRICT_ANSI --> */
 struct String *StringTransform(struct String *const, const char *);
 
 #endif /* guards --> */
