@@ -1,30 +1,33 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A dynamic string, intended to be used with modified UTF-8 encoding,
- \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. That is, this is a
- wrapper that automatically expands memory as needed around a standard {C}
- null-terminated string in a monolithic array and is compatible with {ASCII}.
- If you need to edit a potentially large string, just one of {String} will be
- generally linear-time and is unsuited alone for such a purpose.
+ A dynamic string, intended to be used with modified UTF-8 encoding (or
+ subsets,) \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. That is,
+ this is a wrapper that automatically expands memory as needed around a
+ standard {C} null-terminated string in a monolithic array and is compatible
+ with {ASCII}. If you need to edit a potentially large string, just one of
+ {String} will be generally linear-time and is unsuited alone for such a
+ purpose.
 
- {struct String} is meant to used directly; it is in the header. It's initial
- state is zero where it will be inactive, for example
- {struct String s = { 0 };} or static data. Any calls to string functions
- generally make it active and one should destruct the string by \see{String_}.
- The only exception is \see{String}, which also initialises the string to be
- empty. All functions accept null pointers as a valid state, which means one
- can compose functions safely without
- \url{ https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming) }.
+ There is a difference between a null pointer to a {String}, a {String} that is
+ in it's null state, (taking no extra memory,) and an empty {String}, (which
+ will take extra memory.) All both of these are valid states. To initalise
+ {struct String} to a valid state, one may use \see{String}, which initialises
+ it to the null state, (\see{StringGet} is null, it takes no extra memory.) Any
+ calls to string functions generally make it non-null, and one should destruct
+ the string by \see{String_}, which returns a null state. Also, functions
+ generally accept null pointers, which means one can compose functions safely
+ without \url{ https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming) }.
 
  This is a very small file with not a lot of editing features, but one can use
  \see{StringGet} and to build up a new {String} with \see{StringCat} using
- one's favourite regular expressions tool.
+ one's favourite regular expressions tool, (eg, \url{ http://re2c.org/ }.)
 
  @param STRING_STRICT_ANSI
  Does not define \see{StringPrintCat} because it uses {vsnprintf} which was
- standardised in {C99}. For example, this may be an issue with older {MSVC}
- compilers.
+ standardised until {C99}. If you have a compiler that has trouble with {C99},
+ viz, {MSVC}, (One can, we think, {#define} some stuff to make it look like it
+ follows the standard.)
 
  @title		String
  @author	Neil
@@ -126,8 +129,8 @@ static int cat(struct String *const string, const char *const str,
 	return 1;
 }
 
-/** Use this if {string} is already in an initialised state. The {String} text
- will be set to null and any memory will be freed.
+/** Use this if {string} is in an initialised state. The {String} will be set
+ to null and any memory will be freed.
  @param string: If null, does nothing.
  @order O(1) */
 void String_(struct String *const string) {
@@ -138,7 +141,7 @@ void String_(struct String *const string) {
 
 /** Use this if {string} is uninitialised. Sets the {String} text to be null,
  thus in a well-defined state. Static {String} variables do not need
- initialisation, though it will not hurt. Calling this on an active {string}
+ initialisation, though it will not hurt. Calling this on a non-null {string}
  results in a memory leak.
  @param string: A string whose text will be set to null. If null, does nothing.
  @order O(1) */
@@ -147,8 +150,9 @@ void String(struct String *const string) {
 	inactive(string);
 }
 
-/** Erases the text of {string} so the text is empty. If the text of {string}
- is null, initialises an empty string.
+/** Erases the text of {string} so the text is empty, but does not erase the
+ memory associated with that string. If {string} is in it's null state, then it
+ will allocate memory for an empty string.
  @param string: If null, returns null.
  @return {string}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}.
@@ -164,8 +168,7 @@ struct String *StringClear(struct String *const string) {
 }
 
 /** Volatile, in the sense that it exposes the text; specifically, not
- guaranteed to last between {String} calls to the same object. If you want a
- copy, do {strdup(StringGet(string))}.
+ guaranteed to last between {String} calls to the same object.
  @return The text associated to {string} or null if there is no text or if
  {string} is null.
  @order O(1) */
@@ -174,7 +177,7 @@ const char *StringGet(const struct String *const string) {
 	return string->text;
 }
 
-/** @param string: If null, returns zero.
+/** @param string: If null or in it's null state, returns zero.
  @return The length in bytes.
  @order O(1) */
 size_t StringLength(const struct String *const string) {
@@ -182,7 +185,7 @@ size_t StringLength(const struct String *const string) {
 	return string->length;
 }
 
-/** @param string: If null, returns zero.
+/** @param string: If null or in it's null state, returns zero.
  @return How many code-points in
  \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. If it is not a
  valid string in {UTF-8}, string will return an undefined value between
@@ -211,7 +214,8 @@ size_t StringCodePoints(const struct String *const string) {
 	return length;
 }
 
-/** @return True if the text of {string} exists and is not empty. */
+/** @return True if {string} is non-null and {string} is in it's non-null state
+ and is not empty. */
 int StringHasContent(const struct String *const string) {
 	return !(!string || !string->text || *string->text == '\0');
 }
@@ -248,7 +252,7 @@ struct String *StringTrim(struct String *const string) {
 
 /** Replaces the text in {string} with {str}.
  @param string: If null, returns null.
- @param str: If null, returns {string}.
+ @param str: If null, does nothing.
  @return {string}.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
@@ -264,7 +268,7 @@ struct String *StringCopy(struct String *const string, const char *const str) {
 
 /** Concatenates {str} onto the text in {string}.
  @param string: If null, returns null.
- @param str: If null, returns {string}.
+ @param str: If null, does nothing.
  @return {string}.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */

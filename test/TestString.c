@@ -64,18 +64,21 @@ int main(void) {
 	verify(&s, bytes, codep);
 	StringBetweenCat(&s, bit1x30 + 10, bit1x30 + 20), bytes += 11, codep += 11;
 	verify(&s, bytes, codep);
-	StringPrintCat(&s, "%s%s%.3s \t", bit2x2, bit4x4, bit1x30),
-		bytes += 2*2 + 4*4 + 3 + 2, codep += 2 + 4 + 3 + 2;
+#ifndef STRING_STRICT_ANSI /* <-- !STRING_STRICT_ANSI */
+	StringPrintCat(&s, "%s%s%.3s", bit2x2, bit4x4, bit1x30),
+		bytes += 2*2 + 4*4 + 3, codep += 2 + 4 + 3;
 	verify(&s, bytes, codep);
-	StringTransform(&s, "    %s%%%s\n\f");
-	bytes *= 2, bytes += 4 + 1 + 2, codep *= 2, codep += 4 + 1 + 2;
+#endif /* !STRING_STRICT_ANSI --> */
+	StringTransform(&s, "    %s%%%s \t\n\f");
+	bytes *= 2, bytes += 4 + 1 + 4, codep *= 2, codep += 4 + 1 + 4;
 	verify(&s, bytes, codep);
 	StringCopy(&t, StringGet(&s));
 	verify(&t, bytes, codep);
 	StringRightTrim(&t);
-	verify(&t, bytes - 4, codep - 4);
+	bytes -= 4, codep -= 4;
+	verify(&t, bytes, codep);
 	StringTrim(&s);
-	bytes -= 4 + 4, codep -= 4 + 4;
+	bytes -= 4, codep -= 4;
 	verify(&s, bytes, codep);
 
 	StringClear(&s);
