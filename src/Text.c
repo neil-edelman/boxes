@@ -22,8 +22,90 @@
  a.format("%d foo", 42) = [ "foo bar\n\n", "baz\n", "qux", "42 foo" ]
  TextMap b = [ "o"->"a", "a"->"o" ]
  a.substitute(b) = [ "faa bor\n\n", "boz\n", "qux" ]
+ a.reverse() = [ "qux", "baz\n", "foo bar\n\n" ]
  }
 
+ chop VARIABLE
+ chop( LIST )
+ chop
+ Chops off the last character of a string and returns the character chopped. It is much more efficient than s/.$//s because it neither scans nor copies the string. Note that chop returns the last character.
+ 
+ chomp VARIABLE
+ chomp( LIST )
+ chomp
+ This safer version of chop removes any trailing string that corresponds to the current value of $/ (also known as $INPUT_RECORD_SEPARATOR in the English module). It returns the total number of characters removed from all its arguments. It's often used to remove the newline from the end of an input record when you're worried that the final record may be missing its newline.
+ 
+ crypt PLAINTEXT,SALT
+ Creates a digest string exactly like the crypt(3) function in the C library (assuming that you actually have a version there that has not been extirpated as a potential munition).
+ crypt is a one-way hash function. The PLAINTEXT and SALT are turned into a short string, called a digest, which is returned. The same PLAINTEXT and SALT will always return the same string, but there is no (known) way to get the original PLAINTEXT from the hash. Small changes in the PLAINTEXT or SALT will result in large changes in the digest.
+ 
+ length EXPR
+ length
+ Returns the length in characters of the value of EXPR. If EXPR is omitted, returns the length of $_ . If EXPR is undefined, returns undef.
+ 
+ index STR,SUBSTR,POSITION
+ index STR,SUBSTR
+ The index function searches for one string within another, but without the wildcard-like behavior of a full regular-expression pattern match. It returns the position of the first occurrence of SUBSTR in STR at or after POSITION. If POSITION is omitted, starts searching from the beginning of the string. POSITION before the beginning of the string or after its end is treated as if it were the beginning or the end, respectively. POSITION and the return value are based at zero. If the substring is not found, index returns -1. 
+
+ rindex STR,SUBSTR,POSITION
+ rindex STR,SUBSTR
+ Works just like index except that it returns the position of the last occurrence of SUBSTR in STR. If POSITION is specified, returns the last occurrence beginning at or before that position.
+ 
+ reverse LIST
+ In list context, returns a list value consisting of the elements of LIST in the opposite order. In scalar context, concatenates the elements of LIST and returns a string value with all characters in the opposite order.
+ 
+ sprintf FORMAT, LIST
+ Returns a string formatted by the usual printf conventions of the C library function sprintf.
+ 
+ substr EXPR,OFFSET,LENGTH,REPLACEMENT
+ substr EXPR,OFFSET,LENGTH
+ substr EXPR,OFFSET
+ Extracts a substring out of EXPR and returns it. First character is at offset zero. If OFFSET is negative, starts that far back from the end of the string. If LENGTH is omitted, returns everything through the end of the string. If LENGTH is negative, leaves that many characters off the end of the string.
+ my $s = "The black cat climbed the green tree";
+ my $color  = substr $s, 4, 5;      # black
+ my $middle = substr $s, 4, -11;    # black cat climbed the
+ my $end    = substr $s, 14;        # climbed the green tree
+ my $tail   = substr $s, -4;        # tree
+ my $z      = substr $s, -4, 2;     # tr
+ (splice?)
+ 
+ uc EXPR
+ uc
+ Returns an uppercased version of EXPR. This is the internal function implementing the \U escape in double-quoted strings. It does not attempt to do titlecase mapping on initial letters. See ucfirst for that.
+ 
+ ucfirst EXPR
+ ucfirst
+ Returns the value of EXPR with the first character in uppercase (titlecase in Unicode). This is the internal function implementing the \u escape in double-quoted strings.
+ 
+ 
+ split /PATTERN/,EXPR,LIMIT
+ split /PATTERN/,EXPR
+ split /PATTERN/
+ split
+ Splits the string EXPR into a list of strings and returns the list in list context, or the size of the list in scalar context.
+ split(/-|,/, "1-10,20", 3)
+ # ('1', '10', '20')
+ split(/(-|,)/, "1-10,20", 3)
+ # ('1', '-', '10', ',', '20')
+ split(/-|(,)/, "1-10,20", 3)
+ # ('1', undef, '10', ',', '20')
+ split(/(-)|,/, "1-10,20", 3)
+ # ('1', '-', '10', undef, '20')
+ split(/(-)|(,)/, "1-10,20", 3)
+ # ('1', '-', undef, '10', undef, ',', '20')
+ 
+ void split(Text a, Regex r, void (*s)(Text const a, Text const b, size_t index))
+ Splits {a} with {r} into a new, temporary {b}, sets the {a} cursor to the spot where the split was. {b} is always the unmatched text that comes before the match (possibly empty,) and the posibly the match itself or it has gotten to the end. {s} recieves {a} and {b} and the {index} of the match. To do a conventional split, {void s(Text a, Text b) { a.add(b.remove()); }}, or to do a capture of the text as well as the token, {void s(Text a, Text b) { a.add(b.remove()), a.add(b.remove()); }}.
+ 
+ void split(Text a, Regex r)
+ Splits {a} with {r}. Any captures go in there, too.
+
+ int match(Text a, Regex r);
+ Sets the next match or returns false.
+ 
+ s/PATTERN/REPLACEMENT/msixpodualngcer
+ Searches a string for a pattern, and if found, replaces that pattern with the replacement text and returns the number of substitutions made. Otherwise it returns false (specifically, the empty string).
+ 
  @param TEXT_TEST
  
 
@@ -35,7 +117,7 @@
 
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* fprintf fopen */
-#include <string.h>	/* strerror */
+#include <string.h>	/* strerror strchr */
 #include <limits.h>	/* INT_MAX */
 #include <errno.h>	/* errno */
 #ifdef STORY_DEBUG /* <-- debug */
@@ -45,66 +127,283 @@
 #include "String.h"
 #include "Text.h"
 
-struct LineFile {
-	struct String line;
-	char *source;
-	size_t source_no;
+
+/*  */
+static const struct LineVt {
+	int type;
+} file_vt = { 1 };
+
+/** Abstract {Line}. */
+struct Line {
+	const struct LineVt *vt;
+	struct String string;
 };
 
-struct LineNew {
-	struct String line;
-};
+/** @implements <Line>ToString */
+static void line_to_string(const struct Line *const line, char (*const a)[12]) {
+	sprintf(*a, "%.11s", StringGet(&line->string));
+}
 
 #define LIST_NAME Line
-#define LIST_TYPE struct String
-#include "List.h" /* Defines {LineList} and {LineListNode}. */
+#define LIST_TYPE struct Line
+#define LIST_TO_STRING &line_to_string
+#include "List.h"
 
-#define POOL_NAME Line
-#define POOL_TYPE struct LineListNode
-#define POOL_MIGRATE_EACH &LineListNodeMigrate
-#define POOL_UPDATE struct Line
-#include "Pool.h" /* Defines {LinePool}. */
+/** Abstract constructor. */
+static void Line(struct Line *const line, const struct LineVt *const vt) {
+	assert(line && vt);
+	line->vt = vt;
+	String(&line->string);
+}
 
-struct Strdup {
-	struct Strdup *next;
-	/* String is stored here. */
+/*typedef void (*PT_(Migrate))(T *const data,
+							 const struct Migrate *const migrate);*/
+
+/* {Plain} extends {Line}. */
+#define POOL_NAME Plain
+#define POOL_TYPE struct LineLink
+#define POOL_MIGRATE_EACH &LineLinkMigrate
+/*#define POOL_UPDATE struct Line*/
+#include "Pool.h"
+
+/** {File} extends {Line}. */
+struct File {
+	struct LineLink line;
+	const char *filename;
+	size_t line_no;
 };
 
+#define POOL_NAME File
+#define POOL_TYPE struct File
+#define POOL_MIGRATE_EACH &LineLinkMigrate
+/*#define POOL_UPDATE struct Line*/
+#include "Pool.h" /* Defines {PlainPool}. */
+
+#define POOL_NAME Filename
+#define POOL_TYPE char *
+#include "Pool.h"
+
+
+
+/** Agglomeration {Text}. */
 struct Text {
+	/* List of lines. */
 	struct LineList lines;
-	struct LinePool *line_pool;
-	struct Strdup *sources;
+	/* Stores for list. */
+	struct PlainPool plain;
+	struct FilePool files;
+	struct FilenamePool filenames;
+	/* Editing functions. */
+	struct Line *cursor;
 };
+
+
+
+/** Constructor. {text} comes out with a new file line. */
+static struct File *File(struct Text *const text,
+	const char *const fn, const size_t line_no) {
+	struct File *const file = FilePoolNew(&text->files);
+	assert(text && fn);
+	if(!file) return 0;
+	Line(&file->line.data, &file_vt);
+	file->filename = fn;
+	file->line_no = line_no;
+	LineListPush(&text->lines, &file->line.data); /* @fixme Cursor. */
+	return file;
+}
+
+
 
 /** Destructor.
  @param ptext: A reference to the object that is to be deleted. If null or
  points to null, doesn't do anything. */
 void Text_(struct Text **const ptext) {
 	struct Text *text;
-	struct Strdup *s, *ns;
+	char **pfn;
 	if(!ptext || !(text = *ptext)) return;
 	fprintf(stderr, "~Text: erase, #%p.\n", (void *)text);
-	LinePool_(&text->line_pool);
-	for(s = text->sources; s; s = ns) { ns = s->next; free(s); }
+	LineListClear(&text->lines);
+	PlainPool_(&text->plain);
+	FilePool_(&text->files);
+	while((pfn = FilenamePoolPop(&text->filenames))) free(*pfn);
+	FilenamePool_(&text->filenames);
 	free(text), text = *ptext = 0;
 }
 
 /** Constructor.
- @return An object or a null pointer, if the object couldn't be created. */
+ @return An object or a null pointer, if the object couldn't be created.
+ @throws {malloc} */
 struct Text *Text(void) {
 	struct Text *text;
-	if(!(text = malloc(sizeof(struct Text)))) {
-		perror("Text constructor");
-		Text_(&text);
-		return 0;
-	}
+	if(!(text = malloc(sizeof *text))) return 0;
 	LineListClear(&text->lines);
-	text->line_pool = 0;
-	text->sources   = 0;
+	PlainPool(&text->plain);
+	FilePool(&text->files);
+	FilenamePool(&text->filenames);
+	text->cursor = 0;
 	fprintf(stderr, "Text: new, #%p.\n", (void *)text);
-	if(!(text->line_pool = LinePool())) Text_(&text);
 	return text;
 }
+
+/** The previous line or null if there is no previous line. */
+struct Line *TextFirst(struct Text *const text) {
+	if(!text) return 0;
+	return text->cursor = LineListFirst(&text->lines);
+}
+
+/** @return The next line or null. */
+struct Line *TextNext(struct Line *const line) {
+	return LineListNext(line);
+}
+
+/** Concatenates the contents of the stream {fp}, after the {text} cursor. On
+ success, the read cursor will be at the end of the file.
+ @fixme Respect cursor.
+ @return Success.
+ @throws E_OVERFLOW, E_ERRNO */
+int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
+	struct File *file = 0; /* One line in the file. */
+	char input[256];
+	size_t input_len;
+	size_t line_no = 0;
+	int eol = 0;
+	if(!text || !fp) return 0;
+	while(fgets(input, sizeof input, fp)) {
+		printf("read <%s>\n", input);
+		if(!file && !(file = File(text, fn, ++line_no))) return 0;
+		/* This is weird but not impossible; eg, zero in file. */
+		if(!(input_len = strlen(input))) continue;
+		assert(input_len < sizeof input);
+		if(input[input_len - 1] == '\n') {
+			input[--input_len] = '\0';
+			eol = 1;
+			printf("eol\n");
+		} else {
+			printf("not eol\n");
+		}
+		if(!StringBetweenCat(&file->line.data.string, input, input + input_len))
+			break;
+		if(eol) file = 0;
+	}
+	/* fixme: deal with leftover non-text files. */
+	printf("read %lu lines.\n", (unsigned long)line_no);
+	return feof(fp);
+}
+
+/** Writes the file {fp} with the text {this}. */
+int TextWrite(struct Text *const text, FILE *const fp) {
+	struct Line *line;
+	if(!text || !fp) return 0;
+	for(line = LineListFirst(&text->lines); line; line = LineListNext(line)) {
+		if(fputs(StringGet(&line->string), fp) == EOF) return 0;
+	}
+	return 1;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#if 0
+
+/** Executes {action(line text, line number)} for all lines. If {this} or
+ {action} is null, returns. */
+void TextForEach(struct Text *const this, const LineAction action) {
+	struct Line *line;
+	if(!this || !action) return;
+	for(line = LineListFirst(&this->lines); line; line = LineListNext(line))
+		action(line);
+}
+
+/** Executes {pred(line text, line number)} for all lines and deletes those
+ that return false. If {this} or {pred} is null, returns. */
+void TextKeepIf(struct Text *const this, const LinePredicate pred) {
+	struct Line *line, *nextline;
+	if(!this || !pred) return;
+	for(line = LineListFirst(&this->lines); line; line = nextline) {
+		nextline = LineListNext(line);
+		if(pred(line)) continue;
+		LineListRemove(line);
+		Text_(&line->text);
+		LinePoolRemove(this->pool, (struct LineListNode *)line);
+	}
+}
+
+/** Does {TextSplit} for all lines. */
+void TextSplit(struct Text *const this, const char *delims,
+			   const LinePredicate pred) {
+	struct Line *line, *empty;
+	struct LineListNode *pool;
+	struct Text *text;
+	if(!this) return;
+	for(line = LineListFirst(&this->lines); line; line = LineListNext(line)) {
+		while((text = TextSep(&line->text, delims, pred))) {
+			if(!(pool = LinePoolUpdateNew(this->pool, &line))) {
+				Text_(&text);
+				fprintf(stderr, "TextSplit: %s.\n",
+						LinePoolGetError(this->pool));
+				return;
+			}
+			pool->data.text = text;
+			pool->data.no = line->no;
+			LineListAddBefore(line, &pool->data);
+		}
+		empty = line;
+		if(empty->text) {
+			fprintf(stderr, "TextSplit: %s.\n", TextGetError(empty->text));
+			return;
+		}
+		line = LineListPrevious(empty);
+		LineListRemove(empty);
+		LinePoolRemove(this->pool, (struct LineListNode *)empty);
+	}
+}
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /* @fixme Replace with {split}. */
 #if 0
@@ -246,59 +545,6 @@ static struct {
 static const size_t fibonacci6  = 8;
 static const size_t fibonacci7  = 13;
 
-/** Concatenates the contents of the text file, {fp}, after the read cursor, to
- the text in {string}. On success, the read cursor will be at the end.
- @return {string}.
- @throws E_PARAMETER, E_OVERFLOW, E_ERRNO
- @deprecated Use {StringFileCat} for more performance and string numbers. */
-struct String *StringFileCat(struct String *const string, FILE *const fp) {
-	size_t to_get;
-	int to_get_int;
-	int e;
-	if(!string) return 0;
-	if(!fp) { string->error = E_PARAMETER; return 0; }
-	while(to_get = string->capacity[0] - string->length,
-		  to_get_int = to_get < INT_MAX ? (int)(to_get) : INT_MAX,
-		  fgets(string->text + string->length, to_get_int, fp)) {
-		string->length += strlen(string->text + string->length);
-		if(string->length >= string->capacity[0] - 1 && !capacity_up(string, 0))
-			return 0;
-	}
-	if((e = ferror(fp)))
-	{ string->error = E_ERRNO, string->errno_copy = e; return 0; }
-	debug(string, "StringFileCat", "appended file descriptor %d.\n", (long)fp);
-	return string;
-}
-/** Concatenates one string on the text file, {fp}, after the read cursor, to the
- text in {string}. On success, the read cursor will be at the end.
- @param fp: If string is null, string returns 0.
- @return On true, the file had more lines and a string was stored. If false, the
- file does not have more lines or an error occured; use \see{StringIsError} to
- differentiate.
- @throws E_OVERFLOW, E_ERRNO */
-int StringFileStringCat(struct String *const string, FILE *const fp) {
-	size_t to_get;
-	int to_get_int;
-	int e;
-	if(!string || !fp) return 0;
-	while(to_get = string->capacity[0] - string->length,
-		  to_get_int = to_get < INT_MAX ? (int)(to_get) : INT_MAX,
-		  fgets(string->text + string->length, to_get_int, fp)) {
-		string->length += strlen(string->text + string->length);
-		/* "NULL on error or when end of file occurs while no characters have
-		 been read." So string is always true. */
-		assert(string->length >= 1);
-		if(string->text[string->length - 1] == '\n') break;
-		if(string->length >= string->capacity[0] - 1 && !capacity_up(string, 0))
-			return 0;
-	}
-	if((e = ferror(fp)))
-	{ string->error = E_ERRNO, string->errno_copy = e; return 0; }
-	debug(string, "StringFileStringCat",
-		  "appended a string from file descriptor %d.\n", (long)fp);
-	/* Exactly the same as if we'd had an {length_init != length_final}. */
-	return !feof(fp);
-}
 
 /** Transforms {string} according to all specified {patterns} array of
  {patterns_size}.
@@ -309,7 +555,7 @@ int StringFileStringCat(struct String *const string, FILE *const fp) {
  string, {begin}, and {StringAction}, {transform}; {end} is optional; where
  missing, it will just call {transform} with {begin}. */
 struct String *StringMatch(struct String *const string,
-						   const struct StringPattern *const patterns, const size_t patterns_size) {
+	const struct StringPattern *const patterns, const size_t patterns_size) {
 	struct String *temp = 0;
 	char *s0, *cursor;
 	/* no, I don't use it uninitialised, but . . . whatever */
@@ -550,131 +796,3 @@ static void swap_texts(struct String *const a, struct String *const b) {
 }
 
 #endif
-
-/** Accessor for text. */
-struct Text *LineText(const struct Line *const line) {
-	if(!line) return 0;
-	return line->text;
-}
-
-/** Accessor for line number. */
-size_t LineNo(const struct Line *const line) {
-	if(!line) return 0;
-	return line->no;
-}
-
-/** Mutator for line number. */
-void LineSetNo(struct Line *const line, const size_t no) {
-	if(!line) return;
-	line->no = no;
-}
-
-/** The previous line or null if there is no previous line. */
-struct Line *LinePrevious(struct Line *const line) {
-	return LineListPrevious(line);
-}
-
-/** @return The next line or null. */
-struct Line *LineNext(struct Line *const line) {
-	return LineListNext(line);
-}
-
-/** Concatenates the contents of the text file, {fp}, after the active line.
- One {Line} per line, preserving newlines. On success, the read cursor will be
- at the end.
- @return Success.
- @throws E_OVERFLOW, E_ERRNO */
-int TextFileCat(struct Text *const this, FILE *const fp) {
-	struct Text *text = 0;
-	struct LineListNode *line;
-	size_t no = 0;
-	enum { E_NO, E_TEXT, E_LINES } e = E_NO;
-	if(!this || !fp) return 0;
-	for( ; ; ) {
-		if(!(text = Text())) { e = E_TEXT; break; }
-		if(!TextFileLineCat(text, fp)) break;
-		no++;
-		if(!(line = LinePoolNew(this->pool))) { e = E_LINES; break; }
-		line->data.text = text;
-		line->data.no = no;
-		LineListPush(&this->lines, &line->data);
-	} switch(e) {
-		case E_NO:
-			if(!TextIsError(text)) break;
-			e = E_TEXT;
-		case E_TEXT:
-			fprintf(stderr, "Text: %s.\n", TextGetError(text));
-			break;
-		case E_LINES:
-			fprintf(stderr,"Line: %s.\n",LinePoolGetError(this->pool));
-			break;
-	}
-	/* The last line is empty and does not have any references; must delete
-	 (deleting a null does nothing.) */
-	Text_(&text);
-	if(!e) debug(this, "FileCat", "appended a file.\n");
-	return !e;
-}
-
-/** Writes the file {fp} with the text {this}. */
-int TextWrite(struct Text *const this, FILE *const fp) {
-	struct Line *line;
-	if(!this || !fp) return 0;
-	for(line = LineListFirst(&this->lines); line; line = LineListNext(line)) {
-		if(fputs(TextGet(line->text), fp) == EOF) return 0;
-	}
-	return 1;
-}
-
-/** Executes {action(line text, line number)} for all lines. If {this} or
- {action} is null, returns. */
-void TextForEach(struct Text *const this, const LineAction action) {
-	struct Line *line;
-	if(!this || !action) return;
-	for(line = LineListFirst(&this->lines); line; line = LineListNext(line))
-		action(line);
-}
-
-/** Executes {pred(line text, line number)} for all lines and deletes those
- that return false. If {this} or {pred} is null, returns. */
-void TextKeepIf(struct Text *const this, const LinePredicate pred) {
-	struct Line *line, *nextline;
-	if(!this || !pred) return;
-	for(line = LineListFirst(&this->lines); line; line = nextline) {
-		nextline = LineListNext(line);
-		if(pred(line)) continue;
-		LineListRemove(line);
-		Text_(&line->text);
-		LinePoolRemove(this->pool, (struct LineListNode *)line);
-	}
-}
-
-/** Does {TextSplit} for all lines. */
-void TextSplit(struct Text *const this, const char *delims,
-	const LinePredicate pred) {
-	struct Line *line, *empty;
-	struct LineListNode *pool;
-	struct Text *text;
-	if(!this) return;
-	for(line = LineListFirst(&this->lines); line; line = LineListNext(line)) {
-		while((text = TextSep(&line->text, delims, pred))) {
-			if(!(pool = LinePoolUpdateNew(this->pool, &line))) {
-				Text_(&text);
-				fprintf(stderr, "TextSplit: %s.\n",
-					LinePoolGetError(this->pool));
-				return;
-			}
-			pool->data.text = text;
-			pool->data.no = line->no;
-			LineListAddBefore(line, &pool->data);
-		}
-		empty = line;
-		if(empty->text) {
-			fprintf(stderr, "TextSplit: %s.\n", TextGetError(empty->text));
-			return;
-		}
-		line = LineListPrevious(empty);
-		LineListRemove(empty);
-		LinePoolRemove(this->pool, (struct LineListNode *)empty);
-	}
-}

@@ -1,6 +1,6 @@
 # GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0
 
-PROJ  := Story
+PROJ  := Text
 VA    := 1
 VB    := 0
 
@@ -31,7 +31,7 @@ OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
 DOCS  := $(patsubst $(SDIR)/%.c, $(DDIR)/%.html, $(SRCS))
 
-CC   := gcc
+CC   := clang
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
 -Wmissing-prototypes -Wpointer-arith -Wreturn-type -Wcast-qual -Wwrite-strings \
 -Wswitch -Wshadow -Wcast-align -Wbad-function-cast -Wchar-subscripts -Winline \

@@ -1,21 +1,20 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>List} is an abstract data structure requiring {<T>ListNode} storage; one
- can possibly store this as a sub-structure of larger, possibly different data.
- Provides \see{<T>ListNodeMigrate} for self-referencing pointers that change as
- the result of a memory relocation.
+ {<T>List} is a doubly-linked-list of {<T>Link}, of which data of type, {<T>},
+ must be set using {LIST_TYPE}. This is an abstract data structure requiring
+ {<T>Link} storage, and can possibly store this as a sub-structure of larger
+ data-type. Provides \see{<T>LinkMigrate} for self-referencing pointers that
+ change as the result of a memory relocation within the list.
 
- This is a doubly-linked-list(s) of {<T>ListNode}, (not plain {<T>},) of which
- data of type, {<T>}, must be set using {LIST_TYPE}. Supports one to four
- different orders in the same type. The preprocessor macros are all undefined
- at the end of the file for convenience. Identifiers starting with {LIST_*} and
- {list_*} are reserved.
+ Supports one to four different orders in the same type. The preprocessor
+ macros are all undefined at the end of the file for convenience.
 
  @param LIST_NAME, LIST_TYPE
- The name that literally becomes {<T>}, and a valid type associated therewith;
- should be conformant to naming and to the maximum available length of
- identifiers. Must each be present before including.
+ The name that literally becomes {<T>}, and a valid type associated therewith,
+ accessible to the compiler at the time of inclusion; should be conformant to
+ naming and to the maximum available length of identifiers. Must each be
+ present before including.
 
  @param LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
  Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order, and optional
@@ -41,24 +40,31 @@
  @title		List.h
  @author	Neil
  @std		C89/90
- @version	2018-02 Eliminated the need for unnecessarily {<T>List}.
-			Now you must initialise static variables with {<T>ListClear}.
-			Eliminated {LIST_STATIC_SORT}.
- @since		2017-12 Type information on backing.
-			2017-10 Anonymous orders.
-			2017-07 Made migrate simpler.
-			2017-06 Split Add into Push and Unshift.
-			2017-05 Separated from backing.
+ @version
+ 2018-04 {<T>ListNode} has been shortened to {<T>Link}, thus potential
+ namespace violations doubled. Two dynamic memory allocations have been
+ collapsed into one by making it a non-pointer at the cost of readability.
+ These changes are good for more complex data structures #including list.
+ @since
+ 2018-02 Eliminated the need for unnecessarily {<T>List}. Now one
+ must initialise static variables with {<T>ListClear}. Eliminated
+ {LIST_STATIC_SORT}.
+ 2017-12 Type information on backing.
+ 2017-10 Anonymous orders.
+ 2017-07 Made migrate simpler.
+ 2017-06 Split Add into Push and Unshift.
+ 2017-05 Separated from backing.
  @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
- {assert} bug on {LIST_TEST}.
+ {assert} warnings on {LIST_TEST}.
  @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
  uhm, thanks?; 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info;
  4996 not {C++11}.
  @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
  {padded}; {documentation}; {documentation-unknown-command} it's not quite
  {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
- @fixme Void pointers in {<T>List<U>BiAction} are not effective; have an
- interface. While we're at it, {<T>ListNodeMigrate} should be an interface. */
+ @fixme Non-const void pointers in {<T>List<U>BiAction} are not effective; have
+ an interface. While we're at it, {<T>LinkMigrate} should be an interface.
+ Everything should be an interface. */
 
 /* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -78,11 +84,11 @@
 
 
 
-#include <stddef.h>	/* ptrdiff_t offset_of */
-#include <assert.h>	/* assert */
+#include <stddef.h> /* ptrdiff_t offset_of */
+#include <assert.h> /* assert */
 #ifdef LIST_TO_STRING /* <-- print */
-#include <stdio.h>	/* sprintf */
-#include <string.h>	/* strlen */
+#include <stdio.h>  /* sprintf */
+#include <string.h> /* strlen */
 #endif /* print --> */
 
 
@@ -119,25 +125,22 @@
 #error List: LIST_COMPARATOR can only be anonymous; use LIST_U[A-D]_COMPARATOR.
 #endif
 #endif /* !anon --> */
-#if defined(LIST_TEST) && !defined(LIST_TO_STRING)
+#if defined(LIST_TEST) && !defined(LIST_TO_STRING) /* <-- error */
 #error LIST_TEST requires LIST_TO_STRING.
-#endif
-#if !defined(LIST_TEST) && !defined(NDEBUG)
+#endif /* error --> */
+#if !defined(LIST_TEST) && !defined(NDEBUG) /* <-- !assert */
 #define LIST_NDEBUG
 #define NDEBUG
-#endif
+#endif /* !assert --> */
 #if defined(LIST_UA_COMPARATOR) || defined(LIST_UB_COMPARATOR) \
-	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR)
+	|| defined(LIST_UC_COMPARATOR) || defined(LIST_UD_COMPARATOR) /* <-- some */
 #define LIST_SOME_COMPARATOR
-#endif
+#endif /* some --> */
 
 
 
-
-
-/* After this block, the preprocessor replaces T with LIST_TYPE, T_(X) with
- LIST_NAMEX, PT_(X) with LIST_U_NAME_X, and T_NAME with the string
- version. http://stackoverflow.com/questions/16522341/pseudo-generics-in-c */
+/* Generics using the preprocessor;
+ \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -159,24 +162,12 @@
 #ifdef PT_
 #undef PT_
 #endif
-#ifdef T_NAME
-#undef T_NAME
-#endif
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(LIST_NAME, thing)
 #define PT_(thing) PCAT(list, PCAT(LIST_NAME, thing)) /* {private <T>} */
-#define T_NAME QUOTE(LIST_NAME)
 
 /* Troubles with this line? check to ensure that {LIST_TYPE} is a valid type,
  whose definition is placed above {#include "List.h"}. */
@@ -275,6 +266,8 @@ struct Migrate {
 };
 #endif /* migrate --> */
 
+
+
 /* Private list position. */
 struct PT_(X) {
 #ifdef LIST_UA_NAME
@@ -294,13 +287,13 @@ struct PT_(X) {
 /** A single link in the linked-list derived from {<T>}. Storage of this
  structure is the responsibility of the caller. The {<T>} is stored in the
  element {data}. */
-struct T_(ListNode);
-struct T_(ListNode) {
+struct T_(Link);
+struct T_(Link) {
 	T data;
 	struct PT_(X) x;
 };
 
-/** Serves as an a head for linked-list(s) of {<T>ListNode}. Use
+/** Serves as an a head for linked-list(s) of {<T>Link}. Use
  \see{<T>ListClear} to initialise. */
 struct T_(List);
 struct T_(List) {
@@ -309,9 +302,9 @@ struct T_(List) {
 	 from everything else and reduces the number of arguments that we have to
 	 pass. \see{<T>ListSelfCorrect} uses the fact that {head} and {tail} are
 	 packed to determine whether a list is empty, therefore, {head, tail}
-	 cannot be separated or reversed; furthermore, you cannot have
+	 cannot be separated or reversed; furthermore, one cannot have
 	 {sizeof data == 0} and call \see{<T>ListSelfCorrect}, though I don't see
-	 how you could do that. */
+	 how one could do that. */
 	struct PT_(X) head, tail;
 };
 
@@ -319,7 +312,7 @@ struct T_(List) {
 
 /** Takes {<T>}; used in \see{<T>List<U>ForEach}. This definition is about the
  {LIST_NAME} type, that is, it is without the prefix {List}; to avoid namespace
- collisions, this is private, meaning the name is mangled. If you want this
+ collisions, this is private, meaning the name is mangled. If one want this
  definition, re-declare it. */
 typedef void (*PT_(Action))(T *const);
 
@@ -349,15 +342,22 @@ static const PT_(ToString) PT_(to_string) = (LIST_TO_STRING);
 
 
 /** Private: {container_of}. */
-static struct T_(ListNode) *PT_(node_hold_x)(struct PT_(X) *const x) {
-	return (struct T_(ListNode) *)(void *)
-		((char *)x - offsetof(struct T_(ListNode), x));
+static struct T_(Link) *PT_(node_holds_x)(struct PT_(X) *const x) {
+	return (struct T_(Link) *)(void *)
+		((char *)x - offsetof(struct T_(Link), x));
 }
 
 /** Private: {container_of}. */
-static struct T_(ListNode) *PT_(node_hold_data)(T *const data) {
-	return (struct T_(ListNode) *)(void *)
-		((char *)data - offsetof(struct T_(ListNode), data));
+static struct T_(Link) *PT_(node_holds_data)(T *const data) {
+	return (struct T_(Link) *)(void *)
+		((char *)data - offsetof(struct T_(Link), data));
+}
+
+/** Private: {container_of}; used for \see{<T>List<U>Next}, {etc}. */
+static const struct T_(Link) *PT_(node_holds_const_data)(
+	const T *const data) {
+	return (const struct T_(Link) *)(const void *)
+	((const char *)data - offsetof(struct T_(Link), data));
 }
 
 /** Private: used in \see{<PT>_order_<U>_migrate_each};
@@ -451,7 +451,7 @@ static void PT_(add_after)(struct PT_(X) *const x, struct PT_(X) *const add) {
 }
 
 /** Private: remove from list.
- @implements <T>ListNodeAction */
+ @implements <T>LinkAction */
 static void PT_(remove)(struct PT_(X) *const x) {
 #ifdef LIST_UA_NAME /* <-- a */
 	PT_UA_(x, remove)(x);
@@ -522,55 +522,57 @@ static void T_(ListClear)(struct T_(List) *const list) {
 
 /** Initialises the contents of the node which contains {add} to add it to the
  beginning of {list}. If either {list} or {add} is null, it does nothing.
- @param add: Must be inside of a {<T>ListNode} and not associated to any list;
- this associates the {<T>ListNode} with the list.
+ @param add: Must be inside of a {<T>Link} and not associated to any list;
+ this associates the {<T>Link} with the list.
  @order \Theta(1)
  @fixme Untested.
  @allow */
 static void T_(ListUnshift)(struct T_(List) *const list, T *const add) {
 	if(!list || !add) return;
-	PT_(add_after)(&list->head, &PT_(node_hold_data)(add)->x);
+	PT_(add_after)(&list->head, &PT_(node_holds_data)(add)->x);
 }
 
 /** Initialises the contents of the node which contains {add} to add it to the
  end of {list}.
  @param list: If null, does nothing.
  @param add:  If null, does nothing, otherwise must be inside of a
- {<T>ListNode} and not associated to any list; this associates the
- {<T>ListNode} that {add} is a part of with {list}, if it exists.
+ {<T>Link} and not associated to any list; this associates the
+ {<T>Link} that {add} is a part of with {list}, if it exists.
  @order \Theta(1)
  @allow */
 static void T_(ListPush)(struct T_(List) *const list, T *const add) {
 	if(!list || !add) return;
-	PT_(add_before)(&list->tail, &PT_(node_hold_data)(add)->x);
+	PT_(add_before)(&list->tail, &PT_(node_holds_data)(add)->x);
 }
 
 /** Initialises the contents of the node which contains {add} to add it
  immediately before {data}.
  @param data: If null, does nothing, otherwise must be part of a list.
- @param add: If null, does nothing, otherwise must be inside of a {<T>ListNode}
- and not associated to any list; this associates the {<T>ListNode} with the
+ @param add: If null, does nothing, otherwise must be inside of a {<T>Link}
+ and not associated to any list; this associates the {<T>Link} with the
  list of which {data} is a part, if it exists.
  @order \Theta(1)
  @fixme Untested.
  @allow */
 static void T_(ListAddBefore)(T *const data, T *const add) {
 	if(!data || !add) return;
-	PT_(add_before)(&PT_(node_hold_data)(data)->x,&PT_(node_hold_data)(add)->x);
+	PT_(add_before)(&PT_(node_holds_data)(data)->x,
+		&PT_(node_holds_data)(add)->x);
 }
 
 /** Initialises the contents of the node which contains {add} to add it
  immediately after {data}.
  @param data: If null, does nothing, otherwise must be part of a list.
- @param add: If null, does nothing, otherwise must be inside of a {<T>ListNode}
- and not associated to any list; this associates the {<T>ListNode} with the
+ @param add: If null, does nothing, otherwise must be inside of a {<T>Link}
+ and not associated to any list; this associates the {<T>Link} with the
  list of which {data} is a part, if it exists.
  @order \Theta(1)
  @fixme Untested.
  @allow */
 static void T_(ListAddAfter)(T *const data, T *const add) {
 	if(!data || !add) return;
-	PT_(add_after)(&PT_(node_hold_data)(data)->x, &PT_(node_hold_data)(add)->x);
+	PT_(add_after)(&PT_(node_holds_data)(data)->x,
+		&PT_(node_holds_data)(add)->x);
 }
 
 /** Un-associates {data} from the list; consequently, the {data} is free to add
@@ -581,7 +583,7 @@ static void T_(ListAddAfter)(T *const data, T *const add) {
  @allow */
 static void T_(ListRemove)(T *const data) {
 	if(!data) return;
-	PT_(remove)(&PT_(node_hold_data)(data)->x);
+	PT_(remove)(&PT_(node_holds_data)(data)->x);
 }
 
 /** Appends the elements of {from} onto {list}. Unlike \see{<T>List<U>TakeIf}
@@ -609,7 +611,7 @@ static void T_(ListTake)(struct T_(List) *const list,
  @allow */
 static void T_(ListTakeBefore)(T *const data, struct T_(List) *const from) {
 	if(!data || !from) return;
-	PT_(add_list_before)(&PT_(node_hold_data)(data)->x, from);
+	PT_(add_list_before)(&PT_(node_holds_data)(data)->x, from);
 }
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
@@ -713,21 +715,20 @@ static void T_(ListSort)(struct T_(List) *const list) {
 
 #endif /* comp --> */
 
-/** Adjusts one {<T>ListNode}'s internal pointers when supplied with a
+/** Adjusts one {<T>Link}'s internal pointers when supplied with a
  {Migrate} parameter.
- @param list: If null, does nothing.
+ @param data: If null, does nothing.
  @param migrate: If null, does nothing. Should only be called in a {Migrate}
  function; pass the {migrate} parameter.
- @implements <<T>ListNode>Migrate
+ @implements <<T>Link>Migrate
  @order \Theta(n)
  @allow */
-static void T_(ListNodeMigrate)(struct T_(ListNode) *const listnode,
-	const struct Migrate *const migrate) {
+static void T_(LinkMigrate)(T *const data, const struct Migrate *const migrate){
 	struct PT_(X) *x;
 	/* Relies on not-strictly-defined behaviour because pointers are not
 	 necessarily contiguous in memory; it should be fine in practice. */
-	if(!listnode || !migrate || !migrate->delta) return;
-	x = &listnode->x;
+	if(!data || !migrate || !migrate->delta) return;
+	x = &PT_(node_holds_data)(data)->x;
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -757,6 +758,18 @@ static void T_(ListNodeMigrate)(struct T_(ListNode) *const listnode,
 		PT_UD_(x, migrate)(x, migrate);
 #endif /* d --> */
 	}
+}
+
+/** Adjusts a pointer, {pdata}, to a {<T>Link}, given {migrate}.
+ @param pdata, migrate: If null, does nothing.
+ @fixme Untested. */
+static void T_(LinkMigratePointer)(T **const pdata,
+	const struct Migrate *const migrate) {
+	const void *data;
+	if(!pdata || !migrate) return;
+	data = *pdata;
+	if(data < migrate->begin || data >= migrate->end) return;
+	*(char **)pdata += migrate->delta;
 }
 
 /** One must call this whenever the {<T>List} changes memory locations, (not
@@ -799,6 +812,46 @@ static void T_(ListSelfCorrect)(struct T_(List) *const list) {
 	}
 }
 
+/** Debugging purposes. Turn {LIST_TEST} on. */
+static void T_(ListAudit)(const struct T_(List) *const list) {
+	size_t i, j;
+	int is_j = 0;
+	if(!list) return;
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp parallel sections
+#endif /* omp --> */
+	{
+#ifdef LIST_UA_NAME /* <-- a */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		i = PT_UA_(x, audit)(list);
+		if(is_j) assert(i == j); else (j = i, is_j = 1);
+#endif /* a --> */
+#ifdef LIST_UB_NAME /* <-- b */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		i = PT_UB_(x, audit)(list);
+		if(is_j) assert(i == j); else (j = i, is_j = 1);
+#endif /* b --> */
+#ifdef LIST_UC_NAME /* <-- c */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		i = PT_UC_(x, audit)(list);
+		if(is_j) assert(i == j); else (j = i, is_j = 1);
+#endif /* c --> */
+#ifdef LIST_UD_NAME /* <-- d */
+#ifdef LIST_OPENMP /* <-- omp */
+#pragma omp section
+#endif /* omp --> */
+		i = PT_UD_(x, audit)(list);
+		if(is_j) assert(i == j); else (j = i, is_j = 1);
+#endif /* d --> */
+	}
+}
+
 #ifdef LIST_TEST /* <-- test */
 #include "../test/TestList.h" /* Need this file if one is going to run tests. */
 #endif /* test --> */
@@ -820,8 +873,10 @@ static void PT_(unused_list)(void) {
 	T_(ListMerge)(0, 0);
 	T_(ListSort)(0);
 #endif /* comp --> */
-	T_(ListNodeMigrate)(0, 0);
+	T_(LinkMigrate)(0, 0);
+	T_(LinkMigratePointer)(0, 0);
 	T_(ListSelfCorrect)(0);
+	T_(ListAudit)(0);
 	PT_(unused_coda)();
 }
 /** {clang}'s pre-processor is not fooled if one has one function. */
@@ -834,16 +889,19 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 /* Un-define all macros. */
 #undef LIST_NAME
 #undef LIST_TYPE
+/* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
+ {PCAT_} conform, and {T}, and {U}, are not used. */
+#ifdef LIST_SUBTYPE /* <-- sub */
+#undef LIST_SUBTYPE
+#else /* sub --><-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
+#endif /* !sub --> */
 #undef T
 #undef T_
 #undef PT_
-#undef T_NAME
-#undef QUOTE
-#undef QUOTE_
 #ifdef LIST_TO_STRING
 #undef LIST_TO_STRING
 #endif
@@ -911,13 +969,7 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
  @param LIST_U_NAME: A unique name of the linked list; required;
  @param LIST_U_COMPARATOR: an optional comparator. */
 
-
-
-
-
-/* After this block, the preprocessor replaces T_U_(X, Y) with
- LIST_NAMEXLIST_U_NAMEY, PT_U_(X, Y) with
- list_LIST_U_NAME_X_LIST_U_NAME_Y */
+/* Generics using the preprocessor. */
 #ifdef T_U_
 #undef T_U_
 #endif
@@ -957,6 +1009,18 @@ static void PT_U_(cycle, crash)(struct PT_(X) *const x) {
 #else
 	(void)(x);
 #endif
+}
+
+/** Private: audit index by going though it forwards then back.
+ @return Number of elements. */
+static size_t PT_U_(x, audit)(const struct T_(List) *const list) {
+	struct PT_(X) *emu;
+	size_t f = 0, b = 0;
+	assert(list);
+	for(emu = list->head.U_(next); emu->U_(next); emu = emu->U_(next)) f++;
+	for(emu = list->tail.U_(prev); emu->U_(prev); emu = emu->U_(prev)) b++;
+	assert(f == b);
+	return f;
 }
 
 /** Private: add {add} before {x}. */
@@ -1044,13 +1108,13 @@ static void PT_U_(list, self_correct)(struct T_(List) *const list) {
  null.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Next)(T *const data) {
-	const struct PT_(X) *const x = &PT_(node_hold_data)(data)->x;
+static T *T_U_(List, Next)(const T *const data) {
+	const struct PT_(X) *const x = &PT_(node_holds_const_data)(data)->x;
 	struct PT_(X) *next_x;
 	if(!data) return 0;
 	assert(x->U_(next));
 	if(!(next_x = x->U_(next))->U_(next)) return 0;
-	return &PT_(node_hold_x)(next_x)->data;
+	return &PT_(node_holds_x)(next_x)->data;
 }
 
 /** @param data: Must be part of a {List}. If {data} are not part of a valid
@@ -1060,35 +1124,35 @@ static T *T_U_(List, Next)(T *const data) {
  returns null.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Previous)(T *const data) {
-	const struct PT_(X) *const x = &PT_(node_hold_data)(data)->x;
+static T *T_U_(List, Previous)(const T *const data) {
+	const struct PT_(X) *const x = &PT_(node_holds_const_data)(data)->x;
 	struct PT_(X) *prev_x;
 	if(!data) return 0;
 	assert(x->U_(prev));
 	if(!(prev_x = x->U_(prev))->U_(prev)) return 0;
-	return &PT_(node_hold_x)(prev_x)->data;
+	return &PT_(node_holds_x)(prev_x)->data;
 }
 
 /** @param list: If null, returns null.
  @return A pointer to the first element of {list}.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, First)(struct T_(List) *const list) {
+static T *T_U_(List, First)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->head.U_(next));
 	if(!list->head.U_(next)->U_(next)) return 0; /* Empty. */
-	return &PT_(node_hold_x)(list->head.U_(next))->data;
+	return &PT_(node_holds_x)(list->head.U_(next))->data;
 }
 
 /** @param list: If null, returns null.
  @return A pointer to the last element of {list}.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Last)(struct T_(List) *const list) {
+static T *T_U_(List, Last)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->tail.U_(prev));
 	if(!list->tail.U_(prev)->U_(prev)) return 0; /* Empty. */
-	return &PT_(node_hold_x)(list->tail.U_(prev))->data;
+	return &PT_(node_holds_x)(list->tail.U_(prev))->data;
 }
 
 /** Un-associates the first element in the order {<U>} with the list, if the
@@ -1101,7 +1165,7 @@ static T *T_U_(List, Shift)(struct T_(List) *const list) {
 	if(!list) return 0;
 	if(!(x = list->head.U_(next))->U_(next)) return 0;
 	PT_(remove)(x);
-	return &PT_(node_hold_x)(x)->data;
+	return &PT_(node_holds_x)(x)->data;
 }
 
 /** Un-associates the last element in the order {<U>} with the list, if the
@@ -1114,7 +1178,7 @@ static T *T_U_(List, Pop)(struct T_(List) *const list) {
 	if(!list) return 0;
 	if(!(x = list->tail.U_(prev))->U_(prev)) return 0;
 	PT_(remove)(x);
-	return &PT_(node_hold_x)(x)->data;
+	return &PT_(node_holds_x)(x)->data;
 }
 
 #ifdef LIST_U_COMPARATOR /* <-- comp */
@@ -1137,8 +1201,8 @@ static void PT_U_(list, merge)(struct T_(List) *const alist,
 		{ PT_U_(x, cat)(&alist->tail, blist); return; }
 	/* Merge */
 	for(hind = &alist->head; ; ) {
-		if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
-			&PT_(node_hold_x)(b)->data) < 0) {
+		if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
+			&PT_(node_holds_x)(b)->data) < 0) {
 			a->U_(prev) = hind, hind = hind->U_(next) = a;
 			if(!(a = a->U_(next))->U_(next))
 				{ b->U_(prev) = hind, hind->U_(next) = b;
@@ -1193,8 +1257,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 		/* Run {a} is smaller: downwards insert {b.head} followed by upwards
 		 merge. Insert the first element of {b} downwards into {a}. */
 		for( ; ; ) {
-			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
-				&PT_(node_hold_x)(b)->data) <= 0) {
+			if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
+				&PT_(node_holds_x)(b)->data) <= 0) {
 				chosen = a;
 				a = a->U_(next);
 				break;
@@ -1210,8 +1274,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 		/* Merge upwards; while the lists are interleaved. */
 		while(chosen->U_(next)) {
 			prev_chosen = chosen;
-			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
-				&PT_(node_hold_x)(b)->data) > 0) {
+			if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
+				&PT_(node_holds_x)(b)->data) > 0) {
 				chosen = b;
 				b = b->U_(next);
 			} else {
@@ -1236,8 +1300,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 		/* Run {b} is smaller; upwards insert followed by downwards merge.
 		 Insert the last element of {a} upwards into {b}. */
 		for( ; ; ) {
-			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
-				&PT_(node_hold_x)(b)->data) <= 0) {
+			if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
+				&PT_(node_holds_x)(b)->data) <= 0) {
 				chosen = b;
 				b = b->U_(prev);
 				break;
@@ -1255,8 +1319,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 		/* Merge downwards, while the lists are interleaved. */
 		while(chosen->U_(prev)) {
 			next_chosen = chosen;
-			if(PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
-				&PT_(node_hold_x)(b)->data) > 0) {
+			if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
+				&PT_(node_holds_x)(b)->data) > 0) {
 				chosen = a;
 				a = a->U_(prev);
 			} else {
@@ -1308,8 +1372,8 @@ static void PT_U_(natural, sort)(struct T_(List) *const list) {
 	first_iso_a = new_run->head = new_run->tail = a;
 	/* While {a} and {b} are elements (that are consecutive.) {c} may not be. */
 	for(c = b->U_(next); c; a = b, b = c, c = c->U_(next)) {
-		comp = PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
-			&PT_(node_hold_x)(b)->data);
+		comp = PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
+			&PT_(node_holds_x)(b)->data);
 		/* State machine that considers runs in both directions -- in practice,
 		 slightly slower than only considering increasing runs on most cases;
 		 however, I would hate to see my code replaced with one line; reverse
@@ -1401,8 +1465,8 @@ static int T_U_(List, Compare)(const struct T_(List) *const alist,
 		} else if(!b->U_(next)) {
 			return 1;
 		} else if((diff = PT_U_(data, cmp)
-			(&PT_(node_hold_x)(a)->data,
-			&PT_(node_hold_x)(b)->data))) {
+			(&PT_(node_holds_x)(a)->data,
+			&PT_(node_holds_x)(b)->data))) {
 			return diff;
 		}
 	}
@@ -1420,8 +1484,8 @@ static void PT_U_(boolean, seq)(struct T_(List) *const list,
 	int comp;
 	assert(a && b);
 	while(a->U_(next) && b->U_(next)) {
-		comp = PT_U_(data, cmp)(&PT_(node_hold_x)(a)->data,
-			&PT_(node_hold_x)(b)->data);
+		comp = PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
+			&PT_(node_holds_x)(b)->data);
 		if(comp < 0) {
 			temp = a, a = a->U_(next);
 			if(mask & LO_SUBTRACTION_AB) {
@@ -1511,7 +1575,7 @@ static void T_U_(List, TakeIf)(struct T_(List) *const list,
 	struct PT_(X) *x, *next_x;
 	if(!from || from == list) return;
 	for(x = from->head.U_(next); (next_x = x->U_(next)); x = next_x) {
-		if(predicate && !predicate(&PT_(node_hold_x)(x)->data)) continue;
+		if(predicate && !predicate(&PT_(node_holds_x)(x)->data)) continue;
 		PT_(remove)(x);
 		if(list) PT_(add_before)(&list->tail, x);
 	}
@@ -1530,7 +1594,7 @@ static void T_U_(List, BiTakeIf)(struct T_(List) *const list,
 	struct PT_(X) *x, *next_x;
 	if(!from || from == list) return;
 	for(x = from->head.U_(next); (next_x = x->U_(next)); x = next_x) {
-		if(bipredicate && !bipredicate(&PT_(node_hold_x)(x)->data, param))
+		if(bipredicate && !bipredicate(&PT_(node_holds_x)(x)->data, param))
 			continue;
 		PT_(remove)(x);
 		if(list) PT_(add_before)(&list->tail, x);
@@ -1547,7 +1611,7 @@ static void T_U_(List, ForEach)(struct T_(List) *const list,
 	struct PT_(X) *x, *next_x;
 	if(!list || !action) return;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		action(&PT_(node_hold_x)(x)->data);
+		action(&PT_(node_holds_x)(x)->data);
 }
 
 /** Performs {biaction} for each element in the list in the order specified by
@@ -1564,7 +1628,7 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
 	struct PT_(X) *x, *next_x;
 	if(!list || !biaction) return;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		biaction(&PT_(node_hold_x)(x)->data, param);
+		biaction(&PT_(node_holds_x)(x)->data, param);
 }
 
 /** @param list, predicate: If null, returns null.
@@ -1579,7 +1643,7 @@ static T *T_U_(List, ShortCircuit)(struct T_(List) *const list,
 	T *data;
 	if(!list || !predicate) return 0;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		if(data = &PT_(node_hold_x)(x)->data, !predicate(data)) return data;
+		if(data = &PT_(node_holds_x)(x)->data, !predicate(data)) return data;
 	return 0;
 }
 
@@ -1597,7 +1661,7 @@ static T *T_U_(List, BiShortCircuit)(struct T_(List) *const list,
 	T *data;
 	if(!list || !bipredicate) return 0;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		if(data = &PT_(node_hold_x)(x)->data, !bipredicate(data, param))
+		if(data = &PT_(node_holds_x)(x)->data, !bipredicate(data, param))
 			return data;
 	return 0;
 }
@@ -1663,7 +1727,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 	list_super_cat(&cat, list_cat_start);
 	for(x = list->head.U_(next); x->U_(next); x = x->U_(next)) {
 		if(x != list->head.U_(next)) list_super_cat(&cat, list_cat_sep);
-		PT_(to_string)(&PT_(node_hold_x)(x)->data, &scratch),
+		PT_(to_string)(&PT_(node_holds_x)(x)->data, &scratch),
 			scratch[sizeof scratch - 1] = '\0';
 		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;

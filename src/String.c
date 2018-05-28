@@ -196,11 +196,6 @@ size_t StringCodePoints(const struct String *const string) {
 	return length;
 }
 
-/** @return True if the text of {string} exists and is not empty. */
-int StringHasContent(const struct String *const string) {
-	return !(!string || !string->text || *string->text == '\0');
-}
-
 /** White-space trims the text associated with {string} using {isspace} only
  at the end.
  @param string: If null, returns null.

@@ -1,8 +1,8 @@
 /** 2018 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A {Story} is composed of {Text} in a way that makes them easy and fast to
- edit large strings. Requires {List}, {Pool}, and {Text}.
+ A {Story} is composed of {Text} in a way that makes them easy, (and faster,)
+ to edit large strings. Requires {List}, {Pool}, and {Text}.
 
  ${
  Text a = [ "foo bar\n\n", "baz\n", "qux" ]
@@ -38,6 +38,8 @@
 #include <assert.h>	/* assert */
 #include <errno.h>	/* errno */
 #include "../src/Text.h"
+
+#if 0
 
 #define STACK_NAME Size
 #define STACK_TYPE size_t
@@ -103,24 +105,22 @@ static void word_wrap(struct Line *const line) {
 		SizeStack_(&offsets);
 	}
 }
+#endif
 
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
  @param argv: The arguments.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	struct Text *foo, *text;
-	struct Story *story = 0;
+	struct Text *text = 0;
 	FILE *fp = 0;
-	enum { E_NO, E_STDERR, E_STORY } e = E_NO;
+	const char *e = 0;
 	do {
-
-		if(!(story = Story())) { e = E_STORY; break; }
-
-		if(!(fp = fopen("../../src/Story.h", "r"))) { e = E_STDERR; break; }
-		StoryFileCat(story, fp);
-		fclose(fp), fp = 0;
-
+		if(!(text = Text())) { e = "Text"; break; }
+		if(!(fp = fopen("../../src/Text.h", "r"))
+		   || !TextFile(text, fp, "Text.h")
+		   || !TextWrite(text, stderr)) { e = "Text.h"; break; }
+#if 0
 		/* Delete newlines. */
 		StoryForEach(story, &trim);
 		/* Collapse multi-line paragraph indents. */
@@ -145,17 +145,65 @@ int main(void) {
 		}
 		assert(!foo);
 		printf("Foo: %s\n", TextGet(foo));
-
-	} while(0); switch(e) {
-		case E_NO:
-			break;
-		case E_STDERR:
-			perror("SdtErr"); break;
-		case E_STORY:
-			perror("Story"); break;
-	} {
-		fclose(fp);
-		Story_(&story);
-	}
+#endif
+	} while(0); if(e) perror(e);
+	fclose(fp);
+	Text_(&text);
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
+
+#if 0
+printf("StringSep:\n");
+StringCat(t, "/foo///bar/qux//xxx");
+printf("String: '%s'\n", StringGet(t));
+assert(t);
+s = 0;
+printf("entering\n");
+while((sep = StringSep(&t, "/", &is_delim))) {
+	printf("here\n");
+	printf("StringSep: '%s' '%s'\n", StringGet(sep), StringGet(t));
+	switch(s++) {
+		case 0:
+			assert((str = StringGet(sep)) && !strcmp(sup = "", str));
+			break;
+		case 1:
+			assert((str = StringGet(sep)) && !strcmp(sup = "foo//", str));
+			break;
+		case 2:
+			assert((str = StringGet(sep)) && !strcmp(sup = "bar", str));
+			break;
+		case 3:
+			assert((str = StringGet(sep)) && !strcmp(sup = "qux/", str));
+			break;
+		case 4:
+			assert((str = StringGet(sep)) && !strcmp(sup = "xxx", str));
+			break;
+		default:
+			assert((str = StringGet(sep), 0));
+			break;
+	}
+	String_(&sep);
+}
+assert(!t);
+
+t = String();
+StringCat(t, "words separated by spaces -- and, punctuation!!!");
+printf("original: \"%s\"\n", StringGet(t));
+StringCat(t, "word!!!");
+printf("modified: \"%s\"\n", StringGet(t));
+s = 0;
+while((sep = StringSep(&t, " .,;:!-", 0))) {
+	s++;
+	printf("token => \"%s\"\n", StringGet(sep));
+	String_(&sep);
+}
+assert(s == 16 && !t);
+
+printf("StringMatch:\n");
+StringMatch(t, tpattern, tpattern_size);
+printf("String: %s\n", StringGet(t));
+assert((str = StringGet(t)) && !strcmp(sup
+									   = "<a href = \"Test%Test\">Test%Test</a> yo <em>YO</em>", str));
+StringClear(t);
+
+#endif

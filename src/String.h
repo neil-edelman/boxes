@@ -13,7 +13,6 @@ struct String *StringClear(struct String *const);
 const char *StringGet(const struct String *const);
 size_t StringLength(const struct String *const);
 size_t StringCodePoints(const struct String *const);
-int StringHasContent(const struct String *const);
 struct String *StringRightTrim(struct String *const);
 struct String *StringTrim(struct String *const);
 struct String *StringCopy(struct String *const, const char *const);
