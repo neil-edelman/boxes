@@ -156,13 +156,16 @@ static void Line(struct Line *const line, const struct LineVt *const vt) {
 	String(&line->string);
 }
 
-/*typedef void (*PT_(Migrate))(T *const data,
-							 const struct Migrate *const migrate);*/
+/** @implements <Plain>Migrate */
+static void plain_migrate(struct LineLink *const line,
+	const struct Migrate *const migrate) {
+	LineLinkMigrate(&line->data, migrate);
+}
 
 /* {Plain} extends {Line}. */
 #define POOL_NAME Plain
 #define POOL_TYPE struct LineLink
-#define POOL_MIGRATE_EACH &LineLinkMigrate
+#define POOL_MIGRATE_EACH &plain_migrate
 /*#define POOL_UPDATE struct Line*/
 #include "Pool.h"
 
@@ -173,14 +176,21 @@ struct File {
 	size_t line_no;
 };
 
+/** @implements <File>Migrate */
+static void file_migrate(struct File *const file,
+	const struct Migrate *const migrate) {
+	LineLinkMigrate(&file->line.data, migrate);
+}
+
 #define POOL_NAME File
 #define POOL_TYPE struct File
-#define POOL_MIGRATE_EACH &LineLinkMigrate
+#define POOL_MIGRATE_EACH &file_migrate
 /*#define POOL_UPDATE struct Line*/
 #include "Pool.h" /* Defines {PlainPool}. */
 
 #define POOL_NAME Filename
 #define POOL_TYPE char *
+/* fixme!!! */
 #include "Pool.h"
 
 
