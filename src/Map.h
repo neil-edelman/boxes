@@ -54,7 +54,7 @@
 
 
 
-#include <stddef.h>	/* offset_of */
+#include <stddef.h>	/* offsetof */
 #include <stdlib.h> /* malloc free */
 #include <assert.h>	/* assert */
 #include <stdio.h>  /* perror fprintf */
@@ -240,7 +240,7 @@ struct E_(Map) {
 
 /** Private: {container_of}. */
 static struct E_(MapNode) *PE_(node_holds_item)(E *const entry) {
-	return (struct E_(MapNode) *)(void *)
+	return (struct E_(MapNode) *)
 		((char *)entry - offsetof(struct E_(MapNode), node)
 		- offsetof(struct PE_(EntryLink), data));
 }
