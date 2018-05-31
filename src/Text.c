@@ -115,6 +115,7 @@
  @version	2018-01
  @since		2018-01 */
 
+#include <stddef.h>	/* offset_of */
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* fprintf fopen */
 #include <string.h>	/* strerror strchr */
@@ -127,11 +128,7 @@
 #include "String.h"
 #include "Text.h"
 
-
-/*  */
-static const struct LineVt {
-	int type;
-} file_vt = { 1 };
+struct LineVt;
 
 /** Abstract {Line}. */
 struct Line {
@@ -156,17 +153,24 @@ static void Line(struct Line *const line, const struct LineVt *const vt) {
 	String(&line->string);
 }
 
-/** @implements <Plain>Migrate */
+/** @implements <<Line>Link aka Plain>Migrate */
 static void plain_migrate(struct LineLink *const line,
 	const struct Migrate *const migrate) {
 	LineLinkMigrate(&line->data, migrate);
+}
+
+/** @implements LinePrint */
+static void plain_source(const struct Line *const line,
+	char *const a, const int a_len) {
+	assert(line && a && a_len > 0);
+	sprintf(a, "%.*s", a_len, "new");
 }
 
 /* {Plain} extends {Line}. */
 #define POOL_NAME Plain
 #define POOL_TYPE struct LineLink
 #define POOL_MIGRATE_EACH &plain_migrate
-/*#define POOL_UPDATE struct Line*/
+#define POOL_UPDATE struct Line
 #include "Pool.h"
 
 /** {File} extends {Line}. */
@@ -176,16 +180,41 @@ struct File {
 	size_t line_no;
 };
 
+/** container_of */
+static const struct File *file_holds_const_line(const struct Line *const line) {
+	return (const struct File *)(const void *)
+		((const char *)line - offsetof(struct File, line));
+}
+
 /** @implements <File>Migrate */
 static void file_migrate(struct File *const file,
 	const struct Migrate *const migrate) {
 	LineLinkMigrate(&file->line.data, migrate);
 }
 
+/**
+ @param a_len: Must be > 2.
+ @implements LinePrint
+ @fixme Test. */
+static void file_source(const struct Line *const line,
+	char *const a, const int a_len) {
+	const struct File *const file = file_holds_const_line(line);
+	/* Don't think there is a way to limit the size that confoms to
+	 internationalisation on C89, but this should be safe. Wish {snprintf} was
+	 part of the standard. */
+	char num[256];
+	const int half_a_len = a_len >> 1;
+	assert(line && a && a_len > 2);
+	sprintf(num, "%lu", (unsigned long)file->line_no);
+	sprintf(a, "%.*s:%.*s",
+		half_a_len, file->filename, a_len - half_a_len - 2, num);
+	/*fprintf(stderr, "file_source: %d half %d other %d.\n", a_len, half_a_len, a_len - half_a_len - 1);*/
+}
+
 #define POOL_NAME File
 #define POOL_TYPE struct File
 #define POOL_MIGRATE_EACH &file_migrate
-/*#define POOL_UPDATE struct Line*/
+#define POOL_MIGRATE_UPDATE struct Line
 #include "Pool.h" /* Defines {PlainPool}. */
 
 #define POOL_NAME Filename
@@ -209,16 +238,28 @@ struct Text {
 
 
 
-/** Constructor. {text} comes out with a new file line. */
+/* Virtal table definition. */
+static const struct LineVt {
+	const LinePrint source;
+} plain_vt = { &plain_source }, file_vt = { &file_source };
+
+
+
+/** Private constructor. {text} comes out with a new file line. */
 static struct File *File(struct Text *const text,
 	const char *const fn, const size_t line_no) {
 	struct File *const file = FilePoolNew(&text->files);
+		/*@fixme: FilePoolUpdateNew(&text->files, &text->cursor);*/
 	assert(text && fn);
+	printf("in File\n");
 	if(!file) return 0;
+	printf("--Line\n");
 	Line(&file->line.data, &file_vt);
+	printf("--done");
 	file->filename = fn;
 	file->line_no = line_no;
 	LineListPush(&text->lines, &file->line.data); /* @fixme Cursor. */
+	printf("File done\n");
 	return file;
 }
 
@@ -266,17 +307,24 @@ struct Line *TextNext(struct Line *const line) {
 	return LineListNext(line);
 }
 
-/** Concatenates the contents of the stream {fp}, after the {text} cursor. On
- success, the read cursor will be at the end of the file.
+/** Concatenates the contents of the stream {fp}, after the {text} cursor,
+ labelled with {fn}. On success, the read cursor will be at the end of the
+ file. The newlines are not preserved, rather it is seen as a command to end
+ the line. @fixme
+
+ On error, the contents may be an an intermediate state.
+
  @fixme Respect cursor.
  @return Success.
- @throws E_OVERFLOW, E_ERRNO */
+ @throws ERANGE: the file is too large to fit in a {size_t}.
+ @throws {realloc} errors.
+ @throws {fgets} errors. */
 int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	struct File *file = 0; /* One line in the file. */
 	char input[256];
 	size_t input_len;
 	size_t line_no = 0;
-	int eol = 0;
+	int is_eol = 0;
 	if(!text || !fp) return 0;
 	while(fgets(input, sizeof input, fp)) {
 		printf("read <%s>\n", input);
@@ -284,35 +332,50 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 		/* This is weird but not impossible; eg, zero in file. */
 		if(!(input_len = strlen(input))) continue;
 		assert(input_len < sizeof input);
-		if(input[input_len - 1] == '\n') {
-			input[--input_len] = '\0';
-			eol = 1;
-			printf("eol\n");
-		} else {
-			printf("not eol\n");
-		}
+		if(input[input_len - 1] == '\n') input[--input_len] = '\0', is_eol = 1;
+		printf("between\n");
 		if(!StringBetweenCat(&file->line.data.string, input, input + input_len))
-			break;
-		if(eol) file = 0;
+			return 0;
+		printf("done\n");
+		if(is_eol) file = 0, is_eol = 0;
 	}
-	/* fixme: deal with leftover non-text files. */
-	printf("read %lu lines.\n", (unsigned long)line_no);
 	return feof(fp);
 }
 
-/** Writes the file {fp} with the text {this}. */
-int TextWrite(struct Text *const text, FILE *const fp) {
+/** For each line in {text}, calls {f} with the line and {fp}. If {text}, {f},
+ or {fp} is null, returns false.
+ @param out: Short-circuits to determine error.
+ @return Success. */
+int TextOutput(struct Text *const text, const LineOutput out, FILE *const fp) {
 	struct Line *line;
-	if(!text || !fp) return 0;
-	for(line = LineListFirst(&text->lines); line; line = LineListNext(line)) {
-		if(fputs(StringGet(&line->string), fp) == EOF) return 0;
-	}
+	if(!text || !out || !fp) return 0;
+	for(line = LineListFirst(&text->lines); line; line = LineListNext(line))
+		if(!out(line, fp)) return 0;
 	return 1;
 }
 
+/** Executes {action(line text, line number)} for all lines. If {this} or
+ {action} is null, returns. */
+/*void TextForEach(struct Text *const this, const LineAction action) {
+	struct Line *line;
+	if(!this || !action) return;
+	for(line = LineListFirst(&this->lines); line; line = LineListNext(line))
+		action(line);
+}*/
 
+/** Gets the {line}. */
+const char *TextLineGet(const struct Line *const line) {
+	if(!line) return 0;
+	return StringGet(&line->string);
+}
 
-
+/** Gets the source of the {line} in {a} not exceeding {a_len}. */
+void TextLineSource(const struct Line *const line, char *const a, size_t a_len){
+	const int a_int = (a_len > INT_MAX) ? INT_MAX : (int)a_len;
+	if(!a_len) return;
+	if(!line) { sprintf(a, "%.*s", a_int, "null"); return; }
+	line->vt->source(line, a, a_int);
+}
 
 
 
@@ -329,15 +392,6 @@ int TextWrite(struct Text *const text, FILE *const fp) {
 
 
 #if 0
-
-/** Executes {action(line text, line number)} for all lines. If {this} or
- {action} is null, returns. */
-void TextForEach(struct Text *const this, const LineAction action) {
-	struct Line *line;
-	if(!this || !action) return;
-	for(line = LineListFirst(&this->lines); line; line = LineListNext(line))
-		action(line);
-}
 
 /** Executes {pred(line text, line number)} for all lines and deletes those
  that return false. If {this} or {pred} is null, returns. */

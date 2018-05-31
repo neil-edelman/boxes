@@ -32,7 +32,7 @@
  @since		2018-01 */
 
 #include <stdlib.h> /* malloc free */
-#include <stdio.h>  /* fprintf fopen */
+#include <stdio.h>  /* fprintf fopen FILE */
 #include <string.h>	/* strerror */
 #include <limits.h>	/* INT_MAX */
 #include <assert.h>	/* assert */
@@ -107,6 +107,14 @@ static void word_wrap(struct Line *const line) {
 }
 #endif
 
+static int write_file(const struct Line *const line, FILE *const fp) {
+	char a[32];
+	assert(line && fp);
+	TextLineSource(line, a, sizeof a);
+	return fputs(a, fp) != EOF && fputs(": ", fp) != EOF
+		&& fputs(TextLineGet(line), fp) != EOF && fputc('\n', fp) != EOF;
+}
+
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
  @param argv: The arguments.
@@ -118,8 +126,13 @@ int main(void) {
 	do {
 		if(!(text = Text())) { e = "Text"; break; }
 		if(!(fp = fopen("../../src/Text.h", "r"))
-		   || !TextFile(text, fp, "Text.h")
-		   || !TextWrite(text, stderr)) { e = "Text.h"; break; }
+			|| !TextFile(text, fp, "Text.h")
+			|| fclose(fp) == EOF
+			|| !(fp = fopen("../../src/Text.c", "r"))
+			|| !TextFile(text, fp, "Text.c")
+			|| fclose(fp) == EOF) { e = "Text.h"; break; }
+		fp = 0;
+		if(!TextOutput(text, &write_file, stdout)) { e = "stdout"; break; }
 #if 0
 		/* Delete newlines. */
 		StoryForEach(story, &trim);
