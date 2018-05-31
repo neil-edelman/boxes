@@ -118,6 +118,20 @@ static int write_file(const struct Line *const line, FILE *const fp) {
 		&& fputs(TextLineGet(line), fp) != EOF && fputc('\n', fp) != EOF;
 }
 
+/** Helper for {fclose} that doesn't resort to undefined behavior
+ when presentented with null.
+ @param pfp: A pointer to the file pointer.
+ @return Success.
+ @throws {fclose} errors. */
+static int pfclose(FILE **const pfp) {
+	FILE *fp;
+	int is;
+	if(!pfp || !(fp = *pfp)) return 1;
+	is = (fclose(fp) != EOF);
+	*pfp = fp = 0;
+	return is;
+}
+
 /** Entry point.
  @param argc: The number of arguments, starting with the programme name.
  @param argv: The arguments.
@@ -131,11 +145,11 @@ int main(void) {
 		/* Load all. */
 		if(!(fp = fopen(head, "r"))
 			|| !TextFile(text, fp, head)
-			|| fclose(fp) == EOF) { e = head; break; }
+			|| !pfclose(&fp)) { e = head; break; }
 		if(!TextNew(text)) { e = "edit"; break; }
 		if(!(fp = fopen(body, "r"))
 			|| !TextFile(text, fp, body)
-			|| fclose(fp) == EOF) { e = body; break; }
+			|| !pfclose(&fp)) { e = body; break; }
 		fp = 0;
 		if(!TextOutput(text, &write_file, stdout)) { e = "stdout"; break; }
 #if 0
@@ -165,7 +179,7 @@ int main(void) {
 		printf("Foo: %s\n", TextGet(foo));
 #endif
 	} while(0); if(e) perror(e);
-	fclose(fp);
+	if(!pfclose(&fp)) perror("shutdown");
 	Text_(&text);
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
