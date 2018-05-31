@@ -240,7 +240,7 @@ struct E_(Map) {
 
 /** Private: {container_of}. */
 static struct E_(MapNode) *PE_(node_holds_item)(E *const entry) {
-	return (struct E_(MapNode) *)
+	return (struct E_(MapNode) *)(void *)
 		((char *)entry - offsetof(struct E_(MapNode), node)
 		- offsetof(struct PE_(EntryLink), data));
 }
