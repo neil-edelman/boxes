@@ -107,6 +107,9 @@ static void word_wrap(struct Line *const line) {
 }
 #endif
 
+static const char *const head = "abstract.txt",
+	*const body = "lorem.txt";
+
 static int write_file(const struct Line *const line, FILE *const fp) {
 	char a[32];
 	assert(line && fp);
@@ -125,12 +128,14 @@ int main(void) {
 	const char *e = 0;
 	do {
 		if(!(text = Text())) { e = "Text"; break; }
-		if(!(fp = fopen("../../src/Text.h", "r"))
-			|| !TextFile(text, fp, "Text.h")
-			|| fclose(fp) == EOF
-			|| !(fp = fopen("../../src/Text.c", "r"))
-			|| !TextFile(text, fp, "Text.c")
-			|| fclose(fp) == EOF) { e = "Text.h"; break; }
+		/* Load all. */
+		if(!(fp = fopen(head, "r"))
+			|| !TextFile(text, fp, head)
+			|| fclose(fp) == EOF) { e = head; break; }
+		if(!TextNew(text)) { e = "edit"; break; }
+		if(!(fp = fopen(body, "r"))
+			|| !TextFile(text, fp, body)
+			|| fclose(fp) == EOF) { e = body; break; }
 		fp = 0;
 		if(!TextOutput(text, &write_file, stdout)) { e = "stdout"; break; }
 #if 0

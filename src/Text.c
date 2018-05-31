@@ -229,7 +229,7 @@ struct Text {
 	/* List of lines. */
 	struct LineList lines;
 	/* Stores for list. */
-	struct PlainPool plain;
+	struct PlainPool plains;
 	struct FilePool files;
 	struct FilenamePool filenames;
 	/* Editing functions. */
@@ -245,21 +245,29 @@ static const struct LineVt {
 
 
 
+/** Private constructor. A plain, empty, line in {text} is created. */
+static struct Line *Plain(struct Text *const text) {
+	struct LineLink *const plain = PlainPoolNew(&text->plains);
+	/*@fixme: FilePoolUpdateNew(&text->files, &text->cursor);*/
+	assert(text);
+	if(!plain) return 0;
+	Line(&plain->data, &plain_vt);
+	if(!StringClear(&plain->data.string));
+	LineListPush(&text->lines, &plain->data); /* @fixme Cursor. */
+	return &plain->data;
+}
+
 /** Private constructor. {text} comes out with a new file line. */
 static struct File *File(struct Text *const text,
 	const char *const fn, const size_t line_no) {
 	struct File *const file = FilePoolNew(&text->files);
 		/*@fixme: FilePoolUpdateNew(&text->files, &text->cursor);*/
 	assert(text && fn);
-	printf("in File\n");
 	if(!file) return 0;
-	printf("--Line\n");
 	Line(&file->line.data, &file_vt);
-	printf("--done");
 	file->filename = fn;
 	file->line_no = line_no;
 	LineListPush(&text->lines, &file->line.data); /* @fixme Cursor. */
-	printf("File done\n");
 	return file;
 }
 
@@ -274,7 +282,7 @@ void Text_(struct Text **const ptext) {
 	if(!ptext || !(text = *ptext)) return;
 	fprintf(stderr, "~Text: erase, #%p.\n", (void *)text);
 	LineListClear(&text->lines);
-	PlainPool_(&text->plain);
+	PlainPool_(&text->plains);
 	FilePool_(&text->files);
 	while((pfn = FilenamePoolPop(&text->filenames))) free(*pfn);
 	FilenamePool_(&text->filenames);
@@ -288,7 +296,7 @@ struct Text *Text(void) {
 	struct Text *text;
 	if(!(text = malloc(sizeof *text))) return 0;
 	LineListClear(&text->lines);
-	PlainPool(&text->plain);
+	PlainPool(&text->plains);
 	FilePool(&text->files);
 	FilenamePool(&text->filenames);
 	text->cursor = 0;
@@ -307,7 +315,17 @@ struct Line *TextNext(struct Line *const line) {
 	return LineListNext(line);
 }
 
-/** Concatenates the contents of the stream {fp}, after the {text} cursor,
+/** Concatenates a blank new line after the {text} line cursor.
+ @param text: If null, returns null.
+ @return The line that is created ot null.
+ @throws {malloc} errors. */
+struct Line *TextNew(struct Text *const text) {
+	struct Line *plain = 0;
+	if(!text || !(plain = Plain(text))) return 0;
+	return plain;
+}
+
+/** Concatenates the contents of the stream {fp}, after the {text} line cursor,
  labelled with {fn}. On success, the read cursor will be at the end of the
  file. The newlines are not preserved, rather it is seen as a command to end
  the line. @fixme
@@ -327,16 +345,14 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	int is_eol = 0;
 	if(!text || !fp) return 0;
 	while(fgets(input, sizeof input, fp)) {
-		printf("read <%s>\n", input);
+		/*printf("read <%s>\n", input);*/
 		if(!file && !(file = File(text, fn, ++line_no))) return 0;
 		/* This is weird but not impossible; eg, zero in file. */
 		if(!(input_len = strlen(input))) continue;
 		assert(input_len < sizeof input);
 		if(input[input_len - 1] == '\n') input[--input_len] = '\0', is_eol = 1;
-		printf("between\n");
 		if(!StringBetweenCat(&file->line.data.string, input, input + input_len))
 			return 0;
-		printf("done\n");
 		if(is_eol) file = 0, is_eol = 0;
 	}
 	return feof(fp);

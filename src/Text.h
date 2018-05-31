@@ -11,6 +11,7 @@ typedef int (*LineOutput)(const struct Line *const, FILE *const);
 
 struct Text *Text(void);
 void Text_(struct Text **ptext);
+struct Line *TextNew(struct Text *const text);
 struct Line *TextFirst(struct Text *const text);
 struct Line *TextNext(struct Line *const line);
 int TextFile(struct Text *const text, FILE *const fp, const char *const fn);
