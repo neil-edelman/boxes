@@ -814,7 +814,7 @@ static void T_(ListSelfCorrect)(struct T_(List) *const list) {
 
 /** Debugging purposes. Turn {LIST_TEST} on. */
 static void T_(ListAudit)(const struct T_(List) *const list) {
-	size_t i, j;
+	size_t i, j = 0;
 	int is_j = 0;
 	if(!list) return;
 #ifdef LIST_OPENMP /* <-- omp */
