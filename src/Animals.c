@@ -28,7 +28,8 @@ static const size_t animal_name_size = sizeof ((struct Animal *)0)->name
 	/ sizeof *((struct Animal *)0)->name;
 static void Animal_to_string(const struct Animal *const animal,
 	char (*const a)[12]) {
-	strncpy(*a, animal->name, sizeof *a / sizeof **a);
+	strncpy(*a, animal->name, sizeof *a / sizeof **a - 1);
+	*a[sizeof *a / sizeof **a - 1] = '\0';
 }
 #define LIST_NAME Animal
 #define LIST_TYPE struct Animal
