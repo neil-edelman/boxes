@@ -164,6 +164,8 @@ static void PT_(test_basic)(void) {
 	assert(errno == 0);
 	PT_(valid_state)(&a);
 
+	/* @fixme valgrind is giving me grief if I don't do this? */
+	memset(ts, 0, sizeof ts);
 	/* Get elements. */
 	for(t = ts, t1 = t + ts_size; t < t1; t++) PT_(filler)(t);
 
@@ -337,6 +339,7 @@ static void PT_(test_random)(void) {
 		printf("%s.\n", T_(PoolToString)(&a));
 		PT_(valid_state)(&a);
 	}
+	T_(Pool_)(&a);
 }
 
 /** The list will be tested on stdout. */
