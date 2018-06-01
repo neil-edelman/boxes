@@ -628,7 +628,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
  @allow */
 static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool, S **const update_ptr) {
 	struct PT_(Node) *node;
-	if(!pool || (node = PT_(new)(pool, update_ptr))) return 0;
+	if(!pool || !(node = PT_(new)(pool, update_ptr))) return 0;
 	return &node->data;
 }
 
