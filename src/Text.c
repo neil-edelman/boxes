@@ -130,9 +130,10 @@
 
 struct LineVt;
 
-/** Abstract {Line}. */
+/** Abstract {Line}. Every line keeps track of the {parent} for convenience. */
 struct Line {
 	const struct LineVt *vt;
+	const struct Text *parent;
 	struct String string;
 };
 
@@ -147,9 +148,11 @@ static void line_to_string(const struct Line *const line, char (*const a)[12]) {
 #include "List.h"
 
 /** Abstract constructor. */
-static void Line(struct Line *const line, const struct LineVt *const vt) {
-	assert(line && vt);
+static void Line(struct Line *const line,
+	const struct LineVt *const vt, const struct Text *const parent) {
+	assert(line && vt && parent);
 	line->vt = vt;
+	line->parent = parent;
 	String(&line->string);
 }
 
@@ -277,7 +280,7 @@ static struct Line *Plain(struct Text *const text) {
 		= PlainPoolUpdateNew(&text->plains, &text->cursor);
 	assert(text);
 	if(!plain) return 0;
-	Line(&plain->data, &plain_vt);
+	Line(&plain->data, &plain_vt, text);
 	/* Initialise to empty. */
 	if(!StringClear(&plain->data.string))
 		{ Line_(&plain->data); return 0; }
@@ -291,7 +294,7 @@ static struct File *File(struct Text *const text,
 	struct File *const file = FilePoolUpdateNew(&text->files, &text->cursor);
 	assert(text && StringGet(fn));
 	if(!file) return 0;
-	Line(&file->line.data, &file_vt);
+	Line(&file->line.data, &file_vt, text);
 	/* This would normally be bad, but it's essentially constant. */
 	file->filename = StringGet(fn);
 	file->line_no = line_no;
@@ -340,7 +343,7 @@ struct Line *TextFirst(struct Text *const text) {
 }
 
 /** @return The next line or null. */
-struct Line *TextNext(struct Line *const line) {
+struct Line *LineNext(struct Line *const line) {
 	return LineListNext(line);
 }
 
@@ -415,7 +418,7 @@ void TextForEach(struct Text *const text, const LineAction action) {
 }
 
 /** Gets the {line}. */
-const char *TextLineGet(const struct Line *const line) {
+const char *LineGet(const struct Line *const line) {
 	if(!line) return 0;
 	return StringGet(&line->string);
 }
@@ -447,17 +450,17 @@ void TextLineSource(const struct Line *const line,
 
 #if 0
 
-/** Executes {pred(line text, line number)} for all lines and deletes those
- that return false. If {this} or {pred} is null, returns. */
-void TextKeepIf(struct Text *const this, const LinePredicate pred) {
+/** Executes {pred(line)} for all lines and deletes those that return false. If
+ {this} or {pred} is null, does nothing. */
+void TextKeepIf(struct Text *const text, const LinePredicate pred) {
 	struct Line *line, *nextline;
-	if(!this || !pred) return;
-	for(line = LineListFirst(&this->lines); line; line = nextline) {
+	if(!text || !pred) return;
+	for(line = LineListFirst(&text->lines); line; line = nextline) {
 		nextline = LineListNext(line);
 		if(pred(line)) continue;
 		LineListRemove(line);
 		Text_(&line->text);
-		LinePoolRemove(this->pool, (struct LineListNode *)line);
+		LinePoolRemove(text->pool, (struct LineListNode *)line);
 	}
 }
 

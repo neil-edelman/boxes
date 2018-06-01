@@ -38,54 +38,9 @@
 #include <assert.h>	/* assert */
 #include <errno.h>	/* errno */
 #include "../src/Text.h"
+#include "split.h"
 
 #if 0
-
-#define STACK_NAME Size
-#define STACK_TYPE size_t
-#include "Stack.h"
-
-/** @implements LineAction */
-static void show(struct Line *const line) {
-	assert(line);
-	printf("Line %lu: <%s>.\n", (long unsigned)LineNo(line),TextGet(LineText(line)));
-}
-
-/** @implements LineAction */
-static void trim(struct Line *const line) {
-	assert(line);
-	TextTrim(LineText(line));
-}
-
-/** @implements LineAction */
-static void rtrim(struct Line *const line) {
-	assert(line);
-	TextRightTrim(LineText(line));
-}
-
-/** @implements LinePredicate */
-static int collapse_para(struct Line *const line) {
-	struct Line *const prev = LinePrevious(line);
-	assert(line);
-	/*printf("\"%s\".%lu -> \"%s\".%lu\n",
-		TextGet(LineText(prev)), (long unsigned)LineNo(prev),
-		TextGet(LineText(line)), (long unsigned)LineNo(line));*/
-	if(TextGet(LineText(line))[0] != '\0') return 1;
-	if(!prev || TextGet(LineText(prev))[0] == '\0') return 0;
-	return 1;
-}
-
-/** @implements LineAction */
-static void reinsert_newlines(struct Line *const line) {
-	assert(line);
-	TextCat(LineText(line), "\n");
-}
-
-/** @implements TextPredicate */
-static int no_empty(const char *const string, const char *sub) {
-	UNUSED(string);
-	return isspace(sub[1]) ? 0 : 1;
-}
 
 /** \cite{Wilber1998} \url{http://xxyxyz.org/line-breaking/}. */
 static void word_wrap(struct Line *const line) {
@@ -110,16 +65,16 @@ static void word_wrap(struct Line *const line) {
 static const char *const head = "abstract.txt",
 	*const body = "lorem.txt";
 
+/** Writes "<source>: <line>\n" in {line} to {fp}. */
 static int write_file(const struct Line *const line, FILE *const fp) {
 	char a[32];
 	assert(line && fp);
 	TextLineSource(line, a, sizeof a);
 	return fputs(a, fp) != EOF && fputs(": ", fp) != EOF
-		&& fputs(TextLineGet(line), fp) != EOF && fputc('\n', fp) != EOF;
+		&& fputs(LineGet(line), fp) != EOF && fputc('\n', fp) != EOF;
 }
 
-/** Helper for {fclose} that doesn't resort to undefined behavior
- when presentented with null.
+/** Helper for {fclose} is a little more robust.
  @param pfp: A pointer to the file pointer.
  @return Success.
  @throws {fclose} errors. */
@@ -138,6 +93,7 @@ static int pfclose(FILE **const pfp) {
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	struct Text *text = 0;
+	struct Line *line;
 	FILE *fp = 0;
 	const char *e = 0;
 	do {
@@ -150,7 +106,11 @@ int main(void) {
 		if(!(fp = fopen(body, "r"))
 			|| !TextFile(text, fp, body)
 			|| !pfclose(&fp)) { e = body; break; }
-		fp = 0;
+		/* Split the text into words. */
+		for(line = TextFirst(text); line; line = LineNext(line)) {
+			printf(">>%s\n", LineGet(line));
+		}
+		/* Output. */
 		if(!TextOutput(text, &write_file, stdout)) { e = "stdout"; break; }
 #if 0
 		/* Delete newlines. */
@@ -183,59 +143,3 @@ int main(void) {
 	Text_(&text);
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
-
-#if 0
-printf("StringSep:\n");
-StringCat(t, "/foo///bar/qux//xxx");
-printf("String: '%s'\n", StringGet(t));
-assert(t);
-s = 0;
-printf("entering\n");
-while((sep = StringSep(&t, "/", &is_delim))) {
-	printf("here\n");
-	printf("StringSep: '%s' '%s'\n", StringGet(sep), StringGet(t));
-	switch(s++) {
-		case 0:
-			assert((str = StringGet(sep)) && !strcmp(sup = "", str));
-			break;
-		case 1:
-			assert((str = StringGet(sep)) && !strcmp(sup = "foo//", str));
-			break;
-		case 2:
-			assert((str = StringGet(sep)) && !strcmp(sup = "bar", str));
-			break;
-		case 3:
-			assert((str = StringGet(sep)) && !strcmp(sup = "qux/", str));
-			break;
-		case 4:
-			assert((str = StringGet(sep)) && !strcmp(sup = "xxx", str));
-			break;
-		default:
-			assert((str = StringGet(sep), 0));
-			break;
-	}
-	String_(&sep);
-}
-assert(!t);
-
-t = String();
-StringCat(t, "words separated by spaces -- and, punctuation!!!");
-printf("original: \"%s\"\n", StringGet(t));
-StringCat(t, "word!!!");
-printf("modified: \"%s\"\n", StringGet(t));
-s = 0;
-while((sep = StringSep(&t, " .,;:!-", 0))) {
-	s++;
-	printf("token => \"%s\"\n", StringGet(sep));
-	String_(&sep);
-}
-assert(s == 16 && !t);
-
-printf("StringMatch:\n");
-StringMatch(t, tpattern, tpattern_size);
-printf("String: %s\n", StringGet(t));
-assert((str = StringGet(t)) && !strcmp(sup
-									   = "<a href = \"Test%Test\">Test%Test</a> yo <em>YO</em>", str));
-StringClear(t);
-
-#endif
