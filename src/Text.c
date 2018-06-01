@@ -223,40 +223,29 @@ static void file_source(const struct Line *const line,
 #define POOL_MIGRATE_UPDATE struct Line
 #include "Pool.h" /* Defines {PlainPool}. */
 
-/* This is confusing if you define pointers-to-pointers. */
-struct Str { char *string; };
-
-static void str_to_string(const struct Str *const str, char (*const a)[12]) {
-	assert(str);
-	sprintf(*a, "%.11s", str->string);
+/** @implements <String>ToString */
+static void string_to_string(const struct String *const s, char (*const a)[12]) {
+	assert(s);
+	sprintf(*a, "%.11s", StringGet(s));
 }
-
-#define POOL_NAME Str
-#define POOL_TYPE struct Str
-#define POOL_TO_STRING &str_to_string
-/* fixme!!! */
+/* Note: we don't need a migrate function if it's members are const {String}, otherwise we would. */
+#define POOL_NAME String
+#define POOL_TYPE struct String
+#define POOL_TO_STRING &string_to_string
 #include "Pool.h"
-
-static struct Str *str_new(struct StrPool *const pool, const char *const s) {
-	struct Str *str = 0;
-	char *dup_s = 0;
-	size_t s_len;
-	int is_done = 0;
-	assert(pool && s);
-	do {
-		s_len = strlen(s);
-		if(s_len == (size_t)-1) { errno = ERANGE; break; }
-		if(!(dup_s = malloc(s_len + 1))) break;
-		memcpy(dup_s, s, s_len + 1);
-		if(!(str = StrPoolNew(pool))) break;
-		is_done = 1;
-	} while(0); if(!is_done) {
-		free(dup_s);
-		if(str) StrPoolPop(pool), str = 0;
-	}
-	return str;
+static void string_(struct StringPool *const pool, struct String *const s) {
+	assert(pool);
+	if(!s) return;
+	String_(s);
+	StringPoolRemove(pool, s);
 }
-
+static struct String *string(struct StringPool *const pool, const char *const input) {
+	struct String *s = 0;
+	assert(pool && input);
+	if(!(s = StringPoolNew(pool)) || !StringCat(s, input))
+		{ string_(pool, s); return 0; }
+	return s;
+}
 
 
 
@@ -267,7 +256,7 @@ struct Text {
 	/* Stores for list. */
 	struct PlainPool plains;
 	struct FilePool files;
-	struct StrPool filenames;
+	struct StringPool filenames;
 	/* Editing functions. */
 	struct Line *cursor;
 };
@@ -297,13 +286,13 @@ static struct Line *Plain(struct Text *const text) {
 
 /** Private constructor. {text} comes out with a new file line. */
 static struct File *File(struct Text *const text,
-	const char *const fn, const size_t line_no) {
+	const struct String *fn, const size_t line_no) {
 	struct File *const file = FilePoolNew(&text->files);
 		/*@fixme: FilePoolUpdateNew(&text->files, &text->cursor);*/
-	assert(text && fn);
+	assert(text && StringGet(fn));
 	if(!file) return 0;
 	Line(&file->line.data, &file_vt);
-	file->filename = fn;
+	file->filename = StringGet(fn);
 	file->line_no = line_no;
 	LineListPush(&text->lines, &file->line.data); /* @fixme Cursor. */
 	return file;
@@ -316,15 +305,15 @@ static struct File *File(struct Text *const text,
  points to null, doesn't do anything. */
 void Text_(struct Text **const ptext) {
 	struct Text *text;
-	struct Str *str;
+	struct String *str;
 	if(!ptext || !(text = *ptext)) return;
 	fprintf(stderr, "~Text: erase, #%p.\n", (void *)text);
 	LineListClear(&text->lines);
 	PlainPool_(&text->plains);
 	FilePool_(&text->files);
-	printf("~: %s\n", StrPoolToString(&text->filenames));
-	while((str = StrPoolPop(&text->filenames))) printf("filename %s.\n", str->string), free(str->string);
-	StrPool_(&text->filenames);
+	printf("~: %s\n", StringPoolToString(&text->filenames));
+	while((str = StringPoolPop(&text->filenames))) printf("filename %s.\n", StringGet(str)), String_(str);
+	StringPool_(&text->filenames);
 	free(text), text = *ptext = 0;
 }
 
@@ -337,7 +326,7 @@ struct Text *Text(void) {
 	LineListClear(&text->lines);
 	PlainPool(&text->plains);
 	FilePool(&text->files);
-	StrPool(&text->filenames);
+	StringPool(&text->filenames);
 	text->cursor = 0;
 	fprintf(stderr, "Text: new, #%p.\n", (void *)text);
 	return text;
@@ -378,27 +367,27 @@ struct Line *TextNew(struct Text *const text) {
  @throws {fgets} errors. */
 int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	struct File *file = 0; /* One line in the file. */
-	struct Str *str;
+	struct String *str_fn;
 	char input[256];
 	size_t input_len;
 	size_t line_no = 0;
 	int is_eol = 0;
 	if(!text || !fp) return 0;
 	/* Store a copy of this filename. */
-	if(!(str = StrPoolNew(&text->filenames))) return 0;
-
+	if(!(str_fn = string(&text->filenames, fn))) return 0;
 	/* Append text file to {text}. */
 	while(fgets(input, sizeof input, fp)) {
 		/*printf("read <%s>\n", input);*/
-		if(!file && !(file = File(text, fn, ++line_no))) return 0;
+		if(!file && !(file = File(text, str_fn, ++line_no))) break;
 		/* This is weird but not impossible; eg, zero in file. */
 		if(!(input_len = strlen(input))) continue;
 		assert(input_len < sizeof input);
 		if(input[input_len - 1] == '\n') input[--input_len] = '\0', is_eol = 1;
 		if(!StringBetweenCat(&file->line.data.string, input, input + input_len))
-			return 0;
+			break;
 		if(is_eol) file = 0, is_eol = 0;
 	}
+	/* We can't delete {str_fn} because intermediate values may use it. */
 	return feof(fp);
 }
 
