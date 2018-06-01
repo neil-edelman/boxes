@@ -176,7 +176,7 @@ static void plain_source(const struct Line *const line,
 #define POOL_NAME Plain
 #define POOL_TYPE struct LineLink
 #define POOL_MIGRATE_EACH &plain_migrate
-#define POOL_UPDATE struct Line
+#define POOL_MIGRATE_UPDATE struct Line
 #include "Pool.h"
 
 /** {File} extends {Line}. */
@@ -224,11 +224,12 @@ static void file_source(const struct Line *const line,
 #include "Pool.h" /* Defines {PlainPool}. */
 
 /** @implements <String>ToString */
-static void string_to_string(const struct String *const s, char (*const a)[12]) {
+static void string_to_string(const struct String *const s, char (*const a)[12]){
 	assert(s);
 	sprintf(*a, "%.11s", StringGet(s));
 }
-/* Note: we don't need a migrate function if it's members are const {String}, otherwise we would. */
+/* Note: we don't need a migrate function if it's members are const {String},
+ otherwise we would. */
 #define POOL_NAME String
 #define POOL_TYPE struct String
 #define POOL_TO_STRING &string_to_string
@@ -272,29 +273,29 @@ static const struct LineVt {
 
 /** Private constructor. A plain, empty, line in {text} is created. */
 static struct Line *Plain(struct Text *const text) {
-	struct LineLink *const plain = PlainPoolNew(&text->plains);
-	/*@fixme: FilePoolUpdateNew(&text->files, &text->cursor);*/
+	struct LineLink *const plain
+		= PlainPoolUpdateNew(&text->plains, &text->cursor);
 	assert(text);
 	if(!plain) return 0;
 	Line(&plain->data, &plain_vt);
 	/* Initialise to empty. */
 	if(!StringClear(&plain->data.string))
 		{ Line_(&plain->data); return 0; }
-	LineListPush(&text->lines, &plain->data); /* @fixme Cursor. */
+	LineListPush(&text->lines, &plain->data);
 	return &plain->data;
 }
 
 /** Private constructor. {text} comes out with a new file line. */
 static struct File *File(struct Text *const text,
 	const struct String *fn, const size_t line_no) {
-	struct File *const file = FilePoolNew(&text->files);
-		/*@fixme: FilePoolUpdateNew(&text->files, &text->cursor);*/
+	struct File *const file = FilePoolUpdateNew(&text->files, &text->cursor);
 	assert(text && StringGet(fn));
 	if(!file) return 0;
 	Line(&file->line.data, &file_vt);
+	/* This would normally be bad, but it's essentially constant. */
 	file->filename = StringGet(fn);
 	file->line_no = line_no;
-	LineListPush(&text->lines, &file->line.data); /* @fixme Cursor. */
+	LineListPush(&text->lines, &file->line.data);
 	return file;
 }
 
@@ -307,12 +308,12 @@ void Text_(struct Text **const ptext) {
 	struct Text *text;
 	struct String *str;
 	if(!ptext || !(text = *ptext)) return;
-	fprintf(stderr, "~Text: erase, #%p.\n", (void *)text);
+	fprintf(stderr, "~Text: erase, #%p.\n", (void *)text); /* Debug. */
 	LineListClear(&text->lines);
 	PlainPool_(&text->plains);
 	FilePool_(&text->files);
-	printf("~: %s\n", StringPoolToString(&text->filenames));
-	while((str = StringPoolPop(&text->filenames))) printf("filename %s.\n", StringGet(str)), String_(str);
+	printf("~: %s\n", StringPoolToString(&text->filenames)); /* Debug. */
+	while((str = StringPoolPop(&text->filenames))) String_(str);
 	StringPool_(&text->filenames);
 	free(text), text = *ptext = 0;
 }
@@ -328,7 +329,7 @@ struct Text *Text(void) {
 	FilePool(&text->files);
 	StringPool(&text->filenames);
 	text->cursor = 0;
-	fprintf(stderr, "Text: new, #%p.\n", (void *)text);
+	fprintf(stderr, "Text: new, #%p.\n", (void *)text); /* Debug. */
 	return text;
 }
 
@@ -403,14 +404,14 @@ int TextOutput(struct Text *const text, const LineOutput out, FILE *const fp) {
 	return 1;
 }
 
-/** Executes {action(line text, line number)} for all lines. If {this} or
- {action} is null, returns. */
-/*void TextForEach(struct Text *const this, const LineAction action) {
+/** Executes {action(line)} for all lines if {text} and {action} are
+ non-null. */
+void TextForEach(struct Text *const text, const LineAction action) {
 	struct Line *line;
-	if(!this || !action) return;
-	for(line = LineListFirst(&this->lines); line; line = LineListNext(line))
+	if(!text || !action) return;
+	for(line = LineListFirst(&text->lines); line; line = LineListNext(line))
 		action(line);
-}*/
+}
 
 /** Gets the {line}. */
 const char *TextLineGet(const struct Line *const line) {
@@ -418,12 +419,15 @@ const char *TextLineGet(const struct Line *const line) {
 	return StringGet(&line->string);
 }
 
-/** Gets the source of the {line} in {a} not exceeding {a_len}. */
-void TextLineSource(const struct Line *const line, char *const a, size_t a_len){
-	const int a_int = (a_len > INT_MAX) ? INT_MAX : (int)a_len;
-	if(!a_len) return;
-	if(!line) { sprintf(a, "%.*s", a_int, "null"); return; }
-	line->vt->source(line, a, a_int);
+/** Gets the source of the {line} in a null-terminated string, {a}, not
+ exceeding {a_size}. If {a_size} is zero, does nothing. */
+void TextLineSource(const struct Line *const line,
+	char *const a, size_t a_size) {
+	int a_len;
+	if(!a_size) return;
+	a_len = (a_size > INT_MAX) ? INT_MAX : (int)a_size - 1;
+	if(!line) { sprintf(a, "%.*s", a_len, "null"); return; }
+	line->vt->source(line, a, a_len);
 }
 
 
