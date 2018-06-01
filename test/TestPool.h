@@ -131,7 +131,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(PoolGet)(0, 0) == 0 && T_(PoolGet)(0, 1) == 0);
 	assert(T_(PoolPeek)(0) == 0);
 	assert(T_(PoolPop)(0) == 0);
-	assert(T_(PoolNext)(0, 0) == 0 && T_(PoolNext)(0, t) == 0);
+	assert(T_(PoolNext)(0, 0) == 0);
 	assert(T_(PoolNew)(0) == 0);
 	assert(T_(PoolUpdateNew)(0, 0) == 0
 		&& T_(PoolUpdateNew)(0, &supertype) == 0);
