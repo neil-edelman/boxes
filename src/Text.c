@@ -392,10 +392,11 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	return feof(fp);
 }
 
-/** For each line in {text}, calls {f} with the line and {fp}. If {text}, {f},
- or {fp} is null, returns false.
- @param out: Short-circuits to determine error.
- @return Success. */
+/** For each line in {text}, calls {out} with the line and {fp}. If {text},
+ {out}, or {fp} is null, returns false.
+ @param out: Repeatedly calls this function with advancing lines and {fp}.
+ @return Short-circuits on {out}, that is, a return value of false immediately
+ returns false, and if all values return true, returns true. */
 int TextOutput(struct Text *const text, const LineOutput out, FILE *const fp) {
 	struct Line *line;
 	if(!text || !out || !fp) return 0;
