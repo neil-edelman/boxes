@@ -130,10 +130,9 @@
 
 struct LineVt;
 
-/** Abstract {Line}. Every line keeps track of the {parent} for convenience. */
+/** Abstract {Line}. */
 struct Line {
 	const struct LineVt *vt;
-	const struct Text *parent;
 	struct String string;
 };
 
@@ -148,11 +147,9 @@ static void line_to_string(const struct Line *const line, char (*const a)[12]) {
 #include "List.h"
 
 /** Abstract constructor. */
-static void Line(struct Line *const line,
-	const struct LineVt *const vt, const struct Text *const parent) {
-	assert(line && vt && parent);
+static void Line(struct Line *const line, const struct LineVt *const vt) {
+	assert(line && vt);
 	line->vt = vt;
-	line->parent = parent;
 	String(&line->string);
 }
 
@@ -232,7 +229,7 @@ static void string_to_string(const struct String *const s, char (*const a)[12]){
 	sprintf(*a, "%.11s", StringGet(s));
 }
 /* Note: we don't need a migrate function if it's members are const {String},
- otherwise we would. */
+ otherwise we would. Used for filenames. */
 #define POOL_NAME String
 #define POOL_TYPE struct String
 #define POOL_TO_STRING &string_to_string
@@ -243,7 +240,8 @@ static void string_(struct StringPool *const pool, struct String *const s) {
 	String_(s);
 	StringPoolRemove(pool, s);
 }
-static struct String *string(struct StringPool *const pool, const char *const input) {
+static struct String *string(struct StringPool *const pool,
+	const char *const input) {
 	struct String *s = 0;
 	assert(pool && input);
 	if(!(s = StringPoolNew(pool)) || !StringCat(s, input))
@@ -280,7 +278,7 @@ static struct Line *Plain(struct Text *const text) {
 		= PlainPoolUpdateNew(&text->plains, &text->cursor);
 	assert(text);
 	if(!plain) return 0;
-	Line(&plain->data, &plain_vt, text);
+	Line(&plain->data, &plain_vt);
 	/* Initialise to empty. */
 	if(!StringClear(&plain->data.string))
 		{ Line_(&plain->data); return 0; }
@@ -294,7 +292,7 @@ static struct File *File(struct Text *const text,
 	struct File *const file = FilePoolUpdateNew(&text->files, &text->cursor);
 	assert(text && StringGet(fn));
 	if(!file) return 0;
-	Line(&file->line.data, &file_vt, text);
+	Line(&file->line.data, &file_vt);
 	/* This would normally be bad, but it's essentially constant. */
 	file->filename = StringGet(fn);
 	file->line_no = line_no;
@@ -302,6 +300,8 @@ static struct File *File(struct Text *const text,
 	return file;
 }
 
+
+/* Initialisation. */
 
 
 /** Destructor.
@@ -336,18 +336,34 @@ struct Text *Text(void) {
 	return text;
 }
 
-/** The previous line or null if there is no previous line. */
-struct Line *TextFirst(struct Text *const text) {
+
+/* Cursor movement. */
+
+
+/** Resets the cursor.
+ @param text: If null, does nothing. */
+void TextReset(struct Text *const text) {
+	if(text) text->cursor = 0;
+}
+
+/** Advances the cursor. If the cursor is reset, sets the cursor to the first
+ line.
+ @param text: If null, returns false.
+ @return The string contents or null if there is no next position (the cursor
+ will be reset.) */
+const char *TextNext(struct Text *const text) {
 	if(!text) return 0;
-	return text->cursor = LineListFirst(&text->lines);
+	if(!text->cursor) {
+		text->cursor = LineListFirst(&text->lines);
+	} else {
+		text->cursor = LineListNext(text->cursor);
+	}
+	return text->cursor ? StringGet(&text->cursor->string) : 0;
 }
 
-/** @return The next line or null. */
-struct Line *LineNext(struct Line *const line) {
-	return LineListNext(line);
-}
 
-/** Concatenates a blank new line after the {text} line cursor.
+
+/** Concatenates a blank new line after the {text} line cursor. If the 
  @param text: If null, returns null.
  @return The line that is created ot null.
  @throws {malloc} errors. */
@@ -408,6 +424,39 @@ int TextOutput(struct Text *const text, const LineOutput out, FILE *const fp) {
 	return 1;
 }
 
+/**
+ @param text, fp, fmt: If null, returns false.
+ @param fmt: Should be less then {INT_MAX} bytes. Accepts: \${
+ %% as '%',
+ %s as line,
+ %a as source (max 255 bytes.) }
+ @return Success.
+ @throws {fprintf} errors. */
+int TextPrint(struct Text *const text, FILE *const fp, const char *const fmt) {
+	const struct Line *line;
+	const char *f0, *f1;
+	char a[256];
+	if(!text || !fp || !fmt) return 0;
+	for(line = LineListFirst(&text->lines); line; line = LineListNext(line)) {
+		for(f0 = f1 = fmt; ; f1++) {
+			if(*f1 && *f1 != '%') continue;
+			if(f0 < f1 && fprintf(fp, "%.*s", (int)(f1 - f0), f0) < 0) return 0;
+			if(!*f1) break;
+			switch(*++f1) {
+			case 's':
+				if(fputs(StringGet(&line->string), fp) == EOF) return 0; break;
+			case 'a':
+				if(line->vt->source(line, a, sizeof a), fputs(a, fp) == EOF)
+					return 0; break;
+			case '%':
+				if(fputc('%', fp) == EOF) return 0; break;
+			}
+			f0 = f1 = f1 + 1;
+		}
+	}
+	return 1;
+}
+
 /** Executes {action(line)} for all lines if {text} and {action} are
  non-null. */
 void TextForEach(struct Text *const text, const LineAction action) {
@@ -417,7 +466,9 @@ void TextForEach(struct Text *const text, const LineAction action) {
 		action(line);
 }
 
-/** Gets the {line}. */
+/** @param text: If null, returns null.
+ @return The line under the cursor or null if the cursor is reset.
+ @fixme Don't expose {Line}; do a format-string? */
 const char *LineGet(const struct Line *const line) {
 	if(!line) return 0;
 	return StringGet(&line->string);
@@ -425,7 +476,7 @@ const char *LineGet(const struct Line *const line) {
 
 /** Gets the source of the {line} in a null-terminated string, {a}, not
  exceeding {a_size}. If {a_size} is zero, does nothing. */
-void TextLineSource(const struct Line *const line,
+void LineSource(const struct Line *const line,
 	char *const a, size_t a_size) {
 	int a_len;
 	if(!a_size) return;

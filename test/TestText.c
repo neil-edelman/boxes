@@ -69,7 +69,7 @@ static const char *const head = "abstract.txt",
 static int write_file(const struct Line *const line, FILE *const fp) {
 	char a[32];
 	assert(line && fp);
-	TextLineSource(line, a, sizeof a);
+	LineSource(line, a, sizeof a);
 	return fputs(a, fp) != EOF && fputs(": ", fp) != EOF
 		&& fputs(LineGet(line), fp) != EOF && fputc('\n', fp) != EOF;
 }
@@ -93,8 +93,8 @@ static int pfclose(FILE **const pfp) {
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	struct Text *text = 0;
-	struct Line *line;
 	FILE *fp = 0;
+	const char *s;
 	const char *e = 0;
 	do {
 		if(!(text = Text())) { e = "Text"; break; }
@@ -107,11 +107,13 @@ int main(void) {
 			|| !TextFile(text, fp, body)
 			|| !pfclose(&fp)) { e = body; break; }
 		/* Split the text into words. */
-		for(line = TextFirst(text); line; line = LineNext(line)) {
-			printf(">>%s\n", LineGet(line));
+		TextReset(text);
+		while((s = TextNext(text))) {
+			printf(">>%s\n", s);
 		}
 		/* Output. */
 		if(!TextOutput(text, &write_file, stdout)) { e = "stdout"; break; }
+		if(!TextPrint(text, stdout, "Laa:%a:%s\n")) { e = "stdout"; break; }
 #if 0
 		/* Delete newlines. */
 		StoryForEach(story, &trim);
