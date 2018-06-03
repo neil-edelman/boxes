@@ -85,7 +85,7 @@ static int pfclose(FILE **const pfp) {
 int main(void) {
 	struct Text *text = 0;
 	FILE *fp = 0;
-	const char *s;
+	const char *line, *cursor, *start, *end;
 	const char *e = 0;
 	do {
 		if(!(text = Text())) { e = "Text"; break; }
@@ -99,11 +99,14 @@ int main(void) {
 			|| !pfclose(&fp)) { e = body; break; }
 		/* Split the text into words. */
 		TextReset(text);
-		while((s = TextNext(text))) {
-			printf(">>%s\n", s);
+		while((line = TextNext(text))) {
+			printf(">>%s\n", line);
+			for(cursor = line; start = trim(cursor), end = next(start);
+				cursor = end) TextCopyBetween(text, start, end - 1); /* fixme: rv */
+			/*TextRemove(text);*/
 		}
 		/* Output. */
-		if(!TextPrint(text, stdout, "%a: %s\n")) { e = "stdout"; break; }
+		if(!TextPrint(text, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
 #if 0
 		/* Delete newlines. */
 		StoryForEach(story, &trim);

@@ -190,7 +190,7 @@ static struct Line *plain_copy(struct Text *const text,
 /** {File} extends {Line}. */
 struct File {
 	struct LineLink line;
-	const char *filename;
+	const char *fn;
 	size_t line_no;
 };
 
@@ -221,7 +221,7 @@ static void file_source(const struct Line *const line,
 	assert(line && a && a_len > 2);
 	sprintf(num, "%lu", (unsigned long)file->line_no);
 	sprintf(a, "%.*s:%.*s",
-		half_a_len, file->filename, a_len - half_a_len - 2, num);
+		half_a_len, file->fn, a_len - half_a_len - 2, num);
 	/*fprintf(stderr, "file_source: %d half %d other %d.\n", a_len, half_a_len, a_len - half_a_len - 1);*/
 }
 
@@ -315,7 +315,7 @@ static struct File *File(struct Text *const text,
 	assert(text && fn);
 	if(!file) return 0;
 	Line(&file->line.data, &file_vt);
-	file->filename = fn;
+	file->fn = fn;
 	file->line_no = line_no;
 	return file;
 }
@@ -328,17 +328,22 @@ static void File_(struct Text *const text, struct File *const file) {
 		fprintf(stderr, "Destructing a file line was not in the pool.\n");
 }
 
-/** @implements TextLineOperator */
+/** @param line: Unused.
+ @implements TextLineOperator */
 static struct Line *plain_copy(struct Text *const text,
 	struct Line *const line) {
-	assert(text && line);
-	return 0;
+	struct LineLink *const plain = Plain(text);
+	(void)line;
+	assert(text);
+	return plain ? &plain->data : 0;
 }
 /** @implements TextLineOperator */
 static struct Line *file_copy(struct Text *const text,
 	struct Line *const line) {
+	const struct File *const old_file = file_holds_const_line(line);
+	struct File *const new_file = File(text, old_file->fn, old_file->line_no);
 	assert(text && line);
-	return 0;
+	return new_file ? &new_file->line.data : 0;
 }
 
 
@@ -422,17 +427,20 @@ const char *TextNext(struct Text *const text) {
  the cursor. Fills the copy with {length} bits from {start}. If the cursor is
  reset, a plain copy is pushed at the end.
  @param text: If null, does nothing.
- @param start: If null, the copy will be a blank line and {length} is ignored.
+ @param a, b: If null or {a >= b}, 
  @param length: This parameter is not checked for running over the length of
  the string.
  @return Success.
  @throws ... */
-struct Line *TextLineCopy(struct Text *const text,
-	const char *const start, const size_t length) {
+struct Line *TextCopyBetween(struct Text *const text,
+	const char *const a, const char *const b) {
+	struct Line *line;
 	if(!text) return 0;
-	if(!text->cursor) return TextNew(text);
-	/*********************** fixme */
-	return 0;
+	/* {plain_copy} doesn't use 2nd arg. */
+	if(!(line = (text->cursor ? text->cursor->vt->copy : plain_copy)(text,
+		text->cursor)) || !StringBetweenCat(&line->string, a, b)) return /*@fixme: memory leak!!!*/0;
+	push_above_cursor(text, line);
+	return line;
 }
 
 
@@ -478,7 +486,6 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	if(!(str_fn = string(&text->filenames, fn))) return 0;
 	/* Append text file to {text}. */
 	while(fgets(input, sizeof input, fp)) {
-		/*printf("read <%s>\n", input);*/
 		/* {StringGet} would normally be Bad, but it's essentially constant. */
 		if(!file) {
 			if(!(file = File(text, StringGet(str_fn), ++line_no))) break;
@@ -503,20 +510,24 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
  %s as line,
  %a as source (max 255 bytes.) }
  @return Success.
- @throws {fprintf} errors. */
+ @throws {fwrite}, {fputs}, {fputc} errors. */
 int TextPrint(struct Text *const text, FILE *const fp, const char *const fmt) {
 	const struct Line *line;
 	const char *f0, *f1;
+	size_t size;
 	char a[256];
 	if(!text || !fp || !fmt) return 0;
 	for(line = LineListFirst(&text->lines); line; line = LineListNext(line)) {
 		for(f0 = f1 = fmt; ; f1++) {
 			if(*f1 && *f1 != '%') continue;
-			if(f0 < f1 && fprintf(fp, "%.*s", (int)(f1 - f0), f0) < 0) return 0;
+			if(f0 < f1 && (size = (size_t)(f1 - f0),
+				fwrite(f0, 1, size, fp)) != size) return 0;
 			if(!*f1) break;
 			switch(*++f1) {
 			case 's':
-				if(fputs(StringGet(&line->string), fp) == EOF) return 0; break;
+				if(size = StringLength(&line->string),
+					fwrite(StringGet(&line->string), 1, size, fp) != size)
+					return 0; break;
 			case 'a':
 				if(line->vt->source(line, a, sizeof a), fputs(a, fp) == EOF)
 					return 0; break;

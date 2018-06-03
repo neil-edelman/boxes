@@ -20,8 +20,8 @@ struct Line *TextNew(struct Text *const text);
 
 void TextReset(struct Text *const text);
 const char *TextNext(struct Text *const text);
-struct Line *TextLineCopy(struct Text *const text,
-	const char *const start, const size_t length);
+struct Line *TextCopyBetween(struct Text *const text,
+	const char *const a, const char *const b);
 
 int TextFile(struct Text *const text, FILE *const fp, const char *const fn);
 int TextPrint(struct Text *const text, FILE *const fp, const char *const fmt);
