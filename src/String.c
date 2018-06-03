@@ -286,7 +286,7 @@ struct String *StringCat(struct String *const string, const char *const str) {
  @param str: If null, returns {string}.
  @param str_len: If the bytes one has access to is smaller then this value, the
  results are technically undefined, if using a compiler mode before {C11}.
- \url{ https://stackoverflow.com/questions/47315902/is-it-legal-to-call-memchr-with-a-too-long-length-if-you-know-the-character-wil }
+ \url{ https://stackoverflow.com/q/47315902 }
  @return {string}.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
