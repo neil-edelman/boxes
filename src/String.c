@@ -168,7 +168,8 @@ struct String *StringClear(struct String *const string) {
 }
 
 /** Volatile, in the sense that it exposes the text; specifically, not
- guaranteed to last between {String} calls to the same object.
+ guaranteed to last between {String} calls to the same object. That also means
+ one cannot self-reference strings, but see \see{StringTransform}.
  @return The text associated to {string} or null if there is no text or if
  {string} is null.
  @order O(1) */
@@ -308,7 +309,7 @@ struct String *StringBetweenCat(struct String *const string,
 	const char *const a, const char *const b) {
 	if(!string || !a || !b || a > b) return string;
 	/* @fixme ?? end = memchr(a, 0, (size_t)(b - a + 1));
-	 to make sure it doesn't contain nulls? do we want that? */
+	 to make sure it doesn't contain nulls? do we want that? No. */
 	if(!cat(string, a, (size_t)(b - a + 1))) return 0;
 	return string;
 }

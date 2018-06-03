@@ -81,6 +81,17 @@ int main(void) {
 	bytes -= 4, codep -= 4;
 	verify(&s, bytes, codep);
 
+	printf("Double, double, double.\n");
+	StringTransform(&s, "%s%s");
+	bytes <<= 1, codep <<= 1;
+	verify(&s, bytes, codep);
+	StringTransform(&s, "%s%s");
+	bytes <<= 1, codep <<= 1;
+	verify(&s, bytes, codep);
+	StringTransform(&s, "%s%s");
+	bytes <<= 1, codep <<= 1;
+	verify(&s, bytes, codep);
+
 	StringClear(&s);
 	verify(&s, 0, 0);
 	String_(&t);
