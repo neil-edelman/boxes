@@ -100,11 +100,22 @@ int main(void) {
 		/* Split the text into words. */
 		TextReset(text);
 		while((line = TextNext(text))) {
-			printf(">>%s\n", line);
+			/*printf(">>%s\n", line);*/
+			fputs(line, stdout);
+			fputc('\n', stdout);
+#if 0
+			/* This is bs. It stops at 256 past the line. */
 			for(cursor = line; start = trim(cursor), end = next(start);
-				cursor = end) TextCopyBetween(text, start, end - 1); /* fixme: rv */
+				cursor = end) {
+				assert(start < end);
+				if(!TextCopyBetween(text, start, end - 1)) { e = "copy"; break;}
+			}
+			if(e) break;
+#endif
+			/* Remove the line once all the words are separated. */
 			/*TextRemove(text);*/
 		}
+		if(e) break;
 		/* Output. */
 		if(!TextPrint(text, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
 #if 0
