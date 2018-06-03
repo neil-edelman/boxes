@@ -9,8 +9,9 @@ typedef void (*LineAction)(struct Line *const);
 /** Prints information on the line to a supplied buffer. */
 typedef void (*LinePrint)(const struct Line *const, char *const, const int);
 
-/** Usually outputs text. */
-typedef int (*LineOutput)(const struct Line *const, FILE *const);
+/** Supplied a {Text} and {Line}, returns a {Line}. */
+typedef struct Line *(*TextLineOperator)(struct Text *const,
+	struct Line *const);
 
 struct Text *Text(void);
 void Text_(struct Text **ptext);
@@ -19,9 +20,10 @@ struct Line *TextNew(struct Text *const text);
 
 void TextReset(struct Text *const text);
 const char *TextNext(struct Text *const text);
+struct Line *TextLineCopy(struct Text *const text,
+	const char *const start, const size_t length);
 
 int TextFile(struct Text *const text, FILE *const fp, const char *const fn);
-int TextOutput(struct Text *const text, const LineOutput out, FILE *const fp);
 int TextPrint(struct Text *const text, FILE *const fp, const char *const fmt);
 void TextForEach(struct Text *const this, const LineAction action);
 

@@ -65,15 +65,6 @@ static void word_wrap(struct Line *const line) {
 static const char *const head = "abstract.txt",
 	*const body = "lorem.txt";
 
-/** Writes "<source>: <line>\n" in {line} to {fp}. */
-static int write_file(const struct Line *const line, FILE *const fp) {
-	char a[32];
-	assert(line && fp);
-	LineSource(line, a, sizeof a);
-	return fputs(a, fp) != EOF && fputs(": ", fp) != EOF
-		&& fputs(LineGet(line), fp) != EOF && fputc('\n', fp) != EOF;
-}
-
 /** Helper for {fclose} is a little more robust.
  @param pfp: A pointer to the file pointer.
  @return Success.
@@ -112,8 +103,7 @@ int main(void) {
 			printf(">>%s\n", s);
 		}
 		/* Output. */
-		if(!TextOutput(text, &write_file, stdout)) { e = "stdout"; break; }
-		if(!TextPrint(text, stdout, "Laa:%a:%s\n")) { e = "stdout"; break; }
+		if(!TextPrint(text, stdout, "%a: %s\n")) { e = "stdout"; break; }
 #if 0
 		/* Delete newlines. */
 		StoryForEach(story, &trim);
