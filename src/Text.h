@@ -19,13 +19,15 @@ void Text_(struct Text **ptext);
 struct Line *TextNew(struct Text *const text);
 
 void TextReset(struct Text *const text);
-const char *TextNext(struct Text *const text);
+const struct Line *TextNext(struct Text *const text);
 struct Line *TextCopyBetween(struct Text *const text,
 	const char *const a, const char *const b);
+void TextRemove(struct Text *const text);
 
 int TextFile(struct Text *const text, FILE *const fp, const char *const fn);
 int TextPrint(struct Text *const text, FILE *const fp, const char *const fmt);
 void TextForEach(struct Text *const this, const LineAction action);
 
 const char *LineGet(const struct Line *const line);
+size_t LineLength(const struct Line *const line);
 void LineSource(const struct Line *const line, char *const a, size_t a_len);

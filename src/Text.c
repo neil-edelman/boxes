@@ -206,8 +206,7 @@ static void file_migrate(struct File *const file,
 	LineLinkMigrate(&file->line.data, migrate);
 }
 
-/**
- @param a_len: Must be > 2.
+/** @param a_len: Must be > 2.
  @implements LinePrint
  @fixme Test. */
 static void file_source(const struct Line *const line,
@@ -413,23 +412,21 @@ void TextReset(struct Text *const text) {
  @param text: If null, returns false.
  @return The string contents or null if there is no next position (the cursor
  will be reset.) */
-const char *TextNext(struct Text *const text) {
+const struct Line *TextNext(struct Text *const text) {
 	if(!text) return 0;
 	if(!text->cursor) {
 		text->cursor = LineListFirst(&text->lines);
 	} else {
 		text->cursor = LineListNext(text->cursor);
 	}
-	return text->cursor ? StringGet(&text->cursor->string) : 0;
+	return text->cursor;
 }
 
 /** Makes a copy of the line in {text} at the cursor. Places the copy before
- the cursor. Fills the copy with {length} bits from {start}. If the cursor is
- reset, a plain copy is pushed at the end.
+ the cursor. Fills the copy with bits {[a, b)}. If the cursor is reset, a plain
+ copy is pushed at the end.
  @param text: If null, does nothing.
- @param a, b: If null or {a >= b}, 
- @param length: This parameter is not checked for running over the length of
- the string.
+ @param a, b: If null or {a >= b}, the line will be blank.
  @return Success.
  @throws ... */
 struct Line *TextCopyBetween(struct Text *const text,
@@ -441,6 +438,21 @@ struct Line *TextCopyBetween(struct Text *const text,
 		text->cursor)) || !StringBetweenCat(&line->string, a, b)) return /*@fixme: memory leak!!!*/0;
 	push_above_cursor(text, line);
 	return line;
+}
+
+/** Removes the line at the cursor. The cursor goes to the previous line; if
+ the cursor is on the first line, the cursor is reset. If the cursor is reset,
+ does nothing.
+ @param text: If null, does nothing. */
+void TextRemove(struct Text *const text) {
+	struct Line *prev;
+	if(!text || !text->cursor) return;
+	prev = LineListPrevious(text->cursor);
+	printf("Removing <%s>?\n", LineGet(text->cursor));
+	/* fixme: this crashes!??? */
+	/*LineListRemove(text->cursor);*/
+	/*Line_(text->cursor);*/
+	/*text->cursor = prev;*/
 }
 
 
@@ -456,8 +468,8 @@ struct Line *TextCopyBetween(struct Text *const text,
 struct Line *TextNew(struct Text *const text) {
 	struct LineLink *plain = 0;
 	if(!text || !(plain = Plain(text))) return 0;
-	/* Initialise to empty. */
-	if(!StringClear(&plain->data.string)) { Plain_(text, plain); return 0; }
+	/* Initialise to empty. (Not needed -- \see{LineGet} has extra things.) */
+	/*if(!StringClear(&plain->data.string)) { Plain_(text, plain); return 0; }*/
 	LineListPush(&text->lines, &plain->data);
 	return &plain->data;
 }
@@ -486,7 +498,8 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	if(!(str_fn = string(&text->filenames, fn))) return 0;
 	/* Append text file to {text}. */
 	while(fgets(input, sizeof input, fp)) {
-		/* {StringGet} would normally be Bad, but it's essentially constant. */
+		/* Creates a new blank file line. {StringGet} would normally be Bad,
+		 but it's essentially constant: don't change. */
 		if(!file) {
 			if(!(file = File(text, StringGet(str_fn), ++line_no))) break;
 			push_above_cursor(text, &file->line.data);
@@ -503,7 +516,7 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	return feof(fp);
 }
 
-/**
+/** Outputs {text} to {fp}, each line according to {fmt}.
  @param text, fp, fmt: If null, returns false.
  @param fmt: Should be less then {INT_MAX} bytes. Accepts: \${
  %% as '%',
@@ -549,12 +562,20 @@ void TextForEach(struct Text *const text, const LineAction action) {
 		action(line);
 }
 
-/** @param text: If null, returns null.
- @return The line under the cursor or null if the cursor is reset.
- @fixme Don't expose {Line}; do a format-string? */
+/** @param line: If null, returns null.
+ @return The text stored in line. */
 const char *LineGet(const struct Line *const line) {
+	const char *s;
 	if(!line) return 0;
-	return StringGet(&line->string);
+	return (s = StringGet(&line->string)) ? s : ""; /* Not null ever. */
+}
+
+/** @param line: If null, returns 0.
+ @return The length of the line.
+ @order O(1) */
+size_t LineLength(const struct Line *const line) {
+	if(!line) return 0;
+	return StringLength(&line->string);
 }
 
 /** Gets the source of the {line} in a null-terminated string, {a}, not

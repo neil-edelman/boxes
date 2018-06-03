@@ -84,8 +84,9 @@ static int pfclose(FILE **const pfp) {
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	struct Text *text = 0;
+	const struct Line *line;
 	FILE *fp = 0;
-	const char *line, *cursor, *start, *end;
+	const char *cursor, *start, *end;
 	const char *e = 0;
 	do {
 		if(!(text = Text())) { e = "Text"; break; }
@@ -100,20 +101,25 @@ int main(void) {
 		/* Split the text into words. */
 		TextReset(text);
 		while((line = TextNext(text))) {
-			/*printf(">>%s\n", line);*/
-			fputs(line, stdout);
-			fputc('\n', stdout);
-#if 0
+			printf(">>%lu: <", LineLength(line));
+			{
+				const size_t size = LineLength(line);
+				if(fwrite(LineGet(line), 1, size, stdout) != size)
+					{ e = "output"; break; }
+			}
+			printf(">\n");
 			/* This is bs. It stops at 256 past the line. */
-			for(cursor = line; start = trim(cursor), end = next(start);
+			for(cursor = LineGet(line); start = trim(cursor), end = next(start);
 				cursor = end) {
+				struct Line *word;
 				assert(start < end);
-				if(!TextCopyBetween(text, start, end - 1)) { e = "copy"; break;}
+				if(!(word = TextCopyBetween(text, start, end)))
+					{ e = "copy"; break; }
+				printf("copied <%s>.\n", LineGet(word));
 			}
 			if(e) break;
-#endif
 			/* Remove the line once all the words are separated. */
-			/*TextRemove(text);*/
+			TextRemove(text);
 		}
 		if(e) break;
 		/* Output. */
