@@ -53,16 +53,19 @@ int main(void) {
 	assert(a && !strcmp(a, "") && StringLength(&s) == 0
 		&& !StringHasContent(&s));
 
+	StringCopy(&s, bit3x7), bytes = 3 * 7, codep = 7;
+	verify(&s, bytes, codep);
+	StringBetweenCat(&s, bit1x30, bit1x30 + 3), bytes += 3, codep += 3;
+	verify(&s, bytes, codep);
 	/* @fixme This is a pitiful test. */
-	StringCopy(&s, bit3x7);
-	StringCopy(&s, bit1x30), bytes += 30, codep += 30;
+	StringCopy(&s, bit1x30), bytes = 30, codep = 30;
 	StringCat(&s, bit2x2), bytes += 2*2, codep += 2;
 	StringCat(&s, bit3x7), bytes += 3*7, codep += 7;
 	StringCat(&s, bit4x4), bytes += 4*4, codep += 4;
 	verify(&s, bytes, codep);
 	StringNCat(&s, bit1x30, (size_t)5), bytes += 5, codep += 5;
 	verify(&s, bytes, codep);
-	StringBetweenCat(&s, bit1x30 + 10, bit1x30 + 20), bytes += 11, codep += 11;
+	StringBetweenCat(&s, bit1x30 + 10, bit1x30 + 20), bytes += 10, codep += 10;
 	verify(&s, bytes, codep);
 #ifndef STRING_STRICT_ANSI /* <-- !STRING_STRICT_ANSI */
 	StringPrintCat(&s, "%s%s%.3s", bit2x2, bit4x4, bit1x30),

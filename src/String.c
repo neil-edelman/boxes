@@ -299,18 +299,17 @@ struct String *StringNCat(struct String *const string, const char *const str,
 	return string;
 }
 
-/** Concatenates {string} with {[a, b]}.
+/** Concatenates {string} with {[a, b)}; that is, from {a} and stops when it
+ encounters, and doesn't include {b}. Does not check for null bytes.
  @param string: If null, returns null.
- @param a, b: If {a} or {b} are null or {a} > {b}, returns {string}.
+ @param a, b: If {a} or {b} are null or {a >= b}, returns {string}.
  @return {string}.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
 struct String *StringBetweenCat(struct String *const string,
 	const char *const a, const char *const b) {
-	if(!string || !a || !b || a > b) return string;
-	/* @fixme ?? end = memchr(a, 0, (size_t)(b - a + 1));
-	 to make sure it doesn't contain nulls? do we want that? No. */
-	if(!cat(string, a, (size_t)(b - a + 1))) return 0;
+	if(!string || !a || !b || a >= b) return string;
+	if(!cat(string, a, (size_t)(b - a))) return 0;
 	return string;
 }
 
