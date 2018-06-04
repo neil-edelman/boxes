@@ -94,21 +94,24 @@ int main(void) {
 		if(!(fp = fopen(head, "r"))
 			|| !TextFile(text, fp, head)
 			|| !pfclose(&fp)) { e = head; break; }
+		TextPrint(text, stdout, "(First) %a: %s\n");
+		printf("Loaded file head.\n");
 		if(!TextNew(text)) { e = "edit"; break; }
 		if(!(fp = fopen(body, "r"))
 			|| !TextFile(text, fp, body)
 			|| !pfclose(&fp)) { e = body; break; }
+		printf("Loaded files <%s> and <%s>.\n", head, body);
 		/* Split the text into words. */
 		TextReset(text);
 		while((line = TextNext(text))) {
 			printf(">>%lu: <", LineLength(line));
 			{
 				const size_t size = LineLength(line);
+				printf("\n", size);
 				if(fwrite(LineGet(line), 1, size, stdout) != size)
 					{ e = "output"; break; }
 			}
 			printf(">\n");
-			/* This is bs. It stops at 256 past the line. */
 			for(cursor = LineGet(line); start = trim(cursor), end = next(start);
 				cursor = end) {
 				struct Line *word;

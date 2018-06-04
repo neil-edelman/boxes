@@ -161,13 +161,30 @@ static void Line_(struct Line *const line) {
 
 
 
-/** @implements <<Line>Link aka Plain>Migrate */
-static void plain_migrate(struct LineLink *const line,
-	const struct Migrate *const migrate) {
-	LineLinkMigrate(&line->data, migrate);
+/** {Plain} extends {Line}. Plain has no extra data; is _is_ a {LineLink}, but
+ renamed to avoid confusion. */
+struct Plain { struct LineLink line; };
+
+/** container_of */
+static const struct Plain *const_plain_downcast(const struct Line *const line) {
+	return (const struct Plain *)(const void *)((const char *)line
+		- offsetof(struct Plain, line)
+		- offsetof(struct LineLink, data));
+}
+/** container_of */
+static struct Plain *plain_downcast(struct Line *const line) {
+	return (struct Plain *)(void *)((char *)line
+		- offsetof(struct Plain, line)
+		- offsetof(struct LineLink, data));
 }
 
-/** @implements LinePrint */
+/** @implements <Plain>Migrate */
+static void plain_migrate(struct Plain *const plain,
+	const struct Migrate *const migrate) {
+	LineLinkMigrate(&plain->line.data, migrate);
+}
+
+/** @implements <Plain>LinePrint */
 static void plain_source(const struct Line *const line,
 	char *const a, const int a_len) {
 	assert(line && a && a_len > 0);
@@ -176,11 +193,10 @@ static void plain_source(const struct Line *const line,
 
 /* We have to have vt defined to define this. */
 static struct Line *plain_copy(struct Text *const text,
-	struct Line *const line);
+	const struct Line *const line);
 
-/* {Plain} extends {Line}. */
 #define POOL_NAME Plain
-#define POOL_TYPE struct LineLink
+#define POOL_TYPE struct Plain
 #define POOL_MIGRATE_EACH &plain_migrate
 #define POOL_MIGRATE_UPDATE struct Line
 #include "Pool.h"
@@ -195,9 +211,17 @@ struct File {
 };
 
 /** container_of */
-static const struct File *file_holds_const_line(const struct Line *const line) {
-	return (const struct File *)(const void *)
-		((const char *)line - offsetof(struct File, line));
+static const struct File *const_file_downcast(const struct Line *const line) {
+	return (const struct File *)(const void *)((const char *)line
+		- offsetof(struct File, line)
+		- offsetof(struct LineLink, data));
+}
+
+/** container_of */
+static struct File *file_downcast(struct Line *const line) {
+	return (struct File *)(void *)((char *)line
+		- offsetof(struct File, line)
+		- offsetof(struct LineLink, data));
 }
 
 /** @implements <File>Migrate */
@@ -207,11 +231,11 @@ static void file_migrate(struct File *const file,
 }
 
 /** @param a_len: Must be > 2.
- @implements LinePrint
+ @implements <File>LinePrint
  @fixme Test. */
 static void file_source(const struct Line *const line,
 	char *const a, const int a_len) {
-	const struct File *const file = file_holds_const_line(line);
+	const struct File *const file = const_file_downcast(line);
 	/* Don't think there is a way to limit the size that confoms to
 	 internationalisation on C89, but this should be safe. Wish {snprintf} was
 	 part of the standard. */
@@ -226,13 +250,13 @@ static void file_source(const struct Line *const line,
 
 /* We have to have vt defined to define this. */
 static struct Line *file_copy(struct Text *const text,
-	struct Line *const line);
+	const struct Line *const line);
 
 #define POOL_NAME File
 #define POOL_TYPE struct File
 #define POOL_MIGRATE_EACH &file_migrate
 #define POOL_MIGRATE_UPDATE struct Line
-#include "Pool.h" /* Defines {PlainPool}. */
+#include "Pool.h"
 
 
 
@@ -278,77 +302,8 @@ struct Text {
 
 
 
-/* Virtual table definition. */
-static const struct LineVt {
-	const LinePrint source;
-	const TextLineOperator copy;
-} plain_vt = { &plain_source, &plain_copy },
-	file_vt = { &file_source, &file_copy };
-
-
-
-/* Waited until vt to define these: */
-
-/** Private intermediate empty plain constructor not in {lines}. */
-static struct LineLink *Plain(struct Text *const text) {
-	struct LineLink *const plain
-		= PlainPoolUpdateNew(&text->plains, &text->cursor);
-	assert(text);
-	if(!plain) return 0;
-	Line(&plain->data, &plain_vt);
-	return plain;
-}
-/** Private destructor; does not destroy the {lines}. */
-static void Plain_(struct Text *const text, struct LineLink *const plain) {
-	assert(text);
-	if(!plain) return;
-	Line_(&plain->data);
-	if(!PlainPoolRemove(&text->plains, plain))
-		fprintf(stderr, "Destructing a plain line was not in the pool.\n");
-}
-
-/** Private intermediate empty file constructor not is {lines}. */
-static struct File *File(struct Text *const text,
-	const char *const fn, const size_t line_no) {
-	struct File *const file = FilePoolUpdateNew(&text->files, &text->cursor);
-	assert(text && fn);
-	if(!file) return 0;
-	Line(&file->line.data, &file_vt);
-	file->fn = fn;
-	file->line_no = line_no;
-	return file;
-}
-/** Private destructor; does not destroy the {lines}. */
-static void File_(struct Text *const text, struct File *const file) {
-	assert(text);
-	if(!file) return;
-	Line_(&file->line.data);
-	if(!FilePoolRemove(&text->files, file))
-		fprintf(stderr, "Destructing a file line was not in the pool.\n");
-}
-
-/** @param line: Unused.
- @implements TextLineOperator */
-static struct Line *plain_copy(struct Text *const text,
-	struct Line *const line) {
-	struct LineLink *const plain = Plain(text);
-	(void)line;
-	assert(text);
-	return plain ? &plain->data : 0;
-}
-/** @implements TextLineOperator */
-static struct Line *file_copy(struct Text *const text,
-	struct Line *const line) {
-	const struct File *const old_file = file_holds_const_line(line);
-	struct File *const new_file = File(text, old_file->fn, old_file->line_no);
-	assert(text && line);
-	return new_file ? &new_file->line.data : 0;
-}
-
-
-
 /** Private; pushes before the cursor, or if the cursor is unset, pushes to the
- end. {line} must not be in {text.lines}. */
+ end. {line} must not be in {text.lines}. Called from constructors. */
 static void push_above_cursor(struct Text *const text, struct Line *const line){
 	assert(text && line);
 	if(text->cursor) {
@@ -358,11 +313,88 @@ static void push_above_cursor(struct Text *const text, struct Line *const line){
 	}
 }
 
+/** Private destructor.
+ @implements TextLineAction */
+static void Plain_(struct Text *const text, struct Line *const line) {
+	struct Plain *const plain = plain_downcast(line);
+	assert(text);
+	if(!line) return;
+	LineListRemove(line);
+	if(!PlainPoolRemove(&text->plains, plain)) assert(0);
+	Line_(line);
+}
+/** Private destructor.
+ @implements TextLineAction */
+static void File_(struct Text *const text, struct Line *const line) {
+	struct File *const file = file_downcast(line);
+	assert(text);
+	if(!line) return;
+	LineListRemove(line);
+	if(!FilePoolRemove(&text->files, file)) assert(0);
+	Line_(line);
+}
+
+
+
+/* Virtual table definition. */
+static const struct LineVt {
+	const LinePrint source;
+	const TextLineOperator copy;
+	const TextLineAction delete;
+} plain_vt = { &plain_source, &plain_copy, &Plain_ },
+	file_vt = { &file_source, &file_copy, &File_ };
+
+
+
+/** Private empty plain constructor. */
+static struct Plain *Plain(struct Text *const text) {
+	struct Plain *const plain = PlainPoolUpdateNew(&text->plains,&text->cursor);
+	assert(text);
+	if(!plain) return 0;
+	Line(&plain->line.data, &plain_vt);
+	push_above_cursor(text, &plain->line.data);
+	return plain;
+}
+
+/** Private empty file constructor. */
+static struct File *File(struct Text *const text,
+	const char *const fn, const size_t line_no) {
+	struct File *const file = FilePoolUpdateNew(&text->files, &text->cursor);
+	assert(text && fn);
+	if(!file) return 0;
+	Line(&file->line.data, &file_vt);
+	file->fn = fn;
+	file->line_no = line_no;
+	push_above_cursor(text, &file->line.data);
+	return file;
+}
+
+/* Define these from above. */
+
+/** @param line: Unused.
+ @implements TextLineOperator */
+static struct Line *plain_copy(struct Text *const text,
+	const struct Line *const line) {
+	struct Plain *const plain = Plain(text);
+	(void)line;
+	assert(text);
+	return plain ? &plain->line.data : 0;
+}
+/** @implements TextLineOperator */
+static struct Line *file_copy(struct Text *const text,
+	const struct Line *const line) {
+	const struct File *const old_file = const_file_downcast(line);
+	struct File *const new_file = File(text, old_file->fn, old_file->line_no);
+	assert(text && line);
+	return new_file ? &new_file->line.data : 0;
+}
+
 
 
 
 
 /* Initialisation. */
+
 
 
 /** Destructor.
@@ -436,7 +468,6 @@ struct Line *TextCopyBetween(struct Text *const text,
 	/* {plain_copy} doesn't use 2nd arg. */
 	if(!(line = (text->cursor ? text->cursor->vt->copy : plain_copy)(text,
 		text->cursor)) || !StringBetweenCat(&line->string, a, b)) return /*@fixme: memory leak!!!*/0;
-	push_above_cursor(text, line);
 	return line;
 }
 
@@ -445,14 +476,14 @@ struct Line *TextCopyBetween(struct Text *const text,
  does nothing.
  @param text: If null, does nothing. */
 void TextRemove(struct Text *const text) {
-	struct Line *prev;
-	if(!text || !text->cursor) return;
-	prev = LineListPrevious(text->cursor);
-	printf("Removing <%s>?\n", LineGet(text->cursor));
+	struct Line *del;
+	assert(0);
+	if(!text || !(del = text->cursor)) return;
+	text->cursor = LineListPrevious(del);
+	printf("Removing <%s>, new cursor <%s>.\n", LineGet(del),
+		text->cursor ? LineGet(text->cursor) : "reset");
 	/* fixme: this crashes!??? */
-	/*LineListRemove(text->cursor);*/
-	/*Line_(text->cursor);*/
-	/*text->cursor = prev;*/
+	del->vt->delete(text, del);
 }
 
 
@@ -460,18 +491,17 @@ void TextRemove(struct Text *const text) {
 
 
 
-/** Concatenates a blank new line after the {text} line cursor and sets the
- cursor to the new line.
+/** Concatenates a blank before the {text} cursor, or if the cursor is reset,
+ at the end.
  @param text: If null, returns null.
  @return The line that is created ot null.
  @throws {malloc} errors. */
 struct Line *TextNew(struct Text *const text) {
-	struct LineLink *plain = 0;
+	struct Plain *plain = 0;
 	if(!text || !(plain = Plain(text))) return 0;
 	/* Initialise to empty. (Not needed -- \see{LineGet} has extra things.) */
 	/*if(!StringClear(&plain->data.string)) { Plain_(text, plain); return 0; }*/
-	LineListPush(&text->lines, &plain->data);
-	return &plain->data;
+	return &plain->line.data;
 }
 
 /** Concatenates the contents of the stream {fp}, after the {text} line cursor,
@@ -500,10 +530,7 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	while(fgets(input, sizeof input, fp)) {
 		/* Creates a new blank file line. {StringGet} would normally be Bad,
 		 but it's essentially constant: don't change. */
-		if(!file) {
-			if(!(file = File(text, StringGet(str_fn), ++line_no))) break;
-			push_above_cursor(text, &file->line.data);
-		}
+		if(!file && !(file = File(text, StringGet(str_fn), ++line_no))) break;
 		/* This is weird but not impossible; eg, zero in file. */
 		if(!(input_len = strlen(input))) continue;
 		assert(input_len < sizeof input);
@@ -511,7 +538,9 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 		if(!StringBetweenCat(&file->line.data.string, input, input + input_len))
 			break;
 		if(is_eol) file = 0, is_eol = 0;
+		printf("read %lu lines.\n", line_no);
 	}
+	printf("final read %lu lines.\n", line_no);
 	/* We can't delete {str_fn} because intermediate values may use it. */
 	return feof(fp);
 }
@@ -588,85 +617,6 @@ void LineSource(const struct Line *const line,
 	if(!line) { sprintf(a, "%.*s", a_len, "null"); return; }
 	line->vt->source(line, a, a_len);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-
-/** Executes {pred(line)} for all lines and deletes those that return false. If
- {this} or {pred} is null, does nothing. */
-void TextKeepIf(struct Text *const text, const LinePredicate pred) {
-	struct Line *line, *nextline;
-	if(!text || !pred) return;
-	for(line = LineListFirst(&text->lines); line; line = nextline) {
-		nextline = LineListNext(line);
-		if(pred(line)) continue;
-		LineListRemove(line);
-		Text_(&line->text);
-		LinePoolRemove(text->pool, (struct LineListNode *)line);
-	}
-}
-
-/** Does {TextSplit} for all lines. */
-void TextSplit(struct Text *const this, const char *delims,
-			   const LinePredicate pred) {
-	struct Line *line, *empty;
-	struct LineListNode *pool;
-	struct Text *text;
-	if(!this) return;
-	for(line = LineListFirst(&this->lines); line; line = LineListNext(line)) {
-		while((text = TextSep(&line->text, delims, pred))) {
-			if(!(pool = LinePoolUpdateNew(this->pool, &line))) {
-				Text_(&text);
-				fprintf(stderr, "TextSplit: %s.\n",
-						LinePoolGetError(this->pool));
-				return;
-			}
-			pool->data.text = text;
-			pool->data.no = line->no;
-			LineListAddBefore(line, &pool->data);
-		}
-		empty = line;
-		if(empty->text) {
-			fprintf(stderr, "TextSplit: %s.\n", TextGetError(empty->text));
-			return;
-		}
-		line = LineListPrevious(empty);
-		LineListRemove(empty);
-		LinePoolRemove(this->pool, (struct LineListNode *)empty);
-	}
-}
-#endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

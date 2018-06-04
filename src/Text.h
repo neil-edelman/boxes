@@ -9,9 +9,12 @@ typedef void (*LineAction)(struct Line *const);
 /** Prints information on the line to a supplied buffer. */
 typedef void (*LinePrint)(const struct Line *const, char *const, const int);
 
+/** Supplied a {Text} and {Line}. */
+typedef void (*TextLineAction)(struct Text *const, struct Line *const);
+
 /** Supplied a {Text} and {Line}, returns a {Line}. */
 typedef struct Line *(*TextLineOperator)(struct Text *const,
-	struct Line *const);
+	const struct Line *const);
 
 struct Text *Text(void);
 void Text_(struct Text **ptext);
