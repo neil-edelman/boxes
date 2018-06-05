@@ -165,13 +165,13 @@ static void Line_(struct Line *const line) {
  renamed to avoid confusion. */
 struct Plain { struct LineLink line; };
 
-/** container_of */
-static const struct Plain *plain_const_downcast(const struct Line *const line) {
+/* {container_of}; unused because it contains no data. */
+/*static const struct Plain *plain_const_downcast(const struct Line *const line) {
 	return (const struct Plain *)(const void *)((const char *)line
 		- offsetof(struct Plain, line)
 		- offsetof(struct LineLink, data));
-}
-/** container_of */
+}*/
+/** {container_of}. */
 static struct Plain *plain_downcast(struct Line *const line) {
 	return (struct Plain *)(void *)((char *)line
 		- offsetof(struct Plain, line)
@@ -210,14 +210,14 @@ struct File {
 	size_t line_no;
 };
 
-/** container_of */
+/** {container_of}. */
 static const struct File *file_const_downcast(const struct Line *const line) {
 	return (const struct File *)(const void *)((const char *)line
 		- offsetof(struct File, line)
 		- offsetof(struct LineLink, data));
 }
 
-/** container_of */
+/** {container_of}. */
 static struct File *file_downcast(struct Line *const line) {
 	return (struct File *)(void *)((char *)line
 		- offsetof(struct File, line)

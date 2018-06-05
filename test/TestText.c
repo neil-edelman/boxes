@@ -112,7 +112,8 @@ int main(void) {
 				flags &= ~EMPTY;
 			}
 			if(e) break;
-			/* Any lines made of entirely white-space are collapsed into one. */
+			/* Any lines made of entirely white-space are collapsed into one
+			 blank line. */
 			if(flags & EMPTY) {
 				if(!(flags & BLANK)) TextCopyBetween(text, 0, 0), flags |=BLANK;
 			} else {
