@@ -83,12 +83,14 @@ static int pfclose(FILE **const pfp) {
  @param argv: The arguments.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
+	FILE *fp = 0;
 	struct Text *text = 0;
 	const struct Line *line;
-	FILE *fp = 0;
 	const char *cursor, *start, *end;
 	const char *e = 0;
 	do {
+		struct Line *word;
+		enum { EMPTY = 1, BLANK = 2 } flags = 0;
 		if(!(text = Text())) { e = "Text"; break; }
 		/* Load all. */
 		if(!(fp = fopen(head, "r"))
@@ -104,23 +106,20 @@ int main(void) {
 		/* Split the text into words. */
 		TextReset(text);
 		while((line = TextNext(text))) {
-			printf(">>%lu: <", LineLength(line));
-			{
-				const size_t size = LineLength(line);
-				printf("\n", size);
-				if(fwrite(LineGet(line), 1, size, stdout) != size)
-					{ e = "output"; break; }
-			}
-			printf(">\n");
-			for(cursor = LineGet(line); start = trim(cursor), end = next(start);
-				cursor = end) {
-				struct Line *word;
+			for(cursor = LineGet(line), flags |= EMPTY;
+				start = trim(cursor), end = next(start); cursor = end) {
 				assert(start < end);
 				if(!(word = TextCopyBetween(text, start, end)))
 					{ e = "copy"; break; }
-				printf("copied <%s>.\n", LineGet(word));
+				flags &= ~EMPTY;
 			}
 			if(e) break;
+			/* Any lines made of entirely white-space are collapsed into one. */
+			if(flags & EMPTY) {
+				if(!(flags & BLANK)) TextCopyBetween(text, 0, 0), flags |=BLANK;
+			} else {
+				flags &= ~BLANK;
+			}
 			/* Remove the line once all the words are separated. */
 			TextRemove(text);
 		}
