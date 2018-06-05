@@ -96,13 +96,11 @@ int main(void) {
 		if(!(fp = fopen(head, "r"))
 			|| !TextFile(text, fp, head)
 			|| !pfclose(&fp)) { e = head; break; }
-		TextPrint(text, stdout, "(First) %a: %s\n");
-		printf("Loaded file head.\n");
 		if(!TextNew(text)) { e = "edit"; break; }
 		if(!(fp = fopen(body, "r"))
 			|| !TextFile(text, fp, body)
 			|| !pfclose(&fp)) { e = body; break; }
-		printf("Loaded files <%s> and <%s>.\n", head, body);
+		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 		/* Split the text into words. */
 		TextReset(text);
 		while((line = TextNext(text))) {

@@ -404,11 +404,11 @@ void Text_(struct Text **const ptext) {
 	struct Text *text;
 	struct String *str;
 	if(!ptext || !(text = *ptext)) return;
-	fprintf(stderr, "~Text: erase, #%p.\n", (void *)text); /* Debug. */
+	/*fprintf(stderr, "~Text: erase, #%p.\n", (void *)text); Debug. */
 	LineListClear(&text->lines);
 	PlainPool_(&text->plains);
 	FilePool_(&text->files);
-	printf("~: %s\n", StringPoolToString(&text->filenames)); /* Debug. */
+	/*printf("~: %s\n", StringPoolToString(&text->filenames)); Debug. */
 	while((str = StringPoolPop(&text->filenames))) String_(str);
 	StringPool_(&text->filenames);
 	free(text), text = *ptext = 0;
@@ -425,7 +425,7 @@ struct Text *Text(void) {
 	FilePool(&text->files);
 	StringPool(&text->filenames);
 	text->cursor = 0;
-	fprintf(stderr, "Text: new, #%p.\n", (void *)text); /* Debug. */
+	/*fprintf(stderr, "Text: new, #%p.\n", (void *)text); Debug. */
 	return text;
 }
 
@@ -479,9 +479,6 @@ void TextRemove(struct Text *const text) {
 	struct Line *del;
 	if(!text || !(del = text->cursor)) return;
 	text->cursor = LineListPrevious(del);
-	printf("Removing <%s>, new cursor <%s>.\n", LineGet(del),
-		text->cursor ? LineGet(text->cursor) : "reset");
-	/* fixme: this crashes!??? */
 	del->vt->delete(text, del);
 }
 
@@ -537,9 +534,7 @@ int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 		if(!StringBetweenCat(&file->line.data.string, input, input + input_len))
 			break;
 		if(is_eol) file = 0, is_eol = 0;
-		printf("read %lu lines.\n", line_no);
 	}
-	printf("final read %lu lines.\n", line_no);
 	/* We can't delete {str_fn} because intermediate values may use it. */
 	return feof(fp);
 }
