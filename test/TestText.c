@@ -41,7 +41,6 @@
 #include "split.h"
 
 #if 0
-
 /** \cite{Wilber1998} \url{http://xxyxyz.org/line-breaking/}. */
 static void word_wrap(struct Line *const line) {
 	struct SizeStack *offsets = SizeStack();
@@ -78,21 +77,44 @@ static int pfclose(FILE **const pfp) {
 	return is;
 }
 
-/** Entry point.
- @param argc: The number of arguments, starting with the programme name.
- @param argv: The arguments.
+/** Splits all the words on different lines. */
+static int split(struct Text *const text) {
+	const struct Line *line;
+	struct Line *word;
+	const char *cursor, *start, *end;
+	enum { EMPTY = 1, BLANK = 2 } flags = 0;
+	assert(text);
+	TextReset(text);
+	while((line = TextNext(text))) {
+		for(cursor = LineGet(line), flags |= EMPTY;
+			start = trim(cursor), end = next(start); cursor = end) {
+			assert(start < end);
+			if(!(word = TextCopyBetween(text, start, end))) return 0;
+			flags &= ~EMPTY;
+		}
+		/* Any lines made of entirely white-space are collapsed into one
+		 blank line. */
+		if(flags & EMPTY) {
+			if(!(flags & BLANK)) TextCopyBetween(text, 0, 0), flags |=BLANK;
+		} else {
+			flags &= ~BLANK;
+		}
+		/* Remove the line once all the words are separated. */
+		TextRemove(text);
+	}
+	return 1;
+}
+
+/** Expects {head} and {body} to be on the same directory as it is called from.
+ Word wraps.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	FILE *fp = 0;
-	struct Text *text = 0;
-	const struct Line *line;
-	const char *cursor, *start, *end;
+	struct Text *text = 0, *words = 0;
 	const char *e = 0;
 	do {
-		struct Line *word;
-		enum { EMPTY = 1, BLANK = 2 } flags = 0;
-		if(!(text = Text())) { e = "Text"; break; }
-		/* Load all. */
+		if(!(text = Text()) || !(words = Text())) { e = "Text"; break; }
+		/* Load all. In reality, would read from stdin, just testing. */
 		if(!(fp = fopen(head, "r"))
 			|| !TextFile(text, fp, head)
 			|| !pfclose(&fp)) { e = head; break; }
@@ -102,57 +124,11 @@ int main(void) {
 			|| !pfclose(&fp)) { e = body; break; }
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 		/* Split the text into words. */
-		TextReset(text);
-		while((line = TextNext(text))) {
-			for(cursor = LineGet(line), flags |= EMPTY;
-				start = trim(cursor), end = next(start); cursor = end) {
-				assert(start < end);
-				if(!(word = TextCopyBetween(text, start, end)))
-					{ e = "copy"; break; }
-				flags &= ~EMPTY;
-			}
-			if(e) break;
-			/* Any lines made of entirely white-space are collapsed into one
-			 blank line. */
-			if(flags & EMPTY) {
-				if(!(flags & BLANK)) TextCopyBetween(text, 0, 0), flags |=BLANK;
-			} else {
-				flags &= ~BLANK;
-			}
-			/* Remove the line once all the words are separated. */
-			TextRemove(text);
-		}
-		if(e) break;
+		if(!split(text)) { e = "split"; break; }
 		/* Output. */
 		if(!TextPrint(text, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
-#if 0
-		/* Delete newlines. */
-		StoryForEach(story, &trim);
-		/* Collapse multi-line paragraph indents. */
-		StoryKeepIf(story, &collapse_para);
-		/* Move each word to a line. */
-		StorySplit(story, 0, &no_empty);
-		StoryForEach(story, &rtrim);
-		/* Prepare for output. */
-		StoryForEach(story, &show);
-		StoryForEach(story, &reinsert_newlines);
-
-		if(!(fp = fopen("../../result.txt", "w"))) { e = E_STDERR; break; }
-		if(!StoryWrite(story, fp)) { e = E_STORY; break; };
-		fclose(fp), fp = 0;
-
-		foo = Text();
-		TextCat(foo, "blue,red,,,green,");
-		printf("Foo: %s\n", TextGet(foo));
-		while((text = TextSep(&foo, ",", 0))) {
-			printf("Text: %s\n", TextGet(text));
-			Text_(&text);
-		}
-		assert(!foo);
-		printf("Foo: %s\n", TextGet(foo));
-#endif
 	} while(0); if(e) perror(e);
 	if(!pfclose(&fp)) perror("shutdown");
-	Text_(&text);
+	Text_(&words), Text_(&text);
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
