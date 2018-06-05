@@ -166,7 +166,7 @@ static void Line_(struct Line *const line) {
 struct Plain { struct LineLink line; };
 
 /** container_of */
-static const struct Plain *const_plain_downcast(const struct Line *const line) {
+static const struct Plain *plain_const_downcast(const struct Line *const line) {
 	return (const struct Plain *)(const void *)((const char *)line
 		- offsetof(struct Plain, line)
 		- offsetof(struct LineLink, data));
@@ -211,7 +211,7 @@ struct File {
 };
 
 /** container_of */
-static const struct File *const_file_downcast(const struct Line *const line) {
+static const struct File *file_const_downcast(const struct Line *const line) {
 	return (const struct File *)(const void *)((const char *)line
 		- offsetof(struct File, line)
 		- offsetof(struct LineLink, data));
@@ -235,7 +235,7 @@ static void file_migrate(struct File *const file,
  @fixme Test. */
 static void file_source(const struct Line *const line,
 	char *const a, const int a_len) {
-	const struct File *const file = const_file_downcast(line);
+	const struct File *const file = file_const_downcast(line);
 	/* Don't think there is a way to limit the size that confoms to
 	 internationalisation on C89, but this should be safe. Wish {snprintf} was
 	 part of the standard. */
@@ -383,7 +383,7 @@ static struct Line *plain_copy(struct Text *const text,
 /** @implements TextLineOperator */
 static struct Line *file_copy(struct Text *const text,
 	const struct Line *const line) {
-	const struct File *const old_file = const_file_downcast(line);
+	const struct File *const old_file = file_const_downcast(line);
 	struct File *const new_file = File(text, old_file->fn, old_file->line_no);
 	assert(text && line);
 	return new_file ? &new_file->line.data : 0;
@@ -477,7 +477,6 @@ struct Line *TextCopyBetween(struct Text *const text,
  @param text: If null, does nothing. */
 void TextRemove(struct Text *const text) {
 	struct Line *del;
-	assert(0);
 	if(!text || !(del = text->cursor)) return;
 	text->cursor = LineListPrevious(del);
 	printf("Removing <%s>, new cursor <%s>.\n", LineGet(del),
