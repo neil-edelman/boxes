@@ -260,34 +260,6 @@ static struct Line *file_copy(struct Text *const text,
 
 
 
-/** @implements <String>ToString */
-static void string_to_string(const struct String *const s, char (*const a)[12]){
-	assert(s);
-	sprintf(*a, "%.11s", StringGet(s));
-}
-/* Note: we don't need a migrate function if it's members are const {String},
- otherwise we would. Used for filenames. */
-#define POOL_NAME String
-#define POOL_TYPE struct String
-#define POOL_TO_STRING &string_to_string
-#include "Pool.h"
-static void string_(struct StringPool *const pool, struct String *const s) {
-	assert(pool);
-	if(!s) return;
-	String_(s);
-	StringPoolRemove(pool, s);
-}
-static struct String *string(struct StringPool *const pool,
-	const char *const input) {
-	struct String *s = 0;
-	assert(pool && input);
-	if(!(s = StringPoolNew(pool)) || !StringCat(s, input))
-		{ string_(pool, s); return 0; }
-	return s;
-}
-
-
-
 /** Agglomeration {Text}. */
 struct Text {
 	/* List of lines. */
@@ -295,7 +267,6 @@ struct Text {
 	/* Stores for list. */
 	struct PlainPool plains;
 	struct FilePool files;
-	struct StringPool filenames;
 	/* Editing functions. */
 	struct Line *cursor;
 };
@@ -402,15 +373,12 @@ static struct Line *file_copy(struct Text *const text,
  points to null, doesn't do anything. */
 void Text_(struct Text **const ptext) {
 	struct Text *text;
-	struct String *str;
 	if(!ptext || !(text = *ptext)) return;
 	/*fprintf(stderr, "~Text: erase, #%p.\n", (void *)text); Debug. */
 	LineListClear(&text->lines);
 	PlainPool_(&text->plains);
 	FilePool_(&text->files);
 	/*printf("~: %s\n", StringPoolToString(&text->filenames)); Debug. */
-	while((str = StringPoolPop(&text->filenames))) String_(str);
-	StringPool_(&text->filenames);
 	free(text), text = *ptext = 0;
 }
 
@@ -423,7 +391,6 @@ struct Text *Text(void) {
 	LineListClear(&text->lines);
 	PlainPool(&text->plains);
 	FilePool(&text->files);
-	StringPool(&text->filenames);
 	text->cursor = 0;
 	/*fprintf(stderr, "Text: new, #%p.\n", (void *)text); Debug. */
 	return text;
@@ -503,10 +470,12 @@ struct Line *TextNew(struct Text *const text) {
 /** Concatenates the contents of the stream {fp}, after the {text} line cursor,
  labelled with {fn}. On success, the read cursor will be at the end of the
  file. The newlines are not preserved, rather it is seen as a command to end
- the line. @fixme
+ the line.
 
  On error, the contents may be an an intermediate state.
 
+ @param fp: Must be valid for the duration of this object or any other objects
+ copied off this object.
  @fixme Respect cursor.
  @return Success.
  @throws ERANGE: the file is too large to fit in a {size_t}.
@@ -514,19 +483,16 @@ struct Line *TextNew(struct Text *const text) {
  @throws {fgets} errors. */
 int TextFile(struct Text *const text, FILE *const fp, const char *const fn) {
 	struct File *file = 0; /* One line in the file. */
-	struct String *str_fn;
 	char input[256];
 	size_t input_len;
 	size_t line_no = 0;
 	int is_eol = 0;
 	if(!text || !fp) return 0;
-	/* Store a copy of this filename. */
-	if(!(str_fn = string(&text->filenames, fn))) return 0;
 	/* Append text file to {text}. */
 	while(fgets(input, sizeof input, fp)) {
 		/* Creates a new blank file line. {StringGet} would normally be Bad,
 		 but it's essentially constant: don't change. */
-		if(!file && !(file = File(text, StringGet(str_fn), ++line_no))) break;
+		if(!file && !(file = File(text, fn, ++line_no))) break;
 		/* This is weird but not impossible; eg, zero in file. */
 		if(!(input_len = strlen(input))) continue;
 		assert(input_len < sizeof input);
