@@ -77,32 +77,36 @@ static int pfclose(FILE **const pfp) {
 	return is;
 }
 
-/** Splits all the words on different lines. */
-static int split(struct Text *const text) {
-	const struct Line *line;
+/** Splits all the words on in {src} on different lines on before the cursor in
+ {dst}.
+ @param src, dst: If null, does nothing.
+ @param pwords: If not null, the number of words split is stored.
+ @return Success.
+ @throws {realloc} errors. */
+static int split(struct Text *const dst, const char *const src, size_t *pwords){
 	struct Line *word;
 	const char *cursor, *start, *end;
-	enum { EMPTY = 1, BLANK = 2 } flags = 0;
-	assert(text);
-	TextReset(text);
-	while((line = TextNext(text))) {
-		for(cursor = LineGet(line), flags |= EMPTY;
-			start = trim(cursor), end = next(start); cursor = end) {
-			assert(start < end);
-			if(!(word = TextCopyBetween(text, start, end))) return 0;
-			flags &= ~EMPTY;
-		}
-		/* Any lines made of entirely white-space are collapsed into one
-		 blank line. */
-		if(flags & EMPTY) {
-			if(!(flags & BLANK)) TextCopyBetween(text, 0, 0), flags |=BLANK;
-		} else {
-			flags &= ~BLANK;
-		}
-		/* Remove the line once all the words are separated. */
-		TextRemove(text);
+	size_t words = 0;
+	assert(dst && src);
+	for(cursor = src; start = trim(cursor), end = next(start); cursor = end) {
+		assert(start < end);
+		if(!(word = TextCopyBetween(dst, start, end))) break;
+		words++;
 	}
-	return 1;
+	if(pwords) *pwords = words;
+	return !end;
+}
+
+static int split_para(struct Text *const src, struct Text *const dst) {
+	const struct Line *line;
+	int is_para = 0;
+	size_t words;
+	assert(src);
+	while((line = TextNext(src))) {
+		if(!split(dst, LineGet(line), &words)) return 0;
+		if(words) is_para = 1; else if(is_para) break;
+	}
+	return !!line;
 }
 
 /** Expects {head} and {body} to be on the same directory as it is called from.
@@ -124,9 +128,13 @@ int main(void) {
 			|| !pfclose(&fp)) { e = body; break; }
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 		/* Split the text into words. */
-		if(!split(text)) { e = "split"; break; }
+		while(split_para(text, words)) /*TextNew(words)*/;
+		/* fixme { e = "split"; break; } */
 		/* Output. */
+		printf("***text:\n");
 		if(!TextPrint(text, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
+		printf("***words:\n");
+		if(!TextPrint(words, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
 	} while(0); if(e) perror(e);
 	if(!pfclose(&fp)) perror("shutdown");
 	Text_(&words), Text_(&text);
