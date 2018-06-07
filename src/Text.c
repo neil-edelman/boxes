@@ -165,12 +165,6 @@ static void Line_(struct Line *const line) {
  renamed to avoid confusion. */
 struct Plain { struct LineLink line; };
 
-/* {container_of}; unused because it contains no data. */
-/*static const struct Plain *plain_const_downcast(const struct Line *const line) {
-	return (const struct Plain *)(const void *)((const char *)line
-		- offsetof(struct Plain, line)
-		- offsetof(struct LineLink, data));
-}*/
 /** {container_of}. */
 static struct Plain *plain_downcast(struct Line *const line) {
 	return (struct Plain *)(void *)((char *)line
@@ -192,8 +186,8 @@ static void plain_source(const struct Line *const line,
 }
 
 /* We have to have vt defined to define this. */
-static struct Line *plain_copy(struct Text *const text,
-	const struct Line *const line);
+static struct Line *plain_copy(const struct Line *const src,
+	struct Text *const dst);
 
 #define POOL_NAME Plain
 #define POOL_TYPE struct Plain
@@ -248,9 +242,9 @@ static void file_source(const struct Line *const line,
 	/*fprintf(stderr, "file_source: %d half %d other %d.\n", a_len, half_a_len, a_len - half_a_len - 1);*/
 }
 
-/* We have to have vt defined to define this. */
-static struct Line *file_copy(struct Text *const text,
-	const struct Line *const line);
+/** @implements LineTextOperator */
+static struct Line *file_copy(const struct Line *const src,
+	struct Text *const dst);
 
 #define POOL_NAME File
 #define POOL_TYPE struct File
@@ -310,7 +304,7 @@ static void File_(struct Text *const text, struct Line *const line) {
 /* Virtual table definition. */
 static const struct LineVt {
 	const LinePrint source;
-	const TextLineOperator copy;
+	const LineTextOperator copy;
 	const TextLineAction delete;
 } plain_vt = { &plain_source, &plain_copy, &Plain_ },
 	file_vt = { &file_source, &file_copy, &File_ };
@@ -340,23 +334,23 @@ static struct File *File(struct Text *const text,
 	return file;
 }
 
-/* Define these from above. */
+/* Define these from above. The copy is */
 
 /** @param line: Unused.
- @implements TextLineOperator */
-static struct Line *plain_copy(struct Text *const text,
-	const struct Line *const line) {
-	struct Plain *const plain = Plain(text);
-	(void)line;
-	assert(text);
+ @implements LineTextOperator */
+static struct Line *plain_copy(const struct Line *const src,
+	struct Text *const dst) {
+	struct Plain *const plain = Plain(dst);
+	(void)src;
+	assert(dst);
 	return plain ? &plain->line.data : 0;
 }
-/** @implements TextLineOperator */
-static struct Line *file_copy(struct Text *const text,
-	const struct Line *const line) {
-	const struct File *const old_file = file_const_downcast(line);
-	struct File *const new_file = File(text, old_file->fn, old_file->line_no);
-	assert(text && line);
+/** @implements LineTextOperator */
+static struct Line *file_copy(const struct Line *const src,
+	struct Text *const dst) {
+	const struct File *const old_file = file_const_downcast(src);
+	struct File *const new_file = File(dst, old_file->fn, old_file->line_no);
+	assert(dst && src);
 	return new_file ? &new_file->line.data : 0;
 }
 
@@ -421,21 +415,25 @@ const struct Line *TextNext(struct Text *const text) {
 	return text->cursor;
 }
 
-/** Makes a copy of the line in {text} at the cursor. Places the copy before
- the cursor. Fills the copy with bits {[a, b)}. If the cursor is reset, a plain
- copy is pushed at the end.
- @param text: If null, does nothing.
- @param a, b: If null or {a >= b}, the line will be blank.
+/** Makes a copy of the mata-data in {src}. Places the copy before the {dst}
+ cursor; if the cursor of {dst} is reset, places it at the end. {dst} can be
+ the same list or different {Text}.
+ @param dst, src: If either is null, does nothing.
+ @return The copy.
+ @throws ... */
+struct Line *TextCopyLine(const struct Line *const src, struct Text *const dst){
+	if(!dst || !src) return 0;
+	return src->vt->copy(src, dst);
+}
+
+/** Fills {line} with bits {[a, b)}.
+ @param line: If null, does nothing.
+ @param a, b: If either null or {a >= b}, does nothing.
  @return Success.
  @throws ... */
-struct Line *TextCopyBetween(struct Text *const text,
+int LineCopyBetween(struct Line *const line,
 	const char *const a, const char *const b) {
-	struct Line *line;
-	if(!text) return 0;
-	/* {plain_copy} doesn't use 2nd arg. */
-	if(!(line = (text->cursor ? text->cursor->vt->copy : plain_copy)(text,
-		text->cursor)) || !StringBetweenCat(&line->string, a, b)) return /*@fixme: memory leak!!!*/0;
-	return line;
+	return !(!line || !StringBetweenCat(&line->string, a, b));
 }
 
 /** Removes the line at the cursor. The cursor goes to the previous line; if

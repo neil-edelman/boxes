@@ -79,31 +79,34 @@ static int pfclose(FILE **const pfp) {
 
 /** Splits all the words on in {src} on different lines on before the cursor in
  {dst}.
- @param src, dst: If null, does nothing.
  @param pwords: If not null, the number of words split is stored.
  @return Success.
  @throws {realloc} errors. */
-static int split(struct Text *const dst, const char *const src, size_t *pwords){
-	struct Line *word;
+static int split(const struct Line *const src, struct Text *const dst,
+	size_t *pwords) {
 	const char *cursor, *start, *end;
 	size_t words = 0;
 	assert(dst && src);
-	for(cursor = src; start = trim(cursor), end = next(start); cursor = end) {
+	for(cursor = LineGet(src); start = trim(cursor), end = next(start); cursor = end) {
 		assert(start < end);
-		if(!(word = TextCopyBetween(dst, start, end))) break;
+		if(!LineCopyBetween(TextCopyLine(src, dst), start, end)) break;
 		words++;
 	}
 	if(pwords) *pwords = words;
 	return !end;
 }
 
+/** Splits the entire paragraph starting with cusor of {src} into strings
+ before the cursor of {dst}. The cursor is updated in {src} to the line after
+ or reset if there was no line after.
+ @return The cursor is not reset. */
 static int split_para(struct Text *const src, struct Text *const dst) {
 	const struct Line *line;
 	int is_para = 0;
 	size_t words;
-	assert(src);
+	assert(src && dst);
 	while((line = TextNext(src))) {
-		if(!split(dst, LineGet(line), &words)) return 0;
+		if(!split(line, dst, &words)) return 0;
 		if(words) is_para = 1; else if(is_para) break;
 	}
 	return !!line;
@@ -128,7 +131,7 @@ int main(void) {
 			|| !pfclose(&fp)) { e = body; break; }
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 		/* Split the text into words. */
-		while(split_para(text, words)) /*TextNew(words)*/;
+		while(split_para(text, words)) TextNew(words);
 		/* fixme { e = "split"; break; } */
 		/* Output. */
 		printf("***text:\n");
