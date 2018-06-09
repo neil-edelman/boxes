@@ -87,7 +87,8 @@ static int split(const struct Line *const src, struct Text *const dst,
 	const char *cursor, *start, *end;
 	size_t words = 0;
 	assert(dst && src);
-	for(cursor = LineGet(src); start = trim(cursor), end = next(start); cursor = end) {
+	for(cursor = LineGet(src); start = trim(cursor), end = next(start);
+		cursor = end) {
 		assert(start < end);
 		if(!LineCopyBetween(TextCopyLine(src, dst), start, end)) break;
 		words++;
@@ -131,8 +132,8 @@ int main(void) {
 			|| !pfclose(&fp)) { e = body; break; }
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 		/* Split the text into words. */
-		while(split_para(text, words)) TextNew(words);
-		/* fixme { e = "split"; break; } */
+		while(split_para(text, words)) TextCopyLine(TextLine(text), words);
+		/* fixme TextCursor(text) { e = "split"; break; }? */
 		/* Output. */
 		printf("***text:\n");
 		if(!TextPrint(text, stdout, "%a: <%s>\n")) { e = "stdout"; break; }

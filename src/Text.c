@@ -334,7 +334,7 @@ static struct File *File(struct Text *const text,
 	return file;
 }
 
-/* Define these from above. The copy is */
+/* Define these from above. */
 
 /** @param line: Unused.
  @implements LineTextOperator */
@@ -398,6 +398,13 @@ struct Text *Text(void) {
  @param text: If null, does nothing. */
 void TextReset(struct Text *const text) {
 	if(text) text->cursor = 0;
+}
+
+/** @param text: If null, returns null.
+ @return The line at the cursor or null if the cursor is reset. */
+const struct Line *TextLine(const struct Text *const text) {
+	if(!text || !text->cursor) return 0;
+	return text->cursor;
 }
 
 /** Advances the cursor. If the cursor is reset, sets the cursor to the first
