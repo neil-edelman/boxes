@@ -64,7 +64,7 @@ static void word_wrap(struct Line *const line) {
 static const char *const head = "abstract.txt",
 	*const body = "lorem.txt";
 
-/** Helper for {fclose} is a little more robust.
+/** Helper for {fclose} is a little more robust about null-values.
  @param pfp: A pointer to the file pointer.
  @return Success.
  @throws {fclose} errors. */
@@ -72,6 +72,8 @@ static int pfclose(FILE **const pfp) {
 	FILE *fp;
 	int is;
 	if(!pfp || !(fp = *pfp)) return 1;
+	/* Whatever {fclose} returns, the file pointer is now useless. "After the
+	 call to fclose(), any use of stream results in undefined behavior." */
 	is = (fclose(fp) != EOF);
 	*pfp = fp = 0;
 	return is;
@@ -90,7 +92,7 @@ static int split(const struct Line *const src, struct Text *const dst,
 	for(cursor = LineGet(src); start = trim(cursor), end = next(start);
 		cursor = end) {
 		assert(start < end);
-		if(!LineCopyBetween(TextCopyLine(src, dst), start, end)) break;
+		if(!LineBetweenCat(TextCopyLine(src, dst), start, end)) break;
 		words++;
 	}
 	if(pwords) *pwords = words;
@@ -113,15 +115,38 @@ static int split_para(struct Text *const src, struct Text *const dst) {
 	return !!line;
 }
 
+/** Wraps the line at 80.
+ @param words: Any words after the cursor is erased. */
+static int greedy(struct Text *const words, struct Text *const wrap) {
+	const struct Line *word;
+	struct Line *line = 0;
+	const char *const space = " ", *const space_end = space + 1;
+	const char *str;
+	size_t line_len = 0;
+	assert(words && wrap);
+	while((word = TextNext(words))) {
+		/*printf("Inserting <%s>.\n", LineGet(word));*/
+		if((!line || ((line_len = LineLength(line))
+			&& line_len + 1 + LineLength(word) >= 50))
+			&& !(line_len = 0, line = TextCopyLine(word, wrap))) return 0;
+		if(line_len) LineBetweenCat(line, space, space_end);
+		str = LineGet(word);
+		LineBetweenCat(line, str, str + LineLength(word));
+		TextRemove(words);
+	}
+	return 1;
+}
+
 /** Expects {head} and {body} to be on the same directory as it is called from.
  Word wraps.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	FILE *fp = 0;
-	struct Text *text = 0, *words = 0;
+	struct Text *text = 0, *words = 0, *wrap = 0;
 	const char *e = 0;
-	do {
-		if(!(text = Text()) || !(words = Text())) { e = "Text"; break; }
+	do { /* Try. */
+		if(!(text = Text()) || !(words = Text()) || !(wrap = Text()))
+			{ e = "Text"; break; }
 		/* Load all. In reality, would read from stdin, just testing. */
 		if(!(fp = fopen(head, "r"))
 			|| !TextFile(text, fp, head)
@@ -131,16 +156,19 @@ int main(void) {
 			|| !TextFile(text, fp, body)
 			|| !pfclose(&fp)) { e = body; break; }
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
-		/* Split the text into words. */
-		while(split_para(text, words)) TextCopyLine(TextLine(text), words);
-		/* fixme TextCursor(text) { e = "split"; break; }? */
+		/* Split the text into words and then wraps them. */
+		while(split_para(text, words))
+			if(!greedy(words, wrap)) { e = "wrap"; break; };
+		if(e) break;
 		/* Output. */
 		printf("***text:\n");
 		if(!TextPrint(text, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
-		printf("***words:\n");
+		printf("\n\n***words:\n");
 		if(!TextPrint(words, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
-	} while(0); if(e) perror(e);
-	if(!pfclose(&fp)) perror("shutdown");
-	Text_(&words), Text_(&text);
+		printf("\n\n***wrap:\n");
+		if(!TextPrint(wrap, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
+	} while(0); if(e) perror(e); /* Catch. */
+	if(!pfclose(&fp)) perror("shutdown"); /* Finally. */
+	Text_(&wrap), Text_(&words), Text_(&text); /* Finally. */
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }

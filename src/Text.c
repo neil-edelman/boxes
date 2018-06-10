@@ -407,6 +407,11 @@ const struct Line *TextLine(const struct Text *const text) {
 	return text->cursor;
 }
 
+const struct String *LineString(const struct Line *const line) {
+	if(!line) return 0;
+	return &line->string;
+}
+
 /** Advances the cursor. If the cursor is reset, sets the cursor to the first
  line.
  @param text: If null, returns false.
@@ -438,7 +443,7 @@ struct Line *TextCopyLine(const struct Line *const src, struct Text *const dst){
  @param a, b: If either null or {a >= b}, does nothing.
  @return Success.
  @throws ... */
-int LineCopyBetween(struct Line *const line,
+int LineBetweenCat(struct Line *const line,
 	const char *const a, const char *const b) {
 	return !(!line || !StringBetweenCat(&line->string, a, b));
 }
