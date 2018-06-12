@@ -102,7 +102,8 @@ static int split(const struct Line *const src, struct Text *const dst,
 /** Splits the entire paragraph starting with cusor of {src} into strings
  before the cursor of {dst}. The cursor is updated in {src} to the line after
  or reset if there was no line after.
- @return The cursor is not reset. */
+ @return Whether a paragraph was output.
+ @throws realloc */
 static int split_para(struct Text *const src, struct Text *const dst) {
 	const struct Line *line;
 	int is_para = 0;
@@ -112,7 +113,7 @@ static int split_para(struct Text *const src, struct Text *const dst) {
 		if(!split(line, dst, &words)) return 0;
 		if(words) is_para = 1; else if(is_para) break;
 	}
-	return !!line;
+	return is_para;
 }
 
 /** Wraps the line at 80.
@@ -142,10 +143,11 @@ static int greedy(struct Text *const words, struct Text *const wrap) {
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	FILE *fp = 0;
-	struct Text *text = 0, *words = 0, *wrap = 0;
+	struct Text *text = 0, *words = 0, *greed = 0;
+	const struct Line *newline = 0;
 	const char *e = 0;
 	do { /* Try. */
-		if(!(text = Text()) || !(words = Text()) || !(wrap = Text()))
+		if(!(text = Text()) || !(words = Text()) || !(greed = Text()))
 			{ e = "Text"; break; }
 		/* Load all. In reality, would read from stdin, just testing. */
 		if(!(fp = fopen(head, "r"))
@@ -157,18 +159,21 @@ int main(void) {
 			|| !pfclose(&fp)) { e = body; break; }
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 		/* Split the text into words and then wraps them. */
-		while(split_para(text, words))
-			if(!greedy(words, wrap)) { e = "wrap"; break; };
+		do {
+			if(newline) TextCopyLine(newline, greed);
+			if(!split_para(text, words)) break; /* Newlines at EOF. */
+			if(!greedy(words, greed)) { e = "wrap"; break; };
+		} while((newline = TextLine(text)));
 		if(e) break;
 		/* Output. */
-		printf("***text:\n");
+		/*printf("***text:\n");
 		if(!TextPrint(text, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
 		printf("\n\n***words:\n");
 		if(!TextPrint(words, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
-		printf("\n\n***wrap:\n");
-		if(!TextPrint(wrap, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
+		printf("\n\n***wrap:\n");*/
+		if(!TextPrint(greed, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
 	} while(0); if(e) perror(e); /* Catch. */
 	if(!pfclose(&fp)) perror("shutdown"); /* Finally. */
-	Text_(&wrap), Text_(&words), Text_(&text); /* Finally. */
+	Text_(&greed), Text_(&words), Text_(&text); /* Finally. */
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
