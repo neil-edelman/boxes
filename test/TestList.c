@@ -19,7 +19,7 @@
 #pragma clang diagnostic ignored "-Wdocumentation"
 #pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
 #endif
-#elif defined(__GNUC__) /* clang --><-- GCC */
+#elif defined(__GNUC__) /* clang --><-- GCC (@fixme Specific version.) */
 #pragma GCC diagnostic ignored "-Wconversion"
 #elif defined(__BORLANDC__) /* GCC --><-- BCC */
 #elif defined(_MSC_VER) /* BCC --><-- MSVC: Not C++11. */
