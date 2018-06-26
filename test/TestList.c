@@ -13,24 +13,19 @@
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
 
-#ifdef __clang__ /* <-- clang must be placed ahead of __GNUC__ */
-#if __clang_major__ > 2 /* fixme: this is not how you do it; I don't know how */
+#if defined(__clang__) /* <-- clang (Hack.) */
+#if __clang_major__ > 2
 #pragma clang diagnostic ignored "-Wpadded"
 #pragma clang diagnostic ignored "-Wdocumentation"
 #pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
 #endif
-#elif __GNUC__ /* clang --><-- GCC */
+#elif defined(__GNUC__) /* clang --><-- GCC */
 #pragma GCC diagnostic ignored "-Wconversion"
-#elif __BORLANDC__ /* GCC --><-- BCC must be placed ahead of _MSC_VER */
-#elif _MSC_VER /* BCC --><-- MSVC */
-#pragma warning(disable: 4464)
-#pragma warning(disable: 4706)
-#pragma warning(disable: 4710)
-#pragma warning(disable: 4711)
-#pragma warning(disable: 4820)
-#pragma warning(disable: 4996)
-#elif __MINGW32__ /* MSVC --><-- MinGW */
-#elif __DJGPP__ /* MinGW --><-- DJGPP */
+#elif defined(__BORLANDC__) /* GCC --><-- BCC */
+#elif defined(_MSC_VER) /* BCC --><-- MSVC: Not C++11. */
+#pragma warning(disable: 4464 4706 4710 4711 4820 4996)
+#elif defined(__MINGW32__) /* MSVC --><-- MinGW */
+#elif defined(__DJGPP__) /* MinGW --><-- DJGPP */
 #endif /* --> */
 
 /** Define class {Foo} */
