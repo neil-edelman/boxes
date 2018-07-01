@@ -166,8 +166,10 @@ int main(void) {
 		do {
 			/* Insert a double-break between paragraphs. */
 			if(newline) LineCopyMeta(newline, greed);
-			/*  */
-			if(!split_para(text, words)) break; /* Newlines at EOF. */
+			/* Splits the paragraph into words.
+			 If false, newlines at EOF or error (fixme: handle error.) */
+			if(!split_para(text, words)) break;
+			/* Apply word-wrapping. */
 			if(!greedy(words, greed)) { e = "wrap"; break; };
 		} while((newline = TextLine(text)));
 		if(e) break;
