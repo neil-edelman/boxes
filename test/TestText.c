@@ -92,7 +92,7 @@ static int split(const struct Line *const src, struct Text *const dst,
 	for(cursor = LineGet(src); start = trim(cursor), end = next(start);
 		cursor = end) {
 		assert(start < end);
-		if(!LineBetweenCat(TextCopyLine(src, dst), start, end)) break;
+		if(!LineBetweenCat(LineCopyMeta(src, dst), start, end)) break;
 		words++;
 	}
 	if(pwords) *pwords = words;
@@ -101,7 +101,11 @@ static int split(const struct Line *const src, struct Text *const dst,
 
 /** Splits the entire paragraph starting with cusor of {src} into strings
  before the cursor of {dst}. The cursor is updated in {src} to the line after
- or reset if there was no line after.
+ or reset if there was no line after. A paragraph is delimited by lines
+ composed of only classic white-space; this skips over all the delimiters,
+ if the file has words, it outputs them to {dst}, and stops with a delimiter or
+ end-of-text, and returns true, otherwise the cursor is reset and it will
+ return false.
  @return Whether a paragraph was output.
  @throws realloc */
 static int split_para(struct Text *const src, struct Text *const dst) {
@@ -129,7 +133,7 @@ static int greedy(struct Text *const words, struct Text *const wrap) {
 		/*printf("Inserting <%s>.\n", LineGet(word));*/
 		if((!line || ((line_len = LineLength(line))
 			&& line_len + 1 + LineLength(word) >= 50))
-			&& !(line_len = 0, line = TextCopyLine(word, wrap))) return 0;
+			&& !(line_len = 0, line = LineCopyMeta(word, wrap))) return 0;
 		if(line_len) LineBetweenCat(line, space, space_end);
 		str = LineGet(word);
 		LineBetweenCat(line, str, str + LineLength(word));
@@ -143,12 +147,12 @@ static int greedy(struct Text *const words, struct Text *const wrap) {
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	FILE *fp = 0;
-	struct Text *text = 0, *words = 0, *greed = 0;
+	struct Text *text = 0, *words = 0, *greed = 0, *divide = 0;
 	const struct Line *newline = 0;
 	const char *e = 0;
 	do { /* Try. */
-		if(!(text = Text()) || !(words = Text()) || !(greed = Text()))
-			{ e = "Text"; break; }
+		if(!(text = Text()) || !(words = Text()) || !(greed = Text())
+			|| !(divide = Text())) { e = "Text"; break; }
 		/* Load all. In reality, would read from stdin, just testing. */
 		if(!(fp = fopen(head, "r"))
 			|| !TextFile(text, fp, head)
@@ -160,7 +164,9 @@ int main(void) {
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 		/* Split the text into words and then wraps them. */
 		do {
-			if(newline) TextCopyLine(newline, greed);
+			/* Insert a double-break between paragraphs. */
+			if(newline) LineCopyMeta(newline, greed);
+			/*  */
 			if(!split_para(text, words)) break; /* Newlines at EOF. */
 			if(!greedy(words, greed)) { e = "wrap"; break; };
 		} while((newline = TextLine(text)));
@@ -174,6 +180,6 @@ int main(void) {
 		if(!TextPrint(greed, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
 	} while(0); if(e) perror(e); /* Catch. */
 	if(!pfclose(&fp)) perror("shutdown"); /* Finally. */
-	Text_(&greed), Text_(&words), Text_(&text); /* Finally. */
+	Text_(&divide), Text_(&greed), Text_(&words), Text_(&text); /* Finally. */
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }

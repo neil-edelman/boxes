@@ -427,13 +427,14 @@ const struct Line *TextNext(struct Text *const text) {
 	return text->cursor;
 }
 
-/** Makes a copy of the mata-data in {src}. Places the copy before the {dst}
- cursor; if the cursor of {dst} is reset, places it at the end. {dst} can be
- the same list or different {Text}.
+/** Makes a copy of the meta-data, but not the actual text, in {src}. Places
+ the copy before the {dst} cursor; if the cursor of {dst} is reset, places it
+ at the end. {dst} can be the same list or different {Text}, but copies any
+ depedencies on filenames as well.
  @param dst, src: If either is null, does nothing.
  @return The copy.
- @throws ... */
-struct Line *TextCopyLine(const struct Line *const src, struct Text *const dst){
+ @throws {realloc} errors. */
+struct Line *LineCopyMeta(const struct Line *const src, struct Text *const dst){
 	if(!dst || !src) return 0;
 	return src->vt->copy(src, dst);
 }
