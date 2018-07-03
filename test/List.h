@@ -1631,13 +1631,14 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
 		biaction(&PT_(node_holds_x)(x)->data, param);
 }
 
-/** @param list, predicate: If null, returns null.
+/** Short-circiut evaluates {list} with each item's {predicate}.
+ @param list, predicate: If null, returns null.
  @return The first {<T>} in the linked-list, ordered by {<U>}, that causes the
  {predicate} with {<T>} as argument to return false, or null if the {predicate}
  is true for every case.
  @order ~ O({list}.n) \times O({predicate})
  @allow */
-static T *T_U_(List, ShortCircuit)(struct T_(List) *const list,
+static T *T_U_(List, All)(struct T_(List) *const list,
 	const PT_(Predicate) predicate) {
 	struct PT_(X) *x, *next_x;
 	T *data;
@@ -1647,15 +1648,16 @@ static T *T_U_(List, ShortCircuit)(struct T_(List) *const list,
 	return 0;
 }
 
-/** @param list, bipredicate: If null, returns null.
+/** Short-circiut evaluates {list} with each item's {predicate}.
+ @param list, bipredicate: If null, returns null.
  @param param: Used as the second parameter of {bipredicate}.
  @return The first {<T>} in the linked-list, ordered by {<U>}, that
  causes the {bipredicate} with {<T>} and {param} as arguments to return false,
  or null if the {bipredicate} is true for every case.
  @order ~ O({list}.n) \times O({predicate})
- @fixme Void. No.
+ @fixme Void. No. Have interfaces.
  @allow */
-static T *T_U_(List, BiShortCircuit)(struct T_(List) *const list,
+static T *T_U_(List, BiAll)(struct T_(List) *const list,
 	const PT_(BiPredicate) bipredicate, void *const param) {
 	struct PT_(X) *x, *next_x;
 	T *data;
@@ -1762,8 +1764,8 @@ static void PT_U_(sub_unused, list)(void) {
 	T_U_(List, BiTakeIf)(0, 0, 0, 0);
 	T_U_(List, ForEach)(0, 0);
 	T_U_(List, BiForEach)(0, 0, 0);
-	T_U_(List, ShortCircuit)(0, 0);
-	T_U_(List, BiShortCircuit)(0, 0, 0);
+	T_U_(List, All)(0, 0);
+	T_U_(List, BiAll)(0, 0, 0);
 #ifdef LIST_TO_STRING /* <-- string */
 	T_U_(List, ToString)(0);
 #endif /* string --> */
