@@ -497,6 +497,8 @@ static void PT_U_(test, basic)(void) {
 
 	printf("Basic tests of " QUOTE(LIST_NAME) " linked-list " QUOTE(LIST_U_NAME)
 		":\n");
+	/* {valgrind}? */
+	memset(buf, 0, sizeof buf);
 	/* Clear */
 	T_(ListClear)(0);
 	T_(ListClear)(&a);
@@ -602,6 +604,8 @@ static void PT_U_(test, memory)(void) {
 		QUOTE(LIST_U_NAME) ":\n");
 	T_(ListClear)(&a), T_(ListClear)(&b);
 	PT_(legit)(&a);
+	/* {valgrind}? */
+	memset(buf, 0, sizeof buf);
 	/* fill the items in buf0 */
 	for(i = 0; i < buf_size; i++)
 		node = buf[0] + i, PT_(filler)(&node->data);
