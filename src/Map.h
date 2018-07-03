@@ -378,7 +378,7 @@ static int PE_(is_item)(E *const entry, void *const pkey_void) {
  @allow */
 static E *E_(MapGet)(struct E_(Map) *const map, K key) {
 	if(!map) return 0;
-	return PE_(EntryListBiShortCircuit)(PE_(get_bin)(map, PE_(hash)(key)),
+	return PE_(EntryListBiAll)(PE_(get_bin)(map, PE_(hash)(key)),
 		&PE_(is_item), (void *)&key);
 }
 
@@ -402,7 +402,7 @@ static E *E_(MapPut)(struct E_(Map) *const map, E *const entry) {
 	key = PE_(item_key)(entry);
 	/* Cache the hash and get the bin. */
 	bin = PE_(get_bin)(map, PE_(node_holds_item)(entry)->hash = PE_(hash)(key));
-	if((replaced = PE_(EntryListBiShortCircuit)(bin, &PE_(is_item),
+	if((replaced = PE_(EntryListBiAll)(bin, &PE_(is_item),
 		(void *)&key))) {
 		/* Replace key. */
 		PE_(EntryListRemove)(replaced);
