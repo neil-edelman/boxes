@@ -379,7 +379,7 @@ static int PT_U_(count, predicate)(T *const this, void *const param) {
 /** Counts the elements. */
 static size_t PT_U_(count, elements)(struct T_(List) *const this) {
 	size_t count = 0;
-	T_U_(List, BiShortCircuit)(this, &PT_U_(count, predicate), &count);
+	T_U_(List, BiAll)(this, &PT_U_(count, predicate), &count);
 	return count;
 }
 
@@ -409,7 +409,7 @@ static size_t PT_U_(exactly, elements)(struct T_(List) *const this,
 	struct PT_(Verify) lv = { 0, 0, 0 };
 	lv.array    = array;
 	lv.array_no = array_no;
-	return !T_U_(List, BiShortCircuit)(this, &PT_U_(exactly, predicate),
+	return !T_U_(List, BiAll)(this, &PT_U_(exactly, predicate),
 		&lv);
 }
 
@@ -430,7 +430,7 @@ static int PT_U_(order, predicate)(T *const this, void *const param) {
 /** Verifies sorting on index. */
 static int PT_U_(in, order)(struct T_(List) *const this) {
 	T *one_array[] = { 0 };
-	return !T_U_(List, BiShortCircuit)(this, &PT_U_(order, predicate),
+	return !T_U_(List, BiAll)(this, &PT_U_(order, predicate),
 		one_array);
 }
 
@@ -451,7 +451,7 @@ static size_t PT_U_(count, unordered)(struct T_(List) *this) {
 	struct PT_(Order) info = { 0, 0 };
 	printf("Unordered(" QUOTE(LIST_NAME) "-" QUOTE(LIST_U_NAME) ": %s)\n",
 		T_U_(List, ToString)(this));
-	T_U_(List, BiShortCircuit)(this, &PT_U_(unorder, predicate), &info);
+	T_U_(List, BiAll)(this, &PT_U_(unorder, predicate), &info);
 	return info.count;
 }
 #endif /* comp --> */
@@ -520,19 +520,19 @@ static void PT_U_(test, basic)(void) {
 	PT_(to_string)(data, &str);
 	printf("Link get first data: %s.\n", str);
 	assert(memcmp(&buf[0].data, data, sizeof *data) == 0);
-	/* ShortCircuit */
-	printf("ShortCircuit: for all true returns null.\n");
-	assert(!T_U_(List, ShortCircuit)(0, 0));
-	assert(!T_U_(List, ShortCircuit)(0, &PT_U_(true, index)));
-	assert(!T_U_(List, ShortCircuit)(&a, 0));
-	assert(!T_U_(List, ShortCircuit)(&a, &PT_U_(true, index)));
-	printf("ShortCircuit: parity [ 1, 0, 1, ... ] ends on index 1.\n");
-	/* BiShortCircuit */
-	assert(!T_U_(List, BiShortCircuit)(0, 0, 0));
-	assert(!T_U_(List, BiShortCircuit)(&a, 0, 0));
-	assert(!T_U_(List, BiShortCircuit)(0, &PT_U_(every, second), 0));
+	/* All */
+	printf("All: for all true returns null.\n");
+	assert(!T_U_(List, All)(0, 0));
+	assert(!T_U_(List, All)(0, &PT_U_(true, index)));
+	assert(!T_U_(List, All)(&a, 0));
+	assert(!T_U_(List, All)(&a, &PT_U_(true, index)));
+	printf("All: parity [ 1, 0, 1, ... ] ends on index 1.\n");
+	/* BiAll */
+	assert(!T_U_(List, BiAll)(0, 0, 0));
+	assert(!T_U_(List, BiAll)(&a, 0, 0));
+	assert(!T_U_(List, BiAll)(0, &PT_U_(every, second), 0));
 	is_parity = 1;
-	assert(T_U_(List, BiShortCircuit)(&a, &PT_U_(every, second),
+	assert(T_U_(List, BiAll)(&a, &PT_U_(every, second),
 		&is_parity) == (T *)(buf + 1));
 	/* Next, Previous, First, Last */
 	printf("Removing 3 elements from a.\n");
