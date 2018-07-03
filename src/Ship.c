@@ -117,11 +117,11 @@ struct Ships {
 	struct CruiserPool cruisers;
 };
 /** @implements <Ships,Ship>Action */
-static void ship_delete(struct Ships *const ships, struct Ship *const ship) {
+/*static void ship_delete(struct Ships *const ships, struct Ship *const ship) {
 	assert(ships && ship);
 	ShipListRemove(ship);
 	ship->vt->delete(ships, ship);
-}
+}*/
 /** Called from \see{ship_delete}.
  @implements <Ships,Ship>Action */
 static void destroyer_delete(struct Ships *const ships, struct Ship *const ship)
