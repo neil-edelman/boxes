@@ -121,10 +121,6 @@
 #include <string.h>	/* strerror strchr */
 #include <limits.h>	/* INT_MAX */
 #include <errno.h>	/* errno */
-#ifdef STORY_DEBUG /* <-- debug */
-#include <stdarg.h>	/* va_* */
-#endif /* debug --> */
-
 #include "String.h"
 #include "Text.h"
 
@@ -419,12 +415,15 @@ const struct String *LineString(const struct Line *const line) {
  will be reset.) */
 const struct Line *TextNext(struct Text *const text) {
 	if(!text) return 0;
-	if(!text->cursor) {
-		text->cursor = LineListFirst(&text->lines);
-	} else {
-		text->cursor = LineListNext(text->cursor);
-	}
-	return text->cursor;
+	return text->cursor = text->cursor ?
+		LineListNext(text->cursor) : LineListFirst(&text->lines);
+}
+
+/** @fixme */
+const struct Line *TextPrevious(struct Text *const text) {
+	if(!text) return 0;
+	return text->cursor = text->cursor ?
+		LineListPrevious(text->cursor) : LineListLast(&text->lines);
 }
 
 /** Makes a copy of the meta-data, but not the actual text, in {src}. Places
@@ -460,8 +459,10 @@ void TextRemove(struct Text *const text) {
 	del->vt->delete(text, del);
 }
 
-
-
+/** @fixme */
+int TextHasContent(const struct Text *const text) {
+	return text && !!LineListFirst(&text->lines);
+}
 
 
 
@@ -560,6 +561,32 @@ void TextForEach(struct Text *const text, const LineAction action) {
 	if(!text || !action) return;
 	for(line = LineListFirst(&text->lines); line; line = LineListNext(line))
 		action(line);
+}
+
+/** Short-circiut evaluates {text} with each line's {predicate}.
+ @param list, predicate: If null, returns null.
+ @return The first {Line} in the linked-list that causes the {predicate} with
+ {Line} as argument to return false, or null if the {predicate} is true for
+ every case.
+ @order ~ O({text.lines}) \times O({predicate}) */
+struct Line *TextAll(const struct Text *const text,
+	const LinePredicate predicate) {
+	struct Line *line;
+	if(!text || !predicate) return 0;
+	for(line = LineListFirst(&text->lines); line; line = LineListNext(line))
+		if(!predicate(line)) return line;
+	return 0;
+}
+
+/** @fixme
+ @order O({lines}) */
+size_t TextLineCount(const struct Text *const text) {
+	struct Line *line;
+	size_t count = 0;
+	if(!text) return 0;
+	for(line = LineListFirst(&text->lines); line; line = LineListNext(line))
+		count++;
+	return count;
 }
 
 /** @param line: If null, returns null.
