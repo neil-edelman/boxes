@@ -42,27 +42,6 @@
 
 #define WIDTH 50
 
-#if 0
-/** \cite{Wilber1998} \url{http://xxyxyz.org/line-breaking/}. */
-static void word_wrap(struct Line *const line) {
-	struct SizeStack *offsets = SizeStack();
-	struct Line *l;
-	size_t count, *o;
-	assert(line);
-	errno = 0; do { /* try */
-		if(!(o = SizeStackNew(offsets))) break;
-		*o = 0;
-		/* Count how many words in the paragraph. */
-		for(count = 0, l = line; l && TextLength(LineText(l));
-			l = LineNext(l), count++);
-	} while(0); if(errno) { /* catch */
-		perror("word_wrap");
-	} { /* finally */
-		SizeStack_(&offsets);
-	}
-}
-#endif
-
 static const char *const head = "abstract.txt",
 	*const body = "lorem.txt";
 
@@ -114,8 +93,9 @@ static int split_para(struct Text *const src, struct Text *const dst,
 	size_t *const pwords) {
 	const struct Line *line;
 	int is_para = 0;
-	size_t words, total_words = 0;
+	size_t words = 0, total_words = 0;
 	assert(src && dst && pwords);
+	*pwords = 0;
 	while((line = TextNext(src))) {
 		if(!split(line, dst, &words)) return 0;
 		if(words) is_para = 1; else if(is_para) break;
@@ -194,6 +174,45 @@ static unsigned cost(const size_t i, const size_t j) {
 	return (w > 50) ? 30000 : i_work->minimum + (WIDTH - w) * (WIDTH - w);
 }
 
+/** Called after getting {work} filled. */
+static int words_work_to_wrap(struct Text *const words, struct Text *const wrap) {
+	const char *const space = " ", *const space_end = space + 1;
+	const struct Line *word;
+	size_t lines_in_para = 0, delta, i, j;
+	struct Line *line;
+	struct Work *j_work;
+	const char *str;
+	/* Read off the work. */
+	TextCursorSet(words, 0);
+	j = WorkPoolSize(&work) - 1;
+	while(j > 0) {
+		j_work = WorkPoolGet(&work, j), assert(j_work);
+		i = j_work->breaks;
+		/* Backtrack. The underlying linked-list is not indexable. */
+		assert(i < j);
+		for(delta = j - i; delta; delta--)
+		/* Not supposed to happen. */
+			if(!(word = TextPrevious(words))) return errno = ERANGE, 0;
+		/* Consume all the of the {words} on the same line on the end. */
+		if(!(line = LineCopyMeta(word, wrap))) return 0;
+		TextPrevious(wrap);
+		lines_in_para++;
+		delta = j - i;
+		do {
+			str = LineGet(word), assert(str);
+			if(!LineBetweenCat(line, str, str + LineLength(word))) return 0;
+			TextRemove(words);
+			word = TextNext(words);
+			if(!--delta) break;
+			if(!LineBetweenCat(line, space, space_end)) return 0;
+		} while(1);
+		j = i;
+	}
+	while(lines_in_para) lines_in_para--, TextNext(wrap);
+	assert(!TextHasContent(words));
+	return 1;
+}
+
 static int divide_search(const size_t i0, const size_t j0,
 	const size_t i1, const size_t j1) {
 	size_t j, i;
@@ -222,12 +241,8 @@ static int divide_search(const size_t i0, const size_t j0,
 
 /** \url{ http://xxyxyz.org/line-breaking/ }. */
 static int divide(struct Text *const words, struct Text *const wrap) {
-	const char *const space = " ", *const space_end = space + 1;
-	const struct Line *word;
-	struct Line *line;
-	struct Work *x_work, *j_work;
-	const char *str;
-	size_t n, i = 0, offset = 0, r, edge, x, j, y, delta, lines_in_para = 0;
+	struct Work *x_work;
+	size_t n, i = 0, offset = 0, r, edge, x, j, y;
 	assert(words && wrap);
 	if(!(x_work = (WorkPoolClear(&work), WorkPoolNew(&work)))) return 0;
 	x_work->offset = x_work->breaks = 0, x_work->minimum = 0;
@@ -253,42 +268,49 @@ static int divide(struct Text *const words, struct Text *const wrap) {
 			i++;
 		}
 	}
-	/* Read off the work. */
-	TextReset(words);
-	j = WorkPoolSize(&work) - 1;
-	while(j > 0) {
-		j_work = WorkPoolGet(&work, j), assert(j_work);
-		i = j_work->breaks;
-		/* Backtrack. The underlying linked-list is not indexable. */
-		assert(i < j);
-		for(delta = j - i; delta; delta--)
-			/* Not supposed to happen. */
-			if(!(word = TextPrevious(words))) return errno = ERANGE, 0;
-		/* Consume all the of the {words} on the same line on the end. */
-		if(!(line = LineCopyMeta(word, wrap))) return 0;
-		TextPrevious(wrap);
-		lines_in_para++;
-		delta = j - i;
-		do {
-			str = LineGet(word), assert(str);
-			if(!LineBetweenCat(line, str, str + LineLength(word))) return 0;
-			TextRemove(words);
-			word = TextNext(words);
-			if(!--delta) break;
-			if(!LineBetweenCat(line, space, space_end)) return 0;
-		} while(1);
-		j = i;
-	}
-	while(lines_in_para) lines_in_para--, TextNext(wrap);
-	assert(!TextHasContent(words));
-	return 1;
+	return words_work_to_wrap(words, wrap);
 }
 
 static int dynamic(struct Text *const words, struct Text *const wrap) {
+	struct Line *word, *word2;
+	struct Work *i_work, *j1_work;
 	const size_t count = TextLineCount(words);
-	size_t *slack = malloc(sizeof *slack * count);
+	size_t c;
+	int *slack = malloc(sizeof *slack * count * count), s;
+	size_t i, j;
+	int done = 0;
 	assert(words && wrap);
-	return 0;
+	do {
+		if(!slack) break;
+		for(i = 0, TextCursorSet(words, 0); (word = TextNext(words)); i++) {
+			assert(i < count);
+			slack[i * count + i] = WIDTH - (int)LineLength(word);
+			for(j = i + 1; j < count; j++) {
+				word2 = TextNext(words), assert(word2);
+				slack[i * count + j] = slack[i * count + j - 1]
+					- (int)LineLength(word2) - 1;
+			}
+			TextCursorSet(words, word);
+		}
+		if(!(i_work = (WorkPoolClear(&work), WorkPoolNew(&work)))) break;
+		i_work->offset = i_work->breaks = 0, i_work->minimum = 0;
+		if(TextAll(words, &add_words)) break;
+		for(j = 0; j < count; j++) {
+			i = j;
+			while(i > 0) {
+				i_work = WorkPoolGet(&work, i), assert(i_work);
+				s = slack[i * count + j];
+				c = s < 0 ? INT_MAX : i_work->minimum + s * s;
+				j1_work = WorkPoolGet(&work, j + 1);
+				if(j1_work->minimum > c)
+					j1_work->minimum = (unsigned)c, j1_work->breaks = i;
+				i--;
+			}
+		}
+		done = 1;
+	} while(0); if(!done) perror("error");
+	free(slack), slack = 0;
+	return done && words_work_to_wrap(words, wrap);
 }
 
 typedef int (*BiTextConsumer)(struct Text *const, struct Text *const);
@@ -332,7 +354,7 @@ int main(void) {
 			if(!split_para(text, words, &word_no)) break;
 			/* Apply word-wrapping; the words are consumed. */
 			if(!algorthm->go(words, wrap)) { e = "wrap"; break; };
-		} while((newline = TextLine(text)));
+		} while((newline = TextCursor(text)));
 		if(e) break;
 		if(!TextPrint(wrap, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
 		fprintf(stderr, "This was wrapped using %s.\n", algorthm->name);

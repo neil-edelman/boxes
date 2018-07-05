@@ -390,19 +390,24 @@ struct Text *Text(void) {
 /* Cursor movement. */
 
 
-/** Resets the cursor.
- @param text: If null, does nothing. */
-void TextReset(struct Text *const text) {
-	if(text) text->cursor = 0;
+/**
+ @param set: A line in the {text} or null to reset it. Undefined behaviour is
+ evoked if the line is not in {text}.
+ @fixme */
+int TextCursorSet(struct Text *const text, struct Line *const set) {
+	if(!text) return 0;
+	text->cursor = set;
+	return 1;
 }
 
 /** @param text: If null, returns null.
  @return The line at the cursor or null if the cursor is reset. */
-const struct Line *TextLine(const struct Text *const text) {
+const struct Line *TextCursor(const struct Text *const text) {
 	if(!text || !text->cursor) return 0;
 	return text->cursor;
 }
 
+/** @fixme */
 const struct String *LineString(const struct Line *const line) {
 	if(!line) return 0;
 	return &line->string;
@@ -413,14 +418,14 @@ const struct String *LineString(const struct Line *const line) {
  @param text: If null, returns false.
  @return The string contents or null if there is no next position (the cursor
  will be reset.) */
-const struct Line *TextNext(struct Text *const text) {
+/*const*/ struct Line *TextNext(struct Text *const text) {
 	if(!text) return 0;
 	return text->cursor = text->cursor ?
 		LineListNext(text->cursor) : LineListFirst(&text->lines);
 }
 
 /** @fixme */
-const struct Line *TextPrevious(struct Text *const text) {
+/*const*/ struct Line *TextPrevious(struct Text *const text) {
 	if(!text) return 0;
 	return text->cursor = text->cursor ?
 		LineListPrevious(text->cursor) : LineListLast(&text->lines);
