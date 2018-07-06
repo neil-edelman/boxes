@@ -185,6 +185,7 @@ static int words_work_to_wrap(struct Text *const words,
 	struct Work *j_work = 0;
 	const char *str;
 	assert(words && TextHasContent(words) && wrap && WorkPoolSize(&work));
+	printf("End work:\n");
 	for(i = 0; (j_work = WorkPoolNext(&work, j_work)); i++)
 		printf("%lu\t%lu\t%u\n", i, j_work->breaks, j_work->minimum);
 	/* Read off the work. */
@@ -228,7 +229,9 @@ static int dynamic(struct Text *const words, struct Text *const wrap) {
 	int done = 0;
 	assert(words && wrap);
 	do {
+		/* Create the table. (Working.) */
 		if(!slack) break;
+		memset(slack, 0, sizeof *slack * count * count); /* Actually need? */
 		for(i = 0, TextCursorSet(words, 0); (word = TextNext(words)); i++) {
 			assert(i < count);
 			slack[i * count + i] = WIDTH - (int)LineLength(word);
@@ -239,18 +242,26 @@ static int dynamic(struct Text *const words, struct Text *const wrap) {
 			}
 			TextCursorSet(words, word);
 		}
+		/* Create scratch space. */
 		if(!(i_work = (WorkPoolClear(&work), WorkPoolNew(&work)))) break;
 		/*i_work->offset = */i_work->breaks = 0, i_work->minimum = 0;
 		if(TextAll(words, &add_words)) break;
-		for(j = 1; j < count; j++) {
+		printf("Init work:\n");
+		for(i = 0, i_work = 0; (i_work = WorkPoolNext(&work, i_work)); i++)
+			printf("%lu\t%lu\t%u\n", i, i_work->breaks, i_work->minimum);
+		for(j = 0; j < count; j++) {
 			i = j;
 			do {
+				printf("index %lu\n", i);
 				i_work = WorkPoolGet(&work, i), assert(i_work);
 				s = slack[i * count + j];
 				c = s < 0 ? INT_MAX : i_work->minimum + s * s;
-				j1_work = WorkPoolGet(&work, j + 1);
-				if(j1_work->minimum > c)
+				printf("cost %lu\n", c);
+				j1_work = WorkPoolGet(&work, j + 1), assert(j1_work);
+				if(j1_work->minimum > c) {
 					j1_work->minimum = (unsigned)c, j1_work->breaks = i;
+					printf("index: %lu\tminima: %u\tbreaks %lu\n", i, (unsigned)c, j1_work->breaks);
+				}
 			} while(i--);
 		}
 		done = 1;
