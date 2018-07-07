@@ -106,6 +106,8 @@ static int split_para(struct Text *const src, struct Text *const dst,
 	return is_para;
 }
 
+/** \url{ http://xxyxyz.org/line-breaking/ }. */
+
 /** Most things need more space. */
 struct Work {
 	size_t offset, breaks;
@@ -175,6 +177,14 @@ static unsigned cost(const size_t i, const size_t j) {
 	return (w > 50) ? 30000 : i_work->minimum + (WIDTH - w) * (WIDTH - w);
 }
 
+static void print_work(void) {
+	struct Work *w;
+	size_t i;
+	printf("Line\tBreak\tMinima\n");
+	for(i = 0, w = 0; (w = WorkPoolNext(&work, w)); i++)
+		printf("%lu\t%lu\t%u\n", i, w->breaks, w->minimum);
+}
+
 /** Called after getting {work} filled. */
 static int words_work_to_wrap(struct Text *const words,
 	struct Text *const wrap) {
@@ -185,9 +195,7 @@ static int words_work_to_wrap(struct Text *const words,
 	struct Work *j_work = 0;
 	const char *str;
 	assert(words && TextHasContent(words) && wrap && WorkPoolSize(&work));
-	printf("End work:\n");
-	for(i = 0; (j_work = WorkPoolNext(&work, j_work)); i++)
-		printf("%lu\t%lu\t%u\n", i, j_work->breaks, j_work->minimum);
+	print_work();
 	/* Read off the work. */
 	TextCursorSet(words, 0);
 	j = WorkPoolSize(&work) - 1;
@@ -229,7 +237,7 @@ static int dynamic(struct Text *const words, struct Text *const wrap) {
 	int done = 0;
 	assert(words && wrap);
 	do {
-		/* Create the table. (Working.) */
+		/* Create the table. */
 		if(!slack) break;
 		memset(slack, 0, sizeof *slack * count * count); /* Actually need? */
 		for(i = 0, TextCursorSet(words, 0); (word = TextNext(words)); i++) {
@@ -244,34 +252,22 @@ static int dynamic(struct Text *const words, struct Text *const wrap) {
 		}
 		/* Create scratch space. */
 		if(!(i_work = (WorkPoolClear(&work), WorkPoolNew(&work)))) break;
-		/*i_work->offset = */i_work->breaks = 0, i_work->minimum = 0;
+		/*i_work->offset = <--This doesn't use offset.*/
+		i_work->breaks = 0, i_work->minimum = 0;
 		if(TextAll(words, &add_words)) break;
-		printf("Init work:\n");
-		for(i = 0, i_work = 0; (i_work = WorkPoolNext(&work, i_work)); i++)
-			printf("%lu\t%lu\t%u\n", i, i_work->breaks, i_work->minimum);
+		/* Optimise. */
 		for(j = 0; j < count; j++) {
 			i = j;
 			do {
-				printf("index %lu\n", i);
 				i_work = WorkPoolGet(&work, i), assert(i_work);
 				s = slack[i * count + j];
 				c = s < 0 ? INT_MAX : i_work->minimum + s * s;
-				printf("cost %lu\n", c);
 				j1_work = WorkPoolGet(&work, j + 1), assert(j1_work);
-				if(j1_work->minimum > c) {
+				if(j1_work->minimum > c)
 					j1_work->minimum = (unsigned)c, j1_work->breaks = i;
-					printf("index: %lu\tminima: %u\tbreaks %lu\n", i, (unsigned)c, j1_work->breaks);
-				}
 			} while(i--);
 		}
 		done = 1;
-		for(j = 0; j < count; j++) {
-			printf("[");
-			for(i = 0; i < count; i++) {
-				printf("%d%s", slack[j * count + i], i == count - 1 ? "" : ", ");
-			}
-			printf("]\n");
-		}
 	} while(0); if(!done) perror("error");
 	free(slack), slack = 0;
 	return done && words_work_to_wrap(words, wrap);
@@ -303,7 +299,6 @@ static int divide_search(const size_t i0, const size_t j0,
 	return 1;
 }
 
-/** \url{ http://xxyxyz.org/line-breaking/ }. */
 static int divide(struct Text *const words, struct Text *const wrap) {
 	struct Work *x_work;
 	size_t n, i = 0, offset = 0, r, edge, x, j, y;
@@ -344,7 +339,7 @@ static const struct {
 	{ "Greedy", &greedy },
 	{ "Dynamic", &dynamic },
 	{ "Divide and Conquer", &divide }
-}, *algorthm = algorthms + 1;
+}, *algorthm = algorthms + 2;
 
 /** Expects {head} and {body} to be on the same directory as it is called from.
  Word wraps.
@@ -359,18 +354,21 @@ int main(void) {
 		if(!(text = Text()) || !(words = Text()) || !(wrap = Text()))
 			{ e = "Text"; break; }
 		/* Load all. In reality, would read from stdin, just testing. */
-		/*if(!(fp = fopen(head, "r"))
+#if 0
+		if(!(fp = fopen(head, "r"))
 			|| !TextFile(text, fp, head)
 			|| !pfclose(&fp)) { e = head; break; }
 		if(!TextNew(text)) { e = "edit"; break; }
 		if(!(fp = fopen(body, "r"))
 			|| !TextFile(text, fp, body)
 			|| !pfclose(&fp)) { e = body; break; }
-		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);*/
+		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
+#else
 		if(!(fp = fopen(para, "r"))
 		   || !TextFile(text, fp, body)
 		   || !pfclose(&fp)) { e = body; break; }
 		fprintf(stderr, "Loaded file <%s>.\n", para);
+#endif
 		/* Split the text into words and then wraps them. */
 		do {
 			/* Insert a double-break between paragraphs. */
