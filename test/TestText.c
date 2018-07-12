@@ -180,9 +180,9 @@ static unsigned cost(const size_t i, const size_t j) {
 static void print_work(void) {
 	struct Work *w;
 	size_t i;
-	printf("Line\tBreak\tMinima\n");
+	printf("Line\tOffset\tBreak\tMinima\n");
 	for(i = 0, w = 0; (w = WorkPoolNext(&work, w)); i++)
-		printf("%lu\t%lu\t%u\n", i, w->breaks, w->minimum);
+		printf("%lu\t%lu\t%lu\t%u\n", i, w->offset, w->breaks, w->minimum);
 }
 
 /** Called after getting {work} filled. */
@@ -273,28 +273,72 @@ static int dynamic(struct Text *const words, struct Text *const wrap) {
 	return done && words_work_to_wrap(words, wrap);
 }
 
+#if 0
+static int linear(struct Text *const words, struct Text *const wrap) {
+	struct Work *w;
+	size_t n, i = 0, offset = 0, r;
+	assert(words && wrap);
+	/* Set up work. */
+	if(!(w = (WorkPoolClear(&work), WorkPoolNew(&work)))) return 0;
+	w->offset = w->breaks = 0, w->minimum = 0;
+	if(TextAll(words, &add_words)) return 0;
+	/* n = count + 1 */
+	n = WorkPoolSize(&work);
+	for( ; ; ) {
+		r = 1 << (i + 1); if(r > n) r = n;
+		edge = (1 << i) + offset;
+		/*if(!divide_search(0 + offset, edge, edge, r + offset)) return 0;*/
+		work = WorkPoolGet(&work, r - 1 + offset);
+		assert(work);
+		x = work->minimum;
+		for(j = 1 << i; j < r - 1; j++) {
+			y = cost(j + offset, r - 1 + offset);
+			if(x < y) continue;
+			n -= j;
+			i = 0;
+			offset += j;
+			break;
+		}
+		if(j == r - 1) {
+			if(r == n) break;
+			i++;
+		}
+	}
+	return words_work_to_wrap(words, wrap);
+}
+#endif
+
 static int divide_search(const size_t i0, const size_t j0,
 	const size_t i1, const size_t j1) {
 	size_t j, i;
 	unsigned c;
 	struct Work *j_work;
-	struct Search *s = SearchPoolNew(&search), *t;
-	if(!s) return 0;
-	s->i0 = i0, s->j0 = j0, s->i1 = i1, s->j1 = j1;
+	struct Search s_copy, *s, *t;
+	if(!(s = SearchPoolNew(&search))) return 0;
+	s->i0 = i0, s->j0 = j0, s->i1 = i1, s->j1 = j1;/* stack = [(i0,j0,i1,j1)] */
+	printf("push %lu %lu %lu %lu (a)\n", s->i0, s->j0, s->i1, s->j1);
 	while((s = SearchPoolPop(&search))) {
+		assert(s);
+		printf("pop %lu %lu %lu %lu\n", s->i0, s->j0, s->i1, s->j1);
 		if(s->j0 >= s->j1) continue;
 		j = (s->j0 + s->j1) >> 1;
 		j_work = WorkPoolGet(&work, j), assert(j_work);
 		for(i = s->i0; i < s->i1; i++) {
 			c = cost(i, j);
 			if(c > j_work->minimum) continue;
+			printf("index %lu : cost %u breaks %lu\n", j, c, i);
 			j_work->minimum = c;
 			j_work->breaks = i;
 		}
+		memcpy(&s_copy, s, sizeof s_copy); /* The PoolNew invalidates. */
 		if(!(t = SearchPoolNew(&search))) return 0;
-		t->i0 = j_work->breaks, t->j0 = j + 1, t->i1 = s->i1, t->j1 = s->j1;
+		t->i0 = j_work->breaks, t->j0 = j + 1,
+			t->i1 = s_copy.i1, t->j1 = s_copy.j1;
+		printf("push %lu %lu %lu %lu (b)\n", t->i0, t->j0, t->i1, t->j1);
 		if(!(t = SearchPoolNew(&search))) return 0;
-		t->i0 = s->i0, t->j0 = s->j0, t->i1 = j_work->breaks + 1, t->j1 = j;
+		t->i0 = s_copy.i0, t->j0 = s_copy.j0,
+			t->i1 = j_work->breaks + 1, t->j1 = j;
+		printf("push %lu %lu %lu %lu (c)\n", t->i0, t->j0, t->i1, t->j1);
 	}
 	return 1;
 }
@@ -314,6 +358,7 @@ static int divide(struct Text *const words, struct Text *const wrap) {
 		x_work = WorkPoolGet(&work, r - 1 + offset);
 		assert(x_work);
 		x = x_work->minimum;
+		printf("minimum %lu\n", x);
 		for(j = 1 << i; j < r - 1; j++) {
 			y = cost(j + offset, r - 1 + offset);
 			if(x < y) continue;
@@ -365,8 +410,8 @@ int main(void) {
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 #else
 		if(!(fp = fopen(para, "r"))
-		   || !TextFile(text, fp, body)
-		   || !pfclose(&fp)) { e = body; break; }
+		   || !TextFile(text, fp, para)
+		   || !pfclose(&fp)) { e = para; break; }
 		fprintf(stderr, "Loaded file <%s>.\n", para);
 #endif
 		/* Split the text into words and then wraps them. */
