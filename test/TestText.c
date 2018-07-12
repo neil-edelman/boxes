@@ -174,7 +174,7 @@ static unsigned cost(const size_t i, const size_t j) {
 		*j_work = WorkPoolGet(&work, j);
 	const unsigned w = (unsigned)(j_work->offset - i_work->offset + j - i - 1);
 	assert(i_work && j_work);
-	return (w > 50) ? 30000 : i_work->minimum + (WIDTH - w) * (WIDTH - w);
+	return (w > WIDTH) ? 30000 : i_work->minimum + (WIDTH - w) * (WIDTH - w);
 }
 
 static void print_work(void) {
@@ -316,17 +316,14 @@ static int divide_search(const size_t i0, const size_t j0,
 	struct Search s_copy, *s, *t;
 	if(!(s = SearchPoolNew(&search))) return 0;
 	s->i0 = i0, s->j0 = j0, s->i1 = i1, s->j1 = j1;/* stack = [(i0,j0,i1,j1)] */
-	printf("push %lu %lu %lu %lu (a)\n", s->i0, s->j0, s->i1, s->j1);
 	while((s = SearchPoolPop(&search))) {
 		assert(s);
-		printf("pop %lu %lu %lu %lu\n", s->i0, s->j0, s->i1, s->j1);
 		if(s->j0 >= s->j1) continue;
 		j = (s->j0 + s->j1) >> 1;
 		j_work = WorkPoolGet(&work, j), assert(j_work);
 		for(i = s->i0; i < s->i1; i++) {
 			c = cost(i, j);
 			if(c > j_work->minimum) continue;
-			printf("index %lu : cost %u breaks %lu\n", j, c, i);
 			j_work->minimum = c;
 			j_work->breaks = i;
 		}
@@ -334,11 +331,9 @@ static int divide_search(const size_t i0, const size_t j0,
 		if(!(t = SearchPoolNew(&search))) return 0;
 		t->i0 = j_work->breaks, t->j0 = j + 1,
 			t->i1 = s_copy.i1, t->j1 = s_copy.j1;
-		printf("push %lu %lu %lu %lu (b)\n", t->i0, t->j0, t->i1, t->j1);
 		if(!(t = SearchPoolNew(&search))) return 0;
 		t->i0 = s_copy.i0, t->j0 = s_copy.j0,
 			t->i1 = j_work->breaks + 1, t->j1 = j;
-		printf("push %lu %lu %lu %lu (c)\n", t->i0, t->j0, t->i1, t->j1);
 	}
 	return 1;
 }
@@ -358,7 +353,6 @@ static int divide(struct Text *const words, struct Text *const wrap) {
 		x_work = WorkPoolGet(&work, r - 1 + offset);
 		assert(x_work);
 		x = x_work->minimum;
-		printf("minimum %lu\n", x);
 		for(j = 1 << i; j < r - 1; j++) {
 			y = cost(j + offset, r - 1 + offset);
 			if(x < y) continue;
