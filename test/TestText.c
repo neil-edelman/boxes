@@ -273,24 +273,123 @@ static int dynamic(struct Text *const words, struct Text *const wrap) {
 	return done && words_work_to_wrap(words, wrap);
 }
 
-#if 0
+static void index_to_string(const size_t *n, char (*const a)[12]) {
+	snprintf(*a, sizeof *a, "%lu", *n);
+}
+
+#define POOL_NAME Index
+#define POOL_TYPE size_t
+#define POOL_TO_STRING &index_to_string
+#define POOL_STACK
+#include "../src/Pool.h"
+
+static struct IndexPool stack;
+
+static int smawk_index(struct IndexPool *rows, struct IndexPool *const cols, const size_t col_start, const size_t col_skip) {
+	size_t i, *n, stack_start, stack_no, *c, *s, *r, rows_size, cst, *col, *row;
+	size_t j, cols_size, end;
+	struct Work *w;
+	assert(rows && cols);
+	printf("r,c %s %s (%lu::%lu)\n", IndexPoolToString(rows),
+		IndexPoolToString(cols), col_start, col_skip);
+	stack_start = IndexPoolSize(&stack); /* stack = [] */
+	i = 0;
+	rows_size = IndexPoolSize(rows);
+	while(i < rows_size) {
+		printf("i %lu stack %s (start %lu) rows %s\n", i, IndexPoolToString(&stack), stack_start, IndexPoolToString(rows));
+		r = IndexPoolGet(rows, i), assert(r);
+		stack_no = IndexPoolSize(&stack);
+		if(stack_no > stack_start) {
+			c = IndexPoolGet(cols, col_start + (stack_no - 1) * col_skip), assert(c);
+			s = IndexPoolGet(&stack, stack_no - 1), assert(s);
+			if(cost(*s, *c) < cost(*r, *c)) {
+				if(stack_no < IndexPoolSize(cols)) {
+					if(!(n = IndexPoolNew(&stack))) return 0;
+					*n = *r;
+				}
+				i++;
+			} else {
+				IndexPoolPop(&stack);
+			}
+		} else {
+			if(!(n = IndexPoolNew(&stack))) return 0;
+			*n = *r;
+		}
+		i++;
+	}
+	IndexPoolClear(rows);
+	rows = &stack; /* what? */
+
+	if(IndexPoolSize(cols) > 1) {
+		printf("Recursing with %s (%lu::%lu).\n", IndexPoolToString(cols), col_start + 1, col_skip << 1);
+		smawk_index(rows, cols, col_start + 1, col_skip << 1);
+	}
+
+	i = 0;
+	j = col_start;
+	cols_size = IndexPoolSize(cols);
+	while(j < cols_size) {
+		if(j + 1 < cols_size) {
+			size_t *idx = IndexPoolGet(cols, j + 1);
+			assert(idx);
+			w = WorkPoolGet(&work, *idx);
+			end = w->breaks;
+		} else {
+			end = *IndexPoolGet(rows, IndexPoolSize(rows) - 1);
+		}
+		col = IndexPoolGet(cols, j), assert(col);
+		row = IndexPoolGet(rows, i), assert(row);
+		cst = cost(*row, *col);
+		w = WorkPoolGet(&work, *col), assert(w);
+		if(cst < w->minimum) {
+			w->minimum = (unsigned)cst;
+			w->breaks = *row;
+			if(*row < end) i += 1;
+		} else {
+			j += 2 * col_skip;
+		}
+	}
+	return 1;
+}
+
+static int smawk(struct IndexPool *rows, struct IndexPool *const cols) {
+	assert(rows && cols);
+	IndexPoolClear(&stack);
+	return smawk_index(rows, cols, 0, 1);
+}
+
 static int linear(struct Text *const words, struct Text *const wrap) {
 	struct Work *w;
-	size_t n, i = 0, offset = 0, r;
+	struct IndexPool rows, cols;
+	size_t n, i = 0, offset = 0, r, edge, j, y;
+	unsigned x;
 	assert(words && wrap);
+	IndexPool(&rows), IndexPool(&cols);
 	/* Set up work. */
 	if(!(w = (WorkPoolClear(&work), WorkPoolNew(&work)))) return 0;
 	w->offset = w->breaks = 0, w->minimum = 0;
 	if(TextAll(words, &add_words)) return 0;
-	/* n = count + 1 */
-	n = WorkPoolSize(&work);
+	n = WorkPoolSize(&work); /* n = count + 1 */
 	for( ; ; ) {
 		r = 1 << (i + 1); if(r > n) r = n;
 		edge = (1 << i) + offset;
-		/*if(!divide_search(0 + offset, edge, edge, r + offset)) return 0;*/
-		work = WorkPoolGet(&work, r - 1 + offset);
-		assert(work);
-		x = work->minimum;
+		{ /* Put in the {rows}, {cols}. */
+			const size_t end = r + offset;
+			size_t range, *idx;
+			IndexPoolClear(&rows);
+			for(range = offset; range < edge; range++) {
+				if(!(idx = IndexPoolNew(&rows))) return 0;
+				*idx = range;
+			}
+			IndexPoolClear(&cols);
+			for(range = edge; range < end; range++) {
+				if(!(idx = IndexPoolNew(&cols))) return 0;
+				*idx = range;
+			}
+		}
+		if(!smawk(&rows, &cols)) return 0;
+		w = WorkPoolGet(&work, r - 1 + offset), assert(w);
+		x = w->minimum;
 		for(j = 1 << i; j < r - 1; j++) {
 			y = cost(j + offset, r - 1 + offset);
 			if(x < y) continue;
@@ -306,7 +405,6 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 	}
 	return words_work_to_wrap(words, wrap);
 }
-#endif
 
 static int divide_search(const size_t i0, const size_t j0,
 	const size_t i1, const size_t j1) {
@@ -377,8 +475,9 @@ static const struct {
 } algorthms[] = {
 	{ "Greedy", &greedy },
 	{ "Dynamic", &dynamic },
-	{ "Divide and Conquer", &divide }
-}, *algorthm = algorthms + 2;
+	{ "Divide and Conquer", &divide },
+	{ "Smawk", &linear }
+}, *algorthm = algorthms + 3;
 
 /** Expects {head} and {body} to be on the same directory as it is called from.
  Word wraps.
@@ -425,6 +524,7 @@ int main(void) {
 	} while(0); if(e) perror(e); /* Catch. */
 	if(!pfclose(&fp)) perror("shutdown"); /* Finally. */
 	Text_(&wrap), Text_(&words), Text_(&text);
-	WorkPool_(&work), SearchPool(&search); /* Clear any temp values. */
+	/* Clear any temp values. */
+	WorkPool_(&work), SearchPool_(&search), IndexPool_(&stack);
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
