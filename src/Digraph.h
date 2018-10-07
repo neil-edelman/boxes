@@ -6,28 +6,32 @@
  the data types. In particular, there only option by default to know if a graph
  contains an element is an exhaustive search. The preprocessor macros are all
  undefined at the end of the file for convenience. Diagraphs are rooted (or
- else one would have no way of entering the digraph deterministally,) so they
+ else one would have no way of entering the digraph deterministically,) so they
  can be used as trees, DAGs, or any other graph-like structure, but one must
  enforce the topology elsewhere.
 
  If one wants to supply a dynamic {Pool} for the vertices, be sure to call
  \see{<G>DigraphVertexMigrateAll} somewhere in the {POOL_MIGRATE_ALL}; also, if
  a {Pool} is used for edges, than you must call {<G>VertexLinkMigrate} with
- {data} and {EdgeListSelfCorrect} with {data.out} in the function suppiled by
+ {data} and {EdgeListSelfCorrect} with {data.out} in the function supplied by
  {POOL_MIGRATE_EACH} for vertices.
 
  @param DIGRAPH_NAME
  This literally becomes {<G>}. As it's used in function names, this should
  comply with naming rules and be unique; required.
 
+ @param DIGRAPH_FLOW
+ Instead of \see{<G>DigraphSetRoot}, it will have two special vertices,
+ \see{<G>DigraphSetSource} and \see{<G>DigraphSetSink}. The functioning is the
+ same, but this is a convenience option that saves time setting up a
+ \see{<G>DigraphVertexMigrateAll} for one sink.
+
  @param DIGRAPH_VDATA, DIGRAPH_EDATA
  The optional type(s) associated with {<V>} and {<E>} to store on each vertex
  and edge. Have to be valid types, accessible to the compiler at the time of
  inclusion. For example, if one were doing DFS, you would include some sort of
  structure that had visited in {DIGRAPH_VDATA}, or colour for graph colouring,
- or distance for Dijkstra's or A*. One can set a {start} vertex with
- \see{<G>DigraphStart}, but depending on the algorithm, one may need {is_sink}.
- Currently, there is no data type for the graph itself.
+ or distance for Dijkstra's or A*.
 
  @param DIGRAPH_VDATA_TO_STRING, DIGRAPH_EDATA_TO_STRING
  Optional print function(s) implementing {<G>VDataToString} and
@@ -272,7 +276,11 @@ static int PG_(vertex_comparator)(const struct G_(Vertex) *a,
 struct G_(Digraph);
 struct G_(Digraph) {
 	struct G_(VertexList) vertices;
+#ifdef DIGRAPH_FLOW /* <-- flow */
+	struct G_(Vertex) *source, *sink;
+#else /* flow --><-- !flow */
 	struct G_(Vertex) *root;
+#endif /* !flow --> */
 };
 
 
@@ -293,7 +301,11 @@ static void PG_(e_clear)(struct G_(Edge) *const e, struct G_(Vertex) *const v) {
 /** Initialises the graph to empty. */
 static void PG_(clear)(struct G_(Digraph) *const g) {
 	G_(VertexListClear)(&g->vertices);
+#ifdef DIGRAPH_FLOW /* <-- flow */
+	g->source = g->sink = 0;
+#else /* flow --><-- !flow */
 	g->root = 0;
+#endif /* !flow --> */
 }
 
 /** Destructor for {g}.
@@ -347,14 +359,20 @@ static E *G_(DigraphEdgeData)(struct G_(Edge) *const edge) {
  @allow */
 static void G_(DigraphPutVertex)(struct G_(Digraph) *const g,
 	struct G_(Vertex) *const v) {
-	char a[12];
+	/*char a[12];*/
 	if(!v) return;
 	PG_(v_clear)(v);
 	if(!g) return;
-	if(!G_(VertexListFirst)(&g->vertices)) g->root = v;
+	if(!G_(VertexListFirst)(&g->vertices)) {
+#ifdef DIGRAPH_FLOW /* <-- flow */
+		g->source = g->sink = v;
+#else /* flow --><-- !flow */
+		g->root = v;
+#endif /* !flow --> */
+	}
 	G_(VertexListPush)(&g->vertices, v);
-	PG_(vertex_to_string)(v, &a);
-	/* printf("digraph vertex %s.\n", a); G_(VertexListAudit)(&g->vertices); */
+	/* PG_(vertex_to_string)(v, &a);
+	printf("digraph vertex %s.\n", a); G_(VertexListAudit)(&g->vertices); */
 }
 
 /** Undefined behaviour results from adding edges that have already been added.
@@ -371,8 +389,58 @@ static void G_(DigraphPutEdge)(struct G_(Edge) *e,
 	G_(EdgeListAudit)(&from->out);
 }
 
+#ifdef DIGRAPH_FLOW /* <-- flow */
+
+/** Sets the source vertex returned by \see{<G>DigraphGetSource}. By default,
+ the source is the first vertex added.
+ @param g, source: If null, does nothing.
+ @param source: A vertex in the graph. Undefined behaviour if it is set to a
+ vertex not in the graph.
+ @order \Theta(1)
+ @allow */
+static void G_(DigraphSetSource)(struct G_(Digraph) *const g,
+	struct G_(Vertex) *const source) {
+	if(!g || !source) return;
+	g->source = source;
+}
+
+/** Retrieves the source vertex or null if {g} is empty or null.
+ @param g: If null, does nothing.
+ @order \Theta(1)
+ @allow */
+static struct G_(Vertex) *G_(DigraphGetSource)(const struct G_(Digraph) *const
+	g) {
+	if(!g) return 0;
+	return g->source;
+}
+
+/** Sets the sink vertex returned by \see{<G>DigraphGetSink}. By default,
+ the sink is the first vertex added. If {DIGRAPH_FLOW}.
+ @param g, sink: If null, does nothing.
+ @param sink: A vertex in the graph. Undefined behaviour if it is set to a
+ vertex not in the graph.
+ @order \Theta(1)
+ @allow */
+static void G_(DigraphSetSink)(struct G_(Digraph) *const g,
+	struct G_(Vertex) *const sink) {
+	if(!g || !sink) return;
+	g->sink = sink;
+}
+
+/** Retrieves the sink vertex or null if {g} is empty or null. If
+ {DIGRAPH_FLOW}.
+ @param g: If null, does nothing.
+ @order \Theta(1)
+ @allow */
+static struct G_(Vertex) *G_(DigraphGetSink)(const struct G_(Digraph) *const g){
+	if(!g) return 0;
+	return g->sink;
+}
+
+#else /* flow --><-- !flow */
+
 /** Sets the starting vertex returned by \see{<G>DigraphGetRoot}. By default,
- the root is the first vertex added.
+ the root is the first vertex added. If not {DIGRAPH_FLOW}.
  @param g, root: If null, does nothing.
  @param root: A vertex in the graph. Undefined behaviour if it is set to a
  vertex not in the graph.
@@ -384,13 +452,17 @@ static void G_(DigraphSetRoot)(struct G_(Digraph) *const g,
 	g->root = root;
 }
 
-/** Retrieves the starting vertex or null if {g} is empty or null.
+/** Retrieves the starting vertex or null if {g} is empty or null. If not
+ {DIGRAPH_FLOW}.
+ @param g: If null, does nothing.
  @order \Theta(1)
  @allow */
 static struct G_(Vertex) *G_(DigraphGetRoot)(const struct G_(Digraph) *const g){
 	if(!g) return 0;
 	return g->root;
 }
+
+#endif /* !flow --> */
 
 #if defined(DIGRAPH_VDATA_COMPARATOR) || defined(DIGRAPH_EDATA_COMPARATOR)
 	/* <-- sort */
@@ -435,10 +507,18 @@ static int G_(DigraphOut)(const struct G_(Digraph) *const g,
 			"\tlabel = \"%s\";\n", title);
 	}
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
+		int peripheries = 1;
+#ifdef DIGRAPH_FLOW /* <-- flow */
+		if(v == g->source) peripheries = 3;
+		else if(v == g->sink) peripheries = 2;
+#else /* flow --><-- !flow */
+		if(v == g->root) peripheries = 2;
+#endif /* !flow --> */		
 		v_no = (unsigned long)v;
 		PG_(vertex_to_string)(v, &a);
 		if(fprintf(fp, "\tv%lu [label = \"%s\"%s];\n", v_no, a,
-			v == g->root ? " peripheries = 2" : "") < 0) return 0;
+			peripheries > 1 ? peripheries > 2 ? " peripheries = 3"
+			: " peripheries = 2" : "") < 0) return 0;
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			v_to = (unsigned long)e->to;
 			PG_(edge_to_string)(e, &a);
@@ -465,7 +545,12 @@ static void G_(DigraphVertexMigrateAll)(struct G_(Digraph) *const g,
 	struct G_(Edge) *e = 0;
 	if(!G_(VertexListFirst)(&g->vertices)) return;
 	/*printf("Diagraph<"QUOTE(DIGRAPH_NAME)">::VertexMigrateAll:\n");*/
+#ifdef DIGRAPH_FLOW /* <-- flow */
+	G_(VertexLinkMigratePointer)(&g->source, migrate);
+	G_(VertexLinkMigratePointer)(&g->sink, migrate);
+#else /* flow --><-- !flow */
 	G_(VertexLinkMigratePointer)(&g->root, migrate);
+#endif /* !flow --> */
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e))
 			G_(VertexLinkMigratePointer)(&e->to, migrate);
@@ -492,8 +577,15 @@ static void PG_(unused)(void) {
 #endif /* edata --> */
 	G_(DigraphPutVertex)(0, 0);
 	G_(DigraphPutEdge)(0, 0, 0);
+#ifdef DIGRAPH_FLOW /* <-- flow */
+	G_(DigraphSetSource)(0, 0);
+	G_(DigraphGetSource)(0);
+	G_(DigraphSetSink)(0, 0);
+	G_(DigraphGetSink)(0);
+#else /* flow --><-- !flow */
 	G_(DigraphSetRoot)(0, 0);
 	G_(DigraphGetRoot)(0);
+#endif /* !flow --> */
 #if defined(DIGRAPH_VDATA_COMPARATOR) || defined(DIGRAPH_EDATA_COMPARATOR)
 	/* <-- sort */
 	G_(DigraphSort)(0);
@@ -529,6 +621,9 @@ static void PG_(unused_coda)(void) { PG_(unused)(); }
 #undef E
 #endif
 #undef DIGRAPH_NAME
+#ifdef DIGRAPH_FLOW
+#undef DIGRAPH_FLOW
+#endif
 #ifdef DIGRAPH_VDATA
 #undef DIGRAPH_VDATA
 #endif

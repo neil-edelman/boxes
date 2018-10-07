@@ -82,6 +82,26 @@ static void E_filler(struct E *const e) {
 
 
 
+/* Dijstra */
+/** @implements <int>ToString */
+static void int_to_string(const int *v, char (*const a)[12]) {
+	sprintf(*a, "%.11d", *v);
+}
+/** @implements <int>Action */
+static void int_filler(int *const v) {
+	*v = rand();
+}
+
+#define DIGRAPH_NAME Dijstra
+#define DIGRAPH_FLOW
+#define DIGRAPH_VDATA int
+#define DIGRAPH_VDATA_TO_STRING &int_to_string
+#define DIGRAPH_VDATA_TEST &int_filler
+#define DIGRAPH_TEST
+#include "../src/Digraph.h"
+
+
+
 /* A more complex example using dynamic memory. */
 
 struct Machine;
@@ -422,6 +442,7 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	BlankDigraphTest();
 	ColourDigraphTest();
+	DijstraDigraphTest();
 	/* Custom. */
 	for(i = 0; i < ms_size; i++) {
 		const struct Machines *const m = ms + i;

@@ -13,11 +13,26 @@ static const PG_(EDataAction) PG_(edata_filler) = (DIGRAPH_EDATA_TEST);
 static void PG_(valid_state)(const struct G_(Digraph) *const g) {
 	struct G_(Vertex) *v, *v1;
 	struct G_(Edge) *e;
-	int is_root = 1, is_edge;
+	int is_edge;
+#ifdef DIGRAPH_FLOW /* <-- flow */
+	int is_source = 1, is_sink = 1;
+#else /* flow --><-- !flow */
+	int is_root = 1;
+#endif /* !flow --> */
 	if(!g) return;
+#ifdef DIGRAPH_FLOW /* <-- flow */
+	assert(!g->source == !g->sink);
+	if(g->source) is_source = is_sink = 0;
+#else /* flow --><-- !flow */
 	if(g->root) is_root = 0;
+#endif /* !flow --> */
 	for(v = G_(VertexListFirst)(&g->vertices); v; v = G_(VertexListNext)(v)) {
-		if(g->root == v) is_root = 1;
+#ifdef DIGRAPH_FLOW /* <-- flow */
+		if(v == g->source) is_source = 1;
+		if(v == g->sink)   is_sink = 1;
+#else /* flow --><-- !flow */
+		if(v == g->root) is_root = 1;
+#endif /* !flow --> */
 		for(e = G_(EdgeListFirst)(&v->out); e; e = G_(EdgeListNext)(e)) {
 			is_edge = 0;
 			for(v1 = G_(VertexListFirst)(&g->vertices); v1;
@@ -27,8 +42,14 @@ static void PG_(valid_state)(const struct G_(Digraph) *const g) {
 			assert(is_edge);
 		}
 	}
+	(void)is_edge;
+#ifdef DIGRAPH_FLOW /* <-- flow */
+	assert(is_source && is_sink);
+	(void)is_source, (void)is_sink;
+#else /* flow --><-- !flow */
 	assert(is_root);
-	(void)is_root, (void)is_edge;
+	(void)is_root;
+#endif /* !flow --> */
 }
 
 static void PG_(test_basic)(void) {
