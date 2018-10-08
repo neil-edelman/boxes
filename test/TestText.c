@@ -285,28 +285,38 @@ static void index_to_string(const size_t *n, char (*const a)[12]) {
 
 static struct Slice {
 	struct IndexPool data;
-	size_t start, skip, size;
+	size_t start, skip;
 } stack;
+
+static size_t slice_size(const struct Slice *const slice) {
+	assert(slice && slice->start <= IndexPoolSize(&slice->data)
+		&& slice->skip > 0);
+	return (IndexPoolSize(&slice->data) - slice->start + slice->skip - 1)
+		/ slice->skip;
+}
 
 static int smawk_slice(struct Slice *rows, struct Slice *cols) {
 	size_t i, *n, *c, *s, *r, cst, *col, *row;
 	size_t j, end;
+	size_t rows_size, stack_size, cols_size;
 	struct Work *w;
-	assert(rows && cols);
+	assert(rows && cols && rows->start <= IndexPoolSize(&rows->data)
+		&& cols->start <= IndexPoolSize(&cols->data)
+		&& rows->skip > 0 && cols->skip > 0);
 	printf("_r,c_ %s %s@%lu::%lu\n", IndexPoolToString(&rows->data),
 		IndexPoolToString(&cols->data), cols->start, cols->skip);
 	stack.start = IndexPoolSize(&stack.data); /* stack = [] */
 	i = 0;
-	rows->size = IndexPoolSize(&rows->data);
-	while(i < rows->size) { /* while i < len(rows) */
+	rows_size = slice_size(rows);
+	while(i < rows_size) { /* while i < len(rows) */
 		printf("i %lu stack %s@%lu: rows %s\n", i, IndexPoolToString(&stack.data), stack.start, IndexPoolToString(&rows->data));
 		r = IndexPoolGet(&rows->data, i), assert(r);
-		stack.size = IndexPoolSize(&stack.data);
-		if(stack.size > stack.start) { /* if stack */
-			c = IndexPoolGet(&cols->data, cols->start + (stack.size - stack.start - 1) * cols->skip), assert(c);
-			s = IndexPoolGet(&stack.data, stack.size - 1), assert(s);
+		stack_size = slice_size(&stack);
+		if(stack_size > stack.start) { /* if stack */
+			c = IndexPoolGet(&cols->data, cols->start + (stack_size - stack.start - 1) * cols->skip), assert(c);
+			s = IndexPoolGet(&stack.data, stack_size - 1), assert(s);
 			if(cost(*s, *c) < cost(*r, *c)) {
-				if(stack.size < IndexPoolSize(&cols->data)) {
+				if(stack_size < slice_size(cols)/*IndexPoolSize(&cols->data)*/) {
 					if(!(n = IndexPoolNew(&stack.data))) return 0;
 					*n = *r;
 				}
@@ -320,7 +330,7 @@ static int smawk_slice(struct Slice *rows, struct Slice *cols) {
 			*n = *r;
 			i++;
 		}
-		printf("i %lu rows %lu\n", i, rows->size);
+		printf("i %lu rows %lu\n", i, rows_size);
 	}
 	IndexPoolClear(&rows->data);
 	rows->data = stack.data; /* what? */
@@ -335,9 +345,9 @@ static int smawk_slice(struct Slice *rows, struct Slice *cols) {
 
 	i = 0;
 	j = cols->start;
-	cols->size = IndexPoolSize(&cols->data);
-	while(j < cols->size) {
-		if(j + 1 < cols->size) {
+	cols_size = slice_size(cols);
+	while(j < cols_size) {
+		if(j + 1 < cols_size) {
 			size_t *idx = IndexPoolGet(&cols->data, j + 1);
 			assert(idx);
 			w = WorkPoolGet(&work, *idx);
@@ -366,6 +376,7 @@ static int smawk(struct Slice *rows, struct Slice *const cols) {
 	IndexPoolClear(&stack.data);
 	rows->start = 0, rows->skip = 1;
 	cols->start = 0, cols->skip = 1;
+	stack.skip = 1;
 	return smawk_slice(rows, cols);
 }
 
