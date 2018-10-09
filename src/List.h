@@ -1673,8 +1673,8 @@ static T *T_U_(List, BiAll)(struct T_(List) *const list,
 #ifndef LIST_PRINT_THINGS /* <-- once inside translation unit */
 #define LIST_PRINT_THINGS
 
-static const char *const list_cat_start     = "{ ";
-static const char *const list_cat_end       = " }";
+static const char *const list_cat_start     = "{";
+static const char *const list_cat_end       = "}";
 static const char *const list_cat_alter_end = "...}";
 static const char *const list_cat_sep       = ", ";
 static const char *const list_cat_star      = "*";
