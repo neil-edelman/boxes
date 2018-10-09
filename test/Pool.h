@@ -696,8 +696,8 @@ static void T_(PoolMigratePointer)(T **const data_ptr,
 #ifndef POOL_PRINT_THINGS /* <-- once inside translation unit */
 #define POOL_PRINT_THINGS
 
-static const char *const pool_cat_start     = "[ ";
-static const char *const pool_cat_end       = " ]";
+static const char *const pool_cat_start     = "[";
+static const char *const pool_cat_end       = "]";
 static const char *const pool_cat_alter_end = "...]";
 static const char *const pool_cat_sep       = ", ";
 static const char *const pool_cat_star      = "*";
