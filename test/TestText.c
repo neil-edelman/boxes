@@ -283,10 +283,12 @@ static void index_to_string(const size_t *n, char (*const a)[12]) {
 #define POOL_STACK
 #include "../src/Pool.h"
 
-static struct Slice {
+static struct IndexPool stack;
+
+struct Slice {
 	struct IndexPool data;
 	size_t start, skip;
-} stack;
+};
 
 static size_t slice_size(const struct Slice *const slice) {
 	assert(slice && slice->start <= IndexPoolSize(&slice->data)
@@ -298,42 +300,55 @@ static size_t slice_size(const struct Slice *const slice) {
 static int smawk_slice(struct Slice *rows, struct Slice *cols) {
 	size_t i, *n, *c, *s, *r, cst, *col, *row;
 	size_t j, end;
-	size_t rows_size, stack_size, cols_size;
+	size_t rows_size, stack_size, cols_size, stack_start;
 	struct Work *w;
 	assert(rows && cols && rows->start <= IndexPoolSize(&rows->data)
 		&& cols->start <= IndexPoolSize(&cols->data)
 		&& rows->skip > 0 && cols->skip > 0);
 	printf("_r,c_ %s %s@%lu::%lu\n", IndexPoolToString(&rows->data),
 		IndexPoolToString(&cols->data), cols->start, cols->skip);
-	stack.start = IndexPoolSize(&stack.data); /* stack = [] */
+	stack_start = IndexPoolSize(&stack); /* stack = [] */
 	i = 0;
 	rows_size = slice_size(rows);
 	while(i < rows_size) { /* while i < len(rows) */
-		printf("i %lu stack %s@%lu: rows %s\n", i, IndexPoolToString(&stack.data), stack.start, IndexPoolToString(&rows->data));
+		printf("i %lu stack %s@%lu: rows %s\n", i, IndexPoolToString(&stack), stack_start, IndexPoolToString(&rows->data));
 		r = IndexPoolGet(&rows->data, i), assert(r);
-		stack_size = slice_size(&stack);
-		if(stack_size > stack.start) { /* if stack */
-			c = IndexPoolGet(&cols->data, cols->start + (stack_size - stack.start - 1) * cols->skip), assert(c);
-			s = IndexPoolGet(&stack.data, stack_size - 1), assert(s);
+		stack_size = IndexPoolSize(&stack);
+		printf("[stack_size %lu > stack_start %lu]? %s\n", stack_size, stack_start, IndexPoolToString(&stack));
+		if(stack_size > stack_start) { /* if stack */
+			c = IndexPoolGet(&cols->data, cols->start + (stack_size - stack_start - 1) * cols->skip), assert(c);
+			s = IndexPoolGet(&stack, stack_size - 1), assert(s);
+			printf("[cost(*s, *c) %u < cost(*r, *c) %u]?\n", cost(*s, *c), cost(*r, *c));
 			if(cost(*s, *c) < cost(*r, *c)) {
+				printf("[stack_size %lu < slice_size(cols) %lu]? %s\n", stack_size, slice_size(cols), IndexPoolToString(&stack));
 				if(stack_size < slice_size(cols)/*IndexPoolSize(&cols->data)*/) {
-					if(!(n = IndexPoolNew(&stack.data))) return 0;
+					if(!(n = IndexPoolNew(&stack))) return 0;
 					*n = *r;
 				}
 				i++;
 			} else {
 				printf("stack pop\n");
-				IndexPoolPop(&stack.data);
+				IndexPoolPop(&stack);
 			}
 		} else {
-			if(!(n = IndexPoolNew(&stack.data))) return 0;
+			if(!(n = IndexPoolNew(&stack))) return 0;
 			*n = *r;
 			i++;
 		}
 		printf("i %lu rows %lu\n", i, rows_size);
 	}
 	IndexPoolClear(&rows->data);
-	rows->data = stack.data; /* what? */
+	/*rows->data = stack; *//* what does that even mean? */
+	printf("**%s** -> %s\n", IndexPoolToString(&stack), IndexPoolToString(&rows->data));
+	/* fixme: deep copy :[ ? */
+	{
+		size_t *cursor = 0, *copy;
+		while((cursor = IndexPoolNext(&stack, cursor))) {
+			printf("next %lu\n", *cursor);
+			if(!(copy = IndexPoolNew(&rows->data))) return 0;
+			*copy = *cursor;
+		}
+	}
 
 	if(IndexPoolSize(&cols->data) - cols->start > 1) {
 		struct Slice sub;
@@ -373,10 +388,9 @@ static int smawk_slice(struct Slice *rows, struct Slice *cols) {
 
 static int smawk(struct Slice *rows, struct Slice *const cols) {
 	assert(rows && cols);
-	IndexPoolClear(&stack.data);
+	IndexPoolClear(&stack);
 	rows->start = 0, rows->skip = 1;
 	cols->start = 0, cols->skip = 1;
-	stack.skip = 1;
 	return smawk_slice(rows, cols);
 }
 
@@ -547,6 +561,6 @@ int main(void) {
 	if(!pfclose(&fp)) perror("shutdown"); /* Finally. */
 	Text_(&wrap), Text_(&words), Text_(&text);
 	/* Clear any temp values. */
-	WorkPool_(&work), SearchPool_(&search), IndexPool_(&stack.data);
+	WorkPool_(&work), SearchPool_(&search), IndexPool_(&stack);
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
