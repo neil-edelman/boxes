@@ -285,8 +285,6 @@ static void index_to_string(const size_t *n, char (*const a)[12]) {
 #define POOL_STACK
 #include "../src/Pool.h"
 
-static struct IndexPool stack;
-
 /*
 static int slice(const struct IndexPool *const src, struct IndexPool *const dst,
 	const size_t start, const size_t skip) {
@@ -302,72 +300,63 @@ static int slice(const struct IndexPool *const src, struct IndexPool *const dst,
 }
 */
 
-static int smawk_slice(struct IndexPool */*const*/ rows,
-	struct IndexPool *const cols) {
+static int smawk_slice(const struct IndexPool *const rows,
+	struct IndexPool *const rows2, const struct IndexPool *const cols) {
 	size_t i, *n, *c, *s, *r, *col, *row;
 	size_t j, end;
-	size_t stack_size, rows_size, cols_size;
+	size_t rows_size, rows2_size, cols_size;
 	unsigned cst;
 	struct Work *w;
-	assert(rows && cols);
-	printf("_r,c_ %s %s\n", IndexPoolToString(rows), IndexPoolToString(cols));
-	IndexPoolClear(&stack); /* stack = [] */
+	assert(rows && rows2 && cols);
+	printf("<< start smawk rows %s cols %s\n", IndexPoolToString(rows), IndexPoolToString(cols));
+	IndexPoolClear(rows2); /* stack = [] */
 	i = 0;
 	rows_size = IndexPoolSize(rows);
 	while(i < rows_size) { /* while i < len(rows) */
-		printf("i %lu stack %s rows %s\n", i, IndexPoolToString(&stack), IndexPoolToString(rows));
+		printf("i %lu rows %s rows2 %s\n", i, IndexPoolToString(rows), IndexPoolToString(rows2));
 		r = IndexPoolGet(rows, i), assert(r);
-		stack_size = IndexPoolSize(&stack);
-		if(stack_size) { /* if stack */
+		if((rows2_size = IndexPoolSize(rows2))) { /* if stack */
 			unsigned cost_sc, cost_rc;
-			c = IndexPoolGet(cols, stack_size - 1), assert(c);
-			s = IndexPoolGet(&stack, stack_size - 1), assert(s);
+			c = IndexPoolGet(cols,  rows2_size - 1), assert(c);
+			s = IndexPoolGet(rows2, rows2_size - 1), assert(s);
 			printf("<-- A\n");
 			cost_sc = cost(*s, *c);
 			cost_rc = cost(*r, *c);
 			printf("[cost_sc %u < cost_rc %u ]? A -->\n", cost_sc, cost_rc);
 			/*printf("work %u\n", w);*/
 			if(cost_sc/*(*s, *c)*/ < cost_rc/*(*r, *c)*/) {
-				printf("[stack_size %lu < size(cols) %lu ]? %s\n", stack_size, IndexPoolSize(cols), IndexPoolToString(&stack));
-				if(stack_size < IndexPoolSize(cols)) {
-					if(!(n = IndexPoolNew(&stack))) return 0;
+				printf("[rows2_size %lu < size(cols) %lu ]? %s\n", rows2_size, IndexPoolSize(cols), IndexPoolToString(rows2));
+				if(rows2_size < IndexPoolSize(cols)) {
+					printf("(a) rows2 <- %lu\n", *r);
+					if(!(n = IndexPoolNew(rows2))) return 0;
 					*n = *r;
 				}
 				i++;
 			} else {
-				printf("stack pop\n");
-				IndexPoolPop(&stack);
+				printf("rows2 pop\n");
+				IndexPoolPop(rows2);
 			}
 		} else {
-			if(!(n = IndexPoolNew(&stack))) return 0;
+			printf("(b) rows2 <- %lu\n", *r);
+			if(!(n = IndexPoolNew(rows2))) return 0;
 			*n = *r;
 			i++;
 		}
-		printf("i %lu rows %lu\n", i, rows_size);
 	}
-	IndexPoolClear(rows);
-	/**rows = stack;*/ /* what does that even mean? */
-	/*printf("**%s** -> %s\n", IndexPoolToString(&stack), IndexPoolToString(rows));*/
-	/* fixme: deep copy :[ ? */
-	{
-		size_t *cursor = 0, *copy;
-		while((cursor = IndexPoolNext(&stack, cursor))) {
-			if(!(copy = IndexPoolNew(rows))) return 0;
-			*copy = *cursor;
-		}
-	}
+	printf("rows %s <- rows2 %s\n", IndexPoolToString(rows), IndexPoolToString(rows2));
 
 	cols_size = IndexPoolSize(cols);
-	if(IndexPoolSize(cols) > 1) {
-		struct IndexPool sub; /* fixme */
+	if(cols_size > 1) {
+		struct IndexPool cols2, rows3; /* fixme */
 		size_t *item;
-		IndexPool(&sub);
+		IndexPool(&cols2);
 		for(i = 1; i < cols_size; i += 2) {
-			if(!(item = IndexPoolNew(&sub))) break;
+			if(!(item = IndexPoolNew(&cols2))) break;
 			*item = *IndexPoolGet(cols, i);
 		}
-		if(!(i < cols_size)) printf("recursing with %s\n", IndexPoolToString(&sub)), smawk_slice(rows, &sub);
-		IndexPool_(&sub);
+		IndexPool(&rows3);
+		if(!(i < cols_size)) printf("recursing with rows2 %s cols2 %s {\n", IndexPoolToString(rows2), IndexPoolToString(&cols2)), smawk_slice(rows2, &rows3, &cols2), printf("} rows2 %s\n", IndexPoolToString(rows2));
+		IndexPool_(&cols2);
 		if(i < cols_size) return 0;
 	}
 
@@ -379,11 +368,11 @@ static int smawk_slice(struct IndexPool */*const*/ rows,
 			w = WorkPoolGet(&work, *idx);
 			end = w->breaks;
 		} else {
-			end = *IndexPoolGet(rows, IndexPoolSize(rows)/*rows_size?*/ - 1);
+			end = *IndexPoolGet(rows2, IndexPoolSize(rows2)/*rows_size?*/ - 1);
 		}
 		col = IndexPoolGet(cols, j), assert(col);
-		row = IndexPoolGet(rows, i), assert(row);
-		printf("<-- B i %lu rows %s j %lu cols %s end %lu\n", i, IndexPoolToString(rows), j, IndexPoolToString(cols), end);
+		row = IndexPoolGet(rows2, i), assert(row);
+		printf("<-- B i %lu rows2 %s j %lu cols %s end %lu\n", i, IndexPoolToString(rows2), j, IndexPoolToString(cols), end);
 		cst = cost(*row, *col);
 		w = WorkPoolGet(&work, *col), assert(w);
 		printf("[ %u < %u ] B -->\n", cst, w->minimum);
@@ -394,23 +383,23 @@ static int smawk_slice(struct IndexPool */*const*/ rows,
 		if(*row < end) i += 1;
 		else j += 2;
 	}
-	printf("=end smawk=\n");
+	printf(">> end smawk rows %s rows2 %s\n", IndexPoolToString(rows), IndexPoolToString(rows2));
 	return 1;
 }
 
-static int smawk(struct IndexPool *const rows, struct IndexPool *const cols) {
-	assert(rows && cols);
-	IndexPoolClear(&stack);
-	return smawk_slice(rows, cols);
+static int smawk(struct IndexPool *const rows, struct IndexPool *const rows2,
+	struct IndexPool *const cols) {
+	assert(rows && rows2 && cols);
+	return smawk_slice(rows, rows2, cols);
 }
 
 static int linear(struct Text *const words, struct Text *const wrap) {
 	struct Work *w;
-	struct IndexPool rows, cols;
+	struct IndexPool rows, rows2, cols;
 	size_t n, i = 0, offset = 0, r, edge, j, y;
 	unsigned x;
 	assert(words && wrap);
-	IndexPool(&rows), IndexPool(&cols);
+	IndexPool(&rows), IndexPool(&rows2), IndexPool(&cols);
 	/* Set up work. */
 	if(!(w = (WorkPoolClear(&work), WorkPoolNew(&work)))) return 0;
 	w->offset = w->breaks = 0, w->minimum = 0;
@@ -434,7 +423,7 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 			}
 		}
 		printf("<--smawk\n");
-		if(!smawk(&rows, &cols)) return 0;
+		if(!smawk(&rows, &rows2, &cols)) return 0;
 		printf("smawk-->\n");
 		w = WorkPoolGet(&work, r - 1 + offset), assert(w);
 		x = w->minimum;
@@ -451,6 +440,7 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 			i++;
 		}
 	}
+	IndexPool_(&rows), IndexPool_(&rows2), IndexPool_(&cols);
 	return words_work_to_wrap(words, wrap);
 }
 
@@ -573,6 +563,6 @@ int main(void) {
 	if(!pfclose(&fp)) perror("shutdown"); /* Finally. */
 	Text_(&wrap), Text_(&words), Text_(&text);
 	/* Clear any temp values. */
-	WorkPool_(&work), SearchPool_(&search), IndexPool_(&stack);
+	WorkPool_(&work), SearchPool_(&search);
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
