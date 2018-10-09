@@ -318,9 +318,9 @@ static int smawk_slice(struct IndexPool *const rows,
 		if(stack_size) { /* if stack */
 			c = IndexPoolGet(cols, stack_size - 1), assert(c);
 			s = IndexPoolGet(&stack, stack_size - 1), assert(s);
-			printf("[cost(*s, *c) %u < cost(*r, *c) %u]?\n", cost(*s, *c), cost(*r, *c));
+			printf("[cost(*s, *c) %u < cost(*r, *c) %u ]?\n", cost(*s, *c), cost(*r, *c));
 			if(cost(*s, *c) < cost(*r, *c)) {
-				printf("[stack_size %lu < size(cols) %lu]? %s\n", stack_size, IndexPoolSize(cols), IndexPoolToString(&stack));
+				printf("[stack_size %lu < size(cols) %lu ]? %s\n", stack_size, IndexPoolSize(cols), IndexPoolToString(&stack));
 				if(stack_size < IndexPoolSize(cols)) {
 					if(!(n = IndexPoolNew(&stack))) return 0;
 					*n = *r;
@@ -358,7 +358,7 @@ static int smawk_slice(struct IndexPool *const rows,
 			if(!(item = IndexPoolNew(&sub))) break;
 			*item = *IndexPoolGet(cols, i);
 		}
-		if(!(i < cols_size)) printf("Recursing with %s.\n", IndexPoolToString(&sub)), smawk_slice(rows, &sub);
+		if(!(i < cols_size)) printf("recursing with %s\n", IndexPoolToString(&sub)), smawk_slice(rows, &sub);
 		IndexPool_(&sub);
 		if(i < cols_size) return 0;
 	}
