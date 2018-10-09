@@ -164,17 +164,9 @@ static int add_words(const struct Line *const word) {
 	const size_t offset = last_w ? last_w->offset : 0;
 	struct Work *const w = WorkPoolNew(&work);
 	w->offset = offset + LineLength(word);
-	w->minimum = UINT_MAX;
+	w->minimum = 1000000000l/*UINT_MAX*/;
 	w->breaks = 0;
 	return 1;
-}
-
-static unsigned cost(const size_t i, const size_t j) {
-	const struct Work *i_work = WorkPoolGet(&work, i),
-		*j_work = WorkPoolGet(&work, j);
-	const unsigned w = (unsigned)(j_work->offset - i_work->offset + j - i - 1);
-	assert(i_work && j_work);
-	return (w > WIDTH) ? 30000 : i_work->minimum + (WIDTH - w) * (WIDTH - w);
 }
 
 static void print_work(void) {
@@ -183,6 +175,16 @@ static void print_work(void) {
 	printf("Line\tOffset\tBreak\tMinima\n");
 	for(i = 0, w = 0; (w = WorkPoolNext(&work, w)); i++)
 		printf("%lu\t%lu\t%lu\t%u\n", i, w->offset, w->breaks, w->minimum);
+}
+
+static unsigned cost(const size_t i, const size_t j) {
+	const struct Work *i_work = WorkPoolGet(&work, i),
+		*j_work = WorkPoolGet(&work, j);
+	const unsigned w = (unsigned)(j_work->offset - i_work->offset + j - i - 1);
+	assert(i_work && j_work);
+	printf("cost %lu %lu\n", i, j);
+	/*if(i==7 && j==8) print_work();*/
+	return (w > WIDTH) ? 100000 * (w - WIDTH) : i_work->minimum + (WIDTH - w) * (WIDTH - w);
 }
 
 /** Called after getting {work} filled. */
@@ -300,11 +302,12 @@ static int slice(const struct IndexPool *const src, struct IndexPool *const dst,
 }
 */
 
-static int smawk_slice(struct IndexPool *const rows,
+static int smawk_slice(struct IndexPool */*const*/ rows,
 	struct IndexPool *const cols) {
-	size_t i, *n, *c, *s, *r, cst, *col, *row;
+	size_t i, *n, *c, *s, *r, *col, *row;
 	size_t j, end;
 	size_t stack_size, rows_size, cols_size;
+	unsigned cst;
 	struct Work *w;
 	assert(rows && cols);
 	printf("_r,c_ %s %s\n", IndexPoolToString(rows), IndexPoolToString(cols));
@@ -316,10 +319,15 @@ static int smawk_slice(struct IndexPool *const rows,
 		r = IndexPoolGet(rows, i), assert(r);
 		stack_size = IndexPoolSize(&stack);
 		if(stack_size) { /* if stack */
+			unsigned cost_sc, cost_rc;
 			c = IndexPoolGet(cols, stack_size - 1), assert(c);
 			s = IndexPoolGet(&stack, stack_size - 1), assert(s);
-			printf("[cost(*s, *c) %u < cost(*r, *c) %u ]?\n", cost(*s, *c), cost(*r, *c));
-			if(cost(*s, *c) < cost(*r, *c)) {
+			printf("<-- A\n");
+			cost_sc = cost(*s, *c);
+			cost_rc = cost(*r, *c);
+			printf("[cost_sc %u < cost_rc %u ]? A -->\n", cost_sc, cost_rc);
+			/*printf("work %u\n", w);*/
+			if(cost_sc/*(*s, *c)*/ < cost_rc/*(*r, *c)*/) {
 				printf("[stack_size %lu < size(cols) %lu ]? %s\n", stack_size, IndexPoolSize(cols), IndexPoolToString(&stack));
 				if(stack_size < IndexPoolSize(cols)) {
 					if(!(n = IndexPoolNew(&stack))) return 0;
@@ -338,7 +346,7 @@ static int smawk_slice(struct IndexPool *const rows,
 		printf("i %lu rows %lu\n", i, rows_size);
 	}
 	IndexPoolClear(rows);
-	/*rows->data = stack; *//* what does that even mean? */
+	/**rows = stack;*/ /* what does that even mean? */
 	/*printf("**%s** -> %s\n", IndexPoolToString(&stack), IndexPoolToString(rows));*/
 	/* fixme: deep copy :[ ? */
 	{
@@ -375,8 +383,10 @@ static int smawk_slice(struct IndexPool *const rows,
 		}
 		col = IndexPoolGet(cols, j), assert(col);
 		row = IndexPoolGet(rows, i), assert(row);
+		printf("<-- B i %lu rows %s j %lu cols %s end %lu\n", i, IndexPoolToString(rows), j, IndexPoolToString(cols), end);
 		cst = cost(*row, *col);
 		w = WorkPoolGet(&work, *col), assert(w);
+		printf("[ %u < %u ] B -->\n", cst, w->minimum);
 		if(cst < w->minimum) {
 			w->minimum = (unsigned)cst;
 			w->breaks = *row;
