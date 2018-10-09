@@ -481,7 +481,7 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 
 /** Private: is {idx} a valid index for {pool}?
  @order \Theta(1) */
-static struct PT_(Node) *PT_(valid_index)(struct T_(Pool) *const pool,
+static struct PT_(Node) *PT_(valid_index)(const struct T_(Pool) *const pool,
 	const size_t idx) {
 	assert(pool);
 	if(idx >= pool->size) return 0;
@@ -502,7 +502,7 @@ static struct PT_(Node) *PT_(valid_index)(struct T_(Pool) *const pool,
  @return If failed, returns a null pointer.
  @order \Theta(1)
  @allow */
-static T *T_(PoolGet)(struct T_(Pool) *const pool, const size_t idx) {
+static T *T_(PoolGet)(const struct T_(Pool) *const pool, const size_t idx) {
 	if(!pool) return 0;
 	{
 		struct PT_(Node) *const node = PT_(valid_index)(pool, idx);
