@@ -145,7 +145,6 @@ static int greedy(struct Text *const words, struct Text *const wrap) {
 	size_t line_len = 0;
 	assert(words && wrap);
 	while((word = TextNext(words))) {
-		/*printf("Inserting <%s>.\n", LineGet(word));*/
 		if((!line || ((line_len = LineLength(line))
 			&& line_len + 1 + LineLength(word) > WIDTH))
 			&& !(line_len = 0, line = LineCopyMeta(word, wrap))) return 0;
@@ -183,9 +182,8 @@ static unsigned cost(const size_t i, const size_t j) {
 		*j_work = WorkPoolGet(&work, j);
 	const unsigned w = (unsigned)(j_work->offset - i_work->offset + j - i - 1);
 	assert(i_work && j_work);
-	printf("cost %lu %lu\n", i, j);
-	/*if(i==7 && j==8) print_work();*/
-	return (w > WIDTH) ? 100000 * (w - WIDTH) : i_work->minimum + (WIDTH - w) * (WIDTH - w);
+	return (w > WIDTH)
+		? 100000 * (w - WIDTH) : i_work->minimum + (WIDTH - w) * (WIDTH - w);
 }
 
 /** Called after getting {work} filled. */
@@ -393,41 +391,32 @@ static int Smawk(void) {
 	unsigned cst;
 	struct Work *w;
 	if(!rows || !rows2 || !cols) return 0;
-	printf("<< start smawk rows %s cols %s\n", IndexPoolToString(rows), IndexPoolToString(cols));
 	i = 0;
 	rows_size = IndexPoolSize(rows);
 	while(i < rows_size) { /* while i < len(rows) */
-		printf("i %lu rows %s rows2 %s\n", i, IndexPoolToString(rows), IndexPoolToString(rows2));
 		r = IndexPoolGet(rows, i), assert(r);
 		if((rows2_size = IndexPoolSize(rows2))) { /* if stack */
 			unsigned cost_sc, cost_rc;
 			c = IndexPoolGet(cols,  rows2_size - 1), assert(c);
 			s = IndexPoolGet(rows2, rows2_size - 1), assert(s);
-			printf("<-- A\n");
 			cost_sc = cost(*s, *c);
 			cost_rc = cost(*r, *c);
-			printf("[cost_sc %u < cost_rc %u ]? A -->\n", cost_sc, cost_rc);
 			/*printf("work %u\n", w);*/
 			if(cost_sc/*(*s, *c)*/ < cost_rc/*(*r, *c)*/) {
-				printf("[rows2_size %lu < size(cols) %lu ]? %s\n", rows2_size, IndexPoolSize(cols), IndexPoolToString(rows2));
 				if(rows2_size < IndexPoolSize(cols)) {
-					printf("(a) rows2 <- %lu\n", *r);
 					if(!(n = IndexPoolNew(rows2))) return 0;
 					*n = *r;
 				}
 				i++;
 			} else {
-				printf("rows2 pop\n");
 				IndexPoolPop(rows2);
 			}
 		} else {
-			printf("(b) rows2 <- %lu\n", *r);
 			if(!(n = IndexPoolNew(rows2))) return 0;
 			*n = *r;
 			i++;
 		}
 	}
-	printf("rows %s <- rows2 %s\n", IndexPoolToString(rows), IndexPoolToString(rows2));
 
 	cols_size = IndexPoolSize(cols);
 	if(cols_size > 1) {
@@ -441,11 +430,9 @@ static int Smawk(void) {
 			if(!(item = IndexPoolNew(cols2))) return 0;
 			*item = *IndexPoolGet(cols, i);
 		}
-		printf("recursing with rows2 %s cols2 %s {\n", IndexPoolToString(rows2), IndexPoolToString(cols2));
 		Smawk();
 		/* Update pointers -- has possibly changed. */
 		rows2 = SmawkPeekRows(), rows = SmawkPeekRows2(), assert(rows2 && rows);
-		printf("} rows2 %s\n", IndexPoolToString(rows2));
 	}
 
 	i = j = 0;
@@ -455,16 +442,15 @@ static int Smawk(void) {
 			w = WorkPoolGet(&work, *elt);
 			end = w->breaks;
 		} else {
-			size_t *item = IndexPoolGet(rows2, IndexPoolSize(rows2)/*rows_size?*/ - 1);
+			/* This is now {rows_size}; it has been updated. */
+			size_t *item = IndexPoolGet(rows2, IndexPoolSize(rows2) - 1);
 			assert(item);
 			end = *item;
 		}
 		col = IndexPoolGet(cols, j), assert(col);
 		row = IndexPoolGet(rows2, i), assert(row);
-		printf("<-- B i %lu rows2 %s j %lu cols %s end %lu\n", i, IndexPoolToString(rows2), j, IndexPoolToString(cols), end);
 		cst = cost(*row, *col);
 		w = WorkPoolGet(&work, *col), assert(w);
-		printf("[ %u < %u ] B -->\n", cst, w->minimum);
 		if(cst < w->minimum) {
 			w->minimum = (unsigned)cst;
 			w->breaks = *row;
@@ -472,7 +458,6 @@ static int Smawk(void) {
 		if(*row < end) i += 1;
 		else j += 2;
 	}
-	printf(">> end smawk rows %s rows2 %s\n", IndexPoolToString(rows), IndexPoolToString(rows2));
 	SmawkColumns_();
 	SmawkRows_();
 	return 1;
@@ -507,9 +492,7 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 				*item = range;
 			}
 		}
-		printf("<--smawk\n");
 		if(!Smawk()) return smawk.no_rows_stack = smawk.no_cols_stack = 0, 0;
-		printf("smawk-->\n");
 		w = WorkPoolGet(&work, r - 1 + offset), assert(w);
 		x = w->minimum;
 		for(j = 1 << i; j < r - 1; j++) {
@@ -615,7 +598,7 @@ int main(void) {
 		if(!(text = Text()) || !(words = Text()) || !(wrap = Text()))
 			{ e = "Text"; break; }
 		/* Load all. In reality, would read from stdin, just testing. */
-#if 0
+#if 1
 		if(!(fp = fopen(head, "r"))
 			|| !TextFile(text, fp, head)
 			|| !pfclose(&fp)) { e = head; break; }
