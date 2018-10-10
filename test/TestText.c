@@ -618,6 +618,7 @@ int main(void) {
 	const struct Line *newline = 0;
 	const char *e = 0;
 	do { /* Try. */
+		unsigned long time_clock = 0;
 		size_t word_no;
 		if(!(text = Text()) || !(words = Text()) || !(wrap = Text()))
 			{ e = "Text"; break; }
@@ -639,7 +640,6 @@ int main(void) {
 #endif
 		/* Split the text into words and then wraps them. */
 		do {
-			unsigned long c;
 			/* Insert a double-break between paragraphs. */
 			if(newline) LineCopyMeta(newline, wrap);
 			/* Splits the paragraph into words.
@@ -647,14 +647,14 @@ int main(void) {
 			if(!split_para(text, words, &word_no)) break;
 			printf("count %lu\n", word_no);
 			/* Apply word-wrapping; the words are consumed. */
-			c = clock();
+			time_clock -= clock();
 			if(!algorthm->go(words, wrap)) { e = "wrap"; break; };
-			c = clock() - c;
-			fprintf(stderr, "Time: %fms.\n", c * 1000.0 / CLOCKS_PER_SEC);
+			time_clock += clock();
 		} while((newline = TextCursor(text)));
 		if(e) break;
 		if(!TextPrint(wrap, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
-		fprintf(stderr, "This was wrapped using %s.\n", algorthm->name);
+		fprintf(stderr, "This was wrapped using %s in %fms.\n", algorthm->name,
+			time_clock * 1000.0 / CLOCKS_PER_SEC);
 	} while(0); if(e) perror(e); /* Catch. */
 	if(!pfclose(&fp)) perror("shutdown"); /* Finally. */
 	Text_(&wrap), Text_(&words), Text_(&text);
