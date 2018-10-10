@@ -243,7 +243,7 @@ static struct PT_(Node) *PT_(node_hold_data)(T *const data) {
 		((char *)data - offsetof(struct PT_(Node), data));
 }
 
-/* * Ensures capacity.
+/** Ensures capacity.
  @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
@@ -255,9 +255,9 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 	assert(pool && pool->size <= pool->capacity[0]
 		&& pool->capacity[0] <= pool->capacity[1]
 		&& pool->capacity[1] <= pool_max);
-#ifndef POOL_STACK /* <-- !stack */
-	assert(pool->removed.next == pool->removed.prev
-		&& pool->removed.next == pool_null);
+#ifndef POOL_STACK /* <-- !stack -- spaces that we could have placed it. */
+	assert(!pool->nodes || (pool->removed.next == pool->removed.prev
+		&& pool->removed.next == pool_null));
 #endif /* !stack --> */
 	if(pool->capacity[0] >= min_capacity) return 1;
 	if(min_capacity > max_size) return errno = ERANGE, 0;
@@ -301,6 +301,9 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 				*(char **const)update_ptr += migrate.delta;
 		}
 	}
+#ifndef POOL_STACK /* <-- !stack -- initialise linked-list in case static. */
+	if(!pool->nodes) pool->removed.next = pool->removed.prev = pool_null;
+#endif /* !stack --> */
 	pool->nodes = nodes;
 	pool->capacity[0] = c0;
 	pool->capacity[1] = c1;
@@ -338,7 +341,8 @@ static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Pool) *const pool) {
 	size_t n;
 	assert(pool &&
 		(pool->removed.next == pool_null) == (pool->removed.prev == pool_null));
-	if((n = pool->removed.next) == pool_null) return 0; /* No nodes removed. */
+	/* No nodes removed. */
+	if(!pool->nodes || (n = pool->removed.next) == pool_null) return 0;
 	node = pool->nodes + n;
 	assert(node->x.prev == pool_null && node->x.next != pool_void);
 	if((pool->removed.next = node->x.next) == pool_null) {
@@ -384,16 +388,15 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 
 #endif /* !stack --> */
 
-/** Initialises {pool} to be empty and take no memory. */
+/** Zeros {pool} except for {POOL_MIGRATE_ALL} which is initialised in the
+ containing function, and not {POOL_STACK}, which is initialised in
+ \see{<PT>_reserve}. */
 static void PT_(pool)(struct T_(Pool) *const pool) {
 	assert(pool);
 	pool->nodes        = 0;
 	pool->capacity[0]  = 0;
 	pool->capacity[1]  = 0;
 	pool->size         = 0;
-#ifndef POOL_STACK /* <-- !stack */
-	pool->removed.prev = pool->removed.next = pool_null;
-#endif /* !stack --> */
 }
 
 /** Destructor for {pool}. All the {pool} contents should not be accessed
@@ -408,8 +411,8 @@ static void T_(Pool_)(struct T_(Pool) *const pool) {
 }
 
 #ifdef POOL_MIGRATE_ALL /* <-- all */
-/** Initialises {pool} to be empty. This is the constructor if
- {POOL_MIGRATE_ALL} is specified.
+/** Initialises {pool} to be empty and have a migrate function with a
+ parameter. This is the constructor if {POOL_MIGRATE_ALL} is specified.
  @param pool: If null, does nothing.
  @param migrate_all: The general {<PT>MigrateAll} function.
  @param all: The general migrate parameter.
@@ -424,7 +427,8 @@ static void T_(Pool)(struct T_(Pool) *const pool,
 }
 #else /* all --><-- !all */
 /** Initialises {pool} to be empty. This is the constructor is
- {POOL_MIGRATE_ALL} is not specified.
+ {POOL_MIGRATE_ALL} is not specified. If it is {static} data then it is
+ initialised by default and one doesn't have to call this.
  @order \Theta(1)
  @allow */
 static void T_(Pool)(struct T_(Pool) *const pool) {
