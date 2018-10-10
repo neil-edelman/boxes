@@ -297,12 +297,17 @@ struct Smawk {
 } smawk; /* Already zeroed. This means no concurrency. */
 
 /** Clears all memory that's been reserved. */
-static void SmawkRestart(void) {
+static void Smawk_(void) {
 	struct IndexPool *rows, *cols;
 	while((cols = IndexPoolPoolPop(&smawk.cols_stack))) IndexPool_(cols);
 	IndexPoolPool_(&smawk.cols_stack);
 	while((rows = IndexPoolPoolPop(&smawk.rows_stack))) IndexPool_(rows);
 	IndexPoolPool_(&smawk.rows_stack);
+	smawk.no_rows_stack = smawk.no_cols_stack = 0;
+}
+
+/** Restarts Smawk. */
+static void SmawkRestart(void) {
 	smawk.no_rows_stack = smawk.no_cols_stack = 0;
 }
 
@@ -377,7 +382,7 @@ static struct IndexPool *SmawkPeekColumns2(void) {
 	return IndexPoolPoolGet(&smawk.cols_stack, smawk.no_cols_stack - 2);
 }
 
-static int smawk_r(void) {
+static int Smawk(void) {
 	size_t i, *n, *c, *s, *r, *col, *row;
 	size_t j, end;
 	size_t rows_size, rows2_size, cols_size;
@@ -437,7 +442,7 @@ static int smawk_r(void) {
 			*item = *IndexPoolGet(cols, i);
 		}
 		printf("recursing with rows2 %s cols2 %s {\n", IndexPoolToString(rows2), IndexPoolToString(cols2));
-		smawk_r();
+		Smawk();
 		/* Update pointers -- has possibly changed. */
 		rows2 = SmawkPeekRows(), rows = SmawkPeekRows2(), assert(rows2 && rows);
 		printf("} rows2 %s\n", IndexPoolToString(rows2));
@@ -483,7 +488,7 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 	w->offset = w->breaks = 0, w->minimum = 0;
 	if(TextAll(words, &add_words)) return 0;
 	n = WorkPoolSize(&work); /* n = count + 1 */
-	smawk.no_rows_stack = smawk.no_cols_stack = 0;
+	SmawkRestart();
 	for( ; ; ) {
 		r = 1 << (i + 1); if(r > n) r = n;
 		edge = (1 << i) + offset;
@@ -503,7 +508,7 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 			}
 		}
 		printf("<--smawk\n");
-		if(!smawk_r()) return smawk.no_rows_stack = smawk.no_cols_stack = 0, 0;
+		if(!Smawk()) return smawk.no_rows_stack = smawk.no_cols_stack = 0, 0;
 		printf("smawk-->\n");
 		w = WorkPoolGet(&work, r - 1 + offset), assert(w);
 		x = w->minimum;
@@ -520,7 +525,6 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 			i++;
 		}
 	}
-	assert(!smawk.no_cols_stack);
 	return words_work_to_wrap(words, wrap);
 }
 
@@ -648,6 +652,6 @@ int main(void) {
 	Text_(&wrap), Text_(&words), Text_(&text);
 	/* Clear any temp values. */
 	WorkPool_(&work), SearchPool_(&search);
-	SmawkRestart();
+	Smawk_();
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
