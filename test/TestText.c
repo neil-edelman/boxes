@@ -291,113 +291,104 @@ static void index_to_string(const size_t *n, char (*const a)[12]) {
 #define POOL_STACK
 #include "../src/Pool.h"
 
-struct IndexNexus {
+struct Smawk {
 	struct IndexPoolPool rows_stack, cols_stack;
 	size_t no_rows_stack, no_cols_stack;
-};
+} smawk; /* Already zeroed. This means no concurrency. */
 
-/** This constructs a word-wrapping object. */
-static void IndexNexus(struct IndexNexus *const idx) {
-	assert(idx);
-	IndexPoolPool(&idx->rows_stack), IndexPoolPool(&idx->cols_stack);
-	idx->no_rows_stack = idx->no_cols_stack = 0;
-}
-
-static void IndexNexus_(struct IndexNexus *const idx) {
+/** Clears all memory that's been reserved. */
+static void SmawkRestart(void) {
 	struct IndexPool *rows, *cols;
-	if(!idx) return;
-	while((cols = IndexPoolPoolPop(&idx->cols_stack))) IndexPool_(cols);
-	IndexPoolPool_(&idx->cols_stack);
-	while((rows = IndexPoolPoolPop(&idx->rows_stack))) IndexPool_(rows);
-	IndexPoolPool_(&idx->rows_stack);
-	idx->no_rows_stack = idx->no_cols_stack = 0;
+	while((cols = IndexPoolPoolPop(&smawk.cols_stack))) IndexPool_(cols);
+	IndexPoolPool_(&smawk.cols_stack);
+	while((rows = IndexPoolPoolPop(&smawk.rows_stack))) IndexPool_(rows);
+	IndexPoolPool_(&smawk.rows_stack);
+	smawk.no_rows_stack = smawk.no_cols_stack = 0;
 }
 
-/** Every pointer to any rows is invalidated. 
- @param idx A word-wrapping object.
- @return A rows stack.
+/** Every pointer to any rows is invalidated.
+ @return A new empty rows stack.
  @throws Memory. */
-static struct IndexPool *IndexNexusRows(struct IndexNexus *const idx) {
+static struct IndexPool *SmawkRows(void) {
 	struct IndexPool *rows;
-	assert(idx && idx->no_rows_stack <= IndexPoolPoolSize(&idx->rows_stack));
-	if(idx->no_rows_stack < IndexPoolPoolSize(&idx->rows_stack)) {
-		rows = IndexPoolPoolGet(&idx->rows_stack, idx->no_rows_stack);
+	assert(smawk.no_rows_stack <= IndexPoolPoolSize(&smawk.rows_stack));
+	if(smawk.no_rows_stack < IndexPoolPoolSize(&smawk.rows_stack)) {
+		rows = IndexPoolPoolGet(&smawk.rows_stack, smawk.no_rows_stack);
 		assert(rows);
+		IndexPoolClear(rows);
 	} else {
-		if(!(rows = IndexPoolPoolNew(&idx->rows_stack))) return 0;
+		if(!(rows = IndexPoolPoolNew(&smawk.rows_stack))) return 0;
+		IndexPool(rows);
 	}
-	idx->no_rows_stack++;
-	IndexPool(rows);
+	smawk.no_rows_stack++;
 	return rows;
 }
 
-static struct IndexPool *IndexNexusGetRows(struct IndexNexus *const idx) {
-	assert(idx && idx->no_rows_stack <= IndexPoolPoolSize(&idx->rows_stack));
-	if(!idx->no_rows_stack) return 0;
-	return IndexPoolPoolGet(&idx->rows_stack, idx->no_rows_stack - 1);
+/** Pops from the stack; doesn't have any checks. */
+static void SmawkRows_(void) {
+	assert(smawk.no_rows_stack);
+	smawk.no_rows_stack--;
 }
 
-static struct IndexPool *IndexNexusPreviousRows(struct IndexNexus *const idx) {
-	assert(idx && idx->no_rows_stack <= IndexPoolPoolSize(&idx->rows_stack));
-	if(idx->no_rows_stack < 2) return 0;
-	return IndexPoolPoolGet(&idx->rows_stack, idx->no_rows_stack - 2);
+static struct IndexPool *SmawkPeekRows(void) {
+	assert(smawk.no_rows_stack <= IndexPoolPoolSize(&smawk.rows_stack));
+	if(!smawk.no_rows_stack) return 0;
+	return IndexPoolPoolGet(&smawk.rows_stack, smawk.no_rows_stack - 1);
 }
 
-static void IndexNexusRows_(struct IndexNexus *const idx) {
-	assert(idx && idx->no_rows_stack);
-	idx->no_rows_stack--;
+static struct IndexPool *SmawkPeekRows2(void) {
+	assert(smawk.no_rows_stack <= IndexPoolPoolSize(&smawk.rows_stack));
+	if(smawk.no_rows_stack < 2) return 0;
+	return IndexPoolPoolGet(&smawk.rows_stack, smawk.no_rows_stack - 2);
 }
 
-/** @param idx A word-wrapping object.
- @return A columns stack.
+/** Every pointer to any columns is invalidated.
+ @return A new empty columns stack.
  @throws Memory. */
-static struct IndexPool *IndexNexusColumns(struct IndexNexus *const idx) {
+static struct IndexPool *SmawkColumns(void) {
 	struct IndexPool *cols;
-	assert(idx && idx->no_cols_stack <= IndexPoolPoolSize(&idx->cols_stack));
-	if(idx->no_cols_stack < IndexPoolPoolSize(&idx->cols_stack)) {
-		cols = IndexPoolPoolGet(&idx->cols_stack, idx->no_cols_stack);
+	assert(smawk.no_cols_stack <= IndexPoolPoolSize(&smawk.cols_stack));
+	if(smawk.no_cols_stack < IndexPoolPoolSize(&smawk.cols_stack)) {
+		cols = IndexPoolPoolGet(&smawk.cols_stack, smawk.no_cols_stack);
 		assert(cols);
+		IndexPoolClear(cols);
 	} else {
-		if(!(cols = IndexPoolPoolNew(&idx->cols_stack))) return 0;
+		if(!(cols = IndexPoolPoolNew(&smawk.cols_stack))) return 0;
+		IndexPool(cols);
 	}
-	idx->no_cols_stack++;
-	IndexPool(cols);
+	smawk.no_cols_stack++;
 	return cols;
 }
 
-static struct IndexPool *IndexNexusGetColumns(struct IndexNexus *const idx) {
-	assert(idx && idx->no_cols_stack <= IndexPoolPoolSize(&idx->cols_stack));
-	if(!idx->no_cols_stack) return 0;
-	return IndexPoolPoolGet(&idx->cols_stack, idx->no_cols_stack - 1);
+static void SmawkColumns_(void) {
+	assert(smawk.no_cols_stack);
+	smawk.no_cols_stack--;
 }
 
-static struct IndexPool *IndexNexusPreviousColumns(struct IndexNexus *const idx) {
-	assert(idx && idx->no_cols_stack <= IndexPoolPoolSize(&idx->cols_stack));
-	if(idx->no_cols_stack < 2) return 0;
-	return IndexPoolPoolGet(&idx->cols_stack, idx->no_cols_stack - 2);
+static struct IndexPool *SmawkPeekColumns(void) {
+	assert(smawk.no_cols_stack <= IndexPoolPoolSize(&smawk.cols_stack));
+	if(!smawk.no_cols_stack) return 0;
+	return IndexPoolPoolGet(&smawk.cols_stack, smawk.no_cols_stack - 1);
 }
 
-static void IndexNexusColumns_(struct IndexNexus *const idx) {
-	assert(idx && idx->no_cols_stack);
-	idx->no_cols_stack--;
+static struct IndexPool *SmawkPeekColumns2(void) {
+	assert(smawk.no_cols_stack <= IndexPoolPoolSize(&smawk.cols_stack));
+	if(smawk.no_cols_stack < 2) return 0;
+	return IndexPoolPoolGet(&smawk.cols_stack, smawk.no_cols_stack - 2);
 }
 
-static int smawk(struct IndexNexus *const idx) {
+static int smawk_r(void) {
 	size_t i, *n, *c, *s, *r, *col, *row;
 	size_t j, end;
 	size_t rows_size, rows2_size, cols_size;
-	struct IndexPool */*const*/ rows2 = IndexNexusRows(idx),
-		*/*const*/ rows = IndexNexusPreviousRows(idx); /* Order matters. */
-	const struct IndexPool *cols = IndexNexusGetColumns(idx);
+	/* Order matters! */
+	struct IndexPool *rows2 = SmawkRows() /* stack = [] */,
+		*rows = SmawkPeekRows2();
+	const struct IndexPool *cols = SmawkPeekColumns();
 	unsigned cst;
 	struct Work *w;
-	assert(idx && idx->no_rows_stack >= 2
-		&& IndexPoolPoolSize(&idx->rows_stack) >= idx->no_rows_stack
-		&& idx->no_cols_stack
-		&& IndexPoolPoolSize(&idx->cols_stack) >= idx->no_cols_stack);
-	if(!rows2 || !rows) return 0;
+	if(!rows || !rows2 || !cols) return 0;
 	printf("<< start smawk rows %s cols %s\n", IndexPoolToString(rows), IndexPoolToString(cols));
-	IndexPool(rows2); /* stack = [] */
 	i = 0;
 	rows_size = IndexPoolSize(rows);
 	while(i < rows_size) { /* while i < len(rows) */
@@ -435,21 +426,20 @@ static int smawk(struct IndexNexus *const idx) {
 
 	cols_size = IndexPoolSize(cols);
 	if(cols_size > 1) {
-		struct IndexPool *const cols2 = IndexNexusColumns(idx);
+		struct IndexPool *const cols2 = SmawkColumns();
 		size_t *item;
 		if(!cols2) return 0;
 		/* Now we have to update {cols} because it is in the dynamic buffer. */
-		cols = IndexNexusPreviousColumns(idx);
+		cols = SmawkPeekColumns2(), assert(cols);
 		/* Populate columns for recursion. */
 		for(i = 1; i < cols_size; i += 2) {
 			if(!(item = IndexPoolNew(cols2))) return 0;
 			*item = *IndexPoolGet(cols, i);
 		}
 		printf("recursing with rows2 %s cols2 %s {\n", IndexPoolToString(rows2), IndexPoolToString(cols2));
-		smawk(idx);
-		/* It has possibly changed. */
-		rows2 = IndexNexusGetRows(idx);
-		rows = IndexNexusPreviousRows(idx);
+		smawk_r();
+		/* Update pointers -- has possibly changed. */
+		rows2 = SmawkPeekRows(), rows = SmawkPeekRows2(), assert(rows2 && rows);
 		printf("} rows2 %s\n", IndexPoolToString(rows2));
 	}
 
@@ -457,7 +447,6 @@ static int smawk(struct IndexNexus *const idx) {
 	while(j < cols_size) {
 		if(j + 1 < cols_size) {
 			size_t *elt = IndexPoolGet(cols, j + 1);
-			assert(idx);
 			w = WorkPoolGet(&work, *elt);
 			end = w->breaks;
 		} else {
@@ -479,31 +468,30 @@ static int smawk(struct IndexNexus *const idx) {
 		else j += 2;
 	}
 	printf(">> end smawk rows %s rows2 %s\n", IndexPoolToString(rows), IndexPoolToString(rows2));
-	IndexNexusColumns_(idx);
-	IndexNexusRows_(idx);
+	SmawkColumns_();
+	SmawkRows_();
 	return 1;
 }
 
 static int linear(struct Text *const words, struct Text *const wrap) {
 	struct Work *w;
-	struct IndexNexus idx; /* This would be persistent. */
 	size_t n, i = 0, offset = 0, r, edge, j, y;
 	unsigned x;
-	assert(words && wrap);
-	IndexNexus(&idx); /* <- This would be persistent. */
+	assert(words && wrap && !smawk.no_rows_stack && !smawk.no_cols_stack);
 	/* Set up work. */
 	if(!(w = (WorkPoolClear(&work), WorkPoolNew(&work)))) return 0;
 	w->offset = w->breaks = 0, w->minimum = 0;
 	if(TextAll(words, &add_words)) return 0;
 	n = WorkPoolSize(&work); /* n = count + 1 */
+	smawk.no_rows_stack = smawk.no_cols_stack = 0;
 	for( ; ; ) {
 		r = 1 << (i + 1); if(r > n) r = n;
 		edge = (1 << i) + offset;
 		{ /* Put in the {rows}, {cols}. */
 			const size_t end = r + offset;
 			size_t range, *item;
-			struct IndexPool *const rows = IndexNexusRows(&idx),
-				*const cols = IndexNexusColumns(&idx);
+			struct IndexPool *const rows = SmawkRows(),
+				*const cols = SmawkColumns();
 			if(!rows || !cols) return 0;
 			for(range = offset; range < edge; range++) {
 				if(!(item = IndexPoolNew(rows))) return 0;
@@ -515,7 +503,7 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 			}
 		}
 		printf("<--smawk\n");
-		if(!smawk(&idx)) return 0;
+		if(!smawk_r()) return smawk.no_rows_stack = smawk.no_cols_stack = 0, 0;
 		printf("smawk-->\n");
 		w = WorkPoolGet(&work, r - 1 + offset), assert(w);
 		x = w->minimum;
@@ -532,7 +520,7 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 			i++;
 		}
 	}
-	IndexNexus_(&idx); /* <- This would be persistent. */
+	assert(!smawk.no_cols_stack);
 	return words_work_to_wrap(words, wrap);
 }
 
@@ -660,5 +648,6 @@ int main(void) {
 	Text_(&wrap), Text_(&words), Text_(&text);
 	/* Clear any temp values. */
 	WorkPool_(&work), SearchPool_(&search);
+	SmawkRestart();
 	return e ? EXIT_FAILURE : EXIT_SUCCESS;
 }
