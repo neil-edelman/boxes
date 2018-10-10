@@ -37,6 +37,7 @@
 #include <limits.h>	/* INT_MAX, UINT_MAX */
 #include <assert.h>	/* assert */
 #include <errno.h>	/* errno */
+#include <time.h>   /* timing */
 #include "../src/Text.h"
 #include "split.h"
 
@@ -330,6 +331,12 @@ static struct IndexPool *IndexNexusRows(struct IndexNexus *const idx) {
 	return rows;
 }
 
+static struct IndexPool *IndexNexusGetRows(struct IndexNexus *const idx) {
+	assert(idx && idx->no_rows_stack <= IndexPoolPoolSize(&idx->rows_stack));
+	if(!idx->no_rows_stack) return 0;
+	return IndexPoolPoolGet(&idx->rows_stack, idx->no_rows_stack - 1);
+}
+
 static struct IndexPool *IndexNexusPreviousRows(struct IndexNexus *const idx) {
 	assert(idx && idx->no_rows_stack <= IndexPoolPoolSize(&idx->rows_stack));
 	if(idx->no_rows_stack < 2) return 0;
@@ -379,8 +386,8 @@ static int smawk(struct IndexNexus *const idx) {
 	size_t i, *n, *c, *s, *r, *col, *row;
 	size_t j, end;
 	size_t rows_size, rows2_size, cols_size;
-	struct IndexPool *const rows2 = IndexNexusRows(idx),
-		*const rows = IndexNexusPreviousRows(idx); /* Order matters. */
+	struct IndexPool */*const*/ rows2 = IndexNexusRows(idx),
+		*/*const*/ rows = IndexNexusPreviousRows(idx); /* Order matters. */
 	const struct IndexPool *cols = IndexNexusGetColumns(idx);
 	unsigned cst;
 	struct Work *w;
@@ -440,6 +447,9 @@ static int smawk(struct IndexNexus *const idx) {
 		}
 		printf("recursing with rows2 %s cols2 %s {\n", IndexPoolToString(rows2), IndexPoolToString(cols2));
 		smawk(idx);
+		/* It has possibly changed. */
+		rows2 = IndexNexusGetRows(idx);
+		rows = IndexNexusPreviousRows(idx);
 		printf("} rows2 %s\n", IndexPoolToString(rows2));
 	}
 
@@ -629,6 +639,7 @@ int main(void) {
 #endif
 		/* Split the text into words and then wraps them. */
 		do {
+			unsigned long c;
 			/* Insert a double-break between paragraphs. */
 			if(newline) LineCopyMeta(newline, wrap);
 			/* Splits the paragraph into words.
@@ -636,7 +647,10 @@ int main(void) {
 			if(!split_para(text, words, &word_no)) break;
 			printf("count %lu\n", word_no);
 			/* Apply word-wrapping; the words are consumed. */
+			c = clock();
 			if(!algorthm->go(words, wrap)) { e = "wrap"; break; };
+			c = clock() - c;
+			fprintf(stderr, "Time: %fms.\n", c * 1000.0 / CLOCKS_PER_SEC);
 		} while((newline = TextCursor(text)));
 		if(e) break;
 		if(!TextPrint(wrap, stdout, "%a: <%s>\n")) { e = "stdout"; break; }
