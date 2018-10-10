@@ -482,7 +482,7 @@ static int linear(struct Text *const words, struct Text *const wrap) {
 	struct Work *w;
 	size_t n, i = 0, offset = 0, r, edge, j, y;
 	unsigned x;
-	assert(words && wrap && !smawk.no_rows_stack && !smawk.no_cols_stack);
+	assert(words && wrap);
 	/* Set up work. */
 	if(!(w = (WorkPoolClear(&work), WorkPoolNew(&work)))) return 0;
 	w->offset = w->breaks = 0, w->minimum = 0;
