@@ -1,35 +1,13 @@
 /** 2018 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A {Story} is composed of {Text} in a way that makes them easy, (and faster,)
- to edit large strings. Requires {List}, {Pool}, and {Text}.
-
- ${
- Text a = [ "foo bar\n\n", "baz\n", "qux" ]
- a.split(0) = [ "foo", "bar", "baz", "qux" ]
- a.split("a", " ") = [ "foo", "b", "r", "b", "z", "qux" ]
- a.strip(0) = [ "foo bar", "baz", "qux" ]
- a.strip("quxf ") =  [ "oo bar", "baz", "" ]
- a.empty.strip("quxf ") = [ "oo bar", "baz" ]
- a.join(0) = [ "foo bar\n\n baz\n qux" ]
- a.join("") = [ "foo bar\n\nbaz\nqux" ]
- a.sort() = [ "baz\n", "foo bar\n\n", "qux" ]
- a.replace("a", "oo") = [ "foo boor\n\n", "booz\n", "qux" ]
- /a.cat("quxx") = [ "foo bar\n\n", "baz\n", "qux", "quxx" ]/not needed
- a.cat("%d", 42) = [ "foo bar\n\n42", "baz\n42", "qux42" ]
- a.format("%d foo", 42) = [ "foo bar\n\n", "baz\n", "qux", "42 foo" ]
- TextMap b = [ "o"->"a", "a"->"o" ]
- a.substitute(b) = [ "faa bor\n\n", "boz\n", "qux" ]
- }
-
- @param STORY_DEBUG
- Prints debug information to {stderr}.
-
  @title TestText
  @author Neil
  @std C89/90
- @version 2018-06
- @since 2018-01 */
+ @version 2018-10
+ @since
+ 2018-01
+ 2018-06 */
 
 #include <stdlib.h> /* malloc free */
 #include <stdio.h>  /* fprintf fopen FILE */
@@ -41,11 +19,12 @@
 #include "../src/Text.h"
 #include "split.h"
 
-#define WIDTH 50
+#define WIDTH 78
 
 static const char *const head = "abstract.txt",
 	*const body = "lorem.txt",
-	*const para = "para.txt";
+	*const para = "para.txt",
+	*const longpara = "long.txt";
 
 /** Helper for {fclose} is a little more robust about null-values.
  @param pfp: A pointer to the file pointer.
@@ -169,13 +148,13 @@ static int add_words(const struct Line *const word) {
 	return 1;
 }
 
-static void print_work(void) {
+/*static void print_work(void) {
 	struct Work *w;
 	size_t i;
 	printf("Line\tOffset\tBreak\tMinima\n");
 	for(i = 0, w = 0; (w = WorkPoolNext(&work, w)); i++)
 		printf("%lu\t%lu\t%lu\t%u\n", i, w->offset, w->breaks, w->minimum);
-}
+}*/
 
 static unsigned cost(const size_t i, const size_t j) {
 	const struct Work *i_work = WorkPoolGet(&work, i),
@@ -196,7 +175,7 @@ static int words_work_to_wrap(struct Text *const words,
 	struct Work *j_work = 0;
 	const char *str;
 	assert(words && TextHasContent(words) && wrap && WorkPoolSize(&work));
-	print_work();
+	/*print_work();*/
 	/* Read off the work. */
 	TextCursorSet(words, 0);
 	j = WorkPoolSize(&work) - 1;
@@ -439,6 +418,7 @@ static int Smawk(void) {
 	while(j < cols_size) {
 		if(j + 1 < cols_size) {
 			size_t *elt = IndexPoolGet(cols, j + 1);
+			assert(elt);
 			w = WorkPoolGet(&work, *elt);
 			end = w->breaks;
 		} else {
@@ -608,10 +588,14 @@ int main(void) {
 			|| !pfclose(&fp)) { e = body; break; }
 		fprintf(stderr, "Loaded files <%s> and <%s>.\n", head, body);
 #else
-		if(!(fp = fopen(para, "r"))
+		/*if(!(fp = fopen(para, "r"))
 		   || !TextFile(text, fp, para)
 		   || !pfclose(&fp)) { e = para; break; }
-		fprintf(stderr, "Loaded file <%s>.\n", para);
+		fprintf(stderr, "Loaded file <%s>.\n", para);*/
+		if(!(fp = fopen(longpara, "r"))
+		   || !TextFile(text, fp, longpara)
+		   || !pfclose(&fp)) { e = longpara; break; }
+		fprintf(stderr, "Loaded file <%s>.\n", longpara);
 #endif
 		/* Split the text into words and then wraps them. */
 		do {
@@ -620,7 +604,6 @@ int main(void) {
 			/* Splits the paragraph into words.
 			 If false, newlines at EOF or error (fixme: handle error.) */
 			if(!split_para(text, words, &word_no)) break;
-			printf("count %lu\n", word_no);
 			/* Apply word-wrapping; the words are consumed. */
 			time_clock -= clock();
 			if(!algorthm->go(words, wrap)) { e = "wrap"; break; };
