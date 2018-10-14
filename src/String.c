@@ -2,32 +2,28 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  A dynamic string, intended to be used with modified UTF-8 encoding (or
- subsets,) \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }. That is,
- this is a wrapper that automatically expands memory as needed around a
- standard {C} null-terminated string in a monolithic array and is compatible
+ subsets of this,) \url{ https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8 }.
+ That is, this is a wrapper that automatically expands memory as needed around
+ a standard {C} null-terminated string in a monolithic array and is compatible
  with {ASCII}. If you need to edit a potentially large string, just one of
  {String} will be generally linear-time and is unsuited alone for such a
- purpose.
+ purpose; consider {Text}, an array of {String}, so that {String} remains
+ bounded by a constant.
 
  There is a difference between a null pointer to a {String}, a {String} that is
  in it's null state, (taking no extra memory,) and an empty {String}, (which
- will take extra memory.) All both of these are valid states. To initalise
+ will take extra memory.) All both of these are valid states. To initialise
  {struct String} to a valid state, one may use \see{String}, which initialises
  it to the null state, (\see{StringGet} is null, it takes no extra memory.) Any
  calls to string functions generally make it non-null, and one should destruct
- the string by \see{String_}, which returns a null state. Also, functions
- generally accept null pointers, which means one can compose functions safely
- without \url{ https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming) }.
-
- This is a very small file with not a lot of editing features, but one can use
- \see{StringGet} and to build up a new {String} with \see{StringCat} using
- one's favourite regular expressions tool, (eg, \url{ http://re2c.org/ }.)
+ the string by \see{String_}, which returns a null state. Functions generally
+ accept null pointers, which means one can compose functions safely without
+ \url{ https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming) }.
 
  @param STRING_STRICT_ANSI
  Does not define \see{StringPrintCat} because it uses {vsnprintf} which was
  standardised until {C99}. If you have a compiler that has trouble with {C99},
- viz, {MSVC}, (One can, we think, {#define} some stuff to make it look like it
- follows the standard.)
+ (viz, {MSVC}.)
 
  @title		String
  @author	Neil
