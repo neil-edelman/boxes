@@ -98,9 +98,9 @@ static void PG_(test_random)(void) {
 	} while(0); if(!done) perror(fn); {
 		G_(Digraph_)(&g);
 		if(fp) fclose(fp);
-		if(!done) assert(0);
 	}
-	printf("See <%s>.\n", fn);
+	if(done) printf("See <%s>.\n", fn);
+	printf("<PG>_test_random done.\n");
 }
 
 /** The list will be tested on stdout. */
