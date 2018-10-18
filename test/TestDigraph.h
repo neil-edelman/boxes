@@ -98,7 +98,7 @@ static void PG_(test_random)(void) {
 	} while(0); if(!done) perror(fn); {
 		G_(Digraph_)(&g);
 		fclose(fp);
-		if(!done) assert(0);
+		if(!done) exit(EXIT_FAILURE);
 	}
 	printf("See <%s>.\n", fn);
 }
