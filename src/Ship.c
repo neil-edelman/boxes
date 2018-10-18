@@ -1,9 +1,6 @@
-/** Animals is polymoric class that includes several animal types. There is
- also an interface-thing, where you can mount certain animals. For a more
- detailed expliation, see
- \url{http://neil.chaosnet.org/code/Ctools/tests/Animals/}.
+/** Ship is a superclass of two different ships.
 
- @title Animals
+ @title Ship
  @author Neil
  @std C89 */
 

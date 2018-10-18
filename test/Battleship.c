@@ -7,7 +7,7 @@
 #include <time.h>	/* clock */
 #include "../src/Ship.h"
 
-/** (Incomplete) unit test of {Animals}. */
+/** (Incomplete) unit test of {Battleship}. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	struct Ships *ships = 0;
