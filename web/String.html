@@ -1,0 +1,470 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<!-- steal these colour values from JavaDocs; meh -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>String</title>
+</head>
+
+
+<body>
+
+<h1>String</h1>
+
+<ul>
+	<li><a href = "#_declarations">Declarations</a></li>
+	<li><a href = "#_summary">Function Summary</a></li>
+	<li><a href = "#_detail">Function Detail</a></li>
+</ul>
+
+<p>
+2017 Neil Edelman, distributed under the terms of the MIT License;
+see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
+</p>
+<p>
+A dynamic string, intended to be used with modified UTF-8 encoding (or
+subsets of this,) <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8</a>.
+That is, this is a wrapper that automatically expands memory as needed around
+a standard <em>C</em> null-terminated string in a monolithic array and is compatible
+with <em>ASCII</em>. If you need to edit a potentially large string, just one of
+<em>String</em> will be generally linear-time and is unsuited alone for such a
+purpose; consider <em>Text</em>, an array of <em>String</em>, so that <em>String</em> remains
+length-bounded by a constant.
+</p>
+<p>
+There is a difference between a null pointer to a <em>String</em>, a <em>String</em> that is
+in it's null state, (taking no extra memory,) and an empty <em>String</em>, (which
+will take extra memory.) All both of these are valid states. To initialise
+<em>struct String</em> to a valid state, one may use <a href = "#String">String</a>, which initialises
+it to the null state, (<a href = "#StringGet">StringGet</a> is null, it takes no extra memory.) Any
+calls to string functions generally make it non-null, and one should destruct
+the string by <a href = "#String_">String_</a>, which returns a null state. Functions generally
+accept null pointers, which means one can compose functions safely without
+<a href = "https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming)">https://en.wikipedia.org/wiki/Pyramid_of_doom_(programming)</a>.
+</p>
+<dl>
+	<dt>parameter: STRING_STRICT_ANSI</dt>
+	<dd>Does not define <a href = "#StringPrintCat">StringPrintCat</a> because it uses <em>vsnprintf</em> which was
+ standardised until <em>C99</em>. If you have a compiler that has trouble with <em>C99</em>,
+ (viz, <em>MSVC</em>.)</dd>
+	<dt>minimum standard</dt>
+	<dd>C89/90 with C99 vsnprintf</dd>
+	<dt>author</dt>
+	<dd>Neil</dd>
+	<dt>version</dt>
+	<dd>2018-10 Documentation improved.</dd>
+	<dt>since</dt>
+	<dd>2018-03 <em>Text -&gt; String</em>; complete refactoring to work with <em>Text</em>.
+			2018-01
+			2017-03</dd>
+	<dt>fixme</dt>
+	<dd><em>StringByteOffsetCodePoints()</em>?</dd>
+	<dt>fixme</dt>
+	<dd>Test <em>STRING_STRICT_ANSI</em>.</dd>
+</dl>
+
+
+<a name = "_declarations"><!-- --></a><h2>Declarations</h2>
+
+<div><a name = "struct String"><!-- --></a>
+<h3>struct String</h3>
+<pre><b>struct String</b> {
+	char *text;
+	size_t length, capacity[2];
+}</pre>
+<p>
+Struct to hold information about a string.
+</p>
+<dl>
+</dl>
+</div>
+
+
+<a name = "_summary"><!-- --></a><h2>Function Summary</h2>
+
+<table>
+<tr><th>Return Type</th><th>Function Name</th><th>Argument List</th></tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#String_">String_</a></td>
+	<td>struct String *const string</td>
+</tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#String">String</a></td>
+	<td>struct String *const string</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringClear">StringClear</a></td>
+	<td>struct String *const string</td>
+</tr>
+<tr>
+	<td>const char *</td>
+	<td><a href = "#StringGet">StringGet</a></td>
+	<td>const struct String *const string</td>
+</tr>
+<tr>
+	<td>size_t</td>
+	<td><a href = "#StringLength">StringLength</a></td>
+	<td>const struct String *const string</td>
+</tr>
+<tr>
+	<td>size_t</td>
+	<td><a href = "#StringCodePoints">StringCodePoints</a></td>
+	<td>const struct String *const string</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#StringHasContent">StringHasContent</a></td>
+	<td>const struct String *const string</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringRightTrim">StringRightTrim</a></td>
+	<td>struct String *const string</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringTrim">StringTrim</a></td>
+	<td>struct String *const string</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringCopy">StringCopy</a></td>
+	<td>struct String *const string, const char *const str</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringCat">StringCat</a></td>
+	<td>struct String *const string, const char *const str</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringNCat">StringNCat</a></td>
+	<td>struct String *const string, const char *const str,
+	const size_t str_len</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringBetweenCat">StringBetweenCat</a></td>
+	<td>struct String *const string,
+	const char *const a, const char *const b</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringPrintCat">StringPrintCat</a></td>
+	<td>struct String *const string,
+	const char *const fmt, ...</td>
+</tr>
+<tr>
+	<td>struct String *</td>
+	<td><a href = "#StringTransform">StringTransform</a></td>
+	<td>struct String *const string, const char *fmt</td>
+</tr>
+</table>
+
+
+<a name = "_detail"><!-- --></a><h2>Function Detail</h2>
+
+<div><a name = "String_"><!-- --></a>
+<h3>String_</h3>
+<pre>void <b>String_</b> (struct String *const string)</pre>
+<p>
+Use this if <em>string</em> is in an initialised state. The <em>String</em> will be set
+to null and any memory will be freed.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, does nothing.</dd>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "String"><!-- --></a>
+<h3>String</h3>
+<pre>void <b>String</b> (struct String *const string)</pre>
+<p>
+Use this if <em>string</em> is uninitialised. Sets the <em>String</em> text to be null,
+thus in a well-defined state. Static <em>String</em> variables do not need
+initialisation, though it will not hurt. Calling this on a non-null <em>string</em>
+results in a memory leak.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>A string whose text will be set to null. If null, does nothing.</dd>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "StringClear"><!-- --></a>
+<h3>StringClear</h3>
+<pre>struct String * <b>StringClear</b> (struct String *const string)</pre>
+<p>
+Erases the text of <em>string</em> so the text is empty, but does not erase the
+memory associated with that string. If <em>string</em> is in it's null state, then it
+will allocate memory for an empty string.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "StringGet"><!-- --></a>
+<h3>StringGet</h3>
+<pre>const char * <b>StringGet</b> (const struct String *const string)</pre>
+<p>
+Volatile, in the sense that it exposes the text; specifically, not
+guaranteed to last between <em>String</em> calls to the same object. That also means
+one cannot self-reference strings, but see <a href = "#StringTransform">StringTransform</a>.
+</p>
+<dl>
+	<dt>return</dt>
+	<dd>The text associated to <em>string</em> or null if there is no text or if
+ <em>string</em> is null.</dd>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "StringLength"><!-- --></a>
+<h3>StringLength</h3>
+<pre>size_t <b>StringLength</b> (const struct String *const string)</pre>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null or in it's null state, returns zero.</dd>
+	<dt>return</dt>
+	<dd>The length in bytes.</dd>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "StringCodePoints"><!-- --></a>
+<h3>StringCodePoints</h3>
+<pre>size_t <b>StringCodePoints</b> (const struct String *const string)</pre>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null or in it's null state, returns zero.</dd>
+	<dt>return</dt>
+	<dd>How many code-points in
+ <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8</a>. If it is not a
+ valid string in <em>UTF-8</em>, string will return an undefined value between
+ <em>[0, size]</em>.</dd>
+	<dt>order</dt>
+	<dd>O(<em>string.size</em>)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+	<dt>fixme</dt>
+	<dd>Work with <em>int</em> instead of <em>char</em> to speed this up?</dd>
+</dl>
+</div>
+
+<div><a name = "StringHasContent"><!-- --></a>
+<h3>StringHasContent</h3>
+<pre>int <b>StringHasContent</b> (const struct String *const string)</pre>
+<dl>
+	<dt>return</dt>
+	<dd>True if <em>string</em> is non-null and <em>string</em> is in it's non-null state
+ and is not empty.</dd>
+</dl>
+</div>
+
+<div><a name = "StringRightTrim"><!-- --></a>
+<h3>StringRightTrim</h3>
+<pre>struct String * <b>StringRightTrim</b> (struct String *const string)</pre>
+<p>
+White-space trims the text associated with <em>string</em> using <em>isspace</em> only
+at the end.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
+<div><a name = "StringTrim"><!-- --></a>
+<h3>StringTrim</h3>
+<pre>struct String * <b>StringTrim</b> (struct String *const string)</pre>
+<p>
+White-space trims the text associated with <em>string</em> using <em>isspace</em>.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+</dl>
+</div>
+
+<div><a name = "StringCopy"><!-- --></a>
+<h3>StringCopy</h3>
+<pre>struct String * <b>StringCopy</b> (struct String *const string, const char *const str)</pre>
+<p>
+Replaces the text in <em>string</em> with <em>str</em>.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: str</dt>
+	<dd>If null, does nothing.</dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+</dl>
+</div>
+
+<div><a name = "StringCat"><!-- --></a>
+<h3>StringCat</h3>
+<pre>struct String * <b>StringCat</b> (struct String *const string, const char *const str)</pre>
+<p>
+Concatenates <em>str</em> onto the text in <em>string</em>.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: str</dt>
+	<dd>If null, does nothing.</dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+</dl>
+</div>
+
+<div><a name = "StringNCat"><!-- --></a>
+<h3>StringNCat</h3>
+<pre>struct String * <b>StringNCat</b> (struct String *const string, const char *const str,
+	const size_t str_len)</pre>
+<p>
+Concatenates up to <em>str_len</em> bytes characters of <em>str</em> onto the text in
+<em>string</em>. The responsibility lies with the caller to check for chopped
+code-points.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: str</dt>
+	<dd>If null, returns <em>string</em>.</dd>
+	<dt>parameter: str_len</dt>
+	<dd>If the bytes one has access to is smaller then this value, the
+ results are technically undefined, if using a compiler mode before <em>C11</em>.
+ <a href = "https://stackoverflow.com/q/47315902">https://stackoverflow.com/q/47315902</a></dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+</dl>
+</div>
+
+<div><a name = "StringBetweenCat"><!-- --></a>
+<h3>StringBetweenCat</h3>
+<pre>struct String * <b>StringBetweenCat</b> (struct String *const string,
+	const char *const a, const char *const b)</pre>
+<p>
+Concatenates <em>string</em> with <em>[a, b)</em>; that is, from <em>a</em> and stops when it
+encounters, and doesn't include <em>b</em>. Does not check for null bytes.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: a, b</dt>
+	<dd>If <em>a</em> or <em>b</em> are null or <em>a &gt;= b</em>, returns <em>string</em>.</dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+</dl>
+</div>
+
+<div><a name = "StringPrintCat"><!-- --></a>
+<h3>StringPrintCat</h3>
+<pre>struct String * <b>StringPrintCat</b> (struct String *const string,
+	const char *const fmt, ...)</pre>
+<p>
+Concatenates the text with an <em>fprintf</em>;
+<a href = "http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html">http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html</a>.
+If <em>STRING_STRICT_ANSI</em> is defined, this function is not defined.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: fmt</dt>
+	<dd>If null, returns <em>string</em>.</dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
+	<dt>throws: <em>vsnprintf/realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+</dl>
+</div>
+
+<div><a name = "StringTransform"><!-- --></a>
+<h3>StringTransform</h3>
+<pre>struct String * <b>StringTransform</b> (struct String *const string, const char *fmt)</pre>
+<p>
+Transforms the original text according to <em>fmt</em>.
+</p>
+<dl>
+	<dt>parameter: string</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: fmt</dt>
+	<dd>Accepts %% as '%' and %s as the original string. If null, returns
+ <em>string</em>.</dd>
+	<dt>return</dt>
+	<dd><em>string</em>.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
+	<dt>throws: <em>strdup/malloc/realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+</dl>
+</div>
+
+
+</body>
+</html>
