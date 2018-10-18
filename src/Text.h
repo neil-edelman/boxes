@@ -27,8 +27,8 @@ struct Line *TextNew(struct Text *const text);
 int TextCursorSet(struct Text *const text, struct Line *const set);
 const struct Line *TextCursor(const struct Text *const text);
 const struct String *LineString(const struct Line *const line);
-/*const*/ struct Line *TextNext(struct Text *const text);
-/*const*/ struct Line *TextPrevious(struct Text *const text);
+struct Line *TextNext(struct Text *const text);
+struct Line *TextPrevious(struct Text *const text);
 struct Line *LineCopyMeta(const struct Line *const src, struct Text *const dst);
 int LineBetweenCat(struct Line *const line,
 	const char *const a, const char *const b);

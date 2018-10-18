@@ -1,9 +1,9 @@
 /** 2018 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- A {Text} is composed of {String} in a way that makes them easy to edit.
- Requires {List}, {Pool}, and {String}. Each {Text} is made up of lines, but
- one can stick whatever you want in here, including new-lines or not.
+ A {Text} is composed of {String} in a way that makes them easy and fast to
+ edit. Requires {List}, {Pool}, and {String}. Each {Text} is made up of lines,
+ but one can stick whatever you want in here, including new-lines or not.
 
  If one needs traditional, Python-like editing, call \see{TextNext} to get a
  read-only line, and maybe parse into a new {Text} using one's favourite
@@ -12,7 +12,7 @@
  @title		Text
  @author	Neil
  @std		C89/90
- @version	2018-10
+ @version	2018-10 Excess {split}s removed; {re2c} is better.
  @since		2018-01 */
 
 #include <stddef.h>	/* offset_of */
@@ -57,7 +57,7 @@ static void Line_(struct Line *const line) {
 
 
 
-/** {Plain} extends {Line}. Plain has no extra data; is _is_ a {LineLink}, but
+/** {Plain} extends {Line}. Plain has no extra data; _is_ a {LineLink}, but
  renamed to avoid confusion. */
 struct Plain { struct LineLink line; };
 
@@ -317,15 +317,16 @@ const struct String *LineString(const struct Line *const line) {
  line.
  @param text: If null, returns false.
  @return The string contents or null if there is no next position (the cursor
- will be reset.) */
-/*const*/ struct Line *TextNext(struct Text *const text) {
+ will be reset.)
+ @fixme const? */
+struct Line *TextNext(struct Text *const text) {
 	if(!text) return 0;
 	return text->cursor = text->cursor ?
 		LineListNext(text->cursor) : LineListFirst(&text->lines);
 }
 
-/** @fixme */
-/*const*/ struct Line *TextPrevious(struct Text *const text) {
+/** @fixme const? */
+struct Line *TextPrevious(struct Text *const text) {
 	if(!text) return 0;
 	return text->cursor = text->cursor ?
 		LineListPrevious(text->cursor) : LineListLast(&text->lines);
