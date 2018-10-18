@@ -1,17 +1,18 @@
 /** 2018 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<E>Map} is an associative array abstract data type, (hash table,) of which a
- subset of {K \in E} is used as a unique key, specified by {MAP_KEY}. Adding an
- element with the same {K} causes the old data to be ejected, see
- \see{<E>MapPut}. The key is then hashed to a {uint32_t} and placed in a bucket
- implemented as a power-of-two dynamically allocated array of lists for easy
- rehashing. As such, depends on {List.h} being in the same directory as
- {Map.h}. This requires the storage of {<E>MapNode} or structures therewith.
+ {<E>Map} is a general associative array abstract data type, (hash table, hash
+ map, hashmap, dictionary,) of which a subset, specified by {MAP_KEY},
+ {K \in E} is used as a deterministic unique key. The key is then hashed to a
+ {uint32_t} and placed in a bucket implemented as a power-of-two dynamically
+ allocated array of lists for easy rehashing. Adding an element with the same
+ {K}, according to {MAP_IS_EQUAL}, causes the old data to be ejected, see
+ \see{<E>MapPut}. Depends on {List.h} being in the same directory as {Map.h}.
+ This requires the storage of {<E>MapNode} or structures therewith.
 
- Use when {<E>} contains the key within the data. For a key-value store which
- requires fewer parameters and is closer to a dictionary, see {<K,V>Entry},
- which is sort of a subclass, if you will.
+ Use when {<E>} contains the key within the data. If the data can be separated,
+ into keys and values, see {<K,V>Entry}, which is a subclass requiring fewer
+ parameters (if you will.)
 
  @param MAP_NAME
  A unique (among {Map}) name associated with {<E>} that satisfies {C} naming
@@ -228,7 +229,7 @@ typedef void (*PE_(Action))(E *const);
 
 
 
-/** A {Map} or dictionary. To instatiate, \see{<E>Map}. */
+/** A {Map} or dictionary. To instantiate, \see{<E>Map}. */
 struct E_(Map);
 struct E_(Map) {
 	struct PE_(EntryList) *bins;
@@ -262,8 +263,7 @@ static struct PE_(EntryList) *PE_(get_bin)(struct E_(Map) *const map,
 static int PE_(grow)(struct E_(Map) *const map, const size_t entries) {
 	struct PE_(EntryList) *bins, *b, *end, *new_bin;
 	E *i, *next_i;
-	const float one_ln2
-		= 1.442695040888963407359924681001892137426645954152985934f;
+	const float one_ln2 = 1.44269504088896340735992468100f;
 	const size_t max_bins = (uint32_t)-1 & ~((uint32_t)-1 >> 1);
 	uint32_t items_ln2, c0, c1, mask, hash;
 	int is_moved;
@@ -335,7 +335,7 @@ static struct E_(Map) *E_(Map)(void) {
 	struct E_(Map) *map;
 	if(!(map = malloc(sizeof *map))) return 0;
 	map->bins     = 0;
-	map->entries    = 0;
+	map->entries  = 0;
 	map->log_bins = 0;
 	if(!PE_(grow)(map, 10)) E_(Map_)(&map);
 	return map;
