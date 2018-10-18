@@ -52,8 +52,7 @@
  @title		Digraph.h
  @std		C89
  @author	Neil
- @version	2018-04 This is cool.
- @fixme Have _another_ data type for the graph itself. */
+ @version	2018-04 This is cool. */
 
 
 
@@ -469,7 +468,8 @@ static struct G_(Vertex) *G_(DigraphGetRoot)(const struct G_(Digraph) *const g){
 /** Sorts the digraph according to {DIGRAPH_VDATA_COMPARATOR} and
  {DIGRAPH_EDATA_COMPARATOR}, whichever is defined.
  @order n log n
- @fixme Untested. */
+ @fixme Untested.
+ @allow */
 static void G_(DigraphSort)(struct G_(Digraph) *g) {
 	if(!g) return;
 #ifdef DIGRAPH_VDATA_COMPARATOR /* <-- vcmp */
