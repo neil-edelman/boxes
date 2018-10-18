@@ -447,13 +447,13 @@ int main(void) {
 	for(i = 0; i < ms_size; i++) {
 		const struct Machines *const m = ms + i;
 		struct Machine *mach = Machine(m->machine);
-		FILE *fp;
+		FILE *fp = 0;
 		if(!mach) { perror(m->machine); assert(0); break; }
 		fp = fopen(m->fn, "w");
 		if(!fp || !MachineDigraphOut(&mach->graph, 0, fp)) {
 			perror(m->fn);
 		}
-		fclose(fp);
+		if(fp) fclose(fp);
 		printf("The machine has %s vertices.\n",
 			MachineVertexListToString(&mach->graph.vertices));
 		Machine_(&mach);
