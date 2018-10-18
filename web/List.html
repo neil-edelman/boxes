@@ -44,23 +44,22 @@
 see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
 </p>
 <p>
-<em>&lt;T&gt;List</em> is an abstract data structure requiring <em>&lt;T&gt;ListNode</em> storage; one
-can possibly store this as a sub-structure of larger, possibly different data.
-Provides <a href = "#&lt;T&gt;ListNodeMigrate">&lt;T&gt;ListNodeMigrate</a> for self-referencing pointers that change as
-the result of a memory relocation.
+<em>&lt;T&gt;List</em> is a doubly-linked-list of <em>&lt;T&gt;Link</em>, of which data of type, <em>&lt;T&gt;</em>,
+must be set using <em>LIST_TYPE</em>. This is an abstract data structure requiring
+<em>&lt;T&gt;Link</em> storage, and can possibly store this as a sub-structure of larger
+data-type. Provides <a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a> for self-referencing pointers that
+change as the result of a memory relocation within the list.
 </p>
 <p>
-This is a doubly-linked-list(s) of <em>&lt;T&gt;ListNode</em>, (not plain <em>&lt;T&gt;</em>,) of which
-data of type, <em>&lt;T&gt;</em>, must be set using <em>LIST_TYPE</em>. Supports one to four
-different orders in the same type. The preprocessor macros are all undefined
-at the end of the file for convenience. Identifiers starting with <em>LIST_*</em> and
-<em>list_*</em> are reserved.
+Supports one to four different orders in the same type. The preprocessor
+macros are all undefined at the end of the file for convenience.
 </p>
 <dl>
 	<dt>parameter: LIST_NAME, LIST_TYPE</dt>
-	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith;
- should be conformant to naming and to the maximum available length of
- identifiers. Must each be present before including.</dd>
+	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith,
+ accessible to the compiler at the time of inclusion; should be conformant to
+ naming and to the maximum available length of identifiers. Must each be
+ present before including.</dd>
 	<dt>parameter: LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR</dt>
 	<dd>Each <em>LIST_U[A-D]_NAME</em> literally becomes, <em>&lt;U&gt;</em>, an order, and optional
  comparator, <em>LIST_U[A-D]_COMPARATOR</em>, an equivalence relation function
@@ -83,18 +82,22 @@ at the end of the file for convenience. Identifiers starting with <em>LIST_*</em
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>2018-02 Eliminated the need for unnecessarily <em>&lt;T&gt;List</em>.
-			Now you must initialise static variables with <em>&lt;T&gt;ListClear</em>.
-			Eliminated <em>LIST_STATIC_SORT</em>.</dd>
+	<dd>2018-04 <em>&lt;T&gt;ListNode</em> has been shortened to <em>&lt;T&gt;Link</em>, thus potential
+ namespace violations doubled. Two dynamic memory allocations have been
+ collapsed into one by making it a non-pointer at the cost of readability.
+ These changes are good for more complex data structures #including list.</dd>
 	<dt>since</dt>
-	<dd>2017-12 Type information on backing.
-			2017-10 Anonymous orders.
-			2017-07 Made migrate simpler.
-			2017-06 Split Add into Push and Unshift.
-			2017-05 Separated from backing.</dd>
+	<dd>2018-02 Eliminated the need for unnecessarily <em>&lt;T&gt;List</em>. Now one
+ must initialise static variables with <em>&lt;T&gt;ListClear</em>. Eliminated
+ <em>LIST_STATIC_SORT</em>.
+ 2017-12 Type information on backing.
+ 2017-10 Anonymous orders.
+ 2017-07 Made migrate simpler.
+ 2017-06 Split Add into Push and Unshift.
+ 2017-05 Separated from backing.</dd>
 	<dt>fixme</dt>
 	<dd><em>GCC</em>: <em>#pragma GCC diagnostic ignored "-Wconversion"</em>; libc 4.2
- <em>assert</em> bug on <em>LIST_TEST</em>.</dd>
+ <em>assert</em> warnings on <em>LIST_TEST</em>.</dd>
 	<dt>fixme</dt>
 	<dd><em>MSVC</em>: <em>#pragma warning(disable: x)</em> where <em>x</em> is: 4464 contains '..'
  uhm, thanks?; 4706 not <em>Java</em>; 4710, 4711 inlined info; 4820 padding info;
@@ -104,8 +107,9 @@ at the end of the file for convenience. Identifiers starting with <em>LIST_*</em
  <em>padded</em>; <em>documentation</em>; <em>documentation-unknown-command</em> it's not quite
  <em>clang-tags</em>; 3.8 <em>disabled-macro-expansion</em> on <em>toupper</em> in <em>LIST_TEST</em>.</dd>
 	<dt>fixme</dt>
-	<dd>Void pointers in <em>&lt;T&gt;List&lt;U&gt;BiAction</em> are not effective; have an
- interface. While we're at it, <em>&lt;T&gt;ListNodeMigrate</em> should be an interface.</dd>
+	<dd>Non-const void pointers in <em>&lt;T&gt;List&lt;U&gt;BiAction</em> are not effective; have
+ an interface. While we're at it, <em>&lt;T&gt;LinkMigrate</em> should be an interface.
+ Everything should be an interface.</dd>
 </dl>
 
 
@@ -121,9 +125,9 @@ Contains information about a <em>realloc</em>.
 </dl>
 </div>
 
-<div><a name = "struct &lt;T&gt;ListNode"><!-- --></a>
-<h3>struct &lt;T&gt;ListNode</h3>
-<pre><b>struct &lt;T&gt;ListNode</b></pre>
+<div><a name = "struct &lt;T&gt;Link"><!-- --></a>
+<h3>struct &lt;T&gt;Link</h3>
+<pre><b>struct &lt;T&gt;Link</b></pre>
 <p>
 A single link in the linked-list derived from <em>&lt;T&gt;</em>. Storage of this
 structure is the responsibility of the caller. The <em>&lt;T&gt;</em> is stored in the
@@ -137,7 +141,7 @@ element <em>data</em>.
 <h3>struct &lt;T&gt;List</h3>
 <pre><b>struct &lt;T&gt;List</b></pre>
 <p>
-Serves as an a head for linked-list(s) of <em>&lt;T&gt;ListNode</em>. Use
+Serves as an a head for linked-list(s) of <em>&lt;T&gt;Link</em>. Use
 <a href = "#&lt;T&gt;ListClear">&lt;T&gt;ListClear</a> to initialise.
 </p>
 <dl>
@@ -150,7 +154,7 @@ Serves as an a head for linked-list(s) of <em>&lt;T&gt;ListNode</em>. Use
 <p>
 Takes <em>&lt;T&gt;</em>; used in <a href = "#&lt;T&gt;List&lt;U&gt;ForEach">&lt;T&gt;List&lt;U&gt;ForEach</a>. This definition is about the
 <em>LIST_NAME</em> type, that is, it is without the prefix <em>List</em>; to avoid namespace
-collisions, this is private, meaning the name is mangled. If you want this
+collisions, this is private, meaning the name is mangled. If one want this
 definition, re-declare it.
 </p>
 <dl>
@@ -268,9 +272,8 @@ null-terminated output string (the second.)
 </tr>
 <tr>
 	<td>static void</td>
-	<td><a href = "#&lt;T&gt;ListNodeMigrate">&lt;T&gt;ListNodeMigrate</a></td>
-	<td>struct &lt;T&gt;ListNode *const listnode,
-	const struct Migrate *const migrate</td>
+	<td><a href = "#&lt;T&gt;LinkMigrate">&lt;T&gt;LinkMigrate</a></td>
+	<td>T *const data, const struct Migrate *const migrate</td>
 </tr>
 <tr>
 	<td>static void</td>
@@ -280,22 +283,22 @@ null-terminated output string (the second.)
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;Next">&lt;T&gt;List&lt;U&gt;Next</a></td>
-	<td>T *const data</td>
+	<td>const T *const data</td>
 </tr>
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;Previous">&lt;T&gt;List&lt;U&gt;Previous</a></td>
-	<td>T *const data</td>
+	<td>const T *const data</td>
 </tr>
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;First">&lt;T&gt;List&lt;U&gt;First</a></td>
-	<td>struct &lt;T&gt;List *const list</td>
+	<td>const struct &lt;T&gt;List *const list</td>
 </tr>
 <tr>
 	<td>static T *</td>
 	<td><a href = "#&lt;T&gt;List&lt;U&gt;Last">&lt;T&gt;List&lt;U&gt;Last</a></td>
-	<td>struct &lt;T&gt;List *const list</td>
+	<td>const struct &lt;T&gt;List *const list</td>
 </tr>
 <tr>
 	<td>static void</td>
@@ -359,13 +362,13 @@ null-terminated output string (the second.)
 </tr>
 <tr>
 	<td>static T *</td>
-	<td><a href = "#&lt;T&gt;List&lt;U&gt;ShortCircuit">&lt;T&gt;List&lt;U&gt;ShortCircuit</a></td>
+	<td><a href = "#&lt;T&gt;List&lt;U&gt;All">&lt;T&gt;List&lt;U&gt;All</a></td>
 	<td>struct &lt;T&gt;List *const list,
 	const &lt;PT&gt;Predicate predicate</td>
 </tr>
 <tr>
 	<td>static T *</td>
-	<td><a href = "#&lt;T&gt;List&lt;U&gt;BiShortCircuit">&lt;T&gt;List&lt;U&gt;BiShortCircuit</a></td>
+	<td><a href = "#&lt;T&gt;List&lt;U&gt;BiAll">&lt;T&gt;List&lt;U&gt;BiAll</a></td>
 	<td>struct &lt;T&gt;List *const list,
 	const &lt;PT&gt;BiPredicate bipredicate, void *const param</td>
 </tr>
@@ -403,8 +406,8 @@ beginning of <em>list</em>. If either <em>list</em> or <em>add</em> is null, it 
 </p>
 <dl>
 	<dt>parameter: add</dt>
-	<dd>Must be inside of a <em>&lt;T&gt;ListNode</em> and not associated to any list;
- this associates the <em>&lt;T&gt;ListNode</em> with the list.</dd>
+	<dd>Must be inside of a <em>&lt;T&gt;Link</em> and not associated to any list;
+ this associates the <em>&lt;T&gt;Link</em> with the list.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 	<dt>fixme</dt>
@@ -424,8 +427,8 @@ end of <em>list</em>.
 	<dd>If null, does nothing.</dd>
 	<dt>parameter: add</dt>
 	<dd>If null, does nothing, otherwise must be inside of a
- <em>&lt;T&gt;ListNode</em> and not associated to any list; this associates the
- <em>&lt;T&gt;ListNode</em> that <em>add</em> is a part of with <em>list</em>, if it exists.</dd>
+ <em>&lt;T&gt;Link</em> and not associated to any list; this associates the
+ <em>&lt;T&gt;Link</em> that <em>add</em> is a part of with <em>list</em>, if it exists.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -442,8 +445,8 @@ immediately before <em>data</em>.
 	<dt>parameter: data</dt>
 	<dd>If null, does nothing, otherwise must be part of a list.</dd>
 	<dt>parameter: add</dt>
-	<dd>If null, does nothing, otherwise must be inside of a <em>&lt;T&gt;ListNode</em>
- and not associated to any list; this associates the <em>&lt;T&gt;ListNode</em> with the
+	<dd>If null, does nothing, otherwise must be inside of a <em>&lt;T&gt;Link</em>
+ and not associated to any list; this associates the <em>&lt;T&gt;Link</em> with the
  list of which <em>data</em> is a part, if it exists.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
@@ -463,8 +466,8 @@ immediately after <em>data</em>.
 	<dt>parameter: data</dt>
 	<dd>If null, does nothing, otherwise must be part of a list.</dd>
 	<dt>parameter: add</dt>
-	<dd>If null, does nothing, otherwise must be inside of a <em>&lt;T&gt;ListNode</em>
- and not associated to any list; this associates the <em>&lt;T&gt;ListNode</em> with the
+	<dd>If null, does nothing, otherwise must be inside of a <em>&lt;T&gt;Link</em>
+ and not associated to any list; this associates the <em>&lt;T&gt;Link</em> with the
  list of which <em>data</em> is a part, if it exists.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
@@ -562,22 +565,21 @@ Performs a stable, adaptive sort on all orders which have comparators.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;ListNodeMigrate"><!-- --></a>
-<h3>&lt;T&gt;ListNodeMigrate</h3>
-<pre>static void <b>&lt;T&gt;ListNodeMigrate</b> (struct &lt;T&gt;ListNode *const listnode,
-	const struct Migrate *const migrate)</pre>
+<div><a name = "&lt;T&gt;LinkMigrate"><!-- --></a>
+<h3>&lt;T&gt;LinkMigrate</h3>
+<pre>static void <b>&lt;T&gt;LinkMigrate</b> (T *const data, const struct Migrate *const migrate)</pre>
 <p>
-Adjusts one <em>&lt;T&gt;ListNode</em>'s internal pointers when supplied with a
+Adjusts one <em>&lt;T&gt;Link</em>'s internal pointers when supplied with a
 <em>Migrate</em> parameter.
 </p>
 <dl>
-	<dt>parameter: list</dt>
+	<dt>parameter: data</dt>
 	<dd>If null, does nothing.</dd>
 	<dt>parameter: migrate</dt>
 	<dd>If null, does nothing. Should only be called in a <em>Migrate</em>
  function; pass the <em>migrate</em> parameter.</dd>
 	<dt>implements</dt>
-	<dd>&lt;&lt;T&gt;ListNode&gt;Migrate</dd>
+	<dd>&lt;&lt;T&gt;Link&gt;Migrate</dd>
 	<dt>order</dt>
 	<dd>&Theta;(n)</dd>
 </dl>
@@ -603,7 +605,7 @@ even when it's empty.
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;Next"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;Next</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;Next</b> (T *const data)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;Next</b> (const T *const data)</pre>
 <dl>
 	<dt>parameter: data</dt>
 	<dd>Must be part of a <em>List</em>. If <em>data</em> are not part of a valid
@@ -619,7 +621,7 @@ even when it's empty.
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;Previous"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;Previous</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;Previous</b> (T *const data)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;Previous</b> (const T *const data)</pre>
 <dl>
 	<dt>parameter: data</dt>
 	<dd>Must be part of a <em>List</em>. If <em>data</em> are not part of a valid
@@ -635,7 +637,7 @@ even when it's empty.
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;First"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;First</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;First</b> (struct &lt;T&gt;List *const list)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;First</b> (const struct &lt;T&gt;List *const list)</pre>
 <dl>
 	<dt>parameter: list</dt>
 	<dd>If null, returns null.</dd>
@@ -648,7 +650,7 @@ even when it's empty.
 
 <div><a name = "&lt;T&gt;List&lt;U&gt;Last"><!-- --></a>
 <h3>&lt;T&gt;List&lt;U&gt;Last</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;Last</b> (struct &lt;T&gt;List *const list)</pre>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;Last</b> (const struct &lt;T&gt;List *const list)</pre>
 <dl>
 	<dt>parameter: list</dt>
 	<dd>If null, returns null.</dd>
@@ -835,10 +837,13 @@ iterating.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;List&lt;U&gt;ShortCircuit"><!-- --></a>
-<h3>&lt;T&gt;List&lt;U&gt;ShortCircuit</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;ShortCircuit</b> (struct &lt;T&gt;List *const list,
+<div><a name = "&lt;T&gt;List&lt;U&gt;All"><!-- --></a>
+<h3>&lt;T&gt;List&lt;U&gt;All</h3>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;All</b> (struct &lt;T&gt;List *const list,
 	const &lt;PT&gt;Predicate predicate)</pre>
+<p>
+Short-circiut evaluates <em>list</em> with each item's <em>predicate</em>.
+</p>
 <dl>
 	<dt>parameter: list, predicate</dt>
 	<dd>If null, returns null.</dd>
@@ -851,10 +856,13 @@ iterating.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;List&lt;U&gt;BiShortCircuit"><!-- --></a>
-<h3>&lt;T&gt;List&lt;U&gt;BiShortCircuit</h3>
-<pre>static T * <b>&lt;T&gt;List&lt;U&gt;BiShortCircuit</b> (struct &lt;T&gt;List *const list,
+<div><a name = "&lt;T&gt;List&lt;U&gt;BiAll"><!-- --></a>
+<h3>&lt;T&gt;List&lt;U&gt;BiAll</h3>
+<pre>static T * <b>&lt;T&gt;List&lt;U&gt;BiAll</b> (struct &lt;T&gt;List *const list,
 	const &lt;PT&gt;BiPredicate bipredicate, void *const param)</pre>
+<p>
+Short-circiut evaluates <em>list</em> with each item's <em>predicate</em>.
+</p>
 <dl>
 	<dt>parameter: list, bipredicate</dt>
 	<dd>If null, returns null.</dd>
@@ -867,7 +875,7 @@ iterating.
 	<dt>order</dt>
 	<dd>~ O(<em>list</em>.n) &times; O(<em>predicate</em>)</dd>
 	<dt>fixme</dt>
-	<dd>Void. No.</dd>
+	<dd>Void. No. Have interfaces.</dd>
 </dl>
 </div>
 
