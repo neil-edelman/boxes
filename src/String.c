@@ -8,7 +8,7 @@
  with {ASCII}. If you need to edit a potentially large string, just one of
  {String} will be generally linear-time and is unsuited alone for such a
  purpose; consider {Text}, an array of {String}, so that {String} remains
- bounded by a constant.
+ length-bounded by a constant.
 
  There is a difference between a null pointer to a {String}, a {String} that is
  in it's null state, (taking no extra memory,) and an empty {String}, (which
@@ -28,8 +28,9 @@
  @title		String
  @author	Neil
  @std		C89/90 with C99 vsnprintf
- @version	2018-03 {Text -> String}; complete refactoring to work with {Text}.
- @since		2018-01
+ @version	2018-10 Documentation improved.
+ @since		2018-03 {Text -> String}; complete refactoring to work with {Text}.
+			2018-01
 			2017-03
  @fixme {StringByteOffsetCodePoints()}?
  @fixme Test {STRING_STRICT_ANSI}. */
