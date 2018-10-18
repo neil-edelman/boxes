@@ -44,29 +44,27 @@
 see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
 </p>
 <p>
-<em>&lt;T&gt;Pool</em> is a dynamic array that stores unordered <em>&lt;T&gt;</em>, which must be set
-using <em>POOL_TYPE</em>. Removing an element is done lazily through a linked-list
-internal to the pool; as such, indices will remain the same throughout the
-lifetime of the data. You cannot shrink the capacity of this data type, only
-cause it to grow. Resizing incurs amortised cost, done though a Fibonacci
-sequence. VV!
-</p>
-<p>
-Intended for use in backing polymorphic data-types. <em>&lt;T&gt;Pool</em> is not
-synchronised. The preprocessor macros are all undefined at the end of the file
-for convenience.
+<em>&lt;T&gt;Pool</em> is a dynamic array that stores unordered <em>&lt;T&gt;</em> in a memory pool,
+which must be set using <em>POOL_TYPE</em>. You cannot shrink the capacity of this
+data type, only cause it to grow. Resizing incurs amortised cost, done though
+a Fibonacci sequence. <em>&lt;T&gt;Pool</em> is not synchronised. The preprocessor macros
+are all undefined at the end of the file for convenience.
 </p>
 <dl>
-	<dt>parameter: POOL_NAME</dt>
-	<dd>This literally becomes <em>&lt;T&gt;</em>. As it's used in function names, this should
- comply with naming rules and be unique; required.</dd>
-	<dt>parameter: POOL_TYPE</dt>
-	<dd>The type associated with <em>&lt;T&gt;</em>. Has to be a valid type, accessible to the
- compiler at the time of inclusion; required.</dd>
+	<dt>parameter: POOL_NAME, POOL_TYPE</dt>
+	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith,
+ accessible to the compiler at the time of inclusion; should be conformant to
+ naming and to the maximum available length of identifiers. Must each be
+ present before including.</dd>
+	<dt>parameter: POOL_STACK</dt>
+	<dd>Removing an element is normally done lazily through a linked-list internal to
+ the pool. With this defined, there is no such linked-list; the data will be
+ packed and one can only remove items by <a href = "#&lt;T&gt;PoolPop">&lt;T&gt;PoolPop</a>.</dd>
 	<dt>parameter: POOL_MIGRATE_EACH</dt>
-	<dd>Optional function implementing <em>&lt;PT&gt;Migrate</em>. On memory move, this definition
- will call <em>POOL_MIGRATE_EACH</em> with all <em>&lt;T&gt;</em> in <em>&lt;T&gt;Pool</em>. Use when your data
- is self-referential, like a linked-list.</dd>
+	<dd>Optional function implementing <em>&lt;PT&gt;Migrate</em>. Indices will remain the same
+ throughout the lifetime of the data, but pointers may change on <em>realloc</em>
+ expansion. This definition will call <em>POOL_MIGRATE_EACH</em> with all <em>&lt;T&gt;</em> in
+ <em>&lt;T&gt;Pool</em>. Use when your data is self-referential, like a linked-list.</dd>
 	<dt>parameter: POOL_MIGRATE_ALL</dt>
 	<dd>Optional type <em>&lt;A&gt;</em>. When one may have pointers to the data that is contained
  in the <em>Pool</em> outside the data that can be accessed by the pool. It adds an
@@ -75,14 +73,11 @@ for convenience.
  that includes and has references into the pool. This has the responsibility to
  call <a href = "#&lt;T&gt;MigratePointer">&lt;T&gt;MigratePointer</a> or some migrate function for all references.</dd>
 	<dt>parameter: POOL_MIGRATE_UPDATE</dt>
-	<dd>Optional type association with <em>&lt;U&gt;</em>. If set, the function
- <a href = "#&lt;T&gt;PoolUpdateNew">&lt;T&gt;PoolUpdateNew</a> becomes available, intended for a local iterator
- update on memory move.</dd>
+	<dd>Optional type association with <em>&lt;S&gt;</em>. <em>&lt;S&gt;</em> should be a super-type of <em>&lt;T&gt;</em>.
+ If not set, <em>&lt;S&gt;</em> is <em>&lt;T&gt;</em>. Used in <a href = "#&lt;T&gt;PoolUpdateNew">&lt;T&gt;PoolUpdateNew</a>.</dd>
 	<dt>parameter: POOL_TO_STRING</dt>
 	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
  <a href = "#&lt;T&gt;PoolToString">&lt;T&gt;PoolToString</a>.</dd>
-	<dt>parameter: POOL_DEBUG</dt>
-	<dd>Prints information to <em>stderr</em>. Requires <em>POOL_TO_STRING</em>.</dd>
 	<dt>parameter: POOL_TEST</dt>
 	<dd>Unit testing framework using <em>&lt;T&gt;PoolTest</em>, included in a separate header,
  <em>../test/PoolTest.h</em>. Must be defined equal to a (random) filler function,
@@ -93,9 +88,13 @@ for convenience.
 	<dt>author</dt>
 	<dd>Neil</dd>
 	<dt>version</dt>
-	<dd>2018-02 Errno instead of custom errors.</dd>
+	<dd>2018-04 Merged <em>Stack</em> into <em>Pool</em> again;
+			augh ifdefs, but too much duplicate code.</dd>
 	<dt>since</dt>
-	<dd>2017-12 Introduced <em>POOL_PARENT</em> for type-safety.
+	<dd>2018-03 Why have an extra level of indirection?
+			2018-02 Errno instead of custom errors.
+			2017-12 Introduced <em>POOL_PARENT</em> for type-safety.
+			2017-11 Forked <em>Stack</em> from <em>Pool</em>.
 			2017-10 Replaced <em>PoolIsEmpty</em> by <em>PoolElement</em>, much more useful.
 			2017-10 Renamed Pool; made migrate automatic.
 			2017-07 Made migrate simpler.
@@ -125,10 +124,7 @@ Contains information about a <em>realloc</em>.
 <pre><b>typedef void (*&lt;PT&gt;Migrate)(T *const data,
 	const struct Migrate *const migrate)</b></pre>
 <p>
-This is the migrate function for <em>&lt;T&gt;</em>. This definition is about the
-<em>POOL_TYPE</em> type, that is, it is without the prefix <em>Pool</em>; to avoid namespace
-collisions, this is private, meaning the name is mangled. If you want this
-definition, re-declare it.
+This is the migrate function for <em>&lt;T&gt;</em>.
 </p>
 <dl>
 </dl>
@@ -141,8 +137,7 @@ definition, re-declare it.
 <pre><b>typedef void (*&lt;PT&gt;MigrateAll)(A *const all,
 	const struct Migrate *const migrate)</b></pre>
 <p>
-Function call on <em>realloc</em> if <em>POOL_MIGRATE_ALL</em> is defined. This
-definition is about the <em>POOL_MIGRATE_ALL</em> type.
+Function call on <em>realloc</em> if <em>POOL_MIGRATE_ALL</em> is defined.
 </p>
 <dl>
 </dl>
@@ -177,55 +172,23 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;Pool_">&lt;T&gt;Pool_</a></td>
-	<td>struct &lt;T&gt;Pool **const ppool</td>
-</tr>
-<tr>
-	<td>static struct &lt;T&gt;Pool *</td>
-	<td><a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a></td>
-	<td>const &lt;PT&gt;MigrateAll migrate_all,
-	A *const all</td>
-</tr>
-<tr>
-	<td>static struct &lt;T&gt;Pool *</td>
-	<td><a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a></td>
-	<td>void</td>
-</tr>
-<tr>
-	<td>static T *</td>
-	<td><a href = "#&lt;T&gt;PoolElement">&lt;T&gt;PoolElement</a></td>
-	<td>const struct &lt;T&gt;Pool *const pool</td>
-</tr>
-<tr>
-	<td>static int</td>
-	<td><a href = "#&lt;T&gt;PoolIsElement">&lt;T&gt;PoolIsElement</a></td>
-	<td>struct &lt;T&gt;Pool *const pool, const size_t idx</td>
-</tr>
-<tr>
-	<td>static T *</td>
-	<td><a href = "#&lt;T&gt;PoolGetElement">&lt;T&gt;PoolGetElement</a></td>
-	<td>struct &lt;T&gt;Pool *const pool, const size_t idx</td>
-</tr>
-<tr>
-	<td>static size_t</td>
-	<td><a href = "#&lt;T&gt;PoolGetIndex">&lt;T&gt;PoolGetIndex</a></td>
-	<td>struct &lt;T&gt;Pool *const pool, T *const data</td>
-</tr>
-<tr>
-	<td>static int</td>
-	<td><a href = "#&lt;T&gt;PoolReserve">&lt;T&gt;PoolReserve</a></td>
-	<td>struct &lt;T&gt;Pool *const pool,
-	const size_t min_capacity</td>
-</tr>
-<tr>
-	<td>static T *</td>
-	<td><a href = "#&lt;T&gt;PoolNew">&lt;T&gt;PoolNew</a></td>
 	<td>struct &lt;T&gt;Pool *const pool</td>
 </tr>
 <tr>
-	<td>static T *</td>
-	<td><a href = "#&lt;T&gt;PoolUpdateNew">&lt;T&gt;PoolUpdateNew</a></td>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a></td>
 	<td>struct &lt;T&gt;Pool *const pool,
-	U **const update_ptr</td>
+	const &lt;PT&gt;MigrateAll migrate_all, A *const all</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a></td>
+	<td>struct &lt;T&gt;Pool *const pool</td>
+</tr>
+<tr>
+	<td>static size_t</td>
+	<td><a href = "#&lt;T&gt;PoolSize">&lt;T&gt;PoolSize</a></td>
+	<td>const struct &lt;T&gt;Pool *const pool</td>
 </tr>
 <tr>
 	<td>static int</td>
@@ -238,9 +201,45 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 	<td>struct &lt;T&gt;Pool *const pool</td>
 </tr>
 <tr>
-	<td>static int</td>
-	<td><a href = "#&lt;T&gt;PoolIsEmpty">&lt;T&gt;PoolIsEmpty</a></td>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;PoolGet">&lt;T&gt;PoolGet</a></td>
+	<td>const struct &lt;T&gt;Pool *const pool, const size_t idx</td>
+</tr>
+<tr>
+	<td>static size_t</td>
+	<td><a href = "#&lt;T&gt;PoolIndex">&lt;T&gt;PoolIndex</a></td>
+	<td>struct &lt;T&gt;Pool *const pool, T *const data</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;PoolPeek">&lt;T&gt;PoolPeek</a></td>
 	<td>const struct &lt;T&gt;Pool *const pool</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;PoolPop">&lt;T&gt;PoolPop</a></td>
+	<td>struct &lt;T&gt;Pool *const pool</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;PoolNext">&lt;T&gt;PoolNext</a></td>
+	<td>struct &lt;T&gt;Pool *const pool, T *const prev</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;PoolNew">&lt;T&gt;PoolNew</a></td>
+	<td>struct &lt;T&gt;Pool *const pool</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;PoolUpdateNew">&lt;T&gt;PoolUpdateNew</a></td>
+	<td>struct &lt;T&gt;Pool *const pool, S **const update_ptr</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;PoolForEach">&lt;T&gt;PoolForEach</a></td>
+	<td>struct &lt;T&gt;Pool *const pool,
+	const &lt;PT&gt;Action action</td>
 </tr>
 <tr>
 	<td>static void</td>
@@ -251,7 +250,7 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 <tr>
 	<td>static void</td>
 	<td><a href = "#&lt;T&gt;PoolMigratePointer">&lt;T&gt;PoolMigratePointer</a></td>
-	<td>const T **const data_ptr,
+	<td>T **const data_ptr,
 	const struct Migrate *const migrate</td>
 </tr>
 <tr>
@@ -266,15 +265,14 @@ The pool. To instantiate, see <a href = "#&lt;T&gt;Pool">&lt;T&gt;Pool</a>.
 
 <div><a name = "&lt;T&gt;Pool_"><!-- --></a>
 <h3>&lt;T&gt;Pool_</h3>
-<pre>static void <b>&lt;T&gt;Pool_</b> (struct &lt;T&gt;Pool **const ppool)</pre>
+<pre>static void <b>&lt;T&gt;Pool_</b> (struct &lt;T&gt;Pool *const pool)</pre>
 <p>
-Destructor for <em>Pool</em>. Make sure that the pool's contents will not be
-accessed anymore.
+Destructor for <em>pool</em>. All the <em>pool</em> contents should not be accessed
+anymore and the <em>pool</em> takes no memory.
 </p>
 <dl>
-	<dt>parameter: ppool</dt>
-	<dd>A reference to the object that is to be deleted; it will be set
- to null. If it is already null or it points to null, doesn't do anything.</dd>
+	<dt>parameter: pool</dt>
+	<dd>If null, does nothing.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -282,24 +280,19 @@ accessed anymore.
 
 <div><a name = "&lt;T&gt;Pool"><!-- --></a>
 <h3>&lt;T&gt;Pool</h3>
-<pre>static struct &lt;T&gt;Pool * <b>&lt;T&gt;Pool</b> (const &lt;PT&gt;MigrateAll migrate_all,
-	A *const all)</pre>
+<pre>static void <b>&lt;T&gt;Pool</b> (struct &lt;T&gt;Pool *const pool,
+	const &lt;PT&gt;MigrateAll migrate_all, A *const all)</pre>
 <p>
-Constructs an empty <em>Pool</em> with capacity Fibonacci6, which is 8. This is
-the constructor if <em>POOL_MIGRATE_ALL</em> is specified.
+Initialises <em>pool</em> to be empty and have a migrate function with a
+parameter. This is the constructor if <em>POOL_MIGRATE_ALL</em> is specified.
 </p>
 <dl>
+	<dt>parameter: pool</dt>
+	<dd>If null, does nothing.</dd>
 	<dt>parameter: migrate_all</dt>
 	<dd>The general <em>&lt;PT&gt;MigrateAll</em> function.</dd>
 	<dt>parameter: all</dt>
-	<dd>The general migrate parameter; required if <em>migrate_all</em> is
- specified.</dd>
-	<dt>return</dt>
-	<dd>A new <em>Pool</em> or null and <em>errno</em> may be set.</dd>
-	<dt>throws: ERANGE</dt>
-	<dd>If one and not the other arguments is null.</dd>
-	<dt>throws: ENOMEM?</dt>
-	<dd><em>IEEE Std 1003.1-2001</em>; C standard does not say.</dd>
+	<dd>The general migrate parameter.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
@@ -307,72 +300,89 @@ the constructor if <em>POOL_MIGRATE_ALL</em> is specified.
 
 <div><a name = "&lt;T&gt;Pool"><!-- --></a>
 <h3>&lt;T&gt;Pool</h3>
-<pre>static struct &lt;T&gt;Pool * <b>&lt;T&gt;Pool</b> (void)</pre>
+<pre>static void <b>&lt;T&gt;Pool</b> (struct &lt;T&gt;Pool *const pool)</pre>
 <p>
-Constructs an empty <em>Pool</em> with capacity Fibonacci6, which is 8.
+Initialises <em>pool</em> to be empty. This is the constructor is
+<em>POOL_MIGRATE_ALL</em> is not specified. If it is <em>static</em> data then it is
+initialised by default and one doesn't have to call this.
 </p>
 <dl>
-	<dt>return</dt>
-	<dd>A new <em>Pool</em> or null and <em>errno</em> may be set.</dd>
-	<dt>throws: ENOMEM?</dt>
-	<dd><em>IEEE Std 1003.1-2001</em>; C standard does not say.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;PoolElement"><!-- --></a>
-<h3>&lt;T&gt;PoolElement</h3>
-<pre>static T * <b>&lt;T&gt;PoolElement</b> (const struct &lt;T&gt;Pool *const pool)</pre>
+<div><a name = "&lt;T&gt;PoolSize"><!-- --></a>
+<h3>&lt;T&gt;PoolSize</h3>
+<pre>static size_t <b>&lt;T&gt;PoolSize</b> (const struct &lt;T&gt;Pool *const pool)</pre>
+<p>
+If <em>POOL_STACK</em> is specified, otherwise it doesn't keep track of the size.
+</p>
 <dl>
 	<dt>parameter: pool</dt>
-	<dd>If null, returns null.</dd>
+	<dd>If null, returns zero.</dd>
 	<dt>return</dt>
-	<dd>One element from the pool or null if the pool is empty. It selects
- the position deterministically.</dd>
+	<dd>The current size of the stack.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
-	<dt>fixme</dt>
-	<dd>Untested.</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;PoolIsElement"><!-- --></a>
-<h3>&lt;T&gt;PoolIsElement</h3>
-<pre>static int <b>&lt;T&gt;PoolIsElement</b> (struct &lt;T&gt;Pool *const pool, const size_t idx)</pre>
+<div><a name = "&lt;T&gt;PoolRemove"><!-- --></a>
+<h3>&lt;T&gt;PoolRemove</h3>
+<pre>static int <b>&lt;T&gt;PoolRemove</b> (struct &lt;T&gt;Pool *const pool, T *const data)</pre>
 <p>
-Is <em>idx</em> a valid index for <em>pool</em>?
+Removes <em>data</em> from <em>pool</em>. Only present if <em>POOL_STACK</em> is not defined.
 </p>
 <dl>
+	<dt>parameter: pool, data</dt>
+	<dd>If null, returns false.</dd>
+	<dt>return</dt>
+	<dd>Success, otherwise <em>errno</em> will be set for valid input.</dd>
+	<dt>throws: EDOM</dt>
+	<dd><em>data</em> is not part of <em>pool</em>.</dd>
+	<dt>order</dt>
+	<dd>amortised O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;PoolClear"><!-- --></a>
+<h3>&lt;T&gt;PoolClear</h3>
+<pre>static void <b>&lt;T&gt;PoolClear</b> (struct &lt;T&gt;Pool *const pool)</pre>
+<p>
+Removes all from <em>pool</em>, but leaves the <em>pool</em> memory alone; if one wants
+to remove memory, see <a href = "#Pool_">Pool_</a>.
+</p>
+<dl>
+	<dt>parameter: pool</dt>
+	<dd>If null, does nothing.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;PoolGetElement"><!-- --></a>
-<h3>&lt;T&gt;PoolGetElement</h3>
-<pre>static T * <b>&lt;T&gt;PoolGetElement</b> (struct &lt;T&gt;Pool *const pool, const size_t idx)</pre>
+<div><a name = "&lt;T&gt;PoolGet"><!-- --></a>
+<h3>&lt;T&gt;PoolGet</h3>
+<pre>static T * <b>&lt;T&gt;PoolGet</b> (const struct &lt;T&gt;Pool *const pool, const size_t idx)</pre>
 <p>
 Gets an existing element by index. Causing something to be added to the
 <em>&lt;T&gt;Pool</em> may invalidate this pointer.
 </p>
 <dl>
 	<dt>parameter: pool</dt>
-	<dd>If <em>pool</em> is null, returns null.</dd>
+	<dd>If null, returns null.</dd>
 	<dt>parameter: idx</dt>
 	<dd>Index.</dd>
 	<dt>return</dt>
-	<dd>If failed, returns a null pointer <em>errno</em> will be set.</dd>
-	<dt>throws: EDOM</dt>
-	<dd><em>idx</em> out of bounds.</dd>
+	<dd>If failed, returns a null pointer.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1)</dd>
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;PoolGetIndex"><!-- --></a>
-<h3>&lt;T&gt;PoolGetIndex</h3>
-<pre>static size_t <b>&lt;T&gt;PoolGetIndex</b> (struct &lt;T&gt;Pool *const pool, T *const data)</pre>
+<div><a name = "&lt;T&gt;PoolIndex"><!-- --></a>
+<h3>&lt;T&gt;PoolIndex</h3>
+<pre>static size_t <b>&lt;T&gt;PoolIndex</b> (struct &lt;T&gt;Pool *const pool, T *const data)</pre>
 <p>
 Gets an index given <em>data</em>.
 </p>
@@ -388,26 +398,60 @@ Gets an index given <em>data</em>.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;PoolReserve"><!-- --></a>
-<h3>&lt;T&gt;PoolReserve</h3>
-<pre>static int <b>&lt;T&gt;PoolReserve</b> (struct &lt;T&gt;Pool *const pool,
-	const size_t min_capacity)</pre>
+<div><a name = "&lt;T&gt;PoolPeek"><!-- --></a>
+<h3>&lt;T&gt;PoolPeek</h3>
+<pre>static T * <b>&lt;T&gt;PoolPeek</b> (const struct &lt;T&gt;Pool *const pool)</pre>
+<dl>
+	<dt>parameter: pool</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd>One element from the pool or null if the pool is empty. If
+ <em>POOL_STACK</em> was specified, this will be the last element added, otherwise, it
+ may not be, but it is deterministic. Causing something to be added to the
+ <em>pool</em> may invalidate this pointer.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;PoolPop"><!-- --></a>
+<h3>&lt;T&gt;PoolPop</h3>
+<pre>static T * <b>&lt;T&gt;PoolPop</b> (struct &lt;T&gt;Pool *const pool)</pre>
 <p>
-Increases the capacity of this Pool to ensure that it can hold at least
-the number of elements specified by <em>min_capacity</em>.
+The same value as <a href = "#&lt;T&gt;PoolPeek">&lt;T&gt;PoolPeek</a>.
 </p>
 <dl>
 	<dt>parameter: pool</dt>
-	<dd>If <em>pool</em> is null, returns false.</dd>
+	<dd>If null, returns null.</dd>
 	<dt>return</dt>
-	<dd>True if the capacity increase was viable; otherwise the pool is not
- touched and <em>errno</em> may be set.</dd>
-	<dt>throws: ERANGE</dt>
-	<dd>Tried allocating more then can fit in <em>size_t</em> objects.</dd>
-	<dt>throws: ENOMEM?</dt>
-	<dd><em>IEEE Std 1003.1-2001</em>; C standard does not say.</dd>
+	<dd>Value from the the top of the <em>pool</em> that is removed or null if the
+ stack is empty. Causing something to be added to the <em>pool</em> may invalidate
+ this pointer.</dd>
 	<dt>order</dt>
-	<dd>&Omega;(1), O(<em>capacity</em>)</dd>
+	<dd>&Theta;(1) (amortized if not <em>POOL_STACK</em>)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;PoolNext"><!-- --></a>
+<h3>&lt;T&gt;PoolNext</h3>
+<pre>static T * <b>&lt;T&gt;PoolNext</b> (struct &lt;T&gt;Pool *const pool, T *const prev)</pre>
+<p>
+Provides a way to iterate through the <em>pool</em>. If <em>&lt;T&gt; = &lt;S&gt;</em>, it is safe to
+add using <em>PoolUpdateNew</em> with the return value as <em>update</em>. If <em>POOL_STACK</em>
+is not defined, it is safe to remove an element,
+</p>
+<dl>
+	<dt>parameter: pool</dt>
+	<dd>If null, returns null. If <em>prev</em> is not from this <em>pool</em> and not
+ null, returns null.</dd>
+	<dt>parameter: prev</dt>
+	<dd>Set it to null to start the iteration.</dd>
+	<dt>return</dt>
+	<dd>A pointer to the next element or null if there are no more.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1) (or O(pool space that has been deleted) if not <em>POOL_STACK</em>)</dd>
 </dl>
 </div>
 
@@ -425,8 +469,8 @@ location to fit the new size.
 	<dd>A new, un-initialised, element, or null and <em>errno</em> may be set.</dd>
 	<dt>throws: ERANGE</dt>
 	<dd>Tried allocating more then can fit in <em>size_t</em> objects.</dd>
-	<dt>throws: ENOMEM?</dt>
-	<dd><em>IEEE Std 1003.1-2001</em>; C standard does not say.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
 	<dt>order</dt>
 	<dd>amortised O(1)</dd>
 </dl>
@@ -434,25 +478,23 @@ location to fit the new size.
 
 <div><a name = "&lt;T&gt;PoolUpdateNew"><!-- --></a>
 <h3>&lt;T&gt;PoolUpdateNew</h3>
-<pre>static T * <b>&lt;T&gt;PoolUpdateNew</b> (struct &lt;T&gt;Pool *const pool,
-	U **const update_ptr)</pre>
+<pre>static T * <b>&lt;T&gt;PoolUpdateNew</b> (struct &lt;T&gt;Pool *const pool, S **const update_ptr)</pre>
 <p>
 Gets an uninitialised new element and updates the <em>update_ptr</em> if it is
-within the memory region that was changed. Must have <em>POOL_MIGRATE_UPDATE</em>
-defined. For example, when iterating a pointer and new element is needed that
-could change the pointer.
+within the memory region that was changed. For example, when iterating a
+pointer and new element is needed that could change the pointer.
 </p>
 <dl>
 	<dt>parameter: pool</dt>
-	<dd>If <em>pool</em> is null, returns null.</dd>
-	<dt>parameter: iterator_ptr</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: update_ptr</dt>
 	<dd>Pointer to update on memory move.</dd>
 	<dt>return</dt>
 	<dd>A new, un-initialised, element, or null and <em>errno</em> may be set.</dd>
 	<dt>throws: ERANGE</dt>
 	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
-	<dt>throws: ENOMEM?</dt>
-	<dd><em>IEEE Std 1003.1-2001</em>; C standard does not say.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
 	<dt>order</dt>
 	<dd>amortised O(1)</dd>
 	<dt>fixme</dt>
@@ -460,50 +502,23 @@ could change the pointer.
 </dl>
 </div>
 
-<div><a name = "&lt;T&gt;PoolRemove"><!-- --></a>
-<h3>&lt;T&gt;PoolRemove</h3>
-<pre>static int <b>&lt;T&gt;PoolRemove</b> (struct &lt;T&gt;Pool *const pool, T *const data)</pre>
+<div><a name = "&lt;T&gt;PoolForEach"><!-- --></a>
+<h3>&lt;T&gt;PoolForEach</h3>
+<pre>static void <b>&lt;T&gt;PoolForEach</b> (struct &lt;T&gt;Pool *const pool,
+	const &lt;PT&gt;Action action)</pre>
 <p>
-Removes <em>data</em> from <em>pool</em>.
+Iterates though <em>pool</em> from the bottom and calls <em>action</em> on all the
+elements. The topology of the list can not change while in this function.
 </p>
 <dl>
-	<dt>parameter: pool, data</dt>
-	<dd>If null, returns false.</dd>
-	<dt>return</dt>
-	<dd>Success, otherwise <em>errno</em> will be set.</dd>
-	<dt>throws: EDOM</dt>
-	<dd><em>data</em> is not part of <em>pool</em>.</dd>
+	<dt>parameter: stack, action</dt>
+	<dd>If null, does nothing.</dd>
 	<dt>order</dt>
-	<dd>amortised O(1)</dd>
-</dl>
-</div>
-
-<div><a name = "&lt;T&gt;PoolClear"><!-- --></a>
-<h3>&lt;T&gt;PoolClear</h3>
-<pre>static void <b>&lt;T&gt;PoolClear</b> (struct &lt;T&gt;Pool *const pool)</pre>
-<p>
-Removes all from <em>pool</em>.
-</p>
-<dl>
-	<dt>parameter: pool</dt>
-	<dd>if null, does nothing.</dd>
-	<dt>order</dt>
-	<dd>&Theta;(1)</dd>
-</dl>
-</div>
-
-<div><a name = "&lt;T&gt;PoolIsEmpty"><!-- --></a>
-<h3>&lt;T&gt;PoolIsEmpty</h3>
-<pre>static int <b>&lt;T&gt;PoolIsEmpty</b> (const struct &lt;T&gt;Pool *const pool)</pre>
-<dl>
-	<dt>parameter: pool</dt>
-	<dd>If null, returns false.</dd>
-	<dt>return</dt>
-	<dd>Whether the <em>&lt;T&gt;Pool</em> is empty.</dd>
-	<dt>order</dt>
-	<dd>&Theta;(1)</dd>
+	<dd>O(<em>size</em> &times; <em>action</em>)</dd>
 	<dt>fixme</dt>
 	<dd>Untested.</dd>
+	<dt>fixme</dt>
+	<dd>Sequence interface.</dd>
 </dl>
 </div>
 
@@ -512,8 +527,8 @@ Removes all from <em>pool</em>.
 <pre>static void <b>&lt;T&gt;PoolMigrateEach</b> (struct &lt;T&gt;Pool *const pool,
 	const &lt;PT&gt;Migrate handler, const struct Migrate *const migrate)</pre>
 <p>
-Use when the pool has pointers to another pool in the <em>MigrateAll</em> function
-of the other data type.
+Use when the pool has pointers to another memory move structure in the
+<em>MigrateAll</em> function of the other data type.
 </p>
 <dl>
 	<dt>parameter: pool</dt>
@@ -529,12 +544,14 @@ of the other data type.
 	<dd>O(<em>greatest size</em>)</dd>
 	<dt>fixme</dt>
 	<dd>Untested.</dd>
+	<dt>fixme</dt>
+	<dd>Migrate interface.</dd>
 </dl>
 </div>
 
 <div><a name = "&lt;T&gt;PoolMigratePointer"><!-- --></a>
 <h3>&lt;T&gt;PoolMigratePointer</h3>
-<pre>static void <b>&lt;T&gt;PoolMigratePointer</b> (const T **const data_ptr,
+<pre>static void <b>&lt;T&gt;PoolMigratePointer</b> (T **const data_ptr,
 	const struct Migrate *const migrate)</pre>
 <p>
 Passed a <em>migrate</em> parameter, allows pointers to the pool to be updated. It
@@ -545,6 +562,8 @@ doesn't affect pointers not in the <em>realloc</em>ed region.
 	<dd>&Omega;(1)</dd>
 	<dt>fixme</dt>
 	<dd>Untested.</dd>
+	<dt>fixme</dt>
+	<dd>Migrate interface.</dd>
 </dl>
 </div>
 
@@ -561,6 +580,8 @@ functionality.
 	<dd>Prints <em>pool</em> in a static buffer.</dd>
 	<dt>order</dt>
 	<dd>&Theta;(1); it has a 255 character limit; every element takes some of it.</dd>
+	<dt>fixme</dt>
+	<dd>ToString interface.</dd>
 </dl>
 </div>
 
