@@ -26,8 +26,8 @@ struct Ship {
 	const struct ShipVt *vt;
 	char name[8];
 };
-static const size_t ship_name_size = sizeof ((struct Ship *)0)->name
-	/ sizeof *((struct Ship *)0)->name;
+/*static const size_t ship_name_size = sizeof ((struct Ship *)0)->name
+	/ sizeof *((struct Ship *)0)->name;*/
 /** @implements <Ship>ToString */
 static void ship_to_string(const struct Ship *const ship, char (*const a)[12]) {
 	assert(ship && a);
@@ -44,7 +44,7 @@ struct Destroyer {
 	unsigned no;
 };
 /** {container_of}. */
-static struct Destroyer *destroyer_holds_ship(const struct Ship *const ship) {
+static struct Destroyer *destroyer_holds_ship(struct Ship *const ship) {
 	return (struct Destroyer *)(void *)((char *)ship
 		- offsetof(struct Destroyer, ship) - offsetof(struct ShipLink, data));
 }
