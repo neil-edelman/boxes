@@ -19,12 +19,17 @@
 #include "../src/Text.h"
 #include "split.h"
 
+/* This is not implemented by the C90 standard, but it should have been. In
+ case we are using to C90, define this and hope that the compiler is in this
+ millenium. It's just a test. */
+int snprintf(char *s, size_t n, const char *format, /* args */ ...);
+
 #define WIDTH 78
 
 static const char *const head = "abstract.txt",
-	*const body = "lorem.txt",
-	*const para = "para.txt",
-	*const longpara = "long.txt";
+	*const body = "lorem.txt";
+	/**const para = "para.txt",
+	*const longpara = "long.txt";*/
 
 /** Helper for {fclose} is a little more robust about null-values.
  @param pfp: A pointer to the file pointer.
