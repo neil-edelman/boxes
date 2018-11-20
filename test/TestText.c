@@ -22,7 +22,9 @@
 /* This is not implemented by the C90 standard, but it should have been. In
  case we are using to C90, define this and hope that the compiler is in this
  millenium. It's just a test. */
+#if 0
 int snprintf(char *s, size_t n, const char *format, /* args */ ...);
+#endif
 
 #define WIDTH 78
 
