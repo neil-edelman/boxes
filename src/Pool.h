@@ -526,7 +526,8 @@ static T *T_(PoolGet)(const struct T_(Pool) *const pool, const size_t idx) {
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static size_t T_(PoolIndex)(const struct T_(Pool) *const pool, T *const data) {
+static size_t T_(PoolIndex)(const struct T_(Pool) *const pool,
+	const T *const data) {
 	return PT_(node_hold_const_data)(data) - pool->nodes;
 }
 
