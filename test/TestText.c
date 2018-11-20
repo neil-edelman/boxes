@@ -10,6 +10,10 @@
  2018-06 */
 
 #include <stdlib.h> /* malloc free */
+/* This is not implemented by the C90 standard, but it should have been. In
+ case we are using to C90, define this and hope that the compiler is in this
+ millenium. It's just a test. Probably will fail in MSVC; see Internet. */
+int snprintf(char *s, size_t n, const char *format, /* args */ ...);
 #include <stdio.h>  /* fprintf fopen FILE */
 #include <string.h>	/* strerror */
 #include <limits.h>	/* INT_MAX, UINT_MAX */
@@ -18,13 +22,6 @@
 #include <time.h>   /* timing */
 #include "../src/Text.h"
 #include "split.h"
-
-/* This is not implemented by the C90 standard, but it should have been. In
- case we are using to C90, define this and hope that the compiler is in this
- millenium. It's just a test. */
-#if 0
-int snprintf(char *s, size_t n, const char *format, /* args */ ...);
-#endif
 
 #define WIDTH 78
 
