@@ -441,7 +441,7 @@ int TextPrint(struct Text *const text, FILE *const fp, const char *const fmt) {
 		for(f0 = f1 = fmt; ; f1++) {
 			if(*f1 && *f1 != '%') continue;
 			if(f0 < f1 && (size = (size_t)(f1 - f0),
-				fwrite(f0, 1, size, fp)) != size) return 0;
+				fwrite(f0, 1, size, fp) != size)) return 0;
 			if(!*f1) break;
 			switch(*++f1) {
 			case 's':
