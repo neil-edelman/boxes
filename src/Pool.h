@@ -243,6 +243,12 @@ static struct PT_(Node) *PT_(node_hold_data)(T *const data) {
 		((char *)data - offsetof(struct PT_(Node), data));
 }
 
+/** Private: {container_of}. */
+static const struct PT_(Node) *PT_(node_hold_const_data)(const T *const data) {
+	return (const struct PT_(Node) *)(const void *)
+		((const char *)data - offsetof(struct PT_(Node), data));
+}
+
 /** Ensures capacity.
  @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
@@ -520,8 +526,8 @@ static T *T_(PoolGet)(const struct T_(Pool) *const pool, const size_t idx) {
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static size_t T_(PoolIndex)(struct T_(Pool) *const pool, T *const data) {
-	return PT_(node_hold_data)(data) - pool->nodes;
+static size_t T_(PoolIndex)(const struct T_(Pool) *const pool, T *const data) {
+	return PT_(node_hold_const_data)(data) - pool->nodes;
 }
 
 /** @param pool: If null, returns null.
