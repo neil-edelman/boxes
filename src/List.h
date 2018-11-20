@@ -357,7 +357,7 @@ static struct T_(Link) *PT_(node_holds_data)(T *const data) {
 static const struct T_(Link) *PT_(node_holds_const_data)(
 	const T *const data) {
 	return (const struct T_(Link) *)(const void *)
-	((const char *)data - offsetof(struct T_(Link), data));
+		((const char *)data - offsetof(struct T_(Link), data));
 }
 
 /** Private: used in \see{<PT>_order_<U>_migrate_each};
