@@ -238,13 +238,13 @@ struct T_(Pool) {
 
 
 /** Private: {container_of}. */
-static struct PT_(Node) *PT_(node_hold_data)(T *const data) {
+static struct PT_(Node) *PT_(node_upcast)(T *const data) {
 	return (struct PT_(Node) *)(void *)
 		((char *)data - offsetof(struct PT_(Node), data));
 }
 
 /** Private: {container_of}. */
-static const struct PT_(Node) *PT_(node_hold_const_data)(const T *const data) {
+static const struct PT_(Node) *PT_(node_const_upcast)(const T *const data) {
 	return (const struct PT_(Node) *)(const void *)
 		((const char *)data - offsetof(struct PT_(Node), data));
 }
@@ -466,7 +466,7 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	struct PT_(Node) *node;
 	size_t n;
 	if(!pool || !data) return 0;
-	node = PT_(node_hold_data)(data);
+	node = PT_(node_upcast)(data);
 	n = node - pool->nodes;
 	if(node < pool->nodes || n >= pool->size || node->x.prev != pool_void)
 		return errno = EDOM, 0;
@@ -528,7 +528,7 @@ static T *T_(PoolGet)(const struct T_(Pool) *const pool, const size_t idx) {
  @allow */
 static size_t T_(PoolIndex)(const struct T_(Pool) *const pool,
 	const T *const data) {
-	return PT_(node_hold_const_data)(data) - pool->nodes;
+	return PT_(node_const_upcast)(data) - pool->nodes;
 }
 
 /** @param pool: If null, returns null.
@@ -580,7 +580,7 @@ static T *T_(PoolNext)(struct T_(Pool) *const pool, T *const prev) {
 			node = pool->nodes;
 			idx = 0;
 		} else {
-			node = PT_(node_hold_data)(prev) + 1;
+			node = PT_(node_upcast)(prev) + 1;
 			idx = (size_t)(node - pool->nodes);
 		}
 #ifdef POOL_STACK /* <-- stack */
