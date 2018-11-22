@@ -342,20 +342,19 @@ static const PT_(ToString) PT_(to_string) = (LIST_TO_STRING);
 
 
 /** Private: {container_of}. */
-static struct T_(Link) *PT_(node_holds_x)(struct PT_(X) *const x) {
+static struct T_(Link) *PT_(x_upcast)(struct PT_(X) *const x) {
 	return (struct T_(Link) *)(void *)
 		((char *)x - offsetof(struct T_(Link), x));
 }
 
 /** Private: {container_of}. */
-static struct T_(Link) *PT_(node_holds_data)(T *const data) {
+static struct T_(Link) *PT_(data_upcast)(T *const data) {
 	return (struct T_(Link) *)(void *)
 		((char *)data - offsetof(struct T_(Link), data));
 }
 
 /** Private: {container_of}; used for \see{<T>List<U>Next}, {etc}. */
-static const struct T_(Link) *PT_(node_holds_const_data)(
-	const T *const data) {
+static const struct T_(Link) *PT_(const_data_upcast)(const T *const data) {
 	return (const struct T_(Link) *)(const void *)
 		((const char *)data - offsetof(struct T_(Link), data));
 }
@@ -529,7 +528,7 @@ static void T_(ListClear)(struct T_(List) *const list) {
  @allow */
 static void T_(ListUnshift)(struct T_(List) *const list, T *const add) {
 	if(!list || !add) return;
-	PT_(add_after)(&list->head, &PT_(node_holds_data)(add)->x);
+	PT_(add_after)(&list->head, &PT_(data_upcast)(add)->x);
 }
 
 /** Initialises the contents of the node which contains {add} to add it to the
@@ -542,7 +541,7 @@ static void T_(ListUnshift)(struct T_(List) *const list, T *const add) {
  @allow */
 static void T_(ListPush)(struct T_(List) *const list, T *const add) {
 	if(!list || !add) return;
-	PT_(add_before)(&list->tail, &PT_(node_holds_data)(add)->x);
+	PT_(add_before)(&list->tail, &PT_(data_upcast)(add)->x);
 }
 
 /** Initialises the contents of the node which contains {add} to add it
@@ -556,8 +555,8 @@ static void T_(ListPush)(struct T_(List) *const list, T *const add) {
  @allow */
 static void T_(ListAddBefore)(T *const data, T *const add) {
 	if(!data || !add) return;
-	PT_(add_before)(&PT_(node_holds_data)(data)->x,
-		&PT_(node_holds_data)(add)->x);
+	PT_(add_before)(&PT_(data_upcast)(data)->x,
+		&PT_(data_upcast)(add)->x);
 }
 
 /** Initialises the contents of the node which contains {add} to add it
@@ -571,8 +570,8 @@ static void T_(ListAddBefore)(T *const data, T *const add) {
  @allow */
 static void T_(ListAddAfter)(T *const data, T *const add) {
 	if(!data || !add) return;
-	PT_(add_after)(&PT_(node_holds_data)(data)->x,
-		&PT_(node_holds_data)(add)->x);
+	PT_(add_after)(&PT_(data_upcast)(data)->x,
+		&PT_(data_upcast)(add)->x);
 }
 
 /** Un-associates {data} from the list; consequently, the {data} is free to add
@@ -583,7 +582,7 @@ static void T_(ListAddAfter)(T *const data, T *const add) {
  @allow */
 static void T_(ListRemove)(T *const data) {
 	if(!data) return;
-	PT_(remove)(&PT_(node_holds_data)(data)->x);
+	PT_(remove)(&PT_(data_upcast)(data)->x);
 }
 
 /** Appends the elements of {from} onto {list}. Unlike \see{<T>List<U>TakeIf}
@@ -611,7 +610,7 @@ static void T_(ListTake)(struct T_(List) *const list,
  @allow */
 static void T_(ListTakeBefore)(T *const data, struct T_(List) *const from) {
 	if(!data || !from) return;
-	PT_(add_list_before)(&PT_(node_holds_data)(data)->x, from);
+	PT_(add_list_before)(&PT_(data_upcast)(data)->x, from);
 }
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
@@ -728,7 +727,7 @@ static void T_(LinkMigrate)(T *const data, const struct Migrate *const migrate){
 	/* Relies on not-strictly-defined behaviour because pointers are not
 	 necessarily contiguous in memory; it should be fine in practice. */
 	if(!data || !migrate || !migrate->delta) return;
-	x = &PT_(node_holds_data)(data)->x;
+	x = &PT_(data_upcast)(data)->x;
 #ifdef LIST_OPENMP /* <-- omp */
 	#pragma omp parallel sections
 #endif /* omp --> */
@@ -1109,12 +1108,12 @@ static void PT_U_(list, self_correct)(struct T_(List) *const list) {
  @order \Theta(1)
  @allow */
 static T *T_U_(List, Next)(const T *const data) {
-	const struct PT_(X) *const x = &PT_(node_holds_const_data)(data)->x;
+	const struct PT_(X) *const x = &PT_(const_data_upcast)(data)->x;
 	struct PT_(X) *next_x;
 	if(!data) return 0;
 	assert(x->U_(next));
 	if(!(next_x = x->U_(next))->U_(next)) return 0;
-	return &PT_(node_holds_x)(next_x)->data;
+	return &PT_(x_upcast)(next_x)->data;
 }
 
 /** @param data: Must be part of a {List}. If {data} are not part of a valid
@@ -1125,12 +1124,12 @@ static T *T_U_(List, Next)(const T *const data) {
  @order \Theta(1)
  @allow */
 static T *T_U_(List, Previous)(const T *const data) {
-	const struct PT_(X) *const x = &PT_(node_holds_const_data)(data)->x;
+	const struct PT_(X) *const x = &PT_(const_data_upcast)(data)->x;
 	struct PT_(X) *prev_x;
 	if(!data) return 0;
 	assert(x->U_(prev));
 	if(!(prev_x = x->U_(prev))->U_(prev)) return 0;
-	return &PT_(node_holds_x)(prev_x)->data;
+	return &PT_(x_upcast)(prev_x)->data;
 }
 
 /** @param list: If null, returns null.
@@ -1141,7 +1140,7 @@ static T *T_U_(List, First)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->head.U_(next));
 	if(!list->head.U_(next)->U_(next)) return 0; /* Empty. */
-	return &PT_(node_holds_x)(list->head.U_(next))->data;
+	return &PT_(x_upcast)(list->head.U_(next))->data;
 }
 
 /** @param list: If null, returns null.
@@ -1152,7 +1151,7 @@ static T *T_U_(List, Last)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->tail.U_(prev));
 	if(!list->tail.U_(prev)->U_(prev)) return 0; /* Empty. */
-	return &PT_(node_holds_x)(list->tail.U_(prev))->data;
+	return &PT_(x_upcast)(list->tail.U_(prev))->data;
 }
 
 /** Un-associates the first element in the order {<U>} with the list, if the
@@ -1165,7 +1164,7 @@ static T *T_U_(List, Shift)(struct T_(List) *const list) {
 	if(!list) return 0;
 	if(!(x = list->head.U_(next))->U_(next)) return 0;
 	PT_(remove)(x);
-	return &PT_(node_holds_x)(x)->data;
+	return &PT_(x_upcast)(x)->data;
 }
 
 /** Un-associates the last element in the order {<U>} with the list, if the
@@ -1178,7 +1177,7 @@ static T *T_U_(List, Pop)(struct T_(List) *const list) {
 	if(!list) return 0;
 	if(!(x = list->tail.U_(prev))->U_(prev)) return 0;
 	PT_(remove)(x);
-	return &PT_(node_holds_x)(x)->data;
+	return &PT_(x_upcast)(x)->data;
 }
 
 #ifdef LIST_U_COMPARATOR /* <-- comp */
@@ -1201,8 +1200,8 @@ static void PT_U_(list, merge)(struct T_(List) *const alist,
 		{ PT_U_(x, cat)(&alist->tail, blist); return; }
 	/* Merge */
 	for(hind = &alist->head; ; ) {
-		if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
-			&PT_(node_holds_x)(b)->data) < 0) {
+		if(PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
+			&PT_(x_upcast)(b)->data) < 0) {
 			a->U_(prev) = hind, hind = hind->U_(next) = a;
 			if(!(a = a->U_(next))->U_(next))
 				{ b->U_(prev) = hind, hind->U_(next) = b;
@@ -1257,8 +1256,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 		/* Run {a} is smaller: downwards insert {b.head} followed by upwards
 		 merge. Insert the first element of {b} downwards into {a}. */
 		for( ; ; ) {
-			if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
-				&PT_(node_holds_x)(b)->data) <= 0) {
+			if(PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
+				&PT_(x_upcast)(b)->data) <= 0) {
 				chosen = a;
 				a = a->U_(next);
 				break;
@@ -1274,8 +1273,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 		/* Merge upwards; while the lists are interleaved. */
 		while(chosen->U_(next)) {
 			prev_chosen = chosen;
-			if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
-				&PT_(node_holds_x)(b)->data) > 0) {
+			if(PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
+				&PT_(x_upcast)(b)->data) > 0) {
 				chosen = b;
 				b = b->U_(next);
 			} else {
@@ -1300,8 +1299,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 		/* Run {b} is smaller; upwards insert followed by downwards merge.
 		 Insert the last element of {a} upwards into {b}. */
 		for( ; ; ) {
-			if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
-				&PT_(node_holds_x)(b)->data) <= 0) {
+			if(PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
+				&PT_(x_upcast)(b)->data) <= 0) {
 				chosen = b;
 				b = b->U_(prev);
 				break;
@@ -1319,8 +1318,8 @@ static void PT_U_(runs, merge)(struct PT_(Runs) *const r) {
 		/* Merge downwards, while the lists are interleaved. */
 		while(chosen->U_(prev)) {
 			next_chosen = chosen;
-			if(PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
-				&PT_(node_holds_x)(b)->data) > 0) {
+			if(PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
+				&PT_(x_upcast)(b)->data) > 0) {
 				chosen = a;
 				a = a->U_(prev);
 			} else {
@@ -1372,8 +1371,8 @@ static void PT_U_(natural, sort)(struct T_(List) *const list) {
 	first_iso_a = new_run->head = new_run->tail = a;
 	/* While {a} and {b} are elements (that are consecutive.) {c} may not be. */
 	for(c = b->U_(next); c; a = b, b = c, c = c->U_(next)) {
-		comp = PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
-			&PT_(node_holds_x)(b)->data);
+		comp = PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
+			&PT_(x_upcast)(b)->data);
 		/* State machine that considers runs in both directions -- in practice,
 		 slightly slower than only considering increasing runs on most cases;
 		 however, I would hate to see my code replaced with one line; reverse
@@ -1465,8 +1464,8 @@ static int T_U_(List, Compare)(const struct T_(List) *const alist,
 		} else if(!b->U_(next)) {
 			return 1;
 		} else if((diff = PT_U_(data, cmp)
-			(&PT_(node_holds_x)(a)->data,
-			&PT_(node_holds_x)(b)->data))) {
+			(&PT_(x_upcast)(a)->data,
+			&PT_(x_upcast)(b)->data))) {
 			return diff;
 		}
 	}
@@ -1484,8 +1483,8 @@ static void PT_U_(boolean, seq)(struct T_(List) *const list,
 	int comp;
 	assert(a && b);
 	while(a->U_(next) && b->U_(next)) {
-		comp = PT_U_(data, cmp)(&PT_(node_holds_x)(a)->data,
-			&PT_(node_holds_x)(b)->data);
+		comp = PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
+			&PT_(x_upcast)(b)->data);
 		if(comp < 0) {
 			temp = a, a = a->U_(next);
 			if(mask & LO_SUBTRACTION_AB) {
@@ -1575,7 +1574,7 @@ static void T_U_(List, TakeIf)(struct T_(List) *const list,
 	struct PT_(X) *x, *next_x;
 	if(!from || from == list) return;
 	for(x = from->head.U_(next); (next_x = x->U_(next)); x = next_x) {
-		if(predicate && !predicate(&PT_(node_holds_x)(x)->data)) continue;
+		if(predicate && !predicate(&PT_(x_upcast)(x)->data)) continue;
 		PT_(remove)(x);
 		if(list) PT_(add_before)(&list->tail, x);
 	}
@@ -1594,7 +1593,7 @@ static void T_U_(List, BiTakeIf)(struct T_(List) *const list,
 	struct PT_(X) *x, *next_x;
 	if(!from || from == list) return;
 	for(x = from->head.U_(next); (next_x = x->U_(next)); x = next_x) {
-		if(bipredicate && !bipredicate(&PT_(node_holds_x)(x)->data, param))
+		if(bipredicate && !bipredicate(&PT_(x_upcast)(x)->data, param))
 			continue;
 		PT_(remove)(x);
 		if(list) PT_(add_before)(&list->tail, x);
@@ -1611,7 +1610,7 @@ static void T_U_(List, ForEach)(struct T_(List) *const list,
 	struct PT_(X) *x, *next_x;
 	if(!list || !action) return;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		action(&PT_(node_holds_x)(x)->data);
+		action(&PT_(x_upcast)(x)->data);
 }
 
 /** Performs {biaction} for each element in the list in the order specified by
@@ -1628,7 +1627,7 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
 	struct PT_(X) *x, *next_x;
 	if(!list || !biaction) return;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		biaction(&PT_(node_holds_x)(x)->data, param);
+		biaction(&PT_(x_upcast)(x)->data, param);
 }
 
 /** Short-circiut evaluates {list} with each item's {predicate}.
@@ -1644,7 +1643,7 @@ static T *T_U_(List, All)(struct T_(List) *const list,
 	T *data;
 	if(!list || !predicate) return 0;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		if(data = &PT_(node_holds_x)(x)->data, !predicate(data)) return data;
+		if(data = &PT_(x_upcast)(x)->data, !predicate(data)) return data;
 	return 0;
 }
 
@@ -1663,7 +1662,7 @@ static T *T_U_(List, BiAll)(struct T_(List) *const list,
 	T *data;
 	if(!list || !bipredicate) return 0;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		if(data = &PT_(node_holds_x)(x)->data, !bipredicate(data, param))
+		if(data = &PT_(x_upcast)(x)->data, !bipredicate(data, param))
 			return data;
 	return 0;
 }
@@ -1729,7 +1728,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 	list_super_cat(&cat, list_cat_start);
 	for(x = list->head.U_(next); x->U_(next); x = x->U_(next)) {
 		if(x != list->head.U_(next)) list_super_cat(&cat, list_cat_sep);
-		PT_(to_string)(&PT_(node_holds_x)(x)->data, &scratch),
+		PT_(to_string)(&PT_(x_upcast)(x)->data, &scratch),
 			scratch[sizeof scratch - 1] = '\0';
 		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
