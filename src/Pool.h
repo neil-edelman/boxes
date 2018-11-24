@@ -289,8 +289,10 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		{
 			struct PT_(Node) *e, *end;
 			for(e = nodes, end = e + pool->size; e < end; e++) {
+#ifndef POOL_STACK /* <-- !stack: not packed data */
 				if(e->x.prev != pool_void) continue; /* It's on removed list. */
 				assert(e->x.next == pool_void);
+#endif /* !stack --> */
 				PT_(migrate_each)(&e->data, &migrate);
 			}
 		}
