@@ -14,9 +14,9 @@
  present before including.
 
  @param POOL_STACK
- Removing an element is normally done lazily through a linked-list internal to
- the pool. With this defined, there is no such linked-list; the data will be
- packed and one can only remove items by \see{<T>PoolPop}.
+ Removing an element is normally done in a free list internal to the pool's
+ elements. With this defined, there is no such list; the data will be packed
+ and one can only remove items by \see{<T>PoolPop}.
 
  @param POOL_MIGRATE_EACH
  Optional function implementing {<PT>Migrate}. Indices will remain the same
