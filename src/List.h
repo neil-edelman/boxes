@@ -4,11 +4,10 @@
  {<T>List} is a doubly-linked-list of {<T>Link}, of which data of type, {<T>},
  must be set using {LIST_TYPE}. This is an abstract data structure requiring
  {<T>Link} storage, and can possibly store this as a sub-structure of larger
- data-type. Provides \see{<T>LinkMigrate} for self-referencing pointers that
- change as the result of a memory relocation within the list.
+ data-type.
 
- Supports one to four different orders in the same type. The preprocessor
- macros are all undefined at the end of the file for convenience.
+ Supports one to four multiply-linked-lists (different orders.) The
+ preprocessor macros are all undefined at the end of the file for convenience.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
@@ -347,6 +346,14 @@ static struct T_(Link) *PT_(x_upcast)(struct PT_(X) *const x) {
 		((char *)x - offsetof(struct T_(Link), x));
 }
 
+#ifdef LIST_TO_STRING /* <-- string */
+/** Private: {container_of}. */
+static const struct T_(Link) *PT_(const_x_upcast)(const struct PT_(X) *const x){
+	return (const struct T_(Link) *)(const void *)
+	((const char *)x - offsetof(struct T_(Link), x));
+}
+#endif /* string --> */
+
 /** Private: {container_of}. */
 static struct T_(Link) *PT_(data_upcast)(T *const data) {
 	return (struct T_(Link) *)(void *)
@@ -555,8 +562,7 @@ static void T_(ListPush)(struct T_(List) *const list, T *const add) {
  @allow */
 static void T_(ListAddBefore)(T *const data, T *const add) {
 	if(!data || !add) return;
-	PT_(add_before)(&PT_(data_upcast)(data)->x,
-		&PT_(data_upcast)(add)->x);
+	PT_(add_before)(&PT_(data_upcast)(data)->x, &PT_(data_upcast)(add)->x);
 }
 
 /** Initialises the contents of the node which contains {add} to add it
@@ -570,8 +576,7 @@ static void T_(ListAddBefore)(T *const data, T *const add) {
  @allow */
 static void T_(ListAddAfter)(T *const data, T *const add) {
 	if(!data || !add) return;
-	PT_(add_after)(&PT_(data_upcast)(data)->x,
-		&PT_(data_upcast)(add)->x);
+	PT_(add_after)(&PT_(data_upcast)(data)->x, &PT_(data_upcast)(add)->x);
 }
 
 /** Un-associates {data} from the list; consequently, the {data} is free to add
@@ -619,7 +624,8 @@ static void T_(ListTakeBefore)(T *const data, struct T_(List) *const from) {
  doesn't sort them first; see \see{<T>ListSort}. Concatenates all lists that
  don't have a {LIST_COMPARATOR} or {LIST_U[A-D]_COMPARATOR}.
  @param list: if null, then it removes elements.
- @param from: if null, does nothing.
+ @param from: if null, does nothing, otherwise this list will be empty on
+ return.
  @order O({list}.n + {from}.n)
  @allow */
 static void T_(ListMerge)(struct T_(List) *const list,
@@ -714,8 +720,10 @@ static void T_(ListSort)(struct T_(List) *const list) {
 
 #endif /* comp --> */
 
-/** Adjusts one {<T>Link}'s internal pointers when supplied with a
- {Migrate} parameter.
+/** Adjusts one {<T>Link}'s internal pointers when supplied with a {Migrate}
+ parameter. Specifically, if an agglomeration including the to the {<T>Link}
+ pointers are changing with a new element from {Pool}, one must call this in
+ the function you give to {POOL_MIGRATE_EACH}.
  @param data: If null, does nothing.
  @param migrate: If null, does nothing. Should only be called in a {Migrate}
  function; pass the {migrate} parameter.
@@ -759,7 +767,8 @@ static void T_(LinkMigrate)(T *const data, const struct Migrate *const migrate){
 	}
 }
 
-/** Adjusts a pointer, {pdata}, to a {<T>Link}, given {migrate}.
+/** Adjusts a pointer, {pdata}, to a {<T>Link}, given {migrate}. Use when
+ some (external?) data has a pointer to the list.
  @param pdata, migrate: If null, does nothing.
  @fixme Untested. */
 static void T_(LinkMigratePointer)(T **const pdata,
@@ -1562,8 +1571,7 @@ static void T_U_(List, ForEach)(struct T_(List) *const list,
 }
 
 /** Performs {biaction} for each element in the list in the order specified by
- {<U>}. Do not modify the memory addresses of the elements while the list is
- iterating.
+ {<U>}.
  @param list, action: If null, does nothing.
  @param param: Used as the second parameter of {biaction}.
  @order ~ \Theta({list}.n) \times O({biaction})
@@ -1578,7 +1586,7 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
 		biaction(&PT_(x_upcast)(x)->data, param);
 }
 
-/** Short-circiut evaluates {list} with each item's {predicate}.
+/** Short-circuit evaluates {list} with each item's {predicate}.
  @param list, predicate: If null, returns null.
  @return The first {<T>} in the linked-list, ordered by {<U>}, that causes the
  {predicate} with {<T>} as argument to return false, or null if the {predicate}
@@ -1663,7 +1671,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 	static int buffer_i;
 	struct List_SuperCat cat;
 	char scratch[12];
-	struct PT_(X) *x;
+	const struct PT_(X) *x;
 	assert(strlen(list_cat_alter_end) >= strlen(list_cat_end));
 	assert(sizeof buffer > strlen(list_cat_alter_end));
 	list_super_cat_init(&cat, buffer[buffer_i],
@@ -1676,7 +1684,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 	list_super_cat(&cat, list_cat_start);
 	for(x = list->head.U_(next); x->U_(next); x = x->U_(next)) {
 		if(x != list->head.U_(next)) list_super_cat(&cat, list_cat_sep);
-		PT_(to_string)(&PT_(x_upcast)(x)->data, &scratch),
+		PT_(to_string)(&PT_(const_x_upcast)(x)->data, &scratch),
 			scratch[sizeof scratch - 1] = '\0';
 		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
