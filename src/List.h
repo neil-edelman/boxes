@@ -292,18 +292,14 @@ struct T_(Link) {
 	struct PT_(X) x;
 };
 
-/** Serves as an a head for linked-list(s) of {<T>Link}. Use
- \see{<T>ListClear} to initialise. */
+/** Serves as an a head for linked-list(s) of {<T>Link}. Use \see{<T>ListClear}
+ to initialise. */
 struct T_(List);
 struct T_(List) {
-	/* {head.prev} and {tail.next} are always null. The nodes always have a
-	 non-null {head} and {tail}. This allows the inference of everything
-	 from everything else and reduces the number of arguments that we have to
-	 pass. \see{<T>ListSelfCorrect} uses the fact that {head} and {tail} are
-	 packed to determine whether a list is empty, therefore, {head, tail}
-	 cannot be separated or reversed; furthermore, one cannot have
-	 {sizeof data == 0} and call \see{<T>ListSelfCorrect}, though I don't see
-	 how one could do that. */
+	/* These are sentinels such that {head.prev} and {tail.next} are always and
+	 the only ones to be null. This allows {List} and all {Links} to be closed,
+	 that is with a single pointer, we can infer every other. However, careful
+	 in changing this, \see{<PT>_list_<U>_self_correct}. */
 	struct PT_(X) head, tail;
 };
 
@@ -500,7 +496,7 @@ static void PT_(clear)(struct T_(List) *const list) {
 
 /** Private: add all {from} before {x}. */
 static void PT_(add_list_before)(struct PT_(X) *const x,
-		struct T_(List) *const from) {
+	struct T_(List) *const from) {
 	assert(x && from);
 #ifdef LIST_UA_NAME /* <-- a */
 	PT_UA_(x, cat)(x, from);
@@ -517,7 +513,8 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 }
 
 /** Clears and removes all values from {list}, thereby initialising the
- {<T>List}. All previous values are un-associated.
+ {<T>List}. All previous values are un-associated. Static data is already
+ cleared properly at run-time.
  @param list: if null, does nothing.
  @order \Theta(1)
  @allow */
@@ -782,7 +779,7 @@ static void T_(LinkMigratePointer)(T **const pdata,
 
 /** One must call this whenever the {<T>List} changes memory locations, (not
  the nodes.) This resets and corrects the two ends; the two ends become invalid
- even when it's empty.
+ even when it's empty. (For example, a {Pool} of {<T>List} would call this.)
  @param list: If null, does nothing.
  @order O(1)
  @fixme Untested.
@@ -947,8 +944,7 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 #ifdef U_
 #undef U_
 #endif
-#ifdef LIST_U_ANONYMOUS /* <-- anon: "empty macro arguments were standardized
-in C99" */
+#ifdef LIST_U_ANONYMOUS /* <-- anon: "empty macro arguments standardized C99" */
 #define U_(thing) PCAT(anonymous, thing)
 #define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2)
 #define PT_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
@@ -979,7 +975,7 @@ static void PT_U_(cycle, crash)(struct PT_(X) *const x) {
 #endif
 }
 
-/** Private: add {add} before {x}. */
+/** Private: add {add} before {x}. You cannot call this on {head} or {tail}. */
 static void PT_U_(x, add_before)(struct PT_(X) *const x,
 	struct PT_(X) *const add) {
 	assert(x && add && x != add && x->U_(prev));
@@ -1047,8 +1043,10 @@ static void PT_U_(x, migrate)(struct PT_(X) *const x,
 
 /** Private: when the actual list but not the data changes locations. */
 static void PT_U_(list, self_correct)(struct T_(List) *const list) {
+	assert(sizeof(T) > 0);
+	/* This is a kind of hack relying on {tail, head} to be in packed order in
+	 {<T>List} but not in {<T>Link}. */
 	if(list->head.U_(next) == list->tail.U_(prev) + 1) {
-		/* They are packed -> the list is empty. @fixme Test thoroughly! */
 		list->head.U_(next) = &list->tail;
 		list->tail.U_(prev) = &list->head;
 	} else {
@@ -1438,7 +1436,6 @@ static void PT_U_(boolean, seq)(struct T_(List) *const list,
 	struct PT_(X) *a = alist ? alist->head.U_(next) : 0,
 		*b = blist ? blist->head.U_(next) : 0, *temp;
 	int comp;
-	assert(a && b);
 	while(a->U_(next) && b->U_(next)) {
 		comp = PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
 			&PT_(x_upcast)(b)->data);
@@ -1468,7 +1465,7 @@ static void PT_U_(boolean, seq)(struct T_(List) *const list,
 			if(list) PT_(add_before)(&list->tail, temp);
 		}
 	}
-	if((mask & LO_DEFAULT_B)) {
+	if(mask & LO_DEFAULT_B) {
 		while((temp = b, b = b->U_(next))) {
 			PT_(remove)(temp);
 			if(list) PT_(add_before)(&list->tail, temp);
