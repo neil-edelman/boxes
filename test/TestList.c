@@ -184,7 +184,7 @@ static const struct AnimalVt {
 	void (*const act)(struct Animal *const);
 } sloth_vt = { &sloth_act }, llama_vt = { &llama_act }, bear_vt = { &bear_act };
 /* The linked-list. */
-static struct AnimalList animals;
+static struct AnimalList animals = LIST_EMPTY_2(animals);
 static void Animal_init(struct Animal *const this) {
 	Animal_filler(this);
 	AnimalListPush(&animals, this);
@@ -223,7 +223,8 @@ static void test_block_move(void) {
 	const size_t bears_size = sizeof bears / sizeof *bears;
 	size_t i;
 
-	AnimalListClear(&animals);
+	/* Test new feature: static init. AnimalListClear(&animals); */
+	AnimalListAudit(&animals);
 	printf("Llama test:\n");
 	assert(others_size >= sloths_size);
 	for(i = 0; i < sloths_size; i++) Sloth_init(sloths + i);

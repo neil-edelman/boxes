@@ -252,6 +252,17 @@ enum ListOperation {
 	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
 	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
 };
+/* Use this to statically initialise. How many orders are the [2-4]. This is an
+ initialisation constant expression,
+ eg, {struct <T>List list = LIST_EMPTY(list);} for one order. */
+#define LIST_EMPTY(l) { { 0, &(l).tail }, { &(l).head, 0 } }
+#define LIST_EMPTY_2(l) { { 0, &(l).tail, 0, &(l).tail }, \
+	{ &(l).head, 0, &(l).head, 0 } }
+#define LIST_EMPTY_3(l) { { 0, &(l).tail, 0, &(l).tail, 0, &(l).tail }, \
+	{ &(l).head, 0, &(l).head, 0, &(l).head, 0 } }
+#define LIST_EMPTY_4(l) { \
+	{ 0, &(l).tail, 0, &(l).tail, 0, &(l).tail, 0, &(l).tail }, \
+	{ &(l).head, 0, &(l).head, 0, &(l).head, 0, &(l).head, 0 } }
 #endif /* LIST_H */
 
 /* One time in the same translation unit. */
@@ -293,61 +304,14 @@ struct T_(Link) {
 };
 
 /** Serves as an a head for linked-list(s) of {<T>Link}. Use \see{<T>ListClear}
- to initialise or use the variable {<T>_empty_list} to assign statically. */
+ to initialise. */
 struct T_(List);
-static struct T_(List) {
+struct T_(List) {
 	/* These are sentinels such that {head.prev} and {tail.next} are always and
 	 the only ones to be null. This allows {List} and all {Links} to be closed,
 	 that is with a single pointer, we can infer every other. However, careful
-	 in changing this, \see{<PT>_list_<U>_self_correct}. */
+	 in changing this, \see{<PT>_list_<U>_self_correct}, {LIST_EMPTY[2-4]}. */
 	struct PT_(X) head, tail;
-} T_(_empty_list) = {
-	{
-#ifdef LIST_UA_NAME
-		0, &T_(_empty_list).tail
-#endif
-#ifdef LIST_UB_NAME
-#ifdef LIST_UA_NAME
-		,
-#endif
-		0, &T_(_empty_list).tail
-#endif
-#ifdef LIST_UC_NAME
-#if defined(LIST_UA_NAME) || defined(LIST_UB_NAME)
-		,
-#endif
-		0, &T_(_empty_list).tail
-#endif
-#ifdef LIST_UD_NAME
-#if defined(LIST_UA_NAME) || defined(LIST_UB_NAME) || defined(LIST_UC_NAME)
-		,
-#endif
-		0, &T_(_empty_list).tail
-#endif
-	},
-	{
-#ifdef LIST_UA_NAME
-		&T_(_empty_list).head, 0
-#endif
-#ifdef LIST_UB_NAME
-#ifdef LIST_UA_NAME
-		,
-#endif
-		&T_(_empty_list).head, 0
-#endif
-#ifdef LIST_UC_NAME
-#if defined(LIST_UA_NAME) || defined(LIST_UB_NAME)
-		,
-#endif
-		&T_(_empty_list).head, 0
-#endif
-#ifdef LIST_UD_NAME
-#if defined(LIST_UA_NAME) || defined(LIST_UB_NAME) || defined(LIST_UC_NAME)
-		,
-#endif
-		&T_(_empty_list).head, 0
-#endif
-	}
 };
 
 
@@ -560,8 +524,11 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 }
 
 /** Clears and removes all values from {list}, thereby initialising the
- {<T>List}. All previous values are un-associated. Static data is already
- cleared properly at run-time.
+ {<T>List}. All previous values are un-associated. Do not use an un-initialised
+ or default statically initialised list. One can initialise statically using
+ the initialisation constant expression contained in the macro
+ {struct <T>List list = LIST_EMPTY(list);}, or {LIST_EMPTY_[2-4](list);},
+ depending on how many orders that are in the list.
  @param list: if null, does nothing.
  @order \Theta(1)
  @allow */
@@ -1007,7 +974,7 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 
 
 /** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
- You do not want cycles! */
+ One does not want cycles! */
 static void PT_U_(cycle, crash)(struct PT_(X) *const x) {
 #ifdef LIST_DEBUG
 	struct PT_(X) *turtle, *hare;
@@ -1022,7 +989,7 @@ static void PT_U_(cycle, crash)(struct PT_(X) *const x) {
 #endif
 }
 
-/** Private: add {add} before {x}. You cannot call this on {head} or {tail}. */
+/** Private: add {add} before {x}. */
 static void PT_U_(x, add_before)(struct PT_(X) *const x,
 	struct PT_(X) *const add) {
 	assert(x && add && x != add && x->U_(prev));
