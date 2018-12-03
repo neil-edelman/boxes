@@ -642,6 +642,15 @@ static void PT_U_(test, basic)(void) {
 	T_(ListClear)(&a);
 	assert(!PT_U_(count, elements)(&a));
 	PT_(legit)(&a);
+	{
+		struct T_(List) zero = T_(_empty_list);
+		printf("The empty list %s.\n", T_U_(List, ToString)(&T_(_empty_list)));
+		{
+			size_t z = PT_U_(legit, count)(&zero);
+			printf("Statically initialized list has %lu elements.\n", z);
+			assert(z == 0);
+		}
+	}
 	printf("\n");
 }
 

@@ -293,14 +293,61 @@ struct T_(Link) {
 };
 
 /** Serves as an a head for linked-list(s) of {<T>Link}. Use \see{<T>ListClear}
- to initialise. */
+ to initialise or use the variable {<T>_empty_list} to assign statically. */
 struct T_(List);
-struct T_(List) {
+static struct T_(List) {
 	/* These are sentinels such that {head.prev} and {tail.next} are always and
 	 the only ones to be null. This allows {List} and all {Links} to be closed,
 	 that is with a single pointer, we can infer every other. However, careful
 	 in changing this, \see{<PT>_list_<U>_self_correct}. */
 	struct PT_(X) head, tail;
+} T_(_empty_list) = {
+	{
+#ifdef LIST_UA_NAME
+		0, &T_(_empty_list).tail
+#endif
+#ifdef LIST_UB_NAME
+#ifdef LIST_UA_NAME
+		,
+#endif
+		0, &T_(_empty_list).tail
+#endif
+#ifdef LIST_UC_NAME
+#if defined(LIST_UA_NAME) || defined(LIST_UB_NAME)
+		,
+#endif
+		0, &T_(_empty_list).tail
+#endif
+#ifdef LIST_UD_NAME
+#if defined(LIST_UA_NAME) || defined(LIST_UB_NAME) || defined(LIST_UC_NAME)
+		,
+#endif
+		0, &T_(_empty_list).tail
+#endif
+	},
+	{
+#ifdef LIST_UA_NAME
+		&T_(_empty_list).head, 0
+#endif
+#ifdef LIST_UB_NAME
+#ifdef LIST_UA_NAME
+		,
+#endif
+		&T_(_empty_list).head, 0
+#endif
+#ifdef LIST_UC_NAME
+#if defined(LIST_UA_NAME) || defined(LIST_UB_NAME)
+		,
+#endif
+		&T_(_empty_list).head, 0
+#endif
+#ifdef LIST_UD_NAME
+#if defined(LIST_UA_NAME) || defined(LIST_UB_NAME) || defined(LIST_UC_NAME)
+		,
+#endif
+		&T_(_empty_list).head, 0
+#endif
+	}
 };
 
 
