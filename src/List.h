@@ -4,11 +4,10 @@
  {<T>List} is a doubly-linked-list of {<T>Link}, of which data of type, {<T>},
  must be set using {LIST_TYPE}. This is an abstract data structure requiring
  {<T>Link} storage, and can possibly store this as a sub-structure of larger
- data-type. Provides \see{<T>LinkMigrate} for self-referencing pointers that
- change as the result of a memory relocation within the list.
+ data-type.
 
- Supports one to four different orders in the same type. The preprocessor
- macros are all undefined at the end of the file for convenience.
+ Supports one to four multiply-linked-lists (different orders.) The
+ preprocessor macros are all undefined at the end of the file for convenience.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
@@ -253,6 +252,17 @@ enum ListOperation {
 	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
 	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
 };
+/* Use this to statically initialise. How many orders are the [2-4]. This is an
+ initialisation constant expression,
+ eg, {struct <T>List list = LIST_EMPTY(list);} for one order. */
+#define LIST_EMPTY(l) { { 0, &(l).tail }, { &(l).head, 0 } }
+#define LIST_EMPTY_2(l) { { 0, &(l).tail, 0, &(l).tail }, \
+	{ &(l).head, 0, &(l).head, 0 } }
+#define LIST_EMPTY_3(l) { { 0, &(l).tail, 0, &(l).tail, 0, &(l).tail }, \
+	{ &(l).head, 0, &(l).head, 0, &(l).head, 0 } }
+#define LIST_EMPTY_4(l) { \
+	{ 0, &(l).tail, 0, &(l).tail, 0, &(l).tail, 0, &(l).tail }, \
+	{ &(l).head, 0, &(l).head, 0, &(l).head, 0, &(l).head, 0 } }
 #endif /* LIST_H */
 
 /* One time in the same translation unit. */
@@ -293,18 +303,14 @@ struct T_(Link) {
 	struct PT_(X) x;
 };
 
-/** Serves as an a head for linked-list(s) of {<T>Link}. Use
- \see{<T>ListClear} to initialise. */
+/** Serves as an a head for linked-list(s) of {<T>Link}. Use \see{<T>ListClear}
+ to initialise. */
 struct T_(List);
 struct T_(List) {
-	/* {head.prev} and {tail.next} are always null. The nodes always have a
-	 non-null {head} and {tail}. This allows the inference of everything
-	 from everything else and reduces the number of arguments that we have to
-	 pass. \see{<T>ListSelfCorrect} uses the fact that {head} and {tail} are
-	 packed to determine whether a list is empty, therefore, {head, tail}
-	 cannot be separated or reversed; furthermore, one cannot have
-	 {sizeof data == 0} and call \see{<T>ListSelfCorrect}, though I don't see
-	 how one could do that. */
+	/* These are sentinels such that {head.prev} and {tail.next} are always and
+	 the only ones to be null. This allows {List} and all {Links} to be closed,
+	 that is with a single pointer, we can infer every other. However, careful
+	 in changing this, \see{<PT>_list_<U>_self_correct}, {LIST_EMPTY[2-4]}. */
 	struct PT_(X) head, tail;
 };
 
@@ -346,6 +352,14 @@ static struct T_(Link) *PT_(x_upcast)(struct PT_(X) *const x) {
 	return (struct T_(Link) *)(void *)
 		((char *)x - offsetof(struct T_(Link), x));
 }
+
+#ifdef LIST_TO_STRING /* <-- string */
+/** Private: {container_of}. */
+static const struct T_(Link) *PT_(const_x_upcast)(const struct PT_(X) *const x){
+	return (const struct T_(Link) *)(const void *)
+	((const char *)x - offsetof(struct T_(Link), x));
+}
+#endif /* string --> */
 
 /** Private: {container_of}. */
 static struct T_(Link) *PT_(data_upcast)(T *const data) {
@@ -493,7 +507,7 @@ static void PT_(clear)(struct T_(List) *const list) {
 
 /** Private: add all {from} before {x}. */
 static void PT_(add_list_before)(struct PT_(X) *const x,
-		struct T_(List) *const from) {
+	struct T_(List) *const from) {
 	assert(x && from);
 #ifdef LIST_UA_NAME /* <-- a */
 	PT_UA_(x, cat)(x, from);
@@ -510,7 +524,11 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 }
 
 /** Clears and removes all values from {list}, thereby initialising the
- {<T>List}. All previous values are un-associated.
+ {<T>List}. All previous values are un-associated. Do not use an un-initialised
+ or default statically initialised list. One can initialise statically using
+ the initialisation constant expression contained in the macro
+ {struct <T>List list = LIST_EMPTY(list);}, or {LIST_EMPTY_[2-4](list);},
+ depending on how many orders that are in the list.
  @param list: if null, does nothing.
  @order \Theta(1)
  @allow */
@@ -555,8 +573,7 @@ static void T_(ListPush)(struct T_(List) *const list, T *const add) {
  @allow */
 static void T_(ListAddBefore)(T *const data, T *const add) {
 	if(!data || !add) return;
-	PT_(add_before)(&PT_(data_upcast)(data)->x,
-		&PT_(data_upcast)(add)->x);
+	PT_(add_before)(&PT_(data_upcast)(data)->x, &PT_(data_upcast)(add)->x);
 }
 
 /** Initialises the contents of the node which contains {add} to add it
@@ -570,8 +587,7 @@ static void T_(ListAddBefore)(T *const data, T *const add) {
  @allow */
 static void T_(ListAddAfter)(T *const data, T *const add) {
 	if(!data || !add) return;
-	PT_(add_after)(&PT_(data_upcast)(data)->x,
-		&PT_(data_upcast)(add)->x);
+	PT_(add_after)(&PT_(data_upcast)(data)->x, &PT_(data_upcast)(add)->x);
 }
 
 /** Un-associates {data} from the list; consequently, the {data} is free to add
@@ -619,7 +635,8 @@ static void T_(ListTakeBefore)(T *const data, struct T_(List) *const from) {
  doesn't sort them first; see \see{<T>ListSort}. Concatenates all lists that
  don't have a {LIST_COMPARATOR} or {LIST_U[A-D]_COMPARATOR}.
  @param list: if null, then it removes elements.
- @param from: if null, does nothing.
+ @param from: if null, does nothing, otherwise this list will be empty on
+ return.
  @order O({list}.n + {from}.n)
  @allow */
 static void T_(ListMerge)(struct T_(List) *const list,
@@ -714,8 +731,10 @@ static void T_(ListSort)(struct T_(List) *const list) {
 
 #endif /* comp --> */
 
-/** Adjusts one {<T>Link}'s internal pointers when supplied with a
- {Migrate} parameter.
+/** Adjusts one {<T>Link}'s internal pointers when supplied with a {Migrate}
+ parameter. Specifically, if an agglomeration including the to the {<T>Link}
+ pointers are changing with a new element from {Pool}, one must call this in
+ the function you give to {POOL_MIGRATE_EACH}.
  @param data: If null, does nothing.
  @param migrate: If null, does nothing. Should only be called in a {Migrate}
  function; pass the {migrate} parameter.
@@ -759,7 +778,8 @@ static void T_(LinkMigrate)(T *const data, const struct Migrate *const migrate){
 	}
 }
 
-/** Adjusts a pointer, {pdata}, to a {<T>Link}, given {migrate}.
+/** Adjusts a pointer, {pdata}, to a {<T>Link}, given {migrate}. Use when
+ some (external?) data has a pointer to the list.
  @param pdata, migrate: If null, does nothing.
  @fixme Untested. */
 static void T_(LinkMigratePointer)(T **const pdata,
@@ -773,7 +793,7 @@ static void T_(LinkMigratePointer)(T **const pdata,
 
 /** One must call this whenever the {<T>List} changes memory locations, (not
  the nodes.) This resets and corrects the two ends; the two ends become invalid
- even when it's empty.
+ even when it's empty. (For example, a {Pool} of {<T>List} would call this.)
  @param list: If null, does nothing.
  @order O(1)
  @fixme Untested.
@@ -811,7 +831,7 @@ static void T_(ListSelfCorrect)(struct T_(List) *const list) {
 	}
 }
 
-/** Debugging purposes. Turn {LIST_TEST} on. */
+/** Debugging purposes. */
 static void T_(ListAudit)(const struct T_(List) *const list) {
 	size_t i, j = 0;
 	int is_j = 0;
@@ -978,8 +998,7 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 #ifdef U_
 #undef U_
 #endif
-#ifdef LIST_U_ANONYMOUS /* <-- anon: "empty macro arguments were standardized
-in C99" */
+#ifdef LIST_U_ANONYMOUS /* <-- anon: "empty macro arguments standardized C99" */
 #define U_(thing) PCAT(anonymous, thing)
 #define T_U_(thing1, thing2) CAT(CAT(LIST_NAME, thing1), thing2)
 #define PT_U_(thing1, thing2) PCAT(list, PCAT(PCAT(LIST_NAME, thing1), \
@@ -995,7 +1014,7 @@ in C99" */
 
 
 /** "Floyd's" tortoise-hare algorithm for cycle detection when in debug mode.
- You do not want cycles! */
+ One does not want cycles! */
 static void PT_U_(cycle, crash)(struct PT_(X) *const x) {
 #ifdef LIST_DEBUG
 	struct PT_(X) *turtle, *hare;
@@ -1008,18 +1027,6 @@ static void PT_U_(cycle, crash)(struct PT_(X) *const x) {
 #else
 	(void)(x);
 #endif
-}
-
-/** Private: audit index by going though it forwards then back.
- @return Number of elements. */
-static size_t PT_U_(x, audit)(const struct T_(List) *const list) {
-	struct PT_(X) *emu;
-	size_t f = 0, b = 0;
-	assert(list);
-	for(emu = list->head.U_(next); emu->U_(next); emu = emu->U_(next)) f++;
-	for(emu = list->tail.U_(prev); emu->U_(prev); emu = emu->U_(prev)) b++;
-	assert(f == b);
-	return f;
 }
 
 /** Private: add {add} before {x}. */
@@ -1090,8 +1097,10 @@ static void PT_U_(x, migrate)(struct PT_(X) *const x,
 
 /** Private: when the actual list but not the data changes locations. */
 static void PT_U_(list, self_correct)(struct T_(List) *const list) {
+	assert(sizeof(T) > 0);
+	/* This is a kind of hack relying on {tail, head} to be in packed order in
+	 {<T>List} but not in {<T>Link}. */
 	if(list->head.U_(next) == list->tail.U_(prev) + 1) {
-		/* They are packed -> the list is empty. @fixme Test thoroughly! */
 		list->head.U_(next) = &list->tail;
 		list->tail.U_(prev) = &list->head;
 	} else {
@@ -1481,7 +1490,6 @@ static void PT_U_(boolean, seq)(struct T_(List) *const list,
 	struct PT_(X) *a = alist ? alist->head.U_(next) : 0,
 		*b = blist ? blist->head.U_(next) : 0, *temp;
 	int comp;
-	assert(a && b);
 	while(a->U_(next) && b->U_(next)) {
 		comp = PT_U_(data, cmp)(&PT_(x_upcast)(a)->data,
 			&PT_(x_upcast)(b)->data);
@@ -1511,7 +1519,7 @@ static void PT_U_(boolean, seq)(struct T_(List) *const list,
 			if(list) PT_(add_before)(&list->tail, temp);
 		}
 	}
-	if((mask & LO_DEFAULT_B)) {
+	if(mask & LO_DEFAULT_B) {
 		while((temp = b, b = b->U_(next))) {
 			PT_(remove)(temp);
 			if(list) PT_(add_before)(&list->tail, temp);
@@ -1614,8 +1622,7 @@ static void T_U_(List, ForEach)(struct T_(List) *const list,
 }
 
 /** Performs {biaction} for each element in the list in the order specified by
- {<U>}. Do not modify the memory addresses of the elements while the list is
- iterating.
+ {<U>}.
  @param list, action: If null, does nothing.
  @param param: Used as the second parameter of {biaction}.
  @order ~ \Theta({list}.n) \times O({biaction})
@@ -1630,7 +1637,7 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
 		biaction(&PT_(x_upcast)(x)->data, param);
 }
 
-/** Short-circiut evaluates {list} with each item's {predicate}.
+/** Short-circuit evaluates {list} with each item's {predicate}.
  @param list, predicate: If null, returns null.
  @return The first {<T>} in the linked-list, ordered by {<U>}, that causes the
  {predicate} with {<T>} as argument to return false, or null if the {predicate}
@@ -1715,7 +1722,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 	static int buffer_i;
 	struct List_SuperCat cat;
 	char scratch[12];
-	struct PT_(X) *x;
+	const struct PT_(X) *x;
 	assert(strlen(list_cat_alter_end) >= strlen(list_cat_end));
 	assert(sizeof buffer > strlen(list_cat_alter_end));
 	list_super_cat_init(&cat, buffer[buffer_i],
@@ -1728,7 +1735,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 	list_super_cat(&cat, list_cat_start);
 	for(x = list->head.U_(next); x->U_(next); x = x->U_(next)) {
 		if(x != list->head.U_(next)) list_super_cat(&cat, list_cat_sep);
-		PT_(to_string)(&PT_(x_upcast)(x)->data, &scratch),
+		PT_(to_string)(&PT_(const_x_upcast)(x)->data, &scratch),
 			scratch[sizeof scratch - 1] = '\0';
 		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;
@@ -1739,6 +1746,18 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 }
 
 #endif /* print --> */
+
+/** Private: audit index by going though it forwards then back.
+ @return Number of elements. */
+static size_t PT_U_(x, audit)(const struct T_(List) *const list) {
+	struct PT_(X) *emu;
+	size_t f = 0, b = 0;
+	assert(list);
+	for(emu = list->head.U_(next); emu->U_(next); emu = emu->U_(next)) f++;
+	for(emu = list->tail.U_(prev); emu->U_(prev); emu = emu->U_(prev)) b++;
+	assert(f == b);
+	return f;
+}
 
 static void PT_U_(sub_unused, coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
