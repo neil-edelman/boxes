@@ -3,10 +3,16 @@
 
  {<T>List} is a doubly-linked-list of {<T>Link}, of which data of type, {<T>},
  must be set using {LIST_TYPE}. This is an abstract data structure requiring
- {<T>Link} storage, and can possibly store this as a sub-structure of larger
- data-type.
+ {<T>Link} storage, and can possibly store this as a sub-structure of larger,
+ possibly polymorphic data-type.
 
- Supports one to four multiply-linked-lists (different orders.) The
+ This data-structure is closed; that is, given a valid pointer to an element,
+ one can determine all other pointers, (the elements and the list itself,) in
+ {O(n)}. This is useful as a single-source of information, and simplifies
+ traversal, but requires the linking of two nodes in an empty list; statically
+ un-initialised data, (zero-filled,) will crash, see \see{<T>ListClear}.
+
+ Supports one to four multiply-linked-lists, (different orders.) The
  preprocessor macros are all undefined at the end of the file for convenience.
 
  @param LIST_NAME, LIST_TYPE
@@ -19,8 +25,8 @@
  Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order, and optional
  comparator, {LIST_U[A-D]_COMPARATOR}, an equivalence relation function
  implementing {<T>Comparator}. Not defining this implies one anonymous order
- which one can set a comparator using {LIST_COMPARATOR}; {<U>} will be empty in
- this case.
+ which one can set a comparator using {LIST_COMPARATOR}; {<U>} will be an empty
+ string, in this case.
 
  @param LIST_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
