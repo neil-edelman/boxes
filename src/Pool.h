@@ -572,7 +572,7 @@ static T *T_(PoolPop)(struct T_(Pool) *const pool) {
  @return A pointer to the next element or null if there are no more.
  @order \Theta(1) (or O(pool space that has been deleted) if not {POOL_STACK})
  @allow */
-static T *T_(PoolNext)(struct T_(Pool) *const pool, T *const prev) {
+static T *T_(PoolNext)(const struct T_(Pool) *const pool, T *const prev) {
 	if(!pool) return 0;
 	{
 		struct PT_(Node) *node;
