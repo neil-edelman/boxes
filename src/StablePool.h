@@ -147,6 +147,9 @@ typedef void (*PT_(ToString))(const T *, char (*const)[12]);
 static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 #endif /* string --> */
 
+/* Operates by side-effects only. */
+typedef void (*PT_(Action))(T *const data);
+
 
 
 /* Pool previous, next, in the free list of the largest block. The contract for
@@ -187,10 +190,10 @@ static struct PT_(Node) *PT_(data_upcast)(T *const data) {
 }
 
 /** Private: {container_of}. */
-static const struct PT_(Node) *PT_(data_const_upcast)(const T *const data) {
+/*static const struct PT_(Node) *PT_(data_const_upcast)(const T *const data) {
 	return (const struct PT_(Node) *)(const void *)
 		((const char *)data - offsetof(struct PT_(Node), data));
-}
+}*/
 
 /** Private: {container_of}. */
 static struct PT_(Node) *PT_(x_upcast)(struct PT_(X) *const x) {
@@ -198,12 +201,18 @@ static struct PT_(Node) *PT_(x_upcast)(struct PT_(X) *const x) {
 		((char *)x - offsetof(struct PT_(Node), x));
 }
 
+/** Private: {container_of}. */
+static const struct PT_(Node) *PT_(x_const_upcast)(const struct PT_(X) *const x) {
+	return (const struct PT_(Node) *)(const void *)
+		((const char *)x - offsetof(const struct PT_(Node), x));
+}
+
 /** Private: block to array. */
 static struct PT_(Node) *PT_(block_array)(struct PT_(Block) *const b) {
 	return (struct PT_(Node) *)(void *)(b + 1);
 }
 
-/** Ensures capacity of the largest block, ignoring removed elements.
+/** Ensures capacity of the largest block, cannot have removed elements.
  @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {malloc} errors: {IEEE Std 1003.1-2001}. */
@@ -362,9 +371,13 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	if(block == pool->largest) { /* The largest block has a free list. */
 		PT_(enqueue_removed)(pool, node);
 		if((size_t)(node - nodes) >= block->size - 1) PT_(trim_removed)(pool);
-	} else if(!--block->size) { /* The other blocks get a reference counter. */
-		*prev = block->smaller;
-		free(block);
+	} else {
+		/* Mark as deleted; &node->x literally doesn't matter except non-null.*/
+		node->x.prev = node->x.next = &node->x;
+		if(!--block->size) { /* The other blocks get a reference counter. */
+			*prev = block->smaller;
+			free(block);
+		}
 	}
 	return 1;
 }
@@ -510,13 +523,14 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
  @allow */
 static void T_(PoolForEach)(struct T_(Pool) *const pool,
 	const PT_(Action) action) {
-	struct PT_(Node) *a, *end;
+	struct PT_(Node) *n, *end;
+	struct PT_(Block) *block;
 	if(!pool || !action) return;
-	for(a = pool->nodes, end = a + pool->size; a < end; a++) {
-#ifndef POOL_STACK /* <-- !stack */
-		if(a->x.prev != pool_void) continue;
-#endif /* !stack --> */
-		action(&a->data);
+	for(block = pool->largest; block; block = block->smaller) {
+		for(n = PT_(block_array)(block), end = n + block->size; n < end; n++) {
+			if(n->x.prev) continue;
+			action(&n->data);
+		}
 	}
 }
 
@@ -568,9 +582,10 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	static char buffer[4][256];
 	static unsigned buffer_i;
 	struct Pool_SuperCat cat;
+	struct PT_(Block) *block;
+	struct PT_(Node) *n, *end;
 	int is_first = 1;
 	char scratch[12];
-	size_t i;
 	assert(strlen(pool_cat_alter_end) >= strlen(pool_cat_end));
 	assert(sizeof buffer > strlen(pool_cat_alter_end));
 	pool_super_cat_init(&cat, buffer[buffer_i],
@@ -581,15 +596,15 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 		return cat.print;
 	}
 	pool_super_cat(&cat, pool_cat_start);
-	for(i = 0; i < pool->size; i++) {
-#ifndef POOL_STACK /* <-- !stack */
-		if(pool->nodes[i].x.prev != pool_void) continue;
-#endif /* !stack --> */
-		if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
-		PT_(to_string)(&pool->nodes[i].data, &scratch),
-		scratch[sizeof scratch - 1] = '\0';
-		pool_super_cat(&cat, scratch);
-		if(cat.is_truncated) break;
+	for(block = pool->largest; block; block = block->smaller) {
+		for(n = PT_(block_array)(block), end = n + block->size; n < end; n++) {
+			if(n->x.prev) continue;
+			if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
+			PT_(to_string)(&n->data, &scratch),
+				scratch[sizeof scratch - 1] = '\0';
+			pool_super_cat(&cat, scratch);
+			if(cat.is_truncated) break;
+		}
 	}
 	sprintf(cat.cursor, "%s",
 		cat.is_truncated ? pool_cat_alter_end : pool_cat_end);
@@ -609,24 +624,10 @@ static void PT_(unused_coda)(void);
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_set)(void) {
 	T_(Pool_)(0);
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-	T_(Pool)(0, 0, 0);
-#else /* all --><-- !all */
 	T_(Pool)(0);
-#endif /* !all --> */
-#ifdef POOL_STACK /* <-- stack */
-	T_(PoolSize)(0);
-#else /* stack --><-- !stack */
 	T_(PoolRemove)(0, 0);
-#endif /* !stack --> */
 	T_(PoolClear)(0);
-	T_(PoolGet)(0, 0);
-	T_(PoolIndex)(0, 0);
-	T_(PoolPeek)(0);
-	T_(PoolPop)(0);
-	T_(PoolNext)(0, 0);
 	T_(PoolNew)(0);
-	T_(PoolUpdateNew)(0, 0);
 	T_(PoolForEach)(0, 0);
 #ifdef POOL_TO_STRING
 	T_(PoolToString)(0);
