@@ -18,7 +18,7 @@ static const PT_(Action) PT_(filler) = (POOL_TEST);
 
 
 static void PT_(valid_block)(const struct PT_(Block) *const b) {
-	assert(b && b->capacity && b->capacity >= b->size);
+	assert(b && b->capacity);
 }
 
 static void PT_(valid_state)(const struct T_(Pool) *const a) {
@@ -27,9 +27,9 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 	const size_t max_size = ((size_t)-1 - sizeof *block) / sizeof *node;
 	/* Null is a valid state. */
 	if(!a) return;
-	assert(a && !a->removed.prev && !a->removed.next);
+	assert(a && !a->removed.prev == !a->removed.next);
 	assert(!a->largest
-		   || (a->largest->capacity > a->next_capacity
+		   || (a->largest->capacity < a->next_capacity
 			   && a->next_capacity <= max_size)
 		   || (a->largest->capacity == a->next_capacity) == max_size);
 	for(block = a->largest; block; block = block->smaller)
@@ -96,8 +96,12 @@ static void PT_(test_basic)(void) {
 	printf("Test one element.\n");
 	t = T_(PoolNew)(&a); /* Add. */
 	assert(t);
+	PT_(valid_state)(&a);
+	if(!T_(PoolRemove)(&a, t)) { perror("Error"), assert(0); return; }
+	PT_(valid_state)(&a);
 	t = T_(PoolNew)(&a); /* Add. */
 	assert(t);
+	PT_(valid_state)(&a);
 	T_(PoolClear)(&a);
 	PT_(valid_state)(&a);
 
@@ -108,11 +112,6 @@ static void PT_(test_basic)(void) {
 		memcpy(t, ts + i, sizeof *t);
 	}
 	printf("Now: %s.\n", T_(PoolToString)(&a));
-	assert(!T_(PoolRemove)(&a, t) && errno == EDOM);
-	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
-	printf("Now: %s.\n", T_(PoolToString)(&a));
-	assert(!T_(PoolRemove)(&a, t) && errno == EDOM);
-	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	if(!T_(PoolRemove)(&a, t)) { perror("Error"), assert(0); return; }
 	printf("Now: %s.\n", T_(PoolToString)(&a));
 	assert(!T_(PoolRemove)(&a, t) && errno == EDOM);
@@ -121,9 +120,8 @@ static void PT_(test_basic)(void) {
 	T_(PoolNew)(&a);
 	T_(PoolNew)(&a);
 	PT_(valid_state)(&a);
-
-	/* Peek/Pop. */
 	T_(PoolClear)(&a);
+	PT_(valid_state)(&a);
 
 	/* Big. */
 	for(i = 0; i < big; i++) {
@@ -136,44 +134,50 @@ static void PT_(test_basic)(void) {
 
 	printf("Clear:\n");
 	T_(PoolClear)(&a);
-	printf("%s.\n", T_(PoolToString)(&a));
+	printf("Now: %s.\n", T_(PoolToString)(&a));
 	printf("Destructor:\n");
 	T_(Pool_)(&a);
 	PT_(valid_state)(&a);
+	printf("Done basic tests.\n\n");
 }
 
 static void PT_(test_random)(void) {
 	struct T_(Pool) a;
 	size_t i, size = 0;
 	const size_t mult = 1; /* For long tests. */
-	/* Random. */
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-	T_(Pool)(&a, &PT_(migrate), &dummy_parent);
-#else /* all --><-- !all */
 	T_(Pool)(&a);
-#endif /* !all --> */
 	/* This parameter controls how many iterations. */
 	i = 1000 * mult;
 	while(i--) {
-		T *data;
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
 		/* This parameter controls how big the pool wants to be. */
 		if(r > size / (100.0 * mult)) {
-			if(!(data = T_(PoolNew)(&a))) {
-				perror("Error"), assert(0);
-				return;
-			}
+			T *data = T_(PoolNew)(&a);
+			if(!data) { perror("Error"), assert(0); return;}
 			size++;
 			PT_(filler)(data);
 			PT_(to_string)(data, &str);
 			printf("Created %s.\n", str);
 		} else {
+			struct PT_(Block) *block;
+			struct PT_(Node) *node, *end;
 			size_t idx = rand() / (RAND_MAX + 1.0) * size;
-			PT_(to_string)(data, &str);
-			printf("Removing %s at %lu.\n", str, (unsigned long)idx);
+			assert(a.largest);
+			for(block = a.largest; block; block = block->smaller) {
+				for(node = PT_(block_array)(block), end = node + block->size;
+					node < end; node++) {
+					if(node->x.prev) continue;
+					if(!idx) break;
+					idx--;
+				}
+				if(node < end) break;
+			}
+			assert(block);
+			PT_(to_string)(&node->data, &str);
+			printf("Removing %s.\n", str);
 			{
-				const int ret = T_(PoolRemove)(&a, data);
+				const int ret = T_(PoolRemove)(&a, &node->data);
 				assert(ret || (perror("Removing"), 0));
 			}
 			size--;

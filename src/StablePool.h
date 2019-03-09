@@ -167,7 +167,7 @@ struct PT_(Node) {
 };
 
 /* Information about each block. Each block will have {capacity <PT>Node}'s
- after, {block + 1}. */
+ after, {block + 1}, specified by {<PT>_block_array}. */
 struct PT_(Block) {
 	struct PT_(Block) *smaller;
 	size_t capacity, size;
@@ -223,7 +223,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 	const size_t max_size = ((size_t)-1 - sizeof *block) / sizeof *nodes;
 	assert(pool && !pool->removed.prev && !pool->removed.next);
 	assert(!pool->largest
-		|| (pool->largest->capacity > pool->next_capacity
+		|| (pool->largest->capacity < pool->next_capacity
 		&& pool->next_capacity <= max_size)
 		|| (pool->largest->capacity == pool->next_capacity) == max_size);
 	if(pool->largest && pool->largest->capacity >= min) return 1;
@@ -240,7 +240,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 	}
 	if(!(block = malloc(sizeof *block + c0 * sizeof *nodes))) return 0;
 	/* nodes = (struct PT_(Node) *)(block + 1); */
-	block->smaller = (pool->largest) ? pool->largest->smaller : 0;
+	block->smaller = pool->largest;
 	block->capacity = c0;
 	block->size = 0;
 	pool->largest = block;
@@ -344,12 +344,10 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
 static struct PT_(Block) *PT_(find_block)(const struct T_(Pool) *const pool,
 	const struct PT_(Node) *const node) {
 	struct PT_(Block) *b;
-	struct PT_(Node) *nodeblock;
+	struct PT_(Node) *n;
 	assert(pool && node);
-	for(b = pool->largest; b; b = b->smaller) {
-		nodeblock = (struct PT_(Node) *)(b + 1);
-		if(node >= nodeblock && node < nodeblock + b->capacity) break;
-	}
+	for(b = pool->largest; b; b = b->smaller)
+		if(n = PT_(block_array)(b), node >= n && node < n + b->capacity) break;
 	return b;
 }
 
@@ -372,9 +370,11 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 		PT_(enqueue_removed)(pool, node);
 		if((size_t)(node - nodes) >= block->size - 1) PT_(trim_removed)(pool);
 	} else {
-		/* Mark as deleted; &node->x literally doesn't matter except non-null.*/
+		/* Mark as deleted; &node->x literally doesn't matter except non-null.
+		 "capacity" becomes a reference counter <= size on the smaller blocks,
+		 size is constant for these blocks. */
 		node->x.prev = node->x.next = &node->x;
-		if(!--block->size) { /* The other blocks get a reference counter. */
+		if(!--block->capacity) {
 			*prev = block->smaller;
 			free(block);
 		}
@@ -390,10 +390,12 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	struct PT_(Block) *block, *next;
 	if(!pool || !pool->largest) return;
-	(block = pool->largest)->size = 0;
+	block = pool->largest;
+	next = block->smaller;
+	block->size = 0;
+	block->smaller = 0;
 	pool->removed.prev = pool->removed.next = 0;
-	for(block = block->smaller; block; block = next)
-		next = block->smaller, free(block);
+	while(next) block = next, next = next->smaller, free(block);
 }
 
 #if 0
