@@ -251,7 +251,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 
 /** We are very lazy and we just enqueue the removed so that later data can
  overwrite it.
- @param n: Must be a valid index. */
+ @fixme: flips around and doesn't go to removed! */
 static void PT_(enqueue_removed)(struct T_(Pool) *const pool,
 	struct PT_(Node) *const node) {
 	assert(pool && pool->largest && node
