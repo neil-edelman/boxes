@@ -370,11 +370,9 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 		PT_(enqueue_removed)(pool, node);
 		if((size_t)(node - nodes) >= block->size - 1) PT_(trim_removed)(pool);
 	} else {
-		/* Mark as deleted; &node->x literally doesn't matter except non-null.
-		 "capacity" becomes a reference counter <= size on the smaller blocks,
-		 size is constant for these blocks. */
+		/* Mark as deleted; &node->x literally doesn't matter except non-0. */
 		node->x.prev = node->x.next = &node->x;
-		if(!--block->capacity) {
+		if(!--block->size) {
 			*prev = block->smaller;
 			free(block);
 		}

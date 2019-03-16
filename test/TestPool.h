@@ -46,11 +46,12 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
 			(unsigned long)block->capacity, (unsigned long)block->size,
 			b_strs[b]);
-		for(node = PT_(block_array)(block), end = node + block->size;
+		for(node = PT_(block_array)(block), end = node + (block == p->largest ? block->size : block->capacity);
 			node < end; node++) {
 			PT_(to_string)(&node->data, &str);
 			fprintf(fp, "\t\tnode%p [label=\"%s\", color=%s];\n",
 				(const void *)node, str, node->x.prev ? "firebrick" : "white");
+			/*rank2 -> B -> C -> D -> E [ style=invis ];*/
 		}
 		fprintf(fp, "\t}\n");
 	}
@@ -109,7 +110,7 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 			if(x == head) break;
 			node = PT_(x_const_upcast)(x);
 			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
-			assert(x && node >= first && node < last);
+			assert(x && node >= first && node < last && &node->x != turtle);
 		} while(1);
 		turtle = &a->removed, is_turtle = 0;
 		do {
@@ -117,7 +118,7 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 			if(x == head) break;
 			node = PT_(x_const_upcast)(x);
 			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
-			assert(x && node >= first && node < last);
+			assert(x && node >= first && node < last && &node->x != turtle);
 		} while(1);
 		/* The removed counts for a thing. */
 		assert(forward == back && a->largest->size >= forward);
@@ -235,7 +236,8 @@ static void PT_(test_random)(void) {
 			assert(a.largest);
 			/* Pick random. */
 			for(block = a.largest; block; block = block->smaller) {
-				for(node = PT_(block_array)(block), end = node + block->size;
+				for(node = PT_(block_array)(block), end = node
+					+ (block == a.largest ? block->size : block->capacity);
 					node < end; node++) {
 					if(node->x.prev) continue;
 					if(!idx) break;
