@@ -62,7 +62,7 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			fprintf(fp, "\tnode%p -> node%p;\n",
 				(const void *)PT_(x_const_upcast)(x0),
 				(const void *)PT_(x_const_upcast)(x1));
-			if(is_turtle) turtle = turtle->next; else is_turtle = 1;
+			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
 		} while(x0 = x1, x1 = x1->next, x0 != &p->removed && x0 != turtle);
 		x0 = &p->removed, x1 = x0->prev, turtle = x0, is_turtle = 0;
 		fprintf(fp, "\tedge [color=darkseagreen4];\n");
@@ -70,7 +70,7 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			fprintf(fp, "\tnode%p -> node%p;\n",
 				(const void *)PT_(x_const_upcast)(x0),
 				(const void *)PT_(x_const_upcast)(x1));
-			if(is_turtle) turtle = turtle->next; else is_turtle = 1;
+			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
 		} while(x0 = x1, x1 = x1->next, x0 != &p->removed && x0 != turtle);
 	}
 	fprintf(fp, "}\n");
@@ -108,7 +108,7 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 			forward++, x = x->next;
 			if(x == head) break;
 			node = PT_(x_const_upcast)(x);
-			if(is_turtle) turtle = turtle->next; else is_turtle = 1;
+			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
 			assert(x && node >= first && node < last);
 		} while(1);
 		turtle = &a->removed, is_turtle = 0;
@@ -116,10 +116,11 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 			back++,    x = x->prev;
 			if(x == head) break;
 			node = PT_(x_const_upcast)(x);
-			if(is_turtle) turtle = turtle->next; else is_turtle = 1;
+			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
 			assert(x && node >= first && node < last);
 		} while(1);
-		assert(forward == back && a->largest->size > forward);
+		/* The removed counts for a thing. */
+		assert(forward == back && a->largest->size >= forward);
 	}
 }
 
@@ -211,11 +212,11 @@ static void PT_(test_basic)(void) {
 
 static void PT_(test_random)(void) {
 	struct T_(Pool) a;
-	size_t i, size = 0;
+	size_t i, old_i, size = 0;
 	const size_t mult = 1; /* For long tests. */
 	T_(Pool)(&a);
 	/* This parameter controls how many iterations. */
-	i = 50 * mult;
+	i = 50 * mult, old_i = i;
 	while(i--) {
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
@@ -226,7 +227,7 @@ static void PT_(test_random)(void) {
 			size++;
 			PT_(filler)(data);
 			PT_(to_string)(data, &str);
-			printf("Created %s.\n", str);
+			printf("%lu: Created %s.\n", (unsigned long)(old_i - i), str);
 		} else {
 			struct PT_(Block) *block;
 			struct PT_(Node) *node, *end;
@@ -244,14 +245,21 @@ static void PT_(test_random)(void) {
 			}
 			assert(block);
 			PT_(to_string)(&node->data, &str);
-			printf("Removing %s at %lu.\n", str, (unsigned long)idx);
+			printf("%lu: Removing %s.\n", (unsigned long)(old_i - i), str);
 			{
+				/* @fixme: this sometimes happens. */
 				const int ret = T_(PoolRemove)(&a, &node->data);
-				assert(ret || (perror("Removing"), 0));
+				assert(ret || (perror("Removing"),
+					PT_(graph)(&a, QUOTE(POOL_NAME) "-rem-err.gv"), 0));
 			}
 			size--;
 		}
 		printf("%s.\n", T_(PoolToString)(&a));
+		if(old_i - i < 50) {
+			char fn[64];
+			sprintf(fn, QUOTE(POOL_NAME) "-%u.gv", (unsigned)(old_i - i));
+			PT_(graph)(&a, fn);
+		}
 		PT_(valid_state)(&a);
 	}
 	PT_(graph)(&a, QUOTE(POOL_NAME) "-finish.gv");
