@@ -18,7 +18,7 @@ static const PT_(Action) PT_(filler) = (POOL_TEST);
 static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 	FILE *fp;
 	struct PT_(Block) *block;
-	const struct PT_(Node) *node, *end;
+	const struct PT_(Node) *node, *beg, *end;
 	char str[12], b_strs[2][128] = { "pool", "???" };
 	unsigned b = 0;
 	assert(p && fn);
@@ -46,11 +46,16 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
 			(unsigned long)block->capacity, (unsigned long)block->size,
 			b_strs[b]);
-		for(node = PT_(block_nodes)(block), end = node + (block == p->largest ? block->size : block->capacity);
+		fprintf(fp, "\t\tedge [color=red];\n");
+		for(beg = node = PT_(block_nodes)(block),
+			end = node + (block == p->largest ? block->size : block->capacity);
 			node < end; node++) {
 			PT_(to_string)(&node->data, &str);
 			fprintf(fp, "\t\tnode%p [label=\"%s\", color=%s];\n",
 				(const void *)node, str, node->x.prev ? "firebrick" : "white");
+			if(node == beg) continue;
+			fprintf(fp, "\t\tnode%p -> node%p;\n",
+				(const void *)(node - 1), (const void *)node);
 			/*rank2 -> B -> C -> D -> E [ style=invis ];*/
 		}
 		fprintf(fp, "\t}\n");
@@ -73,6 +78,8 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 				(const void *)PT_(x_const_upcast)(x1));
 			if(is_turtle) turtle = turtle->prev, is_turtle=0; else is_turtle=1;
 		} while(x0 = x1, x1 = x1->prev, x0 != &p->removed && x0 != turtle);
+	}
+	if((block = p->largest)) {
 	}
 	fprintf(fp, "}\n");
 	fclose(fp);
@@ -215,14 +222,13 @@ static void PT_(test_basic)(void) {
 static void PT_(test_random)(void) {
 	struct T_(Pool) a;
 	size_t i, size = 0;
-	const size_t mult = 1; /* For long tests. */
+	const size_t length = 1000; /* Controls how many iterations. */
 	T_(Pool)(&a);
-	/* This parameter controls how many iterations. */
-	for(i = 0; i < 10 * mult; i++) {
+	for(i = 0; i < length; i++) {
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
 		/* This parameter controls how big the pool wants to be. */
-		if(r > size / (100.0 * mult)) {
+		if(r > size / 100.0) {
 			T *data = T_(PoolNew)(&a);
 			if(!data) { perror("Error"), assert(0); return;}
 			size++;
@@ -258,7 +264,7 @@ static void PT_(test_random)(void) {
 			size--;
 		}
 		printf("%s.\n", T_(PoolToString)(&a));
-		if(i < 50 || i == 253) {
+		if(i % (length/10) == length/10-1) {
 			char fn[64];
 			sprintf(fn, QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
 			PT_(graph)(&a, fn);

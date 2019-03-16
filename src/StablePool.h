@@ -378,11 +378,6 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 			free(block);
 		}
 	}
-	{
-		char a[12];
-		PT_(to_string)(data, &a);
-		printf("Removed %s!\n", a);
-	}
 	return 1;
 }
 
