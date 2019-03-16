@@ -25,7 +25,7 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [compound=true];\n"
-		"\trankdir=LR;\n"
+		/*"\trankdir=LR;\n"*/
 		"\tnode [shape=box, style=filled];\n"
 		"\tsubgraph cluster_%s {\n"
 		"\t\tdud_%s [label=\"Pool\\nnext_capacity=%lu\\l\"];\n",
@@ -46,7 +46,6 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
 			(unsigned long)block->capacity, (unsigned long)block->size,
 			b_strs[b]);
-		fprintf(fp, "\t\tedge [color=red];\n");
 		for(beg = node = PT_(block_nodes)(block),
 			end = node + (block == p->largest ? block->size : block->capacity);
 			node < end; node++) {
@@ -54,7 +53,7 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			fprintf(fp, "\t\tnode%p [label=\"%s\", color=%s];\n",
 				(const void *)node, str, node->x.prev ? "firebrick" : "white");
 			if(node == beg) continue;
-			fprintf(fp, "\t\tnode%p -> node%p;\n",
+			fprintf(fp, "\t\tnode%p -> node%p [style=invis];\n",
 				(const void *)(node - 1), (const void *)node);
 			/*rank2 -> B -> C -> D -> E [ style=invis ];*/
 		}
@@ -78,8 +77,6 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 				(const void *)PT_(x_const_upcast)(x1));
 			if(is_turtle) turtle = turtle->prev, is_turtle=0; else is_turtle=1;
 		} while(x0 = x1, x1 = x1->prev, x0 != &p->removed && x0 != turtle);
-	}
-	if((block = p->largest)) {
 	}
 	fprintf(fp, "}\n");
 	fclose(fp);

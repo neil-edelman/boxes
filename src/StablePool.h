@@ -355,7 +355,8 @@ static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
  @param pool, data: If null, returns false.
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is corrupted or not part of {pool}.
- @order amortised O(1) or O(ln(blocks))
+ @order amortised {\O(1)} assuming the blocks are removed uniformly at random,
+ or {O(ln(blocks))}
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	struct PT_(Node) *node;
@@ -500,7 +501,8 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	}
 	pool_super_cat(&cat, pool_cat_start);
 	for(block = pool->largest; block; block = block->smaller) {
-		for(n = PT_(block_nodes)(block), end = n + block->size; n < end; n++) {
+		for(n = PT_(block_nodes)(block), end = n + (block == pool->largest
+			? block->size : block->capacity); n < end; n++) {
 			if(n->x.prev) continue;
 			if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
 			PT_(to_string)(&n->data, &scratch),
