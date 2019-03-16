@@ -46,7 +46,7 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
 			(unsigned long)block->capacity, (unsigned long)block->size,
 			b_strs[b]);
-		for(node = PT_(block_array)(block), end = node + (block == p->largest ? block->size : block->capacity);
+		for(node = PT_(block_nodes)(block), end = node + (block == p->largest ? block->size : block->capacity);
 			node < end; node++) {
 			PT_(to_string)(&node->data, &str);
 			fprintf(fp, "\t\tnode%p [label=\"%s\", color=%s];\n",
@@ -71,8 +71,8 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			fprintf(fp, "\tnode%p -> node%p;\n",
 				(const void *)PT_(x_const_upcast)(x0),
 				(const void *)PT_(x_const_upcast)(x1));
-			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
-		} while(x0 = x1, x1 = x1->next, x0 != &p->removed && x0 != turtle);
+			if(is_turtle) turtle = turtle->prev, is_turtle=0; else is_turtle=1;
+		} while(x0 = x1, x1 = x1->prev, x0 != &p->removed && x0 != turtle);
 	}
 	fprintf(fp, "}\n");
 	fclose(fp);
@@ -101,7 +101,7 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 		size_t forward = 0, back = 0;
 		const struct PT_(X) *head = &a->removed, *x, *turtle = head;
 		int is_turtle = 0;
-		const struct PT_(Node) *const first = PT_(block_array)(a->largest),
+		const struct PT_(Node) *const first = PT_(block_nodes)(a->largest),
 			*const last = first + a->largest->size - 1;
 		assert(head->next && head->prev && a->largest->size > 1);
 		x = head;
@@ -112,12 +112,12 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
 			assert(x && node >= first && node < last && &node->x != turtle);
 		} while(1);
-		turtle = &a->removed, is_turtle = 0;
+		turtle = head, is_turtle = 0, x = head;
 		do {
 			back++,    x = x->prev;
 			if(x == head) break;
 			node = PT_(x_const_upcast)(x);
-			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
+			if(is_turtle) turtle = turtle->prev, is_turtle=0; else is_turtle=1;
 			assert(x && node >= first && node < last && &node->x != turtle);
 		} while(1);
 		/* The removed counts for a thing. */
@@ -213,12 +213,11 @@ static void PT_(test_basic)(void) {
 
 static void PT_(test_random)(void) {
 	struct T_(Pool) a;
-	size_t i, old_i, size = 0;
+	size_t i, size = 0;
 	const size_t mult = 1; /* For long tests. */
 	T_(Pool)(&a);
 	/* This parameter controls how many iterations. */
-	i = 50 * mult, old_i = i;
-	while(i--) {
+	for(i = 0; i < 500 * mult; i++) {
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
 		/* This parameter controls how big the pool wants to be. */
@@ -228,7 +227,7 @@ static void PT_(test_random)(void) {
 			size++;
 			PT_(filler)(data);
 			PT_(to_string)(data, &str);
-			printf("%lu: Created %s.\n", (unsigned long)(old_i - i), str);
+			printf("%lu: Created %s.\n", (unsigned long)i, str);
 		} else {
 			struct PT_(Block) *block;
 			struct PT_(Node) *node, *end;
@@ -236,7 +235,7 @@ static void PT_(test_random)(void) {
 			assert(a.largest);
 			/* Pick random. */
 			for(block = a.largest; block; block = block->smaller) {
-				for(node = PT_(block_array)(block), end = node
+				for(node = PT_(block_nodes)(block), end = node
 					+ (block == a.largest ? block->size : block->capacity);
 					node < end; node++) {
 					if(node->x.prev) continue;
@@ -247,7 +246,8 @@ static void PT_(test_random)(void) {
 			}
 			assert(block);
 			PT_(to_string)(&node->data, &str);
-			printf("%lu: Removing %s.\n", (unsigned long)(old_i - i), str);
+			printf("%lu: Removing %s in block %p.\n", (unsigned long)i, str,
+				(const void *)block);
 			{
 				/* @fixme: this sometimes happens. */
 				const int ret = T_(PoolRemove)(&a, &node->data);
@@ -257,9 +257,9 @@ static void PT_(test_random)(void) {
 			size--;
 		}
 		printf("%s.\n", T_(PoolToString)(&a));
-		if(old_i - i < 50) {
+		if(i < 50 || i == 253) {
 			char fn[64];
-			sprintf(fn, QUOTE(POOL_NAME) "-%u.gv", (unsigned)(old_i - i));
+			sprintf(fn, QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
 			PT_(graph)(&a, fn);
 		}
 		PT_(valid_state)(&a);

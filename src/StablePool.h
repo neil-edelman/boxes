@@ -167,7 +167,7 @@ struct PT_(Node) {
 };
 
 /* Information about each block. Each block will have {capacity <PT>Node}'s
- after, {block + 1}, specified by {<PT>_block_array}. */
+ after, {block + 1}, specified by {<PT>_block_nodes}. */
 struct PT_(Block) {
 	struct PT_(Block) *smaller;
 	size_t capacity, size;
@@ -208,7 +208,7 @@ static const struct PT_(Node) *PT_(x_const_upcast)(const struct PT_(X) *const x)
 }
 
 /** Private: block to array. */
-static struct PT_(Node) *PT_(block_array)(struct PT_(Block) *const b) {
+static struct PT_(Node) *PT_(block_nodes)(struct PT_(Block) *const b) {
 	return (struct PT_(Node) *)(void *)(b + 1);
 }
 
@@ -255,35 +255,34 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 static void PT_(enqueue_removed)(struct T_(Pool) *const pool,
 	struct PT_(Node) *const node) {
 	assert(pool && pool->largest && node
-		&& node >= PT_(block_array)(pool->largest)
-		&& node < PT_(block_array)(pool->largest) + pool->largest->capacity
+		&& node >= PT_(block_nodes)(pool->largest)
+		&& node < PT_(block_nodes)(pool->largest) + pool->largest->size
 		&& !node->x.prev && !node->x.next
 		&& !pool->removed.prev == !pool->removed.next);
-	node->x.prev = &pool->removed;
-	if(!pool->removed.prev) { /* The first. */
-		node->x.next = &pool->removed;
-		pool->removed.next = &node->x;
-	} else { /* Stick it on the end. */
-		node->x.next = pool->removed.prev;
+	node->x.next = &pool->removed;
+	if(pool->removed.prev) {
+		node->x.prev = pool->removed.prev;
 		pool->removed.prev->next = &node->x;
+	} else {
+		node->x.prev = &pool->removed;
+		pool->removed.next = &node->x;
 	}
 	pool->removed.prev = &node->x;
 }
 
 /** Dequeues a removed node, or if the queue is empty, returns null. */
 static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Pool) *const pool) {
-	struct PT_(X) *x;
+	struct PT_(X) *x0, *x1;
 	assert(pool && !pool->removed.next == !pool->removed.prev);
-	/* No nodes removed. */
-	if(!(x = pool->removed.next)) return 0;
-	if((pool->removed.next = x->next) == &pool->removed) {
-		pool->removed.prev = pool->removed.next = 0; /* The last element. */
-	} else {
-		x->next->prev = &pool->removed; /* Remove this element. */
+	if(!(x0 = pool->removed.next)) return 0; /* No elements. */
+	if((x1 = x0->next) == &pool->removed) { /* Last element. */
+		pool->removed.prev = pool->removed.next = 0;
+	} else { /* > 1 removed. */
+		pool->removed.next = x1;
+		x1->prev = &pool->removed;
 	}
-	/* Remove nodes internal pointers from the free list and return. */
-	x->prev = x->next = 0;
-	return PT_(x_upcast)(x);
+	x0->prev = x0->next = 0;
+	return PT_(x_upcast)(x0);
 }
 
 /** Gets rid of the removed node at the tail of the list. Each remove has
@@ -291,10 +290,11 @@ static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Pool) *const pool) {
 static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 	struct PT_(Node) *node;
 	struct PT_(Block) *const block = pool->largest;
-	struct PT_(Node) *const nodes = PT_(block_array)(block);
+	struct PT_(Node) *const nodes = PT_(block_nodes)(block);
 	assert(pool && block);
 	while(block->size
 		&& (node = nodes + block->size - 1)->x.prev) {
+		printf("\nTRIMMING!\n\n");
 		assert(node->x.next);
 		if(node->x.prev == node->x.next) {
 			/* There's only one: we don't want removed pointing to itself. */
@@ -341,14 +341,14 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
 
 /* Find what block it's in. I believe the expected value is {O(ln(n))} because
  the blocks get smaller exponentially. */
-static struct PT_(Block) *PT_(find_block)(const struct T_(Pool) *const pool,
+static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
 	const struct PT_(Node) *const node) {
-	struct PT_(Block) *b;
+	struct PT_(Block) *b, **prev;
 	struct PT_(Node) *n;
 	assert(pool && node);
-	for(b = pool->largest; b; b = b->smaller)
-		if(n = PT_(block_array)(b), node >= n && node < n + b->capacity) break;
-	return b;
+	for(prev = &pool->largest, b = *prev; b; prev = &b->smaller, b = *prev)
+		if(n = PT_(block_nodes)(b), node >= n && node < n + b->capacity) break;
+	return prev;
 }
 
 /** Removes {data} from {pool}.
@@ -363,9 +363,9 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	if(!pool || !data) return 0;
 	node = PT_(data_upcast)(data);
 	/* Removed already or not part of the container. */
-	if(node->x.next || !(block = PT_(find_block)(pool, node)))
+	if(node->x.next || !(block = *(prev = PT_(find_block_addr)(pool, node))))
 		return errno = EDOM, 0;
-	assert(!node->x.prev && block->size);
+	assert(!node->x.prev && prev && block->size);
 	if(block == pool->largest) { /* The largest block has a free list. */
 		PT_(enqueue_removed)(pool, node);
 		if((size_t)(node - nodes) >= block->size - 1) PT_(trim_removed)(pool);
@@ -373,6 +373,7 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 		/* Mark as deleted; &node->x literally doesn't matter except non-0. */
 		node->x.prev = node->x.next = &node->x;
 		if(!--block->size) {
+			/* @fixme: uninitialised pointer!!! find_block should return block.tail? */
 			*prev = block->smaller;
 			free(block);
 		}
@@ -509,7 +510,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
 	size = pool->largest ? pool->largest->size : 0;
 	if(!PT_(reserve)(pool, size + 1)) return 0;
 	assert(pool->largest);
-	node = PT_(block_array)(pool->largest) + pool->largest->size++;
+	node = PT_(block_nodes)(pool->largest) + pool->largest->size++;
 	node->x.prev = node->x.next = 0;
 	return &node->data;
 }
@@ -527,7 +528,7 @@ static void T_(PoolForEach)(struct T_(Pool) *const pool,
 	struct PT_(Block) *block;
 	if(!pool || !action) return;
 	for(block = pool->largest; block; block = block->smaller) {
-		for(n = PT_(block_array)(block), end = n + block->size; n < end; n++) {
+		for(n = PT_(block_nodes)(block), end = n + block->size; n < end; n++) {
 			if(n->x.prev) continue;
 			action(&n->data);
 		}
@@ -597,7 +598,7 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	}
 	pool_super_cat(&cat, pool_cat_start);
 	for(block = pool->largest; block; block = block->smaller) {
-		for(n = PT_(block_array)(block), end = n + block->size; n < end; n++) {
+		for(n = PT_(block_nodes)(block), end = n + block->size; n < end; n++) {
 			if(n->x.prev) continue;
 			if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
 			PT_(to_string)(&n->data, &scratch),
