@@ -340,15 +340,15 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
 }
 
 /* Find what block it's in. I believe the expected value is {O(ln(n))} because
- the blocks get smaller exponentially. */
+ the blocks get smaller exponentially. Must return a value. */
 static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
 	const struct PT_(Node) *const node) {
-	struct PT_(Block) *b, **prev;
+	struct PT_(Block) *b, **baddr;
 	struct PT_(Node) *n;
 	assert(pool && node);
-	for(prev = &pool->largest, b = *prev; b; prev = &b->smaller, b = *prev)
+	for(baddr = &pool->largest, b = *baddr; b; baddr = &b->smaller, b = *baddr)
 		if(n = PT_(block_nodes)(b), node >= n && node < n + b->capacity) break;
-	return prev;
+	return baddr;
 }
 
 /** Removes {data} from {pool}.
@@ -358,25 +358,30 @@ static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
  @order amortised O(1) or O(ln(blocks))
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
-	struct PT_(Node) *node, *nodes;
-	struct PT_(Block) *block, **prev;
+	struct PT_(Node) *node;
+	struct PT_(Block) *block, **baddr;
 	if(!pool || !data) return 0;
 	node = PT_(data_upcast)(data);
 	/* Removed already or not part of the container. */
-	if(node->x.next || !(block = *(prev = PT_(find_block_addr)(pool, node))))
+	if(node->x.next || !(block = *(baddr = PT_(find_block_addr)(pool, node))))
 		return errno = EDOM, 0;
-	assert(!node->x.prev && prev && block->size);
+	assert(!node->x.prev && block->size);
 	if(block == pool->largest) { /* The largest block has a free list. */
+		size_t idx = node - PT_(block_nodes)(block);
 		PT_(enqueue_removed)(pool, node);
-		if((size_t)(node - nodes) >= block->size - 1) PT_(trim_removed)(pool);
+		if(idx >= block->size - 1) PT_(trim_removed)(pool);
 	} else {
 		/* Mark as deleted; &node->x literally doesn't matter except non-0. */
 		node->x.prev = node->x.next = &node->x;
 		if(!--block->size) {
-			/* @fixme: uninitialised pointer!!! find_block should return block.tail? */
-			*prev = block->smaller;
+			*baddr = block->smaller;
 			free(block);
 		}
+	}
+	{
+		char a[12];
+		PT_(to_string)(data, &a);
+		printf("Removed %s!\n", a);
 	}
 	return 1;
 }
@@ -396,104 +401,6 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	pool->removed.prev = pool->removed.next = 0;
 	while(next) block = next, next = next->smaller, free(block);
 }
-
-#if 0
-/** Private: is {idx} a valid index for {pool}?
- @order \Theta(1) */
-static struct PT_(Node) *PT_(valid_index)(const struct T_(Pool) *const pool,
-	const size_t idx) {
-	assert(pool);
-	if(idx >= pool->size) return 0;
-	{
-		struct PT_(Node) *const node = pool->nodes + idx;
-		return node->x.prev == pool_void ? node : 0;
-	}
-}
-
-/** Gets an existing element by index. Causing something to be added to the
- {<T>Pool} may invalidate this pointer.
- @param pool: If null, returns null.
- @param idx: Index.
- @return If failed, returns a null pointer.
- @order \Theta(1)
- @allow */
-static T *T_(PoolGet)(const struct T_(Pool) *const pool, const size_t idx) {
-	if(!pool) return 0;
-	{
-		struct PT_(Node) *const node = PT_(valid_index)(pool, idx);
-		return node ? &node->data : 0;
-	}
-}
-
-/** Gets an index given {data}.
- @param data: If the element is not part of the {Pool}, behaviour is undefined.
- @return An index.
- @order \Theta(1)
- @fixme Untested.
- @allow */
-static size_t T_(PoolIndex)(const struct T_(Pool) *const pool,
-	const T *const data) {
-	return PT_(data_const_upcast)(data) - pool->nodes;
-}
-
-/** @param pool: If null, returns null.
- @return One element from the pool or null if the pool is empty. If
- {POOL_STACK} was specified, this will be the last element added, otherwise, it
- may not be, but it is deterministic. Causing something to be added to the
- {pool} may invalidate this pointer.
- @order \Theta(1)
- @fixme Untested.
- @allow */
-static T *T_(PoolPeek)(const struct T_(Pool) *const pool) {
-	if(!pool || !pool->size) return 0;
-	return &pool->nodes[pool->size - 1].data;
-}
-
-/** The same value as \see{<T>PoolPeek}.
- @param pool: If null, returns null.
- @return Value from the the top of the {pool} that is removed or null if the
- stack is empty. Causing something to be added to the {pool} may invalidate
- this pointer.
- @order \Theta(1) (amortized if not {POOL_STACK})
- @allow */
-static T *T_(PoolPop)(struct T_(Pool) *const pool) {
-	T *data;
-	if(!pool || !pool->size) return 0;
-	data = &pool->nodes[--pool->size].data;
-	PT_(trim_removed)(pool);
-	return data;
-}
-
-/** Provides a way to iterate through the {pool}. If {<T> = <S>}, it is safe to
- add using {PoolUpdateNew} with the return value as {update}. If {POOL_STACK}
- is not defined, it is safe to remove an element,
- @param pool: If null, returns null. If {prev} is not from this {pool} and not
- null, returns null.
- @param prev: Set it to null to start the iteration.
- @return A pointer to the next element or null if there are no more.
- @order \Theta(1) (or O(pool space that has been deleted) if not {POOL_STACK})
- @allow */
-static T *T_(PoolNext)(const struct T_(Pool) *const pool, T *const prev) {
-	if(!pool) return 0;
-	{
-		struct PT_(Node) *node;
-		size_t idx;
-		const size_t size = pool->size;
-		if(!prev) {
-			node = pool->nodes;
-			idx = 0;
-		} else {
-			node = PT_(data_upcast)(prev) + 1;
-			idx = (size_t)(node - pool->nodes);
-		}
-		while(idx < size) {
-			if(node->x.prev == pool_void) return &node->data;
-			node++, idx++;
-		}
-	}
-	return 0;
-}
-#endif
 
 /** Gets an uninitialised new element.
  @param pool: If is null, returns null.

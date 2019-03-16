@@ -110,7 +110,8 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 			if(x == head) break;
 			node = PT_(x_const_upcast)(x);
 			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
-			assert(x && node >= first && node < last && &node->x != turtle);
+				assert(x && node >= first && node < last);
+				assert(&node->x != turtle);
 		} while(1);
 		turtle = head, is_turtle = 0, x = head;
 		do {
@@ -217,7 +218,7 @@ static void PT_(test_random)(void) {
 	const size_t mult = 1; /* For long tests. */
 	T_(Pool)(&a);
 	/* This parameter controls how many iterations. */
-	for(i = 0; i < 500 * mult; i++) {
+	for(i = 0; i < 10 * mult; i++) {
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
 		/* This parameter controls how big the pool wants to be. */

@@ -148,7 +148,7 @@ static void Colour_filler(enum Colour *const this) {
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	unsigned seed = 11632/*(unsigned)clock()*/;
+	unsigned seed = 2532/*11632*//*(unsigned)clock()*/;
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	APoolTest();
