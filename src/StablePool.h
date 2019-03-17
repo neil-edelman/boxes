@@ -106,12 +106,6 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef A
-#undef A
-#endif
-#ifdef S
-#undef S
-#endif
 #ifdef T
 #undef T
 #endif
@@ -125,11 +119,8 @@
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(POOL_NAME, thing)
 #define PT_(thing) PCAT(pool, PCAT(POOL_NAME, thing))
-#define T_NAME QUOTE(POOL_NAME)
 
 /* Troubles with this line? check to ensure that {POOL_TYPE} is a valid type,
  whose definition is placed above {#include "Pool.h"}. */
@@ -152,22 +143,16 @@ typedef void (*PT_(Action))(T *const data);
 
 
 
-/* Pool previous, next, in the free list of the largest block. The contract for
- this is {0,0} -> no nodes removed, otherwise, it's a circular list. This
- allows us to test whether it's removed by prev or next. The additional blocks
- have this unused, since they never have blocks added. */
-struct PT_(X) {
-	struct PT_(X) *prev, *next;
-};
+/* Free-list. */
+struct PT_(X) { struct PT_(X) *prev, *next; };
 
-/* Pool nodes containing the data and prev, next deleted in the free list. */
-struct PT_(Node) {
-	T data;
-	struct PT_(X) x;
-};
+/* Nodes containing the data and the free list of the largest block; smaller
+ blocks are predicates, {x.prev, x.next -> deleted}. The size of the block has
+ to match up. */
+struct PT_(Node) { T data; struct PT_(X) x; };
 
-/* Information about each block. Each block will have {capacity <PT>Node}'s
- after, {block + 1}, specified by {<PT>_block_nodes}. */
+/* Information about each block. Blocks will have {capacity <PT>Node}'s after
+ {block + 1}, specified by {<PT>_block_nodes}. */
 struct PT_(Block) {
 	struct PT_(Block) *smaller;
 	size_t capacity, size;
@@ -178,7 +163,9 @@ struct T_(Pool);
 struct T_(Pool) {
 	struct PT_(Block) *largest; /* We want all items to go in here. */
 	size_t next_capacity;       /* Fibonacci */
-	struct PT_(X) removed;      /* These are of the largest block. */
+	/* {0,0} -> no nodes removed, otherwise, it's a circular list of entrely
+	 items in the largest block. All other states are invalid. */
+	struct PT_(X) removed;
 };
 
 
@@ -190,21 +177,9 @@ static struct PT_(Node) *PT_(data_upcast)(T *const data) {
 }
 
 /** Private: {container_of}. */
-/*static const struct PT_(Node) *PT_(data_const_upcast)(const T *const data) {
-	return (const struct PT_(Node) *)(const void *)
-		((const char *)data - offsetof(struct PT_(Node), data));
-}*/
-
-/** Private: {container_of}. */
 static struct PT_(Node) *PT_(x_upcast)(struct PT_(X) *const x) {
 	return (struct PT_(Node) *)(void *)
 		((char *)x - offsetof(struct PT_(Node), x));
-}
-
-/** Private: {container_of}. */
-static const struct PT_(Node) *PT_(x_const_upcast)(const struct PT_(X) *const x) {
-	return (const struct PT_(Node) *)(const void *)
-		((const char *)x - offsetof(const struct PT_(Node), x));
 }
 
 /** Private: block to array. */
@@ -239,7 +214,6 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 		c0 = c1, c1 = temp;
 	}
 	if(!(block = malloc(sizeof *block + c0 * sizeof *nodes))) return 0;
-	/* nodes = (struct PT_(Node) *)(block + 1); */
 	block->smaller = pool->largest;
 	block->capacity = c0;
 	block->size = 0;
@@ -250,8 +224,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 }
 
 /** We are very lazy and we just enqueue the removed so that later data can
- overwrite it.
- @fixme: flips around and doesn't go to removed! */
+ overwrite it. */
 static void PT_(enqueue_removed)(struct T_(Pool) *const pool,
 	struct PT_(Node) *const node) {
 	assert(pool && pool->largest && node
@@ -292,18 +265,14 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 	struct PT_(Block) *const block = pool->largest;
 	struct PT_(Node) *const nodes = PT_(block_nodes)(block);
 	assert(pool && block);
-	while(block->size
-		&& (node = nodes + block->size - 1)->x.prev) {
-		printf("\nTRIMMING!\n\n");
+	while(block->size && (node = nodes + block->size - 1)->x.prev) {
 		assert(node->x.next);
-		if(node->x.prev == node->x.next) {
-			/* There's only one: we don't want removed pointing to itself. */
+		if(node->x.prev == node->x.next) { /* There's only one. */
 			pool->removed.prev = pool->removed.next = 0;
 		} else {
 			node->x.prev->next = node->x.next;
 			node->x.next->prev = node->x.prev;
 		}
-		/* node->x.prev = node->x.next = 0; Meh, clear doesn't either. */
 		block->size--;
 	}
 }
@@ -385,7 +354,7 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 /** Removes all from {pool}, but leaves the active memory alone; if one wants
  to remove memory, see \see{Pool_}.
  @param pool: If null, does nothing.
- @order \Theta(1)
+ @order O(blocks)
  @allow */
 static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	struct PT_(Block) *block, *next;
@@ -423,7 +392,6 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
  @param stack, action: If null, does nothing.
  @order O({size} \times {action})
  @fixme Untested.
- @fixme Sequence interface.
  @allow */
 static void T_(PoolForEach)(struct T_(Pool) *const pool,
 	const PT_(Action) action) {
@@ -480,7 +448,6 @@ static void pool_super_cat(struct Pool_SuperCat *const cat,
  functionality.
  @return Prints {pool} in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
- @fixme ToString interface.
  @allow */
 static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	static char buffer[4][256];
@@ -560,13 +527,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T
 #undef T_
 #undef PT_
-#undef S
-#ifdef A
-#undef A
-#endif
-#ifdef POOL_MIGRATE_UPDATE
-#undef POOL_MIGRATE_UPDATE
-#endif
 #ifdef POOL_TO_STRING
 #undef POOL_TO_STRING
 #endif

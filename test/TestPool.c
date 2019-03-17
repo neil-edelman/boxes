@@ -1,13 +1,4 @@
-/** Unit test of Foo.c.
-
- @file		TestFoo
- @author	Neil
- @std		C89/90
- @version	1.0; 20xx-xx
- @since		1.0; 20xx-xx
- @param
- @fixme
- @deprecated */
+/** Unit test. */
 
 #include <stdlib.h> /* EXIT_ malloc free */
 #include <stdio.h>  /* fprintf */
@@ -37,16 +28,6 @@ static void A_to_string(const struct A *this, char (*const a)[12]) {
 
 
 
-#if 0
-
-#define POOL_NAME B
-#define POOL_TYPE struct A
-#define POOL_STACK
-#define POOL_TO_STRING &A_to_string
-#define POOL_TEST &A_filler
-#include "../src/Pool.h"
-
-
 
 /** Define {Foo}. */
 struct Foo {
@@ -67,16 +48,8 @@ static void Foo_filler(struct Foo *const this) {
 #define POOL_TYPE struct Foo
 #define POOL_TO_STRING &Foo_to_string
 #define POOL_TEST &Foo_filler
-#include "../src/Pool.h"
+#include "../src/StablePool.h"
 
-
-
-#define POOL_NAME Bar
-#define POOL_TYPE struct Foo
-#define POOL_TO_STRING &Foo_to_string
-#define POOL_TEST &Foo_filler
-#define POOL_STACK
-#include "../src/Pool.h"
 
 
 
@@ -99,10 +72,9 @@ static void Int_filler(int *const this) {
 #undef LIST_NUM_MAX
 #define POOL_NAME Int
 #define POOL_TYPE int
-#define POOL_MIGRATE_ALL int /* This is bs. */
 #define POOL_TO_STRING &Int_to_string
 #define POOL_TEST &Int_filler
-#include "../src/Pool.h"
+#include "../src/StablePool.h"
 
 
 
@@ -130,18 +102,7 @@ static void Colour_filler(enum Colour *const this) {
 #define POOL_TYPE enum Colour
 #define POOL_TO_STRING &Colour_to_string
 #define POOL_TEST &Colour_filler
-#include "../src/Pool.h"
-
-
-
-#define POOL_NAME ColourStack
-#define POOL_TYPE enum Colour
-#define POOL_TO_STRING &Colour_to_string
-#define POOL_TEST &Colour_filler
-#define POOL_STACK
-#include "../src/Pool.h"
-
-#endif
+#include "../src/StablePool.h"
 
 
 
@@ -152,12 +113,9 @@ int main(void) {
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	APoolTest();
-	/*BPoolTest();
 	FooPoolTest();
-	BarPoolTest();
 	IntPoolTest();
 	ColourPoolTest();
-	ColourStackPoolTest();*/
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

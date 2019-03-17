@@ -15,6 +15,13 @@
 /* POOL_TEST must be a function that implements <PT>Action. */
 static const PT_(Action) PT_(filler) = (POOL_TEST);
 
+/** Private: {container_of}. */
+static const struct PT_(Node) *
+	PT_(x_const_upcast)(const struct PT_(X) *const x) {
+	return (const struct PT_(Node) *)(const void *)
+	((const char *)x - offsetof(const struct PT_(Node), x));
+}
+
 static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 	FILE *fp;
 	struct PT_(Block) *block;
@@ -219,13 +226,13 @@ static void PT_(test_basic)(void) {
 static void PT_(test_random)(void) {
 	struct T_(Pool) a;
 	size_t i, size = 0;
-	const size_t length = 1000; /* Controls how many iterations. */
+	const size_t length = 100000; /* Controls how many iterations. */
 	T_(Pool)(&a);
 	for(i = 0; i < length; i++) {
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
 		/* This parameter controls how big the pool wants to be. */
-		if(r > size / 100.0) {
+		if(r > size / 5000.0) {
 			T *data = T_(PoolNew)(&a);
 			if(!data) { perror("Error"), assert(0); return;}
 			size++;
@@ -253,18 +260,18 @@ static void PT_(test_random)(void) {
 			printf("%lu: Removing %s in block %p.\n", (unsigned long)i, str,
 				(const void *)block);
 			{
-				/* @fixme: this sometimes happens. */
 				const int ret = T_(PoolRemove)(&a, &node->data);
 				assert(ret || (perror("Removing"),
 					PT_(graph)(&a, QUOTE(POOL_NAME) "-rem-err.gv"), 0));
 			}
 			size--;
 		}
-		printf("%s.\n", T_(PoolToString)(&a));
-		if(i % (length/10) == length/10-1) {
+		/* The file size is huge and dot balks. */
+		if(i < 10000 && i % 5000 == 2500) {
 			char fn[64];
 			sprintf(fn, QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
 			PT_(graph)(&a, fn);
+			printf("%s.\n", T_(PoolToString)(&a));
 		}
 		PT_(valid_state)(&a);
 	}
@@ -285,7 +292,7 @@ static void T_(PoolTest)(void) {
 		"testing:\n");
 	PT_(test_basic)();
 	PT_(test_random)();
-	fprintf(stderr, "Done tests of Pool<" T_NAME ">.\n\n");
+	fprintf(stderr, "Done tests of Pool<" QUOTE(POOL_NAME) ">.\n\n");
 }
 
 /* Un-define all macros. */
