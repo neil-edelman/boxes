@@ -90,9 +90,9 @@ static const char *const colour_names[] = { "White", "Silver", "Gray", "Black",
 	"Fuchsia", "Pink", "Purple" }; /* max 11 letters */
 static const size_t colour_size = sizeof colour_names / sizeof *colour_names;
 /** @implements <Colour>ToString */
-static void Colour_to_string(const enum Colour *this, char (*const a)[12]) {
-	assert(*this < colour_size);
-	sprintf(*a, "%s", colour_names[*this]);
+static void Colour_to_string(const enum Colour *c, char (*const a)[12]) {
+	assert(*c < colour_size);
+	sprintf(*a, "%s", colour_names[*c]);
 }
 /** @implements <Colour>Action */
 static void Colour_filler(enum Colour *const this) {
@@ -109,7 +109,7 @@ static void Colour_filler(enum Colour *const this) {
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	unsigned seed = /*2532*//*11632*/(unsigned)clock();
+	unsigned seed = /*12395*/ /*2532*//*11632*/(unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	APoolTest();

@@ -187,7 +187,7 @@ static struct PT_(Node) *PT_(block_nodes)(struct PT_(Block) *const b) {
 	return (struct PT_(Node) *)(void *)(b + 1);
 }
 
-/** Ensures capacity of the largest block, cannot have removed elements.
+/** Ensures capacity of the largest block.
  @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {malloc} errors: {IEEE Std 1003.1-2001}. */
@@ -196,7 +196,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 	struct PT_(Block) *block;
 	struct PT_(Node) *nodes;
 	const size_t max_size = ((size_t)-1 - sizeof *block) / sizeof *nodes;
-	assert(pool && !pool->removed.prev && !pool->removed.next);
+	assert(pool && !pool->removed.prev == !pool->removed.next);
 	assert(!pool->largest
 		|| (pool->largest->capacity < pool->next_capacity
 		&& pool->next_capacity <= max_size)
@@ -277,6 +277,13 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 	}
 }
 
+/** How much data is in a block, (skipping items where {node->x.prev}.) */
+static size_t PT_(range)(const struct T_(Pool) *const pool,
+	const struct PT_(Block) *const block) {
+	assert(pool && block);
+	return block == pool->largest ? block->size : block->capacity;
+}
+
 /** Zeros {pool}. */
 static void PT_(pool)(struct T_(Pool) *const pool) {
 	assert(pool);
@@ -308,8 +315,9 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
 	PT_(pool)(pool);
 }
 
-/* Find what block it's in. I believe the expected value is {O(ln(n))} because
- the blocks get smaller exponentially. Must return a value. */
+/* Find what block it's in. I believe the expected value is {O(log log items)}
+ because the blocks get smaller exponentially. Must return a value. Used in
+ \see{<T>PoolRemove}. */
 static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
 	const struct PT_(Node) *const node) {
 	struct PT_(Block) *b, **baddr;
@@ -320,12 +328,19 @@ static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
 	return baddr;
 }
 
+/** Only for the not-largest, inactive, blocks, {node->x} becomes a boolean,
+ null/not. */
+static void PT_(flag_removed)(struct PT_(Node) *const node) {
+	assert(node);
+	node->x.prev = node->x.next = &node->x;
+}
+
 /** Removes {data} from {pool}.
  @param pool, data: If null, returns false.
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is corrupted or not part of {pool}.
- @order amortised {\O(1)} assuming the blocks are removed uniformly at random,
- or {O(ln(blocks))}
+ @order amortised {O(1)}, assuming the blocks are removed uniformly at random,
+ but {log log items} for a small number of deleted items
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	struct PT_(Node) *node;
@@ -341,12 +356,8 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 		PT_(enqueue_removed)(pool, node);
 		if(idx >= block->size - 1) PT_(trim_removed)(pool);
 	} else {
-		/* Mark as deleted; &node->x literally doesn't matter except non-0. */
-		node->x.prev = node->x.next = &node->x;
-		if(!--block->size) {
-			*baddr = block->smaller;
-			free(block);
-		}
+		PT_(flag_removed)(node);
+		if(!--block->size) { *baddr = block->smaller, free(block); }
 	}
 	return 1;
 }
@@ -365,6 +376,31 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	block->smaller = 0;
 	pool->removed.prev = pool->removed.next = 0;
 	while(next) block = next, next = next->smaller, free(block);
+}
+
+/** To ensure that it can hold at least {n} elements, it may increase the
+ capacity of {pool}.
+ @return Success.
+ @throws ERANGE: Tried allocating more then can fit in {size_t}.
+ @throws {malloc} errors: {IEEE Std 1003.1-2001}.
+ @order On existing block, it may have to go though the unused portions of the
+ block and set them to erased.
+ @allow */
+static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
+	struct PT_(Block) *block;
+	struct PT_(Node) *n, *end;
+	int *const errno_ptr = &errno;
+	if(!pool) return 0;
+	block = pool->largest;
+	assert(!errno);
+	if(!PT_(reserve)(pool, min)) return 0;
+	assert(!errno);
+	if(!block || block == pool->largest) return 1;
+	assert(!errno);
+	for(n = PT_(block_nodes)(block) + block->size,
+		end = n + PT_(range)(pool, block); n < end; n++) PT_(flag_removed)(n);
+	assert(!errno);
+	return 1;
 }
 
 /** Gets an uninitialised new element.
@@ -399,7 +435,8 @@ static void T_(PoolForEach)(struct T_(Pool) *const pool,
 	struct PT_(Block) *block;
 	if(!pool || !action) return;
 	for(block = pool->largest; block; block = block->smaller) {
-		for(n = PT_(block_nodes)(block), end = n + block->size; n < end; n++) {
+		for(n = PT_(block_nodes)(block), end = n + PT_(range)(pool, block);
+			n < end; n++) {
 			if(n->x.prev) continue;
 			action(&n->data);
 		}
@@ -468,8 +505,8 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	}
 	pool_super_cat(&cat, pool_cat_start);
 	for(block = pool->largest; block; block = block->smaller) {
-		for(n = PT_(block_nodes)(block), end = n + (block == pool->largest
-			? block->size : block->capacity); n < end; n++) {
+		for(n = PT_(block_nodes)(block), end = n + PT_(range)(pool, block);
+			n < end; n++) {
 			if(n->x.prev) continue;
 			if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
 			PT_(to_string)(&n->data, &scratch),
@@ -499,6 +536,7 @@ static void PT_(unused_set)(void) {
 	T_(Pool)(0);
 	T_(PoolRemove)(0, 0);
 	T_(PoolClear)(0);
+	T_(PoolReserve)(0, 0);
 	T_(PoolNew)(0);
 	T_(PoolForEach)(0, 0);
 #ifdef POOL_TO_STRING

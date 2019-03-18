@@ -25,14 +25,14 @@ static const struct PT_(Node) *
 static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 	FILE *fp;
 	struct PT_(Block) *block;
-	const struct PT_(Node) *node, *beg, *end;
+	const struct PT_(Node) *node, /* *beg, 10000 nodes bogs down dot */ *end;
 	char str[12], b_strs[2][128] = { "pool", "???" };
 	unsigned b = 0;
 	assert(p && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\tgraph [compound=true];\n"
-		/*"\trankdir=LR;\n"*/
+		"\tgraph [compound=true, nslimit=3, nslimit1=3];\n"
+		"\trankdir=LR;\n" /* *beg take this out. */
 		"\tnode [shape=box, style=filled];\n"
 		"\tsubgraph cluster_%s {\n"
 		"\t\tdud_%s [label=\"Pool\\nnext_capacity=%lu\\l\"];\n",
@@ -53,16 +53,16 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
 			(unsigned long)block->capacity, (unsigned long)block->size,
 			b_strs[b]);
-		for(beg = node = PT_(block_nodes)(block),
-			end = node + (block == p->largest ? block->size : block->capacity);
+		for(/*beg =*/ node = PT_(block_nodes)(block),
+			end = node + PT_(range)(p, block);
 			node < end; node++) {
+			if(node->x.prev) continue;
 			PT_(to_string)(&node->data, &str);
 			fprintf(fp, "\t\tnode%p [label=\"%s\", color=%s];\n",
 				(const void *)node, str, node->x.prev ? "firebrick" : "white");
-			if(node == beg) continue;
+			/*if(node == beg) continue;
 			fprintf(fp, "\t\tnode%p -> node%p [style=invis];\n",
-				(const void *)(node - 1), (const void *)node);
-			/*rank2 -> B -> C -> D -> E [ style=invis ];*/
+				(const void *)(node - 1), (const void *)node);*/
 		}
 		fprintf(fp, "\t}\n");
 	}
@@ -145,6 +145,7 @@ static void PT_(test_basic)(void) {
 	T ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
+	int *const errno_ptr = &errno;
 
 	printf("Test null.\n");
 	errno = 0;
@@ -152,6 +153,7 @@ static void PT_(test_basic)(void) {
 	T_(Pool)(0);
 	assert(T_(PoolRemove)(0, 0) == 0);
 	T_(PoolClear)(0);
+	assert(T_(PoolReserve)(0, 1) == 0);
 	assert(T_(PoolNew)(0) == 0);
 	T_(PoolForEach)(0, 0);
 	assert(!strcmp("null", T_(PoolToString(0))));
@@ -164,7 +166,10 @@ static void PT_(test_basic)(void) {
 	assert(T_(PoolRemove)(&a, &node.data) == 0 && errno == EDOM), errno = 0;
 	T_(PoolForEach)(&a, 0);
 	assert(errno == 0);
+	assert(T_(PoolReserve)(&a, 100) && a.next_capacity == 233);
+	assert(errno == 0);
 	PT_(valid_state)(&a);
+	T_(Pool_)(&a);
 
 	printf("Test one element.\n");
 	t = T_(PoolNew)(&a), PT_(filler)(t); /* Add. */
@@ -197,10 +202,8 @@ static void PT_(test_basic)(void) {
 	assert(!T_(PoolRemove)(&a, t1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	PT_(valid_state)(&a);
+	T_(PoolReserve)(&a, 1000);
 	PT_(graph)(&a, QUOTE(POOL_NAME) "-small.gv");
-	T_(PoolNew)(&a); /* Cheating. */
-	T_(PoolNew)(&a);
-	T_(PoolNew)(&a);
 	PT_(valid_state)(&a);
 	T_(PoolClear)(&a);
 	PT_(valid_state)(&a);
