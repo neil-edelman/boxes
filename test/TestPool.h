@@ -53,10 +53,8 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
 			(unsigned long)block->capacity, (unsigned long)block->size,
 			b_strs[b]);
-		for(/*beg =*/ node = PT_(block_nodes)(block),
-			end = node + PT_(range)(p, block);
+		for(node = PT_(block_nodes)(block), end = node + PT_(range)(p, block);
 			node < end; node++) {
-			if(node->x.prev) continue;
 			PT_(to_string)(&node->data, &str);
 			fprintf(fp, "\t\tnode%p [label=\"%s\", color=%s];\n",
 				(const void *)node, str, node->x.prev ? "firebrick" : "white");
@@ -145,7 +143,6 @@ static void PT_(test_basic)(void) {
 	T ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
-	int *const errno_ptr = &errno;
 
 	printf("Test null.\n");
 	errno = 0;
@@ -153,7 +150,6 @@ static void PT_(test_basic)(void) {
 	T_(Pool)(0);
 	assert(T_(PoolRemove)(0, 0) == 0);
 	T_(PoolClear)(0);
-	assert(T_(PoolReserve)(0, 1) == 0);
 	assert(T_(PoolNew)(0) == 0);
 	T_(PoolForEach)(0, 0);
 	assert(!strcmp("null", T_(PoolToString(0))));
@@ -166,10 +162,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(PoolRemove)(&a, &node.data) == 0 && errno == EDOM), errno = 0;
 	T_(PoolForEach)(&a, 0);
 	assert(errno == 0);
-	assert(T_(PoolReserve)(&a, 100) && a.next_capacity == 233);
-	assert(errno == 0);
 	PT_(valid_state)(&a);
-	T_(Pool_)(&a);
 
 	printf("Test one element.\n");
 	t = T_(PoolNew)(&a), PT_(filler)(t); /* Add. */
@@ -202,8 +195,13 @@ static void PT_(test_basic)(void) {
 	assert(!T_(PoolRemove)(&a, t1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	PT_(valid_state)(&a);
-	T_(PoolReserve)(&a, 1000);
 	PT_(graph)(&a, QUOTE(POOL_NAME) "-small.gv");
+	t = T_(PoolNew)(&a), PT_(filler)(t); /* Cheating. */
+	t = T_(PoolNew)(&a), PT_(filler)(t);
+	t = T_(PoolNew)(&a), PT_(filler)(t);
+	PT_(valid_state)(&a);
+	T_(PoolReserve)(&a, 1000);
+	PT_(graph)(&a, QUOTE(POOL_NAME) "-small-1000.gv");
 	PT_(valid_state)(&a);
 	T_(PoolClear)(&a);
 	PT_(valid_state)(&a);

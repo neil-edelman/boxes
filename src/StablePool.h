@@ -385,21 +385,20 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
  @throws {malloc} errors: {IEEE Std 1003.1-2001}.
  @order On existing block, it may have to go though the unused portions of the
  block and set them to erased.
+ @fixme Stub.
  @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
 	struct PT_(Block) *block;
 	struct PT_(Node) *n, *end;
-	int *const errno_ptr = &errno;
 	if(!pool) return 0;
+#if 0
 	block = pool->largest;
-	assert(!errno);
 	if(!PT_(reserve)(pool, min)) return 0;
-	assert(!errno);
 	if(!block || block == pool->largest) return 1;
 	assert(!errno);
 	for(n = PT_(block_nodes)(block) + block->size,
-		end = n + PT_(range)(pool, block); n < end; n++) PT_(flag_removed)(n);
-	assert(!errno);
+		end = n + PT_(range)(pool, block); n < end; n++) /*PT_(flag_removed)(n)*/;
+#endif
 	return 1;
 }
 
