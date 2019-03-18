@@ -200,6 +200,7 @@ static void PT_(test_basic)(void) {
 	t = T_(PoolNew)(&a), PT_(filler)(t);
 	t = T_(PoolNew)(&a), PT_(filler)(t);
 	PT_(valid_state)(&a);
+	assert((perror("?"), !errno));
 	T_(PoolReserve)(&a, 1000);
 	PT_(graph)(&a, QUOTE(POOL_NAME) "-small-1000.gv");
 	PT_(valid_state)(&a);

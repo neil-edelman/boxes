@@ -196,7 +196,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 	struct PT_(Block) *block;
 	struct PT_(Node) *nodes;
 	const size_t max_size = ((size_t)-1 - sizeof *block) / sizeof *nodes;
-	assert(pool && !pool->removed.prev == !pool->removed.next);
+	assert(pool && !pool->removed.prev && !pool->removed.next && min);
 	assert(!pool->largest
 		|| (pool->largest->capacity < pool->next_capacity
 		&& pool->next_capacity <= max_size)
@@ -378,8 +378,10 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	while(next) block = next, next = next->smaller, free(block);
 }
 
+#if 1
 /** To ensure that it can hold at least {n} elements, it may increase the
  capacity of {pool}.
+ @param min: If 0, does nothing and returns true;
  @return Success.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {malloc} errors: {IEEE Std 1003.1-2001}.
@@ -390,17 +392,44 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
 	struct PT_(Block) *block;
 	struct PT_(Node) *n, *end;
+	struct PT_(X) *removed;
+	size_t size_with_free_list;
 	if(!pool) return 0;
-#if 0
+	if(!min) return 1;
+	if(pool->largest) {
+		printf("Reserve: capacity %lu request %lu.\n",
+			(unsigned long)pool->largest->capacity, min);
+	} else {
+		printf("Reserve: request %lu from empty.\n", (unsigned long)min);
+	}
 	block = pool->largest;
+	removed = pool->removed.next;
 	if(!PT_(reserve)(pool, min)) return 0;
-	if(!block || block == pool->largest) return 1;
-	assert(!errno);
-	for(n = PT_(block_nodes)(block) + block->size,
-		end = n + PT_(range)(pool, block); n < end; n++) /*PT_(flag_removed)(n)*/;
-#endif
+	assert((perror("?"), !errno));
+	if(!block || block == pool->largest) return printf("Reserve: no action."),1;
+	assert(pool->largest && block == pool->largest->smaller
+		&& (!removed || block->size > 1));
+	size_with_free_list = block->size;
+	if(removed) { /* Subtract removed from count. */
+		size_t r = 0;
+		while(removed != &pool->removed) r++, removed = removed->next;
+		printf("Reserve: there were %lu removed blocks in size %lu.\n",
+			r, block->size);
+		assert(r && block->size > r);
+		block->size -= r;
+	} else if(!block->size) { /* Erstwhile active is empty block. */
+		pool->largest->smaller = block->smaller;
+		free(block);
+		return 1;
+	}
+	printf("Reserve: filling in [%lu, %lu) with removed.\n",
+		(unsigned long)size_with_free_list, (unsigned long)block->capacity);
+	/* Fill in the uninitialised nodes; blocked in the active block by size. */
+	for(n = PT_(block_nodes)(block) + size_with_free_list,
+		end = n + block->capacity; n < end; n++) PT_(flag_removed)(n);
 	return 1;
 }
+#endif
 
 /** Gets an uninitialised new element.
  @param pool: If is null, returns null.
