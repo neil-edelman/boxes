@@ -61,7 +61,7 @@
  @title		Array.h
  @std		C89
  @author	Neil
- @version
+ @version	2019-03 Renamed {Pool} to {Array}.
  @since		2018-04 Merged {Stack} into {Pool} again to eliminate duplication;
 			2018-03 Why have an extra level of indirection?
 			2018-02 Errno instead of custom errors.
@@ -80,7 +80,7 @@
 #include <stddef.h>	/* ptrdiff_t offset_of */
 #include <stdlib.h>	/* realloc free */
 #include <assert.h>	/* assert */
-#include <string.h>	/* memcpy (memmove strerror strcpy memcmp in ArrayTest.h) */
+#include <string.h>	/* memcpy memmove (strerror strcpy memcmp in ArrayTest.h) */
 #include <errno.h>	/* errno */
 #ifdef ARRAY_TO_STRING /* <-- print */
 #include <stdio.h>	/* snprintf */
@@ -157,11 +157,11 @@ typedef ARRAY_TYPE PT_(Type);
 static const size_t pool_fibonacci6 = 8;
 static const size_t pool_fibonacci7 = 13;
 /* Is a node that is not part of the deleted list; a different kind of null. */
-static const size_t pool_void       = (size_t)-1;
+static const size_t pool_void = (size_t)-1;
 /* Is a node on the edge of the deleted list. */
-static const size_t pool_null       = (size_t)-2;
+static const size_t pool_null = (size_t)-2;
 /* Maximum size; smaller then any special values. */
-static const size_t pool_max        = (size_t)-3;
+static const size_t pool_max  = (size_t)-3;
 /* Removed offset queue. */
 struct ArrayX { size_t prev, next; };
 #endif /* ARRAY_H --> */
@@ -224,9 +224,9 @@ typedef void (*PT_(Action))(T *const data);
 /* Array nodes containing the data. */
 struct PT_(Node) {
 	T data;
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 	struct ArrayX x;
-#endif /* !stack --> */
+#endif /* free --> */
 };
 
 /** The pool. To instantiate, see \see{<T>Array}. */
@@ -238,9 +238,10 @@ struct T_(Array) {
 	size_t capacity[2];
 	/* {nodes} ? {size <= capacity[0]} : {size == 0}. Including removed. */
 	size_t size;
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 	struct ArrayX removed;
-#endif /* !stack --> */
+	/* removed_size? */
+#endif /* free --> */
 #ifdef ARRAY_MIGRATE_ALL /* <-- all */
 	PT_(MigrateAll) migrate_all; /* Called to update on resizing. */
 	A *all; /* Migrate parameter. */
@@ -273,10 +274,10 @@ static int PT_(reserve)(struct T_(Array) *const pool,
 	assert(pool && pool->size <= pool->capacity[0]
 		&& pool->capacity[0] <= pool->capacity[1]
 		&& pool->capacity[1] <= pool_max);
-#ifdef ARRAY_FREE_LIST /* <-- !stack -- spaces that we could have placed it. */
+#ifdef ARRAY_FREE_LIST /* <-- free -- spaces that we could have placed it. */
 	assert(!pool->nodes || (pool->removed.next == pool->removed.prev
 		&& pool->removed.next == pool_null));
-#endif /* !stack --> */
+#endif /* free --> */
 	if(pool->capacity[0] >= min_capacity) return 1;
 	if(min_capacity > max_size) return errno = ERANGE, 0;
 	if(!pool->nodes) {
@@ -301,10 +302,10 @@ static int PT_(reserve)(struct T_(Array) *const pool,
 		{
 			struct PT_(Node) *e, *end;
 			for(e = nodes, end = e + pool->size; e < end; e++) {
-#ifdef ARRAY_FREE_LIST /* <-- !stack: not packed data */
+#ifdef ARRAY_FREE_LIST /* <-- free: not packed data */
 				if(e->x.prev != pool_void) continue; /* It's on removed list. */
 				assert(e->x.next == pool_void);
-#endif /* !stack --> */
+#endif /* free --> */
 				PT_(migrate_each)(&e->data, &migrate);
 			}
 		}
@@ -321,22 +322,20 @@ static int PT_(reserve)(struct T_(Array) *const pool,
 				*(char **const)update_ptr += migrate.delta;
 		}
 	}
-#ifdef ARRAY_FREE_LIST /* <-- !stack -- initialise linked-list in case static. */
+#ifdef ARRAY_FREE_LIST /* <-- free -- initialise linked-list. */
 	if(!pool->nodes) pool->removed.next = pool->removed.prev = pool_null;
-#endif /* !stack --> */
+#endif /* free --> */
 	pool->nodes = nodes;
 	pool->capacity[0] = c0;
 	pool->capacity[1] = c1;
 	return 1;
 }
 
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 
 /** We are very lazy and we just enqueue the removed so that later data can
  overwrite it.
- @param n: Must be a valid index.
- @fixme Change the order of the data to fill the start first. Tricky, but cache
- performance will probably go up? Probably impossible to do in {O(1)}. */
+ @param n: Must be a valid index. */
 static void PT_(enqueue_removed)(struct T_(Array) *const pool, const size_t n) {
 	struct PT_(Node) *const node = pool->nodes + n;
 	assert(pool && n < pool->size);
@@ -406,7 +405,7 @@ static void PT_(trim_removed)(struct T_(Array) *const pool) {
 	}
 }
 
-#endif /* !stack --> */
+#endif /* free --> */
 
 /** Zeros {pool} except for {ARRAY_MIGRATE_ALL} which is initialised in the
  containing function, and not {!ARRAY_FREE_LIST}, which is initialised in
@@ -457,24 +456,24 @@ static void T_(Array)(struct T_(Array) *const pool) {
 }
 #endif /* all --> */
 
-#ifndef ARRAY_FREE_LIST /* <-- stack */
-/** If {!ARRAY_FREE_LIST} is specified, otherwise it doesn't keep track of the size.
+#ifndef ARRAY_FREE_LIST /* <-- !free */
+/** If {ARRAY_FREE_LIST} is specified it doesn't keep track of the size.
  @param pool: If null, returns zero.
  @return The current size of the stack.
  @order \Theta(1)
+ @fixme Is it useful for the removed be sized?
  @allow */
 static size_t T_(ArraySize)(const struct T_(Array) *const pool) {
 	if(!pool) return 0;
 	return pool->size;
 }
-#endif /* stack --> */
+#endif /* !free --> */
 
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
-/** Removes {data} from {pool}. Only present if {!ARRAY_FREE_LIST} is not defined.
+/** Removes {data} from {pool}.
  @param pool, data: If null, returns false.
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is not part of {pool}.
- @order amortised O(1)
+ @order Amortised O(1) if {ARRAY_FREE_LIST} is defined, otherwise, O(n).
  @allow */
 static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data) {
 	struct PT_(Node) *node;
@@ -482,13 +481,19 @@ static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data) {
 	if(!pool || !data) return 0;
 	node = PT_(data_upcast)(data);
 	n = node - pool->nodes;
-	if(node < pool->nodes || n >= pool->size || node->x.prev != pool_void)
-		return errno = EDOM, 0;
-		PT_(enqueue_removed)(pool, n);
+	if(node < pool->nodes || n >= pool->size
+#ifdef ARRAY_FREE_LIST /* <-- free */
+		|| node->x.prev != pool_void
+#endif /* free --> */
+	) return errno = EDOM, 0;
+#ifdef ARRAY_FREE_LIST /* <-- free */
+	PT_(enqueue_removed)(pool, n);
 	if(n >= pool->size - 1) PT_(trim_removed)(pool);
+#else /* free --><-- !free */
+	memmove(node, node + 1, --pool->size - n);
+#endif
 	return 1;
 }
-#endif /* !stack --> */
 
 /** Removes all from {pool}, but leaves the {pool} memory alone; if one wants
  to remove memory, see \see{Array_}.
@@ -498,9 +503,9 @@ static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data) {
 static void T_(ArrayClear)(struct T_(Array) *const pool) {
 	if(!pool) return;
 	pool->size = 0;
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 	pool->removed.prev = pool->removed.next = pool_null;
-#endif /* !stack --> */
+#endif /* free --> */
 }
 
 /** Private: is {idx} a valid index for {pool}?
@@ -509,14 +514,14 @@ static struct PT_(Node) *PT_(valid_index)(const struct T_(Array) *const pool,
 	const size_t idx) {
 	assert(pool);
 	if(idx >= pool->size) return 0;
-#ifndef ARRAY_FREE_LIST /* <-- stack */
+#ifndef ARRAY_FREE_LIST /* <-- !free */
 	return pool->nodes + idx;
-#else /* stack --><-- !stack */
+#else /* !free --><-- free */
 	{
 		struct PT_(Node) *const node = pool->nodes + idx;
 		return node->x.prev == pool_void ? node : 0;
 	}
-#endif /* !stack --> */
+#endif /* free --> */
 }
 
 /** Gets an existing element by index. Causing something to be added to the
@@ -569,9 +574,9 @@ static T *T_(ArrayPop)(struct T_(Array) *const pool) {
 	T *data;
 	if(!pool || !pool->size) return 0;
 	data = &pool->nodes[--pool->size].data;
-#ifdef ARRAY_FREE_LIST /* <-- stack */
+#ifdef ARRAY_FREE_LIST /* <-- !free */
 	PT_(trim_removed)(pool);
-#endif /* stack --> */
+#endif /* !free --> */
 	return data;
 }
 
@@ -597,14 +602,14 @@ static T *T_(ArrayNext)(const struct T_(Array) *const pool, T *const prev) {
 			node = PT_(data_upcast)(prev) + 1;
 			idx = (size_t)(node - pool->nodes);
 		}
-#ifndef ARRAY_FREE_LIST /* <-- stack */
+#ifndef ARRAY_FREE_LIST /* <-- !free */
 		if(idx < size) return &node->data;
-#else /* stack --><-- !stack */
+#else /* !free --><-- free */
 		while(idx < size) {
 			if(node->x.prev == pool_void) return &node->data;
 			node++, idx++;
 		}
-#endif /* !stack */
+#endif /* free */
 	}
 	return 0;
 }
@@ -614,15 +619,15 @@ static struct PT_(Node) *PT_(new)(struct T_(Array) *const pool,
 	S **const update_ptr) {
 	struct PT_(Node) *node;
 	assert(pool);
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 	if((node = PT_(dequeue_removed)(pool))) return node;
-#endif /* !stack --> */
+#endif /* free --> */
 	/* ERANGE, ENOMEM? */
 	if(!PT_(reserve)(pool, pool->size + 1, update_ptr)) return 0;
 	node = pool->nodes + pool->size++;
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 	node->x.prev = node->x.next = pool_void;
-#endif /* !stack --> */
+#endif /* free --> */
 	return node;
 }
 
@@ -669,9 +674,9 @@ static void T_(ArrayForEach)(struct T_(Array) *const pool,
 	struct PT_(Node) *a, *end;
 	if(!pool || !action) return;
 	for(a = pool->nodes, end = a + pool->size; a < end; a++) {
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 		if(a->x.prev != pool_void) continue;
-#endif /* !stack --> */
+#endif /* free --> */
 		action(&a->data);
 	}
 }
@@ -693,9 +698,9 @@ static void T_(ArrayMigrateEach)(struct T_(Array) *const pool,
 	struct PT_(Node) *node, *end;
 	if(!pool || !migrate || !handler) return;
 	for(node = pool->nodes, end = node + pool->size; node < end; node++) {
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 		if(node->x.prev != pool_void) continue;
-#endif /* !stack --> */
+#endif /* free --> */
 		handler(&node->data, migrate);
 	}
 }
@@ -778,9 +783,9 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const pool) {
 	}
 	pool_super_cat(&cat, pool_cat_start);
 	for(i = 0; i < pool->size; i++) {
-#ifdef ARRAY_FREE_LIST /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- free */
 		if(pool->nodes[i].x.prev != pool_void) continue;
-#endif /* !stack --> */
+#endif /* free --> */
 		if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
 		PT_(to_string)(&pool->nodes[i].data, &scratch),
 		scratch[sizeof scratch - 1] = '\0';
@@ -810,11 +815,10 @@ static void PT_(unused_set)(void) {
 #else /* all --><-- !all */
 	T_(Array)(0);
 #endif /* !all --> */
-#ifndef ARRAY_FREE_LIST /* <-- stack */
+#ifndef ARRAY_FREE_LIST /* <-- !free */
 	T_(ArraySize)(0);
-#else /* stack --><-- !stack */
+#endif /* !free --> */
 	T_(ArrayRemove)(0, 0);
-#endif /* !stack --> */
 	T_(ArrayClear)(0);
 	T_(ArrayGet)(0, 0);
 	T_(ArrayIndex)(0, 0);
@@ -856,7 +860,7 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #ifdef A
 #undef A
 #endif
-#ifndef ARRAY_FREE_LIST
+#ifdef ARRAY_FREE_LIST
 #undef ARRAY_FREE_LIST
 #endif
 #ifdef ARRAY_MIGRATE_EACH
