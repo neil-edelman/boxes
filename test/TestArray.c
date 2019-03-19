@@ -25,11 +25,11 @@ static void A_to_string(const struct A *this, char (*const a)[12]);
 static void A_filler(struct A *const this) {
 	Orcish(this->value, sizeof this->value);
 }
-#define POOL_NAME A
-#define POOL_TYPE struct A
-#define POOL_TO_STRING &A_to_string
-#define POOL_TEST &A_filler
-#include "../src/Pool.h"
+#define ARRAY_NAME A
+#define ARRAY_TYPE struct A
+#define ARRAY_TO_STRING &A_to_string
+#define ARRAY_TEST &A_filler
+#include "../src/Array.h"
 /** @implements <A>ToString */
 static void A_to_string(const struct A *this, char (*const a)[12]) {
 	sprintf(*a, "%.11s", this->value);
@@ -37,12 +37,12 @@ static void A_to_string(const struct A *this, char (*const a)[12]) {
 
 
 
-#define POOL_NAME B
-#define POOL_TYPE struct A
-#define POOL_STACK
-#define POOL_TO_STRING &A_to_string
-#define POOL_TEST &A_filler
-#include "../src/Pool.h"
+#define ARRAY_NAME B
+#define ARRAY_TYPE struct A
+#define ARRAY_FREE_LIST
+#define ARRAY_TO_STRING &A_to_string
+#define ARRAY_TEST &A_filler
+#include "../src/Array.h"
 
 
 
@@ -61,20 +61,20 @@ static void Foo_filler(struct Foo *const this) {
 	this->key = (int)(float)(rand() / (RAND_MAX + 1.0) * 99.0);
 	Orcish(this->value, sizeof this->value);
 }
-#define POOL_NAME Foo
-#define POOL_TYPE struct Foo
-#define POOL_TO_STRING &Foo_to_string
-#define POOL_TEST &Foo_filler
-#include "../src/Pool.h"
+#define ARRAY_NAME Foo
+#define ARRAY_TYPE struct Foo
+#define ARRAY_TO_STRING &Foo_to_string
+#define ARRAY_TEST &Foo_filler
+#include "../src/Array.h"
 
 
 
-#define POOL_NAME Bar
-#define POOL_TYPE struct Foo
-#define POOL_TO_STRING &Foo_to_string
-#define POOL_TEST &Foo_filler
-#define POOL_STACK
-#include "../src/Pool.h"
+#define ARRAY_NAME Bar
+#define ARRAY_TYPE struct Foo
+#define ARRAY_TO_STRING &Foo_to_string
+#define ARRAY_TEST &Foo_filler
+#define ARRAY_FREE_LIST
+#include "../src/Array.h"
 
 
 
@@ -95,12 +95,12 @@ static void Int_filler(int *const this) {
 	*this = (int)(float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) *LIST_NUM_MAX);
 }
 #undef LIST_NUM_MAX
-#define POOL_NAME Int
-#define POOL_TYPE int
-#define POOL_MIGRATE_ALL int /* This is bs. */
-#define POOL_TO_STRING &Int_to_string
-#define POOL_TEST &Int_filler
-#include "../src/Pool.h"
+#define ARRAY_NAME Int
+#define ARRAY_TYPE int
+#define ARRAY_MIGRATE_ALL int /* This is bs. */
+#define ARRAY_TO_STRING &Int_to_string
+#define ARRAY_TEST &Int_filler
+#include "../src/Array.h"
 
 
 
@@ -124,20 +124,20 @@ static void Colour_to_string(const enum Colour *this, char (*const a)[12]) {
 static void Colour_filler(enum Colour *const this) {
 	*this = (enum Colour)(float)(rand() / (RAND_MAX + 1.0) * colour_size);
 }
-#define POOL_NAME Colour
-#define POOL_TYPE enum Colour
-#define POOL_TO_STRING &Colour_to_string
-#define POOL_TEST &Colour_filler
-#include "../src/Pool.h"
+#define ARRAY_NAME Colour
+#define ARRAY_TYPE enum Colour
+#define ARRAY_TO_STRING &Colour_to_string
+#define ARRAY_TEST &Colour_filler
+#include "../src/Array.h"
 
 
 
-#define POOL_NAME ColourStack
-#define POOL_TYPE enum Colour
-#define POOL_TO_STRING &Colour_to_string
-#define POOL_TEST &Colour_filler
-#define POOL_STACK
-#include "../src/Pool.h"
+#define ARRAY_NAME ColourFL
+#define ARRAY_TYPE enum Colour
+#define ARRAY_TO_STRING &Colour_to_string
+#define ARRAY_TEST &Colour_filler
+#define ARRAY_FREE_LIST
+#include "../src/Array.h"
 
 
 
@@ -147,13 +147,13 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	APoolTest();
-	BPoolTest();
-	FooPoolTest();
-	BarPoolTest();
-	IntPoolTest();
-	ColourPoolTest();
-	ColourStackPoolTest();
+	AArrayTest();
+	BArrayTest();
+	FooArrayTest();
+	BarArrayTest();
+	IntArrayTest();
+	ColourArrayTest();
+	ColourFLArrayTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

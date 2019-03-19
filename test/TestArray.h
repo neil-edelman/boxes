@@ -1,4 +1,4 @@
-/* Intended to be included by {Pool.h} on {POOL_TYPE_FILLER}. */
+/* Intended to be included by {Array.h} on {ARRAY_TYPE_FILLER}. */
 
 /* Define macros. */
 #ifdef QUOTE
@@ -12,19 +12,19 @@
 
 
 
-/* POOL_TEST must be a function that implements <PT>Action. */
-static const PT_(Action) PT_(filler) = (POOL_TEST);
+/* ARRAY_TEST must be a function that implements <PT>Action. */
+static const PT_(Action) PT_(filler) = (ARRAY_TEST);
 
 
 
-static void PT_(valid_state)(const struct T_(Pool) *const a) {
+static void PT_(valid_state)(const struct T_(Array) *const a) {
 	/* Null is a valid state. */
 	if(!a) return;
 	assert(a->size <= a->capacity[0]);
 	assert(a->capacity[0] < a->capacity[1] || (a->capacity[0] == a->capacity[1]
 		&& (a->capacity[1] == pool_max / sizeof(struct PT_(Node))
 		|| a->capacity[0] == 0)));
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
 	{
 		struct PT_(Node) *node;
 		size_t i, remove_start = 0, remove_end =0,remove_both=0,remove_data = 0;
@@ -61,7 +61,7 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 #endif /* !stack --> */
 }
 
-#ifdef POOL_MIGRATE_ALL /* <-- all */
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
 static S dummy_parent;
 /** @implements Migrate */
 static void PT_(migrate)(S *const parent,
@@ -76,39 +76,39 @@ static void PT_(migrate)(S *const parent,
 
 
 /*
- static void T_(Pool_)(struct T_(Pool) *const pool);
- #ifdef POOL_MIGRATE_ALL * <-- all *
- static void T_(Pool)(struct T_(Pool) *const pool,
+ static void T_(Array_)(struct T_(Array) *const pool);
+ #ifdef ARRAY_MIGRATE_ALL * <-- all *
+ static void T_(Array)(struct T_(Array) *const pool,
  const PT_(MigrateAll) migrate_all, A *const all);
  #else * all --><-- !all *
- static void T_(Pool)(struct T_(Pool) *const pool);
+ static void T_(Array)(struct T_(Array) *const pool);
  #endif * all --> *
- #ifdef POOL_STACK * <-- stack *
- static size_t T_(PoolSize)(const struct T_(Pool) *const pool) {
+ #ifndef ARRAY_FREE_LIST * <-- stack *
+ static size_t T_(ArraySize)(const struct T_(Array) *const pool) {
  #else * stack --><-- !stack *
- static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data);
+ static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data);
  #endif * !stack --> *
- static void T_(PoolClear)(struct T_(Pool) *const pool);
- static T *T_(PoolGet)(struct T_(Pool) *const pool, const size_t idx);
- static size_t T_(PoolIndex)(struct T_(Pool) *const pool, T *const data);
- static T *T_(PoolPeek)(const struct T_(Pool) *const pool);
- static T *T_(PoolPop)(struct T_(Pool) *const pool);
- static T *T_(PoolNext)(struct T_(Pool) *const pool, T *const prev);
- static T *T_(PoolNew)(struct T_(Pool) *const pool);
- static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool, S **const update_ptr);
- static void T_(PoolForEach)(struct T_(Pool) *const pool,
+ static void T_(ArrayClear)(struct T_(Array) *const pool);
+ static T *T_(ArrayGet)(struct T_(Array) *const pool, const size_t idx);
+ static size_t T_(ArrayIndex)(struct T_(Array) *const pool, T *const data);
+ static T *T_(ArrayPeek)(const struct T_(Array) *const pool);
+ static T *T_(ArrayPop)(struct T_(Array) *const pool);
+ static T *T_(ArrayNext)(struct T_(Array) *const pool, T *const prev);
+ static T *T_(ArrayNew)(struct T_(Array) *const pool);
+ static T *T_(ArrayUpdateNew)(struct T_(Array) *const pool, S **const update_ptr);
+ static void T_(ArrayForEach)(struct T_(Array) *const pool,
  const PT_(Action) action);
- static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
+ static void T_(ArrayMigrateEach)(struct T_(Array) *const pool,
  const PT_(Migrate) handler, const struct Migrate *const migrate);
- static void T_(PoolMigratePointer)(T **const data_ptr,
+ static void T_(ArrayMigratePointer)(T **const data_ptr,
  const struct Migrate *const migrate);
- static const char *T_(PoolToString)(const struct T_(Pool) *const pool);
+ static const char *T_(ArrayToString)(const struct T_(Array) *const pool);
 */
 
 
 
 static void PT_(test_basic)(void) {
-	struct T_(Pool) a;
+	struct T_(Array) a;
 	S *supertype;
 	T ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
@@ -116,51 +116,51 @@ static void PT_(test_basic)(void) {
 
 	printf("Test null.\n");
 	errno = 0;
-	T_(Pool_)(0);
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-	T_(Pool)(0, 0, 0);
+	T_(Array_)(0);
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
+	T_(Array)(0, 0, 0);
 #else /* all --><-- !all */
-	T_(Pool)(0);
+	T_(Array)(0);
 #endif /* all --> */
-#ifdef POOL_STACK /* <-- stack */
-	assert(T_(PoolSize(0)) == 0);
+#ifndef ARRAY_FREE_LIST /* <-- stack */
+	assert(T_(ArraySize(0)) == 0);
 #else /* stack --><-- !stack */
-	assert(T_(PoolRemove)(0, 0) == 0);
+	assert(T_(ArrayRemove)(0, 0) == 0);
 #endif /* !stack --> */
-	T_(PoolClear)(0);
-	assert(T_(PoolGet)(0, 0) == 0 && T_(PoolGet)(0, 1) == 0);
-	assert(T_(PoolPeek)(0) == 0);
-	assert(T_(PoolPop)(0) == 0);
-	assert(T_(PoolNext)(0, 0) == 0);
-	assert(T_(PoolNew)(0) == 0);
-	assert(T_(PoolUpdateNew)(0, 0) == 0
-		&& T_(PoolUpdateNew)(0, &supertype) == 0);
-	T_(PoolForEach)(0, 0);
-	T_(PoolMigrateEach)(0, 0, 0);
-	T_(PoolMigratePointer)(0, 0);
-	assert(!strcmp("null", T_(PoolToString(0))));
+	T_(ArrayClear)(0);
+	assert(T_(ArrayGet)(0, 0) == 0 && T_(ArrayGet)(0, 1) == 0);
+	assert(T_(ArrayPeek)(0) == 0);
+	assert(T_(ArrayPop)(0) == 0);
+	assert(T_(ArrayNext)(0, 0) == 0);
+	assert(T_(ArrayNew)(0) == 0);
+	assert(T_(ArrayUpdateNew)(0, 0) == 0
+		&& T_(ArrayUpdateNew)(0, &supertype) == 0);
+	T_(ArrayForEach)(0, 0);
+	T_(ArrayMigrateEach)(0, 0, 0);
+	T_(ArrayMigratePointer)(0, 0);
+	assert(!strcmp("null", T_(ArrayToString(0))));
 	assert(errno == 0);
 	PT_(valid_state)(0);
 
 	printf("Test empty.\n");
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-	T_(Pool)(&a, &PT_(migrate), &dummy_parent);
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
+	T_(Array)(&a, &PT_(migrate), &dummy_parent);
 #else /* all --><-- !all */
-	T_(Pool)(&a);
+	T_(Array)(&a);
 #endif /* all --> */
 	t = (T *)1;
-#ifdef POOL_STACK /* <-- stack */
-	assert(T_(PoolSize)(&a) == 0);
+#ifndef ARRAY_FREE_LIST /* <-- stack */
+	assert(T_(ArraySize)(&a) == 0);
 #else /* stack --><-- !stack */
-	assert(T_(PoolRemove)(&a, 0) == 0 && errno == 0);
-	assert(T_(PoolRemove)(&a, t) == 0 && errno == EDOM), errno = 0;
+	assert(T_(ArrayRemove)(&a, 0) == 0 && errno == 0);
+	assert(T_(ArrayRemove)(&a, t) == 0 && errno == EDOM), errno = 0;
 #endif /* !stack --> */
-	assert(T_(PoolGet)(&a, 0) == 0);
-	assert(T_(PoolPeek)(0) == 0);
-	assert(T_(PoolPop)(0) == 0);
-	assert(T_(PoolNext)(0, 0) == 0 && T_(PoolNext)(0, t) == 0);
-	T_(PoolForEach)(&a, 0);
-	T_(PoolMigrateEach)(&a, 0, 0);
+	assert(T_(ArrayGet)(&a, 0) == 0);
+	assert(T_(ArrayPeek)(0) == 0);
+	assert(T_(ArrayPop)(0) == 0);
+	assert(T_(ArrayNext)(0, 0) == 0 && T_(ArrayNext)(0, t) == 0);
+	T_(ArrayForEach)(&a, 0);
+	T_(ArrayMigrateEach)(&a, 0, 0);
 	assert(errno == 0);
 	PT_(valid_state)(&a);
 
@@ -170,94 +170,94 @@ static void PT_(test_basic)(void) {
 	for(t = ts, t1 = t + ts_size; t < t1; t++) PT_(filler)(t);
 
 	printf("Test one element.\n");
-	t = T_(PoolNew)(&a); /* Add. */
+	t = T_(ArrayNew)(&a); /* Add. */
 	assert(t);
-	t1 = T_(PoolNext)(&a, 0);
+	t1 = T_(ArrayNext)(&a, 0);
 	assert(t == t1);
-	t1 = T_(PoolNext)(&a, t);
+	t1 = T_(ArrayNext)(&a, t);
 	assert(t1 == 0);
-	assert(T_(PoolIndex)(&a, t) == 0);
-	assert(T_(PoolPeek)(&a) == t);
-	assert(T_(PoolGet(&a, 0)) == t);
-	t1 = T_(PoolPop)(&a); /* Remove. */
+	assert(T_(ArrayIndex)(&a, t) == 0);
+	assert(T_(ArrayPeek)(&a) == t);
+	assert(T_(ArrayGet(&a, 0)) == t);
+	t1 = T_(ArrayPop)(&a); /* Remove. */
 	assert(t1 == t);
-	assert(T_(PoolPeek)(&a) == 0);
-	t = T_(PoolNew)(&a); /* Add. */
+	assert(T_(ArrayPeek)(&a) == 0);
+	t = T_(ArrayNew)(&a); /* Add. */
 	assert(t);
-	T_(PoolClear)(&a);
-	assert(T_(PoolPeek)(&a) == 0);
+	T_(ArrayClear)(&a);
+	assert(T_(ArrayPeek)(&a) == 0);
 	PT_(valid_state)(&a);
 
 	printf("Testing %lu elements.\n", (unsigned long)ts_size);
 	for(i = 0; i < ts_size; i++) {
-		t = T_(PoolNew)(&a);
+		t = T_(ArrayNew)(&a);
 		assert(t);
 		memcpy(t, ts + i, sizeof *t);
 	}
-	assert(T_(PoolPeek)(&a));
-	printf("Now: %s.\n", T_(PoolToString)(&a));
-#ifdef POOL_STACK /* <-- stack */
-	assert(T_(PoolSize)(&a) == ts_size);
+	assert(T_(ArrayPeek)(&a));
+	printf("Now: %s.\n", T_(ArrayToString)(&a));
+#ifndef ARRAY_FREE_LIST /* <-- stack */
+	assert(T_(ArraySize)(&a) == ts_size);
 #else /* stack --><-- !stack */
-	if((t = T_(PoolGet)(&a, ts_size - 2))
-		&& !T_(PoolRemove)(&a, t)) {
+	if((t = T_(ArrayGet)(&a, ts_size - 2))
+		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_(PoolToString)(&a));
-	assert(!T_(PoolRemove)(&a, t) && errno == EDOM);
+	printf("Now: %s.\n", T_(ArrayToString)(&a));
+	assert(!T_(ArrayRemove)(&a, t) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
-	if((t = T_(PoolGet)(&a, ts_size - 3))
-		&& !T_(PoolRemove)(&a, t)) {
+	if((t = T_(ArrayGet)(&a, ts_size - 3))
+		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_(PoolToString)(&a));
-	assert(!T_(PoolRemove)(&a, t) && errno == EDOM);
+	printf("Now: %s.\n", T_(ArrayToString)(&a));
+	assert(!T_(ArrayRemove)(&a, t) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
-	if((t = T_(PoolGet)(&a, ts_size - 1)) && !T_(PoolRemove)(&a, t)) {
+	if((t = T_(ArrayGet)(&a, ts_size - 1)) && !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_(PoolToString)(&a));
-	assert(!T_(PoolRemove)(&a, t) && errno == EDOM);
+	printf("Now: %s.\n", T_(ArrayToString)(&a));
+	assert(!T_(ArrayRemove)(&a, t) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	assert(a.size == ts_size - 3);
-	T_(PoolNew)(&a); /* Cheating. */
-	T_(PoolNew)(&a);
-	T_(PoolNew)(&a);
+	T_(ArrayNew)(&a); /* Cheating. */
+	T_(ArrayNew)(&a);
+	T_(ArrayNew)(&a);
 	assert(a.size == ts_size);
 #endif /* !stack --> */
 	PT_(valid_state)(&a);
 
 	/* Peek/Pop. */
-	t = T_(PoolPeek)(&a);
+	t = T_(ArrayPeek)(&a);
 	assert(t && !memcmp(t, ts + ts_size - 1, sizeof *t));
-	t = T_(PoolPop)(&a);
+	t = T_(ArrayPop)(&a);
 	assert(t && !memcmp(t, ts + ts_size - 1, sizeof *t));
-	t = T_(PoolPop)(&a);
+	t = T_(ArrayPop)(&a);
 	assert(t && !memcmp(t, ts + ts_size - 2, sizeof *t));
-	T_(PoolClear)(&a);
+	T_(ArrayClear)(&a);
 
 	/* Big. */
 	for(i = 0; i < big; i++) {
-		t = T_(PoolNew)(&a);
+		t = T_(ArrayNew)(&a);
 		assert(t);
 		PT_(filler)(t);
 	}
-	printf("%s.\n", T_(PoolToString)(&a));
+	printf("%s.\n", T_(ArrayToString)(&a));
 	PT_(valid_state)(&a);
-	for(i = 0, t = 0; (t = T_(PoolNext)(&a, t)); i++);
+	for(i = 0, t = 0; (t = T_(ArrayNext)(&a, t)); i++);
 	assert(a.size == i);
 	PT_(valid_state)(&a);
 
 	printf("Clear:\n");
-	T_(PoolClear)(&a);
-	printf("%s.\n", T_(PoolToString)(&a));
-	assert(T_(PoolPeek)(&a) == 0);
+	T_(ArrayClear)(&a);
+	printf("%s.\n", T_(ArrayToString)(&a));
+	assert(T_(ArrayPeek)(&a) == 0);
 	printf("Destructor:\n");
-	T_(Pool_)(&a);
-	assert(T_(PoolPeek)(&a) == 0);
+	T_(Array_)(&a);
+	assert(T_(ArrayPeek)(&a) == 0);
 	PT_(valid_state)(&a);
 }
 
@@ -265,7 +265,7 @@ static void PT_(test_migrate)(void) {
 
 #if 0 /* <-- 0 */
 
-	struct T_(Pool) a, *a1, *a2;
+	struct T_(Array) a, *a1, *a2;
 	T ts[5000], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	T ss[5000], *s;
@@ -279,12 +279,12 @@ static void PT_(test_migrate)(void) {
 		PT_(filler)(t);
 		memcpy(&ss[t - ts], t, sizeof *t);
 	}
-	T_(Pool)(&a);
+	T_(Array)(&a);
 
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-	T_(Pool)(&a, &PT_(migrate), &dummy_parent);
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
+	T_(Array)(&a, &PT_(migrate), &dummy_parent);
 #else /* all --><-- !all */
-	T_(Pool)(&a);
+	T_(Array)(&a);
 #endif /* all --> */
 
 #endif /* 0 --> */
@@ -292,14 +292,14 @@ static void PT_(test_migrate)(void) {
 }
 
 static void PT_(test_random)(void) {
-	struct T_(Pool) a;
+	struct T_(Array) a;
 	size_t i, size = 0;
 	const size_t mult = 1; /* For long tests. */
 	/* Random. */
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-	T_(Pool)(&a, &PT_(migrate), &dummy_parent);
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
+	T_(Array)(&a, &PT_(migrate), &dummy_parent);
 #else /* all --><-- !all */
-	T_(Pool)(&a);
+	T_(Array)(&a);
 #endif /* !all --> */
 	/* This parameter controls how many iterations. */
 	i = 1000 * mult;
@@ -309,7 +309,7 @@ static void PT_(test_random)(void) {
 		double r = rand() / (RAND_MAX + 1.0);
 		/* This parameter controls how big the pool wants to be. */
 		if(r > size / (100.0 * mult)) {
-			if(!(data = T_(PoolNew)(&a))) {
+			if(!(data = T_(ArrayNew)(&a))) {
 				perror("Error"), assert(0);
 				return;
 			}
@@ -318,57 +318,57 @@ static void PT_(test_random)(void) {
 			PT_(to_string)(data, &str);
 			printf("Created %s.\n", str);
 		} else {
-#ifdef POOL_STACK /* <-- stack */
-			data = T_(PoolPeek)(&a);
+#ifndef ARRAY_FREE_LIST /* <-- stack */
+			data = T_(ArrayPeek)(&a);
 			assert(data);
 			PT_(to_string)(data, &str);
 			printf("Popping %s.\n", str);
-			assert(data == T_(PoolPop)(&a));
+			assert(data == T_(ArrayPop)(&a));
 #else /* stack --><-- !stack */
 			size_t idx = rand() / (RAND_MAX + 1.0) * size;
-			if(!(data = T_(PoolGet)(&a, idx))) continue;
+			if(!(data = T_(ArrayGet)(&a, idx))) continue;
 			PT_(to_string)(data, &str);
 			printf("Removing %s at %lu.\n", str, (unsigned long)idx);
 			{
-				const int ret = T_(PoolRemove)(&a, data);
+				const int ret = T_(ArrayRemove)(&a, data);
 				assert(ret || (perror("Removing"), 0));
 			}
 #endif /* !stack --> */
 			size--;
 		}
-		printf("%s.\n", T_(PoolToString)(&a));
+		printf("%s.\n", T_(ArrayToString)(&a));
 		PT_(valid_state)(&a);
 	}
-	T_(Pool_)(&a);
+	T_(Array_)(&a);
 }
 
 /** The list will be tested on stdout. */
-static void T_(PoolTest)(void) {
-	printf("Pool<" QUOTE(POOL_NAME) ">: of type <" QUOTE(POOL_TYPE)
+static void T_(ArrayTest)(void) {
+	printf("Array<" QUOTE(ARRAY_NAME) ">: of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: "
-#ifdef POOL_STACK
-		"POOL_STACK; "
+#ifndef ARRAY_FREE_LIST
+		"ARRAY_FREE_LIST; "
 #endif
-#ifdef POOL_MIGRATE_EACH
-		"POOL_MIGRATE_EACH<" QUOTE(POOL_MIGRATE_EACH) ">; "
+#ifdef ARRAY_MIGRATE_EACH
+		"ARRAY_MIGRATE_EACH<" QUOTE(ARRAY_MIGRATE_EACH) ">; "
 #endif
-#ifdef POOL_MIGRATE_ALL
-		"POOL_MIGRATE_ALL<" QUOTE(POOL_MIGRATE_ALL) ">; "
+#ifdef ARRAY_MIGRATE_ALL
+		"ARRAY_MIGRATE_ALL<" QUOTE(ARRAY_MIGRATE_ALL) ">; "
 #endif
-#ifdef POOL_MIGRATE_UPDATE
-		"POOL_MIGRATE_UPDATE<" QUOTE(POOL_MIGRATE_UPDATE) ">; "
+#ifdef ARRAY_MIGRATE_UPDATE
+		"ARRAY_MIGRATE_UPDATE<" QUOTE(ARRAY_MIGRATE_UPDATE) ">; "
 #endif		   
-#ifdef POOL_TO_STRING
-		"POOL_TO_STRING<" QUOTE(POOL_TO_STRING) ">; "
+#ifdef ARRAY_TO_STRING
+		"ARRAY_TO_STRING<" QUOTE(ARRAY_TO_STRING) ">; "
 #endif
-#ifdef POOL_TEST
-		"POOL_TEST<" QUOTE(POOL_TEST) ">; "
+#ifdef ARRAY_TEST
+		"ARRAY_TEST<" QUOTE(ARRAY_TEST) ">; "
 #endif
 		"testing:\n");
 	PT_(test_basic)();
 	PT_(test_migrate)();
 	PT_(test_random)();
-	fprintf(stderr, "Done tests of Pool<" T_NAME ">.\n\n");
+	fprintf(stderr, "Done tests of Array<" T_NAME ">.\n\n");
 }
 
 /* Un-define all macros. */

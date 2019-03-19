@@ -1,57 +1,69 @@
 /** 2016 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>Pool} is a dynamic array that stores unordered {<T>} in a memory pool,
- which must be set using {POOL_TYPE}. You cannot shrink the capacity of this
- data type, only cause it to grow. Resizing incurs amortised cost, done though
- a Fibonacci sequence. {<T>Pool} is not synchronised. The preprocessor macros
+ {<T>Array} is a dynamic array that stores unordered {<T>}, which must be set
+ using {ARRAY_TYPE}. The capacity is greater then or equal to the size;
+ resizing incurs amortised cost. You cannot shrink the capacity, only cause it
+ to grow.
+
+ {<T>Array} is contiguous, and therefore unstable; that is, when adding new
+ elements, it may change the memory location. Pointers to this memory become
+ stale and unusable. There is a {Migrate}, but it's practical use becomes
+ confusing as the number of pointers into the {<T>Array} grows.
+
+ {<T>Array} is not synchronised. The parameters are preprocessor macros, and
  are all undefined at the end of the file for convenience.
 
- @param POOL_NAME, POOL_TYPE
+ @param ARRAY_NAME, ARRAY_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
  accessible to the compiler at the time of inclusion; should be conformant to
  naming and to the maximum available length of identifiers. Must each be
  present before including.
 
- @param POOL_STACK
- Removing an element is normally done in a free list internal to the pool's
- elements. With this defined, there is no such list; the data will be packed
- and one can only remove items by \see{<T>PoolPop}.
+ @param ARRAY_FREE_LIST
+ Normally, the data will be packed; removing an element causes all elements
+ behind to shift their position, similar to {C++ vector}, {Java ArrayList},
+ and {Python List}. With this defined, there is a free list internal to the
+ arrays elements. Removing (all but the last) element causes it to be simply
+ inserted into the free list for reuse later. As such, a new element is not
+ guaranteed to be any particular place, the elements' contiguity is broken up,
+ the size is not known, but removal is {O(1)} and the index of an element is
+ constant.
 
- @param POOL_MIGRATE_EACH
+ @param ARRAY_MIGRATE_EACH
  Optional function implementing {<PT>Migrate}. Indices will remain the same
  throughout the lifetime of the data, but pointers may change on {realloc}
- expansion. This definition will call {POOL_MIGRATE_EACH} with all {<T>} in
- {<T>Pool}. Use when your data is self-referential, like a linked-list.
+ expansion. This definition will call {ARRAY_MIGRATE_EACH} with all {<T>} in
+ {<T>Array}. Use when your data is self-referential, like a linked-list.
 
- @param POOL_MIGRATE_ALL
+ @param ARRAY_MIGRATE_ALL
  Optional type {<A>}. When one may have pointers to the data that is contained
- in the {Pool} outside the data that can be accessed by the pool. It adds an
+ in the {Array} outside the data that can be accessed by the pool. It adds an
  element to the constructor, {<PT>MigrateAll migrate_all}, as well as it's
  constant parameter, {<A> all}. This usually is the parent of an agglomeration
  that includes and has references into the pool. This has the responsibility to
  call \see{<T>MigratePointer} or some migrate function for all references.
 
- @param POOL_MIGRATE_UPDATE
+ @param ARRAY_MIGRATE_UPDATE
  Optional type association with {<S>}. {<S>} should be a super-type of {<T>}.
- If not set, {<S>} is {<T>}. Used in \see{<T>PoolUpdateNew}.
+ If not set, {<S>} is {<T>}. Used in \see{<T>ArrayUpdateNew}.
 
- @param POOL_TO_STRING
+ @param ARRAY_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
- \see{<T>PoolToString}.
+ \see{<T>ArrayToString}.
 
- @param POOL_TEST
- Unit testing framework using {<T>PoolTest}, included in a separate header,
- {../test/PoolTest.h}. Must be defined equal to a (random) filler function,
+ @param ARRAY_TEST
+ Unit testing framework using {<T>ArrayTest}, included in a separate header,
+ {../test/ArrayTest.h}. Must be defined equal to a (random) filler function,
  satisfying {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private
- function integrity testing. Requires {POOL_TO_STRING}.
+ function integrity testing. Requires {ARRAY_TO_STRING}.
 
- @title		Pool.h
+ @title		Array.h
  @std		C89
  @author	Neil
- @version	2018-04 Merged {Stack} into {Pool} again;
-			augh ifdefs, but too much duplicate code.
- @since		2018-03 Why have an extra level of indirection?
+ @version
+ @since		2018-04 Merged {Stack} into {Pool} again to eliminate duplication;
+			2018-03 Why have an extra level of indirection?
 			2018-02 Errno instead of custom errors.
 			2017-12 Introduced {POOL_PARENT} for type-safety.
 			2017-11 Forked {Stack} from {Pool}.
@@ -68,26 +80,26 @@
 #include <stddef.h>	/* ptrdiff_t offset_of */
 #include <stdlib.h>	/* realloc free */
 #include <assert.h>	/* assert */
-#include <string.h>	/* memcpy (memmove strerror strcpy memcmp in PoolTest.h) */
+#include <string.h>	/* memcpy (memmove strerror strcpy memcmp in ArrayTest.h) */
 #include <errno.h>	/* errno */
-#ifdef POOL_TO_STRING /* <-- print */
+#ifdef ARRAY_TO_STRING /* <-- print */
 #include <stdio.h>	/* snprintf */
 #endif /* print --> */
 
 
 
 /* Check defines. */
-#ifndef POOL_NAME /* <-- error */
-#error Generic POOL_NAME undefined.
+#ifndef ARRAY_NAME /* <-- error */
+#error Generic ARRAY_NAME undefined.
 #endif /* error --> */
-#ifndef POOL_TYPE /* <-- error */
-#error Generic POOL_TYPE undefined.
+#ifndef ARRAY_TYPE /* <-- error */
+#error Generic ARRAY_TYPE undefined.
 #endif /* --> */
-#if defined(POOL_TEST) && !defined(POOL_TO_STRING) /* <-- error */
-#error POOL_TEST requires POOL_TO_STRING.
+#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <-- error */
+#error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
-#if !defined(POOL_TEST) && !defined(NDEBUG) /* <-- ndebug */
-#define POOL_NDEBUG
+#if !defined(ARRAY_TEST) && !defined(NDEBUG) /* <-- ndebug */
+#define ARRAY_NDEBUG
 #define NDEBUG
 #endif /* ndebug --> */
 
@@ -128,20 +140,20 @@
 #define PCAT(x, y) PCAT_(x, y)
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
-#define T_(thing) CAT(POOL_NAME, thing)
-#define PT_(thing) PCAT(pool, PCAT(POOL_NAME, thing))
-#define T_NAME QUOTE(POOL_NAME)
+#define T_(thing) CAT(ARRAY_NAME, thing)
+#define PT_(thing) PCAT(pool, PCAT(ARRAY_NAME, thing))
+#define T_NAME QUOTE(ARRAY_NAME)
 
-/* Troubles with this line? check to ensure that {POOL_TYPE} is a valid type,
- whose definition is placed above {#include "Pool.h"}. */
-typedef POOL_TYPE PT_(Type);
+/* Troubles with this line? check to ensure that {ARRAY_TYPE} is a valid type,
+ whose definition is placed above {#include "Array.h"}. */
+typedef ARRAY_TYPE PT_(Type);
 #define T PT_(Type)
 
 
 
 /* Constants across multiple includes in the same translation unit. */
-#ifndef POOL_H /* <-- POOL_H */
-#define POOL_H
+#ifndef ARRAY_H /* <-- ARRAY_H */
+#define ARRAY_H
 static const size_t pool_fibonacci6 = 8;
 static const size_t pool_fibonacci7 = 13;
 /* Is a node that is not part of the deleted list; a different kind of null. */
@@ -151,8 +163,8 @@ static const size_t pool_null       = (size_t)-2;
 /* Maximum size; smaller then any special values. */
 static const size_t pool_max        = (size_t)-3;
 /* Removed offset queue. */
-struct PoolX { size_t prev, next; };
-#endif /* POOL_H --> */
+struct ArrayX { size_t prev, next; };
+#endif /* ARRAY_H --> */
 
 /* One time in the same translation unit. */
 #ifndef MIGRATE /* <-- migrate */
@@ -170,38 +182,38 @@ struct Migrate {
 /** This is the migrate function for {<T>}. */
 typedef void (*PT_(Migrate))(T *const data,
 	const struct Migrate *const migrate);
-#ifdef POOL_MIGRATE_EACH /* <-- each */
-/* Check that {POOL_MIGRATE_EACH} is a function implementing {<PT>Migrate},
- whose definition is placed above {#include "Pool.h"}. */
-static const PT_(Migrate) PT_(migrate_each) = (POOL_MIGRATE_EACH);
+#ifdef ARRAY_MIGRATE_EACH /* <-- each */
+/* Check that {ARRAY_MIGRATE_EACH} is a function implementing {<PT>Migrate},
+ whose definition is placed above {#include "Array.h"}. */
+static const PT_(Migrate) PT_(migrate_each) = (ARRAY_MIGRATE_EACH);
 #endif /* each --> */
 
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-/* Troubles with this line? check to ensure that {POOL_MIGRATE_ALL} is a
- valid type, whose definition is placed above {#include "Pool.h"}. */
-typedef POOL_MIGRATE_ALL PT_(MigrateAllType);
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
+/* Troubles with this line? check to ensure that {ARRAY_MIGRATE_ALL} is a
+ valid type, whose definition is placed above {#include "Array.h"}. */
+typedef ARRAY_MIGRATE_ALL PT_(MigrateAllType);
 #define A PT_(MigrateAllType)
-/** Function call on {realloc} if {POOL_MIGRATE_ALL} is defined. */
+/** Function call on {realloc} if {ARRAY_MIGRATE_ALL} is defined. */
 typedef void (*PT_(MigrateAll))(A *const all,
 	const struct Migrate *const migrate);
 #endif /* all --> */
 
-#ifdef POOL_MIGRATE_UPDATE /* <-- update */
-/* Troubles with this line? check to ensure that {POOL_MIGRATE_UPDATE} is a
- valid type, whose definition is placed above {#include "Pool.h"}. */
-typedef POOL_MIGRATE_UPDATE PT_(MigrateUpdateType);
+#ifdef ARRAY_MIGRATE_UPDATE /* <-- update */
+/* Troubles with this line? check to ensure that {ARRAY_MIGRATE_UPDATE} is a
+ valid type, whose definition is placed above {#include "Array.h"}. */
+typedef ARRAY_MIGRATE_UPDATE PT_(MigrateUpdateType);
 #define S PT_(MigrateUpdateType)
 #else /* update --><-- !update */
 #define S PT_(Type)
 #endif /* !update --> */
 
-#ifdef POOL_TO_STRING /* <-- string */
+#ifdef ARRAY_TO_STRING /* <-- string */
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) Used for {POOL_TO_STRING}. */
+ null-terminated output string (the second.) Used for {ARRAY_TO_STRING}. */
 typedef void (*PT_(ToString))(const T *, char (*const)[12]);
-/* Check that {POOL_TO_STRING} is a function implementing {<PT>ToString}, whose
- definition is placed above {#include "Pool.h"}. */
-static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
+/* Check that {ARRAY_TO_STRING} is a function implementing {<PT>ToString}, whose
+ definition is placed above {#include "Array.h"}. */
+static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 #endif /* string --> */
 
 /* Operates by side-effects only. */
@@ -209,27 +221,27 @@ typedef void (*PT_(Action))(T *const data);
 
 
 
-/* Pool nodes containing the data. */
+/* Array nodes containing the data. */
 struct PT_(Node) {
 	T data;
-#ifndef POOL_STACK /* <-- !stack */
-	struct PoolX x;
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
+	struct ArrayX x;
 #endif /* !stack --> */
 };
 
-/** The pool. To instantiate, see \see{<T>Pool}. */
-struct T_(Pool);
-struct T_(Pool) {
+/** The pool. To instantiate, see \see{<T>Array}. */
+struct T_(Array);
+struct T_(Array) {
 	struct PT_(Node) *nodes;
 	/* {nodes} -> {capacity} -> {c[0] < c[1] || c[0] == c[1] == max_size}.
 	 Fibonacci, [0] is the capacity, [1] is next. */
 	size_t capacity[2];
 	/* {nodes} ? {size <= capacity[0]} : {size == 0}. Including removed. */
 	size_t size;
-#ifndef POOL_STACK /* <-- !stack */
-	struct PoolX removed;
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
+	struct ArrayX removed;
 #endif /* !stack --> */
-#ifdef POOL_MIGRATE_ALL /* <-- all */
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
 	PT_(MigrateAll) migrate_all; /* Called to update on resizing. */
 	A *all; /* Migrate parameter. */
 #endif /* all --> */
@@ -253,7 +265,7 @@ static const struct PT_(Node) *PT_(data_const_upcast)(const T *const data) {
  @return Success; otherwise, {errno} may be set.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
-static int PT_(reserve)(struct T_(Pool) *const pool,
+static int PT_(reserve)(struct T_(Array) *const pool,
 	const size_t min_capacity, S **const update_ptr) {
 	size_t c0, c1;
 	struct PT_(Node) *nodes;
@@ -261,7 +273,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 	assert(pool && pool->size <= pool->capacity[0]
 		&& pool->capacity[0] <= pool->capacity[1]
 		&& pool->capacity[1] <= pool_max);
-#ifndef POOL_STACK /* <-- !stack -- spaces that we could have placed it. */
+#ifdef ARRAY_FREE_LIST /* <-- !stack -- spaces that we could have placed it. */
 	assert(!pool->nodes || (pool->removed.next == pool->removed.prev
 		&& pool->removed.next == pool_null));
 #endif /* !stack --> */
@@ -285,11 +297,11 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 		migrate.begin = pool->nodes;
 		migrate.end   = (const char *)pool->nodes + pool->size * sizeof *nodes;
 		migrate.delta = (const char *)nodes - (const char *)pool->nodes;
-#ifdef POOL_MIGRATE_EACH /* <-- each: Self-referential data. */
+#ifdef ARRAY_MIGRATE_EACH /* <-- each: Self-referential data. */
 		{
 			struct PT_(Node) *e, *end;
 			for(e = nodes, end = e + pool->size; e < end; e++) {
-#ifndef POOL_STACK /* <-- !stack: not packed data */
+#ifdef ARRAY_FREE_LIST /* <-- !stack: not packed data */
 				if(e->x.prev != pool_void) continue; /* It's on removed list. */
 				assert(e->x.next == pool_void);
 #endif /* !stack --> */
@@ -297,7 +309,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 			}
 		}
 #endif /* each --> */
-#ifdef POOL_MIGRATE_ALL /* <-- all: random references. */
+#ifdef ARRAY_MIGRATE_ALL /* <-- all: random references. */
 		if(pool->migrate_all) {
 			assert(pool->all);
 			pool->migrate_all(pool->all, &migrate);
@@ -309,7 +321,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 				*(char **const)update_ptr += migrate.delta;
 		}
 	}
-#ifndef POOL_STACK /* <-- !stack -- initialise linked-list in case static. */
+#ifdef ARRAY_FREE_LIST /* <-- !stack -- initialise linked-list in case static. */
 	if(!pool->nodes) pool->removed.next = pool->removed.prev = pool_null;
 #endif /* !stack --> */
 	pool->nodes = nodes;
@@ -318,14 +330,14 @@ static int PT_(reserve)(struct T_(Pool) *const pool,
 	return 1;
 }
 
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
 
 /** We are very lazy and we just enqueue the removed so that later data can
  overwrite it.
  @param n: Must be a valid index.
  @fixme Change the order of the data to fill the start first. Tricky, but cache
  performance will probably go up? Probably impossible to do in {O(1)}. */
-static void PT_(enqueue_removed)(struct T_(Pool) *const pool, const size_t n) {
+static void PT_(enqueue_removed)(struct T_(Array) *const pool, const size_t n) {
 	struct PT_(Node) *const node = pool->nodes + n;
 	assert(pool && n < pool->size);
 	/* Cannot be part of the removed pool already. */
@@ -344,7 +356,7 @@ static void PT_(enqueue_removed)(struct T_(Pool) *const pool, const size_t n) {
 }
 
 /** Dequeues a removed node, or if the queue is empty, returns null. */
-static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Pool) *const pool) {
+static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Array) *const pool) {
 	struct PT_(Node) *node;
 	size_t n;
 	assert(pool &&
@@ -367,7 +379,7 @@ static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Pool) *const pool) {
 
 /** Gets rid of the removed node at the tail of the list. Each remove has
  potentially one delete in the worst case, it just gets amotized a bit. */
-static void PT_(trim_removed)(struct T_(Pool) *const pool) {
+static void PT_(trim_removed)(struct T_(Array) *const pool) {
 	struct PT_(Node) *node, *prev, *next;
 	size_t n;
 	assert(pool);
@@ -396,10 +408,10 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 
 #endif /* !stack --> */
 
-/** Zeros {pool} except for {POOL_MIGRATE_ALL} which is initialised in the
- containing function, and not {POOL_STACK}, which is initialised in
+/** Zeros {pool} except for {ARRAY_MIGRATE_ALL} which is initialised in the
+ containing function, and not {!ARRAY_FREE_LIST}, which is initialised in
  \see{<PT>_reserve}. */
-static void PT_(pool)(struct T_(Pool) *const pool) {
+static void PT_(pool)(struct T_(Array) *const pool) {
 	assert(pool);
 	pool->nodes        = 0;
 	pool->capacity[0]  = 0;
@@ -412,21 +424,21 @@ static void PT_(pool)(struct T_(Pool) *const pool) {
  @param pool: If null, does nothing.
  @order \Theta(1)
  @allow */
-static void T_(Pool_)(struct T_(Pool) *const pool) {
+static void T_(Array_)(struct T_(Array) *const pool) {
 	if(!pool) return;
 	free(pool->nodes);
 	PT_(pool)(pool);
 }
 
-#ifdef POOL_MIGRATE_ALL /* <-- all */
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
 /** Initialises {pool} to be empty and have a migrate function with a
- parameter. This is the constructor if {POOL_MIGRATE_ALL} is specified.
+ parameter. This is the constructor if {ARRAY_MIGRATE_ALL} is specified.
  @param pool: If null, does nothing.
  @param migrate_all: The general {<PT>MigrateAll} function.
  @param all: The general migrate parameter.
  @order \Theta(1)
  @allow */
-static void T_(Pool)(struct T_(Pool) *const pool,
+static void T_(Array)(struct T_(Array) *const pool,
 	const PT_(MigrateAll) migrate_all, A *const all) {
 	if(!pool) return;
 	PT_(pool)(pool);
@@ -435,36 +447,36 @@ static void T_(Pool)(struct T_(Pool) *const pool,
 }
 #else /* all --><-- !all */
 /** Initialises {pool} to be empty. This is the constructor is
- {POOL_MIGRATE_ALL} is not specified. If it is {static} data then it is
+ {ARRAY_MIGRATE_ALL} is not specified. If it is {static} data then it is
  initialised by default and one doesn't have to call this.
  @order \Theta(1)
  @allow */
-static void T_(Pool)(struct T_(Pool) *const pool) {
+static void T_(Array)(struct T_(Array) *const pool) {
 	if(!pool) return;
 	PT_(pool)(pool);
 }
 #endif /* all --> */
 
-#ifdef POOL_STACK /* <-- stack */
-/** If {POOL_STACK} is specified, otherwise it doesn't keep track of the size.
+#ifndef ARRAY_FREE_LIST /* <-- stack */
+/** If {!ARRAY_FREE_LIST} is specified, otherwise it doesn't keep track of the size.
  @param pool: If null, returns zero.
  @return The current size of the stack.
  @order \Theta(1)
  @allow */
-static size_t T_(PoolSize)(const struct T_(Pool) *const pool) {
+static size_t T_(ArraySize)(const struct T_(Array) *const pool) {
 	if(!pool) return 0;
 	return pool->size;
 }
 #endif /* stack --> */
 
-#ifndef POOL_STACK /* <-- !stack */
-/** Removes {data} from {pool}. Only present if {POOL_STACK} is not defined.
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
+/** Removes {data} from {pool}. Only present if {!ARRAY_FREE_LIST} is not defined.
  @param pool, data: If null, returns false.
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is not part of {pool}.
  @order amortised O(1)
  @allow */
-static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
+static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data) {
 	struct PT_(Node) *node;
 	size_t n;
 	if(!pool || !data) return 0;
@@ -479,25 +491,25 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 #endif /* !stack --> */
 
 /** Removes all from {pool}, but leaves the {pool} memory alone; if one wants
- to remove memory, see \see{Pool_}.
+ to remove memory, see \see{Array_}.
  @param pool: If null, does nothing.
  @order \Theta(1)
  @allow */
-static void T_(PoolClear)(struct T_(Pool) *const pool) {
+static void T_(ArrayClear)(struct T_(Array) *const pool) {
 	if(!pool) return;
 	pool->size = 0;
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
 	pool->removed.prev = pool->removed.next = pool_null;
 #endif /* !stack --> */
 }
 
 /** Private: is {idx} a valid index for {pool}?
  @order \Theta(1) */
-static struct PT_(Node) *PT_(valid_index)(const struct T_(Pool) *const pool,
+static struct PT_(Node) *PT_(valid_index)(const struct T_(Array) *const pool,
 	const size_t idx) {
 	assert(pool);
 	if(idx >= pool->size) return 0;
-#ifdef POOL_STACK /* <-- stack */
+#ifndef ARRAY_FREE_LIST /* <-- stack */
 	return pool->nodes + idx;
 #else /* stack --><-- !stack */
 	{
@@ -508,13 +520,13 @@ static struct PT_(Node) *PT_(valid_index)(const struct T_(Pool) *const pool,
 }
 
 /** Gets an existing element by index. Causing something to be added to the
- {<T>Pool} may invalidate this pointer.
+ {<T>Array} may invalidate this pointer.
  @param pool: If null, returns null.
  @param idx: Index.
  @return If failed, returns a null pointer.
  @order \Theta(1)
  @allow */
-static T *T_(PoolGet)(const struct T_(Pool) *const pool, const size_t idx) {
+static T *T_(ArrayGet)(const struct T_(Array) *const pool, const size_t idx) {
 	if(!pool) return 0;
 	{
 		struct PT_(Node) *const node = PT_(valid_index)(pool, idx);
@@ -523,56 +535,56 @@ static T *T_(PoolGet)(const struct T_(Pool) *const pool, const size_t idx) {
 }
 
 /** Gets an index given {data}.
- @param data: If the element is not part of the {Pool}, behaviour is undefined.
+ @param data: If the element is not part of the {Array}, behaviour is undefined.
  @return An index.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static size_t T_(PoolIndex)(const struct T_(Pool) *const pool,
+static size_t T_(ArrayIndex)(const struct T_(Array) *const pool,
 	const T *const data) {
 	return PT_(data_const_upcast)(data) - pool->nodes;
 }
 
 /** @param pool: If null, returns null.
  @return One element from the pool or null if the pool is empty. If
- {POOL_STACK} was specified, this will be the last element added, otherwise, it
+ {!ARRAY_FREE_LIST} was specified, this will be the last element added, otherwise, it
  may not be, but it is deterministic. Causing something to be added to the
  {pool} may invalidate this pointer.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static T *T_(PoolPeek)(const struct T_(Pool) *const pool) {
+static T *T_(ArrayPeek)(const struct T_(Array) *const pool) {
 	if(!pool || !pool->size) return 0;
 	return &pool->nodes[pool->size - 1].data;
 }
 
-/** The same value as \see{<T>PoolPeek}.
+/** The same value as \see{<T>ArrayPeek}.
  @param pool: If null, returns null.
  @return Value from the the top of the {pool} that is removed or null if the
  stack is empty. Causing something to be added to the {pool} may invalidate
  this pointer.
- @order \Theta(1) (amortized if not {POOL_STACK})
+ @order \Theta(1) (amortized if not {!ARRAY_FREE_LIST})
  @allow */
-static T *T_(PoolPop)(struct T_(Pool) *const pool) {
+static T *T_(ArrayPop)(struct T_(Array) *const pool) {
 	T *data;
 	if(!pool || !pool->size) return 0;
 	data = &pool->nodes[--pool->size].data;
-#ifndef POOL_STACK /* <-- stack */
+#ifdef ARRAY_FREE_LIST /* <-- stack */
 	PT_(trim_removed)(pool);
 #endif /* stack --> */
 	return data;
 }
 
 /** Provides a way to iterate through the {pool}. If {<T> = <S>}, it is safe to
- add using {PoolUpdateNew} with the return value as {update}. If {POOL_STACK}
+ add using {ArrayUpdateNew} with the return value as {update}. If {!ARRAY_FREE_LIST}
  is not defined, it is safe to remove an element,
  @param pool: If null, returns null. If {prev} is not from this {pool} and not
  null, returns null.
  @param prev: Set it to null to start the iteration.
  @return A pointer to the next element or null if there are no more.
- @order \Theta(1) (or O(pool space that has been deleted) if not {POOL_STACK})
+ @order \Theta(1) (or O(pool space that has been deleted) if not {!ARRAY_FREE_LIST})
  @allow */
-static T *T_(PoolNext)(const struct T_(Pool) *const pool, T *const prev) {
+static T *T_(ArrayNext)(const struct T_(Array) *const pool, T *const prev) {
 	if(!pool) return 0;
 	{
 		struct PT_(Node) *node;
@@ -585,7 +597,7 @@ static T *T_(PoolNext)(const struct T_(Pool) *const pool, T *const prev) {
 			node = PT_(data_upcast)(prev) + 1;
 			idx = (size_t)(node - pool->nodes);
 		}
-#ifdef POOL_STACK /* <-- stack */
+#ifndef ARRAY_FREE_LIST /* <-- stack */
 		if(idx < size) return &node->data;
 #else /* stack --><-- !stack */
 		while(idx < size) {
@@ -597,24 +609,24 @@ static T *T_(PoolNext)(const struct T_(Pool) *const pool, T *const prev) {
 	return 0;
 }
 
-/** Called from \see{<T>PoolNew} and \see{<T>PoolUpdateNew}. */
-static struct PT_(Node) *PT_(new)(struct T_(Pool) *const pool,
+/** Called from \see{<T>ArrayNew} and \see{<T>ArrayUpdateNew}. */
+static struct PT_(Node) *PT_(new)(struct T_(Array) *const pool,
 	S **const update_ptr) {
 	struct PT_(Node) *node;
 	assert(pool);
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
 	if((node = PT_(dequeue_removed)(pool))) return node;
 #endif /* !stack --> */
 	/* ERANGE, ENOMEM? */
 	if(!PT_(reserve)(pool, pool->size + 1, update_ptr)) return 0;
 	node = pool->nodes + pool->size++;
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
 	node->x.prev = node->x.next = pool_void;
 #endif /* !stack --> */
 	return node;
 }
 
-/** Gets an uninitialised new element. May move the {Pool} to a new memory
+/** Gets an uninitialised new element. May move the {Array} to a new memory
  location to fit the new size.
  @param pool: If is null, returns null.
  @return A new, un-initialised, element, or null and {errno} may be set.
@@ -622,7 +634,7 @@ static struct PT_(Node) *PT_(new)(struct T_(Pool) *const pool,
  @throws {realloc} errors: {IEEE Std 1003.1-2001}.
  @order amortised O(1)
  @allow */
-static T *T_(PoolNew)(struct T_(Pool) *const pool) {
+static T *T_(ArrayNew)(struct T_(Array) *const pool) {
 	struct PT_(Node) *node;
 	if(!pool || !(node = PT_(new)(pool, 0))) return 0;
 	return &node->data;
@@ -639,7 +651,7 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
  @order amortised O(1)
  @fixme Untested.
  @allow */
-static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool, S **const update_ptr) {
+static T *T_(ArrayUpdateNew)(struct T_(Array) *const pool, S **const update_ptr) {
 	struct PT_(Node) *node;
 	if(!pool || !(node = PT_(new)(pool, update_ptr))) return 0;
 	return &node->data;
@@ -652,12 +664,12 @@ static T *T_(PoolUpdateNew)(struct T_(Pool) *const pool, S **const update_ptr) {
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
-static void T_(PoolForEach)(struct T_(Pool) *const pool,
+static void T_(ArrayForEach)(struct T_(Array) *const pool,
 	const PT_(Action) action) {
 	struct PT_(Node) *a, *end;
 	if(!pool || !action) return;
 	for(a = pool->nodes, end = a + pool->size; a < end; a++) {
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
 		if(a->x.prev != pool_void) continue;
 #endif /* !stack --> */
 		action(&a->data);
@@ -676,12 +688,12 @@ static void T_(PoolForEach)(struct T_(Pool) *const pool,
  @fixme Untested.
  @fixme Migrate interface.
  @allow */
-static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
+static void T_(ArrayMigrateEach)(struct T_(Array) *const pool,
 	const PT_(Migrate) handler, const struct Migrate *const migrate) {
 	struct PT_(Node) *node, *end;
 	if(!pool || !migrate || !handler) return;
 	for(node = pool->nodes, end = node + pool->size; node < end; node++) {
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
 		if(node->x.prev != pool_void) continue;
 #endif /* !stack --> */
 		handler(&node->data, migrate);
@@ -694,7 +706,7 @@ static void T_(PoolMigrateEach)(struct T_(Pool) *const pool,
  @fixme Untested.
  @fixme Migrate interface.
  @allow */
-static void T_(PoolMigratePointer)(T **const data_ptr,
+static void T_(ArrayMigratePointer)(T **const data_ptr,
 	const struct Migrate *const migrate) {
 	const void *ptr;
 	if(!data_ptr
@@ -704,10 +716,10 @@ static void T_(PoolMigratePointer)(T **const data_ptr,
 	*(char **)data_ptr += migrate->delta;
 }
 
-#ifdef POOL_TO_STRING /* <-- print */
+#ifdef ARRAY_TO_STRING /* <-- print */
 
-#ifndef POOL_PRINT_THINGS /* <-- once inside translation unit */
-#define POOL_PRINT_THINGS
+#ifndef ARRAY_PRINT_THINGS /* <-- once inside translation unit */
+#define ARRAY_PRINT_THINGS
 
 static const char *const pool_cat_start     = "[";
 static const char *const pool_cat_end       = "]";
@@ -716,19 +728,19 @@ static const char *const pool_cat_sep       = ", ";
 static const char *const pool_cat_star      = "*";
 static const char *const pool_cat_null      = "null";
 
-struct Pool_SuperCat {
+struct Array_SuperCat {
 	char *print, *cursor;
 	size_t left;
 	int is_truncated;
 };
-static void pool_super_cat_init(struct Pool_SuperCat *const cat,
+static void pool_super_cat_init(struct Array_SuperCat *const cat,
 	char *const print, const size_t print_size) {
 	cat->print = cat->cursor = print;
 	cat->left = print_size;
 	cat->is_truncated = 0;
 	print[0] = '\0';
 }
-static void pool_super_cat(struct Pool_SuperCat *const cat,
+static void pool_super_cat(struct Array_SuperCat *const cat,
 	const char *const append) {
 	size_t lu_took; int took;
 	if(cat->is_truncated) return;
@@ -742,16 +754,16 @@ static void pool_super_cat(struct Pool_SuperCat *const cat,
 #endif /* once --> */
 
 /** Can print 4 things at once before it overwrites. One must pool
- {POOL_TO_STRING} to a function implementing {<T>ToString} to get this
+ {ARRAY_TO_STRING} to a function implementing {<T>ToString} to get this
  functionality.
  @return Prints {pool} in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
  @fixme ToString interface.
  @allow */
-static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
+static const char *T_(ArrayToString)(const struct T_(Array) *const pool) {
 	static char buffer[4][256];
 	static unsigned buffer_i;
-	struct Pool_SuperCat cat;
+	struct Array_SuperCat cat;
 	int is_first = 1;
 	char scratch[12];
 	size_t i;
@@ -766,7 +778,7 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 	}
 	pool_super_cat(&cat, pool_cat_start);
 	for(i = 0; i < pool->size; i++) {
-#ifndef POOL_STACK /* <-- !stack */
+#ifdef ARRAY_FREE_LIST /* <-- !stack */
 		if(pool->nodes[i].x.prev != pool_void) continue;
 #endif /* !stack --> */
 		if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
@@ -782,8 +794,8 @@ static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
 
 #endif /* print --> */
 
-#ifdef POOL_TEST /* <-- test */
-#include "../test/TestPool.h" /* Need this file if one is going to run tests. */
+#ifdef ARRAY_TEST /* <-- test */
+#include "../test/TestArray.h" /* Need this file if one is going to run tests. */
 #endif /* test --> */
 
 /* Prototype. */
@@ -792,30 +804,30 @@ static void PT_(unused_coda)(void);
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_set)(void) {
-	T_(Pool_)(0);
-#ifdef POOL_MIGRATE_ALL /* <-- all */
-	T_(Pool)(0, 0, 0);
+	T_(Array_)(0);
+#ifdef ARRAY_MIGRATE_ALL /* <-- all */
+	T_(Array)(0, 0, 0);
 #else /* all --><-- !all */
-	T_(Pool)(0);
+	T_(Array)(0);
 #endif /* !all --> */
-#ifdef POOL_STACK /* <-- stack */
-	T_(PoolSize)(0);
+#ifndef ARRAY_FREE_LIST /* <-- stack */
+	T_(ArraySize)(0);
 #else /* stack --><-- !stack */
-	T_(PoolRemove)(0, 0);
+	T_(ArrayRemove)(0, 0);
 #endif /* !stack --> */
-	T_(PoolClear)(0);
-	T_(PoolGet)(0, 0);
-	T_(PoolIndex)(0, 0);
-	T_(PoolPeek)(0);
-	T_(PoolPop)(0);
-	T_(PoolNext)(0, 0);
-	T_(PoolNew)(0);
-	T_(PoolUpdateNew)(0, 0);
-	T_(PoolForEach)(0, 0);
-	T_(PoolMigrateEach)(0, 0, 0);
-	T_(PoolMigratePointer)(0, 0);
-#ifdef POOL_TO_STRING
-	T_(PoolToString)(0);
+	T_(ArrayClear)(0);
+	T_(ArrayGet)(0, 0);
+	T_(ArrayIndex)(0, 0);
+	T_(ArrayPeek)(0);
+	T_(ArrayPop)(0);
+	T_(ArrayNext)(0, 0);
+	T_(ArrayNew)(0);
+	T_(ArrayUpdateNew)(0, 0);
+	T_(ArrayForEach)(0, 0);
+	T_(ArrayMigrateEach)(0, 0, 0);
+	T_(ArrayMigratePointer)(0, 0);
+#ifdef ARRAY_TO_STRING
+	T_(ArrayToString)(0);
 #endif
 	PT_(unused_coda)();
 }
@@ -825,12 +837,12 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
 /* Un-define all macros. */
-#undef POOL_NAME
-#undef POOL_TYPE
+#undef ARRAY_NAME
+#undef ARRAY_TYPE
 /* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
  {PCAT_} conform, and {T}, {S}, and {A}, are not used. */
-#ifdef POOL_SUBTYPE /* <-- sub */
-#undef POOL_SUBTYPE
+#ifdef ARRAY_SUBTYPE /* <-- sub */
+#undef ARRAY_SUBTYPE
 #else /* sub --><-- !sub */
 #undef CAT
 #undef CAT_
@@ -844,25 +856,25 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #ifdef A
 #undef A
 #endif
-#ifdef POOL_STACK
-#undef POOL_STACK
+#ifndef ARRAY_FREE_LIST
+#undef ARRAY_FREE_LIST
 #endif
-#ifdef POOL_MIGRATE_EACH
-#undef POOL_MIGRATE_EACH
+#ifdef ARRAY_MIGRATE_EACH
+#undef ARRAY_MIGRATE_EACH
 #endif
-#ifdef POOL_MIGRATE_ALL
-#undef POOL_MIGRATE_ALL
+#ifdef ARRAY_MIGRATE_ALL
+#undef ARRAY_MIGRATE_ALL
 #endif
-#ifdef POOL_MIGRATE_UPDATE
-#undef POOL_MIGRATE_UPDATE
+#ifdef ARRAY_MIGRATE_UPDATE
+#undef ARRAY_MIGRATE_UPDATE
 #endif
-#ifdef POOL_TO_STRING
-#undef POOL_TO_STRING
+#ifdef ARRAY_TO_STRING
+#undef ARRAY_TO_STRING
 #endif
-#ifdef POOL_TEST
-#undef POOL_TEST
+#ifdef ARRAY_TEST
+#undef ARRAY_TEST
 #endif
-#ifdef POOL_NDEBUG
-#undef POOL_NDEBUG
+#ifdef ARRAY_NDEBUG
+#undef ARRAY_NDEBUG
 #undef NDEBUG
 #endif
