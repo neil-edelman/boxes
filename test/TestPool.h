@@ -137,6 +137,13 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 
 
 
+static void PT_(print)(T *const data) {
+	char a[12];
+	assert(data);
+	PT_(to_string)(data, &a);
+	printf("> %s!\n", a);
+}
+
 static void PT_(test_basic)(void) {
 	struct T_(Pool) a;
 	struct PT_(Node) node;
@@ -205,7 +212,8 @@ static void PT_(test_basic)(void) {
 	t = T_(PoolNew)(&a), PT_(filler)(t);
 	t = T_(PoolNew)(&a), PT_(filler)(t);
 	t = T_(PoolNew)(&a), PT_(filler)(t);
-	T_(PoolRemove)(&a, t);
+	assert(T_(PoolRemove)(&a, t));
+	T_(PoolForEach)(&a, &PT_(print));
 	PT_(valid_state)(&a);
 	assert(!T_(PoolReserve)(&a, 1000) && errno == EDOM), errno = 0;
 	PT_(graph)(&a, QUOTE(POOL_NAME) "-small-1000.gv");

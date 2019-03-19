@@ -2,28 +2,26 @@
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
  {<T>Pool} stores unordered {<T>} in a memory pool, which must be set using
- {POOL_TYPE}. References to the items in the pool remain valid as long as
- the item is not removed and the pool is not deleted. It tries to be
- contiguous, but as such, it is not guaranteed. However, when the data reaches
- a steady-state size, as new data replaces old data, it will eventually become
- contiguous under uniform sampling, (all old data is eventually removed.)
+ {POOL_TYPE}. Pointers to the items in the pool remain valid as long as
+ the item is not removed and the pool is not deleted, (it is stable.) As such,
+ contiguity is not guaranteed; data is pre-allocated in geometrically
+ increasing blocks. However, when the data reaches a steady-state size, it will
+ eventually become contiguous when removal is uniformly sampled. That is, new
+ data replaces old data, which is all eventually removed. {Pool} is not
+ designed for iteration, reordering, or even counting, but instead to provide a
+ fairly contiguous space for items that may have references.
 
  A zeroed {<T>Pool} is when all the members are zero, such as static data; it
  has no extra memory associated with it. One can go from uninitialised to zero
  with \see{<T>Pool}, sort of the constructor, and initialised to zero with
  \see{<T>Pool_}, sort of the destructor. From zeroed, when you start using
- {<T>Pool}, it goes into an active state and has memory associated with it's
- active block, (at least); one must call {<T>Pool_} to free. As such, a pool
- could have zero elements and still be active, for example, when
- \see{<T>PoolClear} is called on an active pool.
+ {<T>Pool}, it goes into an active state and has memory associated it; one must
+ call \see{<T>Pool_} to free. A pool could have zero elements and still be
+ active, for example, when \see{<T>PoolClear} is called on an active pool.
 
- {Pool} is not designed for iteration, reordering, or even counting, but
- instead to provide a fairly contiguous space, but stable, for more complicated
- structures to store data that has static references. There is no way to shrink
- the active block in memory, just expand it.
-
- {<T>StablePool} is not synchronised. The preprocessor macros are all undefined
- at the end of the file for convenience. Errors are returned with {stderr}.
+ {<T>Pool} is not synchronised. There is no way to shrink the active block in
+ memory, just expand it. Errors are returned with {errno}. The preprocessor
+ macros are all undefined at the end of the file for convenience.
 
  @param POOL_NAME, POOL_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
@@ -335,8 +333,8 @@ static void PT_(flag_removed)(struct PT_(Node) *const node) {
  @param pool, data: If null, returns false.
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is corrupted or not part of {pool}.
- @order amortised {O(1)}, assuming the blocks are removed uniformly at random,
- but {log log items} for a small number of deleted items
+ @order Amortised {O(1)}, if the pool is in steady-state, but {O(log items)}
+ for a small number of deleted items.
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	struct PT_(Node) *node;
@@ -407,11 +405,10 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
 	return &node->data;
 }
 
-/** Iterates though {pool} from the bottom and calls {action} on all the
- elements. The topology of the list can not change while in this function.
+/** Iterates though {pool} and calls {action} on all the elements. There is no
+ way to change the iteration order.
  @param stack, action: If null, does nothing.
- @order O({size} \times {action})
- @fixme Untested.
+ @order O({capacity} \times {action})
  @allow */
 static void T_(PoolForEach)(struct T_(Pool) *const pool,
 	const PT_(Action) action) {

@@ -33,7 +33,7 @@ TEST  := $(call rwildcard, $(TDIR), *.c)
 H     := $(call rwildcard, $(SDIR), *.h) $(call rwildcard, $(TDIR), *.h)
 OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
-DOCS  := $(patsubst $(SDIR)/%.c, $(DDIR)/%.html, $(SRCS))
+DOCS  := $(patsubst $(SDIR)/%.h, $(DDIR)/%.html, $(SRCS) $(H))
 
 CC   := clang #gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
@@ -94,10 +94,10 @@ $(LSRCS): $(GDIR)/%.re.c: $(SDIR)/%.re
 	@mkdir -p $(GDIR)
 	$(LEXER) -o $@ $^
 
-$(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
-	# docs rule
+$(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
+	# docs rule cat $^ | $(CDOC) > $@
 	@mkdir -p $(DDIR)
-	cat $^ | $(CDOC) > $@
+	$(CDOC) < $^ > $@
 
 ######
 # phoney targets
