@@ -374,55 +374,17 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	while(next) block = next, next = next->smaller, free(block);
 }
 
-/** Pre-sizes a new pool. To ensure that it can hold at least {n} elements, it may increase the
- capacity of {pool}.
- @param min: If 0, does nothing and returns true;
- @return Success.
+/** Pre-sizes a zeroed pool to ensure that it can hold at least {min} elements.
+ @return Success; the pool becomes active with at least {min} elements, even if
+ {min} is zero.
+ @throws EDOM: The pool is active.
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {malloc} errors: {IEEE Std 1003.1-2001}.
- @order On existing block, it may have to go though the unused portions of the
- block and set them to erased.
- @fixme Stub.
  @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
-	struct PT_(Block) *block;
-	struct PT_(Node) *n, *end;
-	struct PT_(X) *removed;
-	size_t size_with_free_list;
 	if(!pool) return 0;
-	if(!min) return 1;
-	if(pool->largest) {
-		printf("Reserve: capacity %lu request %lu.\n",
-			(unsigned long)pool->largest->capacity, min);
-	} else {
-		printf("Reserve: request %lu from empty.\n", (unsigned long)min);
-	}
-	block = pool->largest;
-	removed = pool->removed.next;
-	if(!PT_(reserve)(pool, min)) return 0;
-	assert((perror("?"), !errno));
-	if(!block || block == pool->largest) return printf("Reserve: no action."),1;
-	assert(pool->largest && block == pool->largest->smaller
-		&& (!removed || block->size > 1));
-	size_with_free_list = block->size;
-	if(removed) { /* Subtract removed from count. */
-		size_t r = 0;
-		while(removed != &pool->removed) r++, removed = removed->next;
-		printf("Reserve: there were %lu removed blocks in size %lu.\n",
-			r, block->size);
-		assert(r && block->size > r);
-		block->size -= r;
-	} else if(!block->size) { /* Erstwhile active is empty block. */
-		pool->largest->smaller = block->smaller;
-		free(block);
-		return 1;
-	}
-	printf("Reserve: filling in [%lu, %lu) with removed.\n",
-		(unsigned long)size_with_free_list, (unsigned long)block->capacity);
-	/* Fill in the uninitialised nodes; blocked in the active block by size. */
-	for(n = PT_(block_nodes)(block) + size_with_free_list,
-		end = n + block->capacity; n < end; n++) PT_(flag_removed)(n);
-	return 1;
+	if(pool->largest) return errno = EDOM, 0;
+	return PT_(reserve)(pool, min);
 }
 
 /** Gets an uninitialised new element.

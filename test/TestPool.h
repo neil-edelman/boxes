@@ -150,10 +150,11 @@ static void PT_(test_basic)(void) {
 	T_(Pool)(0);
 	assert(T_(PoolRemove)(0, 0) == 0);
 	T_(PoolClear)(0);
+	assert(T_(PoolReserve)(0, 0) == 0);
+	assert((perror("?"), errno == 0));
 	assert(T_(PoolNew)(0) == 0);
 	T_(PoolForEach)(0, 0);
 	assert(!strcmp("null", T_(PoolToString(0))));
-	assert(errno == 0);
 	PT_(valid_state)(0);
 
 	printf("Test empty.\n");
@@ -165,6 +166,8 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(&a);
 
 	printf("Test one element.\n");
+	T_(Pool_)(&a);
+	assert(T_(PoolReserve)(&a, 1000) && a.next_capacity == 2584);
 	t = T_(PoolNew)(&a), PT_(filler)(t); /* Add. */
 	assert(t);
 	PT_(valid_state)(&a);
@@ -176,6 +179,7 @@ static void PT_(test_basic)(void) {
 	T_(PoolClear)(&a);
 	PT_(valid_state)(&a);
 	PT_(graph)(&a, QUOTE(POOL_NAME) "-zero.gv");
+	T_(Pool_)(&a);
 
 	/* @fixme valgrind is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
@@ -203,7 +207,7 @@ static void PT_(test_basic)(void) {
 	t = T_(PoolNew)(&a), PT_(filler)(t);
 	T_(PoolRemove)(&a, t);
 	PT_(valid_state)(&a);
-	/* T_(PoolReserve)(&a, 1000); */
+	assert(!T_(PoolReserve)(&a, 1000) && errno == EDOM), errno = 0;
 	PT_(graph)(&a, QUOTE(POOL_NAME) "-small-1000.gv");
 	PT_(valid_state)(&a);
 	T_(PoolClear)(&a);
