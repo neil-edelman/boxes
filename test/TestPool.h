@@ -158,10 +158,10 @@ static void PT_(test_basic)(void) {
 	assert(T_(PoolRemove)(0, 0) == 0);
 	T_(PoolClear)(0);
 	assert(T_(PoolReserve)(0, 0) == 0);
-	assert((perror("?"), errno == 0));
 	assert(T_(PoolNew)(0) == 0);
 	T_(PoolForEach)(0, 0);
 	assert(!strcmp("null", T_(PoolToString(0))));
+	assert(errno == 0);
 	PT_(valid_state)(0);
 
 	printf("Test empty.\n");
