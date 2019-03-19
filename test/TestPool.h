@@ -242,7 +242,7 @@ static void PT_(test_basic)(void) {
 static void PT_(test_random)(void) {
 	struct T_(Pool) a;
 	size_t i, size = 0;
-	const size_t length = 100000; /* Controls how many iterations. */
+	const size_t length = 120000; /* Controls how many iterations. */
 	T_(Pool)(&a);
 	for(i = 0; i < length; i++) {
 		char str[12];

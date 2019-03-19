@@ -357,7 +357,7 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 }
 
 /** Removes all from {pool}, but leaves the active memory alone; if one wants
- to remove memory, see \see{Pool_}.
+ to remove memory, see \see{<T>Pool_}.
  @param pool: If null, does nothing.
  @order O(blocks)
  @allow */
