@@ -1,33 +1,29 @@
 /** 2016 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
- {<T>StablePool} stores unordered {<T>} in a memory pool, which must be set
- using {POOL_TYPE}. References to the items in the pool remain valid as long as
- the item is not removed. As such, it is not guaranteed to be contiguous. When
- a resizing occurs, the new active block of memory is geometrically larger.
- When data is removed, one of two things happens: if it is in the active block,
- it goes into an internal free list for re-use; if it is not, it is simply
- unused until all the items of that block are marked for removal, then it is
- freed.
+ {<T>Pool} stores unordered {<T>} in a memory pool, which must be set using
+ {POOL_TYPE}. References to the items in the pool remain valid as long as
+ the item is not removed and the pool is not deleted. It tries to be
+ contiguous, but as such, it is not guaranteed. However, when the data reaches
+ a steady-state size, as new data replaces old data, it will eventually become
+ contiguous under uniform sampling, (all old data is eventually removed.)
 
- {StablePool} is not designed for iteration, reordering, or even counting, but
+ A zeroed {<T>Pool} is when all the members are zero, such as static data; it
+ has no extra memory associated with it. One can go from uninitialised to zero
+ with \see{<T>Pool}, sort of the constructor, and initialised to zero with
+ \see{<T>Pool_}, sort of the destructor. From zeroed, when you start using
+ {<T>Pool}, it goes into an active state and has memory associated with it's
+ active block, (at least); one must call {<T>Pool_} to free. As such, a pool
+ could have zero elements and still be active, for example, when
+ \see{<T>PoolClear} is called on an active pool.
+
+ {Pool} is not designed for iteration, reordering, or even counting, but
  instead to provide a fairly contiguous space, but stable, for more complicated
- structures to store data. There is no way to shrink the active block in
- memory, just exapand it.
-
- In development, we mostly saw two distinct cases: where the data was
- non-referential and simple. In this case, {C++} might use {vector}; this has
- developed into {Pool} in {CBoxes}. On the other hand, pointers to data
- in a more complicated structure means the position is not important, but the
- pointer is. With contiguity, we had a system of registering migrating
- functions on all structures which pointed-to data; this was sometimes
- error-prone and difficult to understand. The {<T>StablePool} type resembles
- {Boost C++} non-standard container {stable_vector}, where the data is at a
- constant address so references to that data will not be changed. It's probably
- not as fast, but less complex, thus far more robust.
+ structures to store data that has static references. There is no way to shrink
+ the active block in memory, just expand it.
 
  {<T>StablePool} is not synchronised. The preprocessor macros are all undefined
- at the end of the file for convenience.
+ at the end of the file for convenience. Errors are returned with {stderr}.
 
  @param POOL_NAME, POOL_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
@@ -378,8 +374,7 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	while(next) block = next, next = next->smaller, free(block);
 }
 
-#if 1
-/** To ensure that it can hold at least {n} elements, it may increase the
+/** Pre-sizes a new pool. To ensure that it can hold at least {n} elements, it may increase the
  capacity of {pool}.
  @param min: If 0, does nothing and returns true;
  @return Success.
@@ -429,7 +424,6 @@ static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
 		end = n + block->capacity; n < end; n++) PT_(flag_removed)(n);
 	return 1;
 }
-#endif
 
 /** Gets an uninitialised new element.
  @param pool: If is null, returns null.
