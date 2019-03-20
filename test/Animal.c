@@ -12,13 +12,15 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	struct Animals *animals = 0;
 	int is_success = 0;
+	clock_t t;
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 
+	t = clock();
 	do {
 		struct Animal *a = 0, *prev_a = 0;
 		struct Bear *w, *n;
-		const unsigned animal_no = 10000;
+		const unsigned animal_no = 1000/*000*/;
 		unsigned i;
 		if(!(animals = Animals())) break;
 		for(i = 0; i < animal_no; i++) {
@@ -52,6 +54,7 @@ int main(void) {
 	} {
 		Animals_(&animals);
 	}
+	fprintf(stderr, "Time: %lu\n", (unsigned long)(clock() - t));
 
 	return is_success ? EXIT_SUCCESS : EXIT_FAILURE;
 }

@@ -13,6 +13,8 @@
 #include "Orcish.h"
 #include "Animals.h"
 
+/*#define OLD*/
+
 enum Colour { PINK, RED, BLUE, YELLOW, BEIGE, COLOUR_END };
 static const char *const colours[] = { "pink", "red", "blue","yellow", "beige"};
 enum { BOTTOM, TOP, RIDING_END };
@@ -45,43 +47,74 @@ struct MountInfo {
 struct Mount {
 	struct Animal *steed, *rider;
 };
+#if defined(OLD) || defined(ARRAY) /* <-- migrate */
 /* This needs to have {AnimalVt} defined; define it later. */
 static void mount_migrate(struct Mount *const mount,
 	const struct Migrate *const migrate);
+#endif /* migrate --> */
+#ifdef ARRAY /* <-- array */
+#define ARRAY_NAME Mount
+#define ARRAY_TYPE struct Mount
+#define ARRAY_FREE_LIST
+#include "Array.c"
+#else /* array --><-- !array */
 #define POOL_NAME Mount
 #define POOL_TYPE struct Mount
+#ifdef OLD
 #define POOL_MIGRATE_EACH &mount_migrate
 #include "Pool.h"
+#else
+#include "StablePool.h"
+#endif
+#endif /* !array --> */
 
 /* Class Sloth extends Animal. */
 struct Sloth {
 	struct AnimalLink animal;
 	unsigned hours_slept;
 };
+#if defined(OLD) || defined(ARRAY) /* <-- migrate */
 static void sloth_migrate(struct Sloth *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	AnimalLinkMigrate(&this->animal.data, migrate);
 }
+#endif /* migrate --> */
+#ifdef ARRAY /* <-- array */
+#else /* array --><-- !array */
 #define POOL_NAME Sloth
 #define POOL_TYPE struct Sloth
+#ifdef OLD
 #define POOL_MIGRATE_EACH &sloth_migrate
 #include "Pool.h"
+#else
+#include "StablePool.h"
+#endif
+#endif /* !array --> */
 
 /* Class Emu extends Animal. */
 struct Emu {
 	struct AnimalLink animal;
 	char favourite_letter;
 };
+#if defined(OLD) || defined(ARRAY) /* <-- migrate */
 static void emu_migrate(struct Emu *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	AnimalLinkMigrate(&this->animal.data, migrate);
 }
+#endif /* migrate --> */
+#ifdef ARRAY /* <-- array */
+#else /* array --><-- !array */
 #define POOL_NAME Emu
 #define POOL_TYPE struct Emu
+#ifdef OLD
 #define POOL_MIGRATE_EACH &emu_migrate
 #include "Pool.h"
+#else
+#include "StablePool.h"
+#endif
+#endif /* !array --> */
 
 /* Class BadEmu extends Emu. */
 struct BadEmu {
@@ -89,6 +122,7 @@ struct BadEmu {
 	struct MountInfo mount_info;
 	char muhaha[12];
 };
+#if defined(OLD) || defined(ARRAY) /* <-- migrate */
 static void bad_emu_migrate(struct BadEmu *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
@@ -96,10 +130,18 @@ static void bad_emu_migrate(struct BadEmu *const this,
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
+#endif /* migrate --> */
+#ifdef ARRAY /* <-- array */
+#else /* array --><-- !array */
 #define POOL_NAME BadEmu
 #define POOL_TYPE struct BadEmu
+#ifdef OLD
 #define POOL_MIGRATE_EACH &bad_emu_migrate
 #include "Pool.h"
+#else
+#include "StablePool.h"
+#endif
+#endif /* !array --> */
 
 /* Class Llama extends Animal. */
 struct Llama {
@@ -107,6 +149,7 @@ struct Llama {
 	struct MountInfo mount_info;
 	unsigned chomps;
 };
+#if defined(OLD) || defined(ARRAY) /* <-- migrate */
 static void llama_migrate(struct Llama *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
@@ -114,16 +157,25 @@ static void llama_migrate(struct Llama *const this,
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
+#endif /* migrate --> */
+#ifdef ARRAY /* <-- array */
+#else /* array --><-- !array */
 #define POOL_NAME Llama
 #define POOL_TYPE struct Llama
+#ifdef OLD
 #define POOL_MIGRATE_EACH &llama_migrate
 #include "Pool.h"
+#else
+#include "StablePool.h"
+#endif
+#endif /* !array --> */
 
 /* Class Lemur extends Animal. */
 struct Lemur {
 	struct AnimalLink animal;
 	struct MountInfo mount_info;
 };
+#if defined(OLD) || defined(ARRAY) /* <-- migrate */
 static void lemur_migrate(struct Lemur *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
@@ -131,10 +183,23 @@ static void lemur_migrate(struct Lemur *const this,
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
 }
+#endif /* migrate --> */
+#ifdef ARRAY /* <-- array */
+#define ARRAY_NAME Lemur
+#define ARRAY_TYPE struct Lemur
+#define ARRAY_FREE_LIST
+#define ARRAY_MIGRATE_EACH &lemur_migrate
+#include "Array.h"
+#else /* array --><-- !array */
 #define POOL_NAME Lemur
 #define POOL_TYPE struct Lemur
+#ifdef OLD
 #define POOL_MIGRATE_EACH &lemur_migrate
 #include "Pool.h"
+#else
+#include "StablePool.h"
+#endif
+#endif /* !array --> */
 
 /* Class Bear extends Animal. We have always two or less, so we don't need to
  define a {Pool}. */
@@ -354,6 +419,7 @@ static struct AnimalVt Bear_vt = {
 	(AnimalMountInfo)&Bear_mount_info
 };
 
+#if defined(OLD) || defined(ARRAY) /* <-- migrate */
 /** From before, waiting until {AnimalVt.mount_field} and {Animal_mount} was
  defined. This follows the links to {steed} and {rider} and makes them point
  back to the new memory location of {mount}.
@@ -366,6 +432,7 @@ static void mount_migrate(struct Mount *const mount,
 	MountPoolMigratePointer(&Animal_mount_info(mount->steed)->steed_of,migrate);
 	MountPoolMigratePointer(&Animal_mount_info(mount->rider)->riding, migrate);
 }
+#endif /* migrate --> */
 
 /** Helper for delete. */
 static void dismount(struct Animals *const animals, struct Mount *const mount) {
@@ -555,7 +622,9 @@ void AnimalsAct(struct Animals *const animals) {
 void AnimalsClear(struct Animals *const animals) {
 	if(!animals) return;
 	AnimalListBiForEach(&animals->list, &Animal_delete, animals);
+#ifdef OLD
 	assert(!MountPoolPeek(&animals->mounts));
+#endif
 }
 /** @return The first animal in {animals} or null if it doesn't have any. Don't
  add to {animals} while the iteration is still going. */
