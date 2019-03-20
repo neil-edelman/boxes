@@ -22,10 +22,12 @@ static void time_fn(const TimeFn fn, const size_t replicas) {
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
+	const size_t replicas = 50;
 
 	srand(seed), rand(), fprintf(stderr, "Seed %u.\n", seed);
 
-	time_fn(&TestPool, 5);
+	time_fn(&TestStatic, replicas);
+	time_fn(&TestAlloc, replicas);
 
 	return EXIT_SUCCESS;
 }
