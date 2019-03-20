@@ -17,6 +17,11 @@ struct Time {
 #define ARRAY_TYPE struct Time
 #include "Array.h"
 
+#define ARRAY_NAME ConTime
+#define ARRAY_TYPE struct Time
+#define ARRAY_TAIL_REMOVED
+#include "Array.h"
+
 #define ARRAY_NAME FreeTime
 #define ARRAY_TYPE struct Time
 #define ARRAY_FREE_LIST
@@ -29,17 +34,17 @@ static struct Time *a_time[500000];
 static const size_t a_time_no = sizeof a_time / sizeof *a_time;
 static size_t a_time_count;
 
-static void time_to_string(const struct Time *const t, char (*const a)[12]) {
-	assert(t && a);
-	snprintf(*a, sizeof *a, "%s:%d", t->rdm, t->key);
-}
-
 static void init_time(struct Time *const t) {
 	assert(t);
 	t->key = rand();
 	Orcish(t->rdm, sizeof t->rdm);
 }
 
+#ifdef PRINT
+static void time_to_string(const struct Time *const t, char (*const a)[12]) {
+	assert(t && a);
+	snprintf(*a, sizeof *a, "%s:%d", t->rdm, t->key);
+}
 static void print_alloc(void) {
 	size_t i;
 	char a[12];
@@ -50,16 +55,32 @@ static void print_alloc(void) {
 	}
 	printf("}\n");
 }
+#endif
+
+#define MODIFY
+
+static void modify(struct Time *const t) {
+	assert(t);
+#ifdef MODIFY
+	t->key++;
+#elif defined(MODIFY_GREATLY)
+	init_time(t);
+#endif
+}
 
 void TestStatic(const size_t replicas) {
-	size_t i;
+	size_t i, j;
+#ifdef PRINT
 	char a[12];
+#endif
 	for(i = 0; i < replicas; i++) {
 		float r = (float)(rand() / (1.0 + RAND_MAX));
 		struct Time *time;
 		if(r < 1.0 * s_time_count / replicas) {
 			size_t idx = rand() / (1.0 + RAND_MAX) * s_time_count;
-			/*printf("des %lu\n", (unsigned long)idx);*/
+#ifdef PRINT
+			printf("des %lu\n", (unsigned long)idx);
+#endif
 			if(idx < --s_time_count)
 				memcpy(s_time + idx, s_time + s_time_count, sizeof *time);
 		} else {
@@ -67,24 +88,31 @@ void TestStatic(const size_t replicas) {
 				{ fprintf(stderr, "TestStatic too big."); return; }
 			time = s_time + s_time_count++;
 			init_time(time);
-			/*init_time(t);
+#ifdef PRINT
+			init_time(t);
 			time_to_string(t, &a);
-			printf("create %s\n", a);*/
+			printf("create %s\n", a);
+#endif
 		}
+		for(j = 0; j < s_time_count; j++) modify(s_time + j);
 	}
 	s_time_count = 0;
 }
 
 void TestAlloc(const size_t replicas) {
-	size_t i;
+	size_t i, j;
+#ifdef PRINT
 	char a[12];
+#endif
 	for(i = 0; i < replicas; i++) {
 		float r = (float)(rand() / (1.0 + RAND_MAX));
 		struct Time *time;
 		if(r < 1.0 * a_time_count / replicas) {
 			size_t idx = rand() / (1.0 + RAND_MAX) * a_time_count;
 			assert(idx < a_time_count);
-			/*printf("des %lu\n", (unsigned long)idx);*/
+#ifdef PRINT
+			printf("des %lu\n", (unsigned long)idx);
+#endif
 			time = a_time[idx], assert(time);
 			free(time);
 			if(idx < --a_time_count)
@@ -96,29 +124,37 @@ void TestAlloc(const size_t replicas) {
 				{ perror("malloc"); continue; }
 			a_time[a_time_count++] = time;
 			init_time(time);
-			/*time_to_string(t, &a);
+#ifdef PRINT
+			time_to_string(t, &a);
 			printf("create %s\n", a);
-			print_alloc();*/
+			print_alloc();
+#endif
 		}
+		for(j = 0; j < a_time_count; j++) modify(a_time[j]);
 	}
 	while(a_time_count) free(a_time[--a_time_count]);
 }
 
 void TestPool(const size_t replicas) {
 	size_t i, pool_size = 0;
+#ifdef PRINT
 	char a[12];
+#endif
 	struct TimePool t;
 	TimePool(&t);
-	TimePoolReserve(&t, 3000);
+	/*TimePoolReserve(&t, 3000);*/
 	for(i = 0; i < replicas; i++) {
 		float r = (float)(rand() / (1.0 + RAND_MAX));
 		struct Time *time;
 		if(r < 1.0 * pool_size / replicas) {
-			struct pool_Time_Block *b;
-			struct pool_Time_Node *n;
+			/*struct pool_Time_Block *b;
+			struct pool_Time_Node *n;*/
 			size_t idx = rand() / (1.0 + RAND_MAX) * pool_size;
-			assert(idx < pool_size && t.largest);
-			/*printf("des %lu\n", (unsigned long)idx);*/
+			assert(idx < pool_size && t.largest && pool_size);
+#ifdef PRINT
+			printf("des %lu\n", (unsigned long)idx);
+#endif
+			/*
 			for(b = t.largest->smaller; b; b = b->smaller)
 				{ if(idx < b->size) break; idx -= b->size; }
 			if(b) {
@@ -127,17 +163,19 @@ void TestPool(const size_t replicas) {
 				n = pool_Time_block_nodes(t.largest) + idx;
 				while(n->x.prev) n++;
 			}
-			time = &n->data;
-			TimePoolRemove(&t, time);
-			pool_size--;
+			*/
+			TimePoolRemove(&t, a_time[--pool_size]);
 		} else {
 			if(!(time = TimePoolNew(&t))) { perror("TimeArray"); continue; }
-			pool_size++;
+			a_time[pool_size++] = time;
 			init_time(time);
-			/*time_to_string(time, &a);
+#ifdef PRINT
+			time_to_string(time, &a);
 			printf("create %s\n", a);
-			print_alloc();*/
+			print_alloc();
+#endif
 		}
+		TimePoolForEach(&t, &modify);
 	}
 	TimePool_(&t);
 }
@@ -145,31 +183,71 @@ void TestPool(const size_t replicas) {
 void TestArray(const size_t replicas) {
 	size_t i;
 	struct TimeArray t;
+#ifdef PRINT
 	char a[12];
+#endif
 	TimeArray(&t);
 	for(i = 0; i < replicas; i++) {
 		float r = (float)(rand() / (1.0 + RAND_MAX));
 		struct Time *time;
 		if(r < 1.0 * TimeArraySize(&t) / replicas) {
 			size_t idx = rand() / (1.0 + RAND_MAX) * TimeArraySize(&t);
-			/*printf("des %lu\n", (unsigned long)idx);*/
+#ifdef PRINT
+			printf("des %lu\n", (unsigned long)idx);
+#endif
 			time = TimeArrayGet(&t, idx), assert(time);
 			if(!TimeArrayRemove(&t, time)) perror("TimeArray");
 		} else {
 			if(!(time = TimeArrayNew(&t))) { perror("TimeArray"); continue; }
 			init_time(time);
-			/*time_to_string(time, &a);
+#ifdef PRINT
+			time_to_string(time, &a);
 			printf("create %s\n", a);
-			print_alloc();*/
+			print_alloc();
+#endif
 		}
+		TimeArrayForEach(&t, &modify);
 	}
 	TimeArray(&t);
+}
+
+void TestConArray(const size_t replicas) {
+	size_t i;
+	struct ConTimeArray t;
+#ifdef PRINT
+	char a[12];
+#endif
+	ConTimeArray(&t);
+	for(i = 0; i < replicas; i++) {
+		float r = (float)(rand() / (1.0 + RAND_MAX));
+		struct Time *time;
+		if(r < 1.0 * ConTimeArraySize(&t) / replicas) {
+			size_t idx = rand() / (1.0 + RAND_MAX) * ConTimeArraySize(&t);
+#ifdef PRINT
+			printf("des %lu\n", (unsigned long)idx);
+#endif
+			time = ConTimeArrayGet(&t, idx), assert(time);
+			if(!ConTimeArrayRemove(&t, time)) perror("TimeArray");
+		} else {
+			if(!(time = ConTimeArrayNew(&t))) { perror("TimeArray"); continue; }
+			init_time(time);
+#ifdef PRINT
+			time_to_string(time, &a);
+			printf("create %s\n", a);
+			print_alloc();
+#endif
+		}
+		ConTimeArrayForEach(&t, &modify);
+	}
+	ConTimeArray(&t);
 }
 
 void TestFreeArray(const size_t replicas) {
 	size_t i, pool_size = 0;
 	struct FreeTimeArray t;
+#ifdef PRINT
 	char a[12];
+#endif
 	FreeTimeArray(&t);
 	for(i = 0; i < replicas; i++) {
 		float r = (float)(rand() / (1.0 + RAND_MAX));
@@ -177,7 +255,9 @@ void TestFreeArray(const size_t replicas) {
 		if(r < 1.0 * pool_size / replicas) {
 			size_t idx = rand() / (1.0 + RAND_MAX) * pool_size;
 			assert(idx < pool_size);
-			/*printf("des %lu\n", (unsigned long)idx);*/
+#ifdef PRINT
+			printf("des %lu\n", (unsigned long)idx);
+#endif
 			while(!(time = FreeTimeArrayGet(&t, idx))) idx++;
 			FreeTimeArrayRemove(&t, time);
 			pool_size--;
@@ -185,10 +265,13 @@ void TestFreeArray(const size_t replicas) {
 			if(!(time = FreeTimeArrayNew(&t))) { perror("TimeArray"); continue; }
 			pool_size++;
 			init_time(time);
-			/*time_to_string(time, &a);
-			 printf("create %s\n", a);
-			 print_alloc();*/
+#ifdef PRINT
+			time_to_string(time, &a);
+			printf("create %s\n", a);
+			print_alloc();
+#endif
 		}
+		FreeTimeArrayForEach(&t, &modify);
 	}
 	FreeTimeArray_(&t);
 }

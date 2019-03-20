@@ -487,9 +487,11 @@ static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data) {
 	if(node->x.prev != pool_void) return errno = EDOM, 0;
 	PT_(enqueue_removed)(pool, n);
 	if(n >= pool->size - 1) PT_(trim_removed)(pool);
-#else /* free --><-- !free */
-	memmove(node, node + 1, --pool->size - n);
-#endif
+#elif defined(ARRAY_TAIL_REMOVED) /* free --><-- !free head */
+	if(--pool->size != n) memcpy(node, pool->nodes + pool->size, sizeof *node);
+#else /* !free head -->< !free !head */
+	memmove(node, node + 1, sizeof *node * (--pool->size - n));
+#endif /* !free !head --> */
 	return 1;
 }
 
