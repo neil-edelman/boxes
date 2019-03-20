@@ -13,21 +13,24 @@
 #include <time.h>   /* clock time */
 #include "../src/Time.h"
 
-static void time_fn(const TimeFn fn, const size_t replicas) {
+static void time_fn(const char f, const TimeFn fn, const size_t replicas) {
 	clock_t t = clock();
 	assert(fn && replicas);
 	fn(replicas);
-	printf("%lu\n", (unsigned long)(clock() - t));
+	printf("%c\t%lu\n", f, (unsigned long)(clock() - t));
 }
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
-	const size_t replicas = 50;
+	const size_t replicas = 500000;
 
 	srand(seed), rand(), fprintf(stderr, "Seed %u.\n", seed);
 
-	time_fn(&TestStatic, replicas);
-	time_fn(&TestAlloc, replicas);
+	time_fn('s', &TestStatic, replicas);
+	time_fn('m', &TestAlloc, replicas);
+	time_fn('p', &TestPool, replicas);
+	time_fn('a', &TestArray, replicas);
+	time_fn('f', &TestFreeArray, replicas);
 
 	return EXIT_SUCCESS;
 }
