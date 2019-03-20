@@ -474,6 +474,7 @@ static size_t T_(ArraySize)(const struct T_(Array) *const pool) {
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is not part of {pool}.
  @order Amortised O(1) if {ARRAY_FREE_LIST} is defined, otherwise, O(n).
+ @fixme Test on stack.
  @allow */
 static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data) {
 	struct PT_(Node) *node;
@@ -481,12 +482,9 @@ static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data) {
 	if(!pool || !data) return 0;
 	node = PT_(data_upcast)(data);
 	n = node - pool->nodes;
-	if(node < pool->nodes || n >= pool->size
+	if(node < pool->nodes || n >= pool->size) return errno = EDOM, 0;
 #ifdef ARRAY_FREE_LIST /* <-- free */
-		|| node->x.prev != pool_void
-#endif /* free --> */
-	) return errno = EDOM, 0;
-#ifdef ARRAY_FREE_LIST /* <-- free */
+	if(node->x.prev != pool_void) return errno = EDOM, 0;
 	PT_(enqueue_removed)(pool, n);
 	if(n >= pool->size - 1) PT_(trim_removed)(pool);
 #else /* free --><-- !free */
