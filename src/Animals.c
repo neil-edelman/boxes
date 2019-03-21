@@ -13,7 +13,7 @@
 #include "Orcish.h"
 #include "Animals.h"
 
-#define ARRAY
+/*#define ARRAY*/
 /*#define OLD*/
 
 enum Colour { PINK, RED, BLUE, YELLOW, BEIGE, COLOUR_END };
