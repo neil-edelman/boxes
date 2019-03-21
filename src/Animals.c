@@ -13,6 +13,7 @@
 #include "Orcish.h"
 #include "Animals.h"
 
+#define ARRAY
 /*#define OLD*/
 
 enum Colour { PINK, RED, BLUE, YELLOW, BEIGE, COLOUR_END };
@@ -56,7 +57,8 @@ static void mount_migrate(struct Mount *const mount,
 #define ARRAY_NAME Mount
 #define ARRAY_TYPE struct Mount
 #define ARRAY_FREE_LIST
-#include "Array.c"
+#define ARRAY_MIGRATE_EACH &mount_migrate
+#include "Array.h"
 #else /* array --><-- !array */
 #define POOL_NAME Mount
 #define POOL_TYPE struct Mount
@@ -81,6 +83,11 @@ static void sloth_migrate(struct Sloth *const this,
 }
 #endif /* migrate --> */
 #ifdef ARRAY /* <-- array */
+#define ARRAY_NAME Sloth
+#define ARRAY_TYPE struct Sloth
+#define ARRAY_FREE_LIST
+#define ARRAY_MIGRATE_EACH &sloth_migrate
+#include "Array.h"
 #else /* array --><-- !array */
 #define POOL_NAME Sloth
 #define POOL_TYPE struct Sloth
@@ -105,6 +112,11 @@ static void emu_migrate(struct Emu *const this,
 }
 #endif /* migrate --> */
 #ifdef ARRAY /* <-- array */
+#define ARRAY_NAME Emu
+#define ARRAY_TYPE struct Emu
+#define ARRAY_FREE_LIST
+#define ARRAY_MIGRATE_EACH &emu_migrate
+#include "Array.h"
 #else /* array --><-- !array */
 #define POOL_NAME Emu
 #define POOL_TYPE struct Emu
@@ -127,11 +139,21 @@ static void bad_emu_migrate(struct BadEmu *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	AnimalLinkMigrate(&this->emu.animal.data, migrate);
+#ifdef OLD
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
+#else
+	MountArrayMigratePointer(&this->mount_info.steed_of, migrate);
+	MountArrayMigratePointer(&this->mount_info.riding, migrate);
+#endif
 }
 #endif /* migrate --> */
 #ifdef ARRAY /* <-- array */
+#define ARRAY_NAME BadEmu
+#define ARRAY_TYPE struct BadEmu
+#define ARRAY_FREE_LIST
+#define ARRAY_MIGRATE_EACH &bad_emu_migrate
+#include "Array.h"
 #else /* array --><-- !array */
 #define POOL_NAME BadEmu
 #define POOL_TYPE struct BadEmu
@@ -154,11 +176,21 @@ static void llama_migrate(struct Llama *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	AnimalLinkMigrate(&this->animal.data, migrate);
+#ifdef OLD
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
+#else
+	MountArrayMigratePointer(&this->mount_info.steed_of, migrate);
+	MountArrayMigratePointer(&this->mount_info.riding, migrate);
+#endif
 }
 #endif /* migrate --> */
 #ifdef ARRAY /* <-- array */
+#define ARRAY_NAME Llama
+#define ARRAY_TYPE struct Llama
+#define ARRAY_FREE_LIST
+#define ARRAY_MIGRATE_EACH &llama_migrate
+#include "Array.h"
 #else /* array --><-- !array */
 #define POOL_NAME Llama
 #define POOL_TYPE struct Llama
@@ -180,8 +212,13 @@ static void lemur_migrate(struct Lemur *const this,
 	const struct Migrate *const migrate) {
 	assert(this && migrate);
 	AnimalLinkMigrate(&this->animal.data, migrate);
+#ifdef OLD
 	MountPoolMigratePointer(&this->mount_info.steed_of, migrate);
 	MountPoolMigratePointer(&this->mount_info.riding, migrate);
+#else
+	MountArrayMigratePointer(&this->mount_info.steed_of, migrate);
+	MountArrayMigratePointer(&this->mount_info.riding, migrate);
+#endif
 }
 #endif /* migrate --> */
 #ifdef ARRAY /* <-- array */
@@ -212,12 +249,21 @@ struct Bear {
 /* Animal list with backing. These are the storage structures. */
 struct Animals {
 	struct AnimalList list;
+#ifdef ARRAY
+	struct MountArray mounts;
+	struct SlothArray sloths;
+	struct EmuArray emus;
+	struct BadEmuArray bad_emus;
+	struct LlamaArray llamas;
+	struct LemurArray lemurs;
+#else
 	struct MountPool mounts;
 	struct SlothPool sloths;
 	struct EmuPool emus;
 	struct BadEmuPool bad_emus;
 	struct LlamaPool llamas;
 	struct LemurPool lemurs;
+#endif
 	struct Bear bears[2];
 };
 static const unsigned no_bears = sizeof(((struct Animals *)0)->bears)
@@ -254,31 +300,51 @@ static void Sloth_delete(struct Animals *const animals,
 	struct Sloth *const sloth) {
 	printf("Bye %s.\n", sloth->animal.data.name);
 	AnimalListRemove(&sloth->animal.data);
+#ifdef ARRAY
+	SlothArrayRemove(&animals->sloths, sloth);
+#else
 	SlothPoolRemove(&animals->sloths, sloth);
+#endif
 }
 static void Emu_delete(struct Animals *const animals,
 	struct Emu *const emu) {
 	printf("Bye %s.\n", emu->animal.data.name);
 	AnimalListRemove(&emu->animal.data);
+#ifdef ARRAY
+	EmuArrayRemove(&animals->emus, emu);
+#else
 	EmuPoolRemove(&animals->emus, emu);
+#endif
 }
 static void BadEmu_delete(struct Animals *const animals,
 	struct BadEmu *const bad_emu) {
 	printf("%s dissapers in a puff of smoke.\n", bad_emu->emu.animal.data.name);
 	AnimalListRemove(&bad_emu->emu.animal.data);
+#ifdef ARRAY
+	BadEmuArrayRemove(&animals->bad_emus, bad_emu);
+#else
 	BadEmuPoolRemove(&animals->bad_emus, bad_emu);
+#endif
 }
 static void Lemur_delete(struct Animals *const animals,
 	struct Lemur *const lemur) {
 	printf("Bye %s.\n", lemur->animal.data.name);
 	AnimalListRemove(&lemur->animal.data);
+#ifdef ARRAY
+	LemurArrayRemove(&animals->lemurs, lemur);
+#else
 	LemurPoolRemove(&animals->lemurs, lemur);
+#endif
 }
 static void Llama_delete(struct Animals *const animals,
 	struct Llama *const llama) {
 	printf("Bye %s.\n", llama->animal.data.name);
 	AnimalListRemove(&llama->animal.data);
+#ifdef ARRAY
+	LlamaArrayRemove(&animals->llamas, llama);
+#else
 	LlamaPoolRemove(&animals->llamas, llama);
+#endif
 }
 static void Bear_delete(struct Animals *const animals,
 	struct Bear *const bear) {
@@ -429,8 +495,13 @@ static void mount_migrate(struct Mount *const mount,
 	assert(mount && migrate
 		&& mount->steed && Animal_mount_info(mount->steed)
 		&& mount->rider && Animal_mount_info(mount->rider));
+#ifdef ARRAY
+	MountArrayMigratePointer(&Animal_mount_info(mount->steed)->steed_of,migrate);
+	MountArrayMigratePointer(&Animal_mount_info(mount->rider)->riding, migrate);
+#else
 	MountPoolMigratePointer(&Animal_mount_info(mount->steed)->steed_of,migrate);
 	MountPoolMigratePointer(&Animal_mount_info(mount->rider)->riding, migrate);
+#endif
 }
 #endif /* migrate --> */
 
@@ -441,7 +512,11 @@ static void dismount(struct Animals *const animals, struct Mount *const mount) {
 		mount->rider->vt->type, mount->steed->name, mount->steed->vt->type);
 	Animal_mount_info(mount->steed)->steed_of = 0;
 	Animal_mount_info(mount->rider)->riding = 0;
+#ifdef ARRAY
+	MountArrayRemove(&animals->mounts, mount);
+#else
 	MountPoolRemove(&animals->mounts, mount);
+#endif
 }
 
 /************/
@@ -466,12 +541,21 @@ void Animals_(struct Animals **const panimals) {
 	struct Animals *animals;
 	if(!panimals || !(animals = *panimals)) return;
 	AnimalListClear(&animals->list);
+#ifdef ARRAY
+	LemurArray_(&animals->lemurs);
+	LlamaArray_(&animals->llamas);
+	BadEmuArray_(&animals->bad_emus);
+	EmuArray_(&animals->emus);
+	SlothArray_(&animals->sloths);
+	MountArray_(&animals->mounts);
+#else
 	LemurPool_(&animals->lemurs);
 	LlamaPool_(&animals->llamas);
 	BadEmuPool_(&animals->bad_emus);
 	EmuPool_(&animals->emus);
 	SlothPool_(&animals->sloths);
 	MountPool_(&animals->mounts);
+#endif
 	free(animals), *panimals = animals = 0;
 }
 /** Constructor. */
@@ -480,12 +564,21 @@ struct Animals *Animals(void) {
 	struct Bear *bear, *end;
 	if(!(a = malloc(sizeof *a))) { perror("Animals"); Animals_(&a); return 0; }
 	AnimalListClear(&a->list);
+#ifdef ARRAY
+	MountArray(&a->mounts);
+	SlothArray(&a->sloths);
+	EmuArray(&a->emus);
+	BadEmuArray(&a->bad_emus);
+	LlamaArray(&a->llamas);
+	LemurArray(&a->lemurs);
+#else
 	MountPool(&a->mounts);
 	SlothPool(&a->sloths);
 	EmuPool(&a->emus);
 	BadEmuPool(&a->bad_emus);
 	LlamaPool(&a->llamas);
 	LemurPool(&a->lemurs);
+#endif	
 	for(bear = a->bears, end = bear + no_bears; bear < end; bear++)
 		bear->is_active = 0;
 	return a;
@@ -494,7 +587,11 @@ struct Animals *Animals(void) {
 struct Sloth *Sloth(struct Animals *const animals) {
 	struct Sloth *sloth;
 	if(!animals) return 0;
+#ifdef ARRAY
+	if(!(sloth = SlothArrayNew(&animals->sloths))) return 0;
+#else
 	if(!(sloth = SlothPoolNew(&animals->sloths))) return 0;
+#endif
 	Animal_filler(&sloth->animal.data, &Sloth_vt);
 	sloth->hours_slept = (int)(10.0 * rand() / RAND_MAX) + 4;
 	AnimalListPush(&animals->list, &sloth->animal.data);
@@ -504,7 +601,11 @@ struct Sloth *Sloth(struct Animals *const animals) {
 struct Emu *Emu(struct Animals *const animals) {
 	struct Emu *emu;
 	if(!animals) return 0;
+#ifdef ARRAY
+	if(!(emu = EmuArrayNew(&animals->emus))) return 0;
+#else
 	if(!(emu = EmuPoolNew(&animals->emus))) return 0;
+#endif
 	Animal_filler(&emu->animal.data, &Emu_vt);
 	emu->favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
 	AnimalListPush(&animals->list, &emu->animal.data);
@@ -514,7 +615,11 @@ struct Emu *Emu(struct Animals *const animals) {
 struct BadEmu *BadEmu(struct Animals *const animals) {
 	struct BadEmu *emu;
 	if(!animals) return 0;
+#ifdef ARRAY
+	if(!(emu = BadEmuArrayNew(&animals->bad_emus))) return 0;
+#else
 	if(!(emu = BadEmuPoolNew(&animals->bad_emus))) return 0;
+#endif
 	Animal_filler(&emu->emu.animal.data, &BadEmu_vt);
 	emu->emu.favourite_letter = 'a' + (char)(26.0 * rand() / RAND_MAX);
 	MountInfo_filler(&emu->mount_info, &emu->emu.animal.data, RIDER);
@@ -526,7 +631,11 @@ struct BadEmu *BadEmu(struct Animals *const animals) {
 struct Llama *Llama(struct Animals *const animals) {
 	struct Llama *llama;
 	if(!animals) return 0;
+#ifdef ARRAY
+	if(!(llama = LlamaArrayNew(&animals->llamas))) return 0;
+#else
 	if(!(llama = LlamaPoolNew(&animals->llamas))) return 0;
+#endif
 	Animal_filler(&llama->animal.data, &Llama_vt);
 	MountInfo_filler(&llama->mount_info, &llama->animal.data, STEED);
 	llama->chomps = 5 + 10 * rand() / RAND_MAX;
@@ -537,7 +646,11 @@ struct Llama *Llama(struct Animals *const animals) {
 struct Lemur *Lemur(struct Animals *const animals) {
 	struct Lemur *lemur;
 	if(!animals) return 0;
+#ifdef ARRAY
+	if(!(lemur = LemurArrayNew(&animals->lemurs))) return 0;
+#else
 	if(!(lemur = LemurPoolNew(&animals->lemurs))) return 0;
+#endif
 	Animal_filler(&lemur->animal.data, &Lemur_vt);
 	MountInfo_filler(&lemur->mount_info, &lemur->animal.data, RIDER);
 	AnimalListPush(&animals->list, &lemur->animal.data);
@@ -597,7 +710,11 @@ int AnimalsRide(struct Animals *const animals, struct Animal *const a,
 		"%s the %s do not understand your mount in this configuration.\n",
 		a->name, a->vt->type, b->name, b->vt->type),*/ 0;
 	/* {steed} and {rider} are good. */
+#ifdef ARRAY
+	mount = MountArrayNew(&animals->mounts);
+#else
 	mount = MountPoolNew(&animals->mounts);
+#endif
 	mount->steed = steed, Animal_mount_info(steed)->steed_of = mount;
 	mount->rider = rider, Animal_mount_info(rider)->riding   = mount;
 	printf("%s the %s mounts %s the %s.\n", rider->name, rider->vt->type,

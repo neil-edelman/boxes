@@ -20,7 +20,7 @@ int main(void) {
 	do {
 		struct Animal *a = 0, *prev_a = 0;
 		struct Bear *w, *n;
-		const unsigned animal_no = 1000/*000*/;
+		const unsigned animal_no = 1000000;
 		unsigned i;
 		if(!(animals = Animals())) break;
 		for(i = 0; i < animal_no; i++) {
