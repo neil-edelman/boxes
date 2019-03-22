@@ -44,13 +44,13 @@ struct Destroyer {
 	unsigned no;
 };
 /** {container_of}. */
-static struct Destroyer *destroyer_holds_ship(struct Ship *const ship) {
+static struct Destroyer *destroyer_upcast(struct Ship *const ship) {
 	return (struct Destroyer *)(void *)((char *)ship
 		- offsetof(struct Destroyer, ship) - offsetof(struct ShipLink, data));
 }
 /** {const container_of}. */
 static const struct Destroyer *
-	const_destroyer_holds_ship(const struct Ship *const ship) {
+	const_destroyer_upcast(const struct Ship *const ship) {
 	return (const struct Destroyer *)(const void *)((const char *)ship
 		- offsetof(struct Destroyer, ship)
 		- offsetof(struct ShipLink, data));
@@ -59,7 +59,7 @@ static const struct Destroyer *
 static void destroyer_to_string(const struct Ship *const ship,
 	char (*const a)[12]) {
 	assert(ship && a);
-	sprintf(*a, "%.9s%u", ship->name, const_destroyer_holds_ship(ship)->no%100);
+	sprintf(*a, "%.9s%u", ship->name, const_destroyer_upcast(ship)->no%100);
 	/*strncpy(*a, ship->name, sizeof *a / sizeof **a);*/
 }
 /** @implements <Destroyer>Migrate */
@@ -79,13 +79,13 @@ struct Cruiser {
 	char no;
 };
 /** {container_of}. */
-static struct Cruiser *cruiser_holds_ship(struct Ship *const ship) {
+static struct Cruiser *cruiser_upcast(struct Ship *const ship) {
 	return (struct Cruiser *)(void *)((char *)ship
 		- offsetof(struct Cruiser, ship) - offsetof(struct ShipLink, data));
 }
 /** {const container_of}. */
 static const struct Cruiser *
-	const_cruiser_holds_ship(const struct Ship *const ship) {
+	const_cruiser_upcast(const struct Ship *const ship) {
 	return (const struct Cruiser *)(const void *)((const char *)ship
 		- offsetof(struct Cruiser, ship) - offsetof(struct ShipLink, data));
 }
@@ -93,7 +93,7 @@ static const struct Cruiser *
 static void cruiser_to_string(const struct Ship *const ship,
 	char (*const a)[12]) {
 	assert(ship && a);
-	sprintf(*a, "%.10s%c", ship->name, const_cruiser_holds_ship(ship)->no);
+	sprintf(*a, "%.10s%c", ship->name, const_cruiser_upcast(ship)->no);
 }
 /** @implements <Cruiser>Migrate */
 static void cruiser_migrate(struct Cruiser *const this,
@@ -123,12 +123,12 @@ struct Ships {
  @implements <Ships,Ship>Action */
 static void destroyer_delete(struct Ships *const ships, struct Ship *const ship)
 {
-	DestroyerPoolRemove(&ships->destroyers, destroyer_holds_ship(ship));
+	DestroyerPoolRemove(&ships->destroyers, destroyer_upcast(ship));
 }
 /** Called from \see{ship_delete}.
  @implements <Ships,Ship>Action */
 static void cruiser_delete(struct Ships *const ships, struct Ship *const ship) {
-	CruiserPoolRemove(&ships->cruisers, cruiser_holds_ship(ship));
+	CruiserPoolRemove(&ships->cruisers, cruiser_upcast(ship));
 }
 
 /* Static data containing the virtual functions defined above. */
