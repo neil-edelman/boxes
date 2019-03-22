@@ -2,8 +2,6 @@ Copyright (C) 2017 Neil Edelman.
 
 neil dot edelman each mail dot mcgill dot ca
 
-Generic backing store.
-
 License:
 
 The MIT License (MIT)

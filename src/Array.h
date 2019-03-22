@@ -20,15 +20,26 @@
  naming and to the maximum available length of identifiers. Must each be
  present before including.
 
+ @param ARRAY_STACK
+ Doesn't define \see{<T>ArrayRemove}; the only way to remove from the array is
+ \see{<T>ArrayPop}, making it a stack. Not compatible with {ARRAY_FREE_LIST}
+ and {ARRAY_TAIL_DELETE}.
+
  @param ARRAY_FREE_LIST
  Normally, the data will be packed; removing an element causes all elements
- behind to shift their position, similar to {C++ vector}, {Java ArrayList},
- and {Python List}. With this defined, there is a free list internal to the
- arrays elements. Removing (all but the last) element causes it to be simply
- inserted into the free list for reuse later. As such, a new element is not
- guaranteed to be any particular place, the elements' contiguity is broken up,
- the size is not known, but removal is {O(1)} and the index of an element is
- constant.
+ behind to shift their position, {O(n)}. (Similar to {C++ vector}, {Java
+ ArrayList}, and {Python List}.) With this defined, there is a free list
+ internal to the arrays elements. Removing (all but the last) element causes it
+ to be simply inserted into the free list for reuse later. As such, a new
+ element is not guaranteed to be any particular place, the elements' contiguity
+ is broken up, the size is not known, but removal is amortised {O(1)} and the
+ index of an element is constant. Not compatible with {ARRAY_STACK} and
+ {ARRAY_TAIL_DELETE}.
+
+ @param ARRAY_TAIL_DELETE
+ Instead of preserving order on removal, {O(n)}, this copies the tail element
+ to the removed. One gives up order, but preserves contiguity in {O(1)}. Not
+ compatible with {ARRAY_STACK} and {ARRAY_FREE_LIST}.
 
  @param ARRAY_MIGRATE_EACH
  Optional function implementing {<PT>Migrate}. Indices will remain the same
@@ -95,6 +106,11 @@
 #ifndef ARRAY_TYPE /* <-- error */
 #error Generic ARRAY_TYPE undefined.
 #endif /* --> */
+#if defined(ARRAY_STACK) && defined(ARRAY_FREE_LIST)
+	|| defined(ARRAY_STACK) && defined(ARRAY_TAIL_DELETE)
+	|| defined(ARRAY_FREE_LIST) && defined(ARRAY_TAIL_DELETE) /* <-- error */
+#error ARRAY_STACK, ARRAY_FREE_LIST, and ARRAY_TAIL_DELETE are mutually exclusive.
+#endif /* error --> */
 #if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <-- error */
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
@@ -141,7 +157,7 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 #define T_(thing) CAT(ARRAY_NAME, thing)
-#define PT_(thing) PCAT(pool, PCAT(ARRAY_NAME, thing))
+#define PT_(thing) PCAT(array, PCAT(ARRAY_NAME, thing))
 #define T_NAME QUOTE(ARRAY_NAME)
 
 /* Troubles with this line? check to ensure that {ARRAY_TYPE} is a valid type,
@@ -469,7 +485,8 @@ static size_t T_(ArraySize)(const struct T_(Array) *const pool) {
 }
 #endif /* !free --> */
 
-/** Removes {data} from {pool}.
+#ifndef ARRAY_STACK /* <-- !stack */
+/** Removes {data} from {pool}. Only if not {ARRAY_STACK}.
  @param pool, data: If null, returns false.
  @return Success, otherwise {errno} will be set for valid input.
  @throws EDOM: {data} is not part of {pool}.
@@ -487,11 +504,14 @@ static int T_(ArrayRemove)(struct T_(Array) *const pool, T *const data) {
 	if(node->x.prev != pool_void) return errno = EDOM, 0;
 	PT_(enqueue_removed)(pool, n);
 	if(n >= pool->size - 1) PT_(trim_removed)(pool);
-#else /* free --><-- !free */
-	memmove(node, node + 1, --pool->size - n);
-#endif
+#elif defined(ARRAY_TAIL_DELETE) /* free --><-- !free head */
+	if(--pool->size != n) memcpy(node, pool->nodes + pool->size, sizeof *node);
+#else /* !free head -->< !free !head */
+	memmove(node, node + 1, sizeof *node * (--pool->size - n));
+#endif /* !free !head --> */
 	return 1;
 }
+#endif /* !stack --> */
 
 /** Removes all from {pool}, but leaves the {pool} memory alone; if one wants
  to remove memory, see \see{Array_}.
@@ -816,7 +836,9 @@ static void PT_(unused_set)(void) {
 #ifndef ARRAY_FREE_LIST /* <-- !free */
 	T_(ArraySize)(0);
 #endif /* !free --> */
+#ifndef ARRAY_STACK /* <-- !stack */
 	T_(ArrayRemove)(0, 0);
+#endif /* !stack --> */
 	T_(ArrayClear)(0);
 	T_(ArrayGet)(0, 0);
 	T_(ArrayIndex)(0, 0);
@@ -858,8 +880,14 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #ifdef A
 #undef A
 #endif
+#ifdef ARRAY_STACK
+#undef ARRAY_STACK
+#endif
 #ifdef ARRAY_FREE_LIST
 #undef ARRAY_FREE_LIST
+#endif
+#ifdef ARRAY_TAIL_DELETE
+#undef ARRAY_TAIL_DELETE
 #endif
 #ifdef ARRAY_MIGRATE_EACH
 #undef ARRAY_MIGRATE_EACH
