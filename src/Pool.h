@@ -7,9 +7,9 @@
  contiguity is not guaranteed; data is pre-allocated in geometrically
  increasing blocks. However, when the data reaches a steady-state size, it will
  eventually become contiguous when removal is uniformly sampled. That is, new
- data replaces old data, which is all eventually removed. {Pool} is not
- designed for iteration, reordering, or even counting, but instead to provide a
- fairly contiguous space for items that may have references.
+ data replaces old data, which is all eventually freed. {Pool} is not designed
+ for iteration, reordering, or even counting, but instead to provide a fairly
+ contiguous space for items that may have references.
 
  A zeroed {<T>Pool} is when all the members are zero, such as static data; it
  has no extra memory associated with it. One can go from uninitialised to zero
@@ -20,8 +20,9 @@
  active, for example, when \see{<T>PoolClear} is called on an active pool.
 
  {<T>Pool} is not synchronised. There is no way to shrink the active block in
- memory, just expand it. Errors are returned with {errno}. The preprocessor
- macros are all undefined at the end of the file for convenience.
+ memory, just expand it. Errors are returned with {errno}. The parameters are
+ preprocessor macros, and are all undefined at the end of the file for
+ convenience.
 
  @param POOL_NAME, POOL_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,

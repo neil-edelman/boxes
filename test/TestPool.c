@@ -24,7 +24,7 @@ static void A_to_string(const struct A *this, char (*const a)[12]) {
 #define POOL_TYPE struct A
 #define POOL_TO_STRING &A_to_string
 #define POOL_TEST &A_filler
-#include "../src/StablePool.h"
+#include "../src/Pool.h"
 
 
 
@@ -48,7 +48,7 @@ static void Foo_filler(struct Foo *const this) {
 #define POOL_TYPE struct Foo
 #define POOL_TO_STRING &Foo_to_string
 #define POOL_TEST &Foo_filler
-#include "../src/StablePool.h"
+#include "../src/Pool.h"
 
 
 
@@ -74,7 +74,7 @@ static void Int_filler(int *const this) {
 #define POOL_TYPE int
 #define POOL_TO_STRING &Int_to_string
 #define POOL_TEST &Int_filler
-#include "../src/StablePool.h"
+#include "../src/Pool.h"
 
 
 
@@ -102,7 +102,7 @@ static void Colour_filler(enum Colour *const this) {
 #define POOL_TYPE enum Colour
 #define POOL_TO_STRING &Colour_to_string
 #define POOL_TEST &Colour_filler
-#include "../src/StablePool.h"
+#include "../src/Pool.h"
 
 
 
