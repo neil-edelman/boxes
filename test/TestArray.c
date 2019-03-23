@@ -1,13 +1,8 @@
-/** Unit test of Foo.c.
+/** Unit test of Array.c.
 
- @file		TestFoo
+ @file		TestArray
  @author	Neil
- @std		C89/90
- @version	1.0; 20xx-xx
- @since		1.0; 20xx-xx
- @param
- @fixme
- @deprecated */
+ @std		C89/90 */
 
 #include <stdlib.h> /* EXIT_ malloc free */
 #include <stdio.h>  /* fprintf */
