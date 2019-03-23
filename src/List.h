@@ -3,17 +3,22 @@
 
  {<T>List} is a doubly-linked-list of {<T>Link}, of which data of type, {<T>},
  must be set using {LIST_TYPE}. This is an abstract data structure requiring
- {<T>Link} storage, and can possibly store this as a sub-structure of larger,
- possibly polymorphic data-type.
+ {<T>Link} storage. Supports one to four multiply-linked-lists, as different
+ orders.
 
  This data-structure is closed; that is, given a valid pointer to an element,
  one can determine all other pointers, (the elements and the list itself,) in
  {O(n)}. This is useful as a single-source of information, and simplifies
- traversal, but requires the linking of two nodes in an empty list; statically
- un-initialised data, (zero-filled,) will crash, see \see{<T>ListClear}.
+ traversal, but requires the linking of two nodes in an empty list; therefore,
+ not only are automatically uninitialised data in an undefined state, but
+ default statically initialised data, (zero-filled,) are, too. One can call
+ \see{<T>ListClear} or use the initialisation constant expression contained in
+ the macro {struct <T>List list = LIST_EMPTY(list);}, or
+ {LIST_EMPTY_[2-4](list);}, depending on how many orders that are in the list.
 
- Supports one to four multiply-linked-lists, (different orders.) The
- preprocessor macros are all undefined at the end of the file for convenience.
+ {<T>List} is not synchronised. Errors are reported with {errno}. The
+ parameters are preprocessor macros, and are all undefined at the end of the
+ file for convenience.
 
  @param LIST_NAME, LIST_TYPE
  The name that literally becomes {<T>}, and a valid type associated therewith,
@@ -46,6 +51,7 @@
  @author	Neil
  @std		C89/90
  @version
+ 2016-03 Eliminated Migrate functions.
  2018-04 {<T>ListNode} has been shortened to {<T>Link}, thus potential
  namespace violations doubled. Two dynamic memory allocations have been
  collapsed into one by making it a non-pointer at the cost of readability.
@@ -69,7 +75,7 @@
  {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
  @fixme Non-const void pointers in {<T>List<U>BiAction} are not effective; have
  an interface. While we're at it, {<T>LinkMigrate} should be an interface.
- Everything should be an interface. */
+ Everything should be an interface. Not obvious how. */
 
 /* 2017-05-12 tested with:
  gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
@@ -98,7 +104,8 @@
 
 
 
-/* Check defines; {[A, D]} is just arbitrary; more could be added. */
+/* Check defines; {[A, D]} is just arbitrary; more could be added but at linear
+ time cost. */
 #ifndef LIST_NAME
 #error List generic LIST_NAME undefined.
 #endif
@@ -530,11 +537,7 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 }
 
 /** Clears and removes all values from {list}, thereby initialising the
- {<T>List}. All previous values are un-associated. Do not use an un-initialised
- or default statically initialised list. One can initialise statically using
- the initialisation constant expression contained in the macro
- {struct <T>List list = LIST_EMPTY(list);}, or {LIST_EMPTY_[2-4](list);},
- depending on how many orders that are in the list.
+ {<T>List}. All previous values are un-associated.
  @param list: if null, does nothing.
  @order \Theta(1)
  @allow */
