@@ -30,7 +30,6 @@ static void PT_(valid_state)(const struct T_(Array) *const a) {
 
 static void PT_(test_basic)(void) {
 	struct T_(Array) a;
-	S *supertype;
 	T ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
@@ -49,9 +48,8 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayNext)(0, 0) == 0);
 	assert(T_(ArrayNew)(0) == 0);
 	assert(T_(ArrayUpdateNew)(0, 0) == 0
-		&& T_(ArrayUpdateNew)(0, &supertype) == 0);
+		&& T_(ArrayUpdateNew)(0, 0) == 0);
 	T_(ArrayForEach)(0, 0);
-	T_(ArrayMigratePointer)(0, 0);
 	assert(!strcmp("null", T_(ArrayToString(0))));
 	assert(errno == 0);
 	PT_(valid_state)(0);
@@ -105,6 +103,8 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayPeek)(&a));
 	printf("Now: %s.\n", T_(ArrayToString)(&a));
 	assert(T_(ArraySize)(&a) == ts_size);
+#ifdef ARRAY_STACK /* <-- stack */
+#else /* stack --><-- !stack */
 	if((t = T_(ArrayGet)(&a, ts_size - 2))
 		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
@@ -129,6 +129,7 @@ static void PT_(test_basic)(void) {
 	assert(a.size == ts_size);
 	PT_(valid_state)(&a);
 	printf("Now: %s.\n", T_(ArrayToString)(&a));
+#endif /* !stack --> */
 
 	/* Peek/Pop. */
 	t = T_(ArrayPeek)(&a);
@@ -161,33 +162,6 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(&a);
 }
 
-/** @fixme Uhhh */
-static void PT_(test_migrate)(void) {
-
-#if 0 /* <-- 0 */
-
-	struct T_(Array) a, *a1, *a2;
-	T ts[5000], *t, *t1;
-	const size_t ts_size = sizeof ts / sizeof *ts;
-	T ss[5000], *s;
-	const size_t ss_size = sizeof ss / sizeof *ss;
-	size_t i;
-	S *supertype;
-
-	/* Get elements. */
-	assert(ts_size == ss_size);
-	for(t = ts, t1 = t + ts_size; t < t1; t++) {
-		PT_(filler)(t);
-		memcpy(&ss[t - ts], t, sizeof *t);
-	}
-	T_(Array)(&a);
-
-	T_(Array)(&a);
-
-#endif /* 0 --> */
-
-}
-
 static void PT_(test_random)(void) {
 	struct T_(Array) a;
 	size_t i, size = 0;
@@ -211,14 +185,20 @@ static void PT_(test_random)(void) {
 			PT_(to_string)(data, &str);
 			printf("Created %s.\n", str);
 		} else {
+#ifdef ARRAY_STACK /* <-- stack */
+			double t = 1.0;
+#else /* stack --><-- !stack */
+			double t = 0.5;
+#endif /* !stack --> */
 			r = rand() / (RAND_MAX + 1.0);
-			if(r < 0.5) {
+			if(r < t) {
 				data = T_(ArrayPeek)(&a);
 				assert(data);
 				PT_(to_string)(data, &str);
 				printf("Popping %s.\n", str);
 				assert(data == T_(ArrayPop)(&a));
 			} else {
+#ifndef ARRAY_STACK /* <-- !stack */
 				size_t idx = rand() / (RAND_MAX + 1.0) * size;
 				if(!(data = T_(ArrayGet)(&a, idx))) continue;
 				PT_(to_string)(data, &str);
@@ -227,6 +207,7 @@ static void PT_(test_random)(void) {
 					const int ret = T_(ArrayRemove)(&a, data);
 					assert(ret || (perror("Removing"), 0));
 				}
+#endif /* !stack --> */
 			}
 			size--;
 		}
@@ -260,7 +241,6 @@ static void T_(ArrayTest)(void) {
 #endif
 		"testing:\n");
 	PT_(test_basic)();
-	PT_(test_migrate)();
 	PT_(test_random)();
 	fprintf(stderr, "Done tests of Array<" T_NAME ">.\n\n");
 }

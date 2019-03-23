@@ -28,16 +28,6 @@
  to the removed. One gives up order, but preserves contiguity in {O(1)}. Not
  compatible with {ARRAY_STACK}.
 
- @param ARRAY_MIGRATE_EACH
- Optional function implementing {<PT>Migrate}. Indices will remain the same
- throughout the lifetime of the data, but pointers may change on {realloc}
- expansion. This definition will call {ARRAY_MIGRATE_EACH} with all {<T>} in
- {<T>Array}. Use when your data is self-referential, like a linked-list.
-
- @param ARRAY_MIGRATE_UPDATE
- Optional type association with {<S>}. {<S>} should be a super-type of {<T>}.
- If not set, {<S>} is {<T>}. Used in \see{<T>ArrayUpdateNew}.
-
  @param ARRAY_TO_STRING
  Optional print function implementing {<T>ToString}; makes available
  \see{<T>ArrayToString}.
@@ -51,7 +41,7 @@
  @title		Array.h
  @std		C89
  @author	Neil
- @version	2019-03 Renamed {Pool} to {Array}. Much simplified migrate.
+ @version	2019-03 Renamed {Pool} to {Array}. Took out migrate.
  @since		2018-04 Merged {Stack} into {Pool} again to eliminate duplication;
 			2018-03 Why have an extra level of indirection?
 			2018-02 Errno instead of custom errors.
@@ -73,7 +63,7 @@
 #include <string.h>	/* memcpy memmove (strerror strcpy memcmp in ArrayTest.h) */
 #include <errno.h>	/* errno */
 #ifdef ARRAY_TO_STRING /* <-- print */
-#include <stdio.h>	/* snprintf */
+#include <stdio.h>	/* sprintf */
 #endif /* print --> */
 
 
@@ -112,12 +102,6 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef A
-#undef A
-#endif
-#ifdef S
-#undef S
-#endif
 #ifdef T
 #undef T
 #endif
@@ -143,37 +127,6 @@ typedef ARRAY_TYPE PT_(Type);
 #define T PT_(Type)
 
 
-
-/* One time in the same translation unit. */
-#ifndef MIGRATE /* <-- migrate */
-#define MIGRATE
-/** Contains information about a {realloc}. */
-struct Migrate;
-struct Migrate {
-	const void *begin, *end; /* Old pointers. */
-	ptrdiff_t delta;
-};
-#endif /* migrate --> */
-
-
-
-/** This is the migrate function for {<T>}. */
-typedef void (*PT_(Migrate))(T *const data,
-	const struct Migrate *const migrate);
-#ifdef ARRAY_MIGRATE_EACH /* <-- each */
-/* Check that {ARRAY_MIGRATE_EACH} is a function implementing {<PT>Migrate},
- whose definition is placed above {#include "Array.h"}. */
-static const PT_(Migrate) PT_(migrate_each) = (ARRAY_MIGRATE_EACH);
-#endif /* each --> */
-
-#ifdef ARRAY_MIGRATE_UPDATE /* <-- update */
-/* Troubles with this line? check to ensure that {ARRAY_MIGRATE_UPDATE} is a
- valid type, whose definition is placed above {#include "Array.h"}. */
-typedef ARRAY_MIGRATE_UPDATE PT_(MigrateUpdateType);
-#define S PT_(MigrateUpdateType)
-#else /* update --><-- !update */
-#define S PT_(Type)
-#endif /* !update --> */
 
 #ifdef ARRAY_TO_STRING /* <-- string */
 /** Responsible for turning {<T>} (the first argument) into a 12 {char}
@@ -207,7 +160,7 @@ struct T_(Array) {
  @throws ERANGE: Tried allocating more then can fit in {size_t}.
  @throws {realloc} errors: {IEEE Std 1003.1-2001}. */
 static int PT_(reserve)(struct T_(Array) *const a,
-	const size_t min_capacity, S **const update_ptr) {
+	const size_t min_capacity, T **const update_ptr) {
 	size_t c0, c1;
 	T *data;
 	const size_t max_size = (size_t)-1 / sizeof *data;
@@ -230,24 +183,13 @@ static int PT_(reserve)(struct T_(Array) *const a,
 		if(c1 > max_size || c1 <= c0) c1 = max_size;
 	}
 	if(!(data = realloc(a->data, c0 * sizeof *a->data))) return 0;
-	if(a->data != data) {
+	if(update_ptr && a->data != data) {
 		/* Migrate data; violates pedantic strict-ANSI? */
-		struct Migrate migrate;
-		migrate.begin = a->data;
-		migrate.end   = (const char *)a->data + a->size * sizeof *data;
-		migrate.delta = (const char *)data - (const char *)a->data;
-#ifdef ARRAY_MIGRATE_EACH /* <-- each: Self-referential data. */
-		{
-			struct PT_(Node) *e, *end;
-			for(e = nodes, end = e + a->size; e < end; e++)
-				PT_(migrate_each)(&e->data, &migrate);
-		}
-#endif /* each --> */
-		if(update_ptr) {
-			const void *const u = *update_ptr;
-			if(u >= migrate.begin && u < migrate.end)
-				*(char **const)update_ptr += migrate.delta;
-		}
+		const void *begin = a->data,
+			*end = (const char *)a->data + a->size * sizeof *data;
+		ptrdiff_t delta = (const char *)data - (const char *)a->data;
+		const void *const u = *update_ptr;
+		if(u >= begin && u < end) *(char **const)update_ptr += delta;
 	}
 	a->data = data;
 	a->capacity[0] = c0;
@@ -374,9 +316,9 @@ static T *T_(ArrayPop)(struct T_(Array) *const a) {
 	return a->data + --a->size;
 }
 
-/** Provides a way to iterate through the {a}. If {<T> = <S>}, it is safe to
- add using {ArrayUpdateNew} with the return value as {update}. Removing an
- element casu
+/** Provides a way to iterate through the {a}. It is safe to add using
+ {ArrayUpdateNew} with the return value as {update}. Removing an element causes
+ the pointer to go to the next element, if it exists.
  @param a: If null, returns null. If {prev} is not from this {a} and not
  null, returns null.
  @param prev: Set it to null to start the iteration.
@@ -398,7 +340,7 @@ static T *T_(ArrayNext)(const struct T_(Array) *const a, T *const prev) {
 }
 
 /** Called from \see{<T>ArrayNew} and \see{<T>ArrayUpdateNew}. */
-static T *PT_(new)(struct T_(Array) *const a, S **const update_ptr) {
+static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
 	if(!PT_(reserve)(a, a->size + 1, update_ptr)) return 0;
 	return a->data + a->size++;
@@ -418,8 +360,9 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
 }
 
 /** Gets an uninitialised new element and updates the {update_ptr} if it is
- within the memory region that was changed. For example, when iterating a
- pointer and new element is needed that could change the pointer.
+ within the memory region that was changed to accomidate new space. For
+ example, when iterating a pointer and new element is needed that could change
+ the pointer.
  @param a: If null, returns null.
  @param update_ptr: Pointer to update on memory move.
  @return A new, un-initialised, element, or null and {errno} may be set.
@@ -429,40 +372,25 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
  @fixme Untested.
  @allow */
 static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
-	S **const update_ptr) {
+	T **const update_ptr) {
 	if(!a) return 0;
 	return PT_(new)(a, update_ptr);
 }
 
 /** Iterates though {a} from the bottom and calls {action} on all the
  elements. The topology of the list can not change while in this function.
+ That is, don't call \see{<T>ArrayNew}, \see{<T>ArrayRemove}, _etc_ in
+ {action}.
  @param stack, action: If null, does nothing.
  @order O({size} \times {action})
  @fixme Untested.
  @fixme Sequence interface.
- @fixme Fix delete?
  @allow */
 static void T_(ArrayForEach)(struct T_(Array) *const a,
 	const PT_(Action) action) {
 	T *t, *end;
 	if(!a || !action) return;
 	for(t = a->data, end = t + a->size; t < end; t++) action(t);
-}
-
-/** Passed a {migrate} parameter, allows pointers to the a to be updated. It
- doesn't affect pointers not in the {realloc}ed region.
- @order \Omega(1)
- @fixme Untested.
- @fixme Migrate interface.
- @allow */
-static void T_(ArrayMigratePointer)(T **const data_ptr,
-	const struct Migrate *const migrate) {
-	const void *ptr;
-	if(!data_ptr
-		|| !(ptr = *data_ptr)
-		|| ptr < migrate->begin
-		|| ptr >= migrate->end) return;
-	*(char **)data_ptr += migrate->delta;
 }
 
 #ifdef ARRAY_TO_STRING /* <-- print */
@@ -565,7 +493,6 @@ static void PT_(unused_set)(void) {
 	T_(ArrayNew)(0);
 	T_(ArrayUpdateNew)(0, 0);
 	T_(ArrayForEach)(0, 0);
-	T_(ArrayMigratePointer)(0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
@@ -592,21 +519,11 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T
 #undef T_
 #undef PT_
-#undef S
-#ifdef A
-#undef A
-#endif
 #ifdef ARRAY_STACK
 #undef ARRAY_STACK
 #endif
 #ifdef ARRAY_TAIL_DELETE
 #undef ARRAY_TAIL_DELETE
-#endif
-#ifdef ARRAY_MIGRATE_EACH
-#undef ARRAY_MIGRATE_EACH
-#endif
-#ifdef ARRAY_MIGRATE_UPDATE
-#undef ARRAY_MIGRATE_UPDATE
 #endif
 #ifdef ARRAY_TO_STRING
 #undef ARRAY_TO_STRING

@@ -69,15 +69,6 @@ static void Foo_filler(struct Foo *const this) {
 
 
 
-#define ARRAY_NAME Bar
-#define ARRAY_TYPE struct Foo
-#define ARRAY_TO_STRING &Foo_to_string
-#define ARRAY_TEST &Foo_filler
-#define ARRAY_FREE_LIST
-#include "../src/Array.h"
-
-
-
 /* Class {Int} is a single {int}. */
 /** Assumes {[-9 999 999 999, 99 999 999 999]}.
  @implements <Int>ToString */
@@ -132,11 +123,11 @@ static void Colour_filler(enum Colour *const this) {
 
 
 
-#define ARRAY_NAME ColourFL
+#define ARRAY_NAME ColourStack
 #define ARRAY_TYPE enum Colour
 #define ARRAY_TO_STRING &Colour_to_string
 #define ARRAY_TEST &Colour_filler
-#define ARRAY_FREE_LIST
+#define ARRAY_STACK
 #include "../src/Array.h"
 
 
@@ -150,10 +141,9 @@ int main(void) {
 	AArrayTest();
 	BArrayTest();
 	FooArrayTest();
-	BarArrayTest();
 	IntArrayTest();
 	ColourArrayTest();
-	ColourFLArrayTest();
+	ColourStackArrayTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
