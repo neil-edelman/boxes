@@ -39,7 +39,7 @@ static void A_to_string(const struct A *this, char (*const a)[12]) {
 
 #define ARRAY_NAME B
 #define ARRAY_TYPE struct A
-#define ARRAY_FREE_LIST
+#define ARRAY_TAIL_DELETE
 #define ARRAY_TO_STRING &A_to_string
 #define ARRAY_TEST &A_filler
 #include "../src/Array.h"
