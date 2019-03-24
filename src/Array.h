@@ -142,7 +142,7 @@ typedef void (*PT_(Action))(T *const data);
 
 
 
-/** The a. To instantiate, see \see{<T>Array}. */
+/** The array. To instantiate, see \see{<T>Array}. */
 struct T_(Array);
 struct T_(Array) {
 	T *data;
@@ -200,7 +200,7 @@ static int PT_(reserve)(struct T_(Array) *const a,
 /** Zeros {a} except for {ARRAY_MIGRATE_ALL} which is initialised in the
  containing function, and not {!ARRAY_FREE_LIST}, which is initialised in
  \see{<PT>_reserve}. */
-static void PT_(a)(struct T_(Array) *const a) {
+static void PT_(array)(struct T_(Array) *const a) {
 	assert(a);
 	a->data        = 0;
 	a->capacity[0] = 0;
@@ -216,7 +216,7 @@ static void PT_(a)(struct T_(Array) *const a) {
 static void T_(Array_)(struct T_(Array) *const a) {
 	if(!a) return;
 	free(a->data);
-	PT_(a)(a);
+	PT_(array)(a);
 }
 
 /** Initialises {a} to be empty. If it is {static} data then it is
@@ -225,7 +225,7 @@ static void T_(Array_)(struct T_(Array) *const a) {
  @allow */
 static void T_(Array)(struct T_(Array) *const a) {
 	if(!a) return;
-	PT_(a)(a);
+	PT_(array)(a);
 }
 
 /** @return The size.
@@ -317,8 +317,8 @@ static T *T_(ArrayPop)(struct T_(Array) *const a) {
 }
 
 /** Provides a way to iterate through the {a}. It is safe to add using
- {ArrayUpdateNew} with the return value as {update}. Removing an element causes
- the pointer to go to the next element, if it exists.
+ \see{<T>ArrayUpdateNew} with the return value as {update}. Removing an element
+ causes the pointer to go to the next element, if it exists.
  @param a: If null, returns null. If {prev} is not from this {a} and not
  null, returns null.
  @param prev: Set it to null to start the iteration.
@@ -379,7 +379,7 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 
 /** Iterates though {a} from the bottom and calls {action} on all the
  elements. The topology of the list can not change while in this function.
- That is, don't call \see{<T>ArrayNew}, \see{<T>ArrayRemove}, _etc_ in
+ That is, don't call \see{<T>ArrayNew}, \see{<T>ArrayRemove}, {etc} in
  {action}.
  @param stack, action: If null, does nothing.
  @order O({size} \times {action})

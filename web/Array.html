@@ -1,0 +1,472 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<!-- steal these colour values from JavaDocs; meh -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>Array.h</title>
+</head>
+
+
+<body>
+
+<h1>Array.h</h1>
+
+<ul>
+	<li><a href = "#_declarations">Declarations</a></li>
+	<li><a href = "#_summary">Function Summary</a></li>
+	<li><a href = "#_detail">Function Detail</a></li>
+</ul>
+
+<p>
+2016 Neil Edelman, distributed under the terms of the MIT License;
+see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
+</p>
+<p>
+<em>&lt;T&gt;Array</em> is a dynamic array that stores unordered <em>&lt;T&gt;</em>, which must be set
+using <em>ARRAY_TYPE</em>. The capacity is greater then or equal to the size;
+resizing incurs amortised cost. You cannot shrink the capacity, only cause it
+to grow.
+</p>
+<p>
+<em>&lt;T&gt;Array</em> is contiguous, and therefore unstable; that is, when adding new
+elements, it may change the memory location. Pointers to this memory become
+stale and unusable.
+</p>
+<p>
+<em>&lt;T&gt;Array</em> is not synchronised. The parameters are preprocessor macros, and
+are all undefined at the end of the file for convenience.
+</p>
+<dl>
+	<dt>parameter: ARRAY_NAME, ARRAY_TYPE</dt>
+	<dd>The name that literally becomes <em>&lt;T&gt;</em>, and a valid type associated therewith,
+ accessible to the compiler at the time of inclusion; should be conformant to
+ naming and to the maximum available length of identifiers. Must each be
+ present before including.</dd>
+	<dt>parameter: ARRAY_STACK</dt>
+	<dd>Doesn't define <a href = "#&lt;T&gt;ArrayRemove">&lt;T&gt;ArrayRemove</a>, making it a stack. Not compatible with
+ <em>ARRAY_TAIL_DELETE</em>.</dd>
+	<dt>parameter: ARRAY_TAIL_DELETE</dt>
+	<dd>Instead of preserving order on removal, <em>O(n)</em>, this copies the tail element
+ to the removed. One gives up order, but preserves contiguity in <em>O(1)</em>. Not
+ compatible with <em>ARRAY_STACK</em>.</dd>
+	<dt>parameter: ARRAY_TO_STRING</dt>
+	<dd>Optional print function implementing <em>&lt;T&gt;ToString</em>; makes available
+ <a href = "#&lt;T&gt;ArrayToString">&lt;T&gt;ArrayToString</a>.</dd>
+	<dt>parameter: ARRAY_TEST</dt>
+	<dd>Unit testing framework using <em>&lt;T&gt;ArrayTest</em>, included in a separate header,
+ <em>../test/ArrayTest.h</em>. Must be defined equal to a (random) filler function,
+ satisfying <em>&lt;T&gt;Action</em>. If <em>NDEBUG</em> is not defined, turns on <em>assert</em> private
+ function integrity testing. Requires <em>ARRAY_TO_STRING</em>.</dd>
+	<dt>minimum standard</dt>
+	<dd>C89</dd>
+	<dt>author</dt>
+	<dd>Neil</dd>
+	<dt>version</dt>
+	<dd>2019-03 Renamed <em>Pool</em> to <em>Array</em>. Took out migrate.</dd>
+	<dt>since</dt>
+	<dd>2018-04 Merged <em>Stack</em> into <em>Pool</em> again to eliminate duplication;
+			2018-03 Why have an extra level of indirection?
+			2018-02 Errno instead of custom errors.
+			2017-12 Introduced <em>POOL_PARENT</em> for type-safety.
+			2017-11 Forked <em>Stack</em> from <em>Pool</em>.
+			2017-10 Replaced <em>PoolIsEmpty</em> by <em>PoolElement</em>, much more useful.
+			2017-10 Renamed Pool; made migrate automatic.
+			2017-07 Made migrate simpler.
+			2017-05 Split <em>List</em> from <em>Pool</em>; much simpler.
+			2017-01 Almost-redundant functions simplified.
+			2016-11 Multi-index.
+			2016-08 Permute.</dd>
+</dl>
+
+
+<a name = "_declarations"><!-- --></a><h2>Declarations</h2>
+
+<div><a name = "typedef void (*&lt;PT&gt;ToString)(const T *, char (*const)[12])"><!-- --></a>
+<h3>typedef void (*&lt;PT&gt;ToString)(const T *, char (*const)[12])</h3>
+<pre><b>typedef void (*&lt;PT&gt;ToString)(const T *, char (*const)[12])</b></pre>
+<p>
+Responsible for turning <em>&lt;T&gt;</em> (the first argument) into a 12 <em>char</em>
+null-terminated output string (the second.) Used for <em>ARRAY_TO_STRING</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "struct &lt;T&gt;Array"><!-- --></a>
+<h3>struct &lt;T&gt;Array</h3>
+<pre><b>struct &lt;T&gt;Array</b></pre>
+<p>
+The array. To instantiate, see <a href = "#&lt;T&gt;Array">&lt;T&gt;Array</a>.
+</p>
+<dl>
+</dl>
+</div>
+
+
+<a name = "_summary"><!-- --></a><h2>Function Summary</h2>
+
+<table>
+<tr><th>Return Type</th><th>Function Name</th><th>Argument List</th></tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;Array_">&lt;T&gt;Array_</a></td>
+	<td>struct &lt;T&gt;Array *const a</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;Array">&lt;T&gt;Array</a></td>
+	<td>struct &lt;T&gt;Array *const a</td>
+</tr>
+<tr>
+	<td>static size_t</td>
+	<td><a href = "#&lt;T&gt;ArraySize">&lt;T&gt;ArraySize</a></td>
+	<td>const struct &lt;T&gt;Array *const a</td>
+</tr>
+<tr>
+	<td>static int</td>
+	<td><a href = "#&lt;T&gt;ArrayRemove">&lt;T&gt;ArrayRemove</a></td>
+	<td>struct &lt;T&gt;Array *const a, T *const data</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;ArrayClear">&lt;T&gt;ArrayClear</a></td>
+	<td>struct &lt;T&gt;Array *const a</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;ArrayGet">&lt;T&gt;ArrayGet</a></td>
+	<td>const struct &lt;T&gt;Array *const a, const size_t idx</td>
+</tr>
+<tr>
+	<td>static size_t</td>
+	<td><a href = "#&lt;T&gt;ArrayIndex">&lt;T&gt;ArrayIndex</a></td>
+	<td>const struct &lt;T&gt;Array *const a,
+	const T *const data</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;ArrayPeek">&lt;T&gt;ArrayPeek</a></td>
+	<td>const struct &lt;T&gt;Array *const a</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;ArrayPop">&lt;T&gt;ArrayPop</a></td>
+	<td>struct &lt;T&gt;Array *const a</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;ArrayNext">&lt;T&gt;ArrayNext</a></td>
+	<td>const struct &lt;T&gt;Array *const a, T *const prev</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;ArrayNew">&lt;T&gt;ArrayNew</a></td>
+	<td>struct &lt;T&gt;Array *const a</td>
+</tr>
+<tr>
+	<td>static T *</td>
+	<td><a href = "#&lt;T&gt;ArrayUpdateNew">&lt;T&gt;ArrayUpdateNew</a></td>
+	<td>struct &lt;T&gt;Array *const a,
+	T **const update_ptr</td>
+</tr>
+<tr>
+	<td>static void</td>
+	<td><a href = "#&lt;T&gt;ArrayForEach">&lt;T&gt;ArrayForEach</a></td>
+	<td>struct &lt;T&gt;Array *const a,
+	const &lt;PT&gt;Action action</td>
+</tr>
+<tr>
+	<td>static const char *</td>
+	<td><a href = "#&lt;T&gt;ArrayToString">&lt;T&gt;ArrayToString</a></td>
+	<td>const struct &lt;T&gt;Array *const a</td>
+</tr>
+</table>
+
+
+<a name = "_detail"><!-- --></a><h2>Function Detail</h2>
+
+<div><a name = "&lt;T&gt;Array_"><!-- --></a>
+<h3>&lt;T&gt;Array_</h3>
+<pre>static void <b>&lt;T&gt;Array_</b> (struct &lt;T&gt;Array *const a)</pre>
+<p>
+Destructor for <em>a</em>. All the <em>a</em> contents should not be accessed
+anymore and the <em>a</em> takes no memory.
+</p>
+<dl>
+	<dt>parameter: a</dt>
+	<dd>If null, does nothing.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;Array"><!-- --></a>
+<h3>&lt;T&gt;Array</h3>
+<pre>static void <b>&lt;T&gt;Array</b> (struct &lt;T&gt;Array *const a)</pre>
+<p>
+Initialises <em>a</em> to be empty. If it is <em>static</em> data then it is
+initialised by default and one doesn't have to call this.
+</p>
+<dl>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArraySize"><!-- --></a>
+<h3>&lt;T&gt;ArraySize</h3>
+<pre>static size_t <b>&lt;T&gt;ArraySize</b> (const struct &lt;T&gt;Array *const a)</pre>
+<dl>
+	<dt>return</dt>
+	<dd>The size.</dd>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayRemove"><!-- --></a>
+<h3>&lt;T&gt;ArrayRemove</h3>
+<pre>static int <b>&lt;T&gt;ArrayRemove</b> (struct &lt;T&gt;Array *const a, T *const data)</pre>
+<p>
+Removes <em>data</em> from <em>a</em>. Only if not <em>ARRAY_STACK</em>.
+</p>
+<dl>
+	<dt>parameter: a, data</dt>
+	<dd>If null, returns false.</dd>
+	<dt>parameter: data</dt>
+	<dd>Will be removed; data will remain the same but be updated to the
+ next element, (ARRAY_TAIL_DELETE causes the next element to be the tail,) or
+ if this was the last element, the pointer will be past the end.</dd>
+	<dt>return</dt>
+	<dd>Success, otherwise <em>errno</em> will be set for valid input.</dd>
+	<dt>throws: EDOM</dt>
+	<dd><em>data</em> is not part of <em>a</em>.</dd>
+	<dt>order</dt>
+	<dd>Amortised O(1) if <em>ARRAY_FREE_LIST</em> is defined, otherwise, O(n).</dd>
+	<dt>fixme</dt>
+	<dd>Test on stack.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayClear"><!-- --></a>
+<h3>&lt;T&gt;ArrayClear</h3>
+<pre>static void <b>&lt;T&gt;ArrayClear</b> (struct &lt;T&gt;Array *const a)</pre>
+<p>
+Removes all from <em>a</em>, but leaves the <em>a</em> memory alone; if one wants
+to remove memory, see <a href = "#Array_">Array_</a>.
+</p>
+<dl>
+	<dt>parameter: a</dt>
+	<dd>If null, does nothing.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayGet"><!-- --></a>
+<h3>&lt;T&gt;ArrayGet</h3>
+<pre>static T * <b>&lt;T&gt;ArrayGet</b> (const struct &lt;T&gt;Array *const a, const size_t idx)</pre>
+<p>
+Gets an existing element by index. Causing something to be added to the
+<em>&lt;T&gt;Array</em> may invalidate this pointer, see <a href = "#&lt;T&gt;ArrayUpdateNew">&lt;T&gt;ArrayUpdateNew</a>.
+</p>
+<dl>
+	<dt>parameter: a</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: idx</dt>
+	<dd>Index.</dd>
+	<dt>return</dt>
+	<dd>If failed, returns a null pointer.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayIndex"><!-- --></a>
+<h3>&lt;T&gt;ArrayIndex</h3>
+<pre>static size_t <b>&lt;T&gt;ArrayIndex</b> (const struct &lt;T&gt;Array *const a,
+	const T *const data)</pre>
+<p>
+Gets an index given <em>data</em>.
+</p>
+<dl>
+	<dt>parameter: data</dt>
+	<dd>If the element is not part of the <em>Array</em>, behaviour is undefined.</dd>
+	<dt>return</dt>
+	<dd>An index.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayPeek"><!-- --></a>
+<h3>&lt;T&gt;ArrayPeek</h3>
+<pre>static T * <b>&lt;T&gt;ArrayPeek</b> (const struct &lt;T&gt;Array *const a)</pre>
+<dl>
+	<dt>parameter: a</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd>The last element or null if the a is empty. Causing something to be
+ added to the <em>array</em> may invalidate this pointer.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayPop"><!-- --></a>
+<h3>&lt;T&gt;ArrayPop</h3>
+<pre>static T * <b>&lt;T&gt;ArrayPop</b> (struct &lt;T&gt;Array *const a)</pre>
+<p>
+The same value as <a href = "#&lt;T&gt;ArrayPeek">&lt;T&gt;ArrayPeek</a>.
+</p>
+<dl>
+	<dt>parameter: a</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd>Value from the the top of the <em>a</em> that is removed or null if the
+ stack is empty. Causing something to be added to the <em>a</em> may invalidate
+ this pointer. See <a href = "#&lt;T&gt;ArrayUpdateNew">&lt;T&gt;ArrayUpdateNew</a>.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayNext"><!-- --></a>
+<h3>&lt;T&gt;ArrayNext</h3>
+<pre>static T * <b>&lt;T&gt;ArrayNext</b> (const struct &lt;T&gt;Array *const a, T *const prev)</pre>
+<p>
+Provides a way to iterate through the <em>a</em>. It is safe to add using
+<a href = "#&lt;T&gt;ArrayUpdateNew">&lt;T&gt;ArrayUpdateNew</a> with the return value as <em>update</em>. Removing an element
+causes the pointer to go to the next element, if it exists.
+</p>
+<dl>
+	<dt>parameter: a</dt>
+	<dd>If null, returns null. If <em>prev</em> is not from this <em>a</em> and not
+ null, returns null.</dd>
+	<dt>parameter: prev</dt>
+	<dd>Set it to null to start the iteration.</dd>
+	<dt>return</dt>
+	<dd>A pointer to the next element or null if there are no more.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayNew"><!-- --></a>
+<h3>&lt;T&gt;ArrayNew</h3>
+<pre>static T * <b>&lt;T&gt;ArrayNew</b> (struct &lt;T&gt;Array *const a)</pre>
+<p>
+Gets an uninitialised new element. May move the <em>Array</em> to a new memory
+location to fit the new size.
+</p>
+<dl>
+	<dt>parameter: a</dt>
+	<dd>If is null, returns null.</dd>
+	<dt>return</dt>
+	<dd>A new, un-initialised, element, or null and <em>errno</em> may be set.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em> objects.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+	<dt>order</dt>
+	<dd>amortised O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayUpdateNew"><!-- --></a>
+<h3>&lt;T&gt;ArrayUpdateNew</h3>
+<pre>static T * <b>&lt;T&gt;ArrayUpdateNew</b> (struct &lt;T&gt;Array *const a,
+	T **const update_ptr)</pre>
+<p>
+Gets an uninitialised new element and updates the <em>update_ptr</em> if it is
+within the memory region that was changed to accomidate new space. For
+example, when iterating a pointer and new element is needed that could change
+the pointer.
+</p>
+<dl>
+	<dt>parameter: a</dt>
+	<dd>If null, returns null.</dd>
+	<dt>parameter: update_ptr</dt>
+	<dd>Pointer to update on memory move.</dd>
+	<dt>return</dt>
+	<dd>A new, un-initialised, element, or null and <em>errno</em> may be set.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <em>size_t</em>.</dd>
+	<dt>throws: <em>realloc</em> errors</dt>
+	<dd><em>IEEE Std 1003.1-2001</em>.</dd>
+	<dt>order</dt>
+	<dd>amortised O(1)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayForEach"><!-- --></a>
+<h3>&lt;T&gt;ArrayForEach</h3>
+<pre>static void <b>&lt;T&gt;ArrayForEach</b> (struct &lt;T&gt;Array *const a,
+	const &lt;PT&gt;Action action)</pre>
+<p>
+Iterates though <em>a</em> from the bottom and calls <em>action</em> on all the
+elements. The topology of the list can not change while in this function.
+That is, don't call <a href = "#&lt;T&gt;ArrayNew">&lt;T&gt;ArrayNew</a>, <a href = "#&lt;T&gt;ArrayRemove">&lt;T&gt;ArrayRemove</a>, <em>etc</em> in
+<em>action</em>.
+</p>
+<dl>
+	<dt>parameter: stack, action</dt>
+	<dd>If null, does nothing.</dd>
+	<dt>order</dt>
+	<dd>O(<em>size</em> &times; <em>action</em>)</dd>
+	<dt>fixme</dt>
+	<dd>Untested.</dd>
+	<dt>fixme</dt>
+	<dd>Sequence interface.</dd>
+</dl>
+</div>
+
+<div><a name = "&lt;T&gt;ArrayToString"><!-- --></a>
+<h3>&lt;T&gt;ArrayToString</h3>
+<pre>static const char * <b>&lt;T&gt;ArrayToString</b> (const struct &lt;T&gt;Array *const a)</pre>
+<p>
+Can print 4 things at once before it overwrites. One must a
+<em>ARRAY_TO_STRING</em> to a function implementing <em>&lt;T&gt;ToString</em> to get this
+functionality.
+</p>
+<dl>
+	<dt>return</dt>
+	<dd>Prints <em>a</em> in a static buffer.</dd>
+	<dt>order</dt>
+	<dd>&Theta;(1); it has a 255 character limit; every element takes some of it.</dd>
+	<dt>fixme</dt>
+	<dd>ToString interface.</dd>
+</dl>
+</div>
+
+
+</body>
+</html>

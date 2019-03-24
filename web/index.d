@@ -1,1 +1,1 @@
-A (in some cases) contiguous dynamically-allocated array.
+A contiguous dynamically-allocated array that has amortised time complexity.

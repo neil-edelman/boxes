@@ -1,0 +1,10 @@
+digraph {
+	//rankdir = LR;
+	node [ shape=record, style=filled ];
+	null [ label = "Uninitalised.|Random bytes.\lNo memory.\l" ];
+	static [ label = "Zero filled.|Statically uninitalised.\lNo memory.\l" ];
+	dynamic [ label = "In use.|Dynamic memory allocated.\n" ];
+	null -> static [ label = "<T>Array" ];
+	static -> dynamic [ label = "<T>ArrayNew\l<T>ArrayUpdateNew" ];
+	dynamic -> static [ label = "<T>Array_" ];
+}
