@@ -40,10 +40,10 @@
  satisfying {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private
  function integrity testing. Requires {POOL_TO_STRING}.
 
- @title		StablePool.h
+ @title		Pool.h
  @std		C89
  @author	Neil
- @version	2019-03 Split {Pool} from {Array}; allowed fragmentation in former.
+ @version	2019-03 Split {Pool} from {Array}; now stable.
  @since		2018-04 Merged {Stack} into {Pool} again.
 			2018-03 Why have an extra level of indirection?
 			2018-02 Errno instead of custom errors.
