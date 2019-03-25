@@ -240,6 +240,7 @@ static void test_block_move(void) {
 	printf("By x:\n");
 	AnimalListXForEach(&animals, &act);
 	list_Animal_in_order(&animals);
+#if 0 /* This is confusing and has been taken out! Use {Pool}. */
 	memcpy(others, sloths, sizeof sloths);
 	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '!';
 	printf("Moved sloths: %s.\n", AnimalListNameToString(&animals));
@@ -257,7 +258,8 @@ static void test_block_move(void) {
 		}
 	}
 	printf("Block move: %s.\n", AnimalListNameToString(&animals));
-	for(i = sloths_size; i < others_size; i++) Sloth_init(others + i);
+#endif
+	for(i = /*sloths_size*/0; i < others_size; i++) Sloth_init(others + i);
 	printf("New sloths: %s.\n", AnimalListNameToString(&animals));
 	AnimalListSort(&animals);
 	printf("Sorted: by name %s; by x %s.\n", AnimalListNameToString(&animals),

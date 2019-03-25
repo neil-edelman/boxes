@@ -278,17 +278,6 @@ enum ListOperation {
 	{ &(l).head, 0, &(l).head, 0, &(l).head, 0, &(l).head, 0 } }
 #endif /* LIST_H */
 
-/* One time in the same translation unit. */
-#ifndef MIGRATE /* <-- migrate */
-#define MIGRATE
-/** Contains information about a {realloc}. */
-struct Migrate;
-struct Migrate {
-	const void *begin, *end; /* Old pointers. */
-	ptrdiff_t delta;
-};
-#endif /* migrate --> */
-
 
 
 /* Private list position. */
@@ -308,8 +297,8 @@ struct PT_(X) {
 };
 
 /** A single link in the linked-list derived from {<T>}. Storage of this
- structure is the responsibility of the caller. The {<T>} is stored in the
- element {data}. */
+ structure is the responsibility of the caller. {<T>} is stored in this
+ structure, see \see{<T>LinkData}. */
 struct T_(Link);
 struct T_(Link) {
 	T data;
@@ -317,13 +306,13 @@ struct T_(Link) {
 };
 
 /** Serves as an a head for linked-list(s) of {<T>Link}. Use \see{<T>ListClear}
- to initialise. */
+ or statically initialise using the macro {LIST_EMPTY[_[2-4]]}. */
 struct T_(List);
 struct T_(List) {
 	/* These are sentinels such that {head.prev} and {tail.next} are always and
 	 the only ones to be null. This allows {List} and all {Links} to be closed,
 	 that is with a single pointer, we can infer every other. However, careful
-	 in changing this, \see{<PT>_list_<U>_self_correct}, {LIST_EMPTY[2-4]}. */
+	 in changing this, \see{<PT>_list_<U>_self_correct}. */
 	struct PT_(X) head, tail;
 };
 
@@ -386,15 +375,12 @@ static const struct T_(Link) *PT_(const_data_upcast)(const T *const data) {
 		((const char *)data - offsetof(struct T_(Link), data));
 }
 
-/** Private: used in \see{<PT>_order_<U>_migrate_each};
- \${ptr \in [begin, end) -> ptr += delta}. */
-static int PT_(migrate)(struct PT_(X) **const x_ptr,
-	const struct Migrate *const migrate) {
-	const void *const x = *x_ptr;
-	assert(x_ptr);
-	if(x < migrate->begin || x >= migrate->end) return 0;
-	*(char **)x_ptr += migrate->delta;
-	return 1;
+/** Given a link, extract the data.
+ @param link: Does not do any null-check.
+ @return The data associated to {link}.
+ @allow */
+static const T *T_(LinkData)(const struct T_(Link) *const link) {
+	return &link->data;
 }
 
 /* Prototypes: needed for the next section, but undefined until later. */
@@ -537,7 +523,8 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 }
 
 /** Clears and removes all values from {list}, thereby initialising the
- {<T>List}. All previous values are un-associated.
+ {<T>List}. All previous values are un-associated. Does the same thing as the
+ initialisation constant {LIST_EMPTY[_[2-4]]}.
  @param list: if null, does nothing.
  @order \Theta(1)
  @allow */
@@ -740,66 +727,6 @@ static void T_(ListSort)(struct T_(List) *const list) {
 
 #endif /* comp --> */
 
-/** Adjusts one {<T>Link}'s internal pointers when supplied with a {Migrate}
- parameter. Specifically, if an agglomeration including the to the {<T>Link}
- pointers are changing with a new element from {Pool}, one must call this in
- the function you give to {POOL_MIGRATE_EACH}.
- @param data: If null, does nothing.
- @param migrate: If null, does nothing. Should only be called in a {Migrate}
- function; pass the {migrate} parameter.
- @implements <<T>Link>Migrate
- @order \Theta(n)
- @allow */
-static void T_(LinkMigrate)(T *const data, const struct Migrate *const migrate){
-	struct PT_(X) *x;
-	/* Relies on not-strictly-defined behaviour because pointers are not
-	 necessarily contiguous in memory; it should be fine in practice. */
-	if(!data || !migrate || !migrate->delta) return;
-	x = &PT_(data_upcast)(data)->x;
-#ifdef LIST_OPENMP /* <-- omp */
-	#pragma omp parallel sections
-#endif /* omp --> */
-	{
-#ifdef LIST_UA_NAME /* <-- a */
-#ifdef LIST_OPENMP /* <-- omp */
-		#pragma omp section
-#endif /* omp --> */
-		PT_UA_(x, migrate)(x, migrate);
-#endif /* a --> */
-#ifdef LIST_UB_NAME /* <-- b */
-#ifdef LIST_OPENMP /* <-- omp */
-		#pragma omp section
-#endif /* omp --> */
-		PT_UB_(x, migrate)(x, migrate);
-#endif /* b --> */
-#ifdef LIST_UC_NAME /* <-- c */
-#ifdef LIST_OPENMP /* <-- omp */
-		#pragma omp section
-#endif /* omp --> */
-		PT_UC_(x, migrate)(x, migrate);
-#endif /* c --> */
-#ifdef LIST_UD_NAME /* <-- d */
-#ifdef LIST_OPENMP /* <-- omp */
-		#pragma omp section
-#endif /* omp --> */
-		PT_UD_(x, migrate)(x, migrate);
-#endif /* d --> */
-	}
-}
-
-/** Adjusts a pointer, {pdata}, to a {<T>Link}, given {migrate}. Use when
- some (external?) data has a pointer to the list.
- @param pdata, migrate: If null, does nothing.
- @fixme Untested. */
-static void T_(LinkMigratePointer)(T **const pdata,
-	const struct Migrate *const migrate) {
-	const void *data;
-	if(!pdata || !migrate) return;
-	data = *pdata;
-	if(data < migrate->begin || data >= migrate->end) return;
-	*(char **)pdata += migrate->delta;
-}
-
 /** One must call this whenever the {<T>List} changes memory locations, (not
  the nodes.) This resets and corrects the two ends; the two ends become invalid
  even when it's empty. (For example, a {Pool} of {<T>List} would call this.)
@@ -889,6 +816,7 @@ static void PT_(unused_coda)(void);
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_list)(void) {
+	T_(LinkData)(0);
 	T_(ListClear)(0);
 	T_(ListUnshift)(0, 0);
 	T_(ListPush)(0, 0);
@@ -901,8 +829,6 @@ static void PT_(unused_list)(void) {
 	T_(ListMerge)(0, 0);
 	T_(ListSort)(0);
 #endif /* comp --> */
-	T_(LinkMigrate)(0, 0);
-	T_(LinkMigratePointer)(0, 0);
 	T_(ListSelfCorrect)(0);
 	T_(ListAudit)(0);
 	PT_(unused_coda)();
@@ -1085,23 +1011,6 @@ static void PT_U_(x, cat)(struct PT_(X) *const x,
 	from->tail.U_(prev) = &from->head;
 	PT_U_(cycle, crash)(x);
 	PT_U_(cycle, crash)(&from->head);
-}
-
-/** Private: callback when {realloc} changes pointers. Called in
- \see{PT_(migrate_each)}.
- @order \Theta(1) */
-static void PT_U_(x, migrate)(struct PT_(X) *const x,
-	const struct Migrate *const migrate) {
-	int is;
-	assert(x && x->U_(prev) && x->U_(next) && migrate && migrate->begin
-		&& migrate->begin < migrate->end && migrate->delta);
-	/* If node out of the migration region, it must have node into. Otherwise,
-	 assume the other node is on the list of migrates. */
-	if(!PT_(migrate)(&x->U_(prev), migrate))
-		is = PT_(migrate)(&x->U_(prev)->U_(next), migrate), assert(is);
-	if(!PT_(migrate)(&x->U_(next), migrate))
-		is = PT_(migrate)(&x->U_(next)->U_(prev), migrate), assert(is);
-	(void)is;
 }
 
 /** Private: when the actual list but not the data changes locations. */

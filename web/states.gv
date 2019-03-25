@@ -1,0 +1,8 @@
+digraph {
+	//rankdir = LR;
+	node [ shape=record, style=filled ];
+	null [ label = "Uninitalised or statically uninitalised.\l" ];
+	init [ label = "Initialised.\l|Not our responsibility for \<T\>Link.\l" ];
+	null -> init [ label = "Initialise with LIST_EMPTY[_[2-4]]\l<T>ListClear\l" ];
+	init -> init [ label = "<T>ListClear\l" ];
+}
