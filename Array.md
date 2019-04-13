@@ -3,7 +3,7 @@
 2016 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or [ https://opensource.org/licenses/MIT ].
 
- _<T>Array_ is a dynamic array that stores unordered _<T>_, which must be set
+ _\<T\>Array_ is a dynamic array that stores unordered _<T>_, which must be set
  using _ARRAY_TYPE_. The capacity is greater then or equal to the size;
  resizing incurs amortised cost. You cannot shrink the capacity, only cause it
  to grow.
