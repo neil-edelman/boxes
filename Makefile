@@ -34,7 +34,7 @@ H     := $(call rwildcard, $(SDIR), *.h) $(call rwildcard, $(TDIR), *.h)
 OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 LOBJS := $(patsubst $(GDIR)/%.re.c, $(GDIR)/%.re.o, $(LSRCS))
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
-DOCS  := $(patsubst $(SDIR)/%.c, $(DDIR)/%.html, $(SRCS))
+DOCS  := $(DDIR)/Array.html
 
 CC   := clang #gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
@@ -95,7 +95,7 @@ $(LSRCS): $(GDIR)/%.re.c: $(SDIR)/%.re
 	@mkdir -p $(GDIR)
 	$(LEXER) -o $@ $<
 
-$(DOCS): $(DDIR)/%.html: $(SDIR)/%.c $(SDIR)/%.h
+$(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
 	# docs rule
 	@mkdir -p $(DDIR)
 	cat $^ | $(CDOC) > $@
