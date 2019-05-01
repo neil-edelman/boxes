@@ -21,9 +21,10 @@ static void PT_(valid_state)(const struct T_(Array) *const a) {
 	const size_t max_size = (size_t)-1 / sizeof *a->data;
 	/* Null is a valid state. */
 	if(!a) return;
-	assert(a->size <= a->capacity[0]);
-	assert(a->capacity[0] < a->capacity[1] || (a->capacity[0] == a->capacity[1]
-		&& (a->capacity[1] == max_size || a->capacity[0] == 0)));
+	if(!a->data) { assert(!a->size); return; }
+	assert(a->size <= a->capacity);
+	assert(a->capacity < a->next_capacity
+		|| (a->capacity == a->next_capacity) == max_size);
 }
 
 
