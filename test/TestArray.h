@@ -27,6 +27,14 @@ static void PT_(valid_state)(const struct T_(Array) *const a) {
 		|| (a->capacity == a->next_capacity) == max_size);
 }
 
+static int PT_(zero_filled)(const T *const t) {
+	const char *c = (const char *)t,
+		*const end = (const char *)(t + 1);
+	assert(t);
+	while(c < end) if(*c++) return 0;
+	return 1;
+}
+
 
 
 static void PT_(test_basic)(void) {
@@ -34,6 +42,7 @@ static void PT_(test_basic)(void) {
 	T ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
+	int is_zero;
 
 	printf("Test null.\n");
 	errno = 0;
@@ -51,6 +60,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayUpdateNew)(0, 0) == 0
 		&& T_(ArrayUpdateNew)(0, 0) == 0);
 	T_(ArrayForEach)(0, 0);
+	T_(ArrayTrim)(0, 0);
 	assert(!strcmp("null", T_(ArrayToString(0))));
 	assert(errno == 0);
 	PT_(valid_state)(0);
@@ -140,6 +150,27 @@ static void PT_(test_basic)(void) {
 	t = T_(ArrayPop)(&a);
 	assert(t && !memcmp(t, ts + ts_size - 2, sizeof *t));
 	T_(ArrayClear)(&a);
+	assert(T_(ArraySize)(&a) == 0);
+
+	/* Trim 1. */
+	t = T_(ArrayNew)(&a);
+	assert(t);
+	memset(t, 0, sizeof *t);
+	T_(ArrayTrim)(&a, &PT_(zero_filled));
+	assert(T_(ArraySize)(&a) == 0);
+	/* Trim 3. */
+	t = T_(ArrayNew)(&a);
+	assert(t);
+	memset(t, 0, sizeof *t);
+	t = T_(ArrayNew)(&a);
+	assert(t);
+	PT_(filler)(t);
+	is_zero = PT_(zero_filled)(t);
+	t = T_(ArrayNew)(&a);
+	assert(t);
+	memset(t, 0, sizeof *t);
+	T_(ArrayTrim)(&a, &PT_(zero_filled));
+	assert(T_(ArraySize)(&a) == !is_zero);
 
 	/* Big. */
 	for(i = 0; i < big; i++) {

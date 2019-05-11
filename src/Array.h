@@ -40,6 +40,7 @@
  satisfying {<T>Action}. Requires {ARRAY_TO_STRING} and not {NDEBUG}.
 
  @title		Array.h
+ @fixme		Run under Valgrind!
  @std		C89
  @author	Neil
  @version	2019-03 Renamed {Pool} to {Array}. Took out migrate.
@@ -134,8 +135,11 @@ typedef void (*PT_(ToString))(const T *, char (*const)[12]);
 static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 #endif /* string --> */
 
-/* Operates by side-effects only. */
+/* Operates by side-effects on {data} only. */
 typedef void (*PT_(Action))(T *const data);
+
+/* Given constant {data}, returns a boolean. */
+typedef int (*PT_(Predicate))(const T *const data);
 
 
 
@@ -401,7 +405,7 @@ static int T_(ArrayAddSize)(struct T_(Array) *const a, const size_t add) {
  elements. The topology of the list can not change while in this function.
  That is, don't call \see{<T>ArrayNew}, \see{<T>ArrayRemove}, {etc} in
  {action}.
- @param stack, action: If null, does nothing.
+ @param a, action: If null, does nothing.
  @order O({size} \times {action})
  @fixme Untested.
  @fixme Sequence interface.
@@ -411,6 +415,21 @@ static void T_(ArrayForEach)(struct T_(Array) *const a,
 	T *t, *end;
 	if(!a || !action) return;
 	for(t = a->data, end = t + a->size; t < end; t++) action(t);
+}
+
+/** Removes at either end of {a} of things that {predicate} returns true.
+ @param a, action: If null, does nothing.
+ @order O({size})
+ @allow */
+static void T_(ArrayTrim)(struct T_(Array) *const a,
+	const PT_(Predicate) predicate) {
+	size_t i;
+	if(!a || !predicate) return;
+	while(a->size && predicate(a->data + a->size - 1)) a->size--;
+	for(i = 0; i < a->size && predicate(a->data + i); i++);
+	if(!i) return;
+	assert(i < a->size);
+	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
 #ifdef ARRAY_TO_STRING /* <-- print */
@@ -515,6 +534,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayBuffer)(0, 0);
 	T_(ArrayAddSize)(0, 0);
 	T_(ArrayForEach)(0, 0);
+	T_(ArrayTrim)(0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
