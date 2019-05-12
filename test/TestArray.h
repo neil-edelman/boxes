@@ -93,9 +93,9 @@ static void PT_(test_basic)(void) {
 	assert(t == t1);
 	t1 = T_(ArrayNext)(&a, t1);
 	assert(t1 == 0);
-	t1 = T_(ArrayPrevious)(&a, 0);
+	t1 = T_(ArrayBack)(&a, 0);
 	assert(t == t1);
-	t1 = T_(ArrayPrevious)(&a, t1);
+	t1 = T_(ArrayBack)(&a, t1);
 	assert(t1 == 0);
 	assert(T_(ArrayIndex)(&a, t) == 0);
 	assert(T_(ArrayPeek)(&a) == t);
@@ -186,7 +186,7 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(&a);
 	for(i = 0, t = 0; (t = T_(ArrayNext)(&a, t)); i++);
 	assert(a.size == i);
-	for(i = 0, t = 0; (t = T_(ArrayPrevious)(&a, t)); i++);
+	for(i = 0, t = 0; (t = T_(ArrayBack)(&a, t)); i++);
 	assert(a.size == i);
 	PT_(valid_state)(&a);
 

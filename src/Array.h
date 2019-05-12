@@ -316,7 +316,7 @@ static T *T_(ArrayPop)(struct T_(Array) *const a) {
  @return A pointer to the previous element or null if it does not exist.
  @order \Theta(1)
  @allow */
-static T *T_(ArrayPrevious)(const struct T_(Array) *const a, T *const here) {
+static T *T_(ArrayBack)(const struct T_(Array) *const a, T *const here) {
 	size_t idx;
 	if(!a) return 0;
 	if(!here) {
@@ -585,7 +585,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayIndex)(0, 0);
 	T_(ArrayPeek)(0);
 	T_(ArrayPop)(0);
-	T_(ArrayPrevious)(0, 0);
+	T_(ArrayBack)(0, 0);
 	T_(ArrayNext)(0, 0);
 	T_(ArrayNew)(0);
 	T_(ArrayUpdateNew)(0, 0);
