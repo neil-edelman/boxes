@@ -401,10 +401,9 @@ static int T_(ArrayAddSize)(struct T_(Array) *const a, const size_t add) {
 	return 1;
 }
 
-/** Iterates though {a} from the bottom and calls {action} on all the
- elements. The topology of the list can not change while in this function.
- That is, don't call \see{<T>ArrayNew}, \see{<T>ArrayRemove}, {etc} in
- {action}.
+/** Iterates though {a} and calls {action} on all the elements. The topology of
+ the list can not change while in this function. That is, don't call
+ \see{<T>ArrayNew}, \see{<T>ArrayRemove}, {etc} in {action}.
  @param a, action: If null, does nothing.
  @order O({size} \times {action})
  @fixme Untested.
@@ -417,8 +416,48 @@ static void T_(ArrayForEach)(struct T_(Array) *const a,
 	for(t = a->data, end = t + a->size; t < end; t++) action(t);
 }
 
+/** For all elements of {a}, calls {keep}, and for each element, if the return
+ value is false, lazy deletes that item.
+ @param a, keep: If null, does nothing.
+ @order O({size})
+ @fixme Test.
+ @allow */
+static void T_(ArrayKeepIf)(struct T_(Array) *const a,
+	const PT_(Predicate) keep) {
+	T *erase = 0, *t;
+	const T *retain = 0, *end;
+	size_t removed = 0;
+	int keep0 = 1, keep1 = 0;
+	if(!a || !keep) return;
+	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
+		keep1 = !!keep(t);
+		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
+		if(keep1) { /* Rising edge. */
+			assert(erase && !retain);
+			retain = t;
+		} else if(erase) { /* Falling edge. */
+			size_t n = t - retain;
+			assert(retain && erase < retain && retain < t);
+			memmove(erase, retain, n * sizeof *t);
+			removed += retain - erase;
+			erase += n;
+			retain = 0;
+		} else { /* Falling edge, (first time only.) */
+			erase = t;
+		}
+	}
+	if(erase && keep1) { /* Delayed move when the iteration ended; repeat. */
+		size_t n = t - retain;
+		assert(retain && erase < retain && retain < t);
+		memmove(erase, retain, n * sizeof *t);
+		removed += retain - erase;
+	}
+	assert(removed <= a->size);
+	a->size -= removed;
+}
+
 /** Removes at either end of {a} of things that {predicate} returns true.
- @param a, action: If null, does nothing.
+ @param a, predicate: If null, does nothing.
  @order O({size})
  @allow */
 static void T_(ArrayTrim)(struct T_(Array) *const a,
@@ -534,6 +573,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayBuffer)(0, 0);
 	T_(ArrayAddSize)(0, 0);
 	T_(ArrayForEach)(0, 0);
+	T_(ArrayKeepIf)(0, 0);
 	T_(ArrayTrim)(0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
