@@ -31,10 +31,11 @@ LEXS  := $(call rwildcard, $(SDIR), *.re)
 LSRCS := $(patsubst $(SDIR)/%.re, $(GDIR)/%.re.c, $(LEXS))
 TEST  := $(call rwildcard, $(TDIR), *.c)
 H     := $(call rwildcard, $(SDIR), *.h) $(call rwildcard, $(TDIR), *.h)
+HSRC  := $(call rwildcard, $(SDIR), *.h)
 OBJS  := $(patsubst $(SDIR)/%.c, $(GDIR)/%.o, $(SRCS)) # or *.class
 LOBJS := $(patsubst $(GDIR)/%.re.c, $(GDIR)/%.re.o, $(LSRCS))
 TOBJS := $(patsubst $(TDIR)/%.c, $(GDIR)/$(TDIR)/%.o, $(TEST))
-DOCS  := $(DDIR)/Array.html
+DOCS  := $(patsubst $(SDIR)/%.h, $(DDIR)/%.html, $(HSRC))
 
 CC   := clang #gcc
 CF   := -Wall -Wextra -Wno-format-y2k -Wstrict-prototypes \
@@ -95,7 +96,7 @@ $(LSRCS): $(GDIR)/%.re.c: $(SDIR)/%.re
 	@mkdir -p $(GDIR)
 	$(LEXER) -o $@ $<
 
-$(DOCS): $(DDIR)/%.html: $(SDIR)/%.h
+$(DOCS): $(DDIR)/%.html: $(SDIR)/%.h #$(SDIR)/%.c
 	# docs rule
 	@mkdir -p $(DDIR)
 	cat $^ | $(CDOC) > $@
