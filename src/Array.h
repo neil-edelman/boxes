@@ -310,24 +310,42 @@ static T *T_(ArrayPop)(struct T_(Array) *const a) {
 	return a->data + --a->size;
 }
 
-/** Provides a way to iterate through the {a}. It is safe to add using
- \see{<T>ArrayUpdateNew} with the return value as {update}. Removing an element
- causes the pointer to go to the next element, if it exists.
- @param a: If null, returns null. If {prev} is not from this {a} and not
- null, returns null.
- @param prev: Set it to null to start the iteration.
+/** Iterate through {a} backwards.
+ @param a: The array; if null, returns null.
+ @param here: Set it to null to get the last element, if it exists.
+ @return A pointer to the previous element or null if it does not exist.
+ @order \Theta(1)
+ @allow */
+static T *T_(ArrayPrevious)(const struct T_(Array) *const a, T *const here) {
+	size_t idx;
+	if(!a) return 0;
+	if(!here) {
+		if(!a->size) return 0;
+		idx = a->size;
+	} else {
+		idx = (size_t)(here - a->data);
+		if(!idx) return 0;
+	}
+	return a->data + idx - 1;
+}
+
+/** Iterate through {a}. It is safe to add using \see{<T>ArrayUpdateNew} with
+ the return value as {update}. Removing an element causes the pointer to go to
+ the next element, if it exists.
+ @param a: The array; if null, returns null.
+ @param here: Set it to null to get the first element, if it exists.
  @return A pointer to the next element or null if there are no more.
  @order \Theta(1)
  @allow */
-static T *T_(ArrayNext)(const struct T_(Array) *const a, T *const prev) {
+static T *T_(ArrayNext)(const struct T_(Array) *const a, T *const here) {
 	T *data;
 	size_t idx;
 	if(!a) return 0;
-	if(!prev) {
+	if(!here) {
 		data = a->data;
 		idx = 0;
 	} else {
-		data = prev + 1;
+		data = here + 1;
 		idx = (size_t)(data - a->data);
 	}
 	return idx < a->size ? data : 0;
@@ -567,6 +585,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayIndex)(0, 0);
 	T_(ArrayPeek)(0);
 	T_(ArrayPop)(0);
+	T_(ArrayPrevious)(0, 0);
 	T_(ArrayNext)(0, 0);
 	T_(ArrayNew)(0);
 	T_(ArrayUpdateNew)(0, 0);
