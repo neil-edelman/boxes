@@ -255,6 +255,67 @@ static void PT_(test_random)(void) {
 	T_(Array_)(&a);
 }
 
+/** Replace has it's own test. */
+static void PT_(test_replace)(void) {
+	T ts[5], *t, *t1;
+	const size_t ts_size = sizeof ts / sizeof *ts;
+
+	struct T_(Array) a, b;
+	T *e0, *e1;
+	int boolean;
+
+	/* Get elements. */
+	for(t = ts, t1 = t + ts_size; t < t1; t++) PT_(filler)(t);
+	printf("Test replace.\n");
+	T_(Array)(&a);
+	for(t = ts, t1 = t + ts_size; t < t1; t++) {
+		e0 = T_(ArrayNew)(&a), assert(e0);
+		memcpy(e0, t, sizeof *t);
+	}
+	assert(T_(ArraySize)(&a) == ts_size);	
+	T_(Array)(&b);
+	/* Passing in null. */
+	errno = 0;
+	boolean = T_(ArrayReplace)(0, ts, ts, 0);
+	assert(!boolean && !errno);
+	/* a == b. */
+	boolean = T_(ArrayReplace)(&a, 0, 0, &a);
+	assert(!boolean && errno == EDOM);
+	errno = 0;
+	/* Out-of-bounds. */
+	boolean = T_(ArrayReplace)(&a, ts, 0, 0);
+	assert(!boolean && errno == EDOM);
+	errno = 0;
+	boolean = T_(ArrayReplace)(&a, 0, ts, 0);
+	assert(!boolean && errno == EDOM);
+	errno = 0;
+	/* e0 > e1. */
+	e0 = T_(ArrayGet)(&a, 1);
+	e1 = T_(ArrayGet)(&a, 0);
+	boolean = T_(ArrayReplace)(&a, e0, e1, &b);
+	assert(!boolean && errno == EDOM);
+	errno = 0;
+	/* No-op. */
+	boolean = T_(ArrayReplace)(&a, 0, 0, 0);
+	assert(boolean && T_(ArraySize)(&a) == ts_size);
+	printf("Array %s.\n", T_(ArrayToString)(&a));
+	/* Deleting from the front. */
+	e0 = T_(ArrayGet)(&a, 0);
+	e1 = T_(ArrayGet)(&a, 0);
+	boolean = T_(ArrayReplace)(&a, 0, e1, 0);
+	assert(boolean && T_(ArraySize)(&a) == ts_size - 1);
+	boolean = T_(ArrayReplace)(&a, e0, e1, 0);
+	assert(boolean && T_(ArraySize)(&a) == ts_size - 2);
+	printf("Array after deleting from front %s.\n", T_(ArrayToString)(&a));
+	/* Adding at the back. */
+	t = T_(ArrayNew)(&b);
+	assert(t);
+	memcpy(t, ts + 0, sizeof *t);
+	boolean = T_(ArrayReplace)(&a, T_(ArrayBack)(&a, 0), 0, &b);
+	assert(boolean && T_(ArraySize)(&a) == ts_size - 1);
+	printf("Array after adding to back %s.\n", T_(ArrayToString)(&a));
+}
+
 /** The list will be tested on stdout. */
 static void T_(ArrayTest)(void) {
 	printf("Array<" QUOTE(ARRAY_NAME) ">: of type <" QUOTE(ARRAY_TYPE)
@@ -280,6 +341,7 @@ static void T_(ArrayTest)(void) {
 		"testing:\n");
 	PT_(test_basic)();
 	PT_(test_random)();
+	PT_(test_replace)();
 	fprintf(stderr, "Done tests of Array<" T_NAME ">.\n\n");
 }
 
