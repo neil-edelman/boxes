@@ -327,6 +327,8 @@ static void PT_(test_replace)(void) {
 		T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size
 		   && !memcmp(t, T_(ArrayGet)(&a, 2), sizeof *t));
+	T_(Array_)(&b);
+	T_(Array_)(&a);
 }
 
 /** The list will be tested on stdout. */
