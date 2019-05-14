@@ -489,44 +489,37 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
-/** In {a}, replaces the elements from {e0} to {e1} with a copy of {b}.
+/** In {a}, replaces the elements from {i0} to {i1} with a copy of {b}.
  @param a: If null, does nothing.
- @param e0: If null, the start of the array.
- @param e1: If null, the replacement size is zero and it acts like insert.
+ @param i0, i1: The replacement indices, {[i0, i1)}, such that
+ {0 <= i0} <= i1 <= a.size}.
  @param b: The replacement array. If null, deletes without replacing.
  @return Success.
  @throws EDOM: {a} and {b} are not null and the same.
- @throws EDOM: {e0} and {e1} are not null and {e0 > e1}.
- @throws EDOM: {e0} or {e1} are not null and not in the array.
+ @throws EDOM: {i0} or {i1} are out-of-bounds or {i0 > i1}.
  @throws ERANGE: {b} would cause the array to overflow.
  @throws {realloc}.
  @order \Theta({b.size}) if the elements have the same size, otherwise,
  amortised O({a.size} + {b.size}).
  @allow */
-static int T_(ArrayReplace)(struct T_(Array) *const a, const T *const e0,
-	const T *const e1, const struct T_(Array) *const b) {
-	size_t a0, a1, a_range, b_range;
+static int T_(ArrayReplace)(struct T_(Array) *const a, const size_t i0,
+	const size_t i1, const struct T_(Array) *const b) {
+	size_t a_range, b_range;
 	if(!a) return 0;
-	if(a == b || (e0 && e1 && e0 > e1)
-		|| (e0 && (e0 < a->data || e0 >= a->data + a->size))
-		|| (e1 && (e1 < a->data || e1 >= a->data + a->size)))
-		return errno = EDOM, 0;
-	/* Translate pointers [e0, e1] to [a0, a1) for convenience. */
-	a0 = e0 ? e0 - a->data : 0;
-	a1 = e1 ? e1 - a->data + (size_t)1 : a0;
-	a_range = a1 - a0;
+	if(a == b || i0 > i1 || i1 > a->size) return errno = EDOM, 0;
+	a_range = i1 - i0;
 	b_range = b ? b->size : 0;
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
 		if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;
 		if(!PT_(reserve)(a, a->size + diff, 0)) return 0;
-		memmove(a->data + a1 + diff, a->data + a1, (a->size - a1) * sizeof *e0);
+		memmove(a->data + i1 + diff, a->data + i1,(a->size-i1)*sizeof *a->data);
 		a->size += diff;
 	} else if(b_range < a_range) { /* The output is smaller. */
-		memmove(a->data + a0 + b_range, a->data + a1,(a->size-a1) * sizeof *e0);
+		memmove(a->data + i0 + b_range, a->data+i1,(a->size-i1)*sizeof*a->data);
 		a->size -= a_range - b_range;
 	}
-	if(b) memcpy(a->data + a0, b->data, b->size * sizeof *e0);
+	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
 	return 1;
 }
 

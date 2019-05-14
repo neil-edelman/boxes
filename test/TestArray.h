@@ -261,59 +261,72 @@ static void PT_(test_replace)(void) {
 	const size_t ts_size = sizeof ts / sizeof *ts;
 
 	struct T_(Array) a, b;
-	T *e0, *e1;
-	int boolean;
+	T *e;
+	int success;
 
 	/* Get elements. */
 	for(t = ts, t1 = t + ts_size; t < t1; t++) PT_(filler)(t);
 	printf("Test replace.\n");
 	T_(Array)(&a);
 	for(t = ts, t1 = t + ts_size; t < t1; t++) {
-		e0 = T_(ArrayNew)(&a), assert(e0);
-		memcpy(e0, t, sizeof *t);
+		e = T_(ArrayNew)(&a), assert(e);
+		memcpy(e, t, sizeof *t);
 	}
 	assert(T_(ArraySize)(&a) == ts_size);	
 	T_(Array)(&b);
 	/* Passing in null. */
 	errno = 0;
-	boolean = T_(ArrayReplace)(0, ts, ts, 0);
-	assert(!boolean && !errno);
+	success = T_(ArrayReplace)(0, 0, 0, 0);
+	assert(!success && !errno);
 	/* a == b. */
-	boolean = T_(ArrayReplace)(&a, 0, 0, &a);
-	assert(!boolean && errno == EDOM);
+	success = T_(ArrayReplace)(&a, 0, 0, &a);
+	assert(!success && errno == EDOM);
 	errno = 0;
 	/* Out-of-bounds. */
-	boolean = T_(ArrayReplace)(&a, ts, 0, 0);
-	assert(!boolean && errno == EDOM);
-	errno = 0;
-	boolean = T_(ArrayReplace)(&a, 0, ts, 0);
-	assert(!boolean && errno == EDOM);
+	success = T_(ArrayReplace)(&a, 0, T_(ArraySize)(&a) + 1, 0);
+	assert(!success && errno == EDOM);
 	errno = 0;
 	/* e0 > e1. */
-	e0 = T_(ArrayGet)(&a, 1);
-	e1 = T_(ArrayGet)(&a, 0);
-	boolean = T_(ArrayReplace)(&a, e0, e1, &b);
-	assert(!boolean && errno == EDOM);
+	success = T_(ArrayReplace)(&a, 1, 0, &b);
+	assert(!success && errno == EDOM);
 	errno = 0;
 	/* No-op. */
-	boolean = T_(ArrayReplace)(&a, 0, 0, 0);
-	assert(boolean && T_(ArraySize)(&a) == ts_size);
+	success = T_(ArrayReplace)(&a, 0, 0, 0);
 	printf("Array %s.\n", T_(ArrayToString)(&a));
+	assert(success && T_(ArraySize)(&a) == ts_size);
 	/* Deleting from the front. */
-	e0 = T_(ArrayGet)(&a, 0);
-	e1 = T_(ArrayGet)(&a, 0);
-	boolean = T_(ArrayReplace)(&a, 0, e1, 0);
-	assert(boolean && T_(ArraySize)(&a) == ts_size - 1);
-	boolean = T_(ArrayReplace)(&a, e0, e1, 0);
-	assert(boolean && T_(ArraySize)(&a) == ts_size - 2);
+	success = T_(ArrayReplace)(&a, 0, 1, 0);
 	printf("Array after deleting from front %s.\n", T_(ArrayToString)(&a));
+	assert(success && T_(ArraySize)(&a) == ts_size - 1);
 	/* Adding at the back. */
 	t = T_(ArrayNew)(&b);
 	assert(t);
 	memcpy(t, ts + 0, sizeof *t);
-	boolean = T_(ArrayReplace)(&a, T_(ArrayBack)(&a, 0), 0, &b);
-	assert(boolean && T_(ArraySize)(&a) == ts_size - 1);
-	printf("Array after adding to back %s.\n", T_(ArrayToString)(&a));
+	success = T_(ArrayReplace)(&a, T_(ArraySize)(&a), T_(ArraySize)(&a), &b);
+	printf("Array after adding %s to back %s.\n", T_(ArrayToString)(&b),
+		T_(ArrayToString)(&a));
+	assert(success && T_(ArraySize)(&a) == ts_size);
+	/* Replacing same-size. */
+	success = T_(ArrayReplace)(&a, 1, 2, &b);
+	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
+		T_(ArrayToString)(&a));
+	assert(success && T_(ArraySize)(&a) == ts_size
+		&& !memcmp(t, T_(ArrayGet)(&a, 1), sizeof *t));
+	/* Replacing larger size. */
+	t = T_(ArrayNew)(&b);
+	assert(t);
+	memcpy(t, ts + 1, sizeof *t);
+	success = T_(ArrayReplace)(&a, 1, 2, &b);
+	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
+		T_(ArrayToString)(&a));
+	assert(success && T_(ArraySize)(&a) == ts_size + 1
+		   && !memcmp(t, T_(ArrayGet)(&a, 2), sizeof *t));
+	/* Replacing a smaller size. */
+	success = T_(ArrayReplace)(&a, 1, 4, &b);
+	printf("Array after replacing [1, 4) %s: %s.\n", T_(ArrayToString)(&b),
+		T_(ArrayToString)(&a));
+	assert(success && T_(ArraySize)(&a) == ts_size
+		   && !memcmp(t, T_(ArrayGet)(&a, 2), sizeof *t));
 }
 
 /** The list will be tested on stdout. */
