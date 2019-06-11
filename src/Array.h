@@ -489,10 +489,10 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
-/** In {a}, replaces the elements from {i0} to {i1} with a copy of {b}.
- @param a: If null, does nothing.
+/** In {a}, replaces the elements from indices {i0} to {i1} with a copy of {b}.
+ @param a: If null, returns null.
  @param i0, i1: The replacement indices, {[i0, i1)}, such that
- {0 <= i0} <= i1 <= a.size}.
+ {0 <= i0 <= i1 <= a.size}.
  @param b: The replacement array. If null, deletes without replacing.
  @return Success.
  @throws EDOM: {a} and {b} are not null and the same.
