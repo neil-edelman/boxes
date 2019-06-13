@@ -165,7 +165,7 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	const size_t min_capacity, T **const update_ptr) {
 	size_t c0, c1;
 	T *data;
-	const size_t max_size = (size_t)-1 / sizeof *data;
+	const size_t max_size = (size_t)-1 / sizeof(T *);
 	assert(a);
 	if(!a->data) {
 		if(!min_capacity) return 1;
@@ -189,6 +189,42 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	a->data = data;
 	a->capacity = c0;
 	a->next_capacity = c1;
+	return 1;
+}
+
+/** Converts from a `long` to an index. The subset of `long` that is
+ representable is (much?) less than the full range of `size_t`, so this only
+ works for numbers that are 65k. It is helpful to have this for convenience
+ when working with negative numbers for Python programmers.
+ @param idx: On success, the index is stored in this address.
+ @return Success.
+ @throws ERANGE: {piece} is greater then +/-65535, the minimum of a `size_t`. */
+static int PT_(index)(const struct T_(Array) *const a, const long piece,
+	size_t *const idx) {
+	assert(a && idx);
+	if(piece > 65535l || piece < -65535l) return errno = ERANGE, 0;
+	*idx = (piece < 0)
+		? ((size_t)(-piece) >= a->size) ? 0 : a->size - (size_t)(-piece)
+		: (size_t)piece >= a->size ? a->size : (size_t)piece;
+	return 1;
+}
+
+/** Converts {anchor} and {range} à la Python and stores them in the pointers
+ {p0} and {p1} {s.t} {*p0, *p1 \in [0, a.size], *p0 <= *p1}.
+ @param anchor: An element in the array or null to indicate past the end.
+ @return Success.
+ @throws ERANGE: {anchor} is not null and not in {a}.
+ @throws ERANGE: {range} is greater then 65535 or smaller then -65534. */
+static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
+	const long range, size_t *const p0, size_t *const p1) {
+	assert(a && p0 && p1);
+	if((anchor && (anchor < a->data || anchor >= a->data + a->size))
+		|| range > 65535l || range < -65534l) return errno = ERANGE, 0;
+	*p0 = anchor ? (size_t)(anchor - a->data) : a->size;
+	*p1 = (range < 0)
+		? (size_t)(-range) > a->size ? 0 : a->size - (size_t)(-range) + 1
+		: (size_t)(range)  > a->size ? a->size : (size_t)range;
+	if(*p0 > *p1) *p1 = *p0;
 	return 1;
 }
 
@@ -266,39 +302,14 @@ static void T_(ArrayClear)(struct T_(Array) *const a) {
 	a->size = 0;
 }
 
-/** Converts from a `long` to an index that is clamped to `[0, a.size]` (may be
- `size`, one past the end of the `a`). The subset of `long` that is
- representable is (much?) less than the full range of `size_t`, so this only
- works for numbers that are 65k. It is helpful to have this for convenience
- when working with negative numbers, especially for Python programmers.
- @param result: On success, the index is stored in this address.
- @return Success.
- @throws ERANGE: {input} is greater then +/-65535, the minimum size of a
- `size_t`. */
-static int PT_(index)(const struct T_(Array) *const a, const long piece,
-	size_t *const idx) {
-	assert(a && idx);
-	if(piece > 65535l || piece < -65535l) return errno = ERANGE, 0;
-	*idx = (piece < 0)
-		? ((size_t)(-piece) >= a->size) ? 0 : a->size - (size_t)(-piece)
-		: (size_t)piece >= a->size ? a->size : (size_t)piece;
-	return 1;
-}
-
-/** Gets an existing element by index. Causing something to be added to the
- {<T>Array} may invalidate this pointer, see \see{<T>ArrayUpdateNew}.
+/** Causing something to be added to the {<T>Array} may invalidate this
+ pointer, see \see{<T>ArrayUpdateNew}.
  @param a: If null, returns null.
- @param piece: Index as a `long int`, clipped to `[0, a.size]` (may be one past
- the end of the array); indices that are negative are implied to have the array
- length added.
- @return If failed, returns a null pointer.
- @throws ERANGE: {piece} is greater then +/-65535, (use pointer arithmetic.)
+ @return A pointer to the array's data, indexable up to the array's size.
  @order \Theta(1)
  @allow */
-static T *T_(ArrayGet)(const struct T_(Array) *const a, const long piece) {
-	size_t idx;
-	if(!a || !PT_(index)(a, piece, &idx)) return 0;
-	return a ? idx < a->size ? a->data + idx : 0 : 0;
+static T *T_(ArrayGet)(const struct T_(Array) *const a) {
+	return a ? a->data : 0;
 }
 
 /** Gets an index given {data}.
@@ -542,31 +553,19 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
  @param b: The replacement array. If null, deletes without replacing.
  @return Success.
  @throws EDOM: {a} and {b} are not null and the same.
- @throws EDOM: {data} is not in {a}.
+ @throws ERANGE: {anchor} is not null and not in {a}.
  @throws ERANGE: {range} is greater then 65535 or smaller then -65534.
  @throws ERANGE: {b} would cause the array to overflow.
  @throws {realloc}.
  @order \Theta({b.size}) if the elements have the same size, otherwise,
  amortised O({a.size} + {b.size}).
  @allow */
-static int T_(ArrayReplace)(struct T_(Array) *const a, const T *replace,
+static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
 	const long range, const struct T_(Array) *const b) {
 	size_t i0, i1;
 	if(!a) return 0;
-	if(a == b||(replace && (replace < a->data || replace >= a->data + a->size)))
-		return errno = EDOM, 0;
-	/* Minimum `size_t`. */
-	if(range > 65535l || range < -65534l) return errno = ERANGE, 0;
-	i0 = replace ? (size_t)(replace - a->data) : a->size;
-	if(range < 0) {
-		i1 = ((size_t)(-range + 1) >= a->size) ? i1 = 0 :
-			a->size - (size_t)(-range + 1);
-	} else {
-		i1 = i0 + (size_t)range;
-		if(i1 < i0) return errno = ERANGE, 0; /* Overflow `size_t`. */
-	}
-	if(i1 < i0) i1 = i0;
-	else if(i1 > a->size) i1 = a->size;
+	if(a == b) return errno = EDOM, 0;
+	if(PT_(range)(a, anchor, range, &i0, &i1)) return 0;
 	return PT_(replace)(a, i0, i1, b);
 }
 
@@ -683,7 +682,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayRemove)(0, 0);
 #endif /* !stack --> */
 	T_(ArrayClear)(0);
-	T_(ArrayGet)(0, 0);
+	T_(ArrayGet)(0);
 	T_(ArrayIndex)(0, 0);
 	T_(ArrayPeek)(0);
 	T_(ArrayPop)(0);

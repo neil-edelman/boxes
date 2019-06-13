@@ -52,7 +52,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayRemove)(0, 0) == 0);
 #endif /* !stack --> */
 	T_(ArrayClear)(0);
-	assert(T_(ArrayGet)(0, 0) == 0 && T_(ArrayGet)(0, 1) == 0);
+	assert(T_(ArrayGet)(0) == 0);
 	assert(T_(ArrayPeek)(0) == 0);
 	assert(T_(ArrayPop)(0) == 0);
 	assert(T_(ArrayNext)(0, 0) == 0);
@@ -73,7 +73,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayRemove)(&a, 0) == 0 && errno == 0);
 	assert(T_(ArrayRemove)(&a, t) == 0 && errno == EDOM), errno = 0;
 #endif /* !stack --> */
-	assert(T_(ArrayGet)(&a, 0) == 0);
+	assert(T_(ArrayGet)(&a) == 0);
 	assert(T_(ArrayPeek)(0) == 0);
 	assert(T_(ArrayPop)(0) == 0);
 	assert(T_(ArrayNext)(0, 0) == 0 && T_(ArrayNext)(0, t) == 0);
@@ -99,7 +99,7 @@ static void PT_(test_basic)(void) {
 	assert(t1 == 0);
 	assert(T_(ArrayIndex)(&a, t) == 0);
 	assert(T_(ArrayPeek)(&a) == t);
-	assert(T_(ArrayGet(&a, 0)) == t);
+	assert(T_(ArrayGet(&a)) == t);
 	t1 = T_(ArrayPop)(&a); /* Remove. */
 	assert(t1 == t);
 	assert(T_(ArrayPeek)(&a) == 0);
@@ -120,7 +120,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArraySize)(&a) == ts_size);
 #ifdef ARRAY_STACK /* <-- stack */
 #else /* stack --><-- !stack */
-	if((t = T_(ArrayGet)(&a, ts_size - 2))
+	if((t = T_(ArrayGet)(&a) + ts_size - 2)
 		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
@@ -128,7 +128,7 @@ static void PT_(test_basic)(void) {
 	printf("Now: %s.\n", T_(ArrayToString)(&a));
 	assert(!T_(ArrayRemove)(&a, t + 1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
-	if((t = T_(ArrayGet)(&a, ts_size - 3))
+	if((t = T_(ArrayGet)(&a) + ts_size - 3)
 		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
@@ -238,7 +238,7 @@ static void PT_(test_random)(void) {
 			} else {
 #ifndef ARRAY_STACK /* <-- !stack */
 				size_t idx = rand() / (RAND_MAX + 1.0) * size;
-				if(!(data = T_(ArrayGet)(&a, idx))) continue;
+				if(!(data = T_(ArrayGet)(&a) + idx)) continue;
 				PT_(to_string)(data, &str);
 				printf("Removing %s at %lu.\n", str, (unsigned long)idx);
 				{
@@ -321,7 +321,7 @@ static void PT_(test_replace)(void) {
 	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size
-		&& !memcmp(t, T_(ArrayGet)(&a, 1), sizeof *t));
+		&& !memcmp(t, T_(ArrayGet)(&a) + 1, sizeof *t));
 	/* Replacing larger size. */
 	t = T_(ArrayNew)(&b);
 	assert(t);
@@ -330,13 +330,13 @@ static void PT_(test_replace)(void) {
 	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size + 1
-		   && !memcmp(t, T_(ArrayGet)(&a, 2), sizeof *t));
+		   && !memcmp(t, T_(ArrayGet)(&a) + 2, sizeof *t));
 	/* Replacing a smaller size. */
 	success = T_(ArrayIndexReplace)(&a, 1, 4, &b);
 	printf("Array after replacing [1, 4) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size
-		   && !memcmp(t, T_(ArrayGet)(&a, 2), sizeof *t));
+		   && !memcmp(t, T_(ArrayGet)(&a) + 2, sizeof *t));
 	T_(ArrayClear)(&b);
 	t = T_(ArrayBuffer)(&b, 2);
 	assert(t);
@@ -347,21 +347,21 @@ static void PT_(test_replace)(void) {
 	T_(ArrayReplace)(&a, 0, -1, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[0],[1],[4],[0],[2],[3]] */
-	T_(ArrayReplace)(&a, T_(ArrayGet)(&a, 1), 2, &b);
+	T_(ArrayReplace)(&a, T_(ArrayGet)(&a) + 1, 2, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
-	T_(ArrayReplace)(&a, T_(ArrayGet)(&a, 2), -5, &b);
+	T_(ArrayReplace)(&a, T_(ArrayGet)(&a) + 2, -5, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[2],[3],[3],[4],[0],[2],[3]] */
-	T_(ArrayReplace)(&a, T_(ArrayGet)(&a, -2), -5, &b);
+	T_(ArrayReplace)(&a, T_(ArrayGet)(&a) + 8, -1, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
-	/* a = [[1],[2],[2],[3],[3],[4],[0],[2],[3]] */
-	assert(!memcmp(ts + 1, T_(ArrayGet)(&a, 0), sizeof *t * 2) &&
-		!memcmp(ts + 2, T_(ArrayGet)(&a, 2), sizeof *t * 2) &&
-		!memcmp(ts + 3, T_(ArrayGet)(&a, 4), sizeof *t * 2) &&
-		!memcmp(ts + 0, T_(ArrayGet)(&a, 6), sizeof *t) &&
-		!memcmp(ts + 2, T_(ArrayGet)(&a, 7), sizeof *t * 2) &&
-		T_(ArraySize)(&a) == 9);
+	/* a = [[1],[2],[2],[3],[3],[4],[0],[2],[2],[3]] */
+	assert(T_(ArraySize)(&a) == 9 &&
+		!memcmp(ts + 1, T_(ArrayGet)(&a), sizeof *t * 2) &&
+		!memcmp(ts + 2, T_(ArrayGet)(&a) + 2, sizeof *t * 2) &&
+		!memcmp(ts + 3, T_(ArrayGet)(&a) + 4, sizeof *t * 2) &&
+		!memcmp(ts + 0, T_(ArrayGet)(&a) + 6, sizeof *t) &&
+		!memcmp(ts + 2, T_(ArrayGet)(&a) + 7, sizeof *t * 2));
 	T_(Array_)(&b);
 	T_(Array_)(&a);
 }
