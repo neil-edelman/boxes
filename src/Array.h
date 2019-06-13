@@ -211,6 +211,25 @@ static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	return 1;
 }
 
+/** Replace: does the work. */
+static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
+	const size_t i1, const struct T_(Array) *const b) {
+	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
+	assert(a && a != b && i0 <= i1 && i1 <= a->size);
+	if(a_range < b_range) { /* The output is bigger. */
+		const size_t diff = b_range - a_range;
+		if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;
+			if(!PT_(reserve)(a, a->size + diff, 0)) return 0;
+		memmove(a->data + i1 + diff, a->data + i1,(a->size-i1)*sizeof *a->data);
+		a->size += diff;
+	} else if(b_range < a_range) { /* The output is smaller. */
+		memmove(a->data + i0 + b_range, a->data+i1,(a->size-i1)*sizeof*a->data);
+		a->size -= a_range - b_range;
+	}
+	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
+	return 1;
+}
+
 /** Zeros {a} except for {ARRAY_MIGRATE_ALL} which is initialised in the
  containing function, and not {!ARRAY_FREE_LIST}, which is initialised in
  \see{<PT>_reserve}. */
@@ -293,6 +312,16 @@ static void T_(ArrayClear)(struct T_(Array) *const a) {
  @allow */
 static T *T_(ArrayGet)(const struct T_(Array) *const a) {
 	return a ? a->data : 0;
+}
+
+/** Causing something to be added to the {<T>Array} may invalidate this
+ pointer, see \see{<T>ArrayUpdateNew}.
+ @param a: If null, returns null.
+ @return One past the end of the array.
+ @order \Theta(1)
+ @allow */
+static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
+	return a ? a->data + a->size : 0;
 }
 
 /** Gets an index given {data}.
@@ -507,26 +536,7 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	assert(i < a->size);
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
-
-/** Replace: does the work. */
-static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
-	const size_t i1, const struct T_(Array) *const b) {
-	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
-	assert(a && a != b && i0 <= i1 && i1 <= a->size);
-	if(a_range < b_range) { /* The output is bigger. */
-		const size_t diff = b_range - a_range;
-		if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;
-		if(!PT_(reserve)(a, a->size + diff, 0)) return 0;
-		memmove(a->data + i1 + diff, a->data + i1,(a->size-i1)*sizeof *a->data);
-		a->size += diff;
-	} else if(b_range < a_range) { /* The output is smaller. */
-		memmove(a->data + i0 + b_range, a->data+i1,(a->size-i1)*sizeof*a->data);
-		a->size -= a_range - b_range;
-	}
-	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
-	return 1;
-}
-
+static const char *T_(ArrayToString)(const struct T_(Array) *const a);
 /** In {a}, replaces the elements from {r} up to {range} with a copy of {b}.
  @param a: If null, returns zero.
  @param replace: Beginning of the replaced value, inclusive. If null, appends to
@@ -549,6 +559,9 @@ static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
 	if(!a) return 0;
 	if(a == b) return errno = EDOM, 0;
 	if(!PT_(range)(a, anchor, range, &i0, &i1)) return 0;
+#ifdef ARRAY_TO_STRING
+	printf("Array.h: Replacing %s [%lu, %lu) -> %s.\n", T_(ArrayToString)(a), (unsigned long)i0, (unsigned long)i1, T_(ArrayToString)(b));
+#endif
 	return PT_(replace)(a, i0, i1, b);
 }
 
@@ -666,6 +679,7 @@ static void PT_(unused_set)(void) {
 #endif /* !stack --> */
 	T_(ArrayClear)(0);
 	T_(ArrayGet)(0);
+	T_(ArrayEnd)(0);
 	T_(ArrayIndex)(0, 0);
 	T_(ArrayPeek)(0);
 	T_(ArrayPop)(0);
