@@ -266,14 +266,38 @@ static void T_(ArrayClear)(struct T_(Array) *const a) {
 	a->size = 0;
 }
 
+/** Converts from a `long` to an index that is clamped to `[0, a.size]` (may be
+ `size`, one past the end of the `a`). The subset of `long` that is
+ representable is (much?) less than the full range of `size_t`, so this only
+ works for numbers that are 65k. It is helpful to have this for convenience
+ when working with negative numbers, especially for Python programmers.
+ @param result: On success, the index is stored in this address.
+ @return Success.
+ @throws ERANGE: {input} is greater then +/-65535, the minimum size of a
+ `size_t`. */
+static int PT_(index)(const struct T_(Array) *const a, const long piece,
+	size_t *const idx) {
+	assert(a && idx);
+	if(piece > 65535l || piece < -65535l) return errno = ERANGE, 0;
+	*idx = (piece < 0)
+		? ((size_t)(-piece) >= a->size) ? 0 : a->size - (size_t)(-piece)
+		: (size_t)piece >= a->size ? a->size : (size_t)piece;
+	return 1;
+}
+
 /** Gets an existing element by index. Causing something to be added to the
  {<T>Array} may invalidate this pointer, see \see{<T>ArrayUpdateNew}.
  @param a: If null, returns null.
- @param idx: Index.
+ @param piece: Index as a `long int`, clipped to `[0, a.size]` (may be one past
+ the end of the array); indices that are negative are implied to have the array
+ length added.
  @return If failed, returns a null pointer.
+ @throws ERANGE: {piece} is greater then +/-65535, (use pointer arithmetic.)
  @order \Theta(1)
  @allow */
-static T *T_(ArrayGet)(const struct T_(Array) *const a, const size_t idx) {
+static T *T_(ArrayGet)(const struct T_(Array) *const a, const long piece) {
+	size_t idx;
+	if(!a || !PT_(index)(a, piece, &idx)) return 0;
 	return a ? idx < a->size ? a->data + idx : 0 : 0;
 }
 
@@ -511,15 +535,15 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 
 /** In {a}, replaces the elements from {r} up to {range} with a copy of {b}.
  @param a: If null, returns zero.
- @param replace: Begining of the replaced value, inclusive. If null, appends to
+ @param replace: Beginning of the replaced value, inclusive. If null, appends to
  the end.
  @param range: How many replaced values; negative values are fixed and
- implictly plus the length of the array; clamped at the minimum and maximum.
+ implicitly plus the length of the array; clamped at the minimum and maximum.
  @param b: The replacement array. If null, deletes without replacing.
  @return Success.
  @throws EDOM: {a} and {b} are not null and the same.
  @throws EDOM: {data} is not in {a}.
- @throws ERANGE: {range} is greater then 65535 or smaller then -65535.
+ @throws ERANGE: {range} is greater then 65535 or smaller then -65534.
  @throws ERANGE: {b} would cause the array to overflow.
  @throws {realloc}.
  @order \Theta({b.size}) if the elements have the same size, otherwise,
@@ -532,10 +556,11 @@ static int T_(ArrayReplace)(struct T_(Array) *const a, const T *replace,
 	if(a == b||(replace && (replace < a->data || replace >= a->data + a->size)))
 		return errno = EDOM, 0;
 	/* Minimum `size_t`. */
-	if(range > 65535l || range < -65535l) return errno = ERANGE, 0;
+	if(range > 65535l || range < -65534l) return errno = ERANGE, 0;
 	i0 = replace ? (size_t)(replace - a->data) : a->size;
 	if(range < 0) {
-		i1 = ((size_t)(-range) >= a->size) ? i1 = 0 : a->size -(size_t)(-range);
+		i1 = ((size_t)(-range + 1) >= a->size) ? i1 = 0 :
+			a->size - (size_t)(-range + 1);
 	} else {
 		i1 = i0 + (size_t)range;
 		if(i1 < i0) return errno = ERANGE, 0; /* Overflow `size_t`. */

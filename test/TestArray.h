@@ -353,6 +353,9 @@ static void PT_(test_replace)(void) {
 	T_(ArrayReplace)(&a, T_(ArrayGet)(&a, 2), -5, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[2],[3],[3],[4],[0],[2],[3]] */
+	T_(ArrayReplace)(&a, T_(ArrayGet)(&a, -2), -5, &b);
+	printf("a = %s.\n", T_(ArrayToString)(&a));
+	/* a = [[1],[2],[2],[3],[3],[4],[0],[2],[3]] */
 	assert(!memcmp(ts + 1, T_(ArrayGet)(&a, 0), sizeof *t * 2) &&
 		!memcmp(ts + 2, T_(ArrayGet)(&a, 2), sizeof *t * 2) &&
 		!memcmp(ts + 3, T_(ArrayGet)(&a, 4), sizeof *t * 2) &&
