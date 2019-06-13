@@ -192,38 +192,21 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	return 1;
 }
 
-/** Converts from a `long` to an index. The subset of `long` that is
- representable is (much?) less than the full range of `size_t`, so this only
- works for numbers that are 65k. It is helpful to have this for convenience
- when working with negative numbers for Python programmers.
- @param idx: On success, the index is stored in this address.
- @return Success.
- @throws ERANGE: {piece} is greater then +/-65535, the minimum of a `size_t`. */
-static int PT_(index)(const struct T_(Array) *const a, const long piece,
-	size_t *const idx) {
-	assert(a && idx);
-	if(piece > 65535l || piece < -65535l) return errno = ERANGE, 0;
-	*idx = (piece < 0)
-		? ((size_t)(-piece) >= a->size) ? 0 : a->size - (size_t)(-piece)
-		: (size_t)piece >= a->size ? a->size : (size_t)piece;
-	return 1;
-}
-
 /** Converts {anchor} and {range} à la Python and stores them in the pointers
  {p0} and {p1} {s.t} {*p0, *p1 \in [0, a.size], *p0 <= *p1}.
  @param anchor: An element in the array or null to indicate past the end.
  @return Success.
  @throws ERANGE: {anchor} is not null and not in {a}.
- @throws ERANGE: {range} is greater then 65535 or smaller then -65534. */
+ @throws ERANGE: {range} is greater then +/-65534. */
 static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	const long range, size_t *const p0, size_t *const p1) {
 	assert(a && p0 && p1);
 	if((anchor && (anchor < a->data || anchor >= a->data + a->size))
-		|| range > 65535l || range < -65534l) return errno = ERANGE, 0;
+		|| range > 65534l || range < -65534l) return errno = ERANGE, 0;
 	*p0 = anchor ? (size_t)(anchor - a->data) : a->size;
 	*p1 = (range < 0)
 		? (size_t)(-range) > a->size ? 0 : a->size - (size_t)(-range) + 1
-		: (size_t)(range)  > a->size ? a->size : (size_t)range;
+		: (size_t)(range)  > a->size ? a->size : (size_t)range + 1;
 	if(*p0 > *p1) *p1 = *p0;
 	return 1;
 }
@@ -565,7 +548,7 @@ static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
 	size_t i0, i1;
 	if(!a) return 0;
 	if(a == b) return errno = EDOM, 0;
-	if(PT_(range)(a, anchor, range, &i0, &i1)) return 0;
+	if(!PT_(range)(a, anchor, range, &i0, &i1)) return 0;
 	return PT_(replace)(a, i0, i1, b);
 }
 
