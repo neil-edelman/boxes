@@ -64,6 +64,7 @@
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy memmove (strerror strcpy memcmp in ArrayTest.h) */
 #include <errno.h>	/* errno */
+#include <limits.h> /* LONG_MAX */
 #ifdef ARRAY_TO_STRING /* <-- print */
 #include <stdio.h>	/* sprintf */
 #endif /* print --> */
@@ -489,26 +490,11 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
-/** In {a}, replaces the elements from indices {i0} to {i1} with a copy of {b}.
- @param a: If null, returns null.
- @param i0, i1: The replacement indices, {[i0, i1)}, such that
- {0 <= i0 <= i1 <= a.size}.
- @param b: The replacement array. If null, deletes without replacing.
- @return Success.
- @throws EDOM: {a} and {b} are not null and the same.
- @throws EDOM: {i0} or {i1} are out-of-bounds or {i0 > i1}.
- @throws ERANGE: {b} would cause the array to overflow.
- @throws {realloc}.
- @order \Theta({b.size}) if the elements have the same size, otherwise,
- amortised O({a.size} + {b.size}).
- @allow */
-static int T_(ArrayReplace)(struct T_(Array) *const a, const size_t i0,
+/** Replace: does the work. */
+static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	const size_t i1, const struct T_(Array) *const b) {
-	size_t a_range, b_range;
-	if(!a) return 0;
-	if(a == b || i0 > i1 || i1 > a->size) return errno = EDOM, 0;
-	a_range = i1 - i0;
-	b_range = b ? b->size : 0;
+	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
+	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
 		if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;
@@ -521,6 +507,63 @@ static int T_(ArrayReplace)(struct T_(Array) *const a, const size_t i0,
 	}
 	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
 	return 1;
+}
+
+/** In {a}, replaces the elements from {r} up to {range} with a copy of {b}.
+ @param a: If null, returns zero.
+ @param replace: Begining of the replaced value, inclusive. If null, appends to
+ the end.
+ @param range: How many replaced values; negative values are fixed and
+ implictly plus the length of the array; clamped at the minimum and maximum.
+ @param b: The replacement array. If null, deletes without replacing.
+ @return Success.
+ @throws EDOM: {a} and {b} are not null and the same.
+ @throws EDOM: {data} is not in {a}.
+ @throws ERANGE: {range} is greater then 65535 or smaller then -65535.
+ @throws ERANGE: {b} would cause the array to overflow.
+ @throws {realloc}.
+ @order \Theta({b.size}) if the elements have the same size, otherwise,
+ amortised O({a.size} + {b.size}).
+ @allow */
+static int T_(ArrayReplace)(struct T_(Array) *const a, const T *replace,
+	const long range, const struct T_(Array) *const b) {
+	size_t i0, i1;
+	if(!a) return 0;
+	if(a == b||(replace && (replace < a->data || replace >= a->data + a->size)))
+		return errno = EDOM, 0;
+	/* Minimum `size_t`. */
+	if(range > 65535l || range < -65535l) return errno = ERANGE, 0;
+	i0 = replace ? (size_t)(replace - a->data) : a->size;
+	if(range < 0) {
+		i1 = ((size_t)(-range) >= a->size) ? i1 = 0 : a->size -(size_t)(-range);
+	} else {
+		i1 = i0 + (size_t)range;
+		if(i1 < i0) return errno = ERANGE, 0; /* Overflow `size_t`. */
+	}
+	if(i1 < i0) i1 = i0;
+	else if(i1 > a->size) i1 = a->size;
+	return PT_(replace)(a, i0, i1, b);
+}
+
+/** In {a}, replaces the elements from indices {i0} (inclusive) to {i1}
+ (exclusive) with a copy of {b}.
+ @param a: If null, returns zero.
+ @param i0, i1: The replacement indices, {[i0, i1)}, such that
+ {0 <= i0 <= i1 <= a.size}.
+ @param b: The replacement array. If null, deletes without replacing.
+ @return Success.
+ @throws EDOM: {a} and {b} are not null and the same.
+ @throws EDOM: {i0} or {i1} are out-of-bounds or {i0 > i1}.
+ @throws ERANGE: {b} would cause the array to overflow.
+ @throws {realloc}.
+ @order \Theta({b.size}) if the elements have the same size, otherwise,
+ amortised O({a.size} + {b.size}).
+ @allow */
+static int T_(ArrayIndexReplace)(struct T_(Array) *const a, const size_t i0,
+	const size_t i1, const struct T_(Array) *const b) {
+	if(!a) return 0;
+	if(a == b || i0 > i1 || i1 > a->size) return errno = EDOM, 0;
+	return PT_(replace)(a, i0, i1, b);
 }
 
 #ifdef ARRAY_TO_STRING /* <-- print */
@@ -629,6 +672,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayKeepIf)(0, 0);
 	T_(ArrayTrim)(0, 0);
 	T_(ArrayReplace)(0, 0, 0, 0);
+	T_(ArrayIndexReplace)(0, 0, 0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
