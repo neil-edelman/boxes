@@ -356,6 +356,7 @@ static void PT_(test_replace)(void) {
 	T_(ArrayReplace)(&a, T_(ArrayGet)(&a) + 7, -1, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
+	/* @fixme This is not enought coverage. */
 	assert(T_(ArraySize)(&a) == 9 &&
 		!memcmp(ts + 1, T_(ArrayGet)(&a), sizeof *t * 2) &&
 		!memcmp(ts + 2, T_(ArrayGet)(&a) + 2, sizeof *t * 3) &&

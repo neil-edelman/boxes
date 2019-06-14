@@ -197,17 +197,24 @@ static int PT_(reserve)(struct T_(Array) *const a,
  @param anchor: An element in the array or null to indicate past the end.
  @return Success.
  @throws ERANGE: {anchor} is not null and not in {a}.
- @throws ERANGE: {range} is greater then +/-65534. */
+ @throws ERANGE: {range} is greater then +/-65534.
+ @throws ERANGE: `size_t` overflow. */
 static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	const long range, size_t *const p0, size_t *const p1) {
+	size_t i0, i1;
 	assert(a && p0 && p1);
 	if((anchor && (anchor < a->data || anchor >= a->data + a->size))
 		|| range > 65534l || range < -65534l) return errno = ERANGE, 0;
-	*p0 = anchor ? (size_t)(anchor - a->data) : a->size;
-	*p1 = (range < 0)
-		? (size_t)(-range) > a->size ? 0 : a->size - (size_t)(-range) + 1
-		: (size_t)(range)  > a->size ? a->size : (size_t)range + 1;
-	if(*p0 > *p1) *p1 = *p0;
+	i0 = anchor ? (size_t)(anchor - a->data) : a->size;
+	if(range < 0) {
+		i1 = (size_t)(-range) > a->size ? 0 : a->size - (size_t)(-range) + 1;
+		if(i0 > i1) i1 = i0;
+	} else {
+		i1 = i0 + (size_t)range;
+		if(i0 > i1) return errno = ERANGE, 0;
+		if(i1 > a->size) i1 = a->size;
+	}
+	*p0 = i0, *p1 = i1;
 	return 1;
 }
 
@@ -536,7 +543,10 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	assert(i < a->size);
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
+
+#ifdef ARRAY_TO_STRING
 static const char *T_(ArrayToString)(const struct T_(Array) *const a);
+#endif
 /** In {a}, replaces the elements from {r} up to {range} with a copy of {b}.
  @param a: If null, returns zero.
  @param replace: Beginning of the replaced value, inclusive. If null, appends to
@@ -560,7 +570,7 @@ static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
 	if(a == b) return errno = EDOM, 0;
 	if(!PT_(range)(a, anchor, range, &i0, &i1)) return 0;
 #ifdef ARRAY_TO_STRING
-	printf("Array.h: Replacing %s [%lu, %lu) -> %s.\n", T_(ArrayToString)(a), (unsigned long)i0, (unsigned long)i1, T_(ArrayToString)(b));
+	printf("Array.h: Replacing %s anchor %lu, range %ld -> [%lu, %lu).\n", T_(ArrayToString)(a), anchor ? (unsigned long)(anchor - a->data) : a->size, range, (unsigned long)i0, (unsigned long)i1);
 #endif
 	return PT_(replace)(a, i0, i1, b);
 }
