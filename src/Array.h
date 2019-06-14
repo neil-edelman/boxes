@@ -569,9 +569,6 @@ static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
 	if(!a) return 0;
 	if(a == b) return errno = EDOM, 0;
 	if(!PT_(range)(a, anchor, range, &i0, &i1)) return 0;
-#ifdef ARRAY_TO_STRING
-	printf("Array.h: Replacing %s anchor %lu, range %ld -> [%lu, %lu).\n", T_(ArrayToString)(a), anchor ? (unsigned long)(anchor - a->data) : a->size, range, (unsigned long)i0, (unsigned long)i1);
-#endif
 	return PT_(replace)(a, i0, i1, b);
 }
 
