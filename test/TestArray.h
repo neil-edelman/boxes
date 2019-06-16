@@ -393,7 +393,7 @@ static void T_(ArrayTest)(void) {
 	PT_(test_basic)();
 	PT_(test_random)();
 	PT_(test_replace)();
-	fprintf(stderr, "Done tests of Array<" T_NAME ">.\n\n");
+	fprintf(stderr, "Done tests of Array<" QUOTE(ARRAY_NAME) ">.\n\n");
 }
 
 /* Un-define all macros. */
