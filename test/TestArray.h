@@ -367,6 +367,36 @@ static void PT_(test_replace)(void) {
 	T_(Array_)(&a);
 }
 
+static int PT_(keep_one)(const T *const data) {
+	static size_t i;
+	static const int things[] = { 1,0,0,0,0,1,0,0,1,1,0,1,0,1,0,1,0 };
+	const int predicate = things[i++];
+	(void)data;
+	i %= sizeof things / sizeof *things;
+	return predicate;
+}
+
+static void PT_(test_keep)(void) {
+	T ts[17], *t, *t1, *e;
+	const size_t ts_size = sizeof ts / sizeof *ts;
+	struct T_(Array) a = ARRAY_ZERO;
+	PT_(valid_state)(&a);
+	for(t = ts, t1 = t + ts_size; t < t1; t++) {
+		PT_(filler)(t);
+		e = T_(ArrayNew)(&a), assert(e);
+		memcpy(e, t, sizeof *t);
+	}
+	T_(ArrayKeepIf)(&a, &PT_(keep_one));
+	assert(T_(ArraySize)(&a) == 7
+		&& !memcmp(ts + 0, T_(ArrayGet)(&a) + 0, sizeof *t * 1)
+		&& !memcmp(ts + 5, T_(ArrayGet)(&a) + 1, sizeof *t * 1)
+		&& !memcmp(ts + 8, T_(ArrayGet)(&a) + 2, sizeof *t * 2)
+		&& !memcmp(ts + 11, T_(ArrayGet)(&a) + 4, sizeof *t * 1)
+		&& !memcmp(ts + 13, T_(ArrayGet)(&a) + 5, sizeof *t * 1)
+		&& !memcmp(ts + 15, T_(ArrayGet)(&a) + 6, sizeof *t * 1));
+	T_(Array_)(&a);
+}
+
 /** The list will be tested on stdout. */
 static void T_(ArrayTest)(void) {
 	printf("Array<" QUOTE(ARRAY_NAME) ">: of type <" QUOTE(ARRAY_TYPE)
@@ -393,6 +423,7 @@ static void T_(ArrayTest)(void) {
 	PT_(test_basic)();
 	PT_(test_random)();
 	PT_(test_replace)();
+	PT_(test_keep)();
 	fprintf(stderr, "Done tests of Array<" QUOTE(ARRAY_NAME) ">.\n\n");
 }
 

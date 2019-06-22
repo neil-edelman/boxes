@@ -505,40 +505,49 @@ static void T_(ArrayForEach)(struct T_(Array) *const a,
  value is false, lazy deletes that item.
  @param a, keep: If null, does nothing.
  @order O({size})
- @fixme Test.
  @allow */
 static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	const PT_(Predicate) keep) {
 	T *erase = 0, *t;
 	const T *retain = 0, *end;
-	size_t removed = 0;
+	size_t newsize = 0;
 	int keep0 = 1, keep1 = 0;
 	if(!a || !keep) return;
+	newsize = a->size;
 	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
 		keep1 = !!keep(t);
+		{
+			char str[12];
+			PT_(to_string)(t, &str);
+			printf("Keep(%s) %d.\n", str, keep1);
+		}
 		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
 		if(keep1) { /* Rising edge. */
 			assert(erase && !retain);
 			retain = t;
+			printf("\\-- retain = %lu.\n", retain - a->data);
 		} else if(erase) { /* Falling edge. */
 			size_t n = t - retain;
-			assert(retain && erase < retain && retain < t);
+			assert(erase < retain && retain < t);
 			memmove(erase, retain, n * sizeof *t);
-			removed += retain - erase;
 			erase += n;
 			retain = 0;
+			printf("/-- erase = %lu.\n", erase - a->data);
 		} else { /* Falling edge, (first time only.) */
 			erase = t;
+			printf("/-- (first) erase = %lu.\n", erase - a->data);
 		}
 	}
-	if(erase && keep1) { /* Delayed move when the iteration ended; repeat. */
+	if(!erase) return; /* All elements were kept. */
+	if(keep1) { /* Delayed move when the iteration ended; repeat. */
 		size_t n = t - retain;
 		assert(retain && erase < retain && retain < t);
 		memmove(erase, retain, n * sizeof *t);
-		removed += retain - erase;
+		erase += n;
 	}
-	assert(removed <= a->size);
-	a->size -= removed;
+	/* Adjust the size. */
+	assert((size_t)(erase - a->data) <= a->size);
+	a->size = erase - a->data;
 }
 
 /** Removes at either end of {a} of things that {predicate} returns true.
