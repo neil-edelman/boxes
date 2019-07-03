@@ -3,8 +3,6 @@
 2016 Neil Edelman, distributed under the terms of the MIT License; see
  [ https://opensource.org/licenses/MIT ].
 
-![States](web/states.png)
-
  _<T>Array_ is a dynamic contiguous array that stores _<T>_, which must be set
  using _ARRAY_TYPE_. The capacity is greater then or equal to the size, and
  resizing incurs amortised cost. When adding new elements, the elements may
@@ -15,6 +13,8 @@
  parameters are preprocessor macros, and are all undefined at the end of the
  file for convenience. _assert.h_ is included in this file; to stop the
  debug assertions, use _#define NDEBUG_ before inclusion.
+
+![States](web/states.png)
 
 parameter: ARRAY_NAME, ARRAY_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith,
  accessible to the compiler at the time of inclusion; should be conformant to
@@ -65,37 +65,37 @@ The array. Zeroed data is a valid state. To instantiate explicitly, see
 | _Return Type_	| _Function Name_	| _Argument List_ |
 | - | - | - |
 | static void	| <T>Array_	| (struct <T>Array *const a) |
-static void	<T>Array	(struct <T>Array *const a)
-static size_t	<T>ArraySize	(const struct <T>Array *const a)
-static int	<T>ArrayRemove	(struct <T>Array *const a, T *const data)
-static int	<T>ArrayTailRemove	(struct <T>Array *const a, T *const data)
-static void	<T>ArrayClear	(struct <T>Array *const a)
-static T *	<T>ArrayGet	(const struct <T>Array *const a)
-static T *	<T>ArrayEnd	(const struct <T>Array *const a)
-static size_t	<T>ArrayIndex	(const struct <T>Array *const a,
-	const T *const data)
-static T *	<T>ArrayPeek	(const struct <T>Array *const a)
-static T *	<T>ArrayPop	(struct <T>Array *const a)
-static T *	<T>ArrayBack	(const struct <T>Array *const a, const T *const here)
-static T *	<T>ArrayNext	(const struct <T>Array *const a, const T *const here)
-static T *	<T>ArrayNew	(struct <T>Array *const a)
-static T *	<T>ArrayUpdateNew	(struct <T>Array *const a,
-	T **const update_ptr)
-static T *	<T>ArrayBuffer	(struct <T>Array *const a, const size_t buffer)
-static int	<T>ArrayAddSize	(struct <T>Array *const a, const size_t add)
-static void	<T>ArrayForEach	(struct <T>Array *const a,
-	const <PT>Action action)
-static void	<T>ArrayIfEach	(struct <T>Array *const a,
-	const <PT>Predicate predicate, const <PT>Action action)
-static void	<T>ArrayKeepIf	(struct <T>Array *const a,
-	const <PT>Predicate keep)
-static void	<T>ArrayTrim	(struct <T>Array *const a,
-	const <PT>Predicate predicate)
-static int	<T>ArrayReplace	(struct <T>Array *const a, const T *anchor,
-	const long range, const struct <T>Array *const b)
-static int	<T>ArrayIndexReplace	(struct <T>Array *const a, const size_t i0,
-	const size_t i1, const struct <T>Array *const b)
-static const char *	<T>ArrayToString	(const struct <T>Array *const a)
+| static void	| <T>Array	| (struct <T>Array *const a) |
+| static size_t	| <T>ArraySize	| (const struct <T>Array *const a) |
+| static int	| <T>ArrayRemove	| (struct <T>Array *const a, T *const data) |
+| static int	| <T>ArrayTailRemove	| (struct <T>Array *const a, T *const data) |
+| static void	| <T>ArrayClear	| (struct <T>Array *const a) |
+| static T *	| <T>ArrayGet	| (const struct <T>Array *const a) |
+| static T *	| <T>ArrayEnd	| (const struct <T>Array *const a) |
+| static size_t	| <T>ArrayIndex	| (const struct <T>Array *const a,
+	const T *const data) |
+| static T *	| <T>ArrayPeek	| (const struct <T>Array *const a) |
+| static T *	| <T>ArrayPop	| (struct <T>Array *const a) |
+| static T *	| <T>ArrayBack	| (const struct <T>Array *const a, const T *const here) |
+| static T *	| <T>ArrayNext	| (const struct <T>Array *const a, const T *const here) |
+| static T *	| <T>ArrayNew	| (struct <T>Array *const a) |
+| static T *	| <T>ArrayUpdateNew	| (struct <T>Array *const a,
+	T **const update_ptr) |
+| static T *	| <T>ArrayBuffer	| (struct <T>Array *const a, const size_t buffer) |
+| static int	| <T>ArrayAddSize	| (struct <T>Array *const a, const size_t add) |
+| static void	| <T>ArrayForEach	| (struct <T>Array *const a,
+	const <PT>Action action) |
+| static void	| <T>ArrayIfEach	| (struct <T>Array *const a,
+	const <PT>Predicate predicate, const <PT>Action action) |
+| static void	| <T>ArrayKeepIf	| (struct <T>Array *const a,
+	const <PT>Predicate keep) |
+| static void	| <T>ArrayTrim	| (struct <T>Array *const a,
+	const <PT>Predicate predicate) |
+| static int	| <T>ArrayReplace	| (struct <T>Array *const a, const T *anchor,
+	const long range, const struct <T>Array *const b) |
+| static int	| <T>ArrayIndexReplace	| (struct <T>Array *const a, const size_t i0,
+	const size_t i1, const struct <T>Array *const b) |
+| static const char *	| <T>ArrayToString	| (const struct <T>Array *const a) |
 
 
 
