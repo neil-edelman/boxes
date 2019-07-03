@@ -72,29 +72,21 @@ The array. Zeroed data is a valid state. To instantiate explicitly, see
 | static void	| <T>ArrayClear	| (struct <T>Array *const a) |
 | static T *	| <T>ArrayGet	| (const struct <T>Array *const a) |
 | static T *	| <T>ArrayEnd	| (const struct <T>Array *const a) |
-| static size_t	| <T>ArrayIndex	| (const struct <T>Array *const a,
-	const T *const data) |
+| static size_t	| <T>ArrayIndex	| (const struct <T>Array *const a, const T *const data) |
 | static T *	| <T>ArrayPeek	| (const struct <T>Array *const a) |
 | static T *	| <T>ArrayPop	| (struct <T>Array *const a) |
 | static T *	| <T>ArrayBack	| (const struct <T>Array *const a, const T *const here) |
 | static T *	| <T>ArrayNext	| (const struct <T>Array *const a, const T *const here) |
 | static T *	| <T>ArrayNew	| (struct <T>Array *const a) |
-| static T *	| <T>ArrayUpdateNew	| (struct <T>Array *const a,
-	T **const update_ptr) |
+| static T *	| <T>ArrayUpdateNew	| (struct <T>Array *const a, T **const update_ptr) |
 | static T *	| <T>ArrayBuffer	| (struct <T>Array *const a, const size_t buffer) |
 | static int	| <T>ArrayAddSize	| (struct <T>Array *const a, const size_t add) |
-| static void	| <T>ArrayForEach	| (struct <T>Array *const a,
-	const <PT>Action action) |
-| static void	| <T>ArrayIfEach	| (struct <T>Array *const a,
-	const <PT>Predicate predicate, const <PT>Action action) |
-| static void	| <T>ArrayKeepIf	| (struct <T>Array *const a,
-	const <PT>Predicate keep) |
-| static void	| <T>ArrayTrim	| (struct <T>Array *const a,
-	const <PT>Predicate predicate) |
-| static int	| <T>ArrayReplace	| (struct <T>Array *const a, const T *anchor,
-	const long range, const struct <T>Array *const b) |
-| static int	| <T>ArrayIndexReplace	| (struct <T>Array *const a, const size_t i0,
-	const size_t i1, const struct <T>Array *const b) |
+| static void	| <T>ArrayForEach	| (struct <T>Array *const a, const <PT>Action action) |
+| static void	| <T>ArrayIfEach	| (struct <T>Array *const a, const <PT>Predicate predicate, const <PT>Action action) |
+| static void	| <T>ArrayKeepIf	| (struct <T>Array *const a, const <PT>Predicate keep) |
+| static void	| <T>ArrayTrim	| (struct <T>Array *const a, const <PT>Predicate predicate) |
+| static int	| <T>ArrayReplace	| (struct <T>Array *const a, const T *anchor, const long range, const struct <T>Array *const b) |
+| static int	| <T>ArrayIndexReplace	| (struct <T>Array *const a, const size_t i0, const size_t i1, const struct <T>Array *const b) |
 | static const char *	| <T>ArrayToString	| (const struct <T>Array *const a) |
 
 
