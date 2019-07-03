@@ -3,6 +3,8 @@
 2016 Neil Edelman, distributed under the terms of the MIT License; see
  [ https://opensource.org/licenses/MIT ].
 
+![States](web/states.png)
+
  _<T>Array_ is a dynamic contiguous array that stores _<T>_, which must be set
  using _ARRAY_TYPE_. The capacity is greater then or equal to the size, and
  resizing incurs amortised cost. When adding new elements, the elements may
@@ -60,8 +62,9 @@ The array. Zeroed data is a valid state. To instantiate explicitly, see
 
 ## Function Summary ##
 
-_Return Type_	_Function Name_	_Argument List_
-static void	<T>Array_	(struct <T>Array *const a)
+| _Return Type_	| _Function Name_	| _Argument List_ |
+| - | - | - |
+| static void	| <T>Array_	| (struct <T>Array *const a) |
 static void	<T>Array	(struct <T>Array *const a)
 static size_t	<T>ArraySize	(const struct <T>Array *const a)
 static int	<T>ArrayRemove	(struct <T>Array *const a, T *const data)
