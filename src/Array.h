@@ -462,7 +462,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
  @order O(1)
  @fixme Test.
  @allow */
-static int T_(ArrayAddSize)(struct T_(Array) *const a, const size_t add) {
+static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	if(!a) return 0;
 	if(add > a->capacity || a->size > a->capacity - add)
 		return errno = ERANGE, 0;
@@ -705,7 +705,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayNew)(0);
 	T_(ArrayUpdateNew)(0, 0);
 	T_(ArrayBuffer)(0, 0);
-	T_(ArrayAddSize)(0, 0);
+	T_(ArrayExpand)(0, 0);
 	T_(ArrayForEach)(0, 0);
 	T_(ArrayIfEach)(0, 0, 0);
 	T_(ArrayKeepIf)(0, 0);
