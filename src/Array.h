@@ -509,7 +509,7 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
-static T *T_(ArrayAny)(struct T_(Array) *const a,
+static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
 	T *t, *end;
 	if(!a || !predicate) return 0;
