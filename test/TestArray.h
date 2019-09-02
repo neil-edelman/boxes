@@ -59,7 +59,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayNew)(0) == 0);
 	assert(T_(ArrayUpdateNew)(0, 0) == 0
 		&& T_(ArrayUpdateNew)(0, 0) == 0);
-	T_(ArrayForEach)(0, 0);
+	T_(ArrayEach)(0, 0);
 	T_(ArrayTrim)(0, 0);
 	assert(!strcmp("null", T_(ArrayToString(0))));
 	assert(errno == 0);
@@ -77,7 +77,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayPeek)(0) == 0);
 	assert(T_(ArrayPop)(0) == 0);
 	assert(T_(ArrayNext)(0, 0) == 0 && T_(ArrayNext)(0, t) == 0);
-	T_(ArrayForEach)(&a, 0);
+	T_(ArrayEach)(&a, 0);
 	assert(errno == 0);
 	PT_(valid_state)(&a);
 
