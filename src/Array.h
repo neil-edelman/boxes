@@ -585,9 +585,11 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
  @param[a] If null, returns zero.
  @param[anchor] Beginning of the replaced value, inclusive. If null, appends to
  the end.
- @param[range] How many replaced values; negative values are implicitly plus
- the length of the array; clamped at the minimum and maximum.
- @param[b] The replacement array. If null, deletes without replacing.
+ @param[range] How many replaced values in the original; negative values are
+ implicitly plus the length of the array; clamped at the minimum and maximum.
+ @param[b] The replacement array. If null, deletes without replacing. It is
+ more efficient than individual <fn:<T>ArrayRemove> to delete several
+ consecutive values.
  @return Success.
  @throws[EDOM] `a` and `b` are not null and the same.
  @throws[ERANGE] `anchor` is not null and not in `a`.
@@ -598,7 +600,7 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
  amortised O(`a.size` + `b.size`).
  @allow */
-static int T_(ArrayInsert)(struct T_(Array) *const a, const T *anchor,
+static int T_(ArraySplice)(struct T_(Array) *const a, const T *anchor,
 	const long range, const struct T_(Array) *const b) {
 	size_t i0, i1;
 	if(!a) return 0;
@@ -622,7 +624,7 @@ static int T_(ArrayInsert)(struct T_(Array) *const a, const T *anchor,
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
  amortised O(`a.size` + `b.size`).
  @allow */
-static int T_(ArrayIndexInsert)(struct T_(Array) *const a, const size_t i0,
+static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	const size_t i1, const struct T_(Array) *const b) {
 	if(!a) return 0;
 	if(a == b || i0 > i1 || i1 > a->size) return errno = EDOM, 0;
@@ -740,8 +742,8 @@ static void PT_(unused_set)(void) {
 	T_(ArrayAny)(0, 0);
 	T_(ArrayKeepIf)(0, 0);
 	T_(ArrayTrim)(0, 0);
-	T_(ArrayInsert)(0, 0, 0, 0);
-	T_(ArrayIndexInsert)(0, 0, 0, 0);
+	T_(ArraySplice)(0, 0, 0, 0);
+	T_(ArrayIndexSplice)(0, 0, 0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif

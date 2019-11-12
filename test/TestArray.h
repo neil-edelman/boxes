@@ -276,48 +276,48 @@ static void PT_(test_replace)(void) {
 	T_(Array)(&b);
 	/* Passing in null. */
 	errno = 0;
-	success = T_(ArrayIndexInsert)(0, 0, 0, 0);
+	success = T_(ArrayIndexSplice)(0, 0, 0, 0);
 	assert(!success && !errno);
-	success = T_(ArrayInsert)(0, 0, 0, 0);
+	success = T_(ArraySplice)(0, 0, 0, 0);
 	assert(!success && !errno);
 	/* a == b. */
-	success = T_(ArrayIndexInsert)(&a, 0, 0, &a);
+	success = T_(ArrayIndexSplice)(&a, 0, 0, &a);
 	assert(!success && errno == EDOM);
 	errno = 0;
-	success = T_(ArrayInsert)(&a, 0, 0, &a);
+	success = T_(ArraySplice)(&a, 0, 0, &a);
 	assert(!success && errno == EDOM);
 	errno = 0;
 	/* Out-of-bounds. */
-	success = T_(ArrayIndexInsert)(&a, 0, T_(ArraySize)(&a) + 1, 0);
+	success = T_(ArrayIndexSplice)(&a, 0, T_(ArraySize)(&a) + 1, 0);
 	assert(!success && errno == EDOM);
 	errno = 0;
 	/* Large */
-	success = T_(ArrayInsert)(&a, 0, 65536, 0);
+	success = T_(ArraySplice)(&a, 0, 65536, 0);
 	assert(!success && errno == ERANGE);
 	errno = 0;
 	/* e0 > e1. */
-	success = T_(ArrayIndexInsert)(&a, 1, 0, &b);
+	success = T_(ArrayIndexSplice)(&a, 1, 0, &b);
 	assert(!success && errno == EDOM);
 	errno = 0;
 	/* No-op. */
-	success = T_(ArrayIndexInsert)(&a, 0, 0, 0);
+	success = T_(ArrayIndexSplice)(&a, 0, 0, 0);
 	printf("Array %s.\n", T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size);
 	/* Deleting from the front. */
-	success = T_(ArrayIndexInsert)(&a, 0, 1, 0);
+	success = T_(ArrayIndexSplice)(&a, 0, 1, 0);
 	printf("Array after deleting from front %s.\n", T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size - 1);
 	/* Adding at the back. */
 	t = T_(ArrayNew)(&b);
 	assert(t);
 	memcpy(t, ts + 0, sizeof *t);
-	success = T_(ArrayIndexInsert)(&a, T_(ArraySize)(&a), T_(ArraySize)(&a),
+	success = T_(ArrayIndexSplice)(&a, T_(ArraySize)(&a), T_(ArraySize)(&a),
 		&b);
 	printf("Array after adding %s to back %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size);
 	/* Replacing same-size. */
-	success = T_(ArrayIndexInsert)(&a, 1, 2, &b);
+	success = T_(ArrayIndexSplice)(&a, 1, 2, &b);
 	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size
@@ -326,13 +326,13 @@ static void PT_(test_replace)(void) {
 	t = T_(ArrayNew)(&b);
 	assert(t);
 	memcpy(t, ts + 1, sizeof *t);
-	success = T_(ArrayIndexInsert)(&a, 1, 2, &b);
+	success = T_(ArrayIndexSplice)(&a, 1, 2, &b);
 	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size + 1
 		   && !memcmp(t, T_(ArrayGet)(&a) + 2, sizeof *t));
 	/* Replacing a smaller size. */
-	success = T_(ArrayIndexInsert)(&a, 1, 4, &b);
+	success = T_(ArrayIndexSplice)(&a, 1, 4, &b);
 	printf("Array after replacing [1, 4) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && T_(ArraySize)(&a) == ts_size
@@ -344,16 +344,16 @@ static void PT_(test_replace)(void) {
 	T_(ArrayExpand)(&b, 2);
 	/* a = [[1],[0],[1],[4],[0]]; b = [[2],[3]] */
 	printf("a = %s, b = %s.\n", T_(ArrayToString)(&a), T_(ArrayToString)(&b));
-	T_(ArrayInsert)(&a, 0, -1, &b);
+	T_(ArraySplice)(&a, 0, -1, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[0],[1],[4],[0],[2],[3]] */
-	T_(ArrayInsert)(&a, T_(ArrayGet)(&a) + 1, 2, &b);
+	T_(ArraySplice)(&a, T_(ArrayGet)(&a) + 1, 2, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
-	T_(ArrayInsert)(&a, T_(ArrayGet)(&a) + 2, -5, &b);
+	T_(ArraySplice)(&a, T_(ArrayGet)(&a) + 2, -5, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
-	T_(ArrayInsert)(&a, T_(ArrayGet)(&a) + 7, -1, &b);
+	T_(ArraySplice)(&a, T_(ArrayGet)(&a) + 7, -1, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
 	/* @fixme This is not enought coverage. */
