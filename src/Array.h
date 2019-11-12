@@ -2,15 +2,18 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  `<T>Array` is a dynamic contiguous array that stores `<T>`, which must be set
- using `ARRAY_TYPE`. The capacity is greater then or equal to the size, and
- resizing incurs amortised cost. When adding new elements, the elements may
- change memory location to fit, it is therefore unstable; any pointers to this
- memory may become stale and unusable when expanding.
+ using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal to
+ the size, resizing may be necessary and incurs amortised cost. When adding new
+ elements, the elements may change memory location to fit. It is therefore
+ unstable; any pointers to this memory may become stale and unusable when
+ expanding.
 
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
  file for convenience. `assert.h` is included in this file; to stop the
  debug assertions, use `#define NDEBUG` before inclusion.
+
+ ![States](web/states.png)
 
  @param[ARRAY_NAME, ARRAY_TYPE]
  The name that literally becomes `<T>`, and a valid type associated therewith,
@@ -30,7 +33,7 @@
  `../test/ArrayTest.h`. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PT>Action>. Requires `ARRAY_TO_STRING` and not `NDEBUG`.
 
- @title Array.h: Parameterised Contiguous Dynamic Array
+ @title Contiguous Dynamic Parameterised Array
  @std C89
  @author Neil */
 
@@ -595,7 +598,7 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
  amortised O(`a.size` + `b.size`).
  @allow */
-static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
+static int T_(ArrayInsert)(struct T_(Array) *const a, const T *anchor,
 	const long range, const struct T_(Array) *const b) {
 	size_t i0, i1;
 	if(!a) return 0;
@@ -619,7 +622,7 @@ static int T_(ArrayReplace)(struct T_(Array) *const a, const T *anchor,
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
  amortised O(`a.size` + `b.size`).
  @allow */
-static int T_(ArrayIndexReplace)(struct T_(Array) *const a, const size_t i0,
+static int T_(ArrayIndexInsert)(struct T_(Array) *const a, const size_t i0,
 	const size_t i1, const struct T_(Array) *const b) {
 	if(!a) return 0;
 	if(a == b || i0 > i1 || i1 > a->size) return errno = EDOM, 0;
@@ -737,8 +740,8 @@ static void PT_(unused_set)(void) {
 	T_(ArrayAny)(0, 0);
 	T_(ArrayKeepIf)(0, 0);
 	T_(ArrayTrim)(0, 0);
-	T_(ArrayReplace)(0, 0, 0, 0);
-	T_(ArrayIndexReplace)(0, 0, 0, 0);
+	T_(ArrayInsert)(0, 0, 0, 0);
+	T_(ArrayIndexInsert)(0, 0, 0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
