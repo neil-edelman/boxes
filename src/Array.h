@@ -13,7 +13,7 @@
  file for convenience. `assert.h` is included in this file; to stop the
  debug assertions, use `#define NDEBUG` before inclusion.
 
- ![States](web/states.png)
+ ![States](../web/states.png)
 
  @param[ARRAY_NAME, ARRAY_TYPE]
  The name that literally becomes `<T>`, and a valid type associated therewith,
