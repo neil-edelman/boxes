@@ -731,7 +731,6 @@ static int T_(ArrayCatPrintf)(struct T_(Array) *const a,
 	int is_null_term = 0;
 	size_t total_size;
 	if(!a || !fmt) return 0;
-	printf("Str: starting with <%s> appending <%s>\n", a->data, fmt);
 	/* Check the length first by printing to garbage. */
 	va_start(argp, fmt);
 	length = vsnprintf(&garbage, 0ul, fmt, argp);
@@ -741,7 +740,6 @@ static int T_(ArrayCatPrintf)(struct T_(Array) *const a,
 	 `ARRAY_TYPE` is `char`. */
 	is_null_term = a->size ? a->data[a->size - 1] == '\0' : 0;
 	total_size = a->size + length + !is_null_term;
-	printf("is_null_term %d\ntotal_size %lu\n", is_null_term, total_size);
 	if(total_size < a->size) { errno = ERANGE; return 0; } /* Overflow. */
 	if(!PT_(reserve)(a, total_size, 0)) return 0;
 	/* Now that we have enough space, do the actual printing. */
@@ -750,7 +748,6 @@ static int T_(ArrayCatPrintf)(struct T_(Array) *const a,
 	va_end(argp);
 	if(length < 0) return 0; /* `vsnprintf` error; unlikely. */
 	a->size += length + !is_null_term;
-	printf("Str: <%s>:%lu\n", a->data, a->size);
 	return 1;
 }
 #endif /* string --> */

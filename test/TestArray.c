@@ -14,7 +14,7 @@
 /** Define `CharArray`. */
 #define ARRAY_NAME Char
 #define ARRAY_TYPE char
-#define ARRAY_PRINTF
+#define ARRAY_STRING_FUNCTIONS
 #include "../src/Array.h"
 
 /** Define {A}. */
