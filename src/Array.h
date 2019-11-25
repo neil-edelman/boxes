@@ -717,8 +717,8 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 /** Concatenates a [printf
  ](http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html)-style
  format string. If it sees a '\0' as the last entry, it overwrites it; on
- success, it is always null-terminated. One must have `ARRAY_STRING_FUNCTIONS` and
- `ARRAY_TYPE` must be `char`.
+ success, it is always null-terminated. One must have `ARRAY_STRING_FUNCTIONS`
+ and `ARRAY_TYPE` must be `char`.
  @std C89 but C99 libraries required
  @return Success.
  @throws[malloc, vsnprintf]
