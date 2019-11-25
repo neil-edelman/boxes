@@ -28,9 +28,10 @@
  Optional print function implementing <typedef:<PT>ToString>; makes available
  <fn:<T>ArrayToString>.
 
- @param[ARRAY_PRINTF]
- This defines <fn:<T>ArrayCatPrintf>, but only makes sense if `ARRAY_TYPE` is
- `char`. Uses `vsnprintf`, which may not be in `C89` libraries.
+ @param[ARRAY_STRING_FUNCTIONS]
+ Only makes sense if `ARRAY_TYPE` is `char`, otherwise it's nonsense and the
+ compiler will most likely emit warnings. This defines <fn:<T>ArrayCatPrintf>,
+ which uses `vsnprintf` and may not be in `C89` libraries.
 
  @param[ARRAY_TEST]
  Unit testing framework using `<T>ArrayTest`, included in a separate header,
@@ -52,7 +53,7 @@
 #ifdef ARRAY_TO_STRING /* <-- print */
 #include <stdio.h>	/* sprintf */
 #endif /* print --> */
-#ifdef ARRAY_PRINTF /* <-- printf */
+#ifdef ARRAY_STRING_FUNCTIONS /* <-- printf */
 #include <stdarg.h> /* va_* */
 /* This function was standardised in `C99`. If one is getting a linker error,
  download any of the `vsnprintf` implementations and link it. */
@@ -711,12 +712,12 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 
 #endif /* print --> */
 
-#ifdef ARRAY_PRINTF /* <-- printf */
+#ifdef ARRAY_STRING_FUNCTIONS /* <-- string */
 
 /** Concatenates a [printf
  ](http://pubs.opengroup.org/onlinepubs/007908799/xsh/fprintf.html)-style
  format string. If it sees a '\0' as the last entry, it overwrites it; on
- success, it is always null-terminated. One must have `ARRAY_PRINTF` and
+ success, it is always null-terminated. One must have `ARRAY_STRING_FUNCTIONS` and
  `ARRAY_TYPE` must be `char`.
  @std C89 but C99 libraries required
  @return Success.
@@ -752,7 +753,7 @@ static int T_(ArrayCatPrintf)(struct T_(Array) *const a,
 	printf("Str: <%s>:%lu\n", a->data, a->size);
 	return 1;
 }
-#endif /* printf --> */
+#endif /* string --> */
 
 #ifdef ARRAY_TEST /* <-- test */
 #include "../test/TestArray.h" /* Need this file if one is going to run tests.*/
@@ -793,7 +794,7 @@ static void PT_(unused_set)(void) {
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
-#ifdef ARRAY_PRINTF
+#ifdef ARRAY_STRING_FUNCTIONS
 	T_(ArrayCatPrintf)(0, 0);
 #endif
 	PT_(unused_coda)();
@@ -819,8 +820,8 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef T
 #undef T_
 #undef PT_
-#ifdef ARRAY_PRINTF
-#undef ARRAY_PRINTF
+#ifdef ARRAY_STRING_FUNCTIONS
+#undef ARRAY_STRING_FUNCTIONS
 #endif
 #ifdef ARRAY_STACK
 #undef ARRAY_STACK
