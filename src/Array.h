@@ -57,7 +57,9 @@
 #include <stdarg.h> /* va_* */
 /* This function was standardised in `C99`. If one is getting a linker error,
  download any of the `vsnprintf` implementations and link it. */
-/*fixme!!: int vsnprintf(char *s, size_t n, const char *format, va_list ap);*/
+int vsnprintf(char *restrict s, size_t n, const char *restrict format,
+	va_list ap);
+/*int vsnprintf(char *s, size_t n, const char *format, va_list ap);*/
 #endif /* printf --> */
 
 
