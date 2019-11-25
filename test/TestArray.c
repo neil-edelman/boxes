@@ -11,6 +11,12 @@
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
 
+/** Define `CharArray`. */
+#define ARRAY_NAME Char
+#define ARRAY_TYPE char
+#define ARRAY_PRINTF
+#include "../src/Array.h"
+
 /** Define {A}. */
 struct A {
 	char value[4];
@@ -139,6 +145,15 @@ int main(void) {
 	IntArrayTest();
 	ColourArrayTest();
 	ColourStackArrayTest();
+	{
+		struct CharArray string = ARRAY_ZERO;
+		if(!CharArrayCatPrintf(&string, "%.3s bar", "foooo")
+			|| !CharArrayCatPrintf(&string, " baz")) return EXIT_FAILURE;
+		fprintf(stderr, "CharArrayCatPrintf: %s.\n", CharArrayGet(&string));
+		assert(CharArraySize(&string) == 12
+			&& !strcmp("foo bar baz", CharArrayGet(&string)));
+		CharArray_(&string);
+	}
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
