@@ -252,7 +252,7 @@ static void T_(Array)(struct T_(Array) *const a) {
 
 /** @param[a] If null, returns zero.
  @return The size of `a`.
- @order O(1)
+ @order \O(1)
  @allow */
 static size_t T_(ArraySize)(const struct T_(Array) *const a) {
 	if(!a) return 0;
@@ -268,7 +268,7 @@ static size_t T_(ArraySize)(const struct T_(Array) *const a) {
  end.
  @return Success, otherwise `errno` will be set for valid input.
  @throws[EDOM] `data` is not part of `a`.
- @order O(n).
+ @order \O(n).
  @allow */
 static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
@@ -286,7 +286,7 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
  end.
  @return Success, otherwise `errno` will be set for valid input.
  @throws[EDOM] `data` is not part of `a`.
- @order O(1).
+ @order \O(1).
  @allow */
 static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
@@ -415,7 +415,7 @@ static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
  @throws[ERANGE] Tried allocating more then can fit in `size_t` objects.
  @throws[realloc] [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @order Amortised O(1).
+ @order Amortised \O(1).
  @allow */
 static T *T_(ArrayNew)(struct T_(Array) *const a) {
 	if(!a) return 0;
@@ -430,7 +430,7 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
  @throws[ERANGE] Tried allocating more then can fit in `size_t`.
  @throws[realloc] [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @order amortised O(1)
+ @order Amortised \O(1).
  @fixme Untested.
  @allow */
 static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
@@ -447,7 +447,7 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  @throws[ERANGE] Tried allocating more then can fit in `size_t`.
  @throws[realloc] [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @order Amortised O(`buffer`).
+ @order Amortised \O(`buffer`).
  @fixme Test.
  @allow */
 static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
@@ -459,7 +459,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
  @return Success.
  @throws[ERANGE] The size added is greater than the capacity. To avoid this,
  call <fn:<T>ArrayBuffer> before.
- @order O(1)
+ @order \O(1)
  @fixme Test.
  @allow */
 static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
@@ -474,7 +474,7 @@ static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
  the list can not change while in this function. That is, don't call
  <fn:<T>ArrayNew>, <fn:<T>ArrayRemove>, _etc_ in `action`.
  @param[a, action] If null, does nothing.
- @order O(`size` \times `action`)
+ @order \O(`size` \times `action`)
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
@@ -489,7 +489,7 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
  `predicate` returns true. The topology of the list can not change while in
  this function.
  @param[a, predicate, action] If null, does nothing.
- @order O(`size` \times `action`)
+ @order \O(`size` \times `action`)
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
@@ -505,7 +505,7 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
  @param[a, predicate] If null, returns null.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
- @order O(`size` \times `action`)
+ @order \O(`size` \times `action`)
  @fixme Untested.
  @fixme Sequence interface.
  @allow */
@@ -521,7 +521,7 @@ static T *T_(ArrayAny)(const struct T_(Array) *const a,
 /** For all elements of `a`, calls `keep`, and for each element, if the return
  value is false, lazy deletes that item.
  @param[a, keep] If null, does nothing.
- @order O(`size`)
+ @order \O(`size`)
  @allow */
 static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	const PT_(Predicate) keep) {
@@ -559,7 +559,7 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 
 /** Removes at either end of `a` of things that `predicate` returns true.
  @param[a, predicate] If null, does nothing.
- @order O(`size`)
+ @order \O(`size`)
  @allow */
 static void T_(ArrayTrim)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
@@ -590,7 +590,7 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
  @throws[realloc] [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
- amortised O(`a.size` + `b.size`).
+ amortised \O(`a.size` + `b.size`).
  @allow */
 static int T_(ArraySplice)(struct T_(Array) *const a, const T *anchor,
 	const long range, const struct T_(Array) *const b) {
@@ -614,7 +614,7 @@ static int T_(ArraySplice)(struct T_(Array) *const a, const T *anchor,
  @throws[realloc] [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
- amortised O(`a.size` + `b.size`).
+ amortised \O(`a.size` + `b.size`).
  @allow */
 static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	const size_t i1, const struct T_(Array) *const b) {

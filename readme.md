@@ -172,7 +172,7 @@ Initialises `a` to be empty\.
  - Return:  
    The size of `a` \.
  - Order:  
-   O\(1\)
+   &#927;\(1\)
 
 
 
@@ -192,7 +192,7 @@ Removes `data` from `a` \.
  - Exceptional Return: EDOM  
    `data` is not part of `a` \.
  - Order:  
-   O\(n\)\.
+   &#927;\(n\)\.
 
 
 
@@ -212,7 +212,7 @@ Removes `data` from `a` and replaces the spot it was in with the tail\.
  - Exceptional Return: EDOM  
    `data` is not part of `a` \.
  - Order:  
-   O\(1\)\.
+   &#927;\(1\)\.
 
 
 
@@ -366,7 +366,7 @@ Gets an uninitialised new element\. May move the `a` to a new memory location to
  - Exceptional Return: realloc  
    [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
-   Amortised O\(1\)\.
+   Amortised &#927;\(1\)\.
 
 
 
@@ -388,7 +388,7 @@ Gets an uninitialised new element in `a` and updates the `update_ptr` if it is w
  - Exceptional Return: realloc  
    [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
-   amortised O\(1\)
+   Amortised &#927;\(1\)\.
  - Caveat:  
    Untested\.
 
@@ -412,7 +412,7 @@ Ensures that `a` array is `buffer` capacity beyond the elements in the array\.
  - Exceptional Return: realloc  
    [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
-   Amortised O\(`buffer` \)\.
+   Amortised &#927;\(`buffer` \)\.
  - Caveat:  
    Test\.
 
@@ -430,7 +430,7 @@ Adds `add` to the size in `a` \.
  - Exceptional Return: ERANGE  
    The size added is greater than the capacity\. To avoid this, call [<T>ArrayBuffer](#fn-<T>ArrayBuffer) before\.
  - Order:  
-   O\(1\)
+   &#927;\(1\)
  - Caveat:  
    Test\.
 
@@ -448,7 +448,7 @@ Iterates through `a` and calls `action` on all the elements\. The topology of th
  - Parameter: _action_  
    If null, does nothing\.
  - Order:  
-   O\(`size` &#215; `action` \)
+   &#927;\(`size` &#215; `action` \)
  - Caveat:  
    Untested\. Sequence interface\.
 
@@ -468,7 +468,7 @@ Iterates through `a` and calls `action` on all the elements for which `predicate
  - Parameter: _action_  
    If null, does nothing\.
  - Order:  
-   O\(`size` &#215; `action` \)
+   &#927;\(`size` &#215; `action` \)
  - Caveat:  
    Untested\. Sequence interface\.
 
@@ -488,7 +488,7 @@ Iterates through `a` and calls `predicate` until it returns true\.
  - Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
  - Order:  
-   O\(`size` &#215; `action` \)
+   &#927;\(`size` &#215; `action` \)
  - Caveat:  
    Untested\. Sequence interface\.
 
@@ -506,7 +506,7 @@ For all elements of `a` , calls `keep` , and for each element, if the return val
  - Parameter: _keep_  
    If null, does nothing\.
  - Order:  
-   O\(`size` \)
+   &#927;\(`size` \)
 
 
 
@@ -522,7 +522,7 @@ Removes at either end of `a` of things that `predicate` returns true\.
  - Parameter: _predicate_  
    If null, does nothing\.
  - Order:  
-   O\(`size` \)
+   &#927;\(`size` \)
 
 
 
@@ -554,7 +554,7 @@ In `a` , replaces the elements from `anchor` up to `range` with a copy of `b` \.
  - Exceptional Return: realloc  
    [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
-   &#920;\(`b.size` \) if the elements have the same size, otherwise, amortised O\(`a.size` \+ `b.size` \)\.
+   &#920;\(`b.size` \) if the elements have the same size, otherwise, amortised &#927;\(`a.size` \+ `b.size` \)\.
 
 
 
@@ -584,7 +584,7 @@ In `a` , replaces the elements from indices `i0` \(inclusive\) to `i1` \(exclusi
  - Exceptional Return: realloc  
    [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
-   &#920;\(`b.size` \) if the elements have the same size, otherwise, amortised O\(`a.size` \+ `b.size` \)\.
+   &#920;\(`b.size` \) if the elements have the same size, otherwise, amortised &#927;\(`a.size` \+ `b.size` \)\.
 
 
 
