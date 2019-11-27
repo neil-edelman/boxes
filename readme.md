@@ -1,533 +1,615 @@
-# Array.h #
+ # Array\.h #
 
-2016 Neil Edelman, distributed under the terms of the MIT License; see
- [ https://opensource.org/licenses/MIT ].
+ * [Desciption](#preamble-)
+ * [Typedef Aliases](#typedef-): <a href = "#typedef-<PT>ToString"><PT>ToString</a>, <a href = "#typedef-<PT>Action"><PT>Action</a>, <a href = "#typedef-<PT>Predicate"><PT>Predicate</a>
+ * [Struct, Union, and Enum Definitions](#tag-): <a href = "#tag-<T>Array"><T>Array</a>
+ * [Function Summary](#summary-)
+ * [Function Definitions](#fn-)
+ * [License](#license-)
 
- _<T>Array_ is a dynamic contiguous array that stores _<T>_, which must be set
- using _ARRAY_TYPE_. The capacity is greater then or equal to the size, and
- resizing incurs amortised cost. When adding new elements, the elements may
- change memory location to fit, it is therefore unstable; any pointers to this
- memory become stale and unusable.
+ ## <a name = "preamble-">Description</a> ##
 
- _<T>Array_ is not synchronised. Errors are returned with _errno_. The
- parameters are preprocessor macros, and are all undefined at the end of the
- file for convenience. _assert.h_ is included in this file; to stop the
- debug assertions, use _#define NDEBUG_ before inclusion.
+`<T>Array` is a dynamic contiguous array that stores `<T>` , which must be set using `ARRAY_TYPE` \. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\. When adding new elements, the elements may change memory location to fit\. It is therefore unstable; any pointers to this memory may become stale and unusable when expanding\.
+
+`<T>Array` is not synchronised\. Errors are returned with `errno` \. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before inclusion\.
 
 ![States](web/states.png)
 
-parameter: ARRAY_NAME, ARRAY_TYPE -- The name that literally becomes _<T>_, and a valid type associated therewith,
- accessible to the compiler at the time of inclusion; should be conformant to
- naming and to the maximum available length of identifiers. Must each be
- present before including.
+@title Contiguous Dynamic Parameterised Array
 
-parameter: ARRAY_STACK -- Doesn't define removal functions except `<T>ArrayPop`, making it a stack.
+ - Parameter: ARRAY\_NAME, ARRAY\_TYPE  
+   The name that literally becomes `<T>` , and a valid type associated therewith, accessible to the compiler at the time of inclusion; should be conformant to naming and to the maximum available length of identifiers\. Must each be present before including\.
+ - Parameter: ARRAY\_STACK  
+   Doesn't define removal functions except [<T>ArrayPop](fn-<T>ArrayPop), making it a stack\.
+ - Parameter: ARRAY\_TO\_STRING  
+   Optional print function implementing [<PT>ToString](typedef-<PT>ToString); makes available [<T>ArrayToString](fn-<T>ArrayToString)\.
+ - Parameter: ARRAY\_TEST  
+   Unit testing framework using `<T>ArrayTest` , included in a separate header, `../test/ArrayTest.h` \. Must be defined equal to a \(random\) filler function, satisfying [<PT>Action](typedef-<PT>Action)\. Requires `ARRAY_TO_STRING` and not `NDEBUG` \.
+ * Author:  
+   Neil
+ * Standard:  
+   C89
+ * Caveat:  
+   (<a href = "#fn-<T>ArrayIndex"><T>ArrayIndex</a>, <a href = "#fn-<T>ArrayPeek"><T>ArrayPeek</a>, <a href = "#fn-<T>ArrayUpdateNew"><T>ArrayUpdateNew</a>, <a href = "#fn-<T>ArrayBuffer"><T>ArrayBuffer</a>, <a href = "#fn-<T>ArrayExpand"><T>ArrayExpand</a>, <a href = "#fn-<T>ArrayEach"><T>ArrayEach</a>, <a href = "#fn-<T>ArrayEach"><T>ArrayEach</a>, <a href = "#fn-<T>ArrayIfEach"><T>ArrayIfEach</a>, <a href = "#fn-<T>ArrayIfEach"><T>ArrayIfEach</a>, <a href = "#fn-<T>ArrayAny"><T>ArrayAny</a>, <a href = "#fn-<T>ArrayAny"><T>ArrayAny</a>, <a href = "#fn-<T>ArrayToString"><T>ArrayToString</a>)
 
-parameter: ARRAY_TO_STRING -- Optional print function implementing _<T>ToString_; makes available
- `<T>ArrayToString`.
 
-parameter: ARRAY_TEST -- Unit testing framework using _<T>ArrayTest_, included in a separate header,
- _../test/ArrayTest.h_. Must be defined equal to a (random) filler function,
- satisfying _<T>Action_. Requires _ARRAY_TO_STRING_ and not _NDEBUG_.
 
-minimum standard: C89
 
-author: Neil
+ ## <a name = "typedef-">Typedef Aliases</a> ##
 
-version: 2019-05 Added `<T>ArrayReplace` and `<T>ArrayBuffer`.
+ ### <a name = "typedef-<PT>ToString" id = "typedef-<PT>ToString"><PT>ToString</a> ###
 
-since: 2018-03 Renamed _Pool_ to _Array_. Took out migrate.
+`typedef void(*`**`<PT>ToString`**`)(const T *, char(*const)[12]);`
 
+Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-terminated output string \(the second\.\) Private; must re\-declare\. Used for `ARRAY_TO_STRING` \.
 
 
-## Declarations ##
 
-### typedef void (*<PT>ToString)(const T *, char (*const)[12]) ###
+ ### <a name = "typedef-<PT>Action" id = "typedef-<PT>Action"><PT>Action</a> ###
 
-typedef void (*<PT>ToString)(const T *, char (*const)[12])
+`typedef void(*`**`<PT>Action`**`)(T *const data);`
 
-Responsible for turning _<T>_ (the first argument) into a 12 _char_
- null-terminated output string (the second.) Used for _ARRAY_TO_STRING_.
+Operates by side\-effects on `data` only\. Private; must re\-declare\.
 
 
-### struct <T>Array ###
 
-struct <T>Array
+ ### <a name = "typedef-<PT>Predicate" id = "typedef-<PT>Predicate"><PT>Predicate</a> ###
 
-The array. Zeroed data is a valid state. To instantiate explicitly, see
- `<T>Array` or initialise it with `ARRAY_INIT` or `_0_` (C99.)
+`typedef int(*`**`<PT>Predicate`**`)(const T *const data);`
 
+Given constant `data` , returns a boolean\. Private; must re\-declare\.
 
 
 
-## Function Summary ##
 
-| _Return Type_	| _Function Name_	| _Argument List_ |
-| - | - | - |
-| static void	| <T>Array_	| (struct <T>Array *const a) |
-| static void	| <T>Array	| (struct <T>Array *const a) |
-| static size_t	| <T>ArraySize	| (const struct <T>Array *const a) |
-| static int	| <T>ArrayRemove	| (struct <T>Array *const a, T *const data) |
-| static int	| <T>ArrayTailRemove	| (struct <T>Array *const a, T *const data) |
-| static void	| <T>ArrayClear	| (struct <T>Array *const a) |
-| static T *	| <T>ArrayGet	| (const struct <T>Array *const a) |
-| static T *	| <T>ArrayEnd	| (const struct <T>Array *const a) |
-| static size_t	| <T>ArrayIndex	| (const struct <T>Array *const a, const T *const data) |
-| static T *	| <T>ArrayPeek	| (const struct <T>Array *const a) |
-| static T *	| <T>ArrayPop	| (struct <T>Array *const a) |
-| static T *	| <T>ArrayBack	| (const struct <T>Array *const a, const T *const here) |
-| static T *	| <T>ArrayNext	| (const struct <T>Array *const a, const T *const here) |
-| static T *	| <T>ArrayNew	| (struct <T>Array *const a) |
-| static T *	| <T>ArrayUpdateNew	| (struct <T>Array *const a, T **const update_ptr) |
-| static T *	| <T>ArrayBuffer	| (struct <T>Array *const a, const size_t buffer) |
-| static int	| <T>ArrayAddSize	| (struct <T>Array *const a, const size_t add) |
-| static void	| <T>ArrayForEach	| (struct <T>Array *const a, const <PT>Action action) |
-| static void	| <T>ArrayIfEach	| (struct <T>Array *const a, const <PT>Predicate predicate, const <PT>Action action) |
-| static void	| <T>ArrayKeepIf	| (struct <T>Array *const a, const <PT>Predicate keep) |
-| static void	| <T>ArrayTrim	| (struct <T>Array *const a, const <PT>Predicate predicate) |
-| static int	| <T>ArrayReplace	| (struct <T>Array *const a, const T *anchor, const long range, const struct <T>Array *const b) |
-| static int	| <T>ArrayIndexReplace	| (struct <T>Array *const a, const size_t i0, const size_t i1, const struct <T>Array *const b) |
-| static const char *	| <T>ArrayToString	| (const struct <T>Array *const a) |
 
+ ## <a name = "tag-">Struct, Union, and Enum Definitions</a> ##
 
+ ### <a name = "tag-<T>Array" id = "tag-<T>Array"><T>Array</a> ###
 
-## Function Detail ##
+`struct `**`<T>Array`**`;`
 
-### <T>Array_ ###
+The array\. Zeroed data is a valid state\. To instantiate explicitly, see [<T>Array](fn-<T>Array) or initialise it with `ARRAY_INIT` or `{0}` \(C99\.\)
 
-static void <T>Array_(struct <T>Array *const a)
 
-Destructor for _a_; returns an initialised _a_ to the empty state where it
- takes no memory.
 
-parameter: a -- If null, does nothing.
 
-order: \Theta(1)
 
+ ## <a name = "summary-">Function Summary</a> ##
 
+<table>
 
-### <T>Array ###
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-static void <T>Array(struct <T>Array *const a)
+<tr><td align = right>static void</td><td><a href = "#fn-<T>Array_"><T>Array_</a></td><td>a</td></tr>
 
-Initialises _a_ to be empty.
+<tr><td align = right>static void</td><td><a href = "#fn-<T>Array"><T>Array</a></td><td>a</td></tr>
 
-order: \Theta(1)
+<tr><td align = right>static size_t</td><td><a href = "#fn-<T>ArraySize"><T>ArraySize</a></td><td>a</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn-<T>ArrayRemove"><T>ArrayRemove</a></td><td>a, data</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn-<T>ArrayLazyRemove"><T>ArrayLazyRemove</a></td><td>a, data</td></tr>
 
-### <T>ArraySize ###
+<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayClear"><T>ArrayClear</a></td><td>a</td></tr>
 
-static size_t <T>ArraySize(const struct <T>Array *const a)
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayGet"><T>ArrayGet</a></td><td>a</td></tr>
 
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayEnd"><T>ArrayEnd</a></td><td>a</td></tr>
 
+<tr><td align = right>static size_t</td><td><a href = "#fn-<T>ArrayIndex"><T>ArrayIndex</a></td><td>a, data</td></tr>
 
-return: The size.
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayPeek"><T>ArrayPeek</a></td><td>a</td></tr>
 
-order: O(1)
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayPop"><T>ArrayPop</a></td><td>a</td></tr>
 
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayBack"><T>ArrayBack</a></td><td>a, here</td></tr>
 
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayNext"><T>ArrayNext</a></td><td>a, here</td></tr>
 
-### <T>ArrayRemove ###
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayNew"><T>ArrayNew</a></td><td>a</td></tr>
 
-static int <T>ArrayRemove(struct <T>Array *const a, T *const data)
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayUpdateNew"><T>ArrayUpdateNew</a></td><td>a, update_ptr</td></tr>
 
-Removes _data_ from _a_.
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayBuffer"><T>ArrayBuffer</a></td><td>a, buffer</td></tr>
 
-parameter: a, data -- If null, returns false.
+<tr><td align = right>static int</td><td><a href = "#fn-<T>ArrayExpand"><T>ArrayExpand</a></td><td>a, add</td></tr>
 
-parameter: data -- Will be removed; data will remain the same but be updated to the
- next element, or if this was the last element, the pointer will be past the
- end.
+<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayEach"><T>ArrayEach</a></td><td>a, action</td></tr>
 
-return: Success, otherwise _errno_ will be set for valid input.
+<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayIfEach"><T>ArrayIfEach</a></td><td>a, predicate, action</td></tr>
 
-throws: EDOM -- _data_ is not part of _a_.
+<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayAny"><T>ArrayAny</a></td><td>a, predicate</td></tr>
 
-order: O(n).
+<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayKeepIf"><T>ArrayKeepIf</a></td><td>a, keep</td></tr>
 
+<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayTrim"><T>ArrayTrim</a></td><td>a, predicate</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn-<T>ArraySplice"><T>ArraySplice</a></td><td>a, anchor, range, b</td></tr>
 
-### <T>ArrayTailRemove ###
+<tr><td align = right>static int</td><td><a href = "#fn-<T>ArrayIndexSplice"><T>ArrayIndexSplice</a></td><td>a, i0, i1, b</td></tr>
 
-static int <T>ArrayTailRemove(struct <T>Array *const a, T *const data)
+<tr><td align = right>static const char *</td><td><a href = "#fn-<T>ArrayToString"><T>ArrayToString</a></td><td>a</td></tr>
 
-Removes _data_ from _a_ and replaces the spot it was in with the tail.
+</table>
 
-parameter: a, data -- If null, returns false.
 
-parameter: data -- Will be removed; data will remain the same but be updated to the
- last element, or if this was the last element, the pointer will be past the
- end.
 
-return: Success, otherwise _errno_ will be set for valid input.
+ ## <a name = "fn-">Function Definitions</a> ##
 
-throws: EDOM -- _data_ is not part of _a_.
+ ### <a name = "fn-<T>Array_" id = "fn-<T>Array_"><T>Array_</a> ###
 
-order: O(1).
+`static void `**`<T>Array_`**`(struct <T>Array *const `_`a`_`)`
 
+Destructor for `a` ; returns an initialised `a` to the empty state where it takes no dynamic memory\.
 
+ - Parameter: _a_  
+   If null, does nothing\.
+ - Order:  
+   &#920;\(1\)
 
-### <T>ArrayClear ###
 
-static void <T>ArrayClear(struct <T>Array *const a)
 
-Sets the size of _a_ to zero, effectively removing all the elements, but
- leaves the capacity alone, (the only thing that will free memory allocation
- is `<T>Array_`.)
 
-parameter: a -- If null, does nothing.
+ ### <a name = "fn-<T>Array" id = "fn-<T>Array"><T>Array</a> ###
 
-order: \Theta(1)
+`static void `**`<T>Array`**`(struct <T>Array *const `_`a`_`)`
 
+Initialises `a` to be empty\.
 
+ - Order:  
+   &#920;\(1\)
 
-### <T>ArrayGet ###
 
-static T * <T>ArrayGet(const struct <T>Array *const a)
 
-Causing something to be added to the _<T>Array_ may invalidate this
- pointer, see `<T>ArrayUpdateNew`.
 
-parameter: a -- If null, returns null.
+ ### <a name = "fn-<T>ArraySize" id = "fn-<T>ArraySize"><T>ArraySize</a> ###
 
-return: A pointer to the _a_'s data, indexable up to the _a_'s size.
+`static size_t `**`<T>ArraySize`**`(const struct <T>Array *const `_`a`_`)`
 
-order: \Theta(1)
+ - Parameter: _a_  
+   If null, returns zero\.
+ - Return:  
+   The size of `a` \.
+ - Order:  
+   O\(1\)
 
 
 
-### <T>ArrayEnd ###
 
-static T * <T>ArrayEnd(const struct <T>Array *const a)
+ ### <a name = "fn-<T>ArrayRemove" id = "fn-<T>ArrayRemove"><T>ArrayRemove</a> ###
 
-Causing something to be added to the _<T>Array_ may invalidate this
- pointer, see `<T>ArrayUpdateNew`.
+`static int `**`<T>ArrayRemove`**`(struct <T>Array *const `_`a`_`, T *const `_`data`_`)`
 
-parameter: a -- If null, returns null.
+Removes `data` from `a` \.
 
-return: One past the end of the array; take care when dereferencing, as it is
- not part of the array.
+ - Parameter: _a_  
+   If null, returns false\.
+ - Parameter: _data_  
+   If null, returns false\. Will be removed; data will remain the same but be updated to the next element, or if this was the last element, the pointer will be past the end\.
+ - Return:  
+   Success, otherwise `errno` will be set for valid input\.
+ - Exceptional Return: EDOM  
+   `data` is not part of `a` \.
+ - Order:  
+   O\(n\)\.
 
-order: \Theta(1)
 
 
 
-### <T>ArrayIndex ###
+ ### <a name = "fn-<T>ArrayLazyRemove" id = "fn-<T>ArrayLazyRemove"><T>ArrayLazyRemove</a> ###
 
-static size_t <T>ArrayIndex(const struct <T>Array *const a,
-	const T *const data)
+`static int `**`<T>ArrayLazyRemove`**`(struct <T>Array *const `_`a`_`, T *const `_`data`_`)`
 
-Gets an index given _data_.
+Removes `data` from `a` and replaces the spot it was in with the tail\.
 
-parameter: a -- Must be a valid object.
+ - Parameter: _a_  
+   If null, returns false\.
+ - Parameter: _data_  
+   If null, returns false\. Will be removed; data will remain the same but be updated to the last element, or if this was the last element, the pointer will be past the end\.
+ - Return:  
+   Success, otherwise `errno` will be set for valid input\.
+ - Exceptional Return: EDOM  
+   `data` is not part of `a` \.
+ - Order:  
+   O\(1\)\.
 
-parameter: data -- If the element is not part of the _a_, behaviour is undefined.
 
-return: An index.
 
-order: \Theta(1)
 
-fixme: Untested.
+ ### <a name = "fn-<T>ArrayClear" id = "fn-<T>ArrayClear"><T>ArrayClear</a> ###
 
+`static void `**`<T>ArrayClear`**`(struct <T>Array *const `_`a`_`)`
 
+Sets the size of `a` to zero, effectively removing all the elements, but leaves the capacity alone, \(the only thing that will free memory allocation is [<T>Array\_](fn-<T>Array\_)\.\)
 
-### <T>ArrayPeek ###
+ - Parameter: _a_  
+   If null, does nothing\.
+ - Order:  
+   &#920;\(1\)
 
-static T * <T>ArrayPeek(const struct <T>Array *const a)
 
 
 
-parameter: a -- If null, returns null.
+ ### <a name = "fn-<T>ArrayGet" id = "fn-<T>ArrayGet"><T>ArrayGet</a> ###
 
-return: The last element or null if the a is empty. Causing something to be
- added to the _a_ may invalidate this pointer.
+`static T *`**`<T>ArrayGet`**`(const struct <T>Array *const `_`a`_`)`
 
-order: \Theta(1)
+Causing something to be added to the `<T>Array` may invalidate this pointer, see [<T>ArrayUpdateNew](fn-<T>ArrayUpdateNew)\.
 
-fixme: Untested.
+ - Parameter: _a_  
+   If null, returns null\.
+ - Return:  
+   A pointer to the `a` 's data, indexable up to the `a` 's size\.
+ - Order:  
+   &#920;\(1\)
 
 
 
-### <T>ArrayPop ###
 
-static T * <T>ArrayPop(struct <T>Array *const a)
+ ### <a name = "fn-<T>ArrayEnd" id = "fn-<T>ArrayEnd"><T>ArrayEnd</a> ###
 
-The same value as `<T>ArrayPeek`.
+`static T *`**`<T>ArrayEnd`**`(const struct <T>Array *const `_`a`_`)`
 
-parameter: a -- If null, returns null.
+Causing something to be added to the `<T>Array` may invalidate this pointer, see [<T>ArrayUpdateNew](fn-<T>ArrayUpdateNew)\.
 
-return: Value from the the top of the _a_ that is removed or null if the
- stack is empty. Causing something to be added to the _a_ may invalidate
- this pointer. See `<T>ArrayUpdateNew`.
+ - Parameter: _a_  
+   If null, returns null\.
+ - Return:  
+   One past the end of the array; take care when dereferencing, as it is not part of the array\.
+ - Order:  
+   &#920;\(1\)
 
-order: \Theta(1)
 
 
 
-### <T>ArrayBack ###
+ ### <a name = "fn-<T>ArrayIndex" id = "fn-<T>ArrayIndex"><T>ArrayIndex</a> ###
 
-static T * <T>ArrayBack(const struct <T>Array *const a, const T *const here)
+`static size_t `**`<T>ArrayIndex`**`(const struct <T>Array *const `_`a`_`, const T *const `_`data`_`)`
 
-Iterate through _a_ backwards.
+Gets an index given `data` \.
 
-parameter: a -- The array; if null, returns null.
+ - Parameter: _a_  
+   Must be a valid object that stores `data` \.
+ - Parameter: _data_  
+   If the element is not part of the `a` , behaviour is undefined\.
+ - Return:  
+   An index\.
+ - Order:  
+   &#920;\(1\)
+ - Caveat:  
+   Untested\.
 
-parameter: here -- Set it to null to get the last element, if it exists.
 
-return: A pointer to the previous element or null if it does not exist.
 
-order: \Theta(1)
 
+ ### <a name = "fn-<T>ArrayPeek" id = "fn-<T>ArrayPeek"><T>ArrayPeek</a> ###
 
+`static T *`**`<T>ArrayPeek`**`(const struct <T>Array *const `_`a`_`)`
 
-### <T>ArrayNext ###
+ - Parameter: _a_  
+   If null, returns null\.
+ - Return:  
+   The last element or null if the a is empty\. Causing something to be added to the `a` may invalidate this pointer\.
+ - Order:  
+   &#920;\(1\)
+ - Caveat:  
+   Untested\.
 
-static T * <T>ArrayNext(const struct <T>Array *const a, const T *const here)
 
-Iterate through _a_. It is safe to add using `<T>ArrayUpdateNew` with
- the return value as _update_. Removing an element causes the pointer to go to
- the next element, if it exists.
 
-parameter: a -- The array; if null, returns null.
 
-parameter: here -- Set it to null to get the first element, if it exists.
+ ### <a name = "fn-<T>ArrayPop" id = "fn-<T>ArrayPop"><T>ArrayPop</a> ###
 
-return: A pointer to the next element or null if there are no more.
+`static T *`**`<T>ArrayPop`**`(struct <T>Array *const `_`a`_`)`
 
-order: \Theta(1)
+The same value as [<T>ArrayPeek](fn-<T>ArrayPeek)\.
 
+ - Parameter: _a_  
+   If null, returns null\.
+ - Return:  
+   Value from the the top of the `a` that is removed or null if the stack is empty\. Causing something to be added to the `a` may invalidate this pointer\. See [<T>ArrayUpdateNew](fn-<T>ArrayUpdateNew)\.
+ - Order:  
+   &#920;\(1\)
 
 
-### <T>ArrayNew ###
 
-static T * <T>ArrayNew(struct <T>Array *const a)
 
-Gets an uninitialised new element. May move the _a_ to a new memory
- location to fit the new size.
+ ### <a name = "fn-<T>ArrayBack" id = "fn-<T>ArrayBack"><T>ArrayBack</a> ###
 
-parameter: a -- If is null, returns null.
+`static T *`**`<T>ArrayBack`**`(const struct <T>Array *const `_`a`_`, const T *const `_`here`_`)`
 
-return: A new, un-initialised, element, or null and _errno_ may be set.
+Iterate through `a` backwards\.
 
-throws: ERANGE -- Tried allocating more then can fit in _size_t_ objects.
+ - Parameter: _a_  
+   The array; if null, returns null\.
+ - Parameter: _here_  
+   Set it to null to get the last element, if it exists\.
+ - Return:  
+   A pointer to the previous element or null if it does not exist\.
+ - Order:  
+   &#920;\(1\)
 
-throws: _realloc_ errors -- _IEEE Std 1003.1-2001_.
 
-order: Amortised O(1).
 
 
+ ### <a name = "fn-<T>ArrayNext" id = "fn-<T>ArrayNext"><T>ArrayNext</a> ###
 
-### <T>ArrayUpdateNew ###
+`static T *`**`<T>ArrayNext`**`(const struct <T>Array *const `_`a`_`, const T *const `_`here`_`)`
 
-static T * <T>ArrayUpdateNew(struct <T>Array *const a,
-	T **const update_ptr)
+Iterate through `a` \. It is safe to add using [<T>ArrayUpdateNew](fn-<T>ArrayUpdateNew) with the return value as `update` \. Removing an element causes the pointer to go to the next element, if it exists\.
 
-Gets an uninitialised new element and updates the _update_ptr_ if it is
- within the memory region that was changed to accomodate new space. For
- example, when iterating a pointer and new element is needed that could change
- the pointer.
+ - Parameter: _a_  
+   The array; if null, returns null\.
+ - Parameter: _here_  
+   Set it to null to get the first element, if it exists\.
+ - Return:  
+   A pointer to the next element or null if there are no more\.
+ - Order:  
+   &#920;\(1\)
 
-parameter: a -- If null, returns null.
 
-parameter: update_ptr -- Pointer to update on memory move.
 
-return: A new, un-initialised, element, or null and _errno_ may be set.
 
-throws: ERANGE -- Tried allocating more then can fit in _size_t_.
+ ### <a name = "fn-<T>ArrayNew" id = "fn-<T>ArrayNew"><T>ArrayNew</a> ###
 
-throws: _realloc_ errors -- _IEEE Std 1003.1-2001_.
+`static T *`**`<T>ArrayNew`**`(struct <T>Array *const `_`a`_`)`
 
-order: amortised O(1)
+Gets an uninitialised new element\. May move the `a` to a new memory location to fit the new size\.
 
-fixme: Untested.
+ - Parameter: _a_  
+   If is null, returns null\.
+ - Return:  
+   A new, un\-initialised, element, or null and `errno` may be set\.
+ - Exceptional Return: ERANGE  
+   Tried allocating more then can fit in `size_t` objects\.
+ - Exceptional Return: realloc  
+   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Order:  
+   Amortised O\(1\)\.
 
 
 
-### <T>ArrayBuffer ###
 
-static T * <T>ArrayBuffer(struct <T>Array *const a, const size_t buffer)
+ ### <a name = "fn-<T>ArrayUpdateNew" id = "fn-<T>ArrayUpdateNew"><T>ArrayUpdateNew</a> ###
 
-Ensures that _a_ array is _buffer_ capacity beyond the elements in the
- array.
+`static T *`**`<T>ArrayUpdateNew`**`(struct <T>Array *const `_`a`_`, T **const `_`update_ptr`_`)`
 
-parameter: a -- If is null, returns null.
+Gets an uninitialised new element in `a` and updates the `update_ptr` if it is within the memory region that was changed to accomodate new space\.
 
-parameter: buffer -- If this is zero, returns null.
+ - Parameter: _a_  
+   If null, returns null\.
+ - Parameter: _update\_ptr_  
+   Pointer to update on memory move\. If null, does nothing\.
+ - Return:  
+   A new, un\-initialised, element, or null and `errno` may be set\.
+ - Exceptional Return: ERANGE  
+   Tried allocating more then can fit in `size_t` \.
+ - Exceptional Return: realloc  
+   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Order:  
+   amortised O\(1\)
+ - Caveat:  
+   Untested\.
 
-return: One past the end of the array, or null and _errno_ may be set.
 
-throws: ERANGE
 
-throws: realloc
 
-order: Amortised O(_buffer_).
+ ### <a name = "fn-<T>ArrayBuffer" id = "fn-<T>ArrayBuffer"><T>ArrayBuffer</a> ###
 
-fixme: Test.
+`static T *`**`<T>ArrayBuffer`**`(struct <T>Array *const `_`a`_`, const size_t `_`buffer`_`)`
 
+Ensures that `a` array is `buffer` capacity beyond the elements in the array\.
 
+ - Parameter: _a_  
+   If is null, returns null\.
+ - Parameter: _buffer_  
+   If this is zero, returns null\.
+ - Return:  
+   One past the end of the array, or null and `errno` may be set\.
+ - Exceptional Return: ERANGE  
+   Tried allocating more then can fit in `size_t` \.
+ - Exceptional Return: realloc  
+   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Order:  
+   Amortised O\(`buffer` \)\.
+ - Caveat:  
+   Test\.
 
-### <T>ArrayAddSize ###
 
-static int <T>ArrayAddSize(struct <T>Array *const a, const size_t add)
 
-Adds _add_ to the size in _a_.
 
-return: Success.
+ ### <a name = "fn-<T>ArrayExpand" id = "fn-<T>ArrayExpand"><T>ArrayExpand</a> ###
 
-throws: ERANGE -- The size added is greater than the capacity. To avoid this,
- call `<T>ArrayBuffer` before.
+`static int `**`<T>ArrayExpand`**`(struct <T>Array *const `_`a`_`, const size_t `_`add`_`)`
 
-order: O(1)
+Adds `add` to the size in `a` \.
 
-fixme: Test.
+ - Return:  
+   Success\.
+ - Exceptional Return: ERANGE  
+   The size added is greater than the capacity\. To avoid this, call [<T>ArrayBuffer](fn-<T>ArrayBuffer) before\.
+ - Order:  
+   O\(1\)
+ - Caveat:  
+   Test\.
 
 
 
-### <T>ArrayForEach ###
 
-static void <T>ArrayForEach(struct <T>Array *const a,
-	const <PT>Action action)
+ ### <a name = "fn-<T>ArrayEach" id = "fn-<T>ArrayEach"><T>ArrayEach</a> ###
 
-Iterates though _a_ and calls _action_ on all the elements. The topology of
- the list can not change while in this function. That is, don't call
- `<T>ArrayNew`, `<T>ArrayRemove`, _etc_ in _action_.
+`static void `**`<T>ArrayEach`**`(struct <T>Array *const `_`a`_`, const <PT>Action `_`action`_`)`
 
-parameter: a, action -- If null, does nothing.
+Iterates through `a` and calls `action` on all the elements\. The topology of the list can not change while in this function\. That is, don't call [<T>ArrayNew](fn-<T>ArrayNew), [<T>ArrayRemove](fn-<T>ArrayRemove), _etc_ in `action` \.
 
-order: O(_size_ \times _action_)
+ - Parameter: _a_  
+   If null, does nothing\.
+ - Parameter: _action_  
+   If null, does nothing\.
+ - Order:  
+   O\(`size` &#215; `action` \)
+ - Caveat:  
+   Untested\. Sequence interface\.
 
-fixme: Untested.
 
-fixme: Sequence interface.
 
 
+ ### <a name = "fn-<T>ArrayIfEach" id = "fn-<T>ArrayIfEach"><T>ArrayIfEach</a> ###
 
-### <T>ArrayIfEach ###
+`static void `**`<T>ArrayIfEach`**`(struct <T>Array *const `_`a`_`, const <PT>Predicate `_`predicate`_`, const <PT>Action `_`action`_`)`
 
-static void <T>ArrayIfEach(struct <T>Array *const a,
-	const <PT>Predicate predicate, const <PT>Action action)
+Iterates through `a` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list can not change while in this function\.
 
-Iterates though _a_ and calls _action_ on all the elements for which
- _predicate_ returns true. The topology of the list can not change while in
- this function.
+ - Parameter: _a_  
+   If null, does nothing\.
+ - Parameter: _predicate_  
+   If null, does nothing\.
+ - Parameter: _action_  
+   If null, does nothing\.
+ - Order:  
+   O\(`size` &#215; `action` \)
+ - Caveat:  
+   Untested\. Sequence interface\.
 
-parameter: a, predicate, action -- If null, does nothing.
 
-order: O(_size_ \times _action_)
 
-fixme: Untested.
 
-fixme: Sequence interface.
+ ### <a name = "fn-<T>ArrayAny" id = "fn-<T>ArrayAny"><T>ArrayAny</a> ###
 
+`static T *`**`<T>ArrayAny`**`(const struct <T>Array *const `_`a`_`, const <PT>Predicate `_`predicate`_`)`
 
+Iterates through `a` and calls `predicate` until it returns true\.
 
-### <T>ArrayKeepIf ###
+ - Parameter: _a_  
+   If null, returns null\.
+ - Parameter: _predicate_  
+   If null, returns null\.
+ - Return:  
+   The first `predicate` that returned true, or, if the statement is false on all, null\.
+ - Order:  
+   O\(`size` &#215; `action` \)
+ - Caveat:  
+   Untested\. Sequence interface\.
 
-static void <T>ArrayKeepIf(struct <T>Array *const a,
-	const <PT>Predicate keep)
 
-For all elements of _a_, calls _keep_, and for each element, if the return
- value is false, lazy deletes that item.
 
-parameter: a, keep -- If null, does nothing.
 
-order: O(_size_)
+ ### <a name = "fn-<T>ArrayKeepIf" id = "fn-<T>ArrayKeepIf"><T>ArrayKeepIf</a> ###
 
+`static void `**`<T>ArrayKeepIf`**`(struct <T>Array *const `_`a`_`, const <PT>Predicate `_`keep`_`)`
 
+For all elements of `a` , calls `keep` , and for each element, if the return value is false, lazy deletes that item\.
 
-### <T>ArrayTrim ###
+ - Parameter: _a_  
+   If null, does nothing\.
+ - Parameter: _keep_  
+   If null, does nothing\.
+ - Order:  
+   O\(`size` \)
 
-static void <T>ArrayTrim(struct <T>Array *const a,
-	const <PT>Predicate predicate)
 
-Removes at either end of _a_ of things that _predicate_ returns true.
 
-parameter: a, predicate -- If null, does nothing.
 
-order: O(_size_)
+ ### <a name = "fn-<T>ArrayTrim" id = "fn-<T>ArrayTrim"><T>ArrayTrim</a> ###
 
+`static void `**`<T>ArrayTrim`**`(struct <T>Array *const `_`a`_`, const <PT>Predicate `_`predicate`_`)`
 
+Removes at either end of `a` of things that `predicate` returns true\.
 
-### <T>ArrayReplace ###
+ - Parameter: _a_  
+   If null, does nothing\.
+ - Parameter: _predicate_  
+   If null, does nothing\.
+ - Order:  
+   O\(`size` \)
 
-static int <T>ArrayReplace(struct <T>Array *const a, const T *anchor,
-	const long range, const struct <T>Array *const b)
 
-In _a_, replaces the elements from _anchor_ up to _range_ with a copy of
- _b_.
 
-parameter: a -- If null, returns zero.
 
-parameter: anchor -- Beginning of the replaced value, inclusive. If null, appends to
- the end.
+ ### <a name = "fn-<T>ArraySplice" id = "fn-<T>ArraySplice"><T>ArraySplice</a> ###
 
-parameter: range -- How many replaced values; negative values are implicitly plus
- the length of the array; clamped at the minimum and maximum.
+`static int `**`<T>ArraySplice`**`(struct <T>Array *const `_`a`_`, const T *`_`anchor`_`, const long `_`range`_`, const struct <T>Array *const `_`b`_`)`
 
-parameter: b -- The replacement array. If null, deletes without replacing.
+In `a` , replaces the elements from `anchor` up to `range` with a copy of `b` \.
 
-return: Success.
+ - Parameter: _a_  
+   If null, returns zero\.
+ - Parameter: _anchor_  
+   Beginning of the replaced value, inclusive\. If null, appends to the end\.
+ - Parameter: _range_  
+   How many replaced values in the original; negative values are implicitly plus the length of the array; clamped at the minimum and maximum\.
+ - Parameter: _b_  
+   The replacement array\. If null, deletes without replacing\. It is more efficient than individual [<T>ArrayRemove](fn-<T>ArrayRemove) to delete several consecutive values\.
+ - Return:  
+   Success\.
+ - Exceptional Return: EDOM  
+   `a` and `b` are not null and the same\.
+ - Exceptional Return: ERANGE  
+   `anchor` is not null and not in `a` \.
+ - Exceptional Return: ERANGE  
+   `range` is greater then 65535 or smaller then \-65534\.
+ - Exceptional Return: ERANGE  
+   `b` would cause the array to overflow\.
+ - Exceptional Return: realloc  
+   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Order:  
+   &#920;\(`b.size` \) if the elements have the same size, otherwise, amortised O\(`a.size` \+ `b.size` \)\.
 
-throws: EDOM -- _a_ and _b_ are not null and the same.
 
-throws: ERANGE -- _anchor_ is not null and not in _a_.
 
-throws: ERANGE -- _range_ is greater then 65535 or smaller then -65534.
 
-throws: ERANGE -- _b_ would cause the array to overflow.
+ ### <a name = "fn-<T>ArrayIndexSplice" id = "fn-<T>ArrayIndexSplice"><T>ArrayIndexSplice</a> ###
 
-throws: _realloc_.
+`static int `**`<T>ArrayIndexSplice`**`(struct <T>Array *const `_`a`_`, const size_t `_`i0`_`, const size_t `_`i1`_`, const struct <T>Array *const `_`b`_`)`
 
-order: \Theta(_b.size_) if the elements have the same size, otherwise,
- amortised O(_a.size_ + _b.size_).
+In `a` , replaces the elements from indices `i0` \(inclusive\) to `i1` \(exclusive\) with a copy of `b` \.
 
+ - Parameter: _a_  
+   If null, returns zero\.
+ - Parameter: _i0_  
+   The replacement indices, `[i0, i1)` , such that `0 <= i0 <= i1 <= a.size` \.
+ - Parameter: _i1_  
+   The replacement indices, `[i0, i1)` , such that `0 <= i0 <= i1 <= a.size` \.
+ - Parameter: _b_  
+   The replacement array\. If null, deletes without replacing\.
+ - Return:  
+   Success\.
+ - Exceptional Return: EDOM  
+   `a` and `b` are not null and the same\.
+ - Exceptional Return: EDOM  
+   `i0` or `i1` are out\-of\-bounds or `i0 > i1` \.
+ - Exceptional Return: ERANGE  
+   `b` would cause the array to overflow\.
+ - Exceptional Return: realloc  
+   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Order:  
+   &#920;\(`b.size` \) if the elements have the same size, otherwise, amortised O\(`a.size` \+ `b.size` \)\.
 
 
-### <T>ArrayIndexReplace ###
 
-static int <T>ArrayIndexReplace(struct <T>Array *const a, const size_t i0,
-	const size_t i1, const struct <T>Array *const b)
 
-In _a_, replaces the elements from indices _i0_ (inclusive) to _i1_
- (exclusive) with a copy of _b_.
+ ### <a name = "fn-<T>ArrayToString" id = "fn-<T>ArrayToString"><T>ArrayToString</a> ###
 
-parameter: a -- If null, returns zero.
+`static const char *`**`<T>ArrayToString`**`(const struct <T>Array *const `_`a`_`)`
 
-parameter: i0, i1 -- The replacement indices, _[i0, i1)_, such that
- _0 <= i0 <= i1 <= a.size_.
+Can print 4 things at once before it overwrites\. One must a `ARRAY_TO_STRING` to a function implementing [<PT>ToString](typedef-<PT>ToString) to get this functionality\.
 
-parameter: b -- The replacement array. If null, deletes without replacing.
+ - Return:  
+   Prints `a` in a static buffer\.
+ - Order:  
+   &#920;\(1\); it has a 255 character limit; every element takes some of it\.
+ - Caveat:  
+   ToString interface\.
 
-return: Success.
 
-throws: EDOM -- _a_ and _b_ are not null and the same.
 
-throws: EDOM -- _i0_ or _i1_ are out-of-bounds or _i0 > i1_.
 
-throws: ERANGE -- _b_ would cause the array to overflow.
 
-throws: _realloc_.
 
-order: \Theta(_b.size_) if the elements have the same size, otherwise,
- amortised O(_a.size_ + _b.size_).
+ ## <a name = "license-">License</a> ##
 
-
-
-### <T>ArrayToString ###
-
-static const char * <T>ArrayToString(const struct <T>Array *const a)
-
-Can print 4 things at once before it overwrites. One must a
- _ARRAY_TO_STRING_ to a function implementing _<T>ToString_ to get this
- functionality.
-
-return: Prints _a_ in a static buffer.
-
-order: \Theta(1); it has a 255 character limit; every element takes some of it.
-
-fixme: ToString interface.
-
+2016 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 
 
 
