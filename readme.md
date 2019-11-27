@@ -20,11 +20,11 @@
  - Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    The name that literally becomes `<T>` , and a valid type associated therewith, accessible to the compiler at the time of inclusion; should be conformant to naming and to the maximum available length of identifiers\. Must each be present before including\.
  - Parameter: ARRAY\_STACK  
-   Doesn't define removal functions except [<T>ArrayPop](fn-<T>ArrayPop), making it a stack\.
+   Doesn't define removal functions except [<T>ArrayPop](#fn-<T>ArrayPop), making it a stack\.
  - Parameter: ARRAY\_TO\_STRING  
-   Optional print function implementing [<PT>ToString](typedef-<PT>ToString); makes available [<T>ArrayToString](fn-<T>ArrayToString)\.
+   Optional print function implementing [<PT>ToString](#typedef-<PT>ToString); makes available [<T>ArrayToString](#fn-<T>ArrayToString)\.
  - Parameter: ARRAY\_TEST  
-   Unit testing framework using `<T>ArrayTest` , included in a separate header, `../test/ArrayTest.h` \. Must be defined equal to a \(random\) filler function, satisfying [<PT>Action](typedef-<PT>Action)\. Requires `ARRAY_TO_STRING` and not `NDEBUG` \.
+   Unit testing framework using `<T>ArrayTest` , included in a separate header, `../test/ArrayTest.h` \. Must be defined equal to a \(random\) filler function, satisfying [<PT>Action](#typedef-<PT>Action)\. Requires `ARRAY_TO_STRING` and not `NDEBUG` \.
  * Author:  
    Neil
  * Standard:  
@@ -69,7 +69,7 @@ Given constant `data` , returns a boolean\. Private; must re\-declare\.
 
 `struct `**`<T>Array`**`;`
 
-The array\. Zeroed data is a valid state\. To instantiate explicitly, see [<T>Array](fn-<T>Array) or initialise it with `ARRAY_INIT` or `{0}` \(C99\.\)
+The array\. Zeroed data is a valid state\. To instantiate explicitly, see [<T>Array](#fn-<T>Array) or initialise it with `ARRAY_INIT` or `{0}` \(C99\.\)
 
 
 
@@ -221,7 +221,7 @@ Removes `data` from `a` and replaces the spot it was in with the tail\.
 
 `static void `**`<T>ArrayClear`**`(struct <T>Array *const `_`a`_`)`
 
-Sets the size of `a` to zero, effectively removing all the elements, but leaves the capacity alone, \(the only thing that will free memory allocation is [<T>Array\_](fn-<T>Array\_)\.\)
+Sets the size of `a` to zero, effectively removing all the elements, but leaves the capacity alone, \(the only thing that will free memory allocation is [<T>Array\_](#fn-<T>Array\_)\.\)
 
  - Parameter: _a_  
    If null, does nothing\.
@@ -235,7 +235,7 @@ Sets the size of `a` to zero, effectively removing all the elements, but leaves 
 
 `static T *`**`<T>ArrayGet`**`(const struct <T>Array *const `_`a`_`)`
 
-Causing something to be added to the `<T>Array` may invalidate this pointer, see [<T>ArrayUpdateNew](fn-<T>ArrayUpdateNew)\.
+Causing something to be added to the `<T>Array` may invalidate this pointer, see [<T>ArrayUpdateNew](#fn-<T>ArrayUpdateNew)\.
 
  - Parameter: _a_  
    If null, returns null\.
@@ -251,7 +251,7 @@ Causing something to be added to the `<T>Array` may invalidate this pointer, see
 
 `static T *`**`<T>ArrayEnd`**`(const struct <T>Array *const `_`a`_`)`
 
-Causing something to be added to the `<T>Array` may invalidate this pointer, see [<T>ArrayUpdateNew](fn-<T>ArrayUpdateNew)\.
+Causing something to be added to the `<T>Array` may invalidate this pointer, see [<T>ArrayUpdateNew](#fn-<T>ArrayUpdateNew)\.
 
  - Parameter: _a_  
    If null, returns null\.
@@ -303,12 +303,12 @@ Gets an index given `data` \.
 
 `static T *`**`<T>ArrayPop`**`(struct <T>Array *const `_`a`_`)`
 
-The same value as [<T>ArrayPeek](fn-<T>ArrayPeek)\.
+The same value as [<T>ArrayPeek](#fn-<T>ArrayPeek)\.
 
  - Parameter: _a_  
    If null, returns null\.
  - Return:  
-   Value from the the top of the `a` that is removed or null if the stack is empty\. Causing something to be added to the `a` may invalidate this pointer\. See [<T>ArrayUpdateNew](fn-<T>ArrayUpdateNew)\.
+   Value from the the top of the `a` that is removed or null if the stack is empty\. Causing something to be added to the `a` may invalidate this pointer\. See [<T>ArrayUpdateNew](#fn-<T>ArrayUpdateNew)\.
  - Order:  
    &#920;\(1\)
 
@@ -337,7 +337,7 @@ Iterate through `a` backwards\.
 
 `static T *`**`<T>ArrayNext`**`(const struct <T>Array *const `_`a`_`, const T *const `_`here`_`)`
 
-Iterate through `a` \. It is safe to add using [<T>ArrayUpdateNew](fn-<T>ArrayUpdateNew) with the return value as `update` \. Removing an element causes the pointer to go to the next element, if it exists\.
+Iterate through `a` \. It is safe to add using [<T>ArrayUpdateNew](#fn-<T>ArrayUpdateNew) with the return value as `update` \. Removing an element causes the pointer to go to the next element, if it exists\.
 
  - Parameter: _a_  
    The array; if null, returns null\.
@@ -428,7 +428,7 @@ Adds `add` to the size in `a` \.
  - Return:  
    Success\.
  - Exceptional Return: ERANGE  
-   The size added is greater than the capacity\. To avoid this, call [<T>ArrayBuffer](fn-<T>ArrayBuffer) before\.
+   The size added is greater than the capacity\. To avoid this, call [<T>ArrayBuffer](#fn-<T>ArrayBuffer) before\.
  - Order:  
    O\(1\)
  - Caveat:  
@@ -441,7 +441,7 @@ Adds `add` to the size in `a` \.
 
 `static void `**`<T>ArrayEach`**`(struct <T>Array *const `_`a`_`, const <PT>Action `_`action`_`)`
 
-Iterates through `a` and calls `action` on all the elements\. The topology of the list can not change while in this function\. That is, don't call [<T>ArrayNew](fn-<T>ArrayNew), [<T>ArrayRemove](fn-<T>ArrayRemove), _etc_ in `action` \.
+Iterates through `a` and calls `action` on all the elements\. The topology of the list can not change while in this function\. That is, don't call [<T>ArrayNew](#fn-<T>ArrayNew), [<T>ArrayRemove](#fn-<T>ArrayRemove), _etc_ in `action` \.
 
  - Parameter: _a_  
    If null, does nothing\.
@@ -540,7 +540,7 @@ In `a` , replaces the elements from `anchor` up to `range` with a copy of `b` \.
  - Parameter: _range_  
    How many replaced values in the original; negative values are implicitly plus the length of the array; clamped at the minimum and maximum\.
  - Parameter: _b_  
-   The replacement array\. If null, deletes without replacing\. It is more efficient than individual [<T>ArrayRemove](fn-<T>ArrayRemove) to delete several consecutive values\.
+   The replacement array\. If null, deletes without replacing\. It is more efficient than individual [<T>ArrayRemove](#fn-<T>ArrayRemove) to delete several consecutive values\.
  - Return:  
    Success\.
  - Exceptional Return: EDOM  
@@ -593,7 +593,7 @@ In `a` , replaces the elements from indices `i0` \(inclusive\) to `i1` \(exclusi
 
 `static const char *`**`<T>ArrayToString`**`(const struct <T>Array *const `_`a`_`)`
 
-Can print 4 things at once before it overwrites\. One must a `ARRAY_TO_STRING` to a function implementing [<PT>ToString](typedef-<PT>ToString) to get this functionality\.
+Can print 4 things at once before it overwrites\. One must a `ARRAY_TO_STRING` to a function implementing [<PT>ToString](#typedef-<PT>ToString) to get this functionality\.
 
  - Return:  
    Prints `a` in a static buffer\.
