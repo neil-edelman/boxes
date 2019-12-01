@@ -9,7 +9,7 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`&lt;K&gt;Set` is a collection of objects with a hash function and equality function that doesn't allow duplication\. Collisions are handled by separate chaining\. The maximum load factor is \{ln 2\}\. While in the set, the values cannot change in way that affects their hash\.
+`&lt;K&gt;Set` is a collection of objects with a hash function and equality function that doesn't allow duplication\. Collisions are handled by separate chaining\. The maximum load factor is `ln 2` \. While in the set, the values cannot change in way that affects their hash\.
 
  - Parameter: SET\_NAME, SET\_TYPE  
    `K` that satisfies `C` naming conventions when mangled; required\.
@@ -20,7 +20,7 @@
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PK&gt;ToString](#user-content--77ec3874); makes available [&lt;K&gt;SetToString](#user-content-(null)-1b39893a)\.
  - Parameter: SET\_TEST  
-   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying <typedef:<PV>Action\}\. Requires `SET_TO_STRING` \.
+   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PV&gt;Action](#user-content--4585d713)\. Requires `SET_TO_STRING` \.
  * Standard:  
    C89/90
  * Caveat:  
@@ -163,8 +163,10 @@ Gets `item` from `set` \.
 
 <code>static int <strong>&lt;K&gt;SetPut</strong>(struct &lt;K&gt;Set *const <em>set</em>, struct &lt;K&gt;SetItem *const <em>item</em>, const struct &lt;K&gt;SetItem **const <em>p_eject</em>)</code>
 
-Puts the `item` in `set` \. Adding an element with the same `K` , according to [&lt;PK&gt;IsEqual](#user-content--f1be3090) `MAP_IS_EQUAL` , causes the old data to be ejected\.
+Puts the `item` in `set` \. Adding an element with the same `K` , according to [&lt;PK&gt;IsEqual](#user-content--f1be3090) `SET_IS_EQUAL` , causes the old data to be ejected\.
 
+ - Parameter: _set_  
+   If null, returns false\.
  - Parameter: _item_  
    If null, returns false\. Must not be part this `set` or any other, because the integrety of the other set will be compromised\.
  - Parameter: _p\_eject_  
@@ -191,7 +193,7 @@ Puts the `item` in `set` only if the entry is absent\.
  - Parameter: _p\_is\_absent_  
    If not\-null, it will signal the successful placement\.
  - Return:  
-   Successful operation, including doing nothing because the entry is already in the map\.
+   Successful operation, including doing nothing because the entry is already in the set\.
  - Exceptional Return: realloc  
  - Order:  
    Constant time assuming the hash function is uniform; worst &#927;\(n\)\.
@@ -215,7 +217,7 @@ Removes an element specified by `key` from `set` \.
 
  ### <a id = "user-content-fn-1b39893a" name = "user-content-fn-1b39893a"><K>SetToString</a> ###
 
-<code>static const char *<strong>&lt;K&gt;SetToString</strong>(const struct &lt;KV&gt;Map *const <em>set</em>)</code>
+<code>static const char *<strong>&lt;K&gt;SetToString</strong>(const struct &lt;K&gt;Set *const <em>set</em>)</code>
 
 Can print 2 things at once before it overwrites\. One must set `SET_TO_STRING` to a function implementing [&lt;PK&gt;ToString](#user-content--77ec3874) to get this functionality\.
 

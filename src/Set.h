@@ -302,7 +302,7 @@ static int K_(SetPut)(struct K_(Set) *const set,
 	/* There can only be only be one entry `is_equal(entry)`. */
 	if(set->buckets) {
 		struct K_(SetItem) *prev_x, *x;
-		bucket = PK_(get_bucket)(set, item->hash);
+		bucket = PK_(get_bucket)(set, hash);
 		for(prev_x = bucket; (x = prev_x->next); prev_x = x)
 			if(hash == x->hash && PK_(is_equal)(item->data, x->data)) break;
 		if(x) {
@@ -325,23 +325,9 @@ static int K_(SetPut)(struct K_(Set) *const set,
 	return 1;
 }
 
-#if 0
-		/** Private for <fn:<K>SetPut> and <fn:<K>SetPutIfAbsent>.
-		 @return A duplicate of `item` in `set`. */
-			static struct K_(SetItem) *PK_(find)(struct K_(Set) *const set,
-												 struct K_(SetItem) *const item) {
-				unsigned hash = item->hash = PK_(hash)(item->data);
-				assert(set && item);
-				if(set->buckets) {
-					struct K_(SetItem) *x;
-					for(x = PK_(get_bucket)(set, hash); x; x = x->next)
-						if(hash == x->hash && PK_(is_equal)(item->data, x->data)) return x;
-				}
-				return 0;
-			}
-#endif
+			/* fixme */
+static const char *K_(SetToString)(const struct K_(Set) *const set);
 
-			static const char *K_(SetToString)(const struct K_(Set) *const set);
 /** Puts the `item` in `set` only if the entry is absent.
  @param[set, item] If null, returns false.
  @param[item] Must not be part this `set` or any other.
@@ -359,10 +345,16 @@ static int K_(SetPutIfAbsent)(struct K_(Set) *const set,
 	if(!set || !item) return 0;
 	hash = item->hash = PK_(hash)(item->data);
 	if(set->buckets) {
+		char a[12];
 		struct K_(SetItem) *prev_x, *x;
-		bucket = PK_(get_bucket)(set, item->hash);
-		for(prev_x = bucket; (x = prev_x->next); prev_x = x)
+		PK_(to_string)(&item->data, &a);
+		fprintf(stderr, "we are looking for %s$%u\n", a, item->hash);
+		bucket = PK_(get_bucket)(set, hash);
+		for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
+			PK_(to_string)(&x->data, &a);
+			fprintf(stderr, "\t%s$%u\n", a, x->hash);
 			if(hash == x->hash && PK_(is_equal)(item->data, x->data)) return 1;
+		}
 	}
 	if(!PK_(grow)(set, set->size + 1)) return 0;
 	bucket = PK_(get_bucket)(set, item->hash);
@@ -464,7 +456,6 @@ static const char *K_(SetToString)(const struct K_(Set) *const set) {
 		}
 	}
 	sprintf(cat.cursor, "%s", cat.is_truncated ? "...]" : " ]");
-	fprintf(stderr, "super_cat has %u buckets.\n", 1 << set->log_capacity);
 	return cat.print; /* Static buffer. */
 }
 
