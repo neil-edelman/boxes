@@ -12,35 +12,39 @@
 #include <errno.h>
 
 static unsigned id_hash(const int id) { return id; }
-
 static int id_is_equal(const int a, const int b) { return a == b; }
 
-static void boat_id_to_string(const int *const id, char (*const a)[12]);
+/* Prototype these for <fn:id_to_string>. */
+struct Boat;
+static const struct Boat *id_const_upcast(const int *const);
+static void boat_to_string(const struct Boat *const b, char (*const a)[12]);
+static void id_to_string(const int *const id, char (*const a)[12]) {
+	boat_to_string(id_const_upcast(id), a);
+}
 
+/* Code generation for `IdSet`; we are responsible for storing `IdSetItem`. */
 #define SET_NAME Id
 #define SET_TYPE int
 #define SET_HASH &id_hash
 #define SET_IS_EQUAL &id_is_equal
-#define SET_TO_STRING &boat_id_to_string
+#define SET_TO_STRING &id_to_string
+#define SET_NO_CACHE
 #include "../src/Set.h"
 
+/* Here is where we store it. */
 struct Boat {
 	struct IdSetItem id;
 	int time;
 	int points;
 };
 
-static struct Boat *boat_id_upcast(int *const id) {
-	return (struct Boat *)(void *)((char *)id) - offsetof(struct Boat, id);
-}
-
-static const struct Boat *boat_id_const_upcast(const int *const id) {
+/* `container_of(id)`. */
+static const struct Boat *id_const_upcast(const int *const id) {
 	return (const struct Boat *)(const void *)
 		((const char *)id - offsetof(struct Boat, id));
 }
 
-static void boat_id_to_string(const int *const id, char (*const a)[12]) {
-	const struct Boat *const b = boat_id_const_upcast(id);
+static void boat_to_string(const struct Boat *const b, char (*const a)[12]) {
 	sprintf(*a, "#%d(%d)", *IdSetItem(&b->id), b->points);
 }
 
@@ -52,15 +56,27 @@ static void fill_boat(struct Boat *const b) {
     b->points = 151 - b->time;
 }
 
+/* Not in the set; de-duplication not enabled. */
 static void print_boats(const struct Boat *const bs,
 	const size_t bs_size) {
 	char a[12];
 	size_t b;
 	assert(bs);
-	printf("{ ");
+	printf("In array: { ");
 	for(b = 0; b < bs_size; b++)
-		boat_id_to_string(IdSetItem(&bs[b].id), &a), printf("%s%s", b ? ", " : "", a);
+		boat_to_string(bs + b, &a),
+		printf("%s%s", b ? ", " : "", a);
 	printf(" }\n");
+}
+
+static void put_in_set(struct IdSet *const set, struct Boat *const b) {
+	int is_put;
+	char a[12];
+	assert(b && set);
+	IdSetPutIfAbsent(set, &b->id, &is_put);
+	if(is_put) return;
+	boat_to_string(b, &a);
+	printf("There's already a %s in %s.\n", a, IdSetToString(set));
 }
 
 static void each_boat(struct Boat *const bs, const size_t bs_size,
@@ -70,22 +86,12 @@ static void each_boat(struct Boat *const bs, const size_t bs_size,
 	for(b = 0; b < bs_size; b++) action(bs + b);
 }
 
-static void put_in_set(struct Boat *const b, struct IdSet *const set) {
-	int is_put;
-	char a[12];
-	assert(b && set);
-	IdSetPutIfAbsent(set, &b->id, &is_put);
-	if(is_put) return;
-	boat_id_to_string(IdSetItem(&b->id), &a);
-	printf("There's already a %s in %s.\n", a, IdSetToString(set));
-}
-
-static void each_boat_param(struct Boat *const bs, const size_t bs_size,
-	struct IdSet *const ids,
-	void (*const consumer)(struct Boat *, struct IdSet *const)) {
+static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
+	const size_t bs_size,
+	void (*const action)(struct IdSet *const, struct Boat *)) {
 	size_t b;
 	assert(bs);
-	for(b = 0; b < bs_size; b++) consumer(bs + b, ids);
+	for(b = 0; b < bs_size; b++) action(ids, bs + b);
 }
 
 int main(void) {
@@ -94,34 +100,8 @@ int main(void) {
 	struct IdSet set = SET_ZERO;
 	each_boat(bs, bs_size, &fill_boat);
 	print_boats(bs, bs_size);
-	each_boat_param(bs, bs_size, &set, &put_in_set);
-	printf("Set: %s.\n", IdSetToString(&set));
+	printf("Putting in Set:\n");
+	each_set_boat(&set, bs, bs_size, &put_in_set);
+	printf("Final Set: %s.\n", IdSetToString(&set));
 	return EXIT_SUCCESS;
 }
-
-#if 0
-
-int main(void) {
-	struct BoatEntry boats[12], *discard;
-	const size_t boats_size = sizeof boats / sizeof *boats;
-	size_t i;
-	struct BoatMap map;
-	each_boat(boats, boats_size, &fill);
-	print_boats(boats, boats_size);
-	BoatMap(&map);
-	for(i = 0; i < boats_size; i++) {
-		BoatMapPut(&map, boats + i, &discard);
-		if(discard) {
-			char a[12], b[12];
-			boat_to_string(boats + i, &a);
-			boat_to_string(discard, &b);
-			printf("%s dispaced by %s at %lu.\n", b, a, (unsigned long)i);
-		}
-	}
-	printf("%s\n", BoatMapToString(&map));
-	/*print_boats(boats, boats_size);
-	 if(!(set = hashset_create())) return perror("set"), EXIT_FAILURE;
-	 each_set_boat(set, boats, boats_size, &put);*/
-	return EXIT_SUCCESS;
-}
-#endif

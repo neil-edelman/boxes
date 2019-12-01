@@ -1,10 +1,11 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- `<K>Set` is a collection of objects with a hash function and equality function
- that doesn't allow duplication. Collisions are handled by separate chaining.
- The maximum load factor is `ln 2`. While in the set, the values cannot change
- in way that affects their hash.
+ `<K>Set` is a collection of objects of type `K`, along with a hash function
+ and equality function, that doesn't allow duplication. Internally, it is a
+ hash set, and collisions are handled by separate chaining. The maximum load
+ factor is `ln 2`. While in the set, the values cannot change. One can use this
+ as the key in an associative array.
 
  @param[SET_NAME, SET_TYPE]
  `K` that satisfies `C` naming conventions when mangled; required.
@@ -14,6 +15,11 @@
 
  @param[SET_IS_EQUAL]
  A function satisfying <typedef:<PK>IsEqual>; required.
+
+ @param[SET_NO_CACHE]
+ Always calculates the hash every time and don't store it _per_ datum. Best
+ used when the data to be hashed is very small, (_viz_ the hash calculation is
+ trivial.)
 
  @param[SET_TO_STRING]
  Optional print function implementing <typedef:<PK>ToString>; makes available
@@ -100,19 +106,22 @@ typedef SET_TYPE PK_(Type);
 struct K_(SetItem);
 struct K_(SetItem) {
 	K data;
+#ifndef SET_NO_CACHE /* <!-- cache */
 	unsigned hash;
+#endif /* cache --> */
 	struct K_(SetItem) *next;
 };
 
-#define SET_ZERO { 0, 0, 0 }
 
-/** A `<K>Set`. */
+
+/** A `<K>Set`. To initianise, see <fn:<K>Set>. */
 struct K_(Set);
 struct K_(Set) {
 	struct K_(SetItem) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
 	unsigned log_capacity;
 	size_t size;
 };
+#define SET_ZERO { 0, 0, 0 }
 
 
 
@@ -145,6 +154,15 @@ typedef void (*PK_(Action))(const K *const);
 
 
 
+/** Gets the hash of `item`. */
+static unsigned PK_(get_hash)(struct K_(SetItem) *item) {
+#ifdef SET_NO_CACHE /* <!-- !cache */
+	return PK_(hash)(item->data);
+#else /* !cache --><!-- cache */
+	return item->hash;
+#endif /* cache --> */
+}
+
 /** Extracts the `K` from `item`. */
 static const K *K_(SetItem)(const struct K_(SetItem) *const item) {
 	if(!item) return 0;
@@ -175,7 +193,7 @@ static int PK_(grow)(struct K_(Set) *const set, const size_t size) {
 	const size_t eff_size = 1 + size / 0.693147180559945309417232121458176568;
 	struct K_(SetItem) *buckets, *b, *b_end, *new_b, *prev_x, *x;
 	const unsigned log_c0 = set->log_capacity,
-		log_limit = sizeof buckets->hash * 8;
+		log_limit = sizeof(unsigned) * 8;
 	unsigned c0 = 1 << log_c0, log_c1, c1, mask;
 	assert(set && size && log_c0 < log_limit
 		&& (set->log_capacity >= 3 || !set->log_capacity));
@@ -205,9 +223,10 @@ static int PK_(grow)(struct K_(Set) *const set, const size_t size) {
 		/* Skip the keys that go nowhere. Rehash to the higher buckets. */
 		prev_x = b;
 		while((x = prev_x->next)) {
-			if(!(x->hash & mask)) { prev_x = x; continue; }
+			unsigned hash = PK_(get_hash)(x);
+			if(!(hash & mask)) { prev_x = x; continue; }
 			prev_x->next = x->next;
-			new_b = PK_(get_bucket)(set, x->hash);
+			new_b = PK_(get_bucket)(set, hash);
 			x->next = new_b->next, new_b->next = x;
 		}
 	}
@@ -243,8 +262,8 @@ static void K_(Set)(struct K_(Set) *const set) {
 }
 
 /** Clears and removes all entries from `set`. The capacity and memory of the
- hash table is preserved, but all previous values are un-associated. Until the
- previous size is obtained, the load factor will be less.
+ hash table is preserved, but all previous values are un-associated. The load
+ factor will be less until it reaches it's previous size.
  @param[set] If null, does nothing.
  @order \Theta(`set.buckets`)
  @allow */
@@ -275,8 +294,12 @@ static const K *K_(SetGet)(struct K_(Set) *const set, const K key) {
 	if(!set || !set->buckets) return 0;
 	hash   = PK_(hash)(key);
 	bucket = PK_(get_bucket)(set, hash);
-	for(x = bucket->next; x; x = x->next)
-		if(hash == x->hash && PK_(is_equal)(x->data, key)) return &x->data;
+	for(x = bucket->next; x; x = x->next) {
+#ifndef SET_NO_CACHE /* <!-- !cache: a quick out. */
+		if(hash != x->hash) continue;
+#endif /* cache --> */
+		if(PK_(is_equal)(x->data, key)) return &x->data;
+	}
 	return 0;
 }
 
@@ -298,13 +321,20 @@ static int K_(SetPut)(struct K_(Set) *const set,
 	if(p_eject) *p_eject = 0;
 	if(!set || !item) return 0;
 	/* Calculate and cache the hash value of the key. */
-	hash = item->hash = PK_(hash)(item->data);
+	hash = PK_(hash)(item->data);
+#ifndef SET_NO_CACHE /* <!-- cache */
+	item->hash = hash;
+#endif /* cache --> */
 	/* There can only be only be one entry `is_equal(entry)`. */
 	if(set->buckets) {
 		struct K_(SetItem) *prev_x, *x;
 		bucket = PK_(get_bucket)(set, hash);
-		for(prev_x = bucket; (x = prev_x->next); prev_x = x)
-			if(hash == x->hash && PK_(is_equal)(item->data, x->data)) break;
+		for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
+#ifndef SET_NO_CACHE /* <!-- !cache: a quick out. */
+			if(hash != x->hash) continue;
+#endif /* cache --> */
+			if(PK_(is_equal)(item->data, x->data)) break;
+		}
 		if(x) {
 			prev_x->next = x->next;
 			if(x->next == x) x->next = 0;
@@ -315,7 +345,7 @@ static int K_(SetPut)(struct K_(Set) *const set,
 	if(!eject) {
 		assert(set->size + 1 > set->size);
 		if(!PK_(grow)(set, set->size + 1)) return 0;
-		bucket = PK_(get_bucket)(set, item->hash);
+		bucket = PK_(get_bucket)(set, hash);
 		set->size++;
 	}
 	/* Stick the item on the head of the bucket. */
@@ -324,9 +354,6 @@ static int K_(SetPut)(struct K_(Set) *const set,
 	if(p_eject) *p_eject = eject;
 	return 1;
 }
-
-			/* fixme */
-static const char *K_(SetToString)(const struct K_(Set) *const set);
 
 /** Puts the `item` in `set` only if the entry is absent.
  @param[set, item] If null, returns false.
@@ -343,25 +370,25 @@ static int K_(SetPutIfAbsent)(struct K_(Set) *const set,
 	unsigned hash;
 	if(p_is_absent) *p_is_absent = 0;
 	if(!set || !item) return 0;
-	hash = item->hash = PK_(hash)(item->data);
+	hash = PK_(hash)(item->data);
+#ifndef SET_NO_CACHE /* <!-- cache */
+	item->hash = hash;
+#endif /* cache --> */
 	if(set->buckets) {
-		char a[12];
 		struct K_(SetItem) *prev_x, *x;
-		PK_(to_string)(&item->data, &a);
-		fprintf(stderr, "we are looking for %s$%u\n", a, item->hash);
 		bucket = PK_(get_bucket)(set, hash);
 		for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
-			PK_(to_string)(&x->data, &a);
-			fprintf(stderr, "\t%s$%u\n", a, x->hash);
-			if(hash == x->hash && PK_(is_equal)(item->data, x->data)) return 1;
+#ifndef SET_NO_CACHE /* <!-- !cache: a quick out. */
+			if(hash != x->hash) continue;
+#endif /* cache --> */
+			if(PK_(is_equal)(item->data, x->data)) return 1;
 		}
 	}
 	if(!PK_(grow)(set, set->size + 1)) return 0;
-	bucket = PK_(get_bucket)(set, item->hash);
+	bucket = PK_(get_bucket)(set, hash);
 	item->next = bucket->next, bucket->next = item;
 	set->size++;
 	if(p_is_absent) *p_is_absent = 1;
-	fprintf(stderr, "Now %s.\n", K_(SetToString)(set));
 	return 1;
 }
 
@@ -376,8 +403,12 @@ static struct K_(SetItem) *K_(SetRemove)(struct K_(Set) *const set,
 	if(!set || !set->size || !set->buckets) return 0;
 	hash   = PK_(hash)(key);
 	bucket = PK_(get_bucket)(set, hash);
-	for(prev_x = bucket; (x = prev_x->next); prev_x = x)
-		if(hash == x->hash && PK_(is_equal)(x->data, key)) break;
+	for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
+#ifndef SET_NO_CACHE /* <!-- !cache: a quick out. */
+		if(hash != x->hash) continue;
+#endif /* cache --> */
+		if(PK_(is_equal)(key, x->data)) break;
+	}
 	if(!x) return 0;
 	prev_x->next = x->next;
 	x->next = 0;
@@ -440,7 +471,6 @@ static const char *K_(SetToString)(const struct K_(Set) *const set) {
 		assert(set->log_capacity >= 3 && set->log_capacity < 32);
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
 			b < b_end; b++) {
-			if(!is_first) set_super_cat(&cat, "/");
 			for(x = b->next; x; x = x->next) {
 				if(!is_first) {
 					set_super_cat(&cat, ", ");
