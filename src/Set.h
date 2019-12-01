@@ -1,29 +1,29 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- `<K>Set` is a collection of objects of type `K`, along with a hash function
+ `<E>Set` is a collection of elements of type `E`, along with a hash function
  and equality function, that doesn't allow duplication. Internally, it is a
  hash set, and collisions are handled by separate chaining. The maximum load
  factor is `ln 2`. While in the set, the values cannot change. One can use this
  as the key in an associative array.
 
  @param[SET_NAME, SET_TYPE]
- `K` that satisfies `C` naming conventions when mangled; required.
+ `E` that satisfies `C` naming conventions when mangled; required.
 
  @param[SET_HASH]
- A function satisfying <typedef:<PK>Hash>; required.
+ A function satisfying <typedef:<PE>Hash>; required.
 
  @param[SET_IS_EQUAL]
- A function satisfying <typedef:<PK>IsEqual>; required.
+ A function satisfying <typedef:<PE>IsEqual>; required.
 
  @param[SET_NO_CACHE]
  Always calculates the hash every time and don't store it _per_ datum. Best
- used when the data to be hashed is very small, (_viz_ the hash calculation is
+ used when the data to be hashed is very small, (_viz_, the hash calculation is
  trivial.)
 
  @param[SET_TO_STRING]
- Optional print function implementing <typedef:<PK>ToString>; makes available
- <fn:<K>SetToString>.
+ Optional print function implementing <typedef:<PE>ToString>; makes available
+ <fn:<E>SetToString>.
 
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
@@ -38,7 +38,7 @@
 #include <assert.h>	/* assert */
 #include <stdio.h>  /* perror fprintf */
 #include <errno.h>  /* errno */
-#ifdef SET_TO_STRING /* <-- string */
+#ifdef SET_TO_STRING /* <!-- string */
 #include <string.h> /* strlen */
 #endif /* string --> */
 
@@ -77,47 +77,47 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef K
-#undef K
+#ifdef E
+#undef E
 #endif
-#ifdef K_
-#undef K_
+#ifdef E_
+#undef E_
 #endif
-#ifdef PK_
-#undef PK_
+#ifdef PE_
+#undef PE_
 #endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#define K_(thing) CAT(SET_NAME, thing)
-#define PK_(thing) PCAT(set, PCAT(SET_NAME, thing)) /* "Private." */
+#define E_(thing) CAT(SET_NAME, thing)
+#define PE_(thing) PCAT(set, PCAT(SET_NAME, thing)) /* "Private." */
 
 /* Troubles? Check `SET_TYPE` is a valid type, whose definition is placed above
  inclusion. */
-typedef SET_TYPE PK_(Type);
-#define K PK_(Type)
+typedef SET_TYPE PE_(Type);
+#define E PE_(Type)
 
 
 
-/** Contains `K` and more internal to the working of the hash. Storage of the
- `<K>SetItem` structure is the responsibility of the caller; it could be one
+/** Contains `E` and more internal to the working of the hash. Storage of the
+ `<E>SetItem` structure is the responsibility of the caller; it could be one
  part of a complicated structure. */
-struct K_(SetItem);
-struct K_(SetItem) {
-	K data;
+struct E_(SetItem);
+struct E_(SetItem) {
+	E data;
 #ifndef SET_NO_CACHE /* <!-- cache */
 	unsigned hash;
 #endif /* cache --> */
-	struct K_(SetItem) *next;
+	struct E_(SetItem) *next;
 };
 
 
 
-/** A `<K>Set`. To initianise, see <fn:<K>Set>. */
-struct K_(Set);
-struct K_(Set) {
-	struct K_(SetItem) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
+/** A `<E>Set`. To initianise, see <fn:<E>Set>. */
+struct E_(Set);
+struct E_(Set) {
+	struct E_(SetItem) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
 	unsigned log_capacity;
 	size_t size;
 };
@@ -125,57 +125,58 @@ struct K_(Set) {
 
 
 
-/** A map from `K` onto `unsigned int`. Should be as close as possible to a
+/** A map from `E` onto `unsigned int`. Should be as close as possible to a
  discrete uniform distribution for maximum performance and, when computing,
- take all of `K` into account. */
-typedef unsigned (*PK_(Hash))(const K);
-/* Check that `SET_HASH` is a function implementing <typedef:<PK>Hash>. */
-static const PK_(Hash) PK_(hash) = (SET_HASH);
+ take all of `E` into account. */
+typedef unsigned (*PE_(Hash))(const E);
+/* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
+static const PE_(Hash) PE_(hash) = (SET_HASH);
 
-/** A constant equivalence relation between `K` that satisfies
- `<PK>IsEqual(a, b) -> <PK>Hash(a) == <PK>Hash(b)`. */
-typedef int (*PK_(IsEqual))(const K, const K);
+/** A constant equivalence relation between `E` that satisfies
+ `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. */
+typedef int (*PE_(IsEqual))(const E, const E);
 /* Check that `SET_IS_EQUAL` is a function implementing
- <typedef:<PK>IsEqual>. */
-static const PK_(IsEqual) PK_(is_equal) = (SET_IS_EQUAL);
+ <typedef:<PE>IsEqual>. */
+static const PE_(IsEqual) PE_(is_equal) = (SET_IS_EQUAL);
 
-#ifdef SET_TO_STRING /* <-- string */
-/** Responsible for turning `K` (the first argument) into a 12 `char` string
+#ifdef SET_TO_STRING /* <!-- string */
+/** Responsible for turning `E` (the first argument) into a 12 `char` string
  (the second.) */
-typedef void (*PK_(ToString))(const K *const, char (*const)[12]);
-/* Check that {SET_TO_STRING} is a function implementing {<E>ToString}. */
-static const PK_(ToString) PK_(to_string) = (SET_TO_STRING);
+typedef void (*PE_(ToString))(const E *const, char (*const)[12]);
+/* Check that `SET_TO_STRING` is a function implementing
+ <typedef:<PE>ToString>. */
+static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
 #endif /* string --> */
 
-#ifdef SET_TEST /* <-- test */
+#ifdef SET_TEST /* <!-- test */
 /** Used for `SET_TEST`. */
-typedef void (*PK_(Action))(const K *const);
+typedef void (*PE_(Action))(const E *const);
 #endif /* test --> */
 
 
 
 /** Gets the hash of `item`. */
-static unsigned PK_(get_hash)(struct K_(SetItem) *item) {
+static unsigned PE_(get_hash)(struct E_(SetItem) *item) {
 #ifdef SET_NO_CACHE /* <!-- !cache */
-	return PK_(hash)(item->data);
+	return PE_(hash)(item->data);
 #else /* !cache --><!-- cache */
 	return item->hash;
 #endif /* cache --> */
 }
 
-/** Extracts the `K` from `item`. */
-static const K *K_(SetItem)(const struct K_(SetItem) *const item) {
+/** Extracts the `E` from `item`. */
+static const E *E_(SetItem)(const struct E_(SetItem) *const item) {
 	if(!item) return 0;
 	return &item->data;
 }
 
-static K *K_(SetVariableItem)(struct K_(SetItem) *const item) {
+static E *E_(SetVariableItem)(struct E_(SetItem) *const item) {
 	if(!item) return 0;
 	return &item->data;
 }
 
 /** @return Given a `hash`, compute the bucket at it's index. May be empty. */
-static struct K_(SetItem) *PK_(get_bucket)(struct K_(Set) *const set,
+static struct E_(SetItem) *PE_(get_bucket)(struct E_(Set) *const set,
 	const unsigned hash) {
 	assert(set);
 	return set->buckets + (hash & ((1 << set->log_capacity) - 1));
@@ -188,10 +189,10 @@ static struct K_(SetItem) *PK_(get_bucket)(struct K_(Set) *const set,
  @throws[ERANGE] Tried allocating more then can fit in `size_t`.
  @throws[malloc]
  @order \O(1) amortized. */
-static int PK_(grow)(struct K_(Set) *const set, const size_t size) {
+static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	/* Size if we want each bucket to have one item. */
 	const size_t eff_size = 1 + size / 0.693147180559945309417232121458176568;
-	struct K_(SetItem) *buckets, *b, *b_end, *new_b, *prev_x, *x;
+	struct E_(SetItem) *buckets, *b, *b_end, *new_b, *prev_x, *x;
 	const unsigned log_c0 = set->log_capacity,
 		log_limit = sizeof(unsigned) * 8;
 	unsigned c0 = 1 << log_c0, log_c1, c1, mask;
@@ -212,7 +213,7 @@ static int PK_(grow)(struct K_(Set) *const set, const size_t size) {
 	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1))) return 0;
 	set->buckets = buckets;
 	set->log_capacity = log_c1;
-	/* The mask needs domain {c0 \in [1, max]}, but we want 0 for loops. */
+	/* The mask needs domain `c0 \in [1, max]`, but we want 0 for loops. */
 	mask = (c1 - 1) ^ (c0 - 1), assert(mask);
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
 	/* Initialize the new lists to contain no elements. */
@@ -223,10 +224,10 @@ static int PK_(grow)(struct K_(Set) *const set, const size_t size) {
 		/* Skip the keys that go nowhere. Rehash to the higher buckets. */
 		prev_x = b;
 		while((x = prev_x->next)) {
-			unsigned hash = PK_(get_hash)(x);
+			unsigned hash = PE_(get_hash)(x);
 			if(!(hash & mask)) { prev_x = x; continue; }
 			prev_x->next = x->next;
-			new_b = PK_(get_bucket)(set, hash);
+			new_b = PE_(get_bucket)(set, hash);
 			x->next = new_b->next, new_b->next = x;
 		}
 	}
@@ -234,7 +235,7 @@ static int PK_(grow)(struct K_(Set) *const set, const size_t size) {
 }
 
 /** Zeros `set`, a well-defined state. */
-static void PK_(set)(struct K_(Set) *const set) {
+static void PE_(set)(struct E_(Set) *const set) {
 	assert(set);
 	set->buckets      = 0;
 	set->log_capacity = 0;
@@ -243,22 +244,22 @@ static void PK_(set)(struct K_(Set) *const set) {
 
 /** Destructor for `set`. After, it takes no memory and is in an empty state.
  @allow */
-static void K_(Set_)(struct K_(Set) *const set) {
+static void E_(Set_)(struct E_(Set) *const set) {
 	if(!set) return;
 	free(set->buckets);
-	PK_(set)(set);
+	PE_(set)(set);
 }
 
 /** Initialises `set` to be take no memory and be in an empty state. If it is
  `static` data, then it is initialised by default. Alternatively, assigning
- `{0}` (`C99+`) or `SET_ZERO` as the initialiser also puts it in an empty
+ `{0}` (`C99`+) or `SET_ZERO` as the initialiser also puts it in an empty
  state. Calling this on an active set will cause memory leaks.
  @param[set] If null, does nothing.
  @order \Theta(1)
  @allow */
-static void K_(Set)(struct K_(Set) *const set) {
+static void E_(Set)(struct E_(Set) *const set) {
 	if(!set) return;
-	PK_(set)(set);
+	PE_(set)(set);
 }
 
 /** Clears and removes all entries from `set`. The capacity and memory of the
@@ -267,8 +268,8 @@ static void K_(Set)(struct K_(Set) *const set) {
  @param[set] If null, does nothing.
  @order \Theta(`set.buckets`)
  @allow */
-static void K_(SetClear)(struct K_(Set) *const set) {
-	struct K_(SetItem) *b, *b_end;
+static void E_(SetClear)(struct E_(Set) *const set) {
+	struct E_(SetItem) *b, *b_end;
 	if(!set || !set->log_capacity) return;
 	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
 		b->next = 0;
@@ -278,62 +279,62 @@ static void K_(SetClear)(struct K_(Set) *const set) {
 /** @return The number of entries in the `set`.
  @param[set] If null, returns 0.
  @order \Theta(1) */
-static size_t K_(SetSize)(const struct K_(Set) *const set) {
+static size_t E_(SetSize)(const struct E_(Set) *const set) {
 	if(!set) return 0;
 	return set->size;
 }
 
 /** Gets `item` from `set`.
- @return The value which <typedef:<PK>IsEqual> the `item`, or, if no such value
+ @return The value which <typedef:<PE>IsEqual> the `item`, or, if no such value
  exists, null.
  @order Constant time assuming the hash function is uniform; worst \O(n).
  @allow */
-static const K *K_(SetGet)(struct K_(Set) *const set, const K key) {
+static const E *E_(SetGet)(struct E_(Set) *const set, const E key) {
 	unsigned hash;
-	struct K_(SetItem) *bucket, *x;
+	struct E_(SetItem) *bucket, *x;
 	if(!set || !set->buckets) return 0;
-	hash   = PK_(hash)(key);
-	bucket = PK_(get_bucket)(set, hash);
+	hash   = PE_(hash)(key);
+	bucket = PE_(get_bucket)(set, hash);
 	for(x = bucket->next; x; x = x->next) {
 #ifndef SET_NO_CACHE /* <!-- !cache: a quick out. */
 		if(hash != x->hash) continue;
 #endif /* cache --> */
-		if(PK_(is_equal)(x->data, key)) return &x->data;
+		if(PE_(is_equal)(x->data, key)) return &x->data;
 	}
 	return 0;
 }
 
-/** Puts the `item` in `set`. Adding an element with the same `K`, according
- to <typedef:<PK>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected.
+/** Puts the `item` in `set`. Adding an element with the same `E`, according
+ to <typedef:<PE>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected.
  @param[set, item] If null, returns false.
  @param[item] Must not be part this `set` or any other, because the integrety
  of the other set will be compromised.
  @param[p_eject] If not-null, this address of a variable that will store the
- `K` that was replaced, if any. If null, does nothing.
+ `E` that was replaced, if any. If null, does nothing.
  @return Success.
  @throws[realloc]
  @order Constant time assuming the hash function is uniform; worst \O(n).
  @allow */
-static int K_(SetPut)(struct K_(Set) *const set,
-	struct K_(SetItem) *const item, const struct K_(SetItem) **const p_eject) {
-	struct K_(SetItem) *bucket, *eject = 0;
+static int E_(SetPut)(struct E_(Set) *const set,
+	struct E_(SetItem) *const item, const struct E_(SetItem) **const p_eject) {
+	struct E_(SetItem) *bucket, *eject = 0;
 	unsigned hash;
 	if(p_eject) *p_eject = 0;
 	if(!set || !item) return 0;
 	/* Calculate and cache the hash value of the key. */
-	hash = PK_(hash)(item->data);
+	hash = PE_(hash)(item->data);
 #ifndef SET_NO_CACHE /* <!-- cache */
 	item->hash = hash;
 #endif /* cache --> */
 	/* There can only be only be one entry `is_equal(entry)`. */
 	if(set->buckets) {
-		struct K_(SetItem) *prev_x, *x;
-		bucket = PK_(get_bucket)(set, hash);
+		struct E_(SetItem) *prev_x, *x;
+		bucket = PE_(get_bucket)(set, hash);
 		for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
 #ifndef SET_NO_CACHE /* <!-- !cache: a quick out. */
 			if(hash != x->hash) continue;
 #endif /* cache --> */
-			if(PK_(is_equal)(item->data, x->data)) break;
+			if(PE_(is_equal)(item->data, x->data)) break;
 		}
 		if(x) {
 			prev_x->next = x->next;
@@ -344,8 +345,8 @@ static int K_(SetPut)(struct K_(Set) *const set,
 	/* If the entry is new, we grow. The bucket may have changed. */
 	if(!eject) {
 		assert(set->size + 1 > set->size);
-		if(!PK_(grow)(set, set->size + 1)) return 0;
-		bucket = PK_(get_bucket)(set, hash);
+		if(!PE_(grow)(set, set->size + 1)) return 0;
+		bucket = PE_(get_bucket)(set, hash);
 		set->size++;
 	}
 	/* Stick the item on the head of the bucket. */
@@ -364,28 +365,28 @@ static int K_(SetPut)(struct K_(Set) *const set,
  @throws[realloc]
  @order Constant time assuming the hash function is uniform; worst \O(n).
  @allow */
-static int K_(SetPutIfAbsent)(struct K_(Set) *const set,
-	struct K_(SetItem) *const item, int *const p_is_absent) {
-	struct K_(SetItem) *bucket;
+static int E_(SetPutIfAbsent)(struct E_(Set) *const set,
+	struct E_(SetItem) *const item, int *const p_is_absent) {
+	struct E_(SetItem) *bucket;
 	unsigned hash;
 	if(p_is_absent) *p_is_absent = 0;
 	if(!set || !item) return 0;
-	hash = PK_(hash)(item->data);
+	hash = PE_(hash)(item->data);
 #ifndef SET_NO_CACHE /* <!-- cache */
 	item->hash = hash;
 #endif /* cache --> */
 	if(set->buckets) {
-		struct K_(SetItem) *prev_x, *x;
-		bucket = PK_(get_bucket)(set, hash);
+		struct E_(SetItem) *prev_x, *x;
+		bucket = PE_(get_bucket)(set, hash);
 		for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
 #ifndef SET_NO_CACHE /* <!-- !cache: a quick out. */
 			if(hash != x->hash) continue;
 #endif /* cache --> */
-			if(PK_(is_equal)(item->data, x->data)) return 1;
+			if(PE_(is_equal)(item->data, x->data)) return 1;
 		}
 	}
-	if(!PK_(grow)(set, set->size + 1)) return 0;
-	bucket = PK_(get_bucket)(set, hash);
+	if(!PE_(grow)(set, set->size + 1)) return 0;
+	bucket = PE_(get_bucket)(set, hash);
 	item->next = bucket->next, bucket->next = item;
 	set->size++;
 	if(p_is_absent) *p_is_absent = 1;
@@ -396,18 +397,18 @@ static int K_(SetPutIfAbsent)(struct K_(Set) *const set,
  @return Successfully removed an element or null.
  @order Constant time assuming the hash function is uniform; worst \O(n).
  @allow */
-static struct K_(SetItem) *K_(SetRemove)(struct K_(Set) *const set,
-	const K key) {
+static struct E_(SetItem) *E_(SetRemove)(struct E_(Set) *const set,
+	const E key) {
 	unsigned hash;
-	struct K_(SetItem) *bucket, *prev_x, *x;
+	struct E_(SetItem) *bucket, *prev_x, *x;
 	if(!set || !set->size || !set->buckets) return 0;
-	hash   = PK_(hash)(key);
-	bucket = PK_(get_bucket)(set, hash);
+	hash   = PE_(hash)(key);
+	bucket = PE_(get_bucket)(set, hash);
 	for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
 #ifndef SET_NO_CACHE /* <!-- !cache: a quick out. */
 		if(hash != x->hash) continue;
 #endif /* cache --> */
-		if(PK_(is_equal)(key, x->data)) break;
+		if(PE_(is_equal)(key, x->data)) break;
 	}
 	if(!x) return 0;
 	prev_x->next = x->next;
@@ -416,9 +417,9 @@ static struct K_(SetItem) *K_(SetRemove)(struct K_(Set) *const set,
 	return x;
 }
 
-#ifdef SET_TO_STRING /* <-- print */
+#ifdef SET_TO_STRING /* <!-- print */
 
-#ifndef SET_PRINT_THINGS /* <-- once inside translation unit */
+#ifndef SET_PRINT_THINGS /* <!-- once inside translation unit */
 #define SET_PRINT_THINGS
 
 struct Set_SuperCat {
@@ -448,13 +449,13 @@ static void set_super_cat(struct Set_SuperCat *const cat,
 #endif /* once --> */
 
 /** Can print 2 things at once before it overwrites. One must set
- `SET_TO_STRING` to a function implementing <typedef:<PK>ToString> to get this
+ `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
  functionality.
  @return Prints `set` in a static buffer.
  @order \Theta(1); it has a 1024 character limit; every element takes some of
  it.
  @allow */
-static const char *K_(SetToString)(const struct K_(Set) *const set) {
+static const char *E_(SetToString)(const struct E_(Set) *const set) {
 	static char buffer[2][1024];
 	static unsigned buffer_i;
 	struct Set_SuperCat cat;
@@ -466,7 +467,7 @@ static const char *K_(SetToString)(const struct K_(Set) *const set) {
 	if(!set) return set_super_cat(&cat, "null"), cat.print;
 	set_super_cat(&cat, "[ ");
 	if(set->buckets) {
-		struct K_(SetItem) *b, *b_end, *x;
+		struct E_(SetItem) *b, *b_end, *x;
 		char a[12];
 		assert(set->log_capacity >= 3 && set->log_capacity < 32);
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
@@ -478,7 +479,7 @@ static const char *K_(SetToString)(const struct K_(Set) *const set) {
 				} else {
 					is_first = 0;
 				}
-				PK_(to_string)(&x->data, &a);
+				PE_(to_string)(&x->data, &a);
 				set_super_cat(&cat, a);
 				if(cat.is_truncated) break;
 			}
@@ -491,53 +492,56 @@ static const char *K_(SetToString)(const struct K_(Set) *const set) {
 
 #endif /* print --> */
 
-#ifdef SET_TEST /* <-- test */
+#ifdef SET_TEST /* <!-- test */
 #include "../test/TestSet.h" /* need this file if one is going to run tests */
 #endif /* test --> */
 
-static void PK_(unused_coda)(void);
+static void PE_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation, (hopefully.)
- \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
-static void PK_(unused_set)(void) {
-	K_(Set_)(0);
-	K_(Set)(0);
-	K_(SetClear)(0);
-	K_(SetSize)(0);
-	K_(SetGet)(0, 0);
-	K_(SetPut)(0, 0, 0);
-	K_(SetPutIfAbsent)(0, 0, 0);
-	K_(SetRemove)(0, 0);
+ <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code> */
+static void PE_(unused_set)(void) {
+	E_(Set_)(0);
+	E_(Set)(0);
+	E_(SetClear)(0);
+	E_(SetSize)(0);
+	E_(SetGet)(0, 0);
+	E_(SetPut)(0, 0, 0);
+	E_(SetPutIfAbsent)(0, 0, 0);
+	E_(SetRemove)(0, 0);
 #ifdef SET_TO_STRING
-	K_(SetToString)(0);
+	E_(SetToString)(0);
 #endif
-	PK_(unused_coda)();
+	PE_(unused_coda)();
 }
-static void PK_(unused_coda)(void) { PK_(unused_set)(); }
+static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 
 /* Un-define all macros. */
 #undef SET_NAME
 #undef SET_TYPE
-/* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
- {PCAT_} conform, and {K} is not used. */
-#ifdef SET_SUBTYPE /* <-- sub */
+/* Undocumented; allows nestled inclusion so long as: `CAT`, _etc_ conform to
+ the definitions, and `E` is not used. */
+#ifdef SET_SUBTYPE /* <!-- sub */
 #undef SET_SUBTYPE
-#else /* sub --><-- !sub */
+#else /* sub --><!-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
 #endif /* !sub --> */
-#undef K
-#undef K_
-#undef PK_
-#undef SET_KEY
-#undef SET_VALUE
+#undef E
+#undef E_
+#undef PE_
+#undef SET_NAME
+#undef SET_TYPE
 #undef SET_HASH
 #undef SET_IS_EQUAL
-#ifdef SET_TO_STRING /* <-- string */
+#ifdef SET_NO_CACHE /* <!-- !cache */
+#undef SET_NO_CACHE
+#endif /* !cache --> */
+#ifdef SET_TO_STRING /* <!-- string */
 #undef SET_TO_STRING
 #endif /* string --> */
-#ifdef SET_TEST /* <-- test */
+#ifdef SET_TEST /* <!-- test */
 #undef SET_TEST
 #endif /* test --> */
