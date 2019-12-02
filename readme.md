@@ -1,24 +1,26 @@
  # Set\.h #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [&lt;PK&gt;Hash](#user-content-typedef-3763afc0), [&lt;PK&gt;IsEqual](#user-content-typedef-f1be3090), [&lt;PK&gt;ToString](#user-content-typedef-77ec3874), [&lt;PK&gt;Action](#user-content-typedef-46e4e58a)
- * [Struct, Union, and Enum Definitions](#user-content-tag):  [&lt;K&gt;SetItem](#user-content-tag-505abce1), [&lt;K&gt;Set](#user-content-tag-2f49050a)
+ * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
+ * [Struct, Union, and Enum Definitions](#user-content-tag):  [&lt;E&gt;SetItem](#user-content-tag-f1847bfb), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`&lt;K&gt;Set` is a collection of objects with a hash function and equality function that doesn't allow duplication\. Collisions are handled by separate chaining\. The maximum load factor is `ln 2` \. While in the set, the values cannot change in way that affects their hash\.
+`&lt;E&gt;Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a hash set, and collisions are handled by separate chaining\. The maximum load factor is `ln 2` \. While in the set, the values cannot change\. One can use this as the key in an associative array\.
 
  - Parameter: SET\_NAME, SET\_TYPE  
-   `K` that satisfies `C` naming conventions when mangled; required\.
+   `E` that satisfies `C` naming conventions when mangled; required\.
  - Parameter: SET\_HASH  
-   A function satisfying [&lt;PK&gt;Hash](#user-content--3763afc0); required\.
+   A function satisfying [&lt;PE&gt;Hash](#user-content--812e78a); required\.
  - Parameter: SET\_IS\_EQUAL  
-   A function satisfying [&lt;PK&gt;IsEqual](#user-content--f1be3090); required\.
+   A function satisfying [&lt;PE&gt;IsEqual](#user-content--c1486ede); required\.
+ - Parameter: SET\_NO\_CACHE  
+   Always calculates the hash every time and don't store it _per_ datum\. Best used when the data to be hashed is very small, \(_viz_ , the hash calculation is trivial\.\)
  - Parameter: SET\_TO\_STRING  
-   Optional print function implementing [&lt;PK&gt;ToString](#user-content--77ec3874); makes available [&lt;K&gt;SetToString](#user-content-(null)-1b39893a)\.
+   Optional print function implementing [&lt;PE&gt;ToString](#user-content--a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-(null)-b4e4b20)\.
  - Parameter: SET\_TEST  
    Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PV&gt;Action](#user-content--4585d713)\. Requires `SET_TO_STRING` \.
  * Standard:  
@@ -31,33 +33,33 @@
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
- ### <a id = "user-content-typedef-3763afc0" name = "user-content-typedef-3763afc0"><PK>Hash</a> ###
+ ### <a id = "user-content-typedef-812e78a" name = "user-content-typedef-812e78a"><PE>Hash</a> ###
 
-<code>typedef unsigned(*<strong>&lt;PK&gt;Hash</strong>)(const K);</code>
+<code>typedef unsigned(*<strong>&lt;PE&gt;Hash</strong>)(const E);</code>
 
-A map from `K` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance and, when computing, take all of `K` into account\.
-
-
-
- ### <a id = "user-content-typedef-f1be3090" name = "user-content-typedef-f1be3090"><PK>IsEqual</a> ###
-
-<code>typedef int(*<strong>&lt;PK&gt;IsEqual</strong>)(const K, const K);</code>
-
-A constant equivalence relation between `K` that satisfies `&lt;PK&gt;IsEqual(a, b) -&gt; &lt;PK&gt;Hash(a) == &lt;PK&gt;Hash(b)` \.
+A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance and, when computing, take all of `E` into account\.
 
 
 
- ### <a id = "user-content-typedef-77ec3874" name = "user-content-typedef-77ec3874"><PK>ToString</a> ###
+ ### <a id = "user-content-typedef-c1486ede" name = "user-content-typedef-c1486ede"><PE>IsEqual</a> ###
 
-<code>typedef void(*<strong>&lt;PK&gt;ToString</strong>)(const K *const, char(*const)[12]);</code>
+<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const E, const E);</code>
 
-Responsible for turning `K` \(the first argument\) into a 12 `char` string \(the second\.\)
+A constant equivalence relation between `E` that satisfies `&lt;PE&gt;IsEqual(a, b) -&gt; &lt;PE&gt;Hash(a) == &lt;PE&gt;Hash(b)` \.
 
 
 
- ### <a id = "user-content-typedef-46e4e58a" name = "user-content-typedef-46e4e58a"><PK>Action</a> ###
+ ### <a id = "user-content-typedef-a5b40ebe" name = "user-content-typedef-a5b40ebe"><PE>ToString</a> ###
 
-<code>typedef void(*<strong>&lt;PK&gt;Action</strong>)(const K *const);</code>
+<code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const E *const, char(*const)[12]);</code>
+
+Responsible for turning `E` \(the first argument\) into a 12 `char` string \(the second\.\)
+
+
+
+ ### <a id = "user-content-typedef-9c0e506c" name = "user-content-typedef-9c0e506c"><PE>Action</a> ###
+
+<code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(const E *const);</code>
 
 Used for `SET_TEST` \.
 
@@ -65,19 +67,19 @@ Used for `SET_TEST` \.
 
  ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
- ### <a id = "user-content-tag-505abce1" name = "user-content-tag-505abce1"><K>SetItem</a> ###
+ ### <a id = "user-content-tag-f1847bfb" name = "user-content-tag-f1847bfb"><E>SetItem</a> ###
 
-<code>struct <strong>&lt;K&gt;SetItem</strong>;</code>
+<code>struct <strong>&lt;E&gt;SetItem</strong>;</code>
 
-Contains `K` and more internal to the working of the hash\. Storage of the `&lt;K&gt;SetItem` structure is the responsibility of the caller; it could be one part of a complicated structure\.
+Contains `E` and more internal to the working of the hash\. Storage of the `&lt;E&gt;SetItem` structure is the responsibility of the caller; it could be one part of a complicated structure\.
 
 
 
- ### <a id = "user-content-tag-2f49050a" name = "user-content-tag-2f49050a"><K>Set</a> ###
+ ### <a id = "user-content-tag-c69e9d84" name = "user-content-tag-c69e9d84"><E>Set</a> ###
 
-<code>struct <strong>&lt;K&gt;Set</strong>;</code>
+<code>struct <strong>&lt;E&gt;Set</strong>;</code>
 
-A `&lt;K&gt;Set` \.
+A `&lt;E&gt;Set` \. To initianise, see [&lt;E&gt;Set](#user-content-(null)-c69e9d84)\.
 
 
 
@@ -87,21 +89,21 @@ A `&lt;K&gt;Set` \.
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-c4f364cf">&lt;K&gt;Set_</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-86b27fc1">&lt;E&gt;Set_</a></td><td>set</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-2f49050a">&lt;K&gt;Set</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-c69e9d84">&lt;E&gt;Set</a></td><td>set</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-6cbfd773">&lt;K&gt;SetClear</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-66181859">&lt;E&gt;SetClear</a></td><td>set</td></tr>
 
-<tr><td align = right>static const K *</td><td><a href = "#user-content-fn-a08ac546">&lt;K&gt;SetGet</a></td><td>set, key</td></tr>
+<tr><td align = right>static const E *</td><td><a href = "#user-content-fn-8d1390a0">&lt;E&gt;SetGet</a></td><td>set, key</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-266df0ef">&lt;K&gt;SetPut</a></td><td>set, item, p_eject</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-df6b38cd">&lt;E&gt;SetPut</a></td><td>set, item, p_eject</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-2956c7e9">&lt;K&gt;SetPutIfAbsent</a></td><td>set, item, p_is_absent</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-c6ea7aa7">&lt;E&gt;SetPutIfAbsent</a></td><td>set, item, p_is_absent</td></tr>
 
-<tr><td align = right>static struct &lt;K&gt;SetItem *</td><td><a href = "#user-content-fn-257b1a0e">&lt;K&gt;SetRemove</a></td><td>set, key</td></tr>
+<tr><td align = right>static struct &lt;E&gt;SetItem *</td><td><a href = "#user-content-fn-21a4ad4">&lt;E&gt;SetRemove</a></td><td>set, key</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-1b39893a">&lt;K&gt;SetToString</a></td><td>set</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b4e4b20">&lt;E&gt;SetToString</a></td><td>set</td></tr>
 
 </table>
 
@@ -109,19 +111,19 @@ A `&lt;K&gt;Set` \.
 
  ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
- ### <a id = "user-content-fn-c4f364cf" name = "user-content-fn-c4f364cf"><K>Set_</a> ###
+ ### <a id = "user-content-fn-86b27fc1" name = "user-content-fn-86b27fc1"><E>Set_</a> ###
 
-<code>static void <strong>&lt;K&gt;Set_</strong>(struct &lt;K&gt;Set *const <em>set</em>)</code>
+<code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
 
 Destructor for `set` \. After, it takes no memory and is in an empty state\.
 
 
 
- ### <a id = "user-content-fn-2f49050a" name = "user-content-fn-2f49050a"><K>Set</a> ###
+ ### <a id = "user-content-fn-c69e9d84" name = "user-content-fn-c69e9d84"><E>Set</a> ###
 
-<code>static void <strong>&lt;K&gt;Set</strong>(struct &lt;K&gt;Set *const <em>set</em>)</code>
+<code>static void <strong>&lt;E&gt;Set</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Initialises `set` to be take no memory and be in an empty state\. If it is `static` data, then it is initialised by default\. Alternatively, assigning `{0}` \(`C99+` \) or `SET_ZERO` as the initialiser also puts it in an empty state\. Calling this on an active set will cause memory leaks\.
+Initialises `set` to be take no memory and be in an empty state\. If it is `static` data, then it is initialised by default\. Alternatively, assigning `{0}` \(`C99` \+\) or `SET_ZERO` as the initialiser also puts it in an empty state\. Calling this on an active set will cause memory leaks\.
 
  - Parameter: _set_  
    If null, does nothing\.
@@ -131,11 +133,11 @@ Initialises `set` to be take no memory and be in an empty state\. If it is `stat
 
 
 
- ### <a id = "user-content-fn-6cbfd773" name = "user-content-fn-6cbfd773"><K>SetClear</a> ###
+ ### <a id = "user-content-fn-66181859" name = "user-content-fn-66181859"><E>SetClear</a> ###
 
-<code>static void <strong>&lt;K&gt;SetClear</strong>(struct &lt;K&gt;Set *const <em>set</em>)</code>
+<code>static void <strong>&lt;E&gt;SetClear</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Clears and removes all entries from `set` \. The capacity and memory of the hash table is preserved, but all previous values are un\-associated\. Until the previous size is obtained, the load factor will be less\.
+Clears and removes all entries from `set` \. The capacity and memory of the hash table is preserved, but all previous values are un\-associated\. The load factor will be less until it reaches it's previous size\.
 
  - Parameter: _set_  
    If null, does nothing\.
@@ -145,32 +147,32 @@ Clears and removes all entries from `set` \. The capacity and memory of the hash
 
 
 
- ### <a id = "user-content-fn-a08ac546" name = "user-content-fn-a08ac546"><K>SetGet</a> ###
+ ### <a id = "user-content-fn-8d1390a0" name = "user-content-fn-8d1390a0"><E>SetGet</a> ###
 
-<code>static const K *<strong>&lt;K&gt;SetGet</strong>(struct &lt;K&gt;Set *const <em>set</em>, const K <em>key</em>)</code>
+<code>static const E *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const E <em>key</em>)</code>
 
 Gets `item` from `set` \.
 
  - Return:  
-   The value which [&lt;PK&gt;IsEqual](#user-content--f1be3090) the `item` , or, if no such value exists, null\.
+   The value which [&lt;PE&gt;IsEqual](#user-content--c1486ede) the `item` , or, if no such value exists, null\.
  - Order:  
    Constant time assuming the hash function is uniform; worst &#927;\(n\)\.
 
 
 
 
- ### <a id = "user-content-fn-266df0ef" name = "user-content-fn-266df0ef"><K>SetPut</a> ###
+ ### <a id = "user-content-fn-df6b38cd" name = "user-content-fn-df6b38cd"><E>SetPut</a> ###
 
-<code>static int <strong>&lt;K&gt;SetPut</strong>(struct &lt;K&gt;Set *const <em>set</em>, struct &lt;K&gt;SetItem *const <em>item</em>, const struct &lt;K&gt;SetItem **const <em>p_eject</em>)</code>
+<code>static int <strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetItem *const <em>item</em>, const struct &lt;E&gt;SetItem **const <em>p_eject</em>)</code>
 
-Puts the `item` in `set` \. Adding an element with the same `K` , according to [&lt;PK&gt;IsEqual](#user-content--f1be3090) `SET_IS_EQUAL` , causes the old data to be ejected\.
+Puts the `item` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content--c1486ede) `SET_IS_EQUAL` , causes the old data to be ejected\.
 
  - Parameter: _set_  
    If null, returns false\.
  - Parameter: _item_  
    If null, returns false\. Must not be part this `set` or any other, because the integrety of the other set will be compromised\.
  - Parameter: _p\_eject_  
-   If not\-null, this address of a variable that will store the `K` that was replaced, if any\. If null, does nothing\.
+   If not\-null, this address of a variable that will store the `E` that was replaced, if any\. If null, does nothing\.
  - Return:  
    Success\.
  - Exceptional Return: realloc  
@@ -180,9 +182,9 @@ Puts the `item` in `set` \. Adding an element with the same `K` , according to [
 
 
 
- ### <a id = "user-content-fn-2956c7e9" name = "user-content-fn-2956c7e9"><K>SetPutIfAbsent</a> ###
+ ### <a id = "user-content-fn-c6ea7aa7" name = "user-content-fn-c6ea7aa7"><E>SetPutIfAbsent</a> ###
 
-<code>static int <strong>&lt;K&gt;SetPutIfAbsent</strong>(struct &lt;K&gt;Set *const <em>set</em>, struct &lt;K&gt;SetItem *const <em>item</em>, int *const <em>p_is_absent</em>)</code>
+<code>static int <strong>&lt;E&gt;SetPutIfAbsent</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetItem *const <em>item</em>, int *const <em>p_is_absent</em>)</code>
 
 Puts the `item` in `set` only if the entry is absent\.
 
@@ -201,9 +203,9 @@ Puts the `item` in `set` only if the entry is absent\.
 
 
 
- ### <a id = "user-content-fn-257b1a0e" name = "user-content-fn-257b1a0e"><K>SetRemove</a> ###
+ ### <a id = "user-content-fn-21a4ad4" name = "user-content-fn-21a4ad4"><E>SetRemove</a> ###
 
-<code>static struct &lt;K&gt;SetItem *<strong>&lt;K&gt;SetRemove</strong>(struct &lt;K&gt;Set *const <em>set</em>, const K <em>key</em>)</code>
+<code>static struct &lt;E&gt;SetItem *<strong>&lt;E&gt;SetRemove</strong>(struct &lt;E&gt;Set *const <em>set</em>, const E <em>key</em>)</code>
 
 Removes an element specified by `key` from `set` \.
 
@@ -215,11 +217,11 @@ Removes an element specified by `key` from `set` \.
 
 
 
- ### <a id = "user-content-fn-1b39893a" name = "user-content-fn-1b39893a"><K>SetToString</a> ###
+ ### <a id = "user-content-fn-b4e4b20" name = "user-content-fn-b4e4b20"><E>SetToString</a> ###
 
-<code>static const char *<strong>&lt;K&gt;SetToString</strong>(const struct &lt;K&gt;Set *const <em>set</em>)</code>
+<code>static const char *<strong>&lt;E&gt;SetToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Can print 2 things at once before it overwrites\. One must set `SET_TO_STRING` to a function implementing [&lt;PK&gt;ToString](#user-content--77ec3874) to get this functionality\.
+Can print 2 things at once before it overwrites\. One must set `SET_TO_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content--a5b40ebe) to get this functionality\.
 
  - Return:  
    Prints `set` in a static buffer\.
