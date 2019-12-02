@@ -3,9 +3,11 @@
 
  `<E>Set` is a collection of elements of type `E`, along with a hash function
  and equality function, that doesn't allow duplication. Internally, it is a
- hash set, and collisions are handled by separate chaining. The maximum load
- factor is `ln 2`. While in the set, the values cannot change. One can use this
- as the key in an associative array.
+ hash set, and collisions are handled by separate chaining. It requires the
+ storage of <tag:<E>SetItem>, which is `E` along with data internal to the set;
+ one can get the `E` by doing <fn:<E>SetItem>. The maximum load factor is
+ `ln 2`. While in the set, the values cannot change. One can use this as the
+ key in an associative array.
 
  @param[SET_NAME, SET_TYPE]
  `E` that satisfies `C` naming conventions when mangled; required.

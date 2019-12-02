@@ -9,7 +9,7 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`&lt;E&gt;Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a hash set, and collisions are handled by separate chaining\. The maximum load factor is `ln 2` \. While in the set, the values cannot change\. One can use this as the key in an associative array\.
+`&lt;E&gt;Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a hash set, and collisions are handled by separate chaining\. It requires the storage of [&lt;E&gt;SetItem](#user-content-raw_p-f1847bfb), which is `E` along with data internal to the set; one can get the `E` by doing [&lt;E&gt;SetItem](#user-content-(null)-f1847bfb)\. The maximum load factor is `ln 2` \. While in the set, the values cannot change\. One can use this as the key in an associative array\.
 
  - Parameter: SET\_NAME, SET\_TYPE  
    `E` that satisfies `C` naming conventions when mangled; required\.
