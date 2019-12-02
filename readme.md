@@ -9,7 +9,7 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`&lt;E&gt;Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a hash set, and collisions are handled by separate chaining\. It requires the storage of [&lt;E&gt;SetItem](#user-content-raw_p-f1847bfb), which is `E` along with data internal to the set; one can get the `E` by doing [&lt;E&gt;SetItem](#user-content-(null)-f1847bfb)\. The maximum load factor is `ln 2` \. While in the set, the values cannot change\. One can use this as the key in an associative array\.
+`<E>Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a hash set, and collisions are handled by separate chaining\. It requires the storage of [&lt;E&gt;SetItem](#user-content-raw_p-f1847bfb), which is `E` along with data internal to the set; one can get the `E` by doing [&lt;E&gt;SetItem](#user-content-(null)-f1847bfb)\. The maximum load factor is `ln 2` \. While in the set, the values cannot change\. One can use this as the key in an associative array\.
 
  - Parameter: SET\_NAME, SET\_TYPE  
    `E` that satisfies `C` naming conventions when mangled; required\.
@@ -22,7 +22,7 @@
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content--a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-(null)-b4e4b20)\.
  - Parameter: SET\_TEST  
-   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PV&gt;Action](#user-content--4585d713)\. Requires `SET_TO_STRING` \.
+   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PV&gt;Action](#user-content--4585d713)\. Requires `SET\_TO\_STRING` \.
  * Standard:  
    C89/90
  * Caveat:  
@@ -45,7 +45,7 @@ A map from `E` onto `unsigned int` \. Should be as close as possible to a discre
 
 <code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const E, const E);</code>
 
-A constant equivalence relation between `E` that satisfies `&lt;PE&gt;IsEqual(a, b) -&gt; &lt;PE&gt;Hash(a) == &lt;PE&gt;Hash(b)` \.
+A constant equivalence relation between `E` that satisfies `<PE>IsEqual\(a, b\) \-> <PE>Hash\(a\) == <PE>Hash\(b\)` \.
 
 
 
@@ -61,7 +61,7 @@ Responsible for turning `E` \(the first argument\) into a 12 `char` string \(the
 
 <code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(const E *const);</code>
 
-Used for `SET_TEST` \.
+Used for `SET\_TEST` \.
 
 
 
@@ -71,7 +71,7 @@ Used for `SET_TEST` \.
 
 <code>struct <strong>&lt;E&gt;SetItem</strong>;</code>
 
-Contains `E` and more internal to the working of the hash\. Storage of the `&lt;E&gt;SetItem` structure is the responsibility of the caller; it could be one part of a complicated structure\.
+Contains `E` and more internal to the working of the hash\. Storage of the `<E>SetItem` structure is the responsibility of the caller; it could be one part of a complicated structure\.
 
 
 
@@ -79,7 +79,7 @@ Contains `E` and more internal to the working of the hash\. Storage of the `&lt;
 
 <code>struct <strong>&lt;E&gt;Set</strong>;</code>
 
-A `&lt;E&gt;Set` \. To initianise, see [&lt;E&gt;Set](#user-content-(null)-c69e9d84)\.
+A `<E>Set` \. To initianise, see [&lt;E&gt;Set](#user-content-(null)-c69e9d84)\.
 
 
 
@@ -123,7 +123,7 @@ Destructor for `set` \. After, it takes no memory and is in an empty state\.
 
 <code>static void <strong>&lt;E&gt;Set</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Initialises `set` to be take no memory and be in an empty state\. If it is `static` data, then it is initialised by default\. Alternatively, assigning `{0}` \(`C99` \+\) or `SET_ZERO` as the initialiser also puts it in an empty state\. Calling this on an active set will cause memory leaks\.
+Initialises `set` to be take no memory and be in an empty state\. If it is `static` data, then it is initialised by default\. Alternatively, assigning `\{0\}` \(`C99` \+\) or `SET\_ZERO` as the initialiser also puts it in an empty state\. Calling this on an active set will cause memory leaks\.
 
  - Parameter: _set_  
    If null, does nothing\.
@@ -142,7 +142,7 @@ Clears and removes all entries from `set` \. The capacity and memory of the hash
  - Parameter: _set_  
    If null, does nothing\.
  - Order:  
-   &#920;\(`set.buckets` \)
+   &#920;\(`set\.buckets` \)
 
 
 
@@ -165,7 +165,7 @@ Gets `item` from `set` \.
 
 <code>static int <strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetItem *const <em>item</em>, const struct &lt;E&gt;SetItem **const <em>p_eject</em>)</code>
 
-Puts the `item` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content--c1486ede) `SET_IS_EQUAL` , causes the old data to be ejected\.
+Puts the `item` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content--c1486ede) `SET\_IS\_EQUAL` , causes the old data to be ejected\.
 
  - Parameter: _set_  
    If null, returns false\.
@@ -221,7 +221,7 @@ Removes an element specified by `key` from `set` \.
 
 <code>static const char *<strong>&lt;E&gt;SetToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Can print 2 things at once before it overwrites\. One must set `SET_TO_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content--a5b40ebe) to get this functionality\.
+Can print 2 things at once before it overwrites\. One must set `SET\_TO\_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content--a5b40ebe) to get this functionality\.
 
  - Return:  
    Prints `set` in a static buffer\.
