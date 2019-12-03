@@ -34,6 +34,7 @@
  @std C89/90 */
 
 #include <stddef.h>	/* offsetof */
+#include <limits.h> /* SIZE_MAX? */
 #include <stdlib.h> /* realloc free */
 #include <assert.h>	/* assert */
 #include <stdio.h>  /* perror fprintf */
@@ -59,6 +60,12 @@
 #endif
 #if defined(SET_TEST) && !defined(SET_TO_STRING)
 #error SET_TEST requires SET_TO_STRING.
+#endif
+/* <https://stackoverflow.com/q/44401965> */
+#ifdef SIZE_MAX
+#define SET_SIZE_MAX SIZE_MAX
+#else
+#define SET_SIZE_MAX ((size_t)(-1))
 #endif
 
 
@@ -199,34 +206,37 @@ static struct E_(SetElement) *PE_(bucket_prev)(struct E_(SetElement) *const
 	return 0;
 }
 
-/** Private: grow the table until the capacity is at least
- `size / load factor = ln 2 = 0.69`, ranged from `[8, UINT]` entries.
- @param[size] How many entries are there going to be; `size > 1`.
+/** Private: grow the table until the capacity is at least `size`.
  @return Success; otherwise, `errno` may be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t`.
- @throws[malloc]
- @order \O(1) amortized. */
+ @throws[realloc]
+ @order Amortized \O(1). */
 static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
-	/* Size if we want each bucket to have one element per bucket. */
-	const size_t eff_size = 1 + size / 0.693147180559945309417232121458176568;
 	struct E_(SetElement) *buckets, *b, *b_end, *new_b, *prev_x, *x;
-	const unsigned log_c0 = set->log_capacity,
-		log_limit = sizeof(unsigned) * 8;
+	const unsigned log_c0 = set->log_capacity, log_limit = sizeof(unsigned) * 8;
 	unsigned c0 = 1 << log_c0, log_c1, c1, mask;
-	assert(set && size && log_c0 < log_limit
-		&& (set->log_capacity >= 3 || !set->log_capacity));
-	/* Starting bucket number is a power of 2 in [8, 1 << (log_limit - 1)]. */
-	if(eff_size > 1u << (log_limit - 1)) {
+	size_t no_buckets;
+	assert(set && log_c0 < log_limit && (log_c0 >= 3 || !log_c0));
+	/* `SIZE_MAX` can be as low as 65535, this leaves 5041 as the minimum
+	 maximum elements in the `set`, but it's probably much larger than
+	 `1 << (log_limit - 1)`. This translates to the set being saturated at this
+	 value while the load factor increases. */
+	if(size > SET_SIZE_MAX / 13) return errno = ERANGE, 0;
+	/* Load factor `0.693147180559945309417232121458176568 ~= 9/13`.
+	 Starting bucket number is a power of 2 in `[8, 1 << (log_limit - 1)]`. */
+	if((no_buckets = size * 13 / 9) > 1u << (log_limit - 1)) {
 		log_c1 = log_limit - 1;
 		c1 = 1 << (log_limit - 1);
 	} else {
 		if(log_c0 < 3) log_c1 = 3u,     c1 = 8u;
 		else           log_c1 = log_c0, c1 = c0;
-		while(c1 < eff_size) log_c1++, c1 <<= 1;
+		while(c1 < no_buckets) log_c1++, c1 <<= 1;
 	}
 	/* It's under the critical load factor; don't need to do anything. */
 	if(log_c0 == log_c1) return 1;
 	/* Everything else is amortised. Allocate new space for an expansion. */
+	/*fprintf(stderr, "grow buckets %lu -> %lu for size %lu.\n",
+		(unsigned long)c0, (unsigned long)c1, size);*/
 	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1))) return 0;
 	set->buckets = buckets;
 	set->log_capacity = log_c1;
@@ -249,6 +259,36 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 		}
 	}
 	return 1;
+}
+
+/** Most general put function that every put function calls. Puts `element` in
+ `set` and returns the collided element, if any, as long as `replace` is null
+ or returns 1. */
+static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
+	struct E_(SetElement) *const element, const PE_(Replace) replace) {
+	struct E_(SetElement) *bucket, *prev = 0, *collide = 0;
+	unsigned hash;
+	if(!set || !element) return 0;
+	hash = PE_(hash)(element->data);
+	/* Delete any duplicate. */
+	if(set->buckets) {
+		bucket = PE_(get_bucket)(set, hash);
+		if((prev = PE_(bucket_prev)(bucket, element->data, hash))) {
+			collide = prev->next;
+			if(replace && !replace(&collide->data, &element->data)) return 0;
+			prev->next = collide->next, collide->next = 0;
+			goto erased;
+		}
+	}
+	/* New entry; the bucket may change. */
+	assert(set->size + 1 > set->size);
+	if(!PE_(grow)(set, set->size + 1)) return 0; /* Didn't <fn:<E>SetReserve>.*/
+	bucket = PE_(get_bucket)(set, hash);
+	set->size++;
+erased:
+	/* Stick the element on the head of the bucket. */
+	element->next = bucket->next, bucket->next = element;
+	return collide;
 }
 
 /** Zeros `set`, a well-defined state. */
@@ -316,39 +356,38 @@ static const E *E_(SetGet)(struct E_(Set) *const set, const E data) {
 	return prev ? &prev->next->data : 0;
 }
 
+/** Reserve at least `reserve` divided by the maximum load factor, `ln 2`,
+ space in the buckets.
+ @return Success.
+ @throws[ERANGE] Reserved a bigger number then could fit in a `size_t`.
+ @throws[realloc] */
+static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
+	if(!set) return 0;
+	if(reserve < SET_SIZE_MAX - set->size) return errno = ERANGE, 0;
+	return PE_(grow)(set, set->size + reserve);
+}
+
 /** Puts the `element` in `set`. Adding an element with the same `E`, according
  to <typedef:<PE>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected.
  @param[set, element] If null, returns false.
- @param[element] Should not be of a `set`, because the integrity of that `set`
+ @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.
- @return The removed element, or null.
- @throws[realloc, EDOM] This is a problem.
+ @return The ejected element, or null.
+ @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
+ <fn:<E>Reserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);
  worst \O(n).
- @fixme Have a `<E>SetPutReplaced` that accepts a parameter. All of these will
- call a single private fn.
  @allow */
-static int E_(SetPut)(struct E_(Set) *const set,
+static struct E_(SetElement) *E_(SetPut)(struct E_(Set) *const set,
 	struct E_(SetElement) *const element) {
-	struct E_(SetElement) *bucket, *prev = 0;
-	unsigned hash;
-	if(!set || !element) return 0;
-	hash = PE_(hash)(element->data);
-	/* Delete any duplicate. */
-	if(set->buckets) {
-		bucket = PE_(get_bucket)(set, hash);
-		if((prev = PE_(bucket_prev)(bucket, element->data, hash)))
-			{ prev->next = prev->next->next; goto erased; }
-	}
-	/* New entry; the bucket may change. */
-	assert(set->size + 1 > set->size);
-	if(!PE_(grow)(set, set->size + 1)) return 0;
-	bucket = PE_(get_bucket)(set, hash);
-	set->size++;
-erased:
-	/* Stick the element on the head of the bucket. */
-	element->next = bucket->next, bucket->next = element;
-	return 1;
+	return PE_(put)(set, element, 0);
+}
+
+/** Used in <fn:<E>SetElement> when replace is null. `original` and `replace`
+ are ignored. */
+static int PE_(false)(E *original, E *replace) {
+	(void)(original); (void)(replace);
+	return 0;
 }
 
 /** Puts the `element` in `set` only if the entry is absent or if calling
@@ -359,35 +398,15 @@ erased:
  the function returns true. If null, doesn't do any replacement on collision.
  @return Successful operation, including doing nothing because the entry is
  already in the set.
- @throws[realloc]
+ @throws[realloc, ]
+ @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
+ <fn:<E>Reserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);
  worst \O(n).
  @allow */
-static int E_(SetPutResolve)(struct E_(Set) *const set,
+static struct E_(SetElement) *E_(SetPutResolve)(struct E_(Set) *const set,
 	struct E_(SetElement) *const element, const PE_(Replace) replace) {
-	struct E_(SetElement) *bucket, *prev;
-	unsigned hash;
-	if(!set || !element) return 0;
-	hash = PE_(hash)(element->data);
-	/* Delete any duplicate. */
-	if(set->buckets) {
-		bucket = PE_(get_bucket)(set, hash);
-		if((prev = PE_(bucket_prev)(bucket, element->data, hash))) {
-			struct E_(SetElement) *const collide = prev->next;
-			if(replace && replace(&collide->data, &element->data))
-				{ prev->next = prev->next->next; goto erased; }
-			return 1;
-		}
-	}
-	/* New entry; the bucket may change. */
-	assert(set->size + 1 > set->size);
-	if(!PE_(grow)(set, set->size + 1)) return 0;
-	bucket = PE_(get_bucket)(set, hash);
-	set->size++;
-erased:
-	/* Stick the element on the head of the bucket. */
-	element->next = bucket->next, bucket->next = element;
-	return 1;
+	return PE_(put)(set, element, replace ? replace : &PE_(false));
 }
 
 /** Removes an element `data` from `set`.
@@ -498,6 +517,7 @@ static void PE_(unused_set)(void) {
 	E_(Set)(0);
 	E_(SetClear)(0);
 	E_(SetSize)(0);
+	E_(SetReserve)(0, 0);
 	E_(SetGet)(0, 0);
 	E_(SetPut)(0, 0);
 	E_(SetPutResolve)(0, 0, 0);
@@ -538,3 +558,4 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #ifdef SET_TEST /* <!-- test */
 #undef SET_TEST
 #endif /* test --> */
+#undef SET_SIZE_MAX
