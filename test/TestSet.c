@@ -34,7 +34,7 @@ static void id_to_string(const int *const id, char (*const a)[12]) {
 /* Here is where we store it. */
 struct Boat {
 	struct IdSetItem id;
-	int time;
+	int best_time;
 	int points;
 };
 
@@ -44,19 +44,24 @@ static const struct Boat *id_const_upcast(const int *const id) {
 		((const char *)id - offsetof(struct Boat, id));
 }
 
+/* `container_of(id)`. */
+static struct Boat *id_upcast(int *const id) {
+	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id));
+}
+
 static void boat_to_string(const struct Boat *const b, char (*const a)[12]) {
-	sprintf(*a, "#%d(%d)", *IdSetItem(&b->id), b->points);
+	sprintf(*a, "#%d(%d)", b->id.data, b->points);
 }
 
 static void fill_boat(struct Boat *const b) {
 	assert(b);
 	/* <http://c-faq.com/lib/randrange.html>. PHP ensures collisions > 30. */
-    *IdSetVariableItem(&b->id) = rand() / (RAND_MAX / 30 + 1) + 1;
-    b->time = rand() / (RAND_MAX / 100 + 1) + 50;
-    b->points = 151 - b->time;
+    b->id.data = rand() / (RAND_MAX / 30 + 1) + 1;
+    b->best_time = rand() / (RAND_MAX / 100 + 1) + 50;
+    b->points = 151 - b->best_time;
 }
 
-/* Not in the set; de-duplication not enabled. */
+/* Individual races. */
 static void print_boats(const struct Boat *const bs,
 	const size_t bs_size) {
 	char a[12];
@@ -69,14 +74,17 @@ static void print_boats(const struct Boat *const bs,
 	printf(" }\n");
 }
 
+/** @implements <Id>Replace */
+static int add_up_score(int *const original, int *const replace) {
+	struct Boat *const o = id_upcast(original), *const r = id_upcast(replace);
+	o->points += r->points;
+	r->points = 0;
+	if(r->best_time < o->best_time) o->best_time = r->best_time;
+	return 0; /* Always false because we've sucked the points from `r`. */
+}
+
 static void put_in_set(struct IdSet *const set, struct Boat *const b) {
-	int is_put;
-	char a[12];
-	assert(b && set);
-	IdSetPutIfAbsent(set, &b->id, &is_put);
-	if(is_put) return;
-	boat_to_string(b, &a);
-	printf("There's already a %s in %s.\n", a, IdSetToString(set));
+	IdSetPutResolve(set, &b->id, &add_up_score);
 }
 
 static void each_boat(struct Boat *const bs, const size_t bs_size,
@@ -100,8 +108,7 @@ int main(void) {
 	struct IdSet set = SET_ZERO;
 	each_boat(bs, bs_size, &fill_boat);
 	print_boats(bs, bs_size);
-	printf("Putting in Set:\n");
 	each_set_boat(&set, bs, bs_size, &put_in_set);
-	printf("Final Set: %s.\n", IdSetToString(&set));
+	printf("Final score: %s.\n", IdSetToString(&set));
 	return EXIT_SUCCESS;
 }

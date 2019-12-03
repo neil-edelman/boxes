@@ -9,20 +9,20 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`<E>Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a hash set, and collisions are handled by separate chaining\. It requires the storage of [&lt;E&gt;SetItem](#user-content-raw_p-f1847bfb), which is `E` along with data internal to the set; one can get the `E` by doing [&lt;E&gt;SetItem](#user-content-(null)-f1847bfb)\. The maximum load factor is `ln 2` \. While in the set, the values cannot change\. One can use this as the key in an associative array\.
+`<E>Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a hash set, and collisions are handled by separate chaining\. It requires the storage of [&lt;E&gt;SetItem](#user-content-tag-f1847bfb), which is `E` along with data internal to the set; one can get the `E` by doing [&lt;E&gt;SetItem](#user-content-fn-f1847bfb)\. The maximum load factor is `ln 2` \. While in the set, the values cannot change\. One can use this as the key in an associative array\.
 
  - Parameter: SET\_NAME, SET\_TYPE  
    `E` that satisfies `C` naming conventions when mangled; required\.
  - Parameter: SET\_HASH  
-   A function satisfying [&lt;PE&gt;Hash](#user-content--812e78a); required\.
+   A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  - Parameter: SET\_IS\_EQUAL  
-   A function satisfying [&lt;PE&gt;IsEqual](#user-content--c1486ede); required\.
+   A function satisfying [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede); required\.
  - Parameter: SET\_NO\_CACHE  
    Always calculates the hash every time and don't store it _per_ datum\. Best used when the data to be hashed is very small, \(_viz_ , the hash calculation is trivial\.\)
  - Parameter: SET\_TO\_STRING  
-   Optional print function implementing [&lt;PE&gt;ToString](#user-content--a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-(null)-b4e4b20)\.
+   Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
  - Parameter: SET\_TEST  
-   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PV&gt;Action](#user-content--4585d713)\. Requires `SET\_TO\_STRING` \.
+   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PV&gt;Action](#user-content-typedef-4585d713)\. Requires `SET\_TO\_STRING` \.
  * Standard:  
    C89/90
  * Caveat:  
@@ -79,7 +79,7 @@ Contains `E` and more internal to the working of the hash\. Storage of the `<E>S
 
 <code>struct <strong>&lt;E&gt;Set</strong>;</code>
 
-A `<E>Set` \. To initianise, see [&lt;E&gt;Set](#user-content-(null)-c69e9d84)\.
+A `<E>Set` \. To initianise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\.
 
 
 
@@ -111,7 +111,7 @@ A `<E>Set` \. To initianise, see [&lt;E&gt;Set](#user-content-(null)-c69e9d84)\.
 
  ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
- ### <a id = "user-content-fn-86b27fc1" name = "user-content-fn-86b27fc1"><E>Set_</a> ###
+ ### <a id = "user-content-fn-86b27fc1" name = "user-content-fn-86b27fc1"><E>Set\_</a> ###
 
 <code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
 
@@ -154,7 +154,7 @@ Clears and removes all entries from `set` \. The capacity and memory of the hash
 Gets `item` from `set` \.
 
  - Return:  
-   The value which [&lt;PE&gt;IsEqual](#user-content--c1486ede) the `item` , or, if no such value exists, null\.
+   The value which [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) the `item` , or, if no such value exists, null\.
  - Order:  
    Constant time assuming the hash function is uniform; worst &#927;\(n\)\.
 
@@ -165,7 +165,7 @@ Gets `item` from `set` \.
 
 <code>static int <strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetItem *const <em>item</em>, const struct &lt;E&gt;SetItem **const <em>p_eject</em>)</code>
 
-Puts the `item` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content--c1486ede) `SET\_IS\_EQUAL` , causes the old data to be ejected\.
+Puts the `item` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET\_IS\_EQUAL` , causes the old data to be ejected\.
 
  - Parameter: _set_  
    If null, returns false\.
@@ -221,7 +221,7 @@ Removes an element specified by `key` from `set` \.
 
 <code>static const char *<strong>&lt;E&gt;SetToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Can print 2 things at once before it overwrites\. One must set `SET\_TO\_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content--a5b40ebe) to get this functionality\.
+Can print 2 things at once before it overwrites\. One must set `SET\_TO\_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe) to get this functionality\.
 
  - Return:  
    Prints `set` in a static buffer\.
