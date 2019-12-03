@@ -22,7 +22,8 @@ static void id_to_string(const int *const id, char (*const a)[12]) {
 	boat_to_string(id_const_upcast(id), a);
 }
 
-/* Code generation for `IdSet`; we are responsible for storing `IdSetItem`. */
+/* Code generation for `IdSet`;
+ we are responsible for storing `IdSetElement`. */
 #define SET_NAME Id
 #define SET_TYPE int
 #define SET_HASH &id_hash
@@ -33,7 +34,7 @@ static void id_to_string(const int *const id, char (*const a)[12]) {
 
 /* Here is where we store it. */
 struct Boat {
-	struct IdSetItem id;
+	struct IdSetElement id;
 	int best_time;
 	int points;
 };

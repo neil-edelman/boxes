@@ -4,7 +4,7 @@
  `<E>Set` is a collection of elements of type `E`, along with a hash function
  and equality function, that doesn't allow duplication. Internally, it is a
  separately chained hash set having a maximum load factor of `ln 2`. It
- requires the storage of <tag:<E>SetItem>. While in the set, the
+ requires the storage of <tag:<E>SetElement>. While in the set, the
  values cannot change. One can use this as the key in an associative array.
 
  @param[SET_NAME, SET_TYPE]
@@ -101,16 +101,16 @@ typedef SET_TYPE PE_(Type);
 
 
 /** Contains `E` as the element `data` along with data internal to the set.
- Storage of the `<E>SetItem` structure is the responsibility of the caller; it
- could be one part of a more complex super-structure, (thus using it as a hash
- table.) */
-struct E_(SetItem);
-struct E_(SetItem) {
+ Storage of the `<E>SetElement` structure is the responsibility of the caller;
+ it could be one part of a more complex super-structure, (thus using it as a
+ hash table.) */
+struct E_(SetElement);
+struct E_(SetElement) {
 	E data;
 #ifndef SET_NO_CACHE /* <!-- cache */
 	unsigned hash;
 #endif /* cache --> */
-	struct E_(SetItem) *next;
+	struct E_(SetElement) *next;
 };
 
 
@@ -118,7 +118,8 @@ struct E_(SetItem) {
 /** A `<E>Set`. To initialise, see <fn:<E>Set>. */
 struct E_(Set);
 struct E_(Set) {
-	struct E_(SetItem) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
+	/* An array of 1 << log_capacity (>3) or 0. */
+	struct E_(SetElement) *buckets;
 	unsigned log_capacity;
 	size_t size;
 };
@@ -160,31 +161,30 @@ typedef void (*PE_(Action))(const E *const);
 
 
 
-/** Gets the hash of `item`. */
-static unsigned PE_(get_hash)(struct E_(SetItem) *item) {
+/** Gets the hash of `element`. */
+static unsigned PE_(get_hash)(struct E_(SetElement) *element) {
 #ifdef SET_NO_CACHE /* <!-- !cache */
-	return PE_(hash)(item->data);
+	return PE_(hash)(element->data);
 #else /* !cache --><!-- cache */
-	return item->hash;
+	return element->hash;
 #endif /* cache --> */
 }
 
 /** Retrieves a bucket from `set` given the `hash`. Only call this function if
  non-empty. Will be invalidated upon a call to <fn:<PE>grow>.
  @return Given a `hash`, compute the bucket at it's index. */
-static struct E_(SetItem) *PE_(get_bucket)(struct E_(Set) *const set,
+static struct E_(SetElement) *PE_(get_bucket)(struct E_(Set) *const set,
 	const unsigned hash) {
 	assert(set && set->buckets);
 	return set->buckets + (hash & ((1 << set->log_capacity) - 1));
 }
 
-/** 
- @param[bucket] Must match the bucket of `data`.
+/** Linear search for `data` in `bucket`.
  @param[hash] Must match the hash of `data`.
- @return The link before the `data` in `bucket` or null. */
-static struct E_(SetItem) *PE_(bucket_prev)(struct E_(SetItem) *const bucket,
-	const E data, const unsigned hash) {
-	struct E_(SetItem) *prev_x, *x;
+ @return The link before the element equivalent to `data` or null. */
+static struct E_(SetElement) *PE_(bucket_prev)(struct E_(SetElement) *const
+	bucket, const unsigned hash, const E data) {
+	struct E_(SetElement) *prev_x, *x;
 	assert(bucket && data);
 	for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
 #ifndef SET_NO_CACHE /* <!-- cache: a quick out. */
@@ -192,7 +192,8 @@ static struct E_(SetItem) *PE_(bucket_prev)(struct E_(SetItem) *const bucket,
 #endif /* cache --> */
 		if(PE_(is_equal)(data, x->data)) return prev_x;
 	}
-#ifdef SET_NO_CACHE /* <!-- !cache */
+#ifdef SET_NO_CACHE /* <!-- !cache: doesn't use hash. _Nb_ it is already
+	calculated to find the `bucket`, so this operation is a no-op. */
 	(void)(hash);
 #endif /* cache --> */
 	return 0;
@@ -206,9 +207,9 @@ static struct E_(SetItem) *PE_(bucket_prev)(struct E_(SetItem) *const bucket,
  @throws[malloc]
  @order \O(1) amortized. */
 static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
-	/* Size if we want each bucket to have one item. */
+	/* Size if we want each bucket to have one element per bucket. */
 	const size_t eff_size = 1 + size / 0.693147180559945309417232121458176568;
-	struct E_(SetItem) *buckets, *b, *b_end, *new_b, *prev_x, *x;
+	struct E_(SetElement) *buckets, *b, *b_end, *new_b, *prev_x, *x;
 	const unsigned log_c0 = set->log_capacity,
 		log_limit = sizeof(unsigned) * 8;
 	unsigned c0 = 1 << log_c0, log_c1, c1, mask;
@@ -285,7 +286,7 @@ static void E_(Set)(struct E_(Set) *const set) {
  @order \Theta(`set.buckets`)
  @allow */
 static void E_(SetClear)(struct E_(Set) *const set) {
-	struct E_(SetItem) *b, *b_end;
+	struct E_(SetElement) *b, *b_end;
 	if(!set || !set->log_capacity) return;
 	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
 		b->next = 0;
@@ -300,14 +301,14 @@ static size_t E_(SetSize)(const struct E_(Set) *const set) {
 	return set->size;
 }
 
-/** Gets `item` from `set`. This can be used for testing if the item is in the
- `set`.
- @return The value which <typedef:<PE>IsEqual> the `item`, or, if no such value
+/** Queries whether `data` is is `set`.
+ @param[set] If null, returns null.
+ @return The value which <typedef:<PE>IsEqual> `data`, or, if no such value
  exists, null.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
 static const E *E_(SetGet)(struct E_(Set) *const set, const E data) {
-	struct E_(SetItem) *prev;
+	struct E_(SetElement) *prev;
 	unsigned hash;
 	if(!set || !set->buckets) return 0;
 	hash = PE_(hash)(data);
@@ -315,12 +316,12 @@ static const E *E_(SetGet)(struct E_(Set) *const set, const E data) {
 	return prev ? &prev->next->data : 0;
 }
 
-/** Puts the `item` in `set`. Adding an element with the same `E`, according
+/** Puts the `element` in `set`. Adding an element with the same `E`, according
  to <typedef:<PE>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected.
- @param[set, item] If null, returns false.
- @param[item] Should not be of a `set`, because the integrity of that `set`
+ @param[set, element] If null, returns false.
+ @param[element] Should not be of a `set`, because the integrity of that `set`
  will be compromised.
- @return The removed item, or null.
+ @return The removed element, or null.
  @throws[realloc, EDOM] This is a problem.
  @order Average amortised \O(1), (hash distributes elements uniformly);
  worst \O(n).
@@ -328,15 +329,15 @@ static const E *E_(SetGet)(struct E_(Set) *const set, const E data) {
  call a single private fn.
  @allow */
 static int E_(SetPut)(struct E_(Set) *const set,
-	struct E_(SetItem) *const item) {
-	struct E_(SetItem) *bucket, *prev = 0;
+	struct E_(SetElement) *const element) {
+	struct E_(SetElement) *bucket, *prev = 0;
 	unsigned hash;
-	if(!set || !item) return 0;
-	hash = PE_(hash)(item->data);
+	if(!set || !element) return 0;
+	hash = PE_(hash)(element->data);
 	/* Delete any duplicate. */
 	if(set->buckets) {
 		bucket = PE_(get_bucket)(set, hash);
-		if((prev = PE_(bucket_prev)(bucket, item->data, hash)))
+		if((prev = PE_(bucket_prev)(bucket, element->data, hash)))
 			{ prev->next = prev->next->next; goto erased; }
 	}
 	/* New entry; the bucket may change. */
@@ -345,34 +346,35 @@ static int E_(SetPut)(struct E_(Set) *const set,
 	bucket = PE_(get_bucket)(set, hash);
 	set->size++;
 erased:
-	/* Stick the item on the head of the bucket. */
-	item->next = bucket->next, bucket->next = item;
+	/* Stick the element on the head of the bucket. */
+	element->next = bucket->next, bucket->next = element;
 	return 1;
 }
 
-/** Puts the `item` in `set` only if the entry is absent or if calling
+/** Puts the `element` in `set` only if the entry is absent or if calling
  `replace` returns true.
- @param[set, item] If null, returns false.
- @param[item] Must not be part this `set` or any other.
+ @param[set, element] If null, returns false.
+ @param[element] Must not be part this `set` or any other.
  @param[replace] If specified, gets called on collision and only replaces it if
  the function returns true. If null, doesn't do any replacement on collision.
  @return Successful operation, including doing nothing because the entry is
  already in the set.
  @throws[realloc]
- @order Constant time assuming the hash function is uniform; worst \O(n).
+ @order Average amortised \O(1), (hash distributes elements uniformly);
+ worst \O(n).
  @allow */
 static int E_(SetPutResolve)(struct E_(Set) *const set,
-	struct E_(SetItem) *const item, const PE_(Replace) replace) {
-	struct E_(SetItem) *bucket, *prev;
+	struct E_(SetElement) *const element, const PE_(Replace) replace) {
+	struct E_(SetElement) *bucket, *prev;
 	unsigned hash;
-	if(!set || !item) return 0;
-	hash = PE_(hash)(item->data);
+	if(!set || !element) return 0;
+	hash = PE_(hash)(element->data);
 	/* Delete any duplicate. */
 	if(set->buckets) {
 		bucket = PE_(get_bucket)(set, hash);
-		if((prev = PE_(bucket_prev)(bucket, item->data, hash))) {
-			struct E_(SetItem) *const collide = prev->next;
-			if(replace && replace(&collide->data, &item->data))
+		if((prev = PE_(bucket_prev)(bucket, element->data, hash))) {
+			struct E_(SetElement) *const collide = prev->next;
+			if(replace && replace(&collide->data, &element->data))
 				{ prev->next = prev->next->next; goto erased; }
 			return 1;
 		}
@@ -383,19 +385,19 @@ static int E_(SetPutResolve)(struct E_(Set) *const set,
 	bucket = PE_(get_bucket)(set, hash);
 	set->size++;
 erased:
-	/* Stick the item on the head of the bucket. */
-	item->next = bucket->next, bucket->next = item;
+	/* Stick the element on the head of the bucket. */
+	element->next = bucket->next, bucket->next = element;
 	return 1;
 }
 
-/** Removes an element specified by `key` from `set`.
- @return Successfully removed an element or null.
- @order Constant time assuming the hash function is uniform; worst \O(n).
+/** Removes an element `data` from `set`.
+ @return Successfully removed element or null.
+ @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
-static struct E_(SetItem) *E_(SetRemove)(struct E_(Set) *const set,
+static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 	const E data) {
 	unsigned hash;
-	struct E_(SetItem) *prev, *removed;
+	struct E_(SetElement) *prev, *removed;
 	if(!set || !set->buckets) return 0;
 	hash = PE_(hash)(data);
 	if(!(prev = PE_(bucket_prev)(PE_(get_bucket)(set, hash), data, hash)))
@@ -444,6 +446,7 @@ static void set_super_cat(struct Set_SuperCat *const cat,
  @return Prints `set` in a static buffer.
  @order \Theta(1); it has a 1024 character limit; every element takes some of
  it.
+ @fixme Why don't we use `snprintf`?
  @allow */
 static const char *E_(SetToString)(const struct E_(Set) *const set) {
 	static char buffer[2][1024];
@@ -457,7 +460,7 @@ static const char *E_(SetToString)(const struct E_(Set) *const set) {
 	if(!set) return set_super_cat(&cat, "null"), cat.print;
 	set_super_cat(&cat, "[ ");
 	if(set->buckets) {
-		struct E_(SetItem) *b, *b_end, *x;
+		struct E_(SetElement) *b, *b_end, *x;
 		char a[12];
 		assert(set->log_capacity >= 3 && set->log_capacity < 32);
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
