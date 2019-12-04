@@ -85,6 +85,7 @@ static int add_up_score(int *const original, int *const replace) {
 }
 
 static void put_in_set(struct IdSet *const set, struct Boat *const b) {
+	if(!IdSetReserve(set, 1)) { perror("put_in_set"); return; }
 	IdSetPutResolve(set, &b->id, &add_up_score);
 }
 

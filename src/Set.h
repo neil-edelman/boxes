@@ -366,7 +366,7 @@ static const E *E_(SetGet)(struct E_(Set) *const set, const E data) {
  @allow */
 static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 	if(!set) return 0;
-	if(reserve < SET_SIZE_MAX - set->size) return errno = ERANGE, 0;
+	if(reserve > SET_SIZE_MAX - set->size) return errno = ERANGE, 0;
 	return PE_(grow)(set, set->size + reserve);
 }
 
