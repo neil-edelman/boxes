@@ -206,7 +206,7 @@ static struct E_(SetElement) *PE_(bucket_prev)(struct E_(SetElement) *const
 	return 0;
 }
 
-/** Private: grow the table until the capacity is at least `size`.
+/** Private: grow the `set` until the capacity is at least `size`.
  @return Success; otherwise, `errno` may be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t`.
  @throws[realloc]
@@ -335,7 +335,8 @@ static void E_(SetClear)(struct E_(Set) *const set) {
 
 /** @return The number of entries in the `set`.
  @param[set] If null, returns 0.
- @order \Theta(1) */
+ @order \Theta(1)
+ @allow */
 static size_t E_(SetSize)(const struct E_(Set) *const set) {
 	if(!set) return 0;
 	return set->size;
@@ -357,10 +358,12 @@ static const E *E_(SetGet)(struct E_(Set) *const set, const E data) {
 }
 
 /** Reserve at least `reserve` divided by the maximum load factor, `ln 2`,
- space in the buckets.
+ space in the buckets of `set`.
  @return Success.
- @throws[ERANGE] Reserved a bigger number then could fit in a `size_t`.
- @throws[realloc] */
+ @throws[ERANGE] `reserve` plus the size would take a bigger number then could
+ fit in a `size_t`.
+ @throws[realloc]
+ @allow */
 static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 	if(!set) return 0;
 	if(reserve < SET_SIZE_MAX - set->size) return errno = ERANGE, 0;
@@ -372,9 +375,9 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
  @param[set, element] If null, returns false.
  @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.
- @return The ejected element, or null.
+ @return The ejected element or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
- <fn:<E>Reserve> before ensures that this does not happen.
+ <fn:<E>SetReserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);
  worst \O(n).
  @allow */
@@ -383,8 +386,8 @@ static struct E_(SetElement) *E_(SetPut)(struct E_(Set) *const set,
 	return PE_(put)(set, element, 0);
 }
 
-/** Used in <fn:<E>SetElement> when replace is null. `original` and `replace`
- are ignored. */
+/** Used in <fn:<E>SetPutResolve> when `replace` is null; `original` and
+ `replace` are ignored. */
 static int PE_(false)(E *original, E *replace) {
 	(void)(original); (void)(replace);
 	return 0;
@@ -398,9 +401,9 @@ static int PE_(false)(E *original, E *replace) {
  the function returns true. If null, doesn't do any replacement on collision.
  @return Successful operation, including doing nothing because the entry is
  already in the set.
- @throws[realloc, ]
+ @return The ejected element or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
- <fn:<E>Reserve> before ensures that this does not happen.
+ <fn:<E>SetReserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);
  worst \O(n).
  @allow */
@@ -430,76 +433,54 @@ static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 
 #ifdef SET_TO_STRING /* <!-- print */
 
-#ifndef SET_PRINT_THINGS /* <!-- once inside translation unit */
-#define SET_PRINT_THINGS
-
-struct Set_SuperCat {
-	char *print, *cursor;
-	size_t left;
-	int is_truncated;
-};
-static void set_super_cat_init(struct Set_SuperCat *const cat,
-	char *const print, const size_t print_size) {
-	cat->print = cat->cursor = print;
-	cat->left = print_size;
-	cat->is_truncated = 0;
-	print[0] = '\0';
-}
-static void set_super_cat(struct Set_SuperCat *const cat,
-	const char *const append) {
-	size_t lu_took; int took;
-	if(cat->is_truncated) return;
-	took = sprintf(cat->cursor, "%.*s", (int)cat->left, append);
-	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
-	if(took == 0) { return; }
-	if((lu_took = (size_t)took) >= cat->left)
-		cat->is_truncated = -1, lu_took = cat->left - 1;
-	cat->cursor += lu_took, cat->left -= lu_took;
-}
-
-#endif /* once --> */
-
 /** Can print 2 things at once before it overwrites. One must set
  `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
  functionality.
  @return Prints `set` in a static buffer.
  @order \Theta(1); it has a 1024 character limit; every element takes some of
  it.
- @fixme Why don't we use `snprintf`?
  @allow */
 static const char *E_(SetToString)(const struct E_(Set) *const set) {
-	static char buffer[2][1024];
-	static unsigned buffer_i;
-	struct Set_SuperCat cat;
-	int is_first = 1;
-	assert(4 /*...]*/ >= 2 /* ]*/ && sizeof buffer > 4 /*...]*/);
-	set_super_cat_init(&cat, buffer[buffer_i],
-		sizeof *buffer / sizeof **buffer - 4 /*...]*/);
-	buffer_i++, buffer_i &= 1;
-	if(!set) return set_super_cat(&cat, "null"), cat.print;
-	set_super_cat(&cat, "[ ");
+	static char strings[2][1024];
+	static size_t strings_i;
+	char *string = strings[strings_i++], *s = string;
+	const size_t strings_no = sizeof strings / sizeof *strings,
+		string_size = sizeof *strings / sizeof **strings;
+	const char space = ' ', start = '{', comma = ',', end = '}',
+		*const ellipsis_end = ",…}", *const null = "null";
+	const size_t ellipsis_end_len = strlen(ellipsis_end),
+		null_len = strlen(null);
+	assert(!(strings_no & (strings_no - 1)) && ellipsis_end_len >= 2
+		&& string_size >= 2 + 11 + ellipsis_end_len + 1
+		&& string_size >= null_len + 1);
+	/* Advance the buffer for next time. */
+	strings_i &= strings_no - 1;
+	/* Null set. */
+	if(!set) { memcpy(s, null, null_len), s += null_len; goto terminate; }
+	/* Otherwise */
+	*s++ = start, *s++ = space;
 	if(set->buckets) {
 		struct E_(SetElement) *b, *b_end, *x;
-		char a[12];
-		assert(set->log_capacity >= 3 && set->log_capacity < 32);
+		size_t i;
+		int is_first = 1;
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
 			b < b_end; b++) {
-			for(x = b->next; x; x = x->next) {
-				if(!is_first) {
-					set_super_cat(&cat, ", ");
-					if(cat.is_truncated) break;
-				} else {
-					is_first = 0;
-				}
-				PE_(to_string)(&x->data, &a);
-				set_super_cat(&cat, a);
-				if(cat.is_truncated) break;
-			}
-			if(x) break;
+			if(!is_first) *s++ = comma, *s++ = space; else is_first = 0;
+			s[11] = '\0', PE_(to_string)(&x->data, (char (*)[12])s);
+			for(i = 0; *s != '\0' && i < 12; s++, i++);
+			/* No space to guarantee another element; terminate by ellipsis. */
+			if((size_t)(s - string) > string_size
+				- 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
 		}
 	}
-	sprintf(cat.cursor, "%s", cat.is_truncated ? "...]" : " ]");
-	return cat.print; /* Static buffer. */
+	*s++ = space, *s++ = end;
+	goto terminate;
+ellipsis:
+	memcpy(s, ellipsis_end, ellipsis_end_len), s += ellipsis_end_len;
+terminate:
+	*s++ = '\0';
+	assert(s <= string + string_size);
+	return string;
 }
 
 #endif /* print --> */

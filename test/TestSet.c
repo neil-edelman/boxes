@@ -68,11 +68,11 @@ static void print_boats(const struct Boat *const bs,
 	char a[12];
 	size_t b;
 	assert(bs);
-	printf("In array: { ");
+	printf("In array: [ ");
 	for(b = 0; b < bs_size; b++)
 		boat_to_string(bs + b, &a),
 		printf("%s%s", b ? ", " : "", a);
-	printf(" }\n");
+	printf(" ]\n");
 }
 
 /** @implements <Id>Replace */
