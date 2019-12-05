@@ -16,38 +16,42 @@ static int id_is_equal(const int a, const int b) { return a == b; }
 
 /* Prototype these for <fn:id_to_string>. */
 struct Boat;
-static const struct Boat *id_const_upcast(const int *const);
-static void boat_to_string(const struct Boat *const b, char (*const a)[12]);
+static struct Boat *id_upcast(int *);
+static const struct Boat *id_constupcast(const int *);
+static void fill_boat(struct Boat *);
+static void boat_to_string(const struct Boat *, char (*)[12]);
+
+static void id_filler(int *const id) { fill_boat(id_upcast(id)); }
 static void id_to_string(const int *const id, char (*const a)[12]) {
-	boat_to_string(id_const_upcast(id), a);
+	boat_to_string(id_constupcast(id), a);
 }
 
 /* Code generation for `IdSet`;
- we are responsible for storing `IdSetElement`. */
+ we are responsible for storing `IdSetKey`. */
 #define SET_NAME Id
 #define SET_TYPE int
 #define SET_HASH &id_hash
+#define SET_NO_CACHE
 #define SET_IS_EQUAL &id_is_equal
 #define SET_TO_STRING &id_to_string
-#define SET_NO_CACHE
+#define SET_TEST &id_filler
 #include "../src/Set.h"
 
 /* Here is where we store it. */
 struct Boat {
-	struct IdSetElement id;
+	struct IdSetKey id;
 	int best_time;
 	int points;
 };
 
 /* `container_of(id)`. */
-static const struct Boat *id_const_upcast(const int *const id) {
-	return (const struct Boat *)(const void *)
-		((const char *)id - offsetof(struct Boat, id));
-}
-
-/* `container_of(id)`. */
 static struct Boat *id_upcast(int *const id) {
 	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id));
+}
+/* `container_of(id)`. */
+static const struct Boat *id_constupcast(const int *const id) {
+	return (const struct Boat *)(const void *)
+		((const char *)id - offsetof(struct Boat, id));
 }
 
 static void boat_to_string(const struct Boat *const b, char (*const a)[12]) {
@@ -107,10 +111,11 @@ static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 int main(void) {
 	struct Boat bs[32];
 	size_t bs_size = sizeof bs / sizeof *bs;
-	struct IdSet set = SET_ZERO;
-	each_boat(bs, bs_size, &fill_boat);
+	/*struct IdSet set = SET_ZERO;*/
+	IdSetTest(bs, bs_size, sizeof *bs, offsetof(struct Boat, id));
+	/*each_boat(bs, bs_size, &fill_boat);
 	print_boats(bs, bs_size);
 	each_set_boat(&set, bs, bs_size, &put_in_set);
-	printf("Final score: %s.\n", IdSetToString(&set));
+	printf("Final score: %s.\n", IdSetToString(&set));*/
 	return EXIT_SUCCESS;
 }
