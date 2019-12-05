@@ -11,6 +11,33 @@
 #include <assert.h>
 #include <errno.h>
 
+/** <https://stackoverflow.com/a/12996028> */
+static unsigned int hash_int(unsigned int x) {
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x;
+}
+/** `a` == `b`. */
+static int equal_ints(const unsigned a, const unsigned b) { return a == b; }
+/** Outputs `x` to `a`. */
+static void int_to_string(const unsigned *const x, char (*const a)[12]) {
+	snprintf(*a, sizeof *a, "%u", *x);
+}
+/** Fills `x` with random. */
+static void fill_int(unsigned *const x) { *x = rand(); }
+/** This defines `struct IntSet` and `struct IntSetKey`. */
+#define SET_NAME Int
+#define SET_TYPE unsigned
+#define SET_HASH &hash_int
+#define SET_IS_EQUAL &equal_ints
+#define SET_TO_STRING &int_to_string
+#define SET_TEST &fill_int
+#include "../src/Set.h"
+
+
+
+#if 0
 static unsigned id_hash(const int id) { return id; }
 static int id_is_equal(const int a, const int b) { return a == b; }
 
@@ -107,8 +134,10 @@ static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 	assert(bs);
 	for(b = 0; b < bs_size; b++) action(ids, bs + b);
 }
+#endif
 
 int main(void) {
+#if 0
 	struct Boat bs[32];
 	size_t bs_size = sizeof bs / sizeof *bs;
 	/*struct IdSet set = SET_ZERO;*/
@@ -117,5 +146,7 @@ int main(void) {
 	print_boats(bs, bs_size);
 	each_set_boat(&set, bs, bs_size, &put_in_set);
 	printf("Final score: %s.\n", IdSetToString(&set));*/
+#endif
+	IntSetTest();
 	return EXIT_SUCCESS;
 }

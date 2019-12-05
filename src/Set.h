@@ -209,7 +209,7 @@ static struct PE_(Link) *PE_(bucket_to)(struct PE_(Link) *const bucket,
 	assert(bucket);
 	for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
 #ifndef SET_NO_CACHE /* <!-- cache: a quick out. */
-		if(hash != x->hash) continue;
+		if(hash != PE_(link_constupcast)(x)->hash) continue;
 #endif /* cache --> */
 		if(PE_(is_equal)(data, PE_(link_constupcast)(x)->data)) return prev_x;
 	}

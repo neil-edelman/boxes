@@ -137,16 +137,17 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
  30000 test; 65536 buckets; 6 max; 0.458(0.7) average bucket size.
  30000 test; 65536 buckets; 6 max; 0.458(0.7) average bucket size. */
 
-static void PE_(test_basic)(char *const base, const size_t size,
-	const size_t width, size_t offset) {
-	int is_in[6000];
-	const size_t is_in_size = sizeof is_in / sizeof *is_in;
-	const size_t test_size = is_in_size > size ? is_in_size : size;
+static void PE_(test_basic)(void) {
+	struct {
+		struct E_(SetKey) key;
+		int is_in;
+	} test[30];
+	const size_t test_size = sizeof test / sizeof *test;
 	struct E_(Set) set = SET_ZERO;
 	struct E_(SetKey) *key, *eject;
 	int success;
-	if(!test_size) return;
 	/* Test empty. */
+	PE_(legit)(&set);
 	E_(Set)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
 	PE_(legit)(&set);
@@ -154,8 +155,7 @@ static void PE_(test_basic)(char *const base, const size_t size,
 	/* Test one item. */
 	success = E_(SetReserve)(&set, 1);
 	assert(success);
-	key = (struct E_(SetKey) *)(base + offset);
-	PE_(filler)(&key->data);
+	PE_(filler)(&test[0].key.data);
 	eject = E_(SetPut)(&set, key);
 	assert(!eject);
 	fprintf(stderr, "One: %s.\n", E_(SetToString)(&set));
@@ -224,9 +224,11 @@ static void PE_(test_basic)(char *const base, const size_t size,
 #endif
 }
 
+/* void *const base, const size_t size,
+ const size_t width, size_t offset */
+
 /** The list will be tested on stdout. */
-static void E_(SetTest)(void *const base, const size_t size,
-	const size_t width, size_t offset) {
+static void E_(SetTest)(void) {
 	printf("<" QUOTE(SET_NAME) ">Set was created using: "
 		"SET_HASH <" QUOTE(SET_HASH) ">; "
 		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
@@ -236,8 +238,7 @@ static void E_(SetTest)(void *const base, const size_t size,
 		"SET_TO_STRING<" QUOTE(SET_TO_STRING) ">; "
 		"SET_TEST<" QUOTE(SET_TEST) ">; "
 		"testing:\n");
-	if(!base || !size || !width || offset > width) return;
-	PE_(test_basic)(base, size, width, offset);
+	PE_(test_basic)();
 	fprintf(stderr, "Done tests of Set<" QUOTE(SET_NAME) ">.\n\n");
 }
 
