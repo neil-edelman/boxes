@@ -21,11 +21,11 @@ static const PE_(Action) PE_(filler) = (SET_TEST);
 
 /** Count how many are in the {bucket}.
  @order O(n) */
-static size_t PE_(count)(struct PE_(Link) *const bucket) {
-	const struct PE_(Link) *x;
+static size_t PE_(count)(struct PE_(Bucket) *const bucket) {
+	const struct E_(SetKey) *x;
 	size_t c = 0;
 	assert(bucket);
-	for(x = bucket->next; x; x = x->next) c++;
+	for(x = bucket->first; x; x = x->next) c++;
 	return c;
 }
 
@@ -37,7 +37,7 @@ static void PE_(stats)(const struct E_(Set) *const set,
 	size_t size = 0;
 	assert(delim);
 	if(set && set->buckets) {
-		struct PE_(Link) *b = set->buckets,
+		struct PE_(Bucket) *b = set->buckets,
 			*b_end = b + (1 << set->log_capacity);
 		for( ; b < b_end; b++) {
 			double delta, x;
@@ -67,7 +67,7 @@ static void PE_(stats)(const struct E_(Set) *const set,
 /** Assertion function for seeing if it is in a valid state.
  @order O(|{set.bins}| + |{set.items}|) */
 static void PE_(legit)(const struct E_(Set) *const set) {
-	struct PE_(Link) *b, *b_end;
+	struct PE_(Bucket) *b, *b_end;
 	size_t size = 0;
 	if(!set) return; /* Null state. */
 	if(!set->buckets) { /* Empty state. */
@@ -96,26 +96,25 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	PE_(stats)(set, "\\l", fp);
 	fprintf(fp, "\", shape=box];\n");
 	if(set->buckets) {
-		struct PE_(Link) *b, *b_end, *x, *xt;
+		struct PE_(Bucket) *b, *b_end;
+		struct E_(SetKey) *x, *x_prev, *xt;
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
 			b < b_end; b++) {
-			struct E_(SetKey) *e = PE_(link_upcast)(b), *e_prev;
 			int is_turtle = 0;
 			fprintf(fp, "\tsubgraph cluster_%p {\n"
 				"\t\tstyle=filled;\n"
 				"\t\tEntry%p [label=\"Bucket%u\", color=seagreen, shape=box];"
-				"\n", (void *)b, (void *)e, (unsigned)(b - set->buckets));
-			for(xt = x = b->next; x; x = x->next) {
-				e_prev = e, e = PE_(link_upcast)(x);
-				PE_(to_string)(&e->data, &a);
+				"\n", (void *)b, (void *)x, (unsigned)(b - set->buckets));
+			for(xt = x = b->first, x_prev = 0; x; x_prev = x, x = x->next) {
+				PE_(to_string)(&x->data, &a);
 				fprintf(fp, "\t\tEntry%p [label=\"%u\\l%s\\l\"];\n"
 					"\t\tEntry%p -> Entry%p;\n",
-					(void *)e, PE_(get_hash)(e), a, (void *)e_prev, (void *)e);
+					(void *)x, PE_(get_hash)(x), a, (void *)x_prev, (void *)x);
 				if(is_turtle) xt = xt->next, is_turtle = 0; else is_turtle = 1;
 				if(xt == x->next) {
 					fprintf(fp, "\t\tLoop%p [color=red];\n"
 						"\t\tEntry%p -> Loop%p;\n",
-						(void *)b, (void *)e, (void *)b);
+						(void *)b, (void *)x, (void *)b);
 					break;
 				}
 			}

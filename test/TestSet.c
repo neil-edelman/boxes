@@ -30,7 +30,7 @@ static void fill_int(unsigned *const x) { *x = rand(); }
 #define SET_NAME Int
 #define SET_TYPE unsigned
 #define SET_HASH &hash_int
-#define SET_IS_EQUAL &equal_ints
+#define SET_EQUAL &equal_ints
 #define SET_TO_STRING &int_to_string
 #define SET_TEST &fill_int
 #include "../src/Set.h"

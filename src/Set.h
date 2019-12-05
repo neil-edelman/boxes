@@ -15,7 +15,7 @@
  @param[SET_HASH]
  A function satisfying <typedef:<PE>Hash>; required.
 
- @param[SET_IS_EQUAL]
+ @param[SET_EQUAL]
  A function satisfying <typedef:<PE>IsEqual>; required.
 
  @param[SET_NO_CACHE]
@@ -55,8 +55,8 @@
 #ifndef SET_TYPE
 #error Type SET_TYPE undefined.
 #endif
-#ifndef SET_IS_EQUAL
-#error Function SET_IS_EQUAL undefined.
+#ifndef SET_EQUAL
+#error Function SET_EQUAL undefined.
 #endif
 #ifndef SET_HASH
 #error Function SET_HASH undefined.
@@ -110,27 +110,27 @@ typedef SET_TYPE PE_(Type);
 
 
 
-/* Singly-linked list. All but the head element in <tag:<E>Set> `buckets` have
- <tag:<E>SetKey> as it's parent type. */
-struct PE_(Link) { struct PE_(Link) *next; };
-
 /** Contains `E` as the element `data` along with data internal to the set.
  Storage of the `<E>SetKey` structure is the responsibility of the caller;
  it could be one part of a more complex super-structure, (thus using it as a
  hash table, for instance.) */
 struct E_(SetKey);
 struct E_(SetKey) {
-	struct PE_(Link) *x;
-	E data;
+	struct E_(SetKey) *next;
 #ifndef SET_NO_CACHE /* <!-- cache */
 	unsigned hash;
 #endif /* cache --> */
+	E data;
 };
+
+/* Singly-linked list head for `buckets`. Not really needed, but
+ double-pointers are confusing. */
+struct PE_(Bucket) { struct E_(SetKey) *first; };
 
 /** An `<E>Set`. To initialise, see <fn:<E>Set>. */
 struct E_(Set);
 struct E_(Set) {
-	struct PE_(Link) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
+	struct PE_(Bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
 	size_t size;
 	unsigned log_capacity;
 };
@@ -147,10 +147,10 @@ static const PE_(Hash) PE_(hash) = (SET_HASH);
 
 /** A constant equivalence relation between `E` that satisfies
  `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. */
-typedef int (*PE_(IsEqual))(const E, const E);
-/* Check that `SET_IS_EQUAL` is a function implementing
+typedef int (*PE_(Equal))(const E, const E);
+/* Check that `SET_EQUAL` is a function implementing
  <typedef:<PE>IsEqual>. */
-static const PE_(IsEqual) PE_(is_equal) = (SET_IS_EQUAL);
+static const PE_(Equal) PE_(equal) = (SET_EQUAL);
 
 /** Returns true if the `replace` replaces the `original`; used in
  <fn:<E>SetPutResolve>. */
@@ -172,18 +172,9 @@ typedef void (*PE_(Action))(E *const);
 
 
 
-/** Gets the <tag:<E>SetKey> from a <tag:<PE>Link>, _ie_ `container_of`. */
-static struct E_(SetKey) *PE_(link_upcast)(struct PE_(Link) *const link)
-	{ return (struct E_(SetKey) *)(void *)((char *)link
-	- offsetof(struct E_(SetKey), x)); }
-
-/** Gets the <tag:<E>SetKey> from a <tag:<PE>Link>, _ie_ `container_of`. */
-static const struct E_(SetKey) *PE_(link_constupcast)(const struct
-	PE_(Link) *const link) { return (const struct E_(SetKey) *)(const void *)
-	((const char *)link - offsetof(struct E_(SetKey), x)); }
-
 /** Gets the hash of `element`. */
 static unsigned PE_(get_hash)(struct E_(SetKey) *element) {
+	assert(element);
 #ifdef SET_NO_CACHE /* <!-- !cache */
 	return PE_(hash)(element->data);
 #else /* !cache --><!-- cache */
@@ -192,29 +183,28 @@ static unsigned PE_(get_hash)(struct E_(SetKey) *element) {
 }
 
 /** Retrieves a bucket from `set` given the `hash`. Only call this function if
- non-empty. Will be invalidated upon a call to <fn:<PE>grow>.
+ non-empty. May be invalidated upon a call to <fn:<PE>grow>.
  @return Given a `hash`, compute the bucket at it's index. */
-static struct PE_(Link) *PE_(get_bucket)(struct E_(Set) *const set,
+static struct PE_(Bucket) *PE_(get_bucket)(struct E_(Set) *const set,
 	const unsigned hash) {
-	assert(set && set->buckets);
+	assert(set);
 	return set->buckets + (hash & ((1 << set->log_capacity) - 1));
 }
 
 /** Linear search for `data` in `bucket`.
  @param[hash] Must match the hash of `data`.
- @return The link before the element equivalent to `data` or null. */
-static struct PE_(Link) *PE_(bucket_to)(struct PE_(Link) *const bucket,
+ @return The link that points to the `data` or null. */
+static struct E_(SetKey) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
 	const unsigned hash, const E data) {
-	struct PE_(Link) *prev_x, *x;
+	struct E_(SetKey) **to_x, *x;
 	assert(bucket);
-	for(prev_x = bucket; (x = prev_x->next); prev_x = x) {
+	for(to_x = &bucket->first; (x = *to_x); to_x = &x->next) {
 #ifndef SET_NO_CACHE /* <!-- cache: a quick out. */
-		if(hash != PE_(link_constupcast)(x)->hash) continue;
+		if(hash != x->hash) continue;
 #endif /* cache --> */
-		if(PE_(is_equal)(data, PE_(link_constupcast)(x)->data)) return prev_x;
+		if(PE_(equal)(data, x->data)) return to_x;
 	}
-#ifdef SET_NO_CACHE /* <!-- !cache: doesn't use hash. _Nb_ it is already
-	calculated to find the `bucket`, so this operation is a no-op. */
+#ifdef SET_NO_CACHE /* <!-- !cache */
 	(void)(hash);
 #endif /* cache --> */
 	return 0;
@@ -226,7 +216,8 @@ static struct PE_(Link) *PE_(bucket_to)(struct PE_(Link) *const bucket,
  @throws[realloc]
  @order Amortized \O(1). */
 static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
-	struct PE_(Link) *buckets, *b, *b_end, *new_b, *prev_x, *x;
+	struct PE_(Bucket) *buckets, *b, *b_end, *new_b;
+	struct E_(SetKey) **to_x, *x;
 	const unsigned log_c0 = set->log_capacity, log_limit = sizeof(unsigned) * 8;
 	unsigned c0 = 1 << log_c0, log_c1, c1, mask;
 	size_t no_buckets;
@@ -256,18 +247,19 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	mask = (c1 - 1) ^ (c0 - 1), assert(mask);
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
 	/* Initialize the new lists to contain no elements. */
-	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->next = 0;
+	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->first = 0;
 	/* The expectation value of the fraction of entries that needs to be
 	 rehashed is 1/2 _vs_ any other way would require a complete rehash. */
 	for(b = buckets, b_end = buckets + c0; b < b_end; b++) {
+		unsigned hash;
 		assert(!((b - buckets) & mask));
-		prev_x = b;
-		while((x = prev_x->next)) {
-			unsigned hash = PE_(get_hash)(PE_(link_upcast)(x));
-			if(!(hash & mask)) { prev_x = x; continue; }
-			prev_x->next = x->next;
+		to_x = &b->first;
+		while(*to_x) {
+			hash = PE_(get_hash)((x = *to_x));
+			if(!(hash & mask)) { to_x = &x->next; continue; }
+			*to_x = x->next; /* Remove. */
 			new_b = PE_(get_bucket)(set, hash);
-			x->next = new_b->next, new_b->next = x;
+			x->next = new_b->first, new_b->first = x;
 		}
 	}
 	return 1;
@@ -276,23 +268,23 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 /** Most general put function that every put function calls. Puts `element` in
  `set` and returns the collided element, if any, as long as `replace` is null
  or returns 1. */
-static struct PE_(Link) *PE_(put)(struct E_(Set) *const set,
-	struct E_(SetKey) *const element, const PE_(Replace) replace) {
-	struct PE_(Link) *bucket, *prev = 0, *collide = 0;
+static struct E_(SetKey) *PE_(put)(struct E_(Set) *const set,
+	struct E_(SetKey) *const key, const PE_(Replace) replace) {
+	struct PE_(Bucket) *bucket;
+	struct E_(SetKey) **to_x = 0, *x = 0;
 	unsigned hash;
-	if(!set || !element) return 0;
-	hash = PE_(hash)(element->data);
+	if(!set || !key) return 0;
+	hash = PE_(hash)(key->data);
 #ifndef SET_NO_CACHE /* <!-- cache */
-	element->hash = hash;
+	key->hash = hash;
 #endif /* cache --> */
 	/* Delete any duplicate. */
 	if(set->buckets) {
 		bucket = PE_(get_bucket)(set, hash);
-		if((prev = PE_(bucket_to)(bucket, element->data, hash))) {
-			collide = prev->next;
-			if(replace && !replace(&PE_(link_upcast)(collide)->data,
-				&element->data)) return 0;
-			prev->next = collide->next, collide->next = 0;
+		if((to_x = PE_(bucket_to)(bucket, key->data, hash))) {
+			x = *to_x;
+			if(replace && !replace(&x->data, &key->data)) return 0;
+			*to_x = x->next, x->next = 0;
 			goto erased;
 		}
 	}
@@ -303,8 +295,15 @@ static struct PE_(Link) *PE_(put)(struct E_(Set) *const set,
 	set->size++;
 erased:
 	/* Stick the element on the head of the bucket. */
-	element->x = bucket, bucket = element->x;
-	return collide;
+	key->next = bucket->first, bucket->first = key;
+	return x;
+}
+
+/** Used in <fn:<E>SetPutResolve> when `replace` is null; `original` and
+ `replace` are ignored. */
+static int PE_(false)(E *original, E *replace) {
+	(void)(original); (void)(replace);
+	return 0;
 }
 
 /** Zeros `set`, a well-defined state. */
@@ -342,10 +341,10 @@ static void E_(Set)(struct E_(Set) *const set) {
  @order \Theta(`set.buckets`)
  @allow */
 static void E_(SetClear)(struct E_(Set) *const set) {
-	struct PE_(Link) *b, *b_end;
+	struct PE_(Bucket) *b, *b_end;
 	if(!set || !set->log_capacity) return;
 	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
-		b->next = 0;
+		b->first = 0;
 	set->size = 0;
 }
 
@@ -365,12 +364,12 @@ static size_t E_(SetSize)(const struct E_(Set) *const set) {
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
 static E *E_(SetGet)(struct E_(Set) *const set, const E data) {
-	struct PE_(Link) *prev;
+	struct E_(SetKey) **to_x;
 	unsigned hash;
 	if(!set || !set->buckets) return 0;
 	hash = PE_(hash)(data);
-	prev = PE_(bucket_to)(PE_(get_bucket)(set, hash), data, hash);
-	return prev ? &PE_(link_upcast)(prev->next)->data : 0;
+	to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), data, hash);
+	return to_x ? &(*to_x)->data : 0;
 }
 
 /** Reserve at least `reserve` divided by the maximum load factor, `ln 2`,
@@ -387,7 +386,7 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 }
 
 /** Puts the `element` in `set`. Adding an element with the same `E`, according
- to <typedef:<PE>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected.
+ to <typedef:<PE>IsEqual> `SET_EQUAL`, causes the old data to be ejected.
  @param[set, element] If null, returns false.
  @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.
@@ -399,15 +398,7 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
  @allow */
 static struct E_(SetKey) *E_(SetPut)(struct E_(Set) *const set,
 	struct E_(SetKey) *const element) {
-	struct PE_(Link) *const link = PE_(put)(set, element, 0);
-	return link ? PE_(link_upcast)(link) : 0;
-}
-
-/** Used in <fn:<E>SetPutResolve> when `replace` is null; `original` and
- `replace` are ignored. */
-static int PE_(false)(E *original, E *replace) {
-	(void)(original); (void)(replace);
-	return 0;
+	return PE_(put)(set, element, 0);
 }
 
 /** Puts the `element` in `set` only if the entry is absent or if calling
@@ -426,9 +417,7 @@ static int PE_(false)(E *original, E *replace) {
  @allow */
 static struct E_(SetKey) *E_(SetPutResolve)(struct E_(Set) *const set,
 	struct E_(SetKey) *const element, const PE_(Replace) replace) {
-	struct PE_(Link) *link = PE_(put)(set, element,
-		replace ? replace : &PE_(false));
-	return link ? PE_(link_upcast)(link) : 0;
+	return PE_(put)(set, element, replace ? replace : &PE_(false));
 }
 
 /** Removes an element `data` from `set`.
@@ -438,16 +427,16 @@ static struct E_(SetKey) *E_(SetPutResolve)(struct E_(Set) *const set,
 static struct E_(SetKey) *E_(SetRemove)(struct E_(Set) *const set,
 	const E data) {
 	unsigned hash;
-	struct PE_(Link) *prev, *removed;
+	struct E_(SetKey) **to_x, *x;
 	if(!set || !set->buckets) return 0;
 	hash = PE_(hash)(data);
-	if(!(prev = PE_(bucket_to)(PE_(get_bucket)(set, hash), data, hash)))
+	if(!(to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), data, hash)))
 		return 0;
-	removed = prev->next;
-	prev->next = removed->next;
+	x = *to_x;
+	*to_x = x->next;
 	assert(set->size);
 	set->size--;
-	return PE_(link_upcast)(removed);
+	return x;
 }
 
 #ifdef SET_TO_STRING /* <!-- print */
@@ -469,6 +458,8 @@ static const char *E_(SetToString)(const struct E_(Set) *const set) {
 		*const ellipsis_end = ",…}", *const null = "null";
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
 		null_len = strlen(null);
+	struct PE_(Bucket) *b, *b_end;
+	size_t i;
 	int is_first = 1;
 	assert(!(strings_no & (strings_no - 1)) && ellipsis_end_len >= 2
 		&& string_size >= 2 + 11 + ellipsis_end_len + 1
@@ -479,21 +470,23 @@ static const char *E_(SetToString)(const struct E_(Set) *const set) {
 	if(!set) { memcpy(s, null, null_len), s += null_len; goto terminate; }
 	/* Otherwise */
 	*s++ = start;
-	if(set->buckets) {
-		struct PE_(Link) *b, *b_end, *x;
-		size_t i;
-		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
-			b < b_end; b++) {
+	if(!set->buckets) goto end_buckets;
+	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
+	{
+		struct E_(SetKey) *x = b->first;
+		while(x) {
 			if(!is_first) *s++ = comma, *s++ = space;
 			else *s++ = space, is_first = 0;
 			s[11] = '\0';
-			PE_(to_string)(&PE_(link_constupcast)(x)->data, (char (*)[12])s);
+			/* Might be a strict aliasing violation. */
+			PE_(to_string)(&x->data, (char (*)[12])s);
 			for(i = 0; *s != '\0' && i < 12; s++, i++);
 			/* No space to guarantee another element; terminate by ellipsis. */
 			if((size_t)(s - string) > string_size
-				- 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
+			   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
 		}
 	}
+end_buckets:
 	if(!is_first) *s++ = space;
 	*s++ = end;
 	goto terminate;
@@ -551,7 +544,7 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef SET_NAME
 #undef SET_TYPE
 #undef SET_HASH
-#undef SET_IS_EQUAL
+#undef SET_EQUAL
 #ifdef SET_NO_CACHE /* <!-- !cache */
 #undef SET_NO_CACHE
 #endif /* !cache --> */
