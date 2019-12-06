@@ -166,7 +166,7 @@ static void PE_(test_basic)(void) {
 	E_(Set)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
 	PE_(legit)(&set);
-	PE_(graph)(&set, "zero.gv");
+	PE_(graph)(&set, "graph/" QUOTE(SET_NAME) "-zero.gv");
 	/* Test placing items. */
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		size_t n = t - test;
