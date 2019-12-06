@@ -415,7 +415,7 @@ static struct E_(SetElement) *E_(SetPut)(struct E_(Set) *const set,
  @order Average amortised \O(1), (hash distributes elements uniformly);
  worst \O(n).
  @allow */
-static struct E_(SetElement) *E_(SetPutResolve)(struct E_(Set) *const set,
+static struct E_(SetElement) *E_(SetPolicyPut)(struct E_(Set) *const set,
 	struct E_(SetElement) *const element, const PE_(Replace) replace) {
 	return PE_(put)(set, element, replace ? replace : &PE_(false));
 }
@@ -518,7 +518,7 @@ static void PE_(unused_set)(void) {
 	E_(SetReserve)(0, 0);
 	E_(SetGet)(0, 0);
 	E_(SetPut)(0, 0);
-	E_(SetPutResolve)(0, 0, 0);
+	E_(SetPolicyPut)(0, 0, 0);
 	E_(SetRemove)(0, 0);
 #ifdef SET_TO_STRING
 	E_(SetToString)(0);

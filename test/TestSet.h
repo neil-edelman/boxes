@@ -139,16 +139,6 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	fclose(fp);
 }
 
-/* struct A
- 30 test; 64 buckets; 3 max; 0.469(0.7) average bucket size.
- 30 test; 64 buckets; 2 max; 0.469(0.7) average bucket size.
- 300 test; 512 buckets; 4 max; 0.586(0.8) average bucket size.
- 300 test; 512 buckets; 4 max; 0.586(0.8) average bucket size.
- 3000 test; 8192 buckets; 4 max; 0.366(0.6) average bucket size.
- 3000 test; 8192 buckets; 4 max; 0.366(0.6) average bucket size.
- 30000 test; 65536 buckets; 6 max; 0.458(0.7) average bucket size.
- 30000 test; 65536 buckets; 6 max; 0.458(0.7) average bucket size. */
-
 static void PE_(test_basic)(void) {
 	struct Test {
 		struct E_(SetElement) key;
@@ -214,9 +204,9 @@ static void PE_(test_basic)(void) {
 				assert(r);
 				r = E_(SetRemove)(&set, t->key.data);
 				assert(!r);
-				r = E_(SetPutResolve)(&set, &t->key, 0);
+				r = E_(SetPolicyPut)(&set, &t->key, 0);
 				assert(!r);
-				r = E_(SetPutResolve)(&set, &t->key, 0);
+				r = E_(SetPolicyPut)(&set, &t->key, 0);
 				assert(!r);
 				r = E_(SetRemove)(&set, t->key.data);
 				assert(r);
@@ -224,9 +214,9 @@ static void PE_(test_basic)(void) {
 		} else {
 			collision++;
 			assert(t && element != &t->key);
-			r = E_(SetPutResolve)(&set, &t->key, 0);
+			r = E_(SetPolicyPut)(&set, &t->key, 0);
 			assert(!r);
-			r = E_(SetPutResolve)(&set, &t->key, 0);
+			r = E_(SetPolicyPut)(&set, &t->key, 0);
 			assert(!r);
 		}
 	}
