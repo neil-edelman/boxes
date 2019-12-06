@@ -478,12 +478,14 @@ static const char *E_(SetToString)(const struct E_(Set) *const set) {
 			if(!is_first) *s++ = comma, *s++ = space;
 			else *s++ = space, is_first = 0;
 			s[11] = '\0';
-			/* Might be a strict aliasing violation. */
+			/* Directly to the buffer;
+			 might be a strict aliasing violation, (`C++` it is.) */
 			PE_(to_string)(&x->data, (char (*)[12])s);
 			for(i = 0; *s != '\0' && i < 12; s++, i++);
 			/* No space to guarantee another element; terminate by ellipsis. */
 			if((size_t)(s - string) > string_size
 			   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
+			x = x->next;
 		}
 	}
 end_buckets:

@@ -118,15 +118,12 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 				fprintf(fp, "\tSetKey%p [label=\"hash %u\\l|%s\\l\"];\n",
 					(void *)x, PE_(get_hash)(x), a);
 				if(x_prev) {
-					fprintf(fp, "\t\tSetKey%p -> SetKey%p;\n",
+					fprintf(fp, "\tSetKey%p -> SetKey%p;\n",
 						(void *)x_prev, (void *)x);
 				} else {
-					fprintf(fp, "\t\tBucket%u -> SetKey%p;\n",
+					fprintf(fp, "\tBucket%u -> SetKey%p;\n",
 						(unsigned)(b - set->buckets), (void *)x);
 				}
-				/*
-					"\t\tEntry%p -> Entry%p;\n",
-					, (void *)x_prev, (void *)x);*/
 				if(is_turtle) xt = xt->next, is_turtle = 0; else is_turtle = 1;
 				if(xt == x->next) {
 					fprintf(fp, "\tLoop%p [color=red];\n"
@@ -137,7 +134,7 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 			}
 		}
 	}
-	fprintf(fp, "\tnode [colour=red, style=filled];\n");
+	fprintf(fp, "\tnode [colour=red];\n");
 	fprintf(fp, "}\n");
 	fclose(fp);
 }
@@ -153,53 +150,44 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
  30000 test; 65536 buckets; 6 max; 0.458(0.7) average bucket size. */
 
 static void PE_(test_basic)(void) {
-	struct {
+	struct Test {
 		struct E_(SetKey) key;
 		int is_in;
-	} test[30];
+	} test[3000], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char a[12];
 	struct E_(Set) set = SET_ZERO;
-	struct E_(SetKey) *key, *eject;
+	struct E_(SetKey) *eject;
+	assert(test_size > 1);
+	memset(&test, 0, sizeof test);
 	/* Test empty. */
 	PE_(legit)(&set);
 	E_(Set)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
 	PE_(legit)(&set);
-	/* Test one item. */
-	key = &test[0].key;
-	PE_(filler)(&key->data);
-	PE_(to_string)(&key->data, &a);
-	fprintf(stderr, "%s -> set: %s.\n", a, E_(SetToString)(&set));
-	success = E_(SetReserve)(&set, 1);
-	assert(success && set.buckets && set.log_capacity == 3 && !set.size
-		&& !set.buckets[0].first && !set.buckets[1].first
-		&& !set.buckets[2].first && !set.buckets[3].first
-		&& !set.buckets[4].first && !set.buckets[5].first
-		&& !set.buckets[6].first && !set.buckets[7].first);
-	eject = E_(SetPut)(&set, key);
-	assert(!eject && set.size == 1);
-	fprintf(stderr, "set: %s.\n", E_(SetToString)(&set));
-	PE_(legit)(&set);
-	PE_(stats)(&set, ", ", stderr);
-	fputc('\n', stderr);
-	PE_(graph)(&set, "one.gv");
-#if 0
+	PE_(graph)(&set, "zero.gv");
+	/* Test placing items. */
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
-		PE_(filler)(&t->element.data);
-		PE_(to_string)(&t->element.data, &a);
-		printf("About to put %s into set.\n", a);
-		PE_(legit)(&set);
-		assert(E_(SetReserve)(&set, 1));
-		eject = E_(SetPut)(&set, &t->element);
-		PE_(legit)(&set);
-		if(eject) ((struct Test *)(void *)((char *)eject
-			- offsetof(struct Test, element)))->is_in = 0;
+		size_t n = t - test;
+		PE_(filler)(&t->key.data);
+		PE_(to_string)(&t->key.data, &a);
+		success = E_(SetReserve)(&set, 1);
+		assert(success && set.buckets);
+		if(n == 0) assert(set.log_capacity == 3 && !set.size
+			&& !set.buckets[0].first && !set.buckets[1].first
+			&& !set.buckets[2].first && !set.buckets[3].first
+			&& !set.buckets[4].first && !set.buckets[5].first
+			&& !set.buckets[6].first && !set.buckets[7].first);
+		eject = E_(SetPut)(&set, &t->key);
+		if(n == 0) assert(!eject && set.size == 1);
+		else if(eject) ((struct Test *)(void *)((char *)eject
+			- offsetof(struct Test, key)))->is_in = 0;
 		t->is_in = 1;
-		n = t - test;
-		if(n == 15 || n == 150 || n == 300) {
+		if(n == 15 || n == 150 || n == 300 || n == 1500) {
 			char fn[512];
+			fprintf(stderr, "%lu: %s added to set %s.\n",
+				(unsigned long)n, a, E_(SetToString)(&set));
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-insert-%u.gv",
 				(unsigned)n + 1);
 			PE_(graph)(&set, fn);
@@ -209,6 +197,7 @@ static void PE_(test_basic)(void) {
 		}
 		PE_(legit)(&set);
 	}
+#if 0
 	printf("Testing get from set.\n");
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		struct E_(SetKey) *r;
