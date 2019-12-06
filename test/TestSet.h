@@ -23,7 +23,7 @@ static const PE_(Action) PE_(filler) = (SET_TEST);
 /** Count how many are in the {bucket}.
  @order O(n) */
 static size_t PE_(count)(struct PE_(Bucket) *const bucket) {
-	const struct E_(SetKey) *x;
+	const struct E_(SetElement) *x;
 	size_t c = 0;
 	assert(bucket);
 	for(x = bucket->first; x; x = x->next) c++;
@@ -99,7 +99,7 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	fprintf(fp, "\"];\n");
 	if(set->buckets) {
 		struct PE_(Bucket) *b, *b_end;
-		struct E_(SetKey) *x, *x_prev, *xt;
+		struct E_(SetElement) *x, *x_prev, *xt;
 		fprintf(fp, "\tsubgraph cluster_buckets {\n"
 			"\t\tstyle=filled;\n");
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
@@ -118,10 +118,10 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 				fprintf(fp, "\tSetKey%p [label=\"hash %u\\l|%s\\l\"];\n",
 					(void *)x, PE_(get_hash)(x), a);
 				if(x_prev) {
-					fprintf(fp, "\tSetKey%p -> SetKey%p;\n",
+					fprintf(fp, "\tSetKey%p -> SetElement%p;\n",
 						(void *)x_prev, (void *)x);
 				} else {
-					fprintf(fp, "\tBucket%u -> SetKey%p;\n",
+					fprintf(fp, "\tBucket%u -> SetElement%p;\n",
 						(unsigned)(b - set->buckets), (void *)x);
 				}
 				if(is_turtle) xt = xt->next, is_turtle = 0; else is_turtle = 1;
@@ -151,14 +151,16 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 
 static void PE_(test_basic)(void) {
 	struct Test {
-		struct E_(SetKey) key;
+		struct E_(SetElement) key;
 		int is_in;
-	} test[3000], *t, *t_end;
+	} test[3], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char a[12];
+	size_t removed = 0, collision = 0;
+	struct PE_(Bucket) *b, *b_end;
 	struct E_(Set) set = SET_ZERO;
-	struct E_(SetKey) *eject;
+	struct E_(SetElement) *eject, *element;
 	assert(test_size > 1);
 	memset(&test, 0, sizeof test);
 	/* Test empty. */
@@ -184,7 +186,7 @@ static void PE_(test_basic)(void) {
 		else if(eject) ((struct Test *)(void *)((char *)eject
 			- offsetof(struct Test, key)))->is_in = 0;
 		t->is_in = 1;
-		if(n == 15 || n == 150 || n == 300 || n == 1500) {
+		if(n == 2 || n == 15 || n == 150 || n == 300 || n == 1500) {
 			char fn[512];
 			fprintf(stderr, "%lu: %s added to set %s.\n",
 				(unsigned long)n, a, E_(SetToString)(&set));
@@ -197,31 +199,34 @@ static void PE_(test_basic)(void) {
 		}
 		PE_(legit)(&set);
 	}
-#if 0
 	printf("Testing get from set.\n");
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
-		struct E_(SetKey) *r;
-		element = E_(SetGet)(&set, t->element.data);
+		struct E_(SetElement) *r;
+		PE_(to_string)(&t->key.data, &a);
+		fprintf(stderr, "Retiving %s.\n", a);
+		element = E_(SetGet)(&set, t->key.data);
 		assert(element);
 		if(t->is_in) {
-			assert(element == &t->element.data);
+			assert(element == &t->key);
 			if(rand() < RAND_MAX / 8) {
 				removed++;
-				r = E_(SetRemove)(&set, t->element.data);
+				r = E_(SetRemove)(&set, t->key.data);
 				assert(r);
-				r = E_(SetRemove)(&set, t->element.data);
+				r = E_(SetRemove)(&set, t->key.data);
 				assert(!r);
-				r = E_(SetPutResolve)(&set, &t->element, 0);
+				r = E_(SetPutResolve)(&set, &t->key, 0);
 				assert(!r);
-				r = E_(SetPutResolve)(&set, &t->element, 0);
+				r = E_(SetPutResolve)(&set, &t->key, 0);
 				assert(!r);
+				r = E_(SetRemove)(&set, t->key.data);
+				assert(r);
 			}
 		} else {
 			collision++;
-			assert(t && element != &t->element.data);
-			r = E_(SetPutResolve)(&set, &t->element, 0);
+			assert(t && element != &t->key);
+			r = E_(SetPutResolve)(&set, &t->key, 0);
 			assert(!r);
-			r = E_(SetPutResolve)(&set, &t->element, 0);
+			r = E_(SetPutResolve)(&set, &t->key, 0);
 			assert(!r);
 		}
 	}
@@ -236,7 +241,6 @@ static void PE_(test_basic)(void) {
 	assert(E_(SetSize)(&set) == 0);
 	E_(Set_)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
-#endif
 }
 
 /* void *const base, const size_t size,

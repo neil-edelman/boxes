@@ -35,6 +35,21 @@ static void fill_int(unsigned *const x) { *x = rand(); }
 #define SET_TEST &fill_int
 #include "../src/Set.h"
 
+/** Perform a 32 bit
+ [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on a
+ string, modified to `unsigned`. */
+static unsigned fnv_32a_str(const char *str) {
+	const unsigned char *s = (const unsigned char *)str;
+	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, `FNV1_32A_INIT`. */
+	unsigned hval = 0x811c9dc5;
+	/* FNV magic prime `FNV_32_PRIME 0x01000193`. */
+	while(*s) {
+		hval ^= *s++;
+		hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
+	}
+	return hval;
+}
+
 
 
 #if 0
