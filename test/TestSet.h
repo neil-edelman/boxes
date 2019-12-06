@@ -1,5 +1,6 @@
 /* Intended to be included by Set.h on `SET_TEST`. */
 
+#include <stdio.h>  /* fprintf FILE */
 #include <math.h>   /* sqrt inf */
 #include <string.h> /* memset */
 
@@ -55,13 +56,13 @@ static void PE_(stats)(const struct E_(Set) *const set,
 	fprintf(fp, "entries = %lu%s"
 		"buckets = %lu%s"
 		"max bucket size = %lu%s"
-		"load factor = %.2f(%.1f)%s"
+		"load factor(stderr) = %.2f(%.1f)%s"
 		"E(links traversed) = %.2f%s",
 		(unsigned long)size, delim,
 		(unsigned long)msr.n, delim,
 		(unsigned long)msr.max_bin, delim,
 		msr.mean, msr.n > 1 ? sqrt(msr.ssdm / (msr.n - 1)) : NAN, delim,
-		msr.n ? 1.0 * msr.cost / size : NAN, delim);
+		msr.n ? 1.0 + 1.0 * msr.cost / size : NAN, delim);
 }
 
 /** Assertion function for seeing if it is in a valid state.
@@ -88,37 +89,52 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	assert(set && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\trankdir = LR;\n");
-	fprintf(fp, "\tSet [label=\"Set<" QUOTE(SET_NAME) ">: of type <"
-		QUOTE(SET_KEY) ", " QUOTE(SET_VALUE) ">\\l", (unsigned long)set->size,
+		"\trankdir = LR;\n"
+		"\tnode [shape = record, style = filled]\n");
+	fprintf(fp, "\tSet [label=\"\\<" QUOTE(SET_NAME) "\\>Set: "
+		QUOTE(SET_TYPE) "\\l|", (unsigned long)set->size,
 		set->log_capacity ? 1 << set->log_capacity : 0,
 		(double)set->size / (1 << set->log_capacity));
 	PE_(stats)(set, "\\l", fp);
-	fprintf(fp, "\", shape=box];\n");
+	fprintf(fp, "\"];\n");
 	if(set->buckets) {
 		struct PE_(Bucket) *b, *b_end;
 		struct E_(SetKey) *x, *x_prev, *xt;
+		fprintf(fp, "\tsubgraph cluster_buckets {\n"
+			"\t\tstyle=filled;\n");
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
 			b < b_end; b++) {
-			int is_turtle = 0;
-			fprintf(fp, "\tsubgraph cluster_%p {\n"
-				"\t\tstyle=filled;\n"
-				"\t\tEntry%p [label=\"Bucket%u\", color=seagreen, shape=box];"
-				"\n", (void *)b, (void *)x, (unsigned)(b - set->buckets));
+			fprintf(fp, "\t\tBucket%u;\n",
+				(unsigned)(b - set->buckets));
+		}
+		fprintf(fp, "\t}\n"
+			"\tSet -> Bucket0;\n");
+		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
+			b < b_end; b++) {
+			fprintf(fp, "\t// Bucket%u\n", (unsigned)(b - set->buckets));
 			for(xt = x = b->first, x_prev = 0; x; x_prev = x, x = x->next) {
+				int is_turtle = 0;
 				PE_(to_string)(&x->data, &a);
-				fprintf(fp, "\t\tEntry%p [label=\"%u\\l%s\\l\"];\n"
+				fprintf(fp, "\tSetKey%p [label=\"hash %u\\l|%s\\l\"];\n",
+					(void *)x, PE_(get_hash)(x), a);
+				if(x_prev) {
+					fprintf(fp, "\t\tSetKey%p -> SetKey%p;\n",
+						(void *)x_prev, (void *)x);
+				} else {
+					fprintf(fp, "\t\tBucket%u -> SetKey%p;\n",
+						(unsigned)(b - set->buckets), (void *)x);
+				}
+				/*
 					"\t\tEntry%p -> Entry%p;\n",
-					(void *)x, PE_(get_hash)(x), a, (void *)x_prev, (void *)x);
+					, (void *)x_prev, (void *)x);*/
 				if(is_turtle) xt = xt->next, is_turtle = 0; else is_turtle = 1;
 				if(xt == x->next) {
-					fprintf(fp, "\t\tLoop%p [color=red];\n"
-						"\t\tEntry%p -> Loop%p;\n",
+					fprintf(fp, "\tLoop%p [color=red];\n"
+						"\tSetKey%p -> Loop%p;\n",
 						(void *)b, (void *)x, (void *)b);
 					break;
 				}
 			}
-			fprintf(fp, "\t}\n");
 		}
 	}
 	fprintf(fp, "\tnode [colour=red, style=filled];\n");
@@ -142,22 +158,33 @@ static void PE_(test_basic)(void) {
 		int is_in;
 	} test[30];
 	const size_t test_size = sizeof test / sizeof *test;
+	int success;
+	char a[12];
 	struct E_(Set) set = SET_ZERO;
 	struct E_(SetKey) *key, *eject;
-	int success;
 	/* Test empty. */
 	PE_(legit)(&set);
 	E_(Set)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
 	PE_(legit)(&set);
-	fprintf(stderr, "Empty: %s.\n", E_(SetToString)(&set));
 	/* Test one item. */
+	key = &test[0].key;
+	PE_(filler)(&key->data);
+	PE_(to_string)(&key->data, &a);
+	fprintf(stderr, "%s -> set: %s.\n", a, E_(SetToString)(&set));
 	success = E_(SetReserve)(&set, 1);
-	assert(success);
-	PE_(filler)(&test[0].key.data);
+	assert(success && set.buckets && set.log_capacity == 3 && !set.size
+		&& !set.buckets[0].first && !set.buckets[1].first
+		&& !set.buckets[2].first && !set.buckets[3].first
+		&& !set.buckets[4].first && !set.buckets[5].first
+		&& !set.buckets[6].first && !set.buckets[7].first);
 	eject = E_(SetPut)(&set, key);
-	assert(!eject);
-	fprintf(stderr, "One: %s.\n", E_(SetToString)(&set));
+	assert(!eject && set.size == 1);
+	fprintf(stderr, "set: %s.\n", E_(SetToString)(&set));
+	PE_(legit)(&set);
+	PE_(stats)(&set, ", ", stderr);
+	fputc('\n', stderr);
+	PE_(graph)(&set, "one.gv");
 #if 0
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		PE_(filler)(&t->element.data);
@@ -238,7 +265,7 @@ static void E_(SetTest)(void) {
 		"SET_TEST<" QUOTE(SET_TEST) ">; "
 		"testing:\n");
 	PE_(test_basic)();
-	fprintf(stderr, "Done tests of Set<" QUOTE(SET_NAME) ">.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">Set.\n\n");
 }
 
 #undef QUOTE
