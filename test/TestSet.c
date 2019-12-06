@@ -10,6 +10,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
+#include <string.h> /* strncpy */
+#include "Orcish.h"
 
 /** <https://stackoverflow.com/a/12996028> */
 static unsigned int hash_int(unsigned int x) {
@@ -26,7 +28,7 @@ static void int_to_string(const unsigned *const x, char (*const a)[12]) {
 }
 /** Fills `x` with random. */
 static void fill_int(unsigned *const x) { *x = rand(); }
-/** This defines `struct IntSet` and `struct IntSetKey`. */
+/** This defines `struct IntSet` and `struct IntSetElement`. */
 #define SET_NAME Int
 #define SET_TYPE unsigned
 #define SET_HASH &hash_int
@@ -35,6 +37,7 @@ static void fill_int(unsigned *const x) { *x = rand(); }
 #define SET_TEST &fill_int
 #include "../src/Set.h"
 
+struct String { char s64[64]; };
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on a
  string, modified to `unsigned`. */
@@ -49,7 +52,27 @@ static unsigned fnv_32a_str(const char *str) {
 	}
 	return hval;
 }
-
+static void string_to_string(const char *const str, char (*const a)[12]) {
+	strncpy(*a, str, sizeof(*a));
+}
+#define ARRAY_NAME String
+#define ARRAY_TYPE struct String
+#include "Array.h"
+static struct StringArray strings;
+static void string_fill(const char *str) {
+	struct String *s64;
+	if(!(s64 = StringArrayNew(&strings)))
+		{ perror("string64"); exit(EXIT_FAILURE); return; }
+	Orcish(s64->s64, sizeof s64->s64);
+	str = s64->s64;
+}
+#define SET_NAME String
+#define SET_TYPE const char *
+#define SET_HASH &fnv_32a_str
+#define SET_EQUAL &strcmp
+#define SET_TO_STRING &string_to_string
+#define SET_TEST &string_fill
+#include "../src/Set.h"
 
 
 #if 0
@@ -163,5 +186,7 @@ int main(void) {
 	printf("Final score: %s.\n", IdSetToString(&set));*/
 #endif
 	IntSetTest();
+	/*StringSetTest();
+	StringArray_(&strings);*/
 	return EXIT_SUCCESS;
 }
