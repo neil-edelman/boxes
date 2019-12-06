@@ -1,7 +1,7 @@
  # Set\.h #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
+ * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;Equal](#user-content-typedef-557336ea), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
  * [Struct, Union, and Enum Definitions](#user-content-tag):  [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -12,13 +12,13 @@
 `<E>Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a separately chained hash set having a maximum load factor of `ln 2` \. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in the set, the values cannot change\. One can use this as the key in an associative array\.
 
  - Parameter: SET\_NAME, SET\_TYPE  
-   `E` that satisfies `C` naming conventions when mangled; required\.
+   `E` that satisfies `C` naming conventions when mangled; required\. For performance, this should be as close to a basic data type as possible, \(_eg_ , a pointer instead of a struct\.\)
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
- - Parameter: SET\_IS\_EQUAL  
+ - Parameter: SET\_EQUAL  
    A function satisfying [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede); required\.
  - Parameter: SET\_NO\_CACHE  
-   Always calculates the hash every time and don't store it _per_ datum\. Best used when the data to be hashed is very small, \(_viz_ , the hash calculation is trivial\.\)
+   Always calculates the hash every time and don't store it _per_ datum when the hash calculation is trivial, \(and thus not ostensibly a good hash function\.\)
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
  - Parameter: SET\_TEST  
@@ -26,7 +26,7 @@
  * Standard:  
    C89/90
  * Caveat:  
-   Implement tests\.
+   Implement tests\. `SET\_TYPE` is actually not needed; an order without values is also super\-useful\.
 
 
 
@@ -41,9 +41,9 @@ A map from `E` onto `unsigned int` \. Should be as close as possible to a discre
 
 
 
- ### <a id = "user-content-typedef-c1486ede" name = "user-content-typedef-c1486ede"><PE>IsEqual</a> ###
+ ### <a id = "user-content-typedef-557336ea" name = "user-content-typedef-557336ea"><PE>Equal</a> ###
 
-<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const E, const E);</code>
+<code>typedef int(*<strong>&lt;PE&gt;Equal</strong>)(const E, const E);</code>
 
 A constant equivalence relation between `E` that satisfies `<PE>IsEqual\(a, b\) \-> <PE>Hash\(a\) == <PE>Hash\(b\)` \.
 
@@ -67,7 +67,7 @@ Responsible for turning `E` \(the first argument\) into a 12 `char` string \(the
 
  ### <a id = "user-content-typedef-9c0e506c" name = "user-content-typedef-9c0e506c"><PE>Action</a> ###
 
-<code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(const E *const);</code>
+<code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(E *const);</code>
 
 Used for `SET\_TEST` \.
 
@@ -79,7 +79,7 @@ Used for `SET\_TEST` \.
 
 <code>struct <strong>&lt;E&gt;SetElement</strong>;</code>
 
-Contains `E` as the element `data` along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller; it could be one part of a more complex super\-structure, \(thus using it as a hash table\.\)
+Contains `E` as the element `data` along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller; it could be one part of a more complex super\-structure, \(thus using it as a hash table, for instance\.\)
 
 
 
@@ -87,7 +87,7 @@ Contains `E` as the element `data` along with data internal to the set\. Storage
 
 <code>struct <strong>&lt;E&gt;Set</strong>;</code>
 
-A `<E>Set` \. To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\.
+An `<E>Set` \. To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\.
 
 
 
@@ -105,13 +105,13 @@ A `<E>Set` \. To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\.
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-2dff525d">&lt;E&gt;SetSize</a></td><td>set</td></tr>
 
-<tr><td align = right>static const E *</td><td><a href = "#user-content-fn-8d1390a0">&lt;E&gt;SetGet</a></td><td>set, data</td></tr>
+<tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#user-content-fn-8d1390a0">&lt;E&gt;SetGet</a></td><td>set, data</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-33c00814">&lt;E&gt;SetReserve</a></td><td>set, reserve</td></tr>
 
 <tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#user-content-fn-df6b38cd">&lt;E&gt;SetPut</a></td><td>set, element</td></tr>
 
-<tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#user-content-fn-921b1abb">&lt;E&gt;SetPutResolve</a></td><td>set, element, replace</td></tr>
+<tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#user-content-fn-2ceb4efb">&lt;E&gt;SetPolicyPut</a></td><td>set, element, replace</td></tr>
 
 <tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#user-content-fn-21a4ad4">&lt;E&gt;SetRemove</a></td><td>set, data</td></tr>
 
@@ -175,7 +175,7 @@ Clears and removes all entries from `set` \. The capacity and memory of the hash
 
  ### <a id = "user-content-fn-8d1390a0" name = "user-content-fn-8d1390a0"><E>SetGet</a> ###
 
-<code>static const E *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const E <em>data</em>)</code>
+<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const E <em>data</em>)</code>
 
 Queries whether `data` is is `set` \.
 
@@ -208,7 +208,7 @@ Reserve at least `reserve` divided by the maximum load factor, `ln 2` , space in
 
 <code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>)</code>
 
-Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET\_IS\_EQUAL` , causes the old data to be ejected\.
+Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET\_EQUAL` , causes the old data to be ejected\.
 
  - Parameter: _set_  
    If null, returns false\.
@@ -224,9 +224,9 @@ Puts the `element` in `set` \. Adding an element with the same `E` , according t
 
 
 
- ### <a id = "user-content-fn-921b1abb" name = "user-content-fn-921b1abb"><E>SetPutResolve</a> ###
+ ### <a id = "user-content-fn-2ceb4efb" name = "user-content-fn-2ceb4efb"><E>SetPolicyPut</a> ###
 
-<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPutResolve</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>, const &lt;PE&gt;Replace <em>replace</em>)</code>
+<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPolicyPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>, const &lt;PE&gt;Replace <em>replace</em>)</code>
 
 Puts the `element` in `set` only if the entry is absent or if calling `replace` returns true\.
 
