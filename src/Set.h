@@ -5,7 +5,7 @@
  and equality function, that doesn't allow duplication. Internally, it is a
  separately chained hash set having a maximum load factor of `ln 2`. It
  requires the storage of <tag:<E>SetElement>. While in the set, the
- values cannot change. One can use this as the key in an associative array.
+ hash value cannot change. One can use this as the key in an associative array.
 
  @param[SET_NAME, SET_TYPE]
  `E` that satisfies `C` naming conventions when mangled; required. For
@@ -16,7 +16,7 @@
  A function satisfying <typedef:<PE>Hash>; required.
 
  @param[SET_EQUAL]
- A function satisfying <typedef:<PE>IsEqual>; required.
+ A function satisfying <typedef:<PE>Equal>; required.
 
  @param[SET_NO_CACHE]
  Always calculates the hash every time and don't store it _per_ datum when the
