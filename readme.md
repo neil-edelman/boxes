@@ -16,7 +16,7 @@
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  - Parameter: SET\_EQUAL  
-   A function satisfying [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede); required\.
+   A function satisfying [&lt;PE&gt;Equal](#user-content-typedef-557336ea); required\.
  - Parameter: SET\_NO\_CACHE  
    Always calculates the hash every time and don't store it _per_ datum when the hash calculation is trivial, \(and thus not ostensibly a good hash function\.\)
  - Parameter: SET\_TO\_STRING  
