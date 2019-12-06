@@ -115,10 +115,10 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 			for(xt = x = b->first, x_prev = 0; x; x_prev = x, x = x->next) {
 				int is_turtle = 0;
 				PE_(to_string)(&x->data, &a);
-				fprintf(fp, "\tSetKey%p [label=\"hash %u\\l|%s\\l\"];\n",
+				fprintf(fp, "\tSetElement%p [label=\"hash %u\\l|%s\\l\"];\n",
 					(void *)x, PE_(get_hash)(x), a);
 				if(x_prev) {
-					fprintf(fp, "\tSetKey%p -> SetElement%p;\n",
+					fprintf(fp, "\tSetElement%p -> SetElement%p;\n",
 						(void *)x_prev, (void *)x);
 				} else {
 					fprintf(fp, "\tBucket%u -> SetElement%p;\n",
@@ -127,7 +127,7 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 				if(is_turtle) xt = xt->next, is_turtle = 0; else is_turtle = 1;
 				if(xt == x->next) {
 					fprintf(fp, "\tLoop%p [color=red];\n"
-						"\tSetKey%p -> Loop%p;\n",
+						"\tSetElement%p -> Loop%p;\n",
 						(void *)b, (void *)x, (void *)b);
 					break;
 				}

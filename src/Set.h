@@ -362,12 +362,13 @@ static size_t E_(SetSize)(const struct E_(Set) *const set) {
  exists, null.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
-static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set, const E data) {
+static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set,
+	const E data) {
 	struct E_(SetElement) **to_x;
 	unsigned hash;
 	if(!set || !set->buckets) return 0;
 	hash = PE_(hash)(data);
-	to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), data, hash);
+	to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), hash, data);
 	return to_x ? *to_x : 0;
 }
 
