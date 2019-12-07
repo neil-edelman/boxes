@@ -87,35 +87,17 @@ static void string_fill(const char **const str) {
 #define SET_TEST &order_fill
 #include "../src/Set.h" */
 
-static unsigned id_hash(const int id) { return id; }
-static int id_is_equal(const int a, const int b) { return a == b; }
-static void id_to_string(const int *const id, char (*const a)[12]) {
-	sprintf(*a, "#%d", *id);
-}
-static void id_filler(int *const id) {
-	/* <http://c-faq.com/lib/randrange.html>. PHP ensures collisions > 900. */
-	*id = rand() / (RAND_MAX / 89 + 1) + 10;
-}
-#define SET_NAME JustId
-#define SET_TYPE int
-#define SET_HASH &id_hash
-#define SET_NO_CACHE
-#define SET_EQUAL &id_is_equal
-#define SET_TO_STRING &id_to_string
-#define SET_TEST &id_filler
-#include "../src/Set.h"
-
-/* Same as before except a parent struct we have to declare. */
-struct Boat;
+static unsigned boat_id_hash(const int id) { return id; }
+static int boat_id_is_equal(const int a, const int b) { return a == b; }
 static void boat_id_to_string(const int *const id, char (*const a)[12]);
 static void boat_id_filler(int *const id);
 /* Code generation for `IdSet`;
  we are responsible for storing `IdSetElement`. */
 #define SET_NAME Id
 #define SET_TYPE int
-#define SET_HASH &id_hash
+#define SET_HASH &boat_id_hash
 #define SET_NO_CACHE
-#define SET_EQUAL &id_is_equal
+#define SET_EQUAL &boat_id_is_equal
 #define SET_TO_STRING &boat_id_to_string
 #define SET_TEST &boat_id_filler
 #include "../src/Set.h"
@@ -144,7 +126,8 @@ static void boat_id_to_string(const int *const id, char (*const a)[12]) {
 }
 static void fill_boat(struct Boat *const b) {
 	assert(b);
-    id_filler(&b->id.data);
+	/* <http://c-faq.com/lib/randrange.html>. PHP ensures collisions > 900. */
+	b->id.data = rand() / (RAND_MAX / 89 + 1) + 10;
     b->best_time = rand() / (RAND_MAX / 100 + 1) + 50;
     b->points = 151 - b->best_time;
 }
@@ -202,7 +185,7 @@ static struct IdSetElement *id_set_pool(void *const vboats) {
 }
 
 int main(void) {
-	struct Boat bs[32];
+	struct Boat bs[64];
 	size_t bs_size = sizeof bs / sizeof *bs;
 	struct IdSet ids = SET_ZERO;
 	struct BoatPool boats;
@@ -210,10 +193,10 @@ int main(void) {
 	IntSetTest(0, 0);
 	StringSetTest(0, 0);
 	StringPool_(&strings_fixed);
-	JustIdSetTest(0, 0);
 	IdSetTest(&id_set_pool, &boats);
 	BoatPool_(&boats);
 
+	printf("Boat club races:\n");
 	each_boat(bs, bs_size, &fill_boat);
 	print_boats(bs, bs_size);
 	each_set_boat(&ids, bs, bs_size, &put_in_set);
