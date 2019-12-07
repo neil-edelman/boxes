@@ -16,7 +16,7 @@
 
 
  - Parameter: SET\_NAME, SET\_TYPE  
-   `E` that satisfies `C` naming conventions when mangled; `SET\_NAME` is required\. When `SET\_TYPE` is not set, defaults to `<E>SetElement` for a hash without a type, otherwise, for performance, this should be as close to a basic data type as possible, \(_eg_ , a pointer instead of a struct\.\)
+   `E` that satisfies `C` naming conventions when mangled; required\. For performance, this should be as close to a basic data type as possible, \(_eg_ , a pointer instead of a struct\.\)
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  - Parameter: SET\_EQUAL  

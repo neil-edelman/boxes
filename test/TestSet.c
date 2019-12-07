@@ -87,13 +87,6 @@ static struct StringSetElement *sse_from_pool(void *const vses) {
 	return &se->sse;
 }
 
-/* #define SET_NAME Order
-#define SET_HASH &order_hash
-#define SET_EQUAL &order_is_equal;
-#define SET_TO_STRING &order_to_string
-#define SET_TEST &order_fill
-#include "../src/Set.h" */
-
 static unsigned boat_id_hash(const int id) { return id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
 static void boat_id_to_string(const int *const id, char (*const a)[12]);
