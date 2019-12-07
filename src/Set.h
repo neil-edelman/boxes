@@ -19,15 +19,18 @@
  @param[SET_IS_EQUAL]
  A function satisfying <typedef:<PE>Equal>; required.
 
+ @param[SET_TO_STRING]
+ Optional print function implementing <typedef:<PE>ToString>; makes available
+ <fn:<E>SetToString>.
+
+ @param[SET_REFERENCE]
+ 
+
  @param[SET_NO_CACHE]
  Should be used when the hash calculation is trivial to avoid storing duplicate
  information _per_ datum. It always calculates the hash and discards it. Using
  non-randomly-distributed data directly as a hash is not ostensibly sound, but
  in certain situations, it actually leads to a more balanced table.
-
- @param[SET_TO_STRING]
- Optional print function implementing <typedef:<PE>ToString>; makes available
- <fn:<E>SetToString>.
 
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
