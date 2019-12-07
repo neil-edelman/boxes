@@ -392,7 +392,7 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
  @param[set, element] If null, returns false.
  @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.
- @return The ejected element or null.
+ @return Any ejected element or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
  <fn:<E>SetReserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);
@@ -409,9 +409,7 @@ static struct E_(SetElement) *E_(SetPut)(struct E_(Set) *const set,
  @param[element] Must not be part this `set` or any other.
  @param[replace] If specified, gets called on collision and only replaces it if
  the function returns true. If null, doesn't do any replacement on collision.
- @return Successful operation, including doing nothing because the entry is
- already in the set.
- @return The ejected element or null.
+ @return Any ejected element or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
  <fn:<E>SetReserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);

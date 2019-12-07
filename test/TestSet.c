@@ -68,7 +68,7 @@ static void string_fill(const char **const str) {
 	struct String *s_fixed;
 	*str = 0;
 	if(!(s_fixed = StringPoolNew(&strings_fixed)))
-		{ perror("string fixed"); exit(EXIT_FAILURE); return; }
+		{ perror("fixed string"); exit(EXIT_FAILURE); return; }
 	Orcish(s_fixed->s, sizeof s_fixed->s);
 	*str = s_fixed->s;
 }
@@ -115,12 +115,12 @@ struct Boat {
 	int best_time;
 	int points;
 };
-/* `container_of(id)`. */
+/* `container_of(id.data)`. */
 static struct Boat *id_upcast(int *const id) {
 	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id)
 		- offsetof(struct IdSetElement, data));
 }
-/* `container_of(id)`. */
+/* `const container_of(id.data)`. */
 static const struct Boat *id_const_upcast(const int *const id) {
 	return (const struct Boat *)(const void *)
 		((const char *)id - offsetof(struct Boat, id)

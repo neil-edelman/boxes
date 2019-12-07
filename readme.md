@@ -217,7 +217,7 @@ Puts the `element` in `set` \. Adding an element with the same `E` , according t
  - Parameter: _element_  
    If null, returns false\. Should not be of a `set` because the integrity of that `set` will be compromised\.
  - Return:  
-   The ejected element or null\.
+   Any ejected element or null\.
  - Exceptional Return: realloc, ERANGE  
    There was an error with a re\-sizing\. Calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) before ensures that this does not happen\.
  - Order:  
@@ -239,7 +239,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
  - Parameter: _replace_  
    If specified, gets called on collision and only replaces it if the function returns true\. If null, doesn't do any replacement on collision\.
  - Return:  
-   Successful operation, including doing nothing because the entry is already in the set\. The ejected element or null\.
+   Any ejected element or null\.
  - Exceptional Return: realloc, ERANGE  
    There was an error with a re\-sizing\. Calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) before ensures that this does not happen\.
  - Order:  
