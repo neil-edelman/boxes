@@ -52,7 +52,8 @@ static unsigned fnv_32a_str(const char *str) {
 	return hval;
 }
 static void string_to_string(const char *const*const s, char (*const a)[12]) {
-	strncpy(*a, *s, sizeof(*a));
+	strncpy(*a, *s, sizeof(*a) - 1);
+	(*a)[sizeof(*a) - 1] = '\0';
 }
 static int string_is_equal(const char *const a, const char *const b) {
 	return !strcmp(a, b);
