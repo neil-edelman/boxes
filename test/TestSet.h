@@ -103,7 +103,7 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 		struct E_(SetElement) *x, *x_prev, *xt;
 		fprintf(fp, "\tsubgraph cluster_buckets {\n"
 			"\t\tstyle=filled;\n"
-			/*"\t\tnode [color=white];\n"*/);
+			"\t\tnode [fillcolor=lightpink];\n");
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
 			b < b_end; b++) {
 			fprintf(fp, "\t\tBucket0x%x;\n",

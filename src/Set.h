@@ -36,7 +36,6 @@
  Must be defined equal to a random filler function, satisfying
  <typedef:<PE>Action>. Requires `SET_TO_STRING`.
 
- @fixme The graph is boring.
  @std C89/90 */
 
 #include <stddef.h>	/* offsetof */

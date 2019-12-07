@@ -197,7 +197,7 @@ static struct IdSetElement *id_from_pool(void *const vboats) {
 
 int main(void) {
 	/* For non-automated tests. */
-	struct Boat bs[60000];
+	struct Boat bs[600/*00<-takes time to print*/];
 	size_t bs_size = sizeof bs / sizeof *bs;
 	struct IdSet ids = SET_ZERO;
 	/* For automated tests. */
