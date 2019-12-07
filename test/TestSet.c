@@ -40,7 +40,7 @@ static void fill_int(unsigned *const x) { *x = rand(); }
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on a
  string, modified to `unsigned`. */
-static unsigned fnv_32a_str(const char *const str) {
+static unsigned fnv_32a_str(char *const str) {
 	const unsigned char *s = (const unsigned char *)str;
 	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, `FNV1_32A_INIT`. */
 	unsigned hval = 0x811c9dc5;
@@ -51,34 +51,41 @@ static unsigned fnv_32a_str(const char *const str) {
 	}
 	return hval;
 }
-static void string_to_string(const char *const*const s, char (*const a)[12]) {
+static void string_to_string(char *const*const s, char (*const a)[12]) {
 	strncpy(*a, *s, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-static int string_is_equal(const char *const a, const char *const b) {
+static int string_is_equal(char *const a, char *const b) {
 	return !strcmp(a, b);
 }
-/* This is to store the strings. */
-struct String { char s[12]; };
-#define POOL_NAME String
-#define POOL_TYPE struct String
-#include "Pool.h"
-static struct StringPool strings_fixed;
-static void string_fill(const char **const str) {
-	struct String *s_fixed;
-	*str = 0;
-	if(!(s_fixed = StringPoolNew(&strings_fixed)))
-		{ perror("fixed string"); exit(EXIT_FAILURE); return; }
-	Orcish(s_fixed->s, sizeof s_fixed->s);
-	*str = s_fixed->s;
+#define MAX_STRING 12
+static void string_fill(char **const pstr) {
+	Orcish(*pstr, MAX_STRING);
 }
 #define SET_NAME String
-#define SET_TYPE const char *
+#define SET_TYPE char *
 #define SET_HASH &fnv_32a_str
 #define SET_EQUAL &string_is_equal
 #define SET_TO_STRING &string_to_string
 #define SET_TEST &string_fill
 #include "../src/Set.h"
+struct StringElement {
+	struct StringSetElement sse;
+	char buffer[MAX_STRING];
+};
+#define POOL_NAME StringElement
+#define POOL_TYPE struct StringElement
+#include "Pool.h"
+/* This is to store the strings. */
+static struct StringSetElement *sse_from_pool(void *const vses) {
+	struct StringElementPool *const ses = vses;
+	struct StringElement *const se = StringElementPoolNew(ses);
+	assert(ses);
+	if(!se) return 0;
+	/* This is `MAX_STRING` buffer; <fn:string_fill> will read this value. */
+	se->sse.data = se->buffer;
+	return &se->sse;
+}
 
 /* #define SET_NAME Order
 #define SET_HASH &order_hash
@@ -140,7 +147,7 @@ static void print_boats(const struct Boat *const bs,
 	char a[12];
 	size_t b;
 	assert(bs);
-	printf("In array: [ ");
+	printf("[ ");
 	for(b = 0; b < bs_size; b++)
 		boat_to_string(bs + b, &a),
 		printf("%s%s", b ? ", " : "", a);
@@ -149,6 +156,9 @@ static void print_boats(const struct Boat *const bs,
 /** @implements <Id>Replace */
 static int add_up_score(int *const original, int *const replace) {
 	struct Boat *const o = id_upcast(original), *const r = id_upcast(replace);
+	char a[12];
+	boat_to_string(o, &a);
+	printf("Adding %d to %s.\n", r->points, a);
 	o->points += r->points;
 	r->points = 0;
 	if(r->best_time < o->best_time) o->best_time = r->best_time;
@@ -178,7 +188,7 @@ static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 #include "Pool.h"
 
 /** Parent-type for testing. */
-static struct IdSetElement *id_set_pool(void *const vboats) {
+static struct IdSetElement *id_from_pool(void *const vboats) {
 	struct BoatPool *const boats = vboats;
 	struct Boat *b = BoatPoolNew(boats);
 	assert(boats);
@@ -186,20 +196,26 @@ static struct IdSetElement *id_set_pool(void *const vboats) {
 }
 
 int main(void) {
-	struct Boat bs[64];
+	/* For non-automated tests. */
+	struct Boat bs[60000];
 	size_t bs_size = sizeof bs / sizeof *bs;
 	struct IdSet ids = SET_ZERO;
+	/* For automated tests. */
 	struct BoatPool boats;
+	struct StringElementPool ses;
 
 	IntSetTest(0, 0);
-	StringSetTest(&, 0);
-	StringPool_(&strings_fixed);
-	IdSetTest(&id_set_pool, &boats);
+	StringElementPool(&ses);
+	StringSetTest(&sse_from_pool, &ses);
+	StringElementPool_(&ses);
+	BoatPool(&boats);
+	IdSetTest(&id_from_pool, &boats);
 	BoatPool_(&boats);
 
-	printf("Boat club races:\n");
 	each_boat(bs, bs_size, &fill_boat);
+	printf("Boat club races individually: ");
 	print_boats(bs, bs_size);
+	printf("Now adding up:\n");
 	each_set_boat(&ids, bs, bs_size, &put_in_set);
 	printf("Final score: %s.\n", IdSetToString(&ids));
 
