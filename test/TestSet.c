@@ -172,6 +172,7 @@ static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 	for(b = 0; b < bs_size; b++) action(ids, bs + b);
 }
 
+/* Dynamic memory pool for storing boats, `BoatPool`. */
 #define POOL_NAME Boat
 #define POOL_TYPE struct Boat
 #include "Pool.h"
@@ -191,7 +192,7 @@ int main(void) {
 	struct BoatPool boats;
 
 	IntSetTest(0, 0);
-	StringSetTest(0, 0);
+	StringSetTest(&, 0);
 	StringPool_(&strings_fixed);
 	IdSetTest(&id_set_pool, &boats);
 	BoatPool_(&boats);
