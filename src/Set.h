@@ -10,9 +10,10 @@
  ![Example of <String>Set.](../image/index.png)
 
  @param[SET_NAME, SET_TYPE]
- `E` that satisfies `C` naming conventions when mangled; required. For
- performance, this should be as close to a basic data type as possible, (_eg_,
- a pointer instead of a struct.)
+ `E` that satisfies `C` naming conventions when mangled; `SET_NAME` is
+ required. When `SET_TYPE` is not set, defaults to `<E>SetElement` for a hash
+ without a type, otherwise, for performance, this should be as close to a basic
+ data type as possible, (_eg_, a pointer instead of a struct.)
 
  @param[SET_HASH]
  A function satisfying <typedef:<PE>Hash>; required.
@@ -35,8 +36,6 @@
  Must be defined equal to a random filler function, satisfying
  <typedef:<PE>Action>. Requires `SET_TO_STRING`.
 
- @fixme `SET_TYPE` is actually not needed; an order without values is also
- super-useful.
  @std C89/90 */
 
 #include <stddef.h>	/* offsetof */
@@ -53,9 +52,6 @@
 /* Check defines. */
 #ifndef SET_NAME
 #error Generic SET_NAME undefined.
-#endif
-#ifndef SET_TYPE
-#error Type SET_TYPE undefined.
 #endif
 #ifndef SET_EQUAL
 #error Function SET_EQUAL undefined.

@@ -80,6 +80,13 @@ static void string_fill(const char **const str) {
 #define SET_TEST &string_fill
 #include "../src/Set.h"
 
+/* #define SET_NAME Order
+#define SET_HASH &order_hash
+#define SET_EQUAL &order_is_equal;
+#define SET_TO_STRING &order_to_string
+#define SET_TEST &order_fill
+#include "../src/Set.h" */
+
 static unsigned id_hash(const int id) { return id; }
 static int id_is_equal(const int a, const int b) { return a == b; }
 static void id_to_string(const int *const id, char (*const a)[12]) {
@@ -99,7 +106,9 @@ static void id_filler(int *const id) {
 #include "../src/Set.h"
 
 /* Same as before except a parent struct we have to declare. */
+struct Boat;
 static void boat_id_to_string(const int *const id, char (*const a)[12]);
+static void boat_id_filler(int *const id);
 /* Code generation for `IdSet`;
  we are responsible for storing `IdSetElement`. */
 #define SET_NAME Id
@@ -108,6 +117,7 @@ static void boat_id_to_string(const int *const id, char (*const a)[12]);
 #define SET_NO_CACHE
 #define SET_EQUAL &id_is_equal
 #define SET_TO_STRING &boat_id_to_string
+#define SET_TEST &boat_id_filler
 #include "../src/Set.h"
 /* Here is where we store it. */
 struct Boat {
@@ -137,6 +147,9 @@ static void fill_boat(struct Boat *const b) {
     id_filler(&b->id.data);
     b->best_time = rand() / (RAND_MAX / 100 + 1) + 50;
     b->points = 151 - b->best_time;
+}
+static void boat_id_filler(int *const id) {
+	fill_boat(id_upcast(id));
 }
 /* Individual races. */
 static void print_boats(const struct Boat *const bs,
@@ -176,15 +189,30 @@ static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 	for(b = 0; b < bs_size; b++) action(ids, bs + b);
 }
 
+#define POOL_NAME Boat
+#define POOL_TYPE struct Boat
+#include "Pool.h"
+
+/** Parent-type for testing. */
+static struct IdSetElement *id_set_pool(void *const vboats) {
+	struct BoatPool *const boats = vboats;
+	struct Boat *b = BoatPoolNew(boats);
+	assert(boats);
+	return b ? &b->id : 0;
+}
+
 int main(void) {
 	struct Boat bs[32];
 	size_t bs_size = sizeof bs / sizeof *bs;
 	struct IdSet ids = SET_ZERO;
+	struct BoatPool boats;
 
-	IntSetTest();
-	StringSetTest();
+	IntSetTest(0, 0);
+	StringSetTest(0, 0);
 	StringPool_(&strings_fixed);
-	JustIdSetTest();
+	JustIdSetTest(0, 0);
+	IdSetTest(&id_set_pool, &boats);
+	BoatPool_(&boats);
 
 	each_boat(bs, bs_size, &fill_boat);
 	print_boats(bs, bs_size);

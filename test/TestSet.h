@@ -140,11 +140,12 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	fclose(fp);
 }
 
-static void PE_(test_basic)(void) {
+static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
+	void *const parent) {
 	struct Test {
-		struct E_(SetElement) key;
+		struct E_(SetElement) space, *elem;
 		int is_in;
-	} test[3000], *t, *t_end;
+	} test[40], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char a[12];
@@ -163,8 +164,14 @@ static void PE_(test_basic)(void) {
 	/* Test placing items. */
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		size_t n = t - test;
-		PE_(filler)(&t->key.data);
-		PE_(to_string)(&t->key.data, &a);
+		if(parent_new) {
+			/* Ignore `space` and allocate a parent pointer. */
+			if(!(t->elem = parent_new(parent))) { assert(0); return; }
+		} else {
+			t->elem = &t->space;
+		}
+		PE_(filler)(&t->elem->data);
+		PE_(to_string)(&t->elem->data, &a);
 		success = E_(SetReserve)(&set, 1);
 		assert(success && set.buckets);
 		if(n == 0) assert(set.log_capacity == 3 && !set.size
@@ -172,10 +179,29 @@ static void PE_(test_basic)(void) {
 			&& !set.buckets[2].first && !set.buckets[3].first
 			&& !set.buckets[4].first && !set.buckets[5].first
 			&& !set.buckets[6].first && !set.buckets[7].first);
-		eject = E_(SetPut)(&set, &t->key);
+		eject = E_(SetPut)(&set, t->elem);
 		if(n == 0) assert(!eject && set.size == 1);
-		else if(eject) ((struct Test *)(void *)((char *)eject
-			- offsetof(struct Test, key)))->is_in = 0;
+		else if(eject) {
+			if(!parent_new) {
+				((struct Test *)(void *)((char *)eject
+					- offsetof(struct Test, space)))->is_in = 0;
+			} else {
+				struct Test *sub_t, *sub_t_end;
+				PE_(to_string)(&eject->data, &a);
+				printf("Collision of %s with %s.\n", a, E_(SetToString)(&set));
+				/* Slow way. */
+				for(sub_t = test, sub_t_end = t; sub_t < sub_t_end; sub_t++) {
+					const size_t sub_n = sub_t - test;
+					if(!sub_t->is_in
+						|| !PE_(equal)(eject->data, sub_t->elem->data))
+						continue;
+					printf("Found it at %lu.\n", (unsigned long)sub_n);
+					sub_t->is_in = 0;
+					break;
+				}
+				if(t == t_end) assert(0);
+			}
+		}
 		t->is_in = 1;
 		if(n == 2 || n == 15 || n == 150 || n == 300 || n == 1500) {
 			char fn[512];
@@ -190,35 +216,65 @@ static void PE_(test_basic)(void) {
 		}
 		PE_(legit)(&set);
 	}
+	{
+		char fn[512];
+		PE_(stats)(&set, "\n", stdout);
+		printf("\n");
+		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
+			(unsigned)test_size + 1);
+		PE_(graph)(&set, fn);
+	}
 	printf("Testing get from set.\n");
+	printf("[ ");
+	for(t = test, t_end = t + test_size; t < t_end; t++) {
+		PE_(to_string)(&t->elem->data, &a);
+		printf("%s[%lu-%s]%s", t == test ? "" : ", ",
+			(unsigned long)(t - test), t->is_in ? "yes" : "no", a);
+	}
+	printf(" ]\n");
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		struct E_(SetElement) *r;
-		PE_(to_string)(&t->key.data, &a);
-		fprintf(stderr, "Retiving %s.\n", a);
-		element = E_(SetGet)(&set, t->key.data);
+		PE_(to_string)(&t->elem->data, &a);
+		fprintf(stderr, "Retrieving %s.\n", a);
+		element = E_(SetGet)(&set, t->elem->data);
 		assert(element);
 		if(t->is_in) {
-			assert(element == &t->key);
+			if(element != t->elem) {
+				struct Test *sub_t, *sub_t_end;
+				PE_(graph)(&set, "graph/" QUOTE(SET_NAME) "-error.gv");
+				PE_(to_string)(&t->elem->data, &a);
+				printf("static data %s index %lu\n", a, t - test);
+				PE_(to_string)(&element->data, &a);
+				printf("with %s with %s.\n", a, E_(SetToString)(&set));
+				for(sub_t = test, sub_t_end = t; sub_t < sub_t_end; sub_t++) {
+					const size_t sub_n = sub_t - test;
+					if(!PE_(equal)(eject->data, sub_t->elem->data)) continue;
+					printf("Found it at %lu.\n", (unsigned long)sub_n);
+					sub_t->is_in = 0;
+					break;
+				}
+				if(t == t_end) assert(0);
+			}
+			assert(element == t->elem);
 			if(rand() < RAND_MAX / 8) {
 				removed++;
-				r = E_(SetRemove)(&set, t->key.data);
+				r = E_(SetRemove)(&set, t->elem->data);
 				assert(r);
-				r = E_(SetRemove)(&set, t->key.data);
+				r = E_(SetRemove)(&set, t->elem->data);
 				assert(!r);
-				r = E_(SetPolicyPut)(&set, &t->key, 0);
+				r = E_(SetPolicyPut)(&set, t->elem, 0);
 				assert(!r);
-				r = E_(SetPolicyPut)(&set, &t->key, 0);
+				r = E_(SetPolicyPut)(&set, t->elem, 0);
 				assert(!r);
-				r = E_(SetRemove)(&set, t->key.data);
+				r = E_(SetRemove)(&set, t->elem->data);
 				assert(r);
 			}
 		} else {
+			const size_t count = E_(SetSize)(&set);
 			collision++;
-			assert(t && element != &t->key);
-			r = E_(SetPolicyPut)(&set, &t->key, 0);
-			assert(!r);
-			r = E_(SetPolicyPut)(&set, &t->key, 0);
-			assert(!r);
+			assert(t && element != t->elem);
+			r = E_(SetPolicyPut)(&set, t->elem, 0);
+			assert(!r && count == E_(SetSize)(&set));
 		}
 	}
 	printf("Collisions: %lu; removed: %lu.\n",
@@ -237,8 +293,14 @@ static void PE_(test_basic)(void) {
 /* void *const base, const size_t size,
  const size_t width, size_t offset */
 
-/** The list will be tested on stdout. */
-static void E_(SetTest)(void) {
+/** The list will be tested on `stdout`.
+ @param[parent_new] Specifies the dynamic up-level creator of the parent
+ `struct`. Could be null; then testing will be done statically and `SET_TEST`
+ is not allowed to go over the limits of the data type.
+ @param[parent] The parameter passed to `parent_new`. Ignored if `parent_new`
+ is null. */
+static void E_(SetTest)(struct E_(SetElement) *(*const parent_new)(void *),
+	void *const parent) {
 	printf("<" QUOTE(SET_NAME) ">Set was created using: "
 		"SET_HASH <" QUOTE(SET_HASH) ">; "
 		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
@@ -247,8 +309,8 @@ static void E_(SetTest)(void) {
 #endif
 		"SET_TO_STRING<" QUOTE(SET_TO_STRING) ">; "
 		"SET_TEST<" QUOTE(SET_TEST) ">; "
-		"testing:\n");
-	PE_(test_basic)();
+		"%stesting:\n", parent_new ? "parent type specified; " : "");
+	PE_(test_basic)(parent_new, parent);
 	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">Set.\n\n");
 }
 
