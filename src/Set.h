@@ -7,6 +7,8 @@
  requires the storage of <tag:<E>SetElement>. While in the set, the
  hash value cannot change. One can use this as the key in an associative array.
 
+ ![Example of <String>Set.](../image/index.png)
+
  @param[SET_NAME, SET_TYPE]
  `E` that satisfies `C` naming conventions when mangled; required. For
  performance, this should be as close to a basic data type as possible, (_eg_,
@@ -29,7 +31,7 @@
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
  Must be defined equal to a random filler function, satisfying
- <typedef:<PV>Action>. Requires `SET_TO_STRING`.
+ <typedef:<PE>Action>. Requires `SET_TO_STRING`.
 
  @fixme Implement tests.
  @fixme `SET_TYPE` is actually not needed; an order without values is also
@@ -152,7 +154,7 @@ typedef int (*PE_(Equal))(const E, const E);
 static const PE_(Equal) PE_(equal) = (SET_EQUAL);
 
 /** Returns true if the `replace` replaces the `original`; used in
- <fn:<E>SetPutResolve>. */
+ <fn:<E>SetPolicyPut>. */
 typedef int (*PE_(Replace))(E *original, E *replace);
 
 #ifdef SET_TO_STRING /* <!-- string */
@@ -268,21 +270,21 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
  `set` and returns the collided element, if any, as long as `replace` is null
  or returns 1. */
 static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
-	struct E_(SetElement) *const key, const PE_(Replace) replace) {
+	struct E_(SetElement) *const element, const PE_(Replace) replace) {
 	struct PE_(Bucket) *bucket;
 	struct E_(SetElement) **to_x = 0, *x = 0;
 	unsigned hash;
-	if(!set || !key) return 0;
-	hash = PE_(hash)(key->data);
+	if(!set || !element) return 0;
+	hash = PE_(hash)(element->data);
 #ifndef SET_NO_CACHE /* <!-- cache */
-	key->hash = hash;
+	element->hash = hash;
 #endif /* cache --> */
 	/* Delete any duplicate. */
 	if(set->buckets) {
 		bucket = PE_(get_bucket)(set, hash);
-		if((to_x = PE_(bucket_to)(bucket, hash, key->data))) {
+		if((to_x = PE_(bucket_to)(bucket, hash, element->data))) {
 			x = *to_x;
-			if(replace && !replace(&x->data, &key->data)) return 0;
+			if(replace && !replace(&x->data, &element->data)) return 0;
 			*to_x = x->next, x->next = 0;
 			goto erased;
 		}
@@ -294,11 +296,11 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	set->size++;
 erased:
 	/* Stick the element on the head of the bucket. */
-	key->next = bucket->first, bucket->first = key;
+	element->next = bucket->first, bucket->first = element;
 	return x;
 }
 
-/** Used in <fn:<E>SetPutResolve> when `replace` is null; `original` and
+/** Used in <fn:<E>SetPolicyPut> when `replace` is null; `original` and
  `replace` are ignored. */
 static int PE_(false)(E *original, E *replace) {
 	(void)(original); (void)(replace);
@@ -358,7 +360,7 @@ static size_t E_(SetSize)(const struct E_(Set) *const set) {
 
 /** Queries whether `data` is is `set`.
  @param[set] If null, returns null.
- @return The value which <typedef:<PE>IsEqual> `data`, or, if no such value
+ @return The value which <typedef:<PE>Equal> `data`, or, if no such value
  exists, null.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
@@ -386,7 +388,7 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 }
 
 /** Puts the `element` in `set`. Adding an element with the same `E`, according
- to <typedef:<PE>IsEqual> `SET_EQUAL`, causes the old data to be ejected.
+ to <typedef:<PE>Equal> `SET_EQUAL`, causes the old data to be ejected.
  @param[set, element] If null, returns false.
  @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.

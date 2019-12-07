@@ -11,6 +11,10 @@
 
 `<E>Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a separately chained hash set having a maximum load factor of `ln 2` \. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in the set, the hash value cannot change\. One can use this as the key in an associative array\.
 
+![Example of &lt;String&gt;Set.](image/index.png)
+
+
+
  - Parameter: SET\_NAME, SET\_TYPE  
    `E` that satisfies `C` naming conventions when mangled; required\. For performance, this should be as close to a basic data type as possible, \(_eg_ , a pointer instead of a struct\.\)
  - Parameter: SET\_HASH  
@@ -22,13 +26,11 @@
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
  - Parameter: SET\_TEST  
-   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PV&gt;Action](#user-content-typedef-4585d713)\. Requires `SET\_TO\_STRING` \.
+   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` \.
  * Standard:  
    C89/90
  * Caveat:  
    Implement tests\. `SET\_TYPE` is actually not needed; an order without values is also super\-useful\.
-
-
 
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -53,7 +55,7 @@ A constant equivalence relation between `E` that satisfies `<PE>IsEqual\(a, b\) 
 
 <code>typedef int(*<strong>&lt;PE&gt;Replace</strong>)(E *original, E *replace);</code>
 
-Returns true if the `replace` replaces the `original` ; used in [&lt;E&gt;SetPutResolve](#user-content-fn-921b1abb)\.
+Returns true if the `replace` replaces the `original` ; used in [&lt;E&gt;SetPolicyPut](#user-content-fn-2ceb4efb)\.
 
 
 
@@ -182,7 +184,7 @@ Queries whether `data` is is `set` \.
  - Parameter: _set_  
    If null, returns null\.
  - Return:  
-   The value which [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `data` , or, if no such value exists, null\.
+   The value which [&lt;PE&gt;Equal](#user-content-typedef-557336ea) `data` , or, if no such value exists, null\.
  - Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
@@ -208,7 +210,7 @@ Reserve at least `reserve` divided by the maximum load factor, `ln 2` , space in
 
 <code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>)</code>
 
-Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET\_EQUAL` , causes the old data to be ejected\.
+Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;Equal](#user-content-typedef-557336ea) `SET\_EQUAL` , causes the old data to be ejected\.
 
  - Parameter: _set_  
    If null, returns false\.

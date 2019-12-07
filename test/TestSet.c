@@ -40,7 +40,7 @@ static void fill_int(unsigned *const x) { *x = rand(); }
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on a
  string, modified to `unsigned`. */
-static unsigned fnv_32a_str(const char *str) {
+static unsigned fnv_32a_str(const char *const str) {
 	const unsigned char *s = (const unsigned char *)str;
 	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, `FNV1_32A_INIT`. */
 	unsigned hval = 0x811c9dc5;
@@ -59,17 +59,18 @@ static int string_is_equal(const char *const a, const char *const b) {
 	return !strcmp(a, b);
 }
 /* This is to store the strings. */
-struct String { char s64[64]; };
-#define ARRAY_NAME String
-#define ARRAY_TYPE struct String
-#include "Array.h"
-static struct StringArray strings64;
+struct String { char s[12]; };
+#define POOL_NAME String
+#define POOL_TYPE struct String
+#include "Pool.h"
+static struct StringPool strings_fixed;
 static void string_fill(const char **const str) {
-	struct String *s64;
-	if(!(s64 = StringArrayNew(&strings64)))
-		{ perror("string64"); exit(EXIT_FAILURE); return; }
-	Orcish(s64->s64, sizeof s64->s64);
-	*str = s64->s64;
+	struct String *s_fixed;
+	*str = 0;
+	if(!(s_fixed = StringPoolNew(&strings_fixed)))
+		{ perror("string fixed"); exit(EXIT_FAILURE); return; }
+	Orcish(s_fixed->s, sizeof s_fixed->s);
+	*str = s_fixed->s;
 }
 #define SET_NAME String
 #define SET_TYPE const char *
@@ -79,63 +80,62 @@ static void string_fill(const char **const str) {
 #define SET_TEST &string_fill
 #include "../src/Set.h"
 
-
-#if 0
 static unsigned id_hash(const int id) { return id; }
 static int id_is_equal(const int a, const int b) { return a == b; }
-
-/* Prototype these for <fn:id_to_string>. */
-struct Boat;
-static struct Boat *id_upcast(int *);
-static const struct Boat *id_constupcast(const int *);
-static void fill_boat(struct Boat *);
-static void boat_to_string(const struct Boat *, char (*)[12]);
-
-static void id_filler(int *const id) { fill_boat(id_upcast(id)); }
 static void id_to_string(const int *const id, char (*const a)[12]) {
-	boat_to_string(id_constupcast(id), a);
+	sprintf(*a, "#%d", *id);
 }
-
-/* Code generation for `IdSet`;
- we are responsible for storing `IdSetKey`. */
-#define SET_NAME Id
+static void id_filler(int *const id) {
+	/* <http://c-faq.com/lib/randrange.html>. PHP ensures collisions > 900. */
+	*id = rand() / (RAND_MAX / 89 + 1) + 10;
+}
+#define SET_NAME JustId
 #define SET_TYPE int
 #define SET_HASH &id_hash
 #define SET_NO_CACHE
-#define SET_IS_EQUAL &id_is_equal
+#define SET_EQUAL &id_is_equal
 #define SET_TO_STRING &id_to_string
 #define SET_TEST &id_filler
 #include "../src/Set.h"
 
+/* Same as before except a parent struct we have to declare. */
+static void boat_id_to_string(const int *const id, char (*const a)[12]);
+/* Code generation for `IdSet`;
+ we are responsible for storing `IdSetElement`. */
+#define SET_NAME Id
+#define SET_TYPE int
+#define SET_HASH &id_hash
+#define SET_NO_CACHE
+#define SET_EQUAL &id_is_equal
+#define SET_TO_STRING &boat_id_to_string
+#include "../src/Set.h"
 /* Here is where we store it. */
 struct Boat {
-	struct IdSetKey id;
+	struct IdSetElement id;
 	int best_time;
 	int points;
 };
-
 /* `container_of(id)`. */
 static struct Boat *id_upcast(int *const id) {
-	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id));
+	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id.data));
 }
 /* `container_of(id)`. */
-static const struct Boat *id_constupcast(const int *const id) {
+static const struct Boat *id_const_upcast(const int *const id) {
 	return (const struct Boat *)(const void *)
-		((const char *)id - offsetof(struct Boat, id));
+		((const char *)id - offsetof(struct Boat, id.data));
 }
-
 static void boat_to_string(const struct Boat *const b, char (*const a)[12]) {
 	sprintf(*a, "#%d(%d)", b->id.data, b->points);
 }
-
+static void boat_id_to_string(const int *const id, char (*const a)[12]) {
+	boat_to_string(id_const_upcast(id), a);
+}
 static void fill_boat(struct Boat *const b) {
 	assert(b);
-	/* <http://c-faq.com/lib/randrange.html>. PHP ensures collisions > 30. */
-    b->id.data = rand() / (RAND_MAX / 30 + 1) + 1;
+    id_filler(&b->id.data);
     b->best_time = rand() / (RAND_MAX / 100 + 1) + 50;
     b->points = 151 - b->best_time;
 }
-
 /* Individual races. */
 static void print_boats(const struct Boat *const bs,
 	const size_t bs_size) {
@@ -148,28 +148,24 @@ static void print_boats(const struct Boat *const bs,
 		printf("%s%s", b ? ", " : "", a);
 	printf(" ]\n");
 }
-
 /** @implements <Id>Replace */
 static int add_up_score(int *const original, int *const replace) {
 	struct Boat *const o = id_upcast(original), *const r = id_upcast(replace);
 	o->points += r->points;
 	r->points = 0;
 	if(r->best_time < o->best_time) o->best_time = r->best_time;
-	return 0; /* Always false because we've sucked the points from `r`. */
+	return 0; /* Always false because we've sucked the points from `replace`. */
 }
-
 static void put_in_set(struct IdSet *const set, struct Boat *const b) {
 	if(!IdSetReserve(set, 1)) { perror("put_in_set"); return; }
-	IdSetPutResolve(set, &b->id, &add_up_score);
+	IdSetPolicyPut(set, &b->id, &add_up_score);
 }
-
 static void each_boat(struct Boat *const bs, const size_t bs_size,
 	void (*const action)(struct Boat *)) {
 	size_t b;
 	assert(bs);
 	for(b = 0; b < bs_size; b++) action(bs + b);
 }
-
 static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 	const size_t bs_size,
 	void (*const action)(struct IdSet *const, struct Boat *)) {
@@ -177,21 +173,21 @@ static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 	assert(bs);
 	for(b = 0; b < bs_size; b++) action(ids, bs + b);
 }
-#endif
 
 int main(void) {
-	IntSetTest();
-	StringSetTest();
-	StringArray_(&strings64);
-#if 0
 	struct Boat bs[32];
 	size_t bs_size = sizeof bs / sizeof *bs;
-	/*struct IdSet set = SET_ZERO;*/
-	IdSetTest(bs, bs_size, sizeof *bs, offsetof(struct Boat, id));
-	/*each_boat(bs, bs_size, &fill_boat);
+	struct IdSet ids = SET_ZERO;
+
+	IntSetTest();
+	StringSetTest();
+	StringPool_(&strings_fixed);
+	JustIdSetTest();
+
+	each_boat(bs, bs_size, &fill_boat);
 	print_boats(bs, bs_size);
-	each_set_boat(&set, bs, bs_size, &put_in_set);
-	printf("Final score: %s.\n", IdSetToString(&set));*/
-#endif
+	each_set_boat(&ids, bs, bs_size, &put_in_set);
+	printf("Final score: %s.\n", IdSetToString(&ids));
+
 	return EXIT_SUCCESS;
 }
