@@ -16,7 +16,7 @@
 
 
  - Parameter: SET\_NAME, SET\_TYPE  
-   `E` that satisfies `C` naming conventions when mangled; required\. For performance, this should be as close to a basic data type as possible, \(_eg_ , a pointer instead of a struct\.\)
+   `E` that satisfies `C` naming conventions when mangled; `SET\_NAME` is required\. When `SET\_TYPE` is not set, defaults to `<E>SetElement` for a hash without a type, otherwise, for performance, this should be as close to a basic data type as possible, \(_eg_ , a pointer instead of a struct\.\)
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  - Parameter: SET\_EQUAL  
@@ -30,7 +30,7 @@
  * Standard:  
    C89/90
  * Caveat:  
-   `SET\_TYPE` is actually not needed; an order without values is also super\-useful\.
+   The graph is boring\.
 
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -119,6 +119,8 @@ An `<E>Set` \. To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\.
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b4e4b20">&lt;E&gt;SetToString</a></td><td>set</td></tr>
 
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-382b20c0">&lt;E&gt;SetTest</a></td><td>parent_new, parent</td></tr>
+
 </table>
 
 
@@ -199,9 +201,9 @@ Reserve at least `reserve` divided by the maximum load factor, `ln 2` , space in
 
  - Return:  
    Success\.
- - Exceptional Return: ERANGE  
+ - Exceptional return: ERANGE  
    `reserve` plus the size would take a bigger number then could fit in a `size\_t` \.
- - Exceptional Return: realloc  
+ - Exceptional return: realloc  
 
 
 
@@ -218,7 +220,7 @@ Puts the `element` in `set` \. Adding an element with the same `E` , according t
    If null, returns false\. Should not be of a `set` because the integrity of that `set` will be compromised\.
  - Return:  
    Any ejected element or null\.
- - Exceptional Return: realloc, ERANGE  
+ - Exceptional return: realloc, ERANGE  
    There was an error with a re\-sizing\. Calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) before ensures that this does not happen\.
  - Order:  
    Average amortised &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
@@ -240,7 +242,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
    If specified, gets called on collision and only replaces it if the function returns true\. If null, doesn't do any replacement on collision\.
  - Return:  
    Any ejected element or null\.
- - Exceptional Return: realloc, ERANGE  
+ - Exceptional return: realloc, ERANGE  
    There was an error with a re\-sizing\. Calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) before ensures that this does not happen\.
  - Order:  
    Average amortised &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
@@ -269,9 +271,23 @@ Removes an element `data` from `set` \.
 Can print 2 things at once before it overwrites\. One must set `SET\_TO\_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe) to get this functionality\.
 
  - Return:  
-   Prints `set` in a static buffer\.
+   Prints `set` in a static buffer in order by bucket\.
  - Order:  
    &#920;\(1\); it has a 1024 character limit; every element takes some of it\.
+
+
+
+
+ ### <a id = "user-content-fn-382b20c0" name = "user-content-fn-382b20c0"><E>SetTest</a> ###
+
+<code>static void <strong>&lt;E&gt;SetTest</strong>(struct &lt;E&gt;SetElement *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code>
+
+The list will be tested on `stdout` \. Requires `SET\_TEST` to be a [&lt;PE&gt;Action](#user-content-typedef-9c0e506c) and `SET\_TO\_STRING` \.
+
+ - Parameter: _parent\_new_  
+   Specifies the dynamic up\-level creator of the parent `struct` \. Could be null; then testing will be done statically on an array of `E\_\(SetElement\)` and `SET\_TEST` is not allowed to go over the limits of the data type\.
+ - Parameter: _parent_  
+   The parameter passed to `parent\_new` \. Ignored if `parent\_new` is null\.
 
 
 
