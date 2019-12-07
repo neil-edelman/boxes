@@ -9,17 +9,17 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`<E>Set` is a collection of elements of type `E` , along with a hash function and equality function, that doesn't allow duplication\. Internally, it is a separately chained hash set having a maximum load factor of `ln 2` \. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in the set, the hash value cannot change\.
+`<E>Set` is a collection of elements of type `E` that doesn't allow duplication; to do this, one must supply an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. Internally, it is a simple separately chained hash set\. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in the set, the elements should not change in a way that affects their hash values\.
 
 ![Example of &lt;String&gt;Set.](image/index.png)
 
 
 
  - Parameter: SET\_NAME, SET\_TYPE  
-   `E` that satisfies `C` naming conventions when mangled; required\. For performance, this should be as close to a basic data type as possible, \(_eg_ , a pointer instead of a struct\.\)
+   `E` that satisfies `C` naming conventions when mangled; required\.
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
- - Parameter: SET\_EQUAL  
+ - Parameter: SET\_IS\_EQUAL  
    A function satisfying [&lt;PE&gt;Equal](#user-content-typedef-557336ea); required\.
  - Parameter: SET\_NO\_CACHE  
    Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. It always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it actually leads to a more balanced table\.
@@ -37,7 +37,7 @@
 
 <code>typedef unsigned(*<strong>&lt;PE&gt;Hash</strong>)(const E);</code>
 
-A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance and, when computing, take all of `E` into account\.
+A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance\.
 
 
 
@@ -195,7 +195,7 @@ Queries whether `data` is is `set` \.
 
 <code>static int <strong>&lt;E&gt;SetReserve</strong>(struct &lt;E&gt;Set *const <em>set</em>, const size_t <em>reserve</em>)</code>
 
-Reserve at least `reserve` divided by the maximum load factor, `ln 2` , space in the buckets of `set` \.
+Reserve at least `reserve` , divided by the maximum load factor, `ln 2` , space in the buckets of `set` \.
 
  - Return:  
    Success\.
@@ -210,7 +210,7 @@ Reserve at least `reserve` divided by the maximum load factor, `ln 2` , space in
 
 <code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>)</code>
 
-Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;Equal](#user-content-typedef-557336ea) `SET\_EQUAL` , causes the old data to be ejected\.
+Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;Equal](#user-content-typedef-557336ea) `SET\_IS\_EQUAL` , causes the old data to be ejected\.
 
  - Parameter: _set_  
    If null, returns false\.
