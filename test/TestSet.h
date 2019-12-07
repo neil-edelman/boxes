@@ -145,7 +145,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	struct Test {
 		struct E_(SetElement) space, *elem;
 		int is_in;
-	} test[40], *t, *t_end;
+	} test[40000], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char a[12];
@@ -187,15 +187,12 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 					- offsetof(struct Test, space)))->is_in = 0;
 			} else {
 				struct Test *sub_t, *sub_t_end;
-				PE_(to_string)(&eject->data, &a);
-				printf("Collision of %s with %s.\n", a, E_(SetToString)(&set));
-				/* Slow way. */
+				/* Slow way; we have got a one-way `test -> elem` so it
+				 necessitates a linear search if we want to clear `is_in`. */
 				for(sub_t = test, sub_t_end = t; sub_t < sub_t_end; sub_t++) {
-					const size_t sub_n = sub_t - test;
 					if(!sub_t->is_in
 						|| !PE_(equal)(eject->data, sub_t->elem->data))
 						continue;
-					printf("Found it at %lu.\n", (unsigned long)sub_n);
 					sub_t->is_in = 0;
 					break;
 				}
@@ -225,13 +222,14 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 		PE_(graph)(&set, fn);
 	}
 	printf("Testing get from set.\n");
+	/* This is more debug info.
 	printf("[ ");
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		PE_(to_string)(&t->elem->data, &a);
 		printf("%s[%lu-%s]%s", t == test ? "" : ", ",
 			(unsigned long)(t - test), t->is_in ? "yes" : "no", a);
 	}
-	printf(" ]\n");
+	printf(" ]\n");*/
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		struct E_(SetElement) *r;
 		PE_(to_string)(&t->elem->data, &a);
@@ -239,22 +237,6 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 		element = E_(SetGet)(&set, t->elem->data);
 		assert(element);
 		if(t->is_in) {
-			if(element != t->elem) {
-				struct Test *sub_t, *sub_t_end;
-				PE_(graph)(&set, "graph/" QUOTE(SET_NAME) "-error.gv");
-				PE_(to_string)(&t->elem->data, &a);
-				printf("static data %s index %lu\n", a, t - test);
-				PE_(to_string)(&element->data, &a);
-				printf("with %s with %s.\n", a, E_(SetToString)(&set));
-				for(sub_t = test, sub_t_end = t; sub_t < sub_t_end; sub_t++) {
-					const size_t sub_n = sub_t - test;
-					if(!PE_(equal)(eject->data, sub_t->elem->data)) continue;
-					printf("Found it at %lu.\n", (unsigned long)sub_n);
-					sub_t->is_in = 0;
-					break;
-				}
-				if(t == t_end) assert(0);
-			}
 			assert(element == t->elem);
 			if(rand() < RAND_MAX / 8) {
 				removed++;
