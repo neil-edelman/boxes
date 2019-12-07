@@ -36,6 +36,7 @@
  Must be defined equal to a random filler function, satisfying
  <typedef:<PE>Action>. Requires `SET_TO_STRING`.
 
+ @fixme The graph is boring.
  @std C89/90 */
 
 #include <stddef.h>	/* offsetof */
@@ -439,7 +440,7 @@ static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 /** Can print 2 things at once before it overwrites. One must set
  `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
  functionality.
- @return Prints `set` in a static buffer.
+ @return Prints `set` in a static buffer in order by bucket.
  @order \Theta(1); it has a 1024 character limit; every element takes some of
  it.
  @allow */
@@ -497,8 +498,8 @@ terminate:
 
 #endif /* print --> */
 
-#ifdef SET_TEST /* <!-- test */
-#include "../test/TestSet.h" /* need this file if one is going to run tests */
+#ifdef SET_TEST /* <!-- test: need this file. */
+#include "../test/TestSet.h" /** \include */
 #endif /* test --> */
 
 static void PE_(unused_coda)(void);

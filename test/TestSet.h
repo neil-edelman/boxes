@@ -20,7 +20,7 @@ static const PE_(Action) PE_(filler) = (SET_TEST);
 
 
 
-/** Count how many are in the {bucket}.
+/** Count how many are in the `bucket`.
  @order O(n) */
 static size_t PE_(count)(struct PE_(Bucket) *const bucket) {
 	const struct E_(SetElement) *x;
@@ -30,7 +30,8 @@ static size_t PE_(count)(struct PE_(Bucket) *const bucket) {
 	return c;
 }
 
-/* Collect stats; \cite{Welford1962Note}. */
+/** Collect stats; <Welford1962Note>, on `set` and output them to `fp` with
+ `delim`. */
 static void PE_(stats)(const struct E_(Set) *const set,
 	const char *const delim, FILE *fp) {
 	struct { size_t n, cost, max_bin; double mean, ssdm; }
@@ -65,7 +66,7 @@ static void PE_(stats)(const struct E_(Set) *const set,
 		msr.n ? 1.0 + 1.0 * msr.cost / size : NAN, delim);
 }
 
-/** Assertion function for seeing if it is in a valid state.
+/** Assertion function for seeing if `set` is in a valid state.
  @order O(|{set.bins}| + |{set.items}|) */
 static void PE_(legit)(const struct E_(Set) *const set) {
 	struct PE_(Bucket) *b, *b_end;
@@ -81,7 +82,7 @@ static void PE_(legit)(const struct E_(Set) *const set) {
 	assert(set->size == size);
 }
 
-/** Draw a graph of this {Set} to {fn} in Graphviz format.
+/** Draw a graph of this `set` to `fn` in Graphviz format.
  @order O(|{set.bins}| + |{set.items}|) */
 static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	FILE *fp;
@@ -140,12 +141,13 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	fclose(fp);
 }
 
+/** Passed `parent_new` and `parent` from <fn:<E>SetTest>. */
 static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	void *const parent) {
 	struct Test {
 		struct E_(SetElement) space, *elem;
 		int is_in;
-	} test[40000], *t, *t_end;
+	} test[4000/*0*/], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char a[12];
@@ -272,15 +274,15 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	assert(!set.buckets && !set.log_capacity && !set.size);
 }
 
-/* void *const base, const size_t size,
- const size_t width, size_t offset */
-
-/** The list will be tested on `stdout`.
+/** The list will be tested on `stdout`. Requires `SET_TEST` to be a
+ <typedef:<PE>Action> and `SET_TO_STRING`.
  @param[parent_new] Specifies the dynamic up-level creator of the parent
- `struct`. Could be null; then testing will be done statically and `SET_TEST`
- is not allowed to go over the limits of the data type.
+ `struct`. Could be null; then testing will be done statically on an array of
+ `E_(SetElement)` and `SET_TEST` is not allowed to go over the limits of the
+ data type.
  @param[parent] The parameter passed to `parent_new`. Ignored if `parent_new`
- is null. */
+ is null.
+ @allow */
 static void E_(SetTest)(struct E_(SetElement) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(SET_NAME) ">Set was created using: "
