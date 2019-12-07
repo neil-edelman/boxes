@@ -29,8 +29,6 @@
    Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` \.
  * Standard:  
    C89/90
- * Caveat:  
-   The graph is boring\.
 
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -285,7 +283,7 @@ Can print 2 things at once before it overwrites\. One must set `SET\_TO\_STRING`
 The list will be tested on `stdout` \. Requires `SET\_TEST` to be a [&lt;PE&gt;Action](#user-content-typedef-9c0e506c) and `SET\_TO\_STRING` \.
 
  - Parameter: _parent\_new_  
-   Specifies the dynamic up\-level creator of the parent `struct` \. Could be null; then testing will be done statically on an array of `E\_\(SetElement\)` and `SET\_TEST` is not allowed to go over the limits of the data type\.
+   Specifies the dynamic up\-level creator of the parent `struct` \. Could be null; then testing will be done statically on an array of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) and `SET\_TEST` is not allowed to go over the limits of the data type\.
  - Parameter: _parent_  
    The parameter passed to `parent\_new` \. Ignored if `parent\_new` is null\.
 
