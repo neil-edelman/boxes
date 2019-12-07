@@ -5,7 +5,8 @@
  and equality function, that doesn't allow duplication. Internally, it is a
  separately chained hash set having a maximum load factor of `ln 2`. It
  requires the storage of <tag:<E>SetElement>. While in the set, the
- hash value cannot change. One can use this as the key in an associative array.
+ hash value cannot change. One can use this as the key in an associative array
+ or other more exotic structures by having a parent structure.
 
  ![Example of <String>Set.](../image/index.png)
 
@@ -21,8 +22,11 @@
  A function satisfying <typedef:<PE>Equal>; required.
 
  @param[SET_NO_CACHE]
- Always calculates the hash every time and don't store it _per_ datum when the
- hash calculation is trivial, (and thus not ostensibly a good hash function.)
+ Should be used when the hash calculation is trivial to avoid storing duplicate
+ information _per_ datum. It always calculates the hash and discards it. Using
+ non-randomly-distributed data directly as a hash is not ostensibly sound, but
+ in certain situations, such as permanent auto-incrementing, the expectation
+ value of the links traversed will probably be low.
 
  @param[SET_TO_STRING]
  Optional print function implementing <typedef:<PE>ToString>; makes available
@@ -33,7 +37,6 @@
  Must be defined equal to a random filler function, satisfying
  <typedef:<PE>Action>. Requires `SET_TO_STRING`.
 
- @fixme Implement tests.
  @fixme `SET_TYPE` is actually not needed; an order without values is also
  super-useful.
  @std C89/90 */
