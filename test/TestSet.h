@@ -278,7 +278,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
  <typedef:<PE>Action> and `SET_TO_STRING`.
  @param[parent_new] Specifies the dynamic up-level creator of the parent
  `struct`. Could be null; then testing will be done statically on an array of
- `E_(SetElement)` and `SET_TEST` is not allowed to go over the limits of the
+ <tag:<E>SetElement> and `SET_TEST` is not allowed to go over the limits of the
  data type.
  @param[parent] The parameter passed to `parent_new`. Ignored if `parent_new`
  is null.
