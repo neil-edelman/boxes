@@ -22,7 +22,7 @@
  - Parameter: SET\_EQUAL  
    A function satisfying [&lt;PE&gt;Equal](#user-content-typedef-557336ea); required\.
  - Parameter: SET\_NO\_CACHE  
-   Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. It always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, such as permanent auto\-incrementing, the expectation value of the links traversed will probably be low\.
+   Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. It always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it actually leads to a more balanced table\.
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
  - Parameter: SET\_TEST  

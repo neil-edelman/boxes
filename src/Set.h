@@ -25,8 +25,7 @@
  Should be used when the hash calculation is trivial to avoid storing duplicate
  information _per_ datum. It always calculates the hash and discards it. Using
  non-randomly-distributed data directly as a hash is not ostensibly sound, but
- in certain situations, such as permanent auto-incrementing, the expectation
- value of the links traversed will probably be low.
+ in certain situations, it actually leads to a more balanced table.
 
  @param[SET_TO_STRING]
  Optional print function implementing <typedef:<PE>ToString>; makes available
