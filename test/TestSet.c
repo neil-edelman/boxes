@@ -117,12 +117,14 @@ struct Boat {
 };
 /* `container_of(id)`. */
 static struct Boat *id_upcast(int *const id) {
-	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id.data));
+	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id)
+		- offsetof(struct IdSetElement, data));
 }
 /* `container_of(id)`. */
 static const struct Boat *id_const_upcast(const int *const id) {
 	return (const struct Boat *)(const void *)
-		((const char *)id - offsetof(struct Boat, id.data));
+		((const char *)id - offsetof(struct Boat, id)
+		- offsetof(struct IdSetElement, data));
 }
 static void boat_to_string(const struct Boat *const b, char (*const a)[12]) {
 	sprintf(*a, "#%d(%d)", b->id.data, b->points);
