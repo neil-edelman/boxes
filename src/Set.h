@@ -23,9 +23,6 @@
  Optional print function implementing <typedef:<PE>ToString>; makes available
  <fn:<E>SetToString>.
 
- @param[SET_REFERENCE]
- 
-
  @param[SET_NO_CACHE]
  Should be used when the hash calculation is trivial to avoid storing duplicate
  information _per_ datum. It always calculates the hash and discards it. Using
