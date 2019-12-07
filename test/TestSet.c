@@ -37,7 +37,6 @@ static void fill_int(unsigned *const x) { *x = rand(); }
 #define SET_TEST &fill_int
 #include "../src/Set.h"
 
-struct String { char s64[64]; };
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on a
  string, modified to `unsigned`. */
@@ -52,24 +51,29 @@ static unsigned fnv_32a_str(const char *str) {
 	}
 	return hval;
 }
-static void string_to_string(const char *const str, char (*const a)[12]) {
-	strncpy(*a, str, sizeof(*a));
+static void string_to_string(const char *const*const s, char (*const a)[12]) {
+	strncpy(*a, *s, sizeof(*a));
 }
+static int string_is_equal(const char *const a, const char *const b) {
+	return !strcmp(a, b);
+}
+/* This is to store the strings. */
+struct String { char s64[64]; };
 #define ARRAY_NAME String
 #define ARRAY_TYPE struct String
 #include "Array.h"
-static struct StringArray strings;
-static void string_fill(const char *str) {
+static struct StringArray strings64;
+static void string_fill(const char **const str) {
 	struct String *s64;
-	if(!(s64 = StringArrayNew(&strings)))
+	if(!(s64 = StringArrayNew(&strings64)))
 		{ perror("string64"); exit(EXIT_FAILURE); return; }
 	Orcish(s64->s64, sizeof s64->s64);
-	str = s64->s64;
+	*str = s64->s64;
 }
 #define SET_NAME String
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
-#define SET_EQUAL &strcmp
+#define SET_EQUAL &string_is_equal
 #define SET_TO_STRING &string_to_string
 #define SET_TEST &string_fill
 #include "../src/Set.h"
@@ -175,6 +179,9 @@ static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 #endif
 
 int main(void) {
+	IntSetTest();
+	StringSetTest();
+	StringArray_(&strings64);
 #if 0
 	struct Boat bs[32];
 	size_t bs_size = sizeof bs / sizeof *bs;
@@ -185,8 +192,5 @@ int main(void) {
 	each_set_boat(&set, bs, bs_size, &put_in_set);
 	printf("Final score: %s.\n", IdSetToString(&set));*/
 #endif
-	IntSetTest();
-	/*StringSetTest();
-	StringArray_(&strings);*/
 	return EXIT_SUCCESS;
 }

@@ -280,7 +280,7 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	/* Delete any duplicate. */
 	if(set->buckets) {
 		bucket = PE_(get_bucket)(set, hash);
-		if((to_x = PE_(bucket_to)(bucket, key->data, hash))) {
+		if((to_x = PE_(bucket_to)(bucket, hash, key->data))) {
 			x = *to_x;
 			if(replace && !replace(&x->data, &key->data)) return 0;
 			*to_x = x->next, x->next = 0;
@@ -430,7 +430,7 @@ static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 	struct E_(SetElement) **to_x, *x;
 	if(!set || !set->buckets) return 0;
 	hash = PE_(hash)(data);
-	if(!(to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), data, hash)))
+	if(!(to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), hash, data)))
 		return 0;
 	x = *to_x;
 	*to_x = x->next;
