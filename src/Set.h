@@ -239,8 +239,6 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	/* It's under the critical load factor; don't need to do anything. */
 	if(log_c0 == log_c1) return 1;
 	/* Everything else is amortised. Allocate new space for an expansion. */
-	fprintf(stderr, "grow buckets %lu -> %lu for size %lu.\n",
-		(unsigned long)c0, (unsigned long)c1, size);
 	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1))) return 0;
 	set->buckets = buckets;
 	set->log_capacity = log_c1;
