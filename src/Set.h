@@ -1,23 +1,22 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- `<E>Set` is a collection of elements of type `E`, along with a hash function
- and equality function, that doesn't allow duplication. Internally, it is a
- separately chained hash set having a maximum load factor of `ln 2`. It
- requires the storage of <tag:<E>SetElement>. While in the set, the
- hash value cannot change.
+ `<E>Set` is a collection of elements of type `E` that doesn't allow
+ duplication; to do this, one must supply an equality function, `SET_IS_EQUAL`
+ <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>.
+ Internally, it is a simple separately chained hash set. It requires the
+ storage of <tag:<E>SetElement>. While in the set, the elements should not
+ change in a way that affects their hash values.
 
  ![Example of <String>Set.](../image/index.png)
 
  @param[SET_NAME, SET_TYPE]
- `E` that satisfies `C` naming conventions when mangled; required. For
- performance, this should be as close to a basic data type as possible, (_eg_,
- a pointer instead of a struct.)
+ `E` that satisfies `C` naming conventions when mangled; required.
 
  @param[SET_HASH]
  A function satisfying <typedef:<PE>Hash>; required.
 
- @param[SET_EQUAL]
+ @param[SET_IS_EQUAL]
  A function satisfying <typedef:<PE>Equal>; required.
 
  @param[SET_NO_CACHE]
@@ -55,8 +54,8 @@
 #ifndef SET_TYPE
 #error Tag SET_TYPE undefined.
 #endif
-#ifndef SET_EQUAL
-#error Function SET_EQUAL undefined.
+#ifndef SET_IS_EQUAL
+#error Function SET_IS_EQUAL undefined.
 #endif
 #ifndef SET_HASH
 #error Function SET_HASH undefined.
@@ -139,8 +138,7 @@ struct E_(Set) {
 
 
 /** A map from `E` onto `unsigned int`. Should be as close as possible to a
- discrete uniform distribution for maximum performance and, when computing,
- take all of `E` into account. */
+ discrete uniform distribution for maximum performance. */
 typedef unsigned (*PE_(Hash))(const E);
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
@@ -148,9 +146,9 @@ static const PE_(Hash) PE_(hash) = (SET_HASH);
 /** A constant equivalence relation between `E` that satisfies
  `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. */
 typedef int (*PE_(Equal))(const E, const E);
-/* Check that `SET_EQUAL` is a function implementing
+/* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PE>IsEqual>. */
-static const PE_(Equal) PE_(equal) = (SET_EQUAL);
+static const PE_(Equal) PE_(equal) = (SET_IS_EQUAL);
 
 /** Returns true if the `replace` replaces the `original`; used in
  <fn:<E>SetPolicyPut>. */
@@ -371,7 +369,7 @@ static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set,
 	return to_x ? *to_x : 0;
 }
 
-/** Reserve at least `reserve` divided by the maximum load factor, `ln 2`,
+/** Reserve at least `reserve`, divided by the maximum load factor, `ln 2`,
  space in the buckets of `set`.
  @return Success.
  @throws[ERANGE] `reserve` plus the size would take a bigger number then could
@@ -385,7 +383,7 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 }
 
 /** Puts the `element` in `set`. Adding an element with the same `E`, according
- to <typedef:<PE>Equal> `SET_EQUAL`, causes the old data to be ejected.
+ to <typedef:<PE>Equal> `SET_IS_EQUAL`, causes the old data to be ejected.
  @param[set, element] If null, returns false.
  @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.
@@ -543,7 +541,7 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef SET_NAME
 #undef SET_TYPE
 #undef SET_HASH
-#undef SET_EQUAL
+#undef SET_IS_EQUAL
 #ifdef SET_NO_CACHE /* <!-- !cache */
 #undef SET_NO_CACHE
 #endif /* !cache --> */

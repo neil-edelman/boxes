@@ -32,7 +32,7 @@ static void fill_int(unsigned *const x) { *x = rand(); }
 #define SET_NAME Int
 #define SET_TYPE unsigned
 #define SET_HASH &hash_int
-#define SET_EQUAL &equal_ints
+#define SET_IS_EQUAL &equal_ints
 #define SET_TO_STRING &int_to_string
 #define SET_TEST &fill_int
 #include "../src/Set.h"
@@ -65,7 +65,7 @@ static void string_fill(char **const pstr) {
 #define SET_NAME String
 #define SET_TYPE char *
 #define SET_HASH &fnv_32a_str
-#define SET_EQUAL &string_is_equal
+#define SET_IS_EQUAL &string_is_equal
 #define SET_TO_STRING &string_to_string
 #define SET_TEST &string_fill
 #include "../src/Set.h"
@@ -97,7 +97,7 @@ static void boat_id_filler(int *const id);
 #define SET_TYPE int
 #define SET_HASH &boat_id_hash
 #define SET_NO_CACHE
-#define SET_EQUAL &boat_id_is_equal
+#define SET_IS_EQUAL &boat_id_is_equal
 #define SET_TO_STRING &boat_id_to_string
 #define SET_TEST &boat_id_filler
 #include "../src/Set.h"
