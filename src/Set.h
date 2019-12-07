@@ -5,8 +5,7 @@
  and equality function, that doesn't allow duplication. Internally, it is a
  separately chained hash set having a maximum load factor of `ln 2`. It
  requires the storage of <tag:<E>SetElement>. While in the set, the
- hash value cannot change. One can use this as the key in an associative array
- or other more exotic structures by having a parent structure.
+ hash value cannot change.
 
  ![Example of <String>Set.](../image/index.png)
 
