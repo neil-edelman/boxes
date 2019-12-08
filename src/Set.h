@@ -7,11 +7,15 @@
  the hash function distributes elements uniformly, it allows lookup, insertion,
  and deletion, of `E`, in average \O(1).
 
- Internally, it is a simple separately chained unsigned-hash set with pointers
- as buckets. This offers some independence of sets from set elements, but cache
- performance is left up to the caller. While in a set, the elements should not
- change in a way that affects their hash values, and not be placed into other
- sets, (though a parent type could have multiple independent elements.)
+ Internally, it is a simple, separately chained, unsigned-int-hash set, with
+ buckets as pointers. It can be expanded to a hash map or associative array by
+ enclosing the `<E>SetElement` in another `struct`, as appropriate. This offers
+ some independence of sets from set elements, but cache performance is left up
+ to the caller. While in a set, the elements should not change in a way that
+ affects their hash values, and not be placed into other sets, (though a parent
+ type could have multiple independent elements.) The keys cannot be entirely
+ polymorphic across the boundary of `E` because <fn:<E>SetGet> requires `E` to
+ be instantiatable.
 
  ![Example of <String>Set.](../image/index.png)
 
@@ -30,9 +34,9 @@
  <fn:<E>SetToString>.
 
  @param[SET_PASS_POINTER]
- `SET_HASH` and `SET_IS_EQUAL` are passed `PE` which is the same as `E` except
- when `SET_PASS_POINTER` is defined, then it's `E *`. Should be used when `E`
- is a `struct` whose copying into functions is a performance issue.
+ Changes `PE` from `E` to `E *`; used in `SET_HASH` and `SET_IS_EQUAL`. Should
+ be used when `E` is a `struct` whose copying into functions is a performance
+ issue.
 
  @param[SET_NO_CACHE]
  Should be used when the hash calculation is trivial to avoid storing duplicate
@@ -158,13 +162,15 @@ struct E_(Set) {
 
 
 /** A map from `E` onto `unsigned int`. Should be as close as possible to a
- discrete uniform distribution for maximum performance. */
+ discrete uniform distribution for maximum performance. `PE` depends on
+ `SET_PASS_POINTER`. */
 typedef unsigned (*PE_(Hash))(const PE);
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
 
 /** A constant equivalence relation between `E` that satisfies
- `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. */
+ `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. `PE` depends on
+ `SET_PASS_POINTER`. */
 typedef int (*PE_(IsEqual))(const PE, const PE);
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PE>IsEqual>. */
@@ -194,7 +200,7 @@ typedef void (*PE_(Action))(E *const);
 /** @return `element`. */
 static const E *PE_(pointer)(const E *const element) { return element; }
 #else /* pointer --><!-- !pointer */
-/* @return Re-de-reference `element`. */
+/** @return Re-de-reference `element`. */
 static E PE_(pointer)(const E *const element) { return *element; }
 #endif /* !pointer --> */
 

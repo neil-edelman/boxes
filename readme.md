@@ -11,7 +11,7 @@
 
 [&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication, when supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash function distributes elements uniformly, it allows lookup, insertion, and deletion, of `E` , in average &#927;\(1\)\.
 
-Internally, it is a simple separately chained unsigned\-hash set with pointers as buckets\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. While in a set, the elements should not change in a way that affects their hash values, and not be placed into other sets, \(though a parent type could have multiple independent elements\.\)
+Internally, it is a simple, separately chained, unsigned\-int\-hash set, with buckets as pointers\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another `struct` , as appropriate\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. While in a set, the elements should not change in a way that affects their hash values, and not be placed into other sets, \(though a parent type could have multiple independent elements\.\) The keys cannot be entirely polymorphic across the boundary of `E` because [&lt;E&gt;SetGet](#user-content-fn-8d1390a0) requires `E` to be instantiatable\.
 
 ![Example of &lt;String&gt;Set.](image/index.png)
 
@@ -26,7 +26,7 @@ Internally, it is a simple separately chained unsigned\-hash set with pointers a
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
  - Parameter: SET\_PASS\_POINTER  
-   `SET\_HASH` and `SET\_IS\_EQUAL` are passed `PE` which is the same as `E` except when `SET\_PASS\_POINTER` is defined, then it's `E \*` \. Should be used when `E` is a `struct` whose copying into functions is a performance issue\.
+   Changes `PE` from `E` to `E \*` ; used in `SET\_HASH` and `SET\_IS\_EQUAL` \. Should be used when `E` is a `struct` whose copying into functions is a performance issue\.
  - Parameter: SET\_NO\_CACHE  
    Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
  - Parameter: SET\_TEST  
@@ -41,7 +41,7 @@ Internally, it is a simple separately chained unsigned\-hash set with pointers a
 
 <code>typedef unsigned(*<strong>&lt;PE&gt;Hash</strong>)(const PE);</code>
 
-A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance\.
+A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance\. `PE` depends on `SET\_PASS\_POINTER` \.
 
 
 
@@ -49,7 +49,7 @@ A map from `E` onto `unsigned int` \. Should be as close as possible to a discre
 
 <code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const PE, const PE);</code>
 
-A constant equivalence relation between `E` that satisfies `<PE>IsEqual\(a, b\) \-> <PE>Hash\(a\) == <PE>Hash\(b\)` \.
+A constant equivalence relation between `E` that satisfies `<PE>IsEqual\(a, b\) \-> <PE>Hash\(a\) == <PE>Hash\(b\)` \. `PE` depends on `SET\_PASS\_POINTER` \.
 
 
 
