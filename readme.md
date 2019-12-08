@@ -18,13 +18,15 @@ Internally, it is a simple separately chained unsigned\-hash set with pointers a
 
 
  - Parameter: SET\_NAME, SET\_TYPE  
-   `E` that satisfies `C` naming conventions when mangled and a valid type associated therewith; required\. Note that `E` is passed without pointers, so it should be a pointer or as close to an elementry data type as possible\.
+   `E` that satisfies `C` naming conventions when mangled and a valid type associated therewith; required\.
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  - Parameter: SET\_IS\_EQUAL  
    A function satisfying [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede); required\.
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
+ - Parameter: SET\_PASS\_POINTER  
+   `SET\_HASH` and `SET\_IS\_EQUAL` are passed `PE` which is the same as `E` except when `SET\_PASS\_POINTER` is defined, then it's `E \*` \. Should be used when `E` is a `struct` whose copying into functions is a performance issue\.
  - Parameter: SET\_NO\_CACHE  
    Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
  - Parameter: SET\_TEST  
@@ -37,7 +39,7 @@ Internally, it is a simple separately chained unsigned\-hash set with pointers a
 
  ### <a id = "user-content-typedef-812e78a" name = "user-content-typedef-812e78a"><PE>Hash</a> ###
 
-<code>typedef unsigned(*<strong>&lt;PE&gt;Hash</strong>)(const E);</code>
+<code>typedef unsigned(*<strong>&lt;PE&gt;Hash</strong>)(const PE);</code>
 
 A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance\.
 
@@ -45,7 +47,7 @@ A map from `E` onto `unsigned int` \. Should be as close as possible to a discre
 
  ### <a id = "user-content-typedef-c1486ede" name = "user-content-typedef-c1486ede"><PE>IsEqual</a> ###
 
-<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const E, const E);</code>
+<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const PE, const PE);</code>
 
 A constant equivalence relation between `E` that satisfies `<PE>IsEqual\(a, b\) \-> <PE>Hash\(a\) == <PE>Hash\(b\)` \.
 
@@ -179,7 +181,7 @@ Clears and removes all entries from `set` \. The capacity and memory of the hash
 
  ### <a id = "user-content-fn-8d1390a0" name = "user-content-fn-8d1390a0"><E>SetGet</a> ###
 
-<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const E <em>data</em>)</code>
+<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const PE <em>data</em>)</code>
 
 Queries whether `data` is is `set` \.
 
@@ -252,7 +254,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
 
  ### <a id = "user-content-fn-21a4ad4" name = "user-content-fn-21a4ad4"><E>SetRemove</a> ###
 
-<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetRemove</strong>(struct &lt;E&gt;Set *const <em>set</em>, const E <em>data</em>)</code>
+<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetRemove</strong>(struct &lt;E&gt;Set *const <em>set</em>, const PE <em>data</em>)</code>
 
 Removes an element `data` from `set` \.
 

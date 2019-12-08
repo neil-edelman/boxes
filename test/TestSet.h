@@ -193,8 +193,8 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 				 necessitates a linear search if we want to clear `is_in`. */
 				for(sub_t = test, sub_t_end = t; sub_t < sub_t_end; sub_t++) {
 					if(!sub_t->is_in
-						|| !PE_(equal)(eject->data, sub_t->elem->data))
-						continue;
+						|| !PE_(equal)(PE_(pointer)(&eject->data),
+						PE_(pointer)(&sub_t->elem->data))) continue;
 					sub_t->is_in = 0;
 					break;
 				}
@@ -239,21 +239,21 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 			PE_(to_string)(&t->elem->data, &a);
 			fprintf(stderr, "%lu: retrieving %s.\n", (unsigned long)n, a);
 		}
-		element = E_(SetGet)(&set, t->elem->data);
+		element = E_(SetGet)(&set, PE_(pointer)(&t->elem->data));
 		assert(element);
 		if(t->is_in) {
 			assert(element == t->elem);
 			if(rand() < RAND_MAX / 8) {
 				removed++;
-				r = E_(SetRemove)(&set, t->elem->data);
+				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->data));
 				assert(r);
-				r = E_(SetRemove)(&set, t->elem->data);
+				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->data));
 				assert(!r);
 				r = E_(SetPolicyPut)(&set, t->elem, 0);
 				assert(!r);
 				r = E_(SetPolicyPut)(&set, t->elem, 0);
 				assert(!r);
-				r = E_(SetRemove)(&set, t->elem->data);
+				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->data));
 				assert(r);
 			}
 		} else {

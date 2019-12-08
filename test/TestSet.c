@@ -76,7 +76,8 @@ struct StringElement {
 #define POOL_NAME StringElement
 #define POOL_TYPE struct StringElement
 #include "Pool.h"
-/* This is to store the strings. */
+/** This is to store the strings. We could just have string constants, but we
+ want to automate testing. */
 static struct StringSetElement *sse_from_pool(void *const vses) {
 	struct StringElementPool *const ses = vses;
 	struct StringElement *const se = StringElementPoolNew(ses);
@@ -86,6 +87,33 @@ static struct StringSetElement *sse_from_pool(void *const vses) {
 	se->sse.data = se->buffer;
 	return &se->sse;
 }
+
+struct Vec4 { int v[4]; };
+static unsigned vec4_hash(const struct Vec4 *const v4) {
+	return hash_int((unsigned)v4->v[0]) + hash_int((unsigned)v4->v[1]) +
+		hash_int((unsigned)v4->v[2]) + hash_int((unsigned)v4->v[3]);
+}
+static int vec4_is_equal(const struct Vec4 *a, const struct Vec4 *const b)
+{
+	return a->v[0] == b->v[0] && a->v[1] == b->v[1] && a->v[2] == b->v[2]
+		&& a->v[3] == b->v[3];
+}
+static void vec4_to_string(const struct Vec4 *const v4, char (*const a)[12]) {
+	snprintf(*a, sizeof *a, "(%d,%d,%d,%d)",
+		v4->v[0], v4->v[1], v4->v[2], v4->v[3]);
+}
+static void vec4_filler(struct Vec4 *const v4) {
+	size_t i;
+	for(i = 0; i < 4; i++) v4->v[i] = rand() / (RAND_MAX / 9 + 1);
+}
+#define SET_NAME Vec4
+#define SET_TYPE struct Vec4
+#define SET_PASS_POINTER
+#define SET_HASH &vec4_hash
+#define SET_IS_EQUAL &vec4_is_equal
+#define SET_TO_STRING &vec4_to_string
+#define SET_TEST &vec4_filler
+#include "../src/Set.h"
 
 static unsigned boat_id_hash(const int id) { return id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
@@ -203,6 +231,7 @@ int main(void) {
 	StringSetTest(&sse_from_pool, &ses);
 	StringElementPool_(&ses);
 	BoatPool(&boats);
+	Vec4SetTest(0, 0);
 	IdSetTest(&id_from_pool, &boats);
 	BoatPool_(&boats);
 

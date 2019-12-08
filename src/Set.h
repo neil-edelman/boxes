@@ -17,8 +17,7 @@
 
  @param[SET_NAME, SET_TYPE]
  `E` that satisfies `C` naming conventions when mangled and a valid type
- associated therewith; required. Note that `E` is passed without pointers, so
- it should be a pointer or as close to an elementry data type as possible.
+ associated therewith; required.
 
  @param[SET_HASH]
  A function satisfying <typedef:<PE>Hash>; required.
@@ -29,6 +28,11 @@
  @param[SET_TO_STRING]
  Optional print function implementing <typedef:<PE>ToString>; makes available
  <fn:<E>SetToString>.
+
+ @param[SET_PASS_POINTER]
+ `SET_HASH` and `SET_IS_EQUAL` are passed `PE` which is the same as `E` except
+ when `SET_PASS_POINTER` is defined, then it's `E *`. Should be used when `E`
+ is a `struct` whose copying into functions is a performance issue.
 
  @param[SET_NO_CACHE]
  Should be used when the hash calculation is trivial to avoid storing duplicate
@@ -96,10 +100,13 @@
 #ifdef E
 #undef E
 #endif
+#ifdef PE /* pointer-to-E */
+#undef PE
+#endif
 #ifdef E_
 #undef E_
 #endif
-#ifdef PE_
+#ifdef PE_ /* private-E */
 #undef PE_
 #endif
 #define CAT_(x, y) x ## y
@@ -112,7 +119,13 @@
 /* Check `SET_TYPE` is a valid type, whose definition is placed above
  inclusion. */
 typedef SET_TYPE PE_(Type);
+#ifdef SET_PASS_POINTER /* <!-- pointer */
+typedef PE_(Type) const* PE_(PType);
+#else /* pointer --><!-- !pointer */
+typedef PE_(Type) PE_(PType);
+#endif /* !pointer --> */
 #define E PE_(Type)
+#define PE PE_(PType)
 
 
 
@@ -146,13 +159,13 @@ struct E_(Set) {
 
 /** A map from `E` onto `unsigned int`. Should be as close as possible to a
  discrete uniform distribution for maximum performance. */
-typedef unsigned (*PE_(Hash))(const E);
+typedef unsigned (*PE_(Hash))(const PE);
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
 
 /** A constant equivalence relation between `E` that satisfies
  `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. */
-typedef int (*PE_(IsEqual))(const E, const E);
+typedef int (*PE_(IsEqual))(const PE, const PE);
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PE>IsEqual>. */
 static const PE_(IsEqual) PE_(equal) = (SET_IS_EQUAL);
@@ -177,11 +190,19 @@ typedef void (*PE_(Action))(E *const);
 
 
 
+#ifdef SET_PASS_POINTER /* <!-- pointer */
+/** @return `element`. */
+static const E *PE_(pointer)(const E *const element) { return element; }
+#else /* pointer --><!-- !pointer */
+/* @return Re-de-reference `element`. */
+static E PE_(pointer)(const E *const element) { return *element; }
+#endif /* !pointer --> */
+
 /** Gets the hash of `element`. */
 static unsigned PE_(get_hash)(struct E_(SetElement) *element) {
 	assert(element);
 #ifdef SET_NO_CACHE /* <!-- !cache */
-	return PE_(hash)(element->data);
+	return PE_(hash)(PE_(pointer)(&element->data));
 #else /* !cache --><!-- cache */
 	return element->hash;
 #endif /* cache --> */
@@ -200,14 +221,14 @@ static struct PE_(Bucket) *PE_(get_bucket)(struct E_(Set) *const set,
  @param[hash] Must match the hash of `data`.
  @return The link that points to the `data` or null. */
 static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
-	const unsigned hash, const E data) {
+	const unsigned hash, const PE data) {
 	struct E_(SetElement) **to_x, *x;
 	assert(bucket);
 	for(to_x = &bucket->first; (x = *to_x); to_x = &x->next) {
 #ifndef SET_NO_CACHE /* <!-- cache: a quick out. */
 		if(hash != x->hash) continue;
 #endif /* cache --> */
-		if(PE_(equal)(data, x->data)) return to_x;
+		if(PE_(equal)(data, PE_(pointer)(&x->data))) return to_x;
 	}
 #ifdef SET_NO_CACHE /* <!-- !cache */
 	(void)(hash);
@@ -277,14 +298,15 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	struct E_(SetElement) **to_x = 0, *x = 0;
 	unsigned hash;
 	if(!set || !element) return 0;
-	hash = PE_(hash)(element->data);
+	hash = PE_(hash)(PE_(pointer)(&element->data));
 #ifndef SET_NO_CACHE /* <!-- cache */
 	element->hash = hash;
 #endif /* cache --> */
 	/* Delete any duplicate. */
 	if(set->buckets) {
 		bucket = PE_(get_bucket)(set, hash);
-		if((to_x = PE_(bucket_to)(bucket, hash, element->data))) {
+		if((to_x = PE_(bucket_to)(bucket, hash, PE_(pointer)(&element->data))))
+		{
 			x = *to_x;
 			if(replace && !replace(&x->data, &element->data)) return 0;
 			*to_x = x->next, x->next = 0;
@@ -367,7 +389,7 @@ static size_t E_(SetSize)(const struct E_(Set) *const set) {
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
 static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set,
-	const E data) {
+	const PE data) {
 	struct E_(SetElement) **to_x;
 	unsigned hash;
 	if(!set || !set->buckets) return 0;
@@ -428,7 +450,7 @@ static struct E_(SetElement) *E_(SetPolicyPut)(struct E_(Set) *const set,
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
 static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
-	const E data) {
+	const PE data) {
 	unsigned hash;
 	struct E_(SetElement) **to_x, *x;
 	if(!set || !set->buckets) return 0;
@@ -544,6 +566,7 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef PCAT_
 #endif /* !sub --> */
 #undef E
+#undef PE
 #undef E_
 #undef PE_
 #undef SET_NAME
@@ -556,6 +579,9 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #ifdef SET_TO_STRING /* <!-- string */
 #undef SET_TO_STRING
 #endif /* string --> */
+#ifdef SET_PASS_POINTER /* <!-- !pointer */
+#undef SET_PASS_POINTER
+#endif /* !pointer --> */
 #ifdef SET_TEST /* <!-- test */
 #undef SET_TEST
 #endif /* test --> */
