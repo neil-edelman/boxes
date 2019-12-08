@@ -88,23 +88,29 @@ static struct StringSetElement *sse_from_pool(void *const vses) {
 	return &se->sse;
 }
 
-struct Vec4 { int v[4]; };
+struct Vec4 {
+	char a[2];
+	int n[2];
+};
 static unsigned vec4_hash(const struct Vec4 *const v4) {
-	return hash_int((unsigned)v4->v[0]) + hash_int((unsigned)v4->v[1]) +
-		hash_int((unsigned)v4->v[2]) + hash_int((unsigned)v4->v[3]);
+	/* Cheat a little knowing that the numbers are 0-9. */
+	return 1 * v4->n[0] + 10 * v4->n[1]
+		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a');
 }
 static int vec4_is_equal(const struct Vec4 *a, const struct Vec4 *const b)
 {
-	return a->v[0] == b->v[0] && a->v[1] == b->v[1] && a->v[2] == b->v[2]
-		&& a->v[3] == b->v[3];
+	return a->n[0] == b->n[0] && a->n[1] == b->n[1] && a->a[0] == b->a[0]
+		&& a->a[1] == b->a[1];
 }
 static void vec4_to_string(const struct Vec4 *const v4, char (*const a)[12]) {
-	snprintf(*a, sizeof *a, "(%d,%d,%d,%d)",
-		v4->v[0], v4->v[1], v4->v[2], v4->v[3]);
+	snprintf(*a, sizeof *a, "(%c,%c,%d,%d)",
+		v4->a[0], v4->a[1], v4->n[0], v4->n[1]);
 }
 static void vec4_filler(struct Vec4 *const v4) {
-	size_t i;
-	for(i = 0; i < 4; i++) v4->v[i] = rand() / (RAND_MAX / 9 + 1);
+	v4->a[0] = rand() / (RAND_MAX / 26 + 1) + 'A';
+	v4->a[1] = rand() / (RAND_MAX / 26 + 1) + 'a';
+	v4->n[0] = rand() / (RAND_MAX / 9 + 1);
+	v4->n[1] = rand() / (RAND_MAX / 9 + 1);
 }
 #define SET_NAME Vec4
 #define SET_TYPE struct Vec4
