@@ -99,8 +99,8 @@ static unsigned vec4_hash(const struct Vec4 *const v4) {
 }
 static int vec4_is_equal(const struct Vec4 *a, const struct Vec4 *const b)
 {
-	return a->n[0] == b->n[0] && a->n[1] == b->n[1] && a->a[0] == b->a[0]
-		&& a->a[1] == b->a[1];
+	return a->a[0] == b->a[0] && a->a[1] == b->a[1]
+		&& a->n[0] == b->n[0] && a->n[1] == b->n[1];
 }
 static void vec4_to_string(const struct Vec4 *const v4, char (*const a)[12]) {
 	snprintf(*a, sizeof *a, "(%c,%c,%d,%d)",
@@ -236,8 +236,8 @@ int main(void) {
 	StringElementPool(&ses);
 	StringSetTest(&sse_from_pool, &ses);
 	StringElementPool_(&ses);
-	BoatPool(&boats);
 	Vec4SetTest(0, 0);
+	BoatPool(&boats);
 	IdSetTest(&id_from_pool, &boats);
 	BoatPool_(&boats);
 
