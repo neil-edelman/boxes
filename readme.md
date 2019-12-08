@@ -9,7 +9,7 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`<E>Set` is a collection of elements of type `E` that doesn't allow duplication when supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. Internally, it is a simple separately chained hash set with pointers as buckets\. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in the set, the elements should not change in a way that affects their hash values\.
+`<E>Set` is a collection of elements of type `E` that doesn't allow duplication when supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash distributes elements uniformly, it allows lookup, insertion, and deletion in average &#927;\(1\)\. Internally, it is a simple separately chained unsigned\-hash set with pointers as buckets; in this way, cache performace is left up to the caller\. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in a set, the elements should not change in a way that affects their hash values\.
 
 ![Example of &lt;String&gt;Set.](image/index.png)
 

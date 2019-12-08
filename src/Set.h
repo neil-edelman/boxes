@@ -3,10 +3,13 @@
 
  `<E>Set` is a collection of elements of type `E` that doesn't allow
  duplication when supplied an equality function, `SET_IS_EQUAL`
- <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>.
- Internally, it is a simple separately chained hash set with pointers as
- buckets. It requires the storage of <tag:<E>SetElement>. While in the set, the
- elements should not change in a way that affects their hash values.
+ <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>. If
+ the hash distributes elements uniformly, it allows lookup, insertion, and
+ deletion in average \O(1). Internally, it is a simple separately chained
+ unsigned-hash set with pointers as buckets; in this way, cache performace is
+ left up to the caller. It requires the storage of <tag:<E>SetElement>. While
+ in a set, the elements should not change in a way that affects their hash
+ values.
 
  ![Example of <String>Set.](../image/index.png)
 
@@ -42,7 +45,7 @@
 #include <assert.h>	/* assert */
 #include <errno.h>  /* errno */
 #ifdef SET_TO_STRING /* <!-- string */
-#include <string.h> /* strlen */
+#include <string.h> /* strlen memcpy */
 #endif /* string --> */
 
 
