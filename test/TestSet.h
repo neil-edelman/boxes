@@ -147,7 +147,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	struct Test {
 		struct E_(SetElement) space, *elem;
 		int is_in;
-	} test[4000/*0*/], *t, *t_end;
+	} test[40000], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char a[12];
@@ -233,9 +233,12 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	}
 	printf(" ]\n");*/
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
+		const size_t n = t - test;
 		struct E_(SetElement) *r;
-		PE_(to_string)(&t->elem->data, &a);
-		fprintf(stderr, "Retrieving %s.\n", a);
+		if(n < 100 || (n & 0xFF) == 0) {
+			PE_(to_string)(&t->elem->data, &a);
+			fprintf(stderr, "%lu: retrieving %s.\n", (unsigned long)n, a);
+		}
 		element = E_(SetGet)(&set, t->elem->data);
 		assert(element);
 		if(t->is_in) {

@@ -137,21 +137,22 @@ static void boat_id_filler(int *const id) {
 /* Individual races. */
 static void print_boats(const struct Boat *const bs,
 	const size_t bs_size) {
+	const size_t bs_eff_size = bs_size > 1000 ? 1000 : bs_size;
 	char a[12];
 	size_t b;
 	assert(bs);
 	printf("[ ");
-	for(b = 0; b < bs_size; b++)
+	for(b = 0; b < bs_eff_size; b++)
 		boat_to_string(bs + b, &a),
 		printf("%s%s", b ? ", " : "", a);
-	printf(" ]\n");
+	printf("%s]\n", bs_size > bs_eff_size ? ",…" : " ");
 }
 /** @implements <Id>Replace */
 static int add_up_score(int *const original, int *const replace) {
 	struct Boat *const o = id_upcast(original), *const r = id_upcast(replace);
 	char a[12];
 	boat_to_string(o, &a);
-	printf("Adding %d to %s.\n", r->points, a);
+	/*printf("Adding %d to %s.\n", r->points, a); Takes too long to print. */
 	o->points += r->points;
 	r->points = 0;
 	if(r->best_time < o->best_time) o->best_time = r->best_time;
@@ -190,7 +191,7 @@ static struct IdSetElement *id_from_pool(void *const vboats) {
 
 int main(void) {
 	/* For non-automated tests. */
-	struct Boat bs[600/*00<-takes time to print*/];
+	struct Boat bs[60000/*<-takes time to print*/];
 	size_t bs_size = sizeof bs / sizeof *bs;
 	struct IdSet ids = SET_ZERO;
 	/* For automated tests. */

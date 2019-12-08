@@ -1,7 +1,7 @@
  # Set\.h #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;Equal](#user-content-typedef-557336ea), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
+ * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
  * [Struct, Union, and Enum Definitions](#user-content-tag):  [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -9,7 +9,7 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`<E>Set` is a collection of elements of type `E` that doesn't allow duplication; to do this, one must supply an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. Internally, it is a simple separately chained hash set\. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in the set, the elements should not change in a way that affects their hash values\.
+`<E>Set` is a collection of elements of type `E` that doesn't allow duplication when supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. Internally, it is a simple separately chained hash set with pointers as buckets\. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in the set, the elements should not change in a way that affects their hash values\.
 
 ![Example of &lt;String&gt;Set.](image/index.png)
 
@@ -20,11 +20,11 @@
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  - Parameter: SET\_IS\_EQUAL  
-   A function satisfying [&lt;PE&gt;Equal](#user-content-typedef-557336ea); required\.
- - Parameter: SET\_NO\_CACHE  
-   Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. It always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it actually leads to a more balanced table\.
+   A function satisfying [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede); required\.
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
+ - Parameter: SET\_NO\_CACHE  
+   Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. It always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it actually leads to a more balanced table\.
  - Parameter: SET\_TEST  
    Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` \.
  * Standard:  
@@ -41,9 +41,9 @@ A map from `E` onto `unsigned int` \. Should be as close as possible to a discre
 
 
 
- ### <a id = "user-content-typedef-557336ea" name = "user-content-typedef-557336ea"><PE>Equal</a> ###
+ ### <a id = "user-content-typedef-c1486ede" name = "user-content-typedef-c1486ede"><PE>IsEqual</a> ###
 
-<code>typedef int(*<strong>&lt;PE&gt;Equal</strong>)(const E, const E);</code>
+<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const E, const E);</code>
 
 A constant equivalence relation between `E` that satisfies `<PE>IsEqual\(a, b\) \-> <PE>Hash\(a\) == <PE>Hash\(b\)` \.
 
@@ -184,7 +184,7 @@ Queries whether `data` is is `set` \.
  - Parameter: _set_  
    If null, returns null\.
  - Return:  
-   The value which [&lt;PE&gt;Equal](#user-content-typedef-557336ea) `data` , or, if no such value exists, null\.
+   The value which [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `data` , or, if no such value exists, null\.
  - Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
@@ -210,7 +210,7 @@ Reserve at least `reserve` , divided by the maximum load factor, `ln 2` , space 
 
 <code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>)</code>
 
-Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;Equal](#user-content-typedef-557336ea) `SET\_IS\_EQUAL` , causes the old data to be ejected\.
+Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET\_IS\_EQUAL` , causes the old data to be ejected\.
 
  - Parameter: _set_  
    If null, returns false\.

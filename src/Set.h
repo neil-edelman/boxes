@@ -2,11 +2,11 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  `<E>Set` is a collection of elements of type `E` that doesn't allow
- duplication; to do this, one must supply an equality function, `SET_IS_EQUAL`
+ duplication when supplied an equality function, `SET_IS_EQUAL`
  <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>.
- Internally, it is a simple separately chained hash set. It requires the
- storage of <tag:<E>SetElement>. While in the set, the elements should not
- change in a way that affects their hash values.
+ Internally, it is a simple separately chained hash set with pointers as
+ buckets. It requires the storage of <tag:<E>SetElement>. While in the set, the
+ elements should not change in a way that affects their hash values.
 
  ![Example of <String>Set.](../image/index.png)
 
@@ -17,7 +17,7 @@
  A function satisfying <typedef:<PE>Hash>; required.
 
  @param[SET_IS_EQUAL]
- A function satisfying <typedef:<PE>Equal>; required.
+ A function satisfying <typedef:<PE>IsEqual>; required.
 
  @param[SET_TO_STRING]
  Optional print function implementing <typedef:<PE>ToString>; makes available
@@ -145,10 +145,10 @@ static const PE_(Hash) PE_(hash) = (SET_HASH);
 
 /** A constant equivalence relation between `E` that satisfies
  `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. */
-typedef int (*PE_(Equal))(const E, const E);
+typedef int (*PE_(IsEqual))(const E, const E);
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PE>IsEqual>. */
-static const PE_(Equal) PE_(equal) = (SET_IS_EQUAL);
+static const PE_(IsEqual) PE_(equal) = (SET_IS_EQUAL);
 
 /** Returns true if the `replace` replaces the `original`; used in
  <fn:<E>SetPolicyPut>. */
@@ -355,7 +355,7 @@ static size_t E_(SetSize)(const struct E_(Set) *const set) {
 
 /** Queries whether `data` is is `set`.
  @param[set] If null, returns null.
- @return The value which <typedef:<PE>Equal> `data`, or, if no such value
+ @return The value which <typedef:<PE>IsEqual> `data`, or, if no such value
  exists, null.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
@@ -383,7 +383,7 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 }
 
 /** Puts the `element` in `set`. Adding an element with the same `E`, according
- to <typedef:<PE>Equal> `SET_IS_EQUAL`, causes the old data to be ejected.
+ to <typedef:<PE>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected.
  @param[set, element] If null, returns false.
  @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.
