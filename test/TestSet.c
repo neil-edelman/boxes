@@ -224,29 +224,28 @@ static struct IdSetElement *id_from_pool(void *const vboats) {
 }
 
 int main(void) {
-	/* For non-automated tests. */
-	struct Boat bs[60000/*<-takes time to print*/];
-	size_t bs_size = sizeof bs / sizeof *bs;
-	struct IdSet ids = SET_ZERO;
-	/* For automated tests. */
-	struct BoatPool boats;
-	struct StringElementPool ses;
+	{ /* Automated tests. */
+		struct BoatPool boats;
+		struct StringElementPool ses;
 
-	IntSetTest(0, 0);
-	StringElementPool(&ses);
-	StringSetTest(&sse_from_pool, &ses);
-	StringElementPool_(&ses);
-	Vec4SetTest(0, 0);
-	BoatPool(&boats);
-	IdSetTest(&id_from_pool, &boats);
-	BoatPool_(&boats);
+		IntSetTest(0, 0);
+		StringElementPool(&ses), StringSetTest(&sse_from_pool, &ses),
+			StringElementPool_(&ses);
+		Vec4SetTest(0, 0);
+		BoatPool(&boats), IdSetTest(&id_from_pool, &boats), BoatPool_(&boats);
+	}
+	{ /* Not as automated tests. */
+		struct Boat bs[60000]; /* <- Non-trivial stack requirement. */
+		size_t bs_size = sizeof bs / sizeof *bs;
+		struct IdSet ids = SET_ZERO;
 
-	each_boat(bs, bs_size, &fill_boat);
-	printf("Boat club races individually: ");
-	print_boats(bs, bs_size);
-	printf("Now adding up:\n");
-	each_set_boat(&ids, bs, bs_size, &put_in_set);
-	printf("Final score: %s.\n", IdSetToString(&ids));
+		each_boat(bs, bs_size, &fill_boat);
+		printf("Boat club races individually: ");
+		print_boats(bs, bs_size);
+		printf("Now adding up:\n");
+		each_set_boat(&ids, bs, bs_size, &put_in_set);
+		printf("Final score: %s.\n", IdSetToString(&ids));
+	}
 
 	return EXIT_SUCCESS;
 }
