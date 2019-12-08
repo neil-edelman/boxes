@@ -1,20 +1,24 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- `<E>Set` is a collection of elements of type `E` that doesn't allow
- duplication when supplied an equality function, `SET_IS_EQUAL`
+ <tag:<E>Set> is a collection of elements of <tag:<E>SetElement> that doesn't
+ allow duplication, when supplied an equality function, `SET_IS_EQUAL`
  <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>. If
- the hash distributes elements uniformly, it allows lookup, insertion, and
- deletion in average \O(1). Internally, it is a simple separately chained
- unsigned-hash set with pointers as buckets; in this way, cache performace is
- left up to the caller. It requires the storage of <tag:<E>SetElement>. While
- in a set, the elements should not change in a way that affects their hash
- values.
+ the hash function distributes elements uniformly, it allows lookup, insertion,
+ and deletion, of `E`, in average \O(1).
+
+ Internally, it is a simple separately chained unsigned-hash set with pointers
+ as buckets. This offers some independence of sets from set elements, but cache
+ performance is left up to the caller. While in a set, the elements should not
+ change in a way that affects their hash values, and not be placed into other
+ sets, (though a parent type could have multiple independent elements.)
 
  ![Example of <String>Set.](../image/index.png)
 
  @param[SET_NAME, SET_TYPE]
- `E` that satisfies `C` naming conventions when mangled; required.
+ `E` that satisfies `C` naming conventions when mangled and a valid type
+ associated therewith; required. Note that `E` is passed without pointers, so
+ it should be a pointer or as close to an elementry data type as possible.
 
  @param[SET_HASH]
  A function satisfying <typedef:<PE>Hash>; required.
@@ -28,14 +32,14 @@
 
  @param[SET_NO_CACHE]
  Should be used when the hash calculation is trivial to avoid storing duplicate
- information _per_ datum. It always calculates the hash and discards it. Using
- non-randomly-distributed data directly as a hash is not ostensibly sound, but
- in certain situations, it actually leads to a more balanced table.
+ information _per_ datum. Enabled, it always calculates the hash and discards
+ it. Using non-randomly-distributed data directly as a hash is not ostensibly
+ sound, but in certain situations, it leads to a more balanced table.
 
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
  Must be defined equal to a random filler function, satisfying
- <typedef:<PE>Action>. Requires `SET_TO_STRING`.
+ <typedef:<PE>Action>. Requires `SET_TO_STRING` and not `NDEBUG`.
 
  @std C89/90 */
 
@@ -105,7 +109,7 @@
 #define E_(thing) CAT(SET_NAME, thing)
 #define PE_(thing) PCAT(set, PCAT(SET_NAME, thing)) /* "Private." */
 
-/* Troubles? Check `SET_TYPE` is a valid type, whose definition is placed above
+/* Check `SET_TYPE` is a valid type, whose definition is placed above
  inclusion. */
 typedef SET_TYPE PE_(Type);
 #define E PE_(Type)
@@ -385,12 +389,13 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 	return PE_(grow)(set, set->size + reserve);
 }
 
-/** Puts the `element` in `set`. Adding an element with the same `E`, according
- to <typedef:<PE>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected.
+/** Puts the `element` in `set`.
  @param[set, element] If null, returns false.
  @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.
- @return Any ejected element or null.
+ @return Adding an element with the same `E`, according to
+ <typedef:<PE>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected and
+ returned, otherwise null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
  <fn:<E>SetReserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);

@@ -9,14 +9,16 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`<E>Set` is a collection of elements of type `E` that doesn't allow duplication when supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash distributes elements uniformly, it allows lookup, insertion, and deletion in average &#927;\(1\)\. Internally, it is a simple separately chained unsigned\-hash set with pointers as buckets; in this way, cache performace is left up to the caller\. It requires the storage of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. While in a set, the elements should not change in a way that affects their hash values\.
+[&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication, when supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash function distributes elements uniformly, it allows lookup, insertion, and deletion, of `E` , in average &#927;\(1\)\.
+
+Internally, it is a simple separately chained unsigned\-hash set with pointers as buckets\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. While in a set, the elements should not change in a way that affects their hash values, and not be placed into other sets, \(though a parent type could have multiple independent elements\.\)
 
 ![Example of &lt;String&gt;Set.](image/index.png)
 
 
 
  - Parameter: SET\_NAME, SET\_TYPE  
-   `E` that satisfies `C` naming conventions when mangled; required\.
+   `E` that satisfies `C` naming conventions when mangled and a valid type associated therewith; required\. Note that `E` is passed without pointers, so it should be a pointer or as close to an elementry data type as possible\.
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  - Parameter: SET\_IS\_EQUAL  
@@ -24,9 +26,9 @@
  - Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
  - Parameter: SET\_NO\_CACHE  
-   Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. It always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it actually leads to a more balanced table\.
+   Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
  - Parameter: SET\_TEST  
-   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` \.
+   Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` and not `NDEBUG` \.
  * Standard:  
    C89/90
 
@@ -210,14 +212,14 @@ Reserve at least `reserve` , divided by the maximum load factor, `ln 2` , space 
 
 <code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>)</code>
 
-Puts the `element` in `set` \. Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET\_IS\_EQUAL` , causes the old data to be ejected\.
+Puts the `element` in `set` \.
 
  - Parameter: _set_  
    If null, returns false\.
  - Parameter: _element_  
    If null, returns false\. Should not be of a `set` because the integrity of that `set` will be compromised\.
  - Return:  
-   Any ejected element or null\.
+   Adding an element with the same `E` , according to [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET\_IS\_EQUAL` , causes the old data to be ejected and returned, otherwise null\.
  - Exceptional return: realloc, ERANGE  
    There was an error with a re\-sizing\. Calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) before ensures that this does not happen\.
  - Order:  
