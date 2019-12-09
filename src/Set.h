@@ -36,11 +36,10 @@
  issue.
 
  @param[SET_NO_CACHE]
- Should be used when the hash calculation is trivial to avoid storing duplicate
- <typedef:<PE>UInt> information _per_ datum. Enabled, it always calculates the
- hash and discards it. Using non-randomly-distributed data directly as a hash
- is not ostensibly sound, but in certain situations, it leads to a more
- balanced table.
+ Calculates the hash every time and discards it; should be used when the hash
+ calculation is trivial to avoid storing duplicate <typedef:<PE>UInt> _per_
+ datum. Using non-randomly-distributed data directly as a hash is not
+ ostensibly sound, but in certain situations, it leads to a more balanced table.
 
  @param[SET_HASH_TYPE]
  This is <typedef:<PE>UInt>. Defaults to `unsigned int`, but one can change it

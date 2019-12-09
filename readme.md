@@ -28,7 +28,7 @@ Internally, it is a simple, separately chained, hash set with a maximum load fac
  - Parameter: SET\_PASS\_POINTER  
    Changes `PE` from `E` to `E \*` ; used in `SET\_HASH` and `SET\_IS\_EQUAL` \. Should be used when `E` is a `struct` whose copying into functions is a performance issue\.
  - Parameter: SET\_NO\_CACHE  
-   Should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
+   Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) _per_ datum\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
  - Parameter: SET\_HASH\_TYPE  
    This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. Defaults to `unsigned int` , but one can change it to any unsigned integer type\. The hash map will saturate at `min\(\(\(ln 2\)/2\) &#183; range\(<PE>UInt\), \(1/8\) &#183; range\(size\_t\)\)` , at which point no new buckets can be added and the load factor will increasingly go over the maximum\.
  - Parameter: SET\_TEST  
