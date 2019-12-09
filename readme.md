@@ -1,7 +1,7 @@
  # Set\.h #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;uint](#user-content-typedef-3716ff1a), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
+ * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
  * [Struct, Union, and Enum Definitions](#user-content-tag):  [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -30,7 +30,7 @@ Internally, it is a simple, separately chained, hash set with a maximum load fac
  - Parameter: SET\_NO\_CACHE  
    Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
  - Parameter: SET\_HASH\_TYPE  
-   This is [&lt;PE&gt;uint](#user-content-typedef-3716ff1a)\. If `SET\_NO\_CACHE` is not set, stored _per_ datum\. Defaults to `unsigned` , but one can change it to any unsigned integer type\. The hash map will saturate at `range\(<PE>uint\)/\(2 &#183; ln 2\)` , at which point no new buckets can be added\.
+   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. If `SET\_NO\_CACHE` is not set, stored _per_ datum\. Defaults to `unsigned` , but one can change it to any unsigned integer type\. The hash map will saturate at `range\(<PE>UInt\)/\(2 &#183; ln 2\)` , at which point no new buckets can be added and the load factor can go over the maximum\.
  - Parameter: SET\_TEST  
    Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` and not `NDEBUG` \.
  * Standard:  
@@ -39,9 +39,9 @@ Internally, it is a simple, separately chained, hash set with a maximum load fac
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
- ### <a id = "user-content-typedef-3716ff1a" name = "user-content-typedef-3716ff1a"><PE>uint</a> ###
+ ### <a id = "user-content-typedef-54b8b39a" name = "user-content-typedef-54b8b39a"><PE>UInt</a> ###
 
-<code>typedef SET_HASH_TYPE <strong>&lt;PE&gt;uint</strong>;</code>
+<code>typedef SET_HASH_TYPE <strong>&lt;PE&gt;UInt</strong>;</code>
 
 Valid unsigned integer type; defaults to `unsigned int` \.
 
@@ -49,9 +49,9 @@ Valid unsigned integer type; defaults to `unsigned int` \.
 
  ### <a id = "user-content-typedef-812e78a" name = "user-content-typedef-812e78a"><PE>Hash</a> ###
 
-<code>typedef &lt;PE&gt;uint(*<strong>&lt;PE&gt;Hash</strong>)(const PE);</code>
+<code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const PE);</code>
 
-A map from `E` onto [&lt;PE&gt;uint](#user-content-typedef-3716ff1a), \(defaults to `unsigned` \)\. Should be as close as possible to a discrete uniform distribution for maximum performance\. \(`<PE>` is private `E` , one will have to redeclare it to match if one needs it; `PE` is, if `SET\_PASS\_POINTER` , `E \*` , and if not `E` \.\)
+A map from `E` onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), \(defaults to `unsigned` \)\. Should be as close as possible to a discrete uniform distribution for maximum performance\. \(`<PE>` is private `E` , one will have to redeclare it to match if one needs it; `PE` is, if `SET\_PASS\_POINTER` , `E \*` , and if not `E` \.\)
 
 
 
