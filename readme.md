@@ -30,7 +30,7 @@ Internally, it is a simple, separately chained, hash set with a maximum load fac
  - Parameter: SET\_NO\_CACHE  
    Should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
  - Parameter: SET\_HASH\_TYPE  
-   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. Defaults to `unsigned int` , but one can change it to any unsigned integer type\. The hash map will saturate at `\(\(ln 2\) / 2\) &#183; range\(<PE>UInt\)` , at which point no new buckets can be added and the load factor will increasingly go over the maximum\.
+   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. Defaults to `unsigned int` , but one can change it to any unsigned integer type\. The hash map will saturate at `min\(\(\(ln 2\)/2\) &#183; range\(<PE>UInt\), \(1/8\) &#183; range\(size\_t\)\)` , at which point no new buckets can be added and the load factor will increasingly go over the maximum\.
  - Parameter: SET\_TEST  
    Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` and not `NDEBUG` \.
  * Standard:  
@@ -269,7 +269,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
 Removes an element `data` from `set` \.
 
  - Return:  
-   Successfully removed element or null\. This element is free to be put into another set\.
+   Successfully ejected element or null\. This element is free to be put into another set\.
  - Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
@@ -283,9 +283,9 @@ Removes an element `data` from `set` \.
 Can print 2 things at once before it overwrites\. One must set `SET\_TO\_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe) to get this functionality\.
 
  - Return:  
-   Prints `set` in a static buffer in order by bucket\.
+   Prints `set` in a static buffer in order by bucket, \(_ie_ , unordered\.\)
  - Order:  
-   &#920;\(1\); it has a 1024 character limit; every element takes some of it\.
+   &#920;\(1\); it has a 1024 character limit; every element takes some\.
 
 
 
