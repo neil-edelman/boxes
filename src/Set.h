@@ -47,8 +47,9 @@
  @param[SET_HASH_TYPE]
  This is <typedef:<PE>UInt>. Defaults to `unsigned int`, but one can change it
  to any unsigned integer type. The hash map will saturate at
- `((ln 2) / 2) \cdot range(<PE>UInt)`, at which point no new buckets can be
- added and the load factor will increasingly go over the maximum.
+ `min(((ln 2)/2) \cdot range(<PE>UInt), (1/8) \cdot range(size_t))`, at which
+ point no new buckets can be added and the load factor will increasingly go
+ over the maximum.
 
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
@@ -65,8 +66,6 @@
 #ifdef SET_TO_STRING /* <!-- string */
 #include <string.h> /* strlen memcpy */
 #endif /* string --> */
-
-
 
 /* Check defines. */
 #ifndef SET_NAME
@@ -90,8 +89,6 @@
 #else
 #define SET_SIZE_MAX ((size_t)(-1))
 #endif
-
-
 
 /* Generics using the preprocessor;
  <http://stackoverflow.com/questions/16522341/pseudo-generics-in-c>. */
@@ -137,41 +134,12 @@ typedef PE_(Type) PE_(PType);
 #define E PE_(Type)
 #define PE PE_(PType)
 
-
-
 #ifdef SET_HASH_TYPE /* <!-- hash type */
 /** Valid unsigned integer type; defaults to `unsigned int`. */
 typedef SET_HASH_TYPE PE_(UInt);
 #else /* hash type --><!-- !hash type */
 typedef unsigned PE_(UInt);
 #endif /* !hash type --> */
-
-/** Contains `E` as the element `data` along with data internal to the set.
- Storage of the `<E>SetElement` structure is the responsibility of the
- caller. */
-struct E_(SetElement);
-struct E_(SetElement) {
-	struct E_(SetElement) *next;
-#ifndef SET_NO_CACHE /* <!-- cache */
-	PE_(UInt) hash;
-#endif /* cache --> */
-	E data;
-};
-
-/* Singly-linked list head for `buckets`. Not really needed, but
- double-pointers are confusing. */
-struct PE_(Bucket) { struct E_(SetElement) *first; };
-
-/** An `<E>Set`. To initialise, see <fn:<E>Set>. */
-struct E_(Set);
-struct E_(Set) {
-	struct PE_(Bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
-	size_t size;
-	unsigned log_capacity;
-};
-#define SET_ZERO { 0, 0, 0 }
-
-
 
 /** A map from `E` onto <typedef:<PE>UInt>, (defaults to `unsigned`). Should be
  as close as possible to a discrete uniform distribution for maximum
@@ -209,6 +177,33 @@ typedef void (*PE_(Action))(E *const);
 
 
 
+/** Contains `E` as the element `data` along with data internal to the set.
+ Storage of the `<E>SetElement` structure is the responsibility of the
+ caller. */
+struct E_(SetElement);
+struct E_(SetElement) {
+	struct E_(SetElement) *next;
+#ifndef SET_NO_CACHE /* <!-- cache */
+	PE_(UInt) hash;
+#endif /* cache --> */
+	E data;
+};
+
+/* Singly-linked list head for `buckets`. Not really needed, but
+ double-pointers are confusing, (confusion is not the intent of this file.) */
+struct PE_(Bucket) { struct E_(SetElement) *first; };
+
+/** An `<E>Set`. To initialise, see <fn:<E>Set>. */
+struct E_(Set);
+struct E_(Set) {
+	struct PE_(Bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
+	size_t size;
+	unsigned log_capacity;
+};
+#define SET_ZERO { 0, 0, 0 }
+
+
+
 #ifdef SET_PASS_POINTER /* <!-- pointer */
 /** @return `element`. */
 static const E *PE_(pointer)(const E *const element) { return element; }
@@ -229,7 +224,7 @@ static PE_(UInt) PE_(get_hash)(struct E_(SetElement) *element) {
 
 /** Retrieves a bucket from `set` given the `hash`. Only call this function if
  non-empty. May be invalidated upon a call to <fn:<PE>grow>.
- @return Given a `hash`, compute the bucket at it's index. */
+ @return Given a `hash`, compute the bucket. */
 static struct PE_(Bucket) *PE_(get_bucket)(struct E_(Set) *const set,
 	const PE_(UInt) hash) {
 	assert(set && set->buckets);
@@ -255,9 +250,10 @@ static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
 	return 0;
 }
 
-/** Private: grow the `set` until the capacity is at least `size`.
- @return Success; otherwise, `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t`.
+/** Grow the `set` until the capacity is at least `size`.
+ @return Success; otherwise, `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or doesn't
+ follow `POSIX` standard with `realloc`.
  @throws[realloc]
  @order Amortized \O(1). */
 static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
@@ -273,7 +269,7 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 		&& (PE_(UInt))-1 > 0);
 	/* `SIZE_MAX` min 65535 -> 5041 but typically much larger _st_ it becomes
 	 saturated while the load factor increases. */
-	if(size > SET_SIZE_MAX / 13) return errno = ERANGE, 0;
+	if(size > SET_SIZE_MAX / 13) return 1; /* <- Saturation `1/8 * SIZE_MAX`. */
 	/* Load factor `0.693147180559945309417232121458176568 ~= 9/13`.
 	 Starting bucket number is a power of 2 in `[8, 1 << log_limit]`. */
 	if((no_buckets = size * 13 / 9) > 1u << log_limit) {
@@ -287,16 +283,16 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	/* It's under the critical load factor; don't need to do anything. */
 	if(log_c0 == log_c1) return 1;
 	/* Everything else is amortised. Allocate new space for an expansion. */
-	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1))) return 0;
+	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1)))
+		{ if(!errno) errno = ERANGE; return 0; }
 	set->buckets = buckets;
 	set->log_capacity = log_c1;
 	/* The mask needs domain `c0 \in [1, max]`, but we want 0 for loops. */
 	mask = (c1 - 1) ^ (c0 - 1), assert(mask);
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
-	/* Initialize the new lists to contain no elements. */
+	/* Initialize second part (new) lists to contain no elements. */
 	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->first = 0;
-	/* The expectation value of the fraction of entries that needs to be
-	 rehashed is 1/2 _vs_ any other way would require a complete rehash. */
+	/* Expectation value of rehashing an entry is 1/2. */
 	for(b = buckets, b_end = buckets + c0; b < b_end; b++) {
 		PE_(UInt) hash;
 		assert(!((b - buckets) & mask));
@@ -325,24 +321,22 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 #ifndef SET_NO_CACHE /* <!-- cache */
 	element->hash = hash;
 #endif /* cache --> */
+	if(!set->buckets) goto grow_table;
 	/* Delete any duplicate. */
-	if(set->buckets) {
-		bucket = PE_(get_bucket)(set, hash);
-		if((to_x = PE_(bucket_to)(bucket, hash, PE_(pointer)(&element->data))))
-		{
-			x = *to_x;
-			if(replace && !replace(&x->data, &element->data)) return 0;
-			*to_x = x->next, x->next = 0;
-			goto erased;
-		}
-	}
-	/* New entry; the bucket may change. */
+	bucket = PE_(get_bucket)(set, hash);
+	if(!(to_x = PE_(bucket_to)(bucket, hash, PE_(pointer)(&element->data))))
+		goto grow_table;
+	x = *to_x;
+	if(replace && !replace(&x->data, &element->data)) return 0;
+	*to_x = x->next, x->next = 0;
+	goto add_element;
+grow_table:
 	assert(set->size + 1 > set->size);
-	if(!PE_(grow)(set, set->size + 1)) return 0; /* Didn't <fn:<E>SetReserve>.*/
+	/* Didn't <fn:<E>SetReserve>, now one can't tell error except `errno`. */
+	if(!PE_(grow)(set, set->size + 1)) return 0;
 	bucket = PE_(get_bucket)(set, hash);
 	set->size++;
-erased:
-	/* Stick the element on the head of the bucket. */
+add_element:
 	element->next = bucket->first, bucket->first = element;
 	return x;
 }
@@ -350,8 +344,7 @@ erased:
 /** Used in <fn:<E>SetPolicyPut> when `replace` is null; `original` and
  `replace` are ignored. */
 static int PE_(false)(E *original, E *replace) {
-	(void)(original); (void)(replace);
-	return 0;
+	(void)(original); (void)(replace); return 0;
 }
 
 /** Zeros `set`, a well-defined state. */
@@ -469,7 +462,7 @@ static struct E_(SetElement) *E_(SetPolicyPut)(struct E_(Set) *const set,
 }
 
 /** Removes an element `data` from `set`.
- @return Successfully removed element or null. This element is free to be put
+ @return Successfully ejected element or null. This element is free to be put
  into another set.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
@@ -493,9 +486,8 @@ static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 /** Can print 2 things at once before it overwrites. One must set
  `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
  functionality.
- @return Prints `set` in a static buffer in order by bucket.
- @order \Theta(1); it has a 1024 character limit; every element takes some of
- it.
+ @return Prints `set` in a static buffer in order by bucket, (_ie_, unordered.)
+ @order \Theta(1); it has a 1024 character limit; every element takes some.
  @allow */
 static const char *E_(SetToString)(const struct E_(Set) *const set) {
 	static char strings[2][1024];
@@ -579,8 +571,9 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 /* Un-define all macros. */
 #undef SET_NAME
 #undef SET_TYPE
-/* Undocumented; allows nestled inclusion so long as: `CAT`, _etc_ conform to
- the definitions, and `E` is not used. */
+/* Undocumented: allows nestled inclusion in other .h so long as `CAT`, _etc_,
+ are the same meaning, (they will be replaced with this `CAT`,) and `E`, _etc_,
+ is not used, (they will be undefined.) */
 #ifdef SET_SUBTYPE /* <!-- sub */
 #undef SET_SUBTYPE
 #else /* sub --><!-- !sub */
