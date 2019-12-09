@@ -1,7 +1,7 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- Testing and example of `Set` based on a `Stackoverflow` question.
+ Testing and example of `Set`.
 
  @std C89/90 */
 
@@ -13,29 +13,37 @@
 #include <string.h> /* strncpy */
 #include "Orcish.h"
 
+
+
+/* Simple integer set. */
+
 /** <https://stackoverflow.com/a/12996028> */
-static unsigned int hash_int(unsigned int x) {
+static unsigned int int_hash(unsigned x) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = (x >> 16) ^ x;
     return x;
 }
 /** `a` == `b`. */
-static int equal_ints(const unsigned a, const unsigned b) { return a == b; }
+static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
 /** Outputs `x` to `a`. */
 static void int_to_string(const unsigned *const x, char (*const a)[12]) {
 	snprintf(*a, sizeof *a, "%u", *x);
 }
 /** Fills `x` with random. */
-static void fill_int(unsigned *const x) { *x = rand(); }
+static void int_fill(unsigned *const x) { *x = rand(); }
 /** This defines `struct IntSet` and `struct IntSetElement`. */
 #define SET_NAME Int
 #define SET_TYPE unsigned
-#define SET_HASH &hash_int
-#define SET_IS_EQUAL &equal_ints
+#define SET_HASH &int_hash
+#define SET_IS_EQUAL &int_is_equal
 #define SET_TO_STRING &int_to_string
-#define SET_TEST &fill_int
+#define SET_TEST &int_fill
 #include "../src/Set.h"
+
+
+
+/* String set (with support in dynamically generated pool.) */
 
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on a
@@ -51,16 +59,19 @@ static unsigned fnv_32a_str(char *const str) {
 	}
 	return hval;
 }
+/** `a` == `b` */
+static int string_is_equal(char *const a, char *const b) {
+	return !strcmp(a, b);
+}
+/** Copies `s` to `a`. */
 static void string_to_string(char *const*const s, char (*const a)[12]) {
 	strncpy(*a, *s, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-static int string_is_equal(char *const a, char *const b) {
-	return !strcmp(a, b);
-}
-#define MAX_STRING 12
+#define STRBUF 12
+/** Automatic random naming for test. */
 static void string_fill(char **const pstr) {
-	Orcish(*pstr, MAX_STRING);
+	Orcish(*pstr, STRBUF);
 }
 #define SET_NAME String
 #define SET_TYPE char *
@@ -69,15 +80,15 @@ static void string_fill(char **const pstr) {
 #define SET_TO_STRING &string_to_string
 #define SET_TEST &string_fill
 #include "../src/Set.h"
+/* Auto-naming details. */
 struct StringElement {
 	struct StringSetElement sse;
-	char buffer[MAX_STRING];
+	char buffer[STRBUF];
 };
 #define POOL_NAME StringElement
 #define POOL_TYPE struct StringElement
 #include "Pool.h"
-/** This is to store the strings. We could just have string constants, but we
- want to automate testing. */
+/** This is to store the strings. */
 static struct StringSetElement *sse_from_pool(void *const vses) {
 	struct StringElementPool *const ses = vses;
 	struct StringElement *const se = StringElementPoolNew(ses);
@@ -88,6 +99,10 @@ static struct StringSetElement *sse_from_pool(void *const vses) {
 	return &se->sse;
 }
 
+
+
+/* Vector; used to test `SET_PASS_POINTER`. */
+
 struct Vec4 {
 	char a[2];
 	int n[2];
@@ -97,8 +112,7 @@ static unsigned vec4_hash(const struct Vec4 *const v4) {
 	return 1 * v4->n[0] + 10 * v4->n[1]
 		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a');
 }
-static int vec4_is_equal(const struct Vec4 *a, const struct Vec4 *const b)
-{
+static int vec4_is_equal(const struct Vec4 *a, const struct Vec4 *const b) {
 	return a->a[0] == b->a[0] && a->a[1] == b->a[1]
 		&& a->n[0] == b->n[0] && a->n[1] == b->n[1];
 }
@@ -121,6 +135,11 @@ static void vec4_filler(struct Vec4 *const v4) {
 #define SET_TEST &vec4_filler
 #include "../src/Set.h"
 
+
+
+/* Boats; example of a hash map. In general, one has to declare before
+ defining. URL fixme */
+
 static unsigned boat_id_hash(const int id) { return id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
 static void boat_id_to_string(const int *const id, char (*const a)[12]);
@@ -130,6 +149,7 @@ static void boat_id_filler(int *const id);
 #define SET_NAME Id
 #define SET_TYPE int
 #define SET_HASH &boat_id_hash
+/* Don't need two `int id; unsigned hash = id;` per datum. */
 #define SET_NO_CACHE
 #define SET_IS_EQUAL &boat_id_is_equal
 #define SET_TO_STRING &boat_id_to_string
@@ -158,9 +178,11 @@ static void boat_to_string(const struct Boat *const b, char (*const a)[12]) {
 static void boat_id_to_string(const int *const id, char (*const a)[12]) {
 	boat_to_string(id_const_upcast(id), a);
 }
+/** <http://c-faq.com/lib/randrange.html>. Pigeon-hole principle ensures
+ collisions > 90; this is good because we want them to be involved in
+ several races. */
 static void fill_boat(struct Boat *const b) {
 	assert(b);
-	/* <http://c-faq.com/lib/randrange.html>. PHP ensures collisions > 900. */
 	b->id.data = rand() / (RAND_MAX / 89 + 1) + 10;
     b->best_time = rand() / (RAND_MAX / 100 + 1) + 50;
     b->points = 151 - b->best_time;
@@ -209,12 +231,10 @@ static void each_set_boat(struct IdSet *const ids, struct Boat *const bs,
 	assert(bs);
 	for(b = 0; b < bs_size; b++) action(ids, bs + b);
 }
-
 /* Dynamic memory pool for storing boats, `BoatPool`. */
 #define POOL_NAME Boat
 #define POOL_TYPE struct Boat
 #include "Pool.h"
-
 /** Parent-type for testing. */
 static struct IdSetElement *id_from_pool(void *const vboats) {
 	struct BoatPool *const boats = vboats;
@@ -235,7 +255,7 @@ int main(void) {
 		BoatPool(&boats), IdSetTest(&id_from_pool, &boats), BoatPool_(&boats);
 	}
 	{ /* Not as automated tests. */
-		struct Boat bs[60000]; /* <- Non-trivial stack requirement. */
+		struct Boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
 		size_t bs_size = sizeof bs / sizeof *bs;
 		struct IdSet ids = SET_ZERO;
 

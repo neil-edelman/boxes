@@ -134,9 +134,8 @@ typedef PE_(Type) PE_(PType);
 
 
 /** Contains `E` as the element `data` along with data internal to the set.
- Storage of the `<E>SetElement` structure is the responsibility of the caller;
- it could be one part of a more complex super-structure, (thus using it as a
- hash table, for instance.) */
+ Storage of the `<E>SetElement` structure is the responsibility of the
+ caller. */
 struct E_(SetElement);
 struct E_(SetElement) {
 	struct E_(SetElement) *next;
@@ -162,8 +161,9 @@ struct E_(Set) {
 
 
 /** A map from `E` onto `unsigned int`. Should be as close as possible to a
- discrete uniform distribution for maximum performance. `PE` depends on
- `SET_PASS_POINTER`. */
+ discrete uniform distribution for maximum performance. (`<PE>` is private `E`,
+ one will have to redeclare it to match if one needs it; `PE` is maybe
+ pointer-to-`E`, depending on `SET_PASS_POINTER`.) */
 typedef unsigned (*PE_(Hash))(const PE);
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);

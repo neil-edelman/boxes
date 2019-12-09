@@ -41,7 +41,7 @@ Internally, it is a simple, separately chained, unsigned\-int\-hash set, with bu
 
 <code>typedef unsigned(*<strong>&lt;PE&gt;Hash</strong>)(const PE);</code>
 
-A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance\. `PE` depends on `SET\_PASS\_POINTER` \.
+A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance\. \(`<PE>` is private `E` , one will have to redeclare it to match if one needs it; `PE` is maybe pointer\-to\-`E` , depending on `SET\_PASS\_POINTER` \.\)
 
 
 
@@ -83,7 +83,7 @@ Used for `SET\_TEST` \.
 
 <code>struct <strong>&lt;E&gt;SetElement</strong>;</code>
 
-Contains `E` as the element `data` along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller; it could be one part of a more complex super\-structure, \(thus using it as a hash table, for instance\.\)
+Contains `E` as the element `data` along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller\.
 
 
 
