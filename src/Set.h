@@ -2,19 +2,18 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  <tag:<E>Set> is a collection of elements of <tag:<E>SetElement> that doesn't
- allow duplication, when supplied an equality function, `SET_IS_EQUAL`
+ allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
  <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>. If
  the hash function distributes elements uniformly, it allows lookup, insertion,
  and deletion, of `E`, in average \O(1).
 
  Internally, it is a simple, separately chained, hash set with a maximum load
- factor of `ln 2` and power-of-two resizes, with buckets as pointers. This
- offers some independence of sets from set elements, but cache performance is
- left up to the caller. It can be expanded to a hash map or associative array
- by enclosing the `<E>SetElement` in another parent `struct`, as appropriate.
- While in a set, the elements should not change in a way that affects their
- hash values. The keys cannot be entirely polymorphic across the boundary of
- `E` because <fn:<E>SetGet> requires `E` to be instantiatable.
+ factor of `ln 2`, and power-of-two resizes, with buckets as pointers,
+ containing `E`. This offers some independence of sets from set elements, but
+ cache performance is left up to the caller. It can be expanded to a hash map
+ or associative array by enclosing the `<E>SetElement` in another parent
+ `struct`, as appropriate. While in a set, the elements should not change in a
+ way that affects their hash values.
 
  ![Example of <String>Set.](../image/index.png)
 

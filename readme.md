@@ -9,9 +9,9 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-[&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication, when supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash function distributes elements uniformly, it allows lookup, insertion, and deletion, of `E` , in average &#927;\(1\)\.
+[&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication; it must be supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash function distributes elements uniformly, it allows lookup, insertion, and deletion, of `E` , in average &#927;\(1\)\.
 
-Internally, it is a simple, separately chained, hash set with a maximum load factor of `ln 2` and power\-of\-two resizes, with buckets as pointers\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another parent `struct` , as appropriate\. While in a set, the elements should not change in a way that affects their hash values\. The keys cannot be entirely polymorphic across the boundary of `E` because [&lt;E&gt;SetGet](#user-content-fn-8d1390a0) requires `E` to be instantiatable\.
+Internally, it is a simple, separately chained, hash set with a maximum load factor of `ln 2` , and power\-of\-two resizes, with buckets as pointers, containing `E` \. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another parent `struct` , as appropriate\. While in a set, the elements should not change in a way that affects their hash values\.
 
 ![Example of &lt;String&gt;Set.](image/index.png)
 
