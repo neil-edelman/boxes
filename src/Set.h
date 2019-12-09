@@ -8,12 +8,11 @@
  and deletion, of `E`, in average \O(1).
 
  Internally, it is a simple, separately chained, hash set with a maximum load
- factor of `ln 2`, and power-of-two resizes, with buckets as pointers,
- containing `E`. This offers some independence of sets from set elements, but
- cache performance is left up to the caller. It can be expanded to a hash map
- or associative array by enclosing the `<E>SetElement` in another parent
- `struct`, as appropriate. While in a set, the elements should not change in a
- way that affects their hash values.
+ factor of `ln 2`, and power-of-two resizes, with buckets as pointers. This
+ offers some independence of sets from set elements, but cache performance is
+ left up to the caller. It can be expanded to a hash map or associative array
+ by enclosing the `<E>SetElement` in another `struct`, as appropriate. While in
+ a set, the elements should not change in a way that affects their hash values.
 
  ![Example of <String>Set.](../image/index.png)
 
