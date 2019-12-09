@@ -9,7 +9,7 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-[&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication; it must be supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash function distributes elements uniformly, it allows lookup, insertion, and deletion, of [&lt;PE&gt;Type](#user-content-tag-11e62996), in average &#927;\(1\)\.
+[&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication; it must be supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash function distributes elements uniformly, it allows lookup, insertion, and deletion, of [&lt;PE&gt;Type](#user-content-typedef-11e62996), in average &#927;\(1\)\.
 
 Internally, it is a simple, separately chained, hash set with a maximum load factor of `ln 2` , and power\-of\-two resizes, with buckets as pointers\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another `struct` , as appropriate\. While in a set, the elements should not change in a way that affects their hash values\.
 
@@ -18,7 +18,7 @@ Internally, it is a simple, separately chained, hash set with a maximum load fac
 
 
  - Parameter: SET\_NAME, SET\_TYPE  
-   `<E>` that satisfies `C` naming conventions when mangled and a valid [&lt;PE&gt;Type](#user-content-typedef-11e62996) associated therewith; required\. `<PE>` is private, whose names are prefixed in a manner to avoid collisons; one should re\-define them to use\.
+   `<E>` that satisfies `C` naming conventions when mangled and a valid [&lt;PE&gt;Type](#user-content-typedef-11e62996) associated therewith; required\. `<PE>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  - Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  - Parameter: SET\_IS\_EQUAL  
@@ -67,7 +67,7 @@ Valid unsigned integer type\. The hash map will saturate at `min\(\(\(ln 2\)/2\)
 
 <code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;FnType);</code>
 
-A map from [&lt;PE&gt;FnType](#user-content-tag-1e0d342a) onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), \(defaults to `unsigned` \.\) Should be as close as possible to a discrete uniform distribution for maximum performance\.
+A map from [&lt;PE&gt;FnType](#user-content-typedef-1e0d342a) onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), \(defaults to `unsigned` \.\) Should be as close as possible to a discrete uniform distribution for maximum performance\.
 
 
 
@@ -91,7 +91,7 @@ Returns true if the `replace` replaces the `original` ; used in [&lt;E&gt;SetPol
 
 <code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code>
 
-Responsible for turning [&lt;PE&gt;Type](#user-content-tag-11e62996) \(the first argument\) into a maximum 11\-`char` string \(the second\.\)
+Responsible for turning [&lt;PE&gt;Type](#user-content-typedef-11e62996) \(the first argument\) into a maximum 11\-`char` string \(the second\.\)
 
 
 
@@ -109,7 +109,7 @@ Used for `SET\_TEST` \.
 
 <code>struct <strong>&lt;E&gt;SetElement</strong>;</code>
 
-Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) `data` along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller\.
+Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as an element `data` , along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller\.
 
 
 
