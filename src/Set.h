@@ -46,8 +46,8 @@
  @param[SET_HASH_TYPE]
  This is <typedef:<PE>UInt>. If `SET_NO_CACHE` is not set, stored _per_ datum.
  Defaults to `unsigned`, but one can change it to any unsigned integer type.
- The hash map will saturate at `range(<PE>UInt)/(2 \cdot ln 2)`, at which point
- no new buckets can be added and the load factor can go over the maximum.
+ The hash map will saturate at `((ln 2) / 2) \cdot range(<PE>UInt)`, at which
+ point no new buckets can be added and the load factor can go over the maximum.
 
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
@@ -263,21 +263,21 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	struct PE_(Bucket) *buckets, *b, *b_end, *new_b;
 	struct E_(SetElement) **to_x, *x;
 	const unsigned log_c0 = set->log_capacity,
-		log_limit = sizeof(PE_(UInt)) * 8;
+		log_limit = sizeof(PE_(UInt)) * 8 - 1;
 	unsigned log_c1;
 	PE_(UInt) c0 = 1 << log_c0, c1, mask;
 	size_t no_buckets;
 	/* One did set `<PE>UInt` to an unsigned type, right? */
-	assert(set && c0 && log_c0 < log_limit && (log_c0 >= 3 || !log_c0)
+	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
 		&& (PE_(UInt))-1 > 0);
 	/* `SIZE_MAX` min 65535 -> 5041 but typically much larger _st_ it becomes
 	 saturated while the load factor increases. */
 	if(size > SET_SIZE_MAX / 13) return errno = ERANGE, 0;
 	/* Load factor `0.693147180559945309417232121458176568 ~= 9/13`.
-	 Starting bucket number is a power of 2 in `[8, 1 << (log_limit - 1)]`. */
-	if((no_buckets = size * 13 / 9) > 1u << (log_limit - 1)) {
-		log_c1 = log_limit - 1;
-		c1 = 1 << (log_limit - 1);
+	 Starting bucket number is a power of 2 in `[8, 1 << log_limit]`. */
+	if((no_buckets = size * 13 / 9) > 1u << log_limit) {
+		log_c1 = log_limit;
+		c1 = 1 << log_limit;
 	} else {
 		if(log_c0 < 3) log_c1 = 3u,     c1 = 8u;
 		else           log_c1 = log_c0, c1 = c0;
@@ -369,10 +369,10 @@ static void E_(Set_)(struct E_(Set) *const set) {
 	PE_(set)(set);
 }
 
-/** Initialises `set` to be take no memory and be in an empty state. If it is
- `static` data, then it is initialised by default. Alternatively, assigning
- `{0}` (`C99`+) or `SET_ZERO` as the initialiser also puts it in an empty
- state. Calling this on an active set will cause memory leaks.
+/** Initialises `set` to be take no memory and be in an empty state.
+ Alternatively, assigning `{0}` (`C99`+) or `SET_ZERO` as the initialiser, or
+ being part of `static` data, also puts it in an empty state. Calling this on
+ an active set will cause memory leaks.
  @param[set] If null, does nothing.
  @order \Theta(1)
  @allow */

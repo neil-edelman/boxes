@@ -30,7 +30,7 @@ Internally, it is a simple, separately chained, hash set with a maximum load fac
  - Parameter: SET\_NO\_CACHE  
    Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
  - Parameter: SET\_HASH\_TYPE  
-   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. If `SET\_NO\_CACHE` is not set, stored _per_ datum\. Defaults to `unsigned` , but one can change it to any unsigned integer type\. The hash map will saturate at `range\(<PE>UInt\)/\(2 &#183; ln 2\)` , at which point no new buckets can be added and the load factor can go over the maximum\.
+   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. If `SET\_NO\_CACHE` is not set, stored _per_ datum\. Defaults to `unsigned` , but one can change it to any unsigned integer type\. The hash map will saturate at `\(\(ln 2\) / 2\) &#183; range\(<PE>UInt\)` , at which point no new buckets can be added and the load factor can go over the maximum\.
  - Parameter: SET\_TEST  
    Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` and not `NDEBUG` \.
  * Standard:  
@@ -151,7 +151,7 @@ Destructor for `set` \. After, it takes no memory and is in an empty state\.
 
 <code>static void <strong>&lt;E&gt;Set</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Initialises `set` to be take no memory and be in an empty state\. If it is `static` data, then it is initialised by default\. Alternatively, assigning `\{0\}` \(`C99` \+\) or `SET\_ZERO` as the initialiser also puts it in an empty state\. Calling this on an active set will cause memory leaks\.
+Initialises `set` to be take no memory and be in an empty state\. Alternatively, assigning `\{0\}` \(`C99` \+\) or `SET\_ZERO` as the initialiser, or being part of `static` data, also puts it in an empty state\. Calling this on an active set will cause memory leaks\.
 
  - Parameter: _set_  
    If null, does nothing\.
