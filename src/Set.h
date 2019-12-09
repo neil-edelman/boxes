@@ -511,7 +511,7 @@ static const char *E_(SetToString)(const struct E_(Set) *const set) {
 			 might be a strict aliasing violation, (`C++` it is.) */
 			PE_(to_string)(&x->data, (char (*)[12])s);
 			for(i = 0; *s != '\0' && i < 12; s++, i++);
-			/* No space to guarantee another element; terminate by ellipsis. */
+			/* No greedy guarantee another element; terminate by ellipsis. */
 			if((size_t)(s - string) > string_size
 			   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
 			x = x->next;
@@ -560,8 +560,7 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef SET_NAME
 #undef SET_TYPE
 /* Undocumented: allows nestled inclusion in other .h so long as `CAT`, _etc_,
- are the same meaning, (they will be replaced with this `CAT`,) and `E_`,
- _etc_, are not defined. */
+ are the same meaning and `E_`, _etc_, are not clobbered. */
 #ifdef SET_SUBTYPE /* <!-- sub */
 #undef SET_SUBTYPE
 #else /* sub --><!-- !sub */
