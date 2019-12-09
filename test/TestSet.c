@@ -153,8 +153,11 @@ static void vec4_filler(struct Vec4 *const v4) {
 
 
 
-/* Boats; example of a hash map. In general, one has to declare before
- defining. URL fixme */
+/* Boats; example of a hash map to solve
+ [this problem](https://stackoverflow.com/q/59091226/2472827). In general, one
+ has to declare before defining if one wants a hash map because the
+ `<E>SetElement` is not defined until after, (or one could cast the first
+ element.) */
 
 static unsigned boat_id_hash(const int id) { return id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
