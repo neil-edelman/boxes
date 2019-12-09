@@ -1,7 +1,7 @@
  # Set\.h #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
+ * [Typedef Aliases](#user-content-typedef):  [&lt;PE&gt;uint](#user-content-typedef-3716ff1a), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
  * [Struct, Union, and Enum Definitions](#user-content-tag):  [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -11,7 +11,7 @@
 
 [&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication, when supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash function distributes elements uniformly, it allows lookup, insertion, and deletion, of `E` , in average &#927;\(1\)\.
 
-Internally, it is a simple, separately chained, unsigned\-int\-hash set, with buckets as pointers\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another `struct` , as appropriate\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. While in a set, the elements should not change in a way that affects their hash values, and not be placed into other sets, \(though a parent type could have multiple independent elements\.\) The keys cannot be entirely polymorphic across the boundary of `E` because [&lt;E&gt;SetGet](#user-content-fn-8d1390a0) requires `E` to be instantiatable\.
+Internally, it is a simple, separately chained, hash set with a maximum load factor of `ln 2` and power\-of\-two resizes, with buckets as pointers\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another parent `struct` , as appropriate\. While in a set, the elements should not change in a way that affects their hash values\. The keys cannot be entirely polymorphic across the boundary of `E` because [&lt;E&gt;SetGet](#user-content-fn-8d1390a0) requires `E` to be instantiatable\.
 
 ![Example of &lt;String&gt;Set.](image/index.png)
 
@@ -29,6 +29,8 @@ Internally, it is a simple, separately chained, unsigned\-int\-hash set, with bu
    Changes `PE` from `E` to `E \*` ; used in `SET\_HASH` and `SET\_IS\_EQUAL` \. Should be used when `E` is a `struct` whose copying into functions is a performance issue\.
  - Parameter: SET\_NO\_CACHE  
    Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
+ - Parameter: SET\_HASH\_TYPE  
+   This is [&lt;PE&gt;uint](#user-content-typedef-3716ff1a)\. If `SET\_NO\_CACHE` is not set, stored _per_ datum\. Defaults to `unsigned` , but one can change it to any unsigned integer type\. The hash map will saturate at `range\(<PE>uint\)/\(2 &#183; ln 2\)` , at which point no new buckets can be added\.
  - Parameter: SET\_TEST  
    Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` and not `NDEBUG` \.
  * Standard:  
@@ -37,11 +39,19 @@ Internally, it is a simple, separately chained, unsigned\-int\-hash set, with bu
 
  ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
+ ### <a id = "user-content-typedef-3716ff1a" name = "user-content-typedef-3716ff1a"><PE>uint</a> ###
+
+<code>typedef SET_HASH_TYPE <strong>&lt;PE&gt;uint</strong>;</code>
+
+Valid unsigned integer type; defaults to `unsigned int` \.
+
+
+
  ### <a id = "user-content-typedef-812e78a" name = "user-content-typedef-812e78a"><PE>Hash</a> ###
 
-<code>typedef unsigned(*<strong>&lt;PE&gt;Hash</strong>)(const PE);</code>
+<code>typedef &lt;PE&gt;uint(*<strong>&lt;PE&gt;Hash</strong>)(const PE);</code>
 
-A map from `E` onto `unsigned int` \. Should be as close as possible to a discrete uniform distribution for maximum performance\. \(`<PE>` is private `E` , one will have to redeclare it to match if one needs it; `PE` is maybe pointer\-to\-`E` , depending on `SET\_PASS\_POINTER` \.\)
+A map from `E` onto [&lt;PE&gt;uint](#user-content-typedef-3716ff1a), \(defaults to `unsigned` \)\. Should be as close as possible to a discrete uniform distribution for maximum performance\. \(`<PE>` is private `E` , one will have to redeclare it to match if one needs it; `PE` is, if `SET\_PASS\_POINTER` , `E \*` , and if not `E` \.\)
 
 
 
@@ -199,7 +209,7 @@ Queries whether `data` is is `set` \.
 
 <code>static int <strong>&lt;E&gt;SetReserve</strong>(struct &lt;E&gt;Set *const <em>set</em>, const size_t <em>reserve</em>)</code>
 
-Reserve at least `reserve` , divided by the maximum load factor, `ln 2` , space in the buckets of `set` \.
+Reserve at least `reserve` , divided by the maximum load factor, space in the buckets of `set` \.
 
  - Return:  
    Success\.
@@ -259,7 +269,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
 Removes an element `data` from `set` \.
 
  - Return:  
-   Successfully removed element or null\.
+   Successfully removed element or null\. This element is free to be put into another set\.
  - Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 

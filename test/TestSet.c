@@ -43,6 +43,22 @@ static void int_fill(unsigned *const x) { *x = rand(); }
 
 
 
+/* Used to test `SET_HASH_TYPE`. */
+
+/** This is probably not the greatest hash function. */
+static unsigned char charint_hash(unsigned x) { return x; }
+/** This defines `struct IntSet` and `struct IntSetElement`. */
+#define SET_NAME CharInt
+#define SET_TYPE unsigned
+#define SET_HASH_TYPE unsigned char
+#define SET_HASH &charint_hash
+#define SET_IS_EQUAL &int_is_equal
+#define SET_TO_STRING &int_to_string
+#define SET_TEST &int_fill
+#include "../src/Set.h"
+
+
+
 /* String set (with support in dynamically generated pool.) */
 
 /** Perform a 32 bit
@@ -249,6 +265,7 @@ int main(void) {
 		struct StringElementPool ses;
 
 		IntSetTest(0, 0);
+		CharIntSetTest(0, 0);
 		StringElementPool(&ses), StringSetTest(&sse_from_pool, &ses),
 			StringElementPool_(&ses);
 		Vec4SetTest(0, 0);

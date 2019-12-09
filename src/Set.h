@@ -7,15 +7,14 @@
  the hash function distributes elements uniformly, it allows lookup, insertion,
  and deletion, of `E`, in average \O(1).
 
- Internally, it is a simple, separately chained, unsigned-int-hash set, with
- buckets as pointers. It can be expanded to a hash map or associative array by
- enclosing the `<E>SetElement` in another `struct`, as appropriate. This offers
- some independence of sets from set elements, but cache performance is left up
- to the caller. While in a set, the elements should not change in a way that
- affects their hash values, and not be placed into other sets, (though a parent
- type could have multiple independent elements.) The keys cannot be entirely
- polymorphic across the boundary of `E` because <fn:<E>SetGet> requires `E` to
- be instantiatable.
+ Internally, it is a simple, separately chained, hash set with a maximum load
+ factor of `ln 2` and power-of-two resizes, with buckets as pointers. This
+ offers some independence of sets from set elements, but cache performance is
+ left up to the caller. It can be expanded to a hash map or associative array
+ by enclosing the `<E>SetElement` in another parent `struct`, as appropriate.
+ While in a set, the elements should not change in a way that affects their
+ hash values. The keys cannot be entirely polymorphic across the boundary of
+ `E` because <fn:<E>SetGet> requires `E` to be instantiatable.
 
  ![Example of <String>Set.](../image/index.png)
 
@@ -43,6 +42,12 @@
  information _per_ datum. Enabled, it always calculates the hash and discards
  it. Using non-randomly-distributed data directly as a hash is not ostensibly
  sound, but in certain situations, it leads to a more balanced table.
+
+ @param[SET_HASH_TYPE]
+ This is <typedef:<PE>UInt>. If `SET_NO_CACHE` is not set, stored _per_ datum.
+ Defaults to `unsigned`, but one can change it to any unsigned integer type.
+ The hash map will saturate at `range(<PE>UInt)/(2 \cdot ln 2)`, at which point
+ no new buckets can be added and the load factor can go over the maximum.
 
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
@@ -133,6 +138,13 @@ typedef PE_(Type) PE_(PType);
 
 
 
+#ifdef SET_HASH_TYPE /* <!-- hash type */
+/** Valid unsigned integer type; defaults to `unsigned int`. */
+typedef SET_HASH_TYPE PE_(UInt);
+#else /* hash type --><!-- !hash type */
+typedef unsigned PE_(UInt);
+#endif /* !hash type --> */
+
 /** Contains `E` as the element `data` along with data internal to the set.
  Storage of the `<E>SetElement` structure is the responsibility of the
  caller. */
@@ -140,7 +152,7 @@ struct E_(SetElement);
 struct E_(SetElement) {
 	struct E_(SetElement) *next;
 #ifndef SET_NO_CACHE /* <!-- cache */
-	unsigned hash;
+	PE_(UInt) hash;
 #endif /* cache --> */
 	E data;
 };
@@ -160,11 +172,11 @@ struct E_(Set) {
 
 
 
-/** A map from `E` onto `unsigned int`. Should be as close as possible to a
- discrete uniform distribution for maximum performance. (`<PE>` is private `E`,
- one will have to redeclare it to match if one needs it; `PE` is maybe
- pointer-to-`E`, depending on `SET_PASS_POINTER`.) */
-typedef unsigned (*PE_(Hash))(const PE);
+/** A map from `E` onto <typedef:<PE>UInt>, (defaults to `unsigned`). Should be
+ as close as possible to a discrete uniform distribution for maximum
+ performance. (`<PE>` is private `E`, one will have to redeclare it to match if
+ one needs it; `PE` is, if `SET_PASS_POINTER`, `E *`, and if not `E`.) */
+typedef PE_(UInt) (*PE_(Hash))(const PE);
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
 
@@ -205,7 +217,7 @@ static E PE_(pointer)(const E *const element) { return *element; }
 #endif /* !pointer --> */
 
 /** Gets the hash of `element`. */
-static unsigned PE_(get_hash)(struct E_(SetElement) *element) {
+static PE_(UInt) PE_(get_hash)(struct E_(SetElement) *element) {
 	assert(element);
 #ifdef SET_NO_CACHE /* <!-- !cache */
 	return PE_(hash)(PE_(pointer)(&element->data));
@@ -218,8 +230,8 @@ static unsigned PE_(get_hash)(struct E_(SetElement) *element) {
  non-empty. May be invalidated upon a call to <fn:<PE>grow>.
  @return Given a `hash`, compute the bucket at it's index. */
 static struct PE_(Bucket) *PE_(get_bucket)(struct E_(Set) *const set,
-	const unsigned hash) {
-	assert(set);
+	const PE_(UInt) hash) {
+	assert(set && set->buckets);
 	return set->buckets + (hash & ((1 << set->log_capacity) - 1));
 }
 
@@ -227,7 +239,7 @@ static struct PE_(Bucket) *PE_(get_bucket)(struct E_(Set) *const set,
  @param[hash] Must match the hash of `data`.
  @return The link that points to the `data` or null. */
 static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
-	const unsigned hash, const PE data) {
+	const PE_(UInt) hash, const PE data) {
 	struct E_(SetElement) **to_x, *x;
 	assert(bucket);
 	for(to_x = &bucket->first; (x = *to_x); to_x = &x->next) {
@@ -250,10 +262,14 @@ static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
 static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	struct PE_(Bucket) *buckets, *b, *b_end, *new_b;
 	struct E_(SetElement) **to_x, *x;
-	const unsigned log_c0 = set->log_capacity, log_limit = sizeof(unsigned) * 8;
-	unsigned c0 = 1 << log_c0, log_c1, c1, mask;
+	const unsigned log_c0 = set->log_capacity,
+		log_limit = sizeof(PE_(UInt)) * 8;
+	unsigned log_c1;
+	PE_(UInt) c0 = 1 << log_c0, c1, mask;
 	size_t no_buckets;
-	assert(set && log_c0 < log_limit && (log_c0 >= 3 || !log_c0));
+	/* One did set `<PE>UInt` to an unsigned type, right? */
+	assert(set && c0 && log_c0 < log_limit && (log_c0 >= 3 || !log_c0)
+		&& (PE_(UInt))-1 > 0);
 	/* `SIZE_MAX` min 65535 -> 5041 but typically much larger _st_ it becomes
 	 saturated while the load factor increases. */
 	if(size > SET_SIZE_MAX / 13) return errno = ERANGE, 0;
@@ -281,7 +297,7 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	/* The expectation value of the fraction of entries that needs to be
 	 rehashed is 1/2 _vs_ any other way would require a complete rehash. */
 	for(b = buckets, b_end = buckets + c0; b < b_end; b++) {
-		unsigned hash;
+		PE_(UInt) hash;
 		assert(!((b - buckets) & mask));
 		to_x = &b->first;
 		while(*to_x) {
@@ -302,7 +318,7 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	struct E_(SetElement) *const element, const PE_(Replace) replace) {
 	struct PE_(Bucket) *bucket;
 	struct E_(SetElement) **to_x = 0, *x = 0;
-	unsigned hash;
+	PE_(UInt) hash;
 	if(!set || !element) return 0;
 	hash = PE_(hash)(PE_(pointer)(&element->data));
 #ifndef SET_NO_CACHE /* <!-- cache */
@@ -397,15 +413,15 @@ static size_t E_(SetSize)(const struct E_(Set) *const set) {
 static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set,
 	const PE data) {
 	struct E_(SetElement) **to_x;
-	unsigned hash;
+	PE_(UInt) hash;
 	if(!set || !set->buckets) return 0;
 	hash = PE_(hash)(data);
 	to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), hash, data);
 	return to_x ? *to_x : 0;
 }
 
-/** Reserve at least `reserve`, divided by the maximum load factor, `ln 2`,
- space in the buckets of `set`.
+/** Reserve at least `reserve`, divided by the maximum load factor, space in
+ the buckets of `set`.
  @return Success.
  @throws[ERANGE] `reserve` plus the size would take a bigger number then could
  fit in a `size_t`.
@@ -452,12 +468,13 @@ static struct E_(SetElement) *E_(SetPolicyPut)(struct E_(Set) *const set,
 }
 
 /** Removes an element `data` from `set`.
- @return Successfully removed element or null.
+ @return Successfully removed element or null. This element is free to be put
+ into another set.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
 static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 	const PE data) {
-	unsigned hash;
+	PE_(UInt) hash;
 	struct E_(SetElement) **to_x, *x;
 	if(!set || !set->buckets) return 0;
 	hash = PE_(hash)(data);
@@ -571,6 +588,7 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef PCAT
 #undef PCAT_
 #endif /* !sub --> */
+#undef SET_SIZE_MAX
 #undef E
 #undef PE
 #undef E_
@@ -579,16 +597,18 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef SET_TYPE
 #undef SET_HASH
 #undef SET_IS_EQUAL
-#ifdef SET_NO_CACHE /* <!-- !cache */
-#undef SET_NO_CACHE
-#endif /* !cache --> */
 #ifdef SET_TO_STRING /* <!-- string */
 #undef SET_TO_STRING
 #endif /* string --> */
 #ifdef SET_PASS_POINTER /* <!-- !pointer */
 #undef SET_PASS_POINTER
 #endif /* !pointer --> */
+#ifdef SET_NO_CACHE /* <!-- !cache */
+#undef SET_NO_CACHE
+#endif /* !cache --> */
+#ifdef SET_HASH_TYPE /* <!-- hash type */
+#undef SET_HASH_TYPE
+#endif /* hash type --> */
 #ifdef SET_TEST /* <!-- test */
 #undef SET_TEST
 #endif /* test --> */
-#undef SET_SIZE_MAX
