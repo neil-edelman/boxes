@@ -28,9 +28,9 @@ Internally, it is a simple, separately chained, hash set with a maximum load fac
  - Parameter: SET\_PASS\_POINTER  
    Changes `PE` from `E` to `E \*` ; used in `SET\_HASH` and `SET\_IS\_EQUAL` \. Should be used when `E` is a `struct` whose copying into functions is a performance issue\.
  - Parameter: SET\_NO\_CACHE  
-   Should be used when the hash calculation is trivial to avoid storing duplicate information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
+   Should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) information _per_ datum\. Enabled, it always calculates the hash and discards it\. Using non\-randomly\-distributed data directly as a hash is not ostensibly sound, but in certain situations, it leads to a more balanced table\.
  - Parameter: SET\_HASH\_TYPE  
-   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. If `SET\_NO\_CACHE` is not set, stored _per_ datum\. Defaults to `unsigned` , but one can change it to any unsigned integer type\. The hash map will saturate at `\(\(ln 2\) / 2\) &#183; range\(<PE>UInt\)` , at which point no new buckets can be added and the load factor can go over the maximum\.
+   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. Defaults to `unsigned int` , but one can change it to any unsigned integer type\. The hash map will saturate at `\(\(ln 2\) / 2\) &#183; range\(<PE>UInt\)` , at which point no new buckets can be added and the load factor will increasingly go over the maximum\.
  - Parameter: SET\_TEST  
    Unit testing framework, included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET\_TO\_STRING` and not `NDEBUG` \.
  * Standard:  
@@ -51,7 +51,7 @@ Valid unsigned integer type; defaults to `unsigned int` \.
 
 <code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const PE);</code>
 
-A map from `E` onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), \(defaults to `unsigned` \)\. Should be as close as possible to a discrete uniform distribution for maximum performance\. \(`<PE>` is private `E` , one will have to redeclare it to match if one needs it; `PE` is, if `SET\_PASS\_POINTER` , `E \*` , and if not `E` \.\)
+A map from `E` onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), \(defaults to `unsigned` \)\. Should be as close as possible to a discrete uniform distribution for maximum performance\. \(`<PE>` is private `E` , one will have to redeclare it to match if one needs it; if `SET\_PASS\_POINTER` , `PE` is `E \*` , and if not `E` \.\)
 
 
 

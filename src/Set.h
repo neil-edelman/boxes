@@ -39,15 +39,16 @@
 
  @param[SET_NO_CACHE]
  Should be used when the hash calculation is trivial to avoid storing duplicate
- information _per_ datum. Enabled, it always calculates the hash and discards
- it. Using non-randomly-distributed data directly as a hash is not ostensibly
- sound, but in certain situations, it leads to a more balanced table.
+ <typedef:<PE>UInt> information _per_ datum. Enabled, it always calculates the
+ hash and discards it. Using non-randomly-distributed data directly as a hash
+ is not ostensibly sound, but in certain situations, it leads to a more
+ balanced table.
 
  @param[SET_HASH_TYPE]
- This is <typedef:<PE>UInt>. If `SET_NO_CACHE` is not set, stored _per_ datum.
- Defaults to `unsigned`, but one can change it to any unsigned integer type.
- The hash map will saturate at `((ln 2) / 2) \cdot range(<PE>UInt)`, at which
- point no new buckets can be added and the load factor can go over the maximum.
+ This is <typedef:<PE>UInt>. Defaults to `unsigned int`, but one can change it
+ to any unsigned integer type. The hash map will saturate at
+ `((ln 2) / 2) \cdot range(<PE>UInt)`, at which point no new buckets can be
+ added and the load factor will increasingly go over the maximum.
 
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
@@ -175,7 +176,7 @@ struct E_(Set) {
 /** A map from `E` onto <typedef:<PE>UInt>, (defaults to `unsigned`). Should be
  as close as possible to a discrete uniform distribution for maximum
  performance. (`<PE>` is private `E`, one will have to redeclare it to match if
- one needs it; `PE` is, if `SET_PASS_POINTER`, `E *`, and if not `E`.) */
+ one needs it; if `SET_PASS_POINTER`, `PE` is `E *`, and if not `E`.) */
 typedef PE_(UInt) (*PE_(Hash))(const PE);
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
