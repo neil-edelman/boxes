@@ -5,7 +5,7 @@
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
  <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>. If
  the hash function distributes elements uniformly, it allows lookup, insertion,
- and deletion, of `E`, in average \O(1).
+ and deletion, of <typedef:<PE>Type>, in average \O(1).
 
  Internally, it is a simple, separately chained, hash set with a maximum load
  factor of `ln 2`, and power-of-two resizes, with buckets as pointers. This
@@ -17,8 +17,10 @@
  ![Example of <String>Set.](../image/index.png)
 
  @param[SET_NAME, SET_TYPE]
- `E` that satisfies `C` naming conventions when mangled and a valid type
- associated therewith; required.
+ `<E>` that satisfies `C` naming conventions when mangled and a valid
+ <typedef:<PE>Type> associated therewith; required. `<PE>` is private, whose
+ names are prefixed in a manner to avoid collisions; any should be re-defined
+ prior to use elsewhere.
 
  @param[SET_HASH]
  A function satisfying <typedef:<PE>Hash>; required.
@@ -31,9 +33,8 @@
  <fn:<E>SetToString>.
 
  @param[SET_PASS_POINTER]
- Changes `PE` from `E` to `E *`; used in `SET_HASH` and `SET_IS_EQUAL`. Should
- be used when `E` is a `struct` whose copying into functions is a performance
- issue.
+ Should be used when `E` is a `struct` whose copying into functions is a
+ performance issue. See <typedef:<PE>FnType>.
 
  @param[SET_NO_CACHE]
  Calculates the hash every time and discards it; should be used when the hash
@@ -41,11 +42,7 @@
  datum.
 
  @param[SET_HASH_TYPE]
- This is <typedef:<PE>UInt> and defaults to `unsigned int`. Must be an unsigned
- integer type. The hash map will saturate at
- `min(((ln 2)/2) \cdot range(<PE>UInt), (1/8) \cdot range(size_t))`, at which
- point no new buckets can be added and the load factor will increasingly go
- over the maximum.
+ This is <typedef:<PE>UInt> and defaults to `unsigned int`.
 
  @param[SET_TEST]
  Unit testing framework, included in a separate header, <../test/SetTest.h>.
@@ -100,16 +97,10 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef E
-#undef E
-#endif
-#ifdef PE /* pointer-to-E */
-#undef PE
-#endif
 #ifdef E_
 #undef E_
 #endif
-#ifdef PE_ /* private-E */
+#ifdef PE_
 #undef PE_
 #endif
 #define CAT_(x, y) x ## y
@@ -119,48 +110,48 @@
 #define E_(thing) CAT(SET_NAME, thing)
 #define PE_(thing) PCAT(set, PCAT(SET_NAME, thing)) /* "Private." */
 
-/* Check `SET_TYPE` is a valid type, whose definition is placed above
- inclusion. */
+/** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PE_(Type);
 #ifdef SET_PASS_POINTER /* <!-- pointer */
-typedef PE_(Type) const* PE_(PType);
+/** Used in <typedef:<PE>Hash> and <typedef:<PE>IsEqual> if `SET_PASS_POINTER`,
+ otherwise `<PE>FnType` is <typedef:<PE>Type>. */
+typedef const PE_(Type)* PE_(FnType);
 #else /* pointer --><!-- !pointer */
-typedef PE_(Type) PE_(PType);
+typedef PE_(Type) PE_(FnType);
 #endif /* !pointer --> */
-#define E PE_(Type)
-#define PE PE_(PType)
 
 #ifdef SET_HASH_TYPE /* <!-- hash type */
-/** Valid unsigned integer type; defaults to `unsigned int`. */
+/** Valid unsigned integer type. The hash map will saturate at
+ `min(((ln 2)/2) \cdot range(<PE>UInt), (1/8) \cdot range(size_t))`, at which
+ point no new buckets can be added and the load factor will increase over the
+ maximum. */
 typedef SET_HASH_TYPE PE_(UInt);
 #else /* hash type --><!-- !hash type */
 typedef unsigned PE_(UInt);
 #endif /* !hash type --> */
 
-/** A map from `E` onto <typedef:<PE>UInt>, (defaults to `unsigned`). Should be
- as close as possible to a discrete uniform distribution for maximum
- performance. (`<PE>` is private `E`, one will have to redeclare it to match if
- one needs it; if `SET_PASS_POINTER`, `PE` is `E *`, and if not `E`.) */
-typedef PE_(UInt) (*PE_(Hash))(const PE);
+/** A map from <typedef:<PE>FnType> onto <typedef:<PE>UInt>, (defaults to
+ `unsigned`.) Should be as close as possible to a discrete uniform distribution
+ for maximum performance. */
+typedef PE_(UInt) (*PE_(Hash))(const PE_(FnType));
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
 
-/** A constant equivalence relation between `E` that satisfies
- `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. `PE` depends on
- `SET_PASS_POINTER`. */
-typedef int (*PE_(IsEqual))(const PE, const PE);
+/** A constant equivalence relation between <typedef:<PE>FnType> that satisfies
+ `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. */
+typedef int (*PE_(IsEqual))(const PE_(FnType), const PE_(FnType));
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PE>IsEqual>. */
 static const PE_(IsEqual) PE_(equal) = (SET_IS_EQUAL);
 
 /** Returns true if the `replace` replaces the `original`; used in
  <fn:<E>SetPolicyPut>. */
-typedef int (*PE_(Replace))(E *original, E *replace);
+typedef int (*PE_(Replace))(PE_(Type) *original, PE_(Type) *replace);
 
 #ifdef SET_TO_STRING /* <!-- string */
-/** Responsible for turning `E` (the first argument) into a 12 `char` string
- (the second.) */
-typedef void (*PE_(ToString))(const E *const, char (*const)[12]);
+/** Responsible for turning <typedef:<PE>Type> (the first argument) into a
+ maximum 11-`char` string (the second.) */
+typedef void (*PE_(ToString))(const PE_(Type) *, char (*)[12]);
 /* Check that `SET_TO_STRING` is a function implementing
  <typedef:<PE>ToString>. */
 static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
@@ -168,21 +159,21 @@ static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
 
 #ifdef SET_TEST /* <!-- test */
 /** Used for `SET_TEST`. */
-typedef void (*PE_(Action))(E *const);
+typedef void (*PE_(Action))(PE_(Type) *const);
 #endif /* test --> */
 
 
 
-/** Contains `E` as the element `data` along with data internal to the set.
- Storage of the `<E>SetElement` structure is the responsibility of the
- caller. */
+/** Contains <typedef:<PE>Type> as an element `data`, along with data internal
+ to the set. Storage of the `<E>SetElement` structure is the responsibility of
+ the caller. */
 struct E_(SetElement);
 struct E_(SetElement) {
 	struct E_(SetElement) *next;
 #ifndef SET_NO_CACHE /* <!-- cache */
 	PE_(UInt) hash;
 #endif /* cache --> */
-	E data;
+	PE_(Type) data;
 };
 
 /* Singly-linked list head for `buckets`. Not really needed, but
@@ -202,10 +193,12 @@ struct E_(Set) {
 
 #ifdef SET_PASS_POINTER /* <!-- pointer */
 /** @return `element`. */
-static const E *PE_(pointer)(const E *const element) { return element; }
+static const PE_(Type) *PE_(pointer)(const PE_(Type) *const element)
+	{ return element; }
 #else /* pointer --><!-- !pointer */
 /** @return Re-de-reference `element`. */
-static E PE_(pointer)(const E *const element) { return *element; }
+static PE_(Type) PE_(pointer)(const PE_(Type) *const element)
+	{ return *element; }
 #endif /* !pointer --> */
 
 /** Gets the hash of `element`. */
@@ -231,7 +224,7 @@ static struct PE_(Bucket) *PE_(get_bucket)(struct E_(Set) *const set,
  @param[hash] Must match the hash of `data`.
  @return The link that points to the `data` or null. */
 static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
-	const PE_(UInt) hash, const PE data) {
+	const PE_(UInt) hash, const PE_(FnType) data) {
 	struct E_(SetElement) **to_x, *x;
 	assert(bucket);
 	for(to_x = &bucket->first; (x = *to_x); to_x = &x->next) {
@@ -339,7 +332,7 @@ add_element:
 
 /** Used in <fn:<E>SetPolicyPut> when `replace` is null; `original` and
  `replace` are ignored. */
-static int PE_(false)(E *original, E *replace) {
+static int PE_(false)(PE_(Type) *original, PE_(Type) *replace) {
 	(void)(original); (void)(replace); return 0;
 }
 
@@ -401,7 +394,7 @@ static size_t E_(SetSize)(const struct E_(Set) *const set) {
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
 static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set,
-	const PE data) {
+	const PE_(FnType) data) {
 	struct E_(SetElement) **to_x;
 	PE_(UInt) hash;
 	if(!set || !set->buckets) return 0;
@@ -427,9 +420,8 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
  @param[set, element] If null, returns false.
  @param[element] Should not be of a `set` because the integrity of that `set`
  will be compromised.
- @return Adding an element with the same `E`, according to
- <typedef:<PE>IsEqual> `SET_IS_EQUAL`, causes the old data to be ejected and
- returned, otherwise null.
+ @return Adding `element` with <typedef:<PE>IsEqual> `SET_IS_EQUAL` the old
+ element, causes the old to be ejected and returned, otherwise null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
  <fn:<E>SetReserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);
@@ -463,7 +455,7 @@ static struct E_(SetElement) *E_(SetPolicyPut)(struct E_(Set) *const set,
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
 static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
-	const PE data) {
+	const PE_(FnType) data) {
 	PE_(UInt) hash;
 	struct E_(SetElement) **to_x, *x;
 	if(!set || !set->buckets) return 0;
@@ -568,8 +560,8 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef SET_NAME
 #undef SET_TYPE
 /* Undocumented: allows nestled inclusion in other .h so long as `CAT`, _etc_,
- are the same meaning, (they will be replaced with this `CAT`,) and `E`, _etc_,
- is not used, (they will be undefined.) */
+ are the same meaning, (they will be replaced with this `CAT`,) and `E_`,
+ _etc_, are not defined. */
 #ifdef SET_SUBTYPE /* <!-- sub */
 #undef SET_SUBTYPE
 #else /* sub --><!-- !sub */
@@ -579,8 +571,6 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef PCAT_
 #endif /* !sub --> */
 #undef SET_SIZE_MAX
-#undef E
-#undef PE
 #undef E_
 #undef PE_
 #undef SET_NAME
