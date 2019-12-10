@@ -1,145 +1,141 @@
  # Array\.h #
 
- * [Desciption](#preamble-)
- * [Typedef Aliases](#typedef-): <a href = "#typedef-<PT>ToString"><PT>ToString</a>, <a href = "#typedef-<PT>Action"><PT>Action</a>, <a href = "#typedef-<PT>Predicate"><PT>Predicate</a>
- * [Struct, Union, and Enum Definitions](#tag-): <a href = "#tag-<T>Array"><T>Array</a>
- * [Function Summary](#summary-)
- * [Function Definitions](#fn-)
- * [License](#license-)
+ ## Contiguous Dynamic Parameterised Array ##
 
- ## <a name = "preamble-">Description</a> ##
+ * [Description](#user-content-preamble)
+ * [Typedef Aliases](#user-content-typedef):  [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930)
+ * [Struct, Union, and Enum Definitions](#user-content-tag):  [&lt;T&gt;Array](#user-content-tag-f128eca2)
+ * [Function Summary](#user-content-summary)
+ * [Function Definitions](#user-content-fn)
+ * [License](#user-content-license)
 
-`<T>Array` is a dynamic contiguous array that stores `<T>` , which must be set using `ARRAY_TYPE` \. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\. When adding new elements, the elements may change memory location to fit\. It is therefore unstable; any pointers to this memory may become stale and unusable when expanding\.
+ ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`<T>Array` is not synchronised\. Errors are returned with `errno` \. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before inclusion\.
+`<T>Array` is a dynamic contiguous array that stores `<T>` , which must be set using `ARRAY\_TYPE` \. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\. When adding new elements, the elements may change memory location to fit\. It is therefore unstable; any pointers to this memory may become stale and unusable when expanding\.
+
+`<T>Array` is not synchronised\. Errors are returned with `errno` \. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert\.h` is included in this file; to stop the debug assertions, use `\#define NDEBUG` before inclusion\.
 
 ![States](web/states.png)
 
-@title Contiguous Dynamic Parameterised Array
+
 
  - Parameter: ARRAY\_NAME, ARRAY\_TYPE  
-   The name that literally becomes `<T>` , and a valid type associated therewith, accessible to the compiler at the time of inclusion; should be conformant to naming and to the maximum available length of identifiers\. Must each be present before including\.
+   The name that literally becomes `<T>` , and a valid type associated therewith, accessible to the compiler at the time of inclusion; should be conformant to naming and to the maximum available length of identifiers\. Must each be present before including\. To get an array, one must pass it included in a struct\.
  - Parameter: ARRAY\_STACK  
-   Doesn't define removal functions except [<T>ArrayPop](#fn-<T>ArrayPop), making it a stack\.
+   Doesn't define removal functions except [&lt;T&gt;ArrayPop](#user-content-fn-c32fdd31), making it a stack\.
  - Parameter: ARRAY\_TO\_STRING  
-   Optional print function implementing [<PT>ToString](#typedef-<PT>ToString); makes available [<T>ArrayToString](#fn-<T>ArrayToString)\.
+   Optional print function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f); makes available [&lt;T&gt;ArrayToString](#user-content-fn-e365d362)\.
  - Parameter: ARRAY\_TEST  
-   Unit testing framework using `<T>ArrayTest` , included in a separate header, `../test/ArrayTest.h` \. Must be defined equal to a \(random\) filler function, satisfying [<PT>Action](#typedef-<PT>Action)\. Requires `ARRAY_TO_STRING` and not `NDEBUG` \.
+   Unit testing framework using `<T>ArrayTest` , included in a separate header, `\.\./test/ArrayTest\.h` \. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Requires `ARRAY\_TO\_STRING` and not `NDEBUG` \.
  * Author:  
    Neil
  * Standard:  
    C89
  * Caveat:  
-   (<a href = "#fn-<T>ArrayIndex"><T>ArrayIndex</a>, <a href = "#fn-<T>ArrayPeek"><T>ArrayPeek</a>, <a href = "#fn-<T>ArrayUpdateNew"><T>ArrayUpdateNew</a>, <a href = "#fn-<T>ArrayBuffer"><T>ArrayBuffer</a>, <a href = "#fn-<T>ArrayExpand"><T>ArrayExpand</a>, <a href = "#fn-<T>ArrayEach"><T>ArrayEach</a>, <a href = "#fn-<T>ArrayEach"><T>ArrayEach</a>, <a href = "#fn-<T>ArrayIfEach"><T>ArrayIfEach</a>, <a href = "#fn-<T>ArrayIfEach"><T>ArrayIfEach</a>, <a href = "#fn-<T>ArrayAny"><T>ArrayAny</a>, <a href = "#fn-<T>ArrayAny"><T>ArrayAny</a>, <a href = "#fn-<T>ArrayToString"><T>ArrayToString</a>)
+   (fixme: <T>ArrayIndex, fixme: <T>ArrayPeek, fixme: <T>ArrayUpdateNew, fixme: <T>ArrayBuffer, fixme: <T>ArrayExpand, fixme: <T>ArrayEach, fixme: <T>ArrayEach, fixme: <T>ArrayIfEach, fixme: <T>ArrayIfEach, fixme: <T>ArrayAny, fixme: <T>ArrayAny, fixme: <T>ArrayToString)
+
+
+ ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
+
+ ### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f"><PT>ToString</a> ###
+
+<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*const)[12]);</code>
+
+Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-terminated output string \(the second\.\) Private; must re\-declare\. Used for `ARRAY\_TO\_STRING` \.
 
 
 
+ ### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81"><PT>Action</a> ###
 
- ## <a name = "typedef-">Typedef Aliases</a> ##
-
- ### <a name = "typedef-<PT>ToString" id = "typedef-<PT>ToString"><PT>ToString</a> ###
-
-`typedef void(*`**`<PT>ToString`**`)(const T *, char(*const)[12]);`
-
-Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-terminated output string \(the second\.\) Private; must re\-declare\. Used for `ARRAY_TO_STRING` \.
-
-
-
- ### <a name = "typedef-<PT>Action" id = "typedef-<PT>Action"><PT>Action</a> ###
-
-`typedef void(*`**`<PT>Action`**`)(T *const data);`
+<code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code>
 
 Operates by side\-effects on `data` only\. Private; must re\-declare\.
 
 
 
- ### <a name = "typedef-<PT>Predicate" id = "typedef-<PT>Predicate"><PT>Predicate</a> ###
+ ### <a id = "user-content-typedef-d7c73930" name = "user-content-typedef-d7c73930"><PT>Predicate</a> ###
 
-`typedef int(*`**`<PT>Predicate`**`)(const T *const data);`
+<code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *const data);</code>
 
 Given constant `data` , returns a boolean\. Private; must re\-declare\.
 
 
 
+ ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
+ ### <a id = "user-content-tag-f128eca2" name = "user-content-tag-f128eca2"><T>Array</a> ###
 
- ## <a name = "tag-">Struct, Union, and Enum Definitions</a> ##
+<code>struct <strong>&lt;T&gt;Array</strong>;</code>
 
- ### <a name = "tag-<T>Array" id = "tag-<T>Array"><T>Array</a> ###
-
-`struct `**`<T>Array`**`;`
-
-The array\. Zeroed data is a valid state\. To instantiate explicitly, see [<T>Array](#fn-<T>Array) or initialise it with `ARRAY_INIT` or `{0}` \(C99\.\)
-
+The array\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T&gt;Array](#user-content-fn-f128eca2) or initialise it with `ARRAY\_INIT` or `\{0\}` \(C99\.\)
 
 
 
-
- ## <a name = "summary-">Function Summary</a> ##
+ ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn-<T>Array_"><T>Array_</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-a06d1247">&lt;T&gt;Array_</a></td><td>a</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn-<T>Array"><T>Array</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-f128eca2">&lt;T&gt;Array</a></td><td>a</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn-<T>ArraySize"><T>ArraySize</a></td><td>a</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-824e26cb">&lt;T&gt;ArraySize</a></td><td>a</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn-<T>ArrayRemove"><T>ArrayRemove</a></td><td>a, data</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-8267fb66">&lt;T&gt;ArrayRemove</a></td><td>a, data</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn-<T>ArrayLazyRemove"><T>ArrayLazyRemove</a></td><td>a, data</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-3d3eaaa0">&lt;T&gt;ArrayLazyRemove</a></td><td>a, data</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayClear"><T>ArrayClear</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7094ab4b">&lt;T&gt;ArrayClear</a></td><td>a</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayGet"><T>ArrayGet</a></td><td>a</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-3d64b66e">&lt;T&gt;ArrayGet</a></td><td>a</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayEnd"><T>ArrayEnd</a></td><td>a</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-168bb5af">&lt;T&gt;ArrayEnd</a></td><td>a</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn-<T>ArrayIndex"><T>ArrayIndex</a></td><td>a, data</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-2f86cf96">&lt;T&gt;ArrayIndex</a></td><td>a, data</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayPeek"><T>ArrayPeek</a></td><td>a</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-f880f61d">&lt;T&gt;ArrayPeek</a></td><td>a</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayPop"><T>ArrayPop</a></td><td>a</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-c32fdd31">&lt;T&gt;ArrayPop</a></td><td>a</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayBack"><T>ArrayBack</a></td><td>a, here</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-20e9e3a1">&lt;T&gt;ArrayBack</a></td><td>a, here</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayNext"><T>ArrayNext</a></td><td>a, here</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-4ca0efff">&lt;T&gt;ArrayNext</a></td><td>a, here</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayNew"><T>ArrayNew</a></td><td>a</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-2895000c">&lt;T&gt;ArrayNew</a></td><td>a</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayUpdateNew"><T>ArrayUpdateNew</a></td><td>a, update_ptr</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-e810048b">&lt;T&gt;ArrayUpdateNew</a></td><td>a, update_ptr</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayBuffer"><T>ArrayBuffer</a></td><td>a, buffer</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-12fc774c">&lt;T&gt;ArrayBuffer</a></td><td>a, buffer</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn-<T>ArrayExpand"><T>ArrayExpand</a></td><td>a, add</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-beff16f6">&lt;T&gt;ArrayExpand</a></td><td>a, add</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayEach"><T>ArrayEach</a></td><td>a, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-669dc6cf">&lt;T&gt;ArrayEach</a></td><td>a, action</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayIfEach"><T>ArrayIfEach</a></td><td>a, predicate, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-47277df8">&lt;T&gt;ArrayIfEach</a></td><td>a, predicate, action</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn-<T>ArrayAny"><T>ArrayAny</a></td><td>a, predicate</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-5d3e6684">&lt;T&gt;ArrayAny</a></td><td>a, predicate</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayKeepIf"><T>ArrayKeepIf</a></td><td>a, keep</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-66da1814">&lt;T&gt;ArrayKeepIf</a></td><td>a, keep</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn-<T>ArrayTrim"><T>ArrayTrim</a></td><td>a, predicate</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-761b4122">&lt;T&gt;ArrayTrim</a></td><td>a, predicate</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn-<T>ArraySplice"><T>ArraySplice</a></td><td>a, anchor, range, b</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-bad9dae2">&lt;T&gt;ArraySplice</a></td><td>a, anchor, range, b</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn-<T>ArrayIndexSplice"><T>ArrayIndexSplice</a></td><td>a, i0, i1, b</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-503c6ec6">&lt;T&gt;ArrayIndexSplice</a></td><td>a, i0, i1, b</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn-<T>ArrayToString"><T>ArrayToString</a></td><td>a</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-e365d362">&lt;T&gt;ArrayToString</a></td><td>a</td></tr>
 
 </table>
 
 
 
- ## <a name = "fn-">Function Definitions</a> ##
+ ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
- ### <a name = "fn-<T>Array_" id = "fn-<T>Array_"><T>Array_</a> ###
+ ### <a id = "user-content-fn-a06d1247" name = "user-content-fn-a06d1247"><T>Array\_</a> ###
 
-`static void `**`<T>Array_`**`(struct <T>Array *const `_`a`_`)`
+<code>static void <strong>&lt;T&gt;Array_</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
 
 Destructor for `a` ; returns an initialised `a` to the empty state where it takes no dynamic memory\.
 
@@ -151,9 +147,9 @@ Destructor for `a` ; returns an initialised `a` to the empty state where it take
 
 
 
- ### <a name = "fn-<T>Array" id = "fn-<T>Array"><T>Array</a> ###
+ ### <a id = "user-content-fn-f128eca2" name = "user-content-fn-f128eca2"><T>Array</a> ###
 
-`static void `**`<T>Array`**`(struct <T>Array *const `_`a`_`)`
+<code>static void <strong>&lt;T&gt;Array</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
 
 Initialises `a` to be empty\.
 
@@ -163,9 +159,9 @@ Initialises `a` to be empty\.
 
 
 
- ### <a name = "fn-<T>ArraySize" id = "fn-<T>ArraySize"><T>ArraySize</a> ###
+ ### <a id = "user-content-fn-824e26cb" name = "user-content-fn-824e26cb"><T>ArraySize</a> ###
 
-`static size_t `**`<T>ArraySize`**`(const struct <T>Array *const `_`a`_`)`
+<code>static size_t <strong>&lt;T&gt;ArraySize</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
 
  - Parameter: _a_  
    If null, returns zero\.
@@ -177,9 +173,9 @@ Initialises `a` to be empty\.
 
 
 
- ### <a name = "fn-<T>ArrayRemove" id = "fn-<T>ArrayRemove"><T>ArrayRemove</a> ###
+ ### <a id = "user-content-fn-8267fb66" name = "user-content-fn-8267fb66"><T>ArrayRemove</a> ###
 
-`static int `**`<T>ArrayRemove`**`(struct <T>Array *const `_`a`_`, T *const `_`data`_`)`
+<code>static int <strong>&lt;T&gt;ArrayRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code>
 
 Removes `data` from `a` \.
 
@@ -189,7 +185,7 @@ Removes `data` from `a` \.
    If null, returns false\. Will be removed; data will remain the same but be updated to the next element, or if this was the last element, the pointer will be past the end\.
  - Return:  
    Success, otherwise `errno` will be set for valid input\.
- - Exceptional Return: EDOM  
+ - Exceptional return: EDOM  
    `data` is not part of `a` \.
  - Order:  
    &#927;\(n\)\.
@@ -197,9 +193,9 @@ Removes `data` from `a` \.
 
 
 
- ### <a name = "fn-<T>ArrayLazyRemove" id = "fn-<T>ArrayLazyRemove"><T>ArrayLazyRemove</a> ###
+ ### <a id = "user-content-fn-3d3eaaa0" name = "user-content-fn-3d3eaaa0"><T>ArrayLazyRemove</a> ###
 
-`static int `**`<T>ArrayLazyRemove`**`(struct <T>Array *const `_`a`_`, T *const `_`data`_`)`
+<code>static int <strong>&lt;T&gt;ArrayLazyRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code>
 
 Removes `data` from `a` and replaces the spot it was in with the tail\.
 
@@ -209,7 +205,7 @@ Removes `data` from `a` and replaces the spot it was in with the tail\.
    If null, returns false\. Will be removed; data will remain the same but be updated to the last element, or if this was the last element, the pointer will be past the end\.
  - Return:  
    Success, otherwise `errno` will be set for valid input\.
- - Exceptional Return: EDOM  
+ - Exceptional return: EDOM  
    `data` is not part of `a` \.
  - Order:  
    &#927;\(1\)\.
@@ -217,11 +213,11 @@ Removes `data` from `a` and replaces the spot it was in with the tail\.
 
 
 
- ### <a name = "fn-<T>ArrayClear" id = "fn-<T>ArrayClear"><T>ArrayClear</a> ###
+ ### <a id = "user-content-fn-7094ab4b" name = "user-content-fn-7094ab4b"><T>ArrayClear</a> ###
 
-`static void `**`<T>ArrayClear`**`(struct <T>Array *const `_`a`_`)`
+<code>static void <strong>&lt;T&gt;ArrayClear</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
 
-Sets the size of `a` to zero, effectively removing all the elements, but leaves the capacity alone, \(the only thing that will free memory allocation is [<T>Array\_](#fn-<T>Array\_)\.\)
+Sets the size of `a` to zero, effectively removing all the elements, but leaves the capacity alone, \(the only thing that will free memory allocation is [&lt;T&gt;Array_](#user-content-fn-a06d1247)\.\)
 
  - Parameter: _a_  
    If null, does nothing\.
@@ -231,11 +227,11 @@ Sets the size of `a` to zero, effectively removing all the elements, but leaves 
 
 
 
- ### <a name = "fn-<T>ArrayGet" id = "fn-<T>ArrayGet"><T>ArrayGet</a> ###
+ ### <a id = "user-content-fn-3d64b66e" name = "user-content-fn-3d64b66e"><T>ArrayGet</a> ###
 
-`static T *`**`<T>ArrayGet`**`(const struct <T>Array *const `_`a`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayGet</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
 
-Causing something to be added to the `<T>Array` may invalidate this pointer, see [<T>ArrayUpdateNew](#fn-<T>ArrayUpdateNew)\.
+Causing something to be added to the `<T>Array` may invalidate this pointer, see [&lt;T&gt;ArrayUpdateNew](#user-content-fn-e810048b)\.
 
  - Parameter: _a_  
    If null, returns null\.
@@ -247,11 +243,11 @@ Causing something to be added to the `<T>Array` may invalidate this pointer, see
 
 
 
- ### <a name = "fn-<T>ArrayEnd" id = "fn-<T>ArrayEnd"><T>ArrayEnd</a> ###
+ ### <a id = "user-content-fn-168bb5af" name = "user-content-fn-168bb5af"><T>ArrayEnd</a> ###
 
-`static T *`**`<T>ArrayEnd`**`(const struct <T>Array *const `_`a`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayEnd</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
 
-Causing something to be added to the `<T>Array` may invalidate this pointer, see [<T>ArrayUpdateNew](#fn-<T>ArrayUpdateNew)\.
+Causing something to be added to the `<T>Array` may invalidate this pointer, see [&lt;T&gt;ArrayUpdateNew](#user-content-fn-e810048b)\.
 
  - Parameter: _a_  
    If null, returns null\.
@@ -263,9 +259,9 @@ Causing something to be added to the `<T>Array` may invalidate this pointer, see
 
 
 
- ### <a name = "fn-<T>ArrayIndex" id = "fn-<T>ArrayIndex"><T>ArrayIndex</a> ###
+ ### <a id = "user-content-fn-2f86cf96" name = "user-content-fn-2f86cf96"><T>ArrayIndex</a> ###
 
-`static size_t `**`<T>ArrayIndex`**`(const struct <T>Array *const `_`a`_`, const T *const `_`data`_`)`
+<code>static size_t <strong>&lt;T&gt;ArrayIndex</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>data</em>)</code>
 
 Gets an index given `data` \.
 
@@ -283,9 +279,9 @@ Gets an index given `data` \.
 
 
 
- ### <a name = "fn-<T>ArrayPeek" id = "fn-<T>ArrayPeek"><T>ArrayPeek</a> ###
+ ### <a id = "user-content-fn-f880f61d" name = "user-content-fn-f880f61d"><T>ArrayPeek</a> ###
 
-`static T *`**`<T>ArrayPeek`**`(const struct <T>Array *const `_`a`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayPeek</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
 
  - Parameter: _a_  
    If null, returns null\.
@@ -299,25 +295,25 @@ Gets an index given `data` \.
 
 
 
- ### <a name = "fn-<T>ArrayPop" id = "fn-<T>ArrayPop"><T>ArrayPop</a> ###
+ ### <a id = "user-content-fn-c32fdd31" name = "user-content-fn-c32fdd31"><T>ArrayPop</a> ###
 
-`static T *`**`<T>ArrayPop`**`(struct <T>Array *const `_`a`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayPop</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
 
-The same value as [<T>ArrayPeek](#fn-<T>ArrayPeek)\.
+The same value as [&lt;T&gt;ArrayPeek](#user-content-fn-f880f61d)\.
 
  - Parameter: _a_  
    If null, returns null\.
  - Return:  
-   Value from the the top of the `a` that is removed or null if the stack is empty\. Causing something to be added to the `a` may invalidate this pointer\. See [<T>ArrayUpdateNew](#fn-<T>ArrayUpdateNew)\.
+   Value from the the top of the `a` that is removed or null if the stack is empty\. Causing something to be added to the `a` may invalidate this pointer\. See [&lt;T&gt;ArrayUpdateNew](#user-content-fn-e810048b)\.
  - Order:  
    &#920;\(1\)
 
 
 
 
- ### <a name = "fn-<T>ArrayBack" id = "fn-<T>ArrayBack"><T>ArrayBack</a> ###
+ ### <a id = "user-content-fn-20e9e3a1" name = "user-content-fn-20e9e3a1"><T>ArrayBack</a> ###
 
-`static T *`**`<T>ArrayBack`**`(const struct <T>Array *const `_`a`_`, const T *const `_`here`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayBack</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>here</em>)</code>
 
 Iterate through `a` backwards\.
 
@@ -333,11 +329,11 @@ Iterate through `a` backwards\.
 
 
 
- ### <a name = "fn-<T>ArrayNext" id = "fn-<T>ArrayNext"><T>ArrayNext</a> ###
+ ### <a id = "user-content-fn-4ca0efff" name = "user-content-fn-4ca0efff"><T>ArrayNext</a> ###
 
-`static T *`**`<T>ArrayNext`**`(const struct <T>Array *const `_`a`_`, const T *const `_`here`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayNext</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>here</em>)</code>
 
-Iterate through `a` \. It is safe to add using [<T>ArrayUpdateNew](#fn-<T>ArrayUpdateNew) with the return value as `update` \. Removing an element causes the pointer to go to the next element, if it exists\.
+Iterate through `a` \. It is safe to add using [&lt;T&gt;ArrayUpdateNew](#user-content-fn-e810048b) with the return value as `update` \. Removing an element causes the pointer to go to the next element, if it exists\.
 
  - Parameter: _a_  
    The array; if null, returns null\.
@@ -351,9 +347,9 @@ Iterate through `a` \. It is safe to add using [<T>ArrayUpdateNew](#fn-<T>ArrayU
 
 
 
- ### <a name = "fn-<T>ArrayNew" id = "fn-<T>ArrayNew"><T>ArrayNew</a> ###
+ ### <a id = "user-content-fn-2895000c" name = "user-content-fn-2895000c"><T>ArrayNew</a> ###
 
-`static T *`**`<T>ArrayNew`**`(struct <T>Array *const `_`a`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayNew</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
 
 Gets an uninitialised new element\. May move the `a` to a new memory location to fit the new size\.
 
@@ -361,21 +357,21 @@ Gets an uninitialised new element\. May move the `a` to a new memory location to
    If is null, returns null\.
  - Return:  
    A new, un\-initialised, element, or null and `errno` may be set\.
- - Exceptional Return: ERANGE  
-   Tried allocating more then can fit in `size_t` objects\.
- - Exceptional Return: realloc  
-   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Exceptional return: ERANGE  
+   Tried allocating more then can fit in `size\_t` objects\.
+ - Exceptional return: realloc  
+   [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
    Amortised &#927;\(1\)\.
 
 
 
 
- ### <a name = "fn-<T>ArrayUpdateNew" id = "fn-<T>ArrayUpdateNew"><T>ArrayUpdateNew</a> ###
+ ### <a id = "user-content-fn-e810048b" name = "user-content-fn-e810048b"><T>ArrayUpdateNew</a> ###
 
-`static T *`**`<T>ArrayUpdateNew`**`(struct <T>Array *const `_`a`_`, T **const `_`update_ptr`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayUpdateNew</strong>(struct &lt;T&gt;Array *const <em>a</em>, T **const <em>update_ptr</em>)</code>
 
-Gets an uninitialised new element in `a` and updates the `update_ptr` if it is within the memory region that was changed to accomodate new space\.
+Gets an uninitialised new element in `a` and updates the `update\_ptr` if it is within the memory region that was changed to accomodate new space\.
 
  - Parameter: _a_  
    If null, returns null\.
@@ -383,10 +379,10 @@ Gets an uninitialised new element in `a` and updates the `update_ptr` if it is w
    Pointer to update on memory move\. If null, does nothing\.
  - Return:  
    A new, un\-initialised, element, or null and `errno` may be set\.
- - Exceptional Return: ERANGE  
-   Tried allocating more then can fit in `size_t` \.
- - Exceptional Return: realloc  
-   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Exceptional return: ERANGE  
+   Tried allocating more then can fit in `size\_t` \.
+ - Exceptional return: realloc  
+   [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
    Amortised &#927;\(1\)\.
  - Caveat:  
@@ -395,9 +391,9 @@ Gets an uninitialised new element in `a` and updates the `update_ptr` if it is w
 
 
 
- ### <a name = "fn-<T>ArrayBuffer" id = "fn-<T>ArrayBuffer"><T>ArrayBuffer</a> ###
+ ### <a id = "user-content-fn-12fc774c" name = "user-content-fn-12fc774c"><T>ArrayBuffer</a> ###
 
-`static T *`**`<T>ArrayBuffer`**`(struct <T>Array *const `_`a`_`, const size_t `_`buffer`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayBuffer</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>buffer</em>)</code>
 
 Ensures that `a` array is `buffer` capacity beyond the elements in the array\.
 
@@ -407,10 +403,10 @@ Ensures that `a` array is `buffer` capacity beyond the elements in the array\.
    If this is zero, returns null\.
  - Return:  
    One past the end of the array, or null and `errno` may be set\.
- - Exceptional Return: ERANGE  
-   Tried allocating more then can fit in `size_t` \.
- - Exceptional Return: realloc  
-   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Exceptional return: ERANGE  
+   Tried allocating more then can fit in `size\_t` \.
+ - Exceptional return: realloc  
+   [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
    Amortised &#927;\(`buffer` \)\.
  - Caveat:  
@@ -419,16 +415,16 @@ Ensures that `a` array is `buffer` capacity beyond the elements in the array\.
 
 
 
- ### <a name = "fn-<T>ArrayExpand" id = "fn-<T>ArrayExpand"><T>ArrayExpand</a> ###
+ ### <a id = "user-content-fn-beff16f6" name = "user-content-fn-beff16f6"><T>ArrayExpand</a> ###
 
-`static int `**`<T>ArrayExpand`**`(struct <T>Array *const `_`a`_`, const size_t `_`add`_`)`
+<code>static int <strong>&lt;T&gt;ArrayExpand</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>add</em>)</code>
 
 Adds `add` to the size in `a` \.
 
  - Return:  
    Success\.
- - Exceptional Return: ERANGE  
-   The size added is greater than the capacity\. To avoid this, call [<T>ArrayBuffer](#fn-<T>ArrayBuffer) before\.
+ - Exceptional return: ERANGE  
+   The size added is greater than the capacity\. To avoid this, call [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c) before\.
  - Order:  
    &#927;\(1\)
  - Caveat:  
@@ -437,11 +433,11 @@ Adds `add` to the size in `a` \.
 
 
 
- ### <a name = "fn-<T>ArrayEach" id = "fn-<T>ArrayEach"><T>ArrayEach</a> ###
+ ### <a id = "user-content-fn-669dc6cf" name = "user-content-fn-669dc6cf"><T>ArrayEach</a> ###
 
-`static void `**`<T>ArrayEach`**`(struct <T>Array *const `_`a`_`, const <PT>Action `_`action`_`)`
+<code>static void <strong>&lt;T&gt;ArrayEach</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Action <em>action</em>)</code>
 
-Iterates through `a` and calls `action` on all the elements\. The topology of the list can not change while in this function\. That is, don't call [<T>ArrayNew](#fn-<T>ArrayNew), [<T>ArrayRemove](#fn-<T>ArrayRemove), _etc_ in `action` \.
+Iterates through `a` and calls `action` on all the elements\. The topology of the list can not change while in this function\. That is, don't call [&lt;T&gt;ArrayNew](#user-content-fn-2895000c), [&lt;T&gt;ArrayRemove](#user-content-fn-8267fb66), _etc_ in `action` \.
 
  - Parameter: _a_  
    If null, does nothing\.
@@ -455,9 +451,9 @@ Iterates through `a` and calls `action` on all the elements\. The topology of th
 
 
 
- ### <a name = "fn-<T>ArrayIfEach" id = "fn-<T>ArrayIfEach"><T>ArrayIfEach</a> ###
+ ### <a id = "user-content-fn-47277df8" name = "user-content-fn-47277df8"><T>ArrayIfEach</a> ###
 
-`static void `**`<T>ArrayIfEach`**`(struct <T>Array *const `_`a`_`, const <PT>Predicate `_`predicate`_`, const <PT>Action `_`action`_`)`
+<code>static void <strong>&lt;T&gt;ArrayIfEach</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Predicate <em>predicate</em>, const &lt;PT&gt;Action <em>action</em>)</code>
 
 Iterates through `a` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list can not change while in this function\.
 
@@ -475,9 +471,9 @@ Iterates through `a` and calls `action` on all the elements for which `predicate
 
 
 
- ### <a name = "fn-<T>ArrayAny" id = "fn-<T>ArrayAny"><T>ArrayAny</a> ###
+ ### <a id = "user-content-fn-5d3e6684" name = "user-content-fn-5d3e6684"><T>ArrayAny</a> ###
 
-`static T *`**`<T>ArrayAny`**`(const struct <T>Array *const `_`a`_`, const <PT>Predicate `_`predicate`_`)`
+<code>static T *<strong>&lt;T&gt;ArrayAny</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Predicate <em>predicate</em>)</code>
 
 Iterates through `a` and calls `predicate` until it returns true\.
 
@@ -495,9 +491,9 @@ Iterates through `a` and calls `predicate` until it returns true\.
 
 
 
- ### <a name = "fn-<T>ArrayKeepIf" id = "fn-<T>ArrayKeepIf"><T>ArrayKeepIf</a> ###
+ ### <a id = "user-content-fn-66da1814" name = "user-content-fn-66da1814"><T>ArrayKeepIf</a> ###
 
-`static void `**`<T>ArrayKeepIf`**`(struct <T>Array *const `_`a`_`, const <PT>Predicate `_`keep`_`)`
+<code>static void <strong>&lt;T&gt;ArrayKeepIf</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Predicate <em>keep</em>)</code>
 
 For all elements of `a` , calls `keep` , and for each element, if the return value is false, lazy deletes that item\.
 
@@ -511,9 +507,9 @@ For all elements of `a` , calls `keep` , and for each element, if the return val
 
 
 
- ### <a name = "fn-<T>ArrayTrim" id = "fn-<T>ArrayTrim"><T>ArrayTrim</a> ###
+ ### <a id = "user-content-fn-761b4122" name = "user-content-fn-761b4122"><T>ArrayTrim</a> ###
 
-`static void `**`<T>ArrayTrim`**`(struct <T>Array *const `_`a`_`, const <PT>Predicate `_`predicate`_`)`
+<code>static void <strong>&lt;T&gt;ArrayTrim</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Predicate <em>predicate</em>)</code>
 
 Removes at either end of `a` of things that `predicate` returns true\.
 
@@ -527,9 +523,9 @@ Removes at either end of `a` of things that `predicate` returns true\.
 
 
 
- ### <a name = "fn-<T>ArraySplice" id = "fn-<T>ArraySplice"><T>ArraySplice</a> ###
+ ### <a id = "user-content-fn-bad9dae2" name = "user-content-fn-bad9dae2"><T>ArraySplice</a> ###
 
-`static int `**`<T>ArraySplice`**`(struct <T>Array *const `_`a`_`, const T *`_`anchor`_`, const long `_`range`_`, const struct <T>Array *const `_`b`_`)`
+<code>static int <strong>&lt;T&gt;ArraySplice</strong>(struct &lt;T&gt;Array *const <em>a</em>, const T *<em>anchor</em>, const long <em>range</em>, const struct &lt;T&gt;Array *const <em>b</em>)</code>
 
 In `a` , replaces the elements from `anchor` up to `range` with a copy of `b` \.
 
@@ -540,60 +536,60 @@ In `a` , replaces the elements from `anchor` up to `range` with a copy of `b` \.
  - Parameter: _range_  
    How many replaced values in the original; negative values are implicitly plus the length of the array; clamped at the minimum and maximum\.
  - Parameter: _b_  
-   The replacement array\. If null, deletes without replacing\. It is more efficient than individual [<T>ArrayRemove](#fn-<T>ArrayRemove) to delete several consecutive values\.
+   The replacement array\. If null, deletes without replacing\. It is more efficient than individual [&lt;T&gt;ArrayRemove](#user-content-fn-8267fb66) to delete several consecutive values\.
  - Return:  
    Success\.
- - Exceptional Return: EDOM  
+ - Exceptional return: EDOM  
    `a` and `b` are not null and the same\.
- - Exceptional Return: ERANGE  
+ - Exceptional return: ERANGE  
    `anchor` is not null and not in `a` \.
- - Exceptional Return: ERANGE  
+ - Exceptional return: ERANGE  
    `range` is greater then 65535 or smaller then \-65534\.
- - Exceptional Return: ERANGE  
+ - Exceptional return: ERANGE  
    `b` would cause the array to overflow\.
- - Exceptional Return: realloc  
-   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Exceptional return: realloc  
+   [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
-   &#920;\(`b.size` \) if the elements have the same size, otherwise, amortised &#927;\(`a.size` \+ `b.size` \)\.
+   &#920;\(`b\.size` \) if the elements have the same size, otherwise, amortised &#927;\(`a\.size` \+ `b\.size` \)\.
 
 
 
 
- ### <a name = "fn-<T>ArrayIndexSplice" id = "fn-<T>ArrayIndexSplice"><T>ArrayIndexSplice</a> ###
+ ### <a id = "user-content-fn-503c6ec6" name = "user-content-fn-503c6ec6"><T>ArrayIndexSplice</a> ###
 
-`static int `**`<T>ArrayIndexSplice`**`(struct <T>Array *const `_`a`_`, const size_t `_`i0`_`, const size_t `_`i1`_`, const struct <T>Array *const `_`b`_`)`
+<code>static int <strong>&lt;T&gt;ArrayIndexSplice</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>i0</em>, const size_t <em>i1</em>, const struct &lt;T&gt;Array *const <em>b</em>)</code>
 
 In `a` , replaces the elements from indices `i0` \(inclusive\) to `i1` \(exclusive\) with a copy of `b` \.
 
  - Parameter: _a_  
    If null, returns zero\.
  - Parameter: _i0_  
-   The replacement indices, `[i0, i1)` , such that `0 <= i0 <= i1 <= a.size` \.
+   The replacement indices, `\[i0, i1\)` , such that `0 <= i0 <= i1 <= a\.size` \.
  - Parameter: _i1_  
-   The replacement indices, `[i0, i1)` , such that `0 <= i0 <= i1 <= a.size` \.
+   The replacement indices, `\[i0, i1\)` , such that `0 <= i0 <= i1 <= a\.size` \.
  - Parameter: _b_  
    The replacement array\. If null, deletes without replacing\.
  - Return:  
    Success\.
- - Exceptional Return: EDOM  
+ - Exceptional return: EDOM  
    `a` and `b` are not null and the same\.
- - Exceptional Return: EDOM  
+ - Exceptional return: EDOM  
    `i0` or `i1` are out\-of\-bounds or `i0 > i1` \.
- - Exceptional Return: ERANGE  
+ - Exceptional return: ERANGE  
    `b` would cause the array to overflow\.
- - Exceptional Return: realloc  
-   [IEEE Std 1003\.1\-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
+ - Exceptional return: realloc  
+   [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html) \.
  - Order:  
-   &#920;\(`b.size` \) if the elements have the same size, otherwise, amortised &#927;\(`a.size` \+ `b.size` \)\.
+   &#920;\(`b\.size` \) if the elements have the same size, otherwise, amortised &#927;\(`a\.size` \+ `b\.size` \)\.
 
 
 
 
- ### <a name = "fn-<T>ArrayToString" id = "fn-<T>ArrayToString"><T>ArrayToString</a> ###
+ ### <a id = "user-content-fn-e365d362" name = "user-content-fn-e365d362"><T>ArrayToString</a> ###
 
-`static const char *`**`<T>ArrayToString`**`(const struct <T>Array *const `_`a`_`)`
+<code>static const char *<strong>&lt;T&gt;ArrayToString</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
 
-Can print 4 things at once before it overwrites\. One must a `ARRAY_TO_STRING` to a function implementing [<PT>ToString](#typedef-<PT>ToString) to get this functionality\.
+Can print 4 things at once before it overwrites\. One must a `ARRAY\_TO\_STRING` to a function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f) to get this functionality\.
 
  - Return:  
    Prints `a` in a static buffer\.
@@ -607,9 +603,9 @@ Can print 4 things at once before it overwrites\. One must a `ARRAY_TO_STRING` t
 
 
 
- ## <a name = "license-">License</a> ##
+ ## <a id = "user-content-license" name = "user-content-license">License</a> ##
 
-2016 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
+2016 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT) \.
 
 
 

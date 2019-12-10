@@ -19,7 +19,8 @@
  The name that literally becomes `<T>`, and a valid type associated therewith,
  accessible to the compiler at the time of inclusion; should be conformant to
  naming and to the maximum available length of identifiers. Must each be
- present before including.
+ present before including. To get an array, one must pass it included in a
+ struct.
 
  @param[ARRAY_STACK]
  Doesn't define removal functions except <fn:<T>ArrayPop>, making it a stack.
@@ -33,7 +34,7 @@
  `../test/ArrayTest.h`. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PT>Action>. Requires `ARRAY_TO_STRING` and not `NDEBUG`.
 
- @title Contiguous Dynamic Parameterised Array
+ @subtitle Contiguous Dynamic Parameterised Array
  @std C89
  @author Neil */
 
