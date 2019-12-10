@@ -505,12 +505,11 @@ static const char *E_(SetToString)(const struct E_(Set) *const set) {
 		while(x) {
 			if(!is_first) *s++ = comma, *s++ = space;
 			else *s++ = space, is_first = 0;
-			s[11] = '\0';
-			/* Directly to the buffer;
-			 might be a strict aliasing violation, (`C++` it is.) */
+			/* Directly to the buffer; might be a strict aliasing violation,
+			 (`C++` it is.) Is any cpu affected? Probably not. */
 			PE_(to_string)(&x->data, (char (*)[12])s);
 			for(i = 0; *s != '\0' && i < 12; s++, i++);
-			/* No greedy guarantee another element; terminate by ellipsis. */
+			/* Greedy can not guarantee another; terminate by ellipsis. */
 			if((size_t)(s - string) > string_size
 			   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
 			x = x->next;
