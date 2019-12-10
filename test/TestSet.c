@@ -28,7 +28,8 @@ static unsigned int int_hash(unsigned x) {
 static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
 /** Outputs `x` to `a`. */
 static void int_to_string(const unsigned *const x, char (*const a)[12]) {
-	snprintf(*a, sizeof *a, "%u", *x);
+	/*snprintf(*a, sizeof *a, "%u", *x); Gah.*/
+	sprintf(*a, "%u", *x); /* Assumes <= 32-bit. */
 }
 /** Fills `x` with random. */
 static void int_fill(unsigned *const x) { *x = rand(); }
