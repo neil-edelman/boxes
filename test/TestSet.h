@@ -96,9 +96,7 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 		"\trankdir = LR;\n"
 		"\tnode [shape = record, style = filled];\n");
 	fprintf(fp, "\tSet [label=\"\\<" QUOTE(SET_NAME) "\\>Set: "
-		QUOTE(SET_TYPE) "\\l|", (unsigned long)set->size,
-		set->log_capacity ? 1 << set->log_capacity : 0,
-		(double)set->size / (1 << set->log_capacity));
+		QUOTE(SET_TYPE) "\\l|");
 	PE_(stats)(set, "\\l", fp);
 	fprintf(fp, "\"];\n");
 	if(set->buckets) {
