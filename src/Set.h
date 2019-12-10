@@ -3,9 +3,8 @@
 
  <tag:<E>Set> is a collection of elements of <tag:<E>SetElement> that doesn't
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
- <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>. If
- the hash function distributes elements uniformly, it allows lookup, insertion,
- and deletion, of <typedef:<PE>Type>, in average \O(1).
+ <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>,
+ specified as `defines` before inclusion.
 
  Internally, it is a simple, separately chained, hash set with a maximum load
  factor of `ln 2`, and power-of-two resizes, with buckets as pointers. This

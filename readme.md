@@ -9,7 +9,7 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-[&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication; it must be supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\. If the hash function distributes elements uniformly, it allows lookup, insertion, and deletion, of [&lt;PE&gt;Type](#user-content-typedef-11e62996), in average &#927;\(1\)\.
+[&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication; it must be supplied an equality function, `SET\_IS\_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET\_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a), specified as `defines` before inclusion\.
 
 Internally, it is a simple, separately chained, hash set with a maximum load factor of `ln 2` , and power\-of\-two resizes, with buckets as pointers\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another `struct` , as appropriate\. While in a set, the elements should not change in a way that affects their hash values\.
 

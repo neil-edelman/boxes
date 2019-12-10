@@ -1,7 +1,10 @@
 /* Intended to be included by Set.h on `SET_TEST`. */
 
 #include <stdio.h>  /* fprintf FILE */
-#include <math.h>   /* sqrt inf */
+#include <math.h>   /* sqrt NAN? */
+#ifndef NAN /* <https://stackoverflow.com/questions/5714131/nan-literal-in-c> */
+#define NAN (0. / 0.)
+#endif
 #include <string.h> /* memset */
 
 /* Check that `SET_TEST` is a function implementing `<PE>Action`. */
