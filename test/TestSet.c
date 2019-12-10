@@ -134,8 +134,8 @@ static int vec4_is_equal(const struct Vec4 *a, const struct Vec4 *const b) {
 		&& a->n[0] == b->n[0] && a->n[1] == b->n[1];
 }
 static void vec4_to_string(const struct Vec4 *const v4, char (*const a)[12]) {
-	snprintf(*a, sizeof *a, "(%c,%c,%d,%d)",
-		v4->a[0], v4->a[1], v4->n[0], v4->n[1]);
+	sprintf(*a, "(%c,%c,%d,%d)",
+		v4->a[0], v4->a[1], v4->n[0] % 100, v4->n[1] % 100);
 }
 static void vec4_filler(struct Vec4 *const v4) {
 	v4->a[0] = rand() / (RAND_MAX / 26 + 1) + 'A';
