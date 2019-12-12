@@ -42,19 +42,19 @@
 #include <string.h>	/* memcpy memmove (strerror strcpy memcmp in ArrayTest.h) */
 #include <errno.h>	/* errno */
 #include <limits.h> /* LONG_MAX */
-#ifdef ARRAY_TO_STRING /* <-- print */
+#ifdef ARRAY_TO_STRING /* <!-- print */
 #include <stdio.h>	/* strlen */
 #endif /* print --> */
 
 
 /* Check defines. */
-#ifndef ARRAY_NAME /* <-- error */
+#ifndef ARRAY_NAME /* <!-- error */
 #error Generic ARRAY_NAME undefined.
 #endif /* error --> */
-#ifndef ARRAY_TYPE /* <-- error */
+#ifndef ARRAY_TYPE /* <!-- error */
 #error Generic ARRAY_TYPE undefined.
 #endif /* --> */
-#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <-- error */
+#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <!-- error */
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
 
@@ -97,7 +97,7 @@ typedef ARRAY_TYPE PT_(Type);
 
 
 
-#ifdef ARRAY_TO_STRING /* <-- string */
+#ifdef ARRAY_TO_STRING /* <!-- string */
 /** Responsible for turning `<T>` (the first argument) into a 12 `char`
  null-terminated output string (the second.) Private; must re-declare. Used for
  `ARRAY_TO_STRING`. */
@@ -128,7 +128,7 @@ struct T_(Array) {
 };
 
 /* `{0}` is `C99`. */
-#ifndef ARRAY_ZERO /* <-- !zero */
+#ifndef ARRAY_ZERO /* <!-- !zero */
 #define ARRAY_ZERO { 0, 0, 0, 0 }
 #endif /* !zero --> */
 
@@ -136,10 +136,12 @@ struct T_(Array) {
 
 /** Ensures `min_capacity` of `a`.
  @param[update_ptr] Must be in the array or null, it updates this value.
- @return Success; otherwise, `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t`.
- @throws[realloc] [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). */
+ @return Success; otherwise, `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or doesn't
+ follow [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)
+ with `realloc`.
+ @throws[realloc] */
 static int PT_(reserve)(struct T_(Array) *const a,
 	const size_t min_capacity, T **const update_ptr) {
 	size_t c0, c1;
@@ -162,7 +164,8 @@ static int PT_(reserve)(struct T_(Array) *const a,
 		size_t temp = c0 + c1; c0 = c1; c1 = temp;
 		if(c1 > max_size || c1 < c0) c1 = max_size;
 	}
-	if(!(data = realloc(a->data, c0 * sizeof *a->data))) return 0;
+	if(!(data = realloc(a->data, c0 * sizeof *a->data)))
+		{ if(!errno) errno = ERANGE; return 0; }
 	if(update_ptr && a->data != data)
 		*update_ptr = data + (*update_ptr - a->data);
 	a->data = data;
@@ -217,9 +220,7 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Zeros `a` except for `ARRAY_MIGRATE_ALL` which is initialised in the
- containing function, and not `!ARRAY_FREE_LIST`, which is initialised in
- <fn:<PT>reserve>. */
+/** Zeros `a`. */
 static void PT_(array)(struct T_(Array) *const a) {
 	assert(a);
 	a->data          = 0;
@@ -256,9 +257,9 @@ static size_t T_(ArraySize)(const struct T_(Array) *const a) {
 	return a->size;
 }
 
-#ifndef ARRAY_STACK /* <-- !stack */
+#ifndef ARRAY_STACK /* <!-- !stack */
 
-/** Removes `data` from `a`.
+/** Removes `data` from `a`. Only defined if not `ARRAY_STACK`.
  @param[a, data] If null, returns false.
  @param[data] Will be removed; data will remain the same but be updated to the
  next element, or if this was the last element, the pointer will be past the
@@ -276,7 +277,8 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	return 1;
 }
 
-/** Removes `data` from `a` and replaces the spot it was in with the tail.
+/** Removes `data` from `a` and replaces the spot it was in with the tail. Only
+ defined if not `ARRAY_STACK`.
  @param[a, data] If null, returns false.
  @param[data] Will be removed; data will remain the same but be updated to the
  last element, or if this was the last element, the pointer will be past the
@@ -615,7 +617,7 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	return PT_(replace)(a, i0, i1, b);
 }
 
-#ifdef ARRAY_TO_STRING /* <-- print */
+#ifdef ARRAY_TO_STRING /* <!-- print */
 
 /** Can print 4 things at once before it overwrites. One must a
  `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
@@ -668,7 +670,7 @@ terminate:
 
 #endif /* print --> */
 
-#ifdef ARRAY_TEST /* <-- test */
+#ifdef ARRAY_TEST /* <!-- test */
 #include "../test/TestArray.h" /* \include */
 #endif /* test --> */
 
@@ -681,7 +683,7 @@ static void PT_(unused_set)(void) {
 	T_(Array_)(0);
 	T_(Array)(0);
 	T_(ArraySize)(0);
-#ifndef ARRAY_STACK /* <-- !stack */
+#ifndef ARRAY_STACK /* <!-- !stack */
 	T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0);
 #endif /* !stack --> */
@@ -719,9 +721,9 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef ARRAY_TYPE
 /* Undocumented; allows nestled inclusion so long as: `CAT_`, `CAT`, `PCAT`,
  `PCAT_` conform, and `T` is not used. */
-#ifdef ARRAY_SUBTYPE /* <-- sub */
+#ifdef ARRAY_SUBTYPE /* <!-- sub */
 #undef ARRAY_SUBTYPE
-#else /* sub --><-- !sub */
+#else /* sub --><!-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
