@@ -319,38 +319,34 @@ static T *T_(ArrayGet)(const struct T_(Array) *const a) {
 	return a ? a->data : 0;
 }
 
-/** Causing something to be added to the `<T>Array` may invalidate this
- pointer, see <fn:<T>ArrayUpdateNew>.
- @param[a] If null, returns null.
- @return One past the end of the array; take care when dereferencing, as it is
- not part of the array.
- @order \Theta(1)
- @allow */
-static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
-	return a ? a->data + a->size : 0;
-}
-
 /** Gets an index given `data`.
  @param[a] Must be a valid object that stores `data`.
  @param[data] If the element is not part of the `a`, behaviour is undefined.
  @return An index.
  @order \Theta(1)
- @fixme Untested.
  @allow */
 static size_t T_(ArrayIndex)(const struct T_(Array) *const a,
 	const T *const data) {
 	return data - a->data;
 }
 
+/** Causing something to be added to the `<T>Array` may invalidate this
+ pointer, see <fn:<T>ArrayUpdateNew>.
+ @param[a] If null, returns null.
+ @return One past the end of the array; take care when dereferencing.
+ @order \Theta(1)
+ @allow */
+static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
+	return a && a->data ? a->data + a->size : 0;
+}
+
 /** @param[a] If null, returns null.
  @return The last element or null if the a is empty. Causing something to be
  added to the `a` may invalidate this pointer.
  @order \Theta(1)
- @fixme Untested.
  @allow */
 static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
-	if(!a || !a->size) return 0;
-	return a->data + a->size - 1;
+	return a && a->size ? a->data + a->size - 1 : 0;
 }
 
 /** The same value as <fn:<T>ArrayPeek>.
@@ -361,13 +357,13 @@ static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
  @order \Theta(1)
  @allow */
 static T *T_(ArrayPop)(struct T_(Array) *const a) {
-	if(!a || !a->size) return 0;
-	return a->data + --a->size;
+	return a && a->size ? a->data + --a->size : 0;
 }
 
 /** Iterate through `a` backwards.
  @param[a] The array; if null, returns null.
- @param[here] Set it to null to get the last element, if it exists.
+ @param[here] Set it to the current element; when null, it will be last
+ element, if it exists.
  @return A pointer to the previous element or null if it does not exist.
  @order \Theta(1)
  @allow */
@@ -407,13 +403,14 @@ static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
 	return a->data + a->size++;
 }
 
-/** Gets an uninitialised new element. May move the `a` to a new memory
- location to fit the new size.
+/** Gets an uninitialised new element. May move the elements of `a` to a new
+ memory location to fit the new size and then all the pointers will be stale.
  @param[a] If is null, returns null.
- @return A new, un-initialised, element, or null and `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` objects.
- @throws[realloc] [IEEE Std 1003.1-2001
+ @return A new, un-initialised, element, or null and `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` objects or
+ `realloc` error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
  @order Amortised \O(1).
  @allow */
 static T *T_(ArrayNew)(struct T_(Array) *const a) {
@@ -425,12 +422,12 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
  is within the memory region that was changed to accomodate new space.
  @param[a] If null, returns null.
  @param[update_ptr] Pointer to update on memory move. If null, does nothing.
- @return A new, un-initialised, element, or null and `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t`.
- @throws[realloc] [IEEE Std 1003.1-2001
+ @return A new, un-initialised, element, or null and `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` objects or
+ `realloc` error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
  @order Amortised \O(1).
- @fixme Untested.
  @allow */
 static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 	T **const update_ptr) {

@@ -39,7 +39,7 @@ static int PT_(zero_filled)(const T *const t) {
 
 static void PT_(test_basic)(void) {
 	struct T_(Array) a;
-	T ts[5], *t, *t1;
+	T ts[5], *t, *t1, *start;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
 	int is_zero;
@@ -111,6 +111,7 @@ static void PT_(test_basic)(void) {
 	T_(ArrayClear)(&a);
 	assert(T_(ArrayPeek)(&a) == 0);
 	PT_(valid_state)(&a);
+	assert(T_(ArrayEnd)(&a) == T_(ArrayGet(&a)) + T_(ArraySize)(&a));
 
 #ifndef ARRAY_STACK /* <!-- !stack */
 	printf("Testing lazy remove.\n");
@@ -135,8 +136,10 @@ static void PT_(test_basic)(void) {
 		memcpy(t, ts + i, sizeof *t);
 	}
 	assert(T_(ArrayPeek)(&a));
+	assert(T_(ArrayIndex)(&a, T_(ArrayPeek)(&a)) == ts_size - 1);
 	printf("Now: %s.\n", T_(ArrayToString)(&a));
 	assert(T_(ArraySize)(&a) == ts_size);
+	assert(T_(ArrayEnd)(&a) == T_(ArrayGet(&a)) + T_(ArraySize)(&a));
 #ifndef ARRAY_STACK /* <!-- !stack */
 	if((t = T_(ArrayGet)(&a) + ts_size - 2)
 		&& !T_(ArrayRemove)(&a, t)) {
@@ -195,9 +198,10 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArraySize)(&a) == !is_zero);
 
 	/* Big. */
+	start = T_(ArrayEnd)(&a);
 	for(i = 0; i < big; i++) {
-		t = T_(ArrayNew)(&a);
-		assert(t);
+		t = T_(ArrayUpdateNew)(&a, &start);
+		assert(t && (size_t)(t - start) == i);
 		PT_(filler)(t);
 	}
 	printf("%s.\n", T_(ArrayToString)(&a));
