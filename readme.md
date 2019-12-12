@@ -11,7 +11,7 @@
 
  ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-[&lt;T&gt;Array](#user-content-tag-f128eca2)`is a dynamic contiguous array that stores`<T>`, which must be set using`ARRAY_TYPE\`\.Toensurethatthecapacityisgreaterthenorequaltothesize,resizingmaybenecessaryandincursamortisedcost\.Whenaddingnewelements,theelementsmaychangememorylocationtofit\.Itisthereforeunstable;anypointerstothismemorymaybecomestaleandunusablewhenexpanding\.\`<T>Array\`isnotsynchronised\.Errorsarereturnedwith\`errno\`\.Theparametersarepreprocessormacros,andareallundefinedattheendofthefileforconvenience\.\`assert\.h\`isincludedinthisfile;tostopthedebugassertions,use\`\#defineNDEBUG\`beforeinclusion\.\!\[States\]\(\.\./web/states\.png\)@param\[ARRAY_NAME, ARRAY_TYPE\]\`<T>\`thatsatisfies\`C\`namingconventionswhenmangledandavalidtag\(type\)associatedtherewith;required\.\`<PT>\`isprivate,whosenamesareprefixedinamannertoavoidcollisions;anyshouldbere\-definedpriortouseelsewhere\.@param\[ARRAY_STACK\] Doesn't define removal functions except [&lt;T&gt;ArrayPop](#user-content-fn-c32fdd31), making it a stack\.
+[&lt;T&gt;Array](#user-content-tag-f128eca2)`is a dynamic contiguous array that stores`<T>`, which must be set using`ARRAY_TYPE\`\.Toensurethatthecapacityisgreaterthenorequaltothesize,resizingmaybenecessaryandincursamortisedcost\.Whenaddingnewelements,theelementsmaychangememorylocationtofit\.Itisthereforeunstable;anypointerstothismemorymaybecomestaleandunusablewhenexpanding\.\`<T>Array\`isnotsynchronised\.Errorsarereturnedwith\`errno\`\.Theparametersarepreprocessormacros,andareallundefinedattheendofthefileforconvenience\.\`assert\.h\`isincludedinthisfile;tostopthedebugassertions,use\`\#defineNDEBUG\`before\`assert\.h\`\.\!\[States\]\(\.\./web/states\.png\)@param\[ARRAY_NAME, ARRAY_TYPE\]\`<T>\`thatsatisfies\`C\`namingconventionswhenmangledandavalidtag\(type\)associatedtherewith;required\.\`<PT>\`isprivate,whosenamesareprefixedinamannertoavoidcollisions;anyshouldbere\-definedpriortouseelsewhere\.@param\[ARRAY_STACK\] Doesn't define removal functions except [&lt;T&gt;ArrayPop](#user-content-fn-c32fdd31), making it a stack\.
 
  - Parameter: ARRAY\_TO\_STRING  
    Optional print function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f); makes available [&lt;T&gt;ArrayToString](#user-content-fn-e365d362)\.
@@ -19,8 +19,6 @@
    Unit testing framework [&lt;T&gt;ArrayTest](#user-content-fn-8737e8e2), included in a separate header, [\.\./test/ArrayTest\.h](../test/ArrayTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Requires `ARRAY_TO_STRING` and not `NDEBUG`\.
  * Standard:  
    C89
- * Caveat:  
-   ([<T>ArrayIndex](#fn:<T>ArrayIndex)[<T>ArrayPeek](#fn:<T>ArrayPeek)[<T>ArrayUpdateNew](#fn:<T>ArrayUpdateNew)[<T>ArrayBuffer](#fn:<T>ArrayBuffer)[<T>ArrayExpand](#fn:<T>ArrayExpand)[<T>ArrayEach](#fn:<T>ArrayEach)[<T>ArrayIfEach](#fn:<T>ArrayIfEach)[<T>ArrayAny](#fn:<T>ArrayAny))
 
 
 
@@ -81,9 +79,9 @@ The array\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T
 
 <tr><td align = right>static T *</td><td><a href = "#user-content-fn-3d64b66e">&lt;T&gt;ArrayGet</a></td><td>a</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#user-content-fn-168bb5af">&lt;T&gt;ArrayEnd</a></td><td>a</td></tr>
-
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-2f86cf96">&lt;T&gt;ArrayIndex</a></td><td>a, data</td></tr>
+
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-168bb5af">&lt;T&gt;ArrayEnd</a></td><td>a</td></tr>
 
 <tr><td align = right>static T *</td><td><a href = "#user-content-fn-f880f61d">&lt;T&gt;ArrayPeek</a></td><td>a</td></tr>
 
@@ -167,7 +165,7 @@ Initialises `a` to be empty\.
 
 <code>static int <strong>&lt;T&gt;ArrayRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code>
 
-Removes `data` from `a`\.
+Removes `data` from `a`\. Only defined if not `ARRAY_STACK`\.
 
  - Parameter: _a_  
    If null, returns false\.
@@ -187,7 +185,7 @@ Removes `data` from `a`\.
 
 <code>static int <strong>&lt;T&gt;ArrayLazyRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code>
 
-Removes `data` from `a` and replaces the spot it was in with the tail\.
+Removes `data` from `a` and replaces the spot it was in with the tail\. Only defined if not `ARRAY_STACK`\.
 
  - Parameter: _a_  
    If null, returns false\.
@@ -233,22 +231,6 @@ Causing something to be added to the `<T>Array` may invalidate this pointer, see
 
 
 
- ### <a id = "user-content-fn-168bb5af" name = "user-content-fn-168bb5af">&lt;T&gt;ArrayEnd</a> ###
-
-<code>static T *<strong>&lt;T&gt;ArrayEnd</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
-
-Causing something to be added to the `<T>Array` may invalidate this pointer, see [&lt;T&gt;ArrayUpdateNew](#user-content-fn-e810048b)\.
-
- - Parameter: _a_  
-   If null, returns null\.
- - Return:  
-   One past the end of the array; take care when dereferencing, as it is not part of the array\.
- - Order:  
-   &#920;\(1\)
-
-
-
-
  ### <a id = "user-content-fn-2f86cf96" name = "user-content-fn-2f86cf96">&lt;T&gt;ArrayIndex</a> ###
 
 <code>static size_t <strong>&lt;T&gt;ArrayIndex</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>data</em>)</code>
@@ -263,8 +245,22 @@ Gets an index given `data`\.
    An index\.
  - Order:  
    &#920;\(1\)
- - Caveat:  
-   Untested\.
+
+
+
+
+ ### <a id = "user-content-fn-168bb5af" name = "user-content-fn-168bb5af">&lt;T&gt;ArrayEnd</a> ###
+
+<code>static T *<strong>&lt;T&gt;ArrayEnd</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
+
+Causing something to be added to the `<T>Array` may invalidate this pointer, see [&lt;T&gt;ArrayUpdateNew](#user-content-fn-e810048b)\.
+
+ - Parameter: _a_  
+   If null, returns null\.
+ - Return:  
+   One past the end of the array; take care when dereferencing\.
+ - Order:  
+   &#920;\(1\)
 
 
 
@@ -279,8 +275,6 @@ Gets an index given `data`\.
    The last element or null if the a is empty\. Causing something to be added to the `a` may invalidate this pointer\.
  - Order:  
    &#920;\(1\)
- - Caveat:  
-   Untested\.
 
 
 
@@ -310,7 +304,7 @@ Iterate through `a` backwards\.
  - Parameter: _a_  
    The array; if null, returns null\.
  - Parameter: _here_  
-   Set it to null to get the last element, if it exists\.
+   Set it to the current element; when null, it will be last element, if it exists\.
  - Return:  
    A pointer to the previous element or null if it does not exist\.
  - Order:  
@@ -341,16 +335,15 @@ Iterate through `a`\. It is safe to add using [&lt;T&gt;ArrayUpdateNew](#user-co
 
 <code>static T *<strong>&lt;T&gt;ArrayNew</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
 
-Gets an uninitialised new element\. May move the `a` to a new memory location to fit the new size\.
+Gets an uninitialised new element\. May move the elements of `a` to a new memory location to fit the new size and then all the pointers will be stale\.
 
  - Parameter: _a_  
    If is null, returns null\.
  - Return:  
-   A new, un\-initialised, element, or null and `errno` may be set\.
+   A new, un\-initialised, element, or null and `errno` will be set\.
  - Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` objects\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  - Exceptional return: realloc  
-   [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  - Order:  
    Amortised &#927;\(1\)\.
 
@@ -368,15 +361,12 @@ Gets an uninitialised new element in `a` and updates the `update_ptr` if it is w
  - Parameter: _update\_ptr_  
    Pointer to update on memory move\. If null, does nothing\.
  - Return:  
-   A new, un\-initialised, element, or null and `errno` may be set\.
+   A new, un\-initialised, element, or null and `errno` will be set\.
  - Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t`\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  - Exceptional return: realloc  
-   [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  - Order:  
    Amortised &#927;\(1\)\.
- - Caveat:  
-   Untested\.
 
 
 
@@ -394,13 +384,10 @@ Ensures that `a` array is `buffer` capacity beyond the elements in the array\.
  - Return:  
    One past the end of the array, or null and `errno` may be set\.
  - Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t`\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  - Exceptional return: realloc  
-   [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  - Order:  
    Amortised &#927;\(`buffer`\)\.
- - Caveat:  
-   Test\.
 
 
 
@@ -417,8 +404,6 @@ Adds `add` to the size in `a`\.
    The size added is greater than the capacity\. To avoid this, call [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c) before\.
  - Order:  
    &#927;\(1\)
- - Caveat:  
-   Untested\.
 
 
 
@@ -435,8 +420,6 @@ Iterates through `a` and calls `action` on all the elements\. The topology of th
    If null, does nothing\.
  - Order:  
    &#927;\(`size` &#215; `action`\)
- - Caveat:  
-   Untested\.
 
 
 
@@ -455,8 +438,6 @@ Iterates through `a` and calls `action` on all the elements for which `predicate
    If null, does nothing\.
  - Order:  
    &#927;\(`size` &#215; `action`\)
- - Caveat:  
-   Untested\.
 
 
 
@@ -475,8 +456,6 @@ Iterates through `a` and calls `predicate` until it returns true\.
    The first `predicate` that returned true, or, if the statement is false on all, null\.
  - Order:  
    &#927;\(`size` &#215; `action`\)
- - Caveat:  
-   Untested\.
 
 
 

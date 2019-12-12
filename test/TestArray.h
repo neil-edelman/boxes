@@ -17,6 +17,7 @@ static const PT_(Action) PT_(filler) = (ARRAY_TEST);
 
 
 
+/** @return Is `a` in a valid state? */
 static void PT_(valid_state)(const struct T_(Array) *const a) {
 	const size_t max_size = (size_t)-1 / sizeof *a->data;
 	/* Null is a valid state. */
@@ -27,6 +28,8 @@ static void PT_(valid_state)(const struct T_(Array) *const a) {
 		|| (a->capacity == a->next_capacity) == max_size);
 }
 
+/** @implements <PT>Predicate
+ @return Is `t` zero-filled? */
 static int PT_(zero_filled)(const T *const t) {
 	const char *c = (const char *)t,
 		*const end = (const char *)(t + 1);
@@ -391,6 +394,8 @@ static void PT_(test_replace)(void) {
 	T_(Array_)(&a);
 }
 
+/** @implements <PT>Predicate
+ @return A set sequence of ones and zeros, independant of `data`. */
 static int PT_(keep_one)(const T *const data) {
 	static size_t i;
 	static const int things[] = { 1,0,0,0,0,1,0,0,1,1,0,1,0,1,0,1,0 };
@@ -423,11 +428,15 @@ static void PT_(test_keep)(void) {
 
 static int PT_(num);
 
+/** Increments a global variable, independent of `t`.
+ @implements <PT>Action */
 static void PT_(increment)(T *const t) {
 	(void)t;
 	PT_(num)++;
 }
 
+/** True, independent of `t`.
+ @implements <PT>Predicate */
 static int PT_(true)(const T *const t) {
 	(void)t;
 	return 1;
@@ -455,8 +464,8 @@ static void PT_(test_each)(void) {
 	assert(t == T_(ArrayGet)(&one));
 }
 
-/** The list will be tested on stdout. Requires `ARRAY_TEST`,
- `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`. */
+/** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
+ `NDEBUG` while defining `assert`. */
 static void T_(ArrayTest)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">Array of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: "

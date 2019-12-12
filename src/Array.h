@@ -664,7 +664,7 @@ terminate:
 #endif /* print --> */
 
 #ifdef ARRAY_TEST /* <!-- test */
-#include "../test/TestArray.h" /* \include */
+#include "../test/TestArray.h" /** \include */
 #endif /* test --> */
 
 /* Prototype. */
