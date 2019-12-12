@@ -397,34 +397,24 @@ static void PT_(test_keep)(void) {
 	T_(Array_)(&a);
 }
 
-/** The list will be tested on stdout. */
+/** The list will be tested on stdout. Requires `ARRAY_TEST`,
+ `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`. */
 static void T_(ArrayTest)(void) {
-	printf("Array<" QUOTE(ARRAY_NAME) ">: of type <" QUOTE(ARRAY_TYPE)
+	printf("<" QUOTE(ARRAY_NAME) ">Array of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: "
 #ifdef ARRAY_STACK
 		"ARRAY_STACK; "
 #endif
-#ifdef ARRAY_TAIL_DELETE
-		"ARRAY_TAIL_DELETE; "
-#endif
-#ifdef ARRAY_MIGRATE_EACH
-		"ARRAY_MIGRATE_EACH<" QUOTE(ARRAY_MIGRATE_EACH) ">; "
-#endif
-#ifdef ARRAY_MIGRATE_UPDATE
-		"ARRAY_MIGRATE_UPDATE<" QUOTE(ARRAY_MIGRATE_UPDATE) ">; "
-#endif		   
 #ifdef ARRAY_TO_STRING
-		"ARRAY_TO_STRING<" QUOTE(ARRAY_TO_STRING) ">; "
+		"ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
 #endif
-#ifdef ARRAY_TEST
-		"ARRAY_TEST<" QUOTE(ARRAY_TEST) ">; "
-#endif
+		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; "
 		"testing:\n");
 	PT_(test_basic)();
 	PT_(test_random)();
 	PT_(test_replace)();
 	PT_(test_keep)();
-	fprintf(stderr, "Done tests of Array<" QUOTE(ARRAY_NAME) ">.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">Array.\n\n");
 }
 
 /* Un-define all macros. */

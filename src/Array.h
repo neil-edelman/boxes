@@ -1,8 +1,8 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- `<T>Array` is a dynamic contiguous array that stores `<T>`, which must be set
- using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal to
+ <tag:<T>Array>` is a dynamic contiguous array that stores `<T>`, which must be
+ set using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal to
  the size, resizing may be necessary and incurs amortised cost. When adding new
  elements, the elements may change memory location to fit. It is therefore
  unstable; any pointers to this memory may become stale and unusable when
@@ -11,16 +11,15 @@
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
  file for convenience. `assert.h` is included in this file; to stop the
- debug assertions, use `#define NDEBUG` before inclusion.
+ debug assertions, use `#define NDEBUG` before `assert.h`.
 
  ![States](../web/states.png)
 
  @param[ARRAY_NAME, ARRAY_TYPE]
- The name that literally becomes `<T>`, and a valid type associated therewith,
- accessible to the compiler at the time of inclusion; should be conformant to
- naming and to the maximum available length of identifiers. Must each be
- present before including. To get an array, one must pass it included in a
- struct.
+ `<T>` that satisfies `C` naming conventions when mangled and a valid tag
+ (type) associated therewith; required. `<PT>` is private, whose names are
+ prefixed in a manner to avoid collisions; any should be re-defined prior to
+ use elsewhere.
 
  @param[ARRAY_STACK]
  Doesn't define removal functions except <fn:<T>ArrayPop>, making it a stack.
@@ -30,24 +29,21 @@
  <fn:<T>ArrayToString>.
 
  @param[ARRAY_TEST]
- Unit testing framework using `<T>ArrayTest`, included in a separate header,
- `../test/ArrayTest.h`. Must be defined equal to a (random) filler function,
+ Unit testing framework <fn:<T>ArrayTest>, included in a separate header,
+ <../test/ArrayTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PT>Action>. Requires `ARRAY_TO_STRING` and not `NDEBUG`.
 
- @subtitle Contiguous Dynamic Parameterised Array
- @std C89
- @author Neil */
+ @subtitle Parameterised Contiguous Dynamic Array (Vector)
+ @std C89 */
 
-
-
-#include <stddef.h>	/* ptrdiff_t offset_of */
+#include <stddef.h>	/* offset_of */
 #include <stdlib.h>	/* realloc free */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy memmove (strerror strcpy memcmp in ArrayTest.h) */
 #include <errno.h>	/* errno */
 #include <limits.h> /* LONG_MAX */
 #ifdef ARRAY_TO_STRING /* <-- print */
-#include <stdio.h>	/* sprintf */
+#include <stdio.h>	/* strlen */
 #endif /* print --> */
 
 
@@ -461,7 +457,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
  @throws[ERANGE] The size added is greater than the capacity. To avoid this,
  call <fn:<T>ArrayBuffer> before.
  @order \O(1)
- @fixme Test.
+ @fixme Untested.
  @allow */
 static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	if(!a) return 0;
@@ -477,7 +473,6 @@ static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
  @param[a, action] If null, does nothing.
  @order \O(`size` \times `action`)
  @fixme Untested.
- @fixme Sequence interface.
  @allow */
 static void T_(ArrayEach)(struct T_(Array) *const a,
 	const PT_(Action) action) {
@@ -492,7 +487,6 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
  @param[a, predicate, action] If null, does nothing.
  @order \O(`size` \times `action`)
  @fixme Untested.
- @fixme Sequence interface.
  @allow */
 static void T_(ArrayIfEach)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate, const PT_(Action) action) {
@@ -508,7 +502,6 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
  false on all, null.
  @order \O(`size` \times `action`)
  @fixme Untested.
- @fixme Sequence interface.
  @allow */
 static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
@@ -588,8 +581,7 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
  @throws[ERANGE] `anchor` is not null and not in `a`.
  @throws[ERANGE] `range` is greater then 65535 or smaller then -65534.
  @throws[ERANGE] `b` would cause the array to overflow.
- @throws[realloc] [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
  amortised \O(`a.size` + `b.size`).
  @allow */
@@ -612,8 +604,7 @@ static int T_(ArraySplice)(struct T_(Array) *const a, const T *anchor,
  @throws[EDOM] `a` and `b` are not null and the same.
  @throws[EDOM] `i0` or `i1` are out-of-bounds or `i0 > i1`.
  @throws[ERANGE] `b` would cause the array to overflow.
- @throws[realloc] [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
  @order \Theta(`b.size`) if the elements have the same size, otherwise,
  amortised \O(`a.size` + `b.size`).
  @allow */
@@ -626,83 +617,59 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 
 #ifdef ARRAY_TO_STRING /* <-- print */
 
-#ifndef ARRAY_PRINT_THINGS /* <-- once inside translation unit */
-#define ARRAY_PRINT_THINGS
-
-static const char *const array_cat_start     = "[";
-static const char *const array_cat_end       = "]";
-static const char *const array_cat_alter_end = "...]";
-static const char *const array_cat_sep       = ", ";
-static const char *const array_cat_star      = "*";
-static const char *const array_cat_null      = "null";
-
-struct Array_SuperCat {
-	char *print, *cursor;
-	size_t left;
-	int is_truncated;
-};
-/** Initialises `cat` to a static array `print` and `print_size`. */
-static void array_super_cat_init(struct Array_SuperCat *const cat,
-	char *const print, const size_t print_size) {
-	cat->print = cat->cursor = print;
-	cat->left = print_size;
-	cat->is_truncated = 0;
-	print[0] = '\0';
-}
-/** `append`s the string to `cat` */
-static void array_super_cat(struct Array_SuperCat *const cat,
-	const char *const append) {
-	size_t lu_took; int took;
-	if(cat->is_truncated) return;
-	took = sprintf(cat->cursor, "%.*s", (int)cat->left, append);
-	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
-	if(took == 0) { return; }
-	if((lu_took = (size_t)took) >= cat->left)
-		cat->is_truncated = -1, lu_took = cat->left - 1;
-	cat->cursor += lu_took, cat->left -= lu_took;
-}
-#endif /* once --> */
-
 /** Can print 4 things at once before it overwrites. One must a
  `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
  this functionality.
  @return Prints `a` in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
- @fixme ToString interface.
  @allow */
 static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
-	static char buffer[4][256];
-	static unsigned buffer_i;
-	struct Array_SuperCat cat;
-	int is_first = 1;
-	char scratch[12];
+	static char buffers[4][256];
+	static size_t buffer_i;
+	char *buffer = buffers[buffer_i++], *b = buffer;
+	const size_t buffers_no = sizeof buffers / sizeof *buffers,
+		buffer_size = sizeof *buffers / sizeof **buffers;
+	const char start = '(', comma = ',', space = ' ', end = ')',
+		*const ellipsis_end = ",…)", *const null = "null";
+	const size_t ellipsis_end_len = strlen(ellipsis_end),
+		null_len = strlen(null);
 	size_t i;
-	assert(strlen(array_cat_alter_end) >= strlen(array_cat_end));
-	assert(sizeof buffer > strlen(array_cat_alter_end));
-	array_super_cat_init(&cat, buffer[buffer_i],
-		sizeof *buffer / sizeof **buffer - strlen(array_cat_alter_end));
-	buffer_i++, buffer_i &= 3;
-	if(!a) {
-		array_super_cat(&cat, array_cat_null);
-		return cat.print;
+	PT_(Type) *e, *e_end;
+	int is_first = 1;
+	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
+		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
+		&& buffer_size >= null_len + 1);
+	/* Advance the buffer for next time. */
+	buffer_i &= buffers_no - 1;
+	/* Null array. */
+	if(!a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
+	/* Otherwise. */
+	*b++ = start;
+	if(!a->data || !a->size) goto end_array;
+	for(e = a->data, e_end = a->data + a->size; ; ) {
+		if(!is_first) *b++ = comma, *b++ = space;
+		else is_first = 0;
+		PT_(to_string)(e, (char (*)[12])b);
+		for(i = 0; *b != '\0' && i < 12; b++, i++);
+		if(++e >= e_end) break;
+		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
+			goto ellipsis;
 	}
-	array_super_cat(&cat, array_cat_start);
-	for(i = 0; i < a->size; i++) {
-		if(!is_first) array_super_cat(&cat, array_cat_sep); else is_first = 0;
-		PT_(to_string)(a->data + i, &scratch),
-		scratch[sizeof scratch - 1] = '\0';
-		array_super_cat(&cat, scratch);
-		if(cat.is_truncated) break;
-	}
-	sprintf(cat.cursor, "%s",
-		cat.is_truncated ? array_cat_alter_end : array_cat_end);
-	return cat.print; /* Static buffer. */
+end_array:
+	*b++ = end;
+	goto terminate;
+ellipsis:
+	memcpy(b, ellipsis_end, ellipsis_end_len), b += ellipsis_end_len;
+terminate:
+	*b++ = '\0';
+	assert(b <= buffer + buffer_size);
+	return buffer;
 }
 
 #endif /* print --> */
 
 #ifdef ARRAY_TEST /* <-- test */
-#include "../test/TestArray.h" /* Need this file if one is going to run tests.*/
+#include "../test/TestArray.h" /* \include */
 #endif /* test --> */
 
 /* Prototype. */
