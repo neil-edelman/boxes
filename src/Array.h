@@ -407,8 +407,8 @@ static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
  memory location to fit the new size and then all the pointers will be stale.
  @param[a] If is null, returns null.
  @return A new, un-initialised, element, or null and `errno` will be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` objects or
- `realloc` error and doesn't follow [IEEE Std 1003.1-2001
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc]
  @order Amortised \O(1).
@@ -423,8 +423,8 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
  @param[a] If null, returns null.
  @param[update_ptr] Pointer to update on memory move. If null, does nothing.
  @return A new, un-initialised, element, or null and `errno` will be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` objects or
- `realloc` error and doesn't follow [IEEE Std 1003.1-2001
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc]
  @order Amortised \O(1).
@@ -440,11 +440,11 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  @param[a] If is null, returns null.
  @param[buffer] If this is zero, returns null.
  @return One past the end of the array, or null and `errno` may be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t`.
- @throws[realloc] [IEEE Std 1003.1-2001
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
  @order Amortised \O(`buffer`).
- @fixme Test.
  @allow */
 static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
 	if(!a || !buffer || !PT_(reserve)(a, a->size + buffer, 0)) return 0;
@@ -456,7 +456,6 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
  @throws[ERANGE] The size added is greater than the capacity. To avoid this,
  call <fn:<T>ArrayBuffer> before.
  @order \O(1)
- @fixme Untested.
  @allow */
 static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	if(!a) return 0;
@@ -466,12 +465,11 @@ static int T_(ArrayExpand)(struct T_(Array) *const a, const size_t add) {
 	return 1;
 }
 
-/** Iterates through `a` and calls `action` on all the elements. The topology of
- the list can not change while in this function. That is, don't call
+/** Iterates through `a` and calls `action` on all the elements. The topology
+ of the list can not change while in this function. That is, don't call
  <fn:<T>ArrayNew>, <fn:<T>ArrayRemove>, _etc_ in `action`.
  @param[a, action] If null, does nothing.
  @order \O(`size` \times `action`)
- @fixme Untested.
  @allow */
 static void T_(ArrayEach)(struct T_(Array) *const a,
 	const PT_(Action) action) {
@@ -485,7 +483,6 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
  this function.
  @param[a, predicate, action] If null, does nothing.
  @order \O(`size` \times `action`)
- @fixme Untested.
  @allow */
 static void T_(ArrayIfEach)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate, const PT_(Action) action) {
@@ -500,7 +497,6 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
  @order \O(`size` \times `action`)
- @fixme Untested.
  @allow */
 static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
@@ -708,7 +704,7 @@ static void PT_(unused_set)(void) {
 #endif
 	PT_(unused_coda)();
 }
-/** `clang`'s pre-processor is not fooled if you have one function. */
+/* Some newer compilers are smart. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 

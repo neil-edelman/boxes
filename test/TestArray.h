@@ -365,6 +365,7 @@ static void PT_(test_replace)(void) {
 	assert(t);
 	memcpy(t, ts + 2, sizeof *t * 2);
 	T_(ArrayExpand)(&b, 2);
+	assert(T_(ArraySize)(&b) == 2);
 	/* a = [[1],[0],[1],[4],[0]]; b = [[2],[3]] */
 	printf("a = %s, b = %s.\n", T_(ArrayToString)(&a), T_(ArrayToString)(&b));
 	T_(ArraySplice)(&a, 0, -1, &b);
@@ -420,6 +421,40 @@ static void PT_(test_keep)(void) {
 	T_(Array_)(&a);
 }
 
+static int PT_(num);
+
+static void PT_(increment)(T *const t) {
+	(void)t;
+	PT_(num)++;
+}
+
+static int PT_(true)(const T *const t) {
+	(void)t;
+	return 1;
+}
+
+static void PT_(test_each)(void) {
+	struct T_(Array) empty = ARRAY_ZERO, one = ARRAY_ZERO;
+	T *t;
+	t = T_(ArrayNew)(&one);
+	assert(t);
+	PT_(num) = 0;
+	T_(ArrayEach)(&empty, &PT_(increment));
+	assert(!PT_(num));
+	T_(ArrayEach)(&one, &PT_(increment));
+	assert(PT_(num) == 1);
+	PT_(num) = 0;
+	T_(ArrayIfEach)(&empty, &PT_(true), &PT_(increment));
+	assert(!PT_(num));
+	T_(ArrayIfEach)(&one, &PT_(true), &PT_(increment));
+	assert(PT_(num) == 1);
+	PT_(num) = 0;
+	t = T_(ArrayAny)(&empty, &PT_(true));
+	assert(!t);
+	t = T_(ArrayAny)(&one, &PT_(true));
+	assert(t == T_(ArrayGet)(&one));
+}
+
 /** The list will be tested on stdout. Requires `ARRAY_TEST`,
  `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`. */
 static void T_(ArrayTest)(void) {
@@ -437,6 +472,7 @@ static void T_(ArrayTest)(void) {
 	PT_(test_random)();
 	PT_(test_replace)();
 	PT_(test_keep)();
+	PT_(test_each)();
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">Array.\n\n");
 }
 
