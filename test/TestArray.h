@@ -30,7 +30,7 @@ static void PT_(valid_state)(const struct T_(Array) *const a) {
 
 /** @implements <PT>Predicate
  @return Is `t` zero-filled? */
-static int PT_(zero_filled)(const T *const t) {
+static int PT_(zero_filled)(T *const t) {
 	const char *c = (const char *)t,
 		*const end = (const char *)(t + 1);
 	assert(t);
@@ -397,7 +397,7 @@ static void PT_(test_replace)(void) {
 
 /** @implements <PT>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
-static int PT_(keep_one)(const T *const data) {
+static int PT_(keep_one)(T *const data) {
 	static size_t i;
 	static const int things[] = { 1,0,0,0,0,1,0,0,1,1,0,1,0,1,0,1,0 };
 	const int predicate = things[i++];
@@ -440,7 +440,7 @@ static void PT_(increment)(T *const t) {
 
 /** True, independent of `t`.
  @implements <PT>Predicate */
-static int PT_(true)(const T *const t) {
+static int PT_(true)(T *const t) {
 	(void)t;
 	return 1;
 }
