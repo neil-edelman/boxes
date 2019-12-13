@@ -410,6 +410,8 @@ static void PT_(test_keep)(void) {
 	T ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct T_(Array) a = ARRAY_ZERO;
+	/* Valgrind. */
+	memset(ts, 0, sizeof ts);
 	PT_(valid_state)(&a);
 	for(t = ts, t1 = t + ts_size; t < t1; t++) {
 		PT_(filler)(t);
