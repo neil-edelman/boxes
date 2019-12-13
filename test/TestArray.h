@@ -466,6 +466,7 @@ static void PT_(test_each)(void) {
 	assert(!t);
 	t = T_(ArrayAny)(&one, &PT_(true));
 	assert(t == T_(ArrayGet)(&one));
+	T_(Array_)(&one);
 }
 
 /** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
