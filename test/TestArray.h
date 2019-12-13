@@ -285,11 +285,12 @@ static void PT_(test_random)(void) {
 static void PT_(test_replace)(void) {
 	T ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-
 	struct T_(Array) a, b;
 	T *e;
 	int success;
 
+	/* valgrind does not like this. */
+	memset(ts, 0, sizeof ts);
 	/* Get elements. */
 	for(t = ts, t1 = t + ts_size; t < t1; t++) PT_(filler)(t);
 	printf("Test replace.\n");
@@ -447,6 +448,7 @@ static void PT_(test_each)(void) {
 	T *t;
 	t = T_(ArrayNew)(&one);
 	assert(t);
+	if(!t) return;
 	PT_(num) = 0;
 	T_(ArrayEach)(&empty, &PT_(increment));
 	assert(!PT_(num));
