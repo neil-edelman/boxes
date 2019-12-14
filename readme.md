@@ -27,7 +27,7 @@
 
  ### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f">&lt;PT&gt;ToString</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*const)[12]);</code>
+<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code>
 
 Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-terminated output string \(the second\.\) Private; must re\-declare\. Used for `ARRAY_TO_STRING`\.
 
@@ -35,7 +35,7 @@ Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-term
 
  ### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81">&lt;PT&gt;Action</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code>
+<code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *data);</code>
 
 Operates by side\-effects on `data` only\. Private; must re\-declare\.
 
@@ -43,7 +43,7 @@ Operates by side\-effects on `data` only\. Private; must re\-declare\.
 
  ### <a id = "user-content-typedef-d7c73930" name = "user-content-typedef-d7c73930">&lt;PT&gt;Predicate</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *const data);</code>
+<code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *data);</code>
 
 Given constant `data`, returns a boolean\. Private; must re\-declare\.
 
@@ -105,7 +105,7 @@ The array\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T
 
 <tr><td align = right>static T *</td><td><a href = "#user-content-fn-5d3e6684">&lt;T&gt;ArrayAny</a></td><td>a, predicate</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-66da1814">&lt;T&gt;ArrayKeepIf</a></td><td>a, keep</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-66da1814">&lt;T&gt;ArrayKeepIf</a></td><td>a, keep, destruct</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-761b4122">&lt;T&gt;ArrayTrim</a></td><td>a, predicate</td></tr>
 
@@ -462,9 +462,9 @@ Iterates through `a` and calls `predicate` until it returns true\.
 
  ### <a id = "user-content-fn-66da1814" name = "user-content-fn-66da1814">&lt;T&gt;ArrayKeepIf</a> ###
 
-<code>static void <strong>&lt;T&gt;ArrayKeepIf</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Predicate <em>keep</em>)</code>
+<code>static void <strong>&lt;T&gt;ArrayKeepIf</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Predicate <em>keep</em>, const &lt;PT&gt;Action <em>destruct</em>)</code>
 
-For all elements of `a`, calls `keep`, and for each element, if the return value is false, lazy deletes that item\.
+For all elements of `a`, calls `keep`, and for each element, if the return value is false, lazy deletes that item, calling `destruct` if not\-null\.
 
  - Parameter: _a_  
    If null, does nothing\.
