@@ -289,8 +289,8 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
  @allow */
 static void E_(SetTest)(struct E_(SetElement) *(*const parent_new)(void *),
 	void *const parent) {
-	printf("<" QUOTE(SET_NAME) ">Set was created using: "
-		"SET_HASH <" QUOTE(SET_HASH) ">; "
+	printf("<" QUOTE(SET_NAME) ">Set of type <" QUOTE(SET_TYPE)
+		"> was created using: SET_HASH <" QUOTE(SET_HASH) ">; "
 		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
 #ifdef SET_NO_CACHE
 		"SET_NO_CACHE; "

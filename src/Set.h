@@ -15,6 +15,11 @@
 
  ![Example of <String>Set.](../image/index.png)
 
+ `<E>Set` is not synchronised. Errors are returned with `errno`. The parameters
+ are preprocessor macros, and are all undefined at the end of the file for
+ convenience. `assert.h` is included in this file; to stop the debug
+ assertions, use `#define NDEBUG` before inclusion.
+
  @param[SET_NAME, SET_TYPE]
  `<E>` that satisfies `C` naming conventions when mangled and a valid
  <typedef:<PE>Type> associated therewith; required. `<PE>` is private, whose
@@ -44,11 +49,12 @@
  This is <typedef:<PE>UInt> and defaults to `unsigned int`.
 
  @param[SET_TEST]
- Unit testing framework, included in a separate header, <../test/SetTest.h>.
- Must be defined equal to a random filler function, satisfying
- <typedef:<PE>Action>. Requires `SET_TO_STRING` and not `NDEBUG`.
+ Unit testing framework <fn:<E>SetTest>, included in a separate header,
+ <../test/SetTest.h>. Must be defined equal to a random filler function,
+ satisfying <typedef:<PE>Action>. Requires `SET_TO_STRING` and not `NDEBUG`.
 
- @std C89/90 */
+ @subtitle Parameterised Hash Set
+ @std C89 */
 
 #include <stddef.h>	/* offsetof */
 #include <limits.h> /* SIZE_MAX? */
@@ -186,7 +192,9 @@ struct E_(Set) {
 	size_t size;
 	unsigned log_capacity;
 };
+#ifndef SET_ZERO /* <!-- !zero */
 #define SET_ZERO { 0, 0, 0 }
+#endif /* !zero --> */
 
 
 
@@ -241,7 +249,9 @@ static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
 /** Grow the `set` until the capacity is at least `size`.
  @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or doesn't
- follow `POSIX` standard with `realloc`.
+ follow [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)
+ with `realloc`.
  @throws[realloc]
  @order Amortized \O(1). */
 static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
