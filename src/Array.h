@@ -438,6 +438,7 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 /** Ensures that `a` array is `buffer` capacity beyond the elements in the
  array.
  @param[a] If is null, returns null.
+ @param[buffer] If zero, returns null;
  @return One past the end of the array, or null and `errno` may be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
@@ -446,7 +447,7 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  @order Amortised \O(`buffer`).
  @allow */
 static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t buffer) {
-	if(!a || !PT_(reserve)(a, a->size + buffer, 0)) return 0;
+	if(!a || !buffer || !PT_(reserve)(a, a->size + buffer, 0)) return 0;
 	return a->data + a->size;
 }
 
