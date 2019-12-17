@@ -185,7 +185,7 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(&a);
 	T_(PoolClear)(&a);
 	PT_(valid_state)(&a);
-	PT_(graph)(&a, QUOTE(POOL_NAME) "-zero.gv");
+	PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-zero.gv");
 	T_(Pool_)(&a);
 
 	/* @fixme valgrind is giving me grief if I don't do this? */
@@ -206,7 +206,7 @@ static void PT_(test_basic)(void) {
 	assert(!T_(PoolRemove)(&a, t1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	PT_(valid_state)(&a);
-	PT_(graph)(&a, QUOTE(POOL_NAME) "-small.gv");
+	PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-small.gv");
 	t = T_(PoolNew)(&a), PT_(filler)(t); /* Cheating. */
 	t = T_(PoolNew)(&a), PT_(filler)(t);
 	t = T_(PoolNew)(&a), PT_(filler)(t);
@@ -216,7 +216,7 @@ static void PT_(test_basic)(void) {
 	T_(PoolForEach)(&a, &PT_(print));
 	PT_(valid_state)(&a);
 	assert(!T_(PoolReserve)(&a, 1000) && errno == EDOM), errno = 0;
-	PT_(graph)(&a, QUOTE(POOL_NAME) "-small-1000.gv");
+	PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-small-1000.gv");
 	PT_(valid_state)(&a);
 	T_(PoolClear)(&a);
 	PT_(valid_state)(&a);
@@ -278,20 +278,20 @@ static void PT_(test_random)(void) {
 			{
 				const int ret = T_(PoolRemove)(&a, &node->data);
 				assert(ret || (perror("Removing"),
-					PT_(graph)(&a, QUOTE(POOL_NAME) "-rem-err.gv"), 0));
+					PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"),0));
 			}
 			size--;
 		}
 		/* The file size is huge and dot balks. */
 		if(i < 10000 && i % 5000 == 2500) {
 			char fn[64];
-			sprintf(fn, QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
+			sprintf(fn, "graph/" QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
 			PT_(graph)(&a, fn);
 			printf("%s.\n", T_(PoolToString)(&a));
 		}
 		PT_(valid_state)(&a);
 	}
-	PT_(graph)(&a, QUOTE(POOL_NAME) "-finish.gv");
+	PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-finish.gv");
 	T_(Pool_)(&a);
 }
 
