@@ -15,13 +15,14 @@
 /* POOL_TEST must be a function that implements <PT>Action. */
 static const PT_(Action) PT_(filler) = (POOL_TEST);
 
-/** Private: {container_of}. */
+/** Private: `container_of`. */
 static const struct PT_(Node) *
 	PT_(x_const_upcast)(const struct PT_(X) *const x) {
 	return (const struct PT_(Node) *)(const void *)
 	((const char *)x - offsetof(const struct PT_(Node), x));
 }
 
+/** Tries to graphs `p` in `fn`. */
 static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 	FILE *fp;
 	struct PT_(Block) *block;
@@ -136,7 +137,7 @@ static void PT_(valid_state)(const struct T_(Pool) *const a) {
 }
 
 
-
+/** Prints `data`. */
 static void PT_(print)(T *const data) {
 	char a[12];
 	assert(data);

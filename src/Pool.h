@@ -139,19 +139,19 @@ struct T_(Pool) {
 #endif /* !zero --> */
 
 
-/** Private: `container_of`. */
+/** Private: `container_of` `data`. */
 static struct PT_(Node) *PT_(data_upcast)(T *const data) {
 	return (struct PT_(Node) *)(void *)
 		((char *)data - offsetof(struct PT_(Node), data));
 }
 
-/** Private: `container_of`. */
+/** Private: `container_of` `x`. */
 static struct PT_(Node) *PT_(x_upcast)(struct PT_(X) *const x) {
 	return (struct PT_(Node) *)(void *)
 		((char *)x - offsetof(struct PT_(Node), x));
 }
 
-/** Private: block to array. */
+/** Private: `b` to array. */
 static struct PT_(Node) *PT_(block_nodes)(struct PT_(Block) *const b) {
 	return (struct PT_(Node) *)(void *)(b + 1);
 }
@@ -288,7 +288,7 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
 	PT_(pool)(pool);
 }
 
-/* Find what block it's in. Used in <fn:<T>PoolRemove>.
+/* Find what block `node` is in `pool`. Used in <fn:<T>PoolRemove>.
  @order At worst \O(log `items`) when there's no deletetion.
  @return Must return a value. */
 static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
@@ -337,7 +337,7 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 
 /** Removes all from `pool`. Keeps it's active state, only freeing the smaller
  blocks. Compare <fn:<T>Pool_>.
- @param pool: If null, does nothing.
+ @param[pool] If null, does nothing.
  @order \O(`blocks`)
  @allow */
 static void T_(PoolClear)(struct T_(Pool) *const pool) {
