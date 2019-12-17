@@ -289,9 +289,8 @@ static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
 
 #endif /* !stack --> */
 
-/** Sets the size of `a` to zero, effectively removing all the elements, but
- leaves the capacity alone, (the only thing that will free memory allocation
- is <fn:<T>Array_>.)
+/** Sets `a` to be empty; if it was previously in an active state, it continues
+ to be. Compare <fn:<T>Array_>.
  @param[a] If null, does nothing.
  @order \Theta(1)
  @allow */
@@ -618,26 +617,28 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 	static char buffers[4][256];
 	static size_t buffer_i;
-	char *buffer = buffers[buffer_i++], *b = buffer;
+	char *const buffer = buffers[buffer_i++], *b = buffer;
 	const size_t buffers_no = sizeof buffers / sizeof *buffers,
 		buffer_size = sizeof *buffers / sizeof **buffers;
 	const char start = '(', comma = ',', space = ' ', end = ')',
-		*const ellipsis_end = ",…)", *const null = "null";
+		*const ellipsis_end = ",…)", *const null = "null",
+		*const empty = "empty";
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
-		null_len = strlen(null);
+		null_len = strlen(null), empty_len = strlen(empty);
 	size_t i;
 	PT_(Type) *e, *e_end;
 	int is_first = 1;
 	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
 		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
-		&& buffer_size >= null_len + 1);
+		&& buffer_size >= null_len + 1
+		&& buffer_size >= empty_len + 1);
 	/* Advance the buffer for next time. */
 	buffer_i &= buffers_no - 1;
-	/* Null array. */
-	if(!a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	/* Otherwise. */
+	if(!a)
+		{ memcpy(b, null, null_len), b += null_len; goto terminate; }
+	if(!a->data)
+		{ memcpy(b, empty, empty_len), b += empty_len; goto terminate; }
 	*b++ = start;
-	if(!a->data || !a->size) goto end_array;
 	for(e = a->data, e_end = a->data + a->size; ; ) {
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
@@ -647,7 +648,6 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
 			goto ellipsis;
 	}
-end_array:
 	*b++ = end;
 	goto terminate;
 ellipsis:
