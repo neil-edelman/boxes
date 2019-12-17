@@ -221,7 +221,7 @@ static void PT_(array)(struct T_(Array) *const a) {
 	a->size          = 0;
 }
 
-/** Returns `a` to the empty state where it takes no dynamic memory.
+/** Returns `a` to the idle state where it takes no dynamic memory.
  @param[a] If null, does nothing.
  @order \Theta(1)
  @allow */
@@ -231,7 +231,7 @@ static void T_(Array_)(struct T_(Array) *const a) {
 	PT_(array)(a);
 }
 
-/** Initialises `a` to be empty.
+/** Initialises `a` to be idle.
  @order \Theta(1)
  @allow */
 static void T_(Array)(struct T_(Array) *const a) {
@@ -289,8 +289,9 @@ static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
 
 #endif /* !stack --> */
 
-/** Sets `a` to be empty; if it was previously in an active state, it continues
- to be. Compare <fn:<T>Array_>.
+/** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
+ previously in an active non-idle state, it continues to be. Compare
+ <fn:<T>Array_>.
  @param[a] If null, does nothing.
  @order \Theta(1)
  @allow */
@@ -319,7 +320,7 @@ static size_t T_(ArrayIndex)(const struct T_(Array) *const a,
 	return data - a->data;
 }
 
-/** @param[a] If null or in it's empty state, returns null.
+/** @param[a] If null or idle, returns null.
  @return One past the end of the array.
  @order \Theta(1)
  @allow */
@@ -328,8 +329,7 @@ static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
 }
 
 /** @param[a] If null, returns null.
- @return The last element or null if the a is empty. Causing something to be
- added to the `a` may invalidate this pointer.
+ @return The last element or null if the a is empty.
  @order \Theta(1)
  @allow */
 static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
@@ -339,8 +339,7 @@ static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
 /** The same value as <fn:<T>ArrayPeek>.
  @param[a] If null, returns null.
  @return Value from the the top of the `a` that is removed or null if the
- stack is empty. Causing something to be added to the `a` may invalidate
- this pointer. See <fn:<T>ArrayUpdateNew>.
+ stack is empty.
  @order \Theta(1)
  @allow */
 static T *T_(ArrayPop)(struct T_(Array) *const a) {
@@ -622,22 +621,20 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 		buffer_size = sizeof *buffers / sizeof **buffers;
 	const char start = '(', comma = ',', space = ' ', end = ')',
 		*const ellipsis_end = ",…)", *const null = "null",
-		*const empty = "empty";
+		*const idle = "idle";
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
-		null_len = strlen(null), empty_len = strlen(empty);
+		null_len = strlen(null), idle_len = strlen(idle);
 	size_t i;
 	PT_(Type) *e, *e_end;
 	int is_first = 1;
 	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
 		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
 		&& buffer_size >= null_len + 1
-		&& buffer_size >= empty_len + 1);
+		&& buffer_size >= idle_len + 1);
 	/* Advance the buffer for next time. */
 	buffer_i &= buffers_no - 1;
-	if(!a)
-		{ memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!a->data)
-		{ memcpy(b, empty, empty_len), b += empty_len; goto terminate; }
+	if(!a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
+	if(!a->data) { memcpy(b, idle, idle_len), b += idle_len; goto terminate; }
 	*b++ = start;
 	for(e = a->data, e_end = a->data + a->size; ; ) {
 		if(!is_first) *b++ = comma, *b++ = space;
