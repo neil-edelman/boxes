@@ -1,6 +1,8 @@
 /** 2016 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
+ This needs to be updated.
+
  {<T>Pool} stores unordered {<T>} in a memory pool, which must be set using
  {POOL_TYPE}. Pointers to the items in the pool remain valid as long as
  the item is not removed and the pool is not deleted, (it is stable.) As such,
