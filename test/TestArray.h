@@ -368,7 +368,6 @@ static void PT_(test_replace)(void) {
 	t = T_(ArrayBuffer)(&b, 2);
 	assert(t);
 	memcpy(t, ts + 2, sizeof *t * 2);
-	T_(ArrayExpand)(&b, 2);
 	assert(T_(ArraySize)(&b) == 2);
 	/* a = [[1],[0],[1],[4],[0]]; b = [[2],[3]] */
 	printf("a = %s, b = %s.\n", T_(ArrayToString)(&a), T_(ArrayToString)(&b));
