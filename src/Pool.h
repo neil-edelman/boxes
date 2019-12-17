@@ -289,7 +289,7 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
 }
 
 /* Find what block it's in. Used in <fn:<T>PoolRemove>.
- @order `O(log log items)` because the blocks get smaller exponentially.
+ @order At worst \O(log `items`) when there's no deletetion.
  @return Must return a value. */
 static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
 	const struct PT_(Node) *const node) {
@@ -309,10 +309,10 @@ static void PT_(flag_removed)(struct PT_(Node) *const node) {
 }
 
 /** Removes `data` from `pool`.
- @param pool, data: If null, returns false.
+ @param[pool, data] If null, returns false.
  @return Success, otherwise `errno` will be set for valid input.
  @throws[EDOM] `data` is not part of `pool`.
- @order Amortised \O(1), if the pool is in steady-state, but \O(`log items`)
+ @order Amortised \O(1), if the pool is in steady-state, but \O(log `items`)
  for a small number of deleted items.
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
@@ -335,8 +335,8 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	return 1;
 }
 
-/** Removes all from `pool`, but leaves the active memory alone and frees the
- smaller blocks; if one wants to remove memory, see <fn:<T>Pool_>.
+/** Removes all from `pool`. Keeps it's active state, only freeing the smaller
+ blocks. Compare <fn:<T>Pool_>.
  @param pool: If null, does nothing.
  @order \O(`blocks`)
  @allow */
@@ -352,7 +352,8 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 }
 
 /** Pre-sizes a zeroed pool to ensure that it can hold at least `min` elements.
- @param[pool] If null, returns false;
+ Will not work unless the pool is in an empty state.
+ @param[pool] If null, returns false.
  @param[min] If zero, doesn't do anything and returns true.
  @return Success; the pool becomes active with at least `min` elements.
  @throws[EDOM] The pool is active and doesn't allow reserving.
@@ -368,11 +369,13 @@ static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
 	return PT_(reserve)(pool, min);
 }
 
-/** Gets an uninitialised new element.
- @param pool: If is null, returns null.
- @return A new, un-initialised, element, or null and {errno} may be set.
- @throws ERANGE: Tried allocating more then can fit in {size_t} objects.
- @throws {malloc} errors: {IEEE Std 1003.1-2001}.
+/** New item.
+ @param[pool] If is null, returns null.
+ @return A new element at the end, or null and `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `malloc`
+ doesn't follow [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html).
+ @throws[malloc]
  @order amortised O(1)
  @allow */
 static T *T_(PoolNew)(struct T_(Pool) *const pool) {
@@ -388,10 +391,10 @@ static T *T_(PoolNew)(struct T_(Pool) *const pool) {
 	return &node->data;
 }
 
-/** Iterates though {pool} and calls {action} on all the elements. There is no
+/** Iterates though `pool` and calls `action` on all the elements. There is no
  way to change the iteration order.
- @param stack, action: If null, does nothing.
- @order O({capacity} \times {action})
+ @param[pool, action] If null, does nothing.
+ @order O(`capacity` \times `action`)
  @allow */
 static void T_(PoolForEach)(struct T_(Pool) *const pool,
 	const PT_(Action) action) {
@@ -409,92 +412,72 @@ static void T_(PoolForEach)(struct T_(Pool) *const pool,
 
 #ifdef POOL_TO_STRING /* <-- print */
 
-#ifndef POOL_PRINT_THINGS /* <-- once inside translation unit */
-#define POOL_PRINT_THINGS
-
-static const char *const pool_cat_start     = "[";
-static const char *const pool_cat_end       = "]";
-static const char *const pool_cat_alter_end = "...]";
-static const char *const pool_cat_sep       = ", ";
-static const char *const pool_cat_star      = "*";
-static const char *const pool_cat_null      = "null";
-
-struct Pool_SuperCat {
-	char *print, *cursor;
-	size_t left;
-	int is_truncated;
-};
-static void pool_super_cat_init(struct Pool_SuperCat *const cat,
-	char *const print, const size_t print_size) {
-	cat->print = cat->cursor = print;
-	cat->left = print_size;
-	cat->is_truncated = 0;
-	print[0] = '\0';
-}
-static void pool_super_cat(struct Pool_SuperCat *const cat,
-	const char *const append) {
-	size_t lu_took; int took;
-	if(cat->is_truncated) return;
-	took = sprintf(cat->cursor, "%.*s", (int)cat->left, append);
-	if(took < 0)  { cat->is_truncated = -1; return; } /*implementation defined*/
-	if(took == 0) { return; }
-	if((lu_took = (size_t)took) >= cat->left)
-		cat->is_truncated = -1, lu_took = cat->left - 1;
-	cat->cursor += lu_took, cat->left -= lu_took;
-}
-#endif /* once --> */
-
 /** Can print 4 things at once before it overwrites. One must pool
- {POOL_TO_STRING} to a function implementing {<T>ToString} to get this
+ `POOL_TO_STRING` to a function implementing <typedef:<PT>ToString> to get this
  functionality.
- @return Prints {pool} in a static buffer.
+ @return Prints `pool` in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
  @allow */
 static const char *T_(PoolToString)(const struct T_(Pool) *const pool) {
-	static char buffer[4][256];
-	static unsigned buffer_i;
-	struct Pool_SuperCat cat;
+	static char buffers[4][256];
+	static size_t buffer_i;
+	char *const buffer = buffers[buffer_i++], *b = buffer;
+	const size_t buffers_no = sizeof buffers / sizeof *buffers,
+		buffer_size = sizeof *buffers / sizeof **buffers;
 	struct PT_(Block) *block;
-	struct PT_(Node) *n, *end;
+	struct PT_(Node) *n, *n_end;
+	const char start = '[', comma = ',', space = ' ', end = ')',
+		*const ellipsis_end = ",…]", *const null = "null",
+		*const idle = "idle";
+	const size_t ellipsis_end_len = strlen(ellipsis_end),
+		null_len = strlen(null), idle_len = strlen(idle);
+	size_t i;
 	int is_first = 1;
-	char scratch[12];
-	assert(strlen(pool_cat_alter_end) >= strlen(pool_cat_end));
-	assert(sizeof buffer > strlen(pool_cat_alter_end));
-	pool_super_cat_init(&cat, buffer[buffer_i],
-		sizeof *buffer / sizeof **buffer - strlen(pool_cat_alter_end));
-	buffer_i++, buffer_i &= 3;
-	if(!pool) {
-		pool_super_cat(&cat, pool_cat_null);
-		return cat.print;
-	}
-	pool_super_cat(&cat, pool_cat_start);
+	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
+		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
+		&& buffer_size >= null_len + 1);
+	buffer_i &= buffers_no - 1;
+	/* Null array. */
+	if(!pool)
+		{ memcpy(b, null, null_len), b += null_len; goto terminate; }
+	if(!pool->largest)
+		{ memcpy(b, idle, idle_len), b += idle_len; goto terminate; }
+	/* Otherwise. */
+	*b++ = start;
 	for(block = pool->largest; block; block = block->smaller) {
-		for(n = PT_(block_nodes)(block), end = n + PT_(range)(pool, block);
-			n < end; n++) {
+		for(n = PT_(block_nodes)(block), n_end = n + PT_(range)(pool, block);
+			n < n_end; n++) {
 			if(n->x.prev) continue;
-			if(!is_first) pool_super_cat(&cat, pool_cat_sep); else is_first = 0;
-			PT_(to_string)(&n->data, &scratch),
-				scratch[sizeof scratch - 1] = '\0';
-			pool_super_cat(&cat, scratch);
-			if(cat.is_truncated) break;
+			if(!is_first) *b++ = comma, *b++ = space;
+			else is_first = 0;
+			PT_(to_string)(&n->data, (char (*)[12])b);
+			for(i = 0; *b != '\0' && i < 12; b++, i++);
+			/* No way to tell if it is going to end; this leads to having ...
+			 even if there's nothing there. */
+			if((size_t)(b - buffer)
+				> buffer_size - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
 		}
 	}
-	sprintf(cat.cursor, "%s",
-		cat.is_truncated ? pool_cat_alter_end : pool_cat_end);
-	return cat.print; /* Static buffer. */
+	*b++ = end;
+ellipsis:
+	memcpy(b, ellipsis_end, ellipsis_end_len), b += ellipsis_end_len;
+terminate:
+	*b++ = '\0';
+	assert(b <= buffer + buffer_size);
+	return buffer;
 }
 
 #endif /* print --> */
 
 #ifdef POOL_TEST /* <-- test */
-#include "../test/TestPool.h" /* Need this file if one is going to run tests. */
+#include "../test/TestPool.h" /** \include */
 #endif /* test --> */
 
 /* Prototype. */
 static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
- optimisation, (hopefully.)
- \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
+ optimisation
+ <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code>. */
 static void PT_(unused_set)(void) {
 	T_(Pool_)(0);
 	T_(Pool)(0);
@@ -516,8 +499,8 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 /* Un-define all macros. */
 #undef POOL_NAME
 #undef POOL_TYPE
-/* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
- {PCAT_} conform, and {T} is not used. */
+/* Undocumented; allows nestled inclusion so long as: `CAT_`, _etc_ conform,
+ and `T`, _etc_ is not used. */
 #ifdef POOL_SUBTYPE /* <-- sub */
 #undef POOL_SUBTYPE
 #else /* sub --><-- !sub */
@@ -534,8 +517,4 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif
 #ifdef POOL_TEST
 #undef POOL_TEST
-#endif
-#ifdef POOL_NDEBUG
-#undef POOL_NDEBUG
-#undef NDEBUG
 #endif
