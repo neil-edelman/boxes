@@ -1,74 +1,49 @@
-/** 2016 Neil Edelman, distributed under the terms of the MIT License;
- see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
+/** @license 2016 Neil Edelman, distributed under the terms of the
+ [MIT License](https://opensource.org/licenses/MIT).
 
- {<T>Pool} stores unordered {<T>} in a memory pool, which must be set using
- {POOL_TYPE}. Pointers to the items in the pool remain valid as long as
- the item is not removed and the pool is not deleted, (it is stable.) As such,
- contiguity is not guaranteed; data is pre-allocated in geometrically
- increasing blocks. However, when the data reaches a steady-state size, it will
- eventually become contiguous when removal is uniformly sampled. That is, new
- data replaces old data, which is all eventually freed. {Pool} is not designed
- for iteration, reordering, or even counting, but instead to provide a fairly
- contiguous space for items that may have references.
+ @subtitle Parameterised Stable Pool
 
- A zeroed {<T>Pool} is when all the members are zero, such as static data; it
- has no extra memory associated with it. One can go from uninitialised to zero
- with \see{<T>Pool}, sort of the constructor, and initialised to zero with
- \see{<T>Pool_}, sort of the destructor. From zeroed, when you start using
- {<T>Pool}, it goes into an active state and has memory associated it; one must
- call \see{<T>Pool_} to free. A pool could have zero elements and still be
- active, for example, when \see{<T>PoolClear} is called on an active pool.
+ <tag:<T>Pool> stores unordered `<T>` in a memory pool, which must be set using
+ `POOL_TYPE`. Pointers to valid items in the pool are stable, and as such,
+ contiguity is not possible. However, it uses geometrically increasing
+ size-blocks and when the removal is ongoing and uniformly sampled,
+ (specifically, old elements are all removed,) and data reaches a
+ steady-state size, the data will eventually be in one allocated region.
+ In this way, provides a fairly contiguous space for items to which there might
+ have permanent references or hierarchical structures with different sizes.
 
- {<T>Pool} is not synchronised. There is no way to shrink the active block in
- memory, just expand it. Errors are returned with {errno}. The parameters are
- preprocessor macros, and are all undefined at the end of the file for
- convenience.
+ `<T>Pool` is not synchronised. Errors are returned with `errno`. The
+ parameters are preprocessor macros, and are all undefined at the end of the
+ file for convenience. `assert.h` is included in this file; to stop the
+ debug assertions, use `#define NDEBUG` before `assert.h`.
 
- @param POOL_NAME, POOL_TYPE
- The name that literally becomes {<T>}, and a valid type associated therewith,
- accessible to the compiler at the time of inclusion; should be conformant to
- naming and to the maximum available length of identifiers. Must each be
- present before including.
+ ![States.](../web/states.png)
 
- @param POOL_TO_STRING
- Optional print function implementing {<T>ToString}; makes available
- \see{<T>PoolToString}. Usually this is only used for debugging.
+ @param[POOL_NAME, POOL_TYPE]
+ `<T>` that satisfies `C` naming conventions when mangled and a valid tag
+ (type) associated therewith; required. `<PT>` is private, whose names are
+ prefixed in a manner to avoid collisions; any should be re-defined prior to
+ use elsewhere.
 
- @param POOL_TEST
- Unit testing framework using {<T>PoolTest}, included in a separate header,
- {../test/PoolTest.h}. Must be defined equal to a (random) filler function,
- satisfying {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private
- function integrity testing. Requires {POOL_TO_STRING}.
+ @param[POOL_TO_STRING]
+ Optional print function implementing <typedef:<PT>ToString>; makes available
+ <fn:<T>PoolToString>. Usually this is only used for debugging.
 
- @title		Pool.h
- @std		C89
- @author	Neil
- @version	2019-03 Split {Pool} from {Array}; now stable.
- @since		2018-04 Merged {Stack} into {Pool} again.
-			2018-03 Why have an extra level of indirection?
-			2018-02 Errno instead of custom errors.
-			2017-12 Introduced {POOL_PARENT} for type-safety.
-			2017-11 Forked {Stack} from {Pool}.
-			2017-10 Replaced {PoolIsEmpty} by {PoolElement}, much more useful.
-			2017-10 Renamed Pool; made migrate automatic.
-			2017-07 Made migrate simpler.
-			2017-05 Split {List} from {Pool}; much simpler.
-			2017-01 Almost-redundant functions simplified.
-			2016-11 Multi-index.
-			2016-08 Permute. */
+ @param[POOL_TEST]
+ Unit testing framework <fn:<T>PoolTest>, included in a separate header,
+ <../test/PoolTest.h>. Must be defined equal to a (random) filler function,
+ satisfying <typedef:<PT>Action>. Requires `POOL_TO_STRING` and not `NDEBUG`.
 
+ @std C89 */
 
-
-#include <stddef.h>	/* ptrdiff_t offset_of */
+#include <stddef.h>	/* offset_of */
 #include <stdlib.h>	/* malloc free */
 #include <assert.h>	/* assert */
 #include <string.h>	/* memcpy (memmove strerror strcpy memcmp in PoolTest.h) */
 #include <errno.h>	/* errno */
 #ifdef POOL_TO_STRING /* <-- print */
-#include <stdio.h>	/* snprintf */
+#include <stdio.h>	/* strlen */
 #endif /* print --> */
-
-
 
 /* Check defines. */
 #ifndef POOL_NAME /* <-- error */
@@ -80,15 +55,9 @@
 #if defined(POOL_TEST) && !defined(POOL_TO_STRING) /* <-- error */
 #error POOL_TEST requires POOL_TO_STRING.
 #endif /* error --> */
-#if !defined(POOL_TEST) && !defined(NDEBUG) /* <-- ndebug */
-#define POOL_NDEBUG
-#define NDEBUG
-#endif /* ndebug --> */
-
-
 
 /* Generics using the preprocessor;
- \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
+ <http://stackoverflow.com/questions/16522341/pseudo-generics-in-c>. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -117,61 +86,66 @@
 #define T_(thing) CAT(POOL_NAME, thing)
 #define PT_(thing) PCAT(pool, PCAT(POOL_NAME, thing))
 
-/* Troubles with this line? check to ensure that {POOL_TYPE} is a valid type,
- whose definition is placed above {#include "Pool.h"}. */
+
+/* Troubles with this line? check to ensure that `POOL_TYPE` is a valid type,
+ whose definition is placed above `#include "Pool.h"`. */
 typedef POOL_TYPE PT_(Type);
 #define T PT_(Type)
 
-
-
 #ifdef POOL_TO_STRING /* <-- string */
-/** Responsible for turning {<T>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) Used for {POOL_TO_STRING}. */
-typedef void (*PT_(ToString))(const T *, char (*const)[12]);
-/* Check that {POOL_TO_STRING} is a function implementing {<PT>ToString}, whose
- definition is placed above {#include "Pool.h"}. */
+/** Responsible for turning `<T>` (the first argument) into a 12 `char`
+ null-terminated output string (the second.) Used for `POOL_TO_STRING`. */
+typedef void (*PT_(ToString))(const T *, char (*)[12]);
+/* Check that `POOL_TO_STRING` is a function implementing
+ <typedef:<PT>ToString>, whose definition is placed above
+ `#include "Pool.h"`. */
 static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 #endif /* string --> */
 
-/* Operates by side-effects only. */
+/** Operates by side-effects on `data` only. */
 typedef void (*PT_(Action))(T *const data);
 
-
-
-/* Free-list. */
+/* Free-list item. The reason it's doubly-linked is to support popping a link
+ from the end. fixme: why `<PT>X` when one can have `<PT>Node`? */
 struct PT_(X) { struct PT_(X) *prev, *next; };
 
-/* Nodes containing the data and the free list of the largest block; smaller
- blocks are predicates, {x.prev, x.next -> deleted}. The size of the block has
- to match up. */
+/* Nodes containing the data and, in the largest block, the free list item;
+ smaller blocks satisfy `x.prev, x.next -> deleted`. */
 struct PT_(Node) { T data; struct PT_(X) x; };
 
-/* Information about each block. Blocks will have {capacity <PT>Node}'s after
- {block + 1}, specified by {<PT>_block_nodes}. */
+/* Information about each block. Blocks will have capacity <tag:<PT>Node>'s
+ after `block + 1`, specified by <fn:<PT>_block_nodes>. */
 struct PT_(Block) {
 	struct PT_(Block) *smaller;
 	size_t capacity, size;
 };
 
-/** The pool. To instantiate, see \see{<T>Pool}. */
+/** The pool. Zeroed data is a valid state. To instantiate explicitly, see
+ <fn:<T>Pool> or initialise it with `POOL_INIT` or `{0}` (C99.) */
 struct T_(Pool);
 struct T_(Pool) {
-	struct PT_(Block) *largest; /* We want all items to go in here. */
-	size_t next_capacity;       /* Fibonacci */
-	/* {0,0} -> no nodes removed, otherwise, it's a circular list of entrely
-	 items in the largest block. All other states are invalid. */
+	/* Ideally, all items to go in here, but there may be smaller blocks. */
+	struct PT_(Block) *largest;
+	/* Fibonacci; largest -> (c0 < c1 || c0 == c1 == max_size). */
+	size_t next_capacity;
+	/* {0,0} -> no nodes removed from the largest block, otherwise, it's a
+	 circular list of items in the largest block. All other states invalid. */
 	struct PT_(X) removed;
 };
 
+/* `{0}` is `C99`. */
+#ifndef POOL_ZERO /* <!-- !zero */
+#define POOL_ZERO { 0, 0, { 0, 0 } }
+#endif /* !zero --> */
 
 
-/** Private: {container_of}. */
+/** Private: `container_of`. */
 static struct PT_(Node) *PT_(data_upcast)(T *const data) {
 	return (struct PT_(Node) *)(void *)
 		((char *)data - offsetof(struct PT_(Node), data));
 }
 
-/** Private: {container_of}. */
+/** Private: `container_of`. */
 static struct PT_(Node) *PT_(x_upcast)(struct PT_(X) *const x) {
 	return (struct PT_(Node) *)(void *)
 		((char *)x - offsetof(struct PT_(Node), x));
@@ -182,15 +156,19 @@ static struct PT_(Node) *PT_(block_nodes)(struct PT_(Block) *const b) {
 	return (struct PT_(Node) *)(void *)(b + 1);
 }
 
-/** Ensures capacity of the largest block.
- @return Success; otherwise, {errno} may be set.
- @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws {malloc} errors: {IEEE Std 1003.1-2001}. */
+/** Ensures `min` (> 0) capacity of the largest block in `pool` where the free
+ list is empty.
+ @param[min] If zero, allocates anyway.
+ @return Success; otherwise, `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `malloc`
+ doesn't follow [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html).
+ @throws[malloc] */
 static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 	size_t c0, c1;
 	struct PT_(Block) *block;
-	struct PT_(Node) *nodes;
-	const size_t max_size = ((size_t)-1 - sizeof *block) / sizeof *nodes;
+	const size_t max_size = ((size_t)-1 - sizeof *block)
+		/ sizeof(struct PT_(Node));
 	assert(pool && !pool->removed.prev && !pool->removed.next && min);
 	assert(!pool->largest
 		|| (pool->largest->capacity < pool->next_capacity
@@ -203,12 +181,13 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 	} else {
 		c0 = pool->largest->capacity, c1 = pool->next_capacity;
 	}
-	while(c0 < min) { /* min < max_size; this c0 ^= c1 ^= c0 ^= c1 += c0. */
+	while(c0 < min) { /* `min < max_size`; this `c0 ^= c1 ^= c0 ^= c1 += c0`. */
 		size_t temp = c0 + c1;
-		if(temp > max_size || temp < c1) temp = max_size; /* Unlikely? */
+		if(temp > max_size || temp < c1) temp = max_size;
 		c0 = c1, c1 = temp;
 	}
-	if(!(block = malloc(sizeof *block + c0 * sizeof *nodes))) return 0;
+	if(!(block = malloc(sizeof *block + c0 * sizeof(struct PT_(Node)))))
+		{ if(!errno) errno = ERANGE; return 0; }
 	block->smaller = pool->largest;
 	block->capacity = c0;
 	block->size = 0;
@@ -218,7 +197,7 @@ static int PT_(reserve)(struct T_(Pool) *const pool, const size_t min) {
 	return 1;
 }
 
-/** We are very lazy and we just enqueue the removed so that later data can
+/** We are very lazy and enqueue `node` in `pool` so that later data can
  overwrite it. */
 static void PT_(enqueue_removed)(struct T_(Pool) *const pool,
 	struct PT_(Node) *const node) {
@@ -238,7 +217,8 @@ static void PT_(enqueue_removed)(struct T_(Pool) *const pool,
 	pool->removed.prev = &node->x;
 }
 
-/** Dequeues a removed node, or if the queue is empty, returns null. */
+/** @return Dequeues a removed node from `pool`, or if the queue is empty,
+ returns null. */
 static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Pool) *const pool) {
 	struct PT_(X) *x0, *x1;
 	assert(pool && !pool->removed.next == !pool->removed.prev);
@@ -253,8 +233,8 @@ static struct PT_(Node) *PT_(dequeue_removed)(struct T_(Pool) *const pool) {
 	return PT_(x_upcast)(x0);
 }
 
-/** Gets rid of the removed node at the tail of the list. Each remove has
- potentially one delete in the worst case, it just gets amortized a bit. */
+/** Gets rid of the removed node at the tail of the list of `pool`.
+ @order Amortized \O(1). */
 static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 	struct PT_(Node) *node;
 	struct PT_(Block) *const block = pool->largest;
@@ -272,14 +252,14 @@ static void PT_(trim_removed)(struct T_(Pool) *const pool) {
 	}
 }
 
-/** How much data is in a block, (skipping items where {node->x.prev}.) */
+/** How much data is in a `block` in `pool`, skipping items removed. */
 static size_t PT_(range)(const struct T_(Pool) *const pool,
 	const struct PT_(Block) *const block) {
 	assert(pool && block);
 	return block == pool->largest ? block->size : block->capacity;
 }
 
-/** Zeros {pool}. */
+/** Zeros `pool`. */
 static void PT_(pool)(struct T_(Pool) *const pool) {
 	assert(pool);
 	pool->largest       = 0;
@@ -288,10 +268,9 @@ static void PT_(pool)(struct T_(Pool) *const pool) {
 	pool->removed.next  = 0;
 }
 
-/** Destructor for {pool}. All the {pool} contents are erased and should not be
- accessed anymore; after, the {pool} takes no memory.
- @param pool: If null, does nothing.
- @order \Theta(blocks)
+/** Returns `pool` to the empty state where it takes no dynamic memory.
+ @param[pool] If null, does nothing.
+ @order \Theta(`blocks`)
  @allow */
 static void T_(Pool_)(struct T_(Pool) *const pool) {
 	struct PT_(Block) *block, *next;
@@ -301,8 +280,7 @@ static void T_(Pool_)(struct T_(Pool) *const pool) {
 	PT_(pool)(pool);
 }
 
-/** Initialises {pool} to be empty and zero. If it is {static} data then it
- is initialised by default and one doesn't have to call this.
+/** Initialises `pool` to be empty.
  @order \Theta(1)
  @allow */
 static void T_(Pool)(struct T_(Pool) *const pool) {
@@ -310,9 +288,9 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
 	PT_(pool)(pool);
 }
 
-/* Find what block it's in. I believe the expected value is {O(log log items)}
- because the blocks get smaller exponentially. Must return a value. Used in
- \see{<T>PoolRemove}. */
+/* Find what block it's in. Used in <fn:<T>PoolRemove>.
+ @order `O(log log items)` because the blocks get smaller exponentially.
+ @return Must return a value. */
 static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
 	const struct PT_(Node) *const node) {
 	struct PT_(Block) *b, **baddr;
@@ -323,18 +301,18 @@ static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
 	return baddr;
 }
 
-/** Only for the not-largest, inactive, blocks, {node->x} becomes a boolean,
+/** Only for the not-largest, inactive, blocks, `node` becomes a boolean,
  null/not. */
 static void PT_(flag_removed)(struct PT_(Node) *const node) {
 	assert(node);
 	node->x.prev = node->x.next = &node->x;
 }
 
-/** Removes {data} from {pool}.
+/** Removes `data` from `pool`.
  @param pool, data: If null, returns false.
- @return Success, otherwise {errno} will be set for valid input.
- @throws EDOM: {data} is corrupted or not part of {pool}.
- @order Amortised {O(1)}, if the pool is in steady-state, but {O(log items)}
+ @return Success, otherwise `errno` will be set for valid input.
+ @throws[EDOM] `data` is not part of `pool`.
+ @order Amortised \O(1), if the pool is in steady-state, but \O(`log items`)
  for a small number of deleted items.
  @allow */
 static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
@@ -357,10 +335,10 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	return 1;
 }
 
-/** Removes all from {pool}, but leaves the active memory alone; if one wants
- to remove memory, see \see{<T>Pool_}.
+/** Removes all from `pool`, but leaves the active memory alone and frees the
+ smaller blocks; if one wants to remove memory, see <fn:<T>Pool_>.
  @param pool: If null, does nothing.
- @order O(blocks)
+ @order \O(`blocks`)
  @allow */
 static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	struct PT_(Block) *block, *next;
@@ -373,16 +351,20 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
 	while(next) block = next, next = next->smaller, free(block);
 }
 
-/** Pre-sizes a zeroed pool to ensure that it can hold at least {min} elements.
- @return Success; the pool becomes active with at least {min} elements, even if
- {min} is zero.
- @throws EDOM: The pool is active.
- @throws ERANGE: Tried allocating more then can fit in {size_t}.
- @throws {malloc} errors: {IEEE Std 1003.1-2001}.
+/** Pre-sizes a zeroed pool to ensure that it can hold at least `min` elements.
+ @param[pool] If null, returns false;
+ @param[min] If zero, doesn't do anything and returns true.
+ @return Success; the pool becomes active with at least `min` elements.
+ @throws[EDOM] The pool is active and doesn't allow reserving.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `malloc`
+ doesn't follow [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html).
+ @throws[malloc]
  @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
 	if(!pool) return 0;
 	if(pool->largest) return errno = EDOM, 0;
+	if(!min) return 1;
 	return PT_(reserve)(pool, min);
 }
 
@@ -535,7 +517,7 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef POOL_NAME
 #undef POOL_TYPE
 /* Undocumented; allows nestled inclusion so long as: {CAT_}, {CAT}, {PCAT},
- {PCAT_} conform, and {T}, {S}, and {A}, are not used. */
+ {PCAT_} conform, and {T} is not used. */
 #ifdef POOL_SUBTYPE /* <-- sub */
 #undef POOL_SUBTYPE
 #else /* sub --><-- !sub */
