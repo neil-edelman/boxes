@@ -286,6 +286,7 @@ int main(void) {
 		printf("Now adding up:\n");
 		each_set_boat(&ids, bs, bs_size, &put_in_set);
 		printf("Final score: %s.\n", IdSetToString(&ids));
+		IdSet_(&ids);
 	}
 
 	return EXIT_SUCCESS;
