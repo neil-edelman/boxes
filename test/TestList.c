@@ -184,7 +184,7 @@ static const struct AnimalVt {
 	void (*const act)(struct Animal *const);
 } sloth_vt = { &sloth_act }, llama_vt = { &llama_act }, bear_vt = { &bear_act };
 /* The linked-list. */
-static struct AnimalList animals = LIST_EMPTY_2(animals);
+static struct AnimalList animals = LIST_IDLE_2(animals);
 static void Animal_init(struct Animal *const this) {
 	Animal_filler(this);
 	AnimalListPush(&animals, this);

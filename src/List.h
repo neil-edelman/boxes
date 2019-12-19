@@ -1,66 +1,45 @@
-/** 2017 Neil Edelman, distributed under the terms of the MIT License;
- see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
+/** @license 2017 Neil Edelman, distributed under the terms of the
+ [MIT License](https://opensource.org/licenses/MIT).
 
- This documentation needs to be changed.
+ @subtitle Parameterised Linked-Multi-List
 
- {<T>List} is a doubly-linked-list of {<T>Link}, of which data of type, {<T>},
- must be set using {LIST_TYPE}. This is an abstract data structure requiring
- {<T>Link} storage. Supports one to four multiply-linked-lists, as different
- orders.
+ ![Example of <Animal>List.](../web/list.png)
 
- This data-structure is closed; that is, given a valid pointer to an element,
- one can determine all other pointers, (the elements and the list itself,) in
- {O(n)}. This is useful as a single-source of information, and simplifies
- traversal, but requires the linking of two nodes in an empty list; therefore,
- not only are automatically uninitialised data in an undefined state, but
- default statically initialised data, (zero-filled,) are, too. One can call
- \see{<T>ListClear} or use the initialisation constant expression contained in
- the macro {struct <T>List list = LIST_EMPTY(list);}, or
- {LIST_EMPTY_[2-4](list);}, depending on how many orders that are in the list.
+ <tag:<T>List> is a doubly-linked-list of <tag:<T>Link>, of which data of type,
+ `<T>`, must be set using `LIST_TYPE`. Supports one to four
+ multiply-linked-lists, as different orders.
 
- {<T>List} is not synchronised. Errors are reported with {errno}. The
+ `<T>List` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
- file for convenience.
+ file for convenience. `assert.h` is included; to stop the debug assertions,
+ use `#define NDEBUG` before inclusion.
 
- @param LIST_NAME, LIST_TYPE
- The name that literally becomes {<T>}, and a valid type associated therewith,
- accessible to the compiler at the time of inclusion; should be conformant to
- naming and to the maximum available length of identifiers. Must each be
- present before including.
+ @param[LIST_NAME, LIST_TYPE]
+ `<T>` that satisfies `C` naming conventions when mangled and a valid
+ <typedef:<PT>Type> associated therewith; required. `<PT>` is private, whose
+ names are prefixed in a manner to avoid collisions; any should be re-defined
+ prior to use elsewhere.
 
- @param LIST_COMPARATOR or LIST_U[A-D]_NAME, LIST_U[A-D]_COMPARATOR
- Each {LIST_U[A-D]_NAME} literally becomes, {<U>}, an order, and optional
- comparator, {LIST_U[A-D]_COMPARATOR}, an equivalence relation function
- implementing {<T>Comparator}. Not defining this implies one anonymous order
- which one can set a comparator using {LIST_COMPARATOR}; {<U>} will be an empty
- string, in this case.
+ @param[LIST_COMPARATOR, LIST_Ux_NAME, LIST_Ux_COMPARATOR]
+ Each `LIST_U[A-D]_NAME` becomes `<U>`, an order, and optional comparator,
+ `LIST_U[A-D]_COMPARATOR`, a function implementing <typedef:<PT>Comparator>.
+ Not defining this implies one anonymous order, which one can set a comparator
+ using `LIST_COMPARATOR`; `<U>` will be an empty string, in this case.
 
- @param LIST_TO_STRING
- Optional print function implementing {<T>ToString}; makes available
- \see{<T>List<U>ToString}.
+ @param[LIST_TO_STRING]
+ Optional print function implementing <typedef:<PT>ToString>; makes available
+ <fn:<T>List<U>ToString>.
 
- @param LIST_OPENMP
- Tries to parallelise using {OpenMP}, \url{ http://www.openmp.org/ }. This is
- limited to some, usually multi-order, functions.
+ @param[LIST_OPENMP]
+ Tries to parallelise using [OpenMP](http://www.openmp.org/). This is limited
+ to some, usually multi-order, functions.
 
- @param LIST_TEST
- Unit testing framework using {<T>ListTest}, included in a separate header,
- {../test/ListTest.h}. Must be defined equal to a (random) filler, satisfying
- {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private function
- integrity testing. Requires {LIST_TO_STRING}.
+ @param[LIST_TEST]
+ Unit testing framework using <fn:<T>ListTest>, included in a separate header,
+ `../test/ListTest.h`. Must be defined equal to a (random) filler, satisfying
+ `<PT>Action`. Requires `LIST_TO_STRING` and not `NDEBUG`.
 
  @std C89
- @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
- {assert} warnings on {LIST_TEST}.
- @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
- uhm, thanks?; 4706 not {Java}; 4710, 4711 inlined info; 4820 padding info;
- 4996 not {C++11}.
- @fixme {clang}: {#pragma clang diagnostic ignored "-Wx"} where {x} is:
- {padded}; {documentation}; {documentation-unknown-command} it's not quite
- {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
- @fixme Non-const void pointers in {<T>List<U>BiAction} are not effective; have
- an interface. While we're at it, {<T>LinkMigrate} should be an interface.
- Everything should be an interface. Not obvious how.
  @cf [Array](https://github.com/neil-edelman/Array)
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Pool](https://github.com/neil-edelman/Pool)
@@ -72,16 +51,13 @@
 
 
 
-#include <stddef.h> /* ptrdiff_t offset_of */
+#include <stddef.h> /* offset_of */
 #include <assert.h> /* assert */
 #ifdef LIST_TO_STRING /* <-- print */
-#include <stdio.h>  /* sprintf */
 #include <string.h> /* strlen */
 #endif /* print --> */
 
-
-
-/* Check defines; {[A, D]} is just arbitrary; more could be added but at linear
+/* Check defines; `[A, D]` is just arbitrary; more could be added but at linear
  time cost. */
 #ifndef LIST_NAME
 #error List generic LIST_NAME undefined.
@@ -101,7 +77,7 @@
 #if defined(LIST_UD_COMPARATOR) && !defined(LIST_UD_NAME)
 #error List: LIST_UD_COMPARATOR requires LIST_UD_NAME.
 #endif
-/* Anonymous one-order implicit macro into {UA} for convenience and brevity. */
+/* Anonymous one-order implicit macro into `UA` for convenience and brevity. */
 #if !defined(LIST_UA_NAME) && !defined(LIST_UB_NAME) \
 	&& !defined(LIST_UC_NAME) && !defined(LIST_UD_NAME) /* <-- anon */
 #define LIST_U_ANONYMOUS
@@ -128,8 +104,8 @@
 
 
 
-/* Generics using the preprocessor;
- \url{ http://stackoverflow.com/questions/16522341/pseudo-generics-in-c }. */
+/* Generics using the preprocessor
+ <http://stackoverflow.com/questions/16522341/pseudo-generics-in-c>. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -141,9 +117,6 @@
 #endif
 #ifdef PCAT_
 #undef PCAT_
-#endif
-#ifdef T
-#undef T
 #endif
 #ifdef T_
 #undef T_
@@ -158,10 +131,8 @@
 #define T_(thing) CAT(LIST_NAME, thing)
 #define PT_(thing) PCAT(list, PCAT(LIST_NAME, thing)) /* {private <T>} */
 
-/* Troubles with this line? check to ensure that {LIST_TYPE} is a valid type,
- whose definition is placed above {#include "List.h"}. */
+/** Valid tag type defined by `LIST_TYPE` */
 typedef LIST_TYPE PT_(Type);
-#define T PT_(Type)
 
 /* [A, D] */
 #ifdef UA_
@@ -223,13 +194,11 @@ typedef LIST_TYPE PT_(Type);
 #endif
 #endif /* !anon --> */
 
-
-
 /* Constants across multiple includes in the same translation unit. */
 #ifndef LIST_H /* <-- LIST_H */
 #define LIST_H
-/* \see{combine_sets} operations bit-vector; dummy {LO_?}: {clang -Weverything}
- complains that it is not closed under union, a very valid point. */
+/* <fn:<PT>boolean<U>seq> operations bit-vector; dummy `LO_` ensures that it is
+ closed. */
 enum ListOperation {
 	LO_SUBTRACTION_AB = 1,
 	LO_SUBTRACTION_BA = 2,
@@ -243,14 +212,13 @@ enum ListOperation {
 	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
 };
 /* Use this to statically initialise. How many orders are the [2-4]. This is an
- initialisation constant expression,
- eg, {struct <T>List list = LIST_EMPTY(list);} for one order. */
-#define LIST_EMPTY(l) { { 0, &(l).tail }, { &(l).head, 0 } }
-#define LIST_EMPTY_2(l) { { 0, &(l).tail, 0, &(l).tail }, \
+ initialisation constant expression. */
+#define LIST_IDLE(l) { { 0, &(l).tail }, { &(l).head, 0 } }
+#define LIST_IDLE_2(l) { { 0, &(l).tail, 0, &(l).tail }, \
 	{ &(l).head, 0, &(l).head, 0 } }
-#define LIST_EMPTY_3(l) { { 0, &(l).tail, 0, &(l).tail, 0, &(l).tail }, \
+#define LIST_IDLE_3(l) { { 0, &(l).tail, 0, &(l).tail, 0, &(l).tail }, \
 	{ &(l).head, 0, &(l).head, 0, &(l).head, 0 } }
-#define LIST_EMPTY_4(l) { \
+#define LIST_IDLE_4(l) { \
 	{ 0, &(l).tail, 0, &(l).tail, 0, &(l).tail, 0, &(l).tail }, \
 	{ &(l).head, 0, &(l).head, 0, &(l).head, 0, &(l).head, 0 } }
 #endif /* LIST_H */
@@ -273,91 +241,84 @@ struct PT_(X) {
 #endif
 };
 
-/** A single link in the linked-list derived from {<T>}. Storage of this
- structure is the responsibility of the caller. {<T>} is stored in this
- structure, see \see{<T>LinkData}. */
+/** Contains <typedef:<PT>Type> as an element `data`. Storage of this structure
+ is the responsibility of the caller. */
 struct T_(Link);
 struct T_(Link) {
-	T data;
+	PT_(Type) data;
 	struct PT_(X) x;
 };
 
-/** Serves as an a head for linked-list(s) of {<T>Link}. Use \see{<T>ListClear}
- or statically initialise using the macro {LIST_EMPTY[_[2-4]]}. */
+/** Serves as an a head for (multipy)-linked-list of <tag:<T>Link>. Use
+ <fn:<T>ListClear> or statically initialise using the macro
+ `LIST_IDLE[_[2-4]](<list>)`, depending on how many orders that are in the
+ list. Because this list is closed; that is, given a valid pointer to an
+ element, one can determine all others, null values are not allowed and it is
+ _not_ the same as `{0}`. _Eg_, `struct IntList ints = LIST_IDLE(ints);`. */
 struct T_(List);
 struct T_(List) {
-	/* These are sentinels such that {head.prev} and {tail.next} are always and
-	 the only ones to be null. This allows {List} and all {Links} to be closed,
-	 that is with a single pointer, we can infer every other. However, careful
-	 in changing this, \see{<PT>_list_<U>_self_correct}. */
+	/* These are sentinels such that `head.prev` and `tail.next` are always and
+	 the only ones to be null. */
 	struct PT_(X) head, tail;
 };
 
 
 
-/** Takes {<T>}; used in \see{<T>List<U>ForEach}. This definition is about the
- {LIST_NAME} type, that is, it is without the prefix {List}; to avoid namespace
- collisions, this is private, meaning the name is mangled. If one want this
- definition, re-declare it. */
-typedef void (*PT_(Action))(T *const);
+/** Operates by side-effects on <typedef:<PT>Type>. */
+typedef void (*PT_(Action))(PT_(Type) *);
 
-/** Takes {<T>} and <void *>; used in \see{<T>List<U>BiForEach}. */
-typedef void (*PT_(BiAction))(T *const, void *const);
+/** @fixme No?; used in <fn:<T>List<U>BiForEach>. */
+typedef void (*PT_(BiAction))(PT_(Type) *, void *);
 
-/** Takes {<T>}, returns (non-zero) true or (zero) false. */
-typedef int (*PT_(Predicate))(const T *const);
+/** Returns (non-zero) true or (zero) false. */
+typedef int (*PT_(Predicate))(const PT_(Type) *);
 
-/** Takes {<T>} and {void *}, returns (non-zero) true or (zero) false. */
-typedef int (*PT_(BiPredicate))(T *const, void *const);
+/** @fixme No? */
+typedef int (*PT_(BiPredicate))(PT_(Type) *, void *);
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
-/** Compares two {<T>} values and returns less then, equal to, or greater then
- zero. Should do so forming an equivalence relation with respect to {<T>}. */
-typedef int (*PT_(Comparator))(const T *, const T *);
+
+/** Compares two <typedef:<PT>Type> values and returns less then, equal to, or
+ greater then zero, forming an equivalence relation. */
+typedef int (*PT_(Comparator))(const PT_(Type) *, const PT_(Type) *);
 #endif /* comp --> */
 
 #ifdef LIST_TO_STRING /* <-- string */
-/** Responsible for turning {<T>} (the first argument) into a 12 {char}
- null-terminated output string (the second.) */
-typedef void (*PT_(ToString))(const T *const, char (*const)[12]);
-/* Check that {LIST_TO_STRING} is a function implementing {<T>ToString}. */
+/** Responsible for turning <typedef:<PT>Type> (the first argument) into a
+ maximum 11-`char` string (the second.) */
+typedef void (*PT_(ToString))(const PT_(Type) *, char (*)[12]);
+/* Check that `LIST_TO_STRING` is a function implementing
+ <typedef:<PT>ToString>. */
 static const PT_(ToString) PT_(to_string) = (LIST_TO_STRING);
 #endif /* string --> */
 
 
 
-/** Private: {container_of}. */
+/** Private: container of `x`. */
 static struct T_(Link) *PT_(x_upcast)(struct PT_(X) *const x) {
 	return (struct T_(Link) *)(void *)
 		((char *)x - offsetof(struct T_(Link), x));
 }
 
 #ifdef LIST_TO_STRING /* <-- string */
-/** Private: {container_of}. */
-static const struct T_(Link) *PT_(const_x_upcast)(const struct PT_(X) *const x){
+/** Private: container of `x`. */
+static const struct T_(Link) *PT_(x_cupcast)(const struct PT_(X) *const x){
 	return (const struct T_(Link) *)(const void *)
 	((const char *)x - offsetof(struct T_(Link), x));
 }
 #endif /* string --> */
 
-/** Private: {container_of}. */
-static struct T_(Link) *PT_(data_upcast)(T *const data) {
+/** Private: container_of `data`. */
+static struct T_(Link) *PT_(data_upcast)(PT_(Type) *const data) {
 	return (struct T_(Link) *)(void *)
 		((char *)data - offsetof(struct T_(Link), data));
 }
 
-/** Private: {container_of}; used for \see{<T>List<U>Next}, {etc}. */
-static const struct T_(Link) *PT_(const_data_upcast)(const T *const data) {
+/** Private: container of `data`. */
+static const struct T_(Link) *PT_(data_cupcast)(
+	const PT_(Type) *const data) {
 	return (const struct T_(Link) *)(const void *)
 		((const char *)data - offsetof(struct T_(Link), data));
-}
-
-/** Given a link, extract the data.
- @param link: Does not do any null-check.
- @return The data associated to {link}.
- @allow */
-static const T *T_(LinkData)(const struct T_(Link) *const link) {
-	return &link->data;
 }
 
 /* Prototypes: needed for the next section, but undefined until later. */
@@ -365,11 +326,9 @@ static void PT_(add_before)(struct PT_(X) *const, struct PT_(X) *const);
 static void PT_(add_after)(struct PT_(X) *const, struct PT_(X) *const);
 static void PT_(remove)(struct PT_(X) *const);
 
-
-
-/* Note to future self: recursive includes. The {LIST_U_NAME} pre-processor
- flag controls this behaviour; we are currently in the {!LIST_U_NAME} section.
- These will get all the functions with {<U>} in them from below. */
+/* Note to future self: recursive includes. The `LIST_U_NAME` pre-processor
+ flag controls this behaviour; we are currently in the `!LIST_U_NAME` section.
+ These will get all the functions with `<U>` in them from below. */
 
 #ifdef LIST_UA_NAME /* <-- a */
 #define LIST_U_NAME LIST_UA_NAME
@@ -403,9 +362,7 @@ static void PT_(remove)(struct PT_(X) *const);
 #include "List.h"
 #endif /* d --> */
 
-
-
-/** Private: add before {x}. */
+/** Private: `add` before `x`. */
 static void PT_(add_before)(struct PT_(X) *const x, struct PT_(X) *const add) {
 	assert(x && add && x != add);
 #ifdef LIST_UA_NAME /* <-- a */
@@ -422,7 +379,7 @@ static void PT_(add_before)(struct PT_(X) *const x, struct PT_(X) *const add) {
 #endif /* d --> */
 }
 
-/** Private: add after {x}. */
+/** Private: `add` after `x`. */
 static void PT_(add_after)(struct PT_(X) *const x, struct PT_(X) *const add) {
 	assert(x && add && x != add);
 #ifdef LIST_UA_NAME /* <-- a */
@@ -440,7 +397,7 @@ static void PT_(add_after)(struct PT_(X) *const x, struct PT_(X) *const add) {
 }
 
 /** Private: remove from list.
- @implements <T>LinkAction */
+ @implements <typedef:<PT>LinkAction> */
 static void PT_(remove)(struct PT_(X) *const x) {
 #ifdef LIST_UA_NAME /* <-- a */
 	PT_UA_(x, remove)(x);
@@ -456,7 +413,7 @@ static void PT_(remove)(struct PT_(X) *const x) {
 #endif /* d --> */
 }
 
-/** Private: clears and initialises. */
+/** Private: clears and initialises `list`. */
 static void PT_(clear)(struct T_(List) *const list) {
 	assert(list);
 #ifdef LIST_UA_NAME
@@ -481,7 +438,7 @@ static void PT_(clear)(struct T_(List) *const list) {
 #endif
 }
 
-/** Private: add all {from} before {x}. */
+/** Private: add all `from` before `x`. */
 static void PT_(add_list_before)(struct PT_(X) *const x,
 	struct T_(List) *const from) {
 	assert(x && from);
@@ -499,10 +456,9 @@ static void PT_(add_list_before)(struct PT_(X) *const x,
 #endif /* d --> */
 }
 
-/** Clears and removes all values from {list}, thereby initialising the
- {<T>List}. All previous values are un-associated. Does the same thing as the
- initialisation constant {LIST_EMPTY[_[2-4]]}.
- @param list: if null, does nothing.
+/** Clears and removes all values from `list`, thereby initialising the
+ <tag:<T>List>. All previous values are un-associated.
+ @param[list] if null, does nothing.
  @order \Theta(1)
  @allow */
 static void T_(ListClear)(struct T_(List) *const list) {
@@ -510,27 +466,27 @@ static void T_(ListClear)(struct T_(List) *const list) {
 	PT_(clear)(list);
 }
 
-/** Initialises the contents of the node which contains {add} to add it to the
- beginning of {list}. If either {list} or {add} is null, it does nothing.
- @param add: Must be inside of a {<T>Link} and not associated to any list;
- this associates the {<T>Link} with the list.
+/** Initialises the contents of the node which contains `add` to add it to the
+ beginning of `list`.
+ @param[list, add] If null, does nothing.
+ @param[add] Must not associated to any list.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListUnshift)(struct T_(List) *const list, T *const add) {
+static void T_(ListUnshift)(struct T_(List) *const list,
+	struct T_(Link) *const add) {
 	if(!list || !add) return;
-	PT_(add_after)(&list->head, &PT_(data_upcast)(add)->x);
+	PT_(add_after)(&list->head, &add->x);
 }
 
-/** Initialises the contents of the node which contains {add} to add it to the
- end of {list}.
- @param list: If null, does nothing.
- @param add:  If null, does nothing, otherwise must be inside of a
- {<T>Link} and not associated to any list; this associates the
- {<T>Link} that {add} is a part of with {list}, if it exists.
+/** Initialises the contents of the node which contains `add` to add it to the
+ end of `list`.
+ @param[list, add] If null, does nothing.
+ @param[add] Must not associated to any list.
  @order \Theta(1)
  @allow */
-static void T_(ListPush)(struct T_(List) *const list, T *const add) {
+static void T_(ListPush)(struct T_(List) *const list,
+	struct T_(Link) *const add) {
 	if(!list || !add) return;
 	PT_(add_before)(&list->tail, &PT_(data_upcast)(add)->x);
 }
@@ -544,7 +500,7 @@ static void T_(ListPush)(struct T_(List) *const list, T *const add) {
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListAddBefore)(T *const data, T *const add) {
+static void T_(ListAddBefore)(PT_(Type) *const data, PT_(Type) *const add) {
 	if(!data || !add) return;
 	PT_(add_before)(&PT_(data_upcast)(data)->x, &PT_(data_upcast)(add)->x);
 }
@@ -558,7 +514,7 @@ static void T_(ListAddBefore)(T *const data, T *const add) {
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListAddAfter)(T *const data, T *const add) {
+static void T_(ListAddAfter)(PT_(Type) *const data, PT_(Type) *const add) {
 	if(!data || !add) return;
 	PT_(add_after)(&PT_(data_upcast)(data)->x, &PT_(data_upcast)(add)->x);
 }
@@ -569,7 +525,7 @@ static void T_(ListAddAfter)(T *const data, T *const add) {
  @param data: If null, does nothing.
  @order \Theta(1)
  @allow */
-static void T_(ListRemove)(T *const data) {
+static void T_(ListRemove)(PT_(Type) *const data) {
 	if(!data) return;
 	PT_(remove)(&PT_(data_upcast)(data)->x);
 }
@@ -597,7 +553,7 @@ static void T_(ListTake)(struct T_(List) *const list,
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListTakeBefore)(T *const data, struct T_(List) *const from) {
+static void T_(ListTakeBefore)(PT_(Type) *const data, struct T_(List) *const from) {
 	if(!data || !from) return;
 	PT_(add_list_before)(&PT_(data_upcast)(data)->x, from);
 }
@@ -830,7 +786,6 @@ static void PT_(unused_coda)(void) { PT_(unused_list)(); }
 #undef PCAT
 #undef PCAT_
 #endif /* !sub --> */
-#undef T
 #undef T_
 #undef PT_
 #ifdef LIST_TO_STRING
@@ -992,7 +947,7 @@ static void PT_U_(x, cat)(struct PT_(X) *const x,
 
 /** Private: when the actual list but not the data changes locations. */
 static void PT_U_(list, self_correct)(struct T_(List) *const list) {
-	assert(sizeof(T) > 0);
+	assert(sizeof(PT_(Type)) > 0);
 	/* This is a kind of hack relying on {tail, head} to be in packed order in
 	 {<T>List} but not in {<T>Link}. */
 	if(list->head.U_(next) == list->tail.U_(prev) + 1) {
@@ -1011,7 +966,7 @@ static void PT_U_(list, self_correct)(struct T_(List) *const list) {
  null.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Next)(const T *const data) {
+static PT_(Type) *T_U_(List, Next)(const PT_(Type) *const data) {
 	const struct PT_(X) *const x = &PT_(const_data_upcast)(data)->x;
 	struct PT_(X) *next_x;
 	if(!data) return 0;
@@ -1027,7 +982,7 @@ static T *T_U_(List, Next)(const T *const data) {
  returns null.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Previous)(const T *const data) {
+static PT_(Type) *T_U_(List, Previous)(const PT_(Type) *const data) {
 	const struct PT_(X) *const x = &PT_(const_data_upcast)(data)->x;
 	struct PT_(X) *prev_x;
 	if(!data) return 0;
@@ -1040,7 +995,7 @@ static T *T_U_(List, Previous)(const T *const data) {
  @return A pointer to the first element of {list}.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, First)(const struct T_(List) *const list) {
+static PT_(Type) *T_U_(List, First)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->head.U_(next));
 	if(!list->head.U_(next)->U_(next)) return 0; /* Empty. */
@@ -1051,7 +1006,7 @@ static T *T_U_(List, First)(const struct T_(List) *const list) {
  @return A pointer to the last element of {list}.
  @order \Theta(1)
  @allow */
-static T *T_U_(List, Last)(const struct T_(List) *const list) {
+static PT_(Type) *T_U_(List, Last)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->tail.U_(prev));
 	if(!list->tail.U_(prev)->U_(prev)) return 0; /* Empty. */
@@ -1063,7 +1018,7 @@ static T *T_U_(List, Last)(const struct T_(List) *const list) {
  @param list: If null, returns null.
  @return The erstwhile first element or null if the list was empty.
  @fixme Untested. */
-static T *T_U_(List, Shift)(struct T_(List) *const list) {
+static PT_(Type) *T_U_(List, Shift)(struct T_(List) *const list) {
 	struct PT_(X) *x;
 	if(!list) return 0;
 	if(!(x = list->head.U_(next))->U_(next)) return 0;
@@ -1076,7 +1031,7 @@ static T *T_U_(List, Shift)(struct T_(List) *const list) {
  @param list: If null, returns null.
  @return The erstwhile last element or null if the list was empty.
  @fixme Untested. */
-static T *T_U_(List, Pop)(struct T_(List) *const list) {
+static PT_(Type) *T_U_(List, Pop)(struct T_(List) *const list) {
 	struct PT_(X) *x;
 	if(!list) return 0;
 	if(!(x = list->tail.U_(prev))->U_(prev)) return 0;
@@ -1539,10 +1494,10 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
  is true for every case.
  @order ~ O({list}.n) \times O({predicate})
  @allow */
-static T *T_U_(List, All)(struct T_(List) *const list,
+static PT_(Type) *T_U_(List, All)(struct T_(List) *const list,
 	const PT_(Predicate) predicate) {
 	struct PT_(X) *x, *next_x;
-	T *data;
+	PT_(Type) *data;
 	if(!list || !predicate) return 0;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
 		if(data = &PT_(x_upcast)(x)->data, !predicate(data)) return data;
@@ -1558,10 +1513,10 @@ static T *T_U_(List, All)(struct T_(List) *const list,
  @order ~ O({list}.n) \times O({predicate})
  @fixme Void. No. Have interfaces.
  @allow */
-static T *T_U_(List, BiAll)(struct T_(List) *const list,
+static PT_(Type) *T_U_(List, BiAll)(struct T_(List) *const list,
 	const PT_(BiPredicate) bipredicate, void *const param) {
 	struct PT_(X) *x, *next_x;
-	T *data;
+	PT_(Type) *data;
 	if(!list || !bipredicate) return 0;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
 		if(data = &PT_(x_upcast)(x)->data, !bipredicate(data, param))
