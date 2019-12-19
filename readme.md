@@ -11,11 +11,11 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
+![Example of &lt;String&gt;Set.](web/set.png)
+
 [&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication; it must be supplied an equality function, `SET_IS_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a), specified as `defines` before inclusion\.
 
 Internally, it is a simple, separately chained, hash set with a maximum load factor of `ln 2`, and power\-of\-two resizes, with buckets as pointers\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another `struct`, as appropriate\. While in a set, the elements should not change in a way that affects their hash values\.
-
-![Example of &lt;String&gt;Set.](image/index.png)
 
 `<E>Set` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before inclusion\.
 
@@ -39,6 +39,8 @@ Internally, it is a simple, separately chained, hash set with a maximum load fac
    Unit testing framework [&lt;E&gt;SetTest](#user-content-fn-382b20c0), included in a separate header, [\.\./test/SetTest\.h](../test/SetTest.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET_TO_STRING` and not `NDEBUG`\.
  * Standard:  
    C89
+ * See also:  
+   [Array](https://github.com/neil-edelman/Array); [Digraph](https://github.com/neil-edelman/Digraph); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

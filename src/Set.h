@@ -1,6 +1,10 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @subtitle Parameterised Hash Set
+
+ ![Example of <String>Set.](../web/set.png)
+
  <tag:<E>Set> is a collection of elements of <tag:<E>SetElement> that doesn't
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
  <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>,
@@ -12,8 +16,6 @@
  left up to the caller. It can be expanded to a hash map or associative array
  by enclosing the `<E>SetElement` in another `struct`, as appropriate. While in
  a set, the elements should not change in a way that affects their hash values.
-
- ![Example of <String>Set.](../image/index.png)
 
  `<E>Set` is not synchronised. Errors are returned with `errno`. The parameters
  are preprocessor macros, and are all undefined at the end of the file for
@@ -53,8 +55,12 @@
  <../test/SetTest.h>. Must be defined equal to a random filler function,
  satisfying <typedef:<PE>Action>. Requires `SET_TO_STRING` and not `NDEBUG`.
 
- @subtitle Parameterised Hash Set
- @std C89 */
+ @std C89
+ @cf [Array](https://github.com/neil-edelman/Array)
+ @cf [Digraph](https://github.com/neil-edelman/Digraph)
+ @cf [List](https://github.com/neil-edelman/List)
+ @cf [Orcish](https://github.com/neil-edelman/Orcish)
+ @cf [Pool](https://github.com/neil-edelman/Pool) */
 
 #include <stddef.h>	/* offsetof */
 #include <limits.h> /* SIZE_MAX? */
