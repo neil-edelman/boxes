@@ -15,7 +15,7 @@
 /* POOL_TEST must be a function that implements <PT>Action. */
 static const PT_(Action) PT_(filler) = (POOL_TEST);
 
-/** Private: `container_of`. */
+/** Private: `container_of` `x`. */
 static const struct PT_(Node) *
 	PT_(x_const_upcast)(const struct PT_(X) *const x) {
 	return (const struct PT_(Node) *)(const void *)
@@ -88,10 +88,13 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 	fclose(fp);
 }
 
+/** Crashes if `b` is not a valid block.
+ @implements <PT>Action */
 static void PT_(valid_block)(const struct PT_(Block) *const b) {
 	assert(b && b->capacity);
 }
 
+/** Crashes if `a` is not in a valid state. */
 static void PT_(valid_state)(const struct T_(Pool) *const a) {
 	struct PT_(Block) *block;
 	const struct PT_(Node) *node;
@@ -296,7 +299,8 @@ static void PT_(test_random)(void) {
 	T_(Pool_)(&a);
 }
 
-/** The list will be tested on stdout. */
+/** The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`.
+ @allow */
 static void T_(PoolTest)(void) {
 	printf("Pool<" QUOTE(POOL_NAME) ">: of type <" QUOTE(POOL_TYPE)
 		"> was created using: "

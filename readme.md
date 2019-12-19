@@ -79,6 +79,8 @@ The pool\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T&
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-a0df87e3">&lt;T&gt;PoolToString</a></td><td>pool</td></tr>
 
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7300f93b">&lt;T&gt;PoolTest</a></td><td></td></tr>
+
 </table>
 
 
@@ -212,6 +214,14 @@ Can print 4 things at once before it overwrites\. One must pool `POOL_TO_STRING`
  * Order:  
    &#920;\(1\); it has a 255 character limit; every element takes some of it\.
 
+
+
+
+### <a id = "user-content-fn-7300f93b" name = "user-content-fn-7300f93b">&lt;T&gt;PoolTest</a> ###
+
+<code>static void <strong>&lt;T&gt;PoolTest</strong>(void)</code>
+
+The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`\.
 
 
 

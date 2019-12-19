@@ -288,7 +288,7 @@ static void T_(Pool)(struct T_(Pool) *const pool) {
 	PT_(pool)(pool);
 }
 
-/* Find what block `node` is in `pool`. Used in <fn:<T>PoolRemove>.
+/** Find what block `node` is in `pool`. Used in <fn:<T>PoolRemove>.
  @order At worst \O(log `items`) when there's no deletetion.
  @return Must return a value. */
 static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
@@ -491,7 +491,7 @@ static void PT_(unused_set)(void) {
 #endif
 	PT_(unused_coda)();
 }
-/** {clang}'s pre-processor is not fooled if you have one function. */
+/** Some pre-processors are not fooled if you have one function. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
 
