@@ -431,25 +431,29 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  array, but doesn't add to the size.
  @param[a] If null, returns false.
  @param[reserve] If zero, returns true.
- @return Success or `errno` will be set.
+ @return The end of the `a`, as returned by <fn:<T>ArrayEnd> where are
+ `reserve` elements, or null and `errno` will be set. This memory space is safe
+ to write to, but one will have to increase the size, see <fn:<T>ArrayBuffer>.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc]
  @order Amortised \O(`reserve`).
  @allow */
-static int T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
+static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
 	if(!a) return 0;
-	if(!reserve) return 1;
-	if(a->size > (size_t)-1 - reserve) return errno = ERANGE, 0;
+	if(!reserve) return a->data ? a->data + a->size : 0;
+	if(a->size > (size_t)-1 - reserve) { errno = ERANGE; return 0; }
 	if(!PT_(reserve)(a, a->size + reserve, 0)) return 0;
-	return 1;
+	assert(a->data);
+	return a->data + a->size;
 }
 
-/** @param[a] If null, returns null.
+/** Adds `add` elements to `a`.
+ @param[a] If null, returns null.
  @param[add] If zero, returns null.
- @return The start of a new, un-initialised, sub-array of `add` elements at the
- back of `a`, or null and `errno` will be set.
+ @return The start of a new sub-array of `add` elements at the previous end of
+ `a`, or null and `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).

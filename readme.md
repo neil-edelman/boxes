@@ -107,7 +107,7 @@ The array\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T
 
 <tr><td align = right>static T *</td><td><a href = "#user-content-fn-e810048b">&lt;T&gt;ArrayUpdateNew</a></td><td>a, update_ptr</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-8fb34e3e">&lt;T&gt;ArrayReserve</a></td><td>a, reserve</td></tr>
+<tr><td align = right>static T *</td><td><a href = "#user-content-fn-8fb34e3e">&lt;T&gt;ArrayReserve</a></td><td>a, reserve</td></tr>
 
 <tr><td align = right>static T *</td><td><a href = "#user-content-fn-12fc774c">&lt;T&gt;ArrayBuffer</a></td><td>a, add</td></tr>
 
@@ -379,7 +379,7 @@ Iterate through `a`\. It is safe to add using [&lt;T&gt;ArrayUpdateNew](#user-co
 
 ### <a id = "user-content-fn-8fb34e3e" name = "user-content-fn-8fb34e3e">&lt;T&gt;ArrayReserve</a> ###
 
-<code>static int <strong>&lt;T&gt;ArrayReserve</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>reserve</em>)</code>
+<code>static T *<strong>&lt;T&gt;ArrayReserve</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>reserve</em>)</code>
 
 Ensures that `a` array is `reserve` capacity beyond the elements in the array, but doesn't add to the size\.
 
@@ -388,7 +388,7 @@ Ensures that `a` array is `reserve` capacity beyond the elements in the array, b
  * Parameter: _reserve_  
    If zero, returns true\.
  * Return:  
-   Success or `errno` will be set\.
+   The end of the `a`, as returned by [&lt;T&gt;ArrayEnd](#user-content-fn-168bb5af) where are `reserve` elements, or null and `errno` will be set\. This memory space is safe to write to, but one will have to increase the size, see [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c)\.
  * Exceptional return: ERANGE  
    Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  * Exceptional return: realloc  
@@ -402,12 +402,14 @@ Ensures that `a` array is `reserve` capacity beyond the elements in the array, b
 
 <code>static T *<strong>&lt;T&gt;ArrayBuffer</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>add</em>)</code>
 
+Adds `add` elements to `a`\.
+
  * Parameter: _a_  
    If null, returns null\.
  * Parameter: _add_  
    If zero, returns null\.
  * Return:  
-   The start of a new, un\-initialised, sub\-array of `add` elements at the back of `a`, or null and `errno` will be set\.
+   The start of a new sub\-array of `add` elements at the previous end of `a`, or null and `errno` will be set\.
  * Exceptional return: ERANGE  
    Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  * Exceptional return: realloc  
