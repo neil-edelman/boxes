@@ -27,6 +27,8 @@
    Unit testing framework [&lt;T&gt;PoolTest](#user-content-fn-7300f93b), included in a separate header, [\.\./test/PoolTest\.h](../test/PoolTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Requires `POOL_TO_STRING` and not `NDEBUG`\.
  * Standard:  
    C89
+ * See also:  
+   [Array](https://github.com/neil-edelman/Array); [Digraph](https://github.com/neil-edelman/Digraph); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

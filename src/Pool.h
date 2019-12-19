@@ -3,6 +3,8 @@
 
  @subtitle Parameterised Stable Pool
 
+ 
+
  <tag:<T>Pool> stores unordered `<T>` in a memory pool, which must be set using
  `POOL_TYPE`. Pointers to valid items in the pool are stable, and as such,
  contiguity is not possible. However, it uses geometrically increasing
@@ -34,7 +36,13 @@
  <../test/PoolTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PT>Action>. Requires `POOL_TO_STRING` and not `NDEBUG`.
 
- @std C89 */
+ @std C89
+ @cf [Array](https://github.com/neil-edelman/Array)
+ @cf [Digraph](https://github.com/neil-edelman/Digraph)
+ @cf [List](https://github.com/neil-edelman/List)
+ @cf [Orcish](https://github.com/neil-edelman/Orcish)
+ @cf [Pool](https://github.com/neil-edelman/Pool)
+ @cf [Set](https://github.com/neil-edelman/Set) */
 
 #include <stddef.h>	/* offset_of */
 #include <stdlib.h>	/* malloc free */
