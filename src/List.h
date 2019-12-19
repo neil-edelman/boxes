@@ -1,6 +1,8 @@
 /** 2017 Neil Edelman, distributed under the terms of the MIT License;
  see readme.txt, or \url{ https://opensource.org/licenses/MIT }.
 
+ This documentation needs to be changed.
+
  {<T>List} is a doubly-linked-list of {<T>Link}, of which data of type, {<T>},
  must be set using {LIST_TYPE}. This is an abstract data structure requiring
  {<T>Link} storage. Supports one to four multiply-linked-lists, as different
@@ -47,24 +49,7 @@
  {<T>Action}. If {NDEBUG} is not defined, turns on {assert} private function
  integrity testing. Requires {LIST_TO_STRING}.
 
- @title		List.h
- @author	Neil
- @std		C89/90
- @version
- 2016-03 Eliminated Migrate functions.
- 2018-04 {<T>ListNode} has been shortened to {<T>Link}, thus potential
- namespace violations doubled. Two dynamic memory allocations have been
- collapsed into one by making it a non-pointer at the cost of readability.
- These changes are good for more complex data structures #including list.
- @since
- 2018-02 Eliminated the need for unnecessarily {<T>List}. Now one
- must initialise static variables with {<T>ListClear}. Eliminated
- {LIST_STATIC_SORT}.
- 2017-12 Type information on backing.
- 2017-10 Anonymous orders.
- 2017-07 Made migrate simpler.
- 2017-06 Split Add into Push and Unshift.
- 2017-05 Separated from backing.
+ @std C89
  @fixme {GCC}: {#pragma GCC diagnostic ignored "-Wconversion"}; libc 4.2
  {assert} warnings on {LIST_TEST}.
  @fixme {MSVC}: {#pragma warning(disable: x)} where {x} is: 4464 contains '..'
@@ -75,19 +60,11 @@
  {clang-tags}; 3.8 {disabled-macro-expansion} on {toupper} in {LIST_TEST}.
  @fixme Non-const void pointers in {<T>List<U>BiAction} are not effective; have
  an interface. While we're at it, {<T>LinkMigrate} should be an interface.
- Everything should be an interface. Not obvious how. */
-
-/* 2017-05-12 tested with:
- gcc version 4.2.1 (Apple Inc. build 5666) (dot 3)
- Apple clang version 1.7 (tags/Apple/clang-77) (based on LLVM 2.9svn)
- gcc version 4.9.2 (Debian 4.9.2-10)
- Microsoft Visual Studio Enterprise 2015 Version 14.0.25424.00 Update 3
- Borland 10.1 Embarcadero C++ 7.20 for Win32
- MinGW gcc version 4.9.3 (GCC) Win32
- gcc version 5.4.0 20160609 (Ubuntu 5.4.0-6ubuntu1~16.04.4)
- clang version 3.8.0-2ubuntu4 (tags/RELEASE_380/final) */
-
-
+ Everything should be an interface. Not obvious how.
+ @cf [Array](https://github.com/neil-edelman/Array)
+ @cf [Orcish](https://github.com/neil-edelman/Orcish)
+ @cf [Pool](https://github.com/neil-edelman/Pool)
+ @cf [Set](https://github.com/neil-edelman/Set) */
 
 /* Original #include in the user's C file, and not from calling recursively;
  all "LIST_*" names are assumed to be reserved. */
