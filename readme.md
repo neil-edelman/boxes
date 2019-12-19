@@ -17,8 +17,6 @@
 
 `<T>Pool` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
 
-![States.](web/states.png)
-
 
 
  * Parameter: POOL\_NAME, POOL\_TYPE  
@@ -58,6 +56,8 @@ Operates by side\-effects on `data` only\.
 <code>struct <strong>&lt;T&gt;Pool</strong>;</code>
 
 The pool\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T&gt;Pool](#user-content-fn-517215cf) or initialise it with `POOL_INIT` or `{0}` \(C99\.\)
+
+![States.](web/states.png)
 
 
 

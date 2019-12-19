@@ -19,8 +19,6 @@
  file for convenience. `assert.h` is included in this file; to stop the
  debug assertions, use `#define NDEBUG` before `assert.h`.
 
- ![States.](../web/states.png)
-
  @param[POOL_NAME, POOL_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag
  (type) associated therewith; required. `<PT>` is private, whose names are
@@ -129,7 +127,9 @@ struct PT_(Block) {
 };
 
 /** The pool. Zeroed data is a valid state. To instantiate explicitly, see
- <fn:<T>Pool> or initialise it with `POOL_INIT` or `{0}` (C99.) */
+ <fn:<T>Pool> or initialise it with `POOL_INIT` or `{0}` (C99.)
+
+ ![States.](../web/states.png) */
 struct T_(Pool);
 struct T_(Pool) {
 	/* Ideally, all items to go in here, but there may be smaller blocks. */
