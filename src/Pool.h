@@ -3,7 +3,7 @@
 
  @subtitle Parameterised Stable Pool
 
- 
+ ![Example of Pool][../image/index.png]
 
  <tag:<T>Pool> stores unordered `<T>` in a memory pool, which must be set using
  `POOL_TYPE`. Pointers to valid items in the pool are stable, and as such,
