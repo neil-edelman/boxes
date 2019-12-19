@@ -388,7 +388,7 @@ Ensures that `a` array is `reserve` capacity beyond the elements in the array, b
  * Parameter: _reserve_  
    If zero, returns true\.
  * Return:  
-   The end of the `a`, as returned by [&lt;T&gt;ArrayEnd](#user-content-fn-168bb5af) where are `reserve` elements, or null and `errno` will be set\. This memory space is safe to write to, but one will have to increase the size, see [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c)\.
+   The end of the `a`, as returned by [&lt;T&gt;ArrayEnd](#user-content-fn-168bb5af), where are `reserve` elements, or null and `errno` will be set\. This memory space is safe to write to, but one will have to increase the size, \(see [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c)\.\)
  * Exceptional return: ERANGE  
    Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  * Exceptional return: realloc  
