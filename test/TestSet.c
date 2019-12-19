@@ -264,7 +264,6 @@ static struct IdSetElement *id_from_pool(void *const vboats) {
 }
 
 int main(void) {
-	printf("Foo!\n");
 	{ /* Automated tests. */
 		struct BoatPool boats;
 		struct StringElementPool ses;
