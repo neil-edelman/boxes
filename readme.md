@@ -125,6 +125,8 @@ Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as an element `data`, 
 
 An `<E>Set`\. To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\.
 
+![States.](web/states.png)
+
 
 
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##

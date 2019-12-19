@@ -191,7 +191,9 @@ struct E_(SetElement) {
  double-pointers are confusing, (confusion is not the intent of this file.) */
 struct PE_(Bucket) { struct E_(SetElement) *first; };
 
-/** An `<E>Set`. To initialise, see <fn:<E>Set>. */
+/** An `<E>Set`. To initialise, see <fn:<E>Set>.
+
+ ![States.](../web/states.png) */
 struct E_(Set);
 struct E_(Set) {
 	struct PE_(Bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
