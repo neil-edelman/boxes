@@ -11,7 +11,7 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of Pool](image/index.png)
+![Example of Pool](web/pool.png)
 
 [&lt;T&gt;Pool](#user-content-tag-517215cf) stores unordered `<T>` in a memory pool, which must be set using `POOL_TYPE`\. Pointers to valid items in the pool are stable, and as such, contiguity is not possible\. However, it uses geometrically increasing size\-blocks and when the removal is ongoing and uniformly sampled, \(specifically, old elements are all removed,\) and data reaches a steady\-state size, the data will eventually be in one allocated region\. In this way, provides a fairly contiguous space for items to which there might have permanent references or hierarchical structures with different sizes\.
 

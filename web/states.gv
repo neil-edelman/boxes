@@ -1,9 +1,14 @@
 digraph {
 	//rankdir = LR;
+	fontname = "Bitstream Vera Sans"
+	fontsize = 8
+	node [ fontname = "Bitstream Vera Sans" fontsize = 8 shape = "record" ]
+	edge [ fontname = "Bitstream Vera Sans" fontsize = 8 ]
+
 	node [ shape=record, style=filled ];
-	null [ label = "Uninitalised.|Random bytes.\lNo memory.\l" ];
-	static [ label = "Zero filled.|Statically uninitalised.\lNo memory.\l" ];
-	dynamic [ label = "In use.|Dynamic memory allocated.\n" ];
+	null [ label = "Uninitalised|Random bytes.\lNo memory.\lNot in a valid state.\l", fillcolor = pink ];
+	static [ label = "Idle|No memory.\l\{0\} or POOL_ZERO\l" ];
+	dynamic [ label = "Active|Memory allocated.\n" ];
 	null -> static [ label = "<T>Pool" ];
 	static -> dynamic [ label = "<T>PoolNew\l<T>PoolReserve" ];
 	dynamic -> static [ label = "<T>Pool_" ];
