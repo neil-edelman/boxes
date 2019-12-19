@@ -431,9 +431,10 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  array, but doesn't add to the size.
  @param[a] If null, returns false.
  @param[reserve] If zero, returns true.
- @return The end of the `a`, as returned by <fn:<T>ArrayEnd> where are
+ @return The end of the `a`, as returned by <fn:<T>ArrayEnd>, where are
  `reserve` elements, or null and `errno` will be set. This memory space is safe
- to write to, but one will have to increase the size, see <fn:<T>ArrayBuffer>.
+ to write to, but one will have to increase the size, (see
+ <fn:<T>ArrayBuffer>.)
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
