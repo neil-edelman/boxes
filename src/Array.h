@@ -3,6 +3,8 @@
 
  @subtitle Parameterised Contiguous Dynamic Array (Vector)
 
+ ![Example of Array](../web/array.png)
+
  <tag:<T>Array>` is a dynamic array that stores contiguous `<T>`, which must be
  set using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal
  to the size, resizing may be necessary and incurs amortised cost. When adding
@@ -13,8 +15,6 @@
  parameters are preprocessor macros, and are all undefined at the end of the
  file for convenience. `assert.h` is included in this file; to stop the
  debug assertions, use `#define NDEBUG` before `assert.h`.
-
- ![States.](../web/states.png)
 
  @param[ARRAY_NAME, ARRAY_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag
@@ -34,7 +34,12 @@
  <../test/ArrayTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PT>Action>. Requires `ARRAY_TO_STRING` and not `NDEBUG`.
 
- @std C89 */
+ @std C89
+ @cf [Digraph](https://github.com/neil-edelman/Digraph)
+ @cf [List](https://github.com/neil-edelman/List)
+ @cf [Orcish](https://github.com/neil-edelman/Orcish)
+ @cf [Pool](https://github.com/neil-edelman/Pool)
+ @cf [Set](https://github.com/neil-edelman/Set) */
 
 #include <stddef.h>	/* offset_of */
 #include <stdlib.h>	/* realloc free */
@@ -110,7 +115,9 @@ typedef void (*PT_(Action))(T *data);
 typedef int (*PT_(Predicate))(const T *data);
 
 /** The array. Zeroed data is a valid state. To instantiate explicitly, see
- <fn:<T>Array> or initialise it with `ARRAY_INIT` or `{0}` (C99.) */
+ <fn:<T>Array> or initialise it with `ARRAY_INIT` or `{0}` (C99.)
+
+ ![States.](../web/states.png) */
 struct T_(Array);
 struct T_(Array) {
 	T *data;
@@ -664,8 +671,8 @@ terminate:
 /* Prototype. */
 static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
- optimisation, (hopefully.)
- <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code> */
+ optimisation
+ <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code>. */
 static void PT_(unused_set)(void) {
 	T_(Array_)(0);
 	T_(Array)(0);
@@ -706,8 +713,8 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 /* Un-define all macros. */
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
-/* Undocumented; allows nestled inclusion so long as: `CAT_`, `CAT`, `PCAT`,
- `PCAT_` conform, and `T` is not used. */
+/* Undocumented; allows nestled inclusion so long as: `CAT_`, _etc_ conform,
+ and `T`, _etc_ is not used. */
 #ifdef ARRAY_SUBTYPE /* <!-- sub */
 #undef ARRAY_SUBTYPE
 #else /* sub --><!-- !sub */

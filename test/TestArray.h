@@ -40,6 +40,33 @@ static int PT_(zero_filled)(const T *const t) {
 
 
 
+/** Draw a graph of `a` to `fn` in Graphviz format. */
+static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
+	FILE *fp;
+	char a[12];
+	assert(ar && fn);
+	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	fprintf(fp, "digraph {\n"
+			"\trankdir = LR;\n"
+			"\tnode [shape = record, style = filled];\n");
+	fprintf(fp, "\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>Array: "
+			QUOTE(ARRAY_TYPE) "\\l\"];\n");
+	if(ar->data) {
+		T *const data = ar->data;
+		size_t i;
+		fprintf(fp, "data [label=\"");
+		for(i = 0; i < ar->size; i++) {
+			PT_(to_string)(data + i, &a);
+			fprintf(fp, "%s%s", i == 0 ? "" : "|\\l", a);
+		}
+		fprintf(fp, "\"]\n");
+		fprintf(fp, "Array -> data;\n");
+	}
+	fprintf(fp, "\tnode [colour=red];\n");
+	fprintf(fp, "}\n");
+	fclose(fp);
+}
+
 static void PT_(test_basic)(void) {
 	struct T_(Array) a;
 	T ts[5], *t, *t1, *start;
@@ -228,16 +255,16 @@ static void PT_(test_basic)(void) {
 
 static void PT_(test_random)(void) {
 	struct T_(Array) a;
-	size_t i, size = 0;
 	const size_t mult = 1; /* For long tests. */
+	/* This parameter controls how many iterations. */
+	size_t i, i_end = 1000 * mult, size = 0;
 	/* Random. */
 	T_(Array)(&a);
-	/* This parameter controls how many iterations. */
-	i = 1000 * mult;
-	while(i--) {
+	for(i = 0; i < i_end; i++) {
 		T *data;
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
+		printf("%lu: ", (unsigned long)i);
 		/* This parameter controls how big the pool wants to be. */
 		if(r > size / (100.0 * mult)) {
 			if(!(data = T_(ArrayNew)(&a))) {
@@ -247,7 +274,7 @@ static void PT_(test_random)(void) {
 			size++;
 			PT_(filler)(data);
 			PT_(to_string)(data, &str);
-			printf("Created %s.\n", str);
+			printf("created %s.\n", str);
 		} else {
 #ifdef ARRAY_STACK /* <!-- stack */
 			double t = 1.0;
@@ -259,14 +286,14 @@ static void PT_(test_random)(void) {
 				data = T_(ArrayPeek)(&a);
 				assert(data);
 				PT_(to_string)(data, &str);
-				printf("Popping %s.\n", str);
+				printf("popping %s.\n", str);
 				assert(data == T_(ArrayPop)(&a));
 			} else {
 #ifndef ARRAY_STACK /* <!-- !stack */
 				size_t idx = rand() / (RAND_MAX + 1.0) * size;
 				if(!(data = T_(ArrayGet)(&a) + idx)) continue;
 				PT_(to_string)(data, &str);
-				printf("Removing %s at %lu.\n", str, (unsigned long)idx);
+				printf("removing %s at %lu.\n", str, (unsigned long)idx);
 				{
 					const int ret = T_(ArrayRemove)(&a, data);
 					assert(ret || (perror("Removing"), 0));
@@ -275,8 +302,14 @@ static void PT_(test_random)(void) {
 			}
 			size--;
 		}
-		printf("%s.\n", T_(ArrayToString)(&a));
 		PT_(valid_state)(&a);
+		if(i == 5 || i == 10 || i == 100) {
+			char fn[32];
+			printf("%s.\n", T_(ArrayToString)(&a));
+			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "Array%lu.gv",
+				(unsigned long)i);
+			PT_(graph)(&a, fn);
+		}
 	}
 	T_(Array_)(&a);
 }
