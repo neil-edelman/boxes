@@ -40,7 +40,7 @@ static int PT_(zero_filled)(const T *const t) {
 
 
 
-/** Draw a graph of `a` to `fn` in Graphviz format. */
+/** Draw a graph of `ar` to `fn` in Graphviz format. */
 static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
 	FILE *fp;
 	char a[12];

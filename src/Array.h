@@ -5,7 +5,7 @@
 
  ![Example of Array](../web/array.png)
 
- <tag:<T>Array>` is a dynamic array that stores contiguous `<T>`, which must be
+ <tag:<T>Array> is a dynamic array that stores contiguous `<T>`, which must be
  set using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal
  to the size, resizing may be necessary and incurs amortised cost. When adding
  new elements, the elements may change memory location to fit. It is therefore

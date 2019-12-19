@@ -11,8 +11,18 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-[&lt;T&gt;Array](#user-content-tag-f128eca2)`is a dynamic array that stores contiguous`<T>`, which must be set using`ARRAY_TYPE\`\.Toensurethatthecapacityisgreaterthenorequaltothesize,resizingmaybenecessaryandincursamortisedcost\.Whenaddingnewelements,theelementsmaychangememorylocationtofit\.Itisthereforeunstable;anypointerstothismemorymaybecomestaleandunusable\.\`<T>Array\`isnotsynchronised\.Errorsarereturnedwith\`errno\`\.Theparametersarepreprocessormacros,andareallundefinedattheendofthefileforconvenience\.\`assert\.h\`isincludedinthisfile;tostopthedebugassertions,use\`\#defineNDEBUG\`before\`assert\.h\`\.@param\[ARRAY_NAME, ARRAY_TYPE\]\`<T>\`thatsatisfies\`C\`namingconventionswhenmangledandavalidtag\(type\)associatedtherewith;required\.\`<PT>\`isprivate,whosenamesareprefixedinamannertoavoidcollisions;anyshouldbere\-definedpriortouseelsewhere\.@param\[ARRAY_STACK\] Doesn't define removal functions except [&lt;T&gt;ArrayPop](#user-content-fn-c32fdd31), making it a stack\.
+![Example of Array](web/array.png)
 
+[&lt;T&gt;Array](#user-content-tag-f128eca2) is a dynamic array that stores contiguous `<T>`, which must be set using `ARRAY_TYPE`\. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\. When adding new elements, the elements may change memory location to fit\. It is therefore unstable; any pointers to this memory may become stale and unusable\.
+
+`<T>Array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
+
+
+
+ * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
+   `<T>` that satisfies `C` naming conventions when mangled and a valid tag \(type\) associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
+ * Parameter: ARRAY\_STACK  
+   Doesn't define removal functions except [&lt;T&gt;ArrayPop](#user-content-fn-c32fdd31), making it a stack\.
  * Parameter: ARRAY\_TO\_STRING  
    Optional print function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f); makes available [&lt;T&gt;ArrayToString](#user-content-fn-e365d362)\.
  * Parameter: ARRAY\_TEST  
@@ -21,8 +31,6 @@
    C89
  * See also:  
    [Digraph](https://github.com/neil-edelman/Digraph); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
-
-
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
