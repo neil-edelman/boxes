@@ -123,7 +123,7 @@ Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as an element `data`, 
 
 <code>struct <strong>&lt;E&gt;Set</strong>;</code>
 
-An `<E>Set`\. To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\.
+To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\. Assigning `{0}` \(`C99`\+\) or `SET_ZERO` as the initialiser, or being part of `static` data, also puts it in an empty state\.
 
 ![States.](web/states.png)
 
@@ -167,7 +167,7 @@ An `<E>Set`\. To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\.
 
 <code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Destructor for `set`\. After, it takes no memory and is in an empty state\.
+Destructor for active `set`\. After, it takes no memory and is in an idle state\. If idle, does nothing\.
 
 
 
@@ -175,7 +175,7 @@ Destructor for `set`\. After, it takes no memory and is in an empty state\.
 
 <code>static void <strong>&lt;E&gt;Set</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
 
-Initialises `set` to be take no memory and be in an empty state\. Alternatively, assigning `{0}` \(`C99`\+\) or `SET_ZERO` as the initialiser, or being part of `static` data, also puts it in an empty state\. Calling this on an active set will cause memory leaks\.
+Initialises `set` to be take no memory and be in an idle state\. Calling this on an active set will cause memory leaks\.
 
  * Parameter: _set_  
    If null, does nothing\.

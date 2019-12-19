@@ -191,7 +191,9 @@ struct E_(SetElement) {
  double-pointers are confusing, (confusion is not the intent of this file.) */
 struct PE_(Bucket) { struct E_(SetElement) *first; };
 
-/** An `<E>Set`. To initialise, see <fn:<E>Set>.
+/** To initialise, see <fn:<E>Set>. Assigning `{0}` (`C99`+) or `SET_ZERO` as
+ the initialiser, or being part of `static` data, also puts it in an empty
+ state.
 
  ![States.](../web/states.png) */
 struct E_(Set);
@@ -361,7 +363,8 @@ static void PE_(set)(struct E_(Set) *const set) {
 	set->size         = 0;
 }
 
-/** Destructor for `set`. After, it takes no memory and is in an empty state.
+/** Destructor for active `set`. After, it takes no memory and is in an idle
+ state. If idle, does nothing.
  @allow */
 static void E_(Set_)(struct E_(Set) *const set) {
 	if(!set) return;
@@ -369,10 +372,8 @@ static void E_(Set_)(struct E_(Set) *const set) {
 	PE_(set)(set);
 }
 
-/** Initialises `set` to be take no memory and be in an empty state.
- Alternatively, assigning `{0}` (`C99`+) or `SET_ZERO` as the initialiser, or
- being part of `static` data, also puts it in an empty state. Calling this on
- an active set will cause memory leaks.
+/** Initialises `set` to be take no memory and be in an idle state. Calling
+ this on an active set will cause memory leaks.
  @param[set] If null, does nothing.
  @order \Theta(1)
  @allow */
