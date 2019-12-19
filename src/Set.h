@@ -19,8 +19,8 @@
 
  `<E>Set` is not synchronised. Errors are returned with `errno`. The parameters
  are preprocessor macros, and are all undefined at the end of the file for
- convenience. `assert.h` is included in this file; to stop the debug
- assertions, use `#define NDEBUG` before inclusion.
+ convenience. `assert.h` is included; to stop the debug assertions, use
+ `#define NDEBUG` before inclusion.
 
  @param[SET_NAME, SET_TYPE]
  `<E>` that satisfies `C` naming conventions when mangled and a valid
@@ -57,7 +57,6 @@
 
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Digraph](https://github.com/neil-edelman/Digraph)
  @cf [List](https://github.com/neil-edelman/List)
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Pool](https://github.com/neil-edelman/Pool) */
@@ -86,12 +85,6 @@
 #endif
 #if defined(SET_TEST) && !defined(SET_TO_STRING)
 #error SET_TEST requires SET_TO_STRING.
-#endif
-/* <https://stackoverflow.com/q/44401965> */
-#ifdef SIZE_MAX
-#define SET_SIZE_MAX SIZE_MAX
-#else
-#define SET_SIZE_MAX ((size_t)(-1))
 #endif
 
 /* Generics using the preprocessor;
@@ -277,7 +270,7 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 		&& (PE_(UInt))-1 > 0);
 	/* `SIZE_MAX` min 65535 -> 5041 but typically much larger _st_ it becomes
 	 saturated while the load factor increases. */
-	if(size > SET_SIZE_MAX / 13) return 1; /* <- Saturation `1/8 * SIZE_MAX`. */
+	if(size > (size_t)-1 / 13) return 1; /* <- Saturation `1/8 * SIZE_MAX`. */
 	/* Load factor `0.693147180559945309417232121458176568 ~= 9/13`.
 	 Starting bucket number is a power of 2 in `[8, 1 << log_limit]`. */
 	if((no_buckets = size * 13 / 9) > 1u << log_limit) {
@@ -430,7 +423,7 @@ static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set,
  @allow */
 static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 	if(!set) return 0;
-	if(reserve > SET_SIZE_MAX - set->size) return errno = ERANGE, 0;
+	if(reserve > (size_t)-1 - set->size) return errno = ERANGE, 0;
 	return PE_(grow)(set, set->size + reserve);
 }
 
@@ -586,7 +579,6 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #undef PCAT
 #undef PCAT_
 #endif /* !sub --> */
-#undef SET_SIZE_MAX
 #undef E_
 #undef PE_
 #undef SET_NAME

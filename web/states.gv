@@ -8,7 +8,7 @@ digraph {
 	node [ shape=record, style=filled ];
 	null [ label = "Uninitalised|Random bytes.\lNo memory.\lNot in a valid state.\l", fillcolor = pink ];
 	static [ label = "Idle|No memory.\l\{0\} or POOL_ZERO\l" ];
-	dynamic [ label = "Active|Memory allocated.\n" ];
+	dynamic [ label = "Active|Memory allocated.\lCould have size zero.\l" ];
 	null -> static [ label = "<E>Set" ];
 	static -> dynamic [ label = "<E>SetPut\l<E>SetReserve" ];
 	dynamic -> static [ label = "<E>Set_" ];
