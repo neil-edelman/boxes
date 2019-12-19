@@ -433,7 +433,7 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  @param[reserve] If zero, returns true.
  @return The <fn:<T>ArrayEnd> of the `a`, where are `reserve` elements, or null
  and `errno` will be set. Writing on this memory space is safe, but one will
- have to increase the size, (see <fn:<T>ArrayBuffer>.)
+ have to increase the size manually, (see <fn:<T>ArrayBuffer>.)
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
