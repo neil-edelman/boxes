@@ -148,7 +148,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	struct Test {
 		struct E_(SetElement) space, *elem;
 		int is_in;
-	} test[40000], *t, *t_end;
+	} test[4000/*0*/], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char a[12];
