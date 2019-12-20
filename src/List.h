@@ -488,53 +488,53 @@ static void T_(ListUnshift)(struct T_(List) *const list,
 static void T_(ListPush)(struct T_(List) *const list,
 	struct T_(Link) *const add) {
 	if(!list || !add) return;
-	PT_(add_before)(&list->tail, &PT_(data_upcast)(add)->x);
+	PT_(add_before)(&list->tail, &add->x);
 }
 
-/** Initialises the contents of the node which contains {add} to add it
- immediately before {data}.
- @param data: If null, does nothing, otherwise must be part of a list.
- @param add: If null, does nothing, otherwise must be inside of a {<T>Link}
- and not associated to any list; this associates the {<T>Link} with the
- list of which {data} is a part, if it exists.
+/** Initialises the contents of the node which contains `add` to add it
+ immediately before `anchor`.
+ @param[anchor, add] If null, does nothing.
+ @param[anchor] Must be part of a list.
+ @param[add] Must _not_ be part of any list.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListAddBefore)(PT_(Type) *const data, PT_(Type) *const add) {
-	if(!data || !add) return;
-	PT_(add_before)(&PT_(data_upcast)(data)->x, &PT_(data_upcast)(add)->x);
+static void T_(ListAddBefore)(struct T_(Link) *const anchor,
+	struct T_(Link) *const add) {
+	if(!anchor || !add) return;
+	PT_(add_before)(&anchor->x, &add->x);
 }
 
-/** Initialises the contents of the node which contains {add} to add it
- immediately after {data}.
- @param data: If null, does nothing, otherwise must be part of a list.
- @param add: If null, does nothing, otherwise must be inside of a {<T>Link}
- and not associated to any list; this associates the {<T>Link} with the
- list of which {data} is a part, if it exists.
+/** Initialises the contents of the node which contains `add` to add it
+ immediately after `anchor`.
+ @param[anchor, add] If null, does nothing.
+ @param[anchor] Must be part of a list.
+ @param[add] Must _not_ be part of any list.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListAddAfter)(PT_(Type) *const data, PT_(Type) *const add) {
-	if(!data || !add) return;
-	PT_(add_after)(&PT_(data_upcast)(data)->x, &PT_(data_upcast)(add)->x);
+static void T_(ListAddAfter)(struct T_(Link) *const anchor,
+	struct T_(Link) *const add) {
+	if(!anchor || !add) return;
+	PT_(add_after)(&anchor->x, &add->x);
 }
 
-/** Un-associates {data} from the list; consequently, the {data} is free to add
- to another list or delete. Removing an element that was not added to a list
- results in undefined behaviour.
- @param data: If null, does nothing.
+/** Un-associates `link` from the list; consequently, the `link` is free to add
+ to another list. Removing an element that was not added to a list results in
+ undefined behaviour.
+ @param[link] If null, does nothing.
  @order \Theta(1)
  @allow */
-static void T_(ListRemove)(PT_(Type) *const data) {
-	if(!data) return;
-	PT_(remove)(&PT_(data_upcast)(data)->x);
+static void T_(ListRemove)(struct T_(Link) *const link) {
+	if(!link) return;
+	PT_(remove)(&link->x);
 }
 
-/** Appends the elements of {from} onto {list}. Unlike \see{<T>List<U>TakeIf}
- and all other selective choosing functions, that is, the ones with {<U>}, this
+/** Appends the elements of `from` onto `list`. Unlike <fn:<T>List<U>TakeIf>
+ and all other selective choosing functions, that is, the ones with `<U>`, this
  function preserves two or more orders.
- @param list: If null, then it removes elements.
- @param from: If null, it does nothing, otherwise this list will be empty on
+ @param[list] If null, then it removes elements from `from`.
+ @param[from] If null, it does nothing, otherwise this list will be empty on
  return.
  @order \Theta(1)
  @allow */
@@ -545,28 +545,28 @@ static void T_(ListTake)(struct T_(List) *const list,
 	PT_(add_list_before)(&list->tail, from);
 }
 
-/** Appends the elements from {from} before {data}.
- @param data: If null, does nothing, otherwise if not part of a valid list,
- results are undefined.
- @param from: If null, does nothing, otherwise this list will be empty on
- return.
+/** Appends the elements from `from` before `data`.
+ @param[anchor, from] If null, does nothing.
+ @param[anchor] If not part of a valid list, results are undefined.
+ @param[from] This list will be empty on return.
  @order \Theta(1)
  @fixme Untested.
  @allow */
-static void T_(ListTakeBefore)(PT_(Type) *const data, struct T_(List) *const from) {
-	if(!data || !from) return;
-	PT_(add_list_before)(&PT_(data_upcast)(data)->x, from);
+static void T_(ListTakeBefore)(struct T_(Link) *const anchor,
+	struct T_(List) *const from) {
+	if(!anchor || !from) return;
+	PT_(add_list_before)(&anchor->x, from);
 }
 
 #ifdef LIST_SOME_COMPARATOR /* <-- comp */
 
-/** Merges the elements from {from} into {list}. This uses local order and it
- doesn't sort them first; see \see{<T>ListSort}. Concatenates all lists that
- don't have a {LIST_COMPARATOR} or {LIST_U[A-D]_COMPARATOR}.
- @param list: if null, then it removes elements.
- @param from: if null, does nothing, otherwise this list will be empty on
+/** Merges the elements from `from` into `list`. This uses local order and it
+ doesn't sort them first; see <fn:<T>ListSort>. Concatenates all lists that
+ don't have a `LIST_COMPARATOR` or `LIST_U[A-D]_COMPARATOR`.
+ @param[list] if null, then it removes elements.
+ @param[from] if null, does nothing, otherwise this list will be empty on
  return.
- @order O({list}.n + {from}.n)
+ @order \O(|`list`| + |`from`|)
  @allow */
 static void T_(ListMerge)(struct T_(List) *const list,
 	struct T_(List) *const from) {
@@ -620,9 +620,10 @@ static void T_(ListMerge)(struct T_(List) *const list,
 }
 
 #ifndef LIST_U_ANONYMOUS /* <-- !anon; already has ListSort, T_U_(List, Sort) */
-/** Performs a stable, adaptive sort on all orders which have comparators.
- @param list: If null, does nothing.
- @order \Omega({list}.n), O({list}.n log {list}.n)
+/** Performs a stable, adaptive sort of `list` on all orders which have
+ comparators.
+ @param[list] If null, does nothing.
+ @order \Omega(|`list`|), O(|`list`| log |list|)
  @allow */
 static void T_(ListSort)(struct T_(List) *const list) {
 	if(!list) return;
@@ -749,7 +750,6 @@ static void PT_(unused_coda)(void);
  optimisation, (hopefully.)
  \url{ http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code } */
 static void PT_(unused_list)(void) {
-	T_(LinkData)(0);
 	T_(ListClear)(0);
 	T_(ListUnshift)(0, 0);
 	T_(ListPush)(0, 0);
@@ -966,13 +966,13 @@ static void PT_U_(list, self_correct)(struct T_(List) *const list) {
  null.
  @order \Theta(1)
  @allow */
-static PT_(Type) *T_U_(List, Next)(const PT_(Type) *const data) {
-	const struct PT_(X) *const x = &PT_(const_data_upcast)(data)->x;
+static struct T_(Link) *T_U_(List, Next)(const struct T_(Link) *const anchor) {
+	const struct PT_(X) *const x = &anchor->x;
 	struct PT_(X) *next_x;
-	if(!data) return 0;
+	if(!anchor) return 0;
 	assert(x->U_(next));
 	if(!(next_x = x->U_(next))->U_(next)) return 0;
-	return &PT_(x_upcast)(next_x)->data;
+	return PT_(x_upcast)(next_x);
 }
 
 /** @param data: Must be part of a {List}. If {data} are not part of a valid
@@ -982,35 +982,36 @@ static PT_(Type) *T_U_(List, Next)(const PT_(Type) *const data) {
  returns null.
  @order \Theta(1)
  @allow */
-static PT_(Type) *T_U_(List, Previous)(const PT_(Type) *const data) {
-	const struct PT_(X) *const x = &PT_(const_data_upcast)(data)->x;
+static struct T_(Link) *T_U_(List, Previous)(
+	const struct T_(Link) *const anchor) {
+	const struct PT_(X) *const x = &anchor->x;
 	struct PT_(X) *prev_x;
-	if(!data) return 0;
+	if(!anchor) return 0;
 	assert(x->U_(prev));
 	if(!(prev_x = x->U_(prev))->U_(prev)) return 0;
-	return &PT_(x_upcast)(prev_x)->data;
+	return PT_(x_upcast)(prev_x);
 }
 
 /** @param list: If null, returns null.
  @return A pointer to the first element of {list}.
  @order \Theta(1)
  @allow */
-static PT_(Type) *T_U_(List, First)(const struct T_(List) *const list) {
+static struct T_(Link) *T_U_(List, First)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->head.U_(next));
 	if(!list->head.U_(next)->U_(next)) return 0; /* Empty. */
-	return &PT_(x_upcast)(list->head.U_(next))->data;
+	return PT_(x_upcast)(list->head.U_(next));
 }
 
 /** @param list: If null, returns null.
  @return A pointer to the last element of {list}.
  @order \Theta(1)
  @allow */
-static PT_(Type) *T_U_(List, Last)(const struct T_(List) *const list) {
+static struct T_(Link) *T_U_(List, Last)(const struct T_(List) *const list) {
 	if(!list) return 0;
 	assert(list->tail.U_(prev));
 	if(!list->tail.U_(prev)->U_(prev)) return 0; /* Empty. */
-	return &PT_(x_upcast)(list->tail.U_(prev))->data;
+	return PT_(x_upcast)(list->tail.U_(prev));
 }
 
 /** Un-associates the first element in the order {<U>} with the list, if the
@@ -1018,12 +1019,12 @@ static PT_(Type) *T_U_(List, Last)(const struct T_(List) *const list) {
  @param list: If null, returns null.
  @return The erstwhile first element or null if the list was empty.
  @fixme Untested. */
-static PT_(Type) *T_U_(List, Shift)(struct T_(List) *const list) {
+static struct T_(Link) *T_U_(List, Shift)(struct T_(List) *const list) {
 	struct PT_(X) *x;
 	if(!list) return 0;
 	if(!(x = list->head.U_(next))->U_(next)) return 0;
 	PT_(remove)(x);
-	return &PT_(x_upcast)(x)->data;
+	return PT_(x_upcast)(x);
 }
 
 /** Un-associates the last element in the order {<U>} with the list, if the
@@ -1031,12 +1032,12 @@ static PT_(Type) *T_U_(List, Shift)(struct T_(List) *const list) {
  @param list: If null, returns null.
  @return The erstwhile last element or null if the list was empty.
  @fixme Untested. */
-static PT_(Type) *T_U_(List, Pop)(struct T_(List) *const list) {
+static struct T_(Link) *T_U_(List, Pop)(struct T_(List) *const list) {
 	struct PT_(X) *x;
 	if(!list) return 0;
 	if(!(x = list->tail.U_(prev))->U_(prev)) return 0;
 	PT_(remove)(x);
-	return &PT_(x_upcast)(x)->data;
+	return PT_(x_upcast)(x);
 }
 
 #ifdef LIST_U_COMPARATOR /* <-- comp */
@@ -1494,13 +1495,13 @@ static void T_U_(List, BiForEach)(struct T_(List) *const list,
  is true for every case.
  @order ~ O({list}.n) \times O({predicate})
  @allow */
-static PT_(Type) *T_U_(List, All)(struct T_(List) *const list,
+static struct T_(Link) *T_U_(List, All)(struct T_(List) *const list,
 	const PT_(Predicate) predicate) {
 	struct PT_(X) *x, *next_x;
-	PT_(Type) *data;
+	struct T_(Link) *link;
 	if(!list || !predicate) return 0;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		if(data = &PT_(x_upcast)(x)->data, !predicate(data)) return data;
+		if(link = PT_(x_upcast)(x), !predicate(&link->data)) return link;
 	return 0;
 }
 
@@ -1513,14 +1514,14 @@ static PT_(Type) *T_U_(List, All)(struct T_(List) *const list,
  @order ~ O({list}.n) \times O({predicate})
  @fixme Void. No. Have interfaces.
  @allow */
-static PT_(Type) *T_U_(List, BiAll)(struct T_(List) *const list,
+static struct T_(Link) *T_U_(List, BiAll)(struct T_(List) *const list,
 	const PT_(BiPredicate) bipredicate, void *const param) {
 	struct PT_(X) *x, *next_x;
-	PT_(Type) *data;
+	struct T_(Link) *link;
 	if(!list || !bipredicate) return 0;
 	for(x = list->head.U_(next); (next_x = x->U_(next)); x = next_x)
-		if(data = &PT_(x_upcast)(x)->data, !bipredicate(data, param))
-			return data;
+		if(link = PT_(x_upcast)(x), !bipredicate(&link->data, param))
+			return link;
 	return 0;
 }
 
@@ -1585,7 +1586,7 @@ static char *T_U_(List, ToString)(const struct T_(List) *const list) {
 	list_super_cat(&cat, list_cat_start);
 	for(x = list->head.U_(next); x->U_(next); x = x->U_(next)) {
 		if(x != list->head.U_(next)) list_super_cat(&cat, list_cat_sep);
-		PT_(to_string)(&PT_(const_x_upcast)(x)->data, &scratch),
+		PT_(to_string)(&PT_(x_cupcast)(x)->data, &scratch),
 			scratch[sizeof scratch - 1] = '\0';
 		list_super_cat(&cat, scratch);
 		if(cat.is_truncated) break;

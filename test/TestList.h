@@ -32,9 +32,8 @@ static int PT_(exactly_unordered)(struct T_(List) *const this,
 	const size_t n);
 #endif /* comp --> */
 
-/* Check that LIST_TEST is a function implementing {<T>Action}, viz,
- {void (*)(T *const)}. */
-static void (*const PT_(filler))(T *const) = (LIST_TEST);
+/* Check that LIST_TEST is a function implementing <typedef:<PT>Action>. */
+static void (*const PT_(filler))(PT_(Type) *) = (LIST_TEST);
 
 /* For \see{PT_U_(exactly, elements)}. */
 struct PT_(Verify) {
@@ -44,7 +43,7 @@ struct PT_(Verify) {
 };
 /* For \see{PT_U_(count, unordered)}. */
 struct PT_(Order) {
-	T *prev;
+	PT_(Type) *prev;
 	size_t count;
 };
 
@@ -370,7 +369,7 @@ static size_t PT_U_(legit, count)(const struct T_(List) *const this) {
 /** \see{PT_U_(count, elements)}
  @param param: (size_t *)
  @implements <T>BiPredicate */
-static int PT_U_(count, predicate)(T *const this, void *const param) {
+static int PT_U_(count, predicate)(PT_(Type) *const this, void *const param) {
 	size_t count = *(size_t *)param;
 	(void)(this);
 	*(size_t *)param = ++count;
@@ -386,7 +385,7 @@ static size_t PT_U_(count, elements)(struct T_(List) *const this) {
 /* Global count \see{<T>_count_<U>_another}. */
 static size_t PT_U_(count, var);
 /** @implements <T>Action */
-static void PT_U_(count, another)(T *const this) {
+static void PT_U_(count, another)(PT_(Type) *const this) {
 	(void)(this);
 	PT_U_(count, var)++;
 }
@@ -394,7 +393,7 @@ static void PT_U_(count, another)(T *const this) {
 /** \see{PT_U_(exactly, elements)}
  @param param: struct <T>List<U>Verify
  @implements <T>Predicate */
-static int PT_U_(exactly, predicate)(T *const this, void *const param) {
+static int PT_U_(exactly, predicate)(PT_(Type) *const this, void *const param) {
 	struct PT_(Verify) *lv = param;
 	if(lv->array_no <= lv->i
 		|| memcmp(this, &lv->array[lv->i].data, sizeof *this))
@@ -417,9 +416,9 @@ static size_t PT_U_(exactly, elements)(struct T_(List) *const this,
 /** \see{PT_U_(in, order)}.
  @param param: (T *[1]), last element.
  @implements <T>BiPredicate */
-static int PT_U_(order, predicate)(T *const this, void *const param) {
-	T **prev_one_array = param;
-	T *const prev = prev_one_array[0];
+static int PT_U_(order, predicate)(PT_(Type) *const this, void *const param) {
+	PT_(Type) **prev_one_array = param;
+	PT_(Type) *const prev = prev_one_array[0];
 	/*char scratch[12];
 	PT_(to_string)(data, &scratch), scratch[8] = '\0';
 	printf("%s%s", prev ? " <= " : "", scratch);*/
@@ -429,7 +428,7 @@ static int PT_U_(order, predicate)(T *const this, void *const param) {
 }
 /** Verifies sorting on index. */
 static int PT_U_(in, order)(struct T_(List) *const this) {
-	T *one_array[] = { 0 };
+	PT_(Type) *one_array[] = { 0 };
 	return !T_U_(List, BiAll)(this, &PT_U_(order, predicate),
 		one_array);
 }
@@ -437,7 +436,7 @@ static int PT_U_(in, order)(struct T_(List) *const this) {
 /** \see{PT_U_(count, unordered)}.
  @param param: (struct PT_(Order) *).
  @implements <T>BiPredicate */
-static int PT_U_(unorder, predicate)(T *const this, void *const param) {
+static int PT_U_(unorder, predicate)(PT_(Type) *const this, void *const param) {
 	struct PT_(Order) *info = param;
 	char a[12], b[12];
 	if(info->prev && PT_U_(data, cmp)(info->prev, this) > 0)
@@ -469,14 +468,14 @@ static int PT_U_(in, array)(struct T_(List) *const this,
 
 /** Returns true. Used in \see{PT_U_(test, basic)}.
  @implements <T>Predicate */
-static int PT_U_(true, index)(const T *const this) {
+static int PT_U_(true, index)(const PT_(Type) *const this) {
 	(void)(this);
 	return 1;
 }
 /** Used in \see{PT_U_(test, basic)}.
  @param param: (int *), boolean.
  @implements <T>BiPredicate */
-static int PT_U_(every, second)(T *const this, void *const param) {
+static int PT_U_(every, second)(PT_(Type) *const this, void *const param) {
 	int *const pbinary = param;
 	(void)(this);
 	return !(*pbinary = !*pbinary);
@@ -488,7 +487,7 @@ static int PT_U_(every, second)(T *const this, void *const param) {
 
 static void PT_U_(test, basic)(void) {
 	char str[12];
-	T *data, *item_a, *item_b, *item_y, *item_z;
+	struct T_(Link) *link, *link_a, *link_b, *link_y, *link_z;
 	struct T_(List) a;
 	struct T_(Link) buf[100/*0*/], *const new_buf = buf + 2, *node;
 	const size_t buf_size = sizeof buf / sizeof *buf, new_buf_size = buf_size-4;
@@ -508,20 +507,20 @@ static void PT_U_(test, basic)(void) {
 	T_(ListPush)(&a, 0);
 	node = buf;
 	PT_(filler)(&node->data);
-	T_(ListPush)(0, &node->data);
+	T_(ListPush)(0, node);
 	for(i = 0; i < buf_size; i++) {
 		node = buf + i;
 		PT_(filler)(&node->data);
-		T_(ListPush)(&a, &node->data);
+		T_(ListPush)(&a, node);
 	}
-	item_a = T_U_(List, First)(&a);
-	assert(item_a);
-	data = item_a;
-	assert(data);
+	link_a = T_U_(List, First)(&a);
+	assert(link_a);
+	link = link_a;
+	assert(link);
 	PT_(legit)(&a);
-	PT_(to_string)(data, &str);
+	PT_(to_string)(&link->data, &str);
 	printf("Link get first data: %s.\n", str);
-	assert(memcmp(&buf[0].data, data, sizeof *data) == 0);
+	assert(memcmp(&buf[0].data, &link->data, sizeof link->data) == 0);
 	/* All */
 	printf("All: for all true returns null.\n");
 	assert(!T_U_(List, All)(0, 0));
@@ -535,7 +534,7 @@ static void PT_U_(test, basic)(void) {
 	assert(!T_U_(List, BiAll)(0, &PT_U_(every, second), 0));
 	is_parity = 1;
 	assert(T_U_(List, BiAll)(&a, &PT_U_(every, second),
-		&is_parity) == (T *)(buf + 1));
+		&is_parity) == buf + 1);
 	/* Next, Previous, First, Last */
 	printf("Removing 3 elements from a.\n");
 	assert(PT_U_(exactly, elements)(&a, buf, buf_size));
@@ -543,19 +542,19 @@ static void PT_U_(test, basic)(void) {
 	assert(!T_U_(List, Last)(0));
 	assert(!T_U_(List, Previous)(0));
 	assert(!T_U_(List, Next)(0));
-	item_a = T_U_(List, First)(&a);
-	assert(!T_U_(List, Previous)(item_a));
-	item_b = T_U_(List, Next)(item_a);
-	item_z = T_U_(List, Last)(&a);
-	assert(!T_U_(List, Next)(item_z));
-	item_y = T_U_(List, Previous)(item_z);
-	assert(item_a && item_b && item_y && item_z);
+	link_a = T_U_(List, First)(&a);
+	assert(!T_U_(List, Previous)(link_a));
+	link_b = T_U_(List, Next)(link_a);
+	link_z = T_U_(List, Last)(&a);
+	assert(!T_U_(List, Next)(link_z));
+	link_y = T_U_(List, Previous)(link_z);
+	assert(link_a && link_b && link_y && link_z);
 	/* Remove */
 	/*T_(ListRemove)(0, item_y);*/
-	T_(ListRemove)(item_y);
-	T_(ListRemove)(item_z);
-	T_(ListRemove)(item_b);
-	T_(ListRemove)(item_a);
+	T_(ListRemove)(link_y);
+	T_(ListRemove)(link_z);
+	T_(ListRemove)(link_b);
+	T_(ListRemove)(link_a);
 	assert(PT_U_(exactly, elements)(&a, new_buf, new_buf_size));
 	(void)(new_buf), (void)(new_buf_size);
 	/* ForEach */
@@ -613,10 +612,10 @@ static void PT_U_(test, memory)(void) {
 	memcpy(buf[1], buf[0], buf_size * sizeof *buf[0]);
 	memset(&buf[2], 0, buf_size * sizeof *buf[2]);
 	/* put all items in buf0 and buf1 */
-	for(i = 0; i < buf_size; i++) T_(ListPush)(&a, &buf[0][i].data);
+	for(i = 0; i < buf_size; i++) T_(ListPush)(&a, &buf[0][i]);
 	PT_(legit)(&a);
 	for(i = 0; i < buf_size; i++) {
-		T_(ListPush)(&a, &buf[1][i].data);
+		T_(ListPush)(&a, &buf[1][i]);
 		PT_(legit)(&a);
 	}
 	assert(PT_(count)(&a) == buf_size << 1);
@@ -659,7 +658,7 @@ static void PT_U_(test, memory)(void) {
 	assert(PT_U_(count, elements)(&b) == 0);
 	/* Test done; move. */
 	for(i = 0; i < buf_size; i++)
-		T_(ListPush)(&a, &buf[0][i].data), T_(ListPush)(&b, &buf[1][i].data);
+		T_(ListPush)(&a, &buf[0][i]), T_(ListPush)(&b, &buf[1][i]);
 	assert(PT_U_(exactly, elements)(&a, buf[0], buf_size));
 	assert(PT_U_(exactly, elements)(&b, buf[1], buf_size));
 #ifdef LIST_U_COMPARATOR /* <-- comp */
@@ -699,7 +698,7 @@ static void PT_U_(test, sort)(void) {
 	for(i = 0; i < buf_size; i++) {
 		node = buf + i;
 		PT_(filler)(&node->data);
-		T_(ListPush)(&a, &node->data);
+		T_(ListPush)(&a, node);
 	}
 	count = PT_(count)(&a);
 	assert(count == buf_size);
@@ -742,8 +741,8 @@ static void PT_U_(test, boolean)(void) {
 	/* add to the sequences a, b */
 	T_(ListClear)(&a), T_(ListClear)(&b), T_(ListClear)(&c);
 	T_(ListClear)(&ia), T_(ListClear)(&ib), T_(ListClear)(&ic);
-	T_(ListPush)(&a, &x[0].a.data), T_(ListPush)(&a, &x[1].a.data);
-	T_(ListPush)(&b, &x[0].b.data), T_(ListPush)(&b, &x[2].b.data);
+	T_(ListPush)(&a, &x[0].a), T_(ListPush)(&a, &x[1].a);
+	T_(ListPush)(&b, &x[0].b), T_(ListPush)(&b, &x[2].b);
 	printf("Two " QUOTE(LIST_U_NAME) "-sequences, %s and %s.\n",
 		   T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
 	/* verify comparing things first */
@@ -758,28 +757,28 @@ static void PT_U_(test, boolean)(void) {
 	T_U_(List, TakeSubtraction)(&c, &a, &b);
 	printf("%s; (a = %s, b = %s.)\n", T_U_(List, ToString)(&c),
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
-	T_(ListPush)(&ia, &x[0].ia.data);
-	T_(ListPush)(&ib, &x[0].ib.data), T_(ListPush)(&ib, &x[2].ib.data);
-	T_(ListPush)(&ic, &x[1].ia.data);
+	T_(ListPush)(&ia, &x[0].ia);
+	T_(ListPush)(&ib, &x[0].ib), T_(ListPush)(&ib, &x[2].ib);
+	T_(ListPush)(&ic, &x[1].ia);
 	assert(!T_U_(List, Compare)(&a, &ia));
 	assert(!T_U_(List, Compare)(&b, &ib));
 	assert(!T_U_(List, Compare)(&c, &ic));
 	T_(ListClear)(&a), T_(ListClear)(&b), T_(ListClear)(&c);
 	T_(ListClear)(&ia), T_(ListClear)(&ib), T_(ListClear)(&ic);
 	/* u */
-	T_(ListPush)(&a, &x[0].a.data), T_(ListPush)(&a, &x[1].a.data);
-	T_(ListPush)(&b, &x[0].b.data), T_(ListPush)(&b, &x[2].b.data);
+	T_(ListPush)(&a, &x[0].a), T_(ListPush)(&a, &x[1].a);
+	T_(ListPush)(&b, &x[0].b), T_(ListPush)(&b, &x[2].b);
 	printf("(a = %s) u (b = %s) =\n", T_U_(List, ToString)(&a),
 		T_U_(List, ToString)(&b));
 	T_U_(List, TakeUnion)(&c, &a, &b);
 	printf("%s; (a = %s, b = %s.)\n", T_U_(List, ToString)(&c),
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
-	T_(ListPush)(&ib, &x[0].ib.data);
-	T_(ListPush)(&ic, &x[0].ia.data);
+	T_(ListPush)(&ib, &x[0].ib);
+	T_(ListPush)(&ic, &x[0].ia);
 	if(PT_U_(data, cmp)(&x[1].ia.data, &x[2].ib.data) < 0) {
-		T_(ListPush)(&ic, &x[1].ia.data), T_(ListPush)(&ic, &x[2].ib.data);
+		T_(ListPush)(&ic, &x[1].ia), T_(ListPush)(&ic, &x[2].ib);
 	} else {
-		T_(ListPush)(&ic, &x[2].ib.data), T_(ListPush)(&ic, &x[1].ia.data);
+		T_(ListPush)(&ic, &x[2].ib), T_(ListPush)(&ic, &x[1].ia);
 	}
 	assert(!T_U_(List, Compare)(&a, &ia));
 	assert(!T_U_(List, Compare)(&b, &ib));
@@ -787,35 +786,35 @@ static void PT_U_(test, boolean)(void) {
 	T_(ListClear)(&a), T_(ListClear)(&b), T_(ListClear)(&c);
 	T_(ListClear)(&ia), T_(ListClear)(&ib), T_(ListClear)(&ic);
 	/* n */
-	T_(ListPush)(&a, &x[0].a.data), T_(ListPush)(&a, &x[1].a.data);
-	T_(ListPush)(&b, &x[0].b.data), T_(ListPush)(&b, &x[2].b.data);
+	T_(ListPush)(&a, &x[0].a), T_(ListPush)(&a, &x[1].a);
+	T_(ListPush)(&b, &x[0].b), T_(ListPush)(&b, &x[2].b);
 	printf("(a = %s) n (b = %s) =\n", T_U_(List, ToString)(&a),
 		T_U_(List, ToString)(&b));
 	T_U_(List, TakeIntersection)(&c, &a, &b);
 	printf("%s; (a = %s, b = %s.)\n", T_U_(List, ToString)(&c),
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
-	T_(ListPush)(&ia, &x[1].ia.data);
-	T_(ListPush)(&ib, &x[0].ib.data), T_(ListPush)(&ib, &x[2].ib.data);
-	T_(ListPush)(&ic, &x[0].ia.data);
+	T_(ListPush)(&ia, &x[1].ia);
+	T_(ListPush)(&ib, &x[0].ib), T_(ListPush)(&ib, &x[2].ib);
+	T_(ListPush)(&ic, &x[0].ia);
 	assert(!T_U_(List, Compare)(&a, &ia));
 	assert(!T_U_(List, Compare)(&b, &ib));
 	assert(!T_U_(List, Compare)(&c, &ic));
 	T_(ListClear)(&a), T_(ListClear)(&b), T_(ListClear)(&c);
 	T_(ListClear)(&ia), T_(ListClear)(&ib), T_(ListClear)(&ic);
 	/* xor */
-	T_(ListPush)(&a, &x[0].a.data), T_(ListPush)(&a, &x[1].a.data);
-	T_(ListPush)(&b, &x[0].b.data), T_(ListPush)(&b, &x[2].b.data);
+	T_(ListPush)(&a, &x[0].a), T_(ListPush)(&a, &x[1].a);
+	T_(ListPush)(&b, &x[0].b), T_(ListPush)(&b, &x[2].b);
 	printf("(a = %s) xor (b = %s) =\n", T_U_(List, ToString)(&a),
 		T_U_(List, ToString)(&b));
 	T_U_(List, TakeXor)(&c, &a, &b);
 	printf("%s; (a = %s, b = %s.)\n", T_U_(List, ToString)(&c),
 		T_U_(List, ToString)(&a), T_U_(List, ToString)(&b));
-	T_(ListPush)(&ia, &x[0].ia.data);
-	T_(ListPush)(&ib, &x[0].ib.data);
+	T_(ListPush)(&ia, &x[0].ia);
+	T_(ListPush)(&ib, &x[0].ib);
 	if(PT_U_(data, cmp)(&x[1].ia.data, &x[2].ib.data) < 0) {
-		T_(ListPush)(&ic, &x[1].ia.data), T_(ListPush)(&ic, &x[2].ib.data);
+		T_(ListPush)(&ic, &x[1].ia), T_(ListPush)(&ic, &x[2].ib);
 	} else {
-		T_(ListPush)(&ic, &x[2].ib.data), T_(ListPush)(&ic, &x[1].ia.data);
+		T_(ListPush)(&ic, &x[2].ib), T_(ListPush)(&ic, &x[1].ia);
 	}
 	assert(!T_U_(List, Compare)(&a, &ia));
 	assert(!T_U_(List, Compare)(&b, &ib));
@@ -834,9 +833,9 @@ static void PT_U_(test, order)(void) {
 	assert(T_U_(List, Compare)(0, &b) < 0);
 	assert(T_U_(List, Compare)(&a, &b) == 0);
 	for(i = 0; i < buf_size; i++) node = buf + i, PT_(filler)(&node->data);
-	for(i = 0; i < buf_size >> 1; i++) T_(ListPush)(&a, &(node--)->data);
+	for(i = 0; i < buf_size >> 1; i++) T_(ListPush)(&a, node--);
 	assert(T_U_(List, Compare)(&a, &b) > 0);
-	for( ; i < buf_size; i++) T_(ListPush)(&b, &(node--)->data);
+	for( ; i < buf_size; i++) T_(ListPush)(&b, node--);
 	assert(PT_U_(count, elements)(&a) == buf_size >> 1);
 	assert(PT_U_(count, elements)(&b) == buf_size - (buf_size >> 1));
 	T_(ListSort)(&a), T_(ListSort)(&b);
@@ -850,8 +849,8 @@ static void PT_U_(test, order)(void) {
 	/* done now merge */
 	T_(ListClear)(&a), T_(ListClear)(&b);
 	node = buf;
-	for(i = 0; i < buf_size >> 1; i++) T_(ListPush)(&a, &(node++)->data);
-	for( ; i < buf_size; i++) T_(ListPush)(&b, &(node++)->data);
+	for(i = 0; i < buf_size >> 1; i++) T_(ListPush)(&a, node++);
+	for( ; i < buf_size; i++) T_(ListPush)(&b, node++);
 	T_(ListSort)(&a), T_(ListSort)(&b);
 	assert(PT_U_(count, elements)(&a) == buf_size >> 1);
 	assert(PT_U_(count, elements)(&b) == buf_size - (buf_size >> 1));
@@ -914,7 +913,7 @@ static void PT_U_(test, meta)(void) {
 		else if((size_t)take > nodes_left) take = (int)nodes_left;
 		nodes_left -= (size_t)take;
 		T_(ListClear)(list);
-		while(take) T_(ListPush)(list, &(node++)->data), take--;
+		while(take) T_(ListPush)(list, node++), take--;
 		lists_left--;
 		printf("%lu. %s\n", (unsigned long)(lists_size - lists_left),
 			T_U_(List, ToString)(list));
@@ -952,7 +951,7 @@ static void PT_U_(test, list)(void) {
 		T_(ListClear)(&a);
 		for(i = 0; i < nodes_size; i++) {
 			PT_(filler)(&nodes[i].data);
-			T_(ListPush)(&a, &nodes[i].data);
+			T_(ListPush)(&a, nodes + i);
 		}
 		count = PT_(count)(&a);
 		assert(count == nodes_size);

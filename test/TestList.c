@@ -185,23 +185,23 @@ static const struct AnimalVt {
 } sloth_vt = { &sloth_act }, llama_vt = { &llama_act }, bear_vt = { &bear_act };
 /* The linked-list. */
 static struct AnimalList animals = LIST_IDLE_2(animals);
-static void Animal_init(struct Animal *const this) {
-	Animal_filler(this);
-	AnimalListPush(&animals, this);
+static void Animal_init(struct AnimalLink *const link) {
+	Animal_filler(&link->data);
+	AnimalListPush(&animals, link);
 }
 static void Sloth_init(struct Sloth *const sloth) {
-	Animal_init(&sloth->animal.data);
+	Animal_init(&sloth->animal);
 	sloth->animal.data.vt = &sloth_vt;
 	sloth->lazy = (unsigned)(100.0 * rand() / (RAND_MAX + 1.0) + 20.0);
 }
 static void Llama_init(struct Llama *const llama) {
-	Animal_init(&llama->animal.data);
+	Animal_init(&llama->animal);
 	llama->animal.data.vt = &llama_vt;
 	llama->chomps = (unsigned)(10.0 * rand() / (RAND_MAX + 1.0) + 1.0);
 }
 static void Bear_init(struct Bear *const bear, struct Llama *const llamas,
 	const size_t llamas_size) {
-	Animal_init(&bear->animal.data);
+	Animal_init(&bear->animal);
 	bear->animal.data.vt = &bear_vt;
 	bear->riding = (struct Animal *)(llamas
 		+ (unsigned)((double)llamas_size * rand() / (RAND_MAX + 1.0)));
@@ -240,25 +240,6 @@ static void test_block_move(void) {
 	printf("By x:\n");
 	AnimalListXForEach(&animals, &act);
 	list_Animal_in_order(&animals);
-#if 0 /* This is confusing and has been taken out! Use {Pool}. */
-	memcpy(others, sloths, sizeof sloths);
-	for(i = 0; i < sloths_size; i++) sloths[i].animal.data.name[0] = '!';
-	printf("Moved sloths: %s.\n", AnimalListNameToString(&animals));
-	{
-		struct Migrate migrate;
-		migrate.begin = sloths;
-		migrate.end   = (const char *)sloths + sizeof sloths;
-		migrate.delta = (const char *)others - (const char *)sloths;
-		for(i = 0; i < sloths_size; i++) {
-			char a[12], b[12];
-			list_Animal_to_string(&sloths[i].animal.data, &a);
-			list_Animal_to_string(&others[i].animal.data, &b);
-			printf("Migrating %s -> %s.\n", a, b);
-			AnimalLinkMigrate(&others[i].animal.data, &migrate);
-		}
-	}
-	printf("Block move: %s.\n", AnimalListNameToString(&animals));
-#endif
 	for(i = /*sloths_size*/0; i < others_size; i++) Sloth_init(others + i);
 	printf("New sloths: %s.\n", AnimalListNameToString(&animals));
 	AnimalListSort(&animals);
