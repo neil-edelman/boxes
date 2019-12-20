@@ -308,19 +308,6 @@ static const struct T_(Link) *PT_(x_cupcast)(const struct PT_(X) *const x){
 }
 #endif /* string --> */
 
-/** Private: container_of `data`. */
-static struct T_(Link) *PT_(data_upcast)(PT_(Type) *const data) {
-	return (struct T_(Link) *)(void *)
-		((char *)data - offsetof(struct T_(Link), data));
-}
-
-/** Private: container of `data`. */
-static const struct T_(Link) *PT_(data_cupcast)(
-	const PT_(Type) *const data) {
-	return (const struct T_(Link) *)(const void *)
-		((const char *)data - offsetof(struct T_(Link), data));
-}
-
 /* Prototypes: needed for the next section, but undefined until later. */
 static void PT_(add_before)(struct PT_(X) *const, struct PT_(X) *const);
 static void PT_(add_after)(struct PT_(X) *const, struct PT_(X) *const);

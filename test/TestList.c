@@ -1,10 +1,4 @@
-/** Unit test of List.c.
-
- @file		TestList
- @author	Neil
- @std		C89/90
- @version	1.0; 2017-05
- @since		1.0; 2017-05 Salvaged from TestList.h */
+/** Unit test of `List.h`. */
 
 #include <stdlib.h> /* EXIT_ malloc free */
 #include <stdio.h>  /* fprintf */
@@ -12,21 +6,6 @@
 #include <time.h>	/* clock */
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
-
-#if defined(__clang__) /* <-- clang (Hack.) */
-#if __clang_major__ > 2
-#pragma clang diagnostic ignored "-Wpadded"
-#pragma clang diagnostic ignored "-Wdocumentation"
-#pragma clang diagnostic ignored "-Wdocumentation-unknown-command"
-#endif
-#elif defined(__GNUC__) /* clang --><-- GCC (@fixme Specific version.) */
-#pragma GCC diagnostic ignored "-Wconversion"
-#elif defined(__BORLANDC__) /* GCC --><-- BCC */
-#elif defined(_MSC_VER) /* BCC --><-- MSVC: Not C++11. */
-#pragma warning(disable: 4464 4706 4710 4711 4820 4996)
-#elif defined(__MINGW32__) /* MSVC --><-- MinGW */
-#elif defined(__DJGPP__) /* MinGW --><-- DJGPP */
-#endif /* --> */
 
 /** Define class {Foo} */
 struct Foo {
