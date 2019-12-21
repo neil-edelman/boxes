@@ -149,7 +149,7 @@ static void PT_(print)(T *const data) {
 }
 
 static void PT_(test_basic)(void) {
-	struct T_(Pool) a;
+	struct T_(Pool) a = POOL_IDLE;
 	struct PT_(Node) node;
 	T ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
@@ -169,6 +169,7 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(0);
 
 	printf("Test empty.\n");
+	PT_(valid_state)(&a);
 	T_(Pool)(&a);
 	assert(T_(PoolRemove)(&a, 0)          == 0 && errno == 0);
 	assert(T_(PoolRemove)(&a, &node.data) == 0 && errno == EDOM), errno = 0;
@@ -244,13 +245,15 @@ static void PT_(test_basic)(void) {
 }
 
 static void PT_(test_random)(void) {
-	struct T_(Pool) a;
+	struct T_(Pool) a = POOL_IDLE;
 	size_t i, size = 0;
 	const size_t length = 120000; /* Controls how many iterations. */
-	T_(Pool)(&a);
+	char graph_fn[64];
+	const size_t graph_max = 100000;
 	for(i = 0; i < length; i++) {
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
+		int is_print = !(i & (i - 1));
 		/* This parameter controls how big the pool wants to be. */
 		if(r > size / 5000.0) {
 			T *data = T_(PoolNew)(&a);
@@ -258,7 +261,7 @@ static void PT_(test_random)(void) {
 			size++;
 			PT_(filler)(data);
 			PT_(to_string)(data, &str);
-			printf("%lu: Created %s.\n", (unsigned long)i, str);
+			if(is_print) printf("%lu: Created %s.\n", (unsigned long)i, str);
 		} else {
 			struct PT_(Block) *block;
 			struct PT_(Node) *node, *end;
@@ -277,8 +280,8 @@ static void PT_(test_random)(void) {
 			}
 			assert(block);
 			PT_(to_string)(&node->data, &str);
-			printf("%lu: Removing %s in block %p.\n", (unsigned long)i, str,
-				(const void *)block);
+			if(is_print) printf("%lu: Removing %s in block %p.\n",
+				(unsigned long)i, str, (const void *)block);
 			{
 				const int ret = T_(PoolRemove)(&a, &node->data);
 				assert(ret || (perror("Removing"),
@@ -286,16 +289,17 @@ static void PT_(test_random)(void) {
 			}
 			size--;
 		}
-		/* The file size is huge and dot balks. */
-		if(i < 10000 && i % 5000 == 2500) {
-			char fn[64];
-			sprintf(fn, "graph/" QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
-			PT_(graph)(&a, fn);
+		if(is_print && i < graph_max) {
+			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
+			PT_(graph)(&a, graph_fn);
 			printf("%s.\n", T_(PoolToString)(&a));
 		}
 		PT_(valid_state)(&a);
 	}
-	PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-finish.gv");
+	if(i < graph_max) {
+		sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%u-end.gv", (unsigned)i);
+		PT_(graph)(&a, graph_fn);
+	}
 	T_(Pool_)(&a);
 }
 
