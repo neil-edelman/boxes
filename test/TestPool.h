@@ -33,23 +33,26 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [compound=true, nslimit=3, nslimit1=3];\n"
-		"\trankdir=LR;\n" /* *beg take this out. */
-		"\tnode [shape=box, style=filled];\n"
-		"\tsubgraph cluster_%s {\n"
-		"\t\tdud_%s [label=\"Pool\\nnext_capacity=%lu\\l\"];\n",
-		b_strs[b], b_strs[b], (unsigned long)p->next_capacity);
-	if(p->removed.prev) fprintf(fp, "\t\tnode%p [label=\"removed\"];\n",
-		(const void *)PT_(x_const_upcast)(&p->removed));
-	fprintf(fp, "\t}\n"
-		"\tedge [color=royalblue];\n");
+		"\trankdir=LR;\n"
+		"\tedge [color=royalblue];\n"
+		"\tnode [shape=record, style=filled, fillcolor=lightgray];\n"
+		"\tnode%p [label=\"\\<" QUOTE(POOL_NAME) "\\>Pool\\l|next capacity %lu\\l|removed list\\l\"];\n",
+			(const void *)PT_(x_const_upcast)(&p->removed), /*b_strs[b],*/ (unsigned long)p->next_capacity);
 	for(block = p->largest; block; block = block->smaller) {
 		sprintf(b_strs[b = !b], "block%p", (const void *)block);
+		/* This is cleaver but I don't know what I did. Hack. */
+		if(block == p->largest) {
+			fprintf(fp, "\tnode%p",
+				(const void *)PT_(x_const_upcast)(&p->removed));
+		} else {
+			fprintf(fp, "\tdud_%s", b_strs[!b]);
+		}
 		fprintf(fp,
-			"\tdud_%s -> dud_%s [ltail=cluster_%s, lhead=cluster_%s];\n",
-			b_strs[!b], b_strs[b], b_strs[!b], b_strs[b]);
+			" -> dud_%s [ltail=cluster_%s, lhead=cluster_%s];\n",
+			b_strs[b], b_strs[!b], b_strs[b]);
 		fprintf(fp, "\tsubgraph cluster_%s {\n"
 			"\t\tstyle=filled;\n"
-			"\t\tcolor=lightgray;\n"
+			"\t\tfillcolor=lightgray;\n"
 			"\t\tlabel=\"capacity=%lu\\lsize=%lu\\l\";\n"
 			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
 			(unsigned long)block->capacity, (unsigned long)block->size,
@@ -57,8 +60,9 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 		for(node = PT_(block_nodes)(block), end = node + PT_(range)(p, block);
 			node < end; node++) {
 			PT_(to_string)(&node->data, &str);
-			fprintf(fp, "\t\tnode%p [label=\"%s\", color=%s];\n",
-				(const void *)node, str, node->x.prev ? "firebrick" : "white");
+			fprintf(fp, "\t\tnode%p [label=\"%s\", fillcolor=%s];\n",
+				(const void *)node, str,
+				node->x.prev ? "firebrick" : "lightsteelblue");
 			/*if(node == beg) continue;
 			fprintf(fp, "\t\tnode%p -> node%p [style=invis];\n",
 				(const void *)(node - 1), (const void *)node);*/
@@ -68,7 +72,7 @@ static void PT_(graph)(const struct T_(Pool) *const p, const char *const fn) {
 	if(p->removed.prev) {
 		const struct PT_(X) *x0 = &p->removed, *x1 = x0->next, *turtle = x0;
 		int is_turtle = 0;
-		fprintf(fp, "\tedge [color=darkseagreen];\n");
+		fprintf(fp, "\tedge [color=darkseagreen, constraint=false];\n");
 		do {
 			fprintf(fp, "\tnode%p -> node%p;\n",
 				(const void *)PT_(x_const_upcast)(x0),

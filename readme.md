@@ -28,7 +28,7 @@
  * Standard:  
    C89
  * See also:  
-   [Array](https://github.com/neil-edelman/Array); [Digraph](https://github.com/neil-edelman/Digraph); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Set](https://github.com/neil-edelman/Set)
+   [Array](https://github.com/neil-edelman/Array); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Set](https://github.com/neil-edelman/Set)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -55,7 +55,7 @@ Operates by side\-effects on `data` only\.
 
 <code>struct <strong>&lt;T&gt;Pool</strong>;</code>
 
-The pool\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T&gt;Pool](#user-content-fn-517215cf) or initialise it with `POOL_INIT` or `{0}` \(C99\.\)
+The pool\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T&gt;Pool](#user-content-fn-517215cf) or initialise it with `POOL_IDLE` or `{0}` \(C99\.\)
 
 ![States.](web/states.png)
 
