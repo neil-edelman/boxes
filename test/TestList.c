@@ -7,8 +7,8 @@ struct OrderListLink;
 static void order_to_string(const struct OrderListLink *const l,
 	char (*const a)[12]) {
 	(void)(l);
-	*a[0] = '0';
-	*a[1] = '\0';
+	(*a)[0] = '0';
+	(*a)[1] = '\0';
 }
 static void order_fill(struct OrderListLink *const l) { (void)(l); }
 
@@ -33,23 +33,32 @@ static struct OrderListLink *order_from_pool(void *const volls) {
 struct NoListLink;
 static void no_to_string(const struct NoListLink *, char (*)[12]);
 static void no_fill(struct NoListLink *);
+static int no_compare(const struct NoListLink *, const struct NoListLink *);
 
 #define LIST_NAME No
+#define LIST_COMPARE &no_compare
 #define LIST_TO_STRING &no_to_string
 #define LIST_TEST &no_fill
 #include "../src/List.h"
 
 struct No { struct NoListLink link; int i; };
 
+static int no_compare(const struct NoListLink *const all,
+	const struct NoListLink *const bll) {
+	/* Can do this because `link` is the first field in `struct No`. */
+	const struct No *const a = (const struct No *)all,
+		*const b = (const struct No *)bll;
+	return (a->i > b->i) - (b->i > a->i);
+}
 static void no_to_string(const struct NoListLink *const noll,
 	char (*const a)[12]) {
-	/* Can do this because `link` is the first field in `struct No`. */
 	const struct No *const no = (const struct No *)noll;
+	/*assert(RAND_MAX <= 99999999999l);*/
 	sprintf(*a, "%d", no->i);
 }
 static void no_fill(struct NoListLink *const noll) {
 	struct No *const no = (struct No *)noll;
-	no->i = rand();
+	no->i = rand() / (RAND_MAX / 100000 + 1);
 }
 #define POOL_NAME No
 #define POOL_TYPE struct No
