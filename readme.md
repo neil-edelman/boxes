@@ -11,6 +11,8 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
+![Example of &lt;Animal&gt;List](web/list.png)
+
 [&lt;L&gt;List](#user-content-tag-68dde1fd) is a list of [&lt;L&gt;ListLink](#user-content-tag-16c786c1); it may be supplied a total\-order function, `LIST_COMPARE` [&lt;PL&gt;Compare](#user-content-typedef-c749dcca)\.
 
 Internally, `<L>ListLink` is a doubly\-linked node with sentinels residing in `<L>List`\. It only provides an order, but `<L>ListLink` may be enclosed in another `struct`\. While in a list, adding to another list destroys the integrity of the original list, see [&lt;L&gt;ListRemove](#user-content-fn-86ea1635)\.
@@ -81,7 +83,9 @@ Storage of this structure is the responsibility of the caller\.
 
 <code>struct <strong>&lt;L&gt;List</strong>;</code>
 
-Serves as head and tail for linked\-list of [&lt;L&gt;ListLink](#user-content-tag-16c786c1)\. Use [&lt;L&gt;ListClear](#user-content-fn-5a31ef1a) or statically initialise using the macro `LIST_IDLE(<list>)`\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
+Serves as head and tail for linked\-list of [&lt;L&gt;ListLink](#user-content-tag-16c786c1)\. Use [&lt;L&gt;ListClear](#user-content-fn-5a31ef1a) to initialise the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
+
+![States.](web/states.png)
 
 
 
@@ -562,6 +566,12 @@ Can print 2 things at once before it overwrites\. One must set `LIST_TO_STRING` 
 <code>static void <strong>&lt;L&gt;ListTest</strong>(struct &lt;L&gt;ListLink *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code>
 
 The linked\-list will be tested on stdout\. `LIST_TEST` has to be set\.
+
+ * Parameter: _parent\_new_  
+   Responsible for creating new objects and returning the list\.
+ * Parameter: _parent_  
+   Responsible for creating new objects and returning the list\.
+
 
 
 

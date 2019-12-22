@@ -16,6 +16,7 @@
 /* Check that LIST_TEST is a function implementing <typedef:<PL>Action>. */
 static void (*const PL_(filler))(struct L_(ListLink) *) = (LIST_TEST);
 
+/** Tries to graph `list` in `fn`. */
 static void PL_(graph)(const struct L_(List) *const list, const char *const fn)
 {
 	FILE *fp;
@@ -93,7 +94,7 @@ static void PL_(valid_count)(struct L_(ListLink) *link, const size_t count)
 	{ PL_(floyd)(link, 1, count); }
 
 
-
+/** Passed `parent_new` and `parent`, tests basic functionality. */
 static void PL_(test_basic)(struct L_(ListLink) *(*const parent_new)(void *),
 	void *const parent) {
 	struct L_(List) list;
@@ -134,6 +135,7 @@ static void PL_(test_basic)(struct L_(ListLink) *(*const parent_new)(void *),
 	link = L_(ListNext)(link), assert(link == link_last);
 }
 
+/** Passed `parent_new` and `parent`, tests sort and meta-sort. */
 static void PL_(test_sort)(struct L_(ListLink) *(*const parent_new)(void *),
 	void *const parent) {
 #ifdef LIST_COMPARE /* <!-- comp */
@@ -178,6 +180,8 @@ static void PL_(test_sort)(struct L_(ListLink) *(*const parent_new)(void *),
 }
 
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
+ @param[parent_new, parent] Responsible for creating new objects and returning
+ the list.
  @allow */
 static void L_(ListTest)(struct L_(ListLink) *(*const parent_new)(void *),
 	void *const parent) {

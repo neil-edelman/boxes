@@ -1,7 +1,9 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised Closed Doubly-Linked List
+ @subtitle Parameterised Doubly-Linked Closed List
+
+ ![Example of <Animal>List](../web/list.png)
 
  <tag:<L>List> is a list of <tag:<L>ListLink>; it may be supplied a total-order
  function, `LIST_COMPARE` <typedef:<PL>Compare>.
@@ -87,10 +89,11 @@ struct L_(ListLink);
 struct L_(ListLink) { struct L_(ListLink) *prev, *next; };
 
 /** Serves as head and tail for linked-list of <tag:<L>ListLink>. Use
- <fn:<L>ListClear> or statically initialise using the macro
- `LIST_IDLE(<list>)`. Because this list is closed; that is, given a valid
- pointer to an element, one can determine all others, null values are not
- allowed and it is _not_ the same as `{0}`. */
+ <fn:<L>ListClear> to initialise the list. Because this list is closed; that
+ is, given a valid pointer to an element, one can determine all others, null
+ values are not allowed and it is _not_ the same as `{0}`.
+
+ ![States.](../web/states.png) */
 struct L_(List);
 struct L_(List) {
 	/* These are sentinels such that `head.prev` and `tail.next` are always and

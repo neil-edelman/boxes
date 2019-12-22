@@ -1,0 +1,9 @@
+digraph {
+	//rankdir = LR;
+	node [ shape=record, style=filled ];
+	null [ label = "{uninitalised\l|static\l|zero\l}" ];
+	init [ label = "{initialised\l}" ];
+	null -> init [ label = "<T>ListClear\l" ];
+	init -> init [ style = invis ];
+	init -> init [ label = "<T>ListClear\l<T>ListPush\l<T>ListUnshift\l<T>ListRemove\l...\l" ];
+}
