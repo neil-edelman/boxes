@@ -1,7 +1,7 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised List
+ @subtitle Parameterised Closed Doubly-Linked List
 
  <tag:<L>List> is a list of <tag:<L>ListLink>; it may be supplied a total-order
  function, `LIST_COMPARE` <typedef:<PL>Compare>.

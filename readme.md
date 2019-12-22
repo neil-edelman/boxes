@@ -1,6 +1,6 @@
 # List\.h #
 
-## Parameterised List ##
+## Parameterised Closed Doubly\-Linked List ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PL&gt;ToString](#user-content-typedef-10241527), [&lt;PL&gt;Action](#user-content-typedef-40925d79), [&lt;PL&gt;Predicate](#user-content-typedef-6fadfe58), [&lt;PL&gt;Compare](#user-content-typedef-c749dcca)
