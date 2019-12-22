@@ -139,6 +139,8 @@ Serves as head and tail for linked\-list of [&lt;N&gt;ListLink](#user-content-ta
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-a299d89a">&lt;N&gt;ListCompare</a></td><td>alist, blist</td></tr>
 
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-cf5c0d1e">&lt;N&gt;ListTakeDuplicates</a></td><td>list, from</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-33ae0972">&lt;N&gt;ListTakeSubtraction</a></td><td>list, a, b</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-f6924abf">&lt;N&gt;ListTakeUnion</a></td><td>list, a, b</td></tr>
@@ -472,9 +474,25 @@ Compares `alist` to `blist` as sequences\. Requires `LIST_COMPARE`\.
  * Return:  
    The first `LIST_COMPARE` that is not equal to zero, or 0 if they are equal\. Null is considered as before everything else; two null pointers are considered equal\.
  * Implements:  
-   [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8) as <<PN>List>Compare
+   [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8) as `<<PN>List>Compare`
  * Order:  
    &#920;\(min\(|`alist`|, |`blist`|\)\)
+
+
+
+
+### <a id = "user-content-fn-cf5c0d1e" name = "user-content-fn-cf5c0d1e">&lt;N&gt;ListTakeDuplicates</a> ###
+
+<code>static void <strong>&lt;N&gt;ListTakeDuplicates</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>from</em>)</code>
+
+Appends `list` with local\-duplicates of `from`\. Requires `LIST_COMPARE`\. _Eg_, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list` and leave `(A, B, A)` in `from`\. If one sorts first, `(A, A, B, B)`, the true duplicates will be in `list`, `(A, B)`\.
+
+ * Parameter: _list_  
+   If null, then it removes elements\.
+ * Parameter: _from_  
+   If null, does nothing\.
+ * Order:  
+   O\(|`from`|\)
 
 
 
@@ -488,9 +506,9 @@ Appends `list` with `b` subtracted from `a`\. Requires `LIST_COMPARE`\.
  * Parameter: _list_  
    If null, then it removes elements\.
  * Parameter: _a_  
-   Sorted lists\.
+   Sorted list\.
  * Parameter: _b_  
-   Sorted lists\.
+   Sorted list\.
  * Order:  
    &#927;\(|`a`| \+ |`b`|\)
 
@@ -506,9 +524,9 @@ Appends `list` with the union of `a` and `b`\. Equal elements are moved from `a`
  * Parameter: _list_  
    If null, then it removes elements\.
  * Parameter: _a_  
-   Sorted lists\.
+   Sorted list\.
  * Parameter: _b_  
-   Sorted lists\.
+   Sorted list\.
  * Order:  
    &#927;\(|`a`| \+ |`b`|\)
 
@@ -524,9 +542,9 @@ Appends `list` with the intersection of `a` and `b`\. Equal elements are moved f
  * Parameter: _list_  
    If null, then it removes elements\.
  * Parameter: _a_  
-   Sorted lists\.
+   Sorted list\.
  * Parameter: _b_  
-   Sorted lists\.
+   Sorted list\.
  * Order:  
    &#927;\(|`a`| \+ |`b`|\)
 
@@ -542,9 +560,9 @@ Appends `list` with `a` exclusive\-or `b`\. Equal elements are moved from `a`\. 
  * Parameter: _list_  
    If null, then it removes elements\.
  * Parameter: _a_  
-   Sorted lists\.
+   Sorted list\.
  * Parameter: _b_  
-   Sorted lists\.
+   Sorted list\.
  * Order:  
    O\(|`a`| \+ |`b`|\)
 

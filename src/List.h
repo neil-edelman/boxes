@@ -432,43 +432,63 @@ enum ListOperation {
 };
 #endif /* h --> */
 
+/** Local duplicates from `from` onto the back of `list`.
+ @order \O(|`from`|) */
+static void PN_(duplicates)(struct N_(List) *const list,
+	struct N_(List) *const from) {
+	struct N_(ListLink) *a = from->head.next, *b, *temp;
+	assert(from);
+	if(!(b = a->next)) return;
+	while(b->next) {
+		if(PN_(compare)(a, b)) {
+			a = b, b = b->next;
+		} else {
+			temp = b, b = b->next;
+			PN_(remove)(temp);
+			if(list) PN_(add_before)(&list->tail, temp);
+		}
+	}
+}
+
 /** Private: `alist` `mask` `blist` -> `list`. Prefers `a` to `b` when equal.
  @order \O(|`a`| + |`b`|) */
 static void PN_(boolean)(struct N_(List) *const list,
 	struct N_(List) *const alist, struct N_(List) *const blist,
 	const enum ListOperation mask) {
 	struct N_(ListLink) *a = alist ? alist->head.next : 0,
-	*b = blist ? blist->head.next : 0, *temp;
+		*b = blist ? blist->head.next : 0, *temp;
 	int comp;
-	while(a->next && b->next) {
-		comp = PN_(compare)(a, b);
-		if(comp < 0) {
-			temp = a, a = a->next;
-			if(mask & LO_SUBTRACTION_AB) {
-				PN_(remove)(temp);
-				if(list) PN_(add_before)(&list->tail, temp);
-			}
-		} else if(comp > 0) {
-			temp = b, b = b->next;
-			if(mask & LO_SUBTRACTION_BA) {
-				PN_(remove)(temp);
-				if(list) PN_(add_before)(&list->tail, temp);
-			}
-		} else {
-			temp = a, a = a->next, b = b->next;
-			if(mask & LO_INTERSECTION) {
-				PN_(remove)(temp);
-				if(list) PN_(add_before)(&list->tail, temp);
+	if(a && b) {
+		while(a->next && b->next) {
+			comp = PN_(compare)(a, b);
+			if(comp < 0) {
+				temp = a, a = a->next;
+				if(mask & LO_SUBTRACTION_AB) {
+					PN_(remove)(temp);
+					if(list) PN_(add_before)(&list->tail, temp);
+				}
+			} else if(comp > 0) {
+				temp = b, b = b->next;
+				if(mask & LO_SUBTRACTION_BA) {
+					PN_(remove)(temp);
+					if(list) PN_(add_before)(&list->tail, temp);
+				}
+			} else {
+				temp = a, a = a->next, b = b->next;
+				if(mask & LO_INTERSECTION) {
+					PN_(remove)(temp);
+					if(list) PN_(add_before)(&list->tail, temp);
+				}
 			}
 		}
 	}
-	if(mask & LO_DEFAULT_A) {
+	if(a && mask & LO_DEFAULT_A) {
 		while((temp = a, a = a->next)) {
 			PN_(remove)(temp);
 			if(list) PN_(add_before)(&list->tail, temp);
 		}
 	}
-	if(mask & LO_DEFAULT_B) {
+	if(b && mask & LO_DEFAULT_B) {
 		while((temp = b, b = b->next)) {
 			PN_(remove)(temp);
 			if(list) PN_(add_before)(&list->tail, temp);
@@ -692,7 +712,7 @@ static void N_(ListMerge)(struct N_(List) *const list,
  @return The first `LIST_COMPARE` that is not equal to zero, or 0 if they are
  equal. Null is considered as before everything else; two null pointers are
  considered equal.
- @implements <typedef:<PN>Compare> as <<PN>List>Compare
+ @implements <typedef:<PN>Compare> as `<<PN>List>Compare`
  @order \Theta(min(|`alist`|, |`blist`|))
  @allow */
 static int N_(ListCompare)(const struct N_(List) *const alist,
@@ -718,9 +738,23 @@ static int N_(ListCompare)(const struct N_(List) *const alist,
 	}
 }
 
+/** Appends `list` with local-duplicates of `from`. Requires `LIST_COMPARE`.
+ _Eg_, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list`
+ and leave `(A, B, A)` in `from`. If one sorts first, `(A, A, B, B)`, the true
+ duplicates will be in `list`, `(A, B)`.
+ @param[list] If null, then it removes elements.
+ @param[from] If null, does nothing.
+ @order O(|`from`|)
+ @allow */
+static void N_(ListTakeDuplicates)(struct N_(List) *const list,
+	struct N_(List) *const from) {
+	if(!from) return;
+	PN_(duplicates)(list, from);
+}
+
 /** Appends `list` with `b` subtracted from `a`. Requires `LIST_COMPARE`.
  @param[list] If null, then it removes elements.
- @param[a, b] Sorted lists.
+ @param[a, b] Sorted list.
  @order \O(|`a`| + |`b`|)
  @allow */
 static void N_(ListTakeSubtraction)(struct N_(List) *const list,
@@ -731,7 +765,7 @@ static void N_(ListTakeSubtraction)(struct N_(List) *const list,
 /** Appends `list` with the union of `a` and `b`. Equal elements are moved from
  `a`. Requires `LIST_COMPARE`.
  @param[list] If null, then it removes elements.
- @param[a, b] Sorted lists.
+ @param[a, b] Sorted list.
  @order \O(|`a`| + |`b`|)
  @allow */
 static void N_(ListTakeUnion)(struct N_(List) *const list,
@@ -743,7 +777,7 @@ static void N_(ListTakeUnion)(struct N_(List) *const list,
 /** Appends `list` with the intersection of `a` and `b`. Equal elements are
  moved from `a`. Requires `LIST_COMPARE`.
  @param[list] If null, then it removes elements.
- @param[a, b] Sorted lists.
+ @param[a, b] Sorted list.
  @order \O(|`a`| + |`b`|)
  @allow */
 static void N_(ListTakeIntersection)(struct N_(List) *const list,
@@ -754,7 +788,7 @@ static void N_(ListTakeIntersection)(struct N_(List) *const list,
 /** Appends `list` with `a` exclusive-or `b`. Equal elements are moved from
  `a`. Requires `LIST_COMPARE`.
  @param[list] If null, then it removes elements.
- @param[a, b] Sorted lists.
+ @param[a, b] Sorted list.
  @order O(|`a`| + |`b`|)
  @allow */
 static void N_(ListTakeXor)(struct N_(List) *const list,
@@ -849,6 +883,7 @@ static void PN_(unused_set)(void) {
 	N_(ListTakeUnion)(0, 0, 0);
 	N_(ListTakeIntersection)(0, 0, 0);
 	N_(ListTakeXor)(0, 0, 0);
+	N_(ListTakeDuplicates)(0, 0);
 #endif /* comp --> */
 #ifdef LIST_TO_STRING /* <!-- string */
 	N_(ListToString)(0);
