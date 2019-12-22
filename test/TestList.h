@@ -179,6 +179,84 @@ static void PN_(test_sort)(struct N_(ListLink) *(*const parent_new)(void *),
 #endif /* !comp --> */
 }
 
+#ifdef LIST_COMPARE /* <!-- comp */
+/** Set up the incredibly contrived example involving `a`, `b`, `c`, and
+ `link_a`, `link_b`, `link_alt_b`, `link_c`, `link_d` for
+ <fn:<PN>test_binary>, `a = ()`, `b = (A,B,D)`, and `c = (B,C)`. */
+static void PN_(reset_bool)(struct N_(List) *const a, struct N_(List) *const b,
+	struct N_(List) *const c, struct N_(ListLink) *const link_a,
+	struct N_(ListLink) *const link_b, struct N_(ListLink) *const link_alt_b,
+	struct N_(ListLink) *const link_c, struct N_(ListLink) *const link_d) {
+	assert(a && b && c && link_a && link_b && link_alt_b && link_c && link_d);
+	N_(ListClear)(a), N_(ListClear)(b), N_(ListClear)(c);
+	N_(ListPush)(c, link_b), N_(ListPush)(c, link_c);
+	N_(ListPush)(b, link_a), N_(ListPush)(b, link_alt_b),
+		N_(ListPush)(b, link_d);
+}
+#endif /* comp --> */
+
+/** Passed `parent_new` and `parent`, tests binary operations. */
+static void PN_(test_binary)(struct N_(ListLink) *(*const parent_new)(void *),
+	void *const parent) {
+#ifdef LIST_COMPARE /* <!-- comp */
+	struct N_(List) a, b, c;
+	struct N_(ListLink) *link_a, *link_b, *link_alt_b, *link_c, *link_d;
+	int cmp;
+	/* Test nulls, (Not comprehensive.) */
+	N_(ListClear)(&a);
+	N_(ListSort)(0);
+	N_(ListMerge)(0, 0);
+	cmp = N_(ListCompare)(0, 0), assert(cmp == 0);
+	cmp = N_(ListCompare)(&a, 0), assert(cmp > 0);
+	cmp = N_(ListCompare)(0, &a), assert(cmp < 0);
+	N_(ListTakeDuplicates)(0, 0);
+	/* fixme */
+	{
+		const size_t no_try = 5000;
+		struct N_(List) x, y;
+		size_t i;
+		/* By the PHP, this should be more than enough to get at least the
+		 small-entropy ones, (_ie_ `Letter`.) */
+		N_(ListClear)(&x), N_(ListClear)(&y);
+		for(i = 0; i < no_try; i++) {
+			struct N_(ListLink) *link;
+			if(!(link = parent_new(parent))) { assert(0); return; }
+			PN_(filler)(link);
+			N_(ListPush)(&x, link);
+			N_(ListSort)(&x);
+			N_(ListTakeDuplicates)(&y, &x);
+			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
+			if(!(link_a = N_(ListFirst)(&x))) continue;
+			if(!(link_b = N_(ListFirst)(&y))) continue;
+			if(PN_(compare)(link_a, link_b) == 0)
+				if(!(link_b = N_(ListNext)(link_b))) continue;
+			assert(PN_(compare)(link_a, link_b) < 0);
+			for(link_c = N_(ListNext)(link_a);
+				link_c && PN_(compare)(link_c, link_b) < 0;
+				link_c = N_(ListNext)(link_c));
+			assert(link_c && PN_(compare)(link_c, link_b) == 0);
+			link_alt_b = link_c;
+			if(!(link_c = N_(ListNext)(link_c))
+				|| !(link_d = N_(ListNext)(link_c))) continue;
+			break;
+		}
+		if(i == no_try) {
+			printf("Couldn't get duplicates from " QUOTE(LIST_NAME)
+				" in %lu tries; giving up.\n", (unsigned long)no_try);
+			return;
+		} else {
+			printf("Got duplicates in %lu tries.\n", (unsigned long)i);
+		}
+	}
+	PN_(reset_bool)(&a, &b, &c, link_a, link_b, link_alt_b, link_c, link_d);
+	printf("a = %s, ", N_(ListToString)(&a));
+	printf("b = %s, c = %s.\n", N_(ListToString)(&b), N_(ListToString)(&c));
+	
+#else /* comp --><!-- !comp */
+	(void)(parent_new), (void)(parent);
+#endif /* !comp --> */
+}
+
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list.
@@ -193,6 +271,7 @@ static void N_(ListTest)(struct N_(ListLink) *(*const parent_new)(void *),
 		"testing:\n");
 	PN_(test_basic)(parent_new, parent);
 	PN_(test_sort)(parent_new, parent);
+	PN_(test_binary)(parent_new, parent);
 }
 
 #undef QUOTE

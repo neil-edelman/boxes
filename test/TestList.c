@@ -70,11 +70,55 @@ static struct NoListLink *no_from_pool(void *const vnos) {
 	return &no->link;
 }
 
+/* For testing bin-ops just to be sure the examples were accurate. */
+
+struct LetterListLink;
+static void letter_to_string(const struct LetterListLink *, char (*)[12]);
+static void letter_fill(struct LetterListLink *);
+static int letter_compare(const struct LetterListLink *,
+	const struct LetterListLink *);
+
+#define LIST_NAME Letter
+#define LIST_COMPARE &letter_compare
+#define LIST_TO_STRING &letter_to_string
+#define LIST_TEST &letter_fill
+#include "../src/List.h"
+
+struct Letter { struct LetterListLink link; char letter; };
+
+static int letter_compare(const struct LetterListLink *const all,
+	const struct LetterListLink *const bll) {
+	/* Can do this because `link` is the first field in `struct No`. */
+	const struct Letter *const a = (const struct Letter *)all,
+		*const b = (const struct Letter *)bll;
+	return (a->letter > b->letter) - (b->letter > a->letter);
+}
+static void letter_to_string(const struct LetterListLink *const lll,
+	char (*const a)[12]) {
+	const struct Letter *const l = (const struct Letter *)lll;
+	(*a)[0] = l->letter;
+	(*a)[1] = '\0';
+}
+static void letter_fill(struct LetterListLink *const lll) {
+	struct Letter *const l = (struct Letter *)lll;
+	l->letter = rand() / (RAND_MAX / 26 + 1) + 'A';
+}
+#define POOL_NAME Letter
+#define POOL_TYPE struct Letter
+#include "Pool.h"
+static struct LetterListLink *letter_from_pool(void *const vls) {
+	struct LetterPool *const ls = vls;
+	struct Letter *l = LetterPoolNew(ls);
+	assert(l);
+	return &l->link;
+}
 
 int main(void) {
 	struct OrderLinkPool olls = POOL_IDLE;
 	struct NoPool nos = POOL_IDLE;
+	struct LetterPool ls = POOL_IDLE;
 	OrderListTest(&order_from_pool, &olls), OrderLinkPool_(&olls);
 	NoListTest(&no_from_pool, &nos), NoPool_(&nos);
+	LetterListTest(&letter_from_pool, &ls), LetterPool_(&ls);
 	return EXIT_SUCCESS;
 }

@@ -458,6 +458,8 @@ static void PN_(boolean)(struct N_(List) *const list,
 	struct N_(ListLink) *a = alist ? alist->head.next : 0,
 		*b = blist ? blist->head.next : 0, *temp;
 	int comp;
+	assert((!list || (list != alist && list != blist))
+		&& (!alist || (alist != blist)));
 	if(a && b) {
 		while(a->next && b->next) {
 			comp = PN_(compare)(a, b);
@@ -738,12 +740,12 @@ static int N_(ListCompare)(const struct N_(List) *const alist,
 	}
 }
 
-/** Appends `list` with local-duplicates of `from`. Requires `LIST_COMPARE`.
- _Eg_, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list`
- and leave `(A, B, A)` in `from`. If one sorts first, `(A, A, B, B)`, the true
- duplicates will be in `list`, `(A, B)`.
- @param[list] If null, then it removes elements.
- @param[from] If null, does nothing.
+/** Moves all local-duplicates of `from` to the end of `list`. Requires
+ `LIST_COMPARE`. All parameters must be unique or can be null.
+
+ For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list`
+ and leave `(A, B, A)` in `from`. If one <fn:<N>ListSort> `from` first,
+ `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
  @order O(|`from`|)
  @allow */
 static void N_(ListTakeDuplicates)(struct N_(List) *const list,
@@ -752,9 +754,12 @@ static void N_(ListTakeDuplicates)(struct N_(List) *const list,
 	PN_(duplicates)(list, from);
 }
 
-/** Appends `list` with `b` subtracted from `a`. Requires `LIST_COMPARE`.
- @param[list] If null, then it removes elements.
- @param[a, b] Sorted list.
+/** Subtracts `a` from `b`, as sequential sorted individual elements, and moves
+ it to `list`. All elements are removed from `a`. Requires `LIST_COMPARE`. All
+ parameters must be unique or can be null.
+
+ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
+ `(a:A, a:D)` would be moved to `list`.
  @order \O(|`a`| + |`b`|)
  @allow */
 static void N_(ListTakeSubtraction)(struct N_(List) *const list,
@@ -762,10 +767,12 @@ static void N_(ListTakeSubtraction)(struct N_(List) *const list,
 	PN_(boolean)(list, a, b, LO_SUBTRACTION_AB | LO_DEFAULT_A);
 }
 
-/** Appends `list` with the union of `a` and `b`. Equal elements are moved from
- `a`. Requires `LIST_COMPARE`.
- @param[list] If null, then it removes elements.
- @param[a, b] Sorted list.
+/** Moves the union of `a` and `b` as sequential sorted individual elements to
+ `list`. Equal elements are moved from `a`. Requires `LIST_COMPARE`. All
+ parameters must be unique or can be null.
+
+ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
+ `(a:A, a:B, b:C, a:D)` would be moved to `list`.
  @order \O(|`a`| + |`b`|)
  @allow */
 static void N_(ListTakeUnion)(struct N_(List) *const list,
@@ -774,10 +781,12 @@ static void N_(ListTakeUnion)(struct N_(List) *const list,
 		| LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
 }
 
-/** Appends `list` with the intersection of `a` and `b`. Equal elements are
- moved from `a`. Requires `LIST_COMPARE`.
- @param[list] If null, then it removes elements.
- @param[a, b] Sorted list.
+/** Moves the intersection of `a` and `b` as sequential sorted individual
+ elements to `list`. Equal elements are moved from `a`. Requires
+ `LIST_COMPARE`. All parameters must be unique or can be null.
+
+ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
+ `(a:B)` would be moved to `list`.
  @order \O(|`a`| + |`b`|)
  @allow */
 static void N_(ListTakeIntersection)(struct N_(List) *const list,
@@ -785,10 +794,12 @@ static void N_(ListTakeIntersection)(struct N_(List) *const list,
 	PN_(boolean)(list, a, b, LO_INTERSECTION);
 }
 
-/** Appends `list` with `a` exclusive-or `b`. Equal elements are moved from
- `a`. Requires `LIST_COMPARE`.
- @param[list] If null, then it removes elements.
- @param[a, b] Sorted list.
+/** Moves `a` exclusive-or `b` as sequential sorted individual elements to
+ `list`. Equal elements are moved from `a`. Requires `LIST_COMPARE`. All
+ parameters must be unique or can be null.
+
+ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
+ `(a:A, b:C, a:D)` would be moved to `list`.
  @order O(|`a`| + |`b`|)
  @allow */
 static void N_(ListTakeXor)(struct N_(List) *const list,

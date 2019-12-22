@@ -485,12 +485,12 @@ Compares `alist` to `blist` as sequences\. Requires `LIST_COMPARE`\.
 
 <code>static void <strong>&lt;N&gt;ListTakeDuplicates</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>from</em>)</code>
 
-Appends `list` with local\-duplicates of `from`\. Requires `LIST_COMPARE`\. _Eg_, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list` and leave `(A, B, A)` in `from`\. If one sorts first, `(A, A, B, B)`, the true duplicates will be in `list`, `(A, B)`\.
+Moves all local\-duplicates of `from` to the end of `list`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
- * Parameter: _list_  
-   If null, then it removes elements\.
- * Parameter: _from_  
-   If null, does nothing\.
+For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list` and leave `(A, B, A)` in `from`\. If one [&lt;N&gt;ListSort](#user-content-fn-5db2b073) `from` first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`\.
+
+
+
  * Order:  
    O\(|`from`|\)
 
@@ -501,72 +501,56 @@ Appends `list` with local\-duplicates of `from`\. Requires `LIST_COMPARE`\. _Eg_
 
 <code>static void <strong>&lt;N&gt;ListTakeSubtraction</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>)</code>
 
-Appends `list` with `b` subtracted from `a`\. Requires `LIST_COMPARE`\.
+Subtracts `a` from `b`, as sequential sorted individual elements, and moves it to `list`\. All elements are removed from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
- * Parameter: _list_  
-   If null, then it removes elements\.
- * Parameter: _a_  
-   Sorted list\.
- * Parameter: _b_  
-   Sorted list\.
+For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a:D)` would be moved to `list`\.
+
+
+
  * Order:  
    &#927;\(|`a`| \+ |`b`|\)
-
-
 
 
 ### <a id = "user-content-fn-f6924abf" name = "user-content-fn-f6924abf">&lt;N&gt;ListTakeUnion</a> ###
 
 <code>static void <strong>&lt;N&gt;ListTakeUnion</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>)</code>
 
-Appends `list` with the union of `a` and `b`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\.
+Moves the union of `a` and `b` as sequential sorted individual elements to `list`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
- * Parameter: _list_  
-   If null, then it removes elements\.
- * Parameter: _a_  
-   Sorted list\.
- * Parameter: _b_  
-   Sorted list\.
+For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a:B, b:C, a:D)` would be moved to `list`\.
+
+
+
  * Order:  
    &#927;\(|`a`| \+ |`b`|\)
-
-
 
 
 ### <a id = "user-content-fn-ceffef5d" name = "user-content-fn-ceffef5d">&lt;N&gt;ListTakeIntersection</a> ###
 
 <code>static void <strong>&lt;N&gt;ListTakeIntersection</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>)</code>
 
-Appends `list` with the intersection of `a` and `b`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\.
+Moves the intersection of `a` and `b` as sequential sorted individual elements to `list`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
- * Parameter: _list_  
-   If null, then it removes elements\.
- * Parameter: _a_  
-   Sorted list\.
- * Parameter: _b_  
-   Sorted list\.
+For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:B)` would be moved to `list`\.
+
+
+
  * Order:  
    &#927;\(|`a`| \+ |`b`|\)
-
-
 
 
 ### <a id = "user-content-fn-7bab77cd" name = "user-content-fn-7bab77cd">&lt;N&gt;ListTakeXor</a> ###
 
 <code>static void <strong>&lt;N&gt;ListTakeXor</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>)</code>
 
-Appends `list` with `a` exclusive\-or `b`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\.
+Moves `a` exclusive\-or `b` as sequential sorted individual elements to `list`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
- * Parameter: _list_  
-   If null, then it removes elements\.
- * Parameter: _a_  
-   Sorted list\.
- * Parameter: _b_  
-   Sorted list\.
+For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, b:C, a:D)` would be moved to `list`\.
+
+
+
  * Order:  
    O\(|`a`| \+ |`b`|\)
-
-
 
 
 ### <a id = "user-content-fn-b8333b17" name = "user-content-fn-b8333b17">&lt;N&gt;ListToString</a> ###
@@ -593,8 +577,6 @@ The linked\-list will be tested on stdout\. `LIST_TEST` has to be set\.
    Responsible for creating new objects and returning the list\.
  * Parameter: _parent_  
    Responsible for creating new objects and returning the list\.
-
-
 
 
 
