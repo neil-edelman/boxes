@@ -7,19 +7,18 @@
 
  <tag:<E>Set> is a collection of elements of <tag:<E>SetElement> that doesn't
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
- <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>,
- specified as `defines` before inclusion.
+ <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>.
 
- Internally, it is a simple, separately chained, hash set with a maximum load
- factor of `ln 2`, and power-of-two resizes, with buckets as pointers. This
- offers some independence of sets from set elements, but cache performance is
- left up to the caller. It can be expanded to a hash map or associative array
- by enclosing the `<E>SetElement` in another `struct`, as appropriate. While in
- a set, the elements should not change in a way that affects their hash values.
+ Internally, it is a separately chained, hash set with a maximum load factor of
+ `ln 2`, and power-of-two resizes, with buckets as pointers. This offers some
+ independence of sets from set elements, but cache performance is left up to
+ the caller. It can be expanded to a hash map or associative array by enclosing
+ the `<E>SetElement` in another `struct`, as appropriate. While in a set, the
+ elements should not change in a way that affects their hash values.
 
  `<E>Set` is not synchronised. Errors are returned with `errno`. The parameters
- are preprocessor macros, and are all undefined at the end of the file for
- convenience. `assert.h` is included; to stop the debug assertions, use
+ are `#define` preprocessor macros, and are all undefined at the end of the
+ file for convenience. `assert.h` is used; to stop assertions, use
  `#define NDEBUG` before inclusion.
 
  @param[SET_NAME, SET_TYPE]
@@ -52,7 +51,7 @@
 
  @param[SET_TEST]
  Unit testing framework <fn:<E>SetTest>, included in a separate header,
- <../test/SetTest.h>. Must be defined equal to a random filler function,
+ <../test/TestSet.h>. Must be defined equal to a random filler function,
  satisfying <typedef:<PE>Action>. Requires `SET_TO_STRING` and not `NDEBUG`.
 
  @std C89
@@ -61,7 +60,6 @@
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Pool](https://github.com/neil-edelman/Pool) */
 
-#include <stddef.h>	/* offsetof */
 #include <limits.h> /* SIZE_MAX? */
 #include <stdlib.h> /* realloc free */
 #include <assert.h>	/* assert */
@@ -480,8 +478,7 @@ static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 	return x;
 }
 
-#ifdef SET_TO_STRING /* <!-- print */
-
+#ifdef SET_TO_STRING /* <!-- string */
 /** Can print 2 things at once before it overwrites. One must set
  `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
  functionality.
@@ -538,8 +535,7 @@ terminate:
 	assert(s <= string + string_size);
 	return string;
 }
-
-#endif /* print --> */
+#endif /* string --> */
 
 #ifdef SET_TEST /* <!-- test: need this file. */
 #include "../test/TestSet.h" /** \include */
@@ -566,11 +562,9 @@ static void PE_(unused_set)(void) {
 }
 static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 
-/* Un-define all macros. */
-#undef SET_NAME
-#undef SET_TYPE
-/* Undocumented: allows nestled inclusion in other .h so long as `CAT`, _etc_,
- are the same meaning and `E_`, _etc_, are not clobbered. */
+/* Un-define all macros. Undocumented: allows nestled inclusion in other .h so
+ long as `CAT`, _etc_, are the same meaning and `E_`, _etc_, are not
+ clobbered. */
 #ifdef SET_SUBTYPE /* <!-- sub */
 #undef SET_SUBTYPE
 #else /* sub --><!-- !sub */

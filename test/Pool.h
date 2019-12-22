@@ -125,7 +125,7 @@ struct PT_(Block) {
 };
 
 /** The pool. Zeroed data is a valid state. To instantiate explicitly, see
- <fn:<T>Pool> or initialise it with `POOL_INIT` or `{0}` (C99.)
+ <fn:<T>Pool> or initialise it with `POOL_IDLE` or `{0}` (C99.)
 
  ![States.](../web/states.png) */
 struct T_(Pool);
@@ -140,8 +140,8 @@ struct T_(Pool) {
 };
 
 /* `{0}` is `C99`. */
-#ifndef POOL_ZERO /* <!-- !zero */
-#define POOL_ZERO { 0, 0, { 0, 0 } }
+#ifndef POOL_IDLE /* <!-- !zero */
+#define POOL_IDLE { 0, 0, { 0, 0 } }
 #endif /* !zero --> */
 
 
