@@ -121,11 +121,11 @@ Serves as head and tail for linked\-list of [&lt;N&gt;ListLink](#user-content-ta
 
 <tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#user-content-fn-d736954e">&lt;N&gt;ListPop</a></td><td>list</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-91fc2368">&lt;N&gt;ListTake</a></td><td>list, from</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-ef4618a6">&lt;N&gt;ListTo</a></td><td>from, to</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-d7698e8f">&lt;N&gt;ListTakeIf</a></td><td>list, from, predicate</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-55804f41">&lt;N&gt;ListToIf</a></td><td>from, to, predicate</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-29e11db3">&lt;N&gt;ListTakeBefore</a></td><td>anchor, from</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-c9ee0371">&lt;N&gt;ListToBefore</a></td><td>from, anchor</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-76821c93">&lt;N&gt;ListForEach</a></td><td>list, action</td></tr>
 
@@ -139,15 +139,15 @@ Serves as head and tail for linked\-list of [&lt;N&gt;ListLink](#user-content-ta
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-a299d89a">&lt;N&gt;ListCompare</a></td><td>alist, blist</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-cf5c0d1e">&lt;N&gt;ListTakeDuplicates</a></td><td>list, from</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-6b7d586c">&lt;N&gt;ListDuplicatesTo</a></td><td>from, to</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-33ae0972">&lt;N&gt;ListTakeSubtraction</a></td><td>list, a, b</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-84bacf56">&lt;N&gt;ListSubtractionTo</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-f6924abf">&lt;N&gt;ListTakeUnion</a></td><td>list, a, b</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-cea0fcef">&lt;N&gt;ListUnionTo</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-ceffef5d">&lt;N&gt;ListTakeIntersection</a></td><td>list, a, b</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-f4e619bb">&lt;N&gt;ListIntersectionTo</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-7bab77cd">&lt;N&gt;ListTakeXor</a></td><td>list, a, b</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-c2be8709">&lt;N&gt;ListXorTo</a></td><td>a, b, result</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b8333b17">&lt;N&gt;ListToString</a></td><td>list</td></tr>
 
@@ -339,48 +339,48 @@ Un\-associates the last element of `list`\.
 
 
 
-### <a id = "user-content-fn-91fc2368" name = "user-content-fn-91fc2368">&lt;N&gt;ListTake</a> ###
+### <a id = "user-content-fn-ef4618a6" name = "user-content-fn-ef4618a6">&lt;N&gt;ListTo</a> ###
 
-<code>static void <strong>&lt;N&gt;ListTake</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>from</em>)</code>
+<code>static void <strong>&lt;N&gt;ListTo</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;List *const <em>to</em>)</code>
 
-Moves the elements `from` onto `list` at the end\.
+Moves the elements `from` onto `to` at the end\.
 
- * Parameter: _list_  
-   If null, then it removes elements from `from`\.
  * Parameter: _from_  
    If null, it does nothing, otherwise this list will be empty on return\.
+ * Parameter: _to_  
+   If null, then it removes elements from `from`\.
  * Order:  
    &#920;\(1\)
 
 
 
 
-### <a id = "user-content-fn-d7698e8f" name = "user-content-fn-d7698e8f">&lt;N&gt;ListTakeIf</a> ###
+### <a id = "user-content-fn-55804f41" name = "user-content-fn-55804f41">&lt;N&gt;ListToIf</a> ###
 
-<code>static void <strong>&lt;N&gt;ListTakeIf</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>from</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code>
+<code>static void <strong>&lt;N&gt;ListToIf</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;List *const <em>to</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code>
 
-Moves all elements `from` onto `list` at the end if `predicate` is null or true\.
+Moves all elements `from` onto `to` at the end if `predicate` is null or true\.
 
- * Parameter: _list_  
-   If null, then it removes elements\.
  * Parameter: _from_  
    If null, does nothing\.
+ * Parameter: _to_  
+   If null, then it removes elements\.
  * Order:  
-   &#920;\(|`list`|\) &#215; &#927;\(`predicate`\)
+   &#920;\(|`from`|\) &#215; &#927;\(`predicate`\)
 
 
 
 
-### <a id = "user-content-fn-29e11db3" name = "user-content-fn-29e11db3">&lt;N&gt;ListTakeBefore</a> ###
+### <a id = "user-content-fn-c9ee0371" name = "user-content-fn-c9ee0371">&lt;N&gt;ListToBefore</a> ###
 
-<code>static void <strong>&lt;N&gt;ListTakeBefore</strong>(struct &lt;N&gt;ListLink *const <em>anchor</em>, struct &lt;N&gt;List *const <em>from</em>)</code>
+<code>static void <strong>&lt;N&gt;ListToBefore</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;ListLink *const <em>anchor</em>)</code>
 
 Moves the elements `from` immediately before `anchor`\.
 
- * Parameter: _anchor_  
-   If null, does nothing\. Must be part of a vild list\.
  * Parameter: _from_  
    If null, does nothing\. This list will be empty on return\.
+ * Parameter: _anchor_  
+   If null, does nothing\. Must be part of a valid list that is not `from`\.
  * Order:  
    &#920;\(1\)
 
@@ -481,13 +481,13 @@ Compares `alist` to `blist` as sequences\. Requires `LIST_COMPARE`\.
 
 
 
-### <a id = "user-content-fn-cf5c0d1e" name = "user-content-fn-cf5c0d1e">&lt;N&gt;ListTakeDuplicates</a> ###
+### <a id = "user-content-fn-6b7d586c" name = "user-content-fn-6b7d586c">&lt;N&gt;ListDuplicatesTo</a> ###
 
-<code>static void <strong>&lt;N&gt;ListTakeDuplicates</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>from</em>)</code>
+<code>static void <strong>&lt;N&gt;ListDuplicatesTo</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;List *const <em>to</em>)</code>
 
-Moves all local\-duplicates of `from` to the end of `list`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
+Moves all local\-duplicates of `from` to the end of `to`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
-For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list` and leave `(A, B, A)` in `from`\. If one [&lt;N&gt;ListSort](#user-content-fn-5db2b073) `from` first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`\.
+For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `to` and leave `(A, B, A)` in `from`\. If one [&lt;N&gt;ListSort](#user-content-fn-5db2b073) `from` first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`\.
 
 
 
@@ -497,27 +497,13 @@ For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list` a
 
 
 
-### <a id = "user-content-fn-33ae0972" name = "user-content-fn-33ae0972">&lt;N&gt;ListTakeSubtraction</a> ###
+### <a id = "user-content-fn-84bacf56" name = "user-content-fn-84bacf56">&lt;N&gt;ListSubtractionTo</a> ###
 
-<code>static void <strong>&lt;N&gt;ListTakeSubtraction</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>)</code>
+<code>static void <strong>&lt;N&gt;ListSubtractionTo</strong>(struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>, struct &lt;N&gt;List *const <em>result</em>)</code>
 
-Subtracts `a` from `b`, as sequential sorted individual elements, and moves it to `list`\. All elements are removed from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
+Subtracts `a` from `b`, as sequential sorted individual elements, and moves it to `result`\. All elements are removed from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
-For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a:D)` would be moved to `list`\.
-
-
-
- * Order:  
-   &#927;\(|`a`| \+ |`b`|\)
-
-
-### <a id = "user-content-fn-f6924abf" name = "user-content-fn-f6924abf">&lt;N&gt;ListTakeUnion</a> ###
-
-<code>static void <strong>&lt;N&gt;ListTakeUnion</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>)</code>
-
-Moves the union of `a` and `b` as sequential sorted individual elements to `list`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
-
-For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a:B, b:C, a:D)` would be moved to `list`\.
+For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a:D)` would be moved to `result`\.
 
 
 
@@ -525,13 +511,13 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a
    &#927;\(|`a`| \+ |`b`|\)
 
 
-### <a id = "user-content-fn-ceffef5d" name = "user-content-fn-ceffef5d">&lt;N&gt;ListTakeIntersection</a> ###
+### <a id = "user-content-fn-cea0fcef" name = "user-content-fn-cea0fcef">&lt;N&gt;ListUnionTo</a> ###
 
-<code>static void <strong>&lt;N&gt;ListTakeIntersection</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>)</code>
+<code>static void <strong>&lt;N&gt;ListUnionTo</strong>(struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>, struct &lt;N&gt;List *const <em>result</em>)</code>
 
-Moves the intersection of `a` and `b` as sequential sorted individual elements to `list`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
+Moves the union of `a` and `b` as sequential sorted individual elements to `result`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
-For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:B)` would be moved to `list`\.
+For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a:B, b:C, a:D)` would be moved to `result`\.
 
 
 
@@ -539,13 +525,27 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:B)` 
    &#927;\(|`a`| \+ |`b`|\)
 
 
-### <a id = "user-content-fn-7bab77cd" name = "user-content-fn-7bab77cd">&lt;N&gt;ListTakeXor</a> ###
+### <a id = "user-content-fn-f4e619bb" name = "user-content-fn-f4e619bb">&lt;N&gt;ListIntersectionTo</a> ###
 
-<code>static void <strong>&lt;N&gt;ListTakeXor</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>)</code>
+<code>static void <strong>&lt;N&gt;ListIntersectionTo</strong>(struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>, struct &lt;N&gt;List *const <em>result</em>)</code>
 
-Moves `a` exclusive\-or `b` as sequential sorted individual elements to `list`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
+Moves the intersection of `a` and `b` as sequential sorted individual elements to `result`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
 
-For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, b:C, a:D)` would be moved to `list`\.
+For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:B)` would be moved to `result`\.
+
+
+
+ * Order:  
+   &#927;\(|`a`| \+ |`b`|\)
+
+
+### <a id = "user-content-fn-c2be8709" name = "user-content-fn-c2be8709">&lt;N&gt;ListXorTo</a> ###
+
+<code>static void <strong>&lt;N&gt;ListXorTo</strong>(struct &lt;N&gt;List *const <em>a</em>, struct &lt;N&gt;List *const <em>b</em>, struct &lt;N&gt;List *const <em>result</em>)</code>
+
+Moves `a` exclusive\-or `b` as sequential sorted individual elements to `result`\. Equal elements are moved from `a`\. Requires `LIST_COMPARE`\. All parameters must be unique or can be null\.
+
+For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, b:C, a:D)` would be moved to `result`\.
 
 
 

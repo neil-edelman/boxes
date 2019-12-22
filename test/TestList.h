@@ -209,7 +209,7 @@ static void PN_(test_binary)(struct N_(ListLink) *(*const parent_new)(void *),
 	cmp = N_(ListCompare)(0, 0), assert(cmp == 0);
 	cmp = N_(ListCompare)(&a, 0), assert(cmp > 0);
 	cmp = N_(ListCompare)(0, &a), assert(cmp < 0);
-	N_(ListTakeDuplicates)(0, 0);
+	N_(ListDuplicatesTo)(0, 0);
 	/* fixme */
 	{
 		const size_t no_try = 5000;
@@ -224,7 +224,7 @@ static void PN_(test_binary)(struct N_(ListLink) *(*const parent_new)(void *),
 			PN_(filler)(link);
 			N_(ListPush)(&x, link);
 			N_(ListSort)(&x);
-			N_(ListTakeDuplicates)(&y, &x);
+			N_(ListDuplicatesTo)(&x, &y);
 			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
 			if(!(link_a = N_(ListFirst)(&x))) continue;
 			if(!(link_b = N_(ListFirst)(&y))) continue;

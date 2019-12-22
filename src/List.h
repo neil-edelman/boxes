@@ -161,8 +161,8 @@ static void PN_(remove)(struct N_(ListLink) *const node) {
  `from` will be empty after. Careful that `node` is not in `from` because that
  will just erase the list.
  @order \Theta(1) */
-static void PN_(move)(struct N_(ListLink) *const node,
-	struct N_(List) *const from) {
+static void PN_(move)(struct N_(List) *const from,
+	struct N_(ListLink) *const node) {
 	assert(node && from && node->prev &&
 		!from->head.prev && from->head.next
 		&& from->tail.prev && !from->tail.next);
@@ -320,46 +320,45 @@ static struct N_(ListLink) *N_(ListPop)(struct N_(List) *const list) {
 	return node;
 }
 
-/** Moves the elements `from` onto `list` at the end.
- @param[list] If null, then it removes elements from `from`.
+/** Moves the elements `from` onto `to` at the end.
  @param[from] If null, it does nothing, otherwise this list will be empty on
  return.
+ @param[to] If null, then it removes elements from `from`.
  @order \Theta(1)
  @allow */
-static void N_(ListTake)(struct N_(List) *const list,
-	struct N_(List) *const from) {
-	if(!from || from == list) return;
-	if(!list) { PN_(clear)(from); return; }
-	PN_(move)(&list->tail, from);
+static void N_(ListTo)(struct N_(List) *const from, struct N_(List) *const to) {
+	if(!from || from == to) return;
+	if(!to) { PN_(clear)(from); return; }
+	PN_(move)(from, &to->tail);
 }
 
-/** Moves all elements `from` onto `list` at the end if `predicate` is null or
+/** Moves all elements `from` onto `to` at the end if `predicate` is null or
  true.
- @param[list] If null, then it removes elements.
  @param[from] If null, does nothing.
- @order \Theta(|`list`|) \times \O(`predicate`)
+ @param[to] If null, then it removes elements.
+ @order \Theta(|`from`|) \times \O(`predicate`)
  @allow */
-static void N_(ListTakeIf)(struct N_(List) *const list,
-	struct N_(List) *const from, const PN_(Predicate) predicate) {
+static void N_(ListToIf)(struct N_(List) *const from,
+	struct N_(List) *const to, const PN_(Predicate) predicate) {
 	struct N_(ListLink) *link, *next_link;
-	if(!from || from == list) return;
+	if(!from || from == to) return;
 	for(link = from->head.next; (next_link = link->next); link = next_link) {
 		if(predicate && !predicate(link)) continue;
 		PN_(remove)(link);
-		if(list) PN_(add_before)(&list->tail, link);
+		if(to) PN_(add_before)(&to->tail, link);
 	}
 }
 
 /** Moves the elements `from` immediately before `anchor`.
  @param[anchor, from] If null, does nothing.
- @param[anchor] Must be part of a vild list.
+ @param[anchor] Must be part of a valid list that is not `from`.
  @param[from] This list will be empty on return.
  @order \Theta(1)
  @allow */
-static void N_(ListTakeBefore)(struct N_(ListLink) *const anchor,
-	struct N_(List) *const from) {
-	if(!anchor || !from) return;
-	PN_(move)(anchor, from);
+static void N_(ListToBefore)(struct N_(List) *const from,
+	struct N_(ListLink) *const anchor) {
+	if(!from || !anchor) return;
+	PN_(move)(from, anchor);
 }
 
 /** Performs `action` for each element in `list` in order. `action` can be to
@@ -432,10 +431,10 @@ enum ListOperation {
 };
 #endif /* h --> */
 
-/** Local duplicates from `from` onto the back of `list`.
+/** Local duplicates from `from` onto the back of `to`.
  @order \O(|`from`|) */
-static void PN_(duplicates)(struct N_(List) *const list,
-	struct N_(List) *const from) {
+static void PN_(duplicates)(struct N_(List) *const from,
+	struct N_(List) *const to) {
 	struct N_(ListLink) *a = from->head.next, *b, *temp;
 	assert(from);
 	if(!(b = a->next)) return;
@@ -445,20 +444,20 @@ static void PN_(duplicates)(struct N_(List) *const list,
 		} else {
 			temp = b, b = b->next;
 			PN_(remove)(temp);
-			if(list) PN_(add_before)(&list->tail, temp);
+			if(to) PN_(add_before)(&to->tail, temp);
 		}
 	}
 }
 
-/** Private: `alist` `mask` `blist` -> `list`. Prefers `a` to `b` when equal.
+/** Private: `alist` `mask` `blist` -> `result`. Prefers `a` to `b` when equal.
  @order \O(|`a`| + |`b`|) */
-static void PN_(boolean)(struct N_(List) *const list,
-	struct N_(List) *const alist, struct N_(List) *const blist,
-	const enum ListOperation mask) {
+static void PN_(boolean)(struct N_(List) *const alist,
+	struct N_(List) *const blist, const enum ListOperation mask,
+	struct N_(List) *const result) {
 	struct N_(ListLink) *a = alist ? alist->head.next : 0,
 		*b = blist ? blist->head.next : 0, *temp;
 	int comp;
-	assert((!list || (list != alist && list != blist))
+	assert((!result || (result != alist && result != blist))
 		&& (!alist || (alist != blist)));
 	if(a && b) {
 		while(a->next && b->next) {
@@ -467,19 +466,19 @@ static void PN_(boolean)(struct N_(List) *const list,
 				temp = a, a = a->next;
 				if(mask & LO_SUBTRACTION_AB) {
 					PN_(remove)(temp);
-					if(list) PN_(add_before)(&list->tail, temp);
+					if(result) PN_(add_before)(&result->tail, temp);
 				}
 			} else if(comp > 0) {
 				temp = b, b = b->next;
 				if(mask & LO_SUBTRACTION_BA) {
 					PN_(remove)(temp);
-					if(list) PN_(add_before)(&list->tail, temp);
+					if(result) PN_(add_before)(&result->tail, temp);
 				}
 			} else {
 				temp = a, a = a->next, b = b->next;
 				if(mask & LO_INTERSECTION) {
 					PN_(remove)(temp);
-					if(list) PN_(add_before)(&list->tail, temp);
+					if(result) PN_(add_before)(&result->tail, temp);
 				}
 			}
 		}
@@ -487,13 +486,13 @@ static void PN_(boolean)(struct N_(List) *const list,
 	if(a && mask & LO_DEFAULT_A) {
 		while((temp = a, a = a->next)) {
 			PN_(remove)(temp);
-			if(list) PN_(add_before)(&list->tail, temp);
+			if(result) PN_(add_before)(&result->tail, temp);
 		}
 	}
 	if(b && mask & LO_DEFAULT_B) {
 		while((temp = b, b = b->next)) {
 			PN_(remove)(temp);
-			if(list) PN_(add_before)(&list->tail, temp);
+			if(result) PN_(add_before)(&result->tail, temp);
 		}
 	}
 }
@@ -509,7 +508,7 @@ static void PN_(merge)(struct N_(List) *const alist,
 	if(!(b = blist->head.next)->next) return;
 	/* `alist` empty -- `O(1)` <fn:<PN>move> is more efficient. */
 	if(!(a = alist->head.next)->next)
-	{ PN_(move)(&alist->tail, blist); return; }
+	{ PN_(move)(blist, &alist->tail); return; }
 	/* Merge */
 	for(cur = &alist->head; ; ) {
 		if(PN_(compare)(a, b) < 0) {
@@ -740,72 +739,72 @@ static int N_(ListCompare)(const struct N_(List) *const alist,
 	}
 }
 
-/** Moves all local-duplicates of `from` to the end of `list`. Requires
+/** Moves all local-duplicates of `from` to the end of `to`. Requires
  `LIST_COMPARE`. All parameters must be unique or can be null.
 
- For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `list`
+ For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `to`
  and leave `(A, B, A)` in `from`. If one <fn:<N>ListSort> `from` first,
  `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
  @order O(|`from`|)
  @allow */
-static void N_(ListTakeDuplicates)(struct N_(List) *const list,
-	struct N_(List) *const from) {
+static void N_(ListDuplicatesTo)(struct N_(List) *const from,
+	struct N_(List) *const to) {
 	if(!from) return;
-	PN_(duplicates)(list, from);
+	PN_(duplicates)(from, to);
 }
 
 /** Subtracts `a` from `b`, as sequential sorted individual elements, and moves
- it to `list`. All elements are removed from `a`. Requires `LIST_COMPARE`. All
- parameters must be unique or can be null.
+ it to `result`. All elements are removed from `a`. Requires `LIST_COMPARE`.
+ All parameters must be unique or can be null.
 
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
- `(a:A, a:D)` would be moved to `list`.
+ `(a:A, a:D)` would be moved to `result`.
  @order \O(|`a`| + |`b`|)
  @allow */
-static void N_(ListTakeSubtraction)(struct N_(List) *const list,
-	struct N_(List) *const a, struct N_(List) *const b) {
-	PN_(boolean)(list, a, b, LO_SUBTRACTION_AB | LO_DEFAULT_A);
+static void N_(ListSubtractionTo)(struct N_(List) *const a,
+	struct N_(List) *const b, struct N_(List) *const result) {
+	PN_(boolean)(a, b, LO_SUBTRACTION_AB | LO_DEFAULT_A, result);
 }
 
 /** Moves the union of `a` and `b` as sequential sorted individual elements to
- `list`. Equal elements are moved from `a`. Requires `LIST_COMPARE`. All
+ `result`. Equal elements are moved from `a`. Requires `LIST_COMPARE`. All
  parameters must be unique or can be null.
 
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
- `(a:A, a:B, b:C, a:D)` would be moved to `list`.
+ `(a:A, a:B, b:C, a:D)` would be moved to `result`.
  @order \O(|`a`| + |`b`|)
  @allow */
-static void N_(ListTakeUnion)(struct N_(List) *const list,
-	struct N_(List) *const a, struct N_(List) *const b) {
-	PN_(boolean)(list, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
-		| LO_INTERSECTION | LO_DEFAULT_A | LO_DEFAULT_B);
+static void N_(ListUnionTo)(struct N_(List) *const a, struct N_(List) *const b,
+	struct N_(List) *const result) {
+	PN_(boolean)(a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA | LO_INTERSECTION
+		| LO_DEFAULT_A | LO_DEFAULT_B, result);
 }
 
 /** Moves the intersection of `a` and `b` as sequential sorted individual
- elements to `list`. Equal elements are moved from `a`. Requires
+ elements to `result`. Equal elements are moved from `a`. Requires
  `LIST_COMPARE`. All parameters must be unique or can be null.
 
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
- `(a:B)` would be moved to `list`.
+ `(a:B)` would be moved to `result`.
  @order \O(|`a`| + |`b`|)
  @allow */
-static void N_(ListTakeIntersection)(struct N_(List) *const list,
-	struct N_(List) *const a, struct N_(List) *const b) {
-	PN_(boolean)(list, a, b, LO_INTERSECTION);
+static void N_(ListIntersectionTo)(struct N_(List) *const a,
+	struct N_(List) *const b, struct N_(List) *const result) {
+	PN_(boolean)(a, b, LO_INTERSECTION, result);
 }
 
 /** Moves `a` exclusive-or `b` as sequential sorted individual elements to
- `list`. Equal elements are moved from `a`. Requires `LIST_COMPARE`. All
+ `result`. Equal elements are moved from `a`. Requires `LIST_COMPARE`. All
  parameters must be unique or can be null.
 
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
- `(a:A, b:C, a:D)` would be moved to `list`.
+ `(a:A, b:C, a:D)` would be moved to `result`.
  @order O(|`a`| + |`b`|)
  @allow */
-static void N_(ListTakeXor)(struct N_(List) *const list,
-	struct N_(List) *const a, struct N_(List) *const b) {
-	PN_(boolean)(list, a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA
-		| LO_DEFAULT_A | LO_DEFAULT_B);
+static void N_(ListXorTo)(struct N_(List) *const a, struct N_(List) *const b,
+	struct N_(List) *const result) {
+	PN_(boolean)(a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA | LO_DEFAULT_A
+		| LO_DEFAULT_B, result);
 }
 
 #endif /* comp --> */
@@ -880,9 +879,9 @@ static void PN_(unused_set)(void) {
 	N_(ListRemove)(0);
 	N_(ListShift)(0);
 	N_(ListPop)(0);
-	N_(ListTake)(0, 0);
-	N_(ListTakeIf)(0, 0, 0);
-	N_(ListTakeBefore)(0, 0);
+	N_(ListTo)(0, 0);
+	N_(ListToIf)(0, 0, 0);
+	N_(ListToBefore)(0, 0);
 	N_(ListForEach)(0, 0);
 	N_(ListAny)(0, 0);
 	N_(ListSelfCorrect)(0);
@@ -890,11 +889,11 @@ static void PN_(unused_set)(void) {
 	N_(ListSort)(0);
 	N_(ListMerge)(0, 0);
 	N_(ListCompare)(0, 0);
-	N_(ListTakeSubtraction)(0, 0, 0);
-	N_(ListTakeUnion)(0, 0, 0);
-	N_(ListTakeIntersection)(0, 0, 0);
-	N_(ListTakeXor)(0, 0, 0);
-	N_(ListTakeDuplicates)(0, 0);
+	N_(ListSubtractionTo)(0, 0, 0);
+	N_(ListUnionTo)(0, 0, 0);
+	N_(ListIntersectionTo)(0, 0, 0);
+	N_(ListXorTo)(0, 0, 0);
+	N_(ListDuplicatesTo)(0, 0);
 #endif /* comp --> */
 #ifdef LIST_TO_STRING /* <!-- string */
 	N_(ListToString)(0);
