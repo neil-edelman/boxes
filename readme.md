@@ -330,7 +330,9 @@ Un\-associates the last element of `list`\.
  * Parameter: _list_  
    If null, returns null\.
  * Return:  
-   The erstwhile last element or null if the list was empty\. @oder &#927;\(1\)
+   The erstwhile last element or null if the list was empty\.
+ * Order:  
+   &#927;\(1\)
 
 
 
