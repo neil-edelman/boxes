@@ -10,13 +10,12 @@
 
  Internally, `<L>ListLink` is a doubly-linked node with sentinels residing in
  `<L>List`. It only provides an order, but `<L>ListLink` may be enclosed in
- another `struct`. While in a list, adding to another list destroys the
- integrity of the original list, see <fn:<L>ListRemove>.
+ another `struct`.
 
- `<L>Link` is not synchronised. Errors are returned with `errno`. The
- parameters are `#define` preprocessor macros, and are all undefined at the end
- of the file for convenience. To stop assertions, use `#define NDEBUG` before
- inclusion of `assert.h`, (which is used in this file.)
+ `<L>Link` is not synchronised. The parameters are `#define` preprocessor
+ macros, and are all undefined at the end of the file for convenience. To stop
+ assertions, use `#define NDEBUG` before inclusion of `assert.h`, (which is
+ used in this file.)
 
  @param[LIST_NAME]
  `<L>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
@@ -84,7 +83,11 @@
 #define PL_(thing) PCAT(set, PCAT(LIST_NAME, thing)) /* "Private." */
 
 
-/** Storage of this structure is the responsibility of the caller. */
+/** Storage of this structure is the responsibility of the caller. One can only
+ be in one list at a time; adding to another list while in a list destroys the
+ integrity of the original list, see <fn:<L>ListRemove>.
+
+ ![States.](../web/node-states.png) */
 struct L_(ListLink);
 struct L_(ListLink) { struct L_(ListLink) *prev, *next; };
 
