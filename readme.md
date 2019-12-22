@@ -330,7 +330,7 @@ Un\-associates the last element of `list`\.
  * Parameter: _list_  
    If null, returns null\.
  * Return:  
-   The erstwhile last element or null if the list was empty\.
+   The erstwhile last element or null if the list was empty\. @oder &#927;\(1\)
 
 
 
@@ -362,7 +362,7 @@ Moves all elements `from` onto `list` at the end if `predicate` is null or true\
  * Parameter: _from_  
    If null, does nothing\.
  * Order:  
-   &#920;\(|`list`| &#215; &#927;\(`predicate`\)
+   &#920;\(|`list`|\) &#215; &#927;\(`predicate`\)
 
 
 
@@ -412,7 +412,7 @@ Iterates through `list` and calls `predicate` until it returns true\.
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
  * Order:  
-   &#927;\(|`list`| &#215; `predicate`\)
+   &#927;\(|`list`|\) &#215; &#927;\(`predicate`\)
 
 
 
@@ -435,7 +435,7 @@ Usually [&lt;N&gt;List](#user-content-tag-3824ef2b) doesn't change memory locati
 
 <code>static void <strong>&lt;N&gt;ListSort</strong>(struct &lt;N&gt;List *const <em>list</em>)</code>
 
-Performs a stable, adaptive sort of `list` according to `compare`\. Requires `LIST_COMPARE`\. This does natural merge sort; <Peters 2002, Timsort>, _via_ <McIlroy 1993, Optimistic>, does long merges by galloping, but we don't have random access to the data because we are in a linked\-list\.
+Performs a stable, adaptive sort of `list` according to `compare`\. Requires `LIST_COMPARE`\. [Peters 2002, Timsort](https://scholar.google.ca/scholar?q=Peters+2002%2C+Timsort), _via_ [McIlroy 1993, Optimistic](https://scholar.google.ca/scholar?q=McIlroy+1993%2C+Optimistic), does long merges by galloping, but we don't have random access to the data because we are in a linked\-list; this does natural merge sort\.
 
  * Parameter: _list_  
    If null, does nothing\.

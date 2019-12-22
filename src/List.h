@@ -310,6 +310,7 @@ static struct N_(ListLink) *N_(ListShift)(struct N_(List) *const list) {
 /** Un-associates the last element of `list`.
  @param[list] If null, returns null.
  @return The erstwhile last element or null if the list was empty.
+ @order \O(1)
  @allow */
 static struct N_(ListLink) *N_(ListPop)(struct N_(List) *const list) {
 	struct N_(ListLink) *node;
@@ -336,7 +337,7 @@ static void N_(ListTake)(struct N_(List) *const list,
  true.
  @param[list] If null, then it removes elements.
  @param[from] If null, does nothing.
- @order \Theta(|`list`| \times \O(`predicate`)
+ @order \Theta(|`list`|) \times \O(`predicate`)
  @allow */
 static void N_(ListTakeIf)(struct N_(List) *const list,
 	struct N_(List) *const from, const PN_(Predicate) predicate) {
@@ -378,7 +379,7 @@ static void N_(ListForEach)(struct N_(List) *const list,
  @param[list, predicate] If null, returns null.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
- @order \O(|`list`| \times `predicate`)
+ @order \O(|`list`|) \times \O(`predicate`)
  @allow */
 static struct N_(ListLink) *N_(ListAny)(const struct N_(List) *const list,
 	const PN_(Predicate) predicate) {
@@ -662,9 +663,9 @@ static void PN_(natural)(struct N_(List) *const list) {
 
 
 /** Performs a stable, adaptive sort of `list` according to `compare`. Requires
- `LIST_COMPARE`. This does natural merge sort; <Peters 2002, Timsort>, _via_
- <McIlroy 1993, Optimistic>, does long merges by galloping, but we don't have
- random access to the data because we are in a linked-list.
+ `LIST_COMPARE`. <Peters 2002, Timsort>, _via_ <McIlroy 1993, Optimistic>, does
+ long merges by galloping, but we don't have random access to the data because
+ we are in a linked-list; this does natural merge sort.
  @param[list] If null, does nothing.
  @order \Omega(|`list`|), \O(|`list`| log |`list`|)
  @allow */
