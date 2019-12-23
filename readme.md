@@ -15,11 +15,13 @@
 
 [&lt;N&gt;List](#user-content-tag-3824ef2b) is a list of [&lt;N&gt;ListLink](#user-content-tag-f795158f); it may be supplied a total\-order function, `LIST_COMPARE` [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\.
 
-Internally, `<N>ListLink` is a doubly\-linked node with sentinels residing in `<N>List`\. It only provides an order, but `<N>ListLink` may be enclosed in another `struct`\.
+Internally, `<N>ListLink` is a doubly\-linked node with sentinels residing in `<N>List`\. It only provides an order, but `<N>ListLink` may be enclosed in another `struct` as needed\.
 
 `<N>Link` is not synchronised\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. To stop assertions, use `#define NDEBUG` before inclusion of `assert.h`, \(which is used in this file\.\)
 
 
+
+Debug: ensures that `link` has no cycles\.
 
  * Parameter: LIST\_NAME  
    `<N>` that satisfies `C` naming conventions when mangled; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
@@ -41,7 +43,7 @@ Internally, `<N>ListLink` is a doubly\-linked node with sentinels residing in `<
 
 <code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListLink *, char(*)[12]);</code>
 
-Responsible for turning [&lt;N&gt;ListLink](#user-content-tag-f795158f) \(the first argument\) into a maximum 11\-`char` string \(the second\.\)
+Responsible for turning [&lt;N&gt;ListLink](#user-content-tag-f795158f) \(the first argument\) into a maximum 11\-`char` string \(the second\.\) Defined when `LIST_TO_STRING`\.
 
 
 
@@ -65,7 +67,7 @@ Returns \(Non\-zero\) true or \(zero\) false when given a link\.
 
 <code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListLink *a, const struct &lt;N&gt;ListLink *b);</code>
 
-Returns less then, equal to, or greater then zero, forming an equivalence relation between `a` as compared to `b`\.
+Returns less then, equal to, or greater then zero, forming an equivalence relation between `a` as compared to `b`\. Defined when `LIST_COMPARE`\.
 
 
 
@@ -123,9 +125,9 @@ Serves as head and tail for linked\-list of [&lt;N&gt;ListLink](#user-content-ta
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-ef4618a6">&lt;N&gt;ListTo</a></td><td>from, to</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-55804f41">&lt;N&gt;ListToIf</a></td><td>from, to, predicate</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-c9ee0371">&lt;N&gt;ListToBefore</a></td><td>from, anchor</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-55804f41">&lt;N&gt;ListToIf</a></td><td>from, to, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-76821c93">&lt;N&gt;ListForEach</a></td><td>list, action</td></tr>
 
@@ -334,7 +336,7 @@ Un\-associates the last element of `list`\.
  * Return:  
    The erstwhile last element or null if the list was empty\.
  * Order:  
-   &#927;\(1\)
+   &#920;\(1\)
 
 
 
@@ -355,22 +357,6 @@ Moves the elements `from` onto `to` at the end\.
 
 
 
-### <a id = "user-content-fn-55804f41" name = "user-content-fn-55804f41">&lt;N&gt;ListToIf</a> ###
-
-<code>static void <strong>&lt;N&gt;ListToIf</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;List *const <em>to</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code>
-
-Moves all elements `from` onto `to` at the end if `predicate` is null or true\.
-
- * Parameter: _from_  
-   If null, does nothing\.
- * Parameter: _to_  
-   If null, then it removes elements\.
- * Order:  
-   &#920;\(|`from`|\) &#215; &#927;\(`predicate`\)
-
-
-
-
 ### <a id = "user-content-fn-c9ee0371" name = "user-content-fn-c9ee0371">&lt;N&gt;ListToBefore</a> ###
 
 <code>static void <strong>&lt;N&gt;ListToBefore</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;ListLink *const <em>anchor</em>)</code>
@@ -383,6 +369,22 @@ Moves the elements `from` immediately before `anchor`\.
    If null, does nothing\. Must be part of a valid list that is not `from`\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-55804f41" name = "user-content-fn-55804f41">&lt;N&gt;ListToIf</a> ###
+
+<code>static void <strong>&lt;N&gt;ListToIf</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;List *const <em>to</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code>
+
+Moves all elements `from` onto `to` at the end if `predicate` is null or true\.
+
+ * Parameter: _from_  
+   If null, does nothing\.
+ * Parameter: _to_  
+   If null, then it removes elements\.
+ * Order:  
+   &#920;\(|`from`|\) &#215; &#927;\(`predicate`\)
 
 
 
@@ -430,7 +432,7 @@ Usually [&lt;N&gt;List](#user-content-tag-3824ef2b) doesn't change memory locati
  * Parameter: _list_  
    If null, does nothing\.
  * Order:  
-   &#927;\(1\)
+   &#920;\(1\)
 
 
 

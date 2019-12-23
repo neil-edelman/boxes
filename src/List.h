@@ -10,7 +10,7 @@
 
  Internally, `<N>ListLink` is a doubly-linked node with sentinels residing in
  `<N>List`. It only provides an order, but `<N>ListLink` may be enclosed in
- another `struct`.
+ another `struct` as needed.
 
  `<N>Link` is not synchronised. The parameters are `#define` preprocessor
  macros, and are all undefined at the end of the file for convenience. To stop
@@ -107,7 +107,7 @@ struct N_(List) {
 
 #ifdef LIST_TO_STRING /* <!-- string */
 /** Responsible for turning <tag:<N>ListLink> (the first argument) into a
- maximum 11-`char` string (the second.) */
+ maximum 11-`char` string (the second.) Defined when `LIST_TO_STRING`. */
 typedef void (*PN_(ToString))(const struct N_(ListLink) *, char (*)[12]);
 /* Check that `LIST_TO_STRING` is a function implementing
  <typedef:<PN>ToString>. */
@@ -310,7 +310,7 @@ static struct N_(ListLink) *N_(ListShift)(struct N_(List) *const list) {
 /** Un-associates the last element of `list`.
  @param[list] If null, returns null.
  @return The erstwhile last element or null if the list was empty.
- @order \O(1)
+ @order \Theta(1)
  @allow */
 static struct N_(ListLink) *N_(ListPop)(struct N_(List) *const list) {
 	struct N_(ListLink) *node;
@@ -332,6 +332,18 @@ static void N_(ListTo)(struct N_(List) *const from, struct N_(List) *const to) {
 	PN_(move)(from, &to->tail);
 }
 
+/** Moves the elements `from` immediately before `anchor`.
+ @param[anchor, from] If null, does nothing.
+ @param[anchor] Must be part of a valid list that is not `from`.
+ @param[from] This list will be empty on return.
+ @order \Theta(1)
+ @allow */
+static void N_(ListToBefore)(struct N_(List) *const from,
+	struct N_(ListLink) *const anchor) {
+	if(!from || !anchor) return;
+	PN_(move)(from, anchor);
+}
+
 /** Moves all elements `from` onto `to` at the end if `predicate` is null or
  true.
  @param[from] If null, does nothing.
@@ -347,18 +359,6 @@ static void N_(ListToIf)(struct N_(List) *const from,
 		PN_(remove)(link);
 		if(to) PN_(add_before)(&to->tail, link);
 	}
-}
-
-/** Moves the elements `from` immediately before `anchor`.
- @param[anchor, from] If null, does nothing.
- @param[anchor] Must be part of a valid list that is not `from`.
- @param[from] This list will be empty on return.
- @order \Theta(1)
- @allow */
-static void N_(ListToBefore)(struct N_(List) *const from,
-	struct N_(ListLink) *const anchor) {
-	if(!from || !anchor) return;
-	PN_(move)(from, anchor);
 }
 
 /** Performs `action` for each element in `list` in order. `action` can be to
@@ -393,7 +393,7 @@ static struct N_(ListLink) *N_(ListAny)(const struct N_(List) *const list,
  this corrects `list`'s two ends, (not the nodes, which must be fixed.) Note
  that the two ends become invalid even when it's empty.
  @param[list] If null, does nothing.
- @order \O(1)
+ @order \Theta(1)
  @allow */
 static void N_(ListSelfCorrect)(struct N_(List) *const list) {
 	if(!list) return;
@@ -406,7 +406,7 @@ all the comparison functions and pass the right one, and 99% of the time, it's
 only one. */
 
 /** Returns less then, equal to, or greater then zero, forming an equivalence
- relation between `a` as compared to `b`. */
+ relation between `a` as compared to `b`. Defined when `LIST_COMPARE`. */
 typedef int (*PN_(Compare))(const struct N_(ListLink) *a,
 	const struct N_(ListLink) *b);
 /* Check that `LIST_COMPARE` is a function implementing
@@ -497,26 +497,24 @@ static void PN_(boolean)(struct N_(List) *const alist,
 	}
 }
 
-/** Private: merges `blist` into `alist`; on equal elements, places `alist`
- first.
+/** Private: merges `lb` into `la`; on equal elements, places `la` first.
  @order \O(|`alist`| + |`blist`|). */
-static void PN_(merge)(struct N_(List) *const alist,
-	struct N_(List) *const blist) {
+static void PN_(merge)(struct N_(List) *const la, struct N_(List) *const lb) {
 	struct N_(ListLink) *cur, *a, *b;
-	assert(alist && blist);
+	assert(la && lb);
 	/* `blist` empty -- that was easy. */
-	if(!(b = blist->head.next)->next) return;
+	if(!(b = lb->head.next)->next) return;
 	/* `alist` empty -- `O(1)` <fn:<PN>move> is more efficient. */
-	if(!(a = alist->head.next)->next)
-	{ PN_(move)(blist, &alist->tail); return; }
+	if(!(a = la->head.next)->next)
+		{ PN_(move)(lb, &la->tail); return; }
 	/* Merge */
-	for(cur = &alist->head; ; ) {
+	for(cur = &la->head; ; ) {
 		if(PN_(compare)(a, b) < 0) {
 			a->prev = cur, cur = cur->next = a;
 			if(!(a = a->next)->next) {
 				b->prev = cur, cur->next = b;
-				blist->tail.prev->next = &alist->tail;
-				alist->tail.prev = blist->tail.prev;
+				lb->tail.prev->next = &la->tail;
+				la->tail.prev = lb->tail.prev;
 				break;
 			}
 		} else {
@@ -524,7 +522,7 @@ static void PN_(merge)(struct N_(List) *const alist,
 			if(!(b = b->next)->next) { a->prev = cur, cur->next = a; break; }
 		}
 	}
-	blist->head.next = &blist->tail, blist->tail.prev = &blist->head;
+	lb->head.next = &lb->tail, lb->tail.prev = &lb->head;
 }
 
 /* A run is a sequence of values in the array that is weakly increasing. */
