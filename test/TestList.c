@@ -272,7 +272,7 @@ static void panda_graph(const struct NameList *const n,
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		/*"\trankdir=LR;\n"*/
-		"\tnodesep=0.05;\n");
+		/*"\tnodesep=0.05;\n"*/);
 	set_Name_subgraph(n, fp, "royalblue",
 		offsetof(struct Panda, name_link), 1);
 	set_Where_subgraph(w, fp, /*"firebrick"*/"orchid",
@@ -291,7 +291,7 @@ static void pandas_everywhere(void) {
 	struct PandaPool pandas = POOL_IDLE;
 	size_t i;
 	NameListClear(&names), WhereListClear(&wheres), FeroListClear(&feros);
-	for(i = 0; i < 80; i++)
+	for(i = 0; i < 100; i++)
 		panda_from_pool_extra(&pandas, &names, &wheres, &feros);
 	NameListSort(&names);
 	WhereListSort(&wheres);

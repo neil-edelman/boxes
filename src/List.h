@@ -344,18 +344,17 @@ static void N_(ListToBefore)(struct N_(List) *const from,
 	PN_(move)(from, anchor);
 }
 
-/** Moves all elements `from` onto `to` at the end if `predicate` is null or
- true.
- @param[from] If null, does nothing.
+/** Moves all elements `from` onto `to` at the end if `predicate` is true.
+ @param[from, predicate] If null, does nothing.
  @param[to] If null, then it removes elements.
  @order \Theta(|`from`|) \times \O(`predicate`)
  @allow */
 static void N_(ListToIf)(struct N_(List) *const from,
 	struct N_(List) *const to, const PN_(Predicate) predicate) {
 	struct N_(ListLink) *link, *next_link;
-	if(!from || from == to) return;
+	if(!from || from == to || !predicate) return;
 	for(link = from->head.next; (next_link = link->next); link = next_link) {
-		if(predicate && !predicate(link)) continue;
+		if(!predicate(link)) continue;
 		PN_(remove)(link);
 		if(to) PN_(add_before)(&to->tail, link);
 	}
@@ -385,7 +384,7 @@ static struct N_(ListLink) *N_(ListAny)(const struct N_(List) *const list,
 	struct N_(ListLink) *link, *next_link;
 	if(!list || !predicate) return 0;
 	for(link = list->head.next; (next_link = link->next); link = next_link)
-		if(!predicate(link)) return link;
+		if(predicate(link)) return link;
 	return 0;
 }
 

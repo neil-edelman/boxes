@@ -83,40 +83,60 @@ static void PN_(graph)(const struct N_(List) *const list, const char *const fn)
 }
 
 /** Perform "Floyd's" tortoise-hare algorithm for cycle detection for the list
- on which `link` is a part. If `is_count` is true, `count` must be the number
- of elements.
+ on which `link` is a part and expect `count`. `list` must have at least one
+ element, (it can't be the head of tail.)
  @order \O(|`list`|) */
-static void PN_(floyd)(struct N_(ListLink) *link, const int is_count,
-	const size_t count) {
+static void PN_(floyd)(const struct N_(ListLink) *link, const size_t count) {
 	size_t fw = 0, b1 = 0, b2 = 0;
-	struct N_(ListLink) *hare = link, *turtle = hare;
-	assert(link);
-	for(turtle = hare; hare->prev; hare = hare->prev) {
+	const struct N_(ListLink) *hare = link, *turtle = hare;
+	assert(link && link->prev && link->next);
+	while(hare->prev->prev) {
+		hare = hare->prev;
 		if(b1++ & 1) turtle = turtle->prev;
 		assert(turtle != hare);
 	}
-	for(turtle = hare, hare = hare->next; hare->next; hare = hare->next) {
+	turtle = hare;
+	while(hare->next) {
+		hare = hare->next;
 		if(fw++ & 1) turtle = turtle->next;
 		assert(turtle != hare);
 	}
-	for(turtle = hare, hare = hare->prev; hare != link; hare = hare->prev) {
+	turtle = hare;
+	while(hare != link) {
+		hare = hare->prev;
 		if(b2++ & 1) turtle = turtle->prev;
 		assert(hare && turtle != hare);
 	}
-	assert(fw == b1 + b2 && (!is_count || fw == count));
+	assert(fw == b1 + b2 && fw == count);
 }
-/** Debug: ensures that `link` has no cycles. */
-/*static void PN_(valid)(struct N_(ListLink) *link) { PN_(floyd)(link, 0, 0); }*/
-/** Debug: ensures that `link` has no cycles and that it has `count`
+/** Debug: ensures that `list` has no cycles and that it has `count`
  elements. */
-static void PN_(valid_count)(struct N_(ListLink) *link, const size_t count)
-	{ PN_(floyd)(link, 1, count); }
+static void PN_(count)(const struct N_(List) *const list, const size_t count) {
+	const struct N_(ListLink) *const head = &list->head,
+		*const tail = &list->tail, *first;
+	assert(list && head && tail && !list->head.prev && !list->tail.next);
+	if((first = head->next) == tail)
+		{ assert(tail->prev == head && !count); return; }
+	PN_(floyd)(first, count);
+}
 
+/** Returns `0,1,0,1,...` whatever `link`. */
+static int PN_(parity)(const struct N_(ListLink) *const link) {
+	static int p;
+	(void)(link);
+	return !(p = !p);
+}
+
+/** Returns true whatever `link`. */
+static int PN_(true)(const struct N_(ListLink) *const link) {
+	(void)(link);
+	return 1;
+}
 
 /** Passed `parent_new` and `parent`, tests basic functionality. */
 static void PN_(test_basic)(struct N_(ListLink) *(*const parent_new)(void *),
 	void *const parent) {
-	struct N_(List) list;
+	struct N_(List) l1, l2;
 	struct N_(ListLink) *link, *link_first = 0, *link_last = 0;
 	const size_t test_size = 10;
 	size_t i;
@@ -124,55 +144,96 @@ static void PN_(test_basic)(struct N_(ListLink) *(*const parent_new)(void *),
 	printf("Basic tests of <" QUOTE(LIST_NAME) ">List:\n");
 	/* Clear */
 	N_(ListClear)(0);
-	N_(ListClear)(&list);
-	PN_(valid_count)(&list.head, 0);
-	printf("Adding %lu elements to a.\n", (unsigned long)test_size);
+	N_(ListClear)(&l1);
+	N_(ListClear)(&l2);
+	PN_(count)(&l1, 0);
 	/* Test positions null. */
 	link = N_(ListFirst)(0), assert(!link);
 	link = N_(ListLast)(0), assert(!link);
-	link = N_(ListFirst)(&list), assert(!link);
-	link = N_(ListLast)(&list), assert(!link);
+	link = N_(ListFirst)(&l1), assert(!link);
+	link = N_(ListLast)(&l1), assert(!link);
 	link = N_(ListPrevious)(0), assert(!link);
 	link = N_(ListNext)(0), assert(!link);
 	/* Test other stuff null, empty. */
 	N_(ListUnshift)(0, 0);
-	N_(ListUnshift)(&list, 0);
+	N_(ListUnshift)(&l1, 0);
 	N_(ListPush)(0, 0);
-	N_(ListPush)(&list, 0);
+	N_(ListPush)(&l1, 0);
 	N_(ListAddBefore)(0, 0);
 	N_(ListAddAfter)(0, 0);
 	N_(ListRemove)(0);
-	PN_(valid_count)(&list.head, 0);
+	PN_(count)(&l1, 0);
 	/* Test returns on null and empty. */
 	link = N_(ListShift)(0), assert(!link);
-	link = N_(ListShift)(&list), assert(!link);
+	link = N_(ListShift)(&l1), assert(!link);
 	link = N_(ListPop)(0), assert(!link);
-	link = N_(ListPop)(&list), assert(!link);
-	/* Test other stuff null. */
+	link = N_(ListPop)(&l1), assert(!link);
+	/* Test other stuff. */
 	N_(ListTo)(0, 0);
 	N_(ListToBefore)(0, 0);
 	N_(ListToIf)(0, 0, 0);
 	N_(ListForEach)(0, 0);
 	link = N_(ListAny)(0, 0), assert(!link);
 	/* Add */
-	N_(ListPush)(0, 0);
-	N_(ListPush)(&list, 0);
+	printf("Adding %lu elements to l1.\n", (unsigned long)test_size);
 	for(i = 0; i < test_size; i++) {
-		if(!(link = parent_new(parent))) { assert(0); return; }
+		if(!(link = parent_new(parent))) { assert(0); return; };
 		PN_(filler)(link);
-		N_(ListPush)(&list, link);
+		N_(ListPush)(&l1, link);
 		if(i == 0) link_first = link;
 		link_last = link;
 	}
-	PN_(graph)(&list, "graph/" QUOTE(LIST_NAME) "-small.gv");
-	PN_(valid_count)(&list.head, test_size);
-	printf("Result: %s.\n", N_(ListToString)(&list));
+	PN_(graph)(&l1, "graph/" QUOTE(LIST_NAME) "-small.gv");
+	PN_(count)(&l1, test_size);
+	printf("l1 = %s.\n", N_(ListToString)(&l1));
 	/* Test positions when contents. */
-	link = N_(ListFirst)(&list), assert(link == link_first);
-	link = N_(ListLast)(&list), assert(link == link_last);
+	link = N_(ListFirst)(&l1), assert(link == link_first);
+	link = N_(ListLast)(&l1), assert(link == link_last);
 	link = N_(ListPrevious)(link), assert(link);
 	link = N_(ListNext)(link), assert(link == link_last);
+	/* Test remove contents. */
+	link = N_(ListShift)(&l1), assert(link == link_first);
+	link = N_(ListPop)(&l1), assert(link = link_last);
+	PN_(count)(&l1, test_size - 2);
+	N_(ListUnshift)(&l1, link_first);
+	N_(ListPush)(&l1, link_last);
+	PN_(count)(&l1, test_size);
+	link = N_(ListFirst)(&l1), assert(link == link_first);
+	link = N_(ListLast)(&l1), assert(link == link_last);
 	/* Test movement. */
+	N_(ListToIf)(&l1, &l2, 0);
+	PN_(count)(&l1, test_size);
+	PN_(count)(&l2, 0);
+	N_(ListToIf)(&l1, &l2, &PN_(parity));
+	printf("Transferring . . . l1 = %s; l2 = %s.\n",
+		N_(ListToString)(&l1), N_(ListToString)(&l2));
+	PN_(count)(&l1, test_size >> 1);
+	PN_(count)(&l2, test_size - (test_size >> 1));
+	assert(N_(ListFirst)(&l1) == link_first);
+	N_(ListToBefore)(&l2, link_first->next);
+	PN_(count)(&l1, test_size);
+	PN_(count)(&l2, 0);
+	assert(N_(ListFirst)(&l1) == link_first);
+	N_(ListTo)(&l1, &l2);
+	PN_(count)(&l1, 0);
+	PN_(count)(&l2, test_size);
+	assert(N_(ListFirst)(&l2) == link_first);
+	/* Test any. */
+	link = N_(ListAny)(&l1, &PN_(true)), assert(!link);
+	link = N_(ListAny)(&l2, &PN_(true)), assert(link == link_first);
+	/* Test add before/after. */
+	if(!(link = parent_new(parent))) { assert(0); return; };
+	PN_(filler)(link);
+	N_(ListAddBefore)(N_(ListFirst)(&l2), link);
+	link_first = N_(ListFirst)(&l2);
+	assert(link == link_first);
+	PN_(count)(&l2, test_size + 1);
+	if(!(link = parent_new(parent))) { assert(0); return; };
+	PN_(filler)(link);
+	N_(ListAddBefore)(N_(ListLast)(&l2), link);
+	PN_(count)(&l2, test_size + 2);
+	N_(ListClear)(&l2);
+	PN_(count)(&l2, 0);
 }
 
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */

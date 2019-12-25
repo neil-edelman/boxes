@@ -21,8 +21,6 @@ Internally, `<N>ListLink` is a doubly\-linked node with sentinels residing in `<
 
 
 
-Debug: ensures that `link` has no cycles\.
-
  * Parameter: LIST\_NAME  
    `<N>` that satisfies `C` naming conventions when mangled; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: LIST\_COMPARE  
@@ -377,12 +375,14 @@ Moves the elements `from` immediately before `anchor`\.
 
 <code>static void <strong>&lt;N&gt;ListToIf</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;List *const <em>to</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code>
 
-Moves all elements `from` onto `to` at the end if `predicate` is null or true\.
+Moves all elements `from` onto `to` at the end if `predicate` is true\.
 
  * Parameter: _from_  
    If null, does nothing\.
  * Parameter: _to_  
    If null, then it removes elements\.
+ * Parameter: _predicate_  
+   If null, does nothing\.
  * Order:  
    &#920;\(|`from`|\) &#215; &#927;\(`predicate`\)
 
