@@ -291,7 +291,7 @@ static void pandas_everywhere(void) {
 	struct PandaPool pandas = POOL_IDLE;
 	size_t i;
 	NameListClear(&names), WhereListClear(&wheres), FeroListClear(&feros);
-	for(i = 0; i < 100; i++)
+	for(i = 0; i < /*100*/4; i++)
 		panda_from_pool_extra(&pandas, &names, &wheres, &feros);
 	NameListSort(&names);
 	WhereListSort(&wheres);
