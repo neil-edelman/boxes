@@ -466,7 +466,7 @@ Iterates through `a` and calls `predicate` until it returns true\.
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
  * Order:  
-   &#927;\(`size` &#215; `action`\)
+   &#927;\(`size` &#215; `predicate`\)
 
 
 
