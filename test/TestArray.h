@@ -48,19 +48,23 @@ static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 			"\trankdir = LR;\n"
-			"\tnode [shape = record, style = filled];\n");
-	fprintf(fp, "\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>Array: "
-			QUOTE(ARRAY_TYPE) "\\l\"];\n");
+			"\tnode [shape = record, style = filled];\n"
+			"\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>Array: "
+			QUOTE(ARRAY_TYPE) "\\l|size: %lu\\lcapacity: %lu\\l"
+			"next capacity: %lu\\l\"];\n", (unsigned long)ar->size,
+			(unsigned long)ar->capacity, (unsigned long)ar->next_capacity);
 	if(ar->data) {
 		T *const data = ar->data;
 		size_t i;
-		fprintf(fp, "data [label=\"");
+		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n"
+			"\tArray -> p%p;\n"
+			"\tsubgraph cluster_data {\n"
+			"\t\tstyle=filled;\n", (void *)data);
 		for(i = 0; i < ar->size; i++) {
 			PT_(to_string)(data + i, &a);
-			fprintf(fp, "%s%s", i == 0 ? "" : "|\\l", a);
+			fprintf(fp, "\t\tp%p [label=\"%s\"];\n", (void *)(data + i), a);
 		}
-		fprintf(fp, "\"]\n");
-		fprintf(fp, "Array -> data;\n");
+		fprintf(fp, "\t}\n");
 	}
 	fprintf(fp, "\tnode [colour=red];\n");
 	fprintf(fp, "}\n");
@@ -303,7 +307,7 @@ static void PT_(test_random)(void) {
 			size--;
 		}
 		PT_(valid_state)(&a);
-		if(i == 5 || i == 10 || i == 100) {
+		if(T_(ArraySize)(&a) < 1000000 && !(i & (i - 1))) {
 			char fn[32];
 			printf("%s.\n", T_(ArrayToString)(&a));
 			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "Array%lu.gv",

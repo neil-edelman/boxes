@@ -501,7 +501,7 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
  @param[a, predicate] If null, returns null.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
- @order \O(`size` \times `action`)
+ @order \O(`size` \times `predicate`)
  @allow */
 static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
