@@ -197,7 +197,7 @@ Removes `data` from `a`\. Only defined if not `ARRAY_STACK`\.
 
 <code>static int <strong>&lt;T&gt;ArrayLazyRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code>
 
-Removes `data` from `a` and replaces the spot it was in with the tail\. Only defined if not `ARRAY_STACK`\.
+Removes `data` from `a` and replaces it with the tail\. Only defined if not `ARRAY_STACK`\.
 
  * Parameter: _a_  
    If null, returns false\.

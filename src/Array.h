@@ -274,8 +274,8 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	return 1;
 }
 
-/** Removes `data` from `a` and replaces the spot it was in with the tail. Only
- defined if not `ARRAY_STACK`.
+/** Removes `data` from `a` and replaces it with the tail. Only defined if not
+ `ARRAY_STACK`.
  @param[a, data] If null, returns false.
  @param[data] Will be removed; data will remain the same but be updated to the
  last element, or if this was the last element, the pointer will be past the
