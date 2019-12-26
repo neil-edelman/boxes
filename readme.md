@@ -4,7 +4,7 @@
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1), [&lt;PN&gt;Action](#user-content-typedef-aea37eeb), [&lt;PN&gt;Predicate](#user-content-typedef-48c42a2a), [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;N&gt;ListLink](#user-content-tag-f795158f), [&lt;N&gt;List](#user-content-tag-3824ef2b)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;N&gt;ListNode](#user-content-tag-b60b679b), [&lt;N&gt;List](#user-content-tag-3824ef2b)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,9 +13,9 @@
 
 ![Example of &lt;Animal&gt;List](web/list.png)
 
-[&lt;N&gt;List](#user-content-tag-3824ef2b) is a list of [&lt;N&gt;ListLink](#user-content-tag-f795158f); it may be supplied a total\-order function, `LIST_COMPARE` [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\.
+[&lt;N&gt;List](#user-content-tag-3824ef2b) is a list of [&lt;N&gt;ListNode](#user-content-tag-b60b679b); it may be supplied a total\-order function, `LIST_COMPARE` [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\.
 
-Internally, `<N>ListLink` is a doubly\-linked node with sentinels residing in `<N>List`\. It only provides an order, but `<N>ListLink` may be enclosed in another `struct` as needed\.
+Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<N>List`\. It only provides an order, but `<N>ListNode` may be enclosed in another `struct` as needed\.
 
 `<N>Link` is not synchronised\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. To stop assertions, use `#define NDEBUG` before inclusion of `assert.h`, \(which is used in this file\.\)
 
@@ -39,15 +39,15 @@ Internally, `<N>ListLink` is a doubly\-linked node with sentinels residing in `<
 
 ### <a id = "user-content-typedef-3f3210e1" name = "user-content-typedef-3f3210e1">&lt;PN&gt;ToString</a> ###
 
-<code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListLink *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code>
 
-Responsible for turning [&lt;N&gt;ListLink](#user-content-tag-f795158f) \(the first argument\) into a maximum 11\-`char` string \(the second\.\) Defined when `LIST_TO_STRING`\.
+Responsible for turning [&lt;N&gt;ListNode](#user-content-tag-b60b679b) \(the first argument\) into a maximum 11\-`char` string \(the second\.\) Defined when `LIST_TO_STRING`\.
 
 
 
 ### <a id = "user-content-typedef-aea37eeb" name = "user-content-typedef-aea37eeb">&lt;PN&gt;Action</a> ###
 
-<code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(struct &lt;N&gt;ListLink *);</code>
+<code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(struct &lt;N&gt;ListNode *);</code>
 
 Operates by side\-effects on the link\.
 
@@ -55,7 +55,7 @@ Operates by side\-effects on the link\.
 
 ### <a id = "user-content-typedef-48c42a2a" name = "user-content-typedef-48c42a2a">&lt;PN&gt;Predicate</a> ###
 
-<code>typedef int(*<strong>&lt;PN&gt;Predicate</strong>)(const struct &lt;N&gt;ListLink *);</code>
+<code>typedef int(*<strong>&lt;PN&gt;Predicate</strong>)(const struct &lt;N&gt;ListNode *);</code>
 
 Returns \(Non\-zero\) true or \(zero\) false when given a link\.
 
@@ -63,7 +63,7 @@ Returns \(Non\-zero\) true or \(zero\) false when given a link\.
 
 ### <a id = "user-content-typedef-afc5e5e8" name = "user-content-typedef-afc5e5e8">&lt;PN&gt;Compare</a> ###
 
-<code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListLink *a, const struct &lt;N&gt;ListLink *b);</code>
+<code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListNode *a, const struct &lt;N&gt;ListNode *b);</code>
 
 Returns less then, equal to, or greater then zero, forming an equivalence relation between `a` as compared to `b`\. Defined when `LIST_COMPARE`\.
 
@@ -71,9 +71,9 @@ Returns less then, equal to, or greater then zero, forming an equivalence relati
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-f795158f" name = "user-content-tag-f795158f">&lt;N&gt;ListLink</a> ###
+### <a id = "user-content-tag-b60b679b" name = "user-content-tag-b60b679b">&lt;N&gt;ListNode</a> ###
 
-<code>struct <strong>&lt;N&gt;ListLink</strong>;</code>
+<code>struct <strong>&lt;N&gt;ListNode</strong>;</code>
 
 Storage of this structure is the responsibility of the caller\. One can only be in one list at a time; adding to another list while in a list destroys the integrity of the original list, see [&lt;N&gt;ListRemove](#user-content-fn-c8eb957)\.
 
@@ -85,7 +85,7 @@ Storage of this structure is the responsibility of the caller\. One can only be 
 
 <code>struct <strong>&lt;N&gt;List</strong>;</code>
 
-Serves as head and tail for linked\-list of [&lt;N&gt;ListLink](#user-content-tag-f795158f)\. Use [&lt;N&gt;ListClear](#user-content-fn-d4583b4) to initialise the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
+Serves as head and tail for linked\-list of [&lt;N&gt;ListNode](#user-content-tag-b60b679b)\. Use [&lt;N&gt;ListClear](#user-content-fn-d4583b4) to initialise the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
 
 ![States.](web/states.png)
 
@@ -99,13 +99,13 @@ Serves as head and tail for linked\-list of [&lt;N&gt;ListLink](#user-content-ta
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d4583b4">&lt;N&gt;ListClear</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#user-content-fn-9e54923f">&lt;N&gt;ListFirst</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#user-content-fn-9e54923f">&lt;N&gt;ListFirst</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#user-content-fn-841e6ddb">&lt;N&gt;ListLast</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#user-content-fn-841e6ddb">&lt;N&gt;ListLast</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#user-content-fn-3fe1382e">&lt;N&gt;ListPrevious</a></td><td>link</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#user-content-fn-3fe1382e">&lt;N&gt;ListPrevious</a></td><td>link</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#user-content-fn-d8db41e2">&lt;N&gt;ListNext</a></td><td>link</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#user-content-fn-d8db41e2">&lt;N&gt;ListNext</a></td><td>link</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-36544fb8">&lt;N&gt;ListUnshift</a></td><td>list, add</td></tr>
 
@@ -117,9 +117,9 @@ Serves as head and tail for linked\-list of [&lt;N&gt;ListLink](#user-content-ta
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-c8eb957">&lt;N&gt;ListRemove</a></td><td>link</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#user-content-fn-9c2ff119">&lt;N&gt;ListShift</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#user-content-fn-9c2ff119">&lt;N&gt;ListShift</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#user-content-fn-d736954e">&lt;N&gt;ListPop</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#user-content-fn-d736954e">&lt;N&gt;ListPop</a></td><td>list</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-ef4618a6">&lt;N&gt;ListTo</a></td><td>from, to</td></tr>
 
@@ -129,7 +129,7 @@ Serves as head and tail for linked\-list of [&lt;N&gt;ListLink](#user-content-ta
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-76821c93">&lt;N&gt;ListForEach</a></td><td>list, action</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#user-content-fn-9003cf4b">&lt;N&gt;ListAny</a></td><td>list, predicate</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#user-content-fn-9003cf4b">&lt;N&gt;ListAny</a></td><td>list, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-a211f931">&lt;N&gt;ListSelfCorrect</a></td><td>list</td></tr>
 
@@ -175,7 +175,7 @@ Clears and removes all values from `list`, thereby initialising it\. All previou
 
 ### <a id = "user-content-fn-9e54923f" name = "user-content-fn-9e54923f">&lt;N&gt;ListFirst</a> ###
 
-<code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListFirst</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code>
+<code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListFirst</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code>
 
  * Parameter: _list_  
    If null, returns null\.
@@ -189,7 +189,7 @@ Clears and removes all values from `list`, thereby initialising it\. All previou
 
 ### <a id = "user-content-fn-841e6ddb" name = "user-content-fn-841e6ddb">&lt;N&gt;ListLast</a> ###
 
-<code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListLast</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code>
+<code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListLast</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code>
 
  * Parameter: _list_  
    If null, returns null\.
@@ -203,7 +203,7 @@ Clears and removes all values from `list`, thereby initialising it\. All previou
 
 ### <a id = "user-content-fn-3fe1382e" name = "user-content-fn-3fe1382e">&lt;N&gt;ListPrevious</a> ###
 
-<code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListPrevious</strong>(struct &lt;N&gt;ListLink *<em>link</em>)</code>
+<code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListPrevious</strong>(struct &lt;N&gt;ListNode *<em>link</em>)</code>
 
  * Parameter: _link_  
    If null, returns null, otherwise must be part of a list\.
@@ -217,7 +217,7 @@ Clears and removes all values from `list`, thereby initialising it\. All previou
 
 ### <a id = "user-content-fn-d8db41e2" name = "user-content-fn-d8db41e2">&lt;N&gt;ListNext</a> ###
 
-<code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListNext</strong>(struct &lt;N&gt;ListLink *<em>link</em>)</code>
+<code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListNext</strong>(struct &lt;N&gt;ListNode *<em>link</em>)</code>
 
  * Parameter: _link_  
    If null, returns null, otherwise must be part of a list\.
@@ -231,7 +231,7 @@ Clears and removes all values from `list`, thereby initialising it\. All previou
 
 ### <a id = "user-content-fn-36544fb8" name = "user-content-fn-36544fb8">&lt;N&gt;ListUnshift</a> ###
 
-<code>static void <strong>&lt;N&gt;ListUnshift</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;ListLink *const <em>add</em>)</code>
+<code>static void <strong>&lt;N&gt;ListUnshift</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;ListNode *const <em>add</em>)</code>
 
 Adds `add` to the beginning of `list`\.
 
@@ -247,7 +247,7 @@ Adds `add` to the beginning of `list`\.
 
 ### <a id = "user-content-fn-9cabbaef" name = "user-content-fn-9cabbaef">&lt;N&gt;ListPush</a> ###
 
-<code>static void <strong>&lt;N&gt;ListPush</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;ListLink *const <em>add</em>)</code>
+<code>static void <strong>&lt;N&gt;ListPush</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;ListNode *const <em>add</em>)</code>
 
 Adds `add` to the end of `list`\.
 
@@ -263,7 +263,7 @@ Adds `add` to the end of `list`\.
 
 ### <a id = "user-content-fn-a1d3ad9" name = "user-content-fn-a1d3ad9">&lt;N&gt;ListAddBefore</a> ###
 
-<code>static void <strong>&lt;N&gt;ListAddBefore</strong>(struct &lt;N&gt;ListLink *const <em>anchor</em>, struct &lt;N&gt;ListLink *const <em>add</em>)</code>
+<code>static void <strong>&lt;N&gt;ListAddBefore</strong>(struct &lt;N&gt;ListNode *const <em>anchor</em>, struct &lt;N&gt;ListNode *const <em>add</em>)</code>
 
 Adds `add` immediately before `anchor`\.
 
@@ -279,7 +279,7 @@ Adds `add` immediately before `anchor`\.
 
 ### <a id = "user-content-fn-99b62ff4" name = "user-content-fn-99b62ff4">&lt;N&gt;ListAddAfter</a> ###
 
-<code>static void <strong>&lt;N&gt;ListAddAfter</strong>(struct &lt;N&gt;ListLink *const <em>anchor</em>, struct &lt;N&gt;ListLink *const <em>add</em>)</code>
+<code>static void <strong>&lt;N&gt;ListAddAfter</strong>(struct &lt;N&gt;ListNode *const <em>anchor</em>, struct &lt;N&gt;ListNode *const <em>add</em>)</code>
 
 Adds `add` immediately after `anchor`\.
 
@@ -295,7 +295,7 @@ Adds `add` immediately after `anchor`\.
 
 ### <a id = "user-content-fn-c8eb957" name = "user-content-fn-c8eb957">&lt;N&gt;ListRemove</a> ###
 
-<code>static void <strong>&lt;N&gt;ListRemove</strong>(struct &lt;N&gt;ListLink *const <em>link</em>)</code>
+<code>static void <strong>&lt;N&gt;ListRemove</strong>(struct &lt;N&gt;ListNode *const <em>link</em>)</code>
 
 Un\-associates `link` from the list; consequently, the `link` is free to add to another list\. Removing an element that was not added to a list results in undefined behaviour\.
 
@@ -309,7 +309,7 @@ Un\-associates `link` from the list; consequently, the `link` is free to add to 
 
 ### <a id = "user-content-fn-9c2ff119" name = "user-content-fn-9c2ff119">&lt;N&gt;ListShift</a> ###
 
-<code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListShift</strong>(struct &lt;N&gt;List *const <em>list</em>)</code>
+<code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListShift</strong>(struct &lt;N&gt;List *const <em>list</em>)</code>
 
 Un\-associates the first element of `list`\.
 
@@ -325,7 +325,7 @@ Un\-associates the first element of `list`\.
 
 ### <a id = "user-content-fn-d736954e" name = "user-content-fn-d736954e">&lt;N&gt;ListPop</a> ###
 
-<code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListPop</strong>(struct &lt;N&gt;List *const <em>list</em>)</code>
+<code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListPop</strong>(struct &lt;N&gt;List *const <em>list</em>)</code>
 
 Un\-associates the last element of `list`\.
 
@@ -357,7 +357,7 @@ Moves the elements `from` onto `to` at the end\.
 
 ### <a id = "user-content-fn-c9ee0371" name = "user-content-fn-c9ee0371">&lt;N&gt;ListToBefore</a> ###
 
-<code>static void <strong>&lt;N&gt;ListToBefore</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;ListLink *const <em>anchor</em>)</code>
+<code>static void <strong>&lt;N&gt;ListToBefore</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;ListNode *const <em>anchor</em>)</code>
 
 Moves the elements `from` immediately before `anchor`\.
 
@@ -407,7 +407,7 @@ Performs `action` for each element in `list` in order\. `action` can be to delet
 
 ### <a id = "user-content-fn-9003cf4b" name = "user-content-fn-9003cf4b">&lt;N&gt;ListAny</a> ###
 
-<code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListAny</strong>(const struct &lt;N&gt;List *const <em>list</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code>
+<code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListAny</strong>(const struct &lt;N&gt;List *const <em>list</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code>
 
 Iterates through `list` and calls `predicate` until it returns true\.
 
@@ -571,7 +571,7 @@ Can print 2 things at once before it overwrites\. One must set `LIST_TO_STRING` 
 
 ### <a id = "user-content-fn-c10071df" name = "user-content-fn-c10071df">&lt;N&gt;ListTest</a> ###
 
-<code>static void <strong>&lt;N&gt;ListTest</strong>(struct &lt;N&gt;ListLink *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code>
+<code>static void <strong>&lt;N&gt;ListTest</strong>(struct &lt;N&gt;ListNode *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code>
 
 The linked\-list will be tested on stdout\. `LIST_TEST` has to be set\.
 

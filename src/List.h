@@ -5,11 +5,11 @@
 
  ![Example of <Animal>List](../web/list.png)
 
- <tag:<N>List> is a list of <tag:<N>ListLink>; it may be supplied a total-order
+ <tag:<N>List> is a list of <tag:<N>ListNode>; it may be supplied a total-order
  function, `LIST_COMPARE` <typedef:<PN>Compare>.
 
- Internally, `<N>ListLink` is a doubly-linked node with sentinels residing in
- `<N>List`. It only provides an order, but `<N>ListLink` may be enclosed in
+ Internally, `<N>ListNode` is a doubly-linked node with sentinels residing in
+ `<N>List`. It only provides an order, but `<N>ListNode` may be enclosed in
  another `struct` as needed.
 
  `<N>Link` is not synchronised. The parameters are `#define` preprocessor
@@ -88,10 +88,10 @@
  integrity of the original list, see <fn:<N>ListRemove>.
 
  ![States.](../web/node-states.png) */
-struct N_(ListLink);
-struct N_(ListLink) { struct N_(ListLink) *prev, *next; };
+struct N_(ListNode);
+struct N_(ListNode) { struct N_(ListNode) *prev, *next; };
 
-/** Serves as head and tail for linked-list of <tag:<N>ListLink>. Use
+/** Serves as head and tail for linked-list of <tag:<N>ListNode>. Use
  <fn:<N>ListClear> to initialise the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
  values are not allowed and it is _not_ the same as `{0}`.
@@ -102,22 +102,22 @@ struct N_(List) {
 	/* These are sentinels such that `head.prev` and `tail.next` are always and
 	 the only ones to be null. Must be packed this way for
 	 <fn:<PN>self_correct>. */
-	struct N_(ListLink) head, tail;
+	struct N_(ListNode) head, tail;
 };
 
 #ifdef LIST_TO_STRING /* <!-- string */
-/** Responsible for turning <tag:<N>ListLink> (the first argument) into a
+/** Responsible for turning <tag:<N>ListNode> (the first argument) into a
  maximum 11-`char` string (the second.) Defined when `LIST_TO_STRING`. */
-typedef void (*PN_(ToString))(const struct N_(ListLink) *, char (*)[12]);
+typedef void (*PN_(ToString))(const struct N_(ListNode) *, char (*)[12]);
 /* Check that `LIST_TO_STRING` is a function implementing
  <typedef:<PN>ToString>. */
 static const PN_(ToString) PN_(to_string) = (LIST_TO_STRING);
 #endif /* string --> */
 
 /** Operates by side-effects on the link. */
-typedef void (*PN_(Action))(struct N_(ListLink) *);
+typedef void (*PN_(Action))(struct N_(ListNode) *);
 /** Returns (Non-zero) true or (zero) false when given a link. */
-typedef int (*PN_(Predicate))(const struct N_(ListLink) *);
+typedef int (*PN_(Predicate))(const struct N_(ListNode) *);
 
 
 
@@ -130,8 +130,8 @@ static void PN_(clear)(struct N_(List) *const list) {
 }
 
 /** Private: `add` before `anchor`. */
-static void PN_(add_before)(struct N_(ListLink) *const anchor,
-	struct N_(ListLink) *const add) {
+static void PN_(add_before)(struct N_(ListNode) *const anchor,
+	struct N_(ListNode) *const add) {
 	assert(anchor && add && anchor != add && anchor->prev);
 	add->prev = anchor->prev;
 	add->next = anchor;
@@ -140,8 +140,8 @@ static void PN_(add_before)(struct N_(ListLink) *const anchor,
 }
 
 /** Private: `add` after `anchor`. */
-static void PN_(add_after)(struct N_(ListLink) *const anchor,
-	struct N_(ListLink) *const add) {
+static void PN_(add_after)(struct N_(ListNode) *const anchor,
+	struct N_(ListNode) *const add) {
 	assert(anchor && add && anchor != add && anchor->next);
 	add->prev = anchor;
 	add->next = anchor->next;
@@ -150,7 +150,7 @@ static void PN_(add_after)(struct N_(ListLink) *const anchor,
 }
 
 /** Private: remove `node`. */
-static void PN_(remove)(struct N_(ListLink) *const node) {
+static void PN_(remove)(struct N_(ListNode) *const node) {
 	assert(node && node->prev && node->next);
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
@@ -162,7 +162,7 @@ static void PN_(remove)(struct N_(ListLink) *const node) {
  will just erase the list.
  @order \Theta(1) */
 static void PN_(move)(struct N_(List) *const from,
-	struct N_(ListLink) *const node) {
+	struct N_(ListNode) *const node) {
 	assert(node && from && node->prev &&
 		!from->head.prev && from->head.next
 		&& from->tail.prev && !from->tail.next);
@@ -199,8 +199,8 @@ static void N_(ListClear)(struct N_(List) *const list) {
  @return A pointer to the first element of `list`, if it exists.
  @order \Theta(1)
  @allow */
-static struct N_(ListLink) *N_(ListFirst)(const struct N_(List) *const list) {
-	struct N_(ListLink) *link;
+static struct N_(ListNode) *N_(ListFirst)(const struct N_(List) *const list) {
+	struct N_(ListNode) *link;
 	if(!list) return 0;
 	link = list->head.next, assert(link);
 	return link->next ? link : 0;
@@ -210,8 +210,8 @@ static struct N_(ListLink) *N_(ListFirst)(const struct N_(List) *const list) {
  @return A pointer to the last element of `list`, if it exists.
  @order \Theta(1)
  @allow */
-static struct N_(ListLink) *N_(ListLast)(const struct N_(List) *const list) {
-	struct N_(ListLink) *link;
+static struct N_(ListNode) *N_(ListLast)(const struct N_(List) *const list) {
+	struct N_(ListNode) *link;
 	if(!list) return 0;
 	link = list->tail.prev, assert(link);
 	return link->prev ? link : 0;
@@ -221,7 +221,7 @@ static struct N_(ListLink) *N_(ListLast)(const struct N_(List) *const list) {
  @return The previous element. When `link` is the first element, returns null.
  @order \Theta(1)
  @allow */
-static struct N_(ListLink) *N_(ListPrevious)(struct N_(ListLink) *link) {
+static struct N_(ListNode) *N_(ListPrevious)(struct N_(ListNode) *link) {
 	if(!link) return 0;
 	link = link->prev;
 	return link && link->prev ? link : 0;
@@ -231,7 +231,7 @@ static struct N_(ListLink) *N_(ListPrevious)(struct N_(ListLink) *link) {
  @return The next element. When `link` is the last element, returns null.
  @order \Theta(1)
  @allow */
-static struct N_(ListLink) *N_(ListNext)(struct N_(ListLink) *link) {
+static struct N_(ListNode) *N_(ListNext)(struct N_(ListNode) *link) {
 	if(!link) return 0;
 	link = link->next;
 	return link && link->next ? link : 0;
@@ -243,7 +243,7 @@ static struct N_(ListLink) *N_(ListNext)(struct N_(ListLink) *link) {
  @order \Theta(1)
  @allow */
 static void N_(ListUnshift)(struct N_(List) *const list,
-	struct N_(ListLink) *const add) {
+	struct N_(ListNode) *const add) {
 	if(!list || !add) return;
 	PN_(add_after)(&list->head, add);
 }
@@ -254,7 +254,7 @@ static void N_(ListUnshift)(struct N_(List) *const list,
  @order \Theta(1)
  @allow */
 static void N_(ListPush)(struct N_(List) *const list,
-	struct N_(ListLink) *const add) {
+	struct N_(ListNode) *const add) {
 	if(!list || !add) return;
 	PN_(add_before)(&list->tail, add);
 }
@@ -265,8 +265,8 @@ static void N_(ListPush)(struct N_(List) *const list,
  @param[add] Should not be part of any list.
  @order \Theta(1)
  @allow */
-static void N_(ListAddBefore)(struct N_(ListLink) *const anchor,
-	struct N_(ListLink) *const add) {
+static void N_(ListAddBefore)(struct N_(ListNode) *const anchor,
+	struct N_(ListNode) *const add) {
 	if(!anchor || !add) return;
 	PN_(add_before)(anchor, add);
 }
@@ -277,8 +277,8 @@ static void N_(ListAddBefore)(struct N_(ListLink) *const anchor,
  @param[add] Should not be part of any list.
  @order \Theta(1)
  @allow */
-static void N_(ListAddAfter)(struct N_(ListLink) *const anchor,
-	struct N_(ListLink) *const add) {
+static void N_(ListAddAfter)(struct N_(ListNode) *const anchor,
+	struct N_(ListNode) *const add) {
 	if(!anchor || !add) return;
 	PN_(add_after)(anchor, add);
 }
@@ -289,7 +289,7 @@ static void N_(ListAddAfter)(struct N_(ListLink) *const anchor,
  @param[link] If null, does nothing.
  @order \Theta(1)
  @allow */
-static void N_(ListRemove)(struct N_(ListLink) *const link) {
+static void N_(ListRemove)(struct N_(ListNode) *const link) {
 	if(!link) return;
 	PN_(remove)(link);
 }
@@ -299,8 +299,8 @@ static void N_(ListRemove)(struct N_(ListLink) *const link) {
  @return The erstwhile first element or null if the list was empty.
  @order \Theta(1)
  @allow */
-static struct N_(ListLink) *N_(ListShift)(struct N_(List) *const list) {
-	struct N_(ListLink) *node;
+static struct N_(ListNode) *N_(ListShift)(struct N_(List) *const list) {
+	struct N_(ListNode) *node;
 	if(!list) return 0;
 	if(!(node = list->head.next)->next) return 0;
 	PN_(remove)(node);
@@ -312,8 +312,8 @@ static struct N_(ListLink) *N_(ListShift)(struct N_(List) *const list) {
  @return The erstwhile last element or null if the list was empty.
  @order \Theta(1)
  @allow */
-static struct N_(ListLink) *N_(ListPop)(struct N_(List) *const list) {
-	struct N_(ListLink) *node;
+static struct N_(ListNode) *N_(ListPop)(struct N_(List) *const list) {
+	struct N_(ListNode) *node;
 	if(!list) return 0;
 	if(!(node = list->tail.prev)->prev) return 0;
 	PN_(remove)(node);
@@ -339,7 +339,7 @@ static void N_(ListTo)(struct N_(List) *const from, struct N_(List) *const to) {
  @order \Theta(1)
  @allow */
 static void N_(ListToBefore)(struct N_(List) *const from,
-	struct N_(ListLink) *const anchor) {
+	struct N_(ListNode) *const anchor) {
 	if(!from || !anchor) return;
 	PN_(move)(from, anchor);
 }
@@ -351,7 +351,7 @@ static void N_(ListToBefore)(struct N_(List) *const from,
  @allow */
 static void N_(ListToIf)(struct N_(List) *const from,
 	struct N_(List) *const to, const PN_(Predicate) predicate) {
-	struct N_(ListLink) *link, *next_link;
+	struct N_(ListNode) *link, *next_link;
 	if(!from || from == to || !predicate) return;
 	for(link = from->head.next; (next_link = link->next); link = next_link) {
 		if(!predicate(link)) continue;
@@ -367,7 +367,7 @@ static void N_(ListToIf)(struct N_(List) *const from,
  @allow */
 static void N_(ListForEach)(struct N_(List) *const list,
 	const PN_(Action) action) {
-	struct N_(ListLink) *x, *next_x;
+	struct N_(ListNode) *x, *next_x;
 	if(!list || !action) return;
 	for(x = list->head.next; (next_x = x->next); x = next_x)
 		action(x);
@@ -379,9 +379,9 @@ static void N_(ListForEach)(struct N_(List) *const list,
  false on all, null.
  @order \O(|`list`|) \times \O(`predicate`)
  @allow */
-static struct N_(ListLink) *N_(ListAny)(const struct N_(List) *const list,
+static struct N_(ListNode) *N_(ListAny)(const struct N_(List) *const list,
 	const PN_(Predicate) predicate) {
-	struct N_(ListLink) *link, *next_link;
+	struct N_(ListNode) *link, *next_link;
 	if(!list || !predicate) return 0;
 	for(link = list->head.next; (next_link = link->next); link = next_link)
 		if(predicate(link)) return link;
@@ -406,8 +406,8 @@ only one. */
 
 /** Returns less then, equal to, or greater then zero, forming an equivalence
  relation between `a` as compared to `b`. Defined when `LIST_COMPARE`. */
-typedef int (*PN_(Compare))(const struct N_(ListLink) *a,
-	const struct N_(ListLink) *b);
+typedef int (*PN_(Compare))(const struct N_(ListNode) *a,
+	const struct N_(ListNode) *b);
 /* Check that `LIST_COMPARE` is a function implementing
  <typedef:<PN>Compare>. */
 static const PN_(Compare) PN_(compare) = (LIST_COMPARE);
@@ -434,7 +434,7 @@ enum ListOperation {
  @order \O(|`from`|) */
 static void PN_(duplicates)(struct N_(List) *const from,
 	struct N_(List) *const to) {
-	struct N_(ListLink) *a = from->head.next, *b, *temp;
+	struct N_(ListNode) *a = from->head.next, *b, *temp;
 	assert(from);
 	if(!(b = a->next)) return;
 	while(b->next) {
@@ -453,7 +453,7 @@ static void PN_(duplicates)(struct N_(List) *const from,
 static void PN_(boolean)(struct N_(List) *const alist,
 	struct N_(List) *const blist, const enum ListOperation mask,
 	struct N_(List) *const result) {
-	struct N_(ListLink) *a = alist ? alist->head.next : 0,
+	struct N_(ListNode) *a = alist ? alist->head.next : 0,
 		*b = blist ? blist->head.next : 0, *temp;
 	int comp;
 	assert((!result || (result != alist && result != blist))
@@ -499,7 +499,7 @@ static void PN_(boolean)(struct N_(List) *const alist,
 /** Private: merges `lb` into `la`; on equal elements, places `la` first.
  @order \O(|`alist`| + |`blist`|). */
 static void PN_(merge)(struct N_(List) *const la, struct N_(List) *const lb) {
-	struct N_(ListLink) *cur, *a, *b;
+	struct N_(ListNode) *cur, *a, *b;
 	assert(la && lb);
 	/* `blist` empty -- that was easy. */
 	if(!(b = lb->head.next)->next) return;
@@ -525,7 +525,7 @@ static void PN_(merge)(struct N_(List) *const la, struct N_(List) *const lb) {
 }
 
 /* A run is a sequence of values in the array that is weakly increasing. */
-struct PN_(Run) { struct N_(ListLink) *head, *tail; size_t size; };
+struct PN_(Run) { struct N_(ListNode) *head, *tail; size_t size; };
 /* Store the maximum capacity for the indexing with {size_t}. (Much more then
  we need, in most cases.) \${
  \> range(runs) = Sum_{k=0}^runs 2^{runs-k} - 1
@@ -543,11 +543,11 @@ struct PN_(Runs) {
 static void PN_(merge_runs)(struct PN_(Runs) *const r) {
 	struct PN_(Run) *const run_a = r->run + r->run_no - 2;
 	struct PN_(Run) *const run_b = run_a + 1;
-	struct N_(ListLink) *a = run_a->tail, *b = run_b->head, *chosen;
+	struct N_(ListNode) *a = run_a->tail, *b = run_b->head, *chosen;
 	assert(r->run_no >= 2);
 	/* @fixme We are doing one-to-many compares in some cases? */
 	if(run_a->size <= run_b->size) {
-		struct N_(ListLink) *prev_chosen;
+		struct N_(ListNode) *prev_chosen;
 		/* Run `a` is smaller: downwards insert `b.head` followed by upwards
 		 merge. Insert the first element of `b` downwards into `a`. */
 		for( ; ; ) {
@@ -568,7 +568,7 @@ static void PN_(merge_runs)(struct PN_(Runs) *const r) {
 		if(!a) b->prev = chosen, chosen->next = b, run_a->tail = run_b->tail;
 		else a->prev = chosen, chosen->next = a;
 	} else {
-		struct N_(ListLink) *next_chosen;
+		struct N_(ListNode) *next_chosen;
 		int is_a_tail = 0;
 		/* Run `b` is smaller; upwards insert followed by downwards merge.
 		 Insert the last element of `a` upwards into `b`. */
@@ -604,7 +604,7 @@ static void PN_(natural)(struct N_(List) *const list) {
 	/* Part of the state machine for classifying points. */
 	enum { UNSURE, INCREASING, DECREASING } mono;
 	/* The data that we are sorting. */
-	struct N_(ListLink) *a, *b, *c, *first_iso_a;
+	struct N_(ListNode) *a, *b, *c, *first_iso_a;
 	/* {run_count} is different from {runs.run_no} in that it only increases;
 	 only used for calculating the path up the tree. */
 	size_t run_count, rc;
@@ -645,7 +645,7 @@ static void PN_(natural)(struct N_(List) *const list) {
 			new_run->tail = a; /* Terminating an increasing sequence. */
 		} else { /* {a} == {b} */
 			if(mono == DECREASING) { /* Extend. */
-				struct N_(ListLink) *const a_next = a->next;
+				struct N_(ListNode) *const a_next = a->next;
 				b->next = a_next;
 				a_next->prev = b;
 				a->next = b;
@@ -715,7 +715,7 @@ static void N_(ListMerge)(struct N_(List) *const list,
  @allow */
 static int N_(ListCompare)(const struct N_(List) *const alist,
 	const struct N_(List) *const blist) {
-	struct N_(ListLink) *a, *b;
+	struct N_(ListNode) *a, *b;
 	int diff;
 	/* Null counts as `-\infty`. */
 	if(!alist) {
@@ -823,7 +823,7 @@ static const char *N_(ListToString)(const struct N_(List) *const list) {
 		*const ellipsis_end = ",…)", *const null = "null";
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
 		null_len = strlen(null);
-	struct N_(ListLink) *link;
+	struct N_(ListNode) *link;
 	size_t i;
 	int is_first = 1;
 	/* fixme: I've lost track. */

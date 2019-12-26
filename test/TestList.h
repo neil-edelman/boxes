@@ -15,10 +15,10 @@
 #define QUOTE(name) QUOTE_(name)
 
 /* Check that LIST_TEST is a function implementing <typedef:<PN>Action>. */
-static void (*const PN_(filler))(struct N_(ListLink) *) = (LIST_TEST);
+static void (*const PN_(filler))(struct N_(ListNode) *) = (LIST_TEST);
 
 /** Given `l` and `offset`, calculate the graph node. */
-static const void *PN_(node)(const struct N_(ListLink) *const l,
+static const void *PN_(node)(const struct N_(ListNode) *const l,
 	const size_t offset) {
 	assert(l);
 	return (const char *)l - (l->prev && l->next ? offset : 0);
@@ -32,7 +32,7 @@ static const void *PN_(node)(const struct N_(ListLink) *const l,
  order, then this would be off. */
 static void PN_(subgraph)(const struct N_(List) *const list, FILE *const fp,
 	const char *const colour, const size_t offset, const int is_nodes) {
-	struct N_(ListLink) *link;
+	struct N_(ListNode) *link;
 	char a[12];
 	assert(list && fp && colour);
 	fprintf(fp, "\t# fill %s for list %p\n"
@@ -86,9 +86,9 @@ static void PN_(graph)(const struct N_(List) *const list, const char *const fn)
  on which `link` is a part and expect `count`. `list` must have at least one
  element, (it can't be the head of tail.)
  @order \O(|`list`|) */
-static void PN_(floyd)(const struct N_(ListLink) *link, const size_t count) {
+static void PN_(floyd)(const struct N_(ListNode) *link, const size_t count) {
 	size_t fw = 0, b1 = 0, b2 = 0;
-	const struct N_(ListLink) *hare = link, *turtle = hare;
+	const struct N_(ListNode) *hare = link, *turtle = hare;
 	assert(link && link->prev && link->next);
 	while(hare->prev->prev) {
 		hare = hare->prev;
@@ -112,7 +112,7 @@ static void PN_(floyd)(const struct N_(ListLink) *link, const size_t count) {
 /** Debug: ensures that `list` has no cycles and that it has `count`
  elements. */
 static void PN_(count)(const struct N_(List) *const list, const size_t count) {
-	const struct N_(ListLink) *const head = &list->head,
+	const struct N_(ListNode) *const head = &list->head,
 		*const tail = &list->tail, *first;
 	assert(list && head && tail && !list->head.prev && !list->tail.next);
 	if((first = head->next) == tail)
@@ -121,23 +121,23 @@ static void PN_(count)(const struct N_(List) *const list, const size_t count) {
 }
 
 /** Returns `0,1,0,1,...` whatever `link`. */
-static int PN_(parity)(const struct N_(ListLink) *const link) {
+static int PN_(parity)(const struct N_(ListNode) *const link) {
 	static int p;
 	(void)(link);
 	return !(p = !p);
 }
 
 /** Returns true whatever `link`. */
-static int PN_(true)(const struct N_(ListLink) *const link) {
+static int PN_(true)(const struct N_(ListNode) *const link) {
 	(void)(link);
 	return 1;
 }
 
 /** Passed `parent_new` and `parent`, tests basic functionality. */
-static void PN_(test_basic)(struct N_(ListLink) *(*const parent_new)(void *),
+static void PN_(test_basic)(struct N_(ListNode) *(*const parent_new)(void *),
 	void *const parent) {
 	struct N_(List) l1, l2;
-	struct N_(ListLink) *link, *link_first = 0, *link_last = 0;
+	struct N_(ListNode) *link, *link_first = 0, *link_last = 0;
 	const size_t test_size = 10;
 	size_t i;
 	assert(parent_new && parent);
@@ -237,7 +237,7 @@ static void PN_(test_basic)(struct N_(ListLink) *(*const parent_new)(void *),
 }
 
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */
-static void PN_(test_sort)(struct N_(ListLink) *(*const parent_new)(void *),
+static void PN_(test_sort)(struct N_(ListNode) *(*const parent_new)(void *),
 	void *const parent) {
 #ifdef LIST_COMPARE /* <!-- comp */
 	struct N_(List) lists[64], *list;
@@ -247,7 +247,7 @@ static void PN_(test_sort)(struct N_(ListLink) *(*const parent_new)(void *),
 	/* Random lists. */
 	for(list = lists; list < lists_end; list++) {
 		size_t no_links = rand() / (RAND_MAX / 5 + 1);
-		struct N_(ListLink) *link, *link_a, *link_b;
+		struct N_(ListNode) *link, *link_a, *link_b;
 		N_(ListClear)(list);
 		while(no_links) {
 			if(!(link = parent_new(parent))) { assert(0); return; }
@@ -285,9 +285,9 @@ static void PN_(test_sort)(struct N_(ListLink) *(*const parent_new)(void *),
  `a`, `b`, `b_alt`, `c`, `d` for <fn:<PN>test_binary>, where `a = ()`,
  `b = (A,B,D)`, and `c = (B,C)`. */
 static void PN_(reset_b)(struct N_(List) *const la, struct N_(List) *const lb,
-	struct N_(List) *const result, struct N_(ListLink) *const a,
-	struct N_(ListLink) *const b, struct N_(ListLink) *const b_alt,
-	struct N_(ListLink) *const c, struct N_(ListLink) *const d) {
+	struct N_(List) *const result, struct N_(ListNode) *const a,
+	struct N_(ListNode) *const b, struct N_(ListNode) *const b_alt,
+	struct N_(ListNode) *const c, struct N_(ListNode) *const d) {
 	assert(la && lb && result && a && b && b_alt && c && d);
 	N_(ListClear)(la), N_(ListClear)(lb), N_(ListClear)(result);
 	N_(ListPush)(la, a), N_(ListPush)(la, b), N_(ListPush)(la, d);
@@ -295,9 +295,9 @@ static void PN_(reset_b)(struct N_(List) *const la, struct N_(List) *const lb,
 }
 /** Verifies that `list` is `a`, `b`, `c`, `d`, null. */
 static void PN_(exact)(const struct N_(List) *const list,
-	const struct N_(ListLink) *const a, const struct N_(ListLink) *const b,
-	const struct N_(ListLink) *const c, const struct N_(ListLink) *const d) {
-	struct N_(ListLink) *i;
+	const struct N_(ListNode) *const a, const struct N_(ListNode) *const b,
+	const struct N_(ListNode) *const c, const struct N_(ListNode) *const d) {
+	struct N_(ListNode) *i;
 	assert(list);
 	i = N_(ListFirst)(list), assert(i == a);
 	i = N_(ListNext)(i), assert(i == b);
@@ -308,11 +308,11 @@ static void PN_(exact)(const struct N_(List) *const list,
 #endif /* comp --> */
 
 /** Passed `parent_new` and `parent`, tests binary operations. */
-static void PN_(test_binary)(struct N_(ListLink) *(*const parent_new)(void *),
+static void PN_(test_binary)(struct N_(ListNode) *(*const parent_new)(void *),
 	void *const parent) {
 #ifdef LIST_COMPARE /* <!-- comp */
 	struct N_(List) la, lb, result;
-	struct N_(ListLink) *link, *a, *b, *b_alt, *c, *d;
+	struct N_(ListNode) *link, *a, *b, *b_alt, *c, *d;
 	int cmp;
 	/* Test nulls, (Not comprehensive.) */
 	N_(ListClear)(&la);
@@ -404,7 +404,7 @@ static void PN_(test_binary)(struct N_(ListLink) *(*const parent_new)(void *),
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list.
  @allow */
-static void N_(ListTest)(struct N_(ListLink) *(*const parent_new)(void *),
+static void N_(ListTest)(struct N_(ListNode) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(LIST_NAME) ">List was created using: "
 #ifdef LIST_COMPARE

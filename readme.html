@@ -38,7 +38,7 @@
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>ToString">&lt;PN&gt;ToString</a>, <a href = "#typedef:<PN>Action">&lt;PN&gt;Action</a>, <a href = "#typedef:<PN>Predicate">&lt;PN&gt;Predicate</a>, <a href = "#typedef:<PN>Compare">&lt;PN&gt;Compare</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<N>ListLink">&lt;N&gt;ListLink</a>, <a href = "#tag:<N>List">&lt;N&gt;List</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<N>ListNode">&lt;N&gt;ListNode</a>, <a href = "#tag:<N>List">&lt;N&gt;List</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -48,9 +48,9 @@
 
 <p><img alt = "Example of &lt;Animal&gt;List" src = "web/list.png" width = 320 height = 300></p>
 
-<p><a href = "#tag:&lt;N&gt;List">&lt;N&gt;List</a> is a list of <a href = "#tag:&lt;N&gt;ListLink">&lt;N&gt;ListLink</a>; it may be supplied a total-order function, <code>LIST_COMPARE</code> <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>.</p>
+<p><a href = "#tag:&lt;N&gt;List">&lt;N&gt;List</a> is a list of <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a>; it may be supplied a total-order function, <code>LIST_COMPARE</code> <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>.</p>
 
-<p>Internally, <code>&lt;N&gt;ListLink</code> is a doubly-linked node with sentinels residing in <code>&lt;N&gt;List</code>. It only provides an order, but <code>&lt;N&gt;ListLink</code> may be enclosed in another <code>struct</code> as needed.</p>
+<p>Internally, <code>&lt;N&gt;ListNode</code> is a doubly-linked node with sentinels residing in <code>&lt;N&gt;List</code>. It only provides an order, but <code>&lt;N&gt;ListNode</code> may be enclosed in another <code>struct</code> as needed.</p>
 
 <p><code>&lt;N&gt;Link</code> is not synchronised. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. To stop assertions, use <code>#define NDEBUG</code> before inclusion of <code>assert.h</code>, (which is used in this file.)</p>
 
@@ -75,15 +75,15 @@
 
 <div><h3><a id = "typedef:<PN>ToString" name = "typedef:<PN>ToString">&lt;PN&gt;ToString</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListLink *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code></p>
 
-<p>Responsible for turning <a href = "#tag:&lt;N&gt;ListLink">&lt;N&gt;ListLink</a> (the first argument) into a maximum 11-<code>char</code> string (the second.) Defined when <code>LIST_TO_STRING</code>.</p>
+<p>Responsible for turning <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a> (the first argument) into a maximum 11-<code>char</code> string (the second.) Defined when <code>LIST_TO_STRING</code>.</p>
 
 </div>
 
 <div><h3><a id = "typedef:<PN>Action" name = "typedef:<PN>Action">&lt;PN&gt;Action</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(struct &lt;N&gt;ListLink *);</code></p>
+<p><code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(struct &lt;N&gt;ListNode *);</code></p>
 
 <p>Operates by side-effects on the link.</p>
 
@@ -91,7 +91,7 @@
 
 <div><h3><a id = "typedef:<PN>Predicate" name = "typedef:<PN>Predicate">&lt;PN&gt;Predicate</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PN&gt;Predicate</strong>)(const struct &lt;N&gt;ListLink *);</code></p>
+<p><code>typedef int(*<strong>&lt;PN&gt;Predicate</strong>)(const struct &lt;N&gt;ListNode *);</code></p>
 
 <p>Returns (Non-zero) true or (zero) false when given a link.</p>
 
@@ -99,7 +99,7 @@
 
 <div><h3><a id = "typedef:<PN>Compare" name = "typedef:<PN>Compare">&lt;PN&gt;Compare</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListLink *a, const struct &lt;N&gt;ListLink *b);</code></p>
+<p><code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListNode *a, const struct &lt;N&gt;ListNode *b);</code></p>
 
 <p>Returns less then, equal to, or greater then zero, forming an equivalence relation between <code>a</code> as compared to <code>b</code>. Defined when <code>LIST_COMPARE</code>.</p>
 
@@ -107,9 +107,9 @@
 
 <h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
 
-<div><h3><a id = "tag:<N>ListLink" name = "tag:<N>ListLink">&lt;N&gt;ListLink</a></h3>
+<div><h3><a id = "tag:<N>ListNode" name = "tag:<N>ListNode">&lt;N&gt;ListNode</a></h3>
 
-<p><code>struct <strong>&lt;N&gt;ListLink</strong>;</code></p>
+<p><code>struct <strong>&lt;N&gt;ListNode</strong>;</code></p>
 
 <p>Storage of this structure is the responsibility of the caller. One can only be in one list at a time; adding to another list while in a list destroys the integrity of the original list, see <a href = "#fn:&lt;N&gt;ListRemove">&lt;N&gt;ListRemove</a>.</p>
 
@@ -121,7 +121,7 @@
 
 <p><code>struct <strong>&lt;N&gt;List</strong>;</code></p>
 
-<p>Serves as head and tail for linked-list of <a href = "#tag:&lt;N&gt;ListLink">&lt;N&gt;ListLink</a>. Use <a href = "#fn:&lt;N&gt;ListClear">&lt;N&gt;ListClear</a> to initialise the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>.</p>
+<p>Serves as head and tail for linked-list of <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a>. Use <a href = "#fn:&lt;N&gt;ListClear">&lt;N&gt;ListClear</a> to initialise the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 284 height = 260></p>
 
@@ -135,13 +135,13 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>ListClear">&lt;N&gt;ListClear</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#fn:<N>ListFirst">&lt;N&gt;ListFirst</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#fn:<N>ListFirst">&lt;N&gt;ListFirst</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#fn:<N>ListLast">&lt;N&gt;ListLast</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#fn:<N>ListLast">&lt;N&gt;ListLast</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#fn:<N>ListPrevious">&lt;N&gt;ListPrevious</a></td><td>link</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#fn:<N>ListPrevious">&lt;N&gt;ListPrevious</a></td><td>link</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#fn:<N>ListNext">&lt;N&gt;ListNext</a></td><td>link</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#fn:<N>ListNext">&lt;N&gt;ListNext</a></td><td>link</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>ListUnshift">&lt;N&gt;ListUnshift</a></td><td>list, add</td></tr>
 
@@ -153,9 +153,9 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>ListRemove">&lt;N&gt;ListRemove</a></td><td>link</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#fn:<N>ListShift">&lt;N&gt;ListShift</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#fn:<N>ListShift">&lt;N&gt;ListShift</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#fn:<N>ListPop">&lt;N&gt;ListPop</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#fn:<N>ListPop">&lt;N&gt;ListPop</a></td><td>list</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>ListTo">&lt;N&gt;ListTo</a></td><td>from, to</td></tr>
 
@@ -165,7 +165,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>ListForEach">&lt;N&gt;ListForEach</a></td><td>list, action</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;ListLink *</td><td><a href = "#fn:<N>ListAny">&lt;N&gt;ListAny</a></td><td>list, predicate</td></tr>
+<tr><td align = right>static struct &lt;N&gt;ListNode *</td><td><a href = "#fn:<N>ListAny">&lt;N&gt;ListAny</a></td><td>list, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>ListSelfCorrect">&lt;N&gt;ListSelfCorrect</a></td><td>list</td></tr>
 
@@ -212,7 +212,7 @@
 
 <div><h3><a id = "fn:<N>ListFirst" name = "fn:<N>ListFirst">&lt;N&gt;ListFirst</a></h3>
 
-<p><code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListFirst</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code></p>
+<p><code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListFirst</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code></p>
 
 <dl>
 	<dt>Parameter: <em>list</em></dt>
@@ -227,7 +227,7 @@
 
 <div><h3><a id = "fn:<N>ListLast" name = "fn:<N>ListLast">&lt;N&gt;ListLast</a></h3>
 
-<p><code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListLast</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code></p>
+<p><code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListLast</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code></p>
 
 <dl>
 	<dt>Parameter: <em>list</em></dt>
@@ -242,7 +242,7 @@
 
 <div><h3><a id = "fn:<N>ListPrevious" name = "fn:<N>ListPrevious">&lt;N&gt;ListPrevious</a></h3>
 
-<p><code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListPrevious</strong>(struct &lt;N&gt;ListLink *<em>link</em>)</code></p>
+<p><code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListPrevious</strong>(struct &lt;N&gt;ListNode *<em>link</em>)</code></p>
 
 <dl>
 	<dt>Parameter: <em>link</em></dt>
@@ -257,7 +257,7 @@
 
 <div><h3><a id = "fn:<N>ListNext" name = "fn:<N>ListNext">&lt;N&gt;ListNext</a></h3>
 
-<p><code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListNext</strong>(struct &lt;N&gt;ListLink *<em>link</em>)</code></p>
+<p><code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListNext</strong>(struct &lt;N&gt;ListNode *<em>link</em>)</code></p>
 
 <dl>
 	<dt>Parameter: <em>link</em></dt>
@@ -272,7 +272,7 @@
 
 <div><h3><a id = "fn:<N>ListUnshift" name = "fn:<N>ListUnshift">&lt;N&gt;ListUnshift</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;ListUnshift</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;ListLink *const <em>add</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;ListUnshift</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;ListNode *const <em>add</em>)</code></p>
 
 <p>Adds <code>add</code> to the beginning of <code>list</code>.</p>
 
@@ -289,7 +289,7 @@
 
 <div><h3><a id = "fn:<N>ListPush" name = "fn:<N>ListPush">&lt;N&gt;ListPush</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;ListPush</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;ListLink *const <em>add</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;ListPush</strong>(struct &lt;N&gt;List *const <em>list</em>, struct &lt;N&gt;ListNode *const <em>add</em>)</code></p>
 
 <p>Adds <code>add</code> to the end of <code>list</code>.</p>
 
@@ -306,7 +306,7 @@
 
 <div><h3><a id = "fn:<N>ListAddBefore" name = "fn:<N>ListAddBefore">&lt;N&gt;ListAddBefore</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;ListAddBefore</strong>(struct &lt;N&gt;ListLink *const <em>anchor</em>, struct &lt;N&gt;ListLink *const <em>add</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;ListAddBefore</strong>(struct &lt;N&gt;ListNode *const <em>anchor</em>, struct &lt;N&gt;ListNode *const <em>add</em>)</code></p>
 
 <p>Adds <code>add</code> immediately before <code>anchor</code>.</p>
 
@@ -323,7 +323,7 @@
 
 <div><h3><a id = "fn:<N>ListAddAfter" name = "fn:<N>ListAddAfter">&lt;N&gt;ListAddAfter</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;ListAddAfter</strong>(struct &lt;N&gt;ListLink *const <em>anchor</em>, struct &lt;N&gt;ListLink *const <em>add</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;ListAddAfter</strong>(struct &lt;N&gt;ListNode *const <em>anchor</em>, struct &lt;N&gt;ListNode *const <em>add</em>)</code></p>
 
 <p>Adds <code>add</code> immediately after <code>anchor</code>.</p>
 
@@ -340,7 +340,7 @@
 
 <div><h3><a id = "fn:<N>ListRemove" name = "fn:<N>ListRemove">&lt;N&gt;ListRemove</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;ListRemove</strong>(struct &lt;N&gt;ListLink *const <em>link</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;ListRemove</strong>(struct &lt;N&gt;ListNode *const <em>link</em>)</code></p>
 
 <p>Un-associates <code>link</code> from the list; consequently, the <code>link</code> is free to add to another list. Removing an element that was not added to a list results in undefined behaviour.</p>
 
@@ -355,7 +355,7 @@
 
 <div><h3><a id = "fn:<N>ListShift" name = "fn:<N>ListShift">&lt;N&gt;ListShift</a></h3>
 
-<p><code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListShift</strong>(struct &lt;N&gt;List *const <em>list</em>)</code></p>
+<p><code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListShift</strong>(struct &lt;N&gt;List *const <em>list</em>)</code></p>
 
 <p>Un-associates the first element of <code>list</code>.</p>
 
@@ -372,7 +372,7 @@
 
 <div><h3><a id = "fn:<N>ListPop" name = "fn:<N>ListPop">&lt;N&gt;ListPop</a></h3>
 
-<p><code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListPop</strong>(struct &lt;N&gt;List *const <em>list</em>)</code></p>
+<p><code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListPop</strong>(struct &lt;N&gt;List *const <em>list</em>)</code></p>
 
 <p>Un-associates the last element of <code>list</code>.</p>
 
@@ -406,7 +406,7 @@
 
 <div><h3><a id = "fn:<N>ListToBefore" name = "fn:<N>ListToBefore">&lt;N&gt;ListToBefore</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;ListToBefore</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;ListLink *const <em>anchor</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;ListToBefore</strong>(struct &lt;N&gt;List *const <em>from</em>, struct &lt;N&gt;ListNode *const <em>anchor</em>)</code></p>
 
 <p>Moves the elements <code>from</code> immediately before <code>anchor</code>.</p>
 
@@ -459,7 +459,7 @@
 
 <div><h3><a id = "fn:<N>ListAny" name = "fn:<N>ListAny">&lt;N&gt;ListAny</a></h3>
 
-<p><code>static struct &lt;N&gt;ListLink *<strong>&lt;N&gt;ListAny</strong>(const struct &lt;N&gt;List *const <em>list</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code></p>
+<p><code>static struct &lt;N&gt;ListNode *<strong>&lt;N&gt;ListAny</strong>(const struct &lt;N&gt;List *const <em>list</em>, const &lt;PN&gt;Predicate <em>predicate</em>)</code></p>
 
 <p>Iterates through <code>list</code> and calls <code>predicate</code> until it returns true.</p>
 
@@ -634,7 +634,7 @@
 
 <div><h3><a id = "fn:<N>ListTest" name = "fn:<N>ListTest">&lt;N&gt;ListTest</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;ListTest</strong>(struct &lt;N&gt;ListLink *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;ListTest</strong>(struct &lt;N&gt;ListNode *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code></p>
 
 <p>The linked-list will be tested on stdout. <code>LIST_TEST</code> has to be set.</p>
 
