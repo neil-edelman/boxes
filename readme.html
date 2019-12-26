@@ -1,0 +1,387 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>Set.h</title>
+</head>
+
+<body>
+
+<h1>Set.h</h1>
+
+<h2>Parameterised Hash Set</h2>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PE>Type">&lt;PE&gt;Type</a>, <a href = "#typedef:<PE>FnType">&lt;PE&gt;FnType</a>, <a href = "#typedef:<PE>UInt">&lt;PE&gt;UInt</a>, <a href = "#typedef:<PE>Hash">&lt;PE&gt;Hash</a>, <a href = "#typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a>, <a href = "#typedef:<PE>Replace">&lt;PE&gt;Replace</a>, <a href = "#typedef:<PE>ToString">&lt;PE&gt;ToString</a>, <a href = "#typedef:<PE>Action">&lt;PE&gt;Action</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<E>SetElement">&lt;E&gt;SetElement</a>, <a href = "#tag:<E>Set">&lt;E&gt;Set</a></li>
+	<li><a href = "#summary:">Function Summary</a></li>
+	<li><a href = "#fn:">Function Definitions</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div><h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p><img alt = "Example of &lt;String&gt;Set." src = "web/set.png" width = 583 height = 308></p>
+
+<p><a href = "#tag:&lt;E&gt;Set">&lt;E&gt;Set</a> is a collection of elements of <a href = "#tag:&lt;E&gt;SetElement">&lt;E&gt;SetElement</a> that doesn't allow duplication; it must be supplied an equality function, <code>SET_IS_EQUAL</code> <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a>, and a hash function, <code>SET_HASH</code> <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a>.</p>
+
+<p>Internally, it is a separately chained, hash set with a maximum load factor of <code>ln 2</code>, and power-of-two resizes, with buckets as pointers. This offers some independence of sets from set elements, but cache performance is left up to the caller. It can be expanded to a hash map or associative array by enclosing the <code>&lt;E&gt;SetElement</code> in another <code>struct</code>, as appropriate. While in a set, the elements should not change in a way that affects their hash values.</p>
+
+<p><code>&lt;E&gt;Set</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used; to stop assertions, use <code>#define NDEBUG</code> before inclusion.</p>
+
+</div>
+
+<dl>
+	<dt>Parameter: SET_NAME, SET_TYPE</dt>
+	<dd><code>&lt;E&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> associated therewith; required. <code>&lt;PE&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dt>Parameter: SET_HASH</dt>
+	<dd>A function satisfying <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a>; required.</dd>
+	<dt>Parameter: SET_IS_EQUAL</dt>
+	<dd>A function satisfying <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a>; required.</dd>
+	<dt>Parameter: SET_TO_STRING</dt>
+	<dd>Optional print function implementing <a href = "#typedef:&lt;PE&gt;ToString">&lt;PE&gt;ToString</a>; makes available <a href = "#fn:&lt;E&gt;SetToString">&lt;E&gt;SetToString</a>.</dd>
+	<dt>Parameter: SET_PASS_POINTER</dt>
+	<dd>Should be used when <code>E</code> is a <code>struct</code> whose copying into functions is a performance issue. See <a href = "#typedef:&lt;PE&gt;FnType">&lt;PE&gt;FnType</a>.</dd>
+	<dt>Parameter: SET_NO_CACHE</dt>
+	<dd>Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> <em>per</em> datum.</dd>
+	<dt>Parameter: SET_HASH_TYPE</dt>
+	<dd>This is <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> and defaults to <code>unsigned int</code>.</dd>
+	<dt>Parameter: SET_TEST</dt>
+	<dd>Unit testing framework <a href = "#fn:&lt;E&gt;SetTest">&lt;E&gt;SetTest</a>, included in a separate header, <a href = "../test/TestSet.h">../test/TestSet.h</a>. Must be defined equal to a random filler function, satisfying <a href = "#typedef:&lt;PE&gt;Action">&lt;PE&gt;Action</a>. Requires <code>SET_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
+	<dt>Standard:</dt>
+	<dd>C89</dd>
+	<dt>See also:</dt>
+	<dd><a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a></dd>
+</dl>
+
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div><h3><a id = "typedef:<PE>Type" name = "typedef:<PE>Type">&lt;PE&gt;Type</a></h3>
+
+<p><code>typedef SET_TYPE <strong>&lt;PE&gt;Type</strong>;</code></p>
+
+<p>Valid tag type defined by <code>SET_TYPE</code>.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PE>FnType" name = "typedef:<PE>FnType">&lt;PE&gt;FnType</a></h3>
+
+<p><code>typedef const &lt;PE&gt;Type *<strong>&lt;PE&gt;FnType</strong>;</code></p>
+
+<p>Used in <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a> and <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a> if <code>SET_PASS_POINTER</code>, otherwise <code>&lt;PE&gt;FnType</code> is <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a>.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PE>UInt" name = "typedef:<PE>UInt">&lt;PE&gt;UInt</a></h3>
+
+<p><code>typedef SET_HASH_TYPE <strong>&lt;PE&gt;UInt</strong>;</code></p>
+
+<p>Valid unsigned integer type. The hash map will saturate at <code>min(((ln 2)/2) &#183; range(&lt;PE&gt;UInt), (1/8) &#183; range(size_t))</code>, at which point no new buckets can be added and the load factor will increase over the maximum.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PE>Hash" name = "typedef:<PE>Hash">&lt;PE&gt;Hash</a></h3>
+
+<p><code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;FnType);</code></p>
+
+<p>A map from <a href = "#typedef:&lt;PE&gt;FnType">&lt;PE&gt;FnType</a> onto <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a>, (defaults to <code>unsigned</code>.) Should be as close as possible to a discrete uniform distribution for maximum performance.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PE>IsEqual" name = "typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const &lt;PE&gt;FnType, const &lt;PE&gt;FnType);</code></p>
+
+<p>A constant equivalence relation between <a href = "#typedef:&lt;PE&gt;FnType">&lt;PE&gt;FnType</a> that satisfies <code>&lt;PE&gt;IsEqual(a, b) -&gt; &lt;PE&gt;Hash(a) == &lt;PE&gt;Hash(b)</code>.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PE>Replace" name = "typedef:<PE>Replace">&lt;PE&gt;Replace</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PE&gt;Replace</strong>)(&lt;PE&gt;Type *original, &lt;PE&gt;Type *replace);</code></p>
+
+<p>Returns true if the <code>replace</code> replaces the <code>original</code>; used in <a href = "#fn:&lt;E&gt;SetPolicyPut">&lt;E&gt;SetPolicyPut</a>.</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PE>ToString" name = "typedef:<PE>ToString">&lt;PE&gt;ToString</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code></p>
+
+<p>Responsible for turning <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> (the first argument) into a maximum 11-<code>char</code> string (the second.)</p>
+
+</div>
+
+<div><h3><a id = "typedef:<PE>Action" name = "typedef:<PE>Action">&lt;PE&gt;Action</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(&lt;PE&gt;Type *const);</code></p>
+
+<p>Used for <code>SET_TEST</code>.</p>
+
+</div>
+
+<h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
+
+<div><h3><a id = "tag:<E>SetElement" name = "tag:<E>SetElement">&lt;E&gt;SetElement</a></h3>
+
+<p><code>struct <strong>&lt;E&gt;SetElement</strong>;</code></p>
+
+<p>Contains <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> as an element <code>data</code>, along with data internal to the set. Storage of the <code>&lt;E&gt;SetElement</code> structure is the responsibility of the caller.</p>
+
+</div>
+
+<div><h3><a id = "tag:<E>Set" name = "tag:<E>Set">&lt;E&gt;Set</a></h3>
+
+<p><code>struct <strong>&lt;E&gt;Set</strong>;</code></p>
+
+<p>To initialise, see <a href = "#fn:&lt;E&gt;Set">&lt;E&gt;Set</a>. Assigning <code>{0}</code> (<code>C99</code>+) or <code>SET_ZERO</code> as the initialiser, or being part of <code>static</code> data, also puts it in an empty state.</p>
+
+<p><img alt = "States." src = "web/states.png" width = 215 height = 293></p>
+
+</div>
+
+<div><h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<E>Set_">&lt;E&gt;Set_</a></td><td>set</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<E>Set">&lt;E&gt;Set</a></td><td>set</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<E>SetClear">&lt;E&gt;SetClear</a></td><td>set</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<E>SetSize">&lt;E&gt;SetSize</a></td><td>set</td></tr>
+
+<tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#fn:<E>SetGet">&lt;E&gt;SetGet</a></td><td>set, data</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<E>SetReserve">&lt;E&gt;SetReserve</a></td><td>set, reserve</td></tr>
+
+<tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#fn:<E>SetPut">&lt;E&gt;SetPut</a></td><td>set, element</td></tr>
+
+<tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#fn:<E>SetPolicyPut">&lt;E&gt;SetPolicyPut</a></td><td>set, element, replace</td></tr>
+
+<tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#fn:<E>SetRemove">&lt;E&gt;SetRemove</a></td><td>set, data</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<E>SetToString">&lt;E&gt;SetToString</a></td><td>set</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<E>SetTest">&lt;E&gt;SetTest</a></td><td>parent_new, parent</td></tr>
+
+</table>
+
+</div>
+
+<div><h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div><h3><a id = "fn:<E>Set_" name = "fn:<E>Set_">&lt;E&gt;Set_</a></h3>
+
+<p><code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code></p>
+
+<p>Destructor for active <code>set</code>. After, it takes no memory and is in an idle state. If idle, does nothing.</p>
+
+</div>
+
+<div><h3><a id = "fn:<E>Set" name = "fn:<E>Set">&lt;E&gt;Set</a></h3>
+
+<p><code>static void <strong>&lt;E&gt;Set</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code></p>
+
+<p>Initialises <code>set</code> to be take no memory and be in an idle state. Calling this on an active set will cause memory leaks.</p>
+
+<dl>
+	<dt>Parameter: <em>set</em></dt>
+	<dd>If null, does nothing.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetClear" name = "fn:<E>SetClear">&lt;E&gt;SetClear</a></h3>
+
+<p><code>static void <strong>&lt;E&gt;SetClear</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code></p>
+
+<p>Clears and removes all entries from <code>set</code>. The capacity and memory of the hash table is preserved, but all previous values are un-associated. The load factor will be less until it reaches it's previous size.</p>
+
+<dl>
+	<dt>Parameter: <em>set</em></dt>
+	<dd>If null, does nothing.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(<code>set.buckets</code>)</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetSize" name = "fn:<E>SetSize">&lt;E&gt;SetSize</a></h3>
+
+<p><code>static size_t <strong>&lt;E&gt;SetSize</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code></p>
+
+<dl>
+	<dt>Parameter: <em>set</em></dt>
+	<dd>If null, returns 0.</dd>
+	<dt>Return:</dt>
+	<dd>The number of entries in the <code>set</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetGet" name = "fn:<E>SetGet">&lt;E&gt;SetGet</a></h3>
+
+<p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;FnType <em>data</em>)</code></p>
+
+<p>Queries whether <code>data</code> is is <code>set</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>set</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Return:</dt>
+	<dd>The value which <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a> <code>data</code>, or, if no such value exists, null.</dd>
+	<dt>Order:</dt>
+	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetReserve" name = "fn:<E>SetReserve">&lt;E&gt;SetReserve</a></h3>
+
+<p><code>static int <strong>&lt;E&gt;SetReserve</strong>(struct &lt;E&gt;Set *const <em>set</em>, const size_t <em>reserve</em>)</code></p>
+
+<p>Reserve at least <code>reserve</code>, divided by the maximum load factor, space in the buckets of <code>set</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd><code>reserve</code> plus the size would take a bigger number then could fit in a <code>size_t</code>.</dd>
+	<dt>Exceptional return: realloc</dt>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetPut" name = "fn:<E>SetPut">&lt;E&gt;SetPut</a></h3>
+
+<p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>)</code></p>
+
+<p>Puts the <code>element</code> in <code>set</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>set</em></dt>
+	<dd>If null, returns false.</dd>
+	<dt>Parameter: <em>element</em></dt>
+	<dd>If null, returns false. Should not be of a <code>set</code> because the integrity of that <code>set</code> will be compromised.</dd>
+	<dt>Return:</dt>
+	<dd>Adding <code>element</code> with <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a> <code>SET_IS_EQUAL</code> the old element, causes the old to be ejected and returned, otherwise null.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with a re-sizing. Calling <a href = "#fn:&lt;E&gt;SetReserve">&lt;E&gt;SetReserve</a> before ensures that this does not happen.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetPolicyPut" name = "fn:<E>SetPolicyPut">&lt;E&gt;SetPolicyPut</a></h3>
+
+<p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPolicyPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>, const &lt;PE&gt;Replace <em>replace</em>)</code></p>
+
+<p>Puts the <code>element</code> in <code>set</code> only if the entry is absent or if calling <code>replace</code> returns true.</p>
+
+<dl>
+	<dt>Parameter: <em>set</em></dt>
+	<dd>If null, returns false.</dd>
+	<dt>Parameter: <em>element</em></dt>
+	<dd>If null, returns false. Must not be part this <code>set</code> or any other.</dd>
+	<dt>Parameter: <em>replace</em></dt>
+	<dd>If specified, gets called on collision and only replaces it if the function returns true. If null, doesn't do any replacement on collision.</dd>
+	<dt>Return:</dt>
+	<dd>Any ejected element or null.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with a re-sizing. Calling <a href = "#fn:&lt;E&gt;SetReserve">&lt;E&gt;SetReserve</a> before ensures that this does not happen.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetRemove" name = "fn:<E>SetRemove">&lt;E&gt;SetRemove</a></h3>
+
+<p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetRemove</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;FnType <em>data</em>)</code></p>
+
+<p>Removes an element <code>data</code> from <code>set</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Successfully ejected element or null. This element is free to be put into another set.</dd>
+	<dt>Order:</dt>
+	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetToString" name = "fn:<E>SetToString">&lt;E&gt;SetToString</a></h3>
+
+<p><code>static const char *<strong>&lt;E&gt;SetToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code></p>
+
+<p>Can print 2 things at once before it overwrites. One must set <code>SET_TO_STRING</code> to a function implementing <a href = "#typedef:&lt;PE&gt;ToString">&lt;PE&gt;ToString</a> to get this functionality.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Prints <code>set</code> in a static buffer in order by bucket, (<em>ie</em>, unordered.)</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1); it has a 1024 character limit; every element takes some.</dd>
+</dl>
+
+</div>
+
+<div><h3><a id = "fn:<E>SetTest" name = "fn:<E>SetTest">&lt;E&gt;SetTest</a></h3>
+
+<p><code>static void <strong>&lt;E&gt;SetTest</strong>(struct &lt;E&gt;SetElement *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code></p>
+
+<p>The list will be tested on <code>stdout</code>. Requires <code>SET_TEST</code> to be a <a href = "#typedef:&lt;PE&gt;Action">&lt;PE&gt;Action</a> and <code>SET_TO_STRING</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>parent_new</em></dt>
+	<dd>Specifies the dynamic up-level creator of the parent <code>struct</code>. Could be null; then testing will be done statically on an array of <a href = "#tag:&lt;E&gt;SetElement">&lt;E&gt;SetElement</a> and <code>SET_TEST</code> is not allowed to go over the limits of the data type.</dd>
+	<dt>Parameter: <em>parent</em></dt>
+	<dd>The parameter passed to <code>parent_new</code>. Ignored if <code>parent_new</code> is null.</dd>
+</dl>
+
+</div>
+
+</div>
+
+<div><h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>2019 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+</div>
+
+</body>
+
+</html>
