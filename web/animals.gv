@@ -4,66 +4,49 @@ digraph {
 	node [
 		fontname = "Bitstream Vera Sans",
 		fontsize = 8,
-		shape = record
+		shape = record,
+		style = filled,
+		fillcolor = lightgrey
 	];
 	edge [
 		fontname = "Bitstream Vera Sans",
-		fontsize = 8,
+		fontsize = 8
 	];
-	subgraph cluster_AnimalVt {
-		label = "static";
-		color = grey;
-		fillcolor = clear;
-		AnimalVt [ label = "{AnimalVt|-type\l|-delete()\l-act()\l-mount_info()\l}" ];
-	}
-	subgraph cluster_Animals {
-		label = "Animals";
-		style = filled;
-		color = lightgrey;
-		node [style = filled, fillcolor = white];
+	AnimalVt [ label = "{AnimalVt|-type\l|-delete()\l-act()\l-mount_info()\l}" ];
 
-		Animal [ label = "{Animal as\n\<Animal\>List|- name\l- colour\l}" ];
-		Mount [ label = "{Mount as\n\<Mount\>Pool|-steed: Animal\l-rider: Animal\l}" ]
-		MountInfo [label="{MountInfo|-steed_of: Mount\l-riding: Mount\l-is_allowed: bitfield\l}"]
-		Sloth [ label = "{Sloth as\n\<Sloth\>Pool|-hours_slept}" ];
-		Emu [ label = "{Emu as\n\<Emu\>Pool|-favourite_letter}"];
-		BadEmu [label="{BadEmu as\n\<BadEmu\>Pool|-muhaha}"];
-		Llama [label="{Llama as\n\<Llama\>Pool|-chomps}"];
-		Lemur [label="{Lemur as\n\<Lemur\>Pool|}"];
-		Bear [label="{Bear as\nBear[]|}"];
+	Animal [ label = "{Animal|- name\l- colour\l}" ];
+	Mount [ label = "{Mount|-steed\l-rider\l}" ]
+	MountInfo [label = "{MountInfo|-steed_of\l-riding\l-is_allowed\l}"]
+	Sloth [ label = "{Sloth|-hours_slept}" ];
+	Emu [ label = "{Emu|-favourite_letter}"];
+	BadEmu [label="{BadEmu|-muhaha}"];
+	Llama [label="{Llama|-chomps}"];
+	Lemur [label="{Lemur|}"];
+	Bear [label="{Bear|}"];
 
-		#{ rank = same; Sloth; Emu; Llama; Lemur; Bear; }
+	{ rank = same; Sloth; Emu; Llama; Lemur; Bear; }
+	{ rank = same; AnimalVt; IdListNode; }
 
-		# inheritance (nested {struct}s)
-		edge [ arrowtail = empty, dir = back ];
-		Animal -> Sloth;
-		Animal -> Emu -> BadEmu;
-		Animal -> Llama;
-		Animal ->Lemur;
-		Animal -> Bear;
-		edge [ arrowhead = empty, dir = forward ];
-		BadEmu -> MountInfo;
-		Llama -> MountInfo;
-		Lemur -> MountInfo;
-		Bear -> MountInfo;
+	# inheritance (nested `struct`s)
+	edge [ arrowhead = empty ];
+	Sloth -> Animal;
+	BadEmu -> Emu -> Animal;
+	Llama -> Animal;
+	Lemur -> Animal;
+	Bear -> Animal;
+	edge [ arrowhead = diamond ];
+	BadEmu -> MountInfo;
+	Llama -> MountInfo;
+	Lemur -> MountInfo;
+	Bear -> MountInfo;
 
-		# dependancy (migrate functions)
-		# \each == _migrate
-		#edge [ arrowtail = diamond, dir = back ];
-		edge [ arrowtail = vee, dir = back, style = dashed ]
-		Animal -> Sloth [ label = "sloth%()" ];
-		Animal -> Emu  [ label = "emu%()" ];
-		Animal -> BadEmu [ label = "bad_emu%()" ];
-		Animal -> Llama [ label = "llama%()" ];
-		Animal -> Lemur [ label = "lemur%()" ];
-		Mount -> MountInfo [ label = "bad_emu%()\nllama%()\nlemur%()" ];
-		Animal -> Mount [ label = "mount%()" ];
+	# dependancy
+	edge [ style = dashed ]
+	Animal -> AnimalVt [ headlabel = "  1  ", taillabel = "  1  " ];
+	Mount -> MountInfo [ headlabel = "0..2", taillabel = "0..1" ];
 
-		# association (pointers)
-		edge [ arrowtail = vee, dir = back, style = normal ];
-		edge [ dir = none, style = normal ];
-		AnimalVt -> Animal [ headlabel = "*  ", taillabel = "  1  " ];
-		Mount -> MountInfo [ headlabel = "0..2", taillabel = "0..1" ];
-		Animal -> Mount [ headlabel = " 2  ", taillabel = "1     " ];
-	}
+	# association
+	edge [ style = normal ];
+	Animal -> IdListNode [ headlabel = "  1  ", taillabel = "  1  " ];
+	Animal -> Mount [ headlabel = " 2  ", taillabel = "1     " ];
 }
