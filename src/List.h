@@ -80,7 +80,7 @@
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
 #define N_(thing) CAT(LIST_NAME, thing)
-#define PN_(thing) PCAT(set, PCAT(LIST_NAME, thing)) /* "Private." */
+#define PN_(thing) PCAT(list, PCAT(LIST_NAME, thing)) /* "Private." */
 
 
 /** Storage of this structure is the responsibility of the caller. One can only

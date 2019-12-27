@@ -273,11 +273,12 @@ static void panda_graph(const struct NameList *const n,
 	fprintf(fp, "digraph {\n"
 		/*"\trankdir=LR;\n"*/
 		/*"\tnodesep=0;\n"*/);
-	set_Name_subgraph(n, fp, "royalblue",
+	/* Overriding private! */
+	list_Name_subgraph(n, fp, "royalblue",
 		offsetof(struct Panda, name_node), 1);
-	set_Where_subgraph(w, fp, /*"firebrick"*/"orchid",
+	list_Where_subgraph(w, fp, /*"firebrick"*/"orchid",
 		offsetof(struct Panda, where_node), 0);
-	set_Fero_subgraph(f, fp, "darkseagreen",
+	list_Fero_subgraph(f, fp, "darkseagreen",
 		offsetof(struct Panda, fero_node), 0);
 	fprintf(fp, "\tnode [colour=red, style=filled];\n");
 	fprintf(fp, "}\n");
