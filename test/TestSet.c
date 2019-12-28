@@ -263,6 +263,67 @@ static struct IdSetElement *id_from_pool(void *const vboats) {
 	return b ? &b->id : 0;
 }
 
+
+
+/* Linked dictionary. */
+
+#define SET_NAME Word
+#define SET_TYPE char *
+#define SET_HASH &fnv_32a_str
+#define SET_IS_EQUAL &string_is_equal
+#define SET_TO_STRING &string_to_string
+#include "../src/Set.h"
+
+struct WordListNode;
+static int word_compare(const struct WordListNode *,
+	const struct WordListNode *);
+#define LIST_NAME Word
+#define LIST_COMPARE &word_compare
+#include "List.h"
+
+struct Entry {
+	struct WordSetElement set;
+	struct WordListNode list;
+	char key[24];
+	char value[32];
+};
+
+/* `const` container of `list`. */
+static const struct Entry *list_upcast_c(const struct WordListNode *const list)
+{
+	return (const struct Entry *)(const void *)((const char *)list
+		- offsetof(struct Entry, list));
+}
+/* `const` container of `set`. */
+static struct Entry *set_upcast(struct WordSetElement *const elem) {
+	return (struct Entry *)(void *)((char *)elem - offsetof(struct Entry, set));
+}
+/** @implements <WordListNode>Compare */
+static int word_compare(const struct WordListNode *const a,
+	const struct WordListNode *const b) {
+	return strcmp(list_upcast_c(a)->key, list_upcast_c(b)->key);
+}
+static void entry_fill(struct Entry *const e) {
+	assert(e);
+	e->set.data = e->key;
+	Orcish(e->key, sizeof e->key);
+	Orcish(e->value, sizeof e->value);
+}
+static const struct Entry *entry_prev(struct Entry *const e) {
+	const struct WordListNode *const prev = WordListPrevious(&e->list);
+	assert(e);
+	return prev ? list_upcast_c(prev) : 0;
+}
+static const struct Entry *entry_next(struct Entry *const e) {
+	const struct WordListNode *const next = WordListNext(&e->list);
+	assert(e);
+	return next ? list_upcast_c(next) : 0;
+}
+
+#define POOL_NAME Entry
+#define POOL_TYPE struct Entry
+#include "Pool.h"
+
 int main(void) {
 	{ /* Automated tests. */
 		struct BoatPool boats;
@@ -275,11 +336,10 @@ int main(void) {
 		Vec4SetTest(0, 0);
 		BoatPool(&boats), IdSetTest(&id_from_pool, &boats), BoatPool_(&boats);
 	}
-	{ /* Not as automated tests. */
+	{ /* Boats. */
 		struct Boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
 		size_t bs_size = sizeof bs / sizeof *bs;
 		struct IdSet ids = SET_ZERO;
-
 		each_boat(bs, bs_size, &fill_boat);
 		printf("Boat club races individually: ");
 		print_boats(bs, bs_size);
@@ -287,6 +347,50 @@ int main(void) {
 		each_set_boat(&ids, bs, bs_size, &put_in_set);
 		printf("Final score: %s.\n", IdSetToString(&ids));
 		IdSet_(&ids);
+	}
+	{ /* Linked dictionary. */
+		struct EntryPool entries = POOL_IDLE;
+		const size_t limit = (size_t)500000/*0*/;
+		struct Entry *e, *sp_es[10], **sp_e, **sp_e_end = sp_es,
+			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
+		struct WordSet word_set = SET_ZERO;
+		struct WordList word_list;
+		struct WordSetElement *elem;
+		struct Entry *found;
+		size_t i, unique = 0;
+		int is_used = 1;
+		WordListClear(&word_list);
+		for(i = 0; i < limit; i++) {
+			if(is_used && !(e = EntryPoolNew(&entries)))
+				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
+			entry_fill(e);
+			if(WordSetGet(&word_set, e->key))
+				{ printf("Already %s.\n", e->key); is_used = 0; continue; }
+			is_used = 1;
+			unique++;
+			if(!WordSetReserve(&word_set, 1))
+				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
+			elem = WordSetPut(&word_set, &e->set), assert(!elem);
+			WordListPush(&word_list, &e->list);
+			if(sp_e_end >= sp_e_lim) continue;
+			printf("Looking for %s.\n", e->key);
+			*(sp_e_end++) = e;
+		}
+		printf("Sorting %lu elements.\n", (unsigned long)unique);
+		WordListSort(&word_list);
+		for(sp_e = sp_es; sp_e < sp_e_end; sp_e++) {
+			const struct Entry *prev, *next;
+			elem = WordSetGet(&word_set, (*sp_e)->key);
+			assert(elem);
+			found = set_upcast(elem);
+			prev = entry_prev(found);
+			next = entry_next(found);
+			printf("The found element was …%s, %s, %s…\n",
+				prev ? prev->key : "start", found->key,
+				next ? next->key : "end");
+			assert(found == *sp_e);
+		}
+		WordSet_(&word_set);
 	}
 
 	return EXIT_SUCCESS;
