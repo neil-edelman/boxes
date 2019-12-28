@@ -40,8 +40,6 @@
  @cf [Pool](https://github.com/neil-edelman/Pool)
  @cf [Set](https://github.com/neil-edelman/Set) */
 
-#include <stdio.h> /* fixme */
-
 #include <assert.h>
 #ifdef LIST_TO_STRING /* <!-- string */
 #include <string.h> /* strlen */
