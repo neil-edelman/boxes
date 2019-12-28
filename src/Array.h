@@ -127,8 +127,8 @@ struct T_(Array) {
 };
 
 /* `{0}` is `C99`. */
-#ifndef ARRAY_ZERO /* <!-- !zero */
-#define ARRAY_ZERO { 0, 0, 0, 0 }
+#ifndef ARRAY_IDLE /* <!-- !zero */
+#define ARRAY_IDLE { 0, 0, 0, 0 }
 #endif /* !zero --> */
 
 

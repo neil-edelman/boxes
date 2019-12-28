@@ -445,7 +445,7 @@ static int PT_(keep_one)(const T *const data) {
 static void PT_(test_keep)(void) {
 	T ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-	struct T_(Array) a = ARRAY_ZERO;
+	struct T_(Array) a = ARRAY_IDLE;
 	/* Valgrind. */
 	memset(ts, 0, sizeof ts);
 	PT_(valid_state)(&a);
@@ -482,7 +482,7 @@ static int PT_(true)(const T *const t) {
 }
 
 static void PT_(test_each)(void) {
-	struct T_(Array) empty = ARRAY_ZERO, one = ARRAY_ZERO;
+	struct T_(Array) empty = ARRAY_IDLE, one = ARRAY_IDLE;
 	T *t;
 	t = T_(ArrayNew)(&one);
 	assert(t);
