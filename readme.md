@@ -123,7 +123,7 @@ Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as an element `data`, 
 
 <code>struct <strong>&lt;E&gt;Set</strong>;</code>
 
-To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\. Assigning `{0}` \(`C99`\+\) or `SET_ZERO` as the initialiser, or being part of `static` data, also puts it in an empty state\.
+To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\. Assigning `{0}` \(`C99`\+\) or `SET_IDLE` as the initialiser, or being part of `static` data, also puts it in an idle state, \(no dynamic memory allocated\.\)
 
 ![States.](web/states.png)
 

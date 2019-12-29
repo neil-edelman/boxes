@@ -182,9 +182,9 @@ struct E_(SetElement) {
  double-pointers are confusing, (confusion is not the intent of this file.) */
 struct PE_(Bucket) { struct E_(SetElement) *first; };
 
-/** To initialise, see <fn:<E>Set>. Assigning `{0}` (`C99`+) or `SET_ZERO` as
- the initialiser, or being part of `static` data, also puts it in an empty
- state.
+/** To initialise, see <fn:<E>Set>. Assigning `{0}` (`C99`+) or `SET_IDLE` as
+ the initialiser, or being part of `static` data, also puts it in an idle
+ state, (no dynamic memory allocated.)
 
  ![States.](../web/states.png) */
 struct E_(Set);
