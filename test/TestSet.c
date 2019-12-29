@@ -339,7 +339,7 @@ int main(void) {
 	{ /* Boats. */
 		struct Boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
 		size_t bs_size = sizeof bs / sizeof *bs;
-		struct IdSet ids = SET_ZERO;
+		struct IdSet ids = SET_IDLE;
 		each_boat(bs, bs_size, &fill_boat);
 		printf("Boat club races individually: ");
 		print_boats(bs, bs_size);
@@ -353,7 +353,7 @@ int main(void) {
 		const size_t limit = (size_t)500000/*0*/;
 		struct Entry *e, *sp_es[10], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
-		struct WordSet word_set = SET_ZERO;
+		struct WordSet word_set = SET_IDLE;
 		struct WordList word_list;
 		struct WordSetElement *elem;
 		struct Entry *found;

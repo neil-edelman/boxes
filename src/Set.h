@@ -193,8 +193,8 @@ struct E_(Set) {
 	size_t size;
 	unsigned log_capacity;
 };
-#ifndef SET_ZERO /* <!-- !zero */
-#define SET_ZERO { 0, 0, 0 }
+#ifndef SET_IDLE /* <!-- !zero */
+#define SET_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
 
 

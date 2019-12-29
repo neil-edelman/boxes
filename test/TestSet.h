@@ -154,7 +154,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	char a[12];
 	size_t removed = 0, collision = 0;
 	struct PE_(Bucket) *b, *b_end;
-	struct E_(Set) set = SET_ZERO;
+	struct E_(Set) set = SET_IDLE;
 	struct E_(SetElement) *eject, *element;
 	assert(test_size > 1);
 	memset(&test, 0, sizeof test);
