@@ -76,7 +76,7 @@ static unsigned fnv_32a_str(const char *const str) {
 	return hval;
 }
 struct Str12 { char str[12]; };
-static unsigned str_hash(const struct Str12 /**const*/ s) {
+static unsigned str_hash(const struct Str12 *const s) {
 	return fnv_32a_str(s->str);
 }
 static int str_is_equal(const struct Str12 *const a,
@@ -84,40 +84,22 @@ static int str_is_equal(const struct Str12 *const a,
 	return !strcmp(a->str, b->str);
 }
 /** Copies `s` to `a`. */
-static void string_to_string(char *const*const s, char (*const a)[12]) {
-	strncpy(*a, *s, sizeof(*a) - 1);
+static void str_to_string(const struct Str12 *const s, char (*const a)[12]) {
+	strncpy(*a, s->str, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-#define STRBUF 12
 /** Automatic random naming for test. */
-static void string_fill(char **const pstr) {
-	Orcish(*pstr, STRBUF);
+static void string_fill(struct Str12 *const s) {
+	Orcish(s->str, sizeof s->str);
 }
 #define SET_NAME String
 #define SET_TYPE struct Str12
 #define SET_HASH &str_hash
-#define SET_IS_EQUAL &string_is_equal
-#define SET_TO_STRING &string_to_string
+#define SET_IS_EQUAL &str_is_equal
+#define SET_TO_STRING &str_to_string
+#define SET_PASS_POINTER
 #define SET_TEST &string_fill
 #include "../src/Set.h"
-/* Auto-naming details. */
-struct StringElement {
-	struct StringSetElement sse;
-	char buffer[STRBUF];
-};
-#define POOL_NAME StringElement
-#define POOL_TYPE struct StringElement
-#include "Pool.h"
-/** This is to store the strings. */
-static struct StringSetElement *sse_from_pool(void *const vses) {
-	struct StringElementPool *const ses = vses;
-	struct StringElement *const se = StringElementPoolNew(ses);
-	assert(ses);
-	if(!se) return 0;
-	/* This is `MAX_STRING` buffer; <fn:string_fill> will read this value. */
-	se->sse.key = se->buffer;
-	return &se->sse;
-}
 
 
 
@@ -268,6 +250,7 @@ static struct IdSetElement *id_from_pool(void *const vboats) {
 
 
 
+#if 0
 /* Linked dictionary. */
 
 #define SET_NAME Word
@@ -327,15 +310,15 @@ static const struct Entry *entry_next(struct Entry *const e) {
 #define POOL_TYPE struct Entry
 #include "Pool.h"
 
+#endif
+
 int main(void) {
 	{ /* Automated tests. */
 		struct BoatPool boats;
-		struct StringElementPool ses;
 
 		IntSetTest(0, 0);
 		CharIntSetTest(0, 0);
-		StringElementPool(&ses), StringSetTest(&sse_from_pool, &ses),
-			StringElementPool_(&ses);
+		StringSetTest(0, 0);
 		Vec4SetTest(0, 0);
 		BoatPool(&boats), IdSetTest(&id_from_pool, &boats), BoatPool_(&boats);
 	}
@@ -351,6 +334,7 @@ int main(void) {
 		printf("Final score: %s.\n", IdSetToString(&ids));
 		IdSet_(&ids);
 	}
+#if 0
 	{ /* Linked dictionary. */
 		struct EntryPool entries = POOL_IDLE;
 		const size_t limit = (size_t)500000/*0*/;
@@ -395,6 +379,6 @@ int main(void) {
 		}
 		WordSet_(&word_set);
 	}
-
+#endif
 	return EXIT_SUCCESS;
 }
