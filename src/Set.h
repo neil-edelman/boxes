@@ -37,6 +37,10 @@
  Optional print function implementing <typedef:<PE>ToString>; makes available
  <fn:<E>SetToString>.
 
+ @param[SET_PASS_POINTER]
+ Should be used when `E` is a `struct` whose copying into functions is a
+ performance issue. See <typedef:<PE>FnType>.
+
  @param[SET_NO_CACHE]
  Calculates the hash every time and discards it; should be used when the hash
  calculation is trivial to avoid storing duplicate <typedef:<PE>UInt> _per_
@@ -110,6 +114,13 @@
 
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PE_(Type);
+#ifdef SET_PASS_POINTER /* <!-- pointer */
+/** Used in <typedef:<PE>Hash> and <typedef:<PE>IsEqual> if `SET_PASS_POINTER`,
+ otherwise `<PE>FnType` is <typedef:<PE>Type>. */
+typedef const PE_(Type)* PE_(FnType);
+#else /* pointer --><!-- !pointer */
+typedef PE_(Type) PE_(FnType);
+#endif /* !pointer --> */
 
 #ifdef SET_UINT_TYPE /* <!-- hash type */
 /** Valid unsigned integer type. The hash map will saturate at
@@ -188,11 +199,21 @@ struct E_(Set) {
 
 
 
+#ifdef SET_PASS_POINTER /* <!-- pointer */
+/** @return `element`. */
+static const PE_(Type) *PE_(pointer)(const PE_(Type) *const element)
+	{ return element; }
+#else /* pointer --><!-- !pointer */
+/** @return Re-de-reference `element`. */
+static PE_(Type) PE_(pointer)(const PE_(Type) *const element)
+	{ return *element; }
+#endif /* !pointer --> */
+
 /** Gets the hash of `element`. */
 static PE_(UInt) PE_(get_hash)(struct E_(SetElement) *element) {
 	assert(element);
 #ifdef SET_NO_CACHE /* <!-- !cache */
-	return PE_(hash)(&element->key);
+	return PE_(hash)(PE_(pointer)(&element->key));
 #else /* !cache --><!-- cache */
 	return element->hash;
 #endif /* cache --> */
@@ -218,7 +239,7 @@ static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
 #ifndef SET_NO_CACHE /* <!-- cache: a quick out. */
 		if(hash != x->hash) continue;
 #endif /* cache --> */
-		if(PE_(equal)(data, &x->key)) return to_x;
+		if(PE_(equal)(data, PE_(pointer)(&x->key))) return to_x;
 	}
 #ifdef SET_NO_CACHE /* <!-- !cache */
 	(void)(hash);
@@ -295,14 +316,14 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	struct E_(SetElement) **to_x = 0, *x = 0;
 	PE_(UInt) hash;
 	if(!set || !element) return 0;
-	hash = PE_(hash)(&element->key);
+	hash = PE_(hash)(PE_(pointer)(&element->key));
 #ifndef SET_NO_CACHE /* <!-- cache */
 	element->hash = hash;
 #endif /* cache --> */
 	if(!set->buckets) goto grow_table;
 	/* Delete any duplicate. */
 	bucket = PE_(get_bucket)(set, hash);
-	if(!(to_x = PE_(bucket_to)(bucket, hash, &element->key)))
+	if(!(to_x = PE_(bucket_to)(bucket, hash, PE_(pointer)(&element->key))))
 		goto grow_table;
 	x = *to_x;
 	if(replace && !replace(&x->key, &element->key)) return 0;
@@ -561,6 +582,9 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #ifdef SET_TO_STRING /* <!-- string */
 #undef SET_TO_STRING
 #endif /* string --> */
+#ifdef SET_PASS_POINTER /* <!-- !pointer */
+#undef SET_PASS_POINTER
+#endif /* !pointer --> */
 #ifdef SET_NO_CACHE /* <!-- !cache */
 #undef SET_NO_CACHE
 #endif /* !cache --> */
