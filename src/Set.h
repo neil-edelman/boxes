@@ -46,7 +46,7 @@
  calculation is trivial to avoid storing duplicate <typedef:<PE>UInt> _per_
  datum.
 
- @param[SET_HASH_TYPE]
+ @param[SET_UINT_TYPE]
  This is <typedef:<PE>UInt> and defaults to `unsigned int`.
 
  @param[SET_TEST]
@@ -122,12 +122,12 @@ typedef const PE_(Type)* PE_(FnType);
 typedef PE_(Type) PE_(FnType);
 #endif /* !pointer --> */
 
-#ifdef SET_HASH_TYPE /* <!-- hash type */
+#ifdef SET_UINT_TYPE /* <!-- hash type */
 /** Valid unsigned integer type. The hash map will saturate at
  `min(((ln 2)/2) \cdot range(<PE>UInt), (1/8) \cdot range(size_t))`, at which
  point no new buckets can be added and the load factor will increase over the
  maximum. */
-typedef SET_HASH_TYPE PE_(UInt);
+typedef SET_UINT_TYPE PE_(UInt);
 #else /* hash type --><!-- !hash type */
 typedef unsigned PE_(UInt);
 #endif /* !hash type --> */
@@ -166,7 +166,7 @@ typedef void (*PE_(Action))(PE_(Type) *const);
 
 
 
-/** Contains <typedef:<PE>Type> as an element `data`, along with data internal
+/** Contains <typedef:<PE>Type> as an element `key`, along with data internal
  to the set. Storage of the `<E>SetElement` structure is the responsibility of
  the caller. */
 struct E_(SetElement);
@@ -175,7 +175,7 @@ struct E_(SetElement) {
 #ifndef SET_NO_CACHE /* <!-- cache */
 	PE_(UInt) hash;
 #endif /* cache --> */
-	PE_(Type) data;
+	PE_(Type) key;
 };
 
 /* Singly-linked list head for `buckets`. Not really needed, but
@@ -213,7 +213,7 @@ static PE_(Type) PE_(pointer)(const PE_(Type) *const element)
 static PE_(UInt) PE_(get_hash)(struct E_(SetElement) *element) {
 	assert(element);
 #ifdef SET_NO_CACHE /* <!-- !cache */
-	return PE_(hash)(PE_(pointer)(&element->data));
+	return PE_(hash)(PE_(pointer)(&element->key));
 #else /* !cache --><!-- cache */
 	return element->hash;
 #endif /* cache --> */
@@ -239,7 +239,7 @@ static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
 #ifndef SET_NO_CACHE /* <!-- cache: a quick out. */
 		if(hash != x->hash) continue;
 #endif /* cache --> */
-		if(PE_(equal)(data, PE_(pointer)(&x->data))) return to_x;
+		if(PE_(equal)(data, PE_(pointer)(&x->key))) return to_x;
 	}
 #ifdef SET_NO_CACHE /* <!-- !cache */
 	(void)(hash);
@@ -316,17 +316,17 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	struct E_(SetElement) **to_x = 0, *x = 0;
 	PE_(UInt) hash;
 	if(!set || !element) return 0;
-	hash = PE_(hash)(PE_(pointer)(&element->data));
+	hash = PE_(hash)(PE_(pointer)(&element->key));
 #ifndef SET_NO_CACHE /* <!-- cache */
 	element->hash = hash;
 #endif /* cache --> */
 	if(!set->buckets) goto grow_table;
 	/* Delete any duplicate. */
 	bucket = PE_(get_bucket)(set, hash);
-	if(!(to_x = PE_(bucket_to)(bucket, hash, PE_(pointer)(&element->data))))
+	if(!(to_x = PE_(bucket_to)(bucket, hash, PE_(pointer)(&element->key))))
 		goto grow_table;
 	x = *to_x;
-	if(replace && !replace(&x->data, &element->data)) return 0;
+	if(replace && !replace(&x->key, &element->key)) return 0;
 	*to_x = x->next, x->next = 0;
 	goto add_element;
 grow_table:
@@ -516,7 +516,7 @@ static const char *E_(SetToString)(const struct E_(Set) *const set) {
 			else *s++ = space, is_first = 0;
 			/* Directly to the buffer; might be a strict aliasing violation,
 			 (`C++` it is.) Is any cpu affected? Probably not. */
-			PE_(to_string)(&x->data, (char (*)[12])s);
+			PE_(to_string)(&x->key, (char (*)[12])s);
 			for(i = 0; *s != '\0' && i < 12; s++, i++);
 			/* Greedy can not guarantee another; terminate by ellipsis. */
 			if((size_t)(s - string) > string_size
@@ -588,8 +588,8 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #ifdef SET_NO_CACHE /* <!-- !cache */
 #undef SET_NO_CACHE
 #endif /* !cache --> */
-#ifdef SET_HASH_TYPE /* <!-- hash type */
-#undef SET_HASH_TYPE
+#ifdef SET_UINT_TYPE /* <!-- hash type */
+#undef SET_UINT_TYPE
 #endif /* hash type --> */
 #ifdef SET_TEST /* <!-- test */
 #undef SET_TEST

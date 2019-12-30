@@ -117,7 +117,7 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 			fprintf(fp, "\t// Bucket0x%x\n", (unsigned)(b - set->buckets));
 			for(xt = x = b->first, x_prev = 0; x; x_prev = x, x = x->next) {
 				int is_turtle = 0;
-				PE_(to_string)(&x->data, &a);
+				PE_(to_string)(&x->key, &a);
 				fprintf(fp, "\tSetElement%p [label=\"#0x%x\\l|%s\\l\"];\n",
 					(void *)x, PE_(get_hash)(x), a);
 				if(x_prev) {
@@ -173,8 +173,8 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 		} else {
 			t->elem = &t->space;
 		}
-		PE_(filler)(&t->elem->data);
-		PE_(to_string)(&t->elem->data, &a);
+		PE_(filler)(&t->elem->key);
+		PE_(to_string)(&t->elem->key, &a);
 		success = E_(SetReserve)(&set, 1);
 		assert(success && set.buckets);
 		if(n == 0) assert(set.log_capacity == 3 && !set.size
@@ -194,8 +194,8 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 				 necessitates a linear search if we want to clear `is_in`. */
 				for(sub_t = test, sub_t_end = t; sub_t < sub_t_end; sub_t++) {
 					if(!sub_t->is_in
-						|| !PE_(equal)(PE_(pointer)(&eject->data),
-						PE_(pointer)(&sub_t->elem->data))) continue;
+						|| !PE_(equal)(PE_(pointer)(&eject->key),
+						PE_(pointer)(&sub_t->elem->key))) continue;
 					sub_t->is_in = 0;
 					break;
 				}
@@ -237,24 +237,24 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 		const size_t n = t - test;
 		struct E_(SetElement) *r;
 		if(n < 100 || (n & 0xFF) == 0) {
-			PE_(to_string)(&t->elem->data, &a);
+			PE_(to_string)(&t->elem->key, &a);
 			fprintf(stderr, "%lu: retrieving %s.\n", (unsigned long)n, a);
 		}
-		element = E_(SetGet)(&set, PE_(pointer)(&t->elem->data));
+		element = E_(SetGet)(&set, PE_(pointer)(&t->elem->key));
 		assert(element);
 		if(t->is_in) {
 			assert(element == t->elem);
 			if(rand() < RAND_MAX / 8) {
 				removed++;
-				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->data));
+				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->key));
 				assert(r);
-				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->data));
+				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->key));
 				assert(!r);
 				r = E_(SetPolicyPut)(&set, t->elem, 0);
 				assert(!r);
 				r = E_(SetPolicyPut)(&set, t->elem, 0);
 				assert(!r);
-				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->data));
+				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->key));
 				assert(r);
 			}
 		} else {

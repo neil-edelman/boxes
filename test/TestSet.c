@@ -44,14 +44,13 @@ static void int_fill(unsigned *const x) { *x = rand(); }
 
 
 
-/* Used to test `SET_HASH_TYPE`. */
+/* Used to test `SET_UINT_TYPE`. */
 
 /** This is probably not the greatest hash function. */
 static unsigned char charint_hash(unsigned x) { return x; }
-/** This defines `struct IntSet` and `struct IntSetElement`. */
 #define SET_NAME CharInt
 #define SET_TYPE unsigned
-#define SET_HASH_TYPE unsigned char
+#define SET_UINT_TYPE unsigned char
 #define SET_HASH &charint_hash
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TO_STRING &int_to_string
@@ -112,7 +111,7 @@ static struct StringSetElement *sse_from_pool(void *const vses) {
 	assert(ses);
 	if(!se) return 0;
 	/* This is `MAX_STRING` buffer; <fn:string_fill> will read this value. */
-	se->sse.data = se->buffer;
+	se->sse.key = se->buffer;
 	return &se->sse;
 }
 
@@ -184,16 +183,16 @@ struct Boat {
 /* `container_of(id.data)`. */
 static struct Boat *id_upcast(int *const id) {
 	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id)
-		- offsetof(struct IdSetElement, data));
+		- offsetof(struct IdSetElement, key));
 }
 /* `const container_of(id.data)`. */
 static const struct Boat *id_const_upcast(const int *const id) {
 	return (const struct Boat *)(const void *)
 		((const char *)id - offsetof(struct Boat, id)
-		- offsetof(struct IdSetElement, data));
+		- offsetof(struct IdSetElement, key));
 }
 static void boat_to_string(const struct Boat *const b, char (*const a)[12]) {
-	sprintf(*a, "#%d(%d)", b->id.data, b->points);
+	sprintf(*a, "#%d(%d)", b->id.key, b->points);
 }
 static void boat_id_to_string(const int *const id, char (*const a)[12]) {
 	boat_to_string(id_const_upcast(id), a);
@@ -203,7 +202,7 @@ static void boat_id_to_string(const int *const id, char (*const a)[12]) {
  several races. */
 static void fill_boat(struct Boat *const b) {
 	assert(b);
-	b->id.data = rand() / (RAND_MAX / 89 + 1) + 10;
+	b->id.key = rand() / (RAND_MAX / 89 + 1) + 10;
     b->best_time = rand() / (RAND_MAX / 100 + 1) + 50;
     b->points = 151 - b->best_time;
 }
@@ -305,7 +304,7 @@ static int word_compare(const struct WordListNode *const a,
 }
 static void entry_fill(struct Entry *const e) {
 	assert(e);
-	e->set.data = e->key;
+	e->set.key = e->key;
 	Orcish(e->key, sizeof e->key);
 	Orcish(e->value, sizeof e->value);
 }

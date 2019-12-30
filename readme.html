@@ -69,7 +69,7 @@
 	<dd>Should be used when <code>E</code> is a <code>struct</code> whose copying into functions is a performance issue. See <a href = "#typedef:&lt;PE&gt;FnType">&lt;PE&gt;FnType</a>.</dd>
 	<dt>Parameter: SET_NO_CACHE</dt>
 	<dd>Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> <em>per</em> datum.</dd>
-	<dt>Parameter: SET_HASH_TYPE</dt>
+	<dt>Parameter: SET_UINT_TYPE</dt>
 	<dd>This is <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> and defaults to <code>unsigned int</code>.</dd>
 	<dt>Parameter: SET_TEST</dt>
 	<dd>Unit testing framework <a href = "#fn:&lt;E&gt;SetTest">&lt;E&gt;SetTest</a>, included in a separate header, <a href = "../test/TestSet.h">../test/TestSet.h</a>. Must be defined equal to a random filler function, satisfying <a href = "#typedef:&lt;PE&gt;Action">&lt;PE&gt;Action</a>. Requires <code>SET_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
@@ -99,7 +99,7 @@
 
 <div><h3><a id = "typedef:<PE>UInt" name = "typedef:<PE>UInt">&lt;PE&gt;UInt</a></h3>
 
-<p><code>typedef SET_HASH_TYPE <strong>&lt;PE&gt;UInt</strong>;</code></p>
+<p><code>typedef SET_UINT_TYPE <strong>&lt;PE&gt;UInt</strong>;</code></p>
 
 <p>Valid unsigned integer type. The hash map will saturate at <code>min(((ln 2)/2) &#183; range(&lt;PE&gt;UInt), (1/8) &#183; range(size_t))</code>, at which point no new buckets can be added and the load factor will increase over the maximum.</p>
 
@@ -151,7 +151,7 @@
 
 <p><code>struct <strong>&lt;E&gt;SetElement</strong>;</code></p>
 
-<p>Contains <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> as an element <code>data</code>, along with data internal to the set. Storage of the <code>&lt;E&gt;SetElement</code> structure is the responsibility of the caller.</p>
+<p>Contains <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> as an element <code>key</code>, along with data internal to the set. Storage of the <code>&lt;E&gt;SetElement</code> structure is the responsibility of the caller.</p>
 
 </div>
 

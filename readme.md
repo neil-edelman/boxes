@@ -33,7 +33,7 @@ Internally, it is a separately chained, hash set with a maximum load factor of `
    Should be used when `E` is a `struct` whose copying into functions is a performance issue\. See [&lt;PE&gt;FnType](#user-content-typedef-1e0d342a)\.
  * Parameter: SET\_NO\_CACHE  
    Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) _per_ datum\.
- * Parameter: SET\_HASH\_TYPE  
+ * Parameter: SET\_UINT\_TYPE  
    This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) and defaults to `unsigned int`\.
  * Parameter: SET\_TEST  
    Unit testing framework [&lt;E&gt;SetTest](#user-content-fn-382b20c0), included in a separate header, [\.\./test/TestSet\.h](../test/TestSet.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET_TO_STRING` and not `NDEBUG`\.
@@ -63,7 +63,7 @@ Used in [&lt;PE&gt;Hash](#user-content-typedef-812e78a) and [&lt;PE&gt;IsEqual](
 
 ### <a id = "user-content-typedef-54b8b39a" name = "user-content-typedef-54b8b39a">&lt;PE&gt;UInt</a> ###
 
-<code>typedef SET_HASH_TYPE <strong>&lt;PE&gt;UInt</strong>;</code>
+<code>typedef SET_UINT_TYPE <strong>&lt;PE&gt;UInt</strong>;</code>
 
 Valid unsigned integer type\. The hash map will saturate at `min(((ln 2)/2) &#183; range(<PE>UInt), (1/8) &#183; range(size_t))`, at which point no new buckets can be added and the load factor will increase over the maximum\.
 
@@ -115,7 +115,7 @@ Used for `SET_TEST`\.
 
 <code>struct <strong>&lt;E&gt;SetElement</strong>;</code>
 
-Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as an element `data`, along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller\.
+Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as an element `key`, along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller\.
 
 
 
