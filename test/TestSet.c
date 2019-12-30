@@ -59,12 +59,12 @@ static unsigned char charint_hash(unsigned x) { return x; }
 
 
 
-/* String set (with support in dynamically generated pool.) */
+/* Short string set. */
 
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on a
  string, modified to `unsigned`. */
-static unsigned fnv_32a_str(char *const str) {
+static unsigned fnv_32a_str(const char *const str) {
 	const unsigned char *s = (const unsigned char *)str;
 	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, `FNV1_32A_INIT`. */
 	unsigned hval = 0x811c9dc5;
@@ -75,9 +75,13 @@ static unsigned fnv_32a_str(char *const str) {
 	}
 	return hval;
 }
-/** `a` == `b` */
-static int string_is_equal(char *const a, char *const b) {
-	return !strcmp(a, b);
+struct Str12 { char str[12]; };
+static unsigned str_hash(const struct Str12 /**const*/ s) {
+	return fnv_32a_str(s->str);
+}
+static int str_is_equal(const struct Str12 *const a,
+	const struct Str12 *const b) {
+	return !strcmp(a->str, b->str);
 }
 /** Copies `s` to `a`. */
 static void string_to_string(char *const*const s, char (*const a)[12]) {
@@ -90,8 +94,8 @@ static void string_fill(char **const pstr) {
 	Orcish(*pstr, STRBUF);
 }
 #define SET_NAME String
-#define SET_TYPE char *
-#define SET_HASH &fnv_32a_str
+#define SET_TYPE struct Str12
+#define SET_HASH &str_hash
 #define SET_IS_EQUAL &string_is_equal
 #define SET_TO_STRING &string_to_string
 #define SET_TEST &string_fill
