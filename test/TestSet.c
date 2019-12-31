@@ -167,7 +167,7 @@ static void vec4_filler(struct Vec4 *const v4) {
 
 
 
-/* I wrote Set to solve Boats,
+/* I wrote Set to solve
  [this problem](https://stackoverflow.com/q/59091226/2472827). In general, one
  has to declare before defining if we want a hash map because the
  `<E>SetElement` is not defined until after. */
@@ -370,7 +370,7 @@ int main(void) {
 	}
 	{ /* Linked dictionary. */
 		struct EntryPool entries = POOL_IDLE;
-		const size_t limit = (size_t)500000/*0*/;
+		const size_t limit = (size_t)500000/*0<-This takes a while to set up.*/;
 		struct Entry *e, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
 		struct KeySet key_set = SET_IDLE;
@@ -408,7 +408,7 @@ int main(void) {
 			found = elem_upcast(elem);
 			prev = entry_prev(found);
 			next = entry_next(found);
-			printf("Found element is between …%s, %s, %s…\n",
+			printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
 				prev ? prev->key : "start", found->key,
 				next ? next->key : "end");
 			assert(found == *sp_e);
@@ -416,7 +416,7 @@ int main(void) {
 		KeySet_(&key_set);
 		EntryPool_(&entries);
 	}
-	{ /* Actual dictionary. */
+	{ /* Fill it with the actual dictionary. */
 		const char *const english = "test/Tutte_le_parole_inglesi.txt";
 		FILE *fp = fopen(english, "r");
 		struct EntryPool entries = POOL_IDLE;
@@ -458,8 +458,7 @@ int main(void) {
 				continue;
 			}
 			KeyListPush(&key_list, &e->node);
-			/* Since they are in order already, there's a whole probability
-			 thing. */
+			/* In order already: must do the probability thing. */
 			if(!words_to_go) {
 				fprintf(stderr, "%lu: count inaccurate.\n",
 					(unsigned long)line);
@@ -467,11 +466,10 @@ int main(void) {
 			}
 			if(rand() / (RAND_MAX / (unsigned)words_to_go-- + 1) >= sp_e_to_go)
 				continue;
-			printf("Looking (%u) for %s.\n",
-				(unsigned)(sp_es_size - sp_e_to_go), e->key);
+			printf("Looking for %s.\n", e->key);
 			sp_es[sp_es_size - sp_e_to_go--] = e;
 		}
-		printf("Sorting %lu lines, (they are already sorted.)\n",
+		printf("Sorting %lu lines, (they are presumably already sorted.)\n",
 			(unsigned long)line - 1);
 		KeyListSort(&key_list);
 		for(sp_e = sp_es; sp_e < sp_es + sp_es_size; sp_e++) {
@@ -486,8 +484,6 @@ int main(void) {
 				next ? next->key : "end");
 			assert(found == *sp_e);
 		}
-		KeySet_(&key_set);
-		EntryPool_(&entries);
 		goto finally;
 catch:
 		fprintf(stderr, "%lu:", (unsigned long)line);
