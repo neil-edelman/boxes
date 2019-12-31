@@ -37,7 +37,7 @@
  Optional print function implementing <typedef:<PE>ToString>; makes available
  <fn:<E>SetToString>.
 
- @param[SET_GET_POINTER]
+ @param[SET_POINTER_GET]
  Usually <typedef:<PE>MType> in the same as <typedef:<PE>Type>; this flag makes
  `<PE>MType` be a pointer-to-`<PE>Type`. Should be used when the copying of
  `<PE>Type` into functions is a performance issue. As well as <fn:<E>SetGet>,
@@ -117,21 +117,21 @@
 #define E_(thing) CAT(SET_NAME, thing)
 #define PE_(thing) PCAT(set, PCAT(SET_NAME, thing)) /* "Private." */
 
-/** Valid tag type defined by `SET_TYPE`. */
+/** Valid unsigned integer type used for hash values. The hash map will
+ saturate at `min(((ln 2)/2) \cdot range(<PE>UInt), (1/8) \cdot range(size_t))`,
+ at which point no new buckets can be added and the load factor will increase
+ over the maximum. */
+typedef SET_UINT PE_(UInt);
+
+/** Valid tag type defined by `SET_TYPE`. Included in <tag:<E>SetElement>. */
 typedef SET_TYPE PE_(Type);
-#ifdef SET_GET_POINTER /* <!-- !raw */
-/** `SET_GET_POINTER` modifies `<PE>MType` to be a pointer, otherwise it's
+#ifdef SET_POINTER_GET /* <!-- !raw */
+/** `SET_POINTER_GET` modifies `<PE>MType` to be a pointer, otherwise it's
  the same as <typedef:<PE>Type>. */
 typedef const PE_(Type)* PE_(MType);
 #else /* !raw --><!-- raw */
 typedef PE_(Type) PE_(MType);
 #endif /* raw --> */
-
-/** Valid unsigned integer type. The hash map will saturate at
- `min(((ln 2)/2) \cdot range(<PE>UInt), (1/8) \cdot range(size_t))`, at which
- point no new buckets can be added and the load factor will increase over the
- maximum. */
-typedef SET_UINT PE_(UInt);
 
 /** A map from <typedef:<PE>MType> onto <typedef:<PE>UInt>, (defaults to
  `unsigned`.) Should be as close as possible to a discrete uniform distribution
@@ -147,8 +147,8 @@ typedef int (*PE_(IsEqual))(const PE_(MType), const PE_(MType));
  <typedef:<PE>IsEqual>. */
 static const PE_(IsEqual) PE_(equal) = (SET_IS_EQUAL);
 
-/** Returns true if the `replace` replaces the `original`; used in
- <fn:<E>SetPolicyPut>. */
+/** A di-predicate; returns true if the `replace` replaces the `original`; used
+ in <fn:<E>SetPolicyPut>. */
 typedef int (*PE_(Replace))(PE_(Type) *original, PE_(Type) *replace);
 
 #ifdef SET_TO_STRING /* <!-- string */
@@ -200,7 +200,7 @@ struct E_(Set) {
 
 
 
-#ifdef SET_GET_POINTER /* <!-- !raw */
+#ifdef SET_POINTER_GET /* <!-- !raw */
 /** @return `element`. */
 static const PE_(Type) *PE_(pointer)(const PE_(Type) *const element)
 	{ return element; }
@@ -310,7 +310,7 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 
 /** Most general put function that every put function calls. Puts `element` in
  `set` and returns the collided element, if any, as long as `replace` is null
- or returns 1. */
+ or returns true. */
 static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	struct E_(SetElement) *const element, const PE_(Replace) replace) {
 	struct PE_(Bucket) *bucket;
@@ -583,8 +583,8 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #ifdef SET_TO_STRING /* <!-- string */
 #undef SET_TO_STRING
 #endif /* string --> */
-#ifdef SET_GET_POINTER /* <!-- raw */
-#undef SET_GET_POINTER
+#ifdef SET_POINTER_GET /* <!-- raw */
+#undef SET_POINTER_GET
 #endif /* raw --> */
 #ifdef SET_NO_CACHE /* <!-- !cache */
 #undef SET_NO_CACHE

@@ -3,7 +3,7 @@
 ## Parameterised Hash Set ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PE&gt;Type](#user-content-typedef-11e62996), [&lt;PE&gt;MType](#user-content-typedef-7d6f0919), [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), [&lt;PE&gt;Type](#user-content-typedef-11e62996), [&lt;PE&gt;MType](#user-content-typedef-7d6f0919), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -29,7 +29,7 @@ Internally, it is a separately chained, hash set with a maximum load factor of `
    A function satisfying [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede); required\.
  * Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
- * Parameter: SET\_GET\_POINTER  
+ * Parameter: SET\_POINTER\_GET  
    Usually [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) in the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996); this flag makes `<PE>MType` be a pointer\-to\-`<PE>Type`\. Should be used when the copying of `<PE>Type` into functions is a performance issue\. As well as [&lt;E&gt;SetGet](#user-content-fn-8d1390a0), affects the definition of [&lt;PE&gt;Hash](#user-content-typedef-812e78a) and [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede)\.
  * Parameter: SET\_NO\_CACHE  
    Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) _per_ datum\.
@@ -45,11 +45,19 @@ Internally, it is a separately chained, hash set with a maximum load factor of `
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
+### <a id = "user-content-typedef-54b8b39a" name = "user-content-typedef-54b8b39a">&lt;PE&gt;UInt</a> ###
+
+<code>typedef SET_UINT <strong>&lt;PE&gt;UInt</strong>;</code>
+
+Valid unsigned integer type used for hash values\. The hash map will saturate at `min(((ln 2)/2) &#183; range(<PE>UInt), (1/8) &#183; range(size_t))`, at which point no new buckets can be added and the load factor will increase over the maximum\.
+
+
+
 ### <a id = "user-content-typedef-11e62996" name = "user-content-typedef-11e62996">&lt;PE&gt;Type</a> ###
 
 <code>typedef SET_TYPE <strong>&lt;PE&gt;Type</strong>;</code>
 
-Valid tag type defined by `SET_TYPE`\.
+Valid tag type defined by `SET_TYPE`\. Included in [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\.
 
 
 
@@ -57,15 +65,7 @@ Valid tag type defined by `SET_TYPE`\.
 
 <code>typedef const &lt;PE&gt;Type *<strong>&lt;PE&gt;MType</strong>;</code>
 
-`SET_GET_POINTER` modifies `<PE>MType` to be a pointer, otherwise it's the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996)\.
-
-
-
-### <a id = "user-content-typedef-54b8b39a" name = "user-content-typedef-54b8b39a">&lt;PE&gt;UInt</a> ###
-
-<code>typedef SET_UINT <strong>&lt;PE&gt;UInt</strong>;</code>
-
-Valid unsigned integer type\. The hash map will saturate at `min(((ln 2)/2) &#183; range(<PE>UInt), (1/8) &#183; range(size_t))`, at which point no new buckets can be added and the load factor will increase over the maximum\.
+`SET_POINTER_GET` modifies `<PE>MType` to be a pointer, otherwise it's the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996)\.
 
 
 
@@ -89,7 +89,7 @@ A constant equivalence relation between [&lt;PE&gt;MType](#user-content-typedef-
 
 <code>typedef int(*<strong>&lt;PE&gt;Replace</strong>)(&lt;PE&gt;Type *original, &lt;PE&gt;Type *replace);</code>
 
-Returns true if the `replace` replaces the `original`; used in [&lt;E&gt;SetPolicyPut](#user-content-fn-2ceb4efb)\.
+A di\-predicate; returns true if the `replace` replaces the `original`; used in [&lt;E&gt;SetPolicyPut](#user-content-fn-2ceb4efb)\.
 
 
 

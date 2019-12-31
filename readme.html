@@ -37,14 +37,16 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PE>Type">&lt;PE&gt;Type</a>, <a href = "#typedef:<PE>MType">&lt;PE&gt;MType</a>, <a href = "#typedef:<PE>UInt">&lt;PE&gt;UInt</a>, <a href = "#typedef:<PE>Hash">&lt;PE&gt;Hash</a>, <a href = "#typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a>, <a href = "#typedef:<PE>Replace">&lt;PE&gt;Replace</a>, <a href = "#typedef:<PE>ToString">&lt;PE&gt;ToString</a>, <a href = "#typedef:<PE>Action">&lt;PE&gt;Action</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PE>UInt">&lt;PE&gt;UInt</a>, <a href = "#typedef:<PE>Type">&lt;PE&gt;Type</a>, <a href = "#typedef:<PE>MType">&lt;PE&gt;MType</a>, <a href = "#typedef:<PE>Hash">&lt;PE&gt;Hash</a>, <a href = "#typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a>, <a href = "#typedef:<PE>Replace">&lt;PE&gt;Replace</a>, <a href = "#typedef:<PE>ToString">&lt;PE&gt;ToString</a>, <a href = "#typedef:<PE>Action">&lt;PE&gt;Action</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<E>SetElement">&lt;E&gt;SetElement</a>, <a href = "#tag:<E>Set">&lt;E&gt;Set</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
 </ul>
 
-<div><h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+<div>
+
+<h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
 <p><img alt = "Example of &lt;String&gt;Set." src = "web/set.png" width = 583 height = 308></p>
 
@@ -65,7 +67,7 @@
 	<dd>A function satisfying <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a>; required.</dd>
 	<dt>Parameter: SET_TO_STRING</dt>
 	<dd>Optional print function implementing <a href = "#typedef:&lt;PE&gt;ToString">&lt;PE&gt;ToString</a>; makes available <a href = "#fn:&lt;E&gt;SetToString">&lt;E&gt;SetToString</a>.</dd>
-	<dt>Parameter: SET_GET_POINTER</dt>
+	<dt>Parameter: SET_POINTER_GET</dt>
 	<dd>Usually <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> in the same as <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a>; this flag makes <code>&lt;PE&gt;MType</code> be a pointer-to-<code>&lt;PE&gt;Type</code>. Should be used when the copying of <code>&lt;PE&gt;Type</code> into functions is a performance issue. As well as <a href = "#fn:&lt;E&gt;SetGet">&lt;E&gt;SetGet</a>, affects the definition of <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a> and <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a>.</dd>
 	<dt>Parameter: SET_NO_CACHE</dt>
 	<dd>Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> <em>per</em> datum.</dd>
@@ -81,31 +83,39 @@
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
 
-<div><h3><a id = "typedef:<PE>Type" name = "typedef:<PE>Type">&lt;PE&gt;Type</a></h3>
+<div>
 
-<p><code>typedef SET_TYPE <strong>&lt;PE&gt;Type</strong>;</code></p>
-
-<p>Valid tag type defined by <code>SET_TYPE</code>.</p>
-
-</div>
-
-<div><h3><a id = "typedef:<PE>MType" name = "typedef:<PE>MType">&lt;PE&gt;MType</a></h3>
-
-<p><code>typedef const &lt;PE&gt;Type *<strong>&lt;PE&gt;MType</strong>;</code></p>
-
-<p><code>SET_GET_POINTER</code> modifies <code>&lt;PE&gt;MType</code> to be a pointer, otherwise it's the same as <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a>.</p>
-
-</div>
-
-<div><h3><a id = "typedef:<PE>UInt" name = "typedef:<PE>UInt">&lt;PE&gt;UInt</a></h3>
+<h3><a id = "typedef:<PE>UInt" name = "typedef:<PE>UInt">&lt;PE&gt;UInt</a></h3>
 
 <p><code>typedef SET_UINT <strong>&lt;PE&gt;UInt</strong>;</code></p>
 
-<p>Valid unsigned integer type. The hash map will saturate at <code>min(((ln 2)/2) &#183; range(&lt;PE&gt;UInt), (1/8) &#183; range(size_t))</code>, at which point no new buckets can be added and the load factor will increase over the maximum.</p>
+<p>Valid unsigned integer type used for hash values. The hash map will saturate at <code>min(((ln 2)/2) &#183; range(&lt;PE&gt;UInt), (1/8) &#183; range(size_t))</code>, at which point no new buckets can be added and the load factor will increase over the maximum.</p>
 
 </div>
 
-<div><h3><a id = "typedef:<PE>Hash" name = "typedef:<PE>Hash">&lt;PE&gt;Hash</a></h3>
+<div>
+
+<h3><a id = "typedef:<PE>Type" name = "typedef:<PE>Type">&lt;PE&gt;Type</a></h3>
+
+<p><code>typedef SET_TYPE <strong>&lt;PE&gt;Type</strong>;</code></p>
+
+<p>Valid tag type defined by <code>SET_TYPE</code>. Included in <a href = "#tag:&lt;E&gt;SetElement">&lt;E&gt;SetElement</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PE>MType" name = "typedef:<PE>MType">&lt;PE&gt;MType</a></h3>
+
+<p><code>typedef const &lt;PE&gt;Type *<strong>&lt;PE&gt;MType</strong>;</code></p>
+
+<p><code>SET_POINTER_GET</code> modifies <code>&lt;PE&gt;MType</code> to be a pointer, otherwise it's the same as <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PE>Hash" name = "typedef:<PE>Hash">&lt;PE&gt;Hash</a></h3>
 
 <p><code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;MType);</code></p>
 
@@ -113,7 +123,9 @@
 
 </div>
 
-<div><h3><a id = "typedef:<PE>IsEqual" name = "typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a></h3>
+<div>
+
+<h3><a id = "typedef:<PE>IsEqual" name = "typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a></h3>
 
 <p><code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const &lt;PE&gt;MType, const &lt;PE&gt;MType);</code></p>
 
@@ -121,15 +133,19 @@
 
 </div>
 
-<div><h3><a id = "typedef:<PE>Replace" name = "typedef:<PE>Replace">&lt;PE&gt;Replace</a></h3>
+<div>
+
+<h3><a id = "typedef:<PE>Replace" name = "typedef:<PE>Replace">&lt;PE&gt;Replace</a></h3>
 
 <p><code>typedef int(*<strong>&lt;PE&gt;Replace</strong>)(&lt;PE&gt;Type *original, &lt;PE&gt;Type *replace);</code></p>
 
-<p>Returns true if the <code>replace</code> replaces the <code>original</code>; used in <a href = "#fn:&lt;E&gt;SetPolicyPut">&lt;E&gt;SetPolicyPut</a>.</p>
+<p>A di-predicate; returns true if the <code>replace</code> replaces the <code>original</code>; used in <a href = "#fn:&lt;E&gt;SetPolicyPut">&lt;E&gt;SetPolicyPut</a>.</p>
 
 </div>
 
-<div><h3><a id = "typedef:<PE>ToString" name = "typedef:<PE>ToString">&lt;PE&gt;ToString</a></h3>
+<div>
+
+<h3><a id = "typedef:<PE>ToString" name = "typedef:<PE>ToString">&lt;PE&gt;ToString</a></h3>
 
 <p><code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code></p>
 
@@ -137,7 +153,9 @@
 
 </div>
 
-<div><h3><a id = "typedef:<PE>Action" name = "typedef:<PE>Action">&lt;PE&gt;Action</a></h3>
+<div>
+
+<h3><a id = "typedef:<PE>Action" name = "typedef:<PE>Action">&lt;PE&gt;Action</a></h3>
 
 <p><code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(&lt;PE&gt;Type *);</code></p>
 
@@ -147,7 +165,9 @@
 
 <h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
 
-<div><h3><a id = "tag:<E>SetElement" name = "tag:<E>SetElement">&lt;E&gt;SetElement</a></h3>
+<div>
+
+<h3><a id = "tag:<E>SetElement" name = "tag:<E>SetElement">&lt;E&gt;SetElement</a></h3>
 
 <p><code>struct <strong>&lt;E&gt;SetElement</strong>;</code></p>
 
@@ -155,7 +175,9 @@
 
 </div>
 
-<div><h3><a id = "tag:<E>Set" name = "tag:<E>Set">&lt;E&gt;Set</a></h3>
+<div>
+
+<h3><a id = "tag:<E>Set" name = "tag:<E>Set">&lt;E&gt;Set</a></h3>
 
 <p><code>struct <strong>&lt;E&gt;Set</strong>;</code></p>
 
@@ -165,7 +187,9 @@
 
 </div>
 
-<div><h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+<div>
+
+<h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
 
 <table>
 
@@ -197,9 +221,13 @@
 
 </div>
 
-<div><h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+<div>
 
-<div><h3><a id = "fn:<E>Set_" name = "fn:<E>Set_">&lt;E&gt;Set_</a></h3>
+<h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<E>Set_" name = "fn:<E>Set_">&lt;E&gt;Set_</a></h3>
 
 <p><code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code></p>
 
@@ -207,7 +235,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>Set" name = "fn:<E>Set">&lt;E&gt;Set</a></h3>
+<div>
+
+<h3><a id = "fn:<E>Set" name = "fn:<E>Set">&lt;E&gt;Set</a></h3>
 
 <p><code>static void <strong>&lt;E&gt;Set</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code></p>
 
@@ -222,7 +252,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetClear" name = "fn:<E>SetClear">&lt;E&gt;SetClear</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetClear" name = "fn:<E>SetClear">&lt;E&gt;SetClear</a></h3>
 
 <p><code>static void <strong>&lt;E&gt;SetClear</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code></p>
 
@@ -237,7 +269,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetSize" name = "fn:<E>SetSize">&lt;E&gt;SetSize</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetSize" name = "fn:<E>SetSize">&lt;E&gt;SetSize</a></h3>
 
 <p><code>static size_t <strong>&lt;E&gt;SetSize</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code></p>
 
@@ -252,7 +286,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetGet" name = "fn:<E>SetGet">&lt;E&gt;SetGet</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetGet" name = "fn:<E>SetGet">&lt;E&gt;SetGet</a></h3>
 
 <p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;MType <em>data</em>)</code></p>
 
@@ -269,7 +305,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetReserve" name = "fn:<E>SetReserve">&lt;E&gt;SetReserve</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetReserve" name = "fn:<E>SetReserve">&lt;E&gt;SetReserve</a></h3>
 
 <p><code>static int <strong>&lt;E&gt;SetReserve</strong>(struct &lt;E&gt;Set *const <em>set</em>, const size_t <em>reserve</em>)</code></p>
 
@@ -285,7 +323,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetPut" name = "fn:<E>SetPut">&lt;E&gt;SetPut</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetPut" name = "fn:<E>SetPut">&lt;E&gt;SetPut</a></h3>
 
 <p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>)</code></p>
 
@@ -306,7 +346,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetPolicyPut" name = "fn:<E>SetPolicyPut">&lt;E&gt;SetPolicyPut</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetPolicyPut" name = "fn:<E>SetPolicyPut">&lt;E&gt;SetPolicyPut</a></h3>
 
 <p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetPolicyPut</strong>(struct &lt;E&gt;Set *const <em>set</em>, struct &lt;E&gt;SetElement *const <em>element</em>, const &lt;PE&gt;Replace <em>replace</em>)</code></p>
 
@@ -329,7 +371,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetRemove" name = "fn:<E>SetRemove">&lt;E&gt;SetRemove</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetRemove" name = "fn:<E>SetRemove">&lt;E&gt;SetRemove</a></h3>
 
 <p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetRemove</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;MType <em>data</em>)</code></p>
 
@@ -344,7 +388,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetToString" name = "fn:<E>SetToString">&lt;E&gt;SetToString</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetToString" name = "fn:<E>SetToString">&lt;E&gt;SetToString</a></h3>
 
 <p><code>static const char *<strong>&lt;E&gt;SetToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code></p>
 
@@ -359,7 +405,9 @@
 
 </div>
 
-<div><h3><a id = "fn:<E>SetTest" name = "fn:<E>SetTest">&lt;E&gt;SetTest</a></h3>
+<div>
+
+<h3><a id = "fn:<E>SetTest" name = "fn:<E>SetTest">&lt;E&gt;SetTest</a></h3>
 
 <p><code>static void <strong>&lt;E&gt;SetTest</strong>(struct &lt;E&gt;SetElement *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code></p>
 
@@ -376,7 +424,9 @@
 
 </div>
 
-<div><h2><a id = "license:" name = "license:">License</a></h2>
+<div>
+
+<h2><a id = "license:" name = "license:">License</a></h2>
 
 <p>2019 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
 
