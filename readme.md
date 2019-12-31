@@ -3,7 +3,7 @@
 ## Parameterised Hash Set ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PE&gt;Type](#user-content-typedef-11e62996), [&lt;PE&gt;FnType](#user-content-typedef-1e0d342a), [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PE&gt;Type](#user-content-typedef-11e62996), [&lt;PE&gt;MType](#user-content-typedef-7d6f0919), [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -22,18 +22,18 @@ Internally, it is a separately chained, hash set with a maximum load factor of `
 
 
  * Parameter: SET\_NAME, SET\_TYPE  
-   `<E>` that satisfies `C` naming conventions when mangled and a valid [&lt;PE&gt;Type](#user-content-typedef-11e62996) associated therewith; required\. `<PE>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
+   `<E>` that satisfies `C` naming conventions when mangled and a valid [&lt;PE&gt;Type](#user-content-typedef-11e62996) associated therewith, contained in [&lt;E&gt;SetElement](#user-content-tag-8952cfcc); required\. `<PE>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  * Parameter: SET\_IS\_EQUAL  
    A function satisfying [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede); required\.
  * Parameter: SET\_TO\_STRING  
    Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
- * Parameter: SET\_PASS\_POINTER  
-   Should be used when `E` is a `struct` whose copying into functions is a performance issue\. See [&lt;PE&gt;FnType](#user-content-typedef-1e0d342a)\.
+ * Parameter: SET\_GET\_POINTER  
+   Usually [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) in the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996); this flag makes `<PE>MType` be a pointer\-to\-`<PE>Type`\. Should be used when the copying of `<PE>Type` into functions is a performance issue\. As well as [&lt;E&gt;SetGet](#user-content-fn-8d1390a0), affects the definition of [&lt;PE&gt;Hash](#user-content-typedef-812e78a) and [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede)\.
  * Parameter: SET\_NO\_CACHE  
    Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) _per_ datum\.
- * Parameter: SET\_UINT\_TYPE  
+ * Parameter: SET\_UINT  
    This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) and defaults to `unsigned int`\.
  * Parameter: SET\_TEST  
    Unit testing framework [&lt;E&gt;SetTest](#user-content-fn-382b20c0), included in a separate header, [\.\./test/TestSet\.h](../test/TestSet.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET_TO_STRING` and not `NDEBUG`\.
@@ -53,17 +53,17 @@ Valid tag type defined by `SET_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-1e0d342a" name = "user-content-typedef-1e0d342a">&lt;PE&gt;FnType</a> ###
+### <a id = "user-content-typedef-7d6f0919" name = "user-content-typedef-7d6f0919">&lt;PE&gt;MType</a> ###
 
-<code>typedef const &lt;PE&gt;Type *<strong>&lt;PE&gt;FnType</strong>;</code>
+<code>typedef const &lt;PE&gt;Type *<strong>&lt;PE&gt;MType</strong>;</code>
 
-Used in [&lt;PE&gt;Hash](#user-content-typedef-812e78a) and [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) if `SET_PASS_POINTER`, otherwise `<PE>FnType` is [&lt;PE&gt;Type](#user-content-typedef-11e62996)\.
+`SET_GET_POINTER` modifies `<PE>MType` to be a pointer, otherwise it's the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996)\.
 
 
 
 ### <a id = "user-content-typedef-54b8b39a" name = "user-content-typedef-54b8b39a">&lt;PE&gt;UInt</a> ###
 
-<code>typedef SET_UINT_TYPE <strong>&lt;PE&gt;UInt</strong>;</code>
+<code>typedef SET_UINT <strong>&lt;PE&gt;UInt</strong>;</code>
 
 Valid unsigned integer type\. The hash map will saturate at `min(((ln 2)/2) &#183; range(<PE>UInt), (1/8) &#183; range(size_t))`, at which point no new buckets can be added and the load factor will increase over the maximum\.
 
@@ -71,17 +71,17 @@ Valid unsigned integer type\. The hash map will saturate at `min(((ln 2)/2) &#18
 
 ### <a id = "user-content-typedef-812e78a" name = "user-content-typedef-812e78a">&lt;PE&gt;Hash</a> ###
 
-<code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;FnType);</code>
+<code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;MType);</code>
 
-A map from [&lt;PE&gt;FnType](#user-content-typedef-1e0d342a) onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), \(defaults to `unsigned`\.\) Should be as close as possible to a discrete uniform distribution for maximum performance\.
+A map from [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), \(defaults to `unsigned`\.\) Should be as close as possible to a discrete uniform distribution for maximum performance\.
 
 
 
 ### <a id = "user-content-typedef-c1486ede" name = "user-content-typedef-c1486ede">&lt;PE&gt;IsEqual</a> ###
 
-<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const &lt;PE&gt;FnType, const &lt;PE&gt;FnType);</code>
+<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const &lt;PE&gt;MType, const &lt;PE&gt;MType);</code>
 
-A constant equivalence relation between [&lt;PE&gt;FnType](#user-content-typedef-1e0d342a) that satisfies `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`\.
+A constant equivalence relation between [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) that satisfies `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`\.
 
 
 
@@ -103,7 +103,7 @@ Responsible for turning [&lt;PE&gt;Type](#user-content-typedef-11e62996) \(the f
 
 ### <a id = "user-content-typedef-9c0e506c" name = "user-content-typedef-9c0e506c">&lt;PE&gt;Action</a> ###
 
-<code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(&lt;PE&gt;Type *const);</code>
+<code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(&lt;PE&gt;Type *);</code>
 
 Used for `SET_TEST`\.
 
@@ -115,7 +115,7 @@ Used for `SET_TEST`\.
 
 <code>struct <strong>&lt;E&gt;SetElement</strong>;</code>
 
-Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as an element `key`, along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller\.
+Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as the first element `key`, along with data internal to the set\. Storage of the `<E>SetElement` structure is the responsibility of the caller\.
 
 
 
@@ -215,7 +215,7 @@ Clears and removes all entries from `set`\. The capacity and memory of the hash 
 
 ### <a id = "user-content-fn-8d1390a0" name = "user-content-fn-8d1390a0">&lt;E&gt;SetGet</a> ###
 
-<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;FnType <em>data</em>)</code>
+<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;MType <em>data</em>)</code>
 
 Queries whether `data` is is `set`\.
 
@@ -288,7 +288,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
 
 ### <a id = "user-content-fn-21a4ad4" name = "user-content-fn-21a4ad4">&lt;E&gt;SetRemove</a> ###
 
-<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetRemove</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;FnType <em>data</em>)</code>
+<code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetRemove</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;MType <em>data</em>)</code>
 
 Removes an element `data` from `set`\.
 

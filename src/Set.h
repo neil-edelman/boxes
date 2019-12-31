@@ -37,11 +37,11 @@
  Optional print function implementing <typedef:<PE>ToString>; makes available
  <fn:<E>SetToString>.
 
- @param[SET_REFERENCE_HASH]
- Modifies <typedef:<PE>MType> to be a pointer-to-<typedef:<PE>Type>, instead
- of the same. Should be used when the copying of `<PE>Type` into functions is a
- performance issue. Affects the definition of <typedef:<PE>Hash> and
- <typedef:<PE>IsEqual>; <fn:<E>SetGet> will have to build up a pointer.
+ @param[SET_GET_POINTER]
+ Usually <typedef:<PE>MType> in the same as <typedef:<PE>Type>; this flag makes
+ `<PE>MType` be a pointer-to-`<PE>Type`. Should be used when the copying of
+ `<PE>Type` into functions is a performance issue. As well as <fn:<E>SetGet>,
+ affects the definition of <typedef:<PE>Hash> and <typedef:<PE>IsEqual>.
 
  @param[SET_NO_CACHE]
  Calculates the hash every time and discards it; should be used when the hash
@@ -119,8 +119,8 @@
 
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PE_(Type);
-#ifdef SET_REFERENCE_HASH /* <!-- !raw */
-/** `SET_REFERENCE_HASH` modifies `<PE>MType` to be a pointer, otherwise it's
+#ifdef SET_GET_POINTER /* <!-- !raw */
+/** `SET_GET_POINTER` modifies `<PE>MType` to be a pointer, otherwise it's
  the same as <typedef:<PE>Type>. */
 typedef const PE_(Type)* PE_(MType);
 #else /* !raw --><!-- raw */
@@ -200,7 +200,7 @@ struct E_(Set) {
 
 
 
-#ifdef SET_REFERENCE_HASH /* <!-- !raw */
+#ifdef SET_GET_POINTER /* <!-- !raw */
 /** @return `element`. */
 static const PE_(Type) *PE_(pointer)(const PE_(Type) *const element)
 	{ return element; }
@@ -583,8 +583,8 @@ static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 #ifdef SET_TO_STRING /* <!-- string */
 #undef SET_TO_STRING
 #endif /* string --> */
-#ifdef SET_REFERENCE_HASH /* <!-- raw */
-#undef SET_REFERENCE_HASH
+#ifdef SET_GET_POINTER /* <!-- raw */
+#undef SET_GET_POINTER
 #endif /* raw --> */
 #ifdef SET_NO_CACHE /* <!-- !cache */
 #undef SET_NO_CACHE

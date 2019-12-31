@@ -127,7 +127,7 @@ static struct StringSetElement *string_from_pool(void *const vsp) {
 
 
 
-/* Vector; test of `SET_REFERENCE_HASH`. */
+/* Vector; test of `SET_GET_POINTER`. */
 
 struct Vec4 {
 	char a[2];
@@ -158,7 +158,7 @@ static void vec4_filler(struct Vec4 *const v4) {
 /* <fn:vec4_hash> and <fn:vec4_is_equal> have an extra level of indirection.
  This means that we also have to get an object and fill it to use
  <fn:<E>SetGet>; not very convenient. */
-#define SET_REFERENCE_HASH
+#define SET_GET_POINTER
 #define SET_HASH &vec4_hash
 #define SET_IS_EQUAL &vec4_is_equal
 #define SET_TO_STRING &vec4_to_string
@@ -405,7 +405,7 @@ int main(void) {
 			found = elem_upcast(elem);
 			prev = entry_prev(found);
 			next = entry_next(found);
-			printf("The found element was …%s, %s, %s…\n",
+			printf("The found element is between …%s, %s, %s…\n",
 				prev ? prev->key : "start", found->key,
 				next ? next->key : "end");
 			assert(found == *sp_e);
