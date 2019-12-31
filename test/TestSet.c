@@ -394,7 +394,7 @@ int main(void) {
 			/* Keep the list up to date with the hashmap. */
 			KeyListPush(&key_list, &e->node);
 			/* Test if we can find `sp_e_lim` of them; presumably they will be
-			 randomised by sorting. */
+			 randomised by sorting, but accessable to the `KeySet` on `O(1)`. */
 			if(sp_e_end >= sp_e_lim) continue;
 			printf("Looking for %s.\n", e->key);
 			*(sp_e_end++) = e;
