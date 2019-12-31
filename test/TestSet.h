@@ -253,7 +253,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 				r = E_(SetPolicyPut)(&set, t->elem, 0);
 				assert(!r);
 				r = E_(SetPolicyPut)(&set, t->elem, 0);
-				assert(!r);
+				assert(r == t->elem);
 				r = E_(SetRemove)(&set, PE_(pointer)(&t->elem->key));
 				assert(r);
 			}
@@ -262,7 +262,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 			collision++;
 			assert(t && element != t->elem);
 			r = E_(SetPolicyPut)(&set, t->elem, 0);
-			assert(!r && count == E_(SetSize)(&set));
+			assert(r == t->elem && count == E_(SetSize)(&set));
 		}
 	}
 	printf("Collisions: %lu; removed: %lu.\n",

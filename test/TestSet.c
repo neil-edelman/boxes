@@ -371,7 +371,7 @@ int main(void) {
 	{ /* Linked dictionary. */
 		struct EntryPool entries = POOL_IDLE;
 		const size_t limit = (size_t)500000/*0*/;
-		struct Entry *e, *sp_es[10], **sp_e, **sp_e_end = sp_es,
+		struct Entry *e, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
 		struct KeySet key_set = SET_IDLE;
 		struct KeyList key_list;
@@ -384,14 +384,17 @@ int main(void) {
 			if(is_used && !(e = EntryPoolNew(&entries)))
 				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
 			entry_fill(e);
-			if(KeySetGet(&key_set, e->elem.key)) { printf("Already %s.\n",
-				e->elem.key); is_used = 0; continue; }
-			is_used = 1;
-			unique++;
 			if(!KeySetReserve(&key_set, 1))
 				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
-			elem = KeySetPut(&key_set, &e->elem), assert(!elem);
+			/* Don't go replacing elements; `elem` is set on collision. */
+			elem = KeySetPolicyPut(&key_set, &e->elem, 0);
+			if(elem) { assert(elem == &e->elem), is_used = 0; continue; }
+			is_used = 1;
+			unique++;
+			/* Keep the list up to date with the hashmap. */
 			KeyListPush(&key_list, &e->node);
+			/* Test if we can find `sp_e_lim` of them; presumably they will be
+			 randomised by sorting. */
 			if(sp_e_end >= sp_e_lim) continue;
 			printf("Looking for %s.\n", e->key);
 			*(sp_e_end++) = e;
@@ -405,7 +408,7 @@ int main(void) {
 			found = elem_upcast(elem);
 			prev = entry_prev(found);
 			next = entry_next(found);
-			printf("The found element is between …%s, %s, %s…\n",
+			printf("Found element is between …%s, %s, %s…\n",
 				prev ? prev->key : "start", found->key,
 				next ? next->key : "end");
 			assert(found == *sp_e);

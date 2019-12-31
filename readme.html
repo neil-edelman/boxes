@@ -362,7 +362,7 @@
 	<dt>Parameter: <em>replace</em></dt>
 	<dd>If specified, gets called on collision and only replaces it if the function returns true. If null, doesn't do any replacement on collision.</dd>
 	<dt>Return:</dt>
-	<dd>Any ejected element or null.</dd>
+	<dd>Any ejected element or null. On collision, if <code>replace</code> returns false or <code>replace</code> is null, returns <code>element</code> and leaves the other element in the set.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dd>There was an error with a re-sizing. Calling <a href = "#fn:&lt;E&gt;SetReserve">&lt;E&gt;SetReserve</a> before ensures that this does not happen.</dd>
 	<dt>Order:</dt>

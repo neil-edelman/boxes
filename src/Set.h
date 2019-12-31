@@ -310,7 +310,7 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 
 /** Most general put function that every put function calls. Puts `element` in
  `set` and returns the collided element, if any, as long as `replace` is null
- or returns true. */
+ or returns true. If `replace` returns false, returns `element`. */
 static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	struct E_(SetElement) *const element, const PE_(Replace) replace) {
 	struct PE_(Bucket) *bucket;
@@ -327,7 +327,7 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 	if(!(to_x = PE_(bucket_to)(bucket, hash, PE_(pointer)(&element->key))))
 		goto grow_table;
 	x = *to_x;
-	if(replace && !replace(&x->key, &element->key)) return 0;
+	if(replace && !replace(&x->key, &element->key)) return element;
 	*to_x = x->next, x->next = 0;
 	goto add_element;
 grow_table:
@@ -448,7 +448,9 @@ static struct E_(SetElement) *E_(SetPut)(struct E_(Set) *const set,
  @param[element] Must not be part this `set` or any other.
  @param[replace] If specified, gets called on collision and only replaces it if
  the function returns true. If null, doesn't do any replacement on collision.
- @return Any ejected element or null.
+ @return Any ejected element or null. On collision, if `replace` returns false
+ or `replace` is null, returns `element` and leaves the other element in the
+ set.
  @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
  <fn:<E>SetReserve> before ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);

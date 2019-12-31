@@ -277,7 +277,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
  * Parameter: _replace_  
    If specified, gets called on collision and only replaces it if the function returns true\. If null, doesn't do any replacement on collision\.
  * Return:  
-   Any ejected element or null\.
+   Any ejected element or null\. On collision, if `replace` returns false or `replace` is null, returns `element` and leaves the other element in the set\.
  * Exceptional return: realloc, ERANGE  
    There was an error with a re\-sizing\. Calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) before ensures that this does not happen\.
  * Order:  
