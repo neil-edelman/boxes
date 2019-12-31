@@ -119,7 +119,7 @@
 
 <p><code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;MType);</code></p>
 
-<p>A map from <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> onto <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a>, (defaults to <code>unsigned</code>.) Should be as close as possible to a discrete uniform distribution for maximum performance.</p>
+<p>A map from <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> onto <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a>. Should be as close as possible to a discrete uniform distribution for maximum performance.</p>
 
 </div>
 
@@ -159,7 +159,7 @@
 
 <p><code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(&lt;PE&gt;Type *);</code></p>
 
-<p>Used for <code>SET_TEST</code>.</p>
+<p>Operates by side-effects. Used for <code>SET_TEST</code>.</p>
 
 </div>
 
@@ -333,13 +333,13 @@
 
 <dl>
 	<dt>Parameter: <em>set</em></dt>
-	<dd>If null, returns false.</dd>
+	<dd>If null, returns null.</dd>
 	<dt>Parameter: <em>element</em></dt>
-	<dd>If null, returns false. Should not be of a <code>set</code> because the integrity of that <code>set</code> will be compromised.</dd>
+	<dd>If null, returns null. Should not be of a set because the integrity of that set will be compromised.</dd>
 	<dt>Return:</dt>
-	<dd>Adding <code>element</code> with <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a> <code>SET_IS_EQUAL</code> the old element, causes the old to be ejected and returned, otherwise null.</dd>
+	<dd>Any ejected element or null. (An ejected element has <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a> <code>SET_IS_EQUAL</code> the <code>element</code>.)</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dd>There was an error with a re-sizing. Calling <a href = "#fn:&lt;E&gt;SetReserve">&lt;E&gt;SetReserve</a> before ensures that this does not happen.</dd>
+	<dd>There was an error with a re-sizing. Successfully calling <a href = "#fn:&lt;E&gt;SetReserve">&lt;E&gt;SetReserve</a> with at least one before ensures that this does not happen.</dd>
 	<dt>Order:</dt>
 	<dd>Average amortised &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
 </dl>
@@ -356,15 +356,15 @@
 
 <dl>
 	<dt>Parameter: <em>set</em></dt>
-	<dd>If null, returns false.</dd>
+	<dd>If null, returns null.</dd>
 	<dt>Parameter: <em>element</em></dt>
-	<dd>If null, returns false. Must not be part this <code>set</code> or any other.</dd>
+	<dd>If null, returns null. Should not be of a set because the integrity of that set will be compromised.</dd>
 	<dt>Parameter: <em>replace</em></dt>
-	<dd>If specified, gets called on collision and only replaces it if the function returns true. If null, doesn't do any replacement on collision.</dd>
+	<dd>Called on collision and only replaces it if the function returns true. If null, doesn't do any replacement on collision.</dd>
 	<dt>Return:</dt>
 	<dd>Any ejected element or null. On collision, if <code>replace</code> returns false or <code>replace</code> is null, returns <code>element</code> and leaves the other element in the set.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dd>There was an error with a re-sizing. Calling <a href = "#fn:&lt;E&gt;SetReserve">&lt;E&gt;SetReserve</a> before ensures that this does not happen.</dd>
+	<dd>There was an error with a re-sizing. Successfully calling <a href = "#fn:&lt;E&gt;SetReserve">&lt;E&gt;SetReserve</a> with at least one before ensures that this does not happen.</dd>
 	<dt>Order:</dt>
 	<dd>Average amortised &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
 </dl>
@@ -381,7 +381,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Successfully ejected element or null. This element is free to be put into another set.</dd>
+	<dd>Successfully ejected element or null. This element is free to be put into another set or modify it's hash values.</dd>
 	<dt>Order:</dt>
 	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
 </dl>
@@ -398,7 +398,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Prints <code>set</code> in a static buffer in order by bucket, (<em>ie</em>, unordered.)</dd>
+	<dd>Prints <code>set</code> in a static buffer in order by bucket.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1); it has a 1024 character limit; every element takes some.</dd>
 </dl>

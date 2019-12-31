@@ -133,9 +133,8 @@ typedef const PE_(Type)* PE_(MType);
 typedef PE_(Type) PE_(MType);
 #endif /* raw --> */
 
-/** A map from <typedef:<PE>MType> onto <typedef:<PE>UInt>, (defaults to
- `unsigned`.) Should be as close as possible to a discrete uniform distribution
- for maximum performance. */
+/** A map from <typedef:<PE>MType> onto <typedef:<PE>UInt>. Should be as close
+ as possible to a discrete uniform distribution for maximum performance. */
 typedef PE_(UInt) (*PE_(Hash))(const PE_(MType));
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
@@ -161,7 +160,7 @@ static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
 #endif /* string --> */
 
 #ifdef SET_TEST /* <!-- test */
-/** Used for `SET_TEST`. */
+/** Operates by side-effects. Used for `SET_TEST`. */
 typedef void (*PE_(Action))(PE_(Type) *);
 #endif /* test --> */
 
@@ -427,13 +426,14 @@ static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
 }
 
 /** Puts the `element` in `set`.
- @param[set, element] If null, returns false.
- @param[element] Should not be of a `set` because the integrity of that `set`
- will be compromised.
- @return Adding `element` with <typedef:<PE>IsEqual> `SET_IS_EQUAL` the old
- element, causes the old to be ejected and returned, otherwise null.
- @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
- <fn:<E>SetReserve> before ensures that this does not happen.
+ @param[set, element] If null, returns null.
+ @param[element] Should not be of a set because the integrity of that set will
+ be compromised.
+ @return Any ejected element or null. (An ejected element has
+ <typedef:<PE>IsEqual> `SET_IS_EQUAL` the `element`.)
+ @throws[realloc, ERANGE] There was an error with a re-sizing. Successfully
+ calling <fn:<E>SetReserve> with at least one before ensures that this does not
+ happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);
  worst \O(n).
  @allow */
@@ -444,15 +444,17 @@ static struct E_(SetElement) *E_(SetPut)(struct E_(Set) *const set,
 
 /** Puts the `element` in `set` only if the entry is absent or if calling
  `replace` returns true.
- @param[set, element] If null, returns false.
- @param[element] Must not be part this `set` or any other.
- @param[replace] If specified, gets called on collision and only replaces it if
- the function returns true. If null, doesn't do any replacement on collision.
+ @param[set, element] If null, returns null.
+ @param[element] Should not be of a set because the integrity of that set will
+ be compromised.
+ @param[replace] Called on collision and only replaces it if the function
+ returns true. If null, doesn't do any replacement on collision.
  @return Any ejected element or null. On collision, if `replace` returns false
  or `replace` is null, returns `element` and leaves the other element in the
  set.
- @throws[realloc, ERANGE] There was an error with a re-sizing. Calling
- <fn:<E>SetReserve> before ensures that this does not happen.
+ @throws[realloc, ERANGE] There was an error with a re-sizing. Successfully
+ calling <fn:<E>SetReserve> with at least one before ensures that this does not
+ happen.
  @order Average amortised \O(1), (hash distributes elements uniformly);
  worst \O(n).
  @allow */
@@ -463,7 +465,7 @@ static struct E_(SetElement) *E_(SetPolicyPut)(struct E_(Set) *const set,
 
 /** Removes an element `data` from `set`.
  @return Successfully ejected element or null. This element is free to be put
- into another set.
+ into another set or modify it's hash values.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
 static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
@@ -485,7 +487,7 @@ static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 /** Can print 2 things at once before it overwrites. One must set
  `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
  functionality.
- @return Prints `set` in a static buffer in order by bucket, (_ie_, unordered.)
+ @return Prints `set` in a static buffer in order by bucket.
  @order \Theta(1); it has a 1024 character limit; every element takes some.
  @allow */
 static const char *E_(SetToString)(const struct E_(Set) *const set) {

@@ -73,7 +73,7 @@ Valid tag type defined by `SET_TYPE`\. Included in [&lt;E&gt;SetElement](#user-c
 
 <code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;MType);</code>
 
-A map from [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), \(defaults to `unsigned`\.\) Should be as close as possible to a discrete uniform distribution for maximum performance\.
+A map from [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. Should be as close as possible to a discrete uniform distribution for maximum performance\.
 
 
 
@@ -105,7 +105,7 @@ Responsible for turning [&lt;PE&gt;Type](#user-content-typedef-11e62996) \(the f
 
 <code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(&lt;PE&gt;Type *);</code>
 
-Used for `SET_TEST`\.
+Operates by side\-effects\. Used for `SET_TEST`\.
 
 
 
@@ -251,13 +251,13 @@ Reserve at least `reserve`, divided by the maximum load factor, space in the buc
 Puts the `element` in `set`\.
 
  * Parameter: _set_  
-   If null, returns false\.
+   If null, returns null\.
  * Parameter: _element_  
-   If null, returns false\. Should not be of a `set` because the integrity of that `set` will be compromised\.
+   If null, returns null\. Should not be of a set because the integrity of that set will be compromised\.
  * Return:  
-   Adding `element` with [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET_IS_EQUAL` the old element, causes the old to be ejected and returned, otherwise null\.
+   Any ejected element or null\. \(An ejected element has [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET_IS_EQUAL` the `element`\.\)
  * Exceptional return: realloc, ERANGE  
-   There was an error with a re\-sizing\. Calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) before ensures that this does not happen\.
+   There was an error with a re\-sizing\. Successfully calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) with at least one before ensures that this does not happen\.
  * Order:  
    Average amortised &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
@@ -271,15 +271,15 @@ Puts the `element` in `set`\.
 Puts the `element` in `set` only if the entry is absent or if calling `replace` returns true\.
 
  * Parameter: _set_  
-   If null, returns false\.
+   If null, returns null\.
  * Parameter: _element_  
-   If null, returns false\. Must not be part this `set` or any other\.
+   If null, returns null\. Should not be of a set because the integrity of that set will be compromised\.
  * Parameter: _replace_  
-   If specified, gets called on collision and only replaces it if the function returns true\. If null, doesn't do any replacement on collision\.
+   Called on collision and only replaces it if the function returns true\. If null, doesn't do any replacement on collision\.
  * Return:  
    Any ejected element or null\. On collision, if `replace` returns false or `replace` is null, returns `element` and leaves the other element in the set\.
  * Exceptional return: realloc, ERANGE  
-   There was an error with a re\-sizing\. Calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) before ensures that this does not happen\.
+   There was an error with a re\-sizing\. Successfully calling [&lt;E&gt;SetReserve](#user-content-fn-33c00814) with at least one before ensures that this does not happen\.
  * Order:  
    Average amortised &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
@@ -293,7 +293,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
 Removes an element `data` from `set`\.
 
  * Return:  
-   Successfully ejected element or null\. This element is free to be put into another set\.
+   Successfully ejected element or null\. This element is free to be put into another set or modify it's hash values\.
  * Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
@@ -307,7 +307,7 @@ Removes an element `data` from `set`\.
 Can print 2 things at once before it overwrites\. One must set `SET_TO_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe) to get this functionality\.
 
  * Return:  
-   Prints `set` in a static buffer in order by bucket, \(_ie_, unordered\.\)
+   Prints `set` in a static buffer in order by bucket\.
  * Order:  
    &#920;\(1\); it has a 1024 character limit; every element takes some\.
 
