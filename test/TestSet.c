@@ -377,10 +377,10 @@ int main(void) {
 		struct KeyList key_list;
 		struct KeySetElement *elem;
 		struct Entry *found;
-		size_t i, unique = 0;
+		size_t line, unique = 0;
 		int is_used = 1;
 		KeyListClear(&key_list);
-		for(i = 0; i < limit; i++) {
+		for(line = 0; line < limit; line++) {
 			if(is_used && !(e = EntryPoolNew(&entries)))
 				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
 			entry_fill(e);
@@ -414,6 +414,87 @@ int main(void) {
 			assert(found == *sp_e);
 		}
 		KeySet_(&key_set);
+		EntryPool_(&entries);
+	}
+	{ /* Actual dictionary. */
+		const char *const english = "test/Tutte_le_parole_inglesi.txt";
+		FILE *fp = fopen(english, "r");
+		struct EntryPool entries = POOL_IDLE;
+		struct Entry *e, *sp_es[20], **sp_e;
+		size_t sp_es_size = sizeof sp_es / sizeof *sp_es,
+			sp_e_to_go = sp_es_size;
+		struct KeySet key_set = SET_IDLE;
+		struct KeyList key_list;
+		struct KeySetElement *elem;
+		struct Entry *found;
+		size_t line, words_to_go = 216555, key_len;
+		assert(RAND_MAX >= words_to_go);
+		KeyListClear(&key_list);
+		if(!fp) goto catch;
+		/* Read file. */
+		for(line = 1; ; line++) {
+			char *key_end;
+			if(!(e = EntryPoolNew(&entries))) goto catch;
+			e->elem.key = e->key;
+			if(!fgets(e->key, sizeof e->key, fp)) {
+				EntryPoolRemove(&entries, e); /* Doesn't really do anything. */
+				if(ferror(fp)) { if(!errno) errno = EILSEQ; goto catch; }
+				break;
+			}
+			key_len = strlen(e->key);
+			assert(key_len);
+			key_end = e->key + key_len - 1;
+			/* Words > sizeof e->key - 2, (I guess electroencapholographist is
+			 not on there.) */
+			if(*key_end != '\n') { errno = ERANGE; goto catch; }
+			*key_end = '\0';
+			/* Never mind about the value; it is not used. */
+			elem = KeySetPolicyPut(&key_set, &e->elem, 0);
+			if(elem) {
+				fprintf(stderr, "%lu: ignoring %s already in word list.\n",
+					(unsigned long)line, e->key);
+				EntryPoolRemove(&entries, e);
+				words_to_go--;
+				continue;
+			}
+			KeyListPush(&key_list, &e->node);
+			/* Since they are in order already, there's a whole probability
+			 thing. */
+			if(!words_to_go) {
+				fprintf(stderr, "%lu: count inaccurate.\n",
+					(unsigned long)line);
+				continue;
+			}
+			if(rand() / (RAND_MAX / (unsigned)words_to_go-- + 1) >= sp_e_to_go)
+				continue;
+			printf("Looking (%u) for %s.\n",
+				(unsigned)(sp_es_size - sp_e_to_go), e->key);
+			sp_es[sp_es_size - sp_e_to_go--] = e;
+		}
+		printf("Sorting %lu lines, (they are already sorted.)\n",
+			(unsigned long)line - 1);
+		KeyListSort(&key_list);
+		for(sp_e = sp_es; sp_e < sp_es + sp_es_size; sp_e++) {
+			const struct Entry *prev, *next;
+			elem = KeySetGet(&key_set, (*sp_e)->key);
+			assert(elem);
+			found = elem_upcast(elem);
+			prev = entry_prev(found);
+			next = entry_next(found);
+			printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
+				prev ? prev->key : "start", found->key,
+				next ? next->key : "end");
+			assert(found == *sp_e);
+		}
+		KeySet_(&key_set);
+		EntryPool_(&entries);
+		goto finally;
+catch:
+		fprintf(stderr, "%lu:", (unsigned long)line);
+		perror(english);
+finally:
+		if(fp) fclose(fp);
+		KeySet(&key_set);
 		EntryPool_(&entries);
 	}
 	return EXIT_SUCCESS;
