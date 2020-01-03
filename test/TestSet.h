@@ -24,7 +24,7 @@ static const PE_(Action) PE_(filler) = (SET_TEST);
 
 
 /** Count how many are in the `bucket`.
- @order O(n) */
+ @order \O(`bucket.items`) */
 static size_t PE_(count)(struct PE_(Bucket) *const bucket) {
 	const struct E_(SetElement) *x;
 	size_t c = 0;
@@ -34,7 +34,8 @@ static size_t PE_(count)(struct PE_(Bucket) *const bucket) {
 }
 
 /** Collect stats; <Welford1962Note>, on `set` and output them to `fp` with
- `delim`. */
+ `delim`.
+ @order \O(|`set.bins`| + |`set.items`|) */
 static void PE_(stats)(const struct E_(Set) *const set,
 	const char *const delim, FILE *fp) {
 	struct { size_t n, cost, max_bin; double mean, ssdm; }
@@ -70,7 +71,7 @@ static void PE_(stats)(const struct E_(Set) *const set,
 }
 
 /** Assertion function for seeing if `set` is in a valid state.
- @order O(|{set.bins}| + |{set.items}|) */
+ @order \O(|`set.bins`| + |`set.items`|) */
 static void PE_(legit)(const struct E_(Set) *const set) {
 	struct PE_(Bucket) *b, *b_end;
 	size_t size = 0;
@@ -85,8 +86,9 @@ static void PE_(legit)(const struct E_(Set) *const set) {
 	assert(set->size == size);
 }
 
-/** Draw a graph of this `set` to `fn` in Graphviz format.
- @order O(|{set.bins}| + |{set.items}|) */
+/** Draw a diagram of `set` written to `fn` in
+ [Graphviz](https://www.graphviz.org/) format.
+ @order \O(|`set.bins`| + |`set.items`|) */
 static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	FILE *fp;
 	char a[12];
@@ -139,6 +141,45 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 	}
 	fprintf(fp, "\tnode [colour=red];\n");
 	fprintf(fp, "}\n");
+	fclose(fp);
+}
+
+/** Draw a histogram of `set` written to `fn` in
+ [Gnuplot](http://www.gnuplot.info/) format.
+ @order \O(|`set.bins`| + |`set.items`|) */
+static void PE_(histogram)(const struct E_(Set) *const set,
+	const char *const fn) {
+	FILE *fp;
+	size_t histogram[64], hs, h;
+	const size_t histogram_size = sizeof histogram / sizeof *histogram;
+	assert(set && fn);
+	memset(histogram, 0, sizeof histogram);
+	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	if(set->buckets) {
+		struct PE_(Bucket) *b = set->buckets,
+			*b_end = b + (1 << set->log_capacity);
+		for( ; b < b_end; b++) {
+			size_t items = PE_(count)(b);
+			if(items >= histogram_size) items = histogram_size - 1;
+			histogram[items]++;
+		}
+	}
+	/* Hopefully `historgram_size` is much larger then it has to be. */
+	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
+	printf("Histogram for %lu:\n", set->size);
+	for(h = 0; h < hs; h++)
+		printf("%lu\t%lu\n", (unsigned long)h, (unsigned long)histogram[h]);
+	/* Look up how to do this. */
+	"set term postscript eps enhanced color\n"
+	"set output \"%s.eps\"\n"
+	"set grid\n"
+	"set xlabel \"collisions\"\n"
+	"set ylabel \"frequency\"\n"
+	"set style histogram\n"
+	"set yrange [0:]\n"
+	"set xrange [0:]\n"
+	"plot ?? using 1:2:3 with yerrorbars title \"Errors\", \\n"
+	"\t?? using 1:2 with boxes lw 3 title \"Histogram\"\n";
 	fclose(fp);
 }
 
@@ -203,26 +244,26 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 			}
 		}
 		t->is_in = 1;
-		if(n == 2 || n == 15 || n == 150 || n == 300 || n == 1500) {
-			char fn[512];
+		if(E_(SetSize)(&set) < 1000000 && !(n & (n - 1))) {
+			char fn[64];
 			fprintf(stderr, "%lu: %s added to set %s.\n",
 				(unsigned long)n, a, E_(SetToString)(&set));
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
 				(unsigned)n + 1);
 			PE_(graph)(&set, fn);
-		} else if(n % 750 == 375) {
-			PE_(stats)(&set, "\n", stdout);
-			printf("\n");
 		}
 		PE_(legit)(&set);
 	}
 	{
-		char fn[512];
+		char fn[64];
 		PE_(stats)(&set, "\n", stdout);
 		printf("\n");
-		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
+		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-final.gv",
 			(unsigned)test_size + 1);
 		PE_(graph)(&set, fn);
+		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-histogram.gv",
+			(unsigned)test_size + 1);
+		PE_(histogram)(&set, fn);
 	}
 	printf("Testing get from set.\n");
 	/* This is more debug info.
@@ -236,7 +277,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		const size_t n = t - test;
 		struct E_(SetElement) *r;
-		if(n < 100 || (n & 0xFF) == 0) {
+		if(!(n & (n - 1))) {
 			PE_(to_string)(&t->elem->key, &a);
 			fprintf(stderr, "%lu: retrieving %s.\n", (unsigned long)n, a);
 		}
