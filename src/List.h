@@ -53,8 +53,7 @@
 #error LIST_TEST requires LIST_TO_STRING.
 #endif
 
-/* Generics using the preprocessor;
- <http://stackoverflow.com/questions/16522341/pseudo-generics-in-c>. */
+/* <Kernighan and Ritchie, 1988>. */
 #ifdef CAT
 #undef CAT
 #endif

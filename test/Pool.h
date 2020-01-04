@@ -60,8 +60,7 @@
 #error POOL_TEST requires POOL_TO_STRING.
 #endif /* error --> */
 
-/* Generics using the preprocessor;
- <http://stackoverflow.com/questions/16522341/pseudo-generics-in-c>. */
+/* <Kernighan and Ritchie, 1988>. */
 #ifdef CAT
 #undef CAT
 #endif
