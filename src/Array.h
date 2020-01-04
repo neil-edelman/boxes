@@ -61,7 +61,7 @@
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
 
-/* <Kernighan and Ritchie 1988, p. 231>. */
+/* <Kernighan and Ritchie, 1988>. */
 #ifdef CAT
 #undef CAT
 #endif
