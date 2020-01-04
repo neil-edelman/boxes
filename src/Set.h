@@ -23,9 +23,9 @@
 
  @param[SET_NAME, SET_TYPE]
  `<E>` that satisfies `C` naming conventions when mangled and a valid
- <typedef:<PE>Type> associated therewith, contained in <tag:<E>SetElement>;
- required. `<PE>` is private, whose names are prefixed in a manner to avoid
- collisions; any should be re-defined prior to use elsewhere.
+ <typedef:<PE>Type> associated therewith; required. `<PE>` is private, whose
+ names are prefixed in a manner to avoid collisions; any should be re-defined
+ prior to use elsewhere.
 
  @param[SET_HASH]
  A function satisfying <typedef:<PE>Hash>; required.
@@ -62,13 +62,9 @@
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Pool](https://github.com/neil-edelman/Pool) */
 
-#include <limits.h> /* SIZE_MAX? */
 #include <stdlib.h> /* realloc free */
 #include <assert.h>	/* assert */
 #include <errno.h>  /* errno */
-#ifdef SET_TO_STRING /* <!-- string */
-#include <string.h> /* strlen memcpy */
-#endif /* string --> */
 
 /* Check defines. */
 #ifndef SET_NAME
@@ -86,11 +82,14 @@
 #if defined(SET_TEST) && !defined(SET_TO_STRING)
 #error SET_TEST requires SET_TO_STRING.
 #endif
+#if defined(E_) || defined(PE_)
+#error E_, and PE_ cannot be defined.
+#endif
 #ifndef SET_UINT
 #define SET_UINT unsigned
 #endif
 
-/* <Kernighan and Ritchie, 1988>. */
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -103,18 +102,12 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef E_
-#undef E_
-#endif
-#ifdef PE_
-#undef PE_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
 #define E_(thing) CAT(SET_NAME, thing)
-#define PE_(thing) PCAT(set, PCAT(SET_NAME, thing)) /* "Private." */
+#define PE_(thing) PCAT(set, PCAT(SET_NAME, thing))
 
 /** Valid unsigned integer type used for hash values. The hash map will
  saturate at `min(((ln 2)/2) \cdot range(<PE>UInt), (1/8) \cdot range(size_t))`,
@@ -138,9 +131,9 @@ typedef PE_(UInt) (*PE_(Hash))(const PE_(MType));
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
 
-/** A constant equivalence relation between <typedef:<PE>MType> that satisfies
+/** Equivalence relation between <typedef:<PE>MType> that satisfies
  `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`. */
-typedef int (*PE_(IsEqual))(const PE_(MType), const PE_(MType));
+typedef int (*PE_(IsEqual))(const PE_(MType) a, const PE_(MType) b);
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PE>IsEqual>. */
 static const PE_(IsEqual) PE_(equal) = (SET_IS_EQUAL);
@@ -149,21 +142,10 @@ static const PE_(IsEqual) PE_(equal) = (SET_IS_EQUAL);
  in <fn:<E>SetPolicyPut>. */
 typedef int (*PE_(Replace))(PE_(Type) *original, PE_(Type) *replace);
 
-#ifdef SET_TO_STRING /* <!-- string */
-/** Responsible for turning <typedef:<PE>Type> (the first argument) into a
- maximum 11-`char` string (the second.) */
-typedef void (*PE_(ToString))(const PE_(Type) *, char (*)[12]);
-/* Check that `SET_TO_STRING` is a function implementing
- <typedef:<PE>ToString>. */
-static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
-#endif /* string --> */
-
 #ifdef SET_TEST /* <!-- test */
 /** Operates by side-effects. Used for `SET_TEST`. */
 typedef void (*PE_(Action))(PE_(Type) *);
 #endif /* test --> */
-
-
 
 /** Contains <typedef:<PE>Type> as the first element `key`, along with data
  internal to the set. Storage of the `<E>SetElement` structure is the
@@ -265,8 +247,8 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	/* One did set `<PE>UInt` to an unsigned type, right? */
 	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
 		&& (PE_(UInt))-1 > 0);
-	/* `SIZE_MAX` min 65535 -> 5041 but typically much larger _st_ it becomes
-	 saturated while the load factor increases. */
+	/* `SIZE_MAX` min 65535 (`C99`) -> 5041 but typically much larger _st_ it
+	 becomes saturated while the load factor increases. */
 	if(size > (size_t)-1 / 13) return 1; /* <- Saturation `1/8 * SIZE_MAX`. */
 	/* Load factor `0.693147180559945309417232121458176568 ~= 9/13`.
 	 Starting bucket number is a power of 2 in `[8, 1 << log_limit]`. */
@@ -352,6 +334,8 @@ static void PE_(set)(struct E_(Set) *const set) {
 	set->log_capacity = 0;
 	set->size         = 0;
 }
+
+#ifndef SET_CHILD /* <!-- !sub-type */
 
 /** Destructor for active `set`. After, it takes no memory and is in an idle
  state. If idle, does nothing.
@@ -483,6 +467,16 @@ static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 }
 
 #ifdef SET_TO_STRING /* <!-- string */
+
+#include <string.h> /* strlen memcpy */
+
+/** Responsible for turning <typedef:<PE>Type> into a 12-`char` null-terminated
+ output string. Used for `SET_TO_STRING`. */
+typedef void (*PE_(ToString))(const PE_(Type) *, char (*)[12]);
+/* Check that `SET_TO_STRING` is a function implementing
+ <typedef:<PE>ToString>. */
+static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
+			
 /** Can print 2 things at once before it overwrites. One must set
  `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
  functionality.
@@ -539,6 +533,7 @@ terminate:
 	assert(s <= string + string_size);
 	return string;
 }
+
 #endif /* string --> */
 
 #ifdef SET_TEST /* <!-- test: need this file. */
@@ -566,33 +561,41 @@ static void PE_(unused_set)(void) {
 }
 static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 
-/* Un-define all macros. Undocumented: allows nestled inclusion in other .h so
- long as `CAT`, _etc_, are the same meaning and `E_`, _etc_, are not
- clobbered. */
-#ifdef SET_SUBTYPE /* <!-- sub */
-#undef SET_SUBTYPE
-#else /* sub --><!-- !sub */
+/* Un-define all macros. */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
-#endif /* !sub --> */
+#else /* !sub-type --><!-- sub-type */
+#undef SET_CHILD
+static void PE_(unused_coda)(void);
+/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
+ have the same meanings; they will be replaced with these, and `E` cannot be
+ used. */
+static void PE_(unused_set)(void) {
+	/* <fn:<PE>grow>, _etc_, are integral; we want to be notified when these
+	 are not called. <fn:<PE>false>, not really. */
+	PE_(false)(0, 0);
+	PT_(unused_coda)();
+}
+static void PT_(unused_coda)(void) { PT_(unused_set)(); }
+#endif /* sub-type --> */
 #undef E_
 #undef PE_
 #undef SET_NAME
 #undef SET_TYPE
+#undef SET_UINT
 #undef SET_HASH
 #undef SET_IS_EQUAL
-#ifdef SET_TO_STRING /* <!-- string */
+#ifdef SET_TO_STRING
 #undef SET_TO_STRING
-#endif /* string --> */
-#ifdef SET_POINTER_GET /* <!-- raw */
+#endif
+#ifdef SET_POINTER_GET
 #undef SET_POINTER_GET
-#endif /* raw --> */
-#ifdef SET_NO_CACHE /* <!-- !cache */
+#endif
+#ifdef SET_NO_CACHE
 #undef SET_NO_CACHE
-#endif /* !cache --> */
-#undef SET_UINT
-#ifdef SET_TEST /* <!-- test */
+#endif
+#ifdef SET_TEST
 #undef SET_TEST
-#endif /* test --> */
+#endif
