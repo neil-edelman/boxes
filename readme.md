@@ -47,7 +47,7 @@ Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-term
 
 <code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *data);</code>
 
-Operates by side\-effects on `data` only\.
+Operates by side\-effects on `data`\.
 
 
 

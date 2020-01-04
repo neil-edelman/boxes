@@ -61,8 +61,7 @@
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
 
-/* Generics using the preprocessor;
- <http://stackoverflow.com/questions/16522341/pseudo-generics-in-c>. */
+/* <Kernighan and Ritchie 1988, p. 231>. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -91,7 +90,6 @@
 #define T_(thing) CAT(ARRAY_NAME, thing)
 #define PT_(thing) PCAT(array, PCAT(ARRAY_NAME, thing))
 
-
 /* Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type,
  whose definition is placed above `#include "Array.h"`. */
 typedef ARRAY_TYPE PT_(Type);
@@ -107,7 +105,7 @@ typedef void (*PT_(ToString))(const T *, char (*)[12]);
 static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 #endif /* string --> */
 
-/** Operates by side-effects on `data` only. */
+/** Operates by side-effects on `data`. */
 typedef void (*PT_(Action))(T *data);
 
 /** Given constant `data`, returns a boolean. */
@@ -130,7 +128,6 @@ struct T_(Array) {
 #ifndef ARRAY_IDLE /* <!-- !zero */
 #define ARRAY_IDLE { 0, 0, 0, 0 }
 #endif /* !zero --> */
-
 
 /** Ensures `min_capacity` of `a`.
  @param[min_capacity] If zero, allocates anyway.
