@@ -160,26 +160,25 @@ static void PE_(histogram)(const struct E_(Set) *const set,
 			*b_end = b + (1 << set->log_capacity);
 		for( ; b < b_end; b++) {
 			size_t items = PE_(count)(b);
+			/* The bins are `0,1,2,...,[histogram_size - 1, \infty]`. */
 			if(items >= histogram_size) items = histogram_size - 1;
 			histogram[items]++;
 		}
 	}
 	/* Hopefully `historgram_size` is much larger then it has to be. */
 	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
-	printf("Histogram for %lu:\n", set->size);
-	for(h = 0; h < hs; h++)
-		printf("%lu\t%lu\n", (unsigned long)h, (unsigned long)histogram[h]);
-	/* Look up how to do this. */
-	"set term postscript eps enhanced color\n"
-	"set output \"%s.eps\"\n"
-	"set grid\n"
-	"set xlabel \"collisions\"\n"
-	"set ylabel \"frequency\"\n"
-	"set style histogram\n"
-	"set yrange [0:]\n"
-	"set xrange [0:]\n"
-	"plot ?? using 1:2:3 with yerrorbars title \"Errors\", \\n"
-	"\t?? using 1:2 with boxes lw 3 title \"Histogram\"\n";
+	fprintf(fp, "# Size: %lu.\n"
+		"set term postscript eps enhanced color\n"
+		"set output \"%s.eps\"\n"
+		"set grid\n"
+		"set xlabel \"bucket occupancy\"\n"
+		"set ylabel \"frequency\"\n"
+		"set style histogram\n"
+		"set xrange [0:]\n"
+		"plot \"-\" using 1:2 with boxes lw 3 title \"Histogram\"\n",
+		set->size, fn);
+	for(h = 0; h < hs; h++) fprintf(fp, "%lu\t%lu\n",
+		(unsigned long)h, (unsigned long)histogram[h]);
 	fclose(fp);
 }
 
@@ -261,7 +260,7 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-final.gv",
 			(unsigned)test_size + 1);
 		PE_(graph)(&set, fn);
-		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-histogram.gv",
+		sprintf(fn, "graph/histogram-" QUOTE(SET_NAME) "-%u.gnu",
 			(unsigned)test_size + 1);
 		PE_(histogram)(&set, fn);
 	}
