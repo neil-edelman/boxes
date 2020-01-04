@@ -40,14 +40,10 @@
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Set](https://github.com/neil-edelman/Set) */
 
-#include <stddef.h>	/* offset_of */
+#include <stddef.h> /* offsetof */
 #include <stdlib.h>	/* malloc free */
 #include <assert.h>	/* assert */
-#include <string.h>	/* memcpy (memmove strerror strcpy memcmp in PoolTest.h) */
 #include <errno.h>	/* errno */
-#ifdef POOL_TO_STRING /* <-- print */
-#include <stdio.h>	/* strlen */
-#endif /* print --> */
 
 /* Check defines. */
 #ifndef POOL_NAME /* <-- error */
@@ -59,8 +55,11 @@
 #if defined(POOL_TEST) && !defined(POOL_TO_STRING) /* <-- error */
 #error POOL_TEST requires POOL_TO_STRING.
 #endif /* error --> */
+#if defined(T) || defined(T_) || defined(PT_) /* <!-- error */
+#error T, T_, and PT_ cannot be defined.
+#endif /* error --> */
 
-/* <Kernighan and Ritchie, 1988>. */
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -73,15 +72,6 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef T
-#undef T
-#endif
-#ifdef T_
-#undef T_
-#endif
-#ifdef PT_
-#undef PT_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
@@ -89,21 +79,9 @@
 #define T_(thing) CAT(POOL_NAME, thing)
 #define PT_(thing) PCAT(pool, PCAT(POOL_NAME, thing))
 
-
-/* Troubles with this line? check to ensure that `POOL_TYPE` is a valid type,
- whose definition is placed above `#include "Pool.h"`. */
+/** A valid tag type set by `POOL_TYPE`. This becomes `T`. */
 typedef POOL_TYPE PT_(Type);
 #define T PT_(Type)
-
-#ifdef POOL_TO_STRING /* <-- string */
-/** Responsible for turning `<T>` (the first argument) into a 12 `char`
- null-terminated output string (the second.) Used for `POOL_TO_STRING`. */
-typedef void (*PT_(ToString))(const T *, char (*)[12]);
-/* Check that `POOL_TO_STRING` is a function implementing
- <typedef:<PT>ToString>, whose definition is placed above
- `#include "Pool.h"`. */
-static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
-#endif /* string --> */
 
 /** Operates by side-effects on `data` only. */
 typedef void (*PT_(Action))(T *const data);
@@ -143,7 +121,6 @@ struct T_(Pool) {
 #define POOL_IDLE { 0, 0, { 0, 0 } }
 #endif /* !zero --> */
 
-
 /** Private: `container_of` `data`. */
 static struct PT_(Node) *PT_(data_upcast)(T *const data) {
 	return (struct PT_(Node) *)(void *)
@@ -161,8 +138,8 @@ static struct PT_(Node) *PT_(block_nodes)(struct PT_(Block) *const b) {
 	return (struct PT_(Node) *)(void *)(b + 1);
 }
 
-/** Ensures `min` (> 0) capacity of the largest block in `pool` where the free
- list is empty.
+/** Ensures `min` capacity of the largest block in `pool` where the free list
+ is empty.
  @param[min] If zero, allocates anyway.
  @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `malloc`
@@ -272,6 +249,8 @@ static void PT_(pool)(struct T_(Pool) *const pool) {
 	pool->removed.prev  = 0;
 	pool->removed.next  = 0;
 }
+
+#ifndef POOL_CHILD /* <!-- !sub-type */
 
 /** Returns `pool` to the empty state where it takes no dynamic memory.
  @param[pool] If null, does nothing.
@@ -415,7 +394,17 @@ static void T_(PoolForEach)(struct T_(Pool) *const pool,
 	}
 }
 
-#ifdef POOL_TO_STRING /* <-- print */
+#ifdef POOL_TO_STRING /* <-- string */
+
+#include <string.h>	/* strlrn memcpy (memmove strerror strcpy memcmp) */
+
+/** Responsible for turning `<T>` (the first argument) into a 12 `char`
+ null-terminated output string (the second.) Used for `POOL_TO_STRING`. */
+typedef void (*PT_(ToString))(const T *, char (*)[12]);
+/* Check that `POOL_TO_STRING` is a function implementing
+ <typedef:<PT>ToString>, whose definition is placed above
+ `#include "Pool.h"`. */
+static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
 
 /** Can print 4 things at once before it overwrites. One must pool
  `POOL_TO_STRING` to a function implementing <typedef:<PT>ToString> to get this
@@ -499,24 +488,35 @@ static void PT_(unused_set)(void) {
 /** Some pre-processors are not fooled if you have one function. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
-
-
 /* Un-define all macros. */
-#undef POOL_NAME
-#undef POOL_TYPE
-/* Undocumented; allows nestled inclusion so long as: `CAT_`, _etc_ conform,
- and `T`, _etc_ is not used. */
-#ifdef POOL_SUBTYPE /* <-- sub */
-#undef POOL_SUBTYPE
-#else /* sub --><-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
-#endif /* !sub --> */
+#else /* !sub-type --><!-- sub-type */
+#undef POOL_CHILD
+static void PT_(unused_coda)(void);
+/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
+ have the same meanings; they will be replaced with these, and `T` cannot be
+ used. */
+static void PT_(unused_set)(void) {
+	/* <fn:<PT>data_upcast>, <fn:<PT>x_upcast>, and <fn:<PT>reserve>, are
+	 integral; other stuff, maybe not. */
+	PT_(block_nodes)(0);
+	PT_(enqueue_removed)(0, 0);
+	PT_(dequeue_removed)(0);
+	PT_(trim_removed)(0);
+	PT_(range)(0, 0);
+	PT_(pool)(0);
+	PT_(unused_coda)();
+}
+static void PT_(unused_coda)(void) { PT_(unused_set)(); }
+#endif /* sub-type --> */
 #undef T
 #undef T_
 #undef PT_
+#undef POOL_NAME
+#undef POOL_TYPE
 #ifdef POOL_TO_STRING
 #undef POOL_TO_STRING
 #endif

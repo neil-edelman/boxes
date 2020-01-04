@@ -41,9 +41,6 @@
  @cf [Set](https://github.com/neil-edelman/Set) */
 
 #include <assert.h>
-#ifdef LIST_TO_STRING /* <!-- string */
-#include <string.h> /* strlen */
-#endif /* string --> */
 
 /* Check defines. */
 #ifndef LIST_NAME
@@ -52,8 +49,11 @@
 #if defined(LIST_TEST) && !defined(LIST_TO_STRING)
 #error LIST_TEST requires LIST_TO_STRING.
 #endif
+#if defined(N_) || defined(PN_) /* <!-- error */
+#error N_ and PN_ cannot be defined.
+#endif /* error --> */
 
-/* <Kernighan and Ritchie, 1988>. */
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -66,19 +66,12 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef N_
-#undef N_
-#endif
-#ifdef PN_
-#undef PN_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
 #define N_(thing) CAT(LIST_NAME, thing)
-#define PN_(thing) PCAT(list, PCAT(LIST_NAME, thing)) /* "Private." */
-
+#define PN_(thing) PCAT(list, PCAT(LIST_NAME, thing))
 
 /** Storage of this structure is the responsibility of the caller. One can only
  be in one list at a time; adding to another list while in a list destroys the
@@ -101,21 +94,6 @@ struct N_(List) {
 	 <fn:<PN>self_correct>. */
 	struct N_(ListNode) head, tail;
 };
-
-#ifdef LIST_TO_STRING /* <!-- string */
-/** Responsible for turning <tag:<N>ListNode> (the first argument) into a
- maximum 11-`char` string (the second.) Defined when `LIST_TO_STRING`. */
-typedef void (*PN_(ToString))(const struct N_(ListNode) *, char (*)[12]);
-/* Check that `LIST_TO_STRING` is a function implementing
- <typedef:<PN>ToString>. */
-static const PN_(ToString) PN_(to_string) = (LIST_TO_STRING);
-#endif /* string --> */
-
-/** Operates by side-effects on the link. */
-typedef void (*PN_(Action))(struct N_(ListNode) *);
-/** Returns (Non-zero) true or (zero) false when given a link. */
-typedef int (*PN_(Predicate))(const struct N_(ListNode) *);
-
 
 
 /** Private: clears and initialises `list`. */
@@ -182,6 +160,13 @@ static void PN_(self_correct)(struct N_(List) *const list) {
 	}
 }
 
+#ifndef LIST_CHILD /* <!-- !sub-type */
+
+/** Operates by side-effects on the node. */
+typedef void (*PN_(Action))(struct N_(ListNode) *);
+
+/** Returns (Non-zero) true or (zero) false when given a node. */
+typedef int (*PN_(Predicate))(const struct N_(ListNode) *);
 
 /** Clears and removes all values from `list`, thereby initialising it. All
  previous values are un-associated.
@@ -675,7 +660,6 @@ static void PN_(natural)(struct N_(List) *const list) {
 	list->tail.prev = runs.run[0].tail;
 }
 
-
 /** Performs a stable, adaptive sort of `list` according to `compare`. Requires
  `LIST_COMPARE`. <Peters 2002, Timsort>, _via_ <McIlroy 1993, Optimistic>, does
  long merges by galloping, but we don't have random access to the data because
@@ -803,6 +787,16 @@ static void N_(ListXorTo)(struct N_(List) *const a, struct N_(List) *const b,
 #endif /* comp --> */
 
 #ifdef LIST_TO_STRING /* <!-- string */
+
+#include <string.h> /* strlen memcpy */
+
+/** Responsible for turning the first argument into a 12-`char` null-terminated
+ string. Used for `LIST_TO_STRING`. */
+typedef void (*PN_(ToString))(const struct N_(ListNode) *, char (*)[12]);
+/* Check that `LIST_TO_STRING` is a function implementing
+ <typedef:<PN>ToString>. */
+static const PN_(ToString) PN_(to_string) = (LIST_TO_STRING);
+
 /** Can print 2 things at once before it overwrites. One must set
  `LIST_TO_STRING` to a function implementing <typedef:<PN>ToString> to get this
  functionality.
@@ -896,26 +890,37 @@ static void PN_(unused_set)(void) {
 }
 static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 
-/* Un-define all macros. Undocumented: allows nestled inclusion in other .h so
- long as `CAT`, _etc_, are the same meaning and `E_`, _etc_, are not
- clobbered. */
-#ifdef LIST_SUBTYPE /* <!-- sub */
-#undef LIST_SUBTYPE
-#else /* sub --><!-- !sub */
+/* Un-define all macros. */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
-#endif /* !sub --> */
+#else /* !sub-type --><!-- sub-type */
+#undef LIST_CHILD
+static void PN_(unused_coda)(void);
+/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
+ have the same meanings; they will be replaced with these, and `N` cannot be
+ used. */
+static void PN_(unused_set)(void) {
+	/* PN_(clear)(0); <- want to be notified. */
+	PN_(add_before)(0, 0);
+	PN_(add_after)(0, 0);
+	PN_(remove)(0);
+	PN_(move)(0, 0);
+	PN_(self_correct)(0);
+	PT_(unused_coda)();
+}
+static void PN_(unused_coda)(void) { PN_(unused_set)(); }
+#endif /* !sub-type --> */
 #undef N_
 #undef PN_
 #undef LIST_NAME
-#ifdef LIST_COMPARE /* <!-- !compare */
+#ifdef LIST_COMPARE
 #undef LIST_COMPARE
-#endif /* !compare --> */
-#ifdef LIST_TO_STRING /* <!-- string */
+#endif
+#ifdef LIST_TO_STRING
 #undef LIST_TO_STRING
-#endif /* string --> */
-#ifdef LIST_TEST /* <!-- test */
+#endif
+#ifdef LIST_TEST
 #undef LIST_TEST
-#endif /* test --> */
+#endif
