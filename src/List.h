@@ -543,7 +543,8 @@ static void PN_(merge_runs)(struct PN_(Runs) *const r) {
 	struct PN_(Run) *const run_b = run_a + 1;
 	struct N_(ListNode) *a = run_a->tail, *b = run_b->head, *chosen;
 	assert(r->run_no >= 2);
-	/* @fixme We are doing one-to-many compares in some cases? */
+	/* In the absence of any real information, assume that the elements farther
+	 in the list are generally more apt to be at the back, _viz_, adaptive. */
 	if(run_a->size <= run_b->size) {
 		struct N_(ListNode) *prev_chosen;
 		/* Run `a` is smaller: downwards insert `b.head` followed by upwards
@@ -593,8 +594,8 @@ static void PN_(merge_runs)(struct PN_(Runs) *const r) {
 	r->run_no--;
 }
 
-/** Natural merge sorts `list`. It's kind of experimental. It hasn't been
- optimised; I think it does useless compares. */
+/** Natural merge sorts `list`.  It hasn't been optimised and it's kind of
+ experimental. */
 static void PN_(natural)(struct N_(List) *const list) {
 	/* fixme: This is half-a-KB; use recursion properly. */
 	struct PN_(Runs) runs;
@@ -603,7 +604,7 @@ static void PN_(natural)(struct N_(List) *const list) {
 	enum { UNSURE, INCREASING, DECREASING } mono;
 	/* The data that we are sorting. */
 	struct N_(ListNode) *a, *b, *c, *first_iso_a;
-	/* {run_count} is different from {runs.run_no} in that it only increases;
+	/* `run_count` is different from `runs.run_no` in that it only increases;
 	 only used for calculating the path up the tree. */
 	size_t run_count, rc;
 	/* The value of the comparison. */
@@ -612,20 +613,18 @@ static void PN_(natural)(struct N_(List) *const list) {
 	/* Needs an element. */
 	a = list->head.next, assert(a);
 	if(!(b = a->next)) return;
-	/* Reset the state machine and output to just {a} in the first run. */
+	/* Reset the state machine and output to just `a` in the first run. */
 	mono = UNSURE;
 	runs.run_no = 1;
 	new_run = runs.run + 0, run_count = (size_t)1;
 	new_run->size = 1;
 	first_iso_a = new_run->head = new_run->tail = a;
-	/* While {a} and {b} are elements (that are consecutive.) {c} may not be. */
+	/* While `a` and `b` are elements, (that are consecutive.) */
 	for(c = b->next; c; a = b, b = c, c = c->next) {
 		comp = PN_(compare)(a, b);
 		/* State machine that considers runs in both directions -- in practice,
-		 slightly slower than only considering increasing runs on most cases;
-		 however, I would hate to see my code replaced with one line; reverse
-		 order is 15 times faster, but it's not likely. */
-		if(comp < 0) { /* {a < b}, increasing -- good. */
+		 slightly slower than only considering increasing runs on most cases. */
+		if(comp < 0) { /* `a < b`, increasing -- good. */
 			if(mono != DECREASING) { /* If decreasing, inflection. */
 				mono = INCREASING;
 				new_run->size++;
@@ -641,7 +640,7 @@ static void PN_(natural)(struct N_(List) *const list) {
 				continue;
 			}
 			new_run->tail = a; /* Terminating an increasing sequence. */
-		} else { /* {a} == {b} */
+		} else { /* `a == b`. */
 			if(mono == DECREASING) { /* Extend. */
 				struct N_(ListNode) *const a_next = a->next;
 				b->next = a_next;
@@ -656,10 +655,10 @@ static void PN_(natural)(struct N_(List) *const list) {
 		}
 		/* Head and tail don't necessarily correspond to the first and last. */
 		new_run->head->prev = new_run->tail->next = 0;
-		/* Greedy merge: keeps space to {O(log n)} instead of {O(n)}. */
+		/* Greedy merge: keeps space to `O(log n)` instead of `O(n)`. */
 		for(rc = run_count; !(rc & 1) && runs.run_no >= 2; rc >>= 1)
 			PN_(merge_runs)(&runs);
-		/* Reset the state machine and output to just {b} at the next run. */
+		/* Reset the state machine and output to just `b` at the next run. */
 		mono = UNSURE;
 		assert(runs.run_no < sizeof(runs.run) / sizeof(*runs.run));
 		new_run = runs.run + runs.run_no++, run_count++;
@@ -840,7 +839,8 @@ static const char *N_(ListToString)(const struct N_(List) *const list) {
 		PN_(to_string)(link, (char (*)[12])b);
 		for(i = 0; *b != '\0' && i < 12; b++, i++);
 		/* Greedy can not guarantee another; terminate by ellipsis. */
-		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
+		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
+			goto ellipsis;
 	}
 	*b++ = end;
 	goto terminate;
