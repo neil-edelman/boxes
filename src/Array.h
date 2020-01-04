@@ -40,15 +40,11 @@
  @cf [Pool](https://github.com/neil-edelman/Pool)
  @cf [Set](https://github.com/neil-edelman/Set) */
 
-#include <stddef.h>	/* offset_of */
-#include <stdlib.h>	/* realloc free */
-#include <assert.h>	/* assert */
-#include <string.h>	/* memcpy memmove (strerror strcpy memcmp in ArrayTest.h) */
-#include <errno.h>	/* errno */
-#include <limits.h> /* LONG_MAX */
-#ifdef ARRAY_TO_STRING /* <!-- print */
-#include <stdio.h>	/* strlen */
-#endif /* print --> */
+#include <stddef.h> /* offset_of */
+#include <stdlib.h> /* realloc free */
+#include <assert.h> /* assert */
+#include <string.h> /* memcpy memmove (strlen) (strerror strcpy memcmp) */
+#include <errno.h>  /* errno */
 
 /* Check defines. */
 #ifndef ARRAY_NAME /* <!-- error */
@@ -60,8 +56,11 @@
 #if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <!-- error */
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif /* error --> */
+#if defined(T) || defined(T_) || defined(PT_) /* <!-- error */
+#error T, T_, and PT_ cannot be defined.
+#endif /* error --> */
 
-/* <Kernighan and Ritchie, 1988>. */
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #ifdef CAT
 #undef CAT
 #endif
@@ -74,15 +73,6 @@
 #ifdef PCAT_
 #undef PCAT_
 #endif
-#ifdef T
-#undef T
-#endif
-#ifdef T_
-#undef T_
-#endif
-#ifdef PT_
-#undef PT_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
@@ -90,29 +80,18 @@
 #define T_(thing) CAT(ARRAY_NAME, thing)
 #define PT_(thing) PCAT(array, PCAT(ARRAY_NAME, thing))
 
-/* Troubles with this line? check to ensure that `ARRAY_TYPE` is a valid type,
- whose definition is placed above `#include "Array.h"`. */
+/** A valid tag type set by `ARRAY_TYPE`. This becomes `T`. */
 typedef ARRAY_TYPE PT_(Type);
 #define T PT_(Type)
 
-#ifdef ARRAY_TO_STRING /* <!-- string */
-/** Responsible for turning `<T>` (the first argument) into a 12 `char`
- null-terminated output string (the second.) Used for `ARRAY_TO_STRING`. */
-typedef void (*PT_(ToString))(const T *, char (*)[12]);
-/* Check that `ARRAY_TO_STRING` is a function implementing
- <typedef:<PT>ToString>, whose definition is placed above
- `#include "Array.h"`. */
-static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
-#endif /* string --> */
-
-/** Operates by side-effects on `data`. */
-typedef void (*PT_(Action))(T *data);
+/** Operates by side-effects. */
+typedef void (*PT_(Action))(T *);
 
 /** Given constant `data`, returns a boolean. */
 typedef int (*PT_(Predicate))(const T *data);
 
-/** The array. Zeroed data is a valid state. To instantiate explicitly, see
- <fn:<T>Array> or initialise it with `ARRAY_INIT` or `{0}` (C99.)
+/** To initialise it to an idle state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}`
+ (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
 struct T_(Array);
@@ -123,7 +102,6 @@ struct T_(Array) {
 	/* !data -> !size, data -> size <= capacity */
 	size_t size;
 };
-
 /* `{0}` is `C99`. */
 #ifndef ARRAY_IDLE /* <!-- !zero */
 #define ARRAY_IDLE { 0, 0, 0, 0 }
@@ -215,6 +193,15 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
+/** With `a`, and optional `update_ptr`, adds one to the size. Called from
+ <fn:<T>ArrayNew> and <fn:<T>ArrayUpdateNew>. */
+static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
+	assert(a);
+	if(a->size >= (size_t)-1) { errno = ERANGE; return 0; } /* Not likely. */
+	if(!PT_(reserve)(a, a->size + 1, update_ptr)) return 0;
+	return a->data + a->size++;
+}
+
 /** Zeros `a`. */
 static void PT_(array)(struct T_(Array) *const a) {
 	assert(a);
@@ -223,6 +210,8 @@ static void PT_(array)(struct T_(Array) *const a) {
 	a->next_capacity = 0;
 	a->size          = 0;
 }
+
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
 
 /** Returns `a` to the idle state where it takes no dynamic memory.
  @param[a] If null, does nothing.
@@ -382,15 +371,6 @@ static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
 	if(!a) return 0;
 	idx = here ? (size_t)(here - a->data + 1) : 0;
 	return idx < a->size ? a->data + idx : 0;
-}
-
-/** With `a`, and optional `update_ptr`, adds one to the size. Called from
- <fn:<T>ArrayNew> and <fn:<T>ArrayUpdateNew>. */
-static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
-	assert(a);
-	if(a->size >= (size_t)-1) { errno = ERANGE; return 0; } /* Not likely. */
-	if(!PT_(reserve)(a, a->size + 1, update_ptr)) return 0;
-	return a->data + a->size++;
 }
 
 /** @param[a] If is null, returns null.
@@ -612,8 +592,15 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	return PT_(replace)(a, i0, i1, b);
 }
 
-#ifdef ARRAY_TO_STRING /* <!-- print */
+#ifdef ARRAY_TO_STRING /* <!-- string */
 
+/** Responsible for turning the first argument into a 12-`char` null-terminated
+ output string. Used for `ARRAY_TO_STRING`. */
+typedef void (*PT_(ToString))(const T *, char (*)[12]);
+/* Check that `ARRAY_TO_STRING` is a function implementing
+ <typedef:<PT>ToString>. */
+static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
+	
 /** Can print 4 things at once before it overwrites. One must a
  `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
  this functionality.
@@ -661,14 +648,12 @@ terminate:
 	assert(b <= buffer + buffer_size);
 	return buffer;
 }
+#endif /* string --> */
 
-#endif /* print --> */
-
-#ifdef ARRAY_TEST /* <!-- test */
+#ifdef ARRAY_TEST /* <!-- test: need this file. */
 #include "../test/TestArray.h" /** \include */
 #endif /* test --> */
 
-/* Prototype. */
 static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation
@@ -705,27 +690,34 @@ static void PT_(unused_set)(void) {
 #endif
 	PT_(unused_coda)();
 }
-/* Some newer compilers are smart. */
+/** Some newer compilers are smart. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
-
-
 /* Un-define all macros. */
-#undef ARRAY_NAME
-#undef ARRAY_TYPE
-/* Undocumented; allows nestled inclusion so long as: `CAT_`, _etc_ conform,
- and `T`, _etc_ is not used. */
-#ifdef ARRAY_SUBTYPE /* <!-- sub */
-#undef ARRAY_SUBTYPE
-#else /* sub --><!-- !sub */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
-#endif /* !sub --> */
+#else /* !sub-type --><!-- sub-type */
+#undef ARRAY_CHILD
+static void PT_(unused_coda)(void);
+/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
+ have the same meanings; they will be replaced with these, and `T` cannot be
+ used. */
+static void PT_(unused_set)(void) {
+	/* <fn:<PT>reserve>, <fn:<PT>new>, and <fn:<PT>array> are integral; we want
+	 to be notified when these are not called. Other stuff, not really. */
+	PT_(range)(0, 0, 0, 0, 0);
+	PT_(replace)(0, 0, 0, 0);
+	PT_(unused_coda)();
+}
+static void PT_(unused_coda)(void) { PT_(unused_set)(); }
+#endif /* sub-type --> */
 #undef T
 #undef T_
 #undef PT_
+#undef ARRAY_NAME
+#undef ARRAY_TYPE
 #ifdef ARRAY_STACK
 #undef ARRAY_STACK
 #endif
