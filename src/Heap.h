@@ -24,7 +24,7 @@
  `HEAP_TYPE`.
 
  @param[HEAP_PRIORITY_TYPE]
- This is <typedef:<PE>Priority> and defaults to `unsigned int`.
+ This is <typedef:<PH>Priority> and defaults to `unsigned int`.
 
  @param[HEAP_PRIORITY_COMPARE]
  A function satisfying <typedef:<PE>Compare>. Defaults to minimum-hash using
@@ -129,6 +129,7 @@ struct H_(HeapNode) {
 #define ARRAY_TYPE struct H_(HeapNode)
 #define ARRAY_CHILD
 #include "Array.h"
+#define PT_(thing) PCAT(array, PCAT(CAT(HEAP_NAME, HeapNode), thing))
 
 /** Stores the heap as an implicit binary tree in an array. To initialise it to
  an idle state, see <fn:<H>Heap>, `HEAP_IDLE`, `{0}` (`C99`), or being `static`.
@@ -140,15 +141,9 @@ struct H_(Heap) { struct H_(HeapNodeArray) a; };
 #define HEAP_IDLE { { 0, 0, 0 } }
 #endif /* !zero --> */
 
-
-
-/* parent(i)    = floor((i-1) / 2)
- left_child(i)  = 2*i + 1
- right_child(i) = 2*i + 2 */
-
-/* Heap functions... */
-
-/** Copies `src` to `dest`. */
+/** Copies `src` to `dest`. We could have made the priority a function that
+ calls the object, then we would only need one, but by caching the priority, we
+ expect a decent speed increase. */
 static void PH_(copy)(const struct H_(HeapNode) *const src,
 	struct H_(HeapNode) *const dest) {
 	dest->priority = src->priority;
@@ -157,36 +152,15 @@ static void PH_(copy)(const struct H_(HeapNode) *const src,
 #endif /* type --> */
 }
 
-/** Inserts item `x` at position `k` in `heap`. */
-static void PH_(sift_down)(struct H_(Heap) *const heap, const size_t ik) {
-	struct H_(HeapNode) *const k = heap->a.data + ik, *c, *left, *right;
-	size_t isize = heap->a.size, ihalf = heap->a.size >> 1, ileft, iright;
-	while(ik < ihalf) {
-		ileft = (ik << 1) + 1;
-		left = heap->a.data + ileft;
-		iright = ileft + 1;
-		right = heap->a.data + iright;
-		if(iright < isize
-			&& PH_(compare)(left->priority, right->priority) > 0) {
-			
-		}
-	}
-}
-
-/** Heap invariants on `heap`. */
-static void PH_(heapify)(struct H_(Heap) *const heap) {
-	size_t i;
-	for(i = (heap->a.size >> 1) - 1; i >= 0; i--) PH_(sift_down)(heap, i);
-}
-
-/** Sift-up `node` in `heap`.
+/** Restore order when inserting with index `inode` in `heap`.
  @order \O(log `size`) */
-static void PH_(sift_up)(struct H_(Heap) *const heap, const size_t inode) {
+static void PH_(sift_up)(struct H_(Heap) *const heap,
+	struct H_(HeapNode) *const node) {
 	struct H_(HeapNode) temp, *elem, *elem_up;
 	size_t ielem, ielem_up;
 	int start_permutation = 0;
-	assert(heap && inode < heap->a.size);
-	for(ielem = inode; ielem; ielem = ielem_up) {
+	assert(heap && heap->a.size);
+	for(ielem = node - heap->a.data; ielem; ielem = ielem_up) {
 		elem = heap->a.data + ielem;
 		elem_up = heap->a.data + (ielem_up = (ielem - 1) >> 1);
 		if(PH_(compare)(elem->priority, elem_up->priority) >= 0) break;
@@ -196,9 +170,84 @@ static void PH_(sift_up)(struct H_(Heap) *const heap, const size_t inode) {
 	if(start_permutation) PH_(copy)(&temp, elem);
 }
 
+/** Restore order when extracting node replaced with index `node` in `heap`. */
+static void PH_(sift_down)(struct H_(Heap) *const heap, const size_t inode) {
+	struct H_(HeapNode) temp, *parent, *child;
+	size_t isize = heap->a.size, ihalf = heap->a.size >> 1,
+		iparent = inode, ichild;
+	int start_permutation = 0;
+	while(iparent < ihalf) {
+		child = heap->a.data + (ichild = (iparent << 1) + 1); /* Select left. */
+		if(ichild + 1 < isize && PH_(compare)(child->priority,
+			(child + 1)->priority) > 0) child++; /* Maybe switch right. */
+		parent = heap->a.data + iparent; /* fixme: node->iparent->parent. */
+		if(PH_(compare)(parent->priority, child->priority) <= 0) break;
+		if(!start_permutation) PH_(copy)(parent, &temp), start_permutation = 1;
+		PH_(copy)(child, parent);
+		iparent = ichild;
+	}
+	if(start_permutation) PH_(copy)(&temp, parent);
+}
+
+/** Create a `heap` from an array. */
+static void PH_(heapify)(struct H_(Heap) *const heap) {
+	size_t i;
+	for(i = (heap->a.size >> 1) - 1; (PH_(sift_down)(heap, i), i); i--);
+}
+
+/** Peek at the top node in `heap`.
+ @order \Theta(1) */
+static struct H_(HeapNode) *PH_(peek)(const struct H_(Heap) *const heap) {
+	assert(heap);
+	return heap->a.size ? heap->a.data : 0;
+}
+
 #ifndef HEAP_CHILD /* <!-- !sub-type */
 
+/** Returns `heap` to the idle state where it takes no dynamic memory.
+ @param[a] If null, does nothing.
+ @order \Theta(1)
+ @allow */
+static void H_(Heap_)(struct H_(Heap) *const heap) {
+	if(heap) { free(heap->a.data); PT_(array)(&heap->a); }
+}
 
+/** Initialises `heap` to be idle.
+ @order \Theta(1)
+ @allow */
+static void H_(Heap)(struct H_(Heap) *const heap) {
+	if(heap) { PT_(array)(&heap->a); }
+}
+
+/** Copies `node` into `heap`.
+ @param[heap] If null, returns false.
+ @return Success.
+ @throws[realloc]
+ @order \O(log `size`) */
+static int H_(HeapAdd)(struct H_(Heap) *const heap, struct H_(HeapNode) node) {
+	struct H_(HeapNode) *in_heap;
+	if(heap && (in_heap = PT_(new)(&heap->a, 0))) {
+		PH_(copy)(&node, in_heap);
+		PH_(sift_up)(heap, in_heap);
+		return 1;
+	}
+	return 0;
+}
+
+/** Gets the lowest element according to `` `node` into `heap`.
+ @param[heap] If null, returns false.
+ @return Success.
+ @throws[realloc]
+ @order \O(log `size`) */
+static int H_(HeapAdd)(struct H_(Heap) *const heap, struct H_(HeapNode) node) {
+	struct H_(HeapNode) *in_heap;
+	if(heap && (in_heap = PT_(new)(&heap->a, 0))) {
+		PH_(copy)(&node, in_heap);
+		PH_(sift_up)(heap, in_heap);
+		return 1;
+	}
+	return 0;
+}
 
 #ifdef HEAP_TO_STRING /* <!-- string */
 /** Responsible for turning <typedef:<PH>Type> into a maximum 11-`char`
@@ -210,6 +259,15 @@ static const PH_(ToString) PH_(to_string) = (HEAP_TO_STRING);
 #endif /* string --> */
 
 
+static void PH_(unused_coda)(void);
+static void PH_(unused_set)(void) {
+	struct H_(HeapNode) h;
+	H_(Heap_)(0);
+	H_(Heap)(0);
+	H_(HeapAdd)(0, h);
+	PH_(unused_coda)();
+}
+static void PH_(unused_coda)(void) { PH_(unused_set)(); }
 
 /* Un-define all macros. */
 #undef CAT
@@ -232,6 +290,7 @@ static void PH_(unused_coda)(void) { PH_(unused_set)(); }
 #undef HEAP_NAME
 #undef H_
 #undef PH_
+#undef PT_
 #undef HEAP_PRIORITY_TYPE
 #undef HEAP_PRIORITY_COMPARE
 #ifdef HEAP_TYPE
