@@ -5,20 +5,30 @@
 
  @std C89/90 */
 
-#include <stdlib.h> /* EXIT malloc free */
-/*#include <stdio.h>*/  /* fprintf */
+#include <stdlib.h> /* EXIT malloc free rand */
+#include <stdio.h>  /* *printf */
 /*#include <assert.h>*/ /* assert */
 #include <errno.h>  /* errno */
 
+struct IntHeapNode;
+static void int_to_string(const struct IntHeapNode *, char (*)[12]);
+static void test_int(struct IntHeapNode *);
+
 #define HEAP_NAME Int
-/*#define HEAP_TO_STRING &int_to_string
-#define HEAP_TEST &test_int*/
+#define HEAP_TO_STRING &int_to_string
+#define HEAP_TEST &test_int
 #include "../src/Heap.h"
 
-#define POOL_NAME Int
-#define POOL_TYPE int
-#include "Pool.h"
+static void int_to_string(const struct IntHeapNode *const i,
+	char (*const a)[12]) {
+	sprintf(*a, "%u", i->priority);
+}
+
+static void test_int(struct IntHeapNode *i) {
+	i->priority = rand() / (RAND_MAX / 10 + 1);
+}
 
 int main(void) {
+	IntHeapTest();
 	return EXIT_SUCCESS;
 }

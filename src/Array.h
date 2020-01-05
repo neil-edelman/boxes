@@ -600,7 +600,7 @@ typedef void (*PT_(ToString))(const T *, char (*)[12]);
 /* Check that `ARRAY_TO_STRING` is a function implementing
  <typedef:<PT>ToString>. */
 static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
-	
+
 /** Can print 4 things at once before it overwrites. One must a
  `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
  this functionality.
