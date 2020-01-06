@@ -25,10 +25,12 @@ static void int_to_string(const struct IntHeapNode *const i,
 }
 
 static void test_int(struct IntHeapNode *i) {
-	i->priority = rand() / (RAND_MAX / 10 + 1);
+	i->priority = rand() / (RAND_MAX / 99 + 1) + 1;
+	printf("int: %u\n", i->priority);
 }
 
 int main(void) {
+	rand();
 	IntHeapTest();
 	return EXIT_SUCCESS;
 }

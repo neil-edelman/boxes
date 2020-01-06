@@ -16,35 +16,39 @@ typedef void (*PH_(Action))(struct H_(HeapNode) *);
 /* `HEAP_TEST` must be a function that implements `<PH>Action`. */
 static const PH_(Action) PH_(filler) = (HEAP_TEST);
 
-
-
-
-
-#if 0
-
-/** Draw a graph of `ar` to `fn` in Graphviz format. */
-static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
+/** Draw a graph of `heap` to `fn` in Graphviz format. */
+static void PH_(graph)(const struct H_(Heap) *const heap,
+	const char *const fn) {
 	FILE *fp;
 	char a[12];
-	assert(ar && fn);
+	assert(heap && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-			"\trankdir = LR;\n"
-			"\tnode [shape = record, style = filled];\n"
-			"\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>Array: "
-			QUOTE(ARRAY_TYPE) "\\l|size: %lu\\lcapacity: %lu\\l"
-			"next capacity: %lu\\l\"];\n", (unsigned long)ar->size,
-			(unsigned long)ar->capacity, (unsigned long)ar->next_capacity);
-	if(ar->data) {
-		T *const data = ar->data;
+		"\trankdir = BT; #LR;\n"
+		"\tnode [shape = record, style = filled];\n"
+		"\tHash [label=\"{\\<" QUOTE(HEAP_NAME) "\\>Hash: "
+#ifdef HEAP_TYPE
+		QUOTE(HEAP_TYPE)
+#else
+		"without value"
+#endif
+		"\\l|size: %lu\\lcapacity: %lu\\l"
+		"next capacity: %lu\\l}\"];\n", (unsigned long)heap->a.size,
+		(unsigned long)heap->a.capacity, (unsigned long)heap->a.next_capacity);
+	if(heap->a.data) {
+		struct H_(HeapNode) *const n0 = heap->a.data;
 		size_t i;
-		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n"
-			"\tArray -> p%p;\n"
+		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
+		if(heap->a.size) fprintf(fp, "\tHash -> n0;\n");
+		fprintf(fp, "\tedge [style = dashed];\n"
 			"\tsubgraph cluster_data {\n"
-			"\t\tstyle=filled;\n", (void *)data);
-		for(i = 0; i < ar->size; i++) {
-			PT_(to_string)(data + i, &a);
-			fprintf(fp, "\t\tp%p [label=\"%s\"];\n", (void *)(data + i), a);
+			"\t\tstyle=filled;\n");
+		for(i = 0; i < heap->a.size; i++) {
+			PH_(to_string)(n0 + i, &a);
+			fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
+			if(!i) continue;
+			fprintf(fp, "\t\tn%lu -> n%lu;\n", (unsigned long)i,
+				(unsigned long)((i - 1) >> 1));
 		}
 		fprintf(fp, "\t}\n");
 	}
@@ -52,49 +56,83 @@ static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
 	fprintf(fp, "}\n");
 	fclose(fp);
 }
-#endif
+
+/** Makes sure the `heap` is in a valid state. */
+static void PH_(valid)(const struct H_(Heap) *const heap) {
+	size_t i;
+	struct H_(HeapNode) *n0;
+	if(!heap) return;
+	if(!heap->a.data) { assert(!heap->a.size); return; }
+	n0 = heap->a.data;
+	for(i = 1; i < heap->a.size; i++) {
+		if(PH_(compare)(n0[(i - 1) >> 1].priority, n0[i].priority) <= 0) {
+			PH_(graph)(heap, "graph/" QUOTE(HEAP_NAME) "-invalid.gv");
+			assert(0);
+			break;
+		}
+	}
+}
 
 static void PH_(test_basic)(void) {
 	struct H_(Heap) heap = HEAP_IDLE;
+	struct H_(HeapNode) *node, add;
+	PH_(Value) v, result;
+	const size_t test_size = 20;
+	size_t i;
+	char fn[64];
 
-	printf("Test null.\n");
+	printf("Test empty.\n");
+	PH_(valid)(0);
 	errno = 0;
 	assert(!H_(HeapSize)(&heap));
 	H_(Heap_)(&heap);
 	assert(!H_(HeapSize)(&heap));
 	H_(Heap)(&heap);
 	assert(!H_(HeapSize)(&heap));
+	assert(!H_(HeapPeek)(&heap));
+	assert(!H_(HeapPeekValue(&heap)));
+	assert(!H_(HeapPop)(&heap));
+	PH_(valid)(&heap);
 	assert(!errno);
-	errno = 0;
-	T_(Array_)(0);
-	T_(Array)(0);
-	T_(ArrayClear)(0);
-	assert(T_(ArrayGet)(0) == 0);
-	assert(T_(ArrayPeek)(0) == 0);
-	assert(T_(ArrayPop)(0) == 0);
-	assert(T_(ArrayNext)(0, 0) == 0);
-	assert(T_(ArrayNew)(0) == 0);
-	assert(T_(ArrayUpdateNew)(0, 0) == 0
-		&& T_(ArrayUpdateNew)(0, 0) == 0);
-	T_(ArrayEach)(0, 0);
-	T_(ArrayTrim)(0, 0);
-	assert(!strcmp("null", T_(ArrayToString(0))));
-	assert(errno == 0);
-	PT_(valid_state)(0);
 
-	printf("Test empty.\n");
-	T_(Array)(&a);
-	t = (T *)1;
+	printf("Test one.\n");
+	PH_(filler)(&add);
+	v = PH_(value)(&add);
+	assert(H_(HeapAdd)(&heap, add));
+	printf("Added: %s.\n", H_(HeapToString)(&heap));
+	assert(H_(HeapSize)(&heap) == 1);
+	node = H_(HeapPeek)(&heap);
+	PH_(valid)(&heap);
+	assert(node->priority == add.priority);
+	result = H_(HeapPop(&heap));
+	assert(v == result && !H_(HeapSize)(&heap));
+	PH_(valid)(&heap);
 
-	printf("Clear:\n");
-	T_(ArrayClear)(&a);
-	printf("%s.\n", T_(ArrayToString)(&a));
-	assert(T_(ArrayPeek)(&a) == 0);
-	
+	printf("Test many.\n");
+	for(i = 0; i < test_size; i++) {
+		sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv", (unsigned long)i);
+		PH_(graph)(&heap, fn);
+		PH_(filler)(&add);
+		assert(H_(HeapAdd)(&heap, add));
+		PH_(valid)(&heap);
+	}
+	PH_(graph)(&heap, "graph/" QUOTE(HEAP_NAME) "-little.gv");
+	assert(H_(HeapSize)(&heap) == test_size);
+	for(i = 0; i < test_size; i++) {
+		char a[12];
+		node = H_(HeapPeek)(&heap);
+		assert(node);
+		v = H_(HeapPeekValue)(&heap);
+		PH_(to_string)(node, &a);
+		printf("Retreving %s.\n", a);
+		result = H_(HeapPop)(&heap);
+		assert(v == result && H_(HeapSize)(&heap) == test_size - i - 1);
+		PH_(valid)(&heap);
+	}
+
 	printf("Destructor:\n");
-	T_(Array_)(&a);
-	assert(T_(ArrayPeek)(&a) == 0);
-	PT_(valid_state)(&a);
+	H_(Heap_)(&heap);
+	assert(!H_(HeapPeek)(&heap));
 }
 
 #if 0
@@ -158,193 +196,6 @@ static void PT_(test_random)(void) {
 		}
 	}
 	T_(Array_)(&a);
-}
-
-/** Replace has it's own test. */
-static void PT_(test_replace)(void) {
-	T ts[5], *t, *t1;
-	const size_t ts_size = sizeof ts / sizeof *ts;
-	struct T_(Array) a, b;
-	T *e;
-	int success;
-
-	/* valgrind does not like this. */
-	memset(ts, 0, sizeof ts);
-	/* Get elements. */
-	for(t = ts, t1 = t + ts_size; t < t1; t++) PT_(filler)(t);
-	printf("Test replace.\n");
-	T_(Array)(&a);
-	for(t = ts, t1 = t + ts_size; t < t1; t++) {
-		e = T_(ArrayNew)(&a), assert(e);
-		memcpy(e, t, sizeof *t);
-	}
-	assert(T_(ArraySize)(&a) == ts_size);	
-	T_(Array)(&b);
-	/* Passing in null. */
-	errno = 0;
-	success = T_(ArrayIndexSplice)(0, 0, 0, 0);
-	assert(!success && !errno);
-	success = T_(ArraySplice)(0, 0, 0, 0);
-	assert(!success && !errno);
-	/* a == b. */
-	success = T_(ArrayIndexSplice)(&a, 0, 0, &a);
-	assert(!success && errno == EDOM);
-	errno = 0;
-	success = T_(ArraySplice)(&a, 0, 0, &a);
-	assert(!success && errno == EDOM);
-	errno = 0;
-	/* Out-of-bounds. */
-	success = T_(ArrayIndexSplice)(&a, 0, T_(ArraySize)(&a) + 1, 0);
-	assert(!success && errno == EDOM);
-	errno = 0;
-	/* Large */
-	success = T_(ArraySplice)(&a, 0, 65536, 0);
-	assert(!success && errno == ERANGE);
-	errno = 0;
-	/* e0 > e1. */
-	success = T_(ArrayIndexSplice)(&a, 1, 0, &b);
-	assert(!success && errno == EDOM);
-	errno = 0;
-	/* No-op. */
-	success = T_(ArrayIndexSplice)(&a, 0, 0, 0);
-	printf("Array %s.\n", T_(ArrayToString)(&a));
-	assert(success && T_(ArraySize)(&a) == ts_size);
-	/* Deleting from the front. */
-	success = T_(ArrayIndexSplice)(&a, 0, 1, 0);
-	printf("Array after deleting from front %s.\n", T_(ArrayToString)(&a));
-	assert(success && T_(ArraySize)(&a) == ts_size - 1);
-	/* Adding at the back. */
-	t = T_(ArrayNew)(&b);
-	assert(t);
-	memcpy(t, ts + 0, sizeof *t);
-	success = T_(ArrayIndexSplice)(&a, T_(ArraySize)(&a), T_(ArraySize)(&a),
-		&b);
-	printf("Array after adding %s to back %s.\n", T_(ArrayToString)(&b),
-		T_(ArrayToString)(&a));
-	assert(success && T_(ArraySize)(&a) == ts_size);
-	/* Replacing same-size. */
-	success = T_(ArrayIndexSplice)(&a, 1, 2, &b);
-	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
-		T_(ArrayToString)(&a));
-	assert(success && T_(ArraySize)(&a) == ts_size
-		&& !memcmp(t, T_(ArrayGet)(&a) + 1, sizeof *t));
-	/* Replacing larger size. */
-	t = T_(ArrayNew)(&b);
-	assert(t);
-	memcpy(t, ts + 1, sizeof *t);
-	success = T_(ArrayIndexSplice)(&a, 1, 2, &b);
-	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
-		T_(ArrayToString)(&a));
-	assert(success && T_(ArraySize)(&a) == ts_size + 1
-		   && !memcmp(t, T_(ArrayGet)(&a) + 2, sizeof *t));
-	/* Replacing a smaller size. */
-	success = T_(ArrayIndexSplice)(&a, 1, 4, &b);
-	printf("Array after replacing [1, 4) %s: %s.\n", T_(ArrayToString)(&b),
-		T_(ArrayToString)(&a));
-	assert(success && T_(ArraySize)(&a) == ts_size
-		   && !memcmp(t, T_(ArrayGet)(&a) + 2, sizeof *t));
-	T_(ArrayClear)(&b);
-	t = T_(ArrayBuffer)(&b, 2);
-	assert(t);
-	memcpy(t, ts + 2, sizeof *t * 2);
-	assert(T_(ArraySize)(&b) == 2);
-	/* a = [[1],[0],[1],[4],[0]]; b = [[2],[3]] */
-	printf("a = %s, b = %s.\n", T_(ArrayToString)(&a), T_(ArrayToString)(&b));
-	T_(ArraySplice)(&a, 0, -1, &b);
-	printf("a = %s.\n", T_(ArrayToString)(&a));
-	/* a = [[1],[0],[1],[4],[0],[2],[3]] */
-	T_(ArraySplice)(&a, T_(ArrayGet)(&a) + 1, 2, &b);
-	printf("a = %s.\n", T_(ArrayToString)(&a));
-	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
-	T_(ArraySplice)(&a, T_(ArrayGet)(&a) + 2, -5, &b);
-	printf("a = %s.\n", T_(ArrayToString)(&a));
-	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
-	T_(ArraySplice)(&a, T_(ArrayGet)(&a) + 7, -1, &b);
-	printf("a = %s.\n", T_(ArrayToString)(&a));
-	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
-	/* @fixme This is not enought coverage. */
-	assert(T_(ArraySize)(&a) == 9 &&
-		!memcmp(ts + 1, T_(ArrayGet)(&a), sizeof *t * 2) &&
-		!memcmp(ts + 2, T_(ArrayGet)(&a) + 2, sizeof *t * 3) &&
-		!memcmp(ts + 0, T_(ArrayGet)(&a) + 5, sizeof *t) &&
-		!memcmp(ts + 2, T_(ArrayGet)(&a) + 6, sizeof *t) &&
-		!memcmp(ts + 2, T_(ArrayGet)(&a) + 7, sizeof *t * 2));
-	T_(Array_)(&b);
-	T_(Array_)(&a);
-}
-
-/** @implements <PT>Predicate
- @return A set sequence of ones and zeros, independant of `data`. */
-static int PT_(keep_one)(const T *const data) {
-	static size_t i;
-	static const int things[] = { 1,0,0,0,0,1,0,0,1,1,0,1,0,1,0,1,0 };
-	const int predicate = things[i++];
-	(void)data;
-	i %= sizeof things / sizeof *things;
-	return predicate;
-}
-
-static void PT_(test_keep)(void) {
-	T ts[17], *t, *t1, *e;
-	const size_t ts_size = sizeof ts / sizeof *ts;
-	struct T_(Array) a = ARRAY_IDLE;
-	/* Valgrind. */
-	memset(ts, 0, sizeof ts);
-	PT_(valid_state)(&a);
-	for(t = ts, t1 = t + ts_size; t < t1; t++) {
-		PT_(filler)(t);
-		e = T_(ArrayNew)(&a), assert(e);
-		memcpy(e, t, sizeof *t);
-	}
-	T_(ArrayKeepIf)(&a, &PT_(keep_one), 0);
-	assert(T_(ArraySize)(&a) == 7
-		&& !memcmp(ts + 0, T_(ArrayGet)(&a) + 0, sizeof *t * 1)
-		&& !memcmp(ts + 5, T_(ArrayGet)(&a) + 1, sizeof *t * 1)
-		&& !memcmp(ts + 8, T_(ArrayGet)(&a) + 2, sizeof *t * 2)
-		&& !memcmp(ts + 11, T_(ArrayGet)(&a) + 4, sizeof *t * 1)
-		&& !memcmp(ts + 13, T_(ArrayGet)(&a) + 5, sizeof *t * 1)
-		&& !memcmp(ts + 15, T_(ArrayGet)(&a) + 6, sizeof *t * 1));
-	T_(Array_)(&a);
-}
-
-static int PT_(num);
-
-/** Increments a global variable, independent of `t`.
- @implements <PT>Action */
-static void PT_(increment)(T *const t) {
-	(void)t;
-	PT_(num)++;
-}
-
-/** True, independent of `t`.
- @implements <PT>Predicate */
-static int PT_(true)(const T *const t) {
-	(void)t;
-	return 1;
-}
-
-static void PT_(test_each)(void) {
-	struct T_(Array) empty = ARRAY_IDLE, one = ARRAY_IDLE;
-	T *t;
-	t = T_(ArrayNew)(&one);
-	assert(t);
-	if(!t) return;
-	PT_(num) = 0;
-	T_(ArrayEach)(&empty, &PT_(increment));
-	assert(!PT_(num));
-	T_(ArrayEach)(&one, &PT_(increment));
-	assert(PT_(num) == 1);
-	PT_(num) = 0;
-	T_(ArrayIfEach)(&empty, &PT_(true), &PT_(increment));
-	assert(!PT_(num));
-	T_(ArrayIfEach)(&one, &PT_(true), &PT_(increment));
-	assert(PT_(num) == 1);
-	PT_(num) = 0;
-	t = T_(ArrayAny)(&empty, &PT_(true));
-	assert(!t);
-	t = T_(ArrayAny)(&one, &PT_(true));
-	assert(t == T_(ArrayGet)(&one));
-	T_(Array_)(&one);
 }
 
 #endif

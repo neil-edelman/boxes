@@ -86,8 +86,10 @@ typedef HEAP_PRIORITY PH_(Priority);
 typedef int (*PH_(Compare))(const PH_(Priority), const PH_(Priority));
 #ifndef HEAP_COMPARE /* <!-- !cmp */
 /** Default `a` comes after `b` which makes a min-hash. */
-static int PH_(default_compare)(const PH_(Priority) a, const PH_(Priority) b)
-	{ return a > b; }
+static int PH_(default_compare)(const PH_(Priority) a, const PH_(Priority) b) {
+	printf("cmp %u and %u: %d\n", a, b, a > b);
+	return a > b;
+}
 #define HEAP_COMPARE &PH_(default_compare)
 #endif /* !cmp --> */
 /* Check that `HEAP_COMPARE` is a function implementing
@@ -98,6 +100,13 @@ static const PH_(Compare) PH_(compare) = (HEAP_COMPARE);
 /** If `HEAP_TYPE`, a valid tag type set by `HEAP_TYPE`, used in
  <tag:<H>HeapNode>. */
 typedef HEAP_TYPE PH_(Type);
+/** This represents the value of the node. If `HEAP_TYPE`, a pointer to the
+ <typedef:<PH>Type>; may be null if one has put null values in or if the node
+ is null. If not `HEAP_TYPE`, a boolean `int` value that is true (one) if the
+ value was there and false (zero) if not. */
+typedef PH_(Type) *PH_(Value);
+#else /* type --><!-- !type */
+typedef int PH_(Value);
 #endif /* type --> */
 
 /** Stores a <typedef:<PH>Priority> as `priority`, and, if `HASH_TYPE`, a
@@ -106,7 +115,7 @@ struct H_(HeapNode);
 struct H_(HeapNode) {
 	PH_(Priority) priority;
 #ifdef HEAP_TYPE
-	PH_(Type) *value;
+	PH_(Value) value;
 #endif
 };
 
@@ -125,8 +134,23 @@ struct H_(HeapNode) {
 struct H_(Heap);
 struct H_(Heap) { struct H_(HeapNodeArray) a; };
 #ifndef HEAP_IDLE /* <!-- !zero */
-#define HEAP_IDLE { { 0, 0, 0 } }
+#define HEAP_IDLE { { 0, 0, 0, 0 } }
 #endif /* !zero --> */
+
+/** Extracts the value of `node`, which must not be null. */
+static PH_(Value) PH_(value)(const struct H_(HeapNode) *const node) {
+#ifdef HEAP_TYPE /* <-- type */
+	return node->value;
+#else /* type --><!-- !type */
+	(void)(node);
+	return 1;
+#endif /* !type --> */
+}
+
+/** Extracts the value of `node`, which could be null. */
+static PH_(Value) PH_(value_or_null)(const struct H_(HeapNode) *const node) {
+	return node ? PH_(value)(node) : 0;
+}
 
 /** Copies `src` to `dest`. */
 static void PH_(copy)(const struct H_(HeapNode) *const src,
@@ -137,6 +161,12 @@ static void PH_(copy)(const struct H_(HeapNode) *const src,
 #endif /* type --> */
 }
 
+/* fixme */
+static void PH_(valid)(const struct H_(Heap) *const heap);
+static const char *H_(HeapToString)(const struct H_(Heap) *const heap);
+typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
+static const PH_(ToString) PH_(to_string);
+
 /** Restore order when inserting `node` in `heap`.
  @order \O(log `size`) */
 static void PH_(sift_up)(struct H_(Heap) *const heap,
@@ -145,14 +175,23 @@ static void PH_(sift_up)(struct H_(Heap) *const heap,
 	size_t ielem, ielem_up;
 	int start_permutation = 0;
 	assert(heap && heap->a.size);
+	printf("sift_up called %s.\n", H_(HeapToString)(heap));
 	for(ielem = node - heap->a.data; ielem; ielem = ielem_up) {
+		char a[12], b[12];
 		elem = heap->a.data + ielem;
 		elem_up = heap->a.data + (ielem_up = (ielem - 1) >> 1);
-		if(PH_(compare)(elem->priority, elem_up->priority) >= 0) break;
+		PH_(to_string)(elem, &a);
+		PH_(to_string)(elem_up, &b);
+		printf("%s(%lu) -> %s(%lu)\n", a, ielem, b, ielem_up);
+		if(PH_(compare)(elem_up->priority, elem->priority) <= 0) break;
+		printf("There's a problem with the order; putting %s in temp.\n", a);
 		if(!start_permutation) PH_(copy)(elem, &temp), start_permutation = 1;
 		PH_(copy)(elem_up, elem);
+		printf("now interm %s.\n", H_(HeapToString)(heap));
 	}
 	if(start_permutation) PH_(copy)(&temp, elem);
+	printf("sift_up now %s.\n", H_(HeapToString)(heap));
+	PH_(valid)(heap);
 }
 
 /** Restore order to element index `inode` in `heap` when extracting or on
@@ -175,21 +214,28 @@ static void PH_(sift_down)(struct H_(Heap) *const heap, const size_t inode) {
 	if(start_permutation) PH_(copy)(&temp, parent);
 }
 
-static void PH_(remove)(struct H_(Heap) *const heap) {
+/** Removes from `heap`. Must have a non-zero size. */
+static PH_(Value) PH_(remove)(struct H_(Heap) *const heap) {
+	const PH_(Value) result = PH_(value)(heap->a.data);
 	assert(heap);
 	if(heap->a.size > 1) {
 		PH_(copy)(heap->a.data + --heap->a.size, heap->a.data);
 		PH_(sift_down)(heap, 0);
 	} else {
+		assert(heap->a.size == 1);
 		heap->a.size = 0;
 	}
+	return result;
 }
 
-/** Create a `heap` from an array. */
+#if 0
+/** Create a `heap` from an array.
+ @fixme This is when starting with many elements; not used yet. */
 static void PH_(heapify)(struct H_(Heap) *const heap) {
 	size_t i;
 	for(i = (heap->a.size >> 1) - 1; (PH_(sift_down)(heap, i), i); i--);
 }
+#endif
 
 /** Peek at the top node in `heap`.
  @order \Theta(1) */
@@ -240,19 +286,31 @@ static int H_(HeapAdd)(struct H_(Heap) *const heap, struct H_(HeapNode) node) {
 }
 
 /** @param[heap] If null, returns null.
- @return Lowest in `heap` element according to `HEAP_COMPARE` or null if the
- heap is empty.
+ @return Lowest in `heap` according to `HEAP_COMPARE` or null if the heap is
+ empty. This pointer is valid only until one makes structural changes to the
+ heap.
  @order \O(1) */
 static struct H_(HeapNode) *H_(HeapPeek)(struct H_(Heap) *const heap) {
 	return heap ? PH_(peek)(heap) : 0;
 }
 
+/** This returns a child of that accessible from <fn:<H>HeapPeek>, for
+ convenience with some applications.
+ @param[heap] If null, returns null.
+ @return Lowest <typedef:<PH>Value> in `heap` element according to
+ `HEAP_COMPARE`, (which may be null,) or null or zero if the heap is empty.
+ @order \O(1) */
+static PH_(Value) H_(HeapPeekValue)(struct H_(Heap) *const heap) {
+	return heap ? PH_(value_or_null)(PH_(peek)(heap)) : 0;
+}
+
 /** Remove the lowest element according to `HEAP_COMPARE`.
  @param[heap] If null, returns false.
- @return If empty, returns false.
+ @return The <typedef:<PH>Value> of the element that was removed; if the heap
+ is empty, null or zero.
  @order \O(log `size`) */
-static int H_(HeapRemove)(struct H_(Heap) *const heap) {
-	return heap && heap->a.size ? (PH_(remove)(heap), 1) : 0;
+static PH_(Value) H_(HeapPop)(struct H_(Heap) *const heap) {
+	return heap && heap->a.size ? PH_(remove)(heap) : 0;
 }
 
 /* fixme: buffer remove clear */
@@ -261,7 +319,7 @@ static int H_(HeapRemove)(struct H_(Heap) *const heap) {
 
 /** Responsible for turning <typedef:<H>HeapNode> into a maximum 11-`char`
  string. Used for `HEAP_TO_STRING`. */
-typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
+/*typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);*/
 /* Check that `HEAP_TO_STRING` is a function implementing
  <typedef:<PH>ToString>. */
 static const PH_(ToString) PH_(to_string) = (HEAP_TO_STRING);
@@ -331,7 +389,8 @@ static void PH_(unused_set)(void) {
 	H_(HeapSize)(0);
 	H_(HeapAdd)(0, h);
 	H_(HeapPeek)(0);
-	H_(HeapRemove)(0);
+	H_(HeapPeekValue)(0);
+	H_(HeapPop)(0);
 	H_(HeapToString)(0);
 	PH_(unused_coda)();
 }
@@ -349,6 +408,7 @@ static void PT_(unused_coda)(void);
  have the same meanings; they will be replaced with these, and `T` and `H`
  cannot be used. */
 static void PH_(unused_set)(void) {
+	PH_(value)(0);
 	PH_(copy)(0, 0);
 	PH_(sift_up)(0, 0);
 	PH_(sift_down)(0, 0);
