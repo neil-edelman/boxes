@@ -173,24 +173,16 @@ static void PH_(sift_up)(struct H_(Heap) *const heap,
 	struct H_(HeapNode) *const node) {
 	struct H_(HeapNode) *const n0 = heap->a.data;
 	size_t i = heap->a.size - 1;
-	char a_node[12], a_i_up[12];
 	assert(heap && heap->a.size && node);
-	PH_(to_string)(node, &a_node);
-	printf("heap size %lu.\n", heap->a.size);
 	if(i) {
 		size_t i_up;
 		do {
 			i_up = (i - 1) >> 1;
-			PH_(to_string)(n0 + i_up, &a_i_up);
-			printf("comparing node %s and i_up %s to see if they are okay.\n", a_node, a_i_up);
-			if(PH_(compare)(n0[i_up].priority, node->priority) <= 0) break;
-			printf("out of order.\n");
+			if(PH_(compare)(node->priority, n0[i_up].priority) > 0) break;
 			PH_(copy)(n0 + i_up, n0 + i);
 		} while((i = i_up));
 	}
-	printf("settled %s in %lu\n", a_node, i);
 	PH_(copy)(node, n0 + i);
-	PH_(valid)(heap);
 }
 
 /** Restore order to element index `inode` in `heap` when extracting or on
