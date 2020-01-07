@@ -87,7 +87,6 @@ typedef int (*PH_(Compare))(const PH_(Priority), const PH_(Priority));
 #ifndef HEAP_COMPARE /* <!-- !cmp */
 /** Default `a` comes after `b` which makes a min-hash. */
 static int PH_(default_compare)(const PH_(Priority) a, const PH_(Priority) b) {
-	printf("cmp %u and %u: %d\n", a, b, a > b);
 	return a > b;
 }
 #define HEAP_COMPARE &PH_(default_compare)
@@ -167,30 +166,30 @@ static const char *H_(HeapToString)(const struct H_(Heap) *const heap);
 typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
 static const PH_(ToString) PH_(to_string);
 
-/** Restore order when inserting `node` in `heap`.
+/** Find the spot in `heap` where `node` goes and put it there.
+ @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
 static void PH_(sift_up)(struct H_(Heap) *const heap,
 	struct H_(HeapNode) *const node) {
-	struct H_(HeapNode) temp, *elem, *elem_up;
-	size_t ielem, ielem_up;
-	int start_permutation = 0;
-	assert(heap && heap->a.size);
-	printf("sift_up called %s.\n", H_(HeapToString)(heap));
-	for(ielem = node - heap->a.data; ielem; ielem = ielem_up) {
-		char a[12], b[12];
-		elem = heap->a.data + ielem;
-		elem_up = heap->a.data + (ielem_up = (ielem - 1) >> 1);
-		PH_(to_string)(elem, &a);
-		PH_(to_string)(elem_up, &b);
-		printf("%s(%lu) -> %s(%lu)\n", a, ielem, b, ielem_up);
-		if(PH_(compare)(elem_up->priority, elem->priority) <= 0) break;
-		printf("There's a problem with the order; putting %s in temp.\n", a);
-		if(!start_permutation) PH_(copy)(elem, &temp), start_permutation = 1;
-		PH_(copy)(elem_up, elem);
-		printf("now interm %s.\n", H_(HeapToString)(heap));
+	struct H_(HeapNode) *const n0 = heap->a.data;
+	size_t i = heap->a.size - 1;
+	char a_node[12], a_i_up[12];
+	assert(heap && heap->a.size && node);
+	PH_(to_string)(node, &a_node);
+	printf("heap size %lu.\n", heap->a.size);
+	if(i) {
+		size_t i_up;
+		do {
+			i_up = (i - 1) >> 1;
+			PH_(to_string)(n0 + i_up, &a_i_up);
+			printf("comparing node %s and i_up %s to see if they are okay.\n", a_node, a_i_up);
+			if(PH_(compare)(n0[i_up].priority, node->priority) <= 0) break;
+			printf("out of order.\n");
+			PH_(copy)(n0 + i_up, n0 + i);
+		} while((i = i_up));
 	}
-	if(start_permutation) PH_(copy)(&temp, elem);
-	printf("sift_up now %s.\n", H_(HeapToString)(heap));
+	printf("settled %s in %lu\n", a_node, i);
+	PH_(copy)(node, n0 + i);
 	PH_(valid)(heap);
 }
 
@@ -212,6 +211,14 @@ static void PH_(sift_down)(struct H_(Heap) *const heap, const size_t inode) {
 		iparent = ichild;
 	}
 	if(start_permutation) PH_(copy)(&temp, parent);
+}
+
+/** Add a `node` to `heap`.
+ @order \O(log `size`) */
+static int PH_(add)(struct H_(Heap) *const heap,
+	struct H_(HeapNode) *const node) {
+	printf("add\n");
+	return PT_(new)(&heap->a, 0) ? (PH_(sift_up)(heap, node), 1) : 0;
 }
 
 /** Removes from `heap`. Must have a non-zero size. */
@@ -276,13 +283,8 @@ static size_t H_(HeapSize)(const struct H_(Heap) *const heap) {
  @throws[realloc]
  @order \O(log `size`) */
 static int H_(HeapAdd)(struct H_(Heap) *const heap, struct H_(HeapNode) node) {
-	struct H_(HeapNode) *in_heap;
-	if(heap && (in_heap = PT_(new)(&heap->a, 0))) {
-		PH_(copy)(&node, in_heap);
-		PH_(sift_up)(heap, in_heap);
-		return 1;
-	}
-	return 0;
+	printf("HeapAdd\n");
+	return heap ? PH_(add)(heap, &node) : 0;
 }
 
 /** @param[heap] If null, returns null.

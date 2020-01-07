@@ -26,7 +26,7 @@ static void int_to_string(const struct IntHeapNode *const i,
 
 static void test_int(struct IntHeapNode *i) {
 	i->priority = rand() / (RAND_MAX / 99 + 1) + 1;
-	printf("int: %u\n", i->priority);
+	printf("test_int: generated %u\n", i->priority);
 }
 
 int main(void) {

@@ -65,11 +65,11 @@ static void PH_(valid)(const struct H_(Heap) *const heap) {
 	if(!heap->a.data) { assert(!heap->a.size); return; }
 	n0 = heap->a.data;
 	for(i = 1; i < heap->a.size; i++) {
-		if(PH_(compare)(n0[(i - 1) >> 1].priority, n0[i].priority) <= 0) {
-			PH_(graph)(heap, "graph/" QUOTE(HEAP_NAME) "-invalid.gv");
-			assert(0);
-			break;
-		}
+		size_t iparent = (i - 1) >> 1;
+		if(PH_(compare)(n0[iparent].priority, n0[i].priority) <= 0) continue;
+		PH_(graph)(heap, "graph/" QUOTE(HEAP_NAME) "-invalid.gv");
+		assert(0);
+		break;
 	}
 }
 
@@ -99,7 +99,7 @@ static void PH_(test_basic)(void) {
 	PH_(filler)(&add);
 	v = PH_(value)(&add);
 	assert(H_(HeapAdd)(&heap, add));
-	printf("Added: %s.\n", H_(HeapToString)(&heap));
+	printf("Added one, %s.\n", H_(HeapToString)(&heap));
 	assert(H_(HeapSize)(&heap) == 1);
 	node = H_(HeapPeek)(&heap);
 	PH_(valid)(&heap);
@@ -111,7 +111,7 @@ static void PH_(test_basic)(void) {
 	printf("Test many.\n");
 	for(i = 0; i < test_size; i++) {
 		sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv", (unsigned long)i);
-		PH_(graph)(&heap, fn);
+		printf("Outputing %s.\n", fn), PH_(graph)(&heap, fn);
 		PH_(filler)(&add);
 		assert(H_(HeapAdd)(&heap, add));
 		PH_(valid)(&heap);
