@@ -111,13 +111,15 @@ static void PH_(test_basic)(void) {
 	printf("Test many.\n");
 	for(i = 0; i < test_size; i++) {
 		sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv", (unsigned long)i);
-		printf("Outputing %s.\n", fn), PH_(graph)(&heap, fn);
+		PH_(graph)(&heap, fn);
 		PH_(filler)(&add);
 		assert(H_(HeapAdd)(&heap, add));
 		PH_(valid)(&heap);
 	}
-	PH_(graph)(&heap, "graph/" QUOTE(HEAP_NAME) "-little.gv");
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-final.gv", (unsigned long)i);
+	PH_(graph)(&heap, fn);
 	assert(H_(HeapSize)(&heap) == test_size);
+	printf("Heap: %s.\n", H_(HeapToString)(&heap));
 	for(i = 0; i < test_size; i++) {
 		char a[12];
 		node = H_(HeapPeek)(&heap);
@@ -126,6 +128,9 @@ static void PH_(test_basic)(void) {
 		PH_(to_string)(node, &a);
 		printf("Retreving %s.\n", a);
 		result = H_(HeapPop)(&heap);
+		sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
+			(unsigned long)i);
+		PH_(graph)(&heap, fn);
 		assert(v == result && H_(HeapSize)(&heap) == test_size - i - 1);
 		PH_(valid)(&heap);
 	}

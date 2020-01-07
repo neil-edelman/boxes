@@ -160,12 +160,6 @@ static void PH_(copy)(const struct H_(HeapNode) *const src,
 #endif /* type --> */
 }
 
-/* fixme */
-static void PH_(valid)(const struct H_(Heap) *const heap);
-static const char *H_(HeapToString)(const struct H_(Heap) *const heap);
-typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
-static const PH_(ToString) PH_(to_string);
-
 /** Find the spot in `heap` where `node` goes and put it there.
  @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
@@ -185,32 +179,48 @@ static void PH_(sift_up)(struct H_(Heap) *const heap,
 	PH_(copy)(node, n0 + i);
 }
 
-/** Restore order to element index `inode` in `heap` when extracting or on
- heapify.
- @fixme Doesn't work. */
-static void PH_(sift_down)(struct H_(Heap) *const heap, const size_t inode) {
-	struct H_(HeapNode) temp, *parent, *child;
-	size_t isize = heap->a.size, ihalf = heap->a.size >> 1,
-		iparent = inode, ichild;
-	int start_permutation = 0;
-	while(iparent < ihalf) {
-		child = heap->a.data + (ichild = (iparent << 1) + 1); /* Select left. */
-		if(ichild + 1 < isize && PH_(compare)(child->priority,
-			(child + 1)->priority) > 0) child++; /* Maybe switch right. */
-		parent = heap->a.data + iparent;
-		if(PH_(compare)(parent->priority, child->priority) <= 0) break;
-		if(!start_permutation) PH_(copy)(parent, &temp), start_permutation = 1;
-		PH_(copy)(child, parent);
-		iparent = ichild;
+/* fixme */
+static void PH_(valid)(const struct H_(Heap) *const heap);
+static const char *H_(HeapToString)(const struct H_(Heap) *const heap);
+typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
+static const PH_(ToString) PH_(to_string);
+static void PH_(graph)(const struct H_(Heap) *const heap,
+					   const char *const fn);
+/** Pop the head. */
+static void PH_(sift_down)(struct H_(Heap) *const heap) {
+	const size_t size = (assert(heap && heap->a.size), --heap->a.size),
+		half = size >> 1;
+	size_t i = 0, c;
+	struct H_(HeapNode) *const n0 = heap->a.data, *const down = n0 + size,
+		*child;
+	char a_down[12], a_c0[12], a_c1[12];
+	PH_(to_string)(down, &a_down);
+	printf("Down %s.\n", a_down);
+	while(i < half) {
+		c = (i << 1) + 1;
+		PH_(to_string)(n0 + c, &a_c0);
+		PH_(to_string)(n0 + c + 1, &a_c1);
+		printf("Choosing %s and %s; ", a_c0, a_c1);
+		if(c + 1 < size && PH_(compare)(n0[c].priority,
+			n0[c + 1].priority) > 0) c++;
+		child = n0 + c;
+		PH_(to_string)(child, &a_c0);
+		printf("comparing %s with down %s.\n", a_c0, a_down);
+		if(PH_(compare)(down->priority, child->priority) <= 0) break;
+		PH_(to_string)(n0 + i, &a_c1);
+		printf("%s -> %s\n", a_c0, a_c1);
+		PH_(copy)(child, n0 + i);
+		i = c;
 	}
-	if(start_permutation) PH_(copy)(&temp, parent);
+	PH_(to_string)(n0 + i, &a_c1);
+	printf("sticking %s in spot %lu where %s is.\n", a_down, i, a_c1);
+	PH_(copy)(down, n0 + i);
 }
 
 /** Add a `node` to `heap`.
  @order \O(log `size`) */
 static int PH_(add)(struct H_(Heap) *const heap,
 	struct H_(HeapNode) *const node) {
-	printf("add\n");
 	return PT_(new)(&heap->a, 0) ? (PH_(sift_up)(heap, node), 1) : 0;
 }
 
@@ -219,8 +229,7 @@ static PH_(Value) PH_(remove)(struct H_(Heap) *const heap) {
 	const PH_(Value) result = PH_(value)(heap->a.data);
 	assert(heap);
 	if(heap->a.size > 1) {
-		PH_(copy)(heap->a.data + --heap->a.size, heap->a.data);
-		PH_(sift_down)(heap, 0);
+		PH_(sift_down)(heap);
 	} else {
 		assert(heap->a.size == 1);
 		heap->a.size = 0;
@@ -276,7 +285,6 @@ static size_t H_(HeapSize)(const struct H_(Heap) *const heap) {
  @throws[realloc]
  @order \O(log `size`) */
 static int H_(HeapAdd)(struct H_(Heap) *const heap, struct H_(HeapNode) node) {
-	printf("HeapAdd\n");
 	return heap ? PH_(add)(heap, &node) : 0;
 }
 
