@@ -15,12 +15,12 @@
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an optional
- <typedef:<H>Type> associated therewith; `HEAP_NAME` is required. `<PH>` is
+ <typedef:<PH>Type> associated therewith; `HEAP_NAME` is required. `<PH>` is
  private, whose names are prefixed in a manner to avoid collisions; any should
  be re-defined prior to use elsewhere.
 
  @param[HEAP_COMPARE]
- A function satisfying <typedef:<PE>Compare>. Defaults to minimum-hash using
+ A function satisfying <typedef:<PH>Compare>. Defaults to minimum-hash using
  less-then on `HEAP_PRIORITY`.
 
  @param[HEAP_PRIORITY]
@@ -29,7 +29,7 @@
 
  @param[HEAP_TO_STRING]
  Optional print function implementing <typedef:<PH>ToString>; makes available
- <fn:<H>SetToString>.
+ <fn:<H>HeapToString>.
 
  @param[HEAP_TEST]
  Unit testing framework <fn:<H>HeapTest>, included in a separate header,
@@ -179,41 +179,22 @@ static void PH_(sift_up)(struct H_(Heap) *const heap,
 	PH_(copy)(node, n0 + i);
 }
 
-/* fixme */
-static void PH_(valid)(const struct H_(Heap) *const heap);
-static const char *H_(HeapToString)(const struct H_(Heap) *const heap);
-typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
-static const PH_(ToString) PH_(to_string);
-static void PH_(graph)(const struct H_(Heap) *const heap,
-					   const char *const fn);
-/** Pop the head. */
+/** Pop the head of `heap`. */
 static void PH_(sift_down)(struct H_(Heap) *const heap) {
 	const size_t size = (assert(heap && heap->a.size), --heap->a.size),
 		half = size >> 1;
 	size_t i = 0, c;
 	struct H_(HeapNode) *const n0 = heap->a.data, *const down = n0 + size,
 		*child;
-	char a_down[12], a_c0[12], a_c1[12];
-	PH_(to_string)(down, &a_down);
-	printf("Down %s.\n", a_down);
 	while(i < half) {
 		c = (i << 1) + 1;
-		PH_(to_string)(n0 + c, &a_c0);
-		PH_(to_string)(n0 + c + 1, &a_c1);
-		printf("Choosing %s and %s; ", a_c0, a_c1);
 		if(c + 1 < size && PH_(compare)(n0[c].priority,
 			n0[c + 1].priority) > 0) c++;
 		child = n0 + c;
-		PH_(to_string)(child, &a_c0);
-		printf("comparing %s with down %s.\n", a_c0, a_down);
 		if(PH_(compare)(down->priority, child->priority) <= 0) break;
-		PH_(to_string)(n0 + i, &a_c1);
-		printf("%s -> %s\n", a_c0, a_c1);
 		PH_(copy)(child, n0 + i);
 		i = c;
 	}
-	PH_(to_string)(n0 + i, &a_c1);
-	printf("sticking %s in spot %lu where %s is.\n", a_down, i, a_c1);
 	PH_(copy)(down, n0 + i);
 }
 
@@ -320,9 +301,9 @@ static PH_(Value) H_(HeapPop)(struct H_(Heap) *const heap) {
 
 #ifdef HEAP_TO_STRING /* <!-- string */
 
-/** Responsible for turning <typedef:<H>HeapNode> into a maximum 11-`char`
- string. Used for `HEAP_TO_STRING`. */
-/*typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);*/
+/** Responsible for turning <tag:<H>HeapNode> into a maximum 11-`char` string.
+ Used for `HEAP_TO_STRING`. */
+typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
 /* Check that `HEAP_TO_STRING` is a function implementing
  <typedef:<PH>ToString>. */
 static const PH_(ToString) PH_(to_string) = (HEAP_TO_STRING);
@@ -330,7 +311,7 @@ static const PH_(ToString) PH_(to_string) = (HEAP_TO_STRING);
 /** Can print 4 things at once before it overwrites. One must a
  `HEAP_TO_STRING` to a function implementing <typedef:<PH>ToString> to get
  this functionality.
- @return Prints `a` in a static buffer.
+ @return Prints `heap` in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
  @fixme Again? Use an interface.
  @allow */

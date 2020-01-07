@@ -11,10 +11,10 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** Operates by side-effects. Used for `HEAP_TEST`. */
-typedef void (*PH_(Action))(struct H_(HeapNode) *);
+typedef void (*PH_(BiAction))(struct H_(HeapNode) *, void *);
 
 /* `HEAP_TEST` must be a function that implements `<PH>Action`. */
-static const PH_(Action) PH_(filler) = (HEAP_TEST);
+static const PH_(BiAction) PH_(filler) = (HEAP_TEST);
 
 /** Draw a graph of `heap` to `fn` in Graphviz format. */
 static void PH_(graph)(const struct H_(Heap) *const heap,
@@ -24,7 +24,7 @@ static void PH_(graph)(const struct H_(Heap) *const heap,
 	assert(heap && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\trankdir = BT; #LR;\n"
+		"\trankdir = BT;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\tHash [label=\"{\\<" QUOTE(HEAP_NAME) "\\>Hash: "
 #ifdef HEAP_TYPE
@@ -39,7 +39,7 @@ static void PH_(graph)(const struct H_(Heap) *const heap,
 		struct H_(HeapNode) *const n0 = heap->a.data;
 		size_t i;
 		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
-		if(heap->a.size) fprintf(fp, "\tHash -> n0;\n");
+		if(heap->a.size) fprintf(fp, "\tn0 -> Hash [dir = back];\n");
 		fprintf(fp, "\tedge [style = dashed];\n"
 			"\tsubgraph cluster_data {\n"
 			"\t\tstyle=filled;\n");
@@ -73,7 +73,7 @@ static void PH_(valid)(const struct H_(Heap) *const heap) {
 	}
 }
 
-static void PH_(test_basic)(void) {
+static void PH_(test_basic)(void *const param) {
 	struct H_(Heap) heap = HEAP_IDLE;
 	struct H_(HeapNode) *node, add;
 	PH_(Value) v, result;
@@ -96,7 +96,7 @@ static void PH_(test_basic)(void) {
 	assert(!errno);
 
 	printf("Test one.\n");
-	PH_(filler)(&add);
+	PH_(filler)(&add, param);
 	v = PH_(value)(&add);
 	assert(H_(HeapAdd)(&heap, add));
 	printf("Added one, %s.\n", H_(HeapToString)(&heap));
@@ -112,7 +112,7 @@ static void PH_(test_basic)(void) {
 	for(i = 0; i < test_size; i++) {
 		sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv", (unsigned long)i);
 		PH_(graph)(&heap, fn);
-		PH_(filler)(&add);
+		PH_(filler)(&add, param);
 		assert(H_(HeapAdd)(&heap, add));
 		PH_(valid)(&heap);
 	}
@@ -142,7 +142,7 @@ static void PH_(test_basic)(void) {
 
 #if 0
 
-static void PT_(test_random)(void) {
+static void PT_(test_random)(void *const param) {
 	struct T_(Array) a;
 	const size_t mult = 1; /* For long tests. */
 	/* This parameter controls how many iterations. */
@@ -205,12 +205,9 @@ static void PT_(test_random)(void) {
 
 #endif
 
-
-
-
 /** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
  `NDEBUG` while defining `assert`. */
-static void H_(HeapTest)(void) {
+static void H_(HeapTest)(void *const param) {
 	printf("<" QUOTE(HEAP_NAME) ">Heap"
 #ifdef HEAP_TYPE
 		" of type <" QUOTE(HEAP_TYPE) ">"
@@ -220,7 +217,7 @@ static void H_(HeapTest)(void) {
 		" HEAP_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">;"
 		" HEAP_TEST <" QUOTE(HEAP_TEST) ">;"
 		" testing:\n");
-	PH_(test_basic)();
+	PH_(test_basic)(param);
 	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">Heap.\n\n");
 }
 
