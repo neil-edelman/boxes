@@ -176,9 +176,9 @@ static void PH_(sift_up)(struct H_(Heap) *const heap,
 	assert(heap && heap->a.size && node);
 	if(i) {
 		size_t i_up;
-		do {
+		do { /* Note: don't change the `<=`, want less work on equal. */
 			i_up = (i - 1) >> 1;
-			if(PH_(compare)(node->priority, n0[i_up].priority) > 0) break;
+			if(PH_(compare)(n0[i_up].priority, node->priority) <= 0) break;
 			PH_(copy)(n0 + i_up, n0 + i);
 		} while((i = i_up));
 	}
@@ -186,7 +186,8 @@ static void PH_(sift_up)(struct H_(Heap) *const heap,
 }
 
 /** Restore order to element index `inode` in `heap` when extracting or on
- heapify. */
+ heapify.
+ @fixme Doesn't work. */
 static void PH_(sift_down)(struct H_(Heap) *const heap, const size_t inode) {
 	struct H_(HeapNode) temp, *parent, *child;
 	size_t isize = heap->a.size, ihalf = heap->a.size >> 1,
