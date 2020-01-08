@@ -36,6 +36,7 @@
 
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
+ @cf [Heap](https://github.com/neil-edelman/Heap)
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Pool](https://github.com/neil-edelman/Pool)
  @cf [Set](https://github.com/neil-edelman/Set) */

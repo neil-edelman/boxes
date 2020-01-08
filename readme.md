@@ -32,7 +32,7 @@ Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<
  * Standard:  
    C89
  * See also:  
-   [Array](https://github.com/neil-edelman/Array); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
+   [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
