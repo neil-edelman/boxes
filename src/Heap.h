@@ -6,7 +6,9 @@
  ![Example of heap.](../web/heap.png)
 
  A <tag:<H>Heap> is a priority queue built from <tag:<H>HeapNode>. It is a
- simple binary heap with an array `<<H>HeapNode>Array` backing.
+ simple binary heap. Internally, it is an array `<<H>HeapNode>Array` with heap
+ properties; as such, one needs to have the `Array.h` file in the same
+ directory.
 
  `<H>Heap` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
@@ -81,8 +83,8 @@
 /** Valid type used for caching priority, used in <tag:<H>HeapNode>. */
 typedef HEAP_PRIORITY PH_(Priority);
 
-/** Partial-order function that returns a positive result if `a` comes after
- `b`. */
+/** Returns a positive result if `a` comes after `b`, inducing an ordering
+ between `a` and `b`. */
 typedef int (*PH_(Compare))(const PH_(Priority), const PH_(Priority));
 #ifndef HEAP_COMPARE /* <!-- !cmp */
 /** Default `a` comes after `b` which makes a min-hash. */
@@ -109,7 +111,10 @@ typedef int PH_(Value);
 #endif /* type --> */
 
 /** Stores a <typedef:<PH>Priority> as `priority`, and, if `HASH_TYPE`, a
- <typedef:<PH>Type> pointer called `value`. */
+ <typedef:<PH>Type> pointer called `value`. `value` is just the payload, if the
+ `value` has <typedef:<PH>Priority> in it, (as most other heap
+ implementations,) one has to copy the the sub-structure of value to the
+ `priority` such that the `priority` does not need a second de-reference. */
 struct H_(HeapNode);
 struct H_(HeapNode) {
 	PH_(Priority) priority;

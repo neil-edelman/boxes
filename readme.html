@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 194 height = 286></p>
 
-<p>A <a href = "#tag:&lt;H&gt;Heap">&lt;H&gt;Heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>. It is a simple binary heap with an array <code>&lt;&lt;H&gt;HeapNode&gt;Array</code> backing.</p>
+<p>A <a href = "#tag:&lt;H&gt;Heap">&lt;H&gt;Heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>. It is a simple binary heap. Internally, it is an array <code>&lt;&lt;H&gt;HeapNode&gt;Array</code> with heap properties; as such, one needs to have the <code>Array.h</code> file in the same directory.</p>
 
 <p><code>&lt;H&gt;Heap</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used; to stop assertions, use <code>#define NDEBUG</code> before inclusion.</p>
 
@@ -95,7 +95,7 @@
 
 <p><code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority, const &lt;PH&gt;Priority);</code></p>
 
-<p>Partial-order function that returns a positive result if <code>a</code> comes after <code>b</code>.</p>
+<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing an ordering between <code>a</code> and <code>b</code>.</p>
 
 </div>
 
@@ -147,7 +147,7 @@
 
 <p><code>struct <strong>&lt;H&gt;HeapNode</strong>;</code></p>
 
-<p>Stores a <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> as <code>priority</code>, and, if <code>HASH_TYPE</code>, a <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a> pointer called <code>value</code>.</p>
+<p>Stores a <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> as <code>priority</code>, and, if <code>HASH_TYPE</code>, a <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a> pointer called <code>value</code>. <code>value</code> is just the payload, if the <code>value</code> has <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> in it, (as most other heap implementations,) one has to copy the the sub-structure of value to the <code>priority</code> such that the <code>priority</code> does not need a second de-reference.</p>
 
 </div>
 

@@ -13,7 +13,7 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a simple binary heap with an array `<<H>HeapNode>Array` backing\.
+A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a simple binary heap\. Internally, it is an array `<<H>HeapNode>Array` with heap properties; as such, one needs to have the `Array.h` file in the same directory\.
 
 `<H>Heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
@@ -53,7 +53,7 @@ Valid type used for caching priority, used in [&lt;H&gt;HeapNode](#user-content-
 
 <code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority, const &lt;PH&gt;Priority);</code>
 
-Partial\-order function that returns a positive result if `a` comes after `b`\.
+Returns a positive result if `a` comes after `b`, inducing an ordering between `a` and `b`\.
 
 
 
@@ -95,7 +95,7 @@ Operates by side\-effects\. Used for `HEAP_TEST`\.
 
 <code>struct <strong>&lt;H&gt;HeapNode</strong>;</code>
 
-Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, and, if `HASH_TYPE`, a [&lt;PH&gt;Type](#user-content-typedef-b7099207) pointer called `value`\.
+Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, and, if `HASH_TYPE`, a [&lt;PH&gt;Type](#user-content-typedef-b7099207) pointer called `value`\. `value` is just the payload, if the `value` has [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) in it, \(as most other heap implementations,\) one has to copy the the sub\-structure of value to the `priority` such that the `priority` does not need a second de\-reference\.
 
 
 
