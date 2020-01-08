@@ -40,7 +40,7 @@ Internally, it is a separately chained, hash set with a maximum load factor of `
  * Standard:  
    C89
  * See also:  
-   [Array](https://github.com/neil-edelman/Array); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool)
+   [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
