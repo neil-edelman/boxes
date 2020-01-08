@@ -3,7 +3,7 @@
 ## Parameterised Doubly\-Linked Closed List ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1), [&lt;PN&gt;Action](#user-content-typedef-aea37eeb), [&lt;PN&gt;Predicate](#user-content-typedef-48c42a2a), [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Action](#user-content-typedef-aea37eeb), [&lt;PN&gt;Predicate](#user-content-typedef-48c42a2a), [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8), [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;N&gt;ListNode](#user-content-tag-b60b679b), [&lt;N&gt;List](#user-content-tag-3824ef2b)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -37,19 +37,11 @@ Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-3f3210e1" name = "user-content-typedef-3f3210e1">&lt;PN&gt;ToString</a> ###
-
-<code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code>
-
-Responsible for turning [&lt;N&gt;ListNode](#user-content-tag-b60b679b) \(the first argument\) into a maximum 11\-`char` string \(the second\.\) Defined when `LIST_TO_STRING`\.
-
-
-
 ### <a id = "user-content-typedef-aea37eeb" name = "user-content-typedef-aea37eeb">&lt;PN&gt;Action</a> ###
 
 <code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(struct &lt;N&gt;ListNode *);</code>
 
-Operates by side\-effects on the link\.
+Operates by side\-effects on the node\.
 
 
 
@@ -57,7 +49,7 @@ Operates by side\-effects on the link\.
 
 <code>typedef int(*<strong>&lt;PN&gt;Predicate</strong>)(const struct &lt;N&gt;ListNode *);</code>
 
-Returns \(Non\-zero\) true or \(zero\) false when given a link\.
+Returns \(Non\-zero\) true or \(zero\) false when given a node\.
 
 
 
@@ -66,6 +58,14 @@ Returns \(Non\-zero\) true or \(zero\) false when given a link\.
 <code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListNode *a, const struct &lt;N&gt;ListNode *b);</code>
 
 Returns less then, equal to, or greater then zero, forming an equivalence relation between `a` as compared to `b`\. Defined when `LIST_COMPARE`\.
+
+
+
+### <a id = "user-content-typedef-3f3210e1" name = "user-content-typedef-3f3210e1">&lt;PN&gt;ToString</a> ###
+
+<code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code>
+
+Responsible for turning the first argument into a 12\-`char` null\-terminated string\. Used for `LIST_TO_STRING`\.
 
 
 

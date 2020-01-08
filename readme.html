@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>ToString">&lt;PN&gt;ToString</a>, <a href = "#typedef:<PN>Action">&lt;PN&gt;Action</a>, <a href = "#typedef:<PN>Predicate">&lt;PN&gt;Predicate</a>, <a href = "#typedef:<PN>Compare">&lt;PN&gt;Compare</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>Action">&lt;PN&gt;Action</a>, <a href = "#typedef:<PN>Predicate">&lt;PN&gt;Predicate</a>, <a href = "#typedef:<PN>Compare">&lt;PN&gt;Compare</a>, <a href = "#typedef:<PN>ToString">&lt;PN&gt;ToString</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<N>ListNode">&lt;N&gt;ListNode</a>, <a href = "#tag:<N>List">&lt;N&gt;List</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -77,21 +77,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PN>ToString" name = "typedef:<PN>ToString">&lt;PN&gt;ToString</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code></p>
-
-<p>Responsible for turning <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a> (the first argument) into a maximum 11-<code>char</code> string (the second.) Defined when <code>LIST_TO_STRING</code>.</p>
-
-</div>
-
-<div>
-
 <h3><a id = "typedef:<PN>Action" name = "typedef:<PN>Action">&lt;PN&gt;Action</a></h3>
 
 <p><code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(struct &lt;N&gt;ListNode *);</code></p>
 
-<p>Operates by side-effects on the link.</p>
+<p>Operates by side-effects on the node.</p>
 
 </div>
 
@@ -101,7 +91,7 @@
 
 <p><code>typedef int(*<strong>&lt;PN&gt;Predicate</strong>)(const struct &lt;N&gt;ListNode *);</code></p>
 
-<p>Returns (Non-zero) true or (zero) false when given a link.</p>
+<p>Returns (Non-zero) true or (zero) false when given a node.</p>
 
 </div>
 
@@ -112,6 +102,16 @@
 <p><code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListNode *a, const struct &lt;N&gt;ListNode *b);</code></p>
 
 <p>Returns less then, equal to, or greater then zero, forming an equivalence relation between <code>a</code> as compared to <code>b</code>. Defined when <code>LIST_COMPARE</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>ToString" name = "typedef:<PN>ToString">&lt;PN&gt;ToString</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code></p>
+
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated string. Used for <code>LIST_TO_STRING</code>.</p>
 
 </div>
 
