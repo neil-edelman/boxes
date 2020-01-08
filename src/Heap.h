@@ -83,8 +83,8 @@
 /** Valid type used for caching priority, used in <tag:<H>HeapNode>. */
 typedef HEAP_PRIORITY PH_(Priority);
 
-/** Returns a positive result if `a` comes after `b`, inducing an ordering
- between `a` and `b`. */
+/** Returns a positive result if `a` comes after `b`, inducing a preorder
+ of `a` and `b`. */
 typedef int (*PH_(Compare))(const PH_(Priority), const PH_(Priority));
 #ifndef HEAP_COMPARE /* <!-- !cmp */
 /** Default `a` comes after `b` which makes a min-hash. */

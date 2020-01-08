@@ -53,7 +53,7 @@ Valid type used for caching priority, used in [&lt;H&gt;HeapNode](#user-content-
 
 <code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority, const &lt;PH&gt;Priority);</code>
 
-Returns a positive result if `a` comes after `b`, inducing an ordering between `a` and `b`\.
+Returns a positive result if `a` comes after `b`, inducing a preorder of `a` and `b`\.
 
 
 
