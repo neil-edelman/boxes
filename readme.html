@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>Priority">&lt;PH&gt;Priority</a>, <a href = "#typedef:<PH>Compare">&lt;PH&gt;Compare</a>, <a href = "#typedef:<PH>Type">&lt;PH&gt;Type</a>, <a href = "#typedef:<PH>Value">&lt;PH&gt;Value</a>, <a href = "#typedef:<PH>ToString">&lt;PH&gt;ToString</a>, <a href = "#typedef:<PH>Action">&lt;PH&gt;Action</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>Priority">&lt;PH&gt;Priority</a>, <a href = "#typedef:<PH>Compare">&lt;PH&gt;Compare</a>, <a href = "#typedef:<PH>Type">&lt;PH&gt;Type</a>, <a href = "#typedef:<PH>Value">&lt;PH&gt;Value</a>, <a href = "#typedef:<PH>ToString">&lt;PH&gt;ToString</a>, <a href = "#typedef:<PH>BiAction">&lt;PH&gt;BiAction</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>HeapNode">&lt;H&gt;HeapNode</a>, <a href = "#tag:<H>Heap">&lt;H&gt;Heap</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -66,7 +66,7 @@
 	<dt>Parameter: HEAP_TO_STRING</dt>
 	<dd>Optional print function implementing <a href = "#typedef:&lt;PH&gt;ToString">&lt;PH&gt;ToString</a>; makes available <a href = "#fn:&lt;H&gt;HeapToString">&lt;H&gt;HeapToString</a>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
-	<dd>Unit testing framework <a href = "#fn:&lt;H&gt;HeapTest">&lt;H&gt;HeapTest</a>, included in a separate header, <a href = "../test/HeapTest.h">../test/HeapTest.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;Action">&lt;PH&gt;Action</a>. Requires <code>HEAP_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
+	<dd>Unit testing framework <a href = "#fn:&lt;H&gt;HeapTest">&lt;H&gt;HeapTest</a>, included in a separate header, <a href = "../test/HeapTest.h">../test/HeapTest.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;BiAction">&lt;PH&gt;BiAction</a>. Requires <code>HEAP_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
@@ -131,9 +131,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PH>Action" name = "typedef:<PH>Action">&lt;PH&gt;Action</a></h3>
+<h3><a id = "typedef:<PH>BiAction" name = "typedef:<PH>BiAction">&lt;PH&gt;BiAction</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PH&gt;Action</strong>)(struct &lt;H&gt;HeapNode *);</code></p>
+<p><code>typedef void(*<strong>&lt;PH&gt;BiAction</strong>)(struct &lt;H&gt;HeapNode *, void *);</code></p>
 
 <p>Operates by side-effects. Used for <code>HEAP_TEST</code>.</p>
 
@@ -177,7 +177,17 @@
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<H>HeapSize">&lt;H&gt;HeapSize</a></td><td>heap</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn:<H>HeapAdd">&lt;H&gt;HeapAdd</a></td><td>heap, node</td></tr>
+
+<tr><td align = right>static struct &lt;H&gt;HeapNode *</td><td><a href = "#fn:<H>HeapPeek">&lt;H&gt;HeapPeek</a></td><td>heap</td></tr>
+
+<tr><td align = right>static &lt;PH&gt;Value</td><td><a href = "#fn:<H>HeapPeekValue">&lt;H&gt;HeapPeekValue</a></td><td>heap</td></tr>
+
+<tr><td align = right>static &lt;PH&gt;Value</td><td><a href = "#fn:<H>HeapPop">&lt;H&gt;HeapPop</a></td><td>heap</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#fn:<H>HeapToString">&lt;H&gt;HeapToString</a></td><td>heap</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<H>HeapTest">&lt;H&gt;HeapTest</a></td><td>param</td></tr>
 
 </table>
 
@@ -240,6 +250,81 @@
 
 <div>
 
+<h3><a id = "fn:<H>HeapAdd" name = "fn:<H>HeapAdd">&lt;H&gt;HeapAdd</a></h3>
+
+<p><code>static int <strong>&lt;H&gt;HeapAdd</strong>(struct &lt;H&gt;Heap *const <em>heap</em>, struct &lt;H&gt;HeapNode <em>node</em>)</code></p>
+
+<p>Copies <code>node</code> into <code>heap</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>heap</em></dt>
+	<dd>If null, returns false.</dd>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(log <code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<H>HeapPeek" name = "fn:<H>HeapPeek">&lt;H&gt;HeapPeek</a></h3>
+
+<p><code>static struct &lt;H&gt;HeapNode *<strong>&lt;H&gt;HeapPeek</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
+
+<dl>
+	<dt>Parameter: <em>heap</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Return:</dt>
+	<dd>Lowest in <code>heap</code> according to <code>HEAP_COMPARE</code> or null if the heap is empty. This pointer is valid only until one makes structural changes to the heap.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<H>HeapPeekValue" name = "fn:<H>HeapPeekValue">&lt;H&gt;HeapPeekValue</a></h3>
+
+<p><code>static &lt;PH&gt;Value <strong>&lt;H&gt;HeapPeekValue</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
+
+<p>This returns a child of that accessible from <a href = "#fn:&lt;H&gt;HeapPeek">&lt;H&gt;HeapPeek</a>, for convenience with some applications.</p>
+
+<dl>
+	<dt>Parameter: <em>heap</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Return:</dt>
+	<dd>Lowest <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a> in <code>heap</code> element according to <code>HEAP_COMPARE</code>, (which may be null,) or null or zero if the heap is empty.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<H>HeapPop" name = "fn:<H>HeapPop">&lt;H&gt;HeapPop</a></h3>
+
+<p><code>static &lt;PH&gt;Value <strong>&lt;H&gt;HeapPop</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
+
+<p>Remove the lowest element according to <code>HEAP_COMPARE</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>heap</em></dt>
+	<dd>If null, returns false.</dd>
+	<dt>Return:</dt>
+	<dd>The <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a> of the element that was removed; if the heap is empty, null or zero.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log <code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
 <h3><a id = "fn:<H>HeapToString" name = "fn:<H>HeapToString">&lt;H&gt;HeapToString</a></h3>
 
 <p><code>static const char *<strong>&lt;H&gt;HeapToString</strong>(const struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
@@ -253,6 +338,21 @@
 	<dd>&#920;(1); it has a 255 character limit; every element takes some of it.</dd>
 	<dt>Caveat:</dt>
 	<dd>Again? Use an interface.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<H>HeapTest" name = "fn:<H>HeapTest">&lt;H&gt;HeapTest</a></h3>
+
+<p><code>static void <strong>&lt;H&gt;HeapTest</strong>(void *const <em>param</em>)</code></p>
+
+<p>Will be tested on stdout. Requires <code>HEAP_TEST</code>, <code>HEAP_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>param</em></dt>
+	<dd>The parameter to call <a href = "#typedef:&lt;PH&gt;BiAction">&lt;PH&gt;BiAction</a> <code>HEAP_TEST</code>.</dd>
 </dl>
 
 </div>

@@ -73,6 +73,7 @@ static void PH_(valid)(const struct H_(Heap) *const heap) {
 	}
 }
 
+/** @param[param] The parameter to call <typedef:<PH>BiAction> `HEAP_TEST`. */
 static void PH_(test_basic)(void *const param) {
 	struct H_(Heap) heap = HEAP_IDLE;
 	struct H_(HeapNode) *node, add;
@@ -142,6 +143,7 @@ static void PH_(test_basic)(void *const param) {
 
 #if 0
 
+/** @param[param] The parameter to call <typedef:<PH>BiAction> `HEAP_TEST`. */
 static void PT_(test_random)(void *const param) {
 	struct T_(Array) a;
 	const size_t mult = 1; /* For long tests. */
@@ -206,7 +208,9 @@ static void PT_(test_random)(void *const param) {
 #endif
 
 /** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
- `NDEBUG` while defining `assert`. */
+ `NDEBUG` while defining `assert`.
+ @param[param] The parameter to call <typedef:<PH>BiAction> `HEAP_TEST`.
+ @allow */
 static void H_(HeapTest)(void *const param) {
 	printf("<" QUOTE(HEAP_NAME) ">Heap"
 #ifdef HEAP_TYPE

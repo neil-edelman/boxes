@@ -3,7 +3,7 @@
 ## Parameterised Priority Queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;Priority](#user-content-typedef-57e15d67), [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e), [&lt;PH&gt;Type](#user-content-typedef-b7099207), [&lt;PH&gt;Value](#user-content-typedef-4d915774), [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3), [&lt;PH&gt;Action](#user-content-typedef-d509d605)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;Priority](#user-content-typedef-57e15d67), [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e), [&lt;PH&gt;Type](#user-content-typedef-b7099207), [&lt;PH&gt;Value](#user-content-typedef-4d915774), [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3), [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f), [&lt;H&gt;Heap](#user-content-tag-f1ee6af)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -28,7 +28,7 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
  * Parameter: HEAP\_TO\_STRING  
    Optional print function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3); makes available [&lt;H&gt;HeapToString](#user-content-fn-2dd2ccc3)\.
  * Parameter: HEAP\_TEST  
-   Unit testing framework [&lt;H&gt;HeapTest](#user-content-fn-17b017db), included in a separate header, [\.\./test/HeapTest\.h](../test/HeapTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;Action](#user-content-typedef-d509d605)\. Requires `HEAP_TO_STRING` and not `NDEBUG`\.
+   Unit testing framework [&lt;H&gt;HeapTest](#user-content-fn-17b017db), included in a separate header, [\.\./test/HeapTest\.h](../test/HeapTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)\. Requires `HEAP_TO_STRING` and not `NDEBUG`\.
  * Standard:  
    C89
  * Dependancies:  
@@ -81,9 +81,9 @@ Responsible for turning [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f) into a m
 
 
 
-### <a id = "user-content-typedef-d509d605" name = "user-content-typedef-d509d605">&lt;PH&gt;Action</a> ###
+### <a id = "user-content-typedef-65e63188" name = "user-content-typedef-65e63188">&lt;PH&gt;BiAction</a> ###
 
-<code>typedef void(*<strong>&lt;PH&gt;Action</strong>)(struct &lt;H&gt;HeapNode *);</code>
+<code>typedef void(*<strong>&lt;PH&gt;BiAction</strong>)(struct &lt;H&gt;HeapNode *, void *);</code>
 
 Operates by side\-effects\. Used for `HEAP_TEST`\.
 
@@ -121,7 +121,17 @@ Stores the heap as an implicit binary tree in an array\. To initialise it to an 
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-4070d9e6">&lt;H&gt;HeapSize</a></td><td>heap</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-63b31c6a">&lt;H&gt;HeapAdd</a></td><td>heap, node</td></tr>
+
+<tr><td align = right>static struct &lt;H&gt;HeapNode *</td><td><a href = "#user-content-fn-12af7c44">&lt;H&gt;HeapPeek</a></td><td>heap</td></tr>
+
+<tr><td align = right>static &lt;PH&gt;Value</td><td><a href = "#user-content-fn-d587663d">&lt;H&gt;HeapPeekValue</a></td><td>heap</td></tr>
+
+<tr><td align = right>static &lt;PH&gt;Value</td><td><a href = "#user-content-fn-a1a31b62">&lt;H&gt;HeapPop</a></td><td>heap</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-2dd2ccc3">&lt;H&gt;HeapToString</a></td><td>heap</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-17b017db">&lt;H&gt;HeapTest</a></td><td>param</td></tr>
 
 </table>
 
@@ -171,6 +181,69 @@ Initialises `heap` to be idle\.
 
 
 
+### <a id = "user-content-fn-63b31c6a" name = "user-content-fn-63b31c6a">&lt;H&gt;HeapAdd</a> ###
+
+<code>static int <strong>&lt;H&gt;HeapAdd</strong>(struct &lt;H&gt;Heap *const <em>heap</em>, struct &lt;H&gt;HeapNode <em>node</em>)</code>
+
+Copies `node` into `heap`\.
+
+ * Parameter: _heap_  
+   If null, returns false\.
+ * Return:  
+   Success\.
+ * Exceptional return: realloc  
+ * Order:  
+   &#927;\(log `size`\)
+
+
+
+
+### <a id = "user-content-fn-12af7c44" name = "user-content-fn-12af7c44">&lt;H&gt;HeapPeek</a> ###
+
+<code>static struct &lt;H&gt;HeapNode *<strong>&lt;H&gt;HeapPeek</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code>
+
+ * Parameter: _heap_  
+   If null, returns null\.
+ * Return:  
+   Lowest in `heap` according to `HEAP_COMPARE` or null if the heap is empty\. This pointer is valid only until one makes structural changes to the heap\.
+ * Order:  
+   &#927;\(1\)
+
+
+
+
+### <a id = "user-content-fn-d587663d" name = "user-content-fn-d587663d">&lt;H&gt;HeapPeekValue</a> ###
+
+<code>static &lt;PH&gt;Value <strong>&lt;H&gt;HeapPeekValue</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code>
+
+This returns a child of that accessible from [&lt;H&gt;HeapPeek](#user-content-fn-12af7c44), for convenience with some applications\.
+
+ * Parameter: _heap_  
+   If null, returns null\.
+ * Return:  
+   Lowest [&lt;PH&gt;Value](#user-content-typedef-4d915774) in `heap` element according to `HEAP_COMPARE`, \(which may be null,\) or null or zero if the heap is empty\.
+ * Order:  
+   &#927;\(1\)
+
+
+
+
+### <a id = "user-content-fn-a1a31b62" name = "user-content-fn-a1a31b62">&lt;H&gt;HeapPop</a> ###
+
+<code>static &lt;PH&gt;Value <strong>&lt;H&gt;HeapPop</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code>
+
+Remove the lowest element according to `HEAP_COMPARE`\.
+
+ * Parameter: _heap_  
+   If null, returns false\.
+ * Return:  
+   The [&lt;PH&gt;Value](#user-content-typedef-4d915774) of the element that was removed; if the heap is empty, null or zero\.
+ * Order:  
+   &#927;\(log `size`\)
+
+
+
+
 ### <a id = "user-content-fn-2dd2ccc3" name = "user-content-fn-2dd2ccc3">&lt;H&gt;HeapToString</a> ###
 
 <code>static const char *<strong>&lt;H&gt;HeapToString</strong>(const struct &lt;H&gt;Heap *const <em>heap</em>)</code>
@@ -183,6 +256,18 @@ Can print 4 things at once before it overwrites\. One must a `HEAP_TO_STRING` to
    &#920;\(1\); it has a 255 character limit; every element takes some of it\.
  * Caveat:  
    Again? Use an interface\.
+
+
+
+
+### <a id = "user-content-fn-17b017db" name = "user-content-fn-17b017db">&lt;H&gt;HeapTest</a> ###
+
+<code>static void <strong>&lt;H&gt;HeapTest</strong>(void *const <em>param</em>)</code>
+
+Will be tested on stdout\. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not `NDEBUG` while defining `assert`\.
+
+ * Parameter: _param_  
+   The parameter to call [&lt;PH&gt;BiAction](#user-content-typedef-65e63188) `HEAP_TEST`\.
 
 
 

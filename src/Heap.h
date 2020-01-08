@@ -34,7 +34,7 @@
  @param[HEAP_TEST]
  Unit testing framework <fn:<H>HeapTest>, included in a separate header,
  <../test/HeapTest.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PH>Action>. Requires `HEAP_TO_STRING` and not `NDEBUG`.
+ satisfying <typedef:<PH>BiAction>. Requires `HEAP_TO_STRING` and not `NDEBUG`.
 
  @depend Array.h
  @std C89
@@ -264,7 +264,8 @@ static size_t H_(HeapSize)(const struct H_(Heap) *const heap) {
  @param[heap] If null, returns false.
  @return Success.
  @throws[realloc]
- @order \O(log `size`) */
+ @order \O(log `size`)
+ @allow */
 static int H_(HeapAdd)(struct H_(Heap) *const heap, struct H_(HeapNode) node) {
 	return heap ? PH_(add)(heap, &node) : 0;
 }
@@ -273,7 +274,8 @@ static int H_(HeapAdd)(struct H_(Heap) *const heap, struct H_(HeapNode) node) {
  @return Lowest in `heap` according to `HEAP_COMPARE` or null if the heap is
  empty. This pointer is valid only until one makes structural changes to the
  heap.
- @order \O(1) */
+ @order \O(1)
+ @allow */
 static struct H_(HeapNode) *H_(HeapPeek)(struct H_(Heap) *const heap) {
 	return heap ? PH_(peek)(heap) : 0;
 }
@@ -283,7 +285,8 @@ static struct H_(HeapNode) *H_(HeapPeek)(struct H_(Heap) *const heap) {
  @param[heap] If null, returns null.
  @return Lowest <typedef:<PH>Value> in `heap` element according to
  `HEAP_COMPARE`, (which may be null,) or null or zero if the heap is empty.
- @order \O(1) */
+ @order \O(1)
+ @allow */
 static PH_(Value) H_(HeapPeekValue)(struct H_(Heap) *const heap) {
 	return heap ? PH_(value_or_null)(PH_(peek)(heap)) : 0;
 }
@@ -292,7 +295,8 @@ static PH_(Value) H_(HeapPeekValue)(struct H_(Heap) *const heap) {
  @param[heap] If null, returns false.
  @return The <typedef:<PH>Value> of the element that was removed; if the heap
  is empty, null or zero.
- @order \O(log `size`) */
+ @order \O(log `size`)
+ @allow */
 static PH_(Value) H_(HeapPop)(struct H_(Heap) *const heap) {
 	return heap && heap->a.size ? PH_(remove)(heap) : 0;
 }
