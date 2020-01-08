@@ -386,8 +386,8 @@ static void N_(ListSelfCorrect)(struct N_(List) *const list) {
 all the comparison functions and pass the right one, and 99% of the time, it's
 only one. */
 
-/** Returns less then, equal to, or greater then zero, forming an equivalence
- relation between `a` as compared to `b`. Defined when `LIST_COMPARE`. */
+/** Returns less then, equal to, or greater then zero, inducing an ordering
+ between `a` and `b`. Defined when `LIST_COMPARE`. */
 typedef int (*PN_(Compare))(const struct N_(ListNode) *a,
 	const struct N_(ListNode) *b);
 /* Check that `LIST_COMPARE` is a function implementing

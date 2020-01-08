@@ -57,7 +57,7 @@ Returns \(Non\-zero\) true or \(zero\) false when given a node\.
 
 <code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListNode *a, const struct &lt;N&gt;ListNode *b);</code>
 
-Returns less then, equal to, or greater then zero, forming an equivalence relation between `a` as compared to `b`\. Defined when `LIST_COMPARE`\.
+Returns less then, equal to, or greater then zero, inducing an ordering between `a` and `b`\. Defined when `LIST_COMPARE`\.
 
 
 
