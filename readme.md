@@ -3,7 +3,7 @@
 ## Parameterised Stable Pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f), [&lt;PT&gt;Action](#user-content-typedef-33725a81)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;Pool](#user-content-tag-517215cf)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -33,11 +33,11 @@
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f">&lt;PT&gt;ToString</a> ###
+### <a id = "user-content-typedef-8b318acb" name = "user-content-typedef-8b318acb">&lt;PT&gt;Type</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code>
+<code>typedef POOL_TYPE <strong>&lt;PT&gt;Type</strong>;</code>
 
-Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-terminated output string \(the second\.\) Used for `POOL_TO_STRING`\.
+A valid tag type set by `POOL_TYPE`\. This becomes `T`\.
 
 
 
@@ -46,6 +46,14 @@ Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-term
 <code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code>
 
 Operates by side\-effects on `data` only\.
+
+
+
+### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f">&lt;PT&gt;ToString</a> ###
+
+<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code>
+
+Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-terminated output string \(the second\.\) Used for `POOL_TO_STRING`\.
 
 
 

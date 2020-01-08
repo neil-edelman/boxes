@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>Pool">&lt;T&gt;Pool</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -73,11 +73,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PT>ToString" name = "typedef:<PT>ToString">&lt;PT&gt;ToString</a></h3>
+<h3><a id = "typedef:<PT>Type" name = "typedef:<PT>Type">&lt;PT&gt;Type</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code></p>
+<p><code>typedef POOL_TYPE <strong>&lt;PT&gt;Type</strong>;</code></p>
 
-<p>Responsible for turning <code>&lt;T&gt;</code> (the first argument) into a 12 <code>char</code> null-terminated output string (the second.) Used for <code>POOL_TO_STRING</code>.</p>
+<p>A valid tag type set by <code>POOL_TYPE</code>. This becomes <code>T</code>.</p>
 
 </div>
 
@@ -88,6 +88,16 @@
 <p><code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code></p>
 
 <p>Operates by side-effects on <code>data</code> only.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PT>ToString" name = "typedef:<PT>ToString">&lt;PT&gt;ToString</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code></p>
+
+<p>Responsible for turning <code>&lt;T&gt;</code> (the first argument) into a 12 <code>char</code> null-terminated output string (the second.) Used for <code>POOL_TO_STRING</code>.</p>
 
 </div>
 
