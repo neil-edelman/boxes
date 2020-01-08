@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PE>UInt">&lt;PE&gt;UInt</a>, <a href = "#typedef:<PE>Type">&lt;PE&gt;Type</a>, <a href = "#typedef:<PE>MType">&lt;PE&gt;MType</a>, <a href = "#typedef:<PE>Hash">&lt;PE&gt;Hash</a>, <a href = "#typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a>, <a href = "#typedef:<PE>Replace">&lt;PE&gt;Replace</a>, <a href = "#typedef:<PE>ToString">&lt;PE&gt;ToString</a>, <a href = "#typedef:<PE>Action">&lt;PE&gt;Action</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PE>UInt">&lt;PE&gt;UInt</a>, <a href = "#typedef:<PE>Type">&lt;PE&gt;Type</a>, <a href = "#typedef:<PE>MType">&lt;PE&gt;MType</a>, <a href = "#typedef:<PE>Hash">&lt;PE&gt;Hash</a>, <a href = "#typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a>, <a href = "#typedef:<PE>Replace">&lt;PE&gt;Replace</a>, <a href = "#typedef:<PE>Action">&lt;PE&gt;Action</a>, <a href = "#typedef:<PE>ToString">&lt;PE&gt;ToString</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<E>SetElement">&lt;E&gt;SetElement</a>, <a href = "#tag:<E>Set">&lt;E&gt;Set</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -60,7 +60,7 @@
 
 <dl>
 	<dt>Parameter: SET_NAME, SET_TYPE</dt>
-	<dd><code>&lt;E&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> associated therewith, contained in <a href = "#tag:&lt;E&gt;SetElement">&lt;E&gt;SetElement</a>; required. <code>&lt;PE&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dd><code>&lt;E&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> associated therewith; required. <code>&lt;PE&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
 	<dt>Parameter: SET_HASH</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a>; required.</dd>
 	<dt>Parameter: SET_IS_EQUAL</dt>
@@ -127,9 +127,9 @@
 
 <h3><a id = "typedef:<PE>IsEqual" name = "typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const &lt;PE&gt;MType, const &lt;PE&gt;MType);</code></p>
+<p><code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const &lt;PE&gt;MType a, const &lt;PE&gt;MType b);</code></p>
 
-<p>A constant equivalence relation between <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> that satisfies <code>&lt;PE&gt;IsEqual(a, b) -&gt; &lt;PE&gt;Hash(a) == &lt;PE&gt;Hash(b)</code>.</p>
+<p>Equivalence relation between <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> that satisfies <code>&lt;PE&gt;IsEqual(a, b) -&gt; &lt;PE&gt;Hash(a) == &lt;PE&gt;Hash(b)</code>.</p>
 
 </div>
 
@@ -145,21 +145,21 @@
 
 <div>
 
-<h3><a id = "typedef:<PE>ToString" name = "typedef:<PE>ToString">&lt;PE&gt;ToString</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code></p>
-
-<p>Responsible for turning <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> (the first argument) into a maximum 11-<code>char</code> string (the second.)</p>
-
-</div>
-
-<div>
-
 <h3><a id = "typedef:<PE>Action" name = "typedef:<PE>Action">&lt;PE&gt;Action</a></h3>
 
 <p><code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(&lt;PE&gt;Type *);</code></p>
 
 <p>Operates by side-effects. Used for <code>SET_TEST</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PE>ToString" name = "typedef:<PE>ToString">&lt;PE&gt;ToString</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code></p>
+
+<p>Responsible for turning <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> into a 12-<code>char</code> null-terminated output string. Used for <code>SET_TO_STRING</code>.</p>
 
 </div>
 

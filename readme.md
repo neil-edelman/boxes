@@ -3,7 +3,7 @@
 ## Parameterised Hash Set ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), [&lt;PE&gt;Type](#user-content-typedef-11e62996), [&lt;PE&gt;MType](#user-content-typedef-7d6f0919), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), [&lt;PE&gt;Type](#user-content-typedef-11e62996), [&lt;PE&gt;MType](#user-content-typedef-7d6f0919), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -22,7 +22,7 @@ Internally, it is a separately chained, hash set with a maximum load factor of `
 
 
  * Parameter: SET\_NAME, SET\_TYPE  
-   `<E>` that satisfies `C` naming conventions when mangled and a valid [&lt;PE&gt;Type](#user-content-typedef-11e62996) associated therewith, contained in [&lt;E&gt;SetElement](#user-content-tag-8952cfcc); required\. `<PE>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
+   `<E>` that satisfies `C` naming conventions when mangled and a valid [&lt;PE&gt;Type](#user-content-typedef-11e62996) associated therewith; required\. `<PE>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: SET\_HASH  
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  * Parameter: SET\_IS\_EQUAL  
@@ -79,9 +79,9 @@ A map from [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) onto [&lt;PE&gt;UIn
 
 ### <a id = "user-content-typedef-c1486ede" name = "user-content-typedef-c1486ede">&lt;PE&gt;IsEqual</a> ###
 
-<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const &lt;PE&gt;MType, const &lt;PE&gt;MType);</code>
+<code>typedef int(*<strong>&lt;PE&gt;IsEqual</strong>)(const &lt;PE&gt;MType a, const &lt;PE&gt;MType b);</code>
 
-A constant equivalence relation between [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) that satisfies `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`\.
+Equivalence relation between [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) that satisfies `<PE>IsEqual(a, b) -> <PE>Hash(a) == <PE>Hash(b)`\.
 
 
 
@@ -93,19 +93,19 @@ A di\-predicate; returns true if the `replace` replaces the `original`; used in 
 
 
 
-### <a id = "user-content-typedef-a5b40ebe" name = "user-content-typedef-a5b40ebe">&lt;PE&gt;ToString</a> ###
-
-<code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code>
-
-Responsible for turning [&lt;PE&gt;Type](#user-content-typedef-11e62996) \(the first argument\) into a maximum 11\-`char` string \(the second\.\)
-
-
-
 ### <a id = "user-content-typedef-9c0e506c" name = "user-content-typedef-9c0e506c">&lt;PE&gt;Action</a> ###
 
 <code>typedef void(*<strong>&lt;PE&gt;Action</strong>)(&lt;PE&gt;Type *);</code>
 
 Operates by side\-effects\. Used for `SET_TEST`\.
+
+
+
+### <a id = "user-content-typedef-a5b40ebe" name = "user-content-typedef-a5b40ebe">&lt;PE&gt;ToString</a> ###
+
+<code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code>
+
+Responsible for turning [&lt;PE&gt;Type](#user-content-typedef-11e62996) into a 12\-`char` null\-terminated output string\. Used for `SET_TO_STRING`\.
 
 
 
