@@ -11,7 +11,7 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of heap.](../web/heap.png)
+![Example of heap.](web/heap.png)
 
 A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a simple binary heap with an array `<<H>HeapNode>Array` backing\.
 
@@ -105,7 +105,7 @@ Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, and
 
 Stores the heap as an implicit binary tree in an array\. To initialise it to an idle state, see [&lt;H&gt;Heap](#user-content-fn-f1ee6af), `HEAP_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
-![States.](../web/states.png)
+![States.](web/states.png)
 
 
 

@@ -9,6 +9,7 @@
 #include <stdio.h>  /* *printf */
 /*#include <assert.h>*/ /* assert */
 #include <errno.h>  /* errno */
+#include "Orcish.h"
 
 struct IntHeapNode;
 static void int_to_string(const struct IntHeapNode *, char (*)[12]);
