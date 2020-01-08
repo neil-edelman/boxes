@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>Array">&lt;T&gt;Array</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -75,11 +75,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PT>ToString" name = "typedef:<PT>ToString">&lt;PT&gt;ToString</a></h3>
+<h3><a id = "typedef:<PT>Type" name = "typedef:<PT>Type">&lt;PT&gt;Type</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code></p>
+<p><code>typedef ARRAY_TYPE <strong>&lt;PT&gt;Type</strong>;</code></p>
 
-<p>Responsible for turning <code>&lt;T&gt;</code> (the first argument) into a 12 <code>char</code> null-terminated output string (the second.) Used for <code>ARRAY_TO_STRING</code>.</p>
+<p>A valid tag type set by <code>ARRAY_TYPE</code>. This becomes <code>T</code>.</p>
 
 </div>
 
@@ -87,9 +87,9 @@
 
 <h3><a id = "typedef:<PT>Action" name = "typedef:<PT>Action">&lt;PT&gt;Action</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *data);</code></p>
+<p><code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *);</code></p>
 
-<p>Operates by side-effects on <code>data</code>.</p>
+<p>Operates by side-effects.</p>
 
 </div>
 
@@ -103,6 +103,16 @@
 
 </div>
 
+<div>
+
+<h3><a id = "typedef:<PT>ToString" name = "typedef:<PT>ToString">&lt;PT&gt;ToString</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code></p>
+
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string. Used for <code>ARRAY_TO_STRING</code>.</p>
+
+</div>
+
 <h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
 
 <div>
@@ -111,7 +121,7 @@
 
 <p><code>struct <strong>&lt;T&gt;Array</strong>;</code></p>
 
-<p>The array. Zeroed data is a valid state. To instantiate explicitly, see <a href = "#fn:&lt;T&gt;Array">&lt;T&gt;Array</a> or initialise it with <code>ARRAY_INIT</code> or <code>{0}</code> (C99.)</p>
+<p>To initialise it to an idle state, see <a href = "#fn:&lt;T&gt;Array">&lt;T&gt;Array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 280></p>
 

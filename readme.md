@@ -3,7 +3,7 @@
 ## Parameterised Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;Array](#user-content-tag-f128eca2)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -35,19 +35,19 @@
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f">&lt;PT&gt;ToString</a> ###
+### <a id = "user-content-typedef-8b318acb" name = "user-content-typedef-8b318acb">&lt;PT&gt;Type</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code>
+<code>typedef ARRAY_TYPE <strong>&lt;PT&gt;Type</strong>;</code>
 
-Responsible for turning `<T>` \(the first argument\) into a 12 `char` null\-terminated output string \(the second\.\) Used for `ARRAY_TO_STRING`\.
+A valid tag type set by `ARRAY_TYPE`\. This becomes `T`\.
 
 
 
 ### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81">&lt;PT&gt;Action</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *data);</code>
+<code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *);</code>
 
-Operates by side\-effects on `data`\.
+Operates by side\-effects\.
 
 
 
@@ -59,13 +59,21 @@ Given constant `data`, returns a boolean\.
 
 
 
+### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f">&lt;PT&gt;ToString</a> ###
+
+<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code>
+
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\. Used for `ARRAY_TO_STRING`\.
+
+
+
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
 ### <a id = "user-content-tag-f128eca2" name = "user-content-tag-f128eca2">&lt;T&gt;Array</a> ###
 
 <code>struct <strong>&lt;T&gt;Array</strong>;</code>
 
-The array\. Zeroed data is a valid state\. To instantiate explicitly, see [&lt;T&gt;Array](#user-content-fn-f128eca2) or initialise it with `ARRAY_INIT` or `{0}` \(C99\.\)
+To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
 ![States.](web/states.png)
 

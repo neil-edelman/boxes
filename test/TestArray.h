@@ -1,4 +1,4 @@
-/* Intended to be included by {Array.h} on {ARRAY_TYPE_FILLER}. */
+/* Intended to be included by `Array.h` on `ARRAY_TEST`. */
 
 /* Define macros. */
 #ifdef QUOTE
