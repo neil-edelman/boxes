@@ -19,7 +19,9 @@
  `<H>` that satisfies `C` naming conventions when mangled and an optional
  <typedef:<PH>Type> associated therewith; `HEAP_NAME` is required. `<PH>` is
  private, whose names are prefixed in a manner to avoid collisions; any should
- be re-defined prior to use elsewhere.
+ be re-defined prior to use elsewhere. Note that `HEAP_TYPE` is only used by
+ reference; it can be forward-declared or left out entirely (fixme: forward? is
+ that the right name for it?).
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>Compare>. Defaults to minimum-hash using
@@ -80,14 +82,18 @@
 #define H_(thing) CAT(HEAP_NAME, thing)
 #define PH_(thing) PCAT(heap, PCAT(HEAP_NAME, thing))
 
-/** Valid type used for caching priority, used in <tag:<H>HeapNode>. */
+/** Valid type used for caching priority, used in <tag:<H>HeapNode>. Defaults
+ to `unsigned int`. */
 typedef HEAP_PRIORITY PH_(Priority);
 
-/** Returns a positive result if `a` comes after `b`, inducing a preorder
- of `a` and `b`. */
+/** Returns a positive result if `a` comes after `b`, inducing a pre-order
+ of `a` with respect to `b`; this is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`; it only needs to divide entries into
+ two instead of three categories. */
 typedef int (*PH_(Compare))(const PH_(Priority), const PH_(Priority));
 #ifndef HEAP_COMPARE /* <!-- !cmp */
-/** Default `a` comes after `b` which makes a min-hash. */
+/** Default `a` comes after `b` if `a > b`, which makes a min-hash. To make a
+ max-hash, one could define a `HEAP_PRIORITY` function with `return a < b`. */
 static int PH_(default_compare)(const PH_(Priority) a, const PH_(Priority) b) {
 	return a > b;
 }
@@ -113,8 +119,9 @@ typedef int PH_(Value);
 /** Stores a <typedef:<PH>Priority> as `priority`, and, if `HASH_TYPE`, a
  <typedef:<PH>Type> pointer called `value`. `value` is just the payload, if the
  `value` has <typedef:<PH>Priority> in it, (as most other heap
- implementations,) one has to copy the the sub-structure of value to the
- `priority` such that the `priority` does not need a second de-reference. */
+ implementations,) one has to cache the the sub-structure (default `unsigned
+ int`) of value to the `priority` such that the `priority` does not need a
+ second de-reference. */
 struct H_(HeapNode);
 struct H_(HeapNode) {
 	PH_(Priority) priority;
@@ -165,7 +172,10 @@ static void PH_(copy)(const struct H_(HeapNode) *const src,
 #endif /* type --> */
 }
 
-/** Find the spot in `heap` where `node` goes and put it there.
+/** Find the spot in `heap` where `node` goes and put it there. (This is
+ "tinkle down"??)
+ <Knuth, D.E.: The art of computer programming. Vol. 3: Sorting and searching.
+ Reading, MA: Addison-Wesley 1973>.
  @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
 static void PH_(sift_up)(struct H_(Heap) *const heap,
@@ -175,7 +185,7 @@ static void PH_(sift_up)(struct H_(Heap) *const heap,
 	assert(heap && heap->a.size && node);
 	if(i) {
 		size_t i_up;
-		do { /* Note: don't change the `<=`, want less work on equal. */
+		do { /* Note: don't change the `<=`; it's a queue. */
 			i_up = (i - 1) >> 1;
 			if(PH_(compare)(n0[i_up].priority, node->priority) <= 0) break;
 			PH_(copy)(n0 + i_up, n0 + i);
@@ -184,13 +194,16 @@ static void PH_(sift_up)(struct H_(Heap) *const heap,
 	PH_(copy)(node, n0 + i);
 }
 
-/** Pop the head of `heap`. */
+/** Pop the head of `heap` and restore the heap by sifting down the last
+ element.
+ @param[heap] At least one entry. The head is popped, and the size will be one
+ less. */
 static void PH_(sift_down)(struct H_(Heap) *const heap) {
 	const size_t size = (assert(heap && heap->a.size), --heap->a.size),
 		half = size >> 1;
 	size_t i = 0, c;
-	struct H_(HeapNode) *const n0 = heap->a.data, *const down = n0 + size,
-		*child;
+	struct H_(HeapNode) *const n0 = heap->a.data,
+		*const down = n0 + size /* Put it at the top. */, *child;
 	while(i < half) {
 		c = (i << 1) + 1;
 		if(c + 1 < size && PH_(compare)(n0[c].priority,
@@ -203,10 +216,39 @@ static void PH_(sift_down)(struct H_(Heap) *const heap) {
 	PH_(copy)(down, n0 + i);
 }
 
+/** Restore the `heap` by permuting the elements so `i` is in the proper place.
+ @param[heap] At least `i + 1` entries. */
+static void PH_(sift_down_i)(struct H_(Heap) *const heap, size_t i) {
+	const size_t size = (assert(heap && i < heap->a.size), heap->a.size),
+		half = size >> 1;
+	size_t c;
+	struct H_(HeapNode) *const n0 = heap->a.data, *child, temp;
+	int temp_valid = 0;
+	while(i < half) {
+		c = (i << 1) + 1;
+		if(c + 1 < size && PH_(compare)(n0[c].priority,
+			n0[c + 1].priority) > 0) c++;
+		child = n0 + c;
+		if(temp_valid) {
+			if(PH_(compare)(temp.priority, child->priority) <= 0) break;
+		} else {
+			/* Only happens on the first compare when `i` is in it's original
+			 position. */
+			if(PH_(compare)(n0[i].priority, child->priority) <= 0) break;
+			PH_(copy)(n0 + i, &temp), temp_valid = 1;
+		}
+		PH_(copy)(child, n0 + i);
+		i = c;
+	}
+	if(temp_valid) PH_(copy)(&temp, n0 + i);
+}
+
 /** Add a `node` to `heap`.
  @order \O(log `size`) */
 static int PH_(add)(struct H_(Heap) *const heap,
 	struct H_(HeapNode) *const node) {
+	/* `new` adds an uninitialised element to the back; <fn:<PH>sift_up>
+	 replaces the back element with `node`. */
 	return PT_(new)(&heap->a, 0) ? (PH_(sift_up)(heap, node), 1) : 0;
 }
 
@@ -223,14 +265,14 @@ static PH_(Value) PH_(remove)(struct H_(Heap) *const heap) {
 	return result;
 }
 
-#if 0
-/** Create a `heap` from an array.
- @fixme This is when starting with many elements; not used yet. */
+/** Create a `heap` from an array. <Ffloyd>.
+ @order \O(`size`) */
 static void PH_(heapify)(struct H_(Heap) *const heap) {
 	size_t i;
-	for(i = (heap->a.size >> 1) - 1; (PH_(sift_down)(heap, i), i); i--);
+	assert(heap);
+	if(heap->a.size)
+		for(i = (heap->a.size >> 1) - 1; (PH_(sift_down_i)(heap, i), i); i--);
 }
-#endif
 
 /** Peek at the top node in `heap`.
  @order \Theta(1) */
@@ -263,6 +305,15 @@ static void H_(Heap)(struct H_(Heap) *const heap) {
  @allow */
 static size_t H_(HeapSize)(const struct H_(Heap) *const heap) {
 	return heap ? heap->a.size : 0;
+}
+
+/** Sets `heap` to be empty. That is, the size of `heap` will be zero, but if
+ it was previously in an active non-idle state, it continues to be.
+ @param[heap] If null, does nothing.
+ @order \Theta(1)
+ @allow */
+static void H_(HeapClear)(struct H_(Heap) *const heap) {
+	if(heap) heap->a.size = 0;
 }
 
 /** Copies `node` into `heap`.
@@ -306,7 +357,50 @@ static PH_(Value) H_(HeapPop)(struct H_(Heap) *const heap) {
 	return heap && heap->a.size ? PH_(remove)(heap) : 0;
 }
 
-/* fixme: buffer remove clear */
+/** Ensures that `heap` is `reserve` capacity beyond the elements already in
+ the heap, but doesn't add to the size.
+ @param[heap] If null, returns false.
+ @param[reserve] If zero, returns true.
+ @return The <fn:<H>HeapEnd> of the `heap`, where are `reserve` elements, or
+ null and `errno` will be set. Writing on this memory space is safe, but one
+ will have to increase the size manually, (see <fn:<H>HeapBuffer>.)
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ error and doesn't follow [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
+ @order Amortised \O(`reserve`).
+ @allow */
+static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
+	const size_t reserve) {
+	if(!heap) return 0;
+	if(!reserve) return heap->a.data ? heap->a.data + heap->a.size : 0;
+	if(heap->a.size > (size_t)-1 - reserve) { errno = ERANGE; return 0; }
+	if(!PT_(reserve)(&heap->a, heap->a.size + reserve, 0)) return 0;
+	return heap->a.data + heap->a.size;
+}
+
+/** Adds `add` elements to `heap`.
+ @param[heap] If null, returns null.
+ @param[add] If zero, returns null.
+ @return Success.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ error and doesn't follow [IEEE Std 1003.1-2001
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc]
+ @order \O(`new size`); uses <Ffloyd> to sift-down all the internal nodes of
+ heap. That is, this function is most efficient on a heap of zero size, and
+ becomes more inefficient as the heap grows. For heaps that are already in use,
+ it may be better to add each element individually, resulting in a run-time of
+ \O(`new elements` \cdot log `size`).
+ @allow */
+static int H_(HeapBuffer)(struct H_(Heap) *const heap, const size_t add) {
+	if(!heap || !add) return 0;
+	if(heap->a.size > (size_t)-1 - add) { errno = ERANGE; return 0; }
+	if(!PT_(reserve)(&heap->a, heap->a.size + add, 0)) return 0;
+	heap->a.size += add;
+	PH_(heapify)(heap);
+	return 1;
+}
 
 #ifdef HEAP_TO_STRING /* <!-- string */
 
@@ -380,10 +474,13 @@ static void PH_(unused_set)(void) {
 	H_(Heap_)(0);
 	H_(Heap)(0);
 	H_(HeapSize)(0);
+	H_(HeapClear)(0);
 	H_(HeapAdd)(0, h);
 	H_(HeapPeek)(0);
 	H_(HeapPeekValue)(0);
 	H_(HeapPop)(0);
+	H_(HeapReserve)(0, 0);
+	H_(HeapBuffer)(0, 0);
 	H_(HeapToString)(0);
 	PH_(unused_coda)();
 }
