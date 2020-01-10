@@ -133,7 +133,10 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	}
 	if(min_capacity > max_size) return errno = ERANGE, 0;
 	assert(c0 < c1);
-	/* Fibonacci: c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0; */
+	/* Fibonacci: c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0. Technically, this
+	 calculation takes `\O(log (min_capacity - capacity))`, but we expect that
+	 to be very small using a <trisc... machine model>, and much less than the
+	 time it takes to re-allocate. */
 	while(c0 < min_capacity) {
 		size_t temp = c0 + c1; c0 = c1; c1 = temp;
 		if(c1 > max_size || c1 < c0) c1 = max_size;
@@ -405,8 +408,8 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 	return PT_(new)(a, update_ptr);
 }
 
-/** Ensures that `a` array is `reserve` capacity beyond the elements in the
- array, but doesn't add to the size.
+/** Ensures that `a` is `reserve` capacity beyond the elements in the array,
+ but doesn't add to the size.
  @param[a] If null, returns false.
  @param[reserve] If zero, returns true.
  @return The <fn:<T>ArrayEnd> of the `a`, where are `reserve` elements, or null
@@ -434,7 +437,9 @@ static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
  `a`, or null and `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). If
+ <fn:<T>ArrayReserve> has been successful in reserving at least `add` elements,
+ one is guaranteed success.
  @throws[realloc]
  @order Amortised \O(`add`).
  @allow */

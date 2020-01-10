@@ -385,13 +385,15 @@ static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
  @return Success.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). If
+ <fn:<H>HeapReserve> has been successful in reserving at least `add` elements,
+ one is guaranteed success.
  @throws[realloc]
  @order \O(`new size`); uses <Ffloyd> to sift-down all the internal nodes of
  heap. That is, this function is most efficient on a heap of zero size, and
- becomes more inefficient as the heap grows. For heaps that are already in use,
- it may be better to add each element individually, resulting in a run-time of
- \O(`new elements` \cdot log `size`).
+ becomes more inefficient as the existing heap grows. For heaps that are
+ already in use, it may be better to add each element individually, resulting
+ in a run-time of \O(`new elements` \cdot log `size`).
  @allow */
 static int H_(HeapBuffer)(struct H_(Heap) *const heap, const size_t add) {
 	if(!heap || !add) return 0;
