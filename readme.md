@@ -33,8 +33,6 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
    C89
  * Dependancies:  
    [Array.h](../Array/)
- * Caveat:  
-   ([&lt;H&gt;HeapToString](#user-content-fn-2dd2ccc3))
  * See also:  
    [Array](https://github.com/neil-edelman/Array); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
@@ -316,8 +314,6 @@ Can print 4 things at once before it overwrites\. One must a `HEAP_TO_STRING` to
    Prints `heap` in a static buffer\.
  * Order:  
    &#920;\(1\); it has a 255 character limit; every element takes some of it\.
- * Caveat:  
-   Again? Use an interface\.
 
 
 
