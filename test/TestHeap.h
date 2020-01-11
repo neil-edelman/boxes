@@ -78,9 +78,11 @@ static void PH_(test_basic)(void *const param) {
 	struct H_(Heap) heap = HEAP_IDLE;
 	struct H_(HeapNode) *node, add;
 	PH_(Value) v, result;
-	const size_t test_size = 20;
+	PH_(Priority) last_priority;
+	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i;
 	char fn[64];
+	int success;
 
 	printf("Test empty.\n");
 	PH_(valid)(0);
@@ -110,102 +112,70 @@ static void PH_(test_basic)(void *const param) {
 	PH_(valid)(&heap);
 
 	printf("Test many.\n");
-	for(i = 0; i < test_size; i++) {
-		sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv", (unsigned long)i);
-		PH_(graph)(&heap, fn);
-		PH_(filler)(&add, param);
-		assert(H_(HeapAdd)(&heap, add));
+	for(i = 0; i < test_size_1; i++) {
+		if(!i || !(i & (i - 1))) {
+			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv",
+				(unsigned long)i);
+			PH_(graph)(&heap, fn);
+		}
 		PH_(valid)(&heap);
+		PH_(filler)(&add, param);
+		success = H_(HeapAdd)(&heap, add);
+		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-final.gv", (unsigned long)i);
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv", (unsigned long)i);
 	PH_(graph)(&heap, fn);
-	assert(H_(HeapSize)(&heap) == test_size);
+	assert(H_(HeapSize)(&heap) == test_size_1);
 	printf("Heap: %s.\n", H_(HeapToString)(&heap));
-	for(i = 0; i < test_size; i++) {
+	printf("Heap buffered add, before size = %lu.\n",
+		(unsigned long)H_(HeapSize)(&heap));
+	node = H_(HeapReserve)(&heap, test_size_2);
+	assert(node);
+	for(i = 0; i < test_size_2; i++) PH_(filler)(node + i, param);
+	success = H_(HeapBuffer)(&heap, test_size_2);
+	printf("Now size = %lu.\n", (unsigned long)H_(HeapSize)(&heap));
+	assert(H_(HeapSize)(&heap) == test_size_1 + test_size_2);
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv",
+		test_size_1 + test_size_2);
+	PH_(graph)(&heap, fn);
+	PH_(valid)(&heap);
+	assert(H_(HeapSize)(&heap) == test_size_1 + test_size_2);
+	for(i = 0; i < test_size_3; i++) {
+		if(!i || !(i & (i - 1))) {
+			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv",
+				test_size_1 + test_size_2 + (unsigned long)i);
+			PH_(graph)(&heap, fn);
+		}
+		PH_(valid)(&heap);
+		PH_(filler)(&add, param);
+		success = H_(HeapAdd)(&heap, add);
+		assert(success);
+	}
+	printf("Final heap: %s.\n", H_(HeapToString)(&heap));
+	assert(H_(HeapSize)(&heap) == test_size_1 + test_size_2 + test_size_3);
+	for(i = test_size_1 + test_size_2 + test_size_3; i > 0; i--) {
 		char a[12];
 		node = H_(HeapPeek)(&heap);
 		assert(node);
 		v = H_(HeapPeekValue)(&heap);
 		PH_(to_string)(node, &a);
-		printf("Retreving %s.\n", a);
 		result = H_(HeapPop)(&heap);
-		sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
-			(unsigned long)i);
-		PH_(graph)(&heap, fn);
-		assert(v == result && H_(HeapSize)(&heap) == test_size - i - 1);
+		if(!i || !(i & (i - 1))) {
+			printf("%lu: retreving %s.\n", (unsigned long)i, a);
+			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
+					(unsigned long)i);
+			PH_(graph)(&heap, fn);
+		}
+		assert(v == result && H_(HeapSize)(&heap) == i - 1);
 		PH_(valid)(&heap);
+		if(i != test_size_1 + test_size_2 + test_size_3)
+			assert(PH_(compare)(last_priority, node->priority) <= 0);
+		last_priority = node->priority;
 	}
-
 	printf("Destructor:\n");
 	H_(Heap_)(&heap);
 	assert(!H_(HeapPeek)(&heap));
 }
-
-#if 0
-
-/** @param[param] The parameter to call <typedef:<PH>BiAction> `HEAP_TEST`. */
-static void PT_(test_random)(void *const param) {
-	struct T_(Array) a;
-	const size_t mult = 1; /* For long tests. */
-	/* This parameter controls how many iterations. */
-	size_t i, i_end = 1000 * mult, size = 0;
-	/* Random. */
-	T_(Array)(&a);
-	for(i = 0; i < i_end; i++) {
-		T *data;
-		char str[12];
-		double r = rand() / (RAND_MAX + 1.0);
-		printf("%lu: ", (unsigned long)i);
-		/* This parameter controls how big the pool wants to be. */
-		if(r > size / (100.0 * mult)) {
-			if(!(data = T_(ArrayNew)(&a))) {
-				perror("Error"), assert(0);
-				return;
-			}
-			size++;
-			PT_(filler)(data);
-			PT_(to_string)(data, &str);
-			printf("created %s.\n", str);
-		} else {
-#ifdef ARRAY_STACK /* <!-- stack */
-			double t = 1.0;
-#else /* stack --><!-- !stack */
-			double t = 0.5;
-#endif /* !stack --> */
-			r = rand() / (RAND_MAX + 1.0);
-			if(r < t) {
-				data = T_(ArrayPeek)(&a);
-				assert(data);
-				PT_(to_string)(data, &str);
-				printf("popping %s.\n", str);
-				assert(data == T_(ArrayPop)(&a));
-			} else {
-#ifndef ARRAY_STACK /* <!-- !stack */
-				size_t idx = rand() / (RAND_MAX + 1.0) * size;
-				if(!(data = T_(ArrayGet)(&a) + idx)) continue;
-				PT_(to_string)(data, &str);
-				printf("removing %s at %lu.\n", str, (unsigned long)idx);
-				{
-					const int ret = T_(ArrayRemove)(&a, data);
-					assert(ret || (perror("Removing"), 0));
-				}
-#endif /* !stack --> */
-			}
-			size--;
-		}
-		PT_(valid_state)(&a);
-		if(T_(ArraySize)(&a) < 1000000 && !(i & (i - 1))) {
-			char fn[32];
-			printf("%s.\n", T_(ArrayToString)(&a));
-			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "Array%lu.gv",
-				(unsigned long)i);
-			PT_(graph)(&a, fn);
-		}
-	}
-	T_(Array_)(&a);
-}
-
-#endif
 
 /** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
  `NDEBUG` while defining `assert`.
