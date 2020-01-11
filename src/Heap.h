@@ -6,9 +6,10 @@
  ![Example of heap.](../web/heap.png)
 
  A <tag:<H>Heap> is a priority queue built from <tag:<H>HeapNode>. It is a
- simple binary heap. Internally, it is an array `<<H>HeapNode>Array` with heap
- properties; as such, one needs to have the `Array.h` file in the same
- directory.
+ binary heap, proposed by <Williams, 1964, Heapsort, p. 347> and using
+ terminology of <Knuth, 1973, Sorting>. Internally, it is an array
+ `<<H>HeapNode>Array` with heap properties; as such, one needs to have the
+ `Array.h` file in the same directory.
 
  `<H>Heap` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
@@ -40,7 +41,7 @@
  <../test/HeapTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PH>BiAction>. Requires `HEAP_TO_STRING` and not `NDEBUG`.
 
- @depend Array.h
+ @depend [Array.h](../../Array/)
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
  @cf [List](https://github.com/neil-edelman/List)
@@ -172,10 +173,7 @@ static void PH_(copy)(const struct H_(HeapNode) *const src,
 #endif /* type --> */
 }
 
-/** Find the spot in `heap` where `node` goes and put it there. (This is
- "tinkle down"??)
- <Knuth, D.E.: The art of computer programming. Vol. 3: Sorting and searching.
- Reading, MA: Addison-Wesley 1973>.
+/** Find the spot in `heap` where `node` goes and put it there.
  @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
 static void PH_(sift_up)(struct H_(Heap) *const heap,
@@ -217,6 +215,8 @@ static void PH_(sift_down)(struct H_(Heap) *const heap) {
 }
 
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
+ This reads from the an arbitrary leaf-node into a temporary value, so is
+ slightly more complex then <fn:<PH>sift_down>, but the same thing.
  @param[heap] At least `i + 1` entries. */
 static void PH_(sift_down_i)(struct H_(Heap) *const heap, size_t i) {
 	const size_t size = (assert(heap && i < heap->a.size), heap->a.size),
@@ -265,7 +265,7 @@ static PH_(Value) PH_(remove)(struct H_(Heap) *const heap) {
 	return result;
 }
 
-/** Create a `heap` from an array. <Ffloyd>.
+/** Create a `heap` from an array.
  @order \O(`size`) */
 static void PH_(heapify)(struct H_(Heap) *const heap) {
 	size_t i;
@@ -361,7 +361,7 @@ static PH_(Value) H_(HeapPop)(struct H_(Heap) *const heap) {
  the heap, but doesn't add to the size.
  @param[heap] If null, returns false.
  @param[reserve] If zero, returns true.
- @return The <fn:<H>HeapEnd> of the `heap`, where are `reserve` elements, or
+ @return The end of the `heap`, where are `reserve` elements, or
  null and `errno` will be set. Writing on this memory space is safe, but one
  will have to increase the size manually, (see <fn:<H>HeapBuffer>.)
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
@@ -379,7 +379,11 @@ static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
 	return heap->a.data + heap->a.size;
 }
 
-/** Adds `add` elements to `heap`.
+/** Adds `add` elements to `heap`. Uses <Doberkat, 1984, Floyd> to sift-down
+ all the internal nodes of heap. As such, this function is most efficient on a
+ heap of zero size, and becomes more inefficient as the existing heap grows.
+ For heaps that are already in use, it may be better to add each element
+ individually, resulting in a run-time of \O(`new elements` \cdot log `size`).
  @param[heap] If null, returns null.
  @param[add] If zero, returns null.
  @return Success.
@@ -387,13 +391,11 @@ static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
  error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). If
  <fn:<H>HeapReserve> has been successful in reserving at least `add` elements,
- one is guaranteed success.
+ one is guaranteed success. Practically, it really doesn't make any sense to
+ call this without calling <fn:<H>HeapReserve> because then one would be
+ inserting un-initialised values on the heap.
  @throws[realloc]
- @order \O(`new size`); uses <Ffloyd> to sift-down all the internal nodes of
- heap. That is, this function is most efficient on a heap of zero size, and
- becomes more inefficient as the existing heap grows. For heaps that are
- already in use, it may be better to add each element individually, resulting
- in a run-time of \O(`new elements` \cdot log `size`).
+ @order \O(`new size`)
  @allow */
 static int H_(HeapBuffer)(struct H_(Heap) *const heap, const size_t add) {
 	if(!heap || !add) return 0;
@@ -418,7 +420,6 @@ static const PH_(ToString) PH_(to_string) = (HEAP_TO_STRING);
  this functionality.
  @return Prints `heap` in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
- @fixme Again? Use an interface.
  @allow */
 static const char *H_(HeapToString)(const struct H_(Heap) *const heap) {
 	static char buffers[4][256];
