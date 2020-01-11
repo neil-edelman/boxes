@@ -3,7 +3,12 @@
 #include <string.h> /* strcmp */
 #include "Orcish.h"
 
-/* An order with no parent. It could happen. */
+/* Minimal example with <fn:order_to_string>, <fn:order_fill>, and
+ <fn:order_from_pool> testing framework. An order with no parent represents a
+ permutation, but it's not really useful as such because it's not even
+ contiguous, (probably an array would be better.) It's just a collection of
+ zeros. The `void` pointer (do not recommend) is to decouple `Pool.h`, which is
+ only used for convenience when testing, with `Array.h`. */
 
 struct OrderListNode;
 static void order_to_string(const struct OrderListNode *const l,
@@ -29,7 +34,7 @@ static struct OrderListNode *order_from_pool(void *const volls) {
 	return oll;
 }
 
-/* This is the minimum useful example. */
+/* This is the minimum useful example, (plus testing framework.) */
 
 struct NoListNode;
 static void no_to_string(const struct NoListNode *, char (*)[12]);
@@ -273,7 +278,7 @@ static void panda_graph(const struct NameList *const n,
 	fprintf(fp, "digraph {\n"
 		/*"\trankdir=LR;\n"*/
 		/*"\tnodesep=0;\n"*/);
-	/* Overriding private! */
+	/* Overriding private! I probably should not do this? But it's `C`. */
 	list_Name_subgraph(n, fp, "royalblue",
 		offsetof(struct Panda, name_node), 1);
 	list_Where_subgraph(w, fp, /*"firebrick"*/"orchid",
@@ -301,7 +306,202 @@ static void pandas_everywhere(void) {
 	PandaPool_(&pandas);
 }
 
+/* (Fixed width) skip list. Since we have a fixed number of lists,
+ \> 3 = \log_{1/p} size
+ \> 3 = \frac{\log size}{\log 1/p}
+ \> 3 \log 1/p = \log size
+ \> 8 / size = p */
 
+struct Layer0ListNode;
+static int l0_compare(const struct Layer0ListNode *,
+	const struct Layer0ListNode *);
+static void l0_to_string(const struct Layer0ListNode *, char (*)[12]);
+static void fill_l0(struct Layer0ListNode *);
+#define LIST_NAME Layer0
+#define LIST_COMPARE &l0_compare
+#define LIST_TO_STRING &l0_to_string
+#define LIST_TEST &fill_l0
+#include "../src/List.h"
+
+struct Layer1ListNode;
+static int l1_compare(const struct Layer1ListNode *,
+	const struct Layer1ListNode *);
+static void l1_to_string(const struct Layer1ListNode *, char (*)[12]);
+static void fill_l1(struct Layer1ListNode *);
+#define LIST_NAME Layer1
+#define LIST_COMPARE &l1_compare
+#define LIST_TO_STRING &l1_to_string
+#define LIST_TEST &fill_l1
+#include "../src/List.h"
+
+struct Layer2ListNode;
+static int l2_compare(const struct Layer2ListNode *,
+	const struct Layer2ListNode *);
+static void l2_to_string(const struct Layer2ListNode *, char (*)[12]);
+static void fill_l2(struct Layer2ListNode *);
+#define LIST_NAME Layer2
+#define LIST_COMPARE &l2_compare
+#define LIST_TO_STRING &l2_to_string
+#define LIST_TEST &fill_l2
+#include "../src/List.h"
+
+struct Skip {
+	struct Layer0ListNode l0;
+	struct Layer1ListNode l1;
+	struct Layer2ListNode l2;
+	unsigned value;
+};
+
+static const struct Skip *l0_upcast_c(const struct Layer0ListNode *const n) {
+	return (const struct Skip *)(const void *)((const char *)n
+		- offsetof(struct Skip, l0));
+}
+static const struct Skip *l1_upcast_c(const struct Layer1ListNode *const n) {
+	return (const struct Skip *)(const void *)((const char *)n
+		- offsetof(struct Skip, l1));
+}
+static const struct Skip *l2_upcast_c(const struct Layer2ListNode *const n) {
+	return (const struct Skip *)(const void *)((const char *)n
+		- offsetof(struct Skip, l2));
+}
+
+static struct Skip *l0_upcast(struct Layer0ListNode *const n) {
+	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l0));
+}
+static struct Skip *l1_upcast(struct Layer1ListNode *const n) {
+	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l1));
+}
+static struct Skip *l2_upcast(struct Layer2ListNode *const n) {
+	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l2));
+}
+
+static int skip_compare(const struct Skip *const a,
+	const struct Skip *const b) {
+	return (a->value > b->value) - (b->value > a->value);
+}
+static int l0_compare(const struct Layer0ListNode *a,
+	const struct Layer0ListNode *b) {
+	return skip_compare(l0_upcast_c(a), l0_upcast_c(b));
+}
+static int l1_compare(const struct Layer1ListNode *a,
+	const struct Layer1ListNode *b) {
+	return skip_compare(l1_upcast_c(a), l1_upcast_c(b));
+}
+static int l2_compare(const struct Layer2ListNode *a,
+	const struct Layer2ListNode *b) {
+	return skip_compare(l2_upcast_c(a), l2_upcast_c(b));
+}
+
+static void skip_to_string(const struct Skip *const skip,
+	char (*const a)[12]) {
+	/*assert(RAND_MAX <= 99999999999l);*/
+	sprintf(*a, "%d", skip->value);
+}
+static void l0_to_string(const struct Layer0ListNode *const l0,
+	char (*const a)[12]) {
+	skip_to_string(l0_upcast_c(l0), a);
+}
+static void l1_to_string(const struct Layer1ListNode *const l1,
+	char (*const a)[12]) {
+	skip_to_string(l1_upcast_c(l1), a);
+}
+static void l2_to_string(const struct Layer2ListNode *const l2,
+	char (*const a)[12]) {
+	skip_to_string(l2_upcast_c(l2), a);
+}
+
+static void fill_skip(struct Skip *const skip) {
+	assert(skip);
+	skip->value = rand();
+}
+static void fill_l0(struct Layer0ListNode *const l0) {
+	fill_skip(l0_upcast(l0));
+}
+static void fill_l1(struct Layer1ListNode *const l1) {
+	fill_skip(l1_upcast(l1));
+}
+static void fill_l2(struct Layer2ListNode *const l2) {
+	fill_skip(l2_upcast(l2));
+}
+
+#define POOL_NAME Skip
+#define POOL_TYPE struct Skip
+#include "Pool.h"
+
+static struct Layer0ListNode *l0_from_pool(void *const vpool) {
+	struct SkipPool *const pool = vpool;
+	struct Skip *s = SkipPoolNew(pool);
+	assert(s); if(!s) return 0;
+	return &s->l0;
+}
+static struct Layer1ListNode *l1_from_pool(void *const vpool) {
+	struct SkipPool *const pool = vpool;
+	struct Skip *s = SkipPoolNew(pool);
+	assert(s); if(!s) return 0;
+	return &s->l1;
+}
+static struct Layer2ListNode *l2_from_pool(void *const vpool) {
+	struct SkipPool *const pool = vpool;
+	struct Skip *s = SkipPoolNew(pool);
+	assert(s); if(!s) return 0;
+	return &s->l2;
+}
+
+struct SkipList {
+	struct Layer0List l0list;
+	struct Layer1List l1list;
+	struct Layer2List l2list;
+};
+
+static void skip_clear(struct SkipList *const skip) {
+	assert(skip);
+	Layer0ListClear(&skip->l0list);
+	Layer1ListClear(&skip->l1list);
+	Layer2ListClear(&skip->l2list);
+}
+
+static void skip_graph(const struct SkipList *const skip) {
+	const char *fn = "graph/Skip.gv";
+	FILE *fp;
+	assert(skip);
+	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	fprintf(fp, "digraph {\n");
+	list_Layer0_subgraph(&skip->l0list, fp, "royalblue",
+		offsetof(struct Skip, l0), 1);
+	list_Layer1_subgraph(&skip->l1list, fp, "firebrick",
+		offsetof(struct Skip, l1), 0);
+	list_Layer2_subgraph(&skip->l2list, fp, "darkseagreen",
+		offsetof(struct Skip, l2), 0);
+	fprintf(fp, "\tnode [colour=red, style=filled];\n");
+	fprintf(fp, "}\n");
+	fclose(fp);
+	
+}
+
+static void skips_everywhere(void) {
+	size_t i = 500;
+	int r;
+	struct SkipPool skips = POOL_IDLE;
+	struct SkipList s;
+	skip_clear(&s);
+	while(i) {
+		struct Skip *const skip = SkipPoolNew(&skips);
+		if(!skip) { assert(0); goto finally; }
+		i--;
+		fill_skip(skip);
+		r = rand();
+		printf("%d / %d\n", r, RAND_MAX);
+		Layer0ListPush(&s.l0list, &skip->l0);
+		if(r > RAND_MAX / 2) { printf("L0\n"); continue; }
+		Layer1ListPush(&s.l1list, &skip->l1);
+		if(r > RAND_MAX / 4) { printf("L1\n"); continue; }
+		Layer2ListPush(&s.l2list, &skip->l2);
+		printf("L2\n");
+	}
+	skip_graph(&s);
+finally:
+	SkipPool(&skips);
+}
 
 /* Animals! See <../web/animals.gv>. */
 
@@ -834,13 +1034,18 @@ int main(void) {
 	struct NoPool nos = POOL_IDLE;
 	struct LetterPool ls = POOL_IDLE;
 	struct PandaPool pandas = POOL_IDLE;
+	struct SkipPool skips = POOL_IDLE;
 	OrderListTest(&order_from_pool, &olls), OrderLinkPool_(&olls);
 	NoListTest(&no_from_pool, &nos), NoPool_(&nos);
 	LetterListTest(&letter_from_pool, &ls), LetterPool_(&ls);
 	NameListTest(&panda_name_from_pool, &pandas), PandaPool_(&pandas);
 	WhereListTest(&panda_where_from_pool, &pandas), PandaPool_(&pandas);
 	FeroListTest(&panda_fero_from_pool, &pandas), PandaPool_(&pandas);
+	Layer0ListTest(&l0_from_pool, &skips), SkipPoolClear(&skips);
+	Layer1ListTest(&l1_from_pool, &skips), SkipPoolClear(&skips);
+	Layer2ListTest(&l2_from_pool, &skips), SkipPoolClear(&skips);
 	pandas_everywhere();
+	skips_everywhere();
 	animals_everywhere();
 	return EXIT_SUCCESS;
 }
