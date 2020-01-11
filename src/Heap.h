@@ -21,8 +21,7 @@
  <typedef:<PH>Type> associated therewith; `HEAP_NAME` is required. `<PH>` is
  private, whose names are prefixed in a manner to avoid collisions; any should
  be re-defined prior to use elsewhere. Note that `HEAP_TYPE` is only used by
- reference; it can be forward-declared or left out entirely (fixme: forward? is
- that the right name for it?).
+ reference; it can be forward-declared or left out entirely.
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>Compare>. Defaults to minimum-hash using
@@ -90,11 +89,11 @@ typedef HEAP_PRIORITY PH_(Priority);
 /** Returns a positive result if `a` comes after `b`, inducing a pre-order
  of `a` with respect to `b`; this is compatible, but less strict then the
  comparators from `bsearch` and `qsort`; it only needs to divide entries into
- two instead of three categories. */
+ two instead of three categories. The default `HEAP_COMPARE` is `a > b`, which
+ makes a minimum-hash. */
 typedef int (*PH_(Compare))(const PH_(Priority), const PH_(Priority));
 #ifndef HEAP_COMPARE /* <!-- !cmp */
-/** Default `a` comes after `b` if `a > b`, which makes a min-hash. To make a
- max-hash, one could define a `HEAP_PRIORITY` function with `return a < b`. */
+/** `a` is less than `b`. */
 static int PH_(default_compare)(const PH_(Priority) a, const PH_(Priority) b) {
 	return a > b;
 }
@@ -136,7 +135,7 @@ struct H_(HeapNode) {
 #define ARRAY_TYPE struct H_(HeapNode)
 #define ARRAY_CHILD
 #include "Array.h"
-/* fixme: This is fairy ugly and knows too much about `Array`. */
+/* This is fairy ugly and knows too much about `Array`. */
 #define PT_(thing) PCAT(array, PCAT(CAT(HEAP_NAME, HeapNode), thing))
 
 /** Stores the heap as an implicit binary tree in an array. To initialise it to
@@ -505,6 +504,7 @@ static void PH_(unused_set)(void) {
 	PH_(copy)(0, 0);
 	PH_(sift_up)(0, 0);
 	PH_(sift_down)(0, 0);
+	PH_(sift_down_i)(0, 0);
 	PH_(remove)(0);
 	PH_(heapify)(0);
 	PH_(peek)(0);

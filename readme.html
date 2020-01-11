@@ -58,7 +58,7 @@
 
 <dl>
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
-	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an optional <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a> associated therewith; <code>HEAP_NAME</code> is required. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere. Note that <code>HEAP_TYPE</code> is only used by reference; it can be forward-declared or left out entirely (fixme: forward? is that the right name for it?).</dd>
+	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an optional <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a> associated therewith; <code>HEAP_NAME</code> is required. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere. Note that <code>HEAP_TYPE</code> is only used by reference; it can be forward-declared or left out entirely.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;Compare">&lt;PH&gt;Compare</a>. Defaults to minimum-hash using less-then on <code>HEAP_PRIORITY</code>.</dd>
 	<dt>Parameter: HEAP_PRIORITY</dt>
@@ -93,7 +93,7 @@
 
 <p><code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority, const &lt;PH&gt;Priority);</code></p>
 
-<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories.</p>
+<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. The default <code>HEAP_COMPARE</code> is <code>a &gt; b</code>, which makes a minimum-hash.</p>
 
 </div>
 

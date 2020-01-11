@@ -20,7 +20,7 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
 
 
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
-   `<H>` that satisfies `C` naming conventions when mangled and an optional [&lt;PH&gt;Type](#user-content-typedef-b7099207) associated therewith; `HEAP_NAME` is required\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\. Note that `HEAP_TYPE` is only used by reference; it can be forward\-declared or left out entirely \(fixme: forward? is that the right name for it?\)\.
+   `<H>` that satisfies `C` naming conventions when mangled and an optional [&lt;PH&gt;Type](#user-content-typedef-b7099207) associated therewith; `HEAP_NAME` is required\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\. Note that `HEAP_TYPE` is only used by reference; it can be forward\-declared or left out entirely\.
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash using less\-then on `HEAP_PRIORITY`\.
  * Parameter: HEAP\_PRIORITY  
@@ -51,7 +51,7 @@ Valid type used for caching priority, used in [&lt;H&gt;HeapNode](#user-content-
 
 <code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority, const &lt;PH&gt;Priority);</code>
 
-Returns a positive result if `a` comes after `b`, inducing a pre\-order of `a` with respect to `b`; this is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
+Returns a positive result if `a` comes after `b`, inducing a pre\-order of `a` with respect to `b`; this is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\. The default `HEAP_COMPARE` is `a > b`, which makes a minimum\-hash\.
 
 
 
