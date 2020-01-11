@@ -389,7 +389,7 @@ Iterate through `a`\. It is safe to add using [&lt;T&gt;ArrayUpdateNew](#user-co
 
 <code>static T *<strong>&lt;T&gt;ArrayReserve</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>reserve</em>)</code>
 
-Ensures that `a` array is `reserve` capacity beyond the elements in the array, but doesn't add to the size\.
+Ensures that `a` is `reserve` capacity beyond the elements in the array, but doesn't add to the size\.
 
  * Parameter: _a_  
    If null, returns false\.
@@ -419,7 +419,7 @@ Adds `add` elements to `a`\.
  * Return:  
    The start of a new sub\-array of `add` elements at the previous end of `a`, or null and `errno` will be set\.
  * Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\. If [&lt;T&gt;ArrayReserve](#user-content-fn-8fb34e3e) has been successful in reserving at least `add` elements, one is guaranteed success\.
  * Exceptional return: realloc  
  * Order:  
    Amortised &#927;\(`add`\)\.

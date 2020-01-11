@@ -135,8 +135,8 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	assert(c0 < c1);
 	/* Fibonacci: c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0. Technically, this
 	 calculation takes `\O(log (min_capacity - capacity))`, but we expect that
-	 to be very small using a <trisc... machine model>, and much less than the
-	 time it takes to re-allocate. */
+	 to be very small using a transdichotomous model, <Fredman, Willard, 1993>,
+	 and much less than the time it takes to re-allocate. */
 	while(c0 < min_capacity) {
 		size_t temp = c0 + c1; c0 = c1; c1 = temp;
 		if(c1 > max_size || c1 < c0) c1 = max_size;

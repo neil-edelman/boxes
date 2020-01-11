@@ -488,7 +488,7 @@
 
 <p><code>static T *<strong>&lt;T&gt;ArrayReserve</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>reserve</em>)</code></p>
 
-<p>Ensures that <code>a</code> array is <code>reserve</code> capacity beyond the elements in the array, but doesn't add to the size.</p>
+<p>Ensures that <code>a</code> is <code>reserve</code> capacity beyond the elements in the array, but doesn't add to the size.</p>
 
 <dl>
 	<dt>Parameter: <em>a</em></dt>
@@ -522,7 +522,7 @@
 	<dt>Return:</dt>
 	<dd>The start of a new sub-array of <code>add</code> elements at the previous end of <code>a</code>, or null and <code>errno</code> will be set.</dd>
 	<dt>Exceptional return: ERANGE</dt>
-	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">IEEE Std 1003.1-2001</a>.</dd>
+	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">IEEE Std 1003.1-2001</a>. If <a href = "#fn:&lt;T&gt;ArrayReserve">&lt;T&gt;ArrayReserve</a> has been successful in reserving at least <code>add</code> elements, one is guaranteed success.</dd>
 	<dt>Exceptional return: realloc</dt>
 	<dt>Order:</dt>
 	<dd>Amortised &#927;(<code>add</code>).</dd>
