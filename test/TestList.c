@@ -412,6 +412,14 @@ static void l2_to_string(const struct Layer2ListNode *const l2,
 
 static void fill_skip(struct Skip *const skip) {
 	assert(skip);
+	/* This is accessing data that we shouldn't; maybe have a fn? (another one
+	 that will be used so infrequently that it will only serve to confuse?) */
+	skip->l0.prev = 0;
+	skip->l0.next = 0;
+	skip->l1.prev = 0;
+	skip->l1.next = 0;
+	skip->l2.prev = 0;
+	skip->l2.next = 0;
 	skip->value = rand();
 }
 static void fill_l0(struct Layer0ListNode *const l0) {
@@ -490,13 +498,11 @@ static void skips_everywhere(void) {
 		i--;
 		fill_skip(skip);
 		r = rand();
-		printf("%d / %d\n", r, RAND_MAX);
 		Layer0ListPush(&s.l0list, &skip->l0);
-		if(r > RAND_MAX / 2) { printf("L0\n"); continue; }
+		if(r > RAND_MAX / 2) continue;
 		Layer1ListPush(&s.l1list, &skip->l1);
-		if(r > RAND_MAX / 4) { printf("L1\n"); continue; }
+		if(r > RAND_MAX / 4) continue;
 		Layer2ListPush(&s.l2list, &skip->l2);
-		printf("L2\n");
 	}
 	skip_graph(&s);
 finally:
