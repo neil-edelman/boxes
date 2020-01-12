@@ -306,11 +306,7 @@ static void pandas_everywhere(void) {
 	PandaPool_(&pandas);
 }
 
-/* (Fixed width) skip list. Since we have a fixed number of lists,
- \> 3 = \log_{1/p} size
- \> 3 = \frac{\log size}{\log 1/p}
- \> 3 \log 1/p = \log size
- \> 8 / size = p */
+/* (Fixed width) skip list. */
 
 struct Layer0ListNode;
 static int l0_compare(const struct Layer0ListNode *,
@@ -487,22 +483,52 @@ static void skip_graph(const struct SkipList *const skip) {
 }
 
 static void skips_everywhere(void) {
-	size_t i = 500;
-	int r;
+	const size_t i_lim = 1000;
+	size_t i;
+	unsigned r;
 	struct SkipPool skips = POOL_IDLE;
 	struct SkipList s;
 	skip_clear(&s);
-	while(i) {
+	assert(RAND_MAX / 16 > i_lim);
+	for(i = 0; i < i_lim; i++) {
+		/* Add random data. */
 		struct Skip *const skip = SkipPoolNew(&skips);
+		struct Layer2ListNode *l2, *l2_pr;
+		struct Layer1ListNode *l1, *l1_pr, *l1_lim;
+		struct Layer0ListNode *l0, *l0_pr, *l0_lim;
 		if(!skip) { assert(0); goto finally; }
-		i--;
 		fill_skip(skip);
+		/* Find the order. */
+		for(l2 = 0, l2_pr = Layer2ListFirst(&s.l2list);
+			l2_pr && l2_compare(&skip->l2, l2_pr) > 0;
+			l2 = l2_pr, l2_pr = Layer2ListNext(l2_pr));
+		l1 = l2 ? &l2_upcast(l2)->l1 : 0;
+		l1_lim = l2_pr ? &l2_upcast(l2_pr)->l1 : 0;
+		for(l1_pr = l1 ? Layer1ListNext(l1) : Layer1ListFirst(&s.l1list);
+			l1_pr && (l1_lim ? l1_pr != l1_lim : 1)
+			&& l1_compare(&skip->l1, l1_pr) > 0;
+			l1 = l1_pr, l1_pr = Layer1ListNext(l1_pr));
+		l0 = l1 ? &l1_upcast(l1)->l0 : 0;
+		l0_lim = l1_pr ? &l1_upcast(l1_pr)->l0 : 0;
+		for(l0_pr = l0 ? Layer0ListNext(l0) : Layer0ListFirst(&s.l0list);
+			l0_pr && (l0_lim ? l0_pr != l0_lim : 1)
+			&& l0_compare(&skip->l0, l0_pr) > 0;
+			l0 = l0_pr, l0_pr = Layer0ListNext(l0_pr));
+		/* Since we have a fixed number of lists,
+		 \> n = \log_{1/p} size
+		 \> n = \frac{\log size}{\log 1/p}
+		 \> n \log 1/p = \log size
+		 \> p = 2^n / size
+		 Apparently, some modificalion is required for `n` fixed. */
+		l0 ? Layer0ListAddAfter(l0, &skip->l0)
+			: Layer0ListUnshift(&s.l0list, &skip->l0);
 		r = rand();
-		Layer0ListPush(&s.l0list, &skip->l0);
-		if(r > RAND_MAX / 2) continue;
-		Layer1ListPush(&s.l1list, &skip->l1);
-		if(r > RAND_MAX / 4) continue;
-		Layer2ListPush(&s.l2list, &skip->l2);
+		if(r > RAND_MAX / 4 + i) continue;
+		l1 ? Layer1ListAddAfter(l1, &skip->l1) :
+			Layer1ListUnshift(&s.l1list, &skip->l1);
+		if(r > RAND_MAX / 16 + i) continue;
+		l2 ? Layer2ListAddAfter(l2, &skip->l2) :
+			Layer2ListUnshift(&s.l2list, &skip->l2);
 	}
 	skip_graph(&s);
 finally:
