@@ -17,10 +17,9 @@
  debug assertions, use `#define NDEBUG` before `assert.h`.
 
  @param[ARRAY_NAME, ARRAY_TYPE]
- `<T>` that satisfies `C` naming conventions when mangled and a valid tag
- (type) associated therewith; required. `<PT>` is private, whose names are
- prefixed in a manner to avoid collisions; any should be re-defined prior to
- use elsewhere.
+ `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type
+ associated therewith; required. `<PT>` is private, whose names are prefixed in
+ a manner to avoid collisions; any should be re-defined prior to use elsewhere.
 
  @param[ARRAY_STACK]
  Doesn't define removal functions except <fn:<T>ArrayPop>, making it a stack.
@@ -56,6 +55,10 @@
 #endif /* --> */
 #if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <!-- error */
 #error ARRAY_TEST requires ARRAY_TO_STRING.
+#endif /* error --> */
+#if defined(ARRAY_CHILD) && (defined(ARRAY_STACK) || defined(ARRAY_TO_STRING) \
+	|| defined(ARRAY_TEST)) /* <!-- error */
+#error With ARRAY_CHILD, defining public interface functions is useless.
 #endif /* error --> */
 #if defined(T) || defined(T_) || defined(PT_) /* <!-- error */
 #error T, T_, and PT_ cannot be defined.
