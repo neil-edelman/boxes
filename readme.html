@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>Array">&lt;T&gt;Array</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -58,7 +58,7 @@
 
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
-	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag (type) associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
 	<dt>Parameter: ARRAY_STACK</dt>
 	<dd>Doesn't define removal functions except <a href = "#fn:&lt;T&gt;ArrayPop">&lt;T&gt;ArrayPop</a>, making it a stack.</dd>
 	<dt>Parameter: ARRAY_TO_STRING</dt>
@@ -72,16 +72,6 @@
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
-
-<div>
-
-<h3><a id = "typedef:<PT>Type" name = "typedef:<PT>Type">&lt;PT&gt;Type</a></h3>
-
-<p><code>typedef ARRAY_TYPE <strong>&lt;PT&gt;Type</strong>;</code></p>
-
-<p>A valid tag type set by <code>ARRAY_TYPE</code>. This becomes <code>T</code>.</p>
-
-</div>
 
 <div>
 
