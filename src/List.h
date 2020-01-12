@@ -3,7 +3,7 @@
 
  @subtitle Parameterised Doubly-Linked Closed List
 
- ![Example of <Animal>List](../web/list.png)
+ ![Example of a stochastic skip-list.](../web/list.png)
 
  <tag:<N>List> is a list of <tag:<N>ListNode>; it may be supplied a total-order
  function, `LIST_COMPARE` <typedef:<PN>Compare>.
