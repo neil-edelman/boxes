@@ -58,7 +58,7 @@
 
 <dl>
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
-	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an optional <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a> associated therewith; <code>HEAP_NAME</code> is required. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere. Note that <code>HEAP_TYPE</code> is only used by reference; it can be forward-declared or left out entirely.</dd>
+	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an optional <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a> associated therewith; <code>HEAP_NAME</code> is required. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere. Note that <code>HEAP_TYPE</code> is only used by reference; it can be forward-declared or left out entirely, and the implementation is <a href = "../Pool/">responsble for it's storage</a>.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;Compare">&lt;PH&gt;Compare</a>. Defaults to minimum-hash using less-then on <code>HEAP_PRIORITY</code>.</dd>
 	<dt>Parameter: HEAP_PRIORITY</dt>
