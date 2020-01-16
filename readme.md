@@ -1,4 +1,3 @@
-\ encoded.
 # Array\.h #
 
 ## Parameterised Contiguous Dynamic Array \(Vector\) ##
