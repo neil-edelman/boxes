@@ -1,9 +1,10 @@
+\ encoded.
 # Array\.h #
 
 ## Parameterised Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;Array](#user-content-tag-f128eca2)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -34,6 +35,14 @@
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
+
+### <a id = "user-content-typedef-8b318acb" name = "user-content-typedef-8b318acb">&lt;PT&gt;Type</a> ###
+
+<code>typedef ARRAY_TYPE <strong>&lt;PT&gt;Type</strong>;</code>
+
+A valid tag type set by `ARRAY_TYPE`\. This becomes `T`\.
+
+
 
 ### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81">&lt;PT&gt;Action</a> ###
 
