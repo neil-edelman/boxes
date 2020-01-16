@@ -22,7 +22,8 @@
  private, whose names are prefixed in a manner to avoid collisions; any should
  be re-defined prior to use elsewhere. Note that `HEAP_TYPE` is only used by
  reference; it can be forward-declared or left out entirely, and the
- implementation is [responsble for it's storage](../../Pool/).
+ implementation is
+ [responsble for it's storage](https://github.com/neil-edelman/Pool).
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>Compare>. Defaults to minimum-hash using

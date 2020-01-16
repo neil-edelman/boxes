@@ -20,7 +20,7 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
 
 
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
-   `<H>` that satisfies `C` naming conventions when mangled and an optional [&lt;PH&gt;Type](#user-content-typedef-b7099207) associated therewith; `HEAP_NAME` is required\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\. Note that `HEAP_TYPE` is only used by reference; it can be forward\-declared or left out entirely, and the implementation is [responsble for it's storage](../Pool/)\.
+   `<H>` that satisfies `C` naming conventions when mangled and an optional [&lt;PH&gt;Type](#user-content-typedef-b7099207) associated therewith; `HEAP_NAME` is required\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\. Note that `HEAP_TYPE` is only used by reference; it can be forward\-declared or left out entirely, and the implementation is [responsble for it's storage](https://github.com/neil-edelman/Pool)\.
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash using less\-then on `HEAP_PRIORITY`\.
  * Parameter: HEAP\_PRIORITY  
