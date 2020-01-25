@@ -475,6 +475,7 @@ static void PH_(unused_coda)(void);
 /** This silences unused function warnings. */
 static void PH_(unused_set)(void) {
 	struct H_(HeapNode) h;
+	memset(&h, 0, sizeof h);
 	H_(Heap_)(0);
 	H_(Heap)(0);
 	H_(HeapSize)(0);
