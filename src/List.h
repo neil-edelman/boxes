@@ -9,8 +9,8 @@
  function, `LIST_COMPARE` <typedef:<PN>Compare>.
 
  Internally, `<N>ListNode` is a doubly-linked node with sentinels residing in
- `<N>List`. It only provides an order, but `<N>ListNode` may be enclosed in
- another `struct` as needed.
+ `<N>List`. It only provides an order, and is not very useful without enclosing
+ `<N>ListNode` in, at least, another `struct`.
 
  `<N>Link` is not synchronised. The parameters are `#define` preprocessor
  macros, and are all undefined at the end of the file for convenience. To stop
