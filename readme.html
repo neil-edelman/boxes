@@ -52,7 +52,7 @@
 
 <p><a href = "#tag:&lt;N&gt;List">&lt;N&gt;List</a> is a list of <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a>; it may be supplied a total-order function, <code>LIST_COMPARE</code> <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>.</p>
 
-<p>Internally, <code>&lt;N&gt;ListNode</code> is a doubly-linked node with sentinels residing in <code>&lt;N&gt;List</code>. It only provides an order, but <code>&lt;N&gt;ListNode</code> may be enclosed in another <code>struct</code> as needed.</p>
+<p>Internally, <code>&lt;N&gt;ListNode</code> is a doubly-linked node with sentinels residing in <code>&lt;N&gt;List</code>. It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;ListNode</code> in, at least, another <code>struct</code>.</p>
 
 <p><code>&lt;N&gt;Link</code> is not synchronised. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. To stop assertions, use <code>#define NDEBUG</code> before inclusion of <code>assert.h</code>, (which is used in this file.)</p>
 

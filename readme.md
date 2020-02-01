@@ -15,7 +15,7 @@
 
 [&lt;N&gt;List](#user-content-tag-3824ef2b) is a list of [&lt;N&gt;ListNode](#user-content-tag-b60b679b); it may be supplied a total\-order function, `LIST_COMPARE` [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\.
 
-Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<N>List`\. It only provides an order, but `<N>ListNode` may be enclosed in another `struct` as needed\.
+Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<N>List`\. It only provides an order, and is not very useful without enclosing `<N>ListNode` in, at least, another `struct`\.
 
 `<N>Link` is not synchronised\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. To stop assertions, use `#define NDEBUG` before inclusion of `assert.h`, \(which is used in this file\.\)
 
