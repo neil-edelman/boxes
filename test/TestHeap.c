@@ -11,6 +11,7 @@
 #include <errno.h>  /* errno */
 #include "Orcish.h"
 
+
 struct IntHeapNode;
 static void int_to_string(const struct IntHeapNode *, char (*)[12]);
 static void test_int(struct IntHeapNode *, void *);
@@ -30,6 +31,7 @@ static void test_int(struct IntHeapNode *i, void *const unused) {
 	i->priority = rand() / (RAND_MAX / 99 + 1) + 1;
 	/* printf("test_int: generated %u\n", i->priority); */
 }
+
 
 struct OrcHeapNode;
 static void orc_to_string(const struct OrcHeapNode *, char (*)[12]);
@@ -60,6 +62,7 @@ static void test_orc(struct OrcHeapNode *node, void *const vpool) {
 	node->priority = orc->health;
 	node->value = orc;
 }
+
 
 int main(void) {
 	struct OrcPool orcs = POOL_IDLE;
