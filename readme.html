@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>Priority">&lt;PH&gt;Priority</a>, <a href = "#typedef:<PH>Compare">&lt;PH&gt;Compare</a>, <a href = "#typedef:<PH>Type">&lt;PH&gt;Type</a>, <a href = "#typedef:<PH>Value">&lt;PH&gt;Value</a>, <a href = "#typedef:<PH>ToString">&lt;PH&gt;ToString</a>, <a href = "#typedef:<PH>BiAction">&lt;PH&gt;BiAction</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>Priority">&lt;PH&gt;Priority</a>, <a href = "#typedef:<PH>Compare">&lt;PH&gt;Compare</a>, <a href = "#typedef:<PH>Value">&lt;PH&gt;Value</a>, <a href = "#typedef:<PH>PValue">&lt;PH&gt;PValue</a>, <a href = "#typedef:<PH>ToString">&lt;PH&gt;ToString</a>, <a href = "#typedef:<PH>BiAction">&lt;PH&gt;BiAction</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>HeapNode">&lt;H&gt;HeapNode</a>, <a href = "#tag:<H>Heap">&lt;H&gt;Heap</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 194 height = 286></p>
 
-<p>A <a href = "#tag:&lt;H&gt;Heap">&lt;H&gt;Heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an array <code>&lt;&lt;H&gt;HeapNode&gt;Array</code> with heap properties; as such, one needs to have the <code>Array.h</code> file in the same directory.</p>
+<p>A <a href = "#tag:&lt;H&gt;Heap">&lt;H&gt;Heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;HeapNode&gt;Array</code> with implicit heap properties; as such, one needs to have <code>Array.h</code> file in the same directory.</p>
 
 <p><code>&lt;H&gt;Heap</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used; to stop assertions, use <code>#define NDEBUG</code> before inclusion.</p>
 
@@ -58,11 +58,11 @@
 
 <dl>
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
-	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an optional <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a> associated therewith; <code>HEAP_NAME</code> is required. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere. Note that <code>HEAP_TYPE</code> is only used by reference; it can be forward-declared or left out entirely, and the implementation is <a href = "https://github.com/neil-edelman/Pool">responsble for it's storage</a>.</dd>
+	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an assignable type <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> associated therewith. <code>HEAP_NAME</code> is required but <code>HEAP_TYPE</code> defaults to <code>unsigned int</code> if not specified. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;Compare">&lt;PH&gt;Compare</a>. Defaults to minimum-hash using less-then on <code>HEAP_PRIORITY</code>.</dd>
-	<dt>Parameter: HEAP_PRIORITY</dt>
-	<dd>This is <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> and defaults to <code>unsigned int</code>. Gets combined with <code>HEAP_TYPE</code> (if it exists) to form <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;Compare">&lt;PH&gt;Compare</a>. Defaults to minimum-hash using less-then on <code>HEAP_TYPE</code>; as such, if <code>HEAP_TYPE</code> is changed, this may be required.</dd>
+	<dt>Parameter: HEAP_VALUE</dt>
+	<dd>This is <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a>, the optional payload that is stored as a reference in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>.</dd>
 	<dt>Parameter: HEAP_TO_STRING</dt>
 	<dd>Optional print function implementing <a href = "#typedef:&lt;PH&gt;ToString">&lt;PH&gt;ToString</a>; makes available <a href = "#fn:&lt;H&gt;HeapToString">&lt;H&gt;HeapToString</a>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
@@ -81,9 +81,9 @@
 
 <h3><a id = "typedef:<PH>Priority" name = "typedef:<PH>Priority">&lt;PH&gt;Priority</a></h3>
 
-<p><code>typedef HEAP_PRIORITY <strong>&lt;PH&gt;Priority</strong>;</code></p>
+<p><code>typedef HEAP_TYPE <strong>&lt;PH&gt;Priority</strong>;</code></p>
 
-<p>Valid type used for caching priority, used in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>. Defaults to <code>unsigned int</code>.</p>
+<p>Valid type used for caching priority set by <code>HEAP_TYPE</code> and used in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>. Defaults to <code>unsigned int</code>.</p>
 
 </div>
 
@@ -91,19 +91,9 @@
 
 <h3><a id = "typedef:<PH>Compare" name = "typedef:<PH>Compare">&lt;PH&gt;Compare</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority, const &lt;PH&gt;Priority);</code></p>
+<p><code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority a, const &lt;PH&gt;Priority b);</code></p>
 
-<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. The default <code>HEAP_COMPARE</code> is <code>a &gt; b</code>, which makes a minimum-hash.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PH>Type" name = "typedef:<PH>Type">&lt;PH&gt;Type</a></h3>
-
-<p><code>typedef HEAP_TYPE <strong>&lt;PH&gt;Type</strong>;</code></p>
-
-<p>If <code>HEAP_TYPE</code>, a valid tag type set by <code>HEAP_TYPE</code>, used in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>.</p>
+<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a strict pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. The default <code>HEAP_COMPARE</code> is <code>a &gt; b</code>, which makes a minimum-hash.</p>
 
 </div>
 
@@ -111,9 +101,19 @@
 
 <h3><a id = "typedef:<PH>Value" name = "typedef:<PH>Value">&lt;PH&gt;Value</a></h3>
 
-<p><code>typedef &lt;PH&gt;Type *<strong>&lt;PH&gt;Value</strong>;</code></p>
+<p><code>typedef HEAP_VALUE <strong>&lt;PH&gt;Value</strong>;</code></p>
 
-<p>This represents the value of the node. If <code>HEAP_TYPE</code>, a pointer to the <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a>; may be null if one has put null values in or if the node is null. If not <code>HEAP_TYPE</code>, a boolean <code>int</code> value that is true (one) if the value was there and false (zero) if not.</p>
+<p>If <code>HEAP_VALUE</code> is set, a valid tag type, used in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PH>PValue" name = "typedef:<PH>PValue">&lt;PH&gt;PValue</a></h3>
+
+<p><code>typedef &lt;PH&gt;Value *<strong>&lt;PH&gt;PValue</strong>;</code></p>
+
+<p>If <code>HEAP_VALUE</code> is set, a pointer to the <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a>; may be null if one has put null values in or if the node is null, otherwise a boolean <code>int</code> that is true (one) if the value was there and false (zero) if not.</p>
 
 </div>
 
@@ -145,7 +145,7 @@
 
 <p><code>struct <strong>&lt;H&gt;HeapNode</strong>;</code></p>
 
-<p>Stores a <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> as <code>priority</code>, and, if <code>HASH_TYPE</code>, a <a href = "#typedef:&lt;PH&gt;Type">&lt;PH&gt;Type</a> pointer called <code>value</code>. <code>value</code> is just the payload, if the <code>value</code> has <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> in it, (as most other heap implementations,) one has to cache the the sub-structure (default <code>unsigned int</code>) of value to the <code>priority</code> such that the <code>priority</code> does not need a second de-reference.</p>
+<p>Stores a <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> as <code>priority</code>, which can be set by <code>HASH_TYPE</code>. If <code>HASH_VALUE</code> is set, a <a href = "#typedef:&lt;PH&gt;PValue">&lt;PH&gt;PValue</a> called <code>value</code>.</p>
 
 </div>
 
@@ -181,9 +181,9 @@
 
 <tr><td align = right>static struct &lt;H&gt;HeapNode *</td><td><a href = "#fn:<H>HeapPeek">&lt;H&gt;HeapPeek</a></td><td>heap</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;Value</td><td><a href = "#fn:<H>HeapPeekValue">&lt;H&gt;HeapPeekValue</a></td><td>heap</td></tr>
+<tr><td align = right>static &lt;PH&gt;PValue</td><td><a href = "#fn:<H>HeapPeekValue">&lt;H&gt;HeapPeekValue</a></td><td>heap</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;Value</td><td><a href = "#fn:<H>HeapPop">&lt;H&gt;HeapPop</a></td><td>heap</td></tr>
+<tr><td align = right>static &lt;PH&gt;PValue</td><td><a href = "#fn:<H>HeapPop">&lt;H&gt;HeapPop</a></td><td>heap</td></tr>
 
 <tr><td align = right>static struct &lt;H&gt;HeapNode *</td><td><a href = "#fn:<H>HeapReserve">&lt;H&gt;HeapReserve</a></td><td>heap, reserve</td></tr>
 
@@ -310,15 +310,15 @@
 
 <h3><a id = "fn:<H>HeapPeekValue" name = "fn:<H>HeapPeekValue">&lt;H&gt;HeapPeekValue</a></h3>
 
-<p><code>static &lt;PH&gt;Value <strong>&lt;H&gt;HeapPeekValue</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
+<p><code>static &lt;PH&gt;PValue <strong>&lt;H&gt;HeapPeekValue</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
 
-<p>This returns a child of that accessible from <a href = "#fn:&lt;H&gt;HeapPeek">&lt;H&gt;HeapPeek</a>, for convenience with some applications.</p>
+<p>This returns the value of the <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>, a child of <a href = "#fn:&lt;H&gt;HeapPeek">&lt;H&gt;HeapPeek</a>, for convenience with some applications.</p>
 
 <dl>
 	<dt>Parameter: <em>heap</em></dt>
 	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
-	<dd>Lowest <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a> in <code>heap</code> element according to <code>HEAP_COMPARE</code>, (which may be null,) or null or zero if the heap is empty.</dd>
+	<dd>Lowest <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a> in <code>heap</code> element according to <code>HEAP_COMPARE</code>; if the heap is empty, null or zero.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(1)</dd>
 </dl>
@@ -329,7 +329,7 @@
 
 <h3><a id = "fn:<H>HeapPop" name = "fn:<H>HeapPop">&lt;H&gt;HeapPop</a></h3>
 
-<p><code>static &lt;PH&gt;Value <strong>&lt;H&gt;HeapPop</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
+<p><code>static &lt;PH&gt;PValue <strong>&lt;H&gt;HeapPop</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
 
 <p>Remove the lowest element according to <code>HEAP_COMPARE</code>.</p>
 
@@ -337,7 +337,7 @@
 	<dt>Parameter: <em>heap</em></dt>
 	<dd>If null, returns false.</dd>
 	<dt>Return:</dt>
-	<dd>The <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a> of the element that was removed; if the heap is empty, null or zero.</dd>
+	<dd>The <a href = "#typedef:&lt;PH&gt;PValue">&lt;PH&gt;PValue</a> of the element that was removed; if the heap is empty, null or zero.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log <code>size</code>)</dd>
 </dl>

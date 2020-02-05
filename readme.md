@@ -3,7 +3,7 @@
 ## Parameterised Priority Queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;Priority](#user-content-typedef-57e15d67), [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e), [&lt;PH&gt;Type](#user-content-typedef-b7099207), [&lt;PH&gt;Value](#user-content-typedef-4d915774), [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3), [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;Priority](#user-content-typedef-57e15d67), [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e), [&lt;PH&gt;Value](#user-content-typedef-4d915774), [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02), [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3), [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f), [&lt;H&gt;Heap](#user-content-tag-f1ee6af)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -13,18 +13,18 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an array `<<H>HeapNode>Array` with heap properties; as such, one needs to have the `Array.h` file in the same directory\.
+A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>HeapNode>Array` with implicit heap properties; as such, one needs to have `Array.h` file in the same directory\.
 
 `<H>Heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
 
 
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
-   `<H>` that satisfies `C` naming conventions when mangled and an optional [&lt;PH&gt;Type](#user-content-typedef-b7099207) associated therewith; `HEAP_NAME` is required\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\. Note that `HEAP_TYPE` is only used by reference; it can be forward\-declared or left out entirely, and the implementation is [responsble for it's storage](https://github.com/neil-edelman/Pool)\.
+   `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) associated therewith\. `HEAP_NAME` is required but `HEAP_TYPE` defaults to `unsigned int` if not specified\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: HEAP\_COMPARE  
-   A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash using less\-then on `HEAP_PRIORITY`\.
- * Parameter: HEAP\_PRIORITY  
-   This is [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) and defaults to `unsigned int`\. Gets combined with `HEAP_TYPE` \(if it exists\) to form [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\.
+   A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash using less\-then on `HEAP_TYPE`; as such, if `HEAP_TYPE` is changed, this may be required\.
+ * Parameter: HEAP\_VALUE  
+   This is [&lt;PH&gt;Value](#user-content-typedef-4d915774), the optional payload that is stored as a reference in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\.
  * Parameter: HEAP\_TO\_STRING  
    Optional print function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3); makes available [&lt;H&gt;HeapToString](#user-content-fn-2dd2ccc3)\.
  * Parameter: HEAP\_TEST  
@@ -41,33 +41,33 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
 
 ### <a id = "user-content-typedef-57e15d67" name = "user-content-typedef-57e15d67">&lt;PH&gt;Priority</a> ###
 
-<code>typedef HEAP_PRIORITY <strong>&lt;PH&gt;Priority</strong>;</code>
+<code>typedef HEAP_TYPE <strong>&lt;PH&gt;Priority</strong>;</code>
 
-Valid type used for caching priority, used in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. Defaults to `unsigned int`\.
+Valid type used for caching priority set by `HEAP_TYPE` and used in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. Defaults to `unsigned int`\.
 
 
 
 ### <a id = "user-content-typedef-27ee3a1e" name = "user-content-typedef-27ee3a1e">&lt;PH&gt;Compare</a> ###
 
-<code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority, const &lt;PH&gt;Priority);</code>
+<code>typedef int(*<strong>&lt;PH&gt;Compare</strong>)(const &lt;PH&gt;Priority a, const &lt;PH&gt;Priority b);</code>
 
-Returns a positive result if `a` comes after `b`, inducing a pre\-order of `a` with respect to `b`; this is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\. The default `HEAP_COMPARE` is `a > b`, which makes a minimum\-hash\.
-
-
-
-### <a id = "user-content-typedef-b7099207" name = "user-content-typedef-b7099207">&lt;PH&gt;Type</a> ###
-
-<code>typedef HEAP_TYPE <strong>&lt;PH&gt;Type</strong>;</code>
-
-If `HEAP_TYPE`, a valid tag type set by `HEAP_TYPE`, used in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\.
+Returns a positive result if `a` comes after `b`, inducing a strict pre\-order of `a` with respect to `b`; this is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\. The default `HEAP_COMPARE` is `a > b`, which makes a minimum\-hash\.
 
 
 
 ### <a id = "user-content-typedef-4d915774" name = "user-content-typedef-4d915774">&lt;PH&gt;Value</a> ###
 
-<code>typedef &lt;PH&gt;Type *<strong>&lt;PH&gt;Value</strong>;</code>
+<code>typedef HEAP_VALUE <strong>&lt;PH&gt;Value</strong>;</code>
 
-This represents the value of the node\. If `HEAP_TYPE`, a pointer to the [&lt;PH&gt;Type](#user-content-typedef-b7099207); may be null if one has put null values in or if the node is null\. If not `HEAP_TYPE`, a boolean `int` value that is true \(one\) if the value was there and false \(zero\) if not\.
+If `HEAP_VALUE` is set, a valid tag type, used in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\.
+
+
+
+### <a id = "user-content-typedef-c1cc3f02" name = "user-content-typedef-c1cc3f02">&lt;PH&gt;PValue</a> ###
+
+<code>typedef &lt;PH&gt;Value *<strong>&lt;PH&gt;PValue</strong>;</code>
+
+If `HEAP_VALUE` is set, a pointer to the [&lt;PH&gt;Value](#user-content-typedef-4d915774); may be null if one has put null values in or if the node is null, otherwise a boolean `int` that is true \(one\) if the value was there and false \(zero\) if not\.
 
 
 
@@ -93,7 +93,7 @@ Operates by side\-effects\. Used for `HEAP_TEST`\.
 
 <code>struct <strong>&lt;H&gt;HeapNode</strong>;</code>
 
-Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, and, if `HASH_TYPE`, a [&lt;PH&gt;Type](#user-content-typedef-b7099207) pointer called `value`\. `value` is just the payload, if the `value` has [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) in it, \(as most other heap implementations,\) one has to cache the the sub\-structure \(default `unsigned int`\) of value to the `priority` such that the `priority` does not need a second de\-reference\.
+Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, which can be set by `HASH_TYPE`\. If `HASH_VALUE` is set, a [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02) called `value`\.
 
 
 
@@ -125,9 +125,9 @@ Stores the heap as an implicit binary tree in an array\. To initialise it to an 
 
 <tr><td align = right>static struct &lt;H&gt;HeapNode *</td><td><a href = "#user-content-fn-12af7c44">&lt;H&gt;HeapPeek</a></td><td>heap</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;Value</td><td><a href = "#user-content-fn-d587663d">&lt;H&gt;HeapPeekValue</a></td><td>heap</td></tr>
+<tr><td align = right>static &lt;PH&gt;PValue</td><td><a href = "#user-content-fn-d587663d">&lt;H&gt;HeapPeekValue</a></td><td>heap</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;Value</td><td><a href = "#user-content-fn-a1a31b62">&lt;H&gt;HeapPop</a></td><td>heap</td></tr>
+<tr><td align = right>static &lt;PH&gt;PValue</td><td><a href = "#user-content-fn-a1a31b62">&lt;H&gt;HeapPop</a></td><td>heap</td></tr>
 
 <tr><td align = right>static struct &lt;H&gt;HeapNode *</td><td><a href = "#user-content-fn-508f0f49">&lt;H&gt;HeapReserve</a></td><td>heap, reserve</td></tr>
 
@@ -232,14 +232,14 @@ Copies `node` into `heap`\.
 
 ### <a id = "user-content-fn-d587663d" name = "user-content-fn-d587663d">&lt;H&gt;HeapPeekValue</a> ###
 
-<code>static &lt;PH&gt;Value <strong>&lt;H&gt;HeapPeekValue</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code>
+<code>static &lt;PH&gt;PValue <strong>&lt;H&gt;HeapPeekValue</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code>
 
-This returns a child of that accessible from [&lt;H&gt;HeapPeek](#user-content-fn-12af7c44), for convenience with some applications\.
+This returns the value of the [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f), a child of [&lt;H&gt;HeapPeek](#user-content-fn-12af7c44), for convenience with some applications\.
 
  * Parameter: _heap_  
    If null, returns null\.
  * Return:  
-   Lowest [&lt;PH&gt;Value](#user-content-typedef-4d915774) in `heap` element according to `HEAP_COMPARE`, \(which may be null,\) or null or zero if the heap is empty\.
+   Lowest [&lt;PH&gt;Value](#user-content-typedef-4d915774) in `heap` element according to `HEAP_COMPARE`; if the heap is empty, null or zero\.
  * Order:  
    &#927;\(1\)
 
@@ -248,14 +248,14 @@ This returns a child of that accessible from [&lt;H&gt;HeapPeek](#user-content-f
 
 ### <a id = "user-content-fn-a1a31b62" name = "user-content-fn-a1a31b62">&lt;H&gt;HeapPop</a> ###
 
-<code>static &lt;PH&gt;Value <strong>&lt;H&gt;HeapPop</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code>
+<code>static &lt;PH&gt;PValue <strong>&lt;H&gt;HeapPop</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code>
 
 Remove the lowest element according to `HEAP_COMPARE`\.
 
  * Parameter: _heap_  
    If null, returns false\.
  * Return:  
-   The [&lt;PH&gt;Value](#user-content-typedef-4d915774) of the element that was removed; if the heap is empty, null or zero\.
+   The [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02) of the element that was removed; if the heap is empty, null or zero\.
  * Order:  
    &#927;\(log `size`\)
 
