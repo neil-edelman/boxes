@@ -50,7 +50,9 @@
 
 <p><img alt = "Example of Array" src = "web/array.png" width = 310 height = 262></p>
 
-<p><a href = "#tag:&lt;T&gt;Array">&lt;T&gt;Array</a> is a dynamic array that stores contiguous <code>&lt;T&gt;</code>, which must be set using <code>ARRAY_TYPE</code>. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost. When adding new elements, the elements may change memory location to fit. It is therefore unstable; any pointers to this memory may become stale and unusable.</p>
+<p><a href = "#tag:&lt;T&gt;Array">&lt;T&gt;Array</a> is a dynamic array that stores contiguous <code>&lt;T&gt;</code>, which must be set using <code>ARRAY_TYPE</code>. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost. When adding new elements, the elements may change memory location to fit. It is therefore unstable; any pointers to this memory may become stale and unusable on expansion.</p>
+
+<p>The storage is implicit, <a href = "#fn:&lt;T&gt;ArrayGet">&lt;T&gt;ArrayGet</a> <code>+ index</code>, therefore different sized polymorphic objects must use an extra level of indirection.</p>
 
 <p><code>&lt;T&gt;Array</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is included in this file; to stop the debug assertions, use <code>#define NDEBUG</code> before <code>assert.h</code>.</p>
 

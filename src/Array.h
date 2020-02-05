@@ -9,7 +9,11 @@
  set using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal
  to the size, resizing may be necessary and incurs amortised cost. When adding
  new elements, the elements may change memory location to fit. It is therefore
- unstable; any pointers to this memory may become stale and unusable.
+ unstable; any pointers to this memory may become stale and unusable on
+ expansion.
+
+ The storage is implicit, <fn:<T>ArrayGet> `+ index`, therefore different
+ sized polymorphic objects must use an extra level of indirection.
 
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -702,7 +706,7 @@ static void PT_(unused_set)(void) {
 /** Some newer compilers are smart. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
-/* Un-define all macros. */
+/* Un-define macros. */
 #undef CAT
 #undef CAT_
 #undef PCAT
