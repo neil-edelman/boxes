@@ -13,7 +13,7 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>HeapNode>Array` with implicit heap properties; as such, one needs to have `Array.h` file in the same directory\.
+A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>HeapNode>Array` with implicit heap properties, with a cached [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) and an optional [&lt;PH&gt;Value](#user-content-typedef-4d915774) payload; as such, one needs to have `Array.h` file in the same directory\.
 
 `<H>Heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
@@ -22,9 +22,9 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
    `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) associated therewith\. `HEAP_NAME` is required but `HEAP_TYPE` defaults to `unsigned int` if not specified\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: HEAP\_COMPARE  
-   A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash using less\-then on `HEAP_TYPE`; as such, if `HEAP_TYPE` is changed, this may be required\.
+   A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, if `HEAP_TYPE` is changed, this may be required\.
  * Parameter: HEAP\_VALUE  
-   This is [&lt;PH&gt;Value](#user-content-typedef-4d915774), the optional payload that is stored as a reference in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\.
+   Optional payload [&lt;PH&gt;Value](#user-content-typedef-4d915774), that is stored as a reference in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f); thus, declaring it is sufficent, it doesn't need to be defined\.
  * Parameter: HEAP\_TO\_STRING  
    Optional print function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3); makes available [&lt;H&gt;HeapToString](#user-content-fn-2dd2ccc3)\.
  * Parameter: HEAP\_TEST  
@@ -33,6 +33,8 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
    C89
  * Dependancies:  
    [Array.h](../Array/)
+ * Caveat:  
+   Add decrease priority\.
  * See also:  
    [Array](https://github.com/neil-edelman/Array); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
@@ -43,7 +45,7 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
 
 <code>typedef HEAP_TYPE <strong>&lt;PH&gt;Priority</strong>;</code>
 
-Valid type used for caching priority set by `HEAP_TYPE` and used in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. Defaults to `unsigned int`\.
+Valid assignable type used for priority in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. Defaults to `unsigned int` if not set by `HEAP_TYPE`\.
 
 
 
@@ -59,7 +61,7 @@ Returns a positive result if `a` comes after `b`, inducing a strict pre\-order o
 
 <code>typedef HEAP_VALUE <strong>&lt;PH&gt;Value</strong>;</code>
 
-If `HEAP_VALUE` is set, a valid tag type, used in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\.
+If `HEAP_VALUE` is set, a valid tag type, used as a pointer in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\.
 
 
 
@@ -67,7 +69,7 @@ If `HEAP_VALUE` is set, a valid tag type, used in [&lt;H&gt;HeapNode](#user-cont
 
 <code>typedef &lt;PH&gt;Value *<strong>&lt;PH&gt;PValue</strong>;</code>
 
-If `HEAP_VALUE` is set, a pointer to the [&lt;PH&gt;Value](#user-content-typedef-4d915774); may be null if one has put null values in or if the node is null, otherwise a boolean `int` that is true \(one\) if the value was there and false \(zero\) if not\.
+If `HEAP_VALUE` is set, a pointer to the [&lt;PH&gt;Value](#user-content-typedef-4d915774), otherwise a boolean `int` that is true \(one\) if the value exists and false \(zero\) if not\.
 
 
 
@@ -91,9 +93,9 @@ Operates by side\-effects\. Used for `HEAP_TEST`\.
 
 ### <a id = "user-content-tag-ba24d32f" name = "user-content-tag-ba24d32f">&lt;H&gt;HeapNode</a> ###
 
-<code>struct <strong>&lt;H&gt;HeapNode</strong>;</code>
+<code>struct <strong>&lt;H&gt;HeapNode</strong> { &lt;PH&gt;Priority priority; &lt;PH&gt;PValue value; };</code>
 
-Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, which can be set by `HASH_TYPE`\. If `HASH_VALUE` is set, a [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02) called `value`\.
+Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, which can be set by `HASH_TYPE`\. If `HASH_VALUE` is set, also stores a pointer [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02) called `value`\.
 
 
 
@@ -176,7 +178,7 @@ Initialises `heap` to be idle\.
 <code>static size_t <strong>&lt;H&gt;HeapSize</strong>(const struct &lt;H&gt;Heap *const <em>heap</em>)</code>
 
  * Parameter: _heap_  
-   If null, returns zero;
+   If null, returns zero\.
  * Return:  
    The size of `heap`\.
  * Order:  
@@ -234,7 +236,7 @@ Copies `node` into `heap`\.
 
 <code>static &lt;PH&gt;PValue <strong>&lt;H&gt;HeapPeekValue</strong>(struct &lt;H&gt;Heap *const <em>heap</em>)</code>
 
-This returns the value of the [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f), a child of [&lt;H&gt;HeapPeek](#user-content-fn-12af7c44), for convenience with some applications\.
+This returns the [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02) of the [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f) returned by [&lt;H&gt;HeapPeek](#user-content-fn-12af7c44), for convenience with some applications\. If `HEAP_VALUE`, this is a child of [&lt;H&gt;HeapPeek](#user-content-fn-12af7c44), otherwise it is a boolean `int`\.
 
  * Parameter: _heap_  
    If null, returns null\.
@@ -287,7 +289,7 @@ Ensures that `heap` is `reserve` capacity beyond the elements already in the hea
 
 <code>static int <strong>&lt;H&gt;HeapBuffer</strong>(struct &lt;H&gt;Heap *const <em>heap</em>, const size_t <em>add</em>)</code>
 
-Adds `add` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https://scholar.google.ca/scholar?q=Doberkat%2C+1984%2C+Floyd) to sift\-down all the internal nodes of heap\. As such, this function is most efficient on a heap of zero size, and becomes more inefficient as the existing heap grows\. For heaps that are already in use, it may be better to add each element individually, resulting in a run\-time of &#927;\(`new elements` &#183; log `size`\)\.
+Adds and heapifies `add` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https://scholar.google.ca/scholar?q=Doberkat%2C+1984%2C+Floyd) to sift\-down all the internal nodes of heap, including any previous elements\. As such, this function is most efficient on a heap of zero size, and becomes more inefficient as the existing heap grows\. For heaps that are already in use, it may be better to add each element individually, resulting in a run\-time of &#927;\(`new elements` &#183; log `size`\)\.
 
  * Parameter: _heap_  
    If null, returns null\.
@@ -296,7 +298,7 @@ Adds `add` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https://scholar.goo
  * Return:  
    Success\.
  * Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\. If [&lt;H&gt;HeapReserve](#user-content-fn-508f0f49) has been successful in reserving at least `add` elements, one is guaranteed success\. Practically, it really doesn't make any sense to call this without calling [&lt;H&gt;HeapReserve](#user-content-fn-508f0f49) because then one would be inserting un\-initialised values on the heap\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\. If [&lt;H&gt;HeapReserve](#user-content-fn-508f0f49) has been successful in reserving at least `add` elements, one is guaranteed success\. Practically, it really doesn't make any sense to call this without calling [&lt;H&gt;HeapReserve](#user-content-fn-508f0f49) and setting the values, because then one would be inserting un\-initialised values on the heap\.
  * Exceptional return: realloc  
  * Order:  
    &#927;\(`new size`\)

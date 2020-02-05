@@ -8,8 +8,9 @@
  A <tag:<H>Heap> is a priority queue built from <tag:<H>HeapNode>. It is a
  binary heap, proposed by <Williams, 1964, Heapsort, p. 347> and using
  terminology of <Knuth, 1973, Sorting>. Internally, it is an
- `<<H>HeapNode>Array` with implicit heap properties; as such, one needs to have
- `Array.h` file in the same directory.
+ `<<H>HeapNode>Array` with implicit heap properties, with a cached
+ <typedef:<PH>Priority> and an optional <typedef:<PH>Value> payload; as such,
+ one needs to have `Array.h` file in the same directory.
 
  `<H>Heap` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
@@ -23,13 +24,13 @@
  whose names are prefixed in a manner to avoid collisions.
 
  @param[HEAP_COMPARE]
- A function satisfying <typedef:<PH>Compare>. Defaults to minimum-hash using
- less-then on `HEAP_TYPE`; as such, if `HEAP_TYPE` is changed, this may be
- required.
+ A function satisfying <typedef:<PH>Compare>. Defaults to minimum-hash on
+ `HEAP_TYPE`; as such, if `HEAP_TYPE` is changed, this may be required.
 
  @param[HEAP_VALUE]
- This is <typedef:<PH>Value>, the optional payload that is stored as a
- reference in <tag:<H>HeapNode>.
+ Optional payload <typedef:<PH>Value>, that is stored as a reference in
+ <tag:<H>HeapNode>; thus, declaring it is sufficent, it doesn't need to be
+ defined.
 
  @param[HEAP_TO_STRING]
  Optional print function implementing <typedef:<PH>ToString>; makes available
@@ -46,7 +47,8 @@
  @cf [List](https://github.com/neil-edelman/List)
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set) */
+ @cf [Set](https://github.com/neil-edelman/Set)
+ @fixme Add decrease priority. */
 
 /* Check defines. */
 #ifndef HEAP_NAME
@@ -82,8 +84,8 @@
 #define H_(thing) CAT(HEAP_NAME, thing)
 #define PH_(thing) PCAT(heap, PCAT(HEAP_NAME, thing))
 
-/** Valid type used for caching priority set by `HEAP_TYPE` and used in
- <tag:<H>HeapNode>. Defaults to `unsigned int`. */
+/** Valid assignable type used for priority in <tag:<H>HeapNode>. Defaults to
+ `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(Priority);
 
 /** Returns a positive result if `a` comes after `b`, inducing a strict
@@ -104,19 +106,20 @@ static int PH_(default_compare)(const PH_(Priority) a, const PH_(Priority) b) {
 static const PH_(Compare) PH_(compare) = (HEAP_COMPARE);
 
 #ifdef HEAP_VALUE /* <!-- value */
-/** If `HEAP_VALUE` is set, a valid tag type, used in <tag:<H>HeapNode>. */
+/** If `HEAP_VALUE` is set, a valid tag type, used as a pointer in
+ <tag:<H>HeapNode>. */
 typedef HEAP_VALUE PH_(Value);
-/** If `HEAP_VALUE` is set, a pointer to the <typedef:<PH>Value>; may be null
- if one has put null values in or if the node is null, otherwise a boolean
- `int` that is true (one) if the value was there and false (zero) if not. */
+/** If `HEAP_VALUE` is set, a pointer to the <typedef:<PH>Value>, otherwise a
+ boolean `int` that is true (one) if the value exists and false (zero) if
+ not. */
 typedef PH_(Value) *PH_(PValue);
 #else /* value --><!-- !value */
 typedef int PH_(PValue);
 #endif /* value --> */
 
 /** Stores a <typedef:<PH>Priority> as `priority`, which can be set by
- `HASH_TYPE`. If `HASH_VALUE` is set, a <typedef:<PH>PValue> called `value`. */
-struct H_(HeapNode);
+ `HASH_TYPE`. If `HASH_VALUE` is set, also stores a pointer
+ <typedef:<PH>PValue> called `value`. */
 struct H_(HeapNode) {
 	PH_(Priority) priority;
 #ifdef HEAP_VALUE /* <!-- value */
@@ -292,7 +295,7 @@ static void H_(Heap)(struct H_(Heap) *const heap) {
 	if(heap) PT_(array)(&heap->a);
 }
 
-/** @param[heap] If null, returns zero;
+/** @param[heap] If null, returns zero.
  @return The size of `heap`.
  @order \Theta(1)
  @allow */
@@ -329,8 +332,9 @@ static struct H_(HeapNode) *H_(HeapPeek)(struct H_(Heap) *const heap) {
 	return heap ? PH_(peek)(heap) : 0;
 }
 
-/** This returns the value of the <tag:<H>HeapNode>, a child of
- <fn:<H>HeapPeek>, for convenience with some applications.
+/** This returns the <typedef:<PH>PValue> of the <tag:<H>HeapNode> returned by
+ <fn:<H>HeapPeek>, for convenience with some applications. If `HEAP_VALUE`,
+ this is a child of <fn:<H>HeapPeek>, otherwise it is a boolean `int`.
  @param[heap] If null, returns null.
  @return Lowest <typedef:<PH>Value> in `heap` element according to
  `HEAP_COMPARE`; if the heap is empty, null or zero.
@@ -372,11 +376,12 @@ static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
 	return heap->a.data + heap->a.size;
 }
 
-/** Adds `add` elements to `heap`. Uses <Doberkat, 1984, Floyd> to sift-down
- all the internal nodes of heap. As such, this function is most efficient on a
- heap of zero size, and becomes more inefficient as the existing heap grows.
- For heaps that are already in use, it may be better to add each element
- individually, resulting in a run-time of \O(`new elements` \cdot log `size`).
+/** Adds and heapifies `add` elements to `heap`. Uses <Doberkat, 1984, Floyd>
+ to sift-down all the internal nodes of heap, including any previous elements.
+ As such, this function is most efficient on a heap of zero size, and becomes
+ more inefficient as the existing heap grows. For heaps that are already in
+ use, it may be better to add each element individually, resulting in a
+ run-time of \O(`new elements` \cdot log `size`).
  @param[heap] If null, returns null.
  @param[add] If zero, returns null.
  @return Success.
@@ -385,8 +390,8 @@ static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). If
  <fn:<H>HeapReserve> has been successful in reserving at least `add` elements,
  one is guaranteed success. Practically, it really doesn't make any sense to
- call this without calling <fn:<H>HeapReserve> because then one would be
- inserting un-initialised values on the heap.
+ call this without calling <fn:<H>HeapReserve> and setting the values, because
+ then one would be inserting un-initialised values on the heap.
  @throws[realloc]
  @order \O(`new size`)
  @allow */
