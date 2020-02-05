@@ -38,7 +38,7 @@ static void orc_to_string(const struct OrcHeapNode *, char (*)[12]);
 static void test_orc(struct OrcHeapNode *, void *);
 
 #define HEAP_NAME Orc
-#define HEAP_TYPE struct Orc
+#define HEAP_VALUE struct Orc
 #define HEAP_TO_STRING &orc_to_string
 #define HEAP_TEST &test_orc
 #include "../src/Heap.h"

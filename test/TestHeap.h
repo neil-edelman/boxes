@@ -27,8 +27,8 @@ static void PH_(graph)(const struct H_(Heap) *const heap,
 		"\trankdir = BT;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\tHash [label=\"{\\<" QUOTE(HEAP_NAME) "\\>Hash: "
-#ifdef HEAP_TYPE
-		QUOTE(HEAP_TYPE)
+#ifdef HEAP_VALUE
+		QUOTE(HEAP_VALUE)
 #else
 		"without value"
 #endif
@@ -77,7 +77,7 @@ static void PH_(valid)(const struct H_(Heap) *const heap) {
 static void PH_(test_basic)(void *const param) {
 	struct H_(Heap) heap = HEAP_IDLE;
 	struct H_(HeapNode) *node, add;
-	PH_(Value) v, result;
+	PH_(PValue) v, result;
 	PH_(Priority) last_priority;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i;
@@ -183,11 +183,12 @@ static void PH_(test_basic)(void *const param) {
  @allow */
 static void H_(HeapTest)(void *const param) {
 	printf("<" QUOTE(HEAP_NAME) ">Heap"
-#ifdef HEAP_TYPE
 		" of type <" QUOTE(HEAP_TYPE) ">"
+		" was created using:"
+		" HEAP_COMPARE<" QUOTE(HEAP_COMPARE) ">;"
+#ifdef HEAP_VALUE
+		" HEAP_VALUE<" QUOTE(HEAP_VALUE) ">;"
 #endif
-		" was created using: HEAP_COMPARE<" QUOTE(HEAP_COMPARE) ">;"
-		" HEAP_PRIORITY<" QUOTE(HEAP_PRIORITY) ">;"
 		" HEAP_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">;"
 		" HEAP_TEST <" QUOTE(HEAP_TEST) ">;"
 		" testing:\n");

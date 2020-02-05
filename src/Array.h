@@ -702,7 +702,7 @@ static void PT_(unused_set)(void) {
 /** Some newer compilers are smart. */
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 
-/* Un-define all macros. */
+/* Un-define macros. */
 #undef CAT
 #undef CAT_
 #undef PCAT

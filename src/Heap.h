@@ -7,8 +7,8 @@
 
  A <tag:<H>Heap> is a priority queue built from <tag:<H>HeapNode>. It is a
  binary heap, proposed by <Williams, 1964, Heapsort, p. 347> and using
- terminology of <Knuth, 1973, Sorting>. Internally, it is an array
- `<<H>HeapNode>Array` with heap properties; as such, one needs to have the
+ terminology of <Knuth, 1973, Sorting>. Internally, it is an
+ `<<H>HeapNode>Array` with implicit heap properties; as such, one needs to have
  `Array.h` file in the same directory.
 
  `<H>Heap` is not synchronised. Errors are returned with `errno`. The
@@ -17,21 +17,19 @@
  `#define NDEBUG` before inclusion.
 
  @param[HEAP_NAME, HEAP_TYPE]
- `<H>` that satisfies `C` naming conventions when mangled and an optional
- <typedef:<PH>Type> associated therewith; `HEAP_NAME` is required. `<PH>` is
- private, whose names are prefixed in a manner to avoid collisions; any should
- be re-defined prior to use elsewhere. Note that `HEAP_TYPE` is only used by
- reference; it can be forward-declared or left out entirely, and the
- implementation is
- [responsble for it's storage](https://github.com/neil-edelman/Pool).
+ `<H>` that satisfies `C` naming conventions when mangled and an assignable
+ type <typedef:<PH>Priority> associated therewith. `HEAP_NAME` is required but
+ `HEAP_TYPE` defaults to `unsigned int` if not specified. `<PH>` is private,
+ whose names are prefixed in a manner to avoid collisions.
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>Compare>. Defaults to minimum-hash using
- less-then on `HEAP_PRIORITY`.
+ less-then on `HEAP_TYPE`; as such, if `HEAP_TYPE` is changed, this may be
+ required.
 
- @param[HEAP_PRIORITY]
- This is <typedef:<PH>Priority> and defaults to `unsigned int`. Gets combined
- with `HEAP_TYPE` (if it exists) to form <tag:<H>HeapNode>.
+ @param[HEAP_VALUE]
+ This is <typedef:<PH>Value>, the optional payload that is stored as a
+ reference in <tag:<H>HeapNode>.
 
  @param[HEAP_TO_STRING]
  Optional print function implementing <typedef:<PH>ToString>; makes available
@@ -60,8 +58,8 @@
 #if defined(H_) || defined(PH_)
 #error H_ and PH_ cannot be defined.
 #endif
-#ifndef HEAP_PRIORITY
-#define HEAP_PRIORITY unsigned
+#ifndef HEAP_TYPE
+#define HEAP_TYPE unsigned
 #endif
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -84,18 +82,18 @@
 #define H_(thing) CAT(HEAP_NAME, thing)
 #define PH_(thing) PCAT(heap, PCAT(HEAP_NAME, thing))
 
-/** Valid type used for caching priority, used in <tag:<H>HeapNode>. Defaults
- to `unsigned int`. */
-typedef HEAP_PRIORITY PH_(Priority);
+/** Valid type used for caching priority set by `HEAP_TYPE` and used in
+ <tag:<H>HeapNode>. Defaults to `unsigned int`. */
+typedef HEAP_TYPE PH_(Priority);
 
-/** Returns a positive result if `a` comes after `b`, inducing a pre-order
- of `a` with respect to `b`; this is compatible, but less strict then the
- comparators from `bsearch` and `qsort`; it only needs to divide entries into
- two instead of three categories. The default `HEAP_COMPARE` is `a > b`, which
- makes a minimum-hash. */
-typedef int (*PH_(Compare))(const PH_(Priority), const PH_(Priority));
+/** Returns a positive result if `a` comes after `b`, inducing a strict
+ pre-order of `a` with respect to `b`; this is compatible, but less strict then
+ the comparators from `bsearch` and `qsort`; it only needs to divide entries
+ into two instead of three categories. The default `HEAP_COMPARE` is `a > b`,
+ which makes a minimum-hash. */
+typedef int (*PH_(Compare))(const PH_(Priority) a, const PH_(Priority) b);
 #ifndef HEAP_COMPARE /* <!-- !cmp */
-/** `a` is less than `b`. */
+/** Pre-order with `a` and `b`. */
 static int PH_(default_compare)(const PH_(Priority) a, const PH_(Priority) b) {
 	return a > b;
 }
@@ -105,31 +103,25 @@ static int PH_(default_compare)(const PH_(Priority) a, const PH_(Priority) b) {
  <typedef:<PH>Compare>, if defined. */
 static const PH_(Compare) PH_(compare) = (HEAP_COMPARE);
 
-#ifdef HEAP_TYPE /* <!-- type */
-/** If `HEAP_TYPE`, a valid tag type set by `HEAP_TYPE`, used in
- <tag:<H>HeapNode>. */
-typedef HEAP_TYPE PH_(Type);
-/** This represents the value of the node. If `HEAP_TYPE`, a pointer to the
- <typedef:<PH>Type>; may be null if one has put null values in or if the node
- is null. If not `HEAP_TYPE`, a boolean `int` value that is true (one) if the
- value was there and false (zero) if not. */
-typedef PH_(Type) *PH_(Value);
-#else /* type --><!-- !type */
-typedef int PH_(Value);
-#endif /* type --> */
+#ifdef HEAP_VALUE /* <!-- value */
+/** If `HEAP_VALUE` is set, a valid tag type, used in <tag:<H>HeapNode>. */
+typedef HEAP_VALUE PH_(Value);
+/** If `HEAP_VALUE` is set, a pointer to the <typedef:<PH>Value>; may be null
+ if one has put null values in or if the node is null, otherwise a boolean
+ `int` that is true (one) if the value was there and false (zero) if not. */
+typedef PH_(Value) *PH_(PValue);
+#else /* value --><!-- !value */
+typedef int PH_(PValue);
+#endif /* value --> */
 
-/** Stores a <typedef:<PH>Priority> as `priority`, and, if `HASH_TYPE`, a
- <typedef:<PH>Type> pointer called `value`. `value` is just the payload, if the
- `value` has <typedef:<PH>Priority> in it, (as most other heap
- implementations,) one has to cache the the sub-structure (default `unsigned
- int`) of value to the `priority` such that the `priority` does not need a
- second de-reference. */
+/** Stores a <typedef:<PH>Priority> as `priority`, which can be set by
+ `HASH_TYPE`. If `HASH_VALUE` is set, a <typedef:<PH>PValue> called `value`. */
 struct H_(HeapNode);
 struct H_(HeapNode) {
 	PH_(Priority) priority;
-#ifdef HEAP_TYPE
-	PH_(Value) value;
-#endif
+#ifdef HEAP_VALUE /* <!-- value */
+	PH_(PValue) value;
+#endif /* value --> */
 };
 
 /* This relies on `Array.h` which must be in the same directory. */
@@ -150,18 +142,18 @@ struct H_(Heap) { struct H_(HeapNodeArray) a; };
 #define HEAP_IDLE { { 0, 0, 0, 0 } }
 #endif /* !zero --> */
 
-/** Extracts the value of `node`, which must not be null. */
-static PH_(Value) PH_(value)(const struct H_(HeapNode) *const node) {
-#ifdef HEAP_TYPE /* <-- type */
+/** Extracts the <typedef:<PH>PValue> of `node`, which must not be null. */
+static PH_(PValue) PH_(value)(const struct H_(HeapNode) *const node) {
+#ifdef HEAP_VALUE /* <-- value */
 	return node->value;
-#else /* type --><!-- !type */
+#else /* value --><!-- !value */
 	(void)(node);
 	return 1;
-#endif /* !type --> */
+#endif /* !value --> */
 }
 
-/** Extracts the value of `node`, which could be null. */
-static PH_(Value) PH_(value_or_null)(const struct H_(HeapNode) *const node) {
+/** Extracts the <typedef:<PH>PValue> of `node`, which could be null. */
+static PH_(PValue) PH_(value_or_null)(const struct H_(HeapNode) *const node) {
 	return node ? PH_(value)(node) : 0;
 }
 
@@ -169,9 +161,9 @@ static PH_(Value) PH_(value_or_null)(const struct H_(HeapNode) *const node) {
 static void PH_(copy)(const struct H_(HeapNode) *const src,
 	struct H_(HeapNode) *const dest) {
 	dest->priority = src->priority;
-#ifdef HEAP_TYPE /* <!-- type */
+#ifdef HEAP_VALUE /* <!-- value */
 	dest->value = src->value;
-#endif /* type --> */
+#endif /* value --> */
 }
 
 /** Find the spot in `heap` where `node` goes and put it there.
@@ -254,8 +246,8 @@ static int PH_(add)(struct H_(Heap) *const heap,
 }
 
 /** Removes from `heap`. Must have a non-zero size. */
-static PH_(Value) PH_(remove)(struct H_(Heap) *const heap) {
-	const PH_(Value) result = PH_(value)(heap->a.data);
+static PH_(PValue) PH_(remove)(struct H_(Heap) *const heap) {
+	const PH_(PValue) result = PH_(value)(heap->a.data);
 	assert(heap);
 	if(heap->a.size > 1) {
 		PH_(sift_down)(heap);
@@ -337,24 +329,24 @@ static struct H_(HeapNode) *H_(HeapPeek)(struct H_(Heap) *const heap) {
 	return heap ? PH_(peek)(heap) : 0;
 }
 
-/** This returns a child of that accessible from <fn:<H>HeapPeek>, for
- convenience with some applications.
+/** This returns the value of the <tag:<H>HeapNode>, a child of
+ <fn:<H>HeapPeek>, for convenience with some applications.
  @param[heap] If null, returns null.
  @return Lowest <typedef:<PH>Value> in `heap` element according to
- `HEAP_COMPARE`, (which may be null,) or null or zero if the heap is empty.
+ `HEAP_COMPARE`; if the heap is empty, null or zero.
  @order \O(1)
  @allow */
-static PH_(Value) H_(HeapPeekValue)(struct H_(Heap) *const heap) {
+static PH_(PValue) H_(HeapPeekValue)(struct H_(Heap) *const heap) {
 	return heap ? PH_(value_or_null)(PH_(peek)(heap)) : 0;
 }
 
 /** Remove the lowest element according to `HEAP_COMPARE`.
  @param[heap] If null, returns false.
- @return The <typedef:<PH>Value> of the element that was removed; if the heap
+ @return The <typedef:<PH>PValue> of the element that was removed; if the heap
  is empty, null or zero.
  @order \O(log `size`)
  @allow */
-static PH_(Value) H_(HeapPop)(struct H_(Heap) *const heap) {
+static PH_(PValue) H_(HeapPop)(struct H_(Heap) *const heap) {
 	return heap && heap->a.size ? PH_(remove)(heap) : 0;
 }
 
@@ -434,7 +426,7 @@ static const char *H_(HeapToString)(const struct H_(Heap) *const heap) {
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
 	null_len = strlen(null), idle_len = strlen(idle);
 	size_t i;
-	PT_(Type) *e, *e_end;
+	struct H_(HeapNode) *e, *e_end;
 	int is_first = 1;
 	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
 		   && buffer_size >= 1 + 11 + ellipsis_end_len + 1
@@ -519,10 +511,10 @@ static void PH_(unused_coda)(void) { PH_(unused_set)(); }
 #undef H_
 #undef PH_
 #undef PT_
-#undef HEAP_PRIORITY
-#undef HEAP_COMPARE
-#ifdef HEAP_TYPE
 #undef HEAP_TYPE
+#undef HEAP_COMPARE
+#ifdef HEAP_VALUE
+#undef HEAP_VALUE
 #endif
 #ifdef HEAP_TO_STRING
 #undef HEAP_TO_STRING
