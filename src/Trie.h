@@ -159,7 +159,7 @@ static void PN_(trie)(struct N_(Trie) *const trie)
 	{ assert(trie); PT_(array)(&trie->a); }
 
 static void PN_(trie_)(struct N_(Trie) *const trie)
-	{ assert(trie); free(&trie->a.data); PN_(trie)(trie); }
+	{ assert(trie); free(trie->a.data); PN_(trie)(trie); }
 
 /** Add a `node` to `heap`. */
 static int PN_(add)(struct N_(Trie) *const trie, const PN_(Type) *const data) {
