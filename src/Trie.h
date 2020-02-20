@@ -40,6 +40,9 @@
  @cf [Pool](https://github.com/neil-edelman/Pool)
  @cf [Set](https://github.com/neil-edelman/Set) */
 
+#include <stddef.h>
+#include <string.h>
+
 /* Check defines. */
 #ifndef TRIE_NAME
 #error Generic name TRIE_NAME undefined.
@@ -52,7 +55,7 @@
 #error N_ and PN_ cannot be defined.
 #endif
 #ifndef TRIE_TYPE /* <!-- !type */
-#define TRIE_TYPE char
+#define TRIE_TYPE const char
 #endif /* !type --> */
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -79,7 +82,7 @@
 typedef TRIE_TYPE PN_(Type);
 
 /** Responsible for picking out the null-terminated string. */
-typedef const char *(*PN_(Key))(const PN_(Type) *);
+typedef const char *(*PN_(Key))(PN_(Type) *);
 #ifndef TRIE_KEY /* <!-- !key */
 #define TRIE_KEY &trie_raw
 #ifndef TRIE_RAW /* <!-- !raw */
@@ -131,7 +134,7 @@ static int strcmp_bits(const char *a, const char *b,
 union PN_(TrieNode) {
 	struct TrieInternal branch;
 	size_t on; /* Plus-reference; 2-branching, off is implied +2. */
-	const PN_(Type) *leaf; /* External reference. */
+	PN_(Type) *leaf; /* External reference. */
 };
 
 #define ARRAY_NAME PN_(TrieNode)
@@ -161,26 +164,78 @@ static void PN_(trie)(struct N_(Trie) *const trie)
 static void PN_(trie_)(struct N_(Trie) *const trie)
 	{ assert(trie); free(trie->a.data); PN_(trie)(trie); }
 
-/** Add a `node` to `heap`. */
-static int PN_(add)(struct N_(Trie) *const trie, const PN_(Type) *const data) {
-	struct PN_(TrieNodeArray) *const a = &trie->a;
+/** When one knows that `node` is a branch, follows it to the end and gets an
+ example key for comparison, used for inserting. One could have returned any
+ key from the branch, but this is the most cache-efficient on average. */
+static const char *PN_(branch_key)(const union PN_(TrieNode) *node) {
+	while(node->branch.is_branch[0]) node += 2;
+	node += 2;
+	return PN_(to_key)(node->leaf);
+}
+
+/** Add `data` to `trie`. This assumes that the key of `data` is not the same
+ as any in `trie`, so make sure before calling this or else it may crash, (it
+ doesn't do `NUL` checks.) */
+static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	union PN_(TrieNode) *n, *new_n;
+	const char *const data_key = PN_(to_key)(data), *cmp_key;
+	unsigned bit = 0;
+	int cmp;
 	assert(trie && data);
-	if(a->size == 0) {
+	if(trie->a.size == 0) {
 		/* Empty. */
 		if(!(new_n = PT_(new)(&trie->a, 0))) return 0;
 		new_n->leaf = data;
-	} else if(a->size == 1) {
+	} else if(trie->a.size == 1) {
+		if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
+		trie->a.size += 3;
 		/* One leaf. */
-		n = a->data;
-		
+		n = trie->a.data;
+		cmp_key = PN_(to_key)(n->leaf);
+		while((cmp = trie_strcmp_bit(data_key, cmp_key, bit)) == 0) bit++;
+		printf("data_key = %s; cmp_key = %s; bit %u cmp %d.\n",
+			data_key, cmp_key, bit, cmp);
+		if(cmp < 0) n[2].leaf = data, n[3].leaf = n[0].leaf;
+		else        n[2].leaf = n[0].leaf, n[3].leaf = data;
+		n[0].branch.bit = bit; /* Overwriting. */
+		n[0].branch.is_branch[0] = n[0].branch.is_branch[1] = 0;
+		n[1].on = 2;
 	} else {
-		assert((a->size - 1) % 3 == 0 && a->size < (size_t)-3);
-		if(!PT_(reserve)(a, a->size + 3, 0)) return 0;
-		
+		assert((trie->a.size - 1) % 3 == 0 && trie->a.size < (size_t)-3);
+		n = trie->a.data;
+		cmp_key = PN_(branch_key)(n);
+		if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
 		assert(0);
 	}
 	return 1;
+}
+
+/** We could keep a stack for `O(n)` traversal, but `O(n)` space; maybe there's
+ some devastatingly clever trick? */
+struct TrieIterator { struct N_(Trie) *trie; size_t left, leaf; };
+
+static void PN_(begin_iterate)(struct N_(Trie) *trie,
+	struct TrieIterator *const it) {
+	union PN_(TrieNode) *node;
+	assert(it);
+	it->trie = trie;
+	if(!trie || !trie->a.size)
+		{ it->left = 0, it->leaf = 0; return; }
+	if(trie->a.size == 1)
+		{ it->left = 1, it->leaf = 0; return; }
+	assert((trie->a.size - 1) % 3 == 0);
+	it->left = 1 + (trie->a.size - 1) / 3;
+	for(node = trie->a.data; node->branch.is_branch[0]; node += 2);
+	it->leaf = node + 2 - trie->a.data;
+}
+
+static PN_(Type) *PN_(iterate)(struct TrieIterator *const it) {
+	PN_(Type) *answer;
+	assert(it);
+	if(!it->left) return 0;
+	answer = it->trie->a.data[it->leaf].leaf;
+	it->left--;
+	return answer;
 }
 
 
@@ -269,8 +324,7 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
  @throws[realloc]
  @order \O(log `size`)
  @allow */
-static int N_(TrieAdd)(struct N_(Trie) *const trie,
-	const PN_(Type) *const data) {
+static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	return trie ? PN_(add)(trie, data) : 0;
 }
 

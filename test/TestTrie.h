@@ -11,7 +11,7 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** @fixme */
-typedef void (*PN_(Action))(const PN_(Type) *);
+typedef void (*PN_(Action))(PN_(Type) *);
 
 /* `TRIE_TEST` must be a function that implements `<PN>Action`. */
 static const PN_(Action) PN_(filler) = (TRIE_TEST);
