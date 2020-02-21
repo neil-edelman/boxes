@@ -32,10 +32,13 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	if(trie->a.data) {
 		union PN_(TrieNode) *n, *n_end;
 		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
-		if(trie->a.size) fprintf(fp, "\tn0 -> Hash [dir = back];\n");
+		if(!trie->a.size) goto end_nodes;
+		fprintf(fp, "\tn0 -> Hash [dir = back];\n");
 		fprintf(fp, "\tedge [style = dashed];\n"
 			"\tsubgraph cluster_data {\n"
 			"\t\tstyle=filled;\n");
+		if(trie->a.size == 1) {
+		}
 		for(n = trie->a.data, n_end = n + trie->a.size; n < n_end; n++) {
 			fprintf(fp, "\t\tn%lu [label=\"%s\"];\n",
 				(unsigned long)(n - trie->a.data), PN_(to_key)(n->leaf));

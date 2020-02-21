@@ -100,8 +100,8 @@ static const PN_(Key) PN_(to_key) = (TRIE_KEY);
 
 /** An internal node; assume takes up one register for speed. */
 struct TrieInternal {
-	unsigned bit; /* In string, thus `UINT_MAX/8 - 1` maximum `strlen`. */
-	unsigned char is_branch[2]; /* Children internal node. */
+	unsigned bit;
+	unsigned char left_child_branch, right_child_branch;
 };
 /* assert(sizeof(struct TrieInternal) <= sizeof(size_t)); */
 
@@ -112,20 +112,6 @@ static int trie_strcmp_bit(const char *a, const char *b,
 	return (a[byte] & mask) - (b[byte] & mask);
 }
 
-#if 0
-static int strcmp_bits(const char *a, const char *b,
-	const unsigned low, const unsigned high) {
-	unsigned char x, y;
-	for( ; ; ) {
-		x = (unsigned char)*a;
-		y = (unsigned char)*b;
-		if(x == '\0' || x != y) break;
-		a++, b++;
-	}
-	return x - y;
-}
-#endif
-
 #endif /* idempotent --> */
 
 
@@ -133,7 +119,7 @@ static int strcmp_bits(const char *a, const char *b,
 /** This can be an internal node, an additive self-reference, or leaf. */
 union PN_(TrieNode) {
 	struct TrieInternal branch;
-	size_t on; /* Plus-reference; 2-branching, off is implied +2. */
+	size_t on_offset; /* 2-branching, off is always implied +2. */
 	PN_(Type) *leaf; /* External reference. */
 };
 
@@ -156,11 +142,36 @@ struct N_(Trie) { struct PN_(TrieNodeArray) a; };
 
 
 
+static PN_(Type) *PN_(iterate)(struct N_(Trie) *const trie, size_t *const it) {
+	struct PN_(TrieNodeArray) *a;
+	size_t target, n, on;
+	int branch;
+	assert(it);
+	/* No trie or done iterations. */
+	if(!trie || (a = &trie->a, target = *it, target >= a->size)) return 0;
+	/* Special case of a trie with size one leaf. */
+	if(a->size == 1) { printf("1 leaf\n"), *it = 1; return a->data[0].leaf; }
+	printf("target = %lu\n", target);
+	/* Start at the top and traverse internal nodes until we hit a leaf. */
+	n = 0;
+	do {
+		on = n + 1, on = on + a->data[on].on_offset;
+		if(on > target) { /* Take the right. */
+			branch = a->data[n].branch.left_child_branch;
+			n += 2;
+		} else { /* Take the left. */
+			branch = a->data[n].branch.right_child_branch;
+			n = on;
+		}
+	} while(branch);
+	return a->data[*it = n].leaf;
+}
 
 /** Initialises `trie`. */
 static void PN_(trie)(struct N_(Trie) *const trie)
 	{ assert(trie); PT_(array)(&trie->a); }
 
+/***/
 static void PN_(trie_)(struct N_(Trie) *const trie)
 	{ assert(trie); free(trie->a.data); PN_(trie)(trie); }
 
@@ -168,7 +179,7 @@ static void PN_(trie_)(struct N_(Trie) *const trie)
  example key for comparison, used for inserting. One could have returned any
  key from the branch, but this is the most cache-efficient on average. */
 static const char *PN_(branch_key)(const union PN_(TrieNode) *node) {
-	while(node->branch.is_branch[0]) node += 2;
+	while(node->branch.left_child_branch) node += 2;
 	node += 2;
 	return PN_(to_key)(node->leaf);
 }
@@ -198,8 +209,8 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		if(cmp < 0) n[2].leaf = data, n[3].leaf = n[0].leaf;
 		else        n[2].leaf = n[0].leaf, n[3].leaf = data;
 		n[0].branch.bit = bit; /* Overwriting. */
-		n[0].branch.is_branch[0] = n[0].branch.is_branch[1] = 0;
-		n[1].on = 2;
+		n[0].branch.left_child_branch = n[0].branch.right_child_branch = 0;
+		n[1].on_offset = 2;
 	} else {
 		assert((trie->a.size - 1) % 3 == 0 && trie->a.size < (size_t)-3);
 		n = trie->a.data;
@@ -210,33 +221,6 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	return 1;
 }
 
-/** We could keep a stack for `O(n)` traversal, but `O(n)` space; maybe there's
- some devastatingly clever trick? */
-struct TrieIterator { struct N_(Trie) *trie; size_t left, leaf; };
-
-static void PN_(begin_iterate)(struct N_(Trie) *trie,
-	struct TrieIterator *const it) {
-	union PN_(TrieNode) *node;
-	assert(it);
-	it->trie = trie;
-	if(!trie || !trie->a.size)
-		{ it->left = 0, it->leaf = 0; return; }
-	if(trie->a.size == 1)
-		{ it->left = 1, it->leaf = 0; return; }
-	assert((trie->a.size - 1) % 3 == 0);
-	it->left = 1 + (trie->a.size - 1) / 3;
-	for(node = trie->a.data; node->branch.is_branch[0]; node += 2);
-	it->leaf = node + 2 - trie->a.data;
-}
-
-static PN_(Type) *PN_(iterate)(struct TrieIterator *const it) {
-	PN_(Type) *answer;
-	assert(it);
-	if(!it->left) return 0;
-	answer = it->trie->a.data[it->leaf].leaf;
-	it->left--;
-	return answer;
-}
 
 
 
@@ -255,7 +239,7 @@ static union TrieNode *PN_(common)(const struct N_(Trie) *const trie,
 	const char *const str) {
 	union TrieNode *node;
 	unsigned bit, byte, current = 0;
-	int is_branch;
+	int child_branch;
 	assert(trie && str);
 	if(!trie->nodes.size) return 0;
 	node = trie->nodes.data;
@@ -267,14 +251,14 @@ static union TrieNode *PN_(common)(const struct N_(Trie) *const trie,
 		/* Follow the next byte difference in the trie. */
 		if(str[byte] & (1 << (bit & 7))) {
 			assert(node != trie->nodes.data + node->branch.on);
-			is_branch = node->branch.is_branch[1];
+			child_branch = node->branch.child_branch[1];
 			node = trie->nodes.data + node->branch.on;
 		} else {
-			is_branch = node->branch.is_branch[0];
+			child_branch = node->branch.child_branch[0];
 			node++;
 		}
 		assert(node < trie->nodes.data + trie->nodes.size);
-	} while(is_branch);
+	} while(child_branch);
 	return node;
 }
 
@@ -372,7 +356,7 @@ void TriePrint(struct Trie *const trie) {
  @return Prints `heap` in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
  @allow */
-static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
+static const char *N_(TrieToString)(struct N_(Trie) *const trie) {
 	static char buffers[4][256];
 	static size_t buffer_i;
 	char *const buffer = buffers[buffer_i++], *b = buffer;
@@ -383,8 +367,8 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 	*const idle = "idle";
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
 		null_len = strlen(null), idle_len = strlen(idle);
-	size_t i;
-	PT_(Type) *e, *e_end;
+	size_t i, it;
+	PN_(Type) *element;
 	const char *str;
 	int is_first = 1;
 	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
@@ -397,12 +381,12 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 	if(!trie->a.data) { memcpy(b, idle, idle_len), b += idle_len;
 		goto terminate; }
 	*b++ = start;
-	for(e = trie->a.data, e_end = trie->a.data + trie->a.size; ; ) {
+	for(it = 0; (element = PN_(iterate)(trie, &it)); it++) {
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
-		str = PN_(to_key)(e->leaf); /* fixme: don't know if it's a leaf. */
+		str = PN_(to_key)(element);
 		for(i = 0; *str != '\0' && i < 12; str++, b++, i++) *b = *str;
-		if(++e >= e_end) break;
+		/* fixme: if(++e >= e_end) break; */
 		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
 			goto ellipsis;
 	}
