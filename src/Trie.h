@@ -274,6 +274,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		memmove(node + 2, node, sizeof node * (move - node));
 		(move + 2)->leaf = data;
 		node[0].branch.bit = bit;
+		/* something here is wrong; updated prev_branch? store in memory. */
 		if(prev_branch) {
 			node[0].branch.left_branch = prev_branch->branch.left_branch;
 			prev_branch->branch.left_branch = 1;
