@@ -103,7 +103,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 				trie->a.data[n].branch.left_branch
 				? "" : " [style = dashed]",
 				(unsigned long)n, n + 1 + trie->a.data[n + 1].on_offset,
-				trie->a.data[n].branch.left_branch
+				trie->a.data[n].branch.right_branch
 				? "" : " [style = dashed]");
 		} else {
 			fprintf(fp, "\t\tn%lu [label=\"%s\"];\n",

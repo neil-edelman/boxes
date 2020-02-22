@@ -239,13 +239,14 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		/* Otherwise, follow the branch. */
 		prev_branch = node;
 		if(!trie_is_bit(data_key, bit)) {
-			node[1].on_offset += 3; /* ??? */
+			node[1].on_offset += 3; /* This is in the `memmove`. */
 			is_node_branch = node->branch.left_branch;
 			node += 2;
 		} else {
-			cmp_key = (is_node_branch = node->branch.right_branch)
-				? PN_(branch_key)(node) : PN_(to_key)(node->leaf);
+			is_node_branch = node->branch.right_branch;
 			node = node + 1 + node[1].on_offset;
+			cmp_key = is_node_branch
+				? PN_(branch_key)(node) : PN_(to_key)(node->leaf);
 		}
 	}
 	if(is_node_branch) {
@@ -272,14 +273,14 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 			sizeof node * (trie->a.data + trie->a.size - move));
 		printf("memmove to %lu from %lu amount %lu\n", node + 2 - trie->a.data, node - trie->a.data, move - node);
 		memmove(node + 2, node, sizeof node * (move - node));
-		(move + 2)->leaf = data;
+		(move + 2)->leaf = data; /* -1 +3 */
 		node[0].branch.bit = bit;
-		/* something here is wrong; updated prev_branch? store in memory. */
+		/* something here is wrong. */
 		if(prev_branch) {
 			node[0].branch.left_branch = prev_branch->branch.left_branch;
 			prev_branch->branch.left_branch = 1;
 		} else {
-			node[0].branch.left_branch = 0;
+			node[0].branch.left_branch = trie->a.size <= 1 ? 0 : 1;
 		}
 		node[0].branch.right_branch = 0;
 		node[1].on_offset = move - node + 1;

@@ -23,6 +23,15 @@ static void fill_str(const char *str) {
 static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
 
+	printf("TrieInternal %lu\n"
+		"size_t %lu\n"
+		"Type * %lu\n"
+		"union %lu\n",
+		sizeof(struct TrieInternal),
+		sizeof(size_t),
+		sizeof(trie_Str_Type *),
+		sizeof(union trie_Str_TrieNode));
+
 	trie_Str_print(&trie);
 	printf("Trie: %s.\n", StrTrieToString(&trie));
 	trie_Str_graph(&trie, "graph/trie0.gv");
@@ -36,22 +45,27 @@ static int test(void) {
 	trie_Str_print(&trie);
 	printf("Trie: %s.\n", StrTrieToString(&trie));
 	trie_Str_graph(&trie, "graph/trie2.gv");
+
 	if(!StrTrieAdd(&trie, "baz")) goto catch;
 	trie_Str_print(&trie);
-	/*printf("%s.\n", StrTrieToString(&trie));
-	trie_Str_graph(&trie, "graph/trie3.gv");*/
+	printf("%s.\n", StrTrieToString(&trie));
+	trie_Str_graph(&trie, "graph/trie3.gv");
+
 	if(!StrTrieAdd(&trie, "qux")) goto catch;
 	trie_Str_print(&trie);
-	/*printf("%s.\n", StrTrieToString(&trie));
-	trie_Str_graph(&trie, "graph/trie4.gv");*/
+	printf("%s.\n", StrTrieToString(&trie));
+	trie_Str_graph(&trie, "graph/trie4.gv");
+
 	if(!StrTrieAdd(&trie, "quxx")) goto catch;
 	trie_Str_print(&trie);
-	/*printf("%s.\n", StrTrieToString(&trie));
-	trie_Str_graph(&trie, "graph/trie5.gv");*/
+	printf("%s.\n", StrTrieToString(&trie));
+	trie_Str_graph(&trie, "graph/trie5.gv");
+
 	if(!StrTrieAdd(&trie, "quxxx")) goto catch;
 	trie_Str_print(&trie);
-	/*printf("%s.\n", StrTrieToString(&trie));
-	trie_Str_graph(&trie, "graph/trie6.gv");*/
+	printf("%s.\n", StrTrieToString(&trie));
+	trie_Str_graph(&trie, "graph/trie6.gv");
+
 	printf("Test passed.\n");
 	goto finally;
 catch:
