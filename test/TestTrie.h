@@ -16,37 +16,102 @@ typedef void (*PN_(Action))(PN_(Type) *);
 /* `TRIE_TEST` must be a function that implements `<PN>Action`. */
 static const PN_(Action) PN_(filler) = (TRIE_TEST);
 
+static void PN_(print)(const struct N_(Trie) *const trie) {
+	size_t target, n, on;
+	unsigned branch;
+	printf("__print__ %lu\n", trie ? trie->a.size : 0);
+	if(!trie) { printf("->null\n"); return; }
+	if(!trie->a.size) { printf("->empty\n"); return; }
+	if(trie->a.size == 1) {
+		printf("n0: leaf \"%s\".\n", PN_(to_key)(trie->a.data->leaf));
+		return;
+	}
+	for(target = 0, branch = 1; target < trie->a.size; target += 1 + branch) {
+		n = 0;
+		while(n < target) {
+			on = n + 1, on = on + trie->a.data[on].on_offset;
+			if(on > target) {
+				branch = trie->a.data[n].branch.left_branch;
+				n += 2;
+			} else {
+				branch = trie->a.data[n].branch.right_branch;
+				n = on;
+			}
+			assert(n < trie->a.size && branch <= 1);
+		}
+		assert(n == target);
+		if(branch) {
+			printf("n%lu: bit %u; %s:%s.\n"
+				"n%lu: on offset %lu.\n", (unsigned long)n,
+				trie->a.data[n].branch.bit, trie->a.data[n].branch.left_branch
+				? "branch" : "leaf", trie->a.data[n].branch.right_branch
+				? "branch" : "leaf", (unsigned long)(n + 1),
+				trie->a.data[n + 1].on_offset);
+		} else {
+			printf("n%lu: leaf \"%s\".\n",
+				(unsigned long)n, PN_(to_key)(trie->a.data[n].leaf));
+		}
+	}
+}
+
 /** Draw a graph of `trie` to `fn` in Graphviz format. */
 static void PN_(graph)(const struct N_(Trie) *const trie,
 	const char *const fn) {
 	FILE *fp;
+	size_t target, n, on;
+	unsigned branch;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\trankdir = BT;\n"
 		"\tnode [shape = record, style = filled];\n"
-		"\tTrie [label=\"{\\<" QUOTE(TRIE_NAME) "\\>Hash: " QUOTE(TRIE_TYPE)
+		"\tTrie [label=\"{\\<" QUOTE(TRIE_NAME) "\\>Trie: " QUOTE(TRIE_TYPE)
 		"\\l|size: %lu\\lcapacity: %lu\\l"
 		"next capacity: %lu\\l}\"];\n", (unsigned long)trie->a.size,
 		(unsigned long)trie->a.capacity, (unsigned long)trie->a.next_capacity);
-	if(trie->a.data) {
-		union PN_(TrieNode) *n, *n_end;
-		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
-		if(!trie->a.size) goto end_nodes;
-		fprintf(fp, "\tn0 -> Hash [dir = back];\n");
-		fprintf(fp, "\tedge [style = dashed];\n"
-			"\tsubgraph cluster_data {\n"
-			"\t\tstyle=filled;\n");
-		if(trie->a.size == 1) {
-		}
-		for(n = trie->a.data, n_end = n + trie->a.size; n < n_end; n++) {
-			fprintf(fp, "\t\tn%lu [label=\"%s\"];\n",
-				(unsigned long)(n - trie->a.data), PN_(to_key)(n->leaf));
-			/*fprintf(fp, "\t\tn%lu -> n%lu;\n", (unsigned long)i,
-				(unsigned long)((i - 1) >> 1));*/
-		}
-		fprintf(fp, "\t}\n");
+	if(!trie->a.size) goto outer;
+	fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
+	fprintf(fp, "\tn0 -> Trie [dir = back];\n");
+	fprintf(fp, "\tsubgraph cluster_data {\n"
+		"\t\tstyle=filled;\n");
+	if(trie->a.size == 1) {
+		fprintf(fp, "\t\tn0 [label=\"%s\"];\n",
+			PN_(to_key)(trie->a.data->leaf));
+		goto inner;
 	}
+	for(target = 0, branch = 0; target < trie->a.size; target += 1 + branch) {
+		n = 0;
+		while(n < target) {
+			on = n + 1, on = on + trie->a.data[on].on_offset;
+			if(on > target) {
+				branch = trie->a.data[n].branch.left_branch;
+				n += 2;
+			} else {
+				branch = trie->a.data[n].branch.right_branch;
+				n = on;
+			}
+			assert(n < trie->a.size && branch <= 1);
+		}
+		assert(n == target);
+		if(branch) {
+			fprintf(fp, "\t\tn%lu [label=\"%u\"];\n"
+				"\t\tn%lu -> n%lu%s;\n"
+				"\t\tn%lu -> n%lu%s;\n",
+				(unsigned long)n, trie->a.data[n].branch.bit,
+				(unsigned long)n, (unsigned long)n + 2,
+				trie->a.data[n].branch.left_branch
+				? "" : " [style = dashed]",
+				(unsigned long)n, n + 1 + trie->a.data[n + 1].on_offset,
+				trie->a.data[n].branch.left_branch
+				? "" : " [style = dashed]");
+		} else {
+			fprintf(fp, "\t\tn%lu [label=\"%s\"];\n",
+				(unsigned long)n, PN_(to_key)(trie->a.data[n].leaf));
+		}
+	}
+inner:
+	fprintf(fp, "\t}\n");
+outer:
 	fprintf(fp, "\tnode [colour=red];\n");
 	fprintf(fp, "}\n");
 	fclose(fp);

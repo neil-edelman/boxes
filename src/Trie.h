@@ -101,7 +101,7 @@ static const PN_(Key) PN_(to_key) = (TRIE_KEY);
 /** An internal node; assume takes up one register for speed. */
 struct TrieInternal {
 	unsigned bit;
-	unsigned char left_child_branch, right_child_branch;
+	unsigned char left_branch, right_branch;
 };
 /* assert(sizeof(struct TrieInternal) <= sizeof(size_t)); */
 
@@ -157,10 +157,10 @@ static PN_(Type) *PN_(iterate)(struct N_(Trie) *const trie, size_t *const it) {
 	do {
 		on = n + 1, on = on + a->data[on].on_offset;
 		if(on > target) { /* Take the right. */
-			branch = a->data[n].branch.left_child_branch;
+			branch = a->data[n].branch.left_branch;
 			n += 2;
 		} else { /* Take the left. */
-			branch = a->data[n].branch.right_child_branch;
+			branch = a->data[n].branch.right_branch;
 			n = on;
 		}
 	} while(branch);
@@ -179,7 +179,7 @@ static void PN_(trie_)(struct N_(Trie) *const trie)
  example key for comparison, used for inserting. One could have returned any
  key from the branch, but this is the most cache-efficient on average. */
 static const char *PN_(branch_key)(const union PN_(TrieNode) *node) {
-	while(node->branch.left_child_branch) node += 2;
+	while(node->branch.left_branch) node += 2;
 	node += 2;
 	return PN_(to_key)(node->leaf);
 }
@@ -193,6 +193,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	unsigned bit = 0;
 	int cmp;
 	assert(trie && data);
+	printf("insert %s.\n", PN_(to_key)(data));
 	if(trie->a.size == 0) {
 		/* Empty. */
 		if(!(new_n = PT_(new)(&trie->a, 0))) return 0;
@@ -209,7 +210,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		if(cmp < 0) n[2].leaf = data, n[3].leaf = n[0].leaf;
 		else        n[2].leaf = n[0].leaf, n[3].leaf = data;
 		n[0].branch.bit = bit; /* Overwriting. */
-		n[0].branch.left_child_branch = n[0].branch.right_child_branch = 0;
+		n[0].branch.left_branch = n[0].branch.right_branch = 0;
 		n[1].on_offset = 2;
 	} else {
 		assert((trie->a.size - 1) % 3 == 0 && trie->a.size < (size_t)-3);
@@ -220,7 +221,6 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	}
 	return 1;
 }
-
 
 
 
