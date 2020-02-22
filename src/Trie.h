@@ -106,10 +106,16 @@ struct TrieInternal {
 /* assert(sizeof(struct TrieInternal) <= sizeof(size_t)); */
 
 /** @fixme Woefully unoptimised. */
-static int trie_strcmp_bit(const char *a, const char *b,
+static int trie_strcmp_bit(const char *const a, const char *const b,
 	const unsigned bit) {
 	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
 	return (a[byte] & mask) - (b[byte] & mask);
+}
+
+/** Not going to be bothered to make it 0/1. */
+static unsigned trie_is_bit(const char *const a, const unsigned bit) {
+	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
+	return a[byte] & mask;
 }
 
 #endif /* idempotent --> */
@@ -188,7 +194,7 @@ static const char *PN_(branch_key)(const union PN_(TrieNode) *node) {
  as any in `trie`, so make sure before calling this or else it may crash, (it
  doesn't do `NUL` checks.) */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	union PN_(TrieNode) *n, *new_n;
+	union PN_(TrieNode) *n;
 	const char *const data_key = PN_(to_key)(data), *cmp_key;
 	unsigned bit = 0;
 	int cmp;
@@ -196,8 +202,8 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	printf("insert %s.\n", PN_(to_key)(data));
 	if(trie->a.size == 0) {
 		/* Empty. */
-		if(!(new_n = PT_(new)(&trie->a, 0))) return 0;
-		new_n->leaf = data;
+		if(!(n = PT_(new)(&trie->a, 0))) return 0;
+		n->leaf = data;
 	} else if(trie->a.size == 1) {
 		if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
 		trie->a.size += 3;
@@ -213,10 +219,30 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		n[0].branch.left_branch = n[0].branch.right_branch = 0;
 		n[1].on_offset = 2;
 	} else {
+		unsigned branch;
 		assert((trie->a.size - 1) % 3 == 0 && trie->a.size < (size_t)-3);
 		n = trie->a.data;
-		cmp_key = PN_(branch_key)(n);
 		if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
+		trie->a.size += 3;
+		for(branch = 1; ; ) {
+			cmp_key = branch ? PN_(branch_key)(n) : PN_(to_key)(n->leaf);
+			cmp = 0; /* Debug, don't need? */
+			while((!branch || bit < n->branch.bit)
+				&& (cmp = trie_strcmp_bit(data_key, cmp_key, bit)) == 0) bit++;
+			printf("data_key = %s; cmp_key = %s; bit %u/%u cmp %d.\n",
+				data_key, cmp_key, bit, branch ? n->branch.bit : 0, cmp);
+			/* Bit difference; insert. */
+			if(bit != n->branch.bit) break;
+			/* Otherwise, follow the branch. */
+			if(!trie_is_bit(data_key, bit)) {
+				branch = n->branch.left_branch;
+				n += 2;
+			} else {
+				branch = n->branch.right_branch;
+				n = n + 1 + n[1].on_offset;
+			}
+		}
+		printf("bit %u; cmp %d\n", bit, cmp);
 		assert(0);
 	}
 	return 1;

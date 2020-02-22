@@ -63,7 +63,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\trankdir = BT;\n"
+		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\tTrie [label=\"{\\<" QUOTE(TRIE_NAME) "\\>Trie: " QUOTE(TRIE_TYPE)
 		"\\l|size: %lu\\lcapacity: %lu\\l"
@@ -79,7 +79,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 			PN_(to_key)(trie->a.data->leaf));
 		goto inner;
 	}
-	for(target = 0, branch = 0; target < trie->a.size; target += 1 + branch) {
+	for(target = 0, branch = 1; target < trie->a.size; target += 1 + branch) {
 		n = 0;
 		while(n < target) {
 			on = n + 1, on = on + trie->a.data[on].on_offset;
@@ -93,8 +93,9 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 			assert(n < trie->a.size && branch <= 1);
 		}
 		assert(n == target);
+		fflush(fp);
 		if(branch) {
-			fprintf(fp, "\t\tn%lu [label=\"%u\"];\n"
+			fprintf(fp, "\t\tn%lu [shape = \"oval\" label=\"%u\"];\n"
 				"\t\tn%lu -> n%lu%s;\n"
 				"\t\tn%lu -> n%lu%s;\n",
 				(unsigned long)n, trie->a.data[n].branch.bit,

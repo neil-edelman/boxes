@@ -22,17 +22,20 @@ static void fill_str(const char *str) {
 
 static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
+
 	trie_Str_print(&trie);
-	/*printf("%s.\n", StrTrieToString(&trie));*/
+	printf("Trie: %s.\n", StrTrieToString(&trie));
 	trie_Str_graph(&trie, "graph/trie0.gv");
+
 	if(!StrTrieAdd(&trie, "foo")) goto catch;
 	trie_Str_print(&trie);
-	/*printf("%s.\n", StrTrieToString(&trie));*/
+	printf("Trie: %s.\n", StrTrieToString(&trie));
 	trie_Str_graph(&trie, "graph/trie1.gv");
+
 	if(!StrTrieAdd(&trie, "bar")) goto catch;
 	trie_Str_print(&trie);
-	/*printf("%s.\n", StrTrieToString(&trie));
-	trie_Str_graph(&trie, "graph/trie2.gv");*/
+	printf("Trie: %s.\n", StrTrieToString(&trie));
+	trie_Str_graph(&trie, "graph/trie2.gv");
 	if(!StrTrieAdd(&trie, "baz")) goto catch;
 	trie_Str_print(&trie);
 	/*printf("%s.\n", StrTrieToString(&trie));
