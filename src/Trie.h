@@ -198,12 +198,13 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	const char *const data_key = PN_(to_key)(data), *cmp_key;
 	unsigned bit = 0;
 	int cmp;
-	int is_node_branch;
+	int is_node_branch, is_branch_forwarded;
 	assert(trie && data);
-	printf("insert %s.\n", PN_(to_key)(data));
+	printf("__insert %s__.\n", PN_(to_key)(data));
 	if(trie->a.size == 0) { /* Empty special case. */
 		if(!(node = PT_(new)(&trie->a, 0))) return 0;
 		node->leaf = data;
+		printf("Instering into empty.\n\n");
 		return 1;
 	} else if(trie->a.size == 1) { /* One leaf special case. */
 		if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
@@ -218,13 +219,14 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		node[0].branch.bit = bit; /* Overwriting. */
 		node[0].branch.left_branch = node[0].branch.right_branch = 0;
 		node[1].on_offset = 2;
+		printf("Inserting into one.\n\n");
 		return 1;
 	}
 	/* `size > 1` */
 	assert((trie->a.size - 1) % 3 == 0 && trie->a.size < (size_t)-3);
 	if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
 	cmp_key = PN_(branch_key)((node = trie->a.data));
-	for(is_node_branch = 1, prev_branch = 0; ; ) {
+	for(is_node_branch = 1, is_branch_forwarded = 0, prev_branch = 0; ; ) {
 		while((!is_node_branch || bit < node->branch.bit)
 			&& (cmp = trie_strcmp_bit(data_key, cmp_key, bit)) == 0) bit++;
 		printf("data_key = %s; cmp_key = %s; bit %u; ",
@@ -239,31 +241,46 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		/* Otherwise, follow the branch. */
 		prev_branch = node;
 		if(!trie_is_bit(data_key, bit)) {
-			node[1].on_offset += 3; /* This is in the `memmove`. */
+			node[1].on_offset += 3, is_branch_forwarded = 1;
 			is_node_branch = node->branch.left_branch;
 			node += 2;
 		} else {
+			is_branch_forwarded = 0;
 			is_node_branch = node->branch.right_branch;
 			node = node + 1 + node[1].on_offset;
 			cmp_key = is_node_branch
 				? PN_(branch_key)(node) : PN_(to_key)(node->leaf);
 		}
 	}
-	if(is_node_branch) {
-		printf("node branch bit %u; cmp %d.\n", node->branch.bit, cmp);
-	} else {
-		printf("node leaf %s.\n", PN_(to_key)(node->leaf));
-	}
-	move = prev_branch ? prev_branch + (prev_branch + 1)->on_offset - 2
-		: trie->a.data + trie->a.size;
-	assert(move <= trie->a.data + trie->a.size && move >= node);
 	if(!prev_branch) {
-		printf("->move all.\n");
+		printf("prev: not set.\n");
+	} else {
+		printf("prev: %lu; branch bit %u %s:%s +%ld.\n",
+			prev_branch - trie->a.data,
+			prev_branch->branch.bit,
+			prev_branch->branch.left_branch ? "branch" : "leaf",
+			prev_branch->branch.right_branch ? "branch" : "leaf",
+			prev_branch[1].on_offset);
+	}
+	printf("node: %lu; ", node - trie->a.data);
+	if(is_node_branch) {
+		printf("branch bit %u; cmp %d.\n", node->branch.bit, cmp);
+	} else {
+		printf("leaf %s.\n", PN_(to_key)(node->leaf));
+	}
+	/* +1 accounting for the +3 that we added in preparation for `memmove`. */
+	/* sometimes it's not? but `is_branch_forwarded` is not it. */
+	move = prev_branch ? prev_branch + 1 + (prev_branch + 1)->on_offset
+		- 3 * is_branch_forwarded : trie->a.data + trie->a.size;
+	printf("move: %lu; ", move - trie->a.data);
+	if(!prev_branch) {
+		printf("move all.\n");
 	} else if(prev_branch->branch.right_branch) {
-		printf("move branch bit %u.\n", move->branch.bit);
+		printf("branch bit %u.\n", move->branch.bit);
 	} else {
 		printf("move leaf %s.\n", PN_(to_key)(move->leaf));
 	}
+	assert(move <= trie->a.data + trie->a.size && move >= node);
 	if(cmp < 0) {
 		printf("cmp<0\n");
 		assert(0);
@@ -286,6 +303,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		node[1].on_offset = move - node + 1;
 	}
 	trie->a.size += 3;
+	printf("\n");
 	return 1;
 }
 

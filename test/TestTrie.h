@@ -19,11 +19,11 @@ static const PN_(Action) PN_(filler) = (TRIE_TEST);
 static void PN_(print)(const struct N_(Trie) *const trie) {
 	size_t target, n, on;
 	unsigned branch;
-	printf("__print__ %lu\n", trie ? trie->a.size : 0);
-	if(!trie) { printf("->null\n"); return; }
-	if(!trie->a.size) { printf("->empty\n"); return; }
+	printf("__print__ trie.size %lu\n", trie ? trie->a.size : 0);
+	if(!trie) { printf("null\n\n"); return; }
+	if(!trie->a.size) { printf("empty\n\n"); return; }
 	if(trie->a.size == 1) {
-		printf("n0: leaf \"%s\".\n", PN_(to_key)(trie->a.data->leaf));
+		printf("n0: leaf \"%s\".\n\n", PN_(to_key)(trie->a.data->leaf));
 		return;
 	}
 	for(target = 0, branch = 1; target < trie->a.size; target += 1 + branch) {
@@ -52,6 +52,7 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 				(unsigned long)n, PN_(to_key)(trie->a.data[n].leaf));
 		}
 	}
+	printf("\n");
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format. */
