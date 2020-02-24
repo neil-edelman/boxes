@@ -29,7 +29,7 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 	for(target = 0, branch = 1; target < trie->a.size; target += 1 + branch) {
 		n = 0;
 		while(n < target) {
-			on = n + 1, on = on + trie->a.data[on].on_offset;
+			on = n + 1, on = on + trie->a.data[on].right_offset;
 			if(on > target) {
 				branch = trie->a.data[n].branch.left_branch;
 				n += 2;
@@ -43,10 +43,13 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 		if(branch) {
 			printf("n%lu: bit %u; %s:%s.\n"
 				"n%lu: on offset %lu.\n", (unsigned long)n,
-				trie->a.data[n].branch.bit, trie->a.data[n].branch.left_branch
-				? "branch" : "leaf", trie->a.data[n].branch.right_branch
-				? "branch" : "leaf", (unsigned long)(n + 1),
-				trie->a.data[n + 1].on_offset);
+				trie->a.data[n].branch.choice_bit,
+				trie->a.data[n].branch.left_branch
+				? "branch" : "leaf",
+				trie->a.data[n].branch.right_branch
+				? "branch" : "leaf",
+				(unsigned long)(n + 1),
+				trie->a.data[n + 1].right_offset);
 		} else {
 			printf("n%lu: leaf \"%s\".\n",
 				(unsigned long)n, PN_(to_key)(trie->a.data[n].leaf));
@@ -83,7 +86,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	for(target = 0, branch = 1; target < trie->a.size; target += 1 + branch) {
 		n = 0;
 		while(n < target) {
-			on = n + 1, on = on + trie->a.data[on].on_offset;
+			on = n + 1, on = on + trie->a.data[on].right_offset;
 			if(on > target) {
 				branch = trie->a.data[n].branch.left_branch;
 				n += 2;
@@ -99,11 +102,11 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 			fprintf(fp, "\t\tn%lu [shape = \"oval\" label=\"%u\"];\n"
 				"\t\tn%lu -> n%lu%s;\n"
 				"\t\tn%lu -> n%lu%s;\n",
-				(unsigned long)n, trie->a.data[n].branch.bit,
+				(unsigned long)n, trie->a.data[n].branch.choice_bit,
 				(unsigned long)n, (unsigned long)n + 2,
 				trie->a.data[n].branch.left_branch
 				? "" : " [style = dashed]",
-				(unsigned long)n, n + 1 + trie->a.data[n + 1].on_offset,
+				(unsigned long)n, n + 1 + trie->a.data[n + 1].right_offset,
 				trie->a.data[n].branch.right_branch
 				? "" : " [style = dashed]");
 		} else {
