@@ -152,6 +152,23 @@ struct N_(Trie) { struct PN_(TrieNodeArray) a; };
 
 
 
+/** Debug. Only print one at a time. */
+static const char *PN_(to_desc)(const struct N_(Trie) *const trie,
+	const union PN_(TrieNode) *const n, const int is_branch) {
+	static char a[256];
+	assert(trie);
+	if(!n) {
+		sprintf(a, "node_null");
+	} else if(n >= trie->a.data + trie->a.size) {
+		sprintf(a, "node_%lu one-past end", n - trie->a.data);
+	} else if(is_branch) sprintf(a, "node_%lu: choice_bit %u, %s<+2>:%s<+%ld>",
+		n - trie->a.data, n->branch.choice_bit,
+		n->branch.left_branch ? "branch" : "leaf",
+		n->branch.right_branch ? "branch" : "leaf", n[1].right_offset);
+	else sprintf(a, "node_%lu: \"%s\"", n - trie->a.data, PN_(to_key)(n->leaf));
+	return a;
+}
+
 /** We would have made it `4 (nodes - 1) + 1` with \O(`1`) iteration, not sure
  if it's possible with 3.
  @order \O(`size`); avererge \O(log `size`). */
@@ -206,7 +223,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	unsigned bit = 0;
 	int cmp;
 	assert(trie && data);
-	printf("__insert %s__.\n", PN_(to_key)(data));
+	printf("__insert \"%s\"__.\n", PN_(to_key)(data));
 	if(trie->a.size == 0) { /* Empty special case. */
 		if(!(n1 = PT_(new)(&trie->a, 0))) return 0;
 		n1->leaf = data;
@@ -218,8 +235,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		n1 = trie->a.data;
 		n1_key = PN_(to_key)(n1->leaf);
 		while((cmp = trie_strcmp_bit(data_key, n1_key, bit)) == 0) bit++;
-		printf("data_key = %s; cmp_key = %s; bit %u cmp %d.\n",
-			data_key, n1_key, bit, cmp);
+		printf("cmp_key = %s; bit %u cmp %d.\n", n1_key, bit, cmp);
 		if(cmp < 0) n1[2].leaf = data, n1[3].leaf = n1[0].leaf;
 		else        n1[2].leaf = n1[0].leaf, n1[3].leaf = data;
 		n1[0].branch.choice_bit = bit; /* Overwriting. */
@@ -237,59 +253,40 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		/* Compare bit-by-bit. If it's a leaf, there no upper bound. */
 		while((!is_n1_branch || bit < n1->branch.choice_bit)
 			&& (cmp = trie_strcmp_bit(data_key, n1_key, bit)) == 0) bit++;
-		printf("bit %u: data_key = %s; n1_key = %s; ", bit, data_key, n1_key);
-		is_n1_branch ? printf("branch bit %u; cmp %d.\n", n1->branch.choice_bit,
-			cmp) : printf("leaf %s.\n", PN_(to_key)(n1->leaf));
 		/* Leaf or bit difference; otherwise follow the branch. */
 		if(!is_n1_branch || bit != n1->branch.choice_bit) break;
 		parent = n1;
 		if(!trie_is_bit(data_key, bit)) {
+			printf("n1 was %s; descending left.\n",
+				PN_(to_desc)(trie, n1, is_n1_branch));
 			is_n1_branch = n1->branch.left_branch;
-			n1[1].right_offset += 3; /* Future trie with another node. */
+			n1[1].right_offset += 3; /* Future trie with another leaf. */
 			n1 += 2;
 		} else {
+			printf("n1 was %s; descending right.\n",
+				PN_(to_desc)(trie, n1, is_n1_branch));
 			is_n1_branch = n1->branch.right_branch;
 			n1 = n1 + 1 + n1[1].right_offset;
 			n1_key = PN_(node_key)(n1, is_n1_branch);
 		}
 	}
-	if(!parent) {
-		printf("prev: not set.\n");
-	} else {
-		printf("prev: %lu; branch bit %u %s:%s +%ld.\n",
-			parent - trie->a.data,
-			parent->branch.choice_bit,
-			parent->branch.left_branch ? "branch" : "leaf",
-			parent->branch.right_branch ? "branch" : "leaf",
-			parent[1].right_offset);
-	}
-	printf("node: %lu; ", n1 - trie->a.data);
-	if(is_n1_branch) {
-		printf("branch chiocebit %u; cmp %d.\n", n1->branch.choice_bit, cmp);
-	} else {
-		printf("leaf %s.\n", PN_(to_key)(n1->leaf));
-	}
 	/* +1 accounting for the +3 that we added in preparation for `memmove`. */
 	/* sometimes it's not? but `is_branch_forwarded` is not it. */
 	n2 = parent ? parent + (parent + 1)->right_offset + 1 - 3
 		: trie->a.data + trie->a.size;
-	printf("move: %lu; ", n2 - trie->a.data);
-	if(!parent) {
-		printf("move all.\n");
-	} else if(parent->branch.right_branch) {
-		printf("branch choicebit %u.\n", n2->branch.choice_bit);
-	} else {
-		printf("move leaf %s.\n", PN_(to_key)(n2->leaf));
-	}
-	assert(n2 <= trie->a.data + trie->a.size && n2 >= n1);
+	assert((!parent || (parent >= trie->a.data && parent < n1))
+		&& n1 >= trie->a.data && n1 <= n2
+		&& n2 <= trie->a.data + trie->a.size);
+	printf("parent is %s.\n", PN_(to_desc)(trie, parent, 1));
+	printf("n1 is %s.\n", PN_(to_desc)(trie, n1, is_n1_branch));
+	printf("n2 is %s.\n", PN_(to_desc)(trie, n2,
+		parent ? parent->branch.right_branch : 1));
 	if(cmp < 0) {
 		printf("cmp<0\n");
 		assert(0);
 	} else { /* Insert after. */
-		printf("memmove to %lu from %lu amount %lu\n", n2 + 3 - trie->a.data, n2 - trie->a.data, trie->a.data + trie->a.size - n2);
 		memmove(n2 + 3, n2,
 			sizeof n1 * (trie->a.data + trie->a.size - n2));
-		printf("memmove to %lu from %lu amount %lu\n", n1 + 2 - trie->a.data, n1 - trie->a.data, n2 - n1);
 		memmove(n1 + 2, n1, sizeof n1 * (n2 - n1));
 		(n2 + 2)->leaf = data; /* -1 +3 */
 		n1[0].branch.choice_bit = bit;
