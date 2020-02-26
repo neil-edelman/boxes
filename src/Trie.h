@@ -263,7 +263,6 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	n1 = trie->a.data;
 	n2 = 0;
 	is_n1_branch = 1; /* |T| > 1, \therefore branch. */
-	is_n2_branch = 0;
 	n1_key = PN_(node_key)(n1, 1);
 	assert(n1_key);
 	for( ; ; ) {
@@ -272,16 +271,16 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 			&& (cmp = trie_strcmp_bit(data_key, n1_key, bit)) == 0) bit++;
 		/* Leaf or bit difference; otherwise follow the branch. */
 		if(!is_n1_branch || bit != n1->branch.choice_bit) break;
-		if(!trie_is_bit(data_key, bit)) { /* Descend left (0.) */
+		if(!trie_is_bit(data_key, bit)) { /* Descend left. */
 			n2 = n1 + 1 + n1[1].right_offset;
 			is_n1_branch = n1->branch.left_branch;
-			is_n2_branch = n1->branch.right_branch;
+			is_n2_branch = n1->branch.right_branch; /* only info */
 			printf("n1 is %s; descending left.\n",
 				PN_(to_desc)(trie, n1, 1));
 			n1->branch.left_branch = 1;
 			n1[1].right_offset += 3; /* Future trie with another leaf. */
 			n1 += 2;
-		} else { /* Descend right (1.) */
+		} else { /* Descend right. */
 			printf("n1 is %s; descending right.\n",
 				PN_(to_desc)(trie, n1, is_n1_branch));
 			is_n1_branch = n1->branch.right_branch;
@@ -299,12 +298,12 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	if(cmp < 0) {
 		printf("cmp<0\n");
 		assert(0);
-	} else { /* Make a right leaf. */
+	} else { /* Insert a right leaf. */
 		printf("%lu: %lu->%lu; %lu: %lu->%lu\n\n", trie->a.data + trie->a.size - n2, n2 - trie->a.data, n2 + 3 - trie->a.data, n2 - n1,
 			n1 - trie->a.data, n1 + 2 - trie->a.data);
 		memmove(n2 + 3, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
 		memmove(n1 + 2, n1, sizeof n1 * (n2 - n1));
-		n2[2].leaf = data; /* -1 +3 */
+		n2[2].leaf = data; /* -1 +3; matches `memmove`. */
 		n1[0].branch.choice_bit = bit;
 		/* Otherwise it's just inherited from what was there before. */
 		if(!is_n1_branch) n1[0].branch.left_branch = 0;
