@@ -66,10 +66,13 @@ static int test(void) {
 	trie_Str_graph(&trie, "graph/trie6.gv");
 	/*printf("Trie6: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTrieAdd(&trie, "a")
-		/*|| !StrTrieAdd(&trie, "b")
-		|| !StrTrieAdd(&trie, "c")
-		|| !StrTrieAdd(&trie, "d")
+	if(!StrTrieAdd(&trie, "a")) goto catch;
+	trie_Str_graph(&trie, "graph/trie_a.gv");
+	if(!StrTrieAdd(&trie, "b")) goto catch;
+	trie_Str_graph(&trie, "graph/trie_b.gv");
+	if(!StrTrieAdd(&trie, "c")) goto catch;
+	trie_Str_graph(&trie, "graph/trie_c.gv");
+	if(!StrTrieAdd(&trie, "d")
 		|| !StrTrieAdd(&trie, "e")
 		|| !StrTrieAdd(&trie, "f")
 		|| !StrTrieAdd(&trie, "g")
@@ -91,9 +94,8 @@ static int test(void) {
 		|| !StrTrieAdd(&trie, "w")
 		|| !StrTrieAdd(&trie, "x")
 		|| !StrTrieAdd(&trie, "y")
-		|| !StrTrieAdd(&trie, "z")*/) goto catch;
+		|| !StrTrieAdd(&trie, "z")) goto catch;
 	trie_Str_print(&trie);
-	trie_Str_graph(&trie, "graph/trie7.gv");
 
 	printf("Test passed.\n");
 	goto finally;
