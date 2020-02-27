@@ -303,20 +303,17 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		memmove(n1 + 3, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
 		n1[0].branch.choice_bit = bit;
 		n1[0].branch.left_branch  = 0;
-		n1[0].branch.right_branch = is_n1_branch; /* ? */
+		n1[0].branch.right_branch = is_n1_branch;
 		n1[1].right_offset = 2;
 		n1[2].leaf = data;
 	} else { /* Insert a right leaf. */
-		printf("%lu: %lu->%lu; %lu: %lu->%lu\n\n", trie->a.data + trie->a.size - n2, n2 - trie->a.data, n2 + 3 - trie->a.data, n2 - n1,
-			n1 - trie->a.data, n1 + 2 - trie->a.data);
 		memmove(n2 + 3, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
 		memmove(n1 + 2, n1, sizeof n1 * (n2 - n1));
-		n2[2].leaf = data;
 		n1[0].branch.choice_bit = bit;
-		/* Otherwise it's just inherited from what was there before. */
-		if(!is_n1_branch) n1[0].branch.left_branch = 0;
+		n1[0].branch.left_branch  = is_n1_branch;
 		n1[0].branch.right_branch = 0;
 		n1[1].right_offset = n2 - n1 + 1;
+		n2[2].leaf = data;
 	}
 	trie->a.size += 3;
 	printf("\n");
