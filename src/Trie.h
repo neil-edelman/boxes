@@ -6,15 +6,15 @@
  ![Example of trie.](../web/trie.png)
 
  An <tag:<N>Trie> is a trie of byte-strings ended with `NUL`, compatible with
- any byte-encoding with a null-terminator, in particular,
- [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
+ any byte-encoding with a null-terminator; in particular, `C` strings,
+ including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
- Internally, it is an `<<N>TrieNode>Array`, thus `Array.h` must be present. It
- is a binary [radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
- [Morrison 1968, PATRICiA], except with two differences: the index does not
- store data on the string used to insert, and the trie is stored in a
- semi-implicit array. In this way, it is optimised for lookup and not
- insertion or deletion.
+ Internally, it is an `<<PN>TrieNode>Array`, thus `Array.h` must be present. It
+ resembles a binary [radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
+ [Morrison 1968, PATRICiA], except with two notable differences: the index does
+ not store data on the string, only the positions where the strings are
+ different. Also, the trie is stored in a semi-implicit array. In this way, it
+ is optimised for lookup and not insertion or deletion.
 
  `<N>Trie` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
@@ -218,57 +218,33 @@ static void PN_(trie_)(struct N_(Trie) *const trie)
 	{ assert(trie); free(trie->a.data); PN_(trie)(trie); }
 
 /** @return The key at the leaf taken from `node` all the way to the left.
- This is more cache efficient then the right on average. */
+ This is more cache efficient then the right on average.
+ @order O(`nodes`) */
 static const char *PN_(node_key)(const union PN_(TrieNode) *node,
 	const int is_node_branch) {
 	if(is_node_branch) { while(node->branch.left_branch) node += 2; node += 2; }
 	return PN_(to_key)(node->leaf);
 }
 
-/* fixme */
-static const char *N_(TrieToString)(struct N_(Trie) *const trie);
-
 /** Add `data` to `trie`. This assumes that the key of `data` is not the same
  as any in `trie`, so make sure before calling this or else it may crash, (it
- doesn't do `NUL` checks.) */
+ doesn't do `NUL` checks.)
+ @order O(`nodes`) */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	union PN_(TrieNode) *n1, *n2;
-	unsigned char is_n1_branch, is_n2_branch;
+	unsigned char is_n1_branch;
 	const char *const data_key = PN_(to_key)(data), *n1_key;
 	unsigned bit = 0;
 	int cmp;
 	assert(trie && data);
-	printf("__insert \"%s\" into %s size %lu__.\n", PN_(to_key)(data),
-		N_(TrieToString)(trie), trie->a.size);
-	if(trie->a.size == 0) { /* Empty special case. */
-		if(!(n1 = PT_(new)(&trie->a, 0))) return 0;
-		n1->leaf = data;
-		printf("Inserting into empty.\n\n");
-		return 1;
-	} else if(trie->a.size == 1) { /* One leaf special case. Fixme: merge.*/
-		if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
-		trie->a.size += 3;
-		n1 = trie->a.data;
-		n1_key = PN_(to_key)(n1->leaf);
-		while((cmp = trie_strcmp_bit(data_key, n1_key, bit)) == 0) bit++;
-		printf("cmp_key = %s; bit %u cmp %d.\n", n1_key, bit, cmp);
-		if(cmp < 0) n1[2].leaf = data, n1[3].leaf = n1[0].leaf;
-		else        n1[2].leaf = n1[0].leaf, n1[3].leaf = data;
-		n1[0].branch.choice_bit = bit; /* Overwriting. */
-		n1[0].branch.left_branch = n1[0].branch.right_branch = 0;
-		n1[1].right_offset = 2;
-		printf("Inserting into one.\n\n");
-		return 1;
-	}
-	/* `size > 1`; partition the array into three consecutive disjoint sets,
+	if(trie->a.size == 0) /* Empty special case. */
+		{ if(!(n1 = PT_(new)(&trie->a, 0))) return 0; n1->leaf=data; return 1; }
+	/* Partition the array into three consecutive disjoint sets,
 	 `[0,n1)`, `[n1,n2)`, `[n2,-1]`. */
 	assert((trie->a.size - 1) % 3 == 0 && trie->a.size < (size_t)-3);
 	if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
-	n1 = trie->a.data;
-	n2 = 0;
-	is_n1_branch = 1; /* |T| > 1, \therefore branch. */
-	n1_key = PN_(node_key)(n1, 1);
-	assert(n1_key);
+	n1 = trie->a.data, n2 = 0;
+	n1_key = PN_(node_key)(n1, is_n1_branch = trie->a.size > 1), assert(n1_key);
 	for( ; ; ) {
 		/* Compare bit-by-bit. If it's a leaf, there no upper bound. */
 		while((!is_n1_branch || bit < n1->branch.choice_bit)
@@ -278,15 +254,10 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		if(!trie_is_bit(data_key, bit)) { /* Descend left. */
 			n2 = n1 + 1 + n1[1].right_offset;
 			is_n1_branch = n1->branch.left_branch;
-			is_n2_branch = n1->branch.right_branch; /* only info */
-			printf("n1 is %s; descending left.\n",
-				PN_(to_desc)(trie, n1, 1));
 			n1->branch.left_branch = 1;
 			n1[1].right_offset += 3; /* Future trie with another leaf. */
 			n1 += 2;
 		} else { /* Descend right. */
-			printf("n1 is %s; descending right.\n",
-				PN_(to_desc)(trie, n1, is_n1_branch));
 			is_n1_branch = n1->branch.right_branch;
 			n1->branch.right_branch = 1;
 			n1 = n1 + 1 + n1[1].right_offset;
@@ -295,11 +266,8 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		}
 	}
 	if(!n2) n2 = trie->a.data + trie->a.size;
-	printf("final:\n");
-	printf("n1 is %s.\n", PN_(to_desc)(trie, n1, is_n1_branch));
-	printf("n2 is %s.\n", PN_(to_desc)(trie, n2, is_n2_branch));
 	assert(trie->a.data <= n1 && n1 < n2 && n2 <= trie->a.data + trie->a.size);
-	if(cmp < 0) { /* Left leaf; `[n1,n2], [n2,-1]` are moved together. */
+	if(cmp < 0) { /* Insert left leaf; `[n1,n2], [n2,-1]` are moved together. */
 		memmove(n1 + 3, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
 		n1[0].branch.choice_bit = bit;
 		n1[0].branch.left_branch  = 0;
@@ -316,51 +284,37 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		n2[2].leaf = data;
 	}
 	trie->a.size += 3;
-	printf("\n");
 	return 1;
 }
 
-
-
-#if 0
-
-static size_t PN_(iterate)(struct N_(Trie) *trie, const size_t it) {
-	assert(trie);
-	if(trie->a.size >= it) return 0;
-}
-
-
-/** Only checks the bits that are in the tree for matching.
- @return `TrieNode` leaf that matches `str` or null if size is less than two
- elements. */
-static union TrieNode *PN_(common)(const struct N_(Trie) *const trie,
+/** Doesn't look at the underlying data, but goes through only the index trie
+ deciding bits.
+ @return `TrieNode` leaf that potentially matches `str` or null, definitely
+ isn't in the trie. */
+static union PN_(TrieNode) *PN_(match)(const struct N_(Trie) *const trie,
 	const char *const str) {
-	union TrieNode *node;
-	unsigned bit, byte, current = 0;
-	int child_branch;
+	union PN_(TrieNode) *n = trie->a.data;
+	unsigned bit, byte, str_byte = 0;
+	unsigned char branch = trie->a.size > 1;
 	assert(trie && str);
-	if(!trie->nodes.size) return 0;
-	node = trie->nodes.data;
-	do {
-		bit = node->branch.bit;
-		/* Check for `NUL` terminator in `str`. */
-		for(byte = bit >> 3; current < byte; current++)
-			if(str[current] == '\0') break;
-		/* Follow the next byte difference in the trie. */
-		if(str[byte] & (1 << (bit & 7))) {
-			assert(node != trie->nodes.data + node->branch.on);
-			child_branch = node->branch.child_branch[1];
-			node = trie->nodes.data + node->branch.on;
+	if(!trie->a.size) return 0;
+	while(branch) {
+		/* Don't go farther than the string. */
+		bit = n->branch.choice_bit;
+		for(byte = bit >> 3; str_byte < byte; str_byte++)
+			if(str[str_byte] == '\0') return 0;
+		/* Otherwise, choose the branch. */
+		if(trie_is_bit(str, bit)) {
+			branch = n->branch.right_branch;
+			n = n + 1 + n[1].right_offset;
 		} else {
-			child_branch = node->branch.child_branch[0];
-			node++;
+			branch = n->branch.left_branch;
+			n += 2;
 		}
-		assert(node < trie->nodes.data + trie->nodes.size);
-	} while(child_branch);
-	return node;
+		assert(n < trie->a.data + trie->a.size);
+	}
+	return n;
 }
-
-#endif
 
 
 
@@ -409,44 +363,6 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	return trie ? PN_(add)(trie, data) : 0;
 }
-
-#if 0
-int TrieAdd(struct Trie *const trie, const char *str) {
-	size_t str_size, str_bits, t_bits;
-	size_t *bit, i, j;
-	if(!trie || !str) return 0;
-	/* Ensure that we have enough space. */
-	str_size = strlen(str) + 1;
-	assert(str_size <= (size_t)(-1) >> 3);
-	str_bits = str_size << 3;
-	t_bits = NoArraySize(&trie->bits);
-	if(t_bits < str_bits) {
-		size_t *end;
-		if(!(bit = NoArrayBuffer(&trie->bits, str_bits - t_bits))) return 0;
-		for(end = NoArrayEnd(&trie->bits); bit < end; bit++) *bit = 0;
-	}
-	/* Count. */
-	bit = NoArrayGet(&trie->bits);
-	for(i = 0; i < str_size; i++) {
-		char ch = str[i];
-		for(j = 0; j < 8; j++) if(ch & (1 << j)) bit[(i << 3) + j]++;
-	}
-	trie->count++;
-	return 1;
-}
-
-void TriePrint(struct Trie *const trie) {
-	size_t bs, *b, i;
-	if(!trie) return;
-	printf("count: %lu\n", trie->count);
-	bs = NoArraySize(&trie->bits);
-	b = NoArrayGet(&trie->bits);
-	for(i = 0; i < bs; i++) {
-		printf("bit: %lu\n", b[i]);
-		if((i & 7) == 7) printf("\n");
-	}
-}
-#endif
 
 /** Can print 4 things at once before it overwrites. One must a
  `TRIE_TO_STRING` to a function implementing <typedef:<PH>ToString> to get
@@ -510,9 +426,7 @@ static void PN_(unused_set)(void) {
 	N_(TrieSize)(0);
 	N_(TrieClear)(0);
 	N_(TrieAdd)(0, 0);
-#ifdef TRIE_TO_STRING /* <!-- string */
 	N_(TrieToString)(0);
-#endif /* string --> */
 	PN_(unused_coda)();
 }
 static void PN_(unused_coda)(void) { PN_(unused_set)(); }
@@ -541,9 +455,6 @@ static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 #undef TREE_COMPARE
 #ifdef TRIE_TYPE
 #undef TRIE_TYPE
-#endif
-#ifdef TRIE_TO_STRING
-#undef TRIE_TO_STRING
 #endif
 #ifdef TRIE_TEST
 #undef TRIE_TEST

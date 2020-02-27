@@ -22,6 +22,7 @@ static void fill_str(const char *str) {
 
 static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
+	union trie_Str_TrieNode *n;
 
 	printf("TrieInternal %lu\n"
 		"size_t %lu\n"
@@ -98,6 +99,18 @@ static int test(void) {
 		|| !StrTrieAdd(&trie, "y")
 		|| !StrTrieAdd(&trie, "z")) goto catch;
 	trie_Str_print(&trie);
+	trie_Str_graph(&trie, "graph/trie_z.gv");
+
+	n = trie_Str_match(&trie, "");
+	printf("\"\": %s\n", n ? n->leaf : "null");	
+	n = trie_Str_match(&trie, "foo");
+	printf("\"foo\": %s\n", n ? n->leaf : "null");	
+	n = trie_Str_match(&trie, "qux");
+	printf("\"qux\": %s\n", n ? n->leaf : "null");	
+	n = trie_Str_match(&trie, "quxx");
+	printf("\"quxx\": %s\n", n ? n->leaf : "null");	
+	n = trie_Str_match(&trie, "quux");
+	printf("\"quux\": %s\n", n ? n->leaf : "null");	
 
 	printf("Test passed.\n");
 	goto finally;
