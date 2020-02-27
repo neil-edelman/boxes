@@ -9,8 +9,12 @@
  any byte-encoding with a null-terminator, in particular,
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
- It is optimised for lookup. Internally, it is an `<<N>TrieNode>Array`, thus
- `Array.h` must be present.
+ Internally, it is an `<<N>TrieNode>Array`, thus `Array.h` must be present. It
+ is a binary [radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
+ [Morrison 1968, PATRICiA], except with two differences: the index does not
+ store data on the string used to insert, and the trie is stored in a
+ semi-implicit array. In this way, it is optimised for lookup and not
+ insertion or deletion.
 
  `<N>Trie` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
@@ -257,7 +261,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		return 1;
 	}
 	/* `size > 1`; partition the array into three consecutive disjoint sets,
-	 `[0,n1)`, `[n1,n2)`, `[n2,-1]`. `parent`, if not null, is in the first. */
+	 `[0,n1)`, `[n1,n2)`, `[n2,-1]`. */
 	assert((trie->a.size - 1) % 3 == 0 && trie->a.size < (size_t)-3);
 	if(!PT_(reserve)(&trie->a, trie->a.size + 3, 0)) return 0;
 	n1 = trie->a.data;
@@ -295,15 +299,19 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	printf("n1 is %s.\n", PN_(to_desc)(trie, n1, is_n1_branch));
 	printf("n2 is %s.\n", PN_(to_desc)(trie, n2, is_n2_branch));
 	assert(trie->a.data <= n1 && n1 < n2 && n2 <= trie->a.data + trie->a.size);
-	if(cmp < 0) {
-		printf("cmp<0\n");
-		assert(0);
+	if(cmp < 0) { /* Left leaf; `[n1,n2], [n2,-1]` are moved together. */
+		memmove(n1 + 3, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
+		n1[0].branch.choice_bit = bit;
+		n1[0].branch.left_branch  = 0;
+		n1[0].branch.right_branch = is_n1_branch; /* ? */
+		n1[1].right_offset = 2;
+		n1[2].leaf = data;
 	} else { /* Insert a right leaf. */
 		printf("%lu: %lu->%lu; %lu: %lu->%lu\n\n", trie->a.data + trie->a.size - n2, n2 - trie->a.data, n2 + 3 - trie->a.data, n2 - n1,
 			n1 - trie->a.data, n1 + 2 - trie->a.data);
 		memmove(n2 + 3, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
 		memmove(n1 + 2, n1, sizeof n1 * (n2 - n1));
-		n2[2].leaf = data; /* -1 +3; matches `memmove`. */
+		n2[2].leaf = data;
 		n1[0].branch.choice_bit = bit;
 		/* Otherwise it's just inherited from what was there before. */
 		if(!is_n1_branch) n1[0].branch.left_branch = 0;

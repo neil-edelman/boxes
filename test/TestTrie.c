@@ -66,6 +66,35 @@ static int test(void) {
 	trie_Str_graph(&trie, "graph/trie6.gv");
 	/*printf("Trie6: %s.\n\n", StrTrieToString(&trie));*/
 
+	if(!StrTrieAdd(&trie, "a")
+		/*|| !StrTrieAdd(&trie, "b")
+		|| !StrTrieAdd(&trie, "c")
+		|| !StrTrieAdd(&trie, "d")
+		|| !StrTrieAdd(&trie, "e")
+		|| !StrTrieAdd(&trie, "f")
+		|| !StrTrieAdd(&trie, "g")
+		|| !StrTrieAdd(&trie, "h")
+		|| !StrTrieAdd(&trie, "i")
+		|| !StrTrieAdd(&trie, "j")
+		|| !StrTrieAdd(&trie, "k")
+		|| !StrTrieAdd(&trie, "l")
+		|| !StrTrieAdd(&trie, "m")
+		|| !StrTrieAdd(&trie, "n")
+		|| !StrTrieAdd(&trie, "o")
+		|| !StrTrieAdd(&trie, "p")
+		|| !StrTrieAdd(&trie, "q")
+		|| !StrTrieAdd(&trie, "r")
+		|| !StrTrieAdd(&trie, "s")
+		|| !StrTrieAdd(&trie, "t")
+		|| !StrTrieAdd(&trie, "u")
+		|| !StrTrieAdd(&trie, "v")
+		|| !StrTrieAdd(&trie, "w")
+		|| !StrTrieAdd(&trie, "x")
+		|| !StrTrieAdd(&trie, "y")
+		|| !StrTrieAdd(&trie, "z")*/) goto catch;
+	trie_Str_print(&trie);
+	trie_Str_graph(&trie, "graph/trie7.gv");
+
 	printf("Test passed.\n");
 	goto finally;
 catch:
