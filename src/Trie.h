@@ -13,8 +13,8 @@
  resembles a binary [radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
  [Morrison 1968, PATRICiA], except with two notable differences: the index does
  not store data on the string, only the positions where the strings are
- different. Also, the trie is stored in a semi-implicit array. In this way, it
- is optimised for lookup and not insertion or deletion.
+ different. Also, the trie is stored in a semi-implicit array. It is optimised
+ for lookup and not insertion or deletion.
 
  `<N>Trie` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
@@ -354,11 +354,13 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 	if(trie) trie->a.size = 0;
 }
 
-/** Copies `node` into `heap`.
- @param[heap] If null, returns false.
- @return Success.
+/** Adds a reference to `data` in `trie`.
+ @param[heap, data] If null, returns false.
+ @return Success. One can not modify the <typedef:<PN>to_key> portion of the
+ `data` or it will be in an undefined state until deletion; see
+ <fn:<N>TrieModifyKey> (fixme).
  @throws[realloc]
- @order \O(log `size`)
+ @order \O(`new size`)
  @allow */
 static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	return trie ? PN_(add)(trie, data) : 0;
