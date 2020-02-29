@@ -19,7 +19,8 @@ static const PN_(Action) PN_(filler) = (TRIE_TEST);
 static void PN_(print)(const struct N_(Trie) *const trie) {
 	size_t target, n, on;
 	unsigned branch;
-	printf("__print__ trie.size %lu\n", trie ? trie->a.size : 0);
+	printf("__print__ trie.size %lu -> %lu entries\n", trie ? trie->a.size : 0,
+		(unsigned long)N_(TrieSize)(trie));
 	if(!trie) { printf("null\n\n"); return; }
 	if(!trie->a.size) { printf("empty\n\n"); return; }
 	if(trie->a.size == 1) {

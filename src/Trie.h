@@ -14,7 +14,8 @@
  [Morrison 1968, PATRICiA], except with two notable differences: the index does
  not store data on the string, only the positions where the strings are
  different. Also, the trie is stored in a semi-implicit array. It is optimised
- for lookup and not insertion or deletion.
+ for lookup and not insertion or deletion, which have \O(`n`) time
+ complexities; although `memmove` has a low constant factor.
 
  `<N>Trie` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
@@ -316,9 +317,11 @@ static union PN_(TrieNode) *PN_(match)(const struct N_(Trie) *const trie,
 	return n;
 }
 
-/** Most general put function. Puts `data` in `trie` and returns the collided
- element, if any, as long as `replace` is null or returns true. If `replace`
- returns false, returns `element`. */
+/** Adds `data` to `trie` and, if `eject` is non-null, stores the collided
+ element, if any, as long as `replace` is null or returns true.
+ @param[eject] If not-null, the reference will be set to null if there is no
+ ejection. If `replace`, and `replace` returns false, and `eject`, than
+ `*eject == data`. */
 static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	PN_(Type) **const eject, const PN_(Replace) replace) {
 	union PN_(TrieNode) *match;
@@ -369,8 +372,7 @@ static void N_(Trie)(struct N_(Trie) *const trie)
  @order \Theta(1)
  @allow */
 static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
-	return trie && trie->a.size ? trie->a.size > 1
-		? (trie->a.size - 1) / 3 : 1 : 0;
+	return trie && trie->a.size ? 1 + (trie->a.size - 1) / 3 : 0;
 }
 
 /** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
@@ -382,37 +384,46 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 	if(trie) trie->a.size = 0;
 }
 
-/** Puts the `data` in `trie`, ejecting any existing key.
+/** Adds `data` to `trie`. If data with the same key is present, it fails but
+ does not set `errno`.
  @param[trie, data] If null, returns null.
- @param[data] Should not be of a trie because the integrity of that trie will
- be compromised.
- @return Any ejected data or null. (An ejected element has <typedef:<PN>Key>
- `TRIE_KEY` a string equal to `data`.)
- @throws[realloc, ERANGE] There was an error with a re-sizing. (fixme!)
- @order fixme
+ @return Success.
+ @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @order \O(`size`)
  @allow */
-static PN_(Type) *N_(TriePut)(struct N_(Trie) *const trie,
-	PN_(Type) *const data, PN_(Type) *const*const eject) {
-	return PN_(put)(trie, data, eject, 0);
+static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
+	return trie && data ? PN_(put)(trie, data, 0, &PN_(false)) : 0;
 }
 
-/** Puts `data` in `trie` only if the entry is absent or if calling `replace`
+/** Adds `data` to `trie`. If data with the same key is present, it will
+ overwrite it.
+ @param[trie, data] If null, returns null.
+ @param[eject] If not null, on success it will hold the overwritten value or
+ null if it did not overwrite.
+ @return Success.
+ @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @order \O(`size`)
+ @allow */
+static int N_(TriePut)(struct N_(Trie) *const trie,
+	PN_(Type) *const data, PN_(Type) **const eject) {
+	return trie && data ? PN_(put)(trie, data, eject, 0) : 0;
+}
+
+/** Adds `data` to `trie` only if the entry is absent or if calling `replace`
  returns true.
  @param[trie, data] If null, returns null.
- @param[data] Should not be of a trie because the integrity of that trie will
- be compromised.
+ @param[eject] If not null, on success it will hold the overwritten value or
+ null if it did not overwrite.
  @param[replace] Called on collision and only replaces it if the function
- returns true. If null, doesn't do any replacement on collision.
- @return Any ejected data or null. On collision, if `replace` returns false
- or `replace` is null, returns `element` and leaves the other element in the
- trie.
- @throws[realloc, ERANGE] There was an error with a re-sizing. fixme.
- @order fixme.
+ returns true. If null, it is sematically equivalent to <fn:<N>TreePut>.
+ @return Success.
+ @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @order \O(`size`)
  @allow */
-static PN_(Type) *N_(TriePolicyPut)(struct N_(Trie) *const trie,
-	PN_(Type) *const data, PN_(Type) *const*const eject,
+static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
+	PN_(Type) *const data, PN_(Type) **const eject,
 	const PN_(Replace) replace) {
-	return PN_(put)(trie, data, eject, replace ? replace : &PN_(false));
+	return trie && data ? PN_(put)(trie, data, eject, replace) : 0;
 }
 
 /** Can print 4 things at once before it overwrites. One must a
@@ -476,6 +487,7 @@ static void PN_(unused_set)(void) {
 	N_(Trie)(0);
 	N_(TrieSize)(0);
 	N_(TrieClear)(0);
+	N_(TrieAdd)(0, 0);
 	N_(TriePut)(0, 0, 0);
 	N_(TriePolicyPut)(0, 0, 0, 0);
 	N_(TrieToString)(0);
