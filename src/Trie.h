@@ -36,6 +36,7 @@
  <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PN>Action>. Requires `TRIE_TO_STRING` and not `NDEBUG`.
 
+ @fixme Have a `<N>TrieModifyKey` that's faster then re-inserting it.
  @depend [Array.h](../../Array/)
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
@@ -46,6 +47,31 @@
 
 #include <stddef.h>
 #include <string.h>
+
+#ifndef TRIE_H /* <!-- idempotent */
+#define TRIE_H
+
+/* An internal node; assume takes up one register for speed,
+ `sizeof(struct TrieInternal) <= sizeof(size_t)` */
+struct TrieInternal {
+	unsigned choice_bit;
+	unsigned char left_branch, right_branch;
+};
+
+/** Woefully unoptimised. Does it matter? */
+static int trie_strcmp_bit(const char *const a, const char *const b,
+	const unsigned bit) {
+	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
+	return (a[byte] & mask) - (b[byte] & mask);
+}
+
+/** Not going to be bothered to make it 0/1. */
+static unsigned trie_is_bit(const char *const a, const unsigned bit) {
+	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
+	return a[byte] & mask;
+}
+
+#endif /* idempotent --> */
 
 /* Check defines. */
 #ifndef TRIE_NAME
@@ -97,34 +123,9 @@ static const char *trie_raw(const char *const key) { return key; }
 /* Check that `TRIE_KEY` is a function implementing <typedef:<PN>Key>. */
 static const PN_(Key) PN_(to_key) = (TRIE_KEY);
 
-
-
-#ifndef TRIE_H /* <!-- idempotent */
-#define TRIE_H
-
-/** An internal node; assume takes up one register for speed. */
-struct TrieInternal {
-	unsigned choice_bit;
-	unsigned char left_branch, right_branch;
-};
-/* assert(sizeof(struct TrieInternal) <= sizeof(size_t)); */
-
-/** Woefully unoptimised. Does it matter? */
-static int trie_strcmp_bit(const char *const a, const char *const b,
-	const unsigned bit) {
-	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
-	return (a[byte] & mask) - (b[byte] & mask);
-}
-
-/** Not going to be bothered to make it 0/1. */
-static unsigned trie_is_bit(const char *const a, const unsigned bit) {
-	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
-	return a[byte] & mask;
-}
-
-#endif /* idempotent --> */
-
-
+/** A bi-predicate; returns true if the `replace` replaces the `original`; used
+ in <fn:<N>TriePolicyPut>. */
+typedef int (*PN_(Replace))(PN_(Type) *original, PN_(Type) *replace);
 
 /** Strict binary tree nodes in an array; either internal node (`branch`) which
  is always followed by an additive self-reference (`right_offset`,) or an
@@ -153,8 +154,6 @@ struct N_(Trie) { struct PN_(TrieNodeArray) a; };
 #ifndef TRIE_IDLE /* <!-- !zero */
 #define TRIE_IDLE { { 0, 0, 0, 0 } }
 #endif /* !zero --> */
-
-
 
 /** Debug. Only print one at a time. */
 static const char *PN_(to_desc)(const struct N_(Trie) *const trie,
@@ -316,6 +315,22 @@ static union PN_(TrieNode) *PN_(match)(const struct N_(Trie) *const trie,
 	return n;
 }
 
+/** Most general put function. Puts `data` in `trie` and returns the collided
+ element, if any, as long as `replace` is null or returns true. If `replace`
+ returns false, returns `element`. */
+static PN_(Type) *PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
+	const PN_(Replace) replace) {
+	union PN_(TrieNode) *match;
+	PN_(Type) *eject = 0;
+	if(!trie || !data) return 0;
+	if(!(match = PN_(match)(trie, data))
+		|| strcmp(PN_(to_key)(match->leaf), PN_(to_key)(data)))
+		return PN_(add)(trie, data), eject; /* Didn't match; ignores return. */
+	/* Otherwise, it collided; see what the policy says. */
+	if(replace && !replace(match->leaf, data)) return data;
+	eject = match->leaf, match->leaf = data;
+	return eject;
+}
 
 
 
@@ -337,7 +352,7 @@ static void N_(Trie)(struct N_(Trie) *const trie)
 	{ if(trie) PN_(trie)(trie); }
 
 /** @param[trie] If null, returns zero;
- @return The size of `trie`.
+ @return The number of elements in the `trie`.
  @order \Theta(1)
  @allow */
 static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
@@ -354,16 +369,51 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 	if(trie) trie->a.size = 0;
 }
 
-/** Adds a reference to `data` in `trie`.
+/** Puts the `element` in `trie`.
+ @param[trie, element] If null, returns null.
+ @param[element] Should not be of a set because the integrity of that set will
+ be compromised.
+ @return Any ejected element or null. (An ejected element has <typedef:<PN>Key>
+ `TRIE_KEY` a string equal to `element`.)
+ @throws[realloc, ERANGE] There was an error with a re-sizing. (fixme!)
+ @order fixme
+ @allow */
+static PN_(Type) *N_(TriePut)(struct N_(Trie) *const trie,
+	PN_(Type) *const data) {
+	return PN_(put)(trie, data, 0);
+}
+
+/** Puts `data` in `trie` only if the entry is absent or if calling `replace`
+ returns true.
+ @param[trie, data] If null, returns null.
+ @param[data] Should not be of a trie because the integrity of that trie will
+ be compromised.
+ @param[replace] Called on collision and only replaces it if the function
+ returns true. If null, doesn't do any replacement on collision.
+ @return Any ejected element or null. On collision, if `replace` returns false
+ or `replace` is null, returns `element` and leaves the other element in the
+ set.
+ @throws[realloc, ERANGE] There was an error with a re-sizing. fixme.
+ @order fixme.
+ @allow */
+static PN_(Type) *N_(TriePolicyPut)(struct N_(Trie) *const trie,
+	PN_(Type) *const data, const PN_(Replace) replace) {
+	return PE_(put)(trie, data, replace ? replace : &PE_(false));
+}
+
+/** Adds or replaces a reference to `data` in `trie` according to
+ <typedef:<PN>to_key> `TRIE_KEY`.
  @param[heap, data] If null, returns false.
- @return Success. One can not modify the <typedef:<PN>to_key> portion of the
- `data` or it will be in an undefined state until deletion; see
- <fn:<N>TrieModifyKey> (fixme).
+ @return Success. One can not modify the key of the `data` until removal.
  @throws[realloc]
  @order \O(`new size`)
  @allow */
 static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	return trie ? PN_(add)(trie, data) : 0;
+	union PN_(TrieNode) *match;
+	if(!trie || !data) return 0;
+	if((match = PN_(match)(trie, data))
+		&& !strcmp(PN_(to_key)(match), PN_(to_key)(data));
+	PN_(add)(trie, data);
 }
 
 /** Can print 4 things at once before it overwrites. One must a
