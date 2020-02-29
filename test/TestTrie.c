@@ -12,6 +12,9 @@
 #include <string.h> /* strncpy */
 #include "Orcish.h"
 
+extern const char *const parole;
+size_t parole_size = sizeof parole / sizeof *parole;
+
 static void fill_str(const char *str) {
 	/* nothing */ (void)(str);
 }
@@ -21,7 +24,8 @@ static void fill_str(const char *str) {
 #include "../src/Trie.h"
 
 static int test(void) {
-	struct StrTrie trie = TRIE_IDLE;
+	struct StrTrie trie = TRIE_IDLE, ingleshi = TRIE_IDLE;
+	size_t i;
 	union trie_Str_TrieNode *n;
 
 	printf("TrieInternal %lu\n"
@@ -33,71 +37,73 @@ static int test(void) {
 		sizeof(trie_Str_Type *),
 		sizeof(union trie_Str_TrieNode));
 
+	/* fixme: <N>TrieAdd(struct N_(Trie) *, PN_(Type) *) fails if present. */
+	
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie0.gv");
 	/*printf("Trie0: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTriePut(&trie, "foo")) goto catch;
+	if(!StrTriePut(&trie, "foo", 0)) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie1.gv");
 	/*printf("Trie1: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTriePut(&trie, "bar")) goto catch;
+	if(!StrTriePut(&trie, "bar", 0)) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie2.gv");
 	/*printf("Trie2: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTriePut(&trie, "baz")) goto catch;
+	if(!StrTriePut(&trie, "baz", 0)) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie3.gv");
 	/*printf("Trie3: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTriePut(&trie, "qux")) goto catch;
+	if(!StrTriePut(&trie, "qux", 0)) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie4.gv");
 	/*printf("Trie4: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTriePut(&trie, "quxx")) goto catch;
+	if(!StrTriePut(&trie, "quxx", 0)) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie5.gv");
 	/*printf("Trie5: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTriePut(&trie, "quxxx")) goto catch;
+	if(!StrTriePut(&trie, "quxxx", 0)) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie6.gv");
 	/*printf("Trie6: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTriePut(&trie, "a")) goto catch;
+	if(!StrTriePut(&trie, "a", 0)) goto catch;
 	trie_Str_graph(&trie, "graph/trie_a.gv");
-	if(!StrTriePut(&trie, "b")) goto catch;
+	if(!StrTriePut(&trie, "b", 0)) goto catch;
 	trie_Str_graph(&trie, "graph/trie_b.gv");
 	trie_Str_print(&trie);
-	if(!StrTriePut(&trie, "c")) goto catch;
+	if(!StrTriePut(&trie, "c", 0)) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie_c.gv");
-	if(!StrTriePut(&trie, "d")
-		|| !StrTriePut(&trie, "e")
-		|| !StrTriePut(&trie, "f")
-		|| !StrTriePut(&trie, "g")
-		|| !StrTriePut(&trie, "h")
-		|| !StrTriePut(&trie, "i")
-		|| !StrTriePut(&trie, "j")
-		|| !StrTriePut(&trie, "k")
-		|| !StrTriePut(&trie, "l")
-		|| !StrTriePut(&trie, "m")
-		|| !StrTriePut(&trie, "n")
-		|| !StrTriePut(&trie, "o")
-		|| !StrTriePut(&trie, "p")
-		|| !StrTriePut(&trie, "q")
-		|| !StrTriePut(&trie, "r")
-		|| !StrTriePut(&trie, "s")
-		|| !StrTriePut(&trie, "t")
-		|| !StrTriePut(&trie, "u")
-		|| !StrTriePut(&trie, "v")
-		|| !StrTriePut(&trie, "w")
-		|| !StrTriePut(&trie, "x")
-		|| !StrTriePut(&trie, "y")
-		|| !StrTriePut(&trie, "z")) goto catch;
+	if(!StrTriePut(&trie, "d", 0)
+		|| !StrTriePut(&trie, "e", 0)
+		|| !StrTriePut(&trie, "f", 0)
+		|| !StrTriePut(&trie, "g", 0)
+		|| !StrTriePut(&trie, "h", 0)
+		|| !StrTriePut(&trie, "i", 0)
+		|| !StrTriePut(&trie, "j", 0)
+		|| !StrTriePut(&trie, "k", 0)
+		|| !StrTriePut(&trie, "l", 0)
+		|| !StrTriePut(&trie, "m", 0)
+		|| !StrTriePut(&trie, "n", 0)
+		|| !StrTriePut(&trie, "o", 0)
+		|| !StrTriePut(&trie, "p", 0)
+		|| !StrTriePut(&trie, "q", 0)
+		|| !StrTriePut(&trie, "r", 0)
+		|| !StrTriePut(&trie, "s", 0)
+		|| !StrTriePut(&trie, "t", 0)
+		|| !StrTriePut(&trie, "u", 0)
+		|| !StrTriePut(&trie, "v", 0)
+		|| !StrTriePut(&trie, "w", 0)
+		|| !StrTriePut(&trie, "x", 0)
+		|| !StrTriePut(&trie, "y", 0)
+		|| !StrTriePut(&trie, "z", 0)) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie_z.gv");
 
@@ -112,11 +118,19 @@ static int test(void) {
 	n = trie_Str_match(&trie, "quux");
 	printf("\"quux\": %s\n", n ? n->leaf : "null");	
 
+	printf("parole %lu\n", parole_size);
+
+	for(i = 0; i < parole_size / 3000; i++) {
+		const char *eject;
+		if(!StrTriePut(&trie, parole[i], &eject)) goto catch;
+	}
+
 	printf("Test passed.\n");
 	goto finally;
 catch:
 	printf("Test failed.\n");
 finally:
+	StrTrie_(&ingleshi);
 	StrTrie_(&trie);
 	return 1;
 }
