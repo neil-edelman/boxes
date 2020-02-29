@@ -321,16 +321,27 @@ static union PN_(TrieNode) *PN_(match)(const struct N_(Trie) *const trie,
 static PN_(Type) *PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	const PN_(Replace) replace) {
 	union PN_(TrieNode) *match;
-	PN_(Type) *eject = 0;
+	const char *const data_key = PN_(to_key)(data);
 	if(!trie || !data) return 0;
-	if(!(match = PN_(match)(trie, data))
-		|| strcmp(PN_(to_key)(match->leaf), PN_(to_key)(data)))
-		return PN_(add)(trie, data), eject; /* Didn't match; ignores return. */
-	/* Otherwise, it collided; see what the policy says. */
-	if(replace && !replace(match->leaf, data)) return data;
-	eject = match->leaf, match->leaf = data;
-	return eject;
+	if((match = PN_(match)(trie, data))
+		&& strcmp(PN_(to_key)(match->leaf), data_key)) {
+		PN_(Type) *const eject = match->leaf;
+		if(replace && !replace(eject, data)) return data;
+		match->leaf = data;
+		return eject;
+	} else {
+		PN_(add)(trie, data); /* fixme: ignores return. */
+		return 0;
+	}
 }
+
+/** Used in <fn:<N>TriePolicyPut> when `replace` is null; `original` and
+ `replace` are ignored.
+ @implements <typedef:<PN>Replace> */
+static int PN_(false)(PN_(Type) *original, PN_(Type) *replace) {
+	(void)(original); (void)(replace); return 0;
+}
+
 
 
 
@@ -369,12 +380,26 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 	if(trie) trie->a.size = 0;
 }
 
-/** Puts the `element` in `trie`.
- @param[trie, element] If null, returns null.
- @param[element] Should not be of a set because the integrity of that set will
+/** Reserve space for a single datum in `trie`. For use when one wants to
+ guarantee that <fn:<N>TriePut> or <fn:<N>TriePolicyPut> don't return an
+ exception; otherwise checking for an error on return of null necessitates an
+ `errno` check.
+ @return Success.
+ @throws[ERANGE] `reserve` plus the size would take a bigger number then could
+ fit in a `size_t`.
+ @throws[realloc]
+ @allow */
+static int N_(TrieReserve)(struct N_(Trie) *const trie) {
+	return trie ?
+		PT_(reserve)(&trie->a, trie->a.size ? trie->a.size + 3 : 1, 0) : 0;
+}
+
+/** Puts the `data` in `trie`, ejecting any existing key.
+ @param[trie, data] If null, returns null.
+ @param[data] Should not be of a trie because the integrity of that trie will
  be compromised.
- @return Any ejected element or null. (An ejected element has <typedef:<PN>Key>
- `TRIE_KEY` a string equal to `element`.)
+ @return Any ejected data or null. (An ejected element has <typedef:<PN>Key>
+ `TRIE_KEY` a string equal to `data`.)
  @throws[realloc, ERANGE] There was an error with a re-sizing. (fixme!)
  @order fixme
  @allow */
@@ -390,30 +415,15 @@ static PN_(Type) *N_(TriePut)(struct N_(Trie) *const trie,
  be compromised.
  @param[replace] Called on collision and only replaces it if the function
  returns true. If null, doesn't do any replacement on collision.
- @return Any ejected element or null. On collision, if `replace` returns false
+ @return Any ejected data or null. On collision, if `replace` returns false
  or `replace` is null, returns `element` and leaves the other element in the
- set.
+ trie.
  @throws[realloc, ERANGE] There was an error with a re-sizing. fixme.
  @order fixme.
  @allow */
 static PN_(Type) *N_(TriePolicyPut)(struct N_(Trie) *const trie,
 	PN_(Type) *const data, const PN_(Replace) replace) {
-	return PE_(put)(trie, data, replace ? replace : &PE_(false));
-}
-
-/** Adds or replaces a reference to `data` in `trie` according to
- <typedef:<PN>to_key> `TRIE_KEY`.
- @param[heap, data] If null, returns false.
- @return Success. One can not modify the key of the `data` until removal.
- @throws[realloc]
- @order \O(`new size`)
- @allow */
-static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	union PN_(TrieNode) *match;
-	if(!trie || !data) return 0;
-	if((match = PN_(match)(trie, data))
-		&& !strcmp(PN_(to_key)(match), PN_(to_key)(data));
-	PN_(add)(trie, data);
+	return PN_(put)(trie, data, replace ? replace : &PN_(false));
 }
 
 /** Can print 4 things at once before it overwrites. One must a
@@ -477,7 +487,9 @@ static void PN_(unused_set)(void) {
 	N_(Trie)(0);
 	N_(TrieSize)(0);
 	N_(TrieClear)(0);
-	N_(TrieAdd)(0, 0);
+	N_(TrieReserve)(0);
+	N_(TriePut)(0, 0);
+	N_(TriePolicyPut)(0, 0, 0);
 	N_(TrieToString)(0);
 	PN_(unused_coda)();
 }
