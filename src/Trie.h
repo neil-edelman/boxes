@@ -48,6 +48,7 @@
 #include <stddef.h>
 #include <string.h>
 
+
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 
@@ -73,6 +74,7 @@ static unsigned trie_is_bit(const char *const a, const unsigned bit) {
 
 #endif /* idempotent --> */
 
+
 /* Check defines. */
 #ifndef TRIE_NAME
 #error Generic name TRIE_NAME undefined.
@@ -86,6 +88,11 @@ static unsigned trie_is_bit(const char *const a, const unsigned bit) {
 #endif
 #ifndef TRIE_TYPE /* <!-- !type */
 #define TRIE_TYPE const char
+#define TRIE_KEY &trie_raw
+#ifndef TRIE_RAW /* <!-- !raw */
+#define TRIE_RAW /* Idempotent. */
+static const char *trie_raw(const char *const key) { return key; }
+#endif /* !raw --> */
 #endif /* !type --> */
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -113,12 +120,6 @@ typedef TRIE_TYPE PN_(Type);
 
 /** Responsible for picking out the null-terminated string. */
 typedef const char *(*PN_(Key))(PN_(Type) *);
-#ifndef TRIE_KEY /* <!-- !key */
-#define TRIE_KEY &trie_raw
-#ifndef TRIE_RAW /* <!-- !raw */
-static const char *trie_raw(const char *const key) { return key; }
-#endif /* !raw --> */
-#endif /* !key --> */
 
 /* Check that `TRIE_KEY` is a function implementing <typedef:<PN>Key>. */
 static const PN_(Key) PN_(to_key) = (TRIE_KEY);
@@ -343,9 +344,6 @@ static int PN_(false)(PN_(Type) *original, PN_(Type) *replace) {
 }
 
 
-
-
-
 #ifndef TRIE_CHILD /* <!-- !sub-type */
 
 /** Returns `trie` to the idle state where it takes no dynamic memory.
@@ -504,22 +502,27 @@ static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 #undef TRIE_CHILD
 static void PT_(unused_coda)(void);
 /** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
- have the same meanings; they will be replaced with these, and `T` and `H`
+ have the same meanings; they will be replaced with these, and `T` and `N`
  cannot be used. */
 static void PN_(unused_set)(void) {
+	PN_(iterate)(0, 0);
+	PN_(trie_)(0);
+	PN_(trie)(0);
 	PN_(unused_coda)();
+	PN_(node_key)(0, 0);
+	PN_(add)(0, 0);
+	PN_(match)(0, 0);
+	PN_(put)(0, 0, 0);
+	PN_(false)(0);
 }
 static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 #endif /* sub-type --> */
 #undef TRIE_NAME
+#undef TRIE_TYPE
+#undef TRIE_KEY
 #undef N_
 #undef PN_
 #undef PT_
-#undef HEAP_PRIORITY
-#undef TREE_COMPARE
-#ifdef TRIE_TYPE
-#undef TRIE_TYPE
-#endif
 #ifdef TRIE_TEST
 #undef TRIE_TEST
 #endif
