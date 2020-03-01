@@ -317,6 +317,14 @@ static union PN_(TrieNode) *PN_(match)(const struct N_(Trie) *const trie,
 	return n;
 }
 
+static union PN_(TrieNode) *PN_(get)(const struct N_(Trie) *const trie,
+	const char *const str) {
+	union PN_(TrieNode) *match;
+	assert(trie && str);
+	return (match = PN_(match)(trie, str))
+		&& !strcmp(PN_(to_key)(match->leaf), str) ? match : 0;
+}
+
 /** Adds `data` to `trie` and, if `eject` is non-null, stores the collided
  element, if any, as long as `replace` is null or returns true.
  @param[eject] If not-null, the reference will be set to null if there is no
@@ -328,8 +336,7 @@ static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	const char *const data_key = PN_(to_key)(data);
 	assert(trie && data);
 	if(!trie || !data) return 0;
-	if(!(match = PN_(match)(trie, data))
-		|| strcmp(PN_(to_key)(match->leaf), data_key)) {
+	if(!(match = PN_(get)(trie, data_key))) {
 		if(eject) *eject = 0;
 		return PN_(add)(trie, data);
 	}
@@ -382,6 +389,11 @@ static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
  @allow */
 static void N_(TrieClear)(struct N_(Trie) *const trie) {
 	if(trie) trie->a.size = 0;
+}
+
+static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
+	const char *const str) {
+	return 0;
 }
 
 /** Adds `data` to `trie`. If data with the same key is present, it fails but
@@ -487,6 +499,7 @@ static void PN_(unused_set)(void) {
 	N_(Trie)(0);
 	N_(TrieSize)(0);
 	N_(TrieClear)(0);
+	N_(TrieGet)(0, 0);
 	N_(TrieAdd)(0, 0);
 	N_(TriePut)(0, 0, 0);
 	N_(TriePolicyPut)(0, 0, 0, 0);
