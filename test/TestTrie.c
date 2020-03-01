@@ -75,10 +75,6 @@ struct Entry {
 	struct StrListNode node;
 	char str[24];
 };
-static struct Entry *elem_upcast(struct StrSetElement *const elem) {
-	return (struct Entry *)(void *)((char *)elem
-		- offsetof(struct Entry, elem));
-}
 static const struct Entry *node_upcast_c(const struct StrListNode *const node) {
 	return (const struct Entry *)(const void *)((const char *)node
 		- offsetof(struct Entry, node));
@@ -97,7 +93,6 @@ static int str_list_compare(const struct StrListNode *const a,
 #define POOL_TYPE struct Entry
 #include "Pool.h"
 
-#if 0
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
 	union trie_Str_TrieNode *n;
@@ -187,9 +182,8 @@ catch:
 finally:
 	StrTrie_(&trie);
 }
-#endif
 
-/** <Welford, 1962, Note> */
+/** On-line numerically stable first-order statistics, <Welford, 1962, Note>. */
 struct Measure { size_t count; double mean, ssdm; };
 
 static void m_reset(struct Measure *const measure)
@@ -212,17 +206,32 @@ static double m_sample_variance(const struct Measure *const m)
 static double m_stddev(const struct Measure *const measure)
 	{ return sqrt(m_sample_variance(measure)); }
 
-static void test(void) {
+
+
+enum QData { TRIE_INIT, TRIE_LOOK, /*TRIE_ITER,*/
+	SET_INIT, SET_LOOK, /*SET_ITER,*/ Q_END };
+
+static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
 	struct EntryPool entries = POOL_IDLE;
 	struct StrSet set = SET_IDLE;
 	struct StrList list;
-	size_t i, r, s = 1;
+	size_t i, r, s = 1, q;
 	const size_t replicas = 3;
 	clock_t t;
 	unsigned seed = (unsigned)clock();
-	struct Measure trie_init, trie_look, trie_iter, set_init, set_look,
-		set_iter;
+	int success = 1, is_full = 0;
+	struct {
+		const char *name;
+		FILE *fp;
+		struct Measure m;
+	} qs[Q_END] = { { "trie init", 0, {0,0,0} },
+		{ "trie look", 0, {0,0,0} },
+		/*{ "trie iter", 0, {0,0,0} },*/
+		{ "set init", 0, {0,0,0} },
+		{ "set look", 0, {0,0,0} }/*,
+		{ "set iter", 0, {0,0,0} }*/ },
+		gnu = { "experiment", 0, {0,0,0} };
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 
@@ -235,13 +244,22 @@ static void test(void) {
 		sizeof(trie_Str_Type *),
 		sizeof(union trie_Str_TrieNode));
 
-	/*test_basic_trie_str();*/
+	test_basic_trie_str();
 
 	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
 
-	for(s = 1; s < parole_size; s <<= 2) {
-		m_reset(&trie_init), m_reset(&trie_look), m_reset(&trie_iter),
-			m_reset(&set_init), m_reset(&set_look), m_reset(&set_iter);
+	/* Open all graphs for writing. */
+	for(q = 0; q < Q_END; q++) {
+		char fn[64];
+		if(sprintf(fn, "graph/%s.tsv", qs[q].name) < 0
+			|| !(qs[q].fp = fopen(fn, "w"))) goto catch;
+		fprintf(qs[q].fp, "# %s\n"
+			"# <items>\t<t (ms)>\t<sample error on t with %lu replicas>\n",
+			qs[q].name, (unsigned long)replicas);
+	}
+	for(s = 1; !is_full; s <<= 1) {
+		if(s >= parole_size) is_full = 1, s = parole_size;
+		for(q = 0; q < Q_END; q++) m_reset(&qs[q].m);
 		for(r = 0; r < replicas; r++) {
 
 			/* Trie. */
@@ -250,19 +268,19 @@ static void test(void) {
 			for(i = 0; i < s; i++)
 				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
 			t = clock() - t;
-			m_add(&trie_init, 1000.0 / CLOCKS_PER_SEC * t);
-			/*printf("Initialisation of trie took %fms; trie.size %lu; %s.\n",
-				1000.0 / CLOCKS_PER_SEC * t, (unsigned long)StrTrieSize(&trie),
-				StrTrieToString(&trie));*/
+			m_add(&qs[TRIE_INIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			printf("trie size %lu initialisation %fms; %s.\n",
+				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t,
+				StrTrieToString(&trie));
 			t = clock();
 			for(i = 0; i < s; i++) {
 				const char *const str = StrTrieGet(&trie, parole[i]);
 				assert(str);
 			}
 			t = clock() - t;
-			m_add(&trie_look, 1000.0 / CLOCKS_PER_SEC * t);
-			/*printf("Lookup of %lu trie elements took %fms.\n",
-				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);*/
+			m_add(&qs[TRIE_LOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			printf("trie size %lu lookup all %fms.\n",
+				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);
 			/*trie_Str_graph(&inglesi, "graph/inglesi.gv"); -- 31MB. */
 			/*trie_Str_print(&inglesi);*/
 			StrTrieClear(&trie);
@@ -281,47 +299,88 @@ static void test(void) {
 			}
 			StrListSort(&list);
 			t = clock() - t;
-			m_add(&set_init, 1000.0 / CLOCKS_PER_SEC * t);
-			/*printf("Initialisation of linked set took %fms; set.size %lu; %s.\n",
-				1000.0 / CLOCKS_PER_SEC * t, (unsigned long)StrSetSize(&set),
-				StrListToString(&list));*/
+			m_add(&qs[SET_INIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			printf("set size %lu initialisation %fms; %s.\n",
+				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t,
+				StrListToString(&list));
 			t = clock();
 			for(i = 0; i < s; i++) {
 				struct StrSetElement *const str = StrSetGet(&set, parole[i]);
 				assert(str);
 			}
 			t = clock() - t;
-			m_add(&set_look, 1000.0 / CLOCKS_PER_SEC * t);
-			/*printf("Lookup of %lu linked set elements took %fms.\n",
-				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);*/
+			m_add(&qs[SET_LOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			printf("set size %lu lookup all %fms.\n",
+				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);
 			EntryPoolClear(&entries);
 			StrSetClear(&set);
 		}
-		printf("size %lu\n"
-			"Trie init: %f(%f)\n"
-			"Set init: %f(%f)\n"
-			"Trie lookup: %f(%f)\n"
-			"Set lookup: %f(%f)\n",
-			(unsigned long)s,
-			m_mean(&trie_init), m_stddev(&trie_init),
-			m_mean(&set_init), m_stddev(&set_init),
-			m_mean(&trie_look), m_stddev(&trie_look),
-			m_mean(&set_look), m_stddev(&set_look));
+		for(q = 0; q < Q_END; q++) fprintf(qs[q].fp, "%lu\t%f\t%f\n",
+			(unsigned long)s, m_mean(&qs[q].m), m_stddev(&qs[q].m));
 		/*if(parole_size >= s) break;
 		s <<= 2;
 		if(parole_size >= s) s = parole_size;*/
 	}
-
 	printf("Test passed.\n");
 	goto finally;
 catch:
+	success = 0;
+	perror("test");
 	printf("Test failed.\n");
-	assert(0);
-	exit(EXIT_FAILURE);
 finally:
 	EntryPool_(&entries);
 	StrSet_(&set);
 	StrTrie_(&trie);
+	if(gnu.fp && fclose(gnu.fp)) perror(gnu.name);
+	for(q = 0; q < Q_END; q++)
+		if(qs[q].fp && fclose(qs[q].fp)) perror(qs[q].name);
+	if(!success) return 0;
+
+	/* Output a `gnuplot` script. */
+	{
+		char fn[64];
+		if(sprintf(fn, "graph/%s.gnu", gnu.name) < 0
+			|| !(gnu.fp = fopen(fn, "w"))) goto catch2;
+		fprintf(gnu.fp, "set term postscript eps enhanced color\n"
+			"set output \"graph/%s.eps\"\n"
+			"set grid\n"
+			"set xlabel \"elements\"\n"
+			"set ylabel \"time, t (ms)\"\n"
+			"set yrange [0:]\n"
+			"# set xrange [0:1000] # zooming in\n"
+			"# seed %u\n"
+			"plot", gnu.name, seed);
+		for(q = 0; q < Q_END; q++) fprintf(gnu.fp,
+			"%s \\\n\"graph/%s.tsv\" using 1:2:3 with errorlines lw 3 "
+			"title \"%s\"", q ? "," : "", qs[q].name, qs[q].name);
+		fprintf(gnu.fp, "\n");
+	}
+	if(gnu.fp && fclose(gnu.fp)) goto catch2; gnu.fp = 0;
+#define ESYSTEM -300 /* C89 std does not define. */
+	{
+		int result;
+		char cmd[64];
+		fprintf(stderr, "Running Gnuplot to get a graph of, \"%s,\" "
+			"(http://www.gnuplot.info/.)\n", gnu.name);
+		if((result = system("/usr/local/bin/gnuplot --version")) == -1)
+			goto catch2;
+		else if(result != EXIT_SUCCESS) { errno = ESYSTEM; goto catch2; }
+		if(sprintf(cmd, "/usr/local/bin/gnuplot graph/%s.gnu", gnu.name) < 0
+			|| (result = system(cmd)) == -1) goto catch2;
+		else if(result != EXIT_SUCCESS) { errno = ESYSTEM; goto catch2; }
+		fprintf(stderr, "Running open.\n");
+		if(sprintf(cmd, "open graph/%s.eps", gnu.name) < 0
+		   || (result = system(cmd)) == -1) goto catch2;
+		else if(result != EXIT_SUCCESS) { errno = ESYSTEM; goto catch2; }
+	}
+	goto finally2;
+catch2:
+	errno == ESYSTEM
+		? fprintf(stderr, "gnu: automation system returned error\n")
+		: (perror(gnu.name), 0);
+finally2:
+	if(gnu.fp && fclose(gnu.fp)) perror(gnu.name);
+	return 1;
 }
 
 int main(void) {
