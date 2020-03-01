@@ -11,7 +11,12 @@
 #include <errno.h>  /* errno */
 #include <string.h> /* strncpy */
 #include <time.h>   /* clock time */
+#include <math.h>   /* sqrt NAN? */
+#ifndef NAN
+#define NAN (0./0.)
+#endif
 #include "Orcish.h"
+
 
 extern const char *const parole[];
 extern const size_t parole_size;
@@ -92,7 +97,7 @@ static int str_list_compare(const struct StrListNode *const a,
 #define POOL_TYPE struct Entry
 #include "Pool.h"
 
-
+#if 0
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
 	union trie_Str_TrieNode *n;
@@ -182,19 +187,46 @@ catch:
 finally:
 	StrTrie_(&trie);
 }
+#endif
+
+/** <Welford, 1962, Note> */
+struct Measure { size_t count; double mean, ssdm; };
+
+static void m_reset(struct Measure *const measure)
+	{ assert(measure); measure->count = 0, measure->mean = measure->ssdm = 0; }
+
+static void m_add(struct Measure *const measure, const double replica) {
+	const size_t n = ++measure->count;
+	const double delta = replica - measure->mean;
+	assert(measure);
+	measure->mean += delta / n;
+	measure->ssdm += delta * (replica - measure->mean);
+}
+
+static double m_mean(const struct Measure *const measure)
+	{ assert(measure); return measure->count ? measure->mean : NAN; }
+
+static double m_sample_variance(const struct Measure *const m)
+	{ assert(m); return m->count > 1 ? m->ssdm / (m->count - 1) : NAN; }
+
+static double m_stddev(const struct Measure *const measure)
+	{ return sqrt(m_sample_variance(measure)); }
 
 static void test(void) {
 	struct StrTrie trie = TRIE_IDLE;
 	struct EntryPool entries = POOL_IDLE;
 	struct StrSet set = SET_IDLE;
 	struct StrList list;
-	size_t i;
+	size_t i, r, s = 1;
+	const size_t replicas = 3;
 	clock_t t;
-	unsigned seed = (unsigned)0/*clock()*/;
+	unsigned seed = (unsigned)clock();
+	struct Measure trie_init, trie_look, trie_iter, set_init, set_look,
+		set_iter;
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 
-	printf("TrieInternal %lu\n"
+	fprintf(stderr, "TrieInternal %lu\n"
 		"size_t %lu\n"
 		"Type * %lu\n"
 		"union <PN>TrieNode %lu\n",
@@ -203,57 +235,82 @@ static void test(void) {
 		sizeof(trie_Str_Type *),
 		sizeof(union trie_Str_TrieNode));
 
-	test_basic_trie_str();
+	/*test_basic_trie_str();*/
 
-	/* Trie. */
+	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
 
-	printf("parole_size %lu\n", (unsigned long)parole_size);
-	t = clock();
-	for(i = 0; i < parole_size; i++)
-		if(!StrTriePut(&trie, parole[i], 0)) goto catch;
-	t = clock() - t;
-	printf("Initialisation of trie took %fms; trie.size %lu; %s.\n",
-		1000.0 / CLOCKS_PER_SEC * t, (unsigned long)StrTrieSize(&trie),
-		StrTrieToString(&trie));
-	t = clock();
-	for(i = 0; i < parole_size; i++) {
-		const char *const s = StrTrieGet(&trie, parole[i]);
-		assert(s);
+	for(s = 1; s < parole_size; s <<= 2) {
+		m_reset(&trie_init), m_reset(&trie_look), m_reset(&trie_iter),
+			m_reset(&set_init), m_reset(&set_look), m_reset(&set_iter);
+		for(r = 0; r < replicas; r++) {
+
+			/* Trie. */
+
+			t = clock();
+			for(i = 0; i < s; i++)
+				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
+			t = clock() - t;
+			m_add(&trie_init, 1000.0 / CLOCKS_PER_SEC * t);
+			/*printf("Initialisation of trie took %fms; trie.size %lu; %s.\n",
+				1000.0 / CLOCKS_PER_SEC * t, (unsigned long)StrTrieSize(&trie),
+				StrTrieToString(&trie));*/
+			t = clock();
+			for(i = 0; i < s; i++) {
+				const char *const str = StrTrieGet(&trie, parole[i]);
+				assert(str);
+			}
+			t = clock() - t;
+			m_add(&trie_look, 1000.0 / CLOCKS_PER_SEC * t);
+			/*printf("Lookup of %lu trie elements took %fms.\n",
+				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);*/
+			/*trie_Str_graph(&inglesi, "graph/inglesi.gv"); -- 31MB. */
+			/*trie_Str_print(&inglesi);*/
+			StrTrieClear(&trie);
+
+			/* Linked set. */
+
+			StrListClear(&list);
+			t = clock();
+			for(i = 0; i < s; i++) {
+				struct Entry *const e = EntryPoolNew(&entries);
+				e->elem.key = e->str;
+				strcpy(e->str, parole[i]);
+				if(StrSetPolicyPut(&set, &e->elem, 0))
+					{ EntryPoolRemove(&entries, e); continue; } /* Duplicate. */
+				StrListPush(&list, &e->node);
+			}
+			StrListSort(&list);
+			t = clock() - t;
+			m_add(&set_init, 1000.0 / CLOCKS_PER_SEC * t);
+			/*printf("Initialisation of linked set took %fms; set.size %lu; %s.\n",
+				1000.0 / CLOCKS_PER_SEC * t, (unsigned long)StrSetSize(&set),
+				StrListToString(&list));*/
+			t = clock();
+			for(i = 0; i < s; i++) {
+				struct StrSetElement *const str = StrSetGet(&set, parole[i]);
+				assert(str);
+			}
+			t = clock() - t;
+			m_add(&set_look, 1000.0 / CLOCKS_PER_SEC * t);
+			/*printf("Lookup of %lu linked set elements took %fms.\n",
+				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);*/
+			EntryPoolClear(&entries);
+			StrSetClear(&set);
+		}
+		printf("size %lu\n"
+			"Trie init: %f(%f)\n"
+			"Set init: %f(%f)\n"
+			"Trie lookup: %f(%f)\n"
+			"Set lookup: %f(%f)\n",
+			(unsigned long)s,
+			m_mean(&trie_init), m_stddev(&trie_init),
+			m_mean(&set_init), m_stddev(&set_init),
+			m_mean(&trie_look), m_stddev(&trie_look),
+			m_mean(&set_look), m_stddev(&set_look));
+		/*if(parole_size >= s) break;
+		s <<= 2;
+		if(parole_size >= s) s = parole_size;*/
 	}
-	t = clock() - t;
-	printf("Lookup of %lu trie elements took %fms.\n",
-		(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);
-	/*trie_Str_graph(&inglesi, "graph/inglesi.gv"); -- 31MB. */
-	/*trie_Str_print(&inglesi);*/
-	StrTrie_(&trie);
-
-	/* Linked set. */
-
-	StrListClear(&list);
-	t = clock();
-	for(i = 0; i < parole_size; i++) {
-		struct Entry *const e = EntryPoolNew(&entries);
-		e->elem.key = e->str;
-		strcpy(e->str, parole[i]);
-		if(StrSetPolicyPut(&set, &e->elem, 0))
-			{ EntryPoolRemove(&entries, e); continue; } /* Duplicate. */
-		StrListPush(&list, &e->node);
-	}
-	StrListSort(&list);
-	t = clock() - t;
-	printf("Initialisation of linked set took %fms; set.size %lu; %s.\n",
-		1000.0 / CLOCKS_PER_SEC * t, (unsigned long)StrSetSize(&set),
-		StrListToString(&list));
-	t = clock();
-	for(i = 0; i < parole_size; i++) {
-		struct StrSetElement *const s = StrSetGet(&set, parole[i]);
-		assert(s);
-	}
-	t = clock() - t;
-	printf("Lookup of %lu linked set elements took %fms.\n",
-		(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);
-	EntryPool_(&entries);
-	StrSet_(&set);
 
 	printf("Test passed.\n");
 	goto finally;
