@@ -393,7 +393,8 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 
 static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	const char *const str) {
-	return 0;
+	union PN_(TrieNode) *n;
+	return trie && str && (n = PN_(get)(trie, str)) ? n->leaf : 0;
 }
 
 /** Adds `data` to `trie`. If data with the same key is present, it fails but

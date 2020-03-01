@@ -217,7 +217,7 @@ static void test(void) {
 		StrTrieToString(&trie));
 	t = clock();
 	for(i = 0; i < parole_size; i++) {
-		const char *const s = StrTrieGet(&set, parole[i]);
+		const char *const s = StrTrieGet(&trie, parole[i]);
 		assert(s);
 	}
 	t = clock() - t;
