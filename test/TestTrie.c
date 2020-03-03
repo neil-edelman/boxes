@@ -219,7 +219,6 @@ static int test(void) {
 	size_t i, r, s = 1, q;
 	const size_t replicas = 3;
 	clock_t t;
-	unsigned seed = (unsigned)clock();
 	int success = 1, is_full = 0;
 	struct {
 		const char *name;
@@ -232,19 +231,6 @@ static int test(void) {
 		{ "set look", 0, {0,0,0} }/*,
 		{ "set iter", 0, {0,0,0} }*/ },
 		gnu = { "experiment", 0, {0,0,0} };
-
-	srand(seed), rand(), printf("Seed %u.\n", seed);
-
-	fprintf(stderr, "TrieInternal %lu\n"
-		"size_t %lu\n"
-		"Type * %lu\n"
-		"union <PN>TrieNode %lu\n",
-		sizeof(struct TrieInternal),
-		sizeof(size_t),
-		sizeof(trie_Str_Type *),
-		sizeof(union trie_Str_TrieNode));
-
-	test_basic_trie_str();
 
 	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
 
@@ -349,7 +335,7 @@ finally:
 			"set yrange [0:]\n"
 			"# set xrange [0:1000] # zooming in\n"
 			"# seed %u\n"
-			"plot", gnu.name, seed);
+			"plot", gnu.name, 0/*seed*/);
 		for(q = 0; q < Q_END; q++) fprintf(gnu.fp,
 			"%s \\\n\"graph/%s.tsv\" using 1:2:3 with errorlines lw 3 "
 			"title \"%s\"", q ? "," : "", qs[q].name, qs[q].name);
@@ -384,6 +370,19 @@ finally2:
 }
 
 int main(void) {
+	unsigned seed = (unsigned)clock();
+	srand(seed), rand(), printf("Seed %u.\n", seed);
+	fprintf(stderr, "TrieInternal %lu\n"
+		"size_t %lu\n"
+		"Type * %lu\n"
+		"union <PN>TrieNode %lu\n",
+		sizeof(struct TrieInternal),
+		sizeof(size_t),
+		sizeof(trie_Str_Type *),
+		sizeof(union trie_Str_TrieNode));
+	fprintf(stderr, "union A %lu\n"
+		"struct B %lu\n", sizeof(union A), sizeof(struct B));
+	test_basic_trie_str();
 	test();
 	return EXIT_SUCCESS;
 }
