@@ -208,9 +208,11 @@ static void PN_(trie_)(struct N_(Trie) *const trie)
  @order O(`nodes`) */
 static const char *PN_(node_key)(const union PN_(TrieNode) *node,
 	size_t branch) {
-	if(branch) while(node->branch.left_branches) node++;
+	if(branch) { while(node->branch.left_branches) node++; node++; }
 	return PN_(to_key)(node->leaf);
 }
+
+static void PN_(print_node)(const struct N_(Trie) *const trie, const size_t n);
 
 /** Add `data` to `trie`. This assumes that the key of `data` is not the same
  as any in `trie`, so make sure before calling this or else it may crash, (it
@@ -233,6 +235,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	assert((trie->a.size & 1) == 1 && trie->a.size < (size_t)-2);
 	if(!PT_(reserve)(&trie->a, trie->a.size + 2, 0)) return 0;
 	n1 = trie->a.data, n2 = 0;
+	printf("add into %lu n1: ", trie->a.size), PN_(print_node)(trie, n1 - trie->a.data);
 	n1_key = PN_(node_key)(n1, n1_branches = (trie->a.size>1)), assert(n1_key);
 	printf("data_key %s, n1_key %s\n", data_key, n1_key);
 	

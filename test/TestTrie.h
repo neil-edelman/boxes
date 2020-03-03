@@ -36,10 +36,10 @@ static int PN_(is_branch)(const struct N_(Trie) *const trie,
 	const size_t n) {
 	size_t idx = 0, left_branches, left_nodes;
 	assert(trie && n < trie->a.size);
-	/*printf("->is_branch(%lu/%lu)\n", n, trie->a.size);*/
+	printf("->is_branch(%lu/%lu) ", n, trie->a.size);
 	if(trie->a.size <= 1) return 0;
 	for( ; ; ) {
-		if(n <= idx) return /*printf("1\n"),*/ 1;
+		if(n <= idx) return printf("1\n"), 1;
 		left_branches = trie->a.data[idx].branch.left_branches;
 		left_nodes = (left_branches << 1) + 1;
 		if(n <= idx + left_nodes) {
@@ -52,7 +52,11 @@ static int PN_(is_branch)(const struct N_(Trie) *const trie,
 			if(trie->a.size - idx <= 1) break;
 		}
 	}
-	return /*printf("0\n"),*/ 0;
+	return printf("0\n"), 0;
+}
+
+static void PN_(print_node)(const struct N_(Trie) *const trie, const size_t n) {
+	PN_(is_branch)(trie, n) ? PN_(print_branch)(trie, n) : PN_(print_leaf)(trie, n);
 }
 
 static void PN_(print)(const struct N_(Trie) *const trie) {
@@ -62,9 +66,7 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 		(unsigned long)N_(TrieSize)(trie));
 	if(!trie) { printf("null\n\n"); return; }
 	if(!trie->a.size) { printf("empty\n\n"); return; }
-	for(n = 0; n < trie->a.size; n++)
-		PN_(is_branch)(trie, n)
-		? PN_(print_branch)(trie, n) : PN_(print_leaf)(trie, n);
+	for(n = 0; n < trie->a.size; n++) PN_(print_node)(trie, n);
 	printf("\n");
 }
 
