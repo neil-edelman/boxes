@@ -203,16 +203,6 @@ static void PN_(trie)(struct N_(Trie) *const trie)
 static void PN_(trie_)(struct N_(Trie) *const trie)
 	{ assert(trie); free(trie->a.data); PN_(trie)(trie); }
 
-/** @return The key at the leaf taken from `node` all the way to the left.
- This is more cache efficient then the right on average.
- @order O(`nodes`) */
-static const char *PN_(node_key)(const union PN_(TrieNode) *node,
-	size_t branch) {
-	if(branch) { while(node->branch.left_branches) node++; node++; }
-	assert(PN_(to_key)(node->leaf));
-	return PN_(to_key)(node->leaf);
-}
-
 static void PN_(print_node)(const struct N_(Trie) *const trie, const size_t n);
 
 #include <limits.h>
@@ -222,64 +212,74 @@ static void PN_(print_node)(const struct N_(Trie) *const trie, const size_t n);
  doesn't do `NUL` checks.)
  @order O(`nodes`) */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	/* Partition the array into three consecutive disjoint sets indexed by,
-	 `[0,n1)`, `[n1,n2)`, `[n2,size)`. */
+	size_t size = trie->a.size;
 	union PN_(TrieNode) *n1, *n2;
-	const size_t leaves_size = (trie->a.size >> 1) + 1;
-	size_t n1_branches;
 	const char *const data_key = PN_(to_key)(data), *n1_key;
 	unsigned bit = 0;
 	int cmp;
-	assert(trie && data);
-	/* Empty special case. */
-	if(trie->a.size == 0) { if(!(n1 = PT_(new)(&trie->a, 0))) return 0;
-		n1->leaf = data; return 1; }
-	/* Always odd except zero. */
-	assert((trie->a.size & 1) == 1 && trie->a.size < (size_t)-2);
+
+	assert(trie && data && size < (size_t)-2);
+	printf("ADD data_key = \"%s\".\n", data_key);
+
+	/* Empty short circuit. */
+	if(!size) return (n1 = PT_(new)(&trie->a, 0)) ? (n1->leaf = data, 1) : 0;
+
+	/* Non-empty; odd; reserve +2. */
+	assert((size & 1) == 1);
 	if(!PT_(reserve)(&trie->a, trie->a.size + 2, 0)) return 0;
-	n1 = trie->a.data;
-	n1_key = PN_(node_key)(n1, n1_branches = (trie->a.size>1)), assert(n1_key);
-	n2 = 0;
-	printf("ADD data_key %s, n1_key %s\n", data_key, n1_key);
-	printf("into %lu; n1 -- ", (trie->a.size >> 1) + 1),
-		PN_(print_node)(trie, 0);
-	for( ; ; ) {
-		/* Compare bit-by-bit. If it's a leaf, there no upper bound. */
-		while((!n1_branches || bit < n1->branch.choice_bit)
-			&& (cmp = trie_strcmp_bit(data_key, n1_key, bit)) == 0) bit++;
-		/* Leaf or bit difference stop. */
-		if(!n1_branches || bit != n1->branch.choice_bit) break;
-		/* Follow the branch. */
-		if(!trie_is_bit(data_key, bit)) {
-			n1_branches = n1->branch.left_branches++; /* Update. */
-			n2 = n1 + (n1_branches << 1) + 2; /* `n2` is the end of `n1`. */
-			n1++; /* Descend left. */
-		} else {
-			n1_branches = leaves_size - n1->branch.left_branches - 2;
-			n1 += (n1->branch.left_branches << 1) + 2; /* Descend right. */
-			n1_key = PN_(node_key)(n1, n1_branches);
+
+	/* Partition the array into three consecutive disjoint sets,
+	 `[+0, n1)`, `[n1, n2)`, `[n2, +size)`. */
+	n1 = trie->a.data, n2 = n1 + trie->a.size;
+	n1_key = PN_(to_key)(n1[n1->branch.left_branches + 1].leaf);
+	printf("...n1_key %s, in leafs %lu; n1 -- \n", data_key,
+		   n1_key, (size >> 1) + 1), PN_(print_node)(trie, 0);
+	if(size > 1) {
+		size_t n1_branches;
+		do {
+			const unsigned choice_bit = n1->branch.choice_bit;
+			/* Compare bit-by-bit it it diverges. */
+			while(bit < choice_bit) {
+				if((cmp = trie_strcmp_bit(data_key, n1_key, bit)) != 0)
+					goto insert;
+				bit++;
+			}
+			/* Follow the branch. */
+			if(!trie_is_bit(data_key, bit)) {
+				n1_branches = n1->branch.left_branches++; /* Update. */
+				n2 = n1 + (n1_branches << 1) + 2; /* Move before. */
+				n1++; /* Descend left. */
+			} else {
+				/*n1_branches = (size >> 1) - n1->branch.left_branches - 1;*/
+				n1 += (n1->branch.left_branches << 1) + 2; /* Descend right. */
+				n1_key = n1[n1->branch.left_branches + 1].leaf;
+				n1_branches = (n2 - n1) >> 1;
+			}
+		} while(n1_branches);
+	}
+	while((cmp = trie_strcmp_bit(data_key, n1_key, bit)) == 0) bit++;
+
+insert:
+	if(!n2) ; /* `n1` is all the way right. */
+		printf("partition %lu: [0,%lu)[%lu,%lu)[%lu,%lu)\n", trie->a.size,
+			n1 - trie->a.data, n1 - trie->a.data, n2 - trie->a.data,
+			n2 - trie->a.data, trie->a.size);
+		assert(trie->a.data <= n1 && n1 < n2 && n2 <= trie->a.data + trie->a.size);
+		if(cmp < 0) { /* Insert left leaf; `[n1,n2], [n2,-1]` are moved together. */
+			printf("insert left\n");
+			memmove(n1 + 2, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
+			n1[0].branch.choice_bit = bit;
+			n1[0].branch.left_branches = 0;
+			n1[1].leaf = data;
+		} else { /* Insert a right leaf. */
+			printf("insert right\n");
+			memmove(n2 + 2, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
+			memmove(n1 + 1, n1, sizeof n1 * (n2 - n1));
+			n1[0].branch.choice_bit = bit;
+			assert((n2 - n1) >> 1 <= UINT_MAX);
+			n1[0].branch.left_branches = (unsigned)((n2 - n1) >> 1);
+			n2[1].leaf = data;
 		}
-	}
-	if(!n2) n2 = trie->a.data + trie->a.size; /* `n1` is all the way right. */
-	printf("partition %lu: [0,%lu)[%lu,%lu)[%lu,%lu)\n", trie->a.size,
-		n1 - trie->a.data, n1 - trie->a.data, n2 - trie->a.data,
-		n2 - trie->a.data, trie->a.size);
-	assert(trie->a.data <= n1 && n1 < n2 && n2 <= trie->a.data + trie->a.size);
-	if(cmp < 0) { /* Insert left leaf; `[n1,n2], [n2,-1]` are moved together. */
-		printf("insert left\n");
-		memmove(n1 + 2, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
-		n1[0].branch.choice_bit = bit;
-		n1[0].branch.left_branches = 0;
-		n1[1].leaf = data;
-	} else { /* Insert a right leaf. */
-		printf("insert right\n");
-		memmove(n2 + 2, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
-		memmove(n1 + 1, n1, sizeof n1 * (n2 - n1));
-		n1[0].branch.choice_bit = bit;
-		assert((n2 - n1) >> 1 <= UINT_MAX);
-		n1[0].branch.left_branches = (unsigned)((n2 - n1) >> 1);
-		n2[1].leaf = data;
-	}
 	trie->a.size += 2;
 	return 1;
 }

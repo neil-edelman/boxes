@@ -38,15 +38,8 @@ static int PN_(is_branch)(const struct N_(Trie) *const trie,
 	assert(trie && trie->a.size && i1 <= i2);
 	for( ; i0 < i1; ) {
 		i0_lnode = (((size_t)trie->a.data[i0].branch.left_branches) << 1) + 1;
-		if(i1 <= i0 + i0_lnode) {
-			/*printf("   left (i0_lnode %lu) %lu:%lu:%lu\n",
-				i0_lnode, i0, i1, i2);*/
-			i2 = i0++ + i0_lnode;
-		} else {
-			/*printf("   right (i0_lnode %lu) %lu:%lu:%lu\n",
-				i0_lnode, i0, i1, i2);*/
-			i0 += i0_lnode + 1;
-		}
+		if(i1 <= i0 + i0_lnode) i2 = i0++ + i0_lnode;
+		else                    i0 += i0_lnode + 1;
 	}
 	/*printf("  is_branch %lu:%lu:%lu %s\n", i0, i1, i2, i1 < i2 ? "yes" : "no");*/
 	assert(i0 == i1);
