@@ -214,9 +214,10 @@ static double m_sample_variance(const struct Measure *const m)
 static double m_stddev(const struct Measure *const measure)
 	{ return sqrt(m_sample_variance(measure)); }
 
+/* How many experiments is an X-macro. */
 #define PARAM(A) A
 #define STRUCT(A) { #A, 0, { 0, 0, 0 } }
-#define QS(X) X(ARRAYINIT), X(TRIEINIT), X(TRIELOOK), X(SETINIT), X(SETLOOK)
+#define ES(X) X(ARRAYINIT), X(TRIEINIT), X(TRIELOOK), X(SETINIT), X(SETLOOK)
 
 static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
@@ -224,33 +225,30 @@ static int test(void) {
 	struct EntryPool entries = POOL_IDLE;
 	struct StrSet set = SET_IDLE;
 	struct StrList list;
-	size_t i, r, s = 1, q;
+	size_t i, r, s = 1, e;
 	const size_t replicas = 3;
 	clock_t t;
 	int success = 1, is_full = 0;
-	enum Qs { QS(PARAM) };
-	struct {
-		const char *name;
-		FILE *fp;
-		struct Measure m;
-	} qs[] = { QS(STRUCT) },
-		gnu = { "experiment", 0, {0,0,0} };
-	const size_t qs_size = sizeof qs / sizeof *qs;
+	/* How many files we open simultaneously qs.size OR gnu.size. */
+	enum { ES(PARAM) };
+	struct { const char *name; FILE *fp; struct Measure m; }
+		es[] = { ES(STRUCT) }, gnu = { "experiment", 0, {0,0,0} };
+	const size_t es_size = sizeof es / sizeof *es;
 
 	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
 
 	/* Open all graphs for writing. */
-	for(q = 0; q < qs_size; q++) {
+	for(e = 0; e < es_size; e++) {
 		char fn[64];
-		if(sprintf(fn, "graph/%s.tsv", qs[q].name) < 0
-			|| !(qs[q].fp = fopen(fn, "w"))) goto catch;
-		fprintf(qs[q].fp, "# %s\n"
+		if(sprintf(fn, "graph/%s.tsv", es[e].name) < 0
+			|| !(es[e].fp = fopen(fn, "w"))) goto catch;
+		fprintf(es[e].fp, "# %s\n"
 			"# <items>\t<t (ms)>\t<sample error on t with %lu replicas>\n",
-			qs[q].name, (unsigned long)replicas);
+			es[e].name, (unsigned long)replicas);
 	}
 	for(s = 1; !is_full; s <<= 1) {
 		if(s >= parole_size) is_full = 1, s = parole_size;
-		for(q = 0; q < qs_size; q++) m_reset(&qs[q].m);
+		for(e = 0; e < es_size; e++) m_reset(&es[e].m);
 		for(r = 0; r < replicas; r++) {
 			printf("replica %lu\n", r + 1);
 
@@ -260,7 +258,7 @@ static int test(void) {
 			for(i = 0; i < s; i++)
 				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
 			t = clock() - t;
-			m_add(&qs[TRIEINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&es[TRIEINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
 			printf("trie size %lu initialisation %fms; %s.\n",
 				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t,
 				StrTrieToString(&trie));
@@ -270,7 +268,7 @@ static int test(void) {
 				assert(str);
 			}
 			t = clock() - t;
-			m_add(&qs[TRIELOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&es[TRIELOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
 			printf("trie size %lu lookup all %fms.\n",
 				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);
 			/*trie_Str_graph(&inglesi, "graph/inglesi.gv"); -- 31MB. */
@@ -287,23 +285,23 @@ static int test(void) {
 					(int (*)(const void *, const void *))&strcmp);
 			}
 			t = clock() - t;
-			m_add(&qs[ARRAYINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&es[ARRAYINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
 
 			/* Linked set. */
 
 			StrListClear(&list);
 			t = clock();
 			for(i = 0; i < s; i++) {
-				struct Entry *const e = EntryPoolNew(&entries);
-				e->elem.key = e->str;
-				strcpy(e->str, parole[i]);
-				if(StrSetPolicyPut(&set, &e->elem, 0))
-					{ EntryPoolRemove(&entries, e); continue; } /* Duplicate. */
-				StrListPush(&list, &e->node);
+				struct Entry *const n = EntryPoolNew(&entries);
+				n->elem.key = n->str;
+				strcpy(n->str, parole[i]);
+				if(StrSetPolicyPut(&set, &n->elem, 0))
+					{ EntryPoolRemove(&entries, n); continue; } /* Duplicate. */
+				StrListPush(&list, &n->node);
 			}
 			StrListSort(&list);
 			t = clock() - t;
-			m_add(&qs[SETINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&es[SETINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
 			printf("set size %lu initialisation %fms; %s.\n",
 				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t,
 				StrListToString(&list));
@@ -313,14 +311,14 @@ static int test(void) {
 				assert(str);
 			}
 			t = clock() - t;
-			m_add(&qs[SETLOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&es[SETLOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
 			printf("set size %lu lookup all %fms.\n",
 				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);
 			EntryPoolClear(&entries);
 			StrSetClear(&set);
 		}
-		for(q = 0; q < qs_size; q++) fprintf(qs[q].fp, "%lu\t%f\t%f\n",
-			(unsigned long)s, m_mean(&qs[q].m), m_stddev(&qs[q].m));
+		for(e = 0; e < es_size; e++) fprintf(es[e].fp, "%lu\t%f\t%f\n",
+			(unsigned long)s, m_mean(&es[e].m), m_stddev(&es[e].m));
 		/*if(parole_size >= s) break;
 		s <<= 2;
 		if(parole_size >= s) s = parole_size;*/
@@ -337,8 +335,8 @@ finally:
 	StrSet_(&set);
 	StrTrie_(&trie);
 	if(gnu.fp && fclose(gnu.fp)) perror(gnu.name);
-	for(q = 0; q < qs_size; q++)
-		if(qs[q].fp && fclose(qs[q].fp)) perror(qs[q].name);
+	for(e = 0; e < es_size; e++)
+		if(es[e].fp && fclose(es[e].fp)) perror(es[e].name);
 	if(!success) return 0;
 
 	/* Output a `gnuplot` script. */
@@ -354,10 +352,10 @@ finally:
 			"set yrange [0:2000]\n"
 			"set log x\n"
 			"plot", gnu.name);
-		for(q = 0; q < qs_size; q++) fprintf(gnu.fp,
+		for(e = 0; e < es_size; e++) fprintf(gnu.fp,
 			"%s \\\n\"graph/%s.tsv\" using 1:($2/$1*1000000):($3/$1*1000000) "
-			"with errorlines lw 3 title \"%s\"", q ? "," : "",
-			qs[q].name, qs[q].name);
+			"with errorlines lw 3 title \"%s\"", e ? "," : "",
+			es[e].name, es[e].name);
 		fprintf(gnu.fp, "\n");
 	}
 	if(gnu.fp && fclose(gnu.fp)) goto catch2; gnu.fp = 0;
