@@ -308,18 +308,24 @@ static union PN_(TrieNode) *PN_(match)(const struct N_(Trie) *const trie,
 	int is_branch = trie->a.size > 1;
 	assert(trie && str);
 	if(!trie->a.size) return 0;
+	printf("looking up \"%s\"\n", str);
+	/* fixme: where's the squeeze `n2`? This is wrong. */
+	/////
 	while(is_branch) {
 		/* Don't go farther than the string. */
 		bit = node->branch.choice_bit;
+		printf("lookup: bit %u\n", bit);
 		for(byte = bit >> 3; str_byte < byte; str_byte++)
 			if(str[str_byte] == '\0') return 0;
 		/* Otherwise, choose the branch. */
-		if(trie_is_bit(str, bit)) {
-			is_branch = leaves_size - node->branch.left_branches - 2;
-			node += (node->branch.left_branches << 1) + 2;
-		} else {
+		if(!trie_is_bit(str, bit)) {
+			printf("off\n");
 			is_branch = node->branch.left_branches;
 			node++;
+		} else {
+			printf("on\n");
+			is_branch = !!(leaves_size - node->branch.left_branches - 2);
+			node += (node->branch.left_branches << 1) + 2;
 		}
 		assert(node < trie->a.data + trie->a.size);
 	}
