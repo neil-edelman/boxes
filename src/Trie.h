@@ -207,6 +207,11 @@ static void PN_(print_node)(const struct N_(Trie) *const trie, const size_t n);
 
 #include <limits.h>
 
+static union PN_(TrieNode) *PN_(branch_left_leaf)(union PN_(TrieNode) *node) {
+	while(node->branch.left_branches) node++;
+	return node + 1;
+}
+
 /** Add `data` to `trie`. This assumes that the key of `data` is not the same
  as any in `trie`, so make sure before calling this or else it may crash, (it
  doesn't do `NUL` checks.)
@@ -231,11 +236,12 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	/* Partition the array into three consecutive disjoint sets,
 	 `[+0, n1)`, `[n1, n2)`, `[n2, +size)`. */
 	n1 = trie->a.data, n2 = n1 + trie->a.size;
-	n1_key = PN_(to_key)(n1[n1->branch.left_branches + 1].leaf);
-	printf("...n1_key %s, in leafs %lu; n1 -- \n", data_key,
-		   n1_key, (size >> 1) + 1), PN_(print_node)(trie, 0);
-	if(size > 1) {
+	if(size == 1) {
+		n1_key = PN_(to_key)(n1->leaf);
+	} else {
 		size_t n1_branches;
+		n1_key = PN_(to_key)(PN_(branch_left_leaf)(n1)->leaf);
+		printf("...root key \"%s\", ", n1_key), PN_(print_node)(trie, 0);
 		do {
 			const unsigned choice_bit = n1->branch.choice_bit;
 			/* Compare bit-by-bit it it diverges. */
@@ -249,14 +255,20 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 				n1_branches = n1->branch.left_branches++; /* Update. */
 				n2 = n1 + (n1_branches << 1) + 2; /* Move before. */
 				n1++; /* Descend left. */
+				printf("*left\n");
 			} else {
 				/*n1_branches = (size >> 1) - n1->branch.left_branches - 1;*/
+				printf("n1 is %ld; ", n1 - trie->a.data);
 				n1 += (n1->branch.left_branches << 1) + 2; /* Descend right. */
-				n1_key = n1[n1->branch.left_branches + 1].leaf;
+				printf("now %ld\n", n1 - trie->a.data);
 				n1_branches = (n2 - n1) >> 1;
+				n1_key = PN_(to_key)(n1_branches ? PN_(branch_left_leaf)(n1)->leaf : n1->leaf);
+				printf("*right branches %lu\n", n1_branches);
 			}
 		} while(n1_branches);
 	}
+	/* Leaf insertion. */
+	printf("Leaf insertion n1 = %lu (%s, %s)\n", n1 - trie->a.data, data_key, n1_key);
 	while((cmp = trie_strcmp_bit(data_key, n1_key, bit)) == 0) bit++;
 
 insert:
