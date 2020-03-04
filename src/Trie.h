@@ -157,32 +157,24 @@ struct N_(Trie) { struct PN_(TrieNodeArray) a; };
 /** Converts a `leaf` index an internal index that exists in `trie`. `leaf`
  must be a valid index.
  @order \O(log `size`) if the strings are bounded. */
-static size_t PN_(leaf_index)(struct N_(Trie) *const trie, const size_t leaf) {
-	size_t idx, leaves_size, leaves_seen, left_branches;
+static size_t PN_(leaf_index)(struct N_(Trie) *const trie, size_t leaf) {
+	size_t i0 = 0, i1 = trie->a.size - 1, left_branches;
 	assert(trie && trie->a.size && (trie->a.size & 1) == 1
 		&& leaf <= trie->a.size >> 1);
-	/* Special case. */
-	if(trie->a.size == 1) return 0;
-	/* Start at the top and traverse internal nodes until we hit a leaf. */
-	for(leaves_size = (trie->a.size >> 1) + 1, leaves_seen = idx = 0; ; ) {
-		left_branches = trie->a.data[idx].branch.left;
-		if(leaf <= leaves_seen + left_branches) {
-			idx++; /* Take left. */
-			if(!left_branches) break;
-		} else {
-			leaves_seen += left_branches + 1;
-			if(leaves_size - leaves_seen <= 1) break;
-			idx += (left_branches << 1) + 2; /* Take right. */
-		}
+	while(i0 < i1) {
+		left_branches = trie->a.data[i0].branch.left;
+		if(leaf <= left_branches) i1 = i0++ + (left_branches << 1) + 1;
+		else leaf -= left_branches + 1, i0 += (left_branches << 1) + 2;
 	}
-	return idx;
+	assert(i0 == i1 && i0 < trie->a.size);
+	return i0;
 }
 
 /** Retrieves a `leaf` index or null if the index is out-of-bounds in `trie`. */
 static PN_(Type) *PN_(leaf)(struct N_(Trie) *const trie, const size_t leaf) {
 	size_t i;
 	assert(trie);
-	if(!trie->a.size || leaf > trie->a.size) return 0;
+	if(!trie->a.size || leaf > trie->a.size >> 1) return 0;
 	i = PN_(leaf_index)(trie, leaf);
 	printf("**leaf %p, %lu -> %lu\n", trie, leaf, i);
 	return trie->a.data[i].leaf;
