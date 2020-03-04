@@ -31,6 +31,14 @@ static void fill_str(const char *str) {
 
 
 
+/** For comparison with sorted array. */
+
+#define ARRAY_NAME Str
+#define ARRAY_TYPE const char *
+#include "../src/Array.h"
+
+
+
 /** For comparison with linked hash. */
 
 static int string_is_equal(const char *const a, const char *const b) {
@@ -206,13 +214,13 @@ static double m_sample_variance(const struct Measure *const m)
 static double m_stddev(const struct Measure *const measure)
 	{ return sqrt(m_sample_variance(measure)); }
 
-
-
-enum QData { TRIE_INIT, TRIE_LOOK, /*TRIE_ITER,*/
-	SET_INIT, SET_LOOK, /*SET_ITER,*/ Q_END };
+#define PARAM(A) A
+#define STRUCT(A) { #A, 0, { 0, 0, 0 } }
+#define QS(X) X(ARRAYINIT), X(TRIEINIT), X(TRIELOOK), X(SETINIT), X(SETLOOK)
 
 static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
+	struct StrArray array = ARRAY_IDLE;
 	struct EntryPool entries = POOL_IDLE;
 	struct StrSet set = SET_IDLE;
 	struct StrList list;
@@ -220,22 +228,19 @@ static int test(void) {
 	const size_t replicas = 3;
 	clock_t t;
 	int success = 1, is_full = 0;
+	enum Qs { QS(PARAM) };
 	struct {
 		const char *name;
 		FILE *fp;
 		struct Measure m;
-	} qs[Q_END] = { { "trie init", 0, {0,0,0} },
-		{ "trie look", 0, {0,0,0} },
-		/*{ "trie iter", 0, {0,0,0} },*/
-		{ "set init", 0, {0,0,0} },
-		{ "set look", 0, {0,0,0} }/*,
-		{ "set iter", 0, {0,0,0} }*/ },
+	} qs[] = { QS(STRUCT) },
 		gnu = { "experiment", 0, {0,0,0} };
+	const size_t qs_size = sizeof qs / sizeof *qs;
 
 	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
 
 	/* Open all graphs for writing. */
-	for(q = 0; q < Q_END; q++) {
+	for(q = 0; q < qs_size; q++) {
 		char fn[64];
 		if(sprintf(fn, "graph/%s.tsv", qs[q].name) < 0
 			|| !(qs[q].fp = fopen(fn, "w"))) goto catch;
@@ -245,7 +250,7 @@ static int test(void) {
 	}
 	for(s = 1; !is_full; s <<= 1) {
 		if(s >= parole_size) is_full = 1, s = parole_size;
-		for(q = 0; q < Q_END; q++) m_reset(&qs[q].m);
+		for(q = 0; q < qs_size; q++) m_reset(&qs[q].m);
 		for(r = 0; r < replicas; r++) {
 			printf("replica %lu\n", r + 1);
 
@@ -255,7 +260,7 @@ static int test(void) {
 			for(i = 0; i < s; i++)
 				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
 			t = clock() - t;
-			m_add(&qs[TRIE_INIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&qs[TRIEINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
 			printf("trie size %lu initialisation %fms; %s.\n",
 				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t,
 				StrTrieToString(&trie));
@@ -265,12 +270,24 @@ static int test(void) {
 				assert(str);
 			}
 			t = clock() - t;
-			m_add(&qs[TRIE_LOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&qs[TRIELOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
 			printf("trie size %lu lookup all %fms.\n",
 				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);
 			/*trie_Str_graph(&inglesi, "graph/inglesi.gv"); -- 31MB. */
 			/*trie_Str_print(&inglesi);*/
 			StrTrieClear(&trie);
+
+			/* Sorted array. */
+			t = clock();
+			for(i = 0; i < s; i++) {
+				/* On systems which have differing pointer sizes, this is
+				 problematic. */
+				bsearch(parole[i], array.data, StrArraySize(&array),
+					sizeof(array.data),
+					(int (*)(const void *, const void *))&strcmp);
+			}
+			t = clock() - t;
+			m_add(&qs[ARRAYINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
 
 			/* Linked set. */
 
@@ -286,7 +303,7 @@ static int test(void) {
 			}
 			StrListSort(&list);
 			t = clock() - t;
-			m_add(&qs[SET_INIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&qs[SETINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
 			printf("set size %lu initialisation %fms; %s.\n",
 				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t,
 				StrListToString(&list));
@@ -296,13 +313,13 @@ static int test(void) {
 				assert(str);
 			}
 			t = clock() - t;
-			m_add(&qs[SET_LOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&qs[SETLOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
 			printf("set size %lu lookup all %fms.\n",
 				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);
 			EntryPoolClear(&entries);
 			StrSetClear(&set);
 		}
-		for(q = 0; q < Q_END; q++) fprintf(qs[q].fp, "%lu\t%f\t%f\n",
+		for(q = 0; q < qs_size; q++) fprintf(qs[q].fp, "%lu\t%f\t%f\n",
 			(unsigned long)s, m_mean(&qs[q].m), m_stddev(&qs[q].m));
 		/*if(parole_size >= s) break;
 		s <<= 2;
@@ -315,11 +332,12 @@ catch:
 	perror("test");
 	printf("Test failed.\n");
 finally:
+	StrArray_(&array);
 	EntryPool_(&entries);
 	StrSet_(&set);
 	StrTrie_(&trie);
 	if(gnu.fp && fclose(gnu.fp)) perror(gnu.name);
-	for(q = 0; q < Q_END; q++)
+	for(q = 0; q < qs_size; q++)
 		if(qs[q].fp && fclose(qs[q].fp)) perror(qs[q].name);
 	if(!success) return 0;
 
@@ -336,7 +354,7 @@ finally:
 			"set yrange [0:2000]\n"
 			"set log x\n"
 			"plot", gnu.name);
-		for(q = 0; q < Q_END; q++) fprintf(gnu.fp,
+		for(q = 0; q < qs_size; q++) fprintf(gnu.fp,
 			"%s \\\n\"graph/%s.tsv\" using 1:($2/$1*1000000):($3/$1*1000000) "
 			"with errorlines lw 3 title \"%s\"", q ? "," : "",
 			qs[q].name, qs[q].name);
