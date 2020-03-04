@@ -227,7 +227,8 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	printf("ADD data_key = \"%s\".\n", data_key);
 
 	/* Empty short circuit. */
-	if(!size) return (n1 = PT_(new)(&trie->a, 0)) ? (n1->leaf = data, 1) : 0;
+	if(!size) return printf("In empty trie.\n\n"),
+		(n1 = PT_(new)(&trie->a, 0)) ? (n1->leaf = data, 1) : 0;
 
 	/* Non-empty; odd; reserve +2. */
 	assert((size & 1) == 1);
@@ -277,14 +278,14 @@ insert:
 			n1 - trie->a.data, n1 - trie->a.data, n2 - trie->a.data,
 			n2 - trie->a.data, trie->a.size);
 		assert(trie->a.data <= n1 && n1 < n2 && n2 <= trie->a.data + trie->a.size);
-		if(cmp < 0) { /* Insert left leaf; `[n1,n2], [n2,-1]` are moved together. */
-			printf("insert left\n");
+		if(cmp < 0) { /* Insert left; `[n1,n2], [n2,-1]` are moved together. */
+			printf("insert left\n\n");
 			memmove(n1 + 2, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
 			n1[0].branch.choice_bit = bit;
 			n1[0].branch.left_branches = 0;
 			n1[1].leaf = data;
 		} else { /* Insert a right leaf. */
-			printf("insert right\n");
+			printf("insert right\n\n");
 			memmove(n2 + 2, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
 			memmove(n1 + 1, n1, sizeof n1 * (n2 - n1));
 			n1[0].branch.choice_bit = bit;
@@ -302,34 +303,29 @@ insert:
  isn't in the trie. */
 static union PN_(TrieNode) *PN_(match)(const struct N_(Trie) *const trie,
 	const char *const str) {
-	union PN_(TrieNode) *node = trie->a.data;
-	const size_t leaves_size = (trie->a.size >> 1) + 1;
-	unsigned bit, byte, str_byte = 0;
-	int is_branch = trie->a.size > 1;
-	assert(trie && str);
+	size_t i0 = 0, n0_lnode, i1 = trie->a.size - 1;
+	unsigned n0_bit, n0_byte, str_byte = 0;
+	union PN_(TrieNode) *n0 = trie->a.data + i0;
+	assert(trie);
 	if(!trie->a.size) return 0;
-	printf("looking up \"%s\"\n", str);
-	/* fixme: where's the squeeze `n2`? This is wrong. */
-	/////
-	while(is_branch) {
+	while(i0 < i1) {
+
 		/* Don't go farther than the string. */
-		bit = node->branch.choice_bit;
-		printf("lookup: bit %u\n", bit);
-		for(byte = bit >> 3; str_byte < byte; str_byte++)
+		n0_bit = n0->branch.choice_bit;
+		for(n0_byte = n0_bit >> 3; str_byte < n0_byte; str_byte++)
 			if(str[str_byte] == '\0') return 0;
-		/* Otherwise, choose the branch. */
-		if(!trie_is_bit(str, bit)) {
-			printf("off\n");
-			is_branch = node->branch.left_branches;
-			node++;
-		} else {
-			printf("on\n");
-			is_branch = !!(leaves_size - node->branch.left_branches - 2);
-			node += (node->branch.left_branches << 1) + 2;
-		}
-		assert(node < trie->a.data + trie->a.size);
+		n0_lnode = (((size_t)n0->branch.left_branches) << 1) + 1;
+
+		/* Choose the branch based on `str`. */
+		if(!trie_is_bit(str, n0_bit)) i1 = i0++ + n0_lnode;
+		else i0 += n0_lnode + 1;
+
+		/* Update the pointer. */
+		n0 = trie->a.data + i0;
+
 	}
-	return node;
+	assert(i0 == i1);
+	return n0;
 }
 
 static union PN_(TrieNode) *PN_(get)(const struct N_(Trie) *const trie,

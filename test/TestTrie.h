@@ -19,14 +19,14 @@ static const PN_(Action) PN_(filler) = (TRIE_TEST);
 static void PN_(print_leaf)(const struct N_(Trie) *const trie,
 	const size_t n) {
 	assert(trie && n < trie->a.size);
-	printf("node%lu: leaf \"%s\".\n",
+	printf("node%lu:   leaf, \"%s\".\n",
 		(unsigned long)n, PN_(to_key)(trie->a.data[n].leaf));
 }
 
 static void PN_(print_branch)(const struct N_(Trie) *const trie,
 	const size_t n) {
 	assert(trie && n < trie->a.size);
-	printf("node%lu: branch choice_bit %u left_branches %u.\n",
+	printf("node%lu: branch, bit %u, left %u.\n",
 		(unsigned long)n, trie->a.data[n].branch.choice_bit,
 		trie->a.data[n].branch.left_branches);
 	
@@ -36,7 +36,7 @@ static int PN_(is_branch)(const struct N_(Trie) *const trie,
 	const size_t i1) {
 	size_t i0 = 0, i0_lnode, i2 = trie->a.size - 1;
 	assert(trie && trie->a.size && i1 <= i2);
-	for( ; i0 < i1; ) {
+	while(i0 < i1) {
 		i0_lnode = (((size_t)trie->a.data[i0].branch.left_branches) << 1) + 1;
 		if(i1 <= i0 + i0_lnode) i2 = i0++ + i0_lnode;
 		else                    i0 += i0_lnode + 1;
