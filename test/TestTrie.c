@@ -256,7 +256,6 @@ static int test(void) {
 				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
 			t = clock() - t;
 			m_add(&qs[TRIE_INIT].m, 1000.0 / CLOCKS_PER_SEC * t);
-			trie_Str_print(&trie);
 			printf("trie size %lu initialisation %fms; %s.\n",
 				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t,
 				StrTrieToString(&trie));
@@ -334,13 +333,13 @@ finally:
 			"set grid\n"
 			"set xlabel \"elements\"\n"
 			"set ylabel \"time, t (ms)\"\n"
-			"set yrange [0:]\n"
-			"# set xrange [0:1000] # zooming in\n"
-			"# seed %u\n"
-			"plot", gnu.name, 0/*seed*/);
+			"set yrange [0:2000]\n"
+			"set log x\n"
+			"plot", gnu.name);
 		for(q = 0; q < Q_END; q++) fprintf(gnu.fp,
-			"%s \\\n\"graph/%s.tsv\" using 1:2:3 with errorlines lw 3 "
-			"title \"%s\"", q ? "," : "", qs[q].name, qs[q].name);
+			"%s \\\n\"graph/%s.tsv\" using 1:($2/$1*1000000):($3/$1*1000000) "
+			"with errorlines lw 3 title \"%s\"", q ? "," : "",
+			qs[q].name, qs[q].name);
 		fprintf(gnu.fp, "\n");
 	}
 	if(gnu.fp && fclose(gnu.fp)) goto catch2; gnu.fp = 0;

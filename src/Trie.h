@@ -49,6 +49,7 @@
 #include <string.h> /* size_t memmove strcmp */
 #include <limits.h> /* UINT_MAX */
 
+
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 
@@ -144,8 +145,9 @@ union PN_(TrieNode) {
 
 /** To initialise it to an idle state, see <fn:<N>Tree>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`. Internally, it is an array of <tag:<PN>TrieNode>.
- If size is zero, it's empty; otherwise it has `3 (nodes - 1) + 1` elements. If
- size is one, it's a leaf node, otherwise it's always a branch.
+ If size is zero, it's empty; otherwise it has `2 (nodes - 1) + 1` elements. If
+ size is one, it's a leaf node, otherwise it has an internal node as it's first
+ element.
 
  ![States.](../web/states.png) */
 struct N_(Trie);
@@ -193,8 +195,8 @@ static union PN_(TrieNode) *PN_(branch_left_leaf)(union PN_(TrieNode) *node) {
 }
 
 /** Add `data` to `trie`. This assumes that the key of `data` is not the same
- as any in `trie`, so make sure before calling this or else it may crash, (it
- doesn't do `NUL` checks.)
+ as any in `trie`, so make sure before calling this or else it may crash,
+ (_viz_, it doesn't do `NUL` checks.)
  @order O(`nodes`) */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	size_t size = trie->a.size;
@@ -204,13 +206,11 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	int cmp;
 
 	assert(trie && data && size < (size_t)-2);
-	printf("ADD data_key = \"%s\".\n", data_key);
 
 	/* Empty short circuit. */
-	if(!size) return printf("In empty trie.\n\n"),
-		(n1 = PT_(new)(&trie->a, 0)) ? (n1->leaf = data, 1) : 0;
+	if(!size) return (n1 = PT_(new)(&trie->a, 0)) ? (n1->leaf = data, 1) : 0;
 
-	/* Non-empty; odd; reserve +2. */
+	/* Non-empty; odd; reserve +2, (always an odd number.) */
 	assert((size & 1) == 1);
 	if(!PT_(reserve)(&trie->a, trie->a.size + 2, 0)) return 0;
 
@@ -222,7 +222,6 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	} else {
 		size_t n1_branches;
 		n1_key = PN_(to_key)(PN_(branch_left_leaf)(n1)->leaf);
-		printf("...root key \"%s\", ", n1_key), PN_(print_node)(trie, 0);
 		do {
 			const unsigned choice_bit = n1->branch.bit;
 			/* Compare bit-by-bit it it diverges. */
@@ -238,37 +237,30 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 				n1++; /* Descend left. */
 			} else {
 				n1 += (n1->branch.left << 1) + 2; /* Descend right. */
-				n1_branches = (n2 - n1) >> 1;
+				n1_branches = (n2 - n1) >> 1; /* `(n2 - n1 - 1) / 2`. */
 				n1_key = PN_(to_key)(n1_branches
 					? PN_(branch_left_leaf)(n1)->leaf : n1->leaf);
 			}
 		} while(n1_branches);
 	}
 	/* Leaf insertion. */
-	printf("Leaf insertion n1 = %lu (%s, %s)\n", n1 - trie->a.data, data_key, n1_key);
 	while((cmp = trie_strcmp_bit(data_key, n1_key, bit)) == 0) bit++;
 
 insert:
-	if(!n2) ; /* `n1` is all the way right. */
-		printf("partition %lu: [0,%lu)[%lu,%lu)[%lu,%lu)\n", trie->a.size,
-			n1 - trie->a.data, n1 - trie->a.data, n2 - trie->a.data,
-			n2 - trie->a.data, trie->a.size);
-		assert(trie->a.data <= n1 && n1 < n2 && n2 <= trie->a.data + trie->a.size);
-		if(cmp < 0) { /* Insert left; `[n1,n2], [n2,-1]` are moved together. */
-			printf("insert left\n\n");
-			memmove(n1 + 2, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
-			n1[0].branch.bit  = bit;
-			n1[0].branch.left = 0;
-			n1[1].leaf = data;
-		} else { /* Insert a right leaf. */
-			printf("insert right\n\n");
-			memmove(n2 + 2, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
-			memmove(n1 + 1, n1, sizeof n1 * (n2 - n1));
-			n1[0].branch.bit = bit;
-			assert((n2 - n1) >> 1 <= UINT_MAX); /* fixme: this can happen. */
-			n1[0].branch.left = (unsigned)((n2 - n1) >> 1);
-			n2[1].leaf = data;
-		}
+	assert(trie->a.data <= n1 && n1 < n2 && n2 <= trie->a.data + trie->a.size);
+	if(cmp < 0) { /* Insert left; `[n1,n2], [n2,-1]` are moved together. */
+		memmove(n1 + 2, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
+		n1[0].branch.bit  = bit;
+		n1[0].branch.left = 0;
+		n1[1].leaf = data;
+	} else { /* Insert a right leaf. */
+		memmove(n2 + 2, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
+		memmove(n1 + 1, n1, sizeof n1 * (n2 - n1));
+		n1[0].branch.bit = bit;
+		assert((n2 - n1) >> 1 <= UINT_MAX); /* fixme: this can happen. */
+		n1[0].branch.left = (unsigned)((n2 - n1) >> 1);
+		n2[1].leaf = data;
+	}
 	trie->a.size += 2;
 	return 1;
 }
@@ -448,7 +440,6 @@ static const char *N_(TrieToString)(struct N_(Trie) *const trie) {
 	PN_(Type) *element;
 	const char *str;
 	int is_first = 1;
-	printf("to_string called:\n");
 	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
 		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
 		&& buffer_size >= null_len + 1
@@ -460,7 +451,6 @@ static const char *N_(TrieToString)(struct N_(Trie) *const trie) {
 		goto terminate; }
 	*b++ = start;
 	for(i = 0; (element = PN_(leaf)(trie, i)); i++) {
-		printf("i = %lu -> element = %p.\n", i, element);
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
 		str = PN_(to_key)(element);
@@ -475,7 +465,6 @@ ellipsis:
 terminate:
 	*b++ = '\0';
 	assert(b <= buffer + buffer_size);
-	printf("return \"%s\"\n\n", buffer);
 	return buffer;
 }
 

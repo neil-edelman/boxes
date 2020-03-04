@@ -29,7 +29,6 @@ static void PN_(print_branch)(const struct N_(Trie) *const trie,
 	printf("node%lu: branch, bit %u, left %u.\n",
 		(unsigned long)n, trie->a.data[n].branch.bit,
 		trie->a.data[n].branch.left);
-	
 }
 
 static int PN_(is_branch)(const struct N_(Trie) *const trie,
