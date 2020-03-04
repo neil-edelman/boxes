@@ -214,7 +214,7 @@ static double m_sample_variance(const struct Measure *const m)
 static double m_stddev(const struct Measure *const measure)
 	{ return sqrt(m_sample_variance(measure)); }
 
-/* How many experiments is an X-macro. */
+/* How many experiments is an X-macro. `gnuplot` doesn't like `_`. */
 #define PARAM(A) A
 #define STRUCT(A) { #A, 0, { 0, 0, 0 } }
 #define ES(X) X(ARRAYINIT), X(TRIEINIT), X(TRIELOOK), X(SETINIT), X(SETLOOK)
