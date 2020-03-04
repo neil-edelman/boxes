@@ -247,6 +247,7 @@ static int test(void) {
 		if(s >= parole_size) is_full = 1, s = parole_size;
 		for(q = 0; q < Q_END; q++) m_reset(&qs[q].m);
 		for(r = 0; r < replicas; r++) {
+			printf("replica %lu\n", r + 1);
 
 			/* Trie. */
 
@@ -255,6 +256,7 @@ static int test(void) {
 				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
 			t = clock() - t;
 			m_add(&qs[TRIE_INIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			trie_Str_print(&trie);
 			printf("trie size %lu initialisation %fms; %s.\n",
 				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t,
 				StrTrieToString(&trie));
@@ -380,9 +382,8 @@ int main(void) {
 		sizeof(size_t),
 		sizeof(trie_Str_Type *),
 		sizeof(union trie_Str_TrieNode));
-	fprintf(stderr, "union A %lu\n"
-		"struct B %lu\n", sizeof(union A), sizeof(struct B));
 	test_basic_trie_str();
+	printf("\n***\n\n");
 	test();
 	return EXIT_SUCCESS;
 }

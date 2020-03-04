@@ -27,8 +27,8 @@ static void PN_(print_branch)(const struct N_(Trie) *const trie,
 	const size_t n) {
 	assert(trie && n < trie->a.size);
 	printf("node%lu: branch, bit %u, left %u.\n",
-		(unsigned long)n, trie->a.data[n].branch.choice_bit,
-		trie->a.data[n].branch.left_branches);
+		(unsigned long)n, trie->a.data[n].branch.bit,
+		trie->a.data[n].branch.left);
 	
 }
 
@@ -37,7 +37,7 @@ static int PN_(is_branch)(const struct N_(Trie) *const trie,
 	size_t i0 = 0, i0_lnode, i2 = trie->a.size - 1;
 	assert(trie && trie->a.size && i1 <= i2);
 	while(i0 < i1) {
-		i0_lnode = (((size_t)trie->a.data[i0].branch.left_branches) << 1) + 1;
+		i0_lnode = (((size_t)trie->a.data[i0].branch.left) << 1) + 1;
 		if(i1 <= i0 + i0_lnode) i2 = i0++ + i0_lnode;
 		else                    i0 += i0_lnode + 1;
 	}
@@ -89,12 +89,12 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	assert(trie->a.size > 1);
 	for(n = 0; n < size; n++) {
 		if(PN_(is_branch)(trie, n)) {
-			size_t offset = (trie->a.data[n].branch.left_branches << 1) + 2;
+			size_t offset = (trie->a.data[n].branch.left << 1) + 2;
 			fprintf(fp,
 				"\t\tn%lu [shape = \"oval\" label=\"%u\"];\n"
 				"\t\tn%lu -> n%lu [style = dashed];\n"
 				"\t\tn%lu -> n%lu [label = \"%lu\"];\n",
-				(unsigned long)n, trie->a.data[n].branch.choice_bit,
+				(unsigned long)n, trie->a.data[n].branch.bit,
 				(unsigned long)n, (unsigned long)n + 1,
 				(unsigned long)n, (unsigned long)n + offset,
 				(unsigned long)offset);

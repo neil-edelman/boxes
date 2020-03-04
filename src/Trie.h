@@ -54,20 +54,9 @@
 
 /* An internal node; assume takes up one register for speed,
  `sizeof(struct TrieInternal) <= sizeof(size_t)` */
-union A {
-	struct {
-		unsigned choice_bit : 7;
-		unsigned left : 1;
-	} b;
-	size_t right;
-};
-struct B {
-	unsigned choice_bit : 8;
-	unsigned left : 32 - 8;
-};
 struct TrieInternal {
-	unsigned choice_bit;
-	unsigned left_branches;
+	unsigned bit; /* Choice bit; strictly increase going down the tree. */
+	unsigned left; /* Left branches = left leaves - 1 = left total/2 - 0.5. */
 };
 
 /** Woefully unoptimised. Does it matter? */
@@ -170,12 +159,13 @@ struct N_(Trie) { struct PN_(TrieNodeArray) a; };
  @order \O(log `size`) if the strings are bounded. */
 static size_t PN_(leaf_index)(struct N_(Trie) *const trie, const size_t leaf) {
 	size_t idx, leaves_size, leaves_seen, left_branches;
-	assert(trie && trie->a.size);
+	assert(trie && trie->a.size && (trie->a.size & 1) == 1
+		&& leaf <= trie->a.size >> 1);
 	/* Special case. */
-	if(trie->a.size < 3) return 0;
+	if(trie->a.size == 1) return 0;
 	/* Start at the top and traverse internal nodes until we hit a leaf. */
 	for(leaves_size = (trie->a.size >> 1) + 1, leaves_seen = idx = 0; ; ) {
-		left_branches = trie->a.data[idx].branch.left_branches;
+		left_branches = trie->a.data[idx].branch.left;
 		if(leaf <= leaves_seen + left_branches) {
 			idx++; /* Take left. */
 			if(!left_branches) break;
@@ -190,7 +180,12 @@ static size_t PN_(leaf_index)(struct N_(Trie) *const trie, const size_t leaf) {
 
 /** Retrieves a `leaf` index or null if the index is out-of-bounds in `trie`. */
 static PN_(Type) *PN_(leaf)(struct N_(Trie) *const trie, const size_t leaf) {
+	size_t i;
 	assert(trie);
+	if(!trie->a.size || leaf > trie->a.size) return 0;
+	i = PN_(leaf_index)(trie, leaf);
+	printf("**leaf %p, %lu -> %lu\n", trie, leaf, i);
+	return trie->a.data[i].leaf;
 	return trie->a.size && leaf <= trie->a.size >> 1
 		? trie->a.data[PN_(leaf_index)(trie, leaf)].leaf : 0;
 }
@@ -208,7 +203,7 @@ static void PN_(print_node)(const struct N_(Trie) *const trie, const size_t n);
 #include <limits.h>
 
 static union PN_(TrieNode) *PN_(branch_left_leaf)(union PN_(TrieNode) *node) {
-	while(node->branch.left_branches) node++;
+	while(node->branch.left) node++;
 	return node + 1;
 }
 
@@ -244,7 +239,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		n1_key = PN_(to_key)(PN_(branch_left_leaf)(n1)->leaf);
 		printf("...root key \"%s\", ", n1_key), PN_(print_node)(trie, 0);
 		do {
-			const unsigned choice_bit = n1->branch.choice_bit;
+			const unsigned choice_bit = n1->branch.bit;
 			/* Compare bit-by-bit it it diverges. */
 			while(bit < choice_bit) {
 				if((cmp = trie_strcmp_bit(data_key, n1_key, bit)) != 0)
@@ -253,18 +248,14 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 			}
 			/* Follow the branch. */
 			if(!trie_is_bit(data_key, bit)) {
-				n1_branches = n1->branch.left_branches++; /* Update. */
+				n1_branches = n1->branch.left++; /* Update. */
 				n2 = n1 + (n1_branches << 1) + 2; /* Move before. */
 				n1++; /* Descend left. */
-				printf("*left\n");
 			} else {
-				/*n1_branches = (size >> 1) - n1->branch.left_branches - 1;*/
-				printf("n1 is %ld; ", n1 - trie->a.data);
-				n1 += (n1->branch.left_branches << 1) + 2; /* Descend right. */
-				printf("now %ld\n", n1 - trie->a.data);
+				n1 += (n1->branch.left << 1) + 2; /* Descend right. */
 				n1_branches = (n2 - n1) >> 1;
-				n1_key = PN_(to_key)(n1_branches ? PN_(branch_left_leaf)(n1)->leaf : n1->leaf);
-				printf("*right branches %lu\n", n1_branches);
+				n1_key = PN_(to_key)(n1_branches
+					? PN_(branch_left_leaf)(n1)->leaf : n1->leaf);
 			}
 		} while(n1_branches);
 	}
@@ -281,16 +272,16 @@ insert:
 		if(cmp < 0) { /* Insert left; `[n1,n2], [n2,-1]` are moved together. */
 			printf("insert left\n\n");
 			memmove(n1 + 2, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
-			n1[0].branch.choice_bit = bit;
-			n1[0].branch.left_branches = 0;
+			n1[0].branch.bit  = bit;
+			n1[0].branch.left = 0;
 			n1[1].leaf = data;
 		} else { /* Insert a right leaf. */
 			printf("insert right\n\n");
 			memmove(n2 + 2, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
 			memmove(n1 + 1, n1, sizeof n1 * (n2 - n1));
-			n1[0].branch.choice_bit = bit;
-			assert((n2 - n1) >> 1 <= UINT_MAX);
-			n1[0].branch.left_branches = (unsigned)((n2 - n1) >> 1);
+			n1[0].branch.bit = bit;
+			assert((n2 - n1) >> 1 <= UINT_MAX); /* fixme: this can happen. */
+			n1[0].branch.left = (unsigned)((n2 - n1) >> 1);
 			n2[1].leaf = data;
 		}
 	trie->a.size += 2;
@@ -311,10 +302,10 @@ static union PN_(TrieNode) *PN_(match)(const struct N_(Trie) *const trie,
 	while(i0 < i1) {
 
 		/* Don't go farther than the string. */
-		n0_bit = n0->branch.choice_bit;
+		n0_bit = n0->branch.bit;
 		for(n0_byte = n0_bit >> 3; str_byte < n0_byte; str_byte++)
 			if(str[str_byte] == '\0') return 0;
-		n0_lnode = (((size_t)n0->branch.left_branches) << 1) + 1;
+		n0_lnode = (((size_t)n0->branch.left) << 1) + 1;
 
 		/* Choose the branch based on `str`. */
 		if(!trie_is_bit(str, n0_bit)) i1 = i0++ + n0_lnode;
@@ -399,6 +390,7 @@ static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
  @order \Theta(1)
  @allow */
 static void N_(TrieClear)(struct N_(Trie) *const trie) {
+	printf("Clear.\n");
 	if(trie) trie->a.size = 0;
 }
 
@@ -467,10 +459,11 @@ static const char *N_(TrieToString)(struct N_(Trie) *const trie) {
 	*const idle = "idle";
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
 		null_len = strlen(null), idle_len = strlen(idle);
-	size_t i;
+	size_t i, j;
 	PN_(Type) *element;
 	const char *str;
 	int is_first = 1;
+	printf("to_string called:\n");
 	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
 		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
 		&& buffer_size >= null_len + 1
@@ -482,11 +475,11 @@ static const char *N_(TrieToString)(struct N_(Trie) *const trie) {
 		goto terminate; }
 	*b++ = start;
 	for(i = 0; (element = PN_(leaf)(trie, i)); i++) {
+		printf("i = %lu -> element = %p.\n", i, element);
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
 		str = PN_(to_key)(element);
-		for(i = 0; *str != '\0' && i < 12; str++, b++, i++) *b = *str;
-		/* fixme: if(++e >= e_end) break; */
+		for(j = 0; *str != '\0' && j < 12; str++, b++, j++) *b = *str;
 		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
 			goto ellipsis;
 	}
@@ -497,6 +490,7 @@ ellipsis:
 terminate:
 	*b++ = '\0';
 	assert(b <= buffer + buffer_size);
+	printf("return \"%s\"\n\n", buffer);
 	return buffer;
 }
 
