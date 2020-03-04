@@ -46,14 +46,14 @@
  @cf [Pool](https://github.com/neil-edelman/Pool)
  @cf [Set](https://github.com/neil-edelman/Set) */
 
-#include <stddef.h>
-#include <string.h>
+#include <string.h> /* size_t memmove strcmp */
+#include <limits.h> /* UINT_MAX */
 
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 
 /* An internal node; assume takes up one register for speed,
- `sizeof(struct TrieInternal) <= sizeof(size_t)` */
+ `sizeof(struct TrieInternal) <= sizeof(size_t)`. */
 struct TrieInternal {
 	unsigned bit; /* Choice bit; strictly increase going down the tree. */
 	unsigned left; /* Left branches = left leaves - 1 = left total/2 - 0.5. */
@@ -172,12 +172,7 @@ static size_t PN_(leaf_index)(struct N_(Trie) *const trie, size_t leaf) {
 
 /** Retrieves a `leaf` index or null if the index is out-of-bounds in `trie`. */
 static PN_(Type) *PN_(leaf)(struct N_(Trie) *const trie, const size_t leaf) {
-	size_t i;
 	assert(trie);
-	if(!trie->a.size || leaf > trie->a.size >> 1) return 0;
-	i = PN_(leaf_index)(trie, leaf);
-	printf("**leaf %p, %lu -> %lu\n", trie, leaf, i);
-	return trie->a.data[i].leaf;
 	return trie->a.size && leaf <= trie->a.size >> 1
 		? trie->a.data[PN_(leaf_index)(trie, leaf)].leaf : 0;
 }
@@ -191,8 +186,6 @@ static void PN_(trie_)(struct N_(Trie) *const trie)
 	{ assert(trie); free(trie->a.data); PN_(trie)(trie); }
 
 static void PN_(print_node)(const struct N_(Trie) *const trie, const size_t n);
-
-#include <limits.h>
 
 static union PN_(TrieNode) *PN_(branch_left_leaf)(union PN_(TrieNode) *node) {
 	while(node->branch.left) node++;
