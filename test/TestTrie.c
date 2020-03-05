@@ -255,6 +255,7 @@ static double m_stddev(const struct Measure *const measure)
 	X(TRIEINIT), X(TRIELOOK), \
 	X(SETINIT), X(SETLOOK)
 
+/* fixme: All the data should be the same and permuted randomly. */
 static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
 	struct StrArray array = ARRAY_IDLE;
