@@ -33,11 +33,127 @@ static void fill_str(const char *str) {
 
 /** For comparison with sorted array. */
 
+static void str_to_str(const char *const*str, char(*const a)[12]) {
+	sprintf(*a, "%.11s", *str);
+}
+/*typedef void(*<PT>ToString)(const T *, char(*)[12]);*/
+
 #define ARRAY_NAME Str
 #define ARRAY_TYPE const char *
+#define ARRAY_TO_STRING &str_to_str
 #include "../src/Array.h"
 
+static size_t lower_bound(const struct StrArray *const array,
+	const char *const value) {
+	const char **const data = array->data;
+	size_t low = 0, mid, high = array->size;
+	assert(array && value);
+	while(low < high) {
+		mid = low + ((high - low) >> 1);
+		printf("[%lu, %lu) cmp (%s) to %s\n", low, high, value, data[mid]);
+		if(strcmp(value, data[mid]) <= 0) {
+			high = mid;
+		} else {
+			low = mid + 1;
+		}
+	}
+	return low;
+}
 
+/*
+static size_t lower_bound(const struct StrArray *const array,
+						  const char *const value) {
+	const char **const data = array->data;
+	size_t count = array->size, first = 0, i;
+	assert(array && value);
+	while(count) {
+		i = first + (count >> 1);
+		printf("(%lu, %lu) mid %lu\n", first, first + count, i);
+		if(strcmp(value, data[i]) < 0)
+			count = i;
+		else
+			first += i + 1, count -= i + 1;
+	}
+	return first;
+}
+*/
+
+#if 0
+/** Returns the separator in `array` that is greater than `key`. This could be
+ one-past the end of the array. If the `key` is already in the array, returns
+ null. */
+static const char **array_bisect(const struct StrArray *const array,
+	const char *const key) {
+	/* Modified from:
+	 *
+	 * SPDX-License-Identifier: GPL-2.0-only
+	 *
+	 * A generic implementation of binary search for the Linux kernel
+	 *
+	 * Copyright (C) 2008-2009 Ksplice, Inc.
+	 * Author: Tim Abbott <tabbott@ksplice.com>
+	 */
+	const char **pivot;
+	int result = 0;
+	size_t n = array->size;
+	const char **base = array->data;
+	assert(array && key);
+	while(n > 0) {
+		pivot = base + (n >> 1);
+		result = strcmp(key, *pivot);
+		if(!result) return 0;
+		if(result > 0) base = pivot + 1, n--;
+		n >>= 1;
+	}
+	if(result > 0) pivot++;
+	return pivot;
+}
+#endif
+
+static int array_insert(struct StrArray *const array,
+	const char *const data) {
+	size_t b;
+	assert(array && data);
+	b = lower_bound(array, data);
+	/*printf("bisect(%s) = %lu:%s.\n", data, b,
+		(b >= array->size) ? "off the end" : *bisect);*/
+	StrArrayBuffer(array, 1);
+	memmove(array->data + b + 1, array->data + b,
+		sizeof *array->data * (array->size - b - 1));
+	array->data[b] = data;
+	return 1;
+}
+
+static void foo(void) {
+	struct StrArray array = ARRAY_IDLE;
+	const char *const list[] = { "a", "b", "c", "d", "e", "f" };
+	const char **pstr;
+	size_t i;
+	for(i = 0; i < sizeof list / sizeof *list; i++)
+		pstr = StrArrayNew(&array), *pstr = list[i];
+	printf("array: %s.\n", StrArrayToString(&array));
+	array_insert(&array, "");
+	array_insert(&array, "aa");
+	array_insert(&array, "ba");
+	array_insert(&array, "ca");
+	array_insert(&array, "da");
+	array_insert(&array, "ea");
+	array_insert(&array, "fa");
+	printf("array: %s.\n", StrArrayToString(&array));
+	array_insert(&array, "a");
+	array_insert(&array, "a");
+	array_insert(&array, "a");
+	array_insert(&array, "a");
+	array_insert(&array, "a");
+	array_insert(&array, "a");
+	array_insert(&array, "a");
+	printf("array: %s.\n", StrArrayToString(&array));
+	printf("lb(foo)=%lu; lb(a)=%lu; lb()=%lu; lb(b)=%lu\n",
+		lower_bound(&array, "foo"),
+		   lower_bound(&array, "a"),
+		   lower_bound(&array, ""),
+		   lower_bound(&array, "b"));
+}
 
 /** For comparison with linked hash. */
 
@@ -217,7 +333,9 @@ static double m_stddev(const struct Measure *const measure)
 /* How many experiments is an X-macro. `gnuplot` doesn't like `_`. */
 #define PARAM(A) A
 #define STRUCT(A) { #A, 0, { 0, 0, 0 } }
-#define ES(X) X(ARRAYINIT), X(TRIEINIT), X(TRIELOOK), X(SETINIT), X(SETLOOK)
+#define ES(X) X(ARRAYINIT), X(ARRAYLOOK), \
+	X(TRIEINIT), X(TRIELOOK), \
+	X(SETINIT), X(SETLOOK)
 
 static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
@@ -276,6 +394,11 @@ static int test(void) {
 			StrTrieClear(&trie);
 
 			/* Sorted array. */
+
+			t = clock();
+			for(i = 0; i < s; i++) array_insert(&array, parole[i]);
+			t = clock() - t;
+			m_add(&es[ARRAYINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
 			t = clock();
 			for(i = 0; i < s; i++) {
 				/* On systems which have differing pointer sizes, this is
@@ -285,7 +408,7 @@ static int test(void) {
 					(int (*)(const void *, const void *))&strcmp);
 			}
 			t = clock() - t;
-			m_add(&es[ARRAYINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			m_add(&es[ARRAYLOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
 
 			/* Linked set. */
 
@@ -397,8 +520,9 @@ int main(void) {
 		sizeof(size_t),
 		sizeof(trie_Str_Type *),
 		sizeof(union trie_Str_TrieNode));
-	test_basic_trie_str();
+	/*test_basic_trie_str();
 	printf("\n***\n\n");
-	test();
+	test();*/
+	foo();
 	return EXIT_SUCCESS;
 }
