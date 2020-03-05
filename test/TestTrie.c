@@ -73,37 +73,6 @@ static int array_insert(struct StrArray *const array,
 	return 1;
 }
 
-static void foo(void) {
-	struct StrArray array = ARRAY_IDLE;
-	const char *const list[] = { "a", "b", "c", "d", "e", "f" };
-	const char **pstr;
-	size_t i;
-	for(i = 0; i < sizeof list / sizeof *list; i++)
-		pstr = StrArrayNew(&array), *pstr = list[i];
-	printf("array: %s.\n", StrArrayToString(&array));
-	array_insert(&array, "");
-	array_insert(&array, "aa");
-	array_insert(&array, "ba");
-	array_insert(&array, "ca");
-	array_insert(&array, "da");
-	array_insert(&array, "ea");
-	array_insert(&array, "fa");
-	printf("array: %s.\n", StrArrayToString(&array));
-	array_insert(&array, "a");
-	array_insert(&array, "a");
-	array_insert(&array, "a");
-	array_insert(&array, "a");
-	array_insert(&array, "a");
-	array_insert(&array, "a");
-	array_insert(&array, "a");
-	printf("array: %s.\n", StrArrayToString(&array));
-	printf("lb(foo)=%lu; lb(a)=%lu; lb()=%lu; lb(b)=%lu\n",
-		lower_bound(&array, "foo"),
-		   lower_bound(&array, "a"),
-		   lower_bound(&array, ""),
-		   lower_bound(&array, "b"));
-}
-
 /** For comparison with linked hash. */
 
 static int string_is_equal(const char *const a, const char *const b) {
@@ -281,7 +250,7 @@ static double m_stddev(const struct Measure *const measure)
 
 /* How many experiments is an X-macro. `gnuplot` doesn't like `_`. */
 #define PARAM(A) A
-#define STRUCT(A) { #A, 0, { 0, 0, 0 } }
+#define STRUCT(A) { #A, 0, { 0, 0, 0 }, 0 }
 #define ES(X) X(ARRAYINIT), X(ARRAYLOOK), \
 	X(TRIEINIT), X(TRIELOOK), \
 	X(SETINIT), X(SETLOOK)
@@ -295,11 +264,12 @@ static int test(void) {
 	size_t i, r, s = 1, e;
 	const size_t replicas = 3;
 	clock_t t;
+	double ms;
 	int success = 1, is_full = 0;
 	/* How many files we open simultaneously qs.size OR gnu.size. */
 	enum { ES(PARAM) };
-	struct { const char *name; FILE *fp; struct Measure m; }
-		es[] = { ES(STRUCT) }, gnu = { "experiment", 0, {0,0,0} };
+	struct { const char *name; FILE *fp; struct Measure m; int is_long; }
+		es[] = { ES(STRUCT) }, gnu = { "experiment", 0, {0,0,0}, 0 };
 	const size_t es_size = sizeof es / sizeof *es;
 
 	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
@@ -324,8 +294,8 @@ static int test(void) {
 			t = clock();
 			for(i = 0; i < s; i++)
 				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
-			t = clock() - t;
-			m_add(&es[TRIEINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
+			m_add(&es[TRIEINIT].m, ms);
 			printf("trie size %lu initialisation %fms; %s.\n",
 				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t,
 				StrTrieToString(&trie));
@@ -334,20 +304,23 @@ static int test(void) {
 				const char *const str = StrTrieGet(&trie, parole[i]);
 				assert(str);
 			}
-			t = clock() - t;
-			m_add(&es[TRIELOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
+			m_add(&es[TRIELOOK].m, ms);
 			printf("trie size %lu lookup all %fms.\n",
 				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);
-			/*trie_Str_graph(&inglesi, "graph/inglesi.gv"); -- 31MB. */
-			/*trie_Str_print(&inglesi);*/
 			StrTrieClear(&trie);
 
-			/* Sorted array. */
+			/* Sorted array. This is not a fair comparison exactly since these
+			 are sets and this is a sequence but close enough for our data. */
 
+			if(es[ARRAYINIT].is_long) goto arrayinit_end;
 			t = clock();
 			for(i = 0; i < s; i++) array_insert(&array, parole[i]);
-			t = clock() - t;
-			m_add(&es[ARRAYINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
+			m_add(&es[ARRAYINIT].m, ms);
+			if(ms > 200) es[ARRAYINIT].is_long = 1;
+arrayinit_end:
+
 			t = clock();
 			for(i = 0; i < s; i++) {
 				/* On systems which have differing pointer sizes, this is
@@ -356,8 +329,8 @@ static int test(void) {
 					sizeof(array.data),
 					(int (*)(const void *, const void *))&strcmp);
 			}
-			t = clock() - t;
-			m_add(&es[ARRAYLOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
+			m_add(&es[ARRAYLOOK].m, ms);
 
 			/* Linked set. */
 
@@ -372,8 +345,8 @@ static int test(void) {
 				StrListPush(&list, &n->node);
 			}
 			StrListSort(&list);
-			t = clock() - t;
-			m_add(&es[SETINIT].m, 1000.0 / CLOCKS_PER_SEC * t);
+			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
+			m_add(&es[SETINIT].m, ms);
 			printf("set size %lu initialisation %fms; %s.\n",
 				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t,
 				StrListToString(&list));
@@ -382,8 +355,8 @@ static int test(void) {
 				struct StrSetElement *const str = StrSetGet(&set, parole[i]);
 				assert(str);
 			}
-			t = clock() - t;
-			m_add(&es[SETLOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
+			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
+			m_add(&es[SETLOOK].m, ms);
 			printf("set size %lu lookup all %fms.\n",
 				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);
 			EntryPoolClear(&entries);
@@ -469,9 +442,8 @@ int main(void) {
 		sizeof(size_t),
 		sizeof(trie_Str_Type *),
 		sizeof(union trie_Str_TrieNode));
-	/*test_basic_trie_str();
+	test_basic_trie_str();
 	printf("\n***\n\n");
-	test();*/
-	foo();
+	test();
 	return EXIT_SUCCESS;
 }
