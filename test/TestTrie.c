@@ -50,7 +50,7 @@ static size_t lower_bound(const struct StrArray *const array,
 	assert(array && value);
 	while(low < high) {
 		mid = low + ((high - low) >> 1);
-		printf("[%lu, %lu) cmp (%s) to %s\n", low, high, value, data[mid]);
+		/*printf("[%lu, %lu) cmp (%s) to %s\n", low, high, value, data[mid]);*/
 		if(strcmp(value, data[mid]) <= 0) {
 			high = mid;
 		} else {
@@ -60,63 +60,12 @@ static size_t lower_bound(const struct StrArray *const array,
 	return low;
 }
 
-/*
-static size_t lower_bound(const struct StrArray *const array,
-						  const char *const value) {
-	const char **const data = array->data;
-	size_t count = array->size, first = 0, i;
-	assert(array && value);
-	while(count) {
-		i = first + (count >> 1);
-		printf("(%lu, %lu) mid %lu\n", first, first + count, i);
-		if(strcmp(value, data[i]) < 0)
-			count = i;
-		else
-			first += i + 1, count -= i + 1;
-	}
-	return first;
-}
-*/
-
-#if 0
-/** Returns the separator in `array` that is greater than `key`. This could be
- one-past the end of the array. If the `key` is already in the array, returns
- null. */
-static const char **array_bisect(const struct StrArray *const array,
-	const char *const key) {
-	/* Modified from:
-	 *
-	 * SPDX-License-Identifier: GPL-2.0-only
-	 *
-	 * A generic implementation of binary search for the Linux kernel
-	 *
-	 * Copyright (C) 2008-2009 Ksplice, Inc.
-	 * Author: Tim Abbott <tabbott@ksplice.com>
-	 */
-	const char **pivot;
-	int result = 0;
-	size_t n = array->size;
-	const char **base = array->data;
-	assert(array && key);
-	while(n > 0) {
-		pivot = base + (n >> 1);
-		result = strcmp(key, *pivot);
-		if(!result) return 0;
-		if(result > 0) base = pivot + 1, n--;
-		n >>= 1;
-	}
-	if(result > 0) pivot++;
-	return pivot;
-}
-#endif
-
 static int array_insert(struct StrArray *const array,
 	const char *const data) {
 	size_t b;
 	assert(array && data);
 	b = lower_bound(array, data);
-	/*printf("bisect(%s) = %lu:%s.\n", data, b,
-		(b >= array->size) ? "off the end" : *bisect);*/
+	/*printf("lb(%s) = %lu.\n", data, b);*/
 	StrArrayBuffer(array, 1);
 	memmove(array->data + b + 1, array->data + b,
 		sizeof *array->data * (array->size - b - 1));
