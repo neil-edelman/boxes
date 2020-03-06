@@ -36,7 +36,6 @@ static void fill_str(const char *str) {
 static void str_to_str(const char *const*str, char(*const a)[12]) {
 	sprintf(*a, "%.11s", *str);
 }
-/*typedef void(*<PT>ToString)(const T *, char(*)[12]);*/
 
 #define ARRAY_NAME Str
 #define ARRAY_TYPE const char *
@@ -73,15 +72,14 @@ static int array_insert(struct StrArray *const array,
 	return 1;
 }
 
-/** For comparison with linked hash. */
+static int array_cmp(const void *a, const void *b) {
+	return strcmp((const char *)a, *(const char **)b);
+}
 
-static int string_is_equal(const char *const a, const char *const b) {
-	return !strcmp(a, b);
-}
-static void pstring_to_string(const char *const*const ps, char (*const a)[12]) {
-	strncpy(*a, *ps, sizeof(*a) - 1);
-	(*a)[sizeof(*a) - 1] = '\0';
-}
+
+
+/** For comparison with string set (hash.) */
+
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on
  `str`. */
@@ -96,44 +94,76 @@ static unsigned fnv_32a_str(const char *const str) {
 	}
 	return hval;
 }
-#define SET_NAME Str
+static int string_is_equal(const char *const a, const char *const b) {
+	return !strcmp(a, b);
+}
+static void pointer_to_string(const char *const*const ps,
+	char (*const a)[12]) {
+	strncpy(*a, *ps, sizeof(*a) - 1);
+	(*a)[sizeof(*a) - 1] = '\0';
+}
+#define SET_NAME String
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
-#define SET_TO_STRING &pstring_to_string
+#define SET_TO_STRING &pointer_to_string
 #include "Set.h"
 
-struct StrListNode;
-static int str_list_compare(const struct StrListNode *,
-	const struct StrListNode *);
-static void str_list_to_string(const struct StrListNode *, char (*)[12]);
-#define LIST_NAME Str
-#define LIST_COMPARE &str_list_compare
-#define LIST_TO_STRING &str_list_to_string
+#define POOL_NAME StringElement
+#define POOL_TYPE struct StringSetElement
+#include "Pool.h"
+
+/** For comparison with linked hash -- doesn't make any difference whether it's
+ a copy. */
+
+#if 0
+struct Str24 { char a[24]; };
+static int str24_is_equal(const struct Str24 *const a,
+	const struct Str24 *const b) { return !strcmp(a->a, b->a); }
+static void str24_to_string(const struct Str24 *const s, char (*const a)[12]) {
+	strncpy(*a, s->a, sizeof(*a) - 1);
+	(*a)[sizeof(*a) - 1] = '\0';
+}
+static unsigned str24_hash(const struct Str24 *const s24)
+	{ return fnv_32a_str(s24->a); }
+#define SET_POINTER_GET
+#define SET_NAME Str24
+#define SET_TYPE struct Str24
+#define SET_HASH &str24_hash
+#define SET_IS_EQUAL &str24_is_equal
+#define SET_TO_STRING &str24_to_string
+#include "Set.h"
+
+struct Str24ListNode;
+static int str24_list_compare(const struct Str24ListNode *,
+	const struct Str24ListNode *);
+static void str24_list_to_string(const struct Str24ListNode *, char (*)[12]);
+#define LIST_NAME Str24
+#define LIST_COMPARE &str24_list_compare
+#define LIST_TO_STRING &str24_list_to_string
 #include "List.h"
 
-struct Entry {
-	struct StrSetElement elem;
-	struct StrListNode node;
-	char str[24];
+struct Str24Entry {
+	struct Str24SetElement s24e;
+	struct Str24ListNode s24n;
 };
-static const struct Entry *node_upcast_c(const struct StrListNode *const node) {
-	return (const struct Entry *)(const void *)((const char *)node
-		- offsetof(struct Entry, node));
-}
-static void str_list_to_string(const struct StrListNode *s,
+static const struct Str24Entry *s24n_upcast_c(const struct Str24ListNode *const
+	node) { return (const struct Str24Entry *)(const void *)((const char *)node
+	- offsetof(struct Str24Entry, s24n)); }
+static void str24_list_to_string(const struct Str24ListNode *s,
 	char (*const a)[12]) {
-	sprintf(*a, "%.11s", node_upcast_c(s)->str);
+	sprintf(*a, "%.11s", s24n_upcast_c(s)->s24e.key.a);
 }
 /** @implements <KeyListNode>Compare */
-static int str_list_compare(const struct StrListNode *const a,
-	const struct StrListNode *const b) {
-	return strcmp(node_upcast_c(a)->elem.key, node_upcast_c(b)->elem.key);
+static int str24_list_compare(const struct Str24ListNode *const a,
+	const struct Str24ListNode *const b) {
+	return strcmp(s24n_upcast_c(a)->s24e.key.a, s24n_upcast_c(b)->s24e.key.a);
 }
 
-#define POOL_NAME Entry
-#define POOL_TYPE struct Entry
+#define POOL_NAME Str24Entry
+#define POOL_TYPE struct Str24Entry
 #include "Pool.h"
+#endif
 
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
@@ -225,6 +255,11 @@ finally:
 	StrTrie_(&trie);
 }
 
+/** Returns a time diffecence in microseconds from `then`. */
+static double diff_us(clock_t then) {
+	return 1000000.0 / CLOCKS_PER_SEC * (clock() - then);
+}
+
 /** On-line numerically stable first-order statistics, <Welford, 1962, Note>. */
 struct Measure { size_t count; double mean, ssdm; };
 
@@ -259,13 +294,15 @@ static double m_stddev(const struct Measure *const measure)
 static int test(void) {
 	struct StrTrie trie = TRIE_IDLE;
 	struct StrArray array = ARRAY_IDLE;
-	struct EntryPool entries = POOL_IDLE;
-	struct StrSet set = SET_IDLE;
-	struct StrList list;
+	/* Linked hash map -- too much code.
+	struct Str24EntryPool entries = POOL_IDLE;
+	struct Str24Set set = SET_IDLE;
+	struct Str24List list;*/
+	struct StringSet set = SET_IDLE;
+	struct StringElementPool set_pool = POOL_IDLE;
 	size_t i, r, s = 1, e;
 	const size_t replicas = 3;
 	clock_t t;
-	double ms;
 	int success = 1, is_full = 0;
 	/* How many files we open simultaneously qs.size OR gnu.size. */
 	enum { ES(PARAM) };
@@ -285,89 +322,112 @@ static int test(void) {
 			es[e].name, (unsigned long)replicas);
 	}
 	for(s = 1; !is_full; s <<= 1) {
+		/*if(s > 10000) break;*/
 		if(s >= parole_size) is_full = 1, s = parole_size;
 		for(e = 0; e < es_size; e++) m_reset(&es[e].m);
 		for(r = 0; r < replicas; r++) {
-			printf("replica %lu\n", r + 1);
+			printf("Replica %lu.\n", r + 1);
 
 			/* Trie. */
 
+			StrTrieClear(&trie);
 			t = clock();
 			for(i = 0; i < s; i++)
 				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
-			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
-			m_add(&es[TRIEINIT].m, ms);
-			printf("trie size %lu initialisation %fms; %s.\n",
-				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t,
-				StrTrieToString(&trie));
+			m_add(&es[TRIEINIT].m, diff_us(t));
+			printf("Added init trie size %lu: %s.\n",
+				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
 			t = clock();
 			for(i = 0; i < s; i++) {
-				const char *const str = StrTrieGet(&trie, parole[i]);
+				volatile const char *const str = StrTrieGet(&trie, parole[i]);
 				assert(str);
+				(void)str;
 			}
-			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
-			m_add(&es[TRIELOOK].m, ms);
-			printf("trie size %lu lookup all %fms.\n",
-				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);
-			StrTrieClear(&trie);
+			m_add(&es[TRIELOOK].m, diff_us(t));
+			printf("Added look trie size %lu.\n",
+				(unsigned long)StrTrieSize(&trie));
 
-			/* Sorted array. This is not a fair comparison exactly since these
-			 are sets and this is a sequence but close enough for our data. */
+			/* Sorted array. */
 
-			if(es[ARRAYINIT].is_long) goto arrayinit_end;
+			if(es[ARRAYINIT].is_long || es[ARRAYLOOK].is_long) goto array_end;
+			StrArrayClear(&array);
 			t = clock();
 			for(i = 0; i < s; i++) array_insert(&array, parole[i]);
-			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
-			m_add(&es[ARRAYINIT].m, ms);
-			if(ms > 200) es[ARRAYINIT].is_long = 1;
-arrayinit_end:
-
+			m_add(&es[ARRAYINIT].m, diff_us(t));
+			printf("Added init array size %lu: %s.\n",
+				(unsigned long)StrArraySize(&array), StrArrayToString(&array));
+			if(diff_us(t) > 20000) es[ARRAYINIT].is_long = 1;
 			t = clock();
 			for(i = 0; i < s; i++) {
-				/* On systems which have differing pointer sizes, this is
-				 problematic. */
-				bsearch(parole[i], array.data, StrArraySize(&array),
-					sizeof(array.data),
-					(int (*)(const void *, const void *))&strcmp);
-			}
-			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
-			m_add(&es[ARRAYLOOK].m, ms);
-
-			/* Linked set. */
-
-			StrListClear(&list);
-			t = clock();
-			for(i = 0; i < s; i++) {
-				struct Entry *const n = EntryPoolNew(&entries);
-				n->elem.key = n->str;
-				strcpy(n->str, parole[i]);
-				if(StrSetPolicyPut(&set, &n->elem, 0))
-					{ EntryPoolRemove(&entries, n); continue; } /* Duplicate. */
-				StrListPush(&list, &n->node);
-			}
-			StrListSort(&list);
-			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
-			m_add(&es[SETINIT].m, ms);
-			printf("set size %lu initialisation %fms; %s.\n",
-				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t,
-				StrListToString(&list));
-			t = clock();
-			for(i = 0; i < s; i++) {
-				struct StrSetElement *const str = StrSetGet(&set, parole[i]);
+				/* On systems which have differing pointer sizes, the casts are
+				 problematic, but lazy. */
+				volatile const char **const str = bsearch(parole[i],
+					array.data, array.size, sizeof(array.data), array_cmp);
 				assert(str);
 			}
-			ms = 1000.0 / CLOCKS_PER_SEC * (clock() - t);
-			m_add(&es[SETLOOK].m, ms);
-			printf("set size %lu lookup all %fms.\n",
-				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);
-			EntryPoolClear(&entries);
-			StrSetClear(&set);
+			m_add(&es[ARRAYLOOK].m, diff_us(t));
+			printf("Added look array size %lu.\n",
+				(unsigned long)StrArraySize(&array));
+array_end:
+
+			/* Set, (hash map.) */
+			
+			StringSetClear(&set);
+			StringElementPoolClear(&set_pool);
+			t = clock();
+			for(i = 0; i < s; i++) {
+				struct StringSetElement *elem = StringElementPoolNew(&set_pool);
+				elem->key = parole[i];
+				if(StringSetPolicyPut(&set, elem, 0))
+					StringElementPoolRemove(&set_pool, elem);
+			}
+			m_add(&es[SETINIT].m, diff_us(t));
+			printf("Added init set size %lu: %s.\n",
+				(unsigned long)StringSetSize(&set), StringSetToString(&set));
+			t = clock();
+			for(i = 0; i < s; i++) {
+				struct StringSetElement *const elem
+					= StringSetGet(&set, parole[i]);
+				assert(elem);
+				/*printf("looking for %s.\n", parole[i]);*/
+			}
+			m_add(&es[SETLOOK].m, diff_us(t));
+			printf("Added look set size %lu.\n",
+				(unsigned long)StringSetSize(&set));
+			
+			
+#if 0
+			/* Linked set. */
+
+			Str24SetClear(&set);
+			Str24ListClear(&list);
+			Str24EntryPoolClear(&entries);
+			t = clock();
+			for(i = 0; i < s; i++) {
+				struct Str24Entry *const n = Str24EntryPoolNew(&entries);
+				strcpy(n->s24e.key.a, parole[i]); /* Should pause the timing? */
+				if(Str24SetPolicyPut(&set, &n->s24e, 0)) /* Duplicate. */
+					{ Str24EntryPoolRemove(&entries, n); continue; }
+				Str24ListPush(&list, &n->s24n);
+			}
+			Str24ListSort(&list);
+			m_add(&es[SETINIT].m, diff_us(t));
+			printf("Added init set size %lu: %s.\n",
+				(unsigned long)Str24SetSize(&set), Str24SetToString(&set));
+			t = clock();
+			for(i = 0; i < s; i++) {
+				printf("looking for %s.\n", parole[i]);
+				struct Str24SetElement *const s24 = Str24SetGet(&set, parole[i]);
+				assert(s24);
+			}
+			m_add(&es[SETLOOK].m, diff_us(t));
+			printf("Added look set size %lu.\n",
+				(unsigned long)StrSetSize(&set));
+#endif
+
 		}
 		for(e = 0; e < es_size; e++) fprintf(es[e].fp, "%lu\t%f\t%f\n",
 			(unsigned long)s, m_mean(&es[e].m), m_stddev(&es[e].m));
-		/*if(parole_size >= s) break;
-		s <<= 2;
-		if(parole_size >= s) s = parole_size;*/
 	}
 	printf("Test passed.\n");
 	goto finally;
@@ -377,8 +437,10 @@ catch:
 	printf("Test failed.\n");
 finally:
 	StrArray_(&array);
-	EntryPool_(&entries);
-	StrSet_(&set);
+	/*EntryPool_(&entries);
+	StrSet_(&set);*/
+	StringSet_(&set);
+	StringElementPool_(&set_pool);
 	StrTrie_(&trie);
 	if(gnu.fp && fclose(gnu.fp)) perror(gnu.name);
 	for(e = 0; e < es_size; e++)
@@ -390,18 +452,32 @@ finally:
 		char fn[64];
 		if(sprintf(fn, "graph/%s.gnu", gnu.name) < 0
 			|| !(gnu.fp = fopen(fn, "w"))) goto catch2;
+		/*"set style line 1 lt 1 lw 3 lc rgb '#0072bd' # blue\n"
+		"set style line 2 lt 1 lw 3 lc rgb '#d95319' # orange\n"
+		"set style line 3 lt 1 lw 3 lc rgb '#edb120' # yellow\n"
+		"set style line 4 lt 1 lw 3 lc rgb '#7e2f8e' # purple\n"
+		"set style line 5 lt 1 lw 3 lc rgb '#77ac30' # green\n"
+		"set style line 6 lt 1 lw 3 lc rgb '#4dbeee' # light-blue\n"
+		"set style line 7 lt 1 lw 3 lc rgb '#a2142f' # red\n"*/
+		fprintf(gnu.fp, "set style line 1 lw 3 lc rgb '#0072ff'\n"
+			"set style line 2 lw 3 lc rgb '#ff7200'\n"
+			"set style line 3 lw 3 lc rgb '#0072cc'\n"
+			"set style line 4 lw 3 lc rgb '#cc7200'\n"
+			"set style line 5 lw 3 lc rgb '#007299'\n"
+			"set style line 6 lw 3 lc rgb '#997200'\n");
 		fprintf(gnu.fp, "set term postscript eps enhanced color\n"
+			/*"set encoding utf8\n" Doesn't work at all; {/Symbol m}. */
 			"set output \"graph/%s.eps\"\n"
 			"set grid\n"
 			"set xlabel \"elements\"\n"
-			"set ylabel \"time, t (ms)\"\n"
+			"set ylabel \"amortised time per unit, t (ns)\"\n"
 			"set yrange [0:2000]\n"
 			"set log x\n"
 			"plot", gnu.name);
 		for(e = 0; e < es_size; e++) fprintf(gnu.fp,
-			"%s \\\n\"graph/%s.tsv\" using 1:($2/$1*1000000):($3/$1*1000000) "
-			"with errorlines lw 3 title \"%s\"", e ? "," : "",
-			es[e].name, es[e].name);
+			"%s \\\n\"graph/%s.tsv\" using 1:($2/$1*1000):($3/$1*1000) "
+			"with errorlines title \"%s\" ls %d", e ? "," : "",
+			es[e].name, es[e].name, (int)e + 1);
 		fprintf(gnu.fp, "\n");
 	}
 	if(gnu.fp && fclose(gnu.fp)) goto catch2; gnu.fp = 0;

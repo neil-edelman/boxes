@@ -110,6 +110,7 @@ outer:
 	fclose(fp);
 }
 
+#if 0
 /** Makes sure the `heap` is in a valid state. */
 static void PN_(valid)(const struct N_(Trie) *const trie) {
 	if(!trie) return;
@@ -131,6 +132,7 @@ static void N_(TrieTest)(void *const param) {
 	(void)param;
 	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">Trie.\n\n");
 }
+#endif
 
 /* Un-define all macros. */
 #undef QUOTE
