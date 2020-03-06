@@ -21,6 +21,7 @@
 extern const char *const parole[];
 extern const size_t parole_size;
 
+/** For now, it's just a placeholder to get `graph()`. */
 static void fill_str(const char *str) {
 	/* nothing */ (void)(str);
 }
@@ -113,57 +114,7 @@ static void pointer_to_string(const char *const*const ps,
 #define POOL_TYPE struct StringSetElement
 #include "Pool.h"
 
-/** For comparison with linked hash -- doesn't make any difference whether it's
- a copy. */
 
-#if 0
-struct Str24 { char a[24]; };
-static int str24_is_equal(const struct Str24 *const a,
-	const struct Str24 *const b) { return !strcmp(a->a, b->a); }
-static void str24_to_string(const struct Str24 *const s, char (*const a)[12]) {
-	strncpy(*a, s->a, sizeof(*a) - 1);
-	(*a)[sizeof(*a) - 1] = '\0';
-}
-static unsigned str24_hash(const struct Str24 *const s24)
-	{ return fnv_32a_str(s24->a); }
-#define SET_POINTER_GET
-#define SET_NAME Str24
-#define SET_TYPE struct Str24
-#define SET_HASH &str24_hash
-#define SET_IS_EQUAL &str24_is_equal
-#define SET_TO_STRING &str24_to_string
-#include "Set.h"
-
-struct Str24ListNode;
-static int str24_list_compare(const struct Str24ListNode *,
-	const struct Str24ListNode *);
-static void str24_list_to_string(const struct Str24ListNode *, char (*)[12]);
-#define LIST_NAME Str24
-#define LIST_COMPARE &str24_list_compare
-#define LIST_TO_STRING &str24_list_to_string
-#include "List.h"
-
-struct Str24Entry {
-	struct Str24SetElement s24e;
-	struct Str24ListNode s24n;
-};
-static const struct Str24Entry *s24n_upcast_c(const struct Str24ListNode *const
-	node) { return (const struct Str24Entry *)(const void *)((const char *)node
-	- offsetof(struct Str24Entry, s24n)); }
-static void str24_list_to_string(const struct Str24ListNode *s,
-	char (*const a)[12]) {
-	sprintf(*a, "%.11s", s24n_upcast_c(s)->s24e.key.a);
-}
-/** @implements <KeyListNode>Compare */
-static int str24_list_compare(const struct Str24ListNode *const a,
-	const struct Str24ListNode *const b) {
-	return strcmp(s24n_upcast_c(a)->s24e.key.a, s24n_upcast_c(b)->s24e.key.a);
-}
-
-#define POOL_NAME Str24Entry
-#define POOL_TYPE struct Str24Entry
-#include "Pool.h"
-#endif
 
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
