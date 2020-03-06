@@ -410,12 +410,12 @@ finally:
 		"set style line 5 lt 1 lw 3 lc rgb '#77ac30' # green\n"
 		"set style line 6 lt 1 lw 3 lc rgb '#4dbeee' # light-blue\n"
 		"set style line 7 lt 1 lw 3 lc rgb '#a2142f' # red\n"*/
-		fprintf(gnu.fp, "set style line 1 lw 3 lc rgb '#0072ff'\n"
-			"set style line 2 lw 3 lc rgb '#ff7200'\n"
-			"set style line 3 lw 3 lc rgb '#0072cc'\n"
-			"set style line 4 lw 3 lc rgb '#cc7200'\n"
-			"set style line 5 lw 3 lc rgb '#007299'\n"
-			"set style line 6 lw 3 lc rgb '#997200'\n");
+		fprintf(gnu.fp, "set style line 1 lt 2 lw 3 lc rgb '#0072ff'\n"
+			"set style line 2 lt 2 lw 3 lc rgb '#ff7200'\n"
+			"set style line 3 lt 1 lw 3 lc rgb '#0055cc'\n"
+			"set style line 4 lt 1 lw 3 lc rgb '#cc5500'\n"
+			"set style line 5 lt 5 lw 3 lc rgb '#003399'\n"
+			"set style line 6 lt 5 lw 3 lc rgb '#993300'\n");
 		fprintf(gnu.fp, "set term postscript eps enhanced color\n"
 			/*"set encoding utf8\n" Doesn't work at all; {/Symbol m}. */
 			"set output \"graph/%s.eps\"\n"
