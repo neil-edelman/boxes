@@ -118,7 +118,7 @@ static void pointer_to_string(const char *const*const ps,
 
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
-	union trie_Str_TrieNode *n;
+	const char **n;
 
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie0.gv");
@@ -189,15 +189,15 @@ static void test_basic_trie_str() {
 	trie_Str_graph(&trie, "graph/trie_z.gv");
 
 	n = trie_Str_match(&trie, "");
-	printf("\"\": %s\n", n ? n->leaf : "null");
+	printf("\"\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "foo");
-	printf("\"foo\": %s\n", n ? n->leaf : "null");
+	printf("\"foo\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "qux");
-	printf("\"qux\": %s\n", n ? n->leaf : "null");
+	printf("\"qux\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "quxx");
-	printf("\"quxx\": %s\n", n ? n->leaf : "null");
+	printf("\"quxx\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "quux");
-	printf("\"quux\": %s\n", n ? n->leaf : "null");
+	printf("\"quux\": %s\n", n ? *n : "null");
 	goto finally;
 catch:
 	printf("Test failed.\n");
@@ -462,14 +462,6 @@ finally2:
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	fprintf(stderr, "TrieInternal %lu\n"
-		"size_t %lu\n"
-		"Type * %lu\n"
-		"union <PN>TrieNode %lu\n",
-		sizeof(struct TrieInternal),
-		sizeof(size_t),
-		sizeof(trie_Str_Type *),
-		sizeof(union trie_Str_TrieNode));
 	test_basic_trie_str();
 	printf("\n***\n\n");
 	test();
