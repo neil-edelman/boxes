@@ -38,7 +38,7 @@ end:
 static void PN_(graph)(const struct N_(Trie) *const trie,
 	const char *const fn) {
 	FILE *fp;
-	size_t i;
+	size_t i, l = 0;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
@@ -51,9 +51,18 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	for(i = 0; i < trie->leaves.size; i++)
 		fprintf(fp, "\tleaf%lu [label=\"%s\"];\n",
 		(unsigned long)i, PN_(to_key)(trie->leaves.data[i]));
+		fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
 	for(i = 0; i < trie->branches.size; i++) {
-		fprintf(fp, "\tbranch%lu [shape = \"oval\" label=\"%u\"];\n",
-			(unsigned long)i, trie->branches.data[i].bit);
+		struct TrieBranch *b = trie->branches.data + i;
+		const size_t left = b->left, right = (trie->branches.size-i) - b->left;
+		fprintf(fp, "\tbranch%lu [label=\"%u:%u\"];\n", (unsigned long)i, b->bit, b->left);
+		if(left) {
+			fprintf(fp, "\tbranch%lu -> branch%lu;\n", (unsigned long)i,
+				(unsigned long)i + 1);
+		} else {
+			fprintf(fp, "\tbranch%lu -> leaf%lu;\n", (unsigned long)i,
+				(unsigned long)l);
+		}
 	}
 	/*	fprintf(fp,
 		"\tn%lu [shape = \"oval\" label=\"%u\"];\n"
@@ -62,7 +71,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		(unsigned long)i, trie->branches.data[i].bit,
 		(unsigned long)i, (unsigned long)i + 1,
 		(unsigned long)i, (unsigned long)n +);*/
-	fprintf(fp, "\tnode [colour=red];\n"
+	fprintf(fp, "\tnode [color=red];\n"
 		"}\n");
 	fclose(fp);
 }

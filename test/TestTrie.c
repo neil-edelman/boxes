@@ -125,32 +125,32 @@ static void test_basic_trie_str() {
 	/*printf("Trie0: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "foo")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie1.gv");
 	/*printf("Trie1: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "bar")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie2.gv");
 	/*printf("Trie2: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "baz")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie3.gv");
 	/*printf("Trie3: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "qux")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie4.gv");
 	/*printf("Trie4: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "quxx")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie5.gv");
 	/*printf("Trie5: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "quxxx")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie6.gv");
 	/*printf("Trie6: %s.\n\n", StrTrieToString(&trie));*/
 
@@ -158,9 +158,9 @@ static void test_basic_trie_str() {
 	trie_Str_graph(&trie, "graph/trie_a.gv");
 	if(!StrTrieAdd(&trie, "b")) goto catch;
 	trie_Str_graph(&trie, "graph/trie_b.gv");
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	if(!StrTrieAdd(&trie, "c")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie_c.gv");
 	if(!StrTrieAdd(&trie, "d")
 	   || !StrTrieAdd(&trie, "e")

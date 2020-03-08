@@ -145,6 +145,9 @@ typedef PN_(Type) *PN_(Leaf);
 
 #define PT_(thing) PCAT(array, PCAT(PN_(Leaf), thing))
 
+/* Private code follows a convention that in `branches` (internal nodes) the
+ subscripts begin by `n` and in `leaves` (external nodes) it begins with `i`. */
+
 /** To initialise it to an idle state, see <fn:<N>Tree>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`. Internally, it is an array of <tag:<PN>TrieNode>.
  If size is zero, it's empty; otherwise it has `2 (nodes - 1) + 1` elements. If
@@ -162,7 +165,7 @@ struct N_(Trie) {
 #endif /* !zero --> */
 
 static void PN_(print)(const struct N_(Trie) *const trie) {
-	size_t i;
+	size_t i, n;
 	printf("__Trie__\n");
 	if(!trie) { printf("null"); return; }
 	printf(" > leaves: ");
@@ -170,9 +173,9 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 		printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.data[i]));
 	printf(";\n"
 		" > branches: ");
-	for(i = 0; i < trie->branches.size; i++)
-		printf("%s%u:%u", i ? ", " : "", trie->branches.data[i].bit,
-		trie->branches.data[i].left);
+	for(n = 0; n < trie->branches.size; n++)
+		printf("%s%u:%u", i ? ", " : "", trie->branches.data[n].bit,
+		trie->branches.data[n].left);
 	printf(".\n");
 }
 
@@ -196,58 +199,57 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	struct TrieBranch *branch;
 	PN_(Leaf) *leaf;
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
-	size_t br, br1, lf;
+	size_t n, n1, i;
 	const char *const data_key = PN_(to_key)(data), *br_key;
-	unsigned bit, br_bit, br_left;
+	unsigned bit, n_bit, n_left;
 	int cmp;
 
-	assert(trie && data && br1 < (size_t)-2);
+	assert(trie && data && n1 < (size_t)-2);
 
-	/* Empty short circuit. */
+	/* Empty short circuit; add one entry to `leaves`. */
 	if(!leaf_size) {
 		assert(!trie->branches.size);
 		return (leaf = PT_(new)(&trie->leaves, 0)) ? *leaf = data, 1 : 0;
 	}
 
 	/* Non-empty. */
-	assert(trie->leaves.size == trie->branches.size + 1); /* Waste `size_t`. */
+	assert(leaf_size == branch_size + 1); /* Waste `size_t`. */
 	if(!PT_(reserve)(&trie->leaves, 1, 0)
 		|| !array_TrieBranch_reserve(&trie->branches, 1, 0)) return 0;
 
 	printf("Adding %s to ", data_key), PN_(print)(trie);
 	cmp = 0;
 	bit = 0;
-	lf = 0;
-	for(br = 0, br1 = branch_size; branch = trie->branches.data + br,
-		br_key = trie->leaves.data[br], br < br1; ) {
-		br_bit = branch->bit;
-		/* Compare the strings bit-by-bit. */
-		for( ; bit < br_bit; bit++)
+	i = 0, n = 0, n1 = branch_size;
+	/* Want `branch` and `br_key` before testing. */
+	while(branch = trie->branches.data + n, br_key = trie->leaves.data[n],
+		n < n1) {
+		for(n_bit = branch->bit; bit < n_bit; bit++)
 			if((cmp = trie_strcmp_bit(data_key, br_key, bit)) != 0) goto insert;
-		/* Follow the branch left/right. */
-		if(!trie_is_bit(br_key, bit)) br1 = br++ + ++branch->left;
-		else br += branch->left + 1;
+		/* Follow the left or right branch; update the left. */
+		if(!trie_is_bit(br_key, bit)) n1 = n++ + ++branch->left;
+		else n += branch->left + 1, i += branch->left + 1;
 	}
 	printf("leaf cmp(%s, %s).\n", data_key, br_key);
 	while((cmp = trie_strcmp_bit(data_key, br_key, bit)) == 0) bit++;
-	if(cmp > 0) lf++;
 
 insert:
-	br_left = branch->left;
-	printf("adding %s to leaf %lu.\n", data_key, lf);
-	assert(br <= br1 && br1 <= trie->branches.size && br_key);
+	if(cmp > 0) i++;
+	n_left = branch->left;
+	printf("adding %s to leaf %lu.\n", data_key, i);
+	assert(n <= n1 && n1 <= trie->branches.size && br_key);
 
 	/* Insert a leaf. */
-	leaf = trie->leaves.data + lf;
-	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - lf));
+	leaf = trie->leaves.data + i;
+	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
 	*leaf = data;
 	trie->leaves.size++;
 
 	/* Insert a branch. */
-	branch = trie->branches.data + br;
-	memmove(branch + 1, branch, sizeof *branch * (branch_size - br));
+	branch = trie->branches.data + n;
+	memmove(branch + 1, branch, sizeof *branch * (branch_size - n));
 	branch->bit = bit;
-	branch->left = br_left;
+	branch->left = n_left;
 	trie->branches.size++;
 
 #if 0
@@ -255,17 +257,18 @@ insert:
 		memmove(n1 + 2, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
 		n1[0].branch.bit  = bit;
 		n1[0].branch.left = 0;
-		n1[1].lf = data;
+		n1[1].i = data;
 	} else { /* Insert a right leaf. */
 		memmove(n2 + 2, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
 		memmove(n1 + 1, n1, sizeof n1 * (n2 - n1));
 		n1[0].branch.bit = bit;
 		assert((n2 - n1) >> 1 <= UINT_MAX); /* fixme: this can happen. */
 		n1[0].branch.left = (unsigned)((n2 - n1) >> 1);
-		n2[1].lf = data;
+		n2[1].i = data;
 	}*/
 	trie->a.size += 2;
 #endif
+	printf("Now: "), PN_(print)(trie);
 
 	return 1;
 }
@@ -275,13 +278,12 @@ insert:
  definitely is not in the trie. */
 static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	const char *const str) {
-	size_t n0 = 0, n1 = trie->leaves.size;
+	size_t n0 = 0, n1 = trie->branches.size;
 	struct TrieBranch *n0_branch;
 	unsigned n0_byte, str_byte = 0;
-	assert(trie);
+	assert(trie && trie->leaves.size == trie->branches.size + 1);
 	if(!n1) return 0;
-	n1--, assert(n1 == trie->branches.size);
-	while(n0 < n1) { /* fixme: This is wrong. */
+	while(n0 < n1) {
 		n0_branch = trie->branches.data + n0;
 
 		/* Don't go farther than the string. */
