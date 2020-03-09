@@ -34,36 +34,76 @@ end:
 	printf("^^end print^^\n\n");
 }*/
 
+/*static size_t PN_(leaf)(const struct N_(Trie) *const trie,
+	const size_t n) {
+	size_t n0, i;
+	assert(trie && n < trie->branches.size && trie->branches.data[n].left);
+	printf("n = %lu of { ", n);
+	for(i = 0; i < trie->branches.size; i++)
+		printf("%u ", trie->branches.data[i].left);
+	printf("}.\n");
+	for(i = 0, n0 = 0; ; ) {
+		const unsigned left = trie->branches.data[n0].left;
+		printf("i=%lu,n0=%lu,left=%u;", i, n0, left);
+		if(n <= n0) break;
+		{
+			size_t x;
+			unsigned l = trie->branches.data[n0].left;
+			printf("...%u [", trie->branches.data[n0].left);
+			for(x = n0 + 1; x < n0 + 1 + l; x++)
+				printf("%u ", trie->branches.data[x].left);
+			printf("][");
+			for( ; x < trie->branches.size; x++)
+				printf("%u ", trie->branches.data[x].left);
+			printf("].\n");
+		}
+		if(n0 + left <= n) n0++;
+		else n0 += left + 1, i += left + 1;
+	}
+	printf("Left leaf %lu.\n", i);
+}*/
+
 /** Draw a graph of `trie` to `fn` in Graphviz format. */
 static void PN_(graph)(const struct N_(Trie) *const trie,
 	const char *const fn) {
 	FILE *fp;
-	size_t i, l = 0;
+	size_t i, n;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
-		"\tTrie [label=\"{\\<" QUOTE(TRIE_NAME) "\\>Trie: " QUOTE(TRIE_TYPE)
-		"\\l|size: %lu\\l}\"];\n"
-		"\tnode [fillcolor=lightsteelblue];\n",
-		(unsigned long)N_(TrieSize(trie)));
-	for(i = 0; i < trie->leaves.size; i++)
-		fprintf(fp, "\tleaf%lu [label=\"%s\"];\n",
-		(unsigned long)i, PN_(to_key)(trie->leaves.data[i]));
-		fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
-	for(i = 0; i < trie->branches.size; i++) {
-		struct TrieBranch *b = trie->branches.data + i;
-		const size_t left = b->left, right = (trie->branches.size-i) - b->left;
-		fprintf(fp, "\tbranch%lu [label=\"%u:%u\"];\n", (unsigned long)i, b->bit, b->left);
+		"\tTrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>Trie: " QUOTE(TRIE_TYPE)
+		"\\l|size: %lu\\l}\"];\n",
+		(unsigned long)N_(TrieSize)(trie));
+	fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
+	for(i = 0, n = 0; n < trie->branches.size; n++) {
+		struct TrieBranch *branch = trie->branches.data + n;
+		const size_t left = branch->left,
+			right = trie->branches.size - n - 1 - left;
+		fprintf(fp, "\tbranch%lu [label = \"%u:%u\"];\n",
+			(unsigned long)n, branch->bit, branch->left);
 		if(left) {
-			fprintf(fp, "\tbranch%lu -> branch%lu;\n", (unsigned long)i,
-				(unsigned long)i + 1);
+			fprintf(fp, "\tbranch%lu -> branch%lu; // left branch\n",
+				(unsigned long)n, (unsigned long)n + 1);
 		} else {
-			fprintf(fp, "\tbranch%lu -> leaf%lu;\n", (unsigned long)i,
-				(unsigned long)l);
+			fprintf(fp, "\tbranch%lu -> leaf%lu; // left leaf\n",
+				(unsigned long)n, (unsigned long)i);
+		}
+		if(right) {
+			fprintf(fp, "\tbranch%lu -> branch%lu; // right branch\n",
+				(unsigned long)n, (unsigned long)(n + branch->left) + 1);
+		} else {
+			fprintf(fp, "\tbranch%lu -> leaf%lu; // right leaf\n",
+				(unsigned long)n, (unsigned long)i + branch->left + 1);
 		}
 	}
+	/* This must be after the branches, or it will mix up the order. Since they
+	 have been referenced, one needs explicit formatting? */
+	for(i = 0; i < trie->leaves.size; i++)
+		fprintf(fp, "\tleaf%lu [label = \"%s\", shape = box, "
+		"fillcolor = lightsteelblue, style = filled];\n",
+		(unsigned long)i, PN_(to_key)(trie->leaves.data[i]));
 	/*	fprintf(fp,
 		"\tn%lu [shape = \"oval\" label=\"%u\"];\n"
 		"\tn%lu -> n%lu [style = dashed];\n"
@@ -71,7 +111,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		(unsigned long)i, trie->branches.data[i].bit,
 		(unsigned long)i, (unsigned long)i + 1,
 		(unsigned long)i, (unsigned long)n +);*/
-	fprintf(fp, "\tnode [color=red];\n"
+	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);
 }

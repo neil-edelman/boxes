@@ -174,7 +174,7 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 	printf(";\n"
 		" > branches: ");
 	for(n = 0; n < trie->branches.size; n++)
-		printf("%s%u:%u", i ? ", " : "", trie->branches.data[n].bit,
+		printf("%s%u:%u", n ? ", " : "", trie->branches.data[n].bit,
 		trie->branches.data[n].left);
 	printf(".\n");
 }
@@ -200,11 +200,13 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	PN_(Leaf) *leaf;
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
 	size_t n, n1, i;
-	const char *const data_key = PN_(to_key)(data), *br_key;
+	const char *const data_key = PN_(to_key)(data), *n_key;
 	unsigned bit, n_bit, n_left;
 	int cmp;
 
 	assert(trie && data && n1 < (size_t)-2);
+
+	printf("Adding %s to ", data_key), PN_(print)(trie);
 
 	/* Empty short circuit; add one entry to `leaves`. */
 	if(!leaf_size) {
@@ -217,27 +219,26 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	if(!PT_(reserve)(&trie->leaves, 1, 0)
 		|| !array_TrieBranch_reserve(&trie->branches, 1, 0)) return 0;
 
-	printf("Adding %s to ", data_key), PN_(print)(trie);
 	cmp = 0;
 	bit = 0;
 	i = 0, n = 0, n1 = branch_size;
 	/* Want `branch` and `br_key` before testing. */
-	while(branch = trie->branches.data + n, br_key = trie->leaves.data[n],
+	while(branch = trie->branches.data + n, n_key = trie->leaves.data[i],
 		n < n1) {
 		for(n_bit = branch->bit; bit < n_bit; bit++)
-			if((cmp = trie_strcmp_bit(data_key, br_key, bit)) != 0) goto insert;
+			if((cmp = trie_strcmp_bit(data_key, n_key, bit)) != 0) goto insert;
 		/* Follow the left or right branch; update the left. */
-		if(!trie_is_bit(br_key, bit)) n1 = n++ + ++branch->left;
+		if(!trie_is_bit(n_key, bit)) n1 = n++ + ++branch->left;
 		else n += branch->left + 1, i += branch->left + 1;
 	}
-	printf("leaf cmp(%s, %s).\n", data_key, br_key);
-	while((cmp = trie_strcmp_bit(data_key, br_key, bit)) == 0) bit++;
+	while((cmp = trie_strcmp_bit(data_key, n_key, bit)) == 0) bit++;
+	printf("leaf cmp(%s, %s) = %u.\n", data_key, n_key, bit);
 
 insert:
 	if(cmp > 0) i++;
 	n_left = branch->left;
-	printf("adding %s to leaf %lu.\n", data_key, i);
-	assert(n <= n1 && n1 <= trie->branches.size && br_key);
+	printf(" -> %s to leaf %lu.\n", data_key, i);
+	assert(n <= n1 && n1 <= trie->branches.size && n_key);
 
 	/* Insert a leaf. */
 	leaf = trie->leaves.data + i;
@@ -245,30 +246,13 @@ insert:
 	*leaf = data;
 	trie->leaves.size++;
 
+	printf(" -> %d:%d to branch %lu.\n", bit, n_left, n);
 	/* Insert a branch. */
 	branch = trie->branches.data + n;
 	memmove(branch + 1, branch, sizeof *branch * (branch_size - n));
 	branch->bit = bit;
 	branch->left = n_left;
 	trie->branches.size++;
-
-#if 0
-	if(cmp < 0) { /* Insert left; `[n1,n2], [n2,-1]` are moved together. */
-		memmove(n1 + 2, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
-		n1[0].branch.bit  = bit;
-		n1[0].branch.left = 0;
-		n1[1].i = data;
-	} else { /* Insert a right leaf. */
-		memmove(n2 + 2, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
-		memmove(n1 + 1, n1, sizeof n1 * (n2 - n1));
-		n1[0].branch.bit = bit;
-		assert((n2 - n1) >> 1 <= UINT_MAX); /* fixme: this can happen. */
-		n1[0].branch.left = (unsigned)((n2 - n1) >> 1);
-		n2[1].i = data;
-	}*/
-	trie->a.size += 2;
-#endif
-	printf("Now: "), PN_(print)(trie);
 
 	return 1;
 }
@@ -278,11 +262,12 @@ insert:
  definitely is not in the trie. */
 static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	const char *const str) {
-	size_t n0 = 0, n1 = trie->branches.size;
+	size_t n0 = 0, n1 = trie->leaves.size, i = 0;
 	struct TrieBranch *n0_branch;
 	unsigned n0_byte, str_byte = 0;
-	assert(trie && trie->leaves.size == trie->branches.size + 1);
-	if(!n1) return 0;
+	assert(trie);
+	if(n1-- <= 1) return n1 ? trie->leaves.data : 0;
+	assert(n1 == trie->branches.size);
 	while(n0 < n1) {
 		n0_branch = trie->branches.data + n0;
 
@@ -292,10 +277,10 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 
 		/* Follow the branch left/right. */
 		if(!trie_is_bit(str, n0_branch->bit)) n1 = ++n0 + n0_branch->left;
-		else n0 += n0_branch->left + 1;
+		else n0 += n0_branch->left + 1, i += n0_branch->left + 1;
 	}
-	assert(n0 == n1);
-	return trie->leaves.data + n0;
+	assert(n0 == n1 && i < trie->leaves.size);
+	return trie->leaves.data + i;
 }
 
 static PN_(Type) **PN_(get)(const struct N_(Trie) *const trie,
