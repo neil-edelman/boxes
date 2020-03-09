@@ -53,9 +53,11 @@
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 
-/* Trie branches are just numbers, the bit on the string, and how many branches
- (internal nodes) are in the left subtree. Fixme: No checks for out-of-bounds,
- see if we can extend this. */
+/* The deciding bit on the string, and how many branches (internal nodes) are
+ in the left subtree. As an array, it encodes a pre-order full binary tree
+ semi-implicitly: `left` children are immediately following, right children are
+ the rest. The number of leaves is one more, (with a special case for empty,)
+ and stored in a separate array. */
 struct TrieBranch { unsigned bit, left; };
 
 /* Define the struct used in all <tag:<N>Trie>. */
