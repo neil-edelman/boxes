@@ -198,64 +198,96 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
  (_viz_, it doesn't do `NUL` checks.)
  @order O(`nodes`) */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	struct TrieBranch *branch;
+	struct TrieBranch *n0_branch;
 	PN_(Leaf) *leaf;
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
-	size_t n, n1, i;
 	const char *const data_key = PN_(to_key)(data), *n_key;
-	unsigned bit, n_bit, n_left;
+	size_t n0, n1, i0, i1;
+	unsigned bit, n0_bit, n0_left;
 	int cmp;
 
 	assert(trie && data && n1 < (size_t)-2);
 
-	printf("Adding %s to ", data_key), PN_(print)(trie);
+	/*printf("Adding %s to ", data_key), PN_(print)(trie);*/
+	{
+		size_t i;
+		printf("Before [");
+		for(i = 0; i < trie->leaves.size; i++)
+			printf("%s%s", i ? " " : "", trie->leaves.data[i]);
+		printf("][");
+		for(i = 0; i < trie->branches.size; i++)
+			printf("%s%u:%u", i ? " " : "", trie->branches.data[i].bit,
+			trie->branches.data[i].left);
+		printf("]\n");
+	}
 
 	/* Empty short circuit; add one entry to `leaves`. */
 	if(!leaf_size) {
 		assert(!trie->branches.size);
-		return (leaf = PT_(new)(&trie->leaves, 0)) ? *leaf = data, 1 : 0;
+		return (leaf = PT_(new)(&trie->leaves)) ? *leaf = data, 1 : 0;
 	}
 
 	/* Non-empty. */
 	assert(leaf_size == branch_size + 1); /* Waste `size_t`. */
-	if(!PT_(reserve)(&trie->leaves, 1, 0)
-		|| !array_TrieBranch_reserve(&trie->branches, 1, 0)) return 0;
+	if(!PT_(reserve)(&trie->leaves, 1)
+		|| !array_TrieBranch_reserve(&trie->branches, 1)) return 0;
 
 	cmp = 0;
 	bit = 0;
-	i = 0, n = 0, n1 = branch_size;
+	i0 = 0, i1 = leaf_size, n0 = 0, n1 = branch_size;
 	/* Want `branch` and `br_key` before testing. */
-	while(branch = trie->branches.data + n, n_key = trie->leaves.data[i],
-		n < n1) {
-		for(n_bit = branch->bit; bit < n_bit; bit++)
+	while(n0_branch = trie->branches.data + n0, n_key = trie->leaves.data[i0],
+		n0 < n1) {
+		for(n0_bit = n0_branch->bit; bit < n0_bit; bit++)
 			if((cmp = trie_strcmp_bit(data_key, n_key, bit)) != 0) goto insert;
 		/* Follow the left or right branch; update the left. */
-		if(!trie_is_bit(n_key, bit)) n1 = n++ + ++branch->left;
-		else n += branch->left + 1, i += branch->left + 1;
+		if(!trie_is_bit(n_key, bit))
+			n1 = n0++ + ++n0_branch->left, i1 = i0 + n0_branch->left;
+		else n0 += n0_branch->left + 1, i0 += n0_branch->left + 1;
 	}
 	while((cmp = trie_strcmp_bit(data_key, n_key, bit)) == 0) bit++;
-	printf("leaf cmp(%s, %s) = %u.\n", data_key, n_key, bit);
 
 insert:
-	if(cmp > 0) i++;
-	n_left = branch->left;
-	printf(" -> %s to leaf %lu.\n", data_key, i);
-	assert(n <= n1 && n1 <= trie->branches.size && n_key);
+	/*printf("final: i[%lu..%lu], n[%lu..%lu], cmp %d...\n", i0, i1, n0, n1, cmp);*/
+	n0_left = n0_branch->left; /* Store this value becuse `branch` is moving. */
+	/*printf(" which means %s to leaf %lu; %d:%d to branch %lu.\n",
+		data_key, cmp < 0 ? i0 : i1, bit, n0_left, n0);*/
+	assert(n0 <= n1 && n1 <= trie->branches.size && n_key
+		&& i0 <= i1 && i1 <= trie->branches.size);
 
 	/* Insert a leaf. */
-	leaf = trie->leaves.data + i;
-	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
+	leaf = trie->leaves.data + (cmp < 0 ? i0 : i1);
+	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i0));
 	*leaf = data;
 	trie->leaves.size++;
 
-	printf(" -> %d:%d to branch %lu.\n", bit, n_left, n);
 	/* Insert a branch. */
-	branch = trie->branches.data + n;
-	memmove(branch + 1, branch, sizeof *branch * (branch_size - n));
-	branch->bit = bit;
-	branch->left = n_left;
+	n0_branch = trie->branches.data + n0;
+	memmove(n0_branch + 1, n0_branch, sizeof *n0_branch * (branch_size - n0));
+	n0_branch->bit = bit;
+	n0_branch->left = n0_left;
 	trie->branches.size++;
 
+#if 0
+	if(cmp < 0) { /* Insert left leaf; `[n1,n2], [n2,-1]` are moved together. */
+		memmove(n1 + 3, n1, sizeof n1 * (trie->a.data + trie->a.size - n1));
+		n1[0].branch.choice_bit = bit;
+		n1[0].branch.left_branch  = 0;
+		n1[0].branch.right_branch = is_n1_branch;
+		n1[1].right_offset = 2;
+		n1[2].leaf = data;
+	} else { /* Insert a right leaf. */
+		memmove(n2 + 3, n2, sizeof n1 * (trie->a.data + trie->a.size - n2));
+		memmove(n1 + 2, n1, sizeof n1 * (n2 - n1));
+		n1[0].branch.choice_bit = bit;
+		n1[0].branch.left_branch  = is_n1_branch;
+		n1[0].branch.right_branch = 0;
+		n1[1].right_offset = n2 - n1 + 1;
+		n2[2].leaf = data;
+	}
+	trie->a.size += 3;
+#endif
+	
 	return 1;
 }
 
