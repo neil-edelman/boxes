@@ -245,7 +245,7 @@ static int PH_(add)(struct H_(Heap) *const heap,
 	struct H_(HeapNode) *const node) {
 	/* `new` adds an uninitialised element to the back; <fn:<PH>sift_up>
 	 replaces the back element with `node`. */
-	return PT_(new)(&heap->a, 0) ? (PH_(sift_up)(heap, node), 1) : 0;
+	return PT_(new)(&heap->a) ? (PH_(sift_up)(heap, node), 1) : 0;
 }
 
 /** Removes from `heap`. Must have a non-zero size. */
@@ -284,7 +284,7 @@ static struct H_(HeapNode) *PH_(peek)(const struct H_(Heap) *const heap) {
  @order \Theta(1)
  @allow */
 static void H_(Heap_)(struct H_(Heap) *const heap) {
-	if(heap) free(heap->a.data), PT_(array)(&heap->a);
+	if(heap) PT_(array_)(&heap->a);
 }
 
 /** Initialises `heap` to be idle.
@@ -372,7 +372,7 @@ static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
 	if(!heap) return 0;
 	if(!reserve) return heap->a.data ? heap->a.data + heap->a.size : 0;
 	if(heap->a.size > (size_t)-1 - reserve) { errno = ERANGE; return 0; }
-	if(!PT_(reserve)(&heap->a, heap->a.size + reserve, 0)) return 0;
+	if(!PT_(reserve)(&heap->a, heap->a.size + reserve)) return 0;
 	return heap->a.data + heap->a.size;
 }
 
@@ -398,7 +398,7 @@ static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
 static int H_(HeapBuffer)(struct H_(Heap) *const heap, const size_t add) {
 	if(!heap || !add) return 0;
 	if(heap->a.size > (size_t)-1 - add) { errno = ERANGE; return 0; }
-	if(!PT_(reserve)(&heap->a, heap->a.size + add, 0)) return 0;
+	if(!PT_(reserve)(&heap->a, heap->a.size + add)) return 0;
 	heap->a.size += add;
 	PH_(heapify)(heap);
 	return 1;
