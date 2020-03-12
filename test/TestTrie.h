@@ -63,6 +63,24 @@ end:
 	printf("Left leaf %lu.\n", i);
 }*/
 
+static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n1) {
+	size_t remaining = trie->branches.size, n0 = 0, left, right;
+	assert(trie && n0 <= n1 && n1 < remaining);
+	printf("right(%s, %lu) =\n", N_(TrieToString)(trie), n1);
+	for( ; ; ) {
+		left = trie->branches.data[n0].left;
+		right = remaining - left - 1;
+		printf("[%lu, %lu] \n", left, right);
+		assert(left < remaining && right < remaining);
+		if(n0 >= n1) break;
+		if(n1 <= n0 + left) remaining = left, n0++;
+		else remaining = right, n0 += left + 1;
+	}
+	assert(n0 == n1);
+	printf("= %lu\n", right);
+	return right;
+}
+
 /** Draw a graph of `trie` to `fn` in Graphviz format. */
 static void PN_(graph)(const struct N_(Trie) *const trie,
 	const char *const fn) {
@@ -79,38 +97,26 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
 	for(i = 0, n = 0; n < trie->branches.size; n++) {
 		struct TrieBranch *branch = trie->branches.data + n;
-		const size_t left = branch->left,
-			right = trie->branches.size - n - 1 - left;
-		fprintf(fp, "\tbranch%lu [label = \"%u:%u\"];\n",
-			(unsigned long)n, branch->bit, branch->left);
-		if(left) {
-			fprintf(fp, "\tbranch%lu -> branch%lu; // left branch\n",
-				(unsigned long)n, (unsigned long)n + 1);
-		} else {
-			fprintf(fp, "\tbranch%lu -> leaf%lu; // left leaf\n",
-				(unsigned long)n, (unsigned long)i);
-		}
-		if(right) {
-			fprintf(fp, "\tbranch%lu -> branch%lu; // right branch\n",
-				(unsigned long)n, (unsigned long)(n + branch->left) + 1);
-		} else {
-			fprintf(fp, "\tbranch%lu -> leaf%lu; // right leaf\n",
-				(unsigned long)n, (unsigned long)i + branch->left + 1);
-		}
+		const size_t left = branch->left, right = PN_(right)(trie, n);
+		fprintf(fp, "\tbranch%lu [label = \"%u %lu:%lu\"];\n"
+			"\tbranch%lu -> ",
+			(unsigned long)n, branch->bit, left, right, (unsigned long)n);
+		if(left) fprintf(fp, "branch%lu; // left branch\n",
+			(unsigned long)n + 1);
+		else fprintf(fp, "leaf%lu; // left leaf\n", (unsigned long)i++);
+		fprintf(fp, "\tbranch%lu -> ", (unsigned long)n);
+		if(right) fprintf(fp, "branch%lu; // right branch\n",
+			(unsigned long)n + branch->left + 1);
+		else fprintf(fp, "leaf%lu; // right leaf\n",
+			(unsigned long)i++);
 	}
+	/*assert(i == trie->leaves.size);*/
 	/* This must be after the branches, or it will mix up the order. Since they
 	 have been referenced, one needs explicit formatting? */
 	for(i = 0; i < trie->leaves.size; i++)
 		fprintf(fp, "\tleaf%lu [label = \"%s\", shape = box, "
 		"fillcolor = lightsteelblue, style = filled];\n",
 		(unsigned long)i, PN_(to_key)(trie->leaves.data[i]));
-	/*	fprintf(fp,
-		"\tn%lu [shape = \"oval\" label=\"%u\"];\n"
-		"\tn%lu -> n%lu [style = dashed];\n"
-		"\tn%lu -> n%lu;\n",
-		(unsigned long)i, trie->branches.data[i].bit,
-		(unsigned long)i, (unsigned long)i + 1,
-		(unsigned long)i, (unsigned long)n +);*/
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);

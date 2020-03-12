@@ -491,7 +491,7 @@ static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
  @return Prints `heap` in a static buffer.
  @order \Theta(1); it has a 255 character limit; every element takes some of it.
  @allow */
-static const char *N_(TrieToString)(struct N_(Trie) *const trie) {
+static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 	static char buffers[4][256];
 	static size_t buffer_i;
 	char *const buffer = buffers[buffer_i++], *b = buffer;
