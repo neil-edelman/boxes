@@ -66,18 +66,18 @@ end:
 static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n1) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right;
 	assert(trie && n0 <= n1 && n1 < remaining);
-	printf("right(%s, %lu) =\n", N_(TrieToString)(trie), n1);
+	/*printf("right(%s, %lu) =\n", N_(TrieToString)(trie), n1);*/
 	for( ; ; ) {
 		left = trie->branches.data[n0].left;
 		right = remaining - left - 1;
-		printf("[%lu, %lu] \n", left, right);
+		/*printf("[%lu, %lu] \n", left, right);*/
 		assert(left < remaining && right < remaining);
 		if(n0 >= n1) break;
 		if(n1 <= n0 + left) remaining = left, n0++;
 		else remaining = right, n0 += left + 1;
 	}
 	assert(n0 == n1);
-	printf("= %lu\n", right);
+	/*printf("= %lu\n", right);*/
 	return right;
 }
 
