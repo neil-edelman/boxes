@@ -198,20 +198,19 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
  (_viz_, it doesn't do `NUL` checks.)
  @order O(`nodes`) */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	struct TrieBranch *n0_branch;
+	struct TrieBranch *branch;
 	PN_(Leaf) *leaf;
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
 	const char *const data_key = PN_(to_key)(data), *n_key;
-	size_t n0, n1, i0, i1;
-	unsigned bit, n0_bit, n0_left;
+	size_t n0, n1, i;
+	unsigned bit, n0_bit;
 	int cmp;
 
 	assert(trie && data && n1 < (size_t)-2);
 
 	/*printf("Adding %s to ", data_key), PN_(print)(trie);*/
 	{
-		size_t i;
-		printf("Before [");
+		printf("adding %s to [", data_key);
 		for(i = 0; i < trie->leaves.size; i++)
 			printf("%s%s", i ? " " : "", trie->leaves.data[i]);
 		printf("][");
@@ -232,41 +231,77 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	if(!PT_(reserve)(&trie->leaves, 1)
 		|| !array_TrieBranch_reserve(&trie->branches, 1)) return 0;
 
-	cmp = 0;
 	bit = 0;
-	i0 = 0, i1 = leaf_size, n0 = 0, n1 = branch_size;
-	/* Want `branch` and `br_key` before testing. */
-	while(n0_branch = trie->branches.data + n0, n_key = trie->leaves.data[i0],
-		n0 < n1) {
-		for(n0_bit = n0_branch->bit; bit < n0_bit; bit++)
+	i = 0, n0 = 0, n1 = branch_size;
+
+	/* Internal nodes empty. */
+	if(!n1) {
+		n_key = PN_(to_key)(trie->leaves.data[0]); /* Only one. */
+		while((cmp = trie_strcmp_bit(data_key, n_key, bit)) == 0) bit++;
+		goto insert;
+	}
+
+	/* Internal nodes non-empty. */
+	do {
+		branch = trie->branches.data + n0;
+		n_key = trie->leaves.data[i];
+		for(n0_bit = branch->bit; bit < n0_bit; bit++)
 			if((cmp = trie_strcmp_bit(data_key, n_key, bit)) != 0) goto insert;
 		/* Follow the left or right branch; update the left. */
-		if(!trie_is_bit(n_key, bit))
-			n1 = n0++ + ++n0_branch->left, i1 = i0 + n0_branch->left;
-		else n0 += n0_branch->left + 1, i0 += n0_branch->left + 1;
-	}
+		if(!trie_is_bit(data_key, bit)) printf("->left\n"), n1 = n0++ + ++branch->left;
+		else printf("->right\n"), n0 += branch->left + 1, i += branch->left + 1;
+	} while(n0 < n1);
 	while((cmp = trie_strcmp_bit(data_key, n_key, bit)) == 0) bit++;
 
 insert:
-	/*printf("final: i[%lu..%lu], n[%lu..%lu], cmp %d...\n", i0, i1, n0, n1, cmp);*/
-	n0_left = n0_branch->left; /* Store this value becuse `branch` is moving. */
-	/*printf(" which means %s to leaf %lu; %d:%d to branch %lu.\n",
-		data_key, cmp < 0 ? i0 : i1, bit, n0_left, n0);*/
+	printf("inserting %s into bit %u, cmp %d, n%lu/%lu, i%lu.\n",
+		data_key, bit, cmp, n0, n1, i);
 	assert(n0 <= n1 && n1 <= trie->branches.size && n_key
-		&& i0 <= i1 && i1 <= trie->branches.size);
+		&& i <= trie->leaves.size);
+
+#if 1
+	if(cmp < 0) { /* Insert a left leaf. */
+		printf("less than\n");
+		leaf = trie->leaves.data + i;
+	} else { /* Insert a right leaf. */
+		printf("greater than\n");
+		leaf = trie->leaves.data + i + n1 - n0 + 1;
+	}
+	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
+	*leaf = data;
+	trie->leaves.size++;
+
+	branch = trie->branches.data + n0;
+	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
+	branch->bit = bit;
+	branch->left = (unsigned)(n1 - n0); /* Dangerous. */
+	trie->branches.size++;
+
+#else
+	printf("%s leaf %ld, branch %ld\n", data_key, i0, n0);
+	if(cmp < 0) {
+		printf("insert left...");
+		n0_left = 0;
+	} else {
+		printf("insert right...");
+		i0 = i1;
+		/*n0 = n1;*/
+	}
+	printf("%s leaf %ld, branch %ld\n", data_key, i0, n0);
 
 	/* Insert a leaf. */
-	leaf = trie->leaves.data + (cmp < 0 ? i0 : i1);
+	leaf = trie->leaves.data + i0;
 	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i0));
 	*leaf = data;
 	trie->leaves.size++;
 
 	/* Insert a branch. */
-	n0_branch = trie->branches.data + n0;
-	memmove(n0_branch + 1, n0_branch, sizeof *n0_branch * (branch_size - n0));
-	n0_branch->bit = bit;
-	n0_branch->left = n0_left;
+	branch = trie->branches.data + n0;
+	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
+	branch->bit = bit;
+	branch->left = n0_left;
 	trie->branches.size++;
+#endif
 
 #if 0
 	if(cmp < 0) { /* Insert left leaf; `[n1,n2], [n2,-1]` are moved together. */
@@ -287,7 +322,17 @@ insert:
 	}
 	trie->a.size += 3;
 #endif
-	
+	{
+		printf("now %s [", data_key);
+		for(i = 0; i < trie->leaves.size; i++)
+			printf("%s%s", i ? " " : "", trie->leaves.data[i]);
+		printf("][");
+		for(i = 0; i < trie->branches.size; i++)
+			printf("%s%u:%u", i ? " " : "", trie->branches.data[i].bit,
+			trie->branches.data[i].left);
+		printf("]\n");
+	}
+
 	return 1;
 }
 
