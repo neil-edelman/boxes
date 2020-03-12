@@ -101,9 +101,10 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		fprintf(fp, "\tbranch%lu [label = \"%u %lu:%lu\"];\n"
 			"\tbranch%lu -> ",
 			(unsigned long)n, branch->bit, left, right, (unsigned long)n);
-		if(left) fprintf(fp, "branch%lu; // left branch\n",
+		if(left) fprintf(fp, "branch%lu [style = dashed]; // left branch\n",
 			(unsigned long)n + 1);
-		else fprintf(fp, "leaf%lu; // left leaf\n", (unsigned long)i++);
+		else fprintf(fp, "leaf%lu [style = dashed]; // left leaf\n",
+			(unsigned long)i++);
 		fprintf(fp, "\tbranch%lu -> ", (unsigned long)n);
 		if(right) fprintf(fp, "branch%lu; // right branch\n",
 			(unsigned long)n + branch->left + 1);
