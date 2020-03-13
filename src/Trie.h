@@ -193,12 +193,6 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 	free(trie->branches.data), free(trie->leaves.data), PN_(trie)(trie);
 }
 
-/*static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	size_t n0 = 0, n1 = trie->branches.size;
-	assert(trie && data);
-}*/
-
-
 /** Add `data` to `trie`. This assumes that the key of `data` is not the same
  as any in `trie`, so make sure before calling this or else it may crash,
  (_viz_, it doesn't do `NUL` checks.)

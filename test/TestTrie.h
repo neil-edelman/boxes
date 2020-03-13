@@ -63,6 +63,8 @@ end:
 	printf("Left leaf %lu.\n", i);
 }*/
 
+/** Given `n1` in `trie` branches, caluculate the right child branches.
+ @order \O(log `size`) */
 static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n1) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right;
 	assert(trie && n0 <= n1 && n1 < remaining);
@@ -104,12 +106,12 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		if(left) fprintf(fp, "branch%lu [style = dashed]; // left branch\n",
 			(unsigned long)n + 1);
 		else fprintf(fp, "leaf%lu [style = dashed]; // left leaf\n",
-			(unsigned long)i++);
+			(unsigned long)PN_(right)(trie, n));
 		fprintf(fp, "\tbranch%lu -> ", (unsigned long)n);
 		if(right) fprintf(fp, "branch%lu; // right branch\n",
 			(unsigned long)n + branch->left + 1);
 		else fprintf(fp, "leaf%lu; // right leaf\n",
-			(unsigned long)i++);
+			(unsigned long)PN_(right)(trie, n) + 1);
 	}
 	/*assert(i == trie->leaves.size);*/
 	/* This must be after the branches, or it will mix up the order. Since they
