@@ -34,6 +34,7 @@ end:
 	printf("^^end print^^\n\n");
 }*/
 
+/** Given `n1` in `trie` branches, calculate the corresponding left leaf. */
 /*static size_t PN_(leaf)(const struct N_(Trie) *const trie,
 	const size_t n) {
 	size_t n0, i;
@@ -68,19 +69,32 @@ end:
 static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n1) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right;
 	assert(trie && n0 <= n1 && n1 < remaining);
-	/*printf("right(%s, %lu) =\n", N_(TrieToString)(trie), n1);*/
 	for( ; ; ) {
 		left = trie->branches.data[n0].left;
 		right = remaining - left - 1;
-		/*printf("[%lu, %lu] \n", left, right);*/
 		assert(left < remaining && right < remaining);
 		if(n0 >= n1) break;
 		if(n1 <= n0 + left) remaining = left, n0++;
 		else remaining = right, n0 += left + 1;
 	}
 	assert(n0 == n1);
-	/*printf("= %lu\n", right);*/
 	return right;
+}
+
+static size_t PN_(left_leaf)(const struct N_(Trie) *const trie,
+	const size_t n1) {
+	size_t remaining = trie->branches.size, n0 = 0, left, right, i = 0;
+	assert(trie && n0 <= n1 && n1 < remaining);
+	for( ; ; ) {
+		left = trie->branches.data[n0].left;
+		right = remaining - left - 1;
+		assert(left < remaining && right < remaining);
+		if(n0 >= n1) break;
+		if(n1 <= n0 + left) remaining = left, n0++;
+		else remaining = right, n0 += left + 1, i += left + 1;
+	}
+	assert(n0 == n1);
+	return i;
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format. */
@@ -97,7 +111,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		"\\l|size: %lu\\l}\"];\n",
 		(unsigned long)N_(TrieSize)(trie));
 	fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
-	for(i = 0, n = 0; n < trie->branches.size; n++) {
+	for(n = 0; n < trie->branches.size; n++) {
 		struct TrieBranch *branch = trie->branches.data + n;
 		const size_t left = branch->left, right = PN_(right)(trie, n);
 		fprintf(fp, "\tbranch%lu [label = \"%u %lu:%lu\"];\n"
@@ -106,12 +120,12 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		if(left) fprintf(fp, "branch%lu [style = dashed]; // left branch\n",
 			(unsigned long)n + 1);
 		else fprintf(fp, "leaf%lu [style = dashed]; // left leaf\n",
-			(unsigned long)PN_(right)(trie, n));
+			(unsigned long)PN_(left_leaf)(trie, n));
 		fprintf(fp, "\tbranch%lu -> ", (unsigned long)n);
 		if(right) fprintf(fp, "branch%lu; // right branch\n",
 			(unsigned long)n + branch->left + 1);
 		else fprintf(fp, "leaf%lu; // right leaf\n",
-			(unsigned long)PN_(right)(trie, n) + 1);
+			(unsigned long)PN_(left_leaf)(trie, n) + branch->left + 1);
 	}
 	/*assert(i == trie->leaves.size);*/
 	/* This must be after the branches, or it will mix up the order. Since they

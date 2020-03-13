@@ -168,17 +168,16 @@ struct N_(Trie) {
 
 static void PN_(print)(const struct N_(Trie) *const trie) {
 	size_t i, n;
-	printf("__Trie__\n");
-	if(!trie) { printf("null"); return; }
-	printf(" > leaves: ");
+	printf("__Trie: ");
+	if(!trie) { printf("null.\n"); return; }
+	printf("{");
 	for(i = 0; i < trie->leaves.size; i++)
 		printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.data[i]));
-	printf(";\n"
-		" > branches: ");
+	printf("}; {");
 	for(n = 0; n < trie->branches.size; n++)
 		printf("%s%u:%u", n ? ", " : "", trie->branches.data[n].bit,
 		trie->branches.data[n].left);
-	printf(".\n");
+	printf("}.\n");
 }
 
 /** Initialises `trie`. */
@@ -209,16 +208,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	assert(trie && data && n1 < (size_t)-2);
 
 	/*printf("Adding %s to ", data_key), PN_(print)(trie);*/
-	{
-		printf("adding %s to [", data_key);
-		for(i = 0; i < trie->leaves.size; i++)
-			printf("%s%s", i ? " " : "", trie->leaves.data[i]);
-		printf("][");
-		for(i = 0; i < trie->branches.size; i++)
-			printf("%s%u:%u", i ? " " : "", trie->branches.data[i].bit,
-			trie->branches.data[i].left);
-		printf("]\n");
-	}
+	printf("adding %s to ", data_key), PN_(print)(trie);
 
 	/* Empty short circuit; add one entry to `leaves`. */
 	if(!leaf_size) {
