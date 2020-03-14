@@ -64,36 +64,36 @@ end:
 	printf("Left leaf %lu.\n", i);
 }*/
 
-/** Given `n1` in `trie` branches, caluculate the right child branches.
+/** Given `n` in `trie` branches, caluculate the right child branches.
  @order \O(log `size`) */
-static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n1) {
+static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right;
-	assert(trie && n0 <= n1 && n1 < remaining);
+	assert(trie && n < remaining);
 	for( ; ; ) {
 		left = trie->branches.data[n0].left;
 		right = remaining - left - 1;
 		assert(left < remaining && right < remaining);
-		if(n0 >= n1) break;
-		if(n1 <= n0 + left) remaining = left, n0++;
+		if(n0 >= n) break;
+		if(n <= n0 + left) remaining = left, n0++;
 		else remaining = right, n0 += left + 1;
 	}
-	assert(n0 == n1);
+	assert(n0 == n);
 	return right;
 }
 
 static size_t PN_(left_leaf)(const struct N_(Trie) *const trie,
-	const size_t n1) {
+	const size_t n) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right, i = 0;
-	assert(trie && n0 <= n1 && n1 < remaining);
+	assert(trie && n < remaining);
 	for( ; ; ) {
 		left = trie->branches.data[n0].left;
 		right = remaining - left - 1;
 		assert(left < remaining && right < remaining);
-		if(n0 >= n1) break;
-		if(n1 <= n0 + left) remaining = left, n0++;
+		if(n0 >= n) break;
+		if(n <= n0 + left) remaining = left, n0++;
 		else remaining = right, n0 += left + 1, i += left + 1;
 	}
-	assert(n0 == n1);
+	assert(n0 == n);
 	return i;
 }
 
@@ -108,15 +108,14 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\tTrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>Trie: " QUOTE(TRIE_TYPE)
-		"\\l|size: %lu\\l}\"];\n",
-		(unsigned long)N_(TrieSize)(trie));
+		"\\l|size: %lu\\l}\"];\n", (unsigned long)N_(TrieSize)(trie));
 	fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
 	for(n = 0; n < trie->branches.size; n++) {
 		struct TrieBranch *branch = trie->branches.data + n;
 		const size_t left = branch->left, right = PN_(right)(trie, n);
 		fprintf(fp, "\tbranch%lu [label = \"%u %lu:%lu\"];\n"
-			"\tbranch%lu -> ",
-			(unsigned long)n, branch->bit, left, right, (unsigned long)n);
+			"\tbranch%lu -> ", (unsigned long)n, branch->bit, left, right,
+			(unsigned long)n);
 		if(left) fprintf(fp, "branch%lu [style = dashed]; // left branch\n",
 			(unsigned long)n + 1);
 		else fprintf(fp, "leaf%lu [style = dashed]; // left leaf\n",
@@ -132,8 +131,8 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	 have been referenced, one needs explicit formatting? */
 	for(i = 0; i < trie->leaves.size; i++)
 		fprintf(fp, "\tleaf%lu [label = \"%s\", shape = box, "
-		"fillcolor = lightsteelblue, style = filled];\n",
-		(unsigned long)i, PN_(to_key)(trie->leaves.data[i]));
+		"fillcolor = lightsteelblue, style = filled];\n", (unsigned long)i,
+			PN_(to_key)(trie->leaves.data[i]));
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);

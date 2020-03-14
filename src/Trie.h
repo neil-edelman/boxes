@@ -202,7 +202,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
 	const char *const data_key = PN_(to_key)(data), *n_key;
 	size_t n0, n1, i;
-	unsigned bit, n0_bit;
+	unsigned bit, n0_bit, left;
 	int cmp;
 
 	assert(trie && data && n1 < (size_t)-2);
@@ -241,7 +241,9 @@ insert:
 	assert(n0 <= n1 && n1 <= trie->branches.size && n_key
 		&& i <= trie->leaves.size);
 
-	if(cmp > 0) i += n1 - n0 + 1;
+	printf("%s: i choosing %lu or %lu.\n", data_key, i, i + n1 - n0 + 1);
+	if(cmp < 0) left = 0;
+	else i += n1 - n0 + 1, left = (unsigned)(n1 - n0)/*Danger.*/;
 	leaf = trie->leaves.data + i;
 	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
 	*leaf = data;
@@ -250,7 +252,7 @@ insert:
 	branch = trie->branches.data + n0;
 	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
 	branch->bit = bit;
-	branch->left = (unsigned)(n1 - n0); /* Dangerous. */
+	branch->left = left;
 	trie->branches.size++;
 
 	return 1;
