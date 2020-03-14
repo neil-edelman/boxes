@@ -281,7 +281,7 @@ static int test(void) {
 
 			/* Trie. */
 
-			StrTrieClear(&trie);
+			StrTrieClear(&trie); /* Not really fair? */
 			t = clock();
 			for(i = 0; i < s; i++)
 				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
@@ -290,7 +290,11 @@ static int test(void) {
 				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
 			t = clock();
 			for(i = 0; i < s; i++) {
-				volatile const char *const str = StrTrieGet(&trie, parole[i]);
+				const char *word = parole[i];
+				/*volatile const char *const str = StrTrieGet(&trie, word);*/
+				const char *str;
+				str = StrTrieGet(&trie, word);
+				trie_Str_print(&trie);
 				assert(str);
 				(void)str;
 			}

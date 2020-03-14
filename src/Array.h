@@ -116,7 +116,6 @@ struct T_(Array) {
 #endif /* !zero --> */
 
 /** Ensures `min_capacity` of `a`.
- @param[min_capacity] If zero, allocates anyway.
  @param[update_ptr] Must be in the array or null, it updates this value.
  @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`

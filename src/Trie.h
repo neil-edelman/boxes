@@ -207,7 +207,6 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 
 	assert(trie && data && n1 < (size_t)-2);
 
-	/*printf("Adding %s to ", data_key), PN_(print)(trie);*/
 	printf("adding %s to ", data_key), PN_(print)(trie);
 
 	/* Empty short circuit; add one entry to `leaves`. */
@@ -216,10 +215,13 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		return (leaf = PT_(new)(&trie->leaves)) ? *leaf = data, 1 : 0;
 	}
 
-	/* Non-empty. */
+	/* Non-empty; make sure that add does not go over the maxiumum. */
 	assert(leaf_size == branch_size + 1); /* Waste `size_t`. */
-	if(!PT_(reserve)(&trie->leaves, 1)
-		|| !array_TrieBranch_reserve(&trie->branches, 1)) return 0;
+	/* Fixme: conservative. */
+	if(leaf_size >= UINT_MAX) return errno = ERANGE, 0;
+	if(!PT_(reserve)(&trie->leaves, leaf_size + 1)
+		|| !array_TrieBranch_reserve(&trie->branches, branch_size + 1))
+		return 0;
 
 	/* Internal nodes. */
 	bit = 0;
@@ -240,21 +242,24 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 insert:
 	assert(n0 <= n1 && n1 <= trie->branches.size && n_key
 		&& i <= trie->leaves.size);
+	printf("inserting %s: n %lu, i %lu or %lu ",
+		data_key, n0, i, i + n1 - n0 + 1), PN_(print)(trie);
 
-	printf("%s: i choosing %lu or %lu.\n", data_key, i, i + n1 - n0 + 1);
 	if(cmp < 0) left = 0;
-	else i += n1 - n0 + 1, left = (unsigned)(n1 - n0)/*Danger.*/;
+	else i += n1 - n0 + 1, left = (unsigned)(n1 - n0)/* Limit UINT_MAX. */;
 	leaf = trie->leaves.data + i;
 	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
 	*leaf = data;
 	trie->leaves.size++;
 
+	PN_(print)(trie);
 	branch = trie->branches.data + n0;
 	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
 	branch->bit = bit;
 	branch->left = left;
 	trie->branches.size++;
 
+	PN_(print)(trie);
 	return 1;
 }
 
@@ -267,8 +272,9 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	struct TrieBranch *n0_branch;
 	unsigned n0_byte, str_byte = 0;
 	assert(trie);
-	if(n1-- <= 1) return n1 ? trie->leaves.data : 0;
-	assert(n1 == trie->branches.size);
+	printf("match: %s with ", str), PN_(print)(trie);
+	if(n1 <= 1) return n1 ? trie->leaves.data : 0;
+	n1--, assert(n1 == trie->branches.size);
 	while(n0 < n1) {
 		n0_branch = trie->branches.data + n0;
 
@@ -288,8 +294,13 @@ static PN_(Type) **PN_(get)(const struct N_(Trie) *const trie,
 	const char *const str) {
 	PN_(Type) **pmatch;
 	assert(trie && str);
-	return (pmatch = PN_(match)(trie, str))
-		&& !strcmp(PN_(to_key)(*pmatch), str) ? pmatch : 0;
+	pmatch = PN_(match)(trie, str);
+	if(!pmatch) return printf("get: no match\n"), (PN_(Type)**)0;
+	if(strcmp(PN_(to_key)(*pmatch), str)) return 0;
+	printf("get: %s\n", str);
+	return pmatch;
+	/*return (pmatch = PN_(match)(trie, str))
+		&& !strcmp(PN_(to_key)(*pmatch), str) ? pmatch : 0;*/
 }
 
 /** Adds `data` to `trie` and, if `eject` is non-null, stores the collided
@@ -362,7 +373,13 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	const char *const str) {
 	PN_(Leaf) *l;
-	return trie && str && (l = PN_(get)(trie, str)) ? *l : 0;
+	if(!trie || !str) return 0;
+	printf("Get: params okay; %s: ", str), PN_(print)(trie);
+	l = PN_(get)(trie, str);
+	if(!l) return printf("Get: not in trie\n"), (PN_(Type)*)0;
+	printf("Get: %s\n", str);
+	return *l;
+	/*return trie && str && (l = PN_(get)(trie, str)) ? *l : 0;*/
 }
 
 /** Adds `data` to `trie`. If data with the same key is present, it fails but
