@@ -66,7 +66,12 @@ struct TrieBranch { unsigned bit, left; };
 #define ARRAY_CHILD
 #include "Array.h"
 
-/** Woefully unoptimised. Does it matter? */
+/** Compares the `bit` bit the string `a` against `b`. Does not check the
+ string end.
+ @return In the `bit` position, positive if `a` is after `b`, negative if `a`
+ is before `b`, or zero if `a` is equal to `b`.
+ @fixme Would be better comparing all the bits in the range for equlity, but
+ this is more complicated. Is it worth it? */
 static int trie_strcmp_bit(const char *const a, const char *const b,
 	const unsigned bit) {
 	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
