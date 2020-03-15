@@ -419,8 +419,8 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 	const size_t buffers_no = sizeof buffers / sizeof *buffers,
 	buffer_size = sizeof *buffers / sizeof **buffers;
 	const char start = '{', comma = ',', space = ' ', end = '}',
-	*const ellipsis_end = ",…}", *const null = "null",
-	*const idle = "idle";
+		*const ellipsis_end = ",…}", *const null = "null",
+		*const idle = "idle";
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
 		null_len = strlen(null), idle_len = strlen(idle);
 	PN_(Type) *const*l, *const*l_end;
@@ -428,7 +428,7 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 	const char *str;
 	int is_first = 1;
 	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
-		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
+		&& buffer_size >= 1/*start*/ + 11/*max*/ + ellipsis_end_len + 1/*null*/
 		&& buffer_size >= null_len + 1
 		&& buffer_size >= idle_len + 1);
 	/* Advance the buffer for next time. */
@@ -442,8 +442,8 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 		else is_first = 0;
 		str = PN_(to_key)(*l);
 		for(j = 0; *str != '\0' && j < 12; str++, b++, j++) *b = *str;
-		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
-			goto ellipsis;
+		if((size_t)(b - buffer) >= buffer_size - 2/*comma,space*/ - 11/*max*/
+			- ellipsis_end_len - 1/*null*/) goto ellipsis;
 	}
 	*b++ = end;
 	goto terminate;
