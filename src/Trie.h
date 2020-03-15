@@ -424,7 +424,7 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 	const size_t ellipsis_end_len = strlen(ellipsis_end),
 		null_len = strlen(null), idle_len = strlen(idle);
 	PN_(Type) *const*l, *const*l_end;
-	size_t j;
+	size_t i;
 	const char *str;
 	int is_first = 1;
 	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
@@ -441,7 +441,7 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
 		str = PN_(to_key)(*l);
-		for(j = 0; *str != '\0' && j < 12; str++, b++, j++) *b = *str;
+		for(i = 0; *str != '\0' && i < 12; str++, b++, i++) *b = *str;
 		if((size_t)(b - buffer) >= buffer_size - 2/*comma,space*/ - 11/*max*/
 			- ellipsis_end_len - 1/*null*/) goto ellipsis;
 	}
