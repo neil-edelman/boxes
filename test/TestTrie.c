@@ -236,7 +236,7 @@ static double m_stddev(const struct Measure *const measure)
 
 /* How many experiments is an X-macro. `gnuplot` doesn't like `_`. */
 #define PARAM(A) A
-#define STRUCT(A) { #A, 0, { 0, 0, 0 }, 0 }
+#define STRUCT(A) { #A, 0, { 0, 0, 0 } }
 #define ES(X) X(ARRAYINIT), X(ARRAYLOOK), \
 	X(TRIEINIT), X(TRIELOOK), \
 	X(SETINIT), X(SETLOOK)
@@ -251,14 +251,13 @@ static int test(void) {
 	struct Str24List list;*/
 	struct StringSet set = SET_IDLE;
 	struct StringElementPool set_pool = POOL_IDLE;
-	size_t i, r, s = 1, e;
-	const size_t replicas = 3;
-	clock_t t;
+	size_t i, r, s = 1, e, replicas = 5;
+	clock_t t, t_total;
 	int success = 1, is_full = 0;
 	/* How many files we open simultaneously qs.size OR gnu.size. */
 	enum { ES(PARAM) };
-	struct { const char *name; FILE *fp; struct Measure m; int is_long; }
-		es[] = { ES(STRUCT) }, gnu = { "experiment", 0, {0,0,0}, 0 };
+	struct { const char *name; FILE *fp; struct Measure m; }
+		es[] = { ES(STRUCT) }, gnu = { "experiment", 0, {0,0,0} };
 	const size_t es_size = sizeof es / sizeof *es;
 
 	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
@@ -273,66 +272,40 @@ static int test(void) {
 			es[e].name, (unsigned long)replicas);
 	}
 	for(s = 1; !is_full; s <<= 1) {
-		/*if(s > 10000) break;*/
 		if(s >= parole_size) is_full = 1, s = parole_size;
 		for(e = 0; e < es_size; e++) m_reset(&es[e].m);
 		for(r = 0; r < replicas; r++) {
-			printf("Replica %lu.\n", r + 1);
-
-			/* Trie. */
-
-			StrTrieClear(&trie); /* Not really fair? */
-			t = clock();
-			for(i = 0; i < s; i++)
-				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
-			m_add(&es[TRIEINIT].m, diff_us(t));
-			printf("Added init trie size %lu: %s.\n",
-				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
-			t = clock();
-			for(i = 0; i < s; i++) {
-				const char *word = parole[i];
-				/*volatile const char *const str = StrTrieGet(&trie, word);*/
-				const char *str;
-				str = StrTrieGet(&trie, word);
-				trie_Str_print(&trie);
-				assert(str);
-				(void)str;
-			}
-			m_add(&es[TRIELOOK].m, diff_us(t));
-			printf("Added look trie size %lu.\n",
-				(unsigned long)StrTrieSize(&trie));
+			size_t start_i = rand() / (RAND_MAX / parole_size + 1);
+			t_total = clock();
+			printf("Replica %lu/%lu.\n", r + 1, replicas);
 
 			/* Sorted array. */
-
-			if(es[ARRAYINIT].is_long || es[ARRAYLOOK].is_long) goto array_end;
 			StrArrayClear(&array);
 			t = clock();
-			for(i = 0; i < s; i++) array_insert(&array, parole[i]);
+			for(i = 0; i < s; i++)
+				array_insert(&array, parole[(start_i + i) % parole_size]);
 			m_add(&es[ARRAYINIT].m, diff_us(t));
 			printf("Added init array size %lu: %s.\n",
 				(unsigned long)StrArraySize(&array), StrArrayToString(&array));
-			if(diff_us(t) > 20000) es[ARRAYINIT].is_long = 1;
 			t = clock();
 			for(i = 0; i < s; i++) {
-				/* On systems which have differing pointer sizes, the casts are
-				 problematic, but lazy. */
-				volatile const char **const str = bsearch(parole[i],
-					array.data, array.size, sizeof(array.data), array_cmp);
-				assert(str);
+				const char *const word = parole[(start_i + i) % parole_size],
+				**const key = bsearch(word, array.data, array.size,
+					sizeof array.data, array_cmp);
+				const int cmp = strcmp(word, *key);
+				(void)cmp, assert(key && !cmp);
 			}
 			m_add(&es[ARRAYLOOK].m, diff_us(t));
 			printf("Added look array size %lu.\n",
 				(unsigned long)StrArraySize(&array));
-array_end:
 
 			/* Set, (hash map.) */
-			
 			StringSetClear(&set);
 			StringElementPoolClear(&set_pool);
 			t = clock();
 			for(i = 0; i < s; i++) {
 				struct StringSetElement *elem = StringElementPoolNew(&set_pool);
-				elem->key = parole[i];
+				elem->key = parole[(start_i + i) % parole_size];
 				if(StringSetPolicyPut(&set, elem, 0))
 					StringElementPoolRemove(&set_pool, elem);
 			}
@@ -341,45 +314,39 @@ array_end:
 				(unsigned long)StringSetSize(&set), StringSetToString(&set));
 			t = clock();
 			for(i = 0; i < s; i++) {
-				struct StringSetElement *const elem
-					= StringSetGet(&set, parole[i]);
-				assert(elem);
-				/*printf("looking for %s.\n", parole[i]);*/
+				const char *const word = parole[(start_i + i) % parole_size];
+				const struct StringSetElement *const elem
+					= StringSetGet(&set, word);
+				const int cmp = strcmp(word, elem->key);
+				(void)cmp, assert(elem && !cmp);
 			}
 			m_add(&es[SETLOOK].m, diff_us(t));
 			printf("Added look set size %lu.\n",
 				(unsigned long)StringSetSize(&set));
-			
-			
-#if 0
-			/* Linked set. */
 
-			Str24SetClear(&set);
-			Str24ListClear(&list);
-			Str24EntryPoolClear(&entries);
+			/* Trie. */
+			StrTrieClear(&trie);
+			t = clock();
+			for(i = 0; i < s; i++) if(!StrTrieAdd(&trie,
+				parole[(start_i + i) % parole_size])) goto catch;
+			m_add(&es[TRIEINIT].m, diff_us(t));
+			printf("Added init trie size %lu: %s.\n",
+				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
 			t = clock();
 			for(i = 0; i < s; i++) {
-				struct Str24Entry *const n = Str24EntryPoolNew(&entries);
-				strcpy(n->s24e.key.a, parole[i]); /* Should pause the timing? */
-				if(Str24SetPolicyPut(&set, &n->s24e, 0)) /* Duplicate. */
-					{ Str24EntryPoolRemove(&entries, n); continue; }
-				Str24ListPush(&list, &n->s24n);
+				const char *const word = parole[(start_i + i) % parole_size],
+					*const key = StrTrieGet(&trie, word);
+				const int cmp = strcmp(word, key);
+				(void)cmp, assert(key && !cmp);
 			}
-			Str24ListSort(&list);
-			m_add(&es[SETINIT].m, diff_us(t));
-			printf("Added init set size %lu: %s.\n",
-				(unsigned long)Str24SetSize(&set), Str24SetToString(&set));
-			t = clock();
-			for(i = 0; i < s; i++) {
-				printf("looking for %s.\n", parole[i]);
-				struct Str24SetElement *const s24 = Str24SetGet(&set, parole[i]);
-				assert(s24);
-			}
-			m_add(&es[SETLOOK].m, diff_us(t));
-			printf("Added look set size %lu.\n",
-				(unsigned long)StrSetSize(&set));
-#endif
+			m_add(&es[TRIELOOK].m, diff_us(t));
+			printf("Added look trie size %lu.\n",
+				(unsigned long)StrTrieSize(&trie));
 
+			/* Took took much time; decrease the replicas for next time. */
+			if(replicas != 1
+				&& 10.0 * (clock() - t_total) / CLOCKS_PER_SEC > 1.0 * replicas)
+				replicas--;
 		}
 		for(e = 0; e < es_size; e++) fprintf(es[e].fp, "%lu\t%f\t%f\n",
 			(unsigned long)s, m_mean(&es[e].m), m_stddev(&es[e].m));
@@ -392,8 +359,6 @@ catch:
 	printf("Test failed.\n");
 finally:
 	StrArray_(&array);
-	/*EntryPool_(&entries);
-	StrSet_(&set);*/
 	StringSet_(&set);
 	StringElementPool_(&set_pool);
 	StrTrie_(&trie);
