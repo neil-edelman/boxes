@@ -70,7 +70,7 @@ static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right;
 	assert(trie && n < remaining);
 	for( ; ; ) {
-		left = trie->branches.data[n0].left;
+		left = trie_left(trie->branches.data[n0]);
 		right = remaining - left - 1;
 		assert(left < remaining && right < remaining);
 		if(n0 >= n) break;
@@ -86,7 +86,7 @@ static size_t PN_(left_leaf)(const struct N_(Trie) *const trie,
 	size_t remaining = trie->branches.size, n0 = 0, left, right, i = 0;
 	assert(trie && n < remaining);
 	for( ; ; ) {
-		left = trie->branches.data[n0].left;
+		left = trie_left(trie->branches.data[n0]);
 		right = remaining - left - 1;
 		assert(left < remaining && right < remaining);
 		if(n0 >= n) break;
@@ -111,20 +111,20 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		"\\l|size: %lu\\l}\"];\n", (unsigned long)N_(TrieSize)(trie));
 	fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
 	for(n = 0; n < trie->branches.size; n++) {
-		struct TrieBranch *branch = trie->branches.data + n;
-		const size_t left = branch->left, right = PN_(right)(trie, n);
+		const size_t branch = trie->branches.data[n];
+		const size_t left = trie_left(branch), right = PN_(right)(trie, n);
 		fprintf(fp, "\tbranch%lu [label = \"%u %lu:%lu\"];\n"
-			"\tbranch%lu -> ", (unsigned long)n, branch->bit, left, right,
-			(unsigned long)n);
+			"\tbranch%lu -> ", (unsigned long)n, trie_bit(branch),
+			(unsigned long)left, (unsigned long)right, (unsigned long)n);
 		if(left) fprintf(fp, "branch%lu [style = dashed]; // left branch\n",
 			(unsigned long)n + 1);
 		else fprintf(fp, "leaf%lu [style = dashed]; // left leaf\n",
 			(unsigned long)PN_(left_leaf)(trie, n));
 		fprintf(fp, "\tbranch%lu -> ", (unsigned long)n);
 		if(right) fprintf(fp, "branch%lu; // right branch\n",
-			(unsigned long)n + branch->left + 1);
+			(unsigned long)n + left + 1);
 		else fprintf(fp, "leaf%lu; // right leaf\n",
-			(unsigned long)PN_(left_leaf)(trie, n) + branch->left + 1);
+			(unsigned long)PN_(left_leaf)(trie, n) + left + 1);
 	}
 	/*assert(i == trie->leaves.size);*/
 	/* This must be after the branches, or it will mix up the order. Since they

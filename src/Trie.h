@@ -37,6 +37,12 @@
  <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PN>Action>. Requires `TRIE_TO_STRING` and not `NDEBUG`.
 
+ @fixme
+ Max string length is 510.
+ Max container:
+ 64	4503599627370495
+ 32	1048575
+ 16	15
  @fixme Have a `<N>TrieModifyKey` that's faster then re-inserting it.
  @depend [Array.h](../../Array/)
  @std C89
@@ -58,13 +64,29 @@
  semi-implicitly: `left` children are immediately following, right children are
  the rest. The number of leaves is one more, (with a special case for the
  empty trie,) and stored in a separate array. */
-struct TrieBranch { size_t bit, left; };
+union TrieBranch { size_t bit, left; };
 
 /* Define the struct used in all <tag:<N>Trie>. */
 #define ARRAY_NAME TrieBranch
-#define ARRAY_TYPE struct TrieBranch
+#define ARRAY_TYPE size_t
 #define ARRAY_CHILD
 #include "Array.h"
+
+#define TRIE_BITS 12
+#define TRIE_LEFT_MAX (((size_t)1 << ((sizeof(size_t) << 3) - TRIE_BITS)) - 1)
+#define TRIE_BIT_MAX ((1 << TRIE_BITS) - 1)
+
+static size_t trie_branch(const unsigned bit, const size_t left) {
+	assert(bit <= TRIE_BIT_MAX && left <= TRIE_LEFT_MAX);
+	return bit + (left << TRIE_BITS);
+}
+
+static unsigned trie_bit(const size_t branch)
+	{ return (unsigned)branch & TRIE_BIT_MAX; }
+
+static size_t trie_left(const size_t branch) { return branch >> TRIE_BITS; }
+
+static void trie_left_inc(size_t *const branch) { *branch += TRIE_BIT_MAX + 1; }
 
 /** Compares the `bit` bit the string `a` against `b`. Does not check for the
  end of the string.
@@ -180,8 +202,8 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 		printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.data[i]));
 	printf("}; {");
 	for(n = 0; n < trie->branches.size; n++)
-		printf("%s%u:%u", n ? ", " : "", trie->branches.data[n].bit,
-		trie->branches.data[n].left);
+		printf("%s%u:%lu", n ? ", " : "", trie_bit(trie->branches.data[n]),
+		(unsigned long)trie_left(trie->branches.data[n]));
 	printf("}.\n");
 }
 
@@ -203,13 +225,15 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
 	size_t n0, n1, i;
-	struct TrieBranch *n0_branch;
+	size_t *n0_branch, left;
 	const char *const data_key = PN_(to_key)(data), *n0_key;
-	unsigned bit, n0_bit, left;
+	unsigned bit, n0_bit;
 	PN_(Leaf) *i_leaf;
 	int cmp;
 
+	/* Verify data. */
 	assert(trie && data && n1 < (size_t)-2);
+	if(strlen(data_key) > (TRIE_BIT_MAX >> 3) - 1) return errno = ERANGE, 0;
 
 	/* Empty short circuit; add one entry to `leaves`. */
 	if(!leaf_size) {
@@ -217,10 +241,9 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		return (i_leaf = PT_(new)(&trie->leaves)) ? *i_leaf = data, 1 : 0;
 	}
 
-	/* Non-empty; make sure that add does not go over the maxiumum. */
+	/* Non-empty; conservative maximally unbalanced trie. */
 	assert(leaf_size == branch_size + 1); /* Waste `size_t`. */
-	/* Fixme: conservative, but will work. */
-	if(leaf_size >= UINT_MAX) return errno = ERANGE, 0;
+	if(leaf_size >= TRIE_LEFT_MAX) return errno = ERANGE, 0;
 	if(!PT_(reserve)(&trie->leaves, leaf_size + 1)
 		|| !array_TrieBranch_reserve(&trie->branches, branch_size + 1))
 		return 0;
@@ -231,14 +254,18 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	while(n0_branch = trie->branches.data + n0,
 		n0_key = trie->leaves.data[i],
 		n0 < n1) {
-		for(n0_bit = n0_branch->bit; bit < n0_bit; bit++)
+		/*printf("%lu : %lu, %u:%lu\n", n0, n1, trie_bit(*n0_branch), trie_left(*n0_branch));*/
+		for(n0_bit = trie_bit(*n0_branch); bit < n0_bit; bit++)
 			if((cmp = trie_strcmp_bit(data_key, n0_key, bit)) != 0) goto insert;
 		/* Follow the left or right branch; update the left. */
-		if(!trie_is_bit(data_key, bit)) n1 = n0++ + ++n0_branch->left;
-		else n0 += n0_branch->left + 1, i += n0_branch->left + 1;
+		if(!trie_is_bit(data_key, bit))
+			trie_left_inc(n0_branch), n1 = n0++ + trie_left(*n0_branch);
+		else n0 += trie_left(*n0_branch) + 1, i += trie_left(*n0_branch) + 1;
 	}
 
 	/* Leaf. */
+	/*printf("%lu : %lu, %u:%lu\n", n0, n1, trie_bit(*n0_branch), trie_left(*n0_branch));
+	printf("leaf\n");*/
 	while((cmp = trie_strcmp_bit(data_key, n0_key, bit)) == 0) bit++;
 
 insert:
@@ -254,8 +281,7 @@ insert:
 
 	n0_branch = trie->branches.data + n0;
 	memmove(n0_branch + 1, n0_branch, sizeof *n0_branch * (branch_size - n0));
-	n0_branch->bit = bit;
-	n0_branch->left = left;
+	*n0_branch = trie_branch(bit, left);
 	trie->branches.size++;
 
 	return 1;
@@ -267,19 +293,20 @@ insert:
 static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	const char *const str) {
 	size_t n0 = 0, n1 = trie->leaves.size, i = 0;
-	struct TrieBranch *n0_branch;
+	size_t n0_branch;
 	unsigned n0_byte, str_byte = 0;
 	assert(trie);
 	if(n1 <= 1) return n1 ? trie->leaves.data : 0;
 	n1--, assert(n1 == trie->branches.size);
 	while(n0 < n1) {
-		n0_branch = trie->branches.data + n0;
+		n0_branch = trie->branches.data[n0];
 		/* Don't go farther than the string. */
-		for(n0_byte = n0_branch->bit >> 3; str_byte < n0_byte; str_byte++)
+		for(n0_byte = trie_bit(n0_branch) >> 3; str_byte < n0_byte; str_byte++)
 			if(str[str_byte] == '\0') return 0;
 		/* Follow the branch left/right. */
-		if(!trie_is_bit(str, n0_branch->bit)) n1 = ++n0 + n0_branch->left;
-		else n0 += n0_branch->left + 1, i += n0_branch->left + 1;
+		if(!trie_is_bit(str, trie_bit(n0_branch)))
+			n1 = ++n0 + trie_left(n0_branch);
+		else n0 += trie_left(n0_branch) + 1, i += trie_left(n0_branch) + 1;
 	}
 	assert(n0 == n1 && i < trie->leaves.size);
 	return trie->leaves.data + i;
@@ -301,13 +328,15 @@ static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
  element, if any, as long as `replace` is null or returns true.
  @param[eject] If not-null, the reference will be set to null if there is no
  ejection. If `replace`, and `replace` returns false, and `eject`, than
- `*eject == data`. */
+ `*eject == data`.
+ @throws[realloc, ERANGE] */
 static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	PN_(Type) **const eject, const PN_(Replace) replace) {
 	PN_(Leaf) *match;
-	const char *const data_key = PN_(to_key)(data);
+	const char *data_key;
 	assert(data);
 	if(!trie || !data) return 0;
+	data_key = PN_(to_key)(data);
 	/* Add. */
 	if(!(match = PN_(get)(trie, data_key))) {
 		if(eject) *eject = 0;
@@ -378,6 +407,7 @@ static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
  @return Success. If data with the same key is present, returns false, but does
  not set `errno`.
  @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @throws[ERANGE] The key is too long or the size is maximum.
  @order \O(`size`)
  @allow */
 static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
@@ -390,6 +420,7 @@ static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
  a pointer-to-null if it did not overwrite.
  @return Success.
  @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @throws[ERANGE] The key is too long or the size is maximum.
  @order \Theta(`size`)
  @allow */
 static int N_(TriePut)(struct N_(Trie) *const trie,
@@ -406,6 +437,7 @@ static int N_(TriePut)(struct N_(Trie) *const trie,
  returns true. If null, it is semantically equivalent to <fn:<N>TreePut>.
  @return Success.
  @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @throws[ERANGE] The key is too long or the size is maximum.
  @order \O(`size`)
  @allow */
 static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
