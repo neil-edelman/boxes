@@ -58,7 +58,7 @@
  semi-implicitly: `left` children are immediately following, right children are
  the rest. The number of leaves is one more, (with a special case for the
  empty trie,) and stored in a separate array. */
-struct TrieBranch { unsigned bit, left; };
+struct TrieBranch { size_t bit, left; };
 
 /* Define the struct used in all <tag:<N>Trie>. */
 #define ARRAY_NAME TrieBranch
