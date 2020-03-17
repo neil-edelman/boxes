@@ -38,7 +38,8 @@
  satisfying <typedef:<PN>Action>. Requires `TRIE_TO_STRING` and not `NDEBUG`.
 
  @fixme
- Max string length is 510.
+ Max string length is 510. The max string length in C90 compilers is 509, so
+ this is a reasonable limit.
  Max container:
  64	4503599627370495
  32	1048575
