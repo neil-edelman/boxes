@@ -60,22 +60,19 @@
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 
-/* One decision bit of an array, and how many branches (internal nodes) are in
- the left subtree. As an array, it encodes a pre-order full binary tree
- semi-implicitly: `left` children are immediately following, right children are
- the rest. The number of leaves is one more, (with a special case for the
- empty trie,) and stored in a separate array. */
-union TrieBranch { size_t bit, left; };
-
-/* Define the struct used in all <tag:<N>Trie>. */
+/* This encodes the branches from pre-order full binary tree semi-implicitly:
+ left children are <fn:trie_left> immediately following, right children are the
+ rest. Used os <tag:<N>Trie>. The number of leaves is one more, (with a special
+ case for the empty trie,) and stored in a separate array, which is also just a
+ sorted array. */
 #define ARRAY_NAME TrieBranch
 #define ARRAY_TYPE size_t
 #define ARRAY_CHILD
 #include "Array.h"
 
 #define TRIE_BITS 12
-#define TRIE_LEFT_MAX (((size_t)1 << ((sizeof(size_t) << 3) - TRIE_BITS)) - 1)
 #define TRIE_BIT_MAX ((1 << TRIE_BITS) - 1)
+#define TRIE_LEFT_MAX (((size_t)1 << ((sizeof(size_t) << 3) - TRIE_BITS)) - 1)
 
 static size_t trie_branch(const unsigned bit, const size_t left) {
 	assert(bit <= TRIE_BIT_MAX && left <= TRIE_LEFT_MAX);
@@ -93,10 +90,8 @@ static void trie_left_inc(size_t *const branch) { *branch += TRIE_BIT_MAX + 1; }
  end of the string.
  @return In the `bit` position, positive if `a` is after `b`, negative if `a`
  is before `b`, or zero if `a` is equal to `b`.
- @fixme This compares bit-by-bit. Ostensibly it would be better comparing all
- the bits in a range for equality; however, in the limit of a large number of
- words packed together, I expect this would eventually win out. Also it's
- really hard to do. */
+ @fixme It may be better to compare muliple bits at a time, but this is used in
+ insertion only. */
 static int trie_strcmp_bit(const char *const a, const char *const b,
 	const unsigned bit) {
 	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
@@ -181,8 +176,8 @@ typedef PN_(Type) *PN_(Leaf);
 #define PT_(thing) PCAT(array, PCAT(PN_(Leaf), thing))
 
 /** To initialise it to an idle state, see <fn:<N>Trie>, `TRIE_IDLE`, `{0}`
- (`C99`), or being `static`. Internally, it is an array of
- <tag:<PN>TrieBranch> backed by pointers-to-<typedef:<PN>Type> as leaves.
+ (`C99`), or being `static`. Internally, it is an array of branches backed by
+ pointers-to-<typedef:<PN>Type> as leaves.
 
  ![States.](../web/states.png) */
 struct N_(Trie);
@@ -217,7 +212,8 @@ static void PN_(trie)(struct N_(Trie) *const trie) {
 /** Destructor of `trie`. */
 static void PN_(trie_)(struct N_(Trie) *const trie) {
 	assert(trie);
-	free(trie->branches.data), free(trie->leaves.data), PN_(trie)(trie);
+	array_TrieBranch_array_(&trie->branches), PT_(array_)(&trie->leaves);
+	PN_(trie)(trie);
 }
 
 /** Add `data` to `trie`. This assumes that the key of `data` is not the same
