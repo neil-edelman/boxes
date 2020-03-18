@@ -48,17 +48,17 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of trie." src = "web/trie.png" width = 226 height = 233></p>
+<p><img alt = "Example of trie." src = "web/trie.png" width = 264 height = 258></p>
 
-<p>An <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is a trie of byte-strings ended with <code>NUL</code>, compatible with any byte-encoding with a null-terminator; in particular, <code>C</code> strings, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
+<p>An <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is a trie of byte-strings ended with <code>NUL</code>, compatible with any byte-encoding with a null-terminator; in particular, <code>C</code> strings, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>. It can be seen as a <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> or <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>. The branches do not store data on the strings, only the positions where the strings are different.</p>
 
-<p>It has the same asymptotic run-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, (asymptotically, it still has to lookup to insert,) because it has to update that index. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash <code>Set</code> starting at about 100 items. However, advantages of this data structure are,</p>
+<p>It has the same asymptotic run-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, (asymptotically, it still has to lookup to insert,) because it has to update that index. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash <code>Set</code> starting at about 100 items. However, advantages of this data structure over a hash include,</p>
 
 <ul>
-	<li>because it is deterministic, a stable pointer suffices instead of a node -- one can insert the same data into multiple tries;</li>
-	<li>for the same reason, it has no need of a hash function;</li>
-	<li>the keys are packed and in order;</li>
-	<li>moreover, it is easy to search for like keys.</li>
+	<li>a stable pointer suffices instead of a node probably means one less pointer indirection on object-oriented structures because it is a one-to-one mapping;</li>
+	<li>for the same reason, one can insert the same data into multiple tries;</li>
+	<li>it is naturally packed and in order by dictionary bit on key without a hash function;</li>
+	<li>it is easy to search for like keys.</li>
 </ul>
 
 <p><code>Array.h</code> must be present. <code>&lt;N&gt;Trie</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used; to stop assertions, use <code>#define NDEBUG</code> before inclusion.</p>
@@ -135,8 +135,6 @@
 <p>To initialise it to an idle state, see <a href = "#fn:&lt;N&gt;Trie">&lt;N&gt;Trie</a>, <code>TRIE_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
 <p>A full binary tree stored semi-implicitly in two arrays: one as the branches backed by one as pointers-to-<a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> as leaves. We take two arrays because it speeds up iteration as the leaves are also an array sorted by key, it is &#927;(1) instead of &#927;(log <code>items</code>) to get an example for comparison in insert, and experimetally it is slightly faster.</p>
-
-<p>It can be seen as a <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> or <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>. The branches do not store data on the strings, only the positions where the strings are different.</p>
 
 <p><img alt = "States." src = "../web/states.png"></p>
 

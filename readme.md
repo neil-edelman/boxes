@@ -13,14 +13,14 @@
 
 ![Example of trie.](web/trie.png)
 
-An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is a trie of byte\-strings ended with `NUL`, compatible with any byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
+An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is a trie of byte\-strings ended with `NUL`, compatible with any byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\. The branches do not store data on the strings, only the positions where the strings are different\.
 
-It has the same asymptotic run\-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, \(asymptotically, it still has to lookup to insert,\) because it has to update that index\. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash `Set` starting at about 100 items\. However, advantages of this data structure are,
+It has the same asymptotic run\-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, \(asymptotically, it still has to lookup to insert,\) because it has to update that index\. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash `Set` starting at about 100 items\. However, advantages of this data structure over a hash include,
 
- * because it is deterministic, a stable pointer suffices instead of a node \-\- one can insert the same data into multiple tries;
- * for the same reason, it has no need of a hash function;
- * the keys are packed and in order;
- * moreover, it is easy to search for like keys\.
+ * a stable pointer suffices instead of a node probably means one less pointer indirection on object\-oriented structures because it is a one\-to\-one mapping;
+ * for the same reason, one can insert the same data into multiple tries;
+ * it is naturally packed and in order by dictionary bit on key without a hash function;
+ * it is easy to search for like keys\.
 
 `Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
@@ -85,8 +85,6 @@ Only used if `TRIE_TEST`\.
 To initialise it to an idle state, see [&lt;N&gt;Trie](#user-content-fn-8fc8a233), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
 A full binary tree stored semi\-implicitly in two arrays: one as the branches backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves\. We take two arrays because it speeds up iteration as the leaves are also an array sorted by key, it is &#927;\(1\) instead of &#927;\(log `items`\) to get an example for comparison in insert, and experimetally it is slightly faster\.
-
-It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\. The branches do not store data on the strings, only the positions where the strings are different\.
 
 ![States.](../web/states.png)
 

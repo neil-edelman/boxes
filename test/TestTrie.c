@@ -350,6 +350,8 @@ static int test(void) {
 		}
 		for(e = 0; e < es_size; e++) fprintf(es[e].fp, "%lu\t%f\t%f\n",
 			(unsigned long)s, m_mean(&es[e].m), m_stddev(&es[e].m));
+		if(s != 512) continue;
+		trie_Str_graph(&trie, "graph/example.gv");
 	}
 	printf("Test passed.\n");
 	goto finally;
