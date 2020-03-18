@@ -8,11 +8,11 @@
  An <tag:<N>Trie> is a trie of byte-strings ended with `NUL`, compatible with
  any byte-encoding with a null-terminator; in particular, `C` strings,
  including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
- It can be seen as a
+ It is an index to a sorted array where it does not store data on the strings,
+ only the positions where the strings are different. It can be seen as a
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
- <Morrison, 1968 PATRICiA>. The branches do not store data on the strings, only
- the positions where the strings are different.
- 
+ <Morrison, 1968 PATRICiA>.
+
  It has the same asymptotic run-time as keeping a sorted array of pointers, but
  lookup is faster because it keeps an index; likewise insertion is slower,
  (asymptotically, it still has to lookup to insert,) because it has to update
@@ -24,8 +24,8 @@
     indirection on object-oriented structures because it is a one-to-one
     mapping;
  \* for the same reason, one can insert the same data into multiple tries;
- \* it is naturally packed and in order by dictionary bit on key without a hash
-    function;
+ \* it is naturally packed and in order by bit-wise dictionary on key;
+ \* it is simpler and doesn't need a hash function;
  \* it is easy to search for like keys.
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
