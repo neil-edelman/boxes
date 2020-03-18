@@ -156,6 +156,8 @@
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<N>TrieSize">&lt;N&gt;TrieSize</a></td><td>trie</td></tr>
 
+<tr><td align = right>static &lt;PN&gt;Type *const *</td><td><a href = "#fn:<N>TrieArray">&lt;N&gt;TrieArray</a></td><td>trie</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#fn:<N>TrieClear">&lt;N&gt;TrieClear</a></td><td>trie</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>TrieAdd">&lt;N&gt;TrieAdd</a></td><td>trie, data</td></tr>
@@ -221,6 +223,23 @@
 	<dd>The number of elements in the <code>trie</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieArray" name = "fn:<N>TrieArray">&lt;N&gt;TrieArray</a></h3>
+
+<p><code>static &lt;PN&gt;Type *const *<strong>&lt;N&gt;TrieArray</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+
+<p>It remains valid up to a structural modification of <code>trie</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Return:</dt>
+	<dd>The leaves of <code>trie</code>, ordered by key.</dd>
 </dl>
 
 </div>

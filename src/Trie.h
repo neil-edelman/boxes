@@ -402,7 +402,8 @@ static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
 
 /** It remains valid up to a structural modification of `trie`.
  @param[trie] If null, returns null.
- @return The leaves of `trie`, ordered by key. */
+ @return The leaves of `trie`, ordered by key.
+ @allow */
 static PN_(Type) *const*N_(TrieArray)(const struct N_(Trie) *const trie) {
 	return trie && trie->leaves.size ? trie->leaves.data : 0;
 }

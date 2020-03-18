@@ -15,7 +15,7 @@
 
 An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is a trie of byte\-strings ended with `NUL`, compatible with any byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
-It is the same asymptotic run\-time as keeping sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, \(asymptotically, it still has to lookup to insert,\) because it has to update that index\. Experimentally, lookup performs logarithmically worse then hash map `Set` starting at about 100 items, and insertion is linearly worse\. However, advantages of this data structure are,
+It has the same asymptotic run\-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, \(asymptotically, it still has to lookup to insert,\) because it has to update that index\. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash `Set` starting at about 100 items\. However, advantages of this data structure are,
 
  * because it is deterministic, a stable pointer suffices instead of a node \-\- one can insert the same data into multiple tries;
  * for the same reason, it has no need of a hash function;
@@ -24,20 +24,20 @@ It is the same asymptotic run\-time as keeping sorted array of pointers, but loo
 
 `Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
-Given `n1` in `trie` branches, calculate the corresponding left leaf\.
+
 
  * Parameter: TRIE\_NAME, TRIE\_TYPE  
    `<N>` that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only\.\) `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: TRIE\_KEY  
    A function that satisfies [&lt;PN&gt;Key](#user-content-typedef-8524f620)\. Must be defined if and only if `TRIE_TYPE` is defined\.
  * Parameter: TRIE\_TEST  
-   Unit testing framework [&lt;N&gt;TreeTest](#user-content-fn-ee01efeb), included in a separate header, [\.\./test/TreeTest\.h](../test/TreeTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)\. Requires `TRIE_TO_STRING` and not `NDEBUG`\.
+   Unit testing framework [&lt;N&gt;TrieTest](#user-content-fn-ae32c087), included in a separate header, [\.\./test/TreeTest\.h](../test/TreeTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)\. Requires `TRIE_TO_STRING` and not `NDEBUG`\.
  * Standard:  
    C89
  * Dependancies:  
    [Array.h](../../Array/)
  * Caveat:  
-   Have a replace; much faster then remove and add\. ([&lt;PN&gt;Action](#user-content-typedef-aea37eeb))
+   Have a replace; much faster then remove and add\.
  * See also:  
    [Array](https://github.com/neil-edelman/Array); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
@@ -72,6 +72,8 @@ A bi\-predicate; returns true if the `replace` replaces the `original`; used in 
 
 <code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(&lt;PN&gt;Type *);</code>
 
+Only used if `TRIE_TEST`\.
+
 
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
@@ -82,9 +84,9 @@ A bi\-predicate; returns true if the `replace` replaces the `original`; used in 
 
 To initialise it to an idle state, see [&lt;N&gt;Trie](#user-content-fn-8fc8a233), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
-Internally, it is an array of branches backed by pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves, sorted by key\. We take two arrays because it speeds up iteration, the leaves are also a sorted array, and it is &#927;\(1\) instead of &#927;\(log `items`\) to get an example for comparison in insert, and experimetally it is slightly faster\.
+A full binary tree stored semi\-implicitly in two arrays: one as the branches backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves\. We take two arrays because it speeds up iteration as the leaves are also an array sorted by key, it is &#927;\(1\) instead of &#927;\(log `items`\) to get an example for comparison in insert, and experimetally it is slightly faster\.
 
-The branches are a pre\-order full binary tree, one less then the leaves, \(with the exeception of the empty trie,\) stored in a semi\-implicit array\. The data\-type is an array of `size_t`, which stores two peices of information: the first bit at which the all the branches on the left differ from that on the right, \(as such, the maximum string length is hard\-coded at 510,\) and how many branches on the left; one has to traverse the tree from the root to know how many on the right\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or \[Morrison 1968, PATRICiA\]\. The branches do not store data on the strings, only the positions where the strings are different\.
+It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\. The branches do not store data on the strings, only the positions where the strings are different\.
 
 ![States.](../web/states.png)
 
@@ -102,6 +104,8 @@ The branches are a pre\-order full binary tree, one less then the leaves, \(with
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-6ddbe8d2">&lt;N&gt;TrieSize</a></td><td>trie</td></tr>
 
+<tr><td align = right>static &lt;PN&gt;Type *const *</td><td><a href = "#user-content-fn-c8de2f88">&lt;N&gt;TrieArray</a></td><td>trie</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-b2f36d9c">&lt;N&gt;TrieClear</a></td><td>trie</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-fad143b6">&lt;N&gt;TrieAdd</a></td><td>trie, data</td></tr>
@@ -112,7 +116,7 @@ The branches are a pre\-order full binary tree, one less then the leaves, \(with
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-f6f3fdef">&lt;N&gt;TrieToString</a></td><td>trie</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-ae32c087">&lt;N&gt;TrieTest</a></td><td>param</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-ae32c087">&lt;N&gt;TrieTest</a></td><td></td></tr>
 
 </table>
 
@@ -128,8 +132,6 @@ Returns `trie` to the idle state where it takes no dynamic memory\.
 
  * Parameter: _trie_  
    If null, does nothing\.
- * Order:  
-   &#920;\(1\)
 
 
 
@@ -158,6 +160,20 @@ Initialises `trie` to be idle\.
    The number of elements in the `trie`\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-c8de2f88" name = "user-content-fn-c8de2f88">&lt;N&gt;TrieArray</a> ###
+
+<code>static &lt;PN&gt;Type *const *<strong>&lt;N&gt;TrieArray</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code>
+
+It remains valid up to a structural modification of `trie`\.
+
+ * Parameter: _trie_  
+   If null, returns null\.
+ * Return:  
+   The leaves of `trie`, ordered by key\.
 
 
 
@@ -191,7 +207,7 @@ Adds `data` to `trie` if absent\.
  * Exceptional return: realloc, ERANGE  
    There was an error with a re\-sizing\.
  * Exceptional return: ERANGE  
-   The key is too long or the size is maximum\.
+   The key is greater then 510 characters or the trie has reached it's maximum size\.
  * Order:  
    &#927;\(`size`\)
 
@@ -215,7 +231,7 @@ Updates or adds `data` to `trie`\.
  * Exceptional return: realloc, ERANGE  
    There was an error with a re\-sizing\.
  * Exceptional return: ERANGE  
-   The key is too long or the size is maximum\.
+   The key is greater then 510 characters or the trie has reached it's maximum size\.
  * Order:  
    &#920;\(`size`\)
 
@@ -235,13 +251,13 @@ Adds `data` to `trie` only if the entry is absent or if calling `replace` return
  * Parameter: _eject_  
    If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite a previous value\.
  * Parameter: _replace_  
-   Called on collision and only replaces it if the function returns true\. If null, it is semantically equivalent to [&lt;N&gt;TreePut](#user-content-fn-243ba164)\.
+   Called on collision and only replaces it if the function returns true\. If null, it is semantically equivalent to [&lt;N&gt;TriePut](#user-content-fn-85d52810)\.
  * Return:  
    Success\.
  * Exceptional return: realloc, ERANGE  
    There was an error with a re\-sizing\.
  * Exceptional return: ERANGE  
-   The key is too long or the size is maximum\.
+   The key is greater then 510 characters or the trie has reached it's maximum size\.
  * Order:  
    &#927;\(`size`\)
 
@@ -264,13 +280,9 @@ Can print four strings at once before it overwrites\.
 
 ### <a id = "user-content-fn-ae32c087" name = "user-content-fn-ae32c087">&lt;N&gt;TrieTest</a> ###
 
-<code>static void <strong>&lt;N&gt;TrieTest</strong>(void *const <em>param</em>)</code>
+<code>static void <strong>&lt;N&gt;TrieTest</strong>(void)</code>
 
-Will be tested on stdout\. Requires `TREE_TEST`, `TREE_TO_STRING`, and not `NDEBUG` while defining `assert`\.
-
- * Parameter: _param_  
-   The parameter to call [&lt;PH&gt;BiAction](#user-content-typedef-65e63188) `TREE_TEST`\.
-
+Will be tested on stdout\. Requires `TRIE_TEST`, and not `NDEBUG` while defining `assert`\.
 
 
 
