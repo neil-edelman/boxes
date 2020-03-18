@@ -34,7 +34,7 @@ end:
 	printf("^^end print^^\n\n");
 }*/
 
-/** Given `n1` in `trie` branches, calculate the corresponding left leaf. */
+/* Given `n1` in `trie` branches, calculate the corresponding left leaf. */
 /*static size_t PN_(leaf)(const struct N_(Trie) *const trie,
 	const size_t n) {
 	size_t n0, i;
@@ -81,6 +81,8 @@ static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n) {
 	return right;
 }
 
+/** @return Given `n` in `trie` branches, follows the internal nodes left until
+ it hits a branch. */
 static size_t PN_(left_leaf)(const struct N_(Trie) *const trie,
 	const size_t n) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right, i = 0;
@@ -139,14 +141,14 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 }
 
 #if 0
-/** Makes sure the `heap` is in a valid state. */
+/* Makes sure the `trie` is in a valid state. */
 static void PN_(valid)(const struct N_(Trie) *const trie) {
 	if(!trie) return;
 	if(!trie->a.data) { assert(!trie->a.size); return; }
 	assert(trie->a.size == 1 || (trie->a.size - 1) % 3 == 0);
 }
 
-/** Will be tested on stdout. Requires `TREE_TEST`, `TREE_TO_STRING`, and not
+/* Will be tested on stdout. Requires `TREE_TEST`, `TREE_TO_STRING`, and not
  `NDEBUG` while defining `assert`.
  @param[param] The parameter to call <typedef:<PH>BiAction> `TREE_TEST`.
  @allow */
