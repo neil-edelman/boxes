@@ -400,7 +400,8 @@ static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
 	return trie ? trie->leaves.size : 0;
 }
 
-/** It remains valid up to a structural modification of `trie`.
+/** It remains valid up to a structural modification of `trie` and is indexed
+ up to <fn:<N>TrieSize>.
  @param[trie] If null, returns null.
  @return The leaves of `trie`, ordered by key.
  @allow */
@@ -419,7 +420,8 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 
 /** @param[trie, key] If null, returns null.
  @return The <typedef:<PN>Type> with `key` in `trie` or null no such item
- exists. */
+ exists.
+ @allow */
 static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	PN_(Leaf) *l;
