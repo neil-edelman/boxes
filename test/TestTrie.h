@@ -10,7 +10,7 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** @fixme */
+/** Only used if `TRIE_TEST`. */
 typedef void (*PN_(Action))(PN_(Type) *);
 
 /* `TRIE_TEST` must be a function that implements `<PN>Action`. */
@@ -141,18 +141,17 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 }
 
 #if 0
-/* Makes sure the `trie` is in a valid state. */
+/** Makes sure the `trie` is in a valid state. */
 static void PN_(valid)(const struct N_(Trie) *const trie) {
 	if(!trie) return;
 	if(!trie->a.data) { assert(!trie->a.size); return; }
 	assert(trie->a.size == 1 || (trie->a.size - 1) % 3 == 0);
 }
 
-/* Will be tested on stdout. Requires `TREE_TEST`, `TREE_TO_STRING`, and not
- `NDEBUG` while defining `assert`.
- @param[param] The parameter to call <typedef:<PH>BiAction> `TREE_TEST`.
+/** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
+ defining `assert`.
  @allow */
-static void N_(TrieTest)(void *const param) {
+static void N_(TrieTest)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">Trie"
 		" of type <" QUOTE(TRIE_TYPE) ">"
 		" was created using: TREE_KEY<" QUOTE(TRIE_KEY) ">;"
