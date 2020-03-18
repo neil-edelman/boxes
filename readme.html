@@ -48,7 +48,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of trie." src = "../web/trie.png"></p>
+<p><img alt = "Example of trie." src = "web/trie.png" width = 226 height = 233></p>
 
 <p>An <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is a trie of byte-strings ended with <code>NUL</code>, compatible with any byte-encoding with a null-terminator; in particular, <code>C</code> strings, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
 
@@ -160,6 +160,8 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>TrieClear">&lt;N&gt;TrieClear</a></td><td>trie</td></tr>
 
+<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#fn:<N>TrieGet">&lt;N&gt;TrieGet</a></td><td>trie, key</td></tr>
+
 <tr><td align = right>static int</td><td><a href = "#fn:<N>TrieAdd">&lt;N&gt;TrieAdd</a></td><td>trie, data</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>TriePut">&lt;N&gt;TriePut</a></td><td>trie, data, eject</td></tr>
@@ -233,7 +235,7 @@
 
 <p><code>static &lt;PN&gt;Type *const *<strong>&lt;N&gt;TrieArray</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
 
-<p>It remains valid up to a structural modification of <code>trie</code>.</p>
+<p>It remains valid up to a structural modification of <code>trie</code> and is indexed up to <a href = "#fn:&lt;N&gt;TrieSize">&lt;N&gt;TrieSize</a>.</p>
 
 <dl>
 	<dt>Parameter: <em>trie</em></dt>
@@ -257,6 +259,23 @@
 	<dd>If null, does nothing.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieGet" name = "fn:<N>TrieGet">&lt;N&gt;TrieGet</a></h3>
+
+<p><code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieGet</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Parameter: <em>key</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Return:</dt>
+	<dd>The <a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> with <code>key</code> in <code>trie</code> or null no such item exists.</dd>
 </dl>
 
 </div>

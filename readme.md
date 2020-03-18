@@ -11,7 +11,7 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of trie.](../web/trie.png)
+![Example of trie.](web/trie.png)
 
 An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is a trie of byte\-strings ended with `NUL`, compatible with any byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
@@ -108,6 +108,8 @@ It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-b2f36d9c">&lt;N&gt;TrieClear</a></td><td>trie</td></tr>
 
+<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#user-content-fn-d87c821d">&lt;N&gt;TrieGet</a></td><td>trie, key</td></tr>
+
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-fad143b6">&lt;N&gt;TrieAdd</a></td><td>trie, data</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-85d52810">&lt;N&gt;TriePut</a></td><td>trie, data, eject</td></tr>
@@ -168,7 +170,7 @@ Initialises `trie` to be idle\.
 
 <code>static &lt;PN&gt;Type *const *<strong>&lt;N&gt;TrieArray</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code>
 
-It remains valid up to a structural modification of `trie`\.
+It remains valid up to a structural modification of `trie` and is indexed up to [&lt;N&gt;TrieSize](#user-content-fn-6ddbe8d2)\.
 
  * Parameter: _trie_  
    If null, returns null\.
@@ -188,6 +190,20 @@ Sets `trie` to be empty\. That is, the size of `trie` will be zero, but if it wa
    If null, does nothing\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-d87c821d" name = "user-content-fn-d87c821d">&lt;N&gt;TrieGet</a> ###
+
+<code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieGet</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code>
+
+ * Parameter: _trie_  
+   If null, returns null\.
+ * Parameter: _key_  
+   If null, returns null\.
+ * Return:  
+   The [&lt;PN&gt;Type](#user-content-typedef-c45e6761) with `key` in `trie` or null no such item exists\.
 
 
 
