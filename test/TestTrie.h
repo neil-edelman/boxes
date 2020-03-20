@@ -82,9 +82,9 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	for(n = 0; n < trie->branches.size; n++) {
 		const size_t branch = trie->branches.data[n];
 		const size_t left = trie_left(branch), right = PN_(right)(trie, n);
-		fprintf(fp, "\tbranch%lu [label = \"%u %lu:%lu\"];\n"
+		fprintf(fp, "\tbranch%lu [label = \"%u\"];\n"
 			"\tbranch%lu -> ", (unsigned long)n, trie_bit(branch),
-			(unsigned long)left, (unsigned long)right, (unsigned long)n);
+			(unsigned long)n);
 		if(left) fprintf(fp, "branch%lu [style = dashed]; // left branch\n",
 			(unsigned long)n + 1);
 		else fprintf(fp, "leaf%lu [style = dashed]; // left leaf\n",
