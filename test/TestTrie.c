@@ -458,10 +458,10 @@ int main(void) {
 	(void)StrTrieTest; /* <- Not safe to call. */
 	DictTrieTest();
 	printf("\n***\n\n");
-#if 0 /* <!-- 1 */
+#ifdef TRIE_BENCHMARK /* <!-- bench */
 	timing_comparison();
-#else /* 1 --><!-- 0 */
+#else /* bench --><!-- !bench */
 	(void)timing_comparison;
-#endif /* 0 --> */
+#endif /* !bench --> */
 	return EXIT_SUCCESS;
 }
