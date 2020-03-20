@@ -39,7 +39,8 @@
  @cf [Heap](https://github.com/neil-edelman/Heap)
  @cf [List](https://github.com/neil-edelman/List)
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Set](https://github.com/neil-edelman/Set) */
+ @cf [Set](https://github.com/neil-edelman/Set)
+ @cf [Trie](https://github.com/neil-edelman/Trie) */
 
 #include <stddef.h> /* offsetof */
 #include <stdlib.h>	/* malloc free */
