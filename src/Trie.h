@@ -49,9 +49,11 @@
  satisfying <typedef:<PN>Action>. Requires `TRIE_TO_STRING` and not `NDEBUG`.
 
  @fixme Have a replace; much faster then remove and add.
+ @fixme Have remove.
  @depend [Array.h](../../Array/)
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
+ @cf [Heap](https://github.com/neil-edelman/Heap)
  @cf [List](https://github.com/neil-edelman/List)
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Pool](https://github.com/neil-edelman/Pool)
