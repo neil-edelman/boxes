@@ -125,9 +125,15 @@ static void PN_(valid)(const struct N_(Trie) *const trie) {
 
 static void PN_(test)(void) {
 	struct N_(Trie) trie = TRIE_IDLE;
-	size_t n, add;
-	PN_(Type) *const*a, *i, *data[10];
-	const size_t data_size = sizeof data / sizeof *data;
+	size_t n, size;
+	struct {
+		PN_(Type) data;
+		int is_in;
+	} es[10];
+	const size_t es_size = sizeof es / sizeof *es;
+	PN_(Type) *const*a, *i, *eject;
+	int ret;
+
 	PN_(valid)(0);
 	PN_(valid)(&trie);
 	N_(Trie)(0);
@@ -141,14 +147,30 @@ static void PN_(test)(void) {
 	i = N_(TrieGet)(&trie, ""), assert(!i);
 
 	/* Make random data. */
-	for(n = 0; n < data_size; n++) PN_(filler)(data[n]);
+	for(n = 0; n < es_size; n++) PN_(filler)(&es[n].data);
 
 	assert(!N_(TrieAdd)(0, 0));
-	assert(!N_(TrieAdd)(0, ""));
+	assert(!N_(TrieAdd)(0, &es[0].data));
 	assert(!N_(TrieAdd)(&trie, 0));
 	errno = 0;
-	for(add = 0, n = 0; n < data_size; n++) add += N_(TrieAdd)(&trie, data[n]);
-	assert(n > 0 && n <= data_size);
+	for(n = 0; n < es_size; n++)
+		es[n].is_in = N_(TrieAdd)(&trie, &es[n].data);
+	assert(es[0].is_in);
+	size = N_(TrieSize)(&trie);
+	assert(size > 0 && size <= N_(TrieSize)(&trie));
+	PN_(print)(&trie);
+	printf("Now trie is %s, null is %s.\n", N_(TrieToString)(&trie),
+		N_(TrieToString)(0));
+	PN_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "Trie.gv");
+	ret = N_(TrieAdd)(&trie, &es[0].data); /* Doesn't add. */
+	assert(ret && size == N_(TrieSize)(&trie));
+	ret = N_(TriePut)(0, 0, 0), assert(!ret);
+	ret = N_(TriePut)(&trie, 0, 0), assert(!ret);
+	ret = N_(TriePut)(0, &es[0].data, 0), assert(!ret);
+	ret = N_(TriePut)(&trie, &es[0].data, 0),
+		assert(ret && size == N_(TrieSize)(&trie));
+	ret = N_(TriePut)(&trie, &es[0].data, &eject),
+		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
 	N_(Trie_)(0);
 	N_(Trie_)(&trie), assert(!N_(TrieSize)(&trie)), PN_(valid)(&trie);
 }

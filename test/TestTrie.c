@@ -440,9 +440,14 @@ struct Str12 { char a[12]; };
 
 static const char *str12_key(struct Str12 *s12) { return s12->a; }
 
+static void fill_str12(struct Str12 *s12) {
+	Orcish(s12->a, 12);
+}
+
 #define TRIE_NAME Str12
 #define TRIE_TYPE struct Str12
 #define TRIE_KEY &str12_key
+#define TRIE_TEST &fill_str12
 #include "../src/Trie.h"
 
 int main(void) {
@@ -450,7 +455,7 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	test_basic_trie_str();
 	(void)StrTrieTest; /* <- Not safe to call. */
-	
+	Str12TrieTest();
 	printf("\n***\n\n");
 #if 0 /* <!-- 1 */
 	timing_comparison();

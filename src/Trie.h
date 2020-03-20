@@ -35,9 +35,9 @@
 
  @param[TRIE_NAME, TRIE_TYPE]
  `<N>` that satisfies `C` naming conventions when mangled and an optional
- returnable type that is declared, (it is used by reference only.) `<PN>` is
- private, whose names are prefixed in a manner to avoid collisions; any should
- be re-defined prior to use elsewhere.
+ returnable type that is declared, (it is used by reference only except if
+ `TRIE_TEST`.) `<PN>` is private, whose names are prefixed in a manner to avoid
+ collisions; any should be re-defined prior to use elsewhere.
 
  @param[TRIE_KEY]
  A function that satisfies <typedef:<PN>Key>. Must be defined if and only if
@@ -416,8 +416,8 @@ static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 
 /** Adds `data` to `trie` if absent.
  @param[trie, data] If null, returns null.
- @return Success. If data with the same key is present, returns false, but does
- not set `errno`.
+ @return Success. If data with the same key is present, returns true but
+ doesn't add `data`.
  @throws[realloc, ERANGE] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
  it's maximum size.
