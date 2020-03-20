@@ -95,13 +95,12 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		else fprintf(fp, "leaf%lu; // right leaf\n",
 			(unsigned long)PN_(left_leaf)(trie, n) + left + 1);
 	}
-	/*assert(i == trie->leaves.size);*/
 	/* This must be after the branches, or it will mix up the order. Since they
 	 have been referenced, one needs explicit formatting? */
 	for(i = 0; i < trie->leaves.size; i++)
 		fprintf(fp, "\tleaf%lu [label = \"%s\", shape = box, "
 		"fillcolor = lightsteelblue, style = filled];\n", (unsigned long)i,
-			PN_(to_key)(trie->leaves.data[i]));
+		PN_(to_key)(trie->leaves.data[i]));
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);
@@ -131,7 +130,7 @@ static void PN_(test)(void) {
 		int is_in;
 	} es[10];
 	const size_t es_size = sizeof es / sizeof *es;
-	PN_(Type) *const*a, *i, *eject;
+	PN_(Type) *const*a, *i, *eject, copy;
 	int ret;
 
 	PN_(valid)(0);
@@ -171,6 +170,18 @@ static void PN_(test)(void) {
 		assert(ret && size == N_(TrieSize)(&trie));
 	ret = N_(TriePut)(&trie, &es[0].data, &eject),
 		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
+	ret = N_(TriePolicyPut)(0, 0, 0, 0), assert(!ret);
+	ret = N_(TriePolicyPut)(&trie, 0, 0, 0), assert(!ret);
+	ret = N_(TriePolicyPut)(0, &es[0].data, 0, 0), assert(!ret);
+	ret = N_(TriePolicyPut)(&trie, &es[0].data, 0, 0),
+		assert(ret && size == N_(TrieSize)(&trie));
+	ret = N_(TriePolicyPut)(&trie, &es[0].data, &eject, 0),
+		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
+	ret = N_(TriePolicyPut)(&trie, &es[0].data, &eject, &PN_(false)),
+		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
+	memcpy((void *)&copy, &es[0].data, sizeof es[0].data);
+	ret = N_(TriePolicyPut)(&trie, &copy, &eject, &PN_(false)),
+		assert(ret && size == N_(TrieSize)(&trie) && eject == &copy);
 	N_(Trie_)(0);
 	N_(Trie_)(&trie), assert(!N_(TrieSize)(&trie)), PN_(valid)(&trie);
 }
