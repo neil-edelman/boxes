@@ -107,12 +107,50 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	fclose(fp);
 }
 
-#if 0
 /** Makes sure the `trie` is in a valid state. */
 static void PN_(valid)(const struct N_(Trie) *const trie) {
+	PN_(Type) *const*a;
+	size_t i, i_end;
+	int cmp;
 	if(!trie) return;
-	if(!trie->a.data) { assert(!trie->a.size); return; }
-	assert(trie->a.size == 1 || (trie->a.size - 1) % 3 == 0);
+	if(!trie->leaves.data) { assert(!trie->leaves.size && !trie->branches.data
+		&& !trie->branches.size); return; }
+	assert(trie->leaves.size == trie->branches.size + 1);
+	for(a = N_(TrieArray)(trie), i = 1, i_end = N_(TrieSize)(trie);
+		i < i_end; i++) {
+		cmp = strcmp(PN_(to_key)(a[i - 1]), PN_(to_key)(a[i]));
+		assert(cmp < 0);
+	}
+}
+
+static void PN_(test)(void) {
+	struct N_(Trie) trie = TRIE_IDLE;
+	size_t n, add;
+	PN_(Type) *const*a, *i, *data[10];
+	const size_t data_size = sizeof data / sizeof *data;
+	PN_(valid)(0);
+	PN_(valid)(&trie);
+	N_(Trie)(0);
+	N_(Trie)(&trie), PN_(valid)(&trie);
+	n = N_(TrieSize)(&trie), a = N_(TrieArray)(&trie), assert(!n && !a);
+	N_(TrieClear)(0);
+	N_(TrieClear)(&trie), PN_(valid)(&trie);
+	i = N_(TrieGet)(0, 0), assert(!i);
+	i = N_(TrieGet)(0, ""), assert(!i);
+	i = N_(TrieGet)(&trie, 0), assert(!i);
+	i = N_(TrieGet)(&trie, ""), assert(!i);
+
+	/* Make random data. */
+	for(n = 0; n < data_size; n++) PN_(filler)(data[n]);
+
+	assert(!N_(TrieAdd)(0, 0));
+	assert(!N_(TrieAdd)(0, ""));
+	assert(!N_(TrieAdd)(&trie, 0));
+	errno = 0;
+	for(add = 0, n = 0; n < data_size; n++) add += N_(TrieAdd)(&trie, data[n]);
+	assert(n > 0 && n <= data_size);
+	N_(Trie_)(0);
+	N_(Trie_)(&trie), assert(!N_(TrieSize)(&trie)), PN_(valid)(&trie);
 }
 
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
@@ -122,13 +160,11 @@ static void N_(TrieTest)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">Trie"
 		" of type <" QUOTE(TRIE_TYPE) ">"
 		" was created using: TREE_KEY<" QUOTE(TRIE_KEY) ">;"
-		" TRIE_TO_STRING <" QUOTE(TRIE_TO_STRING) ">;"
 		" TRIE_TEST <" QUOTE(TRIE_TEST) ">;"
 		" testing:\n");
-	(void)param;
+	PN_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">Trie.\n\n");
 }
-#endif
 
 /* Un-define all macros. */
 #undef QUOTE

@@ -21,8 +21,15 @@
 extern const char *const parole[];
 extern const size_t parole_size;
 
-/** For now, it's just a placeholder to get `graph()`. */
+/** Just a placeholder to get `graph()`. Don't call <fn:StrTrieTest> it will
+ crash. */
 static void fill_str(const char *str) {
+	/*switch(rand() / (RAND_MAX / 4 + 1)) {
+	case 0: str = "A"; break;
+	case 1: str = "B"; break;
+	case 2: str = "C"; break;
+	case 3: str = "D"; break;
+	} <- doesn't work; local modifications only. */
 	/* nothing */ (void)(str);
 }
 
@@ -241,8 +248,7 @@ static double m_stddev(const struct Measure *const measure)
 	X(TRIEINIT), X(TRIELOOK), \
 	X(SETINIT), X(SETLOOK)
 
-/* fixme: All the data should be the same and permuted randomly. */
-static int test(void) {
+static int timing_comparison(void) {
 	struct StrTrie trie = TRIE_IDLE;
 	struct StrArray array = ARRAY_IDLE;
 	/* Linked hash map -- too much code.
@@ -430,11 +436,26 @@ finally2:
 	return 1;
 }
 
+struct Str12 { char a[12]; };
+
+static const char *str12_key(struct Str12 *s12) { return s12->a; }
+
+#define TRIE_NAME Str12
+#define TRIE_TYPE struct Str12
+#define TRIE_KEY &str12_key
+#include "../src/Trie.h"
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	test_basic_trie_str();
+	(void)StrTrieTest; /* <- Not safe to call. */
+	
 	printf("\n***\n\n");
-	test();
+#if 0 /* <!-- 1 */
+	timing_comparison();
+#else /* 1 --><!-- 0 */
+	(void)timing_comparison;
+#endif /* 0 --> */
 	return EXIT_SUCCESS;
 }

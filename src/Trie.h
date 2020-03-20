@@ -258,7 +258,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	bit = 0;
 	i = 0, n0 = 0, n1 = branch_size;
 	while(n0_branch = trie->branches.data + n0,
-		n0_key = trie->leaves.data[i],
+		n0_key = PN_(to_key)(trie->leaves.data[i]),
 		n0 < n1) {
 		for(n0_bit = trie_bit(*n0_branch); bit < n0_bit; bit++)
 			if((cmp = trie_strcmp_bit(data_key, n0_key, bit)) != 0) goto insert;
