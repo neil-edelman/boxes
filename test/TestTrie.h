@@ -31,54 +31,6 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 	printf("}.\n");
 }
 
-/*static void PN_(print)(const struct N_(Trie) *const trie) {
-	size_t i;
-	printf("__print__ size %lu.\n", (unsigned long)N_(TrieSize)(trie));
-	if(!trie) { printf("null\n"); goto end; }
-	if(!trie->leaves.size)
-		{ assert(!trie->branches.size); printf("empty\n"); goto end; }
-	assert(trie->branches.size + 1 == trie->leaves.size);
-	for(i = 0; i < trie->branches.size; i++)
-		printf("branch%lu: bit %u, left %u.\n",
-		(unsigned long)i, trie->branches.data[i].bit,
-		trie->branches.data[i].left);
-	for(i = 0; i < trie->leaves.size; i++)
-		printf("leaf%lu:   \"%s\".\n", (unsigned long)i,
-		PN_(to_key)(trie->leaves.data[i]));
-end:
-	printf("^^end print^^\n\n");
-}*/
-
-/* Given `n1` in `trie` branches, calculate the corresponding left leaf. */
-/*static size_t PN_(leaf)(const struct N_(Trie) *const trie,
-	const size_t n) {
-	size_t n0, i;
-	assert(trie && n < trie->branches.size && trie->branches.data[n].left);
-	printf("n = %lu of { ", n);
-	for(i = 0; i < trie->branches.size; i++)
-		printf("%u ", trie->branches.data[i].left);
-	printf("}.\n");
-	for(i = 0, n0 = 0; ; ) {
-		const unsigned left = trie->branches.data[n0].left;
-		printf("i=%lu,n0=%lu,left=%u;", i, n0, left);
-		if(n <= n0) break;
-		{
-			size_t x;
-			unsigned l = trie->branches.data[n0].left;
-			printf("...%u [", trie->branches.data[n0].left);
-			for(x = n0 + 1; x < n0 + 1 + l; x++)
-				printf("%u ", trie->branches.data[x].left);
-			printf("][");
-			for( ; x < trie->branches.size; x++)
-				printf("%u ", trie->branches.data[x].left);
-			printf("].\n");
-		}
-		if(n0 + left <= n) n0++;
-		else n0 += left + 1, i += left + 1;
-	}
-	printf("Left leaf %lu.\n", i);
-}*/
-
 /** Given `n` in `trie` branches, caluculate the right child branches.
  @order \O(log `size`) */
 static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n) {
