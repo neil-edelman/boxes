@@ -116,14 +116,13 @@ struct T_(Array) {
 #endif /* !zero --> */
 
 /** Ensures `min_capacity` of `a`.
- @param[min_capacity] If zero, allocates anyway.
  @param[update_ptr] Must be in the array or null, it updates this value.
  @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
-static int PT_(reserve)(struct T_(Array) *const a,
+static int PT_(update_reserve)(struct T_(Array) *const a,
 	const size_t min_capacity, T **const update_ptr) {
 	size_t c0, c1;
 	T *data;
@@ -142,8 +141,7 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	assert(c0 < c1);
 	/* Fibonacci: c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0. Technically, this
 	 calculation takes `\O(log (min_capacity - capacity))`, but we expect that
-	 to be very small using a transdichotomous model, <Fredman, Willard, 1993>,
-	 and much less than the time it takes to re-allocate. */
+	 to be very small compared to the time to re-allocate. */
 	while(c0 < min_capacity) {
 		size_t temp = c0 + c1; c0 = c1; c1 = temp;
 		if(c1 > max_size || c1 < c0) c1 = max_size;
@@ -156,6 +154,12 @@ static int PT_(reserve)(struct T_(Array) *const a,
 	a->capacity = c0;
 	a->next_capacity = c1;
 	return 1;
+}
+
+/** This is just a convenience function to call `reserve_update` with
+ `a`, `min_capacity`, and no `update_ptr`, which is what usually happens. */
+static int PT_(reserve)(struct T_(Array) *const a, const size_t min_capacity) {
+	return PT_(update_reserve)(a, min_capacity, 0);
 }
 
 /** In `a`, converts `anchor` and `range` à la Python and stores them in the
@@ -193,7 +197,7 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
 		if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;
-			if(!PT_(reserve)(a, a->size + diff, 0)) return 0;
+			if(!PT_(reserve)(a, a->size + diff)) return 0;
 		memmove(a->data + i1 + diff, a->data + i1,(a->size-i1)*sizeof *a->data);
 		a->size += diff;
 	} else if(b_range < a_range) { /* The output is smaller. */
@@ -204,14 +208,16 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** With `a`, and optional `update_ptr`, adds one to the size. Called from
- <fn:<T>ArrayNew> and <fn:<T>ArrayUpdateNew>. */
-static T *PT_(new)(struct T_(Array) *const a, T **const update_ptr) {
+/** Adds one to the size of `a` and updates `update_ptr`. */
+static T *PT_(update_new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
-	if(a->size >= (size_t)-1) { errno = ERANGE; return 0; } /* Not likely. */
-	if(!PT_(reserve)(a, a->size + 1, update_ptr)) return 0;
+	if(a->size >= (size_t)-1) { errno = ERANGE; return 0; } /* Unlikely. */
+	if(!PT_(update_reserve)(a, a->size + 1, update_ptr)) return 0;
 	return a->data + a->size++;
 }
+
+/** Adds one to the size of `a`. */
+static T *PT_(new)(struct T_(Array) *const a) { return PT_(update_new)(a, 0); }
 
 /** Zeros `a`. */
 static void PT_(array)(struct T_(Array) *const a) {
@@ -222,6 +228,13 @@ static void PT_(array)(struct T_(Array) *const a) {
 	a->size          = 0;
 }
 
+/* Frees `a`. */
+static void PT_(array_)(struct T_(Array) *const a) {
+	assert(a);
+	free(a->data);
+	PT_(array)(a);
+}
+
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 
 /** Returns `a` to the idle state where it takes no dynamic memory.
@@ -229,17 +242,14 @@ static void PT_(array)(struct T_(Array) *const a) {
  @order \Theta(1)
  @allow */
 static void T_(Array_)(struct T_(Array) *const a) {
-	if(!a) return;
-	free(a->data);
-	PT_(array)(a);
+	if(a) PT_(array_)(a);
 }
 
 /** Initialises `a` to be idle.
  @order \Theta(1)
  @allow */
 static void T_(Array)(struct T_(Array) *const a) {
-	if(!a) return;
-	PT_(array)(a);
+	if(a) PT_(array)(a);
 }
 
 /** @param[a] If null, returns zero.
@@ -247,8 +257,7 @@ static void T_(Array)(struct T_(Array) *const a) {
  @order \O(1)
  @allow */
 static size_t T_(ArraySize)(const struct T_(Array) *const a) {
-	if(!a) return 0;
-	return a->size;
+	return a ? a->size : 0;
 }
 
 #ifndef ARRAY_STACK /* <!-- !stack */
@@ -395,7 +404,7 @@ static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
  @allow */
 static T *T_(ArrayNew)(struct T_(Array) *const a) {
 	if(!a) return 0;
-	return PT_(new)(a, 0);
+	return PT_(new)(a);
 }
 
 /** @param[a] If null, returns null.
@@ -412,7 +421,7 @@ static T *T_(ArrayNew)(struct T_(Array) *const a) {
 static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 	T **const update_ptr) {
 	if(!a) return 0;
-	return PT_(new)(a, update_ptr);
+	return PT_(update_new)(a, update_ptr);
 }
 
 /** Ensures that `a` is `reserve` capacity beyond the elements in the array,
@@ -432,7 +441,7 @@ static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
 	if(!a) return 0;
 	if(!reserve) return a->data ? a->data + a->size : 0;
 	if(a->size > (size_t)-1 - reserve) { errno = ERANGE; return 0; }
-	if(!PT_(reserve)(a, a->size + reserve, 0)) return 0;
+	if(!PT_(reserve)(a, a->size + reserve)) return 0;
 	assert(a->data);
 	return a->data + a->size;
 }
@@ -454,7 +463,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t add) {
 	size_t prev_size;
 	if(!a || !add) return 0;
 	if(a->size > (size_t)-1 - add) { errno = ERANGE; return 0; }
-	if(!PT_(reserve)(a, a->size + add, 0)) return 0;
+	if(!PT_(reserve)(a, a->size + add)) return 0;
 	prev_size = a->size;
 	a->size += add;
 	return a->data + prev_size;
@@ -718,10 +727,15 @@ static void PT_(unused_coda)(void);
  have the same meanings; they will be replaced with these, and `T` cannot be
  used. */
 static void PT_(unused_set)(void) {
-	/* <fn:<PT>reserve>, <fn:<PT>new>, and <fn:<PT>array> are integral; we want
-	 to be notified when these are not called. Other stuff, not really. */
+	/* <fn:<PT>update_reserve> is integral. */
+	PT_(reserve)(0, 0);
 	PT_(range)(0, 0, 0, 0, 0);
 	PT_(replace)(0, 0, 0, 0);
+	PT_(update_new)(0, 0);
+	PT_(update_new)(0, 0);
+	PT_(new)(0);
+	PT_(array)(0);
+	PT_(array_)(0);
 	PT_(unused_coda)();
 }
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }

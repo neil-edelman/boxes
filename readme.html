@@ -1,0 +1,402 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>Trie.h</title>
+</head>
+
+<body>
+
+<h1>Trie.h</h1>
+
+<h2>String Trie</h2>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>Type">&lt;PN&gt;Type</a>, <a href = "#typedef:<PN>Key">&lt;PN&gt;Key</a>, <a href = "#typedef:<PN>Replace">&lt;PN&gt;Replace</a>, <a href = "#typedef:<PN>Action">&lt;PN&gt;Action</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<N>Trie">&lt;N&gt;Trie</a></li>
+	<li><a href = "#summary:">Function Summary</a></li>
+	<li><a href = "#fn:">Function Definitions</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div>
+
+<h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p><img alt = "Example of trie." src = "web/trie.png" width = 264 height = 258></p>
+
+<p>An <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is a trie of byte-strings ended with <code>NUL</code>, compatible with any byte-encoding with a null-terminator; in particular, <code>C</code> strings, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>. It is an index to a sorted array where it does not store data on the strings, only the positions where the strings are different. It can be seen as a <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> or <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>.</p>
+
+<p>It has the same asymptotic run-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, (asymptotically, it still has to lookup to insert,) because it has to update that index. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash <code>Set</code> starting at about 100 items. However, advantages of this data structure over a hash include,</p>
+
+<ul>
+	<li>a stable pointer suffices instead of a node probably means one less pointer indirection on object-oriented structures because it is a one-to-one mapping;</li>
+	<li>for the same reason, one can insert the same data into multiple tries;</li>
+	<li>it is naturally packed and in order by bit-wise dictionary on key;</li>
+	<li>it is simpler and doesn't need a hash function;</li>
+	<li>it is easy to search for like keys.</li>
+</ul>
+
+<p><code>Array.h</code> must be present. <code>&lt;N&gt;Trie</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used; to stop assertions, use <code>#define NDEBUG</code> before inclusion.</p>
+
+</div>
+
+<dl>
+	<dt>Parameter: TRIE_NAME, TRIE_TYPE</dt>
+	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an optional returnable type that is declared, (it is used by reference only except if <code>TRIE_TEST</code>.) <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dt>Parameter: TRIE_KEY</dt>
+	<dd>A function that satisfies <a href = "#typedef:&lt;PN&gt;Key">&lt;PN&gt;Key</a>. Must be defined if and only if <code>TRIE_TYPE</code> is defined.</dd>
+	<dt>Parameter: TRIE_TEST</dt>
+	<dd>Unit testing framework <a href = "#fn:&lt;N&gt;TrieTest">&lt;N&gt;TrieTest</a>, included in a separate header, <a href = "../test/TreeTest.h">../test/TreeTest.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PN&gt;Action">&lt;PN&gt;Action</a>. Requires <code>TRIE_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
+	<dt>Standard:</dt>
+	<dd>C89</dd>
+	<dt>Dependancies:</dt>
+	<dd><a href = "../Array/">Array.h</a></dd>
+	<dt>Caveat:</dt>
+	<dd>Have a replace; much faster then remove and add. Have remove.</dd>
+	<dt>See also:</dt>
+	<dd><a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a></dd>
+</dl>
+
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div>
+
+<h3><a id = "typedef:<PN>Type" name = "typedef:<PN>Type">&lt;PN&gt;Type</a></h3>
+
+<p><code>typedef TRIE_TYPE <strong>&lt;PN&gt;Type</strong>;</code></p>
+
+<p>A valid tag type set by <code>TRIE_TYPE</code>; defaults to <code>const char</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>Key" name = "typedef:<PN>Key">&lt;PN&gt;Key</a></h3>
+
+<p><code>typedef const char *(*<strong>&lt;PN&gt;Key</strong>)(&lt;PN&gt;Type *);</code></p>
+
+<p>Responsible for picking out the null-terminated string. One must not modify this string while in any trie.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>Replace" name = "typedef:<PN>Replace">&lt;PN&gt;Replace</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PN&gt;Replace</strong>)(&lt;PN&gt;Type *original, &lt;PN&gt;Type *replace);</code></p>
+
+<p>A bi-predicate; returns true if the <code>replace</code> replaces the <code>original</code>; used in <a href = "#fn:&lt;N&gt;TriePolicyPut">&lt;N&gt;TriePolicyPut</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>Action" name = "typedef:<PN>Action">&lt;PN&gt;Action</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(&lt;PN&gt;Type *);</code></p>
+
+<p>Only used if <code>TRIE_TEST</code>.</p>
+
+</div>
+
+<h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
+
+<div>
+
+<h3><a id = "tag:<N>Trie" name = "tag:<N>Trie">&lt;N&gt;Trie</a></h3>
+
+<p><code>struct <strong>&lt;N&gt;Trie</strong>;</code></p>
+
+<p>To initialise it to an idle state, see <a href = "#fn:&lt;N&gt;Trie">&lt;N&gt;Trie</a>, <code>TRIE_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
+
+<p>A full binary tree stored semi-implicitly in two arrays: one as the branches backed by one as pointers-to-<a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> as leaves. We take two arrays because it speeds up iteration as the leaves are also an array sorted by key, it is &#927;(1) instead of &#927;(log <code>items</code>) to get an example for comparison in insert, and experimetally it is slightly faster.</p>
+
+<p><img alt = "States." src = "web/states.png" width = 215 height = 305></p>
+
+</div>
+
+<div>
+
+<h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<N>Trie_">&lt;N&gt;Trie_</a></td><td>trie</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<N>Trie">&lt;N&gt;Trie</a></td><td>trie</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<N>TrieSize">&lt;N&gt;TrieSize</a></td><td>trie</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;Type *const *</td><td><a href = "#fn:<N>TrieArray">&lt;N&gt;TrieArray</a></td><td>trie</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<N>TrieClear">&lt;N&gt;TrieClear</a></td><td>trie</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#fn:<N>TrieGet">&lt;N&gt;TrieGet</a></td><td>trie, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<N>TrieAdd">&lt;N&gt;TrieAdd</a></td><td>trie, data</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<N>TriePut">&lt;N&gt;TriePut</a></td><td>trie, data, eject</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<N>TriePolicyPut">&lt;N&gt;TriePolicyPut</a></td><td>trie, data, eject, replace</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<N>TrieToString">&lt;N&gt;TrieToString</a></td><td>trie</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<N>TrieTest">&lt;N&gt;TrieTest</a></td><td></td></tr>
+
+</table>
+
+</div>
+
+<div>
+
+<h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<N>Trie_" name = "fn:<N>Trie_">&lt;N&gt;Trie_</a></h3>
+
+<p><code>static void <strong>&lt;N&gt;Trie_</strong>(struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+
+<p>Returns <code>trie</code> to the idle state where it takes no dynamic memory.</p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, does nothing.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>Trie" name = "fn:<N>Trie">&lt;N&gt;Trie</a></h3>
+
+<p><code>static void <strong>&lt;N&gt;Trie</strong>(struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+
+<p>Initialises <code>trie</code> to be idle.</p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, does nothing.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieSize" name = "fn:<N>TrieSize">&lt;N&gt;TrieSize</a></h3>
+
+<p><code>static size_t <strong>&lt;N&gt;TrieSize</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, returns zero;</dd>
+	<dt>Return:</dt>
+	<dd>The number of elements in the <code>trie</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieArray" name = "fn:<N>TrieArray">&lt;N&gt;TrieArray</a></h3>
+
+<p><code>static &lt;PN&gt;Type *const *<strong>&lt;N&gt;TrieArray</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+
+<p>It remains valid up to a structural modification of <code>trie</code> and is indexed up to <a href = "#fn:&lt;N&gt;TrieSize">&lt;N&gt;TrieSize</a>.</p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Return:</dt>
+	<dd>The leaves of <code>trie</code>, ordered by key.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieClear" name = "fn:<N>TrieClear">&lt;N&gt;TrieClear</a></h3>
+
+<p><code>static void <strong>&lt;N&gt;TrieClear</strong>(struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+
+<p>Sets <code>trie</code> to be empty. That is, the size of <code>trie</code> will be zero, but if it was previously in an active non-idle state, it continues to be.</p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, does nothing.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieGet" name = "fn:<N>TrieGet">&lt;N&gt;TrieGet</a></h3>
+
+<p><code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieGet</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Parameter: <em>key</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Return:</dt>
+	<dd>The <a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> with <code>key</code> in <code>trie</code> or null no such item exists.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieAdd" name = "fn:<N>TrieAdd">&lt;N&gt;TrieAdd</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;TrieAdd</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>)</code></p>
+
+<p>Adds <code>data</code> to <code>trie</code> if absent.</p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Parameter: <em>data</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Return:</dt>
+	<dd>Success. If data with the same key is present, returns true but doesn't add <code>data</code>.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with a re-sizing.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd>The key is greater then 510 characters or the trie has reached it's maximum size.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TriePut" name = "fn:<N>TriePut">&lt;N&gt;TriePut</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;TriePut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>, &lt;PN&gt;Type **const <em>eject</em>)</code></p>
+
+<p>Updates or adds <code>data</code> to <code>trie</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Parameter: <em>data</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Parameter: <em>eject</em></dt>
+	<dd>If not null, on success it will hold the overwritten value or a pointer-to-null if it did not overwrite.</dd>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with a re-sizing.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd>The key is greater then 510 characters or the trie has reached it's maximum size.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(<code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TriePolicyPut" name = "fn:<N>TriePolicyPut">&lt;N&gt;TriePolicyPut</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;TriePolicyPut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>, &lt;PN&gt;Type **const <em>eject</em>, const &lt;PN&gt;Replace <em>replace</em>)</code></p>
+
+<p>Adds <code>data</code> to <code>trie</code> only if the entry is absent or if calling <code>replace</code> returns true.</p>
+
+<dl>
+	<dt>Parameter: <em>trie</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Parameter: <em>data</em></dt>
+	<dd>If null, returns null.</dd>
+	<dt>Parameter: <em>eject</em></dt>
+	<dd>If not null, on success it will hold the overwritten value or a pointer-to-null if it did not overwrite a previous value.</dd>
+	<dt>Parameter: <em>replace</em></dt>
+	<dd>Called on collision and only replaces it if the function returns true. If null, it is semantically equivalent to <a href = "#fn:&lt;N&gt;TriePut">&lt;N&gt;TriePut</a>.</dd>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with a re-sizing.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd>The key is greater then 510 characters or the trie has reached it's maximum size.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieToString" name = "fn:<N>TrieToString">&lt;N&gt;TrieToString</a></h3>
+
+<p><code>static const char *<strong>&lt;N&gt;TrieToString</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+
+<p>Can print four strings at once before it overwrites.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Prints the keys of <code>trie</code> in a static buffer.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1); it has a 255 character limit; every element takes some of it.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>TrieTest" name = "fn:<N>TrieTest">&lt;N&gt;TrieTest</a></h3>
+
+<p><code>static void <strong>&lt;N&gt;TrieTest</strong>(void)</code></p>
+
+<p>Will be tested on stdout. Requires <code>TRIE_TEST</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
+
+</div>
+
+</div>
+
+<div>
+
+<h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>2020 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+</div>
+
+</body>
+
+</html>

@@ -21,7 +21,15 @@
 extern const char *const parole[];
 extern const size_t parole_size;
 
+/** Just a placeholder to get `graph()`. Don't call <fn:StrTrieTest> it will
+ crash. */
 static void fill_str(const char *str) {
+	/*switch(rand() / (RAND_MAX / 4 + 1)) {
+	case 0: str = "A"; break;
+	case 1: str = "B"; break;
+	case 2: str = "C"; break;
+	case 3: str = "D"; break;
+	} <- doesn't work; local modifications only. */
 	/* nothing */ (void)(str);
 }
 
@@ -31,15 +39,55 @@ static void fill_str(const char *str) {
 
 
 
-/** For comparison with linked hash. */
+/** For comparison with sorted array. */
 
-static int string_is_equal(const char *const a, const char *const b) {
-	return !strcmp(a, b);
+static void str_to_str(const char *const*str, char(*const a)[12]) {
+	sprintf(*a, "%.11s", *str);
 }
-static void pstring_to_string(const char *const*const ps, char (*const a)[12]) {
-	strncpy(*a, *ps, sizeof(*a) - 1);
-	(*a)[sizeof(*a) - 1] = '\0';
+
+#define ARRAY_NAME Str
+#define ARRAY_TYPE const char *
+#define ARRAY_TO_STRING &str_to_str
+#include "../src/Array.h"
+
+static size_t lower_bound(const struct StrArray *const array,
+	const char *const value) {
+	const char **const data = array->data;
+	size_t low = 0, mid, high = array->size;
+	assert(array && value);
+	while(low < high) {
+		mid = low + ((high - low) >> 1);
+		/*printf("[%lu, %lu) cmp (%s) to %s\n", low, high, value, data[mid]);*/
+		if(strcmp(value, data[mid]) <= 0) {
+			high = mid;
+		} else {
+			low = mid + 1;
+		}
+	}
+	return low;
 }
+
+static int array_insert(struct StrArray *const array,
+	const char *const data) {
+	size_t b;
+	assert(array && data);
+	b = lower_bound(array, data);
+	/*printf("lb(%s) = %lu.\n", data, b);*/
+	StrArrayBuffer(array, 1);
+	memmove(array->data + b + 1, array->data + b,
+		sizeof *array->data * (array->size - b - 1));
+	array->data[b] = data;
+	return 1;
+}
+
+static int array_cmp(const void *a, const void *b) {
+	return strcmp((const char *)a, *(const char **)b);
+}
+
+
+
+/** For comparison with string set (hash.) */
+
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on
  `str`. */
@@ -54,80 +102,62 @@ static unsigned fnv_32a_str(const char *const str) {
 	}
 	return hval;
 }
-#define SET_NAME Str
+static int string_is_equal(const char *const a, const char *const b) {
+	return !strcmp(a, b);
+}
+static void pointer_to_string(const char *const*const ps,
+	char (*const a)[12]) {
+	strncpy(*a, *ps, sizeof(*a) - 1);
+	(*a)[sizeof(*a) - 1] = '\0';
+}
+#define SET_NAME String
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
-#define SET_TO_STRING &pstring_to_string
+#define SET_TO_STRING &pointer_to_string
 #include "Set.h"
 
-struct StrListNode;
-static int str_list_compare(const struct StrListNode *,
-	const struct StrListNode *);
-static void str_list_to_string(const struct StrListNode *, char (*)[12]);
-#define LIST_NAME Str
-#define LIST_COMPARE &str_list_compare
-#define LIST_TO_STRING &str_list_to_string
-#include "List.h"
-
-struct Entry {
-	struct StrSetElement elem;
-	struct StrListNode node;
-	char str[24];
-};
-static const struct Entry *node_upcast_c(const struct StrListNode *const node) {
-	return (const struct Entry *)(const void *)((const char *)node
-		- offsetof(struct Entry, node));
-}
-static void str_list_to_string(const struct StrListNode *s,
-	char (*const a)[12]) {
-	sprintf(*a, "%.11s", node_upcast_c(s)->str);
-}
-/** @implements <KeyListNode>Compare */
-static int str_list_compare(const struct StrListNode *const a,
-	const struct StrListNode *const b) {
-	return strcmp(node_upcast_c(a)->elem.key, node_upcast_c(b)->elem.key);
-}
-
-#define POOL_NAME Entry
-#define POOL_TYPE struct Entry
+#define POOL_NAME StringElement
+#define POOL_TYPE struct StringSetElement
 #include "Pool.h"
+
+
 
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
-	union trie_Str_TrieNode *n;
+	const char **n;
 
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie0.gv");
 	/*printf("Trie0: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "foo")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie1.gv");
 	/*printf("Trie1: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "bar")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie2.gv");
 	/*printf("Trie2: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "baz")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie3.gv");
 	/*printf("Trie3: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "qux")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie4.gv");
 	/*printf("Trie4: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "quxx")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie5.gv");
 	/*printf("Trie5: %s.\n\n", StrTrieToString(&trie));*/
 
 	if(!StrTrieAdd(&trie, "quxxx")) goto catch;
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	trie_Str_graph(&trie, "graph/trie6.gv");
 	/*printf("Trie6: %s.\n\n", StrTrieToString(&trie));*/
 
@@ -135,7 +165,7 @@ static void test_basic_trie_str() {
 	trie_Str_graph(&trie, "graph/trie_a.gv");
 	if(!StrTrieAdd(&trie, "b")) goto catch;
 	trie_Str_graph(&trie, "graph/trie_b.gv");
-	trie_Str_print(&trie);
+	/*trie_Str_print(&trie);*/
 	if(!StrTrieAdd(&trie, "c")) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie_c.gv");
@@ -166,21 +196,26 @@ static void test_basic_trie_str() {
 	trie_Str_graph(&trie, "graph/trie_z.gv");
 
 	n = trie_Str_match(&trie, "");
-	printf("\"\": %s\n", n ? n->leaf : "null");
+	printf("\"\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "foo");
-	printf("\"foo\": %s\n", n ? n->leaf : "null");
+	printf("\"foo\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "qux");
-	printf("\"qux\": %s\n", n ? n->leaf : "null");
+	printf("\"qux\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "quxx");
-	printf("\"quxx\": %s\n", n ? n->leaf : "null");
+	printf("\"quxx\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "quux");
-	printf("\"quux\": %s\n", n ? n->leaf : "null");
+	printf("\"quux\": %s\n", n ? *n : "null");
 	goto finally;
 catch:
 	printf("Test failed.\n");
 	assert(0);
 finally:
 	StrTrie_(&trie);
+}
+
+/** Returns a time diffecence in microseconds from `then`. */
+static double diff_us(clock_t then) {
+	return 1000000.0 / CLOCKS_PER_SEC * (clock() - then);
 }
 
 /** On-line numerically stable first-order statistics, <Welford, 1962, Note>. */
@@ -206,120 +241,123 @@ static double m_sample_variance(const struct Measure *const m)
 static double m_stddev(const struct Measure *const measure)
 	{ return sqrt(m_sample_variance(measure)); }
 
+/* How many experiments is an X-macro. `gnuplot` doesn't like `_`. */
+#define PARAM(A) A
+#define STRUCT(A) { #A, 0, { 0, 0, 0 } }
+#define ES(X) X(ARRAYINIT), X(ARRAYLOOK), \
+	X(TRIEINIT), X(TRIELOOK), \
+	X(SETINIT), X(SETLOOK)
 
-
-enum QData { TRIE_INIT, TRIE_LOOK, /*TRIE_ITER,*/
-	SET_INIT, SET_LOOK, /*SET_ITER,*/ Q_END };
-
-static int test(void) {
+static int timing_comparison(void) {
 	struct StrTrie trie = TRIE_IDLE;
-	struct EntryPool entries = POOL_IDLE;
-	struct StrSet set = SET_IDLE;
-	struct StrList list;
-	size_t i, r, s = 1, q;
-	const size_t replicas = 3;
-	clock_t t;
-	unsigned seed = (unsigned)clock();
+	struct StrArray array = ARRAY_IDLE;
+	/* Linked hash map -- too much code.
+	struct Str24EntryPool entries = POOL_IDLE;
+	struct Str24Set set = SET_IDLE;
+	struct Str24List list;*/
+	struct StringSet set = SET_IDLE;
+	struct StringElementPool set_pool = POOL_IDLE;
+	size_t i, r, s = 1, e, replicas = 5;
+	clock_t t, t_total;
 	int success = 1, is_full = 0;
-	struct {
-		const char *name;
-		FILE *fp;
-		struct Measure m;
-	} qs[Q_END] = { { "trie init", 0, {0,0,0} },
-		{ "trie look", 0, {0,0,0} },
-		/*{ "trie iter", 0, {0,0,0} },*/
-		{ "set init", 0, {0,0,0} },
-		{ "set look", 0, {0,0,0} }/*,
-		{ "set iter", 0, {0,0,0} }*/ },
-		gnu = { "experiment", 0, {0,0,0} };
-
-	srand(seed), rand(), printf("Seed %u.\n", seed);
-
-	fprintf(stderr, "TrieInternal %lu\n"
-		"size_t %lu\n"
-		"Type * %lu\n"
-		"union <PN>TrieNode %lu\n",
-		sizeof(struct TrieInternal),
-		sizeof(size_t),
-		sizeof(trie_Str_Type *),
-		sizeof(union trie_Str_TrieNode));
-
-	test_basic_trie_str();
+	/* How many files we open simultaneously qs.size OR gnu.size. */
+	enum { ES(PARAM) };
+	struct { const char *name; FILE *fp; struct Measure m; }
+		es[] = { ES(STRUCT) }, gnu = { "experiment", 0, {0,0,0} };
+	const size_t es_size = sizeof es / sizeof *es;
 
 	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
 
 	/* Open all graphs for writing. */
-	for(q = 0; q < Q_END; q++) {
+	for(e = 0; e < es_size; e++) {
 		char fn[64];
-		if(sprintf(fn, "graph/%s.tsv", qs[q].name) < 0
-			|| !(qs[q].fp = fopen(fn, "w"))) goto catch;
-		fprintf(qs[q].fp, "# %s\n"
+		if(sprintf(fn, "graph/%s.tsv", es[e].name) < 0
+			|| !(es[e].fp = fopen(fn, "w"))) goto catch;
+		fprintf(es[e].fp, "# %s\n"
 			"# <items>\t<t (ms)>\t<sample error on t with %lu replicas>\n",
-			qs[q].name, (unsigned long)replicas);
+			es[e].name, (unsigned long)replicas);
 	}
 	for(s = 1; !is_full; s <<= 1) {
 		if(s >= parole_size) is_full = 1, s = parole_size;
-		for(q = 0; q < Q_END; q++) m_reset(&qs[q].m);
+		for(e = 0; e < es_size; e++) m_reset(&es[e].m);
 		for(r = 0; r < replicas; r++) {
+			size_t start_i = rand() / (RAND_MAX / parole_size + 1);
+			t_total = clock();
+			printf("Replica %lu/%lu.\n", r + 1, replicas);
 
-			/* Trie. */
-
+			/* Sorted array. */
+			StrArrayClear(&array);
 			t = clock();
 			for(i = 0; i < s; i++)
-				if(!StrTriePut(&trie, parole[i], 0)) goto catch;
-			t = clock() - t;
-			m_add(&qs[TRIE_INIT].m, 1000.0 / CLOCKS_PER_SEC * t);
-			printf("trie size %lu initialisation %fms; %s.\n",
-				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t,
-				StrTrieToString(&trie));
+				array_insert(&array, parole[(start_i + i) % parole_size]);
+			m_add(&es[ARRAYINIT].m, diff_us(t));
+			printf("Added init array size %lu: %s.\n",
+				(unsigned long)StrArraySize(&array), StrArrayToString(&array));
 			t = clock();
 			for(i = 0; i < s; i++) {
-				const char *const str = StrTrieGet(&trie, parole[i]);
-				assert(str);
+				const char *const word = parole[(start_i + i) % parole_size],
+				**const key = bsearch(word, array.data, array.size,
+					sizeof array.data, array_cmp);
+				const int cmp = strcmp(word, *key);
+				(void)cmp, assert(key && !cmp);
 			}
-			t = clock() - t;
-			m_add(&qs[TRIE_LOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
-			printf("trie size %lu lookup all %fms.\n",
-				(unsigned long)StrTrieSize(&trie), 1000.0 / CLOCKS_PER_SEC * t);
-			/*trie_Str_graph(&inglesi, "graph/inglesi.gv"); -- 31MB. */
-			/*trie_Str_print(&inglesi);*/
+			m_add(&es[ARRAYLOOK].m, diff_us(t));
+			printf("Added look array size %lu.\n",
+				(unsigned long)StrArraySize(&array));
+
+			/* Set, (hash map.) */
+			StringSetClear(&set);
+			StringElementPoolClear(&set_pool);
+			t = clock();
+			for(i = 0; i < s; i++) {
+				struct StringSetElement *elem = StringElementPoolNew(&set_pool);
+				elem->key = parole[(start_i + i) % parole_size];
+				if(StringSetPolicyPut(&set, elem, 0))
+					StringElementPoolRemove(&set_pool, elem);
+			}
+			m_add(&es[SETINIT].m, diff_us(t));
+			printf("Added init set size %lu: %s.\n",
+				(unsigned long)StringSetSize(&set), StringSetToString(&set));
+			t = clock();
+			for(i = 0; i < s; i++) {
+				const char *const word = parole[(start_i + i) % parole_size];
+				const struct StringSetElement *const elem
+					= StringSetGet(&set, word);
+				const int cmp = strcmp(word, elem->key);
+				(void)cmp, assert(elem && !cmp);
+			}
+			m_add(&es[SETLOOK].m, diff_us(t));
+			printf("Added look set size %lu.\n",
+				(unsigned long)StringSetSize(&set));
+
+			/* Trie. */
 			StrTrieClear(&trie);
-
-			/* Linked set. */
-
-			StrListClear(&list);
+			t = clock();
+			for(i = 0; i < s; i++) if(!StrTrieAdd(&trie,
+				parole[(start_i + i) % parole_size])) goto catch;
+			m_add(&es[TRIEINIT].m, diff_us(t));
+			printf("Added init trie size %lu: %s.\n",
+				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
 			t = clock();
 			for(i = 0; i < s; i++) {
-				struct Entry *const e = EntryPoolNew(&entries);
-				e->elem.key = e->str;
-				strcpy(e->str, parole[i]);
-				if(StrSetPolicyPut(&set, &e->elem, 0))
-					{ EntryPoolRemove(&entries, e); continue; } /* Duplicate. */
-				StrListPush(&list, &e->node);
+				const char *const word = parole[(start_i + i) % parole_size],
+					*const key = StrTrieGet(&trie, word);
+				const int cmp = strcmp(word, key);
+				(void)cmp, assert(key && !cmp);
 			}
-			StrListSort(&list);
-			t = clock() - t;
-			m_add(&qs[SET_INIT].m, 1000.0 / CLOCKS_PER_SEC * t);
-			printf("set size %lu initialisation %fms; %s.\n",
-				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t,
-				StrListToString(&list));
-			t = clock();
-			for(i = 0; i < s; i++) {
-				struct StrSetElement *const str = StrSetGet(&set, parole[i]);
-				assert(str);
-			}
-			t = clock() - t;
-			m_add(&qs[SET_LOOK].m, 1000.0 / CLOCKS_PER_SEC * t);
-			printf("set size %lu lookup all %fms.\n",
-				(unsigned long)StrSetSize(&set), 1000.0 / CLOCKS_PER_SEC * t);
-			EntryPoolClear(&entries);
-			StrSetClear(&set);
+			m_add(&es[TRIELOOK].m, diff_us(t));
+			printf("Added look trie size %lu.\n",
+				(unsigned long)StrTrieSize(&trie));
+
+			/* Took took much time; decrease the replicas for next time. */
+			if(replicas != 1
+				&& 10.0 * (clock() - t_total) / CLOCKS_PER_SEC > 1.0 * replicas)
+				replicas--;
 		}
-		for(q = 0; q < Q_END; q++) fprintf(qs[q].fp, "%lu\t%f\t%f\n",
-			(unsigned long)s, m_mean(&qs[q].m), m_stddev(&qs[q].m));
-		/*if(parole_size >= s) break;
-		s <<= 2;
-		if(parole_size >= s) s = parole_size;*/
+		for(e = 0; e < es_size; e++) fprintf(es[e].fp, "%lu\t%f\t%f\n",
+			(unsigned long)s, m_mean(&es[e].m), m_stddev(&es[e].m));
+		if(s != 512) continue;
+		trie_Str_graph(&trie, "graph/example.gv");
 	}
 	printf("Test passed.\n");
 	goto finally;
@@ -328,12 +366,13 @@ catch:
 	perror("test");
 	printf("Test failed.\n");
 finally:
-	EntryPool_(&entries);
-	StrSet_(&set);
+	StrArray_(&array);
+	StringSet_(&set);
+	StringElementPool_(&set_pool);
 	StrTrie_(&trie);
 	if(gnu.fp && fclose(gnu.fp)) perror(gnu.name);
-	for(q = 0; q < Q_END; q++)
-		if(qs[q].fp && fclose(qs[q].fp)) perror(qs[q].name);
+	for(e = 0; e < es_size; e++)
+		if(es[e].fp && fclose(es[e].fp)) perror(es[e].name);
 	if(!success) return 0;
 
 	/* Output a `gnuplot` script. */
@@ -341,18 +380,32 @@ finally:
 		char fn[64];
 		if(sprintf(fn, "graph/%s.gnu", gnu.name) < 0
 			|| !(gnu.fp = fopen(fn, "w"))) goto catch2;
+		/*"set style line 1 lt 1 lw 3 lc rgb '#0072bd' # blue\n"
+		"set style line 2 lt 1 lw 3 lc rgb '#d95319' # orange\n"
+		"set style line 3 lt 1 lw 3 lc rgb '#edb120' # yellow\n"
+		"set style line 4 lt 1 lw 3 lc rgb '#7e2f8e' # purple\n"
+		"set style line 5 lt 1 lw 3 lc rgb '#77ac30' # green\n"
+		"set style line 6 lt 1 lw 3 lc rgb '#4dbeee' # light-blue\n"
+		"set style line 7 lt 1 lw 3 lc rgb '#a2142f' # red\n"*/
+		fprintf(gnu.fp, "set style line 1 lt 2 lw 3 lc rgb '#0072ff'\n"
+			"set style line 2 lt 2 lw 3 lc rgb '#ff7200'\n"
+			"set style line 3 lt 1 lw 3 lc rgb '#0055cc'\n"
+			"set style line 4 lt 1 lw 3 lc rgb '#cc5500'\n"
+			"set style line 5 lt 5 lw 3 lc rgb '#003399'\n"
+			"set style line 6 lt 5 lw 3 lc rgb '#993300'\n");
 		fprintf(gnu.fp, "set term postscript eps enhanced color\n"
+			/*"set encoding utf8\n" Doesn't work at all; {/Symbol m}. */
 			"set output \"graph/%s.eps\"\n"
 			"set grid\n"
 			"set xlabel \"elements\"\n"
-			"set ylabel \"time, t (ms)\"\n"
-			"set yrange [0:]\n"
-			"# set xrange [0:1000] # zooming in\n"
-			"# seed %u\n"
-			"plot", gnu.name, seed);
-		for(q = 0; q < Q_END; q++) fprintf(gnu.fp,
-			"%s \\\n\"graph/%s.tsv\" using 1:2:3 with errorlines lw 3 "
-			"title \"%s\"", q ? "," : "", qs[q].name, qs[q].name);
+			"set ylabel \"amortised time per unit, t (ns)\"\n"
+			"set yrange [0:2000]\n"
+			"set log x\n"
+			"plot", gnu.name);
+		for(e = 0; e < es_size; e++) fprintf(gnu.fp,
+			"%s \\\n\"graph/%s.tsv\" using 1:($2/$1*1000):($3/$1*1000) "
+			"with errorlines title \"%s\" ls %d", e ? "," : "",
+			es[e].name, es[e].name, (int)e + 1);
 		fprintf(gnu.fp, "\n");
 	}
 	if(gnu.fp && fclose(gnu.fp)) goto catch2; gnu.fp = 0;
@@ -383,7 +436,32 @@ finally2:
 	return 1;
 }
 
+struct Dict { char word[12]; int defn; };
+
+static const char *dict_key(struct Dict *dict) { return dict->word; }
+
+static void fill_dict(struct Dict *dict) {
+	Orcish(dict->word, sizeof ((struct Dict *)0)->word);
+	dict->defn = rand() / (RAND_MAX / 99 + 1);
+}
+
+#define TRIE_NAME Dict
+#define TRIE_TYPE struct Dict
+#define TRIE_KEY &dict_key
+#define TRIE_TEST &fill_dict
+#include "../src/Trie.h"
+
 int main(void) {
-	test();
+	unsigned seed = (unsigned)clock();
+	srand(seed), rand(), printf("Seed %u.\n", seed);
+	test_basic_trie_str();
+	(void)StrTrieTest; /* <- Not safe to call. */
+	DictTrieTest();
+	printf("\n***\n\n");
+#if 0 /* <!-- 1 */
+	timing_comparison();
+#else /* 1 --><!-- 0 */
+	(void)timing_comparison;
+#endif /* 0 --> */
 	return EXIT_SUCCESS;
 }
