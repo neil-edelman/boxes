@@ -230,7 +230,7 @@ static void PT_(array)(struct T_(Array) *const a) {
 	a->size          = 0;
 }
 
-/* Frees `a`. */
+/** Frees `a`. */
 static void PT_(array_)(struct T_(Array) *const a) {
 	assert(a);
 	free(a->data);
