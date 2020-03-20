@@ -16,7 +16,8 @@
  @cf [Heap](https://github.com/neil-edelman/Heap)
  @cf [List](https://github.com/neil-edelman/List)
  @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set) */
+ @cf [Set](https://github.com/neil-edelman/Set)
+ @cf [Trie](https://github.com/neil-edelman/Trie) */
 
 #include <stdlib.h> /* rand */
 #include <stdio.h>  /* strlen */
