@@ -48,6 +48,7 @@
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
  @cf [Pool](https://github.com/neil-edelman/Pool)
  @cf [Set](https://github.com/neil-edelman/Set)
+ @cf [Trie](https://github.com/neil-edelman/Trie)
  @fixme Add decrease priority. */
 
 /* Check defines. */
