@@ -16,6 +16,21 @@ typedef void (*PN_(Action))(PN_(Type) *);
 /* `TRIE_TEST` must be a function that implements `<PN>Action`. */
 static const PN_(Action) PN_(filler) = (TRIE_TEST);
 
+/** Debug: prints `trie`. */
+static void PN_(print)(const struct N_(Trie) *const trie) {
+	size_t i, n;
+	printf("__Trie: ");
+	if(!trie) { printf("null.\n"); return; }
+	printf("{");
+	for(i = 0; i < trie->leaves.size; i++)
+		printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.data[i]));
+	printf("}; {");
+	for(n = 0; n < trie->branches.size; n++)
+		printf("%s%u:%lu", n ? ", " : "", trie_bit(trie->branches.data[n]),
+		(unsigned long)trie_left(trie->branches.data[n]));
+	printf("}.\n");
+}
+
 /*static void PN_(print)(const struct N_(Trie) *const trie) {
 	size_t i;
 	printf("__print__ size %lu.\n", (unsigned long)N_(TrieSize)(trie));

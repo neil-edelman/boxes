@@ -211,21 +211,6 @@ struct N_(Trie) {
 #define TRIE_IDLE { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }
 #endif /* !zero --> */
 
-/** Debug: prints `trie`. */
-static void PN_(print)(const struct N_(Trie) *const trie) {
-	size_t i, n;
-	printf("__Trie: ");
-	if(!trie) { printf("null.\n"); return; }
-	printf("{");
-	for(i = 0; i < trie->leaves.size; i++)
-		printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.data[i]));
-	printf("}; {");
-	for(n = 0; n < trie->branches.size; n++)
-		printf("%s%u:%lu", n ? ", " : "", trie_bit(trie->branches.data[n]),
-		(unsigned long)trie_left(trie->branches.data[n]));
-	printf("}.\n");
-}
-
 /** Initialises `trie` to idle. */
 static void PN_(trie)(struct N_(Trie) *const trie) {
 	assert(trie);
@@ -370,8 +355,8 @@ static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	return 1;
 }
 
-/** Used in <fn:<N>TrieAdd>; `original` and `replace` are ignored and it
- returns false.
+/** Used in <fn:<N>TrieAdd>.
+ @return `original` and `replace` are ignored and it returns false.
  @implements <typedef:<PN>Replace> */
 static int PN_(false)(PN_(Type) *original, PN_(Type) *replace) {
 	return (void)(original), (void)(replace), 0;
