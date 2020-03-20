@@ -61,7 +61,8 @@
  @cf [Heap](https://github.com/neil-edelman/Heap)
  @cf [List](https://github.com/neil-edelman/List)
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool) */
+ @cf [Pool](https://github.com/neil-edelman/Pool)
+ @cf [Trie](https://github.com/neil-edelman/Trie) */
 
 #include <stdlib.h> /* realloc free */
 #include <assert.h>	/* assert */
