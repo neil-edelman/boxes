@@ -68,7 +68,7 @@
 
 <dl>
 	<dt>Parameter: TRIE_NAME, TRIE_TYPE</dt>
-	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an optional returnable type that is declared, (it is used by reference only.) <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an optional returnable type that is declared, (it is used by reference only except if <code>TRIE_TEST</code>.) <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
 	<dt>Parameter: TRIE_KEY</dt>
 	<dd>A function that satisfies <a href = "#typedef:&lt;PN&gt;Key">&lt;PN&gt;Key</a>. Must be defined if and only if <code>TRIE_TYPE</code> is defined.</dd>
 	<dt>Parameter: TRIE_TEST</dt>
@@ -76,11 +76,11 @@
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
-	<dd><a href = "../../Array/">Array.h</a></dd>
+	<dd><a href = "../Array/">Array.h</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Have a replace; much faster then remove and add.</dd>
+	<dd>Have a replace; much faster then remove and add. Have remove.</dd>
 	<dt>See also:</dt>
-	<dd><a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a></dd>
+	<dd><a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a></dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -137,7 +137,7 @@
 
 <p>A full binary tree stored semi-implicitly in two arrays: one as the branches backed by one as pointers-to-<a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> as leaves. We take two arrays because it speeds up iteration as the leaves are also an array sorted by key, it is &#927;(1) instead of &#927;(log <code>items</code>) to get an example for comparison in insert, and experimetally it is slightly faster.</p>
 
-<p><img alt = "States." src = "../web/states.png"></p>
+<p><img alt = "States." src = "web/states.png" width = 215 height = 305></p>
 
 </div>
 
@@ -293,7 +293,7 @@
 	<dt>Parameter: <em>data</em></dt>
 	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
-	<dd>Success. If data with the same key is present, returns false, but does not set <code>errno</code>.</dd>
+	<dd>Success. If data with the same key is present, returns true but doesn't add <code>data</code>.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dd>There was an error with a re-sizing.</dd>
 	<dt>Exceptional return: ERANGE</dt>

@@ -28,7 +28,7 @@ It has the same asymptotic run\-time as keeping a sorted array of pointers, but 
 
 
  * Parameter: TRIE\_NAME, TRIE\_TYPE  
-   `<N>` that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only\.\) `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
+   `<N>` that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only except if `TRIE_TEST`\.\) `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: TRIE\_KEY  
    A function that satisfies [&lt;PN&gt;Key](#user-content-typedef-8524f620)\. Must be defined if and only if `TRIE_TYPE` is defined\.
  * Parameter: TRIE\_TEST  
@@ -36,11 +36,11 @@ It has the same asymptotic run\-time as keeping a sorted array of pointers, but 
  * Standard:  
    C89
  * Dependancies:  
-   [Array.h](../../Array/)
+   [Array.h](../Array/)
  * Caveat:  
-   Have a replace; much faster then remove and add\.
+   Have a replace; much faster then remove and add\. Have remove\.
  * See also:  
-   [Array](https://github.com/neil-edelman/Array); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
+   [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -87,7 +87,7 @@ To initialise it to an idle state, see [&lt;N&gt;Trie](#user-content-fn-8fc8a233
 
 A full binary tree stored semi\-implicitly in two arrays: one as the branches backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves\. We take two arrays because it speeds up iteration as the leaves are also an array sorted by key, it is &#927;\(1\) instead of &#927;\(log `items`\) to get an example for comparison in insert, and experimetally it is slightly faster\.
 
-![States.](../web/states.png)
+![States.](web/states.png)
 
 
 
@@ -218,7 +218,7 @@ Adds `data` to `trie` if absent\.
  * Parameter: _data_  
    If null, returns null\.
  * Return:  
-   Success\. If data with the same key is present, returns false, but does not set `errno`\.
+   Success\. If data with the same key is present, returns true but doesn't add `data`\.
  * Exceptional return: realloc, ERANGE  
    There was an error with a re\-sizing\.
  * Exceptional return: ERANGE  
