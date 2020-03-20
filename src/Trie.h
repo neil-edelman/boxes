@@ -46,7 +46,7 @@
  @param[TRIE_TEST]
  Unit testing framework <fn:<N>TrieTest>, included in a separate header,
  <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PN>Action>. Requires `TRIE_TO_STRING` and not `NDEBUG`.
+ satisfying <typedef:<PN>Action>. Requires that `NDEBUG` not be defined.
 
  @fixme Have a replace; much faster then remove and add.
  @fixme Have remove.

@@ -32,7 +32,7 @@ It has the same asymptotic run\-time as keeping a sorted array of pointers, but 
  * Parameter: TRIE\_KEY  
    A function that satisfies [&lt;PN&gt;Key](#user-content-typedef-8524f620)\. Must be defined if and only if `TRIE_TYPE` is defined\.
  * Parameter: TRIE\_TEST  
-   Unit testing framework [&lt;N&gt;TrieTest](#user-content-fn-ae32c087), included in a separate header, [\.\./test/TreeTest\.h](../test/TreeTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)\. Requires `TRIE_TO_STRING` and not `NDEBUG`\.
+   Unit testing framework [&lt;N&gt;TrieTest](#user-content-fn-ae32c087), included in a separate header, [\.\./test/TreeTest\.h](../test/TreeTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)\. Requires that `NDEBUG` not be defined\.
  * Standard:  
    C89
  * Dependancies:  
