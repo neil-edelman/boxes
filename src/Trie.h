@@ -5,9 +5,9 @@
 
  ![Example of trie.](../web/trie.png)
 
- An <tag:<N>Trie> is an index of data, each containing unique byte-strings
- ended with `NUL`. Compatible with any one-byte-encoding with a
- null-terminator; in particular, `C` strings, including
+ An <tag:<N>Trie> is an index of data, each containing unique identifier which
+ is a byte-string ended with `NUL`. Compatible with any one-byte-encoding with
+ a null-terminator; in particular, `C` strings, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). As such,
  the string should not change while in a trie. It does not store data on the
  strings themselves, only the positions where the strings are different. It can
