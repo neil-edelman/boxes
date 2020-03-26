@@ -5,12 +5,13 @@
 
  ![Example of trie.](../web/trie.png)
 
- An <tag:<N>Trie> is a trie of byte-strings ended with `NUL`, compatible with
- any byte-encoding with a null-terminator; in particular, `C` strings,
- including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
- It is an index to a sorted array where it does not store data on the strings,
- only the positions where the strings are different. It can be seen as a
- [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
+ An <tag:<N>Trie> is an index of data, each containing unique byte-strings
+ ended with `NUL`. Compatible with any one-byte-encoding with a
+ null-terminator; in particular, `C` strings, including
+ [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). As such,
+ the string should not change while in a trie. It does not store data on the
+ strings themselves, only the positions where the strings are different. It can
+ be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
  <Morrison, 1968 PATRICiA>.
 
  It has the same asymptotic run-time as keeping a sorted array of pointers, but
@@ -34,10 +35,10 @@
  assertions, use `#define NDEBUG` before inclusion.
 
  @param[TRIE_NAME, TRIE_TYPE]
- `<N>` that satisfies `C` naming conventions when mangled and an optional
- returnable type that is declared, (it is used by reference only except if
- `TRIE_TEST`.) `<PN>` is private, whose names are prefixed in a manner to avoid
- collisions; any should be re-defined prior to use elsewhere.
+ <typedef:<PN>Type> that satisfies `C` naming conventions when mangled and an
+ optional returnable type that is declared, (it is used by reference only
+ except if `TRIE_TEST`.) `<PN>` is private, whose names are prefixed in a
+ manner to avoid collisions; any should be re-defined prior to use elsewhere.
 
  @param[TRIE_KEY]
  A function that satisfies <typedef:<PN>Key>. Must be defined if and only if
@@ -391,7 +392,7 @@ static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
 /** It remains valid up to a structural modification of `trie` and is indexed
  up to <fn:<N>TrieSize>.
  @param[trie] If null, returns null.
- @return The leaves of `trie`, ordered by key.
+ @return An array of pointers to the leaves of `trie`, ordered by key.
  @allow */
 static PN_(Type) *const*N_(TrieArray)(const struct N_(Trie) *const trie) {
 	return trie && trie->leaves.size ? trie->leaves.data : 0;

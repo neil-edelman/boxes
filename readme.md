@@ -13,7 +13,7 @@
 
 ![Example of trie.](web/trie.png)
 
-An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is a trie of byte\-strings ended with `NUL`, compatible with any byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It is an index to a sorted array where it does not store data on the strings, only the positions where the strings are different\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\.
+An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an index of data, each containing unique byte\-strings ended with `NUL`\. Compatible with any one\-byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. As such, the string should not change while in a trie\. It does not store data on the strings themselves, only the positions where the strings are different\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\.
 
 It has the same asymptotic run\-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, \(asymptotically, it still has to lookup to insert,\) because it has to update that index\. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash `Set` starting at about 100 items\. However, advantages of this data structure over a hash include,
 
@@ -28,7 +28,7 @@ It has the same asymptotic run\-time as keeping a sorted array of pointers, but 
 
 
  * Parameter: TRIE\_NAME, TRIE\_TYPE  
-   `<N>` that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only except if `TRIE_TEST`\.\) `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
+   [&lt;PN&gt;Type](#user-content-typedef-c45e6761) that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only except if `TRIE_TEST`\.\) `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: TRIE\_KEY  
    A function that satisfies [&lt;PN&gt;Key](#user-content-typedef-8524f620)\. Must be defined if and only if `TRIE_TYPE` is defined\.
  * Parameter: TRIE\_TEST  
@@ -174,7 +174,7 @@ It remains valid up to a structural modification of `trie` and is indexed up to 
  * Parameter: _trie_  
    If null, returns null\.
  * Return:  
-   The leaves of `trie`, ordered by key\.
+   An array of pointers to the leaves of `trie`, ordered by key\.
 
 
 
