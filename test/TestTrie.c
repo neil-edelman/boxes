@@ -161,6 +161,9 @@ static void test_basic_trie_str() {
 	trie_Str_graph(&trie, "graph/trie6.gv");
 	/*printf("Trie6: %s.\n\n", StrTrieToString(&trie));*/
 
+	if(!StrTrieRemove(&trie, "foo")) goto catch;
+	trie_Str_graph(&trie, "graph/trie6-delete.gv");
+
 	if(!StrTrieAdd(&trie, "a")) goto catch;
 	trie_Str_graph(&trie, "graph/trie_a.gv");
 	if(!StrTrieAdd(&trie, "b")) goto catch;

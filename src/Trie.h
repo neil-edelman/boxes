@@ -103,6 +103,10 @@ static size_t trie_left(const size_t branch) { return branch >> TRIE_BITS; }
 /** Increments the left `branch` count. Does not check for overflow. */
 static void trie_left_inc(size_t *const branch) { *branch += TRIE_BIT_MAX + 1; }
 
+/** Decrements the left `branch` count. */
+static void trie_left_dec(size_t *const branch)
+	{ assert(*branch > TRIE_BIT_MAX), *branch -= TRIE_BIT_MAX + 1; }
+
 /** Compares `bit` from the string `a` against `b`. Does not check for the end
  of the string, so ensure that they are different. It may be better to compare
  muliple bits at a time, but 1) this is used in insertion only, 2) the advatage
@@ -239,7 +243,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	PN_(Leaf) *i_leaf;
 	int cmp;
 
-	/* Verify data. */
+	/* Verify data and capacity. */
 	assert(trie && data && n1 < (size_t)-2);
 	if(strlen(data_key) > (TRIE_BIT_MAX >> 3) - 1/* null */)
 		return errno = ERANGE, 0;
@@ -293,7 +297,7 @@ insert:
 	return 1;
 }
 
-/** Only looks in internal nodes, (branches.)
+/** Only looks in internal nodes (branches) to find a possible match.
  @return `trie` leaf that potentially matches `key` or null if it definitely is
  not in `trie`. */
 static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
@@ -302,8 +306,7 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	size_t n0_branch;
 	unsigned n0_byte, str_byte = 0;
 	assert(trie);
-	/* Special case. */
-	if(n1 <= 1) return n1 ? trie->leaves.data : 0;
+	if(n1 <= 1) return n1 ? trie->leaves.data : 0; /* Special case. */
 	n1--, assert(n1 == trie->branches.size);
 	while(n0 < n1) {
 		n0_branch = trie->branches.data[n0];
@@ -343,11 +346,13 @@ static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	const char *data_key;
 	assert(trie && data);
 	data_key = PN_(to_key)(data);
+
 	/* Add. */
 	if(!(match = PN_(get)(trie, data_key))) {
 		if(eject) *eject = 0;
 		return PN_(add)(trie, data);
 	}
+
 	/* Collision policy. */
 	if(replace && !replace(*match, data)) {
 		if(eject) *eject = data;
@@ -357,6 +362,101 @@ static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	}
 	return 1;
 }
+
+/** Remove leaf `idx` from `trie`. */
+static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
+	size_t n0 = 0, n1 = trie->branches.size, last_n0, left;
+	size_t *branch;
+	assert(trie && i < trie->leaves.size
+		&& trie->branches.size + 1 == trie->leaves.size);
+
+	/* Remove leaf. */
+	if(!--trie->leaves.size) return; /* Special case of one leaf. */
+	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
+		sizeof(PN_(Leaf)) * (n1 - i));
+
+	/* Remove branch. */
+	for( ; ; ) {
+		left = trie_left(*(branch = trie->branches.data + (last_n0 = n0)));
+		if(i <= left) {
+			if(!left) break;
+			n1 = ++n0 + left;
+			trie_left_dec(branch);
+		} else {
+			if((n0 += ++left) >= n1) break;
+			i -= left;
+		}
+	}
+	memmove(branch, branch + 1, sizeof n0 * (--trie->branches.size - last_n0));
+}
+
+#if 0
+/** If leaf size of the `trie` is at least two when deleting `idx`, one
+ internal node will be deleted, too. */
+static void PN_(remove_coda)(struct N_(Trie) *const trie, const size_t idx) {
+	size_t n0 = 0, n1 = trie->leaves.size, n0_left;
+	size_t *n0_branch;
+	assert(trie && idx < n1);
+	do {
+		n0_branch = trie->branches.data + n0;
+		n0_left   = trie_left(*n0_branch);
+		assert(n0_left <= n_remaining);/**?**/
+		if(n + n_left <= idx) { /* Left. */
+			trie_left_dec(branch);
+			i_remaining -= i_right;
+			n++;
+		} else { /* Right. */
+			i += i_left;
+			i_remaining -= i_left;
+			n += n_left;
+		}
+	} while(0);
+}
+
+static void PN_(remove)(struct N_(Trie) *const trie, const size_t idx) {
+	assert(trie && idx < trie->leaves.size
+		&& trie->branches.size + 1 == trie->leaves.size);
+	if(trie->branches.size) PN_(remove_coda)(trie, idx);
+	
+	assert(trie && idx < );
+}
+#endif
+
+#if 0
+/** Remove `key` from `trie`.
+ @return Success or else `key` was not in `trie`.
+ @fixme This is wrong; two descents, one to locate, one to decement left
+ counts. Even better, have an index. */
+static int PN_(remove)(struct N_(Trie) *const trie,
+	const char *const key) {
+	size_t n0 = 0, n1 = trie->leaves.size, i = 0;
+	size_t n0_branch;
+	unsigned n0_byte, str_byte = 0;
+	PN_(Leaf) *i_leaf;
+	assert(trie);
+	if(n1 <= 1) { if(n1) goto check; return 0; }
+	n1--, assert(n1 == trie->branches.size);
+	while(n0 < n1) {
+		n0_branch = trie->branches.data[n0];
+		for(n0_byte = trie_bit(n0_branch) >> 3; str_byte < n0_byte; str_byte++)
+			if(key[str_byte] == '\0') return 0;
+		if(!trie_is_bit(key, trie_bit(n0_branch)))
+			n1 = ++n0 + trie_left(n0_branch);
+		else n0 += trie_left(n0_branch) + 1, i += trie_left(n0_branch) + 1;
+	}
+	assert(n0 == n1 && i < trie->leaves.size);
+check:
+	/* Now `i \in leaves` and `n0 \in branches` except empty. Check equality. */
+	if(strcmp(PN_(to_key)(trie->leaves.data[i]), key)) return 0;
+	/* Remove the data. */
+	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
+		sizeof *i_leaf * (trie->leaves.size - i)), trie->leaves.size--;
+	if(trie->branches.size)
+		memmove(trie->branches.data + n0, trie->branches.data + n0 + 1,
+		sizeof n0_branch * (trie->branches.size - n0)), trie->branches.size--;
+	return 1;
+}
+#endif
 
 /** Used in <fn:<N>TrieAdd>.
  @return `original` and `replace` are ignored and it returns false.
@@ -413,8 +513,8 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
  @allow */
 static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	const char *const key) {
-	PN_(Leaf) *l;
-	return trie && key && (l = PN_(get)(trie, key)) ? *l : 0;
+	PN_(Leaf) *leaf;
+	return trie && key && (leaf = PN_(get)(trie, key)) ? *leaf : 0;
 }
 
 /** Adds `data` to `trie` if absent.
@@ -461,7 +561,18 @@ static int N_(TriePut)(struct N_(Trie) *const trie,
 static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
 	PN_(Type) *const data, PN_(Type) **const eject,
 	const PN_(Replace) replace) {
-	return trie && data ? PN_(put)(trie, data, eject, replace) : 0;
+	return trie && data && PN_(put)(trie, data, eject, replace);
+}
+
+/** Remove `key` from `trie`.
+ @param[trie, key] If null, returns false.
+ @return Success or else `key` was not in `trie`.
+ @order \O(`size`)
+ @allow */
+static int N_(TrieRemove)(struct N_(Trie) *const trie, const char *const key) {
+	PN_(Leaf) *leaf;
+	return trie && key && (leaf = PN_(get)(trie, key))
+		? (PN_(remove)(trie, leaf - trie->leaves.data), 1) : 0;
 }
 
 /** Can print four strings at once before it overwrites.
@@ -527,6 +638,7 @@ static void PN_(unused_set)(void) {
 	N_(TrieAdd)(0, 0);
 	N_(TriePut)(0, 0, 0);
 	N_(TriePolicyPut)(0, 0, 0, 0);
+	N_(TrieRemove)(0, 0);
 	N_(TrieToString)(0);
 	PN_(unused_coda)();
 }
