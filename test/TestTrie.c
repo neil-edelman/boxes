@@ -127,6 +127,8 @@ static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
 	const char **n;
 
+	assert(StrTrieRemove(&trie, "") == 0);
+
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie0.gv");
 	/*printf("Trie0: %s.\n\n", StrTrieToString(&trie));*/
@@ -161,8 +163,7 @@ static void test_basic_trie_str() {
 	trie_Str_graph(&trie, "graph/trie6.gv");
 	/*printf("Trie6: %s.\n\n", StrTrieToString(&trie));*/
 
-	if(!StrTrieRemove(&trie, "foo")) goto catch;
-	trie_Str_graph(&trie, "graph/trie6-delete.gv");
+	assert(StrTrieSize(&trie) == 6);
 
 	if(!StrTrieAdd(&trie, "a")) goto catch;
 	trie_Str_graph(&trie, "graph/trie_a.gv");
@@ -198,6 +199,36 @@ static void test_basic_trie_str() {
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie_z.gv");
 
+	if(!StrTrieRemove(&trie, "x")
+		|| !StrTrieRemove(&trie, "z")
+		|| !StrTrieRemove(&trie, "y")
+		|| !StrTrieRemove(&trie, "d")
+		|| !StrTrieRemove(&trie, "c")
+		|| !StrTrieRemove(&trie, "b")
+		|| !StrTrieRemove(&trie, "a")
+		|| !StrTrieRemove(&trie, "f")
+		|| !StrTrieRemove(&trie, "g")
+		|| !StrTrieRemove(&trie, "h")
+		|| !StrTrieRemove(&trie, "i")
+		|| !StrTrieRemove(&trie, "j")
+		|| !StrTrieRemove(&trie, "k")
+		|| !StrTrieRemove(&trie, "l")
+		|| !StrTrieRemove(&trie, "m")
+		|| !StrTrieRemove(&trie, "n")
+		|| !StrTrieRemove(&trie, "o")
+		|| !StrTrieRemove(&trie, "p")
+		|| !StrTrieRemove(&trie, "q")
+		|| !StrTrieRemove(&trie, "r")
+		|| !StrTrieRemove(&trie, "s")
+		|| !StrTrieRemove(&trie, "t")
+		|| !StrTrieRemove(&trie, "u")
+		|| !StrTrieRemove(&trie, "v")
+		|| !StrTrieRemove(&trie, "w")
+		|| !StrTrieRemove(&trie, "e")) goto catch;
+	trie_Str_graph(&trie, "graph/trie_a-z-delete.gv");
+
+	assert(StrTrieSize(&trie) == 6);
+
 	n = trie_Str_match(&trie, "");
 	printf("\"\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "foo");
@@ -209,6 +240,7 @@ static void test_basic_trie_str() {
 	n = trie_Str_match(&trie, "quux");
 	printf("\"quux\": %s\n", n ? *n : "null");
 	goto finally;
+
 catch:
 	printf("Test failed.\n");
 	assert(0);
