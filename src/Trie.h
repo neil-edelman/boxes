@@ -390,74 +390,6 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 	memmove(branch, branch + 1, sizeof n0 * (--trie->branches.size - last_n0));
 }
 
-#if 0
-/** If leaf size of the `trie` is at least two when deleting `idx`, one
- internal node will be deleted, too. */
-static void PN_(remove_coda)(struct N_(Trie) *const trie, const size_t idx) {
-	size_t n0 = 0, n1 = trie->leaves.size, n0_left;
-	size_t *n0_branch;
-	assert(trie && idx < n1);
-	do {
-		n0_branch = trie->branches.data + n0;
-		n0_left   = trie_left(*n0_branch);
-		assert(n0_left <= n_remaining);/**?**/
-		if(n + n_left <= idx) { /* Left. */
-			trie_left_dec(branch);
-			i_remaining -= i_right;
-			n++;
-		} else { /* Right. */
-			i += i_left;
-			i_remaining -= i_left;
-			n += n_left;
-		}
-	} while(0);
-}
-
-static void PN_(remove)(struct N_(Trie) *const trie, const size_t idx) {
-	assert(trie && idx < trie->leaves.size
-		&& trie->branches.size + 1 == trie->leaves.size);
-	if(trie->branches.size) PN_(remove_coda)(trie, idx);
-	
-	assert(trie && idx < );
-}
-#endif
-
-#if 0
-/** Remove `key` from `trie`.
- @return Success or else `key` was not in `trie`.
- @fixme This is wrong; two descents, one to locate, one to decement left
- counts. Even better, have an index. */
-static int PN_(remove)(struct N_(Trie) *const trie,
-	const char *const key) {
-	size_t n0 = 0, n1 = trie->leaves.size, i = 0;
-	size_t n0_branch;
-	unsigned n0_byte, str_byte = 0;
-	PN_(Leaf) *i_leaf;
-	assert(trie);
-	if(n1 <= 1) { if(n1) goto check; return 0; }
-	n1--, assert(n1 == trie->branches.size);
-	while(n0 < n1) {
-		n0_branch = trie->branches.data[n0];
-		for(n0_byte = trie_bit(n0_branch) >> 3; str_byte < n0_byte; str_byte++)
-			if(key[str_byte] == '\0') return 0;
-		if(!trie_is_bit(key, trie_bit(n0_branch)))
-			n1 = ++n0 + trie_left(n0_branch);
-		else n0 += trie_left(n0_branch) + 1, i += trie_left(n0_branch) + 1;
-	}
-	assert(n0 == n1 && i < trie->leaves.size);
-check:
-	/* Now `i \in leaves` and `n0 \in branches` except empty. Check equality. */
-	if(strcmp(PN_(to_key)(trie->leaves.data[i]), key)) return 0;
-	/* Remove the data. */
-	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
-		sizeof *i_leaf * (trie->leaves.size - i)), trie->leaves.size--;
-	if(trie->branches.size)
-		memmove(trie->branches.data + n0, trie->branches.data + n0 + 1,
-		sizeof n0_branch * (trie->branches.size - n0)), trie->branches.size--;
-	return 1;
-}
-#endif
-
 /** Used in <fn:<N>TrieAdd>.
  @return `original` and `replace` are ignored and it returns false.
  @implements <typedef:<PN>Replace> */
@@ -664,6 +596,7 @@ static void PN_(unused_set)(void) {
 	PN_(add)(0, 0);
 	PN_(match)(0, 0);
 	PN_(put)(0, 0, 0);
+	PN_(remove)(0, 0);
 	PN_(false)(0);
 }
 static void PN_(unused_coda)(void) { PN_(unused_set)(); }
