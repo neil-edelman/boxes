@@ -13,15 +13,15 @@
 
 ![Example of trie.](web/trie.png)
 
-An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an index of data, each containing unique identifier which is a byte\-string ended with `NUL`\. Compatible with any one\-byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. As such, the string should not change while in a trie\. It does not store data on the strings themselves, only the positions where the strings are different\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\.
+An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a constant \(while in a trie\) unique identifier string that is associated to `N`\. The string can be any encoding with a null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It does not store data on the strings themselves, only the positions where the strings are different\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\.
 
-It has the same asymptotic run\-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, \(asymptotically, it still has to lookup to insert,\) because it has to update that index\. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash `Set` starting at about 100 items\. However, advantages of this data structure over a hash include,
+It has the same asymptotic run\-time as keeping a sorted array of pointers, but it takes twice the space because it keeps an index; lookup is faster and much more cache\-friendly, likewise insertion and deletion are slower, because the need to update the index\. A `Trie` performs asymptotically worse than a good randomised hash table, but,
 
- * a stable pointer suffices instead of a node probably means one less pointer indirection on object\-oriented structures because it is a one\-to\-one mapping;
+ * because it is a one\-to\-one mapping, a stable pointer suffices instead of a node containing extra data;
  * for the same reason, one can insert the same data into multiple tries;
- * it is naturally packed and in order by bit\-wise dictionary on key;
- * it is simpler and doesn't need a hash function;
- * it is easy to search for like keys\.
+ * naturally packed and in order by bit\-wise dictionary on key string;
+ * deterministic and doesn't need a hash function;
+ * easy to search for like keys\.
 
 `Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
@@ -38,7 +38,7 @@ It has the same asymptotic run\-time as keeping a sorted array of pointers, but 
  * Dependancies:  
    [Array.h](../Array/)
  * Caveat:  
-   Have a replace; much faster then remove and add\. Have remove\.
+   Have a replace; much faster then remove and add\. Create a trie from existing data much faster\.
  * See also:  
    [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
@@ -221,7 +221,7 @@ Adds `data` to `trie` if absent\.
    If null, returns null\.
  * Return:  
    Success\. If data with the same key is present, returns true but doesn't add `data`\.
- * Exceptional return: realloc, ERANGE  
+ * Exceptional return: realloc  
    There was an error with a re\-sizing\.
  * Exceptional return: ERANGE  
    The key is greater then 510 characters or the trie has reached it's maximum size\.
@@ -245,7 +245,7 @@ Updates or adds `data` to `trie`\.
    If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite\.
  * Return:  
    Success\.
- * Exceptional return: realloc, ERANGE  
+ * Exceptional return: realloc  
    There was an error with a re\-sizing\.
  * Exceptional return: ERANGE  
    The key is greater then 510 characters or the trie has reached it's maximum size\.

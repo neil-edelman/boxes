@@ -5,29 +5,27 @@
 
  ![Example of trie.](../web/trie.png)
 
- An <tag:<N>Trie> is an index of data, each containing unique identifier which
- is a byte-string ended with `NUL`. Compatible with any one-byte-encoding with
- a null-terminator; in particular, `C` strings, including
- [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). As such,
- the string should not change while in a trie. It does not store data on the
- strings themselves, only the positions where the strings are different. It can
- be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
+ An <tag:<N>Trie> is an array of pointers-to-`N` and index on a constant (while
+ in a trie) unique identifier string that is associated to `N`. The string can
+ be any encoding with a null-terminator; in particular, `C` native strings,
+ including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
+ It does not store data on the strings themselves, only the positions where the
+ strings are different. It can be seen as a
+ [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
  <Morrison, 1968 PATRICiA>.
 
  It has the same asymptotic run-time as keeping a sorted array of pointers, but
- lookup is faster because it keeps an index; likewise insertion is slower,
- (asymptotically, it still has to lookup to insert,) because it has to update
- that index. Experimentally, insertion performs linearly worse, and lookup
- performs logarithmically worse, then a hash `Set` starting at about 100 items.
- However, advantages of this data structure over a hash include,
+ it takes twice the space because it keeps an index; lookup is faster and much
+ more cache-friendly, likewise insertion and deletion are slower, because the
+ need to update the index. A `Trie` performs asymptotically worse than a good
+ randomised hash table, but,
 
- \* a stable pointer suffices instead of a node probably means one less pointer
-    indirection on object-oriented structures because it is a one-to-one
-    mapping;
+ \* because it is a one-to-one mapping, a stable pointer suffices instead of a
+    node containing extra data;
  \* for the same reason, one can insert the same data into multiple tries;
- \* it is naturally packed and in order by bit-wise dictionary on key;
- \* it is simpler and doesn't need a hash function;
- \* it is easy to search for like keys.
+ \* naturally packed and in order by bit-wise dictionary on key string;
+ \* deterministic and doesn't need a hash function;
+ \* easy to search for like keys.
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
  with `errno`. The parameters are `#define` preprocessor macros, and are all
@@ -50,7 +48,7 @@
  satisfying <typedef:<PN>Action>. Requires that `NDEBUG` not be defined.
 
  @fixme Have a replace; much faster then remove and add.
- @fixme Have remove.
+ @fixme Create a trie from existing data much faster.
  @depend [Array.h](../../Array/)
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
@@ -78,7 +76,7 @@ typedef size_t TrieBranch;
 #define ARRAY_CHILD
 #include "Array.h"
 
-/* 12 makes the maximum string length is 510 and the maximum size of a trie,
+/* 12 makes the maximum string length 510 and the maximum size of a trie,
  64-bits: 4503599627370495, 32-bits: 1048575, and 16-bits: 15. */
 #define TRIE_BITS 12
 #define TRIE_BIT_MAX ((1 << TRIE_BITS) - 1)
@@ -97,15 +95,15 @@ static unsigned trie_bit(const TrieBranch branch)
 /** @return Unpacks left sub-branches from `branch`. */
 static size_t trie_left(const TrieBranch branch) { return branch >> TRIE_BITS; }
 
-/** Increments the left `branch` count. Does not check for overflow. */
-static void trie_left_inc(size_t *const branch) { *branch += TRIE_BIT_MAX + 1; }
+/** Increments the left `branch` count. */
+static void trie_left_inc(size_t *const branch)
+	{ assert(*branch < ~(size_t)TRIE_BIT_MAX); *branch += TRIE_BIT_MAX + 1; }
 
 /** Decrements the left `branch` count. */
 static void trie_left_dec(size_t *const branch)
 	{ assert(*branch > TRIE_BIT_MAX), *branch -= TRIE_BIT_MAX + 1; }
 
-/** Compares `bit` from the string `a` against `b`. Does not check for the end
- of the string.
+/** Compares `bit` from the string `a` against `b`.
  @return In the `bit` position, positive if `a` is after `b`, negative if `a`
  is before `b`, or zero if `a` is equal to `b`. */
 static int trie_strcmp_bit(const char *const a, const char *const b,
@@ -114,8 +112,7 @@ static int trie_strcmp_bit(const char *const a, const char *const b,
 	return (a[byte] & mask) - (b[byte] & mask);
 }
 
-/** From string `a`, extract `bit` and return zero or non-zero if one. Does not
- check for the end of the string. */
+/** From string `a`, extract `bit` and return zero or non-zero if one. */
 static unsigned trie_is_bit(const char *const a, const unsigned bit) {
 	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
 	return a[byte] & mask;
@@ -139,7 +136,7 @@ static unsigned trie_is_bit(const char *const a, const unsigned bit) {
 #define TRIE_TYPE const char
 #define TRIE_KEY &trie_raw
 #ifndef TRIE_RAW /* <!-- !raw */
-#define TRIE_RAW /* Idempotent. */
+#define TRIE_RAW /* Idempotent function. */
 /** @return The `key`, which is the string itself in the case where one doesn't
  specify `TRIE_TYPE`. */
 static const char *trie_raw(const char *const key) { return key; }
@@ -223,8 +220,8 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 	PN_(trie)(trie);
 }
 
-/** Add `data` to `trie`. Assumes that the key of `data` is not the same as any
- in `trie`; it does not check for the end of the string.
+/** Add `data` to `trie`. Must not be any key of trie that is the same; _ie_ it
+ does not check for the end of the string.
  @order \Theta(`nodes`)
  @throws[ERANGE] At capacity or string too long.
  @throws[realloc] */
@@ -307,7 +304,7 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	return trie->leaves.data + i;
 }
 
-/** @return `key` is `trie` that is an exact match or null. */
+/** @return `key` is an element of `trie` that is an exact match or null. */
 static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	PN_(Type) **pmatch;
@@ -375,9 +372,8 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 /** Used in <fn:<N>TrieAdd>.
  @return `original` and `replace` are ignored and it returns false.
  @implements <typedef:<PN>Replace> */
-static int PN_(false)(PN_(Type) *original, PN_(Type) *replace) {
-	return (void)(original), (void)(replace), 0;
-}
+static int PN_(false)(PN_(Type) *original, PN_(Type) *replace)
+	{ return (void)(original), (void)(replace), 0; }
 
 
 #ifndef TRIE_CHILD /* <!-- !sub-type */
@@ -435,7 +431,7 @@ static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
  @param[trie, data] If null, returns null.
  @return Success. If data with the same key is present, returns true but
  doesn't add `data`.
- @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
  it's maximum size.
  @order \O(`size`)
@@ -449,7 +445,7 @@ static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
  @param[eject] If not null, on success it will hold the overwritten value or
  a pointer-to-null if it did not overwrite.
  @return Success.
- @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
  it's maximum size.
  @order \Theta(`size`)
