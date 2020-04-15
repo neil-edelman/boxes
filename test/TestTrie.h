@@ -151,6 +151,9 @@ static void PN_(test)(void) {
 	assert(!N_(TrieAdd)(0, 0));
 	assert(!N_(TrieAdd)(0, &es[0].data));
 	assert(!N_(TrieAdd)(&trie, 0));
+	assert(!N_(TrieRemove)(0, 0));
+	assert(!N_(TrieRemove)(&trie, 0));
+	assert(!N_(TrieRemove)(&trie, ""));
 	errno = 0;
 	for(n = 0; n < es_size; n++)
 		es[n].is_in = N_(TrieAdd)(&trie, &es[n].data);
@@ -160,7 +163,8 @@ static void PN_(test)(void) {
 	PN_(print)(&trie);
 	printf("Now trie is %s, null is %s.\n", N_(TrieToString)(&trie),
 		N_(TrieToString)(0));
-	PN_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "Trie.gv");
+	PN_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "Trie-test.gv");
+	/*...*/
 	ret = N_(TrieAdd)(&trie, &es[0].data); /* Doesn't add. */
 	assert(ret && size == N_(TrieSize)(&trie));
 	ret = N_(TriePut)(0, 0, 0), assert(!ret);
