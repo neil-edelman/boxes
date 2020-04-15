@@ -285,9 +285,9 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	while(n0 < n1) {
 		branch = trie->branches.data[n0];
 		bit = trie_bit(branch);
-		left = trie_left(branch);
 		for(n0_byte = bit >> 3; str_byte < n0_byte; str_byte++)
 			if(key[str_byte] == '\0') return 0;
+		left = trie_left(branch);
 		if(!trie_is_bit(key, bit)) n1 = ++n0 + left;
 		else n0 += left + 1, i += left + 1;
 	}
