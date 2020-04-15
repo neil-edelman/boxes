@@ -13,15 +13,7 @@
 
 ![Example of trie.](web/trie.png)
 
-An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a constant \(while in a trie\) unique identifier string that is associated to `N`\. The string can be any encoding with a null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It does not store data on the strings themselves, only the positions where the strings are different\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\.
-
-It has the same asymptotic run\-time as keeping a sorted array of pointers, but it takes twice the space because it keeps an index; lookup is faster and much more cache\-friendly, likewise insertion and deletion are slower, because the need to update the index\. A `Trie` performs asymptotically worse than a good randomised hash table, but,
-
- * because it is a one\-to\-one mapping, a stable pointer suffices instead of a node containing extra data;
- * for the same reason, one can insert the same data into multiple tries;
- * naturally packed and in order by bit\-wise dictionary on key string;
- * deterministic and doesn't need a hash function;
- * easy to search for like keys\.
+A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. The string can be any encoding with a null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA) or [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only the index does not store data on the strings themselves, only the positions where the strings are different\. It has the same asymptotic run\-time as keeping a sorted array of pointers, but it takes twice the space because it keeps an index; lookup is faster and much more cache\-friendly, likewise insertion and deletion are slower, because the need to update the index\.
 
 `Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 

@@ -5,27 +5,17 @@
 
  ![Example of trie.](../web/trie.png)
 
- An <tag:<N>Trie> is an array of pointers-to-`N` and index on a constant (while
- in a trie) unique identifier string that is associated to `N`. The string can
- be any encoding with a null-terminator; in particular, `C` native strings,
- including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
- It does not store data on the strings themselves, only the positions where the
- strings are different. It can be seen as a
- [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or
- <Morrison, 1968 PATRICiA>.
-
- It has the same asymptotic run-time as keeping a sorted array of pointers, but
- it takes twice the space because it keeps an index; lookup is faster and much
- more cache-friendly, likewise insertion and deletion are slower, because the
- need to update the index. A `Trie` performs asymptotically worse than a good
- randomised hash table, but,
-
- \* because it is a one-to-one mapping, a stable pointer suffices instead of a
-    node containing extra data;
- \* for the same reason, one can insert the same data into multiple tries;
- \* naturally packed and in order by bit-wise dictionary on key string;
- \* deterministic and doesn't need a hash function;
- \* easy to search for like keys.
+ A <tag:<N>Trie> is an array of pointers-to-`N` and index on a unique
+ identifier string that is associated to `N`. The string can be any encoding
+ with a null-terminator; in particular, `C` native strings, including
+ [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). It can
+ be seen as <Morrison, 1968 PATRICiA> or
+ [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only the index
+ does not store data on the strings themselves, only the positions where the
+ strings are different. It has the same asymptotic run-time as keeping a sorted
+ array of pointers, but it takes twice the space because it keeps an index;
+ lookup is faster and much more cache-friendly, likewise insertion and deletion
+ are slower, because the need to update the index.
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
  with `errno`. The parameters are `#define` preprocessor macros, and are all
@@ -76,8 +66,8 @@ typedef size_t TrieBranch;
 #define ARRAY_CHILD
 #include "Array.h"
 
-/* 12 makes the maximum string length 510 and the maximum size of a trie,
- 64-bits: 4503599627370495, 32-bits: 1048575, and 16-bits: 15. */
+/* 12 makes the maximum string length 510 and the maximum size of a trie is
+ `size_t` 64-bits: 4503599627370495, 32-bits: 1048575, and 16-bits: 15. */
 #define TRIE_BITS 12
 #define TRIE_BIT_MAX ((1 << TRIE_BITS) - 1)
 #define TRIE_LEFT_MAX (((size_t)1 << ((sizeof(size_t) << 3) - TRIE_BITS)) - 1)
@@ -97,7 +87,7 @@ static size_t trie_left(const TrieBranch branch) { return branch >> TRIE_BITS; }
 
 /** Increments the left `branch` count. */
 static void trie_left_inc(size_t *const branch)
-	{ assert(*branch < ~(size_t)TRIE_BIT_MAX); *branch += TRIE_BIT_MAX + 1; }
+	{ assert(*branch < ~(size_t)TRIE_BIT_MAX), *branch += TRIE_BIT_MAX + 1; }
 
 /** Decrements the left `branch` count. */
 static void trie_left_dec(size_t *const branch)
@@ -220,8 +210,8 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 	PN_(trie)(trie);
 }
 
-/** Add `data` to `trie`. Must not be any key of trie that is the same; _ie_ it
- does not check for the end of the string.
+/** Add `data` to `trie`. Must not be the same as any key of trie; _ie_ it does
+ not check for the end of the string.
  @order \Theta(`nodes`)
  @throws[ERANGE] At capacity or string too long.
  @throws[realloc] */
@@ -286,19 +276,20 @@ insert:
  is not in `trie`. */
 static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	const char *const key) {
-	size_t n0 = 0, n1 = trie->leaves.size, i = 0;
-	size_t n0_branch;
-	unsigned n0_byte, str_byte = 0;
+	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
+	TrieBranch branch;
+	unsigned n0_byte, str_byte = 0, bit;
 	assert(trie && key);
 	if(n1 <= 1) return n1 ? trie->leaves.data : 0; /* Special case. */
 	n1--, assert(n1 == trie->branches.size);
 	while(n0 < n1) {
-		n0_branch = trie->branches.data[n0];
-		for(n0_byte = trie_bit(n0_branch) >> 3; str_byte < n0_byte; str_byte++)
+		branch = trie->branches.data[n0];
+		bit = trie_bit(branch);
+		left = trie_left(branch);
+		for(n0_byte = bit >> 3; str_byte < n0_byte; str_byte++)
 			if(key[str_byte] == '\0') return 0;
-		if(!trie_is_bit(key, trie_bit(n0_branch)))
-			n1 = ++n0 + trie_left(n0_branch);
-		else n0 += trie_left(n0_branch) + 1, i += trie_left(n0_branch) + 1;
+		if(!trie_is_bit(key, bit)) n1 = ++n0 + left;
+		else n0 += left + 1, i += left + 1;
 	}
 	assert(n0 == n1 && i < trie->leaves.size);
 	return trie->leaves.data + i;
