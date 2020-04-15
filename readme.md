@@ -13,7 +13,7 @@
 
 ![Example of trie.](web/trie.png)
 
-An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an index of data, each containing unique byte\-strings ended with `NUL`\. Compatible with any one\-byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. As such, the string should not change while in a trie\. It does not store data on the strings themselves, only the positions where the strings are different\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\.
+An [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an index of data, each containing unique identifier which is a byte\-string ended with `NUL`\. Compatible with any one\-byte\-encoding with a null\-terminator; in particular, `C` strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. As such, the string should not change while in a trie\. It does not store data on the strings themselves, only the positions where the strings are different\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) or [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA)\.
 
 It has the same asymptotic run\-time as keeping a sorted array of pointers, but lookup is faster because it keeps an index; likewise insertion is slower, \(asymptotically, it still has to lookup to insert,\) because it has to update that index\. Experimentally, insertion performs linearly worse, and lookup performs logarithmically worse, then a hash `Set` starting at about 100 items\. However, advantages of this data structure over a hash include,
 
@@ -85,7 +85,7 @@ Only used if `TRIE_TEST`\.
 
 To initialise it to an idle state, see [&lt;N&gt;Trie](#user-content-fn-8fc8a233), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
-A full binary tree stored semi\-implicitly in two arrays: one as the branches backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves\. We take two arrays because it speeds up iteration as the leaves are also an array sorted by key, it is &#927;\(1\) instead of &#927;\(log `items`\) to get an example for comparison in insert, and experimetally it is slightly faster\.
+A full binary tree stored semi\-implicitly in two arrays: a private one as branches backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves\.
 
 ![States.](web/states.png)
 
@@ -114,6 +114,8 @@ A full binary tree stored semi\-implicitly in two arrays: one as the branches ba
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-85d52810">&lt;N&gt;TriePut</a></td><td>trie, data, eject</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-592f827e">&lt;N&gt;TriePolicyPut</a></td><td>trie, data, eject, replace</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-42029eff">&lt;N&gt;TrieRemove</a></td><td>trie, key</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-f6f3fdef">&lt;N&gt;TrieToString</a></td><td>trie</td></tr>
 
@@ -269,10 +271,28 @@ Adds `data` to `trie` only if the entry is absent or if calling `replace` return
    Called on collision and only replaces it if the function returns true\. If null, it is semantically equivalent to [&lt;N&gt;TriePut](#user-content-fn-85d52810)\.
  * Return:  
    Success\.
- * Exceptional return: realloc, ERANGE  
+ * Exceptional return: realloc  
    There was an error with a re\-sizing\.
  * Exceptional return: ERANGE  
    The key is greater then 510 characters or the trie has reached it's maximum size\.
+ * Order:  
+   &#927;\(`size`\)
+
+
+
+
+### <a id = "user-content-fn-42029eff" name = "user-content-fn-42029eff">&lt;N&gt;TrieRemove</a> ###
+
+<code>static int <strong>&lt;N&gt;TrieRemove</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code>
+
+Remove `key` from `trie`\.
+
+ * Parameter: _trie_  
+   If null, returns false\.
+ * Parameter: _key_  
+   If null, returns false\.
+ * Return:  
+   Success or else `key` was not in `trie`\.
  * Order:  
    &#927;\(`size`\)
 

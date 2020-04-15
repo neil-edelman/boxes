@@ -345,7 +345,7 @@ static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	return 1;
 }
 
-/** Remove leaf `idx` from `trie`. */
+/** Remove leaf index `i` from `trie`. */
 static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 	size_t n0 = 0, n1 = trie->branches.size, last_n0, left;
 	size_t *branch;
@@ -467,7 +467,7 @@ static int N_(TriePut)(struct N_(Trie) *const trie,
  @param[replace] Called on collision and only replaces it if the function
  returns true. If null, it is semantically equivalent to <fn:<N>TriePut>.
  @return Success.
- @throws[realloc, ERANGE] There was an error with a re-sizing.
+ @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
  it's maximum size.
  @order \O(`size`)
