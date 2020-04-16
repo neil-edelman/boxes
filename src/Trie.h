@@ -9,13 +9,12 @@
  identifier string that is associated to `N`. The string can be any encoding
  with a null-terminator; in particular, `C` native strings, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). It can
- be seen as <Morrison, 1968 PATRICiA> or
- [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only the index
- does not store data on the strings themselves, only the positions where the
- strings are different. It has the same asymptotic run-time as keeping a sorted
- array of pointers, but it takes twice the space because it keeps an index;
- lookup is faster and much more cache-friendly, likewise insertion and deletion
- are slower, because the need to update the index.
+ be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree);
+ specifically <Morrison, 1968 PATRICiA>, in that the trie only stores data on
+ the positions where the strings are different. It has the same asymptotic
+ run-time as keeping a sorted array of pointers, but it takes twice the space
+ because it keeps an index; lookup is faster and more cache-friendly, likewise
+ insertion and deletion are slower because the need to update the index.
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
  with `errno`. The parameters are `#define` preprocessor macros, and are all
@@ -256,7 +255,7 @@ insert:
 	assert(n0 <= n1 && n1 <= trie->branches.size && n0_key
 		&& i <= trie->leaves.size);
 	if(cmp < 0) left = 0;
-	else i += n1 - n0 + 1, left = (unsigned)(n1 - n0); /* Cast safe by above. */
+	else i += n1 - n0 + 1, left = n1 - n0;
 
 	leaf = trie->leaves.data + i;
 	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
@@ -314,6 +313,7 @@ static void PN_(query_start)(struct N_(TrieQuery) *const q,
 
 static PN_(Type) *PN_(query_next)(struct N_(TrieQuery) *const q) {
 	assert(q && q->trie && q->query && q->used <= q->edit);
+	
 	return 0;
 }
 
