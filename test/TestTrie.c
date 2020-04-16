@@ -239,6 +239,13 @@ static void test_basic_trie_str() {
 	printf("\"quxx\": %s\n", n ? *n : "null");
 	n = trie_Str_match(&trie, "quux");
 	printf("\"quux\": %s\n", n ? *n : "null");
+	{
+		struct StrTrieQuery q;
+		const char *next, *const query = "quxx";
+		trie_Str_query_start(&q, &trie, query, 2);
+		while((next = trie_Str_query_next(&q)))
+			printf("%s: %s\n", query, next);
+	}
 	goto finally;
 
 catch:

@@ -244,10 +244,9 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		n0 < n1) {
 		for(n0_bit = trie_bit(*branch); bit < n0_bit; bit++)
 			if((cmp = trie_strcmp_bit(data_key, n0_key, bit)) != 0) goto insert;
-		/* Follow the left or right branch; update the left. */
-		if(!trie_is_bit(data_key, bit))
-			trie_left_inc(branch), n1 = n0++ + trie_left(*branch);
-		else n0 += trie_left(*branch) + 1, i += trie_left(*branch) + 1;
+		left = trie_left(*branch) + 1;
+		if(!trie_is_bit(data_key, bit)) trie_left_inc(branch), n1 = n0++ + left;
+		else n0 += left, i += left;
 	}
 
 	/* Leaf. */
@@ -293,6 +292,29 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	}
 	assert(n0 == n1 && i < trie->leaves.size);
 	return trie->leaves.data + i;
+}
+
+struct N_(TrieQuery) {
+	const struct N_(Trie) *trie;
+	const char *query;
+	size_t i;
+	unsigned edit, used;
+};
+
+static void PN_(query_start)(struct N_(TrieQuery) *const q,
+	const struct N_(Trie) *const trie, const char *const query,
+	const unsigned edit) {
+	assert(q && trie && query);
+	q->trie = trie;
+	q->query = query;
+	q->i = 0;
+	q->edit = edit;
+	q->used = 0;
+}
+
+static PN_(Type) *PN_(query_next)(struct N_(TrieQuery) *const q) {
+	assert(q && q->trie && q->query && q->used <= q->edit);
+	return 0;
 }
 
 /** @return `key` is an element of `trie` that is an exact match or null. */
