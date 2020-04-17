@@ -7,14 +7,15 @@
 
  A <tag:<N>Trie> is an array of pointers-to-`N` and index on a unique
  identifier string that is associated to `N`. The string can be any encoding
- with a null-terminator; in particular, `C` native strings, including
+ with a byte null-terminator; in particular, `C` native strings, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). It can
  be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree);
  specifically <Morrison, 1968 PATRICiA>, in that the trie only stores data on
  the positions where the strings are different. It has the same asymptotic
- run-time as keeping a sorted array of pointers, but it takes twice the space
- because it keeps an index; lookup is faster and more cache-friendly, likewise
- insertion and deletion are slower because the need to update the index.
+ run-time as keeping a sorted array of pointers and doing a binary search, but
+ because it keeps an index, it takes twice the space; lookup is faster and more
+ cache-friendly, likewise insertion and deletion are slower because the need to
+ update the index.
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
  with `errno`. The parameters are `#define` preprocessor macros, and are all
@@ -36,8 +37,8 @@
  <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PN>Action>. Requires that `NDEBUG` not be defined.
 
- @fixme Have a replace; much faster then remove and add.
- @fixme Create a trie from existing data much faster.
+ @fixme Create a trie much faster from existing data and have a merge.
+ @fixme Have a replace; potentially much less wastful then remove and add.
  @depend [Array.h](../../Array/)
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
@@ -171,8 +172,8 @@ typedef int (*PN_(Replace))(PN_(Type) *original, PN_(Type) *replace);
 typedef PN_(Type) *PN_(Leaf);
 
 /* Trie leaf array is sorted by key. Private code follows a convention that in
- `branches` (internal nodes) the subscripts begin by `n` and in `leaves`
- (external nodes) it begins with `i`. */
+ `branches` (internal nodes) have `n` subscripts and `leaves` (external nodes)
+ have `i` subscripts. */
 #define ARRAY_NAME PN_(Leaf)
 #define ARRAY_TYPE PN_(Leaf)
 #define ARRAY_CHILD
@@ -184,7 +185,8 @@ typedef PN_(Type) *PN_(Leaf);
  (`C99`), or being `static`.
 
  A full binary tree stored semi-implicitly in two arrays: a private one as
- branches backed by one as pointers-to-<typedef:<PN>Type> as leaves.
+ branches backed by one as pointers-to-<typedef:<PN>Type> as leaves in
+ numerically-sorted order.
 
  ![States.](../web/states.png) */
 struct N_(Trie);
@@ -313,7 +315,6 @@ static void PN_(query_start)(struct N_(TrieQuery) *const q,
 
 static PN_(Type) *PN_(query_next)(struct N_(TrieQuery) *const q) {
 	assert(q && q->trie && q->query && q->used <= q->edit);
-	
 	return 0;
 }
 
