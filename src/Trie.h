@@ -232,7 +232,7 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	if(!leaf_size) return assert(!trie->branches.size),
 		(leaf = PT_(new)(&trie->leaves)) ? *leaf = data, 1 : 0;
 
-	/* Non-empty; conservative maximally unbalanced trie. */
+	/* Non-empty; verify conservative maximally unbalanced trie. */
 	assert(leaf_size == branch_size + 1); /* Waste `size_t`. */
 	if(leaf_size >= TRIE_LEFT_MAX) return errno = ERANGE, 0;
 	if(!PT_(reserve)(&trie->leaves, leaf_size + 1)
@@ -299,7 +299,7 @@ struct N_(TrieQuery) {
 	const struct N_(Trie) *trie;
 	const char *query;
 	size_t i;
-	unsigned edit, used;
+	unsigned edit, used, at;
 };
 
 static void PN_(query_start)(struct N_(TrieQuery) *const q,
@@ -311,10 +311,30 @@ static void PN_(query_start)(struct N_(TrieQuery) *const q,
 	q->i = 0;
 	q->edit = edit;
 	q->used = 0;
+	q->at = 0;
 }
 
+/** Performs a DFS of the tree. */
 static PN_(Type) *PN_(query_next)(struct N_(TrieQuery) *const q) {
+#if 0
+	TrieBranch *branch;
+	size_t n0 = 0, i = 0;
 	assert(q && q->trie && q->query && q->used <= q->edit);
+
+	/* Internal nodes. */
+	while(branch = trie->branches.data + n0,
+		n0_key = PN_(to_key)(trie->leaves.data[i]),
+		n0 < n1) {
+		for(n0_bit = trie_bit(*branch); bit < n0_bit; bit++)
+			if((cmp = trie_strcmp_bit(data_key, n0_key, bit)) != 0) goto insert;
+		left = trie_left(*branch) + 1;
+		if(!trie_is_bit(data_key, bit)) trie_left_inc(branch), n1 = n0++ + left;
+		else n0 += left, i += left;
+	}
+
+	/* Leaf. */
+	while((cmp = trie_strcmp_bit(data_key, n0_key, bit)) == 0) bit++;
+#endif
 	return 0;
 }
 
@@ -441,6 +461,12 @@ static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	return trie && key && (leaf = PN_(get)(trie, key)) ? *leaf : 0;
 }
 
+static PN_(Type) *N_(TrieClose)(const struct N_(Trie) *const trie,
+	const char *const key) {
+	PN_(Leaf) *leaf;
+	return trie && key && (leaf = PN_(match)(trie, key)) ? *leaf : 0;
+}
+
 /** Adds `data` to `trie` if absent.
  @param[trie, data] If null, returns null.
  @return Success. If data with the same key is present, returns true but
@@ -559,6 +585,7 @@ static void PN_(unused_set)(void) {
 	N_(TrieArray)(0);
 	N_(TrieClear)(0);
 	N_(TrieGet)(0, 0);
+	N_(TrieClose)(0, 0);
 	N_(TrieAdd)(0, 0);
 	N_(TriePut)(0, 0, 0);
 	N_(TriePolicyPut)(0, 0, 0, 0);

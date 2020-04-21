@@ -125,7 +125,9 @@ static void pointer_to_string(const char *const*const ps,
 
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
-	const char **n;
+	const char *words[] = { "", "foo", "qux", "quxx", "quux" };
+	const size_t words_size = sizeof words / sizeof *words;
+	size_t i;
 
 	assert(StrTrieRemove(&trie, "") == 0);
 
@@ -229,23 +231,15 @@ static void test_basic_trie_str() {
 
 	assert(StrTrieSize(&trie) == 6);
 
-	n = trie_Str_match(&trie, "");
-	printf("\"\": %s\n", n ? *n : "null");
-	n = trie_Str_match(&trie, "foo");
-	printf("\"foo\": %s\n", n ? *n : "null");
-	n = trie_Str_match(&trie, "qux");
-	printf("\"qux\": %s\n", n ? *n : "null");
-	n = trie_Str_match(&trie, "quxx");
-	printf("\"quxx\": %s\n", n ? *n : "null");
-	n = trie_Str_match(&trie, "quux");
-	printf("\"quux\": %s\n", n ? *n : "null");
-	{
+	for(i = 0; i < words_size; i++)
+		printf("\"%s\": %s\n", words[i], StrTrieClose(&trie, words[i]));
+	/*{
 		struct StrTrieQuery q;
 		const char *next, *const query = "quxx";
 		trie_Str_query_start(&q, &trie, query, 2);
 		while((next = trie_Str_query_next(&q)))
 			printf("%s: %s\n", query, next);
-	}
+	}*/
 	goto finally;
 
 catch:
