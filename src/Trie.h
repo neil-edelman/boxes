@@ -48,7 +48,7 @@
  @cf [Pool](https://github.com/neil-edelman/Pool)
  @cf [Set](https://github.com/neil-edelman/Set) */
 
-#include <string.h> /* size_t memmove strcmp */
+#include <string.h> /* size_t memmove strcmp memcpy */
 #include <limits.h> /* UINT_MAX */
 
 
@@ -211,6 +211,37 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 	PN_(trie)(trie);
 }
 
+/** Comparison `a` _vs_ `b` helper. */
+static int PN_(compar)(PN_(Type) *const*const a, PN_(Type) *const*const b)
+	{ return strcmp(PN_(to_key)(*a), PN_(to_key)(*b)); }
+
+/** Comparison `a` _vs_ `b` for <fn:<PN>init>.
+ @implements `qsort` */
+static int PN_(vcompar)(const void *a, const void *b)
+	{ return PN_(compar)(a, b); }
+
+/** @return Success initialising `trie` with `a` of size `a_size`. */
+static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
+	const size_t a_size, const PN_(Replace) replace) {
+	size_t i;
+	PN_(Leaf) *leaves;
+	assert(trie && !trie->leaves.size && !trie->branches.size
+		&& a && a_size && replace);
+	for(i = 0; i < a_size; i++)
+		printf("array[%lu] \"%s\"\n", i, PN_(to_key)(a[i]));
+	if(!PT_(reserve)(&trie->leaves, a_size)) return 0;
+	leaves = trie->leaves.data;
+	memcpy(leaves, a, sizeof *a * a_size);
+	qsort(leaves, a_size, sizeof *a, PN_(vcompar));
+	for(i = 0; i < a_size; i++)
+		printf("data[%lu] \"%s\"\n", i, PN_(to_key)(leaves[i]));
+	for(i = 0; i < a_size - 1; i++) if(strcmp(PN_(to_key)(leaves[i]),
+		PN_(to_key)(leaves[i + 1])) >= 0) return 0;
+	/*...*/
+	printf("checked\n");
+	return 0;
+}
+
 /** Add `data` to `trie`. Must not be the same as any key of trie; _ie_ it does
  not check for the end of the string.
  @order \Theta(`nodes`)
@@ -257,7 +288,7 @@ insert:
 	assert(n0 <= n1 && n1 <= trie->branches.size && n0_key
 		&& i <= trie->leaves.size);
 	if(cmp < 0) left = 0;
-	else i += n1 - n0 + 1, left = n1 - n0;
+	else left = n1 - n0, i += left + 1;
 
 	leaf = trie->leaves.data + i;
 	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
@@ -295,6 +326,7 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	return trie->leaves.data + i;
 }
 
+#if 0
 struct N_(TrieQuery) {
 	const struct N_(Trie) *trie;
 	const char *query;
@@ -337,6 +369,7 @@ static PN_(Type) *PN_(query_next)(struct N_(TrieQuery) *const q) {
 #endif
 	return 0;
 }
+#endif
 
 /** @return `key` is an element of `trie` that is an exact match or null. */
 static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
@@ -425,6 +458,21 @@ static void N_(Trie_)(struct N_(Trie) *const trie)
 static void N_(Trie)(struct N_(Trie) *const trie)
 	{ if(trie) PN_(trie)(trie); }
 
+/** Initialises `trie` from an `array` of pointers-to-`<N>` of `array_size`.
+ @param[trie] If null, does nothing.
+ @param[array] If null, initialises `trie` to empty.
+ @return Success.
+ @throws[realloc]
+ @order \O(`array_size`)
+ @allow */
+static int N_(TrieFromArray)(struct N_(Trie) *const trie,
+	PN_(Type) *const*const array, const size_t array_size,
+	const PN_(Replace) replace) {
+	return trie ? (PN_(trie)(trie), !array || !array_size) ? 1
+		: PN_(init)(trie, array, array_size, replace ? replace : PN_(false))
+		: 0;
+}
+
 /** @param[trie] If null, returns zero;
  @return The number of elements in the `trie`.
  @order \Theta(1)
@@ -454,6 +502,9 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
 /** @param[trie, key] If null, returns null.
  @return The <typedef:<PN>Type> with `key` in `trie` or null no such item
  exists.
+ @order \O(|`key`|). Specifically, faster then a tree, and deterministic,
+ however, logarithmically slower then a good hash table for sizes not fitting
+ in cache, <Thareja 2011, Data>.
  @allow */
 static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	const char *const key) {
@@ -461,6 +512,10 @@ static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	return trie && key && (leaf = PN_(get)(trie, key)) ? *leaf : 0;
 }
 
+/** @param[trie, key] If null, returns null.
+ @return The <typedef:<PN>Type> reasonably with the Levenson distance closest
+ to `key` in `trie`.
+ @allow */
 static PN_(Type) *N_(TrieClose)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	PN_(Leaf) *leaf;
@@ -488,7 +543,7 @@ static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
  @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
  it's maximum size.
- @order \Theta(`size`)
+ @order \O(`size`)
  @allow */
 static int N_(TriePut)(struct N_(Trie) *const trie,
 	PN_(Type) *const data, PN_(Type) **const eject) {
@@ -581,6 +636,7 @@ static void PN_(unused_coda)(void);
 static void PN_(unused_set)(void) {
 	N_(Trie_)(0);
 	N_(Trie)(0);
+	N_(TrieFromArray)(0, 0, 0, 0);
 	N_(TrieSize)(0);
 	N_(TrieArray)(0);
 	N_(TrieClear)(0);

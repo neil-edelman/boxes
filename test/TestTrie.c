@@ -11,7 +11,7 @@
 #include <errno.h>  /* errno */
 #include <string.h> /* strncpy */
 #include <time.h>   /* clock time */
-#include <math.h>   /* sqrt NAN? */
+#include <math.h>   /* sqrt NAN? for stddev */
 #ifndef NAN
 #define NAN (0./0.)
 #endif
@@ -23,15 +23,7 @@ extern const size_t parole_size;
 
 /** Just a placeholder to get `graph()`. Don't call <fn:StrTrieTest> it will
  crash. */
-static void fill_str(const char *str) {
-	/*switch(rand() / (RAND_MAX / 4 + 1)) {
-	case 0: str = "A"; break;
-	case 1: str = "B"; break;
-	case 2: str = "C"; break;
-	case 3: str = "D"; break;
-	} <- doesn't work; local modifications only. */
-	/* nothing */ (void)(str);
-}
+static void fill_str(const char *str) { /* nothing */ (void)(str); }
 
 #define TRIE_NAME Str
 #define TRIE_TEST &fill_str
@@ -233,6 +225,9 @@ static void test_basic_trie_str() {
 
 	for(i = 0; i < words_size; i++)
 		printf("\"%s\": %s\n", words[i], StrTrieClose(&trie, words[i]));
+
+	StrTrie_(&trie);
+	if(!StrTrieFromArray(&trie, words, words_size, 0)) goto catch;
 	/*{
 		struct StrTrieQuery q;
 		const char *next, *const query = "quxx";
@@ -287,10 +282,6 @@ static double m_stddev(const struct Measure *const measure)
 static int timing_comparison(void) {
 	struct StrTrie trie = TRIE_IDLE;
 	struct StrArray array = ARRAY_IDLE;
-	/* Linked hash map -- too much code.
-	struct Str24EntryPool entries = POOL_IDLE;
-	struct Str24Set set = SET_IDLE;
-	struct Str24List list;*/
 	struct StringSet set = SET_IDLE;
 	struct StringElementPool set_pool = POOL_IDLE;
 	size_t i, r, s = 1, e, replicas = 5;
