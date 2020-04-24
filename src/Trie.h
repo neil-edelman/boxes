@@ -11,11 +11,10 @@
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). It can
  be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree);
  specifically <Morrison, 1968 PATRICiA>, in that the trie only stores data on
- the positions where the strings are different. It has the same asymptotic
- run-time as keeping a sorted array of pointers and doing a binary search, but
- because it keeps an index, it takes twice the space; lookup is faster and more
- cache-friendly, likewise insertion and deletion are slower because the need to
- update the index.
+ the positions where the strings are different in the index. Because of this,
+ it takes twice the space as keeping a sorted array of pointers, but lookup is
+ faster and more cache-friendly; likewise, insertion and deletion are slower
+ because the need to update the index.
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
  with `errno`. The parameters are `#define` preprocessor macros, and are all
