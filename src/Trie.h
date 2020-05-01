@@ -235,13 +235,10 @@ static void PN_(init_r)(struct N_(Trie) *const trie, unsigned bit,
 	while(s) half_s = s >> 1,
 		trie_is_bit(PN_(to_key)(trie->leaves.data[a1 + half_s]), bit)
 		? s = half_s : (half_s++, a1 += half_s, s -= half_s);
-	printf("bit %u: [%lu, %lu), first'1' %lu\n", bit,
-		a, a + a_size, a1);
 	s = a1 - a;
 	/* Should have space for all branches pre-allocated, (right?) */
 	branch = array_TrieBranch_new(&trie->branches), assert(branch);
 	*branch = trie_branch(bit, s - 1);
-	printf("branch: #%u:%lu\n", trie_bit(*branch), trie_left(*branch));
 	bit++;
 	PN_(init_r)(trie, bit, a, s);
 	PN_(init_r)(trie, bit, a1, a_size - s);
@@ -252,23 +249,17 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 	const size_t a_size, const PN_(Replace) replace) {
 	size_t i;
 	PN_(Leaf) *leaves;
-	printf("init %lu\n", a_size);
 	assert(trie && !trie->leaves.size && !trie->branches.size
 		&& a && a_size && replace);
-	for(i = 0; i < a_size; i++)
-		printf("array[%lu] \"%s\"\n", i, PN_(to_key)(a[i]));
 	if(!PT_(reserve)(&trie->leaves, a_size)
 		|| !array_TrieBranch_reserve(&trie->branches, a_size - 1)) return 0;
 	leaves = trie->leaves.data;
 	memcpy(leaves, a, sizeof *a * a_size);
 	qsort(leaves, a_size, sizeof *a, PN_(vcompar));
-	for(i = 0; i < a_size; i++)
-		printf("data[%lu] \"%s\"\n", i, PN_(to_key)(leaves[i]));
 	/* @fixme Allow duplicates with `replace`. */
 	for(i = 0; i < a_size - 1; i++)
 		if(strcmp(PN_(to_key)(leaves[i]), PN_(to_key)(leaves[i + 1])) >= 0)
-		return printf("duplicate %lu\n", i), 0;
-	printf("checked\n");
+		return printf("Duplicate %lu.\n", i), 0;
 	PN_(init_r)(trie, 0, 0, a_size);
 	trie->leaves.size = a_size;
 	assert(trie->branches.size == a_size - 1);
