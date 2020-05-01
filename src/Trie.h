@@ -219,26 +219,82 @@ static int PN_(compar)(PN_(Type) *const*const a, PN_(Type) *const*const b)
 static int PN_(vcompar)(const void *a, const void *b)
 	{ return PN_(compar)(a, b); }
 
+/** Does a binary search. Expects `trie` leaves `a` to `a_size` to have `bit`
+ projection match "0"* "1"*.
+ @return Where in the leaves specified it turns from 0 to 1. */
+static size_t PN_(turn_one)(struct N_(Trie) *const trie, const unsigned bit,
+	size_t a, size_t a_size) {
+	size_t m;
+	assert(trie && trie->leaves.size >= a + a_size);
+	/* Check the endpoints, as they are the most probable. */
+	if(!a_size || (trie_is_bit(PN_(to_key)(trie->leaves.data[a]), bit))
+		|| !(a++, --a_size)) return a;
+	if(!trie_is_bit(PN_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
+		return a + a_size;
+	a_size--;
+	printf("turn_one: bit %u a %lu->%lu\n", bit, a, a_size);
+	/* Do a binary search for the first `leaves[a+m]#bit == 1`. */
+	while(a_size) m = a_size >> 1,
+		printf("while a [%lu,%lu), m %lu\n", a, a+a_size, a+m),
+		trie_is_bit(PN_(to_key)(trie->leaves.data[a + m]), bit)
+		? a_size = m : (m++, a += m, a_size -= m);
+	return a;
+}
+
+static void PN_(init_r)(struct N_(Trie) *const trie, unsigned bit,
+	const size_t a, const size_t a_size) {
+	size_t one;
+	assert(trie && a_size);
+	if(a_size <= 1) return;
+	/* Endpoints don't differentiate anything. */
+	while(trie_is_bit(PN_(to_key)(trie->leaves.data[a]), bit)
+		|| !trie_is_bit(PN_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
+		bit++;
+	/* Do a binary search for the first `leaves[a+m]#bit == 1`. */
+	while(a_size) m = a_size >> 1,
+		/*printf("while a [%lu,%lu), m %lu\n", a, a+a_size, a+m),*/
+		trie_is_bit(PN_(to_key)(trie->leaves.data[a + m]), bit)
+		? a_size = m : (m++, a += m, a_size -= m);
+	while(one = PN_(turn_one)(trie, bit, a, a_size),
+		one == a || one >= a + a_size) bit++; /* @fixme Incorporate turn_one. */
+	/*...*/
+	printf("bit %u, [%lu, %lu): %lu\n", bit, a, a + a_size, one);
+}
+
 /** @return Success initialising `trie` with `a` of size `a_size`. */
 static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 	const size_t a_size, const PN_(Replace) replace) {
 	size_t i;
 	PN_(Leaf) *leaves;
+	printf("init %lu\n", a_size);
 	assert(trie && !trie->leaves.size && !trie->branches.size
 		&& a && a_size && replace);
 	for(i = 0; i < a_size; i++)
 		printf("array[%lu] \"%s\"\n", i, PN_(to_key)(a[i]));
-	if(!PT_(reserve)(&trie->leaves, a_size)) return 0;
+	if(!PT_(reserve)(&trie->leaves, a_size)
+		|| !array_TrieBranch_reserve(&trie->branches, a_size - 1)) return 0;
 	leaves = trie->leaves.data;
 	memcpy(leaves, a, sizeof *a * a_size);
+	trie->leaves.size = a_size; /* Danger: breaking contract. */
 	qsort(leaves, a_size, sizeof *a, PN_(vcompar));
 	for(i = 0; i < a_size; i++)
-		printf("data[%lu] \"%s\"\n", i, PN_(to_key)(leaves[i]));
-	for(i = 0; i < a_size - 1; i++) if(strcmp(PN_(to_key)(leaves[i]),
-		PN_(to_key)(leaves[i + 1])) >= 0) return 0;
-	/*...*/
+		printf("data[%lu] \"%s\" %u%u%u%u:%u%u%u%u,...\n",
+		i, PN_(to_key)(leaves[i]),
+		!!trie_is_bit(PN_(to_key)(leaves[i]), 0),
+		!!trie_is_bit(PN_(to_key)(leaves[i]), 1),
+		!!trie_is_bit(PN_(to_key)(leaves[i]), 2),
+		!!trie_is_bit(PN_(to_key)(leaves[i]), 3),
+		!!trie_is_bit(PN_(to_key)(leaves[i]), 4),
+		!!trie_is_bit(PN_(to_key)(leaves[i]), 5),
+		!!trie_is_bit(PN_(to_key)(leaves[i]), 6),
+		!!trie_is_bit(PN_(to_key)(leaves[i]), 7));
+	/* @fixme Allow duplicates with `replace`. */
+	for(i = 0; i < a_size - 1; i++)
+		if(strcmp(PN_(to_key)(leaves[i]), PN_(to_key)(leaves[i + 1])) >= 0)
+		return printf("duplicate %lu\n", i), 0;
 	printf("checked\n");
-	return 0;
+	PN_(init_r)(trie, 0, 0, a_size);
+	return 1;
 }
 
 /** Add `data` to `trie`. Must not be the same as any key of trie; _ie_ it does
@@ -347,7 +403,6 @@ static void PN_(query_start)(struct N_(TrieQuery) *const q,
 
 /** Performs a DFS of the tree. */
 static PN_(Type) *PN_(query_next)(struct N_(TrieQuery) *const q) {
-#if 0
 	TrieBranch *branch;
 	size_t n0 = 0, i = 0;
 	assert(q && q->trie && q->query && q->used <= q->edit);
@@ -365,7 +420,6 @@ static PN_(Type) *PN_(query_next)(struct N_(TrieQuery) *const q) {
 
 	/* Leaf. */
 	while((cmp = trie_strcmp_bit(data_key, n0_key, bit)) == 0) bit++;
-#endif
 	return 0;
 }
 #endif

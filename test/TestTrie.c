@@ -227,7 +227,9 @@ static void test_basic_trie_str() {
 		printf("\"%s\": %s\n", words[i], StrTrieClose(&trie, words[i]));
 
 	StrTrie_(&trie);
+	printf("Trie from array.\n");
 	if(!StrTrieFromArray(&trie, words, words_size, 0)) goto catch;
+	trie_Str_graph(&trie, "graph/trie_all_at_once.gv");
 	/*{
 		struct StrTrieQuery q;
 		const char *next, *const query = "quxx";
