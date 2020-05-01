@@ -119,6 +119,10 @@ static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
 	const char *words[] = { "", "foo", "qux", "quxx", "quux" };
 	const size_t words_size = sizeof words / sizeof *words;
+	const char *alph[] = { "m", "n", "o", "u", "v", "x", "y", "z", "p", "q",
+		"r", "", "å", "a", "b", "g", "h", "i", "j", "k", "l", "c", "d", "e",
+		"f", "s", "t", "w" };
+	const size_t alph_size = sizeof alph / sizeof *alph;
 	size_t i;
 
 	assert(StrTrieRemove(&trie, "") == 0);
@@ -230,6 +234,9 @@ static void test_basic_trie_str() {
 	printf("Trie from array.\n");
 	if(!StrTrieFromArray(&trie, words, words_size, 0)) goto catch;
 	trie_Str_graph(&trie, "graph/trie_all_at_once.gv");
+	StrTrie_(&trie);
+	if(!StrTrieFromArray(&trie, alph, alph_size, 0)) goto catch;
+	trie_Str_graph(&trie, "graph/alph_all_at_once.gv");
 	/*{
 		struct StrTrieQuery q;
 		const char *next, *const query = "quxx";

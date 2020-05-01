@@ -219,26 +219,32 @@ static int PN_(compar)(PN_(Type) *const*const a, PN_(Type) *const*const b)
 static int PN_(vcompar)(const void *a, const void *b)
 	{ return PN_(compar)(a, b); }
 
+/** Recusive function used for <fn:<PN>init>, initialise branches of `trie` up
+ to `bit` with `a` to `a_size` array of sorted leaves. */
 static void PN_(init_r)(struct N_(Trie) *const trie, unsigned bit,
 	const size_t a, const size_t a_size) {
-	size_t m, a1 = a, a0_size = a_size;
+	size_t a1 = a, s = a_size, half_s;
 	TrieBranch *branch;
 	assert(trie && a_size);
 	if(a_size <= 1) return;
-	/* Endpoints don't differentiate anything. */
+	/* Endpoints. */
 	while(trie_is_bit(PN_(to_key)(trie->leaves.data[a]), bit)
 		|| !trie_is_bit(PN_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
 		bit++;
-	/* Do a binary search for the first `leaves[a+m]#bit == 1`. */
-	while(a0_size) m = a0_size >> 1,
-		trie_is_bit(PN_(to_key)(trie->leaves.data[a1 + m]), bit)
-		? a0_size = m : (m++, a1 += m, a0_size -= m);
-	printf("bit %u: [%lu, %lu), first'1' %lu)\n", bit,
+	/* Do a binary search for the first `leaves[a+half_s]#bit == 1`. */
+	while(s) half_s = s >> 1,
+		trie_is_bit(PN_(to_key)(trie->leaves.data[a1 + half_s]), bit)
+		? s = half_s : (half_s++, a1 += half_s, s -= half_s);
+	printf("bit %u: [%lu, %lu), first'1' %lu\n", bit,
 		a, a + a_size, a1);
+	s = a1 - a;
 	/* Should have space for all branches pre-allocated, (right?) */
 	branch = array_TrieBranch_new(&trie->branches), assert(branch);
-	*branch = trie_branch(bit, a1 - a - 1);
-	printf("branch: #%u, l%lu\n", trie_bit(*branch), trie_left(*branch));
+	*branch = trie_branch(bit, s - 1);
+	printf("branch: #%u:%lu\n", trie_bit(*branch), trie_left(*branch));
+	bit++;
+	PN_(init_r)(trie, bit, a, s);
+	PN_(init_r)(trie, bit, a1, a_size - s);
 }
 
 /** @return Success initialising `trie` with `a` of size `a_size`. */
@@ -255,25 +261,17 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 		|| !array_TrieBranch_reserve(&trie->branches, a_size - 1)) return 0;
 	leaves = trie->leaves.data;
 	memcpy(leaves, a, sizeof *a * a_size);
-	trie->leaves.size = a_size; /* Danger: breaking contract. */
 	qsort(leaves, a_size, sizeof *a, PN_(vcompar));
 	for(i = 0; i < a_size; i++)
-		printf("data[%lu] \"%s\" %u%u%u%u:%u%u%u%u,...\n",
-		i, PN_(to_key)(leaves[i]),
-		!!trie_is_bit(PN_(to_key)(leaves[i]), 0),
-		!!trie_is_bit(PN_(to_key)(leaves[i]), 1),
-		!!trie_is_bit(PN_(to_key)(leaves[i]), 2),
-		!!trie_is_bit(PN_(to_key)(leaves[i]), 3),
-		!!trie_is_bit(PN_(to_key)(leaves[i]), 4),
-		!!trie_is_bit(PN_(to_key)(leaves[i]), 5),
-		!!trie_is_bit(PN_(to_key)(leaves[i]), 6),
-		!!trie_is_bit(PN_(to_key)(leaves[i]), 7));
+		printf("data[%lu] \"%s\"\n", i, PN_(to_key)(leaves[i]));
 	/* @fixme Allow duplicates with `replace`. */
 	for(i = 0; i < a_size - 1; i++)
 		if(strcmp(PN_(to_key)(leaves[i]), PN_(to_key)(leaves[i + 1])) >= 0)
 		return printf("duplicate %lu\n", i), 0;
 	printf("checked\n");
 	PN_(init_r)(trie, 0, 0, a_size);
+	trie->leaves.size = a_size;
+	assert(trie->branches.size == a_size - 1);
 	return 1;
 }
 
