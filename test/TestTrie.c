@@ -286,7 +286,7 @@ static double m_stddev(const struct Measure *const measure)
 #define STRUCT(A) { #A, 0, { 0, 0, 0 } }
 #define ES(X) X(ARRAYINIT), X(ARRAYLOOK), \
 	X(TRIEINIT), X(TRIELOOK), \
-	X(SETINIT), X(SETLOOK)
+	X(SETINIT), X(SETLOOK), X(TRIESHORT)
 
 static int timing_comparison(void) {
 	struct StrTrie trie = TRIE_IDLE;
@@ -384,6 +384,13 @@ static int timing_comparison(void) {
 			m_add(&es[TRIELOOK].m, diff_us(t));
 			printf("Added look trie size %lu.\n",
 				(unsigned long)StrTrieSize(&trie));
+
+			StrTrieClear(&trie);
+			t = clock();
+			StrTrieFromArray(&trie, parole, s, 0);
+			m_add(&es[TRIESHORT].m, diff_us(t));
+			printf("Added shortcut init trie size %lu: %s.\n",
+				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
 
 			/* Took took much time; decrease the replicas for next time. */
 			if(replicas != 1
@@ -486,6 +493,8 @@ static void fill_dict(struct Dict *dict) {
 #define TRIE_KEY &dict_key
 #define TRIE_TEST &fill_dict
 #include "../src/Trie.h"
+
+#define TRIE_BENCHMARK
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
