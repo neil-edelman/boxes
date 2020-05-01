@@ -219,31 +219,10 @@ static int PN_(compar)(PN_(Type) *const*const a, PN_(Type) *const*const b)
 static int PN_(vcompar)(const void *a, const void *b)
 	{ return PN_(compar)(a, b); }
 
-/** Does a binary search. Expects `trie` leaves `a` to `a_size` to have `bit`
- projection match "0"* "1"*.
- @return Where in the leaves specified it turns from 0 to 1. */
-static size_t PN_(turn_one)(struct N_(Trie) *const trie, const unsigned bit,
-	size_t a, size_t a_size) {
-	size_t m;
-	assert(trie && trie->leaves.size >= a + a_size);
-	/* Check the endpoints, as they are the most probable. */
-	if(!a_size || (trie_is_bit(PN_(to_key)(trie->leaves.data[a]), bit))
-		|| !(a++, --a_size)) return a;
-	if(!trie_is_bit(PN_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
-		return a + a_size;
-	a_size--;
-	printf("turn_one: bit %u a %lu->%lu\n", bit, a, a_size);
-	/* Do a binary search for the first `leaves[a+m]#bit == 1`. */
-	while(a_size) m = a_size >> 1,
-		printf("while a [%lu,%lu), m %lu\n", a, a+a_size, a+m),
-		trie_is_bit(PN_(to_key)(trie->leaves.data[a + m]), bit)
-		? a_size = m : (m++, a += m, a_size -= m);
-	return a;
-}
-
 static void PN_(init_r)(struct N_(Trie) *const trie, unsigned bit,
 	const size_t a, const size_t a_size) {
-	size_t one;
+	size_t m, a1 = a, a0_size = a_size;
+	TrieBranch *branch;
 	assert(trie && a_size);
 	if(a_size <= 1) return;
 	/* Endpoints don't differentiate anything. */
@@ -251,14 +230,15 @@ static void PN_(init_r)(struct N_(Trie) *const trie, unsigned bit,
 		|| !trie_is_bit(PN_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
 		bit++;
 	/* Do a binary search for the first `leaves[a+m]#bit == 1`. */
-	while(a_size) m = a_size >> 1,
-		/*printf("while a [%lu,%lu), m %lu\n", a, a+a_size, a+m),*/
-		trie_is_bit(PN_(to_key)(trie->leaves.data[a + m]), bit)
-		? a_size = m : (m++, a += m, a_size -= m);
-	while(one = PN_(turn_one)(trie, bit, a, a_size),
-		one == a || one >= a + a_size) bit++; /* @fixme Incorporate turn_one. */
-	/*...*/
-	printf("bit %u, [%lu, %lu): %lu\n", bit, a, a + a_size, one);
+	while(a0_size) m = a0_size >> 1,
+		trie_is_bit(PN_(to_key)(trie->leaves.data[a1 + m]), bit)
+		? a0_size = m : (m++, a1 += m, a0_size -= m);
+	printf("bit %u: [%lu, %lu), first'1' %lu)\n", bit,
+		a, a + a_size, a1);
+	/* Should have space for all branches pre-allocated, (right?) */
+	branch = array_TrieBranch_new(&trie->branches), assert(branch);
+	*branch = trie_branch(bit, a1 - a - 1);
+	printf("branch: #%u, l%lu\n", trie_bit(*branch), trie_left(*branch));
 }
 
 /** @return Success initialising `trie` with `a` of size `a_size`. */

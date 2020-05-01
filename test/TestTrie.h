@@ -39,7 +39,7 @@ static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n) {
 	for( ; ; ) {
 		left = trie_left(trie->branches.data[n0]);
 		right = remaining - left - 1;
-		assert(left < remaining && right < remaining);
+		/*assert(left < remaining && right < remaining); <- Invalid tries. */
 		if(n0 >= n) break;
 		if(n <= n0 + left) remaining = left, n0++;
 		else remaining = right, n0 += left + 1;
