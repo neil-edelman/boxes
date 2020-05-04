@@ -220,8 +220,8 @@ static int PN_(vcompar)(const void *a, const void *b)
 	{ return PN_(compar)(a, b); }
 
 /** Recusive function used for <fn:<PN>init>, initialise branches of `trie` up
- to `bit` with `a` to `a_size` array of sorted leaves. */
-static void PN_(init_r)(struct N_(Trie) *const trie, unsigned bit,
+ to `bit` with `a` to `a_size` array of sorted leaves. Used in <fn:<PN>init>. */
+static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 	const size_t a, const size_t a_size) {
 	size_t a1 = a, s = a_size, half_s;
 	TrieBranch *branch;
@@ -240,11 +240,24 @@ static void PN_(init_r)(struct N_(Trie) *const trie, unsigned bit,
 	branch = array_TrieBranch_new(&trie->branches), assert(branch);
 	*branch = trie_branch(bit, s - 1);
 	bit++;
-	PN_(init_r)(trie, bit, a, s);
-	PN_(init_r)(trie, bit, a1, a_size - s);
+	PN_(init_branches_r)(trie, bit, a, s);
+	PN_(init_branches_r)(trie, bit, a1, a_size - s);
 }
 
-/** @return Success initialising `trie` with `a` of size `a_size`. */
+/** In the process of creation where `trie` `leaves` is a valid sorted array
+ and `replace` is a valid function that returns true if the second element
+ replaces the first. */
+static void PN_(deduplicate)(struct N_(Trie) *const trie,
+	const PN_(Replace) replace) {
+	assert(trie && replace);
+	for(i = 0; i < a_size - 1; i++)
+		if(strcmp(PN_(to_key)(leaves[i]), PN_(to_key)(leaves[i + 1])) >= 0)
+			return printf("Duplicate %lu.\n", i), 0;	
+}
+
+/** @param[replace] Called with any duplicate entries and replaces if true; if
+ null, doesn't replace. Do not modify the key of either of the entries.
+ @return Success initialising `trie` with `a` of size `a_size`. */
 static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 	const size_t a_size, const PN_(Replace) replace) {
 	size_t i;
@@ -255,14 +268,11 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 		|| !array_TrieBranch_reserve(&trie->branches, a_size - 1)) return 0;
 	leaves = trie->leaves.data;
 	memcpy(leaves, a, sizeof *a * a_size);
-	qsort(leaves, a_size, sizeof *a, PN_(vcompar));
-	/* @fixme Allow duplicates with `replace`. */
-	for(i = 0; i < a_size - 1; i++)
-		if(strcmp(PN_(to_key)(leaves[i]), PN_(to_key)(leaves[i + 1])) >= 0)
-		return printf("Duplicate %lu.\n", i), 0;
-	PN_(init_r)(trie, 0, 0, a_size);
 	trie->leaves.size = a_size;
-	assert(trie->branches.size == a_size - 1);
+	qsort(leaves, a_size, sizeof *a, PN_(vcompar));
+	PN_(deduplicate)(trie, replace);
+	PN_(init_branches_r)(trie, 0, 0, trie->leaves.size);
+	assert(trie->branches.size == trie->leaves.size - 1);
 	return 1;
 }
 
