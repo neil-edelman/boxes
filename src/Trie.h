@@ -220,12 +220,14 @@ static int PN_(vcompar)(const void *a, const void *b)
 	{ return PN_(compar)(a, b); }
 
 /** Recusive function used for <fn:<PN>init>, initialise branches of `trie` up
- to `bit` with `a` to `a_size` array of sorted leaves. Used in <fn:<PN>init>. */
+ to `bit` with `a` to `a_size` array of sorted leaves. Used in <fn:<PN>init>.
+ @order O(`leaves`) */
 static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 	const size_t a, const size_t a_size) {
 	size_t a1 = a, s = a_size, half_s;
 	TrieBranch *branch;
-	assert(trie && a_size);
+	assert(trie && a_size && a_size <= trie->leaves.size && trie->leaves.size
+		&& trie->branches.capacity >= trie->leaves.size - 1);
 	if(a_size <= 1) return;
 	/* Endpoints. */
 	while(trie_is_bit(PN_(to_key)(trie->leaves.data[a]), bit)
@@ -246,21 +248,67 @@ static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 
 /** In the process of creation where `trie` `leaves` is a valid sorted array
  and `replace` is a valid function that returns true if the second element
- replaces the first. */
+ replaces the first.
+ @order O(`leaves`) */
 static void PN_(deduplicate)(struct N_(Trie) *const trie,
 	const PN_(Replace) replace) {
-	assert(trie && replace);
-	for(i = 0; i < a_size - 1; i++)
-		if(strcmp(PN_(to_key)(leaves[i]), PN_(to_key)(leaves[i + 1])) >= 0)
-			return printf("Duplicate %lu.\n", i), 0;	
+	PN_(Leaf) *leaves = trie->leaves.data;
+	size_t target, from, cursor, next, choose, move;
+	const size_t end = trie->leaves.size - 1;
+	size_t debug_size = trie->leaves.size, debug;
+	assert(trie && trie->leaves.size && !trie->branches.size && replace);
+	for(debug = 0; debug < debug_size; debug++) printf("%lu:%s, ", debug,
+		PN_(to_key)(leaves[debug])); fputc('\n', stdout);
+	for(target = from = cursor = 0; cursor < end; cursor += next) {
+		printf("cursor %lu, next %lu: ", cursor, next);
+		for(debug = 0; debug < debug_size; debug++) printf("%lu:%s, ", debug,
+			PN_(to_key)(leaves[debug])); fputc('\n', stdout);
+		/* Duplicates from `[cursor...(cursor + choose)...cursor + next)`. */
+		for(choose = 0, next = 1; !strcmp(PN_(to_key)(leaves[cursor + choose]),
+			PN_(to_key)(leaves[cursor + next])); next++) {
+			if(replace(leaves[cursor + choose], leaves[cursor + next]))
+				choose = next;
+			if(cursor + next > end) break; /* +1 */
+		}
+		if(next == 1) continue;
+		/* Need to do some differed copying. */
+		printf("diff %lu(%lu)\n", cursor, next);
+		if(!choose) {
+			move = cursor - from + 1;
+			memmove(leaves + target, leaves + from, sizeof *leaves * move);
+			target += move;
+			from = cursor + next;
+			printf("move %lu: %lu->%lu\n", move, from, target);
+		} else if(choose < next) {
+			move = cursor - from;
+			memmove(leaves + target, leaves + from, sizeof *leaves * move);
+			target += move;
+			memmove(leaves + target, leaves + choose, sizeof *leaves);
+			target++;
+			from = cursor + next;
+		} else {
+			move = cursor - from;
+			memmove(leaves + target, leaves + from, sizeof *leaves * move);
+			target += move;
+			move = cursor + next - 1;
+		}
+	}
+	move = trie->leaves.size - from;
+	memmove(leaves + target, leaves + from, sizeof *leaves * move);
+	target += move;
+	assert(trie->leaves.size >= target), trie->leaves.size = target;
+	{
+		size_t i, i_size = trie->leaves.size;
+		for(i = 0; i < i_size; i++)
+			printf("Now %lu %s.\n", i, PN_(to_key)(leaves[i]));
+	}
 }
 
 /** @param[replace] Called with any duplicate entries and replaces if true; if
  null, doesn't replace. Do not modify the key of either of the entries.
- @return Success initialising `trie` with `a` of size `a_size`. */
+ @return Success initialising `trie` with `a` of size `a_size`, (non-zero.) */
 static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 	const size_t a_size, const PN_(Replace) replace) {
-	size_t i;
 	PN_(Leaf) *leaves;
 	assert(trie && !trie->leaves.size && !trie->branches.size
 		&& a && a_size && replace);

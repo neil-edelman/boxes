@@ -117,7 +117,7 @@ static void pointer_to_string(const char *const*const ps,
 
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
-	const char *words[] = { "", "foo", "qux", "quxx", "quux" };
+	const char *words[] = { "", "foo", "qux", "quxx", "quux", "foo" };
 	const size_t words_size = sizeof words / sizeof *words;
 	const char *alph[] = { "m", "n", "o", "u", "v", "x", "y", "z", "p", "q",
 		"r", "", "å", "a", "b", "g", "h", "i", "j", "k", "l", "c", "d", "e",
@@ -494,7 +494,7 @@ static void fill_dict(struct Dict *dict) {
 #define TRIE_TEST &fill_dict
 #include "../src/Trie.h"
 
-#define TRIE_BENCHMARK
+/*#define TRIE_BENCHMARK*/
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
