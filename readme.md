@@ -13,7 +13,7 @@
 
 ![Example of trie.](web/trie.png)
 
-A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. The string can be any encoding with a null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA) or [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only the index does not store data on the strings themselves, only the positions where the strings are different\. It has the same asymptotic run\-time as keeping a sorted array of pointers, but it takes twice the space because it keeps an index; lookup is faster and much more cache\-friendly, likewise insertion and deletion are slower, because the need to update the index\.
+A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. The string can be any encoding with a byte null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree); specifically [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA), in that the trie only stores data on the positions where the strings are different in the index\. Because of this, it takes twice the space as keeping a sorted array of pointers, but lookup is faster and more cache\-friendly; likewise, insertion and deletion are slower because the need to update the index\.
 
 `Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
@@ -30,7 +30,7 @@ A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` a
  * Dependancies:  
    [Array.h](../Array/)
  * Caveat:  
-   Have a replace; much faster then remove and add\. Create a trie from existing data much faster\.
+   Create a trie much faster from existing data and have a merge\. Have a replace; potentially much less wastful then remove and add\.
  * See also:  
    [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
@@ -77,7 +77,7 @@ Only used if `TRIE_TEST`\.
 
 To initialise it to an idle state, see [&lt;N&gt;Trie](#user-content-fn-8fc8a233), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
-A full binary tree stored semi\-implicitly in two arrays: a private one as branches backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves\.
+A full binary tree stored semi\-implicitly in two arrays: a private one as branches backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves in numerically\-sorted order\.
 
 ![States.](web/states.png)
 
@@ -93,6 +93,8 @@ A full binary tree stored semi\-implicitly in two arrays: a private one as branc
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-8fc8a233">&lt;N&gt;Trie</a></td><td>trie</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-fe08e38c">&lt;N&gt;TrieFromArray</a></td><td>trie, array, array_size, replace</td></tr>
+
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-6ddbe8d2">&lt;N&gt;TrieSize</a></td><td>trie</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;Type *const *</td><td><a href = "#user-content-fn-c8de2f88">&lt;N&gt;TrieArray</a></td><td>trie</td></tr>
@@ -100,6 +102,8 @@ A full binary tree stored semi\-implicitly in two arrays: a private one as branc
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-b2f36d9c">&lt;N&gt;TrieClear</a></td><td>trie</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#user-content-fn-d87c821d">&lt;N&gt;TrieGet</a></td><td>trie, key</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#user-content-fn-45ef569">&lt;N&gt;TrieClose</a></td><td>trie, key</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-fad143b6">&lt;N&gt;TrieAdd</a></td><td>trie, data</td></tr>
 
@@ -141,6 +145,25 @@ Initialises `trie` to be idle\.
    If null, does nothing\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-fe08e38c" name = "user-content-fn-fe08e38c">&lt;N&gt;TrieFromArray</a> ###
+
+<code>static int <strong>&lt;N&gt;TrieFromArray</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const *const <em>array</em>, const size_t <em>array_size</em>, const &lt;PN&gt;Replace <em>replace</em>)</code>
+
+Initialises `trie` from an `array` of pointers\-to\-`<N>` of `array_size`\.
+
+ * Parameter: _trie_  
+   If null, does nothing\.
+ * Parameter: _array_  
+   If null, initialises `trie` to empty\.
+ * Return:  
+   Success\.
+ * Exceptional return: realloc  
+ * Order:  
+   &#927;\(`array_size`\)
 
 
 
@@ -197,6 +220,22 @@ Sets `trie` to be empty\. That is, the size of `trie` will be zero, but if it wa
    If null, returns null\.
  * Return:  
    The [&lt;PN&gt;Type](#user-content-typedef-c45e6761) with `key` in `trie` or null no such item exists\.
+ * Order:  
+   &#927;\(|`key`|\)\. Specifically, faster then a tree, and deterministic, however, logarithmically slower then a good hash table for sizes not fitting in cache, [Thareja 2011, Data](https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data)\.
+
+
+
+
+### <a id = "user-content-fn-45ef569" name = "user-content-fn-45ef569">&lt;N&gt;TrieClose</a> ###
+
+<code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieClose</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code>
+
+ * Parameter: _trie_  
+   If null, returns null\.
+ * Parameter: _key_  
+   If null, returns null\.
+ * Return:  
+   The [&lt;PN&gt;Type](#user-content-typedef-c45e6761) reasonably with the Levenson distance closest to `key` in `trie`\.
 
 
 
@@ -242,7 +281,7 @@ Updates or adds `data` to `trie`\.
  * Exceptional return: ERANGE  
    The key is greater then 510 characters or the trie has reached it's maximum size\.
  * Order:  
-   &#920;\(`size`\)
+   &#927;\(`size`\)
 
 
 
