@@ -88,22 +88,22 @@ typedef void (*PT_(Action))(T *);
 /** Returns a boolean given `<T>`. */
 typedef int (*PT_(Predicate))(const T *);
 
-/** Manages the array `data`, which is indexed up to `size`. When modifying the
- topology of this array, it may change memory location to fit; any pointers to
- this memory may become stale. To initialise it to an idle state, see
- <fn:<T>Array>, `ARRAY_IDLE`, `{0}` (`C99`), or being `static`.
+/** Manages the array field `data`, which is indexed up to `size`. When
+ modifying the topology of this array, it may change memory location to fit;
+ any pointers to this memory may become stale. To initialise it to an idle
+ state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}` (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
 struct T_(Array);
-/* !data -> !size data -> capacity >= min && size <= capacity <= max */
-struct T_(Array) { T *data; size_t size, capacity; };
+/* !first -> !size, first -> capacity >= min && size <= capacity <= max */
+struct T_(Array) { T *first; size_t size, capacity; };
 /* `{0}` is `C99`. */
 #ifndef ARRAY_IDLE /* <!-- !zero */
 #define ARRAY_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
 
 /** Ensures `min_capacity` of `a`.
- @param[min_capacity] If zero and idle, does nothing.
+ @param[min_capacity] If zero, does nothing.
  @param[update_ptr] Must be in the array or null, it updates this value.
  @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
@@ -114,9 +114,9 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 	const size_t min_capacity, T **const update_ptr) {
 	size_t c0;
 	T *data;
-	const size_t max_size = (size_t)-1 / sizeof *a->data;
+	const size_t max_size = (size_t)-1 / sizeof *a->first;
 	assert(a);
-	if(a->data) {
+	if(a->first) {
 		if(min_capacity <= a->capacity) return 1;
 		c0 = a->capacity, assert(c0 >= 8);
 	} else { /* Idle. */
@@ -130,11 +130,11 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; very unlikely. */
 		c0 = c1;
 	}
-	if(!(data = realloc(a->data, sizeof *a->data * c0)))
+	if(!(data = realloc(a->first, sizeof *a->first * c0)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	if(update_ptr && a->data != data)
-		*update_ptr = data + (*update_ptr - a->data); /* Not strict ISO. */
-	a->data = data, a->capacity = c0;
+	if(update_ptr && a->first != data)
+		*update_ptr = data + (*update_ptr - a->first); /* Not strict ISO. */
+	a->first = data, a->capacity = c0;
 	return 1;
 }
 
@@ -153,9 +153,9 @@ static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	const long range, size_t *const p0, size_t *const p1) {
 	size_t i0, i1;
 	assert(a && p0 && p1);
-	if((anchor && (anchor < a->data || anchor >= a->data + a->size))
+	if((anchor && (anchor < a->first || anchor >= a->first + a->size))
 		|| range > 65534l || range < -65534l) return errno = ERANGE, 0;
-	i0 = anchor ? (size_t)(anchor - a->data) : a->size;
+	i0 = anchor ? (size_t)(anchor - a->first) : a->size;
 	if(range < 0) {
 		i1 = (size_t)(-range) > a->size ? 0 : a->size - (size_t)(-range) + 1;
 		if(i0 > i1) i1 = i0;
@@ -177,13 +177,15 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 		const size_t diff = b_range - a_range;
 		if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;
 			if(!PT_(reserve)(a, a->size + diff)) return 0;
-		memmove(a->data + i1 + diff, a->data + i1,(a->size-i1)*sizeof *a->data);
+		memmove(a->first + i1 + diff, a->first + i1,
+			(a->size - i1) * sizeof *a->first);
 		a->size += diff;
 	} else if(b_range < a_range) { /* The output is smaller. */
-		memmove(a->data + i0 + b_range, a->data+i1,(a->size-i1)*sizeof*a->data);
+		memmove(a->first + i0 + b_range, a->first + i1,
+			(a->size - i1) * sizeof *a->first);
 		a->size -= a_range - b_range;
 	}
-	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
+	if(b) memcpy(a->first + i0, b->first, b->size * sizeof *a->first);
 	return 1;
 }
 
@@ -191,20 +193,20 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 static T *PT_(update_new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
 	if(!PT_(update_reserve)(a, a->size + 1, update_ptr)) return 0;
-	return a->data + a->size++;
+	return a->first + a->size++;
 }
 
 /** Adds one to the size of `a`. Returns new. */
 static T *PT_(new)(struct T_(Array) *const a)
-	{ assert(a); return PT_(reserve)(a, a->size + 1) ? a->data + a->size++ : 0;}
+	{ assert(a); return PT_(reserve)(a, a->size + 1) ? a->first + a->size++ : 0;}
 
 /** Initialises `a` to idle. */
 static void PT_(array)(struct T_(Array) *const a)
-	{ assert(a); a->data = 0, a->capacity = a->size = 0; }
+	{ assert(a); a->first = 0, a->capacity = a->size = 0; }
 
 /** Destroys `a` and returns it to idle. */
 static void PT_(array_)(struct T_(Array) *const a)
-	{ assert(a); free(a->data); PT_(array)(a); }
+	{ assert(a); free(a->first); PT_(array)(a); }
 
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 
@@ -215,11 +217,6 @@ static void T_(Array_)(struct T_(Array) *const a) { if(a) PT_(array_)(a); }
 /** Initialises `a` to be idle. @order \Theta(1) @allow */
 static void T_(Array)(struct T_(Array) *const a) { if(a) PT_(array)(a); }
 
-/** @param[a] If null, returns zero.
- @return The `size` field of `a`. @order \O(1) @allow */
-static size_t T_(ArraySize)(const struct T_(Array) *const a)
-	{ return a ? a->size : 0; }
-
 /** Removes `data` from `a`.
  @param[a, data] If null, returns false.
  @return Success, otherwise `errno` will be set for valid input.
@@ -227,8 +224,8 @@ static size_t T_(ArraySize)(const struct T_(Array) *const a)
 static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
 	if(!a || !data) return 0;
-	if(data < a->data
-		|| (n = data - a->data) >= a->size) return errno = EDOM, 0;
+	if(data < a->first
+		|| (n = data - a->first) >= a->size) return errno = EDOM, 0;
 	memmove(data, data + 1, sizeof *data * (--a->size - n));
 	return 1;
 }
@@ -240,9 +237,9 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
 	if(!a || !data) return 0;
-	if(data < a->data
-	   || (n = data - a->data) >= a->size) return errno = EDOM, 0;
-	if(--a->size != n) memcpy(data, a->data + a->size, sizeof *data);
+	if(data < a->first
+	   || (n = data - a->first) >= a->size) return errno = EDOM, 0;
+	if(--a->size != n) memcpy(data, a->first + a->size, sizeof *data);
 	return 1;
 }
 
@@ -256,28 +253,28 @@ static void T_(ArrayClear)(struct T_(Array) *const a)
  @return `data` field of `a`, indexable up to `size`, until the size changes.
  @order \Theta(1) @allow */
 static T *T_(ArrayGet)(const struct T_(Array) *const a)
-	{ return a ? a->data : 0; }
+	{ return a ? a->first : 0; }
 
 /** Gets an index given `data`.
  @param[a] Must be a valid object that stores `data`.
  @param[data] If the element is not part of the `a`, behaviour is undefined.
  @return An index. @order \Theta(1) @allow */
 static size_t T_(ArrayIndex)(const struct T_(Array) *const a,
-	const T *const data) { return data - a->data; }
+	const T *const data) { return data - a->first; }
 
 /** @param[a] If null or idle, returns null.
  @return One past the end of the array.
  @order \Theta(1)
  @allow */
 static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
-	return a && a->data ? a->data + a->size : 0;
+	return a && a->first ? a->first + a->size : 0;
 }
 
 /** @param[a] If null, returns null.
  @return The last element or null if the a is empty.
  @order \Theta(1) @allow */
 static T *T_(ArrayPeek)(const struct T_(Array) *const a)
-	{ return a && a->size ? a->data + a->size - 1 : 0; }
+	{ return a && a->size ? a->first + a->size - 1 : 0; }
 
 /** The same value as <fn:<T>ArrayPeek>.
  @param[a] If null, returns null.
@@ -286,7 +283,7 @@ static T *T_(ArrayPeek)(const struct T_(Array) *const a)
  @order \Theta(1)
  @allow */
 static T *T_(ArrayPop)(struct T_(Array) *const a)
-	{ return a && a->size ? a->data + --a->size : 0; }
+	{ return a && a->size ? a->first + --a->size : 0; }
 
 /** Iterate through `a` backwards.
  @param[a] The array; if null, returns null.
@@ -300,10 +297,10 @@ static T *T_(ArrayBack)(const struct T_(Array) *const a, const T *const here) {
 		if(!a->size) return 0;
 		idx = a->size;
 	} else {
-		idx = (size_t)(here - a->data);
+		idx = (size_t)(here - a->first);
 		if(!idx) return 0;
 	}
-	return a->data + idx - 1;
+	return a->first + idx - 1;
 }
 
 /** Iterate through `a`. Removing an element causes the pointer to go to
@@ -315,8 +312,8 @@ static T *T_(ArrayBack)(const struct T_(Array) *const a, const T *const here) {
 static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
 	size_t idx;
 	if(!a) return 0;
-	idx = here ? (size_t)(here - a->data + 1) : 0;
-	return idx < a->size ? a->data + idx : 0;
+	idx = here ? (size_t)(here - a->first + 1) : 0;
+	return idx < a->size ? a->first + idx : 0;
 }
 
 /** @param[a] If is null, returns null.
@@ -353,11 +350,11 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
  @throws[realloc] @allow */
 static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
 	if(!a) return 0;
-	if(!reserve) return a->data ? a->data + a->size : 0;
+	if(!reserve) return a->first ? a->first + a->size : 0;
 	if(a->size > (size_t)-1 - reserve) { errno = ERANGE; return 0; }
 	if(!PT_(reserve)(a, a->size + reserve)) return 0;
-	assert(a->data);
-	return a->data + a->size;
+	assert(a->first);
+	return a->first + a->size;
 }
 
 /** Adds `add` elements to `a`.
@@ -378,7 +375,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t add) {
 	if(!PT_(reserve)(a, a->size + add)) return 0;
 	prev_size = a->size;
 	a->size += add;
-	return a->data + prev_size;
+	return a->first + prev_size;
 }
 
 /** Iterates through `a` and calls `action` on all the elements. The topology
@@ -390,7 +387,7 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
 	const PT_(Action) action) {
 	T *t, *end;
 	if(!a || !action) return;
-	for(t = a->data, end = t + a->size; t < end; t++) action(t);
+	for(t = a->first, end = t + a->size; t < end; t++) action(t);
 }
 
 /** Iterates through `a` and calls `action` on all the elements for which
@@ -402,7 +399,7 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate, const PT_(Action) action) {
 	T *t, *end;
 	if(!a || !action || !predicate) return;
-	for(t = a->data, end = t + a->size; t < end; t++)
+	for(t = a->first, end = t + a->size; t < end; t++)
 		if(predicate(t)) action(t);
 }
 
@@ -414,7 +411,7 @@ static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
 	T *t, *end;
 	if(!a || !predicate) return 0;
-	for(t = a->data, end = t + a->size; t < end; t++)
+	for(t = a->first, end = t + a->size; t < end; t++)
 		if(predicate(t)) return t;
 	return 0;
 }
@@ -430,7 +427,7 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	const T *retain = 0, *end;
 	int keep0 = 1, keep1 = 0;
 	if(!a || !keep) return;
-	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
+	for(t = a->first, end = a->first + a->size; t < end; keep0 = keep1, t++) {
 		if(!(keep1 = !!keep(t)) && destruct) destruct(t);
 		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
 		if(keep1) { /* Rising edge. */
@@ -454,8 +451,8 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 		erase += n;
 	}
 	/* Adjust the size. */
-	assert((size_t)(erase - a->data) <= a->size);
-	a->size = erase - a->data;
+	assert((size_t)(erase - a->first) <= a->size);
+	a->size = erase - a->first;
 }
 
 /** Removes at either end of `a` of things that `predicate` returns true.
@@ -466,11 +463,11 @@ static void T_(ArrayTrim)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
 	size_t i;
 	if(!a || !predicate) return;
-	while(a->size && predicate(a->data + a->size - 1)) a->size--;
-	for(i = 0; i < a->size && predicate(a->data + i); i++);
+	while(a->size && predicate(a->first + a->size - 1)) a->size--;
+	for(i = 0; i < a->size && predicate(a->first + i); i++);
 	if(!i) return;
 	assert(i < a->size);
-	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
+	memmove(a->first, a->first + i, sizeof *a->first * i), a->size -= i;
 }
 
 /** In `a`, replaces the elements from `anchor` up to `range` with a copy of
@@ -556,9 +553,9 @@ static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 	/* Advance the buffer for next time. */
 	buffer_i &= buffers_no - 1;
 	if(!a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!a->data) { memcpy(b, idle, idle_len), b += idle_len; goto terminate; }
+	if(!a->first) { memcpy(b, idle, idle_len), b += idle_len; goto terminate; }
 	*b++ = start;
-	for(e = a->data, e_end = a->data + a->size; ; ) {
+	for(e = a->first, e_end = a->first + a->size; ; ) {
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
 		PT_(to_string)(e, (char (*)[12])b);
@@ -589,7 +586,6 @@ static void PT_(unused_coda)(void);
 static void PT_(unused_set)(void) {
 	T_(Array_)(0);
 	T_(Array)(0);
-	T_(ArraySize)(0);
 	T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0);
 	T_(ArrayClear)(0);

@@ -1,8 +1,4 @@
-/** Unit test of Array.c.
-
- @file		TestArray
- @author	Neil
- @std		C89/90 */
+/** Unit test of Array.c. @author Neil @std C89/90 */
 
 #include <stdlib.h> /* EXIT_ malloc free */
 #include <stdio.h>  /* fprintf */
@@ -11,12 +7,12 @@
 #include <limits.h>	/* INT_MAX */
 #include "Orcish.h"
 
-/** Define {A}. */
+/** Define `A`. */
 struct A {
 	char value[4];
 };
 static void A_to_string(const struct A *this, char (*const a)[12]);
-/** @implements <Foo>Action */
+/** @implements <A>Action */
 static void A_filler(struct A *const this) {
 	Orcish(this->value, sizeof this->value);
 }
@@ -41,12 +37,12 @@ static void A_to_string(const struct A *this, char (*const a)[12]) {
 
 
 
-/** Define {Foo}. */
+/** Define `Foo`. */
 struct Foo {
 	int key;
 	char value[32];
 };
-/** Assumes {key} is {[0, 99]}.
+/** Assumes `key` is `[0, 99]`.
  @implements <Foo>ToString */
 static void Foo_to_string(const struct Foo *this, char (*const a)[12]) {
 	sprintf(*a, "%d%.9s", this->key, this->value);
@@ -64,8 +60,8 @@ static void Foo_filler(struct Foo *const this) {
 
 
 
-/* Class {Int} is a single {int}. */
-/** Assumes {[-9 999 999 999, 99 999 999 999]}.
+/* Class `Int` is a single `int`. */
+/** Assumes `[-9 999 999 999, 99 999 999 999]`.
  @implements <Int>ToString */
 static void Int_to_string(const int *this, char (*const a)[12]) {
 	sprintf(*a, "%d", *this);
@@ -90,7 +86,7 @@ static void Int_filler(int *const this) {
 
 
 
-/* Class {Colour} is an {enum}. */
+/* Class `Colour` is an `enum`. */
 enum Colour { White, Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
 	Sienna, Brown, Yellow, Khaki, Gold, Olive, Lime, Green, Aqua, Cyan, Teal,
 	Salmon, Orange, Powder, Sky, Steel, Royal, Blue, Navy, Fuchsia, Pink,
