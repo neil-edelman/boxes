@@ -143,7 +143,7 @@ struct H_(HeapNode) {
 struct H_(Heap);
 struct H_(Heap) { struct H_(HeapNodeArray) a; };
 #ifndef HEAP_IDLE /* <!-- !zero */
-#define HEAP_IDLE { { 0, 0, 0, 0 } }
+#define HEAP_IDLE { { 0, 0, 0 } }
 #endif /* !zero --> */
 
 /** Extracts the <typedef:<PH>PValue> of `node`, which must not be null. */
@@ -175,7 +175,7 @@ static void PH_(copy)(const struct H_(HeapNode) *const src,
  @order \O(log `size`) */
 static void PH_(sift_up)(struct H_(Heap) *const heap,
 	struct H_(HeapNode) *const node) {
-	struct H_(HeapNode) *const n0 = heap->a.data;
+	struct H_(HeapNode) *const n0 = heap->a.first;
 	size_t i = heap->a.size - 1;
 	assert(heap && heap->a.size && node);
 	if(i) {
@@ -197,7 +197,7 @@ static void PH_(sift_down)(struct H_(Heap) *const heap) {
 	const size_t size = (assert(heap && heap->a.size), --heap->a.size),
 		half = size >> 1;
 	size_t i = 0, c;
-	struct H_(HeapNode) *const n0 = heap->a.data,
+	struct H_(HeapNode) *const n0 = heap->a.first,
 		*const down = n0 + size /* Put it at the top. */, *child;
 	while(i < half) {
 		c = (i << 1) + 1;
@@ -219,7 +219,7 @@ static void PH_(sift_down_i)(struct H_(Heap) *const heap, size_t i) {
 	const size_t size = (assert(heap && i < heap->a.size), heap->a.size),
 		half = size >> 1;
 	size_t c;
-	struct H_(HeapNode) *const n0 = heap->a.data, *child, temp;
+	struct H_(HeapNode) *const n0 = heap->a.first, *child, temp;
 	int temp_valid = 0;
 	while(i < half) {
 		c = (i << 1) + 1;
@@ -251,7 +251,7 @@ static int PH_(add)(struct H_(Heap) *const heap,
 
 /** Removes from `heap`. Must have a non-zero size. */
 static PH_(PValue) PH_(remove)(struct H_(Heap) *const heap) {
-	const PH_(PValue) result = PH_(value)(heap->a.data);
+	const PH_(PValue) result = PH_(value)(heap->a.first);
 	assert(heap);
 	if(heap->a.size > 1) {
 		PH_(sift_down)(heap);
@@ -275,7 +275,7 @@ static void PH_(heapify)(struct H_(Heap) *const heap) {
  @order \Theta(1) */
 static struct H_(HeapNode) *PH_(peek)(const struct H_(Heap) *const heap) {
 	assert(heap);
-	return heap->a.size ? heap->a.data : 0;
+	return heap->a.size ? heap->a.first : 0;
 }
 
 #ifndef HEAP_CHILD /* <!-- !sub-type */
@@ -371,10 +371,10 @@ static PH_(PValue) H_(HeapPop)(struct H_(Heap) *const heap) {
 static struct H_(HeapNode) *H_(HeapReserve)(struct H_(Heap) *const heap,
 	const size_t reserve) {
 	if(!heap) return 0;
-	if(!reserve) return heap->a.data ? heap->a.data + heap->a.size : 0;
+	if(!reserve) return heap->a.first ? heap->a.first + heap->a.size : 0;
 	if(heap->a.size > (size_t)-1 - reserve) { errno = ERANGE; return 0; }
 	if(!PT_(reserve)(&heap->a, heap->a.size + reserve)) return 0;
-	return heap->a.data + heap->a.size;
+	return heap->a.first + heap->a.size;
 }
 
 /** Adds and heapifies `add` elements to `heap`. Uses <Doberkat, 1984, Floyd>
@@ -441,10 +441,10 @@ static const char *H_(HeapToString)(const struct H_(Heap) *const heap) {
 	/* Advance the buffer for next time. */
 	buffer_i &= buffers_no - 1;
 	if(!heap) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!heap->a.data) { memcpy(b, idle, idle_len), b += idle_len;
+	if(!heap->a.first) { memcpy(b, idle, idle_len), b += idle_len;
 		goto terminate; }
 	*b++ = start;
-	for(e = heap->a.data, e_end = heap->a.data + heap->a.size; ; ) {
+	for(e = heap->a.first, e_end = e + heap->a.size; ; ) {
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
 		PH_(to_string)(e, (char (*)[12])b);
