@@ -13,9 +13,7 @@
 
 ![Example of Array](web/array.png)
 
-[&lt;T&gt;Array](#user-content-tag-f128eca2) is a dynamic array that stores contiguous `<T>`, which must be set using `ARRAY_TYPE`\. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\. When adding new elements, the elements may change memory location to fit\. It is therefore unstable; any pointers to this memory may become stale and unusable on expansion\.
-
-The storage is implicit, [&lt;T&gt;ArrayGet](#user-content-fn-3d64b66e) `+ index`, therefore different sized polymorphic objects must use an extra level of indirection\.
+[&lt;T&gt;Array](#user-content-tag-f128eca2) is a dynamic array that stores contiguous `<T>`, which must be set using `ARRAY_TYPE`\. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\.
 
 `<T>Array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
 
@@ -23,8 +21,6 @@ The storage is implicit, [&lt;T&gt;ArrayGet](#user-content-fn-3d64b66e) `+ index
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<T>` that satisfies `C` naming conventions when mangled and a valid tag\-type associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
- * Parameter: ARRAY\_STACK  
-   Doesn't define removal functions except [&lt;T&gt;ArrayPop](#user-content-fn-c32fdd31), making it a stack\.
  * Parameter: ARRAY\_TO\_STRING  
    Optional print function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f); makes available [&lt;T&gt;ArrayToString](#user-content-fn-e365d362)\.
  * Parameter: ARRAY\_TEST  
@@ -55,9 +51,9 @@ Operates by side\-effects\.
 
 ### <a id = "user-content-typedef-d7c73930" name = "user-content-typedef-d7c73930">&lt;PT&gt;Predicate</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *data);</code>
+<code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *);</code>
 
-Given constant `data`, returns a boolean\.
+Returns a boolean given `<T>`\.
 
 
 
@@ -75,7 +71,7 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>struct <strong>&lt;T&gt;Array</strong>;</code>
 
-To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`\), or being `static`\.
+Manages the array field `first`, which is indexed up to `size`\. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale\. To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
 ![States.](web/states.png)
 
@@ -91,27 +87,15 @@ To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-f128eca2">&lt;T&gt;Array</a></td><td>a</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-824e26cb">&lt;T&gt;ArraySize</a></td><td>a</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-8267fb66">&lt;T&gt;ArrayRemove</a></td><td>a, datum</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-8267fb66">&lt;T&gt;ArrayRemove</a></td><td>a, data</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-3d3eaaa0">&lt;T&gt;ArrayLazyRemove</a></td><td>a, data</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-3d3eaaa0">&lt;T&gt;ArrayLazyRemove</a></td><td>a, datum</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-7094ab4b">&lt;T&gt;ArrayClear</a></td><td>a</td></tr>
-
-<tr><td align = right>static T *</td><td><a href = "#user-content-fn-3d64b66e">&lt;T&gt;ArrayGet</a></td><td>a</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-2f86cf96">&lt;T&gt;ArrayIndex</a></td><td>a, data</td></tr>
-
-<tr><td align = right>static T *</td><td><a href = "#user-content-fn-168bb5af">&lt;T&gt;ArrayEnd</a></td><td>a</td></tr>
 
 <tr><td align = right>static T *</td><td><a href = "#user-content-fn-f880f61d">&lt;T&gt;ArrayPeek</a></td><td>a</td></tr>
 
 <tr><td align = right>static T *</td><td><a href = "#user-content-fn-c32fdd31">&lt;T&gt;ArrayPop</a></td><td>a</td></tr>
-
-<tr><td align = right>static T *</td><td><a href = "#user-content-fn-20e9e3a1">&lt;T&gt;ArrayBack</a></td><td>a, here</td></tr>
-
-<tr><td align = right>static T *</td><td><a href = "#user-content-fn-4ca0efff">&lt;T&gt;ArrayNext</a></td><td>a, here</td></tr>
 
 <tr><td align = right>static T *</td><td><a href = "#user-content-fn-2895000c">&lt;T&gt;ArrayNew</a></td><td>a</td></tr>
 
@@ -169,34 +153,20 @@ Initialises `a` to be idle\.
 
 
 
-### <a id = "user-content-fn-824e26cb" name = "user-content-fn-824e26cb">&lt;T&gt;ArraySize</a> ###
-
-<code>static size_t <strong>&lt;T&gt;ArraySize</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
-
- * Parameter: _a_  
-   If null, returns zero\.
- * Return:  
-   The size of `a`\.
- * Order:  
-   &#927;\(1\)
-
-
-
-
 ### <a id = "user-content-fn-8267fb66" name = "user-content-fn-8267fb66">&lt;T&gt;ArrayRemove</a> ###
 
-<code>static int <strong>&lt;T&gt;ArrayRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code>
+<code>static int <strong>&lt;T&gt;ArrayRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>datum</em>)</code>
 
-Removes `data` from `a`\. Only defined if not `ARRAY_STACK`\.
+Removes `datum` from `a`\.
 
  * Parameter: _a_  
    If null, returns false\.
- * Parameter: _data_  
-   If null, returns false\. Will be removed; data will remain the same but be updated to the next element, or if this was the last element, the pointer will be past the end\.
+ * Parameter: _datum_  
+   If null, returns false\.
  * Return:  
    Success, otherwise `errno` will be set for valid input\.
  * Exceptional return: EDOM  
-   `data` is not part of `a`\.
+   `datum` is not part of `a`\.
  * Order:  
    &#927;\(n\)\.
 
@@ -205,18 +175,18 @@ Removes `data` from `a`\. Only defined if not `ARRAY_STACK`\.
 
 ### <a id = "user-content-fn-3d3eaaa0" name = "user-content-fn-3d3eaaa0">&lt;T&gt;ArrayLazyRemove</a> ###
 
-<code>static int <strong>&lt;T&gt;ArrayLazyRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code>
+<code>static int <strong>&lt;T&gt;ArrayLazyRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>datum</em>)</code>
 
-Removes `data` from `a` and replaces it with the tail\. Only defined if not `ARRAY_STACK`\.
+Removes `datum` from `a` and replaces it with the tail\.
 
  * Parameter: _a_  
    If null, returns false\.
- * Parameter: _data_  
-   If null, returns false\. Will be removed; data will remain the same but be updated to the last element, or if this was the last element, the pointer will be past the end\.
+ * Parameter: _datum_  
+   If null, returns false\.
  * Return:  
    Success, otherwise `errno` will be set for valid input\.
  * Exceptional return: EDOM  
-   `data` is not part of `a`\.
+   `datum` is not part of `a`\.
  * Order:  
    &#927;\(1\)\.
 
@@ -227,58 +197,10 @@ Removes `data` from `a` and replaces it with the tail\. Only defined if not `ARR
 
 <code>static void <strong>&lt;T&gt;ArrayClear</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
 
-Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was previously in an active non\-idle state, it continues to be\. Compare [&lt;T&gt;Array_](#user-content-fn-a06d1247)\.
+Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was previously in an active non\-idle state, it continues to be\.
 
  * Parameter: _a_  
    If null, does nothing\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-3d64b66e" name = "user-content-fn-3d64b66e">&lt;T&gt;ArrayGet</a> ###
-
-<code>static T *<strong>&lt;T&gt;ArrayGet</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
-
-As long as the size doesn't go up, see [&lt;T&gt;ArrayUpdateNew](#user-content-fn-e810048b)\.
-
- * Parameter: _a_  
-   If null, returns null\.
- * Return:  
-   A pointer to the `a`'s data, indexable up to the `a`'s size\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-2f86cf96" name = "user-content-fn-2f86cf96">&lt;T&gt;ArrayIndex</a> ###
-
-<code>static size_t <strong>&lt;T&gt;ArrayIndex</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>data</em>)</code>
-
-Gets an index given `data`\.
-
- * Parameter: _a_  
-   Must be a valid object that stores `data`\.
- * Parameter: _data_  
-   If the element is not part of the `a`, behaviour is undefined\.
- * Return:  
-   An index\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-168bb5af" name = "user-content-fn-168bb5af">&lt;T&gt;ArrayEnd</a> ###
-
-<code>static T *<strong>&lt;T&gt;ArrayEnd</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
-
- * Parameter: _a_  
-   If null or idle, returns null\.
- * Return:  
-   One past the end of the array\.
  * Order:  
    &#920;\(1\)
 
@@ -309,42 +231,6 @@ The same value as [&lt;T&gt;ArrayPeek](#user-content-fn-f880f61d)\.
    If null, returns null\.
  * Return:  
    Value from the the top of the `a` that is removed or null if the stack is empty\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-20e9e3a1" name = "user-content-fn-20e9e3a1">&lt;T&gt;ArrayBack</a> ###
-
-<code>static T *<strong>&lt;T&gt;ArrayBack</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>here</em>)</code>
-
-Iterate through `a` backwards\.
-
- * Parameter: _a_  
-   The array; if null, returns null\.
- * Parameter: _here_  
-   Set it to the current element; when null, it will be last element, if it exists\.
- * Return:  
-   A pointer to the previous element or null if it does not exist\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-4ca0efff" name = "user-content-fn-4ca0efff">&lt;T&gt;ArrayNext</a> ###
-
-<code>static T *<strong>&lt;T&gt;ArrayNext</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>here</em>)</code>
-
-Iterate through `a`\. It is safe to add using [&lt;T&gt;ArrayUpdateNew](#user-content-fn-e810048b) with the return value as `update`\. Removing an element causes the pointer to go to the next element, if it exists\.
-
- * Parameter: _a_  
-   The array; if null, returns null\.
- * Parameter: _here_  
-   Set it to null to get the first element, if it exists\.
- * Return:  
-   A pointer to the next element or null if there are no more\.
  * Order:  
    &#920;\(1\)
 
@@ -391,19 +277,15 @@ Iterate through `a`\. It is safe to add using [&lt;T&gt;ArrayUpdateNew](#user-co
 
 <code>static T *<strong>&lt;T&gt;ArrayReserve</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>reserve</em>)</code>
 
-Ensures that `a` is `reserve` capacity beyond the elements in the array, but doesn't add to the size\.
+Ensures that `a` is `reserve` capacity beyond the elements in the array\.
 
  * Parameter: _a_  
-   If null, returns false\.
- * Parameter: _reserve_  
-   If zero, returns true\.
+   If null, returns null\.
  * Return:  
-   The [&lt;T&gt;ArrayEnd](#user-content-fn-168bb5af) of the `a`, where are `reserve` elements, or null and `errno` will be set\. Writing on this memory space is safe, but one will have to increase the size manually, \(see [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c)\.\)
+   The previous end of `a`, where are `reserve` elements, or null and `errno` will be set\. Writing on this memory space is safe up to `reserve` elements, but one will have to increase the size manually, \(see [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c)\.\)
  * Exceptional return: ERANGE  
    Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  * Exceptional return: realloc  
- * Order:  
-   Amortised &#927;\(`reserve`\)\.
 
 
 
@@ -433,7 +315,7 @@ Adds `add` elements to `a`\.
 
 <code>static void <strong>&lt;T&gt;ArrayEach</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Action <em>action</em>)</code>
 
-Iterates through `a` and calls `action` on all the elements\. The topology of the list can not change while in this function\. That is, don't call [&lt;T&gt;ArrayNew](#user-content-fn-2895000c), [&lt;T&gt;ArrayRemove](#user-content-fn-8267fb66), _etc_ in `action`\.
+Iterates through `a` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
 
  * Parameter: _a_  
    If null, does nothing\.
@@ -582,7 +464,7 @@ Can print 4 things at once before it overwrites\. One must a `ARRAY_TO_STRING` t
  * Return:  
    Prints `a` in a static buffer\.
  * Order:  
-   &#920;\(1\); it has a 255 character limit; every element takes some of it\.
+   &#920;\(1\)
 
 
 

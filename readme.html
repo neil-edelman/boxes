@@ -50,9 +50,7 @@
 
 <p><img alt = "Example of Array" src = "web/array.png" width = 310 height = 262></p>
 
-<p><a href = "#tag:&lt;T&gt;Array">&lt;T&gt;Array</a> is a dynamic array that stores contiguous <code>&lt;T&gt;</code>, which must be set using <code>ARRAY_TYPE</code>. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost. When adding new elements, the elements may change memory location to fit. It is therefore unstable; any pointers to this memory may become stale and unusable on expansion.</p>
-
-<p>The storage is implicit, <a href = "#fn:&lt;T&gt;ArrayGet">&lt;T&gt;ArrayGet</a> <code>+ index</code>, therefore different sized polymorphic objects must use an extra level of indirection.</p>
+<p><a href = "#tag:&lt;T&gt;Array">&lt;T&gt;Array</a> is a dynamic array that stores contiguous <code>&lt;T&gt;</code>, which must be set using <code>ARRAY_TYPE</code>. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost.</p>
 
 <p><code>&lt;T&gt;Array</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is included in this file; to stop the debug assertions, use <code>#define NDEBUG</code> before <code>assert.h</code>.</p>
 
@@ -61,8 +59,6 @@
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
 	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
-	<dt>Parameter: ARRAY_STACK</dt>
-	<dd>Doesn't define removal functions except <a href = "#fn:&lt;T&gt;ArrayPop">&lt;T&gt;ArrayPop</a>, making it a stack.</dd>
 	<dt>Parameter: ARRAY_TO_STRING</dt>
 	<dd>Optional print function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a>; makes available <a href = "#fn:&lt;T&gt;ArrayToString">&lt;T&gt;ArrayToString</a>.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
@@ -99,9 +95,9 @@
 
 <h3><a id = "typedef:<PT>Predicate" name = "typedef:<PT>Predicate">&lt;PT&gt;Predicate</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *data);</code></p>
+<p><code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *);</code></p>
 
-<p>Given constant <code>data</code>, returns a boolean.</p>
+<p>Returns a boolean given <code>&lt;T&gt;</code>.</p>
 
 </div>
 
@@ -123,7 +119,7 @@
 
 <p><code>struct <strong>&lt;T&gt;Array</strong>;</code></p>
 
-<p>To initialise it to an idle state, see <a href = "#fn:&lt;T&gt;Array">&lt;T&gt;Array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
+<p>Manages the array field <code>first</code>, which is indexed up to <code>size</code>. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale. To initialise it to an idle state, see <a href = "#fn:&lt;T&gt;Array">&lt;T&gt;Array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 280></p>
 
@@ -141,27 +137,15 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>Array">&lt;T&gt;Array</a></td><td>a</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<T>ArraySize">&lt;T&gt;ArraySize</a></td><td>a</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<T>ArrayRemove">&lt;T&gt;ArrayRemove</a></td><td>a, datum</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<T>ArrayRemove">&lt;T&gt;ArrayRemove</a></td><td>a, data</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<T>ArrayLazyRemove">&lt;T&gt;ArrayLazyRemove</a></td><td>a, data</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<T>ArrayLazyRemove">&lt;T&gt;ArrayLazyRemove</a></td><td>a, datum</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>ArrayClear">&lt;T&gt;ArrayClear</a></td><td>a</td></tr>
-
-<tr><td align = right>static T *</td><td><a href = "#fn:<T>ArrayGet">&lt;T&gt;ArrayGet</a></td><td>a</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#fn:<T>ArrayIndex">&lt;T&gt;ArrayIndex</a></td><td>a, data</td></tr>
-
-<tr><td align = right>static T *</td><td><a href = "#fn:<T>ArrayEnd">&lt;T&gt;ArrayEnd</a></td><td>a</td></tr>
 
 <tr><td align = right>static T *</td><td><a href = "#fn:<T>ArrayPeek">&lt;T&gt;ArrayPeek</a></td><td>a</td></tr>
 
 <tr><td align = right>static T *</td><td><a href = "#fn:<T>ArrayPop">&lt;T&gt;ArrayPop</a></td><td>a</td></tr>
-
-<tr><td align = right>static T *</td><td><a href = "#fn:<T>ArrayBack">&lt;T&gt;ArrayBack</a></td><td>a, here</td></tr>
-
-<tr><td align = right>static T *</td><td><a href = "#fn:<T>ArrayNext">&lt;T&gt;ArrayNext</a></td><td>a, here</td></tr>
 
 <tr><td align = right>static T *</td><td><a href = "#fn:<T>ArrayNew">&lt;T&gt;ArrayNew</a></td><td>a</td></tr>
 
@@ -229,38 +213,21 @@
 
 <div>
 
-<h3><a id = "fn:<T>ArraySize" name = "fn:<T>ArraySize">&lt;T&gt;ArraySize</a></h3>
-
-<p><code>static size_t <strong>&lt;T&gt;ArraySize</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code></p>
-
-<dl>
-	<dt>Parameter: <em>a</em></dt>
-	<dd>If null, returns zero.</dd>
-	<dt>Return:</dt>
-	<dd>The size of <code>a</code>.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<T>ArrayRemove" name = "fn:<T>ArrayRemove">&lt;T&gt;ArrayRemove</a></h3>
 
-<p><code>static int <strong>&lt;T&gt;ArrayRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code></p>
+<p><code>static int <strong>&lt;T&gt;ArrayRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>datum</em>)</code></p>
 
-<p>Removes <code>data</code> from <code>a</code>. Only defined if not <code>ARRAY_STACK</code>.</p>
+<p>Removes <code>datum</code> from <code>a</code>.</p>
 
 <dl>
 	<dt>Parameter: <em>a</em></dt>
 	<dd>If null, returns false.</dd>
-	<dt>Parameter: <em>data</em></dt>
-	<dd>If null, returns false. Will be removed; data will remain the same but be updated to the next element, or if this was the last element, the pointer will be past the end.</dd>
+	<dt>Parameter: <em>datum</em></dt>
+	<dd>If null, returns false.</dd>
 	<dt>Return:</dt>
 	<dd>Success, otherwise <code>errno</code> will be set for valid input.</dd>
 	<dt>Exceptional return: EDOM</dt>
-	<dd><code>data</code> is not part of <code>a</code>.</dd>
+	<dd><code>datum</code> is not part of <code>a</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(n).</dd>
 </dl>
@@ -271,19 +238,19 @@
 
 <h3><a id = "fn:<T>ArrayLazyRemove" name = "fn:<T>ArrayLazyRemove">&lt;T&gt;ArrayLazyRemove</a></h3>
 
-<p><code>static int <strong>&lt;T&gt;ArrayLazyRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>data</em>)</code></p>
+<p><code>static int <strong>&lt;T&gt;ArrayLazyRemove</strong>(struct &lt;T&gt;Array *const <em>a</em>, T *const <em>datum</em>)</code></p>
 
-<p>Removes <code>data</code> from <code>a</code> and replaces it with the tail. Only defined if not <code>ARRAY_STACK</code>.</p>
+<p>Removes <code>datum</code> from <code>a</code> and replaces it with the tail.</p>
 
 <dl>
 	<dt>Parameter: <em>a</em></dt>
 	<dd>If null, returns false.</dd>
-	<dt>Parameter: <em>data</em></dt>
-	<dd>If null, returns false. Will be removed; data will remain the same but be updated to the last element, or if this was the last element, the pointer will be past the end.</dd>
+	<dt>Parameter: <em>datum</em></dt>
+	<dd>If null, returns false.</dd>
 	<dt>Return:</dt>
 	<dd>Success, otherwise <code>errno</code> will be set for valid input.</dd>
 	<dt>Exceptional return: EDOM</dt>
-	<dd><code>data</code> is not part of <code>a</code>.</dd>
+	<dd><code>datum</code> is not part of <code>a</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(1).</dd>
 </dl>
@@ -296,68 +263,11 @@
 
 <p><code>static void <strong>&lt;T&gt;ArrayClear</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code></p>
 
-<p>Sets <code>a</code> to be empty. That is, the size of <code>a</code> will be zero, but if it was previously in an active non-idle state, it continues to be. Compare <a href = "#fn:&lt;T&gt;Array_">&lt;T&gt;Array_</a>.</p>
+<p>Sets <code>a</code> to be empty. That is, the size of <code>a</code> will be zero, but if it was previously in an active non-idle state, it continues to be.</p>
 
 <dl>
 	<dt>Parameter: <em>a</em></dt>
 	<dd>If null, does nothing.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>ArrayGet" name = "fn:<T>ArrayGet">&lt;T&gt;ArrayGet</a></h3>
-
-<p><code>static T *<strong>&lt;T&gt;ArrayGet</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code></p>
-
-<p>As long as the size doesn't go up, see <a href = "#fn:&lt;T&gt;ArrayUpdateNew">&lt;T&gt;ArrayUpdateNew</a>.</p>
-
-<dl>
-	<dt>Parameter: <em>a</em></dt>
-	<dd>If null, returns null.</dd>
-	<dt>Return:</dt>
-	<dd>A pointer to the <code>a</code>'s data, indexable up to the <code>a</code>'s size.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>ArrayIndex" name = "fn:<T>ArrayIndex">&lt;T&gt;ArrayIndex</a></h3>
-
-<p><code>static size_t <strong>&lt;T&gt;ArrayIndex</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>data</em>)</code></p>
-
-<p>Gets an index given <code>data</code>.</p>
-
-<dl>
-	<dt>Parameter: <em>a</em></dt>
-	<dd>Must be a valid object that stores <code>data</code>.</dd>
-	<dt>Parameter: <em>data</em></dt>
-	<dd>If the element is not part of the <code>a</code>, behaviour is undefined.</dd>
-	<dt>Return:</dt>
-	<dd>An index.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>ArrayEnd" name = "fn:<T>ArrayEnd">&lt;T&gt;ArrayEnd</a></h3>
-
-<p><code>static T *<strong>&lt;T&gt;ArrayEnd</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code></p>
-
-<dl>
-	<dt>Parameter: <em>a</em></dt>
-	<dd>If null or idle, returns null.</dd>
-	<dt>Return:</dt>
-	<dd>One past the end of the array.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -394,48 +304,6 @@
 	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
 	<dd>Value from the the top of the <code>a</code> that is removed or null if the stack is empty.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>ArrayBack" name = "fn:<T>ArrayBack">&lt;T&gt;ArrayBack</a></h3>
-
-<p><code>static T *<strong>&lt;T&gt;ArrayBack</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>here</em>)</code></p>
-
-<p>Iterate through <code>a</code> backwards.</p>
-
-<dl>
-	<dt>Parameter: <em>a</em></dt>
-	<dd>The array; if null, returns null.</dd>
-	<dt>Parameter: <em>here</em></dt>
-	<dd>Set it to the current element; when null, it will be last element, if it exists.</dd>
-	<dt>Return:</dt>
-	<dd>A pointer to the previous element or null if it does not exist.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>ArrayNext" name = "fn:<T>ArrayNext">&lt;T&gt;ArrayNext</a></h3>
-
-<p><code>static T *<strong>&lt;T&gt;ArrayNext</strong>(const struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>here</em>)</code></p>
-
-<p>Iterate through <code>a</code>. It is safe to add using <a href = "#fn:&lt;T&gt;ArrayUpdateNew">&lt;T&gt;ArrayUpdateNew</a> with the return value as <code>update</code>. Removing an element causes the pointer to go to the next element, if it exists.</p>
-
-<dl>
-	<dt>Parameter: <em>a</em></dt>
-	<dd>The array; if null, returns null.</dd>
-	<dt>Parameter: <em>here</em></dt>
-	<dd>Set it to null to get the first element, if it exists.</dd>
-	<dt>Return:</dt>
-	<dd>A pointer to the next element or null if there are no more.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -490,20 +358,16 @@
 
 <p><code>static T *<strong>&lt;T&gt;ArrayReserve</strong>(struct &lt;T&gt;Array *const <em>a</em>, const size_t <em>reserve</em>)</code></p>
 
-<p>Ensures that <code>a</code> is <code>reserve</code> capacity beyond the elements in the array, but doesn't add to the size.</p>
+<p>Ensures that <code>a</code> is <code>reserve</code> capacity beyond the elements in the array.</p>
 
 <dl>
 	<dt>Parameter: <em>a</em></dt>
-	<dd>If null, returns false.</dd>
-	<dt>Parameter: <em>reserve</em></dt>
-	<dd>If zero, returns true.</dd>
+	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
-	<dd>The <a href = "#fn:&lt;T&gt;ArrayEnd">&lt;T&gt;ArrayEnd</a> of the <code>a</code>, where are <code>reserve</code> elements, or null and <code>errno</code> will be set. Writing on this memory space is safe, but one will have to increase the size manually, (see <a href = "#fn:&lt;T&gt;ArrayBuffer">&lt;T&gt;ArrayBuffer</a>.)</dd>
+	<dd>The previous end of <code>a</code>, where are <code>reserve</code> elements, or null and <code>errno</code> will be set. Writing on this memory space is safe up to <code>reserve</code> elements, but one will have to increase the size manually, (see <a href = "#fn:&lt;T&gt;ArrayBuffer">&lt;T&gt;ArrayBuffer</a>.)</dd>
 	<dt>Exceptional return: ERANGE</dt>
 	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">IEEE Std 1003.1-2001</a>.</dd>
 	<dt>Exceptional return: realloc</dt>
-	<dt>Order:</dt>
-	<dd>Amortised &#927;(<code>reserve</code>).</dd>
 </dl>
 
 </div>
@@ -538,7 +402,7 @@
 
 <p><code>static void <strong>&lt;T&gt;ArrayEach</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Action <em>action</em>)</code></p>
 
-<p>Iterates through <code>a</code> and calls <code>action</code> on all the elements. The topology of the list can not change while in this function. That is, don't call <a href = "#fn:&lt;T&gt;ArrayNew">&lt;T&gt;ArrayNew</a>, <a href = "#fn:&lt;T&gt;ArrayRemove">&lt;T&gt;ArrayRemove</a>, <em>etc</em> in <code>action</code>.</p>
+<p>Iterates through <code>a</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
 
 <dl>
 	<dt>Parameter: <em>a</em></dt>
@@ -709,7 +573,7 @@
 	<dt>Return:</dt>
 	<dd>Prints <code>a</code> in a static buffer.</dd>
 	<dt>Order:</dt>
-	<dd>&#920;(1); it has a 255 character limit; every element takes some of it.</dd>
+	<dd>&#920;(1)</dd>
 </dl>
 
 </div>

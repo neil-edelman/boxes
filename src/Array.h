@@ -113,7 +113,7 @@ struct T_(Array) { T *first; size_t size, capacity; };
 static int PT_(update_reserve)(struct T_(Array) *const a,
 	const size_t min_capacity, T **const update_ptr) {
 	size_t c0;
-	T *data;
+	T *first;
 	const size_t max_size = (size_t)-1 / sizeof *a->first;
 	assert(a);
 	if(a->first) {
@@ -130,11 +130,11 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; very unlikely. */
 		c0 = c1;
 	}
-	if(!(data = realloc(a->first, sizeof *a->first * c0)))
+	if(!(first = realloc(a->first, sizeof *a->first * c0)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	if(update_ptr && a->first != data)
-		*update_ptr = data + (*update_ptr - a->first); /* Not strict ISO. */
-	a->first = data, a->capacity = c0;
+	if(update_ptr && a->first != first)
+		*update_ptr = first + (*update_ptr - a->first); /* Not strict ISO. */
+	a->first = first, a->capacity = c0;
 	return 1;
 }
 
@@ -220,9 +220,9 @@ static void T_(Array_)(struct T_(Array) *const a) { if(a) PT_(array_)(a); }
 static void T_(Array)(struct T_(Array) *const a) { if(a) PT_(array)(a); }
 
 /** Removes `datum` from `a`.
- @param[a, data] If null, returns false.
+ @param[a, datum] If null, returns false.
  @return Success, otherwise `errno` will be set for valid input.
- @throws[EDOM] `data` is not part of `a`. @order \O(n). @allow */
+ @throws[EDOM] `datum` is not part of `a`. @order \O(n). @allow */
 static int T_(ArrayRemove)(struct T_(Array) *const a, T *const datum) {
 	size_t n;
 	if(!a || !datum) return 0;
@@ -233,9 +233,9 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const datum) {
 }
 
 /** Removes `datum` from `a` and replaces it with the tail.
- @param[a, data] If null, returns false.
+ @param[a, datum] If null, returns false.
  @return Success, otherwise `errno` will be set for valid input.
- @throws[EDOM] `data` is not part of `a`. @order \O(1). @allow */
+ @throws[EDOM] `datum` is not part of `a`. @order \O(1). @allow */
 static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const datum) {
 	size_t n;
 	if(!a || !datum) return 0;
@@ -290,7 +290,7 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 
 /** Ensures that `a` is `reserve` capacity beyond the elements in the array.
  @param[a] If null, returns null.
- @return The <fn:<T>ArrayEnd> of the `a`, where are `reserve` elements, or null
+ @return The previous end of `a`, where are `reserve` elements, or null
  and `errno` will be set. Writing on this memory space is safe up to `reserve`
  elements, but one will have to increase the size manually, (see
  <fn:<T>ArrayBuffer>.)
@@ -329,8 +329,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t add) {
 }
 
 /** Iterates through `a` and calls `action` on all the elements. The topology
- of the list can not change while in this function. That is, don't call
- <fn:<T>ArrayNew>, <fn:<T>ArrayRemove>, _etc_ in `action`.
+ of the list should not change while in this function.
  @param[a, action] If null, does nothing.
  @order \O(`size` \times `action`) @allow */
 static void T_(ArrayEach)(struct T_(Array) *const a,
@@ -531,8 +530,7 @@ terminate:
 
 static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
- optimisation
- <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code>. */
+ optimisation <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code>. */
 static void PT_(unused_set)(void) {
 	T_(Array_)(0);
 	T_(Array)(0);
