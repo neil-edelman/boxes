@@ -118,15 +118,6 @@ static void Colour_filler(enum Colour *const this) {
 
 
 
-#define ARRAY_NAME ColourStack
-#define ARRAY_TYPE enum Colour
-#define ARRAY_TO_STRING &Colour_to_string
-#define ARRAY_TEST &Colour_filler
-#define ARRAY_STACK
-#include "../src/Array.h"
-
-
-
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
@@ -138,7 +129,6 @@ int main(void) {
 	FooArrayTest();
 	IntArrayTest();
 	ColourArrayTest();
-	ColourStackArrayTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

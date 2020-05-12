@@ -79,10 +79,8 @@ static void PT_(test_basic)(void) {
 	errno = 0;
 	T_(Array_)(0);
 	T_(Array)(0);
-#ifndef ARRAY_STACK /* <!-- !stack */
 	assert(T_(ArrayRemove)(0, 0) == 0);
 	assert(T_(ArrayLazyRemove)(0, 0) == 0);
-#endif /* !stack --> */
 	T_(ArrayClear)(0);
 	assert(T_(ArrayGet)(0) == 0);
 	assert(T_(ArrayPeek)(0) == 0);
@@ -101,12 +99,10 @@ static void PT_(test_basic)(void) {
 	T_(Array)(&a);
 	t = (T *)1;
 	assert(T_(ArraySize)(&a) == 0);
-#ifndef ARRAY_STACK /* <!-- !stack */
 	assert(T_(ArrayRemove)(&a, 0) == 0 && errno == 0);
 	assert(T_(ArrayRemove)(&a, t) == 0 && errno == EDOM), errno = 0;
 	assert(T_(ArrayLazyRemove)(&a, 0) == 0 && errno == 0);
 	assert(T_(ArrayLazyRemove)(&a, t) == 0 && errno == EDOM), errno = 0;
-#endif /* !stack --> */
 	assert(T_(ArrayGet)(&a) == 0);
 	assert(T_(ArrayPeek)(0) == 0);
 	assert(T_(ArrayPop)(0) == 0);
@@ -144,7 +140,6 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(&a);
 	assert(T_(ArrayEnd)(&a) == T_(ArrayGet(&a)) + T_(ArraySize)(&a));
 
-#ifndef ARRAY_STACK /* <!-- !stack */
 	printf("Testing lazy remove.\n");
 	assert(ts_size >= 3);
 	for(i = 0; i < 3; i++) {
@@ -158,7 +153,6 @@ static void PT_(test_basic)(void) {
 	assert(!memcmp(t, ts + 2, sizeof *t) && !memcmp(t + 1, ts + 1, sizeof *t));
 	T_(ArrayClear)(&a);
 	assert(!T_(ArraySize)(&a));
-#endif /* !stack --> */
 
 	printf("Testing %lu elements.\n", (unsigned long)ts_size);
 	for(i = 0; i < ts_size; i++) {
@@ -171,7 +165,6 @@ static void PT_(test_basic)(void) {
 	printf("Now: %s.\n", T_(ArrayToString)(&a));
 	assert(T_(ArraySize)(&a) == ts_size);
 	assert(T_(ArrayEnd)(&a) == T_(ArrayGet(&a)) + T_(ArraySize)(&a));
-#ifndef ARRAY_STACK /* <!-- !stack */
 	if((t = T_(ArrayGet)(&a) + ts_size - 2)
 		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
@@ -196,7 +189,6 @@ static void PT_(test_basic)(void) {
 	assert(a.size == ts_size);
 	PT_(valid_state)(&a);
 	printf("Now: %s.\n", T_(ArrayToString)(&a));
-#endif /* !stack --> */
 
 	/* Peek/Pop. */
 	t = T_(ArrayPeek)(&a);
@@ -277,11 +269,7 @@ static void PT_(test_random)(void) {
 			PT_(to_string)(data, &str);
 			printf("created %s.\n", str);
 		} else {
-#ifdef ARRAY_STACK /* <!-- stack */
-			double t = 1.0;
-#else /* stack --><!-- !stack */
 			double t = 0.5;
-#endif /* !stack --> */
 			r = rand() / (RAND_MAX + 1.0);
 			if(r < t) {
 				data = T_(ArrayPeek)(&a);
@@ -290,7 +278,6 @@ static void PT_(test_random)(void) {
 				printf("popping %s.\n", str);
 				assert(data == T_(ArrayPop)(&a));
 			} else {
-#ifndef ARRAY_STACK /* <!-- !stack */
 				size_t idx = rand() / (RAND_MAX + 1.0) * size;
 				if(!(data = T_(ArrayGet)(&a) + idx)) continue;
 				PT_(to_string)(data, &str);
@@ -299,7 +286,6 @@ static void PT_(test_random)(void) {
 					const int ret = T_(ArrayRemove)(&a, data);
 					assert(ret || (perror("Removing"), 0));
 				}
-#endif /* !stack --> */
 			}
 			size--;
 		}
@@ -507,9 +493,6 @@ static void PT_(test_each)(void) {
 static void T_(ArrayTest)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">Array of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: "
-#ifdef ARRAY_STACK
-		"ARRAY_STACK; "
-#endif
 #ifdef ARRAY_TO_STRING
 		"ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
 #endif

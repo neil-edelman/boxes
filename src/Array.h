@@ -7,13 +7,7 @@
 
  <tag:<T>Array> is a dynamic array that stores contiguous `<T>`, which must be
  set using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal
- to the size, resizing may be necessary and incurs amortised cost. When adding
- new elements, the elements may change memory location to fit. It is therefore
- unstable; any pointers to this memory may become stale and unusable on
- expansion.
-
- The storage is implicit, <fn:<T>ArrayGet> `+ index`, therefore different
- sized polymorphic objects must use an extra level of indirection.
+ to the size, resizing may be necessary and incurs amortised cost.
 
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -24,9 +18,6 @@
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type
  associated therewith; required. `<PT>` is private, whose names are prefixed in
  a manner to avoid collisions; any should be re-defined prior to use elsewhere.
-
- @param[ARRAY_STACK]
- Doesn't define removal functions except <fn:<T>ArrayPop>, making it a stack.
 
  @param[ARRAY_TO_STRING]
  Optional print function implementing <typedef:<PT>ToString>; makes available
@@ -45,7 +36,6 @@
  @cf [Set](https://github.com/neil-edelman/Set)
  @cf [Trie](https://github.com/neil-edelman/Trie) */
 
-#include <stddef.h> /* offset_of */
 #include <stdlib.h> /* realloc free */
 #include <assert.h> /* assert */
 #include <string.h> /* memcpy memmove (strlen) (strerror strcpy memcmp) */
@@ -61,8 +51,7 @@
 #if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TEST requires ARRAY_TO_STRING.
 #endif
-#if defined(ARRAY_CHILD) && (defined(ARRAY_STACK) || defined(ARRAY_TO_STRING) \
-	|| defined(ARRAY_TEST))
+#if defined(ARRAY_CHILD) && (defined(ARRAY_TO_STRING) || defined(ARRAY_TEST))
 #error With ARRAY_CHILD, defining public interface functions is useless.
 #endif
 #if defined(T) || defined(T_) || defined(PT_)
@@ -96,11 +85,13 @@ typedef ARRAY_TYPE PT_(Type);
 /** Operates by side-effects. */
 typedef void (*PT_(Action))(T *);
 
-/** Given constant `data`, returns a boolean. */
-typedef int (*PT_(Predicate))(const T *data);
+/** Returns a boolean given `<T>`. */
+typedef int (*PT_(Predicate))(const T *);
 
-/** To initialise it to an idle state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}`
- (`C99`), or being `static`.
+/** Manages the array `data`, which is indexed up to `size`. When modifying the
+ topology of this array, it may change memory location to fit; any pointers to
+ this memory may become stale. To initialise it to an idle state, see
+ <fn:<T>Array>, `ARRAY_IDLE`, `{0}` (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
 struct T_(Array);
@@ -147,19 +138,17 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 	return 1;
 }
 
-/** This is just a convenience function to call `reserve_update` with
- `a`, `min_capacity`, and no `update_ptr`, which is what usually happens. */
-static int PT_(reserve)(struct T_(Array) *const a, const size_t min_capacity) {
-	return PT_(update_reserve)(a, min_capacity, 0);
-}
+/** Call `reserve_update` with `a`, `min_capacity`, and no `update_ptr`; which
+ is what usually happens. */
+static int PT_(reserve)(struct T_(Array) *const a, const size_t min_capacity)
+	{ return PT_(update_reserve)(a, min_capacity, 0); }
 
 /** In `a`, converts `anchor` and `range` à la Python and stores them in the
  pointers `p0` and `p1` _st_ `*p0, *p1 \in [0, a.size], *p0 <= *p1`.
  @param[anchor] An element in the array or null to indicate past the end.
  @return Success.
- @throws[ERANGE] `anchor` is not null and not in `a`.
- @throws[ERANGE] `range` is greater then +/-65534.
- @throws[ERANGE] `size_t` overflow. */
+ @throws[ERANGE] `anchor` is not null and not in `a`. `range` is greater then
+ +/-65534. `size_t` overflow. */
 static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	const long range, size_t *const p0, size_t *const p1) {
 	size_t i0, i1;
@@ -179,8 +168,7 @@ static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	return 1;
 }
 
-/** Replace: does the work. With `a`, array indices `i0` (inclusive) to `i1`
- (exclusive) will be replaced with `b`. */
+/** `a` indices [`i0`, `i1`) will be replaced with `b`. */
 static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	const size_t i1, const struct T_(Array) *const b) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
@@ -199,68 +187,43 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Adds one to the size of `a` and updates `update_ptr`. */
+/** Adds one to the size of `a` and updates `update_ptr`. Returns new. */
 static T *PT_(update_new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
-	if(a->size >= (size_t)-1) { errno = ERANGE; return 0; } /* Unlikely. */
 	if(!PT_(update_reserve)(a, a->size + 1, update_ptr)) return 0;
 	return a->data + a->size++;
 }
 
-/** Adds one to the size of `a`. */
-static T *PT_(new)(struct T_(Array) *const a) { return PT_(update_new)(a, 0); }
+/** Adds one to the size of `a`. Returns new. */
+static T *PT_(new)(struct T_(Array) *const a)
+	{ assert(a); return PT_(reserve)(a, a->size + 1) ? a->data + a->size++ : 0;}
 
-/** Zeros `a`. */
-static void PT_(array)(struct T_(Array) *const a) {
-	assert(a);
-	a->data     = 0;
-	a->capacity = 0;
-	a->size     = 0;
-}
+/** Initialises `a` to idle. */
+static void PT_(array)(struct T_(Array) *const a)
+	{ assert(a); a->data = 0, a->capacity = a->size = 0; }
 
-/** Frees `a`. */
-static void PT_(array_)(struct T_(Array) *const a) {
-	assert(a);
-	free(a->data);
-	PT_(array)(a);
-}
+/** Destroys `a` and returns it to idle. */
+static void PT_(array_)(struct T_(Array) *const a)
+	{ assert(a); free(a->data); PT_(array)(a); }
 
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 
 /** Returns `a` to the idle state where it takes no dynamic memory.
- @param[a] If null, does nothing.
- @order \Theta(1)
- @allow */
-static void T_(Array_)(struct T_(Array) *const a) {
-	if(a) PT_(array_)(a);
-}
+ @param[a] If null, does nothing. @order \Theta(1) @allow */
+static void T_(Array_)(struct T_(Array) *const a) { if(a) PT_(array_)(a); }
 
-/** Initialises `a` to be idle.
- @order \Theta(1)
- @allow */
-static void T_(Array)(struct T_(Array) *const a) {
-	if(a) PT_(array)(a);
-}
+/** Initialises `a` to be idle. @order \Theta(1) @allow */
+static void T_(Array)(struct T_(Array) *const a) { if(a) PT_(array)(a); }
 
 /** @param[a] If null, returns zero.
- @return The size of `a`.
- @order \O(1)
- @allow */
-static size_t T_(ArraySize)(const struct T_(Array) *const a) {
-	return a ? a->size : 0;
-}
+ @return The `size` field of `a`. @order \O(1) @allow */
+static size_t T_(ArraySize)(const struct T_(Array) *const a)
+	{ return a ? a->size : 0; }
 
-#ifndef ARRAY_STACK /* <!-- !stack */
-
-/** Removes `data` from `a`. Only defined if not `ARRAY_STACK`.
+/** Removes `data` from `a`.
  @param[a, data] If null, returns false.
- @param[data] Will be removed; data will remain the same but be updated to the
- next element, or if this was the last element, the pointer will be past the
- end.
  @return Success, otherwise `errno` will be set for valid input.
- @throws[EDOM] `data` is not part of `a`.
- @order \O(n).
- @allow */
+ @throws[EDOM] `data` is not part of `a`. @order \O(n). @allow */
 static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
 	if(!a || !data) return 0;
@@ -270,16 +233,10 @@ static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
 	return 1;
 }
 
-/** Removes `data` from `a` and replaces it with the tail. Only defined if not
- `ARRAY_STACK`.
+/** Removes `data` from `a` and replaces it with the tail.
  @param[a, data] If null, returns false.
- @param[data] Will be removed; data will remain the same but be updated to the
- last element, or if this was the last element, the pointer will be past the
- end.
  @return Success, otherwise `errno` will be set for valid input.
- @throws[EDOM] `data` is not part of `a`.
- @order \O(1).
- @allow */
+ @throws[EDOM] `data` is not part of `a`. @order \O(1). @allow */
 static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
 	size_t n;
 	if(!a || !data) return 0;
@@ -289,38 +246,24 @@ static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
 	return 1;
 }
 
-#endif /* !stack --> */
-
 /** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
- previously in an active non-idle state, it continues to be. Compare
- <fn:<T>Array_>.
- @param[a] If null, does nothing.
- @order \Theta(1)
- @allow */
-static void T_(ArrayClear)(struct T_(Array) *const a) {
-	if(!a) return;
-	a->size = 0;
-}
+ previously in an active non-idle state, it continues to be.
+ @param[a] If null, does nothing. @order \Theta(1) @allow */
+static void T_(ArrayClear)(struct T_(Array) *const a)
+	{ if(a) a->size = 0; }
 
-/** As long as the size doesn't go up, see <fn:<T>ArrayUpdateNew>.
- @param[a] If null, returns null.
- @return A pointer to the `a`'s data, indexable up to the `a`'s size.
- @order \Theta(1)
- @allow */
-static T *T_(ArrayGet)(const struct T_(Array) *const a) {
-	return a ? a->data : 0;
-}
+/** @param[a] If null, returns null.
+ @return `data` field of `a`, indexable up to `size`, until the size changes.
+ @order \Theta(1) @allow */
+static T *T_(ArrayGet)(const struct T_(Array) *const a)
+	{ return a ? a->data : 0; }
 
 /** Gets an index given `data`.
  @param[a] Must be a valid object that stores `data`.
  @param[data] If the element is not part of the `a`, behaviour is undefined.
- @return An index.
- @order \Theta(1)
- @allow */
+ @return An index. @order \Theta(1) @allow */
 static size_t T_(ArrayIndex)(const struct T_(Array) *const a,
-	const T *const data) {
-	return data - a->data;
-}
+	const T *const data) { return data - a->data; }
 
 /** @param[a] If null or idle, returns null.
  @return One past the end of the array.
@@ -332,8 +275,7 @@ static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
 
 /** @param[a] If null, returns null.
  @return The last element or null if the a is empty.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
 	return a && a->size ? a->data + a->size - 1 : 0;
 }
@@ -392,10 +334,8 @@ static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
  @throws[realloc]
  @order Amortised \O(1).
  @allow */
-static T *T_(ArrayNew)(struct T_(Array) *const a) {
-	if(!a) return 0;
-	return PT_(new)(a);
-}
+static T *T_(ArrayNew)(struct T_(Array) *const a)
+	{ return a ? PT_(new)(a) : 0; }
 
 /** @param[a] If null, returns null.
  @param[update_ptr] Pointer to update on memory move if it is within the memory
@@ -674,10 +614,8 @@ static void PT_(unused_set)(void) {
 	T_(Array_)(0);
 	T_(Array)(0);
 	T_(ArraySize)(0);
-#ifndef ARRAY_STACK /* <!-- !stack */
 	T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0);
-#endif /* !stack --> */
 	T_(ArrayClear)(0);
 	T_(ArrayGet)(0);
 	T_(ArrayEnd)(0);
@@ -735,9 +673,6 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #undef PT_
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
-#ifdef ARRAY_STACK
-#undef ARRAY_STACK
-#endif
 #ifdef ARRAY_TO_STRING
 #undef ARRAY_TO_STRING
 #endif
