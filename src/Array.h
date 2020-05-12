@@ -52,22 +52,22 @@
 #include <errno.h>  /* errno */
 
 /* Check defines. */
-#ifndef ARRAY_NAME /* <!-- error */
+#ifndef ARRAY_NAME
 #error Generic ARRAY_NAME undefined.
-#endif /* error --> */
-#ifndef ARRAY_TYPE /* <!-- error */
+#endif
+#ifndef ARRAY_TYPE
 #error Generic ARRAY_TYPE undefined.
-#endif /* --> */
-#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING) /* <!-- error */
+#endif
+#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TEST requires ARRAY_TO_STRING.
-#endif /* error --> */
+#endif
 #if defined(ARRAY_CHILD) && (defined(ARRAY_STACK) || defined(ARRAY_TO_STRING) \
-	|| defined(ARRAY_TEST)) /* <!-- error */
+	|| defined(ARRAY_TEST))
 #error With ARRAY_CHILD, defining public interface functions is useless.
-#endif /* error --> */
-#if defined(T) || defined(T_) || defined(PT_) /* <!-- error */
+#endif
+#if defined(T) || defined(T_) || defined(PT_)
 #error T, T_, and PT_ cannot be defined.
-#endif /* error --> */
+#endif
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #ifdef CAT
@@ -106,10 +106,8 @@ typedef int (*PT_(Predicate))(const T *data);
 struct T_(Array);
 struct T_(Array) {
 	T *data;
-	/* Fibonacci; data -> (c0 < c1 || c0 == c1 == max_size). */
-	size_t capacity, next_capacity;
-	/* !data -> !size, data -> size <= capacity */
-	size_t size;
+	size_t capacity; /* data -> (capacity >= 8) */
+	size_t size; /* !data -> !size; data -> size <= capacity */
 };
 /* `{0}` is `C99`. */
 #ifndef ARRAY_IDLE /* <!-- !zero */
@@ -130,20 +128,19 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 	T *data;
 	const size_t max_size = (size_t)-1 / sizeof(T *);
 	assert(a);
-	if(!a->data) {
+	if(a->data) {
+		if(min_capacity <= a->capacity) return 1;
+		c0 = a->capacity, assert(c0 >= 8);
+	} else {
 		if(!min_capacity) return 1;
 		c0 = 8;
-		c1 = 13;
-	} else {
-		if(min_capacity <= a->capacity) return 1;
-		c0 = a->capacity;
-		c1 = a->next_capacity;
 	}
 	if(min_capacity > max_size) return errno = ERANGE, 0;
-	assert(c0 < c1);
-	/* Fibonacci: c0 ^= c1, c1 ^= c0, c0 ^= c1, c1 += c0. Technically, this
-	 calculation takes `\O(log (min_capacity - capacity))`, but we expect that
-	 to be very small compared to the time to re-allocate. */
+	/* Grow the capacity a power, bit less then the Fibonacci sequence. */
+	while() {
+		c1 = c0 + (c0 >> 1) + (c0 >> 3);
+	}
+	
 	while(c0 < min_capacity) {
 		size_t temp = c0 + c1; c0 = c1; c1 = temp;
 		if(c1 > max_size || c1 < c0) c1 = max_size;
