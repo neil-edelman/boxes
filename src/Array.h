@@ -276,9 +276,8 @@ static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
 /** @param[a] If null, returns null.
  @return The last element or null if the a is empty.
  @order \Theta(1) @allow */
-static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
-	return a && a->size ? a->data + a->size - 1 : 0;
-}
+static T *T_(ArrayPeek)(const struct T_(Array) *const a)
+	{ return a && a->size ? a->data + a->size - 1 : 0; }
 
 /** The same value as <fn:<T>ArrayPeek>.
  @param[a] If null, returns null.
@@ -286,17 +285,14 @@ static T *T_(ArrayPeek)(const struct T_(Array) *const a) {
  stack is empty.
  @order \Theta(1)
  @allow */
-static T *T_(ArrayPop)(struct T_(Array) *const a) {
-	return a && a->size ? a->data + --a->size : 0;
-}
+static T *T_(ArrayPop)(struct T_(Array) *const a)
+	{ return a && a->size ? a->data + --a->size : 0; }
 
 /** Iterate through `a` backwards.
  @param[a] The array; if null, returns null.
- @param[here] Set it to the current element; when null, it will be last
- element, if it exists.
+ @param[here] Set it to null to get the last element, if it exists.
  @return A pointer to the previous element or null if it does not exist.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static T *T_(ArrayBack)(const struct T_(Array) *const a, const T *const here) {
 	size_t idx;
 	if(!a) return 0;
@@ -310,14 +306,12 @@ static T *T_(ArrayBack)(const struct T_(Array) *const a, const T *const here) {
 	return a->data + idx - 1;
 }
 
-/** Iterate through `a`. It is safe to add using <fn:<T>ArrayUpdateNew> with
- the return value as `update`. Removing an element causes the pointer to go to
+/** Iterate through `a`. Removing an element causes the pointer to go to
  the next element, if it exists.
  @param[a] The array; if null, returns null.
  @param[here] Set it to null to get the first element, if it exists.
  @return A pointer to the next element or null if there are no more.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
 	size_t idx;
 	if(!a) return 0;
@@ -331,9 +325,7 @@ static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @throws[realloc]
- @order Amortised \O(1).
- @allow */
+ @throws[realloc] @order Amortised \O(1). @allow */
 static T *T_(ArrayNew)(struct T_(Array) *const a)
 	{ return a ? PT_(new)(a) : 0; }
 
@@ -345,28 +337,20 @@ static T *T_(ArrayNew)(struct T_(Array) *const a)
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @throws[realloc]
- @order Amortised \O(1).
- @allow */
+ @throws[realloc] @order Amortised \O(1). @allow */
 static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
-	T **const update_ptr) {
-	if(!a) return 0;
-	return PT_(update_new)(a, update_ptr);
-}
+	T **const update_ptr) { return a ? PT_(update_new)(a, update_ptr) : 0; }
 
-/** Ensures that `a` is `reserve` capacity beyond the elements in the array,
- but doesn't add to the size.
- @param[a] If null, returns false.
- @param[reserve] If zero, returns true.
+/** Ensures that `a` is `reserve` capacity beyond the elements in the array.
+ @param[a] If null, returns null.
  @return The <fn:<T>ArrayEnd> of the `a`, where are `reserve` elements, or null
- and `errno` will be set. Writing on this memory space is safe, but one will
- have to increase the size manually, (see <fn:<T>ArrayBuffer>.)
+ and `errno` will be set. Writing on this memory space is safe up to `reserve`
+ elements, but one will have to increase the size manually, (see
+ <fn:<T>ArrayBuffer>.)
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  error and doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @throws[realloc]
- @order Amortised \O(`reserve`).
- @allow */
+ @throws[realloc] @allow */
 static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
 	if(!a) return 0;
 	if(!reserve) return a->data ? a->data + a->size : 0;
@@ -386,9 +370,7 @@ static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). If
  <fn:<T>ArrayReserve> has been successful in reserving at least `add` elements,
  one is guaranteed success.
- @throws[realloc]
- @order Amortised \O(`add`).
- @allow */
+ @throws[realloc] @order Amortised \O(`add`). @allow */
 static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t add) {
 	size_t prev_size;
 	if(!a || !add) return 0;
@@ -403,8 +385,7 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t add) {
  of the list can not change while in this function. That is, don't call
  <fn:<T>ArrayNew>, <fn:<T>ArrayRemove>, _etc_ in `action`.
  @param[a, action] If null, does nothing.
- @order \O(`size` \times `action`)
- @allow */
+ @order \O(`size` \times `action`) @allow */
 static void T_(ArrayEach)(struct T_(Array) *const a,
 	const PT_(Action) action) {
 	T *t, *end;
@@ -416,8 +397,7 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
  `predicate` returns true. The topology of the list can not change while in
  this function.
  @param[a, predicate, action] If null, does nothing.
- @order \O(`size` \times `action`)
- @allow */
+ @order \O(`size` \times `action`) @allow */
 static void T_(ArrayIfEach)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate, const PT_(Action) action) {
 	T *t, *end;
@@ -429,9 +409,7 @@ static void T_(ArrayIfEach)(struct T_(Array) *const a,
 /** Iterates through `a` and calls `predicate` until it returns true.
  @param[a, predicate] If null, returns null.
  @return The first `predicate` that returned true, or, if the statement is
- false on all, null.
- @order \O(`size` \times `predicate`)
- @allow */
+ false on all, null. @order \O(`size` \times `predicate`) @allow */
 static T *T_(ArrayAny)(const struct T_(Array) *const a,
 	const PT_(Predicate) predicate) {
 	T *t, *end;
@@ -556,9 +534,7 @@ static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 /** Can print 4 things at once before it overwrites. One must a
  `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
  this functionality.
- @return Prints `a` in a static buffer.
- @order \Theta(1); it has a 255 character limit; every element takes some of it.
- @allow */
+ @return Prints `a` in a static buffer. @order \Theta(1) @allow */
 static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
 	static char buffers[4][256];
 	static size_t buffer_i;
