@@ -104,18 +104,15 @@ typedef int (*PT_(Predicate))(const T *data);
 
  ![States.](../web/states.png) */
 struct T_(Array);
-struct T_(Array) {
-	T *data;
-	size_t capacity; /* data -> (capacity >= 8) */
-	size_t size; /* !data -> !size; data -> size <= capacity */
-};
+/* !data -> !size data -> capacity >= min && size <= capacity <= max */
+struct T_(Array) { T *data; size_t size, capacity; };
 /* `{0}` is `C99`. */
 #ifndef ARRAY_IDLE /* <!-- !zero */
-#define ARRAY_IDLE { 0, 0, 0, 0 }
+#define ARRAY_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
 
 /** Ensures `min_capacity` of `a`.
- @param[min_capacity] If zero, allocates anyway.
+ @param[min_capacity] If zero and idle, does nothing.
  @param[update_ptr] Must be in the array or null, it updates this value.
  @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
@@ -124,34 +121,29 @@ struct T_(Array) {
  @throws[realloc] */
 static int PT_(update_reserve)(struct T_(Array) *const a,
 	const size_t min_capacity, T **const update_ptr) {
-	size_t c0, c1;
+	size_t c0;
 	T *data;
-	const size_t max_size = (size_t)-1 / sizeof(T *);
+	const size_t max_size = (size_t)-1 / sizeof *a->data;
 	assert(a);
 	if(a->data) {
 		if(min_capacity <= a->capacity) return 1;
 		c0 = a->capacity, assert(c0 >= 8);
-	} else {
+	} else { /* Idle. */
 		if(!min_capacity) return 1;
 		c0 = 8;
 	}
 	if(min_capacity > max_size) return errno = ERANGE, 0;
-	/* Grow the capacity a power, bit less then the Fibonacci sequence. */
-	while() {
-		c1 = c0 + (c0 >> 1) + (c0 >> 3);
-	}
-	
+	/* Grow the capacity exponentially, a bit less then Fibonacci. */
 	while(c0 < min_capacity) {
-		size_t temp = c0 + c1; c0 = c1; c1 = temp;
-		if(c1 > max_size || c1 < c0) c1 = max_size;
+		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
+		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; very unlikely. */
+		c0 = c1;
 	}
-	if(!(data = realloc(a->data, c0 * sizeof *a->data)))
+	if(!(data = realloc(a->data, sizeof *a->data * c0)))
 		{ if(!errno) errno = ERANGE; return 0; }
 	if(update_ptr && a->data != data)
-		*update_ptr = data + (*update_ptr - a->data);
-	a->data = data;
-	a->capacity = c0;
-	a->next_capacity = c1;
+		*update_ptr = data + (*update_ptr - a->data); /* Not strict ISO. */
+	a->data = data, a->capacity = c0;
 	return 1;
 }
 
@@ -221,10 +213,9 @@ static T *PT_(new)(struct T_(Array) *const a) { return PT_(update_new)(a, 0); }
 /** Zeros `a`. */
 static void PT_(array)(struct T_(Array) *const a) {
 	assert(a);
-	a->data          = 0;
-	a->capacity      = 0;
-	a->next_capacity = 0;
-	a->size          = 0;
+	a->data     = 0;
+	a->capacity = 0;
+	a->size     = 0;
 }
 
 /** Frees `a`. */

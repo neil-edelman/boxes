@@ -23,9 +23,7 @@ static void PT_(valid_state)(const struct T_(Array) *const a) {
 	/* Null is a valid state. */
 	if(!a) return;
 	if(!a->data) { assert(!a->size); return; }
-	assert(a->size <= a->capacity);
-	assert(a->capacity < a->next_capacity
-		|| (a->capacity == a->next_capacity) == max_size);
+	assert(a->size <= a->capacity && a->capacity <= max_size);
 }
 
 /** @implements <PT>Predicate
@@ -50,9 +48,8 @@ static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
 			"\trankdir = LR;\n"
 			"\tnode [shape = record, style = filled];\n"
 			"\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>Array: "
-			QUOTE(ARRAY_TYPE) "\\l|size: %lu\\lcapacity: %lu\\l"
-			"next capacity: %lu\\l\"];\n", (unsigned long)ar->size,
-			(unsigned long)ar->capacity, (unsigned long)ar->next_capacity);
+			QUOTE(ARRAY_TYPE) "\\l|size: %lu\\lcapacity: %lu\\l\"];\n",
+			(unsigned long)ar->size, (unsigned long)ar->capacity);
 	if(ar->data) {
 		T *const data = ar->data;
 		size_t i;
