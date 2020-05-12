@@ -539,12 +539,8 @@ static void PT_(unused_set)(void) {
 	T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0);
 	T_(ArrayClear)(0);
-	T_(ArrayEnd)(0);
-	T_(ArrayIndex)(0, 0);
 	T_(ArrayPeek)(0);
 	T_(ArrayPop)(0);
-	T_(ArrayBack)(0, 0);
-	T_(ArrayNext)(0, 0);
 	T_(ArrayNew)(0);
 	T_(ArrayUpdateNew)(0, 0);
 	T_(ArrayReserve)(0, 0);
