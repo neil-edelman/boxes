@@ -88,7 +88,7 @@ typedef void (*PT_(Action))(T *);
 /** Returns a boolean given `<T>`. */
 typedef int (*PT_(Predicate))(const T *);
 
-/** Manages the array field `data`, which is indexed up to `size`. When
+/** Manages the array field `first`, which is indexed up to `size`. When
  modifying the topology of this array, it may change memory location to fit;
  any pointers to this memory may become stale. To initialise it to an idle
  state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}` (`C99`), or being `static`.
@@ -143,7 +143,7 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 static int PT_(reserve)(struct T_(Array) *const a, const size_t min_capacity)
 	{ return PT_(update_reserve)(a, min_capacity, 0); }
 
-/** In `a`, converts `anchor` and `range` à la Python and stores them in the
+/** In `a`, converts `anchor` and `range` à-la-Python and stores them in the
  pointers `p0` and `p1` _st_ `*p0, *p1 \in [0, a.size], *p0 <= *p1`.
  @param[anchor] An element in the array or null to indicate past the end.
  @return Success.
@@ -189,16 +189,18 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Adds one to the size of `a` and updates `update_ptr`. Returns new. */
+/** Returns a new un-initialized datum of `a` and updates `update_ptr`. */
 static T *PT_(update_new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
-	if(!PT_(update_reserve)(a, a->size + 1, update_ptr)) return 0;
-	return a->first + a->size++;
+	return PT_(update_reserve)(a, a->size + 1, update_ptr)
+		? a->first + a->size++ : 0;
 }
 
-/** Adds one to the size of `a`. Returns new. */
-static T *PT_(new)(struct T_(Array) *const a)
-	{ assert(a); return PT_(reserve)(a, a->size + 1) ? a->first + a->size++ : 0;}
+/** Returns a new un-initialized datum of `a`. */
+static T *PT_(new)(struct T_(Array) *const a) {
+	assert(a);
+	return PT_(reserve)(a, a->size + 1) ? a->first + a->size++ : 0;
+}
 
 /** Initialises `a` to idle. */
 static void PT_(array)(struct T_(Array) *const a)
@@ -217,29 +219,29 @@ static void T_(Array_)(struct T_(Array) *const a) { if(a) PT_(array_)(a); }
 /** Initialises `a` to be idle. @order \Theta(1) @allow */
 static void T_(Array)(struct T_(Array) *const a) { if(a) PT_(array)(a); }
 
-/** Removes `data` from `a`.
+/** Removes `datum` from `a`.
  @param[a, data] If null, returns false.
  @return Success, otherwise `errno` will be set for valid input.
  @throws[EDOM] `data` is not part of `a`. @order \O(n). @allow */
-static int T_(ArrayRemove)(struct T_(Array) *const a, T *const data) {
+static int T_(ArrayRemove)(struct T_(Array) *const a, T *const datum) {
 	size_t n;
-	if(!a || !data) return 0;
-	if(data < a->first
-		|| (n = data - a->first) >= a->size) return errno = EDOM, 0;
-	memmove(data, data + 1, sizeof *data * (--a->size - n));
+	if(!a || !datum) return 0;
+	if(datum < a->first
+		|| (n = datum - a->first) >= a->size) return errno = EDOM, 0;
+	memmove(datum, datum + 1, sizeof *datum * (--a->size - n));
 	return 1;
 }
 
-/** Removes `data` from `a` and replaces it with the tail.
+/** Removes `datum` from `a` and replaces it with the tail.
  @param[a, data] If null, returns false.
  @return Success, otherwise `errno` will be set for valid input.
  @throws[EDOM] `data` is not part of `a`. @order \O(1). @allow */
-static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
+static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const datum) {
 	size_t n;
-	if(!a || !data) return 0;
-	if(data < a->first
-	   || (n = data - a->first) >= a->size) return errno = EDOM, 0;
-	if(--a->size != n) memcpy(data, a->first + a->size, sizeof *data);
+	if(!a || !datum) return 0;
+	if(datum < a->first
+	   || (n = datum - a->first) >= a->size) return errno = EDOM, 0;
+	if(--a->size != n) memcpy(datum, a->first + a->size, sizeof *datum);
 	return 1;
 }
 
@@ -248,27 +250,6 @@ static int T_(ArrayLazyRemove)(struct T_(Array) *const a, T *const data) {
  @param[a] If null, does nothing. @order \Theta(1) @allow */
 static void T_(ArrayClear)(struct T_(Array) *const a)
 	{ if(a) a->size = 0; }
-
-/** @param[a] If null, returns null.
- @return `data` field of `a`, indexable up to `size`, until the size changes.
- @order \Theta(1) @allow */
-static T *T_(ArrayGet)(const struct T_(Array) *const a)
-	{ return a ? a->first : 0; }
-
-/** Gets an index given `data`.
- @param[a] Must be a valid object that stores `data`.
- @param[data] If the element is not part of the `a`, behaviour is undefined.
- @return An index. @order \Theta(1) @allow */
-static size_t T_(ArrayIndex)(const struct T_(Array) *const a,
-	const T *const data) { return data - a->first; }
-
-/** @param[a] If null or idle, returns null.
- @return One past the end of the array.
- @order \Theta(1)
- @allow */
-static T *T_(ArrayEnd)(const struct T_(Array) *const a) {
-	return a && a->first ? a->first + a->size : 0;
-}
 
 /** @param[a] If null, returns null.
  @return The last element or null if the a is empty.
@@ -284,37 +265,6 @@ static T *T_(ArrayPeek)(const struct T_(Array) *const a)
  @allow */
 static T *T_(ArrayPop)(struct T_(Array) *const a)
 	{ return a && a->size ? a->first + --a->size : 0; }
-
-/** Iterate through `a` backwards.
- @param[a] The array; if null, returns null.
- @param[here] Set it to null to get the last element, if it exists.
- @return A pointer to the previous element or null if it does not exist.
- @order \Theta(1) @allow */
-static T *T_(ArrayBack)(const struct T_(Array) *const a, const T *const here) {
-	size_t idx;
-	if(!a) return 0;
-	if(!here) {
-		if(!a->size) return 0;
-		idx = a->size;
-	} else {
-		idx = (size_t)(here - a->first);
-		if(!idx) return 0;
-	}
-	return a->first + idx - 1;
-}
-
-/** Iterate through `a`. Removing an element causes the pointer to go to
- the next element, if it exists.
- @param[a] The array; if null, returns null.
- @param[here] Set it to null to get the first element, if it exists.
- @return A pointer to the next element or null if there are no more.
- @order \Theta(1) @allow */
-static T *T_(ArrayNext)(const struct T_(Array) *const a, const T *const here) {
-	size_t idx;
-	if(!a) return 0;
-	idx = here ? (size_t)(here - a->first + 1) : 0;
-	return idx < a->size ? a->first + idx : 0;
-}
 
 /** @param[a] If is null, returns null.
  @return A new, un-initialised, element at the back of `a`, or null and `errno`
@@ -589,7 +539,6 @@ static void PT_(unused_set)(void) {
 	T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0);
 	T_(ArrayClear)(0);
-	T_(ArrayGet)(0);
 	T_(ArrayEnd)(0);
 	T_(ArrayIndex)(0, 0);
 	T_(ArrayPeek)(0);
