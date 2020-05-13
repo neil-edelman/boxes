@@ -224,6 +224,34 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(&a);
 }
 
+/** Non-sense. @implements Compress */
+static int PT_(equal_byte)(T *const a, const T *const b)
+	{ return *(char *)a == *(char *)b; }
+
+/** Add onto `a` `value` x `repetitions` (non-sense.) */
+static int PT_(fill_garbage)(struct T_(Array) *const a,
+	const char value, const size_t repetitions) {
+	T *t;
+	size_t r = 0;
+	assert(a && repetitions);
+	if(!(t = T_(ArrayBuffer)(a, repetitions))) return 0;
+	memset(t, 0, sizeof *t * repetitions);
+	while(r < repetitions) *(char *)(t + r++) = value;
+	return 1;
+}
+
+/** Tests compress, but half-way because we don't know the specifics. */
+static void PT_(test_compress)(void) {
+	struct T_(Array) a = ARRAY_IDLE;
+	assert(PT_(fill_garbage)(&a, 'a', 3) && PT_(fill_garbage)(&a, 'b', 3)
+		&& PT_(fill_garbage)(&a, 'c', 3));
+	assert(a.size == 9);
+	T_(ArrayCompress)(&a, &PT_(equal_byte));
+	assert(a.size == 3 && *(char *)a.first == 'a'
+		&& *(char *)(a.first + 1) == 'b' && *(char *)(a.first + 2) == 'c');
+	T_(Array_)(&a);
+}
+
 static void PT_(test_random)(void) {
 	struct T_(Array) a;
 	const size_t mult = 1; /* For long tests. */
@@ -477,6 +505,7 @@ static void T_(ArrayTest)(void) {
 		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; "
 		"testing:\n");
 	PT_(test_basic)();
+	PT_(test_compress)();
 	PT_(test_random)();
 	PT_(test_replace)();
 	PT_(test_keep)();

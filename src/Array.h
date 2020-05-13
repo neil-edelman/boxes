@@ -88,6 +88,9 @@ typedef void (*PT_(Action))(T *);
 /** Returns a boolean given `<T>`. */
 typedef int (*PT_(Predicate))(const T *);
 
+/** If true, projects `(merge, project) -> (merge)`. */
+typedef int (*PT_(Compress))(T *merge, const T *project);
+
 /** Manages the array field `first`, which is indexed up to `size`. When
  modifying the topology of this array, it may change memory location to fit;
  any pointers to this memory may become stale. To initialise it to an idle
@@ -132,6 +135,8 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 	}
 	if(!(first = realloc(a->first, sizeof *a->first * c0)))
 		{ if(!errno) errno = ERANGE; return 0; }
+	/*printf("reserve: %lu size %lu cap %lu bytes @ at %p from %p.\n",
+		min_capacity, c0, sizeof *a->first, first, a->first);*/
 	if(update_ptr && a->first != first)
 		*update_ptr = first + (*update_ptr - a->first); /* Not strict ISO. */
 	a->first = first, a->capacity = c0;
@@ -189,6 +194,32 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
+/** Calls `compress` for each consecutive pair of elements in `a`, and, for all
+ true, merges the second element into the first.
+ @order \O(`a.size`) */
+static void PT_(compactify)(struct T_(Array) *const a,
+	const PT_(Compress) compress) {
+	size_t target, from, cursor, next, move;
+	const size_t last = a->size;
+	assert(a && compress);
+	for(target = from = cursor = 0; cursor < last; cursor += next) {
+		/* Bijective `[from, cursor)` is moved lazily. */
+		for(next = 1; cursor + next < last
+			&& compress(a->first + cursor, a->first + cursor + next); next++);
+		if(next == 1) continue;
+		/* Also project injective `[cursor, cursor + next)->[cursor]`. */
+		move = cursor + 1 - from;
+		memmove(a->first + target, a->first + from, sizeof *a->first * move);
+		target += move;
+		from = cursor + next;
+	}
+	/* Last differed move. */
+	move = last - from;
+	memmove(a->first + target, a->first + from, sizeof *a->first * move);
+	target += move, assert(a->size >= target);
+	a->size = target;
+}
+
 /** Returns a new un-initialized datum of `a` and updates `update_ptr`. */
 static T *PT_(update_new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
@@ -208,7 +239,7 @@ static void PT_(array)(struct T_(Array) *const a)
 
 /** Destroys `a` and returns it to idle. */
 static void PT_(array_)(struct T_(Array) *const a)
-	{ assert(a); free(a->first); PT_(array)(a); }
+{ assert(a); printf("~array: %lu.\n", a->size); free(a->first); PT_(array)(a); }
 
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 
@@ -321,7 +352,7 @@ static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
 static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t add) {
 	size_t prev_size;
 	if(!a || !add) return 0;
-	if(a->size > (size_t)-1 - add) { errno = ERANGE; return 0; }
+	if(a->size > (size_t)-1 - add) { errno = ERANGE; return 0; } /* Unlikely. */
 	if(!PT_(reserve)(a, a->size + add)) return 0;
 	prev_size = a->size;
 	a->size += add;
@@ -403,6 +434,12 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	assert((size_t)(erase - a->first) <= a->size);
 	a->size = erase - a->first;
 }
+
+/** Calls `compress` for each consecutive pair of elements in `a`.
+ @order \O(`a.size`) */
+static void T_(ArrayCompress)(struct T_(Array) *const a,
+	const PT_(Compress) compress)
+	{ if(a && compress) PT_(compactify)(a, compress); }
 
 /** Removes at either end of `a` of things that `predicate` returns true.
  @param[a, predicate] If null, does nothing.
@@ -547,6 +584,7 @@ static void PT_(unused_set)(void) {
 	T_(ArrayIfEach)(0, 0, 0);
 	T_(ArrayAny)(0, 0);
 	T_(ArrayKeepIf)(0, 0, 0);
+	T_(ArrayCompress)(0, 0);
 	T_(ArrayTrim)(0, 0);
 	T_(ArraySplice)(0, 0, 0, 0);
 	T_(ArrayIndexSplice)(0, 0, 0, 0);
@@ -574,7 +612,7 @@ static void PT_(unused_set)(void) {
 	PT_(reserve)(0, 0);
 	PT_(range)(0, 0, 0, 0, 0);
 	PT_(replace)(0, 0, 0, 0);
-	PT_(update_new)(0, 0);
+	PT_(compactify)(0, 0);
 	PT_(update_new)(0, 0);
 	PT_(new)(0);
 	PT_(array)(0);
