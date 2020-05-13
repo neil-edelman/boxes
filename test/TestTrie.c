@@ -44,7 +44,7 @@ static void str_to_str(const char *const*str, char(*const a)[12]) {
 
 static size_t lower_bound(const struct StrArray *const array,
 	const char *const value) {
-	const char **const data = array->data;
+	const char **const data = array->first;
 	size_t low = 0, mid, high = array->size;
 	assert(array && value);
 	while(low < high) {
@@ -66,9 +66,9 @@ static int array_insert(struct StrArray *const array,
 	b = lower_bound(array, data);
 	/*printf("lb(%s) = %lu.\n", data, b);*/
 	StrArrayBuffer(array, 1);
-	memmove(array->data + b + 1, array->data + b,
-		sizeof *array->data * (array->size - b - 1));
-	array->data[b] = data;
+	memmove(array->first + b + 1, array->first + b,
+		sizeof *array->first * (array->size - b - 1));
+	array->first[b] = data;
 	return 1;
 }
 
@@ -117,8 +117,10 @@ static void pointer_to_string(const char *const*const ps,
 
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
-	const char *words[] = { "", "foo", "qux", "quxx", "quux", "foo" };
+	const char *words[] = { "foo", "bar", "baz", "qux", "quux" };
 	const size_t words_size = sizeof words / sizeof *words;
+	const char *wordsr[] = { "", "foo", "qux", "quxx", "quux", "foo" };
+	const size_t wordsr_size = sizeof wordsr / sizeof *wordsr;
 	const char *alph[] = { "m", "n", "o", "u", "v", "x", "y", "z", "p", "q",
 		"r", "", "å", "a", "b", "g", "h", "i", "j", "k", "l", "c", "d", "e",
 		"f", "s", "t", "w" };
@@ -237,6 +239,9 @@ static void test_basic_trie_str() {
 	StrTrie_(&trie);
 	if(!StrTrieFromArray(&trie, alph, alph_size, 0)) goto catch;
 	trie_Str_graph(&trie, "graph/alph_all_at_once.gv");
+	if(!StrTrieFromArray(&trie, wordsr, wordsr_size, 0)) goto catch;
+	trie_Str_graph(&trie, "graph/trie_r_all_at_once.gv");
+	StrTrie_(&trie);	
 	/*{
 		struct StrTrieQuery q;
 		const char *next, *const query = "quxx";
@@ -328,18 +333,17 @@ static int timing_comparison(void) {
 				array_insert(&array, parole[(start_i + i) % parole_size]);
 			m_add(&es[ARRAYINIT].m, diff_us(t));
 			printf("Added init array size %lu: %s.\n",
-				(unsigned long)StrArraySize(&array), StrArrayToString(&array));
+				(unsigned long)array.size, StrArrayToString(&array));
 			t = clock();
 			for(i = 0; i < s; i++) {
 				const char *const word = parole[(start_i + i) % parole_size],
-				**const key = bsearch(word, array.data, array.size,
-					sizeof array.data, array_cmp);
+				**const key = bsearch(word, array.first, array.size,
+					sizeof array.first, array_cmp);
 				const int cmp = strcmp(word, *key);
 				(void)cmp, assert(key && !cmp);
 			}
 			m_add(&es[ARRAYLOOK].m, diff_us(t));
-			printf("Added look array size %lu.\n",
-				(unsigned long)StrArraySize(&array));
+			printf("Added look array size %lu.\n", (unsigned long)array.size);
 
 			/* Set, (hash map.) */
 			StringSetClear(&set);
@@ -499,6 +503,7 @@ static void fill_dict(struct Dict *dict) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
+	printf("%d", -1 % 20);
 	test_basic_trie_str();
 	(void)StrTrieTest; /* <- Not safe to call. */
 	DictTrieTest();

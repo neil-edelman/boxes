@@ -1,13 +1,13 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle String Trie
+ @subtitle Parameterised String-Key Trie
 
  ![Example of trie.](../web/trie.png)
 
  A <tag:<N>Trie> is an array of pointers-to-`N` and index on a unique
- identifier string that is associated to `N`. The string can be any encoding
- with a byte null-terminator; in particular, `C` native strings, including
+ identifier string that is associated to `N`. Strings can be any encoding with
+ a byte null-terminator; in particular, `C` native strings, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). It can
  be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree);
  specifically <Morrison, 1968 PATRICiA>, in that the trie only stores data on
@@ -164,7 +164,7 @@ typedef const char *(*PN_(Key))(PN_(Type) *);
 static const PN_(Key) PN_(to_key) = (TRIE_KEY);
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
- in <fn:<N>TriePolicyPut>. */
+in <fn:<N>TriePolicyPut>. */
 typedef int (*PN_(Replace))(PN_(Type) *original, PN_(Type) *replace);
 
 /* Used internally to get rid of the confusing double-pointers. */
@@ -194,7 +194,7 @@ struct N_(Trie) {
 	struct PN_(LeafArray) leaves;
 };
 #ifndef TRIE_IDLE /* <!-- !zero */
-#define TRIE_IDLE { { 0, 0, 0, 0 }, { 0, 0, 0, 0 } }
+#define TRIE_IDLE { ARRAY_IDLE, ARRAY_IDLE }
 #endif /* !zero --> */
 
 /** Initialises `trie` to idle. */
@@ -219,6 +219,10 @@ static int PN_(compar)(PN_(Type) *const*const a, PN_(Type) *const*const b)
 static int PN_(vcompar)(const void *a, const void *b)
 	{ return PN_(compar)(a, b); }
 
+/** @implements <PT>Merge */
+static int PN_(equals)(PN_(Leaf) *const a, PN_(Leaf) *const b)
+	{ return !PN_(compar)(a, b); }
+
 /** Recursive function used for <fn:<PN>init>. Initialise branches of `trie` up
  to `bit` with `a` to `a_size` array of sorted leaves.
  @order O(`leaves`) */
@@ -230,12 +234,12 @@ static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 		&& trie->branches.capacity >= trie->leaves.size - 1);
 	if(a_size <= 1) return;
 	/* Endpoints. */
-	while(trie_is_bit(PN_(to_key)(trie->leaves.data[a]), bit)
-		|| !trie_is_bit(PN_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
+	while(trie_is_bit(PN_(to_key)(trie->leaves.first[a]), bit)
+		|| !trie_is_bit(PN_(to_key)(trie->leaves.first[a + a_size - 1]), bit))
 		bit++;
 	/* Do a binary search for the first `leaves[a+half_s]#bit == 1`. */
 	while(s) half_s = s >> 1,
-		trie_is_bit(PN_(to_key)(trie->leaves.data[a1 + half_s]), bit)
+		trie_is_bit(PN_(to_key)(trie->leaves.first[a1 + half_s]), bit)
 		? s = half_s : (half_s++, a1 += half_s, s -= half_s);
 	s = a1 - a;
 	/* Should have space for all branches pre-allocated, (right?) */
@@ -246,71 +250,33 @@ static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 	PN_(init_branches_r)(trie, bit, a1, a_size - s);
 }
 
-/** Used in <fn:<PN>init>.
- @param[leaves] Locally de-duplicates the array.
- @param[replace] Returns true if the second element replaces the first.
- @order O(`leaves`) */
-static void PN_(unique)(struct PN_(LeafArray) *const leaves,
-	const PN_(Replace) replace) {
-	PN_(Leaf) *a = leaves->data;
-	size_t target, from, cursor, next, choose, move;
-	const size_t end = leaves->size - 1;
-	size_t debug_size = leaves->size, debug;
-	int is_first, is_last;
-	assert(leaves && leaves->size && replace);
-	for(debug = 0; debug < debug_size; debug++) printf("%lu:%s, ", debug,
-		PN_(to_key)(a[debug])); fputc('\n', stdout);
-	for(target = from = cursor = 0; cursor < end; cursor += next) {
-		printf("cursor %lu, next %lu: ", cursor, next);
-		for(debug = 0; debug < debug_size; debug++) printf("%lu:%s, ", debug,
-			PN_(to_key)(a[debug])); fputc('\n', stdout);
-
-		/* Duplicates from `[cursor...(cursor + choose)...cursor + next)`. */
-		for(choose = 0, next = 1; !strcmp(PN_(to_key)(a[cursor + choose]),
-			PN_(to_key)(a[cursor + next])); next++) {
-			if(replace(a[cursor + choose], a[cursor + next]))
-				choose = next;
-			if(cursor + next > end) break; /* +1 for -1 in `end`. */
-		}
-		if(next == 1) continue;
-		is_first = !choose;
-		is_last  = (choose == next);
-
-		/* Differed copying. */
-		move = cursor - from + is_first;
-		memmove(a + target, a + from, sizeof *a * move), target += move;
-		if(!is_first && !is_last)
-			memmove(a + target, a + choose, sizeof *a), target++;
-		from = cursor + next - is_last;
-	}
-
-	/* Finish up copying. */
-	move = leaves->size - from;
-	memmove(a + target, a + from, sizeof *a * move);
-	target += move;
-	assert(leaves->size >= target), leaves->size = target;
-	{
-		size_t i, i_size = leaves->size;
-		for(i = 0; i < i_size; i++)
-			printf("Now %lu %s.\n", i, PN_(to_key)(a[i]));
-	}
-}
-
 /** @param[replace] Called with any duplicate entries and replaces if true; if
  null, doesn't replace. Do not modify the key of either of the entries.
  @return Success initialising `trie` with `a` of size `a_size`, (non-zero.) */
 static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
-	const size_t a_size, const PN_(Replace) replace) {
+	const size_t a_size, const PT_(Merge) merge) {
 	PN_(Leaf) *leaves;
 	assert(trie && !trie->leaves.size && !trie->branches.size
-		&& a && a_size && replace);
+		&& a && a_size && merge);
 	if(!PT_(reserve)(&trie->leaves, a_size)
 		|| !array_TrieBranch_reserve(&trie->branches, a_size - 1)) return 0;
-	leaves = trie->leaves.data;
+	leaves = trie->leaves.first;
 	memcpy(leaves, a, sizeof *a * a_size);
 	trie->leaves.size = a_size;
 	qsort(leaves, a_size, sizeof *a, PN_(vcompar));
-	PN_(unique)(&trie->leaves, replace);
+	{
+		size_t i;
+		printf("Trie leaves after sort: { ");
+		for(i = 0; i < a_size; i++) printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.first[i]));
+		printf(" }.\n");
+	}
+	PT_(compress)(&trie->leaves, PN_(compar));
+	{
+		size_t i;
+		printf("Trie leaves after unique: { ");
+		for(i = 0; i < trie->leaves.size; i++) printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.first[i]));
+		printf(" }.\n");
+	}
 	PN_(init_branches_r)(trie, 0, 0, trie->leaves.size);
 	assert(trie->branches.size == trie->leaves.size - 1);
 	return 1;
@@ -345,9 +311,8 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		return 0;
 
 	/* Internal nodes. */
-	while(branch = trie->branches.data + n0,
-		n0_key = PN_(to_key)(trie->leaves.data[i]),
-		n0 < n1) {
+	while(branch = trie->branches.first + n0,
+		n0_key = PN_(to_key)(trie->leaves.first[i]), n0 < n1) {
 		for(n0_bit = trie_bit(*branch); bit < n0_bit; bit++)
 			if((cmp = trie_strcmp_bit(data_key, n0_key, bit)) != 0) goto insert;
 		left = trie_left(*branch) + 1;
@@ -364,12 +329,12 @@ insert:
 	if(cmp < 0) left = 0;
 	else left = n1 - n0, i += left + 1;
 
-	leaf = trie->leaves.data + i;
+	leaf = trie->leaves.first + i;
 	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
 	*leaf = data;
 	trie->leaves.size++;
 
-	branch = trie->branches.data + n0;
+	branch = trie->branches.first + n0;
 	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
 	*branch = trie_branch(bit, left);
 	trie->branches.size++;
@@ -385,10 +350,10 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	TrieBranch branch;
 	unsigned n0_byte, str_byte = 0, bit;
 	assert(trie && key);
-	if(n1 <= 1) return n1 ? trie->leaves.data : 0; /* Special case. */
+	if(n1 <= 1) return n1 ? trie->leaves.first : 0; /* Special case. */
 	n1--, assert(n1 == trie->branches.size);
 	while(n0 < n1) {
-		branch = trie->branches.data[n0];
+		branch = trie->branches.first[n0];
 		bit = trie_bit(branch);
 		for(n0_byte = bit >> 3; str_byte < n0_byte; str_byte++)
 			if(key[str_byte] == '\0') return 0;
@@ -397,51 +362,8 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 		else n0 += left + 1, i += left + 1;
 	}
 	assert(n0 == n1 && i < trie->leaves.size);
-	return trie->leaves.data + i;
+	return trie->leaves.first + i;
 }
-
-#if 0
-struct N_(TrieQuery) {
-	const struct N_(Trie) *trie;
-	const char *query;
-	size_t i;
-	unsigned edit, used, at;
-};
-
-static void PN_(query_start)(struct N_(TrieQuery) *const q,
-	const struct N_(Trie) *const trie, const char *const query,
-	const unsigned edit) {
-	assert(q && trie && query);
-	q->trie = trie;
-	q->query = query;
-	q->i = 0;
-	q->edit = edit;
-	q->used = 0;
-	q->at = 0;
-}
-
-/** Performs a DFS of the tree. */
-static PN_(Type) *PN_(query_next)(struct N_(TrieQuery) *const q) {
-	TrieBranch *branch;
-	size_t n0 = 0, i = 0;
-	assert(q && q->trie && q->query && q->used <= q->edit);
-
-	/* Internal nodes. */
-	while(branch = trie->branches.data + n0,
-		n0_key = PN_(to_key)(trie->leaves.data[i]),
-		n0 < n1) {
-		for(n0_bit = trie_bit(*branch); bit < n0_bit; bit++)
-			if((cmp = trie_strcmp_bit(data_key, n0_key, bit)) != 0) goto insert;
-		left = trie_left(*branch) + 1;
-		if(!trie_is_bit(data_key, bit)) trie_left_inc(branch), n1 = n0++ + left;
-		else n0 += left, i += left;
-	}
-
-	/* Leaf. */
-	while((cmp = trie_strcmp_bit(data_key, n0_key, bit)) == 0) bit++;
-	return 0;
-}
-#endif
 
 /** @return `key` is an element of `trie` that is an exact match or null. */
 static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
@@ -453,7 +375,7 @@ static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
 }
 
 /** Adds `data` to `trie` and, if `eject` is non-null, stores the collided
- element, if any, as long as `replace` is null or returns true.
+ element, if any, as long as `merge` is null or returns true.
  @param[eject] If not-null, the reference will be set to null if there is no
  ejection. If `replace`, and `replace` returns false, and `eject`, than
  `*eject == data`.
@@ -490,12 +412,12 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 
 	/* Remove leaf. */
 	if(!--trie->leaves.size) return; /* Special case of one leaf. */
-	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
+	memmove(trie->leaves.first + i, trie->leaves.first + i + 1,
 		sizeof(PN_(Leaf)) * (n1 - i));
 
 	/* Remove branch. */
 	for( ; ; ) {
-		left = trie_left(*(branch = trie->branches.data + (last_n0 = n0)));
+		left = trie_left(*(branch = trie->branches.first + (last_n0 = n0)));
 		if(i <= left) {
 			if(!left) break;
 			n1 = ++n0 + left;
@@ -511,7 +433,7 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 /** Used in <fn:<N>TrieAdd>.
  @return `original` and `replace` are ignored and it returns false.
  @implements <typedef:<PN>Replace> */
-static int PN_(false)(PN_(Type) *original, PN_(Type) *replace)
+static int PN_(false)(PN_(Type) *original, /*const!*/ PN_(Type) *replace)
 	{ return (void)(original), (void)(replace), 0; }
 
 
@@ -559,7 +481,7 @@ static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
  @return An array of pointers to the leaves of `trie`, ordered by key.
  @allow */
 static PN_(Type) *const*N_(TrieArray)(const struct N_(Trie) *const trie) {
-	return trie && trie->leaves.size ? trie->leaves.data : 0;
+	return trie && trie->leaves.size ? trie->leaves.first : 0;
 }
 
 /** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
@@ -622,13 +544,13 @@ static int N_(TriePut)(struct N_(Trie) *const trie,
 	return trie && data ? PN_(put)(trie, data, eject, 0) : 0;
 }
 
-/** Adds `data` to `trie` only if the entry is absent or if calling `replace`
+/** Adds `data` to `trie` only if the entry is absent or if calling `merge`
  returns true.
  @param[trie, data] If null, returns null.
  @param[eject] If not null, on success it will hold the overwritten value or
  a pointer-to-null if it did not overwrite a previous value.
- @param[replace] Called on collision and only replaces it if the function
- returns true. If null, it is semantically equivalent to <fn:<N>TriePut>.
+ @param[merge] Called on collision and only replaces it if the function returns
+ true. If null, it is semantically equivalent to <fn:<N>TriePut>.
  @return Success.
  @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
@@ -649,7 +571,7 @@ static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
 static int N_(TrieRemove)(struct N_(Trie) *const trie, const char *const key) {
 	PN_(Leaf) *leaf;
 	return trie && key && (leaf = PN_(get)(trie, key))
-		? (PN_(remove)(trie, leaf - trie->leaves.data), 1) : 0;
+		? (PN_(remove)(trie, leaf - trie->leaves.first), 1) : 0;
 }
 
 /** Can print four strings at once before it overwrites.
@@ -678,10 +600,10 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 	/* Advance the buffer for next time. */
 	buffer_i &= buffers_no - 1;
 	if(!trie) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!trie->leaves.data) { memcpy(b, idle, idle_len), b += idle_len;
+	if(!trie->leaves.first) { memcpy(b, idle, idle_len), b += idle_len;
 		goto terminate; }
 	*b++ = start;
-	for(l = trie->leaves.data, l_end = l + trie->leaves.size; l < l_end; l++) {
+	for(l = trie->leaves.first, l_end = l + trie->leaves.size; l < l_end; l++) {
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
 		str = PN_(to_key)(*l);
