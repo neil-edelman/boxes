@@ -3,7 +3,7 @@
 ## Parameterised Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;Merge](#user-content-typedef-444dbe41), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;Array](#user-content-tag-f128eca2)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -54,6 +54,14 @@ Operates by side\-effects\.
 <code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *);</code>
 
 Returns a boolean given `<T>`\.
+
+
+
+### <a id = "user-content-typedef-444dbe41" name = "user-content-typedef-444dbe41">&lt;PT&gt;Merge</a> ###
+
+<code>typedef int(*<strong>&lt;PT&gt;Merge</strong>)(T *image, const T *project);</code>
+
+If true, projects `(image, project) -> (image)`\.
 
 
 

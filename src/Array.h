@@ -88,8 +88,8 @@ typedef void (*PT_(Action))(T *);
 /** Returns a boolean given `<T>`. */
 typedef int (*PT_(Predicate))(const T *);
 
-/** If true, projects `(merge, project) -> (merge)`. */
-typedef int (*PT_(Compress))(T *merge, const T *project);
+/** If true, projects `(image, project) -> (image)`. */
+typedef int (*PT_(Merge))(T *image, const T *project);
 
 /** Manages the array field `first`, which is indexed up to `size`. When
  modifying the topology of this array, it may change memory location to fit;
@@ -110,7 +110,7 @@ struct T_(Array) { T *first; size_t size, capacity; };
  @param[update_ptr] Must be in the array or null, it updates this value.
  @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- doesn't follow [IEEE Std 1003.1-2001
+ doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
 static int PT_(update_reserve)(struct T_(Array) *const a,
@@ -192,18 +192,16 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Calls `compress` for each consecutive pair of elements in `a`, and, for all
- true, merges the second element into the first.
+/** Calls `merge` for each consecutive pair of elements in `a`.
  @order \O(`a.size`) */
-static void PT_(compactify)(struct T_(Array) *const a,
-	const PT_(Compress) compress) {
+static void PT_(compress)(struct T_(Array) *const a, const PT_(Merge) merge) {
 	size_t target, from, cursor, next, move;
 	const size_t last = a->size;
-	assert(a && compress);
+	assert(a && merge);
 	for(target = from = cursor = 0; cursor < last; cursor += next) {
 		/* Bijective `[from, cursor)` is moved lazily. */
 		for(next = 1; cursor + next < last
-			&& compress(a->first + cursor, a->first + cursor + next); next++);
+			&& merge(a->first + cursor, a->first + cursor + next); next++);
 		if(next == 1) continue;
 		/* Also project injective `[cursor, cursor + next)->[cursor]`. */
 		move = cursor + 1 - from;
@@ -299,7 +297,7 @@ static T *T_(ArrayPop)(struct T_(Array) *const a)
  @return A new, un-initialised, element at the back of `a`, or null and `errno`
  will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- error and doesn't follow [IEEE Std 1003.1-2001
+ error and doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] @order Amortised \O(1). @allow */
 static T *T_(ArrayNew)(struct T_(Array) *const a)
@@ -311,7 +309,7 @@ static T *T_(ArrayNew)(struct T_(Array) *const a)
  @return A new, un-initialised, element at the back of `a`, or null and `errno`
  will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- error and doesn't follow [IEEE Std 1003.1-2001
+ error and doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] @order Amortised \O(1). @allow */
 static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
@@ -320,11 +318,11 @@ static T *T_(ArrayUpdateNew)(struct T_(Array) *const a,
 /** Ensures that `a` is `reserve` capacity beyond the elements in the array.
  @param[a] If null, returns null.
  @return The previous end of `a`, where are `reserve` elements, or null
- and `errno` will be set. Writing on this memory space is safe up to `reserve`
- elements, but one will have to increase the size manually, (see
+ and `errno` will be set. Writing on this memory space is safe on success, up
+ to `reserve` elements, but one will have to increase the size, (see
  <fn:<T>ArrayBuffer>.)
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- error and doesn't follow [IEEE Std 1003.1-2001
+ error and doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] @allow */
 static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
@@ -342,7 +340,7 @@ static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
  @return The start of a new sub-array of `add` elements at the previous end of
  `a`, or null and `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- error and doesn't follow [IEEE Std 1003.1-2001
+ error and doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). If
  <fn:<T>ArrayReserve> has been successful in reserving at least `add` elements,
  one is guaranteed success.
@@ -433,11 +431,11 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	a->size = erase - a->first;
 }
 
-/** Calls `compress` for each consecutive pair of elements in `a`.
+/** Calls `merge` for each consecutive pair of elements in `a`. For all true,
+ merges the second element into the first.
  @order \O(`a.size`) */
-static void T_(ArrayCompress)(struct T_(Array) *const a,
-	const PT_(Compress) compress)
-	{ if(a && compress) PT_(compactify)(a, compress); }
+static void T_(ArrayCompress)(struct T_(Array) *const a, const PT_(Merge) merge)
+	{ if(a && merge) PT_(compress)(a, merge); }
 
 /** Removes at either end of `a` of things that `predicate` returns true.
  @param[a, predicate] If null, does nothing.
@@ -610,7 +608,7 @@ static void PT_(unused_set)(void) {
 	PT_(reserve)(0, 0);
 	PT_(range)(0, 0, 0, 0, 0);
 	PT_(replace)(0, 0, 0, 0);
-	PT_(compactify)(0, 0);
+	PT_(compress)(0, 0);
 	PT_(update_new)(0, 0);
 	PT_(new)(0);
 	PT_(array)(0);

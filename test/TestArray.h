@@ -224,7 +224,7 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(&a);
 }
 
-/** Non-sense. @implements Compress */
+/** Reproducable non-sense `a` `b`. @implements Compress */
 static int PT_(equal_byte)(T *const a, const T *const b)
 	{ return *(char *)a == *(char *)b; }
 

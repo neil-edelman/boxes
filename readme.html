@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>Merge">&lt;PT&gt;Merge</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>Array">&lt;T&gt;Array</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -98,6 +98,16 @@
 <p><code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *);</code></p>
 
 <p>Returns a boolean given <code>&lt;T&gt;</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PT>Merge" name = "typedef:<PT>Merge">&lt;PT&gt;Merge</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PT&gt;Merge</strong>)(T *image, const T *project);</code></p>
+
+<p>If true, projects <code>(image, project) -&gt; (image)</code>.</p>
 
 </div>
 
