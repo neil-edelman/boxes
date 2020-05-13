@@ -135,8 +135,6 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 	}
 	if(!(first = realloc(a->first, sizeof *a->first * c0)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	/*printf("reserve: %lu size %lu cap %lu bytes @ at %p from %p.\n",
-		min_capacity, c0, sizeof *a->first, first, a->first);*/
 	if(update_ptr && a->first != first)
 		*update_ptr = first + (*update_ptr - a->first); /* Not strict ISO. */
 	a->first = first, a->capacity = c0;
