@@ -214,8 +214,8 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 	PN_(trie)(trie);
 }
 
-/** Comparison `a` _vs_ `b` helper. */
-static int PN_(compar)(PN_(Type) *const*const a, PN_(Type) *const*const b)
+/** Comparison `a` _vs_ `b` for <fn:<PN>vcompar> and <fn:<PN>equals>. */
+static int PN_(compar)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
 	{ return strcmp(PN_(to_key)(*a), PN_(to_key)(*b)); }
 
 /** Comparison `a` _vs_ `b` for <fn:<PN>init>. @implements `qsort` */
@@ -266,22 +266,10 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 	leaves = trie->leaves.first;
 	memcpy(leaves, a, sizeof *a * a_size);
 	trie->leaves.size = a_size;
-	qsort(leaves, a_size, sizeof *a, PN_(vcompar));
-	{
-		size_t i;
-		printf("Trie leaves after sort: { ");
-		for(i = 0; i < a_size; i++) printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.first[i]));
-		printf(" }.\n");
-	}
+	qsort(leaves, a_size, sizeof *a, &PN_(vcompar));
 	PT_(compactify)(&trie->leaves, &PN_(equals), merge);
-	{
-		size_t i;
-		printf("Trie leaves after unique: { ");
-		for(i = 0; i < trie->leaves.size; i++) printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.first[i]));
-		printf(" }.\n");
-	}
 	PN_(init_branches_r)(trie, 0, 0, trie->leaves.size);
-	assert(trie->branches.size == trie->leaves.size - 1);
+	assert(trie->branches.size + 1 == trie->leaves.size);
 	return 1;
 }
 
