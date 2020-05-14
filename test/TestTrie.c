@@ -498,7 +498,7 @@ static void fill_dict(struct Dict *dict) {
 #define TRIE_TEST &fill_dict
 #include "../src/Trie.h"
 
-/*#define TRIE_BENCHMARK*/
+#define TRIE_BENCHMARK
 
 int main(void) {
 	unsigned seed = (unsigned)clock();

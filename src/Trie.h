@@ -36,7 +36,6 @@
  <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PN>Action>. Requires that `NDEBUG` not be defined.
 
- @fixme Create a trie much faster from existing data and have a merge.
  @fixme Have a replace; potentially much less wastful then remove and add.
  @depend [Array.h](../../Array/)
  @std C89
