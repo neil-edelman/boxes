@@ -1,6 +1,6 @@
 # Trie\.h #
 
-## String Trie ##
+## Parameterised String\-Key Trie ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Type](#user-content-typedef-c45e6761), [&lt;PN&gt;Key](#user-content-typedef-8524f620), [&lt;PN&gt;Replace](#user-content-typedef-38741b27), [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)
@@ -13,7 +13,7 @@
 
 ![Example of trie.](web/trie.png)
 
-A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. The string can be any encoding with a byte null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree); specifically [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA), in that the trie only stores data on the positions where the strings are different in the index\. Because of this, it takes twice the space as keeping a sorted array of pointers, but lookup is faster and more cache\-friendly; likewise, insertion and deletion are slower because the need to update the index\.
+A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. Strings can be any encoding with a byte null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree); specifically [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA), in that the trie only stores data on the positions where the strings are different in the index\. Because of this, it takes twice the space as keeping a sorted array of pointers, but lookup is faster and more cache\-friendly; likewise, insertion and deletion are slower because the need to update the index\.
 
 `Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
@@ -93,7 +93,7 @@ A full binary tree stored semi\-implicitly in two arrays: a private one as branc
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-8fc8a233">&lt;N&gt;Trie</a></td><td>trie</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-fe08e38c">&lt;N&gt;TrieFromArray</a></td><td>trie, array, array_size, replace</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-fe08e38c">&lt;N&gt;TrieFromArray</a></td><td>trie, array, array_size, merge</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-6ddbe8d2">&lt;N&gt;TrieSize</a></td><td>trie</td></tr>
 
@@ -151,7 +151,7 @@ Initialises `trie` to be idle\.
 
 ### <a id = "user-content-fn-fe08e38c" name = "user-content-fn-fe08e38c">&lt;N&gt;TrieFromArray</a> ###
 
-<code>static int <strong>&lt;N&gt;TrieFromArray</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const *const <em>array</em>, const size_t <em>array_size</em>, const &lt;PN&gt;Replace <em>replace</em>)</code>
+<code>static int <strong>&lt;N&gt;TrieFromArray</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const *const <em>array</em>, const size_t <em>array_size</em>, const &lt;PT&gt;Biproject <em>merge</em>)</code>
 
 Initialises `trie` from an `array` of pointers\-to\-`<N>` of `array_size`\.
 
@@ -290,7 +290,7 @@ Updates or adds `data` to `trie`\.
 
 <code>static int <strong>&lt;N&gt;TriePolicyPut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>, &lt;PN&gt;Type **const <em>eject</em>, const &lt;PN&gt;Replace <em>replace</em>)</code>
 
-Adds `data` to `trie` only if the entry is absent or if calling `replace` returns true\.
+Adds `data` to `trie` only if the entry is absent or if calling `merge` returns true\.
 
  * Parameter: _trie_  
    If null, returns null\.
@@ -298,8 +298,6 @@ Adds `data` to `trie` only if the entry is absent or if calling `replace` return
    If null, returns null\.
  * Parameter: _eject_  
    If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite a previous value\.
- * Parameter: _replace_  
-   Called on collision and only replaces it if the function returns true\. If null, it is semantically equivalent to [&lt;N&gt;TriePut](#user-content-fn-85d52810)\.
  * Return:  
    Success\.
  * Exceptional return: realloc  
