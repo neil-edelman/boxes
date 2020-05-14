@@ -164,9 +164,12 @@ typedef const char *(*PN_(Key))(PN_(Type) *);
 static const PN_(Key) PN_(to_key) = (TRIE_KEY);
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
-in <fn:<N>TriePolicyPut>. `replace` should be `const`, but `typedef` rules
- prohibit that when <typedef:<PN>Type> is `const`. */
+in <fn:<N>TriePolicyPut>. */
 typedef int (*PN_(Replace))(PN_(Type) *original, PN_(Type) *replace);
+
+/** @return False. Ignores `a` and `b`. */
+static int PN_(false_replace)(PN_(Type) *const a, PN_(Type) *const b)
+	{ return (void)a, (void)b, 0; }
 
 /* Used internally to get rid of the confusing double-pointers. */
 typedef PN_(Type) *PN_(Leaf);
@@ -215,18 +218,12 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 static int PN_(compar)(PN_(Type) *const*const a, PN_(Type) *const*const b)
 	{ return strcmp(PN_(to_key)(*a), PN_(to_key)(*b)); }
 
-/** Comparison `a` _vs_ `b` for <fn:<PN>init>.
- @implements `qsort` */
+/** Comparison `a` _vs_ `b` for <fn:<PN>init>. @implements `qsort` */
 static int PN_(vcompar)(const void *a, const void *b)
 	{ return PN_(compar)(a, b); }
 
-/** Comparison `a` _vs_ `b` for <fn:<PN>init>.
- @implements <T>Merge */
-static int PN_(mcompar)(PN_(Leaf) *const a, const PN_(Leaf) *const b)
-	{ return PN_(compar)(a, b); }
-
-/** @implements <PT>Merge */
-static int PN_(equals)(PN_(Leaf) *const a, PN_(Leaf) *const b)
+/** Equality `a` _vs_ `b` for <fn:<PN>init>. @implements <PT>Bipredicate */
+static int PN_(equals)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
 	{ return !PN_(compar)(a, b); }
 
 /** Recursive function used for <fn:<PN>init>. Initialise branches of `trie` up
@@ -260,7 +257,7 @@ static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
  null, doesn't replace. Do not modify the key of either of the entries.
  @return Success initialising `trie` with `a` of size `a_size`, (non-zero.) */
 static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
-	const size_t a_size, const PT_(Merge) merge) {
+	const size_t a_size, const PT_(Biproject) merge) {
 	PN_(Leaf) *leaves;
 	assert(trie && !trie->leaves.size && !trie->branches.size
 		&& a && a_size && merge);
@@ -276,7 +273,7 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 		for(i = 0; i < a_size; i++) printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.first[i]));
 		printf(" }.\n");
 	}
-	PT_(compress)(&trie->leaves, &PN_(mcompar));
+	PT_(compactify)(&trie->leaves, &PN_(equals), merge);
 	{
 		size_t i;
 		printf("Trie leaves after unique: { ");
@@ -436,18 +433,6 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 	memmove(branch, branch + 1, sizeof n0 * (--trie->branches.size - last_n0));
 }
 
-/** Used in <fn:<N>TrieAdd>.
- @return `original` and `replace` are ignored and it returns false.
- @implements <typedef:<PN>Replace> */
-static int PN_(false_add)(PN_(Type) *const original, PN_(Type) *const replace)
-	{ return (void)original, (void)replace, 0; }
-
-/** Used in <fn:<N>TrieFromArray>.
- @return `original` and `replace` are ignored and it returns false.
- @implements <typedef:<PN>Replace> */
-static int PN_(false_merge)(PN_(Type) *const image, PN_(Type) *const project)
-	{ return (void)image, (void)project, 0; }
-
 
 #ifndef TRIE_CHILD /* <!-- !sub-type */
 
@@ -473,10 +458,10 @@ static void N_(Trie)(struct N_(Trie) *const trie)
  @allow */
 static int N_(TrieFromArray)(struct N_(Trie) *const trie,
 	PN_(Type) *const*const array, const size_t array_size,
-	const PT_(Merge) merge) {
+	const PT_(Biproject) merge) {
 	return trie ? (PN_(trie)(trie), !array || !array_size) ? 1
-		: PN_(init)(trie, array, array_size, merge ? merge : PN_(false_merge))
-		: 0;
+		: PN_(init)(trie, array, array_size, merge ?
+		merge : PT_(false_project)) : 0;
 }
 
 /** @param[trie] If null, returns zero;
@@ -538,7 +523,7 @@ static PN_(Type) *N_(TrieClose)(const struct N_(Trie) *const trie,
  @order \O(`size`)
  @allow */
 static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	return trie && data ? PN_(put)(trie, data, 0, &PN_(false)) : 0;
+	return trie && data ? PN_(put)(trie, data, 0, &PN_(false_replace)) : 0;
 }
 
 /** Updates or adds `data` to `trie`.
@@ -640,20 +625,10 @@ terminate:
 static void PN_(unused_coda)(void);
 /** This silences unused function warnings. */
 static void PN_(unused_set)(void) {
-	N_(Trie_)(0);
-	N_(Trie)(0);
-	N_(TrieFromArray)(0, 0, 0, 0);
-	N_(TrieSize)(0);
-	N_(TrieArray)(0);
-	N_(TrieClear)(0);
-	N_(TrieGet)(0, 0);
-	N_(TrieClose)(0, 0);
-	N_(TrieAdd)(0, 0);
-	N_(TriePut)(0, 0, 0);
-	N_(TriePolicyPut)(0, 0, 0, 0);
-	N_(TrieRemove)(0, 0);
-	N_(TrieToString)(0);
-	PN_(unused_coda)();
+	N_(Trie_)(0); N_(Trie)(0); N_(TrieFromArray)(0, 0, 0, 0); N_(TrieSize)(0);
+	N_(TrieArray)(0); N_(TrieClear)(0); N_(TrieGet)(0, 0); N_(TrieClose)(0, 0);
+	N_(TrieAdd)(0, 0); N_(TriePut)(0, 0, 0); N_(TriePolicyPut)(0, 0, 0, 0);
+	N_(TrieRemove)(0, 0); N_(TrieToString)(0); PN_(unused_coda)();
 }
 static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 
@@ -669,16 +644,9 @@ static void PT_(unused_coda)(void);
  have the same meanings; they will be replaced with these, and `T` and `N`
  cannot be used. */
 static void PN_(unused_set)(void) {
-	PN_(iterate)(0, 0);
-	PN_(trie_)(0);
-	PN_(trie)(0);
-	PN_(unused_coda)();
-	PN_(node_key)(0, 0);
-	PN_(add)(0, 0);
-	PN_(match)(0, 0);
-	PN_(put)(0, 0, 0);
-	PN_(remove)(0, 0);
-	PN_(false)(0);
+	PN_(iterate)(0, 0); PN_(trie_)(0); PN_(trie)(0); PN_(unused_coda)();
+	PN_(node_key)(0, 0); PN_(add)(0, 0); PN_(match)(0, 0); PN_(put)(0, 0, 0);
+	PN_(remove)(0, 0); PN_(false)(0);
 }
 static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 #endif /* sub-type --> */

@@ -492,11 +492,11 @@ static void fill_dict(struct Dict *dict) {
 	dict->defn = rand() / (RAND_MAX / 99 + 1);
 }
 
-/*#define TRIE_NAME Dict
+#define TRIE_NAME Dict
 #define TRIE_TYPE struct Dict
 #define TRIE_KEY &dict_key
 #define TRIE_TEST &fill_dict
-#include "../src/Trie.h"*/
+#include "../src/Trie.h"
 
 /*#define TRIE_BENCHMARK*/
 
@@ -506,7 +506,7 @@ int main(void) {
 	printf("%d", -1 % 20);
 	test_basic_trie_str();
 	(void)StrTrieTest; /* <- Not safe to call. */
-	/*DictTrieTest();*/
+	DictTrieTest();
 	printf("\n***\n\n");
 #ifdef TRIE_BENCHMARK /* <!-- bench */
 	timing_comparison();

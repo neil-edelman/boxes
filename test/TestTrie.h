@@ -181,10 +181,10 @@ static void PN_(test)(void) {
 		assert(ret && size == N_(TrieSize)(&trie));
 	ret = N_(TriePolicyPut)(&trie, &es[0].data, &eject, 0),
 		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
-	ret = N_(TriePolicyPut)(&trie, &es[0].data, &eject, &PN_(false)),
+	ret = N_(TriePolicyPut)(&trie, &es[0].data, &eject, &PN_(false_replace)),
 		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
 	memcpy((void *)&copy, &es[0].data, sizeof es[0].data);
-	ret = N_(TriePolicyPut)(&trie, &copy, &eject, &PN_(false)),
+	ret = N_(TriePolicyPut)(&trie, &copy, &eject, &PN_(false_replace)),
 		assert(ret && size == N_(TrieSize)(&trie) && eject == &copy);
 	N_(Trie_)(0);
 	N_(Trie_)(&trie), assert(!N_(TrieSize)(&trie)), PN_(valid)(&trie);

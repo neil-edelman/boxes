@@ -88,8 +88,16 @@ typedef void (*PT_(Action))(T *);
 /** Returns a boolean given read-only `<T>`. */
 typedef int (*PT_(Predicate))(const T *);
 
-/** If true, projects `(image, project) -> (image)`. */
-typedef int (*PT_(Merge))(T *image, const T *project);
+/** Returns a boolean given two read-only `<T>`. */
+typedef int (*PT_(Bipredicate))(const T *, const T *);
+
+/** Returns a boolean given two `<T>`, specifying the first or second
+ argument. */
+typedef int (*PT_(Biproject))(T *, T *);
+
+/** Return false, ignore `a` and `b`. @implements <PT>Biproject */
+static int PT_(false_project)(T *const a, T *const b)
+	{ return (void)a, (void)b, 0; }
 
 /** Manages the array field `first`, which is indexed up to `size`. When
  modifying the topology of this array, it may change memory location to fit;
@@ -192,27 +200,37 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Calls `merge` for each consecutive pair of elements in `a`.
+/** Calls `predicate` for each consecutive pair of elements in `a` and if true,
+ surjects two one according to `merge`.
  @order \O(`a.size`) */
-static void PT_(compress)(struct T_(Array) *const a, const PT_(Merge) merge) {
-	size_t target, from, cursor, next, move;
+static void PT_(compactify)(struct T_(Array) *const a,
+	const PT_(Bipredicate) predicate, const PT_(Biproject) merge) {
+	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
-	assert(a && merge);
+	int is_first, is_last;
+	assert(a && predicate && merge);
 	for(target = from = cursor = 0; cursor < last; cursor += next) {
 		/* Bijective `[from, cursor)` is moved lazily. */
-		for(next = 1; cursor + next < last
-			&& merge(a->first + cursor, a->first + cursor + next); next++);
+		for(choice = 0, next = 1; cursor + next < last
+			&& predicate(a->first + cursor + choice, a->first + cursor + next);
+			next++) {
+			printf("merge %lu %lu\n", cursor + choice, cursor + next);
+			if(merge(a->first + cursor + choice, a->first + cursor + next)) choice = next; }
 		if(next == 1) continue;
-		/* Also project injective `[cursor, cursor + next)->[cursor]`. */
-		move = cursor + 1 - from;
-		memmove(a->first + target, a->first + from, sizeof *a->first * move);
-		target += move;
-		from = cursor + next;
+		/* Must move injective `cursor + choice \in [cursor, cursor + next)`. */
+		is_first = !choice;
+		is_last  = (choice == next - 1);
+		move = cursor - from + is_first;
+		memmove(a->first + target, a->first + from, sizeof *a->first * move),
+			target += move;
+		if(!is_first && !is_last) memcpy(a->first + target,
+			a->first + cursor + choice, sizeof *a->first), target++;
+		from = cursor + next - is_last;
 	}
 	/* Last differed move. */
 	move = last - from;
-	memmove(a->first + target, a->first + from, sizeof *a->first * move);
-	target += move, assert(a->size >= target);
+	memmove(a->first + target, a->first + from, sizeof *a->first * move),
+		target += move, assert(a->size >= target);
 	a->size = target;
 }
 
@@ -231,11 +249,11 @@ static T *PT_(new)(struct T_(Array) *const a) {
 
 /** Initialises `a` to idle. */
 static void PT_(array)(struct T_(Array) *const a)
-	{ assert(a); a->first = 0, a->capacity = a->size = 0; }
+	{ assert(a), a->first = 0, a->capacity = a->size = 0; }
 
 /** Destroys `a` and returns it to idle. */
 static void PT_(array_)(struct T_(Array) *const a)
-{ assert(a); printf("~array: %lu.\n", a->size); free(a->first); PT_(array)(a); }
+	{ assert(a), free(a->first), PT_(array)(a); }
 
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 
@@ -431,11 +449,15 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	a->size = erase - a->first;
 }
 
-/** Calls `merge` for each consecutive pair of elements in `a`. For all true,
- merges the second element into the first.
+/** Calls `predicate` for each consecutive pair of elements in `a` and if true,
+ surjects two one according to `merge`.
+ @param[a, predicate] If null, does nothing.
+ @param[merge] Can be null, in which case the second argument is erased.
  @order \O(`a.size`) */
-static void T_(ArrayCompress)(struct T_(Array) *const a, const PT_(Merge) merge)
-	{ if(a && merge) PT_(compress)(a, merge); }
+static void T_(ArrayCompactify)(struct T_(Array) *const a,
+	const PT_(Bipredicate) predicate, const PT_(Biproject) merge)
+	{ if(a && predicate) PT_(compactify)(a, predicate,
+	merge ? merge : &PT_(false_project)); }
 
 /** Removes at either end of `a` of things that `predicate` returns true.
  @param[a, predicate] If null, does nothing.
@@ -565,25 +587,13 @@ static void PT_(unused_coda)(void);
 /** This silences unused function warnings from the pre-processor, but allows
  optimisation <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code>. */
 static void PT_(unused_set)(void) {
-	T_(Array_)(0);
-	T_(Array)(0);
-	T_(ArrayRemove)(0, 0);
-	T_(ArrayLazyRemove)(0, 0);
-	T_(ArrayClear)(0);
-	T_(ArrayPeek)(0);
-	T_(ArrayPop)(0);
-	T_(ArrayNew)(0);
-	T_(ArrayUpdateNew)(0, 0);
-	T_(ArrayReserve)(0, 0);
-	T_(ArrayBuffer)(0, 0);
-	T_(ArrayEach)(0, 0);
-	T_(ArrayIfEach)(0, 0, 0);
-	T_(ArrayAny)(0, 0);
-	T_(ArrayKeepIf)(0, 0, 0);
-	T_(ArrayCompress)(0, 0);
-	T_(ArrayTrim)(0, 0);
-	T_(ArraySplice)(0, 0, 0, 0);
-	T_(ArrayIndexSplice)(0, 0, 0, 0);
+	T_(Array_)(0), T_(Array)(0), T_(ArrayRemove)(0, 0),
+		T_(ArrayLazyRemove)(0, 0), T_(ArrayClear)(0), T_(ArrayPeek)(0),
+		T_(ArrayPop)(0), T_(ArrayNew)(0), T_(ArrayUpdateNew)(0, 0),
+		T_(ArrayReserve)(0, 0), T_(ArrayBuffer)(0, 0), T_(ArrayEach)(0, 0),
+		T_(ArrayIfEach)(0, 0, 0), T_(ArrayAny)(0, 0), T_(ArrayKeepIf)(0, 0, 0),
+		T_(ArrayCompactify)(0, 0, 0), T_(ArrayTrim)(0, 0),
+		T_(ArraySplice)(0, 0, 0, 0), T_(ArrayIndexSplice)(0, 0, 0, 0);
 #ifdef ARRAY_TO_STRING
 	T_(ArrayToString)(0);
 #endif
@@ -605,15 +615,10 @@ static void PT_(unused_coda)(void);
  used. */
 static void PT_(unused_set)(void) {
 	/* <fn:<PT>update_reserve> is integral. */
-	PT_(reserve)(0, 0);
-	PT_(range)(0, 0, 0, 0, 0);
-	PT_(replace)(0, 0, 0, 0);
-	PT_(compress)(0, 0);
-	PT_(update_new)(0, 0);
-	PT_(new)(0);
-	PT_(array)(0);
-	PT_(array_)(0);
-	PT_(unused_coda)();
+	PT_(false_project)(0, 0), PT_(reserve)(0, 0), PT_(range)(0, 0, 0, 0, 0),
+		PT_(replace)(0, 0, 0, 0), PT_(compactify)(0, 0, 0),
+		PT_(update_new)(0, 0), PT_(new)(0), PT_(array)(0), PT_(array_)(0),
+		PT_(unused_coda)();
 }
 static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif /* sub-type --> */
