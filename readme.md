@@ -3,7 +3,7 @@
 ## Parameterised Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;Merge](#user-content-typedef-444dbe41), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;Bipredicate](#user-content-typedef-49a99943), [&lt;PT&gt;Biproject](#user-content-typedef-269e157f), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;Array](#user-content-tag-f128eca2)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -53,15 +53,23 @@ Operates by side\-effects\.
 
 <code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *);</code>
 
-Returns a boolean given `<T>`\.
+Returns a boolean given read\-only `<T>`\.
 
 
 
-### <a id = "user-content-typedef-444dbe41" name = "user-content-typedef-444dbe41">&lt;PT&gt;Merge</a> ###
+### <a id = "user-content-typedef-49a99943" name = "user-content-typedef-49a99943">&lt;PT&gt;Bipredicate</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;Merge</strong>)(T *image, const T *project);</code>
+<code>typedef int(*<strong>&lt;PT&gt;Bipredicate</strong>)(const T *, const T *);</code>
 
-If true, projects `(image, project) -> (image)`\.
+Returns a boolean given two read\-only `<T>`\.
+
+
+
+### <a id = "user-content-typedef-269e157f" name = "user-content-typedef-269e157f">&lt;PT&gt;Biproject</a> ###
+
+<code>typedef int(*<strong>&lt;PT&gt;Biproject</strong>)(T *, T *);</code>
+
+Returns a boolean given two `<T>`, specifying the first or second argument\.
 
 
 
@@ -254,7 +262,7 @@ The same value as [&lt;T&gt;ArrayPeek](#user-content-fn-f880f61d)\.
  * Return:  
    A new, un\-initialised, element at the back of `a`, or null and `errno` will be set\.
  * Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [POSIX](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  * Exceptional return: realloc  
  * Order:  
    Amortised &#927;\(1\)\.
@@ -273,7 +281,7 @@ The same value as [&lt;T&gt;ArrayPeek](#user-content-fn-f880f61d)\.
  * Return:  
    A new, un\-initialised, element at the back of `a`, or null and `errno` will be set\.
  * Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [POSIX](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  * Exceptional return: realloc  
  * Order:  
    Amortised &#927;\(1\)\.
@@ -290,9 +298,9 @@ Ensures that `a` is `reserve` capacity beyond the elements in the array\.
  * Parameter: _a_  
    If null, returns null\.
  * Return:  
-   The previous end of `a`, where are `reserve` elements, or null and `errno` will be set\. Writing on this memory space is safe up to `reserve` elements, but one will have to increase the size manually, \(see [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c)\.\)
+   The previous end of `a`, where are `reserve` elements, or null and `errno` will be set\. Writing on this memory space is safe on success, up to `reserve` elements, but one will have to increase the size, \(see [&lt;T&gt;ArrayBuffer](#user-content-fn-12fc774c)\.\)
  * Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [POSIX](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
  * Exceptional return: realloc  
 
 
@@ -311,7 +319,7 @@ Adds `add` elements to `a`\.
  * Return:  
    The start of a new sub\-array of `add` elements at the previous end of `a`, or null and `errno` will be set\.
  * Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\. If [&lt;T&gt;ArrayReserve](#user-content-fn-8fb34e3e) has been successful in reserving at least `add` elements, one is guaranteed success\.
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [POSIX](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\. If [&lt;T&gt;ArrayReserve](#user-content-fn-8fb34e3e) has been successful in reserving at least `add` elements, one is guaranteed success\.
  * Exceptional return: realloc  
  * Order:  
    Amortised &#927;\(`add`\)\.

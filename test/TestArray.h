@@ -45,11 +45,11 @@ static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
 	assert(ar && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-			"\trankdir = LR;\n"
-			"\tnode [shape = record, style = filled];\n"
-			"\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>Array: "
-			QUOTE(ARRAY_TYPE) "\\l|size: %lu\\lcapacity: %lu\\l\"];\n",
-			(unsigned long)ar->size, (unsigned long)ar->capacity);
+		"\trankdir = LR;\n"
+		"\tnode [shape = record, style = filled];\n"
+		"\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>Array: "
+		QUOTE(ARRAY_TYPE) "\\l|size: %lu\\lcapacity: %lu\\l\"];\n",
+		(unsigned long)ar->size, (unsigned long)ar->capacity);
 	if(ar->first) {
 		T *const data = ar->first;
 		size_t i;
@@ -224,8 +224,8 @@ static void PT_(test_basic)(void) {
 	PT_(valid_state)(&a);
 }
 
-/** Reproducable non-sense `a` `b`. @implements Compress */
-static int PT_(equal_byte)(T *const a, const T *const b)
+/** Reproducable non-sense `a` `b`. @implements Bipredicate */
+static int PT_(equal_byte)(const T *const a, const T *const b)
 	{ return *(char *)a == *(char *)b; }
 
 /** Add onto `a` `value` x `repetitions` (non-sense.) */
@@ -241,12 +241,12 @@ static int PT_(fill_garbage)(struct T_(Array) *const a,
 }
 
 /** Tests compress, but half-way because we don't know the specifics. */
-static void PT_(test_compress)(void) {
+static void PT_(test_compactify)(void) {
 	struct T_(Array) a = ARRAY_IDLE;
 	assert(PT_(fill_garbage)(&a, 'a', 3) && PT_(fill_garbage)(&a, 'b', 3)
 		&& PT_(fill_garbage)(&a, 'c', 3));
 	assert(a.size == 9);
-	T_(ArrayCompress)(&a, &PT_(equal_byte));
+	T_(ArrayCompactify)(&a, &PT_(equal_byte), 0);
 	assert(a.size == 3 && *(char *)a.first == 'a'
 		&& *(char *)(a.first + 1) == 'b' && *(char *)(a.first + 2) == 'c');
 	T_(Array_)(&a);
@@ -505,7 +505,7 @@ static void T_(ArrayTest)(void) {
 		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; "
 		"testing:\n");
 	PT_(test_basic)();
-	PT_(test_compress)();
+	PT_(test_compactify)();
 	PT_(test_random)();
 	PT_(test_replace)();
 	PT_(test_keep)();

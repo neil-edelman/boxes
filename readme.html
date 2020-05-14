@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>Merge">&lt;PT&gt;Merge</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>Bipredicate">&lt;PT&gt;Bipredicate</a>, <a href = "#typedef:<PT>Biproject">&lt;PT&gt;Biproject</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>Array">&lt;T&gt;Array</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -97,17 +97,27 @@
 
 <p><code>typedef int(*<strong>&lt;PT&gt;Predicate</strong>)(const T *);</code></p>
 
-<p>Returns a boolean given <code>&lt;T&gt;</code>.</p>
+<p>Returns a boolean given read-only <code>&lt;T&gt;</code>.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PT>Merge" name = "typedef:<PT>Merge">&lt;PT&gt;Merge</a></h3>
+<h3><a id = "typedef:<PT>Bipredicate" name = "typedef:<PT>Bipredicate">&lt;PT&gt;Bipredicate</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PT&gt;Merge</strong>)(T *image, const T *project);</code></p>
+<p><code>typedef int(*<strong>&lt;PT&gt;Bipredicate</strong>)(const T *, const T *);</code></p>
 
-<p>If true, projects <code>(image, project) -&gt; (image)</code>.</p>
+<p>Returns a boolean given two read-only <code>&lt;T&gt;</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PT>Biproject" name = "typedef:<PT>Biproject">&lt;PT&gt;Biproject</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PT&gt;Biproject</strong>)(T *, T *);</code></p>
+
+<p>Returns a boolean given two <code>&lt;T&gt;</code>, specifying the first or second argument.</p>
 
 </div>
 
@@ -332,7 +342,7 @@
 	<dt>Return:</dt>
 	<dd>A new, un-initialised, element at the back of <code>a</code>, or null and <code>errno</code> will be set.</dd>
 	<dt>Exceptional return: ERANGE</dt>
-	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">IEEE Std 1003.1-2001</a>.</dd>
+	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">POSIX</a>.</dd>
 	<dt>Exceptional return: realloc</dt>
 	<dt>Order:</dt>
 	<dd>Amortised &#927;(1).</dd>
@@ -354,7 +364,7 @@
 	<dt>Return:</dt>
 	<dd>A new, un-initialised, element at the back of <code>a</code>, or null and <code>errno</code> will be set.</dd>
 	<dt>Exceptional return: ERANGE</dt>
-	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">IEEE Std 1003.1-2001</a>.</dd>
+	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">POSIX</a>.</dd>
 	<dt>Exceptional return: realloc</dt>
 	<dt>Order:</dt>
 	<dd>Amortised &#927;(1).</dd>
@@ -374,9 +384,9 @@
 	<dt>Parameter: <em>a</em></dt>
 	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
-	<dd>The previous end of <code>a</code>, where are <code>reserve</code> elements, or null and <code>errno</code> will be set. Writing on this memory space is safe up to <code>reserve</code> elements, but one will have to increase the size manually, (see <a href = "#fn:&lt;T&gt;ArrayBuffer">&lt;T&gt;ArrayBuffer</a>.)</dd>
+	<dd>The previous end of <code>a</code>, where are <code>reserve</code> elements, or null and <code>errno</code> will be set. Writing on this memory space is safe on success, up to <code>reserve</code> elements, but one will have to increase the size, (see <a href = "#fn:&lt;T&gt;ArrayBuffer">&lt;T&gt;ArrayBuffer</a>.)</dd>
 	<dt>Exceptional return: ERANGE</dt>
-	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">IEEE Std 1003.1-2001</a>.</dd>
+	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">POSIX</a>.</dd>
 	<dt>Exceptional return: realloc</dt>
 </dl>
 
@@ -398,7 +408,7 @@
 	<dt>Return:</dt>
 	<dd>The start of a new sub-array of <code>add</code> elements at the previous end of <code>a</code>, or null and <code>errno</code> will be set.</dd>
 	<dt>Exceptional return: ERANGE</dt>
-	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">IEEE Std 1003.1-2001</a>. If <a href = "#fn:&lt;T&gt;ArrayReserve">&lt;T&gt;ArrayReserve</a> has been successful in reserving at least <code>add</code> elements, one is guaranteed success.</dd>
+	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">POSIX</a>. If <a href = "#fn:&lt;T&gt;ArrayReserve">&lt;T&gt;ArrayReserve</a> has been successful in reserving at least <code>add</code> elements, one is guaranteed success.</dd>
 	<dt>Exceptional return: realloc</dt>
 	<dt>Order:</dt>
 	<dd>Amortised &#927;(<code>add</code>).</dd>
