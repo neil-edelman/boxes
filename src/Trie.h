@@ -439,8 +439,14 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 /** Used in <fn:<N>TrieAdd>.
  @return `original` and `replace` are ignored and it returns false.
  @implements <typedef:<PN>Replace> */
-static int PN_(false)(PN_(Type) *const original, PN_(Type) *const replace)
-	{ return (void)(original), (void)(replace), 0; }
+static int PN_(false_add)(PN_(Type) *const original, PN_(Type) *const replace)
+	{ return (void)original, (void)replace, 0; }
+
+/** Used in <fn:<N>TrieFromArray>.
+ @return `original` and `replace` are ignored and it returns false.
+ @implements <typedef:<PN>Replace> */
+static int PN_(false_merge)(PN_(Type) *const image, PN_(Type) *const project)
+	{ return (void)image, (void)project, 0; }
 
 
 #ifndef TRIE_CHILD /* <!-- !sub-type */
@@ -467,9 +473,9 @@ static void N_(Trie)(struct N_(Trie) *const trie)
  @allow */
 static int N_(TrieFromArray)(struct N_(Trie) *const trie,
 	PN_(Type) *const*const array, const size_t array_size,
-	const PN_(Replace) replace) {
+	const PT_(Merge) merge) {
 	return trie ? (PN_(trie)(trie), !array || !array_size) ? 1
-		: PN_(init)(trie, array, array_size, replace ? replace : PN_(false))
+		: PN_(init)(trie, array, array_size, merge ? merge : PN_(false_merge))
 		: 0;
 }
 
