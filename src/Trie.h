@@ -164,7 +164,8 @@ typedef const char *(*PN_(Key))(PN_(Type) *);
 static const PN_(Key) PN_(to_key) = (TRIE_KEY);
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
-in <fn:<N>TriePolicyPut>. */
+in <fn:<N>TriePolicyPut>. `replace` should be `const`, but `typedef` rules
+ prohibit that when <typedef:<PN>Type> is `const`. */
 typedef int (*PN_(Replace))(PN_(Type) *original, PN_(Type) *replace);
 
 /* Used internally to get rid of the confusing double-pointers. */
@@ -219,6 +220,11 @@ static int PN_(compar)(PN_(Type) *const*const a, PN_(Type) *const*const b)
 static int PN_(vcompar)(const void *a, const void *b)
 	{ return PN_(compar)(a, b); }
 
+/** Comparison `a` _vs_ `b` for <fn:<PN>init>.
+ @implements <T>Merge */
+static int PN_(mcompar)(PN_(Leaf) *const a, const PN_(Leaf) *const b)
+	{ return PN_(compar)(a, b); }
+
 /** @implements <PT>Merge */
 static int PN_(equals)(PN_(Leaf) *const a, PN_(Leaf) *const b)
 	{ return !PN_(compar)(a, b); }
@@ -270,7 +276,7 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 		for(i = 0; i < a_size; i++) printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.first[i]));
 		printf(" }.\n");
 	}
-	PT_(compress)(&trie->leaves, PN_(compar));
+	PT_(compress)(&trie->leaves, &PN_(mcompar));
 	{
 		size_t i;
 		printf("Trie leaves after unique: { ");
@@ -433,7 +439,7 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 /** Used in <fn:<N>TrieAdd>.
  @return `original` and `replace` are ignored and it returns false.
  @implements <typedef:<PN>Replace> */
-static int PN_(false)(PN_(Type) *original, /*const!*/ PN_(Type) *replace)
+static int PN_(false)(PN_(Type) *const original, PN_(Type) *const replace)
 	{ return (void)(original), (void)(replace), 0; }
 
 
