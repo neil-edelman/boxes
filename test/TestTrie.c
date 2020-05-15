@@ -42,40 +42,6 @@ static void str_to_str(const char *const*str, char(*const a)[12]) {
 #define ARRAY_TO_STRING &str_to_str
 #include "../src/Array.h"
 
-#ifdef SLOW_ARRAY /* <!-- slow */
-
-static size_t lower_bound(const struct StrArray *const array,
-	const char *const value) {
-	const char **const data = array->first;
-	size_t low = 0, mid, high = array->size;
-	assert(array && value);
-	while(low < high) {
-		mid = low + ((high - low) >> 1);
-		/*printf("[%lu, %lu) cmp (%s) to %s\n", low, high, value, data[mid]);*/
-		if(strcmp(value, data[mid]) <= 0) {
-			high = mid;
-		} else {
-			low = mid + 1;
-		}
-	}
-	return low;
-}
-
-static int array_insert(struct StrArray *const array,
-	const char *const data) {
-	size_t b;
-	assert(array && data);
-	b = lower_bound(array, data);
-	/*printf("lb(%s) = %lu.\n", data, b);*/
-	StrArrayBuffer(array, 1);
-	memmove(array->first + b + 1, array->first + b,
-		sizeof *array->first * (array->size - b - 1));
-	array->first[b] = data;
-	return 1;
-}
-
-#else /* slow --><!-- fast */
-
 static int array_fill(struct StrArray *const strs,
 	const char *const*const words, const size_t words_size,
 	const size_t words_start, const size_t words_chosen) {
@@ -93,8 +59,6 @@ static int array_fill(struct StrArray *const strs,
 	}
 	return 1;
 }
-
-#endif /* fast --> */
 
 static int array_cmp(const void *a, const void *b) {
 	return strcmp(*(const char **)a, *(const char **)b);
@@ -317,7 +281,7 @@ static double m_stddev(const struct Measure *const measure)
 #define STRUCT(A) { #A, 0, { 0, 0, 0 } }
 #define ES(X) X(ARRAYINIT), X(ARRAYLOOK), \
 	X(TRIEINIT), X(TRIELOOK), \
-	X(SETINIT), X(SETLOOK), X(TRIESHORT)
+	X(HASHINIT), X(HASHLOOK)
 
 static int timing_comparison(void) {
 	struct StrTrie trie = TRIE_IDLE;
@@ -353,43 +317,22 @@ static int timing_comparison(void) {
 			printf("Replica %lu/%lu.\n", r + 1, replicas);
 
 			/* Sorted array. */
-			StrArrayClear(&array);
 			t = clock();
-#if SLOW_ARRAY
-			for(i = 0; i < s; i++)
-				array_insert(&array, parole[(start_i + i) % parole_size]);
-#else
 			array_fill(&array, parole, parole_size, start_i, s);
-#endif
+			qsort(array.first, array.size, sizeof array.first, &array_cmp);
+			StrArrayCompactify(&array, &array_is_equal, 0);
 			m_add(&es[ARRAYINIT].m, diff_us(t));
 			printf("Added init array size %lu: %s.\n",
 				(unsigned long)array.size, StrArrayToString(&array));
 			t = clock();
-			qsort(array.first, array.size, sizeof array.first, &array_cmp);
-			StrArrayCompactify(&array, &array_is_equal, 0);
 			printf("Array: %s.\n", StrArrayToString(&array));
-#if 0
 			for(i = 0; i < s; i++) {
 				const char *const word = parole[(start_i + i) % parole_size],
-					**key;
-				int cmp;
-				size_t j;
-				key = bsearch(word, array.first, array.size,
+					**const key = bsearch(&word, array.first, array.size,
 					sizeof array.first, array_cmp);
-				printf("find %s in: { ", word);
-				for(j = 0; j < array.size; j++) printf("%s%s", j ? ", " : "", array.first[j]);
-				printf(" } = %s.\n", key ? *key : 0);
-				/*
 				const int cmp = strcmp(word, *key);
-				printf()
-				const char *const word = parole[(start_i + i) % parole_size],
-					**const key = bsearch(word, array.first, array.size,
-					sizeof array.first, array_cmp);
-				printf("find %s in %s... = %s\n", word, *array.first, key ? *key : 0);
-				const int cmp = strcmp(word, *key);
-				(void)cmp, assert(key && !cmp);*/
+				(void)cmp, assert(key && !cmp);
 			}
-#endif
 			m_add(&es[ARRAYLOOK].m, diff_us(t));
 			printf("Added look array size %lu.\n", (unsigned long)array.size);
 
@@ -403,7 +346,7 @@ static int timing_comparison(void) {
 				if(StringSetPolicyPut(&set, elem, 0))
 					StringElementPoolRemove(&set_pool, elem);
 			}
-			m_add(&es[SETINIT].m, diff_us(t));
+			m_add(&es[HASHINIT].m, diff_us(t));
 			printf("Added init set size %lu: %s.\n",
 				(unsigned long)StringSetSize(&set), StringSetToString(&set));
 			t = clock();
@@ -414,15 +357,15 @@ static int timing_comparison(void) {
 				const int cmp = strcmp(word, elem->key);
 				(void)cmp, assert(elem && !cmp);
 			}
-			m_add(&es[SETLOOK].m, diff_us(t));
+			m_add(&es[HASHLOOK].m, diff_us(t));
 			printf("Added look set size %lu.\n",
 				(unsigned long)StringSetSize(&set));
 
 			/* Trie. */
-			StrTrieClear(&trie);
 			t = clock();
-			for(i = 0; i < s; i++) if(!StrTrieAdd(&trie,
-				parole[(start_i + i) % parole_size])) goto catch;
+			array_fill(&array, parole, parole_size, start_i, s);
+			StrTrieClear(&trie);
+			StrTrieFromArray(&trie, array.first, array.size, 0);
 			m_add(&es[TRIEINIT].m, diff_us(t));
 			printf("Added init trie size %lu: %s.\n",
 				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
@@ -436,13 +379,6 @@ static int timing_comparison(void) {
 			m_add(&es[TRIELOOK].m, diff_us(t));
 			printf("Added look trie size %lu.\n",
 				(unsigned long)StrTrieSize(&trie));
-
-			StrTrieClear(&trie);
-			t = clock();
-			StrTrieFromArray(&trie, parole, s, 0);
-			m_add(&es[TRIESHORT].m, diff_us(t));
-			printf("Added shortcut init trie size %lu: %s.\n",
-				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
 
 			/* Took took much time; decrease the replicas for next time. */
 			if(replicas != 1
@@ -482,12 +418,12 @@ finally:
 		"set style line 5 lt 1 lw 3 lc rgb '#77ac30' # green\n"
 		"set style line 6 lt 1 lw 3 lc rgb '#4dbeee' # light-blue\n"
 		"set style line 7 lt 1 lw 3 lc rgb '#a2142f' # red\n"*/
-		fprintf(gnu.fp, "set style line 1 lt 2 lw 3 lc rgb '#0072ff'\n"
-			"set style line 2 lt 2 lw 3 lc rgb '#ff7200'\n"
-			"set style line 3 lt 1 lw 3 lc rgb '#0055cc'\n"
-			"set style line 4 lt 1 lw 3 lc rgb '#cc5500'\n"
-			"set style line 5 lt 5 lw 3 lc rgb '#003399'\n"
-			"set style line 6 lt 5 lw 3 lc rgb '#993300'\n");
+		fprintf(gnu.fp, "set style line 1 lt 5 lw 2 lc rgb '#0072ff'\n"
+			"set style line 2 lt 1 lw 3 lc rgb '#0072ff'\n"
+			"set style line 3 lt 5 lw 2 lc rgb '#dd5500'\n"
+			"set style line 4 lt 1 lw 3 lc rgb '#dd5500'\n"
+			"set style line 5 lt 5 lw 2 lc rgb '#009933'\n"
+			"set style line 6 lt 1 lw 3 lc rgb '#009933'\n");
 		fprintf(gnu.fp, "set term postscript eps enhanced color\n"
 			/*"set encoding utf8\n" Doesn't work at all; {/Symbol m}. */
 			"set output \"graph/%s.eps\"\n"
