@@ -42,6 +42,8 @@ static void str_to_str(const char *const*str, char(*const a)[12]) {
 #define ARRAY_TO_STRING &str_to_str
 #include "../src/Array.h"
 
+#ifdef SLOW_ARRAY /* <!-- slow */
+
 static size_t lower_bound(const struct StrArray *const array,
 	const char *const value) {
 	const char **const data = array->first;
@@ -72,10 +74,34 @@ static int array_insert(struct StrArray *const array,
 	return 1;
 }
 
-static int array_cmp(const void *a, const void *b) {
-	return strcmp((const char *)a, *(const char **)b);
+#else /* slow --><!-- fast */
+
+static int array_fill(struct StrArray *const strs,
+	const char *const*const words, const size_t words_size,
+	const size_t words_start, const size_t words_chosen) {
+	assert(strs && words && words_chosen && words_chosen <= words_size
+		&& words_start < words_size);
+	StrArrayClear(strs);
+	if(!StrArrayBuffer(strs, words_chosen)) return 0;
+	if(words_start + words_chosen > words_size) {
+		const size_t size_a = words_size - words_start,
+			size_b = words_chosen - size_a;
+		memcpy(strs->first, words + words_start, sizeof *words * size_a);
+		memcpy(strs->first + size_a, words, sizeof *words * size_b);
+	} else {
+		memcpy(strs->first, words + words_start, sizeof *words * words_chosen);
+	}
+	return 1;
 }
 
+#endif /* fast --> */
+
+static int array_cmp(const void *a, const void *b) {
+	return strcmp(*(const char **)a, *(const char **)b);
+}
+
+static int array_is_equal(const char *const*const a, const char *const*const b)
+	{ return !strcmp(*a, *b); }
 
 
 /** For comparison with string set (hash.) */
@@ -329,19 +355,41 @@ static int timing_comparison(void) {
 			/* Sorted array. */
 			StrArrayClear(&array);
 			t = clock();
+#if SLOW_ARRAY
 			for(i = 0; i < s; i++)
 				array_insert(&array, parole[(start_i + i) % parole_size]);
+#else
+			array_fill(&array, parole, parole_size, start_i, s);
+#endif
 			m_add(&es[ARRAYINIT].m, diff_us(t));
 			printf("Added init array size %lu: %s.\n",
 				(unsigned long)array.size, StrArrayToString(&array));
 			t = clock();
+			qsort(array.first, array.size, sizeof array.first, &array_cmp);
+			StrArrayCompactify(&array, &array_is_equal, 0);
+			printf("Array: %s.\n", StrArrayToString(&array));
+#if 0
 			for(i = 0; i < s; i++) {
 				const char *const word = parole[(start_i + i) % parole_size],
-				**const key = bsearch(word, array.first, array.size,
+					**key;
+				int cmp;
+				size_t j;
+				key = bsearch(word, array.first, array.size,
 					sizeof array.first, array_cmp);
+				printf("find %s in: { ", word);
+				for(j = 0; j < array.size; j++) printf("%s%s", j ? ", " : "", array.first[j]);
+				printf(" } = %s.\n", key ? *key : 0);
+				/*
 				const int cmp = strcmp(word, *key);
-				(void)cmp, assert(key && !cmp);
+				printf()
+				const char *const word = parole[(start_i + i) % parole_size],
+					**const key = bsearch(word, array.first, array.size,
+					sizeof array.first, array_cmp);
+				printf("find %s in %s... = %s\n", word, *array.first, key ? *key : 0);
+				const int cmp = strcmp(word, *key);
+				(void)cmp, assert(key && !cmp);*/
 			}
+#endif
 			m_add(&es[ARRAYLOOK].m, diff_us(t));
 			printf("Added look array size %lu.\n", (unsigned long)array.size);
 

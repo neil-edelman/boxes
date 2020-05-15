@@ -528,13 +528,14 @@ static int N_(TriePut)(struct N_(Trie) *const trie,
 	return trie && data ? PN_(put)(trie, data, eject, 0) : 0;
 }
 
-/** Adds `data` to `trie` only if the entry is absent or if calling `merge`
+/** Adds `data` to `trie` only if the entry is absent or if calling `replace`
  returns true.
  @param[trie, data] If null, returns null.
  @param[eject] If not null, on success it will hold the overwritten value or
- a pointer-to-null if it did not overwrite a previous value.
- @param[merge] Called on collision and only replaces it if the function returns
- true. If null, it is semantically equivalent to <fn:<N>TriePut>.
+ a pointer-to-null if it did not overwrite a previous value. If a collision
+ occurs and `replace` does not return true, this value will be `data`.
+ @param[replace] Called on collision and only replaces it if the function
+ returns true. If null, it is semantically equivalent to <fn:<N>TriePut>.
  @return Success.
  @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
