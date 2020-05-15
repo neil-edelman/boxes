@@ -288,7 +288,7 @@ static int timing_comparison(void) {
 	struct StrArray array = ARRAY_IDLE;
 	struct StringSet set = SET_IDLE;
 	struct StringElementPool set_pool = POOL_IDLE;
-	size_t i, r, s = 1, e, replicas = 5;
+	size_t i, r, n = 1, e, replicas = 5;
 	clock_t t, t_total;
 	int success = 1, is_full = 0;
 	/* How many files we open simultaneously qs.size OR gnu.size. */
@@ -308,17 +308,18 @@ static int timing_comparison(void) {
 			"# <items>\t<t (ms)>\t<sample error on t with %lu replicas>\n",
 			es[e].name, (unsigned long)replicas);
 	}
-	for(s = 1; !is_full; s <<= 1) {
-		if(s >= parole_size) is_full = 1, s = parole_size;
+	for(n = 1; !is_full; n <<= 1) {
+		if(n >= parole_size) is_full = 1, n = parole_size;
 		for(e = 0; e < es_size; e++) m_reset(&es[e].m);
 		for(r = 0; r < replicas; r++) {
 			size_t start_i = rand() / (RAND_MAX / parole_size + 1);
 			t_total = clock();
 			printf("Replica %lu/%lu.\n", r + 1, replicas);
 
-			/* Sorted array. */
+			/* Sorted array; pre-allocate for fair test. */
+			array_fill(&array, parole, parole_size, start_i, n);
 			t = clock();
-			array_fill(&array, parole, parole_size, start_i, s);
+			array_fill(&array, parole, parole_size, start_i, n);
 			qsort(array.first, array.size, sizeof array.first, &array_cmp);
 			StrArrayCompactify(&array, &array_is_equal, 0);
 			m_add(&es[ARRAYINIT].m, diff_us(t));
@@ -326,7 +327,7 @@ static int timing_comparison(void) {
 				(unsigned long)array.size, StrArrayToString(&array));
 			t = clock();
 			printf("Array: %s.\n", StrArrayToString(&array));
-			for(i = 0; i < s; i++) {
+			for(i = 0; i < n; i++) {
 				const char *const word = parole[(start_i + i) % parole_size],
 					**const key = bsearch(&word, array.first, array.size,
 					sizeof array.first, array_cmp);
@@ -340,17 +341,17 @@ static int timing_comparison(void) {
 			StringSetClear(&set);
 			StringElementPoolClear(&set_pool);
 			t = clock();
-			for(i = 0; i < s; i++) {
+			for(i = 0; i < n; i++) {
 				struct StringSetElement *elem = StringElementPoolNew(&set_pool);
 				elem->key = parole[(start_i + i) % parole_size];
 				if(StringSetPolicyPut(&set, elem, 0))
 					StringElementPoolRemove(&set_pool, elem);
 			}
 			m_add(&es[HASHINIT].m, diff_us(t));
-			printf("Added init set size %lu: %s.\n",
+			printf("Added init hash size %lu: %s.\n",
 				(unsigned long)StringSetSize(&set), StringSetToString(&set));
 			t = clock();
-			for(i = 0; i < s; i++) {
+			for(i = 0; i < n; i++) {
 				const char *const word = parole[(start_i + i) % parole_size];
 				const struct StringSetElement *const elem
 					= StringSetGet(&set, word);
@@ -358,19 +359,19 @@ static int timing_comparison(void) {
 				(void)cmp, assert(elem && !cmp);
 			}
 			m_add(&es[HASHLOOK].m, diff_us(t));
-			printf("Added look set size %lu.\n",
+			printf("Added look hash size %lu.\n",
 				(unsigned long)StringSetSize(&set));
 
 			/* Trie. */
 			t = clock();
-			array_fill(&array, parole, parole_size, start_i, s);
+			array_fill(&array, parole, parole_size, start_i, n);
 			StrTrieClear(&trie);
 			StrTrieFromArray(&trie, array.first, array.size, 0);
 			m_add(&es[TRIEINIT].m, diff_us(t));
 			printf("Added init trie size %lu: %s.\n",
 				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
 			t = clock();
-			for(i = 0; i < s; i++) {
+			for(i = 0; i < n; i++) {
 				const char *const word = parole[(start_i + i) % parole_size],
 					*const key = StrTrieGet(&trie, word);
 				const int cmp = strcmp(word, key);
@@ -386,8 +387,8 @@ static int timing_comparison(void) {
 				replicas--;
 		}
 		for(e = 0; e < es_size; e++) fprintf(es[e].fp, "%lu\t%f\t%f\n",
-			(unsigned long)s, m_mean(&es[e].m), m_stddev(&es[e].m));
-		if(s != 512) continue;
+			(unsigned long)n, m_mean(&es[e].m), m_stddev(&es[e].m));
+		if(n != 512) continue;
 		trie_Str_graph(&trie, "graph/example.gv");
 	}
 	printf("Test passed.\n");
@@ -411,19 +412,12 @@ finally:
 		char fn[64];
 		if(sprintf(fn, "graph/%s.gnu", gnu.name) < 0
 			|| !(gnu.fp = fopen(fn, "w"))) goto catch2;
-		/*"set style line 1 lt 1 lw 3 lc rgb '#0072bd' # blue\n"
-		"set style line 2 lt 1 lw 3 lc rgb '#d95319' # orange\n"
-		"set style line 3 lt 1 lw 3 lc rgb '#edb120' # yellow\n"
-		"set style line 4 lt 1 lw 3 lc rgb '#7e2f8e' # purple\n"
-		"set style line 5 lt 1 lw 3 lc rgb '#77ac30' # green\n"
-		"set style line 6 lt 1 lw 3 lc rgb '#4dbeee' # light-blue\n"
-		"set style line 7 lt 1 lw 3 lc rgb '#a2142f' # red\n"*/
-		fprintf(gnu.fp, "set style line 1 lt 5 lw 2 lc rgb '#0072ff'\n"
-			"set style line 2 lt 1 lw 3 lc rgb '#0072ff'\n"
-			"set style line 3 lt 5 lw 2 lc rgb '#dd5500'\n"
-			"set style line 4 lt 1 lw 3 lc rgb '#dd5500'\n"
-			"set style line 5 lt 5 lw 2 lc rgb '#009933'\n"
-			"set style line 6 lt 1 lw 3 lc rgb '#009933'\n");
+		fprintf(gnu.fp, "set style line 1 lt 5 lw 2 lc rgb '#0072bd'\n"
+			"set style line 2 lt 1 lw 3 lc rgb '#0072bd'\n"
+			"set style line 3 lt 5 lw 2 lc rgb '#ff0000'\n" /* a2142f */
+			"set style line 4 lt 1 lw 3 lc rgb '#ff0000'\n"
+			"set style line 5 lt 5 lw 2 lc rgb '#00ac33'\n" /* 30ac77 */
+			"set style line 6 lt 1 lw 3 lc rgb '#00ac33'\n");
 		fprintf(gnu.fp, "set term postscript eps enhanced color\n"
 			/*"set encoding utf8\n" Doesn't work at all; {/Symbol m}. */
 			"set output \"graph/%s.eps\"\n"
