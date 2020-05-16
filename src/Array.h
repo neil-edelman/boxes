@@ -5,9 +5,9 @@
 
  ![Example of Array](../web/array.png)
 
- <tag:<T>Array> is a dynamic array that stores contiguous `<T>`, which must be
- set using `ARRAY_TYPE`. To ensure that the capacity is greater then or equal
- to the size, resizing may be necessary and incurs amortised cost.
+ <tag:<T>Array> is a dynamic array that stores contiguous data. To ensure that
+ the capacity is greater then or equal to the size, resizing may be necessary
+ and incurs amortised cost.
 
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -144,7 +144,7 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 		c0 = 8;
 	}
 	if(min_capacity > max_size) return errno = ERANGE, 0;
-	/* `c_n = 1.625^n`, approximation Fibonacci golden ratio `\phi ~ 1.618`. */
+	/* `c_n = a1.625^n`, approximation Fibonacci golden ratio `\phi ~ 1.618`. */
 	while(c0 < min_capacity) {
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
 		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; very unlikely. */
