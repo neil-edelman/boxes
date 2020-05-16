@@ -87,7 +87,7 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>struct <strong>&lt;T&gt;Array</strong>;</code>
 
-Manages the array field `first`, which is indexed up to `size`\. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale\. To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`\), or being `static`\.
+Manages the array field `data`, which is indexed up to `size`\. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale\. To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
 ![States.](web/states.png)
 

@@ -120,7 +120,11 @@ static void PT_(test_basic)(void) {
 	assert(t1 == t);
 	assert(T_(ArrayPeek)(&a) == 0);
 	t = T_(ArrayNew)(&a); /* Add. */
-	assert(t);
+	assert(t && a.size == 1 && a.capacity == 8);
+	T_(ArrayShrink)(&a);
+	assert(a.size == 1 && a.capacity == 1);
+	t = T_(ArrayNew)(&a); /* Add 2. */
+	assert(t && a.size == 2 && a.capacity == 8);
 	T_(ArrayClear)(&a);
 	assert(T_(ArrayPeek)(&a) == 0);
 	PT_(valid_state)(&a);
