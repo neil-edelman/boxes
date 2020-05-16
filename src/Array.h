@@ -144,7 +144,7 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 		c0 = 8;
 	}
 	if(min_capacity > max_size) return errno = ERANGE, 0;
-	/* Grow the capacity exponentially, a bit less then Fibonacci. */
+	/* `c_n = 1.625^n`, approximation Fibonacci golden ratio `\phi ~ 1.618`. */
 	while(c0 < min_capacity) {
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
 		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; very unlikely. */
@@ -385,8 +385,8 @@ static T *T_(ArrayBuffer)(struct T_(Array) *const a, const size_t add) {
 	return a->data + prev_size;
 }
 
-/** Shrinks `a` to the size, freeing unsed memory. If the size is zero, it will
- be in an idle state.
+/** Shrinks the capacity `a` to the size, freeing unsed memory. If the size is
+ zero, it will be in an idle state.
  @return Success. @throws[ERANGE, realloc] Unlikely `realloc` error. */
 static int T_(ArrayShrink)(struct T_(Array) *const a)
 	{ return a ? PT_(shrink)(a) : 0; }
