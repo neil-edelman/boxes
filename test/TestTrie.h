@@ -23,11 +23,11 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 	if(!trie) { printf("null.\n"); return; }
 	printf("{");
 	for(i = 0; i < trie->leaves.size; i++)
-		printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.first[i]));
+		printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.data[i]));
 	printf("}; {");
 	for(n = 0; n < trie->branches.size; n++)
-		printf("%s%u:%lu", n ? ", " : "", trie_bit(trie->branches.first[n]),
-		(unsigned long)trie_left(trie->branches.first[n]));
+		printf("%s%u:%lu", n ? ", " : "", trie_bit(trie->branches.data[n]),
+		(unsigned long)trie_left(trie->branches.data[n]));
 	printf("}.\n");
 }
 
@@ -37,7 +37,7 @@ static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right;
 	assert(trie && n < remaining);
 	for( ; ; ) {
-		left = trie_left(trie->branches.first[n0]);
+		left = trie_left(trie->branches.data[n0]);
 		right = remaining - left - 1;
 		/*assert(left < remaining && right < remaining); <- Invalid tries. */
 		if(n0 >= n) break;
@@ -55,7 +55,7 @@ static size_t PN_(left_leaf)(const struct N_(Trie) *const trie,
 	size_t remaining = trie->branches.size, n0 = 0, left, right, i = 0;
 	assert(trie && n < remaining);
 	for( ; ; ) {
-		left = trie_left(trie->branches.first[n0]);
+		left = trie_left(trie->branches.data[n0]);
 		right = remaining - left - 1;
 		assert(left < remaining && right < remaining);
 		if(n0 >= n) break;
@@ -80,7 +80,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		"\\l|size: %lu\\l}\"];\n", (unsigned long)N_(TrieSize)(trie));
 	fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
 	for(n = 0; n < trie->branches.size; n++) {
-		const size_t branch = trie->branches.first[n];
+		const size_t branch = trie->branches.data[n];
 		const size_t left = trie_left(branch), right = PN_(right)(trie, n);
 		fprintf(fp, "\tbranch%lu [label = \"%u\"];\n"
 			"\tbranch%lu -> ", (unsigned long)n, trie_bit(branch),
@@ -100,7 +100,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	for(i = 0; i < trie->leaves.size; i++)
 		fprintf(fp, "\tleaf%lu [label = \"%s\", shape = box, "
 		"fillcolor = lightsteelblue, style = filled];\n", (unsigned long)i,
-		PN_(to_key)(trie->leaves.first[i]));
+		PN_(to_key)(trie->leaves.data[i]));
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);
@@ -112,8 +112,8 @@ static void PN_(valid)(const struct N_(Trie) *const trie) {
 	size_t i, i_end;
 	int cmp;
 	if(!trie) return;
-	if(!trie->leaves.first) { assert(!trie->leaves.size
-		&& !trie->branches.first && !trie->branches.size); return; }
+	if(!trie->leaves.data) { assert(!trie->leaves.size
+		&& !trie->branches.data && !trie->branches.size); return; }
 	assert(trie->leaves.size == trie->branches.size + 1);
 	for(a = N_(TrieArray)(trie), i = 1, i_end = N_(TrieSize)(trie);
 		i < i_end; i++) {

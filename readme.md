@@ -30,7 +30,7 @@ A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` a
  * Dependancies:  
    [Array.h](../Array/)
  * Caveat:  
-   Create a trie much faster from existing data and have a merge\. Have a replace; potentially much less wastful then remove and add\.
+   Have a replace; potentially much less wastful then remove and add\.
  * See also:  
    [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
@@ -290,14 +290,16 @@ Updates or adds `data` to `trie`\.
 
 <code>static int <strong>&lt;N&gt;TriePolicyPut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>, &lt;PN&gt;Type **const <em>eject</em>, const &lt;PN&gt;Replace <em>replace</em>)</code>
 
-Adds `data` to `trie` only if the entry is absent or if calling `merge` returns true\.
+Adds `data` to `trie` only if the entry is absent or if calling `replace` returns true\.
 
  * Parameter: _trie_  
    If null, returns null\.
  * Parameter: _data_  
    If null, returns null\.
  * Parameter: _eject_  
-   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite a previous value\.
+   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite a previous value\. If a collision occurs and `replace` does not return true, this value will be `data`\.
+ * Parameter: _replace_  
+   Called on collision and only replaces it if the function returns true\. If null, it is semantically equivalent to [&lt;N&gt;TriePut](#user-content-fn-85d52810)\.
  * Return:  
    Success\.
  * Exceptional return: realloc  

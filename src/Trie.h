@@ -236,12 +236,12 @@ static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 		&& trie->branches.capacity >= trie->leaves.size - 1);
 	if(a_size <= 1) return;
 	/* Endpoints. */
-	while(trie_is_bit(PN_(to_key)(trie->leaves.first[a]), bit)
-		|| !trie_is_bit(PN_(to_key)(trie->leaves.first[a + a_size - 1]), bit))
+	while(trie_is_bit(PN_(to_key)(trie->leaves.data[a]), bit)
+		|| !trie_is_bit(PN_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
 		bit++;
 	/* Do a binary search for the first `leaves[a+half_s]#bit == 1`. */
 	while(s) half_s = s >> 1,
-		trie_is_bit(PN_(to_key)(trie->leaves.first[a1 + half_s]), bit)
+		trie_is_bit(PN_(to_key)(trie->leaves.data[a1 + half_s]), bit)
 		? s = half_s : (half_s++, a1 += half_s, s -= half_s);
 	s = a1 - a;
 	/* Should have space for all branches pre-allocated, (right?) */
@@ -262,7 +262,7 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 		&& a && a_size && merge);
 	if(!PT_(reserve)(&trie->leaves, a_size)
 		|| !array_TrieBranch_reserve(&trie->branches, a_size - 1)) return 0;
-	leaves = trie->leaves.first;
+	leaves = trie->leaves.data;
 	memcpy(leaves, a, sizeof *a * a_size);
 	trie->leaves.size = a_size;
 	qsort(leaves, a_size, sizeof *a, &PN_(vcompar));
@@ -301,8 +301,8 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 		return 0;
 
 	/* Internal nodes. */
-	while(branch = trie->branches.first + n0,
-		n0_key = PN_(to_key)(trie->leaves.first[i]), n0 < n1) {
+	while(branch = trie->branches.data + n0,
+		n0_key = PN_(to_key)(trie->leaves.data[i]), n0 < n1) {
 		for(n0_bit = trie_bit(*branch); bit < n0_bit; bit++)
 			if((cmp = trie_strcmp_bit(data_key, n0_key, bit)) != 0) goto insert;
 		left = trie_left(*branch) + 1;
@@ -319,12 +319,12 @@ insert:
 	if(cmp < 0) left = 0;
 	else left = n1 - n0, i += left + 1;
 
-	leaf = trie->leaves.first + i;
+	leaf = trie->leaves.data + i;
 	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
 	*leaf = data;
 	trie->leaves.size++;
 
-	branch = trie->branches.first + n0;
+	branch = trie->branches.data + n0;
 	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
 	*branch = trie_branch(bit, left);
 	trie->branches.size++;
@@ -340,10 +340,10 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	TrieBranch branch;
 	unsigned n0_byte, str_byte = 0, bit;
 	assert(trie && key);
-	if(n1 <= 1) return n1 ? trie->leaves.first : 0; /* Special case. */
+	if(n1 <= 1) return n1 ? trie->leaves.data : 0; /* Special case. */
 	n1--, assert(n1 == trie->branches.size);
 	while(n0 < n1) {
-		branch = trie->branches.first[n0];
+		branch = trie->branches.data[n0];
 		bit = trie_bit(branch);
 		for(n0_byte = bit >> 3; str_byte < n0_byte; str_byte++)
 			if(key[str_byte] == '\0') return 0;
@@ -352,7 +352,7 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 		else n0 += left + 1, i += left + 1;
 	}
 	assert(n0 == n1 && i < trie->leaves.size);
-	return trie->leaves.first + i;
+	return trie->leaves.data + i;
 }
 
 /** @return `key` is an element of `trie` that is an exact match or null. */
@@ -402,12 +402,12 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 
 	/* Remove leaf. */
 	if(!--trie->leaves.size) return; /* Special case of one leaf. */
-	memmove(trie->leaves.first + i, trie->leaves.first + i + 1,
+	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
 		sizeof(PN_(Leaf)) * (n1 - i));
 
 	/* Remove branch. */
 	for( ; ; ) {
-		left = trie_left(*(branch = trie->branches.first + (last_n0 = n0)));
+		left = trie_left(*(branch = trie->branches.data + (last_n0 = n0)));
 		if(i <= left) {
 			if(!left) break;
 			n1 = ++n0 + left;
@@ -418,6 +418,13 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 		}
 	}
 	memmove(branch, branch + 1, sizeof n0 * (--trie->branches.size - last_n0));
+}
+
+/** Shrinks `trie` to size. The arrays probably still a distance away. */
+static int PN_(shrink)(struct N_(Trie) *const trie) {
+	assert(trie);
+	return array_TrieBranch_shrink(&trie->branches)
+		&& PT_(shrink)(&trie->leaves);
 }
 
 
@@ -465,7 +472,7 @@ static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
  @return An array of pointers to the leaves of `trie`, ordered by key.
  @allow */
 static PN_(Type) *const*N_(TrieArray)(const struct N_(Trie) *const trie) {
-	return trie && trie->leaves.size ? trie->leaves.first : 0;
+	return trie && trie->leaves.size ? trie->leaves.data : 0;
 }
 
 /** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
@@ -556,8 +563,13 @@ static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
 static int N_(TrieRemove)(struct N_(Trie) *const trie, const char *const key) {
 	PN_(Leaf) *leaf;
 	return trie && key && (leaf = PN_(get)(trie, key))
-		? (PN_(remove)(trie, leaf - trie->leaves.first), 1) : 0;
+		? (PN_(remove)(trie, leaf - trie->leaves.data), 1) : 0;
 }
+
+/** Shrinks the capacity of `trie` to size.
+ @return Success. @throws[ERANGE, realloc] Unlikely `realloc` error. */
+static int N_(TrieShrink)(struct N_(Trie) *const trie)
+	{ return trie ? PN_(shrink)(trie) : 0; }
 
 /** Can print four strings at once before it overwrites.
  @return Prints the keys of `trie` in a static buffer.
@@ -585,10 +597,10 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
 	/* Advance the buffer for next time. */
 	buffer_i &= buffers_no - 1;
 	if(!trie) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!trie->leaves.first) { memcpy(b, idle, idle_len), b += idle_len;
+	if(!trie->leaves.data) { memcpy(b, idle, idle_len), b += idle_len;
 		goto terminate; }
 	*b++ = start;
-	for(l = trie->leaves.first, l_end = l + trie->leaves.size; l < l_end; l++) {
+	for(l = trie->leaves.data, l_end = l + trie->leaves.size; l < l_end; l++) {
 		if(!is_first) *b++ = comma, *b++ = space;
 		else is_first = 0;
 		str = PN_(to_key)(*l);
@@ -616,7 +628,8 @@ static void PN_(unused_set)(void) {
 	N_(Trie_)(0); N_(Trie)(0); N_(TrieFromArray)(0, 0, 0, 0); N_(TrieSize)(0);
 	N_(TrieArray)(0); N_(TrieClear)(0); N_(TrieGet)(0, 0); N_(TrieClose)(0, 0);
 	N_(TrieAdd)(0, 0); N_(TriePut)(0, 0, 0); N_(TriePolicyPut)(0, 0, 0, 0);
-	N_(TrieRemove)(0, 0); N_(TrieToString)(0); PN_(unused_coda)();
+	N_(TrieRemove)(0, 0); N_(TrieShrink)(0); N_(TrieToString)(0);
+	PN_(unused_coda)();
 }
 static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 
@@ -634,7 +647,7 @@ static void PT_(unused_coda)(void);
 static void PN_(unused_set)(void) {
 	PN_(iterate)(0, 0); PN_(trie_)(0); PN_(trie)(0); PN_(unused_coda)();
 	PN_(node_key)(0, 0); PN_(add)(0, 0); PN_(match)(0, 0); PN_(put)(0, 0, 0);
-	PN_(remove)(0, 0); PN_(false)(0);
+	PN_(remove)(0, 0); PN_(shrink)(0); PN_(false)(0);
 }
 static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 #endif /* sub-type --> */

@@ -68,7 +68,7 @@
 	<dt>Dependancies:</dt>
 	<dd><a href = "../Array/">Array.h</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Create a trie much faster from existing data and have a merge. Have a replace; potentially much less wastful then remove and add.</dd>
+	<dd>Have a replace; potentially much less wastful then remove and add.</dd>
 	<dt>See also:</dt>
 	<dd><a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a></dd>
 </dl>
@@ -374,7 +374,7 @@
 
 <p><code>static int <strong>&lt;N&gt;TriePolicyPut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>, &lt;PN&gt;Type **const <em>eject</em>, const &lt;PN&gt;Replace <em>replace</em>)</code></p>
 
-<p>Adds <code>data</code> to <code>trie</code> only if the entry is absent or if calling <code>merge</code> returns true.</p>
+<p>Adds <code>data</code> to <code>trie</code> only if the entry is absent or if calling <code>replace</code> returns true.</p>
 
 <dl>
 	<dt>Parameter: <em>trie</em></dt>
@@ -382,7 +382,9 @@
 	<dt>Parameter: <em>data</em></dt>
 	<dd>If null, returns null.</dd>
 	<dt>Parameter: <em>eject</em></dt>
-	<dd>If not null, on success it will hold the overwritten value or a pointer-to-null if it did not overwrite a previous value.</dd>
+	<dd>If not null, on success it will hold the overwritten value or a pointer-to-null if it did not overwrite a previous value. If a collision occurs and <code>replace</code> does not return true, this value will be <code>data</code>.</dd>
+	<dt>Parameter: <em>replace</em></dt>
+	<dd>Called on collision and only replaces it if the function returns true. If null, it is semantically equivalent to <a href = "#fn:&lt;N&gt;TriePut">&lt;N&gt;TriePut</a>.</dd>
 	<dt>Return:</dt>
 	<dd>Success.</dd>
 	<dt>Exceptional return: realloc</dt>
