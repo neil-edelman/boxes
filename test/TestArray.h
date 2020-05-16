@@ -19,10 +19,10 @@ static const PT_(Action) PT_(filler) = (ARRAY_TEST);
 
 /** @return Is `a` in a valid state? */
 static void PT_(valid_state)(const struct T_(Array) *const a) {
-	const size_t max_size = (size_t)-1 / sizeof *a->first;
+	const size_t max_size = (size_t)-1 / sizeof *a->data;
 	/* Null is a valid state. */
 	if(!a) return;
-	if(!a->first) { assert(!a->size); return; }
+	if(!a->data) { assert(!a->size); return; }
 	assert(a->size <= a->capacity && a->capacity <= max_size);
 }
 
@@ -50,8 +50,8 @@ static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
 		"\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>Array: "
 		QUOTE(ARRAY_TYPE) "\\l|size: %lu\\lcapacity: %lu\\l\"];\n",
 		(unsigned long)ar->size, (unsigned long)ar->capacity);
-	if(ar->first) {
-		T *const data = ar->first;
+	if(ar->data) {
+		T *const data = ar->data;
 		size_t i;
 		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n"
 			"\tArray -> p%p;\n"
@@ -100,7 +100,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayRemove)(&a, t) == 0 && errno == EDOM), errno = 0;
 	assert(T_(ArrayLazyRemove)(&a, 0) == 0 && errno == 0);
 	assert(T_(ArrayLazyRemove)(&a, t) == 0 && errno == EDOM), errno = 0;
-	assert(a.first == 0);
+	assert(a.data == 0);
 	assert(T_(ArrayPeek)(0) == 0);
 	assert(T_(ArrayPop)(0) == 0);
 	T_(ArrayEach)(&a, 0);
@@ -114,7 +114,7 @@ static void PT_(test_basic)(void) {
 
 	printf("Test one element.\n");
 	t = T_(ArrayNew)(&a); /* Add. */
-	assert(t && a.first == t && a.size == 1);
+	assert(t && a.data == t && a.size == 1);
 	assert(T_(ArrayPeek)(&a) == t);
 	t1 = T_(ArrayPop)(&a); /* Remove. */
 	assert(t1 == t);
@@ -132,9 +132,9 @@ static void PT_(test_basic)(void) {
 		assert(t);
 		memcpy(t, ts + i, sizeof *t);
 	}
-	T_(ArrayLazyRemove)(&a, a.first);
+	T_(ArrayLazyRemove)(&a, a.data);
 	assert(a.size == 2);
-	t = a.first;
+	t = a.data;
 	assert(!memcmp(t, ts + 2, sizeof *t) && !memcmp(t + 1, ts + 1, sizeof *t));
 	T_(ArrayClear)(&a);
 	assert(!a.size);
@@ -148,7 +148,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(ArrayPeek)(&a));
 	printf("Now: %s.\n", T_(ArrayToString)(&a));
 	assert(a.size == ts_size);
-	if((t = a.first + ts_size - 2)
+	if((t = a.data + ts_size - 2)
 		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
@@ -156,7 +156,7 @@ static void PT_(test_basic)(void) {
 	printf("Now: %s.\n", T_(ArrayToString)(&a));
 	assert(!T_(ArrayRemove)(&a, t + 1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
-	if((t = a.first + ts_size - 3)
+	if((t = a.data + ts_size - 3)
 		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
@@ -204,7 +204,7 @@ static void PT_(test_basic)(void) {
 	assert(a.size == !is_zero);
 
 	/* Big. */
-	start = a.first + a.size;
+	start = a.data + a.size;
 	for(i = 0; i < big; i++) {
 		t = T_(ArrayUpdateNew)(&a, &start);
 		assert(t && (size_t)(t - start) == i);
@@ -247,8 +247,8 @@ static void PT_(test_compactify)(void) {
 		&& PT_(fill_garbage)(&a, 'c', 3));
 	assert(a.size == 9);
 	T_(ArrayCompactify)(&a, &PT_(equal_byte), 0);
-	assert(a.size == 3 && *(char *)a.first == 'a'
-		&& *(char *)(a.first + 1) == 'b' && *(char *)(a.first + 2) == 'c');
+	assert(a.size == 3 && *(char *)a.data == 'a'
+		&& *(char *)(a.data + 1) == 'b' && *(char *)(a.data + 2) == 'c');
 	T_(Array_)(&a);
 }
 
@@ -285,7 +285,7 @@ static void PT_(test_random)(void) {
 				assert(data == T_(ArrayPop)(&a));
 			} else {
 				size_t idx = rand() / (RAND_MAX + 1.0) * size;
-				if(!(data = a.first + idx)) continue;
+				if(!(data = a.data + idx)) continue;
 				PT_(to_string)(data, &str);
 				printf("removing %s at %lu.\n", str, (unsigned long)idx);
 				{
@@ -374,7 +374,7 @@ static void PT_(test_replace)(void) {
 	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && a.size == ts_size
-		&& !memcmp(t, a.first + 1, sizeof *t));
+		&& !memcmp(t, a.data + 1, sizeof *t));
 	/* Replacing larger size. */
 	t = T_(ArrayNew)(&b);
 	assert(t);
@@ -383,13 +383,13 @@ static void PT_(test_replace)(void) {
 	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && a.size == ts_size + 1
-		   && !memcmp(t, a.first + 2, sizeof *t));
+		   && !memcmp(t, a.data + 2, sizeof *t));
 	/* Replacing a smaller size. */
 	success = T_(ArrayIndexSplice)(&a, 1, 4, &b);
 	printf("Array after replacing [1, 4) %s: %s.\n", T_(ArrayToString)(&b),
 		T_(ArrayToString)(&a));
 	assert(success && a.size == ts_size
-		   && !memcmp(t, a.first + 2, sizeof *t));
+		   && !memcmp(t, a.data + 2, sizeof *t));
 	T_(ArrayClear)(&b);
 	t = T_(ArrayBuffer)(&b, 2);
 	assert(t);
@@ -400,22 +400,22 @@ static void PT_(test_replace)(void) {
 	T_(ArraySplice)(&a, 0, -1, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[0],[1],[4],[0],[2],[3]] */
-	T_(ArraySplice)(&a, a.first + 1, 2, &b);
+	T_(ArraySplice)(&a, a.data + 1, 2, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
-	T_(ArraySplice)(&a, a.first + 2, -5, &b);
+	T_(ArraySplice)(&a, a.data + 2, -5, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
-	T_(ArraySplice)(&a, a.first + 7, -1, &b);
+	T_(ArraySplice)(&a, a.data + 7, -1, &b);
 	printf("a = %s.\n", T_(ArrayToString)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
 	/* @fixme This is not enought coverage. */
 	assert(a.size == 9 &&
-		!memcmp(ts + 1, a.first, sizeof *t * 2) &&
-		!memcmp(ts + 2, a.first + 2, sizeof *t * 3) &&
-		!memcmp(ts + 0, a.first + 5, sizeof *t) &&
-		!memcmp(ts + 2, a.first + 6, sizeof *t) &&
-		!memcmp(ts + 2, a.first + 7, sizeof *t * 2));
+		!memcmp(ts + 1, a.data, sizeof *t * 2) &&
+		!memcmp(ts + 2, a.data + 2, sizeof *t * 3) &&
+		!memcmp(ts + 0, a.data + 5, sizeof *t) &&
+		!memcmp(ts + 2, a.data + 6, sizeof *t) &&
+		!memcmp(ts + 2, a.data + 7, sizeof *t * 2));
 	T_(Array_)(&b);
 	T_(Array_)(&a);
 }
@@ -445,12 +445,12 @@ static void PT_(test_keep)(void) {
 	}
 	T_(ArrayKeepIf)(&a, &PT_(keep_one), 0);
 	assert(a.size == 7
-		&& !memcmp(ts + 0, a.first + 0, sizeof *t * 1)
-		&& !memcmp(ts + 5, a.first + 1, sizeof *t * 1)
-		&& !memcmp(ts + 8, a.first + 2, sizeof *t * 2)
-		&& !memcmp(ts + 11, a.first + 4, sizeof *t * 1)
-		&& !memcmp(ts + 13, a.first + 5, sizeof *t * 1)
-		&& !memcmp(ts + 15, a.first + 6, sizeof *t * 1));
+		&& !memcmp(ts + 0, a.data + 0, sizeof *t * 1)
+		&& !memcmp(ts + 5, a.data + 1, sizeof *t * 1)
+		&& !memcmp(ts + 8, a.data + 2, sizeof *t * 2)
+		&& !memcmp(ts + 11, a.data + 4, sizeof *t * 1)
+		&& !memcmp(ts + 13, a.data + 5, sizeof *t * 1)
+		&& !memcmp(ts + 15, a.data + 6, sizeof *t * 1));
 	T_(Array_)(&a);
 }
 
@@ -490,7 +490,7 @@ static void PT_(test_each)(void) {
 	t = T_(ArrayAny)(&empty, &PT_(true));
 	assert(!t);
 	t = T_(ArrayAny)(&one, &PT_(true));
-	assert(t == one.first);
+	assert(t == one.data);
 	T_(Array_)(&one);
 }
 
