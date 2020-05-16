@@ -52,10 +52,10 @@ static int array_fill(struct StrArray *const strs,
 	if(words_start + words_chosen > words_size) {
 		const size_t size_a = words_size - words_start,
 			size_b = words_chosen - size_a;
-		memcpy(strs->first, words + words_start, sizeof *words * size_a);
-		memcpy(strs->first + size_a, words, sizeof *words * size_b);
+		memcpy(strs->data, words + words_start, sizeof *words * size_a);
+		memcpy(strs->data + size_a, words, sizeof *words * size_b);
 	} else {
-		memcpy(strs->first, words + words_start, sizeof *words * words_chosen);
+		memcpy(strs->data, words + words_start, sizeof *words * words_chosen);
 	}
 	return 1;
 }
@@ -320,7 +320,7 @@ static int timing_comparison(void) {
 			array_fill(&array, parole, parole_size, start_i, n);
 			t = clock();
 			array_fill(&array, parole, parole_size, start_i, n);
-			qsort(array.first, array.size, sizeof array.first, &array_cmp);
+			qsort(array.data, array.size, sizeof array.data, &array_cmp);
 			StrArrayCompactify(&array, &array_is_equal, 0);
 			m_add(&es[ARRAYINIT].m, diff_us(t));
 			printf("Added init array size %lu: %s.\n",
@@ -329,8 +329,8 @@ static int timing_comparison(void) {
 			printf("Array: %s.\n", StrArrayToString(&array));
 			for(i = 0; i < n; i++) {
 				const char *const word = parole[(start_i + i) % parole_size],
-					**const key = bsearch(&word, array.first, array.size,
-					sizeof array.first, array_cmp);
+					**const key = bsearch(&word, array.data, array.size,
+					sizeof array.data, array_cmp);
 				const int cmp = strcmp(word, *key);
 				(void)cmp, assert(key && !cmp);
 			}
@@ -366,7 +366,7 @@ static int timing_comparison(void) {
 			t = clock();
 			array_fill(&array, parole, parole_size, start_i, n);
 			StrTrieClear(&trie);
-			StrTrieFromArray(&trie, array.first, array.size, 0);
+			StrTrieFromArray(&trie, array.data, array.size, 0);
 			m_add(&es[TRIEINIT].m, diff_us(t));
 			printf("Added init trie size %lu: %s.\n",
 				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
