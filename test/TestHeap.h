@@ -34,8 +34,8 @@ static void PH_(graph)(const struct H_(Heap) *const heap,
 #endif
 		"\\l|size: %lu\\lcapacity: %lu\\l}\"];\n", (unsigned long)heap->a.size,
 		(unsigned long)heap->a.capacity);
-	if(heap->a.first) {
-		struct H_(HeapNode) *const n0 = heap->a.first;
+	if(heap->a.data) {
+		struct H_(HeapNode) *const n0 = heap->a.data;
 		size_t i;
 		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
 		if(heap->a.size) fprintf(fp, "\tn0 -> Hash [dir = back];\n");
@@ -61,7 +61,7 @@ static void PH_(valid)(const struct H_(Heap) *const heap) {
 	size_t i;
 	struct H_(HeapNode) *n0;
 	if(!heap) return;
-	if(!(n0 = heap->a.first)) { assert(!heap->a.size); return; }
+	if(!(n0 = heap->a.data)) { assert(!heap->a.size); return; }
 	for(i = 1; i < heap->a.size; i++) {
 		size_t iparent = (i - 1) >> 1;
 		if(PH_(compare)(n0[iparent].priority, n0[i].priority) <= 0) continue;
