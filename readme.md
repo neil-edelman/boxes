@@ -13,7 +13,7 @@
 
 ![Example of Array](web/array.png)
 
-[&lt;T&gt;Array](#user-content-tag-f128eca2) is a dynamic array that stores contiguous `<T>`, which must be set using `ARRAY_TYPE`\. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\.
+[&lt;T&gt;Array](#user-content-tag-f128eca2) is a dynamic array that stores contiguous data\. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\.
 
 `<T>Array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
 
