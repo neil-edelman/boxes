@@ -9,12 +9,11 @@
  identifier string that is associated to `N`. Strings can be any encoding with
  a byte null-terminator; in particular, `C` native strings, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). It can
- be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree);
- specifically <Morrison, 1968 PATRICiA>, in that the trie only stores data on
- the positions where the strings are different in the index. Because of this,
- it takes twice the space as keeping a sorted array of pointers, but lookup is
- faster and more cache-friendly; likewise, insertion and deletion are slower
- because the need to update the index.
+ be seen as a <Morrison, 1968 PATRICiA>, in that it only stores data in the
+ index on the positions where the strings are different. It is also a
+ [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) which lives in
+ compact \O(`size`) extra memory. Insertion and deletion are slower because
+ the need to update the array index.
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
  with `errno`. The parameters are `#define` preprocessor macros, and are all
@@ -37,6 +36,7 @@
  satisfying <typedef:<PN>Action>. Requires that `NDEBUG` not be defined.
 
  @fixme Have a replace; potentially much less wastful then remove and add.
+ @fixme Compression _a la_ Judy; 64 bits to store mostly 0/1? Could it be done?
  @depend [Array.h](../../Array/)
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
@@ -227,7 +227,7 @@ static int PN_(equals)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
 
 /** Recursive function used for <fn:<PN>init>. Initialise branches of `trie` up
  to `bit` with `a` to `a_size` array of sorted leaves.
- @order O(`leaves`) */
+ @order Speed \O(`leaves`), memory \O(`longest string`). */
 static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 	const size_t a, const size_t a_size) {
 	size_t a1 = a, s = a_size, half_s;
