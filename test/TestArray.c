@@ -9,19 +9,21 @@
 #include "Orcish.h"
 
 
-/* fixme */
-enum Colour { White, Silver, Gray, Black, Red, Maroon, Bisque, Wheat, Tan,
-	Sienna, Brown, Yellow, Khaki, Gold, Olive, Lime, Green, Aqua, Cyan, Teal,
-	Salmon, Orange, Powder, Sky, Steel, Royal, Blue, Navy, Fuchsia, Pink,
-	Purple };
-static const char *const colour_names[] = { "White", "Silver", "Gray", "Black",
-	"Red", "Maroon", "Bisque", "Wheat", "Tan", "Sienna", "Brown", "Yellow",
-	"Khaki", "Gold", "Olive", "Lime", "Green", "Aqua", "Cyan", "Teal",
-	"Salmon", "Orange", "Powder", "Sky", "Steel", "Royal", "Blue", "Navy",
-	"Fuchsia", "Pink", "Purple" }; /* max 11 letters */
-static const size_t colour_size = sizeof colour_names / sizeof *colour_names;
+/* X-macro. */
+#define PARAM(A) A
+#define STRINGISE(A) #A
+ /* Max 11 letters. */
+#define COLOUR(X) \
+	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
+	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
+	X(Olive), X(Lime), X(Green), X(Aqua), X(Cyan), X(Teal), X(Salmon), \
+	X(Orange), X(Powder), X(Sky), X(Steel), X(Royal), X(Blue), X(Navy), \
+	X(Fuchsia), X(Pink), X(Purple)
+enum Colour { COLOUR(PARAM) };
+static const char *const colours[] = { COLOUR(STRINGISE) };
+static const size_t colour_size = sizeof colours / sizeof *colours;
 static void Colour_to_string(const enum Colour *c, char (*const a)[12])
-	{ assert(*c < colour_size); sprintf(*a, "%s", colour_names[*c]); }
+	{ assert(*c < colour_size); sprintf(*a, "%s", colours[*c]); }
 static void Colour_filler(enum Colour *const c)
 	{ *c = (enum Colour)(float)(rand() / (RAND_MAX + 1.0) * colour_size); }
 #define ARRAY_NAME Colour
