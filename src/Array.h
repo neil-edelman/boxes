@@ -659,21 +659,6 @@ static size_t PTC_(lower_bound)(const struct T_(Array) *const a,
 		if(PTC_(compare)(value, a->data + (mid = low + ((high - low) >> 1)))
 		<= 0) high = mid; else low = mid + 1;
 	return low;
-
-	/*size_t first = 0, count = a->size, it, step;
-	char y[12], z[12];
-	assert(a && value);
-	PT_(to_string)(value, &y);
-	while(count > 0) {
-		it = first + (step = count >> 1);
-		PT_(to_string)(a->data + it, &z);
-		printf("count %lu, step %lu, (%s, %s):", count, step, y, z);
-		if(PTC_(compare)(a->data + it, value) < 0)
-			first = ++it, count -= step + 1, printf("greater\n");
-		else
-			count = step, printf("less\n");
-	}
-	return first;*/
 }
 
 /** Loosely `C++` `upper_bound`. @param[a] Array;
@@ -686,17 +671,6 @@ static size_t PTC_(upper_bound)(const struct T_(Array) *const a,
 		if(PTC_(compare)(value, a->data + (mid = low + ((high - low) >> 1)))
 		>= 0) low = mid + 1; else high = mid;
 	return low;
-
-	/*size_t first = 0, count = a->size, it, step;
-	assert(a && value);
-	while(count > 0) {
-		it = first, step = count >> 1;
-		if(PTC_(compare)(value, a->data + it) >= 0)
-			first = ++it, count -= step + 1;
-		else
-			count = step;
-	}
-	return first;*/
 }
 
 /** Inserts `datum` in `a` at the lower bound. @return Success. */
