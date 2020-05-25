@@ -1,5 +1,7 @@
 /* Intended to be included by `Array.h` on `ARRAY_TEST`. */
 
+#include <assert.h>
+
 /* Define macros used for this file. */
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.

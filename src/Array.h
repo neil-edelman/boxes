@@ -55,15 +55,19 @@
 
 /* Check defines. */
 #ifndef ARRAY_NAME
-#error Generic ARRAY_NAME undefined.
+#error Name ARRAY_NAME undefined.
 #endif
 #ifndef ARRAY_TYPE
 #error Tag type ARRAY_TYPE undefined.
 #endif
-#define ARRAY_MIXIN defined(ARRAY_TO_STRING) + defined(ARRAY_COMPARE) \
-	+ ARRAY_IS_EQUAL
+#define ARRAY_MIXIN (defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING))\
+	+ (defined(ARRAY_CONTRAST_NAME) || defined(ARRAY_COMPARE) \
+	|| defined(ARRAY_IS_EQUAL))
 #if ARRAY_MIXIN > 1
 #error Only one mixin per include is allowed; use ARRAY_UNFINISHED.
+#endif
+#if (ARRAY_MIXIN == 0) && defined(ARRAY_TEST)
+#error ARRAY_TEST must be defined in ARRAY_TO_STRING mixin.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
@@ -550,34 +554,42 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
 #define PTS_(thing) PCAT(PT_(thing), ARRAY_TO_STRING_NAME)
 #define T_S_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_TO_STRING_NAME, thing2))
+
+#define TO_STRING PCAT(array, PCAT(ARRAY_NAME, ARRAY_TO_STRING_NAME))
+
 #else /* name --><!-- !name */
 #define PTS_(thing) PCAT(PT_(thing), anonymous)
 #define T_S_(thing1, thing2) CAT(T_(thing1), thing2)
+
+#define TO_STRING PCAT(array, PCAT(ARRAY_NAME, anonymous))
+
 #endif /* !name --> */
+
+#define TO_STRING_(thing) PCAT(TO_STRING, thing)
 
 /* Check that `ARRAY_TO_STRING` is a function implementing
  <typedef:<PT>ToString>. */
-static const PT_(ToString) PTS_(to_string) = (ARRAY_TO_STRING);
+static const PT_(ToString) PTS_(to_str12) = (ARRAY_TO_STRING);
 
 /** Returns true if it wrote ... @fixme
  @implements <S>NextToString */
-static int PTS_(next_to_stringz)(struct PT_(Iterator) *const it,
+static int PTS_(next_to_str12)(struct PT_(Iterator) *const it,
 	char (*const str)[12]) {
 	assert(it && it->a);
 	if(it->i >= it->a->size) return 0;
-	PTS_(to_string)(it->a->data + it->i++, str);
+	PTS_(to_str12)(it->a->data + it->i++, str);
 	return 1;
 }
 
-#define S_ PTS_
+#define TO_STRING_NAME TO_STRING
 #define TO_STRING_ITERATOR struct PT_(Iterator)
-#define TO_STRING_NEXT &PTS_(next_to_stringz)
+#define TO_STRING_NEXT &PTS_(next_to_str12)
 #include "ToString.h"
 
-static const char *PTS_(array_to_string)(const struct T_(Array) *const a) {
+static const char *PTS_(to_string)(const struct T_(Array) *const a) {
 	struct PT_(Iterator) it = { 0, 0 };
 	it.a = a;
-	return PTS_(to_stringz)(&it, '(', ')');
+	return TO_STRING_(iterator_to_string)(&it, '(', ')');
 }
 
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
@@ -586,14 +598,14 @@ static const char *PTS_(array_to_string)(const struct T_(Array) *const a) {
  limitations of `ToString.h`.
  @order \Theta(1) @allow */
 static const char *T_S_(Array, ToString)(const struct T_(Array) *const a) {
-	return PTS_(array_to_string)(a); /* Can be null. */
+	return PTS_(to_string)(a); /* Can be null. */
 }
 
 #endif /* !sub-type --> */
 
 static void PTS_(unused_to_string_coda)(void);
 static void PTS_(unused_to_string)(void) {
-	PTS_(array_to_string)(0);
+	PTS_(to_string)(0);
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 	T_S_(Array, ToString)(0);
 #endif /* !sub-type --> */
@@ -608,6 +620,8 @@ static void PTS_(unused_to_string_coda)(void) { PTS_(unused_to_string)(); }
 
 #undef PTS_
 #undef T_S_
+#undef TO_STRING
+#undef TO_STRING_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -618,7 +632,7 @@ static void PTS_(unused_to_string_coda)(void) { PTS_(unused_to_string)(); }
 
 
 #if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT)
-|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
+	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
 #error P?T_? or P?CAT_? not yet defined in contrast mixin; include array?
 #endif
 
@@ -801,7 +815,12 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 
 #undef PTC_
 #undef T_C_
+#ifdef ARRAY_COMPARE
 #undef ARRAY_COMPARE
+#endif
+#ifdef ARRAY_IS_EQUAL
+#undef ARRAY_IS_EQUAL
+#endif
 #ifdef ARRAY_CONTRAST_NAME
 #undef ARRAY_CONTRAST_NAME
 #endif

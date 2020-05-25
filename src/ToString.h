@@ -1,9 +1,16 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle To String Interface
+ @subtitle To String Mixin
 
- This is a sub-include.
+ @param[TO_STRING_]
+ Function-like define macro accepting one argument and producing a valid name.
+
+ @param[TO_STRING_NEXT]
+ A function satisfying <typedef:<PA>NextToString>.
+
+ @param[TO_STRING_ITERATOR]
+ Tag type the first argument to <typedef:<PA>NextToString>.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -15,19 +22,7 @@
 
 #include <string.h>
 
-/* Check defines. */
-/* @fixme S_ is terrible. */
-#ifndef S_
-#error Function-of-1 like macro S_ undefined.
-#endif
-#ifndef TO_STRING_ITERATOR
-#error Tag type TO_STRING_ITERATOR undefined.
-#endif
-#ifndef TO_STRING_NEXT
-#error Function TO_STRING_NEXT undefined.
-#endif
-
-#ifndef TO_STRING_H /* <!-- idempotent: For all ToString in compilation unit. */
+#ifndef TO_STRING_H /* <!-- idempotent: for all in compilation unit. */
 #define TO_STRING_H
 static char to_string_buffers[4][256];
 static const unsigned to_string_buffers_no = sizeof to_string_buffers
@@ -36,16 +31,39 @@ static const unsigned to_string_buffers_no = sizeof to_string_buffers
 static unsigned to_string_buffer_i;
 #endif /* idempotent --> */
 
-typedef TO_STRING_ITERATOR S_(Iterator);
+/* Check defines. */
+#if !defined(CAT) || !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
+#error ToString is meant to be a mixin included from other headers.
+#endif
+#ifndef TO_STRING_NAME
+#error Name TO_STRING_NAME undefined.
+#endif
+#ifndef TO_STRING_NEXT
+#error Function TO_STRING_NEXT undefined.
+#endif
+#ifndef TO_STRING_ITERATOR
+#error Tag type TO_STRING_ITERATOR undefined.
+#endif
+#ifdef PA_
+#error PA_ cannot be defined.
+#endif
+
+#define PA_(thing) PCAT(TO_STRING_NAME, thing)
+
+/** Tag type set by `TO_STRING_ITERATOR` should be a type that encodes all the
+ values needed for iteration. */
+typedef TO_STRING_ITERATOR PA_(Iterator);
 
 /** Returns true if it wrote to the buffer and advances to the next. */
-typedef int (*S_(NextToString))(S_(Iterator) *, char (*)[12]);
+typedef int (*PA_(NextToString))(PA_(Iterator) *, char (*)[12]);
 
 /* Check that `TO_STRING_NEXT` is a function implementing
  <typedef:<S>NextToString>. */
-static const S_(NextToString) S_(next_to_string) = (TO_STRING_NEXT);
+static const PA_(NextToString) PA_(next_to_str12) = (TO_STRING_NEXT);
 
-static const char *S_(to_stringz)(S_(Iterator) *const it,
+/** Fills the to string function up with `it`, with `start` and `end`
+ delimiters around the `<PA>NextToString` `TO_NEXT_STRING`. @allow */
+static const char *PA_(iterator_to_string)(PA_(Iterator) *const it,
 	const char start, const char end) {
 	const char comma = ',', space = ' ',
 		*const ellipsis = "…", *const null = "null";
@@ -61,7 +79,7 @@ static const char *S_(to_stringz)(S_(Iterator) *const it,
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	if(!it->a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
 	*b++ = start;
-	while(S_(next_to_string)(it, (char (*)[12])b)) {
+	while(PA_(next_to_str12)(it, (char (*)[12])b)) {
 		/* Be paranoid about the '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
@@ -69,7 +87,7 @@ static const char *S_(to_stringz)(S_(Iterator) *const it,
 		if((size = b - buffer) > to_string_buffer_size
 			- 11 - 1 - ellipsis_len - 1 - 1) {
 			char throw_out[12];
-			if(S_(next_to_string)(it, &throw_out)) goto ellipsis; else break;
+			if(PA_(next_to_str12)(it, &throw_out)) goto ellipsis; else break;
 		}
 	}
 	if(is_sep) b -= 2;
@@ -85,59 +103,7 @@ terminate:
 	return buffer;
 }
 
-#undef S_
+#undef PA_
+#undef TO_STRING_NAME
 #undef TO_STRING_ITERATOR
 #undef TO_STRING_NEXT
-
-
-
-#if 0
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- output string. Used for `ARRAY_TO_STRING`. */
-typedef void (*PT_(ToString))(const T *, char (*)[12]);
-/* Check that `ARRAY_TO_STRING` is a function implementing
- <typedef:<PT>ToString>. */
-static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
-
-/** Can print 4 things at once before it overwrites. One must a
- `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
- this functionality.
- @return Prints `a` in a static buffer. @order \Theta(1) @allow */
-
-static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
-	const char start = '(', comma = ',', space = ' ', end = ')',
-	*const ellipsis_end = ",…)", *const null = "null",
-	*const idle = "idle";
-	const size_t ellipsis_end_len = strlen(ellipsis_end),
-	null_len = strlen(null), idle_len = strlen(idle);
-	size_t i;
-	PT_(Type) *e, *e_end;
-	int is_first = 1;
-	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
-		   && buffer_size >= 1 + 11 + ellipsis_end_len + 1
-		   && buffer_size >= null_len + 1
-		   && buffer_size >= idle_len + 1);
-	/* Advance the buffer for next time. */
-	buffer_i &= buffers_no - 1;
-	if(!a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!a->first) { memcpy(b, idle, idle_len), b += idle_len; goto terminate; }
-	*b++ = start;
-	for(e = a->first, e_end = a->first + a->size; ; ) {
-		if(!is_first) *b++ = comma, *b++ = space;
-			else is_first = 0;
-				PT_(to_string)(e, (char (*)[12])b);
-		for(i = 0; *b != '\0' && i < 12; b++, i++);
-		if(++e >= e_end) break;
-		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
-			goto ellipsis;
-	}
-	*b++ = end;
-	goto terminate;
-ellipsis:
-	memcpy(b, ellipsis_end, ellipsis_end_len), b += ellipsis_end_len;
-terminate:
-	*b++ = '\0';
-	assert(b <= buffer + buffer_size);
-	return buffer;
-}
-#endif
