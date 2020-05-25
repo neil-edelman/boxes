@@ -19,14 +19,26 @@
  associated therewith; required. `<PT>` is private, whose names are prefixed in
  a manner to avoid collisions; any should be re-defined prior to use elsewhere.
 
- @param[ARRAY_TO_STRING]
- Optional print function implementing <typedef:<PT>ToString>; makes available
- <fn:<T>ArrayToString>.
+ @param[ARRAY_UNFINISHED]
+ Do not un-define variables for including again in a mixin.
+
+ @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
+ To string mixin; `<S>` that satisfies `C` naming conventions when mangled
+ and function implementing <typedef:<PT>ToString>. There can be multiple to
+ string mixins, but only one can omit `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
- Unit testing framework <fn:<T>ArrayTest>, included in a separate header,
- <../test/ArrayTest.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PT>Action>. Requires `ARRAY_TO_STRING` and not `NDEBUG`.
+ Child of to string mixin; optional unit testing framework <fn:<T>ArrayTest>,
+ included in a separate header, <../test/ArrayTest.h>. Must be defined equal to
+ a (random) filler function, satisfying <typedef:<PT>Action> using the array to
+ string function defined. This can be defined only once per structure, and will
+ not only test the base code with <fn:<T>ArrayTest>, but the mixins after have
+ their own tests.
+
+ @param[ARRAY_CONTRAST_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
+ Compare mixin; `<C>` that satiscfies `C` naming conventions when mangled and
+ one function implementing <typedef:<PT>Bipredicate>; ...fixme There can
+ be multiple contrast mixins, but only one can omit `ARRAY_CONTRAST_NAME`.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -48,29 +60,29 @@
 #ifndef ARRAY_TYPE
 #error Tag type ARRAY_TYPE undefined.
 #endif
-#if defined(ARRAY_TEST) && !defined(ARRAY_TO_STRING)
-#error ARRAY_TEST requires ARRAY_TO_STRING.
+#define ARRAY_MIXIN defined(ARRAY_TO_STRING) + defined(ARRAY_COMPARE) \
+	+ ARRAY_IS_EQUAL
+#if ARRAY_MIXIN > 1
+#error Only one mixin per include is allowed; use ARRAY_UNFINISHED.
 #endif
-#if defined(ARRAY_CHILD) && (defined(ARRAY_TO_STRING) || defined(ARRAY_TEST))
-#error With ARRAY_CHILD, defining public interface functions is useless.
+#if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
+#error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
 #endif
-#if defined(T) || defined(T_) || defined(PT_)
-#error T, T_, and PT_ cannot be defined.
+#if defined(ARRAY_CONTRAST_NAME) \
+	&& !defined(ARRAY_COMPARE) && !defined(ARRAY_IS_EQUAL)
+#error ARRAY_CONTRAST_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL.
+#endif
+
+
+#if ARRAY_MIXIN == 0 /* <!-- base code */
+
+
+#if defined(T) || defined(T_) || defined(PT_) || defined(CAT) || defined(CAT_) \
+	|| defined(PCAT) || defined(PCAT_)
+#error P?T_? or P?CAT_? cannot be defined; possible stray ARRAY_UNFINISHED?
 #endif
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#ifdef CAT
-#undef CAT
-#endif
-#ifdef CAT_
-#undef CAT_
-#endif
-#ifdef PCAT
-#undef PCAT
-#endif
-#ifdef PCAT_
-#undef PCAT_
-#endif
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
@@ -91,13 +103,15 @@ typedef int (*PT_(Predicate))(const T *);
 /** Returns a boolean given two read-only `<T>`. */
 typedef int (*PT_(Bipredicate))(const T *, const T *);
 
-/** Returns a boolean given two `<T>`, specifying the first or second
- argument. */
+/** Returns a boolean given two `<T>`. */
 typedef int (*PT_(Biproject))(T *, T *);
 
-/** @return Ignore `a` and `b` and return false. @implements <PT>Biproject */
-static int PT_(false_project)(T *const a, T *const b)
-	{ return (void)a, (void)b, 0; }
+/** Returns an integer value greater, less, or equal zero fixme... */
+typedef int (*PT_(Compare))(const T *, const T *);
+
+/** Responsible for turning the first argument into a 12-`char` null-terminated
+ output string. Used for `ARRAY_TO_STRING`. */
+typedef void (*PT_(ToString))(const T *, char (*)[12]);
 
 /** Manages the array field `data`, which is indexed up to `size`. When
  modifying the topology of this array, it may change memory location to fit;
@@ -112,6 +126,9 @@ struct T_(Array) { T *data; size_t size, capacity; };
 #ifndef ARRAY_IDLE /* <!-- !zero */
 #define ARRAY_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
+
+/** ??? */
+struct PT_(Iterator) { const struct T_(Array) *a; size_t i; };
 
 /** Initialises `a` to idle. */
 static void PT_(array)(struct T_(Array) *const a)
@@ -144,7 +161,8 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 		c0 = 8;
 	}
 	if(min_capacity > max_size) return errno = ERANGE, 0;
-	/* `c_n = a1.625^n`, approximation Fibonacci golden ratio `\phi ~ 1.618`. */
+	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. Still,
+	 Fibonacci increases slightly more because added term with negative. */
 	while(c0 < min_capacity) {
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
 		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; very unlikely. */
@@ -179,9 +197,8 @@ static int PT_(shrink)(struct T_(Array) *const a) {
 /** In `a`, converts `anchor` and `range` à-la-Python and stores them in the
  pointers `p0` and `p1` _st_ `*p0, *p1 \in [0, a.size], *p0 <= *p1`.
  @param[anchor] An element in the array or null to indicate past the end.
- @return Success.
- @throws[ERANGE] `anchor` is not null and not in `a`. `range` is greater then
- +/-65534. `size_t` overflow. */
+ @return Success. @throws[ERANGE] `anchor` is not null and not in `a`. `range`
+ is greater then +/-65534. `size_t` overflow. */
 static int PT_(range)(const struct T_(Array) *const a, const T *anchor,
 	const long range, size_t *const p0, size_t *const p1) {
 	size_t i0, i1;
@@ -220,38 +237,6 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	}
 	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
 	return 1;
-}
-
-/** Calls `predicate` for each consecutive pair of elements in `a` and if true,
- surjects two one according to `merge`.
- @order \O(`a.size`) */
-static void PT_(compactify)(struct T_(Array) *const a,
-	const PT_(Bipredicate) predicate, const PT_(Biproject) merge) {
-	size_t target, from, cursor, choice, next, move;
-	const size_t last = a->size;
-	int is_first, is_last;
-	assert(a && predicate && merge);
-	for(target = from = cursor = 0; cursor < last; cursor += next) {
-		/* Bijective `[from, cursor)` is moved lazily. */
-		for(choice = 0, next = 1; cursor + next < last
-			&& predicate(a->data + cursor + choice, a->data + cursor + next);
-			next++) if(merge(a->data + choice, a->data + next)) choice = next;
-		if(next == 1) continue;
-		/* Must move injective `cursor + choice \in [cursor, cursor + next)`. */
-		is_first = !choice;
-		is_last  = (choice == next - 1);
-		move = cursor - from + is_first;
-		memmove(a->data + target, a->data + from, sizeof *a->data * move),
-			target += move;
-		if(!is_first && !is_last) memcpy(a->data + target,
-			a->data + cursor + choice, sizeof *a->data), target++;
-		from = cursor + next - is_last;
-	}
-	/* Last differed move. */
-	move = last - from;
-	memmove(a->data + target, a->data + from, sizeof *a->data * move),
-		target += move, assert(a->size >= target);
-	a->size = target;
 }
 
 /** Returns a new un-initialized datum of `a` and updates `update_ptr`. */
@@ -393,6 +378,9 @@ static int T_(ArrayShrink)(struct T_(Array) *const a)
 
 /** Iterates through `a` and calls `action` on all the elements. The topology
  of the list should not change while in this function.
+ 
+ @fixme All these functions can go into Sequetial?
+ 
  @param[a, action] If null, does nothing.
  @order \O(`size` \times `action`) @allow */
 static void T_(ArrayEach)(struct T_(Array) *const a,
@@ -431,8 +419,7 @@ static T *T_(ArrayAny)(const struct T_(Array) *const a,
 /** For all elements of `a`, calls `keep`, and for each element, if the return
  value is false, lazy deletes that item, calling `destruct` if not-null.
  @param[a, keep] If null, does nothing.
- @order \O(`size`)
- @allow */
+ @order \O(`size`) @allow */
 static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	const PT_(Predicate) keep, const PT_(Action) destruct) {
 	T *erase = 0, *t;
@@ -466,16 +453,6 @@ static void T_(ArrayKeepIf)(struct T_(Array) *const a,
 	assert((size_t)(erase - a->data) <= a->size);
 	a->size = erase - a->data;
 }
-
-/** Calls `predicate` for each consecutive pair of elements in `a` and if true,
- surjects two one according to `merge`.
- @param[a, predicate] If null, does nothing.
- @param[merge] Can be null, in which case the second argument is erased.
- @order \O(`a.size`) */
-static void T_(ArrayCompactify)(struct T_(Array) *const a,
-	const PT_(Bipredicate) predicate, const PT_(Biproject) merge)
-	{ if(a && predicate) PT_(compactify)(a, predicate,
-	merge ? merge : &PT_(false_project)); }
 
 /** Removes at either end of `a` of things that `predicate` returns true.
  @param[a, predicate] If null, does nothing.
@@ -541,114 +518,345 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 	return PT_(replace)(a, i0, i1, b);
 }
 
-#ifdef ARRAY_TO_STRING /* <!-- string */
+#endif /* !sub-type --> */
 
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- output string. Used for `ARRAY_TO_STRING`. */
-typedef void (*PT_(ToString))(const T *, char (*)[12]);
-/* Check that `ARRAY_TO_STRING` is a function implementing
- <typedef:<PT>ToString>. */
-static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
-	
-/** Can print 4 things at once before it overwrites. One must a
- `ARRAY_TO_STRING` to a function implementing <typedef:<PT>ToString> to get
- this functionality.
- @return Prints `a` in a static buffer. @order \Theta(1) @allow */
-static const char *T_(ArrayToString)(const struct T_(Array) *const a) {
-	static char buffers[4][256];
-	static size_t buffer_i;
-	char *const buffer = buffers[buffer_i++], *b = buffer;
-	const size_t buffers_no = sizeof buffers / sizeof *buffers,
-		buffer_size = sizeof *buffers / sizeof **buffers;
-	const char start = '(', comma = ',', space = ' ', end = ')',
-		*const ellipsis_end = ",…)", *const null = "null",
-		*const idle = "idle";
-	const size_t ellipsis_end_len = strlen(ellipsis_end),
-		null_len = strlen(null), idle_len = strlen(idle);
-	size_t i;
-	PT_(Type) *e, *e_end;
-	int is_first = 1;
-	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
-		&& buffer_size >= 1 + 11 + ellipsis_end_len + 1
-		&& buffer_size >= null_len + 1
-		&& buffer_size >= idle_len + 1);
-	/* Advance the buffer for next time. */
-	buffer_i &= buffers_no - 1;
-	if(!a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!a->data) { memcpy(b, idle, idle_len), b += idle_len; goto terminate; }
-	*b++ = start;
-	for(e = a->data, e_end = a->data + a->size; ; ) {
-		if(!is_first) *b++ = comma, *b++ = space;
-		else is_first = 0;
-		PT_(to_string)(e, (char (*)[12])b);
-		for(i = 0; *b != '\0' && i < 12; b++, i++);
-		if(++e >= e_end) break;
-		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
-			goto ellipsis;
-	}
-	*b++ = end;
-	goto terminate;
-ellipsis:
-	memcpy(b, ellipsis_end, ellipsis_end_len), b += ellipsis_end_len;
-terminate:
-	*b++ = '\0';
-	assert(b <= buffer + buffer_size);
-	return buffer;
-}
-#endif /* string --> */
-
-#ifdef ARRAY_TEST /* <!-- test: need this file. */
-#include "../test/TestArray.h" /** \include */
-#endif /* test --> */
-
-static void PT_(unused_coda)(void);
-/** This silences unused function warnings from the pre-processor, but allows
- optimisation <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code>. */
-static void PT_(unused_set)(void) {
+static void PT_(unused_base_coda)(void);
+static void PT_(unused_base)(void) {
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
 	T_(Array_)(0); T_(Array)(0); T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0); T_(ArrayClear)(0); T_(ArrayPeek)(0);
 	T_(ArrayPop)(0); T_(ArrayNew)(0); T_(ArrayUpdateNew)(0, 0);
 	T_(ArrayReserve)(0, 0); T_(ArrayBuffer)(0, 0); T_(ArrayShrink)(0);
 	T_(ArrayEach)(0, 0); T_(ArrayIfEach)(0, 0, 0); T_(ArrayAny)(0, 0);
-	T_(ArrayKeepIf)(0, 0, 0); T_(ArrayCompactify)(0, 0, 0);
-	T_(ArrayTrim)(0, 0); T_(ArraySplice)(0, 0, 0, 0);
+	T_(ArrayKeepIf)(0, 0, 0); T_(ArrayTrim)(0, 0); T_(ArraySplice)(0, 0, 0, 0);
 	T_(ArrayIndexSplice)(0, 0, 0, 0);
-#ifdef ARRAY_TO_STRING
-	T_(ArrayToString)(0);
-#endif
-	PT_(unused_coda)();
+#endif /* !sub-type --> */
+	PT_(array)(0), PT_(array_)(0); PT_(update_reserve)(0, 0, 0);
+	PT_(reserve)(0, 0); PT_(shrink)(0); PT_(range)(0, 0, 0, 0, 0);
+	PT_(replace)(0, 0, 0, 0); PT_(update_new)(0, 0); PT_(new)(0);
+	PT_(unused_base_coda)();
 }
-/** Some newer compilers are smart. */
-static void PT_(unused_coda)(void) { PT_(unused_set)(); }
+static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
-/* Un-define macros. */
+
+#elif defined(ARRAY_TO_STRING) /* base code --><!-- to string mixin */
+
+
+#if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT) \
+	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
+#error P?T_? or P?CAT_? not yet defined in to string mixin; include array?
+#endif
+
+#ifdef ARRAY_TO_STRING_NAME /* <!-- name */
+#define PTS_(thing) PCAT(PT_(thing), ARRAY_TO_STRING_NAME)
+#define T_S_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_TO_STRING_NAME, thing2))
+#else /* name --><!-- !name */
+#define PTS_(thing) PCAT(PT_(thing), anonymous)
+#define T_S_(thing1, thing2) CAT(T_(thing1), thing2)
+#endif /* !name --> */
+
+/* Check that `ARRAY_TO_STRING` is a function implementing
+ <typedef:<PT>ToString>. */
+static const PT_(ToString) PTS_(to_string) = (ARRAY_TO_STRING);
+
+/** Returns true if it wrote ... @fixme
+ @implements <S>NextToString */
+static int PTS_(next_to_stringz)(struct PT_(Iterator) *const it,
+	char (*const str)[12]) {
+	assert(it && it->a);
+	if(it->i >= it->a->size) return 0;
+	PTS_(to_string)(it->a->data + it->i++, str);
+	return 1;
+}
+
+#define S_ PTS_
+#define TO_STRING_ITERATOR struct PT_(Iterator)
+#define TO_STRING_NEXT &PTS_(next_to_stringz)
+#include "ToString.h"
+
+static const char *PTS_(array_to_string)(const struct T_(Array) *const a) {
+	struct PT_(Iterator) it = { 0, 0 };
+	it.a = a;
+	return PTS_(to_stringz)(&it, '(', ')');
+}
+
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
+
+/** @return Print the contents of `a` in a static string buffer with the
+ limitations of `ToString.h`.
+ @order \Theta(1) @allow */
+static const char *T_S_(Array, ToString)(const struct T_(Array) *const a) {
+	return PTS_(array_to_string)(a); /* Can be null. */
+}
+
+#endif /* !sub-type --> */
+
+static void PTS_(unused_to_string_coda)(void);
+static void PTS_(unused_to_string)(void) {
+	PTS_(array_to_string)(0);
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
+	T_S_(Array, ToString)(0);
+#endif /* !sub-type --> */
+	PTS_(unused_to_string_coda)();
+}
+static void PTS_(unused_to_string_coda)(void) { PTS_(unused_to_string)(); }
+
+#if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
+#define ARRAY_TEST_BASE /* Only one instance of base tests. */
+#include "../test/TestArray.h"
+#endif /* test --> */
+
+#undef PTS_
+#undef T_S_
+#undef ARRAY_TO_STRING
+#ifdef ARRAY_TO_STRING_NAME
+#undef ARRAY_TO_STRING_NAME
+#endif
+
+
+#else /* to string mixin --><!-- contrast mixin */
+
+
+#if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT)
+|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
+#error P?T_? or P?CAT_? not yet defined in contrast mixin; include array?
+#endif
+
+#ifdef ARRAY_CONTRAST_NAME /* <!-- name */
+#define PTC_(thing) PCAT(PT_(thing), ARRAY_CONTRAST_NAME)
+#define T_C_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_CONTRAST_NAME, thing2))
+#else /* name --><!-- !name */
+#define PTC_(thing) PCAT(PT_(thing), anonymous)
+#define T_C_(thing1, thing2) CAT(T_(thing1), thing2)
+#endif /* !name --> */
+
+#ifdef ARRAY_COMPARE /* <!-- compare */
+
+/* Check that `ARRAY_COMPARE` is a function implementing
+ <typedef:<PT>Bipredicate>. */
+static const PT_(Bipredicate) PTC_(compare) = (ARRAY_COMPARE);
+
+/** !compare(`a`, `b`) == equals(`a`, `b`)
+ @fixme Have a second sub-mixin for this. */
+static int PTC_(is_equal)(const void *const a, const void *const b)
+	{ return !PTC_(compare)(a, b); }
+
+/** Wrapper with void `a` and `b`. @implements qsort */
+static int PTC_(compar)(const void *const a, const void *const b)
+	{ return PTC_(compare)(a, b); }
+
+/** Wrapper with void `a` and `b`. @implements qsort */
+static int PTC_(revers)(const void *const a, const void *const b)
+	{ return PTC_(compare)(b, a); }
+
+/** Loosely `C++` `lower_bound`. @param[a] Array.
+ @return The first index of `a` that is not less then `value`. */
+static size_t PTC_(lower_bound)(const struct T_(Array) *const a,
+	const T *const value) {
+	size_t low = 0, high = a->size, mid;
+	assert(a && value);
+	while(low < high)
+		if(PTC_(compare)(value, a->data + (mid = low + ((high - low) >> 1)))
+		<= 0) high = mid; else low = mid + 1;
+	return low;
+
+	/*size_t first = 0, count = a->size, it, step;
+	char y[12], z[12];
+	assert(a && value);
+	PT_(to_string)(value, &y);
+	while(count > 0) {
+		it = first + (step = count >> 1);
+		PT_(to_string)(a->data + it, &z);
+		printf("count %lu, step %lu, (%s, %s):", count, step, y, z);
+		if(PTC_(compare)(a->data + it, value) < 0)
+			first = ++it, count -= step + 1, printf("greater\n");
+		else
+			count = step, printf("less\n");
+	}
+	return first;*/
+}
+
+/** Loosely `C++` `upper_bound`. @param[a] Array;
+ @return The first index of `a` that is greater then `value`. */
+static size_t PTC_(upper_bound)(const struct T_(Array) *const a,
+	const T *const value) {
+	size_t low = 0, high = a->size, mid;
+	assert(a && value);
+	while(low < high)
+		if(PTC_(compare)(value, a->data + (mid = low + ((high - low) >> 1)))
+		>= 0) low = mid + 1; else high = mid;
+	return low;
+
+	/*size_t first = 0, count = a->size, it, step;
+	assert(a && value);
+	while(count > 0) {
+		it = first, step = count >> 1;
+		if(PTC_(compare)(value, a->data + it) >= 0)
+			first = ++it, count -= step + 1;
+		else
+			count = step;
+	}
+	return first;*/
+}
+
+/** Inserts `datum` in `a` at the lower bound. @return Success. */
+static int PTC_(insert)(struct T_(Array) *const a, const T *const datum) {
+	size_t bound;
+	assert(a && datum);
+	bound = PTC_(lower_bound)(a, datum);
+	if(!PT_(new)(a)) return 0;
+	memmove(a->data + bound + 1, a->data + bound,
+		sizeof *a->data * (a->size - bound - 1));
+	memcpy(a->data + bound, datum, sizeof *datum);
+	return 1;
+}
+
+#else /* compare --><!-- is equal */
+
+/* Check that `ARRAY_COMPARE` is a function implementing
+ <typedef:<PT>Bipredicate>. */
+static const PT_(Bipredicate) PTC_(is_equal) = (ARRAY_IS_EQUAL);
+
+#endif /* is equal --> */
+
+/** Calls `<PTC>is_equal` for each consecutive pair of elements in `a` and, if
+ true, surjects two one according to `merge`. Loosely based on `C++` `unique`.
+ @param[merge] If null, discards all but the first.
+ @order \O(`a.size`) */
+static void PTC_(compactify)(struct T_(Array) *const a,
+	const PT_(Biproject) merge) {
+	size_t target, from, cursor, choice, next, move;
+	const size_t last = a->size;
+	int is_first, is_last;
+	assert(a);
+	for(target = from = cursor = 0; cursor < last; cursor += next) {
+		/* Bijective `[from, cursor)` is moved lazily. */
+		for(choice = 0, next = 1; cursor + next < last && PTC_(is_equal)(a->data
+			+ cursor + choice, a->data + cursor + next); next++)
+			if(merge && merge(a->data + choice, a->data + next)) choice = next;
+		if(next == 1) continue;
+		/* Must move injective `cursor + choice \in [cursor, cursor + next)`. */
+		is_first = !choice;
+		is_last  = (choice == next - 1);
+		move = cursor - from + is_first;
+		memmove(a->data + target, a->data + from, sizeof *a->data * move),
+		target += move;
+		if(!is_first && !is_last) memcpy(a->data + target,
+			a->data + cursor + choice, sizeof *a->data), target++;
+		from = cursor + next - is_last;
+	}
+	/* Last differed move. */
+	move = last - from;
+	memmove(a->data + target, a->data + from, sizeof *a->data * move),
+	target += move, assert(a->size >= target);
+	a->size = target;
+}
+
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
+
+#ifdef ARRAY_COMPARE /* <!-- compare */
+
+/** Sorts `a` by `qsort`. @allow */
+static void T_C_(Array, Sort)(struct T_(Array) *const a)
+	{ if(a) qsort(a->data, a->size, sizeof *a->data, PTC_(compar)); }
+
+/** Sorts `a` in reverse by `qsort`. @allow */
+static void T_C_(Array, Reverse)(struct T_(Array) *const a)
+	{ if(a) qsort(a->data, a->size, sizeof *a->data, PTC_(revers)); }
+
+/** `a` is a random-access array which should be partitioned true/false with
+ less-then `value`.
+ @param[a] If null, returns zero.
+ @return The first index of `a` that is not less then `value`.
+ @order \O(log `size`) @allow */
+static size_t T_C_(Array, LowerBound)(struct T_(Array) *const a,
+	const T *const value)
+	{ return a && value ? PTC_(lower_bound)(a, value) : 0; }
+
+/** `a` is a random-access array which should be partitioned false/true with
+ greater-than or equals `value`.
+ @param[a] If null, returns zero.
+ @return The first index of `a` that is greater then `value`.
+ @order \O(log `size`) @allow */
+static size_t T_C_(Array, UpperBound)(struct T_(Array) *const a,
+	const T *const value)
+	{ return a && value ? PTC_(upper_bound)(a, value) : 0; }
+
+/** Inserts a copy of `datum` in `a` at the lower bound.
+ @param[a, datum] If null, does nothing.
+ @return Success. @throws[ERANGE] Tried allocating more then can fit in
+ `size_t` or `realloc` error and doesn't follow [POSIX
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc] @order Amortised \O(1). @allow */
+static int T_C_(Array, Insert)(struct T_(Array) *const a,
+	const T *const datum) { return a && datum ? PTC_(insert)(a, datum) : 0; }
+
+#endif /* compare --> */
+
+/** Mixin `ARRAY_COMPARE` or `ARRAY_IS_EQUAL`. For each consecutive and equal
+ pair of elements in `a`, surjects to one according to `merge`.
+ @param[a] If null, does nothing.
+ @param[merge] Can be null, in which case, all duplicate entries are erased.
+ @order \O(`a.size`) @allow */
+static void T_C_(Array, Compactify)(struct T_(Array) *const a,
+	const PT_(Biproject) merge) { if(a) PTC_(compactify)(a, merge); }
+
+#endif /* !sub-type --> */
+
+static void PTC_(unused_contrast_coda)(void);
+static void PTC_(unused_contrast)(void) {
+#ifdef ARRAY_COMPARE
+	PTC_(lower_bound)(0, 0); PTC_(upper_bound)(0, 0); PTC_(insert)(0, 0);
+#endif
+	PTC_(compactify)(0, 0);
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
+#ifdef ARRAY_COMPARE /* <!-- compare */
+	T_C_(Array, Sort)(0); T_C_(Array, Reverse)(0);
+	T_C_(Array, LowerBound)(0, 0); T_C_(Array, UpperBound)(0, 0);
+	T_C_(Array, Insert)(0, 0);
+#endif /* compare --> */
+	T_C_(Array, Compactify)(0, 0);
+#endif /* !sub-type --> */
+	PTC_(unused_contrast_coda)();
+}
+static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
+
+#if defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
+#include "../test/TestArray.h" /** \include */
+#endif /* test --> */
+
+#undef PTC_
+#undef T_C_
+#undef ARRAY_COMPARE
+#ifdef ARRAY_CONTRAST_NAME
+#undef ARRAY_CONTRAST_NAME
+#endif
+
+
+#endif /* mixins --> */
+
+
+#ifdef ARRAY_UNFINISHED /* <!-- unfinish */
+#undef ARRAY_UNFINISHED
+#else /* unfinish --><!-- finish */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
-#else /* !sub-type --><!-- sub-type */
-#undef ARRAY_CHILD
-static void PT_(unused_coda)(void);
-/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
- have the same meanings; they will be replaced with these, and `T` cannot be
- used. */
-static void PT_(unused_set)(void) {
-	/* <fn:<PT>update_reserve> is integral. */
-	PT_(false_project)(0, 0); PT_(array)(0), PT_(array_)(0);
-	PT_(reserve)(0, 0); PT_(shrink)(0); PT_(range)(0, 0, 0, 0, 0);
-	PT_(replace)(0, 0, 0, 0); PT_(compactify)(0, 0, 0); PT_(update_new)(0, 0);
-	PT_(new)(0); PT_(unused_coda)();
-}
-static void PT_(unused_coda)(void) { PT_(unused_set)(); }
-#endif /* sub-type --> */
 #undef T
 #undef T_
 #undef PT_
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
-#ifdef ARRAY_TO_STRING
-#undef ARRAY_TO_STRING
+#ifdef ARRAY_CHILD
+#undef ARRAY_CHILD
 #endif
 #ifdef ARRAY_TEST
 #undef ARRAY_TEST
 #endif
+#ifdef ARRAY_TEST_BASE
+#undef ARRAY_TEST_BASE
+#endif
+#endif /* finish --> */
+
+#undef ARRAY_MIXIN

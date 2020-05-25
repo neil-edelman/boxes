@@ -1,21 +1,21 @@
 /* Intended to be included by `Array.h` on `ARRAY_TEST`. */
 
-/* Define macros. */
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
+/* Define macros used for this file. */
+#if defined(QUOTE) || defined(QUOTE_)
+#error QUOTE_? cannot be defined.
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
+#ifdef ARRAY_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
+/* Define this `ARRAY_TO_STRING` as the to string that is used for tests. This
+ should be already defined as `<PTS>to_string` implementing
+ <typedef:<PT>ToString>. */
+static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
 
 /* ARRAY_TEST must be a function that implements <PT>Action. */
 static const PT_(Action) PT_(filler) = (ARRAY_TEST);
-
-
 
 /** @return Is `a` in a valid state? */
 static void PT_(valid_state)(const struct T_(Array) *const a) {
@@ -35,8 +35,6 @@ static int PT_(zero_filled)(const T *const t) {
 	while(c < end) if(*c++) return 0;
 	return 1;
 }
-
-
 
 /** Draw a graph of `ar` to `fn` in Graphviz format. */
 static void PT_(graph)(const struct T_(Array) *const ar, const char *const fn) {
@@ -150,14 +148,14 @@ static void PT_(test_basic)(void) {
 		memcpy(t, ts + i, sizeof *t);
 	}
 	assert(T_(ArrayPeek)(&a));
-	printf("Now: %s.\n", T_(ArrayToString)(&a));
+	printf("Now: %s.\n", T_S_(Array, ToString)(&a));
 	assert(a.size == ts_size);
 	if((t = a.data + ts_size - 2)
 		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_(ArrayToString)(&a));
+	printf("Now: %s.\n", T_S_(Array, ToString)(&a));
 	assert(!T_(ArrayRemove)(&a, t + 1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	if((t = a.data + ts_size - 3)
@@ -165,7 +163,7 @@ static void PT_(test_basic)(void) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_(ArrayToString)(&a));
+	printf("Now: %s.\n", T_S_(Array, ToString)(&a));
 	assert(!T_(ArrayRemove)(&a, t + 1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 
@@ -175,7 +173,7 @@ static void PT_(test_basic)(void) {
 	memcpy(t + 1, ts + 3, sizeof *t * 2);
 	assert(a.size == ts_size);
 	PT_(valid_state)(&a);
-	printf("Now: %s.\n", T_(ArrayToString)(&a));
+	printf("Now: %s.\n", T_S_(Array, ToString)(&a));
 
 	/* Peek/Pop. */
 	t = T_(ArrayPeek)(&a);
@@ -214,46 +212,18 @@ static void PT_(test_basic)(void) {
 		assert(t && (size_t)(t - start) == i);
 		PT_(filler)(t);
 	}
-	printf("%s.\n", T_(ArrayToString)(&a));
+	printf("%s.\n", T_S_(Array, ToString)(&a));
 	PT_(valid_state)(&a);
 
 	printf("Clear:\n");
 	T_(ArrayClear)(&a);
-	printf("%s.\n", T_(ArrayToString)(&a));
+	printf("%s.\n", T_S_(Array, ToString)(&a));
 	assert(T_(ArrayPeek)(&a) == 0);
 	
 	printf("Destructor:\n");
 	T_(Array_)(&a);
 	assert(T_(ArrayPeek)(&a) == 0);
 	PT_(valid_state)(&a);
-}
-
-/** Reproducable non-sense `a` `b`. @implements Bipredicate */
-static int PT_(equal_byte)(const T *const a, const T *const b)
-	{ return *(char *)a == *(char *)b; }
-
-/** Add onto `a` `value` x `repetitions` (non-sense.) */
-static int PT_(fill_garbage)(struct T_(Array) *const a,
-	const char value, const size_t repetitions) {
-	T *t;
-	size_t r = 0;
-	assert(a && repetitions);
-	if(!(t = T_(ArrayBuffer)(a, repetitions))) return 0;
-	memset(t, 0, sizeof *t * repetitions);
-	while(r < repetitions) *(char *)(t + r++) = value;
-	return 1;
-}
-
-/** Tests compress, but half-way because we don't know the specifics. */
-static void PT_(test_compactify)(void) {
-	struct T_(Array) a = ARRAY_IDLE;
-	assert(PT_(fill_garbage)(&a, 'a', 3) && PT_(fill_garbage)(&a, 'b', 3)
-		&& PT_(fill_garbage)(&a, 'c', 3));
-	assert(a.size == 9);
-	T_(ArrayCompactify)(&a, &PT_(equal_byte), 0);
-	assert(a.size == 3 && *(char *)a.data == 'a'
-		&& *(char *)(a.data + 1) == 'b' && *(char *)(a.data + 2) == 'c');
-	T_(Array_)(&a);
 }
 
 static void PT_(test_random)(void) {
@@ -270,10 +240,8 @@ static void PT_(test_random)(void) {
 		printf("%lu: ", (unsigned long)i);
 		/* This parameter controls how big the pool wants to be. */
 		if(r > size / (100.0 * mult)) {
-			if(!(data = T_(ArrayNew)(&a))) {
-				perror("Error"), assert(0);
-				return;
-			}
+			if(!(data = T_(ArrayNew)(&a)))
+				{ perror("Error"), assert(0); return; }
 			size++;
 			PT_(filler)(data);
 			PT_(to_string)(data, &str);
@@ -302,7 +270,7 @@ static void PT_(test_random)(void) {
 		PT_(valid_state)(&a);
 		if(a.size < 1000000 && !(i & (i - 1))) {
 			char fn[32];
-			printf("%s.\n", T_(ArrayToString)(&a));
+			printf("%s.\n", T_S_(Array, ToString)(&a));
 			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "Array%lu.gv",
 				(unsigned long)i);
 			PT_(graph)(&a, fn);
@@ -358,25 +326,24 @@ static void PT_(test_replace)(void) {
 	errno = 0;
 	/* No-op. */
 	success = T_(ArrayIndexSplice)(&a, 0, 0, 0);
-	printf("Array %s.\n", T_(ArrayToString)(&a));
+	printf("Array %s.\n", T_S_(Array, ToString)(&a));
 	assert(success && a.size == ts_size);
 	/* Deleting from the front. */
 	success = T_(ArrayIndexSplice)(&a, 0, 1, 0);
-	printf("Array after deleting from front %s.\n", T_(ArrayToString)(&a));
+	printf("Array after deleting from front %s.\n", T_S_(Array, ToString)(&a));
 	assert(success && a.size == ts_size - 1);
 	/* Adding at the back. */
 	t = T_(ArrayNew)(&b);
 	assert(t);
 	memcpy(t, ts + 0, sizeof *t);
-	success = T_(ArrayIndexSplice)(&a, a.size, a.size,
-		&b);
-	printf("Array after adding %s to back %s.\n", T_(ArrayToString)(&b),
-		T_(ArrayToString)(&a));
+	success = T_(ArrayIndexSplice)(&a, a.size, a.size, &b);
+	printf("Array after adding %s to back %s.\n", T_S_(Array, ToString)(&b),
+		T_S_(Array, ToString)(&a));
 	assert(success && a.size == ts_size);
 	/* Replacing same-size. */
 	success = T_(ArrayIndexSplice)(&a, 1, 2, &b);
-	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
-		T_(ArrayToString)(&a));
+	printf("Array after replacing [1, 2) %s: %s.\n", T_S_(Array, ToString)(&b),
+		T_S_(Array, ToString)(&a));
 	assert(success && a.size == ts_size
 		&& !memcmp(t, a.data + 1, sizeof *t));
 	/* Replacing larger size. */
@@ -384,14 +351,14 @@ static void PT_(test_replace)(void) {
 	assert(t);
 	memcpy(t, ts + 1, sizeof *t);
 	success = T_(ArrayIndexSplice)(&a, 1, 2, &b);
-	printf("Array after replacing [1, 2) %s: %s.\n", T_(ArrayToString)(&b),
-		T_(ArrayToString)(&a));
+	printf("Array after replacing [1, 2) %s: %s.\n", T_S_(Array, ToString)(&b),
+		T_S_(Array, ToString)(&a));
 	assert(success && a.size == ts_size + 1
 		   && !memcmp(t, a.data + 2, sizeof *t));
 	/* Replacing a smaller size. */
 	success = T_(ArrayIndexSplice)(&a, 1, 4, &b);
-	printf("Array after replacing [1, 4) %s: %s.\n", T_(ArrayToString)(&b),
-		T_(ArrayToString)(&a));
+	printf("Array after replacing [1, 4) %s: %s.\n", T_S_(Array, ToString)(&b),
+		T_S_(Array, ToString)(&a));
 	assert(success && a.size == ts_size
 		   && !memcmp(t, a.data + 2, sizeof *t));
 	T_(ArrayClear)(&b);
@@ -400,18 +367,18 @@ static void PT_(test_replace)(void) {
 	memcpy(t, ts + 2, sizeof *t * 2);
 	assert(b.size == 2);
 	/* a = [[1],[0],[1],[4],[0]]; b = [[2],[3]] */
-	printf("a = %s, b = %s.\n", T_(ArrayToString)(&a), T_(ArrayToString)(&b));
+	printf("a = %s, b = %s.\n", T_S_(Array, ToString)(&a), T_S_(Array, ToString)(&b));
 	T_(ArraySplice)(&a, 0, -1, &b);
-	printf("a = %s.\n", T_(ArrayToString)(&a));
+	printf("a = %s.\n", T_S_(Array, ToString)(&a));
 	/* a = [[1],[0],[1],[4],[0],[2],[3]] */
 	T_(ArraySplice)(&a, a.data + 1, 2, &b);
-	printf("a = %s.\n", T_(ArrayToString)(&a));
+	printf("a = %s.\n", T_S_(Array, ToString)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
 	T_(ArraySplice)(&a, a.data + 2, -5, &b);
-	printf("a = %s.\n", T_(ArrayToString)(&a));
+	printf("a = %s.\n", T_S_(Array, ToString)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
 	T_(ArraySplice)(&a, a.data + 7, -1, &b);
-	printf("a = %s.\n", T_(ArrayToString)(&a));
+	printf("a = %s.\n", T_S_(Array, ToString)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
 	/* @fixme This is not enought coverage. */
 	assert(a.size == 9 &&
@@ -499,7 +466,7 @@ static void PT_(test_each)(void) {
 }
 
 /** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
- `NDEBUG` while defining `assert`. */
+ `NDEBUG` while defining `assert`. @allow */
 static void T_(ArrayTest)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">Array of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: "
@@ -509,13 +476,127 @@ static void T_(ArrayTest)(void) {
 		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; "
 		"testing:\n");
 	PT_(test_basic)();
-	PT_(test_compactify)();
 	PT_(test_random)();
 	PT_(test_replace)();
 	PT_(test_keep)();
 	PT_(test_each)();
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">Array.\n\n");
 }
+
+#elif defined(ARRAY_COMPARE) || defined(ARRAY_EQUAL) /* to string --><!-- contrast */
+
+/** Fills `fill` that is not equal to `neq` if possible. */
+static int PTC_(fill_unique)(T *const fill, const T *const neq) {
+	size_t i;
+	assert(fill);
+	for(i = 0; i < 1000; i++) {
+		PT_(filler)(fill);
+		if(!neq || PTC_(compare)(neq, fill)) return 1;
+	}
+	assert(0); return 0;
+}
+
+static void PTC_(test_compactify)(void) {
+	struct T_(Array) a = ARRAY_IDLE;
+	T ts[9], *t, *t1, *t_prev;
+	const size_t ts_size = sizeof ts / sizeof *ts;
+
+	/* `valgrind` is giving me grief if I don't do this? */
+	memset(ts, 0, sizeof ts);
+	/* Get elements. */
+	assert(ts_size % 3 == 0);
+	for(t_prev = 0, t = ts, t1 = t + ts_size; t < t1; t_prev = t, t += 3) {
+		if(!PTC_(fill_unique)(t, t_prev)) { assert(0); return; }
+		memcpy(t + 1, t, sizeof *t);
+		memcpy(t + 2, t, sizeof *t);
+	}
+	if(!T_(ArrayBuffer)(&a, ts_size)) { assert(0); return; }
+	memcpy(a.data, ts, sizeof *t * ts_size);
+	printf("Before: %s.\n", T_(ArrayToString)(&a));
+	T_C_(Array, Compactify)(&a, 0);
+	printf("Compactified: %s.\n", T_(ArrayToString)(&a));
+	assert(a.size == ts_size / 3);
+#ifdef ARRAY_COMPARE /* <!-- compare */
+	T_C_(Array, Sort)(&a);
+	printf("Sorted: %s.\n", T_(ArrayToString)(&a));
+	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
+		assert(PTC_(compare)(t, t + 1) <= 0);
+	T_C_(Array, Reverse)(&a);
+	printf("Reverse: %s.\n", T_(ArrayToString)(&a));
+	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
+		assert(PTC_(compare)(t, t + 1) >= 0);
+#endif /* compare --> */
+	T_(Array_)(&a);
+}
+
+static void PTC_(test_bounds)(void) {
+#ifdef ARRAY_COMPARE /* <!-- compare */
+	struct T_(Array) a = ARRAY_IDLE;
+	const size_t size = 10;
+	size_t i, low, high;
+	T elem;
+	char z[12];
+	int t;
+	if(!T_(ArrayBuffer)(&a, size)) { assert(0); return; }
+	for(i = 0; i < size; i++) PT_(filler)(a.data + i);
+	PT_(filler)(&elem);
+	printf("bounds: %s\n", T_(ArrayToString)(&a));
+	T_C_(Array, Sort)(&a);
+	printf("sorted: %s.\n", T_(ArrayToString)(&a));
+	PT_(to_string)(&elem, &z), printf("elem: %s\n", z);
+	low = T_C_(Array, LowerBound)(&a, &elem);
+	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
+	assert(low <= a.size);
+	assert(!low || PTC_(compare)(a.data + low - 1, &elem) < 0);
+	assert(low == a.size || PTC_(compare)(&elem, a.data + low) <= 0);
+	high = T_C_(Array, UpperBound)(&a, &elem);
+	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
+	assert(high <= a.size);
+	assert(!high || PTC_(compare)(a.data + high - 1, &elem) <= 0);
+	assert(high == a.size || PTC_(compare)(&elem, a.data + high) < 0);
+	t = T_C_(Array, Insert)(&a, &elem);
+	printf("insert: %s.\n", T_(ArrayToString)(&a));
+	assert(t && a.size == size + 1);
+	t = memcmp(&elem, a.data + low, sizeof elem);
+	assert(!t);
+	T_(ArrayClear)(&a);
+	T_(ArrayBuffer)(&a, size);
+	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
+	printf("bounds: %s.\n", T_(ArrayToString)(&a));
+	low = T_C_(Array, LowerBound)(&a, &elem);
+	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
+	assert(low == 0);
+	high = T_C_(Array, UpperBound)(&a, &elem);
+	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
+	assert(high == a.size);
+	T_(Array_)(&a);
+#endif /* compare --> */
+}
+
+/** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
+ `NDEBUG` while defining `assert`. @allow */
+static void T_C_(Array, ContrastTest)(void) {
+	printf("<" QUOTE(ARRAY_NAME) ">Array testing <"
+#ifdef ARRAY_ORDER
+		QUOTE(ARRAY_CONTRAST_NAME)
+#else
+		"anonymous"
+#endif
+		"> contrast "
+#ifdef ARRAY_COMPARE
+		"compare <" QUOTE(ARRAY_COMPARE)
+#elif defined(ARRAY_IS_EQUAL)
+		"is equal <" QUOTE(ARRAY_IS_EQUAL)
+#endif
+		">:\n");
+	PTC_(test_compactify)();
+	PTC_(test_bounds)();
+	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">Array contrast.\n\n");
+}
+
+#else /* compare --><!-- */
+#error Test unsupported option; testing is out-of-sync?
+#endif /* --> */
 
 /* Un-define all macros. */
 #undef QUOTE
