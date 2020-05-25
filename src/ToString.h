@@ -1,7 +1,7 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle To String Mixin
+ @subtitle To String Interface
 
  @param[TO_STRING_]
  Function-like define macro accepting one argument and producing a valid name.

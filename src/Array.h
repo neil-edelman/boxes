@@ -20,25 +20,26 @@
  a manner to avoid collisions; any should be re-defined prior to use elsewhere.
 
  @param[ARRAY_UNFINISHED]
- Do not un-define variables for including again in a mixin.
+ Do not un-define variables for including again in an interface.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string mixin; `<S>` that satisfies `C` naming conventions when mangled
+ To string interface; `<S>` that satisfies `C` naming conventions when mangled
  and function implementing <typedef:<PT>ToString>. There can be multiple to
- string mixins, but only one can omit `ARRAY_TO_STRING_NAME`.
+ string interfaces, but only one can omit `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
- Child of to string mixin; optional unit testing framework <fn:<T>ArrayTest>,
- included in a separate header, <../test/ArrayTest.h>. Must be defined equal to
- a (random) filler function, satisfying <typedef:<PT>Action> using the array to
- string function defined. This can be defined only once per structure, and will
- not only test the base code with <fn:<T>ArrayTest>, but the mixins after have
- their own tests.
+ Optional in the to string interface; can only be defined once _per_
+ `ARRAY_TYPE`: unit testing framework <fn:<T>ArrayTest>, included in a separate
+ header, <../test/ArrayTest.h>. Must be defined equal to a (random) filler
+ function, satisfying <typedef:<PT>Action> using the array to string function
+ defined. Will not only test the base code with <fn:<T>ArrayTest>, but the
+ interfaces after have their own tests.
 
  @param[ARRAY_CONTRAST_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare mixin; `<C>` that satiscfies `C` naming conventions when mangled and
- one function implementing <typedef:<PT>Bipredicate>; ...fixme There can
- be multiple contrast mixins, but only one can omit `ARRAY_CONTRAST_NAME`.
+ Compare interface; `<C>` that satiscfies `C` naming conventions when mangled
+ and a function implementing <typedef:<PT>Compare> or <typedef:<PT>Bipredicate>
+ that satisfies an equality ...fixme There can
+ be multiple contrast interfaces, but only one can omit `ARRAY_CONTRAST_NAME`.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -60,14 +61,14 @@
 #ifndef ARRAY_TYPE
 #error Tag type ARRAY_TYPE undefined.
 #endif
-#define ARRAY_MIXIN (defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING))\
-	+ (defined(ARRAY_CONTRAST_NAME) || defined(ARRAY_COMPARE) \
-	|| defined(ARRAY_IS_EQUAL))
-#if ARRAY_MIXIN > 1
-#error Only one mixin per include is allowed; use ARRAY_UNFINISHED.
+#define ARRAY_INTERFACES (defined(ARRAY_TO_STRING_NAME) \
+	|| defined(ARRAY_TO_STRING)) + (defined(ARRAY_CONTRAST_NAME) \
+	|| defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
+#if ARRAY_INTERFACES > 1
+#error Only one interface per include is allowed; use ARRAY_UNFINISHED.
 #endif
-#if (ARRAY_MIXIN == 0) && defined(ARRAY_TEST)
-#error ARRAY_TEST must be defined in ARRAY_TO_STRING mixin.
+#if (ARRAY_INTERFACES == 0) && defined(ARRAY_TEST)
+#error ARRAY_TEST must be defined in ARRAY_TO_STRING interface.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
@@ -78,7 +79,7 @@
 #endif
 
 
-#if ARRAY_MIXIN == 0 /* <!-- base code */
+#if ARRAY_INTERFACES == 0 /* <!-- base code */
 
 
 #if defined(T) || defined(T_) || defined(PT_) || defined(CAT) || defined(CAT_) \
@@ -543,12 +544,12 @@ static void PT_(unused_base)(void) {
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 
-#elif defined(ARRAY_TO_STRING) /* base code --><!-- to string mixin */
+#elif defined(ARRAY_TO_STRING) /* base code --><!-- to string interface */
 
 
 #if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT) \
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?T_? or P?CAT_? not yet defined in to string mixin; include array?
+#error P?T_? or P?CAT_? not yet defined in to string interface; include array?
 #endif
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
@@ -628,12 +629,12 @@ static void PTS_(unused_to_string_coda)(void) { PTS_(unused_to_string)(); }
 #endif
 
 
-#else /* to string mixin --><!-- contrast mixin */
+#else /* to string interface --><!-- contrast interface */
 
 
 #if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT)
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?T_? or P?CAT_? not yet defined in contrast mixin; include array?
+#error P?T_? or P?CAT_? not yet defined in contrast interface; include array?
 #endif
 
 #ifdef ARRAY_CONTRAST_NAME /* <!-- name */
@@ -650,8 +651,7 @@ static void PTS_(unused_to_string_coda)(void) { PTS_(unused_to_string)(); }
  <typedef:<PT>Bipredicate>. */
 static const PT_(Bipredicate) PTC_(compare) = (ARRAY_COMPARE);
 
-/** !compare(`a`, `b`) == equals(`a`, `b`)
- @fixme Have a second sub-mixin for this. */
+/** !compare(`a`, `b`) == equals(`a`, `b`) */
 static int PTC_(is_equal)(const void *const a, const void *const b)
 	{ return !PTC_(compare)(a, b); }
 
@@ -752,6 +752,8 @@ static void T_C_(Array, Sort)(struct T_(Array) *const a)
 static void T_C_(Array, Reverse)(struct T_(Array) *const a)
 	{ if(a) qsort(a->data, a->size, sizeof *a->data, PTC_(revers)); }
 
+/* fixme: static int T_C_(Array, Compare)() */
+
 /** `a` is a random-access array which should be partitioned true/false with
  less-then `value`.
  @param[a] If null, returns zero.
@@ -781,8 +783,10 @@ static int T_C_(Array, Insert)(struct T_(Array) *const a,
 
 #endif /* compare --> */
 
-/** Mixin `ARRAY_COMPARE` or `ARRAY_IS_EQUAL`. For each consecutive and equal
- pair of elements in `a`, surjects to one according to `merge`.
+/* fixme: static int T_C_(Array, IsEqual)() */
+
+/** Interfaces `ARRAY_COMPARE` or `ARRAY_IS_EQUAL`. For each consecutive and
+ equal pair of elements in `a`, surjects to one according to `merge`.
  @param[a] If null, does nothing.
  @param[merge] Can be null, in which case, all duplicate entries are erased.
  @order \O(`a.size`) @allow */
@@ -826,7 +830,7 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #endif
 
 
-#endif /* mixins --> */
+#endif /* interfaces --> */
 
 
 #ifdef ARRAY_UNFINISHED /* <!-- unfinish */
@@ -852,4 +856,4 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #endif
 #endif /* finish --> */
 
-#undef ARRAY_MIXIN
+#undef ARRAY_INTERFACES
