@@ -3,14 +3,14 @@
 
  @subtitle To String Interface
 
- @param[TO_STRING_]
+ @param[IA_]
  Function-like define macro accepting one argument and producing a valid name.
 
  @param[TO_STRING_NEXT]
- A function satisfying <typedef:<PA>NextToString>.
+ A function satisfying <typedef:<IA>NextToString>.
 
  @param[TO_STRING_ITERATOR]
- Tag type the first argument to <typedef:<PA>NextToString>.
+ Tag type for the first argument to <typedef:<IA>NextToString>.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
