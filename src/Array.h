@@ -555,18 +555,10 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
 #define PTS_(thing) PCAT(PT_(thing), ARRAY_TO_STRING_NAME)
 #define T_S_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_TO_STRING_NAME, thing2))
-
-#define TO_STRING PCAT(array, PCAT(ARRAY_NAME, ARRAY_TO_STRING_NAME))
-
 #else /* name --><!-- !name */
 #define PTS_(thing) PCAT(PT_(thing), anonymous)
 #define T_S_(thing1, thing2) CAT(T_(thing1), thing2)
-
-#define TO_STRING PCAT(array, PCAT(ARRAY_NAME, anonymous))
-
 #endif /* !name --> */
-
-#define TO_STRING_(thing) PCAT(TO_STRING, thing)
 
 /* Check that `ARRAY_TO_STRING` is a function implementing
  <typedef:<PT>ToString>. */
@@ -582,7 +574,7 @@ static int PTS_(next_to_str12)(struct PT_(Iterator) *const it,
 	return 1;
 }
 
-#define TO_STRING_NAME TO_STRING
+#define AI_ PTS_
 #define TO_STRING_ITERATOR struct PT_(Iterator)
 #define TO_STRING_NEXT &PTS_(next_to_str12)
 #include "ToString.h"
@@ -590,7 +582,7 @@ static int PTS_(next_to_str12)(struct PT_(Iterator) *const it,
 static const char *PTS_(to_string)(const struct T_(Array) *const a) {
 	struct PT_(Iterator) it = { 0, 0 };
 	it.a = a;
-	return TO_STRING_(iterator_to_string)(&it, '(', ')');
+	return PTS_(iterator_to_string)(&it, '(', ')');
 }
 
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
@@ -621,8 +613,6 @@ static void PTS_(unused_to_string_coda)(void) { PTS_(unused_to_string)(); }
 
 #undef PTS_
 #undef T_S_
-#undef TO_STRING
-#undef TO_STRING_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME

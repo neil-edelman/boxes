@@ -3,14 +3,15 @@
 
  @subtitle To String Interface
 
- @param[IA_]
+ @param[AI_]
  Function-like define macro accepting one argument and producing a valid name.
+ `PAI_` is private.
 
  @param[TO_STRING_NEXT]
- A function satisfying <typedef:<IA>NextToString>.
+ A function satisfying <typedef:<AI>NextToString>.
 
  @param[TO_STRING_ITERATOR]
- Tag type for the first argument to <typedef:<IA>NextToString>.
+ Tag type for the first argument to <typedef:<AI>NextToString>.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -33,10 +34,10 @@ static unsigned to_string_buffer_i;
 
 /* Check defines. */
 #if !defined(CAT) || !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error ToString is meant to be a mixin included from other headers.
+#error ToString is meant to be included from other headers.
 #endif
-#ifndef TO_STRING_NAME
-#error Name TO_STRING_NAME undefined.
+#ifndef AI_
+#error Macro AI_ undefined.
 #endif
 #ifndef TO_STRING_NEXT
 #error Function TO_STRING_NEXT undefined.
@@ -44,26 +45,26 @@ static unsigned to_string_buffer_i;
 #ifndef TO_STRING_ITERATOR
 #error Tag type TO_STRING_ITERATOR undefined.
 #endif
-#ifdef PA_
-#error PA_ cannot be defined.
+#ifdef PAI_
+#error PAI_ can not be defined.
 #endif
 
-#define PA_(thing) PCAT(TO_STRING_NAME, thing)
+#define PAI_(thing) PCAT(to_string, AI_(thing))
 
 /** Tag type set by `TO_STRING_ITERATOR` should be a type that encodes all the
  values needed for iteration. */
-typedef TO_STRING_ITERATOR PA_(Iterator);
+typedef TO_STRING_ITERATOR PAI_(Iterator);
 
 /** Returns true if it wrote to the buffer and advances to the next. */
-typedef int (*PA_(NextToString))(PA_(Iterator) *, char (*)[12]);
+typedef int (*PAI_(NextToString))(PAI_(Iterator) *, char (*)[12]);
 
 /* Check that `TO_STRING_NEXT` is a function implementing
- <typedef:<S>NextToString>. */
-static const PA_(NextToString) PA_(next_to_str12) = (TO_STRING_NEXT);
+ <typedef:<AI>NextToString>. */
+static const PAI_(NextToString) PAI_(next_to_string) = (TO_STRING_NEXT);
 
 /** Fills the to string function up with `it`, with `start` and `end`
  delimiters around the `<PA>NextToString` `TO_NEXT_STRING`. @allow */
-static const char *PA_(iterator_to_string)(PA_(Iterator) *const it,
+static const char *AI_(iterator_to_string)(PAI_(Iterator) *const it,
 	const char start, const char end) {
 	const char comma = ',', space = ' ',
 		*const ellipsis = "…", *const null = "null";
@@ -79,7 +80,7 @@ static const char *PA_(iterator_to_string)(PA_(Iterator) *const it,
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	if(!it->a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
 	*b++ = start;
-	while(PA_(next_to_str12)(it, (char (*)[12])b)) {
+	while(PAI_(next_to_string)(it, (char (*)[12])b)) {
 		/* Be paranoid about the '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
@@ -87,7 +88,7 @@ static const char *PA_(iterator_to_string)(PA_(Iterator) *const it,
 		if((size = b - buffer) > to_string_buffer_size
 			- 11 - 1 - ellipsis_len - 1 - 1) {
 			char throw_out[12];
-			if(PA_(next_to_str12)(it, &throw_out)) goto ellipsis; else break;
+			if(PAI_(next_to_string)(it, &throw_out)) goto ellipsis; else break;
 		}
 	}
 	if(is_sep) b -= 2;
@@ -103,7 +104,7 @@ terminate:
 	return buffer;
 }
 
-#undef PA_
-#undef TO_STRING_NAME
+#undef AI_
+#undef PAI_
 #undef TO_STRING_ITERATOR
 #undef TO_STRING_NEXT
