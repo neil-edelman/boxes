@@ -25,12 +25,12 @@
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>Compare>. Defaults to minimum-hash on
- `HEAP_TYPE`; as such, if `HEAP_TYPE` is changed, this may be required.
+ `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable
+ type.
 
  @param[HEAP_VALUE]
  Optional payload <typedef:<PH>Value>, that is stored as a reference in
- <tag:<H>HeapNode>; thus, declaring it is sufficent, it doesn't need to be
- defined.
+ <tag:<H>HeapNode>; declaring it is sufficent.
 
  @param[HEAP_TO_STRING]
  Optional print function implementing <typedef:<PH>ToString>; makes available

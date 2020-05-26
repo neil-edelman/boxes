@@ -7,8 +7,6 @@
 
 #include <stdlib.h> /* EXIT malloc free rand */
 #include <stdio.h>  /* *printf */
-/*#include <assert.h>*/ /* assert */
-#include <errno.h>  /* errno */
 #include "Orcish.h"
 
 
