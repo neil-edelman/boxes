@@ -89,7 +89,7 @@
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#elif !defined(CAT) || || !defined(PCAT) /* !sub-type --><!-- !cat */
+#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
 #error ARRAY_CHILD defined but CAT is not.
 #endif /* !cat --> */
 #define T_(thing) CAT(ARRAY_NAME, thing)
