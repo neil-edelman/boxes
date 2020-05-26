@@ -23,17 +23,15 @@
  Do not un-define variables for including again in an interface.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string interface; `<S>` that satisfies `C` naming conventions when mangled
- and function implementing <typedef:<PT>ToString>. There can be multiple to
- string interfaces, but only one can omit `ARRAY_TO_STRING_NAME`.
+ To string interface contained in <ToString.h>; `<A>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PT>ToString>.
+ There can be multiple to string interfaces, but only one can omit
+ `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
- Optional in the to string interface; can only be defined once _per_
- `ARRAY_TYPE`: unit testing framework <fn:<T>ArrayTest>, included in a separate
- header, <../test/ArrayTest.h>. Must be defined equal to a (random) filler
- function, satisfying <typedef:<PT>Action> using the array to string function
- defined. Will not only test the base code with <fn:<T>ArrayTest>, but the
- interfaces after have their own tests.
+ To string interface optional unit testing framework using `assert`; contained
+ in <../test/ArrayTest.h>. Can only be defined once per `Array`. Must be
+ defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
 
  @param[ARRAY_CONTRAST_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare interface; `<C>` that satiscfies `C` naming conventions when mangled
@@ -121,7 +119,7 @@ typedef void (*PT_(ToString))(const T *, char (*)[12]);
 /** Manages the array field `data`, which is indexed up to `size`. When
  modifying the topology of this array, it may change memory location to fit;
  any pointers to this memory may become stale. To initialise it to an idle
- state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}` (`C99`), or being `static`.
+ state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct T_(Array);
@@ -132,7 +130,7 @@ struct T_(Array) { T *data; size_t size, capacity; };
 #define ARRAY_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
 
-/** ??? */
+/** Contains all iteration parameters in one. */
 struct PT_(Iterator) { const struct T_(Array) *a; size_t i; };
 
 /** Initialises `a` to idle. */
@@ -259,12 +257,12 @@ static T *PT_(new)(struct T_(Array) *const a) {
 
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 
+/** Initialises `a` to be idle. @order \Theta(1) @allow */
+static void T_(Array)(struct T_(Array) *const a) { if(a) PT_(array)(a); }
+
 /** Returns `a` to the idle state where it takes no dynamic memory.
  @param[a] If null, does nothing. @order \Theta(1) @allow */
 static void T_(Array_)(struct T_(Array) *const a) { if(a) PT_(array_)(a); }
-
-/** Initialises `a` to be idle. @order \Theta(1) @allow */
-static void T_(Array)(struct T_(Array) *const a) { if(a) PT_(array)(a); }
 
 /** Removes `datum` from `a`.
  @param[a, datum] If null, returns false.
@@ -527,6 +525,9 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
+	PT_(array)(0), PT_(array_)(0); PT_(update_reserve)(0, 0, 0);
+	PT_(reserve)(0, 0); PT_(shrink)(0); PT_(range)(0, 0, 0, 0, 0);
+	PT_(replace)(0, 0, 0, 0); PT_(update_new)(0, 0); PT_(new)(0);
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 	T_(Array_)(0); T_(Array)(0); T_(ArrayRemove)(0, 0);
 	T_(ArrayLazyRemove)(0, 0); T_(ArrayClear)(0); T_(ArrayPeek)(0);
@@ -536,9 +537,6 @@ static void PT_(unused_base)(void) {
 	T_(ArrayKeepIf)(0, 0, 0); T_(ArrayTrim)(0, 0); T_(ArraySplice)(0, 0, 0, 0);
 	T_(ArrayIndexSplice)(0, 0, 0, 0);
 #endif /* !sub-type --> */
-	PT_(array)(0), PT_(array_)(0); PT_(update_reserve)(0, 0, 0);
-	PT_(reserve)(0, 0); PT_(shrink)(0); PT_(range)(0, 0, 0, 0, 0);
-	PT_(replace)(0, 0, 0, 0); PT_(update_new)(0, 0); PT_(new)(0);
 	PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
@@ -553,66 +551,65 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #endif
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
-#define PTS_(thing) PCAT(PT_(thing), ARRAY_TO_STRING_NAME)
-#define T_S_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_TO_STRING_NAME, thing2))
+#define PTA_(thing) PCAT(PT_(thing), ARRAY_TO_STRING_NAME)
+#define T_A_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_TO_STRING_NAME, thing2))
 #else /* name --><!-- !name */
-#define PTS_(thing) PCAT(PT_(thing), anonymous)
-#define T_S_(thing1, thing2) CAT(T_(thing1), thing2)
+#define PTA_(thing) PCAT(PT_(thing), anonymous)
+#define T_A_(thing1, thing2) CAT(T_(thing1), thing2)
 #endif /* !name --> */
 
 /* Check that `ARRAY_TO_STRING` is a function implementing
  <typedef:<PT>ToString>. */
-static const PT_(ToString) PTS_(to_str12) = (ARRAY_TO_STRING);
+static const PT_(ToString) PTA_(to_str12) = (ARRAY_TO_STRING);
 
-/** Returns true if it wrote ... @fixme
- @implements <S>NextToString */
-static int PTS_(next_to_str12)(struct PT_(Iterator) *const it,
+/** Writes `it` to `str` and advances or returns false.
+ @implements <AI>NextToString */
+static int PTA_(next_to_str12)(struct PT_(Iterator) *const it,
 	char (*const str)[12]) {
-	assert(it && it->a);
+	assert(it && it->a && str);
 	if(it->i >= it->a->size) return 0;
-	PTS_(to_str12)(it->a->data + it->i++, str);
+	PTA_(to_str12)(it->a->data + it->i++, str);
 	return 1;
 }
 
-#define AI_ PTS_
+#define AI_ PTA_
 #define TO_STRING_ITERATOR struct PT_(Iterator)
-#define TO_STRING_NEXT &PTS_(next_to_str12)
+#define TO_STRING_NEXT &PTA_(next_to_str12)
 #include "ToString.h"
 
-static const char *PTS_(to_string)(const struct T_(Array) *const a) {
+/** @return Prints `a`. */
+static const char *PTA_(to_string)(const struct T_(Array) *const a) {
 	struct PT_(Iterator) it = { 0, 0 };
-	it.a = a;
-	return PTS_(iterator_to_string)(&it, '(', ')');
+	it.a = a; /* Can be null. */
+	return PTA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
 }
 
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 
 /** @return Print the contents of `a` in a static string buffer with the
- limitations of `ToString.h`.
- @order \Theta(1) @allow */
-static const char *T_S_(Array, ToString)(const struct T_(Array) *const a) {
-	return PTS_(to_string)(a); /* Can be null. */
-}
+ limitations of `ToString.h`. @order \Theta(1) @allow */
+static const char *T_A_(Array, ToString)(const struct T_(Array) *const a)
+	{ return PTA_(to_string)(a); /* Can be null. */ }
 
 #endif /* !sub-type --> */
 
-static void PTS_(unused_to_string_coda)(void);
-static void PTS_(unused_to_string)(void) {
-	PTS_(to_string)(0);
+static void PTA_(unused_to_string_coda)(void);
+static void PTA_(unused_to_string)(void) {
+	PTA_(to_string)(0);
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
-	T_S_(Array, ToString)(0);
+	T_A_(Array, ToString)(0);
 #endif /* !sub-type --> */
-	PTS_(unused_to_string_coda)();
+	PTA_(unused_to_string_coda)();
 }
-static void PTS_(unused_to_string_coda)(void) { PTS_(unused_to_string)(); }
+static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 
 #if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
 #define ARRAY_TEST_BASE /* Only one instance of base tests. */
 #include "../test/TestArray.h"
 #endif /* test --> */
 
-#undef PTS_
-#undef T_S_
+#undef PTA_
+#undef T_A_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -835,14 +832,14 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #undef PT_
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
-#ifdef ARRAY_CHILD
-#undef ARRAY_CHILD
-#endif
 #ifdef ARRAY_TEST
 #undef ARRAY_TEST
 #endif
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
+#endif
+#ifdef ARRAY_CHILD
+#undef ARRAY_CHILD
 #endif
 #endif /* finish --> */
 
