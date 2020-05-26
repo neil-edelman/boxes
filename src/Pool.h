@@ -282,51 +282,26 @@ static struct PT_(Block) **PT_(find_block_addr)(struct T_(Pool) *const pool,
 static void PT_(flag_removed)(struct PT_(Node) *const node)
 	{ assert(node); node->x.prev = node->x.next = &node->x; }
 
-#ifndef POOL_CHILD /* <!-- !sub-type */
-
-/** Initialises `pool` to be empty. @order \Theta(1) @allow */
-static void T_(Pool)(struct T_(Pool) *const pool)
-	{ if(pool) PT_(pool)(pool); }
-
-/** Returns `pool` to the empty state where it takes no dynamic memory.
- @param[pool] If null, does nothing. @order \Theta(`blocks`) @allow */
-static void T_(Pool_)(struct T_(Pool) *const pool)
-	{ if(pool) PT_(pool_)(pool); }
-
-/** New item.
- @param[pool] If is null, returns null.
- @return A new element at the end, or null and `errno` will be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` or `malloc`
- doesn't follow [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html).
- @throws[malloc]
- @order amortised O(1)
- @allow fixme */
-static T *T_(PoolNew)(struct T_(Pool) *const pool) {
+/** @return New node from `pool`. @throws[malloc] */
+static struct PT_(Node) *PT_(new)(struct T_(Pool) *const pool) {
 	struct PT_(Node) *node;
 	size_t size;
-	if(!pool) return 0;
-	if((node = PT_(dequeue_removed)(pool))) return &node->data;
+	assert(pool);
+	if((node = PT_(dequeue_removed)(pool))) return node;
 	size = pool->largest ? pool->largest->size : 0;
 	if(!PT_(reserve)(pool, size + 1)) return 0;
 	assert(pool->largest);
 	node = PT_(block_nodes)(pool->largest) + pool->largest->size++;
 	node->x.prev = node->x.next = 0;
-	return &node->data;
+	return node;
 }
 
-/** Removes `data` from `pool`.
- @param[pool, data] If null, returns false.
- @return Success, otherwise `errno` will be set for valid input.
- @throws[EDOM] `data` is not part of `pool`.
- @order Amortised \O(1), if the pool is in steady-state, but \O(log `items`)
- for a small number of deleted items.
- @allow fixme */
-static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
+/** Remove `datum` item from `pool`. @return Success. @throws[EDOM] */
+static int PT_(remove)(struct T_(Pool) *const pool, T *const datum) {
 	struct PT_(Node) *node;
 	struct PT_(Block) *block, **baddr;
-	if(!pool || !data) return 0;
-	node = PT_(data_upcast)(data);
+	assert(pool && datum);
+	node = PT_(data_upcast)(datum);
 	/* Removed already or not part of the container. */
 	if(node->x.next || !(block = *(baddr = PT_(find_block_addr)(pool, node))))
 		return errno = EDOM, 0;
@@ -342,24 +317,56 @@ static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data) {
 	return 1;
 }
 
-/** Removes all from `pool`. Keeps it's active state, only freeing the smaller
- blocks. Compare <fn:<T>Pool_>.
- @param[pool] If null, does nothing.
- @order \O(`blocks`)
- @allow fixme */
-static void T_(PoolClear)(struct T_(Pool) *const pool) {
+/** Removes all from `pool`. */
+static void PT_(clear)(struct T_(Pool) *const pool) {
 	struct PT_(Block) *block, *next;
-	if(!pool || !pool->largest) return;
-	block = pool->largest;
-	next = block->smaller;
-	block->size = 0;
-	block->smaller = 0;
+	assert(pool); if(!pool->largest) return;
+	block = pool->largest, next = block->smaller;
+	block->size = 0, block->smaller = 0;
 	pool->removed.prev = pool->removed.next = 0;
 	while(next) block = next, next = next->smaller, free(block);
 }
 
-/** Pre-sizes a zeroed pool to ensure that it can hold at least `min` elements.
- Will not work unless the pool is in an empty state.
+#ifndef POOL_CHILD /* <!-- !sub-type */
+
+/** Initialises `pool` to be empty. @order \Theta(1) @allow */
+static void T_(Pool)(struct T_(Pool) *const pool)
+	{ if(pool) PT_(pool)(pool); }
+
+/** Returns `pool` to the empty state where it takes no dynamic memory.
+ @param[pool] If null, does nothing. @order \Theta(`blocks`) @allow */
+static void T_(Pool_)(struct T_(Pool) *const pool)
+	{ if(pool) PT_(pool_)(pool); }
+
+/** New item from `pool`.
+ @param[pool] If is null, returns null.
+ @return A new element at the end, or null and `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `malloc`
+ doesn't follow [POSIX
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html).
+ @throws[malloc] @order amortised O(1) @allow */
+static T *T_(PoolNew)(struct T_(Pool) *const pool) {
+	struct PT_(Node) *n;
+	n = pool ? PT_(new)(pool) : 0;
+	return n ? &n->data : 0;
+}
+
+/** Removes `data` from `pool`.
+ @param[pool, data] If null, returns false.
+ @return Success, otherwise `errno` will be set for valid input.
+ @throws[EDOM] `data` is not part of `pool`.
+ @order Amortised \O(1), if the pool is in steady-state, but \O(log `items`)
+ for a small number of deleted items. @allow */
+static int T_(PoolRemove)(struct T_(Pool) *const pool, T *const data)
+	{ return pool && data ? PT_(remove)(pool, data) : 0; }
+
+/** Removes all from `pool`. Keeps it's active state, only freeing the smaller
+ blocks. Compare <fn:<T>Pool_>.
+ @param[pool] If null, does nothing. @order \O(`blocks`) @allow */
+static void T_(PoolClear)(struct T_(Pool) *const pool)
+	{ if(pool) PT_(clear)(pool); }
+
+/** Pre-sizes an idle pool to ensure that it can hold at least `min` elements.
  @param[pool] If null, returns false.
  @param[min] If zero, doesn't do anything and returns true.
  @return Success; the pool becomes active with at least `min` elements.
@@ -367,8 +374,7 @@ static void T_(PoolClear)(struct T_(Pool) *const pool) {
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `malloc`
  doesn't follow [IEEE Std 1003.1-2001
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html).
- @throws[malloc]
- @allow */
+ @throws[malloc] @allow */
 static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
 	if(!pool) return 0;
 	if(pool->largest) return errno = EDOM, 0;
@@ -379,20 +385,16 @@ static int T_(PoolReserve)(struct T_(Pool) *const pool, const size_t min) {
 /** Iterates though `pool` and calls `action` on all the elements. There is no
  way to change the iteration order.
  @param[pool, action] If null, does nothing.
- @order O(`capacity` \times `action`)
- @allow fixme */
+ @order O(`capacity` \times `action`) @allow */
 static void T_(PoolForEach)(struct T_(Pool) *const pool,
 	const PT_(Action) action) {
 	struct PT_(Node) *n, *end;
 	struct PT_(Block) *block;
 	if(!pool || !action) return;
-	for(block = pool->largest; block; block = block->smaller) {
+	for(block = pool->largest; block; block = block->smaller)
 		for(n = PT_(block_nodes)(block), end = n + PT_(range)(pool, block);
-			n < end; n++) {
-			if(n->x.prev) continue;
-			action(&n->data);
-		}
-	}
+			n < end; n++)
+			if(!n->x.prev) action(&n->data);
 }
 
 #endif /* !sub-type --> */
@@ -434,17 +436,17 @@ static const PT_(ToString) PTA_(to_str12) = (POOL_TO_STRING);
 /** Writes `it` to `str` and advances or returns false.
  @implements <AI>NextToString */
 static int PTA_(next_to_str12)(struct PT_(Iterator) *const it,
-	char (*const a)[12]) {
+	char (*const str)[12]) {
 	struct PT_(Node) *nodes, *n;
 	size_t i_end;
-	assert(it && a && it->pool);
+	assert(it && str && it->pool);
 	while(it->block) {
 		nodes = PT_(block_nodes)(it->block);
 		i_end = PT_(range)(it->pool, it->block);
 		while(it->i < i_end) {
 			if((n = nodes + it->i++)->x.prev) continue;
 			/* Found the data. */
-			PTA_(to_str12)(&n->data, a);
+			PTA_(to_str12)(&n->data, str);
 			return 1;
 		}
 		it->block = it->block->smaller;
@@ -462,7 +464,7 @@ static int PTA_(is_valid)(const struct PT_(Iterator) *const it)
 #define TO_STRING_IS_VALID &PTA_(is_valid)
 #include "ToString.h"
 
-/** @return Prints `a`. */
+/** @return Prints `pool`. */
 static const char *PTA_(to_string)(const struct T_(Pool) *const pool) {
 	struct PT_(Iterator) it = { 0, 0, 0 };
 	it.pool = pool, it.block = pool ? pool->largest : 0;
@@ -471,7 +473,7 @@ static const char *PTA_(to_string)(const struct T_(Pool) *const pool) {
 
 #ifndef POOL_CHILD /* <!-- !sub-type */
 
-/** @return Print the contents of `a` in a static string buffer with the
+/** @return Print the contents of `pool` in a static string buffer with the
  limitations of `ToString.h`. @order \Theta(1) @allow */
 static const char *T_A_(Pool, ToString)(const struct T_(Pool) *const pool)
 	{ return PTA_(to_string)(pool); /* Can be null. */ }
