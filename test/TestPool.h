@@ -1,18 +1,19 @@
-/* Intended to be included by {Pool.h} on {POOL_TYPE_FILLER}. */
+/* Intended to be included by `Pool.h` on `POOL_TEST`. */
 
-/* Define macros. */
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
+#if defined(QUOTE) || defined(QUOTE_)
+#error QUOTE_? cannot be defined.
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
+#ifdef POOL_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
+/* Copy functions for later includes. */
+static const PT_(ToString) PT_(to_string) = (POOL_TO_STRING);
+static const char *(*PT_(pool_to_string))(const struct T_(Pool) *)
+	= T_A_(Pool, ToString);
 
-/* POOL_TEST must be a function that implements <PT>Action. */
+/* POOL_TEST must be a function that implements <typedef:<PT>Action>. */
 static const PT_(Action) PT_(filler) = (POOL_TEST);
 
 /** Private: `container_of` `x`. */
@@ -168,7 +169,7 @@ static void PT_(test_basic)(void) {
 	assert(T_(PoolReserve)(0, 0) == 0);
 	assert(T_(PoolNew)(0) == 0);
 	T_(PoolForEach)(0, 0);
-	assert(!strcmp("null", T_(PoolToString(0))));
+	assert(!strcmp("null", PT_(pool_to_string)(0)));
 	assert(errno == 0);
 	PT_(valid_state)(0);
 
@@ -209,9 +210,9 @@ static void PT_(test_basic)(void) {
 		assert(t);
 		memcpy(t, ts + i, sizeof *t);
 	}
-	printf("Now: %s.\n", T_(PoolToString)(&a));
+	printf("Now: %s.\n", PT_(pool_to_string)(&a));
 	if(!T_(PoolRemove)(&a, t1)) { perror("Error"), assert(0); return; }
-	printf("Now: %s.\n", T_(PoolToString)(&a));
+	printf("Now: %s.\n", PT_(pool_to_string)(&a));
 	assert(!T_(PoolRemove)(&a, t1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	PT_(valid_state)(&a);
@@ -236,12 +237,12 @@ static void PT_(test_basic)(void) {
 		assert(t);
 		PT_(filler)(t);
 	}
-	printf("%s.\n", T_(PoolToString)(&a));
+	printf("%s.\n", PT_(pool_to_string)(&a));
 	PT_(valid_state)(&a);
 
 	printf("Clear:\n");
 	T_(PoolClear)(&a);
-	printf("Now: %s.\n", T_(PoolToString)(&a));
+	printf("Now: %s.\n", PT_(pool_to_string)(&a));
 	printf("Destructor:\n");
 	T_(Pool_)(&a);
 	PT_(valid_state)(&a);
@@ -296,7 +297,7 @@ static void PT_(test_random)(void) {
 		if(is_print && i < graph_max) {
 			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
 			PT_(graph)(&a, graph_fn);
-			printf("%s.\n", T_(PoolToString)(&a));
+			printf("%s.\n", PT_(pool_to_string)(&a));
 		}
 		PT_(valid_state)(&a);
 	}
@@ -324,6 +325,9 @@ static void T_(PoolTest)(void) {
 	fprintf(stderr, "Done tests of Pool<" QUOTE(POOL_NAME) ">.\n\n");
 }
 
-/* Un-define all macros. */
+#else /* to string --><!-- */
+#error Test unsupported option; testing is out-of-sync?
+#endif /* --> */
+
 #undef QUOTE
 #undef QUOTE_
