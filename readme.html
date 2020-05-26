@@ -37,8 +37,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>Bipredicate">&lt;PT&gt;Bipredicate</a>, <a href = "#typedef:<PT>Biproject">&lt;PT&gt;Biproject</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>Array">&lt;T&gt;Array</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>Predicate">&lt;PT&gt;Predicate</a>, <a href = "#typedef:<PT>Bipredicate">&lt;PT&gt;Bipredicate</a>, <a href = "#typedef:<PT>Biproject">&lt;PT&gt;Biproject</a>, <a href = "#typedef:<PT>Compare">&lt;PT&gt;Compare</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>Array">&lt;T&gt;Array</a>, <a href = "#tag:<PT>Iterator">&lt;PT&gt;Iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -59,12 +59,18 @@
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
 	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
-	<dt>Parameter: ARRAY_TO_STRING</dt>
-	<dd>Optional print function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a>; makes available <a href = "#fn:&lt;T&gt;ArrayToString">&lt;T&gt;ArrayToString</a>.</dd>
+	<dt>Parameter: ARRAY_UNFINISHED</dt>
+	<dd>Do not un-define variables for including again in an interface.</dd>
+	<dt>Parameter: ARRAY_TO_STRING_NAME, ARRAY_TO_STRING</dt>
+	<dd>To string interface contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a>. There can be multiple to string interfaces, but only one can omit <code>ARRAY_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
-	<dd>Unit testing framework <a href = "#fn:&lt;T&gt;ArrayTest">&lt;T&gt;ArrayTest</a>, included in a separate header, <a href = "../test/ArrayTest.h">../test/ArrayTest.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>. Requires <code>ARRAY_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
+	<dd>To string interface optional unit testing framework using <code>assert</code>; contained in <a href = "../test/ArrayTest.h">../test/ArrayTest.h</a>. Can only be defined once per <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>.</dd>
+	<dt>Parameter: ARRAY_CONTRAST_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL</dt>
+	<dd>Compare interface; <code>&lt;C&gt;</code> that satiscfies <code>C</code> naming conventions when mangled and a function implementing <a href = "#typedef:&lt;PT&gt;Compare">&lt;PT&gt;Compare</a> or <a href = "#typedef:&lt;PT&gt;Bipredicate">&lt;PT&gt;Bipredicate</a> that satisfies an equality ...fixme There can be multiple contrast interfaces, but only one can omit <code>ARRAY_CONTRAST_NAME</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
+	<dt>Caveat:</dt>
+	<dd>(<a href = "#fn:&lt;T&gt;ArrayEach">&amp;lt;T&amp;gt;ArrayEach</a>)</dd>
 	<dt>See also:</dt>
 	<dd><a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a>; <a href = "https://github.com/neil-edelman/Trie">Trie</a></dd>
 </dl>
@@ -117,7 +123,17 @@
 
 <p><code>typedef int(*<strong>&lt;PT&gt;Biproject</strong>)(T *, T *);</code></p>
 
-<p>Returns a boolean given two <code>&lt;T&gt;</code>, specifying the first or second argument.</p>
+<p>Returns a boolean given two <code>&lt;T&gt;</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PT>Compare" name = "typedef:<PT>Compare">&lt;PT&gt;Compare</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PT&gt;Compare</strong>)(const T *, const T *);</code></p>
+
+<p>Returns an integer value greater, less, or equal zero fixme...</p>
 
 </div>
 
@@ -139,9 +155,19 @@
 
 <p><code>struct <strong>&lt;T&gt;Array</strong>;</code></p>
 
-<p>Manages the array field <code>data</code>, which is indexed up to <code>size</code>. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale. To initialise it to an idle state, see <a href = "#fn:&lt;T&gt;Array">&lt;T&gt;Array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
+<p>Manages the array field <code>data</code>, which is indexed up to <code>size</code>. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale. To initialise it to an idle state, see <a href = "#fn:&lt;T&gt;Array">&lt;T&gt;Array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 280></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<PT>Iterator" name = "tag:<PT>Iterator">&lt;PT&gt;Iterator</a></h3>
+
+<p><code>struct <strong>&lt;PT&gt;Iterator</strong> { const struct &lt;T&gt;Array *a; size_t i; };</code></p>
+
+<p>Contains all iteration parameters in one.</p>
 
 </div>
 
@@ -153,9 +179,9 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>Array_">&lt;T&gt;Array_</a></td><td>a</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#fn:<T>Array">&lt;T&gt;Array</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>Array_">&lt;T&gt;Array_</a></td><td>a</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<T>ArrayRemove">&lt;T&gt;ArrayRemove</a></td><td>a, datum</td></tr>
 
@@ -189,7 +215,23 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<T>ArrayIndexSplice">&lt;T&gt;ArrayIndexSplice</a></td><td>a, i0, i1, b</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<T>ArrayToString">&lt;T&gt;ArrayToString</a></td><td>a</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<T>Array<A>ToString">&lt;T&gt;Array&lt;A&gt;ToString</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>Array<C>Sort">&lt;T&gt;Array&lt;C&gt;Sort</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>Array<C>Reverse">&lt;T&gt;Array&lt;C&gt;Reverse</a></td><td>a</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<T>Array<C>LowerBound">&lt;T&gt;Array&lt;C&gt;LowerBound</a></td><td>a, value</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<T>Array<C>UpperBound">&lt;T&gt;Array&lt;C&gt;UpperBound</a></td><td>a, value</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>Array<C>Insert">&lt;T&gt;Array&lt;C&gt;Insert</a></td><td>a, datum</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>Array<C>Compactify">&lt;T&gt;Array&lt;C&gt;Compactify</a></td><td>a, merge</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>ArrayTest">&lt;T&gt;ArrayTest</a></td><td></td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>Array<C>ContrastTest">&lt;T&gt;Array&lt;C&gt;ContrastTest</a></td><td></td></tr>
 
 </table>
 
@@ -198,6 +240,21 @@
 <div>
 
 <h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<T>Array" name = "fn:<T>Array">&lt;T&gt;Array</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;Array</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code></p>
+
+<p>Initialises <code>a</code> to be idle.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
 
 <div>
 
@@ -210,21 +267,6 @@
 <dl>
 	<dt>Parameter: <em>a</em></dt>
 	<dd>If null, does nothing.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>Array" name = "fn:<T>Array">&lt;T&gt;Array</a></h3>
-
-<p><code>static void <strong>&lt;T&gt;Array</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code></p>
-
-<p>Initialises <code>a</code> to be idle.</p>
-
-<dl>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -431,6 +473,8 @@
 	<dd>If null, does nothing.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>size</code> &#215; <code>action</code>)</dd>
+	<dt>Caveat:</dt>
+	<dd>All these functions can go into Sequetial?</dd>
 </dl>
 
 </div>
@@ -583,18 +627,137 @@
 
 <div>
 
-<h3><a id = "fn:<T>ArrayToString" name = "fn:<T>ArrayToString">&lt;T&gt;ArrayToString</a></h3>
+<h3><a id = "fn:<T>Array<A>ToString" name = "fn:<T>Array<A>ToString">&lt;T&gt;Array&lt;A&gt;ToString</a></h3>
 
-<p><code>static const char *<strong>&lt;T&gt;ArrayToString</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code></p>
-
-<p>Can print 4 things at once before it overwrites. One must a <code>ARRAY_TO_STRING</code> to a function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a> to get this functionality.</p>
+<p><code>static const char *<strong>&lt;T&gt;Array&lt;A&gt;ToString</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Prints <code>a</code> in a static buffer.</dd>
+	<dd>Print the contents of <code>a</code> in a static string buffer with the limitations of <code>ToString.h</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>Array<C>Sort" name = "fn:<T>Array<C>Sort">&lt;T&gt;Array&lt;C&gt;Sort</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;Array&lt;C&gt;Sort</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code></p>
+
+<p>Sorts <code>a</code> by <code>qsort</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>Array<C>Reverse" name = "fn:<T>Array<C>Reverse">&lt;T&gt;Array&lt;C&gt;Reverse</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;Array&lt;C&gt;Reverse</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code></p>
+
+<p>Sorts <code>a</code> in reverse by <code>qsort</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>Array<C>LowerBound" name = "fn:<T>Array<C>LowerBound">&lt;T&gt;Array&lt;C&gt;LowerBound</a></h3>
+
+<p><code>static size_t <strong>&lt;T&gt;Array&lt;C&gt;LowerBound</strong>(struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>value</em>)</code></p>
+
+<p><code>a</code> is a random-access array which should be partitioned true/false with less-then <code>value</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>a</em></dt>
+	<dd>If null, returns zero.</dd>
+	<dt>Return:</dt>
+	<dd>The first index of <code>a</code> that is not less then <code>value</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log <code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>Array<C>UpperBound" name = "fn:<T>Array<C>UpperBound">&lt;T&gt;Array&lt;C&gt;UpperBound</a></h3>
+
+<p><code>static size_t <strong>&lt;T&gt;Array&lt;C&gt;UpperBound</strong>(struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>value</em>)</code></p>
+
+<p><code>a</code> is a random-access array which should be partitioned false/true with greater-than or equals <code>value</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>a</em></dt>
+	<dd>If null, returns zero.</dd>
+	<dt>Return:</dt>
+	<dd>The first index of <code>a</code> that is greater then <code>value</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log <code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>Array<C>Insert" name = "fn:<T>Array<C>Insert">&lt;T&gt;Array&lt;C&gt;Insert</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;Array&lt;C&gt;Insert</strong>(struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>datum</em>)</code></p>
+
+<p>Inserts a copy of <code>datum</code> in <code>a</code> at the lower bound.</p>
+
+<dl>
+	<dt>Parameter: <em>a</em></dt>
+	<dd>If null, does nothing.</dd>
+	<dt>Parameter: <em>datum</em></dt>
+	<dd>If null, does nothing.</dd>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>realloc</code> error and doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html">POSIX</a>.</dd>
+	<dt>Exceptional return: realloc</dt>
+	<dt>Order:</dt>
+	<dd>Amortised &#927;(1).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>Array<C>Compactify" name = "fn:<T>Array<C>Compactify">&lt;T&gt;Array&lt;C&gt;Compactify</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;Array&lt;C&gt;Compactify</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Biproject <em>merge</em>)</code></p>
+
+<p>Interfaces <code>ARRAY_COMPARE</code> or <code>ARRAY_IS_EQUAL</code>. For each consecutive and equal pair of elements in <code>a</code>, surjects to one according to <code>merge</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>a</em></dt>
+	<dd>If null, does nothing.</dd>
+	<dt>Parameter: <em>merge</em></dt>
+	<dd>Can be null, in which case, all duplicate entries are erased.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>a.size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>ArrayTest" name = "fn:<T>ArrayTest">&lt;T&gt;ArrayTest</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;ArrayTest</strong>(void)</code></p>
+
+<p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>Array<C>ContrastTest" name = "fn:<T>Array<C>ContrastTest">&lt;T&gt;Array&lt;C&gt;ContrastTest</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;Array&lt;C&gt;ContrastTest</strong>(void)</code></p>
+
+<p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
 
 </div>
 

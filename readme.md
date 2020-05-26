@@ -3,8 +3,8 @@
 ## Parameterised Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;Bipredicate](#user-content-typedef-49a99943), [&lt;PT&gt;Biproject](#user-content-typedef-269e157f), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;Array](#user-content-tag-f128eca2)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;Bipredicate](#user-content-typedef-49a99943), [&lt;PT&gt;Biproject](#user-content-typedef-269e157f), [&lt;PT&gt;Compare](#user-content-typedef-abfbe632), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;Array](#user-content-tag-f128eca2), [&lt;PT&gt;Iterator](#user-content-tag-25ae129)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -21,12 +21,18 @@
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<T>` that satisfies `C` naming conventions when mangled and a valid tag\-type associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
- * Parameter: ARRAY\_TO\_STRING  
-   Optional print function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f); makes available [&lt;T&gt;ArrayToString](#user-content-fn-e365d362)\.
+ * Parameter: ARRAY\_UNFINISHED  
+   Do not un\-define variables for including again in an interface\.
+ * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
+   To string interface contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)\. There can be multiple to string interfaces, but only one can omit `ARRAY_TO_STRING_NAME`\.
  * Parameter: ARRAY\_TEST  
-   Unit testing framework [&lt;T&gt;ArrayTest](#user-content-fn-8737e8e2), included in a separate header, [\.\./test/ArrayTest\.h](../test/ArrayTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Requires `ARRAY_TO_STRING` and not `NDEBUG`\.
+   To string interface optional unit testing framework using `assert`; contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h)\. Can only be defined once per `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\.
+ * Parameter: ARRAY\_CONTRAST\_NAME, ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
+   Compare interface; `<C>` that satiscfies `C` naming conventions when mangled and a function implementing [&lt;PT&gt;Compare](#user-content-typedef-abfbe632) or [&lt;PT&gt;Bipredicate](#user-content-typedef-49a99943) that satisfies an equality \.\.\.fixme There can be multiple contrast interfaces, but only one can omit `ARRAY_CONTRAST_NAME`\.
  * Standard:  
    C89
+ * Caveat:  
+   ([&lt;T&gt;ArrayEach](#user-content-fn-669dc6cf))
  * See also:  
    [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
 
@@ -69,7 +75,15 @@ Returns a boolean given two read\-only `<T>`\.
 
 <code>typedef int(*<strong>&lt;PT&gt;Biproject</strong>)(T *, T *);</code>
 
-Returns a boolean given two `<T>`, specifying the first or second argument\.
+Returns a boolean given two `<T>`\.
+
+
+
+### <a id = "user-content-typedef-abfbe632" name = "user-content-typedef-abfbe632">&lt;PT&gt;Compare</a> ###
+
+<code>typedef int(*<strong>&lt;PT&gt;Compare</strong>)(const T *, const T *);</code>
+
+Returns an integer value greater, less, or equal zero fixme\.\.\.
 
 
 
@@ -87,9 +101,17 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>struct <strong>&lt;T&gt;Array</strong>;</code>
 
-Manages the array field `data`, which is indexed up to `size`\. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale\. To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`\), or being `static`\.
+Manages the array field `data`, which is indexed up to `size`\. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale\. To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](web/states.png)
+
+
+
+### <a id = "user-content-tag-25ae129" name = "user-content-tag-25ae129">&lt;PT&gt;Iterator</a> ###
+
+<code>struct <strong>&lt;PT&gt;Iterator</strong> { const struct &lt;T&gt;Array *a; size_t i; };</code>
+
+Contains all iteration parameters in one\.
 
 
 
@@ -99,9 +121,9 @@ Manages the array field `data`, which is indexed up to `size`\. When modifying t
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-a06d1247">&lt;T&gt;Array_</a></td><td>a</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-f128eca2">&lt;T&gt;Array</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-a06d1247">&lt;T&gt;Array_</a></td><td>a</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-8267fb66">&lt;T&gt;ArrayRemove</a></td><td>a, datum</td></tr>
 
@@ -135,13 +157,41 @@ Manages the array field `data`, which is indexed up to `size`\. When modifying t
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-503c6ec6">&lt;T&gt;ArrayIndexSplice</a></td><td>a, i0, i1, b</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-e365d362">&lt;T&gt;ArrayToString</a></td><td>a</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-d031e21d">&lt;T&gt;Array&lt;A&gt;ToString</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-b03500d7">&lt;T&gt;Array&lt;C&gt;Sort</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-4163de2b">&lt;T&gt;Array&lt;C&gt;Reverse</a></td><td>a</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-eb4c64d4">&lt;T&gt;Array&lt;C&gt;LowerBound</a></td><td>a, value</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-29222727">&lt;T&gt;Array&lt;C&gt;UpperBound</a></td><td>a, value</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-4cefae16">&lt;T&gt;Array&lt;C&gt;Insert</a></td><td>a, datum</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-f75d7962">&lt;T&gt;Array&lt;C&gt;Compactify</a></td><td>a, merge</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-8737e8e2">&lt;T&gt;ArrayTest</a></td><td></td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-e2e9ab81">&lt;T&gt;Array&lt;C&gt;ContrastTest</a></td><td></td></tr>
 
 </table>
 
 
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
+
+### <a id = "user-content-fn-f128eca2" name = "user-content-fn-f128eca2">&lt;T&gt;Array</a> ###
+
+<code>static void <strong>&lt;T&gt;Array</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
+
+Initialises `a` to be idle\.
+
+ * Order:  
+   &#920;\(1\)
+
+
+
 
 ### <a id = "user-content-fn-a06d1247" name = "user-content-fn-a06d1247">&lt;T&gt;Array_</a> ###
 
@@ -151,18 +201,6 @@ Returns `a` to the idle state where it takes no dynamic memory\.
 
  * Parameter: _a_  
    If null, does nothing\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-f128eca2" name = "user-content-fn-f128eca2">&lt;T&gt;Array</a> ###
-
-<code>static void <strong>&lt;T&gt;Array</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
-
-Initialises `a` to be idle\.
-
  * Order:  
    &#920;\(1\)
 
@@ -339,6 +377,8 @@ Iterates through `a` and calls `action` on all the elements\. The topology of th
    If null, does nothing\.
  * Order:  
    &#927;\(`size` &#215; `action`\)
+ * Caveat:  
+   All these functions can go into Sequetial?
 
 
 
@@ -471,17 +511,116 @@ In `a`, replaces the elements from indices `i0` \(inclusive\) to `i1` \(exclusiv
 
 
 
-### <a id = "user-content-fn-e365d362" name = "user-content-fn-e365d362">&lt;T&gt;ArrayToString</a> ###
+### <a id = "user-content-fn-d031e21d" name = "user-content-fn-d031e21d">&lt;T&gt;Array&lt;A&gt;ToString</a> ###
 
-<code>static const char *<strong>&lt;T&gt;ArrayToString</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
-
-Can print 4 things at once before it overwrites\. One must a `ARRAY_TO_STRING` to a function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f) to get this functionality\.
+<code>static const char *<strong>&lt;T&gt;Array&lt;A&gt;ToString</strong>(const struct &lt;T&gt;Array *const <em>a</em>)</code>
 
  * Return:  
-   Prints `a` in a static buffer\.
+   Print the contents of `a` in a static string buffer with the limitations of `ToString.h`\.
  * Order:  
    &#920;\(1\)
 
+
+
+
+### <a id = "user-content-fn-b03500d7" name = "user-content-fn-b03500d7">&lt;T&gt;Array&lt;C&gt;Sort</a> ###
+
+<code>static void <strong>&lt;T&gt;Array&lt;C&gt;Sort</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
+
+Sorts `a` by `qsort`\.
+
+
+
+### <a id = "user-content-fn-4163de2b" name = "user-content-fn-4163de2b">&lt;T&gt;Array&lt;C&gt;Reverse</a> ###
+
+<code>static void <strong>&lt;T&gt;Array&lt;C&gt;Reverse</strong>(struct &lt;T&gt;Array *const <em>a</em>)</code>
+
+Sorts `a` in reverse by `qsort`\.
+
+
+
+### <a id = "user-content-fn-eb4c64d4" name = "user-content-fn-eb4c64d4">&lt;T&gt;Array&lt;C&gt;LowerBound</a> ###
+
+<code>static size_t <strong>&lt;T&gt;Array&lt;C&gt;LowerBound</strong>(struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>value</em>)</code>
+
+`a` is a random\-access array which should be partitioned true/false with less\-then `value`\.
+
+ * Parameter: _a_  
+   If null, returns zero\.
+ * Return:  
+   The first index of `a` that is not less then `value`\.
+ * Order:  
+   &#927;\(log `size`\)
+
+
+
+
+### <a id = "user-content-fn-29222727" name = "user-content-fn-29222727">&lt;T&gt;Array&lt;C&gt;UpperBound</a> ###
+
+<code>static size_t <strong>&lt;T&gt;Array&lt;C&gt;UpperBound</strong>(struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>value</em>)</code>
+
+`a` is a random\-access array which should be partitioned false/true with greater\-than or equals `value`\.
+
+ * Parameter: _a_  
+   If null, returns zero\.
+ * Return:  
+   The first index of `a` that is greater then `value`\.
+ * Order:  
+   &#927;\(log `size`\)
+
+
+
+
+### <a id = "user-content-fn-4cefae16" name = "user-content-fn-4cefae16">&lt;T&gt;Array&lt;C&gt;Insert</a> ###
+
+<code>static int <strong>&lt;T&gt;Array&lt;C&gt;Insert</strong>(struct &lt;T&gt;Array *const <em>a</em>, const T *const <em>datum</em>)</code>
+
+Inserts a copy of `datum` in `a` at the lower bound\.
+
+ * Parameter: _a_  
+   If null, does nothing\.
+ * Parameter: _datum_  
+   If null, does nothing\.
+ * Return:  
+   Success\.
+ * Exceptional return: ERANGE  
+   Tried allocating more then can fit in `size_t` or `realloc` error and doesn't follow [POSIX](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)\.
+ * Exceptional return: realloc  
+ * Order:  
+   Amortised &#927;\(1\)\.
+
+
+
+
+### <a id = "user-content-fn-f75d7962" name = "user-content-fn-f75d7962">&lt;T&gt;Array&lt;C&gt;Compactify</a> ###
+
+<code>static void <strong>&lt;T&gt;Array&lt;C&gt;Compactify</strong>(struct &lt;T&gt;Array *const <em>a</em>, const &lt;PT&gt;Biproject <em>merge</em>)</code>
+
+Interfaces `ARRAY_COMPARE` or `ARRAY_IS_EQUAL`\. For each consecutive and equal pair of elements in `a`, surjects to one according to `merge`\.
+
+ * Parameter: _a_  
+   If null, does nothing\.
+ * Parameter: _merge_  
+   Can be null, in which case, all duplicate entries are erased\.
+ * Order:  
+   &#927;\(`a.size`\)
+
+
+
+
+### <a id = "user-content-fn-8737e8e2" name = "user-content-fn-8737e8e2">&lt;T&gt;ArrayTest</a> ###
+
+<code>static void <strong>&lt;T&gt;ArrayTest</strong>(void)</code>
+
+Will be tested on stdout\. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`\.
+
+
+
+### <a id = "user-content-fn-e2e9ab81" name = "user-content-fn-e2e9ab81">&lt;T&gt;Array&lt;C&gt;ContrastTest</a> ###
+
+<code>static void <strong>&lt;T&gt;Array&lt;C&gt;ContrastTest</strong>(void)</code>
+
+Will be tested on stdout\. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`\.
 
 
 

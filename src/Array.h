@@ -80,16 +80,18 @@
 #if ARRAY_INTERFACES == 0 /* <!-- base code */
 
 
-#if defined(T) || defined(T_) || defined(PT_) || defined(CAT) || defined(CAT_) \
-	|| defined(PCAT) || defined(PCAT_)
-#error P?T_? or P?CAT_? cannot be defined; possible stray ARRAY_UNFINISHED?
-#endif
-
 /* <Kernighan and Ritchie, 1988, p. 231>. */
+#if defined(T) || defined(T_) || defined(PT_)
+#error P?T_? cannot be defined; possible stray ARRAY_UNFINISHED?
+#endif
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
+#elif !defined(CAT) || || !defined(PCAT) /* !sub-type --><!-- !cat */
+#error ARRAY_CHILD defined but CAT is not.
+#endif /* !cat --> */
 #define T_(thing) CAT(ARRAY_NAME, thing)
 #define PT_(thing) PCAT(array, PCAT(ARRAY_NAME, thing))
 

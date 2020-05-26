@@ -118,4 +118,5 @@ terminate:
 #undef AI_
 #undef PAI_
 #undef TO_STRING_ITERATOR
+#undef TO_STRING_IS_VALID
 #undef TO_STRING_NEXT
