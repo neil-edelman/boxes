@@ -73,7 +73,7 @@ Zeroed data is a valid state\. To instantiate to an idle state, see [&lt;T&gt;Po
 
 ### <a id = "user-content-tag-25ae129" name = "user-content-tag-25ae129">&lt;PT&gt;Iterator</a> ###
 
-<code>struct <strong>&lt;PT&gt;Iterator</strong> { const struct &lt;T&gt;Pool *pool; struct &lt;PT&gt;Block *block; size_t i; };</code>
+<code>struct <strong>&lt;PT&gt;Iterator</strong>;</code>
 
 Contains all iteration parameters in one\.
 

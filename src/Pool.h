@@ -130,6 +130,7 @@ struct T_(Pool) {
 #endif /* !zero --> */
 
 /** Contains all iteration parameters in one. */
+struct PT_(Iterator);
 struct PT_(Iterator)
 	{ const struct T_(Pool) *pool; struct PT_(Block) *block; size_t i; };
 
