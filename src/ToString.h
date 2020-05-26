@@ -42,6 +42,9 @@ static unsigned to_string_buffer_i;
 #ifndef TO_STRING_NEXT
 #error Function TO_STRING_NEXT undefined.
 #endif
+#ifndef TO_STRING_IS_VALID
+#error Function TO_STRING_IS_VALID undefined.
+#endif
 #ifndef TO_STRING_ITERATOR
 #error Tag type TO_STRING_ITERATOR undefined.
 #endif
@@ -59,8 +62,15 @@ typedef TO_STRING_ITERATOR PAI_(Iterator);
 typedef int (*PAI_(NextToString))(PAI_(Iterator) *, char (*)[12]);
 
 /* Check that `TO_STRING_NEXT` is a function implementing
- <typedef:<AI>NextToString>. */
+ <typedef:<PAI>NextToString>. */
 static const PAI_(NextToString) PAI_(next_to_string) = (TO_STRING_NEXT);
+
+/** Returns false if the iterator points to null. */
+typedef int (*PAI_(IsValid))(const PAI_(Iterator) *);
+
+/* Check that `TO_STRING_CONTENTS` is a function implementing
+ <typedef:<PAI>IsValid>. */
+static const PAI_(IsValid) PAI_(is_valid) = (TO_STRING_IS_VALID);
 
 /** Fills the to string function up with `it`, with `start` and `end`
  delimiters around the `<PA>NextToString` `TO_NEXT_STRING`. @allow */
@@ -78,7 +88,8 @@ static const char *AI_(iterator_to_string)(PAI_(Iterator) *const it,
 		&& to_string_buffer_size >= null_len + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	if(!it->a) { memcpy(b, null, null_len), b += null_len; goto terminate; }
+	if(!PAI_(is_valid)(it))
+		{ memcpy(b, null, null_len), b += null_len; goto terminate; }
 	*b++ = start;
 	while(PAI_(next_to_string)(it, (char (*)[12])b)) {
 		/* Be paranoid about the '\0'. */

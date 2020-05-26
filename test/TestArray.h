@@ -11,10 +11,10 @@
 
 #ifdef ARRAY_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
-/* Define this `ARRAY_TO_STRING` as the to string that is used for tests. This
- should be already defined as `<PTS>to_string` implementing
- <typedef:<PT>ToString>. */
+/* Copy functions for later includes. */
 static const PT_(ToString) PT_(to_string) = (ARRAY_TO_STRING);
+static const char *(*PT_(array_to_string))(const struct T_(Array) *)
+	= T_A_(Array, ToString);
 
 /* ARRAY_TEST must be a function that implements <PT>Action. */
 static const PT_(Action) PT_(filler) = (ARRAY_TEST);
@@ -75,7 +75,7 @@ static void PT_(test_basic)(void) {
 	size_t i;
 	int is_zero;
 
-	printf("Test null.\n");
+	printf("Test null %s.\n", PT_(array_to_string)(0));
 	errno = 0;
 	T_(Array_)(0);
 	T_(Array)(0);
@@ -89,7 +89,7 @@ static void PT_(test_basic)(void) {
 		&& T_(ArrayUpdateNew)(0, 0) == 0);
 	T_(ArrayEach)(0, 0);
 	T_(ArrayTrim)(0, 0);
-	assert(!strcmp("null", T_(ArrayToString(0))));
+	assert(!strcmp("null", PT_(array_to_string)(0)));
 	assert(errno == 0);
 	PT_(valid_state)(0);
 
@@ -150,14 +150,14 @@ static void PT_(test_basic)(void) {
 		memcpy(t, ts + i, sizeof *t);
 	}
 	assert(T_(ArrayPeek)(&a));
-	printf("Now: %s.\n", T_A_(Array, ToString)(&a));
+	printf("Now: %s.\n", PT_(array_to_string)(&a));
 	assert(a.size == ts_size);
 	if((t = a.data + ts_size - 2)
 		&& !T_(ArrayRemove)(&a, t)) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_A_(Array, ToString)(&a));
+	printf("Now: %s.\n", PT_(array_to_string)(&a));
 	assert(!T_(ArrayRemove)(&a, t + 1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 	if((t = a.data + ts_size - 3)
@@ -165,7 +165,7 @@ static void PT_(test_basic)(void) {
 		perror("Error"), assert(0);
 		return;
 	}
-	printf("Now: %s.\n", T_A_(Array, ToString)(&a));
+	printf("Now: %s.\n", PT_(array_to_string)(&a));
 	assert(!T_(ArrayRemove)(&a, t + 1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
 
@@ -175,7 +175,7 @@ static void PT_(test_basic)(void) {
 	memcpy(t + 1, ts + 3, sizeof *t * 2);
 	assert(a.size == ts_size);
 	PT_(valid_state)(&a);
-	printf("Now: %s.\n", T_A_(Array, ToString)(&a));
+	printf("Now: %s.\n", PT_(array_to_string)(&a));
 
 	/* Peek/Pop. */
 	t = T_(ArrayPeek)(&a);
@@ -214,12 +214,12 @@ static void PT_(test_basic)(void) {
 		assert(t && (size_t)(t - start) == i);
 		PT_(filler)(t);
 	}
-	printf("%s.\n", T_A_(Array, ToString)(&a));
+	printf("%s.\n", PT_(array_to_string)(&a));
 	PT_(valid_state)(&a);
 
 	printf("Clear:\n");
 	T_(ArrayClear)(&a);
-	printf("%s.\n", T_A_(Array, ToString)(&a));
+	printf("%s.\n", PT_(array_to_string)(&a));
 	assert(T_(ArrayPeek)(&a) == 0);
 	
 	printf("Destructor:\n");
@@ -272,7 +272,7 @@ static void PT_(test_random)(void) {
 		PT_(valid_state)(&a);
 		if(a.size < 1000000 && !(i & (i - 1))) {
 			char fn[32];
-			printf("%s.\n", T_A_(Array, ToString)(&a));
+			printf("%s.\n", PT_(array_to_string)(&a));
 			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "Array%lu.gv",
 				(unsigned long)i);
 			PT_(graph)(&a, fn);
@@ -328,24 +328,24 @@ static void PT_(test_replace)(void) {
 	errno = 0;
 	/* No-op. */
 	success = T_(ArrayIndexSplice)(&a, 0, 0, 0);
-	printf("Array %s.\n", T_A_(Array, ToString)(&a));
+	printf("Array %s.\n", PT_(array_to_string)(&a));
 	assert(success && a.size == ts_size);
 	/* Deleting from the front. */
 	success = T_(ArrayIndexSplice)(&a, 0, 1, 0);
-	printf("Array after deleting from front %s.\n", T_A_(Array, ToString)(&a));
+	printf("Array after deleting from front %s.\n", PT_(array_to_string)(&a));
 	assert(success && a.size == ts_size - 1);
 	/* Adding at the back. */
 	t = T_(ArrayNew)(&b);
 	assert(t);
 	memcpy(t, ts + 0, sizeof *t);
 	success = T_(ArrayIndexSplice)(&a, a.size, a.size, &b);
-	printf("Array after adding %s to back %s.\n", T_A_(Array, ToString)(&b),
-		T_A_(Array, ToString)(&a));
+	printf("Array after adding %s to back %s.\n", PT_(array_to_string)(&b),
+		PT_(array_to_string)(&a));
 	assert(success && a.size == ts_size);
 	/* Replacing same-size. */
 	success = T_(ArrayIndexSplice)(&a, 1, 2, &b);
-	printf("Array after replacing [1, 2) %s: %s.\n", T_A_(Array, ToString)(&b),
-		T_A_(Array, ToString)(&a));
+	printf("Array after replacing [1, 2) %s: %s.\n", PT_(array_to_string)(&b),
+		PT_(array_to_string)(&a));
 	assert(success && a.size == ts_size
 		&& !memcmp(t, a.data + 1, sizeof *t));
 	/* Replacing larger size. */
@@ -353,14 +353,14 @@ static void PT_(test_replace)(void) {
 	assert(t);
 	memcpy(t, ts + 1, sizeof *t);
 	success = T_(ArrayIndexSplice)(&a, 1, 2, &b);
-	printf("Array after replacing [1, 2) %s: %s.\n", T_A_(Array, ToString)(&b),
-		T_A_(Array, ToString)(&a));
+	printf("Array after replacing [1, 2) %s: %s.\n", PT_(array_to_string)(&b),
+		PT_(array_to_string)(&a));
 	assert(success && a.size == ts_size + 1
 		   && !memcmp(t, a.data + 2, sizeof *t));
 	/* Replacing a smaller size. */
 	success = T_(ArrayIndexSplice)(&a, 1, 4, &b);
-	printf("Array after replacing [1, 4) %s: %s.\n", T_A_(Array, ToString)(&b),
-		T_A_(Array, ToString)(&a));
+	printf("Array after replacing [1, 4) %s: %s.\n", PT_(array_to_string)(&b),
+		PT_(array_to_string)(&a));
 	assert(success && a.size == ts_size
 		   && !memcmp(t, a.data + 2, sizeof *t));
 	T_(ArrayClear)(&b);
@@ -369,18 +369,19 @@ static void PT_(test_replace)(void) {
 	memcpy(t, ts + 2, sizeof *t * 2);
 	assert(b.size == 2);
 	/* a = [[1],[0],[1],[4],[0]]; b = [[2],[3]] */
-	printf("a = %s, b = %s.\n", T_A_(Array, ToString)(&a), T_A_(Array, ToString)(&b));
+	printf("a = %s, b = %s.\n", PT_(array_to_string)(&a),
+		PT_(array_to_string)(&b));
 	T_(ArraySplice)(&a, 0, -1, &b);
-	printf("a = %s.\n", T_A_(Array, ToString)(&a));
+	printf("a = %s.\n", PT_(array_to_string)(&a));
 	/* a = [[1],[0],[1],[4],[0],[2],[3]] */
 	T_(ArraySplice)(&a, a.data + 1, 2, &b);
-	printf("a = %s.\n", T_A_(Array, ToString)(&a));
+	printf("a = %s.\n", PT_(array_to_string)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
 	T_(ArraySplice)(&a, a.data + 2, -5, &b);
-	printf("a = %s.\n", T_A_(Array, ToString)(&a));
+	printf("a = %s.\n", PT_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
 	T_(ArraySplice)(&a, a.data + 7, -1, &b);
-	printf("a = %s.\n", T_A_(Array, ToString)(&a));
+	printf("a = %s.\n", PT_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
 	/* @fixme This is not enought coverage. */
 	assert(a.size == 9 &&
@@ -514,17 +515,17 @@ static void PTC_(test_compactify)(void) {
 	}
 	if(!T_(ArrayBuffer)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
-	printf("Before: %s.\n", T_(ArrayToString)(&a));
+	printf("Before: %s.\n", PT_(array_to_string)(&a));
 	T_C_(Array, Compactify)(&a, 0);
-	printf("Compactified: %s.\n", T_(ArrayToString)(&a));
+	printf("Compactified: %s.\n", PT_(array_to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */
 	T_C_(Array, Sort)(&a);
-	printf("Sorted: %s.\n", T_(ArrayToString)(&a));
+	printf("Sorted: %s.\n", PT_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
 		assert(PTC_(compare)(t, t + 1) <= 0);
 	T_C_(Array, Reverse)(&a);
-	printf("Reverse: %s.\n", T_(ArrayToString)(&a));
+	printf("Reverse: %s.\n", PT_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
 		assert(PTC_(compare)(t, t + 1) >= 0);
 #endif /* compare --> */
@@ -542,9 +543,9 @@ static void PTC_(test_bounds)(void) {
 	if(!T_(ArrayBuffer)(&a, size)) { assert(0); return; }
 	for(i = 0; i < size; i++) PT_(filler)(a.data + i);
 	PT_(filler)(&elem);
-	printf("bounds: %s\n", T_(ArrayToString)(&a));
+	printf("bounds: %s\n", PT_(array_to_string)(&a));
 	T_C_(Array, Sort)(&a);
-	printf("sorted: %s.\n", T_(ArrayToString)(&a));
+	printf("sorted: %s.\n", PT_(array_to_string)(&a));
 	PT_(to_string)(&elem, &z), printf("elem: %s\n", z);
 	low = T_C_(Array, LowerBound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
@@ -557,14 +558,14 @@ static void PTC_(test_bounds)(void) {
 	assert(!high || PTC_(compare)(a.data + high - 1, &elem) <= 0);
 	assert(high == a.size || PTC_(compare)(&elem, a.data + high) < 0);
 	t = T_C_(Array, Insert)(&a, &elem);
-	printf("insert: %s.\n", T_(ArrayToString)(&a));
+	printf("insert: %s.\n", PT_(array_to_string)(&a));
 	assert(t && a.size == size + 1);
 	t = memcmp(&elem, a.data + low, sizeof elem);
 	assert(!t);
 	T_(ArrayClear)(&a);
 	T_(ArrayBuffer)(&a, size);
 	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
-	printf("bounds: %s.\n", T_(ArrayToString)(&a));
+	printf("bounds: %s.\n", PT_(array_to_string)(&a));
 	low = T_C_(Array, LowerBound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low == 0);

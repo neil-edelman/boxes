@@ -572,9 +572,14 @@ static int PTA_(next_to_str12)(struct PT_(Iterator) *const it,
 	return 1;
 }
 
+/** @return If `it` contains a not-null pool. */
+static int PTA_(is_valid)(const struct PT_(Iterator) *const it)
+	{ assert(it); return !!it->a; }
+
 #define AI_ PTA_
 #define TO_STRING_ITERATOR struct PT_(Iterator)
 #define TO_STRING_NEXT &PTA_(next_to_str12)
+#define TO_STRING_IS_VALID &PTA_(is_valid)
 #include "ToString.h"
 
 /** @return Prints `a`. */
