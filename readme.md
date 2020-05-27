@@ -13,7 +13,7 @@
 
 ![Example of trie.](web/trie.png)
 
-A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. Strings can be any encoding with a byte null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree); specifically [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA), in that the trie only stores data on the positions where the strings are different in the index\. Because of this, it takes twice the space as keeping a sorted array of pointers, but lookup is faster and more cache\-friendly; likewise, insertion and deletion are slower because the need to update the index\.
+A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. Strings can be any encoding with a byte null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA), in that it only stores data in the index on the positions where the strings are different\. It is also a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) which lives in compact &#927;\(`size`\) extra memory\. Insertion and deletion are slower because the need to update the array index\.
 
 `Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
@@ -30,7 +30,7 @@ A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` a
  * Dependancies:  
    [Array.h](../Array/)
  * Caveat:  
-   Have a replace; potentially much less wastful then remove and add\.
+   Have a replace; potentially much less wastful then remove and add\. Compression _ala_ Judy; 64 bits to store mostly 0/1? Could it be done?
  * See also:  
    [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 

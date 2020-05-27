@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of trie." src = "web/trie.png" width = 264 height = 258></p>
 
-<p>A <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is an array of pointers-to-<code>N</code> and index on a unique identifier string that is associated to <code>N</code>. Strings can be any encoding with a byte null-terminator; in particular, <code>C</code> native strings, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>. It can be seen as a <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>; specifically <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>, in that the trie only stores data on the positions where the strings are different in the index. Because of this, it takes twice the space as keeping a sorted array of pointers, but lookup is faster and more cache-friendly; likewise, insertion and deletion are slower because the need to update the index.</p>
+<p>A <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is an array of pointers-to-<code>N</code> and index on a unique identifier string that is associated to <code>N</code>. Strings can be any encoding with a byte null-terminator; in particular, <code>C</code> native strings, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>, in that it only stores data in the index on the positions where the strings are different. It is also a <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> which lives in compact &#927;(<code>size</code>) extra memory. Insertion and deletion are slower because the need to update the array index.</p>
 
 <p><code>Array.h</code> must be present. <code>&lt;N&gt;Trie</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used; to stop assertions, use <code>#define NDEBUG</code> before inclusion.</p>
 
@@ -68,7 +68,7 @@
 	<dt>Dependancies:</dt>
 	<dd><a href = "../Array/">Array.h</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Have a replace; potentially much less wastful then remove and add.</dd>
+	<dd>Have a replace; potentially much less wastful then remove and add. Compression <em>ala</em> Judy; 64 bits to store mostly 0/1? Could it be done?</dd>
 	<dt>See also:</dt>
 	<dd><a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a></dd>
 </dl>
