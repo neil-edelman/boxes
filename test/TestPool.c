@@ -47,108 +47,45 @@ static void str4_filler(struct Str4 *const s)
 #include "../src/Pool.h"
 
 
-#if 0
-
 static void int_to_string(const int *i, char (*const a)[12])
-{ sprintf(*a, "%d", *i); }
+	{ sprintf(*a, "%d", *i); }
 static void int_filler(int *const i)
-{ *i = rand() / (RAND_MAX / 1998 + 1) - 999; }
-static int int_cmp(const int *const a, const int *const b)
-{ return (*a > *b) - (*b > *a); }
-#define ARRAY_NAME Int
-#define ARRAY_TYPE int
-#define ARRAY_UNFINISHED
-#include "../src/Array.h"
-#define ARRAY_TO_STRING &int_to_string
-#define ARRAY_TEST &int_filler
-#define ARRAY_UNFINISHED
-#include "../src/Array.h"
-#define ARRAY_COMPARE &int_cmp
-#include "../src/Array.h"
+	{ *i = rand() / (RAND_MAX / 1998 + 1) - 999; }
+/*static int int_cmp(const int *const a, const int *const b)
+	{ return (*a > *b) - (*b > *a); }*/
+#define POOL_NAME Int
+#define POOL_TYPE int
+#define POOL_UNFINISHED
+#include "../src/Pool.h"
+#define POOL_TO_STRING &int_to_string
+#define POOL_TEST &int_filler
+#include "../src/Pool.h"
 
 
 struct Keyval { int key; char value[12]; };
 static void keyval_filler(struct Keyval *const kv)
-{ kv->key = rand() / (RAND_MAX / 1098 + 1) - 99;
+	{ kv->key = rand() / (RAND_MAX / 1098 + 1) - 99;
 	Orcish(kv->value, sizeof kv->value); }
 static void keyval_key_to_string(const struct Keyval *const kv,
-								 char (*const a)[12]) { sprintf(*a, "%d_%.7s", kv->key, kv->value); }
+	char (*const a)[12]) { sprintf(*a, "%d_%.7s", kv->key, kv->value); }
 static void keyval_value_to_string(const struct Keyval *const kv,
-								   char (*const a)[12]) { sprintf(*a, "%.11s", kv->value); }
-static int keyval_key_cmp(const struct Keyval *const a,
-						  const struct Keyval *const b)
-{ return (a->key > b->key) - (a->key < b->key); }
+	char (*const a)[12]) { sprintf(*a, "%.11s", kv->value); }
+/*static int keyval_key_cmp(const struct Keyval *const a,
+	const struct Keyval *const b)
+	{ return (a->key > b->key) - (a->key < b->key); }
 static int keyval_value_cmp(const struct Keyval *const a,
-							const struct Keyval *const b) { return strcmp(a->value, b->value); }
-#define ARRAY_NAME Keyval
-#define ARRAY_TYPE struct Keyval
-#define ARRAY_UNFINISHED
-#include "../src/Array.h"
-#define ARRAY_TO_STRING &keyval_key_to_string
-#define ARRAY_TEST &keyval_filler
-#define ARRAY_UNFINISHED
-#include "../src/Array.h"
-#define ARRAY_TO_STRING_NAME Value
-#define ARRAY_TO_STRING &keyval_value_to_string
-#define ARRAY_UNFINISHED
-#include "../src/Array.h"
-#define ARRAY_COMPARE &keyval_key_cmp
-#define ARRAY_UNFINISHED
-#include "../src/Array.h"
-#define ARRAY_CONTRAST_NAME Value
-#define ARRAY_COMPARE &keyval_value_cmp
-#include "../src/Array.h"
-
-
-
-/** Define {Foo}. */
-struct Foo {
-	int key;
-	char value[32];
-};
-/** Assumes {key} is {[0, 99]}.
- @implements <Foo>ToString */
-static void Foo_to_string(const struct Foo *this, char (*const a)[12]) {
-	sprintf(*a, "%d%.9s", this->key, this->value);
-}
-/** @implements <Foo>Action */
-static void Foo_filler(struct Foo *const this) {
-	this->key = (int)(float)(rand() / (RAND_MAX + 1.0) * 99.0);
-	Orcish(this->value, sizeof this->value);
-}
-#define POOL_NAME Foo
-#define POOL_TYPE struct Foo
-#define POOL_TO_STRING &Foo_to_string
-#define POOL_TEST &Foo_filler
+	const struct Keyval *const b) { return strcmp(a->value, b->value); }*/
+#define POOL_NAME Keyval
+#define POOL_TYPE struct Keyval
+#define POOL_UNFINISHED
 #include "../src/Pool.h"
-
-
-
-
-/* Class {Int} is a single {int}. */
-/** Assumes {[-9 999 999 999, 99 999 999 999]}.
- @implements <Int>ToString */
-static void Int_to_string(const int *this, char (*const a)[12]) {
-	sprintf(*a, "%d", *this);
-}
-#include <limits.h>	/* INT_MAX */
-#if INT_MAX > 9999999999
-#define LIST_NUM_MAX 9999999999
-#else
-#define LIST_NUM_MAX INT_MAX
-#endif
-/** @implements <Int>Action */
-static void Int_filler(int *const this) {
-	*this = (int)(float)((2.0 * rand() / (RAND_MAX + 1.0) - 1.0) *LIST_NUM_MAX);
-}
-#undef LIST_NUM_MAX
-#define POOL_NAME Int
-#define POOL_TYPE int
-#define POOL_TO_STRING &Int_to_string
-#define POOL_TEST &Int_filler
+#define POOL_TO_STRING &keyval_key_to_string
+#define POOL_TEST &keyval_filler
+#define POOL_UNFINISHED
 #include "../src/Pool.h"
-
-#endif
+#define POOL_TO_STRING_NAME Value
+#define POOL_TO_STRING &keyval_value_to_string
+#include "../src/Pool.h"
 
 
 /** Entry point.
@@ -159,9 +96,8 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	ColourPoolTest();
 	Str4PoolTest();
-	/*FooPoolTest();
 	IntPoolTest();
-	ColourPoolTest();*/
+	KeyvalPoolTest();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
