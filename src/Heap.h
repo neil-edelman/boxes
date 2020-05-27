@@ -32,14 +32,20 @@
  Optional payload <typedef:<PH>Value>, that is stored as a reference in
  <tag:<H>HeapNode>; declaring it is sufficent.
 
- @param[HEAP_TO_STRING]
- Optional print function implementing <typedef:<PH>ToString>; makes available
- <fn:<H>HeapToString>.
+ @param[HEAP_UNFINISHED]
+ Do not un-define variables for including again in an interface.
+
+ @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
+ To string interface contained in <ToString.h>; `<A>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PH>ToString>.
+ There can be multiple to string interfaces, but only one can omit
+ `HEAP_TO_STRING_NAME`.
 
  @param[HEAP_TEST]
- Unit testing framework <fn:<H>HeapTest>, included in a separate header,
- <../test/HeapTest.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PH>BiAction>. Requires `HEAP_TO_STRING` and not `NDEBUG`.
+ To string interface optional unit testing framework using `assert`; contained
+ in <../test/HeapTest.h>. Can only be defined once per `Heap`. Must be
+ defined equal to a (random) filler function, satisfying
+ <typedef:<PH>BiAction>.
 
  @depend [Array.h](../../Array/)
  @std C89
@@ -55,35 +61,39 @@
 #ifndef HEAP_NAME
 #error Generic HEAP_NAME undefined.
 #endif
-#if defined(HEAP_TEST) && !defined(HEAP_TO_STRING)
-#error HEAP_TEST requires HEAP_TO_STRING.
+#define HEAP_INTERFACES (defined(HEAP_TO_STRING_NAME) \
+	|| defined(HEAP_TO_STRING))
+#if HEAP_INTERFACES > 1
+#error Only one interface per include is allowed; use HEAP_UNFINISHED.
 #endif
-#if defined(H_) || defined(PH_)
-#error H_ and PH_ cannot be defined.
+#if (HEAP_INTERFACES == 0) && defined(HEAP_TEST)
+#error HEAP_TEST must be defined in HEAP_TO_STRING interface.
 #endif
-#ifndef HEAP_TYPE
-#define HEAP_TYPE unsigned
+#if defined(HEAP_TO_STRING_NAME) && !defined(HEAP_TO_STRING)
+#error HEAP_TO_STRING_NAME requires HEAP_TO_STRING.
 #endif
 
+
+#if HEAP_INTERFACES == 0 /* <!-- base code */
+
+
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#ifdef CAT
-#undef CAT
+#if defined(H_) || defined(PH_)
+#error P?H_ cannot be defined; possible stray HEAP_UNFINISHED?
 #endif
-#ifdef CAT_
-#undef CAT_
-#endif
-#ifdef PCAT
-#undef PCAT
-#endif
-#ifdef PCAT_
-#undef PCAT_
-#endif
+#ifndef HEAP_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
+#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
+#error HEAP_CHILD defined but CAT is not.
+#endif /* !cat --> */
 #define H_(thing) CAT(HEAP_NAME, thing)
 #define PH_(thing) PCAT(heap, PCAT(HEAP_NAME, thing))
+#ifndef HEAP_TYPE
+#define HEAP_TYPE unsigned
+#endif
 
 /** Valid assignable type used for priority in <tag:<H>HeapNode>. Defaults to
  `unsigned int` if not set by `HEAP_TYPE`. */
@@ -118,9 +128,14 @@ typedef PH_(Value) *PH_(PValue);
 typedef int PH_(PValue);
 #endif /* value --> */
 
+/** Responsible for turning <tag:<H>HeapNode> into a maximum 11-`char`
+ string. */
+typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
+
 /** Stores a <typedef:<PH>Priority> as `priority`, which can be set by
- `HASH_TYPE`. If `HASH_VALUE` is set, also stores a pointer
+ `HEAP_TYPE`. If `HEAP_VALUE` is set, also stores a pointer
  <typedef:<PH>PValue> called `value`. */
+struct H_(HeapNode);
 struct H_(HeapNode) {
 	PH_(Priority) priority;
 #ifdef HEAP_VALUE /* <!-- value */
@@ -146,6 +161,9 @@ struct H_(Heap) { struct H_(HeapNodeArray) a; };
 #define HEAP_IDLE { { 0, 0, 0 } }
 #endif /* !zero --> */
 
+/** Contains all iteration parameters in one. */
+struct PH_(Iterator) { const struct H_(HeapNodeArray) *a; size_t i; };
+
 /** Extracts the <typedef:<PH>PValue> of `node`, which must not be null. */
 static PH_(PValue) PH_(value)(const struct H_(HeapNode) *const node) {
 #ifdef HEAP_VALUE /* <-- value */
@@ -157,9 +175,8 @@ static PH_(PValue) PH_(value)(const struct H_(HeapNode) *const node) {
 }
 
 /** Extracts the <typedef:<PH>PValue> of `node`, which could be null. */
-static PH_(PValue) PH_(value_or_null)(const struct H_(HeapNode) *const node) {
-	return node ? PH_(value)(node) : 0;
-}
+static PH_(PValue) PH_(value_or_null)(const struct H_(HeapNode) *const node)
+	{ return node ? PH_(value)(node) : 0; }
 
 /** Copies `src` to `dest`. */
 static void PH_(copy)(const struct H_(HeapNode) *const src,
@@ -405,126 +422,130 @@ static int H_(HeapBuffer)(struct H_(Heap) *const heap, const size_t add) {
 	return 1;
 }
 
-#ifdef HEAP_TO_STRING /* <!-- string */
+#endif /* !sub-type --> */
 
-/** Responsible for turning <tag:<H>HeapNode> into a maximum 11-`char` string.
- Used for `HEAP_TO_STRING`. */
-typedef void (*PH_(ToString))(const struct H_(HeapNode) *, char (*)[12]);
+static void PH_(unused_base_coda)(void);
+static void PH_(unused_base)(void) {
+	struct H_(HeapNode) h;
+	memset(&h, 0, sizeof h);
+	PH_(value)(0); PH_(value_or_null)(0); PH_(copy)(0, 0); PH_(sift_up)(0, 0);
+	PH_(sift_down)(0); PH_(sift_down_i)(0, 0); PH_(add)(0, 0); PH_(remove)(0);
+	PH_(heapify)(0); PH_(peek)(0);
+#ifndef HEAP_CHILD /* <!-- !sub-type */
+	H_(Heap_)(0); H_(Heap)(0); H_(HeapSize)(0); H_(HeapClear)(0);
+	H_(HeapAdd)(0, h); H_(HeapPeek)(0); H_(HeapPeekValue)(0); H_(HeapPop)(0);
+	H_(HeapReserve)(0, 0); H_(HeapBuffer)(0, 0);
+#endif /* !sub-type --> */
+	PH_(unused_base_coda)();
+}
+static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
+
+
+#elif defined(HEAP_TO_STRING) /* base code --><!-- to string interface */
+
+
+#if !defined(H_) || !defined(PH_) || !defined(CAT) || !defined(CAT_) \
+	|| !defined(PCAT) || !defined(PCAT_)
+#error P?H_ or P?CAT_? not yet defined in to string interface; include heap?
+#endif
+
+#ifdef HEAP_TO_STRING_NAME /* <!-- name */
+#define PHA_(thing) PCAT(PH_(thing), HEAP_TO_STRING_NAME)
+#define H_A_(thing1, thing2) CAT(H_(thing1), CAT(HEAP_TO_STRING_NAME, thing2))
+#else /* name --><!-- !name */
+#define PHA_(thing) PCAT(PH_(thing), anonymous)
+#define H_A_(thing1, thing2) CAT(H_(thing1), thing2)
+#endif /* !name --> */
+
 /* Check that `HEAP_TO_STRING` is a function implementing
  <typedef:<PH>ToString>. */
-static const PH_(ToString) PH_(to_string) = (HEAP_TO_STRING);
+static const PH_(ToString) PHA_(to_str12) = (HEAP_TO_STRING);
 
-/** Can print 4 things at once before it overwrites. One must a
- `HEAP_TO_STRING` to a function implementing <typedef:<PH>ToString> to get
- this functionality.
- @return Prints `heap` in a static buffer.
- @order \Theta(1); it has a 255 character limit; every element takes some of it.
- @allow */
-static const char *H_(HeapToString)(const struct H_(Heap) *const heap) {
-	static char buffers[4][256];
-	static size_t buffer_i;
-	char *const buffer = buffers[buffer_i++], *b = buffer;
-	const size_t buffers_no = sizeof buffers / sizeof *buffers,
-	buffer_size = sizeof *buffers / sizeof **buffers;
-	const char start = '(', comma = ',', space = ' ', end = ')',
-	*const ellipsis_end = ",…)", *const null = "null",
-	*const idle = "idle";
-	const size_t ellipsis_end_len = strlen(ellipsis_end),
-	null_len = strlen(null), idle_len = strlen(idle);
-	size_t i;
-	struct H_(HeapNode) *e, *e_end;
-	int is_first = 1;
-	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
-		   && buffer_size >= 1 + 11 + ellipsis_end_len + 1
-		   && buffer_size >= null_len + 1
-		   && buffer_size >= idle_len + 1);
-	/* Advance the buffer for next time. */
-	buffer_i &= buffers_no - 1;
-	if(!heap) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!heap->a.data) { memcpy(b, idle, idle_len), b += idle_len;
-		goto terminate; }
-	*b++ = start;
-	for(e = heap->a.data, e_end = e + heap->a.size; ; ) {
-		if(!is_first) *b++ = comma, *b++ = space;
-		else is_first = 0;
-		PH_(to_string)(e, (char (*)[12])b);
-		for(i = 0; *b != '\0' && i < 12; b++, i++);
-		if(++e >= e_end) break;
-		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
-			goto ellipsis;
-	}
-	*b++ = end;
-	goto terminate;
-ellipsis:
-	memcpy(b, ellipsis_end, ellipsis_end_len), b += ellipsis_end_len;
-terminate:
-	*b++ = '\0';
-	assert(b <= buffer + buffer_size);
-	return buffer;
+/** Writes `it` to `str` and advances or returns false.
+ @implements <AI>NextToString */
+static int PHA_(next_to_str12)(struct PH_(Iterator) *const it,
+	char (*const str)[12]) {
+	assert(it && it->a && str);
+	if(it->i >= it->a->size) return 0;
+	PHA_(to_str12)(it->a->data + it->i++, str);
+	return 1;
 }
 
-#endif /* string --> */
+/** @return If `it` contains a not-null pool. */
+static int PHA_(is_valid)(const struct PH_(Iterator) *const it)
+	{ assert(it); return !!it->a; }
 
-#ifdef HEAP_TEST /* <!-- test: need this file. */
+#define AI_ PHA_
+#define TO_STRING_ITERATOR struct PH_(Iterator)
+#define TO_STRING_NEXT &PHA_(next_to_str12)
+#define TO_STRING_IS_VALID &PHA_(is_valid)
+#include "ToString.h"
+
+/** @return Prints `a`. */
+static const char *PHA_(to_string)(const struct H_(Heap) *const heap) {
+	struct PH_(Iterator) it = { 0, 0 };
+	it.a = &heap->a; /* Can be null. */
+	return PHA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
+}
+
+#ifndef HEAP_CHILD /* <!-- !sub-type */
+
+/** @return Print the contents of `heap` in a static string buffer with the
+ limitations of `ToString.h`. @order \Theta(1) @allow */
+static const char *H_A_(Heap, ToString)(const struct H_(Heap) *const heap)
+	{ return PHA_(to_string)(heap); /* Can be null. */ }
+
+#endif /* !sub-type --> */
+
+static void PHA_(unused_to_string_coda)(void);
+static void PHA_(unused_to_string)(void) {
+	PHA_(to_string)(0);
+#ifndef HEAP_CHILD /* <!-- !sub-type */
+	H_A_(Heap, ToString)(0);
+#endif /* !sub-type --> */
+	PHA_(unused_to_string_coda)();
+}
+static void PHA_(unused_to_string_coda)(void) { PHA_(unused_to_string)(); }
+
+#if !defined(HEAP_TEST_BASE) && defined(HEAP_TEST) /* <!-- test */
+#define HEAP_TEST_BASE /* Only one instance of base tests. */
 #include "../test/TestHeap.h" /** \include */
 #endif /* test --> */
 
-static void PH_(unused_coda)(void);
-/** This silences unused function warnings. */
-static void PH_(unused_set)(void) {
-	struct H_(HeapNode) h;
-	memset(&h, 0, sizeof h);
-	H_(Heap_)(0);
-	H_(Heap)(0);
-	H_(HeapSize)(0);
-	H_(HeapClear)(0);
-	H_(HeapAdd)(0, h);
-	H_(HeapPeek)(0);
-	H_(HeapPeekValue)(0);
-	H_(HeapPop)(0);
-	H_(HeapReserve)(0, 0);
-	H_(HeapBuffer)(0, 0);
-	H_(HeapToString)(0);
-	PH_(unused_coda)();
-}
-static void PH_(unused_coda)(void) { PH_(unused_set)(); }
+#undef PHA_
+#undef H_A_
+#undef HEAP_TO_STRING
+#ifdef HEAP_TO_STRING_NAME
+#undef HEAP_TO_STRING_NAME
+#endif
 
-/* Un-define all macros. */
+
+#endif /* interfaces --> */
+
+
+#ifdef HEAP_UNFINISHED /* <!-- unfinish */
+#undef HEAP_UNFINISHED
+#else /* unfinish --><!-- finish */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
-#else /* !sub-type --><!-- sub-type */
-#undef HEAP_CHILD
-static void PT_(unused_coda)(void);
-/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
- have the same meanings; they will be replaced with these, and `T` and `H`
- cannot be used. */
-static void PH_(unused_set)(void) {
-	PH_(value)(0);
-	PH_(copy)(0, 0);
-	PH_(sift_up)(0, 0);
-	PH_(sift_down)(0, 0);
-	PH_(sift_down_i)(0, 0);
-	PH_(remove)(0);
-	PH_(heapify)(0);
-	PH_(peek)(0);
-	PH_(unused_coda)();
-}
-static void PH_(unused_coda)(void) { PH_(unused_set)(); }
-#endif /* sub-type --> */
-#undef HEAP_NAME
 #undef H_
 #undef PH_
-#undef PT_
+#undef HEAP_NAME
 #undef HEAP_TYPE
-#undef HEAP_COMPARE
 #ifdef HEAP_VALUE
 #undef HEAP_VALUE
-#endif
-#ifdef HEAP_TO_STRING
-#undef HEAP_TO_STRING
 #endif
 #ifdef HEAP_TEST
 #undef HEAP_TEST
 #endif
+#ifdef HEAP_TEST_BASE
+#undef HEAP_TEST_BASE
+#endif
+#ifdef HEAP_CHILD
+#undef HEAP_CHILD
+#endif
+#endif /* finish --> */
+
+#undef HEAP_INTERFACES

@@ -1,14 +1,15 @@
-/* Intended to be included by `Heap.h` on `HEAP_TEST`. */
-
-/* Define macros. */
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
+#if defined(QUOTE) || defined(QUOTE_)
+#error QUOTE_? cannot be defined.
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
+
+#ifdef HEAP_TO_STRING /* <!-- to string: Only one, tests all base code. */
+
+/* Copy functions for later includes. */
+static const PH_(ToString) PH_(to_string) = (HEAP_TO_STRING);
+static const char *(*PH_(heap_to_string))(const struct H_(Heap) *)
+	= H_A_(Heap, ToString);
 
 /** Operates by side-effects. Used for `HEAP_TEST`. */
 typedef void (*PH_(BiAction))(struct H_(HeapNode) *, void *);
@@ -100,7 +101,7 @@ static void PH_(test_basic)(void *const param) {
 	PH_(filler)(&add, param);
 	v = PH_(value)(&add);
 	assert(H_(HeapAdd)(&heap, add));
-	printf("Added one, %s.\n", H_(HeapToString)(&heap));
+	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
 	assert(H_(HeapSize)(&heap) == 1);
 	node = H_(HeapPeek)(&heap);
 	PH_(valid)(&heap);
@@ -124,7 +125,7 @@ static void PH_(test_basic)(void *const param) {
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv", (unsigned long)i);
 	PH_(graph)(&heap, fn);
 	assert(H_(HeapSize)(&heap) == test_size_1);
-	printf("Heap: %s.\n", H_(HeapToString)(&heap));
+	printf("Heap: %s.\n", PH_(heap_to_string)(&heap));
 	printf("Heap buffered add, before size = %lu.\n",
 		(unsigned long)H_(HeapSize)(&heap));
 	node = H_(HeapReserve)(&heap, test_size_2);
@@ -149,7 +150,7 @@ static void PH_(test_basic)(void *const param) {
 		success = H_(HeapAdd)(&heap, add);
 		assert(success);
 	}
-	printf("Final heap: %s.\n", H_(HeapToString)(&heap));
+	printf("Final heap: %s.\n", PH_(heap_to_string)(&heap));
 	assert(H_(HeapSize)(&heap) == test_size_1 + test_size_2 + test_size_3);
 	for(i = test_size_1 + test_size_2 + test_size_3; i > 0; i--) {
 		char a[12];
@@ -194,6 +195,10 @@ static void H_(HeapTest)(void *const param) {
 	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">Heap.\n\n");
 }
 
-/* Un-define all macros. */
+
+#else /* compare --><!-- */
+#error Test unsupported option; testing is out-of-sync?
+#endif /* --> */
+
 #undef QUOTE
 #undef QUOTE_

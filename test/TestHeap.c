@@ -15,6 +15,8 @@ static void int_to_string(const struct IntHeapNode *, char (*)[12]);
 static void test_int(struct IntHeapNode *, void *);
 
 #define HEAP_NAME Int
+#define HEAP_UNFINISHED
+#include "../src/Heap.h"
 #define HEAP_TO_STRING &int_to_string
 #define HEAP_TEST &test_int
 #include "../src/Heap.h"
@@ -30,6 +32,8 @@ static void test_int(struct IntHeapNode *i, void *const unused) {
 	/* printf("test_int: generated %u\n", i->priority); */
 }
 
+
+#if 0
 
 struct OrcHeapNode;
 static void orc_to_string(const struct OrcHeapNode *, char (*)[12]);
@@ -61,11 +65,13 @@ static void test_orc(struct OrcHeapNode *node, void *const vpool) {
 	node->value = orc;
 }
 
+#endif
+
 
 int main(void) {
-	struct OrcPool orcs = POOL_IDLE;
+	/*struct OrcPool orcs = POOL_IDLE;*/
 	rand();
 	IntHeapTest(0);
-	OrcHeapTest(&orcs), OrcPool_(&orcs);
+	/*OrcHeapTest(&orcs), OrcPool_(&orcs);*/
 	return EXIT_SUCCESS;
 }
