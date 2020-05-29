@@ -52,7 +52,7 @@
 #include <string.h> /* memcpy memmove (strlen) (strerror strcpy memcmp) */
 #include <errno.h>  /* errno */
 
-/* Check defines. */
+
 #ifndef ARRAY_NAME
 #error Name ARRAY_NAME undefined.
 #endif
@@ -792,7 +792,8 @@ static void T_C_(Array, Compactify)(struct T_(Array) *const a,
 static void PTC_(unused_contrast_coda)(void);
 static void PTC_(unused_contrast)(void) {
 #ifdef ARRAY_COMPARE
-	PTC_(lower_bound)(0, 0); PTC_(upper_bound)(0, 0); PTC_(insert)(0, 0);
+	PTC_(compar)(0, 0); PTC_(revers)(0, 0); PTC_(lower_bound)(0, 0);
+	PTC_(upper_bound)(0, 0); PTC_(insert)(0, 0);
 #endif
 	PTC_(compactify)(0, 0);
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
@@ -830,10 +831,14 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_UNFINISHED /* <!-- unfinish */
 #undef ARRAY_UNFINISHED
 #else /* unfinish --><!-- finish */
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
+#else /* !sub-type --><!-- sub-type */
+#undef ARRAY_CHILD
+#endif /* sub-type --> */
 #undef T
 #undef T_
 #undef PT_
@@ -844,9 +849,6 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #endif
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
-#endif
-#ifdef ARRAY_CHILD
-#undef ARRAY_CHILD
 #endif
 #endif /* finish --> */
 

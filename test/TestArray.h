@@ -1,5 +1,3 @@
-/* Intended to be included by `Array.h` on `ARRAY_TEST`. */
-
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.
 #endif
@@ -278,7 +276,6 @@ static void PT_(test_random)(void) {
 	T_(Array_)(&a);
 }
 
-/** Replace has it's own test. */
 static void PT_(test_replace)(void) {
 	T ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
