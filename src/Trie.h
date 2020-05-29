@@ -148,7 +148,7 @@ static unsigned trie_is_bit(const char *const a, const unsigned bit) {
 
 /* Defaults. */
 #ifndef TRIE_TYPE /* <!-- !type */
-#define TRIE_CONST
+#define TRIE_CONST /* Duplicate const. */
 #define TRIE_TYPE const char
 #define TRIE_KEY &trie_raw
 #ifndef TRIE_RAW /* <!-- !raw */
@@ -169,6 +169,9 @@ typedef TRIE_CONST PN_(Type) PN_(CType);
 
 #undef TRIE_CONST /* Just for <typedef:<PN>CType>. */
 
+/* Used internally to get rid of the confusing double-pointers. */
+typedef PN_(Type) *PN_(Leaf);
+
 /** Responsible for picking out the null-terminated string. One must not modify
  this string while in any trie. */
 typedef const char *(*PN_(Key))(PN_(CType) *);
@@ -183,9 +186,6 @@ typedef int (*PN_(Replace))(PN_(Type) *original, PN_(Type) *replace);
 /** @return False. Ignores `a` and `b`. */
 static int PN_(false_replace)(PN_(Type) *const a, PN_(Type) *const b)
 	{ return (void)a, (void)b, 0; }
-
-/* Used internally to get rid of the confusing double-pointers. */
-typedef PN_(Type) *PN_(Leaf);
 
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. Used for `ARRAY_TO_STRING`. */
@@ -241,21 +241,6 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 	PN_(trie)(trie);
 }
 
-#if 0
-/* fixme */
-/** Comparison `a` _vs_ `b` for <fn:<PN>vcompar> and <fn:<PN>equals>. */
-static int PN_(compar)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
-	{ return strcmp(PN_(to_key)(*a), PN_(to_key)(*b)); }
-
-/** Comparison `a` _vs_ `b` for <fn:<PN>init>. @implements `qsort` */
-static int PN_(vcompar)(const void *a, const void *b)
-	{ return PN_(compar)(a, b); }
-
-/** Equality `a` _vs_ `b` for <fn:<PN>init>. @implements <PT>Bipredicate */
-static int PN_(equals)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
-	{ return !PN_(compar)(a, b); }
-#endif
-
 /** Recursive function used for <fn:<PN>init>. Initialise branches of `trie` up
  to `bit` with `a` to `a_size` array of sorted leaves.
  @order Speed \O(`leaves`), memory \O(`longest string`). */
@@ -283,14 +268,14 @@ static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 	PN_(init_branches_r)(trie, bit, a1, a_size - s);
 }
 
-/** @param[replace] Called with any duplicate entries and replaces if true; if
- null, doesn't replace. Do not modify the key of either of the entries.
+/** @param[merge] Called with any duplicate entries and replaces if true; if
+ null, doesn't replace.
  @return Success initialising `trie` with `a` of size `a_size`, (non-zero.) */
 static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 	const size_t a_size, const PT_(Biproject) merge) {
 	PN_(Leaf) *leaves;
 	assert(trie && !trie->leaves.size && !trie->branches.size
-		&& a && a_size && merge);
+		&& a && a_size /* `merge` can be null. */);
 	if(!PT_(reserve)(&trie->leaves, a_size)
 		|| !array_TrieBranch_reserve(&trie->branches, a_size - 1)) return 0;
 	leaves = trie->leaves.data;
@@ -629,10 +614,10 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
 #ifdef TRIE_TO_STRING_NAME /* <!-- name fixme: define anonymous */
 #define PNA_(thing) PCAT(PT_(thing), TRIE_TO_STRING_NAME)
-#define N_A_(thing1, thing2) CAT(T_(thing1), CAT(TRIE_TO_STRING_NAME, thing2))
+#define N_A_(thing1, thing2) CAT(N_(thing1), CAT(TRIE_TO_STRING_NAME, thing2))
 #else /* name --><!-- !name */
 #define PNA_(thing) PCAT(PT_(thing), anonymous)
-#define N_A_(thing1, thing2) CAT(T_(thing1), thing2)
+#define N_A_(thing1, thing2) CAT(N_(thing1), thing2)
 #endif /* !name --> */
 
 /* Check that `TRIE_TO_STRING` is a function implementing
@@ -662,8 +647,8 @@ static int PNA_(is_valid)(const struct PT_(Iterator) *const it)
 /** @return Prints `trie`. */
 static const char *PNA_(to_string)(const struct N_(Trie) *const trie) {
 	struct PT_(Iterator) it = { 0, 0 };
-	it.a = trie ? trie->leaves.data : 0; /* Can be null. */
-	return PTA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
+	it.a = trie ? &trie->leaves : 0; /* Can be null. */
+	return PNA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
 }
 
 #ifndef TRIE_CHILD /* <!-- !sub-type */

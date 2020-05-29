@@ -23,99 +23,20 @@ extern const size_t parole_size;
 
 /** Just a placeholder to get `graph()`. Don't call <fn:StrTrieTest> it will
  crash. */
-static void fill_str(const char *str) { /* nothing */ (void)(str); }
+static void fill_str(const char *str) { (void)(str); }
 static void str_to_str(const char *const str, char (*const a)[12])
 	{ sprintf(*a, "%.11s", str); }
 
 #define TRIE_NAME Str
 #define TRIE_UNFINISHED
 #include "../src/Trie.h"
-#define TRIE_TO_STRING &str_to_str
+#define TRIE_TO_STRING &str_to_str /* fixme: this is not necessary. */
 #define TRIE_TEST &fill_str
 #include "../src/Trie.h"
 
 
-
-
-
-#if 0
-
-/** For comparison with sorted array. */
-
-#define ARRAY_NAME Str
-#define ARRAY_TYPE const char *
-#define ARRAY_TO_STRING &str_to_str
-#include "../src/Array.h"
-
-static int array_fill(struct StrArray *const strs,
-	const char *const*const words, const size_t words_size,
-	const size_t words_start, const size_t words_chosen) {
-	assert(strs && words && words_chosen && words_chosen <= words_size
-		&& words_start < words_size);
-	StrArrayClear(strs);
-	if(!StrArrayBuffer(strs, words_chosen)) return 0;
-	if(words_start + words_chosen > words_size) {
-		const size_t size_a = words_size - words_start,
-			size_b = words_chosen - size_a;
-		memcpy(strs->data, words + words_start, sizeof *words * size_a);
-		memcpy(strs->data + size_a, words, sizeof *words * size_b);
-	} else {
-		memcpy(strs->data, words + words_start, sizeof *words * words_chosen);
-	}
-	return 1;
-}
-
-static int array_cmp(const void *a, const void *b) {
-	return strcmp(*(const char **)a, *(const char **)b);
-}
-
-static int array_is_equal(const char *const*const a, const char *const*const b)
-	{ return !strcmp(*a, *b); }
-
-
-/** For comparison with string set (hash.) */
-
-/** Perform a 32 bit
- [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on
- `str`. */
-static unsigned fnv_32a_str(const char *const str) {
-	const unsigned char *s = (const unsigned char *)str;
-	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, `FNV1_32A_INIT`. */
-	unsigned hval = 0x811c9dc5;
-	/* FNV magic prime `FNV_32_PRIME 0x01000193`. */
-	while(*s) {
-		hval ^= *s++;
-		hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
-	}
-	return hval;
-}
-static int string_is_equal(const char *const a, const char *const b) {
-	return !strcmp(a, b);
-}
-static void pointer_to_string(const char *const*const ps,
-	char (*const a)[12]) {
-	strncpy(*a, *ps, sizeof(*a) - 1);
-	(*a)[sizeof(*a) - 1] = '\0';
-}
-#define SET_NAME String
-#define SET_TYPE const char *
-#define SET_HASH &fnv_32a_str
-#define SET_IS_EQUAL &string_is_equal
-#define SET_TO_STRING &pointer_to_string
-#include "Set.h"
-
-#define POOL_NAME StringElement
-#define POOL_TYPE struct StringSetElement
-#include "Pool.h"
-
-#endif
-
-
-
-
-#if 0
-
-static void test_basic_trie_str() {
+/** Specific test for str. */
+static void test_basic_trie_str(void) {
 	struct StrTrie trie = TRIE_IDLE;
 	const char *words[] = { "foo", "bar", "baz", "qux", "quux" };
 	const size_t words_size = sizeof words / sizeof *words;
@@ -198,7 +119,8 @@ static void test_basic_trie_str() {
 	   || !StrTrieAdd(&trie, "z")) goto catch;
 	trie_Str_print(&trie);
 	trie_Str_graph(&trie, "graph/trie_z.gv");
-
+	printf("TrieZ: %s.\n\n", StrTrieToString(&trie));
+	assert(StrTrieSize(&trie) == 26 + 6);
 	if(!StrTrieRemove(&trie, "x")
 		|| !StrTrieRemove(&trie, "z")
 		|| !StrTrieRemove(&trie, "y")
@@ -226,13 +148,11 @@ static void test_basic_trie_str() {
 		|| !StrTrieRemove(&trie, "w")
 		|| !StrTrieRemove(&trie, "e")) goto catch;
 	trie_Str_graph(&trie, "graph/trie_a-z-delete.gv");
-
 	assert(StrTrieSize(&trie) == 6);
-
 	for(i = 0; i < words_size; i++)
 		printf("\"%s\": %s\n", words[i], StrTrieClose(&trie, words[i]));
-
 	StrTrie_(&trie);
+
 	printf("Trie from array.\n");
 	if(!StrTrieFromArray(&trie, words, words_size, 0)) goto catch;
 	trie_Str_graph(&trie, "graph/trie_all_at_once.gv");
@@ -242,15 +162,7 @@ static void test_basic_trie_str() {
 	if(!StrTrieFromArray(&trie, wordsr, wordsr_size, 0)) goto catch;
 	trie_Str_graph(&trie, "graph/trie_r_all_at_once.gv");
 	StrTrie_(&trie);	
-	/*{
-		struct StrTrieQuery q;
-		const char *next, *const query = "quxx";
-		trie_Str_query_start(&q, &trie, query, 2);
-		while((next = trie_Str_query_next(&q)))
-			printf("%s: %s\n", query, next);
-	}*/
 	goto finally;
-
 catch:
 	printf("Test failed.\n");
 	assert(0);
@@ -258,12 +170,80 @@ finally:
 	StrTrie_(&trie);
 }
 
-#endif
 
+#define TRIE_BENCHMARK
 
+#ifdef TRIE_BENCHMARK /* <!-- benchmark */
 
+static void pstr_to_str(const char *const*const pstr, char (*const a)[12])
+	{ sprintf(*a, "%.11s", *pstr); }
+static int pstr_cmp(const char *const*const pa, const char *const*const pb)
+	{ return strcmp(*pa, *pb); }
 
-#if 0
+/* For comparison with sorted array. */
+#define ARRAY_NAME Str
+#define ARRAY_TYPE const char *
+#define ARRAY_UNFINISHED
+#include "../src/Array.h"
+#define ARRAY_TO_STRING &pstr_to_str
+#define ARRAY_UNFINISHED
+#include "../src/Array.h"
+#define ARRAY_COMPARE &pstr_cmp
+#include "../src/Array.h"
+
+/** Fills `strs` with `words` of size `words_size` from `words_start` to
+ `words_chosen`. */
+static int array_fill(struct StrArray *const strs,
+	const char *const*const words, const size_t words_size,
+	const size_t words_start, const size_t words_chosen) {
+	assert(strs && words && words_chosen && words_chosen <= words_size
+		&& words_start < words_size);
+	StrArrayClear(strs);
+	if(!StrArrayBuffer(strs, words_chosen)) return 0;
+	if(words_start + words_chosen > words_size) {
+		const size_t size_a = words_size - words_start,
+		size_b = words_chosen - size_a;
+		memcpy(strs->data, words + words_start, sizeof *words * size_a);
+		memcpy(strs->data + size_a, words, sizeof *words * size_b);
+	} else {
+		memcpy(strs->data, words + words_start, sizeof *words * words_chosen);
+	}
+	return 1;
+}
+
+/** For comparison with string set (hash.) */
+
+/** Perform a 32 bit
+ [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on
+ `str`. */
+static unsigned fnv_32a_str(const char *const str) {
+	const unsigned char *s = (const unsigned char *)str;
+	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, `FNV1_32A_INIT`. */
+	unsigned hval = 0x811c9dc5;
+	/* FNV magic prime `FNV_32_PRIME 0x01000193`. */
+	while(*s) {
+		hval ^= *s++;
+		hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
+	}
+	return hval;
+}
+static int string_is_equal(const char *const a, const char *const b) {
+	return !strcmp(a, b);
+}
+static void pointer_to_string(const char *const*const ps, char (*const a)[12]) {
+	strncpy(*a, *ps, sizeof(*a) - 1);
+	(*a)[sizeof(*a) - 1] = '\0';
+}
+#define SET_NAME String
+#define SET_TYPE const char *
+#define SET_HASH &fnv_32a_str
+#define SET_IS_EQUAL &string_is_equal
+#define SET_TO_STRING &pointer_to_string
+#include "Set.h"
+
+#define POOL_NAME StringElement
+#define POOL_TYPE struct StringSetElement
+#include "Pool.h"
 
 /** Returns a time diffecence in microseconds from `then`. */
 static double diff_us(clock_t then) {
@@ -337,8 +317,9 @@ static int timing_comparison(void) {
 			array_fill(&array, parole, parole_size, start_i, n);
 			t = clock();
 			array_fill(&array, parole, parole_size, start_i, n);
-			qsort(array.data, array.size, sizeof array.data, &array_cmp);
-			StrArrayCompactify(&array, &array_is_equal, 0);
+			qsort(array.data, array.size, sizeof array.data,
+				&array_Str_compar_anonymous);
+			StrArrayCompactify(&array, 0);
 			m_add(&es[ARRAYINIT].m, diff_us(t));
 			printf("Added init array size %lu: %s.\n",
 				(unsigned long)array.size, StrArrayToString(&array));
@@ -347,7 +328,7 @@ static int timing_comparison(void) {
 			for(i = 0; i < n; i++) {
 				const char *const word = parole[(start_i + i) % parole_size],
 					**const key = bsearch(&word, array.data, array.size,
-					sizeof array.data, array_cmp);
+					sizeof array.data, &array_Str_compar_anonymous);
 				const int cmp = strcmp(word, *key);
 				(void)cmp, assert(key && !cmp);
 			}
@@ -478,6 +459,10 @@ finally2:
 	return 1;
 }
 
+#endif /* benchmark --> */
+
+
+#if 0
 struct Dict { char word[12]; int defn; };
 
 static const char *dict_key(struct Dict *dict) { return dict->word; }
@@ -490,21 +475,18 @@ static void fill_dict(struct Dict *dict) {
 #define TRIE_NAME Dict
 #define TRIE_TYPE struct Dict
 #define TRIE_KEY &dict_key
+#define TRIE_UNFINISHED
+#include "../src/Trie.h"
 #define TRIE_TEST &fill_dict
 #include "../src/Trie.h"
-
-#define TRIE_BENCHMARK
-
 #endif
-
-
 
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	/*test_basic_trie_str();
-	(void)StrTrieTest;(*/ /* <- Not safe to call. */
+	test_basic_trie_str();
+	(void)StrTrieTest; /* <- Not safe; `const char` is not generatable. */
 	/*DictTrieTest();*/
 	printf("\n***\n\n");
 #ifdef TRIE_BENCHMARK /* <!-- bench */
