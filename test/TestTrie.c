@@ -24,8 +24,8 @@ extern const size_t parole_size;
 /** Just a placeholder to get `graph()`. Don't call <fn:StrTrieTest> it will
  crash. */
 static void fill_str(const char *str) { /* nothing */ (void)(str); }
-static void str_to_str(const char *const*str, char (*const a)[12])
-	{ sprintf(*a, "%.11s", *str); }
+static void str_to_str(const char *const str, char (*const a)[12])
+	{ sprintf(*a, "%.11s", str); }
 
 #define TRIE_NAME Str
 #define TRIE_UNFINISHED

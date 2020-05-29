@@ -73,7 +73,7 @@
 #if TRIE_INTERFACES == 0 /* <!-- base code */
 
 
-/* <Kernighan and Ritchie, 1988, p. 231>. */
+/* <Kernighan and Ritchie, 1988, p. 231>; before idempotent _st_ `CAT`. */
 #if defined(N_) || defined(PN_)
 #error P?N_? cannot be defined; possible stray TRIE_UNFINISHED?
 #endif
@@ -87,21 +87,6 @@
 #endif /* !cat --> */
 #define N_(thing) CAT(TRIE_NAME, thing)
 #define PN_(thing) PCAT(trie, PCAT(TRIE_NAME, thing))
-
-/* Defaults. */
-#ifndef TRIE_TYPE /* <!-- !type */
-#define TRIE_CONST
-#define TRIE_TYPE const char
-#define TRIE_KEY &trie_raw
-#ifndef TRIE_RAW /* <!-- !raw */
-#define TRIE_RAW /* Idempotent function. */
-/** @return The `key`, which is the string itself in the case where one doesn't
- specify `TRIE_TYPE`. */
-static const char *trie_raw(const char *const key) { return key; }
-#endif /* !raw --> */
-#else /* !type --><!-- type */
-#define TRIE_CONST const
-#endif /* type --> */
 
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
@@ -161,12 +146,32 @@ static unsigned trie_is_bit(const char *const a, const unsigned bit) {
 
 #endif /* idempotent --> */
 
+/* Defaults. */
+#ifndef TRIE_TYPE /* <!-- !type */
+#define TRIE_CONST
+#define TRIE_TYPE const char
+#define TRIE_KEY &trie_raw
+#ifndef TRIE_RAW /* <!-- !raw */
+#define TRIE_RAW /* Idempotent function. */
+/** @return The `key`, which is the string itself in the case where one doesn't
+ specify `TRIE_TYPE`. */
+static const char *trie_raw(const char *const key) { return key; }
+#endif /* !raw --> */
+#else /* !type --><!-- type */
+#define TRIE_CONST const
+#endif /* type --> */
+
 /** A valid tag type set by `TRIE_TYPE`; defaults to `const char`. */
 typedef TRIE_TYPE PN_(Type);
 
+/** Same as <typedef:<PN>Type>, except read-only. */
+typedef TRIE_CONST PN_(Type) PN_(CType);
+
+#undef TRIE_CONST /* Just for <typedef:<PN>CType>. */
+
 /** Responsible for picking out the null-terminated string. One must not modify
  this string while in any trie. */
-typedef const char *(*PN_(Key))(TRIE_CONST PN_(Type) *);
+typedef const char *(*PN_(Key))(PN_(CType) *);
 
 /* Check that `TRIE_KEY` is a function implementing <typedef:<PN>Key>. */
 static const PN_(Key) PN_(to_key) = (TRIE_KEY);
@@ -184,7 +189,7 @@ typedef PN_(Type) *PN_(Leaf);
 
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. Used for `ARRAY_TO_STRING`. */
-typedef void (*PN_(ToString))(TRIE_CONST PN_(Type) *, const char (*)[12]);
+typedef void (*PN_(ToString))(PN_(CType) *, char (*)[12]);
 
 /** Compares keys of `a` and `b`. Used in array compare following.
  @implements <<PN>Leaf>Bipredicate */
@@ -640,7 +645,7 @@ static int PNA_(next_to_str12)(struct PT_(Iterator) *const it,
 	char (*const str)[12]) {
 	assert(it && it->a && str);
 	if(it->i >= it->a->size) return 0;
-	PNA_(to_str12)(it->a->data + it->i++, str);
+	PNA_(to_str12)(it->a->data[it->i++], str);
 	return 1;
 }
 
@@ -657,7 +662,7 @@ static int PNA_(is_valid)(const struct PT_(Iterator) *const it)
 /** @return Prints `trie`. */
 static const char *PNA_(to_string)(const struct N_(Trie) *const trie) {
 	struct PT_(Iterator) it = { 0, 0 };
-	it.a = trie ? trie->leaves : 0; /* Can be null. */
+	it.a = trie ? trie->leaves.data : 0; /* Can be null. */
 	return PTA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
 }
 
@@ -713,7 +718,6 @@ static void PNA_(unused_to_string_coda)(void) { PNA_(unused_to_string)(); }
 #undef TRIE_NAME
 #undef TRIE_TYPE
 #undef TRIE_KEY
-#undef TRIE_CONST
 #ifdef TRIE_TEST
 #undef TRIE_TEST
 #endif
