@@ -24,18 +24,23 @@ extern const size_t parole_size;
 /** Just a placeholder to get `graph()`. Don't call <fn:StrTrieTest> it will
  crash. */
 static void fill_str(const char *str) { /* nothing */ (void)(str); }
+static void str_to_str(const char *const*str, char (*const a)[12])
+	{ sprintf(*a, "%.11s", *str); }
 
 #define TRIE_NAME Str
+#define TRIE_UNFINISHED
+#include "../src/Trie.h"
+#define TRIE_TO_STRING &str_to_str
 #define TRIE_TEST &fill_str
 #include "../src/Trie.h"
 
 
 
-/** For comparison with sorted array. */
 
-static void str_to_str(const char *const*str, char(*const a)[12]) {
-	sprintf(*a, "%.11s", *str);
-}
+
+#if 0
+
+/** For comparison with sorted array. */
 
 #define ARRAY_NAME Str
 #define ARRAY_TYPE const char *
@@ -103,7 +108,12 @@ static void pointer_to_string(const char *const*const ps,
 #define POOL_TYPE struct StringSetElement
 #include "Pool.h"
 
+#endif
 
+
+
+
+#if 0
 
 static void test_basic_trie_str() {
 	struct StrTrie trie = TRIE_IDLE;
@@ -247,6 +257,13 @@ catch:
 finally:
 	StrTrie_(&trie);
 }
+
+#endif
+
+
+
+
+#if 0
 
 /** Returns a time diffecence in microseconds from `then`. */
 static double diff_us(clock_t then) {
@@ -478,18 +495,22 @@ static void fill_dict(struct Dict *dict) {
 
 #define TRIE_BENCHMARK
 
+#endif
+
+
+
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	printf("%d", -1 % 20);
-	test_basic_trie_str();
-	(void)StrTrieTest; /* <- Not safe to call. */
-	DictTrieTest();
+	/*test_basic_trie_str();
+	(void)StrTrieTest;(*/ /* <- Not safe to call. */
+	/*DictTrieTest();*/
 	printf("\n***\n\n");
 #ifdef TRIE_BENCHMARK /* <!-- bench */
 	timing_comparison();
 #else /* bench --><!-- !bench */
-	(void)timing_comparison;
+	/*(void)timing_comparison;*/
 #endif /* !bench --> */
 	return EXIT_SUCCESS;
 }

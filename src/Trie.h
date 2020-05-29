@@ -50,6 +50,59 @@
 #include <limits.h> /* UINT_MAX */
 
 
+#ifndef TRIE_NAME
+#error Name TRIE_NAME undefined.
+#endif
+#if (defined(TRIE_TYPE) && !defined(TRIE_KEY)) \
+	|| (!defined(TRIE_TYPE) && defined(TRIE_KEY))
+#error TRIE_TYPE and TRIE_KEY have to be mutually defined or not.
+#endif
+#define TRIE_INTERFACES (defined(TRIE_TO_STRING_NAME) \
+	|| defined(TRIE_TO_STRING))
+#if TRIE_INTERFACES > 1
+#error Only one interface per include is allowed; use TRIE_UNFINISHED.
+#endif
+#if (TRIE_INTERFACES == 0) && defined(TRIE_TEST)
+#error TRIE_TEST must be defined in TRIE_TO_STRING interface.
+#endif
+#if defined(TRIE_TO_STRING_NAME) && !defined(TRIE_TO_STRING)
+#error TRIE_TO_STRING_NAME requires TRIE_TO_STRING.
+#endif
+
+
+#if TRIE_INTERFACES == 0 /* <!-- base code */
+
+
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#if defined(N_) || defined(PN_)
+#error P?N_? cannot be defined; possible stray TRIE_UNFINISHED?
+#endif
+#ifndef TRIE_CHILD /* <!-- !sub-type */
+#define CAT_(x, y) x ## y
+#define CAT(x, y) CAT_(x, y)
+#define PCAT_(x, y) x ## _ ## y
+#define PCAT(x, y) PCAT_(x, y)
+#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
+#error TRIE_CHILD defined but CAT is not.
+#endif /* !cat --> */
+#define N_(thing) CAT(TRIE_NAME, thing)
+#define PN_(thing) PCAT(trie, PCAT(TRIE_NAME, thing))
+
+/* Defaults. */
+#ifndef TRIE_TYPE /* <!-- !type */
+#define TRIE_CONST
+#define TRIE_TYPE const char
+#define TRIE_KEY &trie_raw
+#ifndef TRIE_RAW /* <!-- !raw */
+#define TRIE_RAW /* Idempotent function. */
+/** @return The `key`, which is the string itself in the case where one doesn't
+ specify `TRIE_TYPE`. */
+static const char *trie_raw(const char *const key) { return key; }
+#endif /* !raw --> */
+#else /* !type --><!-- type */
+#define TRIE_CONST const
+#endif /* type --> */
+
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 
@@ -108,62 +161,18 @@ static unsigned trie_is_bit(const char *const a, const unsigned bit) {
 
 #endif /* idempotent --> */
 
-
-/* Check defines. */
-#ifndef TRIE_NAME
-#error Generic name TRIE_NAME undefined.
-#endif
-#if (defined(TRIE_TYPE) && !defined(TRIE_KEY)) \
-	|| (!defined(TRIE_TYPE) && defined(TRIE_KEY))
-#error TRIE_TYPE and TRIE_KEY have to be defined of not.
-#endif
-#if defined(N_) || defined(PN_)
-#error N_ and PN_ cannot be defined.
-#endif
-#ifndef TRIE_TYPE /* <!-- !type */
-#define TRIE_TYPE const char
-#define TRIE_KEY &trie_raw
-#ifndef TRIE_RAW /* <!-- !raw */
-#define TRIE_RAW /* Idempotent function. */
-/** @return The `key`, which is the string itself in the case where one doesn't
- specify `TRIE_TYPE`. */
-static const char *trie_raw(const char *const key) { return key; }
-#endif /* !raw --> */
-#endif /* !type --> */
-
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#ifdef CAT
-#undef CAT
-#endif
-#ifdef CAT_
-#undef CAT_
-#endif
-#ifdef PCAT
-#undef PCAT
-#endif
-#ifdef PCAT_
-#undef PCAT_
-#endif
-#define CAT_(x, y) x ## y
-#define CAT(x, y) CAT_(x, y)
-#define PCAT_(x, y) x ## _ ## y
-#define PCAT(x, y) PCAT_(x, y)
-#define N_(thing) CAT(TRIE_NAME, thing)
-#define PN_(thing) PCAT(trie, PCAT(TRIE_NAME, thing))
-
-
 /** A valid tag type set by `TRIE_TYPE`; defaults to `const char`. */
 typedef TRIE_TYPE PN_(Type);
 
 /** Responsible for picking out the null-terminated string. One must not modify
  this string while in any trie. */
-typedef const char *(*PN_(Key))(PN_(Type) *);
+typedef const char *(*PN_(Key))(TRIE_CONST PN_(Type) *);
 
 /* Check that `TRIE_KEY` is a function implementing <typedef:<PN>Key>. */
 static const PN_(Key) PN_(to_key) = (TRIE_KEY);
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
-in <fn:<N>TriePolicyPut>. */
+ in <fn:<N>TriePolicyPut>. */
 typedef int (*PN_(Replace))(PN_(Type) *original, PN_(Type) *replace);
 
 /** @return False. Ignores `a` and `b`. */
@@ -173,15 +182,29 @@ static int PN_(false_replace)(PN_(Type) *const a, PN_(Type) *const b)
 /* Used internally to get rid of the confusing double-pointers. */
 typedef PN_(Type) *PN_(Leaf);
 
+/** Responsible for turning the first argument into a 12-`char` null-terminated
+ output string. Used for `ARRAY_TO_STRING`. */
+typedef void (*PN_(ToString))(TRIE_CONST PN_(Type) *, const char (*)[12]);
+
+/** Compares keys of `a` and `b`. Used in array compare following.
+ @implements <<PN>Leaf>Bipredicate */
+static int PN_(cmp)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
+	{ return strcmp(PN_(to_key)(*a), PN_(to_key)(*b)); }
+
 /* Trie leaf array is sorted by key. Private code follows a convention that in
  `branches` (internal nodes) have `n` subscripts and `leaves` (external nodes)
  have `i` subscripts. */
 #define ARRAY_NAME PN_(Leaf)
 #define ARRAY_TYPE PN_(Leaf)
 #define ARRAY_CHILD
+#define ARRAY_UNFINISHED
+#include "Array.h"
+#define ARRAY_COMPARE &PN_(cmp)
 #include "Array.h"
 
-#define PT_(thing) PCAT(array, PCAT(PN_(Leaf), thing))
+/*#define PT_(thing) PCAT(PCAT(array, PN_(Leaf)), PCAT(thing, anonymous))*/
+/* array_trie_Str_Leaf_compactify_anonymous */
+#define PT_(thing) PCAT(PCAT(array, PN_(Leaf)), thing)
 
 /** To initialise it to an idle state, see <fn:<N>Trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
@@ -213,6 +236,8 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 	PN_(trie)(trie);
 }
 
+#if 0
+/* fixme */
 /** Comparison `a` _vs_ `b` for <fn:<PN>vcompar> and <fn:<PN>equals>. */
 static int PN_(compar)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
 	{ return strcmp(PN_(to_key)(*a), PN_(to_key)(*b)); }
@@ -224,6 +249,7 @@ static int PN_(vcompar)(const void *a, const void *b)
 /** Equality `a` _vs_ `b` for <fn:<PN>init>. @implements <PT>Bipredicate */
 static int PN_(equals)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
 	{ return !PN_(compar)(a, b); }
+#endif
 
 /** Recursive function used for <fn:<PN>init>. Initialise branches of `trie` up
  to `bit` with `a` to `a_size` array of sorted leaves.
@@ -265,8 +291,9 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 	leaves = trie->leaves.data;
 	memcpy(leaves, a, sizeof *a * a_size);
 	trie->leaves.size = a_size;
-	qsort(leaves, a_size, sizeof *a, &PN_(vcompar));
-	PT_(compactify)(&trie->leaves, &PN_(equals), merge);
+	/* Private functions from `Array.h`. */
+	qsort(leaves, a_size, sizeof *a, &PT_(compar_anonymous));
+	PT_(compactify_anonymous)(&trie->leaves, merge);
 	PN_(init_branches_r)(trie, 0, 0, trie->leaves.size);
 	assert(trie->branches.size + 1 == trie->leaves.size);
 	return 1;
@@ -427,7 +454,6 @@ static int PN_(shrink)(struct N_(Trie) *const trie) {
 		&& PT_(shrink)(&trie->leaves);
 }
 
-
 #ifndef TRIE_CHILD /* <!-- !sub-type */
 
 /** Returns `trie` to the idle state where it takes no dynamic memory.
@@ -454,8 +480,7 @@ static int N_(TrieFromArray)(struct N_(Trie) *const trie,
 	PN_(Type) *const*const array, const size_t array_size,
 	const PT_(Biproject) merge) {
 	return trie ? (PN_(trie)(trie), !array || !array_size) ? 1
-		: PN_(init)(trie, array, array_size, merge ?
-		merge : PT_(false_project)) : 0;
+		: PN_(init)(trie, array, array_size, merge /* Can be null. */) : 0;
 }
 
 /** @param[trie] If null, returns zero;
@@ -571,92 +596,130 @@ static int N_(TrieRemove)(struct N_(Trie) *const trie, const char *const key) {
 static int N_(TrieShrink)(struct N_(Trie) *const trie)
 	{ return trie ? PN_(shrink)(trie) : 0; }
 
-/** Can print four strings at once before it overwrites.
- @return Prints the keys of `trie` in a static buffer.
- @order \Theta(1); it has a 255 character limit; every element takes some of it.
- @allow */
-static const char *N_(TrieToString)(const struct N_(Trie) *const trie) {
-	static char buffers[4][256];
-	static size_t buffer_i;
-	char *const buffer = buffers[buffer_i++], *b = buffer;
-	const size_t buffers_no = sizeof buffers / sizeof *buffers,
-	buffer_size = sizeof *buffers / sizeof **buffers;
-	const char start = '{', comma = ',', space = ' ', end = '}',
-		*const ellipsis_end = ",…}", *const null = "null",
-		*const idle = "idle";
-	const size_t ellipsis_end_len = strlen(ellipsis_end),
-		null_len = strlen(null), idle_len = strlen(idle);
-	PN_(Type) *const*l, *const*l_end;
-	size_t i;
-	const char *str;
-	int is_first = 1;
-	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 1
-		&& buffer_size >= 1/*start*/ + 11/*max*/ + ellipsis_end_len + 1/*null*/
-		&& buffer_size >= null_len + 1
-		&& buffer_size >= idle_len + 1);
-	/* Advance the buffer for next time. */
-	buffer_i &= buffers_no - 1;
-	if(!trie) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	if(!trie->leaves.data) { memcpy(b, idle, idle_len), b += idle_len;
-		goto terminate; }
-	*b++ = start;
-	for(l = trie->leaves.data, l_end = l + trie->leaves.size; l < l_end; l++) {
-		if(!is_first) *b++ = comma, *b++ = space;
-		else is_first = 0;
-		str = PN_(to_key)(*l);
-		for(i = 0; *str != '\0' && i < 12; str++, b++, i++) *b = *str;
-		if((size_t)(b - buffer) >= buffer_size - 2/*comma,space*/ - 11/*max*/
-			- ellipsis_end_len - 1/*null*/) goto ellipsis;
-	}
-	*b++ = end;
-	goto terminate;
-ellipsis:
-	memcpy(b, ellipsis_end, ellipsis_end_len), b += ellipsis_end_len;
-terminate:
-	*b++ = '\0';
-	assert(b <= buffer + buffer_size);
-	return buffer;
-}
+#endif /* !sub-type --> */
 
-#ifdef TRIE_TEST /* <!-- test: need this file. */
-#include "../test/TestTrie.h" /** \include */
-#endif /* test --> */
-
-static void PN_(unused_coda)(void);
-/** This silences unused function warnings. */
-static void PN_(unused_set)(void) {
+static void PN_(unused_base_coda)(void);
+static void PN_(unused_base)(void) {
+	PN_(trie)(0); PN_(trie_)(0); PN_(init)(0, 0, 0, 0); PN_(add)(0, 0);
+	PN_(match)(0, 0); PN_(get)(0, 0); PN_(put)(0, 0, 0, 0); PN_(remove)(0, 0);
+	PN_(shrink)(0);
+#ifndef TRIE_CHILD /* <!-- !sub-type */
 	N_(Trie_)(0); N_(Trie)(0); N_(TrieFromArray)(0, 0, 0, 0); N_(TrieSize)(0);
 	N_(TrieArray)(0); N_(TrieClear)(0); N_(TrieGet)(0, 0); N_(TrieClose)(0, 0);
 	N_(TrieAdd)(0, 0); N_(TriePut)(0, 0, 0); N_(TriePolicyPut)(0, 0, 0, 0);
-	N_(TrieRemove)(0, 0); N_(TrieShrink)(0); N_(TrieToString)(0);
-	PN_(unused_coda)();
+	N_(TrieRemove)(0, 0); N_(TrieShrink)(0);
+#endif /* !sub-type --> */
+	PN_(unused_base_coda)();
 }
-static void PN_(unused_coda)(void) { PN_(unused_set)(); }
+static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
-/* Un-define all macros. */
+
+#elif defined(TRIE_TO_STRING) /* base code --><!-- to string interface */
+
+
+#if !defined(N_) || !defined(PN_) || !defined(CAT) \
+	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
+#error P?N_? or P?CAT_? not yet defined in to string interface; include trie?
+#endif
+
+#ifdef TRIE_TO_STRING_NAME /* <!-- name fixme: define anonymous */
+#define PNA_(thing) PCAT(PT_(thing), TRIE_TO_STRING_NAME)
+#define N_A_(thing1, thing2) CAT(T_(thing1), CAT(TRIE_TO_STRING_NAME, thing2))
+#else /* name --><!-- !name */
+#define PNA_(thing) PCAT(PT_(thing), anonymous)
+#define N_A_(thing1, thing2) CAT(T_(thing1), thing2)
+#endif /* !name --> */
+
+/* Check that `TRIE_TO_STRING` is a function implementing
+ <typedef:<PN>ToString>. */
+static const PN_(ToString) PNA_(to_str12) = (TRIE_TO_STRING);
+
+/** Writes `it` to `str` and advances or returns false.
+ @implements <AI>NextToString */
+static int PNA_(next_to_str12)(struct PT_(Iterator) *const it,
+	char (*const str)[12]) {
+	assert(it && it->a && str);
+	if(it->i >= it->a->size) return 0;
+	PNA_(to_str12)(it->a->data + it->i++, str);
+	return 1;
+}
+
+/** @return If `it` contains a not-null pool. */
+static int PNA_(is_valid)(const struct PT_(Iterator) *const it)
+	{ assert(it); return !!it->a; }
+
+#define AI_ PNA_
+#define TO_STRING_ITERATOR struct PT_(Iterator)
+#define TO_STRING_NEXT &PNA_(next_to_str12)
+#define TO_STRING_IS_VALID &PNA_(is_valid)
+#include "ToString.h"
+
+/** @return Prints `trie`. */
+static const char *PNA_(to_string)(const struct N_(Trie) *const trie) {
+	struct PT_(Iterator) it = { 0, 0 };
+	it.a = trie ? trie->leaves : 0; /* Can be null. */
+	return PTA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
+}
+
+#ifndef TRIE_CHILD /* <!-- !sub-type */
+
+/** @return Print the contents of `trie` in a static string buffer with the
+ limitations of `ToString.h`. @order \Theta(1) @allow */
+static const char *N_A_(Trie, ToString)(const struct N_(Trie) *const trie)
+	{ return PNA_(to_string)(trie); /* Can be null. */ }
+
+#endif /* !sub-type --> */
+
+static void PNA_(unused_to_string_coda)(void);
+static void PNA_(unused_to_string)(void) {
+	PNA_(to_string)(0);
+#ifndef ARRAY_CHILD /* <!-- !sub-type */
+	N_A_(Trie, ToString)(0);
+#endif /* !sub-type --> */
+	PNA_(unused_to_string_coda)();
+}
+static void PNA_(unused_to_string_coda)(void) { PNA_(unused_to_string)(); }
+
+#if !defined(TRIE_TEST_BASE) && defined(TRIE_TEST) /* <!-- test */
+#define TRIE_TEST_BASE /* Only one instance of base tests. */
+#include "../test/TestTrie.h" /** \include */
+#endif /* test --> */
+
+#undef PNA_
+#undef N_A_
+#undef TRIE_TO_STRING
+#ifdef TRIE_TO_STRING_NAME
+#undef TRIE_TO_STRING_NAME
+#endif
+
+
+#endif /* interfaces --> */
+
+
+#ifdef TRIE_UNFINISHED /* <!-- unfinish */
+#undef TRIE_UNFINISHED
+#else /* unfinish --><!-- finish */
+#ifndef TRIE_CHILD /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
 #else /* !sub-type --><!-- sub-type */
 #undef TRIE_CHILD
-static void PT_(unused_coda)(void);
-/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
- have the same meanings; they will be replaced with these, and `T` and `N`
- cannot be used. */
-static void PN_(unused_set)(void) {
-	PN_(iterate)(0, 0); PN_(trie_)(0); PN_(trie)(0); PN_(unused_coda)();
-	PN_(node_key)(0, 0); PN_(add)(0, 0); PN_(match)(0, 0); PN_(put)(0, 0, 0);
-	PN_(remove)(0, 0); PN_(shrink)(0); PN_(false)(0);
-}
-static void PN_(unused_coda)(void) { PN_(unused_set)(); }
 #endif /* sub-type --> */
-#undef TRIE_NAME
-#undef TRIE_TYPE
-#undef TRIE_KEY
 #undef N_
 #undef PN_
 #undef PT_
+#undef TRIE_NAME
+#undef TRIE_TYPE
+#undef TRIE_KEY
+#undef TRIE_CONST
 #ifdef TRIE_TEST
 #undef TRIE_TEST
 #endif
+#ifdef TRIE_TEST_BASE
+#undef TRIE_TEST_BASE
+#endif
+#endif /* finish --> */
+
+#undef TRIE_INTERFACES
