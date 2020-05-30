@@ -17,8 +17,7 @@
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
  with `errno`. The parameters are `#define` preprocessor macros, and are all
- undefined at the end of the file for convenience. `assert.h` is used; to stop
- assertions, use `#define NDEBUG` before inclusion.
+ undefined at the end of the file for convenience. `assert.h` is used.
 
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PN>Type> that satisfies `C` naming conventions when mangled and an
@@ -29,6 +28,9 @@
  @param[TRIE_KEY]
  A function that satisfies <typedef:<PN>Key>. Must be defined if and only if
  `TRIE_TYPE` is defined.
+
+ @param[TRIE_TO_STRING]
+ Defining this includes `ToString.h` with the keys as the to string.
 
  @param[TRIE_TEST]
  Unit testing framework <fn:<N>TrieTest>, included in a separate header,
@@ -57,17 +59,16 @@
 	|| (!defined(TRIE_TYPE) && defined(TRIE_KEY))
 #error TRIE_TYPE and TRIE_KEY have to be mutually defined or not.
 #endif
-#define TRIE_INTERFACES (defined(TRIE_TO_STRING_NAME) \
-	|| defined(TRIE_TO_STRING))
+/*
+#define TRIE_INTERFACES (defined(TRIE_TO_STRING))
 #if TRIE_INTERFACES > 1
 #error Only one interface per include is allowed; use TRIE_UNFINISHED.
 #endif
 #if (TRIE_INTERFACES == 0) && defined(TRIE_TEST)
 #error TRIE_TEST must be defined in TRIE_TO_STRING interface.
 #endif
-#if defined(TRIE_TO_STRING_NAME) && !defined(TRIE_TO_STRING)
-#error TRIE_TO_STRING_NAME requires TRIE_TO_STRING.
-#endif
+*/
+#define TRIE_INTERFACES 0
 
 
 #if TRIE_INTERFACES == 0 /* <!-- base code */
@@ -187,10 +188,6 @@ typedef int (*PN_(Replace))(PN_(Type) *original, PN_(Type) *replace);
 static int PN_(false_replace)(PN_(Type) *const a, PN_(Type) *const b)
 	{ return (void)a, (void)b, 0; }
 
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- output string. Used for `ARRAY_TO_STRING`. */
-typedef void (*PN_(ToString))(PN_(CType) *, char (*)[12]);
-
 /** Compares keys of `a` and `b`. Used in array compare following.
  @implements <<PN>Leaf>Bipredicate */
 static int PN_(cmp)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
@@ -207,8 +204,6 @@ static int PN_(cmp)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
 #define ARRAY_COMPARE &PN_(cmp)
 #include "Array.h"
 
-/*#define PT_(thing) PCAT(PCAT(array, PN_(Leaf)), PCAT(thing, anonymous))*/
-/* array_trie_Str_Leaf_compactify_anonymous */
 #define PT_(thing) PCAT(PCAT(array, PN_(Leaf)), thing)
 
 /** To initialise it to an idle state, see <fn:<N>Trie>, `TRIE_IDLE`, `{0}`
@@ -386,7 +381,7 @@ static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
  @param[eject] If not-null, the reference will be set to null if there is no
  ejection. If `replace`, and `replace` returns false, and `eject`, than
  `*eject == data`.
- @throws[realloc, ERANGE] */
+ @return Success. @throws[realloc, ERANGE] */
 static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	PN_(Type) **const eject, const PN_(Replace) replace) {
 	PN_(Leaf) *match;
@@ -437,7 +432,7 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 	memmove(branch, branch + 1, sizeof n0 * (--trie->branches.size - last_n0));
 }
 
-/** Shrinks `trie` to size. The arrays probably still a distance away. */
+/** Shrinks `trie` to size. The arrays are probably still a distance away. */
 static int PN_(shrink)(struct N_(Trie) *const trie) {
 	assert(trie);
 	return array_TrieBranch_shrink(&trie->branches)
@@ -504,8 +499,7 @@ static void N_(TrieClear)(struct N_(Trie) *const trie) {
  exists.
  @order \O(|`key`|). Specifically, faster then a tree, and deterministic,
  however, logarithmically slower then a good hash table for sizes not fitting
- in cache, <Thareja 2011, Data>.
- @allow */
+ in cache, <Thareja 2011, Data>. @allow */
 static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	PN_(Leaf) *leaf;
@@ -514,8 +508,7 @@ static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 
 /** @param[trie, key] If null, returns null.
  @return The <typedef:<PN>Type> reasonably with the Levenson distance closest
- to `key` in `trie`.
- @allow */
+ to `key` in `trie`. @allow */
 static PN_(Type) *N_(TrieClose)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	PN_(Leaf) *leaf;
@@ -529,8 +522,7 @@ static PN_(Type) *N_(TrieClose)(const struct N_(Trie) *const trie,
  @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
  it's maximum size.
- @order \O(`size`)
- @allow */
+ @order \O(`size`) @allow */
 static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	return trie && data ? PN_(put)(trie, data, 0, &PN_(false_replace)) : 0;
 }
@@ -543,8 +535,7 @@ static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
  @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
  it's maximum size.
- @order \O(`size`)
- @allow */
+ @order \O(`size`) @allow */
 static int N_(TriePut)(struct N_(Trie) *const trie,
 	PN_(Type) *const data, PN_(Type) **const eject) {
 	return trie && data ? PN_(put)(trie, data, eject, 0) : 0;
@@ -562,8 +553,7 @@ static int N_(TriePut)(struct N_(Trie) *const trie,
  @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
  it's maximum size.
- @order \O(`size`)
- @allow */
+ @order \O(`size`) @allow */
 static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
 	PN_(Type) *const data, PN_(Type) **const eject,
 	const PN_(Replace) replace) {
@@ -573,8 +563,7 @@ static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
 /** Remove `key` from `trie`.
  @param[trie, key] If null, returns false.
  @return Success or else `key` was not in `trie`.
- @order \O(`size`)
- @allow */
+ @order \O(`size`) @allow */
 static int N_(TrieRemove)(struct N_(Trie) *const trie, const char *const key) {
 	PN_(Leaf) *leaf;
 	return trie && key && (leaf = PN_(get)(trie, key))
@@ -582,11 +571,51 @@ static int N_(TrieRemove)(struct N_(Trie) *const trie, const char *const key) {
 }
 
 /** Shrinks the capacity of `trie` to size.
- @return Success. @throws[ERANGE, realloc] Unlikely `realloc` error. */
+ @return Success. @throws[ERANGE, realloc] Unlikely `realloc` error. @allow */
 static int N_(TrieShrink)(struct N_(Trie) *const trie)
 	{ return trie ? PN_(shrink)(trie) : 0; }
 
 #endif /* !sub-type --> */
+
+#ifdef TRIE_TO_STRING /* <!-- string */
+
+/** Writes `it` to `str` and advances or returns false.
+ @implements <AI>NextToString */
+static int PN_(next_to_str12)(struct PT_(Iterator) *const it,
+	char (*const str)[12]) {
+	assert(it && it->a && str);
+	if(it->i >= it->a->size) return it->a = 0, 0;
+	sprintf(*str, "%.11s", it->a->data[it->i++]);
+	return 1;
+}
+
+/** @return If `it` contains a not-null trie. */
+static int PN_(is_valid)(const struct PT_(Iterator) *const it)
+	{ assert(it); return !!it->a; }
+
+#define AI_ PN_
+#define TO_STRING_ITERATOR struct PT_(Iterator)
+#define TO_STRING_NEXT &PN_(next_to_str12)
+#define TO_STRING_IS_VALID &PN_(is_valid)
+#include "ToString.h"
+
+/** @return Prints `trie`. */
+static const char *PN_(to_string)(const struct N_(Trie) *const trie) {
+	struct PT_(Iterator) it = { 0, 0 };
+	it.a = trie ? &trie->leaves : 0; /* Can be null. */
+	return PN_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
+}
+
+#ifndef TRIE_CHILD /* <!-- !sub-type */
+
+/** @return Print the contents of `trie` in a static string buffer with the
+ limitations of `ToString.h`. @order \Theta(1) @allow */
+static const char *N_(TrieToString)(const struct N_(Trie) *const trie)
+	{ return PN_(to_string)(trie); /* Can be null. */ }
+
+#endif /* !sub-type --> */
+
+#endif /* string --> */
 
 static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
@@ -599,88 +628,20 @@ static void PN_(unused_base)(void) {
 	N_(TrieAdd)(0, 0); N_(TriePut)(0, 0, 0); N_(TriePolicyPut)(0, 0, 0, 0);
 	N_(TrieRemove)(0, 0); N_(TrieShrink)(0);
 #endif /* !sub-type --> */
+#ifdef TRIE_TO_STRING /* <!-- string */
+	PN_(to_string)(0);
+#ifndef TRIE_CHILD /* <!-- !sub-type */
+	N_(TrieToString)(0);
+#endif /* !sub-type --> */
+#endif /* string --> */
 	PN_(unused_base_coda)();
 }
 static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
-
-
-#elif defined(TRIE_TO_STRING) /* base code --><!-- to string interface */
-
-
-#if !defined(N_) || !defined(PN_) || !defined(CAT) \
-	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?N_? or P?CAT_? not yet defined in to string interface; include trie?
-#endif
-
-#ifdef TRIE_TO_STRING_NAME /* <!-- name fixme: define anonymous */
-#define PNA_(thing) PCAT(PT_(thing), TRIE_TO_STRING_NAME)
-#define N_A_(thing1, thing2) CAT(N_(thing1), CAT(TRIE_TO_STRING_NAME, thing2))
-#else /* name --><!-- !name */
-#define PNA_(thing) PCAT(PT_(thing), anonymous)
-#define N_A_(thing1, thing2) CAT(N_(thing1), thing2)
-#endif /* !name --> */
-
-/* Check that `TRIE_TO_STRING` is a function implementing
- <typedef:<PN>ToString>. */
-static const PN_(ToString) PNA_(to_str12) = (TRIE_TO_STRING);
-
-/** Writes `it` to `str` and advances or returns false.
- @implements <AI>NextToString */
-static int PNA_(next_to_str12)(struct PT_(Iterator) *const it,
-	char (*const str)[12]) {
-	assert(it && it->a && str);
-	if(it->i >= it->a->size) return 0;
-	PNA_(to_str12)(it->a->data[it->i++], str);
-	return 1;
-}
-
-/** @return If `it` contains a not-null pool. */
-static int PNA_(is_valid)(const struct PT_(Iterator) *const it)
-	{ assert(it); return !!it->a; }
-
-#define AI_ PNA_
-#define TO_STRING_ITERATOR struct PT_(Iterator)
-#define TO_STRING_NEXT &PNA_(next_to_str12)
-#define TO_STRING_IS_VALID &PNA_(is_valid)
-#include "ToString.h"
-
-/** @return Prints `trie`. */
-static const char *PNA_(to_string)(const struct N_(Trie) *const trie) {
-	struct PT_(Iterator) it = { 0, 0 };
-	it.a = trie ? &trie->leaves : 0; /* Can be null. */
-	return PNA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
-}
-
-#ifndef TRIE_CHILD /* <!-- !sub-type */
-
-/** @return Print the contents of `trie` in a static string buffer with the
- limitations of `ToString.h`. @order \Theta(1) @allow */
-static const char *N_A_(Trie, ToString)(const struct N_(Trie) *const trie)
-	{ return PNA_(to_string)(trie); /* Can be null. */ }
-
-#endif /* !sub-type --> */
-
-static void PNA_(unused_to_string_coda)(void);
-static void PNA_(unused_to_string)(void) {
-	PNA_(to_string)(0);
-#ifndef ARRAY_CHILD /* <!-- !sub-type */
-	N_A_(Trie, ToString)(0);
-#endif /* !sub-type --> */
-	PNA_(unused_to_string_coda)();
-}
-static void PNA_(unused_to_string_coda)(void) { PNA_(unused_to_string)(); }
 
 #if !defined(TRIE_TEST_BASE) && defined(TRIE_TEST) /* <!-- test */
 #define TRIE_TEST_BASE /* Only one instance of base tests. */
 #include "../test/TestTrie.h" /** \include */
 #endif /* test --> */
-
-#undef PNA_
-#undef N_A_
-#undef TRIE_TO_STRING
-#ifdef TRIE_TO_STRING_NAME
-#undef TRIE_TO_STRING_NAME
-#endif
 
 
 #endif /* interfaces --> */
