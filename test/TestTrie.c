@@ -18,18 +18,17 @@
 #include "Orcish.h"
 
 
+/* This is a dictionary defined in `parole_inglesi.c`. */
 extern const char *const parole[];
 extern const size_t parole_size;
 
-/** Just a placeholder to get `graph()`. Don't call <fn:StrTrieTest> it will
- crash. */
+/** Just a placeholder to get `graph()`; <fn:StrTrieTest> will crash. */
 static void fill_str(const char *str) { (void)(str); }
 
 #define TRIE_NAME Str
 #define TRIE_TO_STRING
 #define TRIE_TEST &fill_str
 #include "../src/Trie.h"
-
 
 /** Specific test for str. */
 static void test_basic_trie_str(void) {
@@ -242,9 +241,8 @@ static void pointer_to_string(const char *const*const ps, char (*const a)[12]) {
 #include "Pool.h"
 
 /** Returns a time diffecence in microseconds from `then`. */
-static double diff_us(clock_t then) {
-	return 1000000.0 / CLOCKS_PER_SEC * (clock() - then);
-}
+static double diff_us(clock_t then)
+	{ return 1000000.0 / CLOCKS_PER_SEC * (clock() - then); }
 
 /** On-line numerically stable first-order statistics, <Welford, 1962, Note>. */
 struct Measure { size_t count; double mean, ssdm; };
@@ -458,12 +456,12 @@ finally2:
 #endif /* benchmark --> */
 
 
-#if 0
 struct Dict { char word[12]; int defn; };
 
-static const char *dict_key(struct Dict *dict) { return dict->word; }
+static const char *dict_key(const struct Dict *const dict)
+	{ return dict->word; }
 
-static void fill_dict(struct Dict *dict) {
+static void fill_dict(struct Dict *const dict) {
 	Orcish(dict->word, sizeof ((struct Dict *)0)->word);
 	dict->defn = rand() / (RAND_MAX / 99 + 1);
 }
@@ -471,11 +469,8 @@ static void fill_dict(struct Dict *dict) {
 #define TRIE_NAME Dict
 #define TRIE_TYPE struct Dict
 #define TRIE_KEY &dict_key
-#define TRIE_UNFINISHED
-#include "../src/Trie.h"
 #define TRIE_TEST &fill_dict
 #include "../src/Trie.h"
-#endif
 
 
 int main(void) {
@@ -483,7 +478,7 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	test_basic_trie_str();
 	(void)StrTrieTest; /* <- Not safe; `const char` is not generatable. */
-	/*DictTrieTest();*/
+	DictTrieTest();
 	printf("\n***\n\n");
 #ifdef TRIE_BENCHMARK /* <!-- bench */
 	timing_comparison();

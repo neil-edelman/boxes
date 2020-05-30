@@ -585,7 +585,7 @@ static int PN_(next_to_str12)(struct PT_(Iterator) *const it,
 	char (*const str)[12]) {
 	assert(it && it->a && str);
 	if(it->i >= it->a->size) return it->a = 0, 0;
-	sprintf(*str, "%.11s", it->a->data[it->i++]);
+	sprintf(*str, "%.11s", PN_(to_key)(it->a->data[it->i++]));
 	return 1;
 }
 
