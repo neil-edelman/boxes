@@ -3,7 +3,7 @@
 ## Parameterised String\-Key Trie ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Type](#user-content-typedef-c45e6761), [&lt;PN&gt;Key](#user-content-typedef-8524f620), [&lt;PN&gt;Replace](#user-content-typedef-38741b27), [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Type](#user-content-typedef-c45e6761), [&lt;PN&gt;CType](#user-content-typedef-c16ead3e), [&lt;PN&gt;Key](#user-content-typedef-8524f620), [&lt;PN&gt;Replace](#user-content-typedef-38741b27), [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;N&gt;Trie](#user-content-tag-8fc8a233)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -15,7 +15,7 @@
 
 A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. Strings can be any encoding with a byte null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA), in that it only stores data in the index on the positions where the strings are different\. It is also a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) which lives in compact &#927;\(`size`\) extra memory\. Insertion and deletion are slower because the need to update the array index\.
 
-`Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
+`Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used\.
 
 
 
@@ -23,6 +23,8 @@ A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` a
    [&lt;PN&gt;Type](#user-content-typedef-c45e6761) that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only except if `TRIE_TEST`\.\) `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: TRIE\_KEY  
    A function that satisfies [&lt;PN&gt;Key](#user-content-typedef-8524f620)\. Must be defined if and only if `TRIE_TYPE` is defined\.
+ * Parameter: TRIE\_TO\_STRING  
+   Defining this includes `ToString.h` with the keys as the to string\.
  * Parameter: TRIE\_TEST  
    Unit testing framework [&lt;N&gt;TrieTest](#user-content-fn-ae32c087), included in a separate header, [\.\./test/TreeTest\.h](../test/TreeTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)\. Requires that `NDEBUG` not be defined\.
  * Standard:  
@@ -45,9 +47,17 @@ A valid tag type set by `TRIE_TYPE`; defaults to `const char`\.
 
 
 
+### <a id = "user-content-typedef-c16ead3e" name = "user-content-typedef-c16ead3e">&lt;PN&gt;CType</a> ###
+
+<code>typedef TRIE_CONST &lt;PN&gt;Type <strong>&lt;PN&gt;CType</strong>;</code>
+
+Same as [&lt;PN&gt;Type](#user-content-typedef-c45e6761), except read\-only\.
+
+
+
 ### <a id = "user-content-typedef-8524f620" name = "user-content-typedef-8524f620">&lt;PN&gt;Key</a> ###
 
-<code>typedef const char *(*<strong>&lt;PN&gt;Key</strong>)(&lt;PN&gt;Type *);</code>
+<code>typedef const char *(*<strong>&lt;PN&gt;Key</strong>)(&lt;PN&gt;CType *);</code>
 
 Responsible for picking out the null\-terminated string\. One must not modify this string while in any trie\.
 
@@ -105,13 +115,15 @@ A full binary tree stored semi\-implicitly in two arrays: a private one as branc
 
 <tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#user-content-fn-45ef569">&lt;N&gt;TrieClose</a></td><td>trie, key</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-fad143b6">&lt;N&gt;TrieAdd</a></td><td>trie, data</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-fad143b6">&lt;N&gt;TrieAdd</a></td><td>trie, datum</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-85d52810">&lt;N&gt;TriePut</a></td><td>trie, data, eject</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-85d52810">&lt;N&gt;TriePut</a></td><td>trie, datum, eject</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-592f827e">&lt;N&gt;TriePolicyPut</a></td><td>trie, data, eject, replace</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-592f827e">&lt;N&gt;TriePolicyPut</a></td><td>trie, datum, eject, replace</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-42029eff">&lt;N&gt;TrieRemove</a></td><td>trie, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-25d3ce3e">&lt;N&gt;TrieShrink</a></td><td>trie</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-f6f3fdef">&lt;N&gt;TrieToString</a></td><td>trie</td></tr>
 
@@ -159,6 +171,8 @@ Initialises `trie` from an `array` of pointers\-to\-`<N>` of `array_size`\.
    If null, does nothing\.
  * Parameter: _array_  
    If null, initialises `trie` to empty\.
+ * Parameter: _merge_  
+   If `array` does not contain unique elements, controls how duplicates in `array` are merged; if null, ignores all\-but\-one\.
  * Return:  
    Success\.
  * Exceptional return: realloc  
@@ -242,16 +256,16 @@ Sets `trie` to be empty\. That is, the size of `trie` will be zero, but if it wa
 
 ### <a id = "user-content-fn-fad143b6" name = "user-content-fn-fad143b6">&lt;N&gt;TrieAdd</a> ###
 
-<code>static int <strong>&lt;N&gt;TrieAdd</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>)</code>
+<code>static int <strong>&lt;N&gt;TrieAdd</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>datum</em>)</code>
 
-Adds `data` to `trie` if absent\.
+Adds `datum` to `trie` if absent\.
 
  * Parameter: _trie_  
    If null, returns null\.
- * Parameter: _data_  
+ * Parameter: _datum_  
    If null, returns null\.
  * Return:  
-   Success\. If data with the same key is present, returns true but doesn't add `data`\.
+   Success\. If data with the same key is present, returns true but doesn't add `datum`\.
  * Exceptional return: realloc  
    There was an error with a re\-sizing\.
  * Exceptional return: ERANGE  
@@ -264,13 +278,13 @@ Adds `data` to `trie` if absent\.
 
 ### <a id = "user-content-fn-85d52810" name = "user-content-fn-85d52810">&lt;N&gt;TriePut</a> ###
 
-<code>static int <strong>&lt;N&gt;TriePut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>, &lt;PN&gt;Type **const <em>eject</em>)</code>
+<code>static int <strong>&lt;N&gt;TriePut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>datum</em>, &lt;PN&gt;Type **const <em>eject</em>)</code>
 
-Updates or adds `data` to `trie`\.
+Updates or adds `datum` to `trie`\.
 
  * Parameter: _trie_  
    If null, returns null\.
- * Parameter: _data_  
+ * Parameter: _datum_  
    If null, returns null\.
  * Parameter: _eject_  
    If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite\.
@@ -288,13 +302,13 @@ Updates or adds `data` to `trie`\.
 
 ### <a id = "user-content-fn-592f827e" name = "user-content-fn-592f827e">&lt;N&gt;TriePolicyPut</a> ###
 
-<code>static int <strong>&lt;N&gt;TriePolicyPut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>data</em>, &lt;PN&gt;Type **const <em>eject</em>, const &lt;PN&gt;Replace <em>replace</em>)</code>
+<code>static int <strong>&lt;N&gt;TriePolicyPut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>datum</em>, &lt;PN&gt;Type **const <em>eject</em>, const &lt;PN&gt;Replace <em>replace</em>)</code>
 
-Adds `data` to `trie` only if the entry is absent or if calling `replace` returns true\.
+Adds `datum` to `trie` only if the entry is absent or if calling `replace` returns true\.
 
  * Parameter: _trie_  
    If null, returns null\.
- * Parameter: _data_  
+ * Parameter: _datum_  
    If null, returns null\.
  * Parameter: _eject_  
    If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite a previous value\. If a collision occurs and `replace` does not return true, this value will be `data`\.
@@ -330,16 +344,28 @@ Remove `key` from `trie`\.
 
 
 
+### <a id = "user-content-fn-25d3ce3e" name = "user-content-fn-25d3ce3e">&lt;N&gt;TrieShrink</a> ###
+
+<code>static int <strong>&lt;N&gt;TrieShrink</strong>(struct &lt;N&gt;Trie *const <em>trie</em>)</code>
+
+Shrinks the capacity of `trie` to size\.
+
+ * Return:  
+   Success\.
+ * Exceptional return: ERANGE, realloc  
+   Unlikely `realloc` error\.
+
+
+
+
 ### <a id = "user-content-fn-f6f3fdef" name = "user-content-fn-f6f3fdef">&lt;N&gt;TrieToString</a> ###
 
 <code>static const char *<strong>&lt;N&gt;TrieToString</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code>
 
-Can print four strings at once before it overwrites\.
-
  * Return:  
-   Prints the keys of `trie` in a static buffer\.
+   Print the contents of `trie` in a static string buffer with the limitations of `ToString.h`\.
  * Order:  
-   &#920;\(1\); it has a 255 character limit; every element takes some of it\.
+   &#920;\(1\)
 
 
 

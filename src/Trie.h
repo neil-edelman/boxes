@@ -287,8 +287,7 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 /** Add `data` to `trie`. Must not be the same as any key of trie; _ie_ it does
  not check for the end of the string.
  @order \Theta(`nodes`)
- @throws[ERANGE] At capacity or string too long.
- @throws[realloc] */
+ @throws[ERANGE] At capacity or string too long. @throws[realloc] */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
 	size_t n0 = 0, n1 = branch_size, i = 0, left;
@@ -305,7 +304,8 @@ static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	if(!leaf_size) return assert(!trie->branches.size),
 		(leaf = PT_(new)(&trie->leaves)) ? *leaf = data, 1 : 0;
 
-	/* Non-empty; verify conservative maximally unbalanced trie. */
+	/* Non-empty; verify conservative maximally unbalanced trie. (I don't think
+	 that's even possible: 2^12=4096 is the maximum bit value.) */
 	assert(leaf_size == branch_size + 1); /* Waste `size_t`. */
 	if(leaf_size >= TRIE_LEFT_MAX) return errno = ERANGE, 0;
 	if(!PT_(reserve)(&trie->leaves, leaf_size + 1)
@@ -376,10 +376,9 @@ static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
 		&& !strcmp(PN_(to_key)(*pmatch), key) ? pmatch : 0;
 }
 
-/** Adds `data` to `trie` and, if `eject` is non-null, stores the collided
- element, if any, as long as `merge` is null or returns true.
- @param[eject] If not-null, the reference will be set to null if there is no
- ejection. If `replace`, and `replace` returns false, and `eject`, than
+/** Adds `data` to `trie` with collision policy `replace`.
+ @param[eject] If not-null, stores the collided element, if any, as long as
+ `replace` is null or returns true. If `replace` returns false,
  `*eject == data`.
  @return Success. @throws[realloc, ERANGE] */
 static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
@@ -388,13 +387,11 @@ static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const data,
 	const char *data_key;
 	assert(trie && data);
 	data_key = PN_(to_key)(data);
-
 	/* Add. */
 	if(!(match = PN_(get)(trie, data_key))) {
 		if(eject) *eject = 0;
 		return PN_(add)(trie, data);
 	}
-
 	/* Collision policy. */
 	if(replace && !replace(*match, data)) {
 		if(eject) *eject = data;
@@ -411,12 +408,10 @@ static void PN_(remove)(struct N_(Trie) *const trie, size_t i) {
 	size_t *branch;
 	assert(trie && i < trie->leaves.size
 		&& trie->branches.size + 1 == trie->leaves.size);
-
 	/* Remove leaf. */
 	if(!--trie->leaves.size) return; /* Special case of one leaf. */
 	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
 		sizeof(PN_(Leaf)) * (n1 - i));
-
 	/* Remove branch. */
 	for( ; ; ) {
 		left = trie_left(*(branch = trie->branches.data + (last_n0 = n0)));
@@ -442,25 +437,21 @@ static int PN_(shrink)(struct N_(Trie) *const trie) {
 #ifndef TRIE_CHILD /* <!-- !sub-type */
 
 /** Returns `trie` to the idle state where it takes no dynamic memory.
- @param[trie] If null, does nothing.
- @allow */
+ @param[trie] If null, does nothing. @allow */
 static void N_(Trie_)(struct N_(Trie) *const trie)
 	{ if(trie) PN_(trie_)(trie); }
 
 /** Initialises `trie` to be idle.
- @param[trie] If null, does nothing.
- @order \Theta(1)
- @allow */
+ @param[trie] If null, does nothing. @order \Theta(1) @allow */
 static void N_(Trie)(struct N_(Trie) *const trie)
 	{ if(trie) PN_(trie)(trie); }
 
 /** Initialises `trie` from an `array` of pointers-to-`<N>` of `array_size`.
  @param[trie] If null, does nothing.
  @param[array] If null, initialises `trie` to empty.
- @return Success.
- @throws[realloc]
- @order \O(`array_size`)
- @allow */
+ @param[merge] If `array` does not contain unique elements, controls how
+ duplicates in `array` are merged; if null, ignores all-but-one.
+ @return Success. @throws[realloc] @order \O(`array_size`) @allow */
 static int N_(TrieFromArray)(struct N_(Trie) *const trie,
 	PN_(Type) *const*const array, const size_t array_size,
 	const PT_(Biproject) merge) {
@@ -470,17 +461,14 @@ static int N_(TrieFromArray)(struct N_(Trie) *const trie,
 
 /** @param[trie] If null, returns zero;
  @return The number of elements in the `trie`.
- @order \Theta(1)
- @allow */
-static size_t N_(TrieSize)(const struct N_(Trie) *const trie) {
-	return trie ? trie->leaves.size : 0;
-}
+ @order \Theta(1) @allow */
+static size_t N_(TrieSize)(const struct N_(Trie) *const trie)
+	{ return trie ? trie->leaves.size : 0; }
 
 /** It remains valid up to a structural modification of `trie` and is indexed
  up to <fn:<N>TrieSize>.
  @param[trie] If null, returns null.
- @return An array of pointers to the leaves of `trie`, ordered by key.
- @allow */
+ @return An array of pointers to the leaves of `trie`, ordered by key. @allow */
 static PN_(Type) *const*N_(TrieArray)(const struct N_(Trie) *const trie) {
 	return trie && trie->leaves.size ? trie->leaves.data : 0;
 }
@@ -488,8 +476,7 @@ static PN_(Type) *const*N_(TrieArray)(const struct N_(Trie) *const trie) {
 /** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
  it was previously in an active non-idle state, it continues to be.
  @param[trie] If null, does nothing.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static void N_(TrieClear)(struct N_(Trie) *const trie) {
 	if(trie) trie->branches.size = trie->leaves.size = 0;
 }
@@ -515,49 +502,45 @@ static PN_(Type) *N_(TrieClose)(const struct N_(Trie) *const trie,
 	return trie && key && (leaf = PN_(match)(trie, key)) ? *leaf : 0;
 }
 
-/** Adds `data` to `trie` if absent.
- @param[trie, data] If null, returns null.
+/** Adds `datum` to `trie` if absent.
+ @param[trie, datum] If null, returns null.
  @return Success. If data with the same key is present, returns true but
- doesn't add `data`.
+ doesn't add `datum`.
  @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
- it's maximum size.
- @order \O(`size`) @allow */
-static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const data) {
-	return trie && data ? PN_(put)(trie, data, 0, &PN_(false_replace)) : 0;
+ it's maximum size. @order \O(`size`) @allow */
+static int N_(TrieAdd)(struct N_(Trie) *const trie, PN_(Type) *const datum) {
+	return trie && datum ? PN_(put)(trie, datum, 0, &PN_(false_replace)) : 0;
 }
 
-/** Updates or adds `data` to `trie`.
- @param[trie, data] If null, returns null.
+/** Updates or adds `datum` to `trie`.
+ @param[trie, datum] If null, returns null.
  @param[eject] If not null, on success it will hold the overwritten value or
  a pointer-to-null if it did not overwrite.
  @return Success.
  @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
- it's maximum size.
- @order \O(`size`) @allow */
+ it's maximum size. @order \O(`size`) @allow */
 static int N_(TriePut)(struct N_(Trie) *const trie,
-	PN_(Type) *const data, PN_(Type) **const eject) {
-	return trie && data ? PN_(put)(trie, data, eject, 0) : 0;
+	PN_(Type) *const datum, PN_(Type) **const eject) {
+	return trie && datum ? PN_(put)(trie, datum, eject, 0) : 0;
 }
 
-/** Adds `data` to `trie` only if the entry is absent or if calling `replace`
+/** Adds `datum` to `trie` only if the entry is absent or if calling `replace`
  returns true.
- @param[trie, data] If null, returns null.
+ @param[trie, datum] If null, returns null.
  @param[eject] If not null, on success it will hold the overwritten value or
  a pointer-to-null if it did not overwrite a previous value. If a collision
  occurs and `replace` does not return true, this value will be `data`.
  @param[replace] Called on collision and only replaces it if the function
  returns true. If null, it is semantically equivalent to <fn:<N>TriePut>.
- @return Success.
- @throws[realloc] There was an error with a re-sizing.
+ @return Success. @throws[realloc] There was an error with a re-sizing.
  @throws[ERANGE] The key is greater then 510 characters or the trie has reached
- it's maximum size.
- @order \O(`size`) @allow */
+ it's maximum size. @order \O(`size`) @allow */
 static int N_(TriePolicyPut)(struct N_(Trie) *const trie,
-	PN_(Type) *const data, PN_(Type) **const eject,
+	PN_(Type) *const datum, PN_(Type) **const eject,
 	const PN_(Replace) replace) {
-	return trie && data && PN_(put)(trie, data, eject, replace);
+	return trie && datum && PN_(put)(trie, datum, eject, replace);
 }
 
 /** Remove `key` from `trie`.
