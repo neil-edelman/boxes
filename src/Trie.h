@@ -5,15 +5,14 @@
 
  ![Example of trie.](../web/trie.png)
 
- A <tag:<N>Trie> is an array of pointers-to-`N` and index on a unique
- identifier string that is associated to `N`. Strings can be any encoding with
- a byte null-terminator; in particular, `C` native strings, including
+ A <tag:<N>Trie> is a prefix tree implemented as an array of pointers-to-`N`
+ and index on a unique identifier string that is associated to `N` in
+ \O(`size`) space. Strings can be any encoding with a byte null-terminator; in
+ particular, `C` native strings, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8). It can
- be seen as a <Morrison, 1968 PATRICiA>, in that it only stores data in the
- index on the positions where the strings are different. It is also a
- [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) which lives in
- compact \O(`size`) extra memory. Insertion and deletion are slower because
- the need to update the array index.
+ be seen as a <Morrison, 1968 PATRICiA>, a
+ [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that it only
+ stores data in the index on the bit-positions where the strings are different.
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
  with `errno`. The parameters are `#define` preprocessor macros, and are all
@@ -233,7 +232,6 @@ static void PN_(trie)(struct N_(Trie) *const trie) {
 static void PN_(trie_)(struct N_(Trie) *const trie) {
 	assert(trie);
 	array_TrieBranch_array_(&trie->branches), PT_(array_)(&trie->leaves);
-	PN_(trie)(trie);
 }
 
 /** Recursive function used for <fn:<PN>init>. Initialise branches of `trie` up
@@ -246,7 +244,7 @@ static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 	assert(trie && a_size && a_size <= trie->leaves.size && trie->leaves.size
 		&& trie->branches.capacity >= trie->leaves.size - 1);
 	if(a_size <= 1) return;
-	/* Endpoints. */
+	/* Endpoints of sorted range: skip [_1_111...] or [...000_0_]. */
 	while(trie_is_bit(PN_(to_key)(trie->leaves.data[a]), bit)
 		|| !trie_is_bit(PN_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
 		bit++;
@@ -285,8 +283,7 @@ static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
 }
 
 /** Add `data` to `trie`. Must not be the same as any key of trie; _ie_ it does
- not check for the end of the string.
- @order \Theta(`nodes`)
+ not check for the end of the string. @return Success. @order \O(|`t`|)
  @throws[ERANGE] At capacity or string too long. @throws[realloc] */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const data) {
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
@@ -344,15 +341,17 @@ insert:
 	return 1;
 }
 
-/** @return `trie` leaf that potentially matches `key` or null if it definitely
- is not in `trie`. */
+/** Don't care bits of `key` are not tested, those that aren't involved in
+ making a decision, and are not stored in the trie. @return `t` leaf that
+ potentially matches `key` or null if it definitely is not in `t`.
+ @order \O(`key.length`) */
 static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
 	TrieBranch branch;
 	unsigned n0_byte, str_byte = 0, bit;
 	assert(trie && key);
-	if(n1 <= 1) return n1 ? trie->leaves.data : 0; /* Special case. */
+	if(!n1) return 0; /* Special case: empty has no matches. */
 	n1--, assert(n1 == trie->branches.size);
 	while(n0 < n1) {
 		branch = trie->branches.data[n0];
@@ -365,6 +364,31 @@ static PN_(Leaf) *PN_(match)(const struct N_(Trie) *const trie,
 	}
 	assert(n0 == n1 && i < trie->leaves.size);
 	return trie->leaves.data + i;
+}
+
+/** In `t` that must be non-empty, given a partial `key`, stores the leaf
+ [`low`, `high`] descision bits prefix matches. @order \O(`key.length`) */
+static void PN_(match_prefix)(const struct N_(Trie) *const trie,
+	const char *const key, size_t *const low, size_t *const high) {
+	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
+	TrieBranch branch;
+	unsigned n0_byte, str_byte = 0, bit;
+	assert(trie && key && low && high && n1);
+	n1--, assert(n1 == trie->branches.size);
+	while(n0 < n1) {
+		branch = trie->branches.data[n0];
+		bit = trie_bit(branch);
+		/* _Sic_; `\0` is _not_ included for partial match. */
+		for(n0_byte = bit >> 3; str_byte <= n0_byte; str_byte++)
+			if(key[str_byte] == '\0') goto finally;
+		left = trie_left(branch);
+		if(!trie_is_bit(key, bit)) n1 = ++n0 + left;
+		else n0 += left + 1, i += left + 1;
+	}
+	assert(n0 == n1);
+finally:
+	assert(n0 <= n1 && i - n0 + n1 < trie->leaves.size);
+	*low = i, *high = i - n0 + n1;
 }
 
 /** @return `key` is an element of `trie` that is an exact match or null. */
@@ -603,8 +627,8 @@ static const char *N_(TrieToString)(const struct N_(Trie) *const trie)
 static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(trie)(0); PN_(trie_)(0); PN_(init)(0, 0, 0, 0); PN_(add)(0, 0);
-	PN_(match)(0, 0); PN_(get)(0, 0); PN_(put)(0, 0, 0, 0); PN_(remove)(0, 0);
-	PN_(shrink)(0);
+	PN_(match)(0, 0); PN_(match_prefix)(0, 0, 0, 0); PN_(get)(0, 0);
+	PN_(put)(0, 0, 0, 0); PN_(remove)(0, 0); PN_(shrink)(0);
 #ifndef TRIE_CHILD /* <!-- !sub-type */
 	N_(Trie_)(0); N_(Trie)(0); N_(TrieFromArray)(0, 0, 0, 0); N_(TrieSize)(0);
 	N_(TrieArray)(0); N_(TrieClear)(0); N_(TrieGet)(0, 0); N_(TrieClose)(0, 0);
