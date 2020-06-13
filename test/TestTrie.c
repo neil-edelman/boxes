@@ -18,10 +18,6 @@
 #include "Orcish.h"
 
 
-/* This is a dictionary defined in `parole_inglesi.c`. */
-extern const char *const parole[];
-extern const size_t parole_size;
-
 /** Just a placeholder to get `graph()`; <fn:StrTrieTest> will crash. */
 static void fill_str(const char *str) { (void)(str); }
 
@@ -274,7 +270,8 @@ static double m_stddev(const struct Measure *const measure)
 	X(TRIEINIT), X(TRIELOOK), \
 	X(HASHINIT), X(HASHLOOK)
 
-static int timing_comparison(void) {
+static int timing_comparison(const char *const *const keys,
+	const size_t keys_size) {
 	struct StrTrie trie = TRIE_IDLE;
 	struct StrArray array = ARRAY_IDLE;
 	struct StringSet set = SET_IDLE;
@@ -288,7 +285,7 @@ static int timing_comparison(void) {
 		es[] = { ES(STRUCT) }, gnu = { "experiment", 0, {0,0,0} };
 	const size_t es_size = sizeof es / sizeof *es;
 
-	fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
+	assert(keys && keys_size);
 
 	/* Open all graphs for writing. */
 	for(e = 0; e < es_size; e++) {
@@ -300,17 +297,17 @@ static int timing_comparison(void) {
 			es[e].name, (unsigned long)replicas);
 	}
 	for(n = 1; !is_full; n <<= 1) {
-		if(n >= parole_size) is_full = 1, n = parole_size;
+		if(n >= keys_size) is_full = 1, n = keys_size;
 		for(e = 0; e < es_size; e++) m_reset(&es[e].m);
 		for(r = 0; r < replicas; r++) {
-			size_t start_i = rand() / (RAND_MAX / parole_size + 1);
+			size_t start_i = rand() / (RAND_MAX / keys_size + 1);
 			t_total = clock();
 			printf("Replica %lu/%lu.\n", r + 1, replicas);
 
 			/* Sorted array; pre-allocate for fair test. */
-			array_fill(&array, parole, parole_size, start_i, n);
+			array_fill(&array, keys, keys_size, start_i, n);
 			t = clock();
-			array_fill(&array, parole, parole_size, start_i, n);
+			array_fill(&array, keys, keys_size, start_i, n);
 			qsort(array.data, array.size, sizeof array.data,
 				&array_Str_compar_anonymous);
 			StrArrayCompactify(&array, 0);
@@ -320,7 +317,7 @@ static int timing_comparison(void) {
 			t = clock();
 			printf("Array: %s.\n", StrArrayToString(&array));
 			for(i = 0; i < n; i++) {
-				const char *const word = parole[(start_i + i) % parole_size],
+				const char *const word = keys[(start_i + i) % keys_size],
 					**const key = bsearch(&word, array.data, array.size,
 					sizeof array.data, &array_Str_compar_anonymous);
 				const int cmp = strcmp(word, *key);
@@ -335,7 +332,7 @@ static int timing_comparison(void) {
 			t = clock();
 			for(i = 0; i < n; i++) {
 				struct StringSetElement *elem = StringElementPoolNew(&set_pool);
-				elem->key = parole[(start_i + i) % parole_size];
+				elem->key = keys[(start_i + i) % keys_size];
 				if(StringSetPolicyPut(&set, elem, 0))
 					StringElementPoolRemove(&set_pool, elem);
 			}
@@ -344,7 +341,7 @@ static int timing_comparison(void) {
 				(unsigned long)StringSetSize(&set), StringSetToString(&set));
 			t = clock();
 			for(i = 0; i < n; i++) {
-				const char *const word = parole[(start_i + i) % parole_size];
+				const char *const word = keys[(start_i + i) % keys_size];
 				const struct StringSetElement *const elem
 					= StringSetGet(&set, word);
 				const int cmp = strcmp(word, elem->key);
@@ -356,7 +353,7 @@ static int timing_comparison(void) {
 
 			/* Trie. */
 			t = clock();
-			array_fill(&array, parole, parole_size, start_i, n);
+			array_fill(&array, keys, keys_size, start_i, n);
 			StrTrieClear(&trie);
 			StrTrieFromArray(&trie, array.data, array.size, 0);
 			m_add(&es[TRIEINIT].m, diff_us(t));
@@ -364,7 +361,7 @@ static int timing_comparison(void) {
 				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
 			t = clock();
 			for(i = 0; i < n; i++) {
-				const char *const word = parole[(start_i + i) % parole_size],
+				const char *const word = keys[(start_i + i) % keys_size],
 					*const key = StrTrieGet(&trie, word);
 				const int cmp = strcmp(word, key);
 				(void)cmp, assert(key && !cmp);
@@ -378,10 +375,13 @@ static int timing_comparison(void) {
 				&& 10.0 * (clock() - t_total) / CLOCKS_PER_SEC > 1.0 * replicas)
 				replicas--;
 		}
-		for(e = 0; e < es_size; e++) fprintf(es[e].fp, "%lu\t%f\t%f\n",
-			(unsigned long)n, m_mean(&es[e].m), m_stddev(&es[e].m));
-		if(n != 512) continue;
-		trie_Str_graph(&trie, "graph/example.gv");
+		for(e = 0; e < es_size; e++) {
+			double stddev = m_stddev(&es[e].m);
+			if(stddev != stddev) stddev = 0; /* Is nan; happens. */
+			fprintf(es[e].fp, "%lu\t%f\t%f\n",
+				(unsigned long)n, m_mean(&es[e].m), stddev);
+		}
+		if(n == 512) trie_Str_graph(&trie, "graph/example.gv");
 	}
 	printf("Test passed.\n");
 	goto finally;
@@ -415,7 +415,7 @@ finally:
 			"set output \"graph/%s.eps\"\n"
 			"set grid\n"
 			"set xlabel \"elements\"\n"
-			"set ylabel \"amortised time per unit, t (ns)\"\n"
+			"set ylabel \"time per element, t (ns)\"\n"
 			"set yrange [0:2000]\n"
 			"set log x\n"
 			"plot", gnu.name);
@@ -456,7 +456,7 @@ finally2:
 #endif /* benchmark --> */
 
 
-struct Dict { char word[12]; int defn; };
+struct Dict { char word[64]; int defn; };
 
 static const char *dict_key(const struct Dict *const dict)
 	{ return dict->word; }
@@ -481,7 +481,34 @@ int main(void) {
 	DictTrieTest();
 	printf("\n***\n\n");
 #ifdef TRIE_BENCHMARK /* <!-- bench */
-	timing_comparison();
+	{
+#if 0
+		/* This is a dictionary defined in `parole_inglesi.c`. */
+		extern const char *const parole[];
+		extern const size_t parole_size;
+		fprintf(stderr, "parole_size %lu\n", (unsigned long)parole_size);
+		timing_comparison(parole, parole_size);
+#else
+		const char **orcs = 0;
+		char *content = 0;
+		const size_t orcs_size = 10000000, each = 64;
+		size_t n;
+		if(!(orcs = malloc(sizeof *orcs * orcs_size))
+			|| !(content = malloc(sizeof *content * each * orcs_size)))
+			goto catch;
+		for(n = 0; n < orcs_size; n++) {
+			orcs[n] = content + each * n;
+			Orcish(content + each * n, each);
+			/*printf("orc: %s.\n", orcs[n]);*/
+		}
+		timing_comparison(orcs, orcs_size);
+		goto finally;
+	catch:
+		perror("orcs");
+	finally:
+		free(orcs), free(content);
+#endif
+	}
 #else /* bench --><!-- !bench */
 	/*(void)timing_comparison;*/
 #endif /* !bench --> */
