@@ -5,12 +5,12 @@
 
  ![Example of trie.](../web/trie.png)
 
- A <tag:<N>Trie> is a prefix tree implemented as an array of pointers-to-`N`
- and index on a key which is a unique string that is associated to each `N`,
- kept in order. It can be seen as a <Morrison, 1968 PATRICiA>: a compact
- [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing
- the bit-positions where the strings are different. Strings can be any encoding
- with a byte null-terminator, (`C` strings,) including
+ A <tag:<N>Trie> is a prefix tree, digital tree, or trie, implemented as an
+ array of pointers-to-`N` whose keys are always in lexicographically-sorted
+ order and index on the keys. It can be seen as a <Morrison, 1968 PATRICiA>: a
+ compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
+ storing the where the keys are different. Strings can be any encoding with a
+ byte null-terminator, (`C` strings,) including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
  `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
