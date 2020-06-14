@@ -484,7 +484,7 @@ int main(void) {
 	printf("\n***\n\n");
 #ifdef TRIE_BENCHMARK /* <!-- bench */
 	{
-#if 0
+#if 1
 		/* This is a dictionary defined in `parole_inglesi.c`. */
 		extern const char *const parole[];
 		extern const size_t parole_size;
