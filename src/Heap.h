@@ -481,7 +481,7 @@ static int PHA_(is_valid)(const struct PH_(Iterator) *const it)
 #define TO_STRING_IS_VALID &PHA_(is_valid)
 #include "ToString.h"
 
-/** @return Prints `a`. */
+/** @return Prints `heap`. */
 static const char *PHA_(to_string)(const struct H_(Heap) *const heap) {
 	struct PH_(Iterator) it = { 0, 0 };
 	it.a = &heap->a; /* Can be null. */
@@ -526,10 +526,14 @@ static void PHA_(unused_to_string_coda)(void) { PHA_(unused_to_string)(); }
 #ifdef HEAP_UNFINISHED /* <!-- unfinish */
 #undef HEAP_UNFINISHED
 #else /* unfinish --><!-- finish */
+#ifndef HEAP_CHILD /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
+#else /* !sub-type --><!-- sub-type */
+#undef HEAP_CHILD
+#endif /* sub-type --> */
 #undef H_
 #undef PH_
 #undef HEAP_NAME
@@ -542,9 +546,6 @@ static void PHA_(unused_to_string_coda)(void) { PHA_(unused_to_string)(); }
 #endif
 #ifdef HEAP_TEST_BASE
 #undef HEAP_TEST_BASE
-#endif
-#ifdef HEAP_CHILD
-#undef HEAP_CHILD
 #endif
 #endif /* finish --> */
 

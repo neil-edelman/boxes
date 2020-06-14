@@ -38,7 +38,7 @@
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>Priority">&lt;PH&gt;Priority</a>, <a href = "#typedef:<PH>Compare">&lt;PH&gt;Compare</a>, <a href = "#typedef:<PH>Value">&lt;PH&gt;Value</a>, <a href = "#typedef:<PH>PValue">&lt;PH&gt;PValue</a>, <a href = "#typedef:<PH>ToString">&lt;PH&gt;ToString</a>, <a href = "#typedef:<PH>BiAction">&lt;PH&gt;BiAction</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>HeapNode">&lt;H&gt;HeapNode</a>, <a href = "#tag:<H>Heap">&lt;H&gt;Heap</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>HeapNode">&lt;H&gt;HeapNode</a>, <a href = "#tag:<H>Heap">&lt;H&gt;Heap</a>, <a href = "#tag:<PH>Iterator">&lt;PH&gt;Iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -60,13 +60,15 @@
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
 	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an assignable type <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> associated therewith. <code>HEAP_NAME</code> is required but <code>HEAP_TYPE</code> defaults to <code>unsigned int</code> if not specified. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;Compare">&lt;PH&gt;Compare</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, if <code>HEAP_TYPE</code> is changed, this may be required.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;Compare">&lt;PH&gt;Compare</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>; thus, declaring it is sufficent, it doesn't need to be defined.</dd>
-	<dt>Parameter: HEAP_TO_STRING</dt>
-	<dd>Optional print function implementing <a href = "#typedef:&lt;PH&gt;ToString">&lt;PH&gt;ToString</a>; makes available <a href = "#fn:&lt;H&gt;HeapToString">&lt;H&gt;HeapToString</a>.</dd>
+	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>; declaring it is sufficent.</dd>
+	<dt>Parameter: HEAP_UNFINISHED</dt>
+	<dd>Do not un-define variables for including again in an interface.</dd>
+	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
+	<dd>To string interface contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PH&gt;ToString">&lt;PH&gt;ToString</a>. There can be multiple to string interfaces, but only one can omit <code>HEAP_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
-	<dd>Unit testing framework <a href = "#fn:&lt;H&gt;HeapTest">&lt;H&gt;HeapTest</a>, included in a separate header, <a href = "../test/HeapTest.h">../test/HeapTest.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;BiAction">&lt;PH&gt;BiAction</a>. Requires <code>HEAP_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
+	<dd>To string interface optional unit testing framework using <code>assert</code>; contained in <a href = "../test/HeapTest.h">../test/HeapTest.h</a>. Can only be defined once per <code>Heap</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;BiAction">&lt;PH&gt;BiAction</a>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
@@ -125,7 +127,7 @@
 
 <p><code>typedef void(*<strong>&lt;PH&gt;ToString</strong>)(const struct &lt;H&gt;HeapNode *, char(*)[12]);</code></p>
 
-<p>Responsible for turning <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a> into a maximum 11-<code>char</code> string. Used for <code>HEAP_TO_STRING</code>.</p>
+<p>Responsible for turning <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a> into a maximum 11-<code>char</code> string.</p>
 
 </div>
 
@@ -145,9 +147,9 @@
 
 <h3><a id = "tag:<H>HeapNode" name = "tag:<H>HeapNode">&lt;H&gt;HeapNode</a></h3>
 
-<p><code>struct <strong>&lt;H&gt;HeapNode</strong> { &lt;PH&gt;Priority priority; &lt;PH&gt;PValue value; };</code></p>
+<p><code>struct <strong>&lt;H&gt;HeapNode</strong>;</code></p>
 
-<p>Stores a <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> as <code>priority</code>, which can be set by <code>HASH_TYPE</code>. If <code>HASH_VALUE</code> is set, also stores a pointer <a href = "#typedef:&lt;PH&gt;PValue">&lt;PH&gt;PValue</a> called <code>value</code>.</p>
+<p>Stores a <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> as <code>priority</code>, which can be set by <code>HEAP_TYPE</code>. If <code>HEAP_VALUE</code> is set, also stores a pointer <a href = "#typedef:&lt;PH&gt;PValue">&lt;PH&gt;PValue</a> called <code>value</code>.</p>
 
 </div>
 
@@ -160,6 +162,16 @@
 <p>Stores the heap as an implicit binary tree in an array. To initialise it to an idle state, see <a href = "#fn:&lt;H&gt;Heap">&lt;H&gt;Heap</a>, <code>HEAP_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 280></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<PH>Iterator" name = "tag:<PH>Iterator">&lt;PH&gt;Iterator</a></h3>
+
+<p><code>struct <strong>&lt;PH&gt;Iterator</strong> { const struct &lt;H&gt;HeapNodeArray *a; size_t i; };</code></p>
+
+<p>Contains all iteration parameters in one.</p>
 
 </div>
 
@@ -191,7 +203,7 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<H>HeapBuffer">&lt;H&gt;HeapBuffer</a></td><td>heap, add</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<H>HeapToString">&lt;H&gt;HeapToString</a></td><td>heap</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<H>Heap<A>ToString">&lt;H&gt;Heap&lt;A&gt;ToString</a></td><td>heap</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<H>HeapTest">&lt;H&gt;HeapTest</a></td><td>param</td></tr>
 
@@ -396,17 +408,15 @@
 
 <div>
 
-<h3><a id = "fn:<H>HeapToString" name = "fn:<H>HeapToString">&lt;H&gt;HeapToString</a></h3>
+<h3><a id = "fn:<H>Heap<A>ToString" name = "fn:<H>Heap<A>ToString">&lt;H&gt;Heap&lt;A&gt;ToString</a></h3>
 
-<p><code>static const char *<strong>&lt;H&gt;HeapToString</strong>(const struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
-
-<p>Can print 4 things at once before it overwrites. One must a <code>HEAP_TO_STRING</code> to a function implementing <a href = "#typedef:&lt;PH&gt;ToString">&lt;PH&gt;ToString</a> to get this functionality.</p>
+<p><code>static const char *<strong>&lt;H&gt;Heap&lt;A&gt;ToString</strong>(const struct &lt;H&gt;Heap *const <em>heap</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Prints <code>heap</code> in a static buffer.</dd>
+	<dd>Print the contents of <code>heap</code> in a static string buffer with the limitations of <code>ToString.h</code>.</dd>
 	<dt>Order:</dt>
-	<dd>&#920;(1); it has a 255 character limit; every element takes some of it.</dd>
+	<dd>&#920;(1)</dd>
 </dl>
 
 </div>

@@ -4,7 +4,7 @@
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;Priority](#user-content-typedef-57e15d67), [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e), [&lt;PH&gt;Value](#user-content-typedef-4d915774), [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02), [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3), [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f), [&lt;H&gt;Heap](#user-content-tag-f1ee6af)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f), [&lt;H&gt;Heap](#user-content-tag-f1ee6af), [&lt;PH&gt;Iterator](#user-content-tag-5f5c1185)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -22,13 +22,15 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
    `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) associated therewith\. `HEAP_NAME` is required but `HEAP_TYPE` defaults to `unsigned int` if not specified\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: HEAP\_COMPARE  
-   A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, if `HEAP_TYPE` is changed, this may be required\.
+   A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
-   Optional payload [&lt;PH&gt;Value](#user-content-typedef-4d915774), that is stored as a reference in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f); thus, declaring it is sufficent, it doesn't need to be defined\.
- * Parameter: HEAP\_TO\_STRING  
-   Optional print function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3); makes available [&lt;H&gt;HeapToString](#user-content-fn-2dd2ccc3)\.
+   Optional payload [&lt;PH&gt;Value](#user-content-typedef-4d915774), that is stored as a reference in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f); declaring it is sufficent\.
+ * Parameter: HEAP\_UNFINISHED  
+   Do not un\-define variables for including again in an interface\.
+ * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
+   To string interface contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3)\. There can be multiple to string interfaces, but only one can omit `HEAP_TO_STRING_NAME`\.
  * Parameter: HEAP\_TEST  
-   Unit testing framework [&lt;H&gt;HeapTest](#user-content-fn-17b017db), included in a separate header, [\.\./test/HeapTest\.h](../test/HeapTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)\. Requires `HEAP_TO_STRING` and not `NDEBUG`\.
+   To string interface optional unit testing framework using `assert`; contained in [\.\./test/HeapTest\.h](../test/HeapTest.h)\. Can only be defined once per `Heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)\.
  * Standard:  
    C89
  * Dependancies:  
@@ -77,7 +79,7 @@ If `HEAP_VALUE` is set, a pointer to the [&lt;PH&gt;Value](#user-content-typedef
 
 <code>typedef void(*<strong>&lt;PH&gt;ToString</strong>)(const struct &lt;H&gt;HeapNode *, char(*)[12]);</code>
 
-Responsible for turning [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f) into a maximum 11\-`char` string\. Used for `HEAP_TO_STRING`\.
+Responsible for turning [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f) into a maximum 11\-`char` string\.
 
 
 
@@ -93,9 +95,9 @@ Operates by side\-effects\. Used for `HEAP_TEST`\.
 
 ### <a id = "user-content-tag-ba24d32f" name = "user-content-tag-ba24d32f">&lt;H&gt;HeapNode</a> ###
 
-<code>struct <strong>&lt;H&gt;HeapNode</strong> { &lt;PH&gt;Priority priority; &lt;PH&gt;PValue value; };</code>
+<code>struct <strong>&lt;H&gt;HeapNode</strong>;</code>
 
-Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, which can be set by `HASH_TYPE`\. If `HASH_VALUE` is set, also stores a pointer [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02) called `value`\.
+Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, which can be set by `HEAP_TYPE`\. If `HEAP_VALUE` is set, also stores a pointer [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02) called `value`\.
 
 
 
@@ -106,6 +108,14 @@ Stores a [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) as `priority`, whi
 Stores the heap as an implicit binary tree in an array\. To initialise it to an idle state, see [&lt;H&gt;Heap](#user-content-fn-f1ee6af), `HEAP_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
 ![States.](web/states.png)
+
+
+
+### <a id = "user-content-tag-5f5c1185" name = "user-content-tag-5f5c1185">&lt;PH&gt;Iterator</a> ###
+
+<code>struct <strong>&lt;PH&gt;Iterator</strong> { const struct &lt;H&gt;HeapNodeArray *a; size_t i; };</code>
+
+Contains all iteration parameters in one\.
 
 
 
@@ -135,7 +145,7 @@ Stores the heap as an implicit binary tree in an array\. To initialise it to an 
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-bd0281c5">&lt;H&gt;HeapBuffer</a></td><td>heap, add</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-2dd2ccc3">&lt;H&gt;HeapToString</a></td><td>heap</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-bea37eb2">&lt;H&gt;Heap&lt;A&gt;ToString</a></td><td>heap</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-17b017db">&lt;H&gt;HeapTest</a></td><td>param</td></tr>
 
@@ -306,16 +316,14 @@ Adds and heapifies `add` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https
 
 
 
-### <a id = "user-content-fn-2dd2ccc3" name = "user-content-fn-2dd2ccc3">&lt;H&gt;HeapToString</a> ###
+### <a id = "user-content-fn-bea37eb2" name = "user-content-fn-bea37eb2">&lt;H&gt;Heap&lt;A&gt;ToString</a> ###
 
-<code>static const char *<strong>&lt;H&gt;HeapToString</strong>(const struct &lt;H&gt;Heap *const <em>heap</em>)</code>
-
-Can print 4 things at once before it overwrites\. One must a `HEAP_TO_STRING` to a function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3) to get this functionality\.
+<code>static const char *<strong>&lt;H&gt;Heap&lt;A&gt;ToString</strong>(const struct &lt;H&gt;Heap *const <em>heap</em>)</code>
 
  * Return:  
-   Prints `heap` in a static buffer\.
+   Print the contents of `heap` in a static string buffer with the limitations of `ToString.h`\.
  * Order:  
-   &#920;\(1\); it has a 255 character limit; every element takes some of it\.
+   &#920;\(1\)
 
 
 
