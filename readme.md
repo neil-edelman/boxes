@@ -1,6 +1,6 @@
 # Trie\.h #
 
-## Parameterised String\-Key Trie ##
+## Parameterised Prefix Tree ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Type](#user-content-typedef-c45e6761), [&lt;PN&gt;CType](#user-content-typedef-c16ead3e), [&lt;PN&gt;Key](#user-content-typedef-8524f620), [&lt;PN&gt;Replace](#user-content-typedef-38741b27), [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)
@@ -13,7 +13,7 @@
 
 ![Example of trie.](web/trie.png)
 
-A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` and index on a unique identifier string that is associated to `N`\. Strings can be any encoding with a byte null\-terminator; in particular, `C` native strings, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA), in that it only stores data in the index on the positions where the strings are different\. It is also a [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) which lives in compact &#927;\(`size`\) extra memory\. Insertion and deletion are slower because the need to update the array index\.
+A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is a prefix tree implemented as an array of pointers\-to\-`N` and index on a key which is a unique string that is associated to each `N`, kept in order\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the bit\-positions where the strings are different\. Strings can be any encoding with a byte null\-terminator, \(`C` strings,\) including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
 `Array.h` must be present\. `<N>Trie` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used\.
 
@@ -32,7 +32,7 @@ A [&lt;N&gt;Trie](#user-content-tag-8fc8a233) is an array of pointers\-to\-`N` a
  * Dependancies:  
    [Array.h](../Array/)
  * Caveat:  
-   Have a replace; potentially much less wastful then remove and add\. Compression _ala_ Judy; 64 bits to store mostly 0/1? Could it be done?
+   Have a replace; potentially much less wastful then remove and add\. Compression _ala_ Judy; 64 bits to store mostly 0/1? Could it be done? Don't put two strings side\-by\-side or delete one that causes two strings to be side\-by\-side that have more than 512 matching characters in the same bit\-positions, it will trip an `assert`\. \(Genomic data, perhaps?\)
  * See also:  
    [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set)
 
@@ -83,11 +83,11 @@ Only used if `TRIE_TEST`\.
 
 ### <a id = "user-content-tag-8fc8a233" name = "user-content-tag-8fc8a233">&lt;N&gt;Trie</a> ###
 
-<code>struct <strong>&lt;N&gt;Trie</strong>;</code>
+<code>struct <strong>&lt;N&gt;Trie</strong> { struct TrieBranchArray branches; struct &lt;PN&gt;LeafArray leaves; };</code>
 
 To initialise it to an idle state, see [&lt;N&gt;Trie](#user-content-fn-8fc8a233), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
-A full binary tree stored semi\-implicitly in two arrays: a private one as branches backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as leaves in numerically\-sorted order\.
+A full binary tree stored semi\-implicitly in two Arrays: as `branches` backed by one as pointers\-to\-[&lt;PN&gt;Type](#user-content-typedef-c45e6761) as `leaves` in lexicographically\-sorted order\.
 
 ![States.](web/states.png)
 
@@ -113,7 +113,7 @@ A full binary tree stored semi\-implicitly in two arrays: a private one as branc
 
 <tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#user-content-fn-d87c821d">&lt;N&gt;TrieGet</a></td><td>trie, key</td></tr>
 
-<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#user-content-fn-45ef569">&lt;N&gt;TrieClose</a></td><td>trie, key</td></tr>
+<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#user-content-fn-7424f684">&lt;N&gt;TrieMatch</a></td><td>trie, key</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-fad143b6">&lt;N&gt;TrieAdd</a></td><td>trie, datum</td></tr>
 
@@ -235,21 +235,21 @@ Sets `trie` to be empty\. That is, the size of `trie` will be zero, but if it wa
  * Return:  
    The [&lt;PN&gt;Type](#user-content-typedef-c45e6761) with `key` in `trie` or null no such item exists\.
  * Order:  
-   &#927;\(|`key`|\)\. Specifically, faster then a tree, and deterministic, however, logarithmically slower then a good hash table for sizes not fitting in cache, [Thareja 2011, Data](https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data)\.
+   &#927;\(|`key`|\), [Thareja 2011, Data](https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data)\.
 
 
 
 
-### <a id = "user-content-fn-45ef569" name = "user-content-fn-45ef569">&lt;N&gt;TrieClose</a> ###
+### <a id = "user-content-fn-7424f684" name = "user-content-fn-7424f684">&lt;N&gt;TrieMatch</a> ###
 
-<code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieClose</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code>
+<code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieMatch</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code>
 
  * Parameter: _trie_  
    If null, returns null\.
  * Parameter: _key_  
    If null, returns null\.
  * Return:  
-   The [&lt;PN&gt;Type](#user-content-typedef-c45e6761) reasonably with the Levenson distance closest to `key` in `trie`\.
+   The [&lt;PN&gt;Type](#user-content-typedef-c45e6761) that matches all the bits in trie\.
 
 
 

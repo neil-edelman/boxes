@@ -162,7 +162,9 @@ finally:
 }
 
 
+#ifndef DEBUG
 #define TRIE_BENCHMARK
+#endif
 
 #ifdef TRIE_BENCHMARK /* <!-- benchmark */
 
@@ -509,8 +511,6 @@ int main(void) {
 		free(orcs), free(content);
 #endif
 	}
-#else /* bench --><!-- !bench */
-	/*(void)timing_comparison;*/
 #endif /* !bench --> */
 	return EXIT_SUCCESS;
 }

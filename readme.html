@@ -33,7 +33,7 @@
 
 <h1>Trie.h</h1>
 
-<h2>Parameterised String-Key Trie</h2>
+<h2>Parameterised Prefix Tree</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of trie." src = "web/trie.png" width = 333 height = 255></p>
 
-<p>A <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is an array of pointers-to-<code>N</code> and index on a unique identifier string that is associated to <code>N</code>. Strings can be any encoding with a byte null-terminator; in particular, <code>C</code> native strings, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>, in that it only stores data in the index on the positions where the strings are different. It is also a <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> which lives in compact &#927;(<code>size</code>) extra memory. Insertion and deletion are slower because the need to update the array index.</p>
+<p>A <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is a prefix tree implemented as an array of pointers-to-<code>N</code> and index on a key which is a unique string that is associated to each <code>N</code>, kept in order. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the bit-positions where the strings are different. Strings can be any encoding with a byte null-terminator, (<code>C</code> strings,) including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
 
 <p><code>Array.h</code> must be present. <code>&lt;N&gt;Trie</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used.</p>
 
@@ -70,7 +70,7 @@
 	<dt>Dependancies:</dt>
 	<dd><a href = "../Array/">Array.h</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Have a replace; potentially much less wastful then remove and add. Compression <em>ala</em> Judy; 64 bits to store mostly 0/1? Could it be done?</dd>
+	<dd>Have a replace; potentially much less wastful then remove and add. Compression <em>ala</em> Judy; 64 bits to store mostly 0/1? Could it be done? Don't put two strings side-by-side or delete one that causes two strings to be side-by-side that have more than 512 matching characters in the same bit-positions, it will trip an <code>assert</code>. (Genomic data, perhaps?)</dd>
 	<dt>See also:</dt>
 	<dd><a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a></dd>
 </dl>
@@ -133,11 +133,11 @@
 
 <h3><a id = "tag:<N>Trie" name = "tag:<N>Trie">&lt;N&gt;Trie</a></h3>
 
-<p><code>struct <strong>&lt;N&gt;Trie</strong>;</code></p>
+<p><code>struct <strong>&lt;N&gt;Trie</strong> { struct TrieBranchArray branches; struct &lt;PN&gt;LeafArray leaves; };</code></p>
 
 <p>To initialise it to an idle state, see <a href = "#fn:&lt;N&gt;Trie">&lt;N&gt;Trie</a>, <code>TRIE_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
-<p>A full binary tree stored semi-implicitly in two arrays: a private one as branches backed by one as pointers-to-<a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> as leaves in numerically-sorted order.</p>
+<p>A full binary tree stored semi-implicitly in two Arrays: as <code>branches</code> backed by one as pointers-to-<a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> as <code>leaves</code> in lexicographically-sorted order.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 305></p>
 
@@ -165,7 +165,7 @@
 
 <tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#fn:<N>TrieGet">&lt;N&gt;TrieGet</a></td><td>trie, key</td></tr>
 
-<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#fn:<N>TrieClose">&lt;N&gt;TrieClose</a></td><td>trie, key</td></tr>
+<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#fn:<N>TrieMatch">&lt;N&gt;TrieMatch</a></td><td>trie, key</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>TrieAdd">&lt;N&gt;TrieAdd</a></td><td>trie, datum</td></tr>
 
@@ -310,16 +310,16 @@
 	<dt>Return:</dt>
 	<dd>The <a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> with <code>key</code> in <code>trie</code> or null no such item exists.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(|<code>key</code>|). Specifically, faster then a tree, and deterministic, however, logarithmically slower then a good hash table for sizes not fitting in cache, <a href = "https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data">Thareja 2011, Data</a>.</dd>
+	<dd>&#927;(|<code>key</code>|), <a href = "https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data">Thareja 2011, Data</a>.</dd>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<N>TrieClose" name = "fn:<N>TrieClose">&lt;N&gt;TrieClose</a></h3>
+<h3><a id = "fn:<N>TrieMatch" name = "fn:<N>TrieMatch">&lt;N&gt;TrieMatch</a></h3>
 
-<p><code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieClose</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+<p><code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieMatch</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
 
 <dl>
 	<dt>Parameter: <em>trie</em></dt>
@@ -327,7 +327,7 @@
 	<dt>Parameter: <em>key</em></dt>
 	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
-	<dd>The <a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> reasonably with the Levenson distance closest to <code>key</code> in <code>trie</code>.</dd>
+	<dd>The <a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> that matches all the bits in trie.</dd>
 </dl>
 
 </div>

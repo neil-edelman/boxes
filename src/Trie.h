@@ -280,7 +280,7 @@ static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
 	PN_(init_branches_r)(trie, bit, b, a_size - b_size);
 }
 
-/** Initialises `t` to `a` of size `a_size`, which cannot be zero.
+/** Initialises `trie` to `a` of size `a_size`, which cannot be zero.
  @param[merge] Called with any duplicate entries and replaces if true; if
  null, doesn't replace. @return Success. @throws[ERANGE, malloc] */
 static int PN_(init)(struct N_(Trie) *const trie, PN_(Type) *const*const a,
@@ -347,7 +347,7 @@ static PN_(Leaf) *PN_(index_get)(const struct N_(Trie) *const trie,
 	return PN_(param_index_get)(trie, key, &i) ? trie->leaves.data + i : 0;
 }
 
-/** @return Exact match for `key` in `t` or null. */
+/** @return Exact match for `key` in `trie` or null. */
 static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	size_t i;
@@ -477,7 +477,7 @@ static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const datum,
 	return 1;
 }
 
-/** @return Whether leaf index `i` has been removed from `t`.
+/** @return Whether leaf index `i` has been removed from `trie`.
  @fixme There is nothing stopping an `assert` from being triggered. */
 static int PN_(index_remove)(struct N_(Trie) *const trie, size_t i) {
 	size_t n0 = 0, n1 = trie->branches.size, parent_n0, left;
@@ -513,7 +513,7 @@ static int PN_(index_remove)(struct N_(Trie) *const trie, size_t i) {
 	return 1;
 }
 
-/** @return Whether `key` has been removed from `t`. */
+/** @return Whether `key` has been removed from `trie`. */
 static int PN_(remove)(struct N_(Trie) *const trie, const char *const key) {
 	size_t i;
 	assert(trie && key);
