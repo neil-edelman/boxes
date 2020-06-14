@@ -512,10 +512,14 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #ifdef POOL_UNFINISHED /* <!-- unfinish */
 #undef POOL_UNFINISHED
 #else /* unfinish --><!-- finish */
+#ifndef POOL_CHILD /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
+#else /* !sub-type --><!-- sub-type */
+#undef POOL_CHILD
+#endif /* sub-type --> */
 #undef T
 #undef T_
 #undef PT_
@@ -526,9 +530,6 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #endif
 #ifdef POOL_TEST_BASE
 #undef POOL_TEST_BASE
-#endif
-#ifdef POOL_CHILD
-#undef POOL_CHILD
 #endif
 #endif /* finish --> */
 
