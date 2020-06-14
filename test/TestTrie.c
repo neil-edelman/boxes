@@ -141,7 +141,7 @@ static void test_basic_trie_str(void) {
 	trie_Str_graph(&trie, "graph/trie_a-z-delete.gv");
 	assert(StrTrieSize(&trie) == 6);
 	for(i = 0; i < words_size; i++)
-		printf("\"%s\": %s\n", words[i], StrTrieClose(&trie, words[i]));
+		printf("\"%s\": %s\n", words[i], StrTrieMatch(&trie, words[i]));
 	StrTrie_(&trie);
 
 	printf("Trie from array.\n");
