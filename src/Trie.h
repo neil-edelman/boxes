@@ -341,17 +341,17 @@ static int PN_(param_get)(const struct N_(Trie) *const trie,
 /** @return `trie` entry that matches bits of `key`, (ignoring the don't care
  bits,) or null if either `key` didn't have the length to fully differentiate
  more then one entry or the `trie` is empty. */
-static PN_(Leaf) *PN_(index_get)(const struct N_(Trie) *const trie,
+static PN_(Type) *PN_(index_get)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	size_t i;
-	return PN_(param_index_get)(trie, key, &i) ? trie->leaves.data + i : 0;
+	return PN_(param_index_get)(trie, key, &i) ? trie->leaves.data[i] : 0;
 }
 
 /** @return Exact match for `key` in `trie` or null. */
-static PN_(Leaf) *PN_(get)(const struct N_(Trie) *const trie,
+static PN_(Type) *PN_(get)(const struct N_(Trie) *const trie,
 	const char *const key) {
 	size_t i;
-	return PN_(param_get)(trie, key, &i) ? trie->leaves.data + i : 0;
+	return PN_(param_get)(trie, key, &i) ? trie->leaves.data[i] : 0;
 }
 
 /** In `trie`, which must be non-empty, given a partial `prefix`, stores all
@@ -457,15 +457,17 @@ insert:
  @return Success. @throws[realloc, ERANGE] */
 static int PN_(put)(struct N_(Trie) *const trie, PN_(Type) *const datum,
 	PN_(Type) **const eject, const PN_(Replace) replace) {
-	PN_(Leaf) *match;
 	const char *data_key;
+	PN_(Leaf) *match;
+	size_t i;
 	assert(trie && datum);
 	data_key = PN_(to_key)(datum);
 	/* Add if absent. */
-	if(!(match = PN_(get)(trie, data_key))) {
+	if(!PN_(param_get)(trie, data_key, &i)) {
 		if(eject) *eject = 0;
 		return PN_(add)(trie, datum);
 	}
+	assert(i < trie->leaves.size), match = trie->leaves.data + i;
 	/* Collision policy. */
 	if(replace && !replace(*match, datum)) {
 		if(eject) *eject = datum;
@@ -486,13 +488,13 @@ static int PN_(index_remove)(struct N_(Trie) *const trie, size_t i) {
 	/* Remove leaf. */
 	if(!--trie->leaves.size) return 1; /* Special case of one leaf. */
 	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
-		sizeof(PN_(Leaf)) * (n1 - i));
+		sizeof trie->leaves.data * (n1 - i));
 	/* fixme: Do another descent _not_ modifying to see if the values can be
 	 combined without overflow. */
 	/* Remove branch. */
 	for( ; ; ) {
 		left = trie_left(*(parent = trie->branches.data + (parent_n0 = n0)));
-		if(i <= left) {
+		if(i <= left) { /* Pre-order binary search. */
 			if(!left) { twin = n0 + 1 < n1 ? trie->branches.data + n0 + 1 : 0;
 				break; }
 			n1 = ++n0 + left;
@@ -575,16 +577,16 @@ static void N_(TrieClear)(struct N_(Trie) *const trie)
  exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
 static PN_(Type) *N_(TrieGet)(const struct N_(Trie) *const trie,
 	const char *const key) {
-	PN_(Leaf) *leaf;
-	return trie && key && (leaf = PN_(get)(trie, key)) ? *leaf : 0;
+	PN_(Leaf) leaf;
+	return trie && key && (leaf = PN_(get)(trie, key)) ? leaf : 0;
 }
 
 /** @param[trie, key] If null, returns null.
  @return The <typedef:<PN>Type> that matches all the bits in trie. @allow */
 static PN_(Type) *N_(TrieMatch)(const struct N_(Trie) *const trie,
 	const char *const key) {
-	PN_(Leaf) *leaf;
-	return trie && key && (leaf = PN_(index_get)(trie, key)) ? *leaf : 0;
+	PN_(Leaf) leaf;
+	return trie && key && (leaf = PN_(index_get)(trie, key)) ? leaf : 0;
 }
 
 /** Adds `datum` to `trie` if absent.
