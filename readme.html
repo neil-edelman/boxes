@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of trie." src = "web/trie.png" width = 333 height = 255></p>
 
-<p>A <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is a prefix tree implemented as an array of pointers-to-<code>N</code> and index on a key which is a unique string that is associated to each <code>N</code>, kept in order. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the bit-positions where the strings are different. Strings can be any encoding with a byte null-terminator, (<code>C</code> strings,) including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
+<p>A <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is a prefix tree, digital tree, or trie, implemented as an array of pointers-to-<code>N</code> whose keys are always in lexicographically-sorted order and index on the keys. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the where the keys are different. Strings can be any encoding with a byte null-terminator, (<code>C</code> strings,) including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
 
 <p><code>Array.h</code> must be present. <code>&lt;N&gt;Trie</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used.</p>
 
