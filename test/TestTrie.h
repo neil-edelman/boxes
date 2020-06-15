@@ -26,7 +26,7 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 		printf("%s%s", i ? ", " : "", PN_(to_key)(trie->leaves.data[i]));
 	printf("}; {");
 	for(n = 0; n < trie->branches.size; n++)
-		printf("%s%u:%lu", n ? ", " : "", trie_skip(trie->branches.data[n]),
+		printf("%s%lu:%lu", n ? ", " : "", trie_skip(trie->branches.data[n]),
 		(unsigned long)trie_left(trie->branches.data[n]));
 	printf("}.\n");
 }
@@ -82,7 +82,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 	for(n = 0; n < trie->branches.size; n++) {
 		const size_t branch = trie->branches.data[n];
 		const size_t left = trie_left(branch), right = PN_(right)(trie, n);
-		fprintf(fp, "\tbranch%lu [label = \"%u\"];\n"
+		fprintf(fp, "\tbranch%lu [label = \"%lu\"];\n"
 			"\tbranch%lu -> ", (unsigned long)n, trie_skip(branch),
 			(unsigned long)n);
 		if(left) fprintf(fp, "branch%lu [style = dashed]; // left branch\n",

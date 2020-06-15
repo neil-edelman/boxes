@@ -112,32 +112,32 @@ typedef size_t TrieBranch;
 #define TRIE_LEFT_MAX (((size_t)1 << ((sizeof(size_t) << 3) - TRIE_SKIP)) - 1)
 
 /** @return Packs `skip` and `left` into a branch. */
-static TrieBranch trie_branch(const unsigned skip, const size_t left) {
+static TrieBranch trie_branch(const size_t skip, const size_t left) {
 	assert(skip <= TRIE_SKIP_MAX && left <= TRIE_LEFT_MAX);
 	return skip + (left << TRIE_SKIP);
 }
 
 /** @return Unpacks skip from `branch`. */
-static unsigned trie_skip(const TrieBranch branch)
-	{ return (unsigned)branch & TRIE_SKIP_MAX; }
+static size_t trie_skip(const TrieBranch branch)
+	{ return branch & TRIE_SKIP_MAX; }
 
 /** @return Unpacks left descendent branches from `branch`. */
 static size_t trie_left(const TrieBranch branch) { return branch >> TRIE_SKIP; }
 
 /** Overwrites `skip` in `branch`. */
-static void trie_skip_set(size_t *const branch, unsigned skip) {
+static void trie_skip_set(size_t *const branch, size_t skip) {
 	assert(branch && skip <= TRIE_SKIP_MAX);
 	*branch &= ~TRIE_SKIP_MAX;
 	*branch += skip;
 }
 
-/** Increments the left `branch` count. */
+/** Increments the left descendants `branch` count. */
 static void trie_left_inc(size_t *const branch) {
 	assert(branch && *branch < ~(size_t)TRIE_SKIP_MAX);
 	*branch += TRIE_SKIP_MAX + 1;
 }
 
-/** Decrements the left `branch` count. */
+/** Decrements the left descendants `branch` count. */
 static void trie_left_dec(size_t *const branch) {
 	assert(branch && *branch > TRIE_SKIP_MAX);
 	*branch -= TRIE_SKIP_MAX + 1;
@@ -147,15 +147,15 @@ static void trie_left_dec(size_t *const branch) {
  @return In the `bit` position, positive if `a` is after `b`, negative if `a`
  is before `b`, or zero if `a` is equal to `b`. */
 static int trie_strcmp_bit(const char *const a, const char *const b,
-	const unsigned bit) {
-	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
-	return (a[byte] & mask) - (b[byte] & mask);
+	const size_t bit) {
+	const size_t byte = bit >> 3, mask = 128 >> (bit & 7);
+	return !(b[byte] & mask) - !(a[byte] & mask);
 }
 
-/** From string `a`, extract `bit` and return zero or non-zero if one. */
-static unsigned trie_is_bit(const char *const a, const unsigned bit) {
-	const unsigned byte = bit >> 3, mask = 128 >> (bit & 7);
-	return a[byte] & mask;
+/** From string `a`, extract `bit`. */
+static int trie_is_bit(const char *const a, const size_t bit) {
+	const size_t byte = bit >> 3, mask = 128 >> (bit & 7);
+	return !!(a[byte] & mask);
 }
 
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
@@ -254,10 +254,10 @@ static void PN_(trie_)(struct N_(Trie) *const trie) {
 /** Recursive function used for <fn:<PN>init>. Initialise branches of `trie` up
  to `bit` with `a` to `a_size` array of sorted leaves.
  @order Speed \O(`a_size` log E(`a.length`))?; memory \O(E(`a.length`)). */
-static void PN_(init_branches_r)(struct N_(Trie) *const trie, unsigned bit,
+static void PN_(init_branches_r)(struct N_(Trie) *const trie, size_t bit,
 	const size_t a, const size_t a_size) {
 	size_t b = a, b_size = a_size, half;
-	unsigned skip = 0;
+	size_t skip = 0;
 	TrieBranch *branch;
 	assert(trie && a_size && a_size <= trie->leaves.size && trie->leaves.size
 		&& trie->branches.capacity >= trie->leaves.size - 1);
@@ -310,7 +310,7 @@ static int PN_(param_index_get)(const struct N_(Trie) *const trie,
 	const char *const key, size_t *const result) {
 	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
 	TrieBranch branch;
-	unsigned n0_byte, str_byte = 0, bit = 0; /* fixme: should be wider. */
+	size_t n0_byte, str_byte = 0, bit = 0;
 	assert(trie && key && result);
 	if(!n1) return 0; /* Special case: there is nothing to match. */
 	n1--, assert(n1 == trie->branches.size);
@@ -361,7 +361,7 @@ static void PN_(index_prefix)(const struct N_(Trie) *const trie,
 	const char *const prefix, size_t *const low, size_t *const high) {
 	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
 	TrieBranch branch;
-	unsigned n0_byte, str_byte = 0, bit = 0;
+	size_t n0_byte, str_byte = 0, bit = 0;
 	assert(trie && prefix && low && high && n1);
 	n1--, assert(n1 == trie->branches.size);
 	while(n0 < n1) {
@@ -398,10 +398,9 @@ static int PN_(prefix)(const struct N_(Trie) *const trie,
  that are equal in more than 2^12 bits. */
 static int PN_(add)(struct N_(Trie) *const trie, PN_(Type) *const datum) {
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
-	size_t n0 = 0, n1 = branch_size, i = 0, left;
+	size_t n0 = 0, n1 = branch_size, i = 0, left, bit = 0, bit0 = 0, bit1;
 	TrieBranch *branch = 0;
 	const char *const data_key = PN_(to_key)(datum), *n0_key;
-	unsigned bit = 0, bit0 = 0, bit1;
 	PN_(Leaf) *leaf;
 	int cmp;
 	assert(trie && datum);
@@ -442,7 +441,7 @@ insert:
 	/* Insert branch. */
 	branch = trie->branches.data + n0;
 	if(n0 != n1) { /* Split the skip value with the existing branch. */
-		const unsigned branch_skip = trie_skip(*branch);
+		const size_t branch_skip = trie_skip(*branch);
 		assert(branch_skip + bit0 >= bit + !n0);
 		trie_skip_set(branch, branch_skip + bit0 - bit - !n0);
 	}
