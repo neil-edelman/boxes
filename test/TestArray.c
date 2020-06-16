@@ -25,7 +25,7 @@ static void colour_filler(enum Colour *const c)
 	{ *c = rand() / (RAND_MAX / (int)colour_size + 1); }
 #define ARRAY_NAME Colour
 #define ARRAY_TYPE enum Colour
-#define ARRAY_EXPECT_INTERFACE
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_TO_STRING &colour_to_string
 #define ARRAY_TEST &colour_filler
@@ -39,7 +39,7 @@ static void str4_filler(struct Str4 *const s)
 	{ Orcish(s->value, sizeof s->value); }
 #define ARRAY_NAME Str4
 #define ARRAY_TYPE struct Str4
-#define ARRAY_EXPECT_INTERFACE
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_TO_STRING &str4_to_string
 #define ARRAY_TEST &str4_filler
@@ -54,11 +54,11 @@ static int int_cmp(const int *const a, const int *const b)
 	{ return (*a > *b) - (*b > *a); }
 #define ARRAY_NAME Int
 #define ARRAY_TYPE int
-#define ARRAY_EXPECT_INTERFACE
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_TO_STRING &int_to_string
 #define ARRAY_TEST &int_filler
-#define ARRAY_EXPECT_INTERFACE
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_COMPARE &int_cmp
 #include "../src/Array.h"
@@ -79,20 +79,20 @@ static int keyval_value_cmp(const struct Keyval *const a,
 	const struct Keyval *const b) { return strcmp(a->value, b->value); }
 #define ARRAY_NAME Keyval
 #define ARRAY_TYPE struct Keyval
-#define ARRAY_EXPECT_INTERFACE
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_TO_STRING &keyval_key_to_string
 #define ARRAY_TEST &keyval_filler
-#define ARRAY_EXPECT_INTERFACE
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_TO_STRING_NAME Value
 #define ARRAY_TO_STRING &keyval_value_to_string
-#define ARRAY_EXPECT_INTERFACE
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_COMPARE &keyval_key_cmp
-#define ARRAY_EXPECT_INTERFACE
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
-#define ARRAY_CONTRAST_NAME Value
+#define ARRAY_COMPARABLE_NAME Value
 #define ARRAY_COMPARE &keyval_value_cmp
 #include "../src/Array.h"
 

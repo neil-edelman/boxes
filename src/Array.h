@@ -19,27 +19,28 @@
  associated therewith; required. `<PT>` is private, whose names are prefixed in
  a manner to avoid collisions; any should be re-defined prior to use elsewhere.
 
- @param[ARRAY_EXPECT_INTERFACE]
- Do not un-define variables for including again in an interface.
+ @param[ARRAY_EXPECT_TRAIT]
+ Do not un-define variables for including again in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string interface contained in <ToString.h>; `<A>` that satisfies `C` naming
+ To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PT>ToString>.
- There can be multiple to string interfaces, but only one can omit
+ There can be multiple to string traits, but only one can omit
  `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
- To string interface optional unit testing framework using `assert`; contained
+ To string trait optional unit testing framework using `assert`; contained
  in <../test/ArrayTest.h>. Can only be defined once per `Array`. Must be
  defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
- Output will be shown with the to string interface in which it's defined.
+ Output will be shown with the to string interface in which it's defined;
+ provides tests for the base code and all later interfaces.
 
- @param[ARRAY_CONTRAST_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
- Compare interface; `<C>` that satisfies `C` naming conventions when mangled
+ @param[ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
+ Comparable trait; `<C>` that satisfies `C` naming conventions when mangled
  and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>Bipredicate>`
  that establishes an equivalence relation, and for `ARRAY_COMPARE`
  <typedef:<PT>Compare> that further establishes a total order. There can be
- multiple contrast interfaces, but only one can omit `ARRAY_CONTRAST_NAME`.
+ multiple contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -61,40 +62,40 @@
 #ifndef ARRAY_TYPE
 #error Tag type ARRAY_TYPE undefined.
 #endif
-/* Can not use `defined` recusively for some reason (`C99 6.10`.) */
 #if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
-#define ARRAY_TO_STRING_INTERFACE 1
+#define ARRAY_TO_STRING_TRAIT 1
 #else
-#define ARRAY_TO_STRING_INTERFACE 0
+#define ARRAY_TO_STRING_TRAIT 0
 #endif
-#if defined(ARRAY_CONTRAST_NAME) || defined(ARRAY_COMPARE) \
+#if defined(ARRAY_COMPARABLE_NAME) || defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_IS_EQUAL)
-#define ARRAY_CONTRAST_INTERFACE 1
+#define ARRAY_COMPARABLE_TRAIT 1
 #else
-#define ARRAY_CONTRAST_INTERFACE 0
+#define ARRAY_COMPARABLE_TRAIT 0
 #endif
-#define ARRAY_INTERFACES ARRAY_TO_STRING_INTERFACE + ARRAY_CONTRAST_INTERFACE
-#if ARRAY_INTERFACES > 1
-#error Only one interface per include is allowed; use ARRAY_EXPECT_INTERFACE.
+#define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARABLE_TRAIT
+#if ARRAY_TRAITS > 1
+#error Only one interface per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
-#if (ARRAY_INTERFACES == 0) && defined(ARRAY_TEST)
+#if (ARRAY_TRAITS == 0) && defined(ARRAY_TEST)
 #error ARRAY_TEST must be defined in ARRAY_TO_STRING interface.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
 #endif
-#if defined(ARRAY_CONTRAST_NAME) \
-	&& !defined(ARRAY_COMPARE) && !defined(ARRAY_IS_EQUAL)
-#error ARRAY_CONTRAST_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL.
+#if defined(ARRAY_COMPARABLE_NAME) \
+	&& ((!defined(ARRAY_COMPARE) && !defined(ARRAY_IS_EQUAL)) || \
+	(defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)))
+#error ARRAY_COMPARABLE_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL not both.
 #endif
 
 
-#if ARRAY_INTERFACES == 0 /* <!-- base code */
+#if ARRAY_TRAITS == 0 /* <!-- base code */
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(T) || defined(T_) || defined(PT_)
-#error P?T_? cannot be defined; possible stray ARRAY_EXPECT_INTERFACE?
+#error P?T_? cannot be defined; possible stray ARRAY_EXPECT_TRAIT?
 #endif
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
@@ -645,9 +646,9 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #error P?T_? or P?CAT_? not yet defined in contrast interface; include array?
 #endif
 
-#ifdef ARRAY_CONTRAST_NAME /* <!-- name */
-#define PTC_(thing) PCAT(PT_(thing), ARRAY_CONTRAST_NAME)
-#define T_C_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_CONTRAST_NAME, thing2))
+#ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
+#define PTC_(thing) PCAT(PT_(thing), ARRAY_COMPARABLE_NAME)
+#define T_C_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_COMPARABLE_NAME, thing2))
 #else /* name --><!-- !name */
 #define PTC_(thing) PCAT(PT_(thing), anonymous)
 #define T_C_(thing1, thing2) CAT(T_(thing1), thing2)
@@ -834,17 +835,17 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_IS_EQUAL
 #undef ARRAY_IS_EQUAL
 #endif
-#ifdef ARRAY_CONTRAST_NAME
-#undef ARRAY_CONTRAST_NAME
+#ifdef ARRAY_COMPARABLE_NAME
+#undef ARRAY_COMPARABLE_NAME
 #endif
 
 
 #endif /* interfaces --> */
 
 
-#ifdef ARRAY_EXPECT_INTERFACE /* <!-- unfinish */
-#undef ARRAY_EXPECT_INTERFACE
-#else /* unfinish --><!-- finish */
+#ifdef ARRAY_EXPECT_TRAIT /* <!-- trait */
+#undef ARRAY_EXPECT_TRAIT
+#else /* trait --><!-- !trait */
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
@@ -864,8 +865,8 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
-#endif /* finish --> */
+#endif /* !trait --> */
 
-#undef ARRAY_TO_STRING_INTERFACE
-#undef ARRAY_CONTRAST_INTERFACE
-#undef ARRAY_INTERFACES
+#undef ARRAY_TO_STRING_TRAIT
+#undef ARRAY_COMPARABLE_TRAIT
+#undef ARRAY_TRAITS
