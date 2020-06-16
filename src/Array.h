@@ -59,9 +59,19 @@
 #ifndef ARRAY_TYPE
 #error Tag type ARRAY_TYPE undefined.
 #endif
-#define ARRAY_INTERFACES (defined(ARRAY_TO_STRING_NAME) \
-	|| defined(ARRAY_TO_STRING)) + (defined(ARRAY_CONTRAST_NAME) \
-	|| defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
+/* Can not use `defined` recusively for some reason `C99 6.10`. */
+#if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
+#define ARRAY_TO_STRING_INTERFACE 1
+#else
+#define ARRAY_TO_STRING_INTERFACE 0
+#endif
+#if defined(ARRAY_CONTRAST_NAME) || defined(ARRAY_COMPARE) \
+	|| defined(ARRAY_IS_EQUAL)
+#define ARRAY_CONTRAST_INTERFACE 1
+#else
+#define ARRAY_CONTRAST_INTERFACE 0
+#endif
+#define ARRAY_INTERFACES ARRAY_TO_STRING_INTERFACE + ARRAY_CONTRAST_INTERFACE
 #if ARRAY_INTERFACES > 1
 #error Only one interface per include is allowed; use ARRAY_UNFINISHED.
 #endif
@@ -852,4 +862,6 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #endif
 #endif /* finish --> */
 
+#undef ARRAY_TO_STRING_INTERFACE
+#undef ARRAY_CONTRAST_INTERFACE
 #undef ARRAY_INTERFACES
