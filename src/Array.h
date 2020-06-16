@@ -52,16 +52,26 @@
 #include <string.h> /* memcpy memmove (strlen) (strerror strcpy memcmp) */
 #include <errno.h>  /* errno */
 
-/* Check defines. */
+
 #ifndef ARRAY_NAME
 #error Name ARRAY_NAME undefined.
 #endif
 #ifndef ARRAY_TYPE
 #error Tag type ARRAY_TYPE undefined.
 #endif
-#define ARRAY_INTERFACES (defined(ARRAY_TO_STRING_NAME) \
-	|| defined(ARRAY_TO_STRING)) + (defined(ARRAY_CONTRAST_NAME) \
-	|| defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
+/* Can not use `defined` recusively for some reason `C99 6.10`. */
+#if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
+#define ARRAY_TO_STRING_INTERFACE 1
+#else
+#define ARRAY_TO_STRING_INTERFACE 0
+#endif
+#if defined(ARRAY_CONTRAST_NAME) || defined(ARRAY_COMPARE) \
+	|| defined(ARRAY_IS_EQUAL)
+#define ARRAY_CONTRAST_INTERFACE 1
+#else
+#define ARRAY_CONTRAST_INTERFACE 0
+#endif
+#define ARRAY_INTERFACES ARRAY_TO_STRING_INTERFACE + ARRAY_CONTRAST_INTERFACE
 #if ARRAY_INTERFACES > 1
 #error Only one interface per include is allowed; use ARRAY_UNFINISHED.
 #endif
@@ -792,7 +802,8 @@ static void T_C_(Array, Compactify)(struct T_(Array) *const a,
 static void PTC_(unused_contrast_coda)(void);
 static void PTC_(unused_contrast)(void) {
 #ifdef ARRAY_COMPARE
-	PTC_(lower_bound)(0, 0); PTC_(upper_bound)(0, 0); PTC_(insert)(0, 0);
+	PTC_(compar)(0, 0); PTC_(revers)(0, 0); PTC_(lower_bound)(0, 0);
+	PTC_(upper_bound)(0, 0); PTC_(insert)(0, 0);
 #endif
 	PTC_(compactify)(0, 0);
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
@@ -835,7 +846,9 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #undef CAT_
 #undef PCAT
 #undef PCAT_
-#endif /* !sub-type --> */
+#else /* !sub-type --><!-- sub-type */
+#undef ARRAY_CHILD
+#endif /* sub-type --> */
 #undef T
 #undef T_
 #undef PT_
@@ -847,9 +860,8 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
-#ifdef ARRAY_CHILD
-#undef ARRAY_CHILD
-#endif
 #endif /* finish --> */
 
+#undef ARRAY_TO_STRING_INTERFACE
+#undef ARRAY_CONTRAST_INTERFACE
 #undef ARRAY_INTERFACES

@@ -61,8 +61,12 @@
 #ifndef HEAP_NAME
 #error Generic HEAP_NAME undefined.
 #endif
-#define HEAP_INTERFACES (defined(HEAP_TO_STRING_NAME) \
-	|| defined(HEAP_TO_STRING))
+#if defined(HEAP_TO_STRING_NAME) || defined(HEAP_TO_STRING)
+#define HEAP_TO_STRING_INTERFACE 1
+#else
+#define HEAP_TO_STRING_INTERFACE 0
+#endif
+#define HEAP_INTERFACES HEAP_TO_STRING_INTERFACE
 #if HEAP_INTERFACES > 1
 #error Only one interface per include is allowed; use HEAP_UNFINISHED.
 #endif
@@ -549,4 +553,5 @@ static void PHA_(unused_to_string_coda)(void) { PHA_(unused_to_string)(); }
 #endif
 #endif /* finish --> */
 
+#undef HEAP_TO_STRING_INTERFACE
 #undef HEAP_INTERFACES
