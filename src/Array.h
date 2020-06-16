@@ -19,7 +19,7 @@
  associated therewith; required. `<PT>` is private, whose names are prefixed in
  a manner to avoid collisions; any should be re-defined prior to use elsewhere.
 
- @param[ARRAY_UNFINISHED]
+ @param[ARRAY_EXPECT_INTERFACE]
  Do not un-define variables for including again in an interface.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
@@ -32,12 +32,14 @@
  To string interface optional unit testing framework using `assert`; contained
  in <../test/ArrayTest.h>. Can only be defined once per `Array`. Must be
  defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
+ Output will be shown with the to string interface in which it's defined.
 
- @param[ARRAY_CONTRAST_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare interface; `<C>` that satiscfies `C` naming conventions when mangled
- and a function implementing <typedef:<PT>Compare> or <typedef:<PT>Bipredicate>
- that satisfies an equality ...fixme There can
- be multiple contrast interfaces, but only one can omit `ARRAY_CONTRAST_NAME`.
+ @param[ARRAY_CONTRAST_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
+ Compare interface; `<C>` that satisfies `C` naming conventions when mangled
+ and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>Bipredicate>`
+ that establishes an equivalence relation, and for `ARRAY_COMPARE`
+ <typedef:<PT>Compare> that further establishes a total order. There can be
+ multiple contrast interfaces, but only one can omit `ARRAY_CONTRAST_NAME`.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -59,7 +61,7 @@
 #ifndef ARRAY_TYPE
 #error Tag type ARRAY_TYPE undefined.
 #endif
-/* Can not use `defined` recusively for some reason `C99 6.10`. */
+/* Can not use `defined` recusively for some reason (`C99 6.10`.) */
 #if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
 #define ARRAY_TO_STRING_INTERFACE 1
 #else
@@ -73,7 +75,7 @@
 #endif
 #define ARRAY_INTERFACES ARRAY_TO_STRING_INTERFACE + ARRAY_CONTRAST_INTERFACE
 #if ARRAY_INTERFACES > 1
-#error Only one interface per include is allowed; use ARRAY_UNFINISHED.
+#error Only one interface per include is allowed; use ARRAY_EXPECT_INTERFACE.
 #endif
 #if (ARRAY_INTERFACES == 0) && defined(ARRAY_TEST)
 #error ARRAY_TEST must be defined in ARRAY_TO_STRING interface.
@@ -92,7 +94,7 @@
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(T) || defined(T_) || defined(PT_)
-#error P?T_? cannot be defined; possible stray ARRAY_UNFINISHED?
+#error P?T_? cannot be defined; possible stray ARRAY_EXPECT_INTERFACE?
 #endif
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
@@ -121,8 +123,10 @@ typedef int (*PT_(Bipredicate))(const T *, const T *);
 /** Returns a boolean given two `<T>`. */
 typedef int (*PT_(Biproject))(T *, T *);
 
-/** Returns an integer value greater, less, or equal zero fixme... */
-typedef int (*PT_(Compare))(const T *, const T *);
+/** Three-way comparison on a totally order set; returns an integer value less
+ then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
+ respectively. */
+typedef int (*PT_(Compare))(const T *a, const T *b);
 
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. Used for `ARRAY_TO_STRING`. */
@@ -652,8 +656,8 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #ifdef ARRAY_COMPARE /* <!-- compare */
 
 /* Check that `ARRAY_COMPARE` is a function implementing
- <typedef:<PT>Bipredicate>. */
-static const PT_(Bipredicate) PTC_(compare) = (ARRAY_COMPARE);
+ <typedef:<PT>Compare>. */
+static const PT_(Compare) PTC_(compare) = (ARRAY_COMPARE);
 
 /** !compare(`a`, `b`) == equals(`a`, `b`) */
 static int PTC_(is_equal)(const void *const a, const void *const b)
@@ -705,7 +709,7 @@ static int PTC_(insert)(struct T_(Array) *const a, const T *const datum) {
 
 #else /* compare --><!-- is equal */
 
-/* Check that `ARRAY_COMPARE` is a function implementing
+/* Check that `ARRAY_IS_EQUAL` is a function implementing
  <typedef:<PT>Bipredicate>. */
 static const PT_(Bipredicate) PTC_(is_equal) = (ARRAY_IS_EQUAL);
 
@@ -838,8 +842,8 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #endif /* interfaces --> */
 
 
-#ifdef ARRAY_UNFINISHED /* <!-- unfinish */
-#undef ARRAY_UNFINISHED
+#ifdef ARRAY_EXPECT_INTERFACE /* <!-- unfinish */
+#undef ARRAY_EXPECT_INTERFACE
 #else /* unfinish --><!-- finish */
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 #undef CAT
