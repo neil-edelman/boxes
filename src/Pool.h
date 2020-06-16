@@ -59,8 +59,12 @@
 #ifndef POOL_TYPE
 #error Tag type POOL_TYPE undefined.
 #endif
-#define POOL_INTERFACES (defined(POOL_TO_STRING_NAME) \
-	|| defined(POOL_TO_STRING))
+#if defined(POOL_TO_STRING_NAME) || defined(POOL_TO_STRING)
+#define POOL_TO_STRING_INTERFACE 1
+#else
+#define POOL_TO_STRING_INTERFACE 0
+#endif
+#define POOL_INTERFACES POOL_TO_STRING_INTERFACE
 #if POOL_INTERFACES > 1
 #error Only one interface per include is allowed; use POOL_UNFINISHED.
 #endif
@@ -533,4 +537,5 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #endif
 #endif /* finish --> */
 
+#undef POOL_TO_STRING_INTERFACE
 #undef POOL_INTERFACES
