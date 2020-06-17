@@ -33,7 +33,7 @@
 
 <h1>Array.h</h1>
 
-<h2>Parameterised Contiguous Dynamic Array (Vector)</h2>
+<h2>Contiguous Dynamic Array (Vector)</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
@@ -50,27 +50,25 @@
 
 <p><img alt = "Example of Array" src = "web/array.png" width = 310 height = 262></p>
 
-<p><a href = "#tag:&lt;T&gt;Array">&lt;T&gt;Array</a> is a dynamic array that stores contiguous data. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost.</p>
+<p><a href = "#tag:&lt;T&gt;Array">&lt;T&gt;Array</a> is a dynamic array that stores contiguous <code>&lt;T&gt;</code>. When modifying the array, to ensure that the capacity is greater then or equal to the size, resizing may be necessary. This incurs amortised cost and any pointers to this memory may become stale.</p>
 
-<p><code>&lt;T&gt;Array</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is included in this file; to stop the debug assertions, use <code>#define NDEBUG</code> before <code>assert.h</code>.</p>
+<p><code>&lt;T&gt;Array</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 
 </div>
 
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
-	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
-	<dt>Parameter: ARRAY_UNFINISHED</dt>
-	<dd>Do not un-define variables for including again in an interface.</dd>
+	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
+	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: ARRAY_TO_STRING_NAME, ARRAY_TO_STRING</dt>
-	<dd>To string interface contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a>. There can be multiple to string interfaces, but only one can omit <code>ARRAY_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a>. There can be multiple to string traits, but only one can omit <code>ARRAY_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
-	<dd>To string interface optional unit testing framework using <code>assert</code>; contained in <a href = "../test/ArrayTest.h">../test/ArrayTest.h</a>. Can only be defined once per <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>.</dd>
-	<dt>Parameter: ARRAY_CONTRAST_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL</dt>
-	<dd>Compare interface; <code>&lt;C&gt;</code> that satiscfies <code>C</code> naming conventions when mangled and a function implementing <a href = "#typedef:&lt;PT&gt;Compare">&lt;PT&gt;Compare</a> or <a href = "#typedef:&lt;PT&gt;Bipredicate">&lt;PT&gt;Bipredicate</a> that satisfies an equality ...fixme There can be multiple contrast interfaces, but only one can omit <code>ARRAY_CONTRAST_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "../test/ArrayTest.h">../test/ArrayTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>. Output will be shown with the to string interface in which it's defined; provides tests for the base code and all later interfaces.</dd>
+	<dt>Parameter: ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE</dt>
+	<dd>Comparable trait; <code>&lt;C&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a function implementing, for <code>ARRAY_IS_EQUAL</code> <a href = "#typedef:&lt;PT&gt;Bipredicate">&lt;PT&gt;Bipredicate</a> that establishes an equivalence relation, or for <code>ARRAY_COMPARE</code> <a href = "#typedef:&lt;PT&gt;Compare">&lt;PT&gt;Compare</a> that establishes a total order. There can be multiple contrast traits, but only one can omit <code>ARRAY_COMPARABLE_NAME</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
-	<dt>Caveat:</dt>
-	<dd>(<a href = "#fn:&lt;T&gt;ArrayEach">&amp;lt;T&amp;gt;ArrayEach</a>)</dd>
 	<dt>See also:</dt>
 	<dd><a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a>; <a href = "https://github.com/neil-edelman/Trie">Trie</a></dd>
 </dl>
@@ -131,9 +129,9 @@
 
 <h3><a id = "typedef:<PT>Compare" name = "typedef:<PT>Compare">&lt;PT&gt;Compare</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PT&gt;Compare</strong>)(const T *, const T *);</code></p>
+<p><code>typedef int(*<strong>&lt;PT&gt;Compare</strong>)(const T *a, const T *b);</code></p>
 
-<p>Returns an integer value greater, less, or equal zero fixme...</p>
+<p>Three-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
 </div>
 
@@ -155,7 +153,7 @@
 
 <p><code>struct <strong>&lt;T&gt;Array</strong>;</code></p>
 
-<p>Manages the array field <code>data</code>, which is indexed up to <code>size</code>. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale. To initialise it to an idle state, see <a href = "#fn:&lt;T&gt;Array">&lt;T&gt;Array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
+<p>Manages the array field <code>data</code>, which is indexed up to <code>size</code>. To initialise it to an idle state, see <a href = "#fn:&lt;T&gt;Array">&lt;T&gt;Array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 280></p>
 
@@ -165,7 +163,7 @@
 
 <h3><a id = "tag:<PT>Iterator" name = "tag:<PT>Iterator">&lt;PT&gt;Iterator</a></h3>
 
-<p><code>struct <strong>&lt;PT&gt;Iterator</strong> { const struct &lt;T&gt;Array *a; size_t i; };</code></p>
+<p><code>struct <strong>&lt;PT&gt;Iterator</strong>;</code></p>
 
 <p>Contains all iteration parameters in one.</p>
 
@@ -473,8 +471,6 @@
 	<dd>If null, does nothing.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>size</code> &#215; <code>action</code>)</dd>
-	<dt>Caveat:</dt>
-	<dd>All these functions can go into Sequetial?</dd>
 </dl>
 
 </div>

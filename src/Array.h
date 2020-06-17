@@ -12,13 +12,13 @@
 
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
- file for convenience. `assert.h` is included in this file; to stop the
- debug assertions, use `#define NDEBUG` before `assert.h`.
+ file for convenience. Assertions are used in this file; to stop them, define
+ `NDEBUG` before `assert.h`.
 
  @param[ARRAY_NAME, ARRAY_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type
  associated therewith; required. `<PT>` is private, whose names are prefixed in
- a manner to avoid collisions; any should be re-defined prior to use elsewhere.
+ a manner to avoid collisions.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -31,14 +31,14 @@
 
  @param[ARRAY_TEST]
  To string trait contained in <../test/ArrayTest.h>; optional unit testing
- framework using `assert`. Can only be defined once per `Array`. Must be
+ framework using `assert`. Can only be defined once _per_ `Array`. Must be
  defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
- Output will be shown with the to string interface in which it's defined;
- provides tests for the base code and all later interfaces.
+ Output will be shown with the to string trait in which it's defined;
+ provides tests for the base code and all later traits.
 
  @param[ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
  Comparable trait; `<C>` that satisfies `C` naming conventions when mangled
- and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>Bipredicate>`
+ and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>Bipredicate>
  that establishes an equivalence relation, or for `ARRAY_COMPARE`
  <typedef:<PT>Compare> that establishes a total order. There can be multiple
  contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
@@ -76,10 +76,10 @@
 #endif
 #define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARABLE_TRAIT
 #if ARRAY_TRAITS > 1
-#error Only one interface per include is allowed; use ARRAY_EXPECT_TRAIT.
+#error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
 #if (ARRAY_TRAITS == 0) && defined(ARRAY_TEST)
-#error ARRAY_TEST must be defined in ARRAY_TO_STRING interface.
+#error ARRAY_TEST must be defined in ARRAY_TO_STRING trait.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
@@ -553,12 +553,12 @@ static void PT_(unused_base)(void) {
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 
-#elif defined(ARRAY_TO_STRING) /* base code --><!-- to string interface */
+#elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
 
 
 #if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT) \
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?T_? or P?CAT_? not yet defined in to string interface; include array?
+#error P?T_? or P?CAT_? not yet defined in to string trait; include array?
 #endif
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
@@ -632,12 +632,12 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #endif
 
 
-#else /* to string interface --><!-- contrast interface */
+#else /* to string trait --><!-- contrast trait */
 
 
 #if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT)
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?T_? or P?CAT_? not yet defined in contrast interface; include array?
+#error P?T_? or P?CAT_? not yet defined in contrast trait; include array?
 #endif
 
 #ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
@@ -834,7 +834,7 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #endif
 
 
-#endif /* interfaces --> */
+#endif /* traits --> */
 
 
 #ifdef ARRAY_EXPECT_TRAIT /* <!-- trait */

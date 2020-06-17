@@ -1,6 +1,6 @@
 # Array\.h #
 
-## Parameterised Contiguous Dynamic Array \(Vector\) ##
+## Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;Predicate](#user-content-typedef-d7c73930), [&lt;PT&gt;Bipredicate](#user-content-typedef-49a99943), [&lt;PT&gt;Biproject](#user-content-typedef-269e157f), [&lt;PT&gt;Compare](#user-content-typedef-abfbe632), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
@@ -13,26 +13,24 @@
 
 ![Example of Array](web/array.png)
 
-[&lt;T&gt;Array](#user-content-tag-f128eca2) is a dynamic array that stores contiguous data\. To ensure that the capacity is greater then or equal to the size, resizing may be necessary and incurs amortised cost\.
+[&lt;T&gt;Array](#user-content-tag-f128eca2) is a dynamic array that stores contiguous `<T>`\. When modifying the array, to ensure that the capacity is greater then or equal to the size, resizing may be necessary\. This incurs amortised cost and any pointers to this memory may become stale\.
 
-`<T>Array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
+`<T>Array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
 
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
-   `<T>` that satisfies `C` naming conventions when mangled and a valid tag\-type associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
- * Parameter: ARRAY\_UNFINISHED  
-   Do not un\-define variables for including again in an interface\.
+   `<T>` that satisfies `C` naming conventions when mangled and a valid tag\-type associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
+ * Parameter: ARRAY\_EXPECT\_TRAIT  
+   Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
-   To string interface contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)\. There can be multiple to string interfaces, but only one can omit `ARRAY_TO_STRING_NAME`\.
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
  * Parameter: ARRAY\_TEST  
-   To string interface optional unit testing framework using `assert`; contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h)\. Can only be defined once per `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\.
- * Parameter: ARRAY\_CONTRAST\_NAME, ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
-   Compare interface; `<C>` that satiscfies `C` naming conventions when mangled and a function implementing [&lt;PT&gt;Compare](#user-content-typedef-abfbe632) or [&lt;PT&gt;Bipredicate](#user-content-typedef-49a99943) that satisfies an equality \.\.\.fixme There can be multiple contrast interfaces, but only one can omit `ARRAY_CONTRAST_NAME`\.
+   To string trait contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Output will be shown with the to string interface in which it's defined; provides tests for the base code and all later interfaces\.
+ * Parameter: ARRAY\_COMPARABLE\_NAME, ARRAY\_IS\_EQUAL, ARRAY\_COMPARE  
+   Comparable trait; `<C>` that satisfies `C` naming conventions when mangled and a function implementing, for `ARRAY_IS_EQUAL` [&lt;PT&gt;Bipredicate](#user-content-typedef-49a99943) that establishes an equivalence relation, or for `ARRAY_COMPARE` [&lt;PT&gt;Compare](#user-content-typedef-abfbe632) that establishes a total order\. There can be multiple contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`\.
  * Standard:  
    C89
- * Caveat:  
-   ([&lt;T&gt;ArrayEach](#user-content-fn-669dc6cf))
  * See also:  
    [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
 
@@ -81,9 +79,9 @@ Returns a boolean given two `<T>`\.
 
 ### <a id = "user-content-typedef-abfbe632" name = "user-content-typedef-abfbe632">&lt;PT&gt;Compare</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;Compare</strong>)(const T *, const T *);</code>
+<code>typedef int(*<strong>&lt;PT&gt;Compare</strong>)(const T *a, const T *b);</code>
 
-Returns an integer value greater, less, or equal zero fixme\.\.\.
+Three\-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
@@ -101,7 +99,7 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>struct <strong>&lt;T&gt;Array</strong>;</code>
 
-Manages the array field `data`, which is indexed up to `size`\. When modifying the topology of this array, it may change memory location to fit; any pointers to this memory may become stale\. To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`,\) or being `static`\.
+Manages the array field `data`, which is indexed up to `size`\. To initialise it to an idle state, see [&lt;T&gt;Array](#user-content-fn-f128eca2), `ARRAY_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](web/states.png)
 
@@ -109,7 +107,7 @@ Manages the array field `data`, which is indexed up to `size`\. When modifying t
 
 ### <a id = "user-content-tag-25ae129" name = "user-content-tag-25ae129">&lt;PT&gt;Iterator</a> ###
 
-<code>struct <strong>&lt;PT&gt;Iterator</strong> { const struct &lt;T&gt;Array *a; size_t i; };</code>
+<code>struct <strong>&lt;PT&gt;Iterator</strong>;</code>
 
 Contains all iteration parameters in one\.
 
@@ -377,8 +375,6 @@ Iterates through `a` and calls `action` on all the elements\. The topology of th
    If null, does nothing\.
  * Order:  
    &#927;\(`size` &#215; `action`\)
- * Caveat:  
-   All these functions can go into Sequetial?
 
 
 
