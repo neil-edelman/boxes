@@ -97,7 +97,7 @@ static int keyval_value_cmp(const struct Keyval *const a,
 #include "../src/Array.h"
 
 
-/** Tests. @return Either EXIT_SUCCESS or EXIT_FAILURE. */
+/** Tests. @return `EXIT_SUCCESS`. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
 

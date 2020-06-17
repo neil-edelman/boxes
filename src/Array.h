@@ -1,13 +1,14 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised Contiguous Dynamic Array (Vector)
+ @subtitle Contiguous Dynamic Array (Vector)
 
  ![Example of Array](../web/array.png)
 
- <tag:<T>Array> is a dynamic array that stores contiguous data. To ensure that
- the capacity is greater then or equal to the size, resizing may be necessary
- and incurs amortised cost.
+ <tag:<T>Array> is a dynamic array that stores contiguous `<T>`. When modifying
+ the array, to ensure that the capacity is greater then or equal to the size,
+ resizing may be necessary. This incurs amortised cost, and any pointers to
+ this memory will become stale.
 
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -20,7 +21,7 @@
  a manner to avoid collisions; any should be re-defined prior to use elsewhere.
 
  @param[ARRAY_EXPECT_TRAIT]
- Do not un-define variables for including again in a trait.
+ Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
@@ -29,8 +30,8 @@
  `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
- To string trait optional unit testing framework using `assert`; contained
- in <../test/ArrayTest.h>. Can only be defined once per `Array`. Must be
+ To string trait contained in <../test/ArrayTest.h>; optional unit testing
+ framework using `assert`. Can only be defined once per `Array`. Must be
  defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
  Output will be shown with the to string interface in which it's defined;
  provides tests for the base code and all later interfaces.
@@ -158,16 +159,13 @@ static void PT_(array)(struct T_(Array) *const a)
 static void PT_(array_)(struct T_(Array) *const a)
 	{ assert(a), free(a->data), PT_(array)(a); }
 
-/** Ensures `min_capacity` of `a`.
- @param[min_capacity] If zero, does nothing.
- @param[update_ptr] Must be in the array or null, it updates this value.
- @return Success; otherwise, `errno` will be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- doesn't follow [POSIX
+/** Ensures `min_capacity` of `a`. @param[min_capacity] If zero, does nothing.
+ @return Success; otherwise, `errno` will be set. @throws[ERANGE] Tried
+ allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
-static int PT_(update_reserve)(struct T_(Array) *const a,
-	const size_t min_capacity, T **const update_ptr) {
+static int PT_(reserve)(struct T_(Array) *const a,
+	const size_t min_capacity) {
 	size_t c0;
 	T *data;
 	const size_t max_size = (size_t)-1 / sizeof *a->data;
@@ -181,25 +179,26 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 		c0 = 8;
 	}
 	if(min_capacity > max_size) return errno = ERANGE, 0;
-	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. Still,
-	 Fibonacci increases slightly more because added term with negative. */
+	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. */
 	while(c0 < min_capacity) {
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
-		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; very unlikely. */
+		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; unlikely. */
 		c0 = c1;
 	}
 	if(!(data = realloc(a->data, sizeof *a->data * c0)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	if(update_ptr && a->data != data)
-		*update_ptr = data + (*update_ptr - a->data); /* Not strict ISO. */
 	a->data = data, a->capacity = c0;
 	return 1;
 }
 
-/** Call `reserve_update` with `a`, `min_capacity`, and no `update_ptr`; which
- is what usually happens. */
-static int PT_(reserve)(struct T_(Array) *const a, const size_t min_capacity)
-	{ return PT_(update_reserve)(a, min_capacity, 0); }
+/** Call `update` with `a`, `min_capacity`. @param[update_ptr] Must be in the
+ array's capacity or null, it updates this value. */
+static int PT_(update_reserve)(struct T_(Array) *const a,
+	const size_t min_capacity, T **const update_ptr) {
+	const size_t i = *update_ptr - a->data;
+	assert(update_ptr && (size_t)(*update_ptr - a->data) <= a->capacity);
+	return PT_(reserve)(a, min_capacity) && (*update_ptr = a->data + i, 1);
+}
 
 /** Shrinks `a` to the size. */
 static int PT_(shrink)(struct T_(Array) *const a) {
@@ -214,8 +213,8 @@ static int PT_(shrink)(struct T_(Array) *const a) {
 	return 1;
 }
 
-/** In `a`, converts `anchor` and `range` à-la-Python and stores them in the
- pointers `p0` and `p1` _st_ `*p0, *p1 \in [0, a.size], *p0 <= *p1`.
+/** In `a`, converts `anchor` and `range` and stores them in the pointers `p0`
+ and `p1` _st_ `*p0, *p1 \in [0, a.size], *p0 <= *p1`.
  @param[anchor] An element in the array or null to indicate past the end.
  @return Success. @throws[ERANGE] `anchor` is not null and not in `a`. `range`
  is greater then +/-65534. `size_t` overflow. */
@@ -259,7 +258,7 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Returns a new un-initialized datum of `a` and updates `update_ptr`. */
+/** Returns a new un-initialised datum of `a` and updates `update_ptr`. */
 static T *PT_(update_new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
 	return PT_(update_reserve)(a, a->size + 1, update_ptr)
@@ -370,8 +369,7 @@ static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
 }
 
 /** Adds `add` elements to `a`.
- @param[a] If null, returns null.
- @param[add] If zero, returns null.
+ @param[a] If null, returns null. @param[add] If zero, returns null.
  @return The start of a new sub-array of `add` elements at the previous end of
  `a`, or null and `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
@@ -398,9 +396,6 @@ static int T_(ArrayShrink)(struct T_(Array) *const a)
 
 /** Iterates through `a` and calls `action` on all the elements. The topology
  of the list should not change while in this function.
- 
- @fixme All these functions can go into Sequetial?
- 
  @param[a, action] If null, does nothing.
  @order \O(`size` \times `action`) @allow */
 static void T_(ArrayEach)(struct T_(Array) *const a,
@@ -412,8 +407,7 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
 
 /** Iterates through `a` and calls `action` on all the elements for which
  `predicate` returns true. The topology of the list can not change while in
- this function.
- @param[a, predicate, action] If null, does nothing.
+ this function. @param[a, predicate, action] If null, does nothing.
  @order \O(`size` \times `action`) @allow */
 static void T_(ArrayIfEach)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate, const PT_(Action) action) {
