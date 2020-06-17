@@ -7,8 +7,8 @@
 
  <tag:<T>Array> is a dynamic array that stores contiguous `<T>`. When modifying
  the array, to ensure that the capacity is greater then or equal to the size,
- resizing may be necessary. This incurs amortised cost, and any pointers to
- this memory will become stale.
+ resizing may be necessary. This incurs amortised cost and any pointers to this
+ memory may become stale.
 
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -39,9 +39,9 @@
  @param[ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
  Comparable trait; `<C>` that satisfies `C` naming conventions when mangled
  and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>Bipredicate>`
- that establishes an equivalence relation, and for `ARRAY_COMPARE`
- <typedef:<PT>Compare> that further establishes a total order. There can be
- multiple contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
+ that establishes an equivalence relation, or for `ARRAY_COMPARE`
+ <typedef:<PT>Compare> that establishes a total order. There can be multiple
+ contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -134,10 +134,9 @@ typedef int (*PT_(Compare))(const T *a, const T *b);
  output string. Used for `ARRAY_TO_STRING`. */
 typedef void (*PT_(ToString))(const T *, char (*)[12]);
 
-/** Manages the array field `data`, which is indexed up to `size`. When
- modifying the topology of this array, it may change memory location to fit;
- any pointers to this memory may become stale. To initialise it to an idle
- state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
+/** Manages the array field `data`, which is indexed up to `size`. To
+ initialise it to an idle state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}`
+ (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct T_(Array);
@@ -149,6 +148,7 @@ struct T_(Array) { T *data; size_t size, capacity; };
 #endif /* !zero --> */
 
 /** Contains all iteration parameters in one. */
+struct PT_(Iterator);
 struct PT_(Iterator) { const struct T_(Array) *a; size_t i; };
 
 /** Initialises `a` to idle. */
