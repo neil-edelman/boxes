@@ -13,9 +13,9 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>HeapNode>Array` with implicit heap properties, with a cached [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) and an optional [&lt;PH&gt;Value](#user-content-typedef-4d915774) payload; as such, one needs to have `Array.h` file in the same directory\.
+A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>HeapNode>Array` with implicit heap properties, with an optionally cached [&lt;PH&gt;Priority](#user-content-typedef-57e15d67) and an optional [&lt;PH&gt;Value](#user-content-typedef-4d915774) payload; as such, one needs to have `Array.h` file in the same directory\.
 
-`<H>Heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
+`<H>Heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
 
 
@@ -24,13 +24,13 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
-   Optional payload [&lt;PH&gt;Value](#user-content-typedef-4d915774), that is stored as a reference in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f); declaring it is sufficent\.
- * Parameter: HEAP\_UNFINISHED  
-   Do not un\-define variables for including again in an interface\.
+   Optional payload [&lt;PH&gt;Value](#user-content-typedef-4d915774), that is stored as a reference in [&lt;H&gt;HeapNode](#user-content-tag-ba24d32f); declaring it is sufficient\.
+ * Parameter: HEAP\_EXPECT\_TRAIT  
+   Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
-   To string interface contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3)\. There can be multiple to string interfaces, but only one can omit `HEAP_TO_STRING_NAME`\.
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3)\. There can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`\.
  * Parameter: HEAP\_TEST  
-   To string interface optional unit testing framework using `assert`; contained in [\.\./test/HeapTest\.h](../test/HeapTest.h)\. Can only be defined once per `Heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)\.
+   To string trait contained in [\.\./test/HeapTest\.h](../test/HeapTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)\.
  * Standard:  
    C89
  * Dependancies:  

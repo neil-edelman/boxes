@@ -50,9 +50,9 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 194 height = 286></p>
 
-<p>A <a href = "#tag:&lt;H&gt;Heap">&lt;H&gt;Heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;HeapNode&gt;Array</code> with implicit heap properties, with a cached <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> and an optional <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a> payload; as such, one needs to have <code>Array.h</code> file in the same directory.</p>
+<p>A <a href = "#tag:&lt;H&gt;Heap">&lt;H&gt;Heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;HeapNode&gt;Array</code> with implicit heap properties, with an optionally cached <a href = "#typedef:&lt;PH&gt;Priority">&lt;PH&gt;Priority</a> and an optional <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a> payload; as such, one needs to have <code>Array.h</code> file in the same directory.</p>
 
-<p><code>&lt;H&gt;Heap</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used; to stop assertions, use <code>#define NDEBUG</code> before inclusion.</p>
+<p><code>&lt;H&gt;Heap</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 
 </div>
 
@@ -62,13 +62,13 @@
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;Compare">&lt;PH&gt;Compare</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>; declaring it is sufficent.</dd>
-	<dt>Parameter: HEAP_UNFINISHED</dt>
-	<dd>Do not un-define variables for including again in an interface.</dd>
+	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;Value">&lt;PH&gt;Value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;HeapNode">&lt;H&gt;HeapNode</a>; declaring it is sufficient.</dd>
+	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
+	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
-	<dd>To string interface contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PH&gt;ToString">&lt;PH&gt;ToString</a>. There can be multiple to string interfaces, but only one can omit <code>HEAP_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PH&gt;ToString">&lt;PH&gt;ToString</a>. There can be multiple to string traits, but only one can omit <code>HEAP_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
-	<dd>To string interface optional unit testing framework using <code>assert</code>; contained in <a href = "../test/HeapTest.h">../test/HeapTest.h</a>. Can only be defined once per <code>Heap</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;BiAction">&lt;PH&gt;BiAction</a>.</dd>
+	<dd>To string trait contained in <a href = "../test/HeapTest.h">../test/HeapTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Heap</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;BiAction">&lt;PH&gt;BiAction</a>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>

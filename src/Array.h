@@ -1,43 +1,47 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised Contiguous Dynamic Array (Vector)
+ @subtitle Contiguous Dynamic Array (Vector)
 
  ![Example of Array](../web/array.png)
 
- <tag:<T>Array> is a dynamic array that stores contiguous data. To ensure that
- the capacity is greater then or equal to the size, resizing may be necessary
- and incurs amortised cost.
+ <tag:<T>Array> is a dynamic array that stores contiguous `<T>`. When modifying
+ the array, to ensure that the capacity is greater then or equal to the size,
+ resizing may be necessary. This incurs amortised cost and any pointers to this
+ memory may become stale.
 
  `<T>Array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
- file for convenience. `assert.h` is included in this file; to stop the
- debug assertions, use `#define NDEBUG` before `assert.h`.
+ file for convenience. Assertions are used in this file; to stop them, define
+ `NDEBUG` before `assert.h`.
 
  @param[ARRAY_NAME, ARRAY_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type
  associated therewith; required. `<PT>` is private, whose names are prefixed in
- a manner to avoid collisions; any should be re-defined prior to use elsewhere.
+ a manner to avoid collisions.
 
- @param[ARRAY_UNFINISHED]
- Do not un-define variables for including again in an interface.
+ @param[ARRAY_EXPECT_TRAIT]
+ Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string interface contained in <ToString.h>; `<A>` that satisfies `C` naming
+ To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PT>ToString>.
- There can be multiple to string interfaces, but only one can omit
+ There can be multiple to string traits, but only one can omit
  `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
- To string interface optional unit testing framework using `assert`; contained
- in <../test/ArrayTest.h>. Can only be defined once per `Array`. Must be
+ To string trait contained in <../test/ArrayTest.h>; optional unit testing
+ framework using `assert`. Can only be defined once _per_ `Array`. Must be
  defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
+ Output will be shown with the to string interface in which it's defined;
+ provides tests for the base code and all later interfaces.
 
- @param[ARRAY_CONTRAST_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare interface; `<C>` that satiscfies `C` naming conventions when mangled
- and a function implementing <typedef:<PT>Compare> or <typedef:<PT>Bipredicate>
- that satisfies an equality ...fixme There can
- be multiple contrast interfaces, but only one can omit `ARRAY_CONTRAST_NAME`.
+ @param[ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
+ Comparable trait; `<C>` that satisfies `C` naming conventions when mangled
+ and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>Bipredicate>
+ that establishes an equivalence relation, or for `ARRAY_COMPARE`
+ <typedef:<PT>Compare> that establishes a total order. There can be multiple
+ contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -59,40 +63,40 @@
 #ifndef ARRAY_TYPE
 #error Tag type ARRAY_TYPE undefined.
 #endif
-/* Can not use `defined` recusively for some reason `C99 6.10`. */
 #if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
-#define ARRAY_TO_STRING_INTERFACE 1
+#define ARRAY_TO_STRING_TRAIT 1
 #else
-#define ARRAY_TO_STRING_INTERFACE 0
+#define ARRAY_TO_STRING_TRAIT 0
 #endif
-#if defined(ARRAY_CONTRAST_NAME) || defined(ARRAY_COMPARE) \
+#if defined(ARRAY_COMPARABLE_NAME) || defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_IS_EQUAL)
-#define ARRAY_CONTRAST_INTERFACE 1
+#define ARRAY_COMPARABLE_TRAIT 1
 #else
-#define ARRAY_CONTRAST_INTERFACE 0
+#define ARRAY_COMPARABLE_TRAIT 0
 #endif
-#define ARRAY_INTERFACES ARRAY_TO_STRING_INTERFACE + ARRAY_CONTRAST_INTERFACE
-#if ARRAY_INTERFACES > 1
-#error Only one interface per include is allowed; use ARRAY_UNFINISHED.
+#define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARABLE_TRAIT
+#if ARRAY_TRAITS > 1
+#error Only one interface per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
-#if (ARRAY_INTERFACES == 0) && defined(ARRAY_TEST)
+#if (ARRAY_TRAITS == 0) && defined(ARRAY_TEST)
 #error ARRAY_TEST must be defined in ARRAY_TO_STRING interface.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
 #endif
-#if defined(ARRAY_CONTRAST_NAME) \
-	&& !defined(ARRAY_COMPARE) && !defined(ARRAY_IS_EQUAL)
-#error ARRAY_CONTRAST_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL.
+#if defined(ARRAY_COMPARABLE_NAME) \
+	&& ((!defined(ARRAY_COMPARE) && !defined(ARRAY_IS_EQUAL)) || \
+	(defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)))
+#error ARRAY_COMPARABLE_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL not both.
 #endif
 
 
-#if ARRAY_INTERFACES == 0 /* <!-- base code */
+#if ARRAY_TRAITS == 0 /* <!-- base code */
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(T) || defined(T_) || defined(PT_)
-#error P?T_? cannot be defined; possible stray ARRAY_UNFINISHED?
+#error P?T_? cannot be defined; possible stray ARRAY_EXPECT_TRAIT?
 #endif
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
@@ -121,17 +125,18 @@ typedef int (*PT_(Bipredicate))(const T *, const T *);
 /** Returns a boolean given two `<T>`. */
 typedef int (*PT_(Biproject))(T *, T *);
 
-/** Returns an integer value greater, less, or equal zero fixme... */
-typedef int (*PT_(Compare))(const T *, const T *);
+/** Three-way comparison on a totally order set; returns an integer value less
+ then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
+ respectively. */
+typedef int (*PT_(Compare))(const T *a, const T *b);
 
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. Used for `ARRAY_TO_STRING`. */
 typedef void (*PT_(ToString))(const T *, char (*)[12]);
 
-/** Manages the array field `data`, which is indexed up to `size`. When
- modifying the topology of this array, it may change memory location to fit;
- any pointers to this memory may become stale. To initialise it to an idle
- state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
+/** Manages the array field `data`, which is indexed up to `size`. To
+ initialise it to an idle state, see <fn:<T>Array>, `ARRAY_IDLE`, `{0}`
+ (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct T_(Array);
@@ -143,6 +148,7 @@ struct T_(Array) { T *data; size_t size, capacity; };
 #endif /* !zero --> */
 
 /** Contains all iteration parameters in one. */
+struct PT_(Iterator);
 struct PT_(Iterator) { const struct T_(Array) *a; size_t i; };
 
 /** Initialises `a` to idle. */
@@ -153,16 +159,13 @@ static void PT_(array)(struct T_(Array) *const a)
 static void PT_(array_)(struct T_(Array) *const a)
 	{ assert(a), free(a->data), PT_(array)(a); }
 
-/** Ensures `min_capacity` of `a`.
- @param[min_capacity] If zero, does nothing.
- @param[update_ptr] Must be in the array or null, it updates this value.
- @return Success; otherwise, `errno` will be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- doesn't follow [POSIX
+/** Ensures `min_capacity` of `a`. @param[min_capacity] If zero, does nothing.
+ @return Success; otherwise, `errno` will be set. @throws[ERANGE] Tried
+ allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
-static int PT_(update_reserve)(struct T_(Array) *const a,
-	const size_t min_capacity, T **const update_ptr) {
+static int PT_(reserve)(struct T_(Array) *const a,
+	const size_t min_capacity) {
 	size_t c0;
 	T *data;
 	const size_t max_size = (size_t)-1 / sizeof *a->data;
@@ -176,25 +179,26 @@ static int PT_(update_reserve)(struct T_(Array) *const a,
 		c0 = 8;
 	}
 	if(min_capacity > max_size) return errno = ERANGE, 0;
-	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. Still,
-	 Fibonacci increases slightly more because added term with negative. */
+	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. */
 	while(c0 < min_capacity) {
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
-		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; very unlikely. */
+		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; unlikely. */
 		c0 = c1;
 	}
 	if(!(data = realloc(a->data, sizeof *a->data * c0)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	if(update_ptr && a->data != data)
-		*update_ptr = data + (*update_ptr - a->data); /* Not strict ISO. */
 	a->data = data, a->capacity = c0;
 	return 1;
 }
 
-/** Call `reserve_update` with `a`, `min_capacity`, and no `update_ptr`; which
- is what usually happens. */
-static int PT_(reserve)(struct T_(Array) *const a, const size_t min_capacity)
-	{ return PT_(update_reserve)(a, min_capacity, 0); }
+/** Call `update` with `a`, `min_capacity`. @param[update_ptr] Must be in the
+ array's capacity or null, it updates this value. */
+static int PT_(update_reserve)(struct T_(Array) *const a,
+	const size_t min_capacity, T **const update_ptr) {
+	const size_t i = *update_ptr - a->data;
+	assert(update_ptr && (size_t)(*update_ptr - a->data) <= a->capacity);
+	return PT_(reserve)(a, min_capacity) && (*update_ptr = a->data + i, 1);
+}
 
 /** Shrinks `a` to the size. */
 static int PT_(shrink)(struct T_(Array) *const a) {
@@ -209,8 +213,8 @@ static int PT_(shrink)(struct T_(Array) *const a) {
 	return 1;
 }
 
-/** In `a`, converts `anchor` and `range` à-la-Python and stores them in the
- pointers `p0` and `p1` _st_ `*p0, *p1 \in [0, a.size], *p0 <= *p1`.
+/** In `a`, converts `anchor` and `range` and stores them in the pointers `p0`
+ and `p1` _st_ `*p0, *p1 \in [0, a.size], *p0 <= *p1`.
  @param[anchor] An element in the array or null to indicate past the end.
  @return Success. @throws[ERANGE] `anchor` is not null and not in `a`. `range`
  is greater then +/-65534. `size_t` overflow. */
@@ -254,7 +258,7 @@ static int PT_(replace)(struct T_(Array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Returns a new un-initialized datum of `a` and updates `update_ptr`. */
+/** Returns a new un-initialised datum of `a` and updates `update_ptr`. */
 static T *PT_(update_new)(struct T_(Array) *const a, T **const update_ptr) {
 	assert(a);
 	return PT_(update_reserve)(a, a->size + 1, update_ptr)
@@ -365,8 +369,7 @@ static T *T_(ArrayReserve)(struct T_(Array) *const a, const size_t reserve) {
 }
 
 /** Adds `add` elements to `a`.
- @param[a] If null, returns null.
- @param[add] If zero, returns null.
+ @param[a] If null, returns null. @param[add] If zero, returns null.
  @return The start of a new sub-array of `add` elements at the previous end of
  `a`, or null and `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
@@ -393,9 +396,6 @@ static int T_(ArrayShrink)(struct T_(Array) *const a)
 
 /** Iterates through `a` and calls `action` on all the elements. The topology
  of the list should not change while in this function.
- 
- @fixme All these functions can go into Sequetial?
- 
  @param[a, action] If null, does nothing.
  @order \O(`size` \times `action`) @allow */
 static void T_(ArrayEach)(struct T_(Array) *const a,
@@ -407,8 +407,7 @@ static void T_(ArrayEach)(struct T_(Array) *const a,
 
 /** Iterates through `a` and calls `action` on all the elements for which
  `predicate` returns true. The topology of the list can not change while in
- this function.
- @param[a, predicate, action] If null, does nothing.
+ this function. @param[a, predicate, action] If null, does nothing.
  @order \O(`size` \times `action`) @allow */
 static void T_(ArrayIfEach)(struct T_(Array) *const a,
 	const PT_(Predicate) predicate, const PT_(Action) action) {
@@ -641,9 +640,9 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #error P?T_? or P?CAT_? not yet defined in contrast interface; include array?
 #endif
 
-#ifdef ARRAY_CONTRAST_NAME /* <!-- name */
-#define PTC_(thing) PCAT(PT_(thing), ARRAY_CONTRAST_NAME)
-#define T_C_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_CONTRAST_NAME, thing2))
+#ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
+#define PTC_(thing) PCAT(PT_(thing), ARRAY_COMPARABLE_NAME)
+#define T_C_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_COMPARABLE_NAME, thing2))
 #else /* name --><!-- !name */
 #define PTC_(thing) PCAT(PT_(thing), anonymous)
 #define T_C_(thing1, thing2) CAT(T_(thing1), thing2)
@@ -652,8 +651,8 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #ifdef ARRAY_COMPARE /* <!-- compare */
 
 /* Check that `ARRAY_COMPARE` is a function implementing
- <typedef:<PT>Bipredicate>. */
-static const PT_(Bipredicate) PTC_(compare) = (ARRAY_COMPARE);
+ <typedef:<PT>Compare>. */
+static const PT_(Compare) PTC_(compare) = (ARRAY_COMPARE);
 
 /** !compare(`a`, `b`) == equals(`a`, `b`) */
 static int PTC_(is_equal)(const void *const a, const void *const b)
@@ -705,7 +704,7 @@ static int PTC_(insert)(struct T_(Array) *const a, const T *const datum) {
 
 #else /* compare --><!-- is equal */
 
-/* Check that `ARRAY_COMPARE` is a function implementing
+/* Check that `ARRAY_IS_EQUAL` is a function implementing
  <typedef:<PT>Bipredicate>. */
 static const PT_(Bipredicate) PTC_(is_equal) = (ARRAY_IS_EQUAL);
 
@@ -830,17 +829,17 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_IS_EQUAL
 #undef ARRAY_IS_EQUAL
 #endif
-#ifdef ARRAY_CONTRAST_NAME
-#undef ARRAY_CONTRAST_NAME
+#ifdef ARRAY_COMPARABLE_NAME
+#undef ARRAY_COMPARABLE_NAME
 #endif
 
 
 #endif /* interfaces --> */
 
 
-#ifdef ARRAY_UNFINISHED /* <!-- unfinish */
-#undef ARRAY_UNFINISHED
-#else /* unfinish --><!-- finish */
+#ifdef ARRAY_EXPECT_TRAIT /* <!-- trait */
+#undef ARRAY_EXPECT_TRAIT
+#else /* trait --><!-- !trait */
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
@@ -860,8 +859,8 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
-#endif /* finish --> */
+#endif /* !trait --> */
 
-#undef ARRAY_TO_STRING_INTERFACE
-#undef ARRAY_CONTRAST_INTERFACE
-#undef ARRAY_INTERFACES
+#undef ARRAY_TO_STRING_TRAIT
+#undef ARRAY_COMPARABLE_TRAIT
+#undef ARRAY_TRAITS

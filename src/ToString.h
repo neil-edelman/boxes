@@ -1,7 +1,7 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle To String Interface
+ @subtitle To String Trait
 
  @param[AI_]
  Function-like define macro accepting one argument and producing a valid name.
@@ -73,7 +73,7 @@ typedef int (*PAI_(IsValid))(const PAI_(Iterator) *);
 static const PAI_(IsValid) PAI_(is_valid) = (TO_STRING_IS_VALID);
 
 /** Fills the to string function up with `it`, with `start` and `end`
- delimiters around the `<PA>NextToString` `TO_STRING_NEXT`. @allow */
+ delimiters around the `<PA>NextToString` `TO_NEXT_STRING`. @allow */
 static const char *AI_(iterator_to_string)(PAI_(Iterator) *const it,
 	const char start, const char end) {
 	const char comma = ',', space = ' ',

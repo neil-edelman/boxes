@@ -15,7 +15,7 @@ static void int_to_string(const struct IntHeapNode *, char (*)[12]);
 static void test_int(struct IntHeapNode *, void *);
 
 #define HEAP_NAME Int
-#define HEAP_UNFINISHED
+#define HEAP_EXPECT_TRAIT
 #include "../src/Heap.h"
 #define HEAP_TO_STRING &int_to_string
 #define HEAP_TEST &test_int
