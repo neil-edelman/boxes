@@ -1,7 +1,7 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised Hash Set
+ @subtitle Hash Set
 
  ![Example of <String>Set.](../web/set.png)
 
@@ -9,12 +9,13 @@
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
  <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>.
 
- Internally, it is a separately chained, hash set with a maximum load factor of
- `ln 2`, and power-of-two resizes, with buckets as pointers. This offers some
- independence of sets from set elements, but cache performance is left up to
- the caller. It can be expanded to a hash map or associative array by enclosing
- the `<E>SetElement` in another `struct`, as appropriate. While in a set, the
- elements should not change in a way that affects their hash values.
+ Internally, it is a separately chained hash table with a maximum load factor
+ of `ln 2`, and power-of-two resizes, with buckets as a forward linked list of
+ <tag:<E>SetElement>. This offers some independence of sets from set elements,
+ but cache performance is left up to the caller. It can be expanded to a hash
+ map or associative array by enclosing the `<E>SetElement` in another `struct`,
+ as appropriate. While in a set, the elements should not change in a way that
+ affects their hash values.
 
  `<E>Set` is not synchronised. Errors are returned with `errno`. The parameters
  are `#define` preprocessor macros, and are all undefined at the end of the
@@ -33,28 +34,35 @@
  @param[SET_IS_EQUAL]
  A function satisfying <typedef:<PE>IsEqual>; required.
 
- @param[SET_TO_STRING]
- Optional print function implementing <typedef:<PE>ToString>; makes available
- <fn:<E>SetToString>.
-
- @param[SET_POINTER_GET]
- Usually <typedef:<PE>MType> in the same as <typedef:<PE>Type>; this flag makes
- `<PE>MType` be a pointer-to-`<PE>Type`. Should be used when the copying of
- `<PE>Type` into functions is a performance issue. As well as <fn:<E>SetGet>,
- affects the definition of <typedef:<PE>Hash> and <typedef:<PE>IsEqual>.
+ @param[SET_POINTER]
+ Usually <typedef:<PE>MType> in the same as <typedef:<PE>Type> for simple
+ `SET_TYPE`, but this flag makes `<PE>MType` be a pointer-to-`<PE>Type`. This
+ affects <typedef:<PE>Hash>, <typedef:<PE>IsEqual>, and <fn:<E>SetGet>, making
+ them accept a pointer.
 
  @param[SET_NO_CACHE]
  Calculates the hash every time and discards it; should be used when the hash
  calculation is trivial to avoid storing duplicate <typedef:<PE>UInt> _per_
- datum.
+ datum, (in rare cases.)
 
  @param[SET_UINT]
  This is <typedef:<PE>UInt> and defaults to `unsigned int`.
 
+ @param[SET_EXPECT_TRAIT]
+ Do not un-define certain variables for subsequent inclusion in a trait.
+
+ @param[SET_TO_STRING]
+ To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PE>ToString>.
+ There can be multiple to string traits, but only one can omit
+ `SET_TO_STRING_NAME`.
+
  @param[SET_TEST]
- Unit testing framework <fn:<E>SetTest>, included in a separate header,
- <../test/TestSet.h>. Must be defined equal to a random filler function,
- satisfying <typedef:<PE>Action>. Requires `SET_TO_STRING` and not `NDEBUG`.
+ To string trait contained in <../test/SetTest.h>; optional unit testing
+ framework using `assert`. Can only be defined once _per_ `Set`. Must be
+ defined equal to a (random) filler function, satisfying <typedef:<PE>Action>.
+ Output will be shown with the to string trait in which it's defined; provides
+ tests for the base code and all later traits.
 
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
@@ -119,8 +127,8 @@ typedef SET_UINT PE_(UInt);
 
 /** Valid tag type defined by `SET_TYPE`. Included in <tag:<E>SetElement>. */
 typedef SET_TYPE PE_(Type);
-#ifdef SET_POINTER_GET /* <!-- !raw */
-/** `SET_POINTER_GET` modifies `<PE>MType` to be a pointer, otherwise it's
+#ifdef SET_POINTER /* <!-- !raw */
+/** `SET_POINTER` modifies `<PE>MType` to be a pointer, otherwise it's
  the same as <typedef:<PE>Type>. */
 typedef const PE_(Type)* PE_(MType);
 #else /* !raw --><!-- raw */
@@ -182,7 +190,7 @@ struct E_(Set) {
 
 
 
-#ifdef SET_POINTER_GET /* <!-- !raw */
+#ifdef SET_POINTER /* <!-- !raw */
 /** @return `element`. */
 static const PE_(Type) *PE_(pointer)(const PE_(Type) *const element)
 	{ return element; }
@@ -592,8 +600,8 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #ifdef SET_TO_STRING
 #undef SET_TO_STRING
 #endif
-#ifdef SET_POINTER_GET
-#undef SET_POINTER_GET
+#ifdef SET_POINTER
+#undef SET_POINTER
 #endif
 #ifdef SET_NO_CACHE
 #undef SET_NO_CACHE

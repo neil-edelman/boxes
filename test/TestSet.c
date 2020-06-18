@@ -45,14 +45,11 @@ static unsigned int int_hash(unsigned x) {
 /** `a` == `b`. */
 static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
 /** Outputs `x` to `a`. */
-static void int_to_string(const unsigned *const x, char (*const a)[12]) {
-	sprintf(*a, "%u", *x); /* Assumes <= 32-bit. */
-}
+static void int_to_string(const unsigned *const x, char (*const a)[12])
+	{ sprintf(*a, "%u", *x); }
 /** Fills `x` with random. */
-static void int_fill(unsigned *const x) {
-	assert(RAND_MAX <= 99999999999l);
-	*x = rand();
-}
+static void int_fill(unsigned *const x)
+	{ assert(RAND_MAX <= 99999999999l); *x = rand(); }
 /** This defines `struct IntSet` and `struct IntSetElement`. */
 #define SET_NAME Int
 #define SET_TYPE unsigned
@@ -127,7 +124,7 @@ static struct StringSetElement *string_from_pool(void *const vsp) {
 
 
 
-/* Vector; test of `SET_POINTER_GET`. */
+/* Vector; test of `SET_POINTER`. */
 
 struct Vec4 {
 	char a[2];
@@ -158,7 +155,7 @@ static void vec4_filler(struct Vec4 *const v4) {
 /* <fn:vec4_hash> and <fn:vec4_is_equal> have an extra level of indirection.
  This means that we also have to get an object and fill it to use
  <fn:<E>SetGet>; not very convenient. */
-#define SET_POINTER_GET
+#define SET_POINTER
 #define SET_HASH &vec4_hash
 #define SET_IS_EQUAL &vec4_is_equal
 #define SET_TO_STRING &vec4_to_string
