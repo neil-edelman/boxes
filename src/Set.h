@@ -206,8 +206,8 @@ struct E_(Set) {
 #endif /* !zero --> */
 
 /** Contains all iteration parameters in one. */
-struct PE_(Iterator); struct PE_(Iterator) { const struct E_(Set) *set;
-	struct PE_(Bucket) *bucket; struct E_(SetElement) *prev; };
+struct PE_(Iterator); struct PE_(Iterator)
+	{ const struct E_(Set) *set; size_t b; struct E_(SetElement) *e; };
 
 /** Initialises `set` to idle. */
 static void PE_(set)(struct E_(Set) *const set)
@@ -491,34 +491,20 @@ static const PE_(ToString) PEA_(to_str12) = (SET_TO_STRING);
  @implements <AI>NextToString */
 static int PEA_(next_to_str12)(struct PE_(Iterator) *const it,
 	char (*const str)[12]) {
+	const size_t b_end = 1 << it->set->log_capacity;
 	assert(it && it->set && str);
-	return 0;
-#if 0
-	*s++ = start;
-	if(!set->buckets) goto end_buckets;
-	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
-	{
-		struct E_(SetElement) *x = b->first;
-		while(x) {
-			if(!is_first) *s++ = comma, *s++ = space;
-			else *s++ = space, is_first = 0;
-			/* Directly to the buffer; might be a strict aliasing violation,
-			 (`C++` it is.) Is any cpu affected? Probably not. */
-			PE_(to_string)(&x->key, (char (*)[12])s);
-			for(i = 0; *s != '\0' && i < 12; s++, i++);
-			/* Greedy can not guarantee another; terminate by ellipsis. */
-			if((size_t)(s - string) > string_size
-			   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
-			x = x->next;
-		}
+	if(!it->set->buckets) return 0;
+	while(it->b < b_end) {
+		if(!it->e) it->e = it->set->buckets[it->b].first;
+		else it->e = it->e->next;
+		if(it->e) goto next;
+		it->b++;
 	}
-	PE_(to_string)(&x->key, (char (*)[12])s);
-	for(i = 0; *s != '\0' && i < 12; s++, i++);
-	/* Greedy can not guarantee another; terminate by ellipsis. */
-	if((size_t)(s - string) > string_size
-	   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
-	x = x->next;
-#endif
+	it->set = 0, it->b = 0, it->e = 0;
+	return 0;
+next:
+	PEA_(to_str12)(&it->e->key, (char (*)[12])str);
+	return 1;
 }
 
 /** @return If `it` contains not-null. */
@@ -571,59 +557,6 @@ static void PEA_(unused_to_string_coda)(void) { PEA_(unused_to_string)(); }
 
 
 #endif /* traits --> */
-
-
-
-#if 0
-
-/** Responsible for turning <typedef:<PE>Type> into a 12-`char` null-terminated
- output string. Used for `SET_TO_STRING`. */
-typedef void (*PE_(ToString))(const PE_(Type) *, char (*)[12]);
-/* Check that `SET_TO_STRING` is a function implementing
- <typedef:<PE>ToString>. */
-static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
-
-/** Can print 2 things at once before it overwrites. One must set
- `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
- functionality.
- @return Prints `set` in a static buffer in order by bucket.
- @order \Theta(1); it has a 1024 character limit; every element takes some.
- @allow */
-static const char *E_(SetToString)(const struct E_(Set) *const set) {
-	static char strings[2][1024];
-	static size_t strings_i;
-	char *string = strings[strings_i++], *s = string;
-	const size_t strings_no = sizeof strings / sizeof *strings,
-		string_size = sizeof *strings / sizeof **strings;
-	const char space = ' ', start = '{', comma = ',', end = '}',
-		*const ellipsis_end = ",…}", *const null = "null";
-	const size_t ellipsis_end_len = strlen(ellipsis_end),
-		null_len = strlen(null);
-	struct PE_(Bucket) *b, *b_end;
-	size_t i;
-	int is_first = 1;
-	assert(!(strings_no & (strings_no - 1)) && ellipsis_end_len >= 2
-		&& string_size >= 2 + 11 + ellipsis_end_len + 1
-		&& string_size >= null_len + 1);
-	/* Advance the buffer for next time. */
-	strings_i &= strings_no - 1;
-	/* Null set. */
-	if(!set) { memcpy(s, null, null_len), s += null_len; goto terminate; }
-	/* Otherwise */
-end_buckets:
-	if(!is_first) *s++ = space;
-	*s++ = end;
-	goto terminate;
-ellipsis:
-	memcpy(s, ellipsis_end, ellipsis_end_len), s += ellipsis_end_len;
-terminate:
-	*s++ = '\0';
-	assert(s <= string + string_size);
-	return string;
-}
-
-#endif
-
 
 
 #ifdef SET_EXPECT_TRAIT /* <!-- trait */

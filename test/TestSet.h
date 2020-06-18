@@ -1,4 +1,10 @@
-/* Intended to be included by Set.h on `SET_TEST`. */
+#if defined(QUOTE) || defined(QUOTE_)
+#error QUOTE_? cannot be defined.
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+
+#ifdef SET_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
 #include <stdio.h>  /* fprintf FILE */
 #include <math.h>   /* sqrt NAN? */
@@ -7,24 +13,15 @@
 #endif
 #include <string.h> /* memset */
 
+/* Copy functions for later includes. */
+static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
+static const char *(*PE_(set_to_string))(const struct E_(Set) *)
+	= E_A_(Set, ToString);
+
 /* Check that `SET_TEST` is a function implementing `<PE>Action`. */
 static const PE_(Action) PE_(filler) = (SET_TEST);
 
-
-
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
-#endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
-
-
-
-/** Count how many are in the `bucket`.
- @order \O(`bucket.items`) */
+/** Count how many are in the `bucket`. @order \O(`bucket.items`) */
 static size_t PE_(count)(struct PE_(Bucket) *const bucket) {
 	const struct E_(SetElement) *x;
 	size_t c = 0;
@@ -34,8 +31,7 @@ static size_t PE_(count)(struct PE_(Bucket) *const bucket) {
 }
 
 /** Collect stats; <Welford1962Note>, on `set` and output them to `fp` with
- `delim`.
- @order \O(|`set.bins`| + |`set.items`|) */
+ `delim`. @order \O(|`set.bins`| + |`set.items`|) */
 static void PE_(stats)(const struct E_(Set) *const set,
 	const char *const delim, FILE *fp) {
 	struct { size_t n, cost, max_bin; double mean, ssdm; }
@@ -243,10 +239,10 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 			}
 		}
 		t->is_in = 1;
-		if(E_(SetSize)(&set) < 1000000 && !(n & (n - 1))) {
+		if(set.size < 1000000 && !(n & (n - 1))) {
 			char fn[64];
 			fprintf(stderr, "%lu: %s added to set %s.\n",
-				(unsigned long)n, a, E_(SetToString)(&set));
+				(unsigned long)n, a, PE_(set_to_string)(&set));
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
 				(unsigned)n + 1);
 			PE_(graph)(&set, fn);
@@ -298,11 +294,11 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 				assert(r);
 			}
 		} else {
-			const size_t count = E_(SetSize)(&set);
+			const size_t count = set.size;
 			collision++;
 			assert(t && element != t->elem);
 			r = E_(SetPolicyPut)(&set, t->elem, 0);
-			assert(r == t->elem && count == E_(SetSize)(&set));
+			assert(r == t->elem && count == set.size);
 		}
 	}
 	printf("Collisions: %lu; removed: %lu.\n",
@@ -312,8 +308,8 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
 	E_(SetClear)(&set);
 	for(b = set.buckets, b_end = b + (1 << set.log_capacity); b < b_end; b++)
 		assert(!PE_(count)(b));
-	assert(E_(SetSize)(&set) == 0);
-	printf("Clear: %s.\n", E_(SetToString(&set)));
+	assert(set.size == 0);
+	printf("Clear: %s.\n", PE_(set_to_string)(&set));
 	E_(Set_)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
 }
@@ -323,10 +319,8 @@ static void PE_(test_basic)(struct E_(SetElement) *(*const parent_new)(void *),
  @param[parent_new] Specifies the dynamic up-level creator of the parent
  `struct`. Could be null; then testing will be done statically on an array of
  <tag:<E>SetElement> and `SET_TEST` is not allowed to go over the limits of the
- data type.
- @param[parent] The parameter passed to `parent_new`. Ignored if `parent_new`
- is null.
- @allow */
+ data type. @param[parent] The parameter passed to `parent_new`. Ignored if
+ `parent_new` is null. @allow */
 static void E_(SetTest)(struct E_(SetElement) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(SET_NAME) ">Set of type <" QUOTE(SET_TYPE)
@@ -341,6 +335,10 @@ static void E_(SetTest)(struct E_(SetElement) *(*const parent_new)(void *),
 	PE_(test_basic)(parent_new, parent);
 	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">Set.\n\n");
 }
+
+#else /* compare --><!-- */
+#error Test unsupported option; testing is out-of-sync?
+#endif /* --> */
 
 #undef QUOTE
 #undef QUOTE_

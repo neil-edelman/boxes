@@ -58,7 +58,7 @@ static void int_fill(unsigned *const x)
 #define SET_EXPECT_TRAIT
 #include "../src/Set.h"
 #define SET_TO_STRING &int_to_string
-/*#define SET_TEST &int_fill*/
+#define SET_TEST &int_fill
 #include "../src/Set.h"
 
 
@@ -348,6 +348,7 @@ static const struct Entry *entry_next(struct Entry *const e) {
 
 
 int main(void) {
+	IntSetTest(0, 0);
 #if 0
 	{ /* Automated tests. The ones that have no pool are self-contained sets,
 	 and we just test them on the stack. The ones that do require more memory
