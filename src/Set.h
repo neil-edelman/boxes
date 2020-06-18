@@ -38,15 +38,16 @@
  Usually <typedef:<PE>MType> in the same as <typedef:<PE>Type> for simple
  `SET_TYPE`, but this flag makes `<PE>MType` be a pointer-to-`<PE>Type`. This
  affects <typedef:<PE>Hash>, <typedef:<PE>IsEqual>, and <fn:<E>SetGet>, making
- them accept a pointer.
+ them accept a pointer-to-const-`<E>` instead of a copy of `<E>`.
+
+ @param[SET_UINT]
+ This is <typedef:<PE>UInt> and defaults to `unsigned int`; use when
+ <typedef:<PE>Hash> is a specific hash length.
 
  @param[SET_NO_CACHE]
  Calculates the hash every time and discards it; should be used when the hash
  calculation is trivial to avoid storing duplicate <typedef:<PE>UInt> _per_
  datum, (in rare cases.)
-
- @param[SET_UINT]
- This is <typedef:<PE>UInt> and defaults to `unsigned int`.
 
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
