@@ -55,11 +55,15 @@ static void int_fill(unsigned *const x)
 #define SET_TYPE unsigned
 #define SET_HASH &int_hash
 #define SET_IS_EQUAL &int_is_equal
+#define SET_EXPECT_TRAIT
+#include "../src/Set.h"
 #define SET_TO_STRING &int_to_string
-#define SET_TEST &int_fill
+/*#define SET_TEST &int_fill*/
 #include "../src/Set.h"
 
 
+
+#if 0
 
 /* Used to test `SET_UINT`; normally `unsigned int`, here `unsigned char`.
  Useful if you want to use a specific hash length, _eg_, C99's `uint32_t` or
@@ -340,8 +344,11 @@ static const struct Entry *entry_next(struct Entry *const e) {
 #include "Pool.h"
 
 
+#endif
+
 
 int main(void) {
+#if 0
 	{ /* Automated tests. The ones that have no pool are self-contained sets,
 	 and we just test them on the stack. The ones that do require more memory
 	 from a parent node, which the internals to `Set` don't know of. */
@@ -490,5 +497,6 @@ finally:
 		KeySet(&key_set);
 		EntryPool_(&entries);
 	}
+#endif
 	return EXIT_SUCCESS;
 }

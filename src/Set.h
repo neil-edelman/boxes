@@ -77,12 +77,12 @@
 #include <assert.h>	/* assert */
 #include <errno.h>  /* errno */
 
-/* Check defines. */
+
 #ifndef SET_NAME
-#error Generic SET_NAME undefined.
+#error Name SET_NAME undefined.
 #endif
 #ifndef SET_TYPE
-#error Tag SET_TYPE undefined.
+#error Tag type SET_TYPE undefined.
 #endif
 #ifndef SET_IS_EQUAL
 #error Function SET_IS_EQUAL undefined.
@@ -90,35 +90,44 @@
 #ifndef SET_HASH
 #error Function SET_HASH undefined.
 #endif
-#if defined(SET_TEST) && !defined(SET_TO_STRING)
-#error SET_TEST requires SET_TO_STRING.
+#if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING)
+#define SET_TO_STRING_TRAIT 1
+#else
+#define SET_TO_STRING_TRAIT 0
 #endif
-#if defined(E_) || defined(PE_)
-#error E_, and PE_ cannot be defined.
+#define SET_TRAITS SET_TO_STRING_TRAIT
+#if SET_TRAITS > 1
+#error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
 #endif
-#ifndef SET_UINT
-#define SET_UINT unsigned
+#if (SET_TRAITS == 0) && defined(SET_TEST)
+#error SET_TEST must be defined in SET_TO_STRING trait.
+#endif
+#if defined(SET_TO_STRING_NAME) && !defined(SET_TO_STRING)
+#error SET_TO_STRING_NAME requires SET_TO_STRING.
 #endif
 
+
+#if SET_TRAITS == 0 /* <!-- base code */
+
+
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#ifdef CAT
-#undef CAT
+#if defined(E_) || defined(PE_)
+#error P?E_? cannot be defined; possible stray SET_EXPECT_TRAIT?
 #endif
-#ifdef CAT_
-#undef CAT_
-#endif
-#ifdef PCAT
-#undef PCAT
-#endif
-#ifdef PCAT_
-#undef PCAT_
-#endif
+#ifndef SET_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
+#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
+#error SET_CHILD defined but CAT is not.
+#endif /* !cat --> */
 #define E_(thing) CAT(SET_NAME, thing)
 #define PE_(thing) PCAT(set, PCAT(SET_NAME, thing))
+
+#ifndef SET_UINT
+#define SET_UINT unsigned
+#endif
 
 /** Valid unsigned integer type used for hash values. The hash map will
  saturate at `min(((ln 2)/2) \cdot range(<PE>UInt), (1/8) \cdot range(size_t))`,
@@ -137,7 +146,8 @@ typedef PE_(Type) PE_(MType);
 #endif /* raw --> */
 
 /** A map from <typedef:<PE>MType> onto <typedef:<PE>UInt>. Should be as close
- as possible to a discrete uniform distribution for maximum performance. */
+ as possible to a discrete uniform distribution while being surjective on bits
+ of the argument for maximum performance. */
 typedef PE_(UInt) (*PE_(Hash))(const PE_(MType));
 /* Check that `SET_HASH` is a function implementing <typedef:<PE>Hash>. */
 static const PE_(Hash) PE_(hash) = (SET_HASH);
@@ -153,10 +163,17 @@ static const PE_(IsEqual) PE_(equal) = (SET_IS_EQUAL);
  in <fn:<E>SetPolicyPut>. */
 typedef int (*PE_(Replace))(PE_(Type) *original, PE_(Type) *replace);
 
-#ifdef SET_TEST /* <!-- test */
+/** Used in <fn:<E>SetPolicyPut> when `replace` is null; `original` and
+ `replace` are ignored. @implements <PE>Replace */
+static int PE_(false)(PE_(Type) *original, PE_(Type) *replace)
+	{ (void)(original); (void)(replace); return 0; }
+
 /** Operates by side-effects. Used for `SET_TEST`. */
 typedef void (*PE_(Action))(PE_(Type) *);
-#endif /* test --> */
+
+/** Responsible for turning the first argument into a 12-`char` null-terminated
+ output string. Used for `SET_TO_STRING`. */
+typedef void (*PE_(ToString))(const PE_(Type) *, char (*)[12]);
 
 /** Contains <typedef:<PE>Type> as the first element `key`, along with data
  internal to the set. Storage of the `<E>SetElement` structure is the
@@ -171,12 +188,11 @@ struct E_(SetElement) {
 };
 
 /* Singly-linked list head for `buckets`. Not really needed, but
- double-pointers are confusing, (confusion is not the intent of this file.) */
+ double-pointers are confusing. */
 struct PE_(Bucket) { struct E_(SetElement) *first; };
 
-/** To initialise, see <fn:<E>Set>. Assigning `{0}` (`C99`+) or `SET_IDLE` as
- the initialiser, or being part of `static` data, also puts it in an idle
- state, (no dynamic memory allocated.)
+/** An `<E>Set` of `size`. To initialise, see <fn:<E>Set>, `SET_IDLE`, `{0}`
+ (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct E_(Set);
@@ -189,7 +205,17 @@ struct E_(Set) {
 #define SET_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
 
+/** Contains all iteration parameters in one. */
+struct PE_(Iterator); struct PE_(Iterator) { const struct E_(Set) *set;
+	struct PE_(Bucket) *bucket; struct E_(SetElement) *prev; };
 
+/** Initialises `set` to idle. */
+static void PE_(set)(struct E_(Set) *const set)
+	{ assert(set); set->buckets = 0; set->log_capacity = 0; set->size = 0; }
+
+/** Destroys `set` and returns it to idle. */
+static void PE_(set_)(struct E_(Set) *const set)
+	{ assert(set), free(set->buckets), PE_(set)(set); }
 
 #ifdef SET_POINTER /* <!-- !raw */
 /** @return `element`. */
@@ -201,7 +227,7 @@ static PE_(Type) PE_(pointer)(const PE_(Type) *const element)
 	{ return *element; }
 #endif /* raw --> */
 
-/** Gets the hash of `element`. */
+/** Gets the hash of `element`, which should be consistant. */
 static PE_(UInt) PE_(get_hash)(struct E_(SetElement) *element) {
 	assert(element);
 #ifdef SET_NO_CACHE /* <!-- !cache */
@@ -239,15 +265,13 @@ static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
 	return 0;
 }
 
-/** Grow the `set` until the capacity is at least `size`.
- @return Success; otherwise, `errno` will be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` or doesn't
- follow [IEEE Std 1003.1-2001
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html)
- with `realloc`.
- @throws[realloc]
- @order Amortized \O(1). */
-static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
+/** Ensures `min_capacity` (`\times ln 2`) of `a`.
+ @param[min_capacity] If zero, does nothing.
+ @return Success; otherwise, `errno` will be set. @throws[ERANGE] Tried
+ allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ @throws[realloc] */
+static int PE_(reserve)(struct E_(Set) *const set, const size_t size) {
 	struct PE_(Bucket) *buckets, *b, *b_end, *new_b;
 	struct E_(SetElement) **to_x, *x;
 	const unsigned log_c0 = set->log_capacity,
@@ -283,7 +307,7 @@ static int PE_(grow)(struct E_(Set) *const set, const size_t size) {
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
 	/* Initialize second part (new) lists to contain no elements. */
 	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->first = 0;
-	/* Expectation value of rehashing an entry is 1/2. */
+	/* Expectation value of rehashing an entry is half. */
 	for(b = buckets, b_end = buckets + c0; b < b_end; b++) {
 		PE_(UInt) hash;
 		assert(!((b - buckets) & mask));
@@ -324,7 +348,7 @@ static struct E_(SetElement) *PE_(put)(struct E_(Set) *const set,
 grow_table:
 	assert(set->size + 1 > set->size);
 	/* Didn't <fn:<E>SetReserve>, now one can't tell error except `errno`. */
-	if(!PE_(grow)(set, set->size + 1)) return 0;
+	if(!PE_(reserve)(set, set->size + 1)) return 0;
 	bucket = PE_(get_bucket)(set, hash);
 	set->size++;
 add_element:
@@ -332,47 +356,21 @@ add_element:
 	return x;
 }
 
-/** Used in <fn:<E>SetPolicyPut> when `replace` is null; `original` and
- `replace` are ignored. */
-static int PE_(false)(PE_(Type) *original, PE_(Type) *replace) {
-	(void)(original); (void)(replace); return 0;
-}
-
-/** Zeros `set`, a well-defined state. */
-static void PE_(set)(struct E_(Set) *const set) {
-	assert(set);
-	set->buckets      = 0;
-	set->log_capacity = 0;
-	set->size         = 0;
-}
-
 #ifndef SET_CHILD /* <!-- !sub-type */
-
-/** Destructor for active `set`. After, it takes no memory and is in an idle
- state. If idle, does nothing.
- @allow */
-static void E_(Set_)(struct E_(Set) *const set) {
-	if(!set) return;
-	free(set->buckets);
-	PE_(set)(set);
-}
 
 /** Initialises `set` to be take no memory and be in an idle state. Calling
  this on an active set will cause memory leaks.
- @param[set] If null, does nothing.
- @order \Theta(1)
- @allow */
-static void E_(Set)(struct E_(Set) *const set) {
-	if(!set) return;
-	PE_(set)(set);
-}
+ @param[set] If null, does nothing. @order \Theta(1) @allow */
+static void E_(Set)(struct E_(Set) *const set) { if(set) PE_(set)(set); }
+
+/** Destructor for active `set`. After, it takes no memory and is in an idle
+ state. If idle, does nothing. @allow */
+static void E_(Set_)(struct E_(Set) *const set) { if(set) PE_(set_)(set); }
 
 /** Clears and removes all entries from `set`. The capacity and memory of the
  hash table is preserved, but all previous values are un-associated. The load
  factor will be less until it reaches it's previous size.
- @param[set] If null, does nothing.
- @order \Theta(`set.buckets`)
- @allow */
+ @param[set] If null, does nothing. @order \Theta(`set.buckets`) @allow */
 static void E_(SetClear)(struct E_(Set) *const set) {
 	struct PE_(Bucket) *b, *b_end;
 	if(!set || !set->log_capacity) return;
@@ -381,21 +379,10 @@ static void E_(SetClear)(struct E_(Set) *const set) {
 	set->size = 0;
 }
 
-/** @return The number of entries in the `set`.
- @param[set] If null, returns 0.
- @order \Theta(1)
- @allow */
-static size_t E_(SetSize)(const struct E_(Set) *const set) {
-	if(!set) return 0;
-	return set->size;
-}
-
-/** Queries whether `data` is is `set`.
- @param[set] If null, returns null.
- @return The value which <typedef:<PE>IsEqual> `data`, or, if no such value
- exists, null.
- @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
- @allow */
+/** @return The value in `set` which <typedef:<PE>IsEqual> `SET_IS_EQUAL`
+ `data`, or, if no such value exists, null.
+ @param[set] If null, returns null. @order Average \O(1), (hash distributes
+ elements uniformly); worst \O(n). @allow */
 static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set,
 	const PE_(MType) data) {
 	struct E_(SetElement) **to_x;
@@ -407,34 +394,24 @@ static struct E_(SetElement) *E_(SetGet)(struct E_(Set) *const set,
 }
 
 /** Reserve at least `reserve`, divided by the maximum load factor, space in
- the buckets of `set`.
- @return Success.
+ the buckets of `set`. @return Success.
  @throws[ERANGE] `reserve` plus the size would take a bigger number then could
- fit in a `size_t`.
- @throws[realloc]
- @allow */
-static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve) {
-	if(!set) return 0;
-	if(reserve > (size_t)-1 - set->size) return errno = ERANGE, 0;
-	return PE_(grow)(set, set->size + reserve);
-}
+ fit in a `size_t`. @throws[realloc] @allow */
+static int E_(SetReserve)(struct E_(Set) *const set, const size_t reserve)
+	{ return set ? reserve > (size_t)-1 - set->size ? (errno = ERANGE, 0) :
+	PE_(reserve)(set, set->size + reserve) : 0; }
 
 /** Puts the `element` in `set`.
- @param[set, element] If null, returns null.
- @param[element] Should not be of a set because the integrity of that set will
- be compromised.
+ @param[set, element] If null, returns null. @param[element] Should not be of a
+ set because the integrity of that set will be compromised.
  @return Any ejected element or null. (An ejected element has
  <typedef:<PE>IsEqual> `SET_IS_EQUAL` the `element`.)
  @throws[realloc, ERANGE] There was an error with a re-sizing. Successfully
  calling <fn:<E>SetReserve> with at least one before ensures that this does not
- happen.
- @order Average amortised \O(1), (hash distributes elements uniformly);
- worst \O(n).
- @allow */
+ happen. @order Average amortised \O(1), (hash distributes elements uniformly);
+ worst \O(n). @allow */
 static struct E_(SetElement) *E_(SetPut)(struct E_(Set) *const set,
-	struct E_(SetElement) *const element) {
-	return PE_(put)(set, element, 0);
-}
+	struct E_(SetElement) *const element) { return PE_(put)(set, element, 0); }
 
 /** Puts the `element` in `set` only if the entry is absent or if calling
  `replace` returns true.
@@ -445,23 +422,18 @@ static struct E_(SetElement) *E_(SetPut)(struct E_(Set) *const set,
  returns true. If null, doesn't do any replacement on collision.
  @return Any ejected element or null. On collision, if `replace` returns false
  or `replace` is null, returns `element` and leaves the other element in the
- set.
- @throws[realloc, ERANGE] There was an error with a re-sizing. Successfully
- calling <fn:<E>SetReserve> with at least one before ensures that this does not
- happen.
- @order Average amortised \O(1), (hash distributes elements uniformly);
- worst \O(n).
- @allow */
+ set. @throws[realloc, ERANGE] There was an error with a re-sizing.
+ Successfully calling <fn:<E>SetReserve> with at least one before ensures that
+ this does not happen. @order Average amortised \O(1), (hash distributes
+ elements uniformly); worst \O(n). @allow */
 static struct E_(SetElement) *E_(SetPolicyPut)(struct E_(Set) *const set,
-	struct E_(SetElement) *const element, const PE_(Replace) replace) {
-	return PE_(put)(set, element, replace ? replace : &PE_(false));
-}
+	struct E_(SetElement) *const element, const PE_(Replace) replace)
+	{ return PE_(put)(set, element, replace ? replace : &PE_(false)); }
 
 /** Removes an element `data` from `set`.
  @return Successfully ejected element or null. This element is free to be put
- into another set or modify it's hash values.
- @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
- @allow */
+ into another set or modify it's hash values. @order Average \O(1), (hash
+ distributes elements uniformly); worst \O(n). @allow */
 static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 	const PE_(MType) data) {
 	PE_(UInt) hash;
@@ -477,9 +449,132 @@ static struct E_(SetElement) *E_(SetRemove)(struct E_(Set) *const set,
 	return x;
 }
 
-#ifdef SET_TO_STRING /* <!-- string */
+#endif /* !sub-type --> */
+
+static void PE_(unused_base_coda)(void);
+static void PE_(unused_base)(void) {
+	PE_(false)(0, 0); PE_(set)(0), PE_(set_)(0); PE_(put)(0, 0, 0);
+#ifndef SET_CHILD /* <!-- !sub-type */
+	E_(Set)(0); E_(Set_)(0); E_(SetClear)(0); E_(SetGet)(0, 0);
+	E_(SetReserve)(0, 0); E_(SetPut)(0, 0); E_(SetPolicyPut)(0, 0, 0);
+	E_(SetRemove)(0, 0);
+#endif /* !sub-type --> */
+	PE_(unused_base_coda)();
+}
+static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
+
+
+#elif defined(SET_TO_STRING) /* base code --><!-- to string trait */
+
+
+#if !defined(E_) || !defined(PE_) || !defined(CAT) \
+	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
+#error P?E_? or P?CAT_? not yet defined in to string trait; include set?
+#endif
 
 #include <string.h> /* strlen memcpy */
+
+
+#ifdef SET_TO_STRING_NAME /* <!-- name */
+#define PEA_(thing) PCAT(PE_(thing), SET_TO_STRING_NAME)
+#define E_A_(thing1, thing2) CAT(E_(thing1), CAT(SET_TO_STRING_NAME, thing2))
+#else /* name --><!-- !name */
+#define PEA_(thing) PCAT(PE_(thing), anonymous)
+#define E_A_(thing1, thing2) CAT(E_(thing1), thing2)
+#endif /* !name --> */
+
+/* Check that `SET_TO_STRING` is a function implementing
+ <typedef:<PE>ToString>. */
+static const PE_(ToString) PEA_(to_str12) = (SET_TO_STRING);
+
+/** Writes `it` to `str` and advances or returns false.
+ @implements <AI>NextToString */
+static int PEA_(next_to_str12)(struct PE_(Iterator) *const it,
+	char (*const str)[12]) {
+	assert(it && it->set && str);
+	return 0;
+#if 0
+	*s++ = start;
+	if(!set->buckets) goto end_buckets;
+	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
+	{
+		struct E_(SetElement) *x = b->first;
+		while(x) {
+			if(!is_first) *s++ = comma, *s++ = space;
+			else *s++ = space, is_first = 0;
+			/* Directly to the buffer; might be a strict aliasing violation,
+			 (`C++` it is.) Is any cpu affected? Probably not. */
+			PE_(to_string)(&x->key, (char (*)[12])s);
+			for(i = 0; *s != '\0' && i < 12; s++, i++);
+			/* Greedy can not guarantee another; terminate by ellipsis. */
+			if((size_t)(s - string) > string_size
+			   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
+			x = x->next;
+		}
+	}
+	PE_(to_string)(&x->key, (char (*)[12])s);
+	for(i = 0; *s != '\0' && i < 12; s++, i++);
+	/* Greedy can not guarantee another; terminate by ellipsis. */
+	if((size_t)(s - string) > string_size
+	   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
+	x = x->next;
+#endif
+}
+
+/** @return If `it` contains not-null. */
+static int PEA_(is_valid)(const struct PE_(Iterator) *const it)
+	{ assert(it); return !!it->set; }
+
+#define AI_ PEA_
+#define TO_STRING_ITERATOR struct PE_(Iterator)
+#define TO_STRING_NEXT &PEA_(next_to_str12)
+#define TO_STRING_IS_VALID &PEA_(is_valid)
+#include "ToString.h"
+
+/** @return Prints `set`. */
+static const char *PEA_(to_string)(const struct E_(Set) *const set) {
+	struct PE_(Iterator) it = { 0, 0, 0 };
+	it.set = set; /* Can be null. */
+	return PEA_(iterator_to_string)(&it, '{', '}'); /* In ToString. */
+}
+
+#ifndef SET_CHILD /* <!-- !sub-type */
+
+/** @return Print the contents of `a` in a static string buffer with the
+ limitations of `ToString.h`. @order \Theta(1) @allow */
+static const char *E_A_(Set, ToString)(const struct E_(Set) *const set)
+	{ return PEA_(to_string)(set); /* Can be null. */ }
+
+#endif /* !sub-type --> */
+
+static void PEA_(unused_to_string_coda)(void);
+static void PEA_(unused_to_string)(void) {
+	PEA_(to_string)(0);
+#ifndef SET_CHILD /* <!-- !sub-type */
+	E_A_(Set, ToString)(0);
+#endif /* !sub-type --> */
+	PEA_(unused_to_string_coda)();
+}
+static void PEA_(unused_to_string_coda)(void) { PEA_(unused_to_string)(); }
+
+#if !defined(SET_TEST_BASE) && defined(SET_TEST) /* <!-- test */
+#define SET_TEST_BASE /* Only one instance of base tests. */
+#include "../test/TestSet.h" /** \include */
+#endif /* test --> */
+
+#undef PEA_
+#undef E_A_
+#undef SET_TO_STRING
+#ifdef SET_TO_STRING_NAME
+#undef SET_TO_STRING_NAME
+#endif
+
+
+#endif /* traits --> */
+
+
+
+#if 0
 
 /** Responsible for turning <typedef:<PE>Type> into a 12-`char` null-terminated
  output string. Used for `SET_TO_STRING`. */
@@ -487,7 +582,7 @@ typedef void (*PE_(ToString))(const PE_(Type) *, char (*)[12]);
 /* Check that `SET_TO_STRING` is a function implementing
  <typedef:<PE>ToString>. */
 static const PE_(ToString) PE_(to_string) = (SET_TO_STRING);
-			
+
 /** Can print 2 things at once before it overwrites. One must set
  `SET_TO_STRING` to a function implementing <typedef:<PE>ToString> to get this
  functionality.
@@ -515,24 +610,6 @@ static const char *E_(SetToString)(const struct E_(Set) *const set) {
 	/* Null set. */
 	if(!set) { memcpy(s, null, null_len), s += null_len; goto terminate; }
 	/* Otherwise */
-	*s++ = start;
-	if(!set->buckets) goto end_buckets;
-	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
-	{
-		struct E_(SetElement) *x = b->first;
-		while(x) {
-			if(!is_first) *s++ = comma, *s++ = space;
-			else *s++ = space, is_first = 0;
-			/* Directly to the buffer; might be a strict aliasing violation,
-			 (`C++` it is.) Is any cpu affected? Probably not. */
-			PE_(to_string)(&x->key, (char (*)[12])s);
-			for(i = 0; *s != '\0' && i < 12; s++, i++);
-			/* Greedy can not guarantee another; terminate by ellipsis. */
-			if((size_t)(s - string) > string_size
-			   - 2 - 11 - ellipsis_end_len - 1) goto ellipsis;
-			x = x->next;
-		}
-	}
 end_buckets:
 	if(!is_first) *s++ = space;
 	*s++ = end;
@@ -545,51 +622,20 @@ terminate:
 	return string;
 }
 
-#endif /* string --> */
-
-#ifdef SET_TEST /* <!-- test: need this file. */
-#include "../test/TestSet.h" /** \include */
-#endif /* test --> */
-
-static void PE_(unused_coda)(void);
-/** This silences unused function warnings from the pre-processor, but allows
- optimisation, (hopefully.)
- <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code> */
-static void PE_(unused_set)(void) {
-	E_(Set_)(0);
-	E_(Set)(0);
-	E_(SetClear)(0);
-	E_(SetSize)(0);
-	E_(SetReserve)(0, 0);
-	E_(SetGet)(0, 0);
-	E_(SetPut)(0, 0);
-	E_(SetPolicyPut)(0, 0, 0);
-	E_(SetRemove)(0, 0);
-#ifdef SET_TO_STRING
-	E_(SetToString)(0);
 #endif
-	PE_(unused_coda)();
-}
-static void PE_(unused_coda)(void) { PE_(unused_set)(); }
 
-/* Un-define all macros. */
+
+
+#ifdef SET_EXPECT_TRAIT /* <!-- trait */
+#undef SET_EXPECT_TRAIT
+#else /* trait --><!-- !trait */
+#ifndef SET_CHILD /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
 #else /* !sub-type --><!-- sub-type */
 #undef SET_CHILD
-static void PE_(unused_coda)(void);
-/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
- have the same meanings; they will be replaced with these, and `E` cannot be
- used. */
-static void PE_(unused_set)(void) {
-	/* <fn:<PE>grow>, _etc_, are integral; we want to be notified when these
-	 are not called. <fn:<PE>false>, not really. */
-	PE_(false)(0, 0);
-	PT_(unused_coda)();
-}
-static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #endif /* sub-type --> */
 #undef E_
 #undef PE_
@@ -610,3 +656,10 @@ static void PT_(unused_coda)(void) { PT_(unused_set)(); }
 #ifdef SET_TEST
 #undef SET_TEST
 #endif
+#ifdef SET_TEST_BASE
+#undef SET_TEST_BASE
+#endif
+#endif /* !trait --> */
+
+#undef SET_TO_STRING_TRAIT
+#undef SET_TRAITS
