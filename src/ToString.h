@@ -1,7 +1,7 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle To String Interface
+ @subtitle To String Trait
 
  @param[AI_]
  Function-like define macro accepting one argument and producing a valid name.

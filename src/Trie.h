@@ -76,17 +76,16 @@
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>; before idempotent _st_ `CAT`. */
-#if defined(N_) || defined(PN_)
-#error P?N_? cannot be defined; possible stray TRIE_UNFINISHED?
+#if defined(N_) || defined(PN_) || (defined(TRIE_CHILD) \
+	^ (defined(CAT) || defined(CAT_) || defined(PCAT) || defined(PCAT_)))
+#error Unexpected P?N_ or P?CAT_?; possible stray TRIE_EXPECT_TRAIT?
 #endif
 #ifndef TRIE_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
-#error TRIE_CHILD defined but CAT is not.
-#endif /* !cat --> */
+#endif /* !sub-type --> */
 #define N_(thing) CAT(TRIE_NAME, thing)
 #define PN_(thing) PCAT(trie, PCAT(TRIE_NAME, thing))
 
