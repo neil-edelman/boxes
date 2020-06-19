@@ -218,7 +218,7 @@ static int PN_(cmp)(const PN_(Leaf) *const a, const PN_(Leaf) *const b)
 #define ARRAY_NAME PN_(Leaf)
 #define ARRAY_TYPE PN_(Leaf)
 #define ARRAY_CHILD
-#define ARRAY_UNFINISHED
+#define ARRAY_EXPECT_TRAIT
 #include "Array.h"
 #define ARRAY_COMPARE &PN_(cmp)
 #include "Array.h"
