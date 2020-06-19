@@ -34,6 +34,8 @@ static struct OrderListNode *order_from_pool(void *const volls) {
 	return oll;
 }
 
+#if 0
+
 /* This is the minimum useful example, (plus testing framework.) */
 
 struct NoListNode;
@@ -1061,14 +1063,16 @@ static int animals_everywhere(void) {
 	return is_success;
 }
 
+#endif
+
 int main(void) {
 	struct OrderLinkPool olls = POOL_IDLE;
-	struct NoPool nos = POOL_IDLE;
+	/*struct NoPool nos = POOL_IDLE;
 	struct LetterPool ls = POOL_IDLE;
 	struct PandaPool pandas = POOL_IDLE;
-	struct SkipPool skips = POOL_IDLE;
+	struct SkipPool skips = POOL_IDLE;*/
 	OrderListTest(&order_from_pool, &olls), OrderLinkPool_(&olls);
-	NoListTest(&no_from_pool, &nos), NoPool_(&nos);
+	/*NoListTest(&no_from_pool, &nos), NoPool_(&nos);
 	LetterListTest(&letter_from_pool, &ls), LetterPool_(&ls);
 	NameListTest(&panda_name_from_pool, &pandas), PandaPool_(&pandas);
 	WhereListTest(&panda_where_from_pool, &pandas), PandaPool_(&pandas);
@@ -1078,6 +1082,6 @@ int main(void) {
 	Layer2ListTest(&l2_from_pool, &skips), SkipPoolClear(&skips);
 	pandas_everywhere();
 	skips_everywhere();
-	animals_everywhere();
+	animals_everywhere();*/
 	return EXIT_SUCCESS;
 }

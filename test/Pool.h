@@ -5,15 +5,12 @@
 
  ![Example of Pool](../web/pool.png)
 
- <tag:<T>Pool> stores unordered `<T>` in a memory pool, which must be set using
- `POOL_TYPE`. Pointers to valid items in the pool are stable, but not generally
- contiguous. It uses geometrically increasing size-blocks and when the removal
- is ongoing and uniformly sampled, (specifically, old elements are all
- eventually removed,) and data reaches a steady-state size, the data will
- settle in one allocated region. In this way, provides a fairly contiguous
- space for items which have references. Specifically, another pointer container
- could use pools for polymorphic data instead of managing individual
- allocations.
+ <tag:<T>Pool> stores unordered `<T>` in a memory pool. Pointers to valid items
+ in the pool are stable, but not generally contiguous. It uses geometrically
+ increasing size-blocks and when the removal is ongoing and uniformly sampled,
+ (specifically, old elements are all eventually removed,) and data reaches a
+ steady-state size, the data will settle in one allocated region. In this way,
+ provides a fairly contiguous space for items which have references.
 
  `<T>Pool` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -23,21 +20,23 @@
  @param[POOL_NAME, POOL_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag type
  associated therewith; required. `<PT>` is private, whose names are prefixed in
- a manner to avoid collisions; any should be re-defined prior to use elsewhere.
+ a manner to avoid collisions.
 
- @param[POOL_UNFINISHED]
- Do not un-define variables for including again in an interface.
+ @param[POOL_EXPECT_TRAIT]
+ Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string interface contained in <ToString.h>; `<A>` that satisfies `C` naming
+ To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PT>ToString>.
- There can be multiple to string interfaces, but only one can omit
+ There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`.
 
  @param[POOL_TEST]
- To string interface optional unit testing framework using `assert`; contained
- in <../test/PoolTest.h>. Can only be defined once per `Pool`. Must be defined
- equal to a (random) filler function, satisfying <typedef:<PT>Action>.
+ To string trait contained in <../test/PoolTest.h>; optional unit testing
+ framework using `assert`. Can only be defined once _per_ `Pool`. Must be
+ defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
+ Output will be shown with the to string trait in which it's defined; provides
+ tests for the base code and all later traits.
 
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
@@ -66,10 +65,10 @@
 #endif
 #define POOL_INTERFACES POOL_TO_STRING_INTERFACE
 #if POOL_INTERFACES > 1
-#error Only one interface per include is allowed; use POOL_UNFINISHED.
+#error Only one trait per include is allowed; use POOL_EXPECT_TRAIT.
 #endif
 #if (POOL_INTERFACES == 0) && defined(POOL_TEST)
-#error POOL_TEST must be defined in POOL_TO_STRING interface.
+#error POOL_TEST must be defined in POOL_TO_STRING trait.
 #endif
 #if defined(POOL_TO_STRING_NAME) && !defined(POOL_TO_STRING)
 #error POOL_TO_STRING_NAME requires POOL_TO_STRING.
@@ -80,17 +79,16 @@
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(T) || defined(T_) || defined(PT_)
-#error P?T_? cannot be defined; possible stray POOL_UNFINISHED?
+#if defined(T_) || defined(PT_) || (defined(POOL_CHILD) \
+	^ (defined(CAT) || defined(CAT_) || defined(PCAT) || defined(PCAT_)))
+#error Unexpected P?T_ or P?CAT_?; possible stray POOL_EXPECT_TRAIT?
 #endif
-#ifndef ARRAY_CHILD /* <!-- !sub-type */
+#ifndef POOL_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
-#error ARRAY_CHILD defined but CAT is not.
-#endif /* !cat --> */
+#endif /* !sub-type --> */
 #define T_(thing) CAT(POOL_NAME, thing)
 #define PT_(thing) PCAT(array, PCAT(POOL_NAME, thing))
 
@@ -420,12 +418,12 @@ static void PT_(unused_base)(void) {
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 
-#elif defined(POOL_TO_STRING) /* base code --><!-- to string interface */
+#elif defined(POOL_TO_STRING) /* base code --><!-- to string trait */
 
 
 #if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT) \
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?T_? or P?CAT_? not yet defined in to string interface; include pool?
+#error P?T_ or P?CAT_? not yet defined; traits must be defined separately?
 #endif
 
 #ifdef POOL_TO_STRING_NAME /* <!-- name */
@@ -510,11 +508,11 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #endif
 
 
-#endif /* interfaces --> */
+#endif /* traits --> */
 
 
-#ifdef POOL_UNFINISHED /* <!-- unfinish */
-#undef POOL_UNFINISHED
+#ifdef POOL_EXPECT_TRAIT /* <!-- unfinish */
+#undef POOL_EXPECT_TRAIT
 #else /* unfinish --><!-- finish */
 #ifndef POOL_CHILD /* <!-- !sub-type */
 #undef CAT

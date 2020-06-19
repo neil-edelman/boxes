@@ -15,18 +15,22 @@
 
 [&lt;N&gt;List](#user-content-tag-3824ef2b) is a list of [&lt;N&gt;ListNode](#user-content-tag-b60b679b); it may be supplied a total\-order function, `LIST_COMPARE` [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\.
 
-Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<N>List`\. It only provides an order, and is not very useful without enclosing `<N>ListNode` in, at least, another `struct`\.
+Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<N>List`\. The sentinels are an added complexity at either end, but enable a closed structure\. It only provides an order, and is not very useful without enclosing `<N>ListNode` in, at least, another `struct`\.
 
-`<N>Link` is not synchronised\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. To stop assertions, use `#define NDEBUG` before inclusion of `assert.h`, \(which is used in this file\.\)
+`<N>Link` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
 
 
  * Parameter: LIST\_NAME  
-   `<N>` that satisfies `C` naming conventions when mangled; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
+   `<N>` that satisfies `C` naming conventions when mangled; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: LIST\_COMPARE  
-   Optional total\-order function satisfying [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\.
- * Parameter: LIST\_TO\_STRING  
-   Optional print function implementing [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1); makes available [&lt;N&gt;ListToString](#user-content-fn-b8333b17)\.
+   Optional total\-order function satisfying [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\. \(Move to trait so all boxes can have them\.\)
+ * Parameter: LIST\_EXPECT\_TRAIT  
+   Do not un\-define certain variables for subsequent inclusion in a trait\.
+ * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1)\. There can be multiple to string traits, but only one can omit `LIST_TO_STRING_NAME`\.
+ * Parameter: LIST\_TEST  
+   To string trait contained in [\.\./test/TestList\.h](../test/TestList.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Parameter: LIST\_TEST  
    Unit testing framework [&lt;N&gt;ListTest](#user-content-fn-c10071df), included in a separate header, [\.\./test/TestList\.h](../test/TestList.h)\. Must be defined equal to a random filler function, satisfying [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)\. Requires `LIST_TO_STRING` and not `NDEBUG`\.
  * Standard:  

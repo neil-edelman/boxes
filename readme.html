@@ -52,19 +52,23 @@
 
 <p><a href = "#tag:&lt;N&gt;List">&lt;N&gt;List</a> is a list of <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a>; it may be supplied a total-order function, <code>LIST_COMPARE</code> <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>.</p>
 
-<p>Internally, <code>&lt;N&gt;ListNode</code> is a doubly-linked node with sentinels residing in <code>&lt;N&gt;List</code>. It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;ListNode</code> in, at least, another <code>struct</code>.</p>
+<p>Internally, <code>&lt;N&gt;ListNode</code> is a doubly-linked node with sentinels residing in <code>&lt;N&gt;List</code>. The sentinels are an added complexity at either end, but enable a closed structure. It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;ListNode</code> in, at least, another <code>struct</code>.</p>
 
-<p><code>&lt;N&gt;Link</code> is not synchronised. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. To stop assertions, use <code>#define NDEBUG</code> before inclusion of <code>assert.h</code>, (which is used in this file.)</p>
+<p><code>&lt;N&gt;Link</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 
 </div>
 
 <dl>
 	<dt>Parameter: LIST_NAME</dt>
-	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: LIST_COMPARE</dt>
-	<dd>Optional total-order function satisfying <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>.</dd>
-	<dt>Parameter: LIST_TO_STRING</dt>
-	<dd>Optional print function implementing <a href = "#typedef:&lt;PN&gt;ToString">&lt;PN&gt;ToString</a>; makes available <a href = "#fn:&lt;N&gt;ListToString">&lt;N&gt;ListToString</a>.</dd>
+	<dd>Optional total-order function satisfying <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>. (Move to trait so all boxes can have them.)</dd>
+	<dt>Parameter: LIST_EXPECT_TRAIT</dt>
+	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
+	<dt>Parameter: LIST_TO_STRING_NAME, LIST_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PN&gt;ToString">&lt;PN&gt;ToString</a>. There can be multiple to string traits, but only one can omit <code>LIST_TO_STRING_NAME</code>.</dd>
+	<dt>Parameter: LIST_TEST</dt>
+	<dd>To string trait contained in <a href = "../test/TestList.h">../test/TestList.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Parameter: LIST_TEST</dt>
 	<dd>Unit testing framework <a href = "#fn:&lt;N&gt;ListTest">&lt;N&gt;ListTest</a>, included in a separate header, <a href = "../test/TestList.h">../test/TestList.h</a>. Must be defined equal to a random filler function, satisfying <a href = "#typedef:&lt;PN&gt;Action">&lt;PN&gt;Action</a>. Requires <code>LIST_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
 	<dt>Standard:</dt>
