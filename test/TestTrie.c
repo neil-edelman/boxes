@@ -176,10 +176,10 @@ static int pstr_cmp(const char *const*const pa, const char *const*const pb)
 /* For comparison with sorted array. */
 #define ARRAY_NAME Str
 #define ARRAY_TYPE const char *
-#define ARRAY_UNFINISHED
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_TO_STRING &pstr_to_str
-#define ARRAY_UNFINISHED
+#define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_COMPARE &pstr_cmp
 #include "../src/Array.h"
