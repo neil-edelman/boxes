@@ -3,20 +3,12 @@
 #include <string.h> /* strcmp */
 #include "Orcish.h"
 
-/* Minimal example with <fn:order_to_string>, <fn:order_fill>, and
- <fn:order_from_pool> testing framework. An order with no parent represents a
- permutation, but it's not really useful as such because it's not even
- contiguous, (probably an array would be better.) It's just a collection of
- zeros. The `void` pointer (do not recommend) is to decouple `Pool.h`, which is
- only used for convenience when testing, with `Array.h`. */
+/* Minimal example. An order with no parent represents a permutation of
+ nothing. */
 
 struct OrderListNode;
 static void order_to_string(const struct OrderListNode *const l,
-	char (*const a)[12]) {
-	(void)(l);
-	(*a)[0] = '0';
-	(*a)[1] = '\0';
-}
+	char (*const a)[12]) { (void)(l); (*a)[0] = '0'; (*a)[1] = '\0'; }
 static void order_fill(struct OrderListNode *const l) { (void)(l); }
 
 #define LIST_NAME Order
@@ -36,7 +28,6 @@ static struct OrderListNode *order_from_pool(void *const volls) {
 	return oll;
 }
 
-#if 0
 
 /* This is the minimum useful example, (plus testing framework.) */
 
@@ -47,6 +38,8 @@ static int no_compare(const struct NoListNode *, const struct NoListNode *);
 
 #define LIST_NAME No
 #define LIST_COMPARE &no_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &no_to_string
 #define LIST_TEST &no_fill
 #include "../src/List.h"
@@ -80,6 +73,7 @@ static struct NoListNode *no_from_pool(void *const vnos) {
 	return &no->link;
 }
 
+
 /* For testing bin-ops just to be sure the examples were accurate. */
 
 struct LetterListNode;
@@ -90,6 +84,8 @@ static int letter_compare(const struct LetterListNode *,
 
 #define LIST_NAME Letter
 #define LIST_COMPARE &letter_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &letter_to_string
 #define LIST_TEST &letter_fill
 #include "../src/List.h"
@@ -123,7 +119,8 @@ static struct LetterListNode *letter_from_pool(void *const vls) {
 	return &l->link;
 }
 
-/* Multi-list. Three lists at once; because why not? */
+
+/* Multi-list. Three lists at once. */
 
 struct NameListNode;
 static void name_to_string(const struct NameListNode *, char (*)[12]);
@@ -133,6 +130,8 @@ static int name_compare(const struct NameListNode *,
 
 #define LIST_NAME Name
 #define LIST_COMPARE &name_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &name_to_string
 #define LIST_TEST &fill_panda_name
 #include "../src/List.h"
@@ -145,6 +144,8 @@ static int where_compare(const struct WhereListNode *,
 
 #define LIST_NAME Where
 #define LIST_COMPARE &where_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &where_to_string
 #define LIST_TEST &fill_panda_where
 #include "../src/List.h"
@@ -157,6 +158,8 @@ static int fero_compare(const struct FeroListNode *,
 
 #define LIST_NAME Fero
 #define LIST_COMPARE &fero_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &fero_to_string
 #define LIST_TEST &fill_panda_fero
 #include "../src/List.h"
@@ -310,7 +313,8 @@ static void pandas_everywhere(void) {
 	PandaPool_(&pandas);
 }
 
-/* (Fixed width) skip list. */
+
+/* (Fixed width) skip list. (fixme: don't need all that) */
 
 struct Layer0ListNode;
 static int l0_compare(const struct Layer0ListNode *,
@@ -319,6 +323,8 @@ static void l0_to_string(const struct Layer0ListNode *, char (*)[12]);
 static void fill_l0(struct Layer0ListNode *);
 #define LIST_NAME Layer0
 #define LIST_COMPARE &l0_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &l0_to_string
 #define LIST_TEST &fill_l0
 #include "../src/List.h"
@@ -330,6 +336,8 @@ static void l1_to_string(const struct Layer1ListNode *, char (*)[12]);
 static void fill_l1(struct Layer1ListNode *);
 #define LIST_NAME Layer1
 #define LIST_COMPARE &l1_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &l1_to_string
 #define LIST_TEST &fill_l1
 #include "../src/List.h"
@@ -341,6 +349,8 @@ static void l2_to_string(const struct Layer2ListNode *, char (*)[12]);
 static void fill_l2(struct Layer2ListNode *);
 #define LIST_NAME Layer2
 #define LIST_COMPARE &l2_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &l2_to_string
 #define LIST_TEST &fill_l2
 #include "../src/List.h"
@@ -539,12 +549,15 @@ finally:
 	SkipPool(&skips);
 }
 
+
 /* Animals! See <../web/animals.gv>. */
 
 /* Id is the list that holds all the animals together. */
 struct IdListNode;
 static void id_to_string(const struct IdListNode *, char (*)[12]);
 #define LIST_NAME Id
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &id_to_string
 #include "../src/List.h"
 
@@ -1065,16 +1078,15 @@ static int animals_everywhere(void) {
 	return is_success;
 }
 
-#endif
 
 int main(void) {
 	struct OrderLinkPool olls = POOL_IDLE;
-	/*struct NoPool nos = POOL_IDLE;
+	struct NoPool nos = POOL_IDLE;
 	struct LetterPool ls = POOL_IDLE;
 	struct PandaPool pandas = POOL_IDLE;
-	struct SkipPool skips = POOL_IDLE;*/
+	struct SkipPool skips = POOL_IDLE;
 	OrderListTest(&order_from_pool, &olls), OrderLinkPool_(&olls);
-	/*NoListTest(&no_from_pool, &nos), NoPool_(&nos);
+	NoListTest(&no_from_pool, &nos), NoPool_(&nos);
 	LetterListTest(&letter_from_pool, &ls), LetterPool_(&ls);
 	NameListTest(&panda_name_from_pool, &pandas), PandaPool_(&pandas);
 	WhereListTest(&panda_where_from_pool, &pandas), PandaPool_(&pandas);
@@ -1084,6 +1096,6 @@ int main(void) {
 	Layer2ListTest(&l2_from_pool, &skips), SkipPoolClear(&skips);
 	pandas_everywhere();
 	skips_everywhere();
-	animals_everywhere();*/
+	animals_everywhere();
 	return EXIT_SUCCESS;
 }
