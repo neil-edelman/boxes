@@ -30,7 +30,7 @@ A [&lt;H&gt;Heap](#user-content-tag-f1ee6af) is a priority queue built from [&lt
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
    To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3)\. There can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`\.
  * Parameter: HEAP\_TEST  
-   To string trait contained in [\.\./test/HeapTest\.h](../test/HeapTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)\.
+   To string trait contained in [\.\./test/HeapTest\.h](../test/HeapTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * Dependancies:  

@@ -45,7 +45,8 @@
  To string trait contained in <../test/HeapTest.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ `Heap`. Must be
  defined equal to a (random) filler function, satisfying
- <typedef:<PH>BiAction>.
+ <typedef:<PH>BiAction>. Output will be shown with the to string trait in which
+ it's defined; provides tests for the base code and all later traits.
 
  @depend [Array.h](../../Array/)
  @std C89
@@ -82,17 +83,17 @@
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(H_) || defined(PH_)
-#error P?H_ cannot be defined; possible stray HEAP_EXPECT_TRAIT?
+#if defined(H_) || defined(PH_) \
+	|| (defined(HEAP_CHILD) \
+	^ (defined(CAT) || defined(CAT_) || defined(PCAT) || defined(PCAT_)))
+#error Unexpected P?H_ or P?CAT_?; possible stray HEAP_EXPECT_TRAIT?
 #endif
 #ifndef HEAP_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
-#error HEAP_CHILD defined but CAT is not.
-#endif /* !cat --> */
+#endif /* !sub-type --> */
 #define H_(thing) CAT(HEAP_NAME, thing)
 #define PH_(thing) PCAT(heap, PCAT(HEAP_NAME, thing))
 #ifndef HEAP_TYPE
@@ -414,7 +415,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 #if !defined(H_) || !defined(PH_) || !defined(CAT) || !defined(CAT_) \
 	|| !defined(PCAT) || !defined(PCAT_)
-#error P?H_ or P?CAT_? not yet defined in to string trait; include heap?
+#error P?H_ or P?CAT_? not yet defined; traits must be defined separately?
 #endif
 
 #ifdef HEAP_TO_STRING_NAME /* <!-- name */

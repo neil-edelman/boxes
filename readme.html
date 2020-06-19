@@ -68,7 +68,7 @@
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PH&gt;ToString">&lt;PH&gt;ToString</a>. There can be multiple to string traits, but only one can omit <code>HEAP_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/HeapTest.h">../test/HeapTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Heap</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;BiAction">&lt;PH&gt;BiAction</a>.</dd>
+	<dd>To string trait contained in <a href = "../test/HeapTest.h">../test/HeapTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Heap</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;BiAction">&lt;PH&gt;BiAction</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
