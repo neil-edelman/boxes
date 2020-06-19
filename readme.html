@@ -33,12 +33,12 @@
 
 <h1>Set.h</h1>
 
-<h2>Parameterised Hash Set</h2>
+<h2>Hash Set</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PE>UInt">&lt;PE&gt;UInt</a>, <a href = "#typedef:<PE>Type">&lt;PE&gt;Type</a>, <a href = "#typedef:<PE>MType">&lt;PE&gt;MType</a>, <a href = "#typedef:<PE>Hash">&lt;PE&gt;Hash</a>, <a href = "#typedef:<PE>IsEqual">&lt;PE&gt;IsEqual</a>, <a href = "#typedef:<PE>Replace">&lt;PE&gt;Replace</a>, <a href = "#typedef:<PE>Action">&lt;PE&gt;Action</a>, <a href = "#typedef:<PE>ToString">&lt;PE&gt;ToString</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<E>SetElement">&lt;E&gt;SetElement</a>, <a href = "#tag:<E>Set">&lt;E&gt;Set</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<E>SetElement">&lt;E&gt;SetElement</a>, <a href = "#tag:<E>Set">&lt;E&gt;Set</a>, <a href = "#tag:<PE>Iterator">&lt;PE&gt;Iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -52,7 +52,7 @@
 
 <p><a href = "#tag:&lt;E&gt;Set">&lt;E&gt;Set</a> is a collection of elements of <a href = "#tag:&lt;E&gt;SetElement">&lt;E&gt;SetElement</a> that doesn't allow duplication; it must be supplied an equality function, <code>SET_IS_EQUAL</code> <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a>, and a hash function, <code>SET_HASH</code> <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a>.</p>
 
-<p>Internally, it is a separately chained, hash set with a maximum load factor of <code>ln 2</code>, and power-of-two resizes, with buckets as a forward linked list <a href = "#tag:&lt;E&gt;SetElement">&lt;E&gt;SetElement</a>. This offers some independence of sets from set elements, but cache performance is left up to the caller. It can be expanded to a hash map or associative array by enclosing the <code>&lt;E&gt;SetElement</code> in another <code>struct</code>, as appropriate. While in a set, the elements should not change in a way that affects their hash values.</p>
+<p>Internally, it is a separately chained hash table with a maximum load factor of <code>ln 2</code>, and power-of-two resizes, with buckets as a forward linked list of <a href = "#tag:&lt;E&gt;SetElement">&lt;E&gt;SetElement</a>. This offers some independence of sets from set elements, but cache performance is left up to the caller. It can be expanded to a hash map or associative array by enclosing the <code>&lt;E&gt;SetElement</code> in another <code>struct</code>, as appropriate. While in a set, the elements should not change in a way that affects their hash values.</p>
 
 <p><code>&lt;E&gt;Set</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used; to stop assertions, use <code>#define NDEBUG</code> before inclusion.</p>
 
@@ -65,16 +65,18 @@
 	<dd>A function satisfying <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a>; required.</dd>
 	<dt>Parameter: SET_IS_EQUAL</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a>; required.</dd>
-	<dt>Parameter: SET_TO_STRING</dt>
-	<dd>Optional print function implementing <a href = "#typedef:&lt;PE&gt;ToString">&lt;PE&gt;ToString</a>; makes available <a href = "#fn:&lt;E&gt;SetToString">&lt;E&gt;SetToString</a>.</dd>
-	<dt>Parameter: SET_POINTER_GET</dt>
-	<dd>Usually <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> in the same as <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a>; this flag makes <code>&lt;PE&gt;MType</code> be a pointer-to-<code>&lt;PE&gt;Type</code>. Should be used when the copying of <code>&lt;PE&gt;Type</code> into functions is a performance issue. As well as <a href = "#fn:&lt;E&gt;SetGet">&lt;E&gt;SetGet</a>, affects the definition of <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a> and <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a>.</dd>
-	<dt>Parameter: SET_NO_CACHE</dt>
-	<dd>Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> <em>per</em> datum.</dd>
+	<dt>Parameter: SET_POINTER</dt>
+	<dd>Usually <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> in the same as <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> for simple <code>SET_TYPE</code>, but this flag makes <code>&lt;PE&gt;MType</code> be a pointer-to-<code>&lt;PE&gt;Type</code>. This affects <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a>, <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a>, and <a href = "#fn:&lt;E&gt;SetGet">&lt;E&gt;SetGet</a>, making them accept a pointer-to-const-<code>&lt;E&gt;</code> instead of a copy of <code>&lt;E&gt;</code>.</dd>
 	<dt>Parameter: SET_UINT</dt>
-	<dd>This is <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> and defaults to <code>unsigned int</code>.</dd>
+	<dd>This is <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> and defaults to <code>unsigned int</code>; use when <a href = "#typedef:&lt;PE&gt;Hash">&lt;PE&gt;Hash</a> is a specific hash length.</dd>
+	<dt>Parameter: SET_NO_CACHE</dt>
+	<dd>Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a> <em>per</em> datum, (in rare cases.)</dd>
+	<dt>Parameter: SET_EXPECT_TRAIT</dt>
+	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
+	<dt>Parameter: SET_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PE&gt;ToString">&lt;PE&gt;ToString</a>. There can be multiple to string traits, but only one can omit <code>SET_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: SET_TEST</dt>
-	<dd>Unit testing framework <a href = "#fn:&lt;E&gt;SetTest">&lt;E&gt;SetTest</a>, included in a separate header, <a href = "../test/TestSet.h">../test/TestSet.h</a>. Must be defined equal to a random filler function, satisfying <a href = "#typedef:&lt;PE&gt;Action">&lt;PE&gt;Action</a>. Requires <code>SET_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
+	<dd>To string trait contained in <a href = "../test/SetTest.h">../test/SetTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Set</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PE&gt;Action">&lt;PE&gt;Action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>See also:</dt>
@@ -109,7 +111,7 @@
 
 <p><code>typedef const &lt;PE&gt;Type *<strong>&lt;PE&gt;MType</strong>;</code></p>
 
-<p><code>SET_POINTER_GET</code> modifies <code>&lt;PE&gt;MType</code> to be a pointer, otherwise it's the same as <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a>.</p>
+<p><code>SET_POINTER</code> modifies <code>&lt;PE&gt;MType</code> to be a pointer, otherwise it's the same as <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a>.</p>
 
 </div>
 
@@ -119,7 +121,7 @@
 
 <p><code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;MType);</code></p>
 
-<p>A map from <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> onto <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a>. Should be as close as possible to a discrete uniform distribution for maximum performance.</p>
+<p>A map from <a href = "#typedef:&lt;PE&gt;MType">&lt;PE&gt;MType</a> onto <a href = "#typedef:&lt;PE&gt;UInt">&lt;PE&gt;UInt</a>. Should be as close as possible to a discrete uniform distribution while being surjective on bits of the argument for maximum performance.</p>
 
 </div>
 
@@ -159,7 +161,7 @@
 
 <p><code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code></p>
 
-<p>Responsible for turning <a href = "#typedef:&lt;PE&gt;Type">&lt;PE&gt;Type</a> into a 12-<code>char</code> null-terminated output string. Used for <code>SET_TO_STRING</code>.</p>
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string. Used for <code>SET_TO_STRING</code>.</p>
 
 </div>
 
@@ -181,9 +183,19 @@
 
 <p><code>struct <strong>&lt;E&gt;Set</strong>;</code></p>
 
-<p>To initialise, see <a href = "#fn:&lt;E&gt;Set">&lt;E&gt;Set</a>. Assigning <code>{0}</code> (<code>C99</code>+) or <code>SET_IDLE</code> as the initialiser, or being part of <code>static</code> data, also puts it in an idle state, (no dynamic memory allocated.)</p>
+<p>An <code>&lt;E&gt;Set</code> of <code>size</code>. To initialise, see <a href = "#fn:&lt;E&gt;Set">&lt;E&gt;Set</a>, <code>SET_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 293></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<PE>Iterator" name = "tag:<PE>Iterator">&lt;PE&gt;Iterator</a></h3>
+
+<p><code>struct <strong>&lt;PE&gt;Iterator</strong>;</code></p>
+
+<p>Contains all iteration parameters in one.</p>
 
 </div>
 
@@ -195,13 +207,11 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<E>Set_">&lt;E&gt;Set_</a></td><td>set</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#fn:<E>Set">&lt;E&gt;Set</a></td><td>set</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<E>SetClear">&lt;E&gt;SetClear</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<E>Set_">&lt;E&gt;Set_</a></td><td>set</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<E>SetSize">&lt;E&gt;SetSize</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<E>SetClear">&lt;E&gt;SetClear</a></td><td>set</td></tr>
 
 <tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#fn:<E>SetGet">&lt;E&gt;SetGet</a></td><td>set, data</td></tr>
 
@@ -213,7 +223,7 @@
 
 <tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#fn:<E>SetRemove">&lt;E&gt;SetRemove</a></td><td>set, data</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<E>SetToString">&lt;E&gt;SetToString</a></td><td>set</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<E>Set<A>ToString">&lt;E&gt;Set&lt;A&gt;ToString</a></td><td>set</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<E>SetTest">&lt;E&gt;SetTest</a></td><td>parent_new, parent</td></tr>
 
@@ -224,16 +234,6 @@
 <div>
 
 <h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
-
-<div>
-
-<h3><a id = "fn:<E>Set_" name = "fn:<E>Set_">&lt;E&gt;Set_</a></h3>
-
-<p><code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code></p>
-
-<p>Destructor for active <code>set</code>. After, it takes no memory and is in an idle state. If idle, does nothing.</p>
-
-</div>
 
 <div>
 
@@ -249,6 +249,16 @@
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<E>Set_" name = "fn:<E>Set_">&lt;E&gt;Set_</a></h3>
+
+<p><code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code></p>
+
+<p>Destructor for active <code>set</code>. After, it takes no memory and is in an idle state. If idle, does nothing.</p>
 
 </div>
 
@@ -271,34 +281,15 @@
 
 <div>
 
-<h3><a id = "fn:<E>SetSize" name = "fn:<E>SetSize">&lt;E&gt;SetSize</a></h3>
-
-<p><code>static size_t <strong>&lt;E&gt;SetSize</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code></p>
-
-<dl>
-	<dt>Parameter: <em>set</em></dt>
-	<dd>If null, returns 0.</dd>
-	<dt>Return:</dt>
-	<dd>The number of entries in the <code>set</code>.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<E>SetGet" name = "fn:<E>SetGet">&lt;E&gt;SetGet</a></h3>
 
 <p><code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;MType <em>data</em>)</code></p>
-
-<p>Queries whether <code>data</code> is is <code>set</code>.</p>
 
 <dl>
 	<dt>Parameter: <em>set</em></dt>
 	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
-	<dd>The value which <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a> <code>data</code>, or, if no such value exists, null.</dd>
+	<dd>The value in <code>set</code> which <a href = "#typedef:&lt;PE&gt;IsEqual">&lt;PE&gt;IsEqual</a> <code>SET_IS_EQUAL</code> <code>data</code>, or, if no such value exists, null.</dd>
 	<dt>Order:</dt>
 	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
 </dl>
@@ -390,17 +381,15 @@
 
 <div>
 
-<h3><a id = "fn:<E>SetToString" name = "fn:<E>SetToString">&lt;E&gt;SetToString</a></h3>
+<h3><a id = "fn:<E>Set<A>ToString" name = "fn:<E>Set<A>ToString">&lt;E&gt;Set&lt;A&gt;ToString</a></h3>
 
-<p><code>static const char *<strong>&lt;E&gt;SetToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code></p>
-
-<p>Can print 2 things at once before it overwrites. One must set <code>SET_TO_STRING</code> to a function implementing <a href = "#typedef:&lt;PE&gt;ToString">&lt;PE&gt;ToString</a> to get this functionality.</p>
+<p><code>static const char *<strong>&lt;E&gt;Set&lt;A&gt;ToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Prints <code>set</code> in a static buffer in order by bucket.</dd>
+	<dd>Print the contents of <code>set</code> in a static string buffer with the limitations of <code>ToString.h</code>.</dd>
 	<dt>Order:</dt>
-	<dd>&#920;(1); it has a 1024 character limit; every element takes some.</dd>
+	<dd>&#920;(1)</dd>
 </dl>
 
 </div>

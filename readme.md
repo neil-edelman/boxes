@@ -1,10 +1,10 @@
 # Set\.h #
 
-## Parameterised Hash Set ##
+## Hash Set ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a), [&lt;PE&gt;Type](#user-content-typedef-11e62996), [&lt;PE&gt;MType](#user-content-typedef-7d6f0919), [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), [&lt;PE&gt;Replace](#user-content-typedef-a4aa6992), [&lt;PE&gt;Action](#user-content-typedef-9c0e506c), [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;E&gt;SetElement](#user-content-tag-8952cfcc), [&lt;E&gt;Set](#user-content-tag-c69e9d84), [&lt;PE&gt;Iterator](#user-content-tag-379519fc)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -15,7 +15,7 @@
 
 [&lt;E&gt;Set](#user-content-tag-c69e9d84) is a collection of elements of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc) that doesn't allow duplication; it must be supplied an equality function, `SET_IS_EQUAL` [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and a hash function, `SET_HASH` [&lt;PE&gt;Hash](#user-content-typedef-812e78a)\.
 
-Internally, it is a separately chained, hash set with a maximum load factor of `ln 2`, and power\-of\-two resizes, with buckets as a forward linked list [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another `struct`, as appropriate\. While in a set, the elements should not change in a way that affects their hash values\.
+Internally, it is a separately chained hash table with a maximum load factor of `ln 2`, and power\-of\-two resizes, with buckets as a forward linked list of [&lt;E&gt;SetElement](#user-content-tag-8952cfcc)\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>SetElement` in another `struct`, as appropriate\. While in a set, the elements should not change in a way that affects their hash values\.
 
 `<E>Set` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
@@ -27,16 +27,18 @@ Internally, it is a separately chained, hash set with a maximum load factor of `
    A function satisfying [&lt;PE&gt;Hash](#user-content-typedef-812e78a); required\.
  * Parameter: SET\_IS\_EQUAL  
    A function satisfying [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede); required\.
- * Parameter: SET\_TO\_STRING  
-   Optional print function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe); makes available [&lt;E&gt;SetToString](#user-content-fn-b4e4b20)\.
- * Parameter: SET\_POINTER\_GET  
-   Usually [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) in the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996); this flag makes `<PE>MType` be a pointer\-to\-`<PE>Type`\. Should be used when the copying of `<PE>Type` into functions is a performance issue\. As well as [&lt;E&gt;SetGet](#user-content-fn-8d1390a0), affects the definition of [&lt;PE&gt;Hash](#user-content-typedef-812e78a) and [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede)\.
- * Parameter: SET\_NO\_CACHE  
-   Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) _per_ datum\.
+ * Parameter: SET\_POINTER  
+   Usually [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) in the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996) for simple `SET_TYPE`, but this flag makes `<PE>MType` be a pointer\-to\-`<PE>Type`\. This affects [&lt;PE&gt;Hash](#user-content-typedef-812e78a), [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede), and [&lt;E&gt;SetGet](#user-content-fn-8d1390a0), making them accept a pointer\-to\-const\-`<E>` instead of a copy of `<E>`\.
  * Parameter: SET\_UINT  
-   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) and defaults to `unsigned int`\.
+   This is [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) and defaults to `unsigned int`; use when [&lt;PE&gt;Hash](#user-content-typedef-812e78a) is a specific hash length\.
+ * Parameter: SET\_NO\_CACHE  
+   Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a) _per_ datum, \(in rare cases\.\)
+ * Parameter: SET\_EXPECT\_TRAIT  
+   Do not un\-define certain variables for subsequent inclusion in a trait\.
+ * Parameter: SET\_TO\_STRING  
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe)\. There can be multiple to string traits, but only one can omit `SET_TO_STRING_NAME`\.
  * Parameter: SET\_TEST  
-   Unit testing framework [&lt;E&gt;SetTest](#user-content-fn-382b20c0), included in a separate header, [\.\./test/TestSet\.h](../test/TestSet.h)\. Must be defined equal to a random filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Requires `SET_TO_STRING` and not `NDEBUG`\.
+   To string trait contained in [\.\./test/SetTest\.h](../test/SetTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Set`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PE&gt;Action](#user-content-typedef-9c0e506c)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * See also:  
@@ -65,7 +67,7 @@ Valid tag type defined by `SET_TYPE`\. Included in [&lt;E&gt;SetElement](#user-c
 
 <code>typedef const &lt;PE&gt;Type *<strong>&lt;PE&gt;MType</strong>;</code>
 
-`SET_POINTER_GET` modifies `<PE>MType` to be a pointer, otherwise it's the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996)\.
+`SET_POINTER` modifies `<PE>MType` to be a pointer, otherwise it's the same as [&lt;PE&gt;Type](#user-content-typedef-11e62996)\.
 
 
 
@@ -73,7 +75,7 @@ Valid tag type defined by `SET_TYPE`\. Included in [&lt;E&gt;SetElement](#user-c
 
 <code>typedef &lt;PE&gt;UInt(*<strong>&lt;PE&gt;Hash</strong>)(const &lt;PE&gt;MType);</code>
 
-A map from [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. Should be as close as possible to a discrete uniform distribution for maximum performance\.
+A map from [&lt;PE&gt;MType](#user-content-typedef-7d6f0919) onto [&lt;PE&gt;UInt](#user-content-typedef-54b8b39a)\. Should be as close as possible to a discrete uniform distribution while being surjective on bits of the argument for maximum performance\.
 
 
 
@@ -105,7 +107,7 @@ Operates by side\-effects\. Used for `SET_TEST`\.
 
 <code>typedef void(*<strong>&lt;PE&gt;ToString</strong>)(const &lt;PE&gt;Type *, char(*)[12]);</code>
 
-Responsible for turning [&lt;PE&gt;Type](#user-content-typedef-11e62996) into a 12\-`char` null\-terminated output string\. Used for `SET_TO_STRING`\.
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\. Used for `SET_TO_STRING`\.
 
 
 
@@ -123,9 +125,17 @@ Contains [&lt;PE&gt;Type](#user-content-typedef-11e62996) as the first element `
 
 <code>struct <strong>&lt;E&gt;Set</strong>;</code>
 
-To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\. Assigning `{0}` \(`C99`\+\) or `SET_IDLE` as the initialiser, or being part of `static` data, also puts it in an idle state, \(no dynamic memory allocated\.\)
+An `<E>Set` of `size`\. To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84), `SET_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](web/states.png)
+
+
+
+### <a id = "user-content-tag-379519fc" name = "user-content-tag-379519fc">&lt;PE&gt;Iterator</a> ###
+
+<code>struct <strong>&lt;PE&gt;Iterator</strong>;</code>
+
+Contains all iteration parameters in one\.
 
 
 
@@ -135,13 +145,11 @@ To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\. Assigning `{0}` \
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-86b27fc1">&lt;E&gt;Set_</a></td><td>set</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-c69e9d84">&lt;E&gt;Set</a></td><td>set</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-66181859">&lt;E&gt;SetClear</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-86b27fc1">&lt;E&gt;Set_</a></td><td>set</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-2dff525d">&lt;E&gt;SetSize</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-66181859">&lt;E&gt;SetClear</a></td><td>set</td></tr>
 
 <tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#user-content-fn-8d1390a0">&lt;E&gt;SetGet</a></td><td>set, data</td></tr>
 
@@ -153,7 +161,7 @@ To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\. Assigning `{0}` \
 
 <tr><td align = right>static struct &lt;E&gt;SetElement *</td><td><a href = "#user-content-fn-21a4ad4">&lt;E&gt;SetRemove</a></td><td>set, data</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b4e4b20">&lt;E&gt;SetToString</a></td><td>set</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-7541b9c3">&lt;E&gt;Set&lt;A&gt;ToString</a></td><td>set</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-382b20c0">&lt;E&gt;SetTest</a></td><td>parent_new, parent</td></tr>
 
@@ -162,14 +170,6 @@ To initialise, see [&lt;E&gt;Set](#user-content-fn-c69e9d84)\. Assigning `{0}` \
 
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
-
-### <a id = "user-content-fn-86b27fc1" name = "user-content-fn-86b27fc1">&lt;E&gt;Set_</a> ###
-
-<code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
-
-Destructor for active `set`\. After, it takes no memory and is in an idle state\. If idle, does nothing\.
-
-
 
 ### <a id = "user-content-fn-c69e9d84" name = "user-content-fn-c69e9d84">&lt;E&gt;Set</a> ###
 
@@ -182,6 +182,14 @@ Initialises `set` to be take no memory and be in an idle state\. Calling this on
  * Order:  
    &#920;\(1\)
 
+
+
+
+### <a id = "user-content-fn-86b27fc1" name = "user-content-fn-86b27fc1">&lt;E&gt;Set_</a> ###
+
+<code>static void <strong>&lt;E&gt;Set_</strong>(struct &lt;E&gt;Set *const <em>set</em>)</code>
+
+Destructor for active `set`\. After, it takes no memory and is in an idle state\. If idle, does nothing\.
 
 
 
@@ -199,30 +207,14 @@ Clears and removes all entries from `set`\. The capacity and memory of the hash 
 
 
 
-### <a id = "user-content-fn-2dff525d" name = "user-content-fn-2dff525d">&lt;E&gt;SetSize</a> ###
-
-<code>static size_t <strong>&lt;E&gt;SetSize</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code>
-
- * Parameter: _set_  
-   If null, returns 0\.
- * Return:  
-   The number of entries in the `set`\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
 ### <a id = "user-content-fn-8d1390a0" name = "user-content-fn-8d1390a0">&lt;E&gt;SetGet</a> ###
 
 <code>static struct &lt;E&gt;SetElement *<strong>&lt;E&gt;SetGet</strong>(struct &lt;E&gt;Set *const <em>set</em>, const &lt;PE&gt;MType <em>data</em>)</code>
 
-Queries whether `data` is is `set`\.
-
  * Parameter: _set_  
    If null, returns null\.
  * Return:  
-   The value which [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `data`, or, if no such value exists, null\.
+   The value in `set` which [&lt;PE&gt;IsEqual](#user-content-typedef-c1486ede) `SET_IS_EQUAL` `data`, or, if no such value exists, null\.
  * Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
@@ -300,16 +292,14 @@ Removes an element `data` from `set`\.
 
 
 
-### <a id = "user-content-fn-b4e4b20" name = "user-content-fn-b4e4b20">&lt;E&gt;SetToString</a> ###
+### <a id = "user-content-fn-7541b9c3" name = "user-content-fn-7541b9c3">&lt;E&gt;Set&lt;A&gt;ToString</a> ###
 
-<code>static const char *<strong>&lt;E&gt;SetToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code>
-
-Can print 2 things at once before it overwrites\. One must set `SET_TO_STRING` to a function implementing [&lt;PE&gt;ToString](#user-content-typedef-a5b40ebe) to get this functionality\.
+<code>static const char *<strong>&lt;E&gt;Set&lt;A&gt;ToString</strong>(const struct &lt;E&gt;Set *const <em>set</em>)</code>
 
  * Return:  
-   Prints `set` in a static buffer in order by bucket\.
+   Print the contents of `set` in a static string buffer with the limitations of `ToString.h`\.
  * Order:  
-   &#920;\(1\); it has a 1024 character limit; every element takes some\.
+   &#920;\(1\)
 
 
 

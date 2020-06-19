@@ -238,7 +238,7 @@ static PE_(UInt) PE_(get_hash)(struct E_(SetElement) *element) {
 }
 
 /** Retrieves a bucket from `set` given the `hash`. Only call this function if
- non-empty. May be invalidated upon a call to <fn:<PE>grow>.
+ non-empty. May be invalidated upon a call to <fn:<PE>reserve>.
  @return Given a `hash`, compute the bucket. */
 static struct PE_(Bucket) *PE_(get_bucket)(struct E_(Set) *const set,
 	const PE_(UInt) hash) {
@@ -265,13 +265,13 @@ static struct E_(SetElement) **PE_(bucket_to)(struct PE_(Bucket) *const bucket,
 	return 0;
 }
 
-/** Ensures `min_capacity` (`\times ln 2`) of `a`.
+/** Ensures `min_capacity` (`\times ln^-1 2`) of the buckets of `set`.
  @param[min_capacity] If zero, does nothing.
  @return Success; otherwise, `errno` will be set. @throws[ERANGE] Tried
  allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
-static int PE_(reserve)(struct E_(Set) *const set, const size_t size) {
+static int PE_(reserve)(struct E_(Set) *const set, const size_t min_capacity) {
 	struct PE_(Bucket) *buckets, *b, *b_end, *new_b;
 	struct E_(SetElement) **to_x, *x;
 	const unsigned log_c0 = set->log_capacity,
@@ -283,11 +283,12 @@ static int PE_(reserve)(struct E_(Set) *const set, const size_t size) {
 	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
 		&& (PE_(UInt))-1 > 0);
 	/* `SIZE_MAX` min 65535 (`C99`) -> 5041 but typically much larger _st_ it
-	 becomes saturated while the load factor increases. */
-	if(size > (size_t)-1 / 13) return 1; /* <- Saturation `1/8 * SIZE_MAX`. */
-	/* Load factor `0.693147180559945309417232121458176568 ~= 9/13`.
+	 becomes saturated while the load factor increases.
+	 Saturation `1/8 * SIZE_MAX`, (which is not defined it `C90`.) */
+	if(min_capacity > (size_t)-1 / 13) return 1;
+	/* Load factor `ln 2 ~= 0.693 ~= 9/13`.
 	 Starting bucket number is a power of 2 in `[8, 1 << log_limit]`. */
-	if((no_buckets = size * 13 / 9) > 1u << log_limit) {
+	if((no_buckets = min_capacity * 13 / 9) > 1u << log_limit) {
 		log_c1 = log_limit;
 		c1 = 1 << log_limit;
 	} else {
@@ -526,7 +527,7 @@ static const char *PEA_(to_string)(const struct E_(Set) *const set) {
 
 #ifndef SET_CHILD /* <!-- !sub-type */
 
-/** @return Print the contents of `a` in a static string buffer with the
+/** @return Print the contents of `set` in a static string buffer with the
  limitations of `ToString.h`. @order \Theta(1) @allow */
 static const char *E_A_(Set, ToString)(const struct E_(Set) *const set)
 	{ return PEA_(to_string)(set); /* Can be null. */ }
