@@ -63,13 +63,11 @@ static void int_fill(unsigned *const x)
 
 
 
-#if 0
-
 /* Used to test `SET_UINT`; normally `unsigned int`, here `unsigned char`.
- Useful if you want to use a specific hash length, _eg_, C99's `uint32_t` or
+ Useful if you want to use a specific hash length, _eg_, `C99`'s `uint32_t` or
  `uint64_t`. */
 
-/** This is probably not the greatest hash function. */
+/** Fast hash function. */
 static unsigned char byteint_hash(unsigned x) { return x; }
 /* All the same functions as above, otherwise. */
 #define SET_NAME ByteInt
@@ -77,6 +75,8 @@ static unsigned char byteint_hash(unsigned x) { return x; }
 #define SET_UINT unsigned char
 #define SET_HASH &byteint_hash
 #define SET_IS_EQUAL &int_is_equal
+#define SET_EXPECT_TRAIT
+#include "../src/Set.h"
 #define SET_TO_STRING &int_to_string
 #define SET_TEST &int_fill
 #include "../src/Set.h"
@@ -99,6 +99,8 @@ static void string_fill(const char **);
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
+#define SET_EXPECT_TRAIT
+#include "../src/Set.h"
 #define SET_TO_STRING &pstring_to_string
 #define SET_TEST &string_fill
 #include "../src/Set.h"
@@ -162,6 +164,8 @@ static void vec4_filler(struct Vec4 *const v4) {
 #define SET_POINTER
 #define SET_HASH &vec4_hash
 #define SET_IS_EQUAL &vec4_is_equal
+#define SET_EXPECT_TRAIT
+#include "../src/Set.h"
 #define SET_TO_STRING &vec4_to_string
 #define SET_TEST &vec4_filler
 #include "../src/Set.h"
@@ -184,6 +188,8 @@ static void fill_boat_id(int *const id);
 #define SET_NO_CACHE
 #define SET_HASH &boat_id_hash
 #define SET_IS_EQUAL &boat_id_is_equal
+#define SET_EXPECT_TRAIT
+#include "../src/Set.h"
 #define SET_TO_STRING &boat_id_to_string
 #define SET_TEST &fill_boat_id
 #include "../src/Set.h"
@@ -291,6 +297,8 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &key_is_equal
+#define SET_EXPECT_TRAIT
+#include "../src/Set.h"
 #define SET_TO_STRING &key_to_string
 #include "../src/Set.h"
 
@@ -344,12 +352,8 @@ static const struct Entry *entry_next(struct Entry *const e) {
 #include "Pool.h"
 
 
-#endif
-
 
 int main(void) {
-	IntSetTest(0, 0);
-#if 0
 	{ /* Automated tests. The ones that have no pool are self-contained sets,
 	 and we just test them on the stack. The ones that do require more memory
 	 from a parent node, which the internals to `Set` don't know of. */
@@ -498,6 +502,5 @@ finally:
 		KeySet(&key_set);
 		EntryPool_(&entries);
 	}
-#endif
 	return EXIT_SUCCESS;
 }

@@ -469,7 +469,7 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 
 #if !defined(E_) || !defined(PE_) || !defined(CAT) \
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?E_? or P?CAT_? not yet defined in to string trait; include set?
+#error P?E_ or P?CAT_? not yet defined; traits must be defined separately?
 #endif
 
 #include <string.h> /* strlen memcpy */
