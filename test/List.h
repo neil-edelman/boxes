@@ -9,30 +9,39 @@
  function, `LIST_COMPARE` <typedef:<PN>Compare>.
 
  Internally, `<N>ListNode` is a doubly-linked node with sentinels residing in
- `<N>List`. It only provides an order, and is not very useful without enclosing
- `<N>ListNode` in, at least, another `struct`.
+ `<N>List`. The sentinels are an added complexity at either end, but enable a
+ closed structure. It only provides an order, and is not very useful without
+ enclosing `<N>ListNode` in, at least, another 'struct` and doing
+ `contianer_of` or the equivalent.
 
- `<N>Link` is not synchronised. The parameters are `#define` preprocessor
- macros, and are all undefined at the end of the file for convenience. To stop
- assertions, use `#define NDEBUG` before inclusion of `assert.h`, (which is
- used in this file.)
+ `<N>Link` is not synchronised. Errors are returned with `errno`. The
+ parameters are preprocessor macros, and are all undefined at the end of the
+ file for convenience. Assertions are used in this file; to stop them, define
+ `NDEBUG` before `assert.h`.
 
  @param[LIST_NAME]
  `<N>` that satisfies `C` naming conventions when mangled; required. `<PN>` is
- private, whose names are prefixed in a manner to avoid collisions; any should
- be re-defined prior to use elsewhere.
+ private, whose names are prefixed in a manner to avoid collisions.
 
  @param[LIST_COMPARE]
  Optional total-order function satisfying <typedef:<PN>Compare>.
+ (Move to trait so all boxes can have them.)
 
- @param[LIST_TO_STRING]
- Optional print function implementing <typedef:<PN>ToString>; makes available
- <fn:<N>ListToString>.
+ @param[LIST_EXPECT_TRAIT]
+ Do not un-define certain variables for subsequent inclusion in a trait.
+
+ @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
+ To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PN>ToString>.
+ There can be multiple to string traits, but only one can omit
+ `LIST_TO_STRING_NAME`.
 
  @param[LIST_TEST]
- Unit testing framework <fn:<N>ListTest>, included in a separate header,
- <../test/TestList.h>. Must be defined equal to a random filler function,
- satisfying <typedef:<PN>Action>. Requires `LIST_TO_STRING` and not `NDEBUG`.
+ To string trait contained in <../test/TestList.h>; optional unit testing
+ framework using `assert`. Can only be defined once _per_ `Array`. Must be
+ defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
+ Output will be shown with the to string trait in which it's defined; provides
+ tests for the base code and all later traits.
 
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
@@ -44,34 +53,46 @@
 
 #include <assert.h>
 
-/* Check defines. */
+
 #ifndef LIST_NAME
 #error Generic LIST_NAME undefined.
 #endif
 #if defined(LIST_TEST) && !defined(LIST_TO_STRING)
 #error LIST_TEST requires LIST_TO_STRING.
 #endif
-#if defined(N_) || defined(PN_) /* <!-- error */
-#error N_ and PN_ cannot be defined.
-#endif /* error --> */
+#if defined(LIST_TO_STRING_NAME) || defined(LIST_TO_STRING)
+#define LIST_TO_STRING_TRAIT 1
+#else
+#define LIST_TO_STRING_TRAIT 0
+#endif
+#define LIST_TRAITS LIST_TO_STRING_TRAIT
+#if LIST_TRAITS > 1
+#error Only one trait per include is allowed; use LIST_EXPECT_TRAIT.
+#endif
+#if (LIST_TRAITS == 0) && defined(LIST_TEST)
+#error LIST_TEST must be defined in LIST_TO_STRING trait.
+#endif
+#if defined(LIST_TO_STRING_NAME) && !defined(LIST_TO_STRING)
+#error LIST_TO_STRING_NAME requires LIST_TO_STRING.
+#endif
+
+
+
+#if LIST_TRAITS == 0 /* <!-- base code */
+
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#ifdef CAT
-#undef CAT
+#if defined(N_) || defined(PN_) \
+	|| (defined(LIST_CHILD) \
+	^ (defined(CAT) || defined(CAT_) || defined(PCAT) || defined(PCAT_)))
+#error Unexpected P?N_ or P?CAT_?; possible stray LIST_EXPECT_TRAIT?
 #endif
-#ifdef CAT_
-#undef CAT_
-#endif
-#ifdef PCAT
-#undef PCAT
-#endif
-#ifdef PCAT_
-#undef PCAT_
-#endif
+#ifndef LIST_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
+#endif /* !sub-type --> */
 #define N_(thing) CAT(LIST_NAME, thing)
 #define PN_(thing) PCAT(list, PCAT(LIST_NAME, thing))
 

@@ -111,20 +111,18 @@
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(E_) || defined(PE_)
-#error P?E_? cannot be defined; possible stray SET_EXPECT_TRAIT?
+#if defined(E_) || defined(PE_) || (defined(SET_CHILD) \
+	^ (defined(CAT) || defined(CAT_) || defined(PCAT) || defined(PCAT_)))
+#error Unexpected P?E_ or P?CAT_?; possible stray SET_EXPECT_TRAIT?
 #endif
 #ifndef SET_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
-#error SET_CHILD defined but CAT is not.
-#endif /* !cat --> */
+#endif /* !sub-type --> */
 #define E_(thing) CAT(SET_NAME, thing)
 #define PE_(thing) PCAT(set, PCAT(SET_NAME, thing))
-
 #ifndef SET_UINT
 #define SET_UINT unsigned
 #endif
