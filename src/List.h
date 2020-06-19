@@ -6,7 +6,8 @@
  ![Example of a stochastic skip-list.](../web/list.png)
 
  <tag:<N>List> is a list of <tag:<N>ListNode>; it may be supplied a total-order
- function, `LIST_COMPARE` <typedef:<PN>Compare>.
+ function, `LIST_COMPARE` <typedef:<PN>Compare>. (fixme: apply to all as a
+ trait.)
 
  Internally, `<N>ListNode` is a doubly-linked node with sentinels residing in
  `<N>List`. The sentinels are an added complexity at either end, but enable a
@@ -77,13 +78,11 @@
 #endif
 
 
-
 #if LIST_TRAITS == 0 /* <!-- base code */
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(N_) || defined(PN_) \
-	|| (defined(LIST_CHILD) \
+#if defined(N_) || defined(PN_) || (defined(LIST_CHILD) \
 	^ (defined(CAT) || defined(CAT_) || defined(PCAT) || defined(PCAT_)))
 #error Unexpected P?N_ or P?CAT_?; possible stray LIST_EXPECT_TRAIT?
 #endif
@@ -104,6 +103,10 @@
 struct N_(ListNode);
 struct N_(ListNode) { struct N_(ListNode) *prev, *next; };
 
+/** Responsible for turning the first argument into a 12-`char` null-terminated
+ output string. Used for `LIST_TO_STRING`. */
+typedef void (*PN_(ToString))(const struct N_(ListNode) *, char (*)[12]);
+
 /** Serves as head and tail for linked-list of <tag:<N>ListNode>. Use
  <fn:<N>ListClear> to initialise the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
@@ -118,8 +121,10 @@ struct N_(List) {
 	struct N_(ListNode) head, tail;
 };
 
+/** Contains all iteration parameters in one. */
+struct PN_(Iterator); struct PN_(Iterator) { const struct N_(ListNode) *node; };
 
-/** Private: clears and initialises `list`. */
+/** Clears and initialises `list`. */
 static void PN_(clear)(struct N_(List) *const list) {
 	assert(list);
 	list->head.prev = list->tail.next = 0;
@@ -127,7 +132,7 @@ static void PN_(clear)(struct N_(List) *const list) {
 	list->tail.prev = &list->head;
 }
 
-/** Private: `add` before `anchor`. */
+/** `add` before `anchor`. */
 static void PN_(add_before)(struct N_(ListNode) *const anchor,
 	struct N_(ListNode) *const add) {
 	assert(anchor && add && anchor != add && anchor->prev);
@@ -137,7 +142,7 @@ static void PN_(add_before)(struct N_(ListNode) *const anchor,
 	anchor->prev = add;
 }
 
-/** Private: `add` after `anchor`. */
+/** `add` after `anchor`. */
 static void PN_(add_after)(struct N_(ListNode) *const anchor,
 	struct N_(ListNode) *const add) {
 	assert(anchor && add && anchor != add && anchor->next);
@@ -147,7 +152,7 @@ static void PN_(add_after)(struct N_(ListNode) *const anchor,
 	anchor->next = add;
 }
 
-/** Private: remove `node`. */
+/** Remove `node`. */
 static void PN_(remove)(struct N_(ListNode) *const node) {
 	assert(node && node->prev && node->next);
 	node->prev->next = node->next;
@@ -155,10 +160,9 @@ static void PN_(remove)(struct N_(ListNode) *const node) {
 	node->prev = node->next = 0;
 }
 
-/** Private: cats all `from` in front of `node`, (don't make `node` `head`);
- `from` will be empty after. Careful that `node` is not in `from` because that
- will just erase the list.
- @order \Theta(1) */
+/** Cats all `from` in front of `node`, (don't make `node` `head`); `from` will
+ be empty after. Careful that `node` is not in `from` because that will just
+ erase the list. @order \Theta(1) */
 static void PN_(move)(struct N_(List) *const from,
 	struct N_(ListNode) *const node) {
 	assert(node && from && node->prev &&
@@ -172,7 +176,7 @@ static void PN_(move)(struct N_(List) *const from,
 	from->tail.prev = &from->head;
 }
 
-/** Private: when the actual `list` but not the data changes locations. */
+/** When the actual `list` but not the data changes locations. */
 static void PN_(self_correct)(struct N_(List) *const list) {
 	if(list->head.next == list->tail.prev + 1) {
 		list->head.next = &list->tail;
@@ -196,9 +200,8 @@ typedef int (*PN_(Predicate))(const struct N_(ListNode) *);
  @param[list] if null, does nothing.
  @order \Theta(1)
  @allow */
-static void N_(ListClear)(struct N_(List) *const list) {
-	if(list) PN_(clear)(list);
-}
+static void N_(ListClear)(struct N_(List) *const list)
+	{ if(list) PN_(clear)(list); }
 
 /** @param[list] If null, returns null.
  @return A pointer to the first element of `list`, if it exists.
@@ -213,8 +216,7 @@ static struct N_(ListNode) *N_(ListFirst)(const struct N_(List) *const list) {
 
 /** @param[list] If null, returns null.
  @return A pointer to the last element of `list`, if it exists.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static struct N_(ListNode) *N_(ListLast)(const struct N_(List) *const list) {
 	struct N_(ListNode) *link;
 	if(!list) return 0;
@@ -224,8 +226,7 @@ static struct N_(ListNode) *N_(ListLast)(const struct N_(List) *const list) {
 
 /** @param[link] If null, returns null, otherwise must be part of a list.
  @return The previous element. When `link` is the first element, returns null.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static struct N_(ListNode) *N_(ListPrevious)(struct N_(ListNode) *link) {
 	if(!link) return 0;
 	link = link->prev;
@@ -234,8 +235,7 @@ static struct N_(ListNode) *N_(ListPrevious)(struct N_(ListNode) *link) {
 
 /** @param[link] If null, returns null, otherwise must be part of a list.
  @return The next element. When `link` is the last element, returns null.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static struct N_(ListNode) *N_(ListNext)(struct N_(ListNode) *link) {
 	if(!link) return 0;
 	link = link->next;
@@ -245,8 +245,7 @@ static struct N_(ListNode) *N_(ListNext)(struct N_(ListNode) *link) {
 /** Adds `add` to the beginning of `list`.
  @param[list, add] If null, does nothing.
  @param[add] Should not associated to any list.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static void N_(ListUnshift)(struct N_(List) *const list,
 	struct N_(ListNode) *const add) {
 	if(!list || !add) return;
@@ -256,8 +255,7 @@ static void N_(ListUnshift)(struct N_(List) *const list,
 /** Adds `add` to the end of `list`.
  @param[list, add] If null, does nothing.
  @param[add] Should not associated to any list.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static void N_(ListPush)(struct N_(List) *const list,
 	struct N_(ListNode) *const add) {
 	if(!list || !add) return;
@@ -268,8 +266,7 @@ static void N_(ListPush)(struct N_(List) *const list,
  @param[anchor, add] If null, does nothing.
  @param[anchor] Must be part of a list.
  @param[add] Should not be part of any list.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static void N_(ListAddBefore)(struct N_(ListNode) *const anchor,
 	struct N_(ListNode) *const add) {
 	if(!anchor || !add) return;
@@ -280,8 +277,7 @@ static void N_(ListAddBefore)(struct N_(ListNode) *const anchor,
  @param[anchor, add] If null, does nothing.
  @param[anchor] Must be part of a list.
  @param[add] Should not be part of any list.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static void N_(ListAddAfter)(struct N_(ListNode) *const anchor,
 	struct N_(ListNode) *const add) {
 	if(!anchor || !add) return;
@@ -292,8 +288,7 @@ static void N_(ListAddAfter)(struct N_(ListNode) *const anchor,
  to another list. Removing an element that was not added to a list results in
  undefined behaviour.
  @param[link] If null, does nothing.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static void N_(ListRemove)(struct N_(ListNode) *const link) {
 	if(!link) return;
 	PN_(remove)(link);
@@ -302,8 +297,7 @@ static void N_(ListRemove)(struct N_(ListNode) *const link) {
 /** Un-associates the first element of `list`.
  @param[list] If null, returns null.
  @return The erstwhile first element or null if the list was empty.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static struct N_(ListNode) *N_(ListShift)(struct N_(List) *const list) {
 	struct N_(ListNode) *node;
 	if(!list) return 0;
@@ -315,8 +309,7 @@ static struct N_(ListNode) *N_(ListShift)(struct N_(List) *const list) {
 /** Un-associates the last element of `list`.
  @param[list] If null, returns null.
  @return The erstwhile last element or null if the list was empty.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static struct N_(ListNode) *N_(ListPop)(struct N_(List) *const list) {
 	struct N_(ListNode) *node;
 	if(!list) return 0;
@@ -327,10 +320,8 @@ static struct N_(ListNode) *N_(ListPop)(struct N_(List) *const list) {
 
 /** Moves the elements `from` onto `to` at the end.
  @param[from] If null, it does nothing, otherwise this list will be empty on
- return.
- @param[to] If null, then it removes elements from `from`.
- @order \Theta(1)
- @allow */
+ return. @param[to] If null, then it removes elements from `from`.
+ @order \Theta(1) @allow */
 static void N_(ListTo)(struct N_(List) *const from, struct N_(List) *const to) {
 	if(!from || from == to) return;
 	if(!to) { PN_(clear)(from); return; }
@@ -341,8 +332,7 @@ static void N_(ListTo)(struct N_(List) *const from, struct N_(List) *const to) {
  @param[anchor, from] If null, does nothing.
  @param[anchor] Must be part of a valid list that is not `from`.
  @param[from] This list will be empty on return.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static void N_(ListToBefore)(struct N_(List) *const from,
 	struct N_(ListNode) *const anchor) {
 	if(!from || !anchor) return;
@@ -352,8 +342,7 @@ static void N_(ListToBefore)(struct N_(List) *const from,
 /** Moves all elements `from` onto `to` at the end if `predicate` is true.
  @param[from, predicate] If null, does nothing.
  @param[to] If null, then it removes elements.
- @order \Theta(|`from`|) \times \O(`predicate`)
- @allow */
+ @order \Theta(|`from`|) \times \O(`predicate`) @allow */
 static void N_(ListToIf)(struct N_(List) *const from,
 	struct N_(List) *const to, const PN_(Predicate) predicate) {
 	struct N_(ListNode) *link, *next_link;
@@ -368,8 +357,7 @@ static void N_(ListToIf)(struct N_(List) *const from,
 /** Performs `action` for each element in `list` in order. `action` can be to
  delete the element.
  @param[list, action] If null, does nothing.
- @order \Theta(|`list`|) \times O(`action`)
- @allow */
+ @order \Theta(|`list`|) \times O(`action`) @allow */
 static void N_(ListForEach)(struct N_(List) *const list,
 	const PN_(Action) action) {
 	struct N_(ListNode) *x, *next_x;
@@ -382,8 +370,7 @@ static void N_(ListForEach)(struct N_(List) *const list,
  @param[list, predicate] If null, returns null.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
- @order \O(|`list`|) \times \O(`predicate`)
- @allow */
+ @order \O(|`list`|) \times \O(`predicate`) @allow */
 static struct N_(ListNode) *N_(ListAny)(const struct N_(List) *const list,
 	const PN_(Predicate) predicate) {
 	struct N_(ListNode) *link, *next_link;
@@ -397,8 +384,7 @@ static struct N_(ListNode) *N_(ListAny)(const struct N_(List) *const list,
  this corrects `list`'s two ends, (not the nodes, which must be fixed.) Note
  that the two ends become invalid even when it's empty.
  @param[list] If null, does nothing.
- @order \Theta(1)
- @allow */
+ @order \Theta(1) @allow */
 static void N_(ListSelfCorrect)(struct N_(List) *const list) {
 	if(!list) return;
 	PN_(self_correct)(list);
@@ -435,8 +421,7 @@ enum ListOperation {
 };
 #endif /* h --> */
 
-/** Local duplicates from `from` onto the back of `to`.
- @order \O(|`from`|) */
+/** Local duplicates from `from` onto the back of `to`. @order \O(|`from`|) */
 static void PN_(duplicates)(struct N_(List) *const from,
 	struct N_(List) *const to) {
 	struct N_(ListNode) *a = from->head.next, *b, *temp;
@@ -688,8 +673,7 @@ static void PN_(natural)(struct N_(List) *const list) {
  long merges by galloping, but we don't have random access to the data because
  we are in a linked-list; this does natural merge sort.
  @param[list] If null, does nothing.
- @order \Omega(|`list`|), \O(|`list`| log |`list`|)
- @allow */
+ @order \Omega(|`list`|), \O(|`list`| log |`list`|) @allow */
 static void N_(ListSort)(struct N_(List) *const list) {
 	if(list) PN_(natural)(list);
 }
@@ -699,9 +683,7 @@ static void N_(ListSort)(struct N_(List) *const list) {
  be sorted, too. Requires `LIST_COMPARE`.
  @param[list] If null, then it removes elements.
  @param[from] If null, does nothing, otherwise this list will be empty on
- return.
- @order \O(|`list`| + |`from`|)
- @allow */
+ return. @order \O(|`list`| + |`from`|) @allow */
 static void N_(ListMerge)(struct N_(List) *const list,
 	struct N_(List) *const from) {
 	if(!from || from == list) return;
@@ -714,8 +696,7 @@ static void N_(ListMerge)(struct N_(List) *const list,
  equal. Null is considered as before everything else; two null pointers are
  considered equal.
  @implements <typedef:<PN>Compare> as `<<PN>List>Compare`
- @order \Theta(min(|`alist`|, |`blist`|))
- @allow */
+ @order \Theta(min(|`alist`|, |`blist`|)) @allow */
 static int N_(ListCompare)(const struct N_(List) *const alist,
 	const struct N_(List) *const blist) {
 	struct N_(ListNode) *a, *b;
@@ -745,8 +726,7 @@ static int N_(ListCompare)(const struct N_(List) *const alist,
  For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `to`
  and leave `(A, B, A)` in `from`. If one <fn:<N>ListSort> `from` first,
  `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
- @order O(|`from`|)
- @allow */
+ @order O(|`from`|) @allow */
 static void N_(ListDuplicatesTo)(struct N_(List) *const from,
 	struct N_(List) *const to) {
 	if(!from) return;
@@ -759,8 +739,7 @@ static void N_(ListDuplicatesTo)(struct N_(List) *const from,
 
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
  `(a:A, a:D)` would be moved to `result`.
- @order \O(|`a`| + |`b`|)
- @allow */
+ @order \O(|`a`| + |`b`|) @allow */
 static void N_(ListSubtractionTo)(struct N_(List) *const a,
 	struct N_(List) *const b, struct N_(List) *const result) {
 	PN_(boolean)(a, b, LO_SUBTRACTION_AB | LO_DEFAULT_A, result);
@@ -772,8 +751,7 @@ static void N_(ListSubtractionTo)(struct N_(List) *const a,
 
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
  `(a:A, a:B, b:C, a:D)` would be moved to `result`.
- @order \O(|`a`| + |`b`|)
- @allow */
+ @order \O(|`a`| + |`b`|) @allow */
 static void N_(ListUnionTo)(struct N_(List) *const a, struct N_(List) *const b,
 	struct N_(List) *const result) {
 	PN_(boolean)(a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA | LO_INTERSECTION
@@ -786,8 +764,7 @@ static void N_(ListUnionTo)(struct N_(List) *const a, struct N_(List) *const b,
 
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
  `(a:B)` would be moved to `result`.
- @order \O(|`a`| + |`b`|)
- @allow */
+ @order \O(|`a`| + |`b`|) @allow */
 static void N_(ListIntersectionTo)(struct N_(List) *const a,
 	struct N_(List) *const b, struct N_(List) *const result) {
 	PN_(boolean)(a, b, LO_INTERSECTION, result);
@@ -809,141 +786,138 @@ static void N_(ListXorTo)(struct N_(List) *const a, struct N_(List) *const b,
 
 #endif /* comp --> */
 
-#ifdef LIST_TO_STRING /* <!-- string */
+#endif /* !sub-type --> */
 
-#include <string.h> /* strlen memcpy */
+static void PN_(unused_base_coda)(void);
+static void PN_(unused_base)(void) {
+	PN_(clear)(0); PN_(add_before)(0, 0); PN_(add_after)(0, 0); PN_(remove)(0);
+	PN_(move)(0, 0); PN_(self_correct)(0);
+#ifndef LIST_CHILD /* <!-- !sub-type */
+	N_(ListClear)(0); N_(ListFirst)(0); N_(ListLast)(0); N_(ListPrevious)(0);
+	N_(ListNext)(0); N_(ListUnshift)(0, 0); N_(ListPush)(0, 0);
+	N_(ListAddBefore)(0, 0); N_(ListAddAfter)(0, 0); N_(ListRemove)(0);
+	N_(ListShift)(0); N_(ListPop)(0); N_(ListTo)(0, 0); N_(ListToIf)(0, 0, 0);
+	N_(ListToBefore)(0, 0); N_(ListForEach)(0, 0); N_(ListAny)(0, 0);
+	N_(ListSelfCorrect)(0);
+#ifdef LIST_COMPARE /* <!-- comp */
+	N_(ListSort)(0); N_(ListMerge)(0, 0); N_(ListCompare)(0, 0);
+	N_(ListSubtractionTo)(0, 0, 0); N_(ListUnionTo)(0, 0, 0);
+	N_(ListIntersectionTo)(0, 0, 0); N_(ListXorTo)(0, 0, 0);
+	N_(ListDuplicatesTo)(0, 0);
+#endif /* comp --> */
+#endif /* !sub-type --> */
+	PN_(unused_base_coda)();
+}
+static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- string. Used for `LIST_TO_STRING`. */
-typedef void (*PN_(ToString))(const struct N_(ListNode) *, char (*)[12]);
+
+#elif defined(LIST_TO_STRING) /* base code --><!-- to string trait */
+
+
+#if !defined(N_) || !defined(PN_) || !defined(CAT) \
+	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
+#error P?N_ or P?CAT_? not yet defined; traits must be defined separately?
+#endif
+
+#ifdef LIST_TO_STRING_NAME /* <!-- name */
+#define PNA_(thing) PCAT(PN_(thing), LIST_TO_STRING_NAME)
+#define N_A_(thing1, thing2) CAT(N_(thing1), CAT(LIST_TO_STRING_NAME, thing2))
+#else /* name --><!-- !name */
+#define PNA_(thing) PCAT(PN_(thing), anonymous)
+#define N_A_(thing1, thing2) CAT(N_(thing1), thing2)
+#endif /* !name --> */
+
 /* Check that `LIST_TO_STRING` is a function implementing
  <typedef:<PN>ToString>. */
-static const PN_(ToString) PN_(to_string) = (LIST_TO_STRING);
+static const PN_(ToString) PNA_(to_str12) = (LIST_TO_STRING);
 
-/** Can print 2 things at once before it overwrites. One must set
- `LIST_TO_STRING` to a function implementing <typedef:<PN>ToString> to get this
- functionality.
- @return Prints `list` in a static buffer.
- @order \Theta(1); it has a 1024 character limit; every element takes some.
- @allow */
-static const char *N_(ListToString)(const struct N_(List) *const list) {
-	static char buffers[2][1024];
-	static size_t buffer_i;
-	char *buffer = buffers[buffer_i++], *b = buffer;
-	const size_t buffers_no = sizeof buffers / sizeof *buffers,
-		buffer_size = sizeof *buffers / sizeof **buffers;
-	const char space = ' ', start = '(', comma = ',', end = ')',
-		*const ellipsis_end = ",…)", *const null = "null";
-	const size_t ellipsis_end_len = strlen(ellipsis_end),
-		null_len = strlen(null);
-	struct N_(ListNode) *link;
-	size_t i;
-	int is_first = 1;
-	/* fixme: I've lost track. */
-	assert(!(buffers_no & (buffers_no - 1)) && ellipsis_end_len >= 2
-		   && buffer_size >= 1 + 11 + ellipsis_end_len + 1
-		   && buffer_size >= null_len + 1);
-	/* Advance the buffer for next time. */
-	buffer_i &= buffers_no - 1;
-	/* Null set. */
-	if(!list) { memcpy(b, null, null_len), b += null_len; goto terminate; }
-	/* Otherwise */
-	*b++ = start;
-	for(link = N_(ListFirst)(list); link; link = N_(ListNext)(link)) {
-		if(is_first) is_first = 0;
-		else *b++ = comma, *b++ = space;
-		PN_(to_string)(link, (char (*)[12])b);
-		for(i = 0; *b != '\0' && i < 12; b++, i++);
-		/* Greedy can not guarantee another; terminate by ellipsis. */
-		if((size_t)(b - buffer) > buffer_size - 2 - 11 - ellipsis_end_len - 1)
-			goto ellipsis;
-	}
-	*b++ = end;
-	goto terminate;
-ellipsis:
-	memcpy(b, ellipsis_end, ellipsis_end_len), b += ellipsis_end_len;
-terminate:
-	*b++ = '\0';
-	assert(b <= buffer + buffer_size);
-	return buffer;
+/** Writes `it` to `str` and advances or returns false.
+ @implements <AI>NextToString */
+static int PNA_(next_to_str12)(struct PN_(Iterator) *const it,
+	char (*const str)[12]) {
+	assert(it && str);
+	if(!it->node || !it->node->next) return 0;
+	PNA_(to_str12)(it->node, str);
+	it->node = it->node->next;
+	return 1;
 }
-#endif /* string --> */
 
-#ifdef LIST_TEST /* <!-- test: need this file. */
+/** @return If `it` contains not-null. */
+static int PNA_(is_valid)(const struct PN_(Iterator) *const it)
+	{ assert(it); return it->node && it->node->next; }
+
+#define AI_ PNA_
+#define TO_STRING_ITERATOR struct PN_(Iterator)
+#define TO_STRING_NEXT &PNA_(next_to_str12)
+#define TO_STRING_IS_VALID &PNA_(is_valid)
+#include "ToString.h"
+
+/** @return Prints `list`. */
+static const char *PNA_(to_string)(const struct N_(List) *const list) {
+	struct PN_(Iterator) it = { 0 };
+	if(list) it.node = &list->head;
+	return PNA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
+}
+
+#ifndef LIST_CHILD /* <!-- !sub-type */
+
+/** @return Print the contents of `list` in a static string buffer with the
+ limitations of `ToString.h`. @order \Theta(1) @allow */
+static const char *N_A_(List, ToString)(const struct N_(List) *const list)
+	{ return PNA_(to_string)(list); /* Can be null. */ }
+
+#endif /* !sub-type --> */
+
+static void PNA_(unused_to_string_coda)(void);
+static void PNA_(unused_to_string)(void) {
+	PNA_(to_string)(0);
+#ifndef LIST_CHILD /* <!-- !sub-type */
+	N_A_(List, ToString)(0);
+#endif /* !sub-type --> */
+	PNA_(unused_to_string_coda)();
+}
+static void PNA_(unused_to_string_coda)(void) { PNA_(unused_to_string)(); }
+
+#if !defined(LIST_TEST_BASE) && defined(LIST_TEST) /* <!-- test */
+#define LIST_TEST_BASE /* Only one instance of base tests. */
 #include "../test/TestList.h" /** \include */
 #endif /* test --> */
 
-static void PN_(unused_coda)(void);
-/** This silences unused function warnings from the pre-processor, but allows
- optimisation, (hopefully.)
- <http://stackoverflow.com/questions/43841780/silencing-unused-static-function-warnings-for-a-section-of-code> */
-static void PN_(unused_set)(void) {
-	N_(ListClear)(0);
-	N_(ListFirst)(0);
-	N_(ListLast)(0);
-	N_(ListPrevious)(0);
-	N_(ListNext)(0);
-	N_(ListUnshift)(0, 0);
-	N_(ListPush)(0, 0);
-	N_(ListAddBefore)(0, 0);
-	N_(ListAddAfter)(0, 0);
-	N_(ListRemove)(0);
-	N_(ListShift)(0);
-	N_(ListPop)(0);
-	N_(ListTo)(0, 0);
-	N_(ListToIf)(0, 0, 0);
-	N_(ListToBefore)(0, 0);
-	N_(ListForEach)(0, 0);
-	N_(ListAny)(0, 0);
-	N_(ListSelfCorrect)(0);
-#ifdef LIST_COMPARE /* <!-- comp */
-	N_(ListSort)(0);
-	N_(ListMerge)(0, 0);
-	N_(ListCompare)(0, 0);
-	N_(ListSubtractionTo)(0, 0, 0);
-	N_(ListUnionTo)(0, 0, 0);
-	N_(ListIntersectionTo)(0, 0, 0);
-	N_(ListXorTo)(0, 0, 0);
-	N_(ListDuplicatesTo)(0, 0);
-#endif /* comp --> */
-#ifdef LIST_TO_STRING /* <!-- string */
-	N_(ListToString)(0);
-#endif /* string --> */
-	PN_(unused_coda)();
-}
-static void PN_(unused_coda)(void) { PN_(unused_set)(); }
+#undef PNA_
+#undef N_A_
+#undef LIST_TO_STRING
+#ifdef LIST_TO_STRING_NAME
+#undef LIST_TO_STRING_NAME
+#endif
 
-/* Un-define all macros. */
+
+#endif /* traits --> */
+
+
+#ifdef LIST_EXPECT_TRAIT /* <!-- trait */
+#undef LIST_EXPECT_TRAIT
+#else /* trait --><!-- !trait */
+#ifndef LIST_CHILD /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #undef PCAT
 #undef PCAT_
 #else /* !sub-type --><!-- sub-type */
 #undef LIST_CHILD
-static void PN_(unused_coda)(void);
-/** This is a subtype of another, more specialised type. `CAT`, _etc_, have to
- have the same meanings; they will be replaced with these, and `N` cannot be
- used. */
-static void PN_(unused_set)(void) {
-	/* PN_(clear)(0); <- want to be notified. */
-	PN_(add_before)(0, 0);
-	PN_(add_after)(0, 0);
-	PN_(remove)(0);
-	PN_(move)(0, 0);
-	PN_(self_correct)(0);
-	PT_(unused_coda)();
-}
-static void PN_(unused_coda)(void) { PN_(unused_set)(); }
-#endif /* !sub-type --> */
+#endif /* sub-type --> */
 #undef N_
 #undef PN_
 #undef LIST_NAME
 #ifdef LIST_COMPARE
 #undef LIST_COMPARE
 #endif
-#ifdef LIST_TO_STRING
-#undef LIST_TO_STRING
-#endif
 #ifdef LIST_TEST
 #undef LIST_TEST
 #endif
+#ifdef LIST_TEST_BASE
+#undef LIST_TEST_BASE
+#endif
+#endif /* !trait --> */
+
+#undef LIST_TO_STRING_TRAIT
+#undef LIST_TRAITS

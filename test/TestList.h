@@ -4,7 +4,6 @@
 #include <stdio.h>  /* printf */
 #include <stddef.h>
 
-/* Define QUOTE. */
 #ifdef QUOTE
 #undef QUOTE
 #endif
@@ -13,6 +12,13 @@
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
+
+#ifdef LIST_TO_STRING /* <!-- to string: Only one, tests all base code. */
+
+/* Copy functions for later includes. */
+static const PN_(ToString) PN_(to_string) = (LIST_TO_STRING);
+static const char *(*PN_(list_to_string))(const struct N_(List) *)
+	= N_A_(List, ToString);
 
 /* Check that LIST_TEST is a function implementing <typedef:<PN>Action>. */
 static void (*const PN_(filler))(struct N_(ListNode) *) = (LIST_TEST);
@@ -185,7 +191,7 @@ static void PN_(test_basic)(struct N_(ListNode) *(*const parent_new)(void *),
 	}
 	PN_(graph)(&l1, "graph/" QUOTE(LIST_NAME) "-small.gv");
 	PN_(count)(&l1, test_size);
-	printf("l1 = %s.\n", N_(ListToString)(&l1));
+	printf("l1 = %s.\n", PN_(list_to_string)(&l1));
 	/* Test positions when contents. */
 	link = N_(ListFirst)(&l1), assert(link == link_first);
 	link = N_(ListLast)(&l1), assert(link == link_last);
@@ -206,7 +212,7 @@ static void PN_(test_basic)(struct N_(ListNode) *(*const parent_new)(void *),
 	PN_(count)(&l2, 0);
 	N_(ListToIf)(&l1, &l2, &PN_(parity));
 	printf("Transferring . . . l1 = %s; l2 = %s.\n",
-		N_(ListToString)(&l1), N_(ListToString)(&l2));
+		PN_(list_to_string)(&l1), PN_(list_to_string)(&l2));
 	PN_(count)(&l1, test_size >> 1);
 	PN_(count)(&l2, test_size - (test_size >> 1));
 	assert(N_(ListFirst)(&l1) == link_first);
@@ -270,7 +276,7 @@ static void PN_(test_sort)(struct N_(ListNode) *(*const parent_new)(void *),
 		QUOTE(LIST_COMPARE) ":\n");
 	for(list = lists; list < lists_end; list++) {
 		N_(ListSelfCorrect)(list); /* `qsort` moves the pointers. */
-		printf("List: %s.\n", N_(ListToString)(list));
+		printf("List: %s.\n", PN_(list_to_string)(list));
 		if(list == lists) continue;
 		cmp = N_(ListCompare)(list - 1, list);
 		assert(cmp <= 0);
@@ -366,31 +372,31 @@ static void PN_(test_binary)(struct N_(ListNode) *(*const parent_new)(void *),
 		}
 	}
 	PN_(reset_b)(&la, &lb, &result, a, b, b_alt, c, d);
-	printf("a = %s, b = %s", N_(ListToString)(&la), N_(ListToString)(&lb));
-	printf(", result = %s.\n", N_(ListToString)(&result));
+	printf("a = %s, b = %s", PN_(list_to_string)(&la), PN_(list_to_string)(&lb));
+	printf(", result = %s.\n", PN_(list_to_string)(&result));
 	N_(ListSubtractionTo)(&la, &lb, &result);
-	printf("a - b = %s.\n", N_(ListToString)(&result));
+	printf("a - b = %s.\n", PN_(list_to_string)(&result));
 	PN_(exact)(&la, b, 0, 0, 0);
 	PN_(exact)(&lb, b_alt, c, 0, 0);
 	PN_(exact)(&result, a, d, 0, 0);
 
 	PN_(reset_b)(&la, &lb, &result, a, b, b_alt, c, d);
 	N_(ListUnionTo)(&la, &lb, &result);
-	printf("a \\cup b = %s.\n", N_(ListToString)(&result));
+	printf("a \\cup b = %s.\n", PN_(list_to_string)(&result));
 	PN_(exact)(&la, 0, 0, 0, 0);
 	PN_(exact)(&lb, b_alt, 0, 0, 0);
 	PN_(exact)(&result, a, b, c, d);
 
 	PN_(reset_b)(&la, &lb, &result, a, b, b_alt, c, d);
 	N_(ListIntersectionTo)(&la, &lb, &result);
-	printf("a \\cap b = %s.\n", N_(ListToString)(&result));
+	printf("a \\cap b = %s.\n", PN_(list_to_string)(&result));
 	PN_(exact)(&la, a, d, 0, 0);
 	PN_(exact)(&lb, b_alt, c, 0, 0);
 	PN_(exact)(&result, b, 0, 0, 0);
 
 	PN_(reset_b)(&la, &lb, &result, a, b, b_alt, c, d);
 	N_(ListXorTo)(&la, &lb, &result);
-	printf("a \\xor b = %s.\n", N_(ListToString)(&result));
+	printf("a \\xor b = %s.\n", PN_(list_to_string)(&result));
 	PN_(exact)(&la, b, 0, 0, 0);
 	PN_(exact)(&lb, b_alt, 0, 0, 0);
 	PN_(exact)(&result, a, c, d, 0);
@@ -402,8 +408,7 @@ static void PN_(test_binary)(struct N_(ListNode) *(*const parent_new)(void *),
 
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
- the list.
- @allow */
+ the list. @allow */
 static void N_(ListTest)(struct N_(ListNode) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(LIST_NAME) ">List was created using: "
@@ -416,6 +421,10 @@ static void N_(ListTest)(struct N_(ListNode) *(*const parent_new)(void *),
 	PN_(test_sort)(parent_new, parent);
 	PN_(test_binary)(parent_new, parent);
 }
+
+#else /* to string --><!-- */
+#error Test unsupported option; testing is out-of-sync?
+#endif /* --> */
 
 #undef QUOTE
 #undef QUOTE_

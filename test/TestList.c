@@ -20,6 +20,8 @@ static void order_to_string(const struct OrderListNode *const l,
 static void order_fill(struct OrderListNode *const l) { (void)(l); }
 
 #define LIST_NAME Order
+#define LIST_EXPECT_TRAIT
+#include "../src/List.h"
 #define LIST_TO_STRING &order_to_string
 #define LIST_TEST &order_fill
 #include "../src/List.h"
