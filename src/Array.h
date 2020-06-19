@@ -33,8 +33,8 @@
  To string trait contained in <../test/ArrayTest.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ `Array`. Must be
  defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
- Output will be shown with the to string trait in which it's defined;
- provides tests for the base code and all later traits.
+ Output will be shown with the to string trait in which it's defined; provides
+ tests for the base code and all later traits.
 
  @param[ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
  Comparable trait; `<C>` that satisfies `C` naming conventions when mangled
@@ -95,17 +95,17 @@
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(T) || defined(T_) || defined(PT_)
-#error P?T_? cannot be defined; possible stray ARRAY_EXPECT_TRAIT?
+#if defined(T) || defined(T_) || defined(PT_) \
+	|| (defined(ARRAY_CHILD) \
+	^ (defined(CAT) || defined(CAT_) || defined(PCAT) || defined(PCAT_)))
+#error Unexpected P?T_? or P?CAT_?; possible stray ARRAY_EXPECT_TRAIT?
 #endif
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
 #define CAT_(x, y) x ## y
 #define CAT(x, y) CAT_(x, y)
 #define PCAT_(x, y) x ## _ ## y
 #define PCAT(x, y) PCAT_(x, y)
-#elif !defined(CAT) || !defined(PCAT) /* !sub-type --><!-- !cat */
-#error ARRAY_CHILD defined but CAT is not.
-#endif /* !cat --> */
+#endif /* !sub-type --> */
 #define T_(thing) CAT(ARRAY_NAME, thing)
 #define PT_(thing) PCAT(array, PCAT(ARRAY_NAME, thing))
 
@@ -558,7 +558,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT) \
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?T_? or P?CAT_? not yet defined in to string trait; include array?
+#error P?T_? or P?CAT_? not yet defined; traits must be defined separately?
 #endif
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
@@ -583,7 +583,7 @@ static int PTA_(next_to_str12)(struct PT_(Iterator) *const it,
 	return 1;
 }
 
-/** @return If `it` contains a not-null pool. */
+/** @return If `it` contains not-null. */
 static int PTA_(is_valid)(const struct PT_(Iterator) *const it)
 	{ assert(it); return !!it->a; }
 
@@ -637,7 +637,7 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 
 #if !defined(T) || !defined(T_) || !defined(PT_) || !defined(CAT)
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error P?T_? or P?CAT_? not yet defined in contrast trait; include array?
+#error P?T_? or P?CAT_? not yet defined; traits must be defined separately?
 #endif
 
 #ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
