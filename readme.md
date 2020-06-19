@@ -13,20 +13,20 @@
 
 ![Example of Pool](web/pool.png)
 
-[&lt;T&gt;Pool](#user-content-tag-517215cf) stores unordered `<T>` in a memory pool, which must be set using `POOL_TYPE`\. Pointers to valid items in the pool are stable, but not generally contiguous\. It uses geometrically increasing size\-blocks and when the removal is ongoing and uniformly sampled, \(specifically, old elements are all eventually removed,\) and data reaches a steady\-state size, the data will settle in one allocated region\. In this way, provides a fairly contiguous space for items which have references\. Specifically, another pointer container could use pools for polymorphic data instead of managing individual allocations\.
+[&lt;T&gt;Pool](#user-content-tag-517215cf) stores unordered `<T>` in a memory pool\. Pointers to valid items in the pool are stable, but not generally contiguous\. It uses geometrically increasing size\-blocks and when the removal is ongoing and uniformly sampled, \(specifically, old elements are all eventually removed,\) and data reaches a steady\-state size, the data will settle in one allocated region\. In this way, provides a fairly contiguous space for items which have references\.
 
 `<T>Pool` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
 
 
 
  * Parameter: POOL\_NAME, POOL\_TYPE  
-   `<T>` that satisfies `C` naming conventions when mangled and a valid tag type associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
- * Parameter: POOL\_UNFINISHED  
-   Do not un\-define variables for including again in an interface\.
+   `<T>` that satisfies `C` naming conventions when mangled and a valid tag type associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
+ * Parameter: POOL\_EXPECT\_TRAIT  
+   Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
-   To string interface contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)\. There can be multiple to string interfaces, but only one can omit `POOL_TO_STRING_NAME`\.
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\.
  * Parameter: POOL\_TEST  
-   To string interface optional unit testing framework using `assert`; contained in [\.\./test/PoolTest\.h](../test/PoolTest.h)\. Can only be defined once per `Pool`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\.
+   To string trait contained in [\.\./test/PoolTest\.h](../test/PoolTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Pool`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * See also:  

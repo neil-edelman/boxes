@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of Pool" src = "web/pool.png" width = 478 height = 242></p>
 
-<p><a href = "#tag:&lt;T&gt;Pool">&lt;T&gt;Pool</a> stores unordered <code>&lt;T&gt;</code> in a memory pool, which must be set using <code>POOL_TYPE</code>. Pointers to valid items in the pool are stable, but not generally contiguous. It uses geometrically increasing size-blocks and when the removal is ongoing and uniformly sampled, (specifically, old elements are all eventually removed,) and data reaches a steady-state size, the data will settle in one allocated region. In this way, provides a fairly contiguous space for items which have references. Specifically, another pointer container could use pools for polymorphic data instead of managing individual allocations.</p>
+<p><a href = "#tag:&lt;T&gt;Pool">&lt;T&gt;Pool</a> stores unordered <code>&lt;T&gt;</code> in a memory pool. Pointers to valid items in the pool are stable, but not generally contiguous. It uses geometrically increasing size-blocks and when the removal is ongoing and uniformly sampled, (specifically, old elements are all eventually removed,) and data reaches a steady-state size, the data will settle in one allocated region. In this way, provides a fairly contiguous space for items which have references.</p>
 
 <p><code>&lt;T&gt;Pool</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is included in this file; to stop the debug assertions, use <code>#define NDEBUG</code> before <code>assert.h</code>.</p>
 
@@ -58,13 +58,13 @@
 
 <dl>
 	<dt>Parameter: POOL_NAME, POOL_TYPE</dt>
-	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag type associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
-	<dt>Parameter: POOL_UNFINISHED</dt>
-	<dd>Do not un-define variables for including again in an interface.</dd>
+	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag type associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dt>Parameter: POOL_EXPECT_TRAIT</dt>
+	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
-	<dd>To string interface contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a>. There can be multiple to string interfaces, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: POOL_TEST</dt>
-	<dd>To string interface optional unit testing framework using <code>assert</code>; contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>. Can only be defined once per <code>Pool</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>.</dd>
+	<dd>To string trait contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Pool</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>See also:</dt>
