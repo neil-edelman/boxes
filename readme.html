@@ -37,8 +37,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>Action">&lt;PN&gt;Action</a>, <a href = "#typedef:<PN>Predicate">&lt;PN&gt;Predicate</a>, <a href = "#typedef:<PN>Compare">&lt;PN&gt;Compare</a>, <a href = "#typedef:<PN>ToString">&lt;PN&gt;ToString</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<N>ListNode">&lt;N&gt;ListNode</a>, <a href = "#tag:<N>List">&lt;N&gt;List</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>Action">&lt;PN&gt;Action</a>, <a href = "#typedef:<PN>Predicate">&lt;PN&gt;Predicate</a>, <a href = "#typedef:<PN>ToString">&lt;PN&gt;ToString</a>, <a href = "#typedef:<PN>Compare">&lt;PN&gt;Compare</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<N>ListNode">&lt;N&gt;ListNode</a>, <a href = "#tag:<N>List">&lt;N&gt;List</a>, <a href = "#tag:<PN>Iterator">&lt;PN&gt;Iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,17 +50,13 @@
 
 <p><img alt = "Example of a stochastic skip-list." src = "web/list.png" width = 577 height = 182></p>
 
-<p><a href = "#tag:&lt;N&gt;List">&lt;N&gt;List</a> is a list of <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a>; it may be supplied a total-order function, <code>LIST_COMPARE</code> <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>.</p>
+<p><a href = "#tag:&lt;N&gt;List">&lt;N&gt;List</a> is a list of <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a>; it may be supplied a total-order function, <code>LIST_COMPARE</code> <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>. (fixme: apply to all as a trait.)</p>
 
-<p>Internally, <code>&lt;N&gt;ListNode</code> is a doubly-linked node with sentinels residing in <code>&lt;N&gt;List</code>. The sentinels are an added complexity at either end, but enable a closed structure. It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;ListNode</code> in, at least, another <code>struct</code>.</p>
-
-<p><code>&lt;N&gt;Link</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
+<p>Internally, <code>&lt;N&gt;ListNode</code> is a doubly-linked node with sentinels residing in <code>&lt;N&gt;List</code>. The sentinels are an added complexity at either end, but enable a closed structure. It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;ListNode</code> in, at least, another 'struct<code>and doing</code>contianer<em>of`ortheequivalent.`&lt;N&gt;Link`isnotsynchronised.Errorsarereturnedwith`errno`.Theparametersarepreprocessormacros,andareallundefinedattheendofthefileforconvenience.Assertionsareusedinthisfile;tostopthem,define`NDEBUG`before`assert.h`.@param[LIST</em>NAME] <code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</p>
 
 </div>
 
 <dl>
-	<dt>Parameter: LIST_NAME</dt>
-	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: LIST_COMPARE</dt>
 	<dd>Optional total-order function satisfying <a href = "#typedef:&lt;PN&gt;Compare">&lt;PN&gt;Compare</a>. (Move to trait so all boxes can have them.)</dd>
 	<dt>Parameter: LIST_EXPECT_TRAIT</dt>
@@ -68,9 +64,7 @@
 	<dt>Parameter: LIST_TO_STRING_NAME, LIST_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PN&gt;ToString">&lt;PN&gt;ToString</a>. There can be multiple to string traits, but only one can omit <code>LIST_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: LIST_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/TestList.h">../test/TestList.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
-	<dt>Parameter: LIST_TEST</dt>
-	<dd>Unit testing framework <a href = "#fn:&lt;N&gt;ListTest">&lt;N&gt;ListTest</a>, included in a separate header, <a href = "../test/TestList.h">../test/TestList.h</a>. Must be defined equal to a random filler function, satisfying <a href = "#typedef:&lt;PN&gt;Action">&lt;PN&gt;Action</a>. Requires <code>LIST_TO_STRING</code> and not <code>NDEBUG</code>.</dd>
+	<dd>To string trait contained in <a href = "../test/TestList.h">../test/TestList.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PN&gt;Action">&lt;PN&gt;Action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>See also:</dt>
@@ -101,21 +95,21 @@
 
 <div>
 
-<h3><a id = "typedef:<PN>Compare" name = "typedef:<PN>Compare">&lt;PN&gt;Compare</a></h3>
+<h3><a id = "typedef:<PN>ToString" name = "typedef:<PN>ToString">&lt;PN&gt;ToString</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListNode *a, const struct &lt;N&gt;ListNode *b);</code></p>
+<p><code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code></p>
 
-<p>Returns less then, equal to, or greater then zero, inducing an ordering between <code>a</code> and <code>b</code>. Defined when <code>LIST_COMPARE</code>.</p>
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string. Used for <code>LIST_TO_STRING</code>.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PN>ToString" name = "typedef:<PN>ToString">&lt;PN&gt;ToString</a></h3>
+<h3><a id = "typedef:<PN>Compare" name = "typedef:<PN>Compare">&lt;PN&gt;Compare</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code></p>
+<p><code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListNode *a, const struct &lt;N&gt;ListNode *b);</code></p>
 
-<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated string. Used for <code>LIST_TO_STRING</code>.</p>
+<p>Returns less then, equal to, or greater then zero, inducing an ordering between <code>a</code> and <code>b</code>. Defined when <code>LIST_COMPARE</code>.</p>
 
 </div>
 
@@ -142,6 +136,16 @@
 <p>Serves as head and tail for linked-list of <a href = "#tag:&lt;N&gt;ListNode">&lt;N&gt;ListNode</a>. Use <a href = "#fn:&lt;N&gt;ListClear">&lt;N&gt;ListClear</a> to initialise the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 284 height = 260></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<PN>Iterator" name = "tag:<PN>Iterator">&lt;PN&gt;Iterator</a></h3>
+
+<p><code>struct <strong>&lt;PN&gt;Iterator</strong>;</code></p>
+
+<p>Contains all iteration parameters in one.</p>
 
 </div>
 
@@ -205,7 +209,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>ListXorTo">&lt;N&gt;ListXorTo</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<N>ListToString">&lt;N&gt;ListToString</a></td><td>list</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<N>List<A>ToString">&lt;N&gt;List&lt;A&gt;ToString</a></td><td>list</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>ListTest">&lt;N&gt;ListTest</a></td><td>parent_new, parent</td></tr>
 
@@ -693,17 +697,15 @@
 
 <div>
 
-<h3><a id = "fn:<N>ListToString" name = "fn:<N>ListToString">&lt;N&gt;ListToString</a></h3>
+<h3><a id = "fn:<N>List<A>ToString" name = "fn:<N>List<A>ToString">&lt;N&gt;List&lt;A&gt;ToString</a></h3>
 
-<p><code>static const char *<strong>&lt;N&gt;ListToString</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code></p>
-
-<p>Can print 2 things at once before it overwrites. One must set <code>LIST_TO_STRING</code> to a function implementing <a href = "#typedef:&lt;PN&gt;ToString">&lt;PN&gt;ToString</a> to get this functionality.</p>
+<p><code>static const char *<strong>&lt;N&gt;List&lt;A&gt;ToString</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Prints <code>list</code> in a static buffer.</dd>
+	<dd>Print the contents of <code>list</code> in a static string buffer with the limitations of <code>ToString.h</code>.</dd>
 	<dt>Order:</dt>
-	<dd>&#920;(1); it has a 1024 character limit; every element takes some.</dd>
+	<dd>&#920;(1)</dd>
 </dl>
 
 </div>

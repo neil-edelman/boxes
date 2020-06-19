@@ -3,8 +3,8 @@
 ## Doubly\-Linked Closed List ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Action](#user-content-typedef-aea37eeb), [&lt;PN&gt;Predicate](#user-content-typedef-48c42a2a), [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8), [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;N&gt;ListNode](#user-content-tag-b60b679b), [&lt;N&gt;List](#user-content-tag-3824ef2b)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Action](#user-content-typedef-aea37eeb), [&lt;PN&gt;Predicate](#user-content-typedef-48c42a2a), [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1), [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;N&gt;ListNode](#user-content-tag-b60b679b), [&lt;N&gt;List](#user-content-tag-3824ef2b), [&lt;PN&gt;Iterator](#user-content-tag-ffc14103)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,16 +13,12 @@
 
 ![Example of a stochastic skip-list.](web/list.png)
 
-[&lt;N&gt;List](#user-content-tag-3824ef2b) is a list of [&lt;N&gt;ListNode](#user-content-tag-b60b679b); it may be supplied a total\-order function, `LIST_COMPARE` [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\.
+[&lt;N&gt;List](#user-content-tag-3824ef2b) is a list of [&lt;N&gt;ListNode](#user-content-tag-b60b679b); it may be supplied a total\-order function, `LIST_COMPARE` [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\. \(fixme: apply to all as a trait\.\)
 
-Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<N>List`\. The sentinels are an added complexity at either end, but enable a closed structure\. It only provides an order, and is not very useful without enclosing `<N>ListNode` in, at least, another `struct`\.
-
-`<N>Link` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
+Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<N>List`\. The sentinels are an added complexity at either end, but enable a closed structure\. It only provides an order, and is not very useful without enclosing `<N>ListNode` in, at least, another 'struct`and doing`contianer_of\`ortheequivalent\.\`<N>Link\`isnotsynchronised\.Errorsarereturnedwith\`errno\`\.Theparametersarepreprocessormacros,andareallundefinedattheendofthefileforconvenience\.Assertionsareusedinthisfile;tostopthem,define\`NDEBUG\`before\`assert\.h\`\.@param\[LIST_NAME\] `<N>` that satisfies `C` naming conventions when mangled; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions\.
 
 
 
- * Parameter: LIST\_NAME  
-   `<N>` that satisfies `C` naming conventions when mangled; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: LIST\_COMPARE  
    Optional total\-order function satisfying [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)\. \(Move to trait so all boxes can have them\.\)
  * Parameter: LIST\_EXPECT\_TRAIT  
@@ -30,9 +26,7 @@ Internally, `<N>ListNode` is a doubly\-linked node with sentinels residing in `<
  * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
    To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1)\. There can be multiple to string traits, but only one can omit `LIST_TO_STRING_NAME`\.
  * Parameter: LIST\_TEST  
-   To string trait contained in [\.\./test/TestList\.h](../test/TestList.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
- * Parameter: LIST\_TEST  
-   Unit testing framework [&lt;N&gt;ListTest](#user-content-fn-c10071df), included in a separate header, [\.\./test/TestList\.h](../test/TestList.h)\. Must be defined equal to a random filler function, satisfying [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)\. Requires `LIST_TO_STRING` and not `NDEBUG`\.
+   To string trait contained in [\.\./test/TestList\.h](../test/TestList.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * See also:  
@@ -57,19 +51,19 @@ Returns \(Non\-zero\) true or \(zero\) false when given a node\.
 
 
 
+### <a id = "user-content-typedef-3f3210e1" name = "user-content-typedef-3f3210e1">&lt;PN&gt;ToString</a> ###
+
+<code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code>
+
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\. Used for `LIST_TO_STRING`\.
+
+
+
 ### <a id = "user-content-typedef-afc5e5e8" name = "user-content-typedef-afc5e5e8">&lt;PN&gt;Compare</a> ###
 
 <code>typedef int(*<strong>&lt;PN&gt;Compare</strong>)(const struct &lt;N&gt;ListNode *a, const struct &lt;N&gt;ListNode *b);</code>
 
 Returns less then, equal to, or greater then zero, inducing an ordering between `a` and `b`\. Defined when `LIST_COMPARE`\.
-
-
-
-### <a id = "user-content-typedef-3f3210e1" name = "user-content-typedef-3f3210e1">&lt;PN&gt;ToString</a> ###
-
-<code>typedef void(*<strong>&lt;PN&gt;ToString</strong>)(const struct &lt;N&gt;ListNode *, char(*)[12]);</code>
-
-Responsible for turning the first argument into a 12\-`char` null\-terminated string\. Used for `LIST_TO_STRING`\.
 
 
 
@@ -92,6 +86,14 @@ Storage of this structure is the responsibility of the caller\. One can only be 
 Serves as head and tail for linked\-list of [&lt;N&gt;ListNode](#user-content-tag-b60b679b)\. Use [&lt;N&gt;ListClear](#user-content-fn-d4583b4) to initialise the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
 
 ![States.](web/states.png)
+
+
+
+### <a id = "user-content-tag-ffc14103" name = "user-content-tag-ffc14103">&lt;PN&gt;Iterator</a> ###
+
+<code>struct <strong>&lt;PN&gt;Iterator</strong>;</code>
+
+Contains all iteration parameters in one\.
 
 
 
@@ -153,7 +155,7 @@ Serves as head and tail for linked\-list of [&lt;N&gt;ListNode](#user-content-ta
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-c2be8709">&lt;N&gt;ListXorTo</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b8333b17">&lt;N&gt;ListToString</a></td><td>list</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-cfadc8be">&lt;N&gt;List&lt;A&gt;ToString</a></td><td>list</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-c10071df">&lt;N&gt;ListTest</a></td><td>parent_new, parent</td></tr>
 
@@ -559,16 +561,14 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, b
    O\(|`a`| \+ |`b`|\)
 
 
-### <a id = "user-content-fn-b8333b17" name = "user-content-fn-b8333b17">&lt;N&gt;ListToString</a> ###
+### <a id = "user-content-fn-cfadc8be" name = "user-content-fn-cfadc8be">&lt;N&gt;List&lt;A&gt;ToString</a> ###
 
-<code>static const char *<strong>&lt;N&gt;ListToString</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code>
-
-Can print 2 things at once before it overwrites\. One must set `LIST_TO_STRING` to a function implementing [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1) to get this functionality\.
+<code>static const char *<strong>&lt;N&gt;List&lt;A&gt;ToString</strong>(const struct &lt;N&gt;List *const <em>list</em>)</code>
 
  * Return:  
-   Prints `list` in a static buffer\.
+   Print the contents of `list` in a static string buffer with the limitations of `ToString.h`\.
  * Order:  
-   &#920;\(1\); it has a 1024 character limit; every element takes some\.
+   &#920;\(1\)
 
 
 
