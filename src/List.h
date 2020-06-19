@@ -1,7 +1,7 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised Doubly-Linked Closed List
+ @subtitle Doubly-Linked Closed List
 
  ![Example of a stochastic skip-list.](../web/list.png)
 
@@ -9,18 +9,18 @@
  function, `LIST_COMPARE` <typedef:<PN>Compare>.
 
  Internally, `<N>ListNode` is a doubly-linked node with sentinels residing in
- `<N>List`. It only provides an order, and is not very useful without enclosing
- `<N>ListNode` in, at least, another `struct`.
+ `<N>List`. The sentinels are an added complexity at either end, but enable a
+ closed structure. It only provides an order, and is not very useful without
+ enclosing `<N>ListNode` in, at least, another `struct`.
 
- `<N>Link` is not synchronised. The parameters are `#define` preprocessor
- macros, and are all undefined at the end of the file for convenience. To stop
- assertions, use `#define NDEBUG` before inclusion of `assert.h`, (which is
- used in this file.)
+ `<N>Link` is not synchronised. Errors are returned with `errno`. The
+ parameters are preprocessor macros, and are all undefined at the end of the
+ file for convenience. Assertions are used in this file; to stop them, define
+ `NDEBUG` before `assert.h`.
 
  @param[LIST_NAME]
  `<N>` that satisfies `C` naming conventions when mangled; required. `<PN>` is
- private, whose names are prefixed in a manner to avoid collisions; any should
- be re-defined prior to use elsewhere.
+ private, whose names are prefixed in a manner to avoid collisions.
 
  @param[LIST_COMPARE]
  Optional total-order function satisfying <typedef:<PN>Compare>.
