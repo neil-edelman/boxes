@@ -6,6 +6,7 @@
 
 #ifdef SET_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
+#include <stddef.h> /* offsetof */
 #include <stdio.h>  /* fprintf FILE */
 #include <math.h>   /* sqrt NAN? */
 #ifndef NAN /* <https://stackoverflow.com/questions/5714131/nan-literal-in-c> */

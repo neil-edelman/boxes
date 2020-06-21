@@ -10,7 +10,7 @@
  <typedef:<PE>IsEqual>, and a hash function, `SET_HASH` <typedef:<PE>Hash>.
 
  Internally, it is a separately chained hash table with a maximum load factor
- of `ln 2`, and power-of-two resizes, with buckets as a forward linked list of
+ of `ln 2`, power-of-two resizes, with buckets as a forward linked list of
  <tag:<E>SetElement>. This offers some independence of sets from set elements,
  but cache performance is left up to the caller. It can be expanded to a hash
  map or associative array by enclosing the `<E>SetElement` in another `struct`,
@@ -470,9 +470,6 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 	|| !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
 #error P?E_ or P?CAT_? not yet defined; traits must be defined separately?
 #endif
-
-#include <string.h> /* strlen memcpy */
-
 
 #ifdef SET_TO_STRING_NAME /* <!-- name */
 #define PEA_(thing) PCAT(PE_(thing), SET_TO_STRING_NAME)
