@@ -57,11 +57,8 @@
 #include <errno.h>  /* errno */
 
 
-#ifndef ARRAY_NAME
-#error Name ARRAY_NAME undefined.
-#endif
-#ifndef ARRAY_TYPE
-#error Tag type ARRAY_TYPE undefined.
+#if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
+#error Name ARRAY_NAME or tag type ARRAY_TYPE undefined.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
 #define ARRAY_TO_STRING_TRAIT 1
@@ -147,9 +144,16 @@ struct T_(Array) { T *data; size_t size, capacity; };
 #define ARRAY_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
 
-/** Contains all iteration parameters in one. */
+/** Contains all iteration parameters in one for iteration in traits. */
 struct PT_(Iterator);
 struct PT_(Iterator) { const struct T_(Array) *a; size_t i; };
+static T *PT_(next)(struct PT_(Iterator) *const it) {
+	assert(it && it->a);
+	return it->i < it->a->size ? it->a->data + it->i++ : 0;
+}
+#define ITERATE_TYPE PT_(Type)
+#define ITERATE_ITERATOR PT_(Iterator)
+#define ITERATE_NEXT &PT_(next)
 
 /** Initialises `a` to idle. */
 static void PT_(array)(struct T_(Array) *const a)
@@ -536,7 +540,7 @@ static int T_(ArrayIndexSplice)(struct T_(Array) *const a, const size_t i0,
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	PT_(array)(0), PT_(array_)(0); PT_(update_reserve)(0, 0, 0);
+	PT_(next)(0); PT_(array)(0), PT_(array_)(0); PT_(update_reserve)(0, 0, 0);
 	PT_(reserve)(0, 0); PT_(shrink)(0); PT_(range)(0, 0, 0, 0, 0);
 	PT_(replace)(0, 0, 0, 0); PT_(update_new)(0, 0); PT_(new)(0);
 #ifndef ARRAY_CHILD /* <!-- !sub-type */
@@ -654,10 +658,6 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
  <typedef:<PT>Compare>. */
 static const PT_(Compare) PTC_(compare) = (ARRAY_COMPARE);
 
-/** !compare(`a`, `b`) == equals(`a`, `b`) */
-static int PTC_(is_equal)(const void *const a, const void *const b)
-	{ return !PTC_(compare)(a, b); }
-
 /** Wrapper with void `a` and `b`. @implements qsort */
 static int PTC_(compar)(const void *const a, const void *const b)
 	{ return PTC_(compare)(a, b); }
@@ -701,6 +701,10 @@ static int PTC_(insert)(struct T_(Array) *const a, const T *const datum) {
 	memcpy(a->data + bound, datum, sizeof *datum);
 	return 1;
 }
+
+/** !compare(`a`, `b`) == equals(`a`, `b`) */
+static int PTC_(is_equal)(const void *const a, const void *const b)
+	{ return !PTC_(compare)(a, b); }
 
 #else /* compare --><!-- is equal */
 
@@ -859,6 +863,9 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
+#undef ITERATE_TYPE
+#undef ITERATE_ITERATOR
+#undef ITERATE_NEXT
 #endif /* !trait --> */
 
 #undef ARRAY_TO_STRING_TRAIT
