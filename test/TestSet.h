@@ -117,6 +117,7 @@ static void PE_(graph)(const struct E_(Set) *const set, const char *const fn) {
 			for(xt = x = b->first, x_prev = 0; x; x_prev = x, x = x->next) {
 				int is_turtle = 0;
 				PE_(to_string)(&x->key, &a);
+				/* May have to change the width if `SET_UINT`. */
 				fprintf(fp, "\tSetElement%p [label=\"#0x%x\\l|%s\\l\"];\n",
 					(void *)x, PE_(get_hash)(x), a);
 				if(x_prev) {

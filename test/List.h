@@ -1,7 +1,7 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Doubly-Linked Closed List
+ @subtitle Closed Total Order Permutation
 
  ![Example of a stochastic skip-list.](../web/list.png)
 
@@ -40,7 +40,7 @@
  @param[LIST_TEST]
  To string trait contained in <../test/TestList.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ `Array`. Must be
- defined equal to a (random) filler function, satisfying <typedef:<PT>Action>.
+ defined equal to a (random) filler function, satisfying <typedef:<PN>Action>.
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
@@ -103,10 +103,6 @@
 struct N_(ListNode);
 struct N_(ListNode) { struct N_(ListNode) *prev, *next; };
 
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- output string. Used for `LIST_TO_STRING`. */
-typedef void (*PN_(ToString))(const struct N_(ListNode) *, char (*)[12]);
-
 /** Serves as head and tail for linked-list of <tag:<N>ListNode>. Use
  <fn:<N>ListClear> to initialise the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
@@ -123,6 +119,16 @@ struct N_(List) {
 
 /** Contains all iteration parameters in one. */
 struct PN_(Iterator); struct PN_(Iterator) { const struct N_(ListNode) *node; };
+
+/** Operates by side-effects on the node. */
+typedef void (*PN_(Action))(struct N_(ListNode) *);
+
+/** Returns (Non-zero) true or (zero) false when given a node. */
+typedef int (*PN_(Predicate))(const struct N_(ListNode) *);
+
+/** Responsible for turning the first argument into a 12-`char` null-terminated
+ output string. Used for `LIST_TO_STRING`. */
+typedef void (*PN_(ToString))(const struct N_(ListNode) *, char (*)[12]);
 
 /** Clears and initialises `list`. */
 static void PN_(clear)(struct N_(List) *const list) {
@@ -188,12 +194,6 @@ static void PN_(self_correct)(struct N_(List) *const list) {
 }
 
 #ifndef LIST_CHILD /* <!-- !sub-type */
-
-/** Operates by side-effects on the node. */
-typedef void (*PN_(Action))(struct N_(ListNode) *);
-
-/** Returns (Non-zero) true or (zero) false when given a node. */
-typedef int (*PN_(Predicate))(const struct N_(ListNode) *);
 
 /** Clears and removes all values from `list`, thereby initialising it. All
  previous values are un-associated.
