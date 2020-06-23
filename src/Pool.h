@@ -1,7 +1,7 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised Stable Pool
+ @subtitle Stable Pool
 
  ![Example of Pool](../web/pool.png)
 
@@ -10,7 +10,7 @@
  increasing size-blocks and when the removal is ongoing and uniformly sampled,
  (specifically, old elements are all eventually removed,) and data reaches a
  steady-state size, the data will settle in one allocated region. In this way,
- provides a fairly contiguous space for items which have references.
+ manages a fairly contiguous space for items which have references.
 
  `<T>Pool` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -90,7 +90,7 @@
 #define PCAT(x, y) PCAT_(x, y)
 #endif /* !sub-type --> */
 #define T_(thing) CAT(POOL_NAME, thing)
-#define PT_(thing) PCAT(array, PCAT(POOL_NAME, thing))
+#define PT_(thing) PCAT(pool, PCAT(POOL_NAME, thing))
 
 /** A valid tag type set by `POOL_TYPE`. This becomes `T`. */
 typedef POOL_TYPE PT_(Type);
