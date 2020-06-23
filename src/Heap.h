@@ -1,7 +1,7 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised Priority Queue
+ @subtitle Priority Queue
 
  ![Example of heap.](../web/heap.png)
 
