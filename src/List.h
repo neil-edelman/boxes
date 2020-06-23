@@ -1,7 +1,7 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Doubly-Linked Closed List
+ @subtitle Closed Total Order Permutation
 
  ![Example of a stochastic skip-list.](../web/list.png)
 
