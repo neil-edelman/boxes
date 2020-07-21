@@ -23,7 +23,7 @@ static void colour_to_string(const enum Colour *c, char (*const a)[12])
 	{ assert(*c < colour_size); sprintf(*a, "%s", colours[*c]); }
 static void colour_filler(enum Colour *const c)
 	{ *c = rand() / (RAND_MAX / (int)colour_size + 1); }
-#define ARRAY_NAME Colour
+#define ARRAY_NAME colour
 #define ARRAY_TYPE enum Colour
 #define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
@@ -37,7 +37,7 @@ static void str4_to_string(const struct Str4 *s, char (*const a)[12])
 	{ sprintf(*a, "%.11s", s->value); }
 static void str4_filler(struct Str4 *const s)
 	{ Orcish(s->value, sizeof s->value); }
-#define ARRAY_NAME Str4
+#define ARRAY_NAME str4
 #define ARRAY_TYPE struct Str4
 #define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
@@ -52,7 +52,7 @@ static void int_filler(int *const i)
 	{ *i = rand() / (RAND_MAX / 1998 + 1) - 999; }
 static int int_cmp(const int *const a, const int *const b)
 	{ return (*a > *b) - (*b > *a); }
-#define ARRAY_NAME Int
+#define ARRAY_NAME int
 #define ARRAY_TYPE int
 #define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
@@ -77,7 +77,7 @@ static int keyval_key_cmp(const struct Keyval *const a,
 	{ return (a->key > b->key) - (a->key < b->key); }
 static int keyval_value_cmp(const struct Keyval *const a,
 	const struct Keyval *const b) { return strcmp(a->value, b->value); }
-#define ARRAY_NAME Keyval
+#define ARRAY_NAME keyval
 #define ARRAY_TYPE struct Keyval
 #define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
@@ -85,14 +85,14 @@ static int keyval_value_cmp(const struct Keyval *const a,
 #define ARRAY_TEST &keyval_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
-#define ARRAY_TO_STRING_NAME Value
+#define ARRAY_TO_STRING_NAME value
 #define ARRAY_TO_STRING &keyval_value_to_string
 #define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
 #define ARRAY_COMPARE &keyval_key_cmp
 #define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
-#define ARRAY_COMPARABLE_NAME Value
+#define ARRAY_COMPARABLE_NAME value
 #define ARRAY_COMPARE &keyval_value_cmp
 #include "../src/Array.h"
 
@@ -102,13 +102,13 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	ColourArrayTest();
-	Str4ArrayTest();
-	IntArrayTest();
-	IntArrayContrastTest();
-	KeyvalArrayTest();
-	KeyvalArrayContrastTest();
-	KeyvalArrayValueContrastTest();
+	colour_array_test();
+	str4_array_test();
+	int_array_test();
+	int_array_comparable_test();
+	keyval_array_test();
+	keyval_array_comparable_test();
+	keyval_array_value_comparable_test();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
