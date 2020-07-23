@@ -86,28 +86,28 @@ static void PH_(test_basic)(void *const param) {
 	printf("Test empty.\n");
 	PH_(valid)(0);
 	errno = 0;
-	assert(!H_(HeapSize)(&heap));
-	H_(Heap_)(&heap);
-	assert(!H_(HeapSize)(&heap));
+	assert(!H_(heap_size)(&heap));
+	H_(heap_)(&heap);
+	assert(!H_(heap_size)(&heap));
 	H_(heap)(&heap);
-	assert(!H_(HeapSize)(&heap));
-	assert(!H_(HeapPeek)(&heap));
-	assert(!H_(HeapPeekValue(&heap)));
-	assert(!H_(HeapPop)(&heap));
+	assert(!H_(heap_size)(&heap));
+	assert(!H_(heap_peek)(&heap));
+	assert(!H_(heap_peek_value(&heap)));
+	assert(!H_(heap_pop)(&heap));
 	PH_(valid)(&heap);
 	assert(!errno);
 
 	printf("Test one.\n");
 	PH_(filler)(&add, param);
-	v = PH_(value)(&add);
-	assert(H_(HeapAdd)(&heap, add));
+	v = PH_(get_value)(&add);
+	assert(H_(heap_add)(&heap, add));
 	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
-	assert(H_(HeapSize)(&heap) == 1);
-	node = H_(HeapPeek)(&heap);
+	assert(H_(heap_size)(&heap) == 1);
+	node = H_(heap_peek)(&heap);
 	PH_(valid)(&heap);
 	assert(node->priority == add.priority);
-	result = H_(HeapPop(&heap));
-	assert(v == result && !H_(HeapSize)(&heap));
+	result = H_(heap_pop(&heap));
+	assert(v == result && !H_(heap_size)(&heap));
 	PH_(valid)(&heap);
 
 	printf("Test many.\n");
@@ -119,26 +119,26 @@ static void PH_(test_basic)(void *const param) {
 		}
 		PH_(valid)(&heap);
 		PH_(filler)(&add, param);
-		success = H_(HeapAdd)(&heap, add);
+		success = H_(heap_add)(&heap, add);
 		assert(success);
 	}
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv", (unsigned long)i);
 	PH_(graph)(&heap, fn);
-	assert(H_(HeapSize)(&heap) == test_size_1);
+	assert(H_(heap_size)(&heap) == test_size_1);
 	printf("Heap: %s.\n", PH_(heap_to_string)(&heap));
 	printf("Heap buffered add, before size = %lu.\n",
-		(unsigned long)H_(HeapSize)(&heap));
-	node = H_(HeapReserve)(&heap, test_size_2);
+		(unsigned long)H_(heap_size)(&heap));
+	node = H_(heap_reserve)(&heap, test_size_2);
 	assert(node);
 	for(i = 0; i < test_size_2; i++) PH_(filler)(node + i, param);
-	success = H_(HeapBuffer)(&heap, test_size_2);
-	printf("Now size = %lu.\n", (unsigned long)H_(HeapSize)(&heap));
-	assert(H_(HeapSize)(&heap) == test_size_1 + test_size_2);
+	success = H_(heap_buffer)(&heap, test_size_2);
+	printf("Now size = %lu.\n", (unsigned long)H_(heap_size)(&heap));
+	assert(H_(heap_size)(&heap) == test_size_1 + test_size_2);
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv",
 		test_size_1 + test_size_2);
 	PH_(graph)(&heap, fn);
 	PH_(valid)(&heap);
-	assert(H_(HeapSize)(&heap) == test_size_1 + test_size_2);
+	assert(H_(heap_size)(&heap) == test_size_1 + test_size_2);
 	for(i = 0; i < test_size_3; i++) {
 		if(!i || !(i & (i - 1))) {
 			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv",
@@ -147,38 +147,38 @@ static void PH_(test_basic)(void *const param) {
 		}
 		PH_(valid)(&heap);
 		PH_(filler)(&add, param);
-		success = H_(HeapAdd)(&heap, add);
+		success = H_(heap_add)(&heap, add);
 		assert(success);
 	}
 	printf("Final heap: %s.\n", PH_(heap_to_string)(&heap));
-	assert(H_(HeapSize)(&heap) == test_size_1 + test_size_2 + test_size_3);
+	assert(H_(heap_size)(&heap) == test_size_1 + test_size_2 + test_size_3);
 	for(i = test_size_1 + test_size_2 + test_size_3; i > 0; i--) {
 		char a[12];
-		node = H_(HeapPeek)(&heap);
+		node = H_(heap_peek)(&heap);
 		assert(node);
-		v = H_(HeapPeekValue)(&heap);
+		v = H_(heap_peek_value)(&heap);
 		PH_(to_str)(node, &a);
-		result = H_(HeapPop)(&heap);
+		result = H_(heap_pop)(&heap);
 		if(!i || !(i & (i - 1))) {
 			printf("%lu: retreving %s.\n", (unsigned long)i, a);
 			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
-					(unsigned long)i);
+				(unsigned long)i);
 			PH_(graph)(&heap, fn);
 		}
-		assert(v == result && H_(HeapSize)(&heap) == i - 1);
+		assert(v == result && H_(heap_size)(&heap) == i - 1);
 		PH_(valid)(&heap);
 		if(i != test_size_1 + test_size_2 + test_size_3)
 			assert(PH_(cmp)(last_priority, node->priority) <= 0);
 		last_priority = node->priority;
 	}
 	printf("Destructor:\n");
-	H_(Heap_)(&heap);
-	assert(!H_(HeapPeek)(&heap));
+	H_(heap_)(&heap);
+	assert(!H_(heap_peek)(&heap));
 }
 
 /** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
  `NDEBUG` while defining `assert`.
- @param[param] The parameter to call <typedef:<PH>BiAction> `HEAP_TEST`.
+ @param[param] The parameter to call <typedef:<PH>biaction> `HEAP_TEST`.
  @allow */
 static void H_(heap_test)(void *const param) {
 	printf("<" QUOTE(HEAP_NAME) ">heap"

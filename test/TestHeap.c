@@ -33,21 +33,21 @@ static void test_int(struct int_heap_node *i, void *const unused) {
 }
 
 
-#if 0
+struct orc_heap_node;
+static void orc_to_string(const struct orc_heap_node *, char (*)[12]);
+static void test_orc(struct orc_heap_node *, void *);
 
-struct OrcHeapNode;
-static void orc_to_string(const struct OrcHeapNode *, char (*)[12]);
-static void test_orc(struct OrcHeapNode *, void *);
-
-#define HEAP_NAME Orc
+#define HEAP_NAME orc
 #define HEAP_VALUE struct Orc
+#define HEAP_EXPECT_TRAIT
+#include "../src/Heap.h"
 #define HEAP_TO_STRING &orc_to_string
 #define HEAP_TEST &test_orc
 #include "../src/Heap.h"
 
 struct Orc { unsigned health; char name[10]; };
 
-static void orc_to_string(const struct OrcHeapNode *const node,
+static void orc_to_string(const struct orc_heap_node *const node,
 	char (*const a)[12]) {
 	sprintf(*a, "%u%.9s", node->priority, node->value->name);
 }
@@ -56,7 +56,7 @@ static void orc_to_string(const struct OrcHeapNode *const node,
 #define POOL_TYPE struct Orc
 #include "Pool.h"
 
-static void test_orc(struct OrcHeapNode *node, void *const vpool) {
+static void test_orc(struct orc_heap_node *node, void *const vpool) {
 	struct Orc *orc = OrcPoolNew(vpool);
 	if(!orc) { assert(0); exit(EXIT_FAILURE); }
 	orc->health = rand() / (RAND_MAX / 99 + 1);
@@ -65,13 +65,11 @@ static void test_orc(struct OrcHeapNode *node, void *const vpool) {
 	node->value = orc;
 }
 
-#endif
-
 
 int main(void) {
-	/*struct OrcPool orcs = POOL_IDLE;*/
+	struct OrcPool orcs = POOL_IDLE;
 	rand();
 	int_heap_test(0);
-	/*OrcHeapTest(&orcs), OrcPool_(&orcs);*/
+	orc_heap_test(&orcs), OrcPool_(&orcs);
 	return EXIT_SUCCESS;
 }
