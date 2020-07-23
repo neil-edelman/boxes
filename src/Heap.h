@@ -12,7 +12,7 @@
  <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer payload; as
  such, one needs to have `Array.h` file in the same directory.
 
- `<H>Heap` is not synchronised. Errors are returned with `errno`. The
+ `<H>heap` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
  of the file for convenience. Assertions are used in this file; to stop them,
  define `NDEBUG` before `assert.h`.
@@ -161,6 +161,7 @@ struct H_(heap) { struct H_(heap_node_array) a; };
 #endif /* !zero --> */
 
 /** Contains all iteration parameters in one. */
+struct PH_(iterator);
 struct PH_(iterator) { const struct H_(heap_node_array) *a; size_t i; };
 
 /** Extracts the <typedef:<PH>pvalue> of `node`, which must not be null. */

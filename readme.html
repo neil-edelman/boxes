@@ -52,7 +52,7 @@
 
 <p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties, with an optionally cached <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload; as such, one needs to have <code>Array.h</code> file in the same directory.</p>
 
-<p><code>&lt;H&gt;Heap</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
+<p><code>&lt;H&gt;heap</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 
 </div>
 
@@ -169,7 +169,7 @@
 
 <h3><a id = "tag:<PH>iterator" name = "tag:<PH>iterator">&lt;PH&gt;iterator</a></h3>
 
-<p><code>struct <strong>&lt;PH&gt;iterator</strong> { const struct &lt;H&gt;heap_node_array *a; size_t i; };</code></p>
+<p><code>struct <strong>&lt;PH&gt;iterator</strong>;</code></p>
 
 <p>Contains all iteration parameters in one.</p>
 

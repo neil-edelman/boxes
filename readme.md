@@ -15,7 +15,7 @@
 
 A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&lt;H&gt;heap_node](#user-content-tag-7243593c)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>heap_node>array` with implicit heap properties, with an optionally cached [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload; as such, one needs to have `Array.h` file in the same directory\.
 
-`<H>Heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
+`<H>heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
 
 
@@ -113,7 +113,7 @@ Stores the heap as an implicit binary tree in an array\. To initialise it to an 
 
 ### <a id = "user-content-tag-52985d65" name = "user-content-tag-52985d65">&lt;PH&gt;iterator</a> ###
 
-<code>struct <strong>&lt;PH&gt;iterator</strong> { const struct &lt;H&gt;heap_node_array *a; size_t i; };</code>
+<code>struct <strong>&lt;PH&gt;iterator</strong>;</code>
 
 Contains all iteration parameters in one\.
 
