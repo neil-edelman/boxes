@@ -7,18 +7,18 @@
 #ifdef HEAP_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
 /* Copy functions for later includes. */
-static const PH_(ToString) PH_(to_string) = (HEAP_TO_STRING);
-static const char *(*PH_(heap_to_string))(const struct H_(Heap) *)
-	= H_A_(Heap, ToString);
+static const PH_(to_string) PH_(to_str) = (HEAP_TO_STRING);
+static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
+	= H_A_(heap, to_string);
 
 /** Operates by side-effects. Used for `HEAP_TEST`. */
-typedef void (*PH_(BiAction))(struct H_(HeapNode) *, void *);
+typedef void (*PH_(biaction))(struct H_(heap_node) *, void *);
 
 /* `HEAP_TEST` must be a function that implements `<PH>Action`. */
-static const PH_(BiAction) PH_(filler) = (HEAP_TEST);
+static const PH_(biaction) PH_(filler) = (HEAP_TEST);
 
 /** Draw a graph of `heap` to `fn` in Graphviz format. */
-static void PH_(graph)(const struct H_(Heap) *const heap,
+static void PH_(graph)(const struct H_(heap) *const heap,
 	const char *const fn) {
 	FILE *fp;
 	char a[12];
@@ -36,7 +36,7 @@ static void PH_(graph)(const struct H_(Heap) *const heap,
 		"\\l|size: %lu\\lcapacity: %lu\\l}\"];\n", (unsigned long)heap->a.size,
 		(unsigned long)heap->a.capacity);
 	if(heap->a.data) {
-		struct H_(HeapNode) *const n0 = heap->a.data;
+		struct H_(heap_node) *const n0 = heap->a.data;
 		size_t i;
 		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
 		if(heap->a.size) fprintf(fp, "\tn0 -> Hash [dir = back];\n");
@@ -44,7 +44,7 @@ static void PH_(graph)(const struct H_(Heap) *const heap,
 			"\tsubgraph cluster_data {\n"
 			"\t\tstyle=filled;\n");
 		for(i = 0; i < heap->a.size; i++) {
-			PH_(to_string)(n0 + i, &a);
+			PH_(to_str)(n0 + i, &a);
 			fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
 			if(!i) continue;
 			fprintf(fp, "\t\tn%lu -> n%lu;\n", (unsigned long)i,
@@ -58,26 +58,26 @@ static void PH_(graph)(const struct H_(Heap) *const heap,
 }
 
 /** Makes sure the `heap` is in a valid state. */
-static void PH_(valid)(const struct H_(Heap) *const heap) {
+static void PH_(valid)(const struct H_(heap) *const heap) {
 	size_t i;
-	struct H_(HeapNode) *n0;
+	struct H_(heap_node) *n0;
 	if(!heap) return;
 	if(!(n0 = heap->a.data)) { assert(!heap->a.size); return; }
 	for(i = 1; i < heap->a.size; i++) {
 		size_t iparent = (i - 1) >> 1;
-		if(PH_(compare)(n0[iparent].priority, n0[i].priority) <= 0) continue;
+		if(PH_(cmp)(n0[iparent].priority, n0[i].priority) <= 0) continue;
 		PH_(graph)(heap, "graph/" QUOTE(HEAP_NAME) "-invalid.gv");
 		assert(0);
 		break;
 	}
 }
 
-/** @param[param] The parameter to call <typedef:<PH>BiAction> `HEAP_TEST`. */
+/** @param[param] The parameter to call <typedef:<PH>biaction> `HEAP_TEST`. */
 static void PH_(test_basic)(void *const param) {
-	struct H_(Heap) heap = HEAP_IDLE;
-	struct H_(HeapNode) *node, add;
-	PH_(PValue) v, result;
-	PH_(Priority) last_priority;
+	struct H_(heap) heap = HEAP_IDLE;
+	struct H_(heap_node) *node, add;
+	PH_(pvalue) v, result;
+	PH_(priority) last_priority;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i;
 	char fn[64];
@@ -89,7 +89,7 @@ static void PH_(test_basic)(void *const param) {
 	assert(!H_(HeapSize)(&heap));
 	H_(Heap_)(&heap);
 	assert(!H_(HeapSize)(&heap));
-	H_(Heap)(&heap);
+	H_(heap)(&heap);
 	assert(!H_(HeapSize)(&heap));
 	assert(!H_(HeapPeek)(&heap));
 	assert(!H_(HeapPeekValue(&heap)));
@@ -157,7 +157,7 @@ static void PH_(test_basic)(void *const param) {
 		node = H_(HeapPeek)(&heap);
 		assert(node);
 		v = H_(HeapPeekValue)(&heap);
-		PH_(to_string)(node, &a);
+		PH_(to_str)(node, &a);
 		result = H_(HeapPop)(&heap);
 		if(!i || !(i & (i - 1))) {
 			printf("%lu: retreving %s.\n", (unsigned long)i, a);
@@ -168,7 +168,7 @@ static void PH_(test_basic)(void *const param) {
 		assert(v == result && H_(HeapSize)(&heap) == i - 1);
 		PH_(valid)(&heap);
 		if(i != test_size_1 + test_size_2 + test_size_3)
-			assert(PH_(compare)(last_priority, node->priority) <= 0);
+			assert(PH_(cmp)(last_priority, node->priority) <= 0);
 		last_priority = node->priority;
 	}
 	printf("Destructor:\n");
@@ -180,19 +180,19 @@ static void PH_(test_basic)(void *const param) {
  `NDEBUG` while defining `assert`.
  @param[param] The parameter to call <typedef:<PH>BiAction> `HEAP_TEST`.
  @allow */
-static void H_(HeapTest)(void *const param) {
-	printf("<" QUOTE(HEAP_NAME) ">Heap"
-		" of type <" QUOTE(HEAP_TYPE) ">"
+static void H_(heap_test)(void *const param) {
+	printf("<" QUOTE(HEAP_NAME) ">heap"
+		" of priority type <" QUOTE(HEAP_TYPE) ">"
 		" was created using:"
 		" HEAP_COMPARE<" QUOTE(HEAP_COMPARE) ">;"
 #ifdef HEAP_VALUE
 		" HEAP_VALUE<" QUOTE(HEAP_VALUE) ">;"
 #endif
-		" HEAP_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">;"
+		" HEAP_TO_STRING <" QUOTE(HEAP_TO_STRING) ">;"
 		" HEAP_TEST <" QUOTE(HEAP_TEST) ">;"
 		" testing:\n");
 	PH_(test_basic)(param);
-	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">Heap.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">heap.\n\n");
 }
 
 

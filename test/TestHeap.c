@@ -10,23 +10,23 @@
 #include "Orcish.h"
 
 
-struct IntHeapNode;
-static void int_to_string(const struct IntHeapNode *, char (*)[12]);
-static void test_int(struct IntHeapNode *, void *);
+struct int_heap_node;
+static void int_to_string(const struct int_heap_node *, char (*)[12]);
+static void test_int(struct int_heap_node *, void *);
 
-#define HEAP_NAME Int
+#define HEAP_NAME int
 #define HEAP_EXPECT_TRAIT
 #include "../src/Heap.h"
 #define HEAP_TO_STRING &int_to_string
 #define HEAP_TEST &test_int
 #include "../src/Heap.h"
 
-static void int_to_string(const struct IntHeapNode *const i,
+static void int_to_string(const struct int_heap_node *const i,
 	char (*const a)[12]) {
 	sprintf(*a, "%u", i->priority);
 }
 
-static void test_int(struct IntHeapNode *i, void *const unused) {
+static void test_int(struct int_heap_node *i, void *const unused) {
 	(void)(unused);
 	i->priority = rand() / (RAND_MAX / 99 + 1) + 1;
 	/* printf("test_int: generated %u\n", i->priority); */
@@ -71,7 +71,7 @@ static void test_orc(struct OrcHeapNode *node, void *const vpool) {
 int main(void) {
 	/*struct OrcPool orcs = POOL_IDLE;*/
 	rand();
-	IntHeapTest(0);
+	int_heap_test(0);
 	/*OrcHeapTest(&orcs), OrcPool_(&orcs);*/
 	return EXIT_SUCCESS;
 }

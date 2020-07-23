@@ -1,6 +1,6 @@
 # Heap\.h #
 
-## Parameterised Priority Queue ##
+## Priority Queue ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;Priority](#user-content-typedef-57e15d67), [&lt;PH&gt;Compare](#user-content-typedef-27ee3a1e), [&lt;PH&gt;Value](#user-content-typedef-4d915774), [&lt;PH&gt;PValue](#user-content-typedef-c1cc3f02), [&lt;PH&gt;ToString](#user-content-typedef-81d59eb3), [&lt;PH&gt;BiAction](#user-content-typedef-65e63188)
