@@ -5,7 +5,7 @@
 
  @param[A_]
  Function-like define macro accepting one argument and producing a valid name.
- `PA_` is private.
+ Defines `PA_` to be private.
 
  @param[TO_STRING_NEXT]
  A function satisfying <typedef:<A>next_to_string>.
@@ -57,11 +57,11 @@ static unsigned to_string_buffer_i;
 typedef TO_STRING_ITERATOR PA_(iterator);
 
 /** Returns true if it wrote to the buffer and advances to the next. */
-typedef int (*PA_(next_string))(PA_(iterator) *, char (*)[12]);
+typedef int (*PA_(next_to_string))(PA_(iterator) *, char (*)[12]);
 
 /* Check that `TO_STRING_NEXT` is a function implementing
  <typedef:<PA>next_to_string>. */
-static const PA_(next_string) PA_(next_to_string) = (TO_STRING_NEXT);
+static const PA_(next_to_string) PA_(n2str) = (TO_STRING_NEXT);
 
 /** Fills the to string function up with `it`, with `start` and `end`
  delimiters around the `<PA>NextToString` `TO_NEXT_STRING`. @allow */
@@ -78,7 +78,7 @@ static const char *A_(iterator_to_string)(PA_(iterator) *const it,
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	*b++ = start;
-	while(PA_(next_to_string)(it, (char (*)[12])b)) {
+	while(PA_(n2str)(it, (char (*)[12])b)) {
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
@@ -86,7 +86,7 @@ static const char *A_(iterator_to_string)(PA_(iterator) *const it,
 		if((size = b - buffer) > to_string_buffer_size
 			- 11 - 1 - ellipsis_len - 1 - 1) {
 			char throw_out[12];
-			if(PA_(next_to_string)(it, &throw_out)) goto ellipsis; else break;
+			if(PA_(n2str)(it, &throw_out)) goto ellipsis; else break;
 		}
 	}
 	if(is_sep) b -= 2;
