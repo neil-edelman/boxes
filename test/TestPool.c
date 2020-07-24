@@ -24,7 +24,7 @@ static void colour_to_string(const enum Colour *c, char (*const a)[12])
 	{ assert(*c < colour_size); sprintf(*a, "%s", colours[*c]); }
 static void colour_filler(enum Colour *const c)
 	{ *c = rand() / (RAND_MAX / (int)colour_size + 1); }
-#define POOL_NAME Colour
+#define POOL_NAME colour
 #define POOL_TYPE enum Colour
 #define POOL_EXPECT_TRAIT
 #include "../src/Pool.h"
@@ -38,7 +38,7 @@ static void str4_to_string(const struct Str4 *s, char (*const a)[12])
 	{ sprintf(*a, "%.11s", s->value); }
 static void str4_filler(struct Str4 *const s)
 	{ Orcish(s->value, sizeof s->value); }
-#define POOL_NAME Str4
+#define POOL_NAME str4
 #define POOL_TYPE struct Str4
 #define POOL_EXPECT_TRAIT
 #include "../src/Pool.h"
@@ -53,7 +53,7 @@ static void int_filler(int *const i)
 	{ *i = rand() / (RAND_MAX / 1998 + 1) - 999; }
 /*static int int_cmp(const int *const a, const int *const b)
 	{ return (*a > *b) - (*b > *a); }*/
-#define POOL_NAME Int
+#define POOL_NAME int
 #define POOL_TYPE int
 #define POOL_EXPECT_TRAIT
 #include "../src/Pool.h"
@@ -75,7 +75,7 @@ static void keyval_value_to_string(const struct Keyval *const kv,
 	{ return (a->key > b->key) - (a->key < b->key); }
 static int keyval_value_cmp(const struct Keyval *const a,
 	const struct Keyval *const b) { return strcmp(a->value, b->value); }*/
-#define POOL_NAME Keyval
+#define POOL_NAME keyval
 #define POOL_TYPE struct Keyval
 #define POOL_EXPECT_TRAIT
 #include "../src/Pool.h"
@@ -94,10 +94,10 @@ int main(void) {
 	unsigned seed = /*12395*/ /*2532*//*11632*/(unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	ColourPoolTest();
-	Str4PoolTest();
-	IntPoolTest();
-	KeyvalPoolTest();
+	colour_pool_test();
+	str4_pool_test();
+	int_pool_test();
+	keyval_pool_test();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

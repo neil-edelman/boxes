@@ -33,12 +33,12 @@
 
 <h1>Pool.h</h1>
 
-<h2>Parameterised Stable Pool</h2>
+<h2>Stable Pool</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>Type">&lt;PT&gt;Type</a>, <a href = "#typedef:<PT>Action">&lt;PT&gt;Action</a>, <a href = "#typedef:<PT>ToString">&lt;PT&gt;ToString</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>Pool">&lt;T&gt;Pool</a>, <a href = "#tag:<PT>Iterator">&lt;PT&gt;Iterator</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PT>to_string">&lt;PT&gt;to_string</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>pool">&lt;T&gt;pool</a>, <a href = "#tag:<PT>iterator">&lt;PT&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,9 +50,9 @@
 
 <p><img alt = "Example of Pool" src = "web/pool.png" width = 478 height = 242></p>
 
-<p><a href = "#tag:&lt;T&gt;Pool">&lt;T&gt;Pool</a> stores unordered <code>&lt;T&gt;</code> in a memory pool. Pointers to valid items in the pool are stable, but not generally contiguous. It uses geometrically increasing size-blocks and when the removal is ongoing and uniformly sampled, (specifically, old elements are all eventually removed,) and data reaches a steady-state size, the data will settle in one allocated region. In this way, provides a fairly contiguous space for items which have references.</p>
+<p><a href = "#tag:&lt;T&gt;pool">&lt;T&gt;pool</a> stores unordered <code>&lt;T&gt;</code> in a memory pool. Pointers to valid items in the pool are stable, but not generally contiguous. It uses geometrically increasing size-blocks and when the removal is ongoing and uniformly sampled, (specifically, old elements are all eventually removed,) and data reaches a steady-state size, the data will settle in one allocated region. In this way, manages a fairly contiguous space for items which have references.</p>
 
-<p><code>&lt;T&gt;Pool</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is included in this file; to stop the debug assertions, use <code>#define NDEBUG</code> before <code>assert.h</code>.</p>
+<p><code>&lt;T&gt;pool</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is included in this file; to stop the debug assertions, use <code>#define NDEBUG</code> before <code>assert.h</code>.</p>
 
 </div>
 
@@ -62,9 +62,9 @@
 	<dt>Parameter: POOL_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;ToString">&lt;PT&gt;ToString</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;to_string">&lt;PT&gt;to_string</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: POOL_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Pool</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;Action">&lt;PT&gt;Action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
+	<dd>To string trait contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Pool</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action">&lt;PT&gt;action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>See also:</dt>
@@ -75,29 +75,29 @@
 
 <div>
 
-<h3><a id = "typedef:<PT>Type" name = "typedef:<PT>Type">&lt;PT&gt;Type</a></h3>
+<h3><a id = "typedef:<PT>type" name = "typedef:<PT>type">&lt;PT&gt;type</a></h3>
 
-<p><code>typedef POOL_TYPE <strong>&lt;PT&gt;Type</strong>;</code></p>
+<p><code>typedef POOL_TYPE <strong>&lt;PT&gt;type</strong>;</code></p>
 
-<p>A valid tag type set by <code>POOL_TYPE</code>. This becomes <code>T</code>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PT>Action" name = "typedef:<PT>Action">&lt;PT&gt;Action</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code></p>
-
-<p>Operates by side-effects on <code>data</code> only.</p>
+<p>A valid tag type set by <code>POOL_TYPE</code>.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PT>ToString" name = "typedef:<PT>ToString">&lt;PT&gt;ToString</a></h3>
+<h3><a id = "typedef:<PT>action" name = "typedef:<PT>action">&lt;PT&gt;action</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PT&gt;action</strong>)(&lt;PT&gt;type *const data);</code></p>
+
+<p>Operates by side-effects.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PT>to_string" name = "typedef:<PT>to_string">&lt;PT&gt;to_string</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PT&gt;to_string</strong>)(const &lt;PT&gt;type *, char(*)[12]);</code></p>
 
 <p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string. Used for <code>POOL_TO_STRING</code>.</p>
 
@@ -107,11 +107,11 @@
 
 <div>
 
-<h3><a id = "tag:<T>Pool" name = "tag:<T>Pool">&lt;T&gt;Pool</a></h3>
+<h3><a id = "tag:<T>pool" name = "tag:<T>pool">&lt;T&gt;pool</a></h3>
 
-<p><code>struct <strong>&lt;T&gt;Pool</strong>;</code></p>
+<p><code>struct <strong>&lt;T&gt;pool</strong>;</code></p>
 
-<p>Zeroed data is a valid state. To instantiate to an idle state, see <a href = "#fn:&lt;T&gt;Pool">&lt;T&gt;Pool</a>, <code>POOL_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
+<p>Zeroed data is a valid state. To instantiate to an idle state, see <a href = "#fn:&lt;T&gt;pool">&lt;T&gt;pool</a>, <code>POOL_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 293></p>
 
@@ -119,9 +119,9 @@
 
 <div>
 
-<h3><a id = "tag:<PT>Iterator" name = "tag:<PT>Iterator">&lt;PT&gt;Iterator</a></h3>
+<h3><a id = "tag:<PT>iterator" name = "tag:<PT>iterator">&lt;PT&gt;iterator</a></h3>
 
-<p><code>struct <strong>&lt;PT&gt;Iterator</strong>;</code></p>
+<p><code>struct <strong>&lt;PT&gt;iterator</strong>;</code></p>
 
 <p>Contains all iteration parameters in one.</p>
 
@@ -135,23 +135,23 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>Pool">&lt;T&gt;Pool</a></td><td>pool</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<T>pool">&lt;T&gt;pool</a></td><td>pool</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>Pool_">&lt;T&gt;Pool_</a></td><td>pool</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<T>pool_">&lt;T&gt;pool_</a></td><td>pool</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#fn:<T>PoolNew">&lt;T&gt;PoolNew</a></td><td>pool</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<T>pool_reserve">&lt;T&gt;pool_reserve</a></td><td>pool, min</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<T>PoolRemove">&lt;T&gt;PoolRemove</a></td><td>pool, data</td></tr>
+<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>pool_new">&lt;T&gt;pool_new</a></td><td>pool</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>PoolClear">&lt;T&gt;PoolClear</a></td><td>pool</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<T>pool_remove">&lt;T&gt;pool_remove</a></td><td>pool, datum</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<T>PoolReserve">&lt;T&gt;PoolReserve</a></td><td>pool, min</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<T>pool_clear">&lt;T&gt;pool_clear</a></td><td>pool</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>PoolForEach">&lt;T&gt;PoolForEach</a></td><td>pool, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<T>pool_for_each">&lt;T&gt;pool_for_each</a></td><td>pool, action</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<T>Pool<A>ToString">&lt;T&gt;Pool&lt;A&gt;ToString</a></td><td>pool</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<T>pool<A>to_string">&lt;T&gt;pool&lt;A&gt;to_string</a></td><td>pool</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>PoolTest">&lt;T&gt;PoolTest</a></td><td></td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<T>pool_test">&lt;T&gt;pool_test</a></td><td></td></tr>
 
 </table>
 
@@ -163,11 +163,11 @@
 
 <div>
 
-<h3><a id = "fn:<T>Pool" name = "fn:<T>Pool">&lt;T&gt;Pool</a></h3>
+<h3><a id = "fn:<T>pool" name = "fn:<T>pool">&lt;T&gt;pool</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;Pool</strong>(struct &lt;T&gt;Pool *const <em>pool</em>)</code></p>
+<p><code>static void <strong>&lt;T&gt;pool</strong>(struct &lt;T&gt;pool *const <em>pool</em>)</code></p>
 
-<p>Initialises <code>pool</code> to be empty.</p>
+<p>Initialises <code>pool</code> to idle.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -178,77 +178,13 @@
 
 <div>
 
-<h3><a id = "fn:<T>Pool_" name = "fn:<T>Pool_">&lt;T&gt;Pool_</a></h3>
+<h3><a id = "fn:<T>pool_" name = "fn:<T>pool_">&lt;T&gt;pool_</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;Pool_</strong>(struct &lt;T&gt;Pool *const <em>pool</em>)</code></p>
+<p><code>static void <strong>&lt;T&gt;pool_</strong>(struct &lt;T&gt;pool *const <em>pool</em>)</code></p>
 
-<p>Returns <code>pool</code> to the empty state where it takes no dynamic memory.</p>
-
-<dl>
-	<dt>Parameter: <em>pool</em></dt>
-	<dd>If null, does nothing.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(<code>blocks</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>PoolNew" name = "fn:<T>PoolNew">&lt;T&gt;PoolNew</a></h3>
-
-<p><code>static T *<strong>&lt;T&gt;PoolNew</strong>(struct &lt;T&gt;Pool *const <em>pool</em>)</code></p>
-
-<p>New item from <code>pool</code>.</p>
+<p>Destroys <code>pool</code> and returns it to idle.</p>
 
 <dl>
-	<dt>Parameter: <em>pool</em></dt>
-	<dd>If is null, returns null.</dd>
-	<dt>Return:</dt>
-	<dd>A new element at the end, or null and <code>errno</code> will be set.</dd>
-	<dt>Exceptional return: ERANGE</dt>
-	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>malloc</code> doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html">POSIX</a>.</dd>
-	<dt>Exceptional return: malloc</dt>
-	<dt>Order:</dt>
-	<dd>amortised O(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>PoolRemove" name = "fn:<T>PoolRemove">&lt;T&gt;PoolRemove</a></h3>
-
-<p><code>static int <strong>&lt;T&gt;PoolRemove</strong>(struct &lt;T&gt;Pool *const <em>pool</em>, T *const <em>data</em>)</code></p>
-
-<p>Removes <code>data</code> from <code>pool</code>.</p>
-
-<dl>
-	<dt>Parameter: <em>pool</em></dt>
-	<dd>If null, returns false.</dd>
-	<dt>Parameter: <em>data</em></dt>
-	<dd>If null, returns false.</dd>
-	<dt>Return:</dt>
-	<dd>Success, otherwise <code>errno</code> will be set for valid input.</dd>
-	<dt>Exceptional return: EDOM</dt>
-	<dd><code>data</code> is not part of <code>pool</code>.</dd>
-	<dt>Order:</dt>
-	<dd>Amortised &#927;(1), if the pool is in steady-state, but &#927;(log <code>items</code>) for a small number of deleted items.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>PoolClear" name = "fn:<T>PoolClear">&lt;T&gt;PoolClear</a></h3>
-
-<p><code>static void <strong>&lt;T&gt;PoolClear</strong>(struct &lt;T&gt;Pool *const <em>pool</em>)</code></p>
-
-<p>Removes all from <code>pool</code>. Keeps it's active state, only freeing the smaller blocks. Compare <a href = "#fn:&lt;T&gt;Pool_">&lt;T&gt;Pool_</a>.</p>
-
-<dl>
-	<dt>Parameter: <em>pool</em></dt>
-	<dd>If null, does nothing.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>blocks</code>)</dd>
 </dl>
@@ -257,41 +193,83 @@
 
 <div>
 
-<h3><a id = "fn:<T>PoolReserve" name = "fn:<T>PoolReserve">&lt;T&gt;PoolReserve</a></h3>
+<h3><a id = "fn:<T>pool_reserve" name = "fn:<T>pool_reserve">&lt;T&gt;pool_reserve</a></h3>
 
-<p><code>static int <strong>&lt;T&gt;PoolReserve</strong>(struct &lt;T&gt;Pool *const <em>pool</em>, const size_t <em>min</em>)</code></p>
+<p><code>static int <strong>&lt;T&gt;pool_reserve</strong>(struct &lt;T&gt;pool *const <em>pool</em>, const size_t <em>min</em>)</code></p>
 
-<p>Pre-sizes an idle pool to ensure that it can hold at least <code>min</code> elements.</p>
+<p>Pre-sizes an <em>idle</em> <code>pool</code> to ensure that it can hold at least <code>min</code> elements.</p>
 
 <dl>
-	<dt>Parameter: <em>pool</em></dt>
-	<dd>If null, returns false.</dd>
 	<dt>Parameter: <em>min</em></dt>
 	<dd>If zero, doesn't do anything and returns true.</dd>
 	<dt>Return:</dt>
 	<dd>Success; the pool becomes active with at least <code>min</code> elements.</dd>
 	<dt>Exceptional return: EDOM</dt>
 	<dd>The pool is active and doesn't allow reserving.</dd>
-	<dt>Exceptional return: ERANGE</dt>
-	<dd>Tried allocating more then can fit in <code>size_t</code> or <code>malloc</code> doesn't follow <a href = "https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html">IEEE Std 1003.1-2001</a>.</dd>
-	<dt>Exceptional return: malloc</dt>
+	<dt>Exceptional return: ERANGE, malloc</dt>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<T>PoolForEach" name = "fn:<T>PoolForEach">&lt;T&gt;PoolForEach</a></h3>
+<h3><a id = "fn:<T>pool_new" name = "fn:<T>pool_new">&lt;T&gt;pool_new</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;PoolForEach</strong>(struct &lt;T&gt;Pool *const <em>pool</em>, const &lt;PT&gt;Action <em>action</em>)</code></p>
-
-<p>Iterates though <code>pool</code> and calls <code>action</code> on all the elements. There is no way to change the iteration order.</p>
+<p><code>static &lt;PT&gt;type *<strong>&lt;T&gt;pool_new</strong>(struct &lt;T&gt;pool *const <em>pool</em>)</code></p>
 
 <dl>
-	<dt>Parameter: <em>pool</em></dt>
-	<dd>If null, does nothing.</dd>
-	<dt>Parameter: <em>action</em></dt>
-	<dd>If null, does nothing.</dd>
+	<dt>Return:</dt>
+	<dd>A new element from <code>pool</code>.</dd>
+	<dt>Exceptional return: ERANGE, malloc</dt>
+	<dt>Order:</dt>
+	<dd>amortised O(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>pool_remove" name = "fn:<T>pool_remove">&lt;T&gt;pool_remove</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;pool_remove</strong>(struct &lt;T&gt;pool *const <em>pool</em>, &lt;PT&gt;type *const <em>datum</em>)</code></p>
+
+<p>Flags <code>datum</code> as removed from <code>pool</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: EDOM</dt>
+	<dd><code>data</code> is not part of <code>pool</code>.</dd>
+	<dt>Order:</dt>
+	<dd>Amortised &#927;(1), if the pool is in steady-state, but &#927;(log <code>pool.items</code>) for a small number of deleted items.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>pool_clear" name = "fn:<T>pool_clear">&lt;T&gt;pool_clear</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;pool_clear</strong>(struct &lt;T&gt;pool *const <em>pool</em>)</code></p>
+
+<p>Removes all from <code>pool</code>, but keeps it's active state. (Only freeing the smaller blocks.)</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>pool.blocks</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>pool_for_each" name = "fn:<T>pool_for_each">&lt;T&gt;pool_for_each</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;pool_for_each</strong>(struct &lt;T&gt;pool *const <em>pool</em>, const &lt;PT&gt;action <em>action</em>)</code></p>
+
+<p>Iterates though <code>pool</code> and calls <code>action</code> on all the elements.</p>
+
+<dl>
 	<dt>Order:</dt>
 	<dd>O(<code>capacity</code> &#215; <code>action</code>)</dd>
 </dl>
@@ -300,9 +278,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>Pool<A>ToString" name = "fn:<T>Pool<A>ToString">&lt;T&gt;Pool&lt;A&gt;ToString</a></h3>
+<h3><a id = "fn:<T>pool<A>to_string" name = "fn:<T>pool<A>to_string">&lt;T&gt;pool&lt;A&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;T&gt;Pool&lt;A&gt;ToString</strong>(const struct &lt;T&gt;Pool *const <em>pool</em>)</code></p>
+<p><code>static const char *<strong>&lt;T&gt;pool&lt;A&gt;to_string</strong>(const struct &lt;T&gt;pool *const <em>pool</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -315,9 +293,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>PoolTest" name = "fn:<T>PoolTest">&lt;T&gt;PoolTest</a></h3>
+<h3><a id = "fn:<T>pool_test" name = "fn:<T>pool_test">&lt;T&gt;pool_test</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;PoolTest</strong>(void)</code></p>
+<p><code>static void <strong>&lt;T&gt;pool_test</strong>(void)</code></p>
 
 <p>The list will be tested on stdout; requires <code>POOL_TEST</code> and not <code>NDEBUG</code>.</p>
 

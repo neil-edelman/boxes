@@ -1,10 +1,10 @@
 # Pool\.h #
 
-## Parameterised Stable Pool ##
+## Stable Pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;Type](#user-content-typedef-8b318acb), [&lt;PT&gt;Action](#user-content-typedef-33725a81), [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;Pool](#user-content-tag-517215cf), [&lt;PT&gt;Iterator](#user-content-tag-25ae129)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;to_string](#user-content-typedef-72056ad6)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;pool](#user-content-tag-d418caef), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,9 +13,9 @@
 
 ![Example of Pool](web/pool.png)
 
-[&lt;T&gt;Pool](#user-content-tag-517215cf) stores unordered `<T>` in a memory pool\. Pointers to valid items in the pool are stable, but not generally contiguous\. It uses geometrically increasing size\-blocks and when the removal is ongoing and uniformly sampled, \(specifically, old elements are all eventually removed,\) and data reaches a steady\-state size, the data will settle in one allocated region\. In this way, provides a fairly contiguous space for items which have references\.
+[&lt;T&gt;pool](#user-content-tag-d418caef) stores unordered `<T>` in a memory pool\. Pointers to valid items in the pool are stable, but not generally contiguous\. It uses geometrically increasing size\-blocks and when the removal is ongoing and uniformly sampled, \(specifically, old elements are all eventually removed,\) and data reaches a steady\-state size, the data will settle in one allocated region\. In this way, manages a fairly contiguous space for items which have references\.
 
-`<T>Pool` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
+`<T>pool` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
 
 
 
@@ -24,9 +24,9 @@
  * Parameter: POOL\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
-   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;ToString](#user-content-typedef-c92c3b0f)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\.
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;to_string](#user-content-typedef-72056ad6)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\.
  * Parameter: POOL\_TEST  
-   To string trait contained in [\.\./test/PoolTest\.h](../test/PoolTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Pool`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;Action](#user-content-typedef-33725a81)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [\.\./test/PoolTest\.h](../test/PoolTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Pool`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action](#user-content-typedef-6ab9561)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * See also:  
@@ -35,25 +35,25 @@
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-8b318acb" name = "user-content-typedef-8b318acb">&lt;PT&gt;Type</a> ###
+### <a id = "user-content-typedef-245060ab" name = "user-content-typedef-245060ab">&lt;PT&gt;type</a> ###
 
-<code>typedef POOL_TYPE <strong>&lt;PT&gt;Type</strong>;</code>
+<code>typedef POOL_TYPE <strong>&lt;PT&gt;type</strong>;</code>
 
-A valid tag type set by `POOL_TYPE`\. This becomes `T`\.
-
-
-
-### <a id = "user-content-typedef-33725a81" name = "user-content-typedef-33725a81">&lt;PT&gt;Action</a> ###
-
-<code>typedef void(*<strong>&lt;PT&gt;Action</strong>)(T *const data);</code>
-
-Operates by side\-effects on `data` only\.
+A valid tag type set by `POOL_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-c92c3b0f" name = "user-content-typedef-c92c3b0f">&lt;PT&gt;ToString</a> ###
+### <a id = "user-content-typedef-6ab9561" name = "user-content-typedef-6ab9561">&lt;PT&gt;action</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;ToString</strong>)(const T *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PT&gt;action</strong>)(&lt;PT&gt;type *const data);</code>
+
+Operates by side\-effects\.
+
+
+
+### <a id = "user-content-typedef-72056ad6" name = "user-content-typedef-72056ad6">&lt;PT&gt;to_string</a> ###
+
+<code>typedef void(*<strong>&lt;PT&gt;to_string</strong>)(const &lt;PT&gt;type *, char(*)[12]);</code>
 
 Responsible for turning the first argument into a 12\-`char` null\-terminated output string\. Used for `POOL_TO_STRING`\.
 
@@ -61,19 +61,19 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-517215cf" name = "user-content-tag-517215cf">&lt;T&gt;Pool</a> ###
+### <a id = "user-content-tag-d418caef" name = "user-content-tag-d418caef">&lt;T&gt;pool</a> ###
 
-<code>struct <strong>&lt;T&gt;Pool</strong>;</code>
+<code>struct <strong>&lt;T&gt;pool</strong>;</code>
 
-Zeroed data is a valid state\. To instantiate to an idle state, see [&lt;T&gt;Pool](#user-content-fn-517215cf), `POOL_IDLE`, `{0}` \(`C99`,\) or being `static`\.
+Zeroed data is a valid state\. To instantiate to an idle state, see [&lt;T&gt;pool](#user-content-fn-d418caef), `POOL_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](web/states.png)
 
 
 
-### <a id = "user-content-tag-25ae129" name = "user-content-tag-25ae129">&lt;PT&gt;Iterator</a> ###
+### <a id = "user-content-tag-d9d00f09" name = "user-content-tag-d9d00f09">&lt;PT&gt;iterator</a> ###
 
-<code>struct <strong>&lt;PT&gt;Iterator</strong>;</code>
+<code>struct <strong>&lt;PT&gt;iterator</strong>;</code>
 
 Contains all iteration parameters in one\.
 
@@ -85,23 +85,23 @@ Contains all iteration parameters in one\.
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-517215cf">&lt;T&gt;Pool</a></td><td>pool</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-d418caef">&lt;T&gt;pool</a></td><td>pool</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-c697f1b0">&lt;T&gt;Pool_</a></td><td>pool</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-93071310">&lt;T&gt;pool_</a></td><td>pool</td></tr>
 
-<tr><td align = right>static T *</td><td><a href = "#user-content-fn-d750c1ef">&lt;T&gt;PoolNew</a></td><td>pool</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-a38f29f8">&lt;T&gt;pool_reserve</a></td><td>pool, min</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-d68920b3">&lt;T&gt;PoolRemove</a></td><td>pool, data</td></tr>
+<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-37a52dae">&lt;T&gt;pool_new</a></td><td>pool</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-ed0039e0">&lt;T&gt;PoolClear</a></td><td>pool</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-1485bf98">&lt;T&gt;pool_remove</a></td><td>pool, datum</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-d5630829">&lt;T&gt;PoolReserve</a></td><td>pool, min</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-4cc4b73d">&lt;T&gt;pool_clear</a></td><td>pool</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-b3c07777">&lt;T&gt;PoolForEach</a></td><td>pool, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-794d81a9">&lt;T&gt;pool_for_each</a></td><td>pool, action</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-aef9d312">&lt;T&gt;Pool&lt;A&gt;ToString</a></td><td>pool</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-e7723251">&lt;T&gt;pool&lt;A&gt;to_string</a></td><td>pool</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-7300f93b">&lt;T&gt;PoolTest</a></td><td></td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-e5a6cab4">&lt;T&gt;pool_test</a></td><td></td></tr>
 
 </table>
 
@@ -109,11 +109,11 @@ Contains all iteration parameters in one\.
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
-### <a id = "user-content-fn-517215cf" name = "user-content-fn-517215cf">&lt;T&gt;Pool</a> ###
+### <a id = "user-content-fn-d418caef" name = "user-content-fn-d418caef">&lt;T&gt;pool</a> ###
 
-<code>static void <strong>&lt;T&gt;Pool</strong>(struct &lt;T&gt;Pool *const <em>pool</em>)</code>
+<code>static void <strong>&lt;T&gt;pool</strong>(struct &lt;T&gt;pool *const <em>pool</em>)</code>
 
-Initialises `pool` to be empty\.
+Initialises `pool` to idle\.
 
  * Order:  
    &#920;\(1\)
@@ -121,113 +121,91 @@ Initialises `pool` to be empty\.
 
 
 
-### <a id = "user-content-fn-c697f1b0" name = "user-content-fn-c697f1b0">&lt;T&gt;Pool_</a> ###
+### <a id = "user-content-fn-93071310" name = "user-content-fn-93071310">&lt;T&gt;pool_</a> ###
 
-<code>static void <strong>&lt;T&gt;Pool_</strong>(struct &lt;T&gt;Pool *const <em>pool</em>)</code>
+<code>static void <strong>&lt;T&gt;pool_</strong>(struct &lt;T&gt;pool *const <em>pool</em>)</code>
 
-Returns `pool` to the empty state where it takes no dynamic memory\.
+Destroys `pool` and returns it to idle\.
 
- * Parameter: _pool_  
-   If null, does nothing\.
- * Order:  
-   &#920;\(`blocks`\)
-
-
-
-
-### <a id = "user-content-fn-d750c1ef" name = "user-content-fn-d750c1ef">&lt;T&gt;PoolNew</a> ###
-
-<code>static T *<strong>&lt;T&gt;PoolNew</strong>(struct &lt;T&gt;Pool *const <em>pool</em>)</code>
-
-New item from `pool`\.
-
- * Parameter: _pool_  
-   If is null, returns null\.
- * Return:  
-   A new element at the end, or null and `errno` will be set\.
- * Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` or `malloc` doesn't follow [POSIX](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html)\.
- * Exceptional return: malloc  
- * Order:  
-   amortised O\(1\)
-
-
-
-
-### <a id = "user-content-fn-d68920b3" name = "user-content-fn-d68920b3">&lt;T&gt;PoolRemove</a> ###
-
-<code>static int <strong>&lt;T&gt;PoolRemove</strong>(struct &lt;T&gt;Pool *const <em>pool</em>, T *const <em>data</em>)</code>
-
-Removes `data` from `pool`\.
-
- * Parameter: _pool_  
-   If null, returns false\.
- * Parameter: _data_  
-   If null, returns false\.
- * Return:  
-   Success, otherwise `errno` will be set for valid input\.
- * Exceptional return: EDOM  
-   `data` is not part of `pool`\.
- * Order:  
-   Amortised &#927;\(1\), if the pool is in steady\-state, but &#927;\(log `items`\) for a small number of deleted items\.
-
-
-
-
-### <a id = "user-content-fn-ed0039e0" name = "user-content-fn-ed0039e0">&lt;T&gt;PoolClear</a> ###
-
-<code>static void <strong>&lt;T&gt;PoolClear</strong>(struct &lt;T&gt;Pool *const <em>pool</em>)</code>
-
-Removes all from `pool`\. Keeps it's active state, only freeing the smaller blocks\. Compare [&lt;T&gt;Pool_](#user-content-fn-c697f1b0)\.
-
- * Parameter: _pool_  
-   If null, does nothing\.
  * Order:  
    &#927;\(`blocks`\)
 
 
 
 
-### <a id = "user-content-fn-d5630829" name = "user-content-fn-d5630829">&lt;T&gt;PoolReserve</a> ###
+### <a id = "user-content-fn-a38f29f8" name = "user-content-fn-a38f29f8">&lt;T&gt;pool_reserve</a> ###
 
-<code>static int <strong>&lt;T&gt;PoolReserve</strong>(struct &lt;T&gt;Pool *const <em>pool</em>, const size_t <em>min</em>)</code>
+<code>static int <strong>&lt;T&gt;pool_reserve</strong>(struct &lt;T&gt;pool *const <em>pool</em>, const size_t <em>min</em>)</code>
 
-Pre\-sizes an idle pool to ensure that it can hold at least `min` elements\.
+Pre\-sizes an _idle_ `pool` to ensure that it can hold at least `min` elements\.
 
- * Parameter: _pool_  
-   If null, returns false\.
  * Parameter: _min_  
    If zero, doesn't do anything and returns true\.
  * Return:  
    Success; the pool becomes active with at least `min` elements\.
  * Exceptional return: EDOM  
    The pool is active and doesn't allow reserving\.
- * Exceptional return: ERANGE  
-   Tried allocating more then can fit in `size_t` or `malloc` doesn't follow [IEEE Std 1003.1-2001](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html)\.
- * Exceptional return: malloc  
+ * Exceptional return: ERANGE, malloc  
 
 
 
 
-### <a id = "user-content-fn-b3c07777" name = "user-content-fn-b3c07777">&lt;T&gt;PoolForEach</a> ###
+### <a id = "user-content-fn-37a52dae" name = "user-content-fn-37a52dae">&lt;T&gt;pool_new</a> ###
 
-<code>static void <strong>&lt;T&gt;PoolForEach</strong>(struct &lt;T&gt;Pool *const <em>pool</em>, const &lt;PT&gt;Action <em>action</em>)</code>
+<code>static &lt;PT&gt;type *<strong>&lt;T&gt;pool_new</strong>(struct &lt;T&gt;pool *const <em>pool</em>)</code>
 
-Iterates though `pool` and calls `action` on all the elements\. There is no way to change the iteration order\.
+ * Return:  
+   A new element from `pool`\.
+ * Exceptional return: ERANGE, malloc  
+ * Order:  
+   amortised O\(1\)
 
- * Parameter: _pool_  
-   If null, does nothing\.
- * Parameter: _action_  
-   If null, does nothing\.
+
+
+
+### <a id = "user-content-fn-1485bf98" name = "user-content-fn-1485bf98">&lt;T&gt;pool_remove</a> ###
+
+<code>static int <strong>&lt;T&gt;pool_remove</strong>(struct &lt;T&gt;pool *const <em>pool</em>, &lt;PT&gt;type *const <em>datum</em>)</code>
+
+Flags `datum` as removed from `pool`\.
+
+ * Return:  
+   Success\.
+ * Exceptional return: EDOM  
+   `data` is not part of `pool`\.
+ * Order:  
+   Amortised &#927;\(1\), if the pool is in steady\-state, but &#927;\(log `pool.items`\) for a small number of deleted items\.
+
+
+
+
+### <a id = "user-content-fn-4cc4b73d" name = "user-content-fn-4cc4b73d">&lt;T&gt;pool_clear</a> ###
+
+<code>static void <strong>&lt;T&gt;pool_clear</strong>(struct &lt;T&gt;pool *const <em>pool</em>)</code>
+
+Removes all from `pool`, but keeps it's active state\. \(Only freeing the smaller blocks\.\)
+
+ * Order:  
+   &#927;\(`pool.blocks`\)
+
+
+
+
+### <a id = "user-content-fn-794d81a9" name = "user-content-fn-794d81a9">&lt;T&gt;pool_for_each</a> ###
+
+<code>static void <strong>&lt;T&gt;pool_for_each</strong>(struct &lt;T&gt;pool *const <em>pool</em>, const &lt;PT&gt;action <em>action</em>)</code>
+
+Iterates though `pool` and calls `action` on all the elements\.
+
  * Order:  
    O\(`capacity` &#215; `action`\)
 
 
 
 
-### <a id = "user-content-fn-aef9d312" name = "user-content-fn-aef9d312">&lt;T&gt;Pool&lt;A&gt;ToString</a> ###
+### <a id = "user-content-fn-e7723251" name = "user-content-fn-e7723251">&lt;T&gt;pool&lt;A&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;T&gt;Pool&lt;A&gt;ToString</strong>(const struct &lt;T&gt;Pool *const <em>pool</em>)</code>
+<code>static const char *<strong>&lt;T&gt;pool&lt;A&gt;to_string</strong>(const struct &lt;T&gt;pool *const <em>pool</em>)</code>
 
  * Return:  
    Print the contents of `pool` in a static string buffer with the limitations of `ToString.h`\.
@@ -237,9 +215,9 @@ Iterates though `pool` and calls `action` on all the elements\. There is no way 
 
 
 
-### <a id = "user-content-fn-7300f93b" name = "user-content-fn-7300f93b">&lt;T&gt;PoolTest</a> ###
+### <a id = "user-content-fn-e5a6cab4" name = "user-content-fn-e5a6cab4">&lt;T&gt;pool_test</a> ###
 
-<code>static void <strong>&lt;T&gt;PoolTest</strong>(void)</code>
+<code>static void <strong>&lt;T&gt;pool_test</strong>(void)</code>
 
 The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`\.
 

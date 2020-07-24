@@ -3,17 +3,18 @@
 
  @subtitle To String Trait
 
- @param[AI_]
+ @param[A_]
  Function-like define macro accepting one argument and producing a valid name.
- `PAI_` is private.
+ Defines `PA_` to be private.
 
  @param[TO_STRING_NEXT]
- A function satisfying <typedef:<AI>NextToString>.
+ A function satisfying <typedef:<A>next_to_string>.
 
  @param[TO_STRING_ITERATOR]
- Tag type for the first argument to <typedef:<AI>NextToString>.
+ Tag type for the first argument to <typedef:<A>next_to_string>.
 
  @std C89
+ @cf [Array](https://github.com/neil-edelman/Array)
  @cf [Heap](https://github.com/neil-edelman/Heap)
  @cf [List](https://github.com/neil-edelman/List)
  @cf [Orcish](https://github.com/neil-edelman/Orcish)
@@ -33,73 +34,59 @@ static unsigned to_string_buffer_i;
 #endif /* idempotent --> */
 
 /* Check defines. */
-#if !defined(CAT) || !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
+#if !defined(CAT) || !defined(CAT_)
 #error ToString is meant to be included from other headers.
 #endif
-#ifndef AI_
-#error Macro AI_ undefined.
+#ifndef A_
+#error Macro A_ undefined.
 #endif
 #ifndef TO_STRING_NEXT
 #error Function TO_STRING_NEXT undefined.
 #endif
-#ifndef TO_STRING_IS_VALID
-#error Function TO_STRING_IS_VALID undefined.
-#endif
 #ifndef TO_STRING_ITERATOR
 #error Tag type TO_STRING_ITERATOR undefined.
 #endif
-#ifdef PAI_
-#error PAI_ can not be defined.
+#ifdef PA_
+#error PA_ can not be defined.
 #endif
 
-#define PAI_(thing) PCAT(to_string, AI_(thing))
+#define PA_(thing) CAT(to_string_, A_(thing))
 
 /** Tag type set by `TO_STRING_ITERATOR` should be a type that encodes all the
  values needed for iteration. */
-typedef TO_STRING_ITERATOR PAI_(Iterator);
+typedef TO_STRING_ITERATOR PA_(iterator);
 
 /** Returns true if it wrote to the buffer and advances to the next. */
-typedef int (*PAI_(NextToString))(PAI_(Iterator) *, char (*)[12]);
+typedef int (*PA_(next_to_string))(PA_(iterator) *, char (*)[12]);
 
 /* Check that `TO_STRING_NEXT` is a function implementing
- <typedef:<PAI>NextToString>. */
-static const PAI_(NextToString) PAI_(next_to_string) = (TO_STRING_NEXT);
-
-/** Returns false if the iterator points to null. */
-typedef int (*PAI_(IsValid))(const PAI_(Iterator) *);
-
-/* Check that `TO_STRING_CONTENTS` is a function implementing
- <typedef:<PAI>IsValid>. */
-static const PAI_(IsValid) PAI_(is_valid) = (TO_STRING_IS_VALID);
+ <typedef:<PA>next_to_string>. */
+static const PA_(next_to_string) PA_(n2str) = (TO_STRING_NEXT);
 
 /** Fills the to string function up with `it`, with `start` and `end`
  delimiters around the `<PA>NextToString` `TO_NEXT_STRING`. @allow */
-static const char *AI_(iterator_to_string)(PAI_(Iterator) *const it,
+static const char *A_(iterator_to_string)(PA_(iterator) *const it,
 	const char start, const char end) {
-	const char comma = ',', space = ' ',
-		*const ellipsis = "…", *const null = "null";
-	const size_t ellipsis_len = strlen(ellipsis), null_len = strlen(null);
+	const char comma = ',', space = ' ', *const ellipsis = "…";
+	const size_t ellipsis_len = strlen(ellipsis);
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
 	int is_sep = 0;
-	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0" or "null" "\0". */
+	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(it && !(to_string_buffers_no & (to_string_buffers_no - 1))
-		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1
-		&& to_string_buffer_size >= null_len + 1);
+		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	if(!PAI_(is_valid)(it))
-		{ memcpy(b, null, null_len), b += null_len; goto terminate; }
 	*b++ = start;
-	while(PAI_(next_to_string)(it, (char (*)[12])b)) {
-		/* Be paranoid about the '\0'. */
+	while(PA_(n2str)(it, (char (*)[12])b)) {
+		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = b - buffer) > to_string_buffer_size
 			- 11 - 1 - ellipsis_len - 1 - 1) {
 			char throw_out[12];
-			if(PAI_(next_to_string)(it, &throw_out)) goto ellipsis; else break;
+			if(PA_(n2str)(it, &throw_out)) goto ellipsis; else break;
 		}
 	}
 	if(is_sep) b -= 2;
@@ -115,8 +102,7 @@ terminate:
 	return buffer;
 }
 
-#undef AI_
-#undef PAI_
+#undef A_
+#undef PA_
 #undef TO_STRING_ITERATOR
-#undef TO_STRING_IS_VALID
 #undef TO_STRING_NEXT
