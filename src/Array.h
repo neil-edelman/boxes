@@ -123,10 +123,6 @@ typedef int (*PT_(biproject))(PT_(type) *, PT_(type) *);
  respectively. */
 typedef int (*PT_(compare))(const PT_(type) *a, const PT_(type) *b);
 
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- output string. Used for `ARRAY_TO_STRING`. */
-typedef void (*PT_(to_string))(const PT_(type) *, char (*)[12]);
-
 /** Manages the array field `data`, which is indexed up to `size`. To
  initialise it to an idle state, see <fn:<T>array>, `ARRAY_IDLE`, `{0}`
  (`C99`,) or being `static`.
@@ -415,8 +411,8 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
 
 
-#if !defined(T_) || !defined(PT_) || !defined(CAT) || !defined(CAT_)
-#error P?T_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
+#if !defined(T_) || !defined(CAT) || !defined(CAT_)
+#error T_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
 #endif
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
@@ -425,7 +421,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #define A_(thing) CAT(T_(array), thing)
 #endif /* !name --> */
 #define TO_STRING ARRAY_TO_STRING
-#include "ToString.h" /** \include */
+#include "ToString.h"
 
 #if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
 #define ARRAY_TEST_BASE /* Only one instance of base tests. */

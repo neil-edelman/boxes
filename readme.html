@@ -33,7 +33,7 @@
 
 <h1>Array.h</h1>
 
-<h2>Contiguous Dynamic Array (Vector); To String Trait</h2>
+<h2>Contiguous Dynamic Array (Vector)</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
@@ -54,7 +54,7 @@
 
 <p><code>&lt;T&gt;array</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 
-The inclusion must define an iterator, ITERATE, ITERATE<em>BOX,ITERATE</em>TYPE, ITERATE<em>BEGIN,andITERATE</em>NEXT, and,</div>
+</div>
 
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
@@ -67,16 +67,10 @@ The inclusion must define an iterator, ITERATE, ITERATE<em>BOX,ITERATE</em>TYPE,
 	<dd>To string trait contained in <a href = "../test/ArrayTest.h">../test/ArrayTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> array. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action">&lt;PT&gt;action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Parameter: ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE</dt>
 	<dd>Comparable trait; <code>&lt;C&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a function implementing, for <code>ARRAY_IS_EQUAL</code> <a href = "#typedef:&lt;PT&gt;bipredicate">&lt;PT&gt;bipredicate</a> that establishes an equivalence relation, or for <code>ARRAY_COMPARE</code> <a href = "#typedef:&lt;PT&gt;compare">&lt;PT&gt;compare</a> that establishes a total order. There can be multiple contrast traits, but only one can omit <code>ARRAY_COMPARABLE_NAME</code>.</dd>
-	<dt>Parameter: A_</dt>
-	<dd>Function-like define macro accepting one argument and producing a valid name. Defines <code>PA_</code> to be private.</dd>
-	<dt>Parameter: TO_STRING</dt>
-	<dd>Function implementing <a href = "#typedef:&lt;PA&gt;to_string">&lt;PA&gt;to_string</a>.</dd>
-	<dt>Parameter: TO_STRING_LEFT, TO_STRING_RIGHT</dt>
-	<dd>7-bit characters, defaults to '(' and ')'.</dd>
 	<dt>Standard:</dt>
-	<dd>C89, C89</dd>
+	<dd>C89</dd>
 	<dt>See also:</dt>
-	<dd><a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a>; <a href = "https://github.com/neil-edelman/Trie">Trie</a>; <a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a>; <a href = "https://github.com/neil-edelman/Trie">Trie</a></dd>
+	<dd><a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a>; <a href = "https://github.com/neil-edelman/Trie">Trie</a></dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -632,8 +626,6 @@ The inclusion must define an iterator, ITERATE, ITERATE<em>BOX,ITERATE</em>TYPE,
 <h2><a id = "license:" name = "license:">License</a></h2>
 
 <p>2016 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
-
-<p>2020 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
 
 </div>
 

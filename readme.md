@@ -1,6 +1,6 @@
 # Array\.h #
 
-## Contiguous Dynamic Array \(Vector\); To String Trait ##
+## Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;predicate](#user-content-typedef-dba5de90), [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3), [&lt;PT&gt;biproject](#user-content-typedef-56a6edf), [&lt;PT&gt;compare](#user-content-typedef-d40b4792), [&lt;PT&gt;to_string](#user-content-typedef-72056ad6), [&lt;PA&gt;to_string](#user-content-typedef-baebff99)
@@ -17,7 +17,7 @@
 
 `<T>array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
-The inclusion must define an iterator, ITERATE, ITERATE_BOX,ITERATE_TYPE, ITERATE_BEGIN,andITERATE_NEXT, and,
+
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<T>` that satisfies `C` naming conventions when mangled and a valid tag\-type associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
@@ -29,16 +29,10 @@ The inclusion must define an iterator, ITERATE, ITERATE_BOX,ITERATE_TYPE, ITERAT
    To string trait contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ array\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action](#user-content-typedef-6ab9561)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Parameter: ARRAY\_COMPARABLE\_NAME, ARRAY\_IS\_EQUAL, ARRAY\_COMPARE  
    Comparable trait; `<C>` that satisfies `C` naming conventions when mangled and a function implementing, for `ARRAY_IS_EQUAL` [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3) that establishes an equivalence relation, or for `ARRAY_COMPARE` [&lt;PT&gt;compare](#user-content-typedef-d40b4792) that establishes a total order\. There can be multiple contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`\.
- * Parameter: A\_  
-   Function\-like define macro accepting one argument and producing a valid name\. Defines `PA_` to be private\.
- * Parameter: TO\_STRING  
-   Function implementing [&lt;PA&gt;to_string](#user-content-typedef-baebff99)\.
- * Parameter: TO\_STRING\_LEFT, TO\_STRING\_RIGHT  
-   7\-bit characters, defaults to '\(' and '\)'\.
  * Standard:  
-   C89, C89
+   C89
  * See also:  
-   [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie); [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
+   [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -496,8 +490,6 @@ Tests equality for each consecutive pair of elements in `a` and, if true, surjec
 ## <a id = "user-content-license" name = "user-content-license">License</a> ##
 
 2016 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
-
-2020 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 
 
 

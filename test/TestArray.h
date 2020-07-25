@@ -7,7 +7,8 @@
 #ifdef ARRAY_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
 /* Copy functions for later includes. */
-static const PT_(to_string) PT_(to_str) = (ARRAY_TO_STRING);
+static void (*PT_(to_string))(const PT_(type) *, char (*)[12])
+	= (ARRAY_TO_STRING);
 static const char *(*PT_(array_to_string))(const struct T_(array) *)
 	= A_(to_string);
 
@@ -51,7 +52,7 @@ static void PT_(graph)(const struct T_(array) *const ar, const char *const fn) {
 			"\tsubgraph cluster_data {\n"
 			"\t\tstyle=filled;\n", (void *)data);
 		for(i = 0; i < ar->size; i++) {
-			PT_(to_str)(data + i, &a);
+			PT_(to_string)(data + i, &a);
 			fprintf(fp, "\t\tp%p [label=\"%s\"];\n", (void *)(data + i), a);
 		}
 		fprintf(fp, "\t}\n");
@@ -204,7 +205,7 @@ static void PT_(test_random)(void) {
 				{ perror("Error"), assert(0); return; }
 			size++;
 			PT_(filler)(data);
-			PT_(to_str)(data, &str);
+			PT_(to_string)(data, &str);
 			printf("created %s.\n", str);
 		} else {
 			double t = 0.5;
@@ -212,13 +213,13 @@ static void PT_(test_random)(void) {
 			if(r < t) {
 				data = T_(array_peek)(&a);
 				assert(data);
-				PT_(to_str)(data, &str);
+				PT_(to_string)(data, &str);
 				printf("popping %s.\n", str);
 				assert(data == T_(array_pop)(&a));
 			} else {
 				size_t idx = rand() / (RAND_MAX + 1.0) * size;
 				if(!(data = a.data + idx)) continue;
-				PT_(to_str)(data, &str);
+				PT_(to_string)(data, &str);
 				printf("removing %s at %lu.\n", str, (unsigned long)idx);
 				T_(array_remove)(&a, data);
 			}
@@ -480,7 +481,7 @@ static void PTC_(test_bounds)(void) {
 	printf("bounds: %s\n", PT_(array_to_string)(&a));
 	T_C_(array, sort)(&a);
 	printf("sorted: %s.\n", PT_(array_to_string)(&a));
-	PT_(to_str)(&elem, &z), printf("elem: %s\n", z);
+	PT_(to_string)(&elem, &z), printf("elem: %s\n", z);
 	low = T_C_(array, lower_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low <= a.size);
