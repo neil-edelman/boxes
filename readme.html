@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PT>predicate">&lt;PT&gt;predicate</a>, <a href = "#typedef:<PT>bipredicate">&lt;PT&gt;bipredicate</a>, <a href = "#typedef:<PT>biproject">&lt;PT&gt;biproject</a>, <a href = "#typedef:<PT>compare">&lt;PT&gt;compare</a>, <a href = "#typedef:<PT>to_string">&lt;PT&gt;to_string</a>, <a href = "#typedef:<PA>to_string">&lt;PA&gt;to_string</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PT>predicate">&lt;PT&gt;predicate</a>, <a href = "#typedef:<PT>bipredicate">&lt;PT&gt;bipredicate</a>, <a href = "#typedef:<PT>biproject">&lt;PT&gt;biproject</a>, <a href = "#typedef:<PT>compare">&lt;PT&gt;compare</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>array">&lt;T&gt;array</a>, <a href = "#tag:<PT>iterator">&lt;PT&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -62,7 +62,7 @@
 	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: ARRAY_TO_STRING_NAME, ARRAY_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;to_string">&lt;PT&gt;to_string</a>. There can be multiple to string traits, but only one can omit <code>ARRAY_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait: <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a function implementing <code>&lt;PA&gt;to_string</code>; gives <code>&lt;T&gt;array_to_string</code> contained in <a href = "ToString.h">ToString.h</a>. There can be multiple to string traits, but only one can omit <code>ARRAY_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/ArrayTest.h">../test/ArrayTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> array. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action">&lt;PT&gt;action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Parameter: ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE</dt>
@@ -135,26 +135,6 @@
 
 </div>
 
-<div>
-
-<h3><a id = "typedef:<PT>to_string" name = "typedef:<PT>to_string">&lt;PT&gt;to_string</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PT&gt;to_string</strong>)(const &lt;PT&gt;type *, char(*)[12]);</code></p>
-
-<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string. Used for <code>ARRAY_TO_STRING</code>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PA>to_string" name = "typedef:<PA>to_string">&lt;PA&gt;to_string</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PA&gt;to_string</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code></p>
-
-<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
-
-</div>
-
 <h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
 
 <div>
@@ -220,8 +200,6 @@
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array_if_each">&lt;T&gt;array_if_each</a></td><td>a, predicate, action</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_any">&lt;T&gt;array_any</a></td><td>a, predicate</td></tr>
-
-<tr><td align = right>static const char *</td><td><a href = "#fn:<A>to_string">&lt;A&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array_test">&lt;T&gt;array_test</a></td><td></td></tr>
 
@@ -499,21 +477,6 @@
 	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>a.size</code> &#215; <code>predicate</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<A>to_string" name = "fn:<A>to_string">&lt;A&gt;to_string</a></h3>
-
-<p><code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code></p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
 </dl>
 
 </div>

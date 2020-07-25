@@ -3,7 +3,7 @@
 ## Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;predicate](#user-content-typedef-dba5de90), [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3), [&lt;PT&gt;biproject](#user-content-typedef-56a6edf), [&lt;PT&gt;compare](#user-content-typedef-d40b4792), [&lt;PT&gt;to_string](#user-content-typedef-72056ad6), [&lt;PA&gt;to_string](#user-content-typedef-baebff99)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;predicate](#user-content-typedef-dba5de90), [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3), [&lt;PT&gt;biproject](#user-content-typedef-56a6edf), [&lt;PT&gt;compare](#user-content-typedef-d40b4792)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;array](#user-content-tag-96e5f142), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -24,7 +24,7 @@
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
-   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;to_string](#user-content-typedef-72056ad6)\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
+   To string trait: `<A>` that satisfies `C` naming conventions when mangled and a function implementing `<PA>to_string`; gives `<T>array_to_string` contained in [ToString\.h](ToString.h)\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
  * Parameter: ARRAY\_TEST  
    To string trait contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ array\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action](#user-content-typedef-6ab9561)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Parameter: ARRAY\_COMPARABLE\_NAME, ARRAY\_IS\_EQUAL, ARRAY\_COMPARE  
@@ -82,22 +82,6 @@ Returns a boolean given two `<T>`\.
 <code>typedef int(*<strong>&lt;PT&gt;compare</strong>)(const &lt;PT&gt;type *a, const &lt;PT&gt;type *b);</code>
 
 Three\-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
-
-
-
-### <a id = "user-content-typedef-72056ad6" name = "user-content-typedef-72056ad6">&lt;PT&gt;to_string</a> ###
-
-<code>typedef void(*<strong>&lt;PT&gt;to_string</strong>)(const &lt;PT&gt;type *, char(*)[12]);</code>
-
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\. Used for `ARRAY_TO_STRING`\.
-
-
-
-### <a id = "user-content-typedef-baebff99" name = "user-content-typedef-baebff99">&lt;PA&gt;to_string</a> ###
-
-<code>typedef void(*<strong>&lt;PA&gt;to_string</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code>
-
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -160,8 +144,6 @@ Contains all iteration parameters for inclusion in traits\.
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-51c854fc">&lt;T&gt;array_if_each</a></td><td>a, predicate, action</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-cfeeb3d7">&lt;T&gt;array_any</a></td><td>a, predicate</td></tr>
-
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-6fb489ab">&lt;A&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-6e93ba93">&lt;T&gt;array_test</a></td><td></td></tr>
 
@@ -387,18 +369,6 @@ Iterates through `a` and calls `predicate` until it returns true\.
    The first `predicate` that returned true, or, if the statement is false on all, null\.
  * Order:  
    &#927;\(`a.size` &#215; `predicate`\)
-
-
-
-
-### <a id = "user-content-fn-6fb489ab" name = "user-content-fn-6fb489ab">&lt;A&gt;to_string</a> ###
-
-<code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code>
-
- * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
- * Order:  
-   &#920;\(1\)
 
 
 
