@@ -1,9 +1,9 @@
 # Array\.h #
 
-## Contiguous Dynamic Array \(Vector\) ##
+## Contiguous Dynamic Array \(Vector\); To String Trait ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;predicate](#user-content-typedef-dba5de90), [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3), [&lt;PT&gt;biproject](#user-content-typedef-56a6edf), [&lt;PT&gt;compare](#user-content-typedef-d40b4792), [&lt;PT&gt;to_string](#user-content-typedef-72056ad6)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;predicate](#user-content-typedef-dba5de90), [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3), [&lt;PT&gt;biproject](#user-content-typedef-56a6edf), [&lt;PT&gt;compare](#user-content-typedef-d40b4792), [&lt;PT&gt;to_string](#user-content-typedef-72056ad6), [&lt;PA&gt;to_string](#user-content-typedef-baebff99)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;array](#user-content-tag-96e5f142), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -17,7 +17,7 @@
 
 `<T>array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
-
+The inclusion must define an iterator, ITERATE, ITERATE_BOX,ITERATE_TYPE, ITERATE_BEGIN,andITERATE_NEXT, and,
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<T>` that satisfies `C` naming conventions when mangled and a valid tag\-type associated therewith; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
@@ -29,10 +29,16 @@
    To string trait contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ array\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action](#user-content-typedef-6ab9561)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Parameter: ARRAY\_COMPARABLE\_NAME, ARRAY\_IS\_EQUAL, ARRAY\_COMPARE  
    Comparable trait; `<C>` that satisfies `C` naming conventions when mangled and a function implementing, for `ARRAY_IS_EQUAL` [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3) that establishes an equivalence relation, or for `ARRAY_COMPARE` [&lt;PT&gt;compare](#user-content-typedef-d40b4792) that establishes a total order\. There can be multiple contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`\.
+ * Parameter: A\_  
+   Function\-like define macro accepting one argument and producing a valid name\. Defines `PA_` to be private\.
+ * Parameter: TO\_STRING  
+   Function implementing [&lt;PA&gt;to_string](#user-content-typedef-baebff99)\.
+ * Parameter: TO\_STRING\_LEFT, TO\_STRING\_RIGHT  
+   7\-bit characters, defaults to '\(' and '\)'\.
  * Standard:  
-   C89
+   C89, C89
  * See also:  
-   [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
+   [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie); [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -93,6 +99,14 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 
 
+### <a id = "user-content-typedef-baebff99" name = "user-content-typedef-baebff99">&lt;PA&gt;to_string</a> ###
+
+<code>typedef void(*<strong>&lt;PA&gt;to_string</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code>
+
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+
+
+
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
 ### <a id = "user-content-tag-96e5f142" name = "user-content-tag-96e5f142">&lt;T&gt;array</a> ###
@@ -109,7 +123,7 @@ Manages the array field `data`, which is indexed up to `size`\. To initialise it
 
 <code>struct <strong>&lt;PT&gt;iterator</strong>;</code>
 
-Contains all iteration parameters in one for iteration in traits\.
+Contains all iteration parameters for inclusion in traits\.
 
 
 
@@ -123,7 +137,7 @@ Contains all iteration parameters in one for iteration in traits\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-a8fa90a7">&lt;T&gt;array_</a></td><td>a</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-17759c31">&lt;T&gt;array_reserve</a></td><td>a, min_capacity</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-17759c31">&lt;T&gt;array_reserve</a></td><td>a, min</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-cd39931d">&lt;T&gt;array_buffer</a></td><td>a, buffer</td></tr>
 
@@ -153,7 +167,11 @@ Contains all iteration parameters in one for iteration in traits\.
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-cfeeb3d7">&lt;T&gt;array_any</a></td><td>a, predicate</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-f8d01c74">&lt;T&gt;array&lt;A&gt;to_string</a></td><td>a</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-6fb489ab">&lt;A&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-6e93ba93">&lt;T&gt;array_test</a></td><td></td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-ff2ca488">&lt;T&gt;array&lt;C&gt;comparable_test</a></td><td></td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-492cb74f">&lt;T&gt;array&lt;C&gt;lower_bound</a></td><td>a, value</td></tr>
 
@@ -164,10 +182,6 @@ Contains all iteration parameters in one for iteration in traits\.
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-449174eb">&lt;T&gt;array&lt;C&gt;reverse</a></td><td>a</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d1f28222">&lt;T&gt;array&lt;C&gt;compactify</a></td><td>a, merge</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-6e93ba93">&lt;T&gt;array_test</a></td><td></td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-ff2ca488">&lt;T&gt;array&lt;C&gt;comparable_test</a></td><td></td></tr>
 
 </table>
 
@@ -197,11 +211,11 @@ Destroys `a` and returns it to idle\.
 
 ### <a id = "user-content-fn-17759c31" name = "user-content-fn-17759c31">&lt;T&gt;array_reserve</a> ###
 
-<code>static int <strong>&lt;T&gt;array_reserve</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>min_capacity</em>)</code>
+<code>static int <strong>&lt;T&gt;array_reserve</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>min</em>)</code>
 
-Ensures `min_capacity` of `a`\.
+Ensures `min` of `a`\.
 
- * Parameter: _min\_capacity_  
+ * Parameter: _min_  
    If zero, does nothing\.
  * Return:  
    Success; otherwise, `errno` will be set\.
@@ -383,15 +397,31 @@ Iterates through `a` and calls `predicate` until it returns true\.
 
 
 
-### <a id = "user-content-fn-f8d01c74" name = "user-content-fn-f8d01c74">&lt;T&gt;array&lt;A&gt;to_string</a> ###
+### <a id = "user-content-fn-6fb489ab" name = "user-content-fn-6fb489ab">&lt;A&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;T&gt;array&lt;A&gt;to_string</strong>(const struct &lt;T&gt;array *const <em>a</em>)</code>
+<code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `a` in a static string buffer with the limitations of `ToString.h`\.
+   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 
+
+
+
+### <a id = "user-content-fn-6e93ba93" name = "user-content-fn-6e93ba93">&lt;T&gt;array_test</a> ###
+
+<code>static void <strong>&lt;T&gt;array_test</strong>(void)</code>
+
+Will be tested on stdout\. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`\.
+
+
+
+### <a id = "user-content-fn-ff2ca488" name = "user-content-fn-ff2ca488">&lt;T&gt;array&lt;C&gt;comparable_test</a> ###
+
+<code>static void <strong>&lt;T&gt;array&lt;C&gt;comparable_test</strong>(void)</code>
+
+Will be tested on stdout\. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`\.
 
 
 
@@ -461,27 +491,13 @@ Tests equality for each consecutive pair of elements in `a` and, if true, surjec
 
 
 
-### <a id = "user-content-fn-6e93ba93" name = "user-content-fn-6e93ba93">&lt;T&gt;array_test</a> ###
-
-<code>static void <strong>&lt;T&gt;array_test</strong>(void)</code>
-
-Will be tested on stdout\. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`\.
-
-
-
-### <a id = "user-content-fn-ff2ca488" name = "user-content-fn-ff2ca488">&lt;T&gt;array&lt;C&gt;comparable_test</a> ###
-
-<code>static void <strong>&lt;T&gt;array&lt;C&gt;comparable_test</strong>(void)</code>
-
-Will be tested on stdout\. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`\.
-
-
-
 
 
 ## <a id = "user-content-license" name = "user-content-license">License</a> ##
 
 2016 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
+
+2020 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
 
 
 

@@ -147,28 +147,27 @@ static void T_(array)(struct T_(array) *const a)
 static void T_(array_)(struct T_(array) *const a)
 	{ assert(a), free(a->data), T_(array)(a); }
 
-/** Ensures `min_capacity` of `a`. @param[min_capacity] If zero, does nothing.
- @return Success; otherwise, `errno` will be set. @throws[ERANGE] Tried
- allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
+/** Ensures `min` of `a`. @param[min] If zero, does nothing. @return Success;
+ otherwise, `errno` will be set. @throws[ERANGE] Tried allocating more then can
+ fit in `size_t` or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] @allow */
-static int T_(array_reserve)(struct T_(array) *const a,
-	const size_t min_capacity) {
+static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 	size_t c0;
 	PT_(type) *data;
 	const size_t max_size = (size_t)-1 / sizeof *a->data;
 	assert(a);
 	if(a->data) {
-		if(min_capacity <= a->capacity) return 1;
+		if(min <= a->capacity) return 1;
 		c0 = a->capacity;
 		if(c0 < 8) c0 = 8;
 	} else { /* Idle. */
-		if(!min_capacity) return 1;
+		if(!min) return 1;
 		c0 = 8;
 	}
-	if(min_capacity > max_size) return errno = ERANGE, 0;
+	if(min > max_size) return errno = ERANGE, 0;
 	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. */
-	while(c0 < min_capacity) {
+	while(c0 < min) {
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
 		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; unlikely. */
 		c0 = c1;
@@ -376,17 +375,30 @@ static PT_(type) *T_(array_any)(const struct T_(array) *const a,
 	return 0;
 }
 
-/** Contains all iteration parameters in one for iteration in traits. */
+/** Contains all iteration parameters for inclusion in traits. */
 struct PT_(iterator);
 struct PT_(iterator) { const struct T_(array) *a; size_t i; };
-/** Advances `it`. */
+
+/** Loads `a` into `it`. @implements <I>begin from <Iterate.h>. */
+static void PT_(begin)(struct PT_(iterator) *const it,
+	const struct T_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
+
+/** Advances `it`. @implements <I>next from <Iterate.h>. */
 static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it && it->a);
 	return it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
+
+#if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
+	|| defined(ITERATE_BEGIN) || defined(ITERATE_NEXT)
+#error Unexpected ITERATE*.
+#endif
+
+#define ITERATE struct PT_(iterator)
+#define ITERATE_BOX struct T_(array)
 #define ITERATE_TYPE PT_(type)
-#define ITERATE_ITERATOR PT_(iterator)
-#define ITERATE_NEXT &PT_(next)
+#define ITERATE_BEGIN PT_(begin)
+#define ITERATE_NEXT PT_(next)
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
@@ -395,7 +407,7 @@ static void PT_(unused_base)(void) {
 	T_(array_peek)(0); T_(array_pop)(0); T_(array_splice)(0, 0, 0, 0);
 	T_(array_clip)(0, 0); T_(array_keep_if)(0, 0, 0); T_(array_trim)(0, 0);
 	T_(array_each)(0, 0); T_(array_if_each)(0, 0, 0); T_(array_any)(0, 0);
-	PT_(next)(0); PT_(unused_base_coda)();
+	PT_(begin)(0, 0); PT_(next)(0); PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
@@ -404,56 +416,23 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 
 #if !defined(T_) || !defined(PT_) || !defined(CAT) || !defined(CAT_)
-#error P?T_ or CAT_? not yet defined; traits must be defined separately?
+#error P?T_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
 #endif
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
-#define PTA_(thing) CAT(PT_(thing), ARRAY_TO_STRING_NAME)
-#define T_A_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_TO_STRING_NAME, thing2))
+#define A_(thing) CAT(T_(array), CAT(ARRAY_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define PTA_(thing) CAT(PT_(thing), anonymous)
-#define T_A_(thing1, thing2) CAT(T_(thing1), thing2)
+#define A_(thing) CAT(T_(array), thing)
 #endif /* !name --> */
-
-/* Check that `ARRAY_TO_STRING` is a function implementing
- <typedef:<PT>to_string>. */
-static const PT_(to_string) PTA_(to_str12) = (ARRAY_TO_STRING);
-
-/** Writes `it` to `str` and advances or returns false.
- @implements <A>next_to_string */
-static int PTA_(next_to_str12)(struct PT_(iterator) *const it,
-	char (*const str)[12]) {
-	assert(it && str);
-	if(!it->a || it->i >= it->a->size) return 0;
-	PTA_(to_str12)(it->a->data + it->i++, str);
-	return 1;
-}
-
-#define A_ PTA_
-#define TO_STRING_ITERATOR struct PT_(iterator)
-#define TO_STRING_NEXT &PTA_(next_to_str12)
-#include "ToString.h"
-
-/** @return Print the contents of `a` in a static string buffer with the
- limitations of `ToString.h`. @order \Theta(1) @allow */
-static const char *T_A_(array, to_string)(const struct T_(array) *const a) {
-	struct PT_(iterator) it = { 0, 0 };
-	it.a = a;
-	return PTA_(iterator_to_string)(&it, '(', ')'); /* In ToString. */
-}
-
-static void PTA_(unused_to_string_coda)(void);
-static void PTA_(unused_to_string)(void)
-	{ T_A_(array, to_string)(0); PTA_(unused_to_string_coda)(); }
-static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
+#define TO_STRING ARRAY_TO_STRING
+#include "ToString.h" /** \include */
 
 #if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
 #define ARRAY_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestArray.h"
+#include "../test/TestArray.h" /** \include */
 #endif /* test --> */
 
-#undef PTA_
-#undef T_A_
+#undef A_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -554,7 +533,13 @@ static const PT_(bipredicate) PTC_(is_equal) = (ARRAY_IS_EQUAL);
 
 #endif /* is equal --> */
 
-/* fixme: static int T_C_(array, is_equal)() */
+/** @fixme @return If `a` equals `b`. */
+static int T_C_(array, is_equal)(const struct T_(array) *const a,
+	const struct T_(array) *const b) {
+	if(!a) return !b;
+	if(!b) return 0;
+	return 1;
+}
 
 /** Tests equality for each consecutive pair of elements in `a` and, if
  true, surjects two one according to `merge`.
@@ -595,12 +580,13 @@ static void PTC_(unused_contrast)(void) {
 	T_C_(array, lower_bound)(0, 0); T_C_(array, upper_bound)(0, 0);
 	T_C_(array, insert)(0, 0); T_C_(array, sort)(0); T_C_(array, reverse)(0);
 #endif /* compare --> */
-	T_C_(array, compactify)(0, 0); PTC_(unused_contrast_coda)();
+	T_C_(array, is_equal)(0, 0); T_C_(array, compactify)(0, 0);
+	PTC_(unused_contrast_coda)();
 }
 static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 
 #if defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
-#include "../test/TestArray.h" /** \include */
+#include "../test/TestArray.h"
 #endif /* test --> */
 
 #undef PTC_
@@ -638,8 +624,10 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
+#undef ITERATE
+#undef ITERATE_BOX
 #undef ITERATE_TYPE
-#undef ITERATE_ITERATOR
+#undef ITERATE_BEGIN
 #undef ITERATE_NEXT
 #endif /* !trait --> */
 

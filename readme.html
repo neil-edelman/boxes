@@ -33,11 +33,11 @@
 
 <h1>Array.h</h1>
 
-<h2>Contiguous Dynamic Array (Vector)</h2>
+<h2>Contiguous Dynamic Array (Vector); To String Trait</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PT>predicate">&lt;PT&gt;predicate</a>, <a href = "#typedef:<PT>bipredicate">&lt;PT&gt;bipredicate</a>, <a href = "#typedef:<PT>biproject">&lt;PT&gt;biproject</a>, <a href = "#typedef:<PT>compare">&lt;PT&gt;compare</a>, <a href = "#typedef:<PT>to_string">&lt;PT&gt;to_string</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PT>predicate">&lt;PT&gt;predicate</a>, <a href = "#typedef:<PT>bipredicate">&lt;PT&gt;bipredicate</a>, <a href = "#typedef:<PT>biproject">&lt;PT&gt;biproject</a>, <a href = "#typedef:<PT>compare">&lt;PT&gt;compare</a>, <a href = "#typedef:<PT>to_string">&lt;PT&gt;to_string</a>, <a href = "#typedef:<PA>to_string">&lt;PA&gt;to_string</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>array">&lt;T&gt;array</a>, <a href = "#tag:<PT>iterator">&lt;PT&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -54,7 +54,7 @@
 
 <p><code>&lt;T&gt;array</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 
-</div>
+The inclusion must define an iterator, ITERATE, ITERATE<em>BOX,ITERATE</em>TYPE, ITERATE<em>BEGIN,andITERATE</em>NEXT, and,</div>
 
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
@@ -67,10 +67,16 @@
 	<dd>To string trait contained in <a href = "../test/ArrayTest.h">../test/ArrayTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> array. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action">&lt;PT&gt;action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Parameter: ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE</dt>
 	<dd>Comparable trait; <code>&lt;C&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a function implementing, for <code>ARRAY_IS_EQUAL</code> <a href = "#typedef:&lt;PT&gt;bipredicate">&lt;PT&gt;bipredicate</a> that establishes an equivalence relation, or for <code>ARRAY_COMPARE</code> <a href = "#typedef:&lt;PT&gt;compare">&lt;PT&gt;compare</a> that establishes a total order. There can be multiple contrast traits, but only one can omit <code>ARRAY_COMPARABLE_NAME</code>.</dd>
+	<dt>Parameter: A_</dt>
+	<dd>Function-like define macro accepting one argument and producing a valid name. Defines <code>PA_</code> to be private.</dd>
+	<dt>Parameter: TO_STRING</dt>
+	<dd>Function implementing <a href = "#typedef:&lt;PA&gt;to_string">&lt;PA&gt;to_string</a>.</dd>
+	<dt>Parameter: TO_STRING_LEFT, TO_STRING_RIGHT</dt>
+	<dd>7-bit characters, defaults to '(' and ')'.</dd>
 	<dt>Standard:</dt>
-	<dd>C89</dd>
+	<dd>C89, C89</dd>
 	<dt>See also:</dt>
-	<dd><a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a>; <a href = "https://github.com/neil-edelman/Trie">Trie</a></dd>
+	<dd><a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a>; <a href = "https://github.com/neil-edelman/Trie">Trie</a>; <a href = "https://github.com/neil-edelman/Array">Array</a>; <a href = "https://github.com/neil-edelman/Heap">Heap</a>; <a href = "https://github.com/neil-edelman/List">List</a>; <a href = "https://github.com/neil-edelman/Orcish">Orcish</a>; <a href = "https://github.com/neil-edelman/Pool">Pool</a>; <a href = "https://github.com/neil-edelman/Set">Set</a>; <a href = "https://github.com/neil-edelman/Trie">Trie</a></dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -145,6 +151,16 @@
 
 </div>
 
+<div>
+
+<h3><a id = "typedef:<PA>to_string" name = "typedef:<PA>to_string">&lt;PA&gt;to_string</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PA&gt;to_string</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code></p>
+
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
+
+</div>
+
 <h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
 
 <div>
@@ -165,7 +181,7 @@
 
 <p><code>struct <strong>&lt;PT&gt;iterator</strong>;</code></p>
 
-<p>Contains all iteration parameters in one for iteration in traits.</p>
+<p>Contains all iteration parameters for inclusion in traits.</p>
 
 </div>
 
@@ -181,7 +197,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array_">&lt;T&gt;array_</a></td><td>a</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<T>array_reserve">&lt;T&gt;array_reserve</a></td><td>a, min_capacity</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<T>array_reserve">&lt;T&gt;array_reserve</a></td><td>a, min</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_buffer">&lt;T&gt;array_buffer</a></td><td>a, buffer</td></tr>
 
@@ -211,7 +227,11 @@
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_any">&lt;T&gt;array_any</a></td><td>a, predicate</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<T>array<A>to_string">&lt;T&gt;array&lt;A&gt;to_string</a></td><td>a</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<A>to_string">&lt;A&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>array_test">&lt;T&gt;array_test</a></td><td></td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>array<C>comparable_test">&lt;T&gt;array&lt;C&gt;comparable_test</a></td><td></td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<T>array<C>lower_bound">&lt;T&gt;array&lt;C&gt;lower_bound</a></td><td>a, value</td></tr>
 
@@ -222,10 +242,6 @@
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array<C>reverse">&lt;T&gt;array&lt;C&gt;reverse</a></td><td>a</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array<C>compactify">&lt;T&gt;array&lt;C&gt;compactify</a></td><td>a, merge</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_test">&lt;T&gt;array_test</a></td><td></td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array<C>comparable_test">&lt;T&gt;array&lt;C&gt;comparable_test</a></td><td></td></tr>
 
 </table>
 
@@ -264,12 +280,12 @@
 
 <h3><a id = "fn:<T>array_reserve" name = "fn:<T>array_reserve">&lt;T&gt;array_reserve</a></h3>
 
-<p><code>static int <strong>&lt;T&gt;array_reserve</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>min_capacity</em>)</code></p>
+<p><code>static int <strong>&lt;T&gt;array_reserve</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>min</em>)</code></p>
 
-<p>Ensures <code>min_capacity</code> of <code>a</code>.</p>
+<p>Ensures <code>min</code> of <code>a</code>.</p>
 
 <dl>
-	<dt>Parameter: <em>min_capacity</em></dt>
+	<dt>Parameter: <em>min</em></dt>
 	<dd>If zero, does nothing.</dd>
 	<dt>Return:</dt>
 	<dd>Success; otherwise, <code>errno</code> will be set.</dd>
@@ -495,16 +511,36 @@
 
 <div>
 
-<h3><a id = "fn:<T>array<A>to_string" name = "fn:<T>array<A>to_string">&lt;T&gt;array&lt;A&gt;to_string</a></h3>
+<h3><a id = "fn:<A>to_string" name = "fn:<A>to_string">&lt;A&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;T&gt;array&lt;A&gt;to_string</strong>(const struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Print the contents of <code>a</code> in a static string buffer with the limitations of <code>ToString.h</code>.</dd>
+	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>array_test" name = "fn:<T>array_test">&lt;T&gt;array_test</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;array_test</strong>(void)</code></p>
+
+<p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>array<C>comparable_test" name = "fn:<T>array<C>comparable_test">&lt;T&gt;array&lt;C&gt;comparable_test</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;comparable_test</strong>(void)</code></p>
+
+<p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
 
 </div>
 
@@ -589,26 +625,6 @@
 
 </div>
 
-<div>
-
-<h3><a id = "fn:<T>array_test" name = "fn:<T>array_test">&lt;T&gt;array_test</a></h3>
-
-<p><code>static void <strong>&lt;T&gt;array_test</strong>(void)</code></p>
-
-<p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>array<C>comparable_test" name = "fn:<T>array<C>comparable_test">&lt;T&gt;array&lt;C&gt;comparable_test</a></h3>
-
-<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;comparable_test</strong>(void)</code></p>
-
-<p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
-
-</div>
-
 </div>
 
 <div>
@@ -616,6 +632,8 @@
 <h2><a id = "license:" name = "license:">License</a></h2>
 
 <p>2016 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+<p>2020 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
 
 </div>
 

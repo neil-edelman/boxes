@@ -9,7 +9,7 @@
 /* Copy functions for later includes. */
 static const PT_(to_string) PT_(to_str) = (ARRAY_TO_STRING);
 static const char *(*PT_(array_to_string))(const struct T_(array) *)
-	= T_A_(array, to_string);
+	= A_(to_string);
 
 /* `ARRAY_TEST` must be a function that implements <typedef:<PT>action>. */
 static const PT_(action) PT_(filler) = (ARRAY_TEST);
@@ -68,7 +68,6 @@ static void PT_(test_basic)(void) {
 	size_t i;
 	int is_zero;
 
-	printf("Test null %s.\n", PT_(array_to_string)(0));
 	assert(errno == 0);
 	PT_(valid_state)(0);
 
