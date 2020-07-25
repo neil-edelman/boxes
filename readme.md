@@ -3,7 +3,7 @@
 ## Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;predicate](#user-content-typedef-dba5de90), [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3), [&lt;PT&gt;biproject](#user-content-typedef-56a6edf), [&lt;PT&gt;compare](#user-content-typedef-d40b4792)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;predicate](#user-content-typedef-dba5de90), [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3), [&lt;PT&gt;biproject](#user-content-typedef-56a6edf), [&lt;PT&gt;compare](#user-content-typedef-d40b4792), [&lt;PA&gt;to_string](#user-content-typedef-baebff99)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;array](#user-content-tag-96e5f142), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -85,6 +85,14 @@ Three\-way comparison on a totally order set; returns an integer value less then
 
 
 
+### <a id = "user-content-typedef-baebff99" name = "user-content-typedef-baebff99">&lt;PA&gt;to_string</a> ###
+
+<code>typedef void(*<strong>&lt;PA&gt;to_string</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code>
+
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+
+
+
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
 ### <a id = "user-content-tag-96e5f142" name = "user-content-tag-96e5f142">&lt;T&gt;array</a> ###
@@ -144,6 +152,8 @@ Contains all iteration parameters for inclusion in traits\.
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-51c854fc">&lt;T&gt;array_if_each</a></td><td>a, predicate, action</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-cfeeb3d7">&lt;T&gt;array_any</a></td><td>a, predicate</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-6fb489ab">&lt;A&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-6e93ba93">&lt;T&gt;array_test</a></td><td></td></tr>
 
@@ -369,6 +379,18 @@ Iterates through `a` and calls `predicate` until it returns true\.
    The first `predicate` that returned true, or, if the statement is false on all, null\.
  * Order:  
    &#927;\(`a.size` &#215; `predicate`\)
+
+
+
+
+### <a id = "user-content-fn-6fb489ab" name = "user-content-fn-6fb489ab">&lt;A&gt;to_string</a> ###
+
+<code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code>
+
+ * Return:  
+   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+ * Order:  
+   &#920;\(1\)
 
 
 

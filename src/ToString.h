@@ -1,4 +1,4 @@
-/** @license 2020 Neil Edelman, distributed under the terms of the
+/* @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
  @subtitle To String Trait
@@ -16,7 +16,8 @@
  @param[TO_STRING_LEFT, TO_STRING_RIGHT]
  7-bit characters, defaults to '(' and ')'.
 
- @std C89 */
+ @std C89
+ @fixme Traits separate documentation. */
 
 #ifndef TO_STRING_H /* <!-- idempotent: for all in compilation unit. */
 #define TO_STRING_H

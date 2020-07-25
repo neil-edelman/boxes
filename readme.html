@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PT>predicate">&lt;PT&gt;predicate</a>, <a href = "#typedef:<PT>bipredicate">&lt;PT&gt;bipredicate</a>, <a href = "#typedef:<PT>biproject">&lt;PT&gt;biproject</a>, <a href = "#typedef:<PT>compare">&lt;PT&gt;compare</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PT>predicate">&lt;PT&gt;predicate</a>, <a href = "#typedef:<PT>bipredicate">&lt;PT&gt;bipredicate</a>, <a href = "#typedef:<PT>biproject">&lt;PT&gt;biproject</a>, <a href = "#typedef:<PT>compare">&lt;PT&gt;compare</a>, <a href = "#typedef:<PA>to_string">&lt;PA&gt;to_string</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>array">&lt;T&gt;array</a>, <a href = "#tag:<PT>iterator">&lt;PT&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -135,6 +135,16 @@
 
 </div>
 
+<div>
+
+<h3><a id = "typedef:<PA>to_string" name = "typedef:<PA>to_string">&lt;PA&gt;to_string</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PA&gt;to_string</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code></p>
+
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
+
+</div>
+
 <h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
 
 <div>
@@ -200,6 +210,8 @@
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array_if_each">&lt;T&gt;array_if_each</a></td><td>a, predicate, action</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_any">&lt;T&gt;array_any</a></td><td>a, predicate</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<A>to_string">&lt;A&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array_test">&lt;T&gt;array_test</a></td><td></td></tr>
 
@@ -477,6 +489,21 @@
 	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>a.size</code> &#215; <code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<A>to_string" name = "fn:<A>to_string">&lt;A&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
 </dl>
 
 </div>
