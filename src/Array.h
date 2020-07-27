@@ -571,7 +571,7 @@ static int T_C_(array, is_equal)(const struct T_(array) *const a,
  true, surjects two one according to `merge`.
  @param[merge] Can be null, in which case, all duplicate entries are erased.
  @order \O(`a.size`) @allow */
-static void T_C_(array, compactify)(struct T_(array) *const a,
+static void T_C_(array, unique)(struct T_(array) *const a,
 	const PT_(biproject) merge) {
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
@@ -607,7 +607,7 @@ static void PTC_(unused_contrast)(void) {
 	T_C_(array, upper_bound)(0, 0); T_C_(array, insert)(0, 0);
 	T_C_(array, sort)(0); T_C_(array, reverse)(0);
 #endif /* compare --> */
-	T_C_(array, is_equal)(0, 0); T_C_(array, compactify)(0, 0);
+	T_C_(array, is_equal)(0, 0); T_C_(array, unique)(0, 0);
 	PTC_(unused_contrast_coda)();
 }
 static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
