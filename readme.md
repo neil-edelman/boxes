@@ -127,6 +127,8 @@ Contains all iteration parameters for inclusion in traits\.
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-cd39931d">&lt;T&gt;array_buffer</a></td><td>a, buffer</td></tr>
 
+<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-821988d1">&lt;T&gt;array_buffer_before</a></td><td>a, before, buffer</td></tr>
+
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-1b5532c7">&lt;T&gt;array_new</a></td><td>a</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-143daddb">&lt;T&gt;array_update_new</a></td><td>a, update_ptr</td></tr>
@@ -218,10 +220,23 @@ Ensures `min` of `a`\.
 
 Adds `buffer` un\-initialised elements at the back of `a`\.
 
- * Parameter: _buffer_  
-   If zero, returns null\.
  * Return:  
-   A pointer to previous end of `a`, where `buffer` objects are, or null and `errno` will be set for `buffer != 0`\.
+   A pointer to previous end of `a`, where `buffer` objects are\.
+ * Exceptional return: realloc, ERANGE  
+
+
+
+
+### <a id = "user-content-fn-821988d1" name = "user-content-fn-821988d1">&lt;T&gt;array_buffer_before</a> ###
+
+<code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_buffer_before</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>before</em>, const size_t <em>buffer</em>)</code>
+
+Adds `buffer` un\-initialised elements at `before` in `a`\.
+
+ * Parameter: _before_  
+   A number smaller then or equal to `a.size`; if `a.size`, this function behaves as [&lt;T&gt;array_buffer](#user-content-fn-cd39931d)\.
+ * Return:  
+   A pointer to the start of the new region\.
  * Exceptional return: realloc, ERANGE  
 
 
@@ -232,8 +247,10 @@ Adds `buffer` un\-initialised elements at the back of `a`\.
 <code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_new</strong>(struct &lt;T&gt;array *const <em>a</em>)</code>
 
  * Return:  
-   A new un\-initialized datum of `a`\.
+   A new un\-initialized element of at the end of `a`\.
  * Exceptional return: realloc, ERANGE  
+ * Order:  
+   amortised &#927;\(1\)
 
 
 

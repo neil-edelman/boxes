@@ -185,6 +185,8 @@
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_buffer">&lt;T&gt;array_buffer</a></td><td>a, buffer</td></tr>
 
+<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_buffer_before">&lt;T&gt;array_buffer_before</a></td><td>a, before, buffer</td></tr>
+
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_new">&lt;T&gt;array_new</a></td><td>a</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_update_new">&lt;T&gt;array_update_new</a></td><td>a, update_ptr</td></tr>
@@ -289,10 +291,26 @@
 <p>Adds <code>buffer</code> un-initialised elements at the back of <code>a</code>.</p>
 
 <dl>
-	<dt>Parameter: <em>buffer</em></dt>
-	<dd>If zero, returns null.</dd>
 	<dt>Return:</dt>
-	<dd>A pointer to previous end of <code>a</code>, where <code>buffer</code> objects are, or null and <code>errno</code> will be set for <code>buffer != 0</code>.</dd>
+	<dd>A pointer to previous end of <code>a</code>, where <code>buffer</code> objects are.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>array_buffer_before" name = "fn:<T>array_buffer_before">&lt;T&gt;array_buffer_before</a></h3>
+
+<p><code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_buffer_before</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>before</em>, const size_t <em>buffer</em>)</code></p>
+
+<p>Adds <code>buffer</code> un-initialised elements at <code>before</code> in <code>a</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>before</em></dt>
+	<dd>A number smaller then or equal to <code>a.size</code>; if <code>a.size</code>, this function behaves as <a href = "#fn:&lt;T&gt;array_buffer">&lt;T&gt;array_buffer</a>.</dd>
+	<dt>Return:</dt>
+	<dd>A pointer to the start of the new region.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 </dl>
 
@@ -306,8 +324,10 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>A new un-initialized datum of <code>a</code>.</dd>
+	<dd>A new un-initialized element of at the end of <code>a</code>.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dt>Order:</dt>
+	<dd>amortised &#927;(1)</dd>
 </dl>
 
 </div>

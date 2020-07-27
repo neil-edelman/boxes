@@ -178,7 +178,7 @@ static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 }
 
 /** Adds `buffer` un-initialised elements at the back of `a`.
- @return A pointer to previous end of `a`, where `buffer` objects are.
+ @return A pointer to previous end of `a`, where there are `buffer` elements.
  @throws[realloc, ERANGE] @allow */
 static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
 	const size_t buffer) {
@@ -192,10 +192,11 @@ static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
 	return a->data + prev_size;
 }
 
-/** Adds `buffer` un-initialised elements `before` in `a`.
- @param[before] A number smaller then or equal to `a.size`.
- @return A pointer to the start of the new region.
- @throws[realloc, ERANGE] @allow */
+/** Adds `buffer` un-initialised elements at `before` in `a`.
+ @param[before] A number smaller then or equal to `a.size`; if `a.size`, this
+ function behaves as <fn:<T>array_buffer>.
+ @return A pointer to the start of the new region where there are `buffer`
+ elements. @throws[realloc, ERANGE] @allow */
 static PT_(type) *T_(array_buffer_before)(struct T_(array) *const a,
 	const size_t before, const size_t buffer) {
 	assert(a && before <= a->size);
