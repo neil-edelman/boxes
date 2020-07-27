@@ -221,7 +221,7 @@ Ensures `min` of `a`\.
 Adds `buffer` un\-initialised elements at the back of `a`\.
 
  * Return:  
-   A pointer to previous end of `a`, where `buffer` objects are\.
+   A pointer to previous end of `a`, where there are `buffer` elements\.
  * Exceptional return: realloc, ERANGE  
 
 
@@ -236,7 +236,7 @@ Adds `buffer` un\-initialised elements at `before` in `a`\.
  * Parameter: _before_  
    A number smaller then or equal to `a.size`; if `a.size`, this function behaves as [&lt;T&gt;array_buffer](#user-content-fn-cd39931d)\.
  * Return:  
-   A pointer to the start of the new region\.
+   A pointer to the start of the new region where there are `buffer` elements\.
  * Exceptional return: realloc, ERANGE  
 
 
