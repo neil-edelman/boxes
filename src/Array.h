@@ -184,18 +184,17 @@ static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
 	const size_t buffer) {
 	size_t prev_size;
 	assert(a);
-	if(a->size > (size_t)-1 - buffer) /* `size_t` overflow; unlikely */
+	if(a->size > (size_t)-1 - buffer) /* `size_t` overflow; unlikely. */
 		{ errno = ERANGE; return 0; }
 	if(!T_(array_reserve)(a, a->size + buffer)) return 0;
 	prev_size = a->size, a->size += buffer;
-	assert(a->data);
-	return a->data + prev_size;
+	return a->data ? a->data + prev_size : 0;
 }
 
 /** Adds `buffer` un-initialised elements at `before` in `a`.
  @param[before] A number smaller then or equal to `a.size`; if `a.size`, this
  function behaves as <fn:<T>array_buffer>.
- @return A pointer to the start of the new region where there are `buffer`
+ @return A pointer to the start of the new region, where there are `buffer`
  elements. @throws[realloc, ERANGE] @allow */
 static PT_(type) *T_(array_buffer_before)(struct T_(array) *const a,
 	const size_t before, const size_t buffer) {
@@ -465,7 +464,8 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 static const PT_(compare) PTC_(compare) = (ARRAY_COMPARE);
 
 /** Lexagraphically compares `a` to `b`, which both can be null.
- @return { `a < b`: negative, `a == b`: zero, `a > b`: positive }. */
+ @return { `a < b`: negative, `a == b`: zero, `a > b`: positive }.
+ @order \O(`a.size`) @allow */
 static int T_C_(array, compare)(const struct T_(array) *const a,
 	const struct T_(array) *const b) {
 	PT_(type) *ia, *ib, *end;

@@ -161,6 +161,8 @@ Contains all iteration parameters for inclusion in traits\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-ff2ca488">&lt;T&gt;array&lt;C&gt;comparable_test</a></td><td></td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-bffba15e">&lt;T&gt;array&lt;C&gt;compare</a></td><td>a, b</td></tr>
+
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-492cb74f">&lt;T&gt;array&lt;C&gt;lower_bound</a></td><td>a, value</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b2e7b882">&lt;T&gt;array&lt;C&gt;upper_bound</a></td><td>a, value</td></tr>
@@ -236,7 +238,7 @@ Adds `buffer` un\-initialised elements at `before` in `a`\.
  * Parameter: _before_  
    A number smaller then or equal to `a.size`; if `a.size`, this function behaves as [&lt;T&gt;array_buffer](#user-content-fn-cd39931d)\.
  * Return:  
-   A pointer to the start of the new region where there are `buffer` elements\.
+   A pointer to the start of the new region, where there are `buffer` elements\.
  * Exceptional return: realloc, ERANGE  
 
 
@@ -425,6 +427,20 @@ Will be tested on stdout\. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not `ND
 <code>static void <strong>&lt;T&gt;array&lt;C&gt;comparable_test</strong>(void)</code>
 
 Will be tested on stdout\. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not `NDEBUG` while defining `assert`\.
+
+
+
+### <a id = "user-content-fn-bffba15e" name = "user-content-fn-bffba15e">&lt;T&gt;array&lt;C&gt;compare</a> ###
+
+<code>static int <strong>&lt;T&gt;array&lt;C&gt;compare</strong>(const struct &lt;T&gt;array *const <em>a</em>, const struct &lt;T&gt;array *const <em>b</em>)</code>
+
+Lexagraphically compares `a` to `b`, which both can be null\.
+
+ * Return:  
+   \{ `a < b`: negative, `a == b`: zero, `a > b`: positive \}\.
+ * Order:  
+   &#927;\(`a.size`\)
+
 
 
 

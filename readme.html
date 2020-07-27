@@ -219,6 +219,8 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array<C>comparable_test">&lt;T&gt;array&lt;C&gt;comparable_test</a></td><td></td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn:<T>array<C>compare">&lt;T&gt;array&lt;C&gt;compare</a></td><td>a, b</td></tr>
+
 <tr><td align = right>static size_t</td><td><a href = "#fn:<T>array<C>lower_bound">&lt;T&gt;array&lt;C&gt;lower_bound</a></td><td>a, value</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<T>array<C>upper_bound">&lt;T&gt;array&lt;C&gt;upper_bound</a></td><td>a, value</td></tr>
@@ -310,7 +312,7 @@
 	<dt>Parameter: <em>before</em></dt>
 	<dd>A number smaller then or equal to <code>a.size</code>; if <code>a.size</code>, this function behaves as <a href = "#fn:&lt;T&gt;array_buffer">&lt;T&gt;array_buffer</a>.</dd>
 	<dt>Return:</dt>
-	<dd>A pointer to the start of the new region where there are <code>buffer</code> elements.</dd>
+	<dd>A pointer to the start of the new region, where there are <code>buffer</code> elements.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 </dl>
 
@@ -545,6 +547,23 @@
 <p><code>static void <strong>&lt;T&gt;array&lt;C&gt;comparable_test</strong>(void)</code></p>
 
 <p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>array<C>compare" name = "fn:<T>array<C>compare">&lt;T&gt;array&lt;C&gt;compare</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;array&lt;C&gt;compare</strong>(const struct &lt;T&gt;array *const <em>a</em>, const struct &lt;T&gt;array *const <em>b</em>)</code></p>
+
+<p>Lexagraphically compares <code>a</code> to <code>b</code>, which both can be null.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>{ <code>a &lt; b</code>: negative, <code>a == b</code>: zero, <code>a &gt; b</code>: positive }.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>a.size</code>)</dd>
+</dl>
 
 </div>
 

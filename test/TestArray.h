@@ -522,52 +522,42 @@ static void PTC_(test_bounds)(void) {
 #endif /* compare --> */
 }
 
-/* fixme: array<C>compare */
-#if 0
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */
-static void PN_(test_sort)(struct N_(ListNode) *(*const parent_new)(void *),
-						   void *const parent) {
-#ifdef LIST_COMPARE /* <!-- comp */
-	struct N_(List) lists[64], *list;
-	const size_t lists_size = sizeof lists / sizeof *lists;
-	struct N_(List) *const lists_end = lists + lists_size;
+static void PTC_(test_sort)(void) {
+#ifdef ARRAY_COMPARE /* <!-- comp */
+	struct T_(array) as[64], *a;
+	const size_t as_size = sizeof as / sizeof *as;
+	const struct T_(array) *const as_end = as + as_size;
 	int cmp;
-	/* Random lists. */
-	for(list = lists; list < lists_end; list++) {
-		size_t no_links = rand() / (RAND_MAX / 5 + 1);
-		struct N_(ListNode) *link, *link_a, *link_b;
-		N_(ListClear)(list);
-		while(no_links) {
-			if(!(link = parent_new(parent))) { assert(0); return; }
-			PN_(filler)(link);
-			N_(ListPush)(list, link);
-			no_links--;
-		}
-		N_(ListSort)(list);
-		for(link_a = 0, link_b = N_(ListFirst)(list); link_b;
-			link_a = link_b, link_b = N_(ListNext)(link_b)) {
-			if(!link_a) continue;
-			cmp = PN_(compare)(link_a, link_b);
-			assert(cmp <= 0);
-		}
+	/* Random array of Arrays. */
+	for(a = as; a < as_end; a++) {
+		size_t size = rand() / (RAND_MAX / 5 + 1), i;
+		PT_(type) *x, *x_end;
+		T_(array)(a);
+		x = T_(array_buffer)(a, size);
+		x_end = x + size;
+		if(!size) continue;
+		assert(x);
+		for(i = 0; i < size; i++) PT_(filler)(a->data + i);
+		T_C_(array, sort)(a);
+		for(x = a->data; x < x_end - 1; x++)
+			cmp = PTC_(compare)(x, x + 1), assert(cmp <= 0);
 	}
 	/* Now sort the lists. */
-	qsort(lists, lists_size, sizeof *lists,
-		  (int (*)(const void *, const void *))&N_(ListCompare));
+	qsort(as, as_size, sizeof *as,
+		(int (*)(const void *, const void *))&T_(array_compare));
 	printf("Sorted array of sorted <" QUOTE(LIST_NAME) ">List by "
 		   QUOTE(LIST_COMPARE) ":\n");
-	for(list = lists; list < lists_end; list++) {
-		N_(ListSelfCorrect)(list); /* `qsort` moves the pointers. */
-		printf("List: %s.\n", PN_(list_to_string)(list));
-		if(list == lists) continue;
-		cmp = N_(ListCompare)(list - 1, list);
+	for(a = as; a < as_end; a++) {
+		printf("List: %s.\n", PT_(array_to_string)(a));
+		if(a == as) continue;
+		cmp = T_(array_compare)(a - 1, a);
 		assert(cmp <= 0);
 	}
 #else /* comp --><!-- !comp */
 	(void)(parent_new), (void)(parent);
 #endif /* !comp --> */
 }
-#endif
 
 /** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
  `NDEBUG` while defining `assert`. @allow */
@@ -587,6 +577,8 @@ static void T_C_(array, comparable_test)(void) {
 		">:\n");
 	PTC_(test_compactify)();
 	PTC_(test_bounds)();
+	PTC_(test_sort)();
+	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array contrast.\n\n");
 }
 
