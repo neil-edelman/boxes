@@ -75,6 +75,9 @@
 #if ARRAY_TRAITS > 1
 #error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
+#if ARRAY_TRAITS != 0 && (!defined(T_) || !defined(CAT) || !defined(CAT_))
+#error T_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
+#endif
 #if (ARRAY_TRAITS == 0) && defined(ARRAY_TEST)
 #error ARRAY_TEST must be defined in ARRAY_TO_STRING trait.
 #endif
@@ -175,14 +178,12 @@ static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 }
 
 /** Adds `buffer` un-initialised elements at the back of `a`.
- @param[buffer] If zero, returns null.
- @return A pointer to previous end of `a`, where `buffer` objects are, or null
- and `errno` will be set for `buffer != 0`. @throws[realloc, ERANGE] @allow */
+ @return A pointer to previous end of `a`, where `buffer` objects are.
+ @throws[realloc, ERANGE] @allow */
 static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
 	const size_t buffer) {
 	size_t prev_size;
 	assert(a);
-	if(!buffer) return 0;
 	if(a->size > (size_t)-1 - buffer) /* `size_t` overflow; unlikely */
 		{ errno = ERANGE; return 0; }
 	if(!T_(array_reserve)(a, a->size + buffer)) return 0;
@@ -191,8 +192,21 @@ static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
 	return a->data + prev_size;
 }
 
-/** @return A new un-initialized datum of `a`.
+/** Adds `buffer` un-initialised elements `before` in `a`.
+ @param[before] A number smaller then or equal to `a.size`.
+ @return A pointer to the start of the new region.
  @throws[realloc, ERANGE] @allow */
+static PT_(type) *T_(array_buffer_before)(struct T_(array) *const a,
+	const size_t before, const size_t buffer) {
+	assert(a && before <= a->size);
+	if(!T_(array_buffer)(a, buffer)) return 0;
+	memmove(a->data + before + buffer, a->data + before,
+		sizeof a->data * (a->size - before));
+	return a->data + before;
+}
+
+/** @return A new un-initialized element of at the end of `a`.
+ @order amortised \O(1) @throws[realloc, ERANGE] @allow */
 static PT_(type) *T_(array_new)(struct T_(array) *const a)
 	{ return T_(array_buffer)(a, 1); }
 
@@ -398,11 +412,12 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	T_(array)(0); T_(array_update_new)(0, 0); T_(array_shrink)(0);
-	T_(array_remove)(0, 0); T_(array_lazy_remove)(0, 0); T_(array_clear)(0);
-	T_(array_peek)(0); T_(array_pop)(0); T_(array_splice)(0, 0, 0, 0);
-	T_(array_clip)(0, 0); T_(array_keep_if)(0, 0, 0); T_(array_trim)(0, 0);
-	T_(array_each)(0, 0); T_(array_if_each)(0, 0, 0); T_(array_any)(0, 0);
+	T_(array)(0); T_(array_buffer_before)(0, 0, 0); T_(array_update_new)(0, 0);
+	T_(array_shrink)(0); T_(array_remove)(0, 0); T_(array_lazy_remove)(0, 0);
+	T_(array_clear)(0); T_(array_peek)(0); T_(array_pop)(0);
+	T_(array_splice)(0, 0, 0, 0); T_(array_clip)(0, 0);
+	T_(array_keep_if)(0, 0, 0); T_(array_trim)(0, 0); T_(array_each)(0, 0);
+	T_(array_if_each)(0, 0, 0); T_(array_any)(0, 0);
 	PT_(begin)(0, 0); PT_(next)(0); PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
@@ -410,10 +425,6 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
 
-
-#if !defined(T_) || !defined(CAT) || !defined(CAT_)
-#error T_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
-#endif
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
 #define A_(thing) CAT(T_(array), CAT(ARRAY_TO_STRING_NAME, thing))
@@ -438,10 +449,6 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #else /* to string trait --><!-- comparable trait */
 
 
-#if !defined(T_) || !defined(PT_) || !defined(CAT) || !defined(CAT_)
-#error P?T_ or CAT_? not yet defined; traits must be defined separately?
-#endif
-
 #ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
 #define PTC_(thing) CAT(PT_(thing), ARRAY_COMPARABLE_NAME)
 #define T_C_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_COMPARABLE_NAME, thing2))
@@ -453,10 +460,28 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef ARRAY_COMPARE /* <!-- compare */
 
 /* Check that `ARRAY_COMPARE` is a function implementing
- <typedef:<PT>Compare>. */
+ <typedef:<PT>compare>. */
 static const PT_(compare) PTC_(compare) = (ARRAY_COMPARE);
 
-/* fixme: static int T_C_(array, compare)() */
+/** Lexagraphically compares `a` to `b`, which both can be null.
+ @return { `a < b`: negative, `a == b`: zero, `a > b`: positive }. */
+static int T_C_(array, compare)(const struct T_(array) *const a,
+	const struct T_(array) *const b) {
+	PT_(type) *ia, *ib, *end;
+	int diff;
+	/* Null counts as `-\infty`. */
+	if(!a) return b ? -1 : 0;
+	else if(!b) return 1;
+	if(a->size > b->size) {
+		for(ia = a->data, ib = b->data, end = ib + b->size; ib < end;
+			ia++, ib++) if((diff = PTC_(compare)(ia, ib))) return diff;
+		return 1;
+	} else {
+		for(ia = a->data, ib = b->data, end = ia + a->size; ia < end;
+			ia++, ib++) if((diff = PTC_(compare)(ia, ib))) return diff;
+		return -(a->size != b->size);
+	}
+}
 
 /** `a` should be partitioned true/false with less-then `value`.
  @return The first index of `a` that is not less then `value`.
@@ -529,11 +554,15 @@ static const PT_(bipredicate) PTC_(is_equal) = (ARRAY_IS_EQUAL);
 
 #endif /* is equal --> */
 
-/** @fixme @return If `a` equals `b`. */
+/** @return If `a` piecewise equals `b`, which both can be null.
+ @order \O(`size`) */
 static int T_C_(array, is_equal)(const struct T_(array) *const a,
 	const struct T_(array) *const b) {
+	PT_(type) *ia, *ib, *end;
 	if(!a) return !b;
-	if(!b) return 0;
+	if(!b || a->size != b->size) return 0;
+	for(ia = a->data, ib = b->data, end = ia + a->size; ia < end; ia++, ib++)
+		if(!PTC_(is_equal)(a, b)) return 0;
 	return 1;
 }
 
@@ -573,8 +602,9 @@ static void T_C_(array, compactify)(struct T_(array) *const a,
 static void PTC_(unused_contrast_coda)(void);
 static void PTC_(unused_contrast)(void) {
 #ifdef ARRAY_COMPARE /* <!-- compare */
-	T_C_(array, lower_bound)(0, 0); T_C_(array, upper_bound)(0, 0);
-	T_C_(array, insert)(0, 0); T_C_(array, sort)(0); T_C_(array, reverse)(0);
+	T_C_(array, compare)(0, 0); T_C_(array, lower_bound)(0, 0);
+	T_C_(array, upper_bound)(0, 0); T_C_(array, insert)(0, 0);
+	T_C_(array, sort)(0); T_C_(array, reverse)(0);
 #endif /* compare --> */
 	T_C_(array, is_equal)(0, 0); T_C_(array, compactify)(0, 0);
 	PTC_(unused_contrast_coda)();

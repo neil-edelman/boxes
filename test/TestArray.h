@@ -78,7 +78,7 @@ static void PT_(test_basic)(void) {
 	assert(errno == 0);
 	PT_(valid_state)(&a);
 
-	/* `valgrind` is giving me grief if I don't do this? */
+	/* This is un-necessary, but `valgrind` reports an error if we don't. */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
 	for(t = ts, t1 = t + ts_size; t < t1; t++) PT_(filler)(t);
@@ -179,8 +179,17 @@ static void PT_(test_basic)(void) {
 	printf("Clear:\n");
 	T_(array_clear)(&a);
 	printf("%s.\n", PT_(array_to_string)(&a));
-	assert(T_(array_peek)(&a) == 0);
-	
+	assert(T_(array_peek)(&a) == 0 && a.size == 0);
+
+	t = T_(array_buffer_before)(&a, 0, ts_size - 1);
+	assert(t && a.size == ts_size - 1);
+	memcpy(a.data, ts, sizeof ts - sizeof *ts);
+	printf("Buffer t[ : -1]: %s.\n", PT_(array_to_string)(&a));
+	t = T_(array_buffer_before)(&a, ts_size - 1, 1);
+	memcpy(a.data + ts_size - 1, ts + ts_size - 1, sizeof *ts);
+	printf("Buffer t[ : ]: %s.\n", PT_(array_to_string)(&a));
+	assert(!memcmp(ts, a.data, sizeof ts));
+
 	printf("Destructor:\n");
 	T_(array_)(&a);
 	assert(T_(array_peek)(&a) == 0);
@@ -198,7 +207,8 @@ static void PT_(test_random)(void) {
 		PT_(type) *data;
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
-		printf("%lu: ", (unsigned long)i);
+		int is_print = !(rand() / (RAND_MAX / 50 + 1));
+		if(is_print) printf("%lu: ", (unsigned long)i);
 		/* This parameter controls how big the pool wants to be. */
 		if(r > size / (100.0 * mult)) {
 			if(!(data = T_(array_new)(&a)))
@@ -206,7 +216,7 @@ static void PT_(test_random)(void) {
 			size++;
 			PT_(filler)(data);
 			PT_(to_string)(data, &str);
-			printf("created %s.\n", str);
+			if(is_print) printf("created %s.\n", str);
 		} else {
 			double t = 0.5;
 			r = rand() / (RAND_MAX + 1.0);
@@ -214,13 +224,14 @@ static void PT_(test_random)(void) {
 				data = T_(array_peek)(&a);
 				assert(data);
 				PT_(to_string)(data, &str);
-				printf("popping %s.\n", str);
+				if(is_print) printf("popping %s.\n", str);
 				assert(data == T_(array_pop)(&a));
 			} else {
 				size_t idx = rand() / (RAND_MAX + 1.0) * size;
 				if(!(data = a.data + idx)) continue;
 				PT_(to_string)(data, &str);
-				printf("removing %s at %lu.\n", str, (unsigned long)idx);
+				if(is_print)
+					printf("removing %s at %lu.\n", str, (unsigned long)idx);
 				T_(array_remove)(&a, data);
 			}
 			size--;
@@ -510,6 +521,53 @@ static void PTC_(test_bounds)(void) {
 	T_(array_)(&a);
 #endif /* compare --> */
 }
+
+/* fixme: array<C>compare */
+#if 0
+/** Passed `parent_new` and `parent`, tests sort and meta-sort. */
+static void PN_(test_sort)(struct N_(ListNode) *(*const parent_new)(void *),
+						   void *const parent) {
+#ifdef LIST_COMPARE /* <!-- comp */
+	struct N_(List) lists[64], *list;
+	const size_t lists_size = sizeof lists / sizeof *lists;
+	struct N_(List) *const lists_end = lists + lists_size;
+	int cmp;
+	/* Random lists. */
+	for(list = lists; list < lists_end; list++) {
+		size_t no_links = rand() / (RAND_MAX / 5 + 1);
+		struct N_(ListNode) *link, *link_a, *link_b;
+		N_(ListClear)(list);
+		while(no_links) {
+			if(!(link = parent_new(parent))) { assert(0); return; }
+			PN_(filler)(link);
+			N_(ListPush)(list, link);
+			no_links--;
+		}
+		N_(ListSort)(list);
+		for(link_a = 0, link_b = N_(ListFirst)(list); link_b;
+			link_a = link_b, link_b = N_(ListNext)(link_b)) {
+			if(!link_a) continue;
+			cmp = PN_(compare)(link_a, link_b);
+			assert(cmp <= 0);
+		}
+	}
+	/* Now sort the lists. */
+	qsort(lists, lists_size, sizeof *lists,
+		  (int (*)(const void *, const void *))&N_(ListCompare));
+	printf("Sorted array of sorted <" QUOTE(LIST_NAME) ">List by "
+		   QUOTE(LIST_COMPARE) ":\n");
+	for(list = lists; list < lists_end; list++) {
+		N_(ListSelfCorrect)(list); /* `qsort` moves the pointers. */
+		printf("List: %s.\n", PN_(list_to_string)(list));
+		if(list == lists) continue;
+		cmp = N_(ListCompare)(list - 1, list);
+		assert(cmp <= 0);
+	}
+#else /* comp --><!-- !comp */
+	(void)(parent_new), (void)(parent);
+#endif /* !comp --> */
+}
+#endif
 
 /** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
  `NDEBUG` while defining `assert`. @allow */
