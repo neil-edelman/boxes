@@ -567,10 +567,12 @@ static int T_C_(array, is_equal)(const struct T_(array) *const a,
 	return 1;
 }
 
-/** Tests equality for each consecutive pair of elements in `a` and, if
- true, surjects two one according to `merge`.
- @param[merge] Can be null, in which case, all duplicate entries are erased.
- @order \O(`a.size`) @allow */
+/** Removes consecutive duplicate elements in `a`.
+ @param[merge] Called with duplicate elements, controls surjection. If false
+ `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
+ can be simulated by mixing the two in the variable that is the value returned.
+ Can be null, in which case behaves like false.
+ @order \O(`a.size` \times `merge`) @allow */
 static void T_C_(array, unique)(struct T_(array) *const a,
 	const PT_(biproject) merge) {
 	size_t target, from, cursor, choice, next, move;
