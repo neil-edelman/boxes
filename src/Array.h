@@ -568,7 +568,7 @@ static int T_C_(array, is_equal)(const struct T_(array) *const a,
 }
 
 /** Removes consecutive duplicate elements in `a`.
- @param[merge] Called with duplicate elements, controls surjection. If false
+ @param[merge] Controls surjection. Called with duplicate elements, if false
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the variable that is the value returned.
  Can be null, in which case behaves like false.
