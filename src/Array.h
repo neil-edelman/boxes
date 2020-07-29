@@ -146,6 +146,17 @@ static void T_(array)(struct T_(array) *const a)
 static void T_(array_)(struct T_(array) *const a)
 	{ assert(a), free(a->data), T_(array)(a); }
 
+/** @return Converts `i` to an index in `a` from [0, `a.size`]. Negative values
+ are implicitly plus `a.size`. @order \Theta(1) @allow */
+static size_t T_(array_clip)(const struct T_(array) *const a, const long i) {
+	/* `SIZE_MAX` is `C99`; assumes two's-compliment, not many hw-tests. */
+	assert(a && (size_t)-1 >= (size_t)LONG_MAX
+		&& (unsigned long)((size_t)-1) >= LONG_MAX);
+	return i < 0
+		? (size_t)-i >= a->size ? 0 : a->size + i
+		: (size_t)i > a->size ? a->size : (size_t)i;
+}
+
 /** Ensures `min` of `a`. @param[min] If zero, does nothing. @return Success;
  otherwise, `errno` will be set. @throws[ERANGE] Tried allocating more then can
  fit in `size_t` or `realloc` doesn't follow [POSIX
@@ -269,6 +280,7 @@ static PT_(type) *T_(array_pop)(struct T_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
 /** `a` indices [`i0`, `i1`) will be replaced with a copy of `b`.
+ @param[b] Can be null, which acts as empty.
  @return Success. @throws[realloc, ERANGE] */
 static int T_(array_splice)(struct T_(array) *const a, const size_t i0,
 	const size_t i1, const struct T_(array) *const b) {
@@ -290,20 +302,45 @@ static int T_(array_splice)(struct T_(array) *const a, const size_t i0,
 	return 1;
 }
 
-/** @return Converts `i` to an index in `a` from [0, `a.size`]. Negative values
- are implicitly plus `a.size`. @order \Theta(1) @allow */
-static size_t T_(array_clip)(const struct T_(array) *const a, const long i) {
-	/* `SIZE_MAX` is `C99`; assumes two's-compliment, which is the only
-	 sequential ring representation with 000 = 0. I haven't tested `PDP-11`. */
-	assert(a && (size_t)-1 >= (size_t)LONG_MAX
-		&& (unsigned long)((size_t)-1) >= LONG_MAX);
-	return i < 0
-		? (size_t)-i >= a->size ? 0 : a->size + i
-		: (size_t)i > a->size ? a->size : (size_t)i;
+/** Copies `b`, which can be null, to the back of `a`.
+ @return Success. @throws[realloc, ERANGE] */
+static int T_(array_copy)(struct T_(array) *const a,
+	const struct T_(array) *const b)
+	{ return T_(array_splice)(a, a->size, a->size, b); }
+
+/** For all elements of `b`, calls `copy`, and if true, lazily copies the
+ elements to `a`. `a` and `b` can not be the same but `b` can be null.
+ @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
+static int T_(array_copy_if)(struct T_(array) *const a,
+	const PT_(predicate) copy, const struct T_(array) *const b) {
+	PT_(type) *i, *fresh;
+	const PT_(type) *end, *rise = 0;
+	size_t add;
+	int difcpy;
+	assert(a && copy && a != b);
+	if(!b) return 1;
+	for(i = b->data, end = i + b->size; i < end; i++) {
+		if(!(!!rise ^ (difcpy = copy(i)))) continue; /* Not falling/rising. */
+		if(difcpy) { /* Rising edge. */
+			assert(!rise);
+			rise = i;
+		} else { /* Falling edge. */
+			assert(rise && !difcpy && rise < i);
+			if(!(fresh = T_(array_buffer)(a, add = i - rise))) return 0;
+			memcpy(fresh, rise, sizeof *fresh * add);
+			rise = 0;
+		}
+	}
+	if(rise) { /* Delayed copy. */
+		assert(!difcpy && rise < i);
+		if(!(fresh = T_(array_buffer)(a, add = i - rise))) return 0;
+		memcpy(fresh, rise, sizeof *fresh * add);
+	}
+	return 1;
 }
 
-/** For all elements of `a`, calls `keep`, and for each element, if the return
- value is false, lazy deletes that item, calling `destruct` if not-null.
+/** For all elements of `a`, calls `keep`, and if false, lazy deletes that
+ item, calling `destruct` if not-null.
  @order \O(`a.size` \times `keep` \times `destruct`) @allow */
 static void T_(array_keep_if)(struct T_(array) *const a,
 	const PT_(predicate) keep, const PT_(action) destruct) {
@@ -313,7 +350,7 @@ static void T_(array_keep_if)(struct T_(array) *const a,
 	assert(a && keep);
 	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
 		if(!(keep1 = !!keep(t)) && destruct) destruct(t);
-			if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
+		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
 		if(keep1) { /* Rising edge. */
 			assert(erase && !retain);
 			retain = t;
@@ -412,13 +449,14 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	T_(array)(0); T_(array_buffer_before)(0, 0, 0); T_(array_update_new)(0, 0);
-	T_(array_shrink)(0); T_(array_remove)(0, 0); T_(array_lazy_remove)(0, 0);
-	T_(array_clear)(0); T_(array_peek)(0); T_(array_pop)(0);
-	T_(array_splice)(0, 0, 0, 0); T_(array_clip)(0, 0);
-	T_(array_keep_if)(0, 0, 0); T_(array_trim)(0, 0); T_(array_each)(0, 0);
-	T_(array_if_each)(0, 0, 0); T_(array_any)(0, 0);
-	PT_(begin)(0, 0); PT_(next)(0); PT_(unused_base_coda)();
+	T_(array_)(0); T_(array_clip)(0, 0); T_(array_buffer_before)(0, 0, 0);
+	T_(array_update_new)(0, 0); T_(array_shrink)(0); T_(array_remove)(0, 0);
+	T_(array_lazy_remove)(0, 0); T_(array_clear)(0); T_(array_peek)(0);
+	T_(array_pop)(0); T_(array_splice)(0, 0, 0, 0); T_(array_copy)(0, 0);
+	T_(array_keep_if)(0, 0, 0); T_(array_copy_if)(0, 0, 0);
+	T_(array_trim)(0, 0); T_(array_each)(0, 0); T_(array_if_each)(0, 0, 0);
+	T_(array_any)(0, 0); PT_(begin)(0, 0); PT_(next)(0);
+	PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 

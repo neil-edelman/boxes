@@ -341,9 +341,9 @@ static void PT_(test_replace)(void) {
 
 /** @implements <PT>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
-static int PT_(keep_one)(const PT_(type) *const data) {
+static int PT_(keep_deterministic)(const PT_(type) *const data) {
 	static size_t i;
-	static const int things[] = { 1,0,0,0,0,1,0,0,1,1,0,1,0,1,0,1,0 };
+	static const int things[] = { 1,0,0,0,0,1,0,0,1,1, 0,1,0,1,0,1,0 };
 	const int predicate = things[i++];
 	(void)data;
 	i %= sizeof things / sizeof *things;
@@ -353,7 +353,8 @@ static int PT_(keep_one)(const PT_(type) *const data) {
 static void PT_(test_keep)(void) {
 	PT_(type) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-	struct T_(array) a = ARRAY_IDLE;
+	struct T_(array) a = ARRAY_IDLE, b = ARRAY_IDLE;
+	int ret;
 	/* Valgrind. */
 	memset(ts, 0, sizeof ts);
 	PT_(valid_state)(&a);
@@ -362,7 +363,9 @@ static void PT_(test_keep)(void) {
 		e = T_(array_new)(&a), assert(e);
 		memcpy(e, t, sizeof *t);
 	}
-	T_(array_keep_if)(&a, &PT_(keep_one), 0);
+	printf("a = %s.\n", T_(array_to_string)(&a));
+	T_(array_keep_if)(&a, &PT_(keep_deterministic), 0);
+	printf("a = k(a) = %s.\n", T_(array_to_string)(&a));
 	assert(a.size == 7
 		&& !memcmp(ts + 0, a.data + 0, sizeof *t * 1)
 		&& !memcmp(ts + 5, a.data + 1, sizeof *t * 1)
@@ -370,7 +373,17 @@ static void PT_(test_keep)(void) {
 		&& !memcmp(ts + 11, a.data + 4, sizeof *t * 1)
 		&& !memcmp(ts + 13, a.data + 5, sizeof *t * 1)
 		&& !memcmp(ts + 15, a.data + 6, sizeof *t * 1));
+	PT_(valid_state)(&a);
+
+	ret = T_(array_copy_if)(&b, &PT_(keep_deterministic), 0);
+	assert(ret && !b.size);
+	ret = T_(array_copy_if)(&b, &PT_(keep_deterministic), &a);
+	printf("b = k(a) = %s.\n", T_(array_to_string)(&b));
+	assert(ret && b.size == 2
+		&& !memcmp(ts + 0, b.data + 0, sizeof *t * 1)
+		&& !memcmp(ts + 13, b.data + 1, sizeof *t * 1));
 	T_(array_)(&a);
+	T_(array_)(&b);
 }
 
 static int PT_(num);
