@@ -475,7 +475,7 @@ static void PTC_(test_compactify)(void) {
 	if(!T_(array_buffer)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("Before: %s.\n", PT_(array_to_string)(&a));
-	T_C_(array, unique)(&a, 0);
+	T_C_(array, unique)(&a);
 	printf("Compactified: %s.\n", PT_(array_to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */

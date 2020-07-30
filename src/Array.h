@@ -546,8 +546,8 @@ static size_t T_C_(array, upper_bound)(const struct T_(array) *const a,
 		+ (mid = low + ((high - low) >> 1))) >= 0) low = mid + 1;
 		else high = mid;
 	return low;
-}	
-	
+}
+
 /** Copies `datum` at the lower bound of a sorted `a`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] */
 static int T_C_(array, insert)(struct T_(array) *const a,
@@ -573,7 +573,7 @@ static void T_C_(array, sort)(struct T_(array) *const a)
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int PTC_(vrevers)(const void *const a, const void *const b)
-	{ return PTC_(compare)(b, a); }	
+	{ return PTC_(compare)(b, a); }
 
 /** Sorts `a` in reverse by `qsort` on `ARRAY_COMPARE`.
  @order \O(`a.size` \log `a.size`) @allow */
@@ -584,7 +584,7 @@ static void T_C_(array, reverse)(struct T_(array) *const a)
  @implements <PT>bipredicate */
 static int PTC_(is_equal)(const void *const a, const void *const b)
 	{ return !PTC_(compare)(a, b); }
-	
+
 #else /* compare --><!-- is equal */
 
 /* Check that `ARRAY_IS_EQUAL` is a function implementing
@@ -608,10 +608,9 @@ static int T_C_(array, is_equal)(const struct T_(array) *const a,
 /** Removes consecutive duplicate elements in `a`.
  @param[merge] Controls surjection. Called with duplicate elements, if false
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
- can be simulated by mixing the two in the variable that is the value returned.
- Can be null, in which case behaves like false.
- @order \O(`a.size` \times `merge`) @allow */
-static void T_C_(array, unique)(struct T_(array) *const a,
+ can be simulated by mixing the two in the value returned. Can be null: behaves
+ like false. @order \O(`a.size` \times `merge`) @allow */
+static void T_C_(array, merge_unique)(struct T_(array) *const a,
 	const PT_(biproject) merge) {
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
@@ -638,7 +637,11 @@ static void T_C_(array, unique)(struct T_(array) *const a,
 	memmove(a->data + target, a->data + from, sizeof *a->data * move),
 	target += move, assert(a->size >= target);
 	a->size = target;
-}	
+}
+
+/** Removes consecutive duplicate elements in `a`. @order \O(`a.size`) @allow */
+static void T_C_(array, unique)(struct T_(array) *const a)
+	{ T_C_(array, merge_unique)(a, 0); }
 
 static void PTC_(unused_contrast_coda)(void);
 static void PTC_(unused_contrast)(void) {
@@ -647,7 +650,7 @@ static void PTC_(unused_contrast)(void) {
 	T_C_(array, upper_bound)(0, 0); T_C_(array, insert)(0, 0);
 	T_C_(array, sort)(0); T_C_(array, reverse)(0);
 #endif /* compare --> */
-	T_C_(array, is_equal)(0, 0); T_C_(array, unique)(0, 0);
+	T_C_(array, is_equal)(0, 0); T_C_(array, unique)(0);
 	PTC_(unused_contrast_coda)();
 }
 static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
