@@ -1,7 +1,7 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Parameterised Prefix Tree
+ @subtitle Prefix Tree
 
  ![Example of trie.](../web/trie.png)
 
@@ -104,8 +104,9 @@ typedef size_t TrieBranch;
 #define ARRAY_CHILD
 #include "Array.h"
 
-/* 12 makes the maximum skip length 511 bytes and the maximum size of a trie is
- `size_t` 64-bits: 4503599627370495, 32-bits: 1048575, and 16-bits: 15. */
+/* 12 makes the maximum skip length 512 bytes and the maximum size of a trie is
+ `size_t` 64-bits: 4503599627370496, 32-bits: 1048576, 16-bits: 16, 8-bits: not
+ supported at all, (unlikely since `C++` has additional constraints.) */
 #define TRIE_SKIP 12
 #define TRIE_SKIP_MAX ((1 << TRIE_SKIP) - 1)
 #define TRIE_LEFT_MAX (((size_t)1 << ((sizeof(size_t) << 3) - TRIE_SKIP)) - 1)

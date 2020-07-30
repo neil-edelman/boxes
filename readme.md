@@ -1,6 +1,6 @@
 # Trie\.h #
 
-## Parameterised Prefix Tree ##
+## Prefix Tree ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Type](#user-content-typedef-c45e6761), [&lt;PN&gt;CType](#user-content-typedef-c16ead3e), [&lt;PN&gt;Key](#user-content-typedef-8524f620), [&lt;PN&gt;Replace](#user-content-typedef-38741b27), [&lt;PN&gt;Action](#user-content-typedef-aea37eeb)
