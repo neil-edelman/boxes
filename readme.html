@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of Pool" src = "web/pool.png" width = 478 height = 242></p>
 
-<p><a href = "#tag:&lt;T&gt;pool">&lt;T&gt;pool</a> stores unordered <code>&lt;T&gt;</code> in a memory pool. Pointers to valid items in the pool are stable, but not generally contiguous. It uses geometrically increasing size-blocks and when the removal is ongoing and uniformly sampled, (specifically, old elements are all eventually removed,) and data reaches a steady-state size, the data will settle in one allocated region. In this way, manages a fairly contiguous space for items which have references.</p>
+<p><a href = "#tag:&lt;T&gt;pool">&lt;T&gt;pool</a> stores unordered <code>&lt;T&gt;</code> in a memory pool. Pointers to valid items in the pool are stable, but not generally contiguous or in any order. It uses geometrically increasing size-blocks and when the removal is ongoing and uniformly sampled, (specifically, old elements are all eventually removed,) and data reaches a steady-state size, the data will settle in one allocated region. In this way, manages a fairly contiguous space for items which have references.</p>
 
 <p><code>&lt;T&gt;pool</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is included in this file; to stop the debug assertions, use <code>#define NDEBUG</code> before <code>assert.h</code>.</p>
 

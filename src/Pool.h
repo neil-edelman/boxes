@@ -6,11 +6,12 @@
  ![Example of Pool](../web/pool.png)
 
  <tag:<T>pool> stores unordered `<T>` in a memory pool. Pointers to valid items
- in the pool are stable, but not generally contiguous. It uses geometrically
- increasing size-blocks and when the removal is ongoing and uniformly sampled,
- (specifically, old elements are all eventually removed,) and data reaches a
- steady-state size, the data will settle in one allocated region. In this way,
- manages a fairly contiguous space for items which have references.
+ in the pool are stable, but not generally contiguous or in any order. It uses
+ geometrically increasing size-blocks and when the removal is ongoing and
+ uniformly sampled, (specifically, old elements are all eventually removed,)
+ and data reaches a steady-state size, the data will settle in one allocated
+ region. In this way, manages a fairly contiguous space for items which have
+ references.
 
  `<T>pool` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
