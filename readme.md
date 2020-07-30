@@ -123,6 +123,8 @@ Contains all iteration parameters for inclusion in traits\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-a8fa90a7">&lt;T&gt;array_</a></td><td>a</td></tr>
 
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-6e0bca81">&lt;T&gt;array_clip</a></td><td>a, i</td></tr>
+
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-17759c31">&lt;T&gt;array_reserve</a></td><td>a, min</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-cd39931d">&lt;T&gt;array_buffer</a></td><td>a, buffer</td></tr>
@@ -143,7 +145,7 @@ Contains all iteration parameters for inclusion in traits\.
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-14f6c2ba">&lt;T&gt;array_pop</a></td><td>a</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-6e0bca81">&lt;T&gt;array_clip</a></td><td>a, i</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-37e10160">&lt;T&gt;array_copy_if</a></td><td>a, copy, b</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-bf0a45e0">&lt;T&gt;array_keep_if</a></td><td>a, keep, destruct</td></tr>
 
@@ -171,7 +173,9 @@ Contains all iteration parameters for inclusion in traits\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-449174eb">&lt;T&gt;array&lt;C&gt;reverse</a></td><td>a</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-d1f28222">&lt;T&gt;array&lt;C&gt;compactify</a></td><td>a, merge</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-44a2ae09">&lt;T&gt;array&lt;C&gt;merge_unique</a></td><td>a, merge</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-9d746afc">&lt;T&gt;array&lt;C&gt;unique</a></td><td>a</td></tr>
 
 </table>
 
@@ -196,6 +200,18 @@ Initialises `a` to idle\.
 <code>static void <strong>&lt;T&gt;array_</strong>(struct &lt;T&gt;array *const <em>a</em>)</code>
 
 Destroys `a` and returns it to idle\.
+
+
+
+### <a id = "user-content-fn-6e0bca81" name = "user-content-fn-6e0bca81">&lt;T&gt;array_clip</a> ###
+
+<code>static size_t <strong>&lt;T&gt;array_clip</strong>(const struct &lt;T&gt;array *const <em>a</em>, const long <em>i</em>)</code>
+
+ * Return:  
+   Converts `i` to an index in `a` from \[0, `a.size`\]\. Negative values are implicitly plus `a.size`\.
+ * Order:  
+   &#920;\(1\)
+
 
 
 
@@ -328,14 +344,15 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 
 
-### <a id = "user-content-fn-6e0bca81" name = "user-content-fn-6e0bca81">&lt;T&gt;array_clip</a> ###
+### <a id = "user-content-fn-37e10160" name = "user-content-fn-37e10160">&lt;T&gt;array_copy_if</a> ###
 
-<code>static size_t <strong>&lt;T&gt;array_clip</strong>(const struct &lt;T&gt;array *const <em>a</em>, const long <em>i</em>)</code>
+<code>static int <strong>&lt;T&gt;array_copy_if</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate <em>copy</em>, const struct &lt;T&gt;array *const <em>b</em>)</code>
 
- * Return:  
-   Converts `i` to an index in `a` from \[0, `a.size`\]\. Negative values are implicitly plus `a.size`\.
+For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null\.
+
+ * Exceptional return: ERANGE, realloc  
  * Order:  
-   &#920;\(1\)
+   &#927;\(`b.size` &#215; `copy`\)
 
 
 
@@ -344,7 +361,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static void <strong>&lt;T&gt;array_keep_if</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate <em>keep</em>, const &lt;PT&gt;action <em>destruct</em>)</code>
 
-For all elements of `a`, calls `keep`, and for each element, if the return value is false, lazy deletes that item, calling `destruct` if not\-null\.
+For all elements of `a`, calls `keep`, and if false, lazy deletes that item, calling `destruct` if not\-null\.
 
  * Order:  
    &#927;\(`a.size` &#215; `keep` &#215; `destruct`\)
@@ -496,14 +513,26 @@ Sorts `a` in reverse by `qsort` on `ARRAY_COMPARE`\.
 
 
 
-### <a id = "user-content-fn-d1f28222" name = "user-content-fn-d1f28222">&lt;T&gt;array&lt;C&gt;compactify</a> ###
+### <a id = "user-content-fn-44a2ae09" name = "user-content-fn-44a2ae09">&lt;T&gt;array&lt;C&gt;merge_unique</a> ###
 
-<code>static void <strong>&lt;T&gt;array&lt;C&gt;compactify</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;biproject <em>merge</em>)</code>
+<code>static void <strong>&lt;T&gt;array&lt;C&gt;merge_unique</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;biproject <em>merge</em>)</code>
 
-Tests equality for each consecutive pair of elements in `a` and, if true, surjects two one according to `merge`\.
+Removes consecutive duplicate elements in `a`\.
 
  * Parameter: _merge_  
-   Can be null, in which case, all duplicate entries are erased\.
+   Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false\.
+ * Order:  
+   &#927;\(`a.size` &#215; `merge`\)
+
+
+
+
+### <a id = "user-content-fn-9d746afc" name = "user-content-fn-9d746afc">&lt;T&gt;array&lt;C&gt;unique</a> ###
+
+<code>static void <strong>&lt;T&gt;array&lt;C&gt;unique</strong>(struct &lt;T&gt;array *const <em>a</em>)</code>
+
+Removes consecutive duplicate elements in `a`\.
+
  * Order:  
    &#927;\(`a.size`\)
 
