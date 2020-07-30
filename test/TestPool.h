@@ -9,9 +9,10 @@
 #ifdef POOL_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
 /* Copy functions for later includes. */
-static const PT_(to_string) PT_(to_str) = (POOL_TO_STRING);
+static void (*PT_(to_string))(const PT_(type) *, char (*)[12])
+	= (POOL_TO_STRING);
 static const char *(*PT_(pool_to_string))(const struct T_(pool) *)
-	= T_A_(pool, to_string);
+	= A_(to_string);
 
 /* POOL_TEST must be a function that implements <typedef:<PT>Action>. */
 static const PT_(action) PT_(filler) = (POOL_TEST);
@@ -62,7 +63,7 @@ static void PT_(graph)(const struct T_(pool) *const p, const char *const fn) {
 			b_strs[b]);
 		for(node = PT_(block_nodes)(block), end = node + PT_(range)(p, block);
 			node < end; node++) {
-			PT_(to_str)(&node->data, &str);
+			PT_(to_string)(&node->data, &str);
 			fprintf(fp, "\t\tnode%p [label=\"%s\", fillcolor=%s];\n",
 				(const void *)node, str,
 				node->x.prev ? "firebrick" : "lightsteelblue");
@@ -151,7 +152,7 @@ static void PT_(valid_state)(const struct T_(pool) *const a) {
 static void PT_(print)(PT_(type) *const data) {
 	char a[12];
 	assert(data);
-	PT_(to_str)(data, &a);
+	PT_(to_string)(data, &a);
 	printf("> %s!\n", a);
 }
 
@@ -257,7 +258,7 @@ static void PT_(test_random)(void) {
 			if(!data) { perror("Error"), assert(0); return;}
 			size++;
 			PT_(filler)(data);
-			PT_(to_str)(data, &str);
+			PT_(to_string)(data, &str);
 			if(is_print) printf("%lu: Created %s.\n", (unsigned long)i, str);
 		} else {
 			struct PT_(block) *block;
@@ -276,7 +277,7 @@ static void PT_(test_random)(void) {
 				if(node < end) break;
 			}
 			assert(block);
-			PT_(to_str)(&node->data, &str);
+			PT_(to_string)(&node->data, &str);
 			if(is_print) printf("%lu: Removing %s in block %p.\n",
 				(unsigned long)i, str, (const void *)block);
 			{

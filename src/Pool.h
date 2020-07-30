@@ -66,6 +66,9 @@
 #if POOL_TRAITS > 1
 #error Only one trait per include is allowed; use POOL_EXPECT_TRAIT.
 #endif
+#if POOL_TRAITS != 0 && (!defined(T_) || !defined(CAT) || !defined(CAT_))
+#error T_ or CAT_? not yet defined; traits must be defined separately?
+#endif
 #if (POOL_TRAITS == 0) && defined(POOL_TEST)
 #error POOL_TEST must be defined in POOL_TO_STRING trait.
 #endif
@@ -95,21 +98,22 @@ typedef POOL_TYPE PT_(type);
 /** Operates by side-effects. */
 typedef void (*PT_(action))(PT_(type) *const data);
 
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- output string. Used for `POOL_TO_STRING`. */
-typedef void (*PT_(to_string))(const PT_(type) *, char (*)[12]);
-
 /* Free-list item. The reason it's doubly-linked is to support popping a link
- from the end. fixme: why `<PT>X` when one can have `<PT>Node`? */
+ from the end. The reason it's <tag:<PT>x> instead of <tag:<PT>node> is it
+ greatly simplifies edge cases, at the expense of casting. */
 struct PT_(x) { struct PT_(x) *prev, *next; };
 
 /* Nodes containing the data and, in the largest block, the free list item;
  smaller blocks satisfy `x.prev, x.next -> deleted`. */
 struct PT_(node) { PT_(type) data; struct PT_(x) x; };
 
-/* Information about each block. Blocks will have capacity <tag:<PT>Node>'s
- after `block + 1`, specified by <fn:<PT>_block_nodes>. */
+/* Information about each block and will have capacity in an array of
+ <tag:<PT>node> at `block + 1`, specified by <fn:<PT>block_nodes>. */
 struct PT_(block) { struct PT_(block) *smaller; size_t capacity, size; };
+
+/** Retrieve the array implicitly after `b`. */
+static struct PT_(node) *PT_(block_nodes)(struct PT_(block) *const b)
+	{ return (struct PT_(node) *)(void *)(b + 1); }
 
 /** Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<T>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
@@ -140,11 +144,12 @@ static struct PT_(node) *PT_(x_upcast)(struct PT_(x) *const x)
 	{ return (struct PT_(node) *)(void *)
 	((char *)x - offsetof(struct PT_(node), x)); }
 
-/** `b` to array. */
-static struct PT_(node) *PT_(block_nodes)(struct PT_(block) *const b)
-	{ return (struct PT_(node) *)(void *)(b + 1); }
+/** Only for the not-largest, inactive, blocks, `node` becomes a boolean,
+ null/not. */
+static void PT_(flag_removed)(struct PT_(node) *const node)
+	{ assert(node); node->x.prev = node->x.next = &node->x; }
 
-/** We are very lazy and enqueue `node` in `pool` so that later data can
+/** Flag `node` removed in the largest block of `pool` so that later data can
  overwrite it. */
 static void PT_(enqueue_removed)(struct T_(pool) *const pool,
 	struct PT_(node) *const node) {
@@ -206,9 +211,8 @@ static size_t PT_(range)(const struct T_(pool) *const pool,
 	return block == pool->largest ? block->size : block->capacity;
 }
 
-/** Find what block `node` is in `pool`.
- @order At worst \O(log `items`) when there's no deletetion.
- @return Must return a value. */
+/** @order At worst \O(log `pool.items`) when there's no deletion.
+ @return What block `node` is in `pool`. */
 static struct PT_(block) **PT_(find_block_addr)(struct T_(pool) *const pool,
 	const struct PT_(node) *const node) {
 	struct PT_(block) *b, **baddr;
@@ -218,11 +222,6 @@ static struct PT_(block) **PT_(find_block_addr)(struct T_(pool) *const pool,
 		if(n = PT_(block_nodes)(b), node >= n && node < n + b->capacity) break;
 	return baddr;
 }
-
-/** Only for the not-largest, inactive, blocks, `node` becomes a boolean,
- null/not. */
-static void PT_(flag_removed)(struct PT_(node) *const node)
-	{ assert(node); node->x.prev = node->x.next = &node->x; }
 
 /** Ensures `min` capacity of the largest block in `pool` where the free list
  is empty. @param[min] If zero, allocates anyway.
@@ -235,7 +234,7 @@ static int PT_(reserve)(struct T_(pool) *const pool, const size_t min) {
 	size_t c0, c1;
 	struct PT_(block) *block;
 	const size_t max_size = ((size_t)-1 - sizeof *block)
-		/ sizeof(struct PT_(node)); /* fixme? */
+		/ sizeof(struct PT_(node));
 	assert(pool && !pool->removed.prev && !pool->removed.next && min);
 	assert(!pool->largest
 		|| (pool->largest->capacity < pool->next_capacity
@@ -263,7 +262,6 @@ static int PT_(reserve)(struct T_(pool) *const pool, const size_t min) {
 	pool->removed.prev = pool->removed.next = 0;
 	return 1;
 }
-
 
 /** Initialises `pool` to idle. @order \Theta(1) @allow */
 static void T_(pool)(struct T_(pool) *const pool)
@@ -305,7 +303,7 @@ static PT_(type) *T_(pool_new)(struct T_(pool) *const pool) {
 	return &node->data;
 }
 
-/** Flags `datum` as removed from `pool`. @return Success.
+/** Deletes `datum` from `pool`. @return Success.
  @throws[EDOM] `data` is not part of `pool`.
  @order Amortised \O(1), if the pool is in steady-state, but
  \O(log `pool.items`) for a small number of deleted items. @allow */
@@ -354,13 +352,43 @@ static void T_(pool_for_each)(struct T_(pool) *const pool,
 			n < end; n++) if(!n->x.prev) action(&n->data);
 }
 
-/** Contains all iteration parameters in one. */
+/** Contains all iteration parameters. */
 struct PT_(iterator);
 struct PT_(iterator)
 	{ const struct T_(pool) *pool; struct PT_(block) *block; size_t i; };
-/*#define ITERATE_TYPE PT_(type)
- #define ITERATE_ITERATOR PT_(iterator)
- #define ITERATE_NEXT &PT_(next)*/
+
+/** Loads `a` into `it`. @implements begin */
+static void PT_(begin)(struct PT_(iterator) *const it,
+	const struct T_(pool) *const pool) {
+	assert(it && pool);
+	it->pool = pool, it->block = pool->largest, it->i = 0;
+}
+
+/** Advances `it`. @implements next */
+static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
+	struct PT_(node) *nodes, *n;
+	size_t i_end;
+	assert(it && it->pool);
+	while(it->block) {
+		nodes = PT_(block_nodes)(it->block);
+		i_end = PT_(range)(it->pool, it->block);
+		while(it->i < i_end)
+			if(!(n = nodes + it->i++)->x.prev) return &n->data;
+		it->block = it->block->smaller;
+	}
+	return 0;
+}
+	
+#if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
+	|| defined(ITERATE_BEGIN) || defined(ITERATE_NEXT)
+#error Unexpected ITERATE*.
+#endif
+	
+#define ITERATE struct PT_(iterator)
+#define ITERATE_BOX struct T_(pool)
+#define ITERATE_TYPE PT_(type)
+#define ITERATE_BEGIN PT_(begin)
+#define ITERATE_NEXT PT_(next)
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
@@ -374,75 +402,20 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #elif defined(POOL_TO_STRING) /* base code --><!-- to string trait */
 
 
-#if !defined(T_) || !defined(PT_) || !defined(CAT) || !defined(CAT_)
-#error P?T_ or CAT_? not yet defined; traits must be defined separately?
-#endif
-
 #ifdef POOL_TO_STRING_NAME /* <!-- name */
-#define PTA_(thing) CAT(PT_(thing), POOL_TO_STRING_NAME)
-#define T_A_(thing1, thing2) CAT(T_(thing1), CAT(POOL_TO_STRING_NAME, thing2))
+#define A_(thing) CAT(T_(pool), CAT(POOL_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define PTA_(thing) CAT(PT_(thing), anonymous)
-#define T_A_(thing1, thing2) CAT(T_(thing1), thing2)
+#define A_(thing) CAT(T_(pool), thing)
 #endif /* !name --> */
-
-/* Check that `POOL_TO_STRING` is a function implementing
- <typedef:<PT>to_string>. */
-static const PT_(to_string) PTA_(to_str12) = (POOL_TO_STRING);
-
-/** Writes `it` to `str` and advances or returns false.
- @implements <AI>NextToString */
-static int PTA_(next_to_str12)(struct PT_(iterator) *const it,
-	char (*const str)[12]) {
-	struct PT_(node) *nodes, *n;
-	size_t i_end;
-	assert(it && str && it->pool);
-	while(it->block) {
-		nodes = PT_(block_nodes)(it->block);
-		i_end = PT_(range)(it->pool, it->block);
-		while(it->i < i_end) {
-			if((n = nodes + it->i++)->x.prev) continue;
-			/* Found the data. */
-			PTA_(to_str12)(&n->data, str);
-			return 1;
-		}
-		it->block = it->block->smaller;
-	}
-	return 0;
-}
-
-#define A_ PTA_
-#define TO_STRING_ITERATOR struct PT_(iterator)
-#define TO_STRING_NEXT &PTA_(next_to_str12)
-#include "ToString.h"
-
-/** @return Prints `pool`. */
-static const char *PTA_(to_string)(const struct T_(pool) *const pool) {
-	struct PT_(iterator) it = { 0, 0, 0 };
-	it.pool = pool, it.block = pool ? pool->largest : 0;
-	return PTA_(iterator_to_string)(&it, '[', ']'); /* In ToString. */
-}
-
-/** @return Print the contents of `pool` in a static string buffer with the
- limitations of `ToString.h`. @order \Theta(1) @allow */
-static const char *T_A_(pool, to_string)(const struct T_(pool) *const pool)
-	{ return PTA_(to_string)(pool); /* Can be null. */ }
-
-static void PTA_(unused_to_string_coda)(void);
-static void PTA_(unused_to_string)(void) {
-	PTA_(to_string)(0);
-	T_A_(pool, to_string)(0);
-	PTA_(unused_to_string_coda)();
-}
-static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
+#define TO_STRING POOL_TO_STRING
+#include "ToString.h" /** \include */
 
 #if !defined(POOL_TEST_BASE) && defined(POOL_TEST) /* <!-- test */
 #define POOL_TEST_BASE /* Only one instance of base tests. */
 #include "../test/TestPool.h" /** \include */
 #endif /* test --> */
 
-#undef PTA_
-#undef T_A_
+#undef A_
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
 #undef POOL_TO_STRING_NAME
@@ -471,7 +444,12 @@ static void PTA_(unused_to_string_coda)(void) { PTA_(unused_to_string)(); }
 #ifdef POOL_TEST_BASE
 #undef POOL_TEST_BASE
 #endif
-#endif /* finish --> */
+#undef ITERATE
+#undef ITERATE_BOX
+#undef ITERATE_TYPE
+#undef ITERATE_BEGIN
+#undef ITERATE_NEXT
+#endif /* !trait --> */
 
 #undef POOL_TO_STRING_TRAIT
 #undef POOL_TRAITS
