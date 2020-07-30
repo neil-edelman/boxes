@@ -1,6 +1,6 @@
 # List\.h #
 
-## Doubly\-Linked Closed List ##
+## Closed Total Order Permutation ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;Action](#user-content-typedef-aea37eeb), [&lt;PN&gt;Predicate](#user-content-typedef-48c42a2a), [&lt;PN&gt;ToString](#user-content-typedef-3f3210e1), [&lt;PN&gt;Compare](#user-content-typedef-afc5e5e8)
