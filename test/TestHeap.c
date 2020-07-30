@@ -52,12 +52,12 @@ static void orc_to_string(const struct orc_heap_node *const node,
 	sprintf(*a, "%u%.9s", node->priority, node->value->name);
 }
 
-#define POOL_NAME Orc
+#define POOL_NAME orc
 #define POOL_TYPE struct Orc
 #include "Pool.h"
 
 static void test_orc(struct orc_heap_node *node, void *const vpool) {
-	struct Orc *orc = OrcPoolNew(vpool);
+	struct Orc *orc = orc_pool_new(vpool);
 	if(!orc) { assert(0); exit(EXIT_FAILURE); }
 	orc->health = rand() / (RAND_MAX / 99 + 1);
 	Orcish(orc->name, sizeof orc->name);
@@ -67,9 +67,9 @@ static void test_orc(struct orc_heap_node *node, void *const vpool) {
 
 
 int main(void) {
-	struct OrcPool orcs = POOL_IDLE;
+	struct orc_pool orcs = POOL_IDLE;
 	rand();
 	int_heap_test(0);
-	orc_heap_test(&orcs), OrcPool_(&orcs);
+	orc_heap_test(&orcs), orc_pool_(&orcs);
 	return EXIT_SUCCESS;
 }
