@@ -425,9 +425,9 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #endif /* traits --> */
 
 
-#ifdef POOL_EXPECT_TRAIT /* <!-- unfinish */
+#ifdef POOL_EXPECT_TRAIT /* <!-- trait */
 #undef POOL_EXPECT_TRAIT
-#else /* unfinish --><!-- finish */
+#else /* trait --><!-- !trait */
 #ifndef POOL_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
