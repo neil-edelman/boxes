@@ -13,7 +13,7 @@ static const char *(*PT_(array_to_string))(const struct T_(array) *)
 	= A_(to_string);
 
 /* `ARRAY_TEST` must be a function that implements <typedef:<PT>action>. */
-static const PT_(action) PT_(filler) = (ARRAY_TEST);
+static const PT_(action_fn) PT_(filler) = (ARRAY_TEST);
 
 /** @return Is `a` in a valid state? */
 static void PT_(valid_state)(const struct T_(array) *const a) {

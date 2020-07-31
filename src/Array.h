@@ -24,22 +24,22 @@
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait: `<A>` that satisfies `C` naming conventions when mangled and
- a function implementing `<PA>to_string`; gives `<T>array_to_string` contained
- in <ToString.h>. There can be multiple to string traits, but only one can omit
- `ARRAY_TO_STRING_NAME`.
+ a function implementing `<PA>to_string_fn`; gives `<T>array<A>to_string`
+ contained in <ToString.h>. There can be multiple to string traits, but only
+ one can omit `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
  To string trait contained in <../test/ArrayTest.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ array. Must be
- defined equal to a (random) filler function, satisfying <typedef:<PT>action>.
- Output will be shown with the to string trait in which it's defined; provides
- tests for the base code and all later traits.
+ defined equal to a (random) filler function, satisfying
+ <typedef:<PT>action_fn>. Output will be shown with the to string trait in
+ which it's defined; provides tests for the base code and all later traits.
 
  @param[ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
  Comparable trait; `<C>` that satisfies `C` naming conventions when mangled
- and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>bipredicate>
+ and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>bipredicate_fn>
  that establishes an equivalence relation, or for `ARRAY_COMPARE`
- <typedef:<PT>compare> that establishes a total order. There can be multiple
+ <typedef:<PT>compare_fn> that establishes a total order. There can be multiple
  contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
 
  @std C89
@@ -110,21 +110,21 @@
 typedef ARRAY_TYPE PT_(type);
 
 /** Operates by side-effects. */
-typedef void (*PT_(action))(PT_(type) *);
+typedef void (*PT_(action_fn))(PT_(type) *);
 
 /** Returns a boolean given read-only `<T>`. */
-typedef int (*PT_(predicate))(const PT_(type) *);
+typedef int (*PT_(predicate_fn))(const PT_(type) *);
 
 /** Returns a boolean given two read-only `<T>`. */
-typedef int (*PT_(bipredicate))(const PT_(type) *, const PT_(type) *);
+typedef int (*PT_(bipredicate_fn))(const PT_(type) *, const PT_(type) *);
 
 /** Returns a boolean given two `<T>`. */
-typedef int (*PT_(biproject))(PT_(type) *, PT_(type) *);
+typedef int (*PT_(biproject_fn))(PT_(type) *, PT_(type) *);
 
 /** Three-way comparison on a totally order set; returns an integer value less
  then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
  respectively. */
-typedef int (*PT_(compare))(const PT_(type) *a, const PT_(type) *b);
+typedef int (*PT_(compare_fn))(const PT_(type) *a, const PT_(type) *b);
 
 /** Manages the array field `data`, which is indexed up to `size`. To
  initialise it to an idle state, see <fn:<T>array>, `ARRAY_IDLE`, `{0}`
@@ -247,7 +247,7 @@ static int T_(array_shrink)(struct T_(array) *const a) {
 	return 1;
 }
 
-/** Removes `datum` from `a`. @order \O(n). @allow */
+/** Removes `datum` from `a`. @order \O(`a.size`). @allow */
 static void T_(array_remove)(struct T_(array) *const a,
 	PT_(type) *const datum) {
 	const size_t n = datum - a->data;
@@ -312,7 +312,7 @@ static int T_(array_copy)(struct T_(array) *const a,
  elements to `a`. `a` and `b` can not be the same but `b` can be null.
  @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
 static int T_(array_copy_if)(struct T_(array) *const a,
-	const PT_(predicate) copy, const struct T_(array) *const b) {
+	const PT_(predicate_fn) copy, const struct T_(array) *const b) {
 	PT_(type) *i, *fresh;
 	const PT_(type) *end, *rise = 0;
 	size_t add;
@@ -343,7 +343,7 @@ static int T_(array_copy_if)(struct T_(array) *const a,
  item, calling `destruct` if not-null.
  @order \O(`a.size` \times `keep` \times `destruct`) @allow */
 static void T_(array_keep_if)(struct T_(array) *const a,
-	const PT_(predicate) keep, const PT_(action) destruct) {
+	const PT_(predicate_fn) keep, const PT_(action_fn) destruct) {
 	PT_(type) *erase = 0, *t;
 	const PT_(type) *retain = 0, *end;
 	int keep0 = 1, keep1 = 0;
@@ -379,7 +379,7 @@ static void T_(array_keep_if)(struct T_(array) *const a,
 /** Removes at either end of `a` of things that `predicate` returns true.
  @order \O(`a.size` \times `predicate`) @allow */
 static void T_(array_trim)(struct T_(array) *const a,
-	const PT_(predicate) predicate) {
+	const PT_(predicate_fn) predicate) {
 	size_t i;
 	assert(a && predicate);
 	while(a->size && predicate(a->data + a->size - 1)) a->size--;
@@ -393,7 +393,7 @@ static void T_(array_trim)(struct T_(array) *const a,
  of the list should not change while in this function.
  @order \O(`a.size` \times `action`) @allow */
 static void T_(array_each)(struct T_(array) *const a,
-	const PT_(action) action) {
+	const PT_(action_fn) action) {
 	PT_(type) *i, *i_end;
 	assert(a && action);
 	for(i = a->data, i_end = i + a->size; i < i_end; i++) action(i);
@@ -403,7 +403,7 @@ static void T_(array_each)(struct T_(array) *const a,
  `predicate` returns true. The topology of the list should not change while in
  this function. @order \O(`a.size` \times `predicate` \times `action`) @allow */
 static void T_(array_if_each)(struct T_(array) *const a,
-	const PT_(predicate) predicate, const PT_(action) action) {
+	const PT_(predicate_fn) predicate, const PT_(action_fn) action) {
 	PT_(type) *i, *i_end;
 	assert(a && predicate && action);
 	for(i = a->data, i_end = i + a->size; i < i_end; i++)
@@ -414,7 +414,7 @@ static void T_(array_if_each)(struct T_(array) *const a,
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null. @order \O(`a.size` \times `predicate`) @allow */
 static PT_(type) *T_(array_any)(const struct T_(array) *const a,
-	const PT_(predicate) predicate) {
+	const PT_(predicate_fn) predicate) {
 	PT_(type) *i, *i_end;
 	if(!a || !predicate) return 0;
 	for(i = a->data, i_end = i + a->size; i < i_end; i++)
@@ -422,15 +422,15 @@ static PT_(type) *T_(array_any)(const struct T_(array) *const a,
 	return 0;
 }
 
-/** Contains all iteration parameters for inclusion in traits. */
+/** Contains all iteration parameters. */
 struct PT_(iterator);
 struct PT_(iterator) { const struct T_(array) *a; size_t i; };
 
-/** Loads `a` into `it`. @implements <I>begin from <Iterate.h>. */
+/** Loads `a` into `it`. @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
 	const struct T_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
 
-/** Advances `it`. @implements <I>next from <Iterate.h>. */
+/** Advances `it`. @implements next */
 static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it && it->a);
 	return it->i < it->a->size ? it->a->data + it->i++ : 0;
@@ -446,6 +446,7 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 #define ITERATE_TYPE PT_(type)
 #define ITERATE_BEGIN PT_(begin)
 #define ITERATE_NEXT PT_(next)
+/* fixme: Also random-access iterators. */
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
@@ -499,7 +500,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 /* Check that `ARRAY_COMPARE` is a function implementing
  <typedef:<PT>compare>. */
-static const PT_(compare) PTC_(compare) = (ARRAY_COMPARE);
+static const PT_(compare_fn) PTC_(compare) = (ARRAY_COMPARE);
 
 /** Lexagraphically compares `a` to `b`, which both can be null.
  @return { `a < b`: negative, `a == b`: zero, `a > b`: positive }.
@@ -611,7 +612,7 @@ static int T_C_(array, is_equal)(const struct T_(array) *const a,
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false. @order \O(`a.size` \times `merge`) @allow */
 static void T_C_(array, merge_unique)(struct T_(array) *const a,
-	const PT_(biproject) merge) {
+	const PT_(biproject_fn) merge) {
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
 	int is_first, is_last;
