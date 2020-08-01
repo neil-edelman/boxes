@@ -15,7 +15,7 @@ static const char *(*PT_(pool_to_string))(const struct T_(pool) *)
 	= A_(to_string);
 
 /* POOL_TEST must be a function that implements <typedef:<PT>Action>. */
-static const PT_(action) PT_(filler) = (POOL_TEST);
+static const PT_(action_fn) PT_(filler) = (POOL_TEST);
 
 /** Private: `container_of` `x`. */
 static const struct PT_(node) *

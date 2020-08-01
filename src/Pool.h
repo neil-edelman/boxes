@@ -5,8 +5,8 @@
 
  ![Example of Pool](../web/pool.png)
 
- <tag:<T>pool> stores unordered `<T>` in a memory pool. Pointers to valid items
- in the pool are stable, but not generally contiguous or in any order. It uses
+ <tag:<T>pool> stores `<T>` in a memory pool. Pointers to valid items in the
+ pool are stable, but not generally in any order or contiguous. It uses
  geometrically increasing size-blocks and when the removal is ongoing and
  uniformly sampled, (specifically, old elements are all eventually removed,)
  and data reaches a steady-state size, the data will settle in one allocated
@@ -28,14 +28,13 @@
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
  To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PT>to_string>.
- There can be multiple to string traits, but only one can omit
- `POOL_TO_STRING_NAME`.
+ conventions when mangled and function implementing `<PT>to_string_fn`. There
+ can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`.
 
  @param[POOL_TEST]
  To string trait contained in <../test/PoolTest.h>; optional unit testing
- framework using `assert`. Can only be defined once _per_ `Pool`. Must be
- defined equal to a (random) filler function, satisfying <typedef:<PT>action>.
+ framework using `assert`. Can only be defined once _per_ pool. Must be defined
+ equal to a (random) filler function, satisfying <typedef:<PT>action_fn>.
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
@@ -96,7 +95,7 @@
 typedef POOL_TYPE PT_(type);
 
 /** Operates by side-effects. */
-typedef void (*PT_(action))(PT_(type) *const data);
+typedef void (*PT_(action_fn))(PT_(type) *const data);
 
 /* Free-list item. The reason it's doubly-linked is to support popping a link
  from the end. The reason it's <tag:<PT>x> instead of <tag:<PT>node> is it
@@ -343,7 +342,7 @@ static void T_(pool_clear)(struct T_(pool) *const pool) {
 /** Iterates though `pool` and calls `action` on all the elements.
  @order O(`capacity` \times `action`) @allow */
 static void T_(pool_for_each)(struct T_(pool) *const pool,
-	const PT_(action) action) {
+	const PT_(action_fn) action) {
 	struct PT_(node) *n, *end;
 	struct PT_(block) *block;
 	if(!pool || !action) return;
@@ -357,7 +356,7 @@ struct PT_(iterator);
 struct PT_(iterator)
 	{ const struct T_(pool) *pool; struct PT_(block) *block; size_t i; };
 
-/** Loads `a` into `it`. @implements begin */
+/** Loads `pool` into `it`. @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
 	const struct T_(pool) *const pool) {
 	assert(it && pool);
@@ -394,7 +393,7 @@ static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
 	T_(pool)(0); T_(pool_)(0); T_(pool_reserve)(0, 0); T_(pool_new)(0);
 	T_(pool_remove)(0, 0); T_(pool_clear)(0); T_(pool_for_each)(0, 0);
-	PT_(unused_base_coda)();
+	PT_(begin)(0, 0); PT_(next)(0); PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 

@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PT>to_string">&lt;PT&gt;to_string</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>pool">&lt;T&gt;pool</a>, <a href = "#tag:<PT>iterator">&lt;PT&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of Pool" src = "web/pool.png" width = 478 height = 242></p>
 
-<p><a href = "#tag:&lt;T&gt;pool">&lt;T&gt;pool</a> stores unordered <code>&lt;T&gt;</code> in a memory pool. Pointers to valid items in the pool are stable, but not generally contiguous or in any order. It uses geometrically increasing size-blocks and when the removal is ongoing and uniformly sampled, (specifically, old elements are all eventually removed,) and data reaches a steady-state size, the data will settle in one allocated region. In this way, manages a fairly contiguous space for items which have references.</p>
+<p><a href = "#tag:&lt;T&gt;pool">&lt;T&gt;pool</a> stores <code>&lt;T&gt;</code> in a memory pool. Pointers to valid items in the pool are stable, but not generally in any order or contiguous. It uses geometrically increasing size-blocks and when the removal is ongoing and uniformly sampled, (specifically, old elements are all eventually removed,) and data reaches a steady-state size, the data will settle in one allocated region. In this way, manages a fairly contiguous space for items which have references.</p>
 
 <p><code>&lt;T&gt;pool</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is included in this file; to stop the debug assertions, use <code>#define NDEBUG</code> before <code>assert.h</code>.</p>
 
@@ -62,9 +62,9 @@
 	<dt>Parameter: POOL_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PT&gt;to_string">&lt;PT&gt;to_string</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <code>&lt;PT&gt;to_string_fn</code>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: POOL_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Pool</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action">&lt;PT&gt;action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
+	<dd>To string trait contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> pool. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action">&lt;PT&gt;action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>See also:</dt>
@@ -95,11 +95,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PT>to_string" name = "typedef:<PT>to_string">&lt;PT&gt;to_string</a></h3>
+<h3><a id = "typedef:<PA>to_string_fn" name = "typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PT&gt;to_string</strong>)(const &lt;PT&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PA&gt;to_string_fn</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code></p>
 
-<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string. Used for <code>POOL_TO_STRING</code>.</p>
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -123,7 +123,7 @@
 
 <p><code>struct <strong>&lt;PT&gt;iterator</strong>;</code></p>
 
-<p>Contains all iteration parameters in one.</p>
+<p>Contains all iteration parameters.</p>
 
 </div>
 
@@ -149,7 +149,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>pool_for_each">&lt;T&gt;pool_for_each</a></td><td>pool, action</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<T>pool<A>to_string">&lt;T&gt;pool&lt;A&gt;to_string</a></td><td>pool</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<A>to_string">&lt;A&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>pool_test">&lt;T&gt;pool_test</a></td><td></td></tr>
 
@@ -233,7 +233,7 @@
 
 <p><code>static int <strong>&lt;T&gt;pool_remove</strong>(struct &lt;T&gt;pool *const <em>pool</em>, &lt;PT&gt;type *const <em>datum</em>)</code></p>
 
-<p>Flags <code>datum</code> as removed from <code>pool</code>.</p>
+<p>Deletes <code>datum</code> from <code>pool</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -278,13 +278,13 @@
 
 <div>
 
-<h3><a id = "fn:<T>pool<A>to_string" name = "fn:<T>pool<A>to_string">&lt;T&gt;pool&lt;A&gt;to_string</a></h3>
+<h3><a id = "fn:<A>to_string" name = "fn:<A>to_string">&lt;A&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;T&gt;pool&lt;A&gt;to_string</strong>(const struct &lt;T&gt;pool *const <em>pool</em>)</code></p>
+<p><code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Print the contents of <code>pool</code> in a static string buffer with the limitations of <code>ToString.h</code>.</dd>
+	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>

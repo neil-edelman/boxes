@@ -3,7 +3,7 @@
 ## Stable Pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;to_string](#user-content-typedef-72056ad6)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;pool](#user-content-tag-d418caef), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -13,7 +13,7 @@
 
 ![Example of Pool](web/pool.png)
 
-[&lt;T&gt;pool](#user-content-tag-d418caef) stores unordered `<T>` in a memory pool\. Pointers to valid items in the pool are stable, but not generally contiguous or in any order\. It uses geometrically increasing size\-blocks and when the removal is ongoing and uniformly sampled, \(specifically, old elements are all eventually removed,\) and data reaches a steady\-state size, the data will settle in one allocated region\. In this way, manages a fairly contiguous space for items which have references\.
+[&lt;T&gt;pool](#user-content-tag-d418caef) stores `<T>` in a memory pool\. Pointers to valid items in the pool are stable, but not generally in any order or contiguous\. It uses geometrically increasing size\-blocks and when the removal is ongoing and uniformly sampled, \(specifically, old elements are all eventually removed,\) and data reaches a steady\-state size, the data will settle in one allocated region\. In this way, manages a fairly contiguous space for items which have references\.
 
 `<T>pool` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is included in this file; to stop the debug assertions, use `#define NDEBUG` before `assert.h`\.
 
@@ -24,9 +24,9 @@
  * Parameter: POOL\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
-   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PT&gt;to_string](#user-content-typedef-72056ad6)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\.
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing `<PT>to_string_fn`\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\.
  * Parameter: POOL\_TEST  
-   To string trait contained in [\.\./test/PoolTest\.h](../test/PoolTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Pool`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action](#user-content-typedef-6ab9561)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [\.\./test/PoolTest\.h](../test/PoolTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ pool\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action](#user-content-typedef-6ab9561)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * See also:  
@@ -51,11 +51,11 @@ Operates by side\-effects\.
 
 
 
-### <a id = "user-content-typedef-72056ad6" name = "user-content-typedef-72056ad6">&lt;PT&gt;to_string</a> ###
+### <a id = "user-content-typedef-a933c596" name = "user-content-typedef-a933c596">&lt;PA&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;to_string</strong>)(const &lt;PT&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PA&gt;to_string_fn</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code>
 
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\. Used for `POOL_TO_STRING`\.
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -75,7 +75,7 @@ Zeroed data is a valid state\. To instantiate to an idle state, see [&lt;T&gt;po
 
 <code>struct <strong>&lt;PT&gt;iterator</strong>;</code>
 
-Contains all iteration parameters in one\.
+Contains all iteration parameters\.
 
 
 
@@ -99,7 +99,7 @@ Contains all iteration parameters in one\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-794d81a9">&lt;T&gt;pool_for_each</a></td><td>pool, action</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-e7723251">&lt;T&gt;pool&lt;A&gt;to_string</a></td><td>pool</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-6fb489ab">&lt;A&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-e5a6cab4">&lt;T&gt;pool_test</a></td><td></td></tr>
 
@@ -167,7 +167,7 @@ Pre\-sizes an _idle_ `pool` to ensure that it can hold at least `min` elements\.
 
 <code>static int <strong>&lt;T&gt;pool_remove</strong>(struct &lt;T&gt;pool *const <em>pool</em>, &lt;PT&gt;type *const <em>datum</em>)</code>
 
-Flags `datum` as removed from `pool`\.
+Deletes `datum` from `pool`\.
 
  * Return:  
    Success\.
@@ -203,12 +203,12 @@ Iterates though `pool` and calls `action` on all the elements\.
 
 
 
-### <a id = "user-content-fn-e7723251" name = "user-content-fn-e7723251">&lt;T&gt;pool&lt;A&gt;to_string</a> ###
+### <a id = "user-content-fn-6fb489ab" name = "user-content-fn-6fb489ab">&lt;A&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;T&gt;pool&lt;A&gt;to_string</strong>(const struct &lt;T&gt;pool *const <em>pool</em>)</code>
+<code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `pool` in a static string buffer with the limitations of `ToString.h`\.
+   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 

@@ -11,7 +11,7 @@
  Defines `PA_` to be private.
 
  @param[TO_STRING]
- Function implementing <typedef:<PA>to_string>.
+ Function implementing <typedef:<PA>to_string_fn>.
 
  @param[TO_STRING_LEFT, TO_STRING_RIGHT]
  7-bit characters, defaults to '(' and ')'.
@@ -53,16 +53,16 @@ static unsigned to_string_buffer_i;
 typedef ITERATE PA_(iterator);
 typedef ITERATE_BOX PA_(box);
 typedef ITERATE_TYPE PA_(type);
-typedef void (*PA_(begin))(PA_(iterator) *, const PA_(box) *);
-typedef PA_(type) *(*PA_(next))(PA_(iterator) *);
+typedef void (*PA_(begin_fn))(PA_(iterator) *, const PA_(box) *);
+typedef PA_(type) *(*PA_(next_fn))(PA_(iterator) *);
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. */
-typedef void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
+typedef void (*PA_(to_string_fn))(const PA_(type) *, char (*)[12]);
 
-static const PA_(begin) PA_(bgn) = (ITERATE_BEGIN);
-static const PA_(next) PA_(nxt) = (ITERATE_NEXT);
+static const PA_(begin_fn) PA_(begin) = (ITERATE_BEGIN);
+static const PA_(next_fn) PA_(next) = (ITERATE_NEXT);
 /* Check that `TO_STRING` is a function implementing <typedef:<PA>to_string>. */
-static const PA_(to_string) PA_(str) = (TO_STRING);
+static const PA_(to_string_fn) PA_(to_string) = (TO_STRING);
 
 /** @return Print the contents of `box` in a static string buffer of 256
  bytes with limitations of only printing 4 things at a time.
@@ -82,17 +82,17 @@ static const char *A_(to_string)(const PA_(box) *const box) {
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	/* Begin iteration. */
-	PA_(bgn)(&it, box);
+	PA_(begin)(&it, box);
 	*b++ = left;
-	while((x = PA_(nxt)(&it))) {
-		PA_(str)(x, (char (*)[12])b);
+	while((x = PA_(next)(&it))) {
+		PA_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = b - buffer) > to_string_buffer_size
 			- 11 - 1 - ellipsis_len - 1 - 1) {
-			if(PA_(nxt)(&it)) goto ellipsis; else break;
+			if(PA_(next)(&it)) goto ellipsis; else break;
 		}
 	}
 	if(is_sep) b -= 2;
