@@ -184,7 +184,7 @@ static void PE_(histogram)(const struct E_(set) *const set,
 	fclose(fp);
 }
 
-/** Passed `parent_new` and `parent` from <fn:<E>SetTest>. */
+/** Passed `parent_new` and `parent` from <fn:<E>set_test>. */
 static void PE_(test_basic)(struct E_(set_node) *(*const parent_new)(void *),
 	void *const parent) {
 	struct Test {
@@ -321,7 +321,7 @@ static void PE_(test_basic)(struct E_(set_node) *(*const parent_new)(void *),
 }
 
 /** The list will be tested on `stdout`. Requires `SET_TEST` to be a
- <typedef:<PE>Action> and `SET_TO_STRING`.
+ <typedef:<PE>action_fn> and `SET_TO_STRING`.
  @param[parent_new] Specifies the dynamic up-level creator of the parent
  `struct`. Could be null; then testing will be done statically on an array of
  <tag:<E>set_node> and `SET_TEST` is not allowed to go over the limits of the

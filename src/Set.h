@@ -7,7 +7,8 @@
 
  <tag:<E>set> is a collection of elements of <tag:<E>set_node> that doesn't
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
- <typedef:<PE>is_equal>, and a hash function, `SET_HASH` <typedef:<PE>hash>.
+ <typedef:<PE>is_equal_fn>, and a hash function, `SET_HASH`
+ <typedef:<PE>hash_fn>.
 
  Internally, it is a separately chained hash table with a maximum load factor
  of `ln 2`, power-of-two resizes, with buckets as a forward linked list of
@@ -29,20 +30,20 @@
  prior to use elsewhere.
 
  @param[SET_HASH]
- A function satisfying <typedef:<PE>hash>; required.
+ A function satisfying <typedef:<PE>hash_fn>; required.
 
  @param[SET_IS_EQUAL]
- A function satisfying <typedef:<PE>is_equal>; required.
+ A function satisfying <typedef:<PE>is_equal_fn>; required.
 
  @param[SET_POINTER]
  Usually <typedef:<PE>mtype> in the same as <typedef:<PE>type> for simple
  `SET_TYPE`, but this flag makes `<PE>mtype` be a pointer-to-`<PE>type`. This
- affects <typedef:<PE>hash>, <typedef:<PE>is_equal>, and <fn:<E>SetGet>, making
- them accept a pointer-to-const-`<E>` instead of a copy of `<E>`.
+ affects <typedef:<PE>hash_fn>, <typedef:<PE>is_equal_fn>, and <fn:<E>set_get>,
+ making them accept a pointer-to-const-`<E>` instead of a copy of `<E>`.
 
  @param[SET_UINT]
  This is <typedef:<PE>uint> and defaults to `unsigned int`; use when
- <typedef:<PE>hash> is a specific hash length.
+ <typedef:<PE>hash_fn> is a specific hash length.
 
  @param[SET_NO_CACHE]
  Calculates the hash every time and discards it; should be used when the hash
@@ -161,7 +162,7 @@ static const PE_(is_equal_fn) PE_(equal) = (SET_IS_EQUAL);
 typedef int (*PE_(replace_fn))(PE_(type) *original, PE_(type) *replace);
 
 /** Used in <fn:<E>set_policy_put> when `replace` is null; `original` and
- `replace` are ignored. @implements <PE>replace_fn */
+ `replace` are ignored. @implements `<PE>replace_fn` */
 static int PE_(false)(PE_(type) *original, PE_(type) *replace)
 	{ (void)(original); (void)(replace); return 0; }
 
@@ -356,7 +357,7 @@ static void E_(set_clear)(struct E_(set) *const set) {
 	set->size = 0;
 }
 
-/** @return The value in `set` which <typedef:<PE>is_equal> `SET_IS_EQUAL`
+/** @return The value in `set` which <typedef:<PE>is_equal_fn> `SET_IS_EQUAL`
  `data`, or, if no such value exists, null.
  @param[set] If null, returns null. @order Average \O(1), (hash distributes
  elements uniformly); worst \O(n). @allow */
@@ -382,7 +383,7 @@ static int E_(set_reserve)(struct E_(set) *const set, const size_t reserve)
  @param[set, element] If null, returns null. @param[element] Should not be of a
  set because the integrity of that set will be compromised.
  @return Any ejected element or null. (An ejected element has
- <typedef:<PE>is_equal> `SET_IS_EQUAL` the `element`.)
+ <typedef:<PE>is_equal_fn> `SET_IS_EQUAL` the `element`.)
  @throws[realloc, ERANGE] There was an error with a re-sizing. Successfully
  calling <fn:<E>set_reserve> with at least one before ensures that this does
  not happen. @order Average amortised \O(1), (hash distributes elements
@@ -400,7 +401,7 @@ static struct E_(set_node) *E_(set_put)(struct E_(set) *const set,
  @return Any ejected element or null. On collision, if `replace` returns false
  or `replace` is null, returns `element` and leaves the other element in the
  set. @throws[realloc, ERANGE] There was an error with a re-sizing.
- Successfully calling <fn:<E>SetReserve> with at least one before ensures that
+ Successfully calling <fn:<E>set_reserve> with at least one before ensures that
  this does not happen. @order Average amortised \O(1), (hash distributes
  elements uniformly); worst \O(n). @allow */
 static struct E_(set_node) *E_(set_policy_put)(struct E_(set) *const set,
@@ -431,7 +432,7 @@ struct PE_(iterator);
 struct PE_(iterator)
 	{ const struct E_(set) *set; size_t b; struct E_(set_node) *e; };
 
-/** Loads `a` into `it`. @implements begin */
+/** Loads `set` into `it`. @implements begin */
 static void PE_(begin)(struct PE_(iterator) *const it,
 	const struct E_(set) *const set)
 	{ assert(it && set), it->set = set, it->b = 0, it->e = 0; }
