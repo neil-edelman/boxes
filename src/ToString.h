@@ -1,30 +1,27 @@
-/** @license 2020 Neil Edelman, distributed under the terms of the
+/* @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
  @subtitle To String Trait
 
- @param[AI_]
+ The inclusion must define an iterator, ITERATE, ITERATE_BOX, ITERATE_TYPE,
+ ITERATE_BEGIN, and ITERATE_NEXT, and,
+
+ @param[A_]
  Function-like define macro accepting one argument and producing a valid name.
- `PAI_` is private.
+ Defines `PA_` to be private.
 
- @param[TO_STRING_NEXT]
- A function satisfying <typedef:<AI>NextToString>.
+ @param[TO_STRING]
+ Function implementing <typedef:<PA>to_string_fn>.
 
- @param[TO_STRING_ITERATOR]
- Tag type for the first argument to <typedef:<AI>NextToString>.
+ @param[TO_STRING_LEFT, TO_STRING_RIGHT]
+ 7-bit characters, defaults to '(' and ')'.
 
  @std C89
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
-
-#include <string.h>
+ @fixme Traits separate documentation. */
 
 #ifndef TO_STRING_H /* <!-- idempotent: for all in compilation unit. */
 #define TO_STRING_H
+#include <string.h>
 static char to_string_buffers[4][256];
 static const unsigned to_string_buffers_no = sizeof to_string_buffers
 	/ sizeof *to_string_buffers, to_string_buffer_size
@@ -33,90 +30,89 @@ static unsigned to_string_buffer_i;
 #endif /* idempotent --> */
 
 /* Check defines. */
-#if !defined(CAT) || !defined(CAT_) || !defined(PCAT) || !defined(PCAT_)
-#error ToString is meant to be included from other headers.
+#if !defined(CAT) || !defined(CAT_) || !defined(ITERATE) \
+	|| !defined(ITERATE_BOX) || !defined(ITERATE_TYPE) \
+	|| !defined(ITERATE_BEGIN) || !defined(ITERATE_NEXT)
+#error To string: CAT_? or ITERATE* are undefined.
 #endif
-#ifndef AI_
-#error Macro AI_ undefined.
+#ifndef A_
+#error To string: macro A_ undefined.
 #endif
-#ifndef TO_STRING_NEXT
-#error Function TO_STRING_NEXT undefined.
+#ifdef PA_
+#error To string: PA_ can not be defined.
 #endif
-#ifndef TO_STRING_IS_VALID
-#error Function TO_STRING_IS_VALID undefined.
+#ifndef TO_STRING_LEFT
+#define TO_STRING_LEFT '('
 #endif
-#ifndef TO_STRING_ITERATOR
-#error Tag type TO_STRING_ITERATOR undefined.
-#endif
-#ifdef PAI_
-#error PAI_ can not be defined.
+#ifndef TO_STRING_RIGHT
+#define TO_STRING_RIGHT ')'
 #endif
 
-#define PAI_(thing) PCAT(to_string, AI_(thing))
+#define PA_(thing) CAT(to_string, A_(thing))
 
-/** Tag type set by `TO_STRING_ITERATOR` should be a type that encodes all the
- values needed for iteration. */
-typedef TO_STRING_ITERATOR PAI_(Iterator);
+typedef ITERATE PA_(iterator);
+typedef ITERATE_BOX PA_(box);
+typedef ITERATE_TYPE PA_(type);
+typedef void (*PA_(begin_fn))(PA_(iterator) *, const PA_(box) *);
+typedef PA_(type) *(*PA_(next_fn))(PA_(iterator) *);
+/** Responsible for turning the first argument into a 12-`char` null-terminated
+ output string. */
+typedef void (*PA_(to_string_fn))(const PA_(type) *, char (*)[12]);
 
-/** Returns true if it wrote to the buffer and advances to the next. */
-typedef int (*PAI_(NextToString))(PAI_(Iterator) *, char (*)[12]);
+static const PA_(begin_fn) PA_(begin) = (ITERATE_BEGIN);
+static const PA_(next_fn) PA_(next) = (ITERATE_NEXT);
+/* Check that `TO_STRING` is a function implementing <typedef:<PA>to_string>. */
+static const PA_(to_string_fn) PA_(to_string) = (TO_STRING);
 
-/* Check that `TO_STRING_NEXT` is a function implementing
- <typedef:<PAI>NextToString>. */
-static const PAI_(NextToString) PAI_(next_to_string) = (TO_STRING_NEXT);
-
-/** Returns false if the iterator points to null. */
-typedef int (*PAI_(IsValid))(const PAI_(Iterator) *);
-
-/* Check that `TO_STRING_CONTENTS` is a function implementing
- <typedef:<PAI>IsValid>. */
-static const PAI_(IsValid) PAI_(is_valid) = (TO_STRING_IS_VALID);
-
-/** Fills the to string function up with `it`, with `start` and `end`
- delimiters around the `<PA>NextToString` `TO_NEXT_STRING`. @allow */
-static const char *AI_(iterator_to_string)(PAI_(Iterator) *const it,
-	const char start, const char end) {
-	const char comma = ',', space = ' ',
-		*const ellipsis = "…", *const null = "null";
-	const size_t ellipsis_len = strlen(ellipsis), null_len = strlen(null);
+/** @return Print the contents of `box` in a static string buffer of 256
+ bytes with limitations of only printing 4 things at a time.
+ @order \Theta(1) @allow */
+static const char *A_(to_string)(const PA_(box) *const box) {
+	const char comma = ',', space = ' ', *const ellipsis = "…",
+		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
+	const size_t ellipsis_len = strlen(ellipsis);
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
+	PA_(type) *x;
+	PA_(iterator) it;
 	int is_sep = 0;
-	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0" or "null" "\0". */
-	assert(it && !(to_string_buffers_no & (to_string_buffers_no - 1))
-		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1
-		&& to_string_buffer_size >= null_len + 1);
+	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
+	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
+		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	if(!PAI_(is_valid)(it))
-		{ memcpy(b, null, null_len), b += null_len; goto terminate; }
-	*b++ = start;
-	while(PAI_(next_to_string)(it, (char (*)[12])b)) {
-		/* Be paranoid about the '\0'. */
+	/* Begin iteration. */
+	PA_(begin)(&it, box);
+	*b++ = left;
+	while((x = PA_(next)(&it))) {
+		PA_(to_string)(x, (char (*)[12])b);
+		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = b - buffer) > to_string_buffer_size
 			- 11 - 1 - ellipsis_len - 1 - 1) {
-			char throw_out[12];
-			if(PAI_(next_to_string)(it, &throw_out)) goto ellipsis; else break;
+			if(PA_(next)(&it)) goto ellipsis; else break;
 		}
 	}
 	if(is_sep) b -= 2;
-	*b++ = end;
+	*b++ = right;
 	goto terminate;
 ellipsis:
 	b--;
 	memcpy(b, ellipsis, ellipsis_len), b += ellipsis_len;
-	*b++ = end;
+	*b++ = right;
 terminate:
 	*b++ = '\0';
 	assert((size = b - buffer) <= to_string_buffer_size);
 	return buffer;
 }
 
-#undef AI_
-#undef PAI_
-#undef TO_STRING_ITERATOR
-#undef TO_STRING_IS_VALID
-#undef TO_STRING_NEXT
+static void PA_(unused_to_string_coda)(void);
+static void PA_(unused_to_string)(void)
+	{ A_(to_string)(0); PA_(unused_to_string_coda)(); }
+static void PA_(unused_to_string_coda)(void) { PA_(unused_to_string)(); }
+
+#undef PA_
+#undef TO_STRING_LEFT
+#undef TO_STRING_RIGHT
