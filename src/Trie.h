@@ -28,7 +28,7 @@
  `TRIE_TYPE` is defined.
 
  @param[TRIE_TO_STRING]
- Defining this includes `ToString.h` with the keys as the to string.
+ Defining this includes `ToString.h` with the keys as the string.
 
  @param[TRIE_TEST]
  Unit testing framework <fn:<N>trie_test>, included in a separate header,

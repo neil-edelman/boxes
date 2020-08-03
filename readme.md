@@ -24,7 +24,7 @@ A [&lt;N&gt;trie](#user-content-tag-d205a13) is a prefix tree, digital tree, or 
  * Parameter: TRIE\_KEY  
    A function that satisfies [&lt;PN&gt;key_fn](#user-content-typedef-80fab10d)\. Must be defined if and only if `TRIE_TYPE` is defined\.
  * Parameter: TRIE\_TO\_STRING  
-   Defining this includes `ToString.h` with the keys as the to string\.
+   Defining this includes `ToString.h` with the keys as the string\.
  * Parameter: TRIE\_TEST  
    Unit testing framework [&lt;N&gt;trie_test](#user-content-fn-4eeb28c0), included in a separate header, [\.\./test/TreeTest\.h](../test/TreeTest.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PN&gt;action_fn](#user-content-typedef-7ef2f840)\. Requires that `NDEBUG` not be defined\.
  * Standard:  
