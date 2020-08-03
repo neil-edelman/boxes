@@ -37,8 +37,9 @@
 
  @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
  To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing `<PH>to_string_fn`. There
- can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`.
+ conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ There can be multiple to string traits, but only one can omit
+ `HEAP_TO_STRING_NAME`.
 
  @param[HEAP_TEST]
  To string trait contained in <../test/HeapTest.h>; optional unit testing
