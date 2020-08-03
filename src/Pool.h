@@ -28,8 +28,9 @@
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
  To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing `<PT>to_string_fn`. There
- can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`.
+ conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ There can be multiple to string traits, but only one can omit
+ `POOL_TO_STRING_NAME`.
 
  @param[POOL_TEST]
  To string trait contained in <../test/PoolTest.h>; optional unit testing

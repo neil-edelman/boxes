@@ -62,7 +62,7 @@
 	<dt>Parameter: POOL_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <code>&lt;PT&gt;to_string_fn</code>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PA&gt;to_string_fn">&lt;PA&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: POOL_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> pool. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action_fn">&lt;PT&gt;action_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
