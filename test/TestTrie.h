@@ -11,13 +11,13 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** Only used if `TRIE_TEST`. */
-typedef void (*PN_(Action))(PN_(Type) *);
+typedef void (*PN_(action_fn))(PN_(type) *);
 
-/* `TRIE_TEST` must be a function that implements `<PN>Action`. */
-static const PN_(Action) PN_(filler) = (TRIE_TEST);
+/* `TRIE_TEST` must be a function that implements `<PN>action_fn`. */
+static const PN_(action_fn) PN_(filler) = (TRIE_TEST);
 
 /** Debug: prints `trie`. */
-static void PN_(print)(const struct N_(Trie) *const trie) {
+static void PN_(print)(const struct N_(trie) *const trie) {
 	size_t i, n;
 	printf("__Trie: ");
 	if(!trie) { printf("null.\n"); return; }
@@ -33,7 +33,7 @@ static void PN_(print)(const struct N_(Trie) *const trie) {
 
 /** Given `n` in `trie` branches, caluculate the right child branches.
  @order \O(log `size`) */
-static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n) {
+static size_t PN_(right)(const struct N_(trie) *const trie, const size_t n) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right;
 	assert(trie && n < remaining);
 	for( ; ; ) {
@@ -50,7 +50,7 @@ static size_t PN_(right)(const struct N_(Trie) *const trie, const size_t n) {
 
 /** @return Given `n` in `trie` branches, follows the internal nodes left until
  it hits a branch. */
-static size_t PN_(left_leaf)(const struct N_(Trie) *const trie,
+static size_t PN_(left_leaf)(const struct N_(trie) *const trie,
 	const size_t n) {
 	size_t remaining = trie->branches.size, n0 = 0, left, right, i = 0;
 	assert(trie && n < remaining);
@@ -67,7 +67,7 @@ static size_t PN_(left_leaf)(const struct N_(Trie) *const trie,
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format. */
-static void PN_(graph)(const struct N_(Trie) *const trie,
+static void PN_(graph)(const struct N_(trie) *const trie,
 	const char *const fn) {
 	FILE *fp;
 	size_t i, n;
@@ -77,7 +77,7 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\tTrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>Trie: " QUOTE(TRIE_TYPE)
-		"\\l|size: %lu\\l}\"];\n", (unsigned long)N_(TrieSize)(trie));
+		"\\l|size: %lu\\l}\"];\n", (unsigned long)N_(trie_size)(trie));
 	fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
 	for(n = 0; n < trie->branches.size; n++) {
 		const size_t branch = trie->branches.data[n];
@@ -107,15 +107,15 @@ static void PN_(graph)(const struct N_(Trie) *const trie,
 }
 
 /** Makes sure the `trie` is in a valid state. */
-static void PN_(valid)(const struct N_(Trie) *const trie) {
-	PN_(Type) *const*a;
+static void PN_(valid)(const struct N_(trie) *const trie) {
+	PN_(type) *const*a;
 	size_t i, i_end;
 	int cmp;
 	if(!trie) return;
 	if(!trie->leaves.data) { assert(!trie->leaves.size
 		&& !trie->branches.data && !trie->branches.size); return; }
 	assert(trie->leaves.size == trie->branches.size + 1);
-	for(a = N_(TrieArray)(trie), i = 1, i_end = N_(TrieSize)(trie);
+	for(a = N_(trie_array)(trie), i = 1, i_end = N_(trie_size)(trie);
 		i < i_end; i++) {
 		cmp = strcmp(PN_(to_key)(a[i - 1]), PN_(to_key)(a[i]));
 		assert(cmp < 0);
@@ -123,77 +123,58 @@ static void PN_(valid)(const struct N_(Trie) *const trie) {
 }
 
 static void PN_(test)(void) {
-	struct N_(Trie) trie = TRIE_IDLE;
+	struct N_(trie) trie = TRIE_IDLE;
 	size_t n, size;
 	struct {
-		PN_(Type) data;
+		PN_(type) data;
 		int is_in;
 	} es[10];
 	const size_t es_size = sizeof es / sizeof *es;
-	PN_(Type) *const*a, *i, *eject, copy;
+	PN_(type) *const*a, *i, *eject, copy;
 	int ret;
 
 	PN_(valid)(0);
 	PN_(valid)(&trie);
-	N_(Trie)(0);
-	N_(Trie)(&trie), PN_(valid)(&trie);
-	n = N_(TrieSize)(&trie), a = N_(TrieArray)(&trie), assert(!n && !a);
-	N_(TrieClear)(0);
-	N_(TrieClear)(&trie), PN_(valid)(&trie);
-	i = N_(TrieGet)(0, 0), assert(!i);
-	i = N_(TrieGet)(0, ""), assert(!i);
-	i = N_(TrieGet)(&trie, 0), assert(!i);
-	i = N_(TrieGet)(&trie, ""), assert(!i);
+	N_(trie)(&trie), PN_(valid)(&trie);
+	n = N_(trie_size)(&trie), a = N_(trie_array)(&trie), assert(!n && !a);
+	N_(trie_clear)(&trie), PN_(valid)(&trie);
+	i = N_(trie_get)(&trie, ""), assert(!i);
 
 	/* Make random data. */
 	for(n = 0; n < es_size; n++) PN_(filler)(&es[n].data);
 
-	assert(!N_(TrieAdd)(0, 0));
-	assert(!N_(TrieAdd)(0, &es[0].data));
-	assert(!N_(TrieAdd)(&trie, 0));
-	assert(!N_(TrieRemove)(0, 0));
-	assert(!N_(TrieRemove)(&trie, 0));
-	assert(!N_(TrieRemove)(&trie, ""));
+	assert(!N_(trie_remove)(&trie, ""));
 	errno = 0;
 	for(n = 0; n < es_size; n++)
-		es[n].is_in = N_(TrieAdd)(&trie, &es[n].data);
+		es[n].is_in = N_(trie_add)(&trie, &es[n].data);
 	assert(es[0].is_in);
-	size = N_(TrieSize)(&trie);
-	assert(size > 0 && size <= N_(TrieSize)(&trie));
+	size = N_(trie_size)(&trie);
+	assert(size > 0 && size <= N_(trie_size)(&trie));
 	PN_(print)(&trie);
-	printf("Now trie is %s, null is %s.\n", N_(TrieToString)(&trie),
-		N_(TrieToString)(0));
+	printf("Now trie is %s.\n", N_(trie_to_string)(&trie));
 	PN_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "Trie-test.gv");
 	/*...*/
-	ret = N_(TrieAdd)(&trie, &es[0].data); /* Doesn't add. */
-	assert(ret && size == N_(TrieSize)(&trie));
-	ret = N_(TriePut)(0, 0, 0), assert(!ret);
-	ret = N_(TriePut)(&trie, 0, 0), assert(!ret);
-	ret = N_(TriePut)(0, &es[0].data, 0), assert(!ret);
-	ret = N_(TriePut)(&trie, &es[0].data, 0),
-		assert(ret && size == N_(TrieSize)(&trie));
-	ret = N_(TriePut)(&trie, &es[0].data, &eject),
-		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
-	ret = N_(TriePolicyPut)(0, 0, 0, 0), assert(!ret);
-	ret = N_(TriePolicyPut)(&trie, 0, 0, 0), assert(!ret);
-	ret = N_(TriePolicyPut)(0, &es[0].data, 0, 0), assert(!ret);
-	ret = N_(TriePolicyPut)(&trie, &es[0].data, 0, 0),
-		assert(ret && size == N_(TrieSize)(&trie));
-	ret = N_(TriePolicyPut)(&trie, &es[0].data, &eject, 0),
-		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
-	ret = N_(TriePolicyPut)(&trie, &es[0].data, &eject, &PN_(false_replace)),
-		assert(ret && size == N_(TrieSize)(&trie) && eject == &es[0].data);
+	ret = N_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
+	assert(ret && size == N_(trie_size)(&trie));
+	ret = N_(trie_put)(&trie, &es[0].data, 0),
+		assert(ret && size == N_(trie_size)(&trie));
+	ret = N_(trie_put)(&trie, &es[0].data, &eject),
+		assert(ret && size == N_(trie_size)(&trie) && eject == &es[0].data);
+	ret = N_(trie_policy_put)(&trie, &es[0].data, 0, 0),
+		assert(ret && size == N_(trie_size)(&trie));
+	ret = N_(trie_policy_put)(&trie, &es[0].data, &eject, 0),
+		assert(ret && size == N_(trie_size)(&trie) && eject == &es[0].data);
+	ret = N_(trie_policy_put)(&trie, &es[0].data, &eject, &PN_(false_replace)),
+		assert(ret && size == N_(trie_size)(&trie) && eject == &es[0].data);
 	memcpy((void *)&copy, &es[0].data, sizeof es[0].data);
-	ret = N_(TriePolicyPut)(&trie, &copy, &eject, &PN_(false_replace)),
-		assert(ret && size == N_(TrieSize)(&trie) && eject == &copy);
-	N_(Trie_)(0);
-	N_(Trie_)(&trie), assert(!N_(TrieSize)(&trie)), PN_(valid)(&trie);
+	ret = N_(trie_policy_put)(&trie, &copy, &eject, &PN_(false_replace)),
+		assert(ret && size == N_(trie_size)(&trie) && eject == &copy);
+	N_(trie_)(&trie), assert(!N_(trie_size)(&trie)), PN_(valid)(&trie);
 }
 
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
- defining `assert`.
- @allow */
-static void N_(TrieTest)(void) {
+ defining `assert`. @allow */
+static void N_(trie_test)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">Trie"
 		" of type <" QUOTE(TRIE_TYPE) ">"
 		" was created using: TREE_KEY<" QUOTE(TRIE_KEY) ">;"

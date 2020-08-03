@@ -16,7 +16,8 @@
  @cf [Heap](https://github.com/neil-edelman/Heap)
  @cf [List](https://github.com/neil-edelman/List)
  @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set) */
+ @cf [Set](https://github.com/neil-edelman/Set)
+ @cf [Trie](https://github.com/neil-edelman/Trie) */
 
 #include <stdlib.h> /* rand */
 #include <stdio.h>  /* strlen */
@@ -62,8 +63,7 @@ static const unsigned max_name_size = 256;
 
 /** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
  then puts a null terminator. Uses `rand` from `stdlib.h`.
- @param[name] If null, does nothing.
- @param[name_size] If zero, does nothing. */
+ @param[name] If null, does nothing. @param[name_size] If zero, does nothing. */
 void Orcish(char *const name, size_t name_size) {
 	char *n = name;
 	const char *part;

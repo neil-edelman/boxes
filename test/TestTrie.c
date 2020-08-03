@@ -18,17 +18,17 @@
 #include "Orcish.h"
 
 
-/** Just a placeholder to get `graph()`; <fn:StrTrieTest> will crash. */
+/** Just a placeholder to get `graph()`; <fn:str_trieTest> will crash. */
 static void fill_str(const char *str) { (void)(str); }
 
-#define TRIE_NAME Str
+#define TRIE_NAME str
 #define TRIE_TO_STRING
 #define TRIE_TEST &fill_str
 #include "../src/Trie.h"
 
 /** Specific test for str. */
 static void test_basic_trie_str(void) {
-	struct StrTrie trie = TRIE_IDLE;
+	struct str_trie trie = TRIE_IDLE;
 	const char *words[] = { "foo", "bar", "baz", "qux", "quux" };
 	const size_t words_size = sizeof words / sizeof *words;
 	const char *wordsr[] = { "", "foo", "qux", "quxx", "quux", "foo" };
@@ -39,128 +39,127 @@ static void test_basic_trie_str(void) {
 	const size_t alph_size = sizeof alph / sizeof *alph;
 	size_t i;
 
-	assert(StrTrieRemove(&trie, "") == 0);
+	assert(str_trie_remove(&trie, "") == 0);
 
-	trie_Str_print(&trie);
-	trie_Str_graph(&trie, "graph/trie0.gv");
-	/*printf("Trie0: %s.\n\n", StrTrieToString(&trie));*/
+	trie_str_print(&trie);
+	trie_str_graph(&trie, "graph/trie0.gv");
+	/*printf("Trie0: %s.\n\n", str_trie_to_string(&trie));*/
 
-	if(!StrTrieAdd(&trie, "foo")) goto catch;
-	/*trie_Str_print(&trie);*/
-	trie_Str_graph(&trie, "graph/trie1.gv");
-	/*printf("Trie1: %s.\n\n", StrTrieToString(&trie));*/
+	if(!str_trie_add(&trie, "foo")) goto catch;
+	/*trie_str_print(&trie);*/
+	trie_str_graph(&trie, "graph/trie1.gv");
+	/*printf("Trie1: %s.\n\n", str_trie_to_string(&trie));*/
 
-	if(!StrTrieAdd(&trie, "bar")) goto catch;
-	/*trie_Str_print(&trie);*/
-	trie_Str_graph(&trie, "graph/trie2.gv");
-	/*printf("Trie2: %s.\n\n", StrTrieToString(&trie));*/
+	if(!str_trie_add(&trie, "bar")) goto catch;
+	/*trie_str_print(&trie);*/
+	trie_str_graph(&trie, "graph/trie2.gv");
+	/*printf("Trie2: %s.\n\n", str_trie_to_string(&trie));*/
 
-	if(!StrTrieAdd(&trie, "baz")) goto catch;
-	/*trie_Str_print(&trie);*/
-	trie_Str_graph(&trie, "graph/trie3.gv");
-	/*printf("Trie3: %s.\n\n", StrTrieToString(&trie));*/
+	if(!str_trie_add(&trie, "baz")) goto catch;
+	/*trie_str_print(&trie);*/
+	trie_str_graph(&trie, "graph/trie3.gv");
+	/*printf("Trie3: %s.\n\n", str_trie_to_string(&trie));*/
 
-	if(!StrTrieAdd(&trie, "qux")) goto catch;
-	/*trie_Str_print(&trie);*/
-	trie_Str_graph(&trie, "graph/trie4.gv");
-	/*printf("Trie4: %s.\n\n", StrTrieToString(&trie));*/
+	if(!str_trie_add(&trie, "qux")) goto catch;
+	/*trie_str_print(&trie);*/
+	trie_str_graph(&trie, "graph/trie4.gv");
+	/*printf("Trie4: %s.\n\n", str_trie_to_string(&trie));*/
 
-	if(!StrTrieAdd(&trie, "quxx")) goto catch;
-	/*trie_Str_print(&trie);*/
-	trie_Str_graph(&trie, "graph/trie5.gv");
-	/*printf("Trie5: %s.\n\n", StrTrieToString(&trie));*/
+	if(!str_trie_add(&trie, "quxx")) goto catch;
+	/*trie_str_print(&trie);*/
+	trie_str_graph(&trie, "graph/trie5.gv");
+	/*printf("Trie5: %s.\n\n", str_trie_to_string(&trie));*/
 
-	if(!StrTrieAdd(&trie, "quxxx")) goto catch;
-	/*trie_Str_print(&trie);*/
-	trie_Str_graph(&trie, "graph/trie6.gv");
-	/*printf("Trie6: %s.\n\n", StrTrieToString(&trie));*/
+	if(!str_trie_add(&trie, "quxxx")) goto catch;
+	/*trie_str_print(&trie);*/
+	trie_str_graph(&trie, "graph/trie6.gv");
+	/*printf("Trie6: %s.\n\n", str_trie_to_string(&trie));*/
 
-	assert(StrTrieSize(&trie) == 6);
+	assert(str_trie_size(&trie) == 6);
 
-	if(!StrTrieAdd(&trie, "a")) goto catch;
-	trie_Str_graph(&trie, "graph/trie_a.gv");
-	if(!StrTrieAdd(&trie, "b")) goto catch;
-	trie_Str_graph(&trie, "graph/trie_b.gv");
-	/*trie_Str_print(&trie);*/
-	if(!StrTrieAdd(&trie, "c")) goto catch;
-	trie_Str_print(&trie);
-	trie_Str_graph(&trie, "graph/trie_c.gv");
-	if(!StrTrieAdd(&trie, "d")
-	   || !StrTrieAdd(&trie, "e")
-	   || !StrTrieAdd(&trie, "f")
-	   || !StrTrieAdd(&trie, "g")
-	   || !StrTrieAdd(&trie, "h")
-	   || !StrTrieAdd(&trie, "i")
-	   || !StrTrieAdd(&trie, "j")
-	   || !StrTrieAdd(&trie, "k")
-	   || !StrTrieAdd(&trie, "l")
-	   || !StrTrieAdd(&trie, "m")
-	   || !StrTrieAdd(&trie, "n")
-	   || !StrTrieAdd(&trie, "o")
-	   || !StrTrieAdd(&trie, "p")
-	   || !StrTrieAdd(&trie, "q")
-	   || !StrTrieAdd(&trie, "r")
-	   || !StrTrieAdd(&trie, "s")
-	   || !StrTrieAdd(&trie, "t")
-	   || !StrTrieAdd(&trie, "u")
-	   || !StrTrieAdd(&trie, "v")
-	   || !StrTrieAdd(&trie, "w")
-	   || !StrTrieAdd(&trie, "x")
-	   || !StrTrieAdd(&trie, "y")
-	   || !StrTrieAdd(&trie, "z")) goto catch;
-	trie_Str_print(&trie);
-	trie_Str_graph(&trie, "graph/trie_z.gv");
-	printf("TrieZ: %s.\n\n", StrTrieToString(&trie));
-	assert(StrTrieSize(&trie) == 26 + 6);
-	if(!StrTrieRemove(&trie, "x")
-		|| !StrTrieRemove(&trie, "z")
-		|| !StrTrieRemove(&trie, "y")
-		|| !StrTrieRemove(&trie, "d")
-		|| !StrTrieRemove(&trie, "c")
-		|| !StrTrieRemove(&trie, "b")
-		|| !StrTrieRemove(&trie, "a")
-		|| !StrTrieRemove(&trie, "f")
-		|| !StrTrieRemove(&trie, "g")
-		|| !StrTrieRemove(&trie, "h")
-		|| !StrTrieRemove(&trie, "i")
-		|| !StrTrieRemove(&trie, "j")
-		|| !StrTrieRemove(&trie, "k")
-		|| !StrTrieRemove(&trie, "l")
-		|| !StrTrieRemove(&trie, "m")
-		|| !StrTrieRemove(&trie, "n")
-		|| !StrTrieRemove(&trie, "o")
-		|| !StrTrieRemove(&trie, "p")
-		|| !StrTrieRemove(&trie, "q")
-		|| !StrTrieRemove(&trie, "r")
-		|| !StrTrieRemove(&trie, "s")
-		|| !StrTrieRemove(&trie, "t")
-		|| !StrTrieRemove(&trie, "u")
-		|| !StrTrieRemove(&trie, "v")
-		|| !StrTrieRemove(&trie, "w")
-		|| !StrTrieRemove(&trie, "e")) goto catch;
-	trie_Str_graph(&trie, "graph/trie_a-z-delete.gv");
-	assert(StrTrieSize(&trie) == 6);
+	if(!str_trie_add(&trie, "a")) goto catch;
+	trie_str_graph(&trie, "graph/trie_a.gv");
+	if(!str_trie_add(&trie, "b")) goto catch;
+	trie_str_graph(&trie, "graph/trie_b.gv");
+	/*trie_str_print(&trie);*/
+	if(!str_trie_add(&trie, "c")) goto catch;
+	trie_str_print(&trie);
+	trie_str_graph(&trie, "graph/trie_c.gv");
+	if(!str_trie_add(&trie, "d")
+	   || !str_trie_add(&trie, "e")
+	   || !str_trie_add(&trie, "f")
+	   || !str_trie_add(&trie, "g")
+	   || !str_trie_add(&trie, "h")
+	   || !str_trie_add(&trie, "i")
+	   || !str_trie_add(&trie, "j")
+	   || !str_trie_add(&trie, "k")
+	   || !str_trie_add(&trie, "l")
+	   || !str_trie_add(&trie, "m")
+	   || !str_trie_add(&trie, "n")
+	   || !str_trie_add(&trie, "o")
+	   || !str_trie_add(&trie, "p")
+	   || !str_trie_add(&trie, "q")
+	   || !str_trie_add(&trie, "r")
+	   || !str_trie_add(&trie, "s")
+	   || !str_trie_add(&trie, "t")
+	   || !str_trie_add(&trie, "u")
+	   || !str_trie_add(&trie, "v")
+	   || !str_trie_add(&trie, "w")
+	   || !str_trie_add(&trie, "x")
+	   || !str_trie_add(&trie, "y")
+	   || !str_trie_add(&trie, "z")) goto catch;
+	trie_str_print(&trie);
+	trie_str_graph(&trie, "graph/trie_z.gv");
+	printf("TrieZ: %s.\n\n", str_trie_to_string(&trie));
+	assert(str_trie_size(&trie) == 26 + 6);
+	if(!str_trie_remove(&trie, "x")
+		|| !str_trie_remove(&trie, "z")
+		|| !str_trie_remove(&trie, "y")
+		|| !str_trie_remove(&trie, "d")
+		|| !str_trie_remove(&trie, "c")
+		|| !str_trie_remove(&trie, "b")
+		|| !str_trie_remove(&trie, "a")
+		|| !str_trie_remove(&trie, "f")
+		|| !str_trie_remove(&trie, "g")
+		|| !str_trie_remove(&trie, "h")
+		|| !str_trie_remove(&trie, "i")
+		|| !str_trie_remove(&trie, "j")
+		|| !str_trie_remove(&trie, "k")
+		|| !str_trie_remove(&trie, "l")
+		|| !str_trie_remove(&trie, "m")
+		|| !str_trie_remove(&trie, "n")
+		|| !str_trie_remove(&trie, "o")
+		|| !str_trie_remove(&trie, "p")
+		|| !str_trie_remove(&trie, "q")
+		|| !str_trie_remove(&trie, "r")
+		|| !str_trie_remove(&trie, "s")
+		|| !str_trie_remove(&trie, "t")
+		|| !str_trie_remove(&trie, "u")
+		|| !str_trie_remove(&trie, "v")
+		|| !str_trie_remove(&trie, "w")
+		|| !str_trie_remove(&trie, "e")) goto catch;
+	trie_str_graph(&trie, "graph/trie_a-z-delete.gv");
+	assert(str_trie_size(&trie) == 6);
 	for(i = 0; i < words_size; i++)
-		printf("\"%s\": %s\n", words[i], StrTrieMatch(&trie, words[i]));
-	StrTrie_(&trie);
+		printf("\"%s\": %s\n", words[i], str_trie_index_get(&trie, words[i]));
+	str_trie_(&trie);
 
 	printf("Trie from array.\n");
-	if(!StrTrieFromArray(&trie, words, words_size, 0)) goto catch;
-	trie_Str_graph(&trie, "graph/trie_all_at_once.gv");
-	StrTrie_(&trie);
-	if(!StrTrieFromArray(&trie, alph, alph_size, 0)) goto catch;
-	trie_Str_graph(&trie, "graph/alph_all_at_once.gv");
-	if(!StrTrieFromArray(&trie, wordsr, wordsr_size, 0)) goto catch;
-	trie_Str_graph(&trie, "graph/trie_r_all_at_once.gv");
-	StrTrie_(&trie);	
+	if(!str_trie_from_array(&trie, words, words_size)) goto catch;
+	trie_str_graph(&trie, "graph/trie_all_at_once.gv");
+	str_trie_(&trie);
+	if(!str_trie_from_array(&trie, alph, alph_size)) goto catch;
+	trie_str_graph(&trie, "graph/alph_all_at_once.gv");
+	if(!str_trie_from_array(&trie, wordsr, wordsr_size)) goto catch;
+	trie_str_graph(&trie, "graph/trie_r_all_at_once.gv");
+	str_trie_(&trie);	
 	goto finally;
 catch:
 	printf("Test failed.\n");
 	assert(0);
 finally:
-	StrTrie_(&trie);
+	str_trie_(&trie);
 }
-
 
 #ifndef DEBUG
 #define TRIE_BENCHMARK
@@ -174,7 +173,7 @@ static int pstr_cmp(const char *const*const pa, const char *const*const pb)
 	{ return strcmp(*pa, *pb); }
 
 /* For comparison with sorted array. */
-#define ARRAY_NAME Str
+#define ARRAY_NAME str
 #define ARRAY_TYPE const char *
 #define ARRAY_EXPECT_TRAIT
 #include "../src/Array.h"
@@ -186,13 +185,13 @@ static int pstr_cmp(const char *const*const pa, const char *const*const pb)
 
 /** Fills `strs` with `words` of size `words_size` from `words_start` to
  `words_chosen`. */
-static int array_fill(struct StrArray *const strs,
+static int array_fill(struct str_array *const strs,
 	const char *const*const words, const size_t words_size,
 	const size_t words_start, const size_t words_chosen) {
 	assert(strs && words && words_chosen && words_chosen <= words_size
 		&& words_start < words_size);
-	StrArrayClear(strs);
-	if(!StrArrayBuffer(strs, words_chosen)) return 0;
+	str_array_clear(strs);
+	if(!str_array_buffer(strs, words_chosen)) return 0;
 	if(words_start + words_chosen > words_size) {
 		const size_t size_a = words_size - words_start,
 		size_b = words_chosen - size_a;
@@ -227,15 +226,17 @@ static void pointer_to_string(const char *const*const ps, char (*const a)[12]) {
 	strncpy(*a, *ps, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-#define SET_NAME String
+#define SET_NAME string
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
+#define SET_EXPECT_TRAIT
+#include "Set.h"
 #define SET_TO_STRING &pointer_to_string
 #include "Set.h"
 
-#define POOL_NAME StringElement
-#define POOL_TYPE struct StringSetElement
+#define POOL_NAME string_node
+#define POOL_TYPE struct string_set_node
 #include "Pool.h"
 
 /** Returns a time diffecence in microseconds from `then`. */
@@ -274,10 +275,10 @@ static double m_stddev(const struct Measure *const measure)
 
 static int timing_comparison(const char *const *const keys,
 	const size_t keys_size) {
-	struct StrTrie trie = TRIE_IDLE;
-	struct StrArray array = ARRAY_IDLE;
-	struct StringSet set = SET_IDLE;
-	struct StringElementPool set_pool = POOL_IDLE;
+	struct str_trie trie = TRIE_IDLE;
+	struct str_array array = ARRAY_IDLE;
+	struct string_set set = SET_IDLE;
+	struct string_node_pool set_pool = POOL_IDLE;
 	size_t i, r, n = 1, e, replicas = 5;
 	clock_t t, t_total;
 	int success = 1, is_full = 0;
@@ -311,17 +312,17 @@ static int timing_comparison(const char *const *const keys,
 			t = clock();
 			array_fill(&array, keys, keys_size, start_i, n);
 			qsort(array.data, array.size, sizeof array.data,
-				&array_Str_compar_anonymous);
-			StrArrayCompactify(&array, 0);
+				&array_str_vcompar_anonymous);
+			str_array_unique(&array);
 			m_add(&es[ARRAYINIT].m, diff_us(t));
 			printf("Added init array size %lu: %s.\n",
-				(unsigned long)array.size, StrArrayToString(&array));
+				(unsigned long)array.size, str_array_to_string(&array));
 			t = clock();
-			printf("Array: %s.\n", StrArrayToString(&array));
+			printf("Array: %s.\n", str_array_to_string(&array));
 			for(i = 0; i < n; i++) {
 				const char *const word = keys[(start_i + i) % keys_size],
 					**const key = bsearch(&word, array.data, array.size,
-					sizeof array.data, &array_Str_compar_anonymous);
+					sizeof array.data, &array_str_vcompar_anonymous);
 				const int cmp = strcmp(word, *key);
 				(void)cmp, assert(key && !cmp);
 			}
@@ -329,48 +330,49 @@ static int timing_comparison(const char *const *const keys,
 			printf("Added look array size %lu.\n", (unsigned long)array.size);
 
 			/* Set, (hash map.) */
-			StringSetClear(&set);
-			StringElementPoolClear(&set_pool);
+			string_set_clear(&set);
+			string_node_pool_clear(&set_pool);
 			t = clock();
 			for(i = 0; i < n; i++) {
-				struct StringSetElement *elem = StringElementPoolNew(&set_pool);
+				struct string_set_node *elem = string_node_pool_new(&set_pool);
 				elem->key = keys[(start_i + i) % keys_size];
-				if(StringSetPolicyPut(&set, elem, 0))
-					StringElementPoolRemove(&set_pool, elem);
+				if(string_set_policy_put(&set, elem, 0))
+					string_node_pool_remove(&set_pool, elem);
 			}
 			m_add(&es[HASHINIT].m, diff_us(t));
 			printf("Added init hash size %lu: %s.\n",
-				(unsigned long)StringSetSize(&set), StringSetToString(&set));
+				(unsigned long)string_set_size(&set),
+				string_set_to_string(&set));
 			t = clock();
 			for(i = 0; i < n; i++) {
 				const char *const word = keys[(start_i + i) % keys_size];
-				const struct StringSetElement *const elem
-					= StringSetGet(&set, word);
+				const struct string_set_node *const elem
+					= string_set_get(&set, word);
 				const int cmp = strcmp(word, elem->key);
 				(void)cmp, assert(elem && !cmp);
 			}
 			m_add(&es[HASHLOOK].m, diff_us(t));
 			printf("Added look hash size %lu.\n",
-				(unsigned long)StringSetSize(&set));
+				(unsigned long)string_set_size(&set));
 
 			/* Trie. */
 			t = clock();
 			array_fill(&array, keys, keys_size, start_i, n);
-			StrTrieClear(&trie);
-			StrTrieFromArray(&trie, array.data, array.size, 0);
+			str_trie_clear(&trie);
+			str_trie_from_array(&trie, array.data, array.size);
 			m_add(&es[TRIEINIT].m, diff_us(t));
 			printf("Added init trie size %lu: %s.\n",
-				(unsigned long)StrTrieSize(&trie), StrTrieToString(&trie));
+				(unsigned long)str_trie_size(&trie), str_trie_to_string(&trie));
 			t = clock();
 			for(i = 0; i < n; i++) {
 				const char *const word = keys[(start_i + i) % keys_size],
-					*const key = StrTrieGet(&trie, word);
+					*const key = str_trie_get(&trie, word);
 				const int cmp = strcmp(word, key);
 				(void)cmp, assert(key && !cmp);
 			}
 			m_add(&es[TRIELOOK].m, diff_us(t));
 			printf("Added look trie size %lu.\n",
-				(unsigned long)StrTrieSize(&trie));
+				(unsigned long)str_trie_size(&trie));
 
 			/* Took took much time; decrease the replicas for next time. */
 			if(replicas != 1
@@ -383,7 +385,7 @@ static int timing_comparison(const char *const *const keys,
 			fprintf(es[e].fp, "%lu\t%f\t%f\n",
 				(unsigned long)n, m_mean(&es[e].m), stddev);
 		}
-		if(n == 512) trie_Str_graph(&trie, "graph/example.gv");
+		if(n == 512) trie_str_graph(&trie, "graph/example.gv");
 	}
 	printf("Test passed.\n");
 	goto finally;
@@ -392,10 +394,10 @@ catch:
 	perror("test");
 	printf("Test failed.\n");
 finally:
-	StrArray_(&array);
-	StringSet_(&set);
-	StringElementPool_(&set_pool);
-	StrTrie_(&trie);
+	str_array_(&array);
+	string_set_(&set);
+	string_node_pool_(&set_pool);
+	str_trie_(&trie);
 	if(gnu.fp && fclose(gnu.fp)) perror(gnu.name);
 	for(e = 0; e < es_size; e++)
 		if(es[e].fp && fclose(es[e].fp)) perror(es[e].name);
@@ -468,9 +470,10 @@ static void fill_dict(struct Dict *const dict) {
 	dict->defn = rand() / (RAND_MAX / 99 + 1);
 }
 
-#define TRIE_NAME Dict
+#define TRIE_NAME dict
 #define TRIE_TYPE struct Dict
 #define TRIE_KEY &dict_key
+#define TRIE_TO_STRING
 #define TRIE_TEST &fill_dict
 #include "../src/Trie.h"
 
@@ -479,8 +482,8 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	test_basic_trie_str();
-	(void)StrTrieTest; /* <- Not safe; `const char` is not generatable. */
-	DictTrieTest();
+	(void)str_trie_test; /* <- Not safe; `const char` is not generatable. */
+	dict_trie_test();
 	printf("\n***\n\n");
 #ifdef TRIE_BENCHMARK /* <!-- bench */
 	{
