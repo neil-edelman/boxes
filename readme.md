@@ -3,7 +3,7 @@
 ## Stable Pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e), [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;pool](#user-content-tag-d418caef), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -26,7 +26,7 @@
  * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
    To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing `<PT>to_string_fn`\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\.
  * Parameter: POOL\_TEST  
-   To string trait contained in [\.\./test/PoolTest\.h](../test/PoolTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ pool\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action](#user-content-typedef-6ab9561)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [\.\./test/PoolTest\.h](../test/PoolTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ pool\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * See also:  
@@ -43,9 +43,9 @@ A valid tag type set by `POOL_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-6ab9561" name = "user-content-typedef-6ab9561">&lt;PT&gt;action</a> ###
+### <a id = "user-content-typedef-ba462b2e" name = "user-content-typedef-ba462b2e">&lt;PT&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;action</strong>)(&lt;PT&gt;type *const data);</code>
+<code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;type *const data);</code>
 
 Operates by side\-effects\.
 
@@ -193,7 +193,7 @@ Removes all from `pool`, but keeps it's active state\. \(Only freeing the smalle
 
 ### <a id = "user-content-fn-794d81a9" name = "user-content-fn-794d81a9">&lt;T&gt;pool_for_each</a> ###
 
-<code>static void <strong>&lt;T&gt;pool_for_each</strong>(struct &lt;T&gt;pool *const <em>pool</em>, const &lt;PT&gt;action <em>action</em>)</code>
+<code>static void <strong>&lt;T&gt;pool_for_each</strong>(struct &lt;T&gt;pool *const <em>pool</em>, const &lt;PT&gt;action_fn <em>action</em>)</code>
 
 Iterates though `pool` and calls `action` on all the elements\.
 

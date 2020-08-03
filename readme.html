@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action">&lt;PT&gt;action</a>, <a href = "#typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action_fn">&lt;PT&gt;action_fn</a>, <a href = "#typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>pool">&lt;T&gt;pool</a>, <a href = "#tag:<PT>iterator">&lt;PT&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -64,7 +64,7 @@
 	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <code>&lt;PT&gt;to_string_fn</code>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: POOL_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> pool. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action">&lt;PT&gt;action</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
+	<dd>To string trait contained in <a href = "../test/PoolTest.h">../test/PoolTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> pool. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action_fn">&lt;PT&gt;action_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>See also:</dt>
@@ -85,9 +85,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PT>action" name = "typedef:<PT>action">&lt;PT&gt;action</a></h3>
+<h3><a id = "typedef:<PT>action_fn" name = "typedef:<PT>action_fn">&lt;PT&gt;action_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PT&gt;action</strong>)(&lt;PT&gt;type *const data);</code></p>
+<p><code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;type *const data);</code></p>
 
 <p>Operates by side-effects.</p>
 
@@ -265,7 +265,7 @@
 
 <h3><a id = "fn:<T>pool_for_each" name = "fn:<T>pool_for_each">&lt;T&gt;pool_for_each</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;pool_for_each</strong>(struct &lt;T&gt;pool *const <em>pool</em>, const &lt;PT&gt;action <em>action</em>)</code></p>
+<p><code>static void <strong>&lt;T&gt;pool_for_each</strong>(struct &lt;T&gt;pool *const <em>pool</em>, const &lt;PT&gt;action_fn <em>action</em>)</code></p>
 
 <p>Iterates though <code>pool</code> and calls <code>action</code> on all the elements.</p>
 

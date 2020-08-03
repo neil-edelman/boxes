@@ -54,7 +54,7 @@ typedef ITERATE PA_(iterator);
 typedef ITERATE_BOX PA_(box);
 typedef ITERATE_TYPE PA_(type);
 typedef void (*PA_(begin_fn))(PA_(iterator) *, const PA_(box) *);
-typedef PA_(type) *(*PA_(next_fn))(PA_(iterator) *);
+typedef const PA_(type) *(*PA_(next_fn))(PA_(iterator) *);
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. */
 typedef void (*PA_(to_string_fn))(const PA_(type) *, char (*)[12]);
@@ -73,7 +73,7 @@ static const char *A_(to_string)(const PA_(box) *const box) {
 	const size_t ellipsis_len = strlen(ellipsis);
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
-	PA_(type) *x;
+	const PA_(type) *x;
 	PA_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
@@ -114,5 +114,6 @@ static void PA_(unused_to_string)(void)
 static void PA_(unused_to_string_coda)(void) { PA_(unused_to_string)(); }
 
 #undef PA_
+#undef TO_STRING
 #undef TO_STRING_LEFT
 #undef TO_STRING_RIGHT
