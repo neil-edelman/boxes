@@ -477,9 +477,9 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 
 
 #ifdef SET_TO_STRING_NAME /* <!-- name */
-#define A_(thing) CAT(E_(array), CAT(SET_TO_STRING_NAME, thing))
+#define A_(thing) CAT(E_(set), CAT(SET_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define A_(thing) CAT(E_(array), thing)
+#define A_(thing) CAT(E_(set), thing)
 #endif /* !name --> */
 #define TO_STRING SET_TO_STRING
 #define TO_STRING_LEFT '{'
