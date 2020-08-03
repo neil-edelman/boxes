@@ -438,7 +438,7 @@ static void PE_(begin)(struct PE_(iterator) *const it,
 	{ assert(it && set), it->set = set, it->b = 0, it->e = 0; }
 
 /** Advances `it`. @implements next */
-static PE_(type) *PE_(next)(struct PE_(iterator) *const it) {
+static const PE_(type) *PE_(next)(struct PE_(iterator) *const it) {
 	const size_t b_end = 1 << it->set->log_capacity;
 	assert(it && it->set);
 	if(!it->set->buckets) return 0;

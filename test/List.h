@@ -684,7 +684,7 @@ static void PN_(begin)(struct PN_(iterator) *const it,
 	{ assert(it && list), it->node = list->head.next; }
 
 /** Advances `it`. @implements next */
-static struct N_(list_node) *PN_(next)(struct PN_(iterator) *const it) {
+static const struct N_(list_node) *PN_(next)(struct PN_(iterator) *const it) {
 	struct N_(list_node) *n;
 	assert(it && it->node);
 	return (it->node = (n = it->node)->next) ? n : 0;

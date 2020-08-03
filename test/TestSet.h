@@ -329,7 +329,7 @@ static void PE_(test_basic)(struct E_(set_node) *(*const parent_new)(void *),
  `parent_new` is null. @allow */
 static void E_(set_test)(struct E_(set_node) *(*const parent_new)(void *),
 	void *const parent) {
-	printf("<" QUOTE(SET_NAME) ">Set of type <" QUOTE(SET_TYPE)
+	printf("<" QUOTE(SET_NAME) ">set of type <" QUOTE(SET_TYPE)
 		"> was created using: SET_HASH <" QUOTE(SET_HASH) ">; "
 		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
 #ifdef SET_NO_CACHE
@@ -339,7 +339,7 @@ static void E_(set_test)(struct E_(set_node) *(*const parent_new)(void *),
 		"SET_TEST<" QUOTE(SET_TEST) ">; "
 		"%stesting:\n", parent_new ? "parent type specified; " : "");
 	PE_(test_basic)(parent_new, parent);
-	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">Set.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">set.\n\n");
 }
 
 #else /* compare --><!-- */
