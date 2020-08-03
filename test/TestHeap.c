@@ -32,7 +32,6 @@ static void test_int(struct int_heap_node *i, void *const unused) {
 	/* printf("test_int: generated %u\n", i->priority); */
 }
 
-
 struct orc_heap_node;
 static void orc_to_string(const struct orc_heap_node *, char (*)[12]);
 static void test_orc(struct orc_heap_node *, void *);
@@ -64,7 +63,6 @@ static void test_orc(struct orc_heap_node *node, void *const vpool) {
 	node->priority = orc->health;
 	node->value = orc;
 }
-
 
 int main(void) {
 	struct orc_pool orcs = POOL_IDLE;

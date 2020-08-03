@@ -3,7 +3,7 @@
 ## Priority Queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare](#user-content-typedef-f7455e7e), [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), [&lt;PH&gt;pvalue](#user-content-typedef-eccf9f42), [&lt;PH&gt;to_string](#user-content-typedef-6be562aa), [&lt;PH&gt;biaction](#user-content-typedef-420cc548)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), [&lt;PH&gt;pvalue](#user-content-typedef-eccf9f42), [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596), [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_node](#user-content-tag-7243593c), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -13,7 +13,7 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&lt;H&gt;heap_node](#user-content-tag-7243593c)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>heap_node>array` with implicit heap properties, with an optionally cached [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload; as such, one needs to have `Array.h` file in the same directory\.
+A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&lt;H&gt;heap_node](#user-content-tag-7243593c)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>heap_node>array` with implicit heap properties, with an optionally cached [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload\. As such, one needs to have `Array.h` file in the same directory\.
 
 `<H>heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
@@ -22,15 +22,15 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&l
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
    `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith\. `HEAP_NAME` is required but `HEAP_TYPE` defaults to `unsigned int` if not specified\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: HEAP\_COMPARE  
-   A function satisfying [&lt;PH&gt;compare](#user-content-typedef-f7455e7e)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
+   A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
    Optional payload [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\.
  * Parameter: HEAP\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
-   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PH&gt;to_string](#user-content-typedef-6be562aa)\. There can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`\.
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing `<PH>to_string_fn`\. There can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`\.
  * Parameter: HEAP\_TEST  
-   To string trait contained in [\.\./test/HeapTest\.h](../test/HeapTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;biaction](#user-content-typedef-420cc548)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [\.\./test/HeapTest\.h](../test/HeapTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * Dependancies:  
@@ -51,9 +51,9 @@ Valid assignable type used for priority in [&lt;H&gt;heap_node](#user-content-ta
 
 
 
-### <a id = "user-content-typedef-f7455e7e" name = "user-content-typedef-f7455e7e">&lt;PH&gt;compare</a> ###
+### <a id = "user-content-typedef-dee13533" name = "user-content-typedef-dee13533">&lt;PH&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PH&gt;compare</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code>
+<code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code>
 
 Returns a positive result if `a` comes after `b`, inducing a strict pre\-order of `a` with respect to `b`; this is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\. The default `HEAP_COMPARE` is `a > b`, which makes a minimum\-hash\.
 
@@ -75,17 +75,17 @@ If `HEAP_VALUE` is set, a pointer to the [&lt;PH&gt;value](#user-content-typedef
 
 
 
-### <a id = "user-content-typedef-6be562aa" name = "user-content-typedef-6be562aa">&lt;PH&gt;to_string</a> ###
+### <a id = "user-content-typedef-a933c596" name = "user-content-typedef-a933c596">&lt;PA&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PH&gt;to_string</strong>)(const struct &lt;H&gt;heap_node *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PA&gt;to_string_fn</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code>
 
-Responsible for turning [&lt;H&gt;heap_node](#user-content-tag-7243593c) into a maximum 11\-`char` string\.
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
 
 
-### <a id = "user-content-typedef-420cc548" name = "user-content-typedef-420cc548">&lt;PH&gt;biaction</a> ###
+### <a id = "user-content-typedef-7e815a45" name = "user-content-typedef-7e815a45">&lt;PH&gt;biaction_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PH&gt;biaction</strong>)(struct &lt;H&gt;heap_node *, void *);</code>
+<code>typedef void(*<strong>&lt;PH&gt;biaction_fn</strong>)(struct &lt;H&gt;heap_node *, void *);</code>
 
 Operates by side\-effects\. Used for `HEAP_TEST`\.
 
@@ -115,7 +115,7 @@ Stores the heap as an implicit binary tree in an array\. To initialise it to an 
 
 <code>struct <strong>&lt;PH&gt;iterator</strong>;</code>
 
-Contains all iteration parameters in one\.
+Contains all iteration parameters\.
 
 
 
@@ -145,7 +145,7 @@ Contains all iteration parameters in one\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-4355676a">&lt;H&gt;heap_buffer</a></td><td>heap, add</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-9bf7fcf1">&lt;H&gt;heap&lt;A&gt;to_string</a></td><td>heap</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-6fb489ab">&lt;A&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-2a4c2c14">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
@@ -271,7 +271,7 @@ Ensures that `heap` is `reserve` capacity beyond the elements already in the hea
  * Parameter: _reserve_  
    If zero and idle, returns null
  * Return:  
-   The end of the `heap`, where are `reserve` elements, or null and `errno` will be set\. Writing on this memory space is safe, but one will have to increase the size manually, \(see [&lt;H&gt;heap_buffer](#user-content-fn-4355676a)\.\)
+   The end of the `heap`, where are `reserve` elements\. Writing on this memory space is safe, but one will have to increase the size manually, \(see [&lt;H&gt;heap_buffer](#user-content-fn-4355676a)\.\)
  * Exceptional return: ERANGE, realloc  
  * Order:  
    Amortised &#927;\(`reserve`\)\.
@@ -297,12 +297,12 @@ Adds and heapifies `add` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https
 
 
 
-### <a id = "user-content-fn-9bf7fcf1" name = "user-content-fn-9bf7fcf1">&lt;H&gt;heap&lt;A&gt;to_string</a> ###
+### <a id = "user-content-fn-6fb489ab" name = "user-content-fn-6fb489ab">&lt;A&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;H&gt;heap&lt;A&gt;to_string</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
+<code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `heap` in a static string buffer with the limitations of `ToString.h`\.
+   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 
@@ -316,7 +316,7 @@ Adds and heapifies `add` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https
 Will be tested on stdout\. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not `NDEBUG` while defining `assert`\.
 
  * Parameter: _param_  
-   The parameter to call [&lt;PH&gt;biaction](#user-content-typedef-420cc548) `HEAP_TEST`\.
+   The parameter to call [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45) `HEAP_TEST`\.
 
 
 

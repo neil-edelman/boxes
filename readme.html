@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare">&lt;PH&gt;compare</a>, <a href = "#typedef:<PH>value">&lt;PH&gt;value</a>, <a href = "#typedef:<PH>pvalue">&lt;PH&gt;pvalue</a>, <a href = "#typedef:<PH>to_string">&lt;PH&gt;to_string</a>, <a href = "#typedef:<PH>biaction">&lt;PH&gt;biaction</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>value">&lt;PH&gt;value</a>, <a href = "#typedef:<PH>pvalue">&lt;PH&gt;pvalue</a>, <a href = "#typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a>, <a href = "#typedef:<PH>biaction_fn">&lt;PH&gt;biaction_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 194 height = 286></p>
 
-<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties, with an optionally cached <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload; as such, one needs to have <code>Array.h</code> file in the same directory.</p>
+<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties, with an optionally cached <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload. As such, one needs to have <code>Array.h</code> file in the same directory.</p>
 
 <p><code>&lt;H&gt;heap</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 
@@ -60,15 +60,15 @@
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
 	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an assignable type <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> associated therewith. <code>HEAP_NAME</code> is required but <code>HEAP_TYPE</code> defaults to <code>unsigned int</code> if not specified. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare">&lt;PH&gt;compare</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
 	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PH&gt;to_string">&lt;PH&gt;to_string</a>. There can be multiple to string traits, but only one can omit <code>HEAP_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <code>&lt;PH&gt;to_string_fn</code>. There can be multiple to string traits, but only one can omit <code>HEAP_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/HeapTest.h">../test/HeapTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Heap</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;biaction">&lt;PH&gt;biaction</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
+	<dd>To string trait contained in <a href = "../test/HeapTest.h">../test/HeapTest.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Heap</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;biaction_fn">&lt;PH&gt;biaction_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
@@ -93,9 +93,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PH>compare" name = "typedef:<PH>compare">&lt;PH&gt;compare</a></h3>
+<h3><a id = "typedef:<PH>compare_fn" name = "typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PH&gt;compare</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code></p>
+<p><code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code></p>
 
 <p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a strict pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. The default <code>HEAP_COMPARE</code> is <code>a &gt; b</code>, which makes a minimum-hash.</p>
 
@@ -123,19 +123,19 @@
 
 <div>
 
-<h3><a id = "typedef:<PH>to_string" name = "typedef:<PH>to_string">&lt;PH&gt;to_string</a></h3>
+<h3><a id = "typedef:<PA>to_string_fn" name = "typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PH&gt;to_string</strong>)(const struct &lt;H&gt;heap_node *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PA&gt;to_string_fn</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code></p>
 
-<p>Responsible for turning <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a> into a maximum 11-<code>char</code> string.</p>
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PH>biaction" name = "typedef:<PH>biaction">&lt;PH&gt;biaction</a></h3>
+<h3><a id = "typedef:<PH>biaction_fn" name = "typedef:<PH>biaction_fn">&lt;PH&gt;biaction_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PH&gt;biaction</strong>)(struct &lt;H&gt;heap_node *, void *);</code></p>
+<p><code>typedef void(*<strong>&lt;PH&gt;biaction_fn</strong>)(struct &lt;H&gt;heap_node *, void *);</code></p>
 
 <p>Operates by side-effects. Used for <code>HEAP_TEST</code>.</p>
 
@@ -171,7 +171,7 @@
 
 <p><code>struct <strong>&lt;PH&gt;iterator</strong>;</code></p>
 
-<p>Contains all iteration parameters in one.</p>
+<p>Contains all iteration parameters.</p>
 
 </div>
 
@@ -203,7 +203,7 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<H>heap_buffer">&lt;H&gt;heap_buffer</a></td><td>heap, add</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<H>heap<A>to_string">&lt;H&gt;heap&lt;A&gt;to_string</a></td><td>heap</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<A>to_string">&lt;A&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<H>heap_test">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
@@ -358,7 +358,7 @@
 	<dt>Parameter: <em>reserve</em></dt>
 	<dd>If zero and idle, returns null</dd>
 	<dt>Return:</dt>
-	<dd>The end of the <code>heap</code>, where are <code>reserve</code> elements, or null and <code>errno</code> will be set. Writing on this memory space is safe, but one will have to increase the size manually, (see <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a>.)</dd>
+	<dd>The end of the <code>heap</code>, where are <code>reserve</code> elements. Writing on this memory space is safe, but one will have to increase the size manually, (see <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a>.)</dd>
 	<dt>Exceptional return: ERANGE, realloc</dt>
 	<dt>Order:</dt>
 	<dd>Amortised &#927;(<code>reserve</code>).</dd>
@@ -389,13 +389,13 @@
 
 <div>
 
-<h3><a id = "fn:<H>heap<A>to_string" name = "fn:<H>heap<A>to_string">&lt;H&gt;heap&lt;A&gt;to_string</a></h3>
+<h3><a id = "fn:<A>to_string" name = "fn:<A>to_string">&lt;A&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;H&gt;heap&lt;A&gt;to_string</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code></p>
+<p><code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Print the contents of <code>heap</code> in a static string buffer with the limitations of <code>ToString.h</code>.</dd>
+	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -412,7 +412,7 @@
 
 <dl>
 	<dt>Parameter: <em>param</em></dt>
-	<dd>The parameter to call <a href = "#typedef:&lt;PH&gt;biaction">&lt;PH&gt;biaction</a> <code>HEAP_TEST</code>.</dd>
+	<dd>The parameter to call <a href = "#typedef:&lt;PH&gt;biaction_fn">&lt;PH&gt;biaction_fn</a> <code>HEAP_TEST</code>.</dd>
 </dl>
 
 </div>
