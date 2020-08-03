@@ -24,8 +24,9 @@
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing `<PT>to_string_fn`. There
- can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`.
+ conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ There can be multiple to string traits, but only one can omit
+ `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
  To string trait contained in <../test/ArrayTest.h>; optional unit testing

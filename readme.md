@@ -24,7 +24,7 @@
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
-   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing `<PT>to_string_fn`\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
  * Parameter: ARRAY\_TEST  
    To string trait contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ array\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Parameter: ARRAY\_COMPARABLE\_NAME, ARRAY\_IS\_EQUAL, ARRAY\_COMPARE  
