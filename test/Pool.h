@@ -364,7 +364,7 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 }
 
 /** Advances `it`. @implements next */
-static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
+static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	struct PT_(node) *nodes, *n;
 	size_t i_end;
 	assert(it && it->pool);
