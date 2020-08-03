@@ -50,11 +50,21 @@
 
 <p><img alt = "Example of a stochastic skip-list." src = "web/list.png" width = 577 height = 182></p>
 
-<p><a href = "#tag:&lt;N&gt;list">&lt;N&gt;list</a> is a doubly-linked list of <a href = "#tag:&lt;N&gt;list_node">&lt;N&gt;list_node</a> with sentinels residing in <code>&lt;N&gt;list</code>. The sentinels are an added complexity at either end, but enable a closed structure. It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;list_node</code> in another 'struct<code>.</code>&lt;N&gt;list<code>is not synchronised. Errors are returned with</code>errno<code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define</code>NDEBUG<code>before</code>assert.h<code>. @param[LIST_NAME]</code>&lt;N&gt;<code>that satisfies</code>C<code>naming conventions when mangled; required.</code>&lt;PN&gt;<code>is private, whose names are prefixed in a manner to avoid collisions. @param[LIST_COMPARE] Optional total-order function satisfying &lt;typedef:&lt;PN&gt;Compare&gt;. (fixme: move to trait.) @param[LIST_EXPECT_TRAIT] Do not un-define certain variables for subsequent inclusion in a trait. @param[LIST_TO_STRING_NAME, LIST_TO_STRING] To string trait contained in &lt;ToString.h&gt;;</code>&lt;A&gt;<code>that satisfies</code>C<code>naming conventions when mangled and function implementing</code>&lt;PN&gt;to<em>string</em>fn&gt;. There can be multiple to string traits, but only one can omit <code>LIST_TO_STRING_NAME</code>.</p>
+<p><a href = "#tag:&lt;N&gt;list">&lt;N&gt;list</a> is a doubly-linked list of <a href = "#tag:&lt;N&gt;list_node">&lt;N&gt;list_node</a> with sentinels residing in <code>&lt;N&gt;list</code>. The sentinels are an added complexity at either end, but enable a closed structure. It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;list_node</code> in another <code>struct</code>.</p>
+
+<p><code>&lt;N&gt;list</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 
 </div>
 
 <dl>
+	<dt>Parameter: LIST_NAME</dt>
+	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dt>Parameter: LIST_COMPARE</dt>
+	<dd>Optional total-order function satisfying <a href = "#typedef:&lt;PN&gt;compare_fn">&lt;PN&gt;compare_fn</a>. (fixme: move to trait.)</dd>
+	<dt>Parameter: LIST_EXPECT_TRAIT</dt>
+	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
+	<dt>Parameter: LIST_TO_STRING_NAME, LIST_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "ToString.h">ToString.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PA&gt;to_string_fn">&lt;PA&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>LIST_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: LIST_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/TestList.h">../test/TestList.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PN&gt;action_fn">&lt;PN&gt;action_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>

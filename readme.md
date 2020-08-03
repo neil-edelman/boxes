@@ -13,10 +13,20 @@
 
 ![Example of a stochastic skip-list.](web/list.png)
 
-[&lt;N&gt;list](#user-content-tag-b7f8a30b) is a doubly\-linked list of [&lt;N&gt;list_node](#user-content-tag-49d3e78) with sentinels residing in `<N>list`\. The sentinels are an added complexity at either end, but enable a closed structure\. It only provides an order, and is not very useful without enclosing `<N>list_node` in another 'struct`.`<N>list`is not synchronised. Errors are returned with`errno`. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define`NDEBUG`before`assert\.h`. @param[LIST_NAME]`<N>`that satisfies`C`naming conventions when mangled; required.`<PN>`is private, whose names are prefixed in a manner to avoid collisions. @param[LIST_COMPARE] Optional total-order function satisfying <typedef:<PN>Compare>. (fixme: move to trait.) @param[LIST_EXPECT_TRAIT] Do not un-define certain variables for subsequent inclusion in a trait. @param[LIST_TO_STRING_NAME, LIST_TO_STRING] To string trait contained in <ToString.h>;`<A>`that satisfies`C`naming conventions when mangled and function implementing`<PN>to_string_fn>\. There can be multiple to string traits, but only one can omit `LIST_TO_STRING_NAME`\.
+[&lt;N&gt;list](#user-content-tag-b7f8a30b) is a doubly\-linked list of [&lt;N&gt;list_node](#user-content-tag-49d3e78) with sentinels residing in `<N>list`\. The sentinels are an added complexity at either end, but enable a closed structure\. It only provides an order, and is not very useful without enclosing `<N>list_node` in another `struct`\.
+
+`<N>list` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
 
 
+ * Parameter: LIST\_NAME  
+   `<N>` that satisfies `C` naming conventions when mangled; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions\.
+ * Parameter: LIST\_COMPARE  
+   Optional total\-order function satisfying [&lt;PN&gt;compare_fn](#user-content-typedef-237a6b85)\. \(fixme: move to trait\.\)
+ * Parameter: LIST\_EXPECT\_TRAIT  
+   Do not un\-define certain variables for subsequent inclusion in a trait\.
+ * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `LIST_TO_STRING_NAME`\.
  * Parameter: LIST\_TEST  
    To string trait contained in [\.\./test/TestList\.h](../test/TestList.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PN&gt;action_fn](#user-content-typedef-7ef2f840)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  

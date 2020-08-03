@@ -8,7 +8,7 @@
  <tag:<N>list> is a doubly-linked list of <tag:<N>list_node> with sentinels
  residing in `<N>list`. The sentinels are an added complexity at either end,
  but enable a closed structure. It only provides an order, and is not very
- useful without enclosing `<N>list_node` in another 'struct`.
+ useful without enclosing `<N>list_node` in another `struct`.
 
  `<N>list` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -20,7 +20,7 @@
  private, whose names are prefixed in a manner to avoid collisions.
 
  @param[LIST_COMPARE]
- Optional total-order function satisfying <typedef:<PN>Compare>.
+ Optional total-order function satisfying <typedef:<PN>compare_fn>.
  (fixme: move to trait.)
 
  @param[LIST_EXPECT_TRAIT]
@@ -28,8 +28,9 @@
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
  To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing `<PN>to_string_fn>. There
- can be multiple to string traits, but only one can omit `LIST_TO_STRING_NAME`.
+ conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ There can be multiple to string traits, but only one can omit
+ `LIST_TO_STRING_NAME`.
 
  @param[LIST_TEST]
  To string trait contained in <../test/TestList.h>; optional unit testing
