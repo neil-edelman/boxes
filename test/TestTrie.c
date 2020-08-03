@@ -341,7 +341,7 @@ static int timing_comparison(const char *const *const keys,
 			}
 			m_add(&es[HASHINIT].m, diff_us(t));
 			printf("Added init hash size %lu: %s.\n",
-				(unsigned long)string_set_size(&set),
+				(unsigned long)set.size,
 				string_set_to_string(&set));
 			t = clock();
 			for(i = 0; i < n; i++) {
@@ -353,7 +353,7 @@ static int timing_comparison(const char *const *const keys,
 			}
 			m_add(&es[HASHLOOK].m, diff_us(t));
 			printf("Added look hash size %lu.\n",
-				(unsigned long)string_set_size(&set));
+				(unsigned long)set.size);
 
 			/* Trie. */
 			t = clock();
