@@ -37,8 +37,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>Type">&lt;PN&gt;Type</a>, <a href = "#typedef:<PN>CType">&lt;PN&gt;CType</a>, <a href = "#typedef:<PN>Key">&lt;PN&gt;Key</a>, <a href = "#typedef:<PN>Replace">&lt;PN&gt;Replace</a>, <a href = "#typedef:<PN>Action">&lt;PN&gt;Action</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<N>Trie">&lt;N&gt;Trie</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>type">&lt;PN&gt;type</a>, <a href = "#typedef:<PN>ctype">&lt;PN&gt;ctype</a>, <a href = "#typedef:<PN>key_fn">&lt;PN&gt;key_fn</a>, <a href = "#typedef:<PN>replace_fn">&lt;PN&gt;replace_fn</a>, <a href = "#typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a>, <a href = "#typedef:<PN>action_fn">&lt;PN&gt;action_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<N>trie">&lt;N&gt;trie</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of trie." src = "web/trie.png" width = 333 height = 255></p>
 
-<p>A <a href = "#tag:&lt;N&gt;Trie">&lt;N&gt;Trie</a> is a prefix tree, digital tree, or trie, implemented as an array of pointers-to-<code>N</code> whose keys are always in lexicographically-sorted order and index on the keys. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the where the keys are different. Strings can be any encoding with a byte null-terminator, (<code>C</code> strings,) including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
+<p>A <a href = "#tag:&lt;N&gt;trie">&lt;N&gt;trie</a> is a prefix tree, digital tree, or trie, implemented as an array of pointers-to-<code>N</code> whose keys are always in lexicographically-sorted order and index on the keys. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the where the keys are different. Strings can be any encoding with a byte null-terminator, (<code>C</code> strings,) including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
 
 <p><code>Array.h</code> must be present. <code>&lt;N&gt;Trie</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are <code>#define</code> preprocessor macros, and are all undefined at the end of the file for convenience. <code>assert.h</code> is used.</p>
 
@@ -58,13 +58,13 @@
 
 <dl>
 	<dt>Parameter: TRIE_NAME, TRIE_TYPE</dt>
-	<dd><a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> that satisfies <code>C</code> naming conventions when mangled and an optional returnable type that is declared, (it is used by reference only except if <code>TRIE_TEST</code>.) <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dd><a href = "#typedef:&lt;PN&gt;type">&lt;PN&gt;type</a> that satisfies <code>C</code> naming conventions when mangled and an optional returnable type that is declared, (it is used by reference only except if <code>TRIE_TEST</code>.) <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
 	<dt>Parameter: TRIE_KEY</dt>
-	<dd>A function that satisfies <a href = "#typedef:&lt;PN&gt;Key">&lt;PN&gt;Key</a>. Must be defined if and only if <code>TRIE_TYPE</code> is defined.</dd>
+	<dd>A function that satisfies <a href = "#typedef:&lt;PN&gt;key_fn">&lt;PN&gt;key_fn</a>. Must be defined if and only if <code>TRIE_TYPE</code> is defined.</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
 	<dd>Defining this includes <code>ToString.h</code> with the keys as the to string.</dd>
 	<dt>Parameter: TRIE_TEST</dt>
-	<dd>Unit testing framework <a href = "#fn:&lt;N&gt;TrieTest">&lt;N&gt;TrieTest</a>, included in a separate header, <a href = "../test/TreeTest.h">../test/TreeTest.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PN&gt;Action">&lt;PN&gt;Action</a>. Requires that <code>NDEBUG</code> not be defined.</dd>
+	<dd>Unit testing framework <a href = "#fn:&lt;N&gt;trie_test">&lt;N&gt;trie_test</a>, included in a separate header, <a href = "../test/TreeTest.h">../test/TreeTest.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PN&gt;action_fn">&lt;PN&gt;action_fn</a>. Requires that <code>NDEBUG</code> not be defined.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
@@ -79,9 +79,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PN>Type" name = "typedef:<PN>Type">&lt;PN&gt;Type</a></h3>
+<h3><a id = "typedef:<PN>type" name = "typedef:<PN>type">&lt;PN&gt;type</a></h3>
 
-<p><code>typedef TRIE_TYPE <strong>&lt;PN&gt;Type</strong>;</code></p>
+<p><code>typedef TRIE_TYPE <strong>&lt;PN&gt;type</strong>;</code></p>
 
 <p>A valid tag type set by <code>TRIE_TYPE</code>; defaults to <code>const char</code>.</p>
 
@@ -89,19 +89,19 @@
 
 <div>
 
-<h3><a id = "typedef:<PN>CType" name = "typedef:<PN>CType">&lt;PN&gt;CType</a></h3>
+<h3><a id = "typedef:<PN>ctype" name = "typedef:<PN>ctype">&lt;PN&gt;ctype</a></h3>
 
-<p><code>typedef TRIE_CONST &lt;PN&gt;Type <strong>&lt;PN&gt;CType</strong>;</code></p>
+<p><code>typedef const TRIE_TYPE <strong>&lt;PN&gt;ctype</strong>;</code></p>
 
-<p>Same as <a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a>, except read-only.</p>
+<p>Same as <a href = "#typedef:&lt;PN&gt;type">&lt;PN&gt;type</a>, except read-only.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PN>Key" name = "typedef:<PN>Key">&lt;PN&gt;Key</a></h3>
+<h3><a id = "typedef:<PN>key_fn" name = "typedef:<PN>key_fn">&lt;PN&gt;key_fn</a></h3>
 
-<p><code>typedef const char *(*<strong>&lt;PN&gt;Key</strong>)(&lt;PN&gt;CType *);</code></p>
+<p><code>typedef const char *(*<strong>&lt;PN&gt;key_fn</strong>)(&lt;PN&gt;ctype *);</code></p>
 
 <p>Responsible for picking out the null-terminated string. One must not modify this string while in any trie.</p>
 
@@ -109,19 +109,29 @@
 
 <div>
 
-<h3><a id = "typedef:<PN>Replace" name = "typedef:<PN>Replace">&lt;PN&gt;Replace</a></h3>
+<h3><a id = "typedef:<PN>replace_fn" name = "typedef:<PN>replace_fn">&lt;PN&gt;replace_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PN&gt;Replace</strong>)(&lt;PN&gt;Type *original, &lt;PN&gt;Type *replace);</code></p>
+<p><code>typedef int(*<strong>&lt;PN&gt;replace_fn</strong>)(&lt;PN&gt;type *original, &lt;PN&gt;type *replace);</code></p>
 
-<p>A bi-predicate; returns true if the <code>replace</code> replaces the <code>original</code>; used in <a href = "#fn:&lt;N&gt;TriePolicyPut">&lt;N&gt;TriePolicyPut</a>.</p>
+<p>A bi-predicate; returns true if the <code>replace</code> replaces the <code>original</code>; used in <a href = "#fn:&lt;N&gt;trie_policy_put">&lt;N&gt;trie_policy_put</a>.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PN>Action" name = "typedef:<PN>Action">&lt;PN&gt;Action</a></h3>
+<h3><a id = "typedef:<PA>to_string_fn" name = "typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PN&gt;Action</strong>)(&lt;PN&gt;Type *);</code></p>
+<p><code>typedef void(*<strong>&lt;PA&gt;to_string_fn</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code></p>
+
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>action_fn" name = "typedef:<PN>action_fn">&lt;PN&gt;action_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PN&gt;action_fn</strong>)(&lt;PN&gt;type *);</code></p>
 
 <p>Only used if <code>TRIE_TEST</code>.</p>
 
@@ -131,13 +141,13 @@
 
 <div>
 
-<h3><a id = "tag:<N>Trie" name = "tag:<N>Trie">&lt;N&gt;Trie</a></h3>
+<h3><a id = "tag:<N>trie" name = "tag:<N>trie">&lt;N&gt;trie</a></h3>
 
-<p><code>struct <strong>&lt;N&gt;Trie</strong> { struct TrieBranchArray branches; struct &lt;PN&gt;LeafArray leaves; };</code></p>
+<p><code>struct <strong>&lt;N&gt;trie</strong> { struct trie_branch_array branches; struct &lt;PN&gt;leaf_array leaves; };</code></p>
 
-<p>To initialise it to an idle state, see <a href = "#fn:&lt;N&gt;Trie">&lt;N&gt;Trie</a>, <code>TRIE_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
+<p>To initialise it to an idle state, see <a href = "#fn:&lt;N&gt;trie">&lt;N&gt;trie</a>, <code>TRIE_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
-<p>A full binary tree stored semi-implicitly in two Arrays: as <code>branches</code> backed by one as pointers-to-<a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> as <code>leaves</code> in lexicographically-sorted order.</p>
+<p>A full binary tree stored semi-implicitly in two Arrays: as <code>branches</code> backed by one as pointers-to-<a href = "#typedef:&lt;PN&gt;type">&lt;PN&gt;type</a> as <code>leaves</code> in lexicographically-sorted order.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 305></p>
 
@@ -151,35 +161,37 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<N>Trie_">&lt;N&gt;Trie_</a></td><td>trie</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<N>trie">&lt;N&gt;trie</a></td><td>trie</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<N>Trie">&lt;N&gt;Trie</a></td><td>trie</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<N>trie_">&lt;N&gt;trie_</a></td><td>trie</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>TrieFromArray">&lt;N&gt;TrieFromArray</a></td><td>trie, array, array_size, merge</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>trie_from_array">&lt;N&gt;trie_from_array</a></td><td>trie, array, array_size</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<N>TrieSize">&lt;N&gt;TrieSize</a></td><td>trie</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#fn:<N>trie_size">&lt;N&gt;trie_size</a></td><td>trie</td></tr>
 
-<tr><td align = right>static &lt;PN&gt;Type *const *</td><td><a href = "#fn:<N>TrieArray">&lt;N&gt;TrieArray</a></td><td>trie</td></tr>
+<tr><td align = right>static &lt;PN&gt;type *const *</td><td><a href = "#fn:<N>trie_array">&lt;N&gt;trie_array</a></td><td>trie</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<N>TrieClear">&lt;N&gt;TrieClear</a></td><td>trie</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<N>trie_clear">&lt;N&gt;trie_clear</a></td><td>trie</td></tr>
 
-<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#fn:<N>TrieGet">&lt;N&gt;TrieGet</a></td><td>trie, key</td></tr>
+<tr><td align = right>static &lt;PN&gt;type *</td><td><a href = "#fn:<N>trie_index_get">&lt;N&gt;trie_index_get</a></td><td>trie, key</td></tr>
 
-<tr><td align = right>static &lt;PN&gt;Type *</td><td><a href = "#fn:<N>TrieMatch">&lt;N&gt;TrieMatch</a></td><td>trie, key</td></tr>
+<tr><td align = right>static &lt;PN&gt;type *</td><td><a href = "#fn:<N>trie_get">&lt;N&gt;trie_get</a></td><td>trie, key</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>TrieAdd">&lt;N&gt;TrieAdd</a></td><td>trie, datum</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<N>trie_index_prefix">&lt;N&gt;trie_index_prefix</a></td><td>trie, prefix, low, high</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>TriePut">&lt;N&gt;TriePut</a></td><td>trie, datum, eject</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>trie_add">&lt;N&gt;trie_add</a></td><td>trie, datum</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>TriePolicyPut">&lt;N&gt;TriePolicyPut</a></td><td>trie, datum, eject, replace</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>trie_put">&lt;N&gt;trie_put</a></td><td>trie, datum, eject</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>TrieRemove">&lt;N&gt;TrieRemove</a></td><td>trie, key</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>trie_policy_put">&lt;N&gt;trie_policy_put</a></td><td>trie, datum, eject, replace</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>TrieShrink">&lt;N&gt;TrieShrink</a></td><td>trie</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>trie_remove">&lt;N&gt;trie_remove</a></td><td>trie, key</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<N>TrieToString">&lt;N&gt;TrieToString</a></td><td>trie</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>trie_shrink">&lt;N&gt;trie_shrink</a></td><td>trie</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<N>TrieTest">&lt;N&gt;TrieTest</a></td><td></td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<A>to_string">&lt;A&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<N>trie_test">&lt;N&gt;trie_test</a></td><td></td></tr>
 
 </table>
 
@@ -191,30 +203,13 @@
 
 <div>
 
-<h3><a id = "fn:<N>Trie_" name = "fn:<N>Trie_">&lt;N&gt;Trie_</a></h3>
+<h3><a id = "fn:<N>trie" name = "fn:<N>trie">&lt;N&gt;trie</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;Trie_</strong>(struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;trie</strong>(struct &lt;N&gt;trie *const <em>trie</em>)</code></p>
 
-<p>Returns <code>trie</code> to the idle state where it takes no dynamic memory.</p>
-
-<dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, does nothing.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>Trie" name = "fn:<N>Trie">&lt;N&gt;Trie</a></h3>
-
-<p><code>static void <strong>&lt;N&gt;Trie</strong>(struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
-
-<p>Initialises <code>trie</code> to be idle.</p>
+<p>Initialises <code>trie</code> to idle.</p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, does nothing.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -223,19 +218,23 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieFromArray" name = "fn:<N>TrieFromArray">&lt;N&gt;TrieFromArray</a></h3>
+<h3><a id = "fn:<N>trie_" name = "fn:<N>trie_">&lt;N&gt;trie_</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;TrieFromArray</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const *const <em>array</em>, const size_t <em>array_size</em>, const &lt;PT&gt;Biproject <em>merge</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;trie_</strong>(struct &lt;N&gt;trie *const <em>trie</em>)</code></p>
+
+<p>Returns an initialised <code>trie</code> to idle.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>trie_from_array" name = "fn:<N>trie_from_array">&lt;N&gt;trie_from_array</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;trie_from_array</strong>(struct &lt;N&gt;trie *const <em>trie</em>, &lt;PN&gt;type *const *const <em>array</em>, const size_t <em>array_size</em>)</code></p>
 
 <p>Initialises <code>trie</code> from an <code>array</code> of pointers-to-<code>&lt;N&gt;</code> of <code>array_size</code>.</p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, does nothing.</dd>
-	<dt>Parameter: <em>array</em></dt>
-	<dd>If null, initialises <code>trie</code> to empty.</dd>
-	<dt>Parameter: <em>merge</em></dt>
-	<dd>If <code>array</code> does not contain unique elements, controls how duplicates in <code>array</code> are merged; if null, ignores all-but-one.</dd>
 	<dt>Return:</dt>
 	<dd>Success.</dd>
 	<dt>Exceptional return: realloc</dt>
@@ -247,13 +246,11 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieSize" name = "fn:<N>TrieSize">&lt;N&gt;TrieSize</a></h3>
+<h3><a id = "fn:<N>trie_size" name = "fn:<N>trie_size">&lt;N&gt;trie_size</a></h3>
 
-<p><code>static size_t <strong>&lt;N&gt;TrieSize</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+<p><code>static size_t <strong>&lt;N&gt;trie_size</strong>(const struct &lt;N&gt;trie *const <em>trie</em>)</code></p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, returns zero;</dd>
 	<dt>Return:</dt>
 	<dd>The number of elements in the <code>trie</code>.</dd>
 	<dt>Order:</dt>
@@ -264,15 +261,13 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieArray" name = "fn:<N>TrieArray">&lt;N&gt;TrieArray</a></h3>
+<h3><a id = "fn:<N>trie_array" name = "fn:<N>trie_array">&lt;N&gt;trie_array</a></h3>
 
-<p><code>static &lt;PN&gt;Type *const *<strong>&lt;N&gt;TrieArray</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+<p><code>static &lt;PN&gt;type *const *<strong>&lt;N&gt;trie_array</strong>(const struct &lt;N&gt;trie *const <em>trie</em>)</code></p>
 
-<p>It remains valid up to a structural modification of <code>trie</code> and is indexed up to <a href = "#fn:&lt;N&gt;TrieSize">&lt;N&gt;TrieSize</a>.</p>
+<p>It remains valid up to a structural modification of <code>trie</code> and is indexed up to <a href = "#fn:&lt;N&gt;trie_size">&lt;N&gt;trie_size</a>.</p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
 	<dd>An array of pointers to the leaves of <code>trie</code>, ordered by key.</dd>
 </dl>
@@ -281,15 +276,13 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieClear" name = "fn:<N>TrieClear">&lt;N&gt;TrieClear</a></h3>
+<h3><a id = "fn:<N>trie_clear" name = "fn:<N>trie_clear">&lt;N&gt;trie_clear</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;TrieClear</strong>(struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;trie_clear</strong>(struct &lt;N&gt;trie *const <em>trie</em>)</code></p>
 
 <p>Sets <code>trie</code> to be empty. That is, the size of <code>trie</code> will be zero, but if it was previously in an active non-idle state, it continues to be.</p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, does nothing.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -298,17 +291,26 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieGet" name = "fn:<N>TrieGet">&lt;N&gt;TrieGet</a></h3>
+<h3><a id = "fn:<N>trie_index_get" name = "fn:<N>trie_index_get">&lt;N&gt;trie_index_get</a></h3>
 
-<p><code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieGet</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+<p><code>static &lt;PN&gt;type *<strong>&lt;N&gt;trie_index_get</strong>(const struct &lt;N&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, returns null.</dd>
-	<dt>Parameter: <em>key</em></dt>
-	<dd>If null, returns null.</dd>
 	<dt>Return:</dt>
-	<dd>The <a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> with <code>key</code> in <code>trie</code> or null no such item exists.</dd>
+	<dd>The <a href = "#typedef:&lt;PN&gt;type">&lt;PN&gt;type</a> that matches <code>key</code> bits in <code>trie</code>, excluding don't-cares.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>trie_get" name = "fn:<N>trie_get">&lt;N&gt;trie_get</a></h3>
+
+<p><code>static &lt;PN&gt;type *<strong>&lt;N&gt;trie_get</strong>(const struct &lt;N&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The <a href = "#typedef:&lt;PN&gt;type">&lt;PN&gt;type</a> with <code>key</code> in <code>trie</code> or null no such item exists.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(|<code>key</code>|), <a href = "https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data">Thareja 2011, Data</a>.</dd>
 </dl>
@@ -317,26 +319,24 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieMatch" name = "fn:<N>TrieMatch">&lt;N&gt;TrieMatch</a></h3>
+<h3><a id = "fn:<N>trie_index_prefix" name = "fn:<N>trie_index_prefix">&lt;N&gt;trie_index_prefix</a></h3>
 
-<p><code>static &lt;PN&gt;Type *<strong>&lt;N&gt;TrieMatch</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;trie_index_prefix</strong>(const struct &lt;N&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>, size_t *const <em>low</em>, size_t *const <em>high</em>)</code></p>
+
+<p>In <code>trie</code>, which must be non-empty, given a partial <code>prefix</code>, stores all leaf prefix matches between <code>low</code>, <code>high</code>, only given the index, ignoring don't care bits.</p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, returns null.</dd>
-	<dt>Parameter: <em>key</em></dt>
-	<dd>If null, returns null.</dd>
-	<dt>Return:</dt>
-	<dd>The <a href = "#typedef:&lt;PN&gt;Type">&lt;PN&gt;Type</a> that matches all the bits in trie.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>prefix.length</code>)</dd>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<N>TrieAdd" name = "fn:<N>TrieAdd">&lt;N&gt;TrieAdd</a></h3>
+<h3><a id = "fn:<N>trie_add" name = "fn:<N>trie_add">&lt;N&gt;trie_add</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;TrieAdd</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>datum</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;trie_add</strong>(struct &lt;N&gt;trie *const <em>trie</em>, &lt;PN&gt;type *const <em>datum</em>)</code></p>
 
 <p>Adds <code>datum</code> to <code>trie</code> if absent.</p>
 
@@ -359,9 +359,9 @@
 
 <div>
 
-<h3><a id = "fn:<N>TriePut" name = "fn:<N>TriePut">&lt;N&gt;TriePut</a></h3>
+<h3><a id = "fn:<N>trie_put" name = "fn:<N>trie_put">&lt;N&gt;trie_put</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;TriePut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>datum</em>, &lt;PN&gt;Type **const <em>eject</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;trie_put</strong>(struct &lt;N&gt;trie *const <em>trie</em>, &lt;PN&gt;type *const <em>datum</em>, &lt;PN&gt;type **const <em>eject</em>)</code></p>
 
 <p>Updates or adds <code>datum</code> to <code>trie</code>.</p>
 
@@ -386,21 +386,17 @@
 
 <div>
 
-<h3><a id = "fn:<N>TriePolicyPut" name = "fn:<N>TriePolicyPut">&lt;N&gt;TriePolicyPut</a></h3>
+<h3><a id = "fn:<N>trie_policy_put" name = "fn:<N>trie_policy_put">&lt;N&gt;trie_policy_put</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;TriePolicyPut</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, &lt;PN&gt;Type *const <em>datum</em>, &lt;PN&gt;Type **const <em>eject</em>, const &lt;PN&gt;Replace <em>replace</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;trie_policy_put</strong>(struct &lt;N&gt;trie *const <em>trie</em>, &lt;PN&gt;type *const <em>datum</em>, &lt;PN&gt;type **const <em>eject</em>, const &lt;PN&gt;replace_fn <em>replace</em>)</code></p>
 
 <p>Adds <code>datum</code> to <code>trie</code> only if the entry is absent or if calling <code>replace</code> returns true.</p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, returns null.</dd>
-	<dt>Parameter: <em>datum</em></dt>
-	<dd>If null, returns null.</dd>
 	<dt>Parameter: <em>eject</em></dt>
 	<dd>If not null, on success it will hold the overwritten value or a pointer-to-null if it did not overwrite a previous value. If a collision occurs and <code>replace</code> does not return true, this value will be <code>data</code>.</dd>
 	<dt>Parameter: <em>replace</em></dt>
-	<dd>Called on collision and only replaces it if the function returns true. If null, it is semantically equivalent to <a href = "#fn:&lt;N&gt;TriePut">&lt;N&gt;TriePut</a>.</dd>
+	<dd>Called on collision and only replaces it if the function returns true. If null, it is semantically equivalent to <a href = "#fn:&lt;N&gt;trie_put">&lt;N&gt;trie_put</a>.</dd>
 	<dt>Return:</dt>
 	<dd>Success.</dd>
 	<dt>Exceptional return: realloc</dt>
@@ -415,17 +411,13 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieRemove" name = "fn:<N>TrieRemove">&lt;N&gt;TrieRemove</a></h3>
+<h3><a id = "fn:<N>trie_remove" name = "fn:<N>trie_remove">&lt;N&gt;trie_remove</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;TrieRemove</strong>(struct &lt;N&gt;Trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;trie_remove</strong>(struct &lt;N&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
 
 <p>Remove <code>key</code> from <code>trie</code>.</p>
 
 <dl>
-	<dt>Parameter: <em>trie</em></dt>
-	<dd>If null, returns false.</dd>
-	<dt>Parameter: <em>key</em></dt>
-	<dd>If null, returns false.</dd>
 	<dt>Return:</dt>
 	<dd>Success or else <code>key</code> was not in <code>trie</code>.</dd>
 	<dt>Order:</dt>
@@ -436,9 +428,9 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieShrink" name = "fn:<N>TrieShrink">&lt;N&gt;TrieShrink</a></h3>
+<h3><a id = "fn:<N>trie_shrink" name = "fn:<N>trie_shrink">&lt;N&gt;trie_shrink</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;TrieShrink</strong>(struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;trie_shrink</strong>(struct &lt;N&gt;trie *const <em>trie</em>)</code></p>
 
 <p>Shrinks the capacity of <code>trie</code> to size.</p>
 
@@ -453,13 +445,13 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieToString" name = "fn:<N>TrieToString">&lt;N&gt;TrieToString</a></h3>
+<h3><a id = "fn:<A>to_string" name = "fn:<A>to_string">&lt;A&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;N&gt;TrieToString</strong>(const struct &lt;N&gt;Trie *const <em>trie</em>)</code></p>
+<p><code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Print the contents of <code>trie</code> in a static string buffer with the limitations of <code>ToString.h</code>.</dd>
+	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -468,9 +460,9 @@
 
 <div>
 
-<h3><a id = "fn:<N>TrieTest" name = "fn:<N>TrieTest">&lt;N&gt;TrieTest</a></h3>
+<h3><a id = "fn:<N>trie_test" name = "fn:<N>trie_test">&lt;N&gt;trie_test</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;TrieTest</strong>(void)</code></p>
+<p><code>static void <strong>&lt;N&gt;trie_test</strong>(void)</code></p>
 
 <p>Will be tested on stdout. Requires <code>TRIE_TEST</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
 

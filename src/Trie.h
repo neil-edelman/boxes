@@ -5,7 +5,7 @@
 
  ![Example of trie.](../web/trie.png)
 
- A <tag:<N>Trie> is a prefix tree, digital tree, or trie, implemented as an
+ A <tag:<N>trie> is a prefix tree, digital tree, or trie, implemented as an
  array of pointers-to-`N` whose keys are always in lexicographically-sorted
  order and index on the keys. It can be seen as a <Morrison, 1968 PATRICiA>: a
  compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
@@ -18,22 +18,22 @@
  undefined at the end of the file for convenience. `assert.h` is used.
 
  @param[TRIE_NAME, TRIE_TYPE]
- <typedef:<PN>Type> that satisfies `C` naming conventions when mangled and an
+ <typedef:<PN>type> that satisfies `C` naming conventions when mangled and an
  optional returnable type that is declared, (it is used by reference only
  except if `TRIE_TEST`.) `<PN>` is private, whose names are prefixed in a
  manner to avoid collisions; any should be re-defined prior to use elsewhere.
 
  @param[TRIE_KEY]
- A function that satisfies <typedef:<PN>Key>. Must be defined if and only if
+ A function that satisfies <typedef:<PN>key_fn>. Must be defined if and only if
  `TRIE_TYPE` is defined.
 
  @param[TRIE_TO_STRING]
  Defining this includes `ToString.h` with the keys as the to string.
 
  @param[TRIE_TEST]
- Unit testing framework <fn:<N>TrieTest>, included in a separate header,
+ Unit testing framework <fn:<N>trie_test>, included in a separate header,
  <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PN>Action>. Requires that `NDEBUG` not be defined.
+ satisfying <typedef:<PN>action_fn>. Requires that `NDEBUG` not be defined.
 
  @fixme Have a replace; potentially much less wastful then remove and add.
  @fixme Compression _a la_ Judy; 64 bits to store mostly 0/1? Could it be done?
@@ -163,7 +163,7 @@ static int trie_is_bit(const char *const a, const size_t bit) {
 }
 
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
- Used in <fn:<PN>prefix>. */
+ Used in <fn:<N>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
 	for( ; ; a++, b++) {
 		if(*a == '\0') return 1;
@@ -186,6 +186,7 @@ static const char *trie_raw(const char *const key) { return key; }
 #endif /* !raw --> */
 #define TRIE_KEY &trie_raw
 #else /* !type --><!-- type */
+/* Variable type for <ToString.h> because dupicate const on `const char`. */
 typedef TRIE_TYPE PN_(vtype);
 /** A valid tag type set by `TRIE_TYPE`; defaults to `const char`. */
 typedef TRIE_TYPE PN_(type);
@@ -207,12 +208,12 @@ static const PN_(key_fn) PN_(to_key) = (TRIE_KEY);
  in <fn:<N>trie_policy_put>. */
 typedef int (*PN_(replace_fn))(PN_(type) *original, PN_(type) *replace);
 
-/** @return False. Ignores `a` and `b`. @implements <PN>replace_fn */
+/** @return False. Ignores `a` and `b`. @implements <typedef:<PN>replace_fn> */
 static int PN_(false_replace)(PN_(type) *const a, PN_(type) *const b)
 	{ return (void)a, (void)b, 0; }
 
 /** Compares keys of `a` and `b`. Used in array compare following.
- @implements <<PN>leaf>bipredicate_fn */
+ @implements bipredicate function */
 static int PN_(compare)(const PN_(leaf) *const a, const PN_(leaf) *const b)
 	{ return strcmp(PN_(to_key)(*a), PN_(to_key)(*b)); }
 
@@ -227,11 +228,11 @@ static int PN_(compare)(const PN_(leaf) *const a, const PN_(leaf) *const b)
 #define T_(thing) CAT(PN_(leaf), thing)
 #define PT_(thing) CAT(CAT(array, PN_(leaf)), thing)
 
-/** To initialise it to an idle state, see <fn:<N>Trie>, `TRIE_IDLE`, `{0}`
+/** To initialise it to an idle state, see <fn:<N>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
 
  A full binary tree stored semi-implicitly in two Arrays: as `branches` backed
- by one as pointers-to-<typedef:<PN>Type> as `leaves` in
+ by one as pointers-to-<typedef:<PN>type> as `leaves` in
  lexicographically-sorted order.
 
  ![States.](../web/states.png) */
@@ -304,8 +305,6 @@ static int PN_(init)(struct N_(trie) *const trie, PN_(type) *const*const a,
 }
 
 /** Initialises `trie` from an `array` of pointers-to-`<N>` of `array_size`.
- @param[merge] If `array` does not contain unique elements, controls how
- duplicates in `array` are merged; if null, ignores all-but-one.
  @return Success. @throws[realloc] @order \O(`array_size`) @allow */
 static int N_(trie_from_array)(struct N_(trie) *const trie,
 	PN_(type) *const*const array, const size_t array_size) {
@@ -381,14 +380,14 @@ static PN_(type) *PN_(get)(const struct N_(trie) *const trie,
 	return PN_(param_get)(trie, key, &i) ? trie->leaves.data[i] : 0;
 }
 
-/** @return The <typedef:<PN>type> that matches all the bits in trie. @allow */
+/** @return The <typedef:<PN>type> that matches `key` bits in `trie`, excluding
+ don't-cares. @allow */
 static PN_(type) *N_(trie_index_get)(const struct N_(trie) *const trie,
 	const char *const key) {
 	return assert(trie && key), PN_(index_get)(trie, key);
 }
 
-/** @param[trie, key] If null, returns null.
- @return The <typedef:<PN>Type> with `key` in `trie` or null no such item
+/** @return The <typedef:<PN>type> with `key` in `trie` or null no such item
  exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
 static PN_(type) *N_(trie_get)(const struct N_(trie) *const trie,
 	const char *const key) {
@@ -647,7 +646,7 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 #ifdef TRIE_TO_STRING /* <!-- string */
 
 
-/** Uses the natural `datum` -> `a` that is defined by <fn:<PN>to_key>. */
+/** Uses the natural `datum` -> `a` that is defined by `TRIE_KEY`. */
 static void PN_(to_string)(PN_(ctype) *const datum, char (*const a)[12]) {
 	assert(datum && a);
 	sprintf(*a, "%.11s", PN_(to_key)(datum));
