@@ -3,7 +3,7 @@
 ## Contiguous Dynamic Array \(Vector\) ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action](#user-content-typedef-6ab9561), [&lt;PT&gt;predicate](#user-content-typedef-dba5de90), [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3), [&lt;PT&gt;biproject](#user-content-typedef-56a6edf), [&lt;PT&gt;compare](#user-content-typedef-d40b4792), [&lt;PA&gt;to_string](#user-content-typedef-baebff99)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e), [&lt;PT&gt;predicate_fn](#user-content-typedef-4608409d), [&lt;PT&gt;bipredicate_fn](#user-content-typedef-1c565568), [&lt;PT&gt;biproject_fn](#user-content-typedef-d76f4c34), [&lt;PT&gt;compare_fn](#user-content-typedef-70f17597), [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;array](#user-content-tag-96e5f142), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -24,11 +24,11 @@
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
-   To string trait: `<A>` that satisfies `C` naming conventions when mangled and a function implementing `<PA>to_string`; gives `<T>array_to_string` contained in [ToString\.h](ToString.h)\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
+   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing `<PT>to_string_fn`\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
  * Parameter: ARRAY\_TEST  
-   To string trait contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ array\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action](#user-content-typedef-6ab9561)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ array\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Parameter: ARRAY\_COMPARABLE\_NAME, ARRAY\_IS\_EQUAL, ARRAY\_COMPARE  
-   Comparable trait; `<C>` that satisfies `C` naming conventions when mangled and a function implementing, for `ARRAY_IS_EQUAL` [&lt;PT&gt;bipredicate](#user-content-typedef-aae48fa3) that establishes an equivalence relation, or for `ARRAY_COMPARE` [&lt;PT&gt;compare](#user-content-typedef-d40b4792) that establishes a total order\. There can be multiple contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`\.
+   Comparable trait; `<C>` that satisfies `C` naming conventions when mangled and a function implementing, for `ARRAY_IS_EQUAL` [&lt;PT&gt;bipredicate_fn](#user-content-typedef-1c565568) that establishes an equivalence relation, or for `ARRAY_COMPARE` [&lt;PT&gt;compare_fn](#user-content-typedef-70f17597) that establishes a total order\. There can be multiple contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`\.
  * Standard:  
    C89
  * See also:  
@@ -45,49 +45,49 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-6ab9561" name = "user-content-typedef-6ab9561">&lt;PT&gt;action</a> ###
+### <a id = "user-content-typedef-ba462b2e" name = "user-content-typedef-ba462b2e">&lt;PT&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;action</strong>)(&lt;PT&gt;type *);</code>
+<code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;type *);</code>
 
 Operates by side\-effects\.
 
 
 
-### <a id = "user-content-typedef-dba5de90" name = "user-content-typedef-dba5de90">&lt;PT&gt;predicate</a> ###
+### <a id = "user-content-typedef-4608409d" name = "user-content-typedef-4608409d">&lt;PT&gt;predicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;predicate</strong>)(const &lt;PT&gt;type *);</code>
+<code>typedef int(*<strong>&lt;PT&gt;predicate_fn</strong>)(const &lt;PT&gt;type *);</code>
 
 Returns a boolean given read\-only `<T>`\.
 
 
 
-### <a id = "user-content-typedef-aae48fa3" name = "user-content-typedef-aae48fa3">&lt;PT&gt;bipredicate</a> ###
+### <a id = "user-content-typedef-1c565568" name = "user-content-typedef-1c565568">&lt;PT&gt;bipredicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;bipredicate</strong>)(const &lt;PT&gt;type *, const &lt;PT&gt;type *);</code>
+<code>typedef int(*<strong>&lt;PT&gt;bipredicate_fn</strong>)(const &lt;PT&gt;type *, const &lt;PT&gt;type *);</code>
 
 Returns a boolean given two read\-only `<T>`\.
 
 
 
-### <a id = "user-content-typedef-56a6edf" name = "user-content-typedef-56a6edf">&lt;PT&gt;biproject</a> ###
+### <a id = "user-content-typedef-d76f4c34" name = "user-content-typedef-d76f4c34">&lt;PT&gt;biproject_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;biproject</strong>)(&lt;PT&gt;type *, &lt;PT&gt;type *);</code>
+<code>typedef int(*<strong>&lt;PT&gt;biproject_fn</strong>)(&lt;PT&gt;type *, &lt;PT&gt;type *);</code>
 
 Returns a boolean given two `<T>`\.
 
 
 
-### <a id = "user-content-typedef-d40b4792" name = "user-content-typedef-d40b4792">&lt;PT&gt;compare</a> ###
+### <a id = "user-content-typedef-70f17597" name = "user-content-typedef-70f17597">&lt;PT&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;compare</strong>)(const &lt;PT&gt;type *a, const &lt;PT&gt;type *b);</code>
+<code>typedef int(*<strong>&lt;PT&gt;compare_fn</strong>)(const &lt;PT&gt;type *a, const &lt;PT&gt;type *b);</code>
 
 Three\-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
-### <a id = "user-content-typedef-baebff99" name = "user-content-typedef-baebff99">&lt;PA&gt;to_string</a> ###
+### <a id = "user-content-typedef-a933c596" name = "user-content-typedef-a933c596">&lt;PA&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PA&gt;to_string</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PA&gt;to_string_fn</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code>
 
 Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
@@ -109,7 +109,7 @@ Manages the array field `data`, which is indexed up to `size`\. To initialise it
 
 <code>struct <strong>&lt;PT&gt;iterator</strong>;</code>
 
-Contains all iteration parameters for inclusion in traits\.
+Contains all iteration parameters\.
 
 
 
@@ -291,7 +291,7 @@ Returns a new un\-initialised datum of `a` and updates `update_ptr`, which must 
 Removes `datum` from `a`\.
 
  * Order:  
-   &#927;\(n\)\.
+   &#927;\(`a.size`\)\.
 
 
 
@@ -346,7 +346,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 ### <a id = "user-content-fn-37e10160" name = "user-content-fn-37e10160">&lt;T&gt;array_copy_if</a> ###
 
-<code>static int <strong>&lt;T&gt;array_copy_if</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate <em>copy</em>, const struct &lt;T&gt;array *const <em>b</em>)</code>
+<code>static int <strong>&lt;T&gt;array_copy_if</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>copy</em>, const struct &lt;T&gt;array *const <em>b</em>)</code>
 
 For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null\.
 
@@ -359,7 +359,7 @@ For all elements of `b`, calls `copy`, and if true, lazily copies the elements t
 
 ### <a id = "user-content-fn-bf0a45e0" name = "user-content-fn-bf0a45e0">&lt;T&gt;array_keep_if</a> ###
 
-<code>static void <strong>&lt;T&gt;array_keep_if</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate <em>keep</em>, const &lt;PT&gt;action <em>destruct</em>)</code>
+<code>static void <strong>&lt;T&gt;array_keep_if</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>keep</em>, const &lt;PT&gt;action_fn <em>destruct</em>)</code>
 
 For all elements of `a`, calls `keep`, and if false, lazy deletes that item, calling `destruct` if not\-null\.
 
@@ -371,7 +371,7 @@ For all elements of `a`, calls `keep`, and if false, lazy deletes that item, cal
 
 ### <a id = "user-content-fn-e65bff8f" name = "user-content-fn-e65bff8f">&lt;T&gt;array_trim</a> ###
 
-<code>static void <strong>&lt;T&gt;array_trim</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate <em>predicate</em>)</code>
+<code>static void <strong>&lt;T&gt;array_trim</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>predicate</em>)</code>
 
 Removes at either end of `a` of things that `predicate` returns true\.
 
@@ -383,7 +383,7 @@ Removes at either end of `a` of things that `predicate` returns true\.
 
 ### <a id = "user-content-fn-daefd78e" name = "user-content-fn-daefd78e">&lt;T&gt;array_each</a> ###
 
-<code>static void <strong>&lt;T&gt;array_each</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;action <em>action</em>)</code>
+<code>static void <strong>&lt;T&gt;array_each</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;action_fn <em>action</em>)</code>
 
 Iterates through `a` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
 
@@ -395,7 +395,7 @@ Iterates through `a` and calls `action` on all the elements\. The topology of th
 
 ### <a id = "user-content-fn-51c854fc" name = "user-content-fn-51c854fc">&lt;T&gt;array_if_each</a> ###
 
-<code>static void <strong>&lt;T&gt;array_if_each</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate <em>predicate</em>, const &lt;PT&gt;action <em>action</em>)</code>
+<code>static void <strong>&lt;T&gt;array_if_each</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>predicate</em>, const &lt;PT&gt;action_fn <em>action</em>)</code>
 
 Iterates through `a` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
 
@@ -407,7 +407,7 @@ Iterates through `a` and calls `action` on all the elements for which `predicate
 
 ### <a id = "user-content-fn-cfeeb3d7" name = "user-content-fn-cfeeb3d7">&lt;T&gt;array_any</a> ###
 
-<code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_any</strong>(const struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate <em>predicate</em>)</code>
+<code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_any</strong>(const struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>predicate</em>)</code>
 
 Iterates through `a` and calls `predicate` until it returns true\.
 
@@ -515,7 +515,7 @@ Sorts `a` in reverse by `qsort` on `ARRAY_COMPARE`\.
 
 ### <a id = "user-content-fn-44a2ae09" name = "user-content-fn-44a2ae09">&lt;T&gt;array&lt;C&gt;merge_unique</a> ###
 
-<code>static void <strong>&lt;T&gt;array&lt;C&gt;merge_unique</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;biproject <em>merge</em>)</code>
+<code>static void <strong>&lt;T&gt;array&lt;C&gt;merge_unique</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;biproject_fn <em>merge</em>)</code>
 
 Removes consecutive duplicate elements in `a`\.
 

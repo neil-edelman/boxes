@@ -23,10 +23,9 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait: `<A>` that satisfies `C` naming conventions when mangled and
- a function implementing `<PA>to_string_fn`; gives `<T>array<A>to_string`
- contained in <ToString.h>. There can be multiple to string traits, but only
- one can omit `ARRAY_TO_STRING_NAME`.
+ To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
+ conventions when mangled and function implementing `<PT>to_string_fn`. There
+ can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
  To string trait contained in <../test/ArrayTest.h>; optional unit testing
@@ -431,7 +430,7 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 	const struct T_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
 
 /** Advances `it`. @implements next */
-static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
+static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it && it->a);
 	return it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
