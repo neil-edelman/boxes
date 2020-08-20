@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of a stochastic skip-list." src = "web/list.png" width = 577 height = 182></p>
 
-<p><a href = "#tag:&lt;N&gt;list">&lt;N&gt;list</a> is a doubly-linked list of <a href = "#tag:&lt;N&gt;list_node">&lt;N&gt;list_node</a> with sentinels residing in <code>&lt;N&gt;list</code>. The sentinels are an added complexity at either end, but enable a closed structure. It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;list_node</code> in another <code>struct</code>.</p>
+<p>In parlance of &lt;Thareja 2014, Data Structures&gt;, <a href = "#tag:&lt;N&gt;list">&lt;N&gt;list</a> is a circular header doubly-linked list of <a href = "#tag:&lt;N&gt;list_node">&lt;N&gt;list_node</a>. The header, or sentinel, resides in <code>&lt;N&gt;list</code>. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list in &#927;(<code>size</code>). It only provides an order, and is not very useful without enclosing <code>&lt;N&gt;list_node</code> in another <code>struct</code>; this is useful for multi-linked elements.</p>
 
 <p><code>&lt;N&gt;list</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
 

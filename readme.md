@@ -13,7 +13,7 @@
 
 ![Example of a stochastic skip-list.](web/list.png)
 
-[&lt;N&gt;list](#user-content-tag-b7f8a30b) is a doubly\-linked list of [&lt;N&gt;list_node](#user-content-tag-49d3e78) with sentinels residing in `<N>list`\. The sentinels are an added complexity at either end, but enable a closed structure\. It only provides an order, and is not very useful without enclosing `<N>list_node` in another `struct`\.
+In parlance of <Thareja 2014, Data Structures>, [&lt;N&gt;list](#user-content-tag-b7f8a30b) is a circular header doubly\-linked list of [&lt;N&gt;list_node](#user-content-tag-49d3e78)\. The header, or sentinel, resides in `<N>list`\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list in &#927;\(`size`\)\. It only provides an order, and is not very useful without enclosing `<N>list_node` in another `struct`; this is useful for multi\-linked elements\.
 
 `<N>list` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
