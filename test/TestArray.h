@@ -36,8 +36,10 @@ static int PT_(zero_filled)(const PT_(type) *const t) {
 static void PT_(graph)(const struct T_(array) *const ar, const char *const fn) {
 	FILE *fp;
 	char a[12];
-	assert(ar && fn);
-	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	/* This is a messy hack; require that `errno` is not set, if we can't open
+	 the file for writing, just reset. Drawing graphs is not the point. */
+	assert(ar && fn && !errno);
+	if(!(fp = fopen(fn, "w"))) { perror(fn); errno = 0; return; }
 	fprintf(fp, "digraph {\n"
 		"\trankdir = LR;\n"
 		"\tnode [shape = record, style = filled];\n"
