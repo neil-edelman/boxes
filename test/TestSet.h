@@ -67,8 +67,8 @@ static void PE_(stats)(const struct E_(set) *const set,
 		(unsigned long)size, delim,
 		(unsigned long)msr.n, delim,
 		(unsigned long)msr.max_bin, delim,
-		msr.mean, msr.n > 1 ? sqrt(msr.ssdm / (msr.n - 1)) : NAN, delim,
-		msr.n ? 1.0 + 1.0 * msr.cost / size : NAN, delim);
+		msr.mean, msr.n > 1 ? sqrt(msr.ssdm / (msr.n - 1)) : (double)NAN, delim,
+		msr.n ? 1.0 + 1.0 * msr.cost / size : (double)NAN, delim);
 }
 
 /** Assertion function for seeing if `set` is in a valid state.

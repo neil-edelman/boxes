@@ -372,7 +372,7 @@ int main(void) {
 	{ /* Linked dictionary. */
 		struct entry_pool entries = POOL_IDLE;
 		const size_t limit = (size_t)500000/*0<-This takes a while to set up.*/;
-		struct Entry *e, *sp_es[20], **sp_e, **sp_e_end = sp_es,
+		struct Entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
 		struct key_set kset = SET_IDLE;
 		struct key_list klist;
@@ -428,12 +428,12 @@ int main(void) {
 		struct key_list klist;
 		struct key_set_node *elem;
 		struct Entry *found;
-		size_t line, words_to_go = 216555, key_len;
+		size_t line = 1, words_to_go = 216555, key_len;
 		assert(RAND_MAX >= words_to_go);
 		key_list_clear(&klist);
 		if(!fp) goto catch;
 		/* Read file. */
-		for(line = 1; ; line++) {
+		for( ; ; line++) {
 			char *key_end;
 			if(!(e = entry_pool_new(&entries))) goto catch;
 			e->elem.key = e->key;
