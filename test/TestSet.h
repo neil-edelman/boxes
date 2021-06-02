@@ -125,10 +125,10 @@ static void PE_(graph)(const struct E_(set) *const set, const char *const fn) {
 				fprintf(fp, "\tSetElement%p [label=\"#0x%x\\l|%s\\l\"];\n",
 					(void *)x, PE_(get_hash)(x), a);
 				if(x_prev) {
-					fprintf(fp, "\tSetElement%p -> set_node%p;\n",
+					fprintf(fp, "\tSetElement%p -> SetElement%p;\n",
 						(void *)x_prev, (void *)x);
 				} else {
-					fprintf(fp, "\tbucket0x%x -> set_node%p;\n",
+					fprintf(fp, "\tbucket0x%x -> SetElement%p;\n",
 						(unsigned)(b - set->buckets), (void *)x);
 				}
 				if(is_turtle) xt = xt->next, is_turtle = 0; else is_turtle = 1;
