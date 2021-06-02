@@ -316,7 +316,7 @@ static int T_(array_copy_if)(struct T_(array) *const a,
 	PT_(type) *i, *fresh;
 	const PT_(type) *end, *rise = 0;
 	size_t add;
-	int difcpy;
+	int difcpy = 0;
 	assert(a && copy && a != b);
 	if(!b) return 1;
 	for(i = b->data, end = i + b->size; i < end; i++) {
