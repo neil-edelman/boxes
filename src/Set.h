@@ -264,13 +264,13 @@ static int PE_(reserve)(struct E_(set) *const set, const size_t min_capacity) {
 		&& (PE_(uint))-1 > 0);
 	/* `SIZE_MAX` min 65535 (`C99`) -> 5041 but typically much larger _st_ it
 	 becomes saturated while the load factor increases.
-	 Saturation `1/8 * SIZE_MAX`, (which is not defined it `C90`.) */
+	 Saturation `1/8 * SIZE_MAX`, (which is not defined in `C90`.) */
 	if(min_capacity > (size_t)-1 / 13) return 1;
 	/* Load factor `ln 2 ~= 0.693 ~= 9/13`.
 	 Starting bucket number is a power of 2 in `[8, 1 << log_limit]`. */
 	if((no_buckets = min_capacity * 13 / 9) > 1u << log_limit) {
 		log_c1 = log_limit;
-		c1 = 1 << log_limit;
+		c1 = 1u << log_limit;
 	} else {
 		if(log_c0 < 3) log_c1 = 3u,     c1 = 8u;
 		else           log_c1 = log_c0, c1 = c0;
