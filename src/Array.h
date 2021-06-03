@@ -5,10 +5,9 @@
 
  ![Example of Array](../web/array.png)
 
- <tag:<T>array> is a dynamic array that stores contiguous `ARRAY_TYPE`. When
- modifying the array, to ensure that the capacity is greater then or equal to
- the size, resizing may be necessary. This incurs amortised cost and any
- pointers to this memory may become stale.
+ <tag:<T>array> is a dynamic array that stores contiguous `ARRAY_TYPE`.
+ Resizing may be necessary when increasing the size of the array. This incurs
+ amortised cost and any pointers to this memory may become stale.
 
  `<T>array` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros. Assertions are used in this file; to stop
@@ -40,7 +39,7 @@
  and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>bipredicate_fn>
  that establishes an equivalence relation, or for `ARRAY_COMPARE`
  <typedef:<PT>compare_fn> that establishes a total order. There can be multiple
- contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
+ comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
 
  @std C89
  @cf [Heap](https://github.com/neil-edelman/Heap)
@@ -137,6 +136,9 @@ struct T_(array) { PT_(type) *data; size_t size, capacity; };
 #ifndef ARRAY_IDLE /* <!-- !zero; `{0}` is `C99`. */
 #define ARRAY_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
+#ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
+#define ARRAY_MIN_CAPACITY 3 /* > 1 */
+#endif /* !min --> */
 
 /** Initialises `a` to idle. @order \Theta(1) @allow */
 static void T_(array)(struct T_(array) *const a)
@@ -157,9 +159,10 @@ static size_t T_(array_clip)(const struct T_(array) *const a, const long i) {
 		: (size_t)i > a->size ? a->size : (size_t)i;
 }
 
-/** Ensures `min` of `a`. @param[min] If zero, does nothing. @return Success;
- otherwise, `errno` will be set. @throws[ERANGE] Tried allocating more then can
- fit in `size_t` or `realloc` doesn't follow [POSIX
+/** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
+ zero, does nothing. @return Success; otherwise, `errno` will be set.
+ @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
+ doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] @allow */
 static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
@@ -168,18 +171,20 @@ static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 	const size_t max_size = (size_t)-1 / sizeof *a->data;
 	assert(a);
 	if(a->data) {
+		assert(a->size <= a->capacity);
 		if(min <= a->capacity) return 1;
-		c0 = a->capacity;
-		if(c0 < 8) c0 = 8;
+		c0 = a->capacity < ARRAY_MIN_CAPACITY
+			? ARRAY_MIN_CAPACITY : a->capacity;
 	} else { /* Idle. */
+		assert(!a->size && !a->capacity);
 		if(!min) return 1;
-		c0 = 8;
+		c0 = ARRAY_MIN_CAPACITY;
 	}
 	if(min > max_size) return errno = ERANGE, 0;
 	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. */
 	while(c0 < min) {
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
-		if(c0 >= c1) { c0 = max_size; break; } /* Overflow; unlikely. */
+		if(c0 >= c1) { c0 = max_size; break; } /* Unlikely. */
 		c0 = c1;
 	}
 	if(!(data = realloc(a->data, sizeof *a->data * c0)))
@@ -188,62 +193,65 @@ static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 	return 1;
 }
 
-/** Adds `buffer` un-initialised elements at the back of `a`.
- @return A pointer to previous end of `a`, where there are `buffer` elements.
- @throws[realloc, ERANGE] @allow */
+/** The capacity of `a` will be increased to at least `buffer` elements.
+ Invalidates pointers in `a`. @return The start of the buffered space, (the
+ back of the array.) If `a` is idle and `buffer` is zero, a null pointer is
+ returned, otherwise null indicates an error. @throws[realloc, ERANGE] @allow */
 static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
 	const size_t buffer) {
-	size_t prev_size;
 	assert(a);
-	if(a->size > (size_t)-1 - buffer) /* `size_t` overflow; unlikely. */
-		{ errno = ERANGE; return 0; }
-	if(!T_(array_reserve)(a, a->size + buffer)) return 0;
-	prev_size = a->size, a->size += buffer;
-	return a->data ? a->data + prev_size : 0;
+	if(a->size > (size_t)-1 - buffer) { errno = ERANGE; return 0; }
+	return T_(array_reserve)(a, a->size + buffer) && a->data
+		? a->data + a->size : 0;
 }
 
-/** Adds `buffer` un-initialised elements at `before` in `a`.
- @param[before] A number smaller then or equal to `a.size`; if `a.size`, this
- function behaves as <fn:<T>array_buffer>.
- @return A pointer to the start of the new region, where there are `buffer`
+/** Adds `n` elements to the back of `a`. The buffer holds enough elements or
+ it will invalidate pointers in `a`.
+ @return A pointer to the elements. If `a` is idle and `n` is zero, a null
+ pointer will be returned, otherwise null indicates an error.
+ @throws[realloc, ERANGE] @allow */
+static PT_(type) *T_(array_append)(struct T_(array) *const a, const size_t n) {
+	PT_(type) *const buffer = T_(array_buffer)(a, n);
+	assert(a);
+	if(!buffer) return 0;
+	assert(n <= a->capacity && a->size <= a->capacity - n);
+	return a->size += n, buffer;
+}
+
+/** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds
+ enough elements or it will invalidate pointers in `a`.
+ @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
+ function behaves as <fn:<T>array_append>.
+ @return A pointer to the start of the new region, where there are `n`
  elements. @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(array_buffer_before)(struct T_(array) *const a,
-	const size_t before, const size_t buffer) {
-	assert(a && before <= a->size);
-	if(!T_(array_buffer)(a, buffer)) return 0;
-	memmove(a->data + before + buffer, a->data + before,
-		sizeof a->data * (a->size - before));
-	return a->data + before;
+static PT_(type) *T_(array_append_at)(struct T_(array) *const a,
+	const size_t n, const size_t at) {
+	const size_t old_size = a->size;
+	PT_(type) *const buffer = T_(array_append)(a, n);
+	assert(a && at <= old_size);
+	if(!buffer) return 0;
+	memmove(a->data + at + n, a->data + at, sizeof a->data * (old_size - at));
+	return a->data + at;
 }
 
-/** @return A new un-initialized element of at the end of `a`.
- @order amortised \O(1) @throws[realloc, ERANGE] @allow */
+/** @return Push back a new element of `a`. The buffer holds enough elements or
+ it will invalidate pointers in `a`.
+ @order amortised \O(1) @throws[realloc, ERANGE] */ \
 static PT_(type) *T_(array_new)(struct T_(array) *const a)
-	{ return T_(array_buffer)(a, 1); }
+	{ return T_(array_append)(a, 1); }
 
-/** Returns a new un-initialised datum of `a` and updates `update_ptr`, which
- must be in `a`. @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(array_update_new)(struct T_(array) *const a,
-	PT_(type) **const update_ptr) {
-	PT_(type) *n;
-	size_t idx = *update_ptr - a->data;
-	assert(a && a->data && update_ptr
-		&& *update_ptr >= a->data && *update_ptr <= a->data + a->capacity);
-	if(!(n = T_(array_new)(a))) return 0;
-	*update_ptr = a->data + idx;
-	return n;
-}
-
-/** Shrinks the capacity `a` to the size, freeing unsed memory. If the size is
- zero, it will be in an idle state.
+/** Shrinks the capacity `a` to the size, freeing unused memory. If the size is
+ zero, it will be in an idle state. Invalidates pointers in `a`.
  @return Success. @throws[ERANGE, realloc] Unlikely `realloc` error. */
 static int T_(array_shrink)(struct T_(array) *const a) {
 	PT_(type) *data;
+	size_t c;
 	assert(a && a->capacity >= a->size);
-	if(!a->data) return assert(!a->size), 1;
-	if(!(data = realloc(a->data, sizeof *a->data * a->size)))
-		{ if(!errno) errno = ERANGE; return 0; } /* Unlikely. */
-	a->data = data, a->capacity = a->size;
+	if(!a->data) return assert(!a->size && !a->capacity), 1;
+	c = a->size && a->size > ARRAY_MIN_CAPACITY ? a->size : ARRAY_MIN_CAPACITY;
+	if(!(data = realloc(a->data, sizeof *a->data * c)))
+		{ if(!errno) errno = ERANGE; return 0; }
+	a->data = data, a->capacity = c;
 	return 1;
 }
 
@@ -288,8 +296,9 @@ static int T_(array_splice)(struct T_(array) *const a, const size_t i0,
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
-		if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;
-		if(!T_(array_reserve)(a, a->size + diff)) return 0;
+		/*if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;*/
+		if(!T_(array_buffer)(a, diff)) return 0;
+		/*if(!T_(array_reserve)(a, a->size + diff)) return 0;*/
 		memmove(a->data + i1 + diff, a->data + i1,
 			(a->size - i1) * sizeof *a->data);
 		a->size += diff;
@@ -326,14 +335,14 @@ static int T_(array_copy_if)(struct T_(array) *const a,
 			rise = i;
 		} else { /* Falling edge. */
 			assert(rise && !difcpy && rise < i);
-			if(!(fresh = T_(array_buffer)(a, add = i - rise))) return 0;
+			if(!(fresh = T_(array_append)(a, add = i - rise))) return 0;
 			memcpy(fresh, rise, sizeof *fresh * add);
 			rise = 0;
 		}
 	}
 	if(rise) { /* Delayed copy. */
 		assert(!difcpy && rise < i);
-		if(!(fresh = T_(array_buffer)(a, add = i - rise))) return 0;
+		if(!(fresh = T_(array_append)(a, add = i - rise))) return 0;
 		memcpy(fresh, rise, sizeof *fresh * add);
 	}
 	return 1;
@@ -450,8 +459,8 @@ static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	T_(array_)(0); T_(array_clip)(0, 0); T_(array_buffer_before)(0, 0, 0);
-	T_(array_update_new)(0, 0); T_(array_shrink)(0); T_(array_remove)(0, 0);
+	T_(array_)(0); T_(array_clip)(0, 0); T_(array_append_at)(0, 0, 0);
+	T_(array_new)(0); T_(array_shrink)(0); T_(array_remove)(0, 0);
 	T_(array_lazy_remove)(0, 0); T_(array_clear)(0); T_(array_peek)(0);
 	T_(array_pop)(0); T_(array_splice)(0, 0, 0, 0); T_(array_copy)(0, 0);
 	T_(array_keep_if)(0, 0, 0); T_(array_copy_if)(0, 0, 0);
@@ -524,7 +533,7 @@ static int T_C_(array, compare)(const struct T_(array) *const a,
 }
 
 /** `a` should be partitioned true/false with less-then `value`.
- @return The first index of `a` that is not less then `value`.
+ @return The first index of `a` that is not less than `value`.
  @order \O(log `a.size`) @allow */
 static size_t T_C_(array, lower_bound)(const struct T_(array) *const a,
 	const PT_(type) *const value) {
@@ -537,7 +546,7 @@ static size_t T_C_(array, lower_bound)(const struct T_(array) *const a,
 }
 
 /** `a` should be partitioned false/true with greater-than or equals `value`.
- @return The first index of `a` that is greater then `value`.
+ @return The first index of `a` that is greater than `value`.
  @order \O(log `a.size`) @allow */
 static size_t T_C_(array, upper_bound)(const struct T_(array) *const a,
 	const PT_(type) *const value) {

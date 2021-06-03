@@ -66,7 +66,7 @@ static void PT_(graph)(const struct T_(array) *const ar, const char *const fn) {
 
 static void PT_(test_basic)(void) {
 	struct T_(array) a;
-	PT_(type) ts[5], *t, *t1, *start;
+	PT_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
 	int is_zero;
@@ -132,7 +132,7 @@ static void PT_(test_basic)(void) {
 	printf("Now: %s.\n", PT_(array_to_string)(&a));
 
 	assert(a.size == ts_size - 2);
-	T_(array_buffer)(&a, 2);
+	T_(array_append)(&a, 2);
 	memcpy(t + 1, ts + 3, sizeof *t * 2);
 	assert(a.size == ts_size);
 	PT_(valid_state)(&a);
@@ -169,10 +169,8 @@ static void PT_(test_basic)(void) {
 	assert(a.size == !is_zero);
 
 	/* Big. */
-	start = a.data + a.size;
 	for(i = 0; i < big; i++) {
-		t = T_(array_update_new)(&a, &start);
-		assert(t);
+		t = T_(array_new)(&a), assert(t);
 		PT_(filler)(t);
 	}
 	printf("%s.\n", PT_(array_to_string)(&a));
@@ -182,15 +180,6 @@ static void PT_(test_basic)(void) {
 	T_(array_clear)(&a);
 	printf("%s.\n", PT_(array_to_string)(&a));
 	assert(T_(array_peek)(&a) == 0 && a.size == 0);
-
-	t = T_(array_buffer_before)(&a, 0, ts_size - 1);
-	assert(t && a.size == ts_size - 1);
-	memcpy(a.data, ts, sizeof ts - sizeof *ts);
-	printf("Buffer t[ : -1]: %s.\n", PT_(array_to_string)(&a));
-	t = T_(array_buffer_before)(&a, ts_size - 1, 1);
-	memcpy(a.data + ts_size - 1, ts + ts_size - 1, sizeof *ts);
-	printf("Buffer t[ : ]: %s.\n", PT_(array_to_string)(&a));
-	assert(!memcmp(ts, a.data, sizeof ts));
 
 	printf("Destructor:\n");
 	T_(array_)(&a);
@@ -307,8 +296,7 @@ static void PT_(test_replace)(void) {
 	assert(success && a.size == ts_size
 		&& !memcmp(t, a.data + 2, sizeof *t));
 	T_(array_clear)(&b);
-	t = T_(array_buffer)(&b, 2);
-	assert(t);
+	t = T_(array_append)(&b, 2), assert(t);
 	memcpy(t, ts + 2, sizeof *t * 2);
 	assert(b.size == 2);
 	/* a = [[1],[0],[1],[4],[0]]; b = [[2],[3]] */
@@ -474,7 +462,7 @@ static void PTC_(test_compactify)(void) {
 		memcpy(t + 1, t, sizeof *t);
 		memcpy(t + 2, t, sizeof *t);
 	}
-	if(!T_(array_buffer)(&a, ts_size)) { assert(0); return; }
+	if(!T_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("Before: %s.\n", PT_(array_to_string)(&a));
 	T_C_(array, unique)(&a);
@@ -501,7 +489,7 @@ static void PTC_(test_bounds)(void) {
 	PT_(type) elem;
 	char z[12];
 	int t;
-	if(!T_(array_buffer)(&a, size)) { assert(0); return; }
+	if(!T_(array_append)(&a, size)) { assert(0); return; }
 	for(i = 0; i < size; i++) PT_(filler)(a.data + i);
 	PT_(filler)(&elem);
 	printf("bounds: %s\n", PT_(array_to_string)(&a));
@@ -524,7 +512,7 @@ static void PTC_(test_bounds)(void) {
 	t = memcmp(&elem, a.data + low, sizeof elem);
 	assert(!t);
 	T_(array_clear)(&a);
-	T_(array_buffer)(&a, size);
+	T_(array_append)(&a, size);
 	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
 	printf("bounds: %s.\n", PT_(array_to_string)(&a));
 	low = T_C_(array, lower_bound)(&a, &elem);
@@ -549,7 +537,7 @@ static void PTC_(test_sort)(void) {
 		size_t size = rand() / (RAND_MAX / 5 + 1), i;
 		PT_(type) *x, *x_end;
 		T_(array)(a);
-		x = T_(array_buffer)(a, size);
+		x = T_(array_append)(a, size);
 		x_end = x + size;
 		if(!size) continue;
 		assert(x);
