@@ -18,6 +18,10 @@
  associated therewith; required. `<PT>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
+ @param[ARRAY_CODA]
+ Includes "array_coda.h" for much more functionality that one may or may not
+ want.
+
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
@@ -59,39 +63,11 @@
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
 #error Name ARRAY_NAME or tag type ARRAY_TYPE undefined.
 #endif
-#if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
-#define ARRAY_TO_STRING_TRAIT 1
-#else
-#define ARRAY_TO_STRING_TRAIT 0
+#if !defined(ARRAY_CODA) && (defined(ARRAY_EXPECT_TRAIT) \
+	|| defined(ARRAY_TEST) || defined(ARRAY_COMPARABLE_NAME) \
+	|| defined(ARRAY_IS_EQUAL) || defined(ARRAY_COMPARE))
+#error This needs ARRAY_CODA to be defined.
 #endif
-#if defined(ARRAY_COMPARABLE_NAME) || defined(ARRAY_COMPARE) \
-	|| defined(ARRAY_IS_EQUAL)
-#define ARRAY_COMPARABLE_TRAIT 1
-#else
-#define ARRAY_COMPARABLE_TRAIT 0
-#endif
-#define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARABLE_TRAIT
-#if ARRAY_TRAITS > 1
-#error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
-#endif
-#if ARRAY_TRAITS != 0 && (!defined(T_) || !defined(CAT) || !defined(CAT_))
-#error T_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
-#endif
-#if (ARRAY_TRAITS == 0) && defined(ARRAY_TEST)
-#error ARRAY_TEST must be defined in ARRAY_TO_STRING trait.
-#endif
-#if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
-#error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
-#endif
-#if defined(ARRAY_COMPARABLE_NAME) \
-	&& ((!defined(ARRAY_COMPARE) && !defined(ARRAY_IS_EQUAL)) || \
-	(defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)))
-#error ARRAY_COMPARABLE_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL not both.
-#endif
-
-
-#if ARRAY_TRAITS == 0 /* <!-- base code */
-
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(T_) || defined(PT_) \
