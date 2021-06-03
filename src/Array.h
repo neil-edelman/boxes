@@ -234,8 +234,8 @@ static PT_(type) *T_(array_append_at)(struct T_(array) *const a,
 	return a->data + at;
 }
 
-/** @return Push back a new element of `a`. The buffer holds enough elements or
- it will invalidate pointers in `a`.
+/** @return Adds (append, push back) one new element of `a`. The buffer holds 
+ an element or it will invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] */ \
 static PT_(type) *T_(array_new)(struct T_(array) *const a)
 	{ return T_(array_append)(a, 1); }

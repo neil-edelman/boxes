@@ -93,11 +93,12 @@ static void PT_(test_basic)(void) {
 	assert(t1 == t);
 	assert(T_(array_peek)(&a) == 0);
 	t = T_(array_new)(&a); /* Add. */
-	assert(t && a.size == 1 && a.capacity == 8);
+	assert(t && a.size == 1 && a.capacity >= 1);
 	T_(array_shrink)(&a);
-	assert(a.size == 1 && a.capacity == 1);
+	assert(ARRAY_MIN_CAPACITY > 1);
+	assert(a.size == 1 && a.capacity == ARRAY_MIN_CAPACITY);
 	t = T_(array_new)(&a); /* Add 2. */
-	assert(t && a.size == 2 && a.capacity == 8);
+	assert(t && a.size == 2 && a.capacity >= 2);
 	T_(array_clear)(&a);
 	assert(T_(array_peek)(&a) == 0);
 	PT_(valid_state)(&a);
