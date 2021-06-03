@@ -3,7 +3,7 @@
 
  @subtitle Contiguous Dynamic Array (Vector)
 
- ![Example of Array](../web/array.png)
+ ![Example of array.](../web/array.png)
 
  <tag:<T>array> is a dynamic array that stores contiguous `ARRAY_TYPE`.
  Resizing may be necessary when increasing the size of the array. This incurs
