@@ -480,11 +480,11 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #define A_(thing) CAT(T_(array), thing)
 #endif /* !name --> */
 #define TO_STRING ARRAY_TO_STRING
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
 #define ARRAY_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestArray.h" /** \include */
+#include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
 #undef A_
@@ -666,7 +666,7 @@ static void PTC_(unused_contrast)(void) {
 static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 
 #if defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
-#include "../test/TestArray.h"
+#include "../test/test_array.h"
 #endif /* test --> */
 
 #undef PTC_
