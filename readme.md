@@ -1,11 +1,11 @@
 # Data Structures #
 
-Parameterized data structures in C89 control meta-module. This is a
-one-source-of-truth for some code is shared between independent modules.
-It also manages copying the latest versions of dependancies. One may
-download this if working on the code for the boxes themselves, but is
-otherwise unneeded if using boxes.
+Parameterized data structures in `C89` control meta-module. This is a helper for
+`boxes` that tries to keep one-source-of-truth for some code is shared between
+independent modules. This is not production-quality; you should not need to
+download this to use `boxes`, but it has helped maintain it.
 
 ## License ##
 
-2020 Neil Edelman, distributed under the terms of the [MIT License](https://opensource.org/licenses/MIT)\.
+2016 Neil Edelman, distributed under the terms of the
+[MIT License](https://opensource.org/licenses/MIT).
