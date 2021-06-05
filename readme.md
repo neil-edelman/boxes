@@ -1,10 +1,19 @@
 # Data Structures #
 
-Parameterized data structures in `C89` control meta-module. This is a helper for
-`boxes` that tries to keep one-source-of-truth for some code is shared between
-independent modules, (without making `git` modules, that's not exactly the use
-case here.) This is not production-quality; you should not need to download this
-to use `boxes`, but it has helped maintain it.
+Every box in `boxes` is an independent project, but some code is shared. This is
+an automated dependancy and build system. There is an interface to which we
+adhere: projects are subdirectories of `boxes`, have `test` and `src`, `make` creates
+a test in `bin`, and `traits` are the same for every project.
+
+These are (some) implementers:
+
+* [array](https://github.com/neil-edelman/array);
+* [heap](https://github.com/neil-edelman/heap);
+* [list](https://github.com/neil-edelman/list);
+* [orcish](https://github.com/neil-edelman/orcish);
+* [pool](https://github.com/neil-edelman/pool);
+* [set](https://github.com/neil-edelman/set);
+* [trie](https://github.com/neil-edelman/trie)
 
 ## License ##
 
