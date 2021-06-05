@@ -1,14 +1,32 @@
-#!/bin/sh
-set -e
-cd `dirname $0`
-for PROJ in *; do if [[ -d "$PROJ" && ! -L "$PROJ" ]]; then
-	[ -r $PROJ/update.txt ] && echo $PROJ && while read -r LINE; do
-		[ -r $PROJ/src/$PROJ.c ] && echo "$PROJ/src/$PROJ.c => $LINE" \
-			&& cp $PROJ/src/$PROJ.c $LINE;
-		[ -r $PROJ/src/$PROJ.h ] && echo "$PROJ/src/$PROJ.h => $LINE" \
-			&& cp $PROJ/src/$PROJ.h $LINE;
-	done < $PROJ/update.txt
-fi done
+#!/bin/bash
 
-# links screw up on Mac
-#[ -r update.txt ] && while read -r LINE; do ln -fv src/Array.h $LINE; done < update.txt
+# Any matching project names and source files, _eg_, foo/src/foo.h (or .c),
+# and any files in `traits` will be considered one-source-of-truth and will
+# be updated in all the other project's src/ and test/.
+# Fairly dangerous!
+# Links would be great for permanent solutions to this problem,
+# but they are unsupported in Xcode and in general on Mac GUI.
+
+set -e
+cd "$(dirname "$0")" || exit
+for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
+	for EXT in c h; do if [[ -r "$PROJ/src/$PROJ.$EXT" ]]; then
+		echo "*** Updating $PROJ/src/$PROJ.$EXT... ***"
+		for OTHER in *; do if [[ -d "$OTHER" && -d "$OTHER"/.git/ \
+			&& ! -L "$OTHER" && "$OTHER" != "$PROJ" ]]; then
+			for SUB in src test; do
+				[ -r "$OTHER/$SUB/$PROJ.$EXT" ] \
+				&& cp "$PROJ/$SUB/$PROJ.$EXT" "$OTHER/$SUB/$PROJ.$EXT"
+			done
+		fi done
+	fi done
+fi done
+for TRAITDIR in traits/*; do
+	echo "*** Updating $TRAITDIR... ***"
+	TRAIT=$(basename "$TRAITDIR")
+	for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
+		for SUB in src test; do [ -r "$PROJ/$SUB/$TRAIT" ] \
+			&& cp "$TRAITDIR" "$PROJ/$SUB/$TRAIT"
+		done
+	fi done
+done

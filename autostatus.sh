@@ -1,8 +1,12 @@
-#!/bin/sh
+#!/bin/bash
+
+# This is a non-destructive task (with normal get) that checks the status
+# of every project at the top-level directory.
+
 set -e
-cd `dirname $0`
-for PROJ in *; do if [[ -d "$PROJ" && ! -L "$PROJ" ]]; then
-	# fixme: search subdirs
-	[ -d $PROJ/.git/ ] && echo Recusing into $PROJ... \
-		&& cd $PROJ && git status && cd ..
+cd "$(dirname "$0")" || exit
+for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
+	(
+	echo "*** Status of $PROJ... ***" && cd "$PROJ" && git status
+	)
 fi done
