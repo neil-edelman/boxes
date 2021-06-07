@@ -7,7 +7,7 @@
 
 #include <stdlib.h> /* EXIT malloc free rand */
 #include <stdio.h>  /* *printf */
-#include "Orcish.h"
+#include "orcish.h"
 
 
 struct int_heap_node;
@@ -16,10 +16,10 @@ static void test_int(struct int_heap_node *, void *);
 
 #define HEAP_NAME int
 #define HEAP_EXPECT_TRAIT
-#include "../src/Heap.h"
+#include "../src/heap.h"
 #define HEAP_TO_STRING &int_to_string
 #define HEAP_TEST &test_int
-#include "../src/Heap.h"
+#include "../src/heap.h"
 
 static void int_to_string(const struct int_heap_node *const i,
 	char (*const a)[12]) {
@@ -37,14 +37,14 @@ static void orc_to_string(const struct orc_heap_node *, char (*)[12]);
 static void test_orc(struct orc_heap_node *, void *);
 
 #define HEAP_NAME orc
-#define HEAP_VALUE struct Orc
+#define HEAP_VALUE struct orc
 #define HEAP_EXPECT_TRAIT
-#include "../src/Heap.h"
+#include "../src/heap.h"
 #define HEAP_TO_STRING &orc_to_string
 #define HEAP_TEST &test_orc
-#include "../src/Heap.h"
+#include "../src/heap.h"
 
-struct Orc { unsigned health; char name[10]; };
+struct orc { unsigned health; char name[10]; };
 
 static void orc_to_string(const struct orc_heap_node *const node,
 	char (*const a)[12]) {
@@ -52,14 +52,14 @@ static void orc_to_string(const struct orc_heap_node *const node,
 }
 
 #define POOL_NAME orc
-#define POOL_TYPE struct Orc
-#include "Pool.h"
+#define POOL_TYPE struct orc
+#include "pool.h"
 
 static void test_orc(struct orc_heap_node *node, void *const vpool) {
-	struct Orc *orc = orc_pool_new(vpool);
+	struct orc *orc = orc_pool_new(vpool);
 	if(!orc) { assert(0); exit(EXIT_FAILURE); }
 	orc->health = rand() / (RAND_MAX / 99 + 1);
-	Orcish(orc->name, sizeof orc->name);
+	orcish(orc->name, sizeof orc->name);
 	node->priority = orc->health;
 	node->value = orc;
 }

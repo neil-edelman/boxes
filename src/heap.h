@@ -10,7 +10,7 @@
  terminology of <Knuth, 1973, Sorting>. Internally, it is an
  `<<H>heap_node>array` with implicit heap properties, with an optionally cached
  <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer payload. As
- such, one needs to have `Array.h` file in the same directory.
+ such, one needs to have `array.h` file in the same directory.
 
  `<H>heap` is not synchronised. Errors are returned with `errno`. The
  parameters are `#define` preprocessor macros, and are all undefined at the end
@@ -48,7 +48,7 @@
  <typedef:<PH>biaction_fn>. Output will be shown with the to string trait in
  which it's defined; provides tests for the base code and all later traits.
 
- @depend [Array.h](../../Array/)
+ @depend [array.h](../../Array/)
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
  @cf [List](https://github.com/neil-edelman/List)
@@ -63,18 +63,18 @@
 #error Generic HEAP_NAME undefined.
 #endif
 #if defined(HEAP_TO_STRING_NAME) || defined(HEAP_TO_STRING)
-#define HEAP_TO_STRING_INTERFACE 1
+#define HEAP_TO_STRING_TRAIT 1
 #else
-#define HEAP_TO_STRING_INTERFACE 0
+#define HEAP_TO_STRING_TRAIT 0
 #endif
-#define HEAP_INTERFACES HEAP_TO_STRING_INTERFACE
-#if HEAP_INTERFACES > 1
+#define HEAP_TRAITS HEAP_TO_STRING_TRAIT
+#if HEAP_TRAITS > 1
 #error Only one trait per include is allowed; use HEAP_EXPECT_TRAIT.
 #endif
 #if HEAP_TRAITS != 0 && (!defined(H_) || !defined(CAT) || !defined(CAT_))
 #error H_ or CAT_? not yet defined; use HEAP_EXPECT_TRAIT?
 #endif
-#if (HEAP_INTERFACES == 0) && defined(HEAP_TEST)
+#if (HEAP_TRAITS == 0) && defined(HEAP_TEST)
 #error HEAP_TEST must be defined in HEAP_TO_STRING trait.
 #endif
 #if defined(HEAP_TO_STRING_NAME) && !defined(HEAP_TO_STRING)
@@ -82,7 +82,7 @@
 #endif
 
 
-#if HEAP_INTERFACES == 0 /* <!-- base code */
+#if HEAP_TRAITS == 0 /* <!-- base code */
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -143,11 +143,11 @@ struct H_(heap_node) {
 #endif /* value --> */
 };
 
-/* This relies on `Array.h` which must be in the same directory. */
+/* This relies on `array.h` which must be in the same directory. */
 #define ARRAY_NAME H_(heap_node)
 #define ARRAY_TYPE struct H_(heap_node)
 #define ARRAY_SUBTYPE
-#include "Array.h"
+#include "array.h"
 
 /** Stores the heap as an implicit binary tree in an array. To initialise it to
  an idle state, see <fn:<H>heap>, `HEAP_IDLE`, `{0}` (`C99`), or being `static`.
@@ -407,11 +407,11 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define A_(thing) CAT(H_(heap), thing)
 #endif /* !name --> */
 #define TO_STRING HEAP_TO_STRING
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(HEAP_TEST_BASE) && defined(HEAP_TEST) /* <!-- test */
 #define HEAP_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestHeap.h" /** \include */
+#include "../test/test_heap.h" /** \include */
 #endif /* test --> */
 
 #undef A_
@@ -454,5 +454,5 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #undef ITERATE_NEXT	
 #endif /* !trait --> */
 
-#undef HEAP_TO_STRING_INTERFACE
-#undef HEAP_INTERFACES
+#undef HEAP_TO_STRING_TRAIT
+#undef HEAP_TRAITS

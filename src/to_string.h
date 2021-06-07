@@ -4,7 +4,7 @@
  @subtitle To String Trait
 
  The inclusion must define an iterator, ITERATE, ITERATE_BOX, ITERATE_TYPE,
- ITERATE_BEGIN, and ITERATE_NEXT, and,
+ ITERATE_BEGIN, and ITERATE_NEXT.
 
  @param[A_]
  Function-like define macro accepting one argument and producing a valid name.
@@ -16,8 +16,7 @@
  @param[TO_STRING_LEFT, TO_STRING_RIGHT]
  7-bit characters, defaults to '(' and ')'.
 
- @std C89
- @fixme Traits separate documentation. */
+ @std C89 */
 
 #ifndef TO_STRING_H /* <!-- idempotent: for all in compilation unit. */
 #define TO_STRING_H
@@ -84,16 +83,15 @@ static const char *A_(to_string)(const PA_(box) *const box) {
 	/* Begin iteration. */
 	PA_(begin)(&it, box);
 	*b++ = left;
-	while((x = PA_(next)(&it))) {
+	while(x = PA_(next)(&it)) {
 		PA_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
-		if((size = b - buffer) > to_string_buffer_size
-			- 11 - 1 - ellipsis_len - 1 - 1) {
-			if(PA_(next)(&it)) goto ellipsis; else break;
-		}
+		if((size = b - buffer)
+			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
+			{ if(PA_(next)(&it)) goto ellipsis; else break; }
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;
@@ -104,7 +102,7 @@ ellipsis:
 	*b++ = right;
 terminate:
 	*b++ = '\0';
-	assert((size = b - buffer) <= to_string_buffer_size);
+	assert(b - buffer <= to_string_buffer_size);
 	return buffer;
 }
 

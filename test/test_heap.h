@@ -79,7 +79,7 @@ static void PH_(test_basic)(void *const param) {
 	struct H_(heap) heap = HEAP_IDLE;
 	struct H_(heap_node) *node, add;
 	PH_(pvalue) v, result;
-	PH_(priority) last_priority;
+	PH_(priority) last_priority = 0;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i;
 	char fn[64];
