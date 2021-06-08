@@ -1,4 +1,4 @@
-# Pool\.h #
+# pool\.h #
 
 ## Stable Pool ##
 
@@ -30,7 +30,7 @@
  * Standard:  
    C89
  * See also:  
-   [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
+   [array](https://github.com/neil-edelman/array); [heap](https://github.com/neil-edelman/heap); [list](https://github.com/neil-edelman/list); [orcish](https://github.com/neil-edelman/orcish); [set](https://github.com/neil-edelman/set); [trie](https://github.com/neil-edelman/trie)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
