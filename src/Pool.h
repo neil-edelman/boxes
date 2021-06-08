@@ -40,12 +40,12 @@
  tests for the base code and all later traits.
 
  @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Set](https://github.com/neil-edelman/Set)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
+ @cf [array](https://github.com/neil-edelman/array)
+ @cf [heap](https://github.com/neil-edelman/heap)
+ @cf [list](https://github.com/neil-edelman/list)
+ @cf [orcish](https://github.com/neil-edelman/orcish)
+ @cf [set](https://github.com/neil-edelman/set)
+ @cf [trie](https://github.com/neil-edelman/trie) */
 
 #include <stddef.h> /* offsetof */
 #include <stdlib.h>	/* malloc free */
@@ -408,11 +408,11 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #define A_(thing) CAT(T_(pool), thing)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(POOL_TEST_BASE) && defined(POOL_TEST) /* <!-- test */
 #define POOL_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestPool.h" /** \include */
+#include "../test/test_pool.h" /** \include */
 #endif /* test --> */
 
 #undef A_

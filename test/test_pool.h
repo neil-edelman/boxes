@@ -262,7 +262,7 @@ static void PT_(test_random)(void) {
 			if(is_print) printf("%lu: Created %s.\n", (unsigned long)i, str);
 		} else {
 			struct PT_(block) *block;
-			struct PT_(node) *node, *end;
+			struct PT_(node) *node = 0, *end;
 			size_t idx = rand() / (RAND_MAX + 1.0) * size;
 			assert(a.largest);
 			/* Pick random. */
