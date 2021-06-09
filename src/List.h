@@ -100,7 +100,7 @@ struct N_(list_node);
 struct N_(list_node) { struct N_(list_node) *prev, *next; };
 
 /** Serves as head and tail for linked-list of <tag:<N>list_node>. Use
- <fn:<N>list_clear> to initialise the list. Because this list is closed; that
+ <fn:<N>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
  values are not allowed and it is _not_ the same as `{0}`.
 
