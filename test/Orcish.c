@@ -23,7 +23,8 @@
 #include <stdio.h>  /* strlen */
 #include <ctype.h>  /* toupper */
 #include <string.h> /* memcpy */
-#include "Orcish.h"
+#include <assert.h> /* assert */
+#include "orcish.h"
 
 static const char *syllables[] = {
 	"ub", "ul", "uk", "um", "uu", "oo", "ee", "uuk", "uru", "ick", "gn", "ch",
@@ -63,14 +64,15 @@ static const unsigned max_name_size = 256;
 
 /** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
  then puts a null terminator. Uses `rand` from `stdlib.h`.
- @param[name] If null, does nothing. @param[name_size] If zero, does nothing. */
+ @param[name_size] If zero, does nothing. */
 void Orcish(char *const name, size_t name_size) {
 	char *n = name;
 	const char *part;
 	size_t part_len;
-	if(!name_size || !name) return;
-	if(name_size == 1) { *n = '\0'; return; }
-	if(name_size > max_name_size) name_size = max_name_size;
+	assert(name);
+	if(!name_size) { return; }
+	else if(name_size == 1) { *n = '\0'; return; }
+	else if(name_size > max_name_size) { name_size = max_name_size; }
 	/* Now `name_size \in [2, max_name_size]`. */
 	if(name_size <= syllables_max_length + suffixes_max_length) {
 		part = syllables[rand() / (RAND_MAX / syllables_size + 1)];

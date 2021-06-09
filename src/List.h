@@ -1,7 +1,7 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Closed Total Order Permutation
+ @subtitle Doubly-Linked List
 
  ![Example of a stochastic skip-list.](../web/list.png)
 
@@ -728,11 +728,11 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 #define A_(thing) CAT(N_(list), thing)
 #endif /* !name --> */
 #define TO_STRING LIST_TO_STRING
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(LIST_TEST_BASE) && defined(LIST_TEST) /* <!-- test */
 #define LIST_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestList.h" /** \include */
+#include "../test/test_list.h" /** \include */
 #endif /* test --> */
 
 #undef A_

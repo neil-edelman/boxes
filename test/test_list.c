@@ -1,7 +1,7 @@
 #include <stdlib.h> /* EXIT rand */
 #include <stdio.h>  /* printf */
 #include <string.h> /* strcmp */
-#include "Orcish.h"
+#include "orcish.h"
 
 /* Minimal example. An order with no parent represents a permutation of
  nothing. */
@@ -13,14 +13,14 @@ static void order_fill(struct order_list_node *const l) { (void)(l); }
 
 #define LIST_NAME order
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &order_to_string
 #define LIST_TEST &order_fill
-#include "../src/List.h"
+#include "../src/list.h"
 
 #define POOL_NAME order_node
 #define POOL_TYPE struct order_list_node
-#include "Pool.h"
+#include "pool.h"
 
 static struct order_list_node *order_from_pool(void *const volls) {
 	struct order_node_pool *const olls = volls;
@@ -40,36 +40,36 @@ static int no_compare(const struct no_list_node *, const struct no_list_node *);
 #define LIST_NAME no
 #define LIST_COMPARE &no_compare
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &no_to_string
 #define LIST_TEST &no_fill
-#include "../src/List.h"
+#include "../src/list.h"
 
-struct No { struct no_list_node node; int i; };
+struct no { struct no_list_node node; int i; };
 
 static int no_compare(const struct no_list_node *const all,
 	const struct no_list_node *const bll) {
-	/* Can do this because `node` is the first field in `struct No`. */
-	const struct No *const a = (const struct No *)all,
-		*const b = (const struct No *)bll;
+	/* Can do this because `node` is the first field. */
+	const struct no *const a = (const struct no *)all,
+		*const b = (const struct no *)bll;
 	return (a->i > b->i) - (b->i > a->i);
 }
 static void no_to_string(const struct no_list_node *const noll,
 	char (*const a)[12]) {
-	const struct No *const no = (const struct No *)noll;
+	const struct no *const no = (const struct no *)noll;
 	/*assert(RAND_MAX <= 99999999999l);*/
 	sprintf(*a, "%d", no->i);
 }
 static void no_fill(struct no_list_node *const noll) {
-	struct No *const no = (struct No *)noll;
+	struct no *const no = (struct no *)noll;
 	no->i = rand() / (RAND_MAX / 100000 + 1);
 }
 #define POOL_NAME no
-#define POOL_TYPE struct No
-#include "Pool.h"
+#define POOL_TYPE struct no
+#include "pool.h"
 static struct no_list_node *no_from_pool(void *const vnos) {
 	struct no_pool *const nos = vnos;
-	struct No *no = no_pool_new(nos);
+	struct no *no = no_pool_new(nos);
 	assert(no); if(!no) return 0;
 	return &no->node;
 }
@@ -86,36 +86,36 @@ static int letter_compare(const struct letter_list_node *,
 #define LIST_NAME letter
 #define LIST_COMPARE &letter_compare
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &letter_to_string
 #define LIST_TEST &letter_fill
-#include "../src/List.h"
+#include "../src/list.h"
 
-struct Letter { struct letter_list_node node; char letter; };
+struct letter { struct letter_list_node node; char letter; };
 
 static int letter_compare(const struct letter_list_node *const all,
 	const struct letter_list_node *const bll) {
 	/* Can do this because `node` is the first field in `struct No`. */
-	const struct Letter *const a = (const struct Letter *)all,
-		*const b = (const struct Letter *)bll;
+	const struct letter *const a = (const struct letter *)all,
+		*const b = (const struct letter *)bll;
 	return (a->letter > b->letter) - (b->letter > a->letter);
 }
 static void letter_to_string(const struct letter_list_node *const lll,
 	char (*const a)[12]) {
-	const struct Letter *const l = (const struct Letter *)lll;
+	const struct letter *const l = (const struct letter *)lll;
 	(*a)[0] = l->letter;
 	(*a)[1] = '\0';
 }
 static void letter_fill(struct letter_list_node *const lll) {
-	struct Letter *const l = (struct Letter *)lll;
+	struct letter *const l = (struct letter *)lll;
 	l->letter = rand() / (RAND_MAX / 26 + 1) + 'A';
 }
 #define POOL_NAME letter
-#define POOL_TYPE struct Letter
-#include "Pool.h"
+#define POOL_TYPE struct letter
+#include "pool.h"
 static struct letter_list_node *letter_from_pool(void *const vls) {
 	struct letter_pool *const ls = vls;
-	struct Letter *l = letter_pool_new(ls);
+	struct letter *l = letter_pool_new(ls);
 	assert(l); if(!l) return 0;
 	return &l->node;
 }
@@ -132,10 +132,10 @@ static int name_compare(const struct name_list_node *,
 #define LIST_NAME name
 #define LIST_COMPARE &name_compare
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &name_to_string
 #define LIST_TEST &fill_panda_name
-#include "../src/List.h"
+#include "../src/list.h"
 
 struct where_list_node;
 static void where_to_string(const struct where_list_node *, char (*)[12]);
@@ -146,10 +146,10 @@ static int where_compare(const struct where_list_node *,
 #define LIST_NAME where
 #define LIST_COMPARE &where_compare
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &where_to_string
 #define LIST_TEST &fill_panda_where
-#include "../src/List.h"
+#include "../src/list.h"
 
 struct fero_list_node;
 static void fero_to_string(const struct fero_list_node *, char (*)[12]);
@@ -160,10 +160,10 @@ static int fero_compare(const struct fero_list_node *,
 #define LIST_NAME fero
 #define LIST_COMPARE &fero_compare
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &fero_to_string
 #define LIST_TEST &fill_panda_fero
-#include "../src/List.h"
+#include "../src/list.h"
 
 struct Panda {
 	char name[12];
@@ -245,7 +245,7 @@ static void fill_panda_fero(struct fero_list_node *const fero) {
 }
 #define POOL_NAME panda
 #define POOL_TYPE struct Panda
-#include "Pool.h"
+#include "pool.h"
 static struct name_list_node *panda_name_from_pool(void *const vpool) {
 	struct panda_pool *const pool = vpool;
 	struct Panda *p = panda_pool_new(pool);
@@ -324,10 +324,10 @@ static void fill_l0(struct layer0_list_node *);
 #define LIST_NAME layer0
 #define LIST_COMPARE &l0_compare
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &l0_to_string
 #define LIST_TEST &fill_l0
-#include "../src/List.h"
+#include "../src/list.h"
 
 struct layer1_list_node;
 static int l1_compare(const struct layer1_list_node *,
@@ -337,10 +337,10 @@ static void fill_l1(struct layer1_list_node *);
 #define LIST_NAME layer1
 #define LIST_COMPARE &l1_compare
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &l1_to_string
 #define LIST_TEST &fill_l1
-#include "../src/List.h"
+#include "../src/list.h"
 
 struct layer2_list_node;
 static int l2_compare(const struct layer2_list_node *,
@@ -350,10 +350,10 @@ static void fill_l2(struct layer2_list_node *);
 #define LIST_NAME layer2
 #define LIST_COMPARE &l2_compare
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &l2_to_string
 #define LIST_TEST &fill_l2
-#include "../src/List.h"
+#include "../src/list.h"
 
 struct Skip {
 	struct layer0_list_node l0;
@@ -444,7 +444,7 @@ static void fill_l2(struct layer2_list_node *const l2) {
 
 #define POOL_NAME skip
 #define POOL_TYPE struct Skip
-#include "Pool.h"
+#include "pool.h"
 
 static struct layer0_list_node *l0_from_pool(void *const vpool) {
 	struct skip_pool *const pool = vpool;
@@ -557,32 +557,32 @@ struct id_list_node;
 static void id_to_string(const struct id_list_node *, char (*)[12]);
 #define LIST_NAME id
 #define LIST_EXPECT_TRAIT
-#include "../src/List.h"
+#include "../src/list.h"
 #define LIST_TO_STRING &id_to_string
-#include "../src/List.h"
+#include "../src/list.h"
 
-enum Colour { PINK, RED, BLUE, YELLOW, BEIGE, COLOUR_END };
+enum colour { PINK, RED, BLUE, YELLOW, BEIGE, COLOUR_END };
 static const char *const colours[] = { "pink", "red", "blue","yellow", "beige"};
 enum { BOTTOM, TOP, RIDING_END };
 
 /* Abstract `Animal`. */
-struct AnimalVt;
-struct Animal {
-	const struct AnimalVt *vt;
+struct animal_vt;
+struct animal {
+	const struct animal_vt *vt;
 	struct id_list_node id;
 	char name[16];
-	enum Colour colour;
+	enum colour colour;
 };
-static const size_t animal_name_size = sizeof ((struct Animal *)0)->name;
-static struct Animal *id_upcast(struct id_list_node *const id) {
-	return (struct Animal *)(void *)((char *)id
-		- offsetof(struct Animal, id));
+static const size_t animal_name_size = sizeof ((struct animal *)0)->name;
+static struct animal *id_upcast(struct id_list_node *const id) {
+	return (struct animal *)(void *)((char *)id
+		- offsetof(struct animal, id));
 }
-static const struct Animal *id_upcast_c(const struct id_list_node *const id) {
-	return (const struct Animal *)(const void *)((const char *)id
-		- offsetof(struct Animal, id));
+static const struct animal *id_upcast_c(const struct id_list_node *const id) {
+	return (const struct animal *)(const void *)((const char *)id
+		- offsetof(struct animal, id));
 }
-static void animal_to_string(const struct Animal *const animal,
+static void animal_to_string(const struct animal *const animal,
 	char (*const a)[12]) {
 	strncpy(*a, animal->name, sizeof *a - 1);
 	*a[sizeof *a - 1] = '\0';
@@ -593,74 +593,74 @@ static void id_to_string(const struct id_list_node *const id,
 }
 
 /* `Mount` involves two animals. */
-struct Mount;
-struct MountInfo {
-	struct Mount *steed_of, *riding;
-	enum Allowed { STEED = 1, RIDER = 2 } is_allowed; /* Bit-field. */
+struct mount;
+struct mount_info {
+	struct mount *steed_of, *riding;
+	enum allowed { STEED = 1, RIDER, RIDER_STEED } is_allowed; /* Bit-field. */
 };
-struct Mount {
-	struct Animal *steed, *rider;
+struct mount {
+	struct animal *steed, *rider;
 };
 #define POOL_NAME mount
-#define POOL_TYPE struct Mount
-#include "Pool.h"
+#define POOL_TYPE struct mount
+#include "pool.h"
 
 /* `Sloth` extends `Animal`. */
-struct Sloth {
-	struct Animal animal;
+struct sloth {
+	struct animal animal;
 	unsigned hours_slept;
 };
 #define POOL_NAME sloth
-#define POOL_TYPE struct Sloth
-#include "Pool.h"
+#define POOL_TYPE struct sloth
+#include "pool.h"
 
 /* `Emu` extends `Animal`. */
-struct Emu {
-	struct Animal animal;
+struct emu {
+	struct animal animal;
 	char favourite_letter;
 };
 #define POOL_NAME emu
-#define POOL_TYPE struct Emu
-#include "Pool.h"
+#define POOL_TYPE struct emu
+#include "pool.h"
 
 /* `BadEmu` extends `Emu`. */
-struct BadEmu {
-	struct Emu emu;
-	struct MountInfo mount_info;
+struct bad_emu {
+	struct emu emu;
+	struct mount_info mount_info;
 	char muhaha[12];
 };
 #define POOL_NAME bademu
-#define POOL_TYPE struct BadEmu
-#include "Pool.h"
+#define POOL_TYPE struct bad_emu
+#include "pool.h"
 
 /* `Llama` extends `Animal`. */
 struct Llama {
-	struct Animal animal;
-	struct MountInfo mount_info;
+	struct animal animal;
+	struct mount_info mount_info;
 	unsigned chomps;
 };
 #define POOL_NAME llama
 #define POOL_TYPE struct Llama
-#include "Pool.h"
+#include "pool.h"
 
 /* `Lemur` extends `Animal`. */
 struct Lemur {
-	struct Animal animal;
-	struct MountInfo mount_info;
+	struct animal animal;
+	struct mount_info mount_info;
 };
 #define POOL_NAME lemur
 #define POOL_TYPE struct Lemur
-#include "Pool.h"
+#include "pool.h"
 
 /* `Bear` extends `Animal`. We have always two or less. */
-struct Bear {
-	struct Animal animal;
+struct bear {
+	struct animal animal;
 	int is_active;
-	struct MountInfo mount_info;
+	struct mount_info mount_info;
 };
 
 /* Id list with backing. */
-struct Animals {
+static struct animals {
 	struct id_list list;
 	struct mount_pool mounts;
 	struct sloth_pool sloths;
@@ -668,26 +668,26 @@ struct Animals {
 	struct bademu_pool bad_emus;
 	struct llama_pool llamas;
 	struct lemur_pool lemurs;
-	struct Bear bears[2];
+	struct bear bears[2];
 } animals;
-static const unsigned no_bears = sizeof(((struct Animals *)0)->bears)
-	/ sizeof(*((struct Animals *)0)->bears);
+static const unsigned no_bears = sizeof(((struct animals *)0)->bears)
+	/ sizeof(*((struct animals *)0)->bears);
 
-typedef void (*AnimalAction)(struct Animal *);
-typedef struct MountInfo *(*AnimalMountInfo)(struct Animal *);
+typedef void (*animal_action_fn)(struct animal *);
+typedef struct mount_info *(*animal_mount_info_fn)(struct animal *);
 
-struct AnimalVt {
+struct animal_vt {
 	const char type[16];
-	AnimalAction delete;
-	AnimalAction act/*transmogrify*/;
-	AnimalMountInfo mount_info;
+	animal_action_fn delete;
+	animal_action_fn act/*transmogrify*/;
+	animal_mount_info_fn mount_info;
 };
 
-static void dismount(struct Mount *);
+static void dismount(struct mount *);
 
-/** @implements AnimalAction */
-static void animal_delete(struct Animal *const animal) {
-	struct MountInfo *mount_info;
+/** @implements animal_action */
+static void animal_delete(struct animal *const animal) {
+	struct mount_info *mount_info;
 	if(!animal) return;
 	if((mount_info = animal->vt->mount_info(animal))) {
 		if(mount_info->steed_of) dismount(mount_info->steed_of);
@@ -699,17 +699,17 @@ static void animal_delete(struct Animal *const animal) {
 static void id_delete(struct id_list_node *const id) {
 	animal_delete(id_upcast(id));
 }
-static void sloth_delete(struct Sloth *const sloth) {
+static void sloth_delete(struct sloth *const sloth) {
 	printf("Bye %s.\n", sloth->animal.name);
 	id_list_remove(&sloth->animal.id);
 	sloth_pool_remove(&animals.sloths, sloth);
 }
-static void emu_delete(struct Emu *const emu) {
+static void emu_delete(struct emu *const emu) {
 	printf("Bye %s.\n", emu->animal.name);
 	id_list_remove(&emu->animal.id);
 	emu_pool_remove(&animals.emus, emu);
 }
-static void bad_emu_delete(struct BadEmu *const bad_emu) {
+static void bad_emu_delete(struct bad_emu *const bad_emu) {
 	printf("%s dissapers in a puff of smoke.\n", bad_emu->emu.animal.name);
 	id_list_remove(&bad_emu->emu.animal.id);
 	bademu_pool_remove(&animals.bad_emus, bad_emu);
@@ -724,15 +724,15 @@ static void llama_delete(struct Llama *const llama) {
 	id_list_remove(&llama->animal.id);
 	llama_pool_remove(&animals.llamas, llama);
 }
-static void bear_delete(struct Bear *const bear) {
+static void bear_delete(struct bear *const bear) {
 	if(!bear->is_active) return;
 	printf("Bye %s.\n", bear->animal.name);
 	id_list_remove(&bear->animal.id);
 	bear->is_active = 0;
 }
 
-/** @implements AnimalAction */
-static void animal_act(struct Animal *const animal) {
+/** @implements animal_action */
+static void animal_act(struct animal *const animal) {
 	assert(animal);
 	animal->vt->act(animal);
 }
@@ -740,20 +740,20 @@ static void animal_act(struct Animal *const animal) {
 static void id_act(struct id_list_node *const id) {
 	animal_act(id_upcast(id));
 }
-static void sloth_act(struct Sloth *const sloth) {
+static void sloth_act(struct sloth *const sloth) {
 	printf("%s %s has favourite colour %s and has been sleeping %u hours.\n",
 		sloth->animal.vt->type, sloth->animal.name,
 		colours[sloth->animal.colour], sloth->hours_slept);
 }
-static void emu_act(struct Emu *const emu) {
+static void emu_act(struct emu *const emu) {
 	printf("%s %s has favourite colour %s and favourite letter %c.\n",
 		emu->animal.vt->type, emu->animal.name,
 		colours[emu->animal.colour], emu->favourite_letter);
 }
-static void bad_emu_act(struct BadEmu *const bad_emu) {
+static void bad_emu_act(struct bad_emu *const bad_emu) {
 	char ride[128] = "";
 	if(bad_emu->mount_info.riding) {
-		const struct Animal *const steed = bad_emu->mount_info.riding->steed;
+		const struct animal *const steed = bad_emu->mount_info.riding->steed;
 		assert(steed);
 		sprintf(ride, " They are riding on %s the %s.",
 			steed->name, steed->vt->type);
@@ -766,7 +766,7 @@ static void bad_emu_act(struct BadEmu *const bad_emu) {
 static void lemur_act(struct Lemur *const lemur) {
 	char ride[128] = "";
 	if(lemur->mount_info.riding) {
-		const struct Animal *const steed = lemur->mount_info.riding->steed;
+		const struct animal *const steed = lemur->mount_info.riding->steed;
 		assert(steed);
 		sprintf(ride, " They are riding on %s the %s.",
 			steed->name, steed->vt->type);
@@ -776,7 +776,7 @@ static void lemur_act(struct Lemur *const lemur) {
 static void llama_act(struct Llama *const llama) {
 	char ride[128] = "";
 	if(llama->mount_info.steed_of) {
-		const struct Animal *const rider = llama->mount_info.steed_of->rider;
+		const struct animal *const rider = llama->mount_info.steed_of->rider;
 		assert(rider);
 		sprintf(ride, " They are the noble steed of %s the %s.",
 			rider->name, rider->vt->type);
@@ -784,16 +784,16 @@ static void llama_act(struct Llama *const llama) {
 	printf("%s %s has chomped %u fingers today.%s\n",
 		llama->animal.vt->type, llama->animal.name, llama->chomps, ride);
 }
-static void bear_act(struct Bear *const bear) {
+static void bear_act(struct bear *const bear) {
 	char ride[128] = " chilling";
 	if(bear->mount_info.riding) {
-		const struct Animal *const steed = bear->mount_info.riding->steed;
+		const struct animal *const steed = bear->mount_info.riding->steed;
 		assert(steed);
 		sprintf(ride + strlen(ride), " riding on %s the %s",
 			steed->name, steed->vt->type);
 	}
 	if(bear->mount_info.steed_of) {
-		const struct Animal *const rider = bear->mount_info.steed_of->rider;
+		const struct animal *const rider = bear->mount_info.steed_of->rider;
 		assert(rider);
 		sprintf(ride + strlen(ride), " being ridden by %s the %s",
 			rider->name, rider->vt->type);
@@ -801,71 +801,72 @@ static void bear_act(struct Bear *const bear) {
 	printf("%s %s is%s.\n", bear->animal.vt->type, bear->animal.name, ride);
 }
 
-/** @implements AnimalMountInfo */
-static struct MountInfo *animal_mount_info(struct Animal *const animal) {
+/** @implements animal_mount_info */
+static struct mount_info *animal_mount_info(struct animal *const animal) {
 	assert(animal);
 	return animal->vt->mount_info(animal);
 }
-static struct MountInfo *no_mount_info(struct Animal *const animal) {
+static struct mount_info *no_mount_info(struct animal *const animal) {
 	(void)animal;
 	return 0;
 }
-static struct MountInfo *bad_emu_mount_info(struct BadEmu *const bad_emu) {
+static struct mount_info *bad_emu_mount_info(struct bad_emu *const bad_emu) {
 	return &bad_emu->mount_info;
 }
-static struct MountInfo *lemur_mount_info(struct Lemur *const lemur) {
+static struct mount_info *lemur_mount_info(struct Lemur *const lemur) {
 	return &lemur->mount_info;
 }
-static struct MountInfo *llama_mount_info(struct Llama *const llama) {
+static struct mount_info *llama_mount_info(struct Llama *const llama) {
 	return &llama->mount_info;
 }
-static struct MountInfo *bear_mount_info(struct Bear *const bear) {
+static struct mount_info *bear_mount_info(struct bear *const bear) {
 	return &bear->mount_info;
 }
 
-/* Static data containing the functions defined above. Because `struct Animal`
+/* Static data containing the functions defined above. Because `struct animal`
  is always the first item in every animal, we can cast them. This is not really
  a good design choice, in hindsight, (should have accepted all `Animal` and
- upcast.) */
-static struct AnimalVt sloth_vt = {
+ upcast.)
+ fixme: this is technically UB, and doesn't have to be. Fix. */
+static struct animal_vt sloth_vt = {
 	"Sloth",
-	(AnimalAction)&sloth_delete,
-	(AnimalAction)&sloth_act,
+	(animal_action_fn)&sloth_delete,
+	(animal_action_fn)&sloth_act,
 	&no_mount_info
 };
-static struct AnimalVt emu_vt = {
+static struct animal_vt emu_vt = {
 	"Emu",
-	(AnimalAction)&emu_delete,
-	(AnimalAction)&emu_act,
+	(animal_action_fn)&emu_delete,
+	(animal_action_fn)&emu_act,
 	&no_mount_info
 };
-static struct AnimalVt bad_emu_vt = {
+static struct animal_vt bad_emu_vt = {
 	"Emu",
-	(AnimalAction)&bad_emu_delete,
-	(AnimalAction)&bad_emu_act,
-	(AnimalMountInfo)&bad_emu_mount_info
+	(animal_action_fn)&bad_emu_delete,
+	(animal_action_fn)&bad_emu_act,
+	(animal_mount_info_fn)&bad_emu_mount_info
 };
-static struct AnimalVt lemur_vt = {
+static struct animal_vt lemur_vt = {
 	"Lemur",
-	(AnimalAction)&lemur_delete,
-	(AnimalAction)&lemur_act,
-	(AnimalMountInfo)&lemur_mount_info
+	(animal_action_fn)&lemur_delete,
+	(animal_action_fn)&lemur_act,
+	(animal_mount_info_fn)&lemur_mount_info
 };
-static struct AnimalVt llama_vt = {
+static struct animal_vt llama_vt = {
 	"Llama",
-	(AnimalAction)&llama_delete,
-	(AnimalAction)&llama_act,
-	(AnimalMountInfo)&llama_mount_info
+	(animal_action_fn)&llama_delete,
+	(animal_action_fn)&llama_act,
+	(animal_mount_info_fn)&llama_mount_info
 };
-static struct AnimalVt bear_vt = {
+static struct animal_vt bear_vt = {
 	"Bear",
-	(AnimalAction)&bear_delete,
-	(AnimalAction)&bear_act,
-	(AnimalMountInfo)&bear_mount_info
+	(animal_action_fn)&bear_delete,
+	(animal_action_fn)&bear_act,
+	(animal_mount_info_fn)&bear_mount_info
 };
 
 /** Helper for delete. */
-static void dismount(struct Mount *const mount) {
+static void dismount(struct mount *const mount) {
 	assert(mount && mount->steed && mount->rider);
 	printf("%s the %s dismounts %s the %s.\n", mount->rider->name,
 		mount->rider->vt->type, mount->steed->name, mount->steed->vt->type);
@@ -875,15 +876,15 @@ static void dismount(struct Mount *const mount) {
 }
 
 /** Only called from constructors of children. */
-static void animal_filler(struct Animal *const animal,
-	const struct AnimalVt *const vt) {
+static void animal_filler(struct animal *const animal,
+	const struct animal_vt *const vt) {
 	assert(animal && vt);
 	animal->vt     = vt;
-	animal->colour = (enum Colour)(rand() / (RAND_MAX / COLOUR_END + 1));
+	animal->colour = (enum colour)(rand() / (RAND_MAX / COLOUR_END + 1));
 	Orcish(animal->name, sizeof animal->name);
 }
-static void mount_info_filler(struct MountInfo *const this,
-	struct Animal *const animal, const enum Allowed is_allowed) {
+static void mount_info_filler(struct mount_info *const this,
+	struct animal *const animal, const enum allowed is_allowed) {
 	assert(this && animal && animal->vt->mount_info(animal) == this);
 	this->steed_of = this->riding = 0;
 	this->is_allowed = is_allowed;
@@ -900,7 +901,7 @@ static void Animals_(void) {
 }
 /** Constructor for all. */
 static void Animals(void) {
-	struct Bear *bear, *end;
+	struct bear *bear, *end;
 	id_list_clear(&animals.list);
 	/*assert() PoolIsIdle? */
 	sloth_pool(&animals.sloths);
@@ -912,8 +913,8 @@ static void Animals(void) {
 		bear->is_active = 0;
 }
 /** Random constructor for a `Sloth`. */
-static struct Sloth *sloth(void) {
-	struct Sloth *s;
+static struct sloth *sloth(void) {
+	struct sloth *s;
 	if(!(s = sloth_pool_new(&animals.sloths))) return 0;
 	animal_filler(&s->animal, &sloth_vt);
 	s->hours_slept = rand() / (RAND_MAX / 10 + 1) + 5;
@@ -921,8 +922,8 @@ static struct Sloth *sloth(void) {
 	return s;
 }
 /** Random constructor for an `Emu`. */
-static struct Emu *emu(void) {
-	struct Emu *e;
+static struct emu *emu(void) {
+	struct emu *e;
 	if(!(e = emu_pool_new(&animals.emus))) return 0;
 	animal_filler(&e->animal, &emu_vt);
 	e->favourite_letter = 'a' + rand() / (RAND_MAX / 26 + 1);
@@ -930,8 +931,8 @@ static struct Emu *emu(void) {
 	return e;
 }
 /** Random constructor for a `BadEmu`. */
-static struct BadEmu *bad_emu(void) {
-	struct BadEmu *e;
+static struct bad_emu *bad_emu(void) {
+	struct bad_emu *e;
 	if(!(e = bademu_pool_new(&animals.bad_emus))) return 0;
 	animal_filler(&e->emu.animal, &bad_emu_vt);
 	e->emu.favourite_letter = 'a' + rand() / (RAND_MAX / 26 + 1);
@@ -962,8 +963,8 @@ static struct Lemur *lemur(void) {
 /** Constructor for a `Bear`.
  @param[no] Has to be `[0, 1]`. You can not overwrite without deleting it first.
  @param[name] Bears have non-random names. */
-static struct Bear *bear(const unsigned no, const char *const name) {
-	struct Bear *b;
+static struct bear *bear(const unsigned no, const char *const name) {
+	struct bear *b;
 	assert(name && no < no_bears);
 	if(no >= no_bears) return 0;
 	b = animals.bears + no;
@@ -980,13 +981,13 @@ static struct Bear *bear(const unsigned no, const char *const name) {
 /** Cause `a` to try to ride `b`. If `a` or `b` is null, causes that connection
  to be broken.
  @return Success. */
-static int ride(struct Animal *const a, struct Animal *const b) {
-	struct Animal *erase, *steed = 0, *rider = 0;
-	struct Mount *mount;
+static int ride(struct animal *const a, struct animal *const b) {
+	struct animal *erase, *steed = 0, *rider = 0;
+	struct mount *mount;
 	if((!a && !b) || a == b) return 0;
 	erase = a ? b ? 0 : a : b;
 	if(erase) {
-		const struct MountInfo *const mi = erase->vt->mount_info(erase);
+		const struct mount_info *const mi = erase->vt->mount_info(erase);
 		if(!mi) return fprintf(stderr, "Animal %s the %s does not have mount "
 			"information.\n", erase->name, erase->vt->type), 0;
 		if(mi->riding)   dismount(mi->riding);
@@ -994,7 +995,7 @@ static int ride(struct Animal *const a, struct Animal *const b) {
 		assert(!mi->steed_of && !mi->riding);
 		return 1;
 	} else {
-		struct MountInfo *const ami = a->vt->mount_info(a),
+		struct mount_info *const ami = a->vt->mount_info(a),
 		*const bmi = b->vt->mount_info(b);
 		if(!ami || !bmi) {
 		} else if((ami->is_allowed & RIDER) && !ami->riding
@@ -1040,7 +1041,7 @@ static int animals_everywhere(void) {
 	Animals();
 	do {
 		struct id_list_node *id = 0, *prev_id = 0;
-		struct Bear *w, *n;
+		struct bear *w, *n;
 		const unsigned animal_no = 10000/*00*/;
 		unsigned i;
 		n = bear(1, "Napoleon");
@@ -1050,9 +1051,9 @@ static int animals_everywhere(void) {
 				if(!sloth()) break;
 			} else if(r < 0.45f) {
 				if(!emu()) break;
-			} else if(r < 0.55) {
+			} else if(r < 0.55f) {
 				if(!bad_emu()) break;
-			} else if(r < 0.8) {
+			} else if(r < 0.8f) {
 				if(!llama()) break;
 			} else {
 				if(!lemur()) break;

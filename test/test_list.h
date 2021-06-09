@@ -48,7 +48,8 @@ static void PN_(subgraph)(const struct N_(list) *const list, FILE *const fp,
 		"\t\tstyle=filled;\n"
 		"\t\tfillcolor=lightgray;\n"
 		"\t\tlabel=\"\\<" QUOTE(LIST_NAME) "\\>list\";\n",
-		colour, (const char *)&list - offset, (const char *)&list - offset);
+		colour, (const void *)((const char *)&list - offset),
+		(const void *)((const char *)&list - offset));
 	fprintf(fp,
 		"\t\tp%p [label=\"head\", shape=ellipse];\n"
 		"\t\tp%p [label=\"tail\", shape=ellipse];\n"
@@ -300,7 +301,7 @@ static void PN_(test_binary)(struct N_(list_node) *(*const parent_new)(void *),
 	void *const parent) {
 #ifdef LIST_COMPARE /* <!-- comp */
 	struct N_(list) la, lb, result;
-	struct N_(list_node) *link, *a, *b, *b_alt, *c, *d;
+	struct N_(list_node) *link, *a = 0, *b = 0, *b_alt = 0, *c = 0, *d = 0;
 	int cmp;
 	/* Test nulls, (Not comprehensive.) */
 	N_(list_clear)(&la);
