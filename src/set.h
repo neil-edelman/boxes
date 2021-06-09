@@ -54,25 +54,25 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[SET_TO_STRING]
- To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
+ To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `SET_TO_STRING_NAME`.
 
  @param[SET_TEST]
- To string trait contained in <../test/SetTest.h>; optional unit testing
+ To string trait contained in <../test/set_test.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ set. Must be defined
  equal to a (random) filler function, satisfying <typedef:<PE>action_fn>.
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
  @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
+ @cf [array](https://github.com/neil-edelman/array)
+ @cf [heap](https://github.com/neil-edelman/heap)
+ @cf [list](https://github.com/neil-edelman/list)
+ @cf [orcish](https://github.com/neil-edelman/orcish)
+ @cf [pool](https://github.com/neil-edelman/pool)
+ @cf [trie](https://github.com/neil-edelman/trie) */
 
 #include <stdlib.h> /* realloc free */
 #include <assert.h>	/* assert */
