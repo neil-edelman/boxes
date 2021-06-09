@@ -36,13 +36,13 @@ Internally, it is a separately chained hash table with a maximum load factor of 
  * Parameter: SET\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: SET\_TO\_STRING  
-   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `SET_TO_STRING_NAME`\.
+   To string trait contained in [to\_string\.h](to_string.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `SET_TO_STRING_NAME`\.
  * Parameter: SET\_TEST  
-   To string trait contained in [\.\./test/SetTest\.h](../test/SetTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ set\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PE&gt;action_fn](#user-content-typedef-50206e09)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [\.\./test/set\_test\.h](../test/set_test.h); optional unit testing framework using `assert`\. Can only be defined once _per_ set\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PE&gt;action_fn](#user-content-typedef-50206e09)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * See also:  
-   [Array](https://github.com/neil-edelman/Array); [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Trie](https://github.com/neil-edelman/Trie)
+   [array](https://github.com/neil-edelman/array); [heap](https://github.com/neil-edelman/heap); [list](https://github.com/neil-edelman/list); [orcish](https://github.com/neil-edelman/orcish); [pool](https://github.com/neil-edelman/pool); [trie](https://github.com/neil-edelman/trie)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
