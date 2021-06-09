@@ -27,13 +27,13 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
+ To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`.
 
  @param[POOL_TEST]
- To string trait contained in <../test/PoolTest.h>; optional unit testing
+ To string trait contained in <../test/pool_test.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ pool. Must be defined
  equal to a (random) filler function, satisfying <typedef:<PT>action_fn>.
  Output will be shown with the to string trait in which it's defined; provides
