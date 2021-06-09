@@ -1,4 +1,4 @@
-# Set\.h #
+# set\.h #
 
 ## Hash Set ##
 
