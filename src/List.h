@@ -30,25 +30,25 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
- To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
+ To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `LIST_TO_STRING_NAME`.
 
  @param[LIST_TEST]
- To string trait contained in <../test/TestList.h>; optional unit testing
+ To string trait contained in <../test/test_list.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ `Array`. Must be
  defined equal to a (random) filler function, satisfying
  <typedef:<PN>action_fn>. Output will be shown with the to string trait in
  which it's defined; provides tests for the base code and all later traits.
 
  @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
+ @cf [array](https://github.com/neil-edelman/array)
+ @cf [heap](https://github.com/neil-edelman/heap)
+ @cf [orcish](https://github.com/neil-edelman/orcish)
+ @cf [pool](https://github.com/neil-edelman/pool)
+ @cf [set](https://github.com/neil-edelman/set)
+ @cf [trie](https://github.com/neil-edelman/trie) */
 
 #include <assert.h>
 
