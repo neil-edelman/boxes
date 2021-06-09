@@ -193,10 +193,11 @@ static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 	return 1;
 }
 
-/** The capacity of `a` will be increased to at least `buffer` elements.
- Invalidates pointers in `a`. @return The start of the buffered space, (the
- back of the array.) If `a` is idle and `buffer` is zero, a null pointer is
- returned, otherwise null indicates an error. @throws[realloc, ERANGE] @allow */
+/** The capacity of `a` will be increased to at least `buffer` elements beyond
+ the size. Invalidates pointers in `a`.
+ @return The start of the buffered space, (the back of the array.) If `a` is
+ idle and `buffer` is zero, a null pointer is returned, otherwise null
+ indicates an error. @throws[realloc, ERANGE] @allow */
 static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
 	const size_t buffer) {
 	assert(a);
