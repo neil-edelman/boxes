@@ -330,6 +330,9 @@ static void PN_(test_binary)(struct N_(list_node) *(*const parent_new)(void *),
 			N_(list_push)(&x, link);
 			N_(list_sort)(&x);
 			N_(list_duplicates_to)(&x, &y);
+			/* fixme: list_duplicates_to is suspect? it keeps giving wrong. */
+			printf("x = %s, y = %s\n", N_(list_to_string)(&x), N_(list_to_string)(&y));
+			/* Honestly, what am I doing? */
 			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
 			if(!(a = N_(list_first)(&x))) continue;
 			if(!(b = N_(list_first)(&y))) continue;
