@@ -485,11 +485,11 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 #define TO_STRING SET_TO_STRING
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(SET_TEST_BASE) && defined(SET_TEST) /* <!-- test */
 #define SET_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestSet.h" /** \include */
+#include "../test/test_set.h" /** \include */
 #endif /* test --> */
 
 #undef A_

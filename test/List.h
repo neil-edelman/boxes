@@ -1,14 +1,17 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Closed Total Order Permutation
+ @subtitle Doubly-Linked List
 
  ![Example of a stochastic skip-list.](../web/list.png)
 
- <tag:<N>list> is a doubly-linked list of <tag:<N>list_node> with sentinels
- residing in `<N>list`. The sentinels are an added complexity at either end,
- but enable a closed structure. It only provides an order, and is not very
- useful without enclosing `<N>list_node` in another 'struct`.
+ In parlance of <Thareja 2014, Data Structures>, <tag:<N>list> is a circular
+ header doubly-linked list of <tag:<N>list_node>. The header, or sentinel,
+ resides in `<N>list`. This is a closed structure, such that with with a
+ pointer to any element, it is possible to extract the entire list in
+ \O(`size`). It only provides an order, and is not very useful without
+ enclosing `<N>list_node` in another `struct`; this is useful for multi-linked
+ elements.
 
  `<N>list` is not synchronised. Errors are returned with `errno`. The
  parameters are preprocessor macros, and are all undefined at the end of the
@@ -20,31 +23,32 @@
  private, whose names are prefixed in a manner to avoid collisions.
 
  @param[LIST_COMPARE]
- Optional total-order function satisfying <typedef:<PN>Compare>.
+ Optional total-order function satisfying <typedef:<PN>compare_fn>.
  (fixme: move to trait.)
 
  @param[LIST_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
- To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing `<PN>to_string_fn>. There
- can be multiple to string traits, but only one can omit `LIST_TO_STRING_NAME`.
+ To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ There can be multiple to string traits, but only one can omit
+ `LIST_TO_STRING_NAME`.
 
  @param[LIST_TEST]
- To string trait contained in <../test/TestList.h>; optional unit testing
+ To string trait contained in <../test/test_list.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ `Array`. Must be
  defined equal to a (random) filler function, satisfying
  <typedef:<PN>action_fn>. Output will be shown with the to string trait in
  which it's defined; provides tests for the base code and all later traits.
 
  @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
+ @cf [array](https://github.com/neil-edelman/array)
+ @cf [heap](https://github.com/neil-edelman/heap)
+ @cf [orcish](https://github.com/neil-edelman/orcish)
+ @cf [pool](https://github.com/neil-edelman/pool)
+ @cf [set](https://github.com/neil-edelman/set)
+ @cf [trie](https://github.com/neil-edelman/trie) */
 
 #include <assert.h>
 
@@ -96,7 +100,7 @@ struct N_(list_node);
 struct N_(list_node) { struct N_(list_node) *prev, *next; };
 
 /** Serves as head and tail for linked-list of <tag:<N>list_node>. Use
- <fn:<N>list_clear> to initialise the list. Because this list is closed; that
+ <fn:<N>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
  values are not allowed and it is _not_ the same as `{0}`.
 
@@ -724,11 +728,11 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 #define A_(thing) CAT(N_(list), thing)
 #endif /* !name --> */
 #define TO_STRING LIST_TO_STRING
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(LIST_TEST_BASE) && defined(LIST_TEST) /* <!-- test */
 #define LIST_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestList.h" /** \include */
+#include "../test/test_list.h" /** \include */
 #endif /* test --> */
 
 #undef A_

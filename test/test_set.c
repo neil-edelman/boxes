@@ -11,7 +11,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h> /* strncpy */
-#include "Orcish.h"
+#include "orcish.h"
 
 
 /** Perform a 32 bit
@@ -54,10 +54,10 @@ static void int_fill(unsigned *const x)
 #define SET_HASH &int_hash
 #define SET_IS_EQUAL &int_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/Set.h"
+#include "../src/set.h"
 #define SET_TO_STRING &int_to_string
 #define SET_TEST &int_fill
-#include "../src/Set.h"
+#include "../src/set.h"
 
 
 /* Used to test `SET_UINT`; normally `unsigned int`, here `unsigned char`.
@@ -73,10 +73,10 @@ static unsigned char byteint_hash(unsigned x) { return x; }
 #define SET_HASH &byteint_hash
 #define SET_IS_EQUAL &int_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/Set.h"
+#include "../src/set.h"
 #define SET_TO_STRING &int_to_string
 #define SET_TEST &int_fill
-#include "../src/Set.h"
+#include "../src/set.h"
 
 
 /* String set. */
@@ -96,30 +96,30 @@ static void string_fill(const char **);
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/Set.h"
+#include "../src/set.h"
 #define SET_TO_STRING &pstring_to_string
 #define SET_TEST &string_fill
-#include "../src/Set.h"
+#include "../src/set.h"
 
 /** Backing: we have to somewhere to store the strings. */
-struct Str12 {
+struct str12 {
 	struct string_set_node elem;
 	char str[12];
 };
-static void str12_fill(struct Str12 *const s12) {
+static void str12_fill(struct str12 *const s12) {
 	s12->elem.key = s12->str;
-	Orcish(s12->str, sizeof s12->str);
+	orcish(s12->str, sizeof s12->str);
 }
 static void string_fill(const char **const ps) {
 	/* Upcasts: const char * -> struct StringSetElement -> struct Str12. */
-	str12_fill((struct Str12 *)ps);
+	str12_fill((struct str12 *)ps);
 }
 #define POOL_NAME string
-#define POOL_TYPE struct Str12
-#include "Pool.h"
+#define POOL_TYPE struct str12
+#include "pool.h"
 static struct string_set_node *string_from_pool(void *const vsp) {
 	struct string_pool *const sp = vsp;
-	struct Str12 *const s = string_pool_new(sp);
+	struct str12 *const s = string_pool_new(sp);
 	assert(sp);
 	return s ? &s->elem : 0;
 }
@@ -127,32 +127,32 @@ static struct string_set_node *string_from_pool(void *const vsp) {
 
 /* Vector; test of `SET_POINTER`. */
 
-struct Vec4 {
+struct vec4 {
 	char a[2];
 	int n[2];
 };
 /* If we cheat a little, knowing that the numbers are 0-9, we can get a much
  more evenly distributed hash value. */
-static unsigned vec4_hash(const struct Vec4 *const v4) {
+static unsigned vec4_hash(const struct vec4 *const v4) {
 	return 1 * v4->n[0] + 10 * v4->n[1]
 		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a');
 }
-static int vec4_is_equal(const struct Vec4 *a, const struct Vec4 *const b) {
+static int vec4_is_equal(const struct vec4 *a, const struct vec4 *const b) {
 	return a->a[0] == b->a[0] && a->a[1] == b->a[1]
 		&& a->n[0] == b->n[0] && a->n[1] == b->n[1];
 }
-static void vec4_to_string(const struct Vec4 *const v4, char (*const a)[12]) {
+static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12]) {
 	sprintf(*a, "(%c,%c,%d,%d)",
 		v4->a[0], v4->a[1], v4->n[0] % 100, v4->n[1] % 100);
 }
-static void vec4_filler(struct Vec4 *const v4) {
+static void vec4_filler(struct vec4 *const v4) {
 	v4->a[0] = rand() / (RAND_MAX / 26 + 1) + 'A';
 	v4->a[1] = rand() / (RAND_MAX / 26 + 1) + 'a';
 	v4->n[0] = rand() / (RAND_MAX / 9 + 1);
 	v4->n[1] = rand() / (RAND_MAX / 9 + 1);
 }
 #define SET_NAME vec4
-#define SET_TYPE struct Vec4
+#define SET_TYPE struct vec4
 /* <fn:vec4_hash> and <fn:vec4_is_equal> have an extra level of indirection.
  This means that we also have to get an object and fill it to use
  <fn:<E>SetGet>; not very convenient. */
@@ -160,10 +160,10 @@ static void vec4_filler(struct Vec4 *const v4) {
 #define SET_HASH &vec4_hash
 #define SET_IS_EQUAL &vec4_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/Set.h"
+#include "../src/set.h"
 #define SET_TO_STRING &vec4_to_string
 #define SET_TEST &vec4_filler
-#include "../src/Set.h"
+#include "../src/set.h"
 
 
 /* I wrote Set to solve
@@ -183,29 +183,28 @@ static void fill_boat_id(int *const id);
 #define SET_HASH &boat_id_hash
 #define SET_IS_EQUAL &boat_id_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/Set.h"
+#include "../src/set.h"
 #define SET_TO_STRING &boat_id_to_string
 #define SET_TEST &fill_boat_id
-#include "../src/Set.h"
-/* Here is where we store `IdSetElement`. */
-struct Boat {
+#include "../src/set.h"
+struct boat {
 	struct id_set_node id;
 	int best_time;
 	int points;
 };
 /* Container of `id`. */
-static struct Boat *id_upcast(int *const id) {
+static struct boat *id_upcast(int *const id) {
 	/* The `offsetof` are both (now) zero, see <tag:Boat>, so this could be
 	 written more succinctly. */
-	return (struct Boat *)(void *)((char *)id - offsetof(struct Boat, id)
+	return (struct boat *)(void *)((char *)id - offsetof(struct boat, id)
 		- offsetof(struct id_set_node, key));
 }
 /* `const` container of `id`. */
-static const struct Boat *id_upcast_c(const int *const id) {
+static const struct boat *id_upcast_c(const int *const id) {
 	/* As this: (or cast) */
-	return (const struct Boat *)(const void *)((const char *)id);
+	return (const struct boat *)(const void *)((const char *)id);
 }
-static void boat_to_string(const struct Boat *const b, char (*const a)[12]) {
+static void boat_to_string(const struct boat *const b, char (*const a)[12]) {
 	/* Should be more careful about overflow? */
 	sprintf(*a, "#%d(%d)", b->id.key, b->points);
 }
@@ -215,7 +214,7 @@ static void boat_id_to_string(const int *const id, char (*const a)[12]) {
 /** <http://c-faq.com/lib/randrange.html>. Pigeon-hole principle ensures
  collisions > 89; this is good because we want `b` to be involved in several
  races. */
-static void fill_boat(struct Boat *const b) {
+static void fill_boat(struct boat *const b) {
 	assert(b);
 	b->id.key = rand() / (RAND_MAX / 89 + 1) + 10;
     b->best_time = rand() / (RAND_MAX / 100 + 1) + 50;
@@ -223,7 +222,7 @@ static void fill_boat(struct Boat *const b) {
 }
 static void fill_boat_id(int *const id) { fill_boat(id_upcast(id)); }
 /* Individual races. */
-static void print_boats(const struct Boat *const bs, const size_t bs_size) {
+static void print_boats(const struct boat *const bs, const size_t bs_size) {
 	const size_t bs_eff_size = bs_size > 1000 ? 1000 : bs_size;
 	char a[12];
 	size_t b;
@@ -234,9 +233,9 @@ static void print_boats(const struct Boat *const bs, const size_t bs_size) {
 		printf("%s%s", b ? ", " : "", a);
 	printf("%s]\n", bs_size > bs_eff_size ? ",…" : " ");
 }
-/** @implements <Id>BiPredicate */
+/** @implements <id>bi_predicate */
 static int add_up_score(int *const original, int *const replace) {
-	struct Boat *const o = id_upcast(original), *const r = id_upcast(replace);
+	struct boat *const o = id_upcast(original), *const r = id_upcast(replace);
 	char a[12];
 	boat_to_string(o, &a);
 	/*printf("Adding %d to %s.\n", r->points, a); Takes too long to print. */
@@ -245,33 +244,33 @@ static int add_up_score(int *const original, int *const replace) {
 	if(r->best_time < o->best_time) o->best_time = r->best_time;
 	return 0; /* Always false because we've sucked the points from `replace`. */
 }
-static void put_in_set(struct id_set *const set, struct Boat *const b) {
+static void put_in_set(struct id_set *const set, struct boat *const b) {
 	/* Should always reserve memory first if we may be expanding the buffer for
 	 error detection; otherwise it's awkward to tell. */
 	if(!id_set_reserve(set, 1)) { perror("put_in_set"); return; }
 	id_set_policy_put(set, &b->id, &add_up_score);
 }
-static void each_boat(struct Boat *const bs, const size_t bs_size,
-	void (*const action)(struct Boat *)) {
+static void each_boat(struct boat *const bs, const size_t bs_size,
+	void (*const action)(struct boat *)) {
 	size_t b;
 	assert(bs);
 	for(b = 0; b < bs_size; b++) action(bs + b);
 }
-static void each_set_boat(struct id_set *const ids, struct Boat *const bs,
+static void each_set_boat(struct id_set *const ids, struct boat *const bs,
 	const size_t bs_size,
-	void (*const action)(struct id_set *const, struct Boat *)) {
+	void (*const action)(struct id_set *const, struct boat *)) {
 	size_t b;
 	assert(bs);
 	for(b = 0; b < bs_size; b++) action(ids, bs + b);
 }
 /* Dynamic memory pool for storing boats, `boat_pool`. */
 #define POOL_NAME boat
-#define POOL_TYPE struct Boat
-#include "Pool.h"
+#define POOL_TYPE struct boat
+#include "pool.h"
 /** Parent-type for testing. */
 static struct id_set_node *id_from_pool(void *const vboats) {
 	struct boat_pool *const boats = vboats;
-	struct Boat *b = boat_pool_new(boats);
+	struct boat *b = boat_pool_new(boats);
 	assert(boats);
 	return b ? &b->id : 0;
 }
@@ -291,18 +290,18 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &key_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/Set.h"
+#include "../src/set.h"
 #define SET_TO_STRING &key_to_string
-#include "../src/Set.h"
+#include "../src/set.h"
 
 struct key_list_node;
 static int key_compare(const struct key_list_node *,
 	const struct key_list_node *);
 #define LIST_NAME key
 #define LIST_COMPARE &key_compare
-#include "List.h"
+#include "list.h"
 
-struct Entry {
+struct dict_entry {
 	struct key_set_node elem;
 	struct key_list_node node;
 	char key[24];
@@ -310,39 +309,40 @@ struct Entry {
 };
 
 /* Container of `elem`. */
-static struct Entry *elem_upcast(struct key_set_node *const elem) {
-	return (struct Entry *)(void *)((char *)elem
-		- offsetof(struct Entry, elem));
+static struct dict_entry *elem_upcast(struct key_set_node *const elem) {
+	return (struct dict_entry *)(void *)((char *)elem
+		- offsetof(struct dict_entry, elem));
 }
 /* `const` container of `node`. */
-static const struct Entry *node_upcast_c(const struct key_list_node *const node)
-	{ return (const struct Entry *)(const void *)((const char *)node
-	- offsetof(struct Entry, node)); }
-/** @implements <KeyListNode>compare */
+static const struct dict_entry
+	*node_upcast_c(const struct key_list_node *const node)
+	{ return (const struct dict_entry *)(const void *)((const char *)node
+	- offsetof(struct dict_entry, node)); }
+/** @implements <key_list_node>compare */
 static int key_compare(const struct key_list_node *const a,
 	const struct key_list_node *const b) {
 	return strcmp(node_upcast_c(a)->elem.key, node_upcast_c(b)->elem.key);
 }
-static void entry_fill(struct Entry *const e) {
+static void entry_fill(struct dict_entry *const e) {
 	assert(e);
 	e->elem.key = e->key;
-	Orcish(e->key, sizeof e->key);
-	Orcish(e->value, sizeof e->value);
+	orcish(e->key, sizeof e->key);
+	orcish(e->value, sizeof e->value);
 }
-static const struct Entry *entry_prev(struct Entry *const e) {
+static const struct dict_entry *entry_prev(struct dict_entry *const e) {
 	const struct key_list_node *const prev = key_list_previous(&e->node);
 	assert(e);
 	return prev ? node_upcast_c(prev) : 0;
 }
-static const struct Entry *entry_next(struct Entry *const e) {
+static const struct dict_entry *entry_next(struct dict_entry *const e) {
 	const struct key_list_node *const next = key_list_next(&e->node);
 	assert(e);
 	return next ? node_upcast_c(next) : 0;
 }
 
 #define POOL_NAME entry
-#define POOL_TYPE struct Entry
-#include "Pool.h"
+#define POOL_TYPE struct dict_entry
+#include "pool.h"
 
 
 int main(void) {
@@ -358,7 +358,7 @@ int main(void) {
 		id_set_test(&id_from_pool, &boats), boat_pool_(&boats);
 	}
 	{ /* Boats. */
-		struct Boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
+		struct boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
 		size_t bs_size = sizeof bs / sizeof *bs;
 		struct id_set ids = SET_IDLE;
 		each_boat(bs, bs_size, &fill_boat);
@@ -372,12 +372,12 @@ int main(void) {
 	{ /* Linked dictionary. */
 		struct entry_pool entries = POOL_IDLE;
 		const size_t limit = (size_t)500000/*0<-This takes a while to set up.*/;
-		struct Entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
+		struct dict_entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
 		struct key_set kset = SET_IDLE;
 		struct key_list klist;
 		struct key_set_node *elem;
-		struct Entry *found;
+		struct dict_entry *found;
 		size_t line, unique = 0;
 		int is_used = 1;
 		key_list_clear(&klist);
@@ -403,7 +403,7 @@ int main(void) {
 		printf("Sorting %lu elements.\n", (unsigned long)unique);
 		key_list_sort(&klist);
 		for(sp_e = sp_es; sp_e < sp_e_end; sp_e++) {
-			const struct Entry *prev, *next;
+			const struct dict_entry *prev, *next;
 			elem = key_set_get(&kset, (*sp_e)->key);
 			assert(elem);
 			found = elem_upcast(elem);
@@ -421,13 +421,13 @@ int main(void) {
 		const char *const english = "test/Tutte_le_parole_inglesi.txt";
 		FILE *fp = fopen(english, "r");
 		struct entry_pool entries = POOL_IDLE;
-		struct Entry *e, *sp_es[20], **sp_e;
+		struct dict_entry *e, *sp_es[20], **sp_e;
 		size_t sp_es_size = sizeof sp_es / sizeof *sp_es,
 			sp_e_to_go = sp_es_size;
 		struct key_set kset = SET_IDLE;
 		struct key_list klist;
 		struct key_set_node *elem;
-		struct Entry *found;
+		struct dict_entry *found;
 		size_t line = 1, words_to_go = 216555, key_len;
 		assert(RAND_MAX >= words_to_go);
 		key_list_clear(&klist);
@@ -475,7 +475,7 @@ int main(void) {
 			(unsigned long)line - 1);
 		key_list_sort(&klist);
 		for(sp_e = sp_es; sp_e < sp_es + sp_es_size; sp_e++) {
-			const struct Entry *prev, *next;
+			const struct dict_entry *prev, *next;
 			elem = key_set_get(&kset, (*sp_e)->key);
 			assert(elem);
 			found = elem_upcast(elem);
