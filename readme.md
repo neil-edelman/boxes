@@ -1,4 +1,4 @@
-# Heap\.h #
+# heap\.h #
 
 ## Priority Queue ##
 
@@ -13,7 +13,7 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&lt;H&gt;heap_node](#user-content-tag-7243593c)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>heap_node>array` with implicit heap properties, with an optionally cached [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload\. As such, one needs to have `Array.h` file in the same directory\.
+A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&lt;H&gt;heap_node](#user-content-tag-7243593c)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>heap_node>array` with implicit heap properties, with an optionally cached [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload\. As such, one needs to have `array.h` file in the same directory\.
 
 `<H>heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
@@ -28,13 +28,13 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&l
  * Parameter: HEAP\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
-   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`\.
+   To string trait contained in [to\_string\.h](to_string.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`\.
  * Parameter: HEAP\_TEST  
-   To string trait contained in [\.\./test/HeapTest\.h](../test/HeapTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * Dependancies:  
-   [Array.h](../Array/)
+   [array.h](../array/)
  * Caveat:  
    Add decrease priority\.
  * See also:  

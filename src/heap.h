@@ -36,19 +36,19 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
- To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
+ To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `HEAP_TO_STRING_NAME`.
 
  @param[HEAP_TEST]
- To string trait contained in <../test/HeapTest.h>; optional unit testing
- framework using `assert`. Can only be defined once _per_ `Heap`. Must be
+ To string trait contained in <../test/heap_test.h>; optional unit testing
+ framework using `assert`. Can only be defined once _per_ `heap`. Must be
  defined equal to a (random) filler function, satisfying
  <typedef:<PH>biaction_fn>. Output will be shown with the to string trait in
  which it's defined; provides tests for the base code and all later traits.
 
- @depend [array.h](../../Array/)
+ @depend [array.h](../../array/)
  @std C89
  @cf [Array](https://github.com/neil-edelman/Array)
  @cf [List](https://github.com/neil-edelman/List)
