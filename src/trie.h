@@ -106,7 +106,7 @@ typedef size_t TrieBranch;
 #define ARRAY_NAME trie_branch
 #define ARRAY_TYPE TrieBranch
 #define ARRAY_SUBTYPE
-#include "Array.h"
+#include "array.h"
 
 /* 12 makes the maximum skip length 512 bytes and the maximum size of a trie is
  `size_t` 64-bits: 4503599627370496, 32-bits: 1048576, 16-bits: 16, 8-bits: not
@@ -186,7 +186,7 @@ static const char *trie_raw(const char *const key) { return key; }
 #endif /* !raw --> */
 #define TRIE_KEY &trie_raw
 #else /* !type --><!-- type */
-/* Variable type for <ToString.h> because dupicate const on `const char`. */
+/* Variable type for <ToString.h> because duplicate const on `const char`. */
 typedef TRIE_TYPE PN_(vtype);
 /** A valid tag type set by `TRIE_TYPE`; defaults to `const char`. */
 typedef TRIE_TYPE PN_(type);
@@ -222,9 +222,9 @@ static int PN_(compare)(const PN_(leaf) *const a, const PN_(leaf) *const b)
 #define ARRAY_TYPE PN_(leaf)
 #define ARRAY_SUBTYPE
 #define ARRAY_EXPECT_TRAIT
-#include "Array.h"
+#include "array.h"
 #define ARRAY_COMPARE &PN_(compare)
-#include "Array.h"
+#include "array.h"
 #define T_(thing) CAT(PN_(leaf), thing)
 #define PT_(thing) CAT(CAT(array, PN_(leaf)), thing)
 
@@ -654,11 +654,11 @@ static void PN_(to_string)(PN_(ctype) *const datum, char (*const a)[12]) {
 
 #define A_(thing) CAT(N_(trie), thing)
 #define TO_STRING &PN_(to_string)
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(TRIE_TEST_BASE) && defined(TRIE_TEST) /* <!-- test */
 #define TRIE_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestTrie.h" /** \include */
+#include "../test/test_trie.h" /** \include */
 #endif /* test --> */
 
 #undef A_

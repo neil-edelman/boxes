@@ -54,24 +54,25 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[SET_TO_STRING]
- To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing `<PE>to_string`. There can
- be multiple to string traits, but only one can omit `SET_TO_STRING_NAME`.
+ To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ There can be multiple to string traits, but only one can omit
+ `SET_TO_STRING_NAME`.
 
  @param[SET_TEST]
- To string trait contained in <../test/SetTest.h>; optional unit testing
+ To string trait contained in <../test/set_test.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ set. Must be defined
  equal to a (random) filler function, satisfying <typedef:<PE>action_fn>.
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
  @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
+ @cf [array](https://github.com/neil-edelman/array)
+ @cf [heap](https://github.com/neil-edelman/heap)
+ @cf [list](https://github.com/neil-edelman/list)
+ @cf [orcish](https://github.com/neil-edelman/orcish)
+ @cf [pool](https://github.com/neil-edelman/pool)
+ @cf [trie](https://github.com/neil-edelman/trie) */
 
 #include <stdlib.h> /* realloc free */
 #include <assert.h>	/* assert */
@@ -263,13 +264,13 @@ static int PE_(reserve)(struct E_(set) *const set, const size_t min_capacity) {
 		&& (PE_(uint))-1 > 0);
 	/* `SIZE_MAX` min 65535 (`C99`) -> 5041 but typically much larger _st_ it
 	 becomes saturated while the load factor increases.
-	 Saturation `1/8 * SIZE_MAX`, (which is not defined it `C90`.) */
+	 Saturation `1/8 * SIZE_MAX`, (which is not defined in `C90`.) */
 	if(min_capacity > (size_t)-1 / 13) return 1;
 	/* Load factor `ln 2 ~= 0.693 ~= 9/13`.
 	 Starting bucket number is a power of 2 in `[8, 1 << log_limit]`. */
 	if((no_buckets = min_capacity * 13 / 9) > 1u << log_limit) {
 		log_c1 = log_limit;
-		c1 = 1 << log_limit;
+		c1 = 1u << log_limit;
 	} else {
 		if(log_c0 < 3) log_c1 = 3u,     c1 = 8u;
 		else           log_c1 = log_c0, c1 = c0;
@@ -484,11 +485,11 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 #define TO_STRING SET_TO_STRING
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(SET_TEST_BASE) && defined(SET_TEST) /* <!-- test */
 #define SET_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestSet.h" /** \include */
+#include "../test/test_set.h" /** \include */
 #endif /* test --> */
 
 #undef A_

@@ -15,7 +15,7 @@
 #ifndef NAN
 #define NAN (0./0.)
 #endif
-#include "Orcish.h"
+#include "orcish.h"
 
 
 /** Just a placeholder to get `graph()`; <fn:str_trieTest> will crash. */
@@ -24,10 +24,14 @@ static void fill_str(const char *str) { (void)(str); }
 #define TRIE_NAME str
 #define TRIE_TO_STRING
 #define TRIE_TEST &fill_str
-#include "../src/Trie.h"
+#include "../src/trie.h"
+
+/* This has no parameterasation yet. */
+#include "../src/btrie.h"
 
 /** Specific test for str. */
 static void test_basic_trie_str(void) {
+	struct trie btrie = {MIN_ARRAY_IDLE};
 	struct str_trie trie = TRIE_IDLE;
 	const char *words[] = { "foo", "bar", "baz", "qux", "quux" };
 	const size_t words_size = sizeof words / sizeof *words;
@@ -152,17 +156,124 @@ static void test_basic_trie_str(void) {
 	trie_str_graph(&trie, "graph/alph_all_at_once.gv");
 	if(!str_trie_from_array(&trie, wordsr, wordsr_size)) goto catch;
 	trie_str_graph(&trie, "graph/trie_r_all_at_once.gv");
-	str_trie_(&trie);	
+	str_trie_(&trie);
+
+	/* btrie. */
+	trie_print(&btrie);
+	trie_graph(&btrie, "graph/btrie0.gv");
+	trie_print(&btrie);
+	trie_graph(&btrie, "graph/btrie0.gv");
+
+	if(!trie_add(&btrie, "foo")) goto catch;
+	trie_graph(&btrie, "graph/btrie1.gv");
+
+	if(!trie_add(&btrie, "bar")) goto catch;
+	trie_graph(&btrie, "graph/btrie2.gv");
+
+	if(!trie_add(&btrie, "baz")) goto catch;
+	trie_graph(&btrie, "graph/btrie3.gv");
+
+	if(!trie_add(&btrie, "qux")) goto catch;
+	trie_graph(&btrie, "graph/btrie4.gv");
+
+	if(!trie_add(&btrie, "quxx")) goto catch;
+	trie_graph(&btrie, "graph/btrie5.gv");
+
+	if(!trie_add(&btrie, "quxxx")) goto catch;
+	trie_graph(&btrie, "graph/btrie6.gv");
+
+	assert(trie_size(&btrie) == 6);
+
+	if(!trie_add(&btrie, "a")) goto catch;
+	trie_graph(&btrie, "graph/btrie_a.gv");
+	if(!trie_add(&btrie, "b")) goto catch;
+	trie_graph(&btrie, "graph/btrie_b.gv");
+	if(!trie_add(&btrie, "c")) goto catch;
+	trie_print(&btrie);
+	trie_graph(&btrie, "graph/btrie_c.gv");
+	if(!trie_add(&btrie, "d")
+		|| !trie_add(&btrie, "e")
+		|| !trie_add(&btrie, "f")
+		|| !trie_add(&btrie, "g")
+		|| !trie_add(&btrie, "h")
+		|| !trie_add(&btrie, "i")
+		|| !trie_add(&btrie, "j")
+		|| !trie_add(&btrie, "k")
+		|| !trie_add(&btrie, "l")
+		|| !trie_add(&btrie, "m")
+		|| !trie_add(&btrie, "n")
+		|| !trie_add(&btrie, "o")
+		|| !trie_add(&btrie, "p")
+		|| !trie_add(&btrie, "q")
+		|| !trie_add(&btrie, "r")
+		|| !trie_add(&btrie, "s")
+		|| !trie_add(&btrie, "t")
+		|| !trie_add(&btrie, "u")
+		|| !trie_add(&btrie, "v")
+		|| !trie_add(&btrie, "w")
+		|| !trie_add(&btrie, "x")
+		|| !trie_add(&btrie, "y")
+		|| !trie_add(&btrie, "z")) goto catch;
+	trie_print(&btrie);
+	trie_graph(&btrie, "graph/btrie_z.gv");
+	/*printf("TrieZ: %s.\n\n", str_trie_to_string(&btrie));*/
+	assert(trie_size(&btrie) == 26 + 6);
+	/* Not done btrie_remove.
+	 if(!str_trie_remove(&btrie, "x")
+		|| !str_trie_remove(&btrie, "z")
+		|| !str_trie_remove(&btrie, "y")
+		|| !str_trie_remove(&btrie, "d")
+		|| !str_trie_remove(&btrie, "c")
+		|| !str_trie_remove(&btrie, "b")
+		|| !str_trie_remove(&btrie, "a")
+		|| !str_trie_remove(&btrie, "f")
+		|| !str_trie_remove(&btrie, "g")
+		|| !str_trie_remove(&btrie, "h")
+		|| !str_trie_remove(&btrie, "i")
+		|| !str_trie_remove(&btrie, "j")
+		|| !str_trie_remove(&btrie, "k")
+		|| !str_trie_remove(&btrie, "l")
+		|| !str_trie_remove(&btrie, "m")
+		|| !str_trie_remove(&btrie, "n")
+		|| !str_trie_remove(&btrie, "o")
+		|| !str_trie_remove(&btrie, "p")
+		|| !str_trie_remove(&btrie, "q")
+		|| !str_trie_remove(&btrie, "r")
+		|| !str_trie_remove(&btrie, "s")
+		|| !str_trie_remove(&btrie, "t")
+		|| !str_trie_remove(&btrie, "u")
+		|| !str_trie_remove(&btrie, "v")
+		|| !str_trie_remove(&btrie, "w")
+		|| !str_trie_remove(&btrie, "e")) goto catch;
+	trie_str_graph(&btrie, "graph/trie_a-z-delete.gv");
+	assert(str_trie_size(&btrie) == 6);
+	for(i = 0; i < words_size; i++)
+		printf("\"%s\": %s\n", words[i], str_trie_index_get(&btrie, words[i]));*/
+	trie_(&btrie);
+
+	/*printf("btrie from array.\n");
+	if(!str_trie_from_array(&btrie, words, words_size)) goto catch;
+	trie_str_graph(&btrie, "graph/trie_all_at_once.gv");
+	str_trie_(&btrie);
+	if(!str_trie_from_array(&btrie, alph, alph_size)) goto catch;
+	trie_str_graph(&btrie, "graph/alph_all_at_once.gv");
+	if(!str_trie_from_array(&btrie, wordsr, wordsr_size)) goto catch;
+	trie_graph(&btrie, "graph/btrie_r_all_at_once.gv");
+	trie_(&btrie);*/
+
 	goto finally;
 catch:
 	printf("Test failed.\n");
 	assert(0);
 finally:
 	str_trie_(&trie);
+	trie_(&btrie);
 }
 
 #ifndef DEBUG
 #define TRIE_BENCHMARK
+#else
+#define TRIE_BENCHMARK /* Debug */
 #endif
 
 #ifdef TRIE_BENCHMARK /* <!-- benchmark */
@@ -176,12 +287,12 @@ static int pstr_cmp(const char *const*const pa, const char *const*const pb)
 #define ARRAY_NAME str
 #define ARRAY_TYPE const char *
 #define ARRAY_EXPECT_TRAIT
-#include "../src/Array.h"
+#include "../src/array.h"
 #define ARRAY_TO_STRING &pstr_to_str
 #define ARRAY_EXPECT_TRAIT
-#include "../src/Array.h"
+#include "../src/array.h"
 #define ARRAY_COMPARE &pstr_cmp
-#include "../src/Array.h"
+#include "../src/array.h"
 
 /** Fills `strs` with `words` of size `words_size` from `words_start` to
  `words_chosen`. */
@@ -231,13 +342,13 @@ static void pointer_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
 #define SET_EXPECT_TRAIT
-#include "Set.h"
+#include "set.h"
 #define SET_TO_STRING &pointer_to_string
-#include "Set.h"
+#include "set.h"
 
 #define POOL_NAME string_node
 #define POOL_TYPE struct string_set_node
-#include "Pool.h"
+#include "pool.h"
 
 /** Returns a time diffecence in microseconds from `then`. */
 static double diff_us(clock_t then)
@@ -258,10 +369,10 @@ static void m_add(struct Measure *const measure, const double replica) {
 }
 
 static double m_mean(const struct Measure *const measure)
-	{ assert(measure); return measure->count ? measure->mean : NAN; }
+	{ assert(measure); return measure->count ? measure->mean : (double)NAN; }
 
 static double m_sample_variance(const struct Measure *const m)
-	{ assert(m); return m->count > 1 ? m->ssdm / (m->count - 1) : NAN; }
+	{ assert(m); return m->count > 1 ? m->ssdm / (m->count - 1) : (double)NAN; }
 
 static double m_stddev(const struct Measure *const measure)
 	{ return sqrt(m_sample_variance(measure)); }
@@ -271,10 +382,12 @@ static double m_stddev(const struct Measure *const measure)
 #define STRUCT(A) { #A, 0, { 0, 0, 0 } }
 #define ES(X) X(ARRAYINIT), X(ARRAYLOOK), \
 	X(TRIEINIT), X(TRIELOOK), \
+	X(BTRIEINIT), X(BTRIELOOK), \
 	X(HASHINIT), X(HASHLOOK)
 
 static int timing_comparison(const char *const *const keys,
 	const size_t keys_size) {
+	struct trie btrie = {MIN_ARRAY_IDLE};
 	struct str_trie trie = TRIE_IDLE;
 	struct str_array array = ARRAY_IDLE;
 	struct string_set set = SET_IDLE;
@@ -359,7 +472,9 @@ static int timing_comparison(const char *const *const keys,
 			t = clock();
 			array_fill(&array, keys, keys_size, start_i, n);
 			str_trie_clear(&trie);
-			str_trie_from_array(&trie, array.data, array.size);
+			for(i = 0; i < n; i++)
+				str_trie_add(&trie, array.data[i]);
+			/*str_trie_from_array(&trie, array.data, array.size);*/
 			m_add(&es[TRIEINIT].m, diff_us(t));
 			printf("Added init trie size %lu: %s.\n",
 				(unsigned long)str_trie_size(&trie), str_trie_to_string(&trie));
@@ -373,6 +488,27 @@ static int timing_comparison(const char *const *const keys,
 			m_add(&es[TRIELOOK].m, diff_us(t));
 			printf("Added look trie size %lu.\n",
 				(unsigned long)str_trie_size(&trie));
+
+			/* BTrie. */
+			t = clock();
+			array_fill(&array, keys, keys_size, start_i, n);
+			trie_clear(&btrie);
+			for(i = 0; i < n; i++)
+				trie_add(&btrie, array.data[i]);
+			/*str_trie_from_array(&trie, array.data, array.size);*/
+			m_add(&es[BTRIEINIT].m, diff_us(t));
+			printf("Added init btrie size %lu.\n",
+				(unsigned long)trie_size(&btrie));
+			t = clock();
+			for(i = 0; i < n; i++) {
+				const char *const word = keys[(start_i + i) % keys_size],
+					*const key = trie_get(&btrie, word);
+				const int cmp = strcmp(word, key);
+				(void)cmp, assert(key && !cmp);
+			}
+			m_add(&es[BTRIELOOK].m, diff_us(t));
+			printf("Added look btrie size %lu.\n",
+				(unsigned long)trie_size(&btrie));
 
 			/* Took took much time; decrease the replicas for next time. */
 			if(replicas != 1
@@ -408,12 +544,15 @@ finally:
 		char fn[64];
 		if(sprintf(fn, "graph/%s.gnu", gnu.name) < 0
 			|| !(gnu.fp = fopen(fn, "w"))) goto catch2;
-		fprintf(gnu.fp, "set style line 1 lt 5 lw 2 lc rgb '#0072bd'\n"
+		fprintf(gnu.fp,
+			"set style line 1 lt 5 lw 2 lc rgb '#0072bd'\n"
 			"set style line 2 lt 1 lw 3 lc rgb '#0072bd'\n"
 			"set style line 3 lt 5 lw 2 lc rgb '#ff0000'\n" /* a2142f */
 			"set style line 4 lt 1 lw 3 lc rgb '#ff0000'\n"
 			"set style line 5 lt 5 lw 2 lc rgb '#00ac33'\n" /* 30ac77 */
-			"set style line 6 lt 1 lw 3 lc rgb '#00ac33'\n");
+			"set style line 6 lt 1 lw 3 lc rgb '#00ac33'\n"
+			"set style line 7 lt 5 lw 2 lc rgb '#19d3f5'\n"
+			"set style line 8 lt 1 lw 3 lc rgb '#19d3f5'\n");
 		fprintf(gnu.fp, "set term postscript eps enhanced color\n"
 			/*"set encoding utf8\n" Doesn't work at all; {/Symbol m}. */
 			"set output \"graph/%s.eps\"\n"
@@ -475,7 +614,7 @@ static void fill_dict(struct Dict *const dict) {
 #define TRIE_KEY &dict_key
 #define TRIE_TO_STRING
 #define TRIE_TEST &fill_dict
-#include "../src/Trie.h"
+#include "../src/trie.h"
 
 
 int main(void) {

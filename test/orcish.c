@@ -23,7 +23,7 @@
 #include <stdio.h>  /* strlen */
 #include <ctype.h>  /* toupper */
 #include <string.h> /* memcpy */
-#include "Orcish.h"
+#include "orcish.h"
 
 static const char *syllables[] = {
 	"ub", "ul", "uk", "um", "uu", "oo", "ee", "uuk", "uru", "ick", "gn", "ch",

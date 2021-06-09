@@ -125,10 +125,7 @@ static void PN_(valid)(const struct N_(trie) *const trie) {
 static void PN_(test)(void) {
 	struct N_(trie) trie = TRIE_IDLE;
 	size_t n, size;
-	struct {
-		PN_(type) data;
-		int is_in;
-	} es[10];
+	struct { PN_(type) data; int is_in; } es[10];
 	const size_t es_size = sizeof es / sizeof *es;
 	PN_(type) *const*a, *i, *eject, copy;
 	int ret;
