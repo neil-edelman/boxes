@@ -1,4 +1,4 @@
-# Array\.h #
+# array\.h #
 
 ## Contiguous Dynamic Array \(Vector\) ##
 
@@ -11,9 +11,9 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of Array](web/array.png)
+![Example of array.](web/array.png)
 
-[&lt;T&gt;array](#user-content-tag-96e5f142) is a dynamic array that stores contiguous `ARRAY_TYPE`\. When modifying the array, to ensure that the capacity is greater then or equal to the size, resizing may be necessary\. This incurs amortised cost and any pointers to this memory may become stale\.
+[&lt;T&gt;array](#user-content-tag-96e5f142) is a dynamic array that stores contiguous `ARRAY_TYPE`\. Resizing may be necessary when increasing the size of the array\. This incurs amortised cost and any pointers to this memory may become stale\.
 
 `<T>array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
@@ -24,15 +24,15 @@
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
-   To string trait contained in [ToString\.h](ToString.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
+   To string trait contained in [to\_string\.h](to_string.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `ARRAY_TO_STRING_NAME`\.
  * Parameter: ARRAY\_TEST  
-   To string trait contained in [\.\./test/ArrayTest\.h](../test/ArrayTest.h); optional unit testing framework using `assert`\. Can only be defined once _per_ array\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [\.\./test/array\_test\.h](../test/array_test.h); optional unit testing framework using `assert`\. Can only be defined once _per_ array\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Parameter: ARRAY\_COMPARABLE\_NAME, ARRAY\_IS\_EQUAL, ARRAY\_COMPARE  
-   Comparable trait; `<C>` that satisfies `C` naming conventions when mangled and a function implementing, for `ARRAY_IS_EQUAL` [&lt;PT&gt;bipredicate_fn](#user-content-typedef-1c565568) that establishes an equivalence relation, or for `ARRAY_COMPARE` [&lt;PT&gt;compare_fn](#user-content-typedef-70f17597) that establishes a total order\. There can be multiple contrast traits, but only one can omit `ARRAY_COMPARABLE_NAME`\.
+   Comparable trait; `<C>` that satisfies `C` naming conventions when mangled and a function implementing, for `ARRAY_IS_EQUAL` [&lt;PT&gt;bipredicate_fn](#user-content-typedef-1c565568) that establishes an equivalence relation, or for `ARRAY_COMPARE` [&lt;PT&gt;compare_fn](#user-content-typedef-70f17597) that establishes a total order\. There can be multiple comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`\.
  * Standard:  
    C89
  * See also:  
-   [Heap](https://github.com/neil-edelman/Heap); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
+   [heap](https://github.com/neil-edelman/heap); [list](https://github.com/neil-edelman/list); [orcish](https://github.com/neil-edelman/orcish); [pool](https://github.com/neil-edelman/pool); [set](https://github.com/neil-edelman/set); [trie](https://github.com/neil-edelman/trie)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -129,11 +129,9 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-cd39931d">&lt;T&gt;array_buffer</a></td><td>a, buffer</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-821988d1">&lt;T&gt;array_buffer_before</a></td><td>a, before, buffer</td></tr>
+<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-d2dc554f">&lt;T&gt;array_append</a></td><td>a, n</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-1b5532c7">&lt;T&gt;array_new</a></td><td>a</td></tr>
-
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-143daddb">&lt;T&gt;array_update_new</a></td><td>a, update_ptr</td></tr>
+<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-7cb999d5">&lt;T&gt;array_append_at</a></td><td>a, n, at</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-ec4aafab">&lt;T&gt;array_remove</a></td><td>a, datum</td></tr>
 
@@ -219,7 +217,7 @@ Destroys `a` and returns it to idle\.
 
 <code>static int <strong>&lt;T&gt;array_reserve</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>min</em>)</code>
 
-Ensures `min` of `a`\.
+Ensures `min` capacity of `a`\. Invalidates pointers in `a`\.
 
  * Parameter: _min_  
    If zero, does nothing\.
@@ -236,49 +234,38 @@ Ensures `min` of `a`\.
 
 <code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_buffer</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>buffer</em>)</code>
 
-Adds `buffer` un\-initialised elements at the back of `a`\.
+The capacity of `a` will be increased to at least `buffer` elements\. Invalidates pointers in `a`\.
 
  * Return:  
-   A pointer to previous end of `a`, where there are `buffer` elements\.
+   The start of the buffered space, \(the back of the array\.\) If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
  * Exceptional return: realloc, ERANGE  
 
 
 
 
-### <a id = "user-content-fn-821988d1" name = "user-content-fn-821988d1">&lt;T&gt;array_buffer_before</a> ###
+### <a id = "user-content-fn-d2dc554f" name = "user-content-fn-d2dc554f">&lt;T&gt;array_append</a> ###
 
-<code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_buffer_before</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>before</em>, const size_t <em>buffer</em>)</code>
+<code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_append</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>n</em>)</code>
 
-Adds `buffer` un\-initialised elements at `before` in `a`\.
+Adds `n` elements to the back of `a`\. The buffer holds enough elements or it will invalidate pointers in `a`\.
 
- * Parameter: _before_  
-   A number smaller then or equal to `a.size`; if `a.size`, this function behaves as [&lt;T&gt;array_buffer](#user-content-fn-cd39931d)\.
  * Return:  
-   A pointer to the start of the new region, where there are `buffer` elements\.
+   A pointer to the elements\. If `a` is idle and `n` is zero, a null pointer will be returned, otherwise null indicates an error\.
  * Exceptional return: realloc, ERANGE  
 
 
 
 
-### <a id = "user-content-fn-1b5532c7" name = "user-content-fn-1b5532c7">&lt;T&gt;array_new</a> ###
+### <a id = "user-content-fn-7cb999d5" name = "user-content-fn-7cb999d5">&lt;T&gt;array_append_at</a> ###
 
-<code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_new</strong>(struct &lt;T&gt;array *const <em>a</em>)</code>
+<code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_append_at</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code>
 
+Adds `n` un\-initialised elements at position `at` in `a`\. The buffer holds enough elements or it will invalidate pointers in `a`\.
+
+ * Parameter: _at_  
+   A number smaller than or equal to `a.size`; if `a.size`, this function behaves as [&lt;T&gt;array_append](#user-content-fn-d2dc554f)\.
  * Return:  
-   A new un\-initialized element of at the end of `a`\.
- * Exceptional return: realloc, ERANGE  
- * Order:  
-   amortised &#927;\(1\)
-
-
-
-
-### <a id = "user-content-fn-143daddb" name = "user-content-fn-143daddb">&lt;T&gt;array_update_new</a> ###
-
-<code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_update_new</strong>(struct &lt;T&gt;array *const <em>a</em>, &lt;PT&gt;type **const <em>update_ptr</em>)</code>
-
-Returns a new un\-initialised datum of `a` and updates `update_ptr`, which must be in `a`\.
-
+   A pointer to the start of the new region, where there are `n` elements\.
  * Exceptional return: realloc, ERANGE  
 
 
@@ -468,7 +455,7 @@ Lexagraphically compares `a` to `b`, which both can be null\.
 `a` should be partitioned true/false with less\-then `value`\.
 
  * Return:  
-   The first index of `a` that is not less then `value`\.
+   The first index of `a` that is not less than `value`\.
  * Order:  
    &#927;\(log `a.size`\)
 
@@ -482,7 +469,7 @@ Lexagraphically compares `a` to `b`, which both can be null\.
 `a` should be partitioned false/true with greater\-than or equals `value`\.
 
  * Return:  
-   The first index of `a` that is greater then `value`\.
+   The first index of `a` that is greater than `value`\.
  * Order:  
    &#927;\(log `a.size`\)
 
