@@ -302,7 +302,7 @@ static int array_fill(struct str_array *const strs,
 	assert(strs && words && words_chosen && words_chosen <= words_size
 		&& words_start < words_size);
 	str_array_clear(strs);
-	if(!str_array_buffer(strs, words_chosen)) return 0;
+	if(!str_array_append(strs, words_chosen)) return 0;
 	if(words_start + words_chosen > words_size) {
 		const size_t size_a = words_size - words_start,
 		size_b = words_chosen - size_a;
@@ -423,7 +423,6 @@ static int timing_comparison(const char *const *const keys,
 			/* Sorted array; pre-allocate for fair test. */
 			array_fill(&array, keys, keys_size, start_i, n);
 			t = clock();
-			array_fill(&array, keys, keys_size, start_i, n);
 			qsort(array.data, array.size, sizeof array.data,
 				&array_str_vcompar_anonymous);
 			str_array_unique(&array);
@@ -436,8 +435,11 @@ static int timing_comparison(const char *const *const keys,
 				const char *const word = keys[(start_i + i) % keys_size],
 					**const key = bsearch(&word, array.data, array.size,
 					sizeof array.data, &array_str_vcompar_anonymous);
-				const int cmp = strcmp(word, *key);
-				(void)cmp, assert(key && !cmp);
+				int cmp;
+				assert(key);
+				cmp = strcmp(word, *key);
+				assert(!cmp);
+				(void)cmp;
 			}
 			m_add(&es[ARRAYLOOK].m, diff_us(t));
 			printf("Added look array size %lu.\n", (unsigned long)array.size);
@@ -472,9 +474,9 @@ static int timing_comparison(const char *const *const keys,
 			t = clock();
 			array_fill(&array, keys, keys_size, start_i, n);
 			str_trie_clear(&trie);
-			for(i = 0; i < n; i++)
-				str_trie_add(&trie, array.data[i]);
-			/*str_trie_from_array(&trie, array.data, array.size);*/
+			/*for(i = 0; i < n; i++)
+				str_trie_add(&trie, array.data[i]); <- this is slow! */
+			str_trie_from_array(&trie, array.data, array.size);
 			m_add(&es[TRIEINIT].m, diff_us(t));
 			printf("Added init trie size %lu: %s.\n",
 				(unsigned long)str_trie_size(&trie), str_trie_to_string(&trie));
