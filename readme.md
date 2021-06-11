@@ -85,7 +85,7 @@ Storage of this structure is the responsibility of the caller\. One can only be 
 
 <code>struct <strong>&lt;N&gt;list</strong>;</code>
 
-Serves as head and tail for linked\-list of [&lt;N&gt;list_node](#user-content-tag-49d3e78)\. Use [&lt;N&gt;list_clear](#user-content-fn-49539c91) to initialise the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
+Serves as head and tail for linked\-list of [&lt;N&gt;list_node](#user-content-tag-49d3e78)\. Use [&lt;N&gt;list_clear](#user-content-fn-49539c91) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
 
 ![States.](web/states.png)
 
