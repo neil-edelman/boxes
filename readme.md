@@ -234,7 +234,7 @@ Ensures `min` capacity of `a`\. Invalidates pointers in `a`\.
 
 <code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_buffer</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>buffer</em>)</code>
 
-The capacity of `a` will be increased to at least `buffer` elements\. Invalidates pointers in `a`\.
+The capacity of `a` will be increased to at least `buffer` elements beyond the size\. Invalidates pointers in `a`\.
 
  * Return:  
    The start of the buffered space, \(the back of the array\.\) If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
