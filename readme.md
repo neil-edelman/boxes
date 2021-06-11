@@ -28,7 +28,7 @@ in `boxes`.
 No effort has been made to synchronize for multi-threaded execution.
 
 Assertions are used to ensure data integrity at runtime; to stop them,
-define `NDEBUG` before `assert.h`, included in the files, (see
+define `#define NDEBUG` before `assert.h`, included in the files, (see
 `man assert`.)
 
 Errors are returned with `errno`: `EDOM`, `ERANGE`, `EISEQ`, (1994
@@ -38,9 +38,9 @@ The source files are `UTF-8`.
 
 The documented parameters are preprocessor macros defined before
 including the file, and they are generally undefined automatically before
-the box is complete. (Except one can include traits by including the
-expect trait define and re-including.) See each project's `test` section
-for examples.
+the box is complete for convenience. (Except one can include traits by
+including the expect trait define and re-including.) See each project's
+`test` section for examples.
 
 ## License ##
 

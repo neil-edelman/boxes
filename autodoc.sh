@@ -11,11 +11,13 @@ for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
 	(
 	cd "$PROJ" || exit
 	if [[ -r "src/$PROJ.c" ]]; then
-		echo "*** Updating $PROJ/readme.md with $PROJ/src/$PROJ.c ***";
+		echo "*** Updating $PROJ/readme with $PROJ/src/$PROJ.c ***";
 		cdoc "src/$PROJ.c" -o readme.md;
+		cdoc "src/$PROJ.c" -o readme.html;
 	elif [[ -r "src/$PROJ.h" ]]; then
-		echo "*** Updating $PROJ/readme.md with $PROJ/src/$PROJ.h ***";
+		echo "*** Updating $PROJ/readme with $PROJ/src/$PROJ.h ***";
 		cdoc "src/$PROJ.h" -o readme.md;
+		cdoc "src/$PROJ.h" -o readme.html;
 	fi
 	)
 fi done

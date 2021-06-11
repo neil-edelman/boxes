@@ -11,6 +11,6 @@ for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
 	(
 	echo "*** Committing $PROJ... ***"
 	cd "$PROJ" || exit
-	git commit -am \""$1"\" || true
+	git commit -am "$1" || true
 	)
 fi done
