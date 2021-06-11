@@ -170,8 +170,8 @@ static int PE_(false)(PE_(type) *original, PE_(type) *replace)
  responsibility of the caller. */
 struct E_(set_node);
 struct E_(set_node) {
+	PE_(type) key; /* This should be next, but offsetof key in set_node 0. */
 	struct E_(set_node) *next;
-	PE_(type) key;
 #ifndef SET_NO_CACHE /* <!-- cache */
 	PE_(uint) hash;
 #endif /* cache --> */
