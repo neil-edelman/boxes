@@ -13,11 +13,6 @@
  region. In this way, manages a fairly contiguous space for items which have
  references.
 
- `<T>pool` is not synchronised. Errors are returned with `errno`. The
- parameters are preprocessor macros, and are all undefined at the end of the
- file for convenience. `assert.h` is included in this file; to stop the
- debug assertions, use `#define NDEBUG` before `assert.h`.
-
  @param[POOL_NAME, POOL_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag type
  associated therewith; required. `<PT>` is private, whose names are prefixed in
@@ -39,13 +34,7 @@
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
- @std C89
- @cf [array](https://github.com/neil-edelman/array)
- @cf [heap](https://github.com/neil-edelman/heap)
- @cf [list](https://github.com/neil-edelman/list)
- @cf [orcish](https://github.com/neil-edelman/orcish)
- @cf [set](https://github.com/neil-edelman/set)
- @cf [trie](https://github.com/neil-edelman/trie) */
+ @std C89 */
 
 #include <stddef.h> /* offsetof */
 #include <stdlib.h>	/* malloc free */
