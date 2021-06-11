@@ -10,13 +10,7 @@
  _etc_. They originate or are inspired by [JRR Tolkien's Orcish
  ](http://en.wikipedia.org/wiki/Languages_constructed_by_J._R._R._Tolkien).
 
- @std C89
- @cf [array](https://github.com/neil-edelman/array)
- @cf [heap](https://github.com/neil-edelman/heap)
- @cf [list](https://github.com/neil-edelman/list)
- @cf [pool](https://github.com/neil-edelman/pool)
- @cf [set](https://github.com/neil-edelman/set)
- @cf [trie](https://github.com/neil-edelman/trie) */
+ @std C89 */
 
 #include <stdlib.h> /* rand */
 #include <stdio.h>  /* strlen */

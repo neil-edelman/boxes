@@ -12,11 +12,6 @@
  <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer payload. As
  such, one needs to have `array.h` file in the same directory.
 
- `<H>heap` is not synchronised. Errors are returned with `errno`. The
- parameters are `#define` preprocessor macros, and are all undefined at the end
- of the file for convenience. Assertions are used in this file; to stop them,
- define `NDEBUG` before `assert.h`.
-
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
  type <typedef:<PH>priority> associated therewith. `HEAP_NAME` is required but
@@ -48,14 +43,8 @@
  <typedef:<PH>biaction_fn>. Output will be shown with the to string trait in
  which it's defined; provides tests for the base code and all later traits.
 
- @depend [array.h](../../array/)
+ @depend [array](https://github.com/neil-edelman/array)
  @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set)
- @cf [Trie](https://github.com/neil-edelman/Trie)
  @fixme Add decrease priority. */
 
 
