@@ -1,8 +1,6 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @std C89
-
  @subtitle Contiguous Dynamic Array (Vector)
 
  ![Example of array.](../web/array.png)
@@ -37,7 +35,9 @@
  and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>bipredicate_fn>
  that establishes an equivalence relation, or for `ARRAY_COMPARE`
  <typedef:<PT>compare_fn> that establishes a total order. There can be multiple
- comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`. */
+ comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
+
+ @std C89 */
 
 #include <stdlib.h> /* realloc free */
 #include <assert.h> /* assert */
