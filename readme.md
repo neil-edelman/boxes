@@ -5,13 +5,6 @@ collection written in `bash`. The individual projects are separate and
 independent. It is therefore unnecessary to _use_ `boxes` in any of the
 individual projects, but useful in developing.
 
-_Eg_ `heap` is an `array`, so one would need at minimum `heap.h` and
-`array.h`, and optionally the `to_string.h` trait, which makes
-`<H>heap_to_string` available. One can use `heap` on it's own, because
-it has a copy of `array.h` and (optionally) `to_string.h`. This `boxes`
-project automates any changes to `array` to be propagated to `heap` and
-tested.
-
 ## Some Implementations ##
 
 * [array](https://github.com/neil-edelman/array);
@@ -44,9 +37,10 @@ Amendment 1 to `C89`,) and library functions provide their own values.
 The source files are `UTF-8`.
 
 The documented parameters are preprocessor macros defined before
-including the file `#define`, and they are generally undefined before the
-box is complete automatically. See the project's `test` section for
-examples.
+including the file, and they are generally undefined automatically before
+the box is complete. (Except one can include traits by including the
+expect trait define and re-including.) See each project's `test` section
+for examples.
 
 ## License ##
 
