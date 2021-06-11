@@ -23,7 +23,7 @@ Projects are subdirectories of `boxes` and have separate `git` repositories.
 Each one must have `test` and `src`; the the `src` has `C` file(s) which are
 the same name as the project; this is the one-source-of-truth. `make` creates
 a test in `bin`. Traits are the same for every project and are stored globally
-in `boxes`.
+in `boxes` under `traits`.
 
 ## Details ##
 
