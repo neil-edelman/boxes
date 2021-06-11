@@ -34,7 +34,8 @@ define `#define NDEBUG` before `assert.h`, included in the files, (see
 `man assert`.)
 
 Errors are returned with `errno`: `EDOM`, `ERANGE`, `EISEQ`, (1994
-Amendment 1 to `C89`,) and library functions provide their own values.
+Amendment 1 to `C89`); standard library functions provide their own
+values which are passed on.
 
 The source files are `UTF-8`.
 
