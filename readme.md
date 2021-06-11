@@ -15,8 +15,6 @@
 
 [&lt;T&gt;array](#user-content-tag-96e5f142) is a dynamic array that stores contiguous `ARRAY_TYPE`\. Resizing may be necessary when increasing the size of the array\. This incurs amortised cost and any pointers to this memory may become stale\.
 
-`<T>array` is not synchronised\. Errors are returned with `errno`\. The parameters are preprocessor macros\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
-
 
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
@@ -31,8 +29,6 @@
    Comparable trait; `<C>` that satisfies `C` naming conventions when mangled and a function implementing, for `ARRAY_IS_EQUAL` [&lt;PT&gt;bipredicate_fn](#user-content-typedef-1c565568) that establishes an equivalence relation, or for `ARRAY_COMPARE` [&lt;PT&gt;compare_fn](#user-content-typedef-70f17597) that establishes a total order\. There can be multiple comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`\.
  * Standard:  
    C89
- * See also:  
-   [heap](https://github.com/neil-edelman/heap); [list](https://github.com/neil-edelman/list); [orcish](https://github.com/neil-edelman/orcish); [pool](https://github.com/neil-edelman/pool); [set](https://github.com/neil-edelman/set); [trie](https://github.com/neil-edelman/trie)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
