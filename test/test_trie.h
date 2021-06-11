@@ -163,6 +163,7 @@ static void PN_(test)(void) {
 		assert(ret && size == N_(trie_size)(&trie) && eject == &es[0].data);
 	ret = N_(trie_policy_put)(&trie, &es[0].data, &eject, &PN_(false_replace)),
 		assert(ret && size == N_(trie_size)(&trie) && eject == &es[0].data);
+	/* fixme: this is no. We should get errors. What am I doing? */
 	memcpy((void *)&copy, &es[0].data, sizeof es[0].data);
 	ret = N_(trie_policy_put)(&trie, &copy, &eject, &PN_(false_replace)),
 		assert(ret && size == N_(trie_size)(&trie) && eject == &copy);

@@ -607,7 +607,7 @@ static const char *dict_key(const struct Dict *const dict)
 	{ return dict->word; }
 
 static void fill_dict(struct Dict *const dict) {
-	Orcish(dict->word, sizeof ((struct Dict *)0)->word);
+	orcish(dict->word, sizeof ((struct Dict *)0)->word);
 	dict->defn = rand() / (RAND_MAX / 99 + 1);
 }
 
