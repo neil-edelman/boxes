@@ -15,7 +15,7 @@
 
 [&lt;E&gt;set](#user-content-tag-2ba39e24) is a collection of elements of [&lt;E&gt;set_node](#user-content-tag-ff4c0209) that doesn't allow duplication; it must be supplied an equality function, `SET_IS_EQUAL` [&lt;PE&gt;is_equal_fn](#user-content-typedef-2a8c8832), and a hash function, `SET_HASH` [&lt;PE&gt;hash_fn](#user-content-typedef-4bb6ea9f)\.
 
-Internally, it is a separately chained hash table with a maximum load factor of `ln 2`, power\-of\-two resizes, with buckets as a forward linked list of [&lt;E&gt;set_node](#user-content-tag-ff4c0209)\. This offers some independence of sets from set elements, but cache performance is left up to the caller\. It can be expanded to a hash map or associative array by enclosing the `<E>set_node` in another `struct`, as appropriate\. While in a set, the elements should not change in a way that affects their hash values\.
+Internally, it is a separately chained hash table with a maximum load factor of `ln 2`, power\-of\-two resizes, with buckets as a forward linked list of [&lt;E&gt;set_node](#user-content-tag-ff4c0209)\. This offers some independence of sets from set elements\. It can be expanded to an associative array by enclosing the `<E>set_node` in another `struct`\.
 
 `<E>set` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. `assert.h` is used; to stop assertions, use `#define NDEBUG` before inclusion\.
 
