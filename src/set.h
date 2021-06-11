@@ -12,11 +12,9 @@
 
  Internally, it is a separately chained hash table with a maximum load factor
  of `ln 2`, power-of-two resizes, with buckets as a forward linked list of
- <tag:<E>set_node>. This offers some independence of sets from set elements,
- but cache performance is left up to the caller. It can be expanded to a hash
- map or associative array by enclosing the `<E>set_node` in another `struct`,
- as appropriate. While in a set, the elements should not change in a way that
- affects their hash values.
+ <tag:<E>set_node>. This offers some independence of sets from set elements.
+ It can be expanded to an associative array by enclosing the `<E>set_node` in
+ another `struct`.
 
  `<E>set` is not synchronised. Errors are returned with `errno`. The parameters
  are `#define` preprocessor macros, and are all undefined at the end of the
@@ -172,8 +170,8 @@ static int PE_(false)(PE_(type) *original, PE_(type) *replace)
  responsibility of the caller. */
 struct E_(set_node);
 struct E_(set_node) {
-	PE_(type) key;
 	struct E_(set_node) *next;
+	PE_(type) key;
 #ifndef SET_NO_CACHE /* <!-- cache */
 	PE_(uint) hash;
 #endif /* cache --> */
