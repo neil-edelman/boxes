@@ -9,15 +9,14 @@
  Orcish names are gathered off the Internet, SMAUG1.8, made up myself,
  _etc_. They originate or are inspired by [JRR Tolkien's Orcish
  ](http://en.wikipedia.org/wiki/Languages_constructed_by_J._R._R._Tolkien).
- Random names are super-useful in testing.
 
  @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
+ @cf [array](https://github.com/neil-edelman/array)
+ @cf [heap](https://github.com/neil-edelman/heap)
+ @cf [list](https://github.com/neil-edelman/list)
+ @cf [pool](https://github.com/neil-edelman/pool)
+ @cf [set](https://github.com/neil-edelman/set)
+ @cf [trie](https://github.com/neil-edelman/trie) */
 
 #include <stdlib.h> /* rand */
 #include <stdio.h>  /* strlen */
@@ -65,7 +64,7 @@ static const unsigned max_name_size = 256;
 /** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
  then puts a null terminator. Uses `rand` from `stdlib.h`.
  @param[name_size] If zero, does nothing. */
-void Orcish(char *const name, size_t name_size) {
+void orcish(char *const name, size_t name_size) {
 	char *n = name;
 	const char *part;
 	size_t part_len;
