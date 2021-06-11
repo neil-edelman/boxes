@@ -1,4 +1,4 @@
-# Trie\.h #
+# trie\.h #
 
 ## Prefix Tree ##
 
