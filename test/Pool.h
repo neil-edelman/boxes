@@ -27,24 +27,25 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing `<PT>to_string_fn`. There
- can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`.
+ To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ There can be multiple to string traits, but only one can omit
+ `POOL_TO_STRING_NAME`.
 
  @param[POOL_TEST]
- To string trait contained in <../test/PoolTest.h>; optional unit testing
+ To string trait contained in <../test/pool_test.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ pool. Must be defined
  equal to a (random) filler function, satisfying <typedef:<PT>action_fn>.
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
  @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Set](https://github.com/neil-edelman/Set)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
+ @cf [array](https://github.com/neil-edelman/array)
+ @cf [heap](https://github.com/neil-edelman/heap)
+ @cf [list](https://github.com/neil-edelman/list)
+ @cf [orcish](https://github.com/neil-edelman/orcish)
+ @cf [set](https://github.com/neil-edelman/set)
+ @cf [trie](https://github.com/neil-edelman/trie) */
 
 #include <stddef.h> /* offsetof */
 #include <stdlib.h>	/* malloc free */
@@ -407,11 +408,11 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #define A_(thing) CAT(T_(pool), thing)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
-#include "ToString.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(POOL_TEST_BASE) && defined(POOL_TEST) /* <!-- test */
 #define POOL_TEST_BASE /* Only one instance of base tests. */
-#include "../test/TestPool.h" /** \include */
+#include "../test/test_pool.h" /** \include */
 #endif /* test --> */
 
 #undef A_

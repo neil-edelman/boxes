@@ -22,13 +22,13 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait contained in <ToString.h>; `<A>` that satisfies `C` naming
+ To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `ARRAY_TO_STRING_NAME`.
 
  @param[ARRAY_TEST]
- To string trait contained in <../test/ArrayTest.h>; optional unit testing
+ To string trait contained in <../test/array_test.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ array. Must be
  defined equal to a (random) filler function, satisfying
  <typedef:<PT>action_fn>. Output will be shown with the to string trait in
@@ -42,12 +42,12 @@
  comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
 
  @std C89
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set)
- @cf [Trie](https://github.com/neil-edelman/Trie) */
+ @cf [heap](https://github.com/neil-edelman/heap)
+ @cf [list](https://github.com/neil-edelman/list)
+ @cf [orcish](https://github.com/neil-edelman/orcish)
+ @cf [pool](https://github.com/neil-edelman/pool)
+ @cf [set](https://github.com/neil-edelman/set)
+ @cf [trie](https://github.com/neil-edelman/trie) */
 
 #include <stdlib.h> /* realloc free */
 #include <assert.h> /* assert */
@@ -193,10 +193,11 @@ static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 	return 1;
 }
 
-/** The capacity of `a` will be increased to at least `buffer` elements.
- Invalidates pointers in `a`. @return The start of the buffered space, (the
- back of the array.) If `a` is idle and `buffer` is zero, a null pointer is
- returned, otherwise null indicates an error. @throws[realloc, ERANGE] @allow */
+/** The capacity of `a` will be increased to at least `buffer` elements beyond
+ the size. Invalidates pointers in `a`.
+ @return The start of the buffered space, (the back of the array.) If `a` is
+ idle and `buffer` is zero, a null pointer is returned, otherwise null
+ indicates an error. @throws[realloc, ERANGE] @allow */
 static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
 	const size_t buffer) {
 	assert(a);
@@ -236,7 +237,7 @@ static PT_(type) *T_(array_append_at)(struct T_(array) *const a,
 
 /** @return Adds (append, push back) one new element of `a`. The buffer holds 
  an element or it will invalidate pointers in `a`.
- @order amortised \O(1) @throws[realloc, ERANGE] */ \
+ @order amortised \O(1) @throws[realloc, ERANGE] */
 static PT_(type) *T_(array_new)(struct T_(array) *const a)
 	{ return T_(array_append)(a, 1); }
 
@@ -277,6 +278,10 @@ static void T_(array_lazy_remove)(struct T_(array) *const a,
  @order \Theta(1) @allow */
 static void T_(array_clear)(struct T_(array) *const a)
 	{ assert(a), a->size = 0; }
+
+/*--- Consider having a contiguous trait that all these can go into? It doesn't
+ really matter that it takes no arguments and it is the only one?
+ Use the iterator? ---*/
 
 /** @return The last element or null if `a` is empty. @order \Theta(1) @allow */
 static PT_(type) *T_(array_peek)(const struct T_(array) *const a)
