@@ -9,10 +9,6 @@
  Resizing may be necessary when increasing the size of the array. This incurs
  amortised cost and any pointers to this memory may become stale.
 
- `<T>array` is not synchronised. Errors are returned with `errno`. The
- parameters are preprocessor macros. Assertions are used in this file; to stop
- them, define `NDEBUG` before `assert.h`.
-
  @param[ARRAY_NAME, ARRAY_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type
  associated therewith; required. `<PT>` is private, whose names are prefixed in
@@ -41,13 +37,7 @@
  <typedef:<PT>compare_fn> that establishes a total order. There can be multiple
  comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
 
- @std C89
- @cf [heap](https://github.com/neil-edelman/heap)
- @cf [list](https://github.com/neil-edelman/list)
- @cf [orcish](https://github.com/neil-edelman/orcish)
- @cf [pool](https://github.com/neil-edelman/pool)
- @cf [set](https://github.com/neil-edelman/set)
- @cf [trie](https://github.com/neil-edelman/trie) */
+ @std C89 */
 
 #include <stdlib.h> /* realloc free */
 #include <assert.h> /* assert */

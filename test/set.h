@@ -16,11 +16,6 @@
  It can be expanded to an associative array by enclosing the `<E>set_node` in
  another `struct`.
 
- `<E>set` is not synchronised. Errors are returned with `errno`. The parameters
- are `#define` preprocessor macros, and are all undefined at the end of the
- file for convenience. `assert.h` is used; to stop assertions, use
- `#define NDEBUG` before inclusion.
-
  @param[SET_NAME, SET_TYPE]
  `<E>` that satisfies `C` naming conventions when mangled and a valid
  <typedef:<PE>type> associated therewith; required. `<PE>` is private, whose
@@ -64,13 +59,7 @@
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
- @std C89
- @cf [array](https://github.com/neil-edelman/array)
- @cf [heap](https://github.com/neil-edelman/heap)
- @cf [list](https://github.com/neil-edelman/list)
- @cf [orcish](https://github.com/neil-edelman/orcish)
- @cf [pool](https://github.com/neil-edelman/pool)
- @cf [trie](https://github.com/neil-edelman/trie) */
+ @std C89 */
 
 #include <stdlib.h> /* realloc free */
 #include <assert.h>	/* assert */

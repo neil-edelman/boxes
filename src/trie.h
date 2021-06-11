@@ -13,10 +13,6 @@
  byte null-terminator, (`C` strings,) including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
- `Array.h` must be present. `<N>Trie` is not synchronised. Errors are returned
- with `errno`. The parameters are `#define` preprocessor macros, and are all
- undefined at the end of the file for convenience. `assert.h` is used.
-
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PN>type> that satisfies `C` naming conventions when mangled and an
  optional returnable type that is declared, (it is used by reference only
@@ -40,14 +36,9 @@
  @fixme Don't put two strings side-by-side or delete one that causes two
  strings to be side-by-side that have more than 512 matching characters in the
  same bit-positions, it will trip an `assert`. (Genomic data, perhaps?)
- @depend [Array.h](../../Array/)
- @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set) */
+
+ @depend [array](https://github.com/neil-edelman/array)
+ @std C89 */
 
 #include <string.h> /* size_t memmove strcmp memcpy */
 #include <limits.h> /* UINT_MAX */

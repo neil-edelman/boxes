@@ -13,11 +13,6 @@
  enclosing `<N>list_node` in another `struct`; this is useful for multi-linked
  elements.
 
- `<N>list` is not synchronised. Errors are returned with `errno`. The
- parameters are preprocessor macros, and are all undefined at the end of the
- file for convenience. Assertions are used in this file; to stop them, define
- `NDEBUG` before `assert.h`.
-
  @param[LIST_NAME]
  `<N>` that satisfies `C` naming conventions when mangled; required. `<PN>` is
  private, whose names are prefixed in a manner to avoid collisions.
@@ -42,13 +37,7 @@
  <typedef:<PN>action_fn>. Output will be shown with the to string trait in
  which it's defined; provides tests for the base code and all later traits.
 
- @std C89
- @cf [array](https://github.com/neil-edelman/array)
- @cf [heap](https://github.com/neil-edelman/heap)
- @cf [orcish](https://github.com/neil-edelman/orcish)
- @cf [pool](https://github.com/neil-edelman/pool)
- @cf [set](https://github.com/neil-edelman/set)
- @cf [trie](https://github.com/neil-edelman/trie) */
+ @std C89 */
 
 #include <assert.h>
 

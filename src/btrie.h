@@ -39,13 +39,7 @@
  <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PN>action_fn>. Requires that `NDEBUG` not be defined.
 
- @std C89
- @cf [Array](https://github.com/neil-edelman/Array)
- @cf [Heap](https://github.com/neil-edelman/Heap)
- @cf [List](https://github.com/neil-edelman/List)
- @cf [Orcish](https://github.com/neil-edelman/Orcish)
- @cf [Pool](https://github.com/neil-edelman/Pool)
- @cf [Set](https://github.com/neil-edelman/Set) */
+ @std C89 */
 
 #include <stdlib.h> /* size_t realloc free abs */
 #include <string.h> /* size_t memmove strcmp memcpy */
