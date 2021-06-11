@@ -10,6 +10,7 @@ cd "$(dirname "$0")" || exit
 for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
 	(
 	cd "$PROJ"
+	echo "*** Making $PROJ ***"
 	make
 	echo "*** Testing $PROJ/bin/$PROJ ***"
 	"bin/$PROJ";
