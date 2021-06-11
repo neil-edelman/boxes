@@ -1,7 +1,7 @@
-# Data Structures #
+# boxes #
 
-`boxes` is an automated dependancy and build system for a `C` code reuse
-collection written in `bash`. The individual projects are separate and
+`boxes` is an automated dependancy and build system for a `C` data structure
+collection written in `bash`. The individual projects are `C` separate and
 independent. It is therefore unnecessary to _use_ `boxes` in any of the
 individual projects, but useful in developing.
 
