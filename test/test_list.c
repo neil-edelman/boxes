@@ -230,7 +230,7 @@ static int fero_compare(const struct fero_list_node *const a,
 }
 static void fill_panda(struct Panda *const p) {
 	assert(p);
-	Orcish(p->name, sizeof p->name);
+	orcish(p->name, sizeof p->name);
 	p->where = rand() / (RAND_MAX / 198 + 1) - 99;
 	p->ferociousness = rand() / (RAND_MAX / 11 + 1);
 }
@@ -881,7 +881,7 @@ static void animal_filler(struct animal *const animal,
 	assert(animal && vt);
 	animal->vt     = vt;
 	animal->colour = (enum colour)(rand() / (RAND_MAX / COLOUR_END + 1));
-	Orcish(animal->name, sizeof animal->name);
+	orcish(animal->name, sizeof animal->name);
 }
 static void mount_info_filler(struct mount_info *const this,
 	struct animal *const animal, const enum allowed is_allowed) {
@@ -937,7 +937,7 @@ static struct bad_emu *bad_emu(void) {
 	animal_filler(&e->emu.animal, &bad_emu_vt);
 	e->emu.favourite_letter = 'a' + rand() / (RAND_MAX / 26 + 1);
 	mount_info_filler(&e->mount_info, &e->emu.animal, RIDER);
-	Orcish(e->muhaha, sizeof e->muhaha);
+	orcish(e->muhaha, sizeof e->muhaha);
 	id_list_push(&animals.list, &e->emu.animal.id);
 	return e;
 }
