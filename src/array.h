@@ -1,6 +1,8 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @std C89
+
  @subtitle Contiguous Dynamic Array (Vector)
 
  ![Example of array.](../web/array.png)
@@ -8,10 +10,6 @@
  <tag:<T>array> is a dynamic array that stores contiguous `ARRAY_TYPE`.
  Resizing may be necessary when increasing the size of the array. This incurs
  amortised cost and any pointers to this memory may become stale.
-
- `<T>array` is not synchronised. Errors are returned with `errno`. The
- parameters are preprocessor macros. Assertions are used in this file; to stop
- them, define `NDEBUG` before `assert.h`.
 
  @param[ARRAY_NAME, ARRAY_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type
@@ -39,15 +37,7 @@
  and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>bipredicate_fn>
  that establishes an equivalence relation, or for `ARRAY_COMPARE`
  <typedef:<PT>compare_fn> that establishes a total order. There can be multiple
- comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
-
- @std C89
- @cf [heap](https://github.com/neil-edelman/heap)
- @cf [list](https://github.com/neil-edelman/list)
- @cf [orcish](https://github.com/neil-edelman/orcish)
- @cf [pool](https://github.com/neil-edelman/pool)
- @cf [set](https://github.com/neil-edelman/set)
- @cf [trie](https://github.com/neil-edelman/trie) */
+ comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`. */
 
 #include <stdlib.h> /* realloc free */
 #include <assert.h> /* assert */
