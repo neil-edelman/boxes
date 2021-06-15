@@ -68,12 +68,12 @@ void orcish(char *const name, size_t name_size) {
 	else if(name_size > max_name_size) { name_size = max_name_size; }
 	/* Now `name_size \in [2, max_name_size]`. */
 	if(name_size <= syllables_max_length + suffixes_max_length) {
-		part = syllables[rand() / (RAND_MAX / syllables_size + 1)];
+		part = syllables[(unsigned)rand() / (RAND_MAX / syllables_size + 1)];
 		part_len = strlen(part);
 		if(part_len >= name_size) part_len = name_size - 1;
 		memcpy(n, part, part_len), n += part_len, name_size -= part_len;
 		if(name_size > suffixes_max_length) {
-			part = suffixes[rand() / (RAND_MAX / suffixes_size + 1)];
+			part = suffixes[(unsigned)rand() / (RAND_MAX / suffixes_size + 1)];
 			part_len = strlen(part);
 			memcpy(n, part, part_len), n += part_len, name_size -= part_len;
 		}
@@ -81,12 +81,12 @@ void orcish(char *const name, size_t name_size) {
 		unsigned no_syllables = ((unsigned)name_size - 1 - suffixes_max_length)
 			/ syllables_max_length;
 		while(no_syllables) {
-			part = syllables[rand() / (RAND_MAX / syllables_size + 1)];
+			part = syllables[(unsigned)rand() / (RAND_MAX / syllables_size +1)];
 			part_len = strlen(part);
 			memcpy(n, part, part_len), n += part_len, name_size -= part_len;
 			no_syllables--;
 		}
-		part = suffixes[rand() / (RAND_MAX / suffixes_size + 1)];
+		part = suffixes[(unsigned)rand() / (RAND_MAX / suffixes_size + 1)];
 		part_len = strlen(part);
 		memcpy(n, part, part_len), n += part_len, name_size -= part_len;
 	}
