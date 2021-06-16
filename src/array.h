@@ -5,21 +5,21 @@
 
  ![Example of array.](../web/array.png)
 
- <tag:<T>array> is a dynamic array that stores contiguous `ARRAY_TYPE`.
+ <tag:<A>array> is a dynamic array that stores contiguous `ARRAY_TYPE`.
  Resizing may be necessary when increasing the size of the array. This incurs
  amortised cost and any pointers to this memory may become stale.
 
  @param[ARRAY_NAME, ARRAY_TYPE]
- `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type
- associated therewith; required. `<PT>` is private, whose names are prefixed in
+ `<A>` that satisfies `C` naming conventions when mangled and a valid tag-type
+ associated therewith; required. `<PA>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ To string trait contained in <to_string.h>; `<S>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PS>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `ARRAY_TO_STRING_NAME`.
 
@@ -27,14 +27,14 @@
  To string trait contained in <../test/array_test.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ array. Must be
  defined equal to a (random) filler function, satisfying
- <typedef:<PT>action_fn>. Output will be shown with the to string trait in
+ <typedef:<PA>action_fn>. Output will be shown with the to string trait in
  which it's defined; provides tests for the base code and all later traits.
 
  @param[ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
  Comparable trait; `<C>` that satisfies `C` naming conventions when mangled
- and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PT>bipredicate_fn>
+ and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PA>bipredicate_fn>
  that establishes an equivalence relation, or for `ARRAY_COMPARE`
- <typedef:<PT>compare_fn> that establishes a total order. There can be multiple
+ <typedef:<PA>compare_fn> that establishes a total order. There can be multiple
  comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
 
  @std C89 */
@@ -64,8 +64,8 @@
 #if ARRAY_TRAITS > 1
 #error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
-#if ARRAY_TRAITS != 0 && (!defined(T_) || !defined(CAT) || !defined(CAT_))
-#error T_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
+#if ARRAY_TRAITS != 0 && (!defined(A_) || !defined(CAT) || !defined(CAT_))
+#error A_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
 #endif
 #if (ARRAY_TRAITS == 0) && defined(ARRAY_TEST)
 #error ARRAY_TEST must be defined in ARRAY_TO_STRING trait.
@@ -84,45 +84,45 @@
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(T_) || defined(PT_) \
+#if defined(A_) || defined(PA_) \
 	|| (defined(ARRAY_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?T_ or CAT_?; possible stray ARRAY_EXPECT_TRAIT?
+#error Unexpected P?A_ or CAT_?; possible stray ARRAY_EXPECT_TRAIT?
 #endif
 #ifndef ARRAY_SUBTYPE /* <!-- !sub-type */
 #define CAT_(x, y) x ## _ ## y
 #define CAT(x, y) CAT_(x, y)
 #endif /* !sub-type --> */
-#define T_(thing) CAT(ARRAY_NAME, thing)
-#define PT_(thing) CAT(array, T_(thing))
+#define A_(thing) CAT(ARRAY_NAME, thing)
+#define PA_(thing) CAT(array, A_(thing))
 
 /** A valid tag type set by `ARRAY_TYPE`. */
-typedef ARRAY_TYPE PT_(type);
+typedef ARRAY_TYPE PA_(type);
 
 /** Operates by side-effects. */
-typedef void (*PT_(action_fn))(PT_(type) *);
+typedef void (*PA_(action_fn))(PA_(type) *);
 
-/** Returns a boolean given read-only `<T>`. */
-typedef int (*PT_(predicate_fn))(const PT_(type) *);
+/** Returns a boolean given read-only `<A>`. */
+typedef int (*PA_(predicate_fn))(const PA_(type) *);
 
-/** Returns a boolean given two read-only `<T>`. */
-typedef int (*PT_(bipredicate_fn))(const PT_(type) *, const PT_(type) *);
+/** Returns a boolean given two read-only `<A>`. */
+typedef int (*PA_(bipredicate_fn))(const PA_(type) *, const PA_(type) *);
 
-/** Returns a boolean given two `<T>`. */
-typedef int (*PT_(biproject_fn))(PT_(type) *, PT_(type) *);
+/** Returns a boolean given two `<A>`. */
+typedef int (*PA_(biproject_fn))(PA_(type) *, PA_(type) *);
 
 /** Three-way comparison on a totally order set; returns an integer value less
  then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
  respectively. */
-typedef int (*PT_(compare_fn))(const PT_(type) *a, const PT_(type) *b);
+typedef int (*PA_(compare_fn))(const PA_(type) *a, const PA_(type) *b);
 
 /** Manages the array field `data`, which is indexed up to `size`. To
- initialise it to an idle state, see <fn:<T>array>, `ARRAY_IDLE`, `{0}`
+ initialise it to an idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}`
  (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
-struct T_(array);
+struct A_(array);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
-struct T_(array) { PT_(type) *data; size_t size, capacity; };
+struct A_(array) { PA_(type) *data; size_t size, capacity; };
 #ifndef ARRAY_IDLE /* <!-- !zero; `{0}` is `C99`. */
 #define ARRAY_IDLE { 0, 0, 0 }
 #endif /* !zero --> */
@@ -131,16 +131,16 @@ struct T_(array) { PT_(type) *data; size_t size, capacity; };
 #endif /* !min --> */
 
 /** Initialises `a` to idle. @order \Theta(1) @allow */
-static void T_(array)(struct T_(array) *const a)
+static void A_(array)(struct A_(array) *const a)
 	{ assert(a), a->data = 0, a->capacity = a->size = 0; }
 
 /** Destroys `a` and returns it to idle. @allow */
-static void T_(array_)(struct T_(array) *const a)
-	{ assert(a), free(a->data), T_(array)(a); }
+static void A_(array_)(struct A_(array) *const a)
+	{ assert(a), free(a->data), A_(array)(a); }
 
 /** @return Converts `i` to an index in `a` from [0, `a.size`]. Negative values
  are implicitly plus `a.size`. @order \Theta(1) @allow */
-static size_t T_(array_clip)(const struct T_(array) *const a, const long i) {
+static size_t A_(array_clip)(const struct A_(array) *const a, const long i) {
 	/* `SIZE_MAX` is `C99`; assumes two's-compliment, not many hw-tests. */
 	assert(a && (size_t)-1 >= (size_t)LONG_MAX
 		&& (unsigned long)((size_t)-1) >= LONG_MAX);
@@ -155,9 +155,9 @@ static size_t T_(array_clip)(const struct T_(array) *const a, const long i) {
  doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] @allow */
-static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
+static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 	size_t c0;
-	PT_(type) *data;
+	PA_(type) *data;
 	const size_t max_size = (size_t)-1 / sizeof *a->data;
 	assert(a);
 	if(a->data) {
@@ -188,11 +188,11 @@ static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
  @return The start of the buffered space, (the back of the array.) If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
  indicates an error. @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
+static PA_(type) *A_(array_buffer)(struct A_(array) *const a,
 	const size_t buffer) {
 	assert(a);
 	if(a->size > (size_t)-1 - buffer) { errno = ERANGE; return 0; }
-	return T_(array_reserve)(a, a->size + buffer) && a->data
+	return A_(array_reserve)(a, a->size + buffer) && a->data
 		? a->data + a->size : 0;
 }
 
@@ -201,8 +201,8 @@ static PT_(type) *T_(array_buffer)(struct T_(array) *const a,
  @return A pointer to the elements. If `a` is idle and `n` is zero, a null
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(array_append)(struct T_(array) *const a, const size_t n) {
-	PT_(type) *const buffer = T_(array_buffer)(a, n);
+static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
+	PA_(type) *const buffer = A_(array_buffer)(a, n);
 	assert(a);
 	if(!buffer) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
@@ -212,13 +212,13 @@ static PT_(type) *T_(array_append)(struct T_(array) *const a, const size_t n) {
 /** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds
  enough elements or it will invalidate pointers in `a`.
  @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
- function behaves as <fn:<T>array_append>.
+ function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
  elements. @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(array_append_at)(struct T_(array) *const a,
+static PA_(type) *A_(array_append_at)(struct A_(array) *const a,
 	const size_t n, const size_t at) {
 	const size_t old_size = a->size;
-	PT_(type) *const buffer = T_(array_append)(a, n);
+	PA_(type) *const buffer = A_(array_append)(a, n);
 	assert(a && at <= old_size);
 	if(!buffer) return 0;
 	memmove(a->data + at + n, a->data + at, sizeof a->data * (old_size - at));
@@ -228,14 +228,14 @@ static PT_(type) *T_(array_append_at)(struct T_(array) *const a,
 /** @return Adds (append, push back) one new element of `a`. The buffer holds 
  an element or it will invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] */
-static PT_(type) *T_(array_new)(struct T_(array) *const a)
-	{ return T_(array_append)(a, 1); }
+static PA_(type) *A_(array_new)(struct A_(array) *const a)
+	{ return A_(array_append)(a, 1); }
 
 /** Shrinks the capacity `a` to the size, freeing unused memory. If the size is
  zero, it will be in an idle state. Invalidates pointers in `a`.
  @return Success. @throws[ERANGE, realloc] Unlikely `realloc` error. */
-static int T_(array_shrink)(struct T_(array) *const a) {
-	PT_(type) *data;
+static int A_(array_shrink)(struct A_(array) *const a) {
+	PA_(type) *data;
 	size_t c;
 	assert(a && a->capacity >= a->size);
 	if(!a->data) return assert(!a->size && !a->capacity), 1;
@@ -247,8 +247,8 @@ static int T_(array_shrink)(struct T_(array) *const a) {
 }
 
 /** Removes `datum` from `a`. @order \O(`a.size`). @allow */
-static void T_(array_remove)(struct T_(array) *const a,
-	PT_(type) *const datum) {
+static void A_(array_remove)(struct A_(array) *const a,
+	PA_(type) *const datum) {
 	const size_t n = (size_t)(datum - a->data);
 	assert(a && datum && datum >= a->data && datum < a->data + a->size);
 	memmove(datum, datum + 1, sizeof *datum * (--a->size - n));
@@ -256,8 +256,8 @@ static void T_(array_remove)(struct T_(array) *const a,
 
 /** Removes `datum` from `a` and replaces it with the tail.
  @order \O(1). @allow */
-static void T_(array_lazy_remove)(struct T_(array) *const a,
-	PT_(type) *const datum) {
+static void A_(array_lazy_remove)(struct A_(array) *const a,
+	PA_(type) *const datum) {
 	size_t n = (size_t)(datum - a->data);
 	assert(a && datum && datum >= a->data && datum < a->data + a->size);
 	if(--a->size != n) memcpy(datum, a->data + a->size, sizeof *datum);
@@ -266,7 +266,7 @@ static void T_(array_lazy_remove)(struct T_(array) *const a,
 /** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
  previously in an active non-idle state, it continues to be.
  @order \Theta(1) @allow */
-static void T_(array_clear)(struct T_(array) *const a)
+static void A_(array_clear)(struct A_(array) *const a)
 	{ assert(a), a->size = 0; }
 
 /*--- Consider having a contiguous trait that all these can go into? It doesn't
@@ -274,26 +274,26 @@ static void T_(array_clear)(struct T_(array) *const a)
  Use the iterator? ---*/
 
 /** @return The last element or null if `a` is empty. @order \Theta(1) @allow */
-static PT_(type) *T_(array_peek)(const struct T_(array) *const a)
+static PA_(type) *A_(array_peek)(const struct A_(array) *const a)
 	{ return assert(a), a->size ? a->data + a->size - 1 : 0; }
 
 /** @return Value from the the top of `a` that is removed or null if the array
  is empty. @order \Theta(1) @allow */
-static PT_(type) *T_(array_pop)(struct T_(array) *const a)
+static PA_(type) *A_(array_pop)(struct A_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
 /** `a` indices [`i0`, `i1`) will be replaced with a copy of `b`.
  @param[b] Can be null, which acts as empty.
  @return Success. @throws[realloc, ERANGE] */
-static int T_(array_splice)(struct T_(array) *const a, const size_t i0,
-	const size_t i1, const struct T_(array) *const b) {
+static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
+	const size_t i1, const struct A_(array) *const b) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
 		/*if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;*/
-		if(!T_(array_buffer)(a, diff)) return 0;
-		/*if(!T_(array_reserve)(a, a->size + diff)) return 0;*/
+		if(!A_(array_buffer)(a, diff)) return 0;
+		/*if(!A_(array_reserve)(a, a->size + diff)) return 0;*/
 		memmove(a->data + i1 + diff, a->data + i1,
 			(a->size - i1) * sizeof *a->data);
 		a->size += diff;
@@ -308,17 +308,17 @@ static int T_(array_splice)(struct T_(array) *const a, const size_t i0,
 
 /** Copies `b`, which can be null, to the back of `a`.
  @return Success. @throws[realloc, ERANGE] */
-static int T_(array_copy)(struct T_(array) *const a,
-	const struct T_(array) *const b)
-	{ return T_(array_splice)(a, a->size, a->size, b); }
+static int A_(array_copy)(struct A_(array) *const a,
+	const struct A_(array) *const b)
+	{ return A_(array_splice)(a, a->size, a->size, b); }
 
 /** For all elements of `b`, calls `copy`, and if true, lazily copies the
  elements to `a`. `a` and `b` can not be the same but `b` can be null.
  @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
-static int T_(array_copy_if)(struct T_(array) *const a,
-	const PT_(predicate_fn) copy, const struct T_(array) *const b) {
-	PT_(type) *i, *fresh;
-	const PT_(type) *end, *rise = 0;
+static int A_(array_copy_if)(struct A_(array) *const a,
+	const PA_(predicate_fn) copy, const struct A_(array) *const b) {
+	PA_(type) *i, *fresh;
+	const PA_(type) *end, *rise = 0;
 	size_t add;
 	int difcpy = 0;
 	assert(a && copy && a != b);
@@ -330,7 +330,7 @@ static int T_(array_copy_if)(struct T_(array) *const a,
 			rise = i;
 		} else { /* Falling edge. */
 			assert(rise && !difcpy && rise < i);
-			if(!(fresh = T_(array_append)(a, add = (size_t)(i - rise))))
+			if(!(fresh = A_(array_append)(a, add = (size_t)(i - rise))))
 				return 0;
 			memcpy(fresh, rise, sizeof *fresh * add);
 			rise = 0;
@@ -338,7 +338,7 @@ static int T_(array_copy_if)(struct T_(array) *const a,
 	}
 	if(rise) { /* Delayed copy. */
 		assert(!difcpy && rise < i);
-		if(!(fresh = T_(array_append)(a, add = (size_t)(i - rise))))
+		if(!(fresh = A_(array_append)(a, add = (size_t)(i - rise))))
 			return 0;
 		memcpy(fresh, rise, sizeof *fresh * add);
 	}
@@ -348,10 +348,10 @@ static int T_(array_copy_if)(struct T_(array) *const a,
 /** For all elements of `a`, calls `keep`, and if false, lazy deletes that
  item, calling `destruct` if not-null.
  @order \O(`a.size` \times `keep` \times `destruct`) @allow */
-static void T_(array_keep_if)(struct T_(array) *const a,
-	const PT_(predicate_fn) keep, const PT_(action_fn) destruct) {
-	PT_(type) *erase = 0, *t;
-	const PT_(type) *retain = 0, *end;
+static void A_(array_keep_if)(struct A_(array) *const a,
+	const PA_(predicate_fn) keep, const PA_(action_fn) destruct) {
+	PA_(type) *erase = 0, *t;
+	const PA_(type) *retain = 0, *end;
 	int keep0 = 1, keep1 = 0;
 	assert(a && keep);
 	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
@@ -384,8 +384,8 @@ static void T_(array_keep_if)(struct T_(array) *const a,
 
 /** Removes at either end of `a` of things that `predicate` returns true.
  @order \O(`a.size` \times `predicate`) @allow */
-static void T_(array_trim)(struct T_(array) *const a,
-	const PT_(predicate_fn) predicate) {
+static void A_(array_trim)(struct A_(array) *const a,
+	const PA_(predicate_fn) predicate) {
 	size_t i;
 	assert(a && predicate);
 	while(a->size && predicate(a->data + a->size - 1)) a->size--;
@@ -398,9 +398,9 @@ static void T_(array_trim)(struct T_(array) *const a,
 /** Iterates through `a` and calls `action` on all the elements. The topology
  of the list should not change while in this function.
  @order \O(`a.size` \times `action`) @allow */
-static void T_(array_each)(struct T_(array) *const a,
-	const PT_(action_fn) action) {
-	PT_(type) *i, *i_end;
+static void A_(array_each)(struct A_(array) *const a,
+	const PA_(action_fn) action) {
+	PA_(type) *i, *i_end;
 	assert(a && action);
 	for(i = a->data, i_end = i + a->size; i < i_end; i++) action(i);
 }
@@ -408,9 +408,9 @@ static void T_(array_each)(struct T_(array) *const a,
 /** Iterates through `a` and calls `action` on all the elements for which
  `predicate` returns true. The topology of the list should not change while in
  this function. @order \O(`a.size` \times `predicate` \times `action`) @allow */
-static void T_(array_if_each)(struct T_(array) *const a,
-	const PT_(predicate_fn) predicate, const PT_(action_fn) action) {
-	PT_(type) *i, *i_end;
+static void A_(array_if_each)(struct A_(array) *const a,
+	const PA_(predicate_fn) predicate, const PA_(action_fn) action) {
+	PA_(type) *i, *i_end;
 	assert(a && predicate && action);
 	for(i = a->data, i_end = i + a->size; i < i_end; i++)
 		if(predicate(i)) action(i);
@@ -419,9 +419,9 @@ static void T_(array_if_each)(struct T_(array) *const a,
 /** Iterates through `a` and calls `predicate` until it returns true.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null. @order \O(`a.size` \times `predicate`) @allow */
-static PT_(type) *T_(array_any)(const struct T_(array) *const a,
-	const PT_(predicate_fn) predicate) {
-	PT_(type) *i, *i_end;
+static PA_(type) *A_(array_any)(const struct A_(array) *const a,
+	const PA_(predicate_fn) predicate) {
+	PA_(type) *i, *i_end;
 	if(!a || !predicate) return 0;
 	for(i = a->data, i_end = i + a->size; i < i_end; i++)
 		if(predicate(i)) return i;
@@ -429,15 +429,15 @@ static PT_(type) *T_(array_any)(const struct T_(array) *const a,
 }
 
 /** Contains all iteration parameters. */
-struct PT_(iterator);
-struct PT_(iterator) { const struct T_(array) *a; size_t i; };
+struct PA_(iterator);
+struct PA_(iterator) { const struct A_(array) *a; size_t i; };
 
 /** Loads `a` into `it`. @implements begin */
-static void PT_(begin)(struct PT_(iterator) *const it,
-	const struct T_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
+static void PA_(begin)(struct PA_(iterator) *const it,
+	const struct A_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
 
 /** Advances `it`. @implements next */
-static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
+static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	assert(it && it->a);
 	return it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
@@ -447,34 +447,34 @@ static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 #error Unexpected ITERATE*.
 #endif
 
-#define ITERATE struct PT_(iterator)
-#define ITERATE_BOX struct T_(array)
-#define ITERATE_TYPE PT_(type)
-#define ITERATE_BEGIN PT_(begin)
-#define ITERATE_NEXT PT_(next)
+#define ITERATE struct PA_(iterator)
+#define ITERATE_BOX struct A_(array)
+#define ITERATE_TYPE PA_(type)
+#define ITERATE_BEGIN PA_(begin)
+#define ITERATE_NEXT PA_(next)
 /* fixme: Also random-access iterators. */
 
-static void PT_(unused_base_coda)(void);
-static void PT_(unused_base)(void) {
-	T_(array_)(0); T_(array_clip)(0, 0); T_(array_append_at)(0, 0, 0);
-	T_(array_new)(0); T_(array_shrink)(0); T_(array_remove)(0, 0);
-	T_(array_lazy_remove)(0, 0); T_(array_clear)(0); T_(array_peek)(0);
-	T_(array_pop)(0); T_(array_splice)(0, 0, 0, 0); T_(array_copy)(0, 0);
-	T_(array_keep_if)(0, 0, 0); T_(array_copy_if)(0, 0, 0);
-	T_(array_trim)(0, 0); T_(array_each)(0, 0); T_(array_if_each)(0, 0, 0);
-	T_(array_any)(0, 0); PT_(begin)(0, 0); PT_(next)(0);
-	PT_(unused_base_coda)();
+static void PA_(unused_base_coda)(void);
+static void PA_(unused_base)(void) {
+	A_(array_)(0); A_(array_clip)(0, 0); A_(array_append_at)(0, 0, 0);
+	A_(array_new)(0); A_(array_shrink)(0); A_(array_remove)(0, 0);
+	A_(array_lazy_remove)(0, 0); A_(array_clear)(0); A_(array_peek)(0);
+	A_(array_pop)(0); A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0);
+	A_(array_keep_if)(0, 0, 0); A_(array_copy_if)(0, 0, 0);
+	A_(array_trim)(0, 0); A_(array_each)(0, 0); A_(array_if_each)(0, 0, 0);
+	A_(array_any)(0, 0); PA_(begin)(0, 0); PA_(next)(0);
+	PA_(unused_base_coda)();
 }
-static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
+static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
 
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
-#define A_(thing) CAT(T_(array), CAT(ARRAY_TO_STRING_NAME, thing))
+#define S_(thing) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define A_(thing) CAT(T_(array), thing)
+#define S_(thing) CAT(A_(array), thing)
 #endif /* !name --> */
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
@@ -484,7 +484,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
-#undef A_
+#undef S_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -495,25 +495,25 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 
 #ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
-#define PTC_(thing) CAT(PT_(thing), ARRAY_COMPARABLE_NAME)
-#define T_C_(thing1, thing2) CAT(T_(thing1), CAT(ARRAY_COMPARABLE_NAME, thing2))
+#define PTC_(thing) CAT(PA_(thing), ARRAY_COMPARABLE_NAME)
+#define T_C_(thing1, thing2) CAT(A_(thing1), CAT(ARRAY_COMPARABLE_NAME, thing2))
 #else /* name --><!-- !name */
-#define PTC_(thing) CAT(PT_(thing), anonymous)
-#define T_C_(thing1, thing2) CAT(T_(thing1), thing2)
+#define PTC_(thing) CAT(PA_(thing), anonymous)
+#define T_C_(thing1, thing2) CAT(A_(thing1), thing2)
 #endif /* !name --> */
 
 #ifdef ARRAY_COMPARE /* <!-- compare */
 
 /* Check that `ARRAY_COMPARE` is a function implementing
- <typedef:<PT>compare>. */
-static const PT_(compare_fn) PTC_(compare) = (ARRAY_COMPARE);
+ <typedef:<PA>compare>. */
+static const PA_(compare_fn) PTC_(compare) = (ARRAY_COMPARE);
 
-/** Lexagraphically compares `a` to `b`, which both can be null.
+/** Lexicographically compares `a` to `b`, which both can be null.
  @return { `a < b`: negative, `a == b`: zero, `a > b`: positive }.
  @order \O(`a.size`) @allow */
-static int T_C_(array, compare)(const struct T_(array) *const a,
-	const struct T_(array) *const b) {
-	PT_(type) *ia, *ib, *end;
+static int T_C_(array, compare)(const struct A_(array) *const a,
+	const struct A_(array) *const b) {
+	PA_(type) *ia, *ib, *end;
 	int diff;
 	/* Null counts as `-\infty`. */
 	if(!a) return b ? -1 : 0;
@@ -532,8 +532,8 @@ static int T_C_(array, compare)(const struct T_(array) *const a,
 /** `a` should be partitioned true/false with less-then `value`.
  @return The first index of `a` that is not less than `value`.
  @order \O(log `a.size`) @allow */
-static size_t T_C_(array, lower_bound)(const struct T_(array) *const a,
-	const PT_(type) *const value) {
+static size_t T_C_(array, lower_bound)(const struct A_(array) *const a,
+	const PA_(type) *const value) {
 	size_t low = 0, high = a->size, mid;
 	assert(a && value);
 	while(low < high) if(PTC_(compare)(value, a->data
@@ -545,8 +545,8 @@ static size_t T_C_(array, lower_bound)(const struct T_(array) *const a,
 /** `a` should be partitioned false/true with greater-than or equals `value`.
  @return The first index of `a` that is greater than `value`.
  @order \O(log `a.size`) @allow */
-static size_t T_C_(array, upper_bound)(const struct T_(array) *const a,
-	const PT_(type) *const value) {
+static size_t T_C_(array, upper_bound)(const struct A_(array) *const a,
+	const PA_(type) *const value) {
 	size_t low = 0, high = a->size, mid;
 	assert(a && value);
 	while(low < high) if(PTC_(compare)(value, a->data
@@ -557,12 +557,12 @@ static size_t T_C_(array, upper_bound)(const struct T_(array) *const a,
 
 /** Copies `datum` at the lower bound of a sorted `a`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] */
-static int T_C_(array, insert)(struct T_(array) *const a,
-	const PT_(type) *const datum) {
+static int T_C_(array, insert)(struct A_(array) *const a,
+	const PA_(type) *const datum) {
 	size_t bound;
 	assert(a && datum);
 	bound = T_C_(array, lower_bound)(a, datum);
-	if(!T_(array_new)(a)) return 0;
+	if(!A_(array_new)(a)) return 0;
 	memmove(a->data + bound + 1, a->data + bound,
 		sizeof *a->data * (a->size - bound - 1));
 	memcpy(a->data + bound, datum, sizeof *datum);
@@ -575,7 +575,7 @@ static int PTC_(vcompar)(const void *const a, const void *const b)
 
 /** Sorts `a` by `qsort` on `ARRAY_COMPARE`.
  @order \O(`a.size` \log `a.size`) @allow */
-static void T_C_(array, sort)(struct T_(array) *const a)
+static void T_C_(array, sort)(struct A_(array) *const a)
 	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PTC_(vcompar)); }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
@@ -584,27 +584,27 @@ static int PTC_(vrevers)(const void *const a, const void *const b)
 
 /** Sorts `a` in reverse by `qsort` on `ARRAY_COMPARE`.
  @order \O(`a.size` \log `a.size`) @allow */
-static void T_C_(array, reverse)(struct T_(array) *const a)
+static void T_C_(array, reverse)(struct A_(array) *const a)
 	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PTC_(vrevers)); }
 
 /** !compare(`a`, `b`) == equals(`a`, `b`) for not `ARRAY_IS_EQUAL`.
- @implements <PT>bipredicate */
+ @implements <PA>bipredicate */
 static int PTC_(is_equal)(const void *const a, const void *const b)
 	{ return !PTC_(compare)(a, b); }
 
 #else /* compare --><!-- is equal */
 
 /* Check that `ARRAY_IS_EQUAL` is a function implementing
- <typedef:<PT>bipredicate>. */
-static const PT_(bipredicate) PTC_(is_equal) = (ARRAY_IS_EQUAL);
+ <typedef:<PA>bipredicate>. */
+static const PA_(bipredicate) PTC_(is_equal) = (ARRAY_IS_EQUAL);
 
 #endif /* is equal --> */
 
 /** @return If `a` piecewise equals `b`, which both can be null.
  @order \O(`size`) */
-static int T_C_(array, is_equal)(const struct T_(array) *const a,
-	const struct T_(array) *const b) {
-	PT_(type) *ia, *ib, *end;
+static int T_C_(array, is_equal)(const struct A_(array) *const a,
+	const struct A_(array) *const b) {
+	PA_(type) *ia, *ib, *end;
 	if(!a) return !b;
 	if(!b || a->size != b->size) return 0;
 	for(ia = a->data, ib = b->data, end = ia + a->size; ia < end; ia++, ib++)
@@ -617,8 +617,8 @@ static int T_C_(array, is_equal)(const struct T_(array) *const a,
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false. @order \O(`a.size` \times `merge`) @allow */
-static void T_C_(array, merge_unique)(struct T_(array) *const a,
-	const PT_(biproject_fn) merge) {
+static void T_C_(array, merge_unique)(struct A_(array) *const a,
+	const PA_(biproject_fn) merge) {
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
 	int is_first, is_last;
@@ -647,7 +647,7 @@ static void T_C_(array, merge_unique)(struct T_(array) *const a,
 }
 
 /** Removes consecutive duplicate elements in `a`. @order \O(`a.size`) @allow */
-static void T_C_(array, unique)(struct T_(array) *const a)
+static void T_C_(array, unique)(struct A_(array) *const a)
 	{ T_C_(array, merge_unique)(a, 0); }
 
 static void PTC_(unused_contrast_coda)(void);
@@ -691,8 +691,8 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #else /* !sub-type --><!-- sub-type */
 #undef ARRAY_SUBTYPE
 #endif /* sub-type --> */
-#undef T_
-#undef PT_
+#undef A_
+#undef PA_
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
 #ifdef ARRAY_TEST
