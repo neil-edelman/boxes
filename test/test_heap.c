@@ -28,7 +28,7 @@ static void int_to_string(const struct int_heap_node *const i,
 
 static void test_int(struct int_heap_node *i, void *const unused) {
 	(void)(unused);
-	i->priority = rand() / (RAND_MAX / 99 + 1) + 1;
+	i->priority = (unsigned)rand() / (RAND_MAX / 99 + 1) + 1;
 	/* printf("test_int: generated %u\n", i->priority); */
 }
 
@@ -58,7 +58,7 @@ static void orc_to_string(const struct orc_heap_node *const node,
 static void test_orc(struct orc_heap_node *node, void *const vpool) {
 	struct orc *orc = orc_pool_new(vpool);
 	if(!orc) { assert(0); exit(EXIT_FAILURE); }
-	orc->health = rand() / (RAND_MAX / 99 + 1);
+	orc->health = (unsigned)rand() / (RAND_MAX / 99 + 1);
 	orcish(orc->name, sizeof orc->name);
 	node->priority = orc->health;
 	node->value = orc;
