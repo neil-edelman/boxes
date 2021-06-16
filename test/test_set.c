@@ -155,7 +155,7 @@ static void vec4_filler(struct vec4 *const v4) {
 #define SET_TYPE struct vec4
 /* <fn:vec4_hash> and <fn:vec4_is_equal> have an extra level of indirection.
  This means that we also have to get an object and fill it to use
- <fn:<E>SetGet>; not very convenient. */
+ <fn:<S>SetGet>; not very convenient. */
 #define SET_POINTER
 #define SET_HASH &vec4_hash
 #define SET_IS_EQUAL &vec4_is_equal
@@ -169,7 +169,7 @@ static void vec4_filler(struct vec4 *const v4) {
 /* I wrote Set to solve
  [this problem](https://stackoverflow.com/q/59091226/2472827). In general, one
  has to declare before defining if we want a hash map because the
- `<E>set_node` is not defined until after. */
+ `<S>set_node` is not defined until after. */
 
 static unsigned boat_id_hash(const int id) { return (unsigned)id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
