@@ -18,8 +18,8 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait contained in <to_string.h>; `<S>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PS>to_string_fn>.
+ To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `ARRAY_TO_STRING_NAME`.
 
@@ -472,9 +472,9 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
-#define S_(thing) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, thing))
+#define Z_(thing) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define S_(thing) CAT(A_(array), thing)
+#define Z_(thing) CAT(A_(array), thing)
 #endif /* !name --> */
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
@@ -484,7 +484,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
-#undef S_
+#undef Z_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
