@@ -10,7 +10,7 @@
 static void (*PT_(to_string))(const PT_(type) *, char (*)[12])
 	= (ARRAY_TO_STRING);
 static const char *(*PT_(array_to_string))(const struct T_(array) *)
-	= A_(to_string);
+	= S_(to_string);
 
 /* `ARRAY_TEST` must be a function that implements <typedef:<PT>action>. */
 static const PT_(action_fn) PT_(filler) = (ARRAY_TEST);
