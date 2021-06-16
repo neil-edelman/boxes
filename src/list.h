@@ -25,8 +25,8 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
- To string trait contained in <to_string.h>; `<S>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PS>to_string_fn>.
+ To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `LIST_TO_STRING_NAME`.
 
@@ -712,9 +712,9 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
 
 #ifdef LIST_TO_STRING_NAME /* <!-- name */
-#define S_(thing) CAT(L_(list), CAT(LIST_TO_STRING_NAME, thing))
+#define Z_(thing) CAT(L_(list), CAT(LIST_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define S_(thing) CAT(L_(list), thing)
+#define Z_(thing) CAT(L_(list), thing)
 #endif /* !name --> */
 #define TO_STRING LIST_TO_STRING
 #include "to_string.h" /** \include */
@@ -724,7 +724,7 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 #include "../test/test_list.h" /** \include */
 #endif /* test --> */
 
-#undef S_
+#undef Z_
 #undef LIST_TO_STRING
 #ifdef LIST_TO_STRING_NAME
 #undef LIST_TO_STRING_NAME
