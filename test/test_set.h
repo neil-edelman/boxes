@@ -18,7 +18,7 @@
 static void (*PE_(to_string))(const PE_(type) *, char (*)[12])
 	= (SET_TO_STRING);
 static const char *(*PE_(set_to_string))(const struct E_(set) *)
-	= A_(to_string);
+	= S_(to_string);
 
 /** Operates by side-effects. Used for `SET_TEST`. */
 typedef void (*PE_(action_fn))(PE_(type) *);

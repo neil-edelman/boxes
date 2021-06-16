@@ -47,8 +47,8 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[SET_TO_STRING]
- To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ To string trait contained in <to_string.h>; `<S>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PS>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `SET_TO_STRING_NAME`.
 
@@ -465,9 +465,9 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 
 
 #ifdef SET_TO_STRING_NAME /* <!-- name */
-#define A_(thing) CAT(E_(set), CAT(SET_TO_STRING_NAME, thing))
+#define S_(thing) CAT(E_(set), CAT(SET_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define A_(thing) CAT(E_(set), thing)
+#define S_(thing) CAT(E_(set), thing)
 #endif /* !name --> */
 #define TO_STRING SET_TO_STRING
 #define TO_STRING_LEFT '{'
@@ -479,7 +479,7 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 #include "../test/test_set.h" /** \include */
 #endif /* test --> */
 
-#undef A_
+#undef S_
 #undef SET_TO_STRING
 #ifdef SET_TO_STRING_NAME
 #undef SET_TO_STRING_NAME
