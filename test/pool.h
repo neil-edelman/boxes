@@ -307,7 +307,7 @@ static int T_(pool_remove)(struct T_(pool) *const pool,
 		return errno = EDOM, 0;
 	assert(!node->x.prev && block->size);
 	if(block == pool->largest) { /* The largest block has a free list. */
-		size_t idx = node - PT_(block_nodes)(block);
+		size_t idx = (size_t)(node - PT_(block_nodes)(block));
 		PT_(enqueue_removed)(pool, node);
 		if(idx >= block->size - 1) PT_(trim_removed)(pool);
 	} else {

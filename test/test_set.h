@@ -208,7 +208,7 @@ static void PE_(test_basic)(struct E_(set_node) *(*const parent_new)(void *),
 	PE_(graph)(&set, "graph/" QUOTE(SET_NAME) "-0.gv");
 	/* Test placing items. */
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
-		size_t n = t - test;
+		size_t n = (size_t)(t - test);
 		if(parent_new) {
 			/* Ignore `space` and allocate a parent pointer. */
 			if(!(t->elem = parent_new(parent))) { assert(0); return; }
@@ -276,7 +276,7 @@ static void PE_(test_basic)(struct E_(set_node) *(*const parent_new)(void *),
 	}
 	printf(" ]\n");*/
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
-		const size_t n = t - test;
+		const size_t n = (size_t)(t - test);
 		struct E_(set_node) *r;
 		if(!(n & (n - 1))) {
 			PE_(to_string)(&t->elem->key, &a);

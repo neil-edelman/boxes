@@ -47,7 +47,7 @@ static void int_to_string(const unsigned *const x, char (*const a)[12])
 	{ sprintf(*a, "%u", *x); }
 /** Fills `x` with random. */
 static void int_fill(unsigned *const x)
-	{ assert(RAND_MAX <= 99999999999l); *x = rand(); }
+	{ assert(RAND_MAX <= 99999999999l); *x = (unsigned)rand(); }
 /** This defines `struct IntSet` and `struct IntSetElement`. */
 #define SET_NAME int
 #define SET_TYPE unsigned
@@ -65,7 +65,7 @@ static void int_fill(unsigned *const x)
  `uint64_t`. */
 
 /** Fast hash function. */
-static unsigned char byteint_hash(unsigned x) { return x; }
+static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
 /* All the same functions as above, otherwise. */
 #define SET_NAME byteint
 #define SET_TYPE unsigned
@@ -134,8 +134,8 @@ struct vec4 {
 /* If we cheat a little, knowing that the numbers are 0-9, we can get a much
  more evenly distributed hash value. */
 static unsigned vec4_hash(const struct vec4 *const v4) {
-	return 1 * v4->n[0] + 10 * v4->n[1]
-		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a');
+	return (unsigned)(1 * v4->n[0] + 10 * v4->n[1]
+		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a'));
 }
 static int vec4_is_equal(const struct vec4 *a, const struct vec4 *const b) {
 	return a->a[0] == b->a[0] && a->a[1] == b->a[1]
@@ -171,7 +171,7 @@ static void vec4_filler(struct vec4 *const v4) {
  has to declare before defining if we want a hash map because the
  `<E>set_node` is not defined until after. */
 
-static unsigned boat_id_hash(const int id) { return id; }
+static unsigned boat_id_hash(const int id) { return (unsigned)id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
 static void boat_id_to_string(const int *const id, char (*const a)[12]);
 static void fill_boat_id(int *const id);
@@ -466,8 +466,8 @@ int main(void) {
 					(unsigned long)line);
 				continue;
 			}
-			if(rand() / (RAND_MAX / (unsigned)words_to_go-- + 1) >= sp_e_to_go)
-				continue;
+			if((unsigned)rand() / (RAND_MAX / (unsigned)words_to_go-- + 1)
+				>= sp_e_to_go) continue;
 			printf("Looking for %s.\n", e->key);
 			sp_es[sp_es_size - sp_e_to_go--] = e;
 		}

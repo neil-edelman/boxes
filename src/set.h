@@ -244,7 +244,7 @@ static int PE_(reserve)(struct E_(set) *const set, const size_t min_capacity) {
 	const unsigned log_c0 = set->log_capacity,
 		log_limit = sizeof(PE_(uint)) * 8 - 1;
 	unsigned log_c1;
-	PE_(uint) c0 = 1 << log_c0, c1, mask;
+	PE_(uint) c0 = (PE_(uint))(1 << log_c0), c1, mask;
 	size_t no_buckets;
 	/* One did set `<PE>uint` to an unsigned type, right? */
 	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
