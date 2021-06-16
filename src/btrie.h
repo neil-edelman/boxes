@@ -5,8 +5,8 @@
 
  ![Example of trie.](../web/trie.png)
 
- An <tag:<N>trie> is a prefix, or digital tree, and is isomorphic to
- <Morrison, 1968 PATRICiA>. It is an index of pointers-to-`N` entries and
+ An <tag:<T>trie> is a prefix, or digital tree, and is isomorphic to
+ <Morrison, 1968 PATRICiA>. It is an index of pointers-to-`T` entries and
  associated unique sorted key that identifies the pointer in a (semi)-compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree). This key is a
  null-terminated read-only (while inside the trie) byte-string, (including
@@ -21,23 +21,23 @@
 
  @param[TRIE_NAME, TRIE_ENTRY]
  A name that satisfies `C` naming conventions when mangled and an optional
- returnable type <typedef:<PN>entry> for an associative map, (it is used by
+ returnable type <typedef:<PT>entry> for an associative map, (it is used by
  reference only except if `TRIE_TEST`.) If not defined, the key-value entry is
- only the key, thus a string set. `<PN>` is private, whose names are prefixed
+ only the key, thus a string set. `<PT>` is private, whose names are prefixed
  in a manner to avoid collisions; any should be re-defined prior to use
  elsewhere.
 
  @param[TRIE_KEY]
- A function that satisfies <typedef:<PN>key_fn>. Must be defined if and only if
+ A function that satisfies <typedef:<PT>key_fn>. Must be defined if and only if
  `TRIE_ENTRY` is defined.
 
  @param[TRIE_TO_STRING]
  Defining this includes `ToString.h` with the keys as the string.
 
  @param[TRIE_TEST]
- Unit testing framework <fn:<N>trie_test>, included in a separate header,
+ Unit testing framework <fn:<T>trie_test>, included in a separate header,
  <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PN>action_fn>. Requires that `NDEBUG` not be defined.
+ satisfying <typedef:<PT>action_fn>. Requires that `NDEBUG` not be defined.
 
  @std C89 */
 

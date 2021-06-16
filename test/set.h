@@ -5,57 +5,57 @@
 
  ![Example of <String>Set.](../web/set.png)
 
- <tag:<E>set> is a collection of elements of <tag:<E>set_node> that doesn't
+ <tag:<S>set> is a collection of elements of <tag:<S>set_node> that doesn't
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
- <typedef:<PE>is_equal_fn>, and a hash function, `SET_HASH`
- <typedef:<PE>hash_fn>.
+ <typedef:<PS>is_equal_fn>, and a hash function, `SET_HASH`
+ <typedef:<PS>hash_fn>.
 
  Internally, it is a separately chained hash table with a maximum load factor
  of `ln 2`, power-of-two resizes, with buckets as a forward linked list of
- <tag:<E>set_node>. This offers some independence of sets from set elements.
- It can be expanded to an associative array by enclosing the `<E>set_node` in
+ <tag:<S>set_node>. This offers some independence of sets from set elements.
+ It can be expanded to an associative array by enclosing the `<S>set_node` in
  another `struct`.
 
  @param[SET_NAME, SET_TYPE]
- `<E>` that satisfies `C` naming conventions when mangled and a valid
- <typedef:<PE>type> associated therewith; required. `<PE>` is private, whose
+ `<S>` that satisfies `C` naming conventions when mangled and a valid
+ <typedef:<PS>type> associated therewith; required. `<PS>` is private, whose
  names are prefixed in a manner to avoid collisions; any should be re-defined
  prior to use elsewhere.
 
  @param[SET_HASH]
- A function satisfying <typedef:<PE>hash_fn>; required.
+ A function satisfying <typedef:<PS>hash_fn>; required.
 
  @param[SET_IS_EQUAL]
- A function satisfying <typedef:<PE>is_equal_fn>; required.
+ A function satisfying <typedef:<PS>is_equal_fn>; required.
 
  @param[SET_POINTER]
- Usually <typedef:<PE>mtype> in the same as <typedef:<PE>type> for simple
- `SET_TYPE`, but this flag makes `<PE>mtype` be a pointer-to-`<PE>type`. This
- affects <typedef:<PE>hash_fn>, <typedef:<PE>is_equal_fn>, and <fn:<E>set_get>,
- making them accept a pointer-to-const-`<E>` instead of a copy of `<E>`.
+ Usually <typedef:<PS>mtype> in the same as <typedef:<PS>type> for simple
+ `SET_TYPE`, but this flag makes `<PS>mtype` be a pointer-to-`<PS>type`. This
+ affects <typedef:<PS>hash_fn>, <typedef:<PS>is_equal_fn>, and <fn:<S>set_get>,
+ making them accept a pointer-to-const-`<S>` instead of a copy of `<S>`.
 
  @param[SET_UINT]
- This is <typedef:<PE>uint> and defaults to `unsigned int`; use when
- <typedef:<PE>hash_fn> is a specific hash length.
+ This is <typedef:<PS>uint> and defaults to `unsigned int`; use when
+ <typedef:<PS>hash_fn> is a specific hash length.
 
  @param[SET_NO_CACHE]
  Calculates the hash every time and discards it; should be used when the hash
- calculation is trivial to avoid storing duplicate <typedef:<PE>uint> _per_
+ calculation is trivial to avoid storing duplicate <typedef:<PS>uint> _per_
  datum, (in rare cases.)
 
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[SET_TO_STRING]
- To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `SET_TO_STRING_NAME`.
 
  @param[SET_TEST]
  To string trait contained in <../test/set_test.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ set. Must be defined
- equal to a (random) filler function, satisfying <typedef:<PE>action_fn>.
+ equal to a (random) filler function, satisfying <typedef:<PS>action_fn>.
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
@@ -87,8 +87,8 @@
 #if SET_TRAITS > 1
 #error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
 #endif
-#if SET_TRAITS != 0 && (!defined(E_) || !defined(CAT) || !defined(CAT_))
-#error E_ or CAT_? not yet defined; use SET_EXPECT_TRAIT.
+#if SET_TRAITS != 0 && (!defined(S_) || !defined(CAT) || !defined(CAT_))
+#error S_ or CAT_? not yet defined; use SET_EXPECT_TRAIT.
 #endif
 #if (SET_TRAITS == 0) && defined(SET_TEST)
 #error SET_TEST must be defined in SET_TO_STRING trait.
@@ -102,81 +102,81 @@
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(E_) || defined(PE_) \
+#if defined(S_) || defined(PS_) \
 	|| (defined(SET_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?E_ or CAT_?; possible stray SET_EXPECT_TRAIT?
+#error Unexpected P?S_ or CAT_?; possible stray SET_EXPECT_TRAIT?
 #endif
 #ifndef SET_SUBTYPE /* <!-- !sub-type */
 #define CAT_(x, y) x ## _ ## y
 #define CAT(x, y) CAT_(x, y)
 #endif /* !sub-type --> */
-#define E_(thing) CAT(SET_NAME, thing)
-#define PE_(thing) CAT(set, CAT(SET_NAME, thing))
+#define S_(thing) CAT(SET_NAME, thing)
+#define PS_(thing) CAT(set, CAT(SET_NAME, thing))
 #ifndef SET_UINT
 #define SET_UINT unsigned
 #endif
 
 /** Valid unsigned integer type used for hash values. The hash map will
- saturate at `min(((ln 2)/2) \cdot range(<PE>uint), (1/8) \cdot range(size_t))`,
+ saturate at `min(((ln 2)/2) \cdot range(<PS>uint), (1/8) \cdot range(size_t))`,
  at which point no new buckets can be added and the load factor will increase
  over the maximum. */
-typedef SET_UINT PE_(uint);
+typedef SET_UINT PS_(uint);
 
-/** Valid tag type defined by `SET_TYPE`. Included in <tag:<E>set_node>. */
-typedef SET_TYPE PE_(type);
+/** Valid tag type defined by `SET_TYPE`. Included in <tag:<S>set_node>. */
+typedef SET_TYPE PS_(type);
 #ifdef SET_POINTER /* <!-- !raw */
-/** `SET_POINTER` modifies `<PE>mtype` to be a pointer, otherwise it's
- the same as <typedef:<PE>type>. */
-typedef const PE_(type)* PE_(mtype);
+/** `SET_POINTER` modifies `<PS>mtype` to be a pointer, otherwise it's
+ the same as <typedef:<PS>type>. */
+typedef const PS_(type)* PS_(mtype);
 #else /* !raw --><!-- raw */
-typedef PE_(type) PE_(mtype);
+typedef PS_(type) PS_(mtype);
 #endif /* raw --> */
 
-/** A map from <typedef:<PE>mtype> onto <typedef:<PE>uint>. Should be as close
+/** A map from <typedef:<PS>mtype> onto <typedef:<PS>uint>. Should be as close
  as possible to a discrete uniform distribution while using all argument for
  maximum performance. */
-typedef PE_(uint) (*PE_(hash_fn))(const PE_(mtype));
-/* Check that `SET_HASH` is a function implementing <typedef:<PE>hash_fn>. */
-static const PE_(hash_fn) PE_(hash) = (SET_HASH);
+typedef PS_(uint) (*PS_(hash_fn))(const PS_(mtype));
+/* Check that `SET_HASH` is a function implementing <typedef:<PS>hash_fn>. */
+static const PS_(hash_fn) PS_(hash) = (SET_HASH);
 
-/** Equivalence relation between <typedef:<PE>mtype> that satisfies
- `<PE>is_equal_fn(a, b) -> <PE>hash_fn(a) == <PE>hash_fn(b)`. */
-typedef int (*PE_(is_equal_fn))(const PE_(mtype) a, const PE_(mtype) b);
+/** Equivalence relation between <typedef:<PS>mtype> that satisfies
+ `<PS>is_equal_fn(a, b) -> <PS>hash_fn(a) == <PS>hash_fn(b)`. */
+typedef int (*PS_(is_equal_fn))(const PS_(mtype) a, const PS_(mtype) b);
 /* Check that `SET_IS_EQUAL` is a function implementing
- <typedef:<PE>is_equal_fn>. */
-static const PE_(is_equal_fn) PE_(equal) = (SET_IS_EQUAL);
+ <typedef:<PS>is_equal_fn>. */
+static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
 /** A di-predicate; returns true if the `replace` replaces the `original`. */
-typedef int (*PE_(replace_fn))(PE_(type) *original, PE_(type) *replace);
+typedef int (*PS_(replace_fn))(PS_(type) *original, PS_(type) *replace);
 
-/** Used in <fn:<E>set_policy_put> when `replace` is null; `original` and
- `replace` are ignored. @implements `<PE>replace_fn` */
-static int PE_(false)(PE_(type) *original, PE_(type) *replace)
+/** Used in <fn:<S>set_policy_put> when `replace` is null; `original` and
+ `replace` are ignored. @implements `<PS>replace_fn` */
+static int PS_(false)(PS_(type) *original, PS_(type) *replace)
 	{ (void)(original); (void)(replace); return 0; }
 
-/** Contains <typedef:<PE>type> as the first element `key`, along with data
- internal to the set. Storage of the `<E>set_node` structure is the
+/** Contains <typedef:<PS>type> as the first element `key`, along with data
+ internal to the set. Storage of the `<S>set_node` structure is the
  responsibility of the caller. */
-struct E_(set_node);
-struct E_(set_node) {
-	PE_(type) key; /* This should be next, but offsetof key in set_node 0. */
-	struct E_(set_node) *next;
+struct S_(set_node);
+struct S_(set_node) {
+	PS_(type) key; /* This should be next, but offsetof key in set_node 0. */
+	struct S_(set_node) *next;
 #ifndef SET_NO_CACHE /* <!-- cache */
-	PE_(uint) hash;
+	PS_(uint) hash;
 #endif /* cache --> */
 };
 
 /* Singly-linked list head for `buckets`. Not really needed, but
  double-pointers are confusing. */
-struct PE_(bucket) { struct E_(set_node) *first; };
+struct PS_(bucket) { struct S_(set_node) *first; };
 
-/** An `<E>set` of `size`. To initialise, see <fn:<E>set>, `SET_IDLE`, `{0}`
+/** An `<S>set` of `size`. To initialise, see <fn:<S>set>, `SET_IDLE`, `{0}`
  (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
-struct E_(set);
-struct E_(set) {
-	struct PE_(bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
+struct S_(set);
+struct S_(set) {
+	struct PS_(bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
 	size_t size;
 	unsigned log_capacity;
 };
@@ -186,29 +186,29 @@ struct E_(set) {
 
 #ifdef SET_POINTER /* <!-- !raw */
 /** @return `element`. */
-static const PE_(type) *PE_(pointer)(const PE_(type) *const element)
+static const PS_(type) *PS_(pointer)(const PS_(type) *const element)
 	{ return element; }
 #else /* !raw --><!-- raw */
 /** @return Re-de-reference `element`. */
-static PE_(type) PE_(pointer)(const PE_(type) *const element)
+static PS_(type) PS_(pointer)(const PS_(type) *const element)
 	{ return *element; }
 #endif /* raw --> */
 
 /** Gets the hash of `element`, which should be consistant. */
-static PE_(uint) PE_(get_hash)(struct E_(set_node) *element) {
+static PS_(uint) PS_(get_hash)(struct S_(set_node) *element) {
 	assert(element);
 #ifdef SET_NO_CACHE /* <!-- !cache */
-	return PE_(hash)(PE_(pointer)(&element->key));
+	return PS_(hash)(PS_(pointer)(&element->key));
 #else /* !cache --><!-- cache */
 	return element->hash;
 #endif /* cache --> */
 }
 
 /** Retrieves a bucket from `set` given the `hash`. Only call this function if
- non-empty. May be invalidated upon a call to <fn:<PE>reserve>.
+ non-empty. May be invalidated upon a call to <fn:<PS>reserve>.
  @return Given a `hash`, compute the bucket. */
-static struct PE_(bucket) *PE_(get_bucket)(struct E_(set) *const set,
-	const PE_(uint) hash) {
+static struct PS_(bucket) *PS_(get_bucket)(struct S_(set) *const set,
+	const PS_(uint) hash) {
 	assert(set && set->buckets);
 	return set->buckets + (hash & ((1 << set->log_capacity) - 1));
 }
@@ -216,15 +216,15 @@ static struct PE_(bucket) *PE_(get_bucket)(struct E_(set) *const set,
 /** Linear search for `data` in `bucket`.
  @param[hash] Must match the hash of `data`.
  @return The link that points to the `data` or null. */
-static struct E_(set_node) **PE_(bucket_to)(struct PE_(bucket) *const bucket,
-	const PE_(uint) hash, const PE_(mtype) data) {
-	struct E_(set_node) **to_x, *x;
+static struct S_(set_node) **PS_(bucket_to)(struct PS_(bucket) *const bucket,
+	const PS_(uint) hash, const PS_(mtype) data) {
+	struct S_(set_node) **to_x, *x;
 	assert(bucket);
 	for(to_x = &bucket->first; (x = *to_x); to_x = &x->next) {
 #ifndef SET_NO_CACHE /* <!-- cache: a quick out. */
 		if(hash != x->hash) continue;
 #endif /* cache --> */
-		if(PE_(equal)(data, PE_(pointer)(&x->key))) return to_x;
+		if(PS_(equal)(data, PS_(pointer)(&x->key))) return to_x;
 	}
 #ifdef SET_NO_CACHE /* <!-- !cache */
 	(void)(hash);
@@ -238,17 +238,17 @@ static struct E_(set_node) **PE_(bucket_to)(struct PE_(bucket) *const bucket,
  allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
-static int PE_(reserve)(struct E_(set) *const set, const size_t min_capacity) {
-	struct PE_(bucket) *buckets, *b, *b_end, *new_b;
-	struct E_(set_node) **to_x, *x;
+static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
+	struct PS_(bucket) *buckets, *b, *b_end, *new_b;
+	struct S_(set_node) **to_x, *x;
 	const unsigned log_c0 = set->log_capacity,
-		log_limit = sizeof(PE_(uint)) * 8 - 1;
+		log_limit = sizeof(PS_(uint)) * 8 - 1;
 	unsigned log_c1;
-	PE_(uint) c0 = 1 << log_c0, c1, mask;
+	PS_(uint) c0 = (PS_(uint))(1 << log_c0), c1, mask;
 	size_t no_buckets;
-	/* One did set `<PE>uint` to an unsigned type, right? */
+	/* One did set `<PS>uint` to an unsigned type, right? */
 	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
-		&& (PE_(uint))-1 > 0);
+		&& (PS_(uint))-1 > 0);
 	/* `SIZE_MAX` min 65535 (`C99`) -> 5041 but typically much larger _st_ it
 	 becomes saturated while the load factor increases.
 	 Saturation `1/8 * SIZE_MAX`, (which is not defined in `C90`.) */
@@ -277,14 +277,14 @@ static int PE_(reserve)(struct E_(set) *const set, const size_t min_capacity) {
 	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->first = 0;
 	/* Expectation value of rehashing an entry is half. */
 	for(b = buckets, b_end = buckets + c0; b < b_end; b++) {
-		PE_(uint) hash;
+		PS_(uint) hash;
 		assert(!((b - buckets) & mask));
 		to_x = &b->first;
 		while(*to_x) {
-			hash = PE_(get_hash)((x = *to_x));
+			hash = PS_(get_hash)((x = *to_x));
 			if(!(hash & mask)) { to_x = &x->next; continue; }
 			*to_x = x->next; /* Remove. */
-			new_b = PE_(get_bucket)(set, hash);
+			new_b = PS_(get_bucket)(set, hash);
 			x->next = new_b->first, new_b->first = x;
 		}
 	}
@@ -294,20 +294,20 @@ static int PE_(reserve)(struct E_(set) *const set, const size_t min_capacity) {
 /** General put, `element` in `set` and returns the collided element, if any,
  as long as `replace` is null or returns true. If `replace` returns false,
  returns `element`. */
-static struct E_(set_node) *PE_(put)(struct E_(set) *const set,
-	struct E_(set_node) *const element, const PE_(replace_fn) replace) {
-	struct PE_(bucket) *bucket;
-	struct E_(set_node) **to_x = 0, *x = 0;
-	PE_(uint) hash;
+static struct S_(set_node) *PS_(put)(struct S_(set) *const set,
+	struct S_(set_node) *const element, const PS_(replace_fn) replace) {
+	struct PS_(bucket) *bucket;
+	struct S_(set_node) **to_x = 0, *x = 0;
+	PS_(uint) hash;
 	assert(set && element);
-	hash = PE_(hash)(PE_(pointer)(&element->key));
+	hash = PS_(hash)(PS_(pointer)(&element->key));
 #ifndef SET_NO_CACHE /* <!-- cache */
 	element->hash = hash;
 #endif /* cache --> */
 	if(!set->buckets) goto grow_table;
 	/* Delete any duplicate. */
-	bucket = PE_(get_bucket)(set, hash);
-	if(!(to_x = PE_(bucket_to)(bucket, hash, PE_(pointer)(&element->key))))
+	bucket = PS_(get_bucket)(set, hash);
+	if(!(to_x = PS_(bucket_to)(bucket, hash, PS_(pointer)(&element->key))))
 		goto grow_table;
 	x = *to_x;
 	if(replace && !replace(&x->key, &element->key)) return element;
@@ -315,9 +315,9 @@ static struct E_(set_node) *PE_(put)(struct E_(set) *const set,
 	goto add_element;
 grow_table:
 	assert(set->size + 1 > set->size);
-	/* Didn't <fn:<PE>reserve>, now one can't tell error except `errno`. */
-	if(!PE_(reserve)(set, set->size + 1)) return 0;
-	bucket = PE_(get_bucket)(set, hash);
+	/* Didn't <fn:<PS>reserve>, now one can't tell error except `errno`. */
+	if(!PS_(reserve)(set, set->size + 1)) return 0;
+	bucket = PS_(get_bucket)(set, hash);
 	set->size++;
 add_element:
 	element->next = bucket->first, bucket->first = element;
@@ -325,19 +325,19 @@ add_element:
 }
 
 /** Initialises `set` to idle. @order \Theta(1) @allow */
-static void E_(set)(struct E_(set) *const set)
+static void S_(set)(struct S_(set) *const set)
 	{ assert(set); set->buckets = 0; set->log_capacity = 0; set->size = 0; }
 
 /** Destroys `set` and returns it to idle. @allow */
-static void E_(set_)(struct E_(set) *const set)
-	{ assert(set), free(set->buckets), E_(set)(set); }
+static void S_(set_)(struct S_(set) *const set)
+	{ assert(set), free(set->buckets), S_(set)(set); }
 
 /** Clears and removes all entries from `set`. The capacity and memory of the
  hash table is preserved, but all previous values are un-associated. The load
  factor will be less until it reaches it's previous size.
  @param[set] If null, does nothing. @order \Theta(`set.buckets`) @allow */
-static void E_(set_clear)(struct E_(set) *const set) {
-	struct PE_(bucket) *b, *b_end;
+static void S_(set_clear)(struct S_(set) *const set) {
+	struct PS_(bucket) *b, *b_end;
 	assert(set);
 	if(!set->log_capacity) return;
 	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
@@ -345,17 +345,17 @@ static void E_(set_clear)(struct E_(set) *const set) {
 	set->size = 0;
 }
 
-/** @return The value in `set` which <typedef:<PE>is_equal_fn> `SET_IS_EQUAL`
+/** @return The value in `set` which <typedef:<PS>is_equal_fn> `SET_IS_EQUAL`
  `data`, or, if no such value exists, null.
  @param[set] If null, returns null. @order Average \O(1), (hash distributes
  elements uniformly); worst \O(n). @allow */
-static struct E_(set_node) *E_(set_get)(struct E_(set) *const set,
-	const PE_(mtype) data) {
-	struct E_(set_node) **to_x;
-	PE_(uint) hash;
+static struct S_(set_node) *S_(set_get)(struct S_(set) *const set,
+	const PS_(mtype) data) {
+	struct S_(set_node) **to_x;
+	PS_(uint) hash;
 	if(!set || !set->buckets) return 0;
-	hash = PE_(hash)(data);
-	to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), hash, data);
+	hash = PS_(hash)(data);
+	to_x = PS_(bucket_to)(PS_(get_bucket)(set, hash), hash, data);
 	return to_x ? *to_x : 0;
 }
 
@@ -363,21 +363,21 @@ static struct E_(set_node) *E_(set_get)(struct E_(set) *const set,
  the buckets of `set`. @return Success.
  @throws[ERANGE] `reserve` plus the size would take a bigger number then could
  fit in a `size_t`. @throws[realloc] @allow */
-static int E_(set_reserve)(struct E_(set) *const set, const size_t reserve)
+static int S_(set_reserve)(struct S_(set) *const set, const size_t reserve)
 	{ return set ? reserve > (size_t)-1 - set->size ? (errno = ERANGE, 0) :
-	PE_(reserve)(set, set->size + reserve) : 0; }
+	PS_(reserve)(set, set->size + reserve) : 0; }
 
 /** Puts the `element` in `set`.
  @param[set, element] If null, returns null. @param[element] Should not be of a
  set because the integrity of that set will be compromised.
  @return Any ejected element or null. (An ejected element has
- <typedef:<PE>is_equal_fn> `SET_IS_EQUAL` the `element`.)
+ <typedef:<PS>is_equal_fn> `SET_IS_EQUAL` the `element`.)
  @throws[realloc, ERANGE] There was an error with a re-sizing. Successfully
- calling <fn:<E>set_reserve> with at least one before ensures that this does
+ calling <fn:<S>set_reserve> with at least one before ensures that this does
  not happen. @order Average amortised \O(1), (hash distributes elements
  uniformly); worst \O(n). @allow */
-static struct E_(set_node) *E_(set_put)(struct E_(set) *const set,
-	struct E_(set_node) *const element) { return PE_(put)(set, element, 0); }
+static struct S_(set_node) *S_(set_put)(struct S_(set) *const set,
+	struct S_(set_node) *const element) { return PS_(put)(set, element, 0); }
 
 /** Puts the `element` in `set` only if the entry is absent or if calling
  `replace` returns true.
@@ -389,24 +389,24 @@ static struct E_(set_node) *E_(set_put)(struct E_(set) *const set,
  @return Any ejected element or null. On collision, if `replace` returns false
  or `replace` is null, returns `element` and leaves the other element in the
  set. @throws[realloc, ERANGE] There was an error with a re-sizing.
- Successfully calling <fn:<E>set_reserve> with at least one before ensures that
+ Successfully calling <fn:<S>set_reserve> with at least one before ensures that
  this does not happen. @order Average amortised \O(1), (hash distributes
  elements uniformly); worst \O(n). @allow */
-static struct E_(set_node) *E_(set_policy_put)(struct E_(set) *const set,
-	struct E_(set_node) *const element, const PE_(replace_fn) replace)
-	{ return PE_(put)(set, element, replace ? replace : &PE_(false)); }
+static struct S_(set_node) *S_(set_policy_put)(struct S_(set) *const set,
+	struct S_(set_node) *const element, const PS_(replace_fn) replace)
+	{ return PS_(put)(set, element, replace ? replace : &PS_(false)); }
 
 /** Removes an element `data` from `set`.
  @return Successfully ejected element or null. This element is free to be put
  into another set or modify it's hash values. @order Average \O(1), (hash
  distributes elements uniformly); worst \O(n). @allow */
-static struct E_(set_node) *E_(set_remove)(struct E_(set) *const set,
-	const PE_(mtype) data) {
-	PE_(uint) hash;
-	struct E_(set_node) **to_x, *x;
+static struct S_(set_node) *S_(set_remove)(struct S_(set) *const set,
+	const PS_(mtype) data) {
+	PS_(uint) hash;
+	struct S_(set_node) **to_x, *x;
 	if(!set || !set->buckets) return 0;
-	hash = PE_(hash)(data);
-	if(!(to_x = PE_(bucket_to)(PE_(get_bucket)(set, hash), hash, data)))
+	hash = PS_(hash)(data);
+	if(!(to_x = PS_(bucket_to)(PS_(get_bucket)(set, hash), hash, data)))
 		return 0;
 	x = *to_x;
 	*to_x = x->next;
@@ -416,17 +416,17 @@ static struct E_(set_node) *E_(set_remove)(struct E_(set) *const set,
 }
 
 /** Contains all iteration parameters. */
-struct PE_(iterator);
-struct PE_(iterator)
-	{ const struct E_(set) *set; size_t b; struct E_(set_node) *e; };
+struct PS_(iterator);
+struct PS_(iterator)
+	{ const struct S_(set) *set; size_t b; struct S_(set_node) *e; };
 
 /** Loads `set` into `it`. @implements begin */
-static void PE_(begin)(struct PE_(iterator) *const it,
-	const struct E_(set) *const set)
+static void PS_(begin)(struct PS_(iterator) *const it,
+	const struct S_(set) *const set)
 	{ assert(it && set), it->set = set, it->b = 0, it->e = 0; }
 
 /** Advances `it`. @implements next */
-static const PE_(type) *PE_(next)(struct PE_(iterator) *const it) {
+static const PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 	const size_t b_end = 1 << it->set->log_capacity;
 	assert(it && it->set);
 	if(!it->set->buckets) return 0;
@@ -445,29 +445,29 @@ static const PE_(type) *PE_(next)(struct PE_(iterator) *const it) {
 #error Unexpected ITERATE*.
 #endif
 
-#define ITERATE struct PE_(iterator)
-#define ITERATE_BOX struct E_(set)
-#define ITERATE_TYPE PE_(type)
-#define ITERATE_BEGIN PE_(begin)
-#define ITERATE_NEXT PE_(next)
+#define ITERATE struct PS_(iterator)
+#define ITERATE_BOX struct S_(set)
+#define ITERATE_TYPE PS_(type)
+#define ITERATE_BEGIN PS_(begin)
+#define ITERATE_NEXT PS_(next)
 
-static void PE_(unused_base_coda)(void);
-static void PE_(unused_base)(void) {
-	E_(set)(0); E_(set_)(0); E_(set_clear)(0); E_(set_get)(0, 0);
-	E_(set_reserve)(0, 0); E_(set_put)(0, 0);  E_(set_policy_put)(0, 0, 0);
-	E_(set_remove)(0, 0); PE_(begin)(0, 0); PE_(next)(0);
-	PE_(unused_base_coda)();
+static void PS_(unused_base_coda)(void);
+static void PS_(unused_base)(void) {
+	S_(set)(0); S_(set_)(0); S_(set_clear)(0); S_(set_get)(0, 0);
+	S_(set_reserve)(0, 0); S_(set_put)(0, 0);  S_(set_policy_put)(0, 0, 0);
+	S_(set_remove)(0, 0); PS_(begin)(0, 0); PS_(next)(0);
+	PS_(unused_base_coda)();
 }
-static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
+static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 
 
 #elif defined(SET_TO_STRING) /* base code --><!-- to string trait */
 
 
 #ifdef SET_TO_STRING_NAME /* <!-- name */
-#define A_(thing) CAT(E_(set), CAT(SET_TO_STRING_NAME, thing))
+#define Z_(thing) CAT(S_(set), CAT(SET_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define A_(thing) CAT(E_(set), thing)
+#define Z_(thing) CAT(S_(set), thing)
 #endif /* !name --> */
 #define TO_STRING SET_TO_STRING
 #define TO_STRING_LEFT '{'
@@ -479,7 +479,7 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 #include "../test/test_set.h" /** \include */
 #endif /* test --> */
 
-#undef A_
+#undef Z_
 #undef SET_TO_STRING
 #ifdef SET_TO_STRING_NAME
 #undef SET_TO_STRING_NAME
@@ -500,8 +500,8 @@ static void PE_(unused_base_coda)(void) { PE_(unused_base)(); }
 #else /* !sub-type --><!-- sub-type */
 #undef SET_SUBTYPE
 #endif /* sub-type --> */
-#undef E_
-#undef PE_
+#undef S_
+#undef PS_
 #undef SET_NAME
 #undef SET_TYPE
 #undef SET_UINT
