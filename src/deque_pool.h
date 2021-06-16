@@ -86,7 +86,7 @@ typedef unsigned pool32;
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(X_) || defined(PU_) \
+#if defined(X_) || defined(PX_) \
 	|| (defined(POOL_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
 #error Unexpected P?X_ or CAT_?; possible stray POOL_EXPECT_TRAIT?
 #endif
@@ -95,22 +95,22 @@ typedef unsigned pool32;
 #define CAT(x, y) CAT_(x, y)
 #endif /* !sub-type --> */
 #define X_(thing) CAT(POOL_NAME, thing)
-#define PU_(thing) CAT(pool, X_(thing))
+#define PX_(thing) CAT(pool, X_(thing))
 
 /** A valid tag type set by `POOL_TYPE`. */
-typedef POOL_TYPE PU_(type);
+typedef POOL_TYPE PX_(type);
 
 /** A chunk followed by data of `capacity`. `size` acts as a checksum. */
-struct PU_(chunk) { size_t capacity, size; };
+struct PX_(chunk) { size_t capacity, size; };
 
 /* This relies on `array.h` which must be in the same directory. */
-#define ARRAY_NAME PU_(chunk)
-#define ARRAY_TYPE struct PU_(chunk) *
+#define ARRAY_NAME PX_(chunk)
+#define ARRAY_TYPE struct PX_(chunk) *
 #define ARRAY_SUBTYPE
 #include "array.h"
 
 /* This relies on `list.h` which must be in the same directory. */
-#define LIST_NAME PU_(type)
+#define LIST_NAME PX_(type)
 #define LIST_SUBTYPE
 #include "list.h"
 
@@ -121,8 +121,8 @@ struct PU_(chunk) { size_t capacity, size; };
  ![States.](../web/states.png) */
 struct X_(pool);
 struct X_(pool) {
-	struct PU_(chunk_array) chunks;
-	struct PU_(type_list) free;
+	struct PX_(chunk_array) chunks;
+	struct PX_(type_list) free;
 };
 /* `{0}` is `C99`. */
 #ifndef POOL_IDLE /* <!-- !zero */
@@ -369,11 +369,11 @@ static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 #error Unexpected ITERATE*.
 #endif
 	
-#define ITERATE struct PU_(iterator)
+#define ITERATE struct PX_(iterator)
 #define ITERATE_BOX struct X_(pool)
-#define ITERATE_TYPE PU_(type)
-#define ITERATE_BEGIN PU_(begin)
-#define ITERATE_NEXT PU_(next)
+#define ITERATE_TYPE PX_(type)
+#define ITERATE_BEGIN PX_(begin)
+#define ITERATE_NEXT PX_(next)
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
@@ -422,7 +422,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #undef POOL_SUBTYPE
 #endif /* sub-type --> */
 #undef X_
-#undef PU_
+#undef PX_
 #undef POOL_NAME
 #undef POOL_TYPE
 #ifdef POOL_TEST
