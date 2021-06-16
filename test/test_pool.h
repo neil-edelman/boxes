@@ -12,7 +12,7 @@
 static void (*PP_(to_string))(const PP_(type) *, char (*)[12])
 	= (POOL_TO_STRING);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
-	= S_(to_string);
+	= Z_(to_string);
 
 /* POOL_TEST must be a function that implements <typedef:<PP>Action>. */
 static const PP_(action_fn) PP_(filler) = (POOL_TEST);

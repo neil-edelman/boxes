@@ -22,8 +22,8 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string trait contained in <to_string.h>; `<S>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PS>to_string_fn>.
+ To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`.
 
@@ -392,9 +392,9 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
 
 #ifdef POOL_TO_STRING_NAME /* <!-- name */
-#define S_(thing) CAT(P_(pool), CAT(POOL_TO_STRING_NAME, thing))
+#define Z_(thing) CAT(P_(pool), CAT(POOL_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define S_(thing) CAT(P_(pool), thing)
+#define Z_(thing) CAT(P_(pool), thing)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
 #include "to_string.h" /** \include */
@@ -404,7 +404,7 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #include "../test/test_pool.h" /** \include */
 #endif /* test --> */
 
-#undef S_
+#undef Z_
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
 #undef POOL_TO_STRING_NAME
