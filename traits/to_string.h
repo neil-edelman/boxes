@@ -89,7 +89,7 @@ static const char *A_(to_string)(const PA_(box) *const box) {
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
-		if((size = b - buffer)
+		if((size = (size_t)(b - buffer))
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
 			{ if(PA_(next)(&it)) goto ellipsis; else break; }
 	}
