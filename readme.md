@@ -3,7 +3,7 @@
 ## Priority Queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), [&lt;PH&gt;pvalue](#user-content-typedef-eccf9f42), [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596), [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), [&lt;PH&gt;pvalue](#user-content-typedef-eccf9f42), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1), [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_node](#user-content-tag-7243593c), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -14,8 +14,6 @@
 ![Example of heap.](web/heap.png)
 
 A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&lt;H&gt;heap_node](#user-content-tag-7243593c)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>heap_node>array` with implicit heap properties, with an optionally cached [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload\. As such, one needs to have `array.h` file in the same directory\.
-
-`<H>heap` is not synchronised\. Errors are returned with `errno`\. The parameters are `#define` preprocessor macros, and are all undefined at the end of the file for convenience\. Assertions are used in this file; to stop them, define `NDEBUG` before `assert.h`\.
 
 
 
@@ -28,17 +26,15 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&l
  * Parameter: HEAP\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PA&gt;to_string_fn](#user-content-typedef-a933c596)\. There can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`\.
+   To string trait contained in [to\_string\.h](to_string.h); `<Z>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)\. There can be multiple to string traits, but only one can omit `HEAP_TO_STRING_NAME`\.
  * Parameter: HEAP\_TEST  
    To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `heap`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
    C89
  * Dependancies:  
-   [array.h](../array/)
+   [array](https://github.com/neil-edelman/array)
  * Caveat:  
    Add decrease priority\.
- * See also:  
-   [Array](https://github.com/neil-edelman/Array); [List](https://github.com/neil-edelman/List); [Orcish](https://github.com/neil-edelman/Orcish); [Pool](https://github.com/neil-edelman/Pool); [Set](https://github.com/neil-edelman/Set); [Trie](https://github.com/neil-edelman/Trie)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -75,9 +71,9 @@ If `HEAP_VALUE` is set, a pointer to the [&lt;PH&gt;value](#user-content-typedef
 
 
 
-### <a id = "user-content-typedef-a933c596" name = "user-content-typedef-a933c596">&lt;PA&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PA&gt;to_string_fn</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
 
 Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
@@ -145,7 +141,7 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-4355676a">&lt;H&gt;heap_buffer</a></td><td>heap, add</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-6fb489ab">&lt;A&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-2a4c2c14">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
@@ -297,9 +293,9 @@ Adds and heapifies `add` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https
 
 
 
-### <a id = "user-content-fn-6fb489ab" name = "user-content-fn-6fb489ab">&lt;A&gt;to_string</a> ###
+### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
    Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
