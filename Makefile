@@ -64,10 +64,10 @@ bison := bison
 #lemon := lemon
 
 CC   := clang #gcc
-CF   := -Wall -Wextra -pedantic -Weverything -Wno-comma -Wno-logical-op-parentheses \
+CF   := -Wall -Wextra -pedantic -O3 -ffast-math -funroll-loops \
+-Weverything -Wno-comma -Wno-logical-op-parentheses \
 -Wno-parentheses -Wno-poison-system-directories -Wno-documentation-unknown-command \
--Wno-documentation -Wno-shift-op-parentheses -Wno-empty-body \
--O3 -ffast-math -funroll-loops \
+-Wno-documentation -Wno-shift-op-parentheses -Wno-empty-body -Wno-padded \
 -ansi # -std=c99 -mwindows
 OF   := -O3 # -framework OpenGL -framework GLUT or -lglut -lGLEW
 

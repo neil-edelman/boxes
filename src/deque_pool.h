@@ -86,97 +86,48 @@ typedef unsigned pool32;
 
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(U_) || defined(PU_) \
+#if defined(X_) || defined(PU_) \
 	|| (defined(POOL_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?U_ or CAT_?; possible stray POOL_EXPECT_TRAIT?
+#error Unexpected P?X_ or CAT_?; possible stray POOL_EXPECT_TRAIT?
 #endif
 #ifndef POOL_SUBTYPE /* <!-- !sub-type */
 #define CAT_(x, y) x ## _ ## y
 #define CAT(x, y) CAT_(x, y)
 #endif /* !sub-type --> */
-#define U_(thing) CAT(POOL_NAME, thing)
-#define PU_(thing) CAT(pool, U_(thing))
+#define X_(thing) CAT(POOL_NAME, thing)
+#define PU_(thing) CAT(pool, X_(thing))
 
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE PU_(type);
 
 /** A chunk followed by data of `capacity`. `size` acts as a checksum. */
 struct PU_(chunk) { size_t capacity, size; };
-	
+
 /* This relies on `array.h` which must be in the same directory. */
-#define ARRAY_NAME PU_(map)
+#define ARRAY_NAME PU_(chunk)
 #define ARRAY_TYPE struct PU_(chunk) *
 #define ARRAY_SUBTYPE
 #include "array.h"
 
-struct U_(pool) {
-	pool32 *bmp0;
-	struct PU_(map_array) map;
-};
+/* This relies on `list.h` which must be in the same directory. */
+#define LIST_NAME PU_(type)
+#define LIST_SUBTYPE
+#include "list.h"
 
-
-/*
-int32_t bmp[capacity];
-
-T data[capacity];
-
-struct map {
-	union { size_t size, capacity; <- how are we supposed to know if the data is in the array? }
-	T *chunk;
-};
-
-array {
-   size_t capacity, size;
-   struct map *data;
-} map;
-int32_t *bmp; */
-
-
-/* Free-list item. The reason it's doubly-linked is to support popping a link
- from the end. The reason it's <tag:<PT>x> instead of <tag:<PT>node> is it
- greatly simplifies edge cases, at the expense of casting. */
-struct PT_(x) { struct PT_(x) *prev, *next; };
-
-/* Nodes containing the data and, in the largest block, the free list item;
- smaller blocks satisfy `x.prev, x.next -> deleted`. */
-struct PT_(node) { PT_(type) data; struct PT_(x) x; };
-
-/* Information about each block and will have capacity in an array of
- <tag:<PT>node> at `block + 1`, specified by <fn:<PT>block_nodes>. */
-struct PT_(block) { struct PT_(block) *smaller; size_t capacity, size; };
-
-/** Retrieve the array implicitly after `b`. */
-static struct PT_(node) *PT_(block_nodes)(struct PT_(block) *const b)
-	{ return (struct PT_(node) *)(void *)(b + 1); }
-
-/** Zeroed data is a valid state. To instantiate to an idle state, see
- <fn:<T>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
+/** Consists of a map of several chunks of increasing size and a free-list.
+ Zeroed data is a valid state. To instantiate to an idle state, see
+ <fn:<X>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
-struct T_(pool);
-struct T_(pool) {
-	/* Ideally, all items to go in here, but there may be smaller blocks. */
-	struct PT_(block) *largest;
-	/* Fibonacci; largest -> (c0 < c1 || c0 == c1 == max_size). */
-	size_t next_capacity;
-	/* {0,0} -> no nodes removed from the largest block, otherwise, it's a
-	 circular list of items in the largest block. All other states invalid. */
-	struct PT_(x) removed;
+struct X_(pool);
+struct X_(pool) {
+	struct PU_(chunk_array) chunks;
+	struct PU_(type_list) free;
 };
 /* `{0}` is `C99`. */
 #ifndef POOL_IDLE /* <!-- !zero */
-#define POOL_IDLE { 0, 0, { 0, 0 } }
+#define POOL_IDLE { ARRAY_IDLE, LIST_IDLE }
 #endif /* !zero --> */
-
-/** Container of `data`. */
-static struct PT_(node) *PT_(data_upcast)(PT_(type) *const data)
-	{ return (struct PT_(node) *)(void *)
-	((char *)data - offsetof(struct PT_(node), data)); }
-
-/** Container of `x`. */
-static struct PT_(node) *PT_(x_upcast)(struct PT_(x) *const x)
-	{ return (struct PT_(node) *)(void *)
-	((char *)x - offsetof(struct PT_(node), x)); }
 
 /** Only for the not-largest, inactive, blocks, `node` becomes a boolean,
  null/not. */
@@ -419,7 +370,7 @@ static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 #endif
 	
 #define ITERATE struct PU_(iterator)
-#define ITERATE_BOX struct U_(pool)
+#define ITERATE_BOX struct X_(pool)
 #define ITERATE_TYPE PU_(type)
 #define ITERATE_BEGIN PU_(begin)
 #define ITERATE_NEXT PU_(next)
@@ -439,9 +390,9 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 
 #ifdef POOL_TO_STRING_NAME /* <!-- name */
-#define A_(thing) CAT(U_(pool), CAT(POOL_TO_STRING_NAME, thing))
+#define A_(thing) CAT(X_(pool), CAT(POOL_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define A_(thing) CAT(U_(pool), thing)
+#define A_(thing) CAT(X_(pool), thing)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
 #include "to_string.h" /** \include */
@@ -470,7 +421,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #else /* !sub-type --><!-- sub-type */
 #undef POOL_SUBTYPE
 #endif /* sub-type --> */
-#undef U_
+#undef X_
 #undef PU_
 #undef POOL_NAME
 #undef POOL_TYPE
