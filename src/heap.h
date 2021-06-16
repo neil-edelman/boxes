@@ -31,8 +31,8 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
- To string trait contained in <to_string.h>; `<S>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PS>to_string_fn>.
+ To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `HEAP_TO_STRING_NAME`.
 
@@ -391,9 +391,9 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 
 #ifdef HEAP_TO_STRING_NAME /* <!-- name */
-#define S_(thing) CAT(H_(heap), CAT(HEAP_TO_STRING_NAME, thing))
+#define Z_(thing) CAT(H_(heap), CAT(HEAP_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define S_(thing) CAT(H_(heap), thing)
+#define Z_(thing) CAT(H_(heap), thing)
 #endif /* !name --> */
 #define TO_STRING HEAP_TO_STRING
 #include "to_string.h" /** \include */
@@ -403,7 +403,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #include "../test/test_heap.h" /** \include */
 #endif /* test --> */
 
-#undef S_
+#undef Z_
 #undef HEAP_TO_STRING
 #ifdef HEAP_TO_STRING_NAME
 #undef HEAP_TO_STRING_NAME
