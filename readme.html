@@ -37,8 +37,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>type">&lt;PT&gt;type</a>, <a href = "#typedef:<PT>action_fn">&lt;PT&gt;action_fn</a>, <a href = "#typedef:<PT>predicate_fn">&lt;PT&gt;predicate_fn</a>, <a href = "#typedef:<PT>bipredicate_fn">&lt;PT&gt;bipredicate_fn</a>, <a href = "#typedef:<PT>biproject_fn">&lt;PT&gt;biproject_fn</a>, <a href = "#typedef:<PT>compare_fn">&lt;PT&gt;compare_fn</a>, <a href = "#typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<T>array">&lt;T&gt;array</a>, <a href = "#tag:<PT>iterator">&lt;PT&gt;iterator</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PA>action_fn">&lt;PA&gt;action_fn</a>, <a href = "#typedef:<PA>predicate_fn">&lt;PA&gt;predicate_fn</a>, <a href = "#typedef:<PA>bipredicate_fn">&lt;PA&gt;bipredicate_fn</a>, <a href = "#typedef:<PA>biproject_fn">&lt;PA&gt;biproject_fn</a>, <a href = "#typedef:<PA>compare_fn">&lt;PA&gt;compare_fn</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<A>array">&lt;A&gt;array</a>, <a href = "#tag:<PA>iterator">&lt;PA&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,36 +50,32 @@
 
 <p><img alt = "Example of array." src = "web/array.png" width = 310 height = 262></p>
 
-<p><a href = "#tag:&lt;T&gt;array">&lt;T&gt;array</a> is a dynamic array that stores contiguous <code>ARRAY_TYPE</code>. Resizing may be necessary when increasing the size of the array. This incurs amortised cost and any pointers to this memory may become stale.</p>
-
-<p><code>&lt;T&gt;array</code> is not synchronised. Errors are returned with <code>errno</code>. The parameters are preprocessor macros. Assertions are used in this file; to stop them, define <code>NDEBUG</code> before <code>assert.h</code>.</p>
+<p><a href = "#tag:&lt;A&gt;array">&lt;A&gt;array</a> is a dynamic array that stores contiguous <code>ARRAY_TYPE</code>. Resizing may be necessary when increasing the size of the array. This incurs amortised cost and any pointers to this memory may become stale.</p>
 
 </div>
 
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
-	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type associated therewith; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dd><code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type associated therewith; required. <code>&lt;PA&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: ARRAY_TO_STRING_NAME, ARRAY_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PA&gt;to_string_fn">&lt;PA&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>ARRAY_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;Z&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PZ&gt;to_string_fn">&lt;PZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>ARRAY_TO_STRING_NAME</code>.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/array_test.h">../test/array_test.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> array. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action_fn">&lt;PT&gt;action_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
+	<dd>To string trait contained in <a href = "../test/array_test.h">../test/array_test.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> array. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PA&gt;action_fn">&lt;PA&gt;action_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Parameter: ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE</dt>
-	<dd>Comparable trait; <code>&lt;C&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a function implementing, for <code>ARRAY_IS_EQUAL</code> <a href = "#typedef:&lt;PT&gt;bipredicate_fn">&lt;PT&gt;bipredicate_fn</a> that establishes an equivalence relation, or for <code>ARRAY_COMPARE</code> <a href = "#typedef:&lt;PT&gt;compare_fn">&lt;PT&gt;compare_fn</a> that establishes a total order. There can be multiple comparable traits, but only one can omit <code>ARRAY_COMPARABLE_NAME</code>.</dd>
+	<dd>Comparable trait; <code>&lt;C&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a function implementing, for <code>ARRAY_IS_EQUAL</code> <a href = "#typedef:&lt;PA&gt;bipredicate_fn">&lt;PA&gt;bipredicate_fn</a> that establishes an equivalence relation, or for <code>ARRAY_COMPARE</code> <a href = "#typedef:&lt;PA&gt;compare_fn">&lt;PA&gt;compare_fn</a> that establishes a total order. There can be multiple comparable traits, but only one can omit <code>ARRAY_COMPARABLE_NAME</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
-	<dt>See also:</dt>
-	<dd><a href = "https://github.com/neil-edelman/heap">heap</a>; <a href = "https://github.com/neil-edelman/list">list</a>; <a href = "https://github.com/neil-edelman/orcish">orcish</a>; <a href = "https://github.com/neil-edelman/pool">pool</a>; <a href = "https://github.com/neil-edelman/set">set</a>; <a href = "https://github.com/neil-edelman/trie">trie</a></dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
 
 <div>
 
-<h3><a id = "typedef:<PT>type" name = "typedef:<PT>type">&lt;PT&gt;type</a></h3>
+<h3><a id = "typedef:<PA>type" name = "typedef:<PA>type">&lt;PA&gt;type</a></h3>
 
-<p><code>typedef ARRAY_TYPE <strong>&lt;PT&gt;type</strong>;</code></p>
+<p><code>typedef ARRAY_TYPE <strong>&lt;PA&gt;type</strong>;</code></p>
 
 <p>A valid tag type set by <code>ARRAY_TYPE</code>.</p>
 
@@ -87,9 +83,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PT>action_fn" name = "typedef:<PT>action_fn">&lt;PT&gt;action_fn</a></h3>
+<h3><a id = "typedef:<PA>action_fn" name = "typedef:<PA>action_fn">&lt;PA&gt;action_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;type *);</code></p>
+<p><code>typedef void(*<strong>&lt;PA&gt;action_fn</strong>)(&lt;PA&gt;type *);</code></p>
 
 <p>Operates by side-effects.</p>
 
@@ -97,39 +93,39 @@
 
 <div>
 
-<h3><a id = "typedef:<PT>predicate_fn" name = "typedef:<PT>predicate_fn">&lt;PT&gt;predicate_fn</a></h3>
+<h3><a id = "typedef:<PA>predicate_fn" name = "typedef:<PA>predicate_fn">&lt;PA&gt;predicate_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PT&gt;predicate_fn</strong>)(const &lt;PT&gt;type *);</code></p>
+<p><code>typedef int(*<strong>&lt;PA&gt;predicate_fn</strong>)(const &lt;PA&gt;type *);</code></p>
 
-<p>Returns a boolean given read-only <code>&lt;T&gt;</code>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PT>bipredicate_fn" name = "typedef:<PT>bipredicate_fn">&lt;PT&gt;bipredicate_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PT&gt;bipredicate_fn</strong>)(const &lt;PT&gt;type *, const &lt;PT&gt;type *);</code></p>
-
-<p>Returns a boolean given two read-only <code>&lt;T&gt;</code>.</p>
+<p>Returns a boolean given read-only <code>&lt;A&gt;</code>.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PT>biproject_fn" name = "typedef:<PT>biproject_fn">&lt;PT&gt;biproject_fn</a></h3>
+<h3><a id = "typedef:<PA>bipredicate_fn" name = "typedef:<PA>bipredicate_fn">&lt;PA&gt;bipredicate_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PT&gt;biproject_fn</strong>)(&lt;PT&gt;type *, &lt;PT&gt;type *);</code></p>
+<p><code>typedef int(*<strong>&lt;PA&gt;bipredicate_fn</strong>)(const &lt;PA&gt;type *, const &lt;PA&gt;type *);</code></p>
 
-<p>Returns a boolean given two <code>&lt;T&gt;</code>.</p>
+<p>Returns a boolean given two read-only <code>&lt;A&gt;</code>.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PT>compare_fn" name = "typedef:<PT>compare_fn">&lt;PT&gt;compare_fn</a></h3>
+<h3><a id = "typedef:<PA>biproject_fn" name = "typedef:<PA>biproject_fn">&lt;PA&gt;biproject_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PT&gt;compare_fn</strong>)(const &lt;PT&gt;type *a, const &lt;PT&gt;type *b);</code></p>
+<p><code>typedef int(*<strong>&lt;PA&gt;biproject_fn</strong>)(&lt;PA&gt;type *, &lt;PA&gt;type *);</code></p>
+
+<p>Returns a boolean given two <code>&lt;A&gt;</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PA>compare_fn" name = "typedef:<PA>compare_fn">&lt;PA&gt;compare_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PA&gt;compare_fn</strong>)(const &lt;PA&gt;type *a, const &lt;PA&gt;type *b);</code></p>
 
 <p>Three-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
@@ -137,9 +133,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PA>to_string_fn" name = "typedef:<PA>to_string_fn">&lt;PA&gt;to_string_fn</a></h3>
+<h3><a id = "typedef:<PZ>to_string_fn" name = "typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PA&gt;to_string_fn</strong>)(const &lt;PA&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code></p>
 
 <p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
 
@@ -149,11 +145,11 @@
 
 <div>
 
-<h3><a id = "tag:<T>array" name = "tag:<T>array">&lt;T&gt;array</a></h3>
+<h3><a id = "tag:<A>array" name = "tag:<A>array">&lt;A&gt;array</a></h3>
 
-<p><code>struct <strong>&lt;T&gt;array</strong>;</code></p>
+<p><code>struct <strong>&lt;A&gt;array</strong>;</code></p>
 
-<p>Manages the array field <code>data</code>, which is indexed up to <code>size</code>. To initialise it to an idle state, see <a href = "#fn:&lt;T&gt;array">&lt;T&gt;array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
+<p>Manages the array field <code>data</code>, which is indexed up to <code>size</code>. To initialise it to an idle state, see <a href = "#fn:&lt;A&gt;array">&lt;A&gt;array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 280></p>
 
@@ -161,9 +157,9 @@
 
 <div>
 
-<h3><a id = "tag:<PT>iterator" name = "tag:<PT>iterator">&lt;PT&gt;iterator</a></h3>
+<h3><a id = "tag:<PA>iterator" name = "tag:<PA>iterator">&lt;PA&gt;iterator</a></h3>
 
-<p><code>struct <strong>&lt;PT&gt;iterator</strong>;</code></p>
+<p><code>struct <strong>&lt;PA&gt;iterator</strong>;</code></p>
 
 <p>Contains all iteration parameters.</p>
 
@@ -177,45 +173,45 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array">&lt;T&gt;array</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array">&lt;A&gt;array</a></td><td>a</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_">&lt;T&gt;array_</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_">&lt;A&gt;array_</a></td><td>a</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<T>array_clip">&lt;T&gt;array_clip</a></td><td>a, i</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#fn:<A>array_clip">&lt;A&gt;array_clip</a></td><td>a, i</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<T>array_reserve">&lt;T&gt;array_reserve</a></td><td>a, min</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<A>array_reserve">&lt;A&gt;array_reserve</a></td><td>a, min</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_buffer">&lt;T&gt;array_buffer</a></td><td>a, buffer</td></tr>
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_buffer">&lt;A&gt;array_buffer</a></td><td>a, buffer</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_append">&lt;T&gt;array_append</a></td><td>a, n</td></tr>
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_append">&lt;A&gt;array_append</a></td><td>a, n</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_append_at">&lt;T&gt;array_append_at</a></td><td>a, n, at</td></tr>
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_append_at">&lt;A&gt;array_append_at</a></td><td>a, n, at</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_remove">&lt;T&gt;array_remove</a></td><td>a, datum</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_remove">&lt;A&gt;array_remove</a></td><td>a, datum</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_lazy_remove">&lt;T&gt;array_lazy_remove</a></td><td>a, datum</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_lazy_remove">&lt;A&gt;array_lazy_remove</a></td><td>a, datum</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_clear">&lt;T&gt;array_clear</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_clear">&lt;A&gt;array_clear</a></td><td>a</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_peek">&lt;T&gt;array_peek</a></td><td>a</td></tr>
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_peek">&lt;A&gt;array_peek</a></td><td>a</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_pop">&lt;T&gt;array_pop</a></td><td>a</td></tr>
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_pop">&lt;A&gt;array_pop</a></td><td>a</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<T>array_copy_if">&lt;T&gt;array_copy_if</a></td><td>a, copy, b</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<A>array_copy_if">&lt;A&gt;array_copy_if</a></td><td>a, copy, b</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_keep_if">&lt;T&gt;array_keep_if</a></td><td>a, keep, destruct</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_keep_if">&lt;A&gt;array_keep_if</a></td><td>a, keep, destruct</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_trim">&lt;T&gt;array_trim</a></td><td>a, predicate</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_trim">&lt;A&gt;array_trim</a></td><td>a, predicate</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_each">&lt;T&gt;array_each</a></td><td>a, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_each">&lt;A&gt;array_each</a></td><td>a, action</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_if_each">&lt;T&gt;array_if_each</a></td><td>a, predicate, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_if_each">&lt;A&gt;array_if_each</a></td><td>a, predicate, action</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#fn:<T>array_any">&lt;T&gt;array_any</a></td><td>a, predicate</td></tr>
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_any">&lt;A&gt;array_any</a></td><td>a, predicate</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<A>to_string">&lt;A&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<Z>to_string">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array_test">&lt;T&gt;array_test</a></td><td></td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<A>array_test">&lt;A&gt;array_test</a></td><td></td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>array<C>comparable_test">&lt;T&gt;array&lt;C&gt;comparable_test</a></td><td></td></tr>
 
@@ -243,9 +239,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array" name = "fn:<T>array">&lt;T&gt;array</a></h3>
+<h3><a id = "fn:<A>array" name = "fn:<A>array">&lt;A&gt;array</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array</strong>(struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
 <p>Initialises <code>a</code> to idle.</p>
 
@@ -258,9 +254,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_" name = "fn:<T>array_">&lt;T&gt;array_</a></h3>
+<h3><a id = "fn:<A>array_" name = "fn:<A>array_">&lt;A&gt;array_</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_</strong>(struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
 <p>Destroys <code>a</code> and returns it to idle.</p>
 
@@ -268,9 +264,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_clip" name = "fn:<T>array_clip">&lt;T&gt;array_clip</a></h3>
+<h3><a id = "fn:<A>array_clip" name = "fn:<A>array_clip">&lt;A&gt;array_clip</a></h3>
 
-<p><code>static size_t <strong>&lt;T&gt;array_clip</strong>(const struct &lt;T&gt;array *const <em>a</em>, const long <em>i</em>)</code></p>
+<p><code>static size_t <strong>&lt;A&gt;array_clip</strong>(const struct &lt;A&gt;array *const <em>a</em>, const long <em>i</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -283,9 +279,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_reserve" name = "fn:<T>array_reserve">&lt;T&gt;array_reserve</a></h3>
+<h3><a id = "fn:<A>array_reserve" name = "fn:<A>array_reserve">&lt;A&gt;array_reserve</a></h3>
 
-<p><code>static int <strong>&lt;T&gt;array_reserve</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>min</em>)</code></p>
+<p><code>static int <strong>&lt;A&gt;array_reserve</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>min</em>)</code></p>
 
 <p>Ensures <code>min</code> capacity of <code>a</code>. Invalidates pointers in <code>a</code>.</p>
 
@@ -303,11 +299,11 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_buffer" name = "fn:<T>array_buffer">&lt;T&gt;array_buffer</a></h3>
+<h3><a id = "fn:<A>array_buffer" name = "fn:<A>array_buffer">&lt;A&gt;array_buffer</a></h3>
 
-<p><code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_buffer</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>buffer</em>)</code></p>
+<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_buffer</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>buffer</em>)</code></p>
 
-<p>The capacity of <code>a</code> will be increased to at least <code>buffer</code> elements. Invalidates pointers in <code>a</code>.</p>
+<p>The capacity of <code>a</code> will be increased to at least <code>buffer</code> elements beyond the size. Invalidates pointers in <code>a</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -319,9 +315,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_append" name = "fn:<T>array_append">&lt;T&gt;array_append</a></h3>
+<h3><a id = "fn:<A>array_append" name = "fn:<A>array_append">&lt;A&gt;array_append</a></h3>
 
-<p><code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_append</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>n</em>)</code></p>
+<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_append</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>)</code></p>
 
 <p>Adds <code>n</code> elements to the back of <code>a</code>. The buffer holds enough elements or it will invalidate pointers in <code>a</code>.</p>
 
@@ -335,15 +331,15 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_append_at" name = "fn:<T>array_append_at">&lt;T&gt;array_append_at</a></h3>
+<h3><a id = "fn:<A>array_append_at" name = "fn:<A>array_append_at">&lt;A&gt;array_append_at</a></h3>
 
-<p><code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_append_at</strong>(struct &lt;T&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code></p>
+<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_append_at</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code></p>
 
 <p>Adds <code>n</code> un-initialised elements at position <code>at</code> in <code>a</code>. The buffer holds enough elements or it will invalidate pointers in <code>a</code>.</p>
 
 <dl>
 	<dt>Parameter: <em>at</em></dt>
-	<dd>A number smaller than or equal to <code>a.size</code>; if <code>a.size</code>, this function behaves as <a href = "#fn:&lt;T&gt;array_append">&lt;T&gt;array_append</a>.</dd>
+	<dd>A number smaller than or equal to <code>a.size</code>; if <code>a.size</code>, this function behaves as <a href = "#fn:&lt;A&gt;array_append">&lt;A&gt;array_append</a>.</dd>
 	<dt>Return:</dt>
 	<dd>A pointer to the start of the new region, where there are <code>n</code> elements.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
@@ -353,9 +349,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_remove" name = "fn:<T>array_remove">&lt;T&gt;array_remove</a></h3>
+<h3><a id = "fn:<A>array_remove" name = "fn:<A>array_remove">&lt;A&gt;array_remove</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_remove</strong>(struct &lt;T&gt;array *const <em>a</em>, &lt;PT&gt;type *const <em>datum</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_remove</strong>(struct &lt;A&gt;array *const <em>a</em>, &lt;PA&gt;type *const <em>datum</em>)</code></p>
 
 <p>Removes <code>datum</code> from <code>a</code>.</p>
 
@@ -368,9 +364,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_lazy_remove" name = "fn:<T>array_lazy_remove">&lt;T&gt;array_lazy_remove</a></h3>
+<h3><a id = "fn:<A>array_lazy_remove" name = "fn:<A>array_lazy_remove">&lt;A&gt;array_lazy_remove</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_lazy_remove</strong>(struct &lt;T&gt;array *const <em>a</em>, &lt;PT&gt;type *const <em>datum</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_lazy_remove</strong>(struct &lt;A&gt;array *const <em>a</em>, &lt;PA&gt;type *const <em>datum</em>)</code></p>
 
 <p>Removes <code>datum</code> from <code>a</code> and replaces it with the tail.</p>
 
@@ -383,9 +379,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_clear" name = "fn:<T>array_clear">&lt;T&gt;array_clear</a></h3>
+<h3><a id = "fn:<A>array_clear" name = "fn:<A>array_clear">&lt;A&gt;array_clear</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_clear</strong>(struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_clear</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
 <p>Sets <code>a</code> to be empty. That is, the size of <code>a</code> will be zero, but if it was previously in an active non-idle state, it continues to be.</p>
 
@@ -398,9 +394,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_peek" name = "fn:<T>array_peek">&lt;T&gt;array_peek</a></h3>
+<h3><a id = "fn:<A>array_peek" name = "fn:<A>array_peek">&lt;A&gt;array_peek</a></h3>
 
-<p><code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_peek</strong>(const struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_peek</strong>(const struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -413,9 +409,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_pop" name = "fn:<T>array_pop">&lt;T&gt;array_pop</a></h3>
+<h3><a id = "fn:<A>array_pop" name = "fn:<A>array_pop">&lt;A&gt;array_pop</a></h3>
 
-<p><code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_pop</strong>(struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_pop</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -428,9 +424,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_copy_if" name = "fn:<T>array_copy_if">&lt;T&gt;array_copy_if</a></h3>
+<h3><a id = "fn:<A>array_copy_if" name = "fn:<A>array_copy_if">&lt;A&gt;array_copy_if</a></h3>
 
-<p><code>static int <strong>&lt;T&gt;array_copy_if</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>copy</em>, const struct &lt;T&gt;array *const <em>b</em>)</code></p>
+<p><code>static int <strong>&lt;A&gt;array_copy_if</strong>(struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;predicate_fn <em>copy</em>, const struct &lt;A&gt;array *const <em>b</em>)</code></p>
 
 <p>For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null.</p>
 
@@ -444,9 +440,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_keep_if" name = "fn:<T>array_keep_if">&lt;T&gt;array_keep_if</a></h3>
+<h3><a id = "fn:<A>array_keep_if" name = "fn:<A>array_keep_if">&lt;A&gt;array_keep_if</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_keep_if</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>keep</em>, const &lt;PT&gt;action_fn <em>destruct</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_keep_if</strong>(struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;predicate_fn <em>keep</em>, const &lt;PA&gt;action_fn <em>destruct</em>)</code></p>
 
 <p>For all elements of <code>a</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> if not-null.</p>
 
@@ -459,9 +455,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_trim" name = "fn:<T>array_trim">&lt;T&gt;array_trim</a></h3>
+<h3><a id = "fn:<A>array_trim" name = "fn:<A>array_trim">&lt;A&gt;array_trim</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_trim</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_trim</strong>(struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p>Removes at either end of <code>a</code> of things that <code>predicate</code> returns true.</p>
 
@@ -474,9 +470,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_each" name = "fn:<T>array_each">&lt;T&gt;array_each</a></h3>
+<h3><a id = "fn:<A>array_each" name = "fn:<A>array_each">&lt;A&gt;array_each</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_each</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;action_fn <em>action</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_each</strong>(struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;action_fn <em>action</em>)</code></p>
 
 <p>Iterates through <code>a</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
 
@@ -489,9 +485,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_if_each" name = "fn:<T>array_if_each">&lt;T&gt;array_if_each</a></h3>
+<h3><a id = "fn:<A>array_if_each" name = "fn:<A>array_if_each">&lt;A&gt;array_if_each</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_if_each</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>predicate</em>, const &lt;PT&gt;action_fn <em>action</em>)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_if_each</strong>(struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;predicate_fn <em>predicate</em>, const &lt;PA&gt;action_fn <em>action</em>)</code></p>
 
 <p>Iterates through <code>a</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
 
@@ -504,9 +500,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_any" name = "fn:<T>array_any">&lt;T&gt;array_any</a></h3>
+<h3><a id = "fn:<A>array_any" name = "fn:<A>array_any">&lt;A&gt;array_any</a></h3>
 
-<p><code>static &lt;PT&gt;type *<strong>&lt;T&gt;array_any</strong>(const struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_any</strong>(const struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p>Iterates through <code>a</code> and calls <code>predicate</code> until it returns true.</p>
 
@@ -521,9 +517,9 @@
 
 <div>
 
-<h3><a id = "fn:<A>to_string" name = "fn:<A>to_string">&lt;A&gt;to_string</a></h3>
+<h3><a id = "fn:<Z>to_string" name = "fn:<Z>to_string">&lt;Z&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;A&gt;to_string</strong>(const &lt;PA&gt;box *const <em>box</em>)</code></p>
+<p><code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -536,9 +532,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array_test" name = "fn:<T>array_test">&lt;T&gt;array_test</a></h3>
+<h3><a id = "fn:<A>array_test" name = "fn:<A>array_test">&lt;A&gt;array_test</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array_test</strong>(void)</code></p>
+<p><code>static void <strong>&lt;A&gt;array_test</strong>(void)</code></p>
 
 <p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
 
@@ -558,9 +554,9 @@
 
 <h3><a id = "fn:<T>array<C>compare" name = "fn:<T>array<C>compare">&lt;T&gt;array&lt;C&gt;compare</a></h3>
 
-<p><code>static int <strong>&lt;T&gt;array&lt;C&gt;compare</strong>(const struct &lt;T&gt;array *const <em>a</em>, const struct &lt;T&gt;array *const <em>b</em>)</code></p>
+<p><code>static int <strong>&lt;T&gt;array&lt;C&gt;compare</strong>(const struct &lt;A&gt;array *const <em>a</em>, const struct &lt;A&gt;array *const <em>b</em>)</code></p>
 
-<p>Lexagraphically compares <code>a</code> to <code>b</code>, which both can be null.</p>
+<p>Lexicographically compares <code>a</code> to <code>b</code>, which both can be null.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -575,7 +571,7 @@
 
 <h3><a id = "fn:<T>array<C>lower_bound" name = "fn:<T>array<C>lower_bound">&lt;T&gt;array&lt;C&gt;lower_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;T&gt;array&lt;C&gt;lower_bound</strong>(const struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;type *const <em>value</em>)</code></p>
+<p><code>static size_t <strong>&lt;T&gt;array&lt;C&gt;lower_bound</strong>(const struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;type *const <em>value</em>)</code></p>
 
 <p><code>a</code> should be partitioned true/false with less-then <code>value</code>.</p>
 
@@ -592,7 +588,7 @@
 
 <h3><a id = "fn:<T>array<C>upper_bound" name = "fn:<T>array<C>upper_bound">&lt;T&gt;array&lt;C&gt;upper_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;T&gt;array&lt;C&gt;upper_bound</strong>(const struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;type *const <em>value</em>)</code></p>
+<p><code>static size_t <strong>&lt;T&gt;array&lt;C&gt;upper_bound</strong>(const struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;type *const <em>value</em>)</code></p>
 
 <p><code>a</code> should be partitioned false/true with greater-than or equals <code>value</code>.</p>
 
@@ -609,7 +605,7 @@
 
 <h3><a id = "fn:<T>array<C>sort" name = "fn:<T>array<C>sort">&lt;T&gt;array&lt;C&gt;sort</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;sort</strong>(struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;sort</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
 <p>Sorts <code>a</code> by <code>qsort</code> on <code>ARRAY_COMPARE</code>.</p>
 
@@ -624,7 +620,7 @@
 
 <h3><a id = "fn:<T>array<C>reverse" name = "fn:<T>array<C>reverse">&lt;T&gt;array&lt;C&gt;reverse</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;reverse</strong>(struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;reverse</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
 <p>Sorts <code>a</code> in reverse by <code>qsort</code> on <code>ARRAY_COMPARE</code>.</p>
 
@@ -639,7 +635,7 @@
 
 <h3><a id = "fn:<T>array<C>merge_unique" name = "fn:<T>array<C>merge_unique">&lt;T&gt;array&lt;C&gt;merge_unique</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;merge_unique</strong>(struct &lt;T&gt;array *const <em>a</em>, const &lt;PT&gt;biproject_fn <em>merge</em>)</code></p>
+<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;merge_unique</strong>(struct &lt;A&gt;array *const <em>a</em>, const &lt;PA&gt;biproject_fn <em>merge</em>)</code></p>
 
 <p>Removes consecutive duplicate elements in <code>a</code>.</p>
 
@@ -656,7 +652,7 @@
 
 <h3><a id = "fn:<T>array<C>unique" name = "fn:<T>array<C>unique">&lt;T&gt;array&lt;C&gt;unique</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;unique</strong>(struct &lt;T&gt;array *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;unique</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
 <p>Removes consecutive duplicate elements in <code>a</code>.</p>
 
