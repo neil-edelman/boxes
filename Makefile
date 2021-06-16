@@ -1,4 +1,4 @@
-# GNU Make 3.81; MacOSX gcc 4.2.1; MacOSX MinGW 4.3.0
+# GNU Make 3.81; MacOSX gcc 4.2.1; clang 19.6.0; MacOSX MinGW 4.3.0
 
 # https://stackoverflow.com/questions/18136918/how-to-get-current-relative-directory-of-your-makefile
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
@@ -66,7 +66,7 @@ bison := bison
 CC   := clang #gcc
 CF   := -Wall -Wextra -pedantic -Weverything -Wno-comma -Wno-logical-op-parentheses \
 -Wno-parentheses -Wno-poison-system-directories -Wno-documentation-unknown-command \
--Wno-shift-op-parentheses \
+-Wno-documentation -Wno-shift-op-parentheses -Wno-empty-body \
 -O3 -ffast-math -funroll-loops \
 -ansi # -std=c99 -mwindows
 OF   := -O3 # -framework OpenGL -framework GLUT or -lglut -lGLEW

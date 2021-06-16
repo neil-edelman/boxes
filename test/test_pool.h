@@ -263,7 +263,7 @@ static void PT_(test_random)(void) {
 		} else {
 			struct PT_(block) *block;
 			struct PT_(node) *node = 0, *end;
-			size_t idx = rand() / (RAND_MAX + 1.0) * size;
+			size_t idx = (unsigned)rand() / (RAND_MAX / size + 1);
 			assert(a.largest);
 			/* Pick random. */
 			for(block = a.largest; block; block = block->smaller) {

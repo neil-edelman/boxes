@@ -23,7 +23,7 @@ static const size_t colour_size = sizeof colours / sizeof *colours;
 static void colour_to_string(const enum colour *c, char (*const a)[12])
 	{ assert(*c < colour_size); sprintf(*a, "%s", colours[*c]); }
 static void colour_filler(enum colour *const c)
-	{ *c = rand() / (RAND_MAX / (int)colour_size + 1); }
+	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define POOL_NAME colour
 #define POOL_TYPE enum colour
 #define POOL_EXPECT_TRAIT
