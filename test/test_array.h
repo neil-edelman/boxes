@@ -219,7 +219,7 @@ static void PT_(test_random)(void) {
 				if(is_print) printf("popping %s.\n", str);
 				assert(data == T_(array_pop)(&a));
 			} else {
-				size_t idx = rand() / (RAND_MAX + 1.0) * size;
+				size_t idx = (unsigned)rand() / (RAND_MAX / size + 1);
 				if(!(data = a.data + idx)) continue;
 				PT_(to_string)(data, &str);
 				if(is_print)
@@ -535,7 +535,7 @@ static void PTC_(test_sort)(void) {
 	int cmp;
 	/* Random array of Arrays. */
 	for(a = as; a < as_end; a++) {
-		size_t size = rand() / (RAND_MAX / 5 + 1), i;
+		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
 		PT_(type) *x, *x_end;
 		T_(array)(a);
 		x = T_(array_append)(a, size);
