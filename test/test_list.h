@@ -231,7 +231,7 @@ static void PN_(test_sort)(struct N_(list_node) *(*const parent_new)(void *),
 	int cmp;
 	/* Random lists. */
 	for(list = lists; list < lists_end; list++) {
-		size_t no_links = rand() / (RAND_MAX / 5 + 1);
+		size_t no_links = (unsigned)rand() / (RAND_MAX / 5 + 1);
 		struct N_(list_node) *link, *link_a, *link_b;
 		N_(list_clear)(list);
 		while(no_links) {

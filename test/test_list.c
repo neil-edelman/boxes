@@ -430,7 +430,7 @@ static void fill_skip(struct Skip *const skip) {
 	skip->l1.next = 0;
 	skip->l2.prev = 0;
 	skip->l2.next = 0;
-	skip->value = rand();
+	skip->value = (unsigned)rand();
 }
 static void fill_l0(struct layer0_list_node *const l0) {
 	fill_skip(l0_upcast(l0));
@@ -536,7 +536,7 @@ static void skips_everywhere(void) {
 		 Apparently, some modificalion is required for `n` fixed. */
 		l0 ? layer0_list_add_after(l0, &skip->l0)
 			: layer0_list_unshift(&s.l0list, &skip->l0);
-		r = rand();
+		r = (unsigned)rand();
 		if(r > RAND_MAX / 4 + i) continue;
 		l1 ? layer1_list_add_after(l1, &skip->l1) :
 			layer1_list_unshift(&s.l1list, &skip->l1);
@@ -917,7 +917,7 @@ static struct sloth *sloth(void) {
 	struct sloth *s;
 	if(!(s = sloth_pool_new(&animals.sloths))) return 0;
 	animal_filler(&s->animal, &sloth_vt);
-	s->hours_slept = rand() / (RAND_MAX / 10 + 1) + 5;
+	s->hours_slept = (unsigned)rand() / (RAND_MAX / 10 + 1) + 5;
 	id_list_push(&animals.list, &s->animal.id);
 	return s;
 }
@@ -947,7 +947,7 @@ static struct Llama *llama(void) {
 	if(!(l = llama_pool_new(&animals.llamas))) return 0;
 	animal_filler(&l->animal, &llama_vt);
 	mount_info_filler(&l->mount_info, &l->animal, STEED);
-	l->chomps = 5 + rand() / (RAND_MAX / 10 + 1);
+	l->chomps = 5 + (unsigned)rand() / (RAND_MAX / 10 + 1);
 	id_list_push(&animals.list, &l->animal.id);
 	return l;
 }
