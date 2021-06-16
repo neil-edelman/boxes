@@ -102,8 +102,8 @@ typedef size_t TrieBranch;
 /* 12 makes the maximum skip length 512 bytes and the maximum size of a trie is
  `size_t` 64-bits: 4503599627370496, 32-bits: 1048576, 16-bits: 16, 8-bits: not
  supported at all, (unlikely since `C++` has additional constraints.) */
-#define TRIE_SKIP 12
-#define TRIE_SKIP_MAX ((1 << TRIE_SKIP) - 1)
+#define TRIE_SKIP 12u
+#define TRIE_SKIP_MAX ((1u << TRIE_SKIP) - 1u)
 #define TRIE_LEFT_MAX (((size_t)1 << ((sizeof(size_t) << 3) - TRIE_SKIP)) - 1)
 
 /** @return Packs `skip` and `left` into a branch. */
@@ -144,13 +144,14 @@ static void trie_left_dec(size_t *const branch) {
 static int trie_strcmp_bit(const char *const a, const char *const b,
 	const size_t bit) {
 	const size_t byte = bit >> 3, mask = 128 >> (bit & 7);
-	return !(b[byte] & mask) - !(a[byte] & mask);
+	return !((unsigned char)b[byte] & mask)
+		- !((unsigned char)a[byte] & mask);
 }
 
 /** From string `a`, extract `bit`. */
 static int trie_is_bit(const char *const a, const size_t bit) {
 	const size_t byte = bit >> 3, mask = 128 >> (bit & 7);
-	return !!(a[byte] & mask);
+	return !!((unsigned char)a[byte] & mask);
 }
 
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.

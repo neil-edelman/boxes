@@ -416,7 +416,7 @@ static int timing_comparison(const char *const *const keys,
 		if(n >= keys_size) is_full = 1, n = keys_size;
 		for(e = 0; e < es_size; e++) m_reset(&es[e].m);
 		for(r = 0; r < replicas; r++) {
-			size_t start_i = rand() / (RAND_MAX / keys_size + 1);
+			size_t start_i = (unsigned)rand() / (RAND_MAX / keys_size + 1);
 			t_total = clock();
 			printf("Replica %lu/%lu.\n", r + 1, replicas);
 

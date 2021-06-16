@@ -145,7 +145,7 @@ static size_t T_(array_clip)(const struct T_(array) *const a, const long i) {
 	assert(a && (size_t)-1 >= (size_t)LONG_MAX
 		&& (unsigned long)((size_t)-1) >= LONG_MAX);
 	return i < 0
-		? (size_t)-i >= a->size ? 0 : a->size + i
+		? (size_t)-i >= a->size ? 0 : a->size - (size_t)-i
 		: (size_t)i > a->size ? a->size : (size_t)i;
 }
 
@@ -249,7 +249,7 @@ static int T_(array_shrink)(struct T_(array) *const a) {
 /** Removes `datum` from `a`. @order \O(`a.size`). @allow */
 static void T_(array_remove)(struct T_(array) *const a,
 	PT_(type) *const datum) {
-	const size_t n = datum - a->data;
+	const size_t n = (size_t)(datum - a->data);
 	assert(a && datum && datum >= a->data && datum < a->data + a->size);
 	memmove(datum, datum + 1, sizeof *datum * (--a->size - n));
 }
@@ -258,7 +258,7 @@ static void T_(array_remove)(struct T_(array) *const a,
  @order \O(1). @allow */
 static void T_(array_lazy_remove)(struct T_(array) *const a,
 	PT_(type) *const datum) {
-	size_t n = datum - a->data;
+	size_t n = (size_t)(datum - a->data);
 	assert(a && datum && datum >= a->data && datum < a->data + a->size);
 	if(--a->size != n) memcpy(datum, a->data + a->size, sizeof *datum);
 }
@@ -330,14 +330,16 @@ static int T_(array_copy_if)(struct T_(array) *const a,
 			rise = i;
 		} else { /* Falling edge. */
 			assert(rise && !difcpy && rise < i);
-			if(!(fresh = T_(array_append)(a, add = i - rise))) return 0;
+			if(!(fresh = T_(array_append)(a, add = (size_t)(i - rise))))
+				return 0;
 			memcpy(fresh, rise, sizeof *fresh * add);
 			rise = 0;
 		}
 	}
 	if(rise) { /* Delayed copy. */
 		assert(!difcpy && rise < i);
-		if(!(fresh = T_(array_append)(a, add = i - rise))) return 0;
+		if(!(fresh = T_(array_append)(a, add = (size_t)(i - rise))))
+			return 0;
 		memcpy(fresh, rise, sizeof *fresh * add);
 	}
 	return 1;
@@ -359,7 +361,7 @@ static void T_(array_keep_if)(struct T_(array) *const a,
 			assert(erase && !retain);
 			retain = t;
 		} else if(erase) { /* Falling edge. */
-			size_t n = t - retain;
+			size_t n = (size_t)(t - retain);
 			assert(erase < retain && retain < t);
 			memmove(erase, retain, n * sizeof *t);
 			erase += n;
@@ -370,14 +372,14 @@ static void T_(array_keep_if)(struct T_(array) *const a,
 	}
 	if(!erase) return; /* All elements were kept. */
 	if(keep1) { /* Delayed move when the iteration ended; repeat. */
-		size_t n = t - retain;
+		size_t n = (size_t)(t - retain);
 		assert(retain && erase < retain && retain < t);
 		memmove(erase, retain, n * sizeof *t);
 		erase += n;
 	}
 	/* Adjust the size. */
 	assert((size_t)(erase - a->data) <= a->size);
-	a->size = erase - a->data;
+	a->size = (size_t)(erase - a->data);
 }
 
 /** Removes at either end of `a` of things that `predicate` returns true.
@@ -630,12 +632,12 @@ static void T_C_(array, merge_unique)(struct T_(array) *const a,
 		/* Must move injective `cursor + choice \in [cursor, cursor + next)`. */
 		is_first = !choice;
 		is_last  = (choice == next - 1);
-		move = cursor - from + is_first;
+		move = cursor - from + (size_t)is_first;
 		memmove(a->data + target, a->data + from, sizeof *a->data * move),
 		target += move;
 		if(!is_first && !is_last) memcpy(a->data + target,
 			a->data + cursor + choice, sizeof *a->data), target++;
-		from = cursor + next - is_last;
+		from = cursor + next - (size_t)is_last;
 	}
 	/* Last differed move. */
 	move = last - from;
