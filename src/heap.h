@@ -285,7 +285,7 @@ static void H_(heap_clear)(struct H_(heap) *const heap)
 static int H_(heap_add)(struct H_(heap) *const heap,
 	struct H_(heap_node) node) {
 	assert(heap);
-	/* `new` adds an uninitialised element to the back; <fn:<PH>sift_up>
+	/* `new` adds an uninitialized element to the back; <fn:<PH>sift_up>
 	 replaces the back element with a copy of `node`. */
 	return H_(heap_node_array_new)(&heap->a) && (PH_(sift_up)(heap, &node), 1);
 }

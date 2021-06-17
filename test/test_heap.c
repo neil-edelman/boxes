@@ -64,10 +64,35 @@ static void test_orc(struct orc_heap_node *node, void *const vpool) {
 	node->value = orc;
 }
 
+
+struct index_heap_node;
+static void index_to_string(const struct index_heap_node *, char (*)[12]);
+static void test_index(struct index_heap_node *, void *);
+static int index_compare(const size_t a, const size_t b) { return a < b; }
+
+#define HEAP_NAME index
+#define HEAP_TYPE size_t
+#define HEAP_COMPARE &index_compare
+#define HEAP_EXPECT_TRAIT
+#include "../src/heap.h"
+#define HEAP_TO_STRING &index_to_string
+#define HEAP_TEST &test_index
+#include "../src/heap.h"
+
+static void index_to_string(const struct index_heap_node *const i,
+	char (*const a)[12]) {
+	sprintf(*a, "%lu", (unsigned long)i->priority);
+}
+static void test_index(struct index_heap_node *i, void *const unused) {
+	(void)(unused);
+	i->priority = (unsigned)rand();
+}
+
 int main(void) {
 	struct orc_pool orcs = POOL_IDLE;
 	rand();
 	int_heap_test(0);
 	orc_heap_test(&orcs), orc_pool_(&orcs);
+	index_heap_test(0);
 	return EXIT_SUCCESS;
 }
