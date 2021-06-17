@@ -138,7 +138,7 @@ struct H_(heap_node) {
 #define ARRAY_SUBTYPE
 #include "array.h"
 
-/** Stores the heap as an implicit binary tree in an array. To initialise it to
+/** Stores the heap as an implicit binary tree in an array. To initialize it to
  an idle state, see <fn:<H>heap>, `HEAP_IDLE`, `{0}` (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
