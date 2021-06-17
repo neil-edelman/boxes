@@ -46,16 +46,24 @@
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
-#ifdef POOL_C99 /* <!-- c99 */
-#include <inttypes.h>
-typedef uint32_t pool32;
-#else /* c99 --><!-- !c99 */
-/* `char` is the only data type that has a fixed width in C89, but usually this
- is a safe bet. */
-typedef unsigned pool32;
-#endif /* !c99 --> */
 /* Borrow this from Linux kernel. */
 #define POOL_BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+/* `char` is the only data type that has a fixed width in C89, but usually this
+ is a safe bet. */
+#ifndef POOL_C99 /* <!-- !c99 */
+typedef unsigned pool32;
+#else /* !c99 --><!-- c99 */
+#include <inttypes.h>
+typedef uint32_t pool32;
+#endif /* c99 --> */
+/* A bitmap. Must have <array.h>. */
+#define ARRAY_NAME pool_bmp
+#define ARRAY_TYPE unsigned char
+#include "array.h"
+/* Macros for bitmap. */
+#define POOLBMP_TEST(a, i) ((a)[(i) >> 3] & (128 >> ((i) & 7)))
+#define POOLBMP_SET(a, i) ((a)[(i) >> 3] |= 128 >> ((i) & 7))
+#define POOLBMP_CLEAR(a, i) ((a)[(i) >> 3] &= ~(128 >> ((i) & 7)))
 #endif /* idempotent --> */
 
 /* Check defines. */
@@ -100,44 +108,33 @@ typedef unsigned pool32;
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE PX_(type);
 
-/** A chunk followed by data of `capacity`. `size` acts as a checksum. */
+/** A chunk followed by data of `capacity`. */
 struct PX_(chunk) { size_t capacity, size; };
 
-/* This relies on `array.h` which must be in the same directory. */
 #define ARRAY_NAME PX_(chunk)
 #define ARRAY_TYPE struct PX_(chunk) *
 #define ARRAY_SUBTYPE
 #include "array.h"
 
-/* This relies on `list.h` which must be in the same directory. */
-#define LIST_NAME PX_(type)
-#define LIST_SUBTYPE
-#include "list.h"
-
-/** Consists of a map of several chunks of increasing size and a free-list.
- Zeroed data is a valid state. To instantiate to an idle state, see
+/** Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<X>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct X_(pool);
 struct X_(pool) {
 	struct PX_(chunk_array) chunks;
-	struct PX_(type_list) free;
+	struct pool_bmp_array taken;
 };
 /* `{0}` is `C99`. */
 #ifndef POOL_IDLE /* <!-- !zero */
-#define POOL_IDLE { ARRAY_IDLE, LIST_IDLE }
+#define POOL_IDLE { ARRAY_IDLE, ARRAY_IDLE }
 #endif /* !zero --> */
 
-/** Only for the not-largest, inactive, blocks, `node` becomes a boolean,
- null/not. */
-static void PT_(flag_removed)(struct PT_(node) *const node)
-	{ assert(node); node->x.prev = node->x.next = &node->x; }
-
+#if 0
 /** Flag `node` removed in the largest block of `pool` so that later data can
  overwrite it. */
-static void PT_(enqueue_removed)(struct T_(pool) *const pool,
-	struct PT_(node) *const node) {
+static void PX_(enqueue_removed)(struct X_(pool) *const pool,
+	PX_(type) *const data) {
 	assert(pool && pool->largest && node
 		&& node >= PT_(block_nodes)(pool->largest)
 		&& node < PT_(block_nodes)(pool->largest) + pool->largest->size
@@ -188,80 +185,32 @@ static void PT_(trim_removed)(struct T_(pool) *const pool) {
 		block->size--;
 	}
 }
+#endif
 
-/** How much data is in a `block` in `pool`, skipping items removed. */
-static size_t PT_(range)(const struct T_(pool) *const pool,
-	const struct PT_(block) *const block) {
-	assert(pool && block);
-	return block == pool->largest ? block->size : block->capacity;
+static int PX_(reserve)(struct X_(pool) *const pool, const size_t size) {
+	struct PX_(chunk) *c0;
+	assert(pool && (!pool->chunks.size
+		|| pool->chunks.data[0]->size >= pool->chunks.data[0]->capacity));
+	if(pool->chunks.size
+		&& (c0 = pool->chunks.data, size <= c0->capacity - c0->size)) return 1;
 }
 
-/** @order At worst \O(log `pool.items`) when there's no deletion.
- @return What block `node` is in `pool`. */
-static struct PT_(block) **PT_(find_block_addr)(struct T_(pool) *const pool,
-	const struct PT_(node) *const node) {
-	struct PT_(block) *b, **baddr;
-	struct PT_(node) *n;
-	assert(pool && node);
-	for(baddr = &pool->largest, b = *baddr; b; baddr = &b->smaller, b = *baddr)
-		if(n = PT_(block_nodes)(b), node >= n && node < n + b->capacity) break;
-	return baddr;
-}
-
-/** Ensures `min` capacity of the largest block in `pool` where the free list
- is empty. @param[min] If zero, allocates anyway.
- @return Success; otherwise, `errno` will be set.
- @throws[ERANGE] Tried allocating more then can fit in `size_t` or `malloc`
- doesn't follow [POSIX
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/malloc.html).
- @throws[malloc] */
-static int PT_(reserve)(struct T_(pool) *const pool, const size_t min) {
-	size_t c0, c1;
-	struct PT_(block) *block;
-	const size_t max_size = ((size_t)-1 - sizeof *block)
-		/ sizeof(struct PT_(node));
-	assert(pool && !pool->removed.prev && !pool->removed.next && min);
-	assert(!pool->largest
-		|| (pool->largest->capacity < pool->next_capacity
-		&& pool->next_capacity <= max_size)
-		|| (pool->largest->capacity == pool->next_capacity) == max_size);
-	if(pool->largest && pool->largest->capacity >= min) return 1;
-	if(min > max_size) return errno = ERANGE, 0;
-	if(!pool->largest) {
-		c0 = 8, c1 = 13;
-	} else {
-		c0 = pool->largest->capacity, c1 = pool->next_capacity;
-	}
-	while(c0 < min) { /* `min < max_size`; this `c0 ^= c1 ^= c0 ^= c1 += c0`. */
-		size_t temp = c0 + c1;
-		if(temp > max_size || temp < c1) temp = max_size;
-		c0 = c1, c1 = temp;
-	}
-	if(!(block = malloc(sizeof *block + c0 * sizeof(struct PT_(node)))))
-		{ if(!errno) errno = ERANGE; return 0; }
-	block->smaller = pool->largest;
-	block->capacity = c0;
-	block->size = 0;
-	pool->largest = block;
-	pool->next_capacity = c1;
-	pool->removed.prev = pool->removed.next = 0;
-	return 1;
-}
-
-/** Initialises `pool` to idle. @order \Theta(1) @allow */
-static void T_(pool)(struct T_(pool) *const pool)
-	{ assert(pool), pool->largest = 0, pool->next_capacity = 0,
-	pool->removed.prev = pool->removed.next = 0; }
-
-/** Destroys `pool` and returns it to idle. @order \O(`blocks`) @allow */
-static void T_(pool_)(struct T_(pool) *const pool) {
-	struct PT_(block) *block, *next;
+/** Initializes `pool` to idle. @order \Theta(1) @allow */
+static void X_(pool)(struct X_(pool) *const pool) {
 	assert(pool);
-	for(block = pool->largest; block; block = next)
-		next = block->smaller, free(block);
-	T_(pool)(pool);
+	PX_(chunk_array)(&pool->chunks), PX_(free_list_clear)(&pool->free);
 }
 
+/** Destroys `pool` and returns it to idle. @order \O(\log `data`) @allow */
+static void X_(pool_)(struct X_(pool) *const pool) {
+	struct PX_(chunk) *i, *i_end;
+	assert(pool);
+	for(i = *pool->chunks.data, i_end = i + pool->chunks.size; i < i_end; i++)
+		free(i);
+	X_(pool)(pool);
+}
+
+#if 0
 /** Pre-sizes an _idle_ `pool` to ensure that it can hold at least `min`
  elements. @param[min] If zero, doesn't do anything and returns true.
  @return Success; the pool becomes active with at least `min` elements.
@@ -272,10 +221,12 @@ static int T_(pool_reserve)(struct T_(pool) *const pool, const size_t min) {
 	if(pool->largest) return errno = EDOM, 0;
 	return min ? PT_(reserve)(pool, min) : 1;
 }
+#endif
 
-/** @return A new element from `pool`. @throws[ERANGE, malloc]
- @order amortised O(1) @allow */
-static PT_(type) *T_(pool_new)(struct T_(pool) *const pool) {
+/** This pointer is constant until it gets removed.
+ @return A pointer to a new uninitialized element from `pool`.
+ @throws[ERANGE, malloc] @order amortised O(1) @allow */
+static PX_(type) *X_(pool_new)(struct X_(pool) *const pool) {
 	struct PT_(node) *node;
 	size_t size;
 	assert(pool);
