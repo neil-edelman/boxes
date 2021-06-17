@@ -10,6 +10,11 @@
  valid so we can erase in the middle. Maybe 32/64/128... element blocks with
  a bit field pointed to by a vector and a circular list?
 
+ Instead of a free-list, let's make it a free-heap:
+ the list of indices is a queue, the heap is way better at concentrating values
+ towards the front; list is O(1), heap O(log n); heap is half the size and
+ can be allocated by need instead of all up front.
+
  @param[POOL_NAME, POOL_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag type
  associated therewith; required. `<PT>` is private, whose names are prefixed in
@@ -46,24 +51,13 @@
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
-/* Borrow this from Linux kernel. */
-#define POOL_BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
-/* `char` is the only data type that has a fixed width in C89, but usually this
- is a safe bet. */
-#ifndef POOL_C99 /* <!-- !c99 */
-typedef unsigned pool32;
-#else /* !c99 --><!-- c99 */
-#include <inttypes.h>
-typedef uint32_t pool32;
-#endif /* c99 --> */
-/* A bitmap. Must have <array.h>. */
-#define ARRAY_NAME pool_bmp
-#define ARRAY_TYPE unsigned char
+
+/* <list.h> and <array.h> must be in the same directory. */
+#define LIST_NAME pool_free
+#include "list.h"
+#define ARRAY_NAME pool_free
+#define ARRAY_TYPE struct pool_free_list_node
 #include "array.h"
-/* Macros for bitmap. */
-#define POOLBMP_TEST(a, i) ((a)[(i) >> 3] & (128 >> ((i) & 7)))
-#define POOLBMP_SET(a, i) ((a)[(i) >> 3] |= 128 >> ((i) & 7))
-#define POOLBMP_CLEAR(a, i) ((a)[(i) >> 3] &= ~(128 >> ((i) & 7)))
 #endif /* idempotent --> */
 
 /* Check defines. */
@@ -116,18 +110,20 @@ struct PX_(chunk) { size_t capacity, size; };
 #define ARRAY_SUBTYPE
 #include "array.h"
 
-/** Zeroed data is a valid state. To instantiate to an idle state, see
+/** Consists of a map of several chunks of increasing size and a free-list.
+ Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<X>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct X_(pool);
 struct X_(pool) {
-	struct PX_(chunk_array) chunks;
-	struct pool_bmp_array taken;
+	struct PX_(chunk_array) chunks; /* Pointers to stable cap, size, data. */
+	struct pool_free_list free; /* Free-list only in chunks[0]. */
+	struct pool_free_array store; /* Backing for free-list. */
 };
 /* `{0}` is `C99`. */
 #ifndef POOL_IDLE /* <!-- !zero */
-#define POOL_IDLE { ARRAY_IDLE, ARRAY_IDLE }
+#define POOL_IDLE { ARRAY_IDLE, LIST_IDLE }
 #endif /* !zero --> */
 
 #if 0
@@ -187,12 +183,17 @@ static void PT_(trim_removed)(struct T_(pool) *const pool) {
 }
 #endif
 
-static int PX_(reserve)(struct X_(pool) *const pool, const size_t size) {
+/** Makes sure there is space for `n` further items in `pool`.
+ @return Success. */
+static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	struct PX_(chunk) *c0;
 	assert(pool && (!pool->chunks.size
 		|| pool->chunks.data[0]->size >= pool->chunks.data[0]->capacity));
-	if(pool->chunks.size
-		&& (c0 = pool->chunks.data, size <= c0->capacity - c0->size)) return 1;
+	if(!pool->chunks.size) { /* It is idle. */
+		assert();
+	}
+		&& (c0 = pool->chunks.data[0], n <= c0->capacity - c0->size))
+		return 1;
 }
 
 /** Initializes `pool` to idle. @order \Theta(1) @allow */
