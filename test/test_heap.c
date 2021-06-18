@@ -9,6 +9,7 @@
 #include <stdio.h>  /* *printf */
 #include "orcish.h"
 
+
 static void int_to_string(const unsigned *const i, char (*const z)[12])
 	{ sprintf(*z, "%u", *i); }
 static void test_int(unsigned *const i, void *const unused) {
@@ -22,7 +23,6 @@ static void test_int(unsigned *const i, void *const unused) {
 #define HEAP_TEST &test_int
 #include "../src/heap.h"
 
-/* ...
 
 struct orc_heap_node;
 static void orc_to_string(const struct orc_heap_node *, char (*)[12]);
@@ -57,11 +57,14 @@ static void test_orc(struct orc_heap_node *node, void *const vpool) {
 }
 
 
-struct index_heap_node;
-static void index_to_string(const struct index_heap_node *, char (*)[12]);
-static void test_index(struct index_heap_node *, void *);
+static void index_to_string(const size_t *const i, char (*const a)[12]) {
+	sprintf(*a, "%lu", (unsigned long)*i);
+}
+static void test_index(size_t *const i, void *const unused) {
+	(void)(unused);
+	*i = (unsigned)rand();
+}
 static int index_compare(const size_t a, const size_t b) { return a < b; }
-
 #define HEAP_NAME index
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &index_compare
@@ -71,22 +74,12 @@ static int index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_TEST &test_index
 #include "../src/heap.h"
 
-static void index_to_string(const struct index_heap_node *const i,
-	char (*const a)[12]) {
-	sprintf(*a, "%lu", (unsigned long)i->priority);
-}
-static void test_index(struct index_heap_node *i, void *const unused) {
-	(void)(unused);
-	i->priority = (unsigned)rand();
-}
-
-*/
 
 int main(void) {
-	/*struct orc_pool orcs = POOL_IDLE;*/
+	struct orc_pool orcs = POOL_IDLE;
 	rand();
 	int_heap_test(0);
-	/*orc_heap_test(&orcs), orc_pool_(&orcs);
-	index_heap_test(0);*/
+	orc_heap_test(&orcs), orc_pool_(&orcs);
+	index_heap_test(0);
 	return EXIT_SUCCESS;
 }

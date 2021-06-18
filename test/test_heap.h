@@ -78,8 +78,8 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
  `HEAP_TEST`. */
 static void PH_(test_basic)(void *const param) {
 	struct H_(heap) heap = HEAP_IDLE;
-	PH_(node) *node, add, result;
-	PH_(value) v;
+	PH_(node) *node, add;
+	PH_(value) v, result;
 	PH_(priority) last_priority = 0;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i;
@@ -110,7 +110,7 @@ static void PH_(test_basic)(void *const param) {
 	PH_(valid)(&heap);
 	assert(PH_(get_priority)(node) == PH_(get_priority)(&add));
 	result = H_(heap_pop)(&heap);
-	assert(v == PH_(get_value)(&result) && !H_(heap_size)(&heap));
+	assert(v == result && !H_(heap_size)(&heap));
 	PH_(valid)(&heap);
 
 	printf("Test many.\n");
@@ -168,7 +168,7 @@ static void PH_(test_basic)(void *const param) {
 				(unsigned long)i);
 			PH_(graph)(&heap, fn);
 		}
-		assert(v == PH_(get_value)(&result) && H_(heap_size)(&heap) == i - 1);
+		assert(v == result && H_(heap_size)(&heap) == i - 1);
 		PH_(valid)(&heap);
 		if(i != test_size_1 + test_size_2 + test_size_3)
 			assert(PH_(compare)(last_priority, PH_(get_priority)(node)) <= 0);

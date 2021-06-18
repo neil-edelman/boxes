@@ -24,8 +24,8 @@
  type.
 
  @param[HEAP_VALUE]
- Optional payload <typedef:<PH>value>, that is stored as a reference in
- <tag:<H>heap_node>; declaring it is sufficient.
+ Optional payload <typedef:<PH>adjunct>, that is stored as a reference in
+ <tag:<H>heap_node> as <typedef:<PH>value>; declaring it is sufficient.
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -110,14 +110,17 @@ static int PH_(default_compare)(const PH_(priority) a, const PH_(priority) b)
 static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 
 #ifdef HEAP_VALUE /* <!-- value */
-/** If `HEAP_VALUE` is set, a valid tag type, otherwise a boolean whether it's
- there or not. */
-typedef HEAP_VALUE PH_(value);
-/** If `HEAP_VALUE` is set. */
-struct PH_(heap_node) { PH_(priority) priority; PH_(value) value; };
-/** If `HEAP_VALUE` is set, this is a <tag:<PH>heap_node>, otherwise it's the
- same as <typedef:<PH>priority>. */
-typedef struct PH_(heap_node) PH_(node);
+/** If `HEAP_VALUE` is set, a valid tag type. */
+typedef HEAP_VALUE PH_(adjunct);
+/** If `HEAP_VALUE` is set, this is a pointer to it, otherwise a boolean
+ value that is true when there is an item. */
+typedef PH_(adjunct) *PH_(value);
+/** If `HEAP_VALUE` is set, creates a value as the payload of
+ <typedef:<PH>node>. */
+struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
+/** Internal nodes in the heap. If `HEAP_VALUE` is set, this is a
+ <tag:<PH>heap_node>, otherwise it's the same as <typedef:<PH>priority>. */
+typedef struct H_(heap_node) PH_(node);
 /** Copies `priority` and `value` into a structure for use in  */
 /*const struct PH_(store) H_(heap_make_node)()...*/
 #else /* value --><!-- !value */
@@ -308,11 +311,14 @@ static PH_(value) H_(heap_peek_value)(struct H_(heap) *const heap)
 	{ return PH_(value_or_null)(H_(heap_peek)(heap)); }
 
 /** Remove the lowest element according to `HEAP_COMPARE`.
- @param[heap] If null, returns false. @return The <typedef:<PH>return> of the
+ @param[heap] If null, returns false. @return The <typedef:<PH>value> of the
  element that was removed; if the heap is empty, null or zero.
  @order \O(log `size`) @allow */
-static PH_(node) H_(heap_pop)(struct H_(heap) *const heap)
-	{ return assert(heap), heap->a.size ? PH_(remove)(heap) : 0; }
+static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
+	PH_(node) n;
+	return assert(heap), heap->a.size
+		? (n = PH_(remove)(heap), PH_(get_value)(&n)) : 0;
+}
 
 /** The capacity of `heap` will be increased to at least `buffer` elements
  beyond the size. Invalidates pointers in `a`.
