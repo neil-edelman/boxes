@@ -9,9 +9,9 @@
 #include <stdio.h>  /* *printf */
 #include "orcish.h"
 
-static void int_to_string(const int i, char (*const z)[12])
-	{ sprintf(*z, "%u", i); }
-static void test_int(int *const i, void *const unused) {
+static void int_to_string(const unsigned *const i, char (*const z)[12])
+	{ sprintf(*z, "%u", *i); }
+static void test_int(unsigned *const i, void *const unused) {
 	(void)(unused);
 	*i = (unsigned)rand() / (RAND_MAX / 99 + 1) + 1;
 }

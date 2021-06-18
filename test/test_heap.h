@@ -7,13 +7,13 @@
 #ifdef HEAP_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
 /* Copy functions for later includes. */
-static void (*PH_(to_string))(const struct H_(heap_node) *, char (*)[12])
+static void (*PH_(to_string))(const PH_(node) *, char (*)[12])
 	= (HEAP_TO_STRING);
 static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
 	= Z_(to_string);
 
 /** Operates by side-effects. Used for `HEAP_TEST`. */
-typedef void (*PH_(biaction_fn))(struct H_(heap_node) *, void *);
+typedef void (*PH_(biaction_fn))(PH_(node) *, void *);
 
 /* `HEAP_TEST` must be a function that implements `<PH>Action`. */
 static const PH_(biaction_fn) PH_(filler) = (HEAP_TEST);
@@ -37,7 +37,7 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 		"\\l|size: %lu\\lcapacity: %lu\\l}\"];\n", (unsigned long)heap->a.size,
 		(unsigned long)heap->a.capacity);
 	if(heap->a.data) {
-		struct H_(heap_node) *const n0 = heap->a.data;
+		PH_(node) *const n0 = heap->a.data;
 		size_t i;
 		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
 		if(heap->a.size) fprintf(fp, "\tn0 -> Hash [dir = back];\n");
@@ -61,12 +61,13 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 /** Makes sure the `heap` is in a valid state. */
 static void PH_(valid)(const struct H_(heap) *const heap) {
 	size_t i;
-	struct H_(heap_node) *n0;
+	PH_(node) *n0;
 	if(!heap) return;
 	if(!(n0 = heap->a.data)) { assert(!heap->a.size); return; }
 	for(i = 1; i < heap->a.size; i++) {
 		size_t iparent = (i - 1) >> 1;
-		if(PH_(compare)(n0[iparent].priority, n0[i].priority) <= 0) continue;
+		if(PH_(compare)(PH_(get_priority)(n0 + iparent),
+			PH_(get_priority)(n0 + i)) <= 0) continue;
 		PH_(graph)(heap, "graph/" QUOTE(HEAP_NAME) "-invalid.gv");
 		assert(0);
 		break;
@@ -77,8 +78,8 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
  `HEAP_TEST`. */
 static void PH_(test_basic)(void *const param) {
 	struct H_(heap) heap = HEAP_IDLE;
-	struct H_(heap_node) *node, add;
-	PH_(pvalue) v, result;
+	PH_(node) *node, add, result;
+	PH_(value) v;
 	PH_(priority) last_priority = 0;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i;
@@ -107,9 +108,9 @@ static void PH_(test_basic)(void *const param) {
 	assert(H_(heap_size)(&heap) == 1);
 	node = H_(heap_peek)(&heap);
 	PH_(valid)(&heap);
-	assert(node->priority == add.priority);
-	result = H_(heap_pop(&heap));
-	assert(v == result && !H_(heap_size)(&heap));
+	assert(PH_(get_priority)(node) == PH_(get_priority)(&add));
+	result = H_(heap_pop)(&heap);
+	assert(v == PH_(get_value)(&result) && !H_(heap_size)(&heap));
 	PH_(valid)(&heap);
 
 	printf("Test many.\n");
@@ -130,10 +131,10 @@ static void PH_(test_basic)(void *const param) {
 	printf("Heap: %s.\n", PH_(heap_to_string)(&heap));
 	printf("Heap buffered add, before size = %lu.\n",
 		(unsigned long)H_(heap_size)(&heap));
-	node = H_(heap_reserve)(&heap, test_size_2);
+	node = H_(heap_buffer)(&heap, test_size_2);
 	assert(node);
 	for(i = 0; i < test_size_2; i++) PH_(filler)(node + i, param);
-	success = H_(heap_buffer)(&heap, test_size_2);
+	success = H_(heap_append)(&heap, test_size_2);
 	printf("Now size = %lu.\n", (unsigned long)H_(heap_size)(&heap));
 	assert(H_(heap_size)(&heap) == test_size_1 + test_size_2);
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv",
@@ -167,11 +168,11 @@ static void PH_(test_basic)(void *const param) {
 				(unsigned long)i);
 			PH_(graph)(&heap, fn);
 		}
-		assert(v == result && H_(heap_size)(&heap) == i - 1);
+		assert(v == PH_(get_value)(&result) && H_(heap_size)(&heap) == i - 1);
 		PH_(valid)(&heap);
 		if(i != test_size_1 + test_size_2 + test_size_3)
-			assert(PH_(compare)(last_priority, node->priority) <= 0);
-		last_priority = node->priority;
+			assert(PH_(compare)(last_priority, PH_(get_priority)(node)) <= 0);
+		last_priority = PH_(get_priority)(node);
 	}
 	printf("Destructor:\n");
 	H_(heap_)(&heap);
