@@ -8,46 +8,45 @@
 
 #ifdef POOL_TO_STRING /* <!-- to string: Only one, tests all base code. */
 
+/** Operates by side-effects. */
+typedef void (*PX_(action_fn))(PX_(type) *);
+
 /* Copy functions for later includes. */
-static void (*PT_(to_string))(const PT_(type) *, char (*)[12])
+static void (*PX_(to_string))(const PX_(type) *, char (*)[12])
 	= (POOL_TO_STRING);
-static const char *(*PT_(pool_to_string))(const struct T_(pool) *)
-	= A_(to_string);
+static const char *(*PX_(pool_to_string))(const struct X_(pool) *)
+	= Z_(to_string);
 
-/* POOL_TEST must be a function that implements <typedef:<PT>Action>. */
-static const PT_(action_fn) PT_(filler) = (POOL_TEST);
-
-/** Private: `container_of` `x`. */
-static const struct PT_(node) *
-	PT_(x_const_upcast)(const struct PT_(x) *const x) {
-	return (const struct PT_(node) *)(const void *)
-	((const char *)x - offsetof(const struct PT_(node), x));
-}
+/* POOL_TEST must be a function that implements <typedef:<PX>Action>. */
+static const PX_(action_fn) PX_(filler) = (POOL_TEST);
 
 /** Tries to graphs `p` in `fn`. */
-static void PT_(graph)(const struct T_(pool) *const p, const char *const fn) {
+static void PX_(graph)(const struct X_(pool) *const pool,
+	const char *const fn) {
 	FILE *fp;
-	struct PT_(block) *block;
-	const struct PT_(node) *node, /* *beg, 10000 nodes bogs down dot */ *end;
-	char str[12], b_strs[2][128] = { "pool", "???" };
-	unsigned b = 0;
-	assert(p && fn);
+	pool_slot *slot, *slot_end;
+	char str[12];
+	assert(pool && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [compound=true, nslimit=3, nslimit1=3];\n"
 		"\trankdir=LR;\n"
 		"\tedge [color=royalblue];\n"
 		"\tnode [shape=record, style=filled, fillcolor=lightgray];\n"
-		"\tnode%p [label=\"\\<" QUOTE(POOL_NAME)
-		"\\>Pool\\l|next capacity %lu\\l|removed list\\l\"];\n",
-		(const void *)PT_(x_const_upcast)(&p->removed), /*b_strs[b],*/
-		(unsigned long)p->next_capacity);
-	for(block = p->largest; block; block = block->smaller) {
+		"\tPool [label=\"\\<" QUOTE(POOL_NAME)
+		"\\>pool\\l|capacity0: %lu\\lfree0.size %lu\\l"
+		"free0.capacity %lu\\l\"];\n",
+		(unsigned long)pool->capacity0,
+		(unsigned long)pool->free0.a.size,
+		(unsigned long)pool->free0.a.capacity);
+#if 0
+	for(slot = pool->slots.data, slot_end = slot + pool->slots.size;
+		slot < slot_end; slot++) {
 		sprintf(b_strs[b = !b], "block%p", (const void *)block);
 		/* This is cleaver but I don't know what I did. Hack. */
 		if(block == p->largest) {
 			fprintf(fp, "\tnode%p",
-			(const void *)PT_(x_const_upcast)(&p->removed));
+			(const void *)PX_(x_const_upcast)(&p->removed));
 		} else {
 			fprintf(fp, "\tdud_%s", b_strs[!b]);
 		}
@@ -61,9 +60,9 @@ static void PT_(graph)(const struct T_(pool) *const p, const char *const fn) {
 			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
 			(unsigned long)block->capacity, (unsigned long)block->size,
 			b_strs[b]);
-		for(node = PT_(block_nodes)(block), end = node + PT_(range)(p, block);
+		for(node = PX_(block_nodes)(block), end = node + PX_(range)(p, block);
 			node < end; node++) {
-			PT_(to_string)(&node->data, &str);
+			PX_(to_string)(&node->data, &str);
 			fprintf(fp, "\t\tnode%p [label=\"%s\", fillcolor=%s];\n",
 				(const void *)node, str,
 				node->x.prev ? "firebrick" : "lightsteelblue");
@@ -74,176 +73,139 @@ static void PT_(graph)(const struct T_(pool) *const p, const char *const fn) {
 		fprintf(fp, "\t}\n");
 	}
 	if(p->removed.prev) {
-		const struct PT_(x) *x0 = &p->removed, *x1 = x0->next, *turtle = x0;
+		const struct PX_(x) *x0 = &p->removed, *x1 = x0->next, *turtle = x0;
 		int is_turtle = 0;
 		fprintf(fp, "\tedge [color=darkseagreen, constraint=false];\n");
 		do {
 			fprintf(fp, "\tnode%p -> node%p;\n",
-				(const void *)PT_(x_const_upcast)(x0),
-				(const void *)PT_(x_const_upcast)(x1));
+				(const void *)PX_(x_const_upcast)(x0),
+				(const void *)PX_(x_const_upcast)(x1));
 			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
 		} while(x0 = x1, x1 = x1->next, x0 != &p->removed && x0 != turtle);
 		x0 = &p->removed, x1 = x0->prev, turtle = x0, is_turtle = 0;
 		fprintf(fp, "\tedge [color=darkseagreen4];\n");
 		do {
 			fprintf(fp, "\tnode%p -> node%p;\n",
-				(const void *)PT_(x_const_upcast)(x0),
-				(const void *)PT_(x_const_upcast)(x1));
+				(const void *)PX_(x_const_upcast)(x0),
+				(const void *)PX_(x_const_upcast)(x1));
 			if(is_turtle) turtle = turtle->prev, is_turtle=0; else is_turtle=1;
 		} while(x0 = x1, x1 = x1->prev, x0 != &p->removed && x0 != turtle);
 	}
+#endif
 	fprintf(fp, "}\n");
 	fclose(fp);
 }
 
-/** Crashes if `b` is not a valid block.
- @implements <PT>Action */
-static void PT_(valid_block)(const struct PT_(block) *const b) {
-	assert(b && b->capacity);
-}
-
-/** Crashes if `a` is not in a valid state. */
-static void PT_(valid_state)(const struct T_(pool) *const a) {
-	struct PT_(block) *block;
-	const struct PT_(node) *node;
-	const size_t max_size = ((size_t)-1 - sizeof *block) / sizeof *node;
-	/* Null is a valid state. */
-	if(!a) return;
-	assert(a && !a->removed.prev == !a->removed.next);
-	assert(!a->largest
-		   || (a->largest->capacity < a->next_capacity
-			   && a->next_capacity <= max_size)
-		   || (a->largest->capacity == a->next_capacity) == max_size);
-	for(block = a->largest; block; block = block->smaller)
-		PT_(valid_block)(block), assert(block == a->largest || block->size > 0);
-	if(!a->largest) {
-		assert(!a->removed.prev && !a->removed.next);
-	} else if(a->removed.prev) {
-		size_t forward = 0, back = 0;
-		const struct PT_(x) *head = &a->removed, *x, *turtle = head;
-		int is_turtle = 0;
-		const struct PT_(node) *const first = PT_(block_nodes)(a->largest),
-			*const last = first + a->largest->size - 1;
-		assert(head->next && head->prev && a->largest->size > 1);
-		x = head;
-		do {
-			forward++, x = x->next;
-			if(x == head) break;
-			node = PT_(x_const_upcast)(x);
-			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
-				assert(x && node >= first && node < last);
-				assert(&node->x != turtle);
-		} while(1);
-		turtle = head, is_turtle = 0, x = head;
-		do {
-			back++,    x = x->prev;
-			if(x == head) break;
-			node = PT_(x_const_upcast)(x);
-			if(is_turtle) turtle = turtle->prev, is_turtle=0; else is_turtle=1;
-			assert(x && node >= first && node < last && &node->x != turtle);
-		} while(1);
-		/* The removed counts for a thing. */
-		assert(forward == back && a->largest->size >= forward);
+/** Crashes if `pool` is not in a valid state. */
+static void PX_(valid_state)(const struct X_(pool) *const pool) {
+	size_t i;
+	if(!pool) return;
+	if(!pool->capacity0) assert(!pool->slots.size);
+	/* Every slot up to size is active. */
+	for(i = 0; i < pool->slots.size; i++) assert(pool->slots.data[i]);
+	if(!pool->slots.size) {
+		/* There are no free0 without slot[0]. */
+		assert(!pool->free0.a.size);
+	} else {
+		/* size[0] <= capacity0 */
+		assert(pool->slots.data[0]->size <= pool->capacity0);
+		/* The free-heap indices are strictly less than the size. */
+		for(i = 0; i < pool->free0.a.size; i++)
+			assert(pool->free0.a.data[i] < pool->slots.data[0]->size);
 	}
+	/*...?*/
 }
 
-
-/** Prints `data`. */
-static void PT_(print)(PT_(type) *const data) {
-	char a[12];
-	assert(data);
-	PT_(to_string)(data, &a);
-	printf("> %s!\n", a);
-}
-
-static void PT_(test_basic)(void) {
-	struct T_(pool) a = POOL_IDLE;
-	struct PT_(node) node;
-	PT_(type) ts[5], *t, *t1;
+static void PX_(test_basic)(void) {
+	struct X_(pool) a = POOL_IDLE;
+	PX_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
 
 	printf("Test null.\n");
 	errno = 0;
-	PT_(valid_state)(0);
+	PX_(valid_state)(0);
 
 	printf("Test empty.\n");
-	PT_(valid_state)(&a);
-	T_(pool)(&a);
-	assert(T_(pool_remove)(&a, &node.data) == 0 && errno == EDOM), errno = 0;
-	T_(pool_for_each)(&a, 0);
+	PX_(valid_state)(&a);
+	X_(pool)(&a);
+	PX_(valid_state)(&a);
+	/*assert(X_(pool_remove)(&a, &node.data) == 0 && errno == EDOM), errno = 0;
 	assert(errno == 0);
-	PT_(valid_state)(&a);
+	PX_(valid_state)(&a);*/
 
 	printf("Test one element.\n");
-	T_(pool_)(&a);
-	assert(T_(pool_reserve)(&a, 1000) && a.next_capacity == 2584);
-	t = T_(pool_new)(&a), PT_(filler)(t); /* Add. */
+	X_(pool_)(&a);
+	t = X_(pool_new)(&a), PX_(filler)(t); /* Add. */
 	assert(t);
-	PT_(valid_state)(&a);
-	if(!T_(pool_remove)(&a, t)) { perror("Error"), assert(0); return; }
-	PT_(valid_state)(&a);
-	t = T_(pool_new)(&a), PT_(filler)(t); /* Add. */
+	PX_(valid_state)(&a);
+
+#if 0
+	if(!X_(pool_remove)(&a, t)) { perror("Error"), assert(0); return; }
+	PX_(valid_state)(&a);
+	t = X_(pool_new)(&a), PX_(filler)(t); /* Add. */
 	assert(t);
-	PT_(valid_state)(&a);
-	T_(pool_clear)(&a);
-	PT_(valid_state)(&a);
-	PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-zero.gv");
-	T_(pool_)(&a);
+	PX_(valid_state)(&a);
+	X_(pool_clear)(&a);
+	PX_(valid_state)(&a);
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-zero.gv");
+	X_(pool_)(&a);
 
 	/* @fixme valgrind is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
-	for(t = ts, t1 = t + ts_size; t < t1; t++) PT_(filler)(t);
+	for(t = ts, t1 = t + ts_size; t < t1; t++) PX_(filler)(t);
 
 	printf("Testing %lu elements.\n", (unsigned long)ts_size);
 	for(t1 = 0, i = 0; i < ts_size; i++) {
-		t = T_(pool_new)(&a);
+		t = X_(pool_new)(&a);
 		if(!t1) t1 = t;
 		assert(t);
 		memcpy(t, ts + i, sizeof *t);
 	}
-	printf("Now: %s.\n", PT_(pool_to_string)(&a));
-	if(!T_(pool_remove)(&a, t1)) { perror("Error"), assert(0); return; }
-	printf("Now: %s.\n", PT_(pool_to_string)(&a));
-	assert(!T_(pool_remove)(&a, t1) && errno == EDOM);
+	printf("Now: %s.\n", PX_(pool_to_string)(&a));
+	if(!X_(pool_remove)(&a, t1)) { perror("Error"), assert(0); return; }
+	printf("Now: %s.\n", PX_(pool_to_string)(&a));
+	assert(!X_(pool_remove)(&a, t1) && errno == EDOM);
 	printf("(Deliberate) error: %s.\n", strerror(errno)), errno = 0;
-	PT_(valid_state)(&a);
-	PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-small.gv");
-	t = T_(pool_new)(&a), PT_(filler)(t); /* Cheating. */
-	t = T_(pool_new)(&a), PT_(filler)(t);
-	t = T_(pool_new)(&a), PT_(filler)(t);
-	t = T_(pool_new)(&a), PT_(filler)(t);
-	t = T_(pool_new)(&a), PT_(filler)(t);
-	assert(T_(pool_remove)(&a, t));
-	T_(pool_for_each)(&a, &PT_(print));
-	PT_(valid_state)(&a);
-	assert(!T_(pool_reserve)(&a, 1000) && errno == EDOM), errno = 0;
-	PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-small-1000.gv");
-	PT_(valid_state)(&a);
-	T_(pool_clear)(&a);
-	PT_(valid_state)(&a);
+	PX_(valid_state)(&a);
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-small.gv");
+	t = X_(pool_new)(&a), PX_(filler)(t); /* Cheating. */
+	t = X_(pool_new)(&a), PX_(filler)(t);
+	t = X_(pool_new)(&a), PX_(filler)(t);
+	t = X_(pool_new)(&a), PX_(filler)(t);
+	t = X_(pool_new)(&a), PX_(filler)(t);
+	assert(X_(pool_remove)(&a, t));
+	X_(pool_for_each)(&a, &PX_(print));
+	PX_(valid_state)(&a);
+	assert(!X_(pool_reserve)(&a, 1000) && errno == EDOM), errno = 0;
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-small-1000.gv");
+	PX_(valid_state)(&a);
+	X_(pool_clear)(&a);
+	PX_(valid_state)(&a);
 
 	/* Big. */
 	for(i = 0; i < big; i++) {
-		t = T_(pool_new)(&a);
+		t = X_(pool_new)(&a);
 		assert(t);
-		PT_(filler)(t);
+		PX_(filler)(t);
 	}
-	printf("%s.\n", PT_(pool_to_string)(&a));
-	PT_(valid_state)(&a);
+	printf("%s.\n", PX_(pool_to_string)(&a));
+	PX_(valid_state)(&a);
 
 	printf("Clear:\n");
-	T_(pool_clear)(&a);
-	printf("Now: %s.\n", PT_(pool_to_string)(&a));
+	X_(pool_clear)(&a);
+	printf("Now: %s.\n", PX_(pool_to_string)(&a));
 	printf("Destructor:\n");
-	T_(pool_)(&a);
-	PT_(valid_state)(&a);
+	X_(pool_)(&a);
+	PX_(valid_state)(&a);
+#endif
 	printf("Done basic tests.\n\n");
 }
 
-static void PT_(test_random)(void) {
-	struct T_(pool) a = POOL_IDLE;
+#if 0
+static void PX_(test_random)(void) {
+	struct X_(pool) a = POOL_IDLE;
 	size_t i, size = 0;
 	const size_t length = 120000; /* Controls how many iterations. */
 	char graph_fn[64];
@@ -254,20 +216,20 @@ static void PT_(test_random)(void) {
 		int is_print = !(i & (i - 1));
 		/* This parameter controls how big the pool wants to be. */
 		if(r > size / 5000.0) {
-			PT_(type) *data = T_(pool_new)(&a);
+			PX_(type) *data = X_(pool_new)(&a);
 			if(!data) { perror("Error"), assert(0); return;}
 			size++;
-			PT_(filler)(data);
-			PT_(to_string)(data, &str);
+			PX_(filler)(data);
+			PX_(to_string)(data, &str);
 			if(is_print) printf("%lu: Created %s.\n", (unsigned long)i, str);
 		} else {
-			struct PT_(block) *block;
-			struct PT_(node) *node = 0, *end;
+			struct PX_(block) *block;
+			struct PX_(node) *node = 0, *end;
 			size_t idx = rand() / (RAND_MAX + 1.0) * size;
 			assert(a.largest);
 			/* Pick random. */
 			for(block = a.largest; block; block = block->smaller) {
-				for(node = PT_(block_nodes)(block), end = node
+				for(node = PX_(block_nodes)(block), end = node
 					+ (block == a.largest ? block->size : block->capacity);
 					node < end; node++) {
 					if(node->x.prev) continue;
@@ -277,33 +239,34 @@ static void PT_(test_random)(void) {
 				if(node < end) break;
 			}
 			assert(block);
-			PT_(to_string)(&node->data, &str);
+			PX_(to_string)(&node->data, &str);
 			if(is_print) printf("%lu: Removing %s in block %p.\n",
 				(unsigned long)i, str, (const void *)block);
 			{
-				const int ret = T_(pool_remove)(&a, &node->data);
+				const int ret = X_(pool_remove)(&a, &node->data);
 				assert(ret || (perror("Removing"),
-					PT_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"),0));
+					PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"),0));
 			}
 			size--;
 		}
 		if(is_print && i < graph_max) {
 			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
-			PT_(graph)(&a, graph_fn);
-			printf("%s.\n", PT_(pool_to_string)(&a));
+			PX_(graph)(&a, graph_fn);
+			printf("%s.\n", PX_(pool_to_string)(&a));
 		}
-		PT_(valid_state)(&a);
+		PX_(valid_state)(&a);
 	}
 	if(i < graph_max) {
 		sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%u-end.gv", (unsigned)i);
-		PT_(graph)(&a, graph_fn);
+		PX_(graph)(&a, graph_fn);
 	}
-	T_(pool_)(&a);
+	X_(pool_)(&a);
 }
+#endif
 
 /** The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`.
  @allow */
-static void T_(pool_test)(void) {
+static void X_(pool_test)(void) {
 	printf("<" QUOTE(POOL_NAME) ">pool: of type <" QUOTE(POOL_TYPE)
 		"> was created using: "
 #ifdef POOL_TO_STRING
@@ -313,8 +276,8 @@ static void T_(pool_test)(void) {
 		"POOL_TEST<" QUOTE(POOL_TEST) ">; "
 #endif
 		"testing:\n");
-	PT_(test_basic)();
-	PT_(test_random)();
+	PX_(test_basic)();
+	/*PX_(test_random)();*/
 	fprintf(stderr, "Done tests of <" QUOTE(POOL_NAME) ">pool.\n\n");
 }
 

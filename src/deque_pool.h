@@ -17,7 +17,7 @@
 
  @param[POOL_NAME, POOL_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag type
- associated therewith; required. `<PT>` is private, whose names are prefixed in
+ associated therewith; required. `<PX>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
  @param[POOL_EXPECT_TRAIT]
@@ -32,7 +32,7 @@
  @param[POOL_TEST]
  To string trait contained in <../test/pool_test.h>; optional unit testing
  framework using `assert`. Can only be defined once _per_ pool. Must be defined
- equal to a (random) filler function, satisfying <typedef:<PT>action_fn>.
+ equal to a (random) filler function, satisfying <typedef:<PX>action_fn>.
  Output will be shown with the to string trait in which it's defined; provides
  tests for the base code and all later traits.
 
@@ -75,8 +75,8 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #if POOL_TRAITS > 1
 #error Only one trait per include is allowed; use POOL_EXPECT_TRAIT.
 #endif
-#if POOL_TRAITS != 0 && (!defined(T_) || !defined(CAT) || !defined(CAT_))
-#error T_ or CAT_? not yet defined; traits must be defined separately?
+#if POOL_TRAITS != 0 && (!defined(X_) || !defined(CAT) || !defined(CAT_))
+#error X_ or CAT_? not yet defined; traits must be defined separately?
 #endif
 #if (POOL_TRAITS == 0) && defined(POOL_TEST)
 #error POOL_TEST must be defined in POOL_TO_STRING trait.
@@ -178,6 +178,7 @@ static int PX_(remove)(struct X_(pool) *const pool,
 				pool_free_heap_pop(&pool->free0);
 			}
 		} else { /* Not the end; just add to free-heap. */
+			printf("Adding to free-heap.\n");
 			return pool_free_heap_add(&pool->free0, idx);
 		}
 	} else { /* It's in the other slots. */
@@ -217,11 +218,8 @@ static void X_(pool_)(struct X_(pool) *const pool) {
 	X_(pool)(pool);
 }
 
-/** Pre-sizes an _idle_ `pool` to ensure that it can hold at least `min`
- elements. @param[min] If zero, doesn't do anything and returns true.
- @return Success; the pool becomes active with at least `min` elements.
- @throws[EDOM] The pool is active and doesn't allow reserving.
- @throws[ERANGE, malloc] @allow */
+/** Ensure capacity of at least `n` items in `pool`. Pre-sizing is better for
+ contiguous blocks. @return Success. @throws[ERANGE, malloc] @allow */
 static int X_(pool_buffer)(struct X_(pool) *const pool, const size_t n) {
 	return assert(pool), PX_(buffer)(pool, n);
 }
@@ -234,8 +232,9 @@ static PX_(type) *X_(pool_new)(struct X_(pool) *const pool) {
 	struct pool_chunk *chunk0;
 	assert(pool);
 	if(!PX_(buffer)(pool, 1)) return 0;
-	assert(pool->slots.size);
-	/* We want the minimum-ish datum in the max-free-heap; array pop. */
+	assert(pool->slots.size && (pool->free0.a.size ||
+		pool->capacity0 > pool->slots.data[0]->size));
+	/* Array pop: towards minimum-ish index in the max-free-heap. */
 	if(free = heap_pool_free_node_array_pop(&pool->free0.a))
 		return PX_(datum)(pool->slots.data[0]) + *free;
 	/* The free-heap is empty; guaranteed by <fn:<PX>buffer>. */
@@ -250,74 +249,43 @@ static PX_(type) *X_(pool_new)(struct X_(pool) *const pool) {
  \O(log `pool.items`) for a small number of deleted items. @allow */
 static int X_(pool_remove)(struct X_(pool) *const pool,
 	PX_(type) *const datum) {
-	struct PT_(node) *node;
-	struct PT_(block) *block, **baddr;
-	assert(pool && datum);
-	node = PT_(data_upcast)(datum);
-	/* Removed already or not part of the container. */
-	if(node->x.next || !(block = *(baddr = PT_(find_block_addr)(pool, node))))
-		return errno = EDOM, 0;
-	assert(!node->x.prev && block->size);
-	if(block == pool->largest) { /* The largest block has a free list. */
-		size_t idx = node - PT_(block_nodes)(block);
-		PT_(enqueue_removed)(pool, node);
-		if(idx >= block->size - 1) PT_(trim_removed)(pool);
-	} else {
-		PT_(flag_removed)(node);
-		if(!--block->size) { *baddr = block->smaller, free(block); }
-	}
-	return 1;
+	assert(0);
+	return 0;
 }
 
-/** Removes all from `pool`, but keeps it's active state. (Only freeing the
- smaller blocks.) @order \O(`pool.blocks`) @allow */
-static void T_(pool_clear)(struct T_(pool) *const pool) {
-	struct PT_(block) *block, *next;
+/** Removes all from `pool`, but keeps it's active state, only freeing the
+ smaller blocks. @order \O(\log `items`) @allow */
+static void X_(pool_clear)(struct X_(pool) *const pool) {
+	pool_slot *i, *i_end;
 	assert(pool);
-	if(!pool->largest) return;
-	block = pool->largest, next = block->smaller;
-	block->size = 0, block->smaller = 0;
-	pool->removed.prev = pool->removed.next = 0;
-	while(next) block = next, next = next->smaller, free(block);
+	if(!pool->slots.size) { assert(!pool->free0.a.size); return; }
+	for(i = pool->slots.data + 1, i_end = i + pool->slots.size; i < i_end; i++)
+		assert(*i), free(*i);
+	pool->slots.data[0]->size = 0;
+	pool->slots.size = 1;
+	pool_free_heap_clear(&pool->free0);
 }
 
-/** Iterates though `pool` and calls `action` on all the elements.
- @order O(`capacity` \times `action`) @allow */
-static void T_(pool_for_each)(struct T_(pool) *const pool,
-	const PT_(action_fn) action) {
-	struct PT_(node) *n, *end;
-	struct PT_(block) *block;
-	if(!pool || !action) return;
-	for(block = pool->largest; block; block = block->smaller)
-		for(n = PT_(block_nodes)(block), end = n + PT_(range)(pool, block);
-		n < end; n++) if(!n->x.prev) action(&n->data);
-}
-
-/** Contains all iteration parameters. */
-struct PT_(iterator);
-struct PT_(iterator)
-	{ const struct T_(pool) *pool; struct PT_(block) *block; size_t i; };
+/** It's not actually possible to iterate though, given the information that
+ we have, but placing it here for testing purposes. Iterates through the
+ zero-slot, ignoring the free list. Do not call. */
+struct PX_(iterator);
+struct PX_(iterator) { struct pool_chunk *chunk0; size_t i; };
 
 /** Loads `pool` into `it`. @implements begin */
-static void PT_(begin)(struct PT_(iterator) *const it,
-	const struct T_(pool) *const pool) {
+static void PX_(begin)(struct PX_(iterator) *const it,
+	const struct X_(pool) *const pool) {
 	assert(it && pool);
-	it->pool = pool, it->block = pool->largest, it->i = 0;
+	if(pool->slots.size) it->chunk0 = pool->slots.data[0];
+	else it->chunk0 = 0;
+	it->i = 0;
 }
 
 /** Advances `it`. @implements next */
-static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
-	struct PT_(node) *nodes, *n;
-	size_t i_end;
-	assert(it && it->pool);
-	while(it->block) {
-		nodes = PT_(block_nodes)(it->block);
-		i_end = PT_(range)(it->pool, it->block);
-		while(it->i < i_end)
-			if(!(n = nodes + it->i++)->x.prev) return &n->data;
-		it->block = it->block->smaller;
-	}
-	return 0;
+static const PX_(type) *PX_(next)(struct PX_(iterator) *const it) {
+	assert(it);
+	return it->chunk0 && it->i < it->chunk0->size
+		? PX_(datum)(it->chunk0) + it->i++ : 0;
 }
 	
 #if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
@@ -331,22 +299,22 @@ static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 #define ITERATE_BEGIN PX_(begin)
 #define ITERATE_NEXT PX_(next)
 
-static void PT_(unused_base_coda)(void);
-static void PT_(unused_base)(void) {
-	T_(pool)(0); T_(pool_)(0); T_(pool_reserve)(0, 0); T_(pool_new)(0);
-	T_(pool_remove)(0, 0); T_(pool_clear)(0); T_(pool_for_each)(0, 0);
-	PT_(begin)(0, 0); PT_(next)(0); PT_(unused_base_coda)();
+static void PX_(unused_base_coda)(void);
+static void PX_(unused_base)(void) {
+	X_(pool)(0); X_(pool_)(0); X_(pool_buffer)(0, 0); X_(pool_new)(0);
+	X_(pool_remove)(0, 0); X_(pool_clear)(0); PX_(begin)(0, 0);
+	PX_(next)(0); PX_(unused_base_coda)();
 }
-static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
+static void PX_(unused_base_coda)(void) { PX_(unused_base)(); }
 
 
 #elif defined(POOL_TO_STRING) /* base code --><!-- to string trait */
 
 
 #ifdef POOL_TO_STRING_NAME /* <!-- name */
-#define A_(thing) CAT(X_(pool), CAT(POOL_TO_STRING_NAME, thing))
+#define Z_(thing) CAT(X_(pool), CAT(POOL_TO_STRING_NAME, thing))
 #else /* name --><!-- !name */
-#define A_(thing) CAT(X_(pool), thing)
+#define Z_(thing) CAT(X_(pool), thing)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
 #include "to_string.h" /** \include */
@@ -356,7 +324,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #include "../test/test_pool.h" /** \include */
 #endif /* test --> */
 
-#undef A_
+#undef Z_
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
 #undef POOL_TO_STRING_NAME
