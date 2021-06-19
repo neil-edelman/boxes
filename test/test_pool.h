@@ -100,11 +100,12 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 static void PX_(valid_state)(const struct X_(pool) *const pool) {
 	size_t i;
 	if(!pool) return;
+	/* If there's no capacity, there's no slots. */
 	if(!pool->capacity0) assert(!pool->slots.size);
 	/* Every slot up to size is active. */
 	for(i = 0; i < pool->slots.size; i++) assert(pool->slots.data[i]);
 	if(!pool->slots.size) {
-		/* There are no free0 without slot[0]. */
+		/* There are no free0 without slots. */
 		assert(!pool->free0.a.size);
 	} else {
 		/* size[0] <= capacity0 */
