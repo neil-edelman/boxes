@@ -51,11 +51,13 @@
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
-/** This is the chunks, followed by data. Explicit to avoid confusion. */
+/** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
+/** A slot is a pointer to a stable chunk. */
+typedef struct pool_chunk *pool_slot;
 /* <array.h> and <heap.h> must be in the same directory. */
-#define ARRAY_NAME pool_chunk
-#define ARRAY_TYPE struct pool_chunk *
+#define ARRAY_NAME pool_slot
+#define ARRAY_TYPE pool_slot
 #include "array.h"
 /** @return An order on `a`, `b` which specifies a max-heap. */
 static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
@@ -114,42 +116,42 @@ typedef POOL_TYPE PX_(type);
  ![States.](../web/states.png) */
 struct X_(pool);
 struct X_(pool) {
-	struct pool_chunk_array chunks; /* Pointers to stable `chunk`. */
-	struct pool_free_heap free0; /* Free-list only in `chunks[0]`. */
-	size_t capacity0; /* Capacity of `chunks[0]` for calculating next. */
+	struct pool_slot_array slots; /* Pointers to stable chunks. */
+	struct pool_free_heap free0; /* Free-list in chunk-zero. */
+	size_t capacity0; /* Capacity of chunk-zero. */
 };
 /* `{0}` is `C99`. */
 #ifndef POOL_IDLE /* <!-- !zero */
 #define POOL_IDLE { ARRAY_IDLE, HEAP_IDLE, (size_t)0 }
 #endif /* !zero --> */
 
-/** @return Given a pointer to `chunk_size`, return the chunk. */
+/** @return Given a pointer to `chunk_size`, return the chunk data. */
 static PX_(type) *PX_(data)(struct pool_chunk *const chunk)
 	{ return (PX_(type) *)(chunk + 1); }
 
-/** Which chunk is `data` in `pool`? @order \O(\log \log `items`) */
-static size_t PX_(chunk)(const struct X_(pool) *const pool,
+/** Which slot is `data` in `pool`? @order \O(\log \log `items`) */
+static size_t PX_(slot)(const struct X_(pool) *const pool,
 	const PX_(type) *const data) {
-	const size_t csize = pool->chunks.size;
+	const size_t ssize = pool->slots.size;
 	size_t n;
-	struct pool_chunk **const c0 = pool->chunks.data, **c1, **c2 = c0;
+	pool_slot *const s0 = pool->slots.data, *s1, *s2 = s0;
 	PX_(type) *cdata;
-	assert(pool && csize && c0 && data);
-	/* Assume with one chunk it's in that chunk; `chunks[0]` is `capacity0`. */
-	if(csize < 2 || (cdata = PX_(data)(c0[0]),
+	assert(pool && ssize && s0 && data);
+	/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
+	if(ssize < 2 || (cdata = PX_(data)(s0[0]),
 		data >= cdata && data < cdata + pool->capacity0))
-		return assert(*c0 && (cdata = PX_(data)(c0[0]),
+		return assert(*s0 && (cdata = PX_(data)(s0[0]),
 		data >= cdata && data < cdata + pool->capacity0)), 0;
 	/* Otherwise, the capacity is unknown, but they are ordered by pointer. Do
 	 a binary search using the next chunk's pointer. */
-	for(c1 = c0 + 1, n = csize - 2; n; n >>= 1) {
-		c2 = c1 + (n >> 1), cdata = PX_(data)(c2[0]);
+	for(s1 = s0 + 1, n = ssize - 2; n; n >>= 1) {
+		s2 = s1 + (n >> 1), cdata = PX_(data)(s2[0]);
 		if(data < cdata) { continue; }
-		else if(data >= PX_(data)(c2[1])) { c1 = c2 + 1; n--; continue; }
-		else { return (size_t)(c2 - c0); }
+		else if(data >= PX_(data)(s2[1])) { s1 = s2 + 1; n--; continue; }
+		else { return (size_t)(s2 - s0); }
 	}
 	/* It will be in the last, open-ended one, (assuming valid.) */
-	return assert(data >= PX_(data)(c2[0])), (size_t)(c2 - c0);
+	return assert(data >= PX_(data)(s2[0])), (size_t)(s2 - s0);
 }
 
 /** Flag `data` removed in the largest block of `pool` so that later data can
