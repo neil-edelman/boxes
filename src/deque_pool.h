@@ -128,28 +128,28 @@ static PX_(type) *PX_(data)(struct pool_chunk *const chunk)
 	{ return (PX_(type) *)(chunk + 1); }
 
 /** Which chunk is `data` in `pool`? @order \O(\log \log `items`) */
-static struct pool_chunk **pool_data_chunk(
-	const struct X_(pool) *const pool, const PX_(type) *const data) {
-	const size_t chunks_size = pool->chunks.size;
+static size_t PX_(chunk)(const struct X_(pool) *const pool,
+	const PX_(type) *const data) {
+	const size_t csize = pool->chunks.size;
 	size_t n;
-	struct pool_chunk **cbase = pool->chunks.data, **c = cbase;
-	PX_(type) *chunk_data;
-	assert(pool && chunks_size && cbase && data);
+	struct pool_chunk **const c0 = pool->chunks.data, **c1, **c2 = c0;
+	PX_(type) *cdata;
+	assert(pool && csize && c0 && data);
 	/* Assume with one chunk it's in that chunk; `chunks[0]` is `capacity0`. */
-	if(chunks_size < 2 || (chunk_data = PX_(data)(c[0]),
-		data >= chunk_data && data < chunk_data + pool->capacity0))
-		return assert(*c && (chunk_data = PX_(data)(c[0]),
-		data >= chunk_data && data < chunk_data + pool->capacity0)), c;
+	if(csize < 2 || (cdata = PX_(data)(c0[0]),
+		data >= cdata && data < cdata + pool->capacity0))
+		return assert(*c0 && (cdata = PX_(data)(c0[0]),
+		data >= cdata && data < cdata + pool->capacity0)), 0;
 	/* Otherwise, the capacity is unknown, but they are ordered by pointer. Do
-	 a binary search on `chunks_size - 2` using the next chunk's pointer. */
-	for(cbase++, n = chunks_size - 2; n; n >>= 1) {
-		c = cbase + (n >> 1), chunk_data = PX_(data)(c[0]);
-		if(data < chunk_data) { continue; }
-		else if(data >= PX_(data)(c[1])) { cbase = c + 1; n--; continue; }
-		else { return c; }
+	 a binary search using the next chunk's pointer. */
+	for(c1 = c0 + 1, n = csize - 2; n; n >>= 1) {
+		c2 = c1 + (n >> 1), cdata = PX_(data)(c2[0]);
+		if(data < cdata) { continue; }
+		else if(data >= PX_(data)(c2[1])) { c1 = c2 + 1; n--; continue; }
+		else { return (size_t)(c2 - c0); }
 	}
-	/* It will be in the last, open-ended one. */
-	return assert(data >= PX_(data)(c[0])), c;
+	/* It will be in the last, open-ended one, (assuming valid.) */
+	return assert(data >= PX_(data)(c2[0])), (size_t)(c2 - c0);
 }
 
 /** Flag `data` removed in the largest block of `pool` so that later data can
@@ -157,16 +157,17 @@ static struct pool_chunk **pool_data_chunk(
  @return Success. @throws[realloc] */
 static int PX_(remove)(struct X_(pool) *const pool,
 	const PX_(type) *const data) {
-	struct chunk **chunk;
-	/* Figure out which chunk it's in by linear search of exponenliti */
-	/* `idx` is the index of the data. */
-	const size_t idx
-		= (size_t)(data - (const PX_(type) *)(pool->chunks.data[0] + 1));
-	assert(pool && pool->chunks.size && data
-		&& data < (const PX_(type) *)(pool->chunks.data[0] + 1)
-		+ pool->chunks.data[0]->capacity);
-	/* fixme: if idx == size, size--, no need to do all this shit. */
-	return pool_heap_add(&pool->free, idx);
+	size_t c = PX_(chunk)(pool, data);
+	struct pool_chunk **chunk = pool->chunks.data + c, ;
+	assert(pool && pool->chunks.size && data);
+	if(c) {
+		assert(*chunk && (*chunk)->size);
+		pool->chunks.data[chunk]->size--;
+	} else {
+		const size_t idx = (size_t)(data - PX_(data)(pool->chunks.data[chunk]));
+		/* fixme: if idx == size, size--, no need to do all this shit. */
+		return pool_heap_add(&pool->free, idx);
+	}
 }
 
 /** @return Takes at the back of the heap a removed node from `pool`. */
