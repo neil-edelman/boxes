@@ -51,13 +51,18 @@
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
-
-/* <list.h> and <array.h> must be in the same directory. */
-#define LIST_NAME pool_free
-#include "list.h"
-#define ARRAY_NAME pool_free
-#define ARRAY_TYPE struct pool_free_list_node
+/** This is the chunks, followed by data. Explicit to avoid confusion. */
+struct pool_chunk { size_t size; };
+/* <array.h> and <heap.h> must be in the same directory. */
+#define ARRAY_NAME pool_chunk
+#define ARRAY_TYPE struct pool_chunk *
 #include "array.h"
+/** @return An order on `a`, `b` which specifies a max-heap. */
+static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
+#define HEAP_NAME pool_free
+#define HEAP_TYPE size_t
+#define HEAP_COMPARE &pool_index_compare
+#include "heap.h"
 #endif /* idempotent --> */
 
 /* Check defines. */
@@ -102,14 +107,6 @@
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE PX_(type);
 
-/** A chunk followed by data of `capacity`. */
-struct PX_(chunk) { size_t capacity, size; };
-
-#define ARRAY_NAME PX_(chunk)
-#define ARRAY_TYPE struct PX_(chunk) *
-#define ARRAY_SUBTYPE
-#include "array.h"
-
 /** Consists of a map of several chunks of increasing size and a free-list.
  Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<X>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
@@ -117,53 +114,72 @@ struct PX_(chunk) { size_t capacity, size; };
  ![States.](../web/states.png) */
 struct X_(pool);
 struct X_(pool) {
-	struct PX_(chunk_array) chunks; /* Pointers to stable cap, size, data. */
-	struct pool_free_list free; /* Free-list only in chunks[0]. */
-	struct pool_free_array store; /* Backing for free-list. */
+	struct pool_chunk_array chunks; /* Pointers to stable `chunk`. */
+	struct pool_free_heap free0; /* Free-list only in `chunks[0]`. */
+	size_t capacity0; /* Capacity of `chunks[0]` for calculating next. */
 };
 /* `{0}` is `C99`. */
 #ifndef POOL_IDLE /* <!-- !zero */
-#define POOL_IDLE { ARRAY_IDLE, LIST_IDLE }
+#define POOL_IDLE { ARRAY_IDLE, HEAP_IDLE, (size_t)0 }
 #endif /* !zero --> */
 
-#if 0
-/** Flag `node` removed in the largest block of `pool` so that later data can
- overwrite it. */
-static void PX_(enqueue_removed)(struct X_(pool) *const pool,
-	PX_(type) *const data) {
-	assert(pool && pool->largest && node
-		&& node >= PT_(block_nodes)(pool->largest)
-		&& node < PT_(block_nodes)(pool->largest) + pool->largest->size
-		&& !node->x.prev && !node->x.next
-		&& !pool->removed.prev == !pool->removed.next);
-	node->x.next = &pool->removed;
-	if(pool->removed.prev) {
-		node->x.prev = pool->removed.prev;
-		pool->removed.prev->next = &node->x;
-	} else {
-		node->x.prev = &pool->removed;
-		pool->removed.next = &node->x;
+/** @return Given a pointer to `chunk_size`, return the chunk. */
+static PX_(type) *PX_(data)(struct pool_chunk *const chunk)
+	{ return (PX_(type) *)(chunk + 1); }
+
+/** Which chunk is `data` in `pool`? @order \O(\log \log `items`) */
+static struct pool_chunk **pool_data_chunk(
+	const struct X_(pool) *const pool, const PX_(type) *const data) {
+	const size_t chunks_size = pool->chunks.size;
+	size_t n;
+	struct pool_chunk **cbase = pool->chunks.data, **c = cbase;
+	PX_(type) *chunk_data;
+	assert(pool && chunks_size && cbase && data);
+	/* Assume with one chunk it's in that chunk; `chunks[0]` is `capacity0`. */
+	if(chunks_size < 2 || (chunk_data = PX_(data)(c[0]),
+		data >= chunk_data && data < chunk_data + pool->capacity0))
+		return assert(*c && (chunk_data = PX_(data)(c[0]),
+		data >= chunk_data && data < chunk_data + pool->capacity0)), c;
+	/* Otherwise, the capacity is unknown, but they are ordered by pointer. Do
+	 a binary search on `chunks_size - 2` using the next chunk's pointer. */
+	for(cbase++, n = chunks_size - 2; n; n >>= 1) {
+		c = cbase + (n >> 1), chunk_data = PX_(data)(c[0]);
+		if(data < chunk_data) { continue; }
+		else if(data >= PX_(data)(c[1])) { cbase = c + 1; n--; continue; }
+		else { return c; }
 	}
-	pool->removed.prev = &node->x;
+	/* It will be in the last, open-ended one. */
+	return assert(data >= PX_(data)(c[0])), c;
 }
 
-/** @return Dequeues a removed node from `pool`, or if the queue is empty,
- returns null. */
-static struct PT_(node) *PT_(dequeue_removed)(struct T_(pool) *const pool) {
-	struct PT_(x) *x0, *x1;
-	assert(pool && !pool->removed.next == !pool->removed.prev);
-	if(!(x0 = pool->removed.next)) return 0; /* No elements. */
-	if((x1 = x0->next) == &pool->removed) { /* Last element. */
-		pool->removed.prev = pool->removed.next = 0;
-	} else { /* > 1 removed. */
-		pool->removed.next = x1;
-		x1->prev = &pool->removed;
-	}
-	x0->prev = x0->next = 0;
-	return PT_(x_upcast)(x0);
+/** Flag `data` removed in the largest block of `pool` so that later data can
+ overwrite it. @order \O(\log deleted items from head chunk)
+ @return Success. @throws[realloc] */
+static int PX_(remove)(struct X_(pool) *const pool,
+	const PX_(type) *const data) {
+	struct chunk **chunk;
+	/* Figure out which chunk it's in by linear search of exponenliti */
+	/* `idx` is the index of the data. */
+	const size_t idx
+		= (size_t)(data - (const PX_(type) *)(pool->chunks.data[0] + 1));
+	assert(pool && pool->chunks.size && data
+		&& data < (const PX_(type) *)(pool->chunks.data[0] + 1)
+		+ pool->chunks.data[0]->capacity);
+	/* fixme: if idx == size, size--, no need to do all this shit. */
+	return pool_heap_add(&pool->free, idx);
 }
 
-/** Gets rid of the removed node at the tail of the list of `pool`.
+/** @return Takes at the back of the heap a removed node from `pool`. */
+static size_t *PX_(take_removed)(struct X_(pool) *const pool) {
+	size_t *idx;
+	assert(pool);
+	if(!(idx = heap_pool_node_array_pop(&pool->free.a))) return 0;
+	assert(pool->chunks.size && pool->chunks.data[0]
+		&& *idx < pool->chunks.data[0]->size);
+	return idx;
+}
+
+/** Gets rid of the removed node `pool`.
  @order Amortized \O(1). */
 static void PT_(trim_removed)(struct T_(pool) *const pool) {
 	struct PT_(node) *node;
@@ -181,25 +197,23 @@ static void PT_(trim_removed)(struct T_(pool) *const pool) {
 		block->size--;
 	}
 }
+
 #endif
 
-/** Makes sure there is space for `n` further items in `pool`.
+/** Makes sure there are space for `n` further items in `pool`.
  @return Success. */
 static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	struct PX_(chunk) *c0;
 	assert(pool && (!pool->chunks.size
 		|| pool->chunks.data[0]->size >= pool->chunks.data[0]->capacity));
-	if(!pool->chunks.size) { /* It is idle. */
-		assert();
-	}
-		&& (c0 = pool->chunks.data[0], n <= c0->capacity - c0->size))
-		return 1;
+	if(pool->chunks.size && (c0 = pool->chunks.data[0], n <= c0->capacity - c0->size)) return 1;
+	/* Not enough capacity; allocate a new chunk that is at least `n`. */
 }
 
 /** Initializes `pool` to idle. @order \Theta(1) @allow */
 static void X_(pool)(struct X_(pool) *const pool) {
 	assert(pool);
-	PX_(chunk_array)(&pool->chunks), PX_(free_list_clear)(&pool->free);
+	PX_(chunk_array)(&pool->chunks), pool_heap(&pool->free);
 }
 
 /** Destroys `pool` and returns it to idle. @order \O(\log `data`) @allow */
@@ -208,6 +222,8 @@ static void X_(pool_)(struct X_(pool) *const pool) {
 	assert(pool);
 	for(i = *pool->chunks.data, i_end = i + pool->chunks.size; i < i_end; i++)
 		free(i);
+	PX_(chunk_array_)(&pool->chunks);
+	pool_heap_(&pool->free);
 	X_(pool)(pool);
 }
 
@@ -228,7 +244,7 @@ static int T_(pool_reserve)(struct T_(pool) *const pool, const size_t min) {
  @return A pointer to a new uninitialized element from `pool`.
  @throws[ERANGE, malloc] @order amortised O(1) @allow */
 static PX_(type) *X_(pool_new)(struct X_(pool) *const pool) {
-	struct PT_(node) *node;
+	struct PX_(data) *node;
 	size_t size;
 	assert(pool);
 	if((node = PT_(dequeue_removed)(pool))) return &node->data;
@@ -329,8 +345,6 @@ static const PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	/* Define `POOL_C99` to stop the error on this line. */
-	POOL_BUILD_BUG_ON(sizeof(pool32) != 4);
 	T_(pool)(0); T_(pool_)(0); T_(pool_reserve)(0, 0); T_(pool_new)(0);
 	T_(pool_remove)(0, 0); T_(pool_clear)(0); T_(pool_for_each)(0, 0);
 	PT_(begin)(0, 0); PT_(next)(0); PT_(unused_base_coda)();

@@ -24,8 +24,8 @@
  type.
 
  @param[HEAP_VALUE]
- Optional payload <typedef:<PH>value>, that is stored as a reference in
- <tag:<H>heap_node>; declaring it is sufficient.
+ Optional payload <typedef:<PH>adjunct>, that is stored as a reference in
+ <tag:<H>heap_node> as <typedef:<PH>value>; declaring it is sufficient.
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -89,7 +89,7 @@
 #define HEAP_TYPE unsigned
 #endif
 
-/** Valid assignable type used for priority in <tag:<H>heap_node>. Defaults to
+/** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(priority);
 
@@ -110,31 +110,27 @@ static int PH_(default_compare)(const PH_(priority) a, const PH_(priority) b)
 static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 
 #ifdef HEAP_VALUE /* <!-- value */
-/** If `HEAP_VALUE` is set, a valid tag type, used as a pointer in
- <tag:<H>heap_node>. */
-typedef HEAP_VALUE PH_(value);
-/** If `HEAP_VALUE` is set, a pointer to the <typedef:<PH>value>, otherwise a
- boolean `int` that is true (one) if the value exists and false (zero) if
- not. */
-typedef PH_(value) *PH_(pvalue);
+/** If `HEAP_VALUE` is set, a valid tag type. */
+typedef HEAP_VALUE PH_(adjunct);
+/** If `HEAP_VALUE` is set, this is a pointer to it, otherwise a boolean
+ value that is true when there is an item. */
+typedef PH_(adjunct) *PH_(value);
+/** If `HEAP_VALUE` is set, creates a value as the payload of
+ <typedef:<PH>node>. */
+struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
+/** Internal nodes in the heap. If `HEAP_VALUE` is set, this is a
+ <tag:<PH>heap_node>, otherwise it's the same as <typedef:<PH>priority>. */
+typedef struct H_(heap_node) PH_(node);
+/** Copies `priority` and `value` into a structure for use in  */
+/*const struct PH_(store) H_(heap_make_node)()...*/
 #else /* value --><!-- !value */
-typedef int PH_(pvalue);
-#endif /* value --> */
-
-/** Stores a <typedef:<PH>priority> as `priority`, which can be set by
- `HEAP_TYPE`. If `HEAP_VALUE` is set, also stores a pointer
- <typedef:<PH>pvalue> called `value`. */
-struct H_(heap_node);
-struct H_(heap_node) {
-	PH_(priority) priority;
-#ifdef HEAP_VALUE /* <!-- value */
-	PH_(pvalue) value;
-#endif /* value --> */
-};
+typedef int PH_(value);
+typedef PH_(priority) PH_(node);
+#endif /* !value --> */
 
 /* This relies on `array.h` which must be in the same directory. */
-#define ARRAY_NAME H_(heap_node)
-#define ARRAY_TYPE struct H_(heap_node)
+#define ARRAY_NAME PH_(node)
+#define ARRAY_TYPE PH_(node)
 #define ARRAY_SUBTYPE
 #include "array.h"
 
@@ -143,13 +139,22 @@ struct H_(heap_node) {
 
  ![States.](../web/states.png) */
 struct H_(heap);
-struct H_(heap) { struct H_(heap_node_array) a; };
+struct H_(heap) { struct PH_(node_array) a; };
 #ifndef HEAP_IDLE /* <!-- !zero */
-#define HEAP_IDLE { { 0, 0, 0 } }
+#define HEAP_IDLE { ARRAY_IDLE }
 #endif /* !zero --> */
 
-/** Extracts the <typedef:<PH>pvalue> of `node`, which must not be null. */
-static PH_(pvalue) PH_(get_value)(const struct H_(heap_node) *const node) {
+/** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
+static PH_(priority) PH_(get_priority)(const PH_(node) *const node) {
+#ifdef HEAP_VALUE /* <-- value */
+	return node->priority;
+#else /* value --><!-- !value */
+	return *node;
+#endif /* !value --> */
+}
+
+/** Extracts the <typedef:<PH>value> of `node`, which must not be null. */
+static PH_(value) PH_(get_value)(const PH_(node) *const node) {
 #ifdef HEAP_VALUE /* <-- value */
 	return node->value;
 #else /* value --><!-- !value */
@@ -158,32 +163,33 @@ static PH_(pvalue) PH_(get_value)(const struct H_(heap_node) *const node) {
 #endif /* !value --> */
 }
 
-/** Extracts the <typedef:<PH>pvalue> of `node`, which could be null. */
-static PH_(pvalue) PH_(value_or_null)(const struct H_(heap_node) *const node)
+/** Extracts the <typedef:<PH>value> of `node`, which could be null. */
+static PH_(value) PH_(value_or_null)(const PH_(node) *const node)
 	{ return node ? PH_(get_value)(node) : 0; }
 
 /** Copies `src` to `dest`. */
-static void PH_(copy)(const struct H_(heap_node) *const src,
-	struct H_(heap_node) *const dest) {
-	dest->priority = src->priority;
+static void PH_(copy)(const PH_(node) *const src, PH_(node) *const dest) {
 #ifdef HEAP_VALUE /* <!-- value */
+	dest->priority = src->priority;
 	dest->value = src->value;
-#endif /* value --> */
+#else /* value --><!-- !value */
+	*dest = *src;
+#endif /* !value --> */
 }
 
 /** Find the spot in `heap` where `node` goes and put it there.
  @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
-static void PH_(sift_up)(struct H_(heap) *const heap,
-	struct H_(heap_node) *const node) {
-	struct H_(heap_node) *const n0 = heap->a.data;
+static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
+	PH_(node) *const n0 = heap->a.data;
+	PH_(priority) p = PH_(get_priority)(node);
 	size_t i = heap->a.size - 1;
 	assert(heap && heap->a.size && node);
 	if(i) {
 		size_t i_up;
 		do { /* Note: don't change the `<=`; it's a queue. */
 			i_up = (i - 1) >> 1;
-			if(PH_(compare)(n0[i_up].priority, node->priority) <= 0) break;
+			if(PH_(compare)(PH_(get_priority)(n0 + i_up), p) <= 0) break;
 			PH_(copy)(n0 + i_up, n0 + i);
 		} while((i = i_up));
 	}
@@ -197,14 +203,15 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
 	const size_t size = (assert(heap && heap->a.size), --heap->a.size),
 		half = size >> 1;
 	size_t i = 0, c;
-	struct H_(heap_node) *const n0 = heap->a.data,
+	PH_(node) *const n0 = heap->a.data,
 		*const down = n0 + size /* Put it at the top. */, *child;
+	const PH_(priority) down_p = PH_(get_priority)(down);
 	while(i < half) {
 		c = (i << 1) + 1;
-		if(c + 1 < size && PH_(compare)(n0[c].priority,
-			n0[c + 1].priority) > 0) c++;
+		if(c + 1 < size && PH_(compare)(PH_(get_priority)(n0 + c),
+			PH_(get_priority)(n0 + c + 1)) > 0) c++;
 		child = n0 + c;
-		if(PH_(compare)(down->priority, child->priority) <= 0) break;
+		if(PH_(compare)(down_p, PH_(get_priority)(child)) <= 0) break;
 		PH_(copy)(child, n0 + i);
 		i = c;
 	}
@@ -219,19 +226,21 @@ static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 	const size_t size = (assert(heap && i < heap->a.size), heap->a.size),
 		half = size >> 1;
 	size_t c;
-	struct H_(heap_node) *const n0 = heap->a.data, *child, temp;
+	PH_(node) *const n0 = heap->a.data, *child, temp;
 	int temp_valid = 0;
 	while(i < half) {
 		c = (i << 1) + 1;
-		if(c + 1 < size && PH_(compare)(n0[c].priority,
-			n0[c + 1].priority) > 0) c++;
+		if(c + 1 < size && PH_(compare)(PH_(get_priority)(n0 + c),
+			PH_(get_priority)(n0 + c + 1)) > 0) c++;
 		child = n0 + c;
 		if(temp_valid) {
-			if(PH_(compare)(temp.priority, child->priority) <= 0) break;
+			if(PH_(compare)(PH_(get_priority)(&temp),
+				PH_(get_priority)(child)) <= 0) break;
 		} else {
 			/* Only happens on the first compare when `i` is in it's original
 			 position. */
-			if(PH_(compare)(n0[i].priority, child->priority) <= 0) break;
+			if(PH_(compare)(PH_(get_priority)(n0 + i),
+				PH_(get_priority)(child)) <= 0) break;
 			PH_(copy)(n0 + i, &temp), temp_valid = 1;
 		}
 		PH_(copy)(child, n0 + i);
@@ -249,8 +258,8 @@ static void PH_(heapify)(struct H_(heap) *const heap) {
 }
 
 /** Removes from `heap`. Must have a non-zero size. */
-static PH_(pvalue) PH_(remove)(struct H_(heap) *const heap) {
-	const PH_(pvalue) result = PH_(get_value)(heap->a.data);
+static PH_(node) PH_(remove)(struct H_(heap) *const heap) {
+	const PH_(node) result = *heap->a.data;
 	assert(heap);
 	if(heap->a.size > 1) {
 		PH_(sift_down)(heap);
@@ -261,14 +270,14 @@ static PH_(pvalue) PH_(remove)(struct H_(heap) *const heap) {
 	return result;
 }
 
-/** Initialises `heap` to be idle. @order \Theta(1) @allow */
+/** Initializes `heap` to be idle. @order \Theta(1) @allow */
 static void H_(heap)(struct H_(heap) *const heap)
-	{ assert(heap), H_(heap_node_array)(&heap->a); }
+	{ assert(heap), PH_(node_array)(&heap->a); }
 
 /** Returns `heap` to the idle state where it takes no dynamic memory.
  @order \Theta(1) @allow */
 static void H_(heap_)(struct H_(heap) *const heap)
-	{ assert(heap), H_(heap_node_array_)(&heap->a); }
+	{ assert(heap), PH_(node_array_)(&heap->a); }
 
 /** @return The size of `heap`. @order \Theta(1) @allow */
 static size_t H_(heap_size)(const struct H_(heap) *const heap)
@@ -280,87 +289,76 @@ static size_t H_(heap_size)(const struct H_(heap) *const heap)
 static void H_(heap_clear)(struct H_(heap) *const heap)
 	{ assert(heap), heap->a.size = 0; }
 
-/** Copies `node` into `heap`. @return Success. @throws[ERANGE, realloc]
- @order \O(log `heap.size`) @allow */
-static int H_(heap_add)(struct H_(heap) *const heap,
-	struct H_(heap_node) node) {
+/** Copies `priority` into `heap`.
+ @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
+static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 	assert(heap);
-	/* `new` adds an uninitialized element to the back; <fn:<PH>sift_up>
-	 replaces the back element with a copy of `node`. */
-	return H_(heap_node_array_new)(&heap->a) && (PH_(sift_up)(heap, &node), 1);
+	return PH_(node_array_new)(&heap->a) && (PH_(sift_up)(heap, &node), 1);
 }
 
 /** @return Lowest in `heap` according to `HEAP_COMPARE` or null if the heap is
  empty. This pointer is valid only until one makes structural changes to the
  heap. @order \O(1) @allow */
-static struct H_(heap_node) *H_(heap_peek)(const struct H_(heap) *const heap)
+static PH_(node) *H_(heap_peek)(const struct H_(heap) *const heap)
 	{ return assert(heap), heap->a.size ? heap->a.data : 0; }
 
-/** This returns the <typedef:<PH>pvalue> of the <tag:<H>heap_node> returned by
+/** This returns the <typedef:<PH>value> of the <typedef:<PH>node> returned by
  <fn:<H>heap_peek>, for convenience with some applications. If `HEAP_VALUE`,
  this is a child of <fn:<H>heap_peek>, otherwise it is a boolean `int`.
  @return Lowest <typedef:<PH>value> in `heap` element according to
  `HEAP_COMPARE`; if the heap is empty, null or zero. @order \O(1) @allow */
-static PH_(pvalue) H_(heap_peek_value)(struct H_(heap) *const heap)
+static PH_(value) H_(heap_peek_value)(struct H_(heap) *const heap)
 	{ return PH_(value_or_null)(H_(heap_peek)(heap)); }
 
 /** Remove the lowest element according to `HEAP_COMPARE`.
- @param[heap] If null, returns false. @return The <typedef:<PH>pvalue> of the
+ @param[heap] If null, returns false. @return The <typedef:<PH>value> of the
  element that was removed; if the heap is empty, null or zero.
  @order \O(log `size`) @allow */
-static PH_(pvalue) H_(heap_pop)(struct H_(heap) *const heap)
-	{ return assert(heap), heap->a.size ? PH_(remove)(heap) : 0; }
-
-/** Ensures that `heap` is `reserve` capacity beyond the elements already in
- the heap, but doesn't add to the size.
- @param[reserve] If zero and idle, returns null
- @return The end of the `heap`, where are `reserve` elements. Writing on this
- memory space is safe, but one will have to increase the size manually, (see
- <fn:<H>heap_buffer>.)
- @throws[ERANGE, realloc] @order Amortised \O(`reserve`). @allow */
-static struct H_(heap_node) *H_(heap_reserve)(struct H_(heap) *const heap,
-	const size_t reserve) {
-	assert(heap);
-	if(!reserve) return heap->a.data ? heap->a.data + heap->a.size : 0;
-	if(heap->a.size > (size_t)-1 - reserve) { errno = ERANGE; return 0; }
-	if(!H_(heap_node_array_reserve)(&heap->a, heap->a.size + reserve)) return 0;
-	return heap->a.data + heap->a.size;
+static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
+	PH_(node) n;
+	return assert(heap), heap->a.size
+		? (n = PH_(remove)(heap), PH_(get_value)(&n)) : 0;
 }
+
+/** The capacity of `heap` will be increased to at least `buffer` elements
+ beyond the size. Invalidates pointers in `a`.
+ @return The start of the buffered space, (the back of the array.) If `a` is
+ idle and `buffer` is zero, a null pointer is returned, otherwise null
+ indicates an error. @throws[realloc, ERANGE] @allow */
+static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
+	const size_t n) { return PH_(node_array_buffer)(&heap->a, n); }
 
 /** Adds and heapifies `add` elements to `heap`. Uses <Doberkat, 1984, Floyd>
  to sift-down all the internal nodes of heap, including any previous elements.
  As such, this function is most efficient on a heap of zero size, and becomes
- more inefficient as the existing heap grows. For heaps that are already in
- use, it may be better to add each element individually, resulting in a
- run-time of \O(`new elements` \cdot log `heap.size`).
+ increasingly inefficient as the heap grows. For heaps that are already in use,
+ it may be better to add each element individually, resulting in a run-time of
+ \O(`new elements` \cdot log `heap.size`).
  @param[add] If zero, returns true.
- @return Success. @throws[ERANGE, realloc] If <fn:<H>heap_reserve> has been
- successful in reserving at least `add` elements, one is guaranteed success.
+ @return Success. @throws[ERANGE, realloc] If <fn:<H>heap_buffer> has been
+ successful in reserving at least `n` elements, one is guaranteed success.
  Practically, it really doesn't make any sense to call this without calling
- <fn:<H>heap_reserve> and setting the values, because then one would be
+ <fn:<H>heap_buffer> and setting the values, because then one would be
  inserting un-initialised values on the heap.
  @order \O(`heap.size` + `add`) @allow */
-static int H_(heap_buffer)(struct H_(heap) *const heap, const size_t add) {
+static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	assert(heap);
-	if(!add) return 1;
-	if(heap->a.size > (size_t)-1 - add) { errno = ERANGE; return 0; }
-	if(!H_(heap_node_array_reserve)(&heap->a, heap->a.size + add)) return 0;
-	heap->a.size += add;
-	PH_(heapify)(heap);
+	PH_(node_array_append)(&heap->a, n);
+	if(n) PH_(heapify)(heap);
 	return 1;
 }
 
 /** Contains all iteration parameters. */
 struct PH_(iterator);
-struct PH_(iterator) { const struct H_(heap_node_array) *a; size_t i; };
+struct PH_(iterator) { const struct PH_(node_array) *a; size_t i; };
 
 /** Loads `heap` into `it`. @implements begin */
 static void PH_(begin)(struct PH_(iterator) *const it,
 	const struct H_(heap) *const heap)
 	{ assert(it && heap), it->a = &heap->a, it->i = 0; }
 
-/** Advances `it`. @implements next */
-static const struct H_(heap_node) *PH_(next)(struct PH_(iterator) *const it) {
+/** Advances `it` in the array. @implements next */
+static const PH_(node) *PH_(next)(struct PH_(iterator) *const it) {
 	assert(it && it->a);
 	return it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
@@ -372,17 +370,15 @@ static const struct H_(heap_node) *PH_(next)(struct PH_(iterator) *const it) {
 
 #define ITERATE struct PH_(iterator)
 #define ITERATE_BOX struct H_(heap)
-#define ITERATE_TYPE struct H_(heap_node)
+#define ITERATE_TYPE PH_(node)
 #define ITERATE_BEGIN PH_(begin)
 #define ITERATE_NEXT PH_(next)
 
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
-	struct H_(heap_node) h;
-	memset(&h, 0, sizeof h);
 	H_(heap)(0); H_(heap_)(0); H_(heap_size)(0); H_(heap_clear)(0);
-	H_(heap_peek_value)(0); H_(heap_pop)(0); H_(heap_reserve)(0, 0);
-	H_(heap_buffer)(0, 0); PH_(unused_base_coda)();
+	H_(heap_peek_value)(0); H_(heap_pop)(0); H_(heap_buffer)(0, 0);
+	H_(heap_append)(0, 0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
