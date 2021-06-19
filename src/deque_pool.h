@@ -53,7 +53,9 @@
 #define POOL_H
 /** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
-/** A slot is a pointer to a stable chunk. */
+/** A slot is a pointer to a stable chunk. Despite `typedef` ideals, it makes
+ the source much more readable to have this instead of a `**chunk` and will
+ not compile on error. */
 typedef struct pool_chunk *pool_slot;
 /* <array.h> and <heap.h> must be in the same directory. */
 #define ARRAY_NAME pool_slot
@@ -154,22 +156,42 @@ static size_t PX_(slot)(const struct X_(pool) *const pool,
 	return assert(data >= PX_(data)(s2[0])), (size_t)(s2 - s0);
 }
 
-/** Flag `data` removed in the largest block of `pool` so that later data can
- overwrite it. @order \O(\log deleted items from head chunk)
- @return Success. @throws[realloc] */
+/** Either `data` in `pool` is in a secondary chunk, in which case it
+ decrements the size, or it's the zero-chunk, where it gets added to the
+ free-heap.
+ @return Success. It may fail due to a free-heap memory allocation error.
+ @order Amortized \O(\log \log `items`) @throws[realloc] */
 static int PX_(remove)(struct X_(pool) *const pool,
 	const PX_(type) *const data) {
-	size_t c = PX_(chunk)(pool, data);
-	struct pool_chunk **chunk = pool->chunks.data + c, ;
-	assert(pool && pool->chunks.size && data);
-	if(c) {
-		assert(*chunk && (*chunk)->size);
-		pool->chunks.data[chunk]->size--;
-	} else {
-		const size_t idx = (size_t)(data - PX_(data)(pool->chunks.data[chunk]));
-		/* fixme: if idx == size, size--, no need to do all this shit. */
-		return pool_heap_add(&pool->free, idx);
+	size_t s = PX_(slot)(pool, data);
+	struct pool_chunk *chunk = pool->slots.data[s];
+	assert(pool && pool->slots.size && data);
+	printf("Remove #%p which is in slot %lu; chunk has %lu size.\n",
+		(const void *)data, (unsigned long)s, chunk->size);
+	if(!s) { /* It's in the zero-slot. */
+		const size_t idx = (size_t)(data - PX_(data)(chunk));
+		assert(pool->capacity0 && chunk->size <= pool->capacity0
+			&& idx < chunk->size);
+		printf("Zero-slot, index %lu of %lu capacity %lu.\n",
+			idx, chunk->size, pool->capacity0);
+		if(idx + 1 == chunk->size) { /* It's at the end -- size goes down. */
+			while(--chunk->size) {
+				const size_t *const free = pool_free_heap_peek(&pool->free0);
+				printf("Size--; now %lu.\n", chunk->size);
+				/* Another item on the free-heap is not exposed? */
+				if(!free || *free < chunk->size - 1) break;
+				printf("Pop %lu from the free-heap.\n", *free);
+				assert(*free == chunk->size - 1);
+				pool_free_heap_pop(&pool->free0);
+			}
+		} else { /* Not the end; just add to free-heap. */
+			return pool_free_heap_add(&pool->free0, idx);
+		}
+	} else { /* It's in the other slots. */
+		if(assert(chunk->size), !--chunk->size)
+			pool_slot_array_remove(&pool->slots, pool->slots.data + s);
 	}
+	return 1;
 }
 
 /** @return Takes at the back of the heap a removed node from `pool`. */
@@ -305,7 +327,7 @@ static void T_(pool_for_each)(struct T_(pool) *const pool,
 	if(!pool || !action) return;
 	for(block = pool->largest; block; block = block->smaller)
 		for(n = PT_(block_nodes)(block), end = n + PT_(range)(pool, block);
-			n < end; n++) if(!n->x.prev) action(&n->data);
+		n < end; n++) if(!n->x.prev) action(&n->data);
 }
 
 /** Contains all iteration parameters. */
