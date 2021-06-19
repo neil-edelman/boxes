@@ -191,15 +191,44 @@ static int PX_(remove)(struct X_(pool) *const pool,
 /** Makes sure there are space for `n` further items in `pool`.
  @return Success. */
 static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
-	assert(pool && (!pool->slots.size && !pool->free0.a.size
+	pool_slot *slot = 0;
+	struct pool_chunk *chunk = 0;
+	int success = 0;
+	const size_t c0 = pool->capacity0,
+		min_size = 13,
+		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
+	size_t c1;
+	printf("buffer %lu\n", n);
+	assert(pool && pool->capacity0 <= max_size
+		&& (!pool->slots.size && !pool->free0.a.size
 		|| pool->slots.data[0]
 		&& pool->free0.a.size < pool->slots.data[0]->size
 		&& pool->slots.data[0]->size <= pool->capacity0));
 	if(pool->slots.size && (n <= pool->capacity0 - pool->slots.data[0]->size
-		+ pool->free0.a.size)) return 1;
+		+ pool->free0.a.size)) goto finally;
 	/* Not enough capacity; allocate a new chunk that is at least `n`. */
-	assert(0);
-	return 0;
+	if(!(slot = pool_slot_array_new(&pool->slots))) goto catch;
+	/* 13 | golden_ratio * pool->capacity0 | n */
+	c1 = c0 + (c0 >> 1) + (c0 >> 3);
+	if(c1 < c0 || c1 > max_size) c1 = max_size;
+	if(c1 < min_size) c1 = min_size;
+	if(max_size < n) c1 = max_size;
+	else if(c1 < n) c1 = n;
+	printf("making chunk enough to hold %lu\n", c1);
+	if(!(chunk = malloc(sizeof chunk + sizeof(PX_(type)) * c1))) goto catch;
+	chunk->size = 0;
+	pool->capacity0 = c1;
+	*slot = chunk;
+	success = 1;
+	assert(pool->slots.size);
+	if(pool->slots.size == 1) goto finally;
+	assert(0); /* place in order */
+	goto finally;
+catch:
+	if(chunk) free(chunk);
+	if(slot) pool_slot_array_remove(&pool->slots, slot), slot = 0;
+finally:
+	return success;
 }
 
 /** Initializes `pool` to idle. @order \Theta(1) @allow */
