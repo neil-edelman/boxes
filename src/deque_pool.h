@@ -280,7 +280,7 @@ static PX_(type) *X_(pool_new)(struct X_(pool) *const pool) {
 	if(!PX_(buffer)(pool, 1)) return 0;
 	assert(pool->slots.size && (pool->free0.a.size ||
 		pool->capacity0 > pool->slots.data[0]->size));
-	/* Array pop: towards minimum-ish index in the max-free-heap. */
+	/* Array pop, towards minimum-ish index in the max-free-heap. */
 	if(free = heap_pool_free_node_array_pop(&pool->free0.a))
 		return PX_(data)(pool->slots.data[0]) + *free;
 	/* The free-heap is empty; guaranteed by <fn:<PX>buffer>. */

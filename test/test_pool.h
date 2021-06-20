@@ -30,7 +30,7 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
-		"\tnode [shape = record, style = filled, fillcolor = lightgray];\n"
+		"\tnode [shape = record, style = filled, fillcolor = lightsteelblue];\n"
 		"\tpool [label=\"\\<" QUOTE(POOL_NAME) "\\>pool\\l|"
 		"%s slots: %lu/%lu\\l"
 		"%s free[0]: %lu/%lu\\l",
@@ -43,7 +43,7 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 	if(!pool->slots.size)
 		fprintf(fp, "idle slots.data[0].capacity: %lu\\l",
 		(unsigned long)pool->capacity0);
-	fprintf(fp, "\"];\n");
+	fprintf(fp, "\", fillcolor=lightgray];\n");
 	if(pool->slots.data) {
 		size_t i, j;
 		struct pool_chunk *chunk;
@@ -52,8 +52,7 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 		if(!pool->slots.size) {
 			fprintf(fp, "\tslot0 [label = \"no slots\", shape = record]\n");
 		} else {
-			fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n"
-				"\tsubgraph cluster_slots {\n"
+			fprintf(fp, "\tsubgraph cluster_slots {\n"
 				"\t\tstyle=filled;\n"
 				"\t\tlabel=\"slots %lu/%lu\";\n",
 				pool->slots.size, pool->slots.capacity);
@@ -63,18 +62,18 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 			fprintf(fp, "\t}\n");
 		}
 		fprintf(fp, "\tpool -> slot0;\n");
-		/* For each slot, there is a chunk array; `chunk[0]` is special. */
+		/* For each slot, there is a chunk array. */
 		for(i = 0; i < pool->slots.size; i++) {
-			chunk = pool->slots.data[0];
+			chunk = pool->slots.data[i];
 			data = PX_(data)(chunk);
 			fprintf(fp, "\tsubgraph cluster_chunk%lu {\n"
 				"\t\tstyle=filled;\n"
 				"\t\tlabel=\"chunk[%lu] %lu",
-				(unsigned long)0, (unsigned long)0, (unsigned long)chunk->size);
+				(unsigned long)i, (unsigned long)i, (unsigned long)chunk->size);
 			if(!i) fprintf(fp, "/%lu", (unsigned long)pool->capacity0);
 			fprintf(fp, "\";\n");
 			if(i || !chunk->size) {
-				fprintf(fp, "\t\tdata0_0 [style=invis]\n");
+				fprintf(fp, "\t\tdata%lu_0 [style=invis]\n", i);
 			} else {
 				for(j = 0; j < chunk->size; j++) {
 					size_t *f, *f_end;
@@ -83,17 +82,18 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 					if(f == f_end) {
 						PX_(to_string)(data + j, &str);
 						fprintf(fp, "\t\tdata%lu_%lu [label=\"[%lu] %s\"];\n",
-							(unsigned long)0, (unsigned long)j, (unsigned long)j,
+							(unsigned long)i, (unsigned long)j, (unsigned long)j,
 							str);
 					} else {
 						fprintf(fp, "\t\tdata%lu_%lu [label=\"removed\","
 							" fillcolor=red, style=invis];\n",
-							(unsigned long)0, (unsigned long)j);
+							(unsigned long)i, (unsigned long)j);
 					}
 				}
 			}
 			fprintf(fp, "\t}\n"
-				"\tslot0 -> data0_0;\n");
+				"\tslot%lu -> data%lu_0;\n",
+				(unsigned long)i, (unsigned long)i);
 		}
 	}
 
