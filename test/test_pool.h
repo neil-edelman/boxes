@@ -27,6 +27,7 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 	char str[12];
 	assert(pool && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
 		"\tnode [shape = record, style = filled, fillcolor = lightgray];\n"
@@ -86,6 +87,7 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 						(unsigned long)0, (unsigned long)j);
 				}
 			}
+			if(!chunk->size) fprintf(fp, "\t\tdata0_0 [style=invis]\n");
 			fprintf(fp, "\t}\n"
 				"\tslot%lu -> data%lu_0;\n",
 				(unsigned long)0, (unsigned long)0);

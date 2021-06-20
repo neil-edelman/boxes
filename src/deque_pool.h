@@ -242,8 +242,6 @@ static int PX_(remove)(struct X_(pool) *const pool,
 		printf("Remove: chunk[%lu], current size %lu.\n",
 			(unsigned long)s, (unsigned long)chunk->size);
 		assert(chunk->size), chunk->size--;
-	}
-	if(!chunk->size) { /* The chunk is not used anymore. */
 		pool_slot_array_remove(&pool->slots, pool->slots.data + s);
 		free(chunk);
 	}
