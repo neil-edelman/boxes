@@ -198,14 +198,18 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 		min_size = 13,
 		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
 	size_t c1;
-	printf("buffer %lu\n", n);
+	printf("buffer: %s, capacity0 %lu, n %lu.\n",
+		pool->slots.size ? "existing" : "new",
+		   (unsigned long)pool->capacity0, (unsigned long)n);
+	if(pool->slots.size)
+		printf("buffer: size0 %lu.\n", pool->slots.data[0]->size);
 	assert(pool && pool->capacity0 <= max_size
 		&& (!pool->slots.size && !pool->free0.a.size
 		|| pool->slots.data[0]
 		&& pool->free0.a.size < pool->slots.data[0]->size
 		&& pool->slots.data[0]->size <= pool->capacity0));
 	if(pool->slots.size && (n <= pool->capacity0 - pool->slots.data[0]->size
-		+ pool->free0.a.size)) goto finally;
+		+ pool->free0.a.size)) {success = 1;printf("buffer: okay\n");goto finally;}
 	/* Not enough capacity; allocate a new chunk that is at least `n`. */
 	if(!(slot = pool_slot_array_new(&pool->slots))) goto catch;
 	/* 13 | golden_ratio * pool->capacity0 | n */
@@ -214,7 +218,7 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	if(c1 < min_size) c1 = min_size;
 	if(max_size < n) c1 = max_size;
 	else if(c1 < n) c1 = n;
-	printf("making chunk enough to hold %lu\n", c1);
+	printf("making new chunk enough to hold %lu\n", c1);
 	if(!(chunk = malloc(sizeof chunk + sizeof(PX_(type)) * c1))) goto catch;
 	chunk->size = 0;
 	pool->capacity0 = c1;
