@@ -195,7 +195,7 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	*slot = chunk;
 	success = 1;
 	assert(pool->slots.size);
-	if(pool->slots.size == 1) goto finally;
+	if(pool->slots.size < 3) goto finally;
 	assert(0); /* place in order */
 	goto finally;
 catch:
