@@ -44,6 +44,8 @@
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
+/* `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PX>type]` */
+#define POOL_CHUNK_START 13
 /** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
 /** A slot is a pointer to a stable chunk. Despite `typedef` ideals, it makes
@@ -121,7 +123,7 @@ struct X_(pool) {
 #endif /* !zero --> */
 
 /** @return Given a pointer to `chunk_size`, return the chunk data. */
-static PX_(type) *PX_(datum)(struct pool_chunk *const chunk)
+static PX_(type) *PX_(data)(struct pool_chunk *const chunk)
 	{ return (PX_(type) *)(chunk + 1); }
 
 /** Which slot is `datum` in `pool`? @order \O(\log \log `items`) */
@@ -133,20 +135,74 @@ static size_t PX_(slot)(const struct X_(pool) *const pool,
 	PX_(type) *cdata;
 	assert(pool && ssize && s0 && datum);
 	/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
-	if(ssize < 2 || (cdata = PX_(datum)(s0[0]),
+	if(ssize < 2 || (cdata = PX_(data)(s0[0]),
 		datum >= cdata && datum < cdata + pool->capacity0))
-		return assert(*s0 && (cdata = PX_(datum)(s0[0]),
+		return assert(*s0 && (cdata = PX_(data)(s0[0]),
 		datum >= cdata && datum < cdata + pool->capacity0)), 0;
 	/* Otherwise, the capacity is unknown, but they are ordered by pointer. Do
 	 a binary search using the next chunk's pointer. */
 	for(s1 = s0 + 1, n = ssize - 2; n; n >>= 1) {
-		s2 = s1 + (n >> 1), cdata = PX_(datum)(s2[0]);
+		s2 = s1 + (n >> 1), cdata = PX_(data)(s2[0]);
 		if(datum < cdata) { continue; }
-		else if(datum >= PX_(datum)(s2[1])) { s1 = s2 + 1; n--; continue; }
+		else if(datum >= PX_(data)(s2[1])) { s1 = s2 + 1; n--; continue; }
 		else { return (size_t)(s2 - s0); }
 	}
 	/* It will be in the last, open-ended one, (assuming valid.) */
-	return assert(datum >= PX_(datum)(s2[0])), (size_t)(s2 - s0);
+	return assert(datum >= PX_(data)(s2[0])), (size_t)(s2 - s0);
+}
+
+/** Makes sure there are space for `n` further items in `pool`.
+ @return Success. */
+static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
+	pool_slot *slot = 0;
+	struct pool_chunk *chunk = 0;
+	int success = 0;
+	const size_t min_size = POOL_CHUNK_START,
+		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
+	size_t c = pool->capacity0;
+	printf("buffer: %s, capacity0 %lu, n %lu.\n",
+		pool->slots.size ? "existing" : "new",
+		   (unsigned long)pool->capacity0, (unsigned long)n);
+	if(pool->slots.size)
+		printf("buffer: size0 %lu.\n", pool->slots.data[0]->size);
+	assert(pool && pool->capacity0 <= max_size);
+	assert(!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
+		|| pool->slots.size && pool->slots.data && pool->slots.data[0]
+		&& (!pool->free0.a.size /* there is no free */
+		/* size free[0] < size chunk[0] */
+		|| pool->free0.a.size < pool->slots.data[0]->size
+		/* free[0] < size chunk[0] */
+		&& pool->free0.a.data[0] < pool->slots.data[0]->size)
+		/* size chunk[0] <= capacity chunk[0] */
+		&& pool->slots.data[0]->size <= pool->capacity0
+		&& min_size <= max_size);
+	if(pool->slots.size && (n <= pool->capacity0 - pool->slots.data[0]->size
+		+ pool->free0.a.size)) { success = 1; goto finally; }
+	/* Not enough capacity; allocate a new chunk that is at least `n`. */
+	if(!(slot = pool_slot_array_new(&pool->slots))) goto catch;
+	if(pool->slots.size > 1) { /* Golden ratio exponential. */
+		size_t c1 = c + (c >> 1) + (c >> 3);
+		c = (c1 < c || c1 > max_size) ? max_size : c1;
+		printf("increasing size, %lu\n", pool->slots.size);
+	}
+	if(c < min_size) c = min_size;
+	if(max_size < n) c = max_size;
+	else if(c < n) c = n;
+	printf("making new chunk enough to hold %lu\n", c);
+	if(!(chunk = malloc(sizeof chunk + sizeof(PX_(type)) * c))) goto catch;
+	chunk->size = 0;
+	pool->capacity0 = c;
+	*slot = chunk;
+	success = 1;
+	assert(pool->slots.size);
+	if(pool->slots.size == 1) goto finally;
+	assert(0); /* place in order */
+	goto finally;
+catch:
+	if(chunk) free(chunk);
+	if(slot) pool_slot_array_remove(&pool->slots, slot), slot = 0;
+finally:
+	return success;
 }
 
 /** Either `data` in `pool` is in a secondary chunk, in which case it
@@ -159,10 +215,11 @@ static int PX_(remove)(struct X_(pool) *const pool,
 	size_t s = PX_(slot)(pool, data);
 	struct pool_chunk *chunk = pool->slots.data[s];
 	assert(pool && pool->slots.size && data);
-	printf("Remove #%p which is in slot %lu; chunk has %lu size.\n",
-		(const void *)data, (unsigned long)s, chunk->size);
-	if(!s) { /* It's in the zero-slot. */
-		const size_t idx = (size_t)(data - PX_(datum)(chunk));
+	printf("Remove #%p: slot %lu.\n",
+		(const void *)data, (unsigned long)s);
+	if(!s) { /* It's in the zero-slot, we need to deal with the free list. */
+		const size_t idx = (size_t)(data - PX_(data)(chunk));
+		printf("Remove: chunk[0], %lu of %lu.\n", idx, chunk->size);
 		assert(pool->capacity0 && chunk->size <= pool->capacity0
 			&& idx < chunk->size);
 		printf("Zero-slot, index %lu of %lu capacity %lu.\n",
@@ -182,57 +239,15 @@ static int PX_(remove)(struct X_(pool) *const pool,
 			return pool_free_heap_add(&pool->free0, idx);
 		}
 	} else { /* It's in the other slots. */
-		if(assert(chunk->size), !--chunk->size)
-			pool_slot_array_remove(&pool->slots, pool->slots.data + s);
+		printf("Remove: chunk[%lu], current size %lu.\n",
+			(unsigned long)s, (unsigned long)chunk->size);
+		assert(chunk->size), chunk->size--;
+	}
+	if(!chunk->size) { /* The chunk is not used anymore. */
+		pool_slot_array_remove(&pool->slots, pool->slots.data + s);
+		free(chunk);
 	}
 	return 1;
-}
-
-/** Makes sure there are space for `n` further items in `pool`.
- @return Success. */
-static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
-	pool_slot *slot = 0;
-	struct pool_chunk *chunk = 0;
-	int success = 0;
-	const size_t c0 = pool->capacity0,
-		min_size = 13,
-		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
-	size_t c1;
-	printf("buffer: %s, capacity0 %lu, n %lu.\n",
-		pool->slots.size ? "existing" : "new",
-		   (unsigned long)pool->capacity0, (unsigned long)n);
-	if(pool->slots.size)
-		printf("buffer: size0 %lu.\n", pool->slots.data[0]->size);
-	assert(pool && pool->capacity0 <= max_size
-		&& (!pool->slots.size && !pool->free0.a.size
-		|| pool->slots.data[0]
-		&& pool->free0.a.size < pool->slots.data[0]->size
-		&& pool->slots.data[0]->size <= pool->capacity0));
-	if(pool->slots.size && (n <= pool->capacity0 - pool->slots.data[0]->size
-		+ pool->free0.a.size)) {success = 1;printf("buffer: okay\n");goto finally;}
-	/* Not enough capacity; allocate a new chunk that is at least `n`. */
-	if(!(slot = pool_slot_array_new(&pool->slots))) goto catch;
-	/* 13 | golden_ratio * pool->capacity0 | n */
-	c1 = c0 + (c0 >> 1) + (c0 >> 3);
-	if(c1 < c0 || c1 > max_size) c1 = max_size;
-	if(c1 < min_size) c1 = min_size;
-	if(max_size < n) c1 = max_size;
-	else if(c1 < n) c1 = n;
-	printf("making new chunk enough to hold %lu\n", c1);
-	if(!(chunk = malloc(sizeof chunk + sizeof(PX_(type)) * c1))) goto catch;
-	chunk->size = 0;
-	pool->capacity0 = c1;
-	*slot = chunk;
-	success = 1;
-	assert(pool->slots.size);
-	if(pool->slots.size == 1) goto finally;
-	assert(0); /* place in order */
-	goto finally;
-catch:
-	if(chunk) free(chunk);
-	if(slot) pool_slot_array_remove(&pool->slots, slot), slot = 0;
-finally:
-	return success;
 }
 
 /** Initializes `pool` to idle. @order \Theta(1) @allow */
@@ -269,22 +284,17 @@ static PX_(type) *X_(pool_new)(struct X_(pool) *const pool) {
 		pool->capacity0 > pool->slots.data[0]->size));
 	/* Array pop: towards minimum-ish index in the max-free-heap. */
 	if(free = heap_pool_free_node_array_pop(&pool->free0.a))
-		return PX_(datum)(pool->slots.data[0]) + *free;
+		return PX_(data)(pool->slots.data[0]) + *free;
 	/* The free-heap is empty; guaranteed by <fn:<PX>buffer>. */
 	chunk0 = pool->slots.data[0];
 	assert(chunk0->size < pool->capacity0);
-	return PX_(datum)(chunk0) + chunk0->size++;
+	return PX_(data)(chunk0) + chunk0->size++;
 }
 
-/** Deletes `datum` from `pool`. @return Success.
- @throws[EDOM] `data` is not part of `pool`.
- @order Amortised \O(1), if the pool is in steady-state, but
- \O(log `pool.items`) for a small number of deleted items. @allow */
+/** Deletes `datum` from `pool`. Do not remove data that is not in `pool`.
+ @return Success. @order \O(\log \log `items`) @allow */
 static int X_(pool_remove)(struct X_(pool) *const pool,
-	PX_(type) *const datum) {
-	assert(0);
-	return 0;
-}
+	PX_(type) *const datum) { return PX_(remove)(pool, datum); }
 
 /** Removes all from `pool`, but keeps it's active state, only freeing the
  smaller blocks. @order \O(\log `items`) @allow */
@@ -318,7 +328,7 @@ static void PX_(begin)(struct PX_(iterator) *const it,
 static const PX_(type) *PX_(next)(struct PX_(iterator) *const it) {
 	assert(it);
 	return it->chunk0 && it->i < it->chunk0->size
-		? PX_(datum)(it->chunk0) + it->i++ : 0;
+		? PX_(data)(it->chunk0) + it->i++ : 0;
 }
 	
 #if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \

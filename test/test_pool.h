@@ -30,39 +30,46 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
 		"\tnode [shape = record, style = filled, fillcolor = lightgray];\n"
-		/*"\tedge [color=royalblue];\n"*/
-		"\tpool [label=\"\\<" QUOTE(POOL_NAME)
-		"\\>pool\\l|capacity0: %lu\\lfree0.size %lu\\l"
-		"free0.capacity %lu\\l\"];\n",
-		(unsigned long)pool->capacity0,
+		"\tpool [label=\"\\<" QUOTE(POOL_NAME) "\\>pool\\l|"
+		"%s slots: %lu/%lu\\l"
+		"%s free[0]: %lu/%lu\\l",
+		pool->slots.data ? "active" : "idle",
+		(unsigned long)pool->slots.size,
+		(unsigned long)pool->slots.capacity,
+		pool->free0.a.data ? "active" : "idle",
 		(unsigned long)pool->free0.a.size,
 		(unsigned long)pool->free0.a.capacity);
+	if(!pool->slots.size)
+		fprintf(fp, "idle slots.data[0].capacity: %lu\\l",
+		(unsigned long)pool->capacity0);
+	fprintf(fp, "\"];\n");
 	if(pool->slots.data) {
 		size_t i, j;
 		struct pool_chunk *chunk;
 		PX_(type) *data;
 		/* Slots are in one array. */
 		if(!pool->slots.size) {
-			fprintf(fp, "\tslots [label = \"no slots\", shape = record]\n");
+			fprintf(fp, "\tslot0 [label = \"no slots\", shape = record]\n");
 		} else {
 			fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n"
 				"\tsubgraph cluster_slots {\n"
 				"\t\tstyle=filled;\n"
-				"\t\tlabel=\"size %lu\\lcapacity %lu\";\n",
+				"\t\tlabel=\"slots %lu/%lu\";\n",
 				pool->slots.size, pool->slots.capacity);
 			for(i = 0; i < pool->slots.size; i++)
-				fprintf(fp, "\t\tslot%lu;\n", (unsigned long)i);
+				fprintf(fp, "\t\tslot%lu [label=\"[%lu] #%p\"];\n",
+				(unsigned long)i, (unsigned long)i, (void *)pool->slots.data[i]);
 			fprintf(fp, "\t}\n");
 		}
 		fprintf(fp, "\tpool -> slot0;\n");
 		/* For each slot, there is a chunk array; `chunk[0]` is special. */
 		if(pool->slots.size) {
 			chunk = pool->slots.data[0];
-			data = PX_(datum)(chunk);
+			data = PX_(data)(chunk);
 			fprintf(fp, "\tsubgraph cluster_chunk%lu {\n"
 				"\t\tstyle=filled;\n"
-				"\t\tlabel=\"size %lu\\lcapacity %lu\";\n",
-				(unsigned long)0, (unsigned long)chunk->size,
+				"\t\tlabel=\"chunk[%lu] %lu/%lu\";\n",
+				(unsigned long)0, (unsigned long)0, (unsigned long)chunk->size,
 				(unsigned long)pool->capacity0);
 			for(j = 0; j < chunk->size; j++) {
 				size_t *f, *f_end;
@@ -70,10 +77,12 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 					f < f_end && *f != j; f++);
 				if(f == f_end) {
 					PX_(to_string)(data + j, &str);
-					fprintf(fp, "\t\tdata%lu_%lu [label=\"%s\"];\n",
-						(unsigned long)0, (unsigned long)j, str);
+					fprintf(fp, "\t\tdata%lu_%lu [label=\"[%lu] %s\"];\n",
+						(unsigned long)0, (unsigned long)j, (unsigned long)j,
+						str);
 				} else {
-					fprintf(fp, "\t\tdata%lu_%lu [color=red];\n",
+					fprintf(fp, "\t\tdata%lu_%lu [label=\"removed\","
+						" fillcolor=red, style=invis];\n",
 						(unsigned long)0, (unsigned long)j);
 				}
 			}
@@ -139,7 +148,7 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 		} while(x0 = x1, x1 = x1->prev, x0 != &p->removed && x0 != turtle);
 	}
 #endif
-	fprintf(fp, "\tnode [colour=red];\n"
+	fprintf(fp, "\tnode [fillcolour=red];\n"
 		"}\n");
 	fclose(fp);
 }
@@ -165,31 +174,37 @@ static void PX_(valid_state)(const struct X_(pool) *const pool) {
 	/*...?*/
 }
 
-static void PX_(test_basic)(void) {
+static void PX_(test_states)(void) {
 	struct X_(pool) a = POOL_IDLE;
 	PX_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
+	int r;
 
 	printf("Test null.\n");
 	errno = 0;
 	PX_(valid_state)(0);
 
-	printf("Test empty.\n");
+	printf("Empty.\n");
 	PX_(valid_state)(&a);
 	X_(pool)(&a);
 	PX_(valid_state)(&a);
-	/*assert(X_(pool_remove)(&a, &node.data) == 0 && errno == EDOM), errno = 0;
-	assert(errno == 0);
-	PX_(valid_state)(&a);*/
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-idle.gv");
 
-	printf("Test one element.\n");
-	X_(pool_)(&a);
+	printf("One element.\n");
+	t = X_(pool_new)(&a), assert(t), PX_(filler)(t), PX_(valid_state)(&a);
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-one.gv");
+
+	printf("Remove.");
+	r = X_(pool_remove)(&a, PX_(data)(a.slots.data[0])), assert(r),
+		PX_(valid_state)(&a);
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-zero.gv");
+
 	for(i = 0; i < 5; i++) t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
 		PX_(valid_state)(&a); /* Add. */
-	X_(pool_remove)(&a, PX_(datum)(a.slots.data[0]) + 1);
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[0]) + 1);
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-some.gv");
 
-	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-one.gv");
 #if 0
 	if(!X_(pool_remove)(&a, t)) { perror("Error"), assert(0); return; }
 	PX_(valid_state)(&a);
@@ -326,7 +341,7 @@ static void X_(pool_test)(void) {
 		"POOL_TEST<" QUOTE(POOL_TEST) ">; "
 #endif
 		"testing:\n");
-	PX_(test_basic)();
+	PX_(test_states)();
 	/*PX_(test_random)();*/
 	fprintf(stderr, "Done tests of <" QUOTE(POOL_NAME) ">pool.\n\n");
 }
