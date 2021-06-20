@@ -44,8 +44,6 @@
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
-/* `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PX>type]` */
-#define POOL_CHUNK_START 13
 /** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
 /** A slot is a pointer to a stable chunk. Despite `typedef` ideals, it makes
@@ -157,7 +155,8 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	pool_slot *slot = 0;
 	struct pool_chunk *chunk = 0;
 	int success = 0;
-	const size_t min_size = POOL_CHUNK_START,
+	/* `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PX>type]` */
+	const size_t min_size = 8,
 		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
 	size_t c = pool->capacity0;
 	printf("buffer: %s, capacity0 %lu, n %lu.\n",
@@ -183,7 +182,8 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	if(pool->slots.size > 1) { /* Golden ratio exponential. */
 		size_t c1 = c + (c >> 1) + (c >> 3);
 		c = (c1 < c || c1 > max_size) ? max_size : c1;
-		printf("increasing size, %lu\n", pool->slots.size);
+		printf("increasing size, %lu -> %lu\n",
+			(unsigned long)pool->slots.size, (unsigned long)c);
 	}
 	if(c < min_size) c = min_size;
 	if(max_size < n) c = max_size;
