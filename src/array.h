@@ -188,12 +188,10 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
  @return The start of the buffered space, (the back of the array.) If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
  indicates an error. @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_buffer)(struct A_(array) *const a,
-	const size_t buffer) {
+static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	assert(a);
-	if(a->size > (size_t)-1 - buffer) { errno = ERANGE; return 0; }
-	return A_(array_reserve)(a, a->size + buffer) && a->data
-		? a->data + a->size : 0;
+	if(a->size > (size_t)-1 - n) { errno = ERANGE; return 0; }
+	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
 /** Adds `n` elements to the back of `a`. The buffer holds enough elements or

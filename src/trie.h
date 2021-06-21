@@ -630,7 +630,7 @@ static void PT_(unused_base)(void) {
 	T_(trie_get)(0, 0); T_(trie_index_prefix)(0, 0, 0, 0);
 	T_(trie_prefix)(0, 0, 0, 0); T_(trie_add)(0, 0); T_(trie_put)(0, 0, 0);
 	T_(trie_policy_put)(0, 0, 0, 0); T_(trie_remove)(0, 0); T_(trie_shrink)(0);
-	PT_(begin)(0, 0); PT_(unused_base_coda)();
+	PT_(begin)(0, 0); PT_(next); PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
