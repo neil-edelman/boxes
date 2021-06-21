@@ -126,20 +126,20 @@ struct X_(pool) {
 static PX_(type) *PX_(data)(struct pool_chunk *const chunk)
 	{ return (PX_(type) *)(chunk + 1); }
 
-/** @return Assuming it's not zero-slot, the slot index of `datum` in `pool`.
+/** @return Index of sorted slot[1..n] that is higher than `datum` in `pool`.
  @order \O(\log `slots`) */
-static size_t PX_(slot_search)(const struct pool_slot_array *const slots,
+static size_t PX_(slot_upper)(const struct pool_slot_array *const slots,
 	const void *const x) {
-	const pool_slot *const base = slots->data;
-	size_t n = slots->size - 2, s0 = 1, s1 = 1;
+	const pool_slot *const base = slots->data + 1;
+	size_t n, a0, a1;
 	assert(slots && x && slots->size > 1);
-	for( ; n; n >>= 1) {
-		s1 = 1 + (n >> 1);
-		if(x < (void *)base[s1]) { continue; }
-		else if((void *)base[s1 + 1] <= x) { s0 = s1 + 1; n--; continue; }
-		else { return s1; }
+	for(a0 = 0, n = slots->size - 1; n; n >>= 1) {
+		a1 = a0 + (n >> 1);
+		if(x < (void *)base[a1]) { continue; }
+		else if((void *)base[a1 + 1] <= x) { a0 = a1 + 1; n--; continue; }
+		else { return a1 + 2; }
 	}
-	return s1;
+	return a0 + 1;
 }
 
 /** Which slot is `datum` in `pool`? @order \O(\log \log `items`) */
@@ -147,13 +147,15 @@ static size_t PX_(slot)(const struct X_(pool) *const pool,
 	const PX_(type) *const datum) {
 	pool_slot *const s0 = pool->slots.data;
 	PX_(type) *cmp;
+	size_t up;
 	assert(pool && pool->slots.size && s0 && datum);
 	/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
-	if(pool->slots.size < 2 || (cmp = PX_(data)(s0[0]),
+	if(pool->slots.size <= 1 || (cmp = PX_(data)(s0[0]),
 		datum >= cmp && datum < cmp + pool->capacity0))
 		return assert(*s0 && (cmp = PX_(data)(s0[0]),
 		datum >= cmp && datum < cmp + pool->capacity0)), 0;
-	return PX_(slot_search)(&pool->slots, datum);
+	up = PX_(slot_upper)(&pool->slots, datum);
+	return assert(up), up - 1;
 }
 
 /** Makes sure there are space for `n` further items in `pool`.
@@ -199,7 +201,7 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 
 	{
 		size_t i;
-		printf("slots: insert #%p into:\n", (void *)chunk);
+		printf("buffer: insert #%p into:\n", (void *)chunk);
 		for(i = 0; i < pool->slots.size; i++)
 			printf(" %p\n", (void *)pool->slots.data[i]);
 	}
@@ -207,14 +209,18 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 		slot = pool_slot_array_append(&pool->slots, 1);
 		assert(slot);
 		if(!pool->slots.size) { /* Initial slot is already in order. */
+			printf("first chunk\n");
 			*slot = chunk;
 		} else { /* Swap the order. */
+			printf("second chunk\n");
 			*slot = pool->slots.data[0];
 			pool->slots.data[0] = chunk;
 		}
 	} else {
-		size_t insert = PX_(slot_search)(&pool->slots, PX_(data)(chunk));
-		assert(0);
+		size_t insert = PX_(slot_upper)(&pool->slots, pool->slots.data[0]);
+		printf("buffer: insert at %lu.\n", (unsigned long)insert);
+		*pool_slot_array_append_at(&pool->slots, 1, insert)
+			= pool->slots.data[0], pool->slots.data[0] = chunk;
 	}
 #if 0
 	/* Eject the zero-slot, placing it in order with the rest of the slots. */

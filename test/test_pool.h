@@ -23,6 +23,8 @@ static const PX_(action_fn) PX_(filler) = (POOL_TEST);
 /** Tries to graphs `p` in `fn`. */
 static void PX_(graph)(const struct X_(pool) *const pool,
 	const char *const fn) {
+	/* "lightgray" "firebrick" "lightsteelblue"
+	 "darkseagreen" "darkseagreen4" */
 	FILE *fp;
 	char str[12];
 	assert(pool && fn);
@@ -32,8 +34,8 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 		"\trankdir=LR;\n"
 		"\tnode [shape = record, style = filled, fillcolor = lightsteelblue];\n"
 		"\tpool [label=\"\\<" QUOTE(POOL_NAME) "\\>pool\\l|"
-		"%s slots: %lu/%lu\\l"
-		"%s free[0]: %lu/%lu\\l",
+		"%s slots %lu/%lu\\l"
+		"%s free[0] %lu/%lu\\l",
 		pool->slots.data ? "active" : "idle",
 		(unsigned long)pool->slots.size,
 		(unsigned long)pool->slots.capacity,
@@ -68,8 +70,8 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 			data = PX_(data)(chunk);
 			fprintf(fp, "\tsubgraph cluster_chunk%lu {\n"
 				"\t\tstyle=filled;\n"
-				"\t\tlabel=\"chunk[%lu] %lu",
-				(unsigned long)i, (unsigned long)i, (unsigned long)chunk->size);
+				"\t\tlabel=\"chunk size %lu",
+				(unsigned long)i, (unsigned long)chunk->size);
 			if(!i) fprintf(fp, "/%lu", (unsigned long)pool->capacity0);
 			fprintf(fp, "\";\n");
 			if(i || !chunk->size) {
@@ -96,60 +98,6 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 				(unsigned long)i, (unsigned long)i);
 		}
 	}
-
-#if 0
-	for(slot = pool->slots.data, slot_end = slot + pool->slots.size;
-		slot < slot_end; slot++) {
-		sprintf(b_strs[b = !b], "block%p", (const void *)block);
-		/* This is cleaver but I don't know what I did. Hack. */
-		if(block == p->largest) {
-			fprintf(fp, "\tnode%p",
-			(const void *)PX_(x_const_upcast)(&p->removed));
-		} else {
-			fprintf(fp, "\tdud_%s", b_strs[!b]);
-		}
-		fprintf(fp,
-			" -> dud_%s [ltail=cluster_%s, lhead=cluster_%s];\n",
-			b_strs[b], b_strs[!b], b_strs[b]);
-		fprintf(fp, "\tsubgraph cluster_%s {\n"
-			"\t\tstyle=filled;\n"
-			"\t\tfillcolor=lightgray;\n"
-			"\t\tlabel=\"capacity=%lu\\lsize=%lu\\l\";\n"
-			"\t\tdud_%s [shape=point, style=invis];\n", b_strs[b],
-			(unsigned long)block->capacity, (unsigned long)block->size,
-			b_strs[b]);
-		for(node = PX_(block_nodes)(block), end = node + PX_(range)(p, block);
-			node < end; node++) {
-			PX_(to_string)(&node->data, &str);
-			fprintf(fp, "\t\tnode%p [label=\"%s\", fillcolor=%s];\n",
-				(const void *)node, str,
-				node->x.prev ? "firebrick" : "lightsteelblue");
-			/*if(node == beg) continue;
-			fprintf(fp, "\t\tnode%p -> node%p [style=invis];\n",
-				(const void *)(node - 1), (const void *)node);*/
-		}
-		fprintf(fp, "\t}\n");
-	}
-	if(p->removed.prev) {
-		const struct PX_(x) *x0 = &p->removed, *x1 = x0->next, *turtle = x0;
-		int is_turtle = 0;
-		fprintf(fp, "\tedge [color=darkseagreen, constraint=false];\n");
-		do {
-			fprintf(fp, "\tnode%p -> node%p;\n",
-				(const void *)PX_(x_const_upcast)(x0),
-				(const void *)PX_(x_const_upcast)(x1));
-			if(is_turtle) turtle = turtle->next, is_turtle=0; else is_turtle=1;
-		} while(x0 = x1, x1 = x1->next, x0 != &p->removed && x0 != turtle);
-		x0 = &p->removed, x1 = x0->prev, turtle = x0, is_turtle = 0;
-		fprintf(fp, "\tedge [color=darkseagreen4];\n");
-		do {
-			fprintf(fp, "\tnode%p -> node%p;\n",
-				(const void *)PX_(x_const_upcast)(x0),
-				(const void *)PX_(x_const_upcast)(x1));
-			if(is_turtle) turtle = turtle->prev, is_turtle=0; else is_turtle=1;
-		} while(x0 = x1, x1 = x1->prev, x0 != &p->removed && x0 != turtle);
-	}
-#endif
 	fprintf(fp, "\tnode [fillcolour=red];\n"
 		"}\n");
 	fclose(fp);
@@ -204,11 +152,12 @@ static void PX_(test_states)(void) {
 
 	for(i = 0; i < 8; i++) t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
 		PX_(valid_state)(&a);
-	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-some.gv");
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-one.gv");
 	for(i = 0; i < 13; i++) t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
 		PX_(valid_state)(&a);
-	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-more.gv");
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-two.gv");
 	t = X_(pool_new)(&a), assert(t), PX_(filler)(t), PX_(valid_state)(&a);
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-three.gv");
 	/*X_(pool_remove)(&a, PX_(data)(a.slots.data[0]) + 1);*/
 #if 0
 	if(!X_(pool_remove)(&a, t)) { perror("Error"), assert(0); return; }
