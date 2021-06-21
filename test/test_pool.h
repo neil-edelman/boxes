@@ -158,7 +158,8 @@ static void PX_(test_states)(void) {
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-two.gv");
 	t = X_(pool_new)(&a), assert(t), PX_(filler)(t), PX_(valid_state)(&a);
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-three.gv");
-	/*X_(pool_remove)(&a, PX_(data)(a.slots.data[0]) + 1);*/
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[2]));
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-delete.gv");
 #if 0
 	if(!X_(pool_remove)(&a, t)) { perror("Error"), assert(0); return; }
 	PX_(valid_state)(&a);

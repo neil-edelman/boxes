@@ -215,12 +215,14 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 			printf("second chunk\n");
 			*slot = pool->slots.data[0];
 			pool->slots.data[0] = chunk;
+			/* This should be subsumed by 3+, but isn't . . . */
 		}
 	} else {
 		size_t insert = PX_(slot_upper)(&pool->slots, pool->slots.data[0]);
 		printf("buffer: insert at %lu.\n", (unsigned long)insert);
-		*pool_slot_array_append_at(&pool->slots, 1, insert)
-			= pool->slots.data[0], pool->slots.data[0] = chunk;
+		slot = pool_slot_array_append_at(&pool->slots, 1, insert);
+		assert(slot);
+		*slot = pool->slots.data[0], pool->slots.data[0] = chunk;
 	}
 #if 0
 	/* Eject the zero-slot, placing it in order with the rest of the slots. */
@@ -283,6 +285,8 @@ static int PX_(remove)(struct X_(pool) *const pool,
 		pool_slot_array_remove(&pool->slots, pool->slots.data + s);
 		free(chunk);
 	}
+	/* FIXME: hahaha removes the whole random chunk instead of the one
+	 on removing from active; an active can go zero no matter what the size. */
 	return 1;
 }
 
