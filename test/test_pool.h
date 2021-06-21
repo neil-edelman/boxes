@@ -178,8 +178,8 @@ static void PX_(valid_state)(const struct X_(pool) *const pool) {
 
 static void PX_(test_states)(void) {
 	struct X_(pool) a = POOL_IDLE;
-	PX_(type) ts[5], *t, *t1;
-	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
+	PX_(type) /*ts[5],*/ *t/*, *t1*/;
+	/*const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;*/
 	size_t i;
 	int r;
 
@@ -203,11 +203,12 @@ static void PX_(test_states)(void) {
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-zero.gv");
 
 	for(i = 0; i < 8; i++) t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
-		PX_(valid_state)(&a); /* Add. */
+		PX_(valid_state)(&a);
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-some.gv");
-	t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
+	for(i = 0; i < 13; i++) t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
 		PX_(valid_state)(&a);
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-more.gv");
+	t = X_(pool_new)(&a), assert(t), PX_(filler)(t), PX_(valid_state)(&a);
 	/*X_(pool_remove)(&a, PX_(data)(a.slots.data[0]) + 1);*/
 #if 0
 	if(!X_(pool_remove)(&a, t)) { perror("Error"), assert(0); return; }

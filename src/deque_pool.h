@@ -44,6 +44,8 @@
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
+/* `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PX>type]` */
+#define POOL_CHUNK_MIN_CAPACITY 8
 /** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
 /** A slot is a pointer to a stable chunk. Despite `typedef` ideals, it makes
@@ -124,85 +126,115 @@ struct X_(pool) {
 static PX_(type) *PX_(data)(struct pool_chunk *const chunk)
 	{ return (PX_(type) *)(chunk + 1); }
 
+/** @return Assuming it's not zero-slot, the slot index of `datum` in `pool`.
+ @order \O(\log `slots`) */
+static size_t PX_(slot_search)(const struct pool_slot_array *const slots,
+	const void *const x) {
+	const pool_slot *const base = slots->data;
+	size_t n = slots->size - 2, s0 = 1, s1 = 1;
+	assert(slots && x && slots->size > 1);
+	for( ; n; n >>= 1) {
+		s1 = 1 + (n >> 1);
+		if(x < (void *)base[s1]) { continue; }
+		else if((void *)base[s1 + 1] <= x) { s0 = s1 + 1; n--; continue; }
+		else { return s1; }
+	}
+	return s1;
+}
+
 /** Which slot is `datum` in `pool`? @order \O(\log \log `items`) */
 static size_t PX_(slot)(const struct X_(pool) *const pool,
 	const PX_(type) *const datum) {
-	const size_t ssize = pool->slots.size;
-	size_t n;
-	pool_slot *const s0 = pool->slots.data, *s1, *s2 = s0;
-	PX_(type) *cdata;
-	assert(pool && ssize && s0 && datum);
+	pool_slot *const s0 = pool->slots.data;
+	PX_(type) *cmp;
+	assert(pool && pool->slots.size && s0 && datum);
 	/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
-	if(ssize < 2 || (cdata = PX_(data)(s0[0]),
-		datum >= cdata && datum < cdata + pool->capacity0))
-		return assert(*s0 && (cdata = PX_(data)(s0[0]),
-		datum >= cdata && datum < cdata + pool->capacity0)), 0;
-	/* Otherwise, the capacity is unknown, but they are ordered by pointer. Do
-	 a binary search using the next chunk's pointer. */
-	for(s1 = s0 + 1, n = ssize - 2; n; n >>= 1) {
-		s2 = s1 + (n >> 1), cdata = PX_(data)(s2[0]);
-		if(datum < cdata) { continue; }
-		else if(datum >= PX_(data)(s2[1])) { s1 = s2 + 1; n--; continue; }
-		else { return (size_t)(s2 - s0); }
-	}
-	/* It will be in the last, open-ended one, (assuming valid.) */
-	return assert(datum >= PX_(data)(s2[0])), (size_t)(s2 - s0);
+	if(pool->slots.size < 2 || (cmp = PX_(data)(s0[0]),
+		datum >= cmp && datum < cmp + pool->capacity0))
+		return assert(*s0 && (cmp = PX_(data)(s0[0]),
+		datum >= cmp && datum < cmp + pool->capacity0)), 0;
+	return PX_(slot_search)(&pool->slots, datum);
 }
 
 /** Makes sure there are space for `n` further items in `pool`.
  @return Success. */
 static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
-	pool_slot *slot = 0;
-	struct pool_chunk *chunk = 0;
-	int success = 0;
-	/* `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PX>type]` */
-	const size_t min_size = 8,
+	pool_slot *slot;
+	struct pool_chunk *chunk; /* For new. */
+	const size_t min_size = POOL_CHUNK_MIN_CAPACITY,
 		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
 	size_t c = pool->capacity0;
-	printf("buffer: %s, capacity0 %lu, n %lu.\n",
-		pool->slots.size ? "existing" : "new",
-		   (unsigned long)pool->capacity0, (unsigned long)n);
-	if(pool->slots.size)
-		printf("buffer: size0 %lu.\n", pool->slots.data[0]->size);
-	assert(pool && pool->capacity0 <= max_size);
-	assert(!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
+	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
+		!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
 		|| pool->slots.size && pool->slots.data && pool->slots.data[0]
-		&& (!pool->free0.a.size /* there is no free */
-		/* size free[0] < size chunk[0] */
-		|| pool->free0.a.size < pool->slots.data[0]->size
-		/* free[0] < size chunk[0] */
-		&& pool->free0.a.data[0] < pool->slots.data[0]->size)
-		/* size chunk[0] <= capacity chunk[0] */
 		&& pool->slots.data[0]->size <= pool->capacity0
-		&& min_size <= max_size);
-	if(pool->slots.size && (n <= pool->capacity0 - pool->slots.data[0]->size
-		+ pool->free0.a.size)) { success = 1; goto finally; }
-	/* Not enough capacity; allocate a new chunk that is at least `n`. */
-	if(!(slot = pool_slot_array_new(&pool->slots))) goto catch;
-	if(pool->slots.size > 1) { /* Golden ratio exponential. */
+		&& (!pool->free0.a.size /* Either there is no free, */
+		/* or size free[0] < size chunk[0] */
+		|| pool->free0.a.size < pool->slots.data[0]->size
+		/* and free[0] < size chunk[0]. */
+		&& pool->free0.a.data[0] < pool->slots.data[0]->size));
+
+	/* There is enough space for `n`, no problem. */
+	if(pool->slots.size && (printf("buffer %lu: existing index %lu of %lu.\n",
+		(unsigned long)n, (unsigned long)pool->slots.data[0]->size,
+		(unsigned long)pool->capacity0),
+		n <= pool->capacity0 - pool->slots.data[0]->size
+		+ pool->free0.a.size)) return 1;
+
+	/* Otherwise, make sure that the slots will have room for one more. */
+	if(!pool_slot_array_buffer(&pool->slots, 1)) return 0;
+
+	/* Figure out the size of the next chunk and allocate it. */
+	if(pool->slots.size) { /* ~Golden ratio, exponential. */
 		size_t c1 = c + (c >> 1) + (c >> 3);
 		c = (c1 < c || c1 > max_size) ? max_size : c1;
-		printf("increasing size, %lu -> %lu\n",
-			(unsigned long)pool->slots.size, (unsigned long)c);
 	}
 	if(c < min_size) c = min_size;
 	if(max_size < n) c = max_size;
 	else if(c < n) c = n;
-	printf("making new chunk enough to hold %lu\n", c);
-	if(!(chunk = malloc(sizeof chunk + sizeof(PX_(type)) * c))) goto catch;
+	if(!(chunk = malloc(sizeof chunk + sizeof(PX_(type)) * c))) return 0;
 	chunk->size = 0;
 	pool->capacity0 = c;
-	*slot = chunk;
-	success = 1;
-	assert(pool->slots.size);
-	if(pool->slots.size < 3) goto finally;
-	assert(0); /* place in order */
-	goto finally;
-catch:
-	if(chunk) free(chunk);
-	if(slot) pool_slot_array_remove(&pool->slots, slot), slot = 0;
-finally:
-	return success;
+	printf("buffer: allocating new chunk with %lu items.\n", c);
+
+	{
+		size_t i;
+		printf("slots: insert #%p into:\n", (void *)chunk);
+		for(i = 0; i < pool->slots.size; i++)
+			printf(" %p\n", (void *)pool->slots.data[i]);
+	}
+	if(pool->slots.size < 2) {
+		slot = pool_slot_array_append(&pool->slots, 1);
+		assert(slot);
+		if(!pool->slots.size) { /* Initial slot is already in order. */
+			*slot = chunk;
+		} else { /* Swap the order. */
+			*slot = pool->slots.data[0];
+			pool->slots.data[0] = chunk;
+		}
+	} else {
+		size_t insert = PX_(slot_search)(&pool->slots, PX_(data)(chunk));
+		assert(0);
+	}
+#if 0
+	/* Eject the zero-slot, placing it in order with the rest of the slots. */
+	if(pool->slots.size) {
+		struct pool_chunk *c0 = pool->slots.data[0];
+		size_t s1, s2, n;
+		/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
+		/* Otherwise, the capacity is unknown, but they are ordered by pointer. Do
+		 a binary search using the next chunk's pointer. */
+		for(s1 = s + 1, n = pool->slots.size - 2; n; n >>= 1) {
+			s2 = s1 + (n >> 1), cdata = PX_(data)(s2[0]);
+			if(datum < cdata) { continue; }
+			else if(datum >= PX_(data)(s2[1])) { s1 = s2 + 1; n--; continue; }
+			else { return (size_t)(s2 - s0); }
+		}
+		/* It will be in the last, open-ended one, (assuming valid.) */
+		return assert(datum >= PX_(data)(s2[0])), (size_t)(s2 - s0);
+	}
+#endif
+	return 1;
 }
 
 /** Either `data` in `pool` is in a secondary chunk, in which case it
@@ -279,7 +311,7 @@ static PX_(type) *X_(pool_new)(struct X_(pool) *const pool) {
 	assert(pool);
 	if(!PX_(buffer)(pool, 1)) return 0;
 	assert(pool->slots.size && (pool->free0.a.size ||
-		pool->capacity0 > pool->slots.data[0]->size));
+		pool->slots.data[0]->size < pool->capacity0));
 	/* Array pop, towards minimum-ish index in the max-free-heap. */
 	if(free = heap_pool_free_node_array_pop(&pool->free0.a))
 		return PX_(data)(pool->slots.data[0]) + *free;
