@@ -152,14 +152,41 @@ static void PX_(test_states)(void) {
 
 	for(i = 0; i < 8; i++) t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
 		PX_(valid_state)(&a);
+	assert(a.slots.size == 1);
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-one.gv");
 	for(i = 0; i < 13; i++) t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
 		PX_(valid_state)(&a);
+	assert(a.slots.size == 2);
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-two.gv");
 	t = X_(pool_new)(&a), assert(t), PX_(filler)(t), PX_(valid_state)(&a);
+	assert(a.slots.size == 3);
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-three.gv");
-	X_(pool_remove)(&a, PX_(data)(a.slots.data[2]));
+	if(a.slots.data[1]->size == 8) i = 0;
+	else assert(a.slots.data[1]->size == 13);
+	if(a.slots.data[2]->size == 8) i = 1;
+	else assert(a.slots.data[2]->size == 13);
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[!i + 1]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[i + 1]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[0]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[i + 1]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[i + 1]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[i + 1]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[i + 1]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[i + 1]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[i + 1]));
+	X_(pool_remove)(&a, PX_(data)(a.slots.data[i + 1]));
+	PX_(valid_state)(&a);
+	assert(a.slots.size == 2);
 	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-delete.gv");
+	X_(pool_clear)(&a);
+	assert(a.slots.size == 1);
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-clear.gv");
+
+	for(i = 0; i < 8; i++) t = X_(pool_new)(&a), assert(t), PX_(filler)(t),
+		PX_(valid_state)(&a);
+	assert(a.slots.size == 1 && a.slots.data[0]->size == 20
+		&& a.capacity0 == 20);
+	PX_(graph)(&a, "graph/" QUOTE(POOL_NAME) "-remove.gv");
 #if 0
 	if(!X_(pool_remove)(&a, t)) { perror("Error"), assert(0); return; }
 	PX_(valid_state)(&a);
