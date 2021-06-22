@@ -168,49 +168,41 @@ static size_t PX_(slot)(const struct X_(pool) *const pool,
  @return Success. */
 static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	pool_slot *slot;
-	struct pool_chunk *chunk; /* For new. */
+	struct pool_chunk *chunk;
 	const size_t min_size = POOL_CHUNK_MIN_CAPACITY,
 		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
-	size_t c = pool->capacity0;
+	size_t c, i;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
 		!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
 		|| pool->slots.size && pool->slots.data && pool->slots.data[0]
 		&& pool->slots.data[0]->size <= pool->capacity0
-		&& (!pool->free0.a.size /* Either there is no free, */
-		/* or size free[0] < size chunk[0] */
+		&& (!pool->free0.a.size
 		|| pool->free0.a.size < pool->slots.data[0]->size
-		/* and free[0] < size chunk[0]. */
 		&& pool->free0.a.data[0] < pool->slots.data[0]->size));
 
-	/* There is enough space for `n`, no problem. */
-	if(pool->slots.size && (printf("buffer %lu: existing index %lu of %lu.\n",
-		(unsigned long)n, (unsigned long)pool->slots.data[0]->size,
-		(unsigned long)pool->capacity0),
-		n <= pool->capacity0 - pool->slots.data[0]->size
-		+ pool->free0.a.size)) return 1;
-
-	/* Otherwise, make sure that the slots will have room for one more. */
+	/* Don't need to do anything. */
+	if(!n || pool->slots.size && n <= pool->capacity0
+		- pool->slots.data[0]->size + pool->free0.a.size) return 1;
+	/* The request is unsatisfiable. */
+	if(max_size < n) return errno = ERANGE, 1;
+	/* We will make a new slot. */
 	if(!pool_slot_array_buffer(&pool->slots, 1)) return 0;
 
 	/* Figure out the size of the next chunk and allocate it. */
-	if(pool->slots.size) { /* ~Golden ratio, exponential. */
+	c = pool->capacity0;
+	if(pool->slots.size) { /* Exponential ~Golden ratio. */
 		size_t c1 = c + (c >> 1) + (c >> 3);
 		c = (c1 < c || c1 > max_size) ? max_size : c1;
 	}
 	if(c < min_size) c = min_size;
-	if(max_size < n) c = max_size;
-	else if(c < n) c = n;
-	if(!(chunk = malloc(sizeof chunk + sizeof(PX_(type)) * c))) return 0;
+	if(c < n) c = n;
+	if(!(chunk = malloc(sizeof chunk + c * sizeof(PX_(type))))) return 0;
 	chunk->size = 0;
 	pool->capacity0 = c;
-	printf("buffer: allocating new chunk with %lu items.\n", c);
-
-	{
-		size_t i;
-		printf("buffer: insert #%p into:\n", (void *)chunk);
-		for(i = 0; i < pool->slots.size; i++)
-			printf(" %p\n", (void *)pool->slots.data[i]);
-	}
+	printf("buffer: allocating new #%p chunk with %lu items.\n",
+		chunk, c);
+	for(i = 0; i < pool->slots.size; i++)
+		printf(" %p\n", (void *)pool->slots.data[i]);
 	if(pool->slots.size < 2) {
 		slot = pool_slot_array_append(&pool->slots, 1);
 		assert(slot);
@@ -231,24 +223,6 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 		assert(slot);
 		*slot = pool->slots.data[0], pool->slots.data[0] = chunk;
 	}
-#if 0
-	/* Eject the zero-slot, placing it in order with the rest of the slots. */
-	if(pool->slots.size) {
-		struct pool_chunk *c0 = pool->slots.data[0];
-		size_t s1, s2, n;
-		/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
-		/* Otherwise, the capacity is unknown, but they are ordered by pointer. Do
-		 a binary search using the next chunk's pointer. */
-		for(s1 = s + 1, n = pool->slots.size - 2; n; n >>= 1) {
-			s2 = s1 + (n >> 1), cdata = PX_(data)(s2[0]);
-			if(datum < cdata) { continue; }
-			else if(datum >= PX_(data)(s2[1])) { s1 = s2 + 1; n--; continue; }
-			else { return (size_t)(s2 - s0); }
-		}
-		/* It will be in the last, open-ended one, (assuming valid.) */
-		return assert(datum >= PX_(data)(s2[0])), (size_t)(s2 - s0);
-	}
-#endif
 	return 1;
 }
 
