@@ -245,10 +245,10 @@ static void PX_(test_states)(void) {
 	printf("Clear:\n");
 	X_(pool_clear)(&a);
 	printf("Now: %s.\n", PX_(pool_to_string)(&a));
-	printf("Destructor:\n");
-	X_(pool_)(&a);
-	PX_(valid_state)(&a);
 #endif
+	printf("Destructor:\n");
+	X_(pool_)(&pool);
+	PX_(valid_state)(&pool);
 	printf("Done basic tests.\n\n");
 }
 
