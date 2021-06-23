@@ -128,16 +128,20 @@ static PX_(type) *PX_(data)(struct pool_chunk *const chunk)
 
 /** @return Index of sorted slot[1..n] that is higher than `datum` in `pool`.
  The [0] slot is unsorted. @order \O(\log `slots`) */
-static size_t PX_(slot_upper)(const struct pool_slot_array *const slots,
+static size_t PX_(upper)(const struct pool_slot_array *const slots,
 	const void *const x) {
 	const pool_slot *const base = slots->data;
+	const size_t max = slots->size - 1;
 	size_t n, b0, b1;
 	assert(slots && x && slots->size);
-	for(b0 = 1, n = slots->size - 1; n; n >>= 1) {
+	for(b0 = 1, n = max; n; n >>= 1) {
 		b1 = b0 + (n >> 1);
-		if(x < (void *)base[b1]) { continue; }
-		else if((void *)base[b1 + 1] <= x) { b0 = b1 + 1; n--; continue; }
-		else { return b1 + 1; }
+		if(x < (void *)base[b1])
+			{ continue; }
+		else if(b1 < max && (void *)base[b1 + 1] <= x)
+			{ b0 = b1 + 1; n--; continue; }
+		else
+			{ return b1 + 1; }
 	}
 	return b0;
 }
@@ -160,7 +164,7 @@ static size_t PX_(slot)(const struct X_(pool) *const pool,
 		datum >= cmp && datum < cmp + pool->capacity0))
 		return assert(*s0 && (cmp = PX_(data)(s0[0]),
 		datum >= cmp && datum < cmp + pool->capacity0)), 0;
-	up = PX_(slot_upper)(&pool->slots, datum);
+	up = PX_(upper)(&pool->slots, datum);
 	return assert(up), up - 1;
 }
 
@@ -200,25 +204,21 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	chunk->size = 0;
 	pool->capacity0 = c;
 	printf("buffer: allocating new #%p chunk with %lu items.\n",
-		chunk, c);
+		(void *)chunk, (unsigned long)c);
+
+	/* Add it to the slots, in order. */
 	for(i = 0; i < pool->slots.size; i++)
 		printf(" %p\n", (void *)pool->slots.data[i]);
-	if(pool->slots.size < 2) {
+	if(!pool->slots.size) { /* Initial chunk. */
 		slot = pool_slot_array_append(&pool->slots, 1);
 		assert(slot);
-		if(!pool->slots.size) { /* Initial slot is already in order. */
-			printf("first chunk\n");
-			*slot = chunk;
-		} else { /* Swap the order. */
-			printf("second chunk\n");
-			*slot = pool->slots.data[0];
-			pool->slots.data[0] = chunk;
-			/* This should be subsumed by 3+, but isn't . . . */
-		}
+		printf("first chunk\n");
+		*slot = chunk;
 	} else {
 		/* Insert the slot[0] into the other slots. */
-		size_t insert = PX_(slot_upper)(&pool->slots, pool->slots.data[0]);
+		size_t insert = PX_(upper)(&pool->slots, pool->slots.data[0]);
 		printf("buffer: insert at %lu.\n", (unsigned long)insert);
+		assert(insert <= pool->slots.size);
 		slot = pool_slot_array_append_at(&pool->slots, 1, insert);
 		assert(slot);
 		*slot = pool->slots.data[0], pool->slots.data[0] = chunk;
@@ -240,11 +240,10 @@ static int PX_(remove)(struct X_(pool) *const pool,
 		(const void *)data, (unsigned long)s);
 	if(!s) { /* It's in the zero-slot, we need to deal with the free list. */
 		const size_t idx = (size_t)(data - PX_(data)(chunk));
-		printf("Remove: chunk[0], %lu of %lu.\n", idx, chunk->size);
+		printf("Remove: chunk[0], %lu/%lu, index %lu.\n",
+			chunk->size, pool->capacity0, idx);
 		assert(pool->capacity0 && chunk->size <= pool->capacity0
 			&& idx < chunk->size);
-		printf("Zero-slot, index %lu of %lu capacity %lu.\n",
-			idx, chunk->size, pool->capacity0);
 		if(idx + 1 == chunk->size) { /* It's at the end -- size goes down. */
 			while(--chunk->size) {
 				const size_t *const free = pool_free_heap_peek(&pool->free0);
@@ -257,7 +256,7 @@ static int PX_(remove)(struct X_(pool) *const pool,
 			}
 		} else { /* Not the end; just add to free-heap. */
 			printf("Adding to free-heap.\n");
-			return pool_free_heap_add(&pool->free0, idx);
+			if(!pool_free_heap_add(&pool->free0, idx)) return 0;
 		}
 	} else if(assert(chunk->size), !--chunk->size) {
 		printf("Remove slot #%p, reference count is zero.\n", (void *)chunk);
@@ -301,7 +300,7 @@ static PX_(type) *X_(pool_new)(struct X_(pool) *const pool) {
 		pool->slots.data[0]->size < pool->capacity0));
 	/* Array pop, towards minimum-ish index in the max-free-heap. */
 	if(free = heap_pool_free_node_array_pop(&pool->free0.a))
-		return PX_(data)(pool->slots.data[0]) + *free;
+		return assert(free), PX_(data)(pool->slots.data[0]) + *free;
 	/* The free-heap is empty; guaranteed by <fn:<PX>buffer>. */
 	chunk0 = pool->slots.data[0];
 	assert(chunk0->size < pool->capacity0);
@@ -320,7 +319,7 @@ static void X_(pool_clear)(struct X_(pool) *const pool) {
 	assert(pool);
 	if(!pool->slots.size) { assert(!pool->free0.a.size); return; }
 	for(i = pool->slots.data + 1, i_end = i-1+pool->slots.size; i < i_end; i++)
-		assert(*i), printf("clear: #%p\n", *i), free(*i);
+		assert(*i), printf("clear: #%p\n", (void *)*i), free(*i);
 	pool->slots.data[0]->size = 0;
 	pool->slots.size = 1;
 	pool_free_heap_clear(&pool->free0);
