@@ -154,11 +154,6 @@ static size_t PX_(slot)(const struct X_(pool) *const pool,
 	size_t up;
 	/*size_t i;*/
 	assert(pool && pool->slots.size && s0 && datum);
-	/*printf(" %p datum\n"
-		"[%p, %p) chunk 0\n", datum, PX_(data)(pool->slots.data[0]),
-		PX_(data)(pool->slots.data[0]) + pool->capacity0);
-	for(i = 1; i < pool->slots.size; i++)
-		printf("[%p chunk %lu\n", PX_(data)(pool->slots.data[i]), (unsigned long)i);*/
 	/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
 	if(pool->slots.size <= 1 || (cmp = PX_(data)(s0[0]),
 		datum >= cmp && datum < cmp + pool->capacity0))
