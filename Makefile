@@ -64,12 +64,12 @@ bison := bison
 #lemon := lemon
 
 CC   := clang #gcc
-CF   := -Wall -Wextra -pedantic -g -ffast-math -funroll-loops \
+CF   := -Wall -Wextra -pedantic -O3 -ffast-math -funroll-loops \
 -Weverything -Wno-comma -Wno-logical-op-parentheses \
--Wno-parentheses -Wno-poison-system-directories -Wno-documentation-unknown-command \
+-Wno-parentheses -Wno-documentation-unknown-command \
 -Wno-documentation -Wno-shift-op-parentheses -Wno-empty-body -Wno-padded \
--ansi # -std=c99 -mwindows -O3
-OF   := #-O3 -Ofast # -framework OpenGL -framework GLUT or -lglut -lGLEW
+-ansi # -std=c99 -mwindows # -Wno-poison-system-directories 
+OF   := -O3 # -framework OpenGL -framework GLUT or -lglut -lGLEW
 
 # Jakob Borg and Eldar Abusalimov
 # $(ARGS) is all the extra arguments; $(BRGS) is_all_the_extra_arguments
