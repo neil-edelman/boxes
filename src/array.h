@@ -115,9 +115,9 @@ typedef int (*PA_(biproject_fn))(PA_(type) *, PA_(type) *);
  respectively. */
 typedef int (*PA_(compare_fn))(const PA_(type) *a, const PA_(type) *b);
 
-/** Manages the array field `data`, which is indexed up to `size`. To
- initialise it to an idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}`
- (`C99`,) or being `static`.
+/** Manages the array field `data` which has `size` elements. The space is
+ indexed up to `capacity`, which is at least `size`. To initialize it to an
+ idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct A_(array);
