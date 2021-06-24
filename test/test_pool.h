@@ -311,16 +311,19 @@ static void PX_(test_random)(void) {
 			PX_(test_array_remove)(&test, ptr);
 		}
 		if(is_print && i < graph_max) {
-			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);
+			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%lu.gv",
+				(unsigned long)(i + 1));
 			PX_(graph)(&pool, graph_fn);
 			printf("%s.\n", PX_(pool_to_string)(&pool));
 		}
 		PX_(valid_state)(&pool);
 	}
 	if(i < graph_max) {
-		sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%u-end.gv", (unsigned)i);
+		sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%lu-end.gv",
+			(unsigned long)i);
 		PX_(graph)(&pool, graph_fn);
 	}
+	PX_(test_array_)(&test);
 	X_(pool_)(&pool);
 }
 
@@ -337,7 +340,7 @@ static void X_(pool_test)(void) {
 #endif
 		"testing:\n");
 	PX_(test_states)();
-	/*PX_(test_random)();*/
+	PX_(test_random)();
 	fprintf(stderr, "Done tests of <" QUOTE(POOL_NAME) ">pool.\n\n");
 }
 
