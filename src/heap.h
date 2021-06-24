@@ -134,8 +134,9 @@ typedef PH_(priority) PH_(node);
 #define ARRAY_SUBTYPE
 #include "array.h"
 
-/** Stores the heap as an implicit binary tree in an array. To initialize it to
- an idle state, see <fn:<H>heap>, `HEAP_IDLE`, `{0}` (`C99`), or being `static`.
+/** Stores the heap as an implicit binary tree in an array called `a`. To
+ initialize it to an idle state, see <fn:<H>heap>, `HEAP_IDLE`, `{0}` (`C99`),
+ or being `static`.
 
  ![States.](../web/states.png) */
 struct H_(heap);
@@ -335,11 +336,8 @@ static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
  it may be better to add each element individually, resulting in a run-time of
  \O(`new elements` \cdot log `heap.size`).
  @param[add] If zero, returns true.
- @return Success. @throws[ERANGE, realloc] If <fn:<H>heap_buffer> has been
- successful in reserving at least `n` elements, one is guaranteed success.
- Practically, it really doesn't make any sense to call this without calling
- <fn:<H>heap_buffer> and setting the values, because then one would be
- inserting un-initialised values on the heap.
+ @return Success. @throws[ERANGE, realloc] In practice, this will not happen if
+ <fn:<H>heap_buffer> has been successful in reserving at least `n` elements.
  @order \O(`heap.size` + `add`) @allow */
 static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	assert(heap);
