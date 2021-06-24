@@ -131,19 +131,19 @@ static PX_(type) *PX_(data)(struct pool_chunk *const chunk)
 static size_t PX_(upper)(const struct pool_slot_array *const slots,
 	const void *const x) {
 	const pool_slot *const base = slots->data;
-	const size_t max = slots->size - 1;
 	size_t n, b0, b1;
-	assert(slots && x && slots->size);
-	for(b0 = 1, n = max; n; n >>= 1) {
+	assert(slots && x);
+	if(!(n = slots->size)) return 0;
+	assert(base);
+	if(!--n) return 1;
+	/* The last one is a special case: it doesn't have an upper bound. */
+	for(b0 = 1, --n; n; n >>= 1) {
 		b1 = b0 + (n >> 1);
-		if(x < (void *)base[b1])
-			{ continue; }
-		else if(b1 < max && (void *)base[b1 + 1] <= x)
-			{ b0 = b1 + 1; n--; continue; }
-		else
-			{ return b1 + 1; }
+		if(x < (void *)base[b1]) { continue; }
+		else if((void *)base[b1 + 1] <= x) { b0 = b1 + 1; n--; continue; }
+		else { return b1 + 1; }
 	}
-	return b0;
+	return b0 + (x < (void *)base[slots->size - 1] ? 0 : 1);
 }
 
 /** Which slot is `datum` in `pool`? @order \O(\log \log `items`) */
@@ -170,7 +170,8 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	struct pool_chunk *chunk;
 	const size_t min_size = POOL_CHUNK_MIN_CAPACITY,
 		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
-	size_t c, i;
+	size_t c, alloc, i;
+	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
 		!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
 		|| pool->slots.size && pool->slots.data && pool->slots.data[0]
@@ -195,11 +196,16 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	}
 	if(c < min_size) c = min_size;
 	if(c < n) c = n;
-	if(!(chunk = malloc(sizeof chunk + c * sizeof(PX_(type))))) return 0;
+	alloc = sizeof chunk + c * sizeof(PX_(type));
+	if(pool->slots.size && !pool->slots.data[0]->size)
+		is_recycled = 1, chunk = realloc(pool->slots.data[0], alloc);
+	else chunk = malloc(alloc);
+	if(!chunk) return 0;
 	chunk->size = 0;
 	pool->capacity0 = c;
-	printf("buffer: allocating new #%p chunk with %lu items.\n",
-		(void *)chunk, (unsigned long)c);
+	printf("buffer: allocating %s #%p chunk with %lu items.\n",
+		is_recycled ? "existing" : "new", (void *)chunk, (unsigned long)c);
+	if(is_recycled) return pool->slots.data[0] = chunk, 1;
 
 	/* Add it to the slots, in order. */
 	for(i = 0; i < pool->slots.size; i++)

@@ -98,10 +98,10 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 								(unsigned long)i, (unsigned long)j,
 								(unsigned long)j, str);
 						} else {
-							fprintf(fp, "\t\tdata%lu_%lu [label=\"[%lu] %lu\" "
+							fprintf(fp, "\t\tdata%lu_%lu [label=\"[%lu]\" "
 								"shape=none, style=empty];\n",
 								(unsigned long)i, (unsigned long)j,
-								(unsigned long)j, rem[j].free);
+								(unsigned long)j);
 							if(rem[j].free) fprintf(fp, "\t\tdata%lu_%lu -> "
 								"data%lu_%lu [constraint=false];\n",
 								(unsigned long)i, (unsigned long)(
@@ -122,13 +122,14 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 	if(pool->free0.a.size) {
 		size_t i;
 		fprintf(fp, "\tsubgraph cluster_free0 {\n"
+			"\t\trankdir=TB;\n"
 			"\t\tstyle=filled;\n"
 			"\t\tlabel=\"free0 %lu/%lu\";\n"
 			"\t\tnode [style=none, shape=none];\n",
 			(unsigned long)pool->free0.a.size,
 			(unsigned long)pool->free0.a.capacity);
 		for(i = 0; i < pool->free0.a.size; i++) {
-			fprintf(fp, "\t\tfree0_%lu [label=\"%lu\"];\n",
+			fprintf(fp, "\t\tfree0_%lu [label=\"[%lu]\"];\n",
 				i, pool->free0.a.data[i]);
 			if(i) fprintf(fp, "\t\tfree0_%lu -> free0_%lu;\n",
 				(unsigned long)(i - 1 >> 1), i);
