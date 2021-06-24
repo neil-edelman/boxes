@@ -152,7 +152,6 @@ static size_t PX_(slot)(const struct X_(pool) *const pool,
 	pool_slot *const s0 = pool->slots.data;
 	PX_(type) *cmp;
 	size_t up;
-	/*size_t i;*/
 	assert(pool && pool->slots.size && s0 && datum);
 	/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
 	if(pool->slots.size <= 1 || (cmp = PX_(data)(s0[0]),
