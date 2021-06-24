@@ -115,9 +115,9 @@ typedef int (*PA_(biproject_fn))(PA_(type) *, PA_(type) *);
  respectively. */
 typedef int (*PA_(compare_fn))(const PA_(type) *a, const PA_(type) *b);
 
-/** Manages the array field `data`, which is indexed up to `size`. To
- initialise it to an idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}`
- (`C99`,) or being `static`.
+/** Manages the array field `data` which has `size` elements. The space is
+ indexed up to `capacity`, which is at least `size`. To initialize it to an
+ idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct A_(array);
@@ -440,6 +440,8 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	return it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
 
+#ifndef ARRAY_NO_ITERATE /* <!-- no: Used in tests of superclass. */
+
 #if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
 	|| defined(ITERATE_BEGIN) || defined(ITERATE_NEXT)
 #error Unexpected ITERATE*.
@@ -452,6 +454,8 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 #define ITERATE_NEXT PA_(next)
 /* fixme: Also random-access iterators. */
 
+#endif /* no --> */
+
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
 	A_(array_)(0); A_(array_clip)(0, 0); A_(array_append_at)(0, 0, 0);
@@ -460,7 +464,10 @@ static void PA_(unused_base)(void) {
 	A_(array_pop)(0); A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0);
 	A_(array_keep_if)(0, 0, 0); A_(array_copy_if)(0, 0, 0);
 	A_(array_trim)(0, 0); A_(array_each)(0, 0); A_(array_if_each)(0, 0, 0);
-	A_(array_any)(0, 0); PA_(begin)(0, 0); PA_(next)(0);
+	A_(array_any)(0, 0);
+#ifndef ARRAY_NO_ITERATE
+	PA_(begin)(0, 0); PA_(next)(0);
+#endif
 	PA_(unused_base_coda)();
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
@@ -699,11 +706,15 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
+#ifdef ARRAY_NO_ITERATE /* <!-- no */
+#undef ARRAY_NO_ITERATE
+#else /* no --><!-- !no */
 #undef ITERATE
 #undef ITERATE_BOX
 #undef ITERATE_TYPE
 #undef ITERATE_BEGIN
 #undef ITERATE_NEXT
+#endif /* !no --> */
 #endif /* !trait --> */
 
 #undef ARRAY_TO_STRING_TRAIT
