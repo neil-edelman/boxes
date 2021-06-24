@@ -268,89 +268,47 @@ static void PX_(test_states)(void) {
 	printf("Done basic tests.\n\n");
 }
 
-/* <http://c-faq.com/misc/bitsets.html> */
-#define BITMASK(b) (1 << ((b) % CHAR_BIT))
-#define BITSLOT(b) ((b) / CHAR_BIT)
-#define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
-#define BITCLEAR(a, b) ((a)[BITSLOT(b)] &= ~BITMASK(b))
-#define BITTEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b))
-#define BITNSLOTS(nb) ((nb + CHAR_BIT - 1) / CHAR_BIT)
+#define ARRAY_NAME PX_(test)
+#define ARRAY_TYPE PX_(type) *
+#define ARRAY_SUBTYPE
+#define ARRAY_NO_ITERATE
+#include "../src/array.h"
 
 static void PX_(test_random)(void) {
 	struct X_(pool) pool = POOL_IDLE;
-	size_t i, size = 0;
+	struct PX_(test_array) test = ARRAY_IDLE;
+	size_t i;
 	const size_t length = 120000; /* Controls how many iterations. */
 	char graph_fn[64];
 	const size_t graph_max = 100000;
-	PX_(type) *data;
-	/* This would be good to use an array, but no. */
-	struct { unsigned char *bits; size_t size; } bmp = { 0, 0 };
+	PX_(type) *data, **ptr;
 
 	for(i = 0; i < length; i++) {
 		char str[12];
 		double r = rand() / (RAND_MAX + 1.0);
 		int is_print = !(i & (i - 1));
 		/* This parameter controls how big the pool wants to be. */
-		if(r > size / 5000.0) {
+		if(r > test.size / 5000.0) {
 			/* Create. */
 			data = X_(pool_new)(&pool);
 			if(!data) { perror("Error"), assert(0); return;}
-			size++;
 			PX_(filler)(data);
 			PX_(to_string)(data, &str);
 			if(is_print) printf("%lu: Created %s.\n", (unsigned long)i, str);
+			ptr = PX_(test_array_new)(&test);
+			assert(ptr);
+			*ptr = data;
 		} else {
 			/* Remove. */
-			size_t max = 0, item, in_slot, slot, j;
-			assert(pool.slots.size
-				&& pool.free0.a.size < pool.slots.data[0]->size);
-			for(j = 0; j < pool.slots.size; j++)
-				max += pool.slots.data[j]->size;
-			max -= pool.free0.a.size;
-			item = (unsigned)rand() / (RAND_MAX / max + 1);
-			slot = 0;
-			if(item < (in_slot = pool.slots.data[0]->size - pool.free0.a.size)){
-				/* Slot-zero has special consideration. */
-				size_t s = BITNSLOTS(pool.slots.data[0]->size);
-				if(s > bmp.size) {
-					unsigned char *temp = realloc(bmp.bits, s);
-					assert(temp);
-					bmp.bits = temp;
-				}
-				memset(bmp.bits, 0, s);
-				for(j = 0; i < pool.free0.a.size; i++) {
-					size_t f = pool.free0.a.data[i];
-					assert(f < pool.slots.data[0]->size
-						&& !BITTEST(bmp.bits, f));
-					BITSET(bmp.bits, f);
-				}
-				do {
-					item = (unsigned)rand()
-						/ (RAND_MAX / pool.slots.data[0]->size + 1);
-				} while(BITTEST(bmp.bits, item));
-				data = PX_(data)(pool.slots.data[0]) + item;
-				PX_(to_string)(data, &str);
-				if(is_print) printf("%lu: Removing %s in zero-chunk.\n",
-					(unsigned long)i, str);
-				X_(pool_remove)(&pool, data);
-			} else do {
-				item -= in_slot;
-				slot++;
-				assert(slot < pool.slots.size);
-			} while(pool.slots.data[slot]->size <= item);
-
-#if 0
-		} {
-
-			if(is_print) printf("%lu: Removing %s in block %p.\n",
-				(unsigned long)i, str, (const void *)block);
-			{
-				const int ret = X_(pool_remove)(&a, &node->data);
-				assert(ret || (perror("Removing"),
-					PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"),0));
-			}
-			size--;
-#endif
+			int ret;
+			assert(test.size);
+			ptr = test.data + (unsigned)rand() / (RAND_MAX / test.size + 1);
+			PX_(to_string)(*ptr, &str);
+			if(is_print) printf("%lu: Removing %s.\n", (unsigned long)i, str);
+			ret = X_(pool_remove)(&pool, *ptr);
+			assert(ret || (perror("Removing"),
+				PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"), 0));
+			PX_(test_array_remove)(&test, ptr);
 		}
 		if(is_print && i < graph_max) {
 			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-%u.gv", (unsigned)i);

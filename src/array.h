@@ -428,6 +428,8 @@ static PA_(type) *A_(array_any)(const struct A_(array) *const a,
 	return 0;
 }
 
+#ifndef ARRAY_NO_ITERATE /* <!-- no: Used in tests of superclass. */
+
 /** Contains all iteration parameters. */
 struct PA_(iterator);
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
@@ -454,6 +456,8 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 #define ITERATE_NEXT PA_(next)
 /* fixme: Also random-access iterators. */
 
+#endif /* no --> */
+
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
 	A_(array_)(0); A_(array_clip)(0, 0); A_(array_append_at)(0, 0, 0);
@@ -462,7 +466,10 @@ static void PA_(unused_base)(void) {
 	A_(array_pop)(0); A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0);
 	A_(array_keep_if)(0, 0, 0); A_(array_copy_if)(0, 0, 0);
 	A_(array_trim)(0, 0); A_(array_each)(0, 0); A_(array_if_each)(0, 0, 0);
-	A_(array_any)(0, 0); PA_(begin)(0, 0); PA_(next)(0);
+	A_(array_any)(0, 0);
+#ifndef ARRAY_NO_ITERATE
+	PA_(begin)(0, 0); PA_(next)(0);
+#endif
 	PA_(unused_base_coda)();
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
@@ -701,11 +708,15 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
+#ifdef ARRAY_NO_ITERATE /* <!-- no */
+#undef ARRAY_NO_ITERATE
+#else /* no --><!-- !no */
 #undef ITERATE
 #undef ITERATE_BOX
 #undef ITERATE_TYPE
 #undef ITERATE_BEGIN
 #undef ITERATE_NEXT
+#endif /* !no --> */
 #endif /* !trait --> */
 
 #undef ARRAY_TO_STRING_TRAIT
