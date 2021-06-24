@@ -49,13 +49,19 @@
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
 #error Name ARRAY_NAME or tag type ARRAY_TYPE undefined.
 #endif
-#if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
-#define ARRAY_TO_STRING_TRAIT 1
-#else
-#define ARRAY_TO_STRING_TRAIT 0
+#if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING) /* <!-- str */
+#ifndef ARRAY_ITERATE
+#error ARRAY_ITERATE must be defined for string trait.
 #endif
+#define ARRAY_TO_STRING_TRAIT 1
+#else /* str --><!-- !str */
+#define ARRAY_TO_STRING_TRAIT 0
+#endif /* !str --> */
 #if defined(ARRAY_COMPARABLE_NAME) || defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_IS_EQUAL)
+#ifndef ARRAY_ITERATE
+#error ARRAY_ITERATE must be defined for compare trait.
+#endif
 #define ARRAY_COMPARABLE_TRAIT 1
 #else
 #define ARRAY_COMPARABLE_TRAIT 0
@@ -74,8 +80,7 @@
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
 #endif
 #if defined(ARRAY_COMPARABLE_NAME) \
-	&& ((!defined(ARRAY_COMPARE) && !defined(ARRAY_IS_EQUAL)) || \
-	(defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)))
+	&& (!(!defined(ARRAY_COMPARE) ^ !defined(ARRAY_IS_EQUAL)))
 #error ARRAY_COMPARABLE_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL not both.
 #endif
 
@@ -94,6 +99,7 @@
 #endif /* !sub-type --> */
 #define A_(thing) CAT(ARRAY_NAME, thing)
 #define PA_(thing) CAT(array, A_(thing))
+
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
@@ -426,6 +432,12 @@ static PA_(type) *A_(array_any)(const struct A_(array) *const a,
 	return 0;
 }
 
+#ifdef ARRAY_ITERATE /* <!-- iterate */
+
+/* Iterators. */
+#define ARRAY_NATURAL_(thing) CAT(A_(array_natural), thing)
+#define ARRAY_REVERSE_(thing) CAT(A_(array_reverse), thing)
+
 /** Contains all iteration parameters. */
 struct PA_(iterator);
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
@@ -436,25 +448,18 @@ static void PA_(begin)(struct PA_(iterator) *const it,
 
 /** Advances `it`. @implements next */
 static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
-	assert(it && it->a);
-	return it->i < it->a->size ? it->a->data + it->i++ : 0;
+	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
-
-#ifndef ARRAY_NO_ITERATE /* <!-- no: Used in tests of superclass. */
-
-#if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
-	|| defined(ITERATE_BEGIN) || defined(ITERATE_NEXT)
-#error Unexpected ITERATE*.
-#endif
 
 #define ITERATE struct PA_(iterator)
 #define ITERATE_BOX struct A_(array)
 #define ITERATE_TYPE PA_(type)
 #define ITERATE_BEGIN PA_(begin)
 #define ITERATE_NEXT PA_(next)
-/* fixme: Also random-access iterators. */
+#include "iterate.h" /** \include */
 
-#endif /* no --> */
+#endif /* iterate --> */
+
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
@@ -465,7 +470,7 @@ static void PA_(unused_base)(void) {
 	A_(array_keep_if)(0, 0, 0); A_(array_copy_if)(0, 0, 0);
 	A_(array_trim)(0, 0); A_(array_each)(0, 0); A_(array_if_each)(0, 0, 0);
 	A_(array_any)(0, 0);
-#ifndef ARRAY_NO_ITERATE
+#ifdef ARRAY_ITERATE
 	PA_(begin)(0, 0); PA_(next)(0);
 #endif
 	PA_(unused_base_coda)();
@@ -696,6 +701,7 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #else /* !sub-type --><!-- sub-type */
 #undef ARRAY_SUBTYPE
 #endif /* sub-type --> */
+#undef ...
 #undef A_
 #undef PA_
 #undef ARRAY_NAME
@@ -706,15 +712,6 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
-#ifdef ARRAY_NO_ITERATE /* <!-- no */
-#undef ARRAY_NO_ITERATE
-#else /* no --><!-- !no */
-#undef ITERATE
-#undef ITERATE_BOX
-#undef ITERATE_TYPE
-#undef ITERATE_BEGIN
-#undef ITERATE_NEXT
-#endif /* !no --> */
 #endif /* !trait --> */
 
 #undef ARRAY_TO_STRING_TRAIT

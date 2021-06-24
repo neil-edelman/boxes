@@ -3,9 +3,6 @@
 
  @subtitle To String Trait
 
- The inclusion must define an iterator, ITERATE, ITERATE_BOX, ITERATE_TYPE,
- ITERATE_BEGIN, and ITERATE_NEXT.
-
  @param[Z_]
  Function-like define macro accepting one argument and producing a valid name.
  Defines `PZ_` to be private.
@@ -29,9 +26,7 @@ static unsigned to_string_buffer_i;
 #endif /* idempotent --> */
 
 /* Check defines. */
-#if !defined(CAT) || !defined(CAT_) || !defined(ITERATE) \
-	|| !defined(ITERATE_BOX) || !defined(ITERATE_TYPE) \
-	|| !defined(ITERATE_BEGIN) || !defined(ITERATE_NEXT)
+#if !defined(CAT) || !defined(CAT_)
 #error To string: CAT_? or ITERATE* are undefined.
 #endif
 #ifndef Z_
