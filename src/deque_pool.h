@@ -169,7 +169,7 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	struct pool_chunk *chunk;
 	const size_t min_size = POOL_CHUNK_MIN_CAPACITY,
 		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PX_(type));
-	size_t c, alloc, i;
+	size_t c, alloc, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
 		!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
@@ -202,13 +202,9 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	if(!chunk) return 0;
 	chunk->size = 0;
 	pool->capacity0 = c;
-	printf("buffer: allocating %s #%p chunk with %lu items.\n",
-		is_recycled ? "existing" : "new", (void *)chunk, (unsigned long)c);
 	if(is_recycled) return pool->slots.data[0] = chunk, 1;
 
 	/* Add it to the slots, in order. */
-	for(i = 0; i < pool->slots.size; i++)
-		printf(" %p\n", (void *)pool->slots.data[i]);
 	if(!pool->slots.size) { /* Initial chunk. */
 		slot = pool_slot_array_append(&pool->slots, 1);
 		assert(slot);
@@ -216,7 +212,7 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 		*slot = chunk;
 	} else {
 		/* Insert the slot[0] into the other slots. */
-		size_t insert = PX_(upper)(&pool->slots, pool->slots.data[0]);
+		insert = PX_(upper)(&pool->slots, pool->slots.data[0]);
 		printf("buffer: insert at %lu.\n", (unsigned long)insert);
 		assert(insert <= pool->slots.size);
 		slot = pool_slot_array_append_at(&pool->slots, 1, insert);
