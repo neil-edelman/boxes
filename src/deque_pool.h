@@ -205,6 +205,16 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	if(is_recycled) return pool->slots.data[0] = chunk, 1;
 
 	/* Add it to the slots, in order. */
+	if(!pool->slots.size) insert = 0;
+	else insert = PX_(upper)(&pool->slots, pool->slots.data[0]);
+	printf("buffer: insert at %lu.\n", (unsigned long)insert);
+	assert(insert <= pool->slots.size);
+	slot = pool_slot_array_append_at(&pool->slots, 1, insert);
+	assert(slot);
+	*slot = pool->slots.data[0], pool->slots.data[0] = chunk;
+
+
+#if 0
 	if(!pool->slots.size) { /* Initial chunk. */
 		slot = pool_slot_array_append(&pool->slots, 1);
 		assert(slot);
@@ -219,6 +229,7 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 		assert(slot);
 		*slot = pool->slots.data[0], pool->slots.data[0] = chunk;
 	}
+#endif
 	return 1;
 }
 
