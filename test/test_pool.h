@@ -109,7 +109,9 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 								), (unsigned long)i, (unsigned long)j);
 						}
 						if(j) fprintf(fp, "\t\tdata%lu_%lu -> data%lu_%lu "
-							"[style=invis];\n", i, j, i, j-1);
+							"[style=invis];\n", (unsigned long)i,
+							(unsigned long)j, (unsigned long)i,
+							(unsigned long)j-1);
 					}
 					free(rem);
 				}
@@ -122,7 +124,7 @@ static void PX_(graph)(const struct X_(pool) *const pool,
 	if(pool->free0.a.size) {
 		size_t i;
 		fprintf(fp, "\tsubgraph cluster_free0 {\n"
-			"\t\trankdir=TB;\n"
+			"\t\trankdir=TB; // doesn't do anything\n"
 			"\t\tstyle=filled;\n"
 			"\t\tlabel=\"free0 %lu/%lu\";\n"
 			"\t\tnode [style=none, shape=none];\n",
@@ -167,8 +169,8 @@ static void PX_(test_states)(void) {
 	struct X_(pool) pool = POOL_IDLE;
 	PX_(type) /*ts[5],*/ *t/*, *t1*/;
 	/*const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;*/
-	const size_t size[] = { 8, 13, 20 };
-	size_t i;
+	const size_t size[] = { 9, 14, 22 };
+	size_t i, j;
 	int r;
 
 	printf("Test null.\n");
@@ -190,37 +192,36 @@ static void PX_(test_states)(void) {
 		PX_(valid_state)(&pool);
 	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-03-remove.gv");
 
+	printf("Pool buffer 9.\n");
+	r = X_(pool_buffer)(&pool, 9), assert(r), PX_(valid_state)(&pool);
+	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-04-buffer.gv");
+
 	for(i = 0; i < size[0]; i++) t = X_(pool_new)(&pool), assert(t),
 		PX_(filler)(t), PX_(valid_state)(&pool);
 	assert(pool.slots.size == 1);
-	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-04-one-chunk.gv");
+	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-05-one-chunk.gv");
 	for(i = 0; i < size[1]; i++) t = X_(pool_new)(&pool), assert(t),
 		PX_(filler)(t), PX_(valid_state)(&pool);
 	assert(pool.slots.size == 2);
-	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-05-two-chunks.gv");
+	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-06-two-chunks.gv");
 	t = X_(pool_new)(&pool), assert(t), PX_(filler)(t), PX_(valid_state)(&pool);
 	assert(pool.slots.size == 3);
-	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-06-three-chunks.gv");
+	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-chunks.gv");
 	if(pool.slots.data[1]->size == size[0]) i = 0;
 	else assert(pool.slots.data[1]->size == size[1]);
 	if(pool.slots.data[2]->size == size[0]) i = 1;
 	else assert(pool.slots.data[2]->size == size[1]);
 	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[!i + 1]));
-	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
 	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[0]));
-	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
-	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
-	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
-	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
-	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
-	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
-	X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
+	assert(pool.slots.data[i + 1]->size == size[0]);
+	for(j = 0; j < size[0]; j++)
+		X_(pool_remove)(&pool, PX_(data)(pool.slots.data[i + 1]));
 	PX_(valid_state)(&pool);
+	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-chunk.gv");
 	assert(pool.slots.size == 2);
-	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-remove-chunk.gv");
 	X_(pool_clear)(&pool);
 	assert(pool.slots.size == 1);
-	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-clear.gv");
+	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-09-clear.gv");
 
 	/* Remove at random. */
 	for(i = 0; i < size[2]; i++) t = X_(pool_new)(&pool), assert(t), PX_(filler)(t), PX_(valid_state)(&pool);
@@ -243,13 +244,21 @@ static void PX_(test_states)(void) {
 			}
 			bits |= rnd_bit;
 		}
-		for(i = 0; i < size[2]; i++) {
-			if(bits & (1 << i)) X_(pool_remove)(&pool, PX_(data)(pool.slots.data[0]) + i);
-		}
+		for(i = 0; i < size[2]; i++)
+			if(bits & (1 << i))
+			X_(pool_remove)(&pool, PX_(data)(pool.slots.data[0]) + i);
+		i = n0;
 	}
-	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-09-remove.gv");
-	assert(pool.slots.size == 1 && pool.slots.data[0]->size == 20
-		&& pool.capacity0 == 20);
+	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-10-remove.gv");
+	assert(pool.slots.size == 1 && pool.slots.data[0]->size == size[2]
+		&& pool.capacity0 == size[2] && pool.free0.a.size == i);
+
+	/* Add at random to an already removed. */
+	while(i) t = X_(pool_new)(&pool), assert(t),
+		PX_(filler)(t), PX_(valid_state)(&pool), i--;
+	PX_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-11-replace.gv");
+	assert(pool.slots.size == 1 && pool.slots.data[0]->size == size[2]
+		&& pool.capacity0 == size[2] && pool.free0.a.size == 0);
 
 	printf("Destructor:\n");
 	X_(pool_)(&pool);

@@ -190,7 +190,7 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 
 	/* Figure out the size of the next chunk and allocate it. */
 	c = pool->capacity0;
-	if(pool->slots.size) { /* Exponential ~Golden ratio. */
+	if(pool->slots.size && pool->slots.data[0]->size) { /* ~Golden ratio. */
 		size_t c1 = c + (c >> 1) + (c >> 3);
 		c = (c1 < c || c1 > max_size) ? max_size : c1;
 	}
