@@ -1,3 +1,9 @@
+/* @fixme HEAP SUMMARY:
+ in use at exit: 601,392 bytes in 11 blocks
+ total heap usage: 159 allocs, 148 frees, 2,695,440 bytes allocated
+ definitely lost: 487,704 bytes in 2 blocks
+ indirectly lost: 113,688 bytes in 9 blocks */
+
 #include <stdlib.h> /* EXIT rand */
 #include <stdio.h>  /* printf */
 #include <string.h> /* strcmp */
