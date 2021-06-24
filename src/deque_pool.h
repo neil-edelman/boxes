@@ -5,18 +5,13 @@
 
  ![Example of Pool](../web/pool.png)
 
- This is the next version of pool. I don't like having two-pointers per data,
- this is stupid. Let's do like a deque, except bit fields to store what is
- valid so we can erase in the middle. Maybe 32/64/128... element blocks with
- a bit field pointed to by a vector and a circular list?
-
- Instead of a free-list, let's make it a free-heap:
- the list of indices is a queue, the heap is way better at concentrating values
- towards the front; list is O(1), heap O(log n); heap is half the size and
- can be allocated by need instead of all up front.
+ <tag:<P>pool> stores `<X>` in a memory pool. Pointers to valid items in the
+ pool are stable, but not generally in any order or contiguous. It uses
+ geometrically increasing size-blocks. When the removal is uniformly sampled,
+ and data reaches a steady-state size, it will settle in one allocated region.
 
  @param[POOL_NAME, POOL_TYPE]
- `<T>` that satisfies `C` naming conventions when mangled and a valid tag type
+ `<X>` that satisfies `C` naming conventions when mangled and a valid tag type
  associated therewith; required. `<PX>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
@@ -207,29 +202,10 @@ static int PX_(buffer)(struct X_(pool) *const pool, const size_t n) {
 	/* Add it to the slots, in order. */
 	if(!pool->slots.size) insert = 0;
 	else insert = PX_(upper)(&pool->slots, pool->slots.data[0]);
-	printf("buffer: insert at %lu.\n", (unsigned long)insert);
 	assert(insert <= pool->slots.size);
 	slot = pool_slot_array_append_at(&pool->slots, 1, insert);
 	assert(slot);
 	*slot = pool->slots.data[0], pool->slots.data[0] = chunk;
-
-
-#if 0
-	if(!pool->slots.size) { /* Initial chunk. */
-		slot = pool_slot_array_append(&pool->slots, 1);
-		assert(slot);
-		printf("first chunk\n");
-		*slot = chunk;
-	} else {
-		/* Insert the slot[0] into the other slots. */
-		insert = PX_(upper)(&pool->slots, pool->slots.data[0]);
-		printf("buffer: insert at %lu.\n", (unsigned long)insert);
-		assert(insert <= pool->slots.size);
-		slot = pool_slot_array_append_at(&pool->slots, 1, insert);
-		assert(slot);
-		*slot = pool->slots.data[0], pool->slots.data[0] = chunk;
-	}
-#endif
 	return 1;
 }
 
@@ -243,33 +219,21 @@ static int PX_(remove)(struct X_(pool) *const pool,
 	size_t s = PX_(slot)(pool, data);
 	struct pool_chunk *chunk = pool->slots.data[s];
 	assert(pool && pool->slots.size && data);
-	printf("Remove #%p: slot %lu.\n",
-		(const void *)data, (unsigned long)s);
-	if(!s) { /* It's in the zero-slot, we need to deal with the free list. */
+	if(!s) { /* It's in the zero-slot, we need to deal with the free-heap. */
 		const size_t idx = (size_t)(data - PX_(data)(chunk));
-		printf("Remove: chunk[0], %lu/%lu, index %lu.\n",
-			chunk->size, pool->capacity0, idx);
 		assert(pool->capacity0 && chunk->size <= pool->capacity0
 			&& idx < chunk->size);
 		if(idx + 1 == chunk->size) { /* It's at the end -- size goes down. */
 			while(--chunk->size) {
 				const size_t *const free = pool_free_heap_peek(&pool->free0);
-				printf("Size--; now %lu.\n", chunk->size);
 				/* Another item on the free-heap is not exposed? */
 				if(!free || *free < chunk->size - 1) break;
-				printf("Pop %lu from the free-heap.\n", *free);
 				assert(*free == chunk->size - 1);
 				pool_free_heap_pop(&pool->free0);
 			}
-		} else { /* Not the end; just add to free-heap. */
-			printf("Adding to free-heap.\n");
-			if(!pool_free_heap_add(&pool->free0, idx)) return 0;
-		}
-	} else if(assert(chunk->size), !--chunk->size) {
-		printf("Remove slot #%p, reference count is zero.\n", (void *)chunk);
-		pool_slot_array_remove(&pool->slots, pool->slots.data + s);
-		free(chunk);
-	}
+		} else if(!pool_free_heap_add(&pool->free0, idx)) return 0;
+	} else if(assert(chunk->size), !--chunk->size)
+		pool_slot_array_remove(&pool->slots, pool->slots.data + s), free(chunk);
 	return 1;
 }
 
@@ -326,7 +290,7 @@ static void X_(pool_clear)(struct X_(pool) *const pool) {
 	assert(pool);
 	if(!pool->slots.size) { assert(!pool->free0.a.size); return; }
 	for(i = pool->slots.data + 1, i_end = i-1+pool->slots.size; i < i_end; i++)
-		assert(*i), printf("clear: #%p\n", (void *)*i), free(*i);
+		assert(*i), free(*i);
 	pool->slots.data[0]->size = 0;
 	pool->slots.size = 1;
 	pool_free_heap_clear(&pool->free0);
