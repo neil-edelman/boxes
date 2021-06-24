@@ -280,10 +280,6 @@ static void H_(heap)(struct H_(heap) *const heap)
 static void H_(heap_)(struct H_(heap) *const heap)
 	{ assert(heap), PH_(node_array_)(&heap->a); }
 
-/** @return The size of `heap`. @order \Theta(1) @allow */
-static size_t H_(heap_size)(const struct H_(heap) *const heap)
-	{ return assert(heap), heap->a.size; }
-
 /** Sets `heap` to be empty. That is, the size of `heap` will be zero, but if
  it was previously in an active non-idle state, it continues to be.
  @param[heap] If null, does nothing. @order \Theta(1) @allow */
@@ -374,10 +370,9 @@ static const PH_(node) *PH_(next)(struct PH_(iterator) *const it) {
 
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
-	H_(heap)(0); H_(heap_)(0); H_(heap_size)(0); H_(heap_clear)(0);
-	H_(heap_peek_value)(0); H_(heap_pop)(0); H_(heap_buffer)(0, 0);
-	H_(heap_append)(0, 0); PH_(begin)(0, 0); PH_(next)(0);
-	PH_(unused_base_coda)();
+	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_peek_value)(0);
+	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
+	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 

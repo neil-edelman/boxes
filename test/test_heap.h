@@ -89,11 +89,11 @@ static void PH_(test_basic)(void *const param) {
 	printf("Test empty.\n");
 	PH_(valid)(0);
 	errno = 0;
-	assert(!H_(heap_size)(&heap));
+	assert(!heap.a.size);
 	H_(heap_)(&heap);
-	assert(!H_(heap_size)(&heap));
+	assert(!heap.a.size);
 	H_(heap)(&heap);
-	assert(!H_(heap_size)(&heap));
+	assert(!heap.a.size);
 	assert(!H_(heap_peek)(&heap));
 	assert(!H_(heap_peek_value(&heap)));
 	assert(!H_(heap_pop)(&heap));
@@ -105,12 +105,12 @@ static void PH_(test_basic)(void *const param) {
 	v = PH_(get_value)(&add);
 	assert(H_(heap_add)(&heap, add));
 	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
-	assert(H_(heap_size)(&heap) == 1);
+	assert(heap.a.size == 1);
 	node = H_(heap_peek)(&heap);
 	PH_(valid)(&heap);
 	assert(PH_(get_priority)(node) == PH_(get_priority)(&add));
 	result = H_(heap_pop)(&heap);
-	assert(v == result && !H_(heap_size)(&heap));
+	assert(v == result && !heap.a.size);
 	PH_(valid)(&heap);
 
 	printf("Test many.\n");
@@ -127,21 +127,21 @@ static void PH_(test_basic)(void *const param) {
 	}
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv", (unsigned long)i);
 	PH_(graph)(&heap, fn);
-	assert(H_(heap_size)(&heap) == test_size_1);
+	assert(heap.a.size == test_size_1);
 	printf("Heap: %s.\n", PH_(heap_to_string)(&heap));
 	printf("Heap buffered add, before size = %lu.\n",
-		(unsigned long)H_(heap_size)(&heap));
+		(unsigned long)heap.a.size);
 	node = H_(heap_buffer)(&heap, test_size_2);
 	assert(node);
 	for(i = 0; i < test_size_2; i++) PH_(filler)(node + i, param);
 	success = H_(heap_append)(&heap, test_size_2);
-	printf("Now size = %lu.\n", (unsigned long)H_(heap_size)(&heap));
-	assert(H_(heap_size)(&heap) == test_size_1 + test_size_2);
+	printf("Now size = %lu.\n", (unsigned long)heap.a.size);
+	assert(heap.a.size == test_size_1 + test_size_2);
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv",
 		test_size_1 + test_size_2);
 	PH_(graph)(&heap, fn);
 	PH_(valid)(&heap);
-	assert(H_(heap_size)(&heap) == test_size_1 + test_size_2);
+	assert(heap.a.size == test_size_1 + test_size_2);
 	for(i = 0; i < test_size_3; i++) {
 		if(!i || !(i & (i - 1))) {
 			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv",
@@ -154,7 +154,7 @@ static void PH_(test_basic)(void *const param) {
 		assert(success);
 	}
 	printf("Final heap: %s.\n", PH_(heap_to_string)(&heap));
-	assert(H_(heap_size)(&heap) == test_size_1 + test_size_2 + test_size_3);
+	assert(heap.a.size == test_size_1 + test_size_2 + test_size_3);
 	for(i = test_size_1 + test_size_2 + test_size_3; i > 0; i--) {
 		char a[12];
 		node = H_(heap_peek)(&heap);
@@ -168,7 +168,7 @@ static void PH_(test_basic)(void *const param) {
 				(unsigned long)i);
 			PH_(graph)(&heap, fn);
 		}
-		assert(v == result && H_(heap_size)(&heap) == i - 1);
+		assert(v == result && heap.a.size == i - 1);
 		PH_(valid)(&heap);
 		if(i != test_size_1 + test_size_2 + test_size_3)
 			assert(PH_(compare)(last_priority, PH_(get_priority)(node)) <= 0);
