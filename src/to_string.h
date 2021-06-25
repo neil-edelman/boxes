@@ -19,17 +19,44 @@
  @param[TO_STRING_LEFT, TO_STRING_RIGHT]
  7-bit characters, defaults to '(' and ')'.
 
+ @param[TO_STRING_EXTERN, TO_STRING_INTERN]
+ Normally the space to put the temporary strings is static, one per file. With
+ this, it's possible to have a global programme storage to save space: have one
+ file have `TO_STRING_INTERN` as the first box, the other files
+ `TO_STRING_EXTERN`. This is unsynchronized.
+
  @std C89 */
+
+#if defined(TO_STRING_H) \
+	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN)) /* <!-- not */
+#error Should be the on the first to_string.
+#else /* not --><!-- !not */
+#if defined(TO_STRING_EXTERN) && defined(TO_STRING_INTERN) /* <!-- two */
+#error These can not be defined together.
+#endif /* two --> */
+#endif /* !not --> */
 
 #ifndef TO_STRING_H /* <!-- idempotent: for all in compilation unit. */
 #define TO_STRING_H
 #include <string.h>
-/* fixme: have it be extern! */
+#if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
+extern char to_string_buffers[4][256];
+extern const unsigned to_string_buffers_no;
+extern unsigned to_string_i;
+#ifdef TO_STRING_INTERN /* <!-- intern */
+char to_string_buffers[4][256];
+const unsigned to_string_buffers_no = sizeof to_string_buffers
+	/ sizeof *to_string_buffers, to_string_buffer_size
+	= sizeof *to_string_buffers / sizeof **to_string_buffers;
+unsigned to_string_buffer_i;
+#endif /* intern --> */
+#else /* ntern --><!-- static */
 static char to_string_buffers[4][256];
 static const unsigned to_string_buffers_no = sizeof to_string_buffers
 	/ sizeof *to_string_buffers, to_string_buffer_size
 	= sizeof *to_string_buffers / sizeof **to_string_buffers;
 static unsigned to_string_buffer_i;
+#endif /* static --> */
 #endif /* idempotent --> */
 
 /* Check defines. */
