@@ -3,12 +3,29 @@
 
  @subtitle Iterate
 
- The inclusion must define an iterator, ITERATE, ITERATE_BOX, ITERATE_TYPE,
- ITERATE_BEGIN, and ITERATE_NEXT.
+ This is a trait included in some containers.
 
- @param[Z_]
- Function-like define macro accepting one argument and producing a valid name.
- Defines `PI_` to be private.
+ @param[ITERATE_]
+ A one-argument macro producing a name that defines the prefix of the trait.
+
+ @param[ITERATE]
+ A type, <typedef:<PI>iterator>, that contains all the iteration parameters.
+
+ @param[ITERATE_BOX]
+ A type, <typedef:<PI>box>, that `ITERATE_BEGIN` converts into an
+ <typedef:<PI>iterator>.
+
+ @param[ITERATE_TYPE]
+ A type, <typedef:<PI>type>, that is the return from `ITERATE_NEXT`.
+
+ @param[ITERATE_BEGIN]
+ A function satisfying <typedef:<PI>begin_fn> that takes the <typedef:<PI>box>
+ and fills the <typedef:<PI>iterator> with initial values.
+
+ @param[ITERATE_NEXT]
+ A function satisfying <typedef:<PI>next_fn> that takes the
+ <typedef:<PI>iterator>, modifies it, and returns the next <typedef:<PI>type>
+ or null on end.
 
  @std C89 */
 

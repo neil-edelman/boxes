@@ -419,7 +419,7 @@ static void PA_(test_each)(void) {
 /** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
  `NDEBUG` while defining `assert`. @allow */
 static void A_(array_test)(void) {
-	printf("<" QUOTE(ARRAY_NAME) ">Array of type <" QUOTE(ARRAY_TYPE)
+	printf("<" QUOTE(ARRAY_NAME) ">array of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: "
 #ifdef ARRAY_TO_STRING
 		"ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
