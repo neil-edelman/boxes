@@ -139,7 +139,7 @@ typedef PH_(priority) PH_(node);
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
 #ifdef HEAP_ITERATE
-#define ARRAY_ITERATE
+#define ARRAY_ITERATE /* Forward this to array `a`. */
 #endif
 #define ARRAY_SUBTYPE
 #include "array.h"
@@ -365,25 +365,24 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 
 #define TO_STRING HEAP_TO_STRING
-#define TO_STRING_ITERATE_(n) CAT(PH_(node_array_forward), n)
+#define ZI_(n) CAT(PH_(node_array_forward), n)
 #ifdef HEAP_TO_STRING_NAME /* <!-- name */
-#define TO_STRING_(n) CAT(PH_(node), CAT(HEAP_TO_STRING_NAME, n))
+#define Z_(n) CAT(PH_(node), CAT(HEAP_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define TO_STRING_(n) CAT(PH_(node), n)
+#define Z_(n) CAT(PH_(node), n)
 #endif /* !name --> */
 #include "to_string.h" /** \include */
 
 /** `heap` passes it on to `a`. */
 static const char *H_(heap_to_string)(const struct H_(heap) *const heap)
-	{ return assert(heap), TO_STRING_(to_string)(&heap->a); }
+	{ return assert(heap), Z_(to_string)(&heap->a); }
 
-#undef TO_STRING_ /* From `to_string.h`. */
+#undef Z_ /* From `to_string.h`. */
 
 static void PH_(unused_to_string_coda)(void);
 static void PH_(unused_to_string)(void) { H_(heap_to_string)(0);
 	PH_(unused_to_string_coda)(); }
 static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
-
 
 #if !defined(HEAP_TEST_BASE) && defined(HEAP_TEST) /* <!-- test */
 #define HEAP_TEST_BASE /* Only one instance of base tests. */

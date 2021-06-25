@@ -451,7 +451,7 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 }
 
 #define ARRAY_FORWARD_(n) CAT(A_(array_forward), n)
-#define ITERATE_ ARRAY_FORWARD_
+#define I_ ARRAY_FORWARD_
 #define ITERATE struct PA_(iterator)
 #define ITERATE_BOX struct A_(array)
 #define ITERATE_TYPE PA_(type)
@@ -471,13 +471,13 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 }
 
 #define ARRAY_BACKWARD_(thing) CAT(A_(array_backward), thing)
-#define ITERATE_ ARRAY_BACKWARD_
+#define I_ ARRAY_BACKWARD_
 #define ITERATE struct PA_(iterator)
 #define ITERATE_BOX struct A_(array)
 #define ITERATE_TYPE PA_(type)
 #define ITERATE_BEGIN PA_(end)
 #define ITERATE_NEXT PA_(prev)
-#include "iterate.h" /** \include */
+#include "iterate.h"
 
 #endif /* iterate --> */
 
@@ -502,11 +502,11 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #define TO_STRING ARRAY_TO_STRING
-#define TO_STRING_ITERATE_ ARRAY_FORWARD_
+#define ZI_ ARRAY_FORWARD_
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
-#define TO_STRING_(n) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, n))
+#define Z_(n) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define TO_STRING_(n) CAT(A_(array), n)
+#define Z_(n) CAT(A_(array), n)
 #endif /* !name --> */
 #include "to_string.h" /** \include */
 
@@ -515,7 +515,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
-#undef TO_STRING_ /* From `to_string.h`. */
+#undef Z_ /* From <to_string.h>. */
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
