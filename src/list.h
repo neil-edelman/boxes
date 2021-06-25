@@ -677,16 +677,17 @@ struct PL_(iterator) { struct L_(list_node) *node; };
 /** Loads `list` into `it`. @implements begin */
 static void PL_(begin)(struct PL_(iterator) *const it,
 	const struct L_(list) *const list)
-	{ assert(it && list), it->node = list->head.next; }
+	{ assert(it && list), it->node = list->head.next /*L_(list_first)(list)*/; }
 
 /** Advances `it`. @implements next */
 static const struct L_(list_node) *PL_(next)(struct PL_(iterator) *const it) {
 	struct L_(list_node) *n;
 	return assert(it && it->node), (it->node = (n = it->node)->next) ? n : 0;
+	/* it->node = L_(list_next)(it->node) */
 }
 
 #define LIST_FORWARD_(n) CAT(L_(list_forward), n)
-#define ITERATE_ LIST_FORWARD_
+#define I_ LIST_FORWARD_
 #define ITERATE struct PL_(iterator)
 #define ITERATE_BOX struct L_(list)
 #define ITERATE_TYPE struct L_(list_node)
@@ -706,7 +707,7 @@ static const struct L_(list_node) *PL_(prev)(struct PL_(iterator) *const it) {
 }
 
 #define LIST_BACKWARD_(n) CAT(L_(list_backward), n)
-#define ITERATE_ LIST_BACKWARD_
+#define I_ LIST_BACKWARD_
 #define ITERATE struct PL_(iterator)
 #define ITERATE_BOX struct L_(list)
 #define ITERATE_TYPE struct L_(list_node)
@@ -742,11 +743,11 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
 
 #define TO_STRING LIST_TO_STRING
-#define TO_STRING_ITERATE_ LIST_FORWARD_
+#define ZI_ LIST_FORWARD_
 #ifdef LIST_TO_STRING_NAME /* <!-- name */
-#define TO_STRING_(n) CAT(L_(list), CAT(LIST_TO_STRING_NAME, n))
+#define Z_(n) CAT(L_(list), CAT(LIST_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define TO_STRING_(n) CAT(L_(list), n)
+#define Z_(n) CAT(L_(list), n)
 #endif /* !name --> */
 #include "to_string.h" /** \include */
 
@@ -755,7 +756,7 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 #include "../test/test_list.h" /** \include */
 #endif /* test --> */
 
-#undef TO_STRING_ /* From <to_string.h>. */
+#undef Z_ /* From <to_string.h>. */
 #undef LIST_TO_STRING
 #ifdef LIST_TO_STRING_NAME
 #undef LIST_TO_STRING_NAME

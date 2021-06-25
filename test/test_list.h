@@ -19,7 +19,7 @@
 static void (*PL_(to_string))(const struct L_(list_node) *, char (*)[12])
 	= (LIST_TO_STRING);
 static const char *(*PL_(list_to_string))(const struct L_(list) *)
-	= TO_STRING_(to_string);
+	= Z_(to_string);
 
 /* Check that LIST_TEST is a function implementing <typedef:<PL>action_fn>. */
 static void (*const PL_(filler))(struct L_(list_node) *) = (LIST_TEST);
