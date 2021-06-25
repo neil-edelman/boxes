@@ -26,7 +26,7 @@ static void fill_str(const char *str) { (void)(str); }
 #define TRIE_TEST &fill_str
 #include "../src/trie.h"
 
-/* This has no parameterasation yet. */
+/* This has no parameterazation yet. */
 #include "../src/btrie.h"
 
 /** Specific test for str. */
@@ -45,6 +45,7 @@ static void test_basic_trie_str(void) {
 
 	assert(str_trie_remove(&trie, "") == 0);
 
+	printf("%s\n", str_trie_to_string(&trie));
 	trie_str_print(&trie);
 	trie_str_graph(&trie, "graph/trie0.gv");
 	/*printf("Trie0: %s.\n\n", str_trie_to_string(&trie));*/
@@ -286,6 +287,7 @@ static int pstr_cmp(const char *const*const pa, const char *const*const pb)
 /* For comparison with sorted array. */
 #define ARRAY_NAME str
 #define ARRAY_TYPE const char *
+#define ARRAY_ITERATE
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &pstr_to_str
@@ -341,6 +343,7 @@ static void pointer_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
+#define SET_ITERATE
 #define SET_EXPECT_TRAIT
 #include "set.h"
 #define SET_TO_STRING &pointer_to_string

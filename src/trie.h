@@ -24,12 +24,13 @@
  `TRIE_TYPE` is defined.
 
  @param[TRIE_TO_STRING]
- Defining this includes `ToString.h` with the keys as the string.
+ Defining this includes <to_string.h> with the keys as the string.
 
  @param[TRIE_TEST]
  Unit testing framework <fn:<T>trie_test>, included in a separate header,
- <../test/TreeTest.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PT>action_fn>. Requires that `NDEBUG` not be defined.
+ <../test/test_trie.h>. Must be defined equal to a (random) filler function,
+ satisfying <typedef:<PT>action_fn>. Requires that `NDEBUG` not be defined
+ and `TRIE_ITERATE_TO_STRING`.
 
  @fixme Have a replace; potentially much less wastful then remove and add.
  @fixme Compression _a la_ Judy; 64 bits to store mostly 0/1? Could it be done?
@@ -38,6 +39,7 @@
  same bit-positions, it will trip an `assert`. (Genomic data, perhaps?)
 
  @depend [array](https://github.com/neil-edelman/array)
+ @depend <iterate.h>
  @std C89 */
 
 #include <string.h> /* size_t memmove strcmp memcpy */
@@ -51,18 +53,6 @@
 	|| (!defined(TRIE_TYPE) && defined(TRIE_KEY))
 #error TRIE_TYPE and TRIE_KEY have to be mutually defined or not.
 #endif
-/*
-#define TRIE_TRAITS (defined(TRIE_TO_STRING))
-#if TRIE_TRAITS > 1
-#error Only one interface per include is allowed; use TRIE_EXPECT_TRAIT.
-#endif
-#if TRIE_TRAITS != 0 && (!defined(T_) || !defined(CAT) || !defined(CAT_))
-#error T_ or CAT_? not yet defined; use TRIE_EXPECT_TRAIT?
-#endif
-#if (TRIE_TRAITS == 0) && defined(TRIE_TEST)
-#error TRIE_TEST must be defined in TRIE_TO_STRING interface.
-#endif
-*/
 #if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
 #error TRIE_TEST requires TRIE_TO_STRING.
 #endif
@@ -178,7 +168,7 @@ static const char *trie_raw(const char *const key) { return key; }
 #endif /* !raw --> */
 #define TRIE_KEY &trie_raw
 #else /* !type --><!-- type */
-/* Variable type for <ToString.h> because duplicate const on `const char`. */
+/* Variable type for <to_string.h> because duplicate const on `const char`. */
 typedef TRIE_TYPE PT_(vtype);
 /** A valid tag type set by `TRIE_TYPE`; defaults to `const char`. */
 typedef TRIE_TYPE PT_(type);
@@ -209,12 +199,30 @@ static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
 static int PT_(compare)(const PT_(leaf) *const a, const PT_(leaf) *const b)
 	{ return strcmp(PT_(to_key)(*a), PT_(to_key)(*b)); }
 
+#ifdef TRIE_TO_STRING /* <!-- str */
+/** Uses the natural `datum` -> `a` that is defined by `TRIE_KEY`. */
+static void PT_(to_string)(PT_(ctype) *const datum, char (*const a)[12]) {
+	assert(datum && a);
+	sprintf(*a, "%.11s", PT_(to_key)(datum));
+}
+static void PT_(to_foo)(const PT_(leaf) *const leaf, char (*const a)[12]) {
+	assert(leaf && a);
+	sprintf(*a, "%.11s", "foo");
+}
+#endif /* str --> */
+
 /* Trie leaf array is sorted by key. */
 #define ARRAY_NAME PT_(leaf)
 #define ARRAY_TYPE PT_(leaf)
+#define ARRAY_ITERATE
 #define ARRAY_SUBTYPE
 #define ARRAY_EXPECT_TRAIT
 #include "array.h"
+#ifdef TRIE_TO_STRING /* <!-- str */
+#define ARRAY_TO_STRING &PT_(to_foo)
+#define ARRAY_EXPECT_TRAIT
+#include "array.h"
+#endif /* str --> */
 #define ARRAY_COMPARE &PT_(compare)
 #include "array.h"
 #define A_(thing) CAT(PT_(leaf), thing)
@@ -296,7 +304,7 @@ static int PT_(init)(struct T_(trie) *const trie, PT_(type) *const*const a,
 	return 1;
 }
 
-/** Initialises `trie` from an `array` of pointers-to-`<T>` of `array_size`.
+/** Initializes `trie` from an `array` of pointers-to-`<T>` of `array_size`.
  @return Success. @throws[realloc] @order \O(`array_size`) @allow */
 static int T_(trie_from_array)(struct T_(trie) *const trie,
 	PT_(type) *const*const array, const size_t array_size) {
@@ -601,27 +609,6 @@ static int T_(trie_shrink)(struct T_(trie) *const trie) {
 		&& A_(array_shrink)(&trie->leaves);
 }
 
-/** Loads `trie` into `it`. @implements begin */
-static void PT_(begin)(struct PA_(iterator) *const it,
-	const struct T_(trie) *const trie)
-	{ assert(it && trie), it->a = &trie->leaves, it->i = 0; }
-
-/** Advances `it`. @implements next */
-static PT_(ctype) *PT_(next)(struct PA_(iterator) *const it) {
-	assert(it && it->a);
-	return it->i < it->a->size ? it->a->data[it->i++] : 0;
-}
-
-#if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
-	|| defined(ITERATE_BEGIN) || defined(ITERATE_NEXT)
-#error Unexpected ITERATE*.
-#endif
-
-#define ITERATE struct PA_(iterator)
-#define ITERATE_BOX struct T_(trie)
-#define ITERATE_TYPE PT_(vtype)
-#define ITERATE_BEGIN PT_(begin)
-#define ITERATE_NEXT PT_(next)
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
@@ -630,7 +617,7 @@ static void PT_(unused_base)(void) {
 	T_(trie_get)(0, 0); T_(trie_index_prefix)(0, 0, 0, 0);
 	T_(trie_prefix)(0, 0, 0, 0); T_(trie_add)(0, 0); T_(trie_put)(0, 0, 0);
 	T_(trie_policy_put)(0, 0, 0, 0); T_(trie_remove)(0, 0); T_(trie_shrink)(0);
-	PT_(begin)(0, 0); PT_(next); PT_(unused_base_coda)();
+	PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
@@ -638,15 +625,20 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef TRIE_TO_STRING /* <!-- string */
 
 
-/** Uses the natural `datum` -> `a` that is defined by `TRIE_KEY`. */
-static void PT_(to_string)(PT_(ctype) *const datum, char (*const a)[12]) {
-	assert(datum && a);
-	sprintf(*a, "%.11s", PT_(to_key)(datum));
+static const char *T_(trie_to_string)(const struct T_(trie) *const trie) {
+	(void)trie;
+	return "foo";
 }
 
-#define Z_(thing) CAT(T_(trie), thing)
+#define Z_(n) CAT(T_(trie), n)
+
+#if 0
 #define TO_STRING &PT_(to_string)
+//#define ARRAY_FORWARD_(n) CAT(A_(array_forward), n)
+#define ZI_(n) CAT(A_(array_forward), n)
 #include "to_string.h" /** \include */
+#endif
+
 
 #if !defined(TRIE_TEST_BASE) && defined(TRIE_TEST) /* <!-- test */
 #define TRIE_TEST_BASE /* Only one instance of base tests. */
@@ -654,6 +646,8 @@ static void PT_(to_string)(PT_(ctype) *const datum, char (*const a)[12]) {
 #endif /* test --> */
 
 #undef Z_
+
+
 #undef TRIE_TO_STRING
 
 	

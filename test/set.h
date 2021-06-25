@@ -43,6 +43,10 @@
  calculation is trivial to avoid storing duplicate <typedef:<PS>uint> _per_
  datum, (in rare cases.)
 
+ @param[SET_ITERATE]
+ Satisfies the <iterate.h> interface for forwards iteration in original
+ inclusion.
+
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
@@ -79,6 +83,9 @@
 #error Function SET_HASH undefined.
 #endif
 #if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING)
+#ifndef SET_ITERATE
+#error SET_ITERATE must be defined for string trait.
+#endif
 #define SET_TO_STRING_TRAIT 1
 #else
 #define SET_TO_STRING_TRAIT 0
@@ -415,6 +422,8 @@ static struct S_(set_node) *S_(set_remove)(struct S_(set) *const set,
 	return x;
 }
 
+#ifdef SET_ITERATE /* <!-- iterate */
+
 /** Contains all iteration parameters. */
 struct PS_(iterator);
 struct PS_(iterator)
@@ -440,22 +449,25 @@ static const PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 	return 0;
 }
 
-#if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
-	|| defined(ITERATE_BEGIN) || defined(ITERATE_NEXT)
-#error Unexpected ITERATE*.
-#endif
-
+#define SET_FORWARD_(n) CAT(S_(set_forward), n)
+#define I_ SET_FORWARD_
 #define ITERATE struct PS_(iterator)
 #define ITERATE_BOX struct S_(set)
 #define ITERATE_TYPE PS_(type)
 #define ITERATE_BEGIN PS_(begin)
 #define ITERATE_NEXT PS_(next)
+#include "iterate.h" /** \include */
+
+#endif /* iterate --> */
 
 static void PS_(unused_base_coda)(void);
 static void PS_(unused_base)(void) {
 	S_(set)(0); S_(set_)(0); S_(set_clear)(0); S_(set_get)(0, 0);
 	S_(set_reserve)(0, 0); S_(set_put)(0, 0);  S_(set_policy_put)(0, 0, 0);
-	S_(set_remove)(0, 0); PS_(begin)(0, 0); PS_(next)(0);
+	S_(set_remove)(0, 0);
+#ifdef ARRAY_ITERATE
+	PS_(begin)(0, 0); PS_(next)(0);
+#endif
 	PS_(unused_base_coda)();
 }
 static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
@@ -464,12 +476,13 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #elif defined(SET_TO_STRING) /* base code --><!-- to string trait */
 
 
-#ifdef SET_TO_STRING_NAME /* <!-- name */
-#define Z_(thing) CAT(S_(set), CAT(SET_TO_STRING_NAME, thing))
-#else /* name --><!-- !name */
-#define Z_(thing) CAT(S_(set), thing)
-#endif /* !name --> */
 #define TO_STRING SET_TO_STRING
+#define ZI_ SET_FORWARD_
+#ifdef SET_TO_STRING_NAME /* <!-- name */
+#define Z_(n) CAT(S_(set), CAT(SET_TO_STRING_NAME, n))
+#else /* name --><!-- !name */
+#define Z_(n) CAT(S_(set), n)
+#endif /* !name --> */
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
@@ -479,7 +492,7 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #include "../test/test_set.h" /** \include */
 #endif /* test --> */
 
-#undef Z_
+#undef Z_ /* From <to_string.h>. */
 #undef SET_TO_STRING
 #ifdef SET_TO_STRING_NAME
 #undef SET_TO_STRING_NAME
@@ -495,11 +508,13 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #ifndef SET_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
-#undef PCAT
-#undef PCAT_
 #else /* !sub-type --><!-- sub-type */
 #undef SET_SUBTYPE
 #endif /* sub-type --> */
+#ifdef SET_ITERATE /* <!-- iter */
+#undef SET_FORWARD_
+#undef SET_ITERATE
+#endif /* iter --> */
 #undef S_
 #undef PS_
 #undef SET_NAME
@@ -528,6 +543,5 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #undef ITERATE_BEGIN
 #undef ITERATE_NEXT
 #endif /* !trait --> */
-
 #undef SET_TO_STRING_TRAIT
 #undef SET_TRAITS
