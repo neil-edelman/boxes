@@ -27,6 +27,10 @@
  Optional payload <typedef:<PH>adjunct>, that is stored as a reference in
  <tag:<H>heap_node> as <typedef:<PH>value>; declaring it is sufficient.
 
+ @param[HEAP_ITERATE]
+ Satisfies the <iterate.h> interface for the underlying array in original
+ inclusion.
+
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
@@ -52,6 +56,9 @@
 #error Generic HEAP_NAME undefined.
 #endif
 #if defined(HEAP_TO_STRING_NAME) || defined(HEAP_TO_STRING)
+#ifndef HEAP_ITERATE
+#error HEAP_ITERATE must be defined for string trait.
+#endif
 #define HEAP_TO_STRING_TRAIT 1
 #else
 #define HEAP_TO_STRING_TRAIT 0
@@ -131,6 +138,9 @@ typedef PH_(priority) PH_(node);
 /* This relies on `array.h` which must be in the same directory. */
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
+#ifdef HEAP_ITERATE
+#define ARRAY_ITERATE
+#endif
 #define ARRAY_SUBTYPE
 #include "array.h"
 

@@ -17,6 +17,7 @@ static void test_int(unsigned *const i, void *const unused) {
 	*i = (unsigned)rand() / (RAND_MAX / 99 + 1) + 1;
 }
 #define HEAP_NAME int
+#define HEAP_ITERATE
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
 #define HEAP_TO_STRING &int_to_string
