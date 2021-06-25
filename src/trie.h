@@ -7,17 +7,17 @@
 
  A <tag:<T>trie> is a prefix tree, digital tree, or trie, implemented as an
  array of pointers-to-`T` whose keys are always in lexicographically-sorted
- order and index on the keys. It can be seen as a <Morrison, 1968 PATRICiA>: a
- compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
+ order. It can be seen as a <Morrison, 1968 PATRICiA>: a compact
+ [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
  storing the where the keys are different. Strings can be any encoding with a
- byte null-terminator, (`C` strings,) including
+ byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
  optional returnable type that is declared, (it is used by reference only
  except if `TRIE_TEST`.) `<PT>` is private, whose names are prefixed in a
- manner to avoid collisions; any should be re-defined prior to use elsewhere.
+ manner to avoid collisions.
 
  @param[TRIE_KEY]
  A function that satisfies <typedef:<PT>key_fn>. Must be defined if and only if

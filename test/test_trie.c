@@ -586,10 +586,12 @@ finally:
 		if(sprintf(cmd, "/usr/local/bin/gnuplot graph/%s.gnu", gnu.name) < 0
 			|| (result = system(cmd)) == -1) goto catch2;
 		else if(result != EXIT_SUCCESS) { errno = ESYSTEM; goto catch2; }
+#ifdef TRIE_OPEN
 		fprintf(stderr, "Running open.\n");
 		if(sprintf(cmd, "open graph/%s.eps", gnu.name) < 0
 		   || (result = system(cmd)) == -1) goto catch2;
 		else if(result != EXIT_SUCCESS) { errno = ESYSTEM; goto catch2; }
+#endif
 	}
 	goto finally2;
 catch2:
