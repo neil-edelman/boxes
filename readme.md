@@ -47,3 +47,12 @@ including the expect trait define and re-including.) See each project's
 
 2016 Neil Edelman, distributed under the terms of the
 [MIT License](https://opensource.org/licenses/MIT).
+
+## Todo ##
+
+More traits instead of just `to_string`.
+Have `algorithm`, `functional`, `compare`?
+
+TEST depends on RAND, but should probably be different for timing.
+
+Add support for custom allocators. Shouldn't #define malloc(n) cust(n)?
