@@ -3,12 +3,15 @@
 
  @subtitle To String Trait
 
- The inclusion must define an iterator, ITERATE, ITERATE_BOX, ITERATE_TYPE,
- ITERATE_BEGIN, and ITERATE_NEXT.
+ A trait relying on the interface <iterate.h>.
 
  @param[Z_]
- Function-like define macro accepting one argument and producing a valid name.
- Defines `PZ_` to be private.
+ A one-argument macro producing a name that is responsible for the name of the
+ to string function. Does not undefine.
+
+ @param[ZI_]
+ A one-argument macro producing a name that is the same as has been previously
+ been called on as `I_` on <iterate.h>. This is responsible for the order.
 
  @param[TO_STRING]
  Function implementing <typedef:<PZ>to_string_fn>.
@@ -16,29 +19,50 @@
  @param[TO_STRING_LEFT, TO_STRING_RIGHT]
  7-bit characters, defaults to '(' and ')'.
 
+ @param[TO_STRING_EXTERN, TO_STRING_INTERN]
+ Normally the space to put the temporary strings is static, one per file. With
+ this, it's possible to have a global programme storage to save space: have one
+ file have `TO_STRING_INTERN` as the first box, the other files
+ `TO_STRING_EXTERN`. This is unsynchronized.
+
  @std C89 */
+
+#if defined(TO_STRING_H) \
+	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN)) /* <!-- not */
+#error Should be the on the first to_string.
+#else /* not --><!-- !not */
+#if defined(TO_STRING_EXTERN) && defined(TO_STRING_INTERN) /* <!-- two */
+#error These can not be defined together.
+#endif /* two --> */
+#endif /* !not --> */
 
 #ifndef TO_STRING_H /* <!-- idempotent: for all in compilation unit. */
 #define TO_STRING_H
 #include <string.h>
+#if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
+extern char to_string_buffers[4][256];
+extern const unsigned to_string_buffers_no;
+extern unsigned to_string_i;
+#ifdef TO_STRING_INTERN /* <!-- intern */
+char to_string_buffers[4][256];
+const unsigned to_string_buffers_no = sizeof to_string_buffers
+	/ sizeof *to_string_buffers, to_string_buffer_size
+	= sizeof *to_string_buffers / sizeof **to_string_buffers;
+unsigned to_string_buffer_i;
+#endif /* intern --> */
+#else /* ntern --><!-- static */
 static char to_string_buffers[4][256];
 static const unsigned to_string_buffers_no = sizeof to_string_buffers
 	/ sizeof *to_string_buffers, to_string_buffer_size
 	= sizeof *to_string_buffers / sizeof **to_string_buffers;
 static unsigned to_string_buffer_i;
+#endif /* static --> */
 #endif /* idempotent --> */
 
 /* Check defines. */
-#if !defined(CAT) || !defined(CAT_) || !defined(ITERATE) \
-	|| !defined(ITERATE_BOX) || !defined(ITERATE_TYPE) \
-	|| !defined(ITERATE_BEGIN) || !defined(ITERATE_NEXT)
-#error To string: CAT_? or ITERATE* are undefined.
-#endif
-#ifndef Z_
-#error To string: macro Z_ undefined.
-#endif
-#ifdef PZ_
-#error To string: PZ_ can not be defined.
+#if !defined(CAT) || !defined(CAT_) || !defined(Z_) || !defined(ZI_) \
+	|| !defined(TO_STRING) || defined(PZ_) || defined(PZI_)
+#error Unexpected preprocessor symbols.
 #endif
 #ifndef TO_STRING_LEFT
 #define TO_STRING_LEFT '('
@@ -47,33 +71,27 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-#define PZ_(thing) CAT(to_string, Z_(thing))
+#define PZ_(n) CAT(to_string, Z_(n))
+#define PZI_(n) CAT(iterate, ZI_(n))
 
-typedef ITERATE PZ_(iterator);
-typedef ITERATE_BOX PZ_(box);
-typedef ITERATE_TYPE PZ_(type);
-typedef void (*PZ_(begin_fn))(PZ_(iterator) *, const PZ_(box) *);
-typedef const PZ_(type) *(*PZ_(next_fn))(PZ_(iterator) *);
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. */
-typedef void (*PZ_(to_string_fn))(const PZ_(type) *, char (*)[12]);
+typedef void (*PZ_(to_string_fn))(const PZI_(type) *, char (*)[12]);
 
-static const PZ_(begin_fn) PZ_(begin) = (ITERATE_BEGIN);
-static const PZ_(next_fn) PZ_(next) = (ITERATE_NEXT);
 /* Check that `TO_STRING` is a function implementing <typedef:<PZ>to_string>. */
 static const PZ_(to_string_fn) PZ_(to_string) = (TO_STRING);
 
 /** @return Print the contents of `box` in a static string buffer of 256
  bytes with limitations of only printing 4 things at a time.
  @order \Theta(1) @allow */
-static const char *Z_(to_string)(const PZ_(box) *const box) {
+static const char *Z_(to_string)(const PZI_(box) *const box) {
 	const char comma = ',', space = ' ', *const ellipsis = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = strlen(ellipsis);
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
-	const PZ_(type) *x;
-	PZ_(iterator) it;
+	const PZI_(type) *x;
+	PZI_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
@@ -81,9 +99,9 @@ static const char *Z_(to_string)(const PZ_(box) *const box) {
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	/* Begin iteration. */
-	PZ_(begin)(&it, box);
+	PZI_(begin)(&it, box);
 	*b++ = left;
-	while(x = PZ_(next)(&it)) {
+	while(x = PZI_(next)(&it)) {
 		PZ_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -91,7 +109,7 @@ static const char *Z_(to_string)(const PZ_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = (size_t)(b - buffer))
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			{ if(PZ_(next)(&it)) goto ellipsis; else break; }
+			{ if(PZI_(next)(&it)) goto ellipsis; else break; }
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;
@@ -111,7 +129,10 @@ static void PZ_(unused_to_string)(void)
 	{ Z_(to_string)(0); PZ_(unused_to_string_coda)(); }
 static void PZ_(unused_to_string_coda)(void) { PZ_(unused_to_string)(); }
 
+#undef PZI_
 #undef PZ_
+/* #undef Z_ We need this for test. */
+#undef TO_STRING_ITERATE_
 #undef TO_STRING
 #undef TO_STRING_LEFT
 #undef TO_STRING_RIGHT
