@@ -32,7 +32,6 @@ static void colour_filler(enum colour *const c)
 #define ARRAY_TEST &colour_filler
 #include "../src/array.h"
 
-#if 0
 
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
@@ -41,6 +40,7 @@ static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }
 #define ARRAY_NAME str4
 #define ARRAY_TYPE struct str4
+#define ARRAY_ITERATE
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &str4_to_string
@@ -56,6 +56,7 @@ static int int_cmp(const int *const a, const int *const b)
 	{ return (*a > *b) - (*b > *a); }
 #define ARRAY_NAME int
 #define ARRAY_TYPE int
+#define ARRAY_ITERATE
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &int_to_string
@@ -81,6 +82,7 @@ static int keyval_value_cmp(const struct keyval *const a,
 	const struct keyval *const b) { return strcmp(a->value, b->value); }
 #define ARRAY_NAME keyval
 #define ARRAY_TYPE struct keyval
+#define ARRAY_ITERATE
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &keyval_key_to_string
@@ -98,7 +100,6 @@ static int keyval_value_cmp(const struct keyval *const a,
 #define ARRAY_COMPARE &keyval_value_cmp
 #include "../src/array.h"
 
-#endif
 
 /** Tests. @return `EXIT_SUCCESS`. */
 int main(void) {
@@ -107,12 +108,12 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
     errno = 0;
 	colour_array_test();
-	/*str4_array_test();
+	str4_array_test();
 	int_array_test();
 	int_array_comparable_test();
 	keyval_array_test();
 	keyval_array_comparable_test();
-	keyval_array_value_comparable_test();*/
+	keyval_array_value_comparable_test();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
