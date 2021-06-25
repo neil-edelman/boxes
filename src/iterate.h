@@ -3,8 +3,6 @@
 
  @subtitle Iterate
 
- `I_`
-
  The inclusion must define an iterator, ITERATE, ITERATE_BOX, ITERATE_TYPE,
  ITERATE_BEGIN, and ITERATE_NEXT.
 
@@ -15,13 +13,13 @@
  @std C89 */
 
 /* Check defines. */
-#if !defined(CAT) || !defined(CAT_) || !defined(I_) || defined(PI_) \
+#if !defined(CAT) || !defined(CAT_) || !defined(ITERATE_) || defined(PI_) \
 	|| !defined(ITERATE) || !defined(ITERATE_BOX) || !defined(ITERATE_TYPE) \
-	|| !defined(ITERATE_BEGIN) || !defined(ITERATE_NEXT) \
+	|| !defined(ITERATE_BEGIN) || !defined(ITERATE_NEXT)
 #error Unexpected preprocessor symbols.
 #endif
 
-#define PI_(thing) CAT(iterate, I_(thing))
+#define PI_(thing) CAT(iterate, ITERATE_(thing))
 
 typedef ITERATE PI_(iterator);
 typedef ITERATE_BOX PI_(box);
@@ -33,6 +31,7 @@ static const PI_(begin_fn) PI_(begin) = (ITERATE_BEGIN);
 static const PI_(next_fn) PI_(next) = (ITERATE_NEXT);
 
 #undef PI_
+#undef ITERATE_
 #undef ITERATE
 #undef ITERATE_BOX
 #undef ITERATE_TYPE

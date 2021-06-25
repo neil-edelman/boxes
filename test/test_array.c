@@ -32,6 +32,7 @@ static void colour_filler(enum colour *const c)
 #define ARRAY_TEST &colour_filler
 #include "../src/array.h"
 
+#if 0
 
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
@@ -97,6 +98,7 @@ static int keyval_value_cmp(const struct keyval *const a,
 #define ARRAY_COMPARE &keyval_value_cmp
 #include "../src/array.h"
 
+#endif
 
 /** Tests. @return `EXIT_SUCCESS`. */
 int main(void) {
@@ -105,12 +107,12 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
     errno = 0;
 	colour_array_test();
-	str4_array_test();
+	/*str4_array_test();
 	int_array_test();
 	int_array_comparable_test();
 	keyval_array_test();
 	keyval_array_comparable_test();
-	keyval_array_value_comparable_test();
+	keyval_array_value_comparable_test();*/
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

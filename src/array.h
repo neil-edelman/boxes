@@ -434,10 +434,6 @@ static PA_(type) *A_(array_any)(const struct A_(array) *const a,
 
 #ifdef ARRAY_ITERATE /* <!-- iterate */
 
-/* Iterators. */
-#define ARRAY_NATURAL_(thing) CAT(A_(array_natural), thing)
-#define ARRAY_REVERSE_(thing) CAT(A_(array_reverse), thing)
-
 /** Contains all iteration parameters. */
 struct PA_(iterator);
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
@@ -451,6 +447,8 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
 
+#define ARRAY_NATURAL_(thing) CAT(A_(array_natural), thing)
+#define ITERATE_ ARRAY_NATURAL_
 #define ITERATE struct PA_(iterator)
 #define ITERATE_BOX struct A_(array)
 #define ITERATE_TYPE PA_(type)
@@ -458,8 +456,27 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 #define ITERATE_NEXT PA_(next)
 #include "iterate.h" /** \include */
 
-#endif /* iterate --> */
+/** Loads `a` into `it`. @implements begin */
+static void PA_(end)(struct PA_(iterator) *const it,
+	const struct A_(array) *const a)
+	{ assert(it && a), it->a = a, it->i = a->size; }
 
+/** Advances `it`. @implements next */
+static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
+	return assert(it && it->a && it->i <= it->a->size),
+		it->i ? it->a->data + --it->i : 0;
+}
+
+#define ARRAY_REVERSE_(thing) CAT(A_(array_reverse), thing)
+#define ITERATE_ ARRAY_REVERSE_
+#define ITERATE struct PA_(iterator)
+#define ITERATE_BOX struct A_(array)
+#define ITERATE_TYPE PA_(type)
+#define ITERATE_BEGIN PA_(end)
+#define ITERATE_NEXT PA_(prev)
+#include "iterate.h" /** \include */
+
+#endif /* iterate --> */
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
@@ -481,20 +498,22 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
 
 
-#ifdef ARRAY_TO_STRING_NAME /* <!-- name */
-#define Z_(thing) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, thing))
-#else /* name --><!-- !name */
-#define Z_(thing) CAT(A_(array), thing)
-#endif /* !name --> */
 #define TO_STRING ARRAY_TO_STRING
+#define TO_STRING_ITERATE_ ARRAY_NATURAL_
+#ifdef ARRAY_TO_STRING_NAME /* <!-- name */
+#define TO_STRING_(n) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, n))
+#else /* name --><!-- !name */
+#define TO_STRING_(n) CAT(A_(array), n)
+#endif /* !name --> */
 #include "to_string.h" /** \include */
 
 #if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
 #define ARRAY_TEST_BASE /* Only one instance of base tests. */
+
 #include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
-#undef Z_
+#undef TO_STRING_ /* From `to_string.h`. */
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -701,7 +720,11 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #else /* !sub-type --><!-- sub-type */
 #undef ARRAY_SUBTYPE
 #endif /* sub-type --> */
-#undef ...
+#ifdef ARRAY_ITERATE /* <!-- iter */
+#undef ARRAY_NATURAL_
+#undef ARRAY_REVERSE_
+#undef ARRAY_ITERATE
+#endif /* iter --> */
 #undef A_
 #undef PA_
 #undef ARRAY_NAME
@@ -713,7 +736,6 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #undef ARRAY_TEST_BASE
 #endif
 #endif /* !trait --> */
-
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARABLE_TRAIT
 #undef ARRAY_TRAITS
