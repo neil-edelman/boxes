@@ -6,6 +6,7 @@
  A trait relying on the interface <iterate.h>.
 
  @param[TO_STRING_]
+ Fixme: `Z_`.
  A one-argument macro producing a name that is responsible for the name of the
  to string function. Does not undefine.
 
