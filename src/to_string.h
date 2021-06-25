@@ -7,7 +7,7 @@
 
  @param[TO_STRING_]
  A one-argument macro producing a name that is responsible for the name of the
- to string function.
+ to string function. Does not undefine.
 
  @param[TO_STRING_ITERATE_]
  A one-argument macro producing a name that is the same as has been previously
@@ -58,7 +58,7 @@ static const PZ_(to_string_fn) PZ_(to_string) = (TO_STRING);
 /** @return Print the contents of `box` in a static string buffer of 256
  bytes with limitations of only printing 4 things at a time.
  @order \Theta(1) @allow */
-static const char *PZ_(box_to_string)(const PI_(box) *const box) {
+static const char *TO_STRING_(to_string)(const PI_(box) *const box) {
 	const char comma = ',', space = ' ', *const ellipsis = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = strlen(ellipsis);
@@ -97,12 +97,6 @@ terminate:
 	assert(b - buffer <= to_string_buffer_size);
 	return buffer;
 }
-
-/** @return Print the contents of `box` in a static string buffer of 256
- bytes with limitations of only printing 4 things at a time.
- @order \Theta(1) @allow */
-static const char *TO_STRING_(to_string)(const PI_(box) *const box)
-	{ return PZ_(box_to_string)(box); }
 
 static void PZ_(unused_to_string_coda)(void);
 static void PZ_(unused_to_string)(void)

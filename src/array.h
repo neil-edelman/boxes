@@ -509,7 +509,6 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 #if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
 #define ARRAY_TEST_BASE /* Only one instance of base tests. */
-
 #include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
@@ -524,11 +523,11 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
-#define PTC_(thing) CAT(PA_(thing), ARRAY_COMPARABLE_NAME)
-#define T_C_(thing1, thing2) CAT(A_(thing1), CAT(ARRAY_COMPARABLE_NAME, thing2))
+#define PTC_(n) CAT(PA_(n), ARRAY_COMPARABLE_NAME)
+#define T_C_(n, m) CAT(A_(n), CAT(ARRAY_COMPARABLE_NAME, m))
 #else /* name --><!-- !name */
-#define PTC_(thing) CAT(PA_(thing), anonymous)
-#define T_C_(thing1, thing2) CAT(A_(thing1), thing2)
+#define PTC_(n) CAT(PA_(n), anonymous)
+#define T_C_(n, m) CAT(A_(n), m)
 #endif /* !name --> */
 
 #ifdef ARRAY_COMPARE /* <!-- compare */
