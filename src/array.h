@@ -14,6 +14,9 @@
  associated therewith; required. `<PA>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
+ @param[ARRAY_ITERATE]
+ Satisfies the <iterate.h> interface for forwards and backwards iteration.
+
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
@@ -447,8 +450,8 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
 
-#define ARRAY_NATURAL_(thing) CAT(A_(array_natural), thing)
-#define ITERATE_ ARRAY_NATURAL_
+#define ARRAY_FORWARD_(n) CAT(A_(array_forward), n)
+#define ITERATE_ ARRAY_FORWARD_
 #define ITERATE struct PA_(iterator)
 #define ITERATE_BOX struct A_(array)
 #define ITERATE_TYPE PA_(type)
@@ -467,8 +470,8 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 		it->i ? it->a->data + --it->i : 0;
 }
 
-#define ARRAY_REVERSE_(thing) CAT(A_(array_reverse), thing)
-#define ITERATE_ ARRAY_REVERSE_
+#define ARRAY_BACKWARD_(thing) CAT(A_(array_backward), thing)
+#define ITERATE_ ARRAY_BACKWARD_
 #define ITERATE struct PA_(iterator)
 #define ITERATE_BOX struct A_(array)
 #define ITERATE_TYPE PA_(type)
@@ -488,7 +491,7 @@ static void PA_(unused_base)(void) {
 	A_(array_trim)(0, 0); A_(array_each)(0, 0); A_(array_if_each)(0, 0, 0);
 	A_(array_any)(0, 0);
 #ifdef ARRAY_ITERATE
-	PA_(begin)(0, 0); PA_(next)(0);
+	PA_(begin)(0, 0); PA_(next)(0); PA_(end)(0, 0); PA_(prev)(0);
 #endif
 	PA_(unused_base_coda)();
 }
@@ -499,7 +502,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #define TO_STRING ARRAY_TO_STRING
-#define TO_STRING_ITERATE_ ARRAY_NATURAL_
+#define TO_STRING_ITERATE_ ARRAY_FORWARD_
 #ifdef ARRAY_TO_STRING_NAME /* <!-- name */
 #define TO_STRING_(n) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
