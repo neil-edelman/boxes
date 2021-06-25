@@ -550,10 +550,10 @@ static void PTC_(test_sort)(void) {
 	/* Now sort the lists. */
 	qsort(as, as_size, sizeof *as,
 		(int (*)(const void *, const void *))&A_(array_compare));
-	printf("Sorted array of sorted <" QUOTE(LIST_NAME) ">List by "
-		   QUOTE(LIST_COMPARE) ":\n");
+	printf("Sorted array of sorted <" QUOTE(ARRAY_NAME) ">array by "
+		   QUOTE(ARRAY_COMPARE) ":\n");
 	for(a = as; a < as_end; a++) {
-		printf("List: %s.\n", PA_(array_to_string)(a));
+		printf("array: %s.\n", PA_(array_to_string)(a));
 		if(a == as) continue;
 		cmp = A_(array_compare)(a - 1, a);
 		assert(cmp <= 0);
