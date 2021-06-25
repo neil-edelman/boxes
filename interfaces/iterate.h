@@ -3,7 +3,7 @@
 
  @subtitle Iterate
 
- This is a trait included in some containers.
+ This is an interface for a strict well-ordering.
 
  @param[ITERATE_]
  A one-argument macro producing a name that defines the prefix of the trait.

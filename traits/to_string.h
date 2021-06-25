@@ -3,7 +3,7 @@
 
  @subtitle To String Trait
 
- A sub-trait of <iterate.h>.
+ A trait relying on the interface <iterate.h>.
 
  @param[TO_STRING_]
  A one-argument macro producing a name that is responsible for the name of the
