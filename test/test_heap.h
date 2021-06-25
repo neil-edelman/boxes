@@ -10,7 +10,7 @@
 static void (*PH_(to_string))(const PH_(node) *, char (*)[12])
 	= (HEAP_TO_STRING);
 static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
-	= Z_(to_string);
+	= H_(heap_to_string);
 
 /** Operates by side-effects. Used for `HEAP_TEST`. */
 typedef void (*PH_(biaction_fn))(PH_(node) *, void *);
