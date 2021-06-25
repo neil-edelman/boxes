@@ -15,7 +15,8 @@
  a manner to avoid collisions.
 
  @param[ARRAY_ITERATE]
- Satisfies the <iterate.h> interface for forwards and backwards iteration.
+ Satisfies the <iterate.h> interface for forwards and backwards iteration in
+ original inclusion.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -722,8 +723,8 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #undef ARRAY_SUBTYPE
 #endif /* sub-type --> */
 #ifdef ARRAY_ITERATE /* <!-- iter */
-#undef ARRAY_NATURAL_
-#undef ARRAY_REVERSE_
+#undef ARRAY_FORWARD_
+#undef ARRAY_BACKWARD_
 #undef ARRAY_ITERATE
 #endif /* iter --> */
 #undef A_
