@@ -21,13 +21,12 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
- There can be multiple to string traits, but only one can omit
- `ARRAY_TO_STRING_NAME`.
+ To string trait contained in <to_string.h>; requires `ARRAY_ITERATE` and goes
+ forwards. An optional mangled name for uniqueness and function implementing
+ <typedef:<PZ>to_string_fn>.
 
  @param[ARRAY_TEST]
- To string trait contained in <../test/array_test.h>; optional unit testing
+ To string trait contained in <../test/array_test.h>. Optional unit testing
  framework using `assert`. Can only be defined once _per_ array. Must be
  defined equal to a (random) filler function, satisfying
  <typedef:<PA>action_fn>. Output will be shown with the to string trait in
