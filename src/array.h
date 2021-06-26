@@ -14,15 +14,14 @@
  associated therewith; required. `<PA>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
- @param[ARRAY_INTERFACE_ITERATE]
- Satisfies the <interface_iterate.h> interface for forwards and backwards
- iteration.
+ @param[ARRAY_ITERATE]
+ Satisfies the <iterate.h> interface for forwards and backwards iteration.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait contained in <trait_to_string.h>; requires `ARRAY_INTERFACE_ITERATE` and goes
+ To string trait contained in <to_string.h>; requires `ARRAY_ITERATE` and goes
  forwards. An optional mangled name for uniqueness and function implementing
  <typedef:<PZ>to_string_fn>.
 
@@ -53,8 +52,8 @@
 #error Name ARRAY_NAME or tag type ARRAY_TYPE undefined.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING) /* <!-- str */
-#ifndef ARRAY_INTERFACE_ITERATE
-#error ARRAY_INTERFACE_ITERATE must be defined for string trait.
+#ifndef ARRAY_ITERATE
+#error ARRAY_ITERATE must be defined for string trait.
 #endif
 #define ARRAY_TO_STRING_TRAIT 1
 #else /* str --><!-- !str */
@@ -62,8 +61,8 @@
 #endif /* !str --> */
 #if defined(ARRAY_COMPARABLE_NAME) || defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_IS_EQUAL)
-#ifndef ARRAY_INTERFACE_ITERATE
-#error ARRAY_INTERFACE_ITERATE must be defined for compare trait.
+#ifndef ARRAY_ITERATE
+#error ARRAY_ITERATE must be defined for compare trait.
 #endif
 #define ARRAY_COMPARABLE_TRAIT 1
 #else
@@ -436,7 +435,7 @@ static PA_(type) *A_(array_any)(const struct A_(array) *const a,
 	return 0;
 }
 
-#ifdef ARRAY_INTERFACE_ITERATE /* <!-- iterate */
+#ifdef ARRAY_ITERATE /* <!-- iterate */
 
 /** Contains all iteration parameters. */
 struct PA_(iterator);
@@ -458,7 +457,7 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 #define ITERATE_TYPE PA_(type)
 #define ITERATE_BEGIN PA_(begin)
 #define ITERATE_NEXT PA_(next)
-#include "interface_iterate.h" /** \include */
+#include "iterate.h" /** \include */
 
 /** Loads `a` into `it`. @implements begin */
 static void PA_(end)(struct PA_(iterator) *const it,
@@ -478,7 +477,7 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 #define ITERATE_TYPE PA_(type)
 #define ITERATE_BEGIN PA_(end)
 #define ITERATE_NEXT PA_(prev)
-#include "interface_iterate.h"
+#include "iterate.h"
 
 #endif /* iterate --> */
 
@@ -491,7 +490,7 @@ static void PA_(unused_base)(void) {
 	A_(array_keep_if)(0, 0, 0); A_(array_copy_if)(0, 0, 0);
 	A_(array_trim)(0, 0); A_(array_each)(0, 0); A_(array_if_each)(0, 0, 0);
 	A_(array_any)(0, 0);
-#ifdef ARRAY_INTERFACE_ITERATE
+#ifdef ARRAY_ITERATE
 	PA_(begin)(0, 0); PA_(next)(0); PA_(end)(0, 0); PA_(prev)(0);
 #endif
 	PA_(unused_base_coda)();
@@ -509,14 +508,14 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #else /* name --><!-- !name */
 #define Z_(n) CAT(A_(array), n)
 #endif /* !name --> */
-#include "trait_to_string.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
 #define ARRAY_TEST_BASE /* Only one instance of base tests. */
 #include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
-#undef Z_ /* From <trait_to_string.h>. */
+#undef Z_ /* From <to_string.h>. */
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -723,10 +722,10 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #else /* !sub-type --><!-- sub-type */
 #undef ARRAY_SUBTYPE
 #endif /* sub-type --> */
-#ifdef ARRAY_INTERFACE_ITERATE /* <!-- iter */
+#ifdef ARRAY_ITERATE /* <!-- iter */
 #undef ARRAY_FORWARD_
 #undef ARRAY_BACKWARD_
-#undef ARRAY_INTERFACE_ITERATE
+#undef ARRAY_ITERATE
 #endif /* iter --> */
 #undef A_
 #undef PA_
