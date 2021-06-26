@@ -14,3 +14,4 @@ for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
 	git commit -am "$1" || true
 	)
 fi done
+git commit -am "$1" || true
