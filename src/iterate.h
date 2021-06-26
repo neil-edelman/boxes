@@ -1,9 +1,11 @@
 /* @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Iterate
+ @subtitle Iterate Interface
 
- This is an interface for a strict well-ordering.
+ This is an interface for a strict well-ordering that defines an
+ <typedef:<PI>iterator> and functions <typedef:<PI>begin_fn> and
+ <typedef:<PI>next_fn>.
 
  @param[I_]
  A one-argument macro producing a name that defines the prefix of the trait.
@@ -27,6 +29,7 @@
  <typedef:<PI>iterator>, modifies it, and returns the next <typedef:<PI>type>
  or null on end.
 
+ @fixme Add a `<PI>remove` function.
  @std C89 */
 
 /* Check defines. */

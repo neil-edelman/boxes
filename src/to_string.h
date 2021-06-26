@@ -3,7 +3,7 @@
 
  @subtitle To String Trait
 
- A trait relying on the interface <iterate.h>.
+ A trait relying on interface <iterate.h>.
 
  @param[Z_]
  A one-argument macro producing a name that is responsible for the name of the
@@ -11,7 +11,8 @@
 
  @param[ZI_]
  A one-argument macro producing a name that is the same as has been previously
- been called on as `I_` on <iterate.h>. This is responsible for the order.
+ been called on as `I_` on <interface_iterate.h>. This is responsible for the
+ order.
 
  @param[TO_STRING]
  Function implementing <typedef:<PZ>to_string_fn>.
@@ -23,7 +24,7 @@
  Normally the space to put the temporary strings is static, one per file. With
  this, it's possible to have a global programme storage to save space: have one
  file have `TO_STRING_INTERN` as the first box, the other files
- `TO_STRING_EXTERN`. This is unsynchronized.
+ `TO_STRING_EXTERN`. This is unsynchronized. @fixme `extern` untested.
 
  @std C89 */
 

@@ -15,8 +15,7 @@
  a manner to avoid collisions.
 
  @param[ARRAY_ITERATE]
- Satisfies the <iterate.h> interface for forwards and backwards iteration in
- original inclusion.
+ Satisfies the <iterate.h> interface for forwards and backwards iteration.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -73,10 +72,11 @@
 #if ARRAY_TRAITS > 1
 #error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
-#if ARRAY_TRAITS != 0 && (!defined(A_) || !defined(CAT) || !defined(CAT_))
-#error A_ or CAT_? not yet defined; use ARRAY_EXPECT_TRAIT?
+#if ARRAY_TRAITS != 0 && (!defined(A_) || !defined(CAT) || !defined(CAT_) \
+	|| defined(ARRAY_ITERFACE_ITERATE))
+#error Use ARRAY_EXPECT_TRAIT and include it again.
 #endif
-#if (ARRAY_TRAITS == 0) && defined(ARRAY_TEST)
+#if ARRAY_TRAITS == 0 && defined(ARRAY_TEST)
 #error ARRAY_TEST must be defined in ARRAY_TO_STRING trait.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
