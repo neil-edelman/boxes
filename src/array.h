@@ -110,14 +110,14 @@ typedef ARRAY_TYPE PA_(type);
 /** Operates by side-effects. */
 typedef void (*PA_(action_fn))(PA_(type) *);
 
+/** Returns a boolean given two `<A>`. */
+typedef int (*PA_(biaction_fn))(PA_(type) *, PA_(type) *);
+
 /** Returns a boolean given read-only `<A>`. */
 typedef int (*PA_(predicate_fn))(const PA_(type) *);
 
 /** Returns a boolean given two read-only `<A>`. */
 typedef int (*PA_(bipredicate_fn))(const PA_(type) *, const PA_(type) *);
-
-/** Returns a boolean given two `<A>`. */
-typedef int (*PA_(biproject_fn))(PA_(type) *, PA_(type) *);
 
 /** Three-way comparison on a totally order set; returns an integer value less
  then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
@@ -648,8 +648,8 @@ static int T_C_(array, is_equal)(const struct A_(array) *const a,
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false. @order \O(`a.size` \times `merge`) @allow */
-static void T_C_(array, merge_unique)(struct A_(array) *const a,
-	const PA_(biproject_fn) merge) {
+static void T_C_(array, unique_merge)(struct A_(array) *const a,
+	const PA_(biaction_fn) merge) {
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
 	int is_first, is_last;
@@ -679,7 +679,7 @@ static void T_C_(array, merge_unique)(struct A_(array) *const a,
 
 /** Removes consecutive duplicate elements in `a`. @order \O(`a.size`) @allow */
 static void T_C_(array, unique)(struct A_(array) *const a)
-	{ T_C_(array, merge_unique)(a, 0); }
+	{ T_C_(array, unique_merge)(a, 0); }
 
 static void PTC_(unused_contrast_coda)(void);
 static void PTC_(unused_contrast)(void) {

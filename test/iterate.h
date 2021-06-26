@@ -10,7 +10,7 @@
  @param[I_]
  A one-argument macro producing a name that defines the prefix of the trait.
 
- @param[ITERATE]
+ @param[ITERATE_TYPE]
  A type, <typedef:<PI>iterator>, that contains all the iteration parameters.
 
  @param[ITERATE_BOX]
@@ -39,7 +39,7 @@
 #error Unexpected preprocessor symbols.
 #endif
 
-#define PI_(thing) CAT(iterate, I_(thing))
+#define PI_(n) CAT(iterate, I_(n))
 
 typedef ITERATE PI_(iterator);
 typedef ITERATE_BOX PI_(box);
