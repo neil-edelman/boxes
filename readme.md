@@ -43,6 +43,12 @@ the box is complete for convenience. (Except one can include traits by
 including the expect trait define and re-including.) See each project's
 `test` section for examples.
 
+There are optional shared files in `interfaces` and `traits`. Some boxes
+support different interfaces, and you add an interface by defining the
+macro and having the interface file. You can then `EXPECT_TRAIT`, include
+the header, and continue defining a trait, and then include the header
+again.
+
 ## License ##
 
 2016 Neil Edelman, distributed under the terms of the
