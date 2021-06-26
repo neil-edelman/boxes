@@ -18,11 +18,15 @@
  associated therewith; required. `<PP>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
+ @param[POOL_ITERATE]
+ Satisfies the <interface_iterate.h> interface for forwards iteration in original
+ inclusion.
+
  @param[POOL_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
+ To string trait contained in <trait_to_string.h>; `<Z>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`.
@@ -47,6 +51,9 @@
 #error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
 #endif
 #if defined(POOL_TO_STRING_NAME) || defined(POOL_TO_STRING)
+#ifndef POOL_ITERATE
+#error POOL_ITERATE must be defined for string trait.
+#endif
 #define POOL_TO_STRING_TRAIT 1
 #else
 #define POOL_TO_STRING_TRAIT 0
@@ -341,6 +348,8 @@ static void P_(pool_for_each)(struct P_(pool) *const pool,
 			n < end; n++) if(!n->x.prev) action(&n->data);
 }
 
+#ifdef POOL_ITERATE /* <!-- iterate */
+
 /** Contains all iteration parameters. */
 struct PP_(iterator);
 struct PP_(iterator)
@@ -367,23 +376,26 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 	}
 	return 0;
 }
-	
-#if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
-	|| defined(ITERATE_BEGIN) || defined(ITERATE_NEXT)
-#error Unexpected ITERATE*.
-#endif
-	
+
+#define POOL_FORWARD_(n) CAT(P_(pool_forward), n)
+#define I_ POOL_FORWARD_
 #define ITERATE struct PP_(iterator)
 #define ITERATE_BOX struct P_(pool)
 #define ITERATE_TYPE PP_(type)
 #define ITERATE_BEGIN PP_(begin)
 #define ITERATE_NEXT PP_(next)
+#include "interface_iterate.h" /** \include */
+
+#endif /* iterate --> */
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
 	P_(pool)(0); P_(pool_)(0); P_(pool_reserve)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); P_(pool_for_each)(0, 0);
-	PP_(begin)(0, 0); PP_(next)(0); PP_(unused_base_coda)();
+#ifdef POOL_BEGIN
+	PP_(begin)(0, 0); PP_(next)(0);
+#endif
+	PP_(unused_base_coda)();
 }
 static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
@@ -391,20 +403,21 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #elif defined(POOL_TO_STRING) /* base code --><!-- to string trait */
 
 
-#ifdef POOL_TO_STRING_NAME /* <!-- name */
-#define Z_(thing) CAT(P_(pool), CAT(POOL_TO_STRING_NAME, thing))
-#else /* name --><!-- !name */
-#define Z_(thing) CAT(P_(pool), thing)
-#endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
-#include "to_string.h" /** \include */
+#define ZI_ POOL_FORWARD_
+#ifdef POOL_TO_STRING_NAME /* <!-- name */
+#define Z_(n) CAT(P_(pool), CAT(POOL_TO_STRING_NAME, n))
+#else /* name --><!-- !name */
+#define Z_(n) CAT(P_(pool), n)
+#endif /* !name --> */
+#include "trait_to_string.h" /** \include */
 
 #if !defined(POOL_TEST_BASE) && defined(POOL_TEST) /* <!-- test */
 #define POOL_TEST_BASE /* Only one instance of base tests. */
 #include "../test/test_pool.h" /** \include */
 #endif /* test --> */
 
-#undef Z_
+#undef Z_ /* From <trait_to_string.h>. */
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
 #undef POOL_TO_STRING_NAME
@@ -423,6 +436,10 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #else /* !sub-type --><!-- sub-type */
 #undef POOL_SUBTYPE
 #endif /* sub-type --> */
+#ifdef POOL_ITERATE /* <!-- iter */
+#undef POOL_FORWARD_
+#undef POOL_ITERATE
+#endif /* iter --> */
 #undef P_
 #undef PP_
 #undef POOL_NAME
@@ -433,12 +450,6 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #ifdef POOL_TEST_BASE
 #undef POOL_TEST_BASE
 #endif
-#undef ITERATE
-#undef ITERATE_BOX
-#undef ITERATE_TYPE
-#undef ITERATE_BEGIN
-#undef ITERATE_NEXT
 #endif /* !trait --> */
-
 #undef POOL_TO_STRING_TRAIT
 #undef POOL_TRAITS

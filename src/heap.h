@@ -27,18 +27,16 @@
  Optional payload <typedef:<PH>adjunct>, that is stored as a reference in
  <tag:<H>heap_node> as <typedef:<PH>value>; declaring it is sufficient.
 
- @param[HEAP_ITERATE]
- Satisfies the <iterate.h> interface for the underlying array in original
- inclusion.
+ @param[HEAP_INTERFACE_ITERATE]
+ Satisfies the <interface_iterate.h> interface for the underlying array.
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
- To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
- There can be multiple to string traits, but only one can omit
- `HEAP_TO_STRING_NAME`.
+ To string trait contained in <trait_to_string.h>; an optional unique `<Z>`
+ that satisfies `C` naming conventions when mangled and function implementing
+ <typedef:<PZ>to_string_fn>.
 
  @param[HEAP_TEST]
  To string trait contained in <../test/heap_test.h>; optional unit testing
@@ -56,8 +54,8 @@
 #error Generic HEAP_NAME undefined.
 #endif
 #if defined(HEAP_TO_STRING_NAME) || defined(HEAP_TO_STRING)
-#ifndef HEAP_ITERATE
-#error HEAP_ITERATE must be defined for string trait.
+#ifndef HEAP_INTERFACE_ITERATE
+#error HEAP_INTERFACE_ITERATE must be defined for string trait.
 #endif
 #define HEAP_TO_STRING_TRAIT 1
 #else
@@ -138,8 +136,8 @@ typedef PH_(priority) PH_(node);
 /* This relies on `array.h` which must be in the same directory. */
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
-#ifdef HEAP_ITERATE
-#define ARRAY_ITERATE /* Forward this to array `a`. */
+#ifdef HEAP_INTERFACE_ITERATE
+#define ARRAY_INTERFACE_ITERATE /* Forward this to array `a`. */
 #endif
 #define ARRAY_SUBTYPE
 #include "array.h"
@@ -371,13 +369,13 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #else /* name --><!-- !name */
 #define Z_(n) CAT(PH_(node), n)
 #endif /* !name --> */
-#include "to_string.h" /** \include */
+#include "trait_to_string.h" /** \include */
 
 /** `heap` passes it on to `a`. */
 static const char *H_(heap_to_string)(const struct H_(heap) *const heap)
 	{ return assert(heap), Z_(to_string)(&heap->a); }
 
-#undef Z_ /* From `to_string.h`. */
+#undef Z_ /* From `trait_to_string.h`. */
 
 static void PH_(unused_to_string_coda)(void);
 static void PH_(unused_to_string)(void) { H_(heap_to_string)(0);
