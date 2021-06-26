@@ -19,14 +19,14 @@
  a manner to avoid collisions.
 
  @param[POOL_ITERATE]
- Satisfies the <interface_iterate.h> interface for forwards iteration in original
+ Satisfies the <iterate.h> interface for forwards iteration in original
  inclusion.
 
  @param[POOL_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string trait contained in <trait_to_string.h>; `<Z>` that satisfies `C` naming
+ To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`.
@@ -384,7 +384,7 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 #define ITERATE_TYPE PP_(type)
 #define ITERATE_BEGIN PP_(begin)
 #define ITERATE_NEXT PP_(next)
-#include "interface_iterate.h" /** \include */
+#include "iterate.h" /** \include */
 
 #endif /* iterate --> */
 
@@ -410,14 +410,14 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #else /* name --><!-- !name */
 #define Z_(n) CAT(P_(pool), n)
 #endif /* !name --> */
-#include "trait_to_string.h" /** \include */
+#include "to_string.h" /** \include */
 
 #if !defined(POOL_TEST_BASE) && defined(POOL_TEST) /* <!-- test */
 #define POOL_TEST_BASE /* Only one instance of base tests. */
 #include "../test/test_pool.h" /** \include */
 #endif /* test --> */
 
-#undef Z_ /* From <trait_to_string.h>. */
+#undef Z_ /* From <to_string.h>. */
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
 #undef POOL_TO_STRING_NAME
