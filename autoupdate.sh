@@ -21,15 +21,6 @@ for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
 		fi done
 	fi done
 fi done
-for INTERFACEDIR in interfaces/*; do
-	INTERFACE=$(basename "$INTERFACEDIR")
-	for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
-		for SUB in src test; do [ -r "$PROJ/$SUB/$INTERFACE" ] \
-			&& echo "Updating Truth $INTERFACEDIR -> $PROJ/$SUB/$INTERFACE." \
-			&& cp "$INTERFACEDIR" "$PROJ/$SUB/$INTERFACE"
-		done
-	fi done
-done
 for TRAITDIR in traits/*; do
 	TRAIT=$(basename "$TRAITDIR")
 	for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
