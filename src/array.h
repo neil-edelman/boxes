@@ -436,6 +436,7 @@ static PA_(type) *A_(array_any)(const struct A_(array) *const a,
 }
 
 /* Factored these out from all the interfaces. */
+#define BOX_ A_
 #define BOX_NAME struct A_(array)
 #define BOX_TYPE PA_(type)
 

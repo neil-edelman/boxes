@@ -7,12 +7,8 @@
  <typedef:<PI>iterator> and functions <typedef:<PI>begin_fn> and
  <typedef:<PI>next_fn>.
 
- @param[BOX_NAME]
- A type, <typedef:<PI>box>, that `ITERATE_BEGIN` converts into an
- <typedef:<PI>iterator>. Does not undefine.
-
- @param[BOX_TYPE]
- A type, <typedef:<PI>type>, that is the return from `ITERATE_NEXT`. Does not
+ @param[BOX_NAME, BOX_TYPE]
+ A type that represents the box and the type that goes in the box. Does not
  undefine.
 
  @param[I_]
