@@ -52,13 +52,15 @@
 #error Name ARRAY_NAME or tag type ARRAY_TYPE undefined.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING) /* <!-- str */
-#ifndef ARRAY_ITERATE
-#error ARRAY_ITERATE must be defined for string trait.
-#endif
 #define ARRAY_TO_STRING_TRAIT 1
 #else /* str --><!-- !str */
 #define ARRAY_TO_STRING_TRAIT 0
 #endif /* !str --> */
+#if defined(ARRAY_FUNCTION)
+#define ARRAY_FUNCTION_TRAIT 1
+#else
+#define ARRAY_FUNCTION_TRAIT 0
+#endif
 #if defined(ARRAY_COMPARABLE_NAME) || defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_IS_EQUAL)
 #ifndef ARRAY_ITERATE
@@ -68,7 +70,8 @@
 #else
 #define ARRAY_COMPARABLE_TRAIT 0
 #endif
-#define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARABLE_TRAIT
+#define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARABLE_TRAIT \
+	+ ARRAY_FUNCTION_TRAIT
 #if ARRAY_TRAITS > 1
 #error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
@@ -100,13 +103,14 @@
 #define CAT_(x, y) x ## _ ## y
 #define CAT(x, y) CAT_(x, y)
 #endif /* !sub-type --> */
-#define A_(thing) CAT(ARRAY_NAME, thing)
-#define PA_(thing) CAT(array, A_(thing))
+#define A_(n) CAT(ARRAY_NAME, n)
+#define PA_(n) CAT(array, A_(n))
 
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
 
+#if 0
 /** Operates by side-effects. */
 typedef void (*PA_(action_fn))(PA_(type) *);
 
@@ -123,6 +127,7 @@ typedef int (*PA_(bipredicate_fn))(const PA_(type) *, const PA_(type) *);
  then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
  respectively. */
 typedef int (*PA_(compare_fn))(const PA_(type) *a, const PA_(type) *b);
+#endif
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`. To initialize it to an
@@ -319,6 +324,7 @@ static int A_(array_copy)(struct A_(array) *const a,
 	const struct A_(array) *const b)
 	{ return A_(array_splice)(a, a->size, a->size, b); }
 
+#if 0
 /** For all elements of `b`, calls `copy`, and if true, lazily copies the
  elements to `a`. `a` and `b` can not be the same but `b` can be null.
  @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
@@ -434,13 +440,9 @@ static PA_(type) *A_(array_any)(const struct A_(array) *const a,
 		if(predicate(i)) return i;
 	return 0;
 }
+#endif
 
-/* Factored these out from all the interfaces. */
-#define BOX_ A_
-#define BOX_NAME struct A_(array)
-#define BOX_TYPE PA_(type)
-
-#ifdef ARRAY_ITERATE /* <!-- iterate interface */
+/* <!-- iterate interface */
 
 /** Contains all iteration parameters. */
 struct PA_(iterator);
@@ -451,16 +453,11 @@ static void PA_(begin)(struct PA_(iterator) *const it,
 	const struct A_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
 
 /** Advances `it`. @implements next */
-static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
+static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
 
-#define ARRAY_FORWARD_(n) CAT(A_(array_forward), n)
-#define I_ ARRAY_FORWARD_
-#define ITERATE_TYPE struct PA_(iterator)
-#define ITERATE_BEGIN PA_(begin)
-#define ITERATE_NEXT PA_(next)
-#include "iterate.h" /** \include */
+/* iterate --><!-- reverse interface? Don't have any traits that use these. */
 
 /** Loads `a` into `it`. @implements begin */
 static void PA_(end)(struct PA_(iterator) *const it,
@@ -473,34 +470,17 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 		it->i ? it->a->data + --it->i : 0;
 }
 
-#define ARRAY_BACKWARD_(thing) CAT(A_(array_backward), thing)
-#define I_ ARRAY_BACKWARD_
-#define ITERATE_TYPE struct PA_(iterator)
-#define ITERATE_BEGIN PA_(end)
-#define ITERATE_NEXT PA_(prev)
-#include "iterate.h"
-
-#endif /* iterate --> */
-
-#ifdef ARRAY_COPY /* <!-- copy interface */
+/* reverse --><!-- copy interface */
 
 /** @implements copy */
-void PA_(copy)(PA_(type) *const dest, const PA_(type) *const src,
+static void PA_(copy)(PA_(type) *const dest, const PA_(type) *const src,
 	const size_t n) { memcpy(dest, src, sizeof *src * n); }
 
 /** @implements copy */
-void PA_(move)(PA_(type) *const dest, const PA_(type) *const src,
+static void PA_(move)(PA_(type) *const dest, const PA_(type) *const src,
 	const size_t n) { memmove(dest, src, sizeof *src * n); }
 
-#define C_ PA_
-#define COPY_FN &PA_(copy)
-#define COPY_MOVE_FN &PA_(move)
-#include "copy.h"
-
-#endif /* copy --> */
-
-#undef BOX_TYPE
-#undef BOX_NAME
+/* copy --> */
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
@@ -508,30 +488,33 @@ static void PA_(unused_base)(void) {
 	A_(array_new)(0); A_(array_shrink)(0); A_(array_remove)(0, 0);
 	A_(array_lazy_remove)(0, 0); A_(array_clear)(0); A_(array_peek)(0);
 	A_(array_pop)(0); A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0);
+#if 0
 	A_(array_keep_if)(0, 0, 0); A_(array_copy_if)(0, 0, 0);
 	A_(array_trim)(0, 0); A_(array_each)(0, 0); A_(array_if_each)(0, 0, 0);
 	A_(array_any)(0, 0);
-#ifdef ARRAY_ITERATE
-	PA_(begin)(0, 0); PA_(next)(0); PA_(end)(0, 0); PA_(prev)(0);
 #endif
-#ifdef ARRAY_COPY
+	PA_(begin)(0, 0); PA_(next)(0);
+	PA_(end)(0, 0); PA_(prev)(0);
 	PA_(copy)(0, 0, 0); PA_(move)(0, 0, 0);
-#endif
 	PA_(unused_base_coda)();
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
+
+/* After the base code so it doesn't interfere with sub-inclusions. */
+#define BOX_ PA_
+#define BOX_CONTAINER struct A_(array)
+#define BOX_CONTENTS PA_(type)
 
 
 #elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
 
 
-#define TO_STRING ARRAY_TO_STRING
-#define ZI_ ARRAY_FORWARD_
-#ifdef ARRAY_TO_STRING_NAME /* <!-- name */
+#ifdef ARRAY_TO_STRING_NAME
 #define Z_(n) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, n))
-#else /* name --><!-- !name */
+#else
 #define Z_(n) CAT(A_(array), n)
-#endif /* !name --> */
+#endif
+#define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
 
 #if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
@@ -539,14 +522,21 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
-#undef Z_ /* From <to_string.h>. */
+#undef Z_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
 #endif
 
 
-#else /* to string trait --><!-- comparable trait */
+#elif defined(ARRAY_FUNCTION) /* to string trait --><!-- function trait */
+
+#define F_ PA_
+#include "function.h" /** \include */
+
+#undef ARRAY_FUNCTION
+
+#else /* function trait --><!-- comparable trait */
 
 
 #ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
@@ -649,12 +639,15 @@ static int PTC_(is_equal)(const void *const a, const void *const b)
 
 #else /* compare --><!-- is equal */
 
+#if 0
 /* Check that `ARRAY_IS_EQUAL` is a function implementing
  <typedef:<PA>bipredicate>. */
 static const PA_(bipredicate) PTC_(is_equal) = (ARRAY_IS_EQUAL);
+#endif
 
 #endif /* is equal --> */
 
+#if 0
 /** @return If `a` piecewise equals `b`, which both can be null.
  @order \O(`size`) */
 static int T_C_(array, is_equal)(const struct A_(array) *const a,
@@ -700,10 +693,13 @@ static void T_C_(array, unique_merge)(struct A_(array) *const a,
 	target += move, assert(a->size >= target);
 	a->size = target;
 }
+#endif
 
+#if 0
 /** Removes consecutive duplicate elements in `a`. @order \O(`a.size`) @allow */
 static void T_C_(array, unique)(struct A_(array) *const a)
 	{ T_C_(array, unique_merge)(a, 0); }
+#endif
 
 static void PTC_(unused_contrast_coda)(void);
 static void PTC_(unused_contrast)(void) {
@@ -712,7 +708,9 @@ static void PTC_(unused_contrast)(void) {
 	T_C_(array, upper_bound)(0, 0); T_C_(array, insert)(0, 0);
 	T_C_(array, sort)(0); T_C_(array, reverse)(0);
 #endif /* compare --> */
+#if 0
 	T_C_(array, is_equal)(0, 0); T_C_(array, unique)(0);
+#endif
 	PTC_(unused_contrast_coda)();
 }
 static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
@@ -746,11 +744,6 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #else /* !sub-type --><!-- sub-type */
 #undef ARRAY_SUBTYPE
 #endif /* sub-type --> */
-#ifdef ARRAY_ITERATE /* <!-- iter */
-#undef ARRAY_FORWARD_
-#undef ARRAY_BACKWARD_
-#undef ARRAY_ITERATE
-#endif /* iter --> */
 #undef A_
 #undef PA_
 #undef ARRAY_NAME
@@ -761,10 +754,11 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
 #endif
-#ifdef MOVE_H
-#undef MOVE_H
-#endif
+#undef BOX_
+#undef BOX_CONTAINER
+#undef BOX_CONTENTS
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
+#undef ARRAY_FUNCTION_TRAIT
 #undef ARRAY_COMPARABLE_TRAIT
 #undef ARRAY_TRAITS

@@ -13,7 +13,9 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 	= Z_(to_string);
 
 /* `ARRAY_TEST` must be a function that implements <typedef:<PA>action>. */
-static const PA_(action_fn) PA_(filler) = (ARRAY_TEST);
+/*static const PA_(action_fn) PA_(filler) = (ARRAY_TEST); <- but it could not
+ be declared. */
+static void (*PA_(filler))(PA_(type) *) = (ARRAY_TEST);
 
 /** @return Is `a` in a valid state? */
 static void PA_(valid_state)(const struct A_(array) *const a) {
@@ -149,6 +151,7 @@ static void PA_(test_basic)(void) {
 	A_(array_clear)(&a);
 	assert(a.size == 0);
 
+#if 0
 	/* Trim 1. */
 	t = A_(array_new)(&a);
 	assert(t);
@@ -168,6 +171,7 @@ static void PA_(test_basic)(void) {
 	memset(t, 0, sizeof *t);
 	A_(array_trim)(&a, &PA_(zero_filled));
 	assert(a.size == !is_zero);
+#endif
 
 	/* Big. */
 	for(i = 0; i < big; i++) {
@@ -355,6 +359,7 @@ static void PA_(test_keep)(void) {
 		memcpy(e, t, sizeof *t);
 	}
 	printf("a = %s.\n", A_(array_to_string)(&a));
+#if 0
 	A_(array_keep_if)(&a, &PA_(keep_deterministic), 0);
 	printf("a = k(a) = %s.\n", A_(array_to_string)(&a));
 	assert(a.size == 7
@@ -373,6 +378,7 @@ static void PA_(test_keep)(void) {
 	assert(ret && b.size == 2
 		&& !memcmp(ts + 0, b.data + 0, sizeof *t * 1)
 		&& !memcmp(ts + 13, b.data + 1, sizeof *t * 1));
+#endif
 	A_(array_)(&a);
 	A_(array_)(&b);
 }
@@ -399,6 +405,7 @@ static void PA_(test_each)(void) {
 	assert(t);
 	if(!t) return;
 	PA_(num) = 0;
+#if 0
 	A_(array_each)(&empty, &PA_(increment));
 	assert(!PA_(num));
 	A_(array_each)(&one, &PA_(increment));
@@ -413,6 +420,7 @@ static void PA_(test_each)(void) {
 	assert(!t);
 	t = A_(array_any)(&one, &PA_(true));
 	assert(t == one.data);
+#endif
 	A_(array_)(&one);
 }
 

@@ -29,36 +29,51 @@
  @std C89 */
 
 /* Check defines. */
-#if !defined(CAT) || !defined(CAT_) || !defined(F_) || !defined(FI_)
+#if !defined(CAT) || !defined(CAT_) || !defined(BOX_) \
+	|| !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
+	|| !defined(F_)
 #error Unexpected preprocessor symbols.
 #endif
 
 #define PF_(n) CAT(function, F_(n))
-#define PFI_(n) CAT(iterate, FI_(n)) /* Same as in <iterate.h>. */
+
+typedef BOX_CONTAINER PF_(box);
+typedef BOX_CONTENTS PF_(type);
+
+/** Operates by side-effects. */
+typedef void (*F_(action_fn))(PF_(type) *);
+
+/** Returns a boolean given two <typedef:<PF>type>. */
+typedef int (*PF_(biaction_fn))(PF_(type) *, PF_(type) *);
+
+/** Returns a boolean given read-only <typedef:<PF>type>. */
+typedef int (*PF_(predicate_fn))(const PF_(type) *);
+
+/** Returns a boolean given two read-only <typedef:<PF>type>. */
+typedef int (*PF_(bipredicate_fn))(const PF_(type) *, const PF_(type) *);
+
+/** Three-way comparison on a totally order set; returns an integer value less
+ then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
+ respectively. */
+typedef int (*PF_(compare_fn))(const PF_(type) *a, const PF_(type) *b);
 
 /** Iterates through `a` and calls `predicate` until it returns true.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null. @order \O(`a.size` \times `predicate`) @allow */
-static PA_(type) *A_(array_any)(const struct A_(array) *const a,
-	const PA_(predicate_fn) predicate) {
-	PA_(type) *i, *i_end;
-	if(!a || !predicate) return 0;
-	for(i = a->data, i_end = i + a->size; i < i_end; i++)
-		if(predicate(i)) return i;
+static const PF_(type) *F_(any)(const PF_(box) *const box,
+	const PF_(predicate_fn) predicate) {
+	struct BOX_(iterator) it;
+	PF_(type) *x;
+	assert(box && predicate);
+	BOX_(begin)(&it, box);
+	while(x = BOX_(next)(&it)) if(predicate(x)) return x;
 	return 0;
 }
 
+static void PF_(unused_function_coda)(void);
+static void PF_(unused_function)(void)
+	{ F_(any)(0, 0); PF_(unused_function_coda)(); }
+static void PF_(unused_function_coda)(void) { PF_(unused_function)(); }
 
-static const char *Z_(to_string)(const PZI_(box) *const box) {
-}
-
-static void PZ_(unused_to_string_coda)(void);
-static void PZ_(unused_to_string)(void)
-	{ Z_(to_string)(0); PZ_(unused_to_string_coda)(); }
-static void PZ_(unused_to_string_coda)(void) { PZ_(unused_to_string)(); }
-
+#undef PF_
 #undef F_
-#undef FI_
-#ifdef FC_
-#undef FC_
-#endif
