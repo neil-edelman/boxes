@@ -41,11 +41,11 @@
 
  @std C89 */
 
-#include <stdlib.h> /* realloc free */
-#include <assert.h> /* assert */
-#include <string.h> /* memcpy memmove (strlen) (strerror strcpy memcmp) */
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include <errno.h>
 #include <limits.h> /* LONG_MAX */
-#include <errno.h>  /* errno */
 
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
@@ -435,7 +435,11 @@ static PA_(type) *A_(array_any)(const struct A_(array) *const a,
 	return 0;
 }
 
-#ifdef ARRAY_ITERATE /* <!-- iterate */
+/* Factored these out from all the interfaces. */
+#define BOX_NAME struct A_(array)
+#define BOX_TYPE PA_(type)
+
+#ifdef ARRAY_ITERATE /* <!-- iterate interface */
 
 /** Contains all iteration parameters. */
 struct PA_(iterator);
@@ -452,9 +456,7 @@ static const PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 
 #define ARRAY_FORWARD_(n) CAT(A_(array_forward), n)
 #define I_ ARRAY_FORWARD_
-#define ITERATE struct PA_(iterator)
-#define ITERATE_BOX struct A_(array)
-#define ITERATE_TYPE PA_(type)
+#define ITERATE_TYPE struct PA_(iterator)
 #define ITERATE_BEGIN PA_(begin)
 #define ITERATE_NEXT PA_(next)
 #include "iterate.h" /** \include */
@@ -472,14 +474,32 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 
 #define ARRAY_BACKWARD_(thing) CAT(A_(array_backward), thing)
 #define I_ ARRAY_BACKWARD_
-#define ITERATE struct PA_(iterator)
-#define ITERATE_BOX struct A_(array)
-#define ITERATE_TYPE PA_(type)
+#define ITERATE_TYPE struct PA_(iterator)
 #define ITERATE_BEGIN PA_(end)
 #define ITERATE_NEXT PA_(prev)
 #include "iterate.h"
 
 #endif /* iterate --> */
+
+#ifdef ARRAY_COPY /* <!-- copy interface */
+
+/** @implements copy */
+void PA_(copy)(PA_(type) *const dest, const PA_(type) *const src,
+	const size_t n) { memcpy(dest, src, sizeof *src * n); }
+
+/** @implements copy */
+void PA_(move)(PA_(type) *const dest, const PA_(type) *const src,
+	const size_t n) { memmove(dest, src, sizeof *src * n); }
+
+#define C_ PA_
+#define COPY_FN &PA_(copy)
+#define COPY_MOVE_FN &PA_(move)
+#include "copy.h"
+
+#endif /* copy --> */
+
+#undef BOX_TYPE
+#undef BOX_NAME
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
@@ -492,6 +512,9 @@ static void PA_(unused_base)(void) {
 	A_(array_any)(0, 0);
 #ifdef ARRAY_ITERATE
 	PA_(begin)(0, 0); PA_(next)(0); PA_(end)(0, 0); PA_(prev)(0);
+#endif
+#ifdef ARRAY_COPY
+	PA_(copy)(0, 0, 0); PA_(move)(0, 0, 0);
 #endif
 	PA_(unused_base_coda)();
 }
@@ -736,6 +759,9 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #endif
 #ifdef ARRAY_TEST_BASE
 #undef ARRAY_TEST_BASE
+#endif
+#ifdef MOVE_H
+#undef MOVE_H
 #endif
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT

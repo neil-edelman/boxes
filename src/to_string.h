@@ -11,8 +11,7 @@
 
  @param[ZI_]
  A one-argument macro producing a name that is the same as has been previously
- been called on as `I_` on <interface_iterate.h>. This is responsible for the
- order.
+ been called on as `I_` on <iterate.h>. This is responsible for the order.
 
  @param[TO_STRING]
  Function implementing <typedef:<PZ>to_string_fn>.
@@ -73,7 +72,7 @@ static unsigned to_string_buffer_i;
 #endif
 
 #define PZ_(n) CAT(to_string, Z_(n))
-#define PZI_(n) CAT(iterate, ZI_(n))
+#define PZI_(n) CAT(iterate, ZI_(n)) /* Same as in <iterate.h>. */
 
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. */
