@@ -316,6 +316,7 @@ static void PA_(test_replace)(void) {
 	printf("2: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
 	assert(a.size == 7);
+#if 0
 	A_(array_splice)(&a, A_(array_clip)(&a, 2), A_(array_clip)(&a, -4), &b);
 	printf("3: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
@@ -330,6 +331,7 @@ static void PA_(test_replace)(void) {
 		!memcmp(ts + 0, a.data + 5, sizeof *t) &&
 		!memcmp(ts + 2, a.data + 6, sizeof *t) &&
 		!memcmp(ts + 2, a.data + 7, sizeof *t * 2));
+#endif
 	A_(array_)(&b);
 	A_(array_)(&a);
 }
@@ -445,6 +447,7 @@ static void A_(array_test)(void) {
 #elif defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_EQUAL) /* to string --><!-- comparable */
 
+#if 0
 /** Fills `fill` that is not equal to `neq` if possible. */
 static int PTC_(fill_unique)(PA_(type) *const fill,
 	const PA_(type) *const neq) {
@@ -570,6 +573,7 @@ static void PTC_(test_sort)(void) {
 	(void)(parent_new), (void)(parent);
 #endif /* !comp --> */
 }
+#endif
 
 /** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
  `NDEBUG` while defining `assert`. @allow */
@@ -587,9 +591,9 @@ static void T_C_(array, comparable_test)(void) {
 		"is equal <" QUOTE(ARRAY_IS_EQUAL)
 #endif
 		">:\n");
-	PTC_(test_compactify)();
+	/*PTC_(test_compactify)();
 	PTC_(test_bounds)();
-	PTC_(test_sort)();
+	PTC_(test_sort)();*/
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array contrast.\n\n");
 }

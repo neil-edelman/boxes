@@ -63,9 +63,6 @@
 #endif
 #if defined(ARRAY_COMPARABLE_NAME) || defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_IS_EQUAL)
-#ifndef ARRAY_ITERATE
-#error ARRAY_ITERATE must be defined for compare trait.
-#endif
 #define ARRAY_COMPARABLE_TRAIT 1
 #else
 #define ARRAY_COMPARABLE_TRAIT 0
@@ -110,25 +107,6 @@
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
 
-#if 0
-/** Operates by side-effects. */
-typedef void (*PA_(action_fn))(PA_(type) *);
-
-/** Returns a boolean given two `<A>`. */
-typedef int (*PA_(biaction_fn))(PA_(type) *, PA_(type) *);
-
-/** Returns a boolean given read-only `<A>`. */
-typedef int (*PA_(predicate_fn))(const PA_(type) *);
-
-/** Returns a boolean given two read-only `<A>`. */
-typedef int (*PA_(bipredicate_fn))(const PA_(type) *, const PA_(type) *);
-
-/** Three-way comparison on a totally order set; returns an integer value less
- then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
- respectively. */
-typedef int (*PA_(compare_fn))(const PA_(type) *a, const PA_(type) *b);
-#endif
-
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`. To initialize it to an
  idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
@@ -152,22 +130,10 @@ static void A_(array)(struct A_(array) *const a)
 static void A_(array_)(struct A_(array) *const a)
 	{ assert(a), free(a->data), A_(array)(a); }
 
-/** @return Converts `i` to an index in `a` from [0, `a.size`]. Negative values
- are implicitly plus `a.size`. @order \Theta(1) @allow */
-static size_t A_(array_clip)(const struct A_(array) *const a, const long i) {
-	/* `SIZE_MAX` is `C99`; assumes two's-compliment, not many hw-tests. */
-	assert(a && (size_t)-1 >= (size_t)LONG_MAX
-		&& (unsigned long)((size_t)-1) >= LONG_MAX);
-	return i < 0
-		? (size_t)-i >= a->size ? 0 : a->size - (size_t)-i
-		: (size_t)i > a->size ? a->size : (size_t)i;
-}
-
 /** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
  zero, does nothing. @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- doesn't follow [POSIX
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
+ doesn't follow POSIX.
  @throws[realloc] @allow */
 static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 	size_t c0;
@@ -281,10 +247,6 @@ static void A_(array_lazy_remove)(struct A_(array) *const a,
 static void A_(array_clear)(struct A_(array) *const a)
 	{ assert(a), a->size = 0; }
 
-/*--- Consider having a contiguous trait that all these can go into? It doesn't
- really matter that it takes no arguments and it is the only one?
- Use the iterator? ---*/
-
 /** @return The last element or null if `a` is empty. @order \Theta(1) @allow */
 static PA_(type) *A_(array_peek)(const struct A_(array) *const a)
 	{ return assert(a), a->size ? a->data + a->size - 1 : 0; }
@@ -324,125 +286,8 @@ static int A_(array_copy)(struct A_(array) *const a,
 	const struct A_(array) *const b)
 	{ return A_(array_splice)(a, a->size, a->size, b); }
 
-#if 0
-/** For all elements of `b`, calls `copy`, and if true, lazily copies the
- elements to `a`. `a` and `b` can not be the same but `b` can be null.
- @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
-static int A_(array_copy_if)(struct A_(array) *const a,
-	const PA_(predicate_fn) copy, const struct A_(array) *const b) {
-	PA_(type) *i, *fresh;
-	const PA_(type) *end, *rise = 0;
-	size_t add;
-	int difcpy = 0;
-	assert(a && copy && a != b);
-	if(!b) return 1;
-	for(i = b->data, end = i + b->size; i < end; i++) {
-		if(!(!!rise ^ (difcpy = copy(i)))) continue; /* Not falling/rising. */
-		if(difcpy) { /* Rising edge. */
-			assert(!rise);
-			rise = i;
-		} else { /* Falling edge. */
-			assert(rise && !difcpy && rise < i);
-			if(!(fresh = A_(array_append)(a, add = (size_t)(i - rise))))
-				return 0;
-			memcpy(fresh, rise, sizeof *fresh * add);
-			rise = 0;
-		}
-	}
-	if(rise) { /* Delayed copy. */
-		assert(!difcpy && rise < i);
-		if(!(fresh = A_(array_append)(a, add = (size_t)(i - rise))))
-			return 0;
-		memcpy(fresh, rise, sizeof *fresh * add);
-	}
-	return 1;
-}
-
-/** For all elements of `a`, calls `keep`, and if false, lazy deletes that
- item, calling `destruct` if not-null.
- @order \O(`a.size` \times `keep` \times `destruct`) @allow */
-static void A_(array_keep_if)(struct A_(array) *const a,
-	const PA_(predicate_fn) keep, const PA_(action_fn) destruct) {
-	PA_(type) *erase = 0, *t;
-	const PA_(type) *retain = 0, *end;
-	int keep0 = 1, keep1 = 0;
-	assert(a && keep);
-	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
-		if(!(keep1 = !!keep(t)) && destruct) destruct(t);
-		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
-		if(keep1) { /* Rising edge. */
-			assert(erase && !retain);
-			retain = t;
-		} else if(erase) { /* Falling edge. */
-			size_t n = (size_t)(t - retain);
-			assert(erase < retain && retain < t);
-			memmove(erase, retain, n * sizeof *t);
-			erase += n;
-			retain = 0;
-		} else { /* Falling edge, (first time only.) */
-			erase = t;
-		}
-	}
-	if(!erase) return; /* All elements were kept. */
-	if(keep1) { /* Delayed move when the iteration ended; repeat. */
-		size_t n = (size_t)(t - retain);
-		assert(retain && erase < retain && retain < t);
-		memmove(erase, retain, n * sizeof *t);
-		erase += n;
-	}
-	/* Adjust the size. */
-	assert((size_t)(erase - a->data) <= a->size);
-	a->size = (size_t)(erase - a->data);
-}
-
-/** Removes at either end of `a` of things that `predicate` returns true.
- @order \O(`a.size` \times `predicate`) @allow */
-static void A_(array_trim)(struct A_(array) *const a,
-	const PA_(predicate_fn) predicate) {
-	size_t i;
-	assert(a && predicate);
-	while(a->size && predicate(a->data + a->size - 1)) a->size--;
-	for(i = 0; i < a->size && predicate(a->data + i); i++);
-	if(!i) return;
-	assert(i < a->size);
-	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
-}
-
-/** Iterates through `a` and calls `action` on all the elements. The topology
- of the list should not change while in this function.
- @order \O(`a.size` \times `action`) @allow */
-static void A_(array_each)(struct A_(array) *const a,
-	const PA_(action_fn) action) {
-	PA_(type) *i, *i_end;
-	assert(a && action);
-	for(i = a->data, i_end = i + a->size; i < i_end; i++) action(i);
-}
-
-/** Iterates through `a` and calls `action` on all the elements for which
- `predicate` returns true. The topology of the list should not change while in
- this function. @order \O(`a.size` \times `predicate` \times `action`) @allow */
-static void A_(array_if_each)(struct A_(array) *const a,
-	const PA_(predicate_fn) predicate, const PA_(action_fn) action) {
-	PA_(type) *i, *i_end;
-	assert(a && predicate && action);
-	for(i = a->data, i_end = i + a->size; i < i_end; i++)
-		if(predicate(i)) action(i);
-}
-
-/** Iterates through `a` and calls `predicate` until it returns true.
- @return The first `predicate` that returned true, or, if the statement is
- false on all, null. @order \O(`a.size` \times `predicate`) @allow */
-static PA_(type) *A_(array_any)(const struct A_(array) *const a,
-	const PA_(predicate_fn) predicate) {
-	PA_(type) *i, *i_end;
-	if(!a || !predicate) return 0;
-	for(i = a->data, i_end = i + a->size; i < i_end; i++)
-		if(predicate(i)) return i;
-	return 0;
-}
-#endif
-
 /* <!-- iterate interface */
+#define BOX_ITERATE
 
 /** Contains all iteration parameters. */
 struct PA_(iterator);
@@ -458,6 +303,7 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 }
 
 /* iterate --><!-- reverse interface? Don't have any traits that use these. */
+#define BOX_REVERSE
 
 /** Loads `a` into `it`. @implements begin */
 static void PA_(end)(struct PA_(iterator) *const it,
@@ -471,6 +317,7 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 }
 
 /* reverse --><!-- copy interface */
+#define BOX_COPY
 
 /** @implements copy */
 static void PA_(copy)(PA_(type) *const dest, const PA_(type) *const src,
@@ -480,11 +327,14 @@ static void PA_(copy)(PA_(type) *const dest, const PA_(type) *const src,
 static void PA_(move)(PA_(type) *const dest, const PA_(type) *const src,
 	const size_t n) { memmove(dest, src, sizeof *src * n); }
 
+static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
+	{ return A_(array_append)(a, n); }
+
 /* copy --> */
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	A_(array_)(0); A_(array_clip)(0, 0); A_(array_append_at)(0, 0, 0);
+	A_(array_)(0); A_(array_append_at)(0, 0, 0);
 	A_(array_new)(0); A_(array_shrink)(0); A_(array_remove)(0, 0);
 	A_(array_lazy_remove)(0, 0); A_(array_clear)(0); A_(array_peek)(0);
 	A_(array_pop)(0); A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0);
@@ -549,6 +399,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 #ifdef ARRAY_COMPARE /* <!-- compare */
 
+#if 0
 /* Check that `ARRAY_COMPARE` is a function implementing
  <typedef:<PA>compare>. */
 static const PA_(compare_fn) PTC_(compare) = (ARRAY_COMPARE);
@@ -636,6 +487,7 @@ static void T_C_(array, reverse)(struct A_(array) *const a)
  @implements <PA>bipredicate */
 static int PTC_(is_equal)(const void *const a, const void *const b)
 	{ return !PTC_(compare)(a, b); }
+#endif
 
 #else /* compare --><!-- is equal */
 
@@ -703,7 +555,7 @@ static void T_C_(array, unique)(struct A_(array) *const a)
 
 static void PTC_(unused_contrast_coda)(void);
 static void PTC_(unused_contrast)(void) {
-#ifdef ARRAY_COMPARE /* <!-- compare */
+#if defined(ARRAY_COMPARE) && 0 /* <!-- compare */
 	T_C_(array, compare)(0, 0); T_C_(array, lower_bound)(0, 0);
 	T_C_(array, upper_bound)(0, 0); T_C_(array, insert)(0, 0);
 	T_C_(array, sort)(0); T_C_(array, reverse)(0);
@@ -757,6 +609,9 @@ static void PTC_(unused_contrast_coda)(void) { PTC_(unused_contrast)(); }
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
+#undef BOX_ITERATE
+#undef BOX_REVERSE
+#undef BOX_COPY
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_FUNCTION_TRAIT
