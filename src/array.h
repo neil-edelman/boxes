@@ -32,13 +32,6 @@
  <typedef:<PA>action_fn>. Output will be shown with the to string trait in
  which it's defined; provides tests for the base code and all later traits.
 
- @param[ARRAY_COMPARABLE_NAME, ARRAY_IS_EQUAL, ARRAY_COMPARE]
- Comparable trait; `<C>` that satisfies `C` naming conventions when mangled
- and a function implementing, for `ARRAY_IS_EQUAL` <typedef:<PA>bipredicate_fn>
- that establishes an equivalence relation, or for `ARRAY_COMPARE`
- <typedef:<PA>compare_fn> that establishes a total order. There can be multiple
- comparable traits, but only one can omit `ARRAY_COMPARABLE_NAME`.
-
  @std C89 */
 
 #include <stdlib.h>

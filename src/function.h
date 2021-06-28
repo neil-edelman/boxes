@@ -3,24 +3,58 @@
 
  @subtitle Function Trait
 
+ Emits a `FUNCTION_H` that should be undefined when one is done with the box.
+ This trait can be included multiple times with or without different
+ parameters, but `F_` can only be set once.
+
  @param[BOX_, BOX_CONTAINER, BOX_CONTENTS]
  A type that represents the box and the type that goes in the box. Does not
  undefine.
 
  @param[F_]
  A one-argument macro producing a name that is responsible for the name of the
- functions.
+ functions. Does not undefine. One should keep this until the end and undefine
+ both `FUNCTION_H` and `F_`.
+
+ @param[FUNCTION_COMPARABLE_NAME, FUNCTION_IS_EQUAL, FUNCTION_COMPARE]
+ Optional compare; `<C>` that satisfies `C` naming conventions when mangled
+ and a function implementing, for `FUNCTION_IS_EQUAL`
+ <typedef:<PA>bipredicate_fn> that establishes an equivalence relation, or for
+ `FUNCTION_COMPARE` <typedef:<PA>compare_fn> that establishes a total order.
+ There can be multiple comparable functions, but only one can omit
+ `FUNCTION_COMPARABLE_NAME`.
 
  @std C89 */
 
 /* Check defines. */
 #if !defined(CAT) || !defined(CAT_) || !defined(BOX_) \
-	|| !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
-	|| !defined(F_)
+	|| !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS)
 #error Unexpected preprocessor symbols.
 #endif
 
+#ifndef F_
+#error Macro `F_(n)` producing a name must be defined.
+#endif
+
+#ifndef FUNCTION_H /* <!-- idempotent */
+
+#define FUNCTION_H CAT(function, F_(n))
+
+#else /**/
+
+/*  */
+#endif
+
 #define PF_(n) CAT(function, F_(n))
+
+#ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
+#define PTC_(n) CAT(PA_(n), ARRAY_COMPARABLE_NAME)
+#define T_C_(n, m) CAT(A_(n), CAT(ARRAY_COMPARABLE_NAME, m))
+#else /* name --><!-- !name */
+#define PTC_(n) CAT(PA_(n), anonymous)
+#define T_C_(n, m) CAT(A_(n), m)
+#endif /* !name --> */
+
 
 typedef BOX_CONTAINER PF_(box);
 typedef BOX_CONTENTS PF_(type);
