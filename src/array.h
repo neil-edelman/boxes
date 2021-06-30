@@ -116,7 +116,7 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
 
-#define BOX_SIZE /* `BOX` has a size that is reflective of size. */
+#define BOX_CONTIGUOUS_SIZE /* `BOX` has a size that is reflective of size. */
 
 /** Initialises `a` to idle. @order \Theta(1) @allow */
 static void A_(array)(struct A_(array) *const a)
@@ -373,7 +373,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #elif defined(ARRAY_FUNCTION) /* to string trait --><!-- function trait */
 
 
-#define F_(n) CAT(A_(array), n)
+#define Z_(n) CAT(A_(array), n)
 #include "function.h" /** \include */
 
 #undef ARRAY_FUNCTION
@@ -433,7 +433,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-#undef BOX_SIZE
+#undef BOX_CONTIGUOUS_SIZE
 #undef BOX_ITERATE
 #undef BOX_REVERSE
 #undef BOX_COPY
