@@ -5,14 +5,23 @@
 
  ![Example of array.](../web/array.png)
 
- <tag:<A>array> is a dynamic array that stores contiguous `ARRAY_TYPE`.
- Resizing may be necessary when increasing the size of the array. This incurs
- amortised cost and any pointers to this memory may become stale.
+ <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>
+ specified by `ARRAY_TYPE`. Resizing may be necessary when increasing the size
+ of the array. This incurs amortised cost; any pointers to this memory may
+ become stale.
 
  @param[ARRAY_NAME, ARRAY_TYPE]
  `<A>` that satisfies `C` naming conventions when mangled and a valid tag-type
  associated therewith; required. `<PA>` is private, whose names are prefixed in
  a manner to avoid collisions.
+
+ @param[ARRAY_FUNCTION]
+ Function trait contained in <function.h>. Does not take any parameters and can
+ only be defined once.
+
+ @param[ARRAY_FILLER]
+ Filler trait. Function implementing <typedef:<PZ>action_fn> that fills the
+ <typedef:<PA>type> from uninitialized to random. Can only be defined once.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -22,11 +31,12 @@
  uniqueness and a function implementing <typedef:<PC>compare> xor
  <typedef:<PC>is_equal>.
 
- @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING, ARRAY_TEST]
+ @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PZ>to_string_fn>. Optional
- testing array contained in <../test/array_test.h>, once _per_ array, ...
+ uniqueness and function implementing <typedef:<PZ>to_string_fn>.
 
+ @param[ARRAY_TEST]
+ Testing array contained in <../test/test_array.h>, once _per_ array, ...
  To string trait contained in . Optional unit testing
  framework using `assert`. Can only be defined once _per_ array. Must be
  defined equal to a (random) filler function, satisfying
@@ -50,24 +60,17 @@
 #else /* str --><!-- !str */
 #define ARRAY_TO_STRING_TRAIT 0
 #endif /* !str --> */
-#if defined(ARRAY_FUNCTION) /* <!-- fn */
-#define ARRAY_FUNCTION_TRAIT 1
-#else /* fn --><!-- !fn */
-#define ARRAY_FUNCTION_TRAIT 0
-#endif /* !fn --> */
 #if defined(ARRAY_COMPARE_NAME) || defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_IS_EQUAL) /* <!-- cmp */
 #define ARRAY_COMPARE_TRAIT 1
 #else /* cmp --><!-- !cmp */
 #define ARRAY_COMPARE_TRAIT 0
 #endif /* !cmp --> */
-#define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARE_TRAIT \
-	+ ARRAY_FUNCTION_TRAIT
+#define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARE_TRAIT
 #if ARRAY_TRAITS > 1
 #error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
-#if ARRAY_TRAITS != 0 && (!defined(A_) || !defined(CAT) || !defined(CAT_) \
-	|| defined(ARRAY_ITERFACE_ITERATE))
+#if ARRAY_TRAITS != 0 && (!defined(A_) || !defined(CAT) || !defined(CAT_))
 #error Use ARRAY_EXPECT_TRAIT and include it again.
 #endif
 #if ARRAY_TRAITS == 0 && defined(ARRAY_TEST)
@@ -328,6 +331,19 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 
 /* copy --> */
 
+#define BOX_ PA_
+#define BOX_CONTAINER struct A_(array)
+#define BOX_CONTENTS PA_(type)
+
+#ifdef ARRAY_FUNCTION /* <!-- function */
+
+#define Z_(n) CAT(A_(array), n)
+#include "function.h" /** \include */
+
+#undef ARRAY_FUNCTION
+
+#endif /* function --> */
+
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
 	A_(array_)(0); A_(array_append_at)(0, 0, 0);
@@ -340,11 +356,6 @@ static void PA_(unused_base)(void) {
 	PA_(unused_base_coda)();
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
-
-/* After the base code so it doesn't interfere with sub-inclusions. */
-#define BOX_ PA_
-#define BOX_CONTAINER struct A_(array)
-#define BOX_CONTENTS PA_(type)
 
 
 #elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
@@ -370,16 +381,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif
 
 
-#elif defined(ARRAY_FUNCTION) /* to string trait --><!-- function trait */
-
-
-#define Z_(n) CAT(A_(array), n)
-#include "function.h" /** \include */
-
-#undef ARRAY_FUNCTION
-
-
-#else /* function trait --><!-- compare trait */
+#else /* to string trait --><!-- compare trait */
 
 
 #ifdef ARRAY_COMPARE_NAME /* <!-- name */
@@ -437,11 +439,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #undef BOX_ITERATE
 #undef BOX_REVERSE
 #undef BOX_COPY
-#ifdef FUNCTION_H
-#undef FUNCTION_H
-#endif
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
-#undef ARRAY_FUNCTION_TRAIT
 #undef ARRAY_COMPARE_TRAIT
 #undef ARRAY_TRAITS
