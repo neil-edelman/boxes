@@ -26,10 +26,10 @@ static void colour_filler(enum colour *const c)
 #define ARRAY_NAME colour
 #define ARRAY_TYPE enum colour
 #define ARRAY_FUNCTION
+#define ARRAY_TEST &colour_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &colour_to_string
-#define ARRAY_TEST &colour_filler
 #include "../src/array.h"
 
 struct str4 { char value[4]; };
@@ -39,10 +39,10 @@ static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }
 #define ARRAY_NAME str4
 #define ARRAY_TYPE struct str4
+#define ARRAY_TEST &str4_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &str4_to_string
-#define ARRAY_TEST &str4_filler
 #include "../src/array.h"
 
 
@@ -54,13 +54,13 @@ static int int_cmp(const int *const a, const int *const b)
 	{ return (*a > *b) - (*b > *a); }
 #define ARRAY_NAME int
 #define ARRAY_TYPE int
+#define ARRAY_TEST &int_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_COMPARE &int_cmp
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &int_to_string
-#define ARRAY_TEST &int_filler
 #include "../src/array.h"
 
 
@@ -79,10 +79,10 @@ static int keyval_value_cmp(const struct keyval *const a,
 	const struct keyval *const b) { return strcmp(a->value, b->value); }
 #define ARRAY_NAME keyval
 #define ARRAY_TYPE struct keyval
+#define ARRAY_TEST &keyval_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &keyval_key_to_string
-#define ARRAY_TEST &keyval_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING_NAME value

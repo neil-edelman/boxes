@@ -4,18 +4,12 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#ifdef ARRAY_TO_STRING /* <!-- to string: Only one, tests all base code. */
-
-/* Copy functions for later includes. */
-static void (*PA_(to_string))(const PA_(type) *, char (*)[12])
-	= (ARRAY_TO_STRING);
-static const char *(*PA_(array_to_string))(const struct A_(array) *)
-	= Z_(to_string);
-
 /* `ARRAY_TEST` must be a function that implements <typedef:<PA>action>. */
-/*static const PA_(action_fn) PA_(filler) = (ARRAY_TEST); <- but it could not
- be declared. */
 static void (*PA_(filler))(PA_(type) *) = (ARRAY_TEST);
+
+/* Assume that there is going to be a way of printing these upcoming. */
+static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
+static char *(*PA_(array_to_string))(const struct A_(array) *);
 
 /** @return Is `a` in a valid state? */
 static void PA_(valid_state)(const struct A_(array) *const a) {
@@ -360,7 +354,7 @@ static void PA_(test_keep)(void) {
 		e = A_(array_new)(&a), assert(e);
 		memcpy(e, t, sizeof *t);
 	}
-	printf("a = %s.\n", A_(array_to_string)(&a));
+	printf("a = %s.\n", PA_(array_to_string)(&a));
 #if 0
 	A_(array_keep_if)(&a, &PA_(keep_deterministic), 0);
 	printf("a = k(a) = %s.\n", A_(array_to_string)(&a));
@@ -436,6 +430,7 @@ static void A_(array_test)(void) {
 #endif
 		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; "
 		"testing:\n");
+	assert(PA_(to_string) && PA_(array_to_string));
 	PA_(test_basic)();
 	PA_(test_random)();
 	PA_(test_replace)();
@@ -444,10 +439,13 @@ static void A_(array_test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">Array.\n\n");
 }
 
-#elif defined(ARRAY_COMPARE) \
+
+
+#if 0 /* <!-- no */
+
+defined(ARRAY_COMPARE) \
 	|| defined(ARRAY_EQUAL) /* to string --><!-- comparable */
 
-#if 0
 /** Fills `fill` that is not equal to `neq` if possible. */
 static int PTC_(fill_unique)(PA_(type) *const fill,
 	const PA_(type) *const neq) {
@@ -573,7 +571,6 @@ static void PTC_(test_sort)(void) {
 	(void)(parent_new), (void)(parent);
 #endif /* !comp --> */
 }
-#endif
 
 /** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
  `NDEBUG` while defining `assert`. @allow */
@@ -598,9 +595,11 @@ static void T_C_(array, comparable_test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array contrast.\n\n");
 }
 
-#else /* compare --><!-- */
-#error Test unsupported option; testing is out-of-sync?
-#endif /* --> */
+/*#else*/ /* compare --><!-- */
+/*#error Test unsupported option; testing is out-of-sync? */
+/*#endif*/ /* --> */
+#endif /* no --> */
 
 #undef QUOTE
 #undef QUOTE_
+#undef ARRAY_TEST

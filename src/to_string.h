@@ -35,7 +35,7 @@
 #endif /* two --> */
 #endif /* !not --> */
 
-#ifndef TO_STRING_H /* <!-- idempotent: for all in compilation unit. */
+#ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
 #include <string.h>
 #if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
@@ -132,7 +132,7 @@ static void PZ_(unused_to_string)(void)
 static void PZ_(unused_to_string_coda)(void) { PZ_(unused_to_string)(); }
 
 #undef PZ_
-/* #undef Z_ We need this for test. */
+#undef Z_
 #undef TO_STRING
 #ifdef TO_STRING_NAME
 #undef TO_STRING_NAME

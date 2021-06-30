@@ -15,16 +15,24 @@
  associated therewith; required. `<PA>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
- @param[ARRAY_FUNCTION]
- Function trait contained in <function.h>. Does not take any parameters and can
- only be defined once.
-
  @param[ARRAY_FILLER]
- Filler trait. Function implementing <typedef:<PZ>action_fn> that fills the
- <typedef:<PA>type> from uninitialized to random. Can only be defined once.
+ Optional function implementing <typedef:<PZ>action_fn> that fills the
+ <typedef:<PA>type> from uninitialized to random, (used for testing.)
+
+ @param[ARRAY_FUNCTION]
+ Include function trait contained in <function.h>.
+
+ @param[ARRAY_TEST]
+ Testing array contained in <../test/test_array.h>, once _per_ array, ...
+ To string trait contained in . Optional unit testing
+ framework using `assert`. Can only be defined once _per_ array. Must be
+ defined equal to a (random) filler function, satisfying
+ <typedef:<PA>action_fn>. Output will be shown with the to string trait in
+ which it's defined; provides tests for the base code and all later traits.
 
  @param[ARRAY_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a trait.
+ Do not un-define certain variables for subsequent inclusion in a parameterized
+ trait.
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <compare.h>. An optional mangled name for
@@ -34,14 +42,6 @@
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <to_string.h>. An optional mangled name for
  uniqueness and function implementing <typedef:<PZ>to_string_fn>.
-
- @param[ARRAY_TEST]
- Testing array contained in <../test/test_array.h>, once _per_ array, ...
- To string trait contained in . Optional unit testing
- framework using `assert`. Can only be defined once _per_ array. Must be
- defined equal to a (random) filler function, satisfying
- <typedef:<PA>action_fn>. Output will be shown with the to string trait in
- which it's defined; provides tests for the base code and all later traits.
 
  @std C89 */
 
@@ -72,9 +72,6 @@
 #endif
 #if ARRAY_TRAITS != 0 && (!defined(A_) || !defined(CAT) || !defined(CAT_))
 #error Use ARRAY_EXPECT_TRAIT and include it again.
-#endif
-#if ARRAY_TRAITS == 0 && defined(ARRAY_TEST)
-#error ARRAY_TEST must be defined in ARRAY_TO_STRING trait.
 #endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
@@ -331,18 +328,22 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 
 /* copy --> */
 
+/* Define these for traits. */
 #define BOX_ PA_
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
 
 #ifdef ARRAY_FUNCTION /* <!-- function */
-
 #define Z_(n) CAT(A_(array), n)
 #include "function.h" /** \include */
-
-#undef ARRAY_FUNCTION
-
 #endif /* function --> */
+
+#ifdef ARRAY_TEST /* <!-- test */
+static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
+static char *(*PA_(array_to_string))(const struct A_(array) *);
+#define BOX_EXPECTS_TO_STRING
+#include "../test/test_array.h" /** \include */
+#endif /* test --> */
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
@@ -367,14 +368,12 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #define Z_(n) CAT(A_(array), n)
 #endif
 #define TO_STRING ARRAY_TO_STRING
+#ifdef ARRAY_EXPECTS_TO_STRING /* <!-- expect */
+#undef ARRAY_EXPECTS_TO_STRING
+static void (*PA_(to_string))(const PA_(type) *, char (*)[12]) = ARRAY_TO_STRING;
+static char *(*PA_(array_to_string))(const struct A_(array) *) = &Z_(to_string);
+#endif /* expect --> */
 #include "to_string.h" /** \include */
-
-#if !defined(ARRAY_TEST_BASE) && defined(ARRAY_TEST) /* <!-- test */
-#define ARRAY_TEST_BASE /* Only one instance of base tests. */
-#include "../test/test_array.h" /** \include */
-#endif /* test --> */
-
-#undef Z_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -426,12 +425,6 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #undef PA_
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
-#ifdef ARRAY_TEST
-#undef ARRAY_TEST
-#endif
-#ifdef ARRAY_TEST_BASE
-#undef ARRAY_TEST_BASE
-#endif
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
