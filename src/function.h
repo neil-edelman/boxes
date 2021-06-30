@@ -4,8 +4,7 @@
  @subtitle Function Trait
 
  Emits a `FUNCTION_H` that should be undefined when one is done with the box.
- This trait can be included multiple times with or without different
- parameters, but `F_` can only be set once.
+ Only one should be included per box.
 
  @param[BOX_, BOX_CONTAINER, BOX_CONTENTS]
  A type that represents the box and the type that goes in the box. Does not
@@ -28,38 +27,18 @@
 
 /* Check defines. */
 #if !defined(CAT) || !defined(CAT_) || !defined(BOX_) \
-	|| !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS)
+	|| !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) || !defined(F_) \
+	|| defined(FUNCTION_H)
 #error Unexpected preprocessor symbols.
 #endif
-
-#ifndef F_
-#error Macro `F_(n)` producing a name must be defined.
-#endif
-
-#ifndef FUNCTION_H /* <!-- idempotent */
-
-#define FUNCTION_H CAT(function, F_(n))
-
-#else /**/
-
-/*  */
-#endif
+#define FUNCTION_H
 
 #define PF_(n) CAT(function, F_(n))
-
-#ifdef ARRAY_COMPARABLE_NAME /* <!-- name */
-#define PTC_(n) CAT(PA_(n), ARRAY_COMPARABLE_NAME)
-#define T_C_(n, m) CAT(A_(n), CAT(ARRAY_COMPARABLE_NAME, m))
-#else /* name --><!-- !name */
-#define PTC_(n) CAT(PA_(n), anonymous)
-#define T_C_(n, m) CAT(A_(n), m)
-#endif /* !name --> */
-
 
 typedef BOX_CONTAINER PF_(box);
 typedef BOX_CONTENTS PF_(type);
 
-/** Operates by side-effects. */
+/** Operates by side-effects on <typedef:<PF>type>. */
 typedef void (*PF_(action_fn))(PF_(type) *);
 
 /** Returns a boolean given two <typedef:<PF>type>. */
@@ -76,23 +55,23 @@ typedef int (*PF_(bipredicate_fn))(const PF_(type) *, const PF_(type) *);
  respectively. */
 typedef int (*PF_(compare_fn))(const PF_(type) *a, const PF_(type) *b);
 
-#if 0
-/** @return Converts `i` to an index in `a` from [0, `a.size`]. Negative values
- are implicitly plus `a.size`. @order \Theta(1) @allow */
-static size_t A_(array_clip)(const struct A_(array) *const a, const long i) {
-	/* `SIZE_MAX` is `C99`; assumes two's-compliment, not many hw-tests. */
-	assert(a && (size_t)-1 >= (size_t)LONG_MAX
+#if defined(BOX_SIZE) /* <!-- fn */
+/** @return Converts `i` to an index in `box` from [0, `a.size`]. Negative
+ values are implicitly plus `box.size`. @order \Theta(1) @allow */
+static size_t F_(clip)(const PF_(box) *const box, const long i) {
+	/* `SIZE_MAX` is `C99`; assumes two's-compliment. */
+	assert(box && (size_t)-1 >= (size_t)LONG_MAX
 		&& (unsigned long)((size_t)-1) >= LONG_MAX);
 	return i < 0
-		? (size_t)-i >= a->size ? 0 : a->size - (size_t)-i
-		: (size_t)i > a->size ? a->size : (size_t)i;
+		? (size_t)-i >= box->size ? 0 : box->size - (size_t)-i
+		: (size_t)i > box->size ? box->size : (size_t)i;
 }
-#endif
+#endif /* fn --> */
 
 #if defined(BOX_ITERATE) && defined(BOX_COPY) /* <!-- fn */
 /** Needs iterate and copy interfaces. For all elements of `b`, calls `copy`,
  and if true, lazily copies the elements to `a`. `a` and `b` can not be the
- same but `b` can be null.
+ same but `b` can be null, (in which case, it does nothing.)
  @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
 static int F_(copy_if)(PF_(box) *const a, const PF_(predicate_fn) copy,
 	const PF_(box) *const b) {
@@ -111,31 +90,32 @@ static int F_(copy_if)(PF_(box) *const a, const PF_(predicate_fn) copy,
 			rise = i;
 		} else { /* Falling edge. */
 			assert(rise && !difcpy && rise < i);
-			if(!(fresh = F_(append)(a, add = (size_t)(i - rise)))) return 0;
-			F_(copy)(fresh, rise, sizeof *fresh * add);
+			if(!(fresh = BOX_(append)(a, add = (size_t)(i - rise)))) return 0;
+			BOX_(copy)(fresh, rise, sizeof *fresh * add);
 			rise = 0;
 		}
 	}
 	if(rise) { /* Delayed copy. */
 		assert(!difcpy && rise < i);
-		if(!(fresh = F_(append)(a, add = (size_t)(i - rise)))) return 0;
-		F_(copy)(fresh, rise, sizeof *fresh * add);
+		if(!(fresh = BOX_(append)(a, add = (size_t)(i - rise)))) return 0;
+		BOX_(copy)(fresh, rise, sizeof *fresh * add);
 	}
 	return 1;
 }
 #endif /* fn --> */
 
-#if 0
-/** For all elements of `a`, calls `keep`, and if false, lazy deletes that
+#if defined(BOX_ITERATE) && defined(BOX_COPY) /* <!-- fn */
+/** For all elements of `box`, calls `keep`, and if false, lazy deletes that
  item, calling `destruct` if not-null.
  @order \O(`a.size` \times `keep` \times `destruct`) @allow */
-static void A_(array_keep_if)(struct A_(array) *const a,
-	const PA_(predicate_fn) keep, const PA_(action_fn) destruct) {
-	PA_(type) *erase = 0, *t;
-	const PA_(type) *retain = 0, *end;
+static void F_(keep_if)(PF_(box) *const box,
+	const PF_(predicate_fn) keep, const PF_(action_fn) destruct) {
+	struct BOX_(iterator) it;
+	PF_(type) *erase = 0, *t;
+	const PF_(type) *retain = 0;
 	int keep0 = 1, keep1 = 0;
-	assert(a && keep);
-	for(t = a->data, end = a->data + a->size; t < end; keep0 = keep1, t++) {
+	assert(box && keep);
+	for(BOX_(begin)(&it, box); t = BOX_(next)(&it); keep0 = keep1) {
 		if(!(keep1 = !!keep(t)) && destruct) destruct(t);
 		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
 		if(keep1) { /* Rising edge. */
@@ -144,7 +124,7 @@ static void A_(array_keep_if)(struct A_(array) *const a,
 		} else if(erase) { /* Falling edge. */
 			size_t n = (size_t)(t - retain);
 			assert(erase < retain && retain < t);
-			memmove(erase, retain, n * sizeof *t);
+			BOX_(move)(erase, retain, n);
 			erase += n;
 			retain = 0;
 		} else { /* Falling edge, (first time only.) */
@@ -155,21 +135,21 @@ static void A_(array_keep_if)(struct A_(array) *const a,
 	if(keep1) { /* Delayed move when the iteration ended; repeat. */
 		size_t n = (size_t)(t - retain);
 		assert(retain && erase < retain && retain < t);
-		memmove(erase, retain, n * sizeof *t);
+		BOX_(move)(erase, retain, n);
 		erase += n;
 	}
 	/* Adjust the size. */
-	assert((size_t)(erase - a->data) <= a->size);
-	a->size = (size_t)(erase - a->data);
+	assert((size_t)(erase - box->data) <= box->size);
+	box->size = (size_t)(erase - box->data);
 }
-#endif
+#endif /* fn --> */
 
 #if defined(BOX_ITERATE) && defined(BOX_REVERSE) \
-	&& defined(BOX_COPY) && 0 /* <!-- fn */
+	&& defined(BOX_REMOVE) /* <!-- fn */
 /** Requires iterate, reverse, and copy interfaces. Removes at either end of
- `a` of things that `predicate` returns true.
- @order \O(`a.size` \times `predicate`) @allow */
-static void F_(trim)(PF_(box) *const a, const PF_(predicate_fn) predicate) {
+ `box` of things that `predicate` returns true.
+ @order \O(`box.size` \times `predicate`) @allow @fixme */
+static void F_(trim)(PF_(box) *const box, const PF_(predicate_fn) predicate) {
 	size_t i;
 	assert(a && predicate);
 	while(a->size && predicate(a->data + a->size - 1)) a->size--;
@@ -181,37 +161,38 @@ static void F_(trim)(PF_(box) *const a, const PF_(predicate_fn) predicate) {
 #endif /* fn --> */
 
 #if defined(BOX_ITERATE) /* <!-- fn */
-/** Iterates through `a` and calls `action` on all the elements. The topology
+/** Iterates through `box` and calls `action` on all the elements. The topology
  of the list should not change while in this function.
- @order \O(`a.size` \times `action`) @allow */
-static void F_(each)(PF_(box) *const a, const PF_(action_fn) action) {
+ @order \O(`box.size` \times `action`) @allow */
+static void F_(each)(PF_(box) *const box, const PF_(action_fn) action) {
 	PA_(type) *i;
-	struct F_(iterator) it;
-	assert(a && action);
-	BOX_(begin)(&it, a);
+	struct BOX_(iterator) it;
+	assert(box && action);
+	BOX_(begin)(&it, box);
 	while(i = BOX_(next)(&it)) action(i);
 }
 #endif /* fn --> */
 
 #if defined(BOX_ITERATE) /* <!-- fn */
-/** Iterates through `a` and calls `action` on all the elements for which
+/** Iterates through `box` and calls `action` on all the elements for which
  `predicate` returns true. The topology of the list should not change while in
- this function. @order \O(`a.size` \times `predicate` \times `action`) @allow */
-static void F_(if_each)(PF_(box) *const a,
+ this function. @order \O(`box.size` \times `predicate` \times `action`)
+ @allow */
+static void F_(if_each)(PF_(box) *const box,
 	const PF_(predicate_fn) predicate, const PF_(action_fn) action) {
 	PF_(type) *i;
-	struct F_(iterator) it;
-	assert(a && predicate && action);
-	BOX_(begin)(&it, a);
+	struct BOX_(iterator) it;
+	assert(box && predicate && action);
+	BOX_(begin)(&it, box);
 	while(i = BOX_(next)(&it)) if(predicate(i)) action(i);
 }
 #endif /* fn --> */
 
 #if defined(BOX_ITERATE) /* <!-- fn */
-/** Requires iterate interface. Iterates through `a` and calls `predicate`
+/** Requires iterate interface. Iterates through `box` and calls `predicate`
  until it returns true.
  @return The first `predicate` that returned true, or, if the statement is
- false on all, null. @order \O(`a.size` \times `predicate`) @allow */
+ false on all, null. @order \O(`box.size` \times `predicate`) @allow */
 static const PF_(type) *F_(any)(const PF_(box) *const box,
 	const PF_(predicate_fn) predicate) {
 	struct BOX_(iterator) it;
@@ -224,8 +205,30 @@ static const PF_(type) *F_(any)(const PF_(box) *const box,
 #endif /* fn --> */
 
 static void PF_(unused_function_coda)(void);
-static void PF_(unused_function)(void)
-	{ /*A_(array_clip)(0, 0);F_(any)(0, 0);*/ PF_(unused_function_coda)(); }
+static void PF_(unused_function)(void) {
+#if defined(BOX_SIZE) /* <!-- fn */
+	F_(clip)(0, 0);
+#endif /* fn --> */
+#if defined(BOX_ITERATE) && defined(BOX_COPY) /* <!-- fn */
+	F_(copy_if)(0, 0, 0);
+#endif /* fn --> */
+#if defined(BOX_ITERATE) && defined(BOX_COPY) /* <!-- fn */
+	F_(keep_if)(0, 0, 0);
+#endif /* fn --> */
+#if defined(BOX_ITERATE) && defined(BOX_REVERSE) \
+	&& defined(BOX_REMOVE) /* <!-- fn */
+	F_(trim)(0, 0);
+#endif /* fn --> */
+#if defined(BOX_ITERATE) /* <!-- fn */
+	F_(each)(0, 0);
+#endif /* fn --> */
+#if defined(BOX_ITERATE) /* <!-- fn */
+	F_(if_each)(0, 0, 0);
+#endif /* fn --> */
+#if defined(BOX_ITERATE) /* <!-- fn */
+	F_(any)(0, 0);
+#endif /* fn --> */
+	PF_(unused_function_coda)(); }
 static void PF_(unused_function_coda)(void) { PF_(unused_function)(); }
 
 #undef PF_
