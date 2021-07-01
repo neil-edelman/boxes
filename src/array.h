@@ -339,9 +339,11 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 #endif /* function --> */
 
 #ifdef ARRAY_TEST /* <!-- test */
+#define ARRAY_EXPECTS_TO_STRING
+#define ARRAY_EXPECTS_FILLER
+static void (*PA_(filler))(PA_(type) *);
 static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
-static char *(*PA_(array_to_string))(const struct A_(array) *);
-#define BOX_EXPECTS_TO_STRING
+static const char *(*PA_(array_to_string))(const struct A_(array) *);
 #include "../test/test_array.h" /** \include */
 #endif /* test --> */
 
@@ -368,12 +370,15 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #define Z_(n) CAT(A_(array), n)
 #endif
 #define TO_STRING ARRAY_TO_STRING
-#ifdef ARRAY_EXPECTS_TO_STRING /* <!-- expect */
-#undef ARRAY_EXPECTS_TO_STRING
-static void (*PA_(to_string))(const PA_(type) *, char (*)[12]) = ARRAY_TO_STRING;
-static char *(*PA_(array_to_string))(const struct A_(array) *) = &Z_(to_string);
-#endif /* expect --> */
 #include "to_string.h" /** \include */
+#ifdef ARRAY_EXPECTS_TO_STRING /* <!-- expect: Fill in the first `to_string`. */
+#undef ARRAY_EXPECTS_TO_STRING
+static void (*PA_(to_string))(const PA_(type) *, char (*)[12]) = PZ_(to_string);
+static const char *(*PA_(array_to_string))(const struct A_(array) *)
+	= &Z_(to_string);
+#endif /* expect --> */
+#undef PZ_
+#undef Z_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -415,6 +420,9 @@ static char *(*PA_(array_to_string))(const struct A_(array) *) = &Z_(to_string);
 #ifdef ARRAY_EXPECT_TRAIT /* <!-- trait */
 #undef ARRAY_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
+#ifdef ARRAY_EXPECTS_TO_STRING
+#error No TO_STRING trait defined.
+#endif
 #ifndef ARRAY_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_

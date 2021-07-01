@@ -7,10 +7,6 @@
 /* `ARRAY_TEST` must be a function that implements <typedef:<PA>action>. */
 static void (*PA_(filler))(PA_(type) *) = (ARRAY_TEST);
 
-/* Assume that there is going to be a way of printing these upcoming. */
-static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
-static char *(*PA_(array_to_string))(const struct A_(array) *);
-
 /** @return Is `a` in a valid state? */
 static void PA_(valid_state)(const struct A_(array) *const a) {
 	const size_t max_size = (size_t)-1 / sizeof *a->data;
