@@ -5,13 +5,9 @@
 
  Only one should be included per box.
 
- @param[BOX_, BOX_CONTAINER, BOX_CONTENTS]
- A type that represents the box and the type that goes in the box. Does not
- undefine.
-
  @param[Z_]
  A one-argument macro producing a name that is responsible for the name of the
- functions. Does not undefine.
+ functions. Should be something like `Z_(x) -> foo_widget_x`.
 
  @std C89 */
 
@@ -23,7 +19,6 @@
 
 #define PZ_(n) CAT(function, Z_(n))
 
-/* One can only define it once. */
 typedef BOX_CONTAINER PZ_(box);
 typedef BOX_CONTENTS PZ_(type);
 

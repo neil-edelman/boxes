@@ -5,12 +5,11 @@
 
  A trait relying on the iterate interface.
 
- @param[BOX_, BOX_CONTAINER, BOX_CONTENTS]
- These should be set by the box.
-
  @param[Z_]
  A one-argument macro producing a name that is responsible for the name of the
- to string function. Does not undefine.
+ to string function. Should be something like
+ `Z_(to_string) -> widget_foo_to_string`. Leaves `Z_` and `PZ_` defined for any
+ `EXPECTS_TO_STRING`; the caller is responsible for undefining.
 
  @param[TO_STRING]
  Function implementing <typedef:<PZ>to_string_fn>.
@@ -28,14 +27,14 @@
 
 #if defined(TO_STRING_H) \
 	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN)) /* <!-- not */
-#error Should be the on the first to_string.
+#error Should be the on the first to_string in the compilation unit.
 #else /* not --><!-- !not */
 #if defined(TO_STRING_EXTERN) && defined(TO_STRING_INTERN) /* <!-- two */
 #error These can not be defined together.
 #endif /* two --> */
 #endif /* !not --> */
 
-#ifndef TO_STRING_H /* <!-- idempotent: for all in compilation unit. */
+#ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
 #include <string.h>
 #if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
@@ -131,11 +130,17 @@ static void PZ_(unused_to_string)(void)
 	{ Z_(to_string)(0); PZ_(unused_to_string_coda)(); }
 static void PZ_(unused_to_string_coda)(void) { PZ_(unused_to_string)(); }
 
-#undef PZ_
-/* #undef Z_ We need this for test. */
+/* #undef PZ_
+#undef Z_ Might need for `EXPECTS_TO_STRING`. */
 #undef TO_STRING
 #ifdef TO_STRING_NAME
 #undef TO_STRING_NAME
+#endif
+#ifdef TO_STRING_EXTERN
+#undef TO_STRING_EXTERN
+#endif
+#ifdef TO_STRING_INTERN
+#undef TO_STRING_INTERN
 #endif
 #undef TO_STRING_LEFT
 #undef TO_STRING_RIGHT
