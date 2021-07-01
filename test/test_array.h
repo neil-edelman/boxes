@@ -420,12 +420,8 @@ static void PA_(test_each)(void) {
  `NDEBUG` while defining `assert`. @allow */
 static void A_(array_test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">array of type <" QUOTE(ARRAY_TYPE)
-		"> was created using: "
-#ifdef ARRAY_TO_STRING
-		"ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
-#endif
-		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; "
-		"testing:\n");
+		"> was created using: ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
+		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; testing:\n");
 	assert(PA_(to_string) && PA_(array_to_string));
 	PA_(test_basic)();
 	PA_(test_random)();
