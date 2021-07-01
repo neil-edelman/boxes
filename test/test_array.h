@@ -598,4 +598,6 @@ static void T_C_(array, comparable_test)(void) {
 
 #undef QUOTE
 #undef QUOTE_
-#undef ARRAY_TEST
+
+/* We should *not* undef `ARRAY_TEST`, since it's used to pick the first
+ to_string. */
