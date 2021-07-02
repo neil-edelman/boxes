@@ -3,19 +3,15 @@
 
  @subtitle Compare Trait
 
- @param[BOX_, BOX_CONTAINER, BOX_CONTENTS]
- A type that represents the box and the type that goes in the box. Does not
- undefine.
-
  @param[Z_]
  A one-argument macro producing a name that is responsible for the name of the
  functions. Does not undefine.
 
  @param[FUNCTION_COMPARABLE_NAME, FUNCTION_IS_EQUAL, FUNCTION_COMPARE]
- Optional unique name `<C>` that satisfies `C` naming conventions when mangled,
+ Optional unique name `<Z>` that satisfies `C` naming conventions when mangled,
  and a function implementing, for `FUNCTION_IS_EQUAL`
- <typedef:<PA>bipredicate_fn> that establishes an equivalence relation, or for
- `FUNCTION_COMPARE` <typedef:<PA>compare_fn> that establishes a total order.
+ <typedef:<PZ>bipredicate_fn> that establishes an equivalence relation, or for
+ `FUNCTION_COMPARE` <typedef:<PZ>compare_fn> that establishes a total order.
  There can be multiple comparable functions, but only one can omit
  `FUNCTION_COMPARABLE_NAME`.
 
@@ -168,12 +164,13 @@ static int Z_(is_equal)(const PZ_(box) *const a, const PZ_(box) *const b) {
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false. @order \O(`a.size` \times `merge`) @allow */
 static void Z_(unique_merge)(PZ_(box) *const a, const PZ_(biaction_fn) merge) {
+	assert(a && merge);
+	if(a) assert(0);
+#if 0
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
 	int is_first, is_last;
 	assert(a);
-	assert(0);
-#if 0
 	for(target = from = cursor = 0; cursor < last; cursor += next) {
 		/* Bijective `[from, cursor)` is moved lazily. */
 		for(choice = 0, next = 1; cursor + next < last && PTC_(is_equal)(a->data
@@ -203,6 +200,14 @@ static void Z_(unique)(PZ_(box) *const a) { Z_(unique_merge)(a, 0); }
 
 static void PZ_(unused_compare_coda)(void);
 static void PZ_(unused_compare)(void) {
+#ifdef ARRAY_COMPARE /* <!-- compare */
+	Z_(compare)(0, 0); Z_(lower_bound)(0, 0); Z_(upper_bound)(0, 0);
+	Z_(insert)(0, 0);
+#ifdef BOX_CONTIGUOUS_SIZE /* <!-- size */
+	Z_(sort)(0); Z_(reverse)(0);
+#endif /* size --> */
+#endif /* compare --> */
+	Z_(is_equal)(0, 0); Z_(unique_merge)(0, 0); Z_(unique)(0);
 	PZ_(unused_compare_coda)(); }
 static void PZ_(unused_compare_coda)(void) { PZ_(unused_compare)(); }
 
