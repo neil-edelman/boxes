@@ -4,19 +4,11 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#ifdef HEAP_TO_STRING /* <!-- to string: Only one, tests all base code. */
+/* Operates by side-effects. Used for `HEAP_TEST`. */
+/* typedef void (*PH_(biaction_fn))(PH_(node) *, void *); */
 
-/* Copy functions for later includes. */
-static void (*PH_(to_string))(const PH_(node) *, char (*)[12])
-	= (HEAP_TO_STRING);
-static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
-	= H_(heap_to_string);
-
-/** Operates by side-effects. Used for `HEAP_TEST`. */
-typedef void (*PH_(biaction_fn))(PH_(node) *, void *);
-
-/* `HEAP_TEST` must be a function that implements `<PH>Action`. */
-static const PH_(biaction_fn) PH_(filler) = (HEAP_TEST);
+/* `HEAP_TEST` must be a function that implements <typedef:<PA>biaction>. */
+static void (*PH_(filler))(PH_(node) *, void *) = (HEAP_TEST);
 
 /** Draw a graph of `heap` to `fn` in Graphviz format. */
 static void PH_(graph)(const struct H_(heap) *const heap,
@@ -191,17 +183,11 @@ static void H_(heap_test)(void *const param) {
 #ifdef HEAP_VALUE
 		" HEAP_VALUE<" QUOTE(HEAP_VALUE) ">;"
 #endif
-		" HEAP_TO_STRING <" QUOTE(HEAP_TO_STRING) ">;"
 		" HEAP_TEST <" QUOTE(HEAP_TEST) ">;"
 		" testing:\n");
 	PH_(test_basic)(param);
 	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">heap.\n\n");
 }
-
-
-#else /* compare --><!-- */
-#error Test unsupported option; testing is out-of-sync?
-#endif /* --> */
 
 #undef QUOTE
 #undef QUOTE_

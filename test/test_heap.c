@@ -17,11 +17,10 @@ static void test_int(unsigned *const i, void *const unused) {
 	*i = (unsigned)rand() / (RAND_MAX / 99 + 1) + 1;
 }
 #define HEAP_NAME int
-#define HEAP_ITERATE
+#define HEAP_TEST &test_int
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
 #define HEAP_TO_STRING &int_to_string
-#define HEAP_TEST &test_int
 #include "../src/heap.h"
 
 
@@ -31,13 +30,13 @@ static void test_orc(struct orc_heap_node *, void *);
 
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc
+#define HEAP_TEST &test_orc
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
 #define HEAP_TO_STRING &orc_to_string
-#define HEAP_TEST &test_orc
 #include "../src/heap.h"
 
-struct orc { unsigned health; char name[10]; };
+struct orc { unsigned health; char name[12]; };
 
 static void orc_to_string(const struct orc_heap_node *const node,
 	char (*const a)[12]) {
@@ -69,10 +68,10 @@ static int index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_NAME index
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &index_compare
+#define HEAP_TEST &test_index
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
 #define HEAP_TO_STRING &index_to_string
-#define HEAP_TEST &test_index
 #include "../src/heap.h"
 
 

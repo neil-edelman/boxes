@@ -27,8 +27,10 @@
  Optional payload <typedef:<PH>adjunct>, that is stored as a reference in
  <tag:<H>heap_node> as <typedef:<PH>value>; declaring it is sufficient.
 
- @param[HEAP_ITERATE]
- Satisfies the <iterate.h> interface for the underlying array.
+ @param[HEAP_TEST]
+ To string trait contained in <../test/heap_test.h>; optional unit testing
+ framework using `assert`. Must be defined equal to a (random) filler function,
+ satisfying <typedef:<PH>biaction_fn>. Provides tests for the base code and all later traits. Requires at least one `HEAP_TO_STRING` trait.
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -38,13 +40,6 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PZ>to_string_fn>.
 
- @param[HEAP_TEST]
- To string trait contained in <../test/heap_test.h>; optional unit testing
- framework using `assert`. Can only be defined once _per_ `heap`. Must be
- defined equal to a (random) filler function, satisfying
- <typedef:<PH>biaction_fn>. Output will be shown with the to string trait in
- which it's defined; provides tests for the base code and all later traits.
-
  @depend [array](https://github.com/neil-edelman/array)
  @std C89
  @fixme Add decrease priority. */
@@ -53,23 +48,17 @@
 #ifndef HEAP_NAME
 #error Generic HEAP_NAME undefined.
 #endif
-#if defined(HEAP_TO_STRING_NAME) || defined(HEAP_TO_STRING)
-#ifndef HEAP_ITERATE
-#error HEAP_ITERATE must be defined for string trait.
-#endif
+#if defined(HEAP_TO_STRING_NAME) || defined(HEAP_TO_STRING) /* <!-- str */
 #define HEAP_TO_STRING_TRAIT 1
-#else
+#else /* str --><!-- !str */
 #define HEAP_TO_STRING_TRAIT 0
-#endif
+#endif /* !str --> */
 #define HEAP_TRAITS HEAP_TO_STRING_TRAIT
 #if HEAP_TRAITS > 1
 #error Only one trait per include is allowed; use HEAP_EXPECT_TRAIT.
 #endif
 #if HEAP_TRAITS != 0 && (!defined(H_) || !defined(CAT) || !defined(CAT_))
-#error H_ or CAT_? not yet defined; use HEAP_EXPECT_TRAIT?
-#endif
-#if (HEAP_TRAITS == 0) && defined(HEAP_TEST)
-#error HEAP_TEST must be defined in HEAP_TO_STRING trait.
+#error Use HEAP_EXPECT_TRAIT in include it again.
 #endif
 #if defined(HEAP_TO_STRING_NAME) && !defined(HEAP_TO_STRING)
 #error HEAP_TO_STRING_NAME requires HEAP_TO_STRING.
@@ -88,8 +77,8 @@
 #define CAT_(x, y) x ## _ ## y
 #define CAT(x, y) CAT_(x, y)
 #endif /* !sub-type --> */
-#define H_(thing) CAT(HEAP_NAME, thing)
-#define PH_(thing) CAT(heap, H_(thing))
+#define H_(n) CAT(HEAP_NAME, n)
+#define PH_(n) CAT(heap, H_(n))
 #ifndef HEAP_TYPE
 #define HEAP_TYPE unsigned
 #endif
@@ -115,7 +104,7 @@ static int PH_(default_compare)(const PH_(priority) a, const PH_(priority) b)
 static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 
 #ifdef HEAP_VALUE /* <!-- value */
-/** If `HEAP_VALUE` is set, a valid tag type. */
+/** If `HEAP_VALUE` is set, a declared tag type. */
 typedef HEAP_VALUE PH_(adjunct);
 /** If `HEAP_VALUE` is set, this is a pointer to it, otherwise a boolean
  value that is true when there is an item. */
@@ -136,9 +125,6 @@ typedef PH_(priority) PH_(node);
 /* This relies on `array.h` which must be in the same directory. */
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
-#ifdef HEAP_ITERATE
-#define ARRAY_ITERATE /* Forward this to array `a`. */
-#endif
 #define ARRAY_SUBTYPE
 #include "array.h"
 
@@ -229,7 +215,7 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
 
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
  This reads from the an arbitrary leaf-node into a temporary value, so is
- slightly more complex then <fn:<PH>sift_down>, but the same thing.
+ slightly more complex than <fn:<PH>sift_down>, but the same thing.
  @param[heap] At least `i + 1` entries. */
 static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 	const size_t size = (assert(heap && i < heap->a.size), heap->a.size),
@@ -292,9 +278,9 @@ static void H_(heap_)(struct H_(heap) *const heap)
  it was previously in an active non-idle state, it continues to be.
  @param[heap] If null, does nothing. @order \Theta(1) @allow */
 static void H_(heap_clear)(struct H_(heap) *const heap)
-	{ assert(heap), heap->a.size = 0; }
+	{ assert(heap), PH_(node_array_clear)(&heap->a); }
 
-/** Copies `priority` into `heap`.
+/** Copies `node` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
 static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 	assert(heap);
@@ -327,9 +313,9 @@ static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
 
 /** The capacity of `heap` will be increased to at least `buffer` elements
  beyond the size. Invalidates pointers in `a`.
- @return The start of the buffered space, (the back of the array.) If `a` is
- idle and `buffer` is zero, a null pointer is returned, otherwise null
- indicates an error. @throws[realloc, ERANGE] @allow */
+ @return The start of the buffered space. If `a` is idle and `buffer` is zero,
+ a null pointer is returned, otherwise null indicates an error.
+ @throws[realloc, ERANGE] @allow */
 static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
 	const size_t n) { return PH_(node_array_buffer)(&heap->a, n); }
 
@@ -340,8 +326,9 @@ static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
  it may be better to add each element individually, resulting in a run-time of
  \O(`new elements` \cdot log `heap.size`).
  @param[add] If zero, returns true.
- @return Success. @throws[ERANGE, realloc] In practice, this will not happen if
- <fn:<H>heap_buffer> has been successful in reserving at least `n` elements.
+ @return Success. @throws[ERANGE, realloc] In practice, pushing uninitialized
+ elements onto the heap does make sense, so <fn:<H>heap_buffer> `n` will be
+ called first, in which case, one is guaranteed success.
  @order \O(`heap.size` + `add`) @allow */
 static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	assert(heap);
@@ -349,6 +336,31 @@ static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	if(n) PH_(heapify)(heap);
 	return 1;
 }
+
+/* <!-- iterate interface */
+#define BOX_ITERATE
+#define PA_(n) CAT(array, CAT(PH_(node), n))
+struct PH_(iterator);
+struct PH_(iterator) { struct PA_(iterator) a; };
+static void PH_(begin)(struct PH_(iterator) *const it,
+	const struct H_(heap) *const h) { PA_(begin)(&it->a, &h->a); }
+static PH_(node) *PH_(next)(struct PH_(iterator) *const it)
+	{ return PA_(next)(&it->a); }
+#undef PA_
+/* iterate --> */
+
+
+/* Define these for traits. */
+#define BOX_ PH_
+#define BOX_CONTAINER struct H_(heap)
+#define BOX_CONTENTS PH_(node)
+
+#ifdef HEAP_TEST /* <!-- test */
+/* Forward-declare. */
+static void (*PH_(to_string))(const PH_(node) *, char (*)[12]);
+static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
+#include "../test/test_heap.h" /** \include */
+#endif /* test --> */
 
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
@@ -362,36 +374,30 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #elif defined(HEAP_TO_STRING) /* base code --><!-- to string trait */
 
 
-#define TO_STRING HEAP_TO_STRING
-#define ZI_(n) CAT(PH_(node_array_forward), n)
 #ifdef HEAP_TO_STRING_NAME /* <!-- name */
-#define Z_(n) CAT(PH_(node), CAT(HEAP_TO_STRING_NAME, n))
+#define Z_(n) CAT(H_(heap), CAT(HEAP_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define Z_(n) CAT(PH_(node), n)
+#define Z_(n) CAT(H_(heap), n)
 #endif /* !name --> */
+#define TO_STRING HEAP_TO_STRING
 #include "to_string.h" /** \include */
-
-/** `heap` passes it on to `a`. */
-static const char *H_(heap_to_string)(const struct H_(heap) *const heap)
-	{ return assert(heap), Z_(to_string)(&heap->a); }
-
-#undef Z_ /* From `to_string.h`. */
-
-static void PH_(unused_to_string_coda)(void);
-static void PH_(unused_to_string)(void) { H_(heap_to_string)(0);
-	PH_(unused_to_string_coda)(); }
-static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
-
-#if !defined(HEAP_TEST_BASE) && defined(HEAP_TEST) /* <!-- test */
-#define HEAP_TEST_BASE /* Only one instance of base tests. */
-#include "../test/test_heap.h" /** \include */
-#endif /* test --> */
-
+#ifdef HEAP_TEST /* <!-- expect: we've forward-declared these. */
+#undef HEAP_TEST
+static void (*PH_(to_string))(const PH_(node) *, char (*)[12]) = PZ_(to_string);
+static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
+	= &Z_(to_string);
+#endif /* expect --> */
+#undef PZ_
+#undef Z_
 #undef HEAP_TO_STRING
 #ifdef HEAP_TO_STRING_NAME
 #undef HEAP_TO_STRING_NAME
 #endif
 
+static void PH_(unused_to_string_coda)(void);
+static void PH_(unused_to_string)(void) { H_(heap_to_string)(0);
+	PH_(unused_to_string_coda)(); }
+static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 
 #endif /* traits --> */
 
@@ -399,6 +405,9 @@ static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 #ifdef HEAP_EXPECT_TRAIT /* <!-- trait */
 #undef HEAP_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
+#if defined(HEAP_TEST)
+#error No to string traits defined for test.
+#endif
 #ifndef HEAP_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
@@ -419,6 +428,10 @@ static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 #ifdef HEAP_TEST_BASE
 #undef HEAP_TEST_BASE
 #endif
+#undef BOX_
+#undef BOX_CONTAINER
+#undef BOX_CONTENTS
+#undef BOX_ITERATE
 #endif /* !trait --> */
 #undef HEAP_TO_STRING_TRAIT
 #undef HEAP_TRAITS
