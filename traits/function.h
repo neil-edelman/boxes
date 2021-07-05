@@ -25,19 +25,8 @@ typedef BOX_CONTENTS PZ_(type);
 /** Operates by side-effects on <typedef:<PZ>type>. */
 typedef void (*PZ_(action_fn))(PZ_(type) *);
 
-/** Returns a boolean given two <typedef:<PZ>type>. */
-typedef int (*PZ_(biaction_fn))(PZ_(type) *, PZ_(type) *);
-
 /** Returns a boolean given read-only <typedef:<PZ>type>. */
 typedef int (*PZ_(predicate_fn))(const PZ_(type) *);
-
-/** Returns a boolean given two read-only <typedef:<PZ>type>. */
-typedef int (*PZ_(bipredicate_fn))(const PZ_(type) *, const PZ_(type) *);
-
-/** Three-way comparison on a totally order set; returns an integer value less
- then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
- respectively. */
-typedef int (*PZ_(compare_fn))(const PZ_(type) *a, const PZ_(type) *b);
 
 #if defined(BOX_CONTIGUOUS_SIZE) /* <!-- fn */
 /** @return Converts `i` to an index in `box` from [0, `a.size`]. Negative
