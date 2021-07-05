@@ -16,6 +16,7 @@ static void PA_(valid_state)(const struct A_(array) *const a) {
 	assert(a->size <= a->capacity && a->capacity <= max_size);
 }
 
+#if 0
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
 static int PA_(zero_filled)(const PA_(type) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
@@ -23,6 +24,7 @@ static int PA_(zero_filled)(const PA_(type) *const t) {
 	while(c < end) if(*c++) return 0;
 	return 1;
 }
+#endif
 
 /** Draw a graph of `ar` to `fn` in Graphviz format. */
 static void PA_(graph)(const struct A_(array) *const ar, const char *const fn) {
@@ -61,7 +63,7 @@ static void PA_(test_basic)(void) {
 	PA_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
-	int is_zero;
+	/*int is_zero;*/
 
 	assert(errno == 0);
 	PA_(valid_state)(0);
@@ -326,6 +328,7 @@ static void PA_(test_replace)(void) {
 	A_(array_)(&a);
 }
 
+#if 0
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
 static int PA_(keep_deterministic)(const PA_(type) *const data) {
@@ -336,12 +339,13 @@ static int PA_(keep_deterministic)(const PA_(type) *const data) {
 	i %= sizeof things / sizeof *things;
 	return predicate;
 }
+#endif
 
 static void PA_(test_keep)(void) {
 	PA_(type) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct A_(array) a = ARRAY_IDLE, b = ARRAY_IDLE;
-	int ret;
+	/*int ret;*/
 	/* Valgrind. */
 	memset(ts, 0, sizeof ts);
 	PA_(valid_state)(&a);
@@ -377,6 +381,7 @@ static void PA_(test_keep)(void) {
 
 static int PA_(num);
 
+#if 0
 /** Increments a global variable, independent of `t`. @implements <PA>action */
 static void PA_(increment)(PA_(type) *const t) {
 	(void)t;
@@ -389,9 +394,10 @@ static int PA_(true)(const PA_(type) *const t) {
 	(void)t;
 	return 1;
 }
+#endif
 
 static void PA_(test_each)(void) {
-	struct A_(array) empty = ARRAY_IDLE, one = ARRAY_IDLE;
+	struct A_(array) /*empty = ARRAY_IDLE,*/ one = ARRAY_IDLE;
 	PA_(type) *t;
 	t = A_(array_new)(&one);
 	assert(t);

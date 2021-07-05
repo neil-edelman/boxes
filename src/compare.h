@@ -148,7 +148,7 @@ static const PZ_(bipredicate_fn) PZ_(is_equal) = (ARRAY_IS_EQUAL);
 /** @return If `a` piecewise equals `b`, which both can be null.
  @order \O(`size`) */
 static int Z_(is_equal)(const PZ_(box) *const a, const PZ_(box) *const b) {
-	const PZ_(type) *ia, *ib;
+	/*const PZ_(type) *ia, *ib;*/
 	if(!a) return !b;
 	if(!b || a->size != b->size) return 0;
 	assert(0);
