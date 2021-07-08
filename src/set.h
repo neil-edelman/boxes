@@ -441,16 +441,21 @@ static const PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 /* Define these for traits. */
 #define BOX_ PS_
 #define BOX_CONTAINER struct S_(set)
-#define BOX_CONTENTS struct PS_(node)
+#define BOX_CONTENTS PS_(mtype)
+
+#ifdef SET_TEST /* <!-- test */
+/* Forward-declare. */
+static void (*PS_(to_string))(const PS_(mtype) *, char (*)[12]);
+static const char *(*PS_(set_to_string))(const struct S_(set) *);
+#include "../test/test_set.h" /** \include */
+#endif /* test --> */
 
 static void PS_(unused_base_coda)(void);
 static void PS_(unused_base)(void) {
 	S_(set)(0); S_(set_)(0); S_(set_clear)(0); S_(set_get)(0, 0);
 	S_(set_reserve)(0, 0); S_(set_put)(0, 0);  S_(set_policy_put)(0, 0, 0);
 	S_(set_remove)(0, 0);
-#ifdef ARRAY_ITERATE
 	PS_(begin)(0, 0); PS_(next)(0);
-#endif
 	PS_(unused_base_coda)();
 }
 static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
@@ -459,23 +464,24 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #elif defined(SET_TO_STRING) /* base code --><!-- to string trait */
 
 
-#define TO_STRING SET_TO_STRING
 #define ZI_ SET_FORWARD_
 #ifdef SET_TO_STRING_NAME /* <!-- name */
 #define Z_(n) CAT(S_(set), CAT(SET_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
 #define Z_(n) CAT(S_(set), n)
 #endif /* !name --> */
+#define TO_STRING SET_TO_STRING
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
-
-#if !defined(SET_TEST_BASE) && defined(SET_TEST) /* <!-- test */
-#define SET_TEST_BASE /* Only one instance of base tests. */
-#include "../test/test_set.h" /** \include */
-#endif /* test --> */
-
-#undef Z_ /* From <to_string.h>. */
+#ifdef SET_TEST /* <!-- expect: we've forward-declared these. */
+#undef SET_TEST
+static void (*PS_(to_string))(const PS_(mtype) *, char (*)[12]) = PZ_(to_string);
+static const char *(*PS_(set_to_string))(const struct S_(set) *)
+	= &Z_(to_string);
+#endif /* expect --> */
+#undef PZ_
+#undef Z_
 #undef SET_TO_STRING
 #ifdef SET_TO_STRING_NAME
 #undef SET_TO_STRING_NAME
@@ -488,16 +494,15 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #ifdef SET_EXPECT_TRAIT /* <!-- trait */
 #undef SET_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
+#if defined(SET_TEST)
+#error No to string traits defined for test.
+#endif
 #ifndef SET_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #else /* !sub-type --><!-- sub-type */
 #undef SET_SUBTYPE
 #endif /* sub-type --> */
-#ifdef SET_ITERATE /* <!-- iter */
-#undef SET_FORWARD_
-#undef SET_ITERATE
-#endif /* iter --> */
 #undef S_
 #undef PS_
 #undef SET_NAME
@@ -520,11 +525,10 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #ifdef SET_TEST_BASE
 #undef SET_TEST_BASE
 #endif
-#undef ITERATE
-#undef ITERATE_BOX
-#undef ITERATE_TYPE
-#undef ITERATE_BEGIN
-#undef ITERATE_NEXT
+#undef BOX_
+#undef BOX_CONTAINER
+#undef BOX_CONTENTS
+#undef BOX_ITERATE
 #endif /* !trait --> */
 #undef SET_TO_STRING_TRAIT
 #undef SET_TRAITS

@@ -4,8 +4,6 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#ifdef SET_TO_STRING /* <!-- to string: Only one, tests all base code. */
-
 #include <stddef.h> /* offsetof */
 #include <stdio.h>  /* fprintf FILE */
 #include <math.h>   /* sqrt NAN? */
@@ -13,12 +11,6 @@
 #define NAN (0. / 0.)
 #endif
 #include <string.h> /* memset */
-
-/* Copy functions for later includes. */
-static void (*PS_(to_string))(const PS_(type) *, char (*)[12])
-	= (SET_TO_STRING);
-static const char *(*PS_(set_to_string))(const struct S_(set) *)
-	= Z_(to_string);
 
 /** Operates by side-effects. Used for `SET_TEST`. */
 typedef void (*PS_(action_fn))(PS_(type) *);
@@ -341,10 +333,6 @@ static void S_(set_test)(struct S_(set_node) *(*const parent_new)(void *),
 	PS_(test_basic)(parent_new, parent);
 	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">set.\n\n");
 }
-
-#else /* compare --><!-- */
-#error Test unsupported option; testing is out-of-sync?
-#endif /* --> */
 
 #undef QUOTE
 #undef QUOTE_
