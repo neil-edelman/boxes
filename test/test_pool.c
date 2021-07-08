@@ -33,8 +33,6 @@ static void colour_filler(enum colour *const c)
 #include "../src/deque_pool.h"
 
 
-#if 0
-
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
 	{ sprintf(*a, "%.11s", s->value); }
@@ -42,10 +40,10 @@ static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }
 #define POOL_NAME str4
 #define POOL_TYPE struct str4
+#define POOL_TEST &str4_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/deque_pool.h"
 #define POOL_TO_STRING &str4_to_string
-#define POOL_TEST &str4_filler
 #include "../src/deque_pool.h"
 
 
@@ -57,10 +55,10 @@ static void int_filler(int *const i)
 	{ return (*a > *b) - (*b > *a); }*/
 #define POOL_NAME int
 #define POOL_TYPE int
+#define POOL_TEST &int_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/deque_pool.h"
 #define POOL_TO_STRING &int_to_string
-#define POOL_TEST &int_filler
 #include "../src/deque_pool.h"
 
 
@@ -79,28 +77,27 @@ static int keyval_value_cmp(const struct Keyval *const a,
 	const struct Keyval *const b) { return strcmp(a->value, b->value); }*/
 #define POOL_NAME keyval
 #define POOL_TYPE struct keyval
+#define POOL_TEST &keyval_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/deque_pool.h"
 #define POOL_TO_STRING &keyval_key_to_string
-#define POOL_TEST &keyval_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/deque_pool.h"
 #define POOL_TO_STRING_NAME value
 #define POOL_TO_STRING &keyval_value_to_string
 #include "../src/deque_pool.h"
 
-#endif
 
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	unsigned seed = /*12395*/ /*2532*//*11632*/(unsigned)clock();
+	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	colour_pool_test();
-	/*str4_pool_test();
+	str4_pool_test();
 	int_pool_test();
-	keyval_pool_test();*/
+	keyval_pool_test();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
