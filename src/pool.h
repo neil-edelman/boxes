@@ -18,9 +18,12 @@
  associated therewith; required. `<PP>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
- @param[POOL_ITERATE]
- Satisfies the <iterate.h> interface for forwards iteration in original
- inclusion.
+ @param[POOL_TEST]
+ To string trait contained in <../test/test_pool.h>; optional unit testing
+ framework using `assert`. Can only be defined once _per_ pool. Must be defined
+ equal to a (random) filler function, satisfying <typedef:<PP>action_fn>.
+ Output will be shown with the to string trait in which it's defined; provides
+ tests for the base code and all later traits.
 
  @param[POOL_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -31,13 +34,6 @@
  There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`.
 
- @param[POOL_TEST]
- To string trait contained in <../test/pool_test.h>; optional unit testing
- framework using `assert`. Can only be defined once _per_ pool. Must be defined
- equal to a (random) filler function, satisfying <typedef:<PP>action_fn>.
- Output will be shown with the to string trait in which it's defined; provides
- tests for the base code and all later traits.
-
  @std C89 */
 
 #include <stddef.h> /* offsetof */
@@ -46,27 +42,20 @@
 #include <errno.h>	/* errno */
 
 
-/* Check defines. */
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
 #error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
 #endif
-#if defined(POOL_TO_STRING_NAME) || defined(POOL_TO_STRING)
-#ifndef POOL_ITERATE
-#error POOL_ITERATE must be defined for string trait.
-#endif
+#if defined(POOL_TO_STRING_NAME) || defined(POOL_TO_STRING) /* <!-- str */
 #define POOL_TO_STRING_TRAIT 1
-#else
+#else /* str --><!-- !str */
 #define POOL_TO_STRING_TRAIT 0
-#endif
+#endif /* !str --> */
 #define POOL_TRAITS POOL_TO_STRING_TRAIT
 #if POOL_TRAITS > 1
-#error Only one trait per include is allowed; use POOL_EXPECT_TRAIT.
+#error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
 #if POOL_TRAITS != 0 && (!defined(P_) || !defined(CAT) || !defined(CAT_))
-#error P_ or CAT_? not yet defined; traits must be defined separately?
-#endif
-#if (POOL_TRAITS == 0) && defined(POOL_TEST)
-#error POOL_TEST must be defined in POOL_TO_STRING trait.
+#error Use POOL_EXPECT_TRAIT and include it again.
 #endif
 #if defined(POOL_TO_STRING_NAME) && !defined(POOL_TO_STRING)
 #error POOL_TO_STRING_NAME requires POOL_TO_STRING.
@@ -348,7 +337,8 @@ static void P_(pool_for_each)(struct P_(pool) *const pool,
 			n < end; n++) if(!n->x.prev) action(&n->data);
 }
 
-#ifdef POOL_ITERATE /* <!-- iterate */
+/* <!-- iterate interface */
+#define BOX_ITERATE
 
 /** Contains all iteration parameters. */
 struct PP_(iterator);
@@ -377,24 +367,18 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 	return 0;
 }
 
-#define POOL_FORWARD_(n) CAT(P_(pool_forward), n)
-#define I_ POOL_FORWARD_
-#define ITERATE struct PP_(iterator)
-#define ITERATE_BOX struct P_(pool)
-#define ITERATE_TYPE PP_(type)
-#define ITERATE_BEGIN PP_(begin)
-#define ITERATE_NEXT PP_(next)
-#include "iterate.h" /** \include */
+/* iterate --> */
 
-#endif /* iterate --> */
+/* Define these for traits. */
+#define BOX_ PP_
+#define BOX_CONTAINER struct P_(pool)
+#define BOX_CONTENTS PP_(type)
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
 	P_(pool)(0); P_(pool_)(0); P_(pool_reserve)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); P_(pool_for_each)(0, 0);
-#ifdef POOL_BEGIN
 	PP_(begin)(0, 0); PP_(next)(0);
-#endif
 	PP_(unused_base_coda)();
 }
 static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
