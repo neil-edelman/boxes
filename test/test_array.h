@@ -4,7 +4,7 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/* `ARRAY_TEST` must be a function that implements <typedef:<PA>action>. */
+/* `ARRAY_TEST` must be a function that implements <typedef:<PA>action_fn>. */
 static void (*PA_(filler))(PA_(type) *) = (ARRAY_TEST);
 
 /** @return Is `a` in a valid state? */
