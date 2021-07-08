@@ -366,7 +366,7 @@ static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_peek_value)(0);
 	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
-	PH_(unused_base_coda)();
+	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 

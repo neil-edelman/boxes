@@ -116,8 +116,6 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
 
-#define BOX_CONTIGUOUS_SIZE /* `BOX` has a size that is reflective of size. */
-
 /** Initialises `a` to idle. @order \Theta(1) @allow */
 static void A_(array)(struct A_(array) *const a)
 	{ assert(a), a->data = 0, a->capacity = a->size = 0; }
@@ -281,6 +279,8 @@ static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
 static int A_(array_copy)(struct A_(array) *const a,
 	const struct A_(array) *const b)
 	{ return A_(array_splice)(a, a->size, a->size, b); }
+
+#define BOX_CONTIGUOUS_SIZE /* `BOX` has a size that is reflective of size. */
 
 /* <!-- iterate interface */
 #define BOX_ITERATE

@@ -3,7 +3,10 @@
 
  @subtitle To String Trait
 
- A trait relying on the iterate interface.
+ A trait relying on the iterate interface. One does need this file unless one
+ defines a box with the `to_string` trait, in which case the box sub-includes
+ this. Optional `TO_STRING_EXTERN` or `TO_STRING_INTERN` are defined before any
+ `to_string` boxes.
 
  @param[Z_]
  A one-argument macro producing a name that is responsible for the name of the
@@ -21,7 +24,9 @@
  Normally the space to put the temporary strings is static, one per file. With
  this, it's possible to have a global programme storage to save space: have one
  file have `TO_STRING_INTERN` as the first box, the other files
- `TO_STRING_EXTERN`. This is unsynchronized. @fixme `extern` untested.
+ `TO_STRING_EXTERN`. This is unsynchronized, but saves space.
+
+ @fixme `extern` untested.
 
  @std C89 */
 
