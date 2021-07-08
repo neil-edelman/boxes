@@ -5,7 +5,7 @@
 
  @param[Z_]
  A one-argument macro producing a name that is responsible for the name of the
- functions. Does not undefine.
+ functions.
 
  @param[FUNCTION_COMPARABLE_NAME, FUNCTION_IS_EQUAL, FUNCTION_COMPARE]
  Optional unique name `<Z>` that satisfies `C` naming conventions when mangled,
