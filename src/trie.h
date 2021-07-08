@@ -225,8 +225,8 @@ static void PT_(to_foo)(const PT_(leaf) *const leaf, char (*const a)[12]) {
 #endif /* str --> */
 #define ARRAY_COMPARE &PT_(compare)
 #include "array.h"
-#define A_(thing) CAT(PT_(leaf), thing)
-#define PA_(thing) CAT(CAT(array, PT_(leaf)), thing)
+#define A_(n) CAT(PT_(leaf), n)
+#define PA_(n) CAT(CAT(compare, PT_(leaf_array)), n)
 
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
@@ -297,7 +297,7 @@ static int PT_(init)(struct T_(trie) *const trie, PT_(type) *const*const a,
 	memcpy(leaves, a, sizeof *a * a_size);
 	trie->leaves.size = a_size;
 	/* Sort, get rid of duplicates, and initialise branches, from `Array.h`. */
-	qsort(leaves, a_size, sizeof *a, &PA_(vcompar_anonymous));
+	qsort(leaves, a_size, sizeof *a, &PA_(vcompar));
 	A_(array_unique)(&trie->leaves);
 	PT_(init_branches_r)(trie, 0, 0, trie->leaves.size);
 	assert(trie->branches.size + 1 == trie->leaves.size);
