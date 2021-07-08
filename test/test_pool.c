@@ -26,11 +26,10 @@ static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define POOL_NAME colour
 #define POOL_TYPE enum colour
-#define POOL_ITERATE
+#define POOL_TEST &colour_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/pool.h"
 #define POOL_TO_STRING &colour_to_string
-#define POOL_TEST &colour_filler
 #include "../src/pool.h"
 
 
@@ -41,11 +40,10 @@ static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }
 #define POOL_NAME str4
 #define POOL_TYPE struct str4
-#define POOL_ITERATE
+#define POOL_TEST &str4_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/pool.h"
 #define POOL_TO_STRING &str4_to_string
-#define POOL_TEST &str4_filler
 #include "../src/pool.h"
 
 
@@ -57,11 +55,10 @@ static void int_filler(int *const i)
 	{ return (*a > *b) - (*b > *a); }*/
 #define POOL_NAME int
 #define POOL_TYPE int
-#define POOL_ITERATE
+#define POOL_TEST &int_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/pool.h"
 #define POOL_TO_STRING &int_to_string
-#define POOL_TEST &int_filler
 #include "../src/pool.h"
 
 
@@ -80,11 +77,10 @@ static int keyval_value_cmp(const struct Keyval *const a,
 	const struct Keyval *const b) { return strcmp(a->value, b->value); }*/
 #define POOL_NAME keyval
 #define POOL_TYPE struct keyval
-#define POOL_ITERATE
+#define POOL_TEST &keyval_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/pool.h"
 #define POOL_TO_STRING &keyval_key_to_string
-#define POOL_TEST &keyval_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/pool.h"
 #define POOL_TO_STRING_NAME value

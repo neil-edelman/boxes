@@ -6,14 +6,6 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#ifdef POOL_TO_STRING /* <!-- to string: Only one, tests all base code. */
-
-/* Copy functions for later includes. */
-static void (*PP_(to_string))(const PP_(type) *, char (*)[12])
-	= (POOL_TO_STRING);
-static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
-	= Z_(to_string);
-
 /* POOL_TEST must be a function that implements <typedef:<PP>Action>. */
 static const PP_(action_fn) PP_(filler) = (POOL_TEST);
 
@@ -317,10 +309,6 @@ static void P_(pool_test)(void) {
 	PP_(test_random)();
 	fprintf(stderr, "Done tests of <" QUOTE(POOL_NAME) ">pool.\n\n");
 }
-
-#else /* to string --><!-- */
-#error Test unsupported option; testing is out-of-sync?
-#endif /* --> */
 
 #undef QUOTE
 #undef QUOTE_

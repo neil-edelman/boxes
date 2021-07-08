@@ -374,6 +374,13 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 #define BOX_CONTAINER struct P_(pool)
 #define BOX_CONTENTS PP_(type)
 
+#ifdef POOL_TEST /* <!-- test */
+/* Forward-declare. */
+static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
+static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
+#include "../test/test_pool.h" /** \include */
+#endif /* test --> */
+
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
 	P_(pool)(0); P_(pool_)(0); P_(pool_reserve)(0, 0); P_(pool_new)(0);
@@ -387,21 +394,21 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #elif defined(POOL_TO_STRING) /* base code --><!-- to string trait */
 
 
-#define TO_STRING POOL_TO_STRING
-#define ZI_ POOL_FORWARD_
 #ifdef POOL_TO_STRING_NAME /* <!-- name */
 #define Z_(n) CAT(P_(pool), CAT(POOL_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
 #define Z_(n) CAT(P_(pool), n)
 #endif /* !name --> */
+#define TO_STRING POOL_TO_STRING
 #include "to_string.h" /** \include */
-
-#if !defined(POOL_TEST_BASE) && defined(POOL_TEST) /* <!-- test */
-#define POOL_TEST_BASE /* Only one instance of base tests. */
-#include "../test/test_pool.h" /** \include */
-#endif /* test --> */
-
-#undef Z_ /* From <to_string.h>. */
+#ifdef POOL_TEST /* <!-- expect: we've forward-declared these. */
+#undef POOL_TEST
+static void (*PP_(to_string))(const PP_(type) *, char (*)[12]) = PZ_(to_string);
+static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
+	= &Z_(to_string);
+#endif /* expect --> */
+#undef PZ_
+#undef Z_
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
 #undef POOL_TO_STRING_NAME
@@ -414,16 +421,15 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #ifdef POOL_EXPECT_TRAIT /* <!-- trait */
 #undef POOL_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
+#if defined(POOL_TEST)
+#error No to string traits defined for test.
+#endif
 #ifndef POOL_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #else /* !sub-type --><!-- sub-type */
 #undef POOL_SUBTYPE
 #endif /* sub-type --> */
-#ifdef POOL_ITERATE /* <!-- iter */
-#undef POOL_FORWARD_
-#undef POOL_ITERATE
-#endif /* iter --> */
 #undef P_
 #undef PP_
 #undef POOL_NAME
@@ -431,9 +437,10 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #ifdef POOL_TEST
 #undef POOL_TEST
 #endif
-#ifdef POOL_TEST_BASE
-#undef POOL_TEST_BASE
-#endif
+#undef BOX_
+#undef BOX_CONTAINER
+#undef BOX_CONTENTS
+#undef BOX_ITERATE
 #endif /* !trait --> */
 #undef POOL_TO_STRING_TRAIT
 #undef POOL_TRAITS
