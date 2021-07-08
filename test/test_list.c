@@ -1,9 +1,3 @@
-/* @fixme HEAP SUMMARY:
- in use at exit: 601,392 bytes in 11 blocks
- total heap usage: 159 allocs, 148 frees, 2,695,440 bytes allocated
- definitely lost: 487,704 bytes in 2 blocks
- indirectly lost: 113,688 bytes in 9 blocks */
-
 #include <stdlib.h> /* EXIT rand */
 #include <stdio.h>  /* printf */
 #include <string.h> /* strcmp */
@@ -18,11 +12,10 @@ static void order_to_string(const struct order_list_node *const l,
 static void order_fill(struct order_list_node *const l) { (void)(l); }
 
 #define LIST_NAME order
-#define LIST_ITERATE
+#define LIST_TEST &order_fill
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &order_to_string
-#define LIST_TEST &order_fill
 #include "../src/list.h"
 
 #define POOL_NAME order_node
@@ -46,11 +39,10 @@ static int no_compare(const struct no_list_node *, const struct no_list_node *);
 
 #define LIST_NAME no
 #define LIST_COMPARE &no_compare
-#define LIST_ITERATE
+#define LIST_TEST &no_fill
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &no_to_string
-#define LIST_TEST &no_fill
 #include "../src/list.h"
 
 struct no { struct no_list_node node; int i; };
@@ -93,11 +85,10 @@ static int letter_compare(const struct letter_list_node *,
 
 #define LIST_NAME letter
 #define LIST_COMPARE &letter_compare
-#define LIST_ITERATE
+#define LIST_TEST &letter_fill
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &letter_to_string
-#define LIST_TEST &letter_fill
 #include "../src/list.h"
 
 struct letter { struct letter_list_node node; char letter; };
@@ -140,11 +131,10 @@ static int name_compare(const struct name_list_node *,
 
 #define LIST_NAME name
 #define LIST_COMPARE &name_compare
-#define LIST_ITERATE
+#define LIST_TEST &fill_panda_name
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &name_to_string
-#define LIST_TEST &fill_panda_name
 #include "../src/list.h"
 
 struct where_list_node;
@@ -155,11 +145,10 @@ static int where_compare(const struct where_list_node *,
 
 #define LIST_NAME where
 #define LIST_COMPARE &where_compare
-#define LIST_ITERATE
+#define LIST_TEST &fill_panda_where
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &where_to_string
-#define LIST_TEST &fill_panda_where
 #include "../src/list.h"
 
 struct fero_list_node;
@@ -170,11 +159,10 @@ static int fero_compare(const struct fero_list_node *,
 
 #define LIST_NAME fero
 #define LIST_COMPARE &fero_compare
-#define LIST_ITERATE
+#define LIST_TEST &fill_panda_fero
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &fero_to_string
-#define LIST_TEST &fill_panda_fero
 #include "../src/list.h"
 
 struct Panda {
@@ -335,11 +323,10 @@ static void l0_to_string(const struct layer0_list_node *, char (*)[12]);
 static void fill_l0(struct layer0_list_node *);
 #define LIST_NAME layer0
 #define LIST_COMPARE &l0_compare
-#define LIST_ITERATE
+#define LIST_TEST &fill_l0
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &l0_to_string
-#define LIST_TEST &fill_l0
 #include "../src/list.h"
 
 struct layer1_list_node;
@@ -349,11 +336,10 @@ static void l1_to_string(const struct layer1_list_node *, char (*)[12]);
 static void fill_l1(struct layer1_list_node *);
 #define LIST_NAME layer1
 #define LIST_COMPARE &l1_compare
-#define LIST_ITERATE
+#define LIST_TEST &fill_l1
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &l1_to_string
-#define LIST_TEST &fill_l1
 #include "../src/list.h"
 
 struct layer2_list_node;
@@ -363,11 +349,10 @@ static void l2_to_string(const struct layer2_list_node *, char (*)[12]);
 static void fill_l2(struct layer2_list_node *);
 #define LIST_NAME layer2
 #define LIST_COMPARE &l2_compare
-#define LIST_ITERATE
+#define LIST_TEST &fill_l2
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &l2_to_string
-#define LIST_TEST &fill_l2
 #include "../src/list.h"
 
 struct Skip {
@@ -571,7 +556,6 @@ finally:
 struct id_list_node;
 static void id_to_string(const struct id_list_node *, char (*)[12]);
 #define LIST_NAME id
-#define LIST_ITERATE
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &id_to_string
@@ -1111,6 +1095,7 @@ int main(void) {
 	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer2_list_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
+	skip_pool_(&skips);
 	pandas_everywhere();
 	skips_everywhere();
 	animals_everywhere();

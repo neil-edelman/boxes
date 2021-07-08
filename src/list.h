@@ -21,10 +21,6 @@
  Optional total-order function satisfying <typedef:<PL>compare_fn>.
  (fixme: move to trait.)
 
- @param[LIST_ITERATE]
- Satisfies the <iterate.h> interface for forwards and backwards iteration in
- original inclusion.
-
  @param[LIST_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
@@ -46,25 +42,19 @@
 
 
 #ifndef LIST_NAME
-#error Generic LIST_NAME undefined.
+#error Name LIST_NAME undefined.
 #endif
-#if defined(LIST_TO_STRING_NAME) || defined(LIST_TO_STRING)
-#ifndef LIST_ITERATE
-#error LIST_ITERATE must be defined for string trait.
-#endif
+#if defined(LIST_TO_STRING_NAME) || defined(LIST_TO_STRING) /* <!-- str */
 #define LIST_TO_STRING_TRAIT 1
-#else
+#else /* str --><!-- !str */
 #define LIST_TO_STRING_TRAIT 0
-#endif
+#endif /* !str --> */
 #define LIST_TRAITS LIST_TO_STRING_TRAIT
 #if LIST_TRAITS > 1
 #error Only one trait per include is allowed; use LIST_EXPECT_TRAIT.
 #endif
 #if LIST_TRAITS != 0 && (!defined(L_) || !defined(CAT) || !defined(CAT_))
-#error L_ or CAT_? not yet defined; use LIST_EXPECT_TRAIT?
-#endif
-#if (LIST_TRAITS == 0) && defined(LIST_TEST)
-#error LIST_TEST must be defined in LIST_TO_STRING trait.
+#error Use LIST_EXPECT_TRAIT and include it again.
 #endif
 #if defined(LIST_TO_STRING_NAME) && !defined(LIST_TO_STRING)
 #error LIST_TO_STRING_NAME requires LIST_TO_STRING.
@@ -86,6 +76,7 @@
 #define L_(thing) CAT(LIST_NAME, thing)
 #define PL_(thing) CAT(list, L_(thing))
 
+
 /** Storage of this structure is the responsibility of the caller. One can only
  be in one list at a time; adding to another list while in a list destroys the
  integrity of the original list, see <fn:<L>list_remove>.
@@ -97,15 +88,12 @@ struct L_(list_node) { struct L_(list_node) *prev, *next; };
 /** Serves as head and tail for linked-list of <tag:<L>list_node>. Use
  <fn:<L>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
- values are not allowed and it is _not_ the same as `{0}`.
+ values are not allowed and it is _not_ the same as `{0}`. These are sentinels
+ such that `head.prev` and `tail.next` are always and the only ones to be null.
 
  ![States.](../web/states.png) */
 struct L_(list);
-struct L_(list) {
-	/* These are sentinels such that `head.prev` and `tail.next` are always and
-	 the only ones to be null. */
-	struct L_(list_node) head, tail;
-};
+struct L_(list) { struct L_(list_node) head, tail; };
 
 /** Operates by side-effects on the node. */
 typedef void (*PL_(action_fn))(struct L_(list_node) *);
@@ -168,7 +156,7 @@ static struct L_(list_node) *L_(list_next)(struct L_(list_node) *link) {
 	return link->next ? link : 0;
 }
 
-/** Clears and initialises `list`.  @order \Theta(1) @allow */
+/** Clears and initializes `list`.  @order \Theta(1) @allow */
 static void L_(list_clear)(struct L_(list) *const list) {
 	assert(list);
 	list->head.prev = list->tail.next = 0;
@@ -668,7 +656,8 @@ static void L_(list_xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 
 #endif /* comp --> */
 
-#ifdef LIST_ITERATE /* <!-- iterate */
+/* <!-- iterate interface */
+#define BOX_ITERATE
 
 /** Contains all iteration parameters. */
 struct PL_(iterator);
@@ -686,14 +675,8 @@ static const struct L_(list_node) *PL_(next)(struct PL_(iterator) *const it) {
 	/* it->node = L_(list_next)(it->node) */
 }
 
-#define LIST_FORWARD_(n) CAT(L_(list_forward), n)
-#define I_ LIST_FORWARD_
-#define ITERATE struct PL_(iterator)
-#define ITERATE_BOX struct L_(list)
-#define ITERATE_TYPE struct L_(list_node)
-#define ITERATE_BEGIN PL_(begin)
-#define ITERATE_NEXT PL_(next)
-#include "iterate.h" /** \include */
+/* iterate --><!-- reverse interface */
+#define BOX_REVERSE
 
 /** Loads `list` into `it`. @implements begin */
 static void PL_(end)(struct PL_(iterator) *const it,
@@ -706,16 +689,19 @@ static const struct L_(list_node) *PL_(prev)(struct PL_(iterator) *const it) {
 	return assert(it && it->node), (it->node = (n = it->node)->prev) ? n : 0;
 }
 
-#define LIST_BACKWARD_(n) CAT(L_(list_backward), n)
-#define I_ LIST_BACKWARD_
-#define ITERATE struct PL_(iterator)
-#define ITERATE_BOX struct L_(list)
-#define ITERATE_TYPE struct L_(list_node)
-#define ITERATE_BEGIN PL_(end)
-#define ITERATE_NEXT PL_(prev)
-#include "iterate.h"
+/* reverse --> */
 
-#endif /* iterate --> */
+/* Define these for traits. */
+#define BOX_ PL_
+#define BOX_CONTAINER struct L_(list)
+#define BOX_CONTENTS struct L_(list_node)
+
+#ifdef LIST_TEST /* <!-- test */
+/* Forward-declare. */
+static void (*PL_(to_string))(const struct L_(list_node) *, char (*)[12]);
+static const char *(*PL_(list_to_string))(const struct L_(list) *);
+#include "../test/test_list.h" /** \include */
+#endif /* test --> */
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
@@ -731,9 +717,7 @@ static void PL_(unused_base)(void) {
 	L_(list_union_to)(0, 0, 0); L_(list_intersection_to)(0, 0, 0);
 	L_(list_xor_to)(0, 0, 0);
 #endif /* comp --> */
-#ifdef LIST_ITERATE
 	PL_(begin)(0, 0); PL_(next)(0); PL_(end)(0, 0); PL_(prev)(0);
-#endif
 	PL_(unused_base_coda)();
 }
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
@@ -742,21 +726,22 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 #elif defined(LIST_TO_STRING) /* base code --><!-- to string trait */
 
 
-#define TO_STRING LIST_TO_STRING
-#define ZI_ LIST_FORWARD_
 #ifdef LIST_TO_STRING_NAME /* <!-- name */
 #define Z_(n) CAT(L_(list), CAT(LIST_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
 #define Z_(n) CAT(L_(list), n)
 #endif /* !name --> */
+#define TO_STRING LIST_TO_STRING
 #include "to_string.h" /** \include */
-
-#if !defined(LIST_TEST_BASE) && defined(LIST_TEST) /* <!-- test */
-#define LIST_TEST_BASE /* Only one instance of base tests. */
-#include "../test/test_list.h" /** \include */
-#endif /* test --> */
-
-#undef Z_ /* From <to_string.h>. */
+#ifdef LIST_TEST /* <!-- expect: we've forward-declared these. */
+#undef LIST_TEST
+static void (*PL_(to_string))(const struct L_(list_node) *, char (*)[12])
+	= PZ_(to_string);
+static const char *(*PL_(list_to_string))(const struct L_(list) *)
+	= &Z_(to_string);
+#endif /* expect --> */
+#undef PZ_
+#undef Z_
 #undef LIST_TO_STRING
 #ifdef LIST_TO_STRING_NAME
 #undef LIST_TO_STRING_NAME
@@ -769,17 +754,15 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 #ifdef LIST_EXPECT_TRAIT /* <!-- trait */
 #undef LIST_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
+#if defined(LIST_TEST)
+#error No to string traits defined for test.
+#endif
 #ifndef LIST_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
 #else /* !sub-type --><!-- sub-type */
 #undef LIST_SUBTYPE
 #endif /* sub-type --> */
-#ifdef LIST_ITERATE /* <!-- iter */
-#undef LIST_FORWARD_
-#undef LIST_BACKWARD_
-#undef LIST_ITERATE
-#endif /* iter --> */
 #undef L_
 #undef PL_
 #undef LIST_NAME
@@ -789,9 +772,11 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 #ifdef LIST_TEST
 #undef LIST_TEST
 #endif
-#ifdef LIST_TEST_BASE
-#undef LIST_TEST_BASE
-#endif
+#undef BOX_
+#undef BOX_CONTAINER
+#undef BOX_CONTENTS
+#undef BOX_ITERATE
+#undef BOX_REVERSE
 #endif /* !trait --> */
 #undef LIST_TO_STRING_TRAIT
 #undef LIST_TRAITS

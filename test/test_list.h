@@ -2,7 +2,6 @@
 
 #include <stdlib.h>	/* EXIT rand */
 #include <stdio.h>  /* printf */
-#include <stddef.h>
 
 #ifdef QUOTE
 #undef QUOTE
@@ -13,15 +12,7 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#ifdef LIST_TO_STRING /* <!-- to string: Only one, tests all base code. */
-
-/* Copy functions for later includes. */
-static void (*PL_(to_string))(const struct L_(list_node) *, char (*)[12])
-	= (LIST_TO_STRING);
-static const char *(*PL_(list_to_string))(const struct L_(list) *)
-	= Z_(to_string);
-
-/* Check that LIST_TEST is a function implementing <typedef:<PL>action_fn>. */
+/* `LIST_TEST` must be a function implementing <typedef:<PL>action_fn>. */
 static void (*const PL_(filler))(struct L_(list_node) *) = (LIST_TEST);
 
 /** Given `l` and `offset`, calculate the graph node. */
@@ -331,7 +322,7 @@ static void PL_(test_binary)(struct L_(list_node) *(*const parent_new)(void *),
 			L_(list_sort)(&x);
 			L_(list_duplicates_to)(&x, &y);
 			/* fixme: list_duplicates_to is suspect? it keeps giving wrong. */
-			printf("x = %s, y = %s\n", L_(list_to_string)(&x), L_(list_to_string)(&y));
+			printf("x = %s, y = %s\n", PL_(list_to_string)(&x), PL_(list_to_string)(&y));
 			/* Honestly, what am I doing? */
 			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
 			if(!(a = L_(list_first)(&x))) continue;
@@ -404,10 +395,6 @@ static void L_(list_test)(struct L_(list_node) *(*const parent_new)(void *),
 	PL_(test_sort)(parent_new, parent);
 	PL_(test_binary)(parent_new, parent);
 }
-
-#else /* to string --><!-- */
-#error Test unsupported option; testing is out-of-sync?
-#endif /* --> */
 
 #undef QUOTE
 #undef QUOTE_
