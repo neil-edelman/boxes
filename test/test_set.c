@@ -53,11 +53,10 @@ static void int_fill(unsigned *const x)
 #define SET_TYPE unsigned
 #define SET_HASH &int_hash
 #define SET_IS_EQUAL &int_is_equal
-#define SET_ITERATE
+#define SET_TEST &int_fill
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &int_to_string
-#define SET_TEST &int_fill
 #include "../src/set.h"
 
 
@@ -73,11 +72,10 @@ static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
 #define SET_UINT unsigned char
 #define SET_HASH &byteint_hash
 #define SET_IS_EQUAL &int_is_equal
-#define SET_ITERATE
+#define SET_TEST &int_fill
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &int_to_string
-#define SET_TEST &int_fill
 #include "../src/set.h"
 
 
@@ -97,11 +95,10 @@ static void string_fill(const char **);
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
-#define SET_ITERATE
+#define SET_TEST &string_fill
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &pstring_to_string
-#define SET_TEST &string_fill
 #include "../src/set.h"
 
 /** Backing: we have to somewhere to store the strings. */
@@ -162,11 +159,10 @@ static void vec4_filler(struct vec4 *const v4) {
 #define SET_POINTER
 #define SET_HASH &vec4_hash
 #define SET_IS_EQUAL &vec4_is_equal
-#define SET_ITERATE
+#define SET_TEST &vec4_filler
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &vec4_to_string
-#define SET_TEST &vec4_filler
 #include "../src/set.h"
 
 
@@ -186,11 +182,10 @@ static void fill_boat_id(int *const id);
 #define SET_NO_CACHE
 #define SET_HASH &boat_id_hash
 #define SET_IS_EQUAL &boat_id_is_equal
-#define SET_ITERATE
+#define SET_TEST &fill_boat_id
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &boat_id_to_string
-#define SET_TEST &fill_boat_id
 #include "../src/set.h"
 struct boat {
 	struct id_set_node id;
@@ -294,7 +289,6 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &key_is_equal
-#define SET_ITERATE
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &key_to_string

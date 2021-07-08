@@ -70,35 +70,21 @@
 #include <errno.h>  /* errno */
 
 
-#ifndef SET_NAME
-#error Name SET_NAME undefined.
+#if !defined(SET_NAME) || !defined(SET_TYPE) || !defined(SET_IS_EQUAL) \
+	|| !defined(SET_HASH)
+#error Name SET_NAME, tag type SET_TYPE, fns SET_IS_EQUAL, SET_HASH undefined.
 #endif
-#ifndef SET_TYPE
-#error Tag type SET_TYPE undefined.
-#endif
-#ifndef SET_IS_EQUAL
-#error Function SET_IS_EQUAL undefined.
-#endif
-#ifndef SET_HASH
-#error Function SET_HASH undefined.
-#endif
-#if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING)
-#ifndef SET_ITERATE
-#error SET_ITERATE must be defined for string trait.
-#endif
+#if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING) /* <!-- str */
 #define SET_TO_STRING_TRAIT 1
-#else
+#else /* str --><!-- !str */
 #define SET_TO_STRING_TRAIT 0
-#endif
+#endif /* !str --> */
 #define SET_TRAITS SET_TO_STRING_TRAIT
 #if SET_TRAITS > 1
 #error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
 #endif
 #if SET_TRAITS != 0 && (!defined(S_) || !defined(CAT) || !defined(CAT_))
-#error S_ or CAT_? not yet defined; use SET_EXPECT_TRAIT.
-#endif
-#if (SET_TRAITS == 0) && defined(SET_TEST)
-#error SET_TEST must be defined in SET_TO_STRING trait.
+#error Use SET_EXPECT_TRAIT and include it again.
 #endif
 #if defined(SET_TO_STRING_NAME) && !defined(SET_TO_STRING)
 #error SET_TO_STRING_NAME requires SET_TO_STRING.
@@ -117,8 +103,8 @@
 #define CAT_(x, y) x ## _ ## y
 #define CAT(x, y) CAT_(x, y)
 #endif /* !sub-type --> */
-#define S_(thing) CAT(SET_NAME, thing)
-#define PS_(thing) CAT(set, CAT(SET_NAME, thing))
+#define S_(n) CAT(SET_NAME, n)
+#define PS_(n) CAT(set, CAT(SET_NAME, n))
 #ifndef SET_UINT
 #define SET_UINT unsigned
 #endif
@@ -422,7 +408,8 @@ static struct S_(set_node) *S_(set_remove)(struct S_(set) *const set,
 	return x;
 }
 
-#ifdef SET_ITERATE /* <!-- iterate */
+/* <!-- iterate interface */
+#define BOX_ITERATE
 
 /** Contains all iteration parameters. */
 struct PS_(iterator);
@@ -449,16 +436,12 @@ static const PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 	return 0;
 }
 
-#define SET_FORWARD_(n) CAT(S_(set_forward), n)
-#define I_ SET_FORWARD_
-#define ITERATE struct PS_(iterator)
-#define ITERATE_BOX struct S_(set)
-#define ITERATE_TYPE PS_(type)
-#define ITERATE_BEGIN PS_(begin)
-#define ITERATE_NEXT PS_(next)
-#include "iterate.h" /** \include */
+/* iterate --> */
 
-#endif /* iterate --> */
+/* Define these for traits. */
+#define BOX_ PS_
+#define BOX_CONTAINER struct S_(set)
+#define BOX_CONTENTS struct PS_(node)
 
 static void PS_(unused_base_coda)(void);
 static void PS_(unused_base)(void) {
