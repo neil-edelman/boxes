@@ -323,7 +323,7 @@ static const PX_(type) *PX_(next)(struct PX_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PX_(to_string))(const PX_(type) *, char (*)[12]);
 static const char *(*PX_(pool_to_string))(const struct X_(pool) *);
-#include "../test/test_pool.h" /** \include */
+#include "../test/test_deque_pool.h" /** \include */
 #endif /* test --> */
 
 /* Define these for traits. */
