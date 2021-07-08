@@ -9,16 +9,8 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#ifdef POOL_TO_STRING /* <!-- to string: Only one, tests all base code. */
-
 /** Operates by side-effects. */
 typedef void (*PX_(action_fn))(PX_(type) *);
-
-/* Copy functions for later includes. */
-static void (*PX_(to_string))(const PX_(type) *, char (*)[12])
-	= (POOL_TO_STRING);
-static const char *(*PX_(pool_to_string))(const struct X_(pool) *)
-	= Z_(to_string);
 
 /* POOL_TEST must be a function that implements <typedef:<PX>Action>. */
 static const PX_(action_fn) PX_(filler) = (POOL_TEST);
@@ -271,7 +263,6 @@ static void PX_(test_states)(void) {
 #define ARRAY_NAME PX_(test)
 #define ARRAY_TYPE PX_(type) *
 #define ARRAY_SUBTYPE
-#define ARRAY_NO_ITERATE
 #include "../src/array.h"
 
 static void PX_(test_random)(void) {
@@ -343,10 +334,6 @@ static void X_(pool_test)(void) {
 	PX_(test_random)();
 	fprintf(stderr, "Done tests of <" QUOTE(POOL_NAME) ">pool.\n\n");
 }
-
-#else /* to string --><!-- */
-#error Test unsupported option; testing is out-of-sync?
-#endif /* --> */
 
 #undef QUOTE
 #undef QUOTE_

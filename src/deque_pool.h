@@ -43,9 +43,8 @@
 #define POOL_CHUNK_MIN_CAPACITY 8
 /** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
-/** A slot is a pointer to a stable chunk. Despite `typedef` ideals, it makes
- the source much more readable to have this instead of a `**chunk` and will
- not compile on error. */
+/** A slot is a pointer to a stable chunk. It makes the source much more
+ readable to have this instead of a `**chunk`. */
 typedef struct pool_chunk *pool_slot;
 /* <array.h> and <heap.h> must be in the same directory. */
 #define ARRAY_NAME pool_slot
@@ -59,7 +58,7 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #include "heap.h"
 #endif /* idempotent --> */
 
-/* Check defines. */
+
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
 #error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
 #endif
@@ -73,10 +72,7 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #error Only one trait per include is allowed; use POOL_EXPECT_TRAIT.
 #endif
 #if POOL_TRAITS != 0 && (!defined(X_) || !defined(CAT) || !defined(CAT_))
-#error X_ or CAT_? not yet defined; traits must be defined separately?
-#endif
-#if (POOL_TRAITS == 0) && defined(POOL_TEST)
-#error POOL_TEST must be defined in POOL_TO_STRING trait.
+#error Use POOL_EXPECT_TRAIT and include it again.
 #endif
 #if defined(POOL_TO_STRING_NAME) && !defined(POOL_TO_STRING)
 #error POOL_TO_STRING_NAME requires POOL_TO_STRING.
@@ -296,6 +292,9 @@ static void X_(pool_clear)(struct X_(pool) *const pool) {
 	pool_free_heap_clear(&pool->free0);
 }
 
+/* <!-- iterate interface */
+#define BOX_ITERATE
+
 /** It's not actually possible to iterate though, given the information that
  we have, but placing it here for testing purposes. Iterates through the
  zero-slot, ignoring the free list. Do not call. */
@@ -317,17 +316,20 @@ static const PX_(type) *PX_(next)(struct PX_(iterator) *const it) {
 	return it->chunk0 && it->i < it->chunk0->size
 		? PX_(data)(it->chunk0) + it->i++ : 0;
 }
-	
-#if defined(ITERATE) || defined(ITERATE_BOX) || defined(ITERATE_TYPE) \
-	|| defined(ITERATE_BEGIN) || defined(ITERATE_NEXT)
-#error Unexpected ITERATE*.
-#endif
-	
-#define ITERATE struct PX_(iterator)
-#define ITERATE_BOX struct X_(pool)
-#define ITERATE_TYPE PX_(type)
-#define ITERATE_BEGIN PX_(begin)
-#define ITERATE_NEXT PX_(next)
+
+/* iterate --> */
+
+#ifdef POOL_TEST /* <!-- test */
+/* Forward-declare. */
+static void (*PX_(to_string))(const PX_(type) *, char (*)[12]);
+static const char *(*PX_(pool_to_string))(const struct X_(pool) *);
+#include "../test/test_pool.h" /** \include */
+#endif /* test --> */
+
+/* Define these for traits. */
+#define BOX_ PX_
+#define BOX_CONTAINER struct X_(pool)
+#define BOX_CONTENTS PX_(type)
 
 static void PX_(unused_base_coda)(void);
 static void PX_(unused_base)(void) {
@@ -348,12 +350,13 @@ static void PX_(unused_base_coda)(void) { PX_(unused_base)(); }
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
 #include "to_string.h" /** \include */
-
-#if !defined(POOL_TEST_BASE) && defined(POOL_TEST) /* <!-- test */
-#define POOL_TEST_BASE /* Only one instance of base tests. */
-#include "../test/test_pool.h" /** \include */
-#endif /* test --> */
-
+#ifdef POOL_TEST /* <!-- expect: we've forward-declared these. */
+#undef POOL_TEST
+static void (*PX_(to_string))(const PX_(type) *, char (*)[12]) = PZ_(to_string);
+static const char *(*PX_(pool_to_string))(const struct X_(pool) *)
+	= &Z_(to_string);
+#endif /* expect --> */
+#undef PZ_
 #undef Z_
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
@@ -367,6 +370,9 @@ static void PX_(unused_base_coda)(void) { PX_(unused_base)(); }
 #ifdef POOL_EXPECT_TRAIT /* <!-- trait */
 #undef POOL_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
+#if defined(POOL_TEST)
+#error No to string traits defined for test.
+#endif
 #ifndef POOL_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
@@ -380,15 +386,10 @@ static void PX_(unused_base_coda)(void) { PX_(unused_base)(); }
 #ifdef POOL_TEST
 #undef POOL_TEST
 #endif
-#ifdef POOL_TEST_BASE
-#undef POOL_TEST_BASE
-#endif
-#undef ITERATE
-#undef ITERATE_BOX
-#undef ITERATE_TYPE
-#undef ITERATE_BEGIN
-#undef ITERATE_NEXT
+#undef BOX_
+#undef BOX_CONTAINER
+#undef BOX_CONTENTS
+#undef BOX_ITERATE
 #endif /* !trait --> */
-
 #undef POOL_TO_STRING_TRAIT
 #undef POOL_TRAITS

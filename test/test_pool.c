@@ -10,7 +10,7 @@
 
 
 #define PARAM(A) A
-#define STRINGISE(A) #A
+#define STRINGIZE(A) #A
 #define COLOUR(X) /* Max 11 letters. */ \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
@@ -18,7 +18,7 @@
 	X(Orange), X(Powder), X(Sky), X(Steel), X(Royal), X(Blue), X(Navy), \
 	X(Fuchsia), X(Pink), X(Purple)
 enum colour { COLOUR(PARAM) };
-static const char *const colours[] = { COLOUR(STRINGISE) };
+static const char *const colours[] = { COLOUR(STRINGIZE) };
 static const size_t colour_size = sizeof colours / sizeof *colours;
 static void colour_to_string(const enum colour *c, char (*const a)[12])
 	{ assert(*c < colour_size); sprintf(*a, "%s", colours[*c]); }
@@ -26,12 +26,14 @@ static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define POOL_NAME colour
 #define POOL_TYPE enum colour
+#define POOL_TEST &colour_filler
 #define POOL_EXPECT_TRAIT
 #include "../src/deque_pool.h"
 #define POOL_TO_STRING &colour_to_string
-#define POOL_TEST &colour_filler
 #include "../src/deque_pool.h"
 
+
+#if 0
 
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
@@ -87,6 +89,7 @@ static int keyval_value_cmp(const struct Keyval *const a,
 #define POOL_TO_STRING &keyval_value_to_string
 #include "../src/deque_pool.h"
 
+#endif
 
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
@@ -95,9 +98,9 @@ int main(void) {
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	colour_pool_test();
-	str4_pool_test();
+	/*str4_pool_test();
 	int_pool_test();
-	keyval_pool_test();
+	keyval_pool_test();*/
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
