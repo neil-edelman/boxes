@@ -1,0 +1,303 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>pool.h</title>
+</head>
+
+<body>
+
+<h1>pool.h</h1>
+
+<h2>Stable Pool</h2>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:pool_slot">pool_slot</a>, <a href = "#typedef:<PP>type">&lt;PP&gt;type</a>, <a href = "#typedef:<PP>action_fn">&lt;PP&gt;action_fn</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:pool_chunk">pool_chunk</a>, <a href = "#tag:<P>pool">&lt;P&gt;pool</a></li>
+	<li><a href = "#summary:">Function Summary</a></li>
+	<li><a href = "#fn:">Function Definitions</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div>
+
+<h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p><img alt = "Example of Pool" src = "web/pool.png" width = 543 height = 309></p>
+
+<p><a href = "#tag:&lt;P&gt;pool">&lt;P&gt;pool</a> stores <code>&lt;P&gt;</code> in a memory pool. Pointers to valid items in the pool are stable, but not generally in any order or contiguous. It uses geometrically increasing size-blocks. When the removal is uniformly sampled, and data reaches a steady-state size, it will settle in one allocated region.</p>
+
+</div>
+
+<dl>
+	<dt>Parameter: POOL_NAME, POOL_TYPE</dt>
+	<dd><code>&lt;P&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag type associated therewith; required. <code>&lt;PP&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dt>Parameter: POOL_TEST</dt>
+	<dd>To string trait contained in <a href = "../test/pool_test.h">../test/pool_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PP&gt;action_fn">&lt;PP&gt;action_fn</a>. Needs at least one to string trait.</dd>
+	<dt>Parameter: POOL_EXPECT_TRAIT</dt>
+	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
+	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PZ&gt;to_string_fn">&lt;PZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
+	<dt>Standard:</dt>
+	<dd>C89</dd>
+	<dt>Dependancies:</dt>
+	<dd><a href = "https://github.com/neil-edelman/array">array</a>, <a href = "https://github.com/neil-edelman/heap">heap</a></dd>
+</dl>
+
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div>
+
+<h3><a id = "typedef:pool_slot" name = "typedef:pool_slot">pool_slot</a></h3>
+
+<p><code>typedef struct pool_chunk *<strong>pool_slot</strong>;</code></p>
+
+<p>A slot is a pointer to a stable chunk. It makes the source much more readable to have this instead of a <code>**chunk</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PP>type" name = "typedef:<PP>type">&lt;PP&gt;type</a></h3>
+
+<p><code>typedef POOL_TYPE <strong>&lt;PP&gt;type</strong>;</code></p>
+
+<p>A valid tag type set by <code>POOL_TYPE</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PP>action_fn" name = "typedef:<PP>action_fn">&lt;PP&gt;action_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PP&gt;action_fn</strong>)(&lt;PP&gt;type *);</code></p>
+
+<p>Operates by side-effects.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PZ>to_string_fn" name = "typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code></p>
+
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
+
+</div>
+
+<h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
+
+<div>
+
+<h3><a id = "tag:pool_chunk" name = "tag:pool_chunk">pool_chunk</a></h3>
+
+<p><code>struct <strong>pool_chunk</strong> { size_t size; };</code></p>
+
+<p>Stable chunk followed by data; explicit naming to avoid confusion.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<P>pool" name = "tag:<P>pool">&lt;P&gt;pool</a></h3>
+
+<p><code>struct <strong>&lt;P&gt;pool</strong>;</code></p>
+
+<p>Consists of a map of several chunks of increasing size and a free-list. Zeroed data is a valid state. To instantiate to an idle state, see <a href = "#fn:&lt;P&gt;pool">&lt;P&gt;pool</a>, <code>POOL_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
+
+<p><img alt = "States." src = "web/states.png" width = 201 height = 291></p>
+
+</div>
+
+<div>
+
+<h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<P>pool">&lt;P&gt;pool</a></td><td>pool</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<P>pool_">&lt;P&gt;pool_</a></td><td>pool</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<P>pool_buffer">&lt;P&gt;pool_buffer</a></td><td>pool, n</td></tr>
+
+<tr><td align = right>static &lt;PP&gt;type *</td><td><a href = "#fn:<P>pool_new">&lt;P&gt;pool_new</a></td><td>pool</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<P>pool_remove">&lt;P&gt;pool_remove</a></td><td>pool, datum</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<P>pool_clear">&lt;P&gt;pool_clear</a></td><td>pool</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<P>pool_test">&lt;P&gt;pool_test</a></td><td></td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<Z>to_string">&lt;Z&gt;to_string</a></td><td>box</td></tr>
+
+</table>
+
+</div>
+
+<div>
+
+<h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<P>pool" name = "fn:<P>pool">&lt;P&gt;pool</a></h3>
+
+<p><code>static void <strong>&lt;P&gt;pool</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code></p>
+
+<p>Initializes <code>pool</code> to idle.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<P>pool_" name = "fn:<P>pool_">&lt;P&gt;pool_</a></h3>
+
+<p><code>static void <strong>&lt;P&gt;pool_</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code></p>
+
+<p>Destroys <code>pool</code> and returns it to idle.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(\log <code>data</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<P>pool_buffer" name = "fn:<P>pool_buffer">&lt;P&gt;pool_buffer</a></h3>
+
+<p><code>static int <strong>&lt;P&gt;pool_buffer</strong>(struct &lt;P&gt;pool *const <em>pool</em>, const size_t <em>n</em>)</code></p>
+
+<p>Ensure capacity of at least <code>n</code> items in <code>pool</code>. Pre-sizing is better for contiguous blocks.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: ERANGE, malloc</dt>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<P>pool_new" name = "fn:<P>pool_new">&lt;P&gt;pool_new</a></h3>
+
+<p><code>static &lt;PP&gt;type *<strong>&lt;P&gt;pool_new</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code></p>
+
+<p>This pointer is constant until it gets removed.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>A pointer to a new uninitialized element from <code>pool</code>.</dd>
+	<dt>Exceptional return: ERANGE, malloc</dt>
+	<dt>Order:</dt>
+	<dd>amortised O(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<P>pool_remove" name = "fn:<P>pool_remove">&lt;P&gt;pool_remove</a></h3>
+
+<p><code>static int <strong>&lt;P&gt;pool_remove</strong>(struct &lt;P&gt;pool *const <em>pool</em>, &lt;PP&gt;type *const <em>datum</em>)</code></p>
+
+<p>Deletes <code>datum</code> from <code>pool</code>. Do not remove data that is not in <code>pool</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(\log \log <code>items</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<P>pool_clear" name = "fn:<P>pool_clear">&lt;P&gt;pool_clear</a></h3>
+
+<p><code>static void <strong>&lt;P&gt;pool_clear</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code></p>
+
+<p>Removes all from <code>pool</code>, but keeps it's active state, only freeing the smaller blocks.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(\log <code>items</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<P>pool_test" name = "fn:<P>pool_test">&lt;P&gt;pool_test</a></h3>
+
+<p><code>static void <strong>&lt;P&gt;pool_test</strong>(void)</code></p>
+
+<p>The list will be tested on stdout; requires <code>POOL_TEST</code> and not <code>NDEBUG</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>to_string" name = "fn:<Z>to_string">&lt;Z&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+</div>
+
+<div>
+
+<h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>2021 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+</div>
+
+</body>
+
+</html>

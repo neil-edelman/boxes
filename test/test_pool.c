@@ -28,9 +28,9 @@ static void colour_filler(enum colour *const c)
 #define POOL_TYPE enum colour
 #define POOL_TEST &colour_filler
 #define POOL_EXPECT_TRAIT
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 #define POOL_TO_STRING &colour_to_string
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 
 
 struct str4 { char value[4]; };
@@ -42,9 +42,9 @@ static void str4_filler(struct str4 *const s)
 #define POOL_TYPE struct str4
 #define POOL_TEST &str4_filler
 #define POOL_EXPECT_TRAIT
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 #define POOL_TO_STRING &str4_to_string
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 
 
 static void int_to_string(const int *i, char (*const a)[12])
@@ -57,9 +57,9 @@ static void int_filler(int *const i)
 #define POOL_TYPE int
 #define POOL_TEST &int_filler
 #define POOL_EXPECT_TRAIT
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 #define POOL_TO_STRING &int_to_string
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 
 
 struct keyval { int key; char value[12]; };
@@ -79,13 +79,13 @@ static int keyval_value_cmp(const struct Keyval *const a,
 #define POOL_TYPE struct keyval
 #define POOL_TEST &keyval_filler
 #define POOL_EXPECT_TRAIT
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 #define POOL_TO_STRING &keyval_key_to_string
 #define POOL_EXPECT_TRAIT
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 #define POOL_TO_STRING_NAME value
 #define POOL_TO_STRING &keyval_value_to_string
-#include "../src/deque_pool.h"
+#include "../src/pool.h"
 
 
 /** Entry point.

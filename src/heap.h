@@ -10,7 +10,7 @@
  terminology of <Knuth, 1973, Sorting>. Internally, it is an
  `<<H>heap_node>array` with implicit heap properties, with an optionally cached
  <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer payload. As
- such, one needs to have `array.h` file in the same directory.
+ such, one needs to have <array.h> file in the same directory.
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
@@ -29,11 +29,13 @@
 
  @param[HEAP_TEST]
  To string trait contained in <../test/heap_test.h>; optional unit testing
- framework using `assert`. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PH>biaction_fn>. Provides tests for the base code and all later traits. Requires at least one `HEAP_TO_STRING` trait.
+ framework using `assert`. Must be defined equal to a random filler function,
+ satisfying `void (*<PH>biaction_fn)(<PH>node *, void *)` with the `param` of
+ <fn:<H>heap_test>. Must have any To String trait.
 
  @param[HEAP_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a trait.
+ Do not un-define certain variables for subsequent inclusion in a parameterized
+ trait.
 
  @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
  To string trait contained in <to_string.h>; an optional unique `<Z>`
@@ -113,10 +115,8 @@ typedef PH_(adjunct) *PH_(value);
  <typedef:<PH>node>. */
 struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
 /** Internal nodes in the heap. If `HEAP_VALUE` is set, this is a
- <tag:<PH>heap_node>, otherwise it's the same as <typedef:<PH>priority>. */
+ <tag:<H>heap_node>, otherwise it's the same as <typedef:<PH>priority>. */
 typedef struct H_(heap_node) PH_(node);
-/** Copies `priority` and `value` into a structure for use in  */
-/*const struct PH_(store) H_(heap_make_node)()...*/
 #else /* value --><!-- !value */
 typedef int PH_(value);
 typedef PH_(priority) PH_(node);
@@ -311,25 +311,25 @@ static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
 		? (n = PH_(remove)(heap), PH_(get_value)(&n)) : 0;
 }
 
-/** The capacity of `heap` will be increased to at least `buffer` elements
- beyond the size. Invalidates pointers in `a`.
+/** The capacity of `heap` will be increased to at least `n` elements beyond
+ the size. Invalidates pointers in `a`.
  @return The start of the buffered space. If `a` is idle and `buffer` is zero,
  a null pointer is returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
 static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
 	const size_t n) { return PH_(node_array_buffer)(&heap->a, n); }
 
-/** Adds and heapifies `add` elements to `heap`. Uses <Doberkat, 1984, Floyd>
- to sift-down all the internal nodes of heap, including any previous elements.
- As such, this function is most efficient on a heap of zero size, and becomes
+/** Adds and heapifies `n` elements to `heap`. Uses <Doberkat, 1984, Floyd> to
+ sift-down all the internal nodes of heap, including any previous elements. As
+ such, this function is most efficient on a heap of zero size, and becomes
  increasingly inefficient as the heap grows. For heaps that are already in use,
  it may be better to add each element individually, resulting in a run-time of
  \O(`new elements` \cdot log `heap.size`).
- @param[add] If zero, returns true.
+ @param[n] If zero, returns true without heapifying.
  @return Success. @throws[ERANGE, realloc] In practice, pushing uninitialized
  elements onto the heap does make sense, so <fn:<H>heap_buffer> `n` will be
  called first, in which case, one is guaranteed success.
- @order \O(`heap.size` + `add`) @allow */
+ @order \O(`heap.size` + `n`) @allow */
 static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	assert(heap);
 	PH_(node_array_append)(&heap->a, n);
@@ -340,20 +340,27 @@ static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 /* <!-- iterate interface */
 #define BOX_ITERATE
 #define PA_(n) CAT(array, CAT(PH_(node), n))
+/** Contains all the iteration parameters. */
 struct PH_(iterator);
 struct PH_(iterator) { struct PA_(iterator) a; };
+/** Begins the forward iteration `it` at `h`. */
 static void PH_(begin)(struct PH_(iterator) *const it,
 	const struct H_(heap) *const h) { PA_(begin)(&it->a, &h->a); }
+/** @return The next `it` or null. */
 static PH_(node) *PH_(next)(struct PH_(iterator) *const it)
 	{ return PA_(next)(&it->a); }
 #undef PA_
 /* iterate --> */
 
-
 /* Define these for traits. */
 #define BOX_ PH_
 #define BOX_CONTAINER struct H_(heap)
 #define BOX_CONTENTS PH_(node)
+
+#ifdef HEAP_FUNCTION /* <!-- function */
+#define Z_(n) CAT(H_(heap), n)
+#include "function.h" /** \include */
+#endif /* function --> */
 
 #ifdef HEAP_TEST /* <!-- test */
 /* Forward-declare. */
