@@ -18,6 +18,7 @@ static void test_int(unsigned *const i, void *const unused) {
 }
 #define HEAP_NAME int
 #define HEAP_TEST &test_int
+#define HEAP_FUNCTION
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
 #define HEAP_TO_STRING &int_to_string

@@ -10,7 +10,7 @@
  terminology of <Knuth, 1973, Sorting>. Internally, it is an
  `<<H>heap_node>array` with implicit heap properties, with an optionally cached
  <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer payload. As
- such, one needs to have `array.h` file in the same directory.
+ such, one needs to have <array.h> file in the same directory.
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
@@ -349,11 +349,15 @@ static PH_(node) *PH_(next)(struct PH_(iterator) *const it)
 #undef PA_
 /* iterate --> */
 
-
 /* Define these for traits. */
 #define BOX_ PH_
 #define BOX_CONTAINER struct H_(heap)
 #define BOX_CONTENTS PH_(node)
+
+#ifdef HEAP_FUNCTION /* <!-- function */
+#define Z_(n) CAT(H_(heap), n)
+#include "function.h" /** \include */
+#endif /* function --> */
 
 #ifdef HEAP_TEST /* <!-- test */
 /* Forward-declare. */
