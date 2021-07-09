@@ -37,8 +37,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>adjunct">&lt;PH&gt;adjunct</a>, <a href = "#typedef:<PH>value">&lt;PH&gt;value</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>adjunct">&lt;PH&gt;adjunct</a>, <a href = "#typedef:<PH>value">&lt;PH&gt;value</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PZ>action_fn">&lt;PZ&gt;action_fn</a>, <a href = "#typedef:<PZ>predicate_fn">&lt;PZ&gt;predicate_fn</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -52,7 +52,7 @@
 
 <p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties, with an optionally cached <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload. As such, one needs to have <a href = "array.h">array.h</a> file in the same directory.</p>
 
-Copies <code>priority</code> and <code>value</code> into a structure for use in</div>
+</div>
 
 <dl>
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
@@ -62,9 +62,9 @@ Copies <code>priority</code> and <code>value</code> into a structure for use in<
 	<dt>Parameter: HEAP_VALUE</dt>
 	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;adjunct">&lt;PH&gt;adjunct</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a> as <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>; declaring it is sufficient.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PH&gt;biaction_fn">&lt;PH&gt;biaction_fn</a>. Provides tests for the base code and all later traits. Requires at least one <code>HEAP_TO_STRING</code> trait.</dd>
+	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a random filler function, satisfying <code>void (*&lt;PH&gt;biaction_fn)(&lt;PH&gt;node *, void *)</code> with the <code>param</code> of <a href = "#fn:&lt;H&gt;heap_test">&lt;H&gt;heap_test</a>. Must have any To String trait.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
-	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
+	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; an optional unique <code>&lt;Z&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PZ&gt;to_string_fn">&lt;PZ&gt;to_string_fn</a>.</dd>
 	<dt>Standard:</dt>
@@ -72,7 +72,7 @@ Copies <code>priority</code> and <code>value</code> into a structure for use in<
 	<dt>Dependancies:</dt>
 	<dd><a href = "https://github.com/neil-edelman/array">array</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Add decrease priority.</dd>
+	<dd>Add decrease priority. (<a href = "#fn:&lt;Z&gt;trim">&amp;lt;Z&amp;gt;trim</a>)</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -123,7 +123,27 @@ Copies <code>priority</code> and <code>value</code> into a structure for use in<
 
 <p><code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code></p>
 
-<p>Internal nodes in the heap. If <code>HEAP_VALUE</code> is set, this is a <a href = "#tag:&lt;PH&gt;heap_node">&lt;PH&gt;heap_node</a>, otherwise it's the same as <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
+<p>Internal nodes in the heap. If <code>HEAP_VALUE</code> is set, this is a <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>, otherwise it's the same as <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PZ>action_fn" name = "typedef:<PZ>action_fn">&lt;PZ&gt;action_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PZ&gt;action_fn</strong>)(&lt;PZ&gt;type *);</code></p>
+
+<p>Operates by side-effects on <a href = "#typedef:&lt;PZ&gt;type">&lt;PZ&gt;type</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PZ>predicate_fn" name = "typedef:<PZ>predicate_fn">&lt;PZ&gt;predicate_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PZ&gt;predicate_fn</strong>)(const &lt;PZ&gt;type *);</code></p>
+
+<p>Returns a boolean given read-only <a href = "#typedef:&lt;PZ&gt;type">&lt;PZ&gt;type</a>.</p>
 
 </div>
 
@@ -163,6 +183,16 @@ Copies <code>priority</code> and <code>value</code> into a structure for use in<
 
 <div>
 
+<h3><a id = "tag:<PH>iterator" name = "tag:<PH>iterator">&lt;PH&gt;iterator</a></h3>
+
+<p><code>struct <strong>&lt;PH&gt;iterator</strong>;</code></p>
+
+<p>Contains all the iteration parameters.</p>
+
+</div>
+
+<div>
+
 <h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
 
 <table>
@@ -186,6 +216,20 @@ Copies <code>priority</code> and <code>value</code> into a structure for use in<
 <tr><td align = right>static &lt;PH&gt;node *</td><td><a href = "#fn:<H>heap_buffer">&lt;H&gt;heap_buffer</a></td><td>heap, n</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<H>heap_append">&lt;H&gt;heap_append</a></td><td>heap, n</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<Z>clip">&lt;Z&gt;clip</a></td><td>box, i</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<Z>copy_if">&lt;Z&gt;copy_if</a></td><td>a, copy, b</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<Z>keep_if">&lt;Z&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<Z>trim">&lt;Z&gt;trim</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<Z>each">&lt;Z&gt;each</a></td><td>box, action</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<Z>if_each">&lt;Z&gt;if_each</a></td><td>box, predicate, action</td></tr>
+
+<tr><td align = right>static const &lt;PZ&gt;type *</td><td><a href = "#fn:<Z>any">&lt;Z&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<H>heap_test">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
@@ -321,7 +365,7 @@ Copies <code>priority</code> and <code>value</code> into a structure for use in<
 
 <p><code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_buffer</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code></p>
 
-<p>The capacity of <code>heap</code> will be increased to at least <code>buffer</code> elements beyond the size. Invalidates pointers in <code>a</code>.</p>
+<p>The capacity of <code>heap</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates pointers in <code>a</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -337,15 +381,125 @@ Copies <code>priority</code> and <code>value</code> into a structure for use in<
 
 <p><code>static int <strong>&lt;H&gt;heap_append</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code></p>
 
-<p>Adds and heapifies <code>add</code> elements to <code>heap</code>. Uses <a href = "https://scholar.google.ca/scholar?q=Doberkat%2C+1984%2C+Floyd">Doberkat, 1984, Floyd</a> to sift-down all the internal nodes of heap, including any previous elements. As such, this function is most efficient on a heap of zero size, and becomes increasingly inefficient as the heap grows. For heaps that are already in use, it may be better to add each element individually, resulting in a run-time of &#927;(<code>new elements</code> &#183; log <code>heap.size</code>).</p>
+<p>Adds and heapifies <code>n</code> elements to <code>heap</code>. Uses <a href = "https://scholar.google.ca/scholar?q=Doberkat%2C+1984%2C+Floyd">Doberkat, 1984, Floyd</a> to sift-down all the internal nodes of heap, including any previous elements. As such, this function is most efficient on a heap of zero size, and becomes increasingly inefficient as the heap grows. For heaps that are already in use, it may be better to add each element individually, resulting in a run-time of &#927;(<code>new elements</code> &#183; log <code>heap.size</code>).</p>
 
 <dl>
+	<dt>Parameter: <em>n</em></dt>
+	<dd>If zero, returns true without heapifying.</dd>
 	<dt>Return:</dt>
 	<dd>Success.</dd>
 	<dt>Exceptional return: ERANGE, realloc</dt>
 	<dd>In practice, pushing uninitialized elements onto the heap does make sense, so <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a> <code>n</code> will be called first, in which case, one is guaranteed success.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(<code>heap.size</code> + <code>add</code>)</dd>
+	<dd>&#927;(<code>heap.size</code> + <code>n</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>clip" name = "fn:<Z>clip">&lt;Z&gt;clip</a></h3>
+
+<p><code>static size_t <strong>&lt;Z&gt;clip</strong>(const &lt;PZ&gt;box *const <em>box</em>, const long <em>i</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Converts <code>i</code> to an index in <code>box</code> from [0, <code>a.size</code>]. Negative values are implicitly plus <code>box.size</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>copy_if" name = "fn:<Z>copy_if">&lt;Z&gt;copy_if</a></h3>
+
+<p><code>static int <strong>&lt;Z&gt;copy_if</strong>(&lt;PZ&gt;box *const <em>a</em>, const &lt;PZ&gt;predicate_fn <em>copy</em>, const &lt;PZ&gt;box *const <em>b</em>)</code></p>
+
+<p>Needs iterate and copy interfaces. For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
+
+<dl>
+	<dt>Exceptional return: ERANGE, realloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>b.size</code> &#215; <code>copy</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>keep_if" name = "fn:<Z>keep_if">&lt;Z&gt;keep_if</a></h3>
+
+<p><code>static void <strong>&lt;Z&gt;keep_if</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>keep</em>, const &lt;PZ&gt;action_fn <em>destruct</em>)</code></p>
+
+<p>For all elements of <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> if not-null.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>a.size</code> &#215; <code>keep</code> &#215; <code>destruct</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>trim" name = "fn:<Z>trim">&lt;Z&gt;trim</a></h3>
+
+<p><code>static void <strong>&lt;Z&gt;trim</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>)</code></p>
+
+<p>Requires iterate, reverse, and copy interfaces. Removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>each" name = "fn:<Z>each">&lt;Z&gt;each</a></h3>
+
+<p><code>static void <strong>&lt;Z&gt;each</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;action_fn <em>action</em>)</code></p>
+
+<p>Iterates through <code>box</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code> &#215; <code>action</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>if_each" name = "fn:<Z>if_each">&lt;Z&gt;if_each</a></h3>
+
+<p><code>static void <strong>&lt;Z&gt;if_each</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>, const &lt;PZ&gt;action_fn <em>action</em>)</code></p>
+
+<p>Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code> &#215; <code>action</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>any" name = "fn:<Z>any">&lt;Z&gt;any</a></h3>
+
+<p><code>static const &lt;PZ&gt;type *<strong>&lt;Z&gt;any</strong>(const &lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>)</code></p>
+
+<p>Requires iterate interface. Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code>)</dd>
 </dl>
 
 </div>
@@ -360,7 +514,7 @@ Copies <code>priority</code> and <code>value</code> into a structure for use in<
 
 <dl>
 	<dt>Parameter: <em>param</em></dt>
-	<dd>The parameter to call <a href = "#typedef:&lt;PH&gt;biaction_fn">&lt;PH&gt;biaction_fn</a> <code>HEAP_TEST</code>.</dd>
+	<dd>The <code>void *</code> parameter in <code>HEAP_TEST</code>. Can be null.</dd>
 </dl>
 
 </div>

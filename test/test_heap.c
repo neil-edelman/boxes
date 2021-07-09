@@ -18,7 +18,6 @@ static void test_int(unsigned *const i, void *const unused) {
 }
 #define HEAP_NAME int
 #define HEAP_TEST &test_int
-#define HEAP_FUNCTION
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
 #define HEAP_TO_STRING &int_to_string
@@ -31,6 +30,7 @@ static void test_orc(struct orc_heap_node *, void *);
 
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc
+#define HEAP_FUNCTION
 #define HEAP_TEST &test_orc
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"

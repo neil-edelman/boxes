@@ -66,8 +66,7 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 	}
 }
 
-/** @param[param] The parameter to call <typedef:<PH>biaction_fn>
- `HEAP_TEST`. */
+/** @param[param] The parameter used for `HEAP_TEST`. */
 static void PH_(test_basic)(void *const param) {
 	struct H_(heap) heap = HEAP_IDLE;
 	PH_(node) *node, add;
@@ -173,8 +172,7 @@ static void PH_(test_basic)(void *const param) {
 
 /** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
  `NDEBUG` while defining `assert`.
- @param[param] The parameter to call <typedef:<PH>biaction_fn> `HEAP_TEST`.
- @allow */
+ @param[param] The `void *` parameter in `HEAP_TEST`. Can be null. @allow */
 static void H_(heap_test)(void *const param) {
 	printf("<" QUOTE(HEAP_NAME) ">heap"
 		" of priority type <" QUOTE(HEAP_TYPE) ">"
