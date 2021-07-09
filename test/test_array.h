@@ -441,8 +441,8 @@ static void A_(array_test)(void) {
 
 #if 0 /* <!-- no */
 
-defined(ARRAY_COMPARE) \
-	|| defined(ARRAY_EQUAL) /* to string --><!-- comparable */
+/*defined(ARRAY_COMPARE) || defined(ARRAY_EQUAL) */
+/* to string --><!-- comparable */
 
 /** Fills `fill` that is not equal to `neq` if possible. */
 static int PTC_(fill_unique)(PA_(type) *const fill,
