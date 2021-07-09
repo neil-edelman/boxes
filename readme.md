@@ -13,7 +13,7 @@
 
 ![Example of Pool](web/pool.png)
 
-[&lt;P&gt;pool](#user-content-tag-8aba39cb) stores `<P>` in a memory pool\. Pointers to valid items in the pool are stable, but not generally in any order or contiguous\. It uses geometrically increasing size\-blocks\. When the removal is uniformly sampled, and data reaches a steady\-state size, it will settle in one allocated region\.
+[&lt;P&gt;pool](#user-content-tag-8aba39cb) is a memory pool that stores [&lt;PP&gt;type](#user-content-typedef-7560d92f)\. Pointers to valid items in the pool are stable, but not generally in any order or contiguous\. It uses geometrically increasing size\-blocks, so, if data reaches a steady\-state size, when the removal is uniformly sampled, it will settle in one allocated region\.
 
 
 

@@ -5,15 +5,16 @@
 
  ![Example of Pool](../web/pool.png)
 
- <tag:<P>pool> stores `<P>` in a memory pool. Pointers to valid items in the
- pool are stable, but not generally in any order or contiguous. It uses
- geometrically increasing size-blocks. When the removal is uniformly sampled,
- and data reaches a steady-state size, it will settle in one allocated region.
+ <tag:<P>pool> is a memory pool that stores <typedef:<PP>type>. Pointers to
+ valid items in the pool are stable, but not generally in any order or
+ contiguous. It uses geometrically increasing size-blocks, so, if data reaches
+ a steady-state size, when the removal is uniformly sampled, it will settle in
+ one allocated region.
 
  @param[POOL_NAME, POOL_TYPE]
- `<P>` that satisfies `C` naming conventions when mangled and a valid tag type
- associated therewith; required. `<PP>` is private, whose names are prefixed in
- a manner to avoid collisions.
+ `<P>` that satisfies `C` naming conventions when mangled and a valid tag type,
+ <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
+ names are prefixed in a manner to avoid collisions.
 
  @param[POOL_TEST]
  To string trait contained in <../test/pool_test.h>; optional unit testing
