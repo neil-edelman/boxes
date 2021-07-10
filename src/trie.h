@@ -32,7 +32,7 @@
  satisfying <typedef:<PT>action_fn>. Requires that `NDEBUG` not be defined
  and `TRIE_ITERATE_TO_STRING`.
 
- @fixme Have a replace; potentially much less wastful then remove and add.
+ @fixme Have a replace; potentially much less wasteful than remove and add.
  @fixme Compression _a la_ Judy; 64 bits to store mostly 0/1? Could it be done?
  @fixme Don't put two strings side-by-side or delete one that causes two
  strings to be side-by-side that have more than 512 matching characters in the
@@ -296,7 +296,7 @@ static int PT_(init)(struct T_(trie) *const trie, PT_(type) *const*const a,
 	leaves = trie->leaves.data;
 	memcpy(leaves, a, sizeof *a * a_size);
 	trie->leaves.size = a_size;
-	/* Sort, get rid of duplicates, and initialise branches, from `Array.h`. */
+	/* Sort, get rid of duplicates, and initialize branches, from `compare.h`. */
 	qsort(leaves, a_size, sizeof *a, &PA_(vcompar));
 	A_(array_unique)(&trie->leaves);
 	PT_(init_branches_r)(trie, 0, 0, trie->leaves.size);

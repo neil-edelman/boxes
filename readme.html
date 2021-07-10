@@ -50,25 +50,25 @@
 
 <p><img alt = "Example of trie." src = "web/trie.png" width = 333 height = 255></p>
 
-<p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix tree, digital tree, or trie, implemented as an array of pointers-to-<code>T</code> whose keys are always in lexicographically-sorted order and index on the keys. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the where the keys are different. Strings can be any encoding with a byte null-terminator, (<code>C</code> strings,) including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
+<p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix tree, digital tree, or trie, implemented as an array of pointers-to-<code>T</code> whose keys are always in lexicographically-sorted order. It can be seen as a <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the where the keys are different. Strings can be any encoding with a byte null-terminator, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
 
 </div>
 
 <dl>
 	<dt>Parameter: TRIE_NAME, TRIE_TYPE</dt>
-	<dd><a href = "#typedef:&lt;PT&gt;type">&lt;PT&gt;type</a> that satisfies <code>C</code> naming conventions when mangled and an optional returnable type that is declared, (it is used by reference only except if <code>TRIE_TEST</code>.) <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dd><a href = "#typedef:&lt;PT&gt;type">&lt;PT&gt;type</a> that satisfies <code>C</code> naming conventions when mangled and an optional returnable type that is declared, (it is used by reference only except if <code>TRIE_TEST</code>.) <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TRIE_KEY</dt>
 	<dd>A function that satisfies <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a>. Must be defined if and only if <code>TRIE_TYPE</code> is defined.</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
-	<dd>Defining this includes <code>ToString.h</code> with the keys as the string.</dd>
+	<dd>Defining this includes <a href = "to_string.h">to_string.h</a> with the keys as the string.</dd>
 	<dt>Parameter: TRIE_TEST</dt>
-	<dd>Unit testing framework <a href = "#fn:&lt;T&gt;trie_test">&lt;T&gt;trie_test</a>, included in a separate header, <a href = "../test/TreeTest.h">../test/TreeTest.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action_fn">&lt;PT&gt;action_fn</a>. Requires that <code>NDEBUG</code> not be defined.</dd>
+	<dd>Unit testing framework <a href = "#fn:&lt;T&gt;trie_test">&lt;T&gt;trie_test</a>, included in a separate header, <a href = "../test/test_trie.h">../test/test_trie.h</a>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PT&gt;action_fn">&lt;PT&gt;action_fn</a>. Requires that <code>NDEBUG</code> not be defined and <code>TRIE_ITERATE_TO_STRING</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
-	<dd><a href = "https://github.com/neil-edelman/array">array</a></dd>
+	<dd><a href = "https://github.com/neil-edelman/array">array</a>, <a href = "iterate.h">iterate.h</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Have a replace; potentially much less wastful then remove and add. Compression <em>ala</em> Judy; 64 bits to store mostly 0/1? Could it be done? Don't put two strings side-by-side or delete one that causes two strings to be side-by-side that have more than 512 matching characters in the same bit-positions, it will trip an <code>assert</code>. (Genomic data, perhaps?)</dd>
+	<dd>Have a replace; potentially much less wasteful than remove and add. Compression <em>ala</em> Judy; 64 bits to store mostly 0/1? Could it be done? Don't put two strings side-by-side or delete one that causes two strings to be side-by-side that have more than 512 matching characters in the same bit-positions, it will trip an <code>assert</code>. (Genomic data, perhaps?)</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -228,7 +228,7 @@
 
 <p><code>static int <strong>&lt;T&gt;trie_from_array</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const *const <em>array</em>, const size_t <em>array_size</em>)</code></p>
 
-<p>Initialises <code>trie</code> from an <code>array</code> of pointers-to-<code>&lt;T&gt;</code> of <code>array_size</code>.</p>
+<p>Initializes <code>trie</code> from an <code>array</code> of pointers-to-<code>&lt;T&gt;</code> of <code>array_size</code>.</p>
 
 <dl>
 	<dt>Return:</dt>

@@ -164,16 +164,14 @@ static int Z_(is_equal)(const PZ_(box) *const a, const PZ_(box) *const b) {
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false. @order \O(`a.size` \times `merge`) @allow */
 static void Z_(unique_merge)(PZ_(box) *const a, const PZ_(biaction_fn) merge) {
-	assert(a && merge);
-	if(a) assert(0);
-#if 0
+	/* fixme: This assumes contiguous. */
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
 	int is_first, is_last;
 	assert(a);
 	for(target = from = cursor = 0; cursor < last; cursor += next) {
 		/* Bijective `[from, cursor)` is moved lazily. */
-		for(choice = 0, next = 1; cursor + next < last && PTC_(is_equal)(a->data
+		for(choice = 0, next = 1; cursor + next < last && PZ_(is_equal)(a->data
 			+ cursor + choice, a->data + cursor + next); next++)
 			if(merge && merge(a->data + choice, a->data + next)) choice = next;
 		if(next == 1) continue;
@@ -192,7 +190,6 @@ static void Z_(unique_merge)(PZ_(box) *const a, const PZ_(biaction_fn) merge) {
 	memmove(a->data + target, a->data + from, sizeof *a->data * move),
 	target += move, assert(a->size >= target);
 	a->size = target;
-#endif
 }
 
 /** Removes consecutive duplicate elements in `a`. @order \O(`a.size`) @allow */
