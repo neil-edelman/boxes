@@ -432,8 +432,8 @@ static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 #ifdef HEAP_TEST
 #undef HEAP_TEST
 #endif
-#ifdef HEAP_TEST_BASE
-#undef HEAP_TEST_BASE
+#ifdef HEAP_FUNCTION
+#undef HEAP_FUNCTION
 #endif
 #undef BOX_
 #undef BOX_CONTAINER
