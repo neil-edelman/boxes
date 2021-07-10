@@ -3,6 +3,8 @@
 
  @subtitle Compare Trait
 
+ This requires the iterate interface.
+
  @param[Z_]
  A one-argument macro producing a name that is responsible for the name of the
  functions.
