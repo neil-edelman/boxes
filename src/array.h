@@ -5,30 +5,23 @@
 
  ![Example of array.](../web/array.png)
 
- <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>
- specified by `ARRAY_TYPE`. Resizing may be necessary when increasing the size
- of the array. This incurs amortised cost; any pointers to this memory may
- become stale.
+ <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>.
+ Resizing may be necessary when increasing the size of the array; this incurs
+ amortised cost, and any pointers to this memory may become stale.
 
  @param[ARRAY_NAME, ARRAY_TYPE]
- `<A>` that satisfies `C` naming conventions when mangled and a valid tag-type
- associated therewith; required. `<PA>` is private, whose names are prefixed in
- a manner to avoid collisions.
-
- @param[ARRAY_FILLER]
- Optional function implementing <typedef:<PZ>action_fn> that fills the
- <typedef:<PA>type> from uninitialized to random, (used for testing.)
+ `<A>` that satisfies `C` naming conventions when mangled and a valid tag-type,
+ <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
+ names are prefixed in a manner to avoid collisions.
 
  @param[ARRAY_FUNCTION]
- Include function trait contained in <function.h>.
+ Include Function trait contained in <function.h>.
 
  @param[ARRAY_TEST]
- Testing array contained in <../test/test_array.h>, once _per_ array, ...
- To string trait contained in . Optional unit testing
- framework using `assert`. Can only be defined once _per_ array. Must be
- defined equal to a (random) filler function, satisfying
- <typedef:<PA>action_fn>. Output will be shown with the to string trait in
- which it's defined; provides tests for the base code and all later traits.
+ Optional function implementing <typedef:<PZ>action_fn> that fills the
+ <typedef:<PA>type> from uninitialized to random for unit testing framework
+ using `assert`. Testing array contained in <../test/test_array.h>. Must have
+ any To String trait.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -36,8 +29,8 @@
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <compare.h>. An optional mangled name for
- uniqueness and a function implementing <typedef:<PC>compare> xor
- <typedef:<PC>is_equal>.
+ uniqueness and a function implementing <typedef:<PZ>compare_fn> xor
+ <typedef:<PZ>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <to_string.h>. An optional mangled name for
@@ -157,8 +150,8 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 	return 1;
 }
 
-/** The capacity of `a` will be increased to at least `buffer` elements beyond
- the size. Invalidates pointers in `a`.
+/** The capacity of `a` will be increased to at least `n` elements beyond the
+ size. Invalidates pointers in `a`.
  @return The start of the buffered space, (the back of the array.) If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
  indicates an error. @throws[realloc, ERANGE] @allow */
@@ -315,14 +308,16 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 /* reverse --><!-- copy interface */
 #define BOX_COPY
 
-/** @implements copy */
+/** Copies `n` items from `src` to `dest`. @implements copy */
 static void PA_(copy)(PA_(type) *const dest, const PA_(type) *const src,
 	const size_t n) { memcpy(dest, src, sizeof *src * n); }
 
-/** @implements copy */
+/** Copies `n` items from `src` to `dest`, which may overlap.
+ @implements copy */
 static void PA_(move)(PA_(type) *const dest, const PA_(type) *const src,
 	const size_t n) { memmove(dest, src, sizeof *src * n); }
 
+/** Appends `n` items on the back of `a`. */
 static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 	{ return A_(array_append)(a, n); }
 
@@ -399,7 +394,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #endif /* !eq --> */
 #define BOX_IS_EQUAL ARRAY_IS_EQUAL
 #endif /* eq --> */
-#include "compare.h"
+#include "compare.h" /** \include */
 
 #ifdef ARRAY_COMPARE_NAME
 #undef ARRAY_COMPARE_NAME

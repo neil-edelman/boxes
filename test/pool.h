@@ -5,15 +5,16 @@
 
  ![Example of Pool](../web/pool.png)
 
- <tag:<P>pool> stores `<P>` in a memory pool. Pointers to valid items in the
- pool are stable, but not generally in any order or contiguous. It uses
- geometrically increasing size-blocks. When the removal is uniformly sampled,
- and data reaches a steady-state size, it will settle in one allocated region.
+ <tag:<P>pool> is a memory pool that stores <typedef:<PP>type>. Pointers to
+ valid items in the pool are stable, but not generally in any order or
+ contiguous. It uses geometrically increasing size-blocks, so, if data reaches
+ a steady-state size, when the removal is uniformly sampled, it will settle in
+ one allocated region.
 
  @param[POOL_NAME, POOL_TYPE]
- `<P>` that satisfies `C` naming conventions when mangled and a valid tag type
- associated therewith; required. `<PP>` is private, whose names are prefixed in
- a manner to avoid collisions.
+ `<P>` that satisfies `C` naming conventions when mangled and a valid tag type,
+ <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
+ names are prefixed in a manner to avoid collisions.
 
  @param[POOL_TEST]
  To string trait contained in <../test/pool_test.h>; optional unit testing
@@ -25,7 +26,7 @@
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
  To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PA>to_string_fn>.
+ conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`.
 
@@ -113,12 +114,12 @@ struct P_(pool) {
 #define POOL_IDLE { ARRAY_IDLE, HEAP_IDLE, (size_t)0 }
 #endif /* !zero --> */
 
-/** @return Given a pointer to `chunk_size`, return the chunk data. */
+/** @return Given a pointer to `chunk`, return the chunk data. */
 static PP_(type) *PP_(data)(struct pool_chunk *const chunk)
 	{ return (PP_(type) *)(chunk + 1); }
 
-/** @return Index of sorted slot[1..n] that is higher than `datum` in `pool`.
- The [0] slot is unsorted. @order \O(\log `slots`) */
+/** @return Index of sorted slot[1..n] that is higher than `x` in `slots`.
+ The `[0]` slot is unsorted. @order \O(\log `slots`) */
 static size_t PP_(upper)(const struct pool_slot_array *const slots,
 	const void *const x) {
 	const pool_slot *const base = slots->data;
