@@ -3,7 +3,7 @@
 ## Hash Set ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;type](#user-content-typedef-5ef437c0), [&lt;PS&gt;mtype](#user-content-typedef-39f53ca7), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;replace_fn](#user-content-typedef-ccec694d), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1), [&lt;PS&gt;action_fn](#user-content-typedef-4d582877)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;type](#user-content-typedef-5ef437c0), [&lt;PS&gt;mtype](#user-content-typedef-39f53ca7), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;replace_fn](#user-content-typedef-ccec694d), [&lt;PS&gt;action_fn](#user-content-typedef-4d582877), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;S&gt;set_node](#user-content-tag-9b50f7a7), [&lt;S&gt;set](#user-content-tag-54aaac2), [&lt;PS&gt;iterator](#user-content-tag-d987a32)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -31,6 +31,8 @@ Internally, it is a separately chained hash table with a maximum load factor of 
    This is [&lt;PS&gt;uint](#user-content-typedef-f1ed2088) and defaults to `unsigned int`; use when [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) is a specific hash length\.
  * Parameter: SET\_NO\_CACHE  
    Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate [&lt;PS&gt;uint](#user-content-typedef-f1ed2088) _per_ datum, \(in rare cases\.\)
+ * Parameter: SET\_ITERATE  
+   Satisfies the [iterate\.h](iterate.h) interface for forwards iteration in original inclusion\.
  * Parameter: SET\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: SET\_TO\_STRING  
@@ -91,19 +93,19 @@ A di\-predicate; returns true if the `replace` replaces the `original`\.
 
 
 
-### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
-
-<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
-
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
-
-
-
 ### <a id = "user-content-typedef-4d582877" name = "user-content-typedef-4d582877">&lt;PS&gt;action_fn</a> ###
 
 <code>typedef void(*<strong>&lt;PS&gt;action_fn</strong>)(&lt;PS&gt;type *);</code>
 
 Operates by side\-effects\. Used for `SET_TEST`\.
+
+
+
+### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
+
+<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
+
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -157,9 +159,9 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static struct &lt;S&gt;set_node *</td><td><a href = "#user-content-fn-f336902b">&lt;S&gt;set_remove</a></td><td>set, data</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-773f8713">&lt;S&gt;set_test</a></td><td>parent_new, parent</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -286,18 +288,6 @@ Removes an element `data` from `set`\.
 
 
 
-### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
-
-<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
-
- * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
 ### <a id = "user-content-fn-773f8713" name = "user-content-fn-773f8713">&lt;S&gt;set_test</a> ###
 
 <code>static void <strong>&lt;S&gt;set_test</strong>(struct &lt;S&gt;set_node *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code>
@@ -308,6 +298,18 @@ The list will be tested on `stdout`\. Requires `SET_TEST` to be a [&lt;PS&gt;act
    Specifies the dynamic up\-level creator of the parent `struct`\. Could be null; then testing will be done statically on an array of [&lt;S&gt;set_node](#user-content-tag-9b50f7a7) and `SET_TEST` is not allowed to go over the limits of the data type\.
  * Parameter: _parent_  
    The parameter passed to `parent_new`\. Ignored if `parent_new` is null\.
+
+
+
+
+### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
+
+<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
+
+ * Return:  
+   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+ * Order:  
+   &#920;\(1\)
 
 
 

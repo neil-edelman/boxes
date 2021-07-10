@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>type">&lt;PS&gt;type</a>, <a href = "#typedef:<PS>mtype">&lt;PS&gt;mtype</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>replace_fn">&lt;PS&gt;replace_fn</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a>, <a href = "#typedef:<PS>action_fn">&lt;PS&gt;action_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>type">&lt;PS&gt;type</a>, <a href = "#typedef:<PS>mtype">&lt;PS&gt;mtype</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>replace_fn">&lt;PS&gt;replace_fn</a>, <a href = "#typedef:<PS>action_fn">&lt;PS&gt;action_fn</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<S>set_node">&lt;S&gt;set_node</a>, <a href = "#tag:<S>set">&lt;S&gt;set</a>, <a href = "#tag:<PS>iterator">&lt;PS&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -69,6 +69,8 @@
 	<dd>This is <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> and defaults to <code>unsigned int</code>; use when <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> is a specific hash length.</dd>
 	<dt>Parameter: SET_NO_CACHE</dt>
 	<dd>Calculates the hash every time and discards it; should be used when the hash calculation is trivial to avoid storing duplicate <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> <em>per</em> datum, (in rare cases.)</dd>
+	<dt>Parameter: SET_ITERATE</dt>
+	<dd>Satisfies the <a href = "iterate.h">iterate.h</a> interface for forwards iteration in original inclusion.</dd>
 	<dt>Parameter: SET_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: SET_TO_STRING</dt>
@@ -143,21 +145,21 @@
 
 <div>
 
-<h3><a id = "typedef:<PZ>to_string_fn" name = "typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code></p>
-
-<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
-
-</div>
-
-<div>
-
 <h3><a id = "typedef:<PS>action_fn" name = "typedef:<PS>action_fn">&lt;PS&gt;action_fn</a></h3>
 
 <p><code>typedef void(*<strong>&lt;PS&gt;action_fn</strong>)(&lt;PS&gt;type *);</code></p>
 
 <p>Operates by side-effects. Used for <code>SET_TEST</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PZ>to_string_fn" name = "typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code></p>
+
+<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -219,9 +221,9 @@
 
 <tr><td align = right>static struct &lt;S&gt;set_node *</td><td><a href = "#fn:<S>set_remove">&lt;S&gt;set_remove</a></td><td>set, data</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<Z>to_string">&lt;Z&gt;to_string</a></td><td>box</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#fn:<S>set_test">&lt;S&gt;set_test</a></td><td>parent_new, parent</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<Z>to_string">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -375,21 +377,6 @@
 
 <div>
 
-<h3><a id = "fn:<Z>to_string" name = "fn:<Z>to_string">&lt;Z&gt;to_string</a></h3>
-
-<p><code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code></p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<S>set_test" name = "fn:<S>set_test">&lt;S&gt;set_test</a></h3>
 
 <p><code>static void <strong>&lt;S&gt;set_test</strong>(struct &lt;S&gt;set_node *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code></p>
@@ -401,6 +388,21 @@
 	<dd>Specifies the dynamic up-level creator of the parent <code>struct</code>. Could be null; then testing will be done statically on an array of <a href = "#tag:&lt;S&gt;set_node">&lt;S&gt;set_node</a> and <code>SET_TEST</code> is not allowed to go over the limits of the data type.</dd>
 	<dt>Parameter: <em>parent</em></dt>
 	<dd>The parameter passed to <code>parent_new</code>. Ignored if <code>parent_new</code> is null.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>to_string" name = "fn:<Z>to_string">&lt;Z&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
 </dl>
 
 </div>
