@@ -138,7 +138,7 @@ static void Z_(trim)(PZ_(box) *const box, const PZ_(predicate_fn) predicate) {
  of the list should not change while in this function.
  @order \O(`box.size` \times `action`) @allow */
 static void Z_(each)(PZ_(box) *const box, const PZ_(action_fn) action) {
-	PA_(type) *i;
+	PZ_(type) *i;
 	struct BOX_(iterator) it;
 	assert(box && action);
 	BOX_(begin)(&it, box);
