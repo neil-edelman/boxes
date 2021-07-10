@@ -62,7 +62,7 @@
 	<dt>Parameter: LIST_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: LIST_TO_STRING_NAME, LIST_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;Z&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PZ&gt;to_string_fn">&lt;PZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>LIST_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; requires <code>ARRAY_ITERATE</code> and goes forwards. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PZ&gt;to_string_fn">&lt;PZ&gt;to_string_fn</a>.</dd>
 	<dt>Parameter: LIST_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/test_list.h">../test/test_list.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PL&gt;action_fn">&lt;PL&gt;action_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
@@ -131,7 +131,7 @@
 
 <p><code>struct <strong>&lt;L&gt;list</strong>;</code></p>
 
-<p>Serves as head and tail for linked-list of <a href = "#tag:&lt;L&gt;list_node">&lt;L&gt;list_node</a>. Use <a href = "#fn:&lt;L&gt;list_clear">&lt;L&gt;list_clear</a> to initialize the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>.</p>
+<p>Serves as head and tail for linked-list of <a href = "#tag:&lt;L&gt;list_node">&lt;L&gt;list_node</a>. Use <a href = "#fn:&lt;L&gt;list_clear">&lt;L&gt;list_clear</a> to initialize the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>. These are sentinels such that <code>head.prev</code> and <code>tail.next</code> are always and the only ones to be null.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 284 height = 260></p>
 
@@ -205,9 +205,9 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_xor_to">&lt;L&gt;list_xor_to</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<Z>to_string">&lt;Z&gt;to_string</a></td><td>box</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_test">&lt;L&gt;list_test</a></td><td>parent_new, parent</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<Z>to_string">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -283,7 +283,7 @@
 
 <p><code>static void <strong>&lt;L&gt;list_clear</strong>(struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
-<p>Clears and initialises <code>list</code>.</p>
+<p>Clears and initializes <code>list</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -618,21 +618,6 @@
 
 <div>
 
-<h3><a id = "fn:<Z>to_string" name = "fn:<Z>to_string">&lt;Z&gt;to_string</a></h3>
-
-<p><code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code></p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<L>list_test" name = "fn:<L>list_test">&lt;L&gt;list_test</a></h3>
 
 <p><code>static void <strong>&lt;L&gt;list_test</strong>(struct &lt;L&gt;list_node *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code></p>
@@ -644,6 +629,21 @@
 	<dd>Responsible for creating new objects and returning the list.</dd>
 	<dt>Parameter: <em>parent</em></dt>
 	<dd>Responsible for creating new objects and returning the list.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<Z>to_string" name = "fn:<Z>to_string">&lt;Z&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
 </dl>
 
 </div>

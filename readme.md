@@ -24,7 +24,7 @@ In parlance of <Thareja 2014, Data Structures>, [&lt;L&gt;list](#user-content-ta
  * Parameter: LIST\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); `<Z>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)\. There can be multiple to string traits, but only one can omit `LIST_TO_STRING_NAME`\.
+   To string trait contained in [to\_string\.h](to_string.h); requires `ARRAY_ITERATE` and goes forwards\. An optional mangled name for uniqueness and function implementing [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)\.
  * Parameter: LIST\_TEST  
    To string trait contained in [\.\./test/test\_list\.h](../test/test_list.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
@@ -81,7 +81,7 @@ Storage of this structure is the responsibility of the caller\. One can only be 
 
 <code>struct <strong>&lt;L&gt;list</strong>;</code>
 
-Serves as head and tail for linked\-list of [&lt;L&gt;list_node](#user-content-tag-9604e632)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
+Serves as head and tail for linked\-list of [&lt;L&gt;list_node](#user-content-tag-9604e632)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. These are sentinels such that `head.prev` and `tail.next` are always and the only ones to be null\.
 
 ![States.](web/states.png)
 
@@ -151,9 +151,9 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-51bed9c1">&lt;L&gt;list_xor_to</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-adcc04ce">&lt;L&gt;list_test</a></td><td>parent_new, parent</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -213,7 +213,7 @@ Contains all iteration parameters\.
 
 <code>static void <strong>&lt;L&gt;list_clear</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
 
-Clears and initialises `list`\.
+Clears and initializes `list`\.
 
  * Order:  
    &#920;\(1\)
@@ -485,18 +485,6 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, b
    O\(|`a`| \+ |`b`|\)
 
 
-### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
-
-<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
-
- * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
 ### <a id = "user-content-fn-adcc04ce" name = "user-content-fn-adcc04ce">&lt;L&gt;list_test</a> ###
 
 <code>static void <strong>&lt;L&gt;list_test</strong>(struct &lt;L&gt;list_node *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code>
@@ -507,6 +495,18 @@ The linked\-list will be tested on stdout\. `LIST_TEST` has to be set\.
    Responsible for creating new objects and returning the list\.
  * Parameter: _parent_  
    Responsible for creating new objects and returning the list\.
+
+
+
+
+### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
+
+<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
+
+ * Return:  
+   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+ * Order:  
+   &#920;\(1\)
 
 
 
