@@ -14,8 +14,8 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[ARRAY_FUNCTION]
- Include Function trait contained in <function.h>.
+ @param[ARRAY_CONTIGUOUS]
+ Include Contiguous trait contained in <contiguous.h>.
 
  @param[ARRAY_TEST]
  Optional function implementing <typedef:<PZ>action_fn> that fills the
@@ -273,10 +273,7 @@ static int A_(array_copy)(struct A_(array) *const a,
 	const struct A_(array) *const b)
 	{ return A_(array_splice)(a, a->size, a->size, b); }
 
-#define BOX_CONTIGUOUS_SIZE /* `BOX` has a size that is reflective of size. */
-
 /* <!-- iterate interface */
-#define BOX_ITERATE
 
 /** Contains all iteration parameters. */
 struct PA_(iterator);
@@ -292,7 +289,6 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 }
 
 /* iterate --><!-- reverse interface */
-#define BOX_REVERSE
 
 /** Loads `a` into `it`. @implements begin */
 static void PA_(end)(struct PA_(iterator) *const it,
@@ -306,16 +302,6 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 }
 
 /* reverse --><!-- copy interface */
-#define BOX_COPY
-
-/** Copies `n` items from `src` to `dest`. @implements copy */
-static void PA_(copy)(PA_(type) *const dest, const PA_(type) *const src,
-	const size_t n) { memcpy(dest, src, sizeof *src * n); }
-
-/** Copies `n` items from `src` to `dest`, which may overlap.
- @implements copy */
-static void PA_(move)(PA_(type) *const dest, const PA_(type) *const src,
-	const size_t n) { memmove(dest, src, sizeof *src * n); }
 
 /** Appends `n` items on the back of `a`. */
 static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
@@ -328,10 +314,10 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
 
-#ifdef ARRAY_FUNCTION /* <!-- function */
+#ifdef ARRAY_FUNCTION /* <!-- contiguous */
 #define Z_(n) CAT(A_(array), n)
-#include "function.h" /** \include */
-#endif /* function --> */
+#include "contiguous.h" /** \include */
+#endif /* contiguous --> */
 
 #ifdef ARRAY_TEST /* <!-- test */
 /* Forward-declare. */
@@ -342,13 +328,11 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	A_(array_)(0); A_(array_append_at)(0, 0, 0);
-	A_(array_new)(0); A_(array_shrink)(0); A_(array_remove)(0, 0);
-	A_(array_lazy_remove)(0, 0); A_(array_clear)(0); A_(array_peek)(0);
-	A_(array_pop)(0); A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0);
-	PA_(begin)(0, 0); PA_(next)(0);
-	PA_(end)(0, 0); PA_(prev)(0);
-	PA_(copy)(0, 0, 0); PA_(move)(0, 0, 0); PA_(append)(0, 0);
+	A_(array_)(0); A_(array_append_at)(0, 0, 0); A_(array_new)(0);
+	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
+	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
+	A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0); PA_(begin)(0, 0);
+	PA_(next)(0); PA_(end)(0, 0); PA_(prev)(0); PA_(append)(0, 0);
 	PA_(unused_base_coda)();
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
@@ -429,10 +413,6 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-#undef BOX_CONTIGUOUS_SIZE
-#undef BOX_ITERATE
-#undef BOX_REVERSE
-#undef BOX_COPY
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
