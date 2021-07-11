@@ -112,6 +112,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			fprintf(fp, "\t// bucket0x%x\n", (unsigned)(b - set->buckets));
 			for(xt = x = b->first, x_prev = 0; x; x_prev = x, x = x->next) {
 				int is_turtle = 0;
+				
 				PS_(to_string)(&x->key, &a);
 				/* May have to change the width if `SET_UINT`. */
 				fprintf(fp, "\tSetElement%p [label=\"#0x%x\\l|%s\\l\"];\n",

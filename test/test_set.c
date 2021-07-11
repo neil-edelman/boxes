@@ -155,7 +155,7 @@ static void vec4_filler(struct vec4 *const v4) {
 #define SET_TYPE struct vec4
 /* <fn:vec4_hash> and <fn:vec4_is_equal> have an extra level of indirection.
  This means that we also have to get an object and fill it to use
- <fn:<S>SetGet>; not very convenient. */
+ <fn:<S>set_get>; not very convenient. */
 #define SET_POINTER
 #define SET_HASH &vec4_hash
 #define SET_IS_EQUAL &vec4_is_equal
