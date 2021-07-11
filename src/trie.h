@@ -44,16 +44,32 @@
 #define TRIE_MAX_LEFT 255 /* Worst-case all-left cap. `[0,max(tree.left=255)]` */
 #define TRIE_BRANCH (TRIE_MAX_LEFT + 1) /* Maximum branches. */
 #define TRIE_ORDER (TRIE_BRANCH + 1) /* Maximum branching factor / leaves. */
-#define TRIE_BITMAP ((TRIE_ORDER - 1) / 8 + 1) /* Bitmap size in bytes. */
-#include <limits.h> /* CHAR_BIT */
-#define TRIE_BITMASK(i) (1 << ((i) % CHAR_BIT))
-#define TRIE_BITSLOT(i) ((i) / CHAR_BIT)
-#define TRIE_BITSET(a, i) ((a)[TRIE_BITSLOT(i)] |= TRIE_BITMASK(i))
-#define TRIE_BITCLEAR(a, i) ((a)[TRIE_BITSLOT(i)] &= ~TRIE_BITMASK(i))
-#define TRIE_BITTEST(a, i) ((a)[TRIE_BITSLOT(i)] & TRIE_BITMASK(i))
-#define TRIE_BITCMP(a, b, i) (((a)[TRIE_BITSLOT(i)] ^ (b)[TRIE_BITSLOT(i)]) \
-	& TRIE_BITMASK(i))
-#define TRIE_BITNSLOTS(nb) (((nb) + CHAR_BIT - 1) / CHAR_BIT)
+static const unsigned char trie_lookup[] = {
+	0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
+	5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+	6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+	6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
+}; /* x == 0 ? 0 : 8 - __builtin_clz_bit(x) */
+/** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
+ Used in <fn:<T>trie_prefix>. */
+static int trie_is_prefix(const char *a, const char *b) {
+	for( ; ; a++, b++) {
+		if(*a == '\0') return 1;
+		if(*a != *b) return *b == '\0';
+	}
+}
 #endif /* idempotent --> */
 
 
@@ -90,40 +106,57 @@ typedef TRIE_TYPE PT_(type);
 
 static char *(*PT_(get_key))(PT_(type) *a) = (TRIE_KEY);
 
+/** https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2 */
+static upper_pot_1_256(unsigned short v) {
+	v |= v >> 1, v |= v >> 2, v |= v >> 4;
+	return v - (v >> 1);
+}
+
 /** Non-empty semi-implicit complete binary tree of a fixed-maximum-size. */
 struct tree {
 	unsigned short bsize; /* +1 is the rank. */
-	unsigned char link[TRIE_BITMAP]; /* Bitmap associated to leaf. */
-	struct branch { unsigned char left, skip; } branches[TRIE_BRANCH];
-	union leaf {  *data; size_t link; } leaves[TRIE_ORDER];
+	union {
+		struct {
+			union { PT_(type) *data; struct tree *link; } leaves[1];
+		} b0;
+		struct {
+			struct { unsigned char left, skip; } branches[1];
+			union { PT_(type) *data; struct tree *link; } leaves[2];
+		} b1;
+		struct {
+			struct { unsigned char left, skip; } branches[2];
+			union { PT_(type) *data; struct tree *link; } leaves[3];
+		} b2;
+		struct {
+			struct { unsigned char left, skip; } branches[4];
+			union { PT_(type) *data; struct tree *link; } leaves[5];
+		} b4;
+		struct {
+			struct { unsigned char left, skip; } branches[8];
+			union { PT_(type) *data; struct tree *link; } leaves[9];
+		} b8;
+		struct {
+			struct { unsigned char left, skip; } branches[16];
+			union { PT_(type) *data; struct tree *link; } leaves[17];
+		} b16;
+		struct {
+			struct { unsigned char left, skip; } branches[32];
+			union { PT_(type) *data; struct tree *link; } leaves[33];
+		} b32;
+		struct {
+			struct { unsigned char left, skip; } branches[64];
+			union { PT_(type) *data; struct tree *link; } leaves[65];
+		} b64;
+		struct {
+			struct { unsigned char left, skip; } branches[128];
+			union { PT_(type) *data; struct tree *link; } leaves[129];
+		} b128;
+		struct {
+			struct { unsigned char left, skip; } branches[256];
+			union { PT_(type) *data; struct tree *link; } leaves[257];
+		} b256;
+	};
 };
-
-/** Compares `bit` from the string `a` against `b`.
- @return In the `bit` position, positive if `a` is after `b`, negative if `a`
- is before `b`, or zero if `a` is equal to `b`. */
-static int trie_strcmp_bit(const char *const a, const char *const b,
-	const size_t bit) {
-	const size_t byte = bit >> 3, mask = 128 >> (bit & 7);
-	return !((unsigned char)b[byte] & mask)
-		- !((unsigned char)a[byte] & mask);
-}
-
-/** From string `a`, extract `bit`. */
-static int trie_is_bit(const char *const a, const size_t bit) {
-	const size_t byte = bit >> 3, mask = 128 >> (bit & 7);
-	return !!((unsigned char)a[byte] & mask);
-}
-
-/** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
- Used in <fn:<T>trie_prefix>. */
-static int trie_is_prefix(const char *a, const char *b) {
-	for( ; ; a++, b++) {
-		if(*a == '\0') return 1;
-		if(*a != *b) return *b == '\0';
-	}
-}
-
-#endif /* idempotent --> */
 
 /* Defaults. */
 #ifndef TRIE_TYPE /* <!-- !type */
