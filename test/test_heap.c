@@ -30,7 +30,6 @@ static void test_orc(struct orc_heap_node *, void *);
 
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc
-#define HEAP_FUNCTION
 #define HEAP_TEST &test_orc
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
