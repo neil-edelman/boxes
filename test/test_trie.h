@@ -76,20 +76,32 @@ static size_t PT_(left_leaf)(union PT_(tree_n) *const tree,
 static void PT_(graph)(const struct T_(trie) *const trie,
 	const char *const fn) {
 	FILE *fp;
+	unsigned short depth = trie->depth;
 	size_t i, n;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
-		"\tTrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>Trie: " QUOTE(TRIE_TYPE)
-		"\\l|root\\l}\"];\n"
-		"\tnode [shape = none, fillcolor = none];\n");
+		"\ttrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>trie: " QUOTE(TRIE_TYPE)
+		"\\l|%s\\l}\"];\n",
+		!depth && !trie->root.data ? "empty" : "root");
+	/* "\tnode [shape = none, fillcolor = none];\n" */
+	if(!depth) {
+		if(trie->root.data) {
+			fprintf(fp, "\tsingle [label = \"%s\"]\n"
+				"\ttrie -> single;\n", PT_(to_key)(trie->root.data));
+		}
+	} else do {
+
+	} while(--depth);
+
+#if 0
 	if(!trie->depth) {
 		if(!trie->depth) {
 			PT_(type) *data = trie->root.data;
-			if(!data) printf("empty");
-			else printf("%s", PT_(to_key)(data));
+			if(!data) fprintf(fp, "empty");
+			else fprintf(fp, "%s", PT_(to_key)(data));
 		} else {
 			struct trie_branch *branch;
 			union PT_(leaf) *leaf;
@@ -99,7 +111,6 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 				printf("%s%s", i ? ", " : "", PT_(to_key)(leaf[i].data));
 		}
 	}
-#if 0
 	for(n = 0; n < trie->branches.size; n++) {
 		const size_t branch = trie->branches.data[n];
 		const size_t left = trie_left(branch), right = PT_(right)(trie, n);
@@ -123,6 +134,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		"fillcolor = lightsteelblue, style = filled];\n", (unsigned long)i,
 		PT_(to_key)(trie->leaves.data[i]));
 #endif
+end:
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);
@@ -177,7 +189,7 @@ static void PT_(test)(void) {
 #endif
 	PT_(print)(&trie);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
-	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "Trie-test.gv");
+	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "_trie-test.gv");
 	/*...*/
 #if 0
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
@@ -203,15 +215,14 @@ static void PT_(test)(void) {
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
 static void T_(trie_test)(void) {
-	printf("<" QUOTE(TRIE_NAME) ">Trie"
+	printf("<" QUOTE(TRIE_NAME) ">trie"
 		" of type <" QUOTE(TRIE_TYPE) ">"
 		" was created using: TREE_KEY<" QUOTE(TRIE_KEY) ">;"
 		" TRIE_TEST <" QUOTE(TRIE_TEST) ">;"
 		" testing:\n");
 	PT_(test)();
-	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">Trie.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">trie.\n\n");
 }
 
-/* Un-define all macros. */
 #undef QUOTE
 #undef QUOTE_
