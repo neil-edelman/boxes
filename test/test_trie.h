@@ -9,31 +9,44 @@ static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 
 /** Debug: prints `trie`. */
 static void PT_(print)(const struct T_(trie) *const trie) {
-	size_t i, n;
+	size_t i;
 	printf("__Trie: ");
 	if(!trie) { printf("null.\n"); return; }
 	printf("{");
-	for(i = 0; i < trie->leaves.size; i++)
-		printf("%s%s", i ? ", " : "", PT_(to_key)(trie->leaves.data[i]));
-	printf("}; {");
+	if(!trie->depth) {
+		PT_(type) *data = trie->root.data;
+		if(!data) printf("empty");
+		else printf("%s", PT_(to_key)(data));
+	} else {
+		struct trie_branch *branch;
+		union PT_(leaf) *leaf;
+		const unsigned short bsize
+			= PT_(extract)(trie->root.tree, &branch, &leaf);
+		for(i = 0; i < bsize; i++)
+			printf("%s%s", i ? ", " : "", PT_(to_key)(leaf[i].data));
+	}
+	/*printf("}; {");
 	for(n = 0; n < trie->branches.size; n++)
 		printf("%s%lu:%lu", n ? ", " : "", trie_skip(trie->branches.data[n]),
-		(unsigned long)trie_left(trie->branches.data[n]));
+		(unsigned long)trie_left(trie->branches.data[n]));*/
 	printf("}.\n");
 }
 
-/** Given `n` in `trie` branches, caluculate the right child branches.
+/** Given a branch `n` in `tree` branches, calculate the right child branches.
  @order \O(log `size`) */
-static size_t PT_(right)(const struct T_(trie) *const trie, const size_t n) {
-	size_t remaining = trie->branches.size, n0 = 0, left, right;
-	assert(trie && n < remaining);
+static unsigned short PT_(right)(union PT_(tree_n) *const tree,
+	const unsigned short n) {
+	struct trie_branch *branches;
+	union PT_(leaf) *leaves;
+	unsigned short bsize = PT_(extract)(tree, &branches, &leaves),
+		left, right, n0 = 0;
+	assert(tree && n < bsize);
 	for( ; ; ) {
-		left = trie_left(trie->branches.data[n0]);
-		right = remaining - left - 1;
+		right = bsize - (left = branches[n0].left) - 1;
 		/*assert(left < remaining && right < remaining); <- Invalid tries. */
 		if(n0 >= n) break;
-		if(n <= n0 + left) remaining = left, n0++;
-		else remaining = right, n0 += left + 1;
+		if(n <= n0 + left) bsize = left, n0++;
+		else bsize = right, n0 += left + 1;
 	}
 	assert(n0 == n);
 	return right;
@@ -41,17 +54,19 @@ static size_t PT_(right)(const struct T_(trie) *const trie, const size_t n) {
 
 /** @return Given `n` in `trie` branches, follows the internal nodes left until
  it hits a branch. */
-static size_t PT_(left_leaf)(const struct T_(trie) *const trie,
+static size_t PT_(left_leaf)(union PT_(tree_n) *const tree,
 	const size_t n) {
-	size_t remaining = trie->branches.size, n0 = 0, left, right, i = 0;
-	assert(trie && n < remaining);
+	struct trie_branch *branches;
+	union PT_(leaf) *leaves;
+	unsigned short bsize = PT_(extract)(tree, &branches, &leaves),
+		left, right, i = 0, n0 = 0;
+	assert(tree && n < bsize);
 	for( ; ; ) {
-		left = trie_left(trie->branches.data[n0]);
-		right = remaining - left - 1;
-		assert(left < remaining && right < remaining);
+		right = bsize - (left = branches[n0].left) - 1;
+		assert(left < bsize && right < bsize);
 		if(n0 >= n) break;
-		if(n <= n0 + left) remaining = left, n0++;
-		else remaining = right, n0 += left + 1, i += left + 1;
+		if(n <= n0 + left) bsize = left, n0++;
+		else bsize = right, n0 += left + 1, i += left + 1;
 	}
 	assert(n0 == n);
 	return i;
@@ -68,8 +83,23 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\tTrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>Trie: " QUOTE(TRIE_TYPE)
-		"\\l|size: %lu\\l}\"];\n", (unsigned long)T_(trie_size)(trie));
-	fprintf(fp, "\tnode [shape = none, fillcolor = none];\n");
+		"\\l|root\\l}\"];\n"
+		"\tnode [shape = none, fillcolor = none];\n");
+	if(!trie->depth) {
+		if(!trie->depth) {
+			PT_(type) *data = trie->root.data;
+			if(!data) printf("empty");
+			else printf("%s", PT_(to_key)(data));
+		} else {
+			struct trie_branch *branch;
+			union PT_(leaf) *leaf;
+			const unsigned short bsize
+				= PT_(extract)(trie->root.tree, &branch, &leaf);
+			for(i = 0; i < bsize; i++)
+				printf("%s%s", i ? ", " : "", PT_(to_key)(leaf[i].data));
+		}
+	}
+#if 0
 	for(n = 0; n < trie->branches.size; n++) {
 		const size_t branch = trie->branches.data[n];
 		const size_t left = trie_left(branch), right = PT_(right)(trie, n);
@@ -92,6 +122,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		fprintf(fp, "\tleaf%lu [label = \"%s\", shape = box, "
 		"fillcolor = lightsteelblue, style = filled];\n", (unsigned long)i,
 		PT_(to_key)(trie->leaves.data[i]));
+#endif
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);
@@ -103,6 +134,7 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 	size_t i, i_end;
 	int cmp;
 	if(!trie) return;
+#if 0
 	if(!trie->leaves.data) { assert(!trie->leaves.size
 		&& !trie->branches.data && !trie->branches.size); return; }
 	assert(trie->leaves.size == trie->branches.size + 1);
@@ -111,6 +143,7 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 		cmp = strcmp(PT_(to_key)(a[i - 1]), PT_(to_key)(a[i]));
 		assert(cmp < 0);
 	}
+#endif
 }
 
 static void PT_(test)(void) {
@@ -124,13 +157,16 @@ static void PT_(test)(void) {
 	PT_(valid)(0);
 	PT_(valid)(&trie);
 	T_(trie)(&trie), PT_(valid)(&trie);
+#if 0
 	n = T_(trie_size)(&trie), a = T_(trie_array)(&trie), assert(!n && !a);
+#endif
 	T_(trie_clear)(&trie), PT_(valid)(&trie);
 	i = T_(trie_get)(&trie, ""), assert(!i);
 
 	/* Make random data. */
 	for(n = 0; n < es_size; n++) PT_(filler)(&es[n].data);
 
+#if 0
 	assert(!T_(trie_remove)(&trie, ""));
 	errno = 0;
 	for(n = 0; n < es_size; n++)
@@ -138,10 +174,12 @@ static void PT_(test)(void) {
 	assert(es[0].is_in);
 	size = T_(trie_size)(&trie);
 	assert(size > 0 && size <= T_(trie_size)(&trie));
+#endif
 	PT_(print)(&trie);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "Trie-test.gv");
 	/*...*/
+#if 0
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
 	assert(ret && size == T_(trie_size)(&trie));
 	ret = T_(trie_put)(&trie, &es[0].data, 0),
@@ -159,6 +197,7 @@ static void PT_(test)(void) {
 	ret = T_(trie_policy_put)(&trie, &copy, &eject, &PT_(false_replace)),
 		assert(ret && size == T_(trie_size)(&trie) && eject == &copy);*/
 	T_(trie_)(&trie), assert(!T_(trie_size)(&trie)), PT_(valid)(&trie);
+#endif
 }
 
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
