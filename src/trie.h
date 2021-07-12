@@ -256,55 +256,6 @@ static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	return leaves[in_tree.lf].data;
 }
 
-#if 0
-
-/** Looks at only the index for potential matches.
- @param[result] A index pointer to leaves that matches `key` when true.
- @return True if `key` in `trie` has matched, otherwise `key` is definitely is
- not in `trie`. @order \O(`key.length`) */
-static int PT_(param_index_get)(const struct T_(trie) *const trie,
-	const char *const key, size_t *const result) {
-	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
-	TrieBranch branch;
-	size_t n0_byte, str_byte = 0, bit = 0;
-	assert(trie && key && result);
-	if(!n1) return 0; /* Special case: there is nothing to match. */
-	n1--, assert(n1 == trie->branches.size);
-	while(n0 < n1) {
-		branch = trie->branches.data[n0];
-		bit += trie_skip(branch);
-		/* Skip the don't care bits, ending up at the decision bit. */
-		for(n0_byte = bit >> 3; str_byte < n0_byte; str_byte++)
-			if(key[str_byte] == '\0') return 0;
-		left = trie_left(branch);
-		if(!trie_is_bit(key, bit)) n1 = ++n0 + left;
-		else n0 += left + 1, i += left + 1;
-		bit++;
-	}
-	assert(n0 == n1 && i < trie->leaves.size);
-	*result = i;
-	return 1;
-}
-
-/** @return True if found the exact `key` in `trie` and stored it's index in
- `result`. */
-static int PT_(param_get)(const struct T_(trie) *const trie,
-	const char *const key, size_t *const result) {
-	return PT_(param_index_get)(trie, key, result)
-		&& !strcmp(PT_(to_key)(trie->leaves.data[*result]), key);
-}
-
-/** @return `trie` entry that matches bits of `key`, (ignoring the don't care
- bits,) or null if either `key` didn't have the length to fully differentiate
- more then one entry or the `trie` is empty. */
-static PT_(type) *PT_(index_get)(const struct T_(trie) *const trie,
-	const char *const key) {
-	size_t i;
-	return PT_(param_index_get)(trie, key, &i) ? trie->leaves.data[i] : 0;
-}
-
-#endif
-
 /** @return Exact match for `key` in `trie` or null. */
 static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	const char *const key) {
@@ -317,48 +268,125 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
 
-#if 0
 
-/** In `trie`, which must be non-empty, given a partial `prefix`, stores all
- leaf prefix matches between `low`, `high`, only given the index, ignoring
- don't care bits. @order \O(`prefix.length`) @allow */
-static void T_(trie_index_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, size_t *const low, size_t *const high) {
-	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
-	TrieBranch branch;
-	size_t n0_byte, str_byte = 0, bit = 0;
-	assert(trie && prefix && low && high && n1);
-	n1--, assert(n1 == trie->branches.size);
-	while(n0 < n1) {
-		branch = trie->branches.data[n0];
-		bit += trie_skip(branch);
-		/* _Sic_; '\0' is _not_ included for partial match. */
-		for(n0_byte = bit >> 3; str_byte <= n0_byte; str_byte++)
-			if(prefix[str_byte] == '\0') goto finally;
-		left = trie_left(branch);
-		if(!trie_is_bit(prefix, bit)) n1 = ++n0 + left;
-		else n0 += left + 1, i += left + 1;
-		bit++;
+
+static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
+	char *x_key;
+	struct { size_t b, b0, b1; } in_bit;
+	struct { size_t idx, tree_start_bit; } in_forest;
+	struct { unsigned br0, br1, lf; } in_tree;
+	struct tree *tree;
+	struct branch *branch;
+	union leaf *leaf;
+	const char *sample;
+	int is_write, is_right, is_split = 0;
+
+	assert(trie && x);
+	if(!trie->depth) { /* [0, 1] items. */
+		if(!trie->root.data) {
+			trie->root.data = x;
+		} else {
+			assert(0);
+		}
+	} else {
+		x_key = PT_(to_key)(x);
+		assert(0);
 	}
-	assert(n0 == n1);
-finally:
-	assert(n0 <= n1 && i - n0 + n1 < trie->leaves.size);
-	*low = i, *high = i - n0 + n1;
-}
+#if 0
+	/* Empty case: make a new tree with one leaf. */
+	if(!forest->size) return (tree = tree_array_new(forest))
+		&& (tree->bsize = 0, memset(&tree->link, 0, TRIE_BITMAP),
+		tree->leaves[0].data = key, 1);
 
-/** @return Whether, in `trie`, given a partial `prefix`, it has found `low`,
- `high` prefix matches. */
-static int T_(trie_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, size_t *const low, size_t *const high) {
-	assert(trie && prefix && low && high);
-	return trie->leaves.size ? (T_(trie_index_prefix)(trie, prefix, low, high),
-		trie_is_prefix(prefix, PT_(to_key)(trie->leaves.data[*low]))) : 0;
-}
+	in_bit.b = 0, in_forest.idx = 0, is_write = 0;
+	do {
+		in_forest.tree_start_bit = in_bit.b;
+tree:
+		assert(in_forest.idx < forest->size);
+		tree = forest->data + in_forest.idx;
+		sample = key_sample(forest, in_forest.idx, 0);
+		/* Pre-select `is_write` if the tree is not full and has no links. */
+		if(!is_write && tree->bsize < TRIE_BRANCH
+			&& !memcmp(&tree->link, zero, TRIE_BITMAP)) is_write = 1;
+		in_bit.b0 = in_bit.b;
+		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+		while(in_tree.br0 < in_tree.br1) {
+			branch = tree->branches + in_tree.br0;
+			/* Test all the skip bits. */
+			for(in_bit.b1 = in_bit.b + branch->skip; in_bit.b < in_bit.b1;
+				in_bit.b++) if(TRIESTR_DIFF(key, sample, in_bit.b)) goto leaf;
+			/* Decision bit. */
+			if(!TRIESTR_TEST(key, in_bit.b)) {
+				in_tree.br1 = ++in_tree.br0 + branch->left;
+				if(is_write) branch->left++;
+			} else {
+				in_tree.br0 += branch->left + 1;
+				in_tree.lf  += branch->left + 1;
+				sample = key_sample(forest, in_forest.idx, in_tree.lf);
+			}
+			in_bit.b0 = in_bit.b1, in_bit.b++;
+		}
+		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree->bsize);
+	} while(TRIESTR_TEST(tree->link, in_tree.lf)
+		&& (in_forest.idx = tree->leaves[in_tree.lf].link, 1));
+	/* Got to the leaves; uniqueness guarantees that this is safe. */
+	while(!TRIESTR_DIFF(x_key, sample, in_bit.b)) in_bit.b++;
 
+leaf:
+	if(TRIESTR_TEST(x_key, in_bit.b))
+		is_right = 1, in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
+	else
+		is_right = 0;
+	/*printf("insert %s, at index %u bit %lu.\n", key, in_tree.lf, in_bit.b);*/
+	assert(in_tree.lf <= tree->bsize + 1u);
+
+	if(is_write) goto insert;
+	/* If the tree is full, split it. */
+	assert(tree->bsize <= TRIE_BRANCH);
+	if(tree->bsize == TRIE_BRANCH) {
+		/*printf("Splitting tree %lu.\n", in_forest.idx);*/
+		assert(!is_split);
+		if(!trie_split(trie, in_forest.idx)) return 0;
+		assert(is_split = 1);
+		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
+	} else {
+		/* Now we are sure that this tree is the one getting modified. */
+		is_write = 1;
+	}
+	in_bit.b = in_forest.tree_start_bit;
+	goto tree;
+
+insert:
+	leaf = tree->leaves + in_tree.lf;
+	memmove(leaf + 1, leaf, sizeof *leaf * (tree->bsize + 1 - in_tree.lf));
+	leaf->data = key;
+	bmp_insert(tree->link, in_tree.lf);
+	branch = tree->branches + in_tree.br0;
+	if(in_tree.br0 != in_tree.br1) { /* Split `skip` with the existing branch. */
+		assert(in_bit.b0 <= in_bit.b
+			&& in_bit.b + !in_tree.br0 <= in_bit.b0 + branch->skip);
+		branch->skip -= in_bit.b - in_bit.b0 + !in_tree.br0;
+	}
+	memmove(branch + 1, branch, sizeof *branch * (tree->bsize - in_tree.br0));
+	assert(in_tree.br1 - in_tree.br0 < 256
+		&& in_bit.b >= in_bit.b0 + !!in_tree.br0
+		&& in_bit.b - in_bit.b0 - !!in_tree.br0 < 256);
+	branch->left = is_right ? (unsigned char)(in_tree.br1 - in_tree.br0) : 0;
+	branch->skip = (unsigned char)(in_bit.b - in_bit.b0 - !!in_tree.br0);
+	tree->bsize++;
 #endif
 
-#if 0
+	return 1;
+}
 
+/** @return If `key` is already in `t`, returns false, otherwise success.
+ @throws[realloc, ERANGE] */
+static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const n) {
+	return assert(trie && n),
+		PT_(get)(trie, PT_(to_key)(n)) ? 0 : PT_(add_unique)(trie, n);
+}
+
+#if 0
 /** Add `datum` to `trie`. Must not be the same as any key of `trie`; _ie_ it
  does not check for the end of the string. @return Success. @order \O(|`trie`|)
  @throws[ERANGE] Trie reached it's conservative maximum, which on machines
@@ -417,6 +445,87 @@ insert:
 	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
 	*branch = trie_branch(bit - bit0 - !!n0, left), trie->branches.size++;
 	return 1;
+}
+
+/** Looks at only the index for potential matches.
+ @param[result] A index pointer to leaves that matches `key` when true.
+ @return True if `key` in `trie` has matched, otherwise `key` is definitely is
+ not in `trie`. @order \O(`key.length`) */
+static int PT_(param_index_get)(const struct T_(trie) *const trie,
+	const char *const key, size_t *const result) {
+	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
+	TrieBranch branch;
+	size_t n0_byte, str_byte = 0, bit = 0;
+	assert(trie && key && result);
+	if(!n1) return 0; /* Special case: there is nothing to match. */
+	n1--, assert(n1 == trie->branches.size);
+	while(n0 < n1) {
+		branch = trie->branches.data[n0];
+		bit += trie_skip(branch);
+		/* Skip the don't care bits, ending up at the decision bit. */
+		for(n0_byte = bit >> 3; str_byte < n0_byte; str_byte++)
+			if(key[str_byte] == '\0') return 0;
+		left = trie_left(branch);
+		if(!trie_is_bit(key, bit)) n1 = ++n0 + left;
+		else n0 += left + 1, i += left + 1;
+		bit++;
+	}
+	assert(n0 == n1 && i < trie->leaves.size);
+	*result = i;
+	return 1;
+}
+
+/** @return True if found the exact `key` in `trie` and stored it's index in
+ `result`. */
+static int PT_(param_get)(const struct T_(trie) *const trie,
+	const char *const key, size_t *const result) {
+	return PT_(param_index_get)(trie, key, result)
+		&& !strcmp(PT_(to_key)(trie->leaves.data[*result]), key);
+}
+
+/** @return `trie` entry that matches bits of `key`, (ignoring the don't care
+ bits,) or null if either `key` didn't have the length to fully differentiate
+ more then one entry or the `trie` is empty. */
+static PT_(type) *PT_(index_get)(const struct T_(trie) *const trie,
+	const char *const key) {
+	size_t i;
+	return PT_(param_index_get)(trie, key, &i) ? trie->leaves.data[i] : 0;
+}
+
+/** In `trie`, which must be non-empty, given a partial `prefix`, stores all
+ leaf prefix matches between `low`, `high`, only given the index, ignoring
+ don't care bits. @order \O(`prefix.length`) @allow */
+static void T_(trie_index_prefix)(const struct T_(trie) *const trie,
+	const char *const prefix, size_t *const low, size_t *const high) {
+	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
+	TrieBranch branch;
+	size_t n0_byte, str_byte = 0, bit = 0;
+	assert(trie && prefix && low && high && n1);
+	n1--, assert(n1 == trie->branches.size);
+	while(n0 < n1) {
+		branch = trie->branches.data[n0];
+		bit += trie_skip(branch);
+		/* _Sic_; '\0' is _not_ included for partial match. */
+		for(n0_byte = bit >> 3; str_byte <= n0_byte; str_byte++)
+			if(prefix[str_byte] == '\0') goto finally;
+		left = trie_left(branch);
+		if(!trie_is_bit(prefix, bit)) n1 = ++n0 + left;
+		else n0 += left + 1, i += left + 1;
+		bit++;
+	}
+	assert(n0 == n1);
+finally:
+	assert(n0 <= n1 && i - n0 + n1 < trie->leaves.size);
+	*low = i, *high = i - n0 + n1;
+}
+
+/** @return Whether, in `trie`, given a partial `prefix`, it has found `low`,
+ `high` prefix matches. */
+static int T_(trie_prefix)(const struct T_(trie) *const trie,
+	const char *const prefix, size_t *const low, size_t *const high) {
+	assert(trie && prefix && low && high);
+	return trie->leaves.size ? (T_(trie_index_prefix)(trie, prefix, low, high),
+		trie_is_prefix(prefix, PT_(to_key)(trie->leaves.data[*low]))) : 0;
 }
 
 /** Adds `datum` to `trie` and, if `eject` is non-null, stores the collided

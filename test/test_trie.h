@@ -182,9 +182,9 @@ static void PT_(test)(void) {
 
 	errno = 0;
 	for(n = 0; n < es_size; n++)
-		es[n].is_in = T_(trie_add)(&trie, &es[n].data), assert(es[n].is_in),
-		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv", (unsigned long)n),
-		PT_(graph)(&trie, fn);
+		es[n].is_in = !!T_(trie_add)(&trie, &es[n].data), assert(es[n].is_in),
+		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
+		(unsigned long)n + 1lu), PT_(graph)(&trie, fn);
 	PT_(print)(&trie);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
 	/*...*/
