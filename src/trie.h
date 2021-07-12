@@ -315,9 +315,7 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 /** @return The <typedef:<PT>type> with `key` in `trie` or null no such item
  exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const key) {
-	return assert(trie && key), PT_(get)(trie, key);
-}
+	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
 
 #if 0
 

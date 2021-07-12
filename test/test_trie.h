@@ -159,6 +159,7 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 }
 
 static void PT_(test)(void) {
+	char fn[64];
 	struct T_(trie) trie = TRIE_IDLE;
 	size_t n, size;
 	struct { PT_(type) data; int is_in; } es[10];
@@ -169,6 +170,7 @@ static void PT_(test)(void) {
 	PT_(valid)(0);
 	PT_(valid)(&trie);
 	T_(trie)(&trie), PT_(valid)(&trie);
+	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "_trie-idle.gv");
 #if 0
 	n = T_(trie_size)(&trie), a = T_(trie_array)(&trie), assert(!n && !a);
 #endif
@@ -178,18 +180,13 @@ static void PT_(test)(void) {
 	/* Make random data. */
 	for(n = 0; n < es_size; n++) PT_(filler)(&es[n].data);
 
-#if 0
-	assert(!T_(trie_remove)(&trie, ""));
 	errno = 0;
 	for(n = 0; n < es_size; n++)
-		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
-	assert(es[0].is_in);
-	size = T_(trie_size)(&trie);
-	assert(size > 0 && size <= T_(trie_size)(&trie));
-#endif
+		es[n].is_in = T_(trie_add)(&trie, &es[n].data), assert(es[n].is_in),
+		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv", (unsigned long)n),
+		PT_(graph)(&trie, fn);
 	PT_(print)(&trie);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
-	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "_trie-test.gv");
 	/*...*/
 #if 0
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
