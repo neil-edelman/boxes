@@ -34,13 +34,13 @@ static void PT_(print)(const struct T_(trie) *const trie) {
 
 /** Given a branch `n` in `tree` branches, calculate the right child branches.
  @order \O(log `size`) */
-static unsigned short PT_(right)(union PT_(tree_n) *const tree,
+static unsigned short PT_(right)(union PT_(any_ptree) tree,
 	const unsigned short n) {
 	struct trie_branch *branches;
 	union PT_(leaf) *leaves;
 	unsigned short bsize = PT_(extract)(tree, &branches, &leaves),
 		left, right, n0 = 0;
-	assert(tree && n < bsize);
+	assert(tree.t0 && n < bsize);
 	for( ; ; ) {
 		right = bsize - (left = branches[n0].left) - 1;
 		/*assert(left < remaining && right < remaining); <- Invalid tries. */
@@ -54,13 +54,13 @@ static unsigned short PT_(right)(union PT_(tree_n) *const tree,
 
 /** @return Given `n` in `trie` branches, follows the internal nodes left until
  it hits a branch. */
-static size_t PT_(left_leaf)(union PT_(tree_n) *const tree,
+static size_t PT_(left_leaf)(union PT_(any_ptree) tree,
 	const size_t n) {
 	struct trie_branch *branches;
 	union PT_(leaf) *leaves;
 	unsigned short bsize = PT_(extract)(tree, &branches, &leaves),
 		left, right, i = 0, n0 = 0;
-	assert(tree && n < bsize);
+	assert(tree.t0 && n < bsize);
 	for( ; ; ) {
 		right = bsize - (left = branches[n0].left) - 1;
 		assert(left < bsize && right < bsize);
@@ -84,7 +84,8 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\ttrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>trie: " QUOTE(TRIE_TYPE)
-		"\\l|%s\\l}\"];\n",
+		"\\l|%s\\l}\"];\n"
+		"\tnode [fillcolor=lightsteelblue];\n",
 		!depth && !trie->root.data ? "empty" : "root");
 	/* "\tnode [shape = none, fillcolor = none];\n" */
 	if(!depth) {
@@ -92,9 +93,12 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 			fprintf(fp, "\tsingle [label = \"%s\"]\n"
 				"\ttrie -> single;\n", PT_(to_key)(trie->root.data));
 		}
-	} else do {
-
-	} while(--depth);
+	} else {
+		fprintf(fp, "\ttrie -> tree%p;\n", (void *)trie->root.tree.t0);
+		do {
+			
+		} while(--depth);
+	}
 
 #if 0
 	if(!trie->depth) {
