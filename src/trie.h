@@ -128,38 +128,38 @@ union PT_(leaf) { PT_(type) *data; union PT_(any_ptree) link; };
 /** Non-empty semi-implicit complete binary tree of a fixed-maximum-size.
  `bsize + 1` is the rank. Each one has a `bsize` range `(n/2, n]`. */
 struct PT_(tree0)
-	{ unsigned short bsize; union PT_(leaf) leaf[1]; };
+	{ unsigned short bsize; union PT_(leaf) leaves[1]; };
 struct PT_(tree1) { unsigned short bsize;
-	struct trie_branch branch[1]; union PT_(leaf) leaf[2]; };
+	struct trie_branch branches[1]; union PT_(leaf) leaves[2]; };
 struct PT_(tree2) { unsigned short bsize;
-	struct trie_branch branch[2]; union PT_(leaf) leaf[3]; };
+	struct trie_branch branches[2]; union PT_(leaf) leaves[3]; };
 struct PT_(tree4) { unsigned short bsize;
-	struct trie_branch branch[4]; union PT_(leaf) leaf[5]; };
+	struct trie_branch branches[4]; union PT_(leaf) leaves[5]; };
 struct PT_(tree8) { unsigned short bsize;
-	struct trie_branch branch[8]; union PT_(leaf) leaf[9]; };
+	struct trie_branch branches[8]; union PT_(leaf) leaves[9]; };
 struct PT_(tree16) { unsigned short bsize;
-	struct trie_branch branch[16]; union PT_(leaf) leaf[17]; };
+	struct trie_branch branches[16]; union PT_(leaf) leaves[17]; };
 struct PT_(tree32) { unsigned short bsize;
-	struct trie_branch branch[32]; union PT_(leaf) leaf[33]; };
+	struct trie_branch branches[32]; union PT_(leaf) leaves[33]; };
 struct PT_(tree64) { unsigned short bsize;
-	struct trie_branch branch[64]; union PT_(leaf) leaf[65]; };
+	struct trie_branch branches[64]; union PT_(leaf) leaves[65]; };
 struct PT_(tree128) { unsigned short bsize;
-	struct trie_branch branch[128]; union PT_(leaf) leaf[129]; };
+	struct trie_branch branches[128]; union PT_(leaf) leaves[129]; };
 struct PT_(tree256) { unsigned short bsize;
-	struct trie_branch branch[256]; union PT_(leaf) leaf[257]; };
+	struct trie_branch branches[256]; union PT_(leaf) leaves[257]; };
 union PT_(maybe_tree) { PT_(type) *data; union PT_(any_ptree) tree; };
 
 /** For `tree`, outputs `branch_ptr` and `leaf_ptr` for the kind of tree.
  @return The branch size. */
 static unsigned short PT_(extract)(union PT_(any_ptree) tree,
-	struct trie_branch **branch_ptr, union PT_(leaf) **leaf_ptr) {
+	struct trie_branch **branches_ptr, union PT_(leaf) **leaves_ptr) {
 	/* 0 could have been any tree, all trees have `bsize`. */
 	assert(tree.t && tree.t->bsize < TRIE_MAX_BRANCH
-		&& branch_ptr && leaf_ptr);
+		&& branches_ptr && leaves_ptr);
 	switch(trie_bsize_lookup[tree.t->bsize]) {
-	case 0: *branch_ptr = 0; *leaf_ptr = tree.t0->leaf; return 0;
-#define TRIE_SWITCH(n, m) case n: *branch_ptr = tree.t##m->branch; \
-	*leaf_ptr = tree.t##m->leaf; return tree.t##m->bsize;
+	case 0: *branches_ptr = 0; *leaves_ptr = tree.t0->leaves; return 0;
+#define TRIE_SWITCH(n, m) case n: *branches_ptr = tree.t##m->branches; \
+	*leaves_ptr = tree.t##m->leaves; return tree.t##m->bsize;
 		TRIE_SWITCH(1, 1)
 		TRIE_SWITCH(2, 2)
 		TRIE_SWITCH(3, 4)
@@ -279,39 +279,50 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	struct { size_t b, b0, b1; } in_bit;
 	struct { size_t idx, tree_start_bit; } in_forest;
 	struct { unsigned br0, br1, lf; } in_tree;
-	struct tree *tree;
+	union PT_(any_ptree) tree;
 	struct branch *branch;
 	union leaf *leaf;
 	const char *sample;
 	int is_write, is_right, is_split = 0;
 
 	assert(trie && x);
-	if(!trie->depth) { /* [0,1] items. */
-		struct PT_(tree1) *tree;
+	if(!trie->depth) { /* [0,1] items: root is a item. */
+		struct PT_(tree1) *t1;
 		const char *existing_key;
-		size_t i;
+		size_t dif;
 		if(!trie->root.data) return trie->root.data = x, 1;
+		/* Change over to tree root. */
 		existing_key = PT_(to_key)(trie->root.data);
-		for(i = 0; !TRIE_BITDIFF(existing_key, x_key, i) && i < 256; i++);
-		/* fixme: This should not be a thing. Increase complication. */
-		if(i > 255) return errno = ERANGE, 0;
-		if(!(tree = malloc(sizeof *tree)))
+		/* fixme: Find a way to eliminate 8-consecutive-byte limit. */
+		for(dif = 0; !TRIE_BITDIFF(existing_key, x_key, dif); dif++)
+			if(dif > 255) return errno = ERANGE, 0;
+		if(!(t1 = malloc(sizeof *t1)))
 			{ if(!errno) errno = ERANGE; return 0; }
-		tree->bsize = 1;
-		tree->branch[0].left = 0;
-		tree->branch[0].skip = (unsigned char)i;
-		i = !TRIE_BITTEST(x_key, i);
-		tree->leaf[i].data = trie->root.data;
-		tree->leaf[!i].data = x;
-		trie->root.tree.t1 = tree;
+		t1->bsize = 1;
+		t1->branches[0].left = 0;
+		t1->branches[0].skip = (unsigned char)dif;
+		dif = !TRIE_BITTEST(x_key, dif);
+		t1->leaves[dif].data = trie->root.data;
+		t1->leaves[!dif].data = x;
+		trie->root.tree.t1 = t1;
 		trie->depth = 1;
 		return 1;
-	} /* [2,] items. */
+	} /* [2,] items: root is a tree. */
+	tree = trie->root.tree;
+	in_bit.b = 0;
+	{
+		struct trie_branch *branches;
+		union PT_(leaf) *leaves;
+		unsigned short bsize = PT_(extract)(tree, &branches, &leaves);
+		printf("bsize %u\n", bsize);
+		in_forest.tree_start_bit = in_bit.b; /* Save for backtracking. */
+	} while(0);
 	assert(0);
 #if 0
 	in_bit.b = 0, in_forest.idx = 0, is_write = 0;
 	do {
 		in_forest.tree_start_bit = in_bit.b;
+		is_write =
 tree:
 		assert(in_forest.idx < forest->size);
 		tree = forest->data + in_forest.idx;
