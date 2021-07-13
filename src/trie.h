@@ -286,32 +286,29 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	int is_write, is_right, is_split = 0;
 
 	assert(trie && x);
-	if(!trie->depth) { /* [0, 1] items. */
-		struct PT_(tree1) *n;
+	if(!trie->depth) { /* [0,1] items. */
+		struct PT_(tree1) *tree;
 		const char *existing_key;
 		size_t i;
 		if(!trie->root.data) return trie->root.data = x, 1;
 		existing_key = PT_(to_key)(trie->root.data);
-		for(i = 0; !TRIE_BITDIFF(existing_key, x_key, i); i++);
-		if(i > 255) return errno = ERANGE, 0; /* This should not be a thing. */
-		if(!(n = malloc(sizeof *n))) { if(!errno) errno = ERANGE; return 0; }
-		n->bsize = 1;
-		n->branch[0].left = 0;
-		n->branch[0].skip = (unsigned char)i;
+		for(i = 0; !TRIE_BITDIFF(existing_key, x_key, i) && i < 256; i++);
+		/* fixme: This should not be a thing. Increase complication. */
+		if(i > 255) return errno = ERANGE, 0;
+		if(!(tree = malloc(sizeof *tree)))
+			{ if(!errno) errno = ERANGE; return 0; }
+		tree->bsize = 1;
+		tree->branch[0].left = 0;
+		tree->branch[0].skip = (unsigned char)i;
 		i = !TRIE_BITTEST(x_key, i);
-		n->leaf[i].data = trie->root.data;
-		n->leaf[!i].data = x;
-		trie->root.tree.t1 = n;
+		tree->leaf[i].data = trie->root.data;
+		tree->leaf[!i].data = x;
+		trie->root.tree.t1 = tree;
 		trie->depth = 1;
-	} else {
-		assert(0);
-	}
+		return 1;
+	} /* [2,] items. */
+	assert(0);
 #if 0
-	/* Empty case: make a new tree with one leaf. */
-	if(!forest->size) return (tree = tree_array_new(forest))
-		&& (tree->bsize = 0, memset(&tree->link, 0, TRIE_BITMAP),
-		tree->leaves[0].data = key, 1);
-
 	in_bit.b = 0, in_forest.idx = 0, is_write = 0;
 	do {
 		in_forest.tree_start_bit = in_bit.b;
