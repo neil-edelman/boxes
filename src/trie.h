@@ -38,6 +38,23 @@
 #include <string.h> /* size_t memmove strcmp memcpy */
 #include <limits.h> /* UINT_MAX */
 #include <errno.h> /* errno ERANGE */
+#include <assert.h>
+
+#ifdef TRIE_STRICT_C90 /* <!-- c90: Just guess and hope. */
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+#else /* c90 --><!-- !c90 */
+#include <stdint.h>
+#endif /* !c90 --> */
+
+
+
+#ifndef TRIE_NAME
+#error Name TRIE_NAME undefined.
+#endif
+#if defined(TRIE_TYPE) ^ defined(TRIE_KEY)
+#error TRIE_TYPE and TRIE_KEY have to be mutually defined.
+#endif
 
 
 #ifndef TRIE_H /* <!-- idempotent */
@@ -48,11 +65,12 @@
 #define TRIE_BITSLOT(n) ((n) / CHAR_BIT)
 #define TRIE_BITTEST(a, n) ((a)[TRIE_BITSLOT(n)] & TRIE_BITMASK(n))
 #define TRIE_BITDIFF(a, b, n) (((a)[TRIE_BITSLOT(n)] ^ (b)[TRIE_BITSLOT(n)]) \
-	& (128 >> ((n) & 7))) /* fixme: assumes CHAR_BIT 8. */
+	& ((1 << (CHAR_BIT - 1)) >> ((n) % CHAR_BIT)))
 /* Worst-case all-left, `[0,max(tree.left)]` */
 #define TRIE_MAX_LEFT ((1 << CHAR_BIT) - 1)
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
+/* Fills `TRIE_BRANCH`: it's kind of arbitrary, see <fn:<PT>assign_bsize>. */
 static const unsigned char trie_bsize_lookup[] = {
 	0, 1, 2, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, /* 0..15 */
 	5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, /* 16..31 */
@@ -70,8 +88,8 @@ static const unsigned char trie_bsize_lookup[] = {
 	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 208..223 */
 	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 224..239 */
 	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 240..255 */
-	9 /* `x == 0 ? 0 : 9 - __builtin_clz_bit(x)`  */
-}; /* Fills `TRIE_BRANCH`: it's kind of arbitrary, see <fn:<PT>assign_bsize>. */
+	9 /* `x == 0 ? 0 : 9 - __builtin_clz(x)` on a bit.  */
+};
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -85,15 +103,7 @@ struct trie_tree_start { unsigned short bsize; };
 #endif /* idempotent --> */
 
 
-#ifndef TRIE_NAME
-#error Name TRIE_NAME undefined.
-#endif
-#if defined(TRIE_TYPE) ^ defined(TRIE_KEY)
-#error TRIE_TYPE and TRIE_KEY have to be mutually defined.
-#endif
-
-
-/* <Kernighan and Ritchie, 1988, p. 231>; before idempotent _st_ `CAT`. */
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(T_) || defined(PT_) \
 	|| (defined(TRIE_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
 #error Unexpected P?T_ or CAT_?; possible stray TRIE_EXPECT_TRAIT?
@@ -113,20 +123,22 @@ static char *PT_(raw)(char **a) { return assert(a), *a; }
 #define TRIE_KEY &PT_(raw)
 #endif /* !type --> */
 
-
+/** Declared type of the trie; defaults to `char`. */
 typedef TRIE_TYPE PT_(type);
 
+/** B-trie nodes: non-empty semi-implicit complete binary tree of a
+ fixed-maximum-size. `bsize + 1` is the rank. To save space, there could be
+ multiple sizes; start fields are the same. */
 union PT_(any_ptree) {
-	struct trie_tree_start *t;
-	struct PT_(tree0) *t0; struct PT_(tree1) *t1; struct PT_(tree2) *t2;
-	struct PT_(tree4) *t4; struct PT_(tree8) *t8; struct PT_(tree16) *t16;
-	struct PT_(tree32) *t32; struct PT_(tree64) *t64;
+	struct trie_tree_start *t; struct PT_(tree0) *t0; struct PT_(tree1) *t1;
+	struct PT_(tree2) *t2; struct PT_(tree4) *t4; struct PT_(tree8) *t8;
+	struct PT_(tree16) *t16; struct PT_(tree32) *t32; struct PT_(tree64) *t64;
 	struct PT_(tree128) *t128; struct PT_(tree256) *t256;
 };
+
+/** A leaf is either data at the base of the b-trie or another tree-link. */
 union PT_(leaf) { PT_(type) *data; union PT_(any_ptree) link; };
 
-/** Non-empty semi-implicit complete binary tree of a fixed-maximum-size.
- `bsize + 1` is the rank. Each one has a `bsize` range `(n/2, n]`. */
 struct PT_(tree0)
 	{ unsigned short bsize; union PT_(leaf) leaves[1]; };
 struct PT_(tree1) { unsigned short bsize;
@@ -149,11 +161,23 @@ struct PT_(tree256) { unsigned short bsize;
 	struct trie_branch branches[256]; union PT_(leaf) leaves[257]; };
 union PT_(maybe_tree) { PT_(type) *data; union PT_(any_ptree) tree; };
 
+/** A bi-predicate; returns true if the `replace` replaces the `original`; used
+ in <fn:<T>trie_policy_put>. */
+typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
+
+
+/** Responsible for picking out the null-terminated string. One must not modify
+ this string while in any trie. */
+static const char *(*PT_(to_key))(const PT_(type) *a) = (TRIE_KEY);
+
+/** @return False. Ignores `a` and `b`. @implements <typedef:<PT>replace_fn> */
+static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
+	{ return (void)a, (void)b, 0; }
+
 /** For `tree`, outputs `branch_ptr` and `leaf_ptr` for the kind of tree.
  @return The branch size. */
 static unsigned short PT_(extract)(union PT_(any_ptree) tree,
 	struct trie_branch **branches_ptr, union PT_(leaf) **leaves_ptr) {
-	/* 0 could have been any tree, all trees have `bsize`. */
 	assert(tree.t && tree.t->bsize < TRIE_MAX_BRANCH
 		&& branches_ptr && leaves_ptr);
 	switch(trie_bsize_lookup[tree.t->bsize]) {
@@ -174,20 +198,8 @@ static unsigned short PT_(extract)(union PT_(any_ptree) tree,
 	}
 }
 
-/** Responsible for picking out the null-terminated string. One must not modify
- this string while in any trie. */
-static const char *(*PT_(to_key))(const PT_(type) *a) = (TRIE_KEY);
-
-/** A bi-predicate; returns true if the `replace` replaces the `original`; used
- in <fn:<T>trie_policy_put>. */
-typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
-
-/** @return False. Ignores `a` and `b`. @implements <typedef:<PT>replace_fn> */
-static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
-	{ return (void)a, (void)b, 0; }
-
-/** Compares keys of `a` and `b`. Used in array compare following.
- @implements bipredicate function */
+/** Compares keys of `a` and `b`. Used in <fn:<T>trie_from_array>.
+ @implements <typedef:<PT>bipredicate_fn> */
 static int PT_(compare)(const PT_(type) *const a, const PT_(type) *const b)
 	{ return strcmp(PT_(to_key)(a), PT_(to_key)(b)); }
 
@@ -208,23 +220,6 @@ struct T_(trie) {
 #ifndef TRIE_IDLE /* <!-- !zero */
 #define TRIE_IDLE { 0, { 0 } }
 #endif /* !zero --> */
-
-/** Initialises `trie` to idle. @order \Theta(1) @allow */
-static void T_(trie)(struct T_(trie) *const trie)
-	{ assert(trie); trie->depth = 0; trie->root.data = 0; }
-
-/** Returns an initialised `trie` to idle. @allow */
-static void T_(trie_)(struct T_(trie) *const trie) {
-	assert(trie);
-	/* fixme */
-	T_(trie)(trie);
-}
-
-/** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
- it was previously in an active non-idle state, it continues to be.
- @order \Theta(1) @allow */
-static void T_(trie_clear)(struct T_(trie) *const trie)
-	{ assert(trie); /* ... */}
 
 /** @return Looks at only the index of `trie` for potential `key` matches,
  otherwise `key` is definitely not in `trie`. @order \O(`key.length`) */
@@ -260,19 +255,49 @@ static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	return leaves[in_tree.lf].data;
 }
 
-/** @return Exact match for `key` in `trie` or null. */
+/** @return Exact match for `key` in `trie` or null. (fixme: private?) */
 static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	const char *const key) {
 	PT_(type) *n;
 	return (n = PT_(match)(trie, key)) && !strcmp(PT_(to_key)(n), key) ? n : 0;
 }
 
+/** @return The leftmost key of the `b` branch of tree `tree`. */
+static const char *PT_(key_sample)(const union PT_(any_ptree) tree,
+	const unsigned short branch) {
+	/*struct tree *tree = ta->data + tr;
+	assert(ta && tr < ta->size && br <= tree->bsize);
+	if(!TRIESTR_TEST(tree->link, br)) return tree->leaves[br].data;
+	tr = tree->leaves[br].link;
+	for( ; ; ) {
+		tree = ta->data + tr;
+		if(!TRIESTR_TEST(tree->link, 0)) return tree->leaves[0].data;
+		tr = tree->leaves[0].link;
+	}*/
+	return 0;
+}
+
+/** Initialises `trie` to idle. @order \Theta(1) @allow */
+static void T_(trie)(struct T_(trie) *const trie)
+	{ assert(trie); trie->depth = 0; trie->root.data = 0; }
+
+/** Returns an initialised `trie` to idle. @allow */
+static void T_(trie_)(struct T_(trie) *const trie) {
+	assert(trie);
+	/* fixme */
+	T_(trie)(trie);
+}
+
+/** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
+ it was previously in an active non-idle state, it continues to be.
+ @order \Theta(1) @allow */
+static void T_(trie_clear)(struct T_(trie) *const trie)
+	{ assert(trie); /* ... */}
+
 /** @return The <typedef:<PT>type> with `key` in `trie` or null no such item
  exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
-
-
 
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
@@ -286,7 +311,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	int is_write, is_right, is_split = 0;
 
 	assert(trie && x);
-	if(!trie->depth) { /* [0,1] items: root is a item. */
+	if(!trie->depth) { /* [0,1] items: root is an item. */
 		struct PT_(tree1) *t1;
 		const char *existing_key;
 		size_t dif;
@@ -401,11 +426,11 @@ insert:
 	return 1;
 }
 
-/** @return If `key` is already in `t`, returns false, otherwise success.
+/** @return If `x` is already in `trie`, returns false, otherwise success.
  @throws[realloc, ERANGE] */
-static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const n) {
-	return assert(trie && n),
-		PT_(get)(trie, PT_(to_key)(n)) ? 0 : PT_(add_unique)(trie, n);
+static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
+	return assert(trie && x),
+		PT_(get)(trie, PT_(to_key)(x)) ? 0 : PT_(add_unique)(trie, x);
 }
 
 #if 0
