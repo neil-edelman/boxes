@@ -13,6 +13,11 @@
  byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
+ These are similar to <Bayer, McCreight, 1972 Large (B-Trees)> in memory. Using
+ <Knuth, 1998 Art 3> terms, instead of a B-tree of order-n nodes, a trie
+ is a B-forest of max-257-leaf complete binary trees, (with max-256 two-byte
+ branches.)
+
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
  optional returnable type that is declared, (it is used by reference only
@@ -24,7 +29,7 @@
  `TRIE_TYPE` is defined.
 
  @param[TRIE_TO_STRING]
- Defining this includes <to_string.h> with the keys as the string.
+ Defining this includes <to_string.h>, with the keys as the string.
 
  @param[TRIE_TEST]
  Unit testing framework <fn:<T>trie_test>, included in a separate header,
@@ -32,21 +37,13 @@
  satisfying <typedef:<PT>action_fn>. Requires that `NDEBUG` not be defined
  and `TRIE_ITERATE_TO_STRING`.
 
- @depend [array](https://github.com/neil-edelman/array)
  @std C89 */
 
-#include <string.h> /* size_t memmove strcmp memcpy */
-#include <limits.h> /* UINT_MAX */
-#include <errno.h> /* errno ERANGE */
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include <assert.h>
-
-#ifdef TRIE_STRICT_C90 /* <!-- c90: Just guess and hope. */
-typedef unsigned char uint8_t;
-typedef unsigned short uint16_t;
-#else /* c90 --><!-- !c90 */
-#include <stdint.h>
-#endif /* !c90 --> */
-
+#include <limits.h> /* Who knows `CHAR_BIT != 8`? I don't have access to a TI compiler. */
 
 
 #ifndef TRIE_NAME
@@ -60,7 +57,6 @@ typedef unsigned short uint16_t;
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 /* http://c-faq.com/misc/bitsets.html */
-#include <limits.h> /* CHAR_BIT */
 #define TRIE_BITMASK(n) (1 << ((n) % CHAR_BIT))
 #define TRIE_BITSLOT(n) ((n) / CHAR_BIT)
 #define TRIE_BITTEST(a, n) ((a)[TRIE_BITSLOT(n)] & TRIE_BITMASK(n))
@@ -99,7 +95,7 @@ static int trie_is_prefix(const char *a, const char *b) {
 	}
 }
 struct trie_branch { unsigned char left, skip; };
-struct trie_tree_start { unsigned short bsize; };
+struct trie_info { unsigned short bsize;/*fixme*/ };
 #endif /* idempotent --> */
 
 
@@ -127,10 +123,10 @@ static char *PT_(raw)(char **a) { return assert(a), *a; }
 typedef TRIE_TYPE PT_(type);
 
 /** B-trie nodes: non-empty semi-implicit complete binary tree of a
- fixed-maximum-size. `bsize + 1` is the rank. To save space, there could be
- multiple sizes; start fields are the same. */
+ fixed-maximum-size. `bsize + 1` is the rank. There can be different width
+ trees, but every tree starts with telling it how big the tree is. */
 union PT_(any_ptree) {
-	struct trie_tree_start *t; struct PT_(tree0) *t0; struct PT_(tree1) *t1;
+	struct trie_info *t; struct PT_(tree0) *t0; struct PT_(tree1) *t1;
 	struct PT_(tree2) *t2; struct PT_(tree4) *t4; struct PT_(tree8) *t8;
 	struct PT_(tree16) *t16; struct PT_(tree32) *t32; struct PT_(tree64) *t64;
 	struct PT_(tree128) *t128; struct PT_(tree256) *t256;
@@ -139,8 +135,8 @@ union PT_(any_ptree) {
 /** A leaf is either data at the base of the b-trie or another tree-link. */
 union PT_(leaf) { PT_(type) *data; union PT_(any_ptree) link; };
 
-struct PT_(tree0)
-	{ unsigned short bsize; union PT_(leaf) leaves[1]; };
+/* Different width trees. */
+struct PT_(tree0) { unsigned short bsize; union PT_(leaf) leaves[1]; };
 struct PT_(tree1) { unsigned short bsize;
 	struct trie_branch branches[1]; union PT_(leaf) leaves[2]; };
 struct PT_(tree2) { unsigned short bsize;
@@ -160,6 +156,12 @@ struct PT_(tree128) { unsigned short bsize;
 struct PT_(tree256) { unsigned short bsize;
 	struct trie_branch branches[256]; union PT_(leaf) leaves[257]; };
 union PT_(maybe_tree) { PT_(type) *data; union PT_(any_ptree) tree; };
+/** In memory. */
+struct PT_(tree) {
+	unsigned short bsize, internal, width;
+	struct tree_branch *branches;
+	union PT_(leaf) *leaves;
+};
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
  in <fn:<T>trie_policy_put>. */
