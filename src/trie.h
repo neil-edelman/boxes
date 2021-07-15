@@ -43,7 +43,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <limits.h> /* Who knows `CHAR_BIT != 8`? I don't have access to a TI compiler. */
+#include <limits.h> /* Works `CHAR_BIT != 8`? Anyone have a TI compiler? */
 
 
 #ifndef TRIE_NAME
@@ -62,30 +62,10 @@
 #define TRIE_BITTEST(a, n) ((a)[TRIE_BITSLOT(n)] & TRIE_BITMASK(n))
 #define TRIE_BITDIFF(a, b, n) (((a)[TRIE_BITSLOT(n)] ^ (b)[TRIE_BITSLOT(n)]) \
 	& ((1 << (CHAR_BIT - 1)) >> ((n) % CHAR_BIT)))
-/* Worst-case all-left, `[0,max(tree.left)]` */
-#define TRIE_MAX_LEFT ((1 << CHAR_BIT) - 1)
+/* Worst-case all-left, `[0,max(tree.left>=255)]`. Fits nicely in struct. */
+#define TRIE_MAX_LEFT 254
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
-/* Fills `TRIE_BRANCH`: it's kind of arbitrary, see <fn:<PT>assign_bsize>. */
-static const unsigned char trie_bsize_lookup[] = {
-	0, 1, 2, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, /* 0..15 */
-	5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, /* 16..31 */
-	6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, /* 32..47 */
-	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, /* 48..63 */
-	7, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 64..79 */
-	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 80..95 */
-	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 96..111 */
-	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, /* 112..127 */
-	8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 128..143 */
-	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 144..159 */
-	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 160..175 */
-	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 176..191 */
-	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 192..207 */
-	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 208..223 */
-	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 224..239 */
-	9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, /* 240..255 */
-	9 /* `x == 0 ? 0 : 9 - __builtin_clz(x)` on a bit.  */
-};
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -95,7 +75,9 @@ static int trie_is_prefix(const char *a, const char *b) {
 	}
 }
 struct trie_branch { unsigned char left, skip; };
-struct trie_info { unsigned short bsize;/*fixme*/ };
+/* This is a bit field defined in <fn:<PT>extract>, but bit fields on `short`
+ may be undefined and may widen the value, who knows. */
+struct trie_info { unsigned short info; };
 #endif /* idempotent --> */
 
 
@@ -122,82 +104,83 @@ static char *PT_(raw)(char **a) { return assert(a), *a; }
 /** Declared type of the trie; defaults to `char`. */
 typedef TRIE_TYPE PT_(type);
 
-/** B-trie nodes: non-empty semi-implicit complete binary tree of a
- fixed-maximum-size. `bsize + 1` is the rank. There can be different width
- trees, but every tree starts with telling it how big the tree is. */
-union PT_(any_ptree) {
-	struct trie_info *t; struct PT_(tree0) *t0; struct PT_(tree1) *t1;
-	struct PT_(tree2) *t2; struct PT_(tree4) *t4; struct PT_(tree8) *t8;
-	struct PT_(tree16) *t16; struct PT_(tree32) *t32; struct PT_(tree64) *t64;
-	struct PT_(tree128) *t128; struct PT_(tree256) *t256;
+/** Pointers to generic trees stored in memory, and part of the B-forest.
+ Points to a non-empty semi-implicit complete binary tree of a
+ fixed-maximum-size, and reading `info` will tell which tree it is. */
+union PT_(any_store) {
+	struct trie_info *s; struct PT_(store0) *s0; struct PT_(store1) *s1;
+	struct PT_(store2) *s2; struct PT_(store3) *s3; struct PT_(store4) *s4;
+	struct PT_(store5) *s5; struct PT_(store6) *s6; struct PT_(store7) *s7;
 };
 
-/** A leaf is either data at the base of the b-trie or another tree-link. */
-union PT_(leaf) { PT_(type) *data; union PT_(any_ptree) link; };
+/** A leaf is either data at the base of the tree at the base of the B-forest
+ that is the trie or another tree-link, and `is_internal` in `info` allows
+ differentiation. */
+union PT_(leaf) { PT_(type) *data; union PT_(any_store) child; };
 
-/* Different width trees. */
-struct PT_(tree0) { unsigned short bsize; union PT_(leaf) leaves[1]; };
-struct PT_(tree1) { unsigned short bsize;
-	struct trie_branch branches[1]; union PT_(leaf) leaves[2]; };
-struct PT_(tree2) { unsigned short bsize;
-	struct trie_branch branches[2]; union PT_(leaf) leaves[3]; };
-struct PT_(tree4) { unsigned short bsize;
-	struct trie_branch branches[4]; union PT_(leaf) leaves[5]; };
-struct PT_(tree8) { unsigned short bsize;
-	struct trie_branch branches[8]; union PT_(leaf) leaves[9]; };
-struct PT_(tree16) { unsigned short bsize;
-	struct trie_branch branches[16]; union PT_(leaf) leaves[17]; };
-struct PT_(tree32) { unsigned short bsize;
-	struct trie_branch branches[32]; union PT_(leaf) leaves[33]; };
-struct PT_(tree64) { unsigned short bsize;
-	struct trie_branch branches[64]; union PT_(leaf) leaves[65]; };
-struct PT_(tree128) { unsigned short bsize;
-	struct trie_branch branches[128]; union PT_(leaf) leaves[129]; };
-struct PT_(tree256) { unsigned short bsize;
-	struct trie_branch branches[256]; union PT_(leaf) leaves[257]; };
-union PT_(maybe_tree) { PT_(type) *data; union PT_(any_ptree) tree; };
-/** In memory. */
+/* Different width trees, designed to fit alignment (and cache) boundaries. */
+struct PT_(store0) { struct trie_info info; char unused[6];
+	union PT_(leaf) leaves[1]; }; /* Except this one wastes space. */
+#define TRIE_STORE(n, m) struct PT_(store##n) { struct trie_info info; \
+	struct trie_branch branches[m - 1]; union PT_(leaf) leaves[m]; };
+TRIE_STORE(1, 4) TRIE_STORE(2, 8) TRIE_STORE(3, 16) TRIE_STORE(4, 32)
+TRIE_STORE(5, 64) TRIE_STORE(6, 128) TRIE_STORE(7, 256)
+#undef TRIE_TREE
+/* We could go one more, but that ruins the alignment. Is it worth it? Maybe
+ 255 could be a special value that allows strings with long matches. */
+
+/** A working tree, extracted from tight storage by <fn:<PT>extract>. */
 struct PT_(tree) {
-	unsigned short bsize, internal, width;
-	struct tree_branch *branches;
+	unsigned /*is_allocated,*/ is_internal, store, bsize;
+	struct trie_branch *branches;
 	union PT_(leaf) *leaves;
 };
+
+/** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
+ (`C99`), or being `static`.
+
+ ![States.](../web/states.png) */
+struct T_(trie) { union PT_(any_store) root; };
+#ifndef TRIE_IDLE /* <!-- !zero */
+#define TRIE_IDLE { { 0 } }
+#endif /* !zero --> */
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
  in <fn:<T>trie_policy_put>. */
 typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
 
-
-/** Responsible for picking out the null-terminated string. One must not modify
- this string while in any trie. */
+/** Responsible for picking out the null-terminated string. Modifying the
+ string while in any trie causes the trie to go into an undefined state. */
 static const char *(*PT_(to_key))(const PT_(type) *a) = (TRIE_KEY);
 
 /** @return False. Ignores `a` and `b`. @implements <typedef:<PT>replace_fn> */
 static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
 	{ return (void)a, (void)b, 0; }
 
-/** For `tree`, outputs `branch_ptr` and `leaf_ptr` for the kind of tree.
- @return The branch size. */
-static unsigned short PT_(extract)(union PT_(any_ptree) tree,
-	struct trie_branch **branches_ptr, union PT_(leaf) **leaves_ptr) {
-	assert(tree.t && tree.t->bsize < TRIE_MAX_BRANCH
-		&& branches_ptr && leaves_ptr);
-	switch(trie_bsize_lookup[tree.t->bsize]) {
-	case 0: *branches_ptr = 0; *leaves_ptr = tree.t0->leaves; return 0;
-#define TRIE_SWITCH(n, m) case n: *branches_ptr = tree.t##m->branches; \
-	*leaves_ptr = tree.t##m->leaves; return tree.t##m->bsize;
-		TRIE_SWITCH(1, 1)
-		TRIE_SWITCH(2, 2)
-		TRIE_SWITCH(3, 4)
-		TRIE_SWITCH(4, 8)
-		TRIE_SWITCH(5, 16)
-		TRIE_SWITCH(6, 32)
-		TRIE_SWITCH(7, 64)
-		TRIE_SWITCH(8, 128)
-		TRIE_SWITCH(9, 256)
+/** For `any`, outputs `tree` for the kind of tree. */
+static void PT_(extract)(const union PT_(any_store) any,
+	struct PT_(tree) *const tree) {
+	const unsigned short info = any.s->info;
+	assert(any.s && tree);
+	/* [is_allocated:1][is_internal:1][store:3][bsize:9] */
+	/*tree->is_allocated = !!(info & 0x2000);*/
+	tree->is_internal = !!(info & 0x1000);
+	tree->store = (info >> 9) & 7, assert(tree->store <= 7);
+	tree->bsize = info & 0x1FF, assert(tree->bsize <= TRIE_MAX_BRANCH);
+	switch(tree->store) {
+	case 0: tree->branches = 0; tree->leaves = any.s0->leaves; break;
+#define TRIE_SWITCH(n) case n: tree->branches = any.s##n->branches; \
+	tree->leaves = any.s##n->leaves; break;
+		TRIE_SWITCH(1) TRIE_SWITCH(2) TRIE_SWITCH(3) TRIE_SWITCH(4)
+		TRIE_SWITCH(5) TRIE_SWITCH(6) TRIE_SWITCH(7)
 #undef TRIE_SWITCH
-	default: assert(0); return 0;
+	default: assert(0);
 	}
+}
+
+static int PT_(store)(const struct PT_(tree) *const tree,
+	const union PT_(any_store) any) {
+	return 0;
 }
 
 /** Compares keys of `a` and `b`. Used in <fn:<T>trie_from_array>.
@@ -211,50 +194,35 @@ static void PT_(to_string)(PT_(type) *const a, char (*const z)[12])
 	{ assert(a && z); sprintf(*z, "%.11s", PT_(to_key)(a)); }
 #endif /* str --> */
 
-/** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
- (`C99`), or being `static`.
-
- ![States.](../web/states.png) */
-struct T_(trie) {
-	unsigned short depth; /* depth ? b-tree root : data root */
-	union PT_(maybe_tree) root;
-};
-#ifndef TRIE_IDLE /* <!-- !zero */
-#define TRIE_IDLE { 0, { 0 } }
-#endif /* !zero --> */
-
 /** @return Looks at only the index of `trie` for potential `key` matches,
  otherwise `key` is definitely not in `trie`. @order \O(`key.length`) */
 static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
-	unsigned short tree_depth = trie->depth;
-	union PT_(any_ptree) tree;
-	struct trie_branch *branches;
-	union PT_(leaf) *leaves;
+	union PT_(any_store) store = trie->root;
+	struct PT_(tree) tree;
+	const struct trie_branch *branch;
 	size_t bit; /* `bit \in key`.  */
 	struct { unsigned br0, br1, lf; } in_tree;
-	struct { size_t i, next; } byte; /* `key` null checks. */
+	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
-	if(!tree_depth) return trie->root.data; /* [0, 1] items. */
-	for(byte.i = 0, bit = 0, tree = trie->root.tree; ; ) { /* B-forest. */
-		assert(tree.t);
-		in_tree.br0 = 0;
-		in_tree.br1 = PT_(extract)(tree, &branches, &leaves);
-		in_tree.lf = 0;
+	if(!store.s) return 0; /* Idle. */
+	for(byte.cur = 0, bit = 0; ; ) { /* B-forest. */
+		PT_(extract)(store, &tree);
+		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) { /* Binary tree. */
-			const struct trie_branch *const branch = branches + in_tree.br0;
-			for(byte.next = (bit += branch->skip) >> 3; byte.i < byte.next;
-				byte.i++) if(key[byte.i] == '\0') return 0; /* Too short. */
+			branch = tree.branches + in_tree.br0;
+			for(byte.next = (bit += branch->skip) >> 3; byte.cur < byte.next;
+				byte.cur++) if(key[byte.cur] == '\0') return 0; /* Too short. */
 			if(!TRIE_BITTEST(key, bit))
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 			else
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		if(!--tree_depth) break;
-		tree = leaves[in_tree.lf].link;
+		if(!tree.is_internal) break;
+		store = tree.leaves[in_tree.lf].child;
 	};
-	return leaves[in_tree.lf].data;
+	return tree.leaves[in_tree.lf].data;
 }
 
 /** @return Exact match for `key` in `trie` or null. (fixme: private?) */
@@ -264,9 +232,9 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	return (n = PT_(match)(trie, key)) && !strcmp(PT_(to_key)(n), key) ? n : 0;
 }
 
-/** @return The leftmost key of the `b` branch of tree `tree`. */
-static const char *PT_(key_sample)(const union PT_(any_ptree) tree,
-	const unsigned short branch) {
+/** @return The leftmost key of the `b` branch of tree `tree`. fixme! */
+static const char *PT_(key_sample)(const union PT_(any_store) any,
+	const unsigned branch) {
 	/*struct tree *tree = ta->data + tr;
 	assert(ta && tr < ta->size && br <= tree->bsize);
 	if(!TRIESTR_TEST(tree->link, br)) return tree->leaves[br].data;
@@ -281,12 +249,11 @@ static const char *PT_(key_sample)(const union PT_(any_ptree) tree,
 
 /** Initialises `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
-	{ assert(trie); trie->depth = 0; trie->root.data = 0; }
+	{ assert(trie); trie->root.s = 0; }
 
 /** Returns an initialised `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
-	assert(trie);
-	/* fixme */
+	assert(trie); /* fixme */
 	T_(trie)(trie);
 }
 
@@ -306,15 +273,23 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	struct { size_t b, b0, b1; } in_bit;
 	struct { size_t idx, tree_start_bit; } in_forest;
 	struct { unsigned br0, br1, lf; } in_tree;
-	union PT_(any_ptree) tree;
+	union PT_(any_store) store = trie->root;
+	struct PT_(tree) tree;
 	struct branch *branch;
 	union leaf *leaf;
 	const char *sample;
 	int is_write, is_right, is_split = 0;
 
 	assert(trie && x);
-	if(!trie->depth) { /* [0,1] items: root is an item. */
-		struct PT_(tree1) *t1;
+	if(!store.s) { /* Empty. */
+		struct PT_(store0) *const s0 = malloc(sizeof *s0);
+		s0->info.info = 0;
+		s0->leaves[0].data = x;
+		return 1;
+	}
+#if 0
+	{
+		struct PT_(tree0) *t0;
 		const char *existing_key;
 		size_t dif;
 		if(!trie->root.data) return trie->root.data = x, 1;
@@ -344,6 +319,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		printf("bsize %u\n", bsize);
 		in_forest.tree_start_bit = in_bit.b; /* Save for backtracking. */
 	} while(0);
+#endif
 	assert(0);
 #if 0
 	in_bit.b = 0, in_forest.idx = 0, is_write = 0;

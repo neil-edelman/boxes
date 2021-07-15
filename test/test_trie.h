@@ -13,17 +13,13 @@ static void PT_(print)(const struct T_(trie) *const trie) {
 	printf("__Trie: ");
 	if(!trie) { printf("null.\n"); return; }
 	printf("{");
-	if(!trie->depth) {
-		PT_(type) *data = trie->root.data;
-		if(!data) printf("empty");
-		else printf("%s", PT_(to_key)(data));
+	if(!trie->root.s) {
+		printf("empty");
 	} else {
-		struct trie_branch *branch;
-		union PT_(leaf) *leaf;
-		const unsigned short bsize
-			= PT_(extract)(trie->root.tree, &branch, &leaf);
-		for(i = 0; i < bsize; i++)
-			printf("%s%s", i ? ", " : "", PT_(to_key)(leaf[i].data));
+		struct PT_(tree) tree;
+		PT_(extract)(trie->root, &tree);
+		for(i = 0; i < tree.bsize; i++) /* No, polyvalent. */
+			printf("%s%s", i ? ", " : "", PT_(to_key)(tree.leaves[i].data));
 	}
 	/*printf("}; {");
 	for(n = 0; n < trie->branches.size; n++)
