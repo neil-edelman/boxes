@@ -7,96 +7,78 @@
 /* `TRIE_TEST` must be a function that implements this prototype. */
 static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 
-/** Debug: prints `trie`. */
-static void PT_(print)(const struct T_(trie) *const trie) {
-	size_t i;
-	printf("__Trie: ");
-	if(!trie) { printf("null.\n"); return; }
-	printf("{");
-	if(!trie->root.s) {
-		printf("empty");
-	} else {
-		struct PT_(tree) tree;
-		PT_(extract)(trie->root, &tree);
-		for(i = 0; i < tree.bsize; i++) /* No, polyvalent. */
-			printf("%s%s", i ? ", " : "", PT_(to_key)(tree.leaves[i].data));
-	}
-	/*printf("}; {");
-	for(n = 0; n < trie->branches.size; n++)
-		printf("%s%lu:%lu", n ? ", " : "", trie_skip(trie->branches.data[n]),
-		(unsigned long)trie_left(trie->branches.data[n]));*/
-	printf("}.\n");
-}
-
 /** Given a branch `b` in `tree` branches, calculate the right child branches.
  @order \O(log `size`) */
-static unsigned short PT_(right)(union PT_(any_ptree) tree,
-	const unsigned short b) {
-	struct trie_branch *branches;
-	union PT_(leaf) *leaves;
-	unsigned short bsize = PT_(extract)(tree, &branches, &leaves),
-		left, right, b0 = 0;
-	assert(tree.t0 && b < bsize);
+static unsigned PT_(right)(const union PT_(any_store) any, const unsigned b) {
+	struct PT_(tree) tree;
+	unsigned left, right, b0 = 0;
+	assert(any.key);
+	PT_(extract)(any, &tree), assert(b < tree.bsize);
 	for( ; ; ) {
-		right = bsize - (left = branches[b0].left) - 1;
-		assert(left < bsize && right < bsize);
+		right = tree.bsize - (left = tree.branches[b0].left) - 1;
+		assert(left < tree.bsize && right < tree.bsize);
 		if(b0 >= b) break;
-		if(b <= b0 + left) bsize = left, b0++;
-		else bsize = right, b0 += left + 1;
+		if(b <= b0 + left) tree.bsize = left, b0++;
+		else tree.bsize = right, b0 += left + 1;
 	}
 	assert(b0 == b);
 	return right;
 }
 
 /** @return Follows the branches to `b` in `tree` and returns the leaf. */
-static unsigned short PT_(left_leaf)(union PT_(any_ptree) tree,
-	const unsigned short b) {
-	struct trie_branch *branches;
-	union PT_(leaf) *leaves;
-	unsigned short bsize = PT_(extract)(tree, &branches, &leaves),
-		left, right, i = 0, b0 = 0;
-	assert(tree.t0 && b < bsize);
+static unsigned PT_(left_leaf)(union PT_(any_store) any, const unsigned b) {
+	struct PT_(tree) tree;
+	unsigned left, right, i = 0, b0 = 0;
+	assert(any.key);
+	PT_(extract)(any, &tree), assert(b < tree.bsize);
 	for( ; ; ) {
-		right = bsize - (left = branches[b0].left) - 1;
-		assert(left < bsize && right < bsize);
+		right = tree.bsize - (left = tree.branches[b0].left) - 1;
+		assert(left < tree.bsize && right < tree.bsize);
 		if(b0 >= b) break;
-		if(b <= b0 + left) bsize = left, b0++;
-		else bsize = right, b0 += left + 1, i += left + 1;
+		if(b <= b0 + left) tree.bsize = left, b0++;
+		else tree.bsize = right, b0 += left + 1, i += left + 1;
 	}
 	assert(b0 == b);
 	return i;
 }
 
-static void PT_(graph_tree)(const union PT_(any_ptree) tree,
-	const unsigned short depth, FILE *const fp) {
-	struct trie_branch *branches, *branch;
-	union PT_(leaf) *leaves;
-	const unsigned short bsize = PT_(extract)(tree, &branches, &leaves);
-	unsigned short b, i;
-	assert(tree.t && fp);
+static void PT_(graph_tree)(const union PT_(any_store) any, FILE *const fp) {
+	struct PT_(tree) tree;
+	struct trie_branch *branch;
+	unsigned left, right, b, i;
+	assert(any.key && fp);
+	PT_(extract)(any, &tree);
 	fprintf(fp, "\tsubgraph cluster_tree%p {\n"
 		"\t\tstyle = filled;\n"
-		"\t\tlabel = \"depth %u\";\n", (void *)tree.t, depth);
-	for(b = 0; b < bsize; b++) { /* Branches. */
-		branch = branches + b;
-		const unsigned short left = branch->left, right = PT_(right)(tree, b);
-		fprintf(fp, "\t\ttree%pbranch%u "
-			"[label = \"%u\", shape = none, fillcolor = none];\n"
-			"\t\ttree%pbranch%u -> ", (void *)tree.t, b, branch->skip,
-			(void *)tree.t, b);
-		if(left) fprintf(fp, "tree%pbranch%u [style = dashed];\n",
-			(void *)tree.t, b + 1);
-		else fprintf(fp, "tree%pleaf%u [style = dashed];\n",
-			(void *)tree.t, PT_(left_leaf)(tree, b));
-		fprintf(fp, "\t\ttree%pbranch%u -> ", (void *)tree.t, b);
-		if(right) fprintf(fp, "tree%pbranch%u;\n",
-			(void *)tree.t, b + left + 1);
-		else fprintf(fp, "tree%pleaf%u;\n", (void *)tree.t,
-			PT_(left_leaf)(tree, b) + left + 1);
+		"\t\tlabel = \"%s; store%u; branches %u\";\n", (void *)any.key,
+		tree.is_internal ? "internal" : "leaf", tree.store, tree.bsize);
+	if(tree.bsize) {
+		for(b = 0; b < tree.bsize; b++) { /* Branches. */
+			branch = tree.branches + b;
+			left = branch->left, right = PT_(right)(any, b);
+			fprintf(fp, "\t\ttree%pbranch%u "
+				"[label = \"%u\", shape = none, fillcolor = none];\n"
+				"\t\ttree%pbranch%u -> ", (void *)any.key, b, branch->skip,
+				(void *)any.key, b);
+			if(left) fprintf(fp, "tree%pbranch%u [style = dashed];\n",
+				(void *)any.key, b + 1);
+			else fprintf(fp, "tree%pleaf%u [style = dashed];\n",
+				(void *)any.key, PT_(left_leaf)(any, b));
+			fprintf(fp, "\t\ttree%pbranch%u -> ", (void *)any.key, b);
+			if(right) fprintf(fp, "tree%pbranch%u;\n",
+				(void *)any.key, b + left + 1);
+			else fprintf(fp, "tree%pleaf%u;\n", (void *)any.key,
+				PT_(left_leaf)(any, b) + left + 1);
+		}
+		for(i = 0; i <= tree.bsize; i++)
+			fprintf(fp, "\t\ttree%pleaf%u [label = \"%s\"];\n", (void *)any.key,
+			i, PT_(to_key)(tree.leaves[i].data)); /* fixme: or link! */
+	} else {
+		/* Instead of creating a lookahead function to previous references, we
+		 very lazily also just call this a branch, even though it's a leaf. */
+		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (void *)any.key,
+			PT_(to_key)(tree.leaves[0].data)); /* fixme: or link! */
 	}
-	for(i = 0; i <= bsize; i++)
-		fprintf(fp, "\t\ttree%pleaf%u [label = \"%s\"];\n", (void *)tree.t,
-			i, PT_(to_key)(leaves[i].data)); /* fixme: or link! */
 	fprintf(fp, "\t}\n\n");
 }
 
@@ -113,19 +95,12 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		"\ttrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>trie: " QUOTE(TRIE_TYPE)
 		"%s}\"];\n"
 		"\tnode [shape = box, fillcolor = lightsteelblue];\n",
-		!trie->depth && !trie->root.data ? "\\l|idle\\l" : "");
+		trie->root.key ? "" : "\\l|idle\\l");
 	/* "\tnode [shape = none, fillcolor = none];\n" */
-	if(!trie->depth) {
-		if(trie->root.data) {
-			fprintf(fp, "\tsingle [label = \"%s\"]\n"
-				"\ttrie -> single [color = firebrick];\n",
-				PT_(to_key)(trie->root.data));
-		}
-	} else {
-		fprintf(fp, "\ttrie -> tree%p%s0 [color = firebrick];\n",
-			(void *)trie->root.tree.t0,
-			trie->root.tree.t->bsize ? "branch" : "leaf");
-		PT_(graph_tree)(trie->root.tree, trie->depth, fp);
+	if(trie->root.key) {
+		fprintf(fp, "\ttrie -> tree%pbranch0 [color = firebrick];\n",
+			(void *)trie->root.key);
+		PT_(graph_tree)(trie->root, fp);
 	}
 
 #if 0
@@ -167,7 +142,6 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		"fillcolor = lightsteelblue, style = filled];\n", (unsigned long)i,
 		PT_(to_key)(trie->leaves.data[i]));
 #endif
-end:
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);
@@ -219,7 +193,6 @@ static void PT_(test)(void) {
 		es[n].is_in = !!T_(trie_add)(&trie, &es[n].data), assert(es[n].is_in),
 		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
 		(unsigned long)n + 1lu), PT_(graph)(&trie, fn);
-	PT_(print)(&trie);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
 	/*...*/
 #if 0

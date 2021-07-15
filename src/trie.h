@@ -108,7 +108,7 @@ typedef TRIE_TYPE PT_(type);
  Points to a non-empty semi-implicit complete binary tree of a
  fixed-maximum-size, and reading `info` will tell which tree it is. */
 union PT_(any_store) {
-	struct trie_info *s; struct PT_(store0) *s0; struct PT_(store1) *s1;
+	struct trie_info *key; struct PT_(store0) *s0; struct PT_(store1) *s1;
 	struct PT_(store2) *s2; struct PT_(store3) *s3; struct PT_(store4) *s4;
 	struct PT_(store5) *s5; struct PT_(store6) *s6; struct PT_(store7) *s7;
 };
@@ -160,8 +160,8 @@ static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
 /** For `any`, outputs `tree` for the kind of tree. */
 static void PT_(extract)(const union PT_(any_store) any,
 	struct PT_(tree) *const tree) {
-	const unsigned short info = any.s->info;
-	assert(any.s && tree);
+	const unsigned short info = any.key->info;
+	assert(any.key && tree);
 	/* [is_allocated:1][is_internal:1][store:3][bsize:9] */
 	/*tree->is_allocated = !!(info & 0x2000);*/
 	tree->is_internal = !!(info & 0x1000);
@@ -205,7 +205,7 @@ static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
-	if(!store.s) return 0; /* Idle. */
+	if(!store.key) return 0; /* Idle. */
 	for(byte.cur = 0, bit = 0; ; ) { /* B-forest. */
 		PT_(extract)(store, &tree);
 		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
@@ -249,7 +249,7 @@ static const char *PT_(key_sample)(const union PT_(any_store) any,
 
 /** Initialises `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
-	{ assert(trie); trie->root.s = 0; }
+	{ assert(trie); trie->root.key = 0; }
 
 /** Returns an initialised `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
@@ -281,7 +281,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	int is_write, is_right, is_split = 0;
 
 	assert(trie && x);
-	if(!store.s) { /* Empty. */
+	if(!store.key) { /* Empty. */
 		struct PT_(store0) *const s0 = malloc(sizeof *s0);
 		s0->info.info = 0;
 		s0->leaves[0].data = x;
