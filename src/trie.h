@@ -178,11 +178,6 @@ static void PT_(extract)(const union PT_(any_store) any,
 	}
 }
 
-static int PT_(store)(const struct PT_(tree) *const tree,
-	const union PT_(any_store) any) {
-	return 0;
-}
-
 /** Compares keys of `a` and `b`. Used in <fn:<T>trie_from_array>.
  @implements <typedef:<PT>bipredicate_fn> */
 static int PT_(compare)(const PT_(type) *const a, const PT_(type) *const b)
@@ -232,128 +227,70 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	return (n = PT_(match)(trie, key)) && !strcmp(PT_(to_key)(n), key) ? n : 0;
 }
 
-/** @return The leftmost key of the `b` branch of tree `tree`. fixme! */
-static const char *PT_(key_sample)(const union PT_(any_store) any,
-	const unsigned branch) {
-	/*struct tree *tree = ta->data + tr;
-	assert(ta && tr < ta->size && br <= tree->bsize);
-	if(!TRIESTR_TEST(tree->link, br)) return tree->leaves[br].data;
-	tr = tree->leaves[br].link;
-	for( ; ; ) {
-		tree = ta->data + tr;
-		if(!TRIESTR_TEST(tree->link, 0)) return tree->leaves[0].data;
-		tr = tree->leaves[0].link;
-	}*/
+/** Expand `any` to ensure that it has one more unused capacity.
+ @return Potentially a new tree. @throws[realloc] */
+static const union PT_(any_store) *PT_(expand)(const union PT_(any_store) any) {
+	struct PT_(tree) tree;
+	assert(any.key);
+	PT_(extract)(any, &tree);
+	/*...*/
 	return 0;
 }
 
-/** Initialises `trie` to idle. @order \Theta(1) @allow */
-static void T_(trie)(struct T_(trie) *const trie)
-	{ assert(trie); trie->root.key = 0; }
-
-/** Returns an initialised `trie` to idle. @allow */
-static void T_(trie_)(struct T_(trie) *const trie) {
-	assert(trie); /* fixme */
-	T_(trie)(trie);
+/** @return The leftmost key `lf` of key `any`. */
+static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
+	struct PT_(tree) tree;
+	assert(any.key);
+	while(PT_(extract)(any, &tree), tree.is_internal)
+		any = tree.leaves[lf].child, lf = 0;
+	return PT_(to_key)(tree.leaves[lf].data);
 }
-
-/** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
- it was previously in an active non-idle state, it continues to be.
- @order \Theta(1) @allow */
-static void T_(trie_clear)(struct T_(trie) *const trie)
-	{ assert(trie); /* ... */}
-
-/** @return The <typedef:<PT>type> with `key` in `trie` or null no such item
- exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
-static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
 
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
-	struct { size_t b, b0, b1; } in_bit;
-	struct { size_t idx, tree_start_bit; } in_forest;
+	struct { size_t x, x0, x1; } in_bit;
+	struct { union PT_(any_store) any; size_t start_bit; } in_forest;
 	struct { unsigned br0, br1, lf; } in_tree;
-	union PT_(any_store) store = trie->root;
 	struct PT_(tree) tree;
-	struct branch *branch;
+	struct trie_branch *branch;
 	union leaf *leaf;
 	const char *sample;
 	int is_write, is_right, is_split = 0;
 
 	assert(trie && x);
-	if(!store.key) { /* Empty. */
+	if(!trie->root.key) { /* Empty special case. */
 		struct PT_(store0) *const s0 = malloc(sizeof *s0);
-		s0->info.info = 0;
-		s0->leaves[0].data = x;
+		if(!s0) { if(!errno) errno = ERANGE; return 0; }
+		s0->info.info = 0, s0->leaves[0].data = x;
+		trie->root.s0 = s0;
 		return 1;
 	}
-#if 0
-	{
-		struct PT_(tree0) *t0;
-		const char *existing_key;
-		size_t dif;
-		if(!trie->root.data) return trie->root.data = x, 1;
-		/* Change over to tree root. */
-		existing_key = PT_(to_key)(trie->root.data);
-		/* fixme: Find a way to eliminate 8-consecutive-byte limit. */
-		for(dif = 0; !TRIE_BITDIFF(existing_key, x_key, dif); dif++)
-			if(dif > 255) return errno = ERANGE, 0;
-		if(!(t1 = malloc(sizeof *t1)))
-			{ if(!errno) errno = ERANGE; return 0; }
-		t1->bsize = 1;
-		t1->branches[0].left = 0;
-		t1->branches[0].skip = (unsigned char)dif;
-		dif = !TRIE_BITTEST(x_key, dif);
-		t1->leaves[dif].data = trie->root.data;
-		t1->leaves[!dif].data = x;
-		trie->root.tree.t1 = t1;
-		trie->depth = 1;
-		return 1;
-	} /* [2,] items: root is a tree. */
-	tree = trie->root.tree;
-	in_bit.b = 0;
-	{
-		struct trie_branch *branches;
-		union PT_(leaf) *leaves;
-		unsigned short bsize = PT_(extract)(tree, &branches, &leaves);
-		printf("bsize %u\n", bsize);
-		in_forest.tree_start_bit = in_bit.b; /* Save for backtracking. */
-	} while(0);
-#endif
-	assert(0);
-#if 0
-	in_bit.b = 0, in_forest.idx = 0, is_write = 0;
-	do {
-		in_forest.tree_start_bit = in_bit.b;
-		is_write =
-tree:
-		assert(in_forest.idx < forest->size);
-		tree = forest->data + in_forest.idx;
-		sample = key_sample(forest, in_forest.idx, 0);
-		/* Pre-select `is_write` if the tree is not full and has no links. */
-		if(!is_write && tree->bsize < TRIE_BRANCH
-			&& !memcmp(&tree->link, zero, TRIE_BITMAP)) is_write = 1;
-		in_bit.b0 = in_bit.b;
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+	/* Find the spot where it goes. For all the trees in the B-forest. */
+	for(in_bit.x = in_forest.start_bit = 0, in_forest.any = trie->root; ; ) {
+		PT_(extract)(in_forest.any, &tree);
+		sample = PT_(sample)(in_forest.any, 0);
+		is_write /* ? */;
+		in_bit.x0 = in_bit.x;
+		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
-			branch = tree->branches + in_tree.br0;
-			/* Test all the skip bits. */
-			for(in_bit.b1 = in_bit.b + branch->skip; in_bit.b < in_bit.b1;
-				in_bit.b++) if(TRIESTR_DIFF(key, sample, in_bit.b)) goto leaf;
+			branch = tree.branches + in_tree.br0;
+			/* Test all the skip bits. fixme: detect overflow. */
+			for(in_bit.x1 = in_bit.x + branch->skip; in_bit.x < in_bit.x1;
+				in_bit.x++) if(TRIE_BITDIFF(x_key, sample, in_bit.x)) goto leaf;
 			/* Decision bit. */
-			if(!TRIESTR_TEST(key, in_bit.b)) {
+			if(!TRIE_BITTEST(x_key, in_bit.x)) {
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 				if(is_write) branch->left++;
 			} else {
 				in_tree.br0 += branch->left + 1;
 				in_tree.lf  += branch->left + 1;
-				sample = key_sample(forest, in_forest.idx, in_tree.lf);
+				sample = PT_(sample)(in_forest.any, in_tree.lf);
 			}
-			in_bit.b0 = in_bit.b1, in_bit.b++;
+			in_bit.x0 = in_bit.x1, in_bit.x++;
 		}
-		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree->bsize);
-	} while(TRIESTR_TEST(tree->link, in_tree.lf)
-		&& (in_forest.idx = tree->leaves[in_tree.lf].link, 1));
+		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree.bsize);
+	} while(TRIE_BITTEST(tree->link, in_tree.lf)
+		&& (in_forest.idx = tree.leaves[in_tree.lf].link, 1));
 	/* Got to the leaves; uniqueness guarantees that this is safe. */
 	while(!TRIESTR_DIFF(x_key, sample, in_bit.b)) in_bit.b++;
 
@@ -404,6 +341,28 @@ insert:
 	return 1;
 }
 
+/** Initialises `trie` to idle. @order \Theta(1) @allow */
+static void T_(trie)(struct T_(trie) *const trie)
+	{ assert(trie); trie->root.key = 0; }
+
+/** Returns an initialised `trie` to idle. @allow */
+static void T_(trie_)(struct T_(trie) *const trie) {
+	assert(trie); /* fixme */
+	T_(trie)(trie);
+}
+
+/** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
+ it was previously in an active non-idle state, it continues to be.
+ @order \Theta(1) @allow */
+static void T_(trie_clear)(struct T_(trie) *const trie)
+	{ assert(trie); /* ... */}
+
+/** @return The <typedef:<PT>type> with `key` in `trie` or null no such item
+ exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
+static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
+	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
+
+
 /** @return If `x` is already in `trie`, returns false, otherwise success.
  @throws[realloc, ERANGE] */
 static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
@@ -412,66 +371,6 @@ static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 }
 
 #if 0
-/** Add `datum` to `trie`. Must not be the same as any key of `trie`; _ie_ it
- does not check for the end of the string. @return Success. @order \O(|`trie`|)
- @throws[ERANGE] Trie reached it's conservative maximum, which on machines
- where the pointer is 64-bits, is 4.5T. On 32-bits, it's 1M.
- @throws[realloc, ERANGE] @fixme Throw EILSEQ if two strings have subsequences
- that are equal in more than 2^12 bits. */
-static int PT_(add)(struct T_(trie) *const trie, PT_(type) *const datum) {
-	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
-	size_t n0 = 0, n1 = branch_size, i = 0, left, bit = 0, bit0 = 0, bit1;
-	TrieBranch *branch = 0;
-	const char *const data_key = PT_(to_key)(datum), *n0_key;
-	PT_(leaf) *leaf;
-	int cmp;
-	assert(trie && datum);
-	/* Empty special case. */
-	if(!leaf_size) return assert(!trie->branches.size),
-		(leaf = A_(array_new)(&trie->leaves)) ? *leaf = datum, 1 : 0;
-	/* Redundant `size_t`, but maybe we will use it like Judy. */
-	assert(leaf_size == branch_size + 1);
-	/* Conservative maximally unbalanced trie. Reserve one more. */
-	if(leaf_size >= TRIE_LEFT_MAX) return errno = ERANGE, 0;
-	if(!A_(array_reserve)(&trie->leaves, leaf_size + 1)
-		|| !trie_branch_array_reserve(&trie->branches, branch_size + 1))
-		return 0;
-	/* Branch from internal node. */
-	while(branch = trie->branches.data + n0,
-		n0_key = PT_(to_key)(trie->leaves.data[i]), n0 < n1) {
-		/* fixme: Detect overflow 12 bits between. */
-		for(bit1 = bit + trie_skip(*branch); bit < bit1; bit++)
-			if((cmp = trie_strcmp_bit(data_key, n0_key, bit)) != 0) goto insert;
-		bit0 = bit1;
-		left = trie_left(*branch) + 1; /* Leaves. */
-		if(!trie_is_bit(data_key, bit++))
-			trie_left_inc(branch), n1 = n0++ + left;
-		else n0 += left, i += left;
-	}
-	/* Branch from leaf. */
-	while((cmp = trie_strcmp_bit(data_key, n0_key, bit)) == 0) bit++;
-insert:
-	assert(n0 <= n1 && n1 <= trie->branches.size && n0_key
-		&& i <= trie->leaves.size && !n0 == !bit0);
-	/* How many left entries are there to move. */
-	if(cmp < 0) left = 0;
-	else left = n1 - n0, i += left + 1;
-	/* Insert leaf. */
-	leaf = trie->leaves.data + i;
-	memmove(leaf + 1, leaf, sizeof *leaf * (leaf_size - i));
-	*leaf = datum, trie->leaves.size++;
-	/* Insert branch. */
-	branch = trie->branches.data + n0;
-	if(n0 != n1) { /* Split the skip value with the existing branch. */
-		const size_t branch_skip = trie_skip(*branch);
-		assert(branch_skip + bit0 >= bit + !n0);
-		trie_skip_set(branch, branch_skip + bit0 - bit - !n0);
-	}
-	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
-	*branch = trie_branch(bit - bit0 - !!n0, left), trie->branches.size++;
-	return 1;
-}
-
 /** Looks at only the index for potential matches.
  @param[result] A index pointer to leaves that matches `key` when true.
  @return True if `key` in `trie` has matched, otherwise `key` is definitely is
