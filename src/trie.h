@@ -76,8 +76,16 @@ static int trie_is_prefix(const char *a, const char *b) {
 }
 struct trie_branch { unsigned char left, skip; };
 /* This is a bit field defined in <fn:<PT>extract>, but bit fields on `short`
- may be undefined and may widen the value, who knows. */
+ may be undefined, or may widen the value, who knows. */
 struct trie_info { unsigned short info; };
+/* X-macros: `C90` doesn't allow trialing commas in initializer lists. */
+#define TRIE_STORE_TAIL_X \
+	X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128) X(7, 256)
+#define TRIE_STORE_X \
+	X(0, 1) TRIE_STORE_TAIL_X
+#define TRIE_STORE_XCSV \
+	X(0, 1), X(1, 4), X(2, 8), X(3, 16), X(4, 32), X(5, 64), \
+	X(6, 128), X(7, 256)
 #endif /* idempotent --> */
 
 
@@ -106,11 +114,12 @@ typedef TRIE_TYPE PT_(type);
 
 /** Pointers to generic trees stored in memory, and part of the B-forest.
  Points to a non-empty semi-implicit complete binary tree of a
- fixed-maximum-size, and reading `info` will tell which tree it is. */
+ fixed-maximum-size; reading `key.info` will tell which tree it is. */
 union PT_(any_store) {
-	struct trie_info *key; struct PT_(store0) *s0; struct PT_(store1) *s1;
-	struct PT_(store2) *s2; struct PT_(store3) *s3; struct PT_(store4) *s4;
-	struct PT_(store5) *s5; struct PT_(store6) *s6; struct PT_(store7) *s7;
+	struct trie_info *key;
+#define X(n, m) struct PT_(store##n) *s##n;
+	TRIE_STORE_X
+#undef X
 };
 
 /** A leaf is either data at the base of the tree at the base of the B-forest
@@ -121,11 +130,10 @@ union PT_(leaf) { PT_(type) *data; union PT_(any_store) child; };
 /* Different width trees, designed to fit alignment (and cache) boundaries. */
 struct PT_(store0) { struct trie_info info; char unused[6];
 	union PT_(leaf) leaves[1]; }; /* Except this one wastes space. */
-#define TRIE_STORE(n, m) struct PT_(store##n) { struct trie_info info; \
+#define X(n, m) struct PT_(store##n) { struct trie_info info; \
 	struct trie_branch branches[m - 1]; union PT_(leaf) leaves[m]; };
-TRIE_STORE(1, 4) TRIE_STORE(2, 8) TRIE_STORE(3, 16) TRIE_STORE(4, 32)
-TRIE_STORE(5, 64) TRIE_STORE(6, 128) TRIE_STORE(7, 256)
-#undef TRIE_TREE
+TRIE_STORE_TAIL_X
+#undef X
 /* We could go one more, but that ruins the alignment. Is it worth it? Maybe
  255 could be a special value that allows strings with long matches. */
 
@@ -169,11 +177,10 @@ static void PT_(extract)(const union PT_(any_store) any,
 	tree->bsize = info & 0x1FF, assert(tree->bsize <= TRIE_MAX_BRANCH);
 	switch(tree->store) {
 	case 0: tree->branches = 0; tree->leaves = any.s0->leaves; break;
-#define TRIE_SWITCH(n) case n: tree->branches = any.s##n->branches; \
+#define X(n, m) case n: tree->branches = any.s##n->branches; \
 	tree->leaves = any.s##n->leaves; break;
-		TRIE_SWITCH(1) TRIE_SWITCH(2) TRIE_SWITCH(3) TRIE_SWITCH(4)
-		TRIE_SWITCH(5) TRIE_SWITCH(6) TRIE_SWITCH(7)
-#undef TRIE_SWITCH
+		TRIE_STORE_TAIL_X
+#undef X
 	default: assert(0);
 	}
 }
@@ -233,7 +240,7 @@ static const union PT_(any_store) *PT_(expand)(const union PT_(any_store) any) {
 	struct PT_(tree) tree;
 	assert(any.key);
 	PT_(extract)(any, &tree);
-	/*...*/
+	////
 	return 0;
 }
 
