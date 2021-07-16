@@ -249,7 +249,7 @@ static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
 	struct { size_t x, x0, x1; } in_bit;
-	struct { union PT_(any_store) any; size_t start_bit; } in_forest;
+	struct { union PT_(any_store) *ref, any; size_t start_bit; } in_forest;
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
@@ -267,7 +267,8 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		return 1;
 	}
 	/* Trees in the B-forest. */
-	in_bit.x = in_forest.start_bit = 0, in_forest.any = trie->root;
+	in_bit.x = in_forest.start_bit = 0, in_forest.ref = &trie->root,
+		in_forest.any = *in_forest.ref;
 	do {
 		PT_(extract)(in_forest.any, &tree);
 tree:
@@ -317,6 +318,7 @@ leaf:
 		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
 	} else {
 		/* Now we are sure that this tree is the one getting modified. */
+		/* fixme: but also we don't know whether the width is the maximum */
 		is_write = 1;
 	}
 	in_bit.x = in_forest.start_bit;
