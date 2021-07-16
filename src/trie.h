@@ -255,8 +255,9 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	struct trie_branch *branch;
 	union leaf *leaf;
 	const char *sample;
-	int is_write, is_right, is_split = 0;
+	int is_write = 0, is_right = 0, is_split = 0;
 
+	printf("inserting %s.\n", x_key);
 	assert(trie && x);
 	if(!trie->root.key) { /* Empty special case. */
 		struct PT_(store0) *const s0 = malloc(sizeof *s0);
@@ -265,16 +266,18 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		trie->root.s0 = s0;
 		return 1;
 	}
-	/* Find the spot where it goes. For all the trees in the B-forest. */
-	for(in_bit.x = in_forest.start_bit = 0, in_forest.any = trie->root; ; ) {
+	/* Trees in the B-forest. */
+	in_bit.x = in_forest.start_bit = 0, in_forest.any = trie->root;
+	do {
 		PT_(extract)(in_forest.any, &tree);
+tree:
 		sample = PT_(sample)(in_forest.any, 0);
-		is_write /* ? */;
 		in_bit.x0 = in_bit.x;
+		/* Descend branches. */
 		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
 			branch = tree.branches + in_tree.br0;
-			/* Test all the skip bits. fixme: detect overflow. */
+			/* Test all the skip bits. */
 			for(in_bit.x1 = in_bit.x + branch->skip; in_bit.x < in_bit.x1;
 				in_bit.x++) if(TRIE_BITDIFF(x_key, sample, in_bit.x)) goto leaf;
 			/* Decision bit. */
@@ -289,36 +292,38 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 			in_bit.x0 = in_bit.x1, in_bit.x++;
 		}
 		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree.bsize);
-	} while(TRIE_BITTEST(tree->link, in_tree.lf)
-		&& (in_forest.idx = tree.leaves[in_tree.lf].link, 1));
-	/* Got to the leaves; uniqueness guarantees that this is safe. */
-	while(!TRIESTR_DIFF(x_key, sample, in_bit.b)) in_bit.b++;
+	} while(tree.is_internal
+		&& (in_forest.any = tree.leaves[in_tree.lf].child, 1));
+	/* Got to the leaves. */
+	in_bit.x1 = in_bit.x + UCHAR_MAX;
+	while(!TRIE_BITDIFF(x_key, sample, in_bit.x))
+		if(++in_bit.x > in_bit.x1) return errno = ERANGE, 0;
 
 leaf:
-	if(TRIESTR_TEST(x_key, in_bit.b))
+	if(TRIE_BITTEST(x_key, in_bit.x))
 		is_right = 1, in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
-	else
-		is_right = 0;
-	/*printf("insert %s, at index %u bit %lu.\n", key, in_tree.lf, in_bit.b);*/
-	assert(in_tree.lf <= tree->bsize + 1u);
+	printf("insert %s, at index %u bit %lu, %s.\n", x_key, in_tree.lf, in_bit.x,
+		is_right ? "right" : "left");
+	assert(in_tree.lf <= tree.bsize + 1u);
 
 	if(is_write) goto insert;
 	/* If the tree is full, split it. */
-	assert(tree->bsize <= TRIE_BRANCH);
-	if(tree->bsize == TRIE_BRANCH) {
-		/*printf("Splitting tree %lu.\n", in_forest.idx);*/
+	assert(tree.bsize <= TRIE_MAX_BRANCH);
+	if(tree.bsize == TRIE_MAX_BRANCH) {
+		printf("Splitting tree %p.\n", (void *)in_forest.any.key);
 		assert(!is_split);
-		if(!trie_split(trie, in_forest.idx)) return 0;
+		/*if(!trie_split(trie, in_forest.idx)) return 0;*/
 		assert(is_split = 1);
 		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
 	} else {
 		/* Now we are sure that this tree is the one getting modified. */
 		is_write = 1;
 	}
-	in_bit.b = in_forest.tree_start_bit;
+	in_bit.x = in_forest.start_bit;
 	goto tree;
 
 insert:
+#if 0
 	leaf = tree->leaves + in_tree.lf;
 	memmove(leaf + 1, leaf, sizeof *leaf * (tree->bsize + 1 - in_tree.lf));
 	leaf->data = key;
