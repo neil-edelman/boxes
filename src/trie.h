@@ -68,7 +68,7 @@
 /* Worst-case all-left, `(128,max(tree.left>=255)]`. It's possible to go right
  down to 0, but need to edit the `TRIE_STORE*`. We could go one more, but that
  ruins the alignment. */
-#define TRIE_MAX_LEFT 254
+#define TRIE_MAX_LEFT 6/*254*/
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
 #if 0 /* For range values; unimplemented yet. */
@@ -90,8 +90,10 @@ struct trie_info { unsigned short info; };
  `{ n = 0: 1 <= m, n != 0: 1 < m }`, and strictly increasing. To add more, one
  has to increase the width of the `store` variable. */
 #define TRIE_STORE_FIRST_X X(0, 1)
-#define TRIE_STORE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
-#define TRIE_STORE_LAST_X  X(7, TRIE_ORDER)
+/*#define TRIE_STORE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
+#define TRIE_STORE_LAST_X  X(7, TRIE_ORDER)*/
+#define TRIE_STORE_MID_X   X(1, 4)
+#define TRIE_STORE_LAST_X  X(2, TRIE_ORDER)
 #define TRIE_STORE_TAIL_X TRIE_STORE_MID_X TRIE_STORE_LAST_X
 #define TRIE_STORE_HEAD_X TRIE_STORE_FIRST_X TRIE_STORE_MID_X
 #define TRIE_STORE_X TRIE_STORE_FIRST_X TRIE_STORE_TAIL_X
@@ -104,7 +106,7 @@ static const unsigned trie_store_bsizes[] = {
 	TRIE_STORE_LAST_X
 #undef X
 };
-static const size_t trie_store_count
+static const unsigned trie_store_count
 	= sizeof trie_store_bsizes / sizeof *trie_store_bsizes;
 #endif /* idempotent --> */
 
@@ -157,7 +159,7 @@ struct PT_(store0) { struct trie_info info; char unused[6];
 TRIE_STORE_TAIL_X
 #undef X
 
-static const size_t PT_(store_sizes)[] = {
+static const unsigned PT_(store_sizes)[] = {
 #define X(n, m) sizeof(struct PT_(store##n)),
 	TRIE_STORE_HEAD_X
 #undef X

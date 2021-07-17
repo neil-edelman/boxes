@@ -50,8 +50,11 @@ static void PT_(graph_tree)(const union PT_(any_store) any, FILE *const fp) {
 	PT_(extract)(any, &tree);
 	fprintf(fp, "\tsubgraph cluster_tree%p {\n"
 		"\t\tstyle = filled;\n"
-		"\t\tlabel = \"store%u %s, branches %u\";\n", (void *)any.key,
-		tree.store, tree.is_internal ? "internal" : "bottom", tree.bsize);
+		"\t\tlabel = \"%s children; rank %u/%u; store%u(%u); %uB\";\n",
+		(void *)any.key, tree.is_internal ? "internal" : "leaf",
+		tree.bsize, trie_store_bsizes[tree.store],
+		tree.store, trie_store_count,
+		PT_(store_sizes)[tree.store]);
 	if(tree.bsize) {
 		for(b = 0; b < tree.bsize; b++) { /* Branches. */
 			branch = tree.branches + b;
@@ -86,7 +89,6 @@ static void PT_(graph_tree)(const union PT_(any_store) any, FILE *const fp) {
 static void PT_(graph)(const struct T_(trie) *const trie,
 	const char *const fn) {
 	FILE *fp;
-	size_t n;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
@@ -102,46 +104,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 			(void *)trie->root.key);
 		PT_(graph_tree)(trie->root, fp);
 	}
-
-#if 0
-	color = royalblue
-	if(!trie->depth) {
-		if(!trie->depth) {
-			PT_(type) *data = trie->root.data;
-			if(!data) fprintf(fp, "idle");
-			else fprintf(fp, "%s", PT_(to_key)(data));
-		} else {
-			struct trie_branch *branch;
-			union PT_(leaf) *leaf;
-			const unsigned short bsize
-				= PT_(extract)(trie->root.tree, &branch, &leaf);
-			for(i = 0; i < bsize; i++)
-				printf("%s%s", i ? ", " : "", PT_(to_key)(leaf[i].data));
-		}
-	}
-	for(n = 0; n < trie->branches.size; n++) {
-		const size_t branch = trie->branches.data[n];
-		const size_t left = trie_left(branch), right = PT_(right)(trie, n);
-		fprintf(fp, "\tbranch%lu [label = \"%lu\"];\n"
-			"\tbranch%lu -> ", (unsigned long)n, trie_skip(branch),
-			(unsigned long)n);
-		if(left) fprintf(fp, "branch%lu [style = dashed]; // left branch\n",
-			(unsigned long)n + 1);
-		else fprintf(fp, "leaf%lu [style = dashed]; // left leaf\n",
-			(unsigned long)PT_(left_leaf)(trie, n));
-		fprintf(fp, "\tbranch%lu -> ", (unsigned long)n);
-		if(right) fprintf(fp, "branch%lu; // right branch\n",
-			(unsigned long)n + left + 1);
-		else fprintf(fp, "leaf%lu; // right leaf\n",
-			(unsigned long)PT_(left_leaf)(trie, n) + left + 1);
-	}
-	/* This must be after the branches, or it will mix up the order. Since they
-	 have been referenced, one needs explicit formatting? */
-	for(i = 0; i < trie->leaves.size; i++)
-		fprintf(fp, "\tleaf%lu [label = \"%s\", shape = box, "
-		"fillcolor = lightsteelblue, style = filled];\n", (unsigned long)i,
-		PT_(to_key)(trie->leaves.data[i]));
-#endif
+	/* color = royalblue */
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);
