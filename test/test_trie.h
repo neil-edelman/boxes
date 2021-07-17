@@ -177,6 +177,7 @@ static void PT_(test)(void) {
 	PT_(valid)(0);
 	PT_(valid)(&trie);
 	T_(trie)(&trie), PT_(valid)(&trie);
+	printf("Idle graph.\n");
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "_trie-idle.gv");
 #if 0
 	n = T_(trie_size)(&trie), a = T_(trie_array)(&trie), assert(!n && !a);
@@ -191,6 +192,7 @@ static void PT_(test)(void) {
 	/* fixme: could be duplicates. */
 	for(n = 0; n < es_size; n++)
 		es[n].is_in = !!T_(trie_add)(&trie, &es[n].data), assert(es[n].is_in),
+		printf("Graph %lu.\n", (unsigned long)n + 1lu),
 		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
 		(unsigned long)n + 1lu), PT_(graph)(&trie, fn);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));

@@ -35,7 +35,7 @@
  Unit testing framework <fn:<T>trie_test>, included in a separate header,
  <../test/test_trie.h>. Must be defined equal to a (random) filler function,
  satisfying <typedef:<PT>action_fn>. Requires that `NDEBUG` not be defined
- and `TRIE_ITERATE_TO_STRING`.
+ and `TRIE_TO_STRING`.
 
  @std C89 */
 
@@ -52,6 +52,9 @@
 #if defined(TRIE_TYPE) ^ defined(TRIE_KEY)
 #error TRIE_TYPE and TRIE_KEY have to be mutually defined.
 #endif
+#if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
+#error TRIE_TEST requires TRIE_TO_STRING.
+#endif
 
 
 #ifndef TRIE_H /* <!-- idempotent */
@@ -62,10 +65,13 @@
 #define TRIE_BITTEST(a, n) ((a)[TRIE_BITSLOT(n)] & TRIE_BITMASK(n))
 #define TRIE_BITDIFF(a, b, n) (((a)[TRIE_BITSLOT(n)] ^ (b)[TRIE_BITSLOT(n)]) \
 	& ((1 << (CHAR_BIT - 1)) >> ((n) % CHAR_BIT)))
-/* Worst-case all-left, `[0,max(tree.left>=255)]`. Fits nicely in struct. */
+/* Worst-case all-left, `(128,max(tree.left>=255)]`. It's possible to go right
+ down to 0, but need to edit the `TRIE_STORE*`. We could go one more, but that
+ ruins the alignment. */
 #define TRIE_MAX_LEFT 254
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
+#if 0 /* For range values; unimplemented yet. */
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -74,14 +80,18 @@ static int trie_is_prefix(const char *a, const char *b) {
 		if(*a != *b) return *b == '\0';
 	}
 }
+#endif
 struct trie_branch { unsigned char left, skip; };
-/* This is a bit field defined in <fn:<PT>extract>, but bit fields on `short`
- may be undefined, or may widen the value, who knows. */
+/* This is a bit-field, but bit-fields on `short` may be unsupported, or may
+ widen the value, so we just hard code it, defined in <fn:<PT>extract>. */
 struct trie_info { unsigned short info; };
-/* This is the store number and branching factor, which is the leaves. */
+/* This is the store number, which stores trees of different widths in `(n, m)`:
+ `n` must be ascending from zero; branching factor `m`, which is the leaves,
+ `{ n = 0: 1 <= m, n != 0: 1 < m }`, and strictly increasing. To add more, one
+ has to increase the width of the `store` variable. */
 #define TRIE_STORE_FIRST_X X(0, 1)
 #define TRIE_STORE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
-#define TRIE_STORE_LAST_X  X(7, 256)
+#define TRIE_STORE_LAST_X  X(7, TRIE_ORDER)
 #define TRIE_STORE_TAIL_X TRIE_STORE_MID_X TRIE_STORE_LAST_X
 #define TRIE_STORE_HEAD_X TRIE_STORE_FIRST_X TRIE_STORE_MID_X
 #define TRIE_STORE_X TRIE_STORE_FIRST_X TRIE_STORE_TAIL_X
@@ -137,15 +147,15 @@ union PT_(any_store) {
  differentiation. */
 union PT_(leaf) { PT_(type) *data; union PT_(any_store) child; };
 
-/* Different width trees, designed to fit alignment (and cache) boundaries. */
+/* Different width trees, designed to fit alignment (and cache) boundaries.
+ Except this one wastes space; may be some use extending from 8 -> 2097183
+ bytes the maximum similarity. */
 struct PT_(store0) { struct trie_info info; char unused[6];
-	union PT_(leaf) leaves[1]; }; /* Except this one wastes space. */
+	union PT_(leaf) leaves[1]; };
 #define X(n, m) struct PT_(store##n) { struct trie_info info; \
 	struct trie_branch branches[m - 1]; union PT_(leaf) leaves[m]; };
 TRIE_STORE_TAIL_X
 #undef X
-/* We could go one more, but that ruins the alignment. Is it worth it? Maybe
- 255 could be a special value that allows strings with long matches. */
 
 static const size_t PT_(store_sizes)[] = {
 #define X(n, m) sizeof(struct PT_(store##n)),
@@ -156,7 +166,8 @@ static const size_t PT_(store_sizes)[] = {
 #undef X
 };
 
-/** A working tree, extracted from tight storage by <fn:<PT>extract>. */
+/** A working tree, extracted from different-width storage by
+ <fn:<PT>extract>. */
 struct PT_(tree) {
 	unsigned /*is_allocated,*/ is_internal, store, bsize;
 	struct trie_branch *branches;
@@ -180,22 +191,26 @@ typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
  string while in any trie causes the trie to go into an undefined state. */
 static const char *(*PT_(to_key))(const PT_(type) *a) = (TRIE_KEY);
 
+#if 0
 /** @return False. Ignores `a` and `b`. @implements <typedef:<PT>replace_fn> */
 static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
 	{ return (void)a, (void)b, 0; }
+#endif
 
-/** For `any`, outputs `tree` for the kind of tree. */
+/** @return `tree` for the kind of tree storage in the compact `any`. */
 static void PT_(extract)(const union PT_(any_store) any,
 	struct PT_(tree) *const tree) {
 	const unsigned short info = any.key->info;
 	assert(any.key && tree);
-	/* [is_allocated:1][is_internal:1][store:3][bsize:9] */
-	/*tree->is_allocated = !!(info & 0x2000);*/
+	/* [is_allocated:1][is_internal:1][store:3][bsize:9]
+	 fixme: This is when 256 was the maximum bsize; 255 will fit in a byte. */
 	tree->is_internal = !!(info & 0x1000);
 	tree->store = (info >> 9) & 7, assert(tree->store < trie_store_count);
 	tree->bsize = info & 0x1FF, assert(tree->bsize <= TRIE_MAX_BRANCH);
 	switch(tree->store) {
+		/* Special case where there are no branches. */
 	case 0: tree->branches = 0; tree->leaves = any.s0->leaves; break;
+		/* General case where there are branches. */
 #define X(n, m) case n: tree->branches = any.s##n->branches; \
 	tree->leaves = any.s##n->leaves; break;
 		TRIE_STORE_TAIL_X
@@ -203,17 +218,6 @@ static void PT_(extract)(const union PT_(any_store) any,
 	default: assert(0);
 	}
 }
-
-/** Compares keys of `a` and `b`. Used in <fn:<T>trie_from_array>.
- @implements <typedef:<PT>bipredicate_fn> */
-static int PT_(compare)(const PT_(type) *const a, const PT_(type) *const b)
-	{ return strcmp(PT_(to_key)(a), PT_(to_key)(b)); }
-
-#ifdef TRIE_TO_STRING /* <!-- str */
-/** Uses the natural `datum` -> `a` that is defined by `TRIE_KEY`. */
-static void PT_(to_string)(PT_(type) *const a, char (*const z)[12])
-	{ assert(a && z); sprintf(*z, "%.11s", PT_(to_key)(a)); }
-#endif /* str --> */
 
 /** @return Looks at only the index of `trie` for potential `key` matches,
  otherwise `key` is definitely not in `trie`. @order \O(`key.length`) */
@@ -254,7 +258,8 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 }
 
 /** Expand `any` to ensure that it has one more unused capacity when the branch
- size is not the maximum. @return Potentially a new tree. @throws[realloc] */
+ size is not the maximum. @return Potentially a re-allocated tree.
+ @throws[realloc] @fixme Cached any. */
 static union PT_(any_store) PT_(expand)(const union PT_(any_store) any) {
 	struct PT_(tree) tree0, tree1;
 	union PT_(any_store) larger;
@@ -269,7 +274,7 @@ static union PT_(any_store) PT_(expand)(const union PT_(any_store) any) {
 		&& tree0.store + 1 < trie_store_count);
 	/* Augment the allocation. */
 	if(!(larger.key = realloc(any.key, PT_(store_sizes)[tree0.store + 1])))
-		{ if(!errno) errno = ERANGE; return (union PT_(any_store)){ 0 }; }
+		{ if(!errno) errno = ERANGE; return larger; }
 	PT_(extract)(larger, &tree0); /* The address may have changed. */
 	printf("expand: #%p store%u %luB -> #%p store%u %luB\n", (void *)any.key,
 		tree0.store, (unsigned long)PT_(store_sizes)[tree0.store],
@@ -285,11 +290,10 @@ static union PT_(any_store) PT_(expand)(const union PT_(any_store) any) {
 		&& tree0.leaves <= tree1.leaves);
 	memmove(tree1.leaves, tree0.leaves,
 		sizeof *tree0.leaves * (tree1.bsize + 1));
-	assert(0);
 	return larger;
 }
 
-/** @return The leftmost key `lf` of key `any`. */
+/** @return The leftmost key `lf` of key `any`. fixme: cached any. */
 static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
 	struct PT_(tree) tree;
 	assert(any.key);
@@ -298,6 +302,8 @@ static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
 	return PT_(to_key)(tree.leaves[lf].data);
 }
 
+static void PT_(graph)(const struct T_(trie) *, const char *);
+
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
 	struct { size_t x, x0, x1; } in_bit;
@@ -305,11 +311,11 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
-	union leaf *leaf;
+	union PT_(leaf) *leaf;
 	const char *sample;
 	int is_write = 0, is_right = 0, is_split = 0;
 
-	printf("inserting %s.\n", x_key);
+	printf("add: %s.\n", x_key);
 	assert(trie && x);
 	if(!trie->root.key) { /* Empty special case. */
 		struct PT_(store0) *const s0 = malloc(sizeof *s0);
@@ -348,6 +354,7 @@ tree:
 	} while(tree.is_internal
 		&& (in_forest.any = tree.leaves[in_tree.lf].child, 1));
 	/* Got to the leaves. */
+	printf("add: got to the leaves.\n");
 	in_bit.x1 = in_bit.x + UCHAR_MAX;
 	while(!TRIE_BITDIFF(x_key, sample, in_bit.x))
 		if(++in_bit.x > in_bit.x1) return errno = ERANGE, 0;
@@ -355,53 +362,60 @@ tree:
 leaf:
 	if(TRIE_BITTEST(x_key, in_bit.x))
 		is_right = 1, in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
-	printf("insert %s, at index %u bit %lu, %s.\n", x_key, in_tree.lf, in_bit.x,
-		is_right ? "right" : "left");
+	printf("add: %s, at leaf %u bit %lu.\n", is_right ? "right" : "left",
+		in_tree.lf, in_bit.x);
 	assert(in_tree.lf <= tree.bsize + 1u);
 
 	if(is_write) goto insert;
 	/* If the tree is full, split it. */
 	assert(tree.bsize <= TRIE_MAX_BRANCH);
 	if(tree.bsize == TRIE_MAX_BRANCH) {
-		printf("Splitting tree %p.\n", (void *)in_forest.any.key);
-		assert(!is_split);
+		printf("add: splitting tree %p.\n", (void *)in_forest.any.key);
+		assert(!is_split&&0);
 		/*if(!trie_split(trie, in_forest.idx)) return 0;*/
-		assert(is_split = 1);
+		assert(is_split = 1); /* _Sic_! */
 		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
 	} else {
 		/* Now we are sure that this tree is the one getting modified. */
-		/* fixme: but also we don't know whether the width is the maximum */
 		union PT_(any_store) any = PT_(expand)(in_forest.any);
-		if(!any.key) return printf("fail store expand\n"), 0;
-		assert(0);
+		if(!any.key) return printf("add: fail store expand.\n"), 0;
+		*in_forest.ref = in_forest.any = any;
+		printf("add: should be 1 store%u\n", (any.key->info >> 9) & 7);
+		printf("add: graph temp.\n");
+		PT_(graph)(trie, "graph/temp.gv");
 		is_write = 1;
 	}
 	in_bit.x = in_forest.start_bit;
 	goto tree;
 
 insert:
-#if 0
-	leaf = tree->leaves + in_tree.lf;
-	memmove(leaf + 1, leaf, sizeof *leaf * (tree->bsize + 1 - in_tree.lf));
-	leaf->data = key;
-	bmp_insert(tree->link, in_tree.lf);
-	branch = tree->branches + in_tree.br0;
+	leaf = tree.leaves + in_tree.lf;
+	memmove(leaf + 1, leaf, sizeof *leaf * (tree.bsize + 1 - in_tree.lf));
+	leaf->data = x;
+	branch = tree.branches + in_tree.br0;
 	if(in_tree.br0 != in_tree.br1) { /* Split `skip` with the existing branch. */
-		assert(in_bit.b0 <= in_bit.b
-			&& in_bit.b + !in_tree.br0 <= in_bit.b0 + branch->skip);
-		branch->skip -= in_bit.b - in_bit.b0 + !in_tree.br0;
+		assert(in_bit.x0 <= in_bit.x
+			&& in_bit.x + !in_tree.br0 <= in_bit.x0 + branch->skip);
+		branch->skip -= in_bit.x - in_bit.x0 + !in_tree.br0;
 	}
-	memmove(branch + 1, branch, sizeof *branch * (tree->bsize - in_tree.br0));
+	memmove(branch + 1, branch, sizeof *branch * (tree.bsize - in_tree.br0));
 	assert(in_tree.br1 - in_tree.br0 < 256
-		&& in_bit.b >= in_bit.b0 + !!in_tree.br0
-		&& in_bit.b - in_bit.b0 - !!in_tree.br0 < 256);
+		&& in_bit.x >= in_bit.x0 + !!in_tree.br0
+		&& in_bit.x - in_bit.x0 - !!in_tree.br0 < 256);
 	branch->left = is_right ? (unsigned char)(in_tree.br1 - in_tree.br0) : 0;
-	branch->skip = (unsigned char)(in_bit.b - in_bit.b0 - !!in_tree.br0);
-	tree->bsize++;
-#endif
+	branch->skip = (unsigned char)(in_bit.x - in_bit.x0 - !!in_tree.br0);
+	in_forest.any.key->info &= ~0x1FF;
+	in_forest.any.key->info |= ++tree.bsize;
 
 	return 1;
 }
+
+#if 0
+/** Compares keys of `a` and `b`. Used in <fn:<T>trie_from_array>.
+ @implements <typedef:<PT>bipredicate_fn> */
+static int PT_(compare)(const PT_(type) *const a, const PT_(type) *const b)
+	{ return strcmp(PT_(to_key)(a), PT_(to_key)(b)); }
+#endif
 
 /** Initialises `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
@@ -698,25 +712,65 @@ static int T_(trie_from_array)(struct T_(trie) *const trie,
 
 #endif
 
+/* <!-- iterate interface */
 
-#ifdef TRIE_TO_STRING /* <!-- string */
+/** Contains all iteration parameters. */
+struct PT_(iterator);
+struct PT_(iterator)
+	{ const struct T_(trie) *trie; union PT_(any_store) any; size_t i; };
 
-static const char *T_(trie_to_string)(const struct T_(trie) *const trie) {
-	(void)trie;
-	return "foo";
+/** Loads `a` into `it`. @implements begin */
+static void PT_(begin)(struct PT_(iterator) *const it,
+	const struct T_(trie) *const trie)
+	{ assert(it && trie); it->trie = trie; it->any.key = 0; }
+
+/** Advances `it`. @implements next */
+static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
+	union PT_(any_store) any;
+	struct PT_(tree) tree;
+	assert(it && it->trie);
+	if(!(any = it->any).key) { /* Start. */
+		if(!(any = it->trie->root).key) return 0;
+		do {
+			PT_(extract)(any, &tree);
+		} while(tree.is_internal && (any = tree.leaves[0].child, 1));
+		it->any = any;
+		it->i = 0;
+	} else {
+		PT_(extract)(any, &tree);
+		if(it->i > tree.bsize) {
+			/*const char *key = PT_(to_key)(tree.leaves[tree.bsize].data);
+			union PT_(any_store) any1 = it->trie->root; */
+			return 0; /* fixme: getting a "next" is fairly involved. */
+		}
+	}
+	return tree.leaves[it->i++].data;
 }
 
-#if defined(TRIE_TEST) /* <!-- test */
+/* iterate --> */
+
+/* Define these for traits. */
+#define BOX_ PT_
+#define BOX_CONTAINER struct T_(trie)
+#define BOX_CONTENTS PT_(type)
+
+#ifdef TRIE_TO_STRING /* <!-- str */
+/** Uses the natural `datum` -> `a` that is defined by `TRIE_KEY`. */
+static void PT_(to_string)(PT_(type) *const a, char (*const z)[12])
+	{ assert(a && z); sprintf(*z, "%.11s", PT_(to_key)(a)); }
+#define Z_(n) CAT(T_(trie), n)
+#define TO_STRING &PT_(to_string)
+#define TO_STRING_LEFT '{'
+#define TO_STRING_RIGHT '{'
+#include "to_string.h" /** \include */
+#endif /* str --> */
+
+#ifdef TRIE_TEST /* <!-- test */
+/* Forward-declare. */
+static const char *(*PT_(array_to_string))(const struct T_(trie) *);
 #include "../test/test_trie.h" /** \include */
 #endif /* test --> */
 
-#undef TRIE_TO_STRING
-	
-#endif /* string --> */
-
-#ifdef TRIE_EXPECT_TRAIT /* <!-- trait */
-#undef TRIE_EXPECT_TRAIT
-#else /* trait --><!-- !trait */
 #ifndef TRIE_SUBTYPE /* <!-- !sub-type */
 #undef CAT
 #undef CAT_
@@ -731,6 +785,3 @@ static const char *T_(trie_to_string)(const struct T_(trie) *const trie) {
 #ifdef TRIE_TEST
 #undef TRIE_TEST
 #endif
-#endif /* !trait --> */
-
-#undef TRIE_TRAITS
