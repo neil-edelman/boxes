@@ -78,37 +78,24 @@ struct trie_branch { unsigned char left, skip; };
 /* This is a bit field defined in <fn:<PT>extract>, but bit fields on `short`
  may be undefined, or may widen the value, who knows. */
 struct trie_info { unsigned short info; };
-/* X-macros: `C90` doesn't allow trialing commas in initializer lists. */
+/* This is the store number and branching factor, which is the leaves. */
 #define TRIE_STORE_FIRST_X X(0, 1)
-#define TRIE_STORE_TAIL_X \
-	X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128) X(7, 256)
-#define TRIE_STORE_X X(0, 1) TRIE_STORE_TAIL_X
-#define TRIE_STORE_CSV_X \
-	X(0, 1), X(1, 4), X(2, 8), X(3, 16), X(4, 32), X(5, 64), X(6, 128), \
-	X(7, 256)
-#define X(n, m) m
-static const unsigned trie_store_sizes[] = { TRIE_STORE_CSV_X };
+#define TRIE_STORE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
+#define TRIE_STORE_LAST_X  X(7, 256)
+#define TRIE_STORE_TAIL_X TRIE_STORE_MID_X TRIE_STORE_LAST_X
+#define TRIE_STORE_HEAD_X TRIE_STORE_FIRST_X TRIE_STORE_MID_X
+#define TRIE_STORE_X TRIE_STORE_FIRST_X TRIE_STORE_TAIL_X
+/* `C90` doesn't allow trialing commas in initializer lists. */
+static const unsigned trie_store_bsizes[] = {
+#define X(n, m) m - 1,
+	TRIE_STORE_HEAD_X
 #undef X
-/* Must be consistent with the previous and have at least `TRIE_MAX_BRANCH`. */
-static const unsigned char trie_store_lookup[] = {
-	0, 1, 1, 1, 1, 2, 2, 2, /**/ 2, 3, 3, 3, 3, 3, 3, 3,
-	3, 4, 4, 4, 4, 4, 4, 4, /**/ 4, 4, 4, 4, 4, 4, 4, 4,
-	4, 5, 5, 5, 5, 5, 5, 5, /**/ 5, 5, 5, 5, 5, 5, 5, 5,
-	5, 5, 5, 5, 5, 5, 5, 5, /**/ 5, 5, 5, 5, 5, 5, 5, 5,
-	5, 6, 6, 6, 6, 6, 6, 6, /**/ 6, 6, 6, 6, 6, 6, 6, 6,
-	6, 6, 6, 6, 6, 6, 6, 6, /**/ 6, 6, 6, 6, 6, 6, 6, 6,
-	6, 6, 6, 6, 6, 6, 6, 6, /**/ 6, 6, 6, 6, 6, 6, 6, 6,
-	6, 6, 6, 6, 6, 6, 6, 6, /**/ 6, 6, 6, 6, 6, 6, 6, 6,
-	6, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
-	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
-	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
-	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
-	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
-	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
-	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
-	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7/*,
-	7*/
+#define X(n, m) m - 1
+	TRIE_STORE_LAST_X
+#undef X
 };
+static const size_t trie_store_count
+	= sizeof trie_store_bsizes / sizeof *trie_store_bsizes;
 #endif /* idempotent --> */
 
 
@@ -160,6 +147,15 @@ TRIE_STORE_TAIL_X
 /* We could go one more, but that ruins the alignment. Is it worth it? Maybe
  255 could be a special value that allows strings with long matches. */
 
+static const size_t PT_(store_sizes)[] = {
+#define X(n, m) sizeof(struct PT_(store##n)),
+	TRIE_STORE_HEAD_X
+#undef X
+#define X(n, m) sizeof(struct PT_(store##n))
+	TRIE_STORE_LAST_X
+#undef X
+};
+
 /** A working tree, extracted from tight storage by <fn:<PT>extract>. */
 struct PT_(tree) {
 	unsigned /*is_allocated,*/ is_internal, store, bsize;
@@ -196,7 +192,7 @@ static void PT_(extract)(const union PT_(any_store) any,
 	/* [is_allocated:1][is_internal:1][store:3][bsize:9] */
 	/*tree->is_allocated = !!(info & 0x2000);*/
 	tree->is_internal = !!(info & 0x1000);
-	tree->store = (info >> 9) & 7, assert(tree->store <= 7);
+	tree->store = (info >> 9) & 7, assert(tree->store < trie_store_count);
 	tree->bsize = info & 0x1FF, assert(tree->bsize <= TRIE_MAX_BRANCH);
 	switch(tree->store) {
 	case 0: tree->branches = 0; tree->leaves = any.s0->leaves; break;
@@ -259,21 +255,38 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 
 /** Expand `any` to ensure that it has one more unused capacity when the branch
  size is not the maximum. @return Potentially a new tree. @throws[realloc] */
-static const union PT_(any_store) *PT_(expand)(const union PT_(any_store) any) {
-	struct PT_(tree) tree;
+static union PT_(any_store) PT_(expand)(const union PT_(any_store) any) {
+	struct PT_(tree) tree0, tree1;
+	union PT_(any_store) larger;
 	assert(any.key);
-	PT_(extract)(any, &tree);
-	assert(tree.bsize < TRIE_MAX_BRANCH);
-	if(tree.bsize < trie_store_sizes[tree.store]) return &any;
-	assert(tree.bsize == trie_store_sizes[tree.store]);
-	trie_store_lookup[tree.bsize];
-	switch(tree.bsize) {
-#define X(n, m) case m - 1:
-		TRIE_STORE_X
-#undef X
-		break;
-	}
-	return 0;
+	PT_(extract)(any, &tree0);
+	printf("expand: bsize %u, store%u: %u\n",
+		tree0.bsize, tree0.store, trie_store_bsizes[tree0.store]);
+	assert(tree0.bsize < TRIE_MAX_BRANCH);
+	if(tree0.bsize < trie_store_bsizes[tree0.store])
+		return printf("expand: we're good\n"), any;
+	assert(tree0.bsize == trie_store_bsizes[tree0.store]
+		&& tree0.store + 1 < trie_store_count);
+	/* Augment the allocation. */
+	if(!(larger.key = realloc(any.key, PT_(store_sizes)[tree0.store + 1])))
+		{ if(!errno) errno = ERANGE; return (union PT_(any_store)){ 0 }; }
+	PT_(extract)(larger, &tree0); /* The address may have changed. */
+	printf("expand: #%p store%u %luB -> #%p store%u %luB\n", (void *)any.key,
+		tree0.store, (unsigned long)PT_(store_sizes)[tree0.store],
+		(void *)larger.key, tree0.store + 1,
+		(unsigned long)PT_(store_sizes)[tree0.store + 1]);
+	/* Augment the allocation size. */
+	larger.key->info &= ~0xE00;
+	larger.key->info |= (tree0.store + 1) << 9;
+	/* Move the leaves farther out. */
+	PT_(extract)(larger, &tree1);
+	assert(tree0.bsize == tree1.bsize
+		&& (!tree0.branches || tree0.branches == tree1.branches)
+		&& tree0.leaves <= tree1.leaves);
+	memmove(tree1.leaves, tree0.leaves,
+		sizeof *tree0.leaves * (tree1.bsize + 1));
+	assert(0);
+	return larger;
 }
 
 /** @return The leftmost key `lf` of key `any`. */
@@ -358,6 +371,9 @@ leaf:
 	} else {
 		/* Now we are sure that this tree is the one getting modified. */
 		/* fixme: but also we don't know whether the width is the maximum */
+		union PT_(any_store) any = PT_(expand)(in_forest.any);
+		if(!any.key) return printf("fail store expand\n"), 0;
+		assert(0);
 		is_write = 1;
 	}
 	in_bit.x = in_forest.start_bit;
