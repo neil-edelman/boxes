@@ -95,9 +95,9 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\ttrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>trie: " QUOTE(TRIE_TYPE)
-		"%s}\"];\n"
+		"; %luB%s}\"];\n"
 		"\tnode [shape = box, fillcolor = lightsteelblue];\n",
-		trie->root.key ? "" : "\\l|idle\\l");
+		(unsigned long)sizeof *trie, trie->root.key ? "" : "\\l|idle\\l");
 	/* "\tnode [shape = none, fillcolor = none];\n" */
 	if(trie->root.key) {
 		fprintf(fp, "\ttrie -> tree%pbranch0 [color = firebrick];\n",

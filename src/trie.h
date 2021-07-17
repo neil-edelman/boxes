@@ -304,7 +304,7 @@ static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
 	return PT_(to_key)(tree.leaves[lf].data);
 }
 
-static void PT_(graph)(const struct T_(trie) *, const char *);
+/*static void PT_(graph)(const struct T_(trie) *, const char *);*/
 static const char *T_(trie_to_string)(const struct T_(trie) *);
 
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
@@ -383,9 +383,6 @@ leaf:
 		union PT_(any_store) any = PT_(expand)(in_forest.any);
 		if(!any.key) return printf("add: fail store expand.\n"), 0;
 		*in_forest.ref = in_forest.any = any;
-		printf("add: should be 1 store%u\n", (any.key->info >> 9) & 7);
-		printf("add: graph temp.\n");
-		PT_(graph)(trie, "graph/temp.gv");
 		is_write = 1;
 	}
 	in_bit.x = in_forest.start_bit;
