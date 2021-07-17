@@ -303,6 +303,7 @@ static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
 }
 
 static void PT_(graph)(const struct T_(trie) *, const char *);
+static const char *T_(trie_to_string)(const struct T_(trie) *);
 
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
@@ -315,8 +316,8 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *sample;
 	int is_write = 0, is_right = 0, is_split = 0;
 
-	printf("add: %s.\n", x_key);
 	assert(trie && x);
+	printf("add: %s to %s.\n", x_key, T_(trie_to_string)(trie));
 	if(!trie->root.key) { /* Empty special case. */
 		struct PT_(store0) *const s0 = malloc(sizeof *s0);
 		if(!s0) { if(!errno) errno = ERANGE; return 0; }
@@ -328,8 +329,8 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	in_bit.x = in_forest.start_bit = 0, in_forest.ref = &trie->root,
 		in_forest.any = *in_forest.ref;
 	do {
-		PT_(extract)(in_forest.any, &tree);
 tree:
+		PT_(extract)(in_forest.any, &tree);
 		sample = PT_(sample)(in_forest.any, 0);
 		in_bit.x0 = in_bit.x;
 		/* Descend branches. */
@@ -761,7 +762,7 @@ static void PT_(to_string)(PT_(type) *const a, char (*const z)[12])
 #define Z_(n) CAT(T_(trie), n)
 #define TO_STRING &PT_(to_string)
 #define TO_STRING_LEFT '{'
-#define TO_STRING_RIGHT '{'
+#define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
 #endif /* str --> */
 
