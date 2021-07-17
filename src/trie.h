@@ -79,13 +79,36 @@ struct trie_branch { unsigned char left, skip; };
  may be undefined, or may widen the value, who knows. */
 struct trie_info { unsigned short info; };
 /* X-macros: `C90` doesn't allow trialing commas in initializer lists. */
+#define TRIE_STORE_FIRST_X X(0, 1)
 #define TRIE_STORE_TAIL_X \
 	X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128) X(7, 256)
-#define TRIE_STORE_X \
-	X(0, 1) TRIE_STORE_TAIL_X
-#define TRIE_STORE_XCSV \
-	X(0, 1), X(1, 4), X(2, 8), X(3, 16), X(4, 32), X(5, 64), \
-	X(6, 128), X(7, 256)
+#define TRIE_STORE_X X(0, 1) TRIE_STORE_TAIL_X
+#define TRIE_STORE_CSV_X \
+	X(0, 1), X(1, 4), X(2, 8), X(3, 16), X(4, 32), X(5, 64), X(6, 128), \
+	X(7, 256)
+#define X(n, m) m
+static const unsigned trie_store_sizes[] = { TRIE_STORE_CSV_X };
+#undef X
+/* Must be consistent with the previous and have at least `TRIE_MAX_BRANCH`. */
+static const unsigned char trie_store_lookup[] = {
+	0, 1, 1, 1, 1, 2, 2, 2, /**/ 2, 3, 3, 3, 3, 3, 3, 3,
+	3, 4, 4, 4, 4, 4, 4, 4, /**/ 4, 4, 4, 4, 4, 4, 4, 4,
+	4, 5, 5, 5, 5, 5, 5, 5, /**/ 5, 5, 5, 5, 5, 5, 5, 5,
+	5, 5, 5, 5, 5, 5, 5, 5, /**/ 5, 5, 5, 5, 5, 5, 5, 5,
+	5, 6, 6, 6, 6, 6, 6, 6, /**/ 6, 6, 6, 6, 6, 6, 6, 6,
+	6, 6, 6, 6, 6, 6, 6, 6, /**/ 6, 6, 6, 6, 6, 6, 6, 6,
+	6, 6, 6, 6, 6, 6, 6, 6, /**/ 6, 6, 6, 6, 6, 6, 6, 6,
+	6, 6, 6, 6, 6, 6, 6, 6, /**/ 6, 6, 6, 6, 6, 6, 6, 6,
+	6, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7,
+	7, 7, 7, 7, 7, 7, 7, 7, /**/ 7, 7, 7, 7, 7, 7, 7, 7/*,
+	7*/
+};
 #endif /* idempotent --> */
 
 
@@ -234,13 +257,22 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	return (n = PT_(match)(trie, key)) && !strcmp(PT_(to_key)(n), key) ? n : 0;
 }
 
-/** Expand `any` to ensure that it has one more unused capacity.
- @return Potentially a new tree. @throws[realloc] */
+/** Expand `any` to ensure that it has one more unused capacity when the branch
+ size is not the maximum. @return Potentially a new tree. @throws[realloc] */
 static const union PT_(any_store) *PT_(expand)(const union PT_(any_store) any) {
 	struct PT_(tree) tree;
 	assert(any.key);
 	PT_(extract)(any, &tree);
-	////
+	assert(tree.bsize < TRIE_MAX_BRANCH);
+	if(tree.bsize < trie_store_sizes[tree.store]) return &any;
+	assert(tree.bsize == trie_store_sizes[tree.store]);
+	trie_store_lookup[tree.bsize];
+	switch(tree.bsize) {
+#define X(n, m) case m - 1:
+		TRIE_STORE_X
+#undef X
+		break;
+	}
 	return 0;
 }
 
