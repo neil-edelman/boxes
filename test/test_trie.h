@@ -50,10 +50,10 @@ static void PT_(graph_tree)(const union PT_(any_store) any, FILE *const fp) {
 	PT_(extract)(any, &tree);
 	fprintf(fp, "\tsubgraph cluster_tree%p {\n"
 		"\t\tstyle = filled;\n"
-		"\t\tlabel = \"%s children; rank %u/%u; store%u(%u); %uB\";\n",
-		(void *)any.key, tree.is_internal ? "internal" : "leaf",
+		"\t\tlabel = \"rank %u/%u; store%u/%u; %uB\";\n",
+		(void *)any.key, /*tree.is_internal ? "internal" : "leaf"<-this obv,*/
 		tree.bsize, trie_store_bsizes[tree.store],
-		tree.store, trie_store_count,
+		tree.store, trie_store_count - 1,
 		PT_(store_sizes)[tree.store]);
 	if(tree.bsize) {
 		for(b = 0; b < tree.bsize; b++) { /* Branches. */
