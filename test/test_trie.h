@@ -154,14 +154,15 @@ static void PT_(test)(void) {
 	errno = 0;
 	/* fixme: could be duplicates. */
 	for(n = 0; n < es_size; n++) {
-		es[n].is_in = !!T_(trie_add)(&trie, &es[n].data);
-		assert(es[n].is_in),
-		printf("Graph %lu.\n", (unsigned long)n + 1lu),
+		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
+		assert(!errno || (perror("Check"), 0));
+		printf("Graph %lu.\n", (unsigned long)n + 1lu);
 		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
 			(unsigned long)n + 1lu);
 		PT_(graph)(&trie, fn);
+		if(es[n].is_in) { printf("Duplicate value %s -> %s.\n",
+			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie)); continue; };
 		i = T_(trie_get)(&trie, PT_(to_key)(&es[n].data));
-		assert(i);
 		assert(i == &es[n].data);
 	}
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));

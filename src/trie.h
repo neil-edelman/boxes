@@ -60,11 +60,11 @@
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 /* http://c-faq.com/misc/bitsets.html */
-#define TRIE_BITMASK(n) (UCHAR_MAX + 1 >> (n) % CHAR_BIT + 1)
+#define TRIE_BITMASK(n) ((1 << CHAR_BIT - 1) >> (n) % CHAR_BIT)
 #define TRIE_BITSLOT(n) ((n) / CHAR_BIT)
 #define TRIE_BITTEST(a, n) ((a)[TRIE_BITSLOT(n)] & TRIE_BITMASK(n))
 #define TRIE_BITDIFF(a, b, n) (((a)[TRIE_BITSLOT(n)] ^ (b)[TRIE_BITSLOT(n)]) \
-	& ((1 << (CHAR_BIT - 1)) >> ((n) % CHAR_BIT)))
+	& TRIE_BITMASK(n))
 /* Worst-case all-left, `(128,max(tree.left>=255)]`. It's possible to go right
  down to 0, but need to edit the `TRIE_STORE*`. We could go one more, but that
  ruins the alignment. */
