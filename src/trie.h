@@ -298,6 +298,14 @@ static union PT_(any_store) PT_(expand)(const union PT_(any_store) any) {
 
 /** @return Success splitting the tree `forest_idx` of `trie`. Must be full. */
 static union PT_(any_store) PT_(split)(union PT_(any_store) any) {
+	struct PT_(tree) tree0, tree1;
+	union PT_(any_store) larger;
+	assert(any.key);
+	PT_(extract)(any, &tree0);
+	printf("split: bsize %u, store%u: %u\n",
+		tree0.bsize, tree0.store, trie_store_bsizes[tree0.store]);
+	assert(tree0.bsize == TRIE_MAX_BRANCH);
+
 #if 0
 	struct tree_array *const forest = &trie->forest;
 	struct { struct tree *old, *new; } tree;
