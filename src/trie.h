@@ -375,6 +375,7 @@ static union PT_(any_store) PT_(split)(union PT_(any_store) any) {
 	tree.old->bsize -= go.parent.branches;
 	tree.new->bsize += go.parent.branches;
 #endif
+	errno = ERANGE;
 	return (union PT_(any_store)){0};
 }
 

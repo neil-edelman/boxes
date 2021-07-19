@@ -132,7 +132,7 @@ static void PT_(test)(void) {
 	char fn[64];
 	struct T_(trie) trie = TRIE_IDLE;
 	size_t n, size;
-	struct { PT_(type) data; int is_in; } es[10];
+	struct { PT_(type) data; int is_in; } es[20];
 	const size_t es_size = sizeof es / sizeof *es;
 	PT_(type) *const*a, *i, *eject/*, copy*/;
 	int ret;
