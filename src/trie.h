@@ -451,11 +451,6 @@ tree:
 		if(++in_bit.x > in_bit.x1) return errno = ERANGE, 0;
 
 leaf:
-	printf("sample: %s\n"
-		"x:      %s\n"
-		"vary at %lu with x %u\n",
-		sample, x_key, in_bit.x, TRIE_BITTEST(x_key, in_bit.x));
-	printf("x: %u%u%u%u%u%u%u%u\n", !!TRIE_BITTEST(x_key, 0), !!TRIE_BITTEST(x_key, 1), !!TRIE_BITTEST(x_key, 2), !!TRIE_BITTEST(x_key, 3), !!TRIE_BITTEST(x_key, 4), !!TRIE_BITTEST(x_key, 5), !!TRIE_BITTEST(x_key, 6), !!TRIE_BITTEST(x_key, 7));
 	/* fixme: TRIE_BITTEST is reversing the order. */
 	if(TRIE_BITTEST(x_key, in_bit.x))
 		is_right = 1, in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
