@@ -60,7 +60,7 @@
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 /* http://c-faq.com/misc/bitsets.html */
-#define TRIE_BITMASK(n) (1 << ((n) % CHAR_BIT))
+#define TRIE_BITMASK(n) (UCHAR_MAX + 1 >> (n) % CHAR_BIT + 1)
 #define TRIE_BITSLOT(n) ((n) / CHAR_BIT)
 #define TRIE_BITTEST(a, n) ((a)[TRIE_BITSLOT(n)] & TRIE_BITMASK(n))
 #define TRIE_BITDIFF(a, b, n) (((a)[TRIE_BITSLOT(n)] ^ (b)[TRIE_BITSLOT(n)]) \
@@ -222,7 +222,8 @@ static void PT_(extract)(const union PT_(any_store) any,
 }
 
 /** @return Looks at only the index of `trie` for potential `key` matches,
- otherwise `key` is definitely not in `trie`. @order \O(`key.length`) */
+ otherwise `key` is definitely not in `trie`. @order \O(`key.length`)
+ fixme: duplicate values! */
 static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
 	union PT_(any_store) store = trie->root;
@@ -295,6 +296,88 @@ static union PT_(any_store) PT_(expand)(const union PT_(any_store) any) {
 	return larger;
 }
 
+/** @return Success splitting the tree `forest_idx` of `trie`. Must be full. */
+static union PT_(any_store) PT_(split)(union PT_(any_store) any) {
+#if 0
+	struct tree_array *const forest = &trie->forest;
+	struct { struct tree *old, *new; } tree;
+	struct {
+		struct { unsigned branches; int balance; } parent, edge[2];
+		struct { unsigned br0, br1, lf; } node;
+	} go;
+	struct { unsigned br0, br1; } dec;
+	union leaf *leaf;
+	struct branch *branch;
+	assert(trie && forest_idx < forest->size);
+	/* Create a new tree; after the pointers are stable. */
+	if(!(tree.new = tree_array_new(forest))) return 0;
+	tree.new->bsize = 0, memset(&tree.new->link, 0, TRIE_BITMAP),
+		tree.new->leaves[0].data = 0;
+	tree.old = forest->data + forest_idx;
+	assert(tree.old->bsize == TRIE_BRANCH);
+	/* Gradient descent on balance (right _vs_ left.) */
+	go.parent.branches = go.parent.balance = tree.old->bsize;
+	go.node.br0 = 0, go.node.br1 = tree.old->bsize, go.node.lf = 0;
+	while(go.node.br0 < go.node.br1) {
+		branch = tree.old->branches + go.node.br0;
+		go.edge[0].branches = branch->left;
+		go.edge[0].balance = (int)(tree.old->bsize - 2 * go.edge[0].branches);
+		go.edge[1].branches = go.node.br1 - go.node.br0 - 1 - branch->left;
+		go.edge[1].balance = (int)(tree.old->bsize - 2 * go.edge[1].branches);
+		if(abs(go.parent.balance) < abs(go.edge[0].balance)) {
+			if(abs(go.parent.balance) < abs(go.edge[1].balance)) break;
+			else goto right;
+		} else {
+			if(abs(go.edge[0].balance) < abs(go.edge[1].balance)) goto left;
+			else goto right;
+		}
+	left:
+		go.parent.branches = go.edge[0].branches;
+		go.parent.balance = go.edge[0].balance;
+		go.node.br1 = ++go.node.br0 + branch->left;
+		continue;
+	right:
+		go.parent.branches = go.edge[1].branches;
+		go.parent.balance = go.edge[1].balance;
+		go.node.br0 += branch->left + 1;
+		go.node.lf  += branch->left + 1;
+		continue;
+	}
+	/* Re-following path except decrement `left` by `parent.branches`. */
+	dec.br0 = 0, dec.br1 = tree.old->bsize;
+	while(dec.br0 < go.node.br0) {
+		branch = tree.old->branches + dec.br0;
+		if(go.node.br0 <= dec.br0 + branch->left) {
+			dec.br1 = ++dec.br0 + branch->left;
+			branch->left -= go.parent.branches;
+		} else {
+			dec.br0 += branch->left + 1;
+		}
+	}
+	/* Move leaves. */
+	assert(go.node.lf + go.parent.branches + 1 <= tree.old->bsize + 1
+		&& go.parent.branches /* Even for `TRIE_MAX_LEFT 0`? */);
+	memcpy(tree.new->leaves, tree.old->leaves + go.node.lf,
+		sizeof *leaf * (go.parent.branches + 1));
+	memmove(tree.old->leaves + go.node.lf + 1,
+		tree.old->leaves + go.node.lf + go.parent.branches + 1,
+		sizeof *leaf * (tree.old->bsize - go.node.lf - go.parent.branches));
+	tree.old->leaves[go.node.lf].link = (size_t)(tree.new - forest->data);
+	bmp_move(tree.old->link, go.node.lf, go.parent.branches + 1,
+		tree.new->link);
+	/* Move branches. */
+	assert(go.node.br1 - go.node.br0 == go.parent.branches);
+	memcpy(tree.new->branches, tree.old->branches + go.node.br0,
+		sizeof *branch * go.parent.branches);
+	memmove(tree.old->branches + go.node.br0, tree.old->branches
+		+ go.node.br1, sizeof *branch * (tree.old->bsize - go.node.br1));
+	/* Move branch size. */
+	tree.old->bsize -= go.parent.branches;
+	tree.new->bsize += go.parent.branches;
+#endif
+	return (union PT_(any_store)){0};
+}
+
 /** @return The leftmost key `lf` of key `any`. fixme: cached any. */
 static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
 	struct PT_(tree) tree;
@@ -311,6 +394,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
 	struct { size_t x, x0, x1; } in_bit;
 	struct { union PT_(any_store) *ref, any; size_t start_bit; } in_forest;
+	struct { union PT_(any_store) *ref; size_t count; } full;
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
@@ -327,22 +411,26 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		trie->root.s0 = s0;
 		return 1;
 	}
-	/* Trees in the B-forest. */
-	in_bit.x = in_forest.start_bit = 0, in_forest.ref = &trie->root,
-		in_forest.any = *in_forest.ref;
-	do {
+	full.ref = 0, in_bit.x = in_forest.start_bit = 0,
+		in_forest.ref = &trie->root, in_forest.any = *in_forest.ref;
+	do { /* Trees in the B-forest. */
 tree:
-		PT_(extract)(in_forest.any, &tree);
 		sample = PT_(sample)(in_forest.any, 0);
+		PT_(extract)(in_forest.any, &tree);
+		if(tree.bsize < TRIE_MAX_BRANCH) {
+			full.ref = 0;
+		} else if(full.ref) {
+			full.count++;
+		} else {
+			full.ref = in_forest.ref;
+			full.count = 1;
+		}
 		in_bit.x0 = in_bit.x;
-		/* Descend branches. */
 		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
-		while(in_tree.br0 < in_tree.br1) {
+		while(in_tree.br0 < in_tree.br1) { /* Descend branches of tree. */
 			branch = tree.branches + in_tree.br0;
-			/* Test all the skip bits. */
 			for(in_bit.x1 = in_bit.x + branch->skip; in_bit.x < in_bit.x1;
 				in_bit.x++) if(TRIE_BITDIFF(x_key, sample, in_bit.x)) goto leaf;
-			/* Decision bit. */
 			if(!TRIE_BITTEST(x_key, in_bit.x)) {
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 				if(is_write) branch->left++;
@@ -354,8 +442,8 @@ tree:
 			in_bit.x0 = in_bit.x1, in_bit.x++;
 		}
 		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree.bsize);
-	} while(tree.is_internal
-		&& (in_forest.any = tree.leaves[in_tree.lf].child, 1));
+	} while(tree.is_internal && (in_forest.ref
+		= &tree.leaves[in_tree.lf].child, in_forest.any = *in_forest.ref, 1));
 	/* Got to the leaves. */
 	printf("add: got to the leaves.\n");
 	in_bit.x1 = in_bit.x + UCHAR_MAX;
@@ -363,6 +451,12 @@ tree:
 		if(++in_bit.x > in_bit.x1) return errno = ERANGE, 0;
 
 leaf:
+	printf("sample: %s\n"
+		"x:      %s\n"
+		"vary at %lu with x %u\n",
+		sample, x_key, in_bit.x, TRIE_BITTEST(x_key, in_bit.x));
+	printf("x: %u%u%u%u%u%u%u%u\n", !!TRIE_BITTEST(x_key, 0), !!TRIE_BITTEST(x_key, 1), !!TRIE_BITTEST(x_key, 2), !!TRIE_BITTEST(x_key, 3), !!TRIE_BITTEST(x_key, 4), !!TRIE_BITTEST(x_key, 5), !!TRIE_BITTEST(x_key, 6), !!TRIE_BITTEST(x_key, 7));
+	/* fixme: TRIE_BITTEST is reversing the order. */
 	if(TRIE_BITTEST(x_key, in_bit.x))
 		is_right = 1, in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
 	printf("add: %s, at leaf %u bit %lu.\n", is_right ? "right" : "left",
@@ -372,11 +466,16 @@ leaf:
 	if(is_write) goto insert;
 	/* If the tree is full, split it. */
 	assert(tree.bsize <= TRIE_MAX_BRANCH);
-	if(tree.bsize == TRIE_MAX_BRANCH) {
+	if(full.ref) { /* Paths along the base of the path that are full. */
+		union PT_(any_store) any;
+		printf("Full ref #%p, count %lu.\n", (void *)full.ref,
+			(unsigned long)full.count);
+		any = PT_(split)(in_forest.any);
+		assert(full.count && tree.bsize == TRIE_MAX_BRANCH);
+		if(!any.key) return printf("add: fail store split.\n"), 0;
+		*in_forest.ref = in_forest.any = any;
+		assert(!is_split && (is_split = 1));
 		printf("add: splitting tree %p.\n", (void *)in_forest.any.key);
-		assert(!is_split&&0);
-		/*if(!trie_split(trie, in_forest.idx)) return 0;*/
-		assert(is_split = 1); /* _Sic_! */
 		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
 	} else {
 		/* Now we are sure that this tree is the one getting modified. */
@@ -438,12 +537,11 @@ static void T_(trie_clear)(struct T_(trie) *const trie)
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
 
-
 /** @return If `x` is already in `trie`, returns false, otherwise success.
  @throws[realloc, ERANGE] */
 static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 	return assert(trie && x),
-		PT_(get)(trie, PT_(to_key)(x)) ? 0 : PT_(add_unique)(trie, x);
+		PT_(get)(trie, PT_(to_key)(x)) ? printf("add: already in trie.\n"), 0 : PT_(add_unique)(trie, x);
 }
 
 #if 0
@@ -539,9 +637,11 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const datum,
 	PT_(leaf) *match;
 	size_t i;
 	assert(trie && datum);
+	printf("put: %s, %s\n", T_(trie_to_string)(trie), PT_(to_string)(datum));
 	data_key = PT_(to_key)(datum);
 	/* Add if absent. */
 	if(!PT_(param_get)(trie, data_key, &i)) {
+		printf("put: get didn't find it.\n");
 		if(eject) *eject = 0;
 		return PT_(add)(trie, datum);
 	}
