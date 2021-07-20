@@ -403,7 +403,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
 	struct { size_t x, x0, x1; } in_bit;
 	struct { union PT_(any_store) *ref, any; size_t start_bit; } in_forest;
-	struct { union PT_(any_store) *ref; size_t count; } full;
+	struct { union PT_(any_store) *ref; size_t start_bit, count; } full;
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
@@ -420,18 +420,20 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		trie->root.s0 = s0;
 		return 1;
 	}
-	full.ref = 0, in_bit.x = in_forest.start_bit = 0,
+	full.ref = 0, in_bit.x = 0,
 		in_forest.ref = &trie->root, in_forest.any = *in_forest.ref;
 	do { /* Trees in the B-forest. */
 tree:
+		in_forest.start_bit = in_bit.x;
 		sample = PT_(sample)(in_forest.any, 0);
 		PT_(extract)(in_forest.any, &tree);
 		if(tree.bsize < TRIE_MAX_BRANCH) {
-			full.ref = 0;
+			full.count = 0;
 		} else if(full.ref) {
 			full.count++;
 		} else {
 			full.ref = in_forest.ref;
+			full.start_bit = in_forest.start_bit;
 			full.count = 1;
 		}
 		in_bit.x0 = in_bit.x;
@@ -470,9 +472,11 @@ leaf:
 	if(is_write) goto insert;
 	/* If the tree is full, split it. */
 	assert(tree.bsize <= TRIE_MAX_BRANCH);
-	if(full.ref) { /* Paths along the base of the path that are full. */
+	if(full.count) { /* Paths along the base of the path that are full. */
 		union PT_(any_store) any;
-		printf("Full ref #%p, count %lu.\n", (void *)full.ref,
+		assert(full.ref);
+		printf("add: full.ref #%p, full.start_bit %lu, full.count %lu.\n",
+			(void *)full.ref, (unsigned long)full.start_bit,
 			(unsigned long)full.count);
 		any = PT_(split)(in_forest.any);
 		assert(full.count && tree.bsize == TRIE_MAX_BRANCH);
@@ -545,7 +549,8 @@ static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
  @throws[realloc, ERANGE] */
 static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 	return assert(trie && x),
-		PT_(get)(trie, PT_(to_key)(x)) ? printf("add: already in trie.\n"), 0 : PT_(add_unique)(trie, x);
+		PT_(get)(trie, PT_(to_key)(x)) ? printf("add: %s already in trie.\n",
+		PT_(to_key)(x)), 0 : PT_(add_unique)(trie, x);
 }
 
 #if 0
