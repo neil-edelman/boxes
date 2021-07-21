@@ -6,17 +6,17 @@
  ![Example of trie.](../web/trie.png)
 
  A <tag:<T>trie> is a prefix tree, digital tree, or trie, implemented as an
- array of pointers-to-`T` whose keys are always in lexicographically-sorted
- order. It can be seen as a <Morrison, 1968 PATRICiA>: a compact
- [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
+ array of pointers-to-`T`, whose keys are always in lexicographically-sorted
+ order and an index on the key. It can be seen as a <Morrison, 1968 PATRICiA>:
+ a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
  storing the where the keys are different. Strings can be any encoding with a
  byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
- These are similar to <Bayer, McCreight, 1972 Large (B-Trees)> in memory. Using
- <Knuth, 1998 Art 3> terms, instead of a B-tree of order-n nodes, a trie
- is a B-forest of max-257-leaf complete binary trees, (with max-256 two-byte
- branches.)
+ In memory, it is similar to <Bayer, McCreight, 1972 Large (B-Trees)>. Using
+ <Knuth, 1998 Art 3> terminology, instead of a B-tree of order-n nodes, it is a B-forest of non-empty complete binary trees. The leaves in a tree also are the
+ branching factor (internal B-forest tree) or the data (leaf B-forest tree);
+ the maximum is the order.
 
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
@@ -59,15 +59,14 @@
 
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
-/* http://c-faq.com/misc/bitsets.html */
+/* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
 #define TRIE_BITMASK(n) ((1 << CHAR_BIT - 1) >> (n) % CHAR_BIT)
 #define TRIE_BITSLOT(n) ((n) / CHAR_BIT)
 #define TRIE_BITTEST(a, n) ((a)[TRIE_BITSLOT(n)] & TRIE_BITMASK(n))
-#define TRIE_BITDIFF(a, b, n) (((a)[TRIE_BITSLOT(n)] ^ (b)[TRIE_BITSLOT(n)]) \
-	& TRIE_BITMASK(n))
-/* Worst-case all-left, `(128,max(tree.left>=255)]`. It's possible to go right
- down to 0, but need to edit the `TRIE_STORE*`. We could go one more, but that
- ruins the alignment. */
+#define TRIE_BITDIFF(a, b, n) \
+	(((a)[TRIE_BITSLOT(n)] ^ (b)[TRIE_BITSLOT(n)]) & TRIE_BITMASK(n))
+/* Worst-case all-left, `(128,UCHAR_MAX]`. It's possible to go right down to 0,
+ but need to edit the `TRIE_STORE*`. We could go one more, but alignment. */
 #define TRIE_MAX_LEFT 6/*254*/
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
@@ -92,7 +91,7 @@ struct trie_info { unsigned short info; };
 #define TRIE_STORE_FIRST_X X(0, 1)
 /*#define TRIE_STORE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
 #define TRIE_STORE_LAST_X  X(7, TRIE_ORDER)*/
-#define TRIE_STORE_MID_X   X(1, 4)
+#define TRIE_STORE_MID_X   X(1, 4) /* Debug! */
 #define TRIE_STORE_LAST_X  X(2, TRIE_ORDER)
 #define TRIE_STORE_TAIL_X TRIE_STORE_MID_X TRIE_STORE_LAST_X
 #define TRIE_STORE_HEAD_X TRIE_STORE_FIRST_X TRIE_STORE_MID_X
@@ -131,7 +130,7 @@ static char *PT_(raw)(char **a) { return assert(a), *a; }
 #define TRIE_KEY &PT_(raw)
 #endif /* !type --> */
 
-/** Declared type of the trie; defaults to `char`. */
+/** Declared type of the trie; `char` default. */
 typedef TRIE_TYPE PT_(type);
 
 /** Pointers to generic trees stored in memory, and part of the B-forest.
@@ -144,14 +143,13 @@ union PT_(any_store) {
 #undef X
 };
 
-/** A leaf is either data at the base of the tree at the base of the B-forest
- that is the trie or another tree-link, and `is_internal` in `info` allows
- differentiation. */
+/** A leaf is either data, in the leaf B-forest tree, or another tree-link, in
+ an internal B-forest tree; see `is_internal` of <tag:<PT>tree>. */
 union PT_(leaf) { PT_(type) *data; union PT_(any_store) child; };
 
 /* Different width trees, designed to fit alignment (and cache) boundaries.
- Except this one wastes space; may be some use extending from 8 -> 2097183
- bytes the maximum similarity. */
+ Except this one wastes space. @fixme May be some use extending from
+ `8 -> 2097183` bytes maximum similarity. */
 struct PT_(store0) { struct trie_info info; char unused[6];
 	union PT_(leaf) leaves[1]; };
 #define X(n, m) struct PT_(store##n) { struct trie_info info; \
@@ -222,8 +220,7 @@ static void PT_(extract)(const union PT_(any_store) any,
 }
 
 /** @return Looks at only the index of `trie` for potential `key` matches,
- otherwise `key` is definitely not in `trie`. @order \O(`key.length`)
- fixme: duplicate values! */
+ otherwise `key` is definitely not in `trie`. @order \O(`key.length`) */
 static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
 	union PT_(any_store) store = trie->root;
@@ -239,8 +236,9 @@ static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) { /* Binary tree. */
 			branch = tree.branches + in_tree.br0;
-			for(byte.next = (bit += branch->skip) >> 3; byte.cur < byte.next;
-				byte.cur++) if(key[byte.cur] == '\0') return 0; /* Too short. */
+			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+				byte.cur < byte.next; byte.cur++) if(key[byte.cur] == '\0')
+				return 0; /* Too short. */
 			if(!TRIE_BITTEST(key, bit))
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 			else
@@ -260,8 +258,8 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	return (n = PT_(match)(trie, key)) && !strcmp(PT_(to_key)(n), key) ? n : 0;
 }
 
-/** Expand `any` to ensure that it has one more unused capacity when the branch
- size is not the maximum. @return Potentially a re-allocated tree.
+/** Expand `any` to ensure that it has one more unused capacity when the size
+ is not the maximum. @return Potentially a re-allocated tree.
  @throws[realloc] @fixme Cached any. */
 static union PT_(any_store) PT_(expand)(const union PT_(any_store) any) {
 	struct PT_(tree) tree0, tree1;
@@ -399,6 +397,9 @@ static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
 /*static void PT_(graph)(const struct T_(trie) *, const char *);*/
 static const char *T_(trie_to_string)(const struct T_(trie) *);
 
+/** Adds `x` to `trie`, which must not be in `trie`.
+ @return Success. @throw[malloc, ERANGE]
+ @throw[ERANGE] There is too many bytes similar for the data-type. */
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
 	struct { size_t x, x0, x1; } in_bit;
@@ -478,7 +479,7 @@ leaf:
 		printf("add: full.ref #%p, full.start_bit %lu, full.count %lu.\n",
 			(void *)full.ref, (unsigned long)full.start_bit,
 			(unsigned long)full.count);
-		any = PT_(split)(in_forest.any);
+		any = PT_(split)(in_forest.any); /* fixme: loop. */
 		assert(full.count && tree.bsize == TRIE_MAX_BRANCH);
 		if(!any.key) return printf("add: fail store split.\n"), 0;
 		*in_forest.ref = in_forest.any = any;
@@ -486,7 +487,7 @@ leaf:
 		printf("add: splitting tree %p.\n", (void *)in_forest.any.key);
 		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
 	} else {
-		/* Now we are sure that this tree is the one getting modified. */
+		/* Go back and modify the tree for one extra branch/leaf pair. */
 		union PT_(any_store) any = PT_(expand)(in_forest.any);
 		if(!any.key) return printf("add: fail store expand.\n"), 0;
 		*in_forest.ref = in_forest.any = any;
