@@ -404,7 +404,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
 	struct { size_t x, x0, x1; } in_bit;
 	struct { union PT_(any_store) *ref, any; size_t start_bit; } in_forest;
-	struct { union PT_(any_store) *ref; size_t start_bit, count; } full;
+	struct { union PT_(any_store) parent, *ref; size_t start_bit, count; } full;
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
@@ -413,7 +413,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	int is_write = 0, is_right = 0, is_split = 0;
 
 	assert(trie && x);
-	printf("add: %s to %s.\n", x_key, T_(trie_to_string)(trie));
+	printf("add: %s -> %s.\n", x_key, T_(trie_to_string)(trie));
 	if(!trie->root.key) { /* Empty special case. */
 		struct PT_(store0) *const s0 = malloc(sizeof *s0);
 		if(!s0) { if(!errno) errno = ERANGE; return 0; }
@@ -421,7 +421,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		trie->root.s0 = s0;
 		return 1;
 	}
-	full.ref = 0, in_bit.x = 0,
+	full.parent.key = 0, full.count = 0, in_bit.x = 0,
 		in_forest.ref = &trie->root, in_forest.any = *in_forest.ref;
 	do { /* Trees in the B-forest. */
 tree:
@@ -430,6 +430,7 @@ tree:
 		PT_(extract)(in_forest.any, &tree);
 		if(tree.bsize < TRIE_MAX_BRANCH) {
 			full.count = 0;
+			full.parent = in_forest.any;
 		} else if(full.ref) {
 			full.count++;
 		} else {
@@ -474,11 +475,37 @@ leaf:
 	/* If the tree is full, split it. */
 	assert(tree.bsize <= TRIE_MAX_BRANCH);
 	if(full.count) { /* Paths along the base of the path that are full. */
-		union PT_(any_store) any;
-		assert(full.ref);
-		printf("add: full.ref #%p, full.start_bit %lu, full.count %lu.\n",
-			(void *)full.ref, (unsigned long)full.start_bit,
-			(unsigned long)full.count);
+		union PT_(any_store) any = trie->root;
+		assert(full.ref && any);
+		printf("add: full.parent #%p, full.ref #%p, full.start_bit %lu, "
+			"full.count %lu.\n", (void *)full.parent.key, (void *)full.ref,
+			(unsigned long)full.start_bit, (unsigned long)full.count);
+		do { /* Trees in the B-forest. */
+			sample = PT_(sample)(in_forest.any, 0);
+			PT_(extract)(in_forest.any, &tree);
+			in_bit.x0 = in_bit.x;
+			in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
+			while(in_tree.br0 < in_tree.br1) { /* Descend branches of tree. */
+				branch = tree.branches + in_tree.br0;
+				if(!TRIE_BITTEST(x_key, in_bit.x)) {
+					in_tree.br1 = ++in_tree.br0 + branch->left;
+					if(is_write) branch->left++;
+				} else {
+					in_tree.br0 += branch->left + 1;
+					in_tree.lf  += branch->left + 1;
+					sample = PT_(sample)(in_forest.any, in_tree.lf);
+				}
+				in_bit.x0 = in_bit.x1, in_bit.x++;
+			}
+			assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree.bsize);
+		} while(tree.is_internal && (in_forest.ref
+			= &tree.leaves[in_tree.lf].child, in_forest.any = *in_forest.ref, 1));
+		if(!full.parent.key) { /* Full all the way to the top level. */
+			struct PT_(store0) *const s0 = malloc(sizeof *s0);
+			if(!s0) { if(!errno) errno = ERANGE; return 0; }
+			s0->info.info = 0, s0->leaves[0].data = x;
+			trie->root.s0 = s0;
+		}
 		any = PT_(split)(in_forest.any); /* fixme: loop. */
 		assert(full.count && tree.bsize == TRIE_MAX_BRANCH);
 		if(!any.key) return printf("add: fail store split.\n"), 0;
