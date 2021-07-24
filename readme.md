@@ -5,6 +5,18 @@ collection using the standard library. The individual projects are separate and
 independent. It is therefore unnecessary to _use_ `boxes` in any of the individual
 projects, but useful in automated developing.
 
+## Why boxes? ##
+
+> [C sucks because](https://wiki.theory.org/index.php/YourLanguageSucks#C_sucks_because)
+> You get nothing else that's truly portable. Rolling your own containers (likely
+> inferior to a standard, highly-optimised version) is something you better get
+> used to doing for every new application, or using overly complicated existing
+> frameworks that take over your application (nspr, apr, glib...).
+
+This is a middle ground. No libraries. Each stand-alone `C89` code. It's like
+rolling your own containers, but all the work of testing and documenting has
+already been done.
+
 ## _Cf_ Some Implementations ##
 
 * [array](https://github.com/neil-edelman/array);
@@ -31,9 +43,9 @@ Assertions are used to ensure data integrity at runtime; to stop them,
 define `#define NDEBUG` before `assert.h`, included in the files, (see
 `man assert`.)
 
-Errors are returned with `errno`: `EDOM`, `ERANGE`, `EISEQ`, (1994
-Amendment 1 to `C89`); standard library functions provide their own
-values which are passed on.
+Errors are returned with the standard `errno`: `EDOM`, `ERANGE`, `EISEQ`
+(1994 Amendment 1 to `C90`); standard library functions provide their own
+values, which are passed on.
 
 The source files are `UTF-8`.
 
@@ -54,8 +66,11 @@ defining a trait, and then include the header again.
 
 ## Todo ##
 
-More traits instead of just `to_string`.
-Have `algorithm`, `functional`, `compare`?
+Lint warnings have become too much. Warnings on perfectly valid code
+defeats the terseness of `C`; programme in `PERL` if one wants endless
+parentheses. `-Weverything` but without _eg_ `-Wno-comma`,
+`-Wno-logical-op-parentheses`, `-Wno-parentheses`,
+`-Wno-shift-op-parentheses`.
 
 TEST depends on RAND, but should probably be different for timing.
 
