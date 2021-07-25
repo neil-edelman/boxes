@@ -70,6 +70,7 @@
 #define TRIE_MAX_LEFT 6/*254*/
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
+#define TRIE_BITMAP(n) (((n) - 1) / CHAR_BIT + 1) /* Bitmap size in bytes. */
 #if 0 /* For range values; unimplemented yet. */
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
@@ -191,19 +192,14 @@ typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
  string while in any trie causes the trie to go into an undefined state. */
 static const char *(*PT_(to_key))(const PT_(type) *a) = (TRIE_KEY);
 
-#if 0
-/** @return False. Ignores `a` and `b`. @implements <typedef:<PT>replace_fn> */
-static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
-	{ return (void)a, (void)b, 0; }
-#endif
-
 /** @return `tree` for the kind of tree storage in the compact `any`. */
 static void PT_(extract)(const union PT_(any_store) any,
 	struct PT_(tree) *const tree) {
 	const unsigned short info = any.key->info;
 	assert(any.key && tree);
-	/* [is_allocated:1][is_internal:1][store:3][bsize:9]
-	 fixme: This is when 256 was the maximum bsize; 255 will fit in a byte. */
+	/* [is_internal:1][store:3][bsize:9]
+	 fixme: This is when 256 was the maximum bsize; 255 will fit in a byte.
+	 should be [bmp:5][store:3][bsize:8] */
 	tree->is_internal = !!(info & 0x1000);
 	tree->store = (info >> 9) & 7, assert(tree->store < trie_store_count);
 	tree->bsize = info & 0x1FF, assert(tree->bsize <= TRIE_MAX_BRANCH);
@@ -535,13 +531,6 @@ insert:
 	return 1;
 }
 
-#if 0
-/** Compares keys of `a` and `b`. Used in <fn:<T>trie_from_array>.
- @implements <typedef:<PT>bipredicate_fn> */
-static int PT_(compare)(const PT_(type) *const a, const PT_(type) *const b)
-	{ return strcmp(PT_(to_key)(a), PT_(to_key)(b)); }
-#endif
-
 /** Initialises `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
 	{ assert(trie); trie->root.key = 0; }
@@ -569,275 +558,8 @@ static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 	return assert(trie && x),
 		PT_(get)(trie, PT_(to_key)(x)) ? printf("add: %s already in trie.\n",
 		PT_(to_key)(x)), 0 : PT_(add_unique)(trie, x);
+	/*return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
 }
-
-#if 0
-/** Looks at only the index for potential matches.
- @param[result] A index pointer to leaves that matches `key` when true.
- @return True if `key` in `trie` has matched, otherwise `key` is definitely is
- not in `trie`. @order \O(`key.length`) */
-static int PT_(param_index_get)(const struct T_(trie) *const trie,
-	const char *const key, size_t *const result) {
-	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
-	TrieBranch branch;
-	size_t n0_byte, str_byte = 0, bit = 0;
-	assert(trie && key && result);
-	if(!n1) return 0; /* Special case: there is nothing to match. */
-	n1--, assert(n1 == trie->branches.size);
-	while(n0 < n1) {
-		branch = trie->branches.data[n0];
-		bit += trie_skip(branch);
-		/* Skip the don't care bits, ending up at the decision bit. */
-		for(n0_byte = bit >> 3; str_byte < n0_byte; str_byte++)
-			if(key[str_byte] == '\0') return 0;
-		left = trie_left(branch);
-		if(!trie_is_bit(key, bit)) n1 = ++n0 + left;
-		else n0 += left + 1, i += left + 1;
-		bit++;
-	}
-	assert(n0 == n1 && i < trie->leaves.size);
-	*result = i;
-	return 1;
-}
-
-/** @return True if found the exact `key` in `trie` and stored it's index in
- `result`. */
-static int PT_(param_get)(const struct T_(trie) *const trie,
-	const char *const key, size_t *const result) {
-	return PT_(param_index_get)(trie, key, result)
-		&& !strcmp(PT_(to_key)(trie->leaves.data[*result]), key);
-}
-
-/** @return `trie` entry that matches bits of `key`, (ignoring the don't care
- bits,) or null if either `key` didn't have the length to fully differentiate
- more then one entry or the `trie` is empty. */
-static PT_(type) *PT_(index_get)(const struct T_(trie) *const trie,
-	const char *const key) {
-	size_t i;
-	return PT_(param_index_get)(trie, key, &i) ? trie->leaves.data[i] : 0;
-}
-
-/** In `trie`, which must be non-empty, given a partial `prefix`, stores all
- leaf prefix matches between `low`, `high`, only given the index, ignoring
- don't care bits. @order \O(`prefix.length`) @allow */
-static void T_(trie_index_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, size_t *const low, size_t *const high) {
-	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
-	TrieBranch branch;
-	size_t n0_byte, str_byte = 0, bit = 0;
-	assert(trie && prefix && low && high && n1);
-	n1--, assert(n1 == trie->branches.size);
-	while(n0 < n1) {
-		branch = trie->branches.data[n0];
-		bit += trie_skip(branch);
-		/* _Sic_; '\0' is _not_ included for partial match. */
-		for(n0_byte = bit >> 3; str_byte <= n0_byte; str_byte++)
-			if(prefix[str_byte] == '\0') goto finally;
-		left = trie_left(branch);
-		if(!trie_is_bit(prefix, bit)) n1 = ++n0 + left;
-		else n0 += left + 1, i += left + 1;
-		bit++;
-	}
-	assert(n0 == n1);
-finally:
-	assert(n0 <= n1 && i - n0 + n1 < trie->leaves.size);
-	*low = i, *high = i - n0 + n1;
-}
-
-/** @return Whether, in `trie`, given a partial `prefix`, it has found `low`,
- `high` prefix matches. */
-static int T_(trie_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, size_t *const low, size_t *const high) {
-	assert(trie && prefix && low && high);
-	return trie->leaves.size ? (T_(trie_index_prefix)(trie, prefix, low, high),
-		trie_is_prefix(prefix, PT_(to_key)(trie->leaves.data[*low]))) : 0;
-}
-
-/** Adds `datum` to `trie` and, if `eject` is non-null, stores the collided
- element, if any, as long as `replace` is null or returns true.
- @param[eject] If not-null, the ejected datum. If `replace` returns false, then
- `*eject == datum`, but it will still return true.
- @return Success. @throws[realloc, ERANGE] */
-static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const datum,
-	PT_(type) **const eject, const PT_(replace_fn) replace) {
-	const char *data_key;
-	PT_(leaf) *match;
-	size_t i;
-	assert(trie && datum);
-	printf("put: %s, %s\n", T_(trie_to_string)(trie), PT_(to_string)(datum));
-	data_key = PT_(to_key)(datum);
-	/* Add if absent. */
-	if(!PT_(param_get)(trie, data_key, &i)) {
-		printf("put: get didn't find it.\n");
-		if(eject) *eject = 0;
-		return PT_(add)(trie, datum);
-	}
-	assert(i < trie->leaves.size), match = trie->leaves.data + i;
-	/* Collision policy. */
-	if(replace && !replace(*match, datum)) {
-		if(eject) *eject = datum;
-	} else {
-		if(eject) *eject = *match;
-		*match = datum;
-	}
-	return 1;
-}
-
-/** Adds `datum` to `trie` if absent.
- @param[trie, datum] If null, returns null.
- @return Success. If data with the same key is present, returns true but
- doesn't add `datum`.
- @throws[realloc] There was an error with a re-sizing.
- @throws[ERANGE] The key is greater then 510 characters or the trie has reached
- it's maximum size. @order \O(`size`) @allow */
-static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const datum) {
-	return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));
-}
-
-/** Updates or adds `datum` to `trie`.
- @param[trie, datum] If null, returns null.
- @param[eject] If not null, on success it will hold the overwritten value or
- a pointer-to-null if it did not overwrite.
- @return Success.
- @throws[realloc] There was an error with a re-sizing.
- @throws[ERANGE] The key is greater then 510 characters or the trie has reached
- it's maximum size. @order \O(`size`) @allow */
-static int T_(trie_put)(struct T_(trie) *const trie,
-	PT_(type) *const datum, PT_(type) **const eject) {
-	return assert(trie && datum), PT_(put)(trie, datum, eject, 0);
-}
-
-/** Adds `datum` to `trie` only if the entry is absent or if calling `replace`
- returns true.
- @param[eject] If not null, on success it will hold the overwritten value or
- a pointer-to-null if it did not overwrite a previous value. If a collision
- occurs and `replace` does not return true, this value will be `data`.
- @param[replace] Called on collision and only replaces it if the function
- returns true. If null, it is semantically equivalent to <fn:<T>trie_put>.
- @return Success. @throws[realloc] There was an error with a re-sizing.
- @throws[ERANGE] The key is greater then 510 characters or the trie has reached
- it's maximum size. @order \O(`size`) @allow */
-static int T_(trie_policy_put)(struct T_(trie) *const trie,
-	PT_(type) *const datum, PT_(type) **const eject,
-	const PT_(replace_fn) replace) {
-	return assert(trie && datum), PT_(put)(trie, datum, eject, replace);
-}
-
-/** @return Whether leaf index `i` has been removed from `trie`.
- @fixme There is nothing stopping an `assert` from being triggered. */
-static int PT_(index_remove)(struct T_(trie) *const trie, size_t i) {
-	size_t n0 = 0, n1 = trie->branches.size, parent_n0, left;
-	size_t *parent, *twin; /* Branches. */
-	assert(trie && i < trie->leaves.size
-		&& trie->branches.size + 1 == trie->leaves.size);
-	/* Remove leaf. */
-	if(!--trie->leaves.size) return 1; /* Special case of one leaf. */
-	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
-		sizeof trie->leaves.data * (n1 - i));
-	/* fixme: Do another descent _not_ modifying to see if the values can be
-	 combined without overflow. */
-	/* Remove branch. */
-	for( ; ; ) {
-		left = trie_left(*(parent = trie->branches.data + (parent_n0 = n0)));
-		if(i <= left) { /* Pre-order binary search. */
-			if(!left) { twin = n0 + 1 < n1 ? trie->branches.data + n0 + 1 : 0;
-				break; }
-			n1 = ++n0 + left;
-			trie_left_dec(parent);
-		} else {
-			if((n0 += left + 1) >= n1)
-				{ twin = left ? trie->branches.data + n0 - left : 0; break; }
-			i -= left + 1;
-		}
-	}
-	/* Merge `parent` with `sibling` before deleting `parent`. */
-	if(twin)
-		/* fixme: There is nothing to guarantee this. */
-		assert(trie_skip(*twin) < TRIE_SKIP_MAX - trie_skip(*parent)),
-		trie_skip_set(twin, trie_skip(*twin) + 1 + trie_skip(*parent));
-	memmove(parent, parent + 1, sizeof n0 * (--trie->branches.size -parent_n0));
-	return 1;
-}
-
-/** Remove `key` from `trie`. @return Success or else `key` was not in `trie`.
- @order \O(`size`) @allow */
-static int T_(trie_remove)(struct T_(trie) *const trie, const char *const key) {
-	size_t i;
-	assert(trie && key);
-	return PT_(param_get)(trie, key, &i) && PT_(index_remove)(trie, i);
-}
-#endif
-
-static void PT_(unused_base_coda)(void);
-static void PT_(unused_base)(void) {
-	T_(trie)(0); T_(trie_)(0);
-	T_(trie_get)(0, 0);
-	PT_(unused_base_coda)();
-}
-static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
-
-
-#if 0
-
-/** Recursive function used for <fn:<PT>init>. Initialise branches of `trie` up
- to `bit` with `a` to `a_size` array of sorted leaves.
- @order Speed \O(`a_size` log E(`a.length`))?; memory \O(E(`a.length`)). */
-static void PT_(init_branches_r)(struct T_(trie) *const trie, size_t bit,
-	const size_t a, const size_t a_size) {
-	size_t b = a, b_size = a_size, half;
-	size_t skip = 0;
-	TrieBranch *branch;
-	assert(trie && a_size && a_size <= trie->leaves.size && trie->leaves.size
-		&& trie->branches.capacity >= trie->leaves.size - 1);
-	if(a_size <= 1) return;
-	/* Endpoints of sorted range: skip [_1_111...] or [...000_0_] don't care.
-	 fixme: UINT_MAX overflow. */
-	while(trie_is_bit(PT_(to_key)(trie->leaves.data[a]), bit)
-		|| !trie_is_bit(PT_(to_key)(trie->leaves.data[a + a_size - 1]), bit))
-		bit++, skip++;
-	/* Do a binary search for the first `leaves[a+half_s]#bit == 1`. */
-	while(b_size) half = b_size >> 1,
-		trie_is_bit(PT_(to_key)(trie->leaves.data[b + half]), bit)
-		? b_size = half : (half++, b += half, b_size -= half);
-	b_size = b - a;
-	/* Should have space for all branches pre-allocated in <fn:<PT>init>. */
-	branch = trie_branch_array_new(&trie->branches), assert(branch);
-	*branch = trie_branch(skip, b_size - 1);
-	bit++;
-	PT_(init_branches_r)(trie, bit, a, b_size);
-	PT_(init_branches_r)(trie, bit, b, a_size - b_size);
-}
-
-/** Initializes `trie` to `a` of size `a_size`, which cannot be zero.
- @return Success. @throws[ERANGE, malloc] */
-static int PT_(init)(struct T_(trie) *const trie, PT_(type) *const*const a,
-	const size_t a_size) {
-	PT_(leaf) *leaves;
-	assert(trie && a && a_size);
-	T_(trie)(trie);
-	/* This will store space for all of the duplicates, as well. */
-	if(!A_(array_reserve)(&trie->leaves, a_size)
-		|| !trie_branch_array_reserve(&trie->branches, a_size - 1)) return 0;
-	leaves = trie->leaves.data;
-	memcpy(leaves, a, sizeof *a * a_size);
-	trie->leaves.size = a_size;
-	/* Sort, get rid of duplicates, and initialize branches, from `compare.h`. */
-	qsort(leaves, a_size, sizeof *a, &PA_(vcompar));
-	A_(array_unique)(&trie->leaves);
-	PT_(init_branches_r)(trie, 0, 0, trie->leaves.size);
-	assert(trie->branches.size + 1 == trie->leaves.size);
-	return 1;
-}
-
-/** Initializes `trie` from an `array` of pointers-to-`<T>` of `array_size`.
- @return Success. @throws[realloc] @order \O(`array_size`) @allow */
-static int T_(trie_from_array)(struct T_(trie) *const trie,
-	PT_(type) *const*const array, const size_t array_size) {
-	return assert(trie && array && array_size),
-		PT_(init)(trie, array, array_size);
-}
-
-#endif
 
 /* <!-- iterate interface */
 
@@ -897,6 +619,13 @@ static void PT_(to_string)(PT_(type) *const a, char (*const z)[12])
 static const char *(*PT_(array_to_string))(const struct T_(trie) *);
 #include "../test/test_trie.h" /** \include */
 #endif /* test --> */
+
+static void PT_(unused_base_coda)(void);
+static void PT_(unused_base)(void) {
+	T_(trie)(0); T_(trie_)(0); T_(trie_get)(0, 0);
+	PT_(unused_base_coda)();
+}
+static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #ifndef TRIE_SUBTYPE /* <!-- !sub-type */
 #undef CAT
