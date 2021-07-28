@@ -9,7 +9,7 @@ static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 
 /** Given a branch `b` in `tree` branches, calculate the right child branches.
  @order \O(log `size`) */
-static unsigned PT_(right)(const union PT_(any_store) any, const unsigned b) {
+static unsigned PT_(right)(const union PT_(any_gauge) any, const unsigned b) {
 	struct PT_(tree) tree;
 	unsigned left, right, b0 = 0;
 	assert(any.key);
@@ -26,7 +26,7 @@ static unsigned PT_(right)(const union PT_(any_store) any, const unsigned b) {
 }
 
 /** @return Follows the branches to `b` in `tree` and returns the leaf. */
-static unsigned PT_(left_leaf)(union PT_(any_store) any, const unsigned b) {
+static unsigned PT_(left_leaf)(union PT_(any_gauge) any, const unsigned b) {
 	struct PT_(tree) tree;
 	unsigned left, right, i = 0, b0 = 0;
 	assert(any.key);
@@ -42,7 +42,7 @@ static unsigned PT_(left_leaf)(union PT_(any_store) any, const unsigned b) {
 	return i;
 }
 
-static void PT_(graph_tree)(const union PT_(any_store) any, FILE *const fp) {
+static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
 	unsigned left, right, b, i;
@@ -50,11 +50,11 @@ static void PT_(graph_tree)(const union PT_(any_store) any, FILE *const fp) {
 	PT_(extract)(any, &tree);
 	fprintf(fp, "\tsubgraph cluster_tree%p {\n"
 		"\t\tstyle = filled;\n"
-		"\t\tlabel = \"rank %u/%u; store%u/%u; %uB\";\n",
+		"\t\tlabel = \"leaves %u/%u; gauge%u (%u); %uB\";\n",
 		(void *)any.key, /*tree.is_internal ? "internal" : "leaf"<-this obv,*/
-		tree.bsize, trie_store_bsizes[tree.store],
-		tree.store, trie_store_count - 1,
-		PT_(store_sizes)[tree.store]);
+		tree.bsize + 1, trie_gauge_bsizes[tree.gauge] + 1,
+		tree.gauge, trie_gauge_count,
+		PT_(gauge_sizes)[tree.gauge]);
 	if(tree.bsize) {
 		for(b = 0; b < tree.bsize; b++) { /* Branches. */
 			branch = tree.branches + b;

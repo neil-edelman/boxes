@@ -70,44 +70,32 @@
 #define TRIE_MAX_LEFT 6/*254*/
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
-#define TRIE_BITMAP(n) (((n) - 1) / CHAR_BIT + 1) /* Bitmap size in bytes. */
-#if 0 /* For range values; unimplemented yet. */
-/** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
- Used in <fn:<T>trie_prefix>. */
-static int trie_is_prefix(const char *a, const char *b) {
-	for( ; ; a++, b++) {
-		if(*a == '\0') return 1;
-		if(*a != *b) return *b == '\0';
-	}
-}
-#endif
+#define TRIE_BMP_SIZE(n) (((n) - 1) / CHAR_BIT + 1) /* Bitmap size in bytes. */
+#define TRIE_BMP_ALIGN_SIZE(n) \
+	(((TRIE_BMP_SIZE(n) - 1) / sizeof(size_t) + 1) * CHAR_BIT)
+struct trie_info { unsigned char bsize, gauge; };
 struct trie_branch { unsigned char left, skip; };
-/* This is a bit-field, but bit-fields on `short` may be unsupported, or may
- widen the value, so we just hard code it, defined in <fn:<PT>extract>. */
-struct trie_info { unsigned short info; };
-/* This is the store number, which stores trees of different widths in `(n, m)`:
- `n` must be ascending from zero; branching factor `m`, which is the leaves,
- `{ n = 0: 1 <= m, n != 0: 1 < m }`, and strictly increasing. To add more, one
- has to increase the width of the `store` variable. */
-#define TRIE_STORE_FIRST_X X(0, 1)
-/*#define TRIE_STORE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
-#define TRIE_STORE_LAST_X  X(7, TRIE_ORDER)*/
-#define TRIE_STORE_MID_X   X(1, 4) /* Debug! */
-#define TRIE_STORE_LAST_X  X(2, TRIE_ORDER)
-#define TRIE_STORE_TAIL_X TRIE_STORE_MID_X TRIE_STORE_LAST_X
-#define TRIE_STORE_HEAD_X TRIE_STORE_FIRST_X TRIE_STORE_MID_X
-#define TRIE_STORE_X TRIE_STORE_FIRST_X TRIE_STORE_TAIL_X
+/* Stores trees of different arbitrary sizes (gauges), `(n, m)`: `n` must be
+ ascending from zero; branching factor `m > 0` are strictly increasing. */
+#define TRIE_GAUGE_FIRST_X X(0, 1)
+/*#define TRIE_GAUGE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
+#define TRIE_GAUGE_LAST_X  X(7, TRIE_ORDER)*/
+#define TRIE_GAUGE_MID_X   X(1, 4) /* Debug: must be monotonic. */
+#define TRIE_GAUGE_LAST_X  X(2, TRIE_ORDER)
+#define TRIE_GAUGE_TAIL_X TRIE_GAUGE_MID_X TRIE_GAUGE_LAST_X
+#define TRIE_GAUGE_HEAD_X TRIE_GAUGE_FIRST_X TRIE_GAUGE_MID_X
+#define TRIE_GAUGE_X TRIE_GAUGE_FIRST_X TRIE_GAUGE_TAIL_X
 /* `C90` doesn't allow trialing commas in initializer lists. */
-static const unsigned trie_store_bsizes[] = {
+static const unsigned trie_gauge_bsizes[] = {
 #define X(n, m) m - 1,
-	TRIE_STORE_HEAD_X
+	TRIE_GAUGE_HEAD_X
 #undef X
 #define X(n, m) m - 1
-	TRIE_STORE_LAST_X
+	TRIE_GAUGE_LAST_X
 #undef X
 };
-static const unsigned trie_store_count
-	= sizeof trie_store_bsizes / sizeof *trie_store_bsizes;
+static const unsigned trie_gauge_count
+	= sizeof trie_gauge_bsizes / sizeof *trie_gauge_bsizes;
 #endif /* idempotent --> */
 
 
@@ -137,89 +125,79 @@ typedef TRIE_TYPE PT_(type);
 /** Pointers to generic trees stored in memory, and part of the B-forest.
  Points to a non-empty semi-implicit complete binary tree of a
  fixed-maximum-size; reading `key.info` will tell which tree it is. */
-union PT_(any_store) {
+union PT_(any_gauge) {
 	struct trie_info *key;
-#define X(n, m) struct PT_(store##n) *s##n;
-	TRIE_STORE_X
+#define X(n, m) struct PT_(gauge##n) *g##n;
+	TRIE_GAUGE_X
 #undef X
 };
 
 /** A leaf is either data, in the leaf B-forest tree, or another tree-link, in
  an internal B-forest tree; see `is_internal` of <tag:<PT>tree>. */
-union PT_(leaf) { PT_(type) *data; union PT_(any_store) child; };
+union PT_(leaf) { PT_(type) *data; union PT_(any_gauge) child; };
 
-/* Different width trees, designed to fit alignment (and cache) boundaries.
- Except this one wastes space. @fixme May be some use extending from
- `8 -> 2097183` bytes maximum similarity. */
-struct PT_(store0) { struct trie_info info; char unused[6];
+/* Different width trees, designed to fit alignment (and cache) boundaries. */
+struct PT_(gauge0) { struct trie_info info; unsigned char link[6];
 	union PT_(leaf) leaves[1]; };
-#define X(n, m) struct PT_(store##n) { struct trie_info info; \
-	struct trie_branch branches[m - 1]; union PT_(leaf) leaves[m]; };
-TRIE_STORE_TAIL_X
+#define X(n, m) struct PT_(gauge##n) { struct trie_info info; \
+	struct trie_branch branches[m - 1]; \
+	unsigned char link[TRIE_BMP_ALIGN_SIZE(m)]; \
+	union PT_(leaf) leaves[m]; };
+TRIE_GAUGE_TAIL_X
 #undef X
 
-static const unsigned PT_(store_sizes)[] = {
-#define X(n, m) sizeof(struct PT_(store##n)),
-	TRIE_STORE_HEAD_X
+static const unsigned PT_(gauge_sizes)[] = {
+#define X(n, m) sizeof(struct PT_(gauge##n)),
+	TRIE_GAUGE_HEAD_X
 #undef X
-#define X(n, m) sizeof(struct PT_(store##n))
-	TRIE_STORE_LAST_X
+#define X(n, m) sizeof(struct PT_(gauge##n))
+	TRIE_GAUGE_LAST_X
 #undef X
 };
 
 /** A working tree, extracted from different-width storage by
  <fn:<PT>extract>. */
-struct PT_(tree) {
-	unsigned /*is_allocated,*/ is_internal, store, bsize;
-	struct trie_branch *branches;
-	union PT_(leaf) *leaves;
-};
+struct PT_(tree) { unsigned bsize, gauge; struct trie_branch *branches;
+	unsigned char *link; union PT_(leaf) *leaves; };
 
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
-struct T_(trie) { union PT_(any_store) root; };
+struct T_(trie) { union PT_(any_gauge) root; };
 #ifndef TRIE_IDLE /* <!-- !zero */
 #define TRIE_IDLE { { 0 } }
 #endif /* !zero --> */
-
-/** A bi-predicate; returns true if the `replace` replaces the `original`; used
- in <fn:<T>trie_policy_put>. */
-typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
 
 /** Responsible for picking out the null-terminated string. Modifying the
  string while in any trie causes the trie to go into an undefined state. */
 static const char *(*PT_(to_key))(const PT_(type) *a) = (TRIE_KEY);
 
 /** @return `tree` for the kind of tree storage in the compact `any`. */
-static void PT_(extract)(const union PT_(any_store) any,
+static void PT_(extract)(const union PT_(any_gauge) any,
 	struct PT_(tree) *const tree) {
-	const unsigned short info = any.key->info;
 	assert(any.key && tree);
-	/* [is_internal:1][store:3][bsize:9]
-	 fixme: This is when 256 was the maximum bsize; 255 will fit in a byte.
-	 should be [bmp:5][store:3][bsize:8] */
-	tree->is_internal = !!(info & 0x1000);
-	tree->store = (info >> 9) & 7, assert(tree->store < trie_store_count);
-	tree->bsize = info & 0x1FF, assert(tree->bsize <= TRIE_MAX_BRANCH);
-	switch(tree->store) {
-		/* Special case where there are no branches. */
-	case 0: tree->branches = 0; tree->leaves = any.s0->leaves; break;
-		/* General case where there are branches. */
-#define X(n, m) case n: tree->branches = any.s##n->branches; \
-	tree->leaves = any.s##n->leaves; break;
-		TRIE_STORE_TAIL_X
+	tree->bsize = any.key->bsize;
+	tree->gauge = any.key->gauge;
+	switch(tree->gauge) {
+	case 0: /* Special case where there are no branches. */
+		tree->branches = 0; tree->link = any.g0->link;
+		tree->leaves = any.g0->leaves; break;
+#define X(n, m) case n: tree->branches = any.g##n->branches; \
+	tree->link = any.g##n->link; tree->leaves = any.g##n->leaves; break;
+		TRIE_GAUGE_TAIL_X
 #undef X
 	default: assert(0);
 	}
 }
 
+
+
 /** @return Looks at only the index of `trie` for potential `key` matches,
  otherwise `key` is definitely not in `trie`. @order \O(`key.length`) */
 static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
-	union PT_(any_store) store = trie->root;
+	union PT_(any_gauge) store = trie->root;
 	struct PT_(tree) tree;
 	const struct trie_branch *branch;
 	size_t bit; /* `bit \in key`.  */
@@ -233,15 +211,15 @@ static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 		while(in_tree.br0 < in_tree.br1) { /* Binary tree. */
 			branch = tree.branches + in_tree.br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
-				byte.cur < byte.next; byte.cur++) if(key[byte.cur] == '\0')
-				return 0; /* Too short. */
+				byte.cur < byte.next; byte.cur++)
+				if(key[byte.cur] == '\0') return 0; /* Too short. */
 			if(!TRIE_BITTEST(key, bit))
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 			else
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		if(!tree.is_internal) break;
+		if(!TRIE_BITTEST(tree.link, in_tree.lf)) break;
 		store = tree.leaves[in_tree.lf].child;
 	};
 	return tree.leaves[in_tree.lf].data;
@@ -257,47 +235,53 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 /** Expand `any` to ensure that it has one more unused capacity when the size
  is not the maximum. @return Potentially a re-allocated tree.
  @throws[realloc] @fixme Cached any. */
-static union PT_(any_store) PT_(expand)(const union PT_(any_store) any) {
+static union PT_(any_gauge) PT_(expand)(const union PT_(any_gauge) any) {
 	struct PT_(tree) tree0, tree1;
-	union PT_(any_store) larger;
+	union PT_(any_gauge) larger;
+	size_t links0, links1;
 	assert(any.key);
 	PT_(extract)(any, &tree0);
-	printf("expand: bsize %u, store%u: %u\n",
-		tree0.bsize, tree0.store, trie_store_bsizes[tree0.store]);
+	printf("expand: bsize %u, width%u: %u\n",
+		tree0.bsize, tree0.gauge, trie_gauge_bsizes[tree0.gauge]);
 	assert(tree0.bsize < TRIE_MAX_BRANCH);
-	if(tree0.bsize < trie_store_bsizes[tree0.store])
+	if(tree0.bsize < trie_gauge_bsizes[tree0.gauge])
 		return printf("expand: we're good\n"), any;
-	assert(tree0.bsize == trie_store_bsizes[tree0.store]
-		&& tree0.store + 1 < trie_store_count);
+	assert(tree0.bsize == trie_gauge_bsizes[tree0.gauge]
+		&& tree0.gauge + 1 < trie_gauge_count);
 	/* Augment the allocation. */
-	if(!(larger.key = realloc(any.key, PT_(store_sizes)[tree0.store + 1])))
+	if(!(larger.key = realloc(any.key, PT_(gauge_sizes)[tree0.gauge + 1])))
 		{ if(!errno) errno = ERANGE; return larger; }
 	PT_(extract)(larger, &tree0); /* The address may have changed. */
-	printf("expand: #%p store%u %luB -> #%p store%u %luB\n", (void *)any.key,
-		tree0.store, (unsigned long)PT_(store_sizes)[tree0.store],
-		(void *)larger.key, tree0.store + 1,
-		(unsigned long)PT_(store_sizes)[tree0.store + 1]);
+	printf("expand: #%p width%u %luB -> #%p store%u %luB\n", (void *)any.key,
+		tree0.gauge, (unsigned long)PT_(gauge_sizes)[tree0.gauge],
+		(void *)larger.key, tree0.gauge + 1,
+		(unsigned long)PT_(gauge_sizes)[tree0.gauge + 1]);
 	/* Augment the allocation size. */
-	larger.key->info &= ~0xE00;
-	larger.key->info |= (tree0.store + 1) << 9;
-	/* Move the leaves farther out. */
+	larger.key->gauge++;
 	PT_(extract)(larger, &tree1);
 	assert(tree0.bsize == tree1.bsize
 		&& (!tree0.branches || tree0.branches == tree1.branches)
+		&& tree0.link <= tree1.link
 		&& tree0.leaves <= tree1.leaves);
+	/* Careful to go backwards because we don't want to overwrite. */
 	memmove(tree1.leaves, tree0.leaves,
-		sizeof *tree0.leaves * (tree1.bsize + 1));
+		sizeof *tree0.leaves * (tree0.bsize + 1));
+	links0 = TRIE_BMP_SIZE(tree0.bsize + 1);
+	links1 = TRIE_BMP_SIZE(trie_gauge_bsizes[tree0.gauge + 1] + 1);
+	printf("expand: moving from %luB to %luB\n", links0, links1);
+	memmove(tree1.link, tree0.link, links0);
+	memset(tree0.link + links0, 0, links1 - links0);
 	return larger;
 }
 
 /** @return Success splitting the tree `forest_idx` of `trie`. Must be full. */
-static union PT_(any_store) PT_(split)(union PT_(any_store) any) {
+static union PT_(any_gauge) PT_(split)(union PT_(any_gauge) any) {
 	struct PT_(tree) tree0, tree1;
-	union PT_(any_store) larger;
+	union PT_(any_gauge) larger;
 	assert(any.key);
 	PT_(extract)(any, &tree0);
-	printf("split: bsize %u, store%u: %u\n",
-		tree0.bsize, tree0.store, trie_store_bsizes[tree0.store]);
+	printf("split: bsize %u, gauge%u: %u\n",
+		tree0.bsize, tree0.gauge, trie_gauge_bsizes[tree0.gauge]);
 	assert(tree0.bsize == TRIE_MAX_BRANCH);
 
 #if 0
@@ -378,14 +362,14 @@ static union PT_(any_store) PT_(split)(union PT_(any_store) any) {
 	tree.new->bsize += go.parent.branches;
 #endif
 	errno = ERANGE;
-	return (union PT_(any_store)){0};
+	return (union PT_(any_gauge)){0};
 }
 
 /** @return The leftmost key `lf` of key `any`. fixme: cached any. */
-static const char *PT_(sample)(union PT_(any_store) any, unsigned lf) {
+static const char *PT_(sample)(union PT_(any_gauge) any, unsigned lf) {
 	struct PT_(tree) tree;
 	assert(any.key);
-	while(PT_(extract)(any, &tree), tree.is_internal)
+	while(PT_(extract)(any, &tree), TRIE_BITTEST(tree.link, 0))
 		any = tree.leaves[lf].child, lf = 0;
 	return PT_(to_key)(tree.leaves[lf].data);
 }
@@ -399,38 +383,41 @@ static const char *T_(trie_to_string)(const struct T_(trie) *);
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const x_key = PT_(to_key)(x);
 	struct { size_t x, x0, x1; } in_bit;
-	struct { union PT_(any_store) *ref, any; size_t start_bit; } in_forest;
-	struct { size_t count; union PT_(any_store) start; } full;
+	struct { union PT_(any_gauge) *ref, any; size_t start_bit; } in_forest;
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
 	union PT_(leaf) *leaf;
 	const char *sample;
-	int is_write = 0, is_right = 0, is_split = 0;
+	int is_right = 0, is_split = 0;
+	struct { size_t count; union PT_(any_gauge) start; } explore;
+	enum { EXPLORING, SPLITTING, WRITING } go = EXPLORING;
 
 	assert(trie && x);
 	printf("add: %s -> %s.\n", x_key, T_(trie_to_string)(trie));
 	if(!trie->root.key) { /* Empty special case. */
-		struct PT_(store0) *const s0 = malloc(sizeof *s0);
-		if(!s0) { if(!errno) errno = ERANGE; return 0; }
-		s0->info.info = 0, s0->leaves[0].data = x;
-		trie->root.s0 = s0;
+		struct PT_(gauge0) *const g0 = malloc(sizeof *g0);
+		if(!g0) { if(!errno) errno = ERANGE; return 0; }
+		g0->info.bsize = 0, g0->info.gauge = 0, g0->link[0] = 0,
+			g0->leaves[0].data = x;
+		trie->root.g0 = g0;
 		return 1;
 	}
-	full.count = 0, in_bit.x = 0,
-		in_forest.ref = &trie->root, in_forest.any = *in_forest.ref;
-	do { /* Trees in the B-forest. */
+	for(explore.count = 0, in_bit.x = 0, in_forest.ref = &trie->root,
+		in_forest.any = *in_forest.ref; ; ) { /* B-forest. */
 tree:
 		in_forest.start_bit = in_bit.x;
 		sample = PT_(sample)(in_forest.any, 0);
 		PT_(extract)(in_forest.any, &tree);
-		if(tree.bsize < TRIE_MAX_BRANCH) {
-			full.count = 0;
-		} else if(full.start.key) {
-			full.count++;
-		} else {
-			full.start = in_forest.any;
-			full.count = 1;
+		if(go == EXPLORING) { /* Branches that need to be split. */
+			if(tree.bsize < TRIE_MAX_BRANCH) {
+				explore.count = 0;
+			} else if(!explore.count) {
+				explore.start = in_forest.any;
+				explore.count = 1;
+			} else {
+				explore.count++;
+			}
 		}
 		in_bit.x0 = in_bit.x;
 		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
@@ -440,7 +427,7 @@ tree:
 				in_bit.x++) if(TRIE_BITDIFF(x_key, sample, in_bit.x)) goto leaf;
 			if(!TRIE_BITTEST(x_key, in_bit.x)) {
 				in_tree.br1 = ++in_tree.br0 + branch->left;
-				if(is_write) branch->left++;
+				if(go == WRITING) branch->left++;
 			} else {
 				in_tree.br0 += branch->left + 1;
 				in_tree.lf  += branch->left + 1;
@@ -449,8 +436,9 @@ tree:
 			in_bit.x0 = in_bit.x1, in_bit.x++;
 		}
 		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree.bsize);
-	} while(tree.is_internal && (in_forest.ref
-		= &tree.leaves[in_tree.lf].child, in_forest.any = *in_forest.ref, 1));
+		if(!TRIE_BITTEST(tree.link, in_tree.lf)) break;
+		in_forest.any = *(in_forest.ref = &tree.leaves[in_tree.lf].child);
+	}
 	/* Got to the leaves. */
 	printf("add: got to the leaves.\n");
 	in_bit.x1 = in_bit.x + UCHAR_MAX;
@@ -464,47 +452,28 @@ leaf:
 		in_tree.lf, in_bit.x);
 	assert(in_tree.lf <= tree.bsize + 1u);
 
-	if(is_write) goto insert;
+	if(go == WRITING) goto insert;
 	/* If the tree is full, split it. */
 	assert(tree.bsize <= TRIE_MAX_BRANCH);
-	if(full.count) { /* Paths along the base of the path that are full. */
-		union PT_(any_store) any = trie->root;
-		assert(full.start.key && any.key);
+	if(explore.count) { /* Paths along the base of the path that are full. */
+		union PT_(any_gauge) any = trie->root;
+		assert(explore.start.key && any.key);
 		printf("add: full.start #%p, full.count %lu.\n",
-			(void *)full.start.key, (unsigned long)full.count);
-		do { /* Trees in the B-forest. */
-			sample = PT_(sample)(in_forest.any, 0);
-			PT_(extract)(in_forest.any, &tree);
-			in_bit.x0 = in_bit.x;
-			in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
-			while(in_tree.br0 < in_tree.br1) { /* Descend branches of tree. */
-				branch = tree.branches + in_tree.br0;
-				if(!TRIE_BITTEST(x_key, in_bit.x)) {
-					in_tree.br1 = ++in_tree.br0 + branch->left;
-					if(is_write) branch->left++;
-				} else {
-					in_tree.br0 += branch->left + 1;
-					in_tree.lf  += branch->left + 1;
-					sample = PT_(sample)(in_forest.any, in_tree.lf);
-				}
-				in_bit.x0 = in_bit.x1, in_bit.x++;
-			}
-			assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree.bsize);
-		} while(tree.is_internal && (in_forest.ref
-			= &tree.leaves[in_tree.lf].child, in_forest.any = *in_forest.ref, 1));
+			(void *)explore.start.key, (unsigned long)explore.count);
 		any = PT_(split)(in_forest.any); /* fixme: loop. */
-		assert(full.count && tree.bsize == TRIE_MAX_BRANCH);
+		assert(explore.count && tree.bsize == TRIE_MAX_BRANCH);
 		if(!any.key) return printf("add: fail store split.\n"), 0;
 		*in_forest.ref = in_forest.any = any;
 		assert(!is_split && (is_split = 1));
 		printf("add: splitting tree %p.\n", (void *)in_forest.any.key);
 		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
+		go = SPLITTING;
 	} else {
 		/* Go back and modify the tree for one extra branch/leaf pair. */
-		union PT_(any_store) any = PT_(expand)(in_forest.any);
+		union PT_(any_gauge) any = PT_(expand)(in_forest.any);
 		if(!any.key) return printf("add: fail store expand.\n"), 0;
 		*in_forest.ref = in_forest.any = any;
-		is_write = 1;
+		go = WRITING;
 	}
 	in_bit.x = in_forest.start_bit;
 	goto tree;
@@ -525,8 +494,7 @@ insert:
 		&& in_bit.x - in_bit.x0 - !!in_tree.br0 < 256);
 	branch->left = is_right ? (unsigned char)(in_tree.br1 - in_tree.br0) : 0;
 	branch->skip = (unsigned char)(in_bit.x - in_bit.x0 - !!in_tree.br0);
-	in_forest.any.key->info &= ~0x1FF;
-	in_forest.any.key->info |= ++tree.bsize;
+	in_forest.any.key->bsize++;
 
 	return 1;
 }
@@ -566,7 +534,7 @@ static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 /** Contains all iteration parameters. */
 struct PT_(iterator);
 struct PT_(iterator)
-	{ const struct T_(trie) *trie; union PT_(any_store) any; size_t i; };
+	{ const struct T_(trie) *trie; union PT_(any_gauge) any; size_t i; };
 
 /** Loads `a` into `it`. @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
@@ -575,21 +543,21 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 
 /** Advances `it`. @implements next */
 static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
-	union PT_(any_store) any;
+	union PT_(any_gauge) any;
 	struct PT_(tree) tree;
 	assert(it && it->trie);
 	if(!(any = it->any).key) { /* Start. */
 		if(!(any = it->trie->root).key) return 0;
 		do {
 			PT_(extract)(any, &tree);
-		} while(tree.is_internal && (any = tree.leaves[0].child, 1));
+		} while(TRIE_BITTEST(tree.link, 0) && (any = tree.leaves[0].child, 1));
 		it->any = any;
 		it->i = 0;
 	} else {
 		PT_(extract)(any, &tree);
 		if(it->i > tree.bsize) {
 			/*const char *key = PT_(to_key)(tree.leaves[tree.bsize].data);
-			union PT_(any_store) any1 = it->trie->root; */
+			union PT_(any_gauge) any1 = it->trie->root; */
 			return 0; /* fixme: getting a "next" is fairly involved. */
 		}
 	}
