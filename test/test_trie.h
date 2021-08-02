@@ -112,9 +112,11 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 
 /** Makes sure the `trie` is in a valid state. */
 static void PT_(valid)(const struct T_(trie) *const trie) {
+#if 0
 	PT_(type) *const*a;
 	size_t i, i_end;
 	int cmp;
+#endif
 	if(!trie) return;
 #if 0
 	if(!trie->leaves.data) { assert(!trie->leaves.size
