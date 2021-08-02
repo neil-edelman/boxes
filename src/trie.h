@@ -273,9 +273,12 @@ static union PT_(any_gauge) PT_(expand)(const union PT_(any_gauge) any) {
 /** @return Success splitting the tree `forest_idx` of `trie`. Must be full. */
 static union PT_(any_gauge) PT_(split)(union PT_(any_gauge) any) {
 	struct PT_(tree) tree;
-	struct { unsigned br0, br1, lf; } in_tree, in_opt;
+	struct { unsigned br0, br1, lf; } in_tree;
+	struct { unsigned br0, br1; } in_write;
 	struct { int opt, left, right; } balance; /* Minimize this. */
-	enum { LEFT, RIGHT } choose;
+#define X(n, m) struct PT_(gauge##n) *split;
+	TRIE_GAUGE_LAST_X
+#undef X
 	assert(any.key);
 	PT_(extract)(any, &tree);
 	printf("split: bsize %u, gauge%u: %u\n",
@@ -299,32 +302,34 @@ static union PT_(any_gauge) PT_(split)(union PT_(any_gauge) any) {
 			balance.opt, balance.left, balance.right);
 		if(abs(balance.opt) < abs(balance.left)) {
 			if(abs(balance.opt) < abs(balance.right)) break;
-			else choose = RIGHT;
+			else goto right;
 		} else {
-			if(abs(balance.left) < abs(balance.right)) choose = LEFT;
-			else choose = RIGHT;
+			if(abs(balance.left) < abs(balance.right)) goto left;
+			else goto right;
 		}
-		in_opt.br0 = in_tree.br0, in_opt.br1 = in_tree.br1,
-			in_opt.lf = in_tree.lf;
-		if(choose == LEFT) {
-			balance.opt = balance.left;
-			in_tree.br1 = ++in_tree.br0 + branch->left;
-		} else {
-			balance.opt = balance.right;
-			in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
-		}
+left:
+		balance.opt = balance.left;
+		in_tree.br1 = ++in_tree.br0 + branch->left;
+		continue;
+right:
+		balance.opt = balance.right;
+		in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 	}
 	assert(in_tree.br0 != in_tree.br1 && in_tree.lf <= tree.bsize);
-	printf("-> split on [%u,%u]:%u.\n", in_opt.br0, in_opt.br1, in_opt.lf);
-	/* Re-following path; decrement branches. */
-	in_tree.br0 = 0, in_tree.br1 = tree.bsize;
-	while(in_tree.br0 < in_opt.br0) {
-		struct trie_branch *const branch = tree.branches + in_tree.br0;
-		if(in_opt.br0 <= in_tree.br0 + branch->left) {
-			in_tree.br1 = ++in_tree.br0 + branch->left;
-			branch->left -= /*go.parent.branches*/in_opt.br1 - in_opt.br0; /*?*/
+	printf("-> split on [%u,%u]:%u.\n", in_tree.br0, in_tree.br1, in_tree.lf);
+	/* Split off a new tree. */
+	if(!(split = malloc(sizeof *split)))
+		{ if(!errno) errno = ERANGE; return (union PT_(any_gauge)){ 0 }; };
+	/*memset(split->link, 0, ??);*/
+	/* Decrement branches in preparation to split. */
+	in_write.br0 = 0, in_write.br1 = tree.bsize;
+	while(in_write.br0 < in_tree.br0) {
+		struct trie_branch *const branch = tree.branches + in_write.br0;
+		if(in_tree.br0 <= in_write.br0 + branch->left) {
+			in_write.br1 = ++in_write.br0 + branch->left;
+			branch->left -= in_tree.br1 - in_tree.br0;
 		} else {
-			in_tree.br0 += branch->left + 1;
+			in_write.br0 += branch->left + 1;
 		}
 	}
 	{
@@ -368,7 +373,7 @@ static union PT_(any_gauge) PT_(split)(union PT_(any_gauge) any) {
 	return (union PT_(any_gauge)){0};
 }
 
-/** @return The leftmost key `lf` of key `any`. fixme: cached any. */
+/** @return The leftmost key `lf` of key `any`. */
 static const char *PT_(sample)(union PT_(any_gauge) any, unsigned lf) {
 	struct PT_(tree) tree;
 	assert(any.key);
@@ -490,7 +495,7 @@ static void T_(trie)(struct T_(trie) *const trie)
 
 /** Returns an initialised `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
-	assert(trie); /* fixme */
+	assert(trie && !trie); /* fixme */
 	T_(trie)(trie);
 }
 
