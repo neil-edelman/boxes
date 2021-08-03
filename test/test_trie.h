@@ -63,26 +63,47 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 				"[label = \"%u\", shape = none, fillcolor = none];\n"
 				"\t\ttree%pbranch%u -> ", (void *)any.key, b, branch->skip,
 				(void *)any.key, b);
-			if(left) fprintf(fp, "tree%pbranch%u [style = dashed];\n",
-				(void *)any.key, b + 1);
-			else fprintf(fp, "tree%pleaf%u [style = dashed];\n",
-				(void *)any.key, PT_(left_leaf)(any, b));
+			if(left) {
+				fprintf(fp, "tree%pbranch%u [style = dashed];\n",
+					(void *)any.key, b + 1);
+			} else {
+				unsigned leaf = PT_(left_leaf)(any, b);
+				if(TRIE_BITTEST(tree.link, leaf)) {
+					fprintf(fp,
+						"tree%pbranch0 [style = dashed, color = royalblue];\n",
+						(void *)tree.leaves[leaf].child.key);
+				} else {
+					fprintf(fp, "tree%pleaf%u [style = dashed];\n",
+						(void *)any.key, leaf);
+				}
+			}
 			fprintf(fp, "\t\ttree%pbranch%u -> ", (void *)any.key, b);
-			if(right) fprintf(fp, "tree%pbranch%u;\n",
-				(void *)any.key, b + left + 1);
-			else fprintf(fp, "tree%pleaf%u;\n", (void *)any.key,
-				PT_(left_leaf)(any, b) + left + 1);
+			if(right) {
+				fprintf(fp, "tree%pbranch%u;\n",
+					(void *)any.key, b + left + 1);
+			} else {
+				unsigned leaf = PT_(left_leaf)(any, b) + left + 1;
+				if(TRIE_BITTEST(tree.link, leaf)) {
+					fprintf(fp, "tree%pbranch0 [color = royalblue];\n",
+						(void *)tree.leaves[leaf].child.key);
+				} else {
+					fprintf(fp, "tree%pleaf%u;\n", (void *)any.key, leaf);
+				}
+			}
 		}
-		for(i = 0; i <= tree.bsize; i++)
-			fprintf(fp, "\t\ttree%pleaf%u [label = \"%s\"];\n", (void *)any.key,
-			i, PT_(to_key)(tree.leaves[i].data)); /* fixme: or link! */
+		for(i = 0; i <= tree.bsize; i++) if(!TRIE_BITTEST(tree.link, i))
+			fprintf(fp, "\t\ttree%pleaf%u [label = \"%s\"];\n",
+			(void *)any.key, i, PT_(to_key)(tree.leaves[i].data));
 	} else {
 		/* Instead of creating a lookahead function to previous references, we
 		 very lazily also just call this a branch, even though it's a leaf. */
+		assert(!TRIE_BITTEST(tree.link, 0)); /* fixme: should be possible. */
 		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (void *)any.key,
-			PT_(to_key)(tree.leaves[0].data)); /* fixme: or link! */
+			PT_(to_key)(tree.leaves[0].data));
 	}
 	fprintf(fp, "\t}\n\n");
+	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
+		PT_(graph_tree)(tree.leaves[i].child, fp);
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format. */
@@ -158,8 +179,7 @@ static void PT_(test)(void) {
 		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
 		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
 			(unsigned long)n + 1lu);
-		PT_(graph)(&trie, fn);
-		printf("Graph %s.\n", fn);
+		printf("Graph %s.\n", fn), PT_(graph)(&trie, fn);
 		assert(!errno || (perror("Check"), 0));
 		if(!es[n].is_in) { printf("Duplicate value %s -> %s.\n",
 			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie)); continue; };

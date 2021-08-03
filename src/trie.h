@@ -96,6 +96,85 @@ static const unsigned trie_gauge_bsizes[] = {
 };
 static const unsigned trie_gauge_count
 	= sizeof trie_gauge_bsizes / sizeof *trie_gauge_bsizes;
+/** Inserts 0 in the bit-addressed `insert` in the `bmp` with `bmp_size` bytes.
+ All the other bits past the `insert` are shifted right, and one bit at the end
+ is erased. */
+static void trie_bmp_insert(unsigned char *const bmp, size_t bmp_size,
+	const unsigned insert) {
+	size_t insert_byte = insert / CHAR_BIT;
+	unsigned char a = bmp[insert_byte], carry = a & 1, b = a >> 1;
+	const unsigned char mask = 127 >> (insert & 7); /* Assumes `CHAR_BIT`. */
+	assert(bmp && insert_byte < bmp_size);
+	/* <https://graphics.stanford.edu/~seander/bithacks.html#MaskedMerge>. */
+	bmp[insert_byte++] = (a ^ ((a ^ b) & mask)) & ~(mask + 1);
+	while(insert_byte < bmp_size) {
+		a = bmp[insert_byte];
+		b = (unsigned char)(carry << 7) | (a >> 1);
+		carry = a & 1;
+		bmp[insert_byte++] = b;
+	}
+}
+/** Moves and overwrites `bmp_b` with `bit_offset` to `bit_range` from
+ `bmp_a`. Both must have maximum gauge, `TRIE_ORDER` leaves. `bmp_a` has the
+ moved part replaced with a single bit, '1'. */
+static void trie_bmp_move(unsigned char *const bmp_a, const unsigned bit_offset,
+	const unsigned bit_range, unsigned char *const bmp_b) {
+	assert(bmp_a && bmp_b);
+	assert(bit_range && bit_offset + bit_range <= TRIE_ORDER);
+	{ /* Copy a contiguous subset of bits from `a` into the new array, `b`. */
+		const unsigned a = bit_offset >> 3, a_bit = bit_offset & 7;
+		unsigned b, rest;
+		for(b = 0, rest = bit_range; rest > 8; b++, rest -= 8)
+			bmp_b[b] = (unsigned char)(bmp_a[a + b] << a_bit)
+			| (bmp_a[a + b + 1] >> (8 - a_bit));
+		bmp_b[b] = (unsigned char)(bmp_a[a + b] << a_bit);
+		if(a + b < (bit_offset + bit_range) >> 3)
+			bmp_b[b] |= (bmp_a[a + b + 1] >> (8 - a_bit));
+		bmp_b[b++] &= ~(255 >> rest);
+		memset(bmp_b + b, 0, TRIE_BMP_ALIGN_SIZE(TRIE_ORDER) - b);
+	}
+	{ /* Replace copied bits from `a` with '1'. */
+		const unsigned a = bit_offset >> 3, a_bit = bit_offset & 7;
+		bmp_a[a] |= 128 >> a_bit;
+	}
+	{ /* Move bits back in `a`. */
+		unsigned a0 = (bit_offset + 1) >> 3, a1 = (bit_offset + bit_range) >> 3;
+		const unsigned a0_bit = (bit_offset + 1) & 7,
+			a1_bit = (bit_offset + bit_range) & 7;
+		assert(a0 <= TRIE_BMP_SIZE(TRIE_ORDER)
+			&& a1 <= TRIE_BMP_SIZE(TRIE_ORDER));
+		if(a1 == TRIE_BMP_SIZE(TRIE_ORDER)) { /* On the trailing edge. */
+			assert(!a1_bit); /* Extreme right. */
+			if(a0 == TRIE_BMP_SIZE(TRIE_ORDER)) assert(!a0_bit);
+			else bmp_a[a0++] &= 255 << 8-a0_bit;
+		} else if(a1_bit < a0_bit) { /* Inversion of shift. */
+			const unsigned shift = a0_bit - a1_bit;
+			assert(a0 < a1);
+			{
+				const unsigned char bmp_a_a0 = bmp_a[a0],
+					bmp_a_a1 = bmp_a[a1] >> shift,
+					mask = 255 >> a0_bit;
+				bmp_a[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
+			}
+			while(++a0, ++a1 < TRIE_BMP_SIZE(TRIE_ORDER)) bmp_a[a0]
+				= (unsigned char)(bmp_a[a1 - 1] <<8-shift | bmp_a[a1] >>shift);
+			bmp_a[a0++] = (unsigned char)(bmp_a[a1 - 1] << 8-shift);
+		} else { /* Shift right or zero. */
+			const unsigned shift = a1_bit - a0_bit;
+			assert(a0 <= a1);
+			{
+				const unsigned char bmp_a_a0 = bmp_a[a0],
+					bmp_a_a1 = (unsigned char)(bmp_a[a1] << shift),
+					mask = 255 >> a0_bit;
+				bmp_a[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
+			}
+			while(++a0, ++a1 < TRIE_BMP_SIZE(TRIE_ORDER))
+				bmp_a[a0 - 1] |= bmp_a[a1] >> 8-shift,
+				bmp_a[a0] = (unsigned char)(bmp_a[a1] << shift);
+		}
+		memset(bmp_a + a0, 0, TRIE_BMP_SIZE(TRIE_ORDER) - a0);
+	}
+}
 #endif /* idempotent --> */
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -271,7 +350,7 @@ static union PT_(any_gauge) PT_(expand)(const union PT_(any_gauge) any) {
 }
 
 /** @return Success splitting the tree `forest_idx` of `trie`. Must be full. */
-static union PT_(any_gauge) PT_(split)(union PT_(any_gauge) any) {
+static int PT_(split)(union PT_(any_gauge) any) {
 	struct PT_(tree) tree;
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct { unsigned br0, br1; } in_write;
@@ -319,8 +398,11 @@ right:
 	printf("-> split on [%u,%u]:%u.\n", in_tree.br0, in_tree.br1, in_tree.lf);
 	/* Split off a new tree. */
 	if(!(split = malloc(sizeof *split)))
-		{ if(!errno) errno = ERANGE; return (union PT_(any_gauge)){ 0 }; };
-	/*memset(split->link, 0, ??);*/
+		{ if(!errno) errno = ERANGE; return 0; }
+	split->info.bsize = 0;
+#define X(n, m) split->info.gauge = n;
+	TRIE_GAUGE_LAST_X
+#undef X
 	/* Re-descend and decrement branches in preparation to split. */
 	in_write.br0 = 0, in_write.br1 = tree.bsize;
 	while(in_write.br0 < in_tree.br0) {
@@ -336,7 +418,6 @@ right:
 		unsigned b;
 		printf("branches: {"); for(b = 0; b < TRIE_MAX_BRANCH; b++) printf("%s%u", b ? ", " : "", tree.branches[b].left); printf("}\n");
 	}
-
 	/* Move leaves. */
 	memcpy(split->leaves, tree.leaves + in_tree.lf,
 		sizeof *tree.leaves * (in_tree.br1 - in_tree.br0 + 1));
@@ -347,25 +428,36 @@ right:
 #define X(n, m) tree.leaves[in_tree.lf].child.g##n = split;
 	TRIE_GAUGE_LAST_X
 #undef X
-	/*bmp_move(tree.link, in_tree.lf, in_tree.br1 - in_tree.br0 + 1,
-		split->link);fixme*/
+	/* Move link bitmap. */
+	trie_bmp_move(tree.link, in_tree.lf, in_tree.br1 - in_tree.br0 + 1,
+		split->link);
+	{
+		size_t i;
+		printf("Old:");
+		for(i = 0; i < TRIE_ORDER; i++)
+			printf("%u", !!TRIE_BITTEST(tree.link, i));
+		printf("\n");
+		printf("New:");
+		for(i = 0; i < TRIE_ORDER; i++)
+		printf("%u", !!TRIE_BITTEST(split->link, i));
+		printf("\n");
+	}
 	/* Move branches. */
 	memcpy(split->branches, tree.branches + in_tree.br0,
 		sizeof *tree.branches * (in_tree.br1 - in_tree.br0));
 	memmove(tree.branches + in_tree.br0, tree.branches
 		+ in_tree.br1, sizeof *tree.branches * (TRIE_MAX_BRANCH - in_tree.br1));
-	/* Move branch size. */
-	tree.bsize -= in_tree.br1 - in_tree.br0;
+	/* Move branch size. *//* tree.bsize -= in_tree.br1 - in_tree.br0; */
+	any.key->bsize -= in_tree.br1 - in_tree.br0;
 	split->info.bsize += in_tree.br1 - in_tree.br0;
-	errno = ERANGE;
-	return (union PT_(any_gauge)){0};
+	return 1;
 }
 
 /** @return The leftmost key `lf` of key `any`. */
 static const char *PT_(sample)(union PT_(any_gauge) any, unsigned lf) {
 	struct PT_(tree) tree;
 	assert(any.key);
-	while(PT_(extract)(any, &tree), TRIE_BITTEST(tree.link, 0))
+	while(PT_(extract)(any, &tree), TRIE_BITTEST(tree.link, lf))
 		any = tree.leaves[lf].child, lf = 0;
 	return PT_(to_key)(tree.leaves[lf].data);
 }
@@ -440,9 +532,8 @@ leaf:
 	/* If the tree is full, split it. */
 	assert(tree.bsize <= TRIE_MAX_BRANCH);
 	if(tree.bsize == TRIE_MAX_BRANCH) {
-		union PT_(any_gauge) any = PT_(split)(in_forest.any);
-		if(!any.key) return printf("add: fail store split.\n"), 0;
-		*in_forest.ref = in_forest.any = any;
+		if(!PT_(split)(in_forest.any)) return printf("add: fail store split.\n"), 0;
+		printf("add: split %s.\n", T_(trie_to_string)(trie));
 		assert(!is_split && (is_split = 1));
 		printf("add: splitting tree %p.\n", (void *)in_forest.any.key);
 		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
