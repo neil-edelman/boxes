@@ -321,7 +321,7 @@ right:
 	if(!(split = malloc(sizeof *split)))
 		{ if(!errno) errno = ERANGE; return (union PT_(any_gauge)){ 0 }; };
 	/*memset(split->link, 0, ??);*/
-	/* Decrement branches in preparation to split. */
+	/* Re-descend and decrement branches in preparation to split. */
 	in_write.br0 = 0, in_write.br1 = tree.bsize;
 	while(in_write.br0 < in_tree.br0) {
 		struct trie_branch *const branch = tree.branches + in_write.br0;
@@ -337,38 +337,26 @@ right:
 		printf("branches: {"); for(b = 0; b < TRIE_MAX_BRANCH; b++) printf("%s%u", b ? ", " : "", tree.branches[b].left); printf("}\n");
 	}
 
-#if 0
-	dec.br0 = 0, dec.br1 = tree.old->bsize;
-	while(dec.br0 < go.node.br0) {
-		branch = tree.old->branches + dec.br0;
-		if(go.node.br0 <= dec.br0 + branch->left) {
-			dec.br1 = ++dec.br0 + branch->left;
-			branch->left -= go.parent.branches;
-		} else {
-			dec.br0 += branch->left + 1;
-		}
-	}
 	/* Move leaves. */
-	assert(go.node.lf + go.parent.branches + 1 <= tree.old->bsize + 1
-		&& go.parent.branches /* Even for `TRIE_MAX_LEFT 0`? */);
-	memcpy(tree.new->leaves, tree.old->leaves + go.node.lf,
-		sizeof *leaf * (go.parent.branches + 1));
-	memmove(tree.old->leaves + go.node.lf + 1,
-		tree.old->leaves + go.node.lf + go.parent.branches + 1,
-		sizeof *leaf * (tree.old->bsize - go.node.lf - go.parent.branches));
-	tree.old->leaves[go.node.lf].link = (size_t)(tree.new - forest->data);
-	bmp_move(tree.old->link, go.node.lf, go.parent.branches + 1,
-		tree.new->link);
+	memcpy(split->leaves, tree.leaves + in_tree.lf,
+		sizeof *tree.leaves * (in_tree.br1 - in_tree.br0 + 1));
+	memmove(tree.leaves + in_tree.lf + 1,
+		tree.leaves + in_tree.lf + (in_tree.br1 - in_tree.br0 + 1),
+		sizeof *tree.leaves * (TRIE_MAX_BRANCH - in_tree.lf
+		- in_tree.br1 + in_tree.br0));
+#define X(n, m) tree.leaves[in_tree.lf].child.g##n = split;
+	TRIE_GAUGE_LAST_X
+#undef X
+	/*bmp_move(tree.link, in_tree.lf, in_tree.br1 - in_tree.br0 + 1,
+		split->link);fixme*/
 	/* Move branches. */
-	assert(go.node.br1 - go.node.br0 == go.parent.branches);
-	memcpy(tree.new->branches, tree.old->branches + go.node.br0,
-		sizeof *branch * go.parent.branches);
-	memmove(tree.old->branches + go.node.br0, tree.old->branches
-		+ go.node.br1, sizeof *branch * (tree.old->bsize - go.node.br1));
+	memcpy(split->branches, tree.branches + in_tree.br0,
+		sizeof *tree.branches * (in_tree.br1 - in_tree.br0));
+	memmove(tree.branches + in_tree.br0, tree.branches
+		+ in_tree.br1, sizeof *tree.branches * (TRIE_MAX_BRANCH - in_tree.br1));
 	/* Move branch size. */
-	tree.old->bsize -= go.parent.branches;
-	tree.new->bsize += go.parent.branches;
-#endif
+	tree.bsize -= in_tree.br1 - in_tree.br0;
+	split->info.bsize += in_tree.br1 - in_tree.br0;
 	errno = ERANGE;
 	return (union PT_(any_gauge)){0};
 }
