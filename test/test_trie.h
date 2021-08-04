@@ -70,10 +70,11 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 				unsigned leaf = PT_(left_leaf)(any, b);
 				if(TRIE_BITTEST(tree.link, leaf)) {
 					fprintf(fp,
-						"tree%pbranch0 [style = dashed, color = royalblue];\n",
+						"tree%pbranch0 [style = dashed, color = firebrick];\n",
 						(void *)tree.leaves[leaf].child.key);
 				} else {
-					fprintf(fp, "tree%pleaf%u [style = dashed];\n",
+					fprintf(fp,
+						"tree%pleaf%u [style = dashed, color = royalblue];\n",
 						(void *)any.key, leaf);
 				}
 			}
@@ -84,10 +85,11 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 			} else {
 				unsigned leaf = PT_(left_leaf)(any, b) + left + 1;
 				if(TRIE_BITTEST(tree.link, leaf)) {
-					fprintf(fp, "tree%pbranch0 [color = royalblue];\n",
+					fprintf(fp, "tree%pbranch0 [color = firebrick];\n",
 						(void *)tree.leaves[leaf].child.key);
 				} else {
-					fprintf(fp, "tree%pleaf%u;\n", (void *)any.key, leaf);
+					fprintf(fp, "tree%pleaf%u [color = royalblue];\n",
+						(void *)any.key, leaf);
 				}
 			}
 		}
@@ -97,7 +99,8 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 	} else {
 		/* Instead of creating a lookahead function to previous references, we
 		 very lazily also just call this a branch, even though it's a leaf. */
-		assert(!TRIE_BITTEST(tree.link, 0)); /* fixme: should be possible. */
+		assert(!TRIE_BITTEST(tree.link, 0)); /* fixme:
+		 should be possible; then what? */
 		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (void *)any.key,
 			PT_(to_key)(tree.leaves[0].data));
 	}
