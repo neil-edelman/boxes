@@ -114,28 +114,29 @@ static void trie_bmp_insert(unsigned char *const bmp, size_t bmp_size,
 		bmp[insert_byte++] = b;
 	}
 }
-/** Moves and overwrites `bmp_b` with `bit_offset` to `bit_range` from
- `bmp_a`. Both must have maximum gauge, `TRIE_ORDER` leaves. `bmp_a` has the
+/** Moves and overwrites `child` with `bit_offset` to `bit_range` from
+ `parent`. Both must have maximum gauge, `TRIE_ORDER` leaves. `parent` has the
  moved part replaced with a single bit, '1'. */
-static void trie_bmp_move(unsigned char *const bmp_a, const unsigned bit_offset,
-	const unsigned bit_range, unsigned char *const bmp_b) {
-	assert(bmp_a && bmp_b);
+static void trie_bmp_child(unsigned char *const parent,
+	unsigned char *const child,
+	const unsigned bit_offset, const unsigned bit_range) {
+	assert(parent && child);
 	assert(bit_range && bit_offset + bit_range <= TRIE_ORDER);
 	{ /* Copy a contiguous subset of bits from `a` into the new array, `b`. */
 		const unsigned a = bit_offset >> 3, a_bit = bit_offset & 7;
 		unsigned b, rest;
 		for(b = 0, rest = bit_range; rest > 8; b++, rest -= 8)
-			bmp_b[b] = (unsigned char)(bmp_a[a + b] << a_bit)
-			| (bmp_a[a + b + 1] >> (8 - a_bit));
-		bmp_b[b] = (unsigned char)(bmp_a[a + b] << a_bit);
+			child[b] = (unsigned char)(parent[a + b] << a_bit)
+			| (parent[a + b + 1] >> (8 - a_bit));
+		child[b] = (unsigned char)(parent[a + b] << a_bit);
 		if(a + b < (bit_offset + bit_range) >> 3)
-			bmp_b[b] |= (bmp_a[a + b + 1] >> (8 - a_bit));
-		bmp_b[b++] &= ~(255 >> rest);
-		memset(bmp_b + b, 0, TRIE_BMP_ALIGN_SIZE(TRIE_ORDER) - b);
+			child[b] |= (parent[a + b + 1] >> (8 - a_bit));
+		child[b++] &= ~(255 >> rest);
+		memset(child + b, 0, TRIE_BMP_ALIGN_SIZE(TRIE_ORDER) - b);
 	}
 	{ /* Replace copied bits from `a` with '1'. */
 		const unsigned a = bit_offset >> 3, a_bit = bit_offset & 7;
-		bmp_a[a] |= 128 >> a_bit;
+		parent[a] |= 128 >> a_bit;
 	}
 	{ /* Move bits back in `a`. */
 		unsigned a0 = (bit_offset + 1) >> 3, a1 = (bit_offset + bit_range) >> 3;
@@ -146,33 +147,33 @@ static void trie_bmp_move(unsigned char *const bmp_a, const unsigned bit_offset,
 		if(a1 == TRIE_BMP_SIZE(TRIE_ORDER)) { /* On the trailing edge. */
 			assert(!a1_bit); /* Extreme right. */
 			if(a0 == TRIE_BMP_SIZE(TRIE_ORDER)) assert(!a0_bit);
-			else bmp_a[a0++] &= 255 << 8-a0_bit;
+			else parent[a0++] &= 255 << 8-a0_bit;
 		} else if(a1_bit < a0_bit) { /* Inversion of shift. */
 			const unsigned shift = a0_bit - a1_bit;
 			assert(a0 < a1);
 			{
-				const unsigned char bmp_a_a0 = bmp_a[a0],
-					bmp_a_a1 = bmp_a[a1] >> shift,
+				const unsigned char bmp_a_a0 = parent[a0],
+					bmp_a_a1 = parent[a1] >> shift,
 					mask = 255 >> a0_bit;
-				bmp_a[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
+				parent[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
 			}
-			while(++a0, ++a1 < TRIE_BMP_SIZE(TRIE_ORDER)) bmp_a[a0]
-				= (unsigned char)(bmp_a[a1 - 1] <<8-shift | bmp_a[a1] >>shift);
-			bmp_a[a0++] = (unsigned char)(bmp_a[a1 - 1] << 8-shift);
+			while(++a0, ++a1 < TRIE_BMP_SIZE(TRIE_ORDER)) parent[a0]
+				= (unsigned char)(parent[a1 - 1] <<8-shift | parent[a1] >>shift);
+			parent[a0++] = (unsigned char)(parent[a1 - 1] << 8-shift);
 		} else { /* Shift right or zero. */
 			const unsigned shift = a1_bit - a0_bit;
 			assert(a0 <= a1);
 			{
-				const unsigned char bmp_a_a0 = bmp_a[a0],
-					bmp_a_a1 = (unsigned char)(bmp_a[a1] << shift),
+				const unsigned char bmp_a_a0 = parent[a0],
+					bmp_a_a1 = (unsigned char)(parent[a1] << shift),
 					mask = 255 >> a0_bit;
-				bmp_a[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
+				parent[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
 			}
 			while(++a0, ++a1 < TRIE_BMP_SIZE(TRIE_ORDER))
-				bmp_a[a0 - 1] |= bmp_a[a1] >> 8-shift,
-				bmp_a[a0] = (unsigned char)(bmp_a[a1] << shift);
+				parent[a0 - 1] |= parent[a1] >> 8-shift,
+				parent[a0] = (unsigned char)(parent[a1] << shift);
 		}
-		memset(bmp_a + a0, 0, TRIE_BMP_SIZE(TRIE_ORDER) - a0);
+		memset(parent + a0, 0, TRIE_BMP_SIZE(TRIE_ORDER) - a0);
 	}
 }
 #endif /* idempotent --> */
@@ -429,8 +430,8 @@ right:
 	TRIE_GAUGE_LAST_X
 #undef X
 	/* Move link bitmap. */
-	trie_bmp_move(tree.link, in_tree.lf, in_tree.br1 - in_tree.br0 + 1,
-		split->link);
+	trie_bmp_child(tree.link, split->link,
+		in_tree.lf, in_tree.br1 - in_tree.br0 + 1);
 	{
 		size_t i;
 		printf("Old:");

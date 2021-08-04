@@ -42,15 +42,17 @@ static unsigned PT_(left_leaf)(union PT_(any_gauge) any, const unsigned b) {
 	return i;
 }
 
+/** Graphs `any` on `fp`. */
 static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
 	unsigned left, right, b, i;
 	assert(any.key && fp);
 	PT_(extract)(any, &tree);
-	fprintf(fp, "\tsubgraph cluster_tree%p {\n"
-		"\t\tstyle = filled;\n"
-		"\t\tlabel = \"leaves %u/%u; gauge%u (%u); %uB\";\n",
+	fprintf(fp, "\t//subgraph cluster_tree%p { "
+		"// confuse the order in dot\n"
+		"\t\t//style = filled;\n"
+		"\t\t//label = \"leaves %u/%u; gauge%u (%u); %uB\";\n",
 		(void *)any.key, /*tree.is_internal ? "internal" : "leaf"<-this obv,*/
 		tree.bsize + 1, trie_gauge_bsizes[tree.gauge] + 1,
 		tree.gauge, trie_gauge_count,
@@ -69,9 +71,10 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 			} else {
 				unsigned leaf = PT_(left_leaf)(any, b);
 				if(TRIE_BITTEST(tree.link, leaf)) {
-					fprintf(fp,
-						"tree%pbranch0 [style = dashed, color = firebrick];\n",
-						(void *)tree.leaves[leaf].child.key);
+					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
+						"style = dashed, color = firebrick, penwidth = 2];\n",
+						(void *)tree.leaves[leaf].child.key,
+						PT_(gauge_sizes)[tree.leaves[leaf].child.key->gauge]);
 				} else {
 					fprintf(fp,
 						"tree%pleaf%u [style = dashed, color = royalblue];\n",
@@ -85,8 +88,10 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 			} else {
 				unsigned leaf = PT_(left_leaf)(any, b) + left + 1;
 				if(TRIE_BITTEST(tree.link, leaf)) {
-					fprintf(fp, "tree%pbranch0 [color = firebrick];\n",
-						(void *)tree.leaves[leaf].child.key);
+					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
+						"color = firebrick, penwidth = 2];\n",
+						(void *)tree.leaves[leaf].child.key,
+						PT_(gauge_sizes)[tree.leaves[leaf].child.key->gauge]);
 				} else {
 					fprintf(fp, "tree%pleaf%u [color = royalblue];\n",
 						(void *)any.key, leaf);
@@ -104,7 +109,7 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (void *)any.key,
 			PT_(to_key)(tree.leaves[0].data));
 	}
-	fprintf(fp, "\t}\n\n");
+	fprintf(fp, "\t//}\n\n");
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
 		PT_(graph_tree)(tree.leaves[i].child, fp);
 }
@@ -124,8 +129,9 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		(unsigned long)sizeof *trie, trie->root.key ? "" : "\\l|idle\\l");
 	/* "\tnode [shape = none, fillcolor = none];\n" */
 	if(trie->root.key) {
-		fprintf(fp, "\ttrie -> tree%pbranch0 [color = firebrick];\n",
-			(void *)trie->root.key);
+		fprintf(fp, "\ttrie -> tree%pbranch0 [label = \"%uB\", "
+			"color = firebrick, penwidth = 2];\n", (void *)trie->root.key,
+			PT_(gauge_sizes)[trie->root.key->gauge]);
 		PT_(graph_tree)(trie->root, fp);
 	}
 	/* color = royalblue */
