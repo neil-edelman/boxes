@@ -252,17 +252,17 @@ struct T_(trie) { union PT_(any_gauge) root; };
 static const char *(*PT_(to_key))(const PT_(type) *a) = (TRIE_KEY);
 
 /** @return `tree` for the kind of tree storage in the compact `any`. */
-static void PT_(extract)(const union PT_(any_gauge) any,
+static void PT_(extract)(const union PT_(any_gauge) store,
 	struct PT_(tree) *const tree) {
-	assert(any.key && tree);
-	tree->bsize = any.key->bsize;
-	tree->gauge = any.key->gauge;
+	assert(store.key && tree);
+	tree->bsize = store.key->bsize;
+	tree->gauge = store.key->gauge;
 	switch(tree->gauge) {
 	case 0: /* Special case where there are no branches. */
-		tree->branches = 0; tree->link = any.g0->link;
-		tree->leaves = any.g0->leaves; break;
-#define X(n, m) case n: tree->branches = any.g##n->branches; \
-	tree->link = any.g##n->link; tree->leaves = any.g##n->leaves; break;
+		tree->branches = 0; tree->link = store.g0->link;
+		tree->leaves = store.g0->leaves; break;
+#define X(n, m) case n: tree->branches = store.g##n->branches; \
+	tree->link = store.g##n->link; tree->leaves = store.g##n->leaves; break;
 		TRIE_GAUGE_TAIL_X
 #undef X
 	default: assert(0);
@@ -612,52 +612,53 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 
 /** Advances `it`. @implements next */
 static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
-	union PT_(any_gauge) any;
+	union PT_(any_gauge) cur;
 	struct PT_(tree) tree;
 	assert(it && it->trie);
-	if(!(any.key = it->cur.key)) { /* Starting. Descend to first leaf. */
-		if(!(any = it->trie->root).key) return 0; /* Empty. */
-		while(PT_(extract)(any, &tree), TRIE_BITTEST(tree.link, 0))
-			any = tree.leaves[0].child;
-		it->cur = any, it->i = 0;
+	if(!(cur.key = it->cur.key)) { /* Starting. Descend to first leaf. */
+		if(!(cur = it->trie->root).key) return 0; /* Empty. */
+		while(PT_(extract)(cur, &tree), TRIE_BITTEST(tree.link, 0))
+			cur = tree.leaves[0].child;
+		it->cur = cur, it->i = 0;
 	} else { /* Iterating. */
-		PT_(extract)(any, &tree);
-		if(++it->i > tree.bsize) return printf("ohoh\n"), 0;
-		/*struct { union PT_(any_gauge) any; unsigned i; } backup = { {0}, 0 };*/
-		while(TRIE_BITTEST(tree.link, it->i))
-			it->i = 0, PT_(extract)(any = tree.leaves[0].child, &tree);
-	}
-	/*	PT_(extract)(any, &tree);
-		if(it->i > tree.bsize) {
-			const char *key = PT_(to_key)(tree.leaves[tree.bsize].data);
-			union PT_(any_gauge) any1 = it->trie->root; */
-			/*union PT_(any_gauge) store = trie->root;
-			struct PT_(tree) tree;
-			const struct trie_branch *branch;
-			struct { unsigned br0, br1, lf; } in_tree;
-			assert(trie && key);
-			if(!store.key) return 0;
-			for(byte.cur = 0, bit = 0; ; ) {
-				PT_(extract)(store, &tree);
-				in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
-				while(in_tree.br0 < in_tree.br1) {
-					branch = tree.branches + in_tree.br0;
-					for(byte.next = (bit += branch->skip) / CHAR_BIT;
-						byte.cur < byte.next; byte.cur++)
-						if(key[byte.cur] == '\0') return 0;
-					if(!TRIE_BITTEST(key, bit))
-						in_tree.br1 = ++in_tree.br0 + branch->left;
+		PT_(extract)(cur, &tree);
+		if(++it->i > tree.bsize) { /* Finished tree; restart down next. */
+			/* Any one from the tree will do; we just need to match the path.
+			 The last one is definitely a data leaf. */
+			const char *key = PT_(to_key)(tree.leaves[it->i - 1].data);
+			const union PT_(any_gauge) store1 = cur;
+			union PT_(any_gauge) store2 = it->trie->root;
+			struct PT_(tree) tree2;
+			size_t bit2 = 0;
+			const struct trie_branch *branch2;
+			struct { unsigned br0, br1, lf; } in_tree2;
+			assert(key && store2.key);
+			printf("next: got stuck on %s.\n", PT_(to_key)(tree.leaves[it->i - 1].data));
+			for(it->cur.key = 0, it->i = 0; ; ) {
+				if(store1.key == store2.key) break; /* Reached the tree. */
+				PT_(extract)(store2, &tree2);
+				in_tree2.br0 = 0, in_tree2.br1 = tree2.bsize, in_tree2.lf = 0;
+				while(in_tree2.br0 < in_tree2.br1) {
+					branch2 = tree2.branches + in_tree2.br0;
+					bit2 += branch2->skip;
+					if(!TRIE_BITTEST(key, bit2))
+						in_tree2.br1 = ++in_tree2.br0 + branch2->left;
 					else
-						in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
-					bit++;
+						in_tree2.br0 += branch2->left + 1,
+						in_tree2.lf += branch2->left + 1;
+					bit2++;
 				}
-				if(!TRIE_BITTEST(tree.link, in_tree.lf)) break;
-				store = tree.leaves[in_tree.lf].child;
-			};
-			return tree.leaves[in_tree.lf].data;
-			return 0;
+				/* We found a continuation. */
+				if(in_tree2.lf < tree2.bsize)
+					it->cur.key = store2.key, it->i = in_tree2.lf + 1;
+				assert(TRIE_BITTEST(tree2.link, in_tree2.lf));
+				store2 = tree2.leaves[in_tree2.lf].child;
+			}
+			if(!it->cur.key) { assert(!it->i); return 0; } /* No more. */
 		}
-	}*/
+		while(TRIE_BITTEST(tree.link, it->i)) /* Move one over. */
+			PT_(extract)(cur = tree.leaves[it->i = 0].child, &tree);
+	}
 	return tree.leaves[it->i].data;
 }
 
