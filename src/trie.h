@@ -633,7 +633,8 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 			const struct trie_branch *branch2;
 			struct { unsigned br0, br1, lf; } in_tree2;
 			assert(key && store2.key);
-			printf("next: got stuck on %s.\n", PT_(to_key)(tree.leaves[it->i - 1].data));
+			/*printf("next: got stuck on %s.\n",
+				PT_(to_key)(tree.leaves[it->i - 1].data));*/
 			for(it->cur.key = 0, it->i = 0; ; ) {
 				if(store1.key == store2.key) break; /* Reached the tree. */
 				PT_(extract)(store2, &tree2);
@@ -650,11 +651,13 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 				}
 				/* We found a continuation. */
 				if(in_tree2.lf < tree2.bsize)
-					it->cur.key = store2.key, it->i = in_tree2.lf + 1;
+					it->cur.key = store2.key, it->i = in_tree2.lf + 1/*,
+					printf("Continues in %s.\n", PT_(to_key)(tree2.leaves[it->i].data))*/;
 				assert(TRIE_BITTEST(tree2.link, in_tree2.lf));
 				store2 = tree2.leaves[in_tree2.lf].child;
 			}
 			if(!it->cur.key) { assert(!it->i); return 0; } /* No more. */
+			PT_(extract)(it->cur, &tree); /* Update tree. */
 		}
 		while(TRIE_BITTEST(tree.link, it->i)) /* Move one over. */
 			PT_(extract)(cur = tree.leaves[it->i = 0].child, &tree);
