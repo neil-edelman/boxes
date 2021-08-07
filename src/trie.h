@@ -327,10 +327,10 @@ static union PT_(any_gauge) PT_(expand)(const union PT_(any_gauge) any) {
 	if(!(larger.key = realloc(any.key, PT_(gauge_sizes)[tree0.gauge + 1])))
 		{ if(!errno) errno = ERANGE; return larger; }
 	PT_(extract)(larger, &tree0); /* The address may have changed. */
-	/*printf("expand: #%p width%u %luB -> #%p store%u %luB\n", (void *)any.key,
+	printf("expand: #%p width%u %luB -> #%p store%u %luB\n", (void *)any.key,
 		tree0.gauge, (unsigned long)PT_(gauge_sizes)[tree0.gauge],
 		(void *)larger.key, tree0.gauge + 1,
-		(unsigned long)PT_(gauge_sizes)[tree0.gauge + 1]);*/
+		(unsigned long)PT_(gauge_sizes)[tree0.gauge + 1]);
 	/* Augment the allocation size. */
 	larger.key->gauge++;
 	PT_(extract)(larger, &tree1);
@@ -349,6 +349,10 @@ static union PT_(any_gauge) PT_(expand)(const union PT_(any_gauge) any) {
 	return larger;
 }
 
+/* fixme */
+static void PT_(graph_mem)(const struct T_(trie) *const trie,
+	const char *const fn);
+
 /** @return Success splitting the tree `forest_idx` of `trie`. Must be full. */
 static int PT_(split)(union PT_(any_gauge) any) {
 	struct PT_(tree) tree;
@@ -364,10 +368,10 @@ static int PT_(split)(union PT_(any_gauge) any) {
 		tree.bsize, tree.gauge, trie_gauge_bsizes[tree.gauge]);
 	assert(tree.bsize == TRIE_MAX_BRANCH
 		&& tree.gauge == trie_gauge_count - 1);
-	/*{
+	{
 		unsigned b;
 		printf("branches: {"); for(b = 0; b < TRIE_MAX_BRANCH; b++) printf("%s%u", b ? ", " : "", tree.branches[b].left); printf("}\n");
-	}*/
+	}
 	in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
 	for(balance.opt = TRIE_MAX_BRANCH; ; ) { /* Descend branches of tree. */
 		const struct trie_branch *const branch = tree.branches + in_tree.br0;
@@ -403,6 +407,7 @@ right:
 #define X(n, m) split->info.gauge = n;
 	TRIE_GAUGE_LAST_X
 #undef X
+	printf("split: new split %p.\n", (void *)split);
 	/* Re-descend and decrement branches in preparation to split. */
 	in_write.br0 = 0, in_write.br1 = tree.bsize;
 	while(in_write.br0 < in_tree.br0) {
@@ -414,10 +419,10 @@ right:
 			in_write.br0 += branch->left + 1;
 		}
 	}
-	/*{
+	{
 		unsigned b;
 		printf("branches: {"); for(b = 0; b < TRIE_MAX_BRANCH; b++) printf("%s%u", b ? ", " : "", tree.branches[b].left); printf("}\n");
-	}*/
+	}
 	/* Move leaves. */
 	memcpy(split->leaves, tree.leaves + in_tree.lf,
 		sizeof *tree.leaves * (in_tree.br1 - in_tree.br0 + 1));
@@ -532,6 +537,17 @@ leaf:
 	assert(tree.bsize <= TRIE_MAX_BRANCH);
 	if(tree.bsize == TRIE_MAX_BRANCH) {
 		if(!PT_(split)(in_forest.any)) return 0;
+		PT_(graph_mem)(trie, "graph/mem.gv");
+		{
+			struct PT_(tree) fuck;
+			unsigned i;
+			PT_(extract)(in_forest.any, &fuck);
+			printf("fuck: ");
+			for(i = 0; i <= fuck.bsize; i++) {
+				printf("%u", !!TRIE_BITTEST(fuck.link, i));
+			}
+			printf("\n");
+		}
 		printf("add: split %s.\n", T_(trie_to_string)(trie));
 		assert(!is_split && (is_split = 1));
 		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
@@ -612,29 +628,29 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 
 /** Advances `it`. @implements next */
 static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
-	union PT_(any_gauge) cur;
+	/*union PT_(any_gauge) cur;*/
 	struct PT_(tree) tree;
 	assert(it && it->trie);
-	if(!(cur.key = it->cur.key)) { /* Starting. Descend to first leaf. */
-		if(!(cur = it->trie->root).key) return 0; /* Empty. */
-		while(PT_(extract)(cur, &tree), TRIE_BITTEST(tree.link, 0))
-			cur = tree.leaves[0].child;
-		it->cur = cur, it->i = 0;
+	if(!it->cur.key) { /* Starting. Descend to first leaf. */
+		if(!(it->cur = it->trie->root).key) return 0; /* Empty. */
+		while(PT_(extract)(it->cur, &tree), TRIE_BITTEST(tree.link, 0))
+			it->cur = tree.leaves[0].child;
+		it->i = 0;
 	} else { /* Iterating. */
-		PT_(extract)(cur, &tree);
+		PT_(extract)(it->cur, &tree);
 		if(++it->i > tree.bsize) { /* Finished tree; restart down next. */
 			/* Any one from the tree will do; we just need to match the path.
 			 The last one is definitely a data leaf. */
 			const char *key = PT_(to_key)(tree.leaves[it->i - 1].data);
-			const union PT_(any_gauge) store1 = cur;
+			const union PT_(any_gauge) store1 = it->cur;
 			union PT_(any_gauge) store2 = it->trie->root;
 			struct PT_(tree) tree2;
 			size_t bit2 = 0;
 			const struct trie_branch *branch2;
 			struct { unsigned br0, br1, lf; } in_tree2;
 			assert(key && store2.key);
-			/*printf("next: got stuck on %s.\n",
-				PT_(to_key)(tree.leaves[it->i - 1].data));*/
+			printf("next: got stuck on %s.\n",
+				PT_(to_key)(tree.leaves[it->i - 1].data));
 			for(it->cur.key = 0, it->i = 0; ; ) {
 				if(store1.key == store2.key) break; /* Reached the tree. */
 				PT_(extract)(store2, &tree2);
@@ -651,16 +667,20 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 				}
 				/* We found a continuation. */
 				if(in_tree2.lf < tree2.bsize)
-					it->cur.key = store2.key, it->i = in_tree2.lf + 1/*,
-					printf("Continues in %s.\n", PT_(to_key)(tree2.leaves[it->i].data))*/;
+					it->cur.key = store2.key, it->i = in_tree2.lf + 1,
+					printf("next: continues in tree %p, leaf %u.\n",
+						(void *)store2.key, it->i);
 				assert(TRIE_BITTEST(tree2.link, in_tree2.lf));
 				store2 = tree2.leaves[in_tree2.lf].child;
 			}
 			if(!it->cur.key) { assert(!it->i); return 0; } /* No more. */
 			PT_(extract)(it->cur, &tree); /* Update tree. */
+		} else {
+			printf("next: tree %p, leaf %u, bsize %u.\n",
+				(void *)it->cur.key, it->i, it->cur.key->bsize);
 		}
-		while(TRIE_BITTEST(tree.link, it->i)) /* Move one over. */
-			PT_(extract)(cur = tree.leaves[it->i = 0].child, &tree);
+		while(TRIE_BITTEST(tree.link, it->i))
+			PT_(extract)(it->cur = tree.leaves[it->i = 0].child, &tree);
 	}
 	return tree.leaves[it->i].data;
 }
