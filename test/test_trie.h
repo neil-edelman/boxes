@@ -67,20 +67,22 @@ static void PT_(graph_tree_mem)(const union PT_(any_tree) any, FILE *const fp) {
 		"\t<TR>\n"
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">leaves</TD>\n");
 	for(i = 0; i <= tree.bsize; i++) {
-		if(TRIE_BITTEST(tree.link, i)) fprintf(fp, "\t\t<TD PORT=\"%u\">...</TD>\n", i);
-		else fprintf(fp, "\t\t<TD>%s</TD>\n", PT_(to_key)(tree.leaves[i].data));
-		/* Should really escape it . . . don't have weird characters. */
+		if(TRIE_BITTEST(tree.children, i))
+			fprintf(fp, "\t\t<TD PORT=\"%u\">...</TD>\n", i);
+		else
+			fprintf(fp, "\t\t<TD>%s</TD>\n", PT_(to_key)(tree.leaves[i].data));
+			/* Should really escape it . . . don't have weird characters. */
 	}
 	fprintf(fp, "\t</TR>\n"
 		"</TABLE>>];\n");
 	/* Draw the lines between trees. */
-	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
+	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 [label = \"%uB\", "
 		"color = firebrick];\n",
 		(void *)any.info, i, (void *)tree.leaves[i].child.info,
 		PT_(tree_sizes)[tree.leaves[i].child.info->no]);
 	/* Recurse. */
-	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
+	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i))
 		PT_(graph_tree_mem)(tree.leaves[i].child, fp);
 }
 
@@ -110,7 +112,7 @@ static void PT_(graph_tree)(const union PT_(any_tree) any, FILE *const fp) {
 					(void *)any.info, b + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(any, b);
-				if(TRIE_BITTEST(tree.link, leaf)) {
+				if(TRIE_BITTEST(tree.children, leaf)) {
 					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
 						"style = dashed, color = firebrick];\n",
 						(void *)tree.leaves[leaf].child.info,
@@ -127,7 +129,7 @@ static void PT_(graph_tree)(const union PT_(any_tree) any, FILE *const fp) {
 					(void *)any.info, b + left + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(any, b) + left + 1;
-				if(TRIE_BITTEST(tree.link, leaf)) {
+				if(TRIE_BITTEST(tree.children, leaf)) {
 					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
 						"color = firebrick];\n",
 						(void *)tree.leaves[leaf].child.info,
@@ -138,19 +140,19 @@ static void PT_(graph_tree)(const union PT_(any_tree) any, FILE *const fp) {
 				}
 			}
 		}
-		for(i = 0; i <= tree.bsize; i++) if(!TRIE_BITTEST(tree.link, i))
+		for(i = 0; i <= tree.bsize; i++) if(!TRIE_BITTEST(tree.children, i))
 			fprintf(fp, "\t\ttree%pleaf%u [label = \"%s\"];\n",
 			(void *)any.info, i, PT_(to_key)(tree.leaves[i].data));
 	} else {
 		/* Instead of creating a lookahead function to previous references, we
 		 very lazily also just call this a branch, even though it's a leaf. */
-		assert(!TRIE_BITTEST(tree.link, 0)); /* fixme:
+		assert(!TRIE_BITTEST(tree.children, 0)); /* fixme:
 		 should be possible; then what? */
 		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (void *)any.info,
 			PT_(to_key)(tree.leaves[0].data));
 	}
 	fprintf(fp, "\t//}\n\n");
-	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
+	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i))
 		PT_(graph_tree)(tree.leaves[i].child, fp);
 }
 
@@ -196,7 +198,7 @@ static void PT_(valid_tree)(const union PT_(any_tree) any) {
 	for(i = 0; i < tree.bsize; i++)
 		assert(tree.branches[i].left < tree.bsize - 1 - i);
 	for(i = 0; i <= tree.bsize; i++) {
-		if(TRIE_BITTEST(tree.link, i)) {
+		if(TRIE_BITTEST(tree.children, i)) {
 			PT_(valid_tree)(tree.leaves[i].child);
 		} else {
 			const char *str2;
