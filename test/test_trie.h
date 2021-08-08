@@ -50,21 +50,28 @@ static void PT_(graph_tree_mem)(const union PT_(any_gauge) any, FILE *const fp) 
 	assert(any.key && fp);
 	PT_(extract)(any, &tree);
 	/* Tree is one record node. */
-	fprintf(fp, "\ttree%pbranch0 [shape = record, style = filled, "
-		"label = \"{{left",
-		(void *)any.key);
-	for(b = 0; b < tree.bsize; b++)
-		branch = tree.branches + b, fprintf(fp, "|%u", branch->left);
-	fprintf(fp, "}|{skip");
-	for(b = 0; b < tree.bsize; b++)
-		branch = tree.branches + b, fprintf(fp, "|%u", branch->skip);
-	fprintf(fp, "}|{leaves");
+	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
+		"label = <\n"
+		"<TABLE BORDER=\"0\" CELLBORDER=\"1\">\n"
+		"\t<TR>\n"
+		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n", (void *)any.key);
+	for(b = 0; b < tree.bsize; b++) branch = tree.branches + b,
+		fprintf(fp, "\t\t<TD>%u</TD>\n", branch->left);
+	fprintf(fp, "\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">skip</TD>\n");
+	for(b = 0; b < tree.bsize; b++) branch = tree.branches + b,
+		fprintf(fp, "\t\t<TD>%u</TD>\n", branch->skip);
+	fprintf(fp, "\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">leaves</TD>\n");
 	for(i = 0; i <= tree.bsize; i++) {
-		if(TRIE_BITTEST(tree.link, i)) fprintf(fp, "|<%u>...", i);
-		else fprintf(fp, "|%s", PT_(to_key)(tree.leaves[i].data));
+		if(TRIE_BITTEST(tree.link, i)) fprintf(fp, "\t\t<TD PORT=\"%u\">...</TD>\n", i);
+		else fprintf(fp, "\t\t<TD>%s</TD>\n", PT_(to_key)(tree.leaves[i].data));
 		/* Should really escape it... */
 	}
-	fprintf(fp, "}}\"];\n");
+	fprintf(fp, "\t</TR>\n"
+		"</TABLE>>];\n");
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 [label = \"%uB\", "
