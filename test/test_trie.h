@@ -185,39 +185,33 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 static void PT_(graph_mem)(const struct T_(trie) *const trie,
 	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem)); }
 
+/** Make sure `any` is in a valid state, (and all the children.) */
 static void PT_(valid_tree)(const union PT_(any_tree) any) {
 	unsigned i;
+	int cmp = 0;
+	const char *str1 = 0;
 	struct PT_(tree) tree;
 	assert(any.info && any.info->bsize <= trie_tree_bsizes[any.info->no]);
 	PT_(extract)(any, &tree);
 	for(i = 0; i < tree.bsize; i++)
 		assert(tree.branches[i].left < tree.bsize - 1 - i);
-	/*for(a = T_(trie_array)(trie), i = 1, i_end = T_(trie_size)(trie);
-		i < i_end; i++) {
-		cmp = strcmp(PT_(to_key)(a[i - 1]), PT_(to_key)(a[i]));
-		assert(cmp < 0);
-	}*/
+	for(i = 0; i <= tree.bsize; i++) {
+		if(TRIE_BITTEST(tree.link, i)) {
+			PT_(valid_tree)(tree.leaves[i].child);
+		} else {
+			const char *str2;
+			assert(tree.leaves[i].data);
+			str2 = PT_(to_key)(tree.leaves[i].data);
+			if(str1) cmp = strcmp(str1, str2), assert(cmp < 0);
+			str1 = str2;
+		}
+	}
 }
 
 /** Makes sure the `trie` is in a valid state. */
 static void PT_(valid)(const struct T_(trie) *const trie) {
-	/* Null or empty are valid. */
 	if(!trie || !trie->root.info) return;
-#if 0
-	PT_(type) *const*a;
-	size_t i, i_end;
-	int cmp;
-#endif
-#if 0
-	if(!trie->leaves.data) { assert(!trie->leaves.size
-		&& !trie->branches.data && !trie->branches.size); return; }
-	assert(trie->leaves.size == trie->branches.size + 1);
-	for(a = T_(trie_array)(trie), i = 1, i_end = T_(trie_size)(trie);
-		i < i_end; i++) {
-		cmp = strcmp(PT_(to_key)(a[i - 1]), PT_(to_key)(a[i]));
-		assert(cmp < 0);
-	}
-#endif
+	PT_(valid_tree)(trie->root);
 }
 
 static void PT_(test)(void) {
