@@ -78,8 +78,8 @@ static void PT_(graph_tree_mem)(const union PT_(any_tree) any, FILE *const fp) {
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 [label = \"%uB\", "
-		"color = firebrick];\n",
-		(void *)any.info, i, (void *)tree.leaves[i].child.info,
+		"color = firebrick];\n", (void *)any.info, i,
+		(void *)tree.leaves[i].child.info,
 		PT_(tree_sizes)[tree.leaves[i].child.info->no]);
 	/* Recurse. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i))
