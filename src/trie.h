@@ -681,7 +681,7 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 				(void *)it->cur.key, it->i, it->cur.key->bsize);
 		}
 		while(TRIE_BITTEST(tree.link, it->i))
-			PT_(extract)(it->cur = tree.leaves[it->i = 0].child, &tree);
+			PT_(extract)(it->cur = tree.leaves[it->i].child, &tree), it->i = 0;
 	}
 	return tree.leaves[it->i].data;
 }
