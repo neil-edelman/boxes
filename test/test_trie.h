@@ -12,7 +12,7 @@ static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 static unsigned PT_(right)(const union PT_(any_tree) any, const unsigned b) {
 	struct PT_(tree) tree;
 	unsigned left, right, b0 = 0;
-	assert(any.key);
+	assert(any.info);
 	PT_(extract)(any, &tree), assert(b < tree.bsize);
 	for( ; ; ) {
 		right = tree.bsize - (left = tree.branches[b0].left) - 1;
@@ -29,7 +29,7 @@ static unsigned PT_(right)(const union PT_(any_tree) any, const unsigned b) {
 static unsigned PT_(left_leaf)(union PT_(any_tree) any, const unsigned b) {
 	struct PT_(tree) tree;
 	unsigned left, right, i = 0, b0 = 0;
-	assert(any.key);
+	assert(any.info);
 	PT_(extract)(any, &tree), assert(b < tree.bsize);
 	for( ; ; ) {
 		right = tree.bsize - (left = tree.branches[b0].left) - 1;
@@ -47,7 +47,7 @@ static void PT_(graph_tree_mem)(const union PT_(any_tree) any, FILE *const fp) {
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
 	unsigned b, i;
-	assert(any.key && fp);
+	assert(any.info && fp);
 	PT_(extract)(any, &tree);
 	/* Tree is one record node in memory -- GraphViz says html is
 	 case-insensitive, but I cannot get it to work without screaming. */
@@ -55,7 +55,7 @@ static void PT_(graph_tree_mem)(const union PT_(any_tree) any, FILE *const fp) {
 		"label = <\n"
 		"<TABLE BORDER=\"0\" CELLBORDER=\"1\">\n"
 		"\t<TR>\n"
-		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n", (void *)any.key);
+		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n", (void *)any.info);
 	for(b = 0; b < tree.bsize; b++) branch = tree.branches + b,
 		fprintf(fp, "\t\t<TD>%u</TD>\n", branch->left);
 	fprintf(fp, "\t</TR>\n"
@@ -77,8 +77,8 @@ static void PT_(graph_tree_mem)(const union PT_(any_tree) any, FILE *const fp) {
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 [label = \"%uB\", "
 		"color = firebrick];\n",
-		(void *)any.key, i, (void *)tree.leaves[i].child.key,
-		PT_(tree_sizes)[tree.leaves[i].child.key->no]);
+		(void *)any.info, i, (void *)tree.leaves[i].child.info,
+		PT_(tree_sizes)[tree.leaves[i].child.info->no]);
 	/* Recurse. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
 		PT_(graph_tree_mem)(tree.leaves[i].child, fp);
@@ -89,13 +89,13 @@ static void PT_(graph_tree)(const union PT_(any_tree) any, FILE *const fp) {
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
 	unsigned left, right, b, i;
-	assert(any.key && fp);
+	assert(any.info && fp);
 	PT_(extract)(any, &tree);
 	fprintf(fp, "\t//subgraph cluster_tree%p { "
 		"// confuse the order in dot\n"
 		"\t\t//style = filled;\n"
 		"\t\t//label = \"leaves %u/%u; tree%u (%u); %uB\";\n",
-		(void *)any.key, tree.bsize + 1, trie_tree_bsizes[tree.no] + 1,
+		(void *)any.info, tree.bsize + 1, trie_tree_bsizes[tree.no] + 1,
 		tree.no, trie_tree_count, PT_(tree_sizes)[tree.no]);
 	if(tree.bsize) {
 		for(b = 0; b < tree.bsize; b++) { /* Branches. */
@@ -103,50 +103,50 @@ static void PT_(graph_tree)(const union PT_(any_tree) any, FILE *const fp) {
 			left = branch->left, right = PT_(right)(any, b);
 			fprintf(fp, "\t\ttree%pbranch%u "
 				"[label = \"%u\", shape = none, fillcolor = none];\n"
-				"\t\ttree%pbranch%u -> ", (void *)any.key, b, branch->skip,
-				(void *)any.key, b);
+				"\t\ttree%pbranch%u -> ", (void *)any.info, b, branch->skip,
+				(void *)any.info, b);
 			if(left) {
 				fprintf(fp, "tree%pbranch%u [style = dashed];\n",
-					(void *)any.key, b + 1);
+					(void *)any.info, b + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(any, b);
 				if(TRIE_BITTEST(tree.link, leaf)) {
 					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
 						"style = dashed, color = firebrick];\n",
-						(void *)tree.leaves[leaf].child.key,
-						PT_(tree_sizes)[tree.leaves[leaf].child.key->no]);
+						(void *)tree.leaves[leaf].child.info,
+						PT_(tree_sizes)[tree.leaves[leaf].child.info->no]);
 				} else {
 					fprintf(fp,
 						"tree%pleaf%u [style = dashed, color = royalblue];\n",
-						(void *)any.key, leaf);
+						(void *)any.info, leaf);
 				}
 			}
-			fprintf(fp, "\t\ttree%pbranch%u -> ", (void *)any.key, b);
+			fprintf(fp, "\t\ttree%pbranch%u -> ", (void *)any.info, b);
 			if(right) {
 				fprintf(fp, "tree%pbranch%u;\n",
-					(void *)any.key, b + left + 1);
+					(void *)any.info, b + left + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(any, b) + left + 1;
 				if(TRIE_BITTEST(tree.link, leaf)) {
 					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
 						"color = firebrick];\n",
-						(void *)tree.leaves[leaf].child.key,
-						PT_(tree_sizes)[tree.leaves[leaf].child.key->no]);
+						(void *)tree.leaves[leaf].child.info,
+						PT_(tree_sizes)[tree.leaves[leaf].child.info->no]);
 				} else {
 					fprintf(fp, "tree%pleaf%u [color = royalblue];\n",
-						(void *)any.key, leaf);
+						(void *)any.info, leaf);
 				}
 			}
 		}
 		for(i = 0; i <= tree.bsize; i++) if(!TRIE_BITTEST(tree.link, i))
 			fprintf(fp, "\t\ttree%pleaf%u [label = \"%s\"];\n",
-			(void *)any.key, i, PT_(to_key)(tree.leaves[i].data));
+			(void *)any.info, i, PT_(to_key)(tree.leaves[i].data));
 	} else {
 		/* Instead of creating a lookahead function to previous references, we
 		 very lazily also just call this a branch, even though it's a leaf. */
 		assert(!TRIE_BITTEST(tree.link, 0)); /* fixme:
 		 should be possible; then what? */
-		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (void *)any.key,
+		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (void *)any.info,
 			PT_(to_key)(tree.leaves[0].data));
 	}
 	fprintf(fp, "\t//}\n\n");
@@ -167,11 +167,11 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 		"\ttrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>trie: " QUOTE(TRIE_TYPE)
 		"; %luB%s}\"];\n"
 		"\tnode [shape = box, fillcolor = lightsteelblue];\n",
-		(unsigned long)sizeof *trie, trie->root.key ? "" : "\\l|idle\\l");
-	if(trie->root.key) {
+		(unsigned long)sizeof *trie, trie->root.info ? "" : "\\l|idle\\l");
+	if(trie->root.info) {
 		fprintf(fp, "\ttrie -> tree%pbranch0 [label = \"%uB\", "
-			"color = firebrick];\n", (void *)trie->root.key,
-			PT_(tree_sizes)[trie->root.key->no]);
+			"color = firebrick];\n", (void *)trie->root.info,
+			PT_(tree_sizes)[trie->root.info->no]);
 		PT_(tree)(trie->root, fp);
 	}
 	fprintf(fp, "\tnode [color = red];\n"
@@ -185,16 +185,24 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 static void PT_(graph_mem)(const struct T_(trie) *const trie,
 	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem)); }
 
-/*static void PT_(valid_tree)(const struct PT_(any_tree) *tree) {
-	assert(tree);
-	assert();
-}*/
+static void PT_(valid_tree)(const union PT_(any_tree) any) {
+	unsigned i;
+	struct PT_(tree) tree;
+	assert(any.info && any.info->bsize <= trie_tree_bsizes[any.info->no]);
+	PT_(extract)(any, &tree);
+	for(i = 0; i < tree.bsize; i++)
+		assert(tree.branches[i].left < tree.bsize - 1 - i);
+	/*for(a = T_(trie_array)(trie), i = 1, i_end = T_(trie_size)(trie);
+		i < i_end; i++) {
+		cmp = strcmp(PT_(to_key)(a[i - 1]), PT_(to_key)(a[i]));
+		assert(cmp < 0);
+	}*/
+}
 
 /** Makes sure the `trie` is in a valid state. */
 static void PT_(valid)(const struct T_(trie) *const trie) {
-	/* Null is valid. */
-	if(!trie) return;
-	/*  */
+	/* Null or empty are valid. */
+	if(!trie || !trie->root.info) return;
 #if 0
 	PT_(type) *const*a;
 	size_t i, i_end;
@@ -218,7 +226,7 @@ static void PT_(test)(void) {
 	size_t n, size;
 	struct { PT_(type) data; int is_in; } es[20];
 	const size_t es_size = sizeof es / sizeof *es;
-	PT_(type) *const*a, *i, *eject/*, copy*/;
+	PT_(type) *const*a, *i, *eject;
 	int ret;
 
 	PT_(valid)(0);
@@ -266,10 +274,6 @@ static void PT_(test)(void) {
 		assert(ret && size == T_(trie_size)(&trie) && eject == &es[0].data);
 	ret = T_(trie_policy_put)(&trie, &es[0].data, &eject, &PT_(false_replace)),
 		assert(ret && size == T_(trie_size)(&trie) && eject == &es[0].data);
-	/* fixme: this is no. We should get errors. What am I doing? */
-	/*memcpy((void *)&copy, &es[0].data, sizeof es[0].data);
-	ret = T_(trie_policy_put)(&trie, &copy, &eject, &PT_(false_replace)),
-		assert(ret && size == T_(trie_size)(&trie) && eject == &copy);*/
 	T_(trie_)(&trie), assert(!T_(trie_size)(&trie)), PT_(valid)(&trie);
 #endif
 }
