@@ -9,7 +9,7 @@ static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 
 /** Given a branch `b` in `tree` branches, calculate the right child branches.
  @order \O(log `size`) */
-static unsigned PT_(right)(const union PT_(any_gauge) any, const unsigned b) {
+static unsigned PT_(right)(const union PT_(any_tree) any, const unsigned b) {
 	struct PT_(tree) tree;
 	unsigned left, right, b0 = 0;
 	assert(any.key);
@@ -26,7 +26,7 @@ static unsigned PT_(right)(const union PT_(any_gauge) any, const unsigned b) {
 }
 
 /** @return Follows the branches to `b` in `tree` and returns the leaf. */
-static unsigned PT_(left_leaf)(union PT_(any_gauge) any, const unsigned b) {
+static unsigned PT_(left_leaf)(union PT_(any_tree) any, const unsigned b) {
 	struct PT_(tree) tree;
 	unsigned left, right, i = 0, b0 = 0;
 	assert(any.key);
@@ -43,7 +43,7 @@ static unsigned PT_(left_leaf)(union PT_(any_gauge) any, const unsigned b) {
 }
 
 /** Graphs `any` on `fp`. */
-static void PT_(graph_tree_mem)(const union PT_(any_gauge) any, FILE *const fp) {
+static void PT_(graph_tree_mem)(const union PT_(any_tree) any, FILE *const fp) {
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
 	unsigned b, i;
@@ -78,14 +78,14 @@ static void PT_(graph_tree_mem)(const union PT_(any_gauge) any, FILE *const fp) 
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 [label = \"%uB\", "
 		"color = firebrick];\n",
 		(void *)any.key, i, (void *)tree.leaves[i].child.key,
-		PT_(gauge_sizes)[tree.leaves[i].child.key->gauge]);
+		PT_(tree_sizes)[tree.leaves[i].child.key->no]);
 	/* Recurse. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
 		PT_(graph_tree_mem)(tree.leaves[i].child, fp);
 }
 
 /** Graphs `any` on `fp`. */
-static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
+static void PT_(graph_tree)(const union PT_(any_tree) any, FILE *const fp) {
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
 	unsigned left, right, b, i;
@@ -94,9 +94,9 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 	fprintf(fp, "\t//subgraph cluster_tree%p { "
 		"// confuse the order in dot\n"
 		"\t\t//style = filled;\n"
-		"\t\t//label = \"leaves %u/%u; gauge%u (%u); %uB\";\n",
-		(void *)any.key, tree.bsize + 1, trie_gauge_bsizes[tree.gauge] + 1,
-		tree.gauge, trie_gauge_count, PT_(gauge_sizes)[tree.gauge]);
+		"\t\t//label = \"leaves %u/%u; tree%u (%u); %uB\";\n",
+		(void *)any.key, tree.bsize + 1, trie_tree_bsizes[tree.no] + 1,
+		tree.no, trie_tree_count, PT_(tree_sizes)[tree.no]);
 	if(tree.bsize) {
 		for(b = 0; b < tree.bsize; b++) { /* Branches. */
 			branch = tree.branches + b;
@@ -114,7 +114,7 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
 						"style = dashed, color = firebrick];\n",
 						(void *)tree.leaves[leaf].child.key,
-						PT_(gauge_sizes)[tree.leaves[leaf].child.key->gauge]);
+						PT_(tree_sizes)[tree.leaves[leaf].child.key->no]);
 				} else {
 					fprintf(fp,
 						"tree%pleaf%u [style = dashed, color = royalblue];\n",
@@ -131,7 +131,7 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
 						"color = firebrick];\n",
 						(void *)tree.leaves[leaf].child.key,
-						PT_(gauge_sizes)[tree.leaves[leaf].child.key->gauge]);
+						PT_(tree_sizes)[tree.leaves[leaf].child.key->no]);
 				} else {
 					fprintf(fp, "tree%pleaf%u [color = royalblue];\n",
 						(void *)any.key, leaf);
@@ -157,7 +157,7 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 /** Draw a graph of `trie` to `fn` in Graphviz format. */
 static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	const char *const fn,
-	void (*PT_(tree))(const union PT_(any_gauge), FILE *)) {
+	void (*PT_(tree))(const union PT_(any_tree), FILE *)) {
 	FILE *fp;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
@@ -171,7 +171,7 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	if(trie->root.key) {
 		fprintf(fp, "\ttrie -> tree%pbranch0 [label = \"%uB\", "
 			"color = firebrick];\n", (void *)trie->root.key,
-			PT_(gauge_sizes)[trie->root.key->gauge]);
+			PT_(tree_sizes)[trie->root.key->no]);
 		PT_(tree)(trie->root, fp);
 	}
 	fprintf(fp, "\tnode [color = red];\n"
