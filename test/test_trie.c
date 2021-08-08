@@ -30,7 +30,7 @@ static const char *colour_key(const enum colour *const c)
 
 
 int main(void) {
-	unsigned seed = (unsigned)/*649891<-good*//*517622<-crash early*//*518450<-crash16*/ 520863/*<-repeat clock()*/;
+	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	colour_trie_test();
 	return EXIT_SUCCESS;
