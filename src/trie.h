@@ -538,6 +538,7 @@ leaf:
 	if(tree.bsize == TRIE_MAX_BRANCH) {
 		if(!PT_(split)(in_forest.any)) return 0;
 		PT_(graph_mem)(trie, "graph/mem.gv");
+		printf("Graph mem.\n");
 		{
 			struct PT_(tree) fuck;
 			unsigned i;
