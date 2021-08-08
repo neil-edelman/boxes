@@ -46,10 +46,11 @@ static unsigned PT_(left_leaf)(union PT_(any_gauge) any, const unsigned b) {
 static void PT_(graph_tree_mem)(const union PT_(any_gauge) any, FILE *const fp) {
 	struct PT_(tree) tree;
 	struct trie_branch *branch;
-	unsigned left, right, b, i;
+	unsigned b, i;
 	assert(any.key && fp);
 	PT_(extract)(any, &tree);
-	/* Tree is one record node. */
+	/* Tree is one record node in memory -- GraphViz says html is
+	 case-insensitive, but I cannot get it to work without screaming. */
 	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
 		"label = <\n"
 		"<TABLE BORDER=\"0\" CELLBORDER=\"1\">\n"
@@ -68,17 +69,17 @@ static void PT_(graph_tree_mem)(const union PT_(any_gauge) any, FILE *const fp) 
 	for(i = 0; i <= tree.bsize; i++) {
 		if(TRIE_BITTEST(tree.link, i)) fprintf(fp, "\t\t<TD PORT=\"%u\">...</TD>\n", i);
 		else fprintf(fp, "\t\t<TD>%s</TD>\n", PT_(to_key)(tree.leaves[i].data));
-		/* Should really escape it... */
+		/* Should really escape it . . . don't have weird characters. */
 	}
 	fprintf(fp, "\t</TR>\n"
 		"</TABLE>>];\n");
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 [label = \"%uB\", "
-		"color = firebrick, penwidth = 2];\n",
+		"color = firebrick];\n",
 		(void *)any.key, i, (void *)tree.leaves[i].child.key,
 		PT_(gauge_sizes)[tree.leaves[i].child.key->gauge]);
-	/* Recuse. */
+	/* Recurse. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i))
 		PT_(graph_tree_mem)(tree.leaves[i].child, fp);
 }
@@ -111,7 +112,7 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 				unsigned leaf = PT_(left_leaf)(any, b);
 				if(TRIE_BITTEST(tree.link, leaf)) {
 					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
-						"style = dashed, color = firebrick, penwidth = 2];\n",
+						"style = dashed, color = firebrick];\n",
 						(void *)tree.leaves[leaf].child.key,
 						PT_(gauge_sizes)[tree.leaves[leaf].child.key->gauge]);
 				} else {
@@ -128,7 +129,7 @@ static void PT_(graph_tree)(const union PT_(any_gauge) any, FILE *const fp) {
 				unsigned leaf = PT_(left_leaf)(any, b) + left + 1;
 				if(TRIE_BITTEST(tree.link, leaf)) {
 					fprintf(fp, "tree%pbranch0 [label = \"%uB\", "
-						"color = firebrick, penwidth = 2];\n",
+						"color = firebrick];\n",
 						(void *)tree.leaves[leaf].child.key,
 						PT_(gauge_sizes)[tree.leaves[leaf].child.key->gauge]);
 				} else {
@@ -169,7 +170,7 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 		(unsigned long)sizeof *trie, trie->root.key ? "" : "\\l|idle\\l");
 	if(trie->root.key) {
 		fprintf(fp, "\ttrie -> tree%pbranch0 [label = \"%uB\", "
-			"color = firebrick, penwidth = 2];\n", (void *)trie->root.key,
+			"color = firebrick];\n", (void *)trie->root.key,
 			PT_(gauge_sizes)[trie->root.key->gauge]);
 		PT_(tree)(trie->root, fp);
 	}
@@ -184,14 +185,21 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 static void PT_(graph_mem)(const struct T_(trie) *const trie,
 	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem)); }
 
+/*static void PT_(valid_tree)(const struct PT_(any_tree) *tree) {
+	assert(tree);
+	assert();
+}*/
+
 /** Makes sure the `trie` is in a valid state. */
 static void PT_(valid)(const struct T_(trie) *const trie) {
+	/* Null is valid. */
+	if(!trie) return;
+	/*  */
 #if 0
 	PT_(type) *const*a;
 	size_t i, i_end;
 	int cmp;
 #endif
-	if(!trie) return;
 #if 0
 	if(!trie->leaves.data) { assert(!trie->leaves.size
 		&& !trie->branches.data && !trie->branches.size); return; }
@@ -232,8 +240,11 @@ static void PT_(test)(void) {
 		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
 		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
 			(unsigned long)n + 1lu);
-		printf("Graph %s: %s.\n", fn, T_(trie_to_string)(&trie)),
-			PT_(graph)(&trie, fn);
+		printf("Graph %s: %s.\n", fn, T_(trie_to_string)(&trie));
+		PT_(graph)(&trie, fn);
+		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu-mem.gv",
+			(unsigned long)n + 1lu);
+		PT_(graph_mem)(&trie, fn);
 		assert(!errno || (perror("Check"), 0));
 		if(!es[n].is_in) { printf("Duplicate value %s -> %s.\n",
 			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie)); continue; };

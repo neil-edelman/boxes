@@ -349,10 +349,6 @@ static union PT_(any_gauge) PT_(expand)(const union PT_(any_gauge) any) {
 	return larger;
 }
 
-/* fixme */
-static void PT_(graph_mem)(const struct T_(trie) *const trie,
-	const char *const fn);
-
 /** @return Success splitting the tree `forest_idx` of `trie`. Must be full. */
 static int PT_(split)(union PT_(any_gauge) any) {
 	struct PT_(tree) tree;
@@ -468,7 +464,7 @@ static const char *PT_(sample)(union PT_(any_gauge) any, unsigned lf) {
 }
 
 /*static void PT_(graph)(const struct T_(trie) *, const char *);*/
-static const char *T_(trie_to_string)(const struct T_(trie) *);
+/*static const char *T_(trie_to_string)(const struct T_(trie) *);*/
 
 /** Adds `x` to `trie`, which must not be in `trie`.
  @return Success. @throw[malloc, ERANGE]
@@ -485,7 +481,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	int is_write = 0, is_right = 0, is_split = 0;
 
 	assert(trie && x);
-	printf("add: %s -> %s.\n", x_key, T_(trie_to_string)(trie));
+	/*printf("add: %s -> %s.\n", x_key, T_(trie_to_string)(trie));*/
 	if(!trie->root.key) { /* Empty special case. */
 		struct PT_(gauge0) *const g0 = malloc(sizeof *g0);
 		if(!g0) { if(!errno) errno = ERANGE; return 0; }
@@ -533,31 +529,19 @@ leaf:
 	assert(in_tree.lf <= tree.bsize + 1u);
 
 	if(is_write) goto insert;
-	/* If the tree is full, split it. */
 	assert(tree.bsize <= TRIE_MAX_BRANCH);
 	if(tree.bsize == TRIE_MAX_BRANCH) {
+		/* If the tree is full, split it, and go again. */
 		if(!PT_(split)(in_forest.any)) return 0;
-		PT_(graph_mem)(trie, "graph/mem.gv");
-		printf("Graph mem.\n");
-		{
-			struct PT_(tree) fuck;
-			unsigned i;
-			PT_(extract)(in_forest.any, &fuck);
-			printf("fuck: ");
-			for(i = 0; i <= fuck.bsize; i++) {
-				printf("%u", !!TRIE_BITTEST(fuck.link, i));
-			}
-			printf("\n");
-		}
-		printf("add: split %s.\n", T_(trie_to_string)(trie));
+		/*printf("add: split %s.\n", T_(trie_to_string)(trie));*/
 		assert(!is_split && (is_split = 1));
-		/*printf("Returning to \"%s\" in tree %lu.\n", key, in_forest.idx);*/
 	} else {
-		/* Go back and modify the tree for one extra branch/leaf pair. */
-		union PT_(any_gauge) any = PT_(expand)(in_forest.any);
-		if(!any.key) return 0;
-		printf("add: expand %s.\n", T_(trie_to_string)(trie));
-		*in_forest.ref = in_forest.any = any;
+		/* Go back and modify the tree for one extra branch/leaf pair;
+		 if unneeded, this will return immediately. */
+		union PT_(any_gauge) store = PT_(expand)(in_forest.any);
+		if(!store.key) return 0;
+		/*printf("add: expand %s.\n", T_(trie_to_string)(trie));*/
+		*in_forest.ref = in_forest.any = store;
 		is_write = 1;
 	}
 	in_bit.x = in_forest.start_bit;
@@ -583,36 +567,6 @@ insert:
 	in_forest.any.key->bsize++;
 
 	return 1;
-}
-
-/** Initialises `trie` to idle. @order \Theta(1) @allow */
-static void T_(trie)(struct T_(trie) *const trie)
-	{ assert(trie); trie->root.key = 0; }
-
-/** Returns an initialised `trie` to idle. @allow */
-static void T_(trie_)(struct T_(trie) *const trie) {
-	assert(trie && !trie); /* fixme */
-	T_(trie)(trie);
-}
-
-/** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
- it was previously in an active non-idle state, it continues to be.
- @order \Theta(1) @allow */
-static void T_(trie_clear)(struct T_(trie) *const trie)
-	{ assert(trie); /* ... */}
-
-/** @return The <typedef:<PT>type> with `key` in `trie` or null no such item
- exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
-static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
-
-/** @return If `x` is already in `trie`, returns false, otherwise success.
- @throws[realloc, ERANGE] */
-static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
-	return assert(trie && x),
-		PT_(get)(trie, PT_(to_key)(x)) ? printf("add: %s already in trie.\n",
-		PT_(to_key)(x)), 0 : PT_(add_unique)(trie, x);
-	/*return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
 }
 
 /* <!-- iterate interface */
@@ -650,8 +604,8 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 			const struct trie_branch *branch2;
 			struct { unsigned br0, br1, lf; } in_tree2;
 			assert(key && store2.key);
-			printf("next: got stuck on %s.\n",
-				PT_(to_key)(tree.leaves[it->i - 1].data));
+			/*printf("next: got stuck on %s.\n",
+				PT_(to_key)(tree.leaves[it->i - 1].data));*/
 			for(it->cur.key = 0, it->i = 0; ; ) {
 				if(store1.key == store2.key) break; /* Reached the tree. */
 				PT_(extract)(store2, &tree2);
@@ -668,18 +622,18 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 				}
 				/* We found a continuation. */
 				if(in_tree2.lf < tree2.bsize)
-					it->cur.key = store2.key, it->i = in_tree2.lf + 1,
+					it->cur.key = store2.key, it->i = in_tree2.lf + 1/*,
 					printf("next: continues in tree %p, leaf %u.\n",
-						(void *)store2.key, it->i);
+						(void *)store2.key, it->i)*/;
 				assert(TRIE_BITTEST(tree2.link, in_tree2.lf));
 				store2 = tree2.leaves[in_tree2.lf].child;
 			}
 			if(!it->cur.key) { assert(!it->i); return 0; } /* No more. */
 			PT_(extract)(it->cur, &tree); /* Update tree. */
-		} else {
+		} /*else {
 			printf("next: tree %p, leaf %u, bsize %u.\n",
 				(void *)it->cur.key, it->i, it->cur.key->bsize);
-		}
+		}*/
 		while(TRIE_BITTEST(tree.link, it->i))
 			PT_(extract)(it->cur = tree.leaves[it->i].child, &tree), it->i = 0;
 	}
@@ -687,6 +641,38 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 }
 
 /* iterate --> */
+
+
+
+/** Initialises `trie` to idle. @order \Theta(1) @allow */
+static void T_(trie)(struct T_(trie) *const trie)
+	{ assert(trie); trie->root.key = 0; }
+
+/** Returns an initialised `trie` to idle. @allow */
+static void T_(trie_)(struct T_(trie) *const trie) {
+	assert(trie && !trie); /* fixme */
+	T_(trie)(trie);
+}
+
+/** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
+ it was previously in an active non-idle state, it continues to be.
+ @order \Theta(1) @allow */
+static void T_(trie_clear)(struct T_(trie) *const trie)
+	{ assert(trie); /* ... */}
+
+/** @return The <typedef:<PT>type> with `key` in `trie` or null no such item
+ exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
+static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
+	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
+
+/** @return If `x` is already in `trie`, returns false, otherwise success.
+ @throws[realloc, ERANGE] */
+static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
+	return assert(trie && x),
+		PT_(get)(trie, PT_(to_key)(x)) ? printf("add: %s already in trie.\n",
+		PT_(to_key)(x)), 0 : PT_(add_unique)(trie, x);
+	/*return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
+}
 
 /* Define these for traits. */
 #define BOX_ PT_
