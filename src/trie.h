@@ -569,6 +569,15 @@ insert:
 	return 1;
 }
 
+/**  */
+static void PT_(clear_tree)(const union PT_(any_tree) any) {
+	struct PT_(tree) tree;
+	unsigned i;
+	assert(any.info);
+	PT_(extract)(any, &tree);
+	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.link, i)) PT_(clear_tree)(tree.leaves[i].child);
+}
+
 /* <!-- iterate interface */
 
 /** Contains all iteration parameters. */
