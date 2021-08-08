@@ -569,13 +569,15 @@ insert:
 	return 1;
 }
 
-/**  */
+/** Frees all `any` and it's children. */
 static void PT_(clear_tree)(const union PT_(any_tree) any) {
 	struct PT_(tree) tree;
 	unsigned i;
 	assert(any.info);
 	PT_(extract)(any, &tree);
-	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i)) PT_(clear_tree)(tree.leaves[i].child);
+	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i))
+		PT_(clear_tree)(tree.leaves[i].child);
+	free(any.info);
 }
 
 /* <!-- iterate interface */
@@ -659,15 +661,9 @@ static void T_(trie)(struct T_(trie) *const trie)
 
 /** Returns an initialised `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
-	assert(trie && !trie); /* fixme */
-	T_(trie)(trie);
+	assert(trie);
+	if(trie->root.info) PT_(clear_tree)(trie->root), T_(trie)(trie);
 }
-
-/** Sets `trie` to be empty. That is, the size of `trie` will be zero, but if
- it was previously in an active non-idle state, it continues to be.
- @order \Theta(1) @allow */
-static void T_(trie_clear)(struct T_(trie) *const trie)
-	{ assert(trie); /* ... */}
 
 /** @return The <typedef:<PT>type> with `key` in `trie` or null no such item
  exists. @order \O(|`key`|), <Thareja 2011, Data>. @allow */

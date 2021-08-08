@@ -233,7 +233,7 @@ static void PT_(test)(void) {
 #if 0
 	n = T_(trie_size)(&trie), a = T_(trie_array)(&trie), assert(!n && !a);
 #endif
-	T_(trie_clear)(&trie), PT_(valid)(&trie);
+	T_(trie_)(&trie), PT_(valid)(&trie);
 	i = T_(trie_get)(&trie, ""), assert(!i);
 
 	/* Make random data. */
