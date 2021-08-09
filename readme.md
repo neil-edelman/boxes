@@ -15,7 +15,7 @@
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix tree, digital tree, or trie, implemented as an array of pointers\-to\-`T` and an index on the key string\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the keys are different\. Strings can be any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
-In memory, it is similar to <Bayer, McCreight, 1972 Large \(B\-Trees\)>\. Using [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, but instead of a B\-tree of order\-n nodes, it is a forest of non\-empty complete binary trees\. Thus the leaves in a tree are also the branching factor; the maximum is the order, fixed by compilation macros\.
+In memory, it is similar to [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\. Using [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, but instead of a B\-tree of order\-n nodes, it is a forest of non\-empty complete binary trees\. Thus the leaves in a tree are also the branching factor; the maximum is the order, fixed by compilation macros\.
 
 
 

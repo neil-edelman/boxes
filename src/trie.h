@@ -13,7 +13,7 @@
  byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
- In memory, it is similar to <Bayer, McCreight, 1972 Large (B-Trees)>. Using
+ In memory, it is similar to <Bayer, McCreight, 1972 Large>. Using
  <Knuth, 1998 Art 3> terminology, but instead of a B-tree of order-n nodes, it
  is a forest of non-empty complete binary trees. Thus the leaves in a tree are
  also the branching factor; the maximum is the order, fixed by compilation
