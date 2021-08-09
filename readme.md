@@ -15,7 +15,7 @@
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix tree, digital tree, or trie, implemented as an array of pointers\-to\-`T`, whose keys are always in lexicographically\-sorted order and an index on the key\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the keys are different\. Strings can be any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
-In memory, it is similar to <Bayer, McCreight, 1972 Large \(B\-Trees\)>\. Using [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, instead of a B\-tree of order\-n nodes, it is a B\-forest of non\-empty complete binary trees\. The leaves in a tree also are the branching factor \(internal B\-forest tree\) or the data \(leaf B\-forest tree\); the maximum is the order\.
+In memory, it is similar to <Bayer, McCreight, 1972 Large \(B\-Trees\)>\. Using [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, but instead of a B\-tree of order\-n nodes, it is a forest of non\-empty complete binary trees\. Thus the leaves in a tree are also the branching factor; the maximum is the order, fixed by compilation macros\.
 
 
 
@@ -26,7 +26,7 @@ In memory, it is similar to <Bayer, McCreight, 1972 Large \(B\-Trees\)>\. Using 
  * Parameter: TRIE\_TO\_STRING  
    Defining this includes [to\_string\.h](to_string.h), with the keys as the string\.
  * Parameter: TRIE\_TEST  
-   Unit testing framework [&lt;T&gt;trie_test](#user-content-fn-ae9d3396), included in a separate header, [\.\./test/test\_trie\.h](../test/test_trie.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Requires that `NDEBUG` not be defined and `TRIE_TO_STRING`\.
+   Unit testing framework [&lt;T&gt;trie_test](#user-content-fn-ae9d3396), included in a separate header, [\.\./test/test\_trie\.h](../test/test_trie.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Requires `TRIE_TO_STRING` and that `NDEBUG` not be defined\.
  * Standard:  
    C89
 
@@ -121,6 +121,8 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a></td><td>trie, key</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-70c096ed">&lt;T&gt;trie_add</a></td><td>trie, x</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-ae9d3396">&lt;T&gt;trie_test</a></td><td></td></tr>
@@ -159,6 +161,17 @@ Returns an initialised `trie` to idle\.
    The [&lt;PT&gt;type](#user-content-typedef-245060ab) with `key` in `trie` or null no such item exists\.
  * Order:  
    &#927;\(|`key`|\), [Thareja 2011, Data](https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data)\.
+
+
+
+
+### <a id = "user-content-fn-70c096ed" name = "user-content-fn-70c096ed">&lt;T&gt;trie_add</a> ###
+
+<code>static int <strong>&lt;T&gt;trie_add</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>)</code>
+
+ * Return:  
+   If `x` is already in `trie`, returns false, otherwise success\.
+ * Exceptional return: realloc, ERANGE  
 
 
 

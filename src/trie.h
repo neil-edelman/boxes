@@ -14,9 +14,10 @@
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
  In memory, it is similar to <Bayer, McCreight, 1972 Large (B-Trees)>. Using
- <Knuth, 1998 Art 3> terminology, instead of a B-tree of order-n nodes, it is a B-forest of non-empty complete binary trees. The leaves in a tree also are the
- branching factor (internal B-forest tree) or the data (leaf B-forest tree);
- the maximum is the order.
+ <Knuth, 1998 Art 3> terminology, but instead of a B-tree of order-n nodes, it
+ is a forest of non-empty complete binary trees. Thus the leaves in a tree are
+ also the branching factor; the maximum is the order, fixed by compilation
+ macros.
 
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
@@ -34,8 +35,8 @@
  @param[TRIE_TEST]
  Unit testing framework <fn:<T>trie_test>, included in a separate header,
  <../test/test_trie.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PT>action_fn>. Requires that `NDEBUG` not be defined
- and `TRIE_TO_STRING`.
+ satisfying <typedef:<PT>action_fn>. Requires `TRIE_TO_STRING` and that
+ `NDEBUG` not be defined.
 
  @std C89 */
 
@@ -43,7 +44,8 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <limits.h> /* Works `CHAR_BIT != 8`? Anyone have a TI compiler? */
+/* Suspect it will not work if `CHAR_BIT != 8`; need TI compiler? */
+#include <limits.h>
 
 
 #ifndef TRIE_NAME
@@ -73,7 +75,6 @@
 #define TRIE_BMP_SIZE(n) (((n) - 1) / CHAR_BIT + 1) /* Bitmap size in bytes. */
 #define TRIE_BMP_ALIGN_SIZE(n) \
 	(((TRIE_BMP_SIZE(n) - 1) / sizeof(size_t) + 1) * CHAR_BIT)
-/* `bsize <= trie_tree_bsizes[no]` */
 struct trie_info { unsigned char bsize, no; };
 struct trie_branch { unsigned char left, skip; };
 /* Stores tree numbers of different arbitrary sizes, `(n, m)`: `n` must be
@@ -81,7 +82,7 @@ struct trie_branch { unsigned char left, skip; };
 #define TRIE_TREE_FIRST_X X(0, 1)
 /*#define TRIE_TREE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
 #define TRIE_TREE_LAST_X  X(7, TRIE_ORDER)*/
-#define TRIE_TREE_MID_X   X(1, 4) /* Debug: must be monotonic. */
+#define TRIE_TREE_MID_X   X(1, 4) /* Debug: too straight. Must be monotonic. */
 #define TRIE_TREE_LAST_X  X(2, TRIE_ORDER)
 #define TRIE_TREE_TAIL_X TRIE_TREE_MID_X TRIE_TREE_LAST_X
 #define TRIE_TREE_HEAD_X TRIE_TREE_FIRST_X TRIE_TREE_MID_X
@@ -284,10 +285,10 @@ static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
 	if(!store.info) return 0; /* Idle. */
-	for(byte.cur = 0, bit = 0; ; ) { /* B-forest. */
+	for(byte.cur = 0, bit = 0; ; ) { /* Forest. */
 		PT_(extract)(store, &tree);
 		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
-		while(in_tree.br0 < in_tree.br1) { /* Binary tree. */
+		while(in_tree.br0 < in_tree.br1) { /* Tree. */
 			branch = tree.branches + in_tree.br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
@@ -594,7 +595,6 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 
 /** Advances `it`. @implements next */
 static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
-	/*union PT_(any_tree) cur;*/
 	struct PT_(tree) tree;
 	assert(it && it->trie);
 	if(!it->cur.info) { /* Starting. Descend to first leaf. */
@@ -671,7 +671,7 @@ static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return assert(trie && key), PT_(get)(trie, key); }
 
 /** @return If `x` is already in `trie`, returns false, otherwise success.
- @throws[realloc, ERANGE] */
+ @throws[realloc, ERANGE] @allow */
 static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 	return assert(trie && x),
 		PT_(get)(trie, PT_(to_key)(x)) ? /*printf("add: %s already in trie.\n",
@@ -696,15 +696,13 @@ static void PT_(to_string)(const PT_(type) *const a, char (*const z)[12])
 #endif /* str --> */
 
 #ifdef TRIE_TEST /* <!-- test */
-/* Forward-declare. */
-static const char *(*PT_(array_to_string))(const struct T_(trie) *);
 #include "../test/test_trie.h" /** \include */
 #endif /* test --> */
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	T_(trie)(0); T_(trie_)(0); T_(trie_get)(0, 0);
-	PT_(unused_base_coda)();
+	T_(trie)(0); T_(trie_)(0); T_(trie_get)(0, 0); T_(trie_add)(0, 0);
+	PT_(begin)(0, 0); PT_(next)(0); PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
