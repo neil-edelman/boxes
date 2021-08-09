@@ -6,9 +6,9 @@
  ![Example of trie.](../web/trie.png)
 
  A <tag:<T>trie> is a prefix tree, digital tree, or trie, implemented as an
- array of pointers-to-`T`, whose keys are always in lexicographically-sorted
- order and an index on the key. It can be seen as a <Morrison, 1968 PATRICiA>:
- a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
+ array of pointers-to-`T` and an index on the key string. It can be seen as a
+ <Morrison, 1968 PATRICiA>: a compact
+ [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
  storing the where the keys are different. Strings can be any encoding with a
  byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
