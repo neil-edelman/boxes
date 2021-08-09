@@ -463,9 +463,6 @@ static const char *PT_(sample)(union PT_(any_tree) any, unsigned lf) {
 	return PT_(to_key)(tree.leaves[lf].data);
 }
 
-/*static void PT_(graph)(const struct T_(trie) *, const char *);*/
-/*static const char *T_(trie_to_string)(const struct T_(trie) *);*/
-
 /** Adds `x` to `trie`, which must not be in `trie`.
  @return Success. @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
@@ -584,8 +581,8 @@ static void PT_(clear_tree)(const union PT_(any_tree) any) {
 
 /** Contains all iteration parameters. */
 struct PT_(iterator);
-struct PT_(iterator)
-	{ const struct T_(trie) *trie; union PT_(any_tree) cur; unsigned i; };
+struct PT_(iterator) { const struct T_(trie) *trie;
+	union PT_(any_tree) cur; unsigned i, unused; };
 
 /** Loads `a` into `it`. @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
