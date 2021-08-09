@@ -327,10 +327,10 @@ static union PT_(any_tree) PT_(expand)(const union PT_(any_tree) any) {
 	if(!(larger.info = realloc(any.info, PT_(tree_sizes)[tree0.no + 1])))
 		{ if(!errno) errno = ERANGE; return larger; }
 	PT_(extract)(larger, &tree0); /* The address may have changed. */
-	printf("expand: #%p width%u %luB -> #%p store%u %luB\n", (void *)any.info,
+	/*printf("expand: #%p width%u %luB -> #%p store%u %luB\n", (void *)any.info,
 		tree0.no, (unsigned long)PT_(tree_sizes)[tree0.no],
 		(void *)larger.info, tree0.no + 1,
-		(unsigned long)PT_(tree_sizes)[tree0.no + 1]);
+		(unsigned long)PT_(tree_sizes)[tree0.no + 1]);*/
 	/* Augment the allocation size. */
 	larger.info->no++;
 	PT_(extract)(larger, &tree1);
@@ -360,14 +360,14 @@ static int PT_(split)(union PT_(any_tree) any) {
 #undef X
 	assert(any.info);
 	PT_(extract)(any, &tree);
-	printf("split: bsize %u, tree%u: %u\n",
-		tree.bsize, tree.no, trie_tree_bsizes[tree.no]);
+	/*printf("split: bsize %u, tree%u: %u\n",
+		tree.bsize, tree.no, trie_tree_bsizes[tree.no]);*/
 	assert(tree.bsize == TRIE_MAX_BRANCH
 		&& tree.no == trie_tree_count - 1);
-	{
+	/*{
 		unsigned b;
 		printf("branches: {"); for(b = 0; b < TRIE_MAX_BRANCH; b++) printf("%s%u", b ? ", " : "", tree.branches[b].left); printf("}\n");
-	}
+	}*/
 	in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
 	for(balance.opt = TRIE_MAX_BRANCH; ; ) { /* Descend branches of tree. */
 		const struct trie_branch *const branch = tree.branches + in_tree.br0;
@@ -395,7 +395,7 @@ right:
 		in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 	}
 	assert(in_tree.br0 != in_tree.br1 && in_tree.lf <= tree.bsize);
-	printf("split on [%u,%u]:%u.\n", in_tree.br0, in_tree.br1, in_tree.lf);
+	/*printf("split on [%u,%u]:%u.\n", in_tree.br0, in_tree.br1, in_tree.lf);*/
 	/* Split off a new tree. */
 	if(!(split = malloc(sizeof *split)))
 		{ if(!errno) errno = ERANGE; return 0; }
@@ -403,7 +403,7 @@ right:
 #define X(n, m) split->info.no = n;
 	TRIE_TREE_LAST_X
 #undef X
-	printf("split: new split %p.\n", (void *)split);
+	/*printf("split: new split %p.\n", (void *)split);*/
 	/* Re-descend and decrement branches in preparation to split. */
 	in_write.br0 = 0, in_write.br1 = tree.bsize;
 	while(in_write.br0 < in_tree.br0) {
@@ -415,10 +415,10 @@ right:
 			in_write.br0 += branch->left + 1;
 		}
 	}
-	{
+	/*{
 		unsigned b;
 		printf("branches: {"); for(b = 0; b < TRIE_MAX_BRANCH; b++) printf("%s%u", b ? ", " : "", tree.branches[b].left); printf("}\n");
-	}
+	}*/
 	/* Move leaves. */
 	memcpy(split->leaves, tree.leaves + in_tree.lf,
 		sizeof *tree.leaves * (in_tree.br1 - in_tree.br0 + 1));
@@ -674,8 +674,8 @@ static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
  @throws[realloc, ERANGE] */
 static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 	return assert(trie && x),
-		PT_(get)(trie, PT_(to_key)(x)) ? printf("add: %s already in trie.\n",
-		PT_(to_key)(x)), 0 : PT_(add_unique)(trie, x);
+		PT_(get)(trie, PT_(to_key)(x)) ? /*printf("add: %s already in trie.\n",
+		PT_(to_key)(x)),*/ 0 : PT_(add_unique)(trie, x);
 	/*return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
 }
 

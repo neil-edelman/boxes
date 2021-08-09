@@ -219,22 +219,18 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 static void PT_(test)(void) {
 	char fn[64];
 	struct T_(trie) trie = TRIE_IDLE;
-	size_t n, size;
+	size_t n;
 	struct { PT_(type) data; int is_in; } es[20];
 	const size_t es_size = sizeof es / sizeof *es;
-	PT_(type) *const*a, *i, *eject;
-	int ret;
+	PT_(type) *data;
 
 	PT_(valid)(0);
 	PT_(valid)(&trie);
 	T_(trie)(&trie), PT_(valid)(&trie);
 	printf("Idle graph.\n");
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "_trie-idle.gv");
-#if 0
-	n = T_(trie_size)(&trie), a = T_(trie_array)(&trie), assert(!n && !a);
-#endif
 	T_(trie_)(&trie), PT_(valid)(&trie);
-	i = T_(trie_get)(&trie, ""), assert(!i);
+	data = T_(trie_get)(&trie, ""), assert(!data);
 
 	/* Make random data. */
 	for(n = 0; n < es_size; n++) PT_(filler)(&es[n].data);
@@ -252,9 +248,12 @@ static void PT_(test)(void) {
 		assert(!errno || (perror("Check"), 0));
 		if(!es[n].is_in) { printf("Duplicate value %s -> %s.\n",
 			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie)); continue; };
-		i = T_(trie_get)(&trie, PT_(to_key)(&es[n].data));
-		assert(i == &es[n].data);
+		data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data));
+		assert(data == &es[n].data);
 	}
+	for(n = 0; n < es_size; n++) if(es[n].is_in)
+		data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data)),
+		assert(data == &es[n].data);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
 	/*...*/
 #if 0
@@ -270,8 +269,8 @@ static void PT_(test)(void) {
 		assert(ret && size == T_(trie_size)(&trie) && eject == &es[0].data);
 	ret = T_(trie_policy_put)(&trie, &es[0].data, &eject, &PT_(false_replace)),
 		assert(ret && size == T_(trie_size)(&trie) && eject == &es[0].data);
-	T_(trie_)(&trie), assert(!T_(trie_size)(&trie)), PT_(valid)(&trie);
 #endif
+	T_(trie_)(&trie), assert(!trie.root.info), PT_(valid)(&trie);
 }
 
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
