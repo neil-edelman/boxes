@@ -11,7 +11,7 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of trie.](../web/trie.png)
+![Example of trie.](web/trie.png)
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix tree, digital tree, or trie, implemented as an array of pointers\-to\-`T`, whose keys are always in lexicographically\-sorted order and an index on the key\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the keys are different\. Strings can be any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
@@ -97,7 +97,7 @@ A working tree of any size extracted from different\-width storage by [&lt;PT&gt
 
 To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
-![States.](../web/states.png)
+![States.](web/states.png)
 
 
 
