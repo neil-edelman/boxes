@@ -191,8 +191,8 @@ static void trie_bmp_split(unsigned char *const parent,
 #define T_(thing) CAT(TRIE_NAME, thing)
 #define PT_(thing) CAT(trie, T_(thing))
 
-/* Default values for string. */
 #ifndef TRIE_TYPE /* <!-- !type */
+/** Default values for string: uses `a` as the key. */
 static char *PT_(raw)(char **a) { return assert(a), *a; }
 #define TRIE_TYPE char
 #define TRIE_KEY &PT_(raw)
@@ -250,9 +250,12 @@ struct T_(trie) { union PT_(any_tree) root; };
 
 /** Responsible for picking out the null-terminated string. Modifying the
  string while in any trie causes the trie to go into an undefined state. */
-static const char *(*PT_(to_key))(const PT_(type) *a) = (TRIE_KEY);
+typedef const char *(*PT_(key_fn))(const PT_(type) *);
 
-/** @return `tree` for the kind of tree storage in the compact `any`. */
+/* Check that `TRIE_KEY` is a function satisfying <typedef:<PT>key_fn>. */
+static PT_(key_fn) PT_(to_key) = (TRIE_KEY);
+
+/** @return Fills `tree` for the kind of tree storage in `store`. */
 static void PT_(extract)(const union PT_(any_tree) store,
 	struct PT_(tree) *const tree) {
 	assert(store.info && tree);
@@ -349,7 +352,7 @@ static union PT_(any_tree) PT_(expand)(const union PT_(any_tree) any) {
 	return larger;
 }
 
-/** @return Success splitting the tree `forest_idx` of `trie`. Must be full. */
+/** @return Success splitting the tree `any`. Must be full. */
 static int PT_(split)(union PT_(any_tree) any) {
 	struct PT_(tree) tree;
 	struct { unsigned br0, br1, lf; } in_tree;
@@ -584,7 +587,7 @@ struct PT_(iterator);
 struct PT_(iterator) { const struct T_(trie) *trie;
 	union PT_(any_tree) cur; unsigned i, unused; };
 
-/** Loads `a` into `it`. @implements begin */
+/** Loads `trie` into `it`. @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
 	const struct T_(trie) *const trie)
 	{ assert(it && trie); it->trie = trie; it->cur.info = 0; }
@@ -682,7 +685,7 @@ static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 #define BOX_CONTENTS PT_(type)
 
 #ifdef TRIE_TO_STRING /* <!-- str */
-/** Uses the natural `datum` -> `a` that is defined by `TRIE_KEY`. */
+/** Uses the natural `a` -> `z` that is defined by `TRIE_KEY`. */
 static void PT_(to_string)(const PT_(type) *const a, char (*const z)[12])
 	{ assert(a && z); sprintf(*z, "%.11s", PT_(to_key)(a)); }
 #define Z_(n) CAT(T_(trie), n)

@@ -4,10 +4,15 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/* `TRIE_TEST` must be a function that implements this prototype. */
+/* Works by side-effects, _ie_ fills the type with data. */
+typedef void (*PT_(action_fn))(PT_(type) *);
+/* Used in <fn:<PT>graph_choose>. */
+typedef void (*PT_(tree_file_fn))(const union PT_(any_tree), FILE *);
+
+/* `TRIE_TEST` must be a function that implements <typedef:<PT>action_fn>. */
 static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 
-/** Given a branch `b` in `tree` branches, calculate the right child branches.
+/** Given a branch `b` in `any` branches, calculate the right child branches.
  @order \O(log `size`) */
 static unsigned PT_(right)(const union PT_(any_tree) any, const unsigned b) {
 	struct PT_(tree) tree;
@@ -25,7 +30,7 @@ static unsigned PT_(right)(const union PT_(any_tree) any, const unsigned b) {
 	return right;
 }
 
-/** @return Follows the branches to `b` in `tree` and returns the leaf. */
+/** @return Follows the branches to `b` in `any` and returns the leaf. */
 static unsigned PT_(left_leaf)(union PT_(any_tree) any, const unsigned b) {
 	struct PT_(tree) tree;
 	unsigned left, right, i = 0, b0 = 0;
@@ -156,10 +161,10 @@ static void PT_(graph_tree)(const union PT_(any_tree) any, FILE *const fp) {
 		PT_(graph_tree)(tree.leaves[i].child, fp);
 }
 
-/** Draw a graph of `trie` to `fn` in Graphviz format. */
+/** Draw a graph of `trie` to `fn` in Graphviz format with `tf` as it's
+ tree-drawing output. */
 static void PT_(graph_choose)(const struct T_(trie) *const trie,
-	const char *const fn,
-	void (*PT_(tree))(const union PT_(any_tree), FILE *)) {
+	const char *const fn, const PT_(tree_file_fn) tf) {
 	FILE *fp;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
@@ -174,16 +179,18 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 		fprintf(fp, "\ttrie -> tree%pbranch0 [label = \"%uB\", "
 			"color = firebrick];\n", (void *)trie->root.info,
 			PT_(tree_sizes)[trie->root.info->no]);
-		PT_(tree)(trie->root, fp);
+		tf(trie->root, fp);
 	}
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
 	fclose(fp);
 }
 
+/** Graphs logical `trie` output to `fn`. */
 static void PT_(graph)(const struct T_(trie) *const trie,
 	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree)); }
 
+/** Graphs `trie` in memory output to `fn`. */
 static void PT_(graph_mem)(const struct T_(trie) *const trie,
 	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem)); }
 
