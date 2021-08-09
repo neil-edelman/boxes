@@ -4,7 +4,8 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/* Works by side-effects, _ie_ fills the type with data. */
+/** Works by side-effects, _ie_ fills the type with data. Only defined if
+ `TRIE_TEST`. */
 typedef void (*PT_(action_fn))(PT_(type) *);
 /* Used in <fn:<PT>graph_choose>. */
 typedef void (*PT_(tree_file_fn))(const union PT_(any_tree), FILE *);

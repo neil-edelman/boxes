@@ -3,7 +3,7 @@
 ## Prefix Tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;PT&gt;any_tree](#user-content-tag-f3b4d764), [&lt;PT&gt;leaf](#user-content-tag-44821167), [&lt;PT&gt;tree](#user-content-tag-134b950f), [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -54,6 +54,14 @@ Responsible for picking out the null\-terminated string\. Modifying the string w
 <code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
 
 Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+
+
+
+### <a id = "user-content-typedef-ba462b2e" name = "user-content-typedef-ba462b2e">&lt;PT&gt;action_fn</a> ###
+
+<code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;type *);</code>
+
+Works by side\-effects, _ie_ fills the type with data\. Only defined if `TRIE_TEST`\.
 
 
 
