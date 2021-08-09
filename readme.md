@@ -4,7 +4,7 @@
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;PT&gt;any_tree](#user-content-tag-f3b4d764), [&lt;PT&gt;leaf](#user-content-tag-44821167), [&lt;PT&gt;tree](#user-content-tag-134b950f), [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -67,33 +67,9 @@ Works by side\-effects, _ie_ fills the type with data\. Only defined if `TRIE_TE
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-f3b4d764" name = "user-content-tag-f3b4d764">&lt;PT&gt;any_tree</a> ###
-
-<code>union <strong>&lt;PT&gt;any_tree</strong> { struct trie_info *info; TRIE_TREE_X };</code>
-
-Pointers to generic trees stored in memory, and part of the B\-forest\. Points to a non\-empty semi\-implicit complete binary tree of a fixed\-maximum\-size; reading `key.tree` will tell which tree it is\.
-
-
-
-### <a id = "user-content-tag-44821167" name = "user-content-tag-44821167">&lt;PT&gt;leaf</a> ###
-
-<code>union <strong>&lt;PT&gt;leaf</strong> { &lt;PT&gt;type *data; union &lt;PT&gt;any_tree child; };</code>
-
-A leaf is either data or another child tree; the `children` of [&lt;PT&gt;tree](#user-content-tag-134b950f) is a bitmap that tells which\.
-
-
-
-### <a id = "user-content-tag-134b950f" name = "user-content-tag-134b950f">&lt;PT&gt;tree</a> ###
-
-<code>struct <strong>&lt;PT&gt;tree</strong> { unsigned bsize, no; struct trie_branch *branches; unsigned char *children; union &lt;PT&gt;leaf *leaves; };</code>
-
-A working tree of any size extracted from different\-width storage by [&lt;PT&gt;extract](#user-content-fn-6c67df90)\.
-
-
-
 ### <a id = "user-content-tag-754a10a5" name = "user-content-tag-754a10a5">&lt;T&gt;trie</a> ###
 
-<code>struct <strong>&lt;T&gt;trie</strong> { union &lt;PT&gt;any_tree root; };</code>
+<code>struct <strong>&lt;T&gt;trie</strong>;</code>
 
 To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 

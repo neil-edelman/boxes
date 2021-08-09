@@ -202,9 +202,9 @@ static char *PT_(raw)(char **a) { return assert(a), *a; }
 /** Declared type of the trie; `char` default. */
 typedef TRIE_TYPE PT_(type);
 
-/** Pointers to generic trees stored in memory, and part of the B-forest.
+/* Pointers to generic trees stored in memory, and part of the B-forest.
  Points to a non-empty semi-implicit complete binary tree of a
- fixed-maximum-size; reading `key.tree` will tell which tree it is. */
+ fixed-maximum-size; reading `info.no` will tell which tree it is. */
 union PT_(any_tree) {
 	struct trie_info *info;
 #define X(n, m) struct PT_(tree##n) *t##n;
@@ -212,7 +212,7 @@ union PT_(any_tree) {
 #undef X
 };
 
-/** A leaf is either data or another child tree; the `children` of
+/* A leaf is either data or another child tree; the `children` of
  <tag:<PT>tree> is a bitmap that tells which. */
 union PT_(leaf) { PT_(type) *data; union PT_(any_tree) child; };
 
@@ -235,7 +235,7 @@ static const unsigned PT_(tree_sizes)[] = {
 #undef X
 };
 
-/** A working tree of any size extracted from different-width storage by
+/* A working tree of any size extracted from different-width storage by
  <fn:<PT>extract>. */
 struct PT_(tree) { unsigned bsize, no; struct trie_branch *branches;
 	unsigned char *children; union PT_(leaf) *leaves; };
@@ -244,6 +244,7 @@ struct PT_(tree) { unsigned bsize, no; struct trie_branch *branches;
  (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
+struct T_(trie);
 struct T_(trie) { union PT_(any_tree) root; };
 #ifndef TRIE_IDLE /* <!-- !zero */
 #define TRIE_IDLE { { 0 } }
@@ -314,7 +315,7 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 
 /** Expand `any` to ensure that it has one more unused capacity when the size
  is not the maximum. @return Potentially a re-allocated tree.
- @throws[realloc] @fixme Cached any. */
+ @throws[realloc] */
 static union PT_(any_tree) PT_(expand)(const union PT_(any_tree) any) {
 	struct PT_(tree) tree0, tree1;
 	union PT_(any_tree) larger;
