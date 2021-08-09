@@ -584,8 +584,7 @@ static void PT_(clear_tree)(const union PT_(any_tree) any) {
 
 /* <!-- iterate interface */
 
-/** Contains all iteration parameters. */
-struct PT_(iterator);
+/* Contains all iteration parameters. */
 struct PT_(iterator) { const struct T_(trie) *trie;
 	union PT_(any_tree) cur; unsigned i, unused; };
 

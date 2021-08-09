@@ -4,7 +4,7 @@
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;PT&gt;iterator](#user-content-tag-d9d00f09)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;trie](#user-content-tag-754a10a5)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -74,14 +74,6 @@ Works by side\-effects, _ie_ fills the type with data\. Only defined if `TRIE_TE
 To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
 ![States.](web/states.png)
-
-
-
-### <a id = "user-content-tag-d9d00f09" name = "user-content-tag-d9d00f09">&lt;PT&gt;iterator</a> ###
-
-<code>struct <strong>&lt;PT&gt;iterator</strong>;</code>
-
-Contains all iteration parameters\.
 
 
 
