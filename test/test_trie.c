@@ -5,6 +5,7 @@
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno */
 #include <time.h>   /* clock time */
+#include "orcish.h"
 
 #define PARAM(A) A
 #define STRINGIZE(A) #A
@@ -28,10 +29,36 @@ static const char *colour_key(const enum colour *const c)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
+struct str4 { char value[4]; };
+static void str4_filler(struct str4 *const s)
+	{ orcish(s->value, sizeof s->value); }
+static const char *str4_key(const struct str4 *const s) { return s->value; }
+#define TRIE_NAME str4
+#define TRIE_TYPE struct str4
+#define TRIE_KEY &str4_key
+#define TRIE_TEST &str4_filler
+#define TRIE_TO_STRING
+#include "../src/trie.h"
+
+/* This is organized by value; the key doesn't do anything. */
+struct keyval { int key; char value[12]; };
+static void keyval_filler(struct keyval *const kv)
+	{ kv->key = rand() / (RAND_MAX / 1098 + 1) - 99;
+	orcish(kv->value, sizeof kv->value); }
+static const char *keyval_key(const struct keyval *const kv)
+	{ return kv->value; }
+#define TRIE_NAME keyval
+#define TRIE_TYPE struct keyval
+#define TRIE_KEY &keyval_key
+#define TRIE_TEST &keyval_filler
+#define TRIE_TO_STRING
+#include "../src/trie.h"
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	colour_trie_test();
+	str4_trie_test();
+	keyval_trie_test();
 	return EXIT_SUCCESS;
 }

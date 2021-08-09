@@ -220,7 +220,7 @@ static void PT_(test)(void) {
 	char fn[64];
 	struct T_(trie) trie = TRIE_IDLE;
 	size_t n;
-	struct { PT_(type) data; int is_in; } es[20];
+	struct { PT_(type) data; int is_in; } es[2000];
 	const size_t es_size = sizeof es / sizeof *es;
 	PT_(type) *data;
 
@@ -238,13 +238,15 @@ static void PT_(test)(void) {
 	errno = 0;
 	for(n = 0; n < es_size; n++) {
 		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
-		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
-			(unsigned long)n + 1lu);
-		printf("Graph %s: %s.\n", fn, T_(trie_to_string)(&trie));
-		PT_(graph)(&trie, fn);
-		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu-mem.gv",
-			(unsigned long)n + 1lu);
-		PT_(graph_mem)(&trie, fn);
+		if(!((n + 1) & n) || n + 1 == es_size) { /* Graph. */
+			sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
+				(unsigned long)n + 1lu);
+			printf("Graph %s: %s.\n", fn, T_(trie_to_string)(&trie));
+			PT_(graph)(&trie, fn);
+			sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu-mem.gv",
+				(unsigned long)n + 1lu);
+			PT_(graph_mem)(&trie, fn);
+		}
 		assert(!errno || (perror("Check"), 0));
 		if(!es[n].is_in) { printf("Duplicate value %s -> %s.\n",
 			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie)); continue; };
@@ -255,7 +257,6 @@ static void PT_(test)(void) {
 		data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data)),
 		assert(data == &es[n].data);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
-	/*...*/
 #if 0
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
 	assert(ret && size == T_(trie_size)(&trie));
@@ -271,6 +272,7 @@ static void PT_(test)(void) {
 		assert(ret && size == T_(trie_size)(&trie) && eject == &es[0].data);
 #endif
 	T_(trie_)(&trie), assert(!trie.root.info), PT_(valid)(&trie);
+	assert(!errno);
 }
 
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
