@@ -67,13 +67,20 @@ static void str_trie_test(void) {
 	str_trie_add(&strs, "foo");
 	str_trie_prefix(&strs, "b", &it);
 	printf("b: %u, %u\n", it.leaf, it.leaf_end);
-	while(str = str_trie_next(&it)) printf("got: %s\n", str);
+	while(str = str_trie_next(&it))
+		printf("got: %s rem %lu.\n", str, (unsigned long)str_trie_size(&it));
 	str_trie_prefix(&strs, "f", &it);
 	printf("f: %u, %u\n", it.leaf, it.leaf_end);
-	while(str = str_trie_next(&it)) printf("got: %s\n", str);
+	while(str = str_trie_next(&it))
+		printf("got: %s rem %lu.\n", str, (unsigned long)str_trie_size(&it));
 	str_trie_prefix(&strs, "a", &it);
 	printf("a: %u, %u\n", it.leaf, it.leaf_end);
-	while(str = str_trie_next(&it)) printf("got: %s\n", str);
+	while(str = str_trie_next(&it))
+		printf("got: %s rem %lu.\n", str, (unsigned long)str_trie_size(&it));
+	str_trie_prefix(&strs, "", &it);
+	printf("<empty>: %u, %u\n", it.leaf, it.leaf_end);
+	while(str = str_trie_next(&it))
+		printf("got: %s rem %lu.\n", str, (unsigned long)str_trie_size(&it));
 	str_trie_(&strs);
 }
 

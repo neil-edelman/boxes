@@ -303,6 +303,15 @@ static void PT_(extract)(const union PT_(any_tree) store,
 	}
 }
 
+/** @return The leftmost key `lf` of `any`. */
+static const char *PT_(sample)(union PT_(any_tree) any, unsigned lf) {
+	struct PT_(tree) tree;
+	assert(any.info);
+	while(PT_(extract)(any, &tree), TRIE_BITTEST(tree.children, lf))
+		any = tree.leaves[lf].child, lf = 0;
+	return PT_(to_key)(tree.leaves[lf].data);
+}
+
 /** @return Looks at only the index of `trie` for potential `key` matches,
  otherwise `key` is definitely not in `trie`. @order \O(`key.length`) */
 static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
@@ -334,9 +343,8 @@ static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	return tree.leaves[in_tree.lf].data;
 }
 
-
 /** Looks at only the index of `trie` for potential `prefix` matches,
- and stores them in `it`. @order \O(|`prefix`|) @order \O(|`prefix`|) */
+ and stores them in `it`. @order \O(|`prefix`|) */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *it) {
 	union PT_(any_tree) store = trie->root;
@@ -383,17 +391,21 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	return (x = PT_(match)(trie, key)) && !strcmp(PT_(to_key)(x), key) ? x : 0;
 }
 
-/** ... */
+/** Stores all `prefix` matches in `trie` and stores them in `it`.
+ @param[it] Output remains valid until the topology of the trie changes.
+ @order \O(|`prefix`|) */
 static void PT_(prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *it) {
-	if(prefix) {
-		PT_(match_prefix)(trie, prefix, it);
-		if(it->leaf_end <= it->leaf) return;
-		/*trie_is_prefix(prefix, PT_(to_key)(trie->leaves.data[*low])))*/
-	} else {
-		assert(trie && it && 0);
-		/*...*/
-	}
+	struct PT_(tree) tree;
+	assert(trie && prefix && it);
+	PT_(match_prefix)(trie, prefix, it);
+	if(it->leaf_end <= it->leaf) return;
+	assert(it->root.info && it->next.info && it->next.info == it->end.info
+		&& it->leaf_end <= it->end.info->bsize + 1);
+	/* Makes sure the trie matches the string. */
+	PT_(extract)(it->end, &tree);
+	if(!trie_is_prefix(prefix, PT_(sample)(it->end, it->leaf_end - 1)))
+		it->leaf_end = it->leaf;
 }
 
 /** Expand `any` to ensure that it has one more unused capacity when not full.
@@ -543,15 +555,6 @@ right:
 
 /* join() */
 
-/** @return The leftmost key `lf` of `any`. */
-static const char *PT_(sample)(union PT_(any_tree) any, unsigned lf) {
-	struct PT_(tree) tree;
-	assert(any.info);
-	while(PT_(extract)(any, &tree), TRIE_BITTEST(tree.children, lf))
-		any = tree.leaves[lf].child, lf = 0;
-	return PT_(to_key)(tree.leaves[lf].data);
-}
-
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
@@ -663,16 +666,30 @@ static void PT_(clear)(const union PT_(any_tree) any) {
 	free(any.info);
 }
 
-/** Counts the sub-tree `any`. @fixme Again, lazy. @order O(|`any`|) */
-static size_t PT_(size)(const union PT_(any_tree) any) {
+/** Counts the sub-tree `any`. @order O(|`any`|) */
+static size_t PT_(sub_size)(const union PT_(any_tree) any) {
 	struct PT_(tree) tree;
 	unsigned i;
 	size_t size;
 	assert(any.info);
 	PT_(extract)(any, &tree);
 	size = tree.bsize + 1;
+	/* This is inefficient, obvs. Use `(children & (children - 1))`. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i))
-		size += PT_(size)(tree.leaves[i].child) - 1;
+		size += PT_(sub_size)(tree.leaves[i].child) - 1;
+	return size;
+}
+
+static size_t PT_(size)(const struct T_(trie_iterator) *const it) {
+	/* Round-up. */
+	/*...*/
+	size_t size, child[(TRIE_ORDER - 1) / CHAR_BIT / sizeof size + 1];
+	const size_t child_size = sizeof child / sizeof *child;
+	assert(it && it->leaf <= it->leaf_end);
+	size = it->leaf_end - it->leaf;
+	/* And . . . */
+	memset(child, 0, child_size);
+	/*for(i = 0; i < )*/
 	return size;
 }
 
@@ -768,12 +785,6 @@ static void T_(trie_)(struct T_(trie) *const trie) {
 	if(trie->root.info) PT_(clear)(trie->root), T_(trie)(trie);
 }
 
-/** Counts the size of the `trie`. @order \O(`trie.size`) @allow */
-static size_t T_(trie_size)(const struct T_(trie) *const trie) {
-	assert(trie);
-	return trie->root.info ? PT_(size)(trie->root) : 0;
-}
-
 /** @return Looks at only the index of `trie` for potential `key` matches,
  but doesn't compare the string for an exact match. @order \O(|`key`|) @allow */
 static PT_(type) *T_(trie_match)(const struct T_(trie) *const trie,
@@ -786,11 +797,16 @@ static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 
 /** Fills `it` with iteration parameters that find values that start with
  `prefix` in `trie`.
- @param[it] Can be null, in which case `it` will be filled with the entire trie.
+ @param[prefix] To fill `it` with the entire `trie`, use the empty string.
  @order \O(|`prefix`+1|) */
 static void T_(trie_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *const it)
 	{ PT_(prefix)(trie, prefix, it); }
+
+/** Counts the of the remaining items in `it`; the trie that `it` originated
+ can not have topological changes. @order \O(`it.size`) @allow */
+static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
+	{ return assert(it), it->root.info ? PT_(size)(it) : 0; }
 
 /** @return If `x` is already in `trie`, returns false, otherwise success.
  @throws[realloc, ERANGE] @allow */
