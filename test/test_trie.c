@@ -7,6 +7,10 @@
 #include <time.h>   /* clock time */
 #include "orcish.h"
 
+#define TRIE_NAME str
+#define TRIE_TO_STRING
+#include "../src/trie.h"
+
 #define PARAM(A) A
 #define STRINGIZE(A) #A
 #define COLOUR(X) /* Max 11 letters. */ \
@@ -54,9 +58,29 @@ static const char *keyval_key(const struct keyval *const kv)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
+static void str_trie_test(void) {
+	struct str_trie strs = TRIE_IDLE;
+	struct str_trie_iterator it;
+	const char *str;
+	str_trie_add(&strs, "bar");
+	str_trie_add(&strs, "baz");
+	str_trie_add(&strs, "foo");
+	str_trie_prefix(&strs, "b", &it);
+	printf("b: %u, %u\n", it.i, it.i_end);
+	while(str = str_trie_next(&it)) printf("got: %s\n", str);
+	str_trie_prefix(&strs, "f", &it);
+	printf("f: %u, %u\n", it.i, it.i_end);
+	while(str = str_trie_next(&it)) printf("got: %s\n", str);
+	str_trie_prefix(&strs, "a", &it);
+	printf("a: %u, %u\n", it.i, it.i_end);
+	while(str = str_trie_next(&it)) printf("got: %s\n", str);
+	str_trie_(&strs);
+}
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
+	str_trie_test(); /* Special. */
 	colour_trie_test();
 	str4_trie_test();
 	keyval_trie_test();
