@@ -680,7 +680,7 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 	const struct T_(trie) *const trie)
 	{ assert(it && trie); it->root = it->next = trie->root; it->leaf = 0; }
 
-/** Advances `it`. @implements next */
+/** Advances `it`. @return The previous value or null. @implements next */
 static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	struct PT_(tree) tree;
 	assert(it);
@@ -736,18 +736,16 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	return tree.leaves[it->leaf++].data;
 }
 
+/** Advances `it`. @return The previous value or null. @implements next */
 static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
-	struct PT_(iterator) real;
+	struct PT_(iterator) shunt;
 	PT_(type) *x;
-	assert(it && it->root.info);
-	if(!it->next.info
+	assert(it);
+	if(!it->root.info || !it->next.info
 		|| it->next.info == it->end.info && it->leaf >= it->leaf_end) return 0;
-	real.root = it->root;
-	real.next.info = it->next.info;
-	real.leaf = it->leaf;
-	x = PT_(next)(&real);
-	it->next.info = real.next.info;
-	it->leaf = real.leaf;
+	shunt.root = it->root, shunt.next.info = it->next.info,
+		shunt.leaf = it->leaf, x = PT_(next)(&shunt);
+	it->next.info = shunt.next.info, it->leaf = shunt.leaf;
 	return x;
 }
 
