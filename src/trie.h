@@ -181,6 +181,14 @@ static void trie_bmp_split(unsigned char *const parent,
 		memset(parent + a0, 0, TRIE_BMP_SIZE(TRIE_ORDER) - a0);
 	}
 }
+/** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
+ Used in <fn:<T>trie_prefix>. */
+static int trie_is_prefix(const char *a, const char *b) {
+	for( ; ; a++, b++) {
+		if(*a == '\0') return 1;
+		if(*a != *b) return *b == '\0';
+	}
+}
 #endif /* idempotent --> */
 
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -240,8 +248,12 @@ static const unsigned PT_(tree_sizes)[] = {
 
 /* A working tree of any size extracted from different-width storage by
  <fn:<PT>extract>. */
-struct PT_(tree) { unsigned bsize, no; struct trie_branch *branches;
-	unsigned char *children; union PT_(leaf) *leaves; };
+struct PT_(tree) {
+	unsigned bsize, no;
+	struct trie_branch *branches;
+	unsigned char *children;
+	union PT_(leaf) *leaves;
+};
 
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
@@ -260,7 +272,8 @@ struct PT_(iterator) {
 	unsigned leaf, unused;
 };
 
-/** Stores a range in the trie. Any changes in the trie invalidate it. */
+/** Stores a range in the trie. Any changes in the topology of the trie
+ invalidate it. */
 struct T_(trie_iterator) {
 	union PT_(any_tree) root, next, end;
 	unsigned leaf, leaf_end;
@@ -324,31 +337,8 @@ static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 
 /** Looks at only the index of `trie` for potential `prefix` matches,
  and stores them in `it`. @order \O(|`prefix`|) @order \O(|`prefix`|) */
-static void PT_(prefix)(const struct T_(trie) *const trie,
+static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *it) {
-#if 0
-	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
-	TrieBranch branch;
-	size_t n0_byte, str_byte = 0, bit = 0;
-	assert(trie && prefix && low && high && n1);
-	n1--, assert(n1 == trie->branches.size);
-	while(n0 < n1) {
-		branch = trie->branches.data[n0];
-		bit += trie_skip(branch);
-		/* _Sic_; '\0' is _not_ included for partial match. */
-		for(n0_byte = bit >> 3; str_byte <= n0_byte; str_byte++)
-			if(prefix[str_byte] == '\0') goto finally;
-		left = trie_left(branch);
-		if(!trie_is_bit(prefix, bit)) n1 = ++n0 + left;
-		else n0 += left + 1, i += left + 1;
-		bit++;
-	}
-	assert(n0 == n1);
-finally:
-	assert(n0 <= n1 && i - n0 + n1 < trie->leaves.size);
-	*low = i, *high = i - n0 + n1;
-#endif
-
 	union PT_(any_tree) store = trie->root;
 	struct PT_(tree) tree;
 	const struct trie_branch *branch;
@@ -391,6 +381,19 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	const char *const key) {
 	PT_(type) *x;
 	return (x = PT_(match)(trie, key)) && !strcmp(PT_(to_key)(x), key) ? x : 0;
+}
+
+/** ... */
+static void PT_(prefix)(const struct T_(trie) *const trie,
+	const char *const prefix, struct T_(trie_iterator) *it) {
+	if(prefix) {
+		PT_(match_prefix)(trie, prefix, it);
+		if(it->leaf_end <= it->leaf) return;
+		/*trie_is_prefix(prefix, PT_(to_key)(trie->leaves.data[*low])))*/
+	} else {
+		assert(trie && it && 0);
+		/*...*/
+	}
 }
 
 /** Expand `any` to ensure that it has one more unused capacity when not full.
@@ -736,19 +739,6 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	return tree.leaves[it->leaf++].data;
 }
 
-/** Advances `it`. @return The previous value or null. @implements next */
-static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
-	struct PT_(iterator) shunt;
-	PT_(type) *x;
-	assert(it);
-	if(!it->root.info || !it->next.info
-		|| it->next.info == it->end.info && it->leaf >= it->leaf_end) return 0;
-	shunt.root = it->root, shunt.next.info = it->next.info,
-		shunt.leaf = it->leaf, x = PT_(next)(&shunt);
-	it->next.info = shunt.next.info, it->leaf = shunt.leaf;
-	return x;
-}
-
 /* iterate --> */
 
 #if 0
@@ -794,13 +784,13 @@ static PT_(type) *T_(trie_match)(const struct T_(trie) *const trie,
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
 
-/** @return Whether, in `trie`, given a partial `prefix`, it has found `low`,
- `high` prefix matches. */
+/** Fills `it` with iteration parameters that find values that start with
+ `prefix` in `trie`.
+ @param[it] Can be null, in which case `it` will be filled with the entire trie.
+ @order \O(|`prefix`+1|) */
 static void T_(trie_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, struct T_(trie_iterator) *const it) {
-	/* Also strcmp. */
-	PT_(prefix)(trie, prefix, it);
-}
+	const char *const prefix, struct T_(trie_iterator) *const it)
+	{ PT_(prefix)(trie, prefix, it); }
 
 /** @return If `x` is already in `trie`, returns false, otherwise success.
  @throws[realloc, ERANGE] @allow */
@@ -811,14 +801,19 @@ static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 	/*return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
 }
 
-/** @return Whether `a` and `b` are equal up to the minimum. Used in
- <fn:trie_prefix>. */
-/*static int trie_is_prefix(const char *a, const char *b) {
-	for( ; ; a++, b++) {
-		if(*a == '\0') return 1;
-		if(*a != *b) return *b == '\0';
-	}
-}*/
+/** Advances `it`. @return The previous value or null. */
+static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
+	struct PT_(iterator) shunt;
+	PT_(type) *x;
+	assert(it);
+	/* This has more information about the end of iteration. */
+	/*!it->root.info || !it->next.info || */
+	if(it->next.info == it->end.info && it->leaf >= it->leaf_end) return 0;
+	shunt.root = it->root, shunt.next.info = it->next.info,
+		shunt.leaf = it->leaf, x = PT_(next)(&shunt);
+	it->next.info = shunt.next.info, it->leaf = shunt.leaf;
+	return x;
+}
 
 /* Define these for traits. */
 #define BOX_ PT_
