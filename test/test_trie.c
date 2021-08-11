@@ -66,13 +66,13 @@ static void str_trie_test(void) {
 	str_trie_add(&strs, "baz");
 	str_trie_add(&strs, "foo");
 	str_trie_prefix(&strs, "b", &it);
-	printf("b: %u, %u\n", it.i, it.i_end);
+	printf("b: %u, %u\n", it.leaf, it.leaf_end);
 	while(str = str_trie_next(&it)) printf("got: %s\n", str);
 	str_trie_prefix(&strs, "f", &it);
-	printf("f: %u, %u\n", it.i, it.i_end);
+	printf("f: %u, %u\n", it.leaf, it.leaf_end);
 	while(str = str_trie_next(&it)) printf("got: %s\n", str);
 	str_trie_prefix(&strs, "a", &it);
-	printf("a: %u, %u\n", it.i, it.i_end);
+	printf("a: %u, %u\n", it.leaf, it.leaf_end);
 	while(str = str_trie_next(&it)) printf("got: %s\n", str);
 	str_trie_(&strs);
 }

@@ -256,16 +256,14 @@ struct T_(trie) { union PT_(any_tree) root; };
 /* Contains all iteration parameters; satisfies box interface iteration. This
  is a private version of the <tag:<T>trie_iterator> that does all the work. */
 struct PT_(iterator) {
-	const struct T_(trie) *trie;
-	union PT_(any_tree) cur;
-	unsigned i, unused;
+	union PT_(any_tree) root, next;
+	unsigned leaf, unused;
 };
 
 /** Stores a range in the trie. Any changes in the trie invalidate it. */
 struct T_(trie_iterator) {
-	const struct T_(trie) *trie;
-	union PT_(any_tree) cur, end;
-	unsigned i, i_end;
+	union PT_(any_tree) root, next, end;
+	unsigned leaf, leaf_end;
 };
 
 /** Responsible for picking out the null-terminated string. Modifying the
@@ -358,7 +356,8 @@ finally:
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && prefix && it);
-	it->trie = 0, it->cur.info = it->end.info = 0, it->i = it->i_end = 0;
+	it->root.info = it->next.info = it->end.info = 0;
+	it->leaf = it->leaf_end = 0;
 	if(!store.info) return; /* Idle. */
 	for(byte.cur = 0, bit = 0; ; ) { /* Forest. */
 		PT_(extract)(store, &tree);
@@ -381,9 +380,10 @@ finally:
 finally:
 	assert(in_tree.br0 <= in_tree.br1
 		&& in_tree.lf - in_tree.br0 + in_tree.br1 <= tree.bsize);
-	it->trie = trie;
-	it->cur = it->end = store;
-	it->i = in_tree.lf, it->i_end = in_tree.lf + in_tree.br1 - in_tree.br0;
+	it->root = trie->root;
+	it->next = it->end = store;
+	it->leaf = in_tree.lf;
+	it->leaf_end = in_tree.lf + in_tree.br1 - in_tree.br0 + 1;
 }
 
 /** @return Exact match for `key` in `trie` or null. */
@@ -675,81 +675,79 @@ static size_t PT_(size)(const union PT_(any_tree) any) {
 
 /* <!-- iterate interface */
 
-/** Loads `trie` into `it`. @implements begin */
+/** Loads the first element of `trie` into `it`. @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
 	const struct T_(trie) *const trie)
-	{ assert(it && trie); it->trie = trie; it->cur.info = 0; }
+	{ assert(it && trie); it->root = it->next = trie->root; it->leaf = 0; }
 
 /** Advances `it`. @implements next */
 static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	struct PT_(tree) tree;
-	assert(it && it->trie);
-	if(!it->cur.info) { /* Starting. Descend to first leaf. */
-		if(!(it->cur = it->trie->root).info) return 0; /* Empty. */
-		while(PT_(extract)(it->cur, &tree), TRIE_BITTEST(tree.children, 0))
-			it->cur = tree.leaves[0].child;
-		it->i = 0;
-	} else { /* Iterating. */
-		PT_(extract)(it->cur, &tree);
-		if(++it->i > tree.bsize) { /* Finished tree; restart down next. */
-			/* Any one from the tree will do; we just need to match the path.
-			 The last one is definitely a data leaf. */
-			const char *key = PT_(to_key)(tree.leaves[it->i - 1].data);
-			const union PT_(any_tree) store1 = it->cur;
-			union PT_(any_tree) store2 = it->trie->root;
-			struct PT_(tree) tree2;
-			size_t bit2 = 0;
-			const struct trie_branch *branch2;
-			struct { unsigned br0, br1, lf; } in_tree2;
-			assert(key && store2.info);
-			/*printf("next: got stuck on %s.\n",
-				PT_(to_key)(tree.leaves[it->i - 1].data));*/
-			for(it->cur.info = 0, it->i = 0; ; ) {
-				if(store1.info == store2.info) break; /* Reached the tree. */
-				PT_(extract)(store2, &tree2);
-				in_tree2.br0 = 0, in_tree2.br1 = tree2.bsize, in_tree2.lf = 0;
-				while(in_tree2.br0 < in_tree2.br1) {
-					branch2 = tree2.branches + in_tree2.br0;
-					bit2 += branch2->skip;
-					if(!TRIE_BITTEST(key, bit2))
-						in_tree2.br1 = ++in_tree2.br0 + branch2->left;
-					else
-						in_tree2.br0 += branch2->left + 1,
-						in_tree2.lf += branch2->left + 1;
-					bit2++;
-				}
-				/* We found a continuation. */
-				if(in_tree2.lf < tree2.bsize)
-					it->cur.info = store2.info, it->i = in_tree2.lf + 1/*,
-					printf("next: continues in tree %p, leaf %u.\n",
-						(void *)store2.key, it->i)*/;
-				assert(TRIE_BITTEST(tree2.children, in_tree2.lf));
-				store2 = tree2.leaves[in_tree2.lf].child;
+	assert(it);
+	/*printf("_next_\n");*/
+	if(!it->root.info || !it->next.info) return 0;
+	PT_(extract)(it->next, &tree);
+	/* Off the end of the tree. */
+	if(it->leaf > tree.bsize) {
+		/* Definitely a data leaf or else we would have fallen thought.
+		 Unless it had a concurrent modification. That would be bad; don't. */
+		const char *key = PT_(to_key)(tree.leaves[tree.bsize].data);
+		const union PT_(any_tree) store1 = it->next;
+		union PT_(any_tree) store2 = it->root;
+		struct PT_(tree) tree2;
+		size_t bit2 = 0;
+		const struct trie_branch *branch2;
+		struct { unsigned br0, br1, lf; } in_tree2;
+		assert(key && store2.info && !TRIE_BITTEST(tree.children, tree.bsize));
+		/*printf("next: over the end of the tree on %s.\n",
+			PT_(to_key)(tree.leaves[it->leaf - 1].data));*/
+		for(it->next.info = 0; ; ) { /* Forest. */
+			if(store2.info == store1.info) break; /* Reached the tree. */
+			PT_(extract)(store2, &tree2);
+			in_tree2.br0 = 0, in_tree2.br1 = tree2.bsize, in_tree2.lf = 0;
+			while(in_tree2.br0 < in_tree2.br1) { /* Tree. */
+				branch2 = tree2.branches + in_tree2.br0;
+				bit2 += branch2->skip;
+				if(!TRIE_BITTEST(key, bit2))
+					in_tree2.br1 = ++in_tree2.br0 + branch2->left;
+				else
+					in_tree2.br0 += branch2->left + 1,
+					in_tree2.lf += branch2->left + 1;
+				bit2++;
 			}
-			if(!it->cur.info) { assert(!it->i); return 0; } /* No more. */
-			PT_(extract)(it->cur, &tree); /* Update tree. */
-		} /*else {
-			printf("next: tree %p, leaf %u, bsize %u.\n",
-				(void *)it->cur.key, it->i, it->cur.key->bsize);
-		}*/
-		while(TRIE_BITTEST(tree.children, it->i))
-			PT_(extract)(it->cur = tree.leaves[it->i].child, &tree), it->i = 0;
+			/* Set it to the next value. */
+			if(in_tree2.lf < tree2.bsize)
+				it->next.info = store2.info, it->leaf = in_tree2.lf + 1/*,
+				printf("next: continues in tree %p, leaf %u.\n",
+					(void *)store2.key, it->i)*/;
+			/* We never reach the bottom, since it breaks up above. */
+			assert(TRIE_BITTEST(tree2.children, in_tree2.lf));
+			store2 = tree2.leaves[in_tree2.lf].child;
+		}
+		if(!it->next.info) { /*printf("next: fin\n");*/ it->leaf = 0; return 0; } /* No more. */
+		PT_(extract)(it->next, &tree); /* Update tree. */
 	}
-	return tree.leaves[it->i].data;
+	/* Fall through the trees. */
+	while(TRIE_BITTEST(tree.children, it->leaf))
+		PT_(extract)(it->next = tree.leaves[it->leaf].child, &tree),
+		it->leaf = 0/*, printf("next: fall though.\n")*/;
+	/* Until we hit data. */
+	/*printf("next: more data\n");*/
+	return tree.leaves[it->leaf++].data;
 }
 
 static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 	struct PT_(iterator) real;
 	PT_(type) *x;
-	assert(it && it->trie);
-	if(!it->cur.info || it->cur.info == it->end.info && it->i > it->i_end)
-		return 0;
-	real.trie = it->trie;
-	real.cur.info = it->cur.info;
-	real.i = it->i;
+	assert(it && it->root.info);
+	if(!it->next.info
+		|| it->next.info == it->end.info && it->leaf >= it->leaf_end) return 0;
+	real.root = it->root;
+	real.next.info = it->next.info;
+	real.leaf = it->leaf;
 	x = PT_(next)(&real);
-	it->cur.info = real.cur.info;
-	it->i = real.i;
+	it->next.info = real.next.info;
+	it->leaf = real.leaf;
 	return x;
 }
 
