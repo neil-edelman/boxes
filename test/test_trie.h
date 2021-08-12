@@ -246,7 +246,7 @@ static void PT_(test)(void) {
 
 	errno = 0;
 	for(n = 0; n < es_size; n++) {
-		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
+		es[n].is_in = T_(trie_try_insert)(&trie, &es[n].data);
 		if(!((n + 1) & n) || n + 1 == es_size) { /* Graph. */
 			sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
 				(unsigned long)n + 1lu);
@@ -279,7 +279,7 @@ static void PT_(test)(void) {
 	printf("%lu items; sum of exhaustive one-letter sub-trees: %lu.\n",
 		n, count), assert(n == count && n);
 #if 0
-	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
+	ret = T_(trie_try_insert)(&trie, &es[0].data); /* Doesn't add. */
 	assert(ret && size == T_(trie_size)(&trie));
 	ret = T_(trie_put)(&trie, &es[0].data, 0),
 		assert(ret && size == T_(trie_size)(&trie));

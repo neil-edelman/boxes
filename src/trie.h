@@ -809,14 +809,22 @@ static PT_(type) *T_(trie_match)(const struct T_(trie) *const trie,
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
 
-/** Adds `x` to `trie`. @return If `x` is already in `trie`, returns false,
- otherwise success. @throws[realloc, ERANGE] @allow */
-static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
-	return assert(trie && x),
+/** Inserts a pointer to `x` into `trie` if the key doesn't exist already.
+ @return If the key did not exist and it was created, returns true. If the key
+ of `x` is already in `trie`, or an error occurred, returns false.
+ @throws[realloc, ERANGE] Set `errno = 0` before to tell if the operation
+ failed due to error. @allow */
+static int T_(trie_try_insert)(struct T_(trie) *const trie, PT_(type) *const x)
+	{ return assert(trie && x),
 		PT_(get)(trie, PT_(to_key)(x)) ? /*printf("add: %s already in trie.\n",
 		PT_(to_key)(x)),*/ 0 : PT_(add_unique)(trie, x);
 	/*return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
 }
+
+/* TODO: insert_or_assign or at or put or assign { return assert(trie && x),
+	 PT_(get)(trie, PT_(to_key)(x)) ? printf("add: %s already in trie.\n",
+	 PT_(to_key)(x)), 0 : PT_(add_unique)(trie, x);
+ return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
 
 /** Fills `it` with iteration parameters that find values that start with
  `prefix` in `trie`.
@@ -847,6 +855,10 @@ static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 	return x;
 }
 
+/* typename std::unordered_map<Key,T,Hash,KeyEqual,Alloc>::size_type
+	erase_if(std::unordered_map<Key,T,Hash,KeyEqual,Alloc>& c, Pred pred);
+ std::pair */
+
 /* Define these for traits. */
 #define BOX_ PT_
 #define BOX_CONTAINER struct T_(trie)
@@ -871,7 +883,7 @@ static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
 	PT_(begin)(0, 0);
 	T_(trie)(0); T_(trie_)(0);
-	T_(trie_match)(0, 0); T_(trie_get)(0, 0); T_(trie_add)(0, 0);
+	T_(trie_match)(0, 0); T_(trie_get)(0, 0); T_(trie_try_insert)(0, 0);
 	T_(trie_prefix)(0, 0, 0); T_(trie_size)(0); T_(trie_next)(0);
 	PT_(unused_base_coda)();
 }

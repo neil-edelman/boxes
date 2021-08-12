@@ -66,9 +66,9 @@ static void str_trie_test(void) {
 	const char *test[] = { "b", "f", "a", "" };
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
-	str_trie_add(&strs, "bar");
-	str_trie_add(&strs, "baz");
-	str_trie_add(&strs, "foo");
+	str_trie_try_put(&strs, "bar");
+	str_trie_try_put(&strs, "baz");
+	str_trie_try_put(&strs, "foo");
 	for(i = 0; i < test_size; i++) {
 		str = test[i];
 		str_trie_prefix(&strs, str, &it);
