@@ -58,6 +58,7 @@ static const char *keyval_key(const struct keyval *const kv)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
+/** Special; plain strings are not testable in this framework. */
 static void str_trie_test(void) {
 	struct str_trie strs = TRIE_IDLE;
 	struct str_trie_iterator it;
@@ -82,7 +83,7 @@ static void str_trie_test(void) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	str_trie_test(); /* Special. */
+	str_trie_test();
 	colour_trie_test();
 	str4_trie_test();
 	keyval_trie_test();

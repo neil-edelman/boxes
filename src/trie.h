@@ -27,7 +27,8 @@
 
  @param[TRIE_KEY]
  A function that satisfies <typedef:<PT>key_fn>. Must be defined if and only if
- `TRIE_TYPE` is defined.
+ `TRIE_TYPE` is defined. (This imbues it with the properties of an associative
+ array.)
 
  @param[TRIE_TO_STRING]
  Defining this includes <to_string.h>, with the keys as the string.
@@ -787,6 +788,17 @@ static void T_(trie_)(struct T_(trie) *const trie) {
 	if(trie->root.info) PT_(clear)(trie->root), T_(trie)(trie);
 }
 
+#if 0
+/** Initializes `trie` from an `array` of pointers-to-`<T>` of `array_size`.
+ @return Success. @throws[realloc] @order \O(`array_size`) @allow
+ @fixme Write this function, somehow. */
+static int T_(trie_from_array)(struct T_(trie) *const trie,
+	PT_(type) *const*const array, const size_t array_size) {
+	return assert(trie && array && array_size),
+		PT_(init)(trie, array, array_size);
+}
+#endif
+
 /** @return Looks at only the index of `trie` for potential `key` matches,
  but doesn't compare the string for an exact match. @order \O(|`key`|) @allow */
 static PT_(type) *T_(trie_match)(const struct T_(trie) *const trie,
@@ -797,20 +809,6 @@ static PT_(type) *T_(trie_match)(const struct T_(trie) *const trie,
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
 
-/** Fills `it` with iteration parameters that find values that start with
- `prefix` in `trie`.
- @param[prefix] To fill `it` with the entire `trie`, use the empty string.
- @order \O(|`prefix`+1|) */
-static void T_(trie_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, struct T_(trie_iterator) *const it)
-	{ PT_(prefix)(trie, prefix, it); }
-
-/** Counts the of the items in the new `it`; the trie that `it` originated can
- not have topological changes and the iterator must be new, (<fn:<T>trie_next>
- causes it to become undefined.) @order \O(|`it`|) @allow */
-static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
-	{ return PT_(size)(it); }
-
 /** Adds `x` to `trie`. @return If `x` is already in `trie`, returns false,
  otherwise success. @throws[realloc, ERANGE] @allow */
 static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
@@ -819,6 +817,21 @@ static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 		PT_(to_key)(x)),*/ 0 : PT_(add_unique)(trie, x);
 	/*return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
 }
+
+/** Fills `it` with iteration parameters that find values that start with
+ `prefix` in `trie`.
+ @param[prefix] To fill `it` with the entire `trie`, use the empty string.
+ @param[it] A pointer to an iterator that gets filled. It is valid until a
+ topological change to `trie`. @order \O(|`prefix`+1|) */
+static void T_(trie_prefix)(const struct T_(trie) *const trie,
+	const char *const prefix, struct T_(trie_iterator) *const it)
+	{ PT_(prefix)(trie, prefix, it); }
+
+/** Counts the of the items in the new `it`; iterator must be new,
+ (<fn:<T>trie_next> causes it to become undefined.)
+ @order \O(|`it`|) @allow */
+static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
+	{ return PT_(size)(it); }
 
 /** Advances `it`. @return The previous value or null. */
 static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
@@ -856,9 +869,10 @@ static void PT_(to_string)(const PT_(type) *const a, char (*const z)[12])
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	PT_(begin)(0, 0); T_(trie_next)(0);
-	T_(trie)(0); T_(trie_)(0); T_(trie_size)(0); T_(trie_match)(0, 0);
-	T_(trie_get)(0, 0); T_(trie_prefix)(0, 0, 0); T_(trie_add)(0, 0);
+	PT_(begin)(0, 0);
+	T_(trie)(0); T_(trie_)(0);
+	T_(trie_match)(0, 0); T_(trie_get)(0, 0); T_(trie_add)(0, 0);
+	T_(trie_prefix)(0, 0, 0); T_(trie_size)(0); T_(trie_next)(0);
 	PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
