@@ -227,7 +227,8 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 static void PT_(test)(void) {
 	char fn[64];
 	struct T_(trie) trie = TRIE_IDLE;
-	size_t n;
+	struct T_(trie_iterator) it;
+	size_t n, count;
 	struct { PT_(type) data; int is_in; } es[2000];
 	const size_t es_size = sizeof es / sizeof *es;
 	PT_(type) *data;
@@ -265,6 +266,18 @@ static void PT_(test)(void) {
 		data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data)),
 		assert(data == &es[n].data);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
+
+	/* Test prefix and size. */
+	count = !!T_(trie_get)(&trie, "");
+	for(n = 1; n < 256; n++) {
+		char a[2] = { (char)n, '\0' };
+		T_(trie_prefix)(&trie, a, &it);
+		count += T_(trie_size)(&it);
+	}
+	T_(trie_prefix)(&trie, "", &it);
+	n = T_(trie_size)(&it);
+	printf("%lu items; sum of exhaustive one-letter sub-trees: %lu.\n",
+		n, count), assert(n == count);
 #if 0
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
 	assert(ret && size == T_(trie_size)(&trie));
