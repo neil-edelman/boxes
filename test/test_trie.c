@@ -62,25 +62,20 @@ static void str_trie_test(void) {
 	struct str_trie strs = TRIE_IDLE;
 	struct str_trie_iterator it;
 	const char *str;
+	const char *test[] = { "b", "f", "a", "" };
+	const size_t test_size = sizeof test / sizeof *test;
+	size_t i;
 	str_trie_add(&strs, "bar");
 	str_trie_add(&strs, "baz");
 	str_trie_add(&strs, "foo");
-	str_trie_prefix(&strs, "b", &it);
-	printf("b: %u, %u\n", it.leaf, it.leaf_end);
-	while(str = str_trie_next(&it))
-		printf("got: %s rem %lu.\n", str, (unsigned long)str_trie_size(&it));
-	str_trie_prefix(&strs, "f", &it);
-	printf("f: %u, %u\n", it.leaf, it.leaf_end);
-	while(str = str_trie_next(&it))
-		printf("got: %s rem %lu.\n", str, (unsigned long)str_trie_size(&it));
-	str_trie_prefix(&strs, "a", &it);
-	printf("a: %u, %u\n", it.leaf, it.leaf_end);
-	while(str = str_trie_next(&it))
-		printf("got: %s rem %lu.\n", str, (unsigned long)str_trie_size(&it));
-	str_trie_prefix(&strs, "", &it);
-	printf("<empty>: %u, %u\n", it.leaf, it.leaf_end);
-	while(str = str_trie_next(&it))
-		printf("got: %s rem %lu.\n", str, (unsigned long)str_trie_size(&it));
+	for(i = 0; i < test_size; i++) {
+		str = test[i];
+		str_trie_prefix(&strs, str, &it);
+		printf("%s: (%u, %u) size %lu\n",
+			str, it.leaf, it.leaf_end, (unsigned long)str_trie_size(&it));
+		while(str = str_trie_next(&it))
+			printf("got: %s.\n", str);
+	}
 	str_trie_(&strs);
 }
 

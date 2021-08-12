@@ -303,7 +303,8 @@ static void PT_(extract)(const union PT_(any_tree) store,
 	}
 }
 
-/** @return The leftmost key `lf` of `any`. */
+/** @return The leftmost key `lf` of `any`. This is why one should not modify
+ the keys: the data that is contained in them is essential to the trie. */
 static const char *PT_(sample)(union PT_(any_tree) any, unsigned lf) {
 	struct PT_(tree) tree;
 	assert(any.info);
@@ -313,7 +314,7 @@ static const char *PT_(sample)(union PT_(any_tree) any, unsigned lf) {
 }
 
 /** @return Looks at only the index of `trie` for potential `key` matches,
- otherwise `key` is definitely not in `trie`. @order \O(`key.length`) */
+ otherwise `key` is definitely not in `trie`. @order \O(|`key`|) */
 static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
 	union PT_(any_tree) store = trie->root;
@@ -666,7 +667,7 @@ static void PT_(clear)(const union PT_(any_tree) any) {
 	free(any.info);
 }
 
-/** Counts the sub-tree `any`. @order O(|`any`|) */
+/** Counts the sub-tree `any`. @order \O(|`any`|) */
 static size_t PT_(sub_size)(const union PT_(any_tree) any) {
 	struct PT_(tree) tree;
 	unsigned i;
@@ -680,32 +681,21 @@ static size_t PT_(sub_size)(const union PT_(any_tree) any) {
 	return size;
 }
 
+/** Counts the new iterator `it`. @order \O(|`it`|) */
 static size_t PT_(size)(const struct T_(trie_iterator) *const it) {
-	/* Round-up. */
-	/*...*/
-	struct PT_(tree) tree;
-	size_t size/*, child[(TRIE_ORDER - 1) / CHAR_BIT / sizeof size + 1];
-		const size_t child_size = sizeof child / sizeof *child*/;
-	size_t bmp;
-	unsigned bmp_size, bmp_size_size, child_offset;
-	unsigned char *children;
+	struct PT_(tree) next;
+	size_t size;
+	unsigned i;
 	assert(it);
 	if(!it->root.info || !it->next.info) return 0;
-	assert(it->leaf <= it->leaf_end);
+	PT_(extract)(it->next, &next);
+	/* We actually could find the size, but it's non-trivial, and just storing
+	 the size is way more efficient. */
+	assert(it->next.info == it->end.info
+		&& it->leaf <= it->leaf_end && it->leaf_end <= next.bsize + 1);
 	size = it->leaf_end - it->leaf;
-	/* And . . . */
-	PT_(extract)(it->next, &tree);
-	children = tree.children, child_offset = 0;
-	bmp_size = TRIE_BMP_SIZE(trie_tree_bsizes[tree.no] + 1);
-	bmp_size_size = (bmp_size - 1) / sizeof bmp + 1;
-	do {
-		size_t memcpy_size = bmp_size < sizeof bmp ? bmp_size : sizeof bmp;
-		printf("The size is %u, size_size %u.\n", bmp_size, bmp_size_size);
-		bmp = 0, memcpy(&bmp, children, memcpy_size);
-
-		children++, child_offset += sizeof bmp * CHAR_BIT;
-		bmp_size_size--, bmp_size -= memcpy_size;
-	} while(bmp_size); assert(!bmp_size_size);
+	for(i = it->leaf; i < it->leaf_end; i++) if(TRIE_BITTEST(next.children, i))
+		size += PT_(sub_size)(next.leaves[i].child) - 1;
 	return size;
 }
 
@@ -819,13 +809,14 @@ static void T_(trie_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *const it)
 	{ PT_(prefix)(trie, prefix, it); }
 
-/** Counts the of the remaining items in `it`; the trie that `it` originated
- can not have topological changes. @order \O(`it.size`) @allow */
+/** Counts the of the items in the new `it`; the trie that `it` originated can
+ not have topological changes and the iterator must be new, (<fn:<T>trie_next>
+ causes it to become undefined.) @order \O(|`it`|) @allow */
 static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
-	{ return assert(it), it->root.info ? PT_(size)(it) : 0; }
+	{ return PT_(size)(it); }
 
-/** @return If `x` is already in `trie`, returns false, otherwise success.
- @throws[realloc, ERANGE] @allow */
+/** Adds `x` to `trie`. @return If `x` is already in `trie`, returns false,
+ otherwise success. @throws[realloc, ERANGE] @allow */
 static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 	return assert(trie && x),
 		PT_(get)(trie, PT_(to_key)(x)) ? /*printf("add: %s already in trie.\n",
@@ -837,9 +828,9 @@ static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x) {
 static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 	struct PT_(iterator) shunt;
 	PT_(type) *x;
-	assert(it);
-	/* This has more information about the end of iteration. */
-	/*!it->root.info || !it->next.info || */
+	assert(it && (it->next.info && it->root.info || !it->next.info));
+	/* This adds another constraint: instead of ending when the trie has no
+	 more entries like <fn:<PT>next>, we check if it has passed the point. */
 	if(it->next.info == it->end.info && it->leaf >= it->leaf_end) return 0;
 	shunt.root = it->root, shunt.next.info = it->next.info,
 		shunt.leaf = it->leaf, x = PT_(next)(&shunt);
