@@ -277,7 +277,7 @@ static void PT_(test)(void) {
 	T_(trie_prefix)(&trie, "", &it);
 	n = T_(trie_size)(&it);
 	printf("%lu items; sum of exhaustive one-letter sub-trees: %lu.\n",
-		n, count), assert(n == count);
+		n, count), assert(n == count && n);
 #if 0
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
 	assert(ret && size == T_(trie_size)(&trie));
