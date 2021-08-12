@@ -674,7 +674,7 @@ static size_t PT_(sub_size)(const union PT_(any_tree) any) {
 	assert(any.info);
 	PT_(extract)(any, &tree);
 	size = tree.bsize + 1;
-	/* This is inefficient, obvs. Use `(children & (children - 1))`. */
+	/* This is inefficient, but processor agnostic. */
 	for(i = 0; i <= tree.bsize; i++) if(TRIE_BITTEST(tree.children, i))
 		size += PT_(sub_size)(tree.leaves[i].child) - 1;
 	return size;
@@ -683,13 +683,29 @@ static size_t PT_(sub_size)(const union PT_(any_tree) any) {
 static size_t PT_(size)(const struct T_(trie_iterator) *const it) {
 	/* Round-up. */
 	/*...*/
-	size_t size, child[(TRIE_ORDER - 1) / CHAR_BIT / sizeof size + 1];
-	const size_t child_size = sizeof child / sizeof *child;
-	assert(it && it->leaf <= it->leaf_end);
+	struct PT_(tree) tree;
+	size_t size/*, child[(TRIE_ORDER - 1) / CHAR_BIT / sizeof size + 1];
+		const size_t child_size = sizeof child / sizeof *child*/;
+	size_t bmp;
+	unsigned bmp_size, bmp_size_size, child_offset;
+	unsigned char *children;
+	assert(it);
+	if(!it->root.info || !it->next.info) return 0;
+	assert(it->leaf <= it->leaf_end);
 	size = it->leaf_end - it->leaf;
 	/* And . . . */
-	memset(child, 0, child_size);
-	/*for(i = 0; i < )*/
+	PT_(extract)(it->next, &tree);
+	children = tree.children, child_offset = 0;
+	bmp_size = TRIE_BMP_SIZE(trie_tree_bsizes[tree.no] + 1);
+	bmp_size_size = (bmp_size - 1) / sizeof bmp + 1;
+	do {
+		size_t memcpy_size = bmp_size < sizeof bmp ? bmp_size : sizeof bmp;
+		printf("The size is %u, size_size %u.\n", bmp_size, bmp_size_size);
+		bmp = 0, memcpy(&bmp, children, memcpy_size);
+
+		children++, child_offset += sizeof bmp * CHAR_BIT;
+		bmp_size_size--, bmp_size -= memcpy_size;
+	} while(bmp_size); assert(!bmp_size_size);
 	return size;
 }
 
