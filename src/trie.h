@@ -249,10 +249,8 @@ static const unsigned PT_(tree_sizes)[] = {
 /* A working tree of any size extracted from different-width storage by
  <fn:<PT>extract>. */
 struct PT_(tree) {
-	unsigned bsize, no;
-	struct trie_branch *branches;
-	unsigned char *children;
-	union PT_(leaf) *leaves;
+	unsigned bsize, no; struct trie_branch *branches;
+	unsigned char *children; union PT_(leaf) *leaves;
 };
 
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
@@ -266,21 +264,19 @@ struct T_(trie) { union PT_(any_tree) root; };
 #endif /* !zero --> */
 
 /* Contains all iteration parameters; satisfies box interface iteration. This
- is a private version of the <tag:<T>trie_iterator> that does all the work. */
-struct PT_(iterator) {
-	union PT_(any_tree) root, next;
-	unsigned leaf, unused;
-};
+ is a private version of the <tag:<T>trie_iterator> that does all the work, but
+ it can only iterate through the entire trie. */
+struct PT_(iterator)
+	{ union PT_(any_tree) root, next; unsigned leaf, unused; };
 
 /** Stores a range in the trie. Any changes in the topology of the trie
  invalidate it. */
-struct T_(trie_iterator) {
-	union PT_(any_tree) root, next, end;
-	unsigned leaf, leaf_end;
-};
+struct T_(trie_iterator)
+	{ union PT_(any_tree) root, next, end; unsigned leaf, leaf_end; };
 
 /** Responsible for picking out the null-terminated string. Modifying the
- string while in any trie causes the trie to go into an undefined state. */
+ string key in the original <typedef:<PT>type> while in any trie causes the
+ entire trie to go into an undefined state. */
 typedef const char *(*PT_(key_fn))(const PT_(type) *);
 
 /* Check that `TRIE_KEY` is a function satisfying <typedef:<PT>key_fn>. */
