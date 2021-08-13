@@ -224,26 +224,37 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 	PT_(valid_tree)(trie->root);
 }
 
+static int PT_(false)(PT_(type) *const a, PT_(type) *const b)
+	{ (void)a, (void)b; return 0; }
+
+static int PT_(true)(PT_(type) *const a, PT_(type) *const b)
+	{ (void)a, (void)b; return 1; }
+
 static void PT_(test)(void) {
 	char fn[64];
 	struct T_(trie) trie = TRIE_IDLE;
 	struct T_(trie_iterator) it;
-	size_t n, count;
+	size_t n, m, count;
 	struct { PT_(type) data; int is_in; } es[2000];
+	PT_(type) dup;
 	const size_t es_size = sizeof es / sizeof *es;
 	PT_(type) *data;
+	int ret;
 
+	/* Idle. */
 	PT_(valid)(0);
 	PT_(valid)(&trie);
 	T_(trie)(&trie), PT_(valid)(&trie);
 	printf("Idle graph.\n");
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "_trie-idle.gv");
 	T_(trie_)(&trie), PT_(valid)(&trie);
+	data = T_(trie_match)(&trie, ""), assert(!data);
 	data = T_(trie_get)(&trie, ""), assert(!data);
 
 	/* Make random data. */
 	for(n = 0; n < es_size; n++) PT_(filler)(&es[n].data);
 
+	/* Adding. */
 	errno = 0;
 	for(n = 0; n < es_size; n++) {
 		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
@@ -257,8 +268,8 @@ static void PT_(test)(void) {
 			PT_(graph_mem)(&trie, fn);
 		}
 		assert(!errno || (perror("Check"), 0));
-		if(!es[n].is_in) { printf("Duplicate value %s -> %s.\n",
-			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie)); continue; };
+		if(!es[n].is_in) {assert(!errno);/*printf("Duplicate value %s -> %s.\n",
+			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie));*/ continue; };
 		data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data));
 		assert(data == &es[n].data);
 	}
@@ -278,20 +289,28 @@ static void PT_(test)(void) {
 	n = T_(trie_size)(&it);
 	printf("%lu items; sum of exhaustive one-letter sub-trees: %lu.\n",
 		n, count), assert(n == count && n);
-#if 0
+
+	/* Replacement. */
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
-	assert(ret && size == T_(trie_size)(&trie));
-	ret = T_(trie_put)(&trie, &es[0].data, 0),
-		assert(ret && size == T_(trie_size)(&trie));
-	ret = T_(trie_put)(&trie, &es[0].data, &eject),
-		assert(ret && size == T_(trie_size)(&trie) && eject == &es[0].data);
-	ret = T_(trie_policy_put)(&trie, &es[0].data, 0, 0),
-		assert(ret && size == T_(trie_size)(&trie));
-	ret = T_(trie_policy_put)(&trie, &es[0].data, &eject, 0),
-		assert(ret && size == T_(trie_size)(&trie) && eject == &es[0].data);
-	ret = T_(trie_policy_put)(&trie, &es[0].data, &eject, &PT_(false_replace)),
-		assert(ret && size == T_(trie_size)(&trie) && eject == &es[0].data);
-#endif
+	assert(!ret);
+	ret = T_(trie_put)(&trie, &es[0].data, 0);
+	assert(ret);
+	ret = T_(trie_put)(&trie, &es[0].data, &data);
+	assert(ret && data == &es[0].data);
+	ret = T_(trie_policy_put)(&trie, &es[0].data, 0, 0); /* Does add. */
+	assert(ret);
+	ret = T_(trie_policy_put)(&trie, &es[0].data, &data, 0); /* Does add. */
+	assert(ret && data == &es[0].data);
+	memcpy(&dup, &es[0].data, sizeof dup);
+	ret = T_(trie_policy_put)(&trie, &dup, &data, &PT_(false)); /* Not add. */
+	assert(ret && data == &dup);
+	ret = T_(trie_policy_put)(&trie, &dup, &data, &PT_(true)); /* Add. */
+	assert(ret && data == &es[0].data), es[0].is_in = 0;
+	T_(trie_prefix)(&trie, "", &it);
+	m = T_(trie_size)(&it);
+	printf("Trie size: %lu before, replacement %lu.\n",
+		(unsigned long)n, (unsigned long)m);
+	assert(n == m);
 	T_(trie_)(&trie), assert(!trie.root.info), PT_(valid)(&trie);
 	assert(!errno);
 }

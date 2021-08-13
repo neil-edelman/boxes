@@ -862,17 +862,18 @@ static int T_(trie_policy_put)(struct T_(trie) *const trie, PT_(type) *const x,
 	PT_(type) **const eject, const PT_(replace_fn) replace)
 	{ return assert(trie && x), PT_(put)(trie, x, eject, replace); }
 
-/** Fills `it` with iteration parameters that find values that start with
- `prefix` in `trie`.
+/** Fills `it` with iteration parameters that find values of keys that start
+ with `prefix` in `trie`.
  @param[prefix] To fill `it` with the entire `trie`, use the empty string.
  @param[it] A pointer to an iterator that gets filled. It is valid until a
- topological change to `trie`. @order \O(|`prefix`+1|) */
+ topological change to `trie`. Calling <fn:<T>trie_next> will iterate them in
+ order. @order \O(|`prefix`|) */
 static void T_(trie_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *const it)
 	{ PT_(prefix)(trie, prefix, it); }
 
 /** Counts the of the items in the new `it`; iterator must be new,
- (<fn:<T>trie_next> causes it to become undefined.)
+ (calling <fn:<T>trie_next> causes it to become undefined.)
  @order \O(|`it`|) @allow */
 static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 	{ return PT_(size)(it); }
