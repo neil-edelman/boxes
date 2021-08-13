@@ -22,13 +22,15 @@ In memory, it is similar to [Bayer, McCreight, 1972 Large](https://scholar.googl
  * Parameter: TRIE\_NAME, TRIE\_TYPE  
    [&lt;PT&gt;type](#user-content-typedef-245060ab) that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only except if `TRIE_TEST`\.\) `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TRIE\_KEY  
-   A function that satisfies [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f)\. Must be defined if and only if `TRIE_TYPE` is defined\.
+   A function that satisfies [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f)\. Must be defined if and only if `TRIE_TYPE` is defined\. \(This imbues it with the properties of an associative array\.\)
  * Parameter: TRIE\_TO\_STRING  
    Defining this includes [to\_string\.h](to_string.h), with the keys as the string\.
  * Parameter: TRIE\_TEST  
    Unit testing framework [&lt;T&gt;trie_test](#user-content-fn-ae9d3396), included in a separate header, [\.\./test/test\_trie\.h](../test/test_trie.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Requires `TRIE_TO_STRING` and that `NDEBUG` not be defined\.
  * Standard:  
    C89
+ * Caveat:  
+   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -45,7 +47,7 @@ Declared type of the trie; `char` default\.
 
 <code>typedef const char *(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;type *);</code>
 
-Responsible for picking out the null\-terminated string\. Modifying the string while in any trie causes the trie to go into an undefined state\.
+Responsible for picking out the null\-terminated string\. Modifying the string key in the original [&lt;PT&gt;type](#user-content-typedef-245060ab) while in any trie causes the entire trie to go into an undefined state\.
 
 
 
@@ -103,13 +105,19 @@ Stores a range in the trie\. Any changes in the topology of the trie invalidate 
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-9d98b98e">&lt;T&gt;trie_</a></td><td>trie</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>trie</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-3554106c">&lt;T&gt;trie_from_array</a></td><td>trie, array, array_size</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-46d99cc7">&lt;T&gt;trie_match</a></td><td>trie, key</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a></td><td>trie, key</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-70c096ed">&lt;T&gt;trie_add</a></td><td>trie, x</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-bd93d12b">&lt;T&gt;trie_put</a></td><td>trie, x, eject</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-50d1d256">&lt;T&gt;trie_policy_put</a></td><td>trie, x, eject, replace</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
@@ -141,14 +149,19 @@ Returns an initialised `trie` to idle\.
 
 
 
-### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
+### <a id = "user-content-fn-3554106c" name = "user-content-fn-3554106c">&lt;T&gt;trie_from_array</a> ###
 
-<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie *const <em>trie</em>)</code>
+<code>static int <strong>&lt;T&gt;trie_from_array</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const *const <em>array</em>, const size_t <em>array_size</em>)</code>
 
-Counts the size of the `trie`\.
+Initializes `trie` from an `array` of pointers\-to\-`<T>` of `array_size`\.
 
+ * Return:  
+   Success\.
+ * Exceptional return: realloc  
  * Order:  
-   &#927;\(`trie.size`\)
+   &#927;\(`array_size`\)
+ * Caveat:  
+   Write this function, somehow\.
 
 
 
@@ -158,7 +171,7 @@ Counts the size of the `trie`\.
 <code>static &lt;PT&gt;type *<strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code>
 
  * Return:  
-   Looks at only the index of `trie` for potential `key` matches, but doesn't compare the string for an exact match\.
+   Looks at only the index of `trie` for potential `key` matches, but will ignore the values of the bits that are not in the index\.
  * Order:  
    &#927;\(|`key`|\)
 
@@ -181,9 +194,62 @@ Counts the size of the `trie`\.
 
 <code>static int <strong>&lt;T&gt;trie_add</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>)</code>
 
+Adds a pointer to `x` into `trie` if the key doesn't exist already\.
+
  * Return:  
-   If `x` is already in `trie`, returns false, otherwise success\.
+   If the key did not exist and it was created, returns true\. If the key of `x` is already in `trie`, or an error occurred, returns false\.
  * Exceptional return: realloc, ERANGE  
+   Set `errno = 0` before to tell if the operation failed due to error\.
+ * Order:  
+   &#927;\(|`key`|\)
+
+
+
+
+### <a id = "user-content-fn-bd93d12b" name = "user-content-fn-bd93d12b">&lt;T&gt;trie_put</a> ###
+
+<code>static int <strong>&lt;T&gt;trie_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>, &lt;PT&gt;type **const <em>eject</em>)</code>
+
+Updates or adds a pointer to `x` into `trie`\.
+
+ * Parameter: _eject_  
+   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite any value\.
+ * Return:  
+   Success\.
+ * Exceptional return: realloc, ERANGE  
+ * Order:  
+   &#927;\(|`key`|\)
+
+
+
+
+### <a id = "user-content-fn-50d1d256" name = "user-content-fn-50d1d256">&lt;T&gt;trie_policy_put</a> ###
+
+<code>static int <strong>&lt;T&gt;trie_policy_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>, &lt;PT&gt;type **const <em>eject</em>, const &lt;PT&gt;replace_fn <em>replace</em>)</code>
+
+Adds a pointer to `x` to `trie` only if the entry is absent or if calling `replace` returns true or is null\.
+
+ * Parameter: _eject_  
+   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite any value\. If a collision occurs and `replace` does not return true, this will be a pointer to `x`\.
+ * Parameter: _replace_  
+   Called on collision and only replaces it if the function returns true\. If null, it is semantically equivalent to [&lt;T&gt;trie_put](#user-content-fn-bd93d12b)\.
+ * Return:  
+   Success\.
+ * Exceptional return: realloc, ERANGE  
+ * Order:  
+   &#927;\(|`key`|\)
+
+
+
+
+### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
+
+<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
+
+Counts the of the items in the new `it`; iterator must be new, \([&lt;T&gt;trie_next](#user-content-fn-f36d1483) causes it to become undefined\.\)
+
+ * Order:  
+   &#927;\(|`it`|\)
 
 
 

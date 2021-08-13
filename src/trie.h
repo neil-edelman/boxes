@@ -300,9 +300,8 @@ static void PT_(extract)(const union PT_(any_tree) store,
 	}
 }
 
-/** Looks at only the index of `trie` for potential `key` matches.
- @return A pointer to the found leaf, or null, if `key` is definitely not in
- `trie`. @order \O(|`key`|) */
+/** @return The address of a index candidate match for `key` in `trie`, or
+ null, if `key` is definitely not in `trie`. @order \O(|`key`|) */
 static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 	const char *const key) {
 	union PT_(any_tree) store = trie->root;
@@ -332,16 +331,23 @@ static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 	return &tree.leaves[in_tree.lf].data;
 }
 
-/** @return Calls <fn:<PT>leaf_match> with `trie`, `key`, and dereferences. */
+/** @return An index candidate match for `key` in `trie`. */
 static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key)
 	{ PT_(type) **const x = PT_(leaf_match)(trie, key); return x ? *x : 0; }
 
+/** @return The address of the exact match for `key` in `trie` or null. */
+static PT_(type) **PT_(leaf_get)(const struct T_(trie) *const trie,
+	const char *const key) {
+	PT_(type) **const x = PT_(leaf_match)(trie, key);
+	return x && !strcmp(PT_(to_key)(*x), key) ? x : 0;
+}
+
 /** @return Exact match for `key` in `trie` or null. */
 static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 	const char *const key) {
-	PT_(type) *x;
-	return (x = PT_(match)(trie, key)) && !strcmp(PT_(to_key)(x), key) ? x : 0;
+	PT_(type) *const x = PT_(match)(trie, key);
+	return x && !strcmp(PT_(to_key)(x), key) ? x : 0;
 }
 
 /** Looks at only the index of `trie` for potential `prefix` matches,
@@ -657,35 +663,33 @@ insert:
 	return 1;
 }
 
-#if 0
-/** Adds `datum` to `trie` and, if `eject` is non-null, stores the collided
+/** A bi-predicate; returns true if the `replace` replaces the `original`; used
+ in <fn:<T>trie_policy_put>. */
+typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
+
+/** Adds `x` to `trie` and, if `eject` is non-null, stores the collided
  element, if any, as long as `replace` is null or returns true.
  @param[eject] If not-null, the ejected datum. If `replace` returns false, then
  `*eject == datum`, but it will still return true.
  @return Success. @throws[realloc, ERANGE] */
 static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 	PT_(type) **const eject, const PT_(replace_fn) replace) {
-	const char *data_key;
-	PT_(leaf) *match;
-	size_t i;
+	const char *key;
+	PT_(type) **leaf;
 	assert(trie && x);
-	data_key = PT_(to_key)(x);
+	key = PT_(to_key)(x);
 	/* Add if absent. */
-	if(!PT_(param_get)(trie, data_key, &i)) {
-		if(eject) *eject = 0;
-		return PT_(add)(trie, x);
-	}
-	assert(i < trie->leaves.size), match = trie->leaves.data + i;
+	if(!(leaf = PT_(leaf_get)(trie, key)))
+		{ if(eject) *eject = 0; return PT_(add_unique)(trie, x); }
 	/* Collision policy. */
-	if(replace && !replace(*match, datum)) {
+	if(replace && !replace(*leaf, x)) {
 		if(eject) *eject = x;
 	} else {
-		if(eject) *eject = *match;
-		*match = datum;
+		if(eject) *eject = *leaf;
+		*leaf = x;
 	}
 	return 1;
 }
-#endif
 
 /** Frees `any` and it's children. @fixme This is a lazy, but effective; test
  for stack overflow on different machines. */
@@ -796,22 +800,6 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 
 /* iterate --> */
 
-#if 0
-/** A bi-predicate; returns true if the `replace` replaces the `original`; used
- in <fn:<T>trie_policy_put>. */
-typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
-
-/** @return False. Ignores `a` and `b`. @implements <typedef:<PT>replace_fn> */
-static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
-	{ return (void)a, (void)b, 0; }
-
-/** Compares keys of `a` and `b`. Used in array compare following.
- @implements bipredicate function */
-static int PT_(compare)(const PT_(leaf) *const a, const PT_(leaf) *const b)
-	{ return strcmp(PT_(to_key)(*a), PT_(to_key)(*b)); }
-#endif
-
-
 
 /** Initialises `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
@@ -835,7 +823,8 @@ static int T_(trie_from_array)(struct T_(trie) *const trie,
 #endif
 
 /** @return Looks at only the index of `trie` for potential `key` matches,
- but doesn't compare the string for an exact match. @order \O(|`key`|) @allow */
+ but will ignore the values of the bits that are not in the index.
+ @order \O(|`key`|) @allow */
 static PT_(type) *T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(match)(trie, key); }
 
@@ -848,47 +837,30 @@ static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
  @return If the key did not exist and it was created, returns true. If the key
  of `x` is already in `trie`, or an error occurred, returns false.
  @throws[realloc, ERANGE] Set `errno = 0` before to tell if the operation
- failed due to error. @allow */
+ failed due to error. @order \O(|`key`|) @allow */
 static int T_(trie_add)(struct T_(trie) *const trie, PT_(type) *const x)
 	{ return assert(trie && x),
-		PT_(get)(trie, PT_(to_key)(x)) ? 0 : PT_(add_unique)(trie, x);
-	/*return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
-}
+	PT_(get)(trie, PT_(to_key)(x)) ? 0 : PT_(add_unique)(trie, x); }
 
-#if 0
-/** Updates or adds `datum` to `trie`.
- @param[trie, datum] If null, returns null.
+/** Updates or adds a pointer to `x` into `trie`.
  @param[eject] If not null, on success it will hold the overwritten value or
- a pointer-to-null if it did not overwrite.
- @return Success.
- @throws[realloc] There was an error with a re-sizing.
- @throws[ERANGE] The key is greater then 510 characters or the trie has reached
- it's maximum size. @order \O(`size`) @allow */
-static int T_(trie_put)(struct T_(trie) *const trie,
-	PT_(type) *const datum, PT_(type) **const eject) {
-	return assert(trie && datum), PT_(put)(trie, datum, eject, 0);
-}
+ a pointer-to-null if it did not overwrite any value.
+ @return Success. @throws[realloc, ERANGE] @order \O(|`key`|) @allow */
+static int T_(trie_put)(struct T_(trie) *const trie, PT_(type) *const x,
+	PT_(type) **const eject)
+	{ return assert(trie && x), PT_(put)(trie, x, eject, 0); }
 
-/** Adds `datum` to `trie` only if the entry is absent or if calling `replace`
- returns true.
+/** Adds a pointer to `x` to `trie` only if the entry is absent or if calling
+ `replace` returns true or is null.
  @param[eject] If not null, on success it will hold the overwritten value or
- a pointer-to-null if it did not overwrite a previous value. If a collision
- occurs and `replace` does not return true, this value will be `data`.
+ a pointer-to-null if it did not overwrite any value. If a collision occurs and
+ `replace` does not return true, this will be a pointer to `x`.
  @param[replace] Called on collision and only replaces it if the function
  returns true. If null, it is semantically equivalent to <fn:<T>trie_put>.
- @return Success. @throws[realloc] There was an error with a re-sizing.
- @throws[ERANGE] The key is greater then 510 characters or the trie has reached
- it's maximum size. @order \O(`size`) @allow */
-static int T_(trie_policy_put)(struct T_(trie) *const trie,
-	PT_(type) *const datum, PT_(type) **const eject,
-	const PT_(replace_fn) replace) {
-	return assert(trie && datum), PT_(put)(trie, datum, eject, replace);
-}
-#endif
-/* TODO: insert_or_assign or at or put or assign { return assert(trie && x),
-	 PT_(get)(trie, PT_(to_key)(x)) ? printf("add: %s already in trie.\n",
-	 PT_(to_key)(x)), 0 : PT_(add_unique)(trie, x);
- return assert(trie && datum), PT_(put)(trie, datum, 0, &PT_(false_replace));*/
+ @return Success. @throws[realloc, ERANGE] @order \O(|`key`|) @allow */
+static int T_(trie_policy_put)(struct T_(trie) *const trie, PT_(type) *const x,
+	PT_(type) **const eject, const PT_(replace_fn) replace)
+	{ return assert(trie && x), PT_(put)(trie, x, eject, replace); }
 
 /** Fills `it` with iteration parameters that find values that start with
  `prefix` in `trie`.
@@ -947,7 +919,8 @@ static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
 	PT_(begin)(0, 0);
 	T_(trie)(0); T_(trie_)(0);
-	T_(trie_match)(0, 0); T_(trie_get)(0, 0); T_(trie_add)(0, 0);
+	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
+	T_(trie_add)(0, 0); T_(trie_put)(0, 0, 0); T_(trie_policy_put)(0, 0, 0, 0);
 	T_(trie_prefix)(0, 0, 0); T_(trie_size)(0); T_(trie_next)(0);
 	PT_(unused_base_coda)();
 }
