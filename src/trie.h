@@ -9,8 +9,8 @@
  array of pointers-to-`T` and an index on the key string. It can be seen as a
  <Morrison, 1968 PATRICiA>: a compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
- storing the where the keys are different. Strings can be any encoding with a
- byte null-terminator, including
+ storing the where the key bits are different. Strings can be any encoding with
+ a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
  In memory, it is similar to <Bayer, McCreight, 1972 Large>. Using

@@ -224,9 +224,11 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 	PT_(valid_tree)(trie->root);
 }
 
+/** Ignores `a` and `b`. @return False. */
 static int PT_(false)(PT_(type) *const a, PT_(type) *const b)
 	{ (void)a, (void)b; return 0; }
 
+/** Ignores `a` and `b`. @return True. */
 static int PT_(true)(PT_(type) *const a, PT_(type) *const b)
 	{ (void)a, (void)b; return 1; }
 
