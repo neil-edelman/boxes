@@ -15,7 +15,7 @@
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix tree, digital tree, or trie, implemented as an array of pointers\-to\-`T` and an index on the key string\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the key bits are different\. Strings can be any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
-In memory, it is similar to [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\. Using [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, but instead of a B\-tree of order\-n nodes, it is a forest of non\-empty complete binary trees\. Thus the leaves in a tree are also the branching factor; the maximum is the order, fixed by compilation macros\.
+In memory, it is similar to [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\. Using [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, but instead of a B\-tree of order\-n nodes, it is a forest of non\-empty complete binary trees\. Therefore, the leaves in a tree are also the branching factor; the maximum is the order, fixed by compilation macros\. Being in a trie, the trees may be unbalanced depending on the distribution of strings\.
 
 
 
@@ -30,7 +30,7 @@ In memory, it is similar to [Bayer, McCreight, 1972 Large](https://scholar.googl
  * Standard:  
    C89
  * Caveat:  
-   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
+   ([&lt;T&gt;trie_iterator](#user-content-tag-854250a4), [&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -89,9 +89,13 @@ To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5
 
 ### <a id = "user-content-tag-854250a4" name = "user-content-tag-854250a4">&lt;T&gt;trie_iterator</a> ###
 
-<code>struct <strong>&lt;T&gt;trie_iterator</strong> { union &lt;PT&gt;any_tree root, next, end; unsigned leaf, leaf_end; };</code>
+<code>struct <strong>&lt;T&gt;trie_iterator</strong>;</code>
 
 Stores a range in the trie\. Any changes in the topology of the trie invalidate it\.
+
+ * Caveat:  
+   Replacing `root` with `bit` would make it faster and allow size remaining; just have to fiddle with `end` to `above`\. That makes it incomatible with private, but could merge\.
+
 
 
 

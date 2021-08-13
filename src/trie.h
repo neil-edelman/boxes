@@ -275,6 +275,7 @@ struct PT_(iterator)
  invalidate it. @fixme Replacing `root` with `bit` would make it faster and
  allow size remaining; just have to fiddle with `end` to `above`. That makes it
  incomatible with private, but could merge. */
+struct T_(trie_iterator);
 struct T_(trie_iterator)
 	{ union PT_(any_tree) root, next, end; unsigned leaf, leaf_end; };
 
