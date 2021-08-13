@@ -805,11 +805,11 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 /* iterate --> */
 
 
-/** Initialises `trie` to idle. @order \Theta(1) @allow */
+/** Initializes `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
 	{ assert(trie); trie->root.info = 0; }
 
-/** Returns an initialised `trie` to idle. @allow */
+/** Returns an initialized `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
 	assert(trie);
 	if(trie->root.info) PT_(clear)(trie->root), T_(trie)(trie);
