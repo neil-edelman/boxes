@@ -566,8 +566,6 @@ right:
 	return 1;
 }
 
-/* join() */
-
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
@@ -693,6 +691,88 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 		*leaf = x;
 	}
 	return 1;
+}
+
+/* join() */
+
+#if 0
+/** @return Whether leaf index `i` has been removed from `trie`.
+ @fixme There is nothing stopping an `assert` from being triggered. */
+static int PT_(index_remove)(struct T_(trie) *const trie, size_t i) {
+	size_t n0 = 0, n1 = trie->branches.size, parent_n0, left;
+	size_t *parent, *twin; /* Branches. */
+	assert(trie && i < trie->leaves.size
+		&& trie->branches.size + 1 == trie->leaves.size);
+	/* Remove leaf. */
+	if(!--trie->leaves.size) return 1; /* Special case of one leaf. */
+	memmove(trie->leaves.data + i, trie->leaves.data + i + 1,
+		sizeof trie->leaves.data * (n1 - i));
+	/* fixme: Do another descent _not_ modifying to see if the values can be
+	 combined without overflow. */
+	/* Remove branch. */
+	for( ; ; ) {
+		left = trie_left(*(parent = trie->branches.data + (parent_n0 = n0)));
+		if(i <= left) { /* Pre-order binary search. */
+			if(!left) { twin = n0 + 1 < n1 ? trie->branches.data + n0 + 1 : 0;
+				break; }
+			n1 = ++n0 + left;
+			trie_left_dec(parent);
+		} else {
+			if((n0 += left + 1) >= n1)
+				{ twin = left ? trie->branches.data + n0 - left : 0; break; }
+			i -= left + 1;
+		}
+	}
+	/* Merge `parent` with `sibling` before deleting `parent`. */
+	if(twin)
+		/* fixme: There is nothing to guarantee this. */
+		assert(trie_skip(*twin) < TRIE_SKIP_MAX - trie_skip(*parent)),
+		trie_skip_set(twin, trie_skip(*twin) + 1 + trie_skip(*parent));
+	memmove(parent, parent + 1, sizeof n0 * (--trie->branches.size -parent_n0));
+	return 1;
+}
+#endif
+
+static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
+	const char *const key) {
+	union PT_(any_tree) parent = { 0 }, store = trie->root;
+	struct PT_(tree) tree;
+	const struct trie_branch *branch;
+	const char *sample;
+	struct { unsigned br0, br1, lf; } in_tree;
+	size_t bit;
+	struct { size_t cur, next; } byte; /* `key` null checks. */
+	PT_(type) *rm;
+	assert(trie && key);
+	/* Preliminary exploration. */
+	for(bit = 0; ; ) {
+		PT_(extract)(store, &tree);
+		sample = PT_(sample)(store, 0);
+		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
+		while(in_tree.br0 < in_tree.br1) {
+			branch = tree.branches + in_tree.br0;
+			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+				byte.cur < byte.next; byte.cur++)
+				if(key[byte.cur] == '\0') return 0; /* Too short. */
+			if(!TRIE_BITTEST(key, bit)) {
+				in_tree.br1 = ++in_tree.br0 + branch->left;
+				/*if(is_write) branch->left--;*/
+			} else {
+				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
+				sample = PT_(sample)(store, in_tree.lf);
+			}
+			bit++;
+		}
+		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree.bsize);
+		if(!TRIE_BITTEST(tree.children, in_tree.lf)) break;
+		parent = store;
+		store = tree.leaves[in_tree.lf].child;
+	}
+	/* We have the leaf, now to make sure it matches. */
+	if(strcmp(key, PT_(to_key)(rm = tree.leaves[in_tree.lf].data))) return 0;
+	printf("Yes, \"%s\" exists as leaf %u. Parent tree %p.\n",
+		key, in_tree.lf, (void *)parent.info);
+	return 0;
 }
 
 /** Frees `any` and it's children. @fixme This is a lazy, but effective; test
@@ -837,6 +917,9 @@ static PT_(type) *T_(trie_match)(const struct T_(trie) *const trie,
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
 
+static PT_(type) *T_(trie_remove)(struct T_(trie) *const trie,
+	const char *const key) { return PT_(remove)(trie, key); }
+
 /** Adds a pointer to `x` into `trie` if the key doesn't exist already.
  @return If the key did not exist and it was created, returns true. If the key
  of `x` is already in `trie`, or an error occurred, returns false.
@@ -925,6 +1008,7 @@ static void PT_(unused_base)(void) {
 	PT_(begin)(0, 0);
 	T_(trie)(0); T_(trie_)(0);
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
+	T_(trie_remove)(0, 0);
 	T_(trie_add)(0, 0); T_(trie_put)(0, 0, 0); T_(trie_policy_put)(0, 0, 0, 0);
 	T_(trie_prefix)(0, 0, 0); T_(trie_size)(0); T_(trie_next)(0);
 	PT_(unused_base_coda)();
