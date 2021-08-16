@@ -767,6 +767,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		tree.branches + branches.parent + 1,
 		sizeof tree.branches * (tree.bsize - branches.parent - 1));
 	assert(store.info->bsize), store.info->bsize--;
+	/* fixme: Delete from the children bitmap. */
 	return data;
 }
 
