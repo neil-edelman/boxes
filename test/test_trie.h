@@ -283,7 +283,7 @@ static void PT_(test)(void) {
 	/* Test prefix and size. */
 	count = !!T_(trie_get)(&trie, "");
 	for(n = 1; n < 256; n++) {
-		char a[2] = { (char)n, '\0' };
+		char a[2] = { '\0', '\0' }; a[0] = (char)n;
 		T_(trie_prefix)(&trie, a, &it);
 		count += T_(trie_size)(&it);
 	}
