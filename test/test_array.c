@@ -106,10 +106,11 @@ int main(void) {
 	colour_array_test();
 	str4_array_test();
 	int_array_test();
-	//int_array_comparable_test();
+	/* fixme
+	int_array_comparable_test();*/
 	keyval_array_test();
-	//keyval_array_comparable_test();
-	//keyval_array_value_comparable_test();
+	/*keyval_array_comparable_test();
+	keyval_array_value_comparable_test();*/
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
