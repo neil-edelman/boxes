@@ -42,7 +42,6 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
-#include <limits.h> /* LONG_MAX */
 
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
