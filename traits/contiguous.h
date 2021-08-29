@@ -13,6 +13,8 @@
 
  @std C89 */
 
+#include <limits.h>
+
 #if !defined(CAT) || !defined(CAT_) || !defined(BOX_) \
 	|| !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) || !defined(Z_)
 #error Unexpected preprocessor symbols.
