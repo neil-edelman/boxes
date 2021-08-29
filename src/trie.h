@@ -46,7 +46,6 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-/* Suspect it will not work if `CHAR_BIT != 8`; need TI compiler? */
 #include <limits.h>
 
 
@@ -77,9 +76,10 @@
 #define TRIE_MAX_LEFT 6/*254*/
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
-#define TRIE_BMP_SIZE(n) (((n) - 1) / CHAR_BIT + 1) /* Bitmap size in bytes. */
-#define TRIE_BMP_ALIGN_SIZE(n) \
-	(((TRIE_BMP_SIZE(n) - 1) / sizeof(size_t) + 1) * CHAR_BIT)
+#define TRIE_BITS_TO_BYTE(n) \
+	(((n) - 1) / CHAR_BIT + 1)
+#define TRIE_BITS_TO_SIZE(n) \
+	(((TRIE_BITS_TO_BYTE(n) - 1) / sizeof(size_t) + 1) * CHAR_BIT)
 struct trie_info { unsigned char bsize, no; };
 struct trie_branch { unsigned char left, skip; };
 /* Stores tree numbers of different arbitrary sizes, `(n, m)`: `n` must be
@@ -139,7 +139,7 @@ static void trie_bmp_split(unsigned char *const parent,
 		if(a + b < (bit_offset + bit_range) >> 3)
 			child[b] |= (parent[a + b + 1] >> (8 - a_bit));
 		child[b++] &= ~(255 >> rest);
-		memset(child + b, 0, TRIE_BMP_ALIGN_SIZE(TRIE_ORDER) - b);
+		memset(child + b, 0, TRIE_BITS_TO_SIZE(TRIE_ORDER) - b);
 	}
 	{ /* Replace copied bits from `a` with '1'. */
 		const unsigned a = bit_offset >> 3, a_bit = bit_offset & 7;
@@ -149,11 +149,11 @@ static void trie_bmp_split(unsigned char *const parent,
 		unsigned a0 = (bit_offset + 1) >> 3, a1 = (bit_offset + bit_range) >> 3;
 		const unsigned a0_bit = (bit_offset + 1) & 7,
 			a1_bit = (bit_offset + bit_range) & 7;
-		assert(a0 <= TRIE_BMP_SIZE(TRIE_ORDER)
-			&& a1 <= TRIE_BMP_SIZE(TRIE_ORDER));
-		if(a1 == TRIE_BMP_SIZE(TRIE_ORDER)) { /* On the trailing edge. */
+		assert(a0 <= TRIE_BITS_TO_BYTE(TRIE_ORDER)
+			&& a1 <= TRIE_BITS_TO_BYTE(TRIE_ORDER));
+		if(a1 == TRIE_BITS_TO_BYTE(TRIE_ORDER)) { /* On the trailing edge. */
 			assert(!a1_bit); /* Extreme right. */
-			if(a0 == TRIE_BMP_SIZE(TRIE_ORDER)) assert(!a0_bit);
+			if(a0 == TRIE_BITS_TO_BYTE(TRIE_ORDER)) assert(!a0_bit);
 			else parent[a0++] &= 255 << 8-a0_bit;
 		} else if(a1_bit < a0_bit) { /* Inversion of shift. */
 			const unsigned shift = a0_bit - a1_bit;
@@ -164,7 +164,7 @@ static void trie_bmp_split(unsigned char *const parent,
 					mask = 255 >> a0_bit;
 				parent[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
 			}
-			while(++a0, ++a1 < TRIE_BMP_SIZE(TRIE_ORDER)) parent[a0]
+			while(++a0, ++a1 < TRIE_BITS_TO_BYTE(TRIE_ORDER)) parent[a0]
 				= (unsigned char)(parent[a1 - 1] <<8-shift | parent[a1] >>shift);
 			parent[a0++] = (unsigned char)(parent[a1 - 1] << 8-shift);
 		} else { /* Shift right or zero. */
@@ -176,11 +176,11 @@ static void trie_bmp_split(unsigned char *const parent,
 					mask = 255 >> a0_bit;
 				parent[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
 			}
-			while(++a0, ++a1 < TRIE_BMP_SIZE(TRIE_ORDER))
+			while(++a0, ++a1 < TRIE_BITS_TO_BYTE(TRIE_ORDER))
 				parent[a0 - 1] |= parent[a1] >> 8-shift,
 				parent[a0] = (unsigned char)(parent[a1] << shift);
 		}
-		memset(parent + a0, 0, TRIE_BMP_SIZE(TRIE_ORDER) - a0);
+		memset(parent + a0, 0, TRIE_BITS_TO_BYTE(TRIE_ORDER) - a0);
 	}
 }
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
@@ -234,7 +234,7 @@ struct PT_(tree0) { struct trie_info info; unsigned char children[6];
 	union PT_(leaf) leaves[1]; };
 #define X(n, m) struct PT_(tree##n) { struct trie_info info; \
 	struct trie_branch branches[m - 1]; \
-	unsigned char children[TRIE_BMP_ALIGN_SIZE(m)]; \
+	unsigned char children[TRIE_BITS_TO_SIZE(m)]; \
 	union PT_(leaf) leaves[m]; };
 TRIE_TREE_TAIL_X
 #undef X
@@ -453,8 +453,8 @@ static union PT_(any_tree) PT_(expand)(const union PT_(any_tree) any) {
 	/* Careful to go backwards because we don't want to overwrite. */
 	memmove(tree1.leaves, tree0.leaves,
 		sizeof *tree0.leaves * (tree0.bsize + 1));
-	links0 = TRIE_BMP_SIZE(tree0.bsize + 1);
-	links1 = TRIE_BMP_SIZE(trie_tree_bsizes[tree0.no + 1] + 1);
+	links0 = TRIE_BITS_TO_BYTE(tree0.bsize + 1);
+	links1 = TRIE_BITS_TO_BYTE(trie_tree_bsizes[tree0.no + 1] + 1);
 	/*printf("expand: moving from %luB to %luB\n", links0, links1);*/
 	memmove(tree1.children, tree0.children, links0);
 	memset(tree0.children + links0, 0, links1 - links0);
