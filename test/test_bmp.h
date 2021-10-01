@@ -126,9 +126,9 @@ static void PB_(test)(void) {
  defining `assert`. @allow */
 static void B_(bmp_test)(void) {
 	struct B_(bmp) b;
-	printf("<" QUOTE(BMP_NAME) ">bmp"
-		" is an underlying array of %lu <" QUOTE(BMP_TYPE) ">, %luB, %lub,"
-		" to store " QUOTE(BMP_BITS) "b testing:\n",
+	printf("<" QUOTE(BMP_NAME) ">bmp is storing " QUOTE(BMP_BITS) " boolean"
+		" values, backed by an underlying array of %lu <" QUOTE(BMP_TYPE) ">,"
+		" %luB, %lub; testing:\n",
 		(unsigned long)sizeof b.chunk / sizeof *b.chunk,
 		(unsigned long)sizeof b.chunk,
 		(unsigned long)sizeof b.chunk * CHAR_BIT);
