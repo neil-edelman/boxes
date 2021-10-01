@@ -55,25 +55,34 @@
 /** The underlying array, an unsigned type set by `BMP_TYPE`. */
 typedef BMP_TYPE PB_(chunk);
 
-#define BMP_MAX (~(PB_(chunk))0)
-
 /** An array of `BMP_BITS` bits, taking up the next multiple of `BMP_TYPE`
  size. */
 struct B_(bmp) {
 	PB_(chunk) chunk[(((BMP_BITS) - 1) / CHAR_BIT / sizeof(PB_(chunk)) + 1)];
 };
 
+#define BMP_MAX (~(PB_(chunk))0)
+/*#define BMP_CHUNKS (sizeof ((struct B_(bmp) *)0)->chunk \
+	/ sizeof *((struct B_(bmp) *)0)->chunk)*/
+/* #define BMP_CHUNKS (sizeof ((struct B_(bmp) *)0)->chunk * CHAR_BIT) */
+
 /** Sets `a` to all false. */
 static void B_(bmp_clear)(struct B_(bmp) *const a)
 	{ assert(a); memset(a, 0, sizeof *a); }
 
+/** Sets `idx` in `a`. */
+static void B_(bmp_set)(struct B_(bmp) *const a, unsigned idx) {
+
+}
+
 /** Inverts all entries of `a`. */
-static void B_(bmp_invert)(struct B_(bmp) *const a) {
+static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 	size_t i;
 	for(i = 0; i < sizeof a->chunk / sizeof *a->chunk; i++)
 		a->chunk[i] = ~a->chunk[i];
-	/* Let's keep 0 for unused bits, it's just nice. */
-
+	/* Obsessively zero padded bits. */
+	a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
+		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
 #ifdef BMP_TEST /* <!-- test */
@@ -82,7 +91,7 @@ static void B_(bmp_invert)(struct B_(bmp) *const a) {
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	B_(bmp_clear)(0); B_(bmp_invert)(0);
+	B_(bmp_clear)(0); B_(bmp_invert_all)(0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }

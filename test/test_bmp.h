@@ -114,8 +114,7 @@ static void PB_(test)(void) {
 	for(i = 0; i < sizeof bmp.chunk / sizeof *bmp.chunk; i++) assert(!bmp.chunk[i]);
 
 	printf("invert:\n");
-	/* ... */
-	B_(bmp_invert)(&bmp);
+	B_(bmp_invert_all)(&bmp);
 	PB_(to_string)(&bmp, &bmp_str);
 	PB_(str_invert)(&str);
 	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
