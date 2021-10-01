@@ -18,7 +18,8 @@
 
  @std C89/90 */
 
-#include <limits.h>
+#include <string.h> /* mem */
+#include <limits.h> /* CHAR_BIT */
 #include <assert.h>
 
 
@@ -62,7 +63,32 @@ struct B_(bmp) {
 	PB_(chunk) chunk[(((BMP_BITS) - 1) / CHAR_BIT / sizeof(PB_(chunk)) + 1)];
 };
 
-#if !defined(BMP_TEST_BASE) && defined(BMP_TEST) /* <!-- test */
-#define BMP_TEST_BASE /* Only one instance of base tests. */
+/** Sets `bmp` to all false. */
+static void B_(bmp_clear)(struct B_(bmp) *const bmp)
+	{ assert(bmp); memset(bmp, 0, sizeof *bmp); }
+
+#ifdef BMP_TEST /* <!-- test */
 #include "../test/test_bmp.h" /** \include */
 #endif /* test --> */
+
+static void PB_(unused_base_coda)(void);
+static void PB_(unused_base)(void) {
+	B_(bmp_clear)(0);
+	PB_(unused_base_coda)();
+}
+static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
+
+#ifndef BMP_SUBTYPE /* <!-- !sub-type */
+#undef CAT
+#undef CAT_
+#else /* !sub-type --><!-- sub-type */
+#undef BMP_SUBTYPE
+#endif /* sub-type --> */
+#undef B_
+#undef PB_
+#undef BMP_NAME
+#undef BMP_BITS
+#undef BMP_TYPE
+#ifdef BMP_TEST
+#undef BMP_TEST
+#endif

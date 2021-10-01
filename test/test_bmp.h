@@ -8,6 +8,8 @@
 
 static void PB_(test)(void) {
 	struct B_(bmp) b;
+	B_(bmp_clear)(b);
+	
 }
 
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while
@@ -21,7 +23,7 @@ static void B_(bmp_test)(void) {
 		(unsigned long)sizeof b.chunk,
 		(unsigned long)sizeof b.chunk * CHAR_BIT);
 	PB_(test)();
-	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">Trie.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(BMP_NAME) ">bmp.\n\n");
 }
 
 /* Un-define all macros. */
