@@ -24,8 +24,8 @@ static void PB_(to_string)(const struct B_(bmp) *const bmp,
 	*s = '\0';
 }
 
-/** Adds spaces into `s` and adds parentheses between `offset` to `range` and
- sends it to `stdout`. */
+/** Adds `label` and spaces into `s` and adds parentheses between `offset`
+ to `range`, new line, and sends it to `stdout`. */
 static void PB_(adorn)(const struct PB_(str) *str,
 	const unsigned offset, const unsigned range, const char label) {
 	size_t i;

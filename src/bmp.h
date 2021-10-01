@@ -73,7 +73,7 @@ static void B_(bmp_invert)(struct B_(bmp) *const a) {
 	for(i = 0; i < sizeof a->chunk / sizeof *a->chunk; i++)
 		a->chunk[i] = ~a->chunk[i];
 	/* Let's keep 0 for unused bits, it's just nice. */
-	// fixme
+
 }
 
 #ifdef BMP_TEST /* <!-- test */
@@ -101,3 +101,4 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #ifdef BMP_TEST
 #undef BMP_TEST
 #endif
+#undef BMP_MAX
