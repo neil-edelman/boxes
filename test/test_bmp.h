@@ -27,8 +27,9 @@ static void PB_(to_string)(const struct B_(bmp) *const bmp,
 /** Adds spaces into `s` and adds parentheses between `offset` to `range` and
  sends it to `stdout`. */
 static void PB_(adorn)(const struct PB_(str) *str,
-	const unsigned offset, const unsigned range) {
+	const unsigned offset, const unsigned range, const char label) {
 	size_t i;
+	fputc(label, stdout);
 	for(i = 0; ; i++) {
 		const int end = str->bits[i] == '\0', sep = !(i & 3) && i,
 			lef = i == offset, rht = i == offset + range, stp = i == BMP_BITS;
@@ -108,7 +109,7 @@ static void PB_(test)(void) {
 	B_(bmp_clear)(&bmp);
 	PB_(to_string)(&bmp, &bmp_str);
 	PB_(str_clear)(&str);
-	PB_(adorn)(&str, 0, 0), PB_(adorn)(&bmp_str, 0, 0);
+	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
 	assert(!strcmp(str.bits, bmp_str.bits));
 	for(i = 0; i < sizeof bmp.chunk / sizeof *bmp.chunk; i++) assert(!bmp.chunk[i]);
 
@@ -117,7 +118,7 @@ static void PB_(test)(void) {
 	B_(bmp_invert)(&bmp);
 	PB_(to_string)(&bmp, &bmp_str);
 	PB_(str_invert)(&str);
-	PB_(adorn)(&str, 0, 0), PB_(adorn)(&bmp_str, 0, 0);
+	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
 	assert(!strcmp(str.bits, bmp_str.bits));
 }
 
