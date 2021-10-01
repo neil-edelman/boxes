@@ -63,9 +63,18 @@ struct B_(bmp) {
 	PB_(chunk) chunk[(((BMP_BITS) - 1) / CHAR_BIT / sizeof(PB_(chunk)) + 1)];
 };
 
-/** Sets `bmp` to all false. */
-static void B_(bmp_clear)(struct B_(bmp) *const bmp)
-	{ assert(bmp); memset(bmp, 0, sizeof *bmp); }
+/** Sets `a` to all false. */
+static void B_(bmp_clear)(struct B_(bmp) *const a)
+	{ assert(a); memset(a, 0, sizeof *a); }
+
+/** Inverts all entries of `a`. */
+static void B_(bmp_invert)(struct B_(bmp) *const a) {
+	size_t i;
+	for(i = 0; i < sizeof a->chunk / sizeof *a->chunk; i++)
+		a->chunk[i] = ~a->chunk[i];
+	/* Let's keep 0 for unused bits, it's just nice. */
+	// fixme
+}
 
 #ifdef BMP_TEST /* <!-- test */
 #include "../test/test_bmp.h" /** \include */
@@ -73,7 +82,7 @@ static void B_(bmp_clear)(struct B_(bmp) *const bmp)
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	B_(bmp_clear)(0);
+	B_(bmp_clear)(0); B_(bmp_invert)(0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
