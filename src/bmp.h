@@ -46,8 +46,8 @@
 #define BMP_H
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
 #define BMP_HI (1u << sizeof(PB_(chunk)) * CHAR_BIT - 1)
-#define BMP_MASK(n) (BMP_HI >> (n) % sizeof(PB_(chunk)) * CHAR_BIT)
-#define BMP_SLOT(n) ((n) / (sizeof(PB_(chunk)) * CHAR_BIT))
+#define BMP_MASK(n) (BMP_HI >> (n) % (sizeof(PB_(chunk)) * CHAR_BIT))
+#define BMP_SLOT(n) ((n) / ((unsigned)sizeof(PB_(chunk)) * CHAR_BIT))
 #define BMP_PROJ(a, n) ((a)[BMP_SLOT(n)] & BMP_MASK(n))
 #define BMP_DIFF(a, b, n) (((a)[BMP_SLOT(n)] ^ (b)[BMP_SLOT(n)]) & BMP_MASK(n))
 #define BMP_SET(a, n) ((a)[BMP_SLOT(n)] |= BMP_MASK(n))
@@ -87,11 +87,11 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 }
 
 /** Sets bit `n` in `a`. */
-static void B_(bmp_set)(struct B_(bmp) *const a, unsigned n)
-	{ assert(a && n < BMP_BITS); BMP_SET(a->chunk, n); }
+static void B_(bmp_set)(struct B_(bmp) *const a, const unsigned n)
+{ assert(a && n < BMP_BITS); printf("set %u: (%u:%u)\n", n, BMP_SLOT(n), BMP_MASK(n)); BMP_SET(a->chunk, n); }
 
 /** Clears bit `n` in `a`. */
-static void B_(bmp_clear)(struct B_(bmp) *const a, unsigned n)
+static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned n)
 	{ assert(a && n < BMP_BITS); BMP_CLEAR(a->chunk, n); }
 
 #ifdef BMP_TEST /* <!-- test */
