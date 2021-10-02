@@ -66,7 +66,11 @@ static void PB_(str_set)(struct PB_(str) *const a, const unsigned n)
 static void PB_(str_clear)(struct PB_(str) *const a, const unsigned n)
 	{ assert(a && n < BMP_BITS); a->bits[n] = '0'; }
 
+static void PB_(str_toggle)(struct PB_(str) *const a, const unsigned n)
+	{ assert(a && n < BMP_BITS); a->bits[n] = a->bits[n] == '1' ? '0' : '1'; }
 
+
+/* . . . */
 
 
 static void PB_(str_insert)(struct PB_(str) *const a,
@@ -112,7 +116,7 @@ static void string_split(char *const parent, char *const child,
 static void PB_(test)(void) {
 	struct B_(bmp) bmp;
 	struct PB_(str) str, bmp_str;
-	unsigned i;
+	unsigned i, j;
 	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
 	printf("clear_all:\n");
@@ -134,16 +138,21 @@ static void PB_(test)(void) {
 	B_(bmp_clear_all)(&bmp);
 	PB_(str_clear_all)(&str);
 
-	printf("set:\n");
+	printf("set:\n"); /* Has to be clear. */
 	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
-		printf("%s%d", i ? ", " : "", i), B_(bmp_set)(&bmp, i);
-	printf("\n");
+		B_(bmp_set)(&bmp, i);
 	PB_(to_string)(&bmp, &bmp_str);
 	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
-		printf("%s%d", i ? ", " : "", i), PB_(str_set)(&str, i);
-	printf("\n");
+		PB_(str_set)(&str, i);
 	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
 	assert(!strcmp(str.bits, bmp_str.bits));
+
+	printf("test:\n"); /* Has to come just after set. */
+	for(i = 0, j = 0; i < BMP_BITS; i++) {
+		assert(B_(bmp_at)(&bmp, i) == (i == j));
+		if(i < j) continue;
+		j += 1 + r[j % sizeof r / sizeof *r];
+	}
 
 	printf("clear:\n");
 	B_(bmp_clear)(&bmp, 0);
@@ -152,7 +161,12 @@ static void PB_(test)(void) {
 	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
 	assert(!strcmp(str.bits, bmp_str.bits));
 
-
+	printf("toggle:\n");
+	B_(bmp_toggle)(&bmp, 0);
+	PB_(to_string)(&bmp, &bmp_str);
+	PB_(str_toggle)(&str, 0);
+	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
+	assert(!strcmp(str.bits, bmp_str.bits));
 }
 
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while

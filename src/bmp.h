@@ -45,15 +45,15 @@
 #ifndef BMP_H /* <!-- idempotent */
 #define BMP_H
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
+#define BMP_MAX (~(PB_(chunk))0)
 #define BMP_HI (1u << sizeof(PB_(chunk)) * CHAR_BIT - 1)
 #define BMP_MASK(n) (BMP_HI >> (n) % (sizeof(PB_(chunk)) * CHAR_BIT))
 #define BMP_SLOT(n) ((n) / ((unsigned)sizeof(PB_(chunk)) * CHAR_BIT))
-#define BMP_PROJ(a, n) ((a)[BMP_SLOT(n)] & BMP_MASK(n))
+#define BMP_AT(a, n) ((a)[BMP_SLOT(n)] & BMP_MASK(n))
 #define BMP_DIFF(a, b, n) (((a)[BMP_SLOT(n)] ^ (b)[BMP_SLOT(n)]) & BMP_MASK(n))
 #define BMP_SET(a, n) ((a)[BMP_SLOT(n)] |= BMP_MASK(n))
 #define BMP_CLEAR(a, n) ((a)[BMP_SLOT(n)] &= ~(BMP_MASK(n)))
 #define BMP_TOGGLE(a, n) ((a)[BMP_SLOT(n)] ^= BMP_MASK(n))
-#define BMP_MAX (~(PB_(chunk))0)
 #endif /* idempotent --> */
 
 
@@ -86,13 +86,21 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
+/** Projects the eigenvalue `n` of `a`. */
+static unsigned B_(bmp_at)(struct B_(bmp) *const a, const unsigned n)
+	{ assert(a && n < BMP_BITS); return !!BMP_AT(a->chunk, n); }
+
 /** Sets bit `n` in `a`. */
 static void B_(bmp_set)(struct B_(bmp) *const a, const unsigned n)
-{ assert(a && n < BMP_BITS); printf("set %u: (%u:%u)\n", n, BMP_SLOT(n), BMP_MASK(n)); BMP_SET(a->chunk, n); }
+	{ assert(a && n < BMP_BITS); BMP_SET(a->chunk, n); }
 
 /** Clears bit `n` in `a`. */
 static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned n)
 	{ assert(a && n < BMP_BITS); BMP_CLEAR(a->chunk, n); }
+
+/** Toggles bit `n` in `a`. */
+static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned n)
+	{ assert(a && n < BMP_BITS); BMP_TOGGLE(a->chunk, n); }
 
 #ifdef BMP_TEST /* <!-- test */
 #include "../test/test_bmp.h" /** \include */
@@ -100,8 +108,8 @@ static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned n)
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	B_(bmp_clear_all)(0); B_(bmp_invert_all)(0);
-	B_(bmp_set)(0, 0); B_(bmp_clear)(0, 0);
+	B_(bmp_clear_all)(0); B_(bmp_invert_all)(0); B_(bmp_at)(0, 0);
+	B_(bmp_set)(0, 0); B_(bmp_clear)(0, 0); B_(bmp_toggle)(0, 0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
