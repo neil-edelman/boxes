@@ -46,19 +46,28 @@ static void PB_(adorn)(const struct PB_(str) *str,
 	fputc('\n', stdout);
 }
 
-static void PB_(str_clear)(struct PB_(str) *const a) {
+static void PB_(str_clear_all)(struct PB_(str) *const a) {
 	assert(a);
 	memset(a, '0', sizeof a->bits - 1);
 	a->bits[sizeof a->bits - 1] = '\0';
 }
 
-static void PB_(str_invert)(struct PB_(str) *const a) {
+static void PB_(str_invert_all)(struct PB_(str) *const a) {
 	size_t i;
 	assert(a);
 	for(i = 0; i < BMP_BITS; i++) a->bits[i] = a->bits[i] == '0' ? '1' : '0';
 	for( ; i < sizeof a->bits - 1; i++) assert(a->bits[i] == '0');
 	assert(a->bits[sizeof a->bits - 1] == '\0');
 }
+
+static void PB_(str_set)(struct PB_(str) *const a, const unsigned n)
+	{ assert(a && n < BMP_BITS); a->bits[n] = '1'; }
+
+static void PB_(str_clear)(struct PB_(str) *const a, const unsigned n)
+	{ assert(a && n < BMP_BITS); a->bits[n] = '0'; }
+
+
+
 
 static void PB_(str_insert)(struct PB_(str) *const a,
 	const unsigned offset, const unsigned n) {
@@ -103,22 +112,47 @@ static void string_split(char *const parent, char *const child,
 static void PB_(test)(void) {
 	struct B_(bmp) bmp;
 	struct PB_(str) str, bmp_str;
-	size_t i;
+	unsigned i;
+	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
-	printf("clear:\n");
-	B_(bmp_clear)(&bmp);
+	printf("clear_all:\n");
+	B_(bmp_clear_all)(&bmp);
 	PB_(to_string)(&bmp, &bmp_str);
-	PB_(str_clear)(&str);
+	PB_(str_clear_all)(&str);
 	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
 	assert(!strcmp(str.bits, bmp_str.bits));
-	for(i = 0; i < sizeof bmp.chunk / sizeof *bmp.chunk; i++) assert(!bmp.chunk[i]);
+	for(i = 0; i < sizeof bmp.chunk / sizeof *bmp.chunk; i++)
+		assert(!bmp.chunk[i]);
 
 	printf("invert:\n");
 	B_(bmp_invert_all)(&bmp);
 	PB_(to_string)(&bmp, &bmp_str);
-	PB_(str_invert)(&str);
+	PB_(str_invert_all)(&str);
 	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
 	assert(!strcmp(str.bits, bmp_str.bits));
+
+	B_(bmp_clear_all)(&bmp);
+	PB_(str_clear_all)(&str);
+
+	printf("set:\n");
+	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
+		printf("%s%d", i ? ", " : "", i), B_(bmp_set)(&bmp, i);
+	printf("\n");
+	PB_(to_string)(&bmp, &bmp_str);
+	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
+		printf("%s%d", i ? ", " : "", i), PB_(str_set)(&str, i);
+	printf("\n");
+	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
+	assert(!strcmp(str.bits, bmp_str.bits));
+
+	printf("clear:\n");
+	B_(bmp_clear)(&bmp, 0);
+	PB_(to_string)(&bmp, &bmp_str);
+	PB_(str_clear)(&str, 0);
+	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
+	assert(!strcmp(str.bits, bmp_str.bits));
+
+
 }
 
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while

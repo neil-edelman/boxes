@@ -44,6 +44,16 @@
 
 #ifndef BMP_H /* <!-- idempotent */
 #define BMP_H
+/* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
+#define BMP_HI (1u << sizeof(PB_(chunk)) * CHAR_BIT - 1)
+#define BMP_MASK(n) (BMP_HI >> (n) % sizeof(PB_(chunk)) * CHAR_BIT)
+#define BMP_SLOT(n) ((n) / (sizeof(PB_(chunk)) * CHAR_BIT))
+#define BMP_PROJ(a, n) ((a)[BMP_SLOT(n)] & BMP_MASK(n))
+#define BMP_DIFF(a, b, n) (((a)[BMP_SLOT(n)] ^ (b)[BMP_SLOT(n)]) & BMP_MASK(n))
+#define BMP_SET(a, n) ((a)[BMP_SLOT(n)] |= BMP_MASK(n))
+#define BMP_CLEAR(a, n) ((a)[BMP_SLOT(n)] &= ~(BMP_MASK(n)))
+#define BMP_TOGGLE(a, n) ((a)[BMP_SLOT(n)] ^= BMP_MASK(n))
+#define BMP_MAX (~(PB_(chunk))0)
 #endif /* idempotent --> */
 
 
@@ -61,23 +71,14 @@ struct B_(bmp) {
 	PB_(chunk) chunk[(((BMP_BITS) - 1) / CHAR_BIT / sizeof(PB_(chunk)) + 1)];
 };
 
-#define BMP_MAX (~(PB_(chunk))0)
-/*#define BMP_CHUNKS (sizeof ((struct B_(bmp) *)0)->chunk \
-	/ sizeof *((struct B_(bmp) *)0)->chunk)*/
-/* #define BMP_CHUNKS (sizeof ((struct B_(bmp) *)0)->chunk * CHAR_BIT) */
-
 /** Sets `a` to all false. */
-static void B_(bmp_clear)(struct B_(bmp) *const a)
+static void B_(bmp_clear_all)(struct B_(bmp) *const a)
 	{ assert(a); memset(a, 0, sizeof *a); }
-
-/** Sets `idx` in `a`. */
-static void B_(bmp_set)(struct B_(bmp) *const a, unsigned idx) {
-
-}
 
 /** Inverts all entries of `a`. */
 static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 	size_t i;
+	assert(a);
 	for(i = 0; i < sizeof a->chunk / sizeof *a->chunk; i++)
 		a->chunk[i] = ~a->chunk[i];
 	/* Obsessively zero padded bits. */
@@ -85,13 +86,22 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
+/** Sets bit `n` in `a`. */
+static void B_(bmp_set)(struct B_(bmp) *const a, unsigned n)
+	{ assert(a && n < BMP_BITS); BMP_SET(a->chunk, n); }
+
+/** Clears bit `n` in `a`. */
+static void B_(bmp_clear)(struct B_(bmp) *const a, unsigned n)
+	{ assert(a && n < BMP_BITS); BMP_CLEAR(a->chunk, n); }
+
 #ifdef BMP_TEST /* <!-- test */
 #include "../test/test_bmp.h" /** \include */
 #endif /* test --> */
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	B_(bmp_clear)(0); B_(bmp_invert_all)(0);
+	B_(bmp_clear_all)(0); B_(bmp_invert_all)(0);
+	B_(bmp_set)(0, 0); B_(bmp_clear)(0, 0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
