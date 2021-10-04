@@ -46,14 +46,15 @@
 #define BMP_H
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
 #define BMP_MAX (~(PB_(chunk))0)
-#define BMP_HI (1u << sizeof(PB_(chunk)) * CHAR_BIT - 1)
-#define BMP_MASK(n) (BMP_HI >> (n) % (sizeof(PB_(chunk)) * CHAR_BIT))
-#define BMP_SLOT(n) ((n) / ((unsigned)sizeof(PB_(chunk)) * CHAR_BIT))
-#define BMP_AT(a, n) ((a)[BMP_SLOT(n)] & BMP_MASK(n))
-#define BMP_DIFF(a, b, n) (((a)[BMP_SLOT(n)] ^ (b)[BMP_SLOT(n)]) & BMP_MASK(n))
-#define BMP_SET(a, n) ((a)[BMP_SLOT(n)] |= BMP_MASK(n))
-#define BMP_CLEAR(a, n) ((a)[BMP_SLOT(n)] &= ~(BMP_MASK(n)))
-#define BMP_TOGGLE(a, n) ((a)[BMP_SLOT(n)] ^= BMP_MASK(n))
+#define BMP_CHUNK (sizeof(PB_(chunk)) * CHAR_BIT)
+#define BMP_CHUNK_HI (1u << BMP_CHUNK - 1)
+#define BMP_MASK(x) (BMP_CHUNK_HI >> (x) % (unsigned)BMP_CHUNK)
+#define BMP_SLOT(x) ((x) / (unsigned)BMP_CHUNK)
+#define BMP_AT(a, x) ((a)[BMP_SLOT(x)] & BMP_MASK(x))
+#define BMP_DIFF(a, b, x) (((a)[BMP_SLOT(x)] ^ (b)[BMP_SLOT(x)]) & BMP_MASK(x))
+#define BMP_SET(a, x) ((a)[BMP_SLOT(x)] |= BMP_MASK(x))
+#define BMP_CLEAR(a, x) ((a)[BMP_SLOT(x)] &= ~(BMP_MASK(x)))
+#define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 #endif /* idempotent --> */
 
 
@@ -68,7 +69,7 @@ typedef BMP_TYPE PB_(chunk);
 /** An array of `BMP_BITS` bits, taking up the next multiple of `BMP_TYPE`
  size. */
 struct B_(bmp) {
-	PB_(chunk) chunk[(((BMP_BITS) - 1) / CHAR_BIT / sizeof(PB_(chunk)) + 1)];
+	PB_(chunk) chunk[((BMP_BITS) - 1) / BMP_CHUNK + 1];
 };
 
 /** Sets `a` to all false. */
@@ -86,21 +87,64 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-/** Projects the eigenvalue `n` of `a`. */
-static unsigned B_(bmp_at)(struct B_(bmp) *const a, const unsigned n)
-	{ assert(a && n < BMP_BITS); return !!BMP_AT(a->chunk, n); }
+/** Projects the eigenvalue of bit `x` of `a`. */
+static unsigned B_(bmp_at)(struct B_(bmp) *const a, const unsigned x)
+	{ assert(a && x < BMP_BITS); return !!BMP_AT(a->chunk, x); }
 
-/** Sets bit `n` in `a`. */
-static void B_(bmp_set)(struct B_(bmp) *const a, const unsigned n)
-	{ assert(a && n < BMP_BITS); BMP_SET(a->chunk, n); }
+/** Sets bit `x` in `a`. */
+static void B_(bmp_set)(struct B_(bmp) *const a, const unsigned x)
+	{ assert(a && x < BMP_BITS); BMP_SET(a->chunk, x); }
 
-/** Clears bit `n` in `a`. */
-static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned n)
-	{ assert(a && n < BMP_BITS); BMP_CLEAR(a->chunk, n); }
+/** Clears bit `x` in `a`. */
+static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned x)
+	{ assert(a && x < BMP_BITS); BMP_CLEAR(a->chunk, x); }
 
-/** Toggles bit `n` in `a`. */
-static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned n)
-	{ assert(a && n < BMP_BITS); BMP_TOGGLE(a->chunk, n); }
+/** Toggles bit `x` in `a`. */
+static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
+	{ assert(a && x < BMP_BITS); BMP_TOGGLE(a->chunk, x); }
+
+static void B_(bmp_insert_range)(struct B_(bmp) *const a,
+	const unsigned x, const unsigned n) {
+	unsigned src = BMP_BITS - n, dst = BMP_BITS;
+	PB_(chunk) *chunk = &a->chunk[(BMP_BITS - 1) / BMP_CHUNK + 1];
+	assert(a && n && x + n < BMP_BITS);
+	while(src > x) {
+		const struct { unsigned hi, lo; }
+			src0 = { src / BMP_CHUNK, src % BMP_CHUNK },
+			dst0 = { dst / BMP_CHUNK, dst % BMP_CHUNK };
+		if(src0.lo < dst0.lo) {
+		} else if(dst0.lo) {
+			/*const B_(chunk) temp = a->chunk[dst0.hi];*/
+			a->chunk[dst0.hi] = a->chunk[src0.hi] << BMP_CHUNK - dst0.lo;
+		}
+	}
+	/* . . . */
+}
+
+/** Insert bit `n` into `a`, moving over all the bits past it right; the bit on
+ the end is erased. */
+static void B_(bmp_insert)(struct B_(bmp) *const a, const unsigned n) {
+	struct { unsigned whole, remain; }
+		insert = { n / BMP_CHUNK, n % BMP_CHUNK },
+		size = { BMP_BITS / BMP_CHUNK, BMP_BITS % BMP_CHUNK };
+	const int multi = insert.whole < size.whole;
+	PB_(chunk) x = a->chunk[insert.whole], carry = x & 1,
+		mask = 1 << BMP_CHUNK - 1 - insert.remain;
+	assert(a && n < BMP_BITS);
+	/* <https://graphics.stanford.edu/~seander/bithacks.html#MaskedMerge>. */
+	a->chunk[insert.whole] = (x ^ ((x ^ (x >> 1)) & (mask - 1))) & ~mask;
+	if(multi) while(++insert.whole < size.whole) {
+		x = a->chunk[insert.whole];
+		a->chunk[insert.whole] = (PB_(chunk))(carry << BMP_CHUNK-1) | (x >> 1);
+		carry = x & 1;
+	}
+	if(size.remain) {
+		mask = BMP_MAX >> size.remain;
+		x = a->chunk[insert.whole];
+		a->chunk[insert.whole]
+			= (multi ? (carry << BMP_CHUNK-1) | (x >> 1) : x) & ~mask;
+	}
+}
 
 #ifdef BMP_TEST /* <!-- test */
 #include "../test/test_bmp.h" /** \include */

@@ -8,78 +8,80 @@
 
 /* The byte versions for testing. */
 
-struct PB_(str)
+struct PB_(gadget)
 	{ char bits[sizeof(((struct B_(bmp) *)0)->chunk) * CHAR_BIT + 1]; };
 
-/** `bmp` of is written in `str` for use in testing. */
-static void PB_(to_string)(const struct B_(bmp) *const bmp,
-	struct PB_(str) *const str) {
+/** Homomorphism from `a` to `g` for use in testing. */
+static void PB_(to_gadget)(const struct B_(bmp) *const a,
+	struct PB_(gadget) *const g) {
 	size_t i, j;
-	char *s = str->bits;
-	assert(bmp && str);
-	for(i = 0; i < sizeof bmp->chunk / sizeof *bmp->chunk; i++)
-		for(j = 0; j < sizeof *bmp->chunk * CHAR_BIT; j++) *s++
-		= bmp->chunk[i] & (1 << sizeof *bmp->chunk * CHAR_BIT - 1 - j)
-		? '1' : '0';
+	char *s = g->bits;
+	assert(a && g);
+	for(i = 0; i < sizeof a->chunk / sizeof *a->chunk; i++)
+		for(j = 0; j < sizeof *a->chunk * CHAR_BIT; j++) *s++
+		= a->chunk[i] & (1 << sizeof *a->chunk * CHAR_BIT - 1 - j) ? '1' : '0';
 	*s = '\0';
 }
 
-/** Adds `label` and spaces into `s` and adds parentheses between `offset`
- to `range`, new line, and sends it to `stdout`. */
-static void PB_(adorn)(const struct PB_(str) *str,
-	const unsigned offset, const unsigned range, const char label) {
+/** @return Temporary string representation of `g` with spaces, parentheses
+ at `x` to `n`. */
+static char *PB_(adorn)(const struct PB_(gadget) *g,
+	const unsigned x, const unsigned n) {
+	static unsigned choice;
+	static char temp[4][(sizeof g->bits - 1) * 10 / 8 + 3 + 1];
+	char *const zs = temp[choice++], *z = zs;
 	size_t i;
-	fputc(label, stdout);
+	choice %= sizeof temp / sizeof *temp;
 	for(i = 0; ; i++) {
-		const int end = str->bits[i] == '\0', sep = !(i & 3) && i,
-			lef = i == offset, rht = i == offset + range, stp = i == BMP_BITS;
-		if(!end && sep && !rht && !stp) fputc(i & 31 ? i & 7 ? ':' : ' ' : '/', stdout);
-		if(lef) fputc('[', stdout);
-		if(rht) fputc(']', stdout);
-		if(stp) fputc('#', stdout);
+		const int end = g->bits[i] == '\0', sep = !(i & 3) && i,
+			lef = i == x, rht = i == x + n, stp = i == BMP_BITS;
+		if(!end && sep && !rht && !stp) *z++ = i & 31 ? i & 7 ? ':' : ' ' : '/';
+		if(lef) *z++ = '[';
+		if(rht) *z++ = ']';
+		if(stp) *z++ = '#';
 		if(!end && sep && (rht || stp))
-			fputc(i & 31 ? i & 7 ? ':' : ' ' : '/', stdout);
-		if(!end) assert(str->bits[i] == '0' || str->bits[i] == '1'),
-			fputc(str->bits[i], stdout);
+			*z++ = i & 31 ? i & 7 ? ':' : ' ' : '/';
+		if(!end) assert(g->bits[i] == '0' || g->bits[i] == '1'),
+			*z++ = g->bits[i];
 		if(end) break;
 	}
-	fputc('\n', stdout);
+	*z = '\0';
+	return zs;
 }
 
-static void PB_(str_clear_all)(struct PB_(str) *const a) {
-	assert(a);
-	memset(a, '0', sizeof a->bits - 1);
-	a->bits[sizeof a->bits - 1] = '\0';
+static void PB_(str_clear_all)(struct PB_(gadget) *const g) {
+	assert(g);
+	memset(g, '0', sizeof g->bits - 1);
+	g->bits[sizeof g->bits - 1] = '\0';
 }
 
-static void PB_(str_invert_all)(struct PB_(str) *const a) {
+static void PB_(str_invert_all)(struct PB_(gadget) *const g) {
 	size_t i;
-	assert(a);
-	for(i = 0; i < BMP_BITS; i++) a->bits[i] = a->bits[i] == '0' ? '1' : '0';
-	for( ; i < sizeof a->bits - 1; i++) assert(a->bits[i] == '0');
-	assert(a->bits[sizeof a->bits - 1] == '\0');
+	assert(g);
+	for(i = 0; i < BMP_BITS; i++) g->bits[i] = g->bits[i] == '0' ? '1' : '0';
+	for( ; i < sizeof g->bits - 1; i++) assert(g->bits[i] == '0');
+	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
 
-static void PB_(str_set)(struct PB_(str) *const a, const unsigned n)
-	{ assert(a && n < BMP_BITS); a->bits[n] = '1'; }
+static void PB_(str_set)(struct PB_(gadget) *const g, const unsigned n)
+	{ assert(g && n < BMP_BITS); g->bits[n] = '1'; }
 
-static void PB_(str_clear)(struct PB_(str) *const a, const unsigned n)
-	{ assert(a && n < BMP_BITS); a->bits[n] = '0'; }
+static void PB_(str_clear)(struct PB_(gadget) *const g, const unsigned n)
+	{ assert(g && n < BMP_BITS); g->bits[n] = '0'; }
 
-static void PB_(str_toggle)(struct PB_(str) *const a, const unsigned n)
-	{ assert(a && n < BMP_BITS); a->bits[n] = a->bits[n] == '1' ? '0' : '1'; }
+static void PB_(str_toggle)(struct PB_(gadget) *const g, const unsigned n)
+	{ assert(g && n < BMP_BITS); g->bits[n] = g->bits[n] == '1' ? '0' : '1'; }
 
-
-/* . . . */
-
-
-static void PB_(str_insert)(struct PB_(str) *const a,
-	const unsigned offset, const unsigned n) {
-	assert(a && offset + n <= BMP_BITS);
-	memmove(a + offset + n, a + offset, BMP_BITS - offset - n);
-	memset(a + offset, '0', n);
-	assert(a->bits[sizeof a->bits - 1] == '\0');
+static void PB_(str_insert_range)(struct PB_(gadget) *const g,
+	const unsigned n, const unsigned range) {
+	assert(g && n + range < BMP_BITS);
+	memmove(&g->bits[n + range], &g->bits[n], BMP_BITS - n - range);
+	memset(&g->bits[n], '0', range);
+	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
+
+static void PB_(str_insert)(struct PB_(gadget) *const g, const unsigned n)
+	{ PB_(str_insert_range)(g, n, 1); }
 
 #if 0
 static void string_remove(char *const a,
@@ -115,37 +117,41 @@ static void string_split(char *const parent, char *const child,
 
 static void PB_(test)(void) {
 	struct B_(bmp) bmp;
-	struct PB_(str) str, bmp_str;
+	struct PB_(gadget) gdt, bmp_gdt;
 	unsigned i, j;
 	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
-	printf("clear_all:\n");
+	PB_(str_clear_all)(&gdt);
 	B_(bmp_clear_all)(&bmp);
-	PB_(to_string)(&bmp, &bmp_str);
-	PB_(str_clear_all)(&str);
-	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
-	assert(!strcmp(str.bits, bmp_str.bits));
+	PB_(to_gadget)(&bmp, &bmp_gdt);
+	printf("clear_all:\n"
+		" str %s;\n"
+		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
+	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 	for(i = 0; i < sizeof bmp.chunk / sizeof *bmp.chunk; i++)
 		assert(!bmp.chunk[i]);
 
-	printf("invert:\n");
+	PB_(str_invert_all)(&gdt);
 	B_(bmp_invert_all)(&bmp);
-	PB_(to_string)(&bmp, &bmp_str);
-	PB_(str_invert_all)(&str);
-	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
-	assert(!strcmp(str.bits, bmp_str.bits));
+	PB_(to_gadget)(&bmp, &bmp_gdt);
+	printf("invert:\n"
+		" str %s;\n"
+		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
+	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
 	B_(bmp_clear_all)(&bmp);
-	PB_(str_clear_all)(&str);
+	PB_(str_clear_all)(&gdt);
 
-	printf("set:\n"); /* Has to be clear. */
+	/* Has to be clear. */
+	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
+		PB_(str_set)(&gdt, i);
 	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
 		B_(bmp_set)(&bmp, i);
-	PB_(to_string)(&bmp, &bmp_str);
-	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
-		PB_(str_set)(&str, i);
-	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
-	assert(!strcmp(str.bits, bmp_str.bits));
+	PB_(to_gadget)(&bmp, &bmp_gdt);
+	printf("set:\n"
+		" str %s;\n"
+		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
+	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
 	printf("test:\n"); /* Has to come just after set. */
 	for(i = 0, j = 0; i < BMP_BITS; i++) {
@@ -154,19 +160,30 @@ static void PB_(test)(void) {
 		j += 1 + r[j % sizeof r / sizeof *r];
 	}
 
-	printf("clear:\n");
+	PB_(str_clear)(&gdt, 0);
 	B_(bmp_clear)(&bmp, 0);
-	PB_(to_string)(&bmp, &bmp_str);
-	PB_(str_clear)(&str, 0);
-	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
-	assert(!strcmp(str.bits, bmp_str.bits));
+	PB_(to_gadget)(&bmp, &bmp_gdt);
+	printf("clear:\n"
+		" str %s;\n"
+		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
+	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
-	printf("toggle:\n");
+	PB_(str_toggle)(&gdt, 0);
 	B_(bmp_toggle)(&bmp, 0);
-	PB_(to_string)(&bmp, &bmp_str);
-	PB_(str_toggle)(&str, 0);
-	PB_(adorn)(&str, 0, 0, 'S'), PB_(adorn)(&bmp_str, 0, 0, 'B');
-	assert(!strcmp(str.bits, bmp_str.bits));
+	PB_(to_gadget)(&bmp, &bmp_gdt);
+	printf("toggle:\n"
+		" str %s;\n"
+		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
+	assert(!strcmp(gdt.bits, bmp_gdt.bits));
+
+	/* fixme: iterate */
+	PB_(str_insert)(&gdt, 4);
+	B_(bmp_insert)(&bmp, 4);
+	PB_(to_gadget)(&bmp, &bmp_gdt);
+	printf("insert:\n"
+		" str %s;\n"
+		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
+	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 }
 
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while
