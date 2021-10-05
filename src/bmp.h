@@ -47,6 +47,7 @@
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
 #define BMP_MAX (~(PB_(chunk))0)
 #define BMP_CHUNK (sizeof(PB_(chunk)) * CHAR_BIT)
+#define BMP_CHUNKS (((BMP_BITS) - 1) / BMP_CHUNK + 1)
 #define BMP_CHUNK_HI (1u << BMP_CHUNK - 1)
 #define BMP_MASK(x) (BMP_CHUNK_HI >> (x) % (unsigned)BMP_CHUNK)
 #define BMP_SLOT(x) ((x) / (unsigned)BMP_CHUNK)
@@ -68,9 +69,7 @@ typedef BMP_TYPE PB_(chunk);
 
 /** An array of `BMP_BITS` bits, taking up the next multiple of `BMP_TYPE`
  size. */
-struct B_(bmp) {
-	PB_(chunk) chunk[((BMP_BITS) - 1) / BMP_CHUNK + 1];
-};
+struct B_(bmp) { PB_(chunk) chunk[BMP_CHUNKS]; };
 
 /** Sets `a` to all false. */
 static void B_(bmp_clear_all)(struct B_(bmp) *const a)
@@ -105,13 +104,15 @@ static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 
 static void B_(bmp_insert_range)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	unsigned src = BMP_BITS - n, dst = BMP_BITS;
-	PB_(chunk) *chunk = &a->chunk[(BMP_BITS - 1) / BMP_CHUNK + 1];
+	unsigned source = BMP_BITS - n, dest = BMP_BITS;
+	struct { unsigned hi, lo; }
+		stp = { x / BMP_CHUNK, x % BMP_CHUNK },
+		src = { source / BMP_CHUNK, source % BMP_CHUNK },
+		dst = { dest / BMP_CHUNK, dest % BMP_CHUNK };
+	const PB_(chunk) store = a->chunk[stp.hi];
+	unsigned i = BMP_CHUNKS - 1;
 	assert(a && n && x + n < BMP_BITS);
 	while(src > x) {
-		const struct { unsigned hi, lo; }
-			src0 = { src / BMP_CHUNK, src % BMP_CHUNK },
-			dst0 = { dst / BMP_CHUNK, dst % BMP_CHUNK };
 		if(src0.lo < dst0.lo) {
 		} else if(dst0.lo) {
 			/*const B_(chunk) temp = a->chunk[dst0.hi];*/
