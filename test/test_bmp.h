@@ -185,10 +185,11 @@ static void PB_(test)(void) {
 		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
 	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
+	printf("insert range:\n"
+		" bmp %s.\n", PB_(adorn)(&bmp_gdt, 4, 0));
 	B_(bmp_insert_range)(&bmp, 4, 4);
 	PB_(to_gadget)(&bmp, &bmp_gdt);
-	printf("insert range:\n"
-		" bmp %s.\n", PB_(adorn)(&bmp_gdt, 0, 0));
+	printf(" bmp %s.\n", PB_(adorn)(&bmp_gdt, 4, 4));
 }
 
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while
