@@ -108,30 +108,30 @@ static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 
 static void B_(bmp_insert_range)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	struct B_(bmp) old;
-	unsigned source = BMP_BITS - n, dest = BMP_BITS;
+	const unsigned stop = x / BMP_CHUNK;
+	unsigned source_bit = BMP_BITS - n, dest_bit = BMP_BITS;
 	struct { unsigned hi, lo; }
 		stp = { x / BMP_CHUNK, x % BMP_CHUNK },
 		src = { source / BMP_CHUNK, source % BMP_CHUNK },
-		dst = { dest / BMP_CHUNK, dest % BMP_CHUNK };
-	const PB_(chunk) store = a->chunk[stp.hi];
+		dst = { dest / BMP_CHUNK, dest % BMP_CHUNK },
+		nxx = { n / BMP_CHUNK, n % BMP_CHUNK };
+	const PB_(chunk) store = a->chunk[stop];
 	PB_(chunk) construct;
 	assert(a && n && x + n < BMP_BITS);
-	{ /* Instead of working backwards,  */
-		const unsigned x_bytes = x / BMP_CHUNK * sizeof *a->chunk;
-		memcpy(old.chunk + x_bytes, a + x_bytes, sizeof a->chunk - x_bytes);
-	}
+	/* Inverted copying is good. */
 	printf("stp %u:%u, src %u:%u, dst %u:%u\n",
 		stp.hi, stp.lo, src.hi, src.lo, dst.hi, dst.lo);
 
 	for( ; ; ) {
 		printf("stp.hi %u, dst.hi = %u\n", stp.hi, dst.hi);
-		construct = a->chunk[src.hi] >> ;
-		if(dst.hi <= stp.hi) break;
+		construct = a->chunk[src.hi] >> nxx.lo;
+		if(dst.hi == stp.hi) { a->chunk[dst.hi] = construct; break; }
 		dst.hi--;
+		construct |= a->chunk[]
 	}
 	/*a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);*/
+	printf("done\n");
 }
 
 /** Insert bit `n` into `a`, moving over all the bits past it right; the bit on
