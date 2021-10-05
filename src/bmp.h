@@ -86,6 +86,10 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
+/** Copies `a` to `b`. */
+static void B_(bmp_copy)(const struct B_(bmp) *const a,
+	struct B_(bmp) *const b) { assert(a && b); memcpy(b, a, sizeof *a); }
+
 /** Projects the eigenvalue of bit `x` of `a`. */
 static unsigned B_(bmp_at)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); return !!BMP_AT(a->chunk, x); }
@@ -104,22 +108,30 @@ static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 
 static void B_(bmp_insert_range)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
+	struct B_(bmp) old;
 	unsigned source = BMP_BITS - n, dest = BMP_BITS;
 	struct { unsigned hi, lo; }
 		stp = { x / BMP_CHUNK, x % BMP_CHUNK },
 		src = { source / BMP_CHUNK, source % BMP_CHUNK },
 		dst = { dest / BMP_CHUNK, dest % BMP_CHUNK };
 	const PB_(chunk) store = a->chunk[stp.hi];
-	unsigned i = BMP_CHUNKS - 1;
+	PB_(chunk) construct;
 	assert(a && n && x + n < BMP_BITS);
-	while(src > x) {
-		if(src0.lo < dst0.lo) {
-		} else if(dst0.lo) {
-			/*const B_(chunk) temp = a->chunk[dst0.hi];*/
-			a->chunk[dst0.hi] = a->chunk[src0.hi] << BMP_CHUNK - dst0.lo;
-		}
+	{ /* Instead of working backwards,  */
+		const unsigned x_bytes = x / BMP_CHUNK * sizeof *a->chunk;
+		memcpy(old.chunk + x_bytes, a + x_bytes, sizeof a->chunk - x_bytes);
 	}
-	/* . . . */
+	printf("stp %u:%u, src %u:%u, dst %u:%u\n",
+		stp.hi, stp.lo, src.hi, src.lo, dst.hi, dst.lo);
+
+	for( ; ; ) {
+		printf("stp.hi %u, dst.hi = %u\n", stp.hi, dst.hi);
+		construct = a->chunk[src.hi] >> ;
+		if(dst.hi <= stp.hi) break;
+		dst.hi--;
+	}
+	/*a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
+		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);*/
 }
 
 /** Insert bit `n` into `a`, moving over all the bits past it right; the bit on
