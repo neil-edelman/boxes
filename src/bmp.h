@@ -108,20 +108,18 @@ static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 
 static void B_(bmp_insert_range)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	struct { unsigned hi, lo; }
-		stp = { x / BMP_CHUNK, x % BMP_CHUNK },
-		src = { (BMP_BITS - n) / BMP_CHUNK, (BMP_BITS - n) % BMP_CHUNK },
-		dst = { BMP_BITS / BMP_CHUNK, BMP_BITS % BMP_CHUNK };
-	const PB_(chunk) store = a->chunk[stp.hi];
-	PB_(chunk) construct;
+	const unsigned limit_hi = x / BMP_CHUNK;
+	const struct { unsigned hi, lo } move = { n / BMP_CHUNK, n % BMP_CHUNK };
+	unsigned src_hi = (BMP_BITS - n) / BMP_CHUNK;
+	const PB_(chunk) store = a->chunk[limit_hi];
+	PB_(chunk) temp;
 	assert(a && n && x + n < BMP_BITS);
-
-	for( ; ; ) {
-		printf("stp.hi %u, dst.hi = %u\n", stp.hi, dst.hi);
-		construct = a->chunk[src.hi] >> src.lo;
-		if(src.hi == stp.hi) { a->chunk[dst.hi] = construct; break; }
-		construct |= a->chunk[--src.hi] << BMP_CHUNK - src.lo;
-		a->chunk[dst.hi--] = construct;
+	for( ; ; ) { /* Copy a superset of `<PB>chunk` bits, backwards. */
+		printf("src_hi = %u\n", src_hi);
+		temp = a->chunk[src_hi] >> move.lo;
+		if(src_hi == limit_hi) { a->chunk[src_hi + move.hi] = temp; break; }
+		temp |= a->chunk[src_hi - 1] << BMP_CHUNK - move.lo;
+		a->chunk[src_hi-- + move.hi] = temp;
 	}
 	/*a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);*/
