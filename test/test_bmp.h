@@ -35,12 +35,13 @@ static char *PB_(adorn)(const struct PB_(gadget) *g,
 	for(i = 0; ; i++) {
 		const int end = g->bits[i] == '\0', sep = !(i & 3) && i,
 			lef = i == x, rht = i == x + n, stp = i == BMP_BITS;
-		if(!end && sep && !rht && !stp) *z++ = i & 31 ? i & 7 ? ':' : ' ' : '/';
+		if(!end && sep && !rht && !stp)
+			*z++ = i & 31 ? i & 7 ? ':' : '/' : ' ';
 		if(lef) *z++ = '[';
 		if(rht) *z++ = ']';
 		if(stp) *z++ = '#';
 		if(!end && sep && (rht || stp))
-			*z++ = i & 31 ? i & 7 ? ':' : ' ' : '/';
+			*z++ = i & 31 ? i & 7 ? ':' : '/' : ' ';
 		if(!end) assert(g->bits[i] == '0' || g->bits[i] == '1'),
 			*z++ = g->bits[i];
 		if(end) break;
@@ -114,7 +115,7 @@ static void string_split(char *const parent, char *const child,
 
 static void PB_(test)(void) {
 	struct B_(bmp) bmp, bmp_bkp;
-	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp;
+	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp, g;
 	unsigned i, j;
 	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
@@ -182,7 +183,7 @@ static void PB_(test)(void) {
 			PB_(to_gadget)(&bmp, &bmp_gdt);
 			assert(!strcmp(gdt.bits, bmp_gdt.bits));
 			PB_(gadget_insert)(&gdt, i, j);
-			B_(bmp_insert)(&bmp, i, j);
+			B_(bmp_insert)(&bmp, i, j, &g);
 			PB_(to_gadget)(&bmp, &bmp_gdt);
 			printf("insert(%u, %u):\n"
 				" bfr %s;\n"

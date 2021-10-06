@@ -102,63 +102,52 @@ static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned x)
 static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_TOGGLE(a->chunk, x); }
 
+struct PB_(gadget);
+static void PB_(to_gadget)(const struct B_(bmp) *const a,
+						   struct PB_(gadget) *const g);
+static char *PB_(adorn)(const struct PB_(gadget) *g,
+						const unsigned x, const unsigned n);
+
 /** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. */
 static void B_(bmp_insert)(struct B_(bmp) *const a,
-	const unsigned x, const unsigned n) {
+	const unsigned x, const unsigned n, struct PB_(gadget) *g) {
 	const struct { unsigned hi, lo; }
 		move = { n / BMP_CHUNK, n % BMP_CHUNK },
 		limit = { x / BMP_CHUNK, x % BMP_CHUNK };
-	unsigned i = (BMP_BITS - n) / BMP_CHUNK;
+	unsigned i = BMP_CHUNKS - 1 - move.hi;
 	const PB_(chunk) store = a->chunk[limit.hi];
 	PB_(chunk) temp;
 	assert(a && x + n < BMP_BITS);
 	if(!n) return;
+	printf("move=[%u:%u] i=%u\n", move.hi, move.lo, i);
+	PB_(to_gadget)(a, g);
+	printf("before\t%s.\n", PB_(adorn)(g, x, 0));
 	/* Zero the bits that are not involved on the last iteration. */
 	a->chunk[limit.hi] &= BMP_MAX >> limit.lo;
+	printf("unused\t%s.\n", PB_(adorn)(g, x, 0));
 	/* Copy a superset aligned with `<PB>chunk` bits, backwards. */
 	for( ; ; ) {
 		temp = a->chunk[i] >> move.lo;
-		if(i == limit.hi) { a->chunk[move.hi + i] = temp; break; }
-		temp |= a->chunk[i - 1] << BMP_CHUNK - move.lo;
+		if(i == limit.hi) { a->chunk[i + move.hi] = temp; break; }
+		if(move.lo) temp |= a->chunk[i - 1] << BMP_CHUNK - move.lo;
 		a->chunk[i-- + move.hi] = temp;
 	}
+	PB_(to_gadget)(a, g);
+	printf("super\t%s.\n", PB_(adorn)(g, x, n));
 	/* Zero intervening `<PB>chunk`. */
 	for(i = 0; i < move.hi; i++) a->chunk[limit.hi + i] = 0;
+	PB_(to_gadget)(a, g);
+	printf("zero\t%s.\n", PB_(adorn)(g, x, n));
 	/* Restore the bits that are not involved. */
 	a->chunk[limit.hi] |= ~(BMP_MAX >> limit.lo) & store;
+	PB_(to_gadget)(a, g);
+	printf("restore\t%s.\n", PB_(adorn)(g, x, n));
 	/* Clip the value at the high bit. */
 	a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
+	PB_(to_gadget)(a, g);
+	printf("clip\t%s.\n", PB_(adorn)(g, x, n));
 }
-
-#if 0
-
-/** Insert bit `n` into `a`, moving over all the bits past it right; the bit on
- the end is erased. */
-static void B_(bmp_insert_one)(struct B_(bmp) *const a, const unsigned n) {
-	struct { unsigned whole, remain; }
-		insert = { n / BMP_CHUNK, n % BMP_CHUNK },
-		size = { BMP_BITS / BMP_CHUNK, BMP_BITS % BMP_CHUNK };
-	const int multi = insert.whole < size.whole;
-	PB_(chunk) x = a->chunk[insert.whole], carry = x & 1,
-		mask = 1 << BMP_CHUNK - 1 - insert.remain;
-	assert(a && n < BMP_BITS);
-	/* <https://graphics.stanford.edu/~seander/bithacks.html#MaskedMerge>. */
-	a->chunk[insert.whole] = (x ^ ((x ^ (x >> 1)) & (mask - 1))) & ~mask;
-	if(multi) while(++insert.whole < size.whole) {
-		x = a->chunk[insert.whole];
-		a->chunk[insert.whole] = (PB_(chunk))(carry << BMP_CHUNK-1) | (x >> 1);
-		carry = x & 1;
-	}
-	if(size.remain) {
-		mask = BMP_MAX >> size.remain;
-		x = a->chunk[insert.whole];
-		a->chunk[insert.whole]
-			= (multi ? (carry << BMP_CHUNK-1) | (x >> 1) : x) & ~mask;
-	}
-}
-
-#endif
 
 #ifdef BMP_TEST /* <!-- test */
 #include "../test/test_bmp.h" /** \include */
