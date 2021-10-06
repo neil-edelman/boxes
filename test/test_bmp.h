@@ -49,13 +49,13 @@ static char *PB_(adorn)(const struct PB_(gadget) *g,
 	return zs;
 }
 
-static void PB_(str_clear_all)(struct PB_(gadget) *const g) {
+static void PB_(gadget_clear_all)(struct PB_(gadget) *const g) {
 	assert(g);
 	memset(g, '0', sizeof g->bits - 1);
 	g->bits[sizeof g->bits - 1] = '\0';
 }
 
-static void PB_(str_invert_all)(struct PB_(gadget) *const g) {
+static void PB_(gadget_invert_all)(struct PB_(gadget) *const g) {
 	size_t i;
 	assert(g);
 	for(i = 0; i < BMP_BITS; i++) g->bits[i] = g->bits[i] == '0' ? '1' : '0';
@@ -63,35 +63,32 @@ static void PB_(str_invert_all)(struct PB_(gadget) *const g) {
 	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
 
-static void PB_(str_set)(struct PB_(gadget) *const g, const unsigned n)
+static void PB_(gadget_set)(struct PB_(gadget) *const g, const unsigned n)
 	{ assert(g && n < BMP_BITS); g->bits[n] = '1'; }
 
-static void PB_(str_clear)(struct PB_(gadget) *const g, const unsigned n)
+static void PB_(gadget_clear)(struct PB_(gadget) *const g, const unsigned n)
 	{ assert(g && n < BMP_BITS); g->bits[n] = '0'; }
 
-static void PB_(str_toggle)(struct PB_(gadget) *const g, const unsigned n)
+static void PB_(gadget_toggle)(struct PB_(gadget) *const g, const unsigned n)
 	{ assert(g && n < BMP_BITS); g->bits[n] = g->bits[n] == '1' ? '0' : '1'; }
 
-static void PB_(str_insert)(struct PB_(gadget) *const g,
-	const unsigned n, const unsigned range) {
-	assert(g && n + range < BMP_BITS);
-	memmove(&g->bits[n + range], &g->bits[n], BMP_BITS - n - range);
-	memset(&g->bits[n], '0', range);
+static void PB_(gadget_insert)(struct PB_(gadget) *const g,
+	const unsigned x, const unsigned n) {
+	assert(g && x + n < BMP_BITS);
+	memmove(g->bits + x + n, g->bits + x, BMP_BITS - x - n);
+	memset(g->bits + x, '0', n);
 	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
 
-static void PB_(str_insert_one)(struct PB_(gadget) *const g, const unsigned n)
-	{ PB_(str_insert)(g, n, 1); }
-
-#if 0
-static void string_remove(char *const a,
-	const unsigned delete, const unsigned a_size) {
-	assert(a && delete < a_size);
-	memmove(a + delete, a + delete + 1, a_size - delete - 1);
-	a[a_size - 1] = '0';
-	assert(a[BMP_CHUNK(a_size) * BMP_BITS] == '\0');
+static void PB_(gadget_remove)(struct PB_(gadget) *const g,
+	const unsigned x, const unsigned n) {
+	assert(g && x + n < BMP_BITS);
+	memmove(g->bits + x, g->bits + x + n, BMP_BITS - x - n);
+	memset(g->bits + BMP_BITS - n, '0', n);
+	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
 
+#if 0
 /** Move `byte_range` at `byte_offset` in `parent` with `bytes` to
  `child` with `bytes`, starting at zero and filling the rest with '0'; the
  moved part in `parent` is replaced with a single '1'. */
@@ -116,12 +113,12 @@ static void string_split(char *const parent, char *const child,
 
 
 static void PB_(test)(void) {
-	struct B_(bmp) bmp;
-	struct PB_(gadget) gdt, bmp_gdt;
+	struct B_(bmp) bmp, bmp_bkp;
+	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp;
 	unsigned i, j;
 	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
-	PB_(str_clear_all)(&gdt);
+	PB_(gadget_clear_all)(&gdt);
 	B_(bmp_clear_all)(&bmp);
 	PB_(to_gadget)(&bmp, &bmp_gdt);
 	printf("clear_all:\n"
@@ -131,7 +128,7 @@ static void PB_(test)(void) {
 	for(i = 0; i < sizeof bmp.chunk / sizeof *bmp.chunk; i++)
 		assert(!bmp.chunk[i]);
 
-	PB_(str_invert_all)(&gdt);
+	PB_(gadget_invert_all)(&gdt);
 	B_(bmp_invert_all)(&bmp);
 	PB_(to_gadget)(&bmp, &bmp_gdt);
 	printf("invert:\n"
@@ -140,11 +137,11 @@ static void PB_(test)(void) {
 	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
 	B_(bmp_clear_all)(&bmp);
-	PB_(str_clear_all)(&gdt);
+	PB_(gadget_clear_all)(&gdt);
 
 	/* Has to be clear. */
 	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
-		PB_(str_set)(&gdt, i);
+		PB_(gadget_set)(&gdt, i);
 	for(i = 0; i < BMP_BITS; i += 1 + r[i % sizeof r / sizeof *r])
 		B_(bmp_set)(&bmp, i);
 	PB_(to_gadget)(&bmp, &bmp_gdt);
@@ -160,7 +157,7 @@ static void PB_(test)(void) {
 		j += 1 + r[j % sizeof r / sizeof *r];
 	}
 
-	PB_(str_clear)(&gdt, 0);
+	PB_(gadget_clear)(&gdt, 0);
 	B_(bmp_clear)(&bmp, 0);
 	PB_(to_gadget)(&bmp, &bmp_gdt);
 	printf("clear:\n"
@@ -168,7 +165,7 @@ static void PB_(test)(void) {
 		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
 	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
-	PB_(str_toggle)(&gdt, 0);
+	PB_(gadget_toggle)(&gdt, 0);
 	B_(bmp_toggle)(&bmp, 0);
 	PB_(to_gadget)(&bmp, &bmp_gdt);
 	printf("toggle:\n"
@@ -176,22 +173,26 @@ static void PB_(test)(void) {
 		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
 	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
-	/* fixme: iterate */
-	PB_(str_insert_one)(&gdt, 4);
-	B_(bmp_insert_one)(&bmp, 4);
-	PB_(to_gadget)(&bmp, &bmp_gdt);
-	printf("insert_one:\n"
-		" str %s;\n"
-		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
-	assert(!strcmp(gdt.bits, bmp_gdt.bits));
-
-	printf("insert:\n"
-		" bfr %s.\n", PB_(adorn)(&bmp_gdt, 4, 0));
-	PB_(str_insert)(&gdt, 4, 4);
-	B_(bmp_insert)(&bmp, 4, 4);
-	PB_(to_gadget)(&bmp, &bmp_gdt);
-	printf(" str %s;\n"
-		" bmp %s.\n", PB_(adorn)(&gdt, 4, 4), PB_(adorn)(&bmp_gdt, 4, 4));
+	memcpy(&bmp_bkp, &bmp, sizeof bmp);
+	memcpy(&gdt_bkp, &gdt, sizeof gdt);
+	for(i = 0; i < BMP_BITS; i++) {
+		for(j = 0; j < BMP_BITS - i; j++) {
+			memcpy(&bmp, &bmp_bkp, sizeof bmp);
+			memcpy(&gdt, &gdt_bkp, sizeof gdt);
+			PB_(to_gadget)(&bmp, &bmp_gdt);
+			assert(!strcmp(gdt.bits, bmp_gdt.bits));
+			PB_(gadget_insert)(&gdt, i, j);
+			B_(bmp_insert)(&bmp, i, j);
+			PB_(to_gadget)(&bmp, &bmp_gdt);
+			printf("insert(%u, %u):\n"
+				" bfr %s;\n"
+				" str %s;\n"
+				" bmp %s.\n",
+				i, j, PB_(adorn)(&gdt_bkp, i, 0),
+				PB_(adorn)(&gdt, i, j), PB_(adorn)(&bmp_gdt, i, j));
+			assert(!strcmp(gdt.bits, bmp_gdt.bits));
+		}
+	}
 }
 
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while

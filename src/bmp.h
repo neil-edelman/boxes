@@ -111,7 +111,8 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 	unsigned i = (BMP_BITS - n) / BMP_CHUNK;
 	const PB_(chunk) store = a->chunk[limit.hi];
 	PB_(chunk) temp;
-	assert(a && n && x + n < BMP_BITS);
+	assert(a && x + n < BMP_BITS);
+	if(!n) return;
 	/* Zero the bits that are not involved on the last iteration. */
 	a->chunk[limit.hi] &= BMP_MAX >> limit.lo;
 	/* Copy a superset aligned with `<PB>chunk` bits, backwards. */
@@ -129,6 +130,8 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 	a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
+
+#if 0
 
 /** Insert bit `n` into `a`, moving over all the bits past it right; the bit on
  the end is erased. */
@@ -154,6 +157,8 @@ static void B_(bmp_insert_one)(struct B_(bmp) *const a, const unsigned n) {
 			= (multi ? (carry << BMP_CHUNK-1) | (x >> 1) : x) & ~mask;
 	}
 }
+
+#endif
 
 #ifdef BMP_TEST /* <!-- test */
 #include "../test/test_bmp.h" /** \include */
