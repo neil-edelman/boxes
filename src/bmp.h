@@ -102,15 +102,9 @@ static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned x)
 static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_TOGGLE(a->chunk, x); }
 
-struct PB_(gadget);
-static void PB_(to_gadget)(const struct B_(bmp) *const a,
-						   struct PB_(gadget) *const g);
-static char *PB_(adorn)(const struct PB_(gadget) *g,
-						const unsigned x, const unsigned n);
-
 /** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. */
 static void B_(bmp_insert)(struct B_(bmp) *const a,
-	const unsigned x, const unsigned n, struct PB_(gadget) *g) {
+	const unsigned x, const unsigned n) {
 	const struct { unsigned hi, lo; }
 		move = { n / BMP_CHUNK, n % BMP_CHUNK },
 		limit = { x / BMP_CHUNK, x % BMP_CHUNK };
@@ -119,12 +113,8 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 	PB_(chunk) temp;
 	assert(a && x + n < BMP_BITS);
 	if(!n) return;
-	printf("move=[%u:%u] i=%u\n", move.hi, move.lo, i);
-	PB_(to_gadget)(a, g);
-	printf("before\t%s.\n", PB_(adorn)(g, x, 0));
 	/* Zero the bits that are not involved on the last iteration. */
 	a->chunk[limit.hi] &= BMP_MAX >> limit.lo;
-	printf("unused\t%s.\n", PB_(adorn)(g, x, 0));
 	/* Copy a superset aligned with `<PB>chunk` bits, backwards. */
 	for( ; ; ) {
 		temp = a->chunk[i] >> move.lo;
@@ -132,22 +122,18 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 		if(move.lo) temp |= a->chunk[i - 1] << BMP_CHUNK - move.lo;
 		a->chunk[i-- + move.hi] = temp;
 	}
-	PB_(to_gadget)(a, g);
-	printf("super\t%s.\n", PB_(adorn)(g, x, n));
-	/* Zero intervening `<PB>chunk`. */
+	/* Zero intervening, restore the bits that are not involved, and clip. */
 	for(i = 0; i < move.hi; i++) a->chunk[limit.hi + i] = 0;
-	PB_(to_gadget)(a, g);
-	printf("zero\t%s.\n", PB_(adorn)(g, x, n));
-	/* Restore the bits that are not involved. */
 	a->chunk[limit.hi] |= ~(BMP_MAX >> limit.lo) & store;
-	PB_(to_gadget)(a, g);
-	printf("restore\t%s.\n", PB_(adorn)(g, x, n));
-	/* Clip the value at the high bit. */
 	a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
-	PB_(to_gadget)(a, g);
-	printf("clip\t%s.\n", PB_(adorn)(g, x, n));
 }
+
+/*struct PB_(gadget);
+static void PB_(to_gadget)(const struct B_(bmp) *const a,
+						   struct PB_(gadget) *const g);
+static char *PB_(adorn)(const struct PB_(gadget) *g,
+						const unsigned x, const unsigned n);*/
 
 #ifdef BMP_TEST /* <!-- test */
 #include "../test/test_bmp.h" /** \include */

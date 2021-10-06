@@ -115,7 +115,7 @@ static void string_split(char *const parent, char *const child,
 
 static void PB_(test)(void) {
 	struct B_(bmp) bmp, bmp_bkp;
-	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp, g;
+	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp;
 	unsigned i, j;
 	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
@@ -183,7 +183,7 @@ static void PB_(test)(void) {
 			PB_(to_gadget)(&bmp, &bmp_gdt);
 			assert(!strcmp(gdt.bits, bmp_gdt.bits));
 			PB_(gadget_insert)(&gdt, i, j);
-			B_(bmp_insert)(&bmp, i, j, &g);
+			B_(bmp_insert)(&bmp, i, j);
 			PB_(to_gadget)(&bmp, &bmp_gdt);
 			printf("insert(%u, %u):\n"
 				" bfr %s;\n"
