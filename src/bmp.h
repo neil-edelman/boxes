@@ -86,10 +86,6 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-/** Copies `a` to `b`. */
-static void B_(bmp_copy)(const struct B_(bmp) *const a,
-	struct B_(bmp) *const b) { assert(a && b); memcpy(b, a, sizeof *a); }
-
 /** Projects the eigenvalue of bit `x` of `a`. */
 static unsigned B_(bmp_at)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); return !!BMP_AT(a->chunk, x); }
@@ -106,29 +102,36 @@ static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned x)
 static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_TOGGLE(a->chunk, x); }
 
-static void B_(bmp_insert_range)(struct B_(bmp) *const a,
+static void B_(bmp_insert)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	const unsigned limit_hi = x / BMP_CHUNK;
-	const struct { unsigned hi, lo } move = { n / BMP_CHUNK, n % BMP_CHUNK };
-	unsigned src_hi = (BMP_BITS - n) / BMP_CHUNK;
-	const PB_(chunk) store = a->chunk[limit_hi];
+	const struct { unsigned hi, lo; }
+		move = { n / BMP_CHUNK, n % BMP_CHUNK },
+		limit = { x / BMP_CHUNK, x % BMP_CHUNK };
+	unsigned i = (BMP_BITS - n) / BMP_CHUNK;
+	const PB_(chunk) store = a->chunk[limit.hi];
 	PB_(chunk) temp;
 	assert(a && n && x + n < BMP_BITS);
-	for( ; ; ) { /* Copy a superset of `<PB>chunk` bits, backwards. */
-		printf("src_hi = %u\n", src_hi);
-		temp = a->chunk[src_hi] >> move.lo;
-		if(src_hi == limit_hi) { a->chunk[src_hi + move.hi] = temp; break; }
-		temp |= a->chunk[src_hi - 1] << BMP_CHUNK - move.lo;
-		a->chunk[src_hi-- + move.hi] = temp;
+	/* Zero the bits that are not involved on the last iteration. */
+	a->chunk[limit.hi] &= BMP_MAX >> limit.lo;
+	/* Copy a superset aligned with `<PB>chunk` bits, backwards. */
+	for( ; ; ) {
+		temp = a->chunk[i] >> move.lo;
+		if(i == limit.hi) { a->chunk[move.hi + i] = temp; break; }
+		temp |= a->chunk[i - 1] << BMP_CHUNK - move.lo;
+		a->chunk[i-- + move.hi] = temp;
 	}
-	/*a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
-		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);*/
-	printf("done\n");
+	/* Zero intervening `<PB>chunk`. */
+	for(i = 0; i < move.hi; i++) a->chunk[limit.hi + i] = 0;
+	/* Restore the bits that are not involved. */
+	a->chunk[limit.hi] |= ~(BMP_MAX >> limit.lo) & store;
+	/* Clip the value at the high bit. */
+	a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
+		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
 /** Insert bit `n` into `a`, moving over all the bits past it right; the bit on
  the end is erased. */
-static void B_(bmp_insert)(struct B_(bmp) *const a, const unsigned n) {
+static void B_(bmp_insert_one)(struct B_(bmp) *const a, const unsigned n) {
 	struct { unsigned whole, remain; }
 		insert = { n / BMP_CHUNK, n % BMP_CHUNK },
 		size = { BMP_BITS / BMP_CHUNK, BMP_BITS % BMP_CHUNK };

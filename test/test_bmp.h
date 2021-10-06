@@ -72,7 +72,7 @@ static void PB_(str_clear)(struct PB_(gadget) *const g, const unsigned n)
 static void PB_(str_toggle)(struct PB_(gadget) *const g, const unsigned n)
 	{ assert(g && n < BMP_BITS); g->bits[n] = g->bits[n] == '1' ? '0' : '1'; }
 
-static void PB_(str_insert_range)(struct PB_(gadget) *const g,
+static void PB_(str_insert)(struct PB_(gadget) *const g,
 	const unsigned n, const unsigned range) {
 	assert(g && n + range < BMP_BITS);
 	memmove(&g->bits[n + range], &g->bits[n], BMP_BITS - n - range);
@@ -80,8 +80,8 @@ static void PB_(str_insert_range)(struct PB_(gadget) *const g,
 	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
 
-static void PB_(str_insert)(struct PB_(gadget) *const g, const unsigned n)
-	{ PB_(str_insert_range)(g, n, 1); }
+static void PB_(str_insert_one)(struct PB_(gadget) *const g, const unsigned n)
+	{ PB_(str_insert)(g, n, 1); }
 
 #if 0
 static void string_remove(char *const a,
@@ -177,19 +177,21 @@ static void PB_(test)(void) {
 	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
 	/* fixme: iterate */
-	PB_(str_insert)(&gdt, 4);
-	B_(bmp_insert)(&bmp, 4);
+	PB_(str_insert_one)(&gdt, 4);
+	B_(bmp_insert_one)(&bmp, 4);
 	PB_(to_gadget)(&bmp, &bmp_gdt);
-	printf("insert:\n"
+	printf("insert_one:\n"
 		" str %s;\n"
 		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
 	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
-	printf("insert range:\n"
-		" bmp %s.\n", PB_(adorn)(&bmp_gdt, 4, 0));
-	B_(bmp_insert_range)(&bmp, 4, 4);
+	printf("insert:\n"
+		" bfr %s.\n", PB_(adorn)(&bmp_gdt, 4, 0));
+	PB_(str_insert)(&gdt, 4, 4);
+	B_(bmp_insert)(&bmp, 4, 4);
 	PB_(to_gadget)(&bmp, &bmp_gdt);
-	printf(" bmp %s.\n", PB_(adorn)(&bmp_gdt, 4, 4));
+	printf(" str %s;\n"
+		" bmp %s.\n", PB_(adorn)(&gdt, 4, 4), PB_(adorn)(&bmp_gdt, 4, 4));
 }
 
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while
