@@ -102,6 +102,7 @@ static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned x)
 static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_TOGGLE(a->chunk, x); }
 
+/** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. */
 static void B_(bmp_insert)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	const struct { unsigned hi, lo; }
