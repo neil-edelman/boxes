@@ -89,33 +89,9 @@ static void PB_(gadget_remove)(struct PB_(gadget) *const g,
 	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
 
-#if 0
-/** Move `byte_range` at `byte_offset` in `parent` with `bytes` to
- `child` with `bytes`, starting at zero and filling the rest with '0'; the
- moved part in `parent` is replaced with a single '1'. */
-static void string_split(char *const parent, char *const child,
-	const unsigned offset_byte, const unsigned byte_range,
-	const unsigned bytes) {
-	const unsigned full = BMP_CHUNK(bytes) * BMP_BITS;
-	assert(parent && child && byte_range && offset_byte + byte_range <= bytes);
-	/* Copy select `parent` to `child`. */
-	memcpy(child, parent + offset_byte, byte_range);
-	memset(child + byte_range, '0', full - byte_range);
-	child[full] = '\0';
-	/* Move the selected range in `parent` to '1'. */
-	parent[offset_byte] = '1';
-	/* Move back. */
-	memmove(parent + offset_byte + 1, parent + offset_byte + byte_range,
-		bytes - offset_byte - byte_range);
-	memset(parent + bytes - byte_range + 1, '0', byte_range - 1);
-	assert(parent[full] == '\0');
-}
-#endif
-
-
 static void PB_(test)(void) {
 	struct B_(bmp) bmp, bmp_bkp;
-	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp;
+	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp, g;
 	unsigned i, j;
 	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
@@ -176,6 +152,7 @@ static void PB_(test)(void) {
 
 	memcpy(&bmp_bkp, &bmp, sizeof bmp);
 	memcpy(&gdt_bkp, &gdt, sizeof gdt);
+
 	for(i = 0; i < BMP_BITS; i++) {
 		for(j = 0; j < BMP_BITS - i; j++) {
 			memcpy(&bmp, &bmp_bkp, sizeof bmp);
@@ -191,6 +168,25 @@ static void PB_(test)(void) {
 				" bmp %s.\n",
 				i, j, PB_(adorn)(&gdt_bkp, i, 0),
 				PB_(adorn)(&gdt, i, j), PB_(adorn)(&bmp_gdt, i, j));
+			assert(!strcmp(gdt.bits, bmp_gdt.bits));
+		}
+	}
+
+	for(i = 0; i < BMP_BITS; i++) {
+		for(j = 0; j < BMP_BITS - i; j++) {
+			memcpy(&bmp, &bmp_bkp, sizeof bmp);
+			memcpy(&gdt, &gdt_bkp, sizeof gdt);
+			PB_(to_gadget)(&bmp, &bmp_gdt);
+			assert(!strcmp(gdt.bits, bmp_gdt.bits));
+			PB_(gadget_remove)(&gdt, i, j);
+			B_(bmp_remove)(&bmp, i, j, &g);
+			PB_(to_gadget)(&bmp, &bmp_gdt);
+			printf("remove(%u, %u):\n"
+				" bfr %s;\n"
+				" str %s;\n"
+				" bmp %s.\n",
+				i, j, PB_(adorn)(&gdt_bkp, i, j),
+				PB_(adorn)(&gdt, i, 0), PB_(adorn)(&bmp_gdt, i, 0));
 			assert(!strcmp(gdt.bits, bmp_gdt.bits));
 		}
 	}
