@@ -19,8 +19,8 @@
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<A>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), associated therewith; required\. `<PA>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: ARRAY\_FUNCTION  
-   Include Function trait contained in [function\.h](function.h)\.
+ * Parameter: ARRAY\_CONTIGUOUS  
+   Include Contiguous trait contained in [contiguous\.h](contiguous.h)\.
  * Parameter: ARRAY\_TEST  
    Optional function implementing [&lt;PZ&gt;action_fn](#user-content-typedef-9321d9ec) that fills the [&lt;PA&gt;type](#user-content-typedef-a8a4b08a) from uninitialized to random for unit testing framework using `assert`\. Testing array contained in [\.\./test/test\_array\.h](../test/test_array.h)\. Must have any To String trait\.
  * Parameter: ARRAY\_EXPECT\_TRAIT  
@@ -129,6 +129,8 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-bc954312">&lt;A&gt;array_append_at</a></td><td>a, n, at</td></tr>
 
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-1b423580">&lt;A&gt;array_new</a></td><td>a</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d5035752">&lt;A&gt;array_remove</a></td><td>a, datum</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d2a95b41">&lt;A&gt;array_lazy_remove</a></td><td>a, datum</td></tr>
@@ -220,10 +222,10 @@ Ensures `min` capacity of `a`\. Invalidates pointers in `a`\.
 
 <code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_buffer</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>)</code>
 
-The capacity of `a` will be increased to at least `n` elements beyond the size\. Invalidates pointers in `a`\.
+The capacity of `a` will be increased to at least `n` elements beyond the size\. Invalidates any pointers in `a`\.
 
  * Return:  
-   The start of the buffered space, \(the back of the array\.\) If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
+   The start of the buffered space at the back of the array\. If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
  * Exceptional return: realloc, ERANGE  
 
 
@@ -233,7 +235,7 @@ The capacity of `a` will be increased to at least `n` elements beyond the size\.
 
 <code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_append</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>)</code>
 
-Adds `n` elements to the back of `a`\. The buffer holds enough elements or it will invalidate pointers in `a`\.
+Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n` is greater than the buffer space\.
 
  * Return:  
    A pointer to the elements\. If `a` is idle and `n` is zero, a null pointer will be returned, otherwise null indicates an error\.
@@ -253,6 +255,19 @@ Adds `n` un\-initialised elements at position `at` in `a`\. The buffer holds eno
  * Return:  
    A pointer to the start of the new region, where there are `n` elements\.
  * Exceptional return: realloc, ERANGE  
+
+
+
+
+### <a id = "user-content-fn-1b423580" name = "user-content-fn-1b423580">&lt;A&gt;array_new</a> ###
+
+<code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_new</strong>(struct &lt;A&gt;array *const <em>a</em>)</code>
+
+ * Return:  
+   Adds \(push back\) one new element of `a`\. The buffer holds an element or it will invalidate pointers in `a`\.
+ * Exceptional return: realloc, ERANGE  
+ * Order:  
+   amortised &#927;\(1\)
 
 
 
@@ -333,7 +348,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static int <strong>&lt;Z&gt;copy_if</strong>(&lt;PZ&gt;box *const <em>a</em>, const &lt;PZ&gt;predicate_fn <em>copy</em>, const &lt;PZ&gt;box *const <em>b</em>)</code>
 
-Needs iterate and copy interfaces\. For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
+For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: ERANGE, realloc  
  * Order:  
@@ -358,7 +373,7 @@ For all elements of `box`, calls `keep`, and if false, lazy deletes that item, c
 
 <code>static void <strong>&lt;Z&gt;trim</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>)</code>
 
-Requires iterate, reverse, and copy interfaces\. Removes at either end of `box` of things that `predicate` returns true\.
+Removes at either end of `box` of things that `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate`\)

@@ -57,8 +57,8 @@
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
 	<dd><code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type, <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>, associated therewith; required. <code>&lt;PA&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
-	<dt>Parameter: ARRAY_FUNCTION</dt>
-	<dd>Include Function trait contained in <a href = "function.h">function.h</a>.</dd>
+	<dt>Parameter: ARRAY_CONTIGUOUS</dt>
+	<dd>Include Contiguous trait contained in <a href = "contiguous.h">contiguous.h</a>.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
 	<dd>Optional function implementing <a href = "#typedef:&lt;PZ&gt;action_fn">&lt;PZ&gt;action_fn</a> that fills the <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a> from uninitialized to random for unit testing framework using <code>assert</code>. Testing array contained in <a href = "../test/test_array.h">../test/test_array.h</a>. Must have any To String trait.</dd>
 	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
@@ -187,6 +187,8 @@
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_append_at">&lt;A&gt;array_append_at</a></td><td>a, n, at</td></tr>
 
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_new">&lt;A&gt;array_new</a></td><td>a</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#fn:<A>array_remove">&lt;A&gt;array_remove</a></td><td>a, datum</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<A>array_lazy_remove">&lt;A&gt;array_lazy_remove</a></td><td>a, datum</td></tr>
@@ -290,11 +292,11 @@
 
 <p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_buffer</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>)</code></p>
 
-<p>The capacity of <code>a</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates pointers in <code>a</code>.</p>
+<p>The capacity of <code>a</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates any pointers in <code>a</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>The start of the buffered space, (the back of the array.) If <code>a</code> is idle and <code>buffer</code> is zero, a null pointer is returned, otherwise null indicates an error.</dd>
+	<dd>The start of the buffered space at the back of the array. If <code>a</code> is idle and <code>buffer</code> is zero, a null pointer is returned, otherwise null indicates an error.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 </dl>
 
@@ -306,7 +308,7 @@
 
 <p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_append</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>)</code></p>
 
-<p>Adds <code>n</code> elements to the back of <code>a</code>. The buffer holds enough elements or it will invalidate pointers in <code>a</code>.</p>
+<p>Adds <code>n</code> elements to the back of <code>a</code>. It will invalidate pointers in <code>a</code> if <code>n</code> is greater than the buffer space.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -330,6 +332,22 @@
 	<dt>Return:</dt>
 	<dd>A pointer to the start of the new region, where there are <code>n</code> elements.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<A>array_new" name = "fn:<A>array_new">&lt;A&gt;array_new</a></h3>
+
+<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_new</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Adds (push back) one new element of <code>a</code>. The buffer holds an element or it will invalidate pointers in <code>a</code>.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dt>Order:</dt>
+	<dd>amortised &#927;(1)</dd>
 </dl>
 
 </div>
@@ -430,7 +448,7 @@
 
 <p><code>static int <strong>&lt;Z&gt;copy_if</strong>(&lt;PZ&gt;box *const <em>a</em>, const &lt;PZ&gt;predicate_fn <em>copy</em>, const &lt;PZ&gt;box *const <em>b</em>)</code></p>
 
-<p>Needs iterate and copy interfaces. For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
+<p>For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
 
 <dl>
 	<dt>Exceptional return: ERANGE, realloc</dt>
@@ -461,7 +479,7 @@
 
 <p><code>static void <strong>&lt;Z&gt;trim</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>)</code></p>
 
-<p>Requires iterate, reverse, and copy interfaces. Removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
+<p>Removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
 
 <dl>
 	<dt>Order:</dt>
