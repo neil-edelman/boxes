@@ -147,7 +147,7 @@ static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12]) {
 }
 static void vec4_filler(struct vec4 *const v4) {
 	v4->a[0] = 'A' + (char)(rand() / (RAND_MAX / 26 + 1));
-	v4->a[1] = 'a' + (rand() / (RAND_MAX / 26 + 1));
+	v4->a[1] = 'a' + (char)(rand() / (RAND_MAX / 26 + 1));
 	v4->n[0] = rand() / (RAND_MAX / 9 + 1);
 	v4->n[1] = rand() / (RAND_MAX / 9 + 1);
 }
