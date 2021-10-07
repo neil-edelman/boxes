@@ -8,9 +8,9 @@
  A <tag:<H>heap> is a priority queue built from <tag:<H>heap_node>. It is a
  binary heap, proposed by <Williams, 1964, Heapsort, p. 347> and using
  terminology of <Knuth, 1973, Sorting>. Internally, it is an
- `<<H>heap_node>array` with implicit heap properties, with an optionally cached
- <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer payload. As
- such, one needs to have <array.h> file in the same directory.
+ `<<H>heap_node>array` with implicit heap properties on <typedef:<PH>priority>
+ and an optional <typedef:<PH>value> pointer payload. As such, one needs to
+ have <array.h> file in the same directory.
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
