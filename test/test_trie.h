@@ -127,7 +127,7 @@ static void PT_(test)(void) {
 	size_t n, size;
 	struct { PT_(type) data; int is_in; } es[10];
 	const size_t es_size = sizeof es / sizeof *es;
-	PT_(type) *const*a, *i, *eject, copy;
+	PT_(type) *const*a, *i, *eject/*, copy*/;
 	int ret;
 
 	PT_(valid)(0);

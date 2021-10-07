@@ -271,9 +271,9 @@ finally:
 	trie_(&btrie);
 }
 
-/*#ifndef DEBUG
+#ifndef DEBUG
 #define TRIE_BENCHMARK
-#endif*/
+#endif
 
 #ifdef TRIE_BENCHMARK /* <!-- benchmark */
 
@@ -285,7 +285,6 @@ static int pstr_cmp(const char *const*const pa, const char *const*const pb)
 /* For comparison with sorted array. */
 #define ARRAY_NAME str
 #define ARRAY_TYPE const char *
-#define ARRAY_ITERATE
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_TO_STRING &pstr_to_str
@@ -341,7 +340,6 @@ static void pointer_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_TYPE const char *
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &string_is_equal
-#define SET_ITERATE
 #define SET_EXPECT_TRAIT
 #include "set.h"
 #define SET_TO_STRING &pointer_to_string
@@ -425,7 +423,7 @@ static int timing_comparison(const char *const *const keys,
 			array_fill(&array, keys, keys_size, start_i, n);
 			t = clock();
 			qsort(array.data, array.size, sizeof array.data,
-				&array_str_vcompar_anonymous);
+				&compare_str_array_vcompar);
 			str_array_unique(&array);
 			m_add(&es[ARRAYINIT].m, diff_us(t));
 			printf("Added init array size %lu: %s.\n",
@@ -435,7 +433,7 @@ static int timing_comparison(const char *const *const keys,
 			for(i = 0; i < n; i++) {
 				const char *const word = keys[(start_i + i) % keys_size],
 					**const key = bsearch(&word, array.data, array.size,
-					sizeof array.data, &array_str_vcompar_anonymous);
+					sizeof array.data, &compare_str_array_vcompar);
 				int cmp;
 				assert(key);
 				cmp = strcmp(word, *key);

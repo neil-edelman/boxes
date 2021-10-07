@@ -3,6 +3,9 @@
 
  @subtitle Compare Trait
 
+ Requires contiguous data elements are stored in array `data` up to
+ `size_t size` such that `memcpy` will work. `<BOX>append` function defined.
+
  @param[Z_]
  A one-argument macro producing a name that is responsible for the name of the
  functions.
@@ -17,7 +20,6 @@
 
  @std C89 */
 
-/* Check defines. */
 #if !defined(CAT) || !defined(CAT_) || !defined(BOX_) \
 	|| !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) || !defined(Z_)
 #error Unexpected preprocessor symbols.
@@ -110,8 +112,6 @@ static int Z_(insert)(PZ_(box) *const a,
 	return 0;
 }
 
-#ifdef BOX_CONTIGUOUS_SIZE /* <!-- size */
-
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int PZ_(vcompar)(const void *const a, const void *const b)
 	{ return PZ_(compare)(a, b); }
@@ -130,8 +130,6 @@ static int PZ_(vrevers)(const void *const a, const void *const b)
 static void Z_(reverse)(PZ_(box) *const a)
 	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PZ_(vrevers)); }
 
-#endif /* size --> */
-
 /** !compare(`a`, `b`) == equals(`a`, `b`) for not `ARRAY_IS_EQUAL`.
  @implements <typedef:<PZ>bipredicate_fn> */
 static int PZ_(is_equal)(const PZ_(type) *const a, const PZ_(type) *const b)
@@ -148,13 +146,11 @@ static const PZ_(bipredicate_fn) PZ_(is_equal) = (ARRAY_IS_EQUAL);
 /** @return If `a` piecewise equals `b`, which both can be null.
  @order \O(`size`) */
 static int Z_(is_equal)(const PZ_(box) *const a, const PZ_(box) *const b) {
-	const PZ_(type) *ia, *ib;
+	const PZ_(type) *ia, *ib, *end;
 	if(!a) return !b;
 	if(!b || a->size != b->size) return 0;
-	assert(0);
-	/* Use iterate.
-	 for(ia = a->data, ib = b->data, end = ia + a->size; ia < end; ia++, ib++)
-		if(!PZ_(is_equal)(a, b)) return 0;*/
+	for(ia = a->data, ib = b->data, end = ia + a->size; ia < end; ia++, ib++)
+		if(!PZ_(is_equal)(ia, ib)) return 0;
 	return 1;
 }
 
@@ -164,7 +160,6 @@ static int Z_(is_equal)(const PZ_(box) *const a, const PZ_(box) *const b) {
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false. @order \O(`a.size` \times `merge`) @allow */
 static void Z_(unique_merge)(PZ_(box) *const a, const PZ_(biaction_fn) merge) {
-	/* fixme: This assumes contiguous. */
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = a->size;
 	int is_first, is_last;
@@ -199,10 +194,7 @@ static void PZ_(unused_compare_coda)(void);
 static void PZ_(unused_compare)(void) {
 #ifdef ARRAY_COMPARE /* <!-- compare */
 	Z_(compare)(0, 0); Z_(lower_bound)(0, 0); Z_(upper_bound)(0, 0);
-	Z_(insert)(0, 0);
-#ifdef BOX_CONTIGUOUS_SIZE /* <!-- size */
-	Z_(sort)(0); Z_(reverse)(0);
-#endif /* size --> */
+	Z_(insert)(0, 0); Z_(sort)(0); Z_(reverse)(0);
 #endif /* compare --> */
 	Z_(is_equal)(0, 0); Z_(unique_merge)(0, 0); Z_(unique)(0);
 	PZ_(unused_compare_coda)(); }

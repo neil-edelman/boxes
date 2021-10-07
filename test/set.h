@@ -441,11 +441,11 @@ static const PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 /* Define these for traits. */
 #define BOX_ PS_
 #define BOX_CONTAINER struct S_(set)
-#define BOX_CONTENTS PS_(mtype)
+#define BOX_CONTENTS PS_(type)
 
 #ifdef SET_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PS_(to_string))(const PS_(mtype) *, char (*)[12]);
+static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
 static const char *(*PS_(set_to_string))(const struct S_(set) *);
 #include "../test/test_set.h" /** \include */
 #endif /* test --> */
@@ -476,7 +476,8 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #include "to_string.h" /** \include */
 #ifdef SET_TEST /* <!-- expect: we've forward-declared these. */
 #undef SET_TEST
-static void (*PS_(to_string))(const PS_(mtype) *, char (*)[12]) = PZ_(to_string);
+static void (*PS_(to_string))(const PS_(type) *, char (*)[12])
+	= PZ_(to_string);
 static const char *(*PS_(set_to_string))(const struct S_(set) *)
 	= &Z_(to_string);
 #endif /* expect --> */
