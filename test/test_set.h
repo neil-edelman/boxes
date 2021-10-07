@@ -45,7 +45,7 @@ static void PS_(stats)(const struct S_(set) *const set,
 			if(msr.max_bin < items) msr.max_bin = items;
 			x = (double)items;
 			delta = x - msr.mean;
-			msr.mean += delta / ++msr.n;
+			msr.mean += delta / (double)(++msr.n);
 			msr.ssdm += delta * (x - msr.mean);
 		}
 		size = set->size;
@@ -59,8 +59,10 @@ static void PS_(stats)(const struct S_(set) *const set,
 		(unsigned long)size, delim,
 		(unsigned long)msr.n, delim,
 		(unsigned long)msr.max_bin, delim,
-		msr.mean, msr.n > 1 ? sqrt(msr.ssdm / (msr.n - 1)) : (double)NAN, delim,
-		msr.n ? 1.0 + 1.0 * msr.cost / size : (double)NAN, delim);
+		msr.mean, msr.n > 1
+		? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN, delim,
+		msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size
+		: (double)NAN, delim);
 }
 
 /** Assertion function for seeing if `set` is in a valid state.
