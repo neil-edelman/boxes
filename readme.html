@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>adjunct">&lt;PH&gt;adjunct</a>, <a href = "#typedef:<PH>value">&lt;PH&gt;value</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PZ>action_fn">&lt;PZ&gt;action_fn</a>, <a href = "#typedef:<PZ>predicate_fn">&lt;PZ&gt;predicate_fn</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>adjunct">&lt;PH&gt;adjunct</a>, <a href = "#typedef:<PH>value">&lt;PH&gt;value</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 194 height = 286></p>
 
-<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties, with an optionally cached <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload. As such, one needs to have <a href = "array.h">array.h</a> file in the same directory.</p>
+<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload. As such, one needs to have <a href = "array.h">array.h</a> file in the same directory.</p>
 
 </div>
 
@@ -72,7 +72,7 @@
 	<dt>Dependancies:</dt>
 	<dd><a href = "https://github.com/neil-edelman/array">array</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Add decrease priority. (<a href = "#fn:&lt;Z&gt;trim">&amp;lt;Z&amp;gt;trim</a>)</dd>
+	<dd>Add decrease priority.</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -124,26 +124,6 @@
 <p><code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code></p>
 
 <p>Internal nodes in the heap. If <code>HEAP_VALUE</code> is set, this is a <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>, otherwise it's the same as <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PZ>action_fn" name = "typedef:<PZ>action_fn">&lt;PZ&gt;action_fn</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PZ&gt;action_fn</strong>)(&lt;PZ&gt;type *);</code></p>
-
-<p>Operates by side-effects on <a href = "#typedef:&lt;PZ&gt;type">&lt;PZ&gt;type</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PZ>predicate_fn" name = "typedef:<PZ>predicate_fn">&lt;PZ&gt;predicate_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PZ&gt;predicate_fn</strong>)(const &lt;PZ&gt;type *);</code></p>
-
-<p>Returns a boolean given read-only <a href = "#typedef:&lt;PZ&gt;type">&lt;PZ&gt;type</a>.</p>
 
 </div>
 
@@ -216,20 +196,6 @@
 <tr><td align = right>static &lt;PH&gt;node *</td><td><a href = "#fn:<H>heap_buffer">&lt;H&gt;heap_buffer</a></td><td>heap, n</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<H>heap_append">&lt;H&gt;heap_append</a></td><td>heap, n</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#fn:<Z>clip">&lt;Z&gt;clip</a></td><td>box, i</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<Z>copy_if">&lt;Z&gt;copy_if</a></td><td>a, copy, b</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>keep_if">&lt;Z&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>trim">&lt;Z&gt;trim</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>each">&lt;Z&gt;each</a></td><td>box, action</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>if_each">&lt;Z&gt;if_each</a></td><td>box, predicate, action</td></tr>
-
-<tr><td align = right>static const &lt;PZ&gt;type *</td><td><a href = "#fn:<Z>any">&lt;Z&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<H>heap_test">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
@@ -392,114 +358,6 @@
 	<dd>In practice, pushing uninitialized elements onto the heap does make sense, so <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a> <code>n</code> will be called first, in which case, one is guaranteed success.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>heap.size</code> + <code>n</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<Z>clip" name = "fn:<Z>clip">&lt;Z&gt;clip</a></h3>
-
-<p><code>static size_t <strong>&lt;Z&gt;clip</strong>(const &lt;PZ&gt;box *const <em>box</em>, const long <em>i</em>)</code></p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Converts <code>i</code> to an index in <code>box</code> from [0, <code>a.size</code>]. Negative values are implicitly plus <code>box.size</code>.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<Z>copy_if" name = "fn:<Z>copy_if">&lt;Z&gt;copy_if</a></h3>
-
-<p><code>static int <strong>&lt;Z&gt;copy_if</strong>(&lt;PZ&gt;box *const <em>a</em>, const &lt;PZ&gt;predicate_fn <em>copy</em>, const &lt;PZ&gt;box *const <em>b</em>)</code></p>
-
-<p>Needs iterate and copy interfaces. For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
-
-<dl>
-	<dt>Exceptional return: ERANGE, realloc</dt>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>b.size</code> &#215; <code>copy</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<Z>keep_if" name = "fn:<Z>keep_if">&lt;Z&gt;keep_if</a></h3>
-
-<p><code>static void <strong>&lt;Z&gt;keep_if</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>keep</em>, const &lt;PZ&gt;action_fn <em>destruct</em>)</code></p>
-
-<p>For all elements of <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> if not-null.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>a.size</code> &#215; <code>keep</code> &#215; <code>destruct</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<Z>trim" name = "fn:<Z>trim">&lt;Z&gt;trim</a></h3>
-
-<p><code>static void <strong>&lt;Z&gt;trim</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>)</code></p>
-
-<p>Requires iterate, reverse, and copy interfaces. Removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<Z>each" name = "fn:<Z>each">&lt;Z&gt;each</a></h3>
-
-<p><code>static void <strong>&lt;Z&gt;each</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;action_fn <em>action</em>)</code></p>
-
-<p>Iterates through <code>box</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>box.size</code> &#215; <code>action</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<Z>if_each" name = "fn:<Z>if_each">&lt;Z&gt;if_each</a></h3>
-
-<p><code>static void <strong>&lt;Z&gt;if_each</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>, const &lt;PZ&gt;action_fn <em>action</em>)</code></p>
-
-<p>Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code> &#215; <code>action</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<Z>any" name = "fn:<Z>any">&lt;Z&gt;any</a></h3>
-
-<p><code>static const &lt;PZ&gt;type *<strong>&lt;Z&gt;any</strong>(const &lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>)</code></p>
-
-<p>Requires iterate interface. Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code>)</dd>
 </dl>
 
 </div>
