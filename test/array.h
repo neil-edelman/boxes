@@ -42,7 +42,6 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
-#include <limits.h> /* LONG_MAX */
 
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
@@ -151,8 +150,8 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 }
 
 /** The capacity of `a` will be increased to at least `n` elements beyond the
- size. Invalidates pointers in `a`.
- @return The start of the buffered space, (the back of the array.) If `a` is
+ size. Invalidates any pointers in `a`.
+ @return The start of the buffered space at the back of the array. If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
  indicates an error. @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
@@ -161,15 +160,15 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
-/** Adds `n` elements to the back of `a`. The buffer holds enough elements or
- it will invalidate pointers in `a`.
+/** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
+ `n` is greater than the buffer space.
  @return A pointer to the elements. If `a` is idle and `n` is zero, a null
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
-	PA_(type) *const buffer = A_(array_buffer)(a, n);
+	PA_(type) *buffer;
 	assert(a);
-	if(!buffer) return 0;
+	if(!(buffer = A_(array_buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
 	return a->size += n, buffer;
 }
@@ -190,9 +189,9 @@ static PA_(type) *A_(array_append_at)(struct A_(array) *const a,
 	return a->data + at;
 }
 
-/** @return Adds (append, push back) one new element of `a`. The buffer holds 
- an element or it will invalidate pointers in `a`.
- @order amortised \O(1) @throws[realloc, ERANGE] */
+/** @return Adds (push back) one new element of `a`. The buffer holds an
+ element or it will invalidate pointers in `a`.
+ @order amortised \O(1) @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_new)(struct A_(array) *const a)
 	{ return A_(array_append)(a, 1); }
 
