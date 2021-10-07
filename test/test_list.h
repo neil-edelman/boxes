@@ -154,7 +154,7 @@ static void PL_(test_basic)(struct L_(list_node) *(*const parent_new)(void *),
 	/* Add */
 	printf("Adding %lu elements to l1.\n", (unsigned long)test_size);
 	for(i = 0; i < test_size; i++) {
-		if(!(link = parent_new(parent))) { assert(0); return; };
+		if(!(link = parent_new(parent))) { assert(0); return; }
 		PL_(filler)(link);
 		L_(list_push)(&l1, link);
 		if(i == 0) link_first = link;
@@ -198,13 +198,13 @@ static void PL_(test_basic)(struct L_(list_node) *(*const parent_new)(void *),
 	link = L_(list_any)(&l1, &PL_(true)), assert(!link);
 	link = L_(list_any)(&l2, &PL_(true)), assert(link == link_first);
 	/* Test add before/after. */
-	if(!(link = parent_new(parent))) { assert(0); return; };
+	if(!(link = parent_new(parent))) { assert(0); return; }
 	PL_(filler)(link);
 	L_(list_add_before)(L_(list_first)(&l2), link);
 	link_first = L_(list_first)(&l2);
 	assert(link == link_first);
 	PL_(count)(&l2, test_size + 1);
-	if(!(link = parent_new(parent))) { assert(0); return; };
+	if(!(link = parent_new(parent))) { assert(0); return; }
 	PL_(filler)(link);
 	L_(list_add_before)(L_(list_last)(&l2), link);
 	PL_(count)(&l2, test_size + 2);

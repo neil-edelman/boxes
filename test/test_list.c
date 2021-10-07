@@ -108,7 +108,7 @@ static void letter_to_string(const struct letter_list_node *const lll,
 }
 static void letter_fill(struct letter_list_node *const lll) {
 	struct letter *const l = (struct letter *)lll;
-	l->letter = rand() / (RAND_MAX / 26 + 1) + 'A';
+	l->letter = 'A' + (char)(rand() / (RAND_MAX / 26 + 1));
 }
 #define POOL_NAME letter
 #define POOL_TYPE struct letter
@@ -926,7 +926,7 @@ static struct emu *emu(void) {
 	struct emu *e;
 	if(!(e = emu_pool_new(&animals.emus))) return 0;
 	animal_filler(&e->animal, &emu_vt);
-	e->favourite_letter = 'a' + rand() / (RAND_MAX / 26 + 1);
+	e->favourite_letter = 'a' + (char)(rand() / (RAND_MAX / 26 + 1));
 	id_list_push(&animals.list, &e->animal.id);
 	return e;
 }
@@ -935,7 +935,7 @@ static struct bad_emu *bad_emu(void) {
 	struct bad_emu *e;
 	if(!(e = bademu_pool_new(&animals.bad_emus))) return 0;
 	animal_filler(&e->emu.animal, &bad_emu_vt);
-	e->emu.favourite_letter = 'a' + rand() / (RAND_MAX / 26 + 1);
+	e->emu.favourite_letter = 'a' + (char)(rand() / (RAND_MAX / 26 + 1));
 	mount_info_filler(&e->mount_info, &e->emu.animal, RIDER);
 	orcish(e->muhaha, sizeof e->muhaha);
 	id_list_push(&animals.list, &e->emu.animal.id);
