@@ -82,7 +82,7 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 	for(i = 0; i < sizeof a->chunk / sizeof *a->chunk; i++)
 		a->chunk[i] = ~a->chunk[i];
 	/* Obsessively zero padded bits. */
-	a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
+	a->chunk[BMP_CHUNKS - 1]
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
@@ -125,7 +125,7 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 	/* Zero intervening, restore the bits that are not involved, and clip. */
 	for(i = 0; i < move.hi; i++) a->chunk[first.hi + i] = 0;
 	a->chunk[first.hi] |= ~(BMP_MAX >> first.lo) & store;
-	a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
+	a->chunk[BMP_CHUNKS - 1]
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
@@ -145,10 +145,10 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 	const PB_(chunk) store = a->chunk[first.hi];
 	PB_(chunk) temp;
 	assert(a && x + n < BMP_BITS);
-	printf("in remove: %u->%u, move: [%u:%u], first: [%u:%u]\n",
+	/*printf("in remove(%u, %u): move: [%u:%u], first: [%u:%u]\n",
 		x, n, move.hi, move.lo, first.hi, first.lo);
 	PB_(to_gadget)(a, g);
-	printf("before:\t%s.\n", PB_(adorn)(g, x, n));
+	printf("before:\t%s.\n", PB_(adorn)(g, x, n));*/
 	if(!n) return;
 	/* Copy a superset aligned with `<PB>chunk` bits. */
 	for( ; ; ) {
@@ -157,11 +157,16 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 		if(move.lo) temp |= a->chunk[i + 1] >> BMP_CHUNK - move.lo;
 		a->chunk[i++ - move.hi] = temp;
 	}
+	/*PB_(to_gadget)(a, g);
+	printf("loop:\t%s.\n", PB_(adorn)(g, x, 0));*/
 	/* Zero intervening, restore the bits that are not involved, and clip. */
-	/*for(i = 0; i < move.hi; i++) a->chunk[limit.hi + i] = 0;
-	a->chunk[limit.hi] |= ~(BMP_MAX >> limit.lo) & store;
-	a->chunk[sizeof a->chunk / sizeof *a->chunk - 1]
-		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);*/
+	for(i = BMP_CHUNKS - move.hi; i < BMP_CHUNKS; i++) a->chunk[i] = 0;
+	/* <https://graphics.stanford.edu/~seander/bithacks.html#MaskedMerge> */
+	a->chunk[first.hi] ^= (a->chunk[first.hi] ^ store) & ~(BMP_MAX >> first.lo);
+	a->chunk[BMP_CHUNKS - 1]
+		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
+	/*PB_(to_gadget)(a, g);
+	printf("final:\t%s.\n", PB_(adorn)(g, x, 0));*/
 }
 
 #ifdef BMP_TEST /* <!-- test */
