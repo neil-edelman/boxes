@@ -18,7 +18,7 @@
 
 
  * Parameter: POOL\_NAME, POOL\_TYPE  
-   `<P>` that satisfies `C` naming conventions when mangled and a valid tag type associated therewith; required\. `<PP>` is private, whose names are prefixed in a manner to avoid collisions\.
+   `<P>` that satisfies `C` naming conventions when mangled and a valid tag type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), associated therewith; required\. `<PP>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: POOL\_TEST  
    To string trait contained in [\.\./test/pool\_test\.h](../test/pool_test.h); optional unit testing framework using `assert`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PP&gt;action_fn](#user-content-typedef-cefaf27a)\. Needs at least one to string trait\.
  * Parameter: POOL\_EXPECT\_TRAIT  

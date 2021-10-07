@@ -8,9 +8,9 @@
  A <tag:<H>heap> is a priority queue built from <tag:<H>heap_node>. It is a
  binary heap, proposed by <Williams, 1964, Heapsort, p. 347> and using
  terminology of <Knuth, 1973, Sorting>. Internally, it is an
- `<<H>heap_node>array` with implicit heap properties, with an optionally cached
- <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer payload. As
- such, one needs to have <array.h> file in the same directory.
+ `<<H>heap_node>array` with implicit heap properties on <typedef:<PH>priority>
+ and an optional <typedef:<PH>value> pointer payload. As such, one needs to
+ have <array.h> file in the same directory.
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
@@ -357,11 +357,6 @@ static PH_(node) *PH_(next)(struct PH_(iterator) *const it)
 #define BOX_CONTAINER struct H_(heap)
 #define BOX_CONTENTS PH_(node)
 
-#ifdef HEAP_FUNCTION /* <!-- function */
-#define Z_(n) CAT(H_(heap), n)
-#include "function.h" /** \include */
-#endif /* function --> */
-
 #ifdef HEAP_TEST /* <!-- test */
 /* Forward-declare. */
 static void (*PH_(to_string))(const PH_(node) *, char (*)[12]);
@@ -432,13 +427,9 @@ static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 #ifdef HEAP_TEST
 #undef HEAP_TEST
 #endif
-#ifdef HEAP_FUNCTION
-#undef HEAP_FUNCTION
-#endif
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-#undef BOX_ITERATE
 #endif /* !trait --> */
 #undef HEAP_TO_STRING_TRAIT
 #undef HEAP_TRAITS

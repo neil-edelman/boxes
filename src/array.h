@@ -14,8 +14,8 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[ARRAY_FUNCTION]
- Include Function trait contained in <function.h>.
+ @param[ARRAY_CONTIGUOUS]
+ Include Contiguous trait contained in <contiguous.h>.
 
  @param[ARRAY_TEST]
  Optional function implementing <typedef:<PZ>action_fn> that fills the
@@ -42,7 +42,6 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
-#include <limits.h> /* LONG_MAX */
 
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
@@ -151,8 +150,8 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 }
 
 /** The capacity of `a` will be increased to at least `n` elements beyond the
- size. Invalidates pointers in `a`.
- @return The start of the buffered space, (the back of the array.) If `a` is
+ size. Invalidates any pointers in `a`.
+ @return The start of the buffered space at the back of the array. If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
  indicates an error. @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
@@ -161,15 +160,15 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
-/** Adds `n` elements to the back of `a`. The buffer holds enough elements or
- it will invalidate pointers in `a`.
+/** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
+ `n` is greater than the buffer space.
  @return A pointer to the elements. If `a` is idle and `n` is zero, a null
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
-	PA_(type) *const buffer = A_(array_buffer)(a, n);
+	PA_(type) *buffer;
 	assert(a);
-	if(!buffer) return 0;
+	if(!(buffer = A_(array_buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
 	return a->size += n, buffer;
 }
@@ -190,9 +189,9 @@ static PA_(type) *A_(array_append_at)(struct A_(array) *const a,
 	return a->data + at;
 }
 
-/** @return Adds (append, push back) one new element of `a`. The buffer holds 
- an element or it will invalidate pointers in `a`.
- @order amortised \O(1) @throws[realloc, ERANGE] */
+/** @return Adds (push back) one new element of `a`. The buffer holds an
+ element or it will invalidate pointers in `a`.
+ @order amortised \O(1) @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_new)(struct A_(array) *const a)
 	{ return A_(array_append)(a, 1); }
 
@@ -273,10 +272,7 @@ static int A_(array_copy)(struct A_(array) *const a,
 	const struct A_(array) *const b)
 	{ return A_(array_splice)(a, a->size, a->size, b); }
 
-#define BOX_CONTIGUOUS_SIZE /* `BOX` has a size that is reflective of size. */
-
 /* <!-- iterate interface */
-#define BOX_ITERATE
 
 /** Contains all iteration parameters. */
 struct PA_(iterator);
@@ -292,7 +288,6 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 }
 
 /* iterate --><!-- reverse interface */
-#define BOX_REVERSE
 
 /** Loads `a` into `it`. @implements begin */
 static void PA_(end)(struct PA_(iterator) *const it,
@@ -306,16 +301,6 @@ static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
 }
 
 /* reverse --><!-- copy interface */
-#define BOX_COPY
-
-/** Copies `n` items from `src` to `dest`. @implements copy */
-static void PA_(copy)(PA_(type) *const dest, const PA_(type) *const src,
-	const size_t n) { memcpy(dest, src, sizeof *src * n); }
-
-/** Copies `n` items from `src` to `dest`, which may overlap.
- @implements copy */
-static void PA_(move)(PA_(type) *const dest, const PA_(type) *const src,
-	const size_t n) { memmove(dest, src, sizeof *src * n); }
 
 /** Appends `n` items on the back of `a`. */
 static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
@@ -328,10 +313,10 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
 
-#ifdef ARRAY_FUNCTION /* <!-- function */
+#ifdef ARRAY_FUNCTION /* <!-- contiguous */
 #define Z_(n) CAT(A_(array), n)
-#include "function.h" /** \include */
-#endif /* function --> */
+#include "contiguous.h" /** \include */
+#endif /* contiguous --> */
 
 #ifdef ARRAY_TEST /* <!-- test */
 /* Forward-declare. */
@@ -342,13 +327,11 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	A_(array_)(0); A_(array_append_at)(0, 0, 0);
-	A_(array_new)(0); A_(array_shrink)(0); A_(array_remove)(0, 0);
-	A_(array_lazy_remove)(0, 0); A_(array_clear)(0); A_(array_peek)(0);
-	A_(array_pop)(0); A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0);
-	PA_(begin)(0, 0); PA_(next)(0);
-	PA_(end)(0, 0); PA_(prev)(0);
-	PA_(copy)(0, 0, 0); PA_(move)(0, 0, 0); PA_(append)(0, 0);
+	A_(array_)(0); A_(array_append_at)(0, 0, 0); A_(array_new)(0);
+	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
+	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
+	A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0); PA_(begin)(0, 0);
+	PA_(next)(0); PA_(end)(0, 0); PA_(prev)(0); PA_(append)(0, 0);
 	PA_(unused_base_coda)();
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
@@ -429,10 +412,6 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-#undef BOX_CONTIGUOUS_SIZE
-#undef BOX_ITERATE
-#undef BOX_REVERSE
-#undef BOX_COPY
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
