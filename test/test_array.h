@@ -194,36 +194,38 @@ static void PA_(test_random)(void) {
 	for(i = 0; i < i_end; i++) {
 		PA_(type) *data;
 		char str[12];
-		double r = rand() / (RAND_MAX + 1.0);
-		int is_print = !(rand() / (RAND_MAX / 50 + 1));
+		unsigned r = (unsigned)rand();
+		/*double r = rand() / (RAND_MAX + 1.0);*/
+		int is_print = 1/*!(rand() / (RAND_MAX / 50 + 1))*/;
 		if(is_print) printf("%lu: ", (unsigned long)i);
 		/* This parameter controls how big the pool wants to be. */
-		if(r > size / (100.0 * mult)) {
+		if(r > size * (RAND_MAX / (2 * 100 * mult))) {
 			if(!(data = A_(array_new)(&a)))
 				{ perror("Error"), assert(0); return; }
 			size++;
 			PA_(filler)(data);
 			PA_(to_string)(data, &str);
-			if(is_print) printf("created %s.\n", str);
+			if(is_print) printf("created %s.", str);
 		} else {
-			double t = 0.5;
-			r = rand() / (RAND_MAX + 1.0);
+			const unsigned t = RAND_MAX / 2;
+			r = (unsigned)rand();
 			if(r < t) {
 				data = A_(array_peek)(&a);
 				assert(data);
 				PA_(to_string)(data, &str);
-				if(is_print) printf("popping %s.\n", str);
+				if(is_print) printf("popping %s.", str);
 				assert(data == A_(array_pop)(&a));
 			} else {
 				size_t idx = (unsigned)rand() / (RAND_MAX / size + 1);
 				if(!(data = a.data + idx)) continue;
 				PA_(to_string)(data, &str);
 				if(is_print)
-					printf("removing %s at %lu.\n", str, (unsigned long)idx);
+					printf("removing %s at %lu.", str, (unsigned long)idx);
 				A_(array_remove)(&a, data);
 			}
 			size--;
 		}
+		if(is_print) printf(" Size %lu.\n", (unsigned long)a.size);
 		PA_(valid_state)(&a);
 		if(a.size < 1000000 && !(i & (i - 1))) {
 			char fn[32];
