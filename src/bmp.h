@@ -103,14 +103,13 @@ static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 /** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. */
 static void B_(bmp_insert)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	const struct { unsigned hi, lo; }
-		move = { n / BMP_CHUNK, n % BMP_CHUNK },
-		first = { x / BMP_CHUNK, x % BMP_CHUNK };
-	unsigned i = BMP_CHUNKS - 1 - move.hi;
-	const PB_(chunk) store = a->chunk[first.hi];
-	PB_(chunk) temp;
+	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
+	/*const*/ PB_(chunk) store; PB_(chunk) temp;
 	assert(a && x + n < BMP_BITS);
 	if(!n) return;
+	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;
+	first.hi = x / BMP_CHUNK, first.lo = x % BMP_CHUNK;
+	i = BMP_CHUNKS - 1 - move.hi; store = a->chunk[first.hi];
 	/* Zero the bits that are not involved on the last iteration. */
 	a->chunk[first.hi] &= BMP_MAX >> first.lo;
 	/* Copy a superset aligned with `<PB>chunk` bits, backwards. */
@@ -130,14 +129,13 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 /** Removes `n` at `x` in `a`. The `n` bits coming from the right are zero. */
 static void B_(bmp_remove)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	const struct { unsigned hi, lo; }
-		move = { n / BMP_CHUNK, n % BMP_CHUNK },
-		first = { x / BMP_CHUNK, x % BMP_CHUNK };
-	unsigned i = first.hi + move.hi;
-	const PB_(chunk) store = a->chunk[first.hi];
-	PB_(chunk) temp;
+	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
+	/*const*/ PB_(chunk) store; PB_(chunk) temp;
 	assert(a && x + n < BMP_BITS);
 	if(!n) return;
+	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;
+	first.hi = x / BMP_CHUNK, first.lo = x % BMP_CHUNK;
+	i = first.hi + move.hi; store = a->chunk[first.hi];
 	/* Copy a superset aligned with `<PB>chunk` bits. */
 	for( ; ; ) {
 		temp = a->chunk[i] << move.lo;
