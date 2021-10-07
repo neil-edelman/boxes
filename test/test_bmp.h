@@ -91,7 +91,7 @@ static void PB_(gadget_remove)(struct PB_(gadget) *const g,
 
 static void PB_(test)(void) {
 	struct B_(bmp) bmp, bmp_bkp;
-	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp, g;
+	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp;
 	unsigned i, j;
 	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
@@ -150,6 +150,7 @@ static void PB_(test)(void) {
 		" bmp %s.\n", PB_(adorn)(&gdt, 0, 0), PB_(adorn)(&bmp_gdt, 0, 0));
 	assert(!strcmp(gdt.bits, bmp_gdt.bits));
 
+	/* These are used in testing all insert and remove. */
 	memcpy(&bmp_bkp, &bmp, sizeof bmp);
 	memcpy(&gdt_bkp, &gdt, sizeof gdt);
 
@@ -179,7 +180,7 @@ static void PB_(test)(void) {
 			PB_(to_gadget)(&bmp, &bmp_gdt);
 			assert(!strcmp(gdt.bits, bmp_gdt.bits));
 			PB_(gadget_remove)(&gdt, i, j);
-			B_(bmp_remove)(&bmp, i, j, &g);
+			B_(bmp_remove)(&bmp, i, j);
 			PB_(to_gadget)(&bmp, &bmp_gdt);
 			printf("remove(%u, %u):\n"
 				" bfr %s;\n"

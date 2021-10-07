@@ -22,7 +22,6 @@
 #include <limits.h> /* CHAR_BIT */
 #include <assert.h>
 
-
 #if !defined(BMP_NAME) || !defined(BMP_BITS)
 #error Name BMP_NAME or unsigned number BMP_BITS undefined.
 #endif
@@ -57,7 +56,6 @@
 #define BMP_CLEAR(a, x) ((a)[BMP_SLOT(x)] &= ~(BMP_MASK(x)))
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 #endif /* idempotent --> */
-
 
 /* Defaults. */
 #ifndef BMP_TYPE /* <!-- !type */
@@ -129,15 +127,9 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-struct PB_(gadget);
-static void PB_(to_gadget)(const struct B_(bmp) *const a,
-						   struct PB_(gadget) *const g);
-static char *PB_(adorn)(const struct PB_(gadget) *g,
-						const unsigned x, const unsigned n);
-
 /** Removes `n` at `x` in `a`. The `n` bits coming from the right are zero. */
 static void B_(bmp_remove)(struct B_(bmp) *const a,
-	const unsigned x, const unsigned n, struct PB_(gadget) *g) {
+	const unsigned x, const unsigned n) {
 	const struct { unsigned hi, lo; }
 		move = { n / BMP_CHUNK, n % BMP_CHUNK },
 		first = { x / BMP_CHUNK, x % BMP_CHUNK };
@@ -145,10 +137,6 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 	const PB_(chunk) store = a->chunk[first.hi];
 	PB_(chunk) temp;
 	assert(a && x + n < BMP_BITS);
-	/*printf("in remove(%u, %u): move: [%u:%u], first: [%u:%u]\n",
-		x, n, move.hi, move.lo, first.hi, first.lo);
-	PB_(to_gadget)(a, g);
-	printf("before:\t%s.\n", PB_(adorn)(g, x, n));*/
 	if(!n) return;
 	/* Copy a superset aligned with `<PB>chunk` bits. */
 	for( ; ; ) {
@@ -157,16 +145,12 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 		if(move.lo) temp |= a->chunk[i + 1] >> BMP_CHUNK - move.lo;
 		a->chunk[i++ - move.hi] = temp;
 	}
-	/*PB_(to_gadget)(a, g);
-	printf("loop:\t%s.\n", PB_(adorn)(g, x, 0));*/
 	/* Zero intervening, restore the bits that are not involved, and clip. */
 	for(i = BMP_CHUNKS - move.hi; i < BMP_CHUNKS; i++) a->chunk[i] = 0;
 	/* <https://graphics.stanford.edu/~seander/bithacks.html#MaskedMerge> */
 	a->chunk[first.hi] ^= (a->chunk[first.hi] ^ store) & ~(BMP_MAX >> first.lo);
 	a->chunk[BMP_CHUNKS - 1]
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
-	/*PB_(to_gadget)(a, g);
-	printf("final:\t%s.\n", PB_(adorn)(g, x, 0));*/
 }
 
 #ifdef BMP_TEST /* <!-- test */
