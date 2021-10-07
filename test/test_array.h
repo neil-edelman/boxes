@@ -195,8 +195,7 @@ static void PA_(test_random)(void) {
 		PA_(type) *data;
 		char str[12];
 		unsigned r = (unsigned)rand();
-		/*double r = rand() / (RAND_MAX + 1.0);*/
-		int is_print = 1/*!(rand() / (RAND_MAX / 50 + 1))*/;
+		int is_print = !(rand() / (RAND_MAX / 50 + 1));
 		if(is_print) printf("%lu: ", (unsigned long)i);
 		/* This parameter controls how big the pool wants to be. */
 		if(r > size * (RAND_MAX / (2 * 100 * mult))) {
