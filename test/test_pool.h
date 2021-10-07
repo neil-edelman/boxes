@@ -276,10 +276,10 @@ static void PP_(test_random)(void) {
 
 	for(i = 0; i < length; i++) {
 		char str[12];
-		double r = rand() / (RAND_MAX + 1.0);
+		unsigned r = (unsigned)rand();
 		int is_print = !(i & (i - 1));
 		/* This parameter controls how big the pool wants to be. */
-		if(r > test.size / 5000.0) {
+		if(r > test.size * (RAND_MAX / (2 * 5000))) {
 			/* Create. */
 			data = P_(pool_new)(&pool);
 			if(!data) { perror("Error"), assert(0); return;}
@@ -301,6 +301,7 @@ static void PP_(test_random)(void) {
 				PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"), 0));
 			PP_(test_array_remove)(&test, ptr);
 		}
+		if(is_print) printf("test.size: %lu.\n", (unsigned long)test.size);
 		if(is_print && i < graph_max) {
 			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-step-%lu.gv",
 				(unsigned long)(i + 1));
