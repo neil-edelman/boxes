@@ -13,13 +13,6 @@
  a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
- In memory, it is similar to <Bayer, McCreight, 1972 Large>. Using
- <Knuth, 1998 Art 3> terminology, but instead of a B-tree of order-n nodes, it
- is a forest of non-empty complete binary trees. Therefore, the leaves in a
- tree are also the branching factor; the maximum is the order, fixed by
- compilation macros. However, by the nature of strings, tries may be unbalanced
- depending on the distribution.
-
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
  optional returnable type that is declared, (it is used by reference only
@@ -66,123 +59,19 @@
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
-#define TRIE_BITMASK(n) ((1 << CHAR_BIT - 1) >> (n) % CHAR_BIT)
-#define TRIE_BITSLOT(n) ((n) / CHAR_BIT)
-#define TRIE_BITTEST(a, n) ((a)[TRIE_BITSLOT(n)] & TRIE_BITMASK(n))
-#define TRIE_BITDIFF(a, b, n) \
-	(((a)[TRIE_BITSLOT(n)] ^ (b)[TRIE_BITSLOT(n)]) & TRIE_BITMASK(n))
-/* Worst-case all-left, `(128,UCHAR_MAX]`. It's possible to go right down to 0,
- but need to edit the `TRIE_STORE*`. We could go one more, but alignment. */
+#define TRIE_MASK(n) ((1 << CHAR_BIT - 1) >> (n) % CHAR_BIT)
+#define TRIE_SLOT(n) ((n) / CHAR_BIT)
+#define TRIE_TEST(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
+#define TRIE_DIFF(a, b, n) \
+	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
+/* Worst-case all-left, `(0,UCHAR_MAX]`. We could go 255, but alignment. */
 #define TRIE_MAX_LEFT 6/*254*/
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
-#define TRIE_BITS_TO_BYTE(n) \
-	(((n) - 1) / CHAR_BIT + 1)
-#define TRIE_BITS_TO_SIZE(n) \
-	(((TRIE_BITS_TO_BYTE(n) - 1) / sizeof(size_t) + 1) * CHAR_BIT)
-struct trie_info { unsigned char bsize, no; };
 struct trie_branch { unsigned char left, skip; };
-/* Stores tree numbers of different arbitrary sizes, `(n, m)`: `n` must be
- ascending from zero; `m > 0` branching factor are strictly increasing. */
-#define TRIE_TREE_FIRST_X X(0, 1)
-/*#define TRIE_TREE_MID_X   X(1, 4) X(2, 8) X(3, 16) X(4, 32) X(5, 64) X(6, 128)
-#define TRIE_TREE_LAST_X  X(7, TRIE_ORDER)*/
-#define TRIE_TREE_MID_X   X(1, 4) /* Debug: too straight. Must be monotonic. */
-#define TRIE_TREE_LAST_X  X(2, TRIE_ORDER)
-#define TRIE_TREE_TAIL_X TRIE_TREE_MID_X TRIE_TREE_LAST_X
-#define TRIE_TREE_HEAD_X TRIE_TREE_FIRST_X TRIE_TREE_MID_X
-#define TRIE_TREE_X TRIE_TREE_FIRST_X TRIE_TREE_TAIL_X
-/* `C90` doesn't allow trialing commas in initializer lists. */
-static const unsigned trie_tree_bsizes[] = {
-#define X(n, m) m - 1,
-	TRIE_TREE_HEAD_X
-#undef X
-#define X(n, m) m - 1
-	TRIE_TREE_LAST_X
-#undef X
-};
-static const unsigned trie_tree_count
-	= sizeof trie_tree_bsizes / sizeof *trie_tree_bsizes;
-/** Inserts 0 in the bit-addressed `insert` in the `bmp` with `bmp_size` bytes.
- All the other bits past the `insert` are shifted right, and one bit at the end
- is erased. */
-static void trie_bmp_insert(unsigned char *const bmp, size_t bmp_size,
-	const unsigned insert) {
-	size_t insert_byte = insert / CHAR_BIT;
-	unsigned char a = bmp[insert_byte], carry = a & 1, b = a >> 1;
-	const unsigned char mask = 127 >> (insert & 7); /* Assumes `CHAR_BIT`. */
-	assert(bmp && insert_byte < bmp_size);
-	/* <https://graphics.stanford.edu/~seander/bithacks.html#MaskedMerge>. */
-	bmp[insert_byte++] = (a ^ ((a ^ b) & mask)) & ~(mask + 1);
-	while(insert_byte < bmp_size) {
-		a = bmp[insert_byte];
-		b = (unsigned char)(carry << 7) | (a >> 1);
-		carry = a & 1;
-		bmp[insert_byte++] = b;
-	}
-}
-/** Moves and overwrites `child` with `bit_offset` to `bit_range` from
- `parent`. Both must have maximum tree, `TRIE_ORDER` leaves. `parent` has the
- moved part replaced with a single bit, '1'. */
-static void trie_bmp_split(unsigned char *const parent,
-	unsigned char *const child,
-	const unsigned bit_offset, const unsigned bit_range) {
-	assert(parent && child);
-	assert(bit_range && bit_offset + bit_range <= TRIE_ORDER);
-	{ /* Copy a contiguous subset of bits from `a` into the new array, `b`. */
-		const unsigned a = bit_offset >> 3, a_bit = bit_offset & 7;
-		unsigned b, rest;
-		for(b = 0, rest = bit_range; rest > 8; b++, rest -= 8)
-			child[b] = (unsigned char)(parent[a + b] << a_bit)
-			| (parent[a + b + 1] >> (8 - a_bit));
-		child[b] = (unsigned char)(parent[a + b] << a_bit);
-		if(a + b < (bit_offset + bit_range) >> 3)
-			child[b] |= (parent[a + b + 1] >> (8 - a_bit));
-		child[b++] &= ~(255 >> rest);
-		memset(child + b, 0, TRIE_BITS_TO_SIZE(TRIE_ORDER) - b);
-	}
-	{ /* Replace copied bits from `a` with '1'. */
-		const unsigned a = bit_offset >> 3, a_bit = bit_offset & 7;
-		parent[a] |= 128 >> a_bit;
-	}
-	{ /* Move bits back in `a`. */
-		unsigned a0 = (bit_offset + 1) >> 3, a1 = (bit_offset + bit_range) >> 3;
-		const unsigned a0_bit = (bit_offset + 1) & 7,
-			a1_bit = (bit_offset + bit_range) & 7;
-		assert(a0 <= TRIE_BITS_TO_BYTE(TRIE_ORDER)
-			&& a1 <= TRIE_BITS_TO_BYTE(TRIE_ORDER));
-		if(a1 == TRIE_BITS_TO_BYTE(TRIE_ORDER)) { /* On the trailing edge. */
-			assert(!a1_bit); /* Extreme right. */
-			if(a0 == TRIE_BITS_TO_BYTE(TRIE_ORDER)) assert(!a0_bit);
-			else parent[a0++] &= 255 << 8-a0_bit;
-		} else if(a1_bit < a0_bit) { /* Inversion of shift. */
-			const unsigned shift = a0_bit - a1_bit;
-			assert(a0 < a1);
-			{
-				const unsigned char bmp_a_a0 = parent[a0],
-					bmp_a_a1 = parent[a1] >> shift,
-					mask = 255 >> a0_bit;
-				parent[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
-			}
-			while(++a0, ++a1 < TRIE_BITS_TO_BYTE(TRIE_ORDER)) parent[a0]
-				= (unsigned char)(parent[a1 - 1] <<8-shift | parent[a1] >>shift);
-			parent[a0++] = (unsigned char)(parent[a1 - 1] << 8-shift);
-		} else { /* Shift right or zero. */
-			const unsigned shift = a1_bit - a0_bit;
-			assert(a0 <= a1);
-			{
-				const unsigned char bmp_a_a0 = parent[a0],
-					bmp_a_a1 = (unsigned char)(parent[a1] << shift),
-					mask = 255 >> a0_bit;
-				parent[a0] = bmp_a_a0 ^ ((bmp_a_a0 ^ bmp_a_a1) & mask);
-			}
-			while(++a0, ++a1 < TRIE_BITS_TO_BYTE(TRIE_ORDER))
-				parent[a0 - 1] |= parent[a1] >> 8-shift,
-				parent[a0] = (unsigned char)(parent[a1] << shift);
-		}
-		memset(parent + a0, 0, TRIE_BITS_TO_BYTE(TRIE_ORDER) - a0);
-	}
-}
+#define BMP_NAME trie
+#define BMP_BITS TRIE_ORDER
+#include "bmp.h"
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -215,52 +104,26 @@ static const char *PT_(raw)(const char *a) { return assert(a), a; }
 /** Declared type of the trie; `char` default. */
 typedef TRIE_TYPE PT_(type);
 
-/* Pointers to generic trees stored in memory, and part of the B-forest.
- Points to a non-empty semi-implicit complete binary tree of a
- fixed-maximum-size; reading `info.no` will tell which tree it is. */
-union PT_(any_tree) {
-	struct trie_info *info;
-#define X(n, m) struct PT_(tree##n) *t##n;
-	TRIE_TREE_X
-#undef X
-};
+/** A leaf is either data or another tree; the `children` of <tag:<PT>tree> is
+ a bitmap that tells which. */
+union PT_(leaf) { PT_(type) *data; struct PT_(tree) *child; };
 
-/* A leaf is either data or another child tree; the `children` of
- <tag:<PT>tree> is a bitmap that tells which. */
-union PT_(leaf) { PT_(type) *data; union PT_(any_tree) child; };
-
-/* Different stores of trees, designed to fit alignment boundaries. */
-struct PT_(tree0) { struct trie_info info; unsigned char children[6];
-	union PT_(leaf) leaves[1]; };
-#define X(n, m) struct PT_(tree##n) { struct trie_info info; \
-	struct trie_branch branches[m - 1]; \
-	unsigned char children[TRIE_BITS_TO_SIZE(m)]; \
-	union PT_(leaf) leaves[m]; };
-TRIE_TREE_TAIL_X
-#undef X
-
-static const unsigned PT_(tree_sizes)[] = {
-#define X(n, m) sizeof(struct PT_(tree##n)),
-	TRIE_TREE_HEAD_X
-#undef X
-#define X(n, m) sizeof(struct PT_(tree##n))
-	TRIE_TREE_LAST_X
-#undef X
-};
-
-/* A working tree of any size extracted from different-width storage by
- <fn:<PT>extract>. */
+/** A trie is a forest of non-empty complete binary trees. In
+ <Knuth, 1998 Art 3> terminology, this structure is similar to a node of
+ `TRIE_ORDER` in a B-tree, described in <Bayer, McCreight, 1972 Large>, but
+ node already has conflicting meaning. */
 struct PT_(tree) {
-	unsigned bsize, no; struct trie_branch *branches;
-	unsigned char *children; union PT_(leaf) *leaves;
+	unsigned char bsize, skip;
+	struct trie_branch branch[TRIE_MAX_BRANCH];
+	struct trie_bmp children;
+	union PT_(leaf) leaf[TRIE_ORDER];
 };
 
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
-struct T_(trie);
-struct T_(trie) { union PT_(any_tree) root; };
+struct T_(trie) { struct PT_(tree) *root; };
 #ifndef TRIE_IDLE /* <!-- !zero */
 #define TRIE_IDLE { { 0 } }
 #endif /* !zero --> */
@@ -269,15 +132,15 @@ struct T_(trie) { union PT_(any_tree) root; };
  is a private version of the <tag:<T>trie_iterator> that does all the work, but
  it can only iterate through the entire trie. */
 struct PT_(iterator)
-	{ union PT_(any_tree) root, next; unsigned leaf, unused; };
+	{ struct PT_(tree) root, next; unsigned leaf, unused; };
 
 /** Stores a range in the trie. Any changes in the topology of the trie
  invalidate it. @fixme Replacing `root` with `bit` would make it faster and
  allow size remaining; just have to fiddle with `end` to `above`. That makes it
- incomatible with private, but could merge. */
+ incompatible with private, but could merge. */
 struct T_(trie_iterator);
 struct T_(trie_iterator)
-	{ union PT_(any_tree) root, next, end; unsigned leaf, leaf_end; };
+	{ struct PT_(tree) root, next, end; unsigned leaf, leaf_end; };
 
 /** Responsible for picking out the null-terminated string. Modifying the
  string key in the original <typedef:<PT>type> while in any trie causes the
@@ -287,52 +150,33 @@ typedef const char *(*PT_(key_fn))(const PT_(type) *);
 /* Check that `TRIE_KEY` is a function satisfying <typedef:<PT>key_fn>. */
 static PT_(key_fn) PT_(to_key) = (TRIE_KEY);
 
-/** @return Fills `tree` for the kind of tree storage in `store`. */
-static void PT_(extract)(const union PT_(any_tree) store,
-	struct PT_(tree) *const tree) {
-	assert(store.info && tree);
-	tree->bsize = store.info->bsize;
-	switch(tree->no = store.info->no) {
-	case 0: /* Special case where there are no branches. */
-		tree->branches = 0; tree->children = store.t0->children;
-		tree->leaves = store.t0->leaves; break;
-#define X(n, m) case n: tree->branches = store.t##n->branches; tree->children \
-	= store.t##n->children; tree->leaves = store.t##n->leaves; break;
-		TRIE_TREE_TAIL_X
-#undef X
-	default: assert(0);
-	}
-}
-
 /** @return The address of a index candidate match for `key` in `trie`, or
  null, if `key` is definitely not in `trie`. @order \O(|`key`|) */
 static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 	const char *const key) {
-	union PT_(any_tree) store = trie->root;
-	struct PT_(tree) tree;
+	struct PT_(tree) *tree;
 	size_t bit; /* `bit \in key`.  */
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
-	assert(trie && key);
-	if(!store.info) return 0; /* Idle. */
-	for(byte.cur = 0, bit = 0; ; ) { /* Forest. */
-		PT_(extract)(store, &tree);
-		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
+	assert(key);
+	if(!trie) return 0;
+	for(tree = trie->root, byte.cur = 0, bit = 0; ; ) { /* Forest. */
+		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) { /* Tree. */
-			const struct trie_branch *const branch = tree.branches +in_tree.br0;
+			const struct trie_branch *const branch = tree->branch + in_tree.br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0; /* Too short. */
-			if(!TRIE_BITTEST(key, bit))
+			if(!TRIE_TEST(key, bit))
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 			else
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		if(!TRIE_BITTEST(tree.children, in_tree.lf)) break;
-		store = tree.leaves[in_tree.lf].child;
-	};
-	return &tree.leaves[in_tree.lf].data;
+		if(!trie_bmp_at(&tree->children, in_tree.lf)) break;
+		tree = tree->leaf[in_tree.lf].child;
+	}
+	return &tree->leaf[in_tree.lf].data;
 }
 
 /** @return An index candidate match for `key` in `trie`. */
@@ -419,46 +263,6 @@ static void PT_(prefix)(const struct T_(trie) *const trie,
 	PT_(extract)(it->end, &tree);
 	if(!trie_is_prefix(prefix, PT_(sample)(it->end, it->leaf_end - 1)))
 		it->leaf_end = it->leaf;
-}
-
-/** Expand `any` to ensure that it has one more unused capacity when not full.
- @return Potentially a re-allocated `any`. @throws[realloc] */
-static union PT_(any_tree) PT_(expand)(const union PT_(any_tree) any) {
-	struct PT_(tree) tree0, tree1;
-	union PT_(any_tree) larger;
-	size_t links0, links1;
-	assert(any.info);
-	PT_(extract)(any, &tree0);
-	/*printf("expand: bsize %u, width%u: %u\n",
-		tree0.bsize, tree0.tree, trie_tree_bsizes[tree0.tree]);*/
-	assert(tree0.bsize < TRIE_MAX_BRANCH);
-	if(tree0.bsize < trie_tree_bsizes[tree0.no]) return any;
-	assert(tree0.bsize == trie_tree_bsizes[tree0.no]
-		&& tree0.no + 1 < trie_tree_count);
-	/* Augment the allocation. */
-	if(!(larger.info = realloc(any.info, PT_(tree_sizes)[tree0.no + 1])))
-		{ if(!errno) errno = ERANGE; return larger; }
-	PT_(extract)(larger, &tree0); /* The address may have changed. */
-	/*printf("expand: #%p width%u %luB -> #%p store%u %luB\n", (void *)any.info,
-		tree0.no, (unsigned long)PT_(tree_sizes)[tree0.no],
-		(void *)larger.info, tree0.no + 1,
-		(unsigned long)PT_(tree_sizes)[tree0.no + 1]);*/
-	/* Augment the allocation size. */
-	larger.info->no++;
-	PT_(extract)(larger, &tree1);
-	assert(tree0.bsize == tree1.bsize
-		&& (!tree0.branches || tree0.branches == tree1.branches)
-		&& tree0.children <= tree1.children
-		&& tree0.leaves <= tree1.leaves);
-	/* Careful to go backwards because we don't want to overwrite. */
-	memmove(tree1.leaves, tree0.leaves,
-		sizeof *tree0.leaves * (tree0.bsize + 1));
-	links0 = TRIE_BITS_TO_BYTE(tree0.bsize + 1);
-	links1 = TRIE_BITS_TO_BYTE(trie_tree_bsizes[tree0.no + 1] + 1);
-	/*printf("expand: moving from %luB to %luB\n", links0, links1);*/
-	memmove(tree1.children, tree0.children, links0);
-	memset(tree0.children + links0, 0, links1 - links0);
-	return larger;
 }
 
 /** @return Success splitting the tree `any`. Must be full. */
