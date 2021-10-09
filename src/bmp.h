@@ -25,7 +25,7 @@
 #if !defined(BMP_NAME) || !defined(BMP_BITS)
 #error Name BMP_NAME or unsigned number BMP_BITS undefined.
 #endif
-#if BMP_BITS <= 1
+#if BMP_BITS < 1
 #error BMP_BITS too small.
 #endif
 
@@ -178,4 +178,3 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #ifdef BMP_TEST
 #undef BMP_TEST
 #endif
-#undef BMP_MAX
