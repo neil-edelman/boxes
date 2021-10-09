@@ -129,7 +129,7 @@ static void PB_(test)(void) {
 
 	printf("test:\n"); /* Has to come just after set. */
 	for(i = 0, j = 0; i < BMP_BITS; i++) {
-		assert(B_(bmp_at)(&bmp, i) == (i == j));
+		assert(!!B_(bmp_test)(&bmp, i) == (i == j));
 		if(i < j) continue;
 		j += 1 + r[j % sizeof r / sizeof *r];
 	}
@@ -195,7 +195,7 @@ static void PB_(test)(void) {
 
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
-static void B_(bmp_test)(void) {
+static void B_(bmp_tests)(void) {
 	struct B_(bmp) b;
 	printf("<" QUOTE(BMP_NAME) ">bmp is storing " QUOTE(BMP_BITS) " boolean"
 		" values, backed by an underlying array of %lu <" QUOTE(BMP_TYPE) ">,"

@@ -8,6 +8,6 @@
 
 /** Entry point. @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	b_bmp_test();
+	b_bmp_tests();
 	return EXIT_SUCCESS;
 }
