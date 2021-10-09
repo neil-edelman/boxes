@@ -61,7 +61,7 @@
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
 #define TRIE_MASK(n) ((1 << CHAR_BIT - 1) >> (n) % CHAR_BIT)
 #define TRIE_SLOT(n) ((n) / CHAR_BIT)
-#define TRIE_TEST(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
+#define TRIE_QUERY(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
 #define TRIE_DIFF(a, b, n) \
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-left, `(0,UCHAR_MAX]`. We could go 255, but alignment. */
@@ -125,7 +125,7 @@ struct PT_(tree) {
  ![States.](../web/states.png) */
 struct T_(trie) { struct PT_(tree) *root; };
 #ifndef TRIE_IDLE /* <!-- !zero */
-#define TRIE_IDLE { { 0 } }
+#define TRIE_IDLE { 0 }
 #endif /* !zero --> */
 
 /* Contains all iteration parameters; satisfies box interface iteration. This
@@ -167,7 +167,7 @@ static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0; /* Too short. */
-			if(!TRIE_TEST(key, bit))
+			if(!TRIE_QUERY(key, bit))
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 			else
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
@@ -218,7 +218,7 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur <= byte.next; byte.cur++)
 				if(prefix[byte.cur] == '\0') goto finally;
-			if(!TRIE_TEST(prefix, bit))
+			if(!TRIE_QUERY(prefix, bit))
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 			else
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
@@ -401,7 +401,7 @@ tree:
 			branch = tree->branch + in_tree.br0;
 			for(in_bit.x1 = in_bit.x + branch->skip; in_bit.x < in_bit.x1;
 				in_bit.x++) if(TRIE_DIFF(x_key, sample, in_bit.x)) goto leaf;
-			if(!TRIE_TEST(x_key, in_bit.x)) {
+			if(!TRIE_QUERY(x_key, in_bit.x)) {
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 				if(is_write) branch->left++;
 			} else {
@@ -420,7 +420,7 @@ tree:
 	while(!TRIE_DIFF(x_key, sample, in_bit.x))
 		if(++in_bit.x > in_bit.x1) return errno = ERANGE, 0;
 leaf:
-	if(TRIE_TEST(x_key, in_bit.x))
+	if(TRIE_QUERY(x_key, in_bit.x))
 		is_right = 1, in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
 	/*printf("add: %s, at leaf %u bit %lu.\n", is_right ? "right" : "left",
 		in_tree.lf, in_bit.x);*/
@@ -569,14 +569,14 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	return 0;
 }
 
-/** Frees `tree` and it's children. @fixme This is a lazy. */
-/*static void PT_(clear)(struct PT_(tree) *const tree) {
+/** Frees `tree` and it's children recursively. */
+static void PT_(clear)(struct PT_(tree) *const tree) {
 	unsigned i;
 	assert(tree);
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->children, i))
 		PT_(clear)(tree->leaf[i].child);
 	free(tree);
-}*/
+}
 
 /** Counts the sub-tree `any`. @order \O(|`any`|) */
 static size_t PT_(sub_size)(const struct PT_(tree) *const tree) {
@@ -592,7 +592,7 @@ static size_t PT_(sub_size)(const struct PT_(tree) *const tree) {
 
 /** Counts the new iterator `it`. @order \O(|`it`|) */
 static size_t PT_(size)(const struct T_(trie_iterator) *const it) {
-	struct PT_(tree) *next;
+	struct PT_(tree) *next = it->root; /* ? */
 	size_t size;
 	unsigned i;
 	assert(it);
@@ -621,30 +621,27 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	struct PT_(tree) *tree;
 	assert(it);
 	/*printf("_next_\n");*/
-	if(!it->root || !it->next) return 0;
-	tree = it->next;
+	if(!it->root || !(tree = it->next)) return 0;
 	/* Off the end of the tree. */
 	if(it->leaf > tree->bsize) {
 		/* Definitely a data leaf or else we would have fallen thought.
 		 Unless it had a concurrent modification. That would be bad; don't. */
-		const char *key = PT_(to_key)(tree.leaves[tree.bsize].data);
-		const union PT_(any_tree) store1 = it->next;
-		union PT_(any_tree) store2 = it->root;
-		struct PT_(tree) tree2;
+		const char *key = PT_(to_key)(tree->leaf[tree->bsize].data);
+		const struct PT_(tree) *tree1 = it->next;
+		struct PT_(tree) *tree2 = it->root;
 		size_t bit2 = 0;
 		const struct trie_branch *branch2;
 		struct { unsigned br0, br1, lf; } in_tree2;
-		assert(key && store2.info && !TRIE_BITTEST(tree.children, tree.bsize));
+		assert(key && tree2 && !trie_bmp_test(&tree->children, tree->bsize));
 		/*printf("next: over the end of the tree on %s.\n",
 			PT_(to_key)(tree.leaves[it->leaf - 1].data));*/
-		for(it->next.info = 0; ; ) { /* Forest. */
-			if(store2.info == store1.info) break; /* Reached the tree. */
-			PT_(extract)(store2, &tree2);
-			in_tree2.br0 = 0, in_tree2.br1 = tree2.bsize, in_tree2.lf = 0;
+		for(it->next = 0; ; ) { /* Forest. */
+			if(tree2 == tree1) break; /* Reached the tree. */
+			in_tree2.br0 = 0, in_tree2.br1 = tree2->bsize, in_tree2.lf = 0;
 			while(in_tree2.br0 < in_tree2.br1) { /* Tree. */
-				branch2 = tree2.branches + in_tree2.br0;
+				branch2 = tree2->branch + in_tree2.br0;
 				bit2 += branch2->skip;
-				if(!TRIE_BITTEST(key, bit2))
+				if(!TRIE_QUERY(key, bit2))
 					in_tree2.br1 = ++in_tree2.br0 + branch2->left;
 				else
 					in_tree2.br0 += branch2->left + 1,
@@ -652,24 +649,24 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 				bit2++;
 			}
 			/* Set it to the next value. */
-			if(in_tree2.lf < tree2.bsize)
-				it->next.info = store2.info, it->leaf = in_tree2.lf + 1/*,
+			if(in_tree2.lf < tree2->bsize)
+				it->next = tree2, it->leaf = in_tree2.lf + 1/*,
 				printf("next: continues in tree %p, leaf %u.\n",
 					(void *)store2.key, it->i)*/;
 			/* We never reach the bottom, since it breaks up above. */
-			assert(TRIE_BITTEST(tree2.children, in_tree2.lf));
-			store2 = tree2.leaves[in_tree2.lf].child;
+			assert(trie_bmp_test(&tree2->children, in_tree2.lf));
+			tree2 = tree2->leaf[in_tree2.lf].child;
 		}
-		if(!it->next.info) { /*printf("next: fin\n");*/ it->leaf = 0; return 0; } /* No more. */
-		PT_(extract)(it->next, &tree); /* Update tree. */
+		if(!it->next) { /*printf("next: fin\n");*/ it->leaf = 0; return 0; } /* No more. */
+		tree = it->next; /* Update tree. */
 	}
 	/* Fall through the trees. */
-	while(TRIE_BITTEST(tree.children, it->leaf))
-		PT_(extract)(it->next = tree.leaves[it->leaf].child, &tree),
-		it->leaf = 0/*, printf("next: fall though.\n")*/;
+	while(trie_bmp_test(&tree->children, it->leaf))
+		it->next = tree->leaf[it->leaf].child, it->leaf = 0
+		/*, printf("next: fall though.\n")*/;
 	/* Until we hit data. */
 	/*printf("next: more data\n");*/
-	return tree.leaves[it->leaf++].data;
+	return tree->leaf[it->leaf++].data;
 }
 
 /* iterate --> */
@@ -677,12 +674,12 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 
 /** Initializes `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
-	{ assert(trie); trie->root.info = 0; }
+	{ assert(trie); trie->root = 0; }
 
 /** Returns an initialized `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
 	assert(trie);
-	if(trie->root.info) PT_(clear)(trie->root), T_(trie)(trie);
+	if(trie->root) PT_(clear)(trie->root), T_(trie)(trie);
 }
 
 #if 0
@@ -759,13 +756,13 @@ static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 	struct PT_(iterator) shunt;
 	PT_(type) *x;
-	assert(it && (it->next.info && it->root.info || !it->next.info));
+	assert(it && (it->next && it->root || !it->next));
 	/* This adds another constraint: instead of ending when the trie has no
 	 more entries like <fn:<PT>next>, we check if it has passed the point. */
-	if(it->next.info == it->end.info && it->leaf >= it->leaf_end) return 0;
-	shunt.root = it->root, shunt.next.info = it->next.info,
+	if(it->next == it->end && it->leaf >= it->leaf_end) return 0;
+	shunt.root = it->root, shunt.next = it->next,
 		shunt.leaf = it->leaf, x = PT_(next)(&shunt);
-	it->next.info = shunt.next.info, it->leaf = shunt.leaf;
+	it->next = shunt.next, it->leaf = shunt.leaf;
 	return x;
 }
 
