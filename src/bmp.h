@@ -25,7 +25,7 @@
 #if !defined(BMP_NAME) || !defined(BMP_BITS)
 #error Name BMP_NAME or unsigned number BMP_BITS undefined.
 #endif
-#if BMP_BITS <= 1
+#if BMP_BITS < 1
 #error BMP_BITS too small.
 #endif
 
@@ -84,9 +84,10 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-/** Projects the eigenvalue of bit `x` of `a`. */
-static unsigned B_(bmp_at)(struct B_(bmp) *const a, const unsigned x)
-	{ assert(a && x < BMP_BITS); return !!BMP_AT(a->chunk, x); }
+/** @return Projects the eigenvalue of bit `x` of `a`. Either zero of
+ non-zero. */
+static unsigned B_(bmp_test)(const struct B_(bmp) *const a, const unsigned x)
+	{ assert(a && x < BMP_BITS); return BMP_AT(a->chunk, x); }
 
 /** Sets bit `x` in `a`. */
 static void B_(bmp_set)(struct B_(bmp) *const a, const unsigned x)
@@ -157,7 +158,7 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	B_(bmp_clear_all)(0); B_(bmp_invert_all)(0); B_(bmp_at)(0, 0);
+	B_(bmp_clear_all)(0); B_(bmp_invert_all)(0); B_(bmp_test)(0, 0);
 	B_(bmp_set)(0, 0); B_(bmp_clear)(0, 0); B_(bmp_toggle)(0, 0);
 	PB_(unused_base_coda)();
 }
@@ -177,4 +178,3 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #ifdef BMP_TEST
 #undef BMP_TEST
 #endif
-#undef BMP_MAX
