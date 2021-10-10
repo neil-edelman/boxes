@@ -390,7 +390,7 @@ right:
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x);
 	struct PT_(tree) *tree;
-	struct { size_t tree, branch, x, next; } bit; /* `bit \in key`.  */
+	struct { size_t tree, last, cur, next; } bit; /* `bit \in key`.  */
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct trie_branch *branch;
 	union PT_(leaf) *leaf;
@@ -402,16 +402,16 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		if(!(tree = PT_(tree)())) return 0;
 		tree->leaf[0].data = x; trie->root = tree; return 1;
 	}
-	for(tree = trie->root, bit.x = 0; ; ) { /* Forest. */
+	for(tree = trie->root, bit.cur = 0; ; ) { /* Forest. */
 tree:
-		bit.tree = bit.branch = bit.x;
+		bit.tree = bit.last = bit.cur;
 		sample = PT_(sample)(tree, 0);
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) { /* Tree. */
 			branch = tree->branch + in_tree.br0;
-			for(bit.next = bit.x + branch->skip; bit.x < bit.next;
-				bit.x++) if(TRIE_DIFF(key, sample, bit.x)) goto leaf;
-			if(!TRIE_QUERY(key, bit.x)) {
+			for(bit.next = bit.cur + branch->skip; bit.cur < bit.next;
+				bit.cur++) if(TRIE_DIFF(key, sample, bit.cur)) goto leaf;
+			if(!TRIE_QUERY(key, bit.cur)) {
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 				if(is_write) branch->left++;
 			} else {
@@ -419,19 +419,18 @@ tree:
 				in_tree.lf  += branch->left + 1;
 				sample = PT_(sample)(tree, in_tree.lf);
 			}
-			bit.branch = bit.x++;
+			bit.last = bit.cur++;
 		}
-		assert(in_tree.br0 == in_tree.br1
-			&& in_tree.lf <= tree->bsize);
+		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree->bsize);
 		if(!trie_bmp_test(&tree->is_child, in_tree.lf)) break;
 		tree = tree->leaf[in_tree.lf].child;
 	}
 	/* Got to the leaves. */
-	bit.next = bit.x + UCHAR_MAX;
-	while(!TRIE_DIFF(key, sample, bit.x))
-		if(++bit.x > bit.next) return errno = ERANGE, 0;
+	bit.next = bit.cur + UCHAR_MAX;
+	while(!TRIE_DIFF(key, sample, bit.cur))
+		if(++bit.cur > bit.next) return errno = ERANGE, 0;
 leaf:
-	if(TRIE_QUERY(key, bit.x))
+	if(TRIE_QUERY(key, bit.cur))
 		is_right = 1, in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
 	/*printf("add: %s, at leaf %u bit %lu.\n", is_right ? "right" : "left",
 		in_tree.lf, in_bit.x);*/
@@ -445,10 +444,9 @@ leaf:
 		/*printf("add: split %s.\n", T_(trie_to_string)(trie));*/
 		assert(!is_split && (is_split = 1));
 	} else {
-		/* something...? */
 		is_write = 1;
 	}
-	bit.x = bit.tree;
+	bit.cur = bit.tree;
 	goto tree;
 insert:
 	leaf = tree->leaf + in_tree.lf;
@@ -456,17 +454,17 @@ insert:
 	leaf->data = x;
 	branch = tree->branch + in_tree.br0;
 	if(in_tree.br0 != in_tree.br1) { /* Split `skip` with the existing branch. */
-		assert(bit.branch <= bit.x
-			&& bit.x + !in_tree.br0 <= bit.branch + branch->skip);
-		branch->skip -= bit.x - bit.branch + !in_tree.br0;
+		assert(bit.last <= bit.cur
+			&& bit.cur + !in_tree.br0 <= bit.last + branch->skip);
+		branch->skip -= bit.cur - bit.last + !in_tree.br0;
 	}
 	trie_bmp_insert(&tree->is_child, in_tree.lf, 1);
 	memmove(branch + 1, branch, sizeof *branch * (tree->bsize - in_tree.br0));
 	assert(in_tree.br1 - in_tree.br0 < 256
-		&& bit.x >= bit.branch + !!in_tree.br0
-		&& bit.x - bit.branch - !!in_tree.br0 < 256);
+		&& bit.cur >= bit.last + !!in_tree.br0
+		&& bit.cur - bit.last - !!in_tree.br0 < 256);
 	branch->left = is_right ? (unsigned char)(in_tree.br1 - in_tree.br0) : 0;
-	branch->skip = (unsigned char)(bit.x - bit.branch - !!in_tree.br0);
+	branch->skip = (unsigned char)(bit.cur - bit.last - !!in_tree.br0);
 	tree->bsize++;
 	return 1;
 }

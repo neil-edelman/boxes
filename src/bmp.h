@@ -106,7 +106,7 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
 	/*const*/ PB_(chunk) store; PB_(chunk) temp;
-	assert(a && x + n < BMP_BITS);
+	assert(a && x + n <= BMP_BITS);
 	if(!n) return;
 	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;
 	first.hi = x / BMP_CHUNK, first.lo = x % BMP_CHUNK;
@@ -132,7 +132,7 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
 	/*const*/ PB_(chunk) store; PB_(chunk) temp;
-	assert(a && x + n < BMP_BITS);
+	assert(a && x + n <= BMP_BITS);
 	if(!n) return;
 	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;
 	first.hi = x / BMP_CHUNK, first.lo = x % BMP_CHUNK;
