@@ -75,7 +75,7 @@ static void PB_(gadget_toggle)(struct PB_(gadget) *const g, const unsigned n)
 
 static void PB_(gadget_insert)(struct PB_(gadget) *const g,
 	const unsigned x, const unsigned n) {
-	assert(g && x + n < BMP_BITS);
+	assert(g && x + n <= BMP_BITS);
 	memmove(g->bits + x + n, g->bits + x, BMP_BITS - x - n);
 	memset(g->bits + x, '0', n);
 	assert(g->bits[sizeof g->bits - 1] == '\0');
@@ -83,7 +83,7 @@ static void PB_(gadget_insert)(struct PB_(gadget) *const g,
 
 static void PB_(gadget_remove)(struct PB_(gadget) *const g,
 	const unsigned x, const unsigned n) {
-	assert(g && x + n < BMP_BITS);
+	assert(g && x + n <= BMP_BITS);
 	memmove(g->bits + x, g->bits + x + n, BMP_BITS - x - n);
 	memset(g->bits + BMP_BITS - n, '0', n);
 	assert(g->bits[sizeof g->bits - 1] == '\0');
@@ -155,7 +155,7 @@ static void PB_(test)(void) {
 	memcpy(&gdt_bkp, &gdt, sizeof gdt);
 
 	for(i = 0; i < BMP_BITS; i++) {
-		for(j = 0; j < BMP_BITS - i; j++) {
+		for(j = 0; j <= BMP_BITS - i; j++) {
 			memcpy(&bmp, &bmp_bkp, sizeof bmp);
 			memcpy(&gdt, &gdt_bkp, sizeof gdt);
 			PB_(to_gadget)(&bmp, &bmp_gdt);
@@ -174,7 +174,7 @@ static void PB_(test)(void) {
 	}
 
 	for(i = 0; i < BMP_BITS; i++) {
-		for(j = 0; j < BMP_BITS - i; j++) {
+		for(j = 0; j <= BMP_BITS - i; j++) {
 			memcpy(&bmp, &bmp_bkp, sizeof bmp);
 			memcpy(&gdt, &gdt_bkp, sizeof gdt);
 			PB_(to_gadget)(&bmp, &bmp_gdt);
