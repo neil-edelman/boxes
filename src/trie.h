@@ -378,6 +378,8 @@ right:
  @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
+	/* I think it would be really practical to add locks to just one tree,
+	 Same as hash table, really. */
 	const char *const x_key = PT_(to_key)(x);
 	struct { size_t x, x0, x1; } in_bit;
 	struct { size_t start_bit; unsigned br0, br1, lf, unused; } in_tree;
