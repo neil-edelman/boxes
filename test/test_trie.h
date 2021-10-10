@@ -70,7 +70,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		"\t<TR>\n"
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">leaves</TD>\n");
 	for(i = 0; i <= tree->bsize; i++) {
-		if(trie_bmp_test(&tree->children, i))
+		if(trie_bmp_test(&tree->is_child, i))
 			fprintf(fp, "\t\t<TD PORT=\"%u\">...</TD>\n", i);
 		else
 			fprintf(fp, "\t\t<TD>%s</TD>\n", PT_(to_key)(tree->leaf[i].data));
@@ -79,12 +79,12 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	fprintf(fp, "\t</TR>\n"
 		"</TABLE>>];\n");
 	/* Draw the lines between trees. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->children, i))
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[color = firebrick];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child);
 	/* Recurse. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->children, i))
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		PT_(graph_tree_mem)(tree->leaf[i].child, fp);
 }
 
@@ -112,7 +112,7 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 					(const void *)tree, b + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b);
-				if(trie_bmp_test(&tree->children, leaf)) {
+				if(trie_bmp_test(&tree->is_child, leaf)) {
 					fprintf(fp, "tree%pbranch0 "
 						"[style = dashed, color = firebrick];\n",
 						(const void *)tree->leaf[leaf].child);
@@ -128,7 +128,7 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 					(const void *)tree, b + left + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b) + left + 1;
-				if(trie_bmp_test(&tree->children, leaf)) {
+				if(trie_bmp_test(&tree->is_child, leaf)) {
 					fprintf(fp, "tree%pbranch0"
 						" [color = firebrick];\n",
 						(const void *)tree->leaf[leaf].child);
@@ -138,19 +138,19 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 				}
 			}
 		}
-		for(i = 0; i <= tree->bsize; i++) if(!trie_bmp_test(&tree->children, i))
+		for(i = 0; i <= tree->bsize; i++) if(!trie_bmp_test(&tree->is_child, i))
 			fprintf(fp, "\t\ttree%pleaf%u [label = \"%s\"];\n",
 			(const void *)tree, i, PT_(to_key)(tree->leaf[i].data));
 	} else {
 		/* Instead of creating a lookahead function to previous references, we
 		 very lazily also just call this a branch, even though it's a leaf. */
-		assert(!trie_bmp_test(&tree->children, 0)); /* fixme:
+		assert(!trie_bmp_test(&tree->is_child, 0)); /* fixme:
 		 should be possible; then what? */
 		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (const void *)tree,
 			PT_(to_key)(tree->leaf[0].data));
 	}
 	fprintf(fp, "\t//}\n\n");
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->children, i))
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		PT_(graph_tree)(tree->leaf[i].child, fp);
 }
 
@@ -195,7 +195,7 @@ static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 	for(i = 0; i < tree->bsize; i++)
 		assert(tree->branch[i].left < tree->bsize - 1 - i);
 	for(i = 0; i <= tree->bsize; i++) {
-		if(trie_bmp_test(&tree->children, i)) {
+		if(trie_bmp_test(&tree->is_child, i)) {
 			PT_(valid_tree)(tree->leaf[i].child);
 		} else {
 			const char *str2;

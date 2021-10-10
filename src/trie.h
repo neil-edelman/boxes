@@ -12,6 +12,8 @@
  storing the where the key bits are different. Strings can be any encoding with
  a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
+ Practically, this is a set or map of strings, in order, with performance
+ comparable to that of a B-tree, allowing fast prefix matches.
 
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
@@ -21,8 +23,8 @@
 
  @param[TRIE_KEY]
  A function that satisfies <typedef:<PT>key_fn>. Must be defined if and only if
- `TRIE_TYPE` is defined. (This imbues it with the properties of an associative
- array.)
+ `TRIE_TYPE` is defined. (This imbues it with the properties of a string
+ associative array.)
 
  @param[TRIE_TO_STRING]
  Defining this includes <to_string.h>, with the keys as the string.
@@ -33,14 +35,14 @@
  satisfying <typedef:<PT>action_fn>. Requires `TRIE_TO_STRING` and that
  `NDEBUG` not be defined.
 
+ @depend [bmp](https://github.com/neil-edelman/bmp)
  @std C89 */
 
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <limits.h>
-
+#include <limits.h> /* CHAR_BIT (C89!) */
 
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
@@ -55,7 +57,6 @@
 #error TRIE_TEST can only be on TRIE_TYPE.
 #endif
 
-
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
@@ -69,6 +70,7 @@
 #define TRIE_MAX_BRANCH (TRIE_MAX_LEFT + 1)
 #define TRIE_ORDER (TRIE_MAX_BRANCH + 1) /* Maximum branching factor. */
 struct trie_branch { unsigned char left, skip; };
+/* Dependency on `bmp.h`. */
 #define BMP_NAME trie
 #define BMP_BITS TRIE_ORDER
 #include "bmp.h"
@@ -115,7 +117,7 @@ union PT_(leaf) { PT_(type) *data; struct PT_(tree) *child; };
 struct PT_(tree) {
 	unsigned char bsize, skip;
 	struct trie_branch branch[TRIE_MAX_BRANCH];
-	struct trie_bmp children;
+	struct trie_bmp is_child;
 	union PT_(leaf) leaf[TRIE_ORDER];
 };
 
@@ -173,7 +175,7 @@ static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&tree->children, in_tree.lf)) break;
+		if(!trie_bmp_test(&tree->is_child, in_tree.lf)) break;
 		tree = tree->leaf[in_tree.lf].child;
 	}
 	return &tree->leaf[in_tree.lf].data;
@@ -224,7 +226,7 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&tree->children, in_tree.lf)) break;
+		if(!trie_bmp_test(&tree->is_child, in_tree.lf)) break;
 		tree = tree->leaf[in_tree.lf].child;
 	};
 finally:
@@ -240,7 +242,7 @@ finally:
 static const char *PT_(sample)(const struct PT_(tree) *tree,
 	unsigned lf) {
 	assert(tree);
-	while(trie_bmp_test(&tree->children, lf))
+	while(trie_bmp_test(&tree->is_child, lf))
 		tree = tree->leaf[lf].child, lf = 0;
 	return PT_(to_key)(tree->leaf[lf].data);
 }
@@ -265,7 +267,7 @@ static struct PT_(tree) *PT_(tree)(void) {
 	struct PT_(tree) *tree;
 	if(!(tree = malloc(sizeof *tree)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	tree->bsize = 0, tree->skip = 0, trie_bmp_clear_all(&tree->children);
+	tree->bsize = 0, tree->skip = 0, trie_bmp_clear_all(&tree->is_child);
 	return tree;
 }
 
@@ -412,7 +414,7 @@ tree:
 		}
 		assert(in_tree.br0 == in_tree.br1
 			&& in_tree.lf <= tree->bsize);
-		if(!trie_bmp_test(&tree->children, in_tree.lf)) break;
+		if(!trie_bmp_test(&tree->is_child, in_tree.lf)) break;
 		tree = tree->leaf[in_tree.lf].child;
 	}
 	/* Got to the leaves. */
@@ -448,7 +450,7 @@ insert:
 			&& in_bit.x + !in_tree.br0 <= in_bit.x0 + branch->skip);
 		branch->skip -= in_bit.x - in_bit.x0 + !in_tree.br0;
 	}
-	trie_bmp_insert(&tree->children, in_tree.lf, 1);
+	trie_bmp_insert(&tree->is_child, in_tree.lf, 1);
 	memmove(branch + 1, branch, sizeof *branch * (tree->bsize - in_tree.br0));
 	assert(in_tree.br1 - in_tree.br0 < 256
 		&& in_bit.x >= in_bit.x0 + !!in_tree.br0
@@ -573,7 +575,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 static void PT_(clear)(struct PT_(tree) *const tree) {
 	unsigned i;
 	assert(tree);
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->children, i))
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		PT_(clear)(tree->leaf[i].child);
 	free(tree);
 }
@@ -585,7 +587,7 @@ static size_t PT_(sub_size)(const struct PT_(tree) *const tree) {
 	assert(tree);
 	size = tree->bsize + 1;
 	/* This is extremely inefficient, but processor agnostic. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->children, i))
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		size += PT_(sub_size)(tree->leaf[i].child) - 1;
 	return size;
 }
@@ -604,7 +606,7 @@ static size_t PT_(size)(const struct T_(trie_iterator) *const it) {
 	size = it->leaf_end - it->leaf;
 	/* fixme: I have no idea what's going on. */
 	for(i = it->leaf; i < it->leaf_end; i++)
-		if(trie_bmp_test(&next->children, i))
+		if(trie_bmp_test(&next->is_child, i))
 		size += PT_(sub_size)(next->leaf[i].child) - 1;
 	return size;
 }
@@ -632,7 +634,7 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 		size_t bit2 = 0;
 		const struct trie_branch *branch2;
 		struct { unsigned br0, br1, lf; } in_tree2;
-		assert(key && tree2 && !trie_bmp_test(&tree->children, tree->bsize));
+		assert(key && tree2 && !trie_bmp_test(&tree->is_child, tree->bsize));
 		/*printf("next: over the end of the tree on %s.\n",
 			PT_(to_key)(tree.leaves[it->leaf - 1].data));*/
 		for(it->next = 0; ; ) { /* Forest. */
@@ -654,14 +656,14 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 				printf("next: continues in tree %p, leaf %u.\n",
 					(void *)store2.key, it->i)*/;
 			/* We never reach the bottom, since it breaks up above. */
-			assert(trie_bmp_test(&tree2->children, in_tree2.lf));
+			assert(trie_bmp_test(&tree2->is_child, in_tree2.lf));
 			tree2 = tree2->leaf[in_tree2.lf].child;
 		}
 		if(!it->next) { /*printf("next: fin\n");*/ it->leaf = 0; return 0; } /* No more. */
 		tree = it->next; /* Update tree. */
 	}
 	/* Fall through the trees. */
-	while(trie_bmp_test(&tree->children, it->leaf))
+	while(trie_bmp_test(&tree->is_child, it->leaf))
 		it->next = tree->leaf[it->leaf].child, it->leaf = 0
 		/*, printf("next: fall though.\n")*/;
 	/* Until we hit data. */
