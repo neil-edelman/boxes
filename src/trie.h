@@ -275,8 +275,9 @@ static struct PT_(tree) *PT_(tree)(void) {
  receive the promoted root from `tree`) or null, if `tree` is the root.
  @return Success. @throws[malloc] */
 static int PT_(split)(struct T_(trie) *const trie,
-	struct PT_(tree) *const parent, struct PT_(tree) *const tree) {
+	struct PT_(tree) *const tree, struct PT_(tree) *const parent) {
 	assert(trie && tree);
+	printf("split fail\n");
 	return 0;
 }
 
@@ -389,7 +390,7 @@ right:
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x);
 	struct PT_(tree) *tree;
-	struct { size_t tree, branch, next, x; } bit; /* `bit \in key`.  */
+	struct { size_t tree, branch, x, next; } bit; /* `bit \in key`.  */
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct trie_branch *branch;
 	union PT_(leaf) *leaf;
@@ -407,7 +408,7 @@ tree:
 		sample = PT_(sample)(tree, 0);
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) { /* Tree. */
-			branch = tree->branch + in_tree.br0, bit.branch = bit.x;
+			branch = tree->branch + in_tree.br0;
 			for(bit.next = bit.x + branch->skip; bit.x < bit.next;
 				bit.x++) if(TRIE_DIFF(key, sample, bit.x)) goto leaf;
 			if(!TRIE_QUERY(key, bit.x)) {
@@ -418,7 +419,7 @@ tree:
 				in_tree.lf  += branch->left + 1;
 				sample = PT_(sample)(tree, in_tree.lf);
 			}
-			bit.x++;
+			bit.branch = bit.x++;
 		}
 		assert(in_tree.br0 == in_tree.br1
 			&& in_tree.lf <= tree->bsize);
@@ -439,14 +440,15 @@ leaf:
 	assert(tree->bsize <= TRIE_MAX_BRANCH);
 	if(tree->bsize == TRIE_MAX_BRANCH) {
 		/* If the tree is full, split it, and go again. */
-		/* This requires more info. */
-		if(!PT_(split)(trie, tree, 0/*!*/)) return 0;
+		/* fixme */
+		if(!PT_(split)(trie, tree, 0)) return 0;
 		/*printf("add: split %s.\n", T_(trie_to_string)(trie));*/
 		assert(!is_split && (is_split = 1));
 	} else {
+		/* something...? */
 		is_write = 1;
 	}
-	bit.x = bit.tree; /* Backtrack. */
+	bit.x = bit.tree;
 	goto tree;
 insert:
 	leaf = tree->leaf + in_tree.lf;
@@ -462,7 +464,7 @@ insert:
 	memmove(branch + 1, branch, sizeof *branch * (tree->bsize - in_tree.br0));
 	assert(in_tree.br1 - in_tree.br0 < 256
 		&& bit.x >= bit.branch + !!in_tree.br0
-		&& bit.x - bit.branch - !!in_tree.br0 < 256 /* fixme: TRIE_ORDER? UCHAR_MAX? */);
+		&& bit.x - bit.branch - !!in_tree.br0 < 256);
 	branch->left = is_right ? (unsigned char)(in_tree.br1 - in_tree.br0) : 0;
 	branch->skip = (unsigned char)(bit.x - bit.branch - !!in_tree.br0);
 	tree->bsize++;
