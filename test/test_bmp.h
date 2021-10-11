@@ -50,12 +50,14 @@ static char *PB_(adorn)(const struct PB_(gadget) *g,
 	return zs;
 }
 
+/** Clears all `g` to zero. */
 static void PB_(gadget_clear_all)(struct PB_(gadget) *const g) {
 	assert(g);
 	memset(g, '0', sizeof g->bits - 1);
 	g->bits[sizeof g->bits - 1] = '\0';
 }
 
+/** Inverts all `g`. */
 static void PB_(gadget_invert_all)(struct PB_(gadget) *const g) {
 	size_t i;
 	assert(g);
@@ -64,15 +66,19 @@ static void PB_(gadget_invert_all)(struct PB_(gadget) *const g) {
 	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
 
+/** Sets `n` in `g`. */
 static void PB_(gadget_set)(struct PB_(gadget) *const g, const unsigned n)
 	{ assert(g && n < BMP_BITS); g->bits[n] = '1'; }
 
+/** Clears `n` in `g`. */
 static void PB_(gadget_clear)(struct PB_(gadget) *const g, const unsigned n)
 	{ assert(g && n < BMP_BITS); g->bits[n] = '0'; }
 
+/** Toggles `n` in `g`. */
 static void PB_(gadget_toggle)(struct PB_(gadget) *const g, const unsigned n)
 	{ assert(g && n < BMP_BITS); g->bits[n] = g->bits[n] == '1' ? '0' : '1'; }
 
+/** Inserts `n` zeros at `x` in `g`. */
 static void PB_(gadget_insert)(struct PB_(gadget) *const g,
 	const unsigned x, const unsigned n) {
 	assert(g && x + n <= BMP_BITS);
@@ -81,6 +87,7 @@ static void PB_(gadget_insert)(struct PB_(gadget) *const g,
 	assert(g->bits[sizeof g->bits - 1] == '\0');
 }
 
+/** Removes `n` at `x` in `g`. Zeros right side. */
 static void PB_(gadget_remove)(struct PB_(gadget) *const g,
 	const unsigned x, const unsigned n) {
 	assert(g && x + n <= BMP_BITS);

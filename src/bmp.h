@@ -12,9 +12,7 @@
  type determines the granularity; changing it may affect the speed.
 
  @param[BMP_TEST]
- Optional function implementing <typedef:<PZ>action_fn> that fills the
- <typedef:<PB>type> from uninitialized to random for unit testing framework
- using `assert`. Testing array contained in <../test/test_bmp.h>.
+ Optional unit testing framework using `assert`. Testing contained in <../test/test_bmp.h>.
 
  @std C89/90 */
 
