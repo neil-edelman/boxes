@@ -7,14 +7,8 @@
  `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith; required. `<PB>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
- @param[BMP_TYPE]
- The underlying unsigned type of array, `unsigned int` default. The size of the
- type determines the granularity; changing it may affect the speed.
-
  @param[BMP_TEST]
- Optional function implementing <typedef:<PZ>action_fn> that fills the
- <typedef:<PB>type> from uninitialized to random for unit testing framework
- using `assert`. Testing array contained in <../test/test_bmp.h>.
+ Optional unit testing framework using `assert`. Testing contained in <../test/test_bmp.h>.
 
  @std C89/90 */
 
@@ -57,23 +51,17 @@
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 #endif /* idempotent --> */
 
-/* Defaults. */
-#ifndef BMP_TYPE /* <!-- !type */
-#define BMP_TYPE unsigned
-#endif /* !type --> */
+/** The underlying array type. */
+typedef unsigned PB_(chunk);
 
-/** The underlying array, an unsigned type set by `BMP_TYPE`. */
-typedef BMP_TYPE PB_(chunk);
-
-/** An array of `BMP_BITS` bits, taking up the next multiple of `BMP_TYPE`
- size. */
+/** An array of `BMP_BITS` bits, taking up the next multiple chunk. */
 struct B_(bmp) { PB_(chunk) chunk[BMP_CHUNKS]; };
 
-/** Sets `a` to all false. */
+/** Sets `a` to all false. @allow */
 static void B_(bmp_clear_all)(struct B_(bmp) *const a)
 	{ assert(a); memset(a, 0, sizeof *a); }
 
-/** Inverts all entries of `a`. */
+/** Inverts all entries of `a`. @allow */
 static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 	size_t i;
 	assert(a);
@@ -85,23 +73,23 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 }
 
 /** @return Projects the eigenvalue of bit `x` of `a`. Either zero of
- non-zero. */
+ non-zero. @allow */
 static unsigned B_(bmp_test)(const struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); return BMP_AT(a->chunk, x); }
 
-/** Sets bit `x` in `a`. */
+/** Sets bit `x` in `a`. @allow */
 static void B_(bmp_set)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_SET(a->chunk, x); }
 
-/** Clears bit `x` in `a`. */
+/** Clears bit `x` in `a`. @allow */
 static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_CLEAR(a->chunk, x); }
 
-/** Toggles bit `x` in `a`. */
+/** Toggles bit `x` in `a`. @allow */
 static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_TOGGLE(a->chunk, x); }
 
-/** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. */
+/** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. @allow */
 static void B_(bmp_insert)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
@@ -127,7 +115,8 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-/** Removes `n` at `x` in `a`. The `n` bits coming from the right are zero. */
+/** Removes `n` at `x` in `a`. The `n` bits coming from the right are zero.
+ @allow */
 static void B_(bmp_remove)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
@@ -174,7 +163,6 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #undef PB_
 #undef BMP_NAME
 #undef BMP_BITS
-#undef BMP_TYPE
 #ifdef BMP_TEST
 #undef BMP_TEST
 #endif
