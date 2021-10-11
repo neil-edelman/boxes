@@ -268,18 +268,96 @@ static struct PT_(tree) *PT_(tree)(void) {
 	if(!(tree = malloc(sizeof *tree)))
 		{ if(!errno) errno = ERANGE; return 0; }
 	tree->bsize = 0, tree->skip = 0, trie_bmp_clear_all(&tree->is_child);
+	/* fixme: doesn't need clear */
 	return tree;
 }
 
-/** Splits `tree0` of `trie`. `parent` must be a non-full parent tree (to
- receive the promoted root from `tree`) or null, if `tree` is the root.
- @return Success. @throws[malloc] */
+#ifdef TRIE_TEST
+static void PT_(graph)(const struct T_(trie) *const trie,
+					   const char *const fn);
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+
+/** Splits `tree0` of `trie`. `parent` must be a non-full parent tree or null
+ if `tree` is the root. The `parent` receives the promoted root from `tree` at
+ `leaf`, if it's null, `leaf` must be zero. @return Success. @throws[malloc] */
 static int PT_(split)(struct T_(trie) *const trie,
-	struct PT_(tree) *const tree, struct PT_(tree) *const parent) {
-	assert(trie && tree);
-	printf("split fail\n");
-	return 0;
+	struct PT_(tree) *const tree,
+	struct PT_(tree) *const parent, const unsigned leaf) {
+	struct PT_(tree) *up = parent, *left = 0, *right = 0;
+	struct trie_branch *root = tree->branch + 0;
+	int success = 0;
+#ifdef TRIE_TEST
+	static unsigned count;
+	char fn[64];
+#endif
+	assert(trie && tree && tree->bsize);
+	printf("::split\n");
+#ifdef TRIE_TEST
+	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split0.gv", count);
+	PT_(graph)(trie, fn);
+#endif
+	/* Allocate any memory for split. */
+	if(!up && !(up = PT_(tree)())) goto catch;
+	if(root->left) left = tree;
+	if(root->left + 1 < tree->bsize
+		&& !(right = left ? PT_(tree)() : tree)) goto catch;
+	/* Promote the root. */
+	if(!parent) {
+		assert(!leaf && trie->root == tree);
+		trie->root = up;
+		up->bsize = 1;
+		/* This can go out of `if`. */
+		up->branch[0].left = 0;
+		up->branch[0].skip = tree->branch[0].skip;
+		if(left) trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
+		else trie_bmp_clear(&up->is_child, 0),
+			up->leaf[0].data = tree->leaf[0].data;
+		if(right) trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
+		else trie_bmp_clear(&up->is_child, 1),
+			up->leaf[1].data = tree->leaf[root->left + 1].data;
+	} else {
+		assert(leaf < parent->bsize + 1
+			&& trie_bmp_test(&parent->is_child, leaf)
+			&& parent->leaf[leaf].child == tree);
+		assert(0);
+	}
+	/* Move leaves. */
+#if 0
+	memcpy(right->leaf, tree->leaf + in_tree.lf,
+		sizeof *tree.leaves * (in_tree.br1 - in_tree.br0 + 1));
+	memmove(tree.leaves + in_tree.lf + 1,
+		tree.leaves + in_tree.lf + (in_tree.br1 - in_tree.br0 + 1),
+		sizeof *tree.leaves * (TRIE_MAX_BRANCH - in_tree.lf
+		- in_tree.br1 + in_tree.br0));
+	/* Move children bitmap. */
+	trie_bmp_split(tree.children, split->children,
+		in_tree.lf, in_tree.br1 - in_tree.br0 + 1);
+	/* Move branches. */
+	memcpy(split->branches, tree.branches + in_tree.br0,
+		sizeof *tree.branches * (in_tree.br1 - in_tree.br0));
+	memmove(tree.branches + in_tree.br0, tree.branches
+		+ in_tree.br1, sizeof *tree.branches * (TRIE_MAX_BRANCH - in_tree.br1));
+	/* Move branch size. *//* tree.bsize -= in_tree.br1 - in_tree.br0; */
+	any.info->bsize -= in_tree.br1 - in_tree.br0;
+	split->info.bsize += in_tree.br1 - in_tree.br0;
+#endif
+	{ success = 1; goto finally; }
+catch:
+	if(!parent) free(up);
+	if(left) free(right);
+finally:
+#ifdef TRIE_TEST
+	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split9.gv", count);
+	PT_(graph)(trie, fn);
+	count++;
+#endif
+	return success;
 }
+
+#undef QUOTE
+#undef QUOTE_
 
 #if 0
 /** @return Success splitting the tree `any`. Must be full. */
@@ -440,9 +518,9 @@ leaf:
 	if(tree->bsize == TRIE_MAX_BRANCH) {
 		/* If the tree is full, split it, and go again. */
 		/* fixme */
-		if(!PT_(split)(trie, tree, 0)) return 0;
+		if(!PT_(split)(trie, tree, 0, 0)) return 0;
 		/*printf("add: split %s.\n", T_(trie_to_string)(trie));*/
-		assert(!is_split && (is_split = 1));
+		assert(!is_split && (is_split = 1)); /* Check for infinite loop. */
 	} else {
 		is_write = 1;
 	}
