@@ -99,7 +99,7 @@ static void PB_(gadget_remove)(struct PB_(gadget) *const g,
 static void PB_(test)(void) {
 	struct B_(bmp) bmp, bmp_bkp;
 	struct PB_(gadget) gdt, bmp_gdt, gdt_bkp;
-	unsigned i, j;
+	unsigned i, j, show;
 	const unsigned r[] = { 0, 1, 2, 0, 2, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1 };
 
 	PB_(gadget_clear_all)(&gdt);
@@ -161,6 +161,7 @@ static void PB_(test)(void) {
 	memcpy(&bmp_bkp, &bmp, sizeof bmp);
 	memcpy(&gdt_bkp, &gdt, sizeof gdt);
 
+	show = 0;
 	for(i = 0; i < BMP_BITS; i++) {
 		for(j = 0; j <= BMP_BITS - i; j++) {
 			memcpy(&bmp, &bmp_bkp, sizeof bmp);
@@ -170,7 +171,8 @@ static void PB_(test)(void) {
 			PB_(gadget_insert)(&gdt, i, j);
 			B_(bmp_insert)(&bmp, i, j);
 			PB_(to_gadget)(&bmp, &bmp_gdt);
-			printf("insert(%u, %u):\n"
+			/* Once one gets over 100, it becomes spam. */
+			if(show++, !(show & (show - 1))) printf("insert(%u, %u):\n"
 				" bfr %s;\n"
 				" str %s;\n"
 				" bmp %s.\n",
@@ -180,6 +182,7 @@ static void PB_(test)(void) {
 		}
 	}
 
+	show = 0;
 	for(i = 0; i < BMP_BITS; i++) {
 		for(j = 0; j <= BMP_BITS - i; j++) {
 			memcpy(&bmp, &bmp_bkp, sizeof bmp);
@@ -189,7 +192,7 @@ static void PB_(test)(void) {
 			PB_(gadget_remove)(&gdt, i, j);
 			B_(bmp_remove)(&bmp, i, j);
 			PB_(to_gadget)(&bmp, &bmp_gdt);
-			printf("remove(%u, %u):\n"
+			if(show++, !(show & (show - 1))) printf("remove(%u, %u):\n"
 				" bfr %s;\n"
 				" str %s;\n"
 				" bmp %s.\n",

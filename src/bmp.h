@@ -7,10 +7,6 @@
  `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith; required. `<PB>` is private, whose names are prefixed in
  a manner to avoid collisions.
 
- @param[BMP_TYPE]
- The underlying unsigned type of array, `unsigned int` default. The size of the
- type determines the granularity; changing it may affect the speed.
-
  @param[BMP_TEST]
  Optional unit testing framework using `assert`. Testing contained in <../test/test_bmp.h>.
 
@@ -55,13 +51,9 @@
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 #endif /* idempotent --> */
 
-/* Defaults. */
-#ifndef BMP_TYPE /* <!-- !type */
-#define BMP_TYPE unsigned
-#endif /* !type --> */
-
-/** The underlying array, an unsigned type set by `BMP_TYPE`. */
-typedef BMP_TYPE PB_(chunk);
+/* The underlying array type; this used to be changeable, but why? It also
+ messed up our macros if one set it to a wide type. */
+typedef unsigned PB_(chunk);
 
 /** An array of `BMP_BITS` bits, taking up the next multiple of `BMP_TYPE`
  size. */
@@ -172,7 +164,6 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #undef PB_
 #undef BMP_NAME
 #undef BMP_BITS
-#undef BMP_TYPE
 #ifdef BMP_TEST
 #undef BMP_TEST
 #endif
