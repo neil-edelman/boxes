@@ -35,6 +35,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>chunk">&lt;PB&gt;chunk</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<B>bmp">&lt;B&gt;bmp</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -58,6 +59,18 @@
 
 </div>
 
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div>
+
+<h3><a id = "typedef:<PB>chunk" name = "typedef:<PB>chunk">&lt;PB&gt;chunk</a></h3>
+
+<p><code>typedef unsigned <strong>&lt;PB&gt;chunk</strong>;</code></p>
+
+<p>The underlying array type.</p>
+
+</div>
+
 <h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
 
 <div>
@@ -66,7 +79,7 @@
 
 <p><code>struct <strong>&lt;B&gt;bmp</strong> { &lt;PB&gt;chunk chunk[BMP_CHUNKS]; };</code></p>
 
-<p>An array of <code>BMP_BITS</code> bits, taking up the next multiple of <code>BMP_TYPE</code> size.</p>
+<p>An array of <code>BMP_BITS</code> bits, taking up the next multiple chunk.</p>
 
 </div>
 
