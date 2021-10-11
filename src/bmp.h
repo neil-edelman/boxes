@@ -57,11 +57,11 @@ typedef unsigned PB_(chunk);
 /** An array of `BMP_BITS` bits, taking up the next multiple chunk. */
 struct B_(bmp) { PB_(chunk) chunk[BMP_CHUNKS]; };
 
-/** Sets `a` to all false. */
+/** Sets `a` to all false. @allow */
 static void B_(bmp_clear_all)(struct B_(bmp) *const a)
 	{ assert(a); memset(a, 0, sizeof *a); }
 
-/** Inverts all entries of `a`. */
+/** Inverts all entries of `a`. @allow */
 static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 	size_t i;
 	assert(a);
@@ -73,23 +73,23 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 }
 
 /** @return Projects the eigenvalue of bit `x` of `a`. Either zero of
- non-zero. */
+ non-zero. @allow */
 static unsigned B_(bmp_test)(const struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); return BMP_AT(a->chunk, x); }
 
-/** Sets bit `x` in `a`. */
+/** Sets bit `x` in `a`. @allow */
 static void B_(bmp_set)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_SET(a->chunk, x); }
 
-/** Clears bit `x` in `a`. */
+/** Clears bit `x` in `a`. @allow */
 static void B_(bmp_clear)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_CLEAR(a->chunk, x); }
 
-/** Toggles bit `x` in `a`. */
+/** Toggles bit `x` in `a`. @allow */
 static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_TOGGLE(a->chunk, x); }
 
-/** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. */
+/** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. @allow */
 static void B_(bmp_insert)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
@@ -115,7 +115,8 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-/** Removes `n` at `x` in `a`. The `n` bits coming from the right are zero. */
+/** Removes `n` at `x` in `a`. The `n` bits coming from the right are zero.
+ @allow */
 static void B_(bmp_remove)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;

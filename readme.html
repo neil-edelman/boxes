@@ -91,6 +91,22 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
+<tr><td align = right>static void</td><td><a href = "#fn:<B>bmp_clear_all">&lt;B&gt;bmp_clear_all</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<B>bmp_invert_all">&lt;B&gt;bmp_invert_all</a></td><td>a</td></tr>
+
+<tr><td align = right>static unsigned</td><td><a href = "#fn:<B>bmp_test">&lt;B&gt;bmp_test</a></td><td>a, x</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<B>bmp_set">&lt;B&gt;bmp_set</a></td><td>a, x</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<B>bmp_clear">&lt;B&gt;bmp_clear</a></td><td>a, x</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<B>bmp_toggle">&lt;B&gt;bmp_toggle</a></td><td>a, x</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<B>bmp_insert">&lt;B&gt;bmp_insert</a></td><td>a, x, n</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<B>bmp_remove">&lt;B&gt;bmp_remove</a></td><td>a, x, n</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#fn:<B>bmp_tests">&lt;B&gt;bmp_tests</a></td><td></td></tr>
 
 </table>
@@ -100,6 +116,89 @@
 <div>
 
 <h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<B>bmp_clear_all" name = "fn:<B>bmp_clear_all">&lt;B&gt;bmp_clear_all</a></h3>
+
+<p><code>static void <strong>&lt;B&gt;bmp_clear_all</strong>(struct &lt;B&gt;bmp *const <em>a</em>)</code></p>
+
+<p>Sets <code>a</code> to all false.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>bmp_invert_all" name = "fn:<B>bmp_invert_all">&lt;B&gt;bmp_invert_all</a></h3>
+
+<p><code>static void <strong>&lt;B&gt;bmp_invert_all</strong>(struct &lt;B&gt;bmp *const <em>a</em>)</code></p>
+
+<p>Inverts all entries of <code>a</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>bmp_test" name = "fn:<B>bmp_test">&lt;B&gt;bmp_test</a></h3>
+
+<p><code>static unsigned <strong>&lt;B&gt;bmp_test</strong>(const struct &lt;B&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Projects the eigenvalue of bit <code>x</code> of <code>a</code>. Either zero of non-zero.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>bmp_set" name = "fn:<B>bmp_set">&lt;B&gt;bmp_set</a></h3>
+
+<p><code>static void <strong>&lt;B&gt;bmp_set</strong>(struct &lt;B&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code></p>
+
+<p>Sets bit <code>x</code> in <code>a</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>bmp_clear" name = "fn:<B>bmp_clear">&lt;B&gt;bmp_clear</a></h3>
+
+<p><code>static void <strong>&lt;B&gt;bmp_clear</strong>(struct &lt;B&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code></p>
+
+<p>Clears bit <code>x</code> in <code>a</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>bmp_toggle" name = "fn:<B>bmp_toggle">&lt;B&gt;bmp_toggle</a></h3>
+
+<p><code>static void <strong>&lt;B&gt;bmp_toggle</strong>(struct &lt;B&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code></p>
+
+<p>Toggles bit <code>x</code> in <code>a</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>bmp_insert" name = "fn:<B>bmp_insert">&lt;B&gt;bmp_insert</a></h3>
+
+<p><code>static void <strong>&lt;B&gt;bmp_insert</strong>(struct &lt;B&gt;bmp *const <em>a</em>, const unsigned <em>x</em>, const unsigned <em>n</em>)</code></p>
+
+<p>Inserts <code>n</code> zeros at <code>x</code> in <code>a</code>. The <code>n</code> right bits are discarded.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>bmp_remove" name = "fn:<B>bmp_remove">&lt;B&gt;bmp_remove</a></h3>
+
+<p><code>static void <strong>&lt;B&gt;bmp_remove</strong>(struct &lt;B&gt;bmp *const <em>a</em>, const unsigned <em>x</em>, const unsigned <em>n</em>)</code></p>
+
+<p>Removes <code>n</code> at <code>x</code> in <code>a</code>. The <code>n</code> bits coming from the right are zero.</p>
+
+</div>
 
 <div>
 
