@@ -35,7 +35,6 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>chunk">&lt;PB&gt;chunk</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<B>bmp">&lt;B&gt;bmp</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -51,25 +50,11 @@
 <dl>
 	<dt>Parameter: BMP_NAME, BMP_BITS</dt>
 	<dd><code>&lt;B&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a number of bits associated therewith; required. <code>&lt;PB&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
-	<dt>Parameter: BMP_TYPE</dt>
-	<dd>The underlying unsigned type of array, <code>unsigned int</code> default. The size of the type determines the granularity; changing it may affect the speed.</dd>
 	<dt>Parameter: BMP_TEST</dt>
 	<dd>Optional unit testing framework using <code>assert</code>. Testing contained in <a href = "../test/test_bmp.h">../test/test_bmp.h</a>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89/90</dd>
 </dl>
-
-</div>
-
-<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
-
-<div>
-
-<h3><a id = "typedef:<PB>chunk" name = "typedef:<PB>chunk">&lt;PB&gt;chunk</a></h3>
-
-<p><code>typedef BMP_TYPE <strong>&lt;PB&gt;chunk</strong>;</code></p>
-
-<p>The underlying array, an unsigned type set by <code>BMP_TYPE</code>.</p>
 
 </div>
 
