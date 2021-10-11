@@ -51,12 +51,10 @@
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 #endif /* idempotent --> */
 
-/* The underlying array type; this used to be changeable, but why? It also
- messed up our macros if one set it to a wide type. */
+/** The underlying array type. */
 typedef unsigned PB_(chunk);
 
-/** An array of `BMP_BITS` bits, taking up the next multiple of `BMP_TYPE`
- size. */
+/** An array of `BMP_BITS` bits, taking up the next multiple chunk. */
 struct B_(bmp) { PB_(chunk) chunk[BMP_CHUNKS]; };
 
 /** Sets `a` to all false. */
