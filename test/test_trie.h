@@ -262,6 +262,7 @@ static void PT_(test)(void) {
 		if(!es[n].is_in) {assert(!errno);/*printf("Duplicate value %s -> %s.\n",
 			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie));*/ continue; };
 		data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data));
+		printf("test get(%s) = %s\n", PT_(to_key)(&es[n].data), data ? PT_(to_key)(data) : "<didn't find>");
 		assert(data == &es[n].data);
 	}
 	for(n = 0; n < es_size; n++) if(es[n].is_in)

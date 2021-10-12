@@ -275,6 +275,11 @@ static struct PT_(tree) *PT_(tree)(void) {
 #ifdef TRIE_TEST
 static void PT_(graph)(const struct T_(trie) *const trie,
 					   const char *const fn);
+static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
+								FILE *const fp);
+typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, FILE *);
+static void PT_(graph_choose)(const struct T_(trie) *const trie,
+							  const char *const fn, const PT_(tree_file_fn) tf);
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
@@ -286,78 +291,66 @@ static int PT_(split)(struct T_(trie) *const trie,
 	struct PT_(tree) *const tree,
 	struct PT_(tree) *const parent, const unsigned leaf) {
 	struct PT_(tree) *up = parent, *left = 0, *right = 0;
-	struct trie_branch *root = tree->branch + 0;
+	struct trie_branch *const root = tree->branch + 0;
+	const unsigned char left_lf = root->left + 1;
 	int success = 0;
 #ifdef TRIE_TEST
 	static unsigned count;
 	char fn[64];
+	printf("::split count %u\n", count);
 #endif
 	assert(trie && tree && tree->bsize);
-	printf("::split\n");
 #ifdef TRIE_TEST
+	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split0-mem.gv", count);
+	PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem));
 	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split0.gv", count);
 	PT_(graph)(trie, fn);
 #endif
-	/* Allocate any memory for split. */
-	if(!up && !(up = PT_(tree)())) goto catch;
-	if(root->left) left = tree;
-	if(root->left + 1 < tree->bsize
-		&& !(right = left ? PT_(tree)() : tree)) goto catch;
+	/* Allocate memory for split. */
+	if(!up && !(up = PT_(tree)()) || (left = tree, !(right = PT_(tree)())))
+		goto catch;
 	/* Promote the root. */
 	if(!parent) {
 		assert(!leaf && trie->root == tree);
 		trie->root = up;
 		up->bsize = 1;
-		/* This can go out of `if`. */
+		/* This can go out of `if`? */
 		up->branch[0].left = 0;
 		up->branch[0].skip = tree->branch[0].skip;
-		if(left) trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
-		else trie_bmp_clear(&up->is_child, 0),
-			up->leaf[0].data = tree->leaf[0].data;
-		if(right) trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
-		else trie_bmp_clear(&up->is_child, 1),
-			up->leaf[1].data = tree->leaf[root->left + 1].data;
+		trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
+		trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
 	} else {
 		assert(leaf < parent->bsize + 1
 			&& trie_bmp_test(&parent->is_child, leaf)
 			&& parent->leaf[leaf].child == tree);
 		assert(0);
 	}
-	/* Move leaves. */
-#if 0
-	memcpy(right->leaf, tree->leaf + in_tree.lf,
-		sizeof *tree.leaves * (in_tree.br1 - in_tree.br0 + 1));
-	memmove(tree.leaves + in_tree.lf + 1,
-		tree.leaves + in_tree.lf + (in_tree.br1 - in_tree.br0 + 1),
-		sizeof *tree.leaves * (TRIE_MAX_BRANCH - in_tree.lf
-		- in_tree.br1 + in_tree.br0));
-	/* Move children bitmap. */
-	trie_bmp_split(tree.children, split->children,
-		in_tree.lf, in_tree.br1 - in_tree.br0 + 1);
-	/* Move branches. */
-	memcpy(split->branches, tree.branches + in_tree.br0,
-		sizeof *tree.branches * (in_tree.br1 - in_tree.br0));
-	memmove(tree.branches + in_tree.br0, tree.branches
-		+ in_tree.br1, sizeof *tree.branches * (TRIE_MAX_BRANCH - in_tree.br1));
-	/* Move branch size. *//* tree.bsize -= in_tree.br1 - in_tree.br0; */
-	any.info->bsize -= in_tree.br1 - in_tree.br0;
-	split->info.bsize += in_tree.br1 - in_tree.br0;
-#endif
+	/* Copy the left to the right. */
+	right->bsize = tree->bsize - left_lf;
+	memcpy(right->branch, left->branch + left_lf,
+		sizeof *left->branch * right->bsize);
+	memcpy(right->leaf, left->leaf + left_lf,
+		sizeof *left->leaf * (right->bsize + 1));
+	memcpy(&right->is_child, &left->is_child, sizeof left->is_child);
+	trie_bmp_remove(&right->is_child, 0, left_lf);
+	/* Move back the branches of the left to account for the promotion. */
+	left->bsize = left_lf - 1;
+	memmove(left->branch, left->branch + 1,
+		sizeof *left->branch * (left->bsize + 1));
 	{ success = 1; goto finally; }
 catch:
 	if(!parent) free(up);
-	if(left) free(right);
+	free(right);
 finally:
 #ifdef TRIE_TEST
+	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split9-mem.gv", count);
+	PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem));
 	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split9.gv", count);
 	PT_(graph)(trie, fn);
 	count++;
 #endif
 	return success;
 }
-
-#undef QUOTE
-#undef QUOTE_
 
 #if 0
 /** @return Success splitting the tree `any`. Must be full. */
@@ -544,8 +537,19 @@ insert:
 	branch->left = is_right ? (unsigned char)(in_tree.br1 - in_tree.br0) : 0;
 	branch->skip = (unsigned char)(bit.cur - bit.last - !!in_tree.br0);
 	tree->bsize++;
+	printf("add_unique(%s) completed\n", key);
+#ifdef TRIE_TEST
+	{
+		static unsigned no;
+		char fn[64];
+		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-add-%u.gv", no++);
+		PT_(graph)(trie, fn);
+	}
+#endif
 	return 1;
 }
+#undef QUOTE
+#undef QUOTE_
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
  in <fn:<T>trie_policy_put>. */
