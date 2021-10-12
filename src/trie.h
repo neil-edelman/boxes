@@ -463,10 +463,11 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	struct PT_(tree) *tree;
 	struct { size_t tree, last, cur, next; } bit; /* `bit \in key`.  */
 	struct { unsigned br0, br1, lf; } in_tree;
+	struct { struct PT_(tree) *parent; size_t bit; } unfilled = { 0, 0 };
 	struct trie_branch *branch;
 	union PT_(leaf) *leaf;
 	const char *sample;
-	int is_write = 0, is_right = 0, is_split = 0;
+	int is_write = 0, is_split = 0, is_right = 0;
 	assert(trie && x);
 	/*printf("add: %s -> %s.\n", x_key, T_(trie_to_string)(trie));*/
 	if(!trie->root) { /* Empty special case. */
@@ -475,6 +476,10 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	}
 	for(tree = trie->root, bit.cur = 0; ; ) { /* Forest. */
 tree:
+		/*if(is_split) {
+			assert(tree->bsize == TRIE_MAX_BRANCH);
+		} else if(tree->bsize < TRIE_MAX_BRANCH)*/
+			unfilled.parent = tree, unfilled.bit = bit.cur;
 		bit.tree = bit.last = bit.cur;
 		sample = PT_(sample)(tree, 0);
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
@@ -513,11 +518,14 @@ leaf:
 		/* fixme */
 		if(!PT_(split)(trie, tree, 0, 0)) return 0;
 		/*printf("add: split %s.\n", T_(trie_to_string)(trie));*/
-		assert(!is_split && (is_split = 1)); /* Check for infinite loop. */
+		assert(!is_write && !is_split && (is_split = 1)); /* Check infinite. */
+		/* and bit.cur = last non-full. FIXME */
+		bit.cur = unfilled.bit;
+		tree = unfilled.parent; /* not even close */
 	} else {
-		is_write = 1;
+		bit.cur = bit.tree;
 	}
-	bit.cur = bit.tree;
+	is_write = 1;
 	goto tree;
 insert:
 	leaf = tree->leaf + in_tree.lf;
