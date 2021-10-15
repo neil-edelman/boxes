@@ -214,13 +214,14 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	FILE *fp;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	/* lightsteelblue b1c4e0 -> cfe2ff (eww) d8e3f3 e6effe */
 	fprintf(fp, "digraph {\n"
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\ttrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>trie: " QUOTE(TRIE_TYPE)
-		"; %luB%s}\"];\n"
-		"\tnode [shape = box, fillcolor = lightsteelblue];\n",
-		(unsigned long)sizeof *trie, trie->root ? "" : "\\l|idle\\l");
+		"%s}\"];\n"
+		"\tnode [shape = box, fillcolor = \"lightsteelblue\"];\n",
+		trie->root ? "" : "\\l|idle\\l");
 	if(trie->root) {
 		fprintf(fp, "\ttrie -> tree%pbranch0 [color = firebrick];\n",
 			(const void *)trie->root);
