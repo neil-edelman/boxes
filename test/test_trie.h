@@ -219,9 +219,9 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 		"\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\ttrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>trie: " QUOTE(TRIE_TYPE)
-		"%s}\"];\n"
+		"\\l|order %u%s}\"];\n"
 		"\tnode [shape = box, fillcolor = \"lightsteelblue\"];\n",
-		trie->root ? "" : "\\l|idle\\l");
+		TRIE_ORDER, trie->root ? "" : "\\l|idle\\l");
 	if(trie->root) {
 		fprintf(fp, "\ttrie -> tree%pbranch0 [color = firebrick];\n",
 			(const void *)trie->root);
