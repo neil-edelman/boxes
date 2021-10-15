@@ -273,15 +273,9 @@ static struct PT_(tree) *PT_(tree)(void) {
 }
 
 #ifdef TRIE_TEST
-static void PT_(graph)(const struct T_(trie) *const trie,
-					   const char *const fn);
-static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
-								FILE *const fp);
-static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
-								 FILE *const fp);
-typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, FILE *);
-static void PT_(graph_choose)(const struct T_(trie) *const trie,
-							  const char *const fn, const PT_(tree_file_fn) tf);
+static void PT_(graph)(const struct T_(trie) *, const char *);
+static void PT_(graph_mem)(const struct T_(trie) *, const char *);
+static void PT_(graph_bits)(const struct T_(trie) *, const char *);
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
@@ -299,7 +293,7 @@ static int PT_(split)(struct T_(trie) *const trie,
 	char fn[64];
 	printf("::split count %u\n", count);
 	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split0-mem.gv", count);
-	PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem));
+	PT_(graph_mem)(trie, fn);
 	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split0.gv", count);
 	PT_(graph)(trie, fn);
 #endif
@@ -347,7 +341,7 @@ catch:
 finally:
 #ifdef TRIE_TEST
 	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split9-mem.gv", count);
-	PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem));
+	PT_(graph_mem)(trie, fn);
 	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split9.gv", count);
 	PT_(graph)(trie, fn);
 	count++;
@@ -456,10 +450,8 @@ found:
 
 #ifdef TRIE_TEST
 		PT_(graph)(trie, "graph/" QUOTE(TRIE_NAME) "-end.gv");
-		PT_(graph_choose)(trie, "graph/" QUOTE(TRIE_NAME) "-end-mem.gv",
-			&PT_(graph_tree_mem));
-		PT_(graph_choose)(trie, "graph/" QUOTE(TRIE_NAME) "-end-bits.gv",
-			&PT_(graph_tree_bits));
+		PT_(graph_mem)(trie, "graph/" QUOTE(TRIE_NAME) "-end-mem.gv");
+		PT_(graph_bits)(trie, "graph/" QUOTE(TRIE_NAME) "-end-bits.gv");
 #endif
 		assert(0);
 		filled_count--;
@@ -509,7 +501,7 @@ found:
 		static unsigned no;
 		char fn[64];
 		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-add-%u.gv", no++);
-		PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem));
+		PT_(graph_mem)(trie, fn);
 		printf("add: %s\n", fn);
 	}
 #endif

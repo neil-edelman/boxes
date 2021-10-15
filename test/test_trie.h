@@ -8,7 +8,7 @@
  `TRIE_TEST`. */
 typedef void (*PT_(action_fn))(PT_(type) *);
 /* Used in <fn:<PT>graph_choose>. */
-typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, FILE *);
+typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, FILE *);
 
 /* `TRIE_TEST` must be a function that implements <typedef:<PT>action_fn>. */
 static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
@@ -48,7 +48,7 @@ static unsigned PT_(left_leaf)(const struct PT_(tree) *const tree,
 
 /** Graphs `tree` on `fp`. */
 static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
-	FILE *const fp) {
+	const size_t treebit, FILE *const fp) {
 	unsigned b, i;
 	assert(tree && fp);
 	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
@@ -62,7 +62,8 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		} else {
 			const char *key = PT_(to_key)(tree->leaf[i].data);
 			const struct trie_branch *branch = tree->branch;
-			size_t key_len = strlen(key), next_branch = branch->skip;
+			size_t /*key_len = strlen(key),*/
+				next_branch = treebit + branch->skip;
 			const char *bgcolour;
 			struct { unsigned br0, br1; } in_tree;
 			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\">%s</TD>\n", key);
@@ -95,15 +96,29 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		"[color = firebrick];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child);
 	/* Recurse. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
-		PT_(graph_tree_bits)(tree->leaf[i].child, fp);
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
+		struct { unsigned br0, br1, lf; } in_tree;
+		size_t bit = treebit;
+		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+		while(in_tree.br0 < in_tree.br1) {
+			const struct trie_branch *branch = tree->branch + in_tree.br0;
+			bit += branch->skip;
+			if(i < in_tree.lf)
+				in_tree.br1 = ++in_tree.br0 + branch->left;
+			else
+				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
+			bit++;
+		}
+		PT_(graph_tree_bits)(tree->leaf[i].child, bit, fp);
+	}
 }
 
 /** Graphs `any` on `fp`. */
 static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
-	FILE *const fp) {
+	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned b, i;
+	(void)treebit;
 	assert(tree && fp);
 	/* Tree is one record node in memory -- GraphViz says html is
 	 case-insensitive, but I cannot get it to work without screaming. */
@@ -138,14 +153,15 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		(const void *)tree->leaf[i].child);
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
-		PT_(graph_tree_mem)(tree->leaf[i].child, fp);
+		PT_(graph_tree_mem)(tree->leaf[i].child, 0, fp);
 }
 
 /** Graphs `any` on `fp`. */
 static void PT_(graph_tree)(const struct PT_(tree) *const tree,
-	FILE *const fp) {
+	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned left, right, b, i;
+	(void)treebit;
 	assert(tree && fp);
 	fprintf(fp, "\t//subgraph cluster_tree%p { "
 		"// confuse the order in dot\n"
@@ -203,7 +219,7 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 	}
 	fprintf(fp, "\t//}\n\n");
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
-		PT_(graph_tree)(tree->leaf[i].child, fp);
+		PT_(graph_tree)(tree->leaf[i].child, 0, fp);
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `tf` as it's
@@ -224,7 +240,7 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	if(trie->root) {
 		fprintf(fp, "\ttrie -> tree%pbranch0 [color = firebrick];\n",
 			(const void *)trie->root);
-		tf(trie->root, fp);
+		tf(trie->root, 0, fp);
 	}
 	fprintf(fp, "\tnode [color = red];\n"
 		"}\n");
@@ -239,6 +255,11 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 static void PT_(graph_mem)(const struct T_(trie) *const trie,
 	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem)); }
 
+/** Graphs `trie` in bits output to `fn`. */
+static void PT_(graph_bits)(const struct T_(trie) *const trie,
+	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_bits));}
+
+#if 0
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
@@ -262,6 +283,7 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 	}
 	printf("\n");
 }
+#endif
 
 /** Make sure `any` is in a valid state, (and all the children.) */
 static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
@@ -303,7 +325,7 @@ static void PT_(test)(void) {
 	struct T_(trie) trie = TRIE_IDLE;
 	struct T_(trie_iterator) it;
 	size_t n, m, count;
-	struct { PT_(type) data; int is_in; } es[2000];
+	struct { PT_(type) data; int is_in, unused; } es[2000];
 	PT_(type) dup;
 	const size_t es_size = sizeof es / sizeof *es;
 	PT_(type) *data;
