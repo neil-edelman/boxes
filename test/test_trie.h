@@ -197,10 +197,9 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 	} else {
 		/* Instead of creating a lookahead function to previous references, we
 		 very lazily also just call this a branch, even though it's a leaf. */
-		assert(!trie_bmp_test(&tree->is_child, 0)); /* fixme:
-		 should be possible; then what? */
-		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n", (const void *)tree,
-			PT_(to_key)(tree->leaf[0].data));
+		fprintf(fp, "\t\ttree%pbranch0 [label = \"%s\"];\n",
+			(const void *)tree, trie_bmp_test(&tree->is_child, 0)
+			? "<forward>" : PT_(to_key)(tree->leaf[0].data));
 	}
 	fprintf(fp, "\t//}\n\n");
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
