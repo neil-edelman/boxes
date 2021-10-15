@@ -46,6 +46,59 @@ static unsigned PT_(left_leaf)(const struct PT_(tree) *const tree,
 	return i;
 }
 
+/** Graphs `tree` on `fp`. */
+static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
+	FILE *const fp) {
+	unsigned b, i;
+	assert(tree && fp);
+	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
+		"label = <\n"
+		"<TABLE BORDER=\"0\" CELLBORDER=\"1\">\n", (const void *)tree);
+	for(i = 0; i <= tree->bsize; i++) {
+		fprintf(fp, "\t<TR>\n");
+		if(trie_bmp_test(&tree->is_child, i)) {
+			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\" "
+			"PORT=\"%u\">...</TD>\n", i);
+		} else {
+			const char *key = PT_(to_key)(tree->leaf[i].data);
+			const struct trie_branch *branch = tree->branch;
+			size_t key_len = strlen(key), next_branch = branch->skip;
+			const char *bgcolour;
+			struct { unsigned br0, br1; } in_tree;
+			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\">%s</TD>\n", key);
+			in_tree.br0 = 0, in_tree.br1 = tree->bsize;
+			for(b = 0; /* b < (key_len + 1) * CHAR_BIT */in_tree.br0 < in_tree.br1; b++) {
+				const unsigned bit = !!TRIE_QUERY(key, b);
+				if(next_branch) {
+					next_branch--;
+					bgcolour = "invis";
+				} else {
+					if(!bit) {
+						in_tree.br1 = ++in_tree.br0 + branch->left;
+						bgcolour = "mistyrose";
+					} else {
+						in_tree.br0 += branch->left + 1;
+						bgcolour = "honeydew";
+					}
+					next_branch = (branch = tree->branch + in_tree.br0)->skip;
+				}
+				if(b && !(b & 7)) fprintf(fp, "\t\t<TD BORDER=\"0\">&nbsp;</TD>\n");
+				fprintf(fp, "\t\t<TD BGCOLOR=\"%s\">%u</TD>\n", bgcolour, bit);
+			}
+		}
+		fprintf(fp, "\t</TR>\n");
+	}
+	fprintf(fp, "</TABLE>>];\n");
+	/* Draw the lines between trees. */
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
+		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
+		"[color = firebrick];\n", (const void *)tree, i,
+		(const void *)tree->leaf[i].child);
+	/* Recurse. */
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
+		PT_(graph_tree_bits)(tree->leaf[i].child, fp);
+}
+
 /** Graphs `any` on `fp`. */
 static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	FILE *const fp) {
@@ -186,12 +239,36 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 static void PT_(graph_mem)(const struct T_(trie) *const trie,
 	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem)); }
 
+static void PT_(print)(const struct PT_(tree) *const tree) {
+	const struct trie_branch *branch;
+	unsigned b, i;
+	assert(tree);
+	printf("tree %p\n"
+		"left ", (const void *)tree);
+	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
+		printf("%s%u", b ? ", " : "", branch->left);
+	printf("\n"
+		"skip ");
+	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
+		printf("%s%u", b ? ", " : "", branch->skip);
+	printf("\n"
+		"leaves ");
+	for(i = 0; i <= tree->bsize; i++) {
+		if(i) printf(", ");
+		if(trie_bmp_test(&tree->is_child, i))
+			printf("%p", (void *)tree->leaf[i].child);
+		else
+			printf("%s", PT_(to_key)(tree->leaf[i].data));
+	}
+	printf("\n");
+}
+
 /** Make sure `any` is in a valid state, (and all the children.) */
 static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 	unsigned i;
 	int cmp = 0;
 	const char *str1 = 0;
-	assert(tree && tree->bsize <= TRIE_MAX_BRANCH);
+	assert(tree && tree->bsize <= TRIE_BRANCHES);
 	for(i = 0; i < tree->bsize; i++)
 		assert(tree->branch[i].left < tree->bsize - 1 - i);
 	for(i = 0; i <= tree->bsize; i++) {

@@ -88,7 +88,7 @@ static void str_trie_test(void) {
 }
 
 int main(void) {
-	unsigned seed = (unsigned)clock();
+	unsigned seed = 608126/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	str_trie_test();
 	colour_trie_test();
