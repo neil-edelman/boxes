@@ -13,6 +13,22 @@ typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, FILE *);
 /* `TRIE_TEST` must be a function that implements <typedef:<PT>action_fn>. */
 static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 
+/** Is `leaf` going to the right in `tree`? */
+static unsigned PT_(is_right)(const struct PT_(tree) *const tree,
+	const unsigned leaf) {
+	struct { unsigned br0, br1, lf; } in_tree;
+	unsigned left, right;
+	in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+	while(in_tree.br0 < in_tree.br1) {
+		right = in_tree.br1 - (left = tree->branch[in_tree.br0].left) - 1;
+		assert(left < in_tree.br1 && right < in_tree.br1);
+		if(in_tree.br0 >= leaf) break;
+		if(leaf <= in_tree.br0 + left) in_tree.br1 = left, in_tree.br0++;
+		else in_tree.br1 = right, in_tree.br0 += left + 1;
+	}
+	return in_tree.br1 < leaf;
+}
+
 /** Given a branch `b` in `tree` branches, calculate the right child branches.
  @order \O(log `size`) */
 static unsigned PT_(right)(const struct PT_(tree) *const tree,
@@ -94,11 +110,12 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		fprintf(fp, "\t</TR>\n");
 	}
 	fprintf(fp, "</TABLE>>];\n");
-	/* Draw the lines between trees. */
+	/* Draw the lines between trees. "FireBrick" */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[color = FireBrick];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].child);
+		"[color = \"Black:invis:Black\"%s];\n", (const void *)tree, i,
+		(const void *)tree->leaf[i].child,
+		PT_(is_right)(tree, i) ? "" : " style = dashed");
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -155,8 +172,9 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[color = FireBrick];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].child);
+		"[color = \"Black:invis:Black\"%s];\n", (const void *)tree, i,
+		(const void *)tree->leaf[i].child,
+		PT_(is_right)(tree, i) ? "" : " style = dashed");
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		PT_(graph_tree_mem)(tree->leaf[i].child, 0, fp);
@@ -190,7 +208,7 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 				unsigned leaf = PT_(left_leaf)(tree, b);
 				if(trie_bmp_test(&tree->is_child, leaf)) {
 					fprintf(fp, "tree%pbranch0 "
-						"[style = dashed, color = FireBrick];\n",
+						"[style = dashed, color = \"Black:invis:Black\"];\n",
 						(const void *)tree->leaf[leaf].child);
 				} else {
 					fprintf(fp,
@@ -205,7 +223,7 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b) + left + 1;
 				if(trie_bmp_test(&tree->is_child, leaf)) {
-					fprintf(fp, "tree%pbranch0 [color = FireBrick];\n",
+					fprintf(fp, "tree%pbranch0 [color = \"Black:invis:Black\"];\n",
 						(const void *)tree->leaf[leaf].child);
 				} else {
 					fprintf(fp, "tree%pleaf%u [color = ""Gray"/*"RoyalBlue"*/"];\n",
@@ -253,7 +271,7 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	if(!trie->root) {
 		fprintf(fp, "\tidle;");
 	} else {
-		/*fprintf(fp, "\ttrie -> tree%pbranch0 [color = FireBrick];\n",
+		/*fprintf(fp, "\ttrie -> tree%pbranch0 [color = \"Black:invis:Black\"];\n",
 			(const void *)trie->root);*/
 		tf(trie->root, 0, fp);
 	}
