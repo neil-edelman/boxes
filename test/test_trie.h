@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <string.h>
+
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.
 #endif
@@ -12,6 +15,9 @@ typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, FILE *);
 
 /* `TRIE_TEST` must be a function that implements <typedef:<PT>action_fn>. */
 static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
+
+/* Debug number, which is the number printed next to the graphs, _etc_. */
+static unsigned PT_(no);
 
 /** Is `leaf` going to the right in `tree`? */
 static unsigned PT_(is_right)(const struct PT_(tree) *const tree,
@@ -181,7 +187,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 }
 
 /** Graphs `any` on `fp`. */
-static void PT_(graph_tree)(const struct PT_(tree) *const tree,
+static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned left, right, b, i;
@@ -247,7 +253,7 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 	}
 	fprintf(fp, "\t//}\n\n");
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
-		PT_(graph_tree)(tree->leaf[i].child, 0, fp);
+		PT_(graph_tree_logic)(tree->leaf[i].child, 0, fp);
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `tf` as it's
@@ -282,15 +288,34 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 
 /** Graphs logical `trie` output to `fn`. */
 static void PT_(graph)(const struct T_(trie) *const trie,
-	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree)); }
+	const char *const fn) {
+	const char logic[] = "-logic", mem[] = "-mem", bits[] = "-bits";
+	char temp[128], *dash, *dot;
+	size_t fn_len = strlen(fn), i, i_fn, i_temp;
+	/* Whatever we're going to add to the string. */
+	if(fn_len > sizeof temp - 30 - 1
+		|| !(dash = strchr(fn, '-')) || !(dot = strchr(dash, '.'))) {
+		fprintf(stderr, "Too long or doesn't '-' and then '.': <%s>.\n", fn);
+		assert(0);
+		return;
+	}
+	printf("graph: base %s; number %u.\n", fn, PT_(no));
+	i = (size_t)(dash - fn), memcpy(temp, fn, i_temp = i_fn = i);
+	temp[i_temp++] = '-';
+	sprintf(temp + i_temp, "%u", PT_(no)), i_temp += strlen(temp + i_temp);
+	i = (size_t)(dot - fn) - i_fn, memcpy(temp + i_temp, fn + i_fn, i),
+		i_temp += i, i_fn += i;
 
-/** Graphs `trie` in memory output to `fn`. */
-static void PT_(graph_mem)(const struct T_(trie) *const trie,
-	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_mem)); }
-
-/** Graphs `trie` in bits output to `fn`. */
-static void PT_(graph_bits)(const struct T_(trie) *const trie,
-	const char *const fn) { PT_(graph_choose)(trie, fn, &PT_(graph_tree_bits));}
+	memcpy(temp + i_temp, logic, sizeof logic - 1);
+	memcpy(temp + i_temp + sizeof logic - 1, fn + i_fn, fn_len - i_fn + 1);
+	PT_(graph_choose)(trie, temp, &PT_(graph_tree_logic));
+	memcpy(temp + i_temp, mem, sizeof mem - 1);
+	memcpy(temp + i_temp + sizeof mem - 1, fn + i_fn, fn_len - i_fn + 1);
+	PT_(graph_choose)(trie, temp, &PT_(graph_tree_mem));
+	memcpy(temp + i_temp, bits, sizeof bits - 1);
+	memcpy(temp + i_temp + sizeof bits - 1, fn + i_fn, fn_len - i_fn + 1);
+	PT_(graph_choose)(trie, temp, &PT_(graph_tree_bits));
+}
 
 #if 0
 static void PT_(print)(const struct PT_(tree) *const tree) {
@@ -354,7 +379,6 @@ static int PT_(true)(PT_(type) *const a, PT_(type) *const b)
 	{ (void)a, (void)b; return 1; }
 
 static void PT_(test)(void) {
-	char fn[64];
 	struct T_(trie) trie = TRIE_IDLE;
 	struct T_(trie_iterator) it;
 	size_t n, m, count;
@@ -368,8 +392,7 @@ static void PT_(test)(void) {
 	PT_(valid)(0);
 	PT_(valid)(&trie);
 	T_(trie)(&trie), PT_(valid)(&trie);
-	printf("Idle graph.\n");
-	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "_trie-idle.gv");
+	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv");
 	T_(trie_)(&trie), PT_(valid)(&trie);
 	data = T_(trie_match)(&trie, ""), assert(!data);
 	data = T_(trie_get)(&trie, ""), assert(!data);
@@ -380,17 +403,11 @@ static void PT_(test)(void) {
 	/* Adding. */
 	errno = 0;
 	for(n = 0; n < es_size; n++) {
+		PT_(no)++;
 		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
-		if(!((n + 1) & n) || n + 1 == es_size) { /* Graph. */
-			sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu.gv",
-				(unsigned long)n + 1lu);
-			printf("Graph %s: %s.\n", fn, T_(trie_to_string)(&trie));
-			PT_(graph)(&trie, fn);
-			sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-%lu-mem.gv",
-				(unsigned long)n + 1lu);
-			PT_(graph_mem)(&trie, fn);
-		}
-		assert(!errno || (perror("Check"), 0));
+		/*if(!((n + 1) & n) || n + 1 == es_size)
+			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-pot.gv");*/
+		assert(!errno);
 		if(!es[n].is_in) {assert(!errno);/*printf("Duplicate value %s -> %s.\n",
 			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie));*/ continue; };
 		data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data));

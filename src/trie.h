@@ -66,7 +66,7 @@
 #define TRIE_DIFF(a, b, n) \
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-left, `(0,UCHAR_MAX]`. We could go 255, but alignment. */
-#define TRIE_MAX_LEFT 6/*6*//*254*/
+#define TRIE_MAX_LEFT 1/*6*//*254*/
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
 #define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
 struct trie_branch { unsigned char left, skip; };
@@ -272,11 +272,29 @@ static struct PT_(tree) *PT_(tree)(void) {
 	return tree;
 }
 
+#ifdef TRIE_TO_STRING
+static const char *T_(trie_to_string)(const struct T_(trie) *);
+#endif
+
+static const char *PT_(str)(const struct T_(trie) *const trie) {
+#ifdef TRIE_TO_STRING
+	return T_(trie_to_string)(trie);
+#else
+	return "[not to string]"
+#endif
+}
+
 #ifdef TRIE_TEST
 static void PT_(graph)(const struct T_(trie) *, const char *);
-static void PT_(graph_mem)(const struct T_(trie) *, const char *);
-static void PT_(graph_bits)(const struct T_(trie) *, const char *);
 #endif
+
+static void PT_(grph)(const struct T_(trie) *const trie, const char *const fn) {
+	assert(trie && fn);
+#ifdef TRIE_TEST
+	PT_(graph)(trie, fn);
+#endif
+}
+
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
@@ -289,15 +307,9 @@ static int PT_(split)(struct T_(trie) *const trie,
 	struct PT_(tree) *up, *left = 0, *right = 0;
 	unsigned char split;
 	int success = 0;
-#ifdef TRIE_TEST
-	static unsigned count;
-	char fn[64];
-	printf("::split count %u\n", count);
-	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split0-mem.gv", count);
-	PT_(graph_mem)(trie, fn);
-	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split0.gv", count);
-	PT_(graph)(trie, fn);
-#endif
+
+	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split0.gv");
+
 	assert(trie);
 	if(!(up = parent) && !(up = PT_(tree)()) || !(right = PT_(tree)()))
 		goto catch;
@@ -340,26 +352,8 @@ catch:
 	if(!parent) free(up);
 	free(right);
 finally:
-#ifdef TRIE_TEST
-	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split9-mem.gv", count);
-	PT_(graph_mem)(trie, fn);
-	sprintf(fn, "graph/" QUOTE(TRIE_NAME) "-%u-split9.gv", count);
-	PT_(graph)(trie, fn);
-	count++;
-#endif
+	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split9.gv");
 	return success;
-}
-
-#ifdef TRIE_TO_STRING
-static const char *T_(trie_to_string)(const struct T_(trie) *);
-#endif
-
-static const char *PT_(str)(const struct T_(trie) *const trie) {
-#ifdef TRIE_TO_STRING
-	return T_(trie_to_string)(trie);
-#else
-	return "[not to string]"
-#endif
 }
 
 /** Adds `x` to `trie`, which must not be present. @return Success.
@@ -374,7 +368,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	struct { unsigned br0, br1, lf; } in_tree;
 	struct trie_branch *branch;
 	union PT_(leaf) *leaf;
-	int is_right = 0;
+	int is_right;
 	assert(trie && x && key);
 
 	printf("add: %s -> %s.\n", key, PT_(str)(trie));
@@ -420,9 +414,11 @@ found:
 
 	/* Backtrack to split the child of the last unfilled. */
 	while(filled_count) {
+		struct PT_(tree) *filled;
 		assert(unfilled != tree); /* Not necessarily the other way around. */
 		printf("add: unfilled %p, tree %p splitting, ohoh.\n",
 			(void *)unfilled, (void *)tree);
+		is_right = 0;
 		in_tree.br0 = 0, in_tree.lf = 0;
 		if(!unfilled) { /* Split the root. */
 			assert(!bit.unfilled);
@@ -437,7 +433,7 @@ found:
 				branch = unfilled->branch + in_tree.br0;
 				bit.x += branch->skip;
 				if(bit.x >= bit.found) { assert(filled_count == 1); break; }
-				if(!TRIE_QUERY(key, bit.x))
+				if(!(is_right = TRIE_QUERY(key, bit.x)))
 					in_tree.br1 = ++in_tree.br0 + branch->left, branch->left++;
 				else
 					in_tree.br0 += branch->left + 1,
@@ -446,19 +442,18 @@ found:
 			}
 			if(in_tree.br0 == in_tree.br1 && TRIE_QUERY(key, bit.found))
 				in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
-			assert(trie_bmp_test(&unfilled->is_child, in_tree.lf));
+			assert(in_tree.lf <= tree->bsize
+				&& trie_bmp_test(&unfilled->is_child, in_tree.lf));
 			printf("add: going to leaf %u.\n", in_tree.lf);
 		}
+		/* Go further. */
+
 		if(!PT_(split)(trie, unfilled, in_tree.lf)) return 0;
 		if(!unfilled) unfilled = trie->root;
 		bit.unfilled = bit.x;
 		filled_count--;
 
-#ifdef TRIE_TEST
-		PT_(graph)(trie, "graph/" QUOTE(TRIE_NAME) "-end.gv");
-		PT_(graph_mem)(trie, "graph/" QUOTE(TRIE_NAME) "-end-mem.gv");
-		PT_(graph_bits)(trie, "graph/" QUOTE(TRIE_NAME) "-end-bits.gv");
-#endif
+		PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split-end.gv");
 		assert(!filled_count);
 	}
 
@@ -477,8 +472,8 @@ found:
 			in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 		bit.first_br = ++bit.x;
 	}
-	if(TRIE_QUERY(key, bit.found))
-		is_right = 1, in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
+	if(is_right = TRIE_QUERY(key, bit.found))
+		in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
 	/*printf("add: %s, at leaf %u bit %lu.\n", is_right ? "right" : "left",
 		in_tree.lf, bit.found);*/
 	assert(in_tree.lf <= tree->bsize + 1u);
@@ -500,15 +495,7 @@ found:
 	branch->left = is_right ? (unsigned char)(in_tree.br1 - in_tree.br0) : 0;
 	branch->skip = (unsigned char)(bit.found - bit.first_br);
 	tree->bsize++;
-#ifdef TRIE_TEST
-	{
-		static unsigned no;
-		char fn[64];
-		sprintf(fn, "graph/" QUOTE(TRIE_NAME) "_trie-add-%u.gv", no++);
-		PT_(graph_mem)(trie, fn);
-		printf("add: %s\n", fn);
-	}
-#endif
+	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
 	printf("add_unique(%s) completed, tree bsize %d\n", key, tree->bsize);
 	return 1;
 }
