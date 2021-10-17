@@ -52,8 +52,8 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 	unsigned b, i;
 	assert(tree && fp);
 	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
-		"label = <\n"
-		"<TABLE BORDER=\"0\" CELLBORDER=\"1\">\n", (const void *)tree);
+		"fillcolor=\"Grey95\" label = <\n"
+		"<TABLE BORDER=\"0\" CELLBORDER=\"0\">\n", (const void *)tree);
 	for(i = 0; i <= tree->bsize; i++) {
 		fprintf(fp, "\t<TR>\n");
 		if(trie_bmp_test(&tree->is_child, i)) {
@@ -64,7 +64,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 			const struct trie_branch *branch = tree->branch;
 			size_t /*key_len = strlen(key),*/
 				next_branch = treebit + branch->skip;
-			const char *bgcolour;
+			const char *params, *start, *end;
 			struct { unsigned br0, br1; } in_tree;
 			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\">%s</TD>\n", key);
 			in_tree.br0 = 0, in_tree.br1 = tree->bsize;
@@ -72,19 +72,23 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 				const unsigned bit = !!TRIE_QUERY(key, b);
 				if(next_branch) {
 					next_branch--;
-					bgcolour = "invis";
+					params = "", start = "", end = "";
 				} else {
 					if(!bit) {
 						in_tree.br1 = ++in_tree.br0 + branch->left;
-						bgcolour = "mistyrose";
+						/* MistyRose */
+						params = " BGCOLOR=\"White\" BORDER=\"1\"";
+						start = "", end = "";
 					} else {
 						in_tree.br0 += branch->left + 1;
-						bgcolour = "honeydew";
+						/* "Honeydew" probably is hard for colour-blind. */
+						params = " BGCOLOR=\"Black\" COLOR=\"White\" BORDER=\"1\"";
+						start = "<FONT COLOR=\"White\">", end = "</FONT>";
 					}
 					next_branch = (branch = tree->branch + in_tree.br0)->skip;
 				}
 				if(b && !(b & 7)) fprintf(fp, "\t\t<TD BORDER=\"0\">&nbsp;</TD>\n");
-				fprintf(fp, "\t\t<TD BGCOLOR=\"%s\">%u</TD>\n", bgcolour, bit);
+				fprintf(fp, "\t\t<TD%s>%s%u%s</TD>\n", params, start, bit, end);
 			}
 		}
 		fprintf(fp, "\t</TR>\n");
@@ -93,7 +97,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[color = firebrick];\n", (const void *)tree, i,
+		"[color = FireBrick];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child);
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
@@ -122,13 +126,15 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	assert(tree && fp);
 	/* Tree is one record node in memory -- GraphViz says html is
 	 case-insensitive, but I cannot get it to work without screaming. */
-	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
-		"label = <\n"
-		"<TABLE BORDER=\"0\" CELLBORDER=\"1\">\n"
+	fprintf(fp, "\ttree%pbranch0 [shape = box, "
+		"style = filled, fillcolor = Gray95, label = <\n"
+		"<TABLE BORDER=\"0\""/*" CELLBORDER=\"1\""*/">\n"
+		/*"\t<TR><TD ALIGN=\"right\" BORDER=\"0\">branches</TD><TD>%u</TD></TR>\n"*/
 		"\t<TR>\n"
-		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n", (const void *)tree);
+		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n",
+		(const void *)tree/*, tree->bsize*/);
 	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
-		fprintf(fp, "\t\t<TD>%u</TD>\n", branch->left);
+		fprintf(fp, "\t\t<TD BGCOLOR=\"Gray90\">%u</TD>\n", branch->left);
 	fprintf(fp, "\t</TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">skip</TD>\n");
@@ -139,9 +145,9 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">leaves</TD>\n");
 	for(i = 0; i <= tree->bsize; i++) {
 		if(trie_bmp_test(&tree->is_child, i))
-			fprintf(fp, "\t\t<TD PORT=\"%u\">...</TD>\n", i);
+			fprintf(fp, "\t\t<TD PORT=\"%u\" BGCOLOR=\"Gray90\">...</TD>\n", i);
 		else
-			fprintf(fp, "\t\t<TD>%s</TD>\n", PT_(to_key)(tree->leaf[i].data));
+			fprintf(fp, "\t\t<TD BGCOLOR=\"Grey90\">%s</TD>\n", PT_(to_key)(tree->leaf[i].data));
 			/* Should really escape it . . . don't have weird characters. */
 	}
 	fprintf(fp, "\t</TR>\n"
@@ -149,7 +155,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[color = firebrick];\n", (const void *)tree, i,
+		"[color = FireBrick];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child);
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
@@ -164,16 +170,17 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 	(void)treebit;
 	assert(tree && fp);
 	fprintf(fp, "\t//subgraph cluster_tree%p { "
-		"// confuse the order in dot\n"
+		"\t\t// confuse the order in dot\n"
 		"\t\t//style = filled;\n"
-		"\t\t//label = \"leaves %u/%u\";\n",
+		"\t\t//label = \"leaves %u/%u\";\n"
+		"\t\tnode [style = filled];\n",
 		(const void *)tree, tree->bsize + 1, TRIE_ORDER);
 	if(tree->bsize) {
 		for(b = 0; b < tree->bsize; b++) { /* Branches. */
 			branch = tree->branch + b;
 			left = branch->left, right = PT_(right)(tree, b);
 			fprintf(fp, "\t\ttree%pbranch%u "
-				"[label = \"%u\", shape = none, fillcolor = none];\n"
+				"[label = \"%u\", shape = circle, fillcolor = Grey95];\n"
 				"\t\ttree%pbranch%u -> ", (const void *)tree, b, branch->skip,
 				(const void *)tree, b);
 			if(left) {
@@ -183,11 +190,11 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 				unsigned leaf = PT_(left_leaf)(tree, b);
 				if(trie_bmp_test(&tree->is_child, leaf)) {
 					fprintf(fp, "tree%pbranch0 "
-						"[style = dashed, color = firebrick];\n",
+						"[style = dashed, color = FireBrick];\n",
 						(const void *)tree->leaf[leaf].child);
 				} else {
 					fprintf(fp,
-						"tree%pleaf%u [style = dashed, color = royalblue];\n",
+						"tree%pleaf%u [style = dashed, color = Gray"/*"RoyalBlue"*/"];\n",
 						(const void *)tree, leaf);
 				}
 			}
@@ -198,18 +205,21 @@ static void PT_(graph_tree)(const struct PT_(tree) *const tree,
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b) + left + 1;
 				if(trie_bmp_test(&tree->is_child, leaf)) {
-					fprintf(fp, "tree%pbranch0"
-						" [color = firebrick];\n",
+					fprintf(fp, "tree%pbranch0 [color = FireBrick];\n",
 						(const void *)tree->leaf[leaf].child);
 				} else {
-					fprintf(fp, "tree%pleaf%u [color = royalblue];\n",
+					fprintf(fp, "tree%pleaf%u [color = ""Gray"/*"RoyalBlue"*/"];\n",
 						(const void *)tree, leaf);
 				}
 			}
 		}
+	}
+	fprintf(fp, "\t\tnode [style = empty, fillcolor = none];\n");
+	if(tree->bsize) {
 		for(i = 0; i <= tree->bsize; i++) if(!trie_bmp_test(&tree->is_child, i))
 			fprintf(fp, "\t\ttree%pleaf%u [label = \"%s\"];\n",
 			(const void *)tree, i, PT_(to_key)(tree->leaf[i].data));
+		/* ⊔ was good, but it didn't leave much space. */
 	} else {
 		/* Instead of creating a lookahead function to previous references, we
 		 very lazily also just call this a branch, even though it's a leaf. */
@@ -229,20 +239,25 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	FILE *fp;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	/* lightsteelblue b1c4e0 -> cfe2ff (eww) d8e3f3 e6effe */
+	/* LightSteelBlue b1c4e0 -> cfe2ff (eww) d8e3f3 e6effe */
 	fprintf(fp, "digraph {\n"
-		"\trankdir = TB;\n"
+		"\tnode [shape = none];\n"
+		/*"\tranksep = 0.2;\n"
+		"\tnodesep = 1.8;\n"*/
+		/* "\trankdir = TB;\n"
 		"\tnode [shape = record, style = filled];\n"
 		"\ttrie [label = \"{\\<" QUOTE(TRIE_NAME) "\\>trie: " QUOTE(TRIE_TYPE)
 		"\\l|order %u%s}\"];\n"
-		"\tnode [shape = box, fillcolor = \"lightsteelblue\"];\n",
-		TRIE_ORDER, trie->root ? "" : "\\l|idle\\l");
-	if(trie->root) {
-		fprintf(fp, "\ttrie -> tree%pbranch0 [color = firebrick];\n",
-			(const void *)trie->root);
+		"\tnode [shape = box, fillcolor = LightSteelBlue];\n",
+		TRIE_ORDER, trie->root ? "" : "\\l|idle\\l"*/);
+	if(!trie->root) {
+		fprintf(fp, "\tidle;");
+	} else {
+		/*fprintf(fp, "\ttrie -> tree%pbranch0 [color = FireBrick];\n",
+			(const void *)trie->root);*/
 		tf(trie->root, 0, fp);
 	}
-	fprintf(fp, "\tnode [color = red];\n"
+	fprintf(fp, "\tnode [color = Red];\n"
 		"}\n");
 	fclose(fp);
 }
