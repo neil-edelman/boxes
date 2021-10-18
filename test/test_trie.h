@@ -22,6 +22,19 @@ static unsigned PT_(no);
 /** Is `leaf` going to the right in `tree`? */
 static unsigned PT_(is_right)(const struct PT_(tree) *const tree,
 	const unsigned leaf) {
+
+	/* Okay, I would now write this: but I'd be wrong?
+	struct { unsigned br0, br1, lf; } in_tree;
+	in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+	while(in_tree.br0 < leaf) {
+		const struct trie_branch *branch = tree->branch + in_tree.br0;
+		if(leaf <= in_tree.br0 + branch->left)
+			in_tree.br1 = ++in_tree.br0 + branch->left;
+		else
+			in_tree.br0 += branch->left + 1;
+	}
+	return in_tree.br1 < leaf;*/
+
 	struct { unsigned br0, br1, lf; } in_tree;
 	unsigned left, right;
 	in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
@@ -29,10 +42,8 @@ static unsigned PT_(is_right)(const struct PT_(tree) *const tree,
 		right = in_tree.br1 - (left = tree->branch[in_tree.br0].left) - 1;
 		assert(left < in_tree.br1 && right < in_tree.br1);
 		if(in_tree.br0 >= leaf) break;
-		if(leaf <= in_tree.br0 + left)
-			in_tree.br1 = /*in_tree.br0 + ?right?*/ left, in_tree.br0++;
-		else
-			in_tree.br1 = right, in_tree.br0 += left + 1;
+		if(leaf <= in_tree.br0 + left) in_tree.br1 = in_tree.br0 + left, in_tree.br0++;
+		else in_tree.br1 = right, in_tree.br0 += left + 1;
 	}
 	return in_tree.br1 < leaf;
 }
