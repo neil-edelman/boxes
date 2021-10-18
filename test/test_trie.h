@@ -29,8 +29,10 @@ static unsigned PT_(is_right)(const struct PT_(tree) *const tree,
 		right = in_tree.br1 - (left = tree->branch[in_tree.br0].left) - 1;
 		assert(left < in_tree.br1 && right < in_tree.br1);
 		if(in_tree.br0 >= leaf) break;
-		if(leaf <= in_tree.br0 + left) in_tree.br1 = left, in_tree.br0++;
-		else in_tree.br1 = right, in_tree.br0 += left + 1;
+		if(leaf <= in_tree.br0 + left)
+			in_tree.br1 = /*in_tree.br0 + ?right?*/ left, in_tree.br0++;
+		else
+			in_tree.br1 = right, in_tree.br0 += left + 1;
 	}
 	return in_tree.br1 < leaf;
 }
