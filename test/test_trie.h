@@ -77,39 +77,37 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		"fillcolor=\"Grey95\" label = <\n"
 		"<TABLE BORDER=\"0\" CELLBORDER=\"0\">\n", (const void *)tree);
 	for(i = 0; i <= tree->bsize; i++) {
-		fprintf(fp, "\t<TR>\n");
-		if(trie_bmp_test(&tree->is_child, i)) {
-			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\" "
-			"PORT=\"%u\">...</TD>\n", i);
-		} else {
-			const char *key = PT_(to_key)(tree->leaf[i].data);
-			const struct trie_branch *branch = tree->branch;
-			size_t next_branch = treebit + branch->skip;
-			const char *params, *start, *end;
-			struct { unsigned br0, br1; } in_tree;
-			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\">%s</TD>\n", key);
-			in_tree.br0 = 0, in_tree.br1 = tree->bsize;
-			for(b = 0; in_tree.br0 < in_tree.br1; b++) {
-				const unsigned bit = !!TRIE_QUERY(key, b);
-				if(next_branch) {
-					next_branch--;
-					params = "", start = "", end = "";
+		const char *key = PT_(sample)(tree, i);
+		const struct trie_branch *branch = tree->branch;
+		size_t next_branch = treebit + branch->skip;
+		const char *params, *start, *end;
+		struct { unsigned br0, br1; } in_tree;
+
+		fprintf(fp, "\t<TR>\n"
+			"\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\" PORT=\"%u\">%s%s</TD>\n",
+			i, trie_bmp_test(&tree->is_child, i) ? "↓" : "", key);
+
+		in_tree.br0 = 0, in_tree.br1 = tree->bsize;
+		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
+			const unsigned bit = !!TRIE_QUERY(key, b);
+			if(next_branch) {
+				next_branch--;
+				params = "", start = "", end = "";
+			} else {
+				if(!bit) {
+					in_tree.br1 = ++in_tree.br0 + branch->left;
+					params = " BGCOLOR=\"White\" BORDER=\"1\"";
+					start = "", end = "";
 				} else {
-					if(!bit) {
-						in_tree.br1 = ++in_tree.br0 + branch->left;
-						params = " BGCOLOR=\"White\" BORDER=\"1\"";
-						start = "", end = "";
-					} else {
-						in_tree.br0 += branch->left + 1;
-						params
-							= " BGCOLOR=\"Black\" COLOR=\"White\" BORDER=\"1\"";
-						start = "<FONT COLOR=\"White\">", end = "</FONT>";
-					}
-					next_branch = (branch = tree->branch + in_tree.br0)->skip;
+					in_tree.br0 += branch->left + 1;
+					params
+						= " BGCOLOR=\"Black\" COLOR=\"White\" BORDER=\"1\"";
+					start = "<FONT COLOR=\"White\">", end = "</FONT>";
 				}
-				if(b && !(b & 7)) fprintf(fp, "\t\t<TD BORDER=\"0\">&nbsp;</TD>\n");
-				fprintf(fp, "\t\t<TD%s>%s%u%s</TD>\n", params, start, bit, end);
+				next_branch = (branch = tree->branch + in_tree.br0)->skip;
 			}
+			if(b && !(b & 7)) fprintf(fp, "\t\t<TD BORDER=\"0\">&nbsp;</TD>\n");
+			fprintf(fp, "\t\t<TD%s>%s%u%s</TD>\n", params, start, bit, end);
 		}
 		fprintf(fp, "\t</TR>\n");
 	}
