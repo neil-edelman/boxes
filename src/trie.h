@@ -356,16 +356,16 @@ finally:
  @throw[ERANGE] There is too many bytes similar for the data-type. */
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x), *sample;
-	size_t bit, next;
+	size_t bit;
 	struct {
-		struct PT_(tree) *tr; size_t tr_bit, br_bit, lf_bit/*not needed*/;
+		struct PT_(tree) *tr; size_t tr_bit, br_bit, lf_bit;
 		unsigned br0, br1, lf, is_right;
 	} find;
 	struct {
 		struct PT_(tree) *prnt;
 		size_t lf_bit, n;
-		unsigned lf;
-	} full = { 0, 0, 0, 0 };
+		unsigned lf, unused;
+	} full = { 0, 0, 0, 0, 0 };
 	assert(trie && x && key);
 
 	printf("add: %s -> %s.\n", key, PT_(str)(trie));
@@ -374,17 +374,17 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		if(!(find.tr = PT_(tree)())) return 0;
 		find.tr->leaf[0].data = x; trie->root = find.tr; return 1;
 	}
+	/* Find bit, bit-by-bit, not in the tree. */
 	for(bit = 0; ; ) { /* Forest. */
 		const int filled = find.tr->bsize >= TRIE_BRANCHES;
-		/* Record for backtracking. */
 		find.tr_bit = find.br_bit = bit;
 		full.n = filled ? full.n + 1 : 0;
-		/* Find bit, bit-by-bit, not in the tree. */
 		sample = PT_(sample)(find.tr, 0);
 		find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
 		while(find.br0 < find.br1) { /* Tree. */
 			const struct trie_branch *const branch = find.tr->branch + find.br0;
-			for(next = bit + branch->skip; bit < next; bit++)
+			const size_t next = bit + branch->skip;
+			for( ; bit < next; bit++)
 				if(TRIE_DIFF(key, sample, bit)) goto found;
 			printf("add: bit %lu, branch[left:%u, skip:%u], going %u.\n",
 				bit, branch->left, branch->skip, !!TRIE_QUERY(key, bit));
@@ -401,10 +401,11 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
 		find.tr = find.tr->leaf[find.lf].child;
 	}
-	/* Got to a leaf. */
-	next = bit + UCHAR_MAX;
-	while(!TRIE_DIFF(key, sample, bit))
-		if(++bit > next) return errno = ERANGE, 0;
+	{ /* Got to a leaf. */
+		const size_t limit = bit + UCHAR_MAX;
+		while(!TRIE_DIFF(key, sample, bit))
+			if(++bit > limit) return errno = ERANGE, 0;
+	}
 found:
 	if(find.is_right = TRIE_QUERY(key, bit))
 		find.lf += find.br1 - find.br0 + 1;
@@ -420,6 +421,55 @@ found:
 		if(!--full.n) break;
 		assert(0); /*...*/
 #if 0
+		static int PT_(split)(struct T_(trie) *const trie,
+			struct PT_(tree) *const parent, const unsigned leaf) {
+			struct PT_(tree) *up, *left = 0, *right = 0;
+			unsigned char split;
+			int success = 0;
+			assert(trie);
+			if(!(up = parent) && !(up = PT_(tree)()) || !(right = PT_(tree)()))
+				goto catch;
+			/* Promote the root of the the parent's leaf sub-tree; going to be left. */
+			if(!parent) {
+				assert(!leaf);
+				left = trie->root;
+				assert(left && left->bsize);
+				trie->root = up;
+				up->bsize = 1;
+				up->branch[0].left = 0;
+				up->branch[0].skip = left->branch[0].skip;
+				trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
+				trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
+			} else {
+				assert(leaf < parent->bsize + 1
+					&& trie_bmp_test(&parent->is_child, leaf));
+				left = parent->leaf[leaf].child;
+				assert(left && left->bsize);
+				assert(0);
+			}
+			split = left->branch[0].left + 1;
+
+			/* Copy the right part of the left to the new right. */
+			right->bsize = left->bsize - split;
+			memcpy(right->branch, left->branch + split,
+				sizeof *left->branch * right->bsize);
+			memcpy(right->leaf, left->leaf + split,
+				sizeof *left->leaf * (right->bsize + 1));
+			memcpy(&right->is_child, &left->is_child, sizeof left->is_child);
+			trie_bmp_remove(&right->is_child, 0, split);
+
+			/* Move back the branches of the left to account for the promotion. */
+			left->bsize = split - 1;
+			memmove(left->branch, left->branch + 1,
+				sizeof *left->branch * (left->bsize + 1));
+			{ success = 1; goto finally; }
+		catch:
+			if(!parent) free(up);
+			free(right);
+		finally:
+			return success;
+		}
+
 		struct { unsigned br0, br1, lf; } t = { 0, 0, 0 };
 		printf("add: filled: count %lu, parent %p, cf find %p. Splitting.\n",
 			(unsigned long)full.n, (void *)full.prnt, (void *)find.tr);
