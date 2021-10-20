@@ -518,7 +518,7 @@ insert:
 			struct trie_branch *const branch = find.tr->branch + t.br0;
 			printf("add: branch[left:%u, skip:%u], going ",
 				branch->left, branch->skip);
-			if(t.br0 + branch->left + 1 > find.br1)
+			if(t.br0 + branch->left < find.br1)
 				t.br1 = ++t.br0 + branch->left++,
 				printf("left\n");
 			else
