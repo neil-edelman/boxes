@@ -370,48 +370,51 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 
 	printf("add: %s -> %s.\n", key, PT_(str)(trie));
 
-	if(!(find.tr = trie->root)) { /* Empty. */
-		if(!(find.tr = PT_(tree)())) return 0;
-		find.tr->leaf[0].data = x; trie->root = find.tr; return 1;
-	}
-	/* Find bit, bit-by-bit, not in the tree. */
-	for(bit = 0; ; ) { /* Forest. */
-		const int filled = find.tr->bsize >= TRIE_BRANCHES;
-		find.tr_bit = find.br_bit = bit;
-		full.n = filled ? full.n + 1 : 0;
-		sample = PT_(sample)(find.tr, 0);
-		find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
-		while(find.br0 < find.br1) { /* Tree. */
-			const struct trie_branch *const branch = find.tr->branch + find.br0;
-			const size_t next = bit + branch->skip;
-			for( ; bit < next; bit++)
-				if(TRIE_DIFF(key, sample, bit)) goto found;
-			printf("add: bit %lu, branch[left:%u, skip:%u], going %u.\n",
-				bit, branch->left, branch->skip, !!TRIE_QUERY(key, bit));
-			if(!TRIE_QUERY(key, bit)) {
-				find.br1 = ++find.br0 + branch->left;
-			} else {
-				find.br0 += branch->left + 1, find.lf += branch->left + 1;
-				sample = PT_(sample)(find.tr, find.lf);
+	/* Solitary. */
+	if(!(find.tr = trie->root)) return (find.tr = PT_(tree)())
+		&& (find.tr->leaf[0].data = x, trie->root = find.tr, 1);
+
+	{ /* Fill in `find` and `full`. */
+		/* Find bit, bit-by-bit, not in the tree. */
+		for(bit = 0; ; ) { /* Forest. */
+			const int filled = find.tr->bsize >= TRIE_BRANCHES;
+			find.tr_bit = find.br_bit = bit;
+			full.n = filled ? full.n + 1 : 0;
+			sample = PT_(sample)(find.tr, 0);
+			find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
+			while(find.br0 < find.br1) { /* Tree. */
+				const struct trie_branch *const
+					branch = find.tr->branch + find.br0;
+				const size_t next = bit + branch->skip;
+				for( ; bit < next; bit++)
+					if(TRIE_DIFF(key, sample, bit)) goto found;
+				printf("add: bit %lu, branch[left:%u, skip:%u], going %u.\n",
+					bit, branch->left, branch->skip, !!TRIE_QUERY(key, bit));
+				if(!TRIE_QUERY(key, bit)) {
+					find.br1 = ++find.br0 + branch->left;
+				} else {
+					find.br0 += branch->left + 1, find.lf += branch->left + 1;
+					sample = PT_(sample)(find.tr, find.lf);
+				}
+				find.br_bit = ++bit;
 			}
-			find.br_bit = ++bit;
+			assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
+			if(!filled) full.prnt = find.tr, full.lf = find.lf, full.lf_bit = bit;
+			if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
+			find.tr = find.tr->leaf[find.lf].child;
 		}
-		assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
-		if(!filled) full.prnt = find.tr, full.lf = find.lf, full.lf_bit = bit;
-		if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
-		find.tr = find.tr->leaf[find.lf].child;
-	}
-	{ /* Got to a leaf. */
-		const size_t limit = bit + UCHAR_MAX;
-		while(!TRIE_DIFF(key, sample, bit))
-			if(++bit > limit) return errno = ERANGE, 0;
-	}
+		{ /* Got to a leaf. */
+			const size_t limit = bit + UCHAR_MAX;
+			while(!TRIE_DIFF(key, sample, bit))
+				if(++bit > limit) return errno = ERANGE, 0;
+		}
 found:
-	if(find.is_right = TRIE_QUERY(key, bit))
-		find.lf += find.br1 - find.br0 + 1;
-	find.lf_bit = bit;
-	printf("find: tree bit: %lu, branch bit: %lu, leaf bit: %lu, leaf: %u\n",
-		find.tr_bit, find.br_bit, find.lf_bit, find.lf);
+		if(find.is_right = TRIE_QUERY(key, bit))
+			find.lf += find.br1 - find.br0 + 1;
+		find.lf_bit = bit;
+		printf("find: tree bit: %lu, branch bit: %lu, leaf bit: %lu, leaf: %u\n",
+			find.tr_bit, find.br_bit, find.lf_bit, find.lf);
+	}
 
 	/* Backtrack to split the child of the last unfilled tree repeatedly. */
 	if(!full.n) goto insert;
@@ -427,6 +430,7 @@ found:
 			unsigned char split;
 			int success = 0;
 			assert(trie);
+
 			if(!(up = parent) && !(up = PT_(tree)()) || !(right = PT_(tree)()))
 				goto catch;
 			/* Promote the root of the the parent's leaf sub-tree; going to be left. */
@@ -502,8 +506,23 @@ found:
 	assert(0);
 
 insert:
+	/****** HERE *****/
 	printf("add: backtrack tree %p(%lu).\n", (void *)find.tr, find.tr_bit);
 	assert(find.tr->bsize < TRIE_BRANCHES);
+#if 1
+	{
+		struct { unsigned br0, br1, lf; } t = { 0, find.tr->bsize, 0 };
+		while(t.br0 < find.br0) {
+			struct trie_branch *const branch = find.tr->branch + t.br0;
+			if(t.br0 + branch->left + 1 > find.br1)
+				t.br1 = ++t.br0 + branch->left++;
+			else
+				t.br0 += branch->left + 1, t.lf += branch->left + 1;
+		}
+		if(find.is_right) t.lf += t.br1 - t.br0 + 1;
+		assert(t.br0 == find.br0 && t.br1 == find.br1 && t.lf == find.lf);
+	}
+#else
 	{
 		struct { unsigned br0, br1, lf; } t = { 0, find.tr->bsize, 0 };
 		bit = find.tr_bit;
@@ -513,7 +532,7 @@ insert:
 			/* We know the leaf, we don't need this. */
 			if(bit >= find.br_bit) break;
 			if(!TRIE_QUERY(key, bit))
-				t.br1 = ++t.br0 + branch->left, branch->left++;
+				t.br1 = ++t.br0 + branch->left++;
 			else
 				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
@@ -524,6 +543,7 @@ insert:
 			in_tree.lf, bit.found);*/
 		assert(t.lf <= find.tr->bsize + 1u); /* <=? */
 	}
+#endif
 
 	/* Expand the tree. */
 	{
