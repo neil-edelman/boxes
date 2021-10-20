@@ -357,15 +357,10 @@ finally:
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x);
 	size_t bit = 0;
-	struct {
-		struct PT_(tree) *tr; size_t tr_bit; struct { size_t b0, b1; } leaf;
-		unsigned br0, br1, lf, is_right;
-	} find;
-	struct {
-		size_t n;
-		struct { struct PT_(tree) *tree; unsigned lf, unused; size_t lf_bit; }
-			prnt;
-	} full = { 0, { 0, 0, 6666, 7777 } }; /* Trap values; never used. */
+	struct { struct PT_(tree) *tr; size_t tr_bit;
+		struct { size_t b0, b1; } end; unsigned br0, br1, lf, is_right; } find;
+	struct { size_t n; struct { struct PT_(tree) *tree; unsigned lf, unused;
+		size_t lf_bit; } prnt; } full = { 0, { 0, 0, 999, 999 } }; /* Trap. */
 	assert(trie && x && key);
 
 	printf("_add_: %s -> %s.\n", key, PT_(str)(trie));
@@ -379,7 +374,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		for( ; ; ) { /* Forest. */
 			const int is_full = find.tr->bsize >= TRIE_BRANCHES;
 			full.n = is_full ? full.n + 1 : 0;
-			find.tr_bit = find.leaf.b0 = bit;
+			find.tr_bit = find.end.b0 = bit;
 			sample = PT_(sample)(find.tr, 0);
 			printf("add: tree_%p(%lu)\n", (void *)find.tr, find.tr_bit);
 			find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
@@ -396,7 +391,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 				else find.br0 += branch->left + 1, find.lf += branch->left + 1,
 					sample = PT_(sample)(find.tr, find.lf),
 					printf("right\n");
-				find.leaf.b0 = ++bit;
+				find.end.b0 = ++bit;
 			}
 			assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
 			if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
@@ -410,13 +405,13 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 				if(++bit > limit) return errno = ERANGE, 0;
 		}
 found:
-		find.leaf.b1 = bit;
+		find.end.b1 = bit;
 		if(find.is_right = TRIE_QUERY(key, bit))
 			find.lf += find.br1 - find.br0 + 1;
 	}
 	printf("add: find [b%lu: br[%u,%u],lf#%u] [bit %lu..%lu] "
-		"full %lu\n", find.tr_bit, find.br0, find.br1, find.lf, find.leaf.b0,
-		find.leaf.b1, full.n);
+		"full %lu\n", find.tr_bit, find.br0, find.br1, find.lf, find.end.b0,
+		find.end.b1, full.n);
 
 	/* Backtrack to split the child of the last unfilled tree repeatedly. */
 	if(!full.n) goto insert;
@@ -508,68 +503,44 @@ found:
 	assert(0);
 
 insert:
-	/****** HERE *****/
-	printf("add: backtrack tree_%p(%lu).\n", (void *)find.tr, find.tr_bit);
+	printf("add: tree_%p(%lu) backtrack\n",
+		(void *)find.tr, find.tr_bit);
 	assert(find.tr->bsize < TRIE_BRANCHES);
-#if 1
-	{
-		struct { unsigned br0, br1, lf; } t = { 0, find.tr->bsize, 0 };
-		while(t.br0 < find.br0) {
-			struct trie_branch *const branch = find.tr->branch + t.br0;
+	{ /* For the path, augment all the branch's left counts along the left. */
+		struct { unsigned br0, br1, lf; } mir = { 0, find.tr->bsize, 0 };
+		while(mir.br0 < find.br0) {
+			struct trie_branch *const branch = find.tr->branch + mir.br0;
 			printf("add: branch[left:%u, skip:%u], going ",
 				branch->left, branch->skip);
-			if(t.br0 + branch->left < find.br1)
-				t.br1 = ++t.br0 + branch->left++,
-				printf("left\n");
+			if(mir.br0 + branch->left < find.br1)
+				mir.br1 = ++mir.br0 + branch->left++,
+				printf("left, augmenting\n");
 			else
-				t.br0 += branch->left + 1, t.lf += branch->left + 1,
+				mir.br0 += branch->left + 1, mir.lf += branch->left + 1,
 				printf("right\n");
 		}
-		if(find.is_right) t.lf += t.br1 - t.br0 + 1;
-		assert(t.br0 == find.br0 && t.br1 == find.br1 && t.lf == find.lf);
+		assert((mir.lf += (mir.br1 - mir.br0 + 1) * !!find.is_right,
+			mir.br0 == find.br0 && mir.br1 == find.br1 && mir.lf == find.lf));
 	}
-#else
-	{
-		struct { unsigned br0, br1, lf; } t = { 0, find.tr->bsize, 0 };
-		bit = find.tr_bit;
-		while(t.br0 < t.br1) { /* Tree. */
-			struct trie_branch *const branch = find.tr->branch + t.br0;
-			bit += branch->skip;
-			/* We know the leaf, we don't need this. */
-			if(bit >= find.br_bit) break;
-			if(!TRIE_QUERY(key, bit))
-				t.br1 = ++t.br0 + branch->left++;
-			else
-				t.br0 += branch->left + 1, t.lf += branch->left + 1;
-			bit++;
-		}
-		if(find.is_right)
-			t.lf += t.br1 - t.br0 + 1;
-		/*printf("add: %s, at leaf %u bit %lu.\n", is_right ? "right" : "left",
-			in_tree.lf, bit.found);*/
-		assert(t.lf <= find.tr->bsize + 1u); /* <=? */
-	}
-#endif
-
-	/* Expand the tree. */
-	{
+	printf("add: tree_%p(%lu) expand\n",
+		(void *)find.tr, find.tr_bit);
+	{ /* Expand the tree to include one more branch and leaf. */
 		union PT_(leaf) *leaf = find.tr->leaf + find.lf;
 		struct trie_branch *branch = find.tr->branch + find.br0;
 		memmove(leaf + 1, leaf,
 			sizeof *leaf * ((find.tr->bsize + 1) - find.lf));
 		leaf->data = x;
-		if(find.br0 != find.br1) { /* Split with the existing branch. */
-			assert(find.leaf.b0 <= find.leaf.b1
-				&& find.leaf.b1 + 1 <= find.leaf.b0 + branch->skip);
-			branch->skip -= find.leaf.b1 - find.leaf.b0 + 1;
-		}
+		/* Split with the existing branch. */
+		if(find.br0 != find.br1) assert(find.end.b0 <= find.end.b1
+			&& find.end.b1 + 1 <= find.end.b0 + branch->skip),
+			branch->skip -= find.end.b1 - find.end.b0 + 1;
 		trie_bmp_insert(&find.tr->is_child, find.lf, 1);
 		memmove(branch + 1, branch,
 			sizeof *branch * (find.tr->bsize - find.br0));
 		assert(find.br1 - find.br0 <= TRIE_MAX_LEFT
-			&& find.leaf.b1 - find.leaf.b0 <= UCHAR_MAX);
+			&& find.end.b1 - find.end.b0 <= UCHAR_MAX);
 		branch->left = find.is_right ? (unsigned char)(find.br1 - find.br0) : 0;
-		branch->skip = (unsigned char)(find.leaf.b1 - find.leaf.b0);
+		branch->skip = (unsigned char)(find.end.b1 - find.end.b0);
 		find.tr->bsize++;
 	}
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
