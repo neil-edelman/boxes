@@ -265,10 +265,9 @@ static void PT_(prefix)(const struct T_(trie) *const trie,
 /** @return Allocate a new tree with one undefined leaf. @throws[malloc] */
 static struct PT_(tree) *PT_(tree)(void) {
 	struct PT_(tree) *tree;
-	if(!(tree = malloc(sizeof *tree)))
-		{ if(!errno) errno = ERANGE; return 0; }
+	if(!(tree = malloc(sizeof *tree))) { if(!errno) errno = ERANGE; return 0; }
 	tree->bsize = 0, tree->skip = 0, trie_bmp_clear_all(&tree->is_child);
-	/* fixme: doesn't need clear */
+	/* fixme: doesn't need clear? */
 	return tree;
 }
 
@@ -413,64 +412,61 @@ found:
 		"full %lu\n", find.tr_bit, find.br0, find.br1, find.lf, find.end.b0,
 		find.end.b1, full.n);
 
-	/* Backtrack to split the child of the last unfilled tree repeatedly. */
+	/* Split the path up to the last unfilled tree, going down. */
 	if(!full.n) goto insert;
-	for( ; ; ) {
+	for( ; ; ) { /* Split a tree. */
+#define ONE
+#ifdef ONE
+		struct PT_(tree) *up, *left = 0, *right = 0;
+		unsigned char n_split;
+#endif
 		printf("full: %lu.\n", full.n);
-		if(!PT_(split)(trie, full.prnt.tree, full.prnt.lf)) return 0;
-		if(!--full.n) break;
-		assert(0); /*...*/
-#if 0
-		static int PT_(split)(struct T_(trie) *const trie,
-			struct PT_(tree) *const parent, const unsigned leaf) {
-			struct PT_(tree) *up, *left = 0, *right = 0;
-			unsigned char split;
-			int success = 0;
-			assert(trie);
-
-			if(!(up = parent) && !(up = PT_(tree)()) || !(right = PT_(tree)()))
-				goto catch;
-			/* Promote the root of the the parent's leaf sub-tree; going to be left. */
-			if(!parent) {
-				assert(!leaf);
-				left = trie->root;
-				assert(left && left->bsize);
-				trie->root = up;
-				up->bsize = 1;
-				up->branch[0].left = 0;
-				up->branch[0].skip = left->branch[0].skip;
-				trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
-				trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
-			} else {
-				assert(leaf < parent->bsize + 1
-					&& trie_bmp_test(&parent->is_child, leaf));
-				left = parent->leaf[leaf].child;
-				assert(left && left->bsize);
-				assert(0);
-			}
-			split = left->branch[0].left + 1;
-
-			/* Copy the right part of the left to the new right. */
-			right->bsize = left->bsize - split;
-			memcpy(right->branch, left->branch + split,
-				sizeof *left->branch * right->bsize);
-			memcpy(right->leaf, left->leaf + split,
-				sizeof *left->leaf * (right->bsize + 1));
-			memcpy(&right->is_child, &left->is_child, sizeof left->is_child);
-			trie_bmp_remove(&right->is_child, 0, split);
-
-			/* Move back the branches of the left to account for the promotion. */
-			left->bsize = split - 1;
-			memmove(left->branch, left->branch + 1,
-				sizeof *left->branch * (left->bsize + 1));
-			{ success = 1; goto finally; }
-		catch:
-			if(!parent) free(up);
-			free(right);
-		finally:
-			return success;
+#ifdef ONE
+		/* Allocate one or two if the root-tree is being split. This is a
+		 sequence point where the trie is valid; splitting could fail part-way,
+		 but this ensures that it's always the same trie logically. */
+		if(!(up = full.prnt.tree) && !(up = PT_(tree)())
+			|| !(right = PT_(tree)())) { if(!full.prnt.tree) free(up);
+			free(right); return 0; }
+		/* Promote the root of the the parent's leaf sub-tree. */
+		if(!full.prnt.tree) {
+			assert(!full.prnt.lf);
+			left = trie->root;
+			assert(left && left->bsize);
+			up->bsize = 1;
+			up->branch[0].left = 0;
+			up->branch[0].skip = left->branch[0].skip;
+			trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
+			trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
+			trie->root = up;
+		} else {
+			assert(full.prnt.lf < full.prnt.tree->bsize + 1
+				&& trie_bmp_test(&full.prnt.tree->is_child, full.prnt.lf));
+			left = full.prnt.tree->leaf[full.prnt.lf].child;
+			assert(left && left->bsize);
+			assert(0);
 		}
+		assert(left->bsize);
+		n_split = left->branch[0].left + 1;
 
+		/* Copy the right part of the left to the new right. */
+		right->bsize = left->bsize - n_split;
+		memcpy(right->branch, left->branch + n_split,
+			sizeof *left->branch * right->bsize);
+		memcpy(right->leaf, left->leaf + n_split,
+			sizeof *left->leaf * (right->bsize + 1));
+		memcpy(&right->is_child, &left->is_child, sizeof left->is_child);
+		trie_bmp_remove(&right->is_child, 0, n_split);
+
+		/* Move back the branches of the left to account for the promotion. */
+		left->bsize = n_split - 1;
+		memmove(left->branch, left->branch + 1,
+			sizeof *left->branch * (left->bsize + 1));
+#else
+		if(!PT_(split)(trie, full.prnt.tree, full.prnt.lf)) return 0;
+#endif
+		if(!--full.n) break;
+#ifdef ONENO
 		struct { unsigned br0, br1, lf; } t = { 0, 0, 0 };
 		printf("add: filled: count %lu, parent %p, cf find %p. Splitting.\n",
 			(unsigned long)full.n, (void *)full.prnt, (void *)find.tr);
@@ -497,9 +493,10 @@ found:
 		filled_count--;
 		assert(!filled_count);
 #endif
-		/* Adjust the bit found above. */
+		assert(0); /*...*/
 	}
-	/* Also adjust bits. */
+	/* TODO: Adjust the bit found above. */
+	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
 	assert(0);
 
 insert:
