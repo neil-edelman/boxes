@@ -363,11 +363,10 @@ found:
 	if(!full.n) goto insert;
 	for( ; ; ) { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
-		unsigned char n_split;
-
+		unsigned char split_lfs;
 		printf("full: %lu.\n", full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
-		 sequence point where the trie is valid. */
+		 sequence point in splitting where the trie is valid. */
 		if(!(up = full.prnt.tree) && !(up = PT_(tree)())
 			|| !(right = PT_(tree)())) { if(!full.prnt.tree) free(up);
 			free(right); return 0; }
@@ -390,27 +389,28 @@ found:
 			assert(0);
 		}
 		assert(left->bsize);
-		n_split = left->branch[0].left + 1;
+		split_lfs = left->branch[0].left + 1;
 
 		/* Copy the right part of the left to the new right. */
-		right->bsize = left->bsize - n_split;
-		memcpy(right->branch, left->branch + n_split,
+		right->bsize = left->bsize - split_lfs;
+		memcpy(right->branch, left->branch + split_lfs,
 			sizeof *left->branch * right->bsize);
-		memcpy(right->leaf, left->leaf + n_split,
+		memcpy(right->leaf, left->leaf + split_lfs,
 			sizeof *left->leaf * (right->bsize + 1));
 		memcpy(&right->is_child, &left->is_child, sizeof left->is_child);
-		trie_bmp_remove(&right->is_child, 0, n_split);
+		trie_bmp_remove(&right->is_child, 0, split_lfs);
 
 		/* Move back the branches of the left to account for the promotion. */
-		left->bsize = n_split - 1;
+		left->bsize = split_lfs - 1;
 		memmove(left->branch, left->branch + 1,
 			sizeof *left->branch * (left->bsize + 1));
 
 		if(--full.n) { /* Continue to the next tree. */
-		} else { /* This is the last tree split -- adjust invalidated `find`. */
+		} else { /* Last tree split -- adjust invalidated `find`. */
 			/* fixme: update find. */
 			break;
 		}
+		assert(0); /*...*/
 #if 0
 		struct { unsigned br0, br1, lf; } t = { 0, 0, 0 };
 		printf("add: filled: count %lu, parent %p, cf find %p. Splitting.\n",
@@ -436,7 +436,6 @@ found:
 		if(!unfilled) assert(!bit.x), unfilled = trie->root;
 		bit.unfilled = bit.x;
 #endif
-		assert(0); /*...*/
 	}
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
 	assert(0);
