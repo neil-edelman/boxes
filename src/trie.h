@@ -445,7 +445,8 @@ insert:
 		(void *)find.tr, find.tr_bit);
 	assert(find.tr->bsize < TRIE_BRANCHES);
 	{ /* For the path, augment all the branch's left counts along the left. */
-		struct { unsigned br0, br1, lf; } mir = { 0, find.tr->bsize, 0 };
+		struct { unsigned br0, br1, lf; } mir;
+		mir.br0 = 0, mir.br1 = find.tr->bsize, mir.lf = 0;
 		while(mir.br0 < find.br0) {
 			struct trie_branch *const branch = find.tr->branch + mir.br0;
 			printf("add: branch[left:%u, skip:%u], going ",
