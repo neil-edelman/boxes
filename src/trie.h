@@ -297,59 +297,6 @@ static void PT_(grph)(const struct T_(trie) *const trie, const char *const fn) {
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** Splits the child of `parent` at `leaf` in `trie`. `parent` must be a
- non-full parent tree or null, in that case, it splits the root and `leaf` must
- be zero. The trees under `parent`.
- @return Success. @throws[malloc] */
-static int PT_(split)(struct T_(trie) *const trie,
-	struct PT_(tree) *const parent, const unsigned leaf) {
-	struct PT_(tree) *up, *left = 0, *right = 0;
-	unsigned char split;
-	int success = 0;
-	assert(trie);
-	if(!(up = parent) && !(up = PT_(tree)()) || !(right = PT_(tree)()))
-		goto catch;
-	/* Promote the root of the the parent's leaf sub-tree; going to be left. */
-	if(!parent) {
-		assert(!leaf);
-		left = trie->root;
-		assert(left && left->bsize);
-		trie->root = up;
-		up->bsize = 1;
-		up->branch[0].left = 0;
-		up->branch[0].skip = left->branch[0].skip;
-		trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
-		trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
-	} else {
-		assert(leaf < parent->bsize + 1
-			&& trie_bmp_test(&parent->is_child, leaf));
-		left = parent->leaf[leaf].child;
-		assert(left && left->bsize);
-		assert(0);
-	}
-	split = left->branch[0].left + 1;
-
-	/* Copy the right part of the left to the new right. */
-	right->bsize = left->bsize - split;
-	memcpy(right->branch, left->branch + split,
-		sizeof *left->branch * right->bsize);
-	memcpy(right->leaf, left->leaf + split,
-		sizeof *left->leaf * (right->bsize + 1));
-	memcpy(&right->is_child, &left->is_child, sizeof left->is_child);
-	trie_bmp_remove(&right->is_child, 0, split);
-
-	/* Move back the branches of the left to account for the promotion. */
-	left->bsize = split - 1;
-	memmove(left->branch, left->branch + 1,
-		sizeof *left->branch * (left->bsize + 1));
-	{ success = 1; goto finally; }
-catch:
-	if(!parent) free(up);
-	free(right);
-finally:
-	return success;
-}
-
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
@@ -415,16 +362,12 @@ found:
 	/* Split the path up to the last unfilled tree, going down. */
 	if(!full.n) goto insert;
 	for( ; ; ) { /* Split a tree. */
-#define ONE
-#ifdef ONE
 		struct PT_(tree) *up, *left = 0, *right = 0;
 		unsigned char n_split;
-#endif
+
 		printf("full: %lu.\n", full.n);
-#ifdef ONE
 		/* Allocate one or two if the root-tree is being split. This is a
-		 sequence point where the trie is valid; splitting could fail part-way,
-		 but this ensures that it's always the same trie logically. */
+		 sequence point where the trie is valid. */
 		if(!(up = full.prnt.tree) && !(up = PT_(tree)())
 			|| !(right = PT_(tree)())) { if(!full.prnt.tree) free(up);
 			free(right); return 0; }
@@ -462,11 +405,13 @@ found:
 		left->bsize = n_split - 1;
 		memmove(left->branch, left->branch + 1,
 			sizeof *left->branch * (left->bsize + 1));
-#else
-		if(!PT_(split)(trie, full.prnt.tree, full.prnt.lf)) return 0;
-#endif
-		if(!--full.n) break;
-#ifdef ONENO
+
+		if(--full.n) { /* Continue to the next tree. */
+		} else { /* This is the last tree split -- adjust invalidated `find`. */
+			/* fixme: update find. */
+			break;
+		}
+#if 0
 		struct { unsigned br0, br1, lf; } t = { 0, 0, 0 };
 		printf("add: filled: count %lu, parent %p, cf find %p. Splitting.\n",
 			(unsigned long)full.n, (void *)full.prnt, (void *)find.tr);
@@ -474,7 +419,7 @@ found:
 		while(t.br0 < t.br1) { /* Tree. */
 			const struct trie_branch *const branch = full.prnt->branch + t.br0;
 			full.bit += branch->skip;
-			if(filled.bit >= bit.find) { assert(filled_count == 1); break; }
+			assert(filled.bit < bit.find);
 			if(!(is_right = TRIE_QUERY(key, bit.x)))
 				in_tree.br1 = ++in_tree.br0 + branch->left, branch->left++;
 			else
@@ -490,12 +435,9 @@ found:
 		printf("add: tree %p, leaf %u, bit %lu, target %lu\n", (void *)find, in_tree.lf, bit.x, bit.find);
 		if(!unfilled) assert(!bit.x), unfilled = trie->root;
 		bit.unfilled = bit.x;
-		filled_count--;
-		assert(!filled_count);
 #endif
 		assert(0); /*...*/
 	}
-	/* TODO: Adjust the bit found above. */
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
 	assert(0);
 
