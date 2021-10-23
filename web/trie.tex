@@ -9,9 +9,12 @@
 \usepackage{amsmath}
 \usepackage{standalone}
 
+% doesn't wrap
 \usepackage{xcolor}
 \definecolor{light-gray}{gray}{0.95}
 \newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
+
+%\newcommand{\math}[1]{\colorbox{light-gray}{\texttt{#1}}}
 
 \usepackage{times}      % font
 \usepackage{graphicx}   % include graphics
@@ -56,7 +59,7 @@
 
 % info
 \author{Neil Edelman}
-\title{Tries as an Index for String Keys}
+\title{Prefix-B-trees as an Index}
 \date{2021}
 
 \begin{document}
@@ -76,7 +79,7 @@ This is a set on a variable-length key, always terminated by a sentinel (allow a
 
 For proper ordering, most-significant bit first; prefix strings the sentinel should be less-than the encoding of all the characters. In practice, a null-terminated string. A Modified~UTF-8 example is Figure~\ref{bits}. It stores the keys in lexicographic order, but not by any collation algorithm.
 
-terminator, like in that paper; a terminator will . This terminator should have less-than all the other characters for ordering, so by a \emph{string} we mean \emph{a null-terminated string}. ; for example, in Modified UTF-8, \code{Z < a < z < â}. show a picture
+terminator, like in that paper; a terminator will . This terminator should have less-than all the other characters for ordering, so by a \emph{string} we mean \emph{a null-terminated string}. ; for example, in Modified UTF-8, \code{Z < a < z < æ}. show a picture
 
 \begin{figure} %[!ht]
 	\centering
@@ -105,9 +108,9 @@ instead of adding in one big trie, where the data type presents a limit of how b
 
 \subsection{Limits}
 
-Worst-case \code{\{ a, aa, aaa, aaaa, ... \}}. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
+Worst-case $\{ a, aa, aaa, aaaa, ... \}$. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
 
-This is valid, \code{\{ dictate, dictator \}}, as well as, \code{\{ dictator, dictionary, dictionaries \}}, but, as outlined, one ca'n't put \code{\{ dictionary, dictionaries \}}: it is too long a skip value. There are several modifications that would allow this, but they are out of this scope.
+This is valid, $\{ dictator \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to $\{ dictionary, dictionaries \}$: it is too long a skip value. There are several modifications that would allow this, but they are out of this scope.
 
 Insertion: Any leaf on the sub-tree queried will do; in this implementation, favours the left side.
 
