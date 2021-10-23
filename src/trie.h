@@ -352,8 +352,10 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		}
 found:
 		find.end.b1 = bit;
+		printf("ADD: find [br[%u,%u],lf#%u]\n", find.br0, find.br1, find.lf);
 		if(find.is_right = TRIE_QUERY(key, bit))
 			find.lf += find.br1 - find.br0 + 1;
+		printf("ADD: find [br[%u,%u],lf#%u]\n", find.br0, find.br1, find.lf);
 	}
 	printf("add: find [b%lu: br[%u,%u],lf#%u] [bit %lu..%lu] "
 		"full %lu\n", find.tr_bit, find.br0, find.br1, find.lf, find.end.b0,
@@ -458,17 +460,21 @@ insert:
 		mir.br0 = 0, mir.br1 = find.tr->bsize, mir.lf = 0;
 		while(mir.br0 < find.br0) {
 			struct trie_branch *const branch = find.tr->branch + mir.br0;
-			printf("add: branch[left:%u, skip:%u], going ",
-				branch->left, branch->skip);
-			if(mir.br0 + branch->left < find.br1)
+			printf("add: branch[left:%u, skip:%u], going %u+%u<%u ",
+				branch->left, branch->skip, mir.br0, branch->left, find.br1);
+			if(mir.br0 + 1 + branch->left < find.br1)
 				mir.br1 = ++mir.br0 + branch->left++,
 				printf("left, augmenting\n");
 			else
 				mir.br0 += branch->left + 1, mir.lf += branch->left + 1,
 				printf("right\n");
 		}
-		assert((mir.lf += (mir.br1 - mir.br0 + 1) * !!find.is_right,
-			mir.br0 == find.br0 && mir.br1 == find.br1 && mir.lf == find.lf));
+		printf("ADD: find [br[%u,%u],lf#%u]\n", find.br0, find.br1, find.lf);
+		printf("ADD: mir  [br[%u,%u],lf#%u]\n", mir.br0, mir.br1, mir.lf);
+		mir.lf += (mir.br1 - mir.br0 + 1) * !!find.is_right;
+		printf("ADD: mir  [br[%u,%u],lf#%u]\n", mir.br0, mir.br1, mir.lf);
+		assert(
+			mir.br0 == find.br0 && mir.br1 == find.br1 && mir.lf == find.lf);
 	}
 	printf("add: tree_%p(%lu) expand\n",
 		(void *)find.tr, find.tr_bit);

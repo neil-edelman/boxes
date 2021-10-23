@@ -137,9 +137,9 @@ static void str_trie_test(void) {
 int main(void) {
 	unsigned seed = 608126/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
+	star_trie_test();
 	str_trie_test();
 	colour_trie_test();
-	star_trie_test();
 	str4_trie_test();
 	keyval_trie_test();
 	return EXIT_SUCCESS;
