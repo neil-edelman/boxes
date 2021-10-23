@@ -407,10 +407,19 @@ found:
 
 		if(--full.n) { /* Continue to the next tree. */
 		} else { /* Last tree split -- adjust invalidated `find`. */
-			/* fixme: update find. */
+			/* fixme: update find:
+			struct { struct PT_(tree) *tr; size_t tr_bit;
+				struct { size_t b0, b1; } end; unsigned br0, br1, lf, is_right; } find;*/
+			if(!find.lf) {
+				find.tr = up;
+				assert(0);
+			} else if(find.lf <= split_lfs) {
+				find.tr = left;
+			} else {
+				find.tr = right;
+			}
 			break;
 		}
-		assert(0); /*...*/
 #if 0
 		struct { unsigned br0, br1, lf; } t = { 0, 0, 0 };
 		printf("add: filled: count %lu, parent %p, cf find %p. Splitting.\n",
