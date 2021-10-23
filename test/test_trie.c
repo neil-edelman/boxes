@@ -134,13 +134,31 @@ static void str_trie_test(void) {
 	str_trie_(&strs);
 }
 
+static void contrived_star_test(void) {
+	struct star_trie t = TRIE_IDLE;
+	struct star star[10], *s;
+	size_t i;
+	trie_star_no = 0;
+	char z[12];
+	for(i = 0; i < sizeof star / sizeof *star; i++) {
+		s = star + i;
+		star_filler(s);
+		trie_star_to_string(s, &z);
+		printf("--Star %s--\n", z);
+		star_trie_add(&t, s);
+		trie_star_no++;
+	}
+	star_trie_(&t);
+}
+
 int main(void) {
 	unsigned seed = 608126/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	star_trie_test();
 	str_trie_test();
+	contrived_star_test();
+	/*star_trie_test();
 	colour_trie_test();
 	str4_trie_test();
-	keyval_trie_test();
+	keyval_trie_test();*/
 	return EXIT_SUCCESS;
 }

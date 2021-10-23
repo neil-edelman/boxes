@@ -352,21 +352,20 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		}
 found:
 		find.end.b1 = bit;
-		printf("ADD: find [br[%u,%u],lf#%u]\n", find.br0, find.br1, find.lf);
 		if(find.is_right = TRIE_QUERY(key, bit))
 			find.lf += find.br1 - find.br0 + 1;
 		printf("ADD: find [br[%u,%u],lf#%u]\n", find.br0, find.br1, find.lf);
 	}
-	printf("add: find [b%lu: br[%u,%u],lf#%u] [bit %lu..%lu] "
+	/*printf("add: find [b%lu: br[%u,%u],lf#%u] [bit %lu..%lu] "
 		"full %lu\n", find.tr_bit, find.br0, find.br1, find.lf, find.end.b0,
-		find.end.b1, full.n);
+		find.end.b1, full.n);*/
 
 	/* Split the path up to the last unfilled tree, going down. */
 	if(!full.n) goto insert;
 	for( ; ; ) { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
-		unsigned char split_lfs;
-		printf("full: %lu.\n", full.n);
+		unsigned char split;
+		printf("add: full %lu.\n", full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
 		 sequence point in splitting where the trie is valid. */
 		if(!(up = full.prnt.tree) && !(up = PT_(tree)())
@@ -391,35 +390,46 @@ found:
 			assert(0);
 		}
 		assert(left->bsize);
-		split_lfs = left->branch[0].left + 1;
+		split = left->branch[0].left + 1; /* Leaves split. */
+		printf("add: split %u.\n", split);
 
 		/* Copy the right part of the left to the new right. */
-		right->bsize = left->bsize - split_lfs;
-		memcpy(right->branch, left->branch + split_lfs,
+		right->bsize = left->bsize - split;
+		memcpy(right->branch, left->branch + split,
 			sizeof *left->branch * right->bsize);
-		memcpy(right->leaf, left->leaf + split_lfs,
+		memcpy(right->leaf, left->leaf + split,
 			sizeof *left->leaf * (right->bsize + 1));
 		memcpy(&right->is_child, &left->is_child, sizeof left->is_child);
-		trie_bmp_remove(&right->is_child, 0, split_lfs);
+		trie_bmp_remove(&right->is_child, 0, split);
 
 		/* Move back the branches of the left to account for the promotion. */
-		left->bsize = split_lfs - 1;
+		left->bsize = split - 1;
 		memmove(left->branch, left->branch + 1,
 			sizeof *left->branch * (left->bsize + 1));
 
 		if(--full.n) { /* Continue to the next tree. */
+			assert(0);
 		} else { /* Last tree split -- adjust invalidated `find`. */
 			/* fixme: update find:
-			struct { struct PT_(tree) *tr; size_t tr_bit;
-				struct { size_t b0, b1; } end; unsigned br0, br1, lf, is_right; } find;*/
-			if(!find.lf) {
+			struct { struct PT_(tree) *tr; unsigned br0, br1, lf; } find;*/
+			printf("add: find before [%u,%u;%u]\n", find.br0, find.br1, find.lf);
+			if(!find.br0) {
+				printf("add: position top\n");
 				find.tr = up;
 				assert(0);
-			} else if(find.lf <= split_lfs) {
+			} else if(find.br0 <= split) {
+				printf("add: position left; br1 %u -> %u\n", find.br1, find.br1 - split);
 				find.tr = left;
+				find.br0--;
+				find.br1 -= split;
 			} else {
+				printf("add: position right\n");
 				find.tr = right;
+				find.br0 -= split;
+				find.br1 -= split;
+				find.lf -= split;
 			}
+			printf("add: find after [%u,%u;%u]\n", find.br0, find.br1, find.lf);
 			break;
 		}
 #if 0
@@ -449,7 +459,7 @@ found:
 #endif
 	}
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
-	assert(0);
+	//assert(0);
 
 insert:
 	printf("add: tree_%p(%lu) backtrack\n",
@@ -469,8 +479,6 @@ insert:
 				mir.br0 += branch->left + 1, mir.lf += branch->left + 1,
 				printf("right\n");
 		}
-		printf("ADD: find [br[%u,%u],lf#%u]\n", find.br0, find.br1, find.lf);
-		printf("ADD: mir  [br[%u,%u],lf#%u]\n", mir.br0, mir.br1, mir.lf);
 		mir.lf += (mir.br1 - mir.br0 + 1) * !!find.is_right;
 		printf("ADD: mir  [br[%u,%u],lf#%u]\n", mir.br0, mir.br1, mir.lf);
 		assert(
@@ -709,8 +717,8 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 	}
 	/* Fall through the trees. */
 	while(trie_bmp_test(&tree->is_child, it->leaf))
-		it->next = tree->leaf[it->leaf].child, it->leaf = 0
-		/*, printf("next: fall though.\n")*/;
+		tree = it->next = tree->leaf[it->leaf].child, it->leaf = 0
+		/*, printf("next: fall though.\n")*/; /* !!! */
 	/* Until we hit data. */
 	/*printf("next: more data\n");*/
 	return tree->leaf[it->leaf++].data;
