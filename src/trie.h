@@ -347,9 +347,9 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 			}
 			assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
 			if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
-			if(!is_full) full.prnt.tr = find.tr, full.prnt.lf = find.lf,
-				full.prnt.lf_bit = bit; /* End bit. */
-			/********AND MORE********/
+			if(!is_full) full.prnt.tr = find.tr, full.prnt.lf_bit = bit,
+				full.prnt.br0 = find.br0, full.prnt.br1 = find.br1,
+				full.prnt.lf = find.lf;
 			find.tr = find.tr->leaf[find.lf].child;
 		}
 		{ /* Got to a leaf. */
@@ -425,7 +425,8 @@ found:
 				find.tr = up;
 				assert(0);
 			} else if(find.br0 <= split) {
-				printf("add: position left; br1 %u -> %u\n", find.br1, find.br1 - split);
+				printf("add: position left; br1 %u -> %u\n",
+					find.br1, find.br1 - split);
 				find.tr = left;
 				find.br0--;
 				find.br1 -= split;
@@ -466,7 +467,6 @@ found:
 #endif
 	}
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
-	//assert(0);
 
 insert:
 	printf("add: tree_%p(%lu) backtrack\n",
