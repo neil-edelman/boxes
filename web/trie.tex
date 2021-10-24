@@ -11,7 +11,7 @@
 \usepackage{times}      % font
 \usepackage{graphicx}   % include graphics
 \usepackage{fullpage}   % book margins -> std margins
-\usepackage{amsmath}    % {align}
+\usepackage{amsmath}    % align, nobreakdash
 %\usepackage{wrapfig}    % {wrapfigure}
 %\usepackage{moreverb}   % \verbatimtabinput
 %\usepackage{subfig}     % sub-figure
@@ -49,6 +49,9 @@
   pdfpagemode=UseNone
 }
 
+% these should not be hyphenated
+%\hyphenation{UTF-8} "not a letter"
+
 % info
 \author{Neil Edelman}
 \title{Prefix-B-trees as an Index}
@@ -69,9 +72,9 @@ Intro.\cite{morrison1968patricia}\cite{fredkin1960trie}\cite{knuth1997sorting}
 
 This is a set on a variable-length key, always terminated by a sentinel (allow a string is a prefix of another string in the same trie). It is ordered, and permits range queries with a prefix.
 
-For proper ordering, most-significant bit first; prefix strings the sentinel should be less-than the encoding of all the characters. In practice, a null-terminated string. A Modified~UTF-8 example is Figure~\ref{star-3:bits}. It stores the keys in lexicographic order, but not by any collation algorithm.
+For proper ordering, most-significant bit first; prefix strings the sentinel should be less-than the encoding of all the characters. In practice, a null-terminated string. A Modified~\mbox{UTF-8} example is Figure~\ref{star-3:bits}. It stores the keys in lexicographic order, but not by any collation algorithm.
 
-terminator, like in that paper; a terminator will . This terminator should have less-than all the other characters for ordering, so by a \emph{string} we mean \emph{a null-terminated string}. ; for example, in Modified UTF-8, \code{Z < a < z < æ}. show a picture
+terminator, like in that paper; a terminator will . This terminator should have less-than all the other characters for ordering, so by a \emph{string} we mean \emph{a null-terminated string}. ; for example, in Modified~\mbox{UTF-8}, \code{Z < a < z < æ}. show a picture
 
 
 % star-3
