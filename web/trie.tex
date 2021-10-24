@@ -334,11 +334,13 @@ An implementation is an associative-array Patrica trie\cite{morrison1968patricia
 
 This is an index: unlike a binary search where the key is retrieved and compared, we have the string decision bit in the key that cuts down the size of the search space. When we get a prefix match, only one string needs to be retrieved to check that it's a match with all the bits that we skipped over.
 
-\subsection{Tree Structure}
+A forest of trees. B-tree: always have the same number of trees.
 
-non-empty complete binary tree
+\subsection{Tree Structure in Memory}
 
-semi-implicit: lose the ability to go up the tree; have to have the size \ref{star-3:mem}
+non-empty complete binary tree. semi-implicit: lose the ability to go up the tree; have to have the size \ref{star-3:mem}
+
+Separate the leaves, which are pointers to data or to another tree, from the branches, which are decision bits in the key string passed to look up. Only one leaf lookup is performed per tree.
 
 \subsection{Machine Considerations}
 
