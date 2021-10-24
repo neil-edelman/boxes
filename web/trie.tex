@@ -1,20 +1,12 @@
 \documentclass[12pt]{article}
 
 \usepackage[utf8]{inputenc}
+\usepackage[pdf,singlefile,tmpdir]{graphviz} % \detokenize to use utf-8
 
-% dot2tex
-\usepackage[x11names, svgnames, rgb]{xcolor}
-\usepackage{tikz}
-\usetikzlibrary{snakes,arrows,shapes}
-\usepackage{amsmath}
-\usepackage{standalone}
-
-% doesn't wrap
+% code doesn't wrap
 \usepackage{xcolor}
 \definecolor{light-gray}{gray}{0.95}
 \newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
-
-%\newcommand{\math}[1]{\colorbox{light-gray}{\texttt{#1}}}
 
 \usepackage{times}      % font
 \usepackage{graphicx}   % include graphics
@@ -26,7 +18,7 @@
 \usepackage{subcaption}
 \usepackage[colorlinks]{hyperref}   % pdf links
 \usepackage{url}        % url support
-
+\usepackage{comment}
 
 % ieee style
 \bibliographystyle{ieeetr}
@@ -81,12 +73,267 @@ For proper ordering, most-significant bit first; prefix strings the sentinel sho
 
 terminator, like in that paper; a terminator will . This terminator should have less-than all the other characters for ordering, so by a \emph{string} we mean \emph{a null-terminated string}. ; for example, in Modified UTF-8, \code{Z < a < z < æ}. show a picture
 
+
+% star-3
 \begin{figure} %[!ht]
 	\centering
-	\subcaptionbox{A cat\label{bits}}{\input{targets/colour-3-add-logic.gv.tex}}
-	%\includegraphics[width=0.5\textwidth]{trie.png}
-	\caption{Trie.\label{trie}}
+	\subcaptionbox{Bit view.\label{star-3:bits}}{
+\digraph[scale=0.6]{star3bits}{
+	node [shape = none];
+	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
+<TABLE BORDER="0" CELLBORDER="0">
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">Algieba</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">Regulus</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+		<TD>0</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="2">Vega</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+	</TR>
+</TABLE>>];
+}}\\
+	\subcaptionbox{Logical view.\label{star-3:logic}}{
+\digraph[scale=0.6]{star3logic}{
+	node [shape = none];
+	tree0x1028049c0branch0 [label = "3", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x1028049c0branch0 -> tree0x1028049c0leaf0 [style = dashed, color = Gray];
+	tree0x1028049c0branch0 -> tree0x1028049c0branch1;
+	tree0x1028049c0branch1 [label = "1", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x1028049c0branch1 -> tree0x1028049c0leaf1 [style = dashed, color = Gray];
+	tree0x1028049c0branch1 -> tree0x1028049c0leaf2 [color = Gray];
+	tree0x1028049c0leaf0 [label = "Algieba"];
+	tree0x1028049c0leaf1 [label = "Regulus"];
+	tree0x1028049c0leaf2 [label = "Vega"];
+}}\\
+	\subcaptionbox{Memory view.\label{star-3:mem}}{
+\digraph[scale=0.6]{star3mem}{
+	node [shape = none];
+	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="right" BORDER="0">left</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">skip</TD>
+		<TD>3</TD>
+		<TD>1</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">leaves</TD>
+		<TD BGCOLOR="Grey90">Algieba</TD>
+		<TD BGCOLOR="Grey90">Regulus</TD>
+		<TD BGCOLOR="Grey90">Vega</TD>
+	</TR>
+</TABLE>>];
+}}
+	\caption{A full 3-trie.\label{star-3}}
 \end{figure}
+
+
+
+
+
+
+% star-4
+\begin{comment}
+\begin{figure}
+	\centering
+	\caption{Split the trie to put four items.\label{star-4}}
+	\subcaptionbox{Bit view.\label{star-4:bits}}{
+\digraph[scale=0.6]{star4bits}{
+	node [shape = none];
+	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
+<TABLE BORDER="0" CELLBORDER="0">
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">↓<FONT COLOR="Gray">Algieba</FONT></TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">↓<FONT COLOR="Gray">Regulus</FONT></TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+	</TR>
+</TABLE>>];
+	tree0x1028049f0branch0:0 -> tree0x1028049c0branch0 [color = "Black:invis:Black" style = dashed];
+	tree0x1028049f0branch0:1 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
+	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
+<TABLE BORDER="0" CELLBORDER="0">
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">Algieba</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD BORDER="0">&nbsp;</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD BORDER="0">&nbsp;</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">Alpheratz</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD BORDER="0">&nbsp;</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD BORDER="0">&nbsp;</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+	</TR>
+</TABLE>>];
+	tree0x102804a20branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
+<TABLE BORDER="0" CELLBORDER="0">
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">Regulus</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">Vega</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+	</TR>
+</TABLE>>];
+}}
+\end{figure}
+\end{comment}
+\begin{figure}
+	\centering
+	\subcaptionbox{Logical view.\label{star-4:logic}}{
+\digraph[scale=0.6]{star4logic}{
+	node [shape = none];
+	tree0x1028049f0branch0 [label = "3", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x1028049f0branch0 -> tree0x1028049c0branch0 [style = dashed, color = "Black:invis:Black"];
+	tree0x1028049f0branch0 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
+	tree0x1028049c0branch0 [label = "15", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x1028049c0branch0 -> tree0x1028049c0leaf0 [style = dashed, color = Gray];
+	tree0x1028049c0branch0 -> tree0x1028049c0leaf1 [color = Gray];
+	tree0x1028049c0leaf0 [label = "Algieba"];
+	tree0x1028049c0leaf1 [label = "Alpheratz"];
+	tree0x102804a20branch0 [label = "1", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x102804a20branch0 -> tree0x102804a20leaf0 [style = dashed, color = Gray];
+	tree0x102804a20branch0 -> tree0x102804a20leaf1 [color = Gray];
+	tree0x102804a20leaf0 [label = "Regulus"];
+	tree0x102804a20leaf1 [label = "Vega"];
+}}\\
+	\subcaptionbox{Memory view.\label{star-4:mem}}{
+\digraph[scale=0.6]{star4mem}{
+	node [shape = none];
+	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="right" BORDER="0">left</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">skip</TD>
+		<TD>3</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">leaves</TD>
+		<TD PORT="0" BGCOLOR="Gray90">...</TD>
+		<TD PORT="1" BGCOLOR="Gray90">...</TD>
+	</TR>
+</TABLE>>];
+	tree0x1028049f0branch0:0 -> tree0x1028049c0branch0 [color = "Black:invis:Black" style = dashed];
+	tree0x1028049f0branch0:1 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
+	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="right" BORDER="0">left</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">skip</TD>
+		<TD>15</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">leaves</TD>
+		<TD BGCOLOR="Grey90">Algieba</TD>
+		<TD BGCOLOR="Grey90">Alpheratz</TD>
+	</TR>
+</TABLE>>];
+	tree0x102804a20branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="right" BORDER="0">left</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">skip</TD>
+		<TD>1</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">leaves</TD>
+		<TD BGCOLOR="Grey90">Regulus</TD>
+		<TD BGCOLOR="Grey90">Vega</TD>
+	</TR>
+</TABLE>>];
+}}
+	\caption{Split the 3-trie to put four items.\label{star-4}}
+\end{figure}
+
+
 
 \subsection{Implementation}
 
