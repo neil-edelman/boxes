@@ -1,7 +1,7 @@
 \documentclass[12pt]{article}
 
 \usepackage[utf8]{inputenc}
-\usepackage[pdf,singlefile,tmpdir]{graphviz} % \detokenize to use utf-8
+\usepackage[pdf,tmpdir]{graphviz} % \detokenize to use utf-8 [singlefile]
 
 % code doesn't wrap
 \usepackage{xcolor}
@@ -69,7 +69,7 @@ Intro.\cite{morrison1968patricia}\cite{fredkin1960trie}\cite{knuth1997sorting}
 
 This is a set on a variable-length key, always terminated by a sentinel (allow a string is a prefix of another string in the same trie). It is ordered, and permits range queries with a prefix.
 
-For proper ordering, most-significant bit first; prefix strings the sentinel should be less-than the encoding of all the characters. In practice, a null-terminated string. A Modified~UTF-8 example is Figure~\ref{bits}. It stores the keys in lexicographic order, but not by any collation algorithm.
+For proper ordering, most-significant bit first; prefix strings the sentinel should be less-than the encoding of all the characters. In practice, a null-terminated string. A Modified~UTF-8 example is Figure~\ref{star-3:bits}. It stores the keys in lexicographic order, but not by any collation algorithm.
 
 terminator, like in that paper; a terminator will . This terminator should have less-than all the other characters for ordering, so by a \emph{string} we mean \emph{a null-terminated string}. ; for example, in Modified UTF-8, \code{Z < a < z < æ}. show a picture
 
@@ -77,8 +77,8 @@ terminator, like in that paper; a terminator will . This terminator should have 
 % star-3
 \begin{figure} %[!ht]
 	\centering
-	\subcaptionbox{Bit view.\label{star-3:bits}}{
-\digraph[scale=0.6]{star3bits}{
+	\subcaptionbox{Bit view.\label{star-3:bits}}{%
+		\digraph[scale=0.6]{star3bits}{
 	node [shape = none];
 	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
 <TABLE BORDER="0" CELLBORDER="0">
@@ -108,7 +108,8 @@ terminator, like in that paper; a terminator will . This terminator should have 
 		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
 	</TR>
 </TABLE>>];
-}}\\
+		}
+	}
 	\subcaptionbox{Logical view.\label{star-3:logic}}{
 \digraph[scale=0.6]{star3logic}{
 	node [shape = none];
@@ -121,7 +122,7 @@ terminator, like in that paper; a terminator will . This terminator should have 
 	tree0x1028049c0leaf0 [label = "Algieba"];
 	tree0x1028049c0leaf1 [label = "Regulus"];
 	tree0x1028049c0leaf2 [label = "Vega"];
-}}\\
+}}
 	\subcaptionbox{Memory view.\label{star-3:mem}}{
 \digraph[scale=0.6]{star3mem}{
 	node [shape = none];
@@ -148,30 +149,23 @@ terminator, like in that paper; a terminator will . This terminator should have 
 	\caption{A full 3-trie.\label{star-3}}
 \end{figure}
 
-
-
-
-
-
 % star-4
-\begin{comment}
 \begin{figure}
 	\centering
-	\caption{Split the trie to put four items.\label{star-4}}
 	\subcaptionbox{Bit view.\label{star-4:bits}}{
 \digraph[scale=0.6]{star4bits}{
 	node [shape = none];
 	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
 <TABLE BORDER="0" CELLBORDER="0">
 	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="0">↓<FONT COLOR="Gray">Algieba</FONT></TD>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">\detokenize{↓}<FONT COLOR="Gray">Algieba</FONT></TD>
 		<TD>0</TD>
 		<TD>1</TD>
 		<TD>0</TD>
 		<TD BGCOLOR="White" BORDER="1">0</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="1">↓<FONT COLOR="Gray">Regulus</FONT></TD>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">\detokenize{↓}<FONT COLOR="Gray">Regulus</FONT></TD>
 		<TD>0</TD>
 		<TD>1</TD>
 		<TD>0</TD>
@@ -255,10 +249,6 @@ terminator, like in that paper; a terminator will . This terminator should have 
 	</TR>
 </TABLE>>];
 }}
-\end{figure}
-\end{comment}
-\begin{figure}
-	\centering
 	\subcaptionbox{Logical view.\label{star-4:logic}}{
 \digraph[scale=0.6]{star4logic}{
 	node [shape = none];
@@ -337,7 +327,7 @@ terminator, like in that paper; a terminator will . This terminator should have 
 
 \subsection{Implementation}
 
-An implementation is an associative-array Patrica trie \cite{}: binary, storing only bit differences; Figure~\ref{prefix:logic}.
+An implementation is an associative-array Patrica trie\cite{morrison1968patricia}: binary, storing only bit differences; Figure~\ref{star-3:logic}.
 
 This is an index: unlike a binary search where the key is retrieved and compared, we have the string decision bit in the key that cuts down the size of the search space. When we get a prefix match, only one string needs to be retrieved to check that it's a match with all the bits that we skipped over.
 
@@ -345,7 +335,7 @@ This is an index: unlike a binary search where the key is retrieved and compared
 
 non-empty complete binary tree
 
-semi-implicit: lose the ability to go up the tree; have to have the size \ref{prefix:mem}
+semi-implicit: lose the ability to go up the tree; have to have the size \ref{star-3:mem}
 
 \subsection{Machine Considerations}
 
