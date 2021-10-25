@@ -340,45 +340,54 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 		bit.unfilled = bit.x;
 #endif
 
-/* Augment/expand an un-full tree. The inserted spot will be an uninitialized
+/** All parameters to insert a node in a tree, minus the node. This is just
+ for the insert function, which could end up inserting multiple times at
+ different places when it causes a cascaded split. */
+struct PT_(insert) {
+	struct PT_(tree) *tr;
+	unsigned br0, br1, lf, is_right;
+	struct { size_t b0, b1; } end;
+};
+
+/* Expand an un-full tree. The inserted spot will be an uninitialized
  data leaf. Helper method for <fn:<PT>add_unique>. */
-static const union PT_(leaf) *PT_(augment_unfull_tree)(struct PT_(tree)
-	*const tr, const unsigned br0, const unsigned br1, const unsigned lf,
-	const unsigned is_right, const size_t end_b0, const size_t end_b1) {
-	struct { unsigned br0, br1, lf; } mir = { 0, tr->bsize, 0 };
+static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
+	struct { unsigned br0, br1, lf; } mir = { 0, i.tr->bsize, 0 };
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
-	assert(tr && tr->bsize < TRIE_BRANCHES && br0 <= br1 && br1 <= tr->bsize
-		&& br1 - br0 <= TRIE_MAX_LEFT && lf <= tr->bsize + 1
-		&& end_b0 <= end_b1 && end_b1 - end_b0 <= UCHAR_MAX);
+	assert(i.tr && i.tr->bsize < TRIE_BRANCHES && i.br0 <= i.br1
+		&& i.br1 <= i.tr->bsize && i.br1 - i.br0 <= TRIE_MAX_LEFT
+		&& i.lf <= i.tr->bsize + 1 && i.end.b0 <= i.end.b1
+		&& i.end.b1 - i.end.b0 <= UCHAR_MAX);
 	/*mir.br0 = 0, mir.br1 = tr->bsize, mir.lf = 0;*/
-	printf("insert: %s-tree\n", orc(tr));
+	printf("insert: %s-tree\n", orc(i.tr));
 
 	/* Path defined by parameters: augment left counts along the left. */
-	while(mir.br0 < br0) {
-		branch = tr->branch + mir.br0;
-		if(mir.br0 + 1 + branch->left < br1)
+	while(mir.br0 < i.br0) {
+		branch = i.tr->branch + mir.br0;
+		if(mir.br0 + 1 + branch->left < i.br1)
 			mir.br1 = ++mir.br0 + branch->left++;
 		else
 			mir.br0 += branch->left + 1, mir.lf += branch->left + 1;
 	}
-	mir.lf += (mir.br1 - mir.br0 + 1) * is_right;
-	printf("insert.augment: mir  [%u,%u;%u]\n", mir.br0, mir.br1, mir.lf);
-	assert(mir.br0 == br0 && mir.br1 == br1 && mir.lf == lf);
+	assert((mir.lf += (mir.br1 - mir.br0 + 1) * i.is_right,
+		printf("insert.augment: mir  [%u,%u;%u]\n",
+		mir.br0, mir.br1, mir.lf),
+		mir.br0 == i.br0 && mir.br1 == i.br1 && mir.lf == i.lf));
 
 	/* Expand the tree to include one more leaf. */
-	leaf = tr->leaf + lf;
-	memmove(leaf + 1, leaf, sizeof *leaf * ((tr->bsize + 1) - lf));
+	leaf = i.tr->leaf + i.lf;
+	memmove(leaf + 1, leaf, sizeof *leaf * ((i.tr->bsize + 1) - i.lf));
 	/* Split with existing branch. */
-	branch = tr->branch + br0;
-	if(br0 != br1) assert(end_b0 <= end_b1
-		&& end_b1 + 1 <= end_b0 + branch->skip),
-		branch->skip -= end_b1 - end_b0 + 1;
-	trie_bmp_insert(&tr->is_child, lf, 1);
-	memmove(branch + 1, branch, sizeof *branch * (tr->bsize - br0));
-	branch->left = is_right ? (unsigned char)(br1 - br0) : 0;
-	branch->skip = (unsigned char)(end_b1 - end_b0);
-	tr->bsize++;
+	branch = i.tr->branch + i.br0;
+	if(i.br0 != i.br1) assert(i.end.b0 <= i.end.b1
+		&& i.end.b1 + 1 <= i.end.b0 + branch->skip),
+		branch->skip -= i.end.b1 - i.end.b0 + 1;
+	trie_bmp_insert(&i.tr->is_child, i.lf, 1);
+	memmove(branch + 1, branch, sizeof *branch * (i.tr->bsize - i.br0));
+	branch->left = i.is_right ? (unsigned char)(i.br1 - i.br0) : 0;
+	branch->skip = (unsigned char)(i.end.b1 - i.end.b0);
+	i.tr->bsize++;
 	return leaf;
 }
 
