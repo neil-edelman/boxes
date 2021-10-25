@@ -477,17 +477,13 @@ insert: /* <!-- Insert the data into a un-full tree. */
 		mir.br0 = 0, mir.br1 = find.tr->bsize, mir.lf = 0;
 		while(mir.br0 < find.br0) {
 			struct trie_branch *const branch = find.tr->branch + mir.br0;
-			printf("add: branch[left:%u, skip:%u], going %u+%u<%u ",
-				branch->left, branch->skip, mir.br0, branch->left, find.br1);
 			if(mir.br0 + 1 + branch->left < find.br1)
-				mir.br1 = ++mir.br0 + branch->left++,
-				printf("left, augmenting\n");
+				mir.br1 = ++mir.br0 + branch->left++;
 			else
-				mir.br0 += branch->left + 1, mir.lf += branch->left + 1,
-				printf("right\n");
+				mir.br0 += branch->left + 1, mir.lf += branch->left + 1;
 		}
 		mir.lf += (mir.br1 - mir.br0 + 1) * find.is_right;
-		printf("ADD: mir  [br[%u,%u],lf#%u]\n", mir.br0, mir.br1, mir.lf);
+		printf("ADD: mir  [%u,%u;%u]\n", mir.br0, mir.br1, mir.lf);
 		assert(
 			mir.br0 == find.br0 && mir.br1 == find.br1 && mir.lf == find.lf);
 	}
