@@ -323,7 +323,6 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 			unsigned br0, br1, lf, unused;
 		} prnt;
 		size_t n; } full = { { 0, 9999, 9999, 9999, 0, 9999 }, 0 }; /* Trap. */
-	char a[12];
 	assert(trie && x && key);
 
 	printf("_add_: %s -> %s.\n", key, PT_(str)(trie));
@@ -371,9 +370,8 @@ found:
 		find.end.b1 = bit;
 		if(find.is_right = !!TRIE_QUERY(key, bit))
 			find.lf += find.br1 - find.br0 + 1;
-		orcish_ptr(a, sizeof a, find.tr);
 		printf("add: find %s-tree(b%lu)[%u,%u;%u]\n",
-			a, find.tr_bit, find.br0, find.br1, find.lf);
+			orc(find.tr), find.tr_bit, find.br0, find.br1, find.lf);
 	} /* Find. --> */
 
 	/* <!-- Split the path up to the last unfilled tree, going down. */
@@ -381,9 +379,8 @@ found:
 	for( ; ; ) { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
 		unsigned char split;
-		orcish_ptr(a, sizeof a, full.prnt.tr);
 		printf("add: full.prnt %s-tree(end b%lu)[%u,%u;%u]; full trees %lu\n",
-			a, full.prnt.end_bit, full.prnt.br0,
+			orc(full.prnt.tr), full.prnt.end_bit, full.prnt.br0,
 			full.prnt.br1, full.prnt.lf, full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
 		 sequence point in splitting where the trie is valid. */
@@ -488,8 +485,7 @@ found:
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
 
 insert: /* <!-- Insert the data into a un-full tree. */
-	orcish_ptr(a, sizeof a, find.tr);
-	printf("add: %s-tree(%lu) backtrack\n", a, find.tr_bit);
+	printf("add: %s-tree(%lu) backtrack\n", orc(find.tr), find.tr_bit);
 	assert(find.tr->bsize < TRIE_BRANCHES);
 	{ /* For the path, augment all the branch's left counts along the left. */
 		struct { unsigned br0, br1, lf; } mir;
@@ -506,8 +502,7 @@ insert: /* <!-- Insert the data into a un-full tree. */
 		assert(
 			mir.br0 == find.br0 && mir.br1 == find.br1 && mir.lf == find.lf);
 	}
-	orcish_ptr(a, sizeof a, find.tr);
-	printf("add: %s-tree(%lu) expand\n", a, find.tr_bit);
+	printf("add: %s-tree(%lu) expand\n", orc(find.tr), find.tr_bit);
 	{ /* Expand the tree to include one more branch and leaf. */
 		union PT_(leaf) *leaf = find.tr->leaf + find.lf;
 		struct trie_branch *branch = find.tr->branch + find.br0;

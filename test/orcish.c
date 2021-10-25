@@ -123,5 +123,30 @@ void orcish(char *const name, const size_t name_size)
  to `name_size` - 1, then puts a null terminator. Uses `MurmurHash3Mixer`.
  @param[name_size] If zero, does nothing. */
 void orcish_ptr(char *const name, const size_t name_size,
-	const void *const p)
-	{ orcish_recur(name, name_size, (unsigned long)p, &MurmurHash3Mixer); }
+	const void *const p) {
+	assert(name);
+	if(!name_size) return;
+	if(!p) {
+		switch(name_size) {
+		default:
+		case 5: name[3] = 'l';
+		case 4: name[2] = 'l';
+		case 3: name[1] = 'u';
+		case 2: name[0] = 'n';
+		case 1: break;
+		}
+		name[name_size < 5 ? name_size - 1 : 4] = '\0';
+	} else {
+		orcish_recur(name, name_size, (unsigned long)p, &MurmurHash3Mixer);
+	}
+}
+
+/** Fills a static buffer of up to four names with a deterministic Orcish name
+ based on `p` with <fn:orcish_ptr>. */
+const char *orc(const void *const p) {
+	static char str[4][12];
+	static unsigned x;
+	x %= sizeof str / sizeof *str;
+	orcish_ptr(str[x], sizeof *str, p);
+	return str[x++];
+}
