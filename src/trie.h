@@ -340,6 +340,48 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 		bit.unfilled = bit.x;
 #endif
 
+/* Augment/expand an un-full tree. The inserted spot will be an uninitialized
+ data leaf. Helper method for <fn:<PT>add_unique>. */
+static const union PT_(leaf) *PT_(augment_unfull_tree)(struct PT_(tree)
+	*const tr, const unsigned br0, const unsigned br1, const unsigned lf,
+	const unsigned is_right, const size_t end_b0, const size_t end_b1) {
+	struct { unsigned br0, br1, lf; } mir = { 0, tr->bsize, 0 };
+	union PT_(leaf) *leaf;
+	struct trie_branch *branch;
+	assert(tr && tr->bsize < TRIE_BRANCHES && br0 <= br1 && br1 <= tr->bsize
+		&& br1 - br0 <= TRIE_MAX_LEFT && lf <= tr->bsize + 1
+		&& end_b0 <= end_b1 && end_b1 - end_b0 <= UCHAR_MAX);
+	/*mir.br0 = 0, mir.br1 = tr->bsize, mir.lf = 0;*/
+	printf("insert: %s-tree\n", orc(tr));
+
+	/* Path defined by parameters: augment left counts along the left. */
+	while(mir.br0 < br0) {
+		branch = tr->branch + mir.br0;
+		if(mir.br0 + 1 + branch->left < br1)
+			mir.br1 = ++mir.br0 + branch->left++;
+		else
+			mir.br0 += branch->left + 1, mir.lf += branch->left + 1;
+	}
+	mir.lf += (mir.br1 - mir.br0 + 1) * is_right;
+	printf("insert.augment: mir  [%u,%u;%u]\n", mir.br0, mir.br1, mir.lf);
+	assert(mir.br0 == br0 && mir.br1 == br1 && mir.lf == lf);
+
+	/* Expand the tree to include one more leaf. */
+	leaf = tr->leaf + lf;
+	memmove(leaf + 1, leaf, sizeof *leaf * ((tr->bsize + 1) - lf));
+	/* Split with existing branch. */
+	branch = tr->branch + br0;
+	if(br0 != br1) assert(end_b0 <= end_b1
+		&& end_b1 + 1 <= end_b0 + branch->skip),
+		branch->skip -= end_b1 - end_b0 + 1;
+	trie_bmp_insert(&tr->is_child, lf, 1);
+	memmove(branch + 1, branch, sizeof *branch * (tr->bsize - br0));
+	branch->left = is_right ? (unsigned char)(br1 - br0) : 0;
+	branch->skip = (unsigned char)(end_b1 - end_b0);
+	tr->bsize++;
+	return leaf;
+}
+
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
@@ -382,8 +424,10 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 				const size_t next = bit + branch->skip;
 				for( ; bit < next; bit++)
 					if(TRIE_DIFF(key, sample, bit)) goto found;
-				if(!TRIE_QUERY(key, bit)) find.br1 = ++find.br0 + branch->left;
-				else find.br0 += branch->left + 1, find.lf += branch->left + 1,
+				if(!TRIE_QUERY(key, bit))
+					find.br1 = ++find.br0 + branch->left;
+				else find.br0 += branch->left + 1,
+					find.lf += branch->left + 1,
 					sample = PT_(sample)(find.tr, find.lf);
 				find.end.b0 = ++bit;
 			}
@@ -486,6 +530,7 @@ found:
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
 
 insert: /* <!-- Insert the data into a un-full tree. */
+#if 0
 	printf("add.insert: %s-tree(%lu) backtrack\n", orc(find.tr), find.tr_bit);
 	assert(find.tr->bsize < TRIE_BRANCHES);
 	{ /* For the path, augment all the branch's left counts along the left. */
@@ -523,6 +568,11 @@ insert: /* <!-- Insert the data into a un-full tree. */
 		branch->skip = (unsigned char)(find.end.b1 - find.end.b0);
 		find.tr->bsize++;
 	}
+#else
+	PT_(augment_unfull_tree)(find.tr, find.br0, find.br1, find.lf,
+		find.is_right, find.end.b0, find.end.b1);
+	find.tr->leaf[find.lf].data = x;
+#endif
 	/* Insert. --> */
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
 	printf("add_unique(%s) completed, tree bsize %d\n", key, find.tr->bsize);
