@@ -1,6 +1,7 @@
-\documentclass[12pt,ieee]{article}
+\documentclass[12pt]{article}
 
 % input
+\bibliographystyle{ieeetr}
 \usepackage[utf8]{inputenc}
 %\usepackage{times} % font
 \usepackage{lmodern} % scalable font
@@ -10,11 +11,10 @@
 \usepackage{fullpage} % book margins -> std margins
 \usepackage{wrapfig} % wrapfigure
 %\usepackage{moreverb} % verbatimtabinput
-%\usepackage{subfig} % sub-figure
 \usepackage{subcaption} % subcaptionbox
 \usepackage[colorlinks]{hyperref} % pdf links
 \usepackage{url} % url support
-\usepackage{comment} % comment
+%\usepackage{comment} % comment
 
 % code doesn't wrap
 \usepackage[table]{xcolor}
@@ -29,16 +29,13 @@
 % colourize titles
 \definecolor{ilrblue}{RGB}{79,166,220}
 \usepackage{titling}
-\pretitle{\fontfamily{\sfdefault}\fontsize{18bp}{18bp}\color{ilrblue}\selectfont}
-\posttitle{\par\vspace{24bp}}
+\pretitle{\vspace{-3em}\fontfamily{\sfdefault}\fontsize{18bp}{18bp}\color{ilrblue}\selectfont}
+\posttitle{\par\vspace{18bp}}
 \preauthor{\normalfont\selectfont\MakeUppercase}
 \postauthor{\par\vspace{4bp}}
 \predate{\normalfont\selectfont}
 \postdate{\par\vspace{-8bp}}
 \usepackage{titlesec}
-%\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
-%\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
-%\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
 \titleformat{\section}{\fontfamily{\sfdefault}\selectfont\normalsize\bfseries\color{ilrblue}\MakeUppercase}{\thesection}{1em}{}
 \titleformat{\subsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}}{\thesubsection}{1em}{}
 \titleformat{\subsubsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}\it}{\thesubsubsection}{1em}{}
@@ -49,7 +46,7 @@
       \section*{\abstractname}%
     \else \small %
       \begin{center}%
-        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-12bp}}%
       \end{center}%
       \quotation
     \fi}
@@ -69,7 +66,7 @@
 }
 
 \author{Neil A. Edelman}
-\title{Prefix-B-trees as an Index}
+\title{Practical Tries as a String Index}
 \date{2021-10-20}
 
 \begin{document}
@@ -81,8 +78,6 @@
 \section{Introduction}
 
 A trie is, ``a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991],''\cite{askitis2011redesigning} so that, ``INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.''\cite{knuth1997sorting} It is ordered, and a prefix permits range queries.
-
-\subsubsection{subsub}
 
 In practice, a set on a variable-length key, always terminated by a sentinel; this will allow a string and it's prefix in the same trie\cite{fredkin1960trie}. For proper ordering, we traverse with most-significant bit first and the sentinel should be less-than the encoding of all the characters; in practice, a null-terminated string. Figure~\ref{star-3:bits} shows a Modified~\mbox{UTF-8} example. It stores the keys in lexicographic order, but not by any collation algorithm.
 
