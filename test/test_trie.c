@@ -11,6 +11,16 @@
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
+static void sz_filler(char *c) { assert(c != 0); c = ""; }
+static const char *sz_key(const char *const c) { return c; }
+
+#define TRIE_NAME sz
+#define TRIE_TYPE char
+#define TRIE_KEY &sz_key
+#define TRIE_TEST &sz_filler
+#define TRIE_TO_STRING
+#include "../src/trie.h"
+
 #define PARAM(A) A
 #define STRINGIZE(A) #A
 #define COLOUR(X) /* Max 11 letters. */ \
@@ -134,28 +144,38 @@ static void str_trie_test(void) {
 	str_trie_(&strs);
 }
 
-static void contrived_star_test(void) {
-	struct star_trie t = TRIE_IDLE;
+static void contrived_test(void) {
+	struct star_trie strs = TRIE_IDLE;
 	struct star star[10], *s;
+	struct sz_trie szs = TRIE_IDLE;
 	size_t i;
 	trie_star_no = 0;
 	char z[12];
+	trie_sz_no++, sz_trie_add(&szs, "");
+	trie_sz_no++, sz_trie_add(&szs, "A");
+	trie_sz_no++, sz_trie_add(&szs, "Z");
+	trie_sz_no++, sz_trie_add(&szs, "a");
+	trie_sz_no++, sz_trie_add(&szs, "z");
+	trie_sz_no++, sz_trie_add(&szs, "â");
+	trie_sz_no++, sz_trie_add(&szs, "foobar");
+	trie_sz_no++, sz_trie_add(&szs, "foo");
+	trie_sz_grph(&szs, "graph/szs-full.gv");
 	for(i = 0; i < sizeof star / sizeof *star; i++) {
 		s = star + i;
+		trie_star_no++;
 		star_filler(s);
 		trie_star_to_string(s, &z);
 		printf("--Star %s--\n", z);
-		star_trie_add(&t, s);
-		trie_star_no++;
+		star_trie_add(&strs, s);
 	}
-	star_trie_(&t);
+	star_trie_(&strs);
 }
 
 int main(void) {
 	unsigned seed = 608126/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	str_trie_test();
-	contrived_star_test();
+	contrived_test();
 	/*star_trie_test();
 	colour_trie_test();
 	str4_trie_test();

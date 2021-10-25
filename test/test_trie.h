@@ -99,8 +99,9 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		unsigned is_child = trie_bmp_test(&tree->is_child, i);
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\" PORT=\"%u\">%s%s%s</TD>\n",
-			i, is_child ? "↓<FONT COLOR=\"Gray\">" : "", key,
+			i, is_child ? "↓<FONT COLOR=\"Gray\">&#8288;" : "", key,
 			is_child ? "</FONT>" : "");
+		/* &ZeroWidthSpace; still does crazy on empty */
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
 			const unsigned bit = !!TRIE_QUERY(key, b);
