@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include "orcish.h"
 
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.
@@ -308,9 +309,11 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
+	char a[12];
 	assert(tree);
-	printf("tree %p\n"
-		"left ", (const void *)tree);
+	orcish_ptr(a, sizeof a, tree);
+	printf("%s-tree:\n"
+		"left ", a);
 	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
 		printf("%s%u", b ? ", " : "", branch->left);
 	printf("\n"
@@ -321,10 +324,12 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 		"leaves ");
 	for(i = 0; i <= tree->bsize; i++) {
 		if(i) printf(", ");
-		if(trie_bmp_test(&tree->is_child, i))
-			printf("%p", (void *)tree->leaf[i].child);
-		else
+		if(trie_bmp_test(&tree->is_child, i)) {
+			orcish_ptr(a, sizeof a, tree->leaf[i].child);
+			printf("%s-tree", a);
+		} else {
 			printf("%s", PT_(to_key)(tree->leaf[i].data));
+		}
 	}
 	printf("\n");
 }

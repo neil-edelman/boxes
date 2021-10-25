@@ -56,9 +56,11 @@ static const unsigned suffixes_max_length = 7;
 static const unsigned max_name_size = 256;
 
 /** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
- then puts a null terminator. Uses `rand` from `stdlib.h`.
+ then puts a null terminator. Uses `r` plugged into `recur` to generate random
+ values in the range of `RAND_MAX`.
  @param[name_size] If zero, does nothing. */
-void orcish(char *const name, size_t name_size) {
+static void orcish_recur(char *const name, size_t name_size,
+	unsigned long r, unsigned (*recur)(unsigned long *)) {
 	char *n = name;
 	const char *part;
 	size_t part_len;
@@ -68,12 +70,12 @@ void orcish(char *const name, size_t name_size) {
 	else if(name_size > max_name_size) { name_size = max_name_size; }
 	/* Now `name_size \in [2, max_name_size]`. */
 	if(name_size <= syllables_max_length + suffixes_max_length) {
-		part = syllables[(unsigned)rand() / (RAND_MAX / syllables_size + 1)];
+		part = syllables[recur(&r) / (RAND_MAX / syllables_size + 1)];
 		part_len = strlen(part);
 		if(part_len >= name_size) part_len = name_size - 1;
 		memcpy(n, part, part_len), n += part_len, name_size -= part_len;
 		if(name_size > suffixes_max_length) {
-			part = suffixes[(unsigned)rand() / (RAND_MAX / suffixes_size + 1)];
+			part = suffixes[recur(&r) / (RAND_MAX / suffixes_size + 1)];
 			part_len = strlen(part);
 			memcpy(n, part, part_len), n += part_len, name_size -= part_len;
 		}
@@ -81,15 +83,45 @@ void orcish(char *const name, size_t name_size) {
 		unsigned no_syllables = ((unsigned)name_size - 1 - suffixes_max_length)
 			/ syllables_max_length;
 		while(no_syllables) {
-			part = syllables[(unsigned)rand() / (RAND_MAX / syllables_size +1)];
+			part = syllables[recur(&r) / (RAND_MAX / syllables_size +1)];
 			part_len = strlen(part);
 			memcpy(n, part, part_len), n += part_len, name_size -= part_len;
 			no_syllables--;
 		}
-		part = suffixes[(unsigned)rand() / (RAND_MAX / suffixes_size + 1)];
+		part = suffixes[recur(&r) / (RAND_MAX / suffixes_size + 1)];
 		part_len = strlen(part);
 		memcpy(n, part, part_len), n += part_len, name_size -= part_len;
 	}
 	*n = '\0';
 	*name = (char)toupper(*name);
 }
+
+/** Uses `rand`; ignores `r` and uses a global variable set by `srand`. */
+static unsigned rand_recur(unsigned long *const r)
+	{ (void)r; return (unsigned)rand(); }
+
+/** <https://github.com/aappleby/smhasher>, used as the recurrence on `r`. */
+static unsigned MurmurHash3Mixer(unsigned long *const r) {
+	unsigned long key = *r;
+	assert(r);
+	key ^= (key >> 33);
+	key *= 0xff51afd7ed558ccd;
+	key ^= (key >> 33);
+	key *= 0xc4ceb9fe1a85ec53;
+	key ^= (key >> 33);
+	*r = key;
+	return key % (1lu + RAND_MAX);
+}
+
+/** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
+ then puts a null terminator. Uses `rand` from `stdlib.h`.
+ @param[name_size] If zero, does nothing. */
+void orcish(char *const name, const size_t name_size)
+	{ orcish_recur(name, name_size, 0, &rand_recur); }
+
+/** Fills `name` with a deterministic Orcish name based on `p`. Potentially up
+ to `name_size` - 1, then puts a null terminator. Uses `MurmurHash3Mixer`.
+ @param[name_size] If zero, does nothing. */
+void orcish_ptr(char *const name, const size_t name_size,
+	const void *const p)
+	{ orcish_recur(name, name_size, (unsigned long)p, &MurmurHash3Mixer); }
