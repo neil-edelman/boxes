@@ -347,6 +347,7 @@ struct PT_(insert) {
 	struct PT_(tree) *tr;
 	unsigned br0, br1, lf, is_right;
 	struct { size_t b0, b1; } end;
+	union { size_t top, end; } bit; /* Unused for insertion. */
 };
 
 /* Expand an un-full tree. The inserted spot will be an uninitialized
@@ -397,11 +398,7 @@ static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x);
 	size_t bit = 0;
-	struct {
-		struct PT_(tree) *tr; size_t tr_bit;
-		unsigned br0, br1, lf, is_right;
-		struct { size_t b0, b1; } end;
-	} find;
+	struct PT_(insert) find;
 	struct {
 		struct {
 			struct PT_(tree) *tr; size_t end_bit;
@@ -423,9 +420,9 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		for( ; ; ) { /* Forest. */
 			const int is_full = find.tr->bsize >= TRIE_BRANCHES;
 			full.n = is_full ? full.n + 1 : 0;
-			find.tr_bit = find.end.b0 = bit;
+			find.bit.top = find.end.b0 = bit;
 			sample = PT_(sample)(find.tr, 0);
-			printf("add.find: (b%lu)\n", find.tr_bit), PT_(prnt)(find.tr);
+			printf("add.find: (b%lu)\n", find.bit.top), PT_(prnt)(find.tr);
 			find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
 			while(find.br0 < find.br1) { /* Tree. */
 				const struct trie_branch *const
@@ -458,7 +455,7 @@ found:
 		if(find.is_right = !!TRIE_QUERY(key, bit))
 			find.lf += find.br1 - find.br0 + 1;
 		printf("add.find: %s-tree(b%lu)[%u,%u;%u]\n",
-			orc(find.tr), find.tr_bit, find.br0, find.br1, find.lf);
+			orc(find.tr), find.bit.top, find.br0, find.br1, find.lf);
 	} /* Find. --> */
 
 	/* <!-- Split the path up to the last unfilled tree, going down. */
@@ -578,8 +575,7 @@ insert: /* <!-- Insert the data into a un-full tree. */
 		find.tr->bsize++;
 	}
 #else
-	PT_(augment_unfull_tree)(find.tr, find.br0, find.br1, find.lf,
-		find.is_right, find.end.b0, find.end.b1);
+	PT_(expand)(find);
 	find.tr->leaf[find.lf].data = x;
 #endif
 	/* Insert. --> */
