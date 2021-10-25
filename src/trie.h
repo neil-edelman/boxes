@@ -158,27 +158,27 @@ static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 	const char *const key) {
 	struct PT_(tree) *tree;
 	size_t bit; /* `bit \in key`.  */
-	struct { unsigned br0, br1, lf; } in_tree;
+	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
 	if(!(tree = trie->root)) return 0; /* Empty. */
 	for(byte.cur = 0, bit = 0; ; ) { /* Forest. */
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
-		while(in_tree.br0 < in_tree.br1) { /* Tree. */
-			const struct trie_branch *const branch = tree->branch + in_tree.br0;
+		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
+		while(t.br0 < t.br1) { /* Tree. */
+			const struct trie_branch *const branch = tree->branch + t.br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0; /* Too short. */
 			if(!TRIE_QUERY(key, bit))
-				in_tree.br1 = ++in_tree.br0 + branch->left;
+				t.br1 = ++t.br0 + branch->left;
 			else
-				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
+				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&tree->is_child, in_tree.lf)) break;
-		tree = tree->leaf[in_tree.lf].child;
+		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
+		tree = tree->leaf[t.lf].child;
 	}
-	return &tree->leaf[in_tree.lf].data;
+	return &tree->leaf[t.lf].data;
 }
 
 /** @return An index candidate match for `key` in `trie`. */
@@ -206,36 +206,36 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *it) {
 	struct PT_(tree) *tree;
 	size_t bit; /* `bit \in key`.  */
-	struct { unsigned br0, br1, lf; } in_tree;
+	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(prefix && it);
 	it->root = it->next = it->end = 0;
 	it->leaf = it->leaf_end = 0;
 	if(!trie) return;
 	for(tree = trie->root, byte.cur = 0, bit = 0; ; ) { /* Forest. */
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
-		while(in_tree.br0 < in_tree.br1) { /* Tree. */
-			const struct trie_branch *const branch = tree->branch + in_tree.br0;
+		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
+		while(t.br0 < t.br1) { /* Tree. */
+			const struct trie_branch *const branch = tree->branch + t.br0;
 			/* _Sic_; '\0' is _not_ included for partial match. */
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur <= byte.next; byte.cur++)
 				if(prefix[byte.cur] == '\0') goto finally;
 			if(!TRIE_QUERY(prefix, bit))
-				in_tree.br1 = ++in_tree.br0 + branch->left;
+				t.br1 = ++t.br0 + branch->left;
 			else
-				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
+				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&tree->is_child, in_tree.lf)) break;
-		tree = tree->leaf[in_tree.lf].child;
+		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
+		tree = tree->leaf[t.lf].child;
 	};
 finally:
-	assert(in_tree.br0 <= in_tree.br1
-		&& in_tree.lf - in_tree.br0 + in_tree.br1 <= tree->bsize);
+	assert(t.br0 <= t.br1
+		&& t.lf - t.br0 + t.br1 <= tree->bsize);
 	it->root = trie->root;
 	it->next = it->end = tree;
-	it->leaf = in_tree.lf;
-	it->leaf_end = in_tree.lf + in_tree.br1 - in_tree.br0 + 1;
+	it->leaf = t.lf;
+	it->leaf_end = t.lf + t.br1 - t.br0 + 1;
 }
 
 /** @return The leftmost key `lf` of `any`. */
@@ -310,7 +310,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	} find;
 	struct {
 		struct {
-			struct PT_(tree) *tr; size_t lf_bit;
+			struct PT_(tree) *tr; size_t end_bit;
 			unsigned br0, br1, lf, unused;
 		} prnt;
 		size_t n; } full = { { 0, 9999, 9999, 9999, 0, 9999 }, 0 }; /* Trap. */
@@ -346,8 +346,8 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 			}
 			assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
 			if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
-			/* If it's not terminal and not full, save the parent of full. */
-			if(!is_full) full.prnt.tr = find.tr, full.prnt.lf_bit = bit,
+			/* If it's not terminal and not full, in case it becomes full. */
+			if(!is_full) full.prnt.tr = find.tr, full.prnt.end_bit = bit,
 				full.prnt.br0 = find.br0, full.prnt.br1 = find.br1,
 				full.prnt.lf = find.lf;
 			find.tr = find.tr->leaf[find.lf].child;
@@ -370,8 +370,8 @@ found:
 	for( ; ; ) { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
 		unsigned char split;
-		printf("add: full.prnt tree%p(lf b%lu)[%u,%u;%u]; full trees %lu\n",
-			(void *)full.prnt.tr, full.prnt.lf_bit, full.prnt.br0,
+		printf("add: full.prnt tree%p(end b%lu)[%u,%u;%u]; full trees %lu\n",
+			(void *)full.prnt.tr, full.prnt.end_bit, full.prnt.br0,
 			full.prnt.br1, full.prnt.lf, full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
 		 sequence point in splitting where the trie is valid. */
