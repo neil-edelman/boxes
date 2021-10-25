@@ -466,18 +466,13 @@ found:
 				find.tr = up;
 				assert(0);
 			} else if(find.br1 <= split) {
-				printf("add.correct: position left; br1 %u -> %u\n",
-					find.br1, find.br1 - split);
+				printf("add.correct: position left\n");
 				find.tr = left;
-				find.br0--;
-				find.br1 -= split;
+				find.br0--, find.br1--;
 			} else {
-				printf("add.correct: position right; (untested)\n");
+				printf("add.correct: position right\n");
 				find.tr = right;
-				find.br0 -= split;
-				find.br1 -= split;
-				find.lf -= split;
-				assert(0);
+				find.br0 -= split, find.br1 -= split, find.lf -= split;
 			}
 			printf("add.correct: find after [%u,%u;%u]\n",
 				   find.br0, find.br1, find.lf);
