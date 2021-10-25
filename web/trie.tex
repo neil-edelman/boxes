@@ -1,61 +1,76 @@
-\documentclass[12pt]{article}
+\documentclass[12pt,ieee]{article}
 
+% input
 \usepackage[utf8]{inputenc}
-\usepackage[pdf,tmpdir]{graphviz} % \detokenize to use utf-8 [singlefile]
+%\usepackage{times} % font
+\usepackage{lmodern} % scalable font
+\usepackage{graphicx} % include graphics
+\usepackage{amsmath} % align, nobreakdash
+\usepackage[pdf,tmpdir]{graphviz} % digraph
+\usepackage{fullpage} % book margins -> std margins
+\usepackage{wrapfig} % wrapfigure
+%\usepackage{moreverb} % verbatimtabinput
+%\usepackage{subfig} % sub-figure
+\usepackage{subcaption} % subcaptionbox
+\usepackage[colorlinks]{hyperref} % pdf links
+\usepackage{url} % url support
+\usepackage{comment} % comment
 
 % code doesn't wrap
-\usepackage{xcolor}
+\usepackage[table]{xcolor}
 \definecolor{light-gray}{gray}{0.95}
 \newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
-
-\usepackage{times}      % font
-\usepackage{graphicx}   % include graphics
-\usepackage{fullpage}   % book margins -> std margins
-\usepackage{amsmath}    % align, nobreakdash
-%\usepackage{wrapfig}    % {wrapfigure}
-%\usepackage{moreverb}   % \verbatimtabinput
-%\usepackage{subfig}     % sub-figure
-\usepackage{subcaption}
-\usepackage[colorlinks]{hyperref}   % pdf links
-\usepackage{url}        % url support
-\usepackage{comment}
-
-% ieee style
-\bibliographystyle{ieeetr}
-
-% define "\fig"
-\def\fig#1#2{\begin{figure}[!ht]\begin{center}
-\includegraphics[width=0.5\textwidth]{#1.jpg}
-\end{center}\caption{#2}\label{#1}\end{figure}}
-
-\def\wide#1#2{\begin{figure*}[hptb]\begin{center}
-\includegraphics[height=0.5\textwidth]{#1.jpg}
-\end{center}\vspace{-0pt}\caption{#2}\label{#1}\end{figure*}}
 
 % create new commands
 \def\^#1{\textsuperscript{#1}}
 \def\!{\overline}
 \def\degree{\ensuremath{^\circ}}
 
+% colourize titles
+\definecolor{ilrblue}{RGB}{79,166,220}
+\usepackage{titling}
+\pretitle{\fontfamily{\sfdefault}\fontsize{18bp}{18bp}\color{ilrblue}\selectfont}
+\posttitle{\par\vspace{24bp}}
+\preauthor{\normalfont\selectfont\MakeUppercase}
+\postauthor{\par\vspace{4bp}}
+\predate{\normalfont\selectfont}
+\postdate{\par\vspace{-8bp}}
+\usepackage{titlesec}
+%\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+%\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+%\titleformat{\subsubsection}{\normalfont\normalsize\bfseries}{\thesubsubsection}{1em}{}
+\titleformat{\section}{\fontfamily{\sfdefault}\selectfont\normalsize\bfseries\color{ilrblue}\MakeUppercase}{\thesection}{1em}{}
+\titleformat{\subsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}\it}{\thesubsubsection}{1em}{}
+% Ewww
+\makeatletter
+\renewenvironment{abstract}{%
+    \if@twocolumn
+      \section*{\abstractname}%
+    \else \small %
+      \begin{center}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}}%
+      \end{center}%
+      \quotation
+    \fi}
+    {\if@twocolumn\else\endquotation\fi}
+\makeatother
+
 % for hyperref
 \hypersetup{
-  linkcolor=blue,
-  urlcolor=blue,
-  filecolor=blue,
-  citecolor=blue, % that's it
+  linkcolor=ilrblue,
+  urlcolor=ilrblue,
+  filecolor=ilrblue,
+  citecolor=ilrblue, % that's it
   pdfauthor={\@author},
   pdftitle={\@title},
   pdfsubject={\@title},
   pdfpagemode=UseNone
 }
 
-% these should not be hyphenated
-%\hyphenation{UTF-8} "not a letter"
-
-% info
-\author{Neil Edelman}
+\author{Neil A. Edelman}
 \title{Prefix-B-trees as an Index}
-\date{2021}
+\date{2021-10-20}
 
 \begin{document}
 
@@ -65,20 +80,15 @@
 
 \section{Introduction}
 
-\noindent
-Intro.\cite{morrison1968patricia}\cite{fredkin1960trie}\cite{knuth1997sorting}
+A trie is, ``a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991],''\cite{askitis2011redesigning} so that, ``INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.''\cite{knuth1997sorting} It is ordered, and a prefix permits range queries.
 
-\subsection{Abstract Data Type}
+\subsubsection{subsub}
 
-This is a set on a variable-length key, always terminated by a sentinel (allow a string is a prefix of another string in the same trie). It is ordered, and permits range queries with a prefix.
-
-For proper ordering, most-significant bit first; prefix strings the sentinel should be less-than the encoding of all the characters. In practice, a null-terminated string. A Modified~\mbox{UTF-8} example is Figure~\ref{star-3:bits}. It stores the keys in lexicographic order, but not by any collation algorithm.
-
-terminator, like in that paper; a terminator will . This terminator should have less-than all the other characters for ordering, so by a \emph{string} we mean \emph{a null-terminated string}. ; for example, in Modified~\mbox{UTF-8}, \code{Z < a < z < æ}. show a picture
-
+In practice, a set on a variable-length key, always terminated by a sentinel; this will allow a string and it's prefix in the same trie\cite{fredkin1960trie}. For proper ordering, we traverse with most-significant bit first and the sentinel should be less-than the encoding of all the characters; in practice, a null-terminated string. Figure~\ref{star-3:bits} shows a Modified~\mbox{UTF-8} example. It stores the keys in lexicographic order, but not by any collation algorithm.
 
 % star-3
-\begin{figure} %[!ht]
+%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
+\begin{figure}
 	\centering
 	\subcaptionbox{Bit view.\label{star-3:bits}}{%
 		\digraph[scale=0.6]{star3bits}{
@@ -328,23 +338,23 @@ terminator, like in that paper; a terminator will . This terminator should have 
 
 
 
-\subsection{Implementation}
+\section{Implementation}
 
-An implementation is an associative-array Patrica trie\cite{morrison1968patricia}: binary, storing only bit differences; Figure~\ref{star-3:logic}.
-
-This is an index: unlike a binary search where the key is retrieved and compared, we have the string decision bit in the key that cuts down the size of the search space. When we get a prefix match, only one string needs to be retrieved to check that it's a match with all the bits that we skipped over.
+A compact representation is a Patrica trie\cite{morrison1968patricia}: that is, a binary trie on the individual bits and skip values when bits offer no difference. In Figure~\ref{star-3:logic}, the branches indicate a \code{do not care} for all the skipped bits before, corresponding to Figure~\ref{star-3:bits} that offer no delineation. If a query might have a difference in the skipped values, one could also check the final result of a query for agreement with the found value.
 
 A forest of trees. B-tree: always have the same number of trees.
 
-\subsection{Tree Structure in Memory}
+\subsection{Structure in Memory}
 
-non-empty complete binary tree. semi-implicit: lose the ability to go up the tree; have to have the size \ref{star-3:mem}
+Like a node in a B-trie, a tree structure is a contiguous chunk. A tree whose $\mathit{size}$, the number of nodes, is composed of internal nodes, $\mathit{branch}$, and external nodes, $\mathit{leaf}$; $\mathit{size} = \mathit{branch} + \mathit{leaf}$. As a non-empty complete binary tree, $\mathit{leaf} = \mathit{branch} + 1 \rightarrow \mathit{size} = 2\mathit{branch} + 1$. We arrange the branches pre-order in an array, thus, forward read in topologically sorted order. Number of branches remaining is initialized to the $b = \mathit{branch}$, we can make the tree semi-implicit by storing the $\mathit{left}$ branches and calculating $\mathit{right} = b - \mathit{left}$. As an example, refer to Figure~\ref{star-3:mem}.
+
+The above wastes half of $\mathit{left}$'s dynamic range, in the best case, because branches that are $e$ from the end will have at most $\mathit{left} = e$: a tree with all left branches.
 
 Separate the leaves, which are pointers to data or to another tree, from the branches, which are decision bits in the key string passed to look up. Only one leaf lookup is performed per tree.
 
 \subsection{Machine Considerations}
 
-The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range allowed for each byte; a trie (also a B-tree) of order 256 is an obvious choice.
+The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. Always forward in memory. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range allowed for each byte; a trie (also a B-tree) of order 256 is an obvious choice.\cite{sinha2004cache}
 
 instead of adding in one big trie, where the data type presents a limit of how big it is, we have pointers to sub-blocks. This is seen in ... This allows us to shrink the data-type significantly; for a non-empty complete binary tree that has `n` leaves (order `n`), it has `n - 1` the internal nodes, or branches. The maximum that the left branch count can be is when the right node of the root is a leaf, that is `n - 2`. If we set this left-branch maximum to the maximum of the data type, we can use all the range. Practically, we set it to 254 instead of 255; the branches take up 255, and the branch size number is 1, for alignment.
 
