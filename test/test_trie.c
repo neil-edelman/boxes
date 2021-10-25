@@ -160,6 +160,7 @@ static void contrived_test(void) {
 	trie_sz_no++, sz_trie_add(&szs, "foobar");
 	trie_sz_no++, sz_trie_add(&szs, "foo");
 	trie_sz_grph(&szs, "graph/szs-full.gv");
+	/* "τ Ceti" "τ C" */
 	for(i = 0; i < sizeof star / sizeof *star; i++) {
 		s = star + i;
 		trie_star_no++;

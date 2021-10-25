@@ -97,6 +97,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		const char *params, *start, *end;
 		struct { unsigned br0, br1; } in_tree;
 		unsigned is_child = trie_bmp_test(&tree->is_child, i);
+		/* 0-width joiner: GraphViz gets upset when tag closed immediately. */
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\" PORT=\"%u\">%s%s%s</TD>\n",
 			i, is_child ? "↓<FONT COLOR=\"Gray\">&#8288;" : "", key,
