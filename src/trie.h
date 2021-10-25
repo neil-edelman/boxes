@@ -65,8 +65,12 @@
 #define TRIE_QUERY(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
 #define TRIE_DIFF(a, b, n) \
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
-/* Worst-case all-left, `(0,UCHAR_MAX]`. We could go 255, but alignment. */
+/* Worst-case all-branches-left root. Parameter sets the maximum tree size.
+ Prefer alignment `4n - 2`. (It could easily happen, `{a, b, ..., A}`). */
 #define TRIE_MAX_LEFT 1/*6*//*254*/
+#if TRIE_MAX_LEFT < 0 /*1? maybe?it's useless*/ || TRIE_MAX_LEFT > UCHAR_MAX
+#error TRIE_MAX_LEFT has to be `(0, UCHAR_MAX]` without modifications.
+#endif
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
 #define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
 struct trie_branch { unsigned char left, skip; };
