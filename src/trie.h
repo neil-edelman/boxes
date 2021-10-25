@@ -285,6 +285,7 @@ static const char *PT_(str)(const struct T_(trie) *const trie) {
 
 #ifdef TRIE_TEST
 static void PT_(graph)(const struct T_(trie) *, const char *);
+static void PT_(print)(const struct PT_(tree) *);
 #endif
 
 static void PT_(grph)(const struct T_(trie) *const trie, const char *const fn) {
@@ -293,6 +294,14 @@ static void PT_(grph)(const struct T_(trie) *const trie, const char *const fn) {
 	PT_(graph)(trie, fn);
 #endif
 }
+
+static void PT_(prnt)(const struct PT_(tree) *const tree) {
+	assert(tree);
+#ifdef TRIE_TEST
+	PT_(print)(tree);
+#endif
+}
+
 
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
@@ -331,7 +340,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 			full.n = is_full ? full.n + 1 : 0;
 			find.tr_bit = find.end.b0 = bit;
 			sample = PT_(sample)(find.tr, 0);
-			printf("add: tree%p(b%lu)\n", (void *)find.tr, find.tr_bit);
+			printf("add: (b%lu)\n", find.tr_bit), PT_(prnt)(find.tr);
 			find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
 			while(find.br0 < find.br1) { /* Tree. */
 				const struct trie_branch *const
@@ -379,7 +388,7 @@ found:
 			|| !(right = PT_(tree)())) { if(!full.prnt.tr) free(up);
 			free(right); return 0; }
 		/* Promote the root of the the parent's leaf sub-tree. */
-		if(!full.prnt.tr) {
+		if(!full.prnt.tr) { /* Raising the depth of the B-trie. */
 			assert(!full.prnt.lf);
 			left = trie->root;
 			assert(left && left->bsize);
@@ -390,7 +399,8 @@ found:
 			trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
 			trie->root = up;
 		} else {
-			assert(full.prnt.lf <= full.prnt.tr->bsize
+			assert(full.prnt.tr->bsize < TRIE_BRANCHES
+				&& full.prnt.lf <= full.prnt.tr->bsize
 				&& trie_bmp_test(&full.prnt.tr->is_child, full.prnt.lf));
 			left = full.prnt.tr->leaf[full.prnt.lf].child;
 			assert(left && left->bsize); /* Or else wouldn't be full. */
@@ -436,6 +446,7 @@ found:
 				find.br0 -= split;
 				find.br1 -= split;
 				find.lf -= split;
+				assert(0);
 			}
 			printf("add: find after [%u,%u;%u]\n", find.br0, find.br1, find.lf);
 			break;

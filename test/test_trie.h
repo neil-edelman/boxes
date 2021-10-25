@@ -305,7 +305,6 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 	PT_(graph_choose)(trie, temp, &PT_(graph_tree_bits));
 }
 
-#if 0
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
@@ -329,7 +328,6 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 	}
 	printf("\n");
 }
-#endif
 
 /** Make sure `any` is in a valid state, (and all the children.) */
 static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
