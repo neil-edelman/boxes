@@ -358,8 +358,9 @@ static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	struct trie_branch *branch;
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES && i.br0 <= i.br1
 		&& i.br1 <= i.tr->bsize && i.br1 - i.br0 <= TRIE_MAX_LEFT
-		&& i.lf <= i.tr->bsize + 1 && i.end.b0 <= i.end.b1
-		&& i.end.b1 - i.end.b0 <= UCHAR_MAX);
+		&& i.lf <= i.tr->bsize + 1
+		&& (i.br0 == i.br1
+		|| (i.end.b0 <= i.end.b1 && i.end.b1 - i.end.b0 <= UCHAR_MAX)));
 	/*mir.br0 = 0, mir.br1 = tr->bsize, mir.lf = 0;*/
 	printf("insert: %s-tree\n", orc(i.tr));
 
@@ -490,6 +491,11 @@ found:
 				&& trie_bmp_test(&full.prnt.tr->is_child, full.prnt.lf));
 			left = full.prnt.tr->leaf[full.prnt.lf].child;
 			assert(left && left->bsize); /* Or else wouldn't be full. */
+			PT_(expand)(full.prnt);
+			/* ...two of them? what's full.prnt.lf? is it the left? +1?
+			 should we be using up? */
+			trie_bmp_set(&full.prnt.tr->is_child, full.prnt.lf);
+			full.prnt.tr->leaf[full.prnt.lf].child = 0/*left?*/;
 			assert(0);
 		}
 		assert(left->bsize);
