@@ -42,7 +42,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <limits.h> /* CHAR_BIT (C89!) */
+#include <limits.h> /* CHAR_BIT (will compile on C89) */
 
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
@@ -50,11 +50,8 @@
 #if defined(TRIE_TYPE) ^ defined(TRIE_KEY)
 #error TRIE_TYPE and TRIE_KEY have to be mutually defined.
 #endif
-#if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
-#error TRIE_TEST requires TRIE_TO_STRING.
-#endif
-#if defined(TRIE_TEST) && !defined(TRIE_TYPE)
-#error TRIE_TEST can only be on TRIE_TYPE.
+#if defined(TRIE_TEST) && (!defined(TRIE_TO_STRING) || !defined(TRIE_TYPE))
+#error TRIE_TEST requires TRIE_TO_STRING and TRIE_TYPE.
 #endif
 
 #ifndef TRIE_H /* <!-- idempotent */
@@ -101,7 +98,7 @@ static int trie_is_prefix(const char *a, const char *b) {
 #define PT_(thing) CAT(trie, T_(thing))
 
 #ifndef TRIE_TYPE /* <!-- !type */
-/** Default values for string: uses `a` as the key. */
+/** Default `char` uses `a` as the key, which makes it a set of strings. */
 static const char *PT_(raw)(const char *a) { return assert(a), a; }
 #define TRIE_TYPE char
 #define TRIE_KEY &PT_(raw)
