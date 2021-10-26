@@ -529,55 +529,15 @@ found:
 				find.br0 -= split, find.br1 -= split, find.lf -= split;
 			}
 			printf("add.correct: find after [%u,%u;%u]\n",
-				   find.br0, find.br1, find.lf);
+				find.br0, find.br1, find.lf);
 			break;
 		}
 	} /* Split. --> */
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
 
 insert: /* <!-- Insert the data into a un-full tree. */
-#if 0
-	printf("add.insert: %s-tree(%lu) backtrack\n", orc(find.tr), find.tr_bit);
-	assert(find.tr->bsize < TRIE_BRANCHES);
-	{ /* For the path, augment all the branch's left counts along the left. */
-		struct { unsigned br0, br1, lf; } mir;
-		mir.br0 = 0, mir.br1 = find.tr->bsize, mir.lf = 0;
-		while(mir.br0 < find.br0) {
-			struct trie_branch *const branch = find.tr->branch + mir.br0;
-			if(mir.br0 + 1 + branch->left < find.br1)
-				mir.br1 = ++mir.br0 + branch->left++;
-			else
-				mir.br0 += branch->left + 1, mir.lf += branch->left + 1;
-		}
-		mir.lf += (mir.br1 - mir.br0 + 1) * find.is_right;
-		printf("add.insert: mir  [%u,%u;%u]\n", mir.br0, mir.br1, mir.lf);
-		assert(
-			mir.br0 == find.br0 && mir.br1 == find.br1 && mir.lf == find.lf);
-	}
-	printf("add.expand: %s-tree(%lu)\n", orc(find.tr), find.tr_bit);
-	{ /* Expand the tree to include one more branch and leaf. */
-		union PT_(leaf) *leaf = find.tr->leaf + find.lf;
-		struct trie_branch *branch = find.tr->branch + find.br0;
-		memmove(leaf + 1, leaf,
-			sizeof *leaf * ((find.tr->bsize + 1) - find.lf));
-		leaf->data = x;
-		/* Split with the existing branch. */
-		if(find.br0 != find.br1) assert(find.end.b0 <= find.end.b1
-			&& find.end.b1 + 1 <= find.end.b0 + branch->skip),
-			branch->skip -= find.end.b1 - find.end.b0 + 1;
-		trie_bmp_insert(&find.tr->is_child, find.lf, 1);
-		memmove(branch + 1, branch,
-			sizeof *branch * (find.tr->bsize - find.br0));
-		assert(find.br1 - find.br0 <= TRIE_MAX_LEFT
-			&& find.end.b1 - find.end.b0 <= UCHAR_MAX);
-		branch->left = find.is_right ? (unsigned char)(find.br1 - find.br0) : 0;
-		branch->skip = (unsigned char)(find.end.b1 - find.end.b0);
-		find.tr->bsize++;
-	}
-#else
 	PT_(expand)(find);
 	find.tr->leaf[find.lf].data = x;
-#endif
 	/* Insert. --> */
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
 	printf("add_unique(%s) completed, tree bsize %d\n", key, find.tr->bsize);

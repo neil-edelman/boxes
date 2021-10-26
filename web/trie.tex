@@ -22,9 +22,10 @@
 \newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
 
 % create new commands
-\def\^#1{\textsuperscript{#1}}
-\def\!{\overline}
-\def\degree{\ensuremath{^\circ}}
+%\def\^#1{\textsuperscript{#1}}
+%\def\!{\overline}
+%\def\degree{\ensuremath{^\circ}}
+\def\Scale{0.5}
 
 % colourize titles
 \definecolor{ilrblue}{RGB}{79,166,220}
@@ -55,10 +56,10 @@
 
 % for hyperref
 \hypersetup{
-  linkcolor=ilrblue,
+  linkcolor=ilrblue, % internal (figure) links
   urlcolor=ilrblue,
   filecolor=ilrblue,
-  citecolor=ilrblue, % that's it
+  citecolor=ilrblue, % bibliography links
   pdfauthor={\@author},
   pdftitle={\@title},
   pdfsubject={\@title},
@@ -79,14 +80,14 @@
 
 A trie is, ``a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991],''\cite{askitis2011redesigning} so that, ``INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.''\cite{knuth1997sorting} It is ordered, and a prefix permits range queries.
 
-In practice, a set on a variable-length key, always terminated by a sentinel; this will allow a string and it's prefix in the same trie\cite{fredkin1960trie}. For proper ordering, we traverse with most-significant bit first and the sentinel should be less-than the encoding of all the characters; in practice, a null-terminated string. Figure~\ref{star-3:bits} shows a Modified~\mbox{UTF-8} example. It stores the keys in lexicographic order, but not by any collation algorithm.
+In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{fredkin1960trie}(but not really). For proper ordering, we traverse with most-significant bit first and the sentinel should be less-than the other numeric value of all the other characters. We use null-terminated, Modified~\mbox{UTF-8} strings, like in Figure~\ref{star-3:bits}. Keys are sorted in lexicographic order, but not by any collation algorithm. show a diagram
 
 % star-3
 %\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
 \begin{figure}
 	\centering
 	\subcaptionbox{Bit view.\label{star-3:bits}}{%
-		\digraph[scale=0.6]{star3bits}{
+		\digraph[scale=\Scale]{star3bits}{
 	node [shape = none];
 	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
 <TABLE BORDER="0" CELLBORDER="0">
@@ -119,7 +120,7 @@ In practice, a set on a variable-length key, always terminated by a sentinel; th
 		}
 	}
 	\subcaptionbox{Logical view.\label{star-3:logic}}{
-\digraph[scale=0.6]{star3logic}{
+\digraph[scale=\Scale]{star3logic}{
 	node [shape = none];
 	tree0x1028049c0branch0 [label = "3", shape = circle, style = filled, fillcolor = Grey95];
 	tree0x1028049c0branch0 -> tree0x1028049c0leaf0 [style = dashed, color = Gray];
@@ -132,7 +133,7 @@ In practice, a set on a variable-length key, always terminated by a sentinel; th
 	tree0x1028049c0leaf2 [label = "Vega"];
 }}
 	\subcaptionbox{Memory view.\label{star-3:mem}}{
-\digraph[scale=0.6]{star3mem}{
+\digraph[scale=\Scale]{star3mem}{
 	node [shape = none];
 	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
 <TABLE BORDER="0">
@@ -161,7 +162,7 @@ In practice, a set on a variable-length key, always terminated by a sentinel; th
 \begin{figure}
 	\centering
 	\subcaptionbox{Bit view.\label{star-4:bits}}{
-\digraph[scale=0.6]{star4bits}{
+\digraph[scale=\Scale]{star4bits}{
 	node [shape = none];
 	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
 <TABLE BORDER="0" CELLBORDER="0">
@@ -258,7 +259,7 @@ In practice, a set on a variable-length key, always terminated by a sentinel; th
 </TABLE>>];
 }}
 	\subcaptionbox{Logical view.\label{star-4:logic}}{
-\digraph[scale=0.6]{star4logic}{
+\digraph[scale=\Scale]{star4logic}{
 	node [shape = none];
 	tree0x1028049f0branch0 [label = "3", shape = circle, style = filled, fillcolor = Grey95];
 	tree0x1028049f0branch0 -> tree0x1028049c0branch0 [style = dashed, color = "Black:invis:Black"];
@@ -275,7 +276,7 @@ In practice, a set on a variable-length key, always terminated by a sentinel; th
 	tree0x102804a20leaf1 [label = "Vega"];
 }}\\
 	\subcaptionbox{Memory view.\label{star-4:mem}}{
-\digraph[scale=0.6]{star4mem}{
+\digraph[scale=\Scale]{star4mem}{
 	node [shape = none];
 	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
 <TABLE BORDER="0">
@@ -337,13 +338,15 @@ In practice, a set on a variable-length key, always terminated by a sentinel; th
 
 A compact representation is a Patrica trie\cite{morrison1968patricia}: that is, a binary trie on the individual bits and skip values when bits offer no difference. In Figure~\ref{star-3:logic}, the branches indicate a \code{do not care} for all the skipped bits before, corresponding to Figure~\ref{star-3:bits} that offer no delineation. If a query might have a difference in the skipped values, one could also check the final result of a query for agreement with the found value.
 
-A forest of trees. B-tree: always have the same number of trees.
+instead of adding in one big trie, where the data type presents a limit of how big it is, we have pointers to sub-blocks. This is seen in ... This allows us to shrink the data-type significantly; for a non-empty complete binary tree that has `n` leaves (order `n`), it has `n - 1` the internal nodes, or branches. The maximum that the left branch count can be is when the right node of the root is a leaf, that is `n - 2`. If we set this left-branch maximum to the maximum of the data type, we can use all the range. Practically, we set it to 254 instead of 255; the branches take up 255, and the branch size number is 1, for alignment.
+
+A forest of trees. B-tree: always have the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness.
 
 \subsection{Structure in Memory}
 
 Like a node in a B-trie, a tree structure is a contiguous chunk. As an example, refer to Figure~\ref{star-3:mem}. A tree whose $\mathit{size}$, the number of nodes, is composed of internal nodes, $\mathit{branch}$, and external nodes, $\mathit{leaf}$; $\mathit{size} = \mathit{branch} + \mathit{leaf}$. As a non-empty complete binary tree, $\mathit{leaf} = \mathit{branch} + 1 \rightarrow \mathit{size} = 2\mathit{branch} + 1$. We arrange the branches pre-order in an array, thus, forward read in topologically sorted order. If the number of branches remaining is initialized to $b = \mathit{branch}$, we can make the tree semi-implicit by storing the $\mathit{left}$ branches and calculating $\mathit{right} = b - \mathit{left}$. When $b = 0$, the accumulator, $l$, is the position of the leaf. Programme.
 
-The above wastes half of $\mathit{left}$'s dynamic range, in the best case, because branches that are $e$ from the end will have at most $\mathit{left} = e$: a tree with all left branches.
+The above wastes half of $\mathit{left}$'s dynamic range, in the best case, because branches that are $e$ from the end will have at most $\mathit{left} = e$ (such that the end will always be zero): a tree with all left branches.
 
  Separate the leaves, which are pointers to data or to another tree, from the branches, which are decision bits in the key string passed to look up. Only one leaf lookup is performed per tree.
 
@@ -351,17 +354,26 @@ The above wastes half of $\mathit{left}$'s dynamic range, in the best case, beca
 
 The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. Always forward in memory. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range of $\mathit{left}$; a trie (also a B-tree) of order 256 is an obvious choice.\cite{sinha2004cache}
 
-instead of adding in one big trie, where the data type presents a limit of how big it is, we have pointers to sub-blocks. This is seen in ... This allows us to shrink the data-type significantly; for a non-empty complete binary tree that has `n` leaves (order `n`), it has `n - 1` the internal nodes, or branches. The maximum that the left branch count can be is when the right node of the root is a leaf, that is `n - 2`. If we set this left-branch maximum to the maximum of the data type, we can use all the range. Practically, we set it to 254 instead of 255; the branches take up 255, and the branch size number is 1, for alignment.
+\subsection{Running Time}
+
+The `\O(log n)` running time is only when the trie has bounds on strings that are placed there. Worst-case $\{ a, aa, aaa, aaaa, ... \}$. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
 
 \subsection{Limits}
-
-Worst-case $\{ a, aa, aaa, aaaa, ... \}$. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
 
 This is valid, $\{ dictator \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to $\{ dictionary, dictionaries \}$: it is too long a skip value. There are several modifications that would allow this, but they are out of this scope.
 
 Insertion: Any leaf on the sub-tree queried will do; in this implementation, favours the left side.
 
 on split, do we have to go locally and see if we can join them?
+
+we don't need to store any data if the leaf-trees are different from the branch-trees?
+trie: root, height
+branch tree: bsize, +branchtree, branch[o-1], leaf[o]
+leaf tree: bsize, ?, branch[o-1], is_recursive_bmp[o/8], leaf[o]
+or
+leaf tree: bsize, ?, branch[o-1], leaf[o] { skip, union{ data, trie } }
+or
+leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data } } }
 
 \bibliography{trie}
 
