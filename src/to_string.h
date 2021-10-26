@@ -30,6 +30,14 @@
 
  @std C89 */
 
+#include <string.h>
+
+/* Check defines. */
+#if !defined(BOX_) || !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
+	|| !defined(Z_) || !defined(TO_STRING)
+#error Undefined preprocessor symbols.
+#endif
+
 #if defined(TO_STRING_H) \
 	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN)) /* <!-- not */
 #error Should be the on the first to_string in the compilation unit.
@@ -41,7 +49,13 @@
 
 #ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
-#include <string.h>
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PZ_)
+#error Unexpected defines.
+#endif
+#define TO_STRING_CAT_(x, y) x ## _ ## y
+#define TO_STRING_CAT(x, y) TO_STRING_CAT_(x, y)
+#define PZ_(n) TO_STRING_CAT(to_string, Z_(n))
 #if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
 extern char to_string_buffers[4][256];
 extern const unsigned to_string_buffers_no;
@@ -62,20 +76,12 @@ static unsigned to_string_buffer_i;
 #endif /* static --> */
 #endif /* idempotent --> */
 
-/* Check defines. */
-#if !defined(CAT) || !defined(CAT_) || !defined(BOX_) \
-	|| !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
-	|| !defined(Z_) || !defined(TO_STRING)
-#error Unexpected preprocessor symbols.
-#endif
 #ifndef TO_STRING_LEFT
 #define TO_STRING_LEFT '('
 #endif
 #ifndef TO_STRING_RIGHT
 #define TO_STRING_RIGHT ')'
 #endif
-
-#define PZ_(n) CAT(to_string, Z_(n))
 
 typedef BOX_CONTAINER PZ_(box);
 typedef BOX_CONTENTS PZ_(type);

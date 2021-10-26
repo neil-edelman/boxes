@@ -56,6 +56,14 @@
 
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#if defined(TRIE_CAT_) || defined(TRIE_CAT) || defined(T_) || defined(PT_)
+#error Unexpected defines.
+#endif
+#define TRIE_CAT_(n, m) n ## _ ## m
+#define TRIE_CAT(n, m) TRIE_CAT_(n, m)
+#define T_(n) TRIE_CAT(TRIE_NAME, n)
+#define PT_(n) TRIE_CAT(trie, T_(n))
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
 #define TRIE_MASK(n) ((1 << CHAR_BIT - 1) >> (n) % CHAR_BIT)
 #define TRIE_SLOT(n) ((n) / CHAR_BIT)
@@ -85,25 +93,12 @@ static int trie_is_prefix(const char *a, const char *b) {
 }
 #endif /* idempotent --> */
 
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(T_) || defined(PT_) \
-	|| (defined(TRIE_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?T_ or CAT_?; possible stray TRIE_EXPECT_TRAIT?
-#endif
-#ifndef TRIE_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define T_(thing) CAT(TRIE_NAME, thing)
-#define PT_(thing) CAT(trie, T_(thing))
-
 #ifndef TRIE_TYPE /* <!-- !type */
 /** Default `char` uses `a` as the key, which makes it a set of strings. */
 static const char *PT_(raw)(const char *a) { return assert(a), a; }
 #define TRIE_TYPE char
 #define TRIE_KEY &PT_(raw)
 #endif /* !type --> */
-
 /** Declared type of the trie; `char` default. */
 typedef TRIE_TYPE PT_(type);
 
@@ -320,7 +315,7 @@ struct PT_(insert) {
 /* Expand an un-full tree. The inserted spot will be an uninitialized
  data leaf. Helper method for <fn:<PT>add_unique>. */
 static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
-	struct { unsigned br0, br1, lf; } mir = { 0, i.tr->bsize, 0 };
+	struct { unsigned br0, br1, lf; } mir;
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES && i.br0 <= i.br1
@@ -328,7 +323,7 @@ static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 		&& i.lf <= i.tr->bsize + 1
 		&& (i.br0 == i.br1
 		|| (i.end.b0 <= i.end.b1 && i.end.b1 - i.end.b0 <= UCHAR_MAX)));
-	/*mir.br0 = 0, mir.br1 = tr->bsize, mir.lf = 0;*/
+	mir.br0 = 0, mir.br1 = i.tr->bsize, mir.lf = 0;
 	printf("insert: %s-tree\n", orc(i.tr));
 
 	/* Path defined by parameters: augment left counts along the left. */
@@ -841,7 +836,7 @@ static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 /** Uses the natural `a` -> `z` that is defined by `TRIE_KEY`. */
 static void PT_(to_string)(const PT_(type) *const a, char (*const z)[12])
 	{ assert(a && z); sprintf(*z, "%.11s", PT_(to_key)(a)); }
-#define Z_(n) CAT(T_(trie), n)
+#define Z_(n) TRIE_CAT(T_(trie), n)
 #define TO_STRING &PT_(to_string)
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
@@ -864,14 +859,6 @@ static void PT_(unused_base)(void) {
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
-#ifndef TRIE_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef TRIE_SUBTYPE
-#endif /* sub-type --> */
-#undef T_
-#undef PT_
 #undef TRIE_NAME
 #undef TRIE_TYPE
 #undef TRIE_KEY
