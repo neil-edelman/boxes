@@ -369,7 +369,7 @@ static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 		if(mir.br0 + 1 + branch->left < i.br1)
 			mir.br1 = ++mir.br0 + branch->left++;
 		else
-			mir.br0 += branch->left + 1, mir.lf += branch->left + 1;
+			mir.br0 += branch->left+1, mir.lf += branch->left+1;
 	}
 	assert((mir.lf += (mir.br1 - mir.br0 + 1) * i.is_right,
 		printf("insert.augment: mir  [%u,%u;%u]\n",
@@ -435,10 +435,11 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 			}
 			assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
 			if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
-			/* If it's not terminal and not full, in case it becomes full. */
-			if(!is_full) full.prnt.tr = find.tr, full.prnt.bit.end = bit,
-				full.prnt.br0 = find.br0, full.prnt.br1 = find.br1,
-				full.prnt.lf = find.lf;
+			/* If it's not terminal and not full, copy the tree.
+			 these are not set: is_right, end.b1
+			 bit.top => bit.end */
+			if(!is_full) memcpy(&full.prnt, &find, sizeof find),
+				full.prnt.bit.end = bit;
 			find.tr = find.tr->leaf[find.lf].child;
 		}
 		{ /* Got to a leaf; skip value is less than maximum allowed. */
