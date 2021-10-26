@@ -310,36 +310,6 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#if 0
-		struct { unsigned br0, br1, lf; } t = { 0, 0, 0 };
-		orcish_ptr(a, sizeof a, full.prnt.tr);
-		printf("add: filled: count %lu, parent %s-tree,",
-			(unsigned long)full.n, a);
-		orcish_ptr(a, sizeof a, find.tr);
-		printf(" cf find %s; split:\n", a);
-		if(full.prnt) t.br1 = full.prnt->bsize;
-		while(t.br0 < t.br1) { /* Tree. */
-			const struct trie_branch *const branch = full.prnt->branch + t.br0;
-			full.bit += branch->skip;
-			assert(filled.bit < bit.find);
-			if(!(is_right = TRIE_QUERY(key, bit.x)))
-				in_tree.br1 = ++in_tree.br0 + branch->left, branch->left++;
-			else
-				in_tree.br0 += branch->left + 1,
-				in_tree.lf += branch->left + 1;
-			++bit.x;
-		}
-		if(unfilled && in_tree.br0 == in_tree.br1 && TRIE_QUERY(key, bit.find))
-			in_tree.lf += in_tree.br1 - in_tree.br0 + 1;
-		assert(!unfilled || (in_tree.lf <= unfilled->bsize
-			&& trie_bmp_test(&unfilled->is_child, in_tree.lf)));
-		/* Go further. */
-		printf("add: %s-tree, leaf %u, bit %lu, target %lu\n",
-			orc(find.tr), in_tree.lf, bit.x, bit.find);
-		if(!unfilled) assert(!bit.x), unfilled = trie->root;
-		bit.unfilled = bit.x;
-#endif
-
 /** All parameters to insert a node in a tree, minus the node. This is just
  for the insert function, which could end up inserting multiple times at
  different places when it causes a cascaded split. */
@@ -437,16 +407,15 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 				sample = PT_(sample)(find.tr, find.lf);
 			}
 			find.end.b0 = ++bit;
-		}
+		} /* Tree. */
 		assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
 		if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
 		/* If it's not terminal and not full, copy the tree. `br0 == br1` so
-		 `end.b1` is not used. `bit.top` in `find` is `bit.end` in `full`
-		 (copied unnecessarily.) */
+		 `end.b1` is not used. `bit.top` in `find` is `bit.end` in `full`. */
 		if(!is_full)
 			memcpy(&full.prnt, &find, sizeof find), full.prnt.bit.end = bit;
 		find.tr = find.tr->leaf[find.lf].child;
-	}
+	} /* Forest. */
 	{ /* Got to a leaf. Fixme: maybe a recursion would fix this limit. */
 		const size_t limit = bit + UCHAR_MAX;
 		while(!TRIE_DIFF(key, sample, bit))
