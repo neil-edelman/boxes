@@ -38,12 +38,6 @@
  @depend [bmp](https://github.com/neil-edelman/bmp)
  @std C89 */
 
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <assert.h>
-#include <limits.h> /* CHAR_BIT (will compile on C89) */
-
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
@@ -53,6 +47,12 @@
 #if defined(TRIE_TEST) && (!defined(TRIE_TO_STRING) || !defined(TRIE_TYPE))
 #error TRIE_TEST requires TRIE_TO_STRING and TRIE_TYPE.
 #endif
+
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <assert.h>
+#include <limits.h> /* CHAR_BIT (will compile on C89) */
 
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
