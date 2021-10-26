@@ -375,7 +375,7 @@ static void PT_(test)(void) {
 	struct T_(trie) trie = TRIE_IDLE;
 	struct T_(trie_iterator) it;
 	size_t n, m, count;
-	struct { PT_(type) data; int is_in, unused; } es[/*2000*/30];
+	struct { PT_(type) data; int is_in; } es[20/*00*/];
 	PT_(type) dup;
 	const size_t es_size = sizeof es / sizeof *es;
 	PT_(type) *data;

@@ -399,13 +399,9 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x);
 	size_t bit = 0;
 	struct PT_(insert) find;
-	struct {
-		struct {
-			struct PT_(tree) *tr; size_t end_bit;
-			unsigned br0, br1, lf, unused;
-		} prnt;
-		size_t n; } full = { { 0, 9999, 9999, 9999, 0, 9999 }, 0 }; /* Trap. */
+	struct { struct PT_(insert) prnt; size_t n; } full;
 	assert(trie && x && key);
+	full.prnt.tr = 0, full.prnt.lf = 0, full.n = 0;
 
 	printf("_add_: %s -> %s.\n", key, PT_(str)(trie));
 
@@ -440,7 +436,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 			assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
 			if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
 			/* If it's not terminal and not full, in case it becomes full. */
-			if(!is_full) full.prnt.tr = find.tr, full.prnt.end_bit = bit,
+			if(!is_full) full.prnt.tr = find.tr, full.prnt.bit.end = bit,
 				full.prnt.br0 = find.br0, full.prnt.br1 = find.br1,
 				full.prnt.lf = find.lf;
 			find.tr = find.tr->leaf[find.lf].child;
@@ -465,7 +461,7 @@ found:
 		unsigned char split;
 		printf("add.split: full.prnt %s-tree(end b%lu)[%u,%u;%u]; "
 			"full trees %lu\n",
-			orc(full.prnt.tr), full.prnt.end_bit, full.prnt.br0,
+			orc(full.prnt.tr), full.prnt.bit.end, full.prnt.br0,
 			full.prnt.br1, full.prnt.lf, full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
 		 sequence point in splitting where the trie is valid. */
