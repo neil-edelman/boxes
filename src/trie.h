@@ -395,13 +395,14 @@ static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
-static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
+static int PT_(add_unique)(struct T_(trie) *const trie,
+	PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x);
 	size_t bit = 0;
 	struct PT_(insert) find;
 	struct { struct PT_(insert) prnt; size_t n; } full;
+	const char *sample; /* Only used in Find. */
 	assert(trie && x && key);
-	full.prnt.tr = 0, full.prnt.lf = 0, full.n = 0;
 
 	printf("_add_: %s -> %s.\n", key, PT_(str)(trie));
 
@@ -410,52 +411,55 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(type) *const x) {
 		&& (find.tr->leaf[0].data = x, trie->root = find.tr, 1);
 	/* Solitary. --> */
 
-	{ /* <!-- Find the first bit not in the tree; remember full parent. */
-		const char *sample;
-		assert(find.tr);
-		for( ; ; ) { /* Forest. */
-			const int is_full = find.tr->bsize >= TRIE_BRANCHES;
-			full.n = is_full ? full.n + 1 : 0;
-			find.bit.top = find.end.b0 = bit;
-			sample = PT_(sample)(find.tr, 0);
-			printf("add.find: (b%lu)\n", find.bit.top), PT_(prnt)(find.tr);
-			find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
-			while(find.br0 < find.br1) { /* Tree. */
-				const struct trie_branch *const
-					branch = find.tr->branch + find.br0;
-				const size_t next = bit + branch->skip;
-				for( ; bit < next; bit++)
-					if(TRIE_DIFF(key, sample, bit)) goto found;
-				if(!TRIE_QUERY(key, bit))
-					find.br1 = ++find.br0 + branch->left;
-				else find.br0 += branch->left + 1,
-					find.lf += branch->left + 1,
-					sample = PT_(sample)(find.tr, find.lf);
-				find.end.b0 = ++bit;
+	/* <!-- Find the first bit not in the tree. */
+	assert(find.tr), find.is_right = 0; /* Code path determinism. */
+	full.prnt.tr = 0, full.prnt.lf = 0, full.n = 0;
+	for( ; ; ) { /* Forest. */
+		const int is_full = find.tr->bsize >= TRIE_BRANCHES;
+		full.n = is_full ? full.n + 1 : 0;
+		find.bit.top = find.end.b0 = bit;
+		sample = PT_(sample)(find.tr, 0);
+		printf("add.find: (b%lu)\n", find.bit.top), PT_(prnt)(find.tr);
+		find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
+		while(find.br0 < find.br1) { /* Tree. */
+			const struct trie_branch *const branch
+				= find.tr->branch + find.br0;
+			const size_t next = bit + branch->skip;
+			/* is_full || !full.n -- don't have to worry. */
+			for( ; bit < next; bit++)
+				if(TRIE_DIFF(key, sample, bit)) goto found;
+			if(!TRIE_QUERY(key, bit)) {
+				find.br1 = ++find.br0 + branch->left;
+			} else {
+				find.br0 += branch->left + 1;
+				find.lf += branch->left + 1;
+				sample = PT_(sample)(find.tr, find.lf);
 			}
-			assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
-			if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
-			/* If it's not terminal and not full, copy the tree.
-			 these are not set: is_right, end.b1
-			 bit.top => bit.end */
-			if(!is_full) memcpy(&full.prnt, &find, sizeof find),
-				full.prnt.bit.end = bit;
-			find.tr = find.tr->leaf[find.lf].child;
+			find.end.b0 = ++bit;
 		}
-		{ /* Got to a leaf; skip value is less than maximum allowed. */
-			const size_t limit = bit + UCHAR_MAX;
-			while(!TRIE_DIFF(key, sample, bit))
-				if(++bit > limit) return errno = EILSEQ, 0;
-		}
+		assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
+		if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
+		/* If it's not terminal and not full, copy the tree. `br0 == br1` so
+		 `end.b1` is not used. `bit.top` in `find` is `bit.end` in `full`
+		 (copied unnecessarily.) */
+		if(!is_full)
+			memcpy(&full.prnt, &find, sizeof find), full.prnt.bit.end = bit;
+		find.tr = find.tr->leaf[find.lf].child;
+	}
+	{ /* Got to a leaf. Fixme: maybe a recursion would fix this limit. */
+		const size_t limit = bit + UCHAR_MAX;
+		while(!TRIE_DIFF(key, sample, bit))
+			if(++bit > limit) return errno = EILSEQ, 0;
+	}
 found:
-		find.end.b1 = bit;
-		if(find.is_right = !!TRIE_QUERY(key, bit))
-			find.lf += find.br1 - find.br0 + 1;
-		printf("add.find: %s-tree(b%lu)[%u,%u;%u]\n",
-			orc(find.tr), find.bit.top, find.br0, find.br1, find.lf);
-	} /* Find. --> */
+	find.end.b1 = bit;
+	if(find.is_right = !!TRIE_QUERY(key, bit))
+		find.lf += find.br1 - find.br0 + 1;
+	printf("add.find: %s-tree(b%lu)[%u,%u;%u]\n",
+		orc(find.tr), find.bit.top, find.br0, find.br1, find.lf);
+	/* Find. --> */
 
-	/* <!-- Split the path up to the last unfilled tree, going down. */
+	/* <!-- Backtrack and split down the path of all the full. */
 	if(!full.n) goto insert;
 	for( ; ; ) { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
