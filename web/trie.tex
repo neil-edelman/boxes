@@ -340,7 +340,7 @@ A compact representation is a Patrica trie\cite{morrison1968patricia}: that is, 
 
 instead of adding in one big trie, where the data type presents a limit of how big it is, we have pointers to sub-blocks. This is seen in ... This allows us to shrink the data-type significantly; for a non-empty complete binary tree that has `n` leaves (order `n`), it has `n - 1` the internal nodes, or branches. The maximum that the left branch count can be is when the right node of the root is a leaf, that is `n - 2`. If we set this left-branch maximum to the maximum of the data type, we can use all the range. Practically, we set it to 254 instead of 255; the branches take up 255, and the branch size number is 1, for alignment.
 
-A forest of trees. B-tree: always have the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness.
+This is a fixed-maximum size trie within a B-tree. Because of overlapping terminology, some care must be used in describing the structure. We use the notion that a trie is a forest of trees. Nodes, in B-tree terminology, are trees. A complete path through the forest always visits the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness.
 
 \subsection{Structure in Memory}
 

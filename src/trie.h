@@ -312,9 +312,10 @@ struct PT_(insert) {
 	union { size_t top, end; } bit; /* Unused for insertion. */
 };
 
-/* Expand an un-full tree. The inserted spot will be an uninitialized
- data leaf. Helper method for <fn:<PT>add_unique>. */
-static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
+/* Expand an un-full tree. Helper method for <fn:<PT>add_unique>.
+ @return Inserted spot, an uninitialized data leaf. (_Ie_ `i.tr->leaf[i.lf]`;
+ it doesn't really need to be a return value, but for clarity.) */
+static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	struct { unsigned br0, br1, lf; } mir;
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
@@ -325,6 +326,7 @@ static const union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 		|| (i.end.b0 <= i.end.b1 && i.end.b1 - i.end.b0 <= UCHAR_MAX)));
 	mir.br0 = 0, mir.br1 = i.tr->bsize, mir.lf = 0;
 	printf("insert: %s-tree\n", orc(i.tr));
+	PT_(prnt)(i.tr);
 
 	/* Path defined by parameters: augment left counts along the left. */
 	while(mir.br0 < i.br0) {
@@ -379,6 +381,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	full.prnt.tr = 0, full.prnt.lf = 0, full.n = 0;
 	for( ; ; ) { /* Forest. */
 		const int is_full = find.tr->bsize >= TRIE_BRANCHES;
+		struct PT_(tree) *child;
 		full.n = is_full ? full.n + 1 : 0;
 		find.bit.top = find.end.b0 = bit;
 		sample = PT_(sample)(find.tr, 0);
@@ -402,11 +405,11 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 		} /* Tree. */
 		assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
 		if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
-		/* If it's not terminal and not full, copy the tree. `br0 == br1` so
-		 `end.b1` is not used. `bit.top` in `find` is `bit.end` in `full`. */
-		if(!is_full)
+		child = find.tr->leaf[find.lf].child;
+		find.end.b1 = find.end.b0 + (child->bsize ? child->branch[0].skip : 0);
+		if(!is_full) /* `bit.top` in `find` is `bit.end` in `full`. */
 			memcpy(&full.prnt, &find, sizeof find), full.prnt.bit.end = bit;
-		find.tr = find.tr->leaf[find.lf].child;
+		find.tr = child;
 	} /* Forest. */
 	{ /* Got to a leaf. Fixme: maybe a recursion would fix this limit. */
 		const size_t limit = bit + UCHAR_MAX;
@@ -436,8 +439,8 @@ found:
 			|| !(right = PT_(tree)())) { if(!full.prnt.tr) free(up);
 			free(right); return 0; }
 		/* Promote the root of the the parent's leaf sub-tree. */
-		if(!full.prnt.tr) { /* Raising the depth of the B-trie. */
-			assert(!full.prnt.lf);
+		if(!full.prnt.tr) { /* Raising the depth of the forest. */
+			assert(up != full.prnt.tr && !full.prnt.lf);
 			left = trie->root;
 			assert(left && left->bsize);
 			up->bsize = 1;
@@ -446,23 +449,28 @@ found:
 			trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
 			trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
 			trie->root = up;
-		} else {
-			assert(full.prnt.tr->bsize < TRIE_BRANCHES
+		} else { /* `up` is `prnt.tr`. */
+			assert(up->bsize < TRIE_BRANCHES
 				&& full.prnt.lf <= full.prnt.tr->bsize
-				&& trie_bmp_test(&full.prnt.tr->is_child, full.prnt.lf));
-			left = full.prnt.tr->leaf[full.prnt.lf].child;
+				&& trie_bmp_test(&up->is_child, full.prnt.lf));
+			/* Switch places; the left's leaves don't need to be copied. */
+			left = up->leaf[full.prnt.lf].child;
 			assert(left && left->bsize); /* Or else wouldn't be full. */
-			PT_(expand)(full.prnt);
-			/* ...two of them? what's full.prnt.lf? is it the left? +1?
-			 should we be using up? */
+			/*printf("prnt: [%u,%u;%u]\n"
+				"BEFORE prnt: ",
+				full.prnt.br0, full.prnt.br1, full.prnt.lf),
+				PT_(prnt)(full.prnt.tr);*/
+			PT_(expand)(full.prnt)->child = left;
 			trie_bmp_set(&full.prnt.tr->is_child, full.prnt.lf);
-			full.prnt.tr->leaf[full.prnt.lf].child = 0/*left?*/;
-			assert(0);
+			full.prnt.tr->leaf[full.prnt.lf + 1].child = right;
+			/*right->leaf[0].data = "placeholder";
+			printf("AFTER  prnt: "), PT_(prnt)(full.prnt.tr);
+			PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split-confused.gv");
+			assert(0);*/
 		}
 		assert(left->bsize);
 		split = left->branch[0].left + 1; /* Leaves split. */
 		printf("add.split: splitting on %u.\n", split);
-
 		/* Copy the right part of the left to the new right. */
 		right->bsize = left->bsize - split;
 		memcpy(right->branch, left->branch + split,
@@ -471,7 +479,6 @@ found:
 			sizeof *left->leaf * (right->bsize + 1));
 		memcpy(&right->is_child, &left->is_child, sizeof left->is_child);
 		trie_bmp_remove(&right->is_child, 0, split);
-
 		/* Move back the branches of the left to account for the promotion. */
 		left->bsize = split - 1;
 		memmove(left->branch, left->branch + 1,
@@ -503,10 +510,8 @@ found:
 	} /* Split. --> */
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
 
-insert: /* <!-- Insert the data into a un-full tree. */
-	PT_(expand)(find);
-	find.tr->leaf[find.lf].data = x;
-	/* Insert. --> */
+insert:
+	PT_(expand)(find)->data = x;
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
 	printf("add_unique(%s) completed, tree bsize %d\n", key, find.tr->bsize);
 	return 1;
