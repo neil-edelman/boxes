@@ -319,14 +319,14 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	struct { unsigned br0, br1, lf; } mir;
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
-	assert(i.tr && i.tr->bsize < TRIE_BRANCHES && i.br0 <= i.br1
-		&& i.br1 <= i.tr->bsize && i.br1 - i.br0 <= TRIE_MAX_LEFT
-		&& i.lf <= i.tr->bsize + 1
-		&& (i.br0 == i.br1
-		|| (i.end.b0 <= i.end.b1 && i.end.b1 - i.end.b0 <= UCHAR_MAX)));
-	mir.br0 = 0, mir.br1 = i.tr->bsize, mir.lf = 0;
 	printf("insert: %s-tree\n", orc(i.tr));
 	PT_(prnt)(i.tr);
+	assert(i.tr && i.tr->bsize < TRIE_BRANCHES);
+	assert(i.br0 <= i.br1 && i.br1 <= i.tr->bsize
+		&& i.br1 - i.br0 <= TRIE_MAX_LEFT && i.lf <= i.tr->bsize + 1);
+	assert(i.br0 == i.br1
+		|| (i.end.b0 <= i.end.b1 && i.end.b1 - i.end.b0 <= UCHAR_MAX));
+	mir.br0 = 0, mir.br1 = i.tr->bsize, mir.lf = 0;
 
 	/* Path defined by parameters: augment left counts along the left. */
 	while(mir.br0 < i.br0) {
@@ -369,7 +369,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	const char *sample; /* Only used in Find. */
 	assert(trie && x && key);
 
-	printf("_add_: %s -> %s.\n", key, PT_(str)(trie));
+	printf("\n_add_: %s -> %s.\n", key, PT_(str)(trie));
 
 	/* <!-- Solitary. */
 	if(!(find.tr = trie->root)) return (find.tr = PT_(tree)())
@@ -393,7 +393,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 			const size_t next = bit + branch->skip;
 			/* is_full || !full.n -- don't have to worry. */
 			for( ; bit < next; bit++)
-				if(TRIE_DIFF(key, sample, bit)) goto found;
+			if(TRIE_DIFF(key, sample, bit)) goto found;
 			if(!TRIE_QUERY(key, bit)) {
 				find.br1 = ++find.br0 + branch->left;
 			} else {
@@ -453,20 +453,12 @@ found:
 			assert(up->bsize < TRIE_BRANCHES
 				&& full.prnt.lf <= full.prnt.tr->bsize
 				&& trie_bmp_test(&up->is_child, full.prnt.lf));
-			/* Switch places; the left's leaves don't need to be copied. */
+			/* Switch places. */
 			left = up->leaf[full.prnt.lf].child;
 			assert(left && left->bsize); /* Or else wouldn't be full. */
-			/*printf("prnt: [%u,%u;%u]\n"
-				"BEFORE prnt: ",
-				full.prnt.br0, full.prnt.br1, full.prnt.lf),
-				PT_(prnt)(full.prnt.tr);*/
 			PT_(expand)(full.prnt)->child = left;
 			trie_bmp_set(&full.prnt.tr->is_child, full.prnt.lf);
 			full.prnt.tr->leaf[full.prnt.lf + 1].child = right;
-			/*right->leaf[0].data = "placeholder";
-			printf("AFTER  prnt: "), PT_(prnt)(full.prnt.tr);
-			PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split-confused.gv");
-			assert(0);*/
 		}
 		assert(left->bsize);
 		split = left->branch[0].left + 1; /* Leaves split. */

@@ -164,8 +164,11 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	fprintf(fp, "\ttree%pbranch0 [shape = box, "
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
+		"\t<TR><TD COLSPAN=\"%u\">"
+		"<FONT COLOR=\"Gray75\">%s-tree</FONT></TD></TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n", (const void *)tree);
+		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n",
+		(const void *)tree, tree->bsize + 2, orc(tree));
 	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
 		fprintf(fp, "\t\t<TD BGCOLOR=\"Gray90\">%u</TD>\n", branch->left);
 	fprintf(fp, "\t</TR>\n"
@@ -269,7 +272,8 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\tnode [shape = none];\n\n");
+		"\tnode [shape = none];\n"
+		/*"\tforcelabels = true;\n"*/"\n");
 	if(!trie->root) fprintf(fp, "\tidle;");
 	else tf(trie->root, 0, fp);
 	fprintf(fp, "\tnode [color = Red];\n"
