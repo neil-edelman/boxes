@@ -320,7 +320,6 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
 	printf("insert: %s-tree\n", orc(i.tr));
-	PT_(prnt)(i.tr);
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES);
 	assert(i.br0 <= i.br1 && i.br1 <= i.tr->bsize
 		&& i.br1 - i.br0 <= TRIE_MAX_LEFT && i.lf <= i.tr->bsize + 1);
@@ -385,7 +384,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 		full.n = is_full ? full.n + 1 : 0;
 		find.bit.top = find.end.b0 = bit;
 		sample = PT_(sample)(find.tr, 0);
-		printf("add.find: (b%lu)\n", find.bit.top), PT_(prnt)(find.tr);
+		printf("add.find: %s(b%lu)\n", orc(find.tr), find.bit.top);
 		find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
 		while(find.br0 < find.br1) { /* Tree. */
 			const struct trie_branch *const branch
@@ -479,13 +478,12 @@ found:
 		if(--full.n) { /* Continue to the next tree. */
 			assert(0);
 		} else { /* Last tree split -- adjust invalidated `find`. */
-			/* fixme: update find:
-			struct { struct PT_(tree) *tr; unsigned br0, br1, lf; } find;*/
-			printf("add.correct: find before [%u,%u;%u]\n", find.br0, find.br1, find.lf);
+			printf("add.correct: find before [%u,%u;%u]\n",
+				find.br0, find.br1, find.lf);
 			if(!find.br0) {
 				printf("add.correct: position top\n");
 				find.tr = up;
-				assert(0);
+				assert(0); /* FIXME: ...and */
 			} else if(find.br1 <= split) {
 				printf("add.correct: position left\n");
 				find.tr = left;
