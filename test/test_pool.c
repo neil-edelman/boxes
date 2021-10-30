@@ -6,7 +6,7 @@
 #include <time.h>	/* clock */
 #include <limits.h>	/* INT_MAX */
 #include <assert.h> /* assert */
-#include "orcish.h"
+#include "orc.h"
 
 
 #define PARAM(A) A
@@ -37,7 +37,7 @@ struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
 	{ sprintf(*a, "%.11s", s->value); }
 static void str4_filler(struct str4 *const s)
-	{ orcish(s->value, sizeof s->value); }
+	{ orc_name(s->value, sizeof s->value); }
 #define POOL_NAME str4
 #define POOL_TYPE struct str4
 #define POOL_TEST &str4_filler
@@ -65,7 +65,7 @@ static void int_filler(int *const i)
 struct keyval { int key; char value[12]; };
 static void keyval_filler(struct keyval *const kv)
 	{ kv->key = rand() / (RAND_MAX / 1098 + 1) - 99;
-	orcish(kv->value, sizeof kv->value); }
+	orc_name(kv->value, sizeof kv->value); }
 static void keyval_key_to_string(const struct keyval *const kv,
 	char (*const a)[12]) { sprintf(*a, "%d_%.7s", kv->key, kv->value); }
 static void keyval_value_to_string(const struct keyval *const kv,
