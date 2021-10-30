@@ -1,4 +1,4 @@
-/** @license 2014, 2021 Neil Edelman, distributed under the terms of the
+/** @license 2014 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT). Contains some syllables
  from [SMAUG](http://www.smaug.org/), which is a derivative of
  [Merc](http://dikumud.com/Children/merc2.asp), and
@@ -9,13 +9,11 @@
  @subtitle Name Generator
 
  Orcish names originate or are inspired by [JRR Tolkien's Orcish
- ](http://en.wikipedia.org/wiki/Languages_constructed_by_J._R._R._Tolkien). Use
- <fn:orc_name> to fill a memory location with an Orcish name, or <fn:orcify> to
- assign a deterministic name to a pointer.
+ ](http://en.wikipedia.org/wiki/Languages_constructed_by_J._R._R._Tolkien).
 
  @std C89 */
 
-#include "orc.h"
+#include "orcish.h"
 #include <stdlib.h> /* rand */
 #include <stdio.h>  /* strlen */
 #include <ctype.h>  /* toupper */
@@ -148,13 +146,13 @@ static unsigned long fmix(unsigned long k) {
 }
 #endif /* long --> */
 
-/** Advances `r`.
- @return Number in `[0, RAND_MAX]`. @implements `orcish` */
+/** Advances `r` with `MurmurHash` finalizer.
+ @return Number in `[0, RAND_MAX]`. @implements `orc_rand` */
 static unsigned murmur_callback(unsigned long *const r)
 	{ return (*r = fmix(*r)) % (1lu + RAND_MAX); }
 
 /** Uses `rand`; ignores `r` and uses a global variable set by `srand`.
- @return Number in `[0, RAND_MAX]`. @implements `orcish` */
+ @return Number in `[0, RAND_MAX]`. @implements `orc_rand` */
 static unsigned rand_callback(unsigned long *const r)
 	{ (void)r; return (unsigned)rand(); }
 
@@ -163,7 +161,7 @@ static unsigned rand_callback(unsigned long *const r)
  `stdlib.h`.
  @param[name] A valid pointer to at least `name_size` characters.
  @param[name_size] If zero, does nothing. */
-void orc_name(char *const name, const size_t name_size) {
+void orcish(char *const name, const size_t name_size) {
 	assert(name || !name_size);
 	orc_rand(name, name_size, 0, &rand_callback);
 }
