@@ -15,7 +15,7 @@
 #ifndef NAN
 #define NAN (0./0.)
 #endif
-#include "orcish.h"
+#include "orc.h"
 
 
 /** Just a placeholder to get `graph()`; <fn:str_trieTest> will crash. */
@@ -606,7 +606,7 @@ static const char *dict_key(const struct Dict *const dict)
 	{ return dict->word; }
 
 static void fill_dict(struct Dict *const dict) {
-	orcish(dict->word, sizeof ((struct Dict *)0)->word);
+	orc_name(dict->word, sizeof ((struct Dict *)0)->word);
 	dict->defn = rand() / (RAND_MAX / 99 + 1);
 }
 
