@@ -319,10 +319,12 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	struct { unsigned br0, br1, lf; } t;
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
-	printf("insert: %s-tree\n", orcify(i.tr));
+	printf("insert: %s\n", orcify(i.tr));
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES);
-	assert(i.br0 <= i.br1 && i.br1 <= i.tr->bsize
-		&& i.br1 - i.br0 <= TRIE_MAX_LEFT && i.lf <= i.tr->bsize + 1);
+	assert(i.br0 <= i.br1);
+	assert(i.br1 <= i.tr->bsize);
+	assert(i.br1 - i.br0 <= TRIE_MAX_LEFT);
+	assert(i.lf <= i.tr->bsize + 1);
 	assert(i.br0 == i.br1
 		|| (i.end.b0 <= i.end.b1 && i.end.b1 - i.end.b0 <= UCHAR_MAX));
 	t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
@@ -478,18 +480,18 @@ found:
 		if(--full.n) { /* Continue to the next tree. */
 			assert(0);
 		} else { /* Last tree split -- adjust invalidated `find`. */
-			printf("add.correct: find before [%u,%u;%u]\n",
-				find.br0, find.br1, find.lf);
+			printf("add.correct: find before %s[%u,%u;%u]\n",
+				orcify(find.tr), find.br0, find.br1, find.lf);
 			if(!find.br0) {
-				printf("add.correct: position top\n");
+				printf("add.correct: position top %s\n", orcify(up));
 				find.tr = up;
 				assert(0); /* FIXME: ...and */
-			} else if(find.br1 <= split) {
-				printf("add.correct: position left\n");
+			} else if(find.br1 < split) {
+				printf("add.correct: position left %s\n", orcify(left));
 				find.tr = left;
 				find.br0--, find.br1--;
 			} else {
-				printf("add.correct: position right\n");
+				printf("add.correct: position right %s\n", orcify(right));
 				find.tr = right;
 				find.br0 -= split, find.br1 -= split, find.lf -= split;
 			}
