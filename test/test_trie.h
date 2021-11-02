@@ -164,8 +164,8 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	fprintf(fp, "\ttree%pbranch0 [shape = box, "
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD COLSPAN=\"%u\">"
-		"<FONT COLOR=\"Gray75\">%s-tree</FONT></TD></TR>\n"
+		"\t<TR><TD COLSPAN=\"%u\" ALIGN=\"LEFT\">"
+		"<FONT COLOR=\"Gray75\">%s</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n",
 		(const void *)tree, tree->bsize + 2, orcify(tree));

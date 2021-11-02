@@ -307,7 +307,7 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
  different places when it causes a cascaded split. */
 struct PT_(insert) {
 	struct PT_(tree) *tr;
-	unsigned br0, br1, lf, is_right;
+	unsigned br0, br1, lf, unused;
 	struct { size_t b0, b1; } end;
 	union { size_t top, end; } bit; /* Unused for insertion. */
 };
@@ -335,10 +335,10 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 		else
 			t.br0 += branch->left + 1, t.lf += branch->left + 1;
 	}
-	assert((t.lf += (t.br1 - t.br0 + 1) * i.is_right,
-		printf("insert.augment: mir [%u,%u;%u] is %s\n",
-		t.br0, t.br1, t.lf, i.is_right ? "right" : "left"),
-		t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf));
+	/*assert((t.lf += (t.br1 - t.br0 + 1) * i.is_right,
+		printf("insert.augment: mir [%u,%u;%u]\n",
+		t.br0, t.br1, t.lf),
+		t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf));*/
 
 	/* Expand the tree to include one more leaf. */
 	leaf = i.tr->leaf + i.lf;
@@ -350,7 +350,7 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 		branch->skip -= i.end.b1 - i.end.b0 + 1;
 	trie_bmp_insert(&i.tr->is_child, i.lf, 1);
 	memmove(branch + 1, branch, sizeof *branch * (i.tr->bsize - i.br0));
-	branch->left = i.is_right ? (unsigned char)(i.br1 - i.br0) : 0;
+	branch->left = (unsigned char)(i.br1 - i.br0);
 	branch->skip = (unsigned char)(i.end.b1 - i.end.b0);
 	i.tr->bsize++;
 	return leaf;
@@ -376,7 +376,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	/* Solitary. --> */
 
 	/* <!-- Find the first bit not in the tree. */
-	assert(find.tr), find.is_right = 0; /* Code path determinism. */
+	assert(find.tr);
 	full.prnt.tr = 0, full.prnt.lf = 0, full.n = 0;
 	for( ; ; ) { /* Forest. */
 		const int is_full = find.tr->bsize >= TRIE_BRANCHES;
@@ -417,9 +417,9 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	}
 found:
 	find.end.b1 = bit;
-	if(find.is_right = !!TRIE_QUERY(key, bit))
-		find.lf += find.br1 - find.br0 + 1;
-	printf("add.find: %s-tree(b%lu)[%u,%u;%u]\n",
+	if(!TRIE_QUERY(key, bit)) find.br1 = find.br0; /* Left leaf. */
+	else find.lf += find.br1 - find.br0 + 1; /* Right leaf. */
+	printf("add.find: %s(b%lu)[%u,%u;%u]\n",
 		orcify(find.tr), find.bit.top, find.br0, find.br1, find.lf);
 	/* Find. --> */
 
@@ -428,7 +428,7 @@ found:
 	for( ; ; ) { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
 		unsigned char split;
-		printf("add.split: full.prnt %s-tree(end b%lu)[%u,%u;%u]; "
+		printf("add.split: full.prnt %s(end b%lu)[%u,%u;%u]; "
 			"full trees %lu\n",
 			orcify(full.prnt.tr), full.prnt.bit.end, full.prnt.br0,
 			full.prnt.br1, full.prnt.lf, full.n);
