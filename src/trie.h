@@ -316,29 +316,29 @@ struct PT_(insert) {
  @return Inserted spot, an uninitialized data leaf. (_Ie_ `i.tr->leaf[i.lf]`;
  it doesn't really need to be a return value, but for clarity.) */
 static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
-	struct { unsigned br0, br1, lf; } mir;
+	struct { unsigned br0, br1, lf; } t;
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
-	printf("insert: %s-tree\n", orc(i.tr));
+	printf("insert: %s-tree\n", orcify(i.tr));
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES);
 	assert(i.br0 <= i.br1 && i.br1 <= i.tr->bsize
 		&& i.br1 - i.br0 <= TRIE_MAX_LEFT && i.lf <= i.tr->bsize + 1);
 	assert(i.br0 == i.br1
 		|| (i.end.b0 <= i.end.b1 && i.end.b1 - i.end.b0 <= UCHAR_MAX));
-	mir.br0 = 0, mir.br1 = i.tr->bsize, mir.lf = 0;
+	t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
 
 	/* Path defined by parameters: augment left counts along the left. */
-	while(mir.br0 < i.br0) {
-		branch = i.tr->branch + mir.br0;
-		if(mir.br0 + 1 + branch->left < i.br1)
-			mir.br1 = ++mir.br0 + branch->left++;
+	while(t.br0 < i.br0) {
+		branch = i.tr->branch + t.br0;
+		if(t.br0 + 1 + branch->left < i.br1)
+			t.br1 = ++t.br0 + branch->left++;
 		else
-			mir.br0 += branch->left+1, mir.lf += branch->left+1;
+			t.br0 += branch->left + 1, t.lf += branch->left + 1;
 	}
-	assert((mir.lf += (mir.br1 - mir.br0 + 1) * i.is_right,
-		printf("insert.augment: mir  [%u,%u;%u]\n",
-		mir.br0, mir.br1, mir.lf),
-		mir.br0 == i.br0 && mir.br1 == i.br1 && mir.lf == i.lf));
+	assert((t.lf += (t.br1 - t.br0 + 1) * i.is_right,
+		printf("insert.augment: mir [%u,%u;%u] is %s\n",
+		t.br0, t.br1, t.lf, i.is_right ? "right" : "left"),
+		t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf));
 
 	/* Expand the tree to include one more leaf. */
 	leaf = i.tr->leaf + i.lf;
@@ -384,7 +384,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 		full.n = is_full ? full.n + 1 : 0;
 		find.bit.top = find.end.b0 = bit;
 		sample = PT_(sample)(find.tr, 0);
-		printf("add.find: %s(b%lu)\n", orc(find.tr), find.bit.top);
+		printf("add.find: %s(b%lu)\n", orcify(find.tr), find.bit.top);
 		find.br0 = 0, find.br1 = find.tr->bsize, find.lf = 0;
 		while(find.br0 < find.br1) { /* Tree. */
 			const struct trie_branch *const branch
@@ -420,7 +420,7 @@ found:
 	if(find.is_right = !!TRIE_QUERY(key, bit))
 		find.lf += find.br1 - find.br0 + 1;
 	printf("add.find: %s-tree(b%lu)[%u,%u;%u]\n",
-		orc(find.tr), find.bit.top, find.br0, find.br1, find.lf);
+		orcify(find.tr), find.bit.top, find.br0, find.br1, find.lf);
 	/* Find. --> */
 
 	/* <!-- Backtrack and split down the path of all the full. */
@@ -430,7 +430,7 @@ found:
 		unsigned char split;
 		printf("add.split: full.prnt %s-tree(end b%lu)[%u,%u;%u]; "
 			"full trees %lu\n",
-			orc(full.prnt.tr), full.prnt.bit.end, full.prnt.br0,
+			orcify(full.prnt.tr), full.prnt.bit.end, full.prnt.br0,
 			full.prnt.br1, full.prnt.lf, full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
 		 sequence point in splitting where the trie is valid. */

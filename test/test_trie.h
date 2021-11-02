@@ -168,7 +168,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		"<FONT COLOR=\"Gray75\">%s-tree</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n",
-		(const void *)tree, tree->bsize + 2, orc(tree));
+		(const void *)tree, tree->bsize + 2, orcify(tree));
 	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
 		fprintf(fp, "\t\t<TD BGCOLOR=\"Gray90\">%u</TD>\n", branch->left);
 	fprintf(fp, "\t</TR>\n"
@@ -315,11 +315,9 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
-	char a[12];
 	assert(tree);
-	orcish_ptr(a, sizeof a, tree);
 	printf("%s-tree:\n"
-		"left ", a);
+		"left ", orcify(tree));
 	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
 		printf("%s%u", b ? ", " : "", branch->left);
 	printf("\n"
@@ -330,12 +328,10 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 		"leaves ");
 	for(i = 0; i <= tree->bsize; i++) {
 		if(i) printf(", ");
-		if(trie_bmp_test(&tree->is_child, i)) {
-			orcish_ptr(a, sizeof a, tree->leaf[i].child);
-			printf("%s-tree", a);
-		} else {
+		if(trie_bmp_test(&tree->is_child, i))
+			printf("%s-tree", orcify(tree->leaf[i].child));
+		else
 			printf("%s", PT_(to_key)(tree->leaf[i].data));
-		}
 	}
 	printf("\n");
 }
