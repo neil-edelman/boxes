@@ -330,7 +330,7 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	/* Path defined by parameters: augment left counts along the left. */
 	while(t.br0 < i.br0) {
 		branch = i.tr->branch + t.br0;
-		if(t.br0 + 1 + branch->left < i.br1)
+		if(t.br0 + 1 + branch->left < i.br0)
 			t.br1 = ++t.br0 + branch->left++;
 		else
 			t.br0 += branch->left + 1, t.lf += branch->left + 1;
