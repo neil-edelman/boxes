@@ -372,6 +372,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 
 	printf("\n_add_: %s -> %s.\n", key, PT_(str)(trie));
 
+start:
 	/* <!-- Solitary. */
 	if(!(find.tr = trie->root)) return (find.tr = PT_(tree)())
 		&& (find.tr->leaf[0].data = x, trie->root = find.tr, 1);
@@ -439,8 +440,7 @@ found:
 		if(!(up = full.prnt.tr) && !(up = PT_(tree)())
 			|| !(right = PT_(tree)())) { if(!full.prnt.tr) free(up);
 			free(right); return 0; }
-		/* Promote the root of the the parent's leaf sub-tree. */
-		if(!full.prnt.tr) { /* Raising the depth of the forest. */
+		if(!full.prnt.tr) { /* Promoting the root raises depth of forest. */
 			assert(up != full.prnt.tr && !full.prnt.lf);
 			left = trie->root;
 			assert(left && left->bsize);
@@ -450,7 +450,7 @@ found:
 			trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
 			trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
 			trie->root = up;
-		} else { /* `up` is `prnt.tr`. */
+		} else { /* Promote the root; (`up` is `prnt.tr`.) */
 			assert(up->bsize < TRIE_BRANCHES
 				&& full.prnt.lf <= full.prnt.tr->bsize
 				&& trie_bmp_test(&up->is_child, full.prnt.lf));
@@ -489,11 +489,22 @@ found:
 			printf("add.correct: find before %s[%u,%u;%u]\n",
 				orcify(find.tr), find.br0, find.br1, find.lf);
 			if(!find.br0) {
-				printf("add.correct: position top %s\n", orcify(up));
-				/* This is a mistake; fold this into the others with key&bit. */
-				find.tr = up;
+				printf("add.correct: position top %s, bit %lu\n", orcify(up),
+					(unsigned long)find.end.b1);
+				/* The only thing we can reliably do is start again, but this
+				 time, we've split the tree all the trees under where it goes,
+				 but maybe where it goes is full, and we have to split more? */
+				goto start;
+				PT_(prnt)(up);
+				if(!TRIE_QUERY(key, find.end.b1)) {
+					printf("add.correct: which is left\n");
+					find.tr = left;
+				} else {
+					printf("add.correct: which is right\n");
+					find.tr = right;
+				}
 				assert(0); /* FIXME: ...and */
-			} else if(find.br1 < split) {
+			} else if(/*(!find.br0 && ??) ||*/ find.br1 < split) {
 				printf("add.correct: position left %s\n", orcify(left));
 				find.tr = left;
 				find.br0--, find.br1--;

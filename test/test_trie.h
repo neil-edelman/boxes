@@ -97,11 +97,13 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		const char *params, *start, *end;
 		struct { unsigned br0, br1; } in_tree;
 		unsigned is_child = trie_bmp_test(&tree->is_child, i);
-		/* 0-width joiner: GraphViz gets upset when tag closed immediately. */
+		/* 0-width joiner "&#8288;": GraphViz gets upset when tag closed
+		 immediately. */
 		fprintf(fp, "\t<TR>\n"
-			"\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\" PORT=\"%u\">%s%s%s</TD>\n",
-			i, is_child ? "↓<FONT COLOR=\"Gray\">&#8288;" : "", key,
-			is_child ? "</FONT>" : "");
+			"\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\""
+			" PORT=\"%u\">%s%s%s⊔</FONT></TD>\n",
+			i, is_child ? "↓<FONT COLOR=\"Gray\">" : "", key,
+			is_child ? "" : "<FONT COLOR=\"Grey\">");
 		/* &ZeroWidthSpace; still does crazy on empty */
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
@@ -183,7 +185,8 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		if(trie_bmp_test(&tree->is_child, i))
 			fprintf(fp, "\t\t<TD PORT=\"%u\" BGCOLOR=\"Gray90\">...</TD>\n", i);
 		else
-			fprintf(fp, "\t\t<TD BGCOLOR=\"Grey90\">%s</TD>\n", PT_(to_key)(tree->leaf[i].data));
+			fprintf(fp, "\t\t<TD BGCOLOR=\"Grey90\">%s<FONT COLOR=\"Grey\">"
+			"⊔</FONT></TD>\n", PT_(to_key)(tree->leaf[i].data));
 			/* Should really escape it . . . don't have weird characters. */
 	}
 	fprintf(fp, "\t</TR>\n"
@@ -246,9 +249,9 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 
 	fprintf(fp, "\t// leaves\n");
 	if(tree->bsize) {
-		/* ⊔ was good, but it didn't leave much space. */
+		/* \sqcup ⊔ was good, but it didn't leave much space. */
 		for(i = 0; i <= tree->bsize; i++) if(!trie_bmp_test(&tree->is_child, i))
-			fprintf(fp, "\ttree%pleaf%u [label = \"%s\"];\n",
+			fprintf(fp, "\ttree%pleaf%u [label = <%s<FONT COLOR=\"Grey\">⊔</FONT>>];\n",
 			(const void *)tree, i, PT_(to_key)(tree->leaf[i].data));
 	} else {
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
@@ -261,7 +264,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 				(const void *)tree, (const void *)tree,
 				(const void *)tree->leaf[0].child);
 		} else {
-			fprintf(fp, "\ttree%pbranch0 [label = \"%s\"];\n",
+			fprintf(fp, "\ttree%pbranch0 [label = <%s<FONT COLOR=\"Grey\">⊔</FONT>>];\n",
 				(const void *)tree, PT_(to_key)(tree->leaf[0].data));
 		}
 	}
@@ -324,7 +327,7 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
 	assert(tree);
-	printf("%s-tree:\n"
+	printf("%s:\n"
 		"left ", orcify(tree));
 	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
 		printf("%s%u", b ? ", " : "", branch->left);
@@ -336,10 +339,8 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 		"leaves ");
 	for(i = 0; i <= tree->bsize; i++) {
 		if(i) printf(", ");
-		if(trie_bmp_test(&tree->is_child, i))
-			printf("%s-tree", orcify(tree->leaf[i].child));
-		else
-			printf("%s", PT_(to_key)(tree->leaf[i].data));
+		printf("%s", trie_bmp_test(&tree->is_child, i)
+			? orcify(tree->leaf[i].child) : PT_(to_key)(tree->leaf[i].data));
 	}
 	printf("\n");
 }
