@@ -254,8 +254,8 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
 		 others may reference it. */
 		if(trie_bmp_test(&tree->is_child, 0)) {
-			fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle, "
-					"style = filled, fillcolor = Grey95];\n"
+			fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle,"
+				" style = filled, fillcolor = Grey95];\n"
 				"\ttree%pbranch0 -> tree%pbranch0"
 				" [color = \"Black:invis:Black\"];\n",
 				(const void *)tree, (const void *)tree,
