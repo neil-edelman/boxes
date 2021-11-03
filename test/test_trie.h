@@ -193,7 +193,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[color = \"Black:invis:Black\"%s];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child,
-		PT_(is_right)(tree, i) ? "" : " style = dashed");
+		PT_(is_right)(tree, i) ? "" : ", style = dashed");
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		PT_(graph_tree_mem)(tree->leaf[i].child, 0, fp);
@@ -257,7 +257,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 			fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle,"
 				" style = filled, fillcolor = Grey95];\n"
 				"\ttree%pbranch0 -> tree%pbranch0"
-				" [color = \"Black:invis:Black\"];\n",
+				" [color = \"Black:invis:Black\", style = dotted];\n",
 				(const void *)tree, (const void *)tree,
 				(const void *)tree->leaf[0].child);
 		} else {
