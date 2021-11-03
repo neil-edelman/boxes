@@ -477,6 +477,12 @@ found:
 		memmove(left->branch, left->branch + 1,
 			sizeof *left->branch * (left->bsize + 1));
 
+		{
+			char a[128];
+			sprintf(a, "graph/" QUOTE(TRIE_NAME) "-split-%lu.gv", full.n);
+			PT_(grph)(trie, a);
+		}
+
 		if(--full.n) { /* Continue to the next tree. */
 			assert(0);
 		} else { /* Last tree split -- adjust invalidated `find`. */
@@ -500,7 +506,6 @@ found:
 			break;
 		}
 	} /* Split. --> */
-	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-split.gv");
 
 insert:
 	PT_(expand)(find)->data = x;

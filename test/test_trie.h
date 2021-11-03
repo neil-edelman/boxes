@@ -253,9 +253,17 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 	} else {
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
 		 others may reference it. */
-		fprintf(fp, "\ttree%pbranch0 [label = \"%s\"];\n",
-			(const void *)tree, trie_bmp_test(&tree->is_child, 0)
-			? "..." : PT_(to_key)(tree->leaf[0].data));
+		if(trie_bmp_test(&tree->is_child, 0)) {
+			fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle, "
+					"style = filled, fillcolor = Grey95];\n"
+				"\ttree%pbranch0 -> tree%pbranch0"
+				" [color = \"Black:invis:Black\"];\n",
+				(const void *)tree, (const void *)tree,
+				(const void *)tree->leaf[0].child);
+		} else {
+			fprintf(fp, "\ttree%pbranch0 [label = \"%s\"];\n",
+				(const void *)tree, PT_(to_key)(tree->leaf[0].data));
+		}
 	}
 	fprintf(fp, "\n");
 
