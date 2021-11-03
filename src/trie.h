@@ -490,6 +490,7 @@ found:
 				orcify(find.tr), find.br0, find.br1, find.lf);
 			if(!find.br0) {
 				printf("add.correct: position top %s\n", orcify(up));
+				/* This is a mistake; fold this into the others with key&bit. */
 				find.tr = up;
 				assert(0); /* FIXME: ...and */
 			} else if(find.br1 < split) {
