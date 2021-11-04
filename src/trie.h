@@ -319,7 +319,7 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	struct { unsigned br0, br1, lf; } t;
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
-	printf("insert: %s\n", orcify(i.tr));
+	printf("insert: %s[%u,%u;%u]\n", orcify(i.tr), i.br0, i.br1, i.lf);
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES);
 	assert(i.br0 <= i.br1);
 	assert(i.br1 <= i.tr->bsize);
@@ -333,10 +333,11 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	while(t.br0 < i.br0) {
 		branch = i.tr->branch + t.br0;
 		if(t.br0 + 1 + branch->left < i.br0)
-			t.br1 = ++t.br0 + branch->left++;
+			t.br1 = ++t.br0 + branch->left++, printf("l");
 		else
-			t.br0 += branch->left + 1, t.lf += branch->left + 1;
+			t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("r");
 	}
+	printf("\n");
 	/*assert((t.lf += (t.br1 - t.br0 + 1) * i.is_right,
 		printf("insert.augment: mir [%u,%u;%u]\n",
 		t.br0, t.br1, t.lf),
@@ -396,16 +397,19 @@ start:
 			const size_t next = bit + branch->skip;
 			/* is_full || !full.n -- don't have to worry. */
 			for( ; bit < next; bit++)
-			if(TRIE_DIFF(key, sample, bit)) goto found;
+			if(TRIE_DIFF(key, sample, bit)) { printf("(branch)\n"); goto found;}
 			if(!TRIE_QUERY(key, bit)) {
 				find.br1 = ++find.br0 + branch->left;
+				printf("l");
 			} else {
 				find.br0 += branch->left + 1;
 				find.lf += branch->left + 1;
 				sample = PT_(sample)(find.tr, find.lf);
+				printf("r");
 			}
 			find.end.b0 = ++bit;
 		} /* Tree. */
+		printf("\n");
 		assert(find.br0 == find.br1 && find.lf <= find.tr->bsize);
 		if(!trie_bmp_test(&find.tr->is_child, find.lf)) break;
 		child = find.tr->leaf[find.lf].child;
@@ -423,7 +427,7 @@ found:
 	find.end.b1 = bit;
 	if(!TRIE_QUERY(key, bit)) find.br1 = find.br0; /* Left leaf. */
 	else find.lf += find.br1 - find.br0 + 1; /* Right leaf. */
-	printf("add.find: %s(b%lu)[%u,%u;%u]\n",
+	printf("add.find: found %s(b%lu)[%u,%u;%u]\n",
 		orcify(find.tr), find.bit.top, find.br0, find.br1, find.lf);
 	/* Find. --> */
 
