@@ -167,10 +167,10 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"%u\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray75\">%s</FONT></TD></TR>\n"
+		"<FONT COLOR=\"Gray75\">b%lu, %s</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n",
-		(const void *)tree, tree->bsize + 2, orcify(tree));
+		(const void *)tree, tree->bsize + 2, treebit, orcify(tree));
 	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
 		fprintf(fp, "\t\t<TD BGCOLOR=\"Gray90\">%u</TD>\n", branch->left);
 	fprintf(fp, "\t</TR>\n"
@@ -198,8 +198,23 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		(const void *)tree->leaf[i].child,
 		PT_(is_right)(tree, i) ? "" : ", style = dashed");
 	/* Recurse. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
-		PT_(graph_tree_mem)(tree->leaf[i].child, 0, fp);
+	/*for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
+		PT_(graph_tree_mem)(tree->leaf[i].child, 0, fp);*/
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
+		struct { unsigned br0, br1, lf; } in_tree;
+		size_t bit = treebit;
+		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+		while(in_tree.br0 < in_tree.br1) {
+			branch = tree->branch + in_tree.br0;
+			bit += branch->skip;
+			if(i <= in_tree.lf + branch->left)
+				in_tree.br1 = ++in_tree.br0 + branch->left;
+			else
+				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
+			bit++;
+		}
+		PT_(graph_tree_mem)(tree->leaf[i].child, bit, fp);
+	}
 }
 
 /** Graphs `any` on `fp`. */

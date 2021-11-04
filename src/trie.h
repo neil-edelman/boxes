@@ -307,7 +307,7 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
  different places when it causes a cascaded split. */
 struct PT_(insert) {
 	struct PT_(tree) *tr;
-	unsigned br0, br1, lf, unused;
+	unsigned br0, br1, lf, is_right;
 	struct { size_t b0, b1; } end;
 	union { size_t top, end; } bit; /* Unused for insertion. */
 };
@@ -343,6 +343,9 @@ static union PT_(leaf) *PT_(expand)(/*const*/ struct PT_(insert) i) {
 		printf("insert.augment: mir [%u,%u;%u]\n",
 		t.br0, t.br1, t.lf),
 		t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf));*/
+
+	if(!i.is_right) i.br1 = i.br0; /* Left leaf. */
+	else i.lf += i.br1 - i.br0 + 1; /* Right leaf. */
 
 	/* Expand the tree to include one more leaf. */
 	leaf = i.tr->leaf + i.lf;
@@ -382,9 +385,8 @@ start:
 
 	/* <!-- Find the first bit not in the tree. */
 	assert(find.tr);
-	bit = 0;
 	full.prnt.tr = 0, full.prnt.lf = 0, full.n = 0;
-	for( ; ; ) { /* Forest. */
+	for(bit = 0; ; ) { /* Forest. */
 		const int is_full = find.tr->bsize >= TRIE_BRANCHES;
 		struct PT_(tree) *child;
 		full.n = is_full ? full.n + 1 : 0;
@@ -425,11 +427,14 @@ start:
 			if(++bit > limit) return errno = EILSEQ, 0;
 	}
 found:
-	find.end.b1 = bit;
+	find.is_right = !!TRIE_QUERY(key, find.end.b1 = bit);
+#if 0
 	if(!TRIE_QUERY(key, bit)) find.br1 = find.br0; /* Left leaf. */
 	else find.lf += find.br1 - find.br0 + 1; /* Right leaf. */
+#endif
 	printf("add.find: found %s[%u,%u;%u](b%lu,b%lu), top b%lu\n",
-		orcify(find.tr), find.br0, find.br1, find.lf, find.end.b0, find.end.b1, find.bit.top);
+		orcify(find.tr), find.br0, find.br1, find.lf,
+		find.end.b0, find.end.b1, find.bit.top);
 	/* Find. --> */
 
 	/* <!-- Backtrack and split down the path of all the full. */
@@ -437,10 +442,10 @@ found:
 	for( ; ; ) { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
 		unsigned char split;
-		printf("add.split: full.prnt %s(end b%lu)[%u,%u;%u]; "
+		printf("add.split: full.prnt %s[%u,%u;%u], end b%lu, "
 			"full trees %lu\n",
-			orcify(full.prnt.tr), full.prnt.bit.end, full.prnt.br0,
-			full.prnt.br1, full.prnt.lf, full.n);
+			orcify(full.prnt.tr), full.prnt.br0, full.prnt.br1, full.prnt.lf,
+			full.prnt.bit.end, full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
 		 sequence point in splitting where the trie is valid. */
 		if(!(up = full.prnt.tr) && !(up = PT_(tree)())
