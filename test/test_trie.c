@@ -148,17 +148,20 @@ static void contrived_test(void) {
 	struct star_trie strs = TRIE_IDLE;
 	struct star star[10], *s;
 	struct sz_trie szs = TRIE_IDLE;
-	size_t i;
+	size_t i, j;
+	char *szs_array[] = { "", "A", "Z", "a", "z", "â", "foobar", "foo" };
 	trie_star_no = 0;
 	char z[12];
-	trie_sz_no++, sz_trie_add(&szs, "");
-	trie_sz_no++, sz_trie_add(&szs, "A");
-	trie_sz_no++, sz_trie_add(&szs, "Z");
-	trie_sz_no++, sz_trie_add(&szs, "a");
-	trie_sz_no++, sz_trie_add(&szs, "z");
-	trie_sz_no++, sz_trie_add(&szs, "â");
-	trie_sz_no++, sz_trie_add(&szs, "foobar");
-	trie_sz_no++, sz_trie_add(&szs, "foo");
+	for(i = 0; i < sizeof szs_array / sizeof *szs_array; i++) {
+		trie_sz_no++, sz_trie_add(&szs, szs_array[i]);
+		for(j = 0; j <= i; j++) {
+			char *sz = sz_trie_get(&szs, szs_array[j]);
+			printf("test get(%s) = %s\n",
+				szs_array[j], sz ? sz : "<didn't find>");
+			assert(sz == szs_array[j]);
+
+		}
+	}
 	trie_sz_grph(&szs, "graph/szs-full.gv");
 	/* "τ Ceti" "τ C" */
 	for(i = 0; i < sizeof star / sizeof *star; i++) {

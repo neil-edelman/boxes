@@ -364,7 +364,7 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 static int PT_(add_unique)(struct T_(trie) *const trie,
 	PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x);
-	size_t bit = 0;
+	size_t bit;
 	struct PT_(insert) find;
 	struct { struct PT_(insert) prnt; size_t n; } full;
 	const char *sample; /* Only used in Find. */
@@ -380,6 +380,7 @@ start:
 
 	/* <!-- Find the first bit not in the tree. */
 	assert(find.tr);
+	bit = 0;
 	full.prnt.tr = 0, full.prnt.lf = 0, full.n = 0;
 	for( ; ; ) { /* Forest. */
 		const int is_full = find.tr->bsize >= TRIE_BRANCHES;
@@ -484,37 +485,28 @@ found:
 		}
 
 		if(--full.n) { /* Continue to the next tree. */
+			/* fixme: Multi-intervening tree support is not implemented. */
 			assert(0);
 		} else { /* Last tree split -- adjust invalidated `find`. */
 			printf("add.correct: find before %s[%u,%u;%u]\n",
 				orcify(find.tr), find.br0, find.br1, find.lf);
 			if(!find.br0) {
-				printf("add.correct: position top %s, bit %lu\n", orcify(up),
+				printf("add.correct:"
+					" position top %s, bit %lu, starting again\n", orcify(up),
 					(unsigned long)find.end.b1);
-				/* The only thing we can reliably do is start again, but this
-				 time, we've split the tree all the trees under where it goes,
-				 but maybe where it goes is full, and we have to split more? */
+				/* This is an unfortunate position: we should be storing the
+				 positions on a stack, but it's easier and less power-hungry to
+				 start again. This is also unlikely. */
 				goto start;
-				PT_(prnt)(up);
-				if(!TRIE_QUERY(key, find.end.b1)) {
-					printf("add.correct: which is left\n");
-					find.tr = left;
-				} else {
-					printf("add.correct: which is right\n");
-					find.tr = right;
-				}
-				assert(0); /* FIXME: ...and */
-			} else if(/*(!find.br0 && ??) ||*/ find.br1 < split) {
-				printf("add.correct: position left %s\n", orcify(left));
+			} else if(find.br1 < split) {
 				find.tr = left;
 				find.br0--, find.br1--;
 			} else {
-				printf("add.correct: position right %s\n", orcify(right));
 				find.tr = right;
 				find.br0 -= split, find.br1 -= split, find.lf -= split;
 			}
-			printf("add.correct: find after [%u,%u;%u]\n",
-				find.br0, find.br1, find.lf);
+			printf("add.correct: find after %s[%u,%u;%u]\n",
+				orcify(find.tr), find.br0, find.br1, find.lf);
 			break;
 		}
 	} /* Split. --> */
