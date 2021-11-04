@@ -149,7 +149,8 @@ static void contrived_test(void) {
 	struct star star[10], *s;
 	struct sz_trie szs = TRIE_IDLE;
 	size_t i, j;
-	char *szs_array[] = { "", "A", "Z", "a", "z", "â", "foobar", "foo" };
+	/*char *szs_array[] = { "", "A", "Z", "a", "z", "â", "foobar", "foo" };*/
+	char *szs_array[] = { "a", "z", "n" };
 	trie_star_no = 0;
 	char z[12];
 	for(i = 0; i < sizeof szs_array / sizeof *szs_array; i++) {
@@ -159,7 +160,6 @@ static void contrived_test(void) {
 			printf("test get(%s) = %s\n",
 				szs_array[j], sz ? sz : "<didn't find>");
 			assert(sz == szs_array[j]);
-
 		}
 	}
 	trie_sz_grph(&szs, "graph/szs-full.gv");
