@@ -315,11 +315,10 @@ struct PT_(insert) {
 /* Expand an un-full tree. Helper method for <fn:<PT>add_unique>.
  @return Inserted spot, an uninitialized data leaf. (_Ie_ `i.tr->leaf[i.lf]`;
  it doesn't really need to be a return value, but for clarity.) */
-static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
+static union PT_(leaf) *PT_(expand)(/*const*/ struct PT_(insert) i) {
 	struct { unsigned br0, br1, lf; } t;
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
-	printf("insert: %s[%u,%u;%u]\n", orcify(i.tr), i.br0, i.br1, i.lf);
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES);
 	assert(i.br0 <= i.br1);
 	assert(i.br1 <= i.tr->bsize);
@@ -327,12 +326,14 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	assert(i.lf <= i.tr->bsize + 1);
 	assert(i.br0 == i.br1
 		|| (i.end.b0 <= i.end.b1 && i.end.b1 - i.end.b0 <= UCHAR_MAX));
-	t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
 
 	/* Path defined by parameters: augment left counts along the left. */
+	t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
+	printf("insert: %s[%u,%u;%u]\n",
+		orcify(i.tr), i.br0, i.br1, i.lf);
 	while(t.br0 < i.br0) {
 		branch = i.tr->branch + t.br0;
-		if(t.br0 + 1 + branch->left < i.br0)
+		if(t.br0 + branch->left + 1 < i.br0)
 			t.br1 = ++t.br0 + branch->left++, printf("l");
 		else
 			t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("r");
@@ -427,8 +428,8 @@ found:
 	find.end.b1 = bit;
 	if(!TRIE_QUERY(key, bit)) find.br1 = find.br0; /* Left leaf. */
 	else find.lf += find.br1 - find.br0 + 1; /* Right leaf. */
-	printf("add.find: found %s(b%lu)[%u,%u;%u]\n",
-		orcify(find.tr), find.bit.top, find.br0, find.br1, find.lf);
+	printf("add.find: found %s[%u,%u;%u](b%lu,b%lu), top b%lu\n",
+		orcify(find.tr), find.br0, find.br1, find.lf, find.end.b0, find.end.b1, find.bit.top);
 	/* Find. --> */
 
 	/* <!-- Backtrack and split down the path of all the full. */
