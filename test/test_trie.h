@@ -144,7 +144,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		while(in_tree.br0 < in_tree.br1) {
 			const struct trie_branch *branch = tree->branch + in_tree.br0;
 			bit += branch->skip;
-			if(in_tree.lf + branch->left + 1 > i)
+			if(i <= in_tree.lf + branch->left)
 				in_tree.br1 = ++in_tree.br0 + branch->left;
 			else
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
