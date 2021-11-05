@@ -338,16 +338,14 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	printf("\n");
 	assert(t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf);
 
-	/* Expand the tree to include one more leaf. */
+	/* Expand the tree to include one more leaf and branch. */
 	lf = i.lf + (i.is_right ? i.br1 - i.br0 + 1 : 0);
-	printf("is right = %u; i[%u,%u;%u]; lf = %u.\n", i.is_right, i.br0, i.br1, i.lf, lf);
 	assert(lf <= i.tr->bsize + 1);
 	leaf = i.tr->leaf + lf;
 	memmove(leaf + 1, leaf, sizeof *leaf * ((i.tr->bsize + 1) - lf));
-
 	branch = i.tr->branch + i.br0;
-	if(i.br0 < i.br1) { /* Split with existing branch. */
-		assert(i.bit1 + 1 <= i.bit0 + branch->skip);
+	if(i.br0 != i.br1) { /* Split with existing branch. */
+		assert(i.br0 < i.br1 && i.bit1 + 1 <= i.bit0 + branch->skip);
 		branch->skip -= i.bit1 - i.bit0 + 1;
 	}
 	trie_bmp_insert(&i.tr->is_child, lf, 1);
@@ -453,17 +451,17 @@ found:
 			trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
 			trie->root = up;
 		} else { /* Promote the root into another tree; (`up` is `prnt.tr`.) */
-			assert(up->bsize < TRIE_BRANCHES
-				&& full.prnt.lf <= full.prnt.tr->bsize
+			assert(up == full.prnt.tr && up->bsize < TRIE_BRANCHES
+				&& full.prnt.lf <= up->bsize
 				&& trie_bmp_test(&up->is_child, full.prnt.lf));
-			/* Switch places. */
-			left = up->leaf[full.prnt.lf].child;
+			/***** this is wrong now; compensate for right */
+			left = up->leaf[full.prnt.lf].child; /* Switch places. */
 			assert(left && left->bsize); /* Or else wouldn't be full. */
 			printf("add: promoting root of %s into unfilled tree %s.\n",
 				orcify(left), orcify(up));
 			PT_(expand)(full.prnt)->child = left;
-			trie_bmp_set(&full.prnt.tr->is_child, full.prnt.lf);
-			full.prnt.tr->leaf[full.prnt.lf + 1].child = right;
+			trie_bmp_set(&up->is_child, full.prnt.lf);
+			up->leaf[full.prnt.lf + 1].child = right;
 		}
 		assert(left->bsize);
 		split = left->branch[0].left + 1; /* Leaves split. */
