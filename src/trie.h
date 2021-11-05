@@ -318,7 +318,6 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	struct { unsigned br0, br1, lf; } t;
 	union PT_(leaf) *leaf;
 	struct trie_branch *branch;
-	unsigned lf;
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES);
 	assert(i.br0 <= i.br1 && i.br1 <= i.tr->bsize);
 	assert(i.br1 - i.br0 <= TRIE_MAX_LEFT);
@@ -326,8 +325,7 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 
 	/* Path defined by parameters: augment left counts along the left. */
 	t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
-	printf("insert: %s[%u,%u;%u]%c: ",
-		orcify(i.tr), i.br0, i.br1, i.lf, i.is_right ? 'R' : 'L');
+	printf("insert: %s[%u,%u;%u]: ", orcify(i.tr), i.br0, i.br1, i.lf);
 	while(t.br0 < i.br0) {
 		branch = i.tr->branch + t.br0;
 		if(t.br0 + branch->left + 1 < i.br0)
@@ -336,19 +334,19 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 			t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
 	}
 	printf("\n");
-	assert(t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf);
+	assert(t.br0 == i.br0 && t.br1 == i.br1
+		&& (t.lf == i.lf || t.lf + i.br1 - i.br0 + 1 == i.lf));
 
 	/* Expand the tree to include one more leaf and branch. */
-	lf = i.lf + (i.is_right ? i.br1 - i.br0 + 1 : 0);
-	assert(lf <= i.tr->bsize + 1);
-	leaf = i.tr->leaf + lf;
-	memmove(leaf + 1, leaf, sizeof *leaf * ((i.tr->bsize + 1) - lf));
+	assert(i.lf <= i.tr->bsize + 1);
+	leaf = i.tr->leaf + i.lf;
+	memmove(leaf + 1, leaf, sizeof *leaf * ((i.tr->bsize + 1) - i.lf));
 	branch = i.tr->branch + i.br0;
 	if(i.br0 != i.br1) { /* Split with existing branch. */
 		assert(i.br0 < i.br1 && i.bit1 + 1 <= i.bit0 + branch->skip);
 		branch->skip -= i.bit1 - i.bit0 + 1;
 	}
-	trie_bmp_insert(&i.tr->is_child, lf, 1);
+	trie_bmp_insert(&i.tr->is_child, i.lf, 1);
 	memmove(branch + 1, branch, sizeof *branch * (i.tr->bsize - i.br0));
 	branch->left = i.is_right ? (unsigned char)(i.br1 - i.br0) : 0;
 	branch->skip = (unsigned char)(i.bit1 - i.bit0);
@@ -418,10 +416,12 @@ start:
 			if(++find.bit1 > limit) return errno = EILSEQ, 0;
 	}
 found:
-	find.is_right = !!TRIE_QUERY(key, find.bit1);
-	printf("add.find: found %s(bit %lu)[%u,%u;%u]%c; bit[%lu, %lu]\n",
+	/* Account for choosing the left/right leaf. */
+	if(find.is_right = !!TRIE_QUERY(key, find.bit1))
+		find.lf += find.br1 - find.br0 + 1;
+	printf("add.find: found %s(bit %lu)[%u,%u;%u]; bit[%lu, %lu]\n",
 		orcify(find.tr), find.anchor.top, find.br0, find.br1, find.lf,
-		find.is_right ? 'R' : 'L', find.bit0, find.bit1);
+		find.bit0, find.bit1);
 	/* Find. --> */
 
 	/* <!-- Backtrack and split down the path of all the full. */
