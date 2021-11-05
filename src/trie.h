@@ -342,13 +342,9 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 		t.br0, t.br1, t.lf),
 		t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf));*/
 
-#if 0
-	if(!TRIE_QUERY(key, bit)) find.br1 = find.br0; /* Left leaf. */
-	else find.lf += find.br1 - find.br0 + 1; /* Right leaf. */
-#endif
-
 	/* Expand the tree to include one more leaf. */
-	lf = i.lf + i.is_right ? i.br1 - i.br0 + 1 : 0;
+	lf = i.lf + (i.is_right ? i.br1 - i.br0 + 1 : 0);
+	printf("is right = %u; i[%u,%u;%u]; lf = %u.\n", i.is_right, i.br0, i.br1, i.lf, lf);
 	assert(lf <= i.tr->bsize + 1);
 	leaf = i.tr->leaf + lf;
 	memmove(leaf + 1, leaf, sizeof *leaf * ((i.tr->bsize + 1) - lf));
