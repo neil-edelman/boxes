@@ -322,8 +322,7 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	assert(i.tr && i.tr->bsize < TRIE_BRANCHES);
 	assert(i.br0 <= i.br1 && i.br1 <= i.tr->bsize);
 	assert(i.br1 - i.br0 <= TRIE_MAX_LEFT);
-	assert(i.br0 == i.br1 ? i.bit0 <= UCHAR_MAX :
-		i.bit0 <= i.bit1 && i.bit1 - i.bit0 <= UCHAR_MAX);
+	assert(i.bit0 <= i.bit1 && i.bit1 - i.bit0 <= UCHAR_MAX);
 
 	/* Path defined by parameters: augment left counts along the left. */
 	t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
@@ -337,10 +336,7 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 			t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
 	}
 	printf("\n");
-	/*assert((t.lf += (t.br1 - t.br0 + 1) * i.is_right,
-		printf("insert.augment: mir [%u,%u;%u]\n",
-		t.br0, t.br1, t.lf),
-		t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf));*/
+	assert(t.br0 == i.br0 && t.br1 == i.br1 && t.lf == i.lf);
 
 	/* Expand the tree to include one more leaf. */
 	lf = i.lf + (i.is_right ? i.br1 - i.br0 + 1 : 0);
