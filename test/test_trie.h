@@ -320,7 +320,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		assert(0);
 		return;
 	}
-	printf("graph: base %s; number %u.\n", fn, PT_(no));
+	printf("graph.%u: base %s.\n", PT_(no), fn);
 	i = (size_t)(dash - fn), memcpy(temp, fn, i_temp = i_fn = i);
 	temp[i_temp++] = '-';
 	sprintf(temp + i_temp, "%u", PT_(no)), i_temp += strlen(temp + i_temp);

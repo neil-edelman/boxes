@@ -151,8 +151,8 @@ static void contrived_test(void) {
 	size_t i, j;
 	char *szs_array[] = { "", "A", "Z", "a", "z", "â", "foobar", "foo" };
 	/*char *szs_array[] = { "a", "z", "b" };*/
-	trie_star_no = 0;
 	char z[12];
+	trie_star_no = 0;
 	for(i = 0; i < sizeof szs_array / sizeof *szs_array; i++) {
 		trie_sz_no++, sz_trie_add(&szs, szs_array[i]);
 		for(j = 0; j <= i; j++) {
@@ -178,8 +178,8 @@ static void contrived_test(void) {
 int main(void) {
 	unsigned seed = 608126/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	str_trie_test();
 	contrived_test();
+	str_trie_test();
 	/*star_trie_test();
 	colour_trie_test();
 	str4_trie_test();
