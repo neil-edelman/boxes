@@ -358,10 +358,6 @@ static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
 	return leaf;
 }
 
-static int PT_(split)() {
-
-}
-
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
@@ -369,11 +365,8 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	PT_(type) *const x) {
 	struct PT_(insert) i;
 	struct { unsigned br0, br1, lf; } t;
-	struct {
-		struct { struct PT_(tree) *tr; unsigned lf, unused; size_t anchor; }
-			parent;
-		size_t n;
-	} full;
+	struct PT_(treeloc) { struct PT_(tree) *tr; size_t bit; };
+	struct { struct PT_(treeloc) parent; size_t n; } full;
 	const char *sample; /* Only used in Find. */
 
 	assert(trie && x);
@@ -387,7 +380,7 @@ start:
 	/* Solitary. --> */
 
 	/* <!-- Find the first bit not in the tree. */
-	full.parent.tr = 0, full.n = 0;
+	full.parent.tr = 0, full.n = 0; /* Backtracking information. */
 	assert(i.tr);
 	for(i.bit.diff = 0; ; i.tr = i.tr->leaf[t.lf].child) { /* Forest. */
 		const int is_full = i.tr->bsize >= TRIE_BRANCHES;
@@ -414,8 +407,7 @@ start:
 		} /* Tree. */
 		assert(t.br0 == t.br1 && t.lf <= i.tr->bsize);
 		if(!trie_bmp_test(&i.tr->is_child, t.lf)) break;
-		if(!is_full) full.parent.tr = i.tr, full.parent.lf = t.lf,
-			full.parent.anchor = i.bit.diff;
+		if(!is_full) full.parent.tr = i.tr, full.parent.bit = i.bit.tr;
 	} /* Forest. */
 	{ /* Got to a leaf. */
 		const size_t limit = i.bit.diff + UCHAR_MAX;
@@ -424,7 +416,7 @@ start:
 	}
 found:
 	/* Account for choosing the left/right leaf.
-	 (Not strictly necessary here.) */
+	 (Not strictly necessary here?) */
 	if(!!TRIE_QUERY(i.key, i.bit.diff))
 		t.lf += t.br1 - t.br0 + 1, printf("/R");
 	else
@@ -437,43 +429,74 @@ found:
 	for( ; ; ) { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
 		unsigned char leaves_split;
-		printf("add.split: unfilled parent %s, followed by %lu full trees\n",
-			orcify(full.parent.tr), full.n);
+		struct PT_(treeloc) next;
+		struct trie_branch *branch;
+		union PT_(leaf) *leaf;
+		size_t with_promote_bit;
+		printf("add.split: unfilled parent %s(bit %lu),"
+			" followed by %lu full trees\n", orcify(full.parent.tr),
+			full.parent.bit, full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
 		 sequence point in splitting where the trie is valid. */
 		if(!(up = full.parent.tr) && !(up = PT_(tree)())
 			|| !(right = PT_(tree)()))
 			{ free(right); if(!full.parent.tr) free(up);
 			if(!errno) errno = ERANGE; return 0; }
-		if(!full.parent.tr) { /* Promoting root tree raises depth of forest. */
-			assert(up != full.parent.tr);
-			left = trie->root;
-			assert(left && left->bsize);
-			printf("add.split: promoting from root tree %s raises depth of"
-				" forest, new root %s.\n", orcify(left), orcify(up));
-			up->bsize = 1;
-			up->branch[0].left = 0;
-			up->branch[0].skip = left->branch[0].skip;
-			trie_bmp_set(&up->is_child, 0), up->leaf[0].child = left;
-			trie_bmp_set(&up->is_child, 1), up->leaf[1].child = right;
-			trie->root = up;
-		} else { /* Promote the root into another unfull-tree, (which may
-			become full, if the data is above, start over.) */
-			assert(up == full.parent.tr && up->bsize < TRIE_BRANCHES
-				&& full.parent.lf <= up->bsize
-				&& trie_bmp_test(&up->is_child, full.parent.lf));
-			/***** this is wrong now; compensate for right?? */
-			left = up->leaf[full.parent.lf].child; /* Switch places. */
-			assert(left && left->bsize); /* Or else wouldn't be full. */
+		if(full.parent.tr) { /* Expand the parent to hold the promoted root. */
+			assert(up == full.parent.tr && up->bsize < TRIE_BRANCHES);
+			printf("add.split: inserting into parent %s(bit %lu): ",
+				orcify(up), full.parent.bit);
+			next.bit = full.parent.bit;
+			t.br0 = 0, t.br1 = up->bsize, t.lf = 0;
+			while(t.br0 < t.br1) { /* Tree. */
+				branch = up->branch + t.br0;
+				next.bit += branch->skip, assert(next.bit < i.bit.diff);
+				if(!TRIE_QUERY(i.key, next.bit))
+					t.br1 = ++t.br0 + branch->left++, printf("L");
+				else
+					t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
+				next.bit++;
+			}
+			/* Expand the tree to include one more leaf and branch. */
+			left = (leaf = up->leaf + t.lf)->child,
+				assert(t.lf <= up->bsize + 1
+				&& trie_bmp_test(&up->is_child, t.lf));
+			memmove(leaf + 1, leaf, sizeof *leaf * ((up->bsize + 1) - t.lf));
+			branch = up->branch + t.br0;
+			trie_bmp_insert(&up->is_child, t.lf, 1);
+			memmove(branch + 1, branch, sizeof *branch * (up->bsize - t.br0));
+			up->bsize++; /* Might be full, now. */
 			printf("add.split: promoting root of %s into unfilled tree %s.\n",
 				orcify(left), orcify(up));
-			/*PT_(expand)(full.parent)->child = left;
-			trie_bmp_set(&up->is_child, full.prnt.lf);
-			up->leaf[full.prnt.lf + 1].child = right;*/
 			assert(0);
+		} else { /* Raise depth of forest for the promoted branch. */
+			left = trie->root;
+			trie->root = up, next.bit = 0;
+			t.br0 = 0, t.br1 = up->bsize = 1, t.lf = 0;
+			trie_bmp_set(&up->is_child, 1);
+			printf("add.split: promoting from root tree %s raises depth of"
+				" forest, new root %s.\n", orcify(left), orcify(up));
 		}
-		assert(left->bsize);
+		/* Promote the root of left to the parent's unfilled. */
+		assert(up == next.tr && left && left->bsize);
+		branch = up->branch + t.br0;
+		branch->left = 0;
+		branch->skip = left->branch[0].skip;
+		leaf = up->leaf + t.lf;
+		leaf->child = left, trie_bmp_set(&up->is_child, t.lf);
+		(leaf + 1)->child = right,
+			assert(trie_bmp_test(&up->is_child, t.lf + 1));
+		/* Advance the cursor to the next tree? */
 		leaves_split = left->branch[0].left + 1;
+		if((with_promote_bit = next.bit + branch->skip) <= i.bit.diff) {
+			assert(with_promote_bit < i.bit.diff);
+			next.tr = !(TRIE_QUERY(i.key, (next.bit = with_promote_bit)))
+				? left : right;
+			next.bit++;
+		} else {
+			next.tr = up;
+		}
+		//full.parent.bit
 		printf("add.split: splitting on %u leaves.\n", leaves_split);
 		/* Copy the right part of the left to the new right. */
 		right->bsize = left->bsize - leaves_split;
@@ -500,11 +523,16 @@ found:
 		} else { /* Last tree split -- adjust invalidated `i`. */
 			printf("add.correct: before \"%s\", %s(bit %lu, diff %lu)\n",
 				i.key, orcify(i.tr), i.bit.tr, i.bit.diff);
+			/*struct PT_(insert) {
+				const char *key;
+				struct PT_(tree) *tr;
+				struct { size_t tr, diff; } bit;
+			};*/
 			assert(0);
 #if 0
-			if(!find.br0) {
+			if(!i.br0) {
 				printf("add.correct:"
-					" position top %s, bit %lu, starting again\n", orcify(up),
+					" position top %s, bit %lu\n", orcify(up),
 					(unsigned long)find.bit1);
 				/* This is an unfortunate position: we should be storing the
 				 positions on a stack, but it's easier and less power-hungry to
