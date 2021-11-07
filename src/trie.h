@@ -365,8 +365,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	PT_(type) *const x) {
 	struct PT_(insert) i;
 	struct { unsigned br0, br1, lf; } t;
-	struct PT_(treeloc) { struct PT_(tree) *tr; size_t bit; };
-	struct { struct PT_(treeloc) parent; size_t n; } full;
+	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
 
 	assert(trie && x);
@@ -374,16 +373,17 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	printf("\n_add_: %s -> %s.\n", i.key, PT_(str)(trie));
 
 start:
-	/* <!-- Solitary. */
+	/* <!-- Solitary. ********************************************************/
 	if(!(i.tr = trie->root)) return (i.tr = PT_(tree)())
 		&& (i.tr->leaf[0].data = x, trie->root = i.tr, 1);
 	/* Solitary. --> */
 
-	/* <!-- Find the first bit not in the tree. */
-	full.parent.tr = 0, full.n = 0; /* Backtracking information. */
+	/* <!-- Find the first bit not in the tree. ******************************/
+	/* Backtracking information; anchor is the first not-full tree. */
+	full.a.tr = 0, full.a.bit = 0, full.n = 0;
 	assert(i.tr);
 	for(i.bit.diff = 0; ; i.tr = i.tr->leaf[t.lf].child) { /* Forest. */
-		const int is_full = i.tr->bsize >= TRIE_BRANCHES;
+		const int is_full = TRIE_BRANCHES <= i.tr->bsize;
 		full.n = is_full ? full.n + 1 : 0;
 		i.bit.tr = i.bit.diff;
 		sample = PT_(sample)(i.tr, 0);
@@ -407,7 +407,7 @@ start:
 		} /* Tree. */
 		assert(t.br0 == t.br1 && t.lf <= i.tr->bsize);
 		if(!trie_bmp_test(&i.tr->is_child, t.lf)) break;
-		if(!is_full) full.parent.tr = i.tr, full.parent.bit = i.bit.tr;
+		if(!is_full) full.a.tr = i.tr, full.a.bit = i.bit.tr;
 	} /* Forest. */
 	{ /* Got to a leaf. */
 		const size_t limit = i.bit.diff + UCHAR_MAX;
@@ -424,38 +424,35 @@ found:
 	printf("[%u,%u;%u]; bit %lu\n", t.br0, t.br1, t.lf, i.bit.diff);
 	/* Find. --> */
 
-	/* <!-- Backtrack and split. */
+	/* <!-- Backtrack and split. *********************************************/
 	if(!full.n) goto insert;
-	for( ; ; ) { /* Split a tree. */
+	do { /* Split a tree. */
 		struct PT_(tree) *up, *left = 0, *right = 0;
 		unsigned char leaves_split;
-		struct PT_(treeloc) next;
 		struct trie_branch *branch;
 		union PT_(leaf) *leaf;
 		size_t with_promote_bit;
 		printf("add.split: unfilled parent %s(bit %lu),"
-			" followed by %lu full trees\n", orcify(full.parent.tr),
-			full.parent.bit, full.n);
+			" followed by %lu full trees\n", orcify(full.a.tr),
+			full.a.bit, full.n);
 		/* Allocate one or two if the root-tree is being split. This is a
 		 sequence point in splitting where the trie is valid. */
-		if(!(up = full.parent.tr) && !(up = PT_(tree)())
-			|| !(right = PT_(tree)()))
-			{ free(right); if(!full.parent.tr) free(up);
+		if(!(up = full.a.tr) && !(up = PT_(tree)()) || !(right = PT_(tree)()))
+			{ free(right); if(!full.a.tr) free(up);
 			if(!errno) errno = ERANGE; return 0; }
-		if(full.parent.tr) { /* Expand the parent to hold the promoted root. */
-			assert(up == full.parent.tr && up->bsize < TRIE_BRANCHES);
+		if(full.a.tr) { /* Expand the parent to hold the promoted root. */
+			assert(up == full.a.tr && up->bsize < TRIE_BRANCHES);
 			printf("add.split: inserting into parent %s(bit %lu): ",
-				orcify(up), full.parent.bit);
-			next.bit = full.parent.bit;
+				orcify(up), full.a.bit);
 			t.br0 = 0, t.br1 = up->bsize, t.lf = 0;
 			while(t.br0 < t.br1) { /* Tree. */
 				branch = up->branch + t.br0;
-				next.bit += branch->skip, assert(next.bit < i.bit.diff);
-				if(!TRIE_QUERY(i.key, next.bit))
+				full.a.bit += branch->skip, assert(full.a.bit < i.bit.diff);
+				if(!TRIE_QUERY(i.key, full.a.bit))
 					t.br1 = ++t.br0 + branch->left++, printf("L");
 				else
 					t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
-				next.bit++;
+				full.a.bit++;
 			}
 			/* Expand the tree to include one more leaf and branch. */
 			left = (leaf = up->leaf + t.lf)->child,
@@ -466,19 +463,20 @@ found:
 			trie_bmp_insert(&up->is_child, t.lf, 1);
 			memmove(branch + 1, branch, sizeof *branch * (up->bsize - t.br0));
 			up->bsize++; /* Might be full, now. */
-			printf("add.split: promoting root of %s into unfilled tree %s.\n",
-				orcify(left), orcify(up));
+			printf("add.split: new root %s for promoting %s.\n",
+				orcify(up), orcify(left));
 			assert(0);
 		} else { /* Raise depth of forest for the promoted branch. */
+			assert(!full.a.bit);
 			left = trie->root;
-			trie->root = up, next.bit = 0;
+			trie->root = up;
 			t.br0 = 0, t.br1 = up->bsize = 1, t.lf = 0;
 			trie_bmp_set(&up->is_child, 1);
 			printf("add.split: promoting from root tree %s raises depth of"
 				" forest, new root %s.\n", orcify(left), orcify(up));
 		}
 		/* Promote the root of left to the parent's unfilled. */
-		assert(up == next.tr && left && left->bsize);
+		assert(left && left->bsize);
 		branch = up->branch + t.br0;
 		branch->left = 0;
 		branch->skip = left->branch[0].skip;
@@ -486,17 +484,17 @@ found:
 		leaf->child = left, trie_bmp_set(&up->is_child, t.lf);
 		(leaf + 1)->child = right,
 			assert(trie_bmp_test(&up->is_child, t.lf + 1));
-		/* Advance the cursor to the next tree? */
+		/* Advance the cursor to the next tree. */
 		leaves_split = left->branch[0].left + 1;
-		if((with_promote_bit = next.bit + branch->skip) <= i.bit.diff) {
+		if((with_promote_bit = full.a.bit + branch->skip) <= i.bit.diff) {
 			assert(with_promote_bit < i.bit.diff);
-			next.tr = !(TRIE_QUERY(i.key, (next.bit = with_promote_bit)))
-				? left : right;
-			next.bit++;
+			full.a.bit = with_promote_bit;
+			full.a.tr = !(TRIE_QUERY(i.key, full.a.bit)) ? left : right;
+			full.a.bit++;
 		} else {
-			next.tr = up;
+			assert(full.n == 1);
+			full.a.tr = up;
 		}
-		//full.parent.bit
 		printf("add.split: splitting on %u leaves.\n", leaves_split);
 		/* Copy the right part of the left to the new right. */
 		right->bsize = left->bsize - leaves_split;
@@ -516,43 +514,15 @@ found:
 			sprintf(a, "graph/" QUOTE(TRIE_NAME) "-split-%lu.gv", full.n);
 			PT_(grph)(trie, a);
 		}
+		printf("add: counter %lu.\n", full.n);
+	} while(--full.n); /* Split. --> */
+	printf("add.correct: before \"%s\", %s(bit %lu, diff %lu)\n",
+		i.key, orcify(i.tr), i.bit.tr, i.bit.diff);
+	printf("but . . . parent %s(bit %lu)\n",
+		orcify(full.a.tr), full.a.bit);
+	i.tr = full.a.tr, i.bit.tr = full.a.bit;
 
-		if(--full.n) { /* Continue to the next tree. */
-			/* fixme: Multi-intervening tree support is not implemented. */
-			assert(0);
-		} else { /* Last tree split -- adjust invalidated `i`. */
-			printf("add.correct: before \"%s\", %s(bit %lu, diff %lu)\n",
-				i.key, orcify(i.tr), i.bit.tr, i.bit.diff);
-			/*struct PT_(insert) {
-				const char *key;
-				struct PT_(tree) *tr;
-				struct { size_t tr, diff; } bit;
-			};*/
-			assert(0);
-#if 0
-			if(!i.br0) {
-				printf("add.correct:"
-					" position top %s, bit %lu\n", orcify(up),
-					(unsigned long)find.bit1);
-				/* This is an unfortunate position: we should be storing the
-				 positions on a stack, but it's easier and less power-hungry to
-				 start again. This is also unlikely. */
-				goto start; /* Fixme: but only if the tree is full. */
-			} else if(find.br1 < split) {
-				i.tr = left;
-				find.br0--, find.br1--;
-			} else {
-				i.tr = right;
-				find.br0 -= split, find.br1 -= split, find.lf -= split;
-			}
-			printf("add.correct: find after %s[%u,%u;%u]\n",
-				orcify(find.tr), find.br0, find.br1, find.lf);
-#endif
-			break;
-		}
-	} /* Split. --> */
-
-insert:
+insert: /* Insert into unfilled tree. ****************************************/
 	PT_(expand)(i)->data = x;
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
 	printf("add_unique(%s) completed, tree bsize %d\n", i.key, i.tr->bsize);
