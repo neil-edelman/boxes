@@ -367,6 +367,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	struct { unsigned br0, br1, lf; } t;
 	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
+	int start_over = 0; /* Debug */
 
 	assert(trie && x);
 	i.key = PT_(to_key)(x), assert(i.key);
@@ -521,6 +522,8 @@ found:
 	printf("but . . . parent %s(bit %lu)\n",
 		orcify(full.a.tr), full.a.bit);
 	i.tr = full.a.tr, i.bit.tr = full.a.bit;
+	/* It was in the promoted bit's skip; the "Might be full now," was true. */
+	if(TRIE_BRANCHES >= i.tr->bsize) { assert(!start_over++); goto start; }
 
 insert: /* Insert into unfilled tree. ****************************************/
 	PT_(expand)(i)->data = x;
