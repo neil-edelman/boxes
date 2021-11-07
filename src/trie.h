@@ -455,6 +455,7 @@ found:
 					t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
 				full.a.bit++;
 			}
+			printf("\n");
 			/* Expand the tree to include one more leaf and branch. */
 			left = (leaf = up->leaf + t.lf)->child,
 				assert(t.lf <= up->bsize + 1
@@ -515,15 +516,16 @@ found:
 			sprintf(a, "graph/" QUOTE(TRIE_NAME) "-split-%lu.gv", full.n);
 			PT_(grph)(trie, a);
 		}
-		printf("add: counter %lu.\n", full.n);
 	} while(--full.n); /* Split. --> */
 	printf("add.correct: before \"%s\", %s(bit %lu, diff %lu)\n",
 		i.key, orcify(i.tr), i.bit.tr, i.bit.diff);
 	printf("but . . . parent %s(bit %lu)\n",
 		orcify(full.a.tr), full.a.bit);
 	i.tr = full.a.tr, i.bit.tr = full.a.bit;
-	/* It was in the promoted bit's skip; the "Might be full now," was true. */
-	if(TRIE_BRANCHES >= i.tr->bsize) { assert(!start_over++); goto start; }
+	/* It was in the promoted bit's skip and "Might be full now," was true.
+	 Don't have enough information to recover, but ca'n't get here twice. */
+	if(TRIE_BRANCHES >= i.tr->bsize)
+		{ assert(!start_over++); printf("add: START OVER!\n"); goto start; }
 
 insert: /* Insert into unfilled tree. ****************************************/
 	PT_(expand)(i)->data = x;
