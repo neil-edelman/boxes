@@ -116,7 +116,7 @@ static const char *keyval_key(const struct keyval *const kv)
 #include "../src/trie.h"
 
 /** Special; plain strings are not testable in this framework. */
-static void str_trie_test(void) {
+static void str_trie_special_test(void) {
 	struct str_trie strs = TRIE_IDLE;
 	struct str_trie_iterator it;
 	const char *str;
@@ -181,11 +181,11 @@ static void contrived_test(void) {
 int main(void) {
 	unsigned seed = 608126/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
+	str_trie_special_test();
 	contrived_test();
-	str_trie_test();
-	/*star_trie_test();
+	/*star_trie_test();*/
 	colour_trie_test();
-	str4_trie_test();
+	/*str4_trie_test();
 	keyval_trie_test();*/
 	return EXIT_SUCCESS;
 }

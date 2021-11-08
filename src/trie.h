@@ -73,7 +73,7 @@
 /* Worst-case all-branches-left root. Parameter sets the maximum tree size.
  Prefer alignment `4n - 2`; cache `32n - 2`. (Easily, `{a, b, ..., A}`). */
 #define TRIE_MAX_LEFT 1/*6*//*254*/
-#if TRIE_MAX_LEFT </*=?*/ 0 || TRIE_MAX_LEFT > UCHAR_MAX
+#if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
 #error TRIE_MAX_LEFT parameter range `[0, UCHAR_MAX]` without modifications.
 #endif
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */

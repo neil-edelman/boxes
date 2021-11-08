@@ -423,8 +423,8 @@ static void PT_(test)(void) {
 		/*if(!((n + 1) & n) || n + 1 == es_size)
 			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-pot.gv");*/
 		assert(!errno);
-		if(!es[n].is_in) {assert(!errno);/*printf("Duplicate value %s -> %s.\n",
-			PT_(to_key)(&es[n].data), T_(trie_to_string)(&trie));*/ continue; };
+		if(!es[n].is_in) { printf("Duplicate value %s.\n",
+			PT_(to_key)(&es[n].data)); continue; };
 		for(m = 0; m <= n; m++) {
 			data = T_(trie_get)(&trie, PT_(to_key)(&es[m].data));
 			printf("test get(%s) = %s\n", PT_(to_key)(&es[m].data), data ? PT_(to_key)(data) : "<didn't find>");
