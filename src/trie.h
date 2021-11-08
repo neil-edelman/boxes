@@ -368,6 +368,8 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
 	int start_over = 0; /* Debug: make sure we only go through twice. */
+	char a[128];
+	unsigned no = 1;
 
 	assert(trie && x);
 	i.key = PT_(to_key)(x), assert(i.key);
@@ -510,21 +512,22 @@ found:
 		memmove(left->branch, left->branch + 1,
 			sizeof *left->branch * (left->bsize + 1));
 
-		{
-			char a[128];
-			sprintf(a, "graph/" QUOTE(TRIE_NAME) "-split-%lu.gv", full.n);
-			PT_(grph)(trie, a);
-		}
+		sprintf(a, "graph/" QUOTE(TRIE_NAME) "-split-%u-%lu.gv", no, 99-full.n);
+		PT_(grph)(trie, a);
 	} while(--full.n); /* Split. --> */
-	printf("add.correct: before \"%s\", %s(bit %lu, diff %lu)\n",
-		i.key, orcify(i.tr), i.bit.tr, i.bit.diff);
-	printf("but . . . parent %s(bit %lu)\n",
-		orcify(full.a.tr), full.a.bit);
+	printf("add.correct: before \"%s\", %s(bit %lu, diff %lu),"
+		" becoming parent %s(bit %lu)\n", i.key, orcify(i.tr), i.bit.tr,
+		i.bit.diff, orcify(full.a.tr), full.a.bit);
 	i.tr = full.a.tr, i.bit.tr = full.a.bit;
 	/* It was in the promoted bit's skip and "Might be full now," was true.
 	 Don't have enough information to recover, but ca'n't get here twice. */
-	if(TRIE_BRANCHES >= i.tr->bsize)
-		{ assert(!start_over++); printf("add: START OVER!\n"); goto start; }
+	if(TRIE_BRANCHES <= i.tr->bsize)
+		{ printf("add: START OVER! %s is full.\n", orcify(i.tr));
+			PT_(prnt)(i.tr);
+			sprintf(a, "graph/" QUOTE(TRIE_NAME) "-split-%u-%lu-over.gv",
+				no++, 99-full.n);
+			PT_(grph)(trie, a);
+			assert(!start_over++); goto start; }
 
 insert: /* Insert into unfilled tree. ****************************************/
 	PT_(expand)(i)->data = x;

@@ -152,25 +152,28 @@ static void contrived_test(void) {
 	char *szs_array[] = { "", "A", "Z", "a", "z", "â", "foobar", "foo" };
 	/*char *szs_array[] = { "a", "z", "b" };*/
 	char z[12];
-	trie_star_no = 0;
+	trie_sz_no = 1;
 	for(i = 0; i < sizeof szs_array / sizeof *szs_array; i++) {
-		trie_sz_no++, sz_trie_add(&szs, szs_array[i]);
+		if(!sz_trie_add(&szs, szs_array[i]))
+			{ printf("This does not make sense.\n"); assert(0); continue; }
 		for(j = 0; j <= i; j++) {
 			char *sz = sz_trie_get(&szs, szs_array[j]);
 			printf("test get(%s) = %s\n",
 				szs_array[j], sz ? sz : "<didn't find>");
 			assert(sz == szs_array[j]);
 		}
+		trie_sz_no++;
 	}
 	trie_sz_grph(&szs, "graph/szs-full.gv");
 	/* "τ Ceti" "τ C" */
+	trie_star_no = 1;
 	for(i = 0; i < sizeof star / sizeof *star; i++) {
 		s = star + i;
-		trie_star_no++;
 		star_filler(s);
 		trie_star_to_string(s, &z);
-		printf("--Star %s--\n", z);
-		star_trie_add(&strs, s);
+		printf("--Star %s, %u--\n", z, trie_star_no);
+		if(!star_trie_add(&strs, s)) { assert(!errno); continue; }
+		trie_star_no++;
 	}
 	star_trie_(&strs);
 }
