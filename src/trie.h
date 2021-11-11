@@ -532,7 +532,8 @@ found:
 insert: /* Insert into unfilled tree. ****************************************/
 	PT_(expand)(i)->data = x;
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
-	printf("add_unique(%s) completed, tree bsize %d\n", i.key, i.tr->bsize);
+	printf("add_unique(%s) completed, %s bsize %d\n",
+		i.key, orcify(i.tr), i.tr->bsize);
 	return 1;
 }
 #undef QUOTE
