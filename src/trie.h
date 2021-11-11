@@ -132,6 +132,13 @@ struct T_(trie) { struct PT_(tree) *root; };
 struct PT_(iterator)
 	{ struct PT_(tree) *root, *next; unsigned leaf, unused; };
 
+#if 0
+/* I don't know what I did. */
+struct PT_(iterator) {
+	size_t dont_care_bit; /* Constant. */
+};
+#endif
+
 /** Stores a range in the trie. Any changes in the topology of the trie
  invalidate it. @fixme Replacing `root` with `bit` would make it faster and
  allow size remaining; just have to fiddle with `end` to `above`. That makes it

@@ -397,7 +397,7 @@ static int PT_(true)(PT_(type) *const a, PT_(type) *const b)
 static void PT_(test)(void) {
 	struct T_(trie) trie = TRIE_IDLE;
 	struct T_(trie_iterator) it;
-	size_t n, m, count;
+	size_t n, m, count, sum;
 	struct { PT_(type) data; int is_in; } es[20/*00*/];
 	PT_(type) dup;
 	const size_t es_size = sizeof es / sizeof *es;
@@ -417,6 +417,7 @@ static void PT_(test)(void) {
 	for(n = 0; n < es_size; n++) PT_(filler)(&es[n].data);
 
 	/* Adding. */
+	count = 0;
 	errno = 0;
 	for(n = 0, PT_(no) = 1; n < es_size; n++) {
 		printf("Adding %s.\n", PT_(to_key)(&es[n].data));
@@ -425,6 +426,7 @@ static void PT_(test)(void) {
 			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-pot.gv");*/
 		assert(!errno);
 		if(!es[n].is_in) { printf("Duplicate value.\n"); continue; };
+		count++;
 		for(m = 0; m <= n; m++) {
 			if(!es[m].is_in) continue;
 			data = T_(trie_get)(&trie, PT_(to_key)(&es[m].data));
@@ -439,16 +441,17 @@ static void PT_(test)(void) {
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
 
 	/* Test prefix and size. */
-	count = !!T_(trie_get)(&trie, "");
+	sum = !!T_(trie_get)(&trie, "");
 	for(n = 1; n < 256; n++) {
-		char a[2] = { '\0', '\0' }; a[0] = (char)n;
+		char a[2] = { '\0', '\0' };
+		a[0] = (char)n;
 		T_(trie_prefix)(&trie, a, &it);
-		count += T_(trie_size)(&it);
+		sum += T_(trie_size)(&it);
 	}
 	T_(trie_prefix)(&trie, "", &it);
 	n = T_(trie_size)(&it);
-	printf("%lu items; sum of exhaustive one-letter sub-trees: %lu.\n",
-		n, count), assert(n == count && n);
+	printf("%lu items inserted; %lu items counted; sum of sub-trees %lu.\n",
+		count, n, sum), assert(n == count && n == sum);
 
 	/* Replacement. */
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
