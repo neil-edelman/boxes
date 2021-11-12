@@ -443,15 +443,10 @@ static void PT_(test)(void) {
 	/* Test prefix and size. */
 	sum = !!T_(trie_get)(&trie, "");
 	for(n = 1; n < 256; n++) {
-		PT_(type) *t;
-		size_t add;
 		char a[2] = { '\0', '\0' };
 		a[0] = (char)n;
 		T_(trie_prefix)(&trie, a, &it);
-		add = T_(trie_size)(&it);
-		sum += add;
-		if(add) printf("%c: %lu\n", (char)n, add);
-		while(t = T_(trie_next)(&it)) printf("<%s>\n", PT_(to_key)(t));
+		sum += T_(trie_size)(&it);
 	}
 	T_(trie_prefix)(&trie, "", &it);
 	n = T_(trie_size)(&it);
