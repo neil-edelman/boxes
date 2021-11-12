@@ -681,20 +681,25 @@ static size_t PT_(sub_size)(const struct PT_(tree) *const tree) {
 
 /** Counts the new iterator `it`. @order \O(|`it`|) */
 static size_t PT_(size)(const struct T_(trie_iterator) *const it) {
-	struct PT_(tree) *next = it->root; /* ? */
+	//struct PT_(tree) *next = it->root; /* WTF? No. */
 	size_t size;
 	unsigned i;
 	assert(it);
 	if(!it->root || !it->next) return 0;
-	/* We actually could find the size, but it's non-trivial, and just storing
-	 the size is way more efficient. */
 	assert(it->next == it->end
-		&& it->leaf <= it->leaf_end && it->leaf_end <= next->bsize + 1);
+		&& it->leaf <= it->leaf_end && it->leaf_end <= it->next->bsize + 1);
 	size = it->leaf_end - it->leaf;
-	/* fixme: I have no idea what's going on. */
-	for(i = it->leaf; i < it->leaf_end; i++)
-		if(trie_bmp_test(&next->is_child, i))
-		size += PT_(sub_size)(next->leaf[i].child) - 1;
+	printf("(next %s; [%u, %u]; init %lu", orcify(it->next), it->leaf, it->leaf_end, size);
+	for(i = it->leaf; i < it->leaf_end; i++) {
+		/* It clearly is not, but it insists on taking this branch.
+		 (next Ithlurum; [0, 3]; init 3; ch 7; ch 9; ch 12) */
+		if(trie_bmp_test(&it->next->is_child, i)) {
+			size += PT_(sub_size)(it->next->leaf[i].child) - 1, printf("; %lu (%u)", size, !!trie_bmp_test(&it->next->is_child, i));
+		} else {
+			printf("<%s>", PT_(to_key)(it->next->leaf[i].data));
+		}
+	}
+	printf(")\n");
 	return size;
 }
 
