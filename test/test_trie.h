@@ -422,15 +422,16 @@ static void PT_(test)(void) {
 	for(n = 0, PT_(no) = 1; n < es_size; n++) {
 		printf("Adding %s.\n", PT_(to_key)(&es[n].data));
 		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
-		/*if(!((n + 1) & n) || n + 1 == es_size)
-			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-pot.gv");*/
+		if(!((n + 1) & n) || n + 1 == es_size)
+			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-sample.gv");
 		assert(!errno);
 		if(!es[n].is_in) { printf("Duplicate value.\n"); continue; };
 		count++;
 		for(m = 0; m <= n; m++) {
 			if(!es[m].is_in) continue;
 			data = T_(trie_get)(&trie, PT_(to_key)(&es[m].data));
-			/*printf("test get(%s) = %s\n", PT_(to_key)(&es[m].data),
+			/* This is O(n^2) spam.
+			printf("test get(%s) = %s\n", PT_(to_key)(&es[m].data),
 				data ? PT_(to_key)(data) : "<didn't find>");*/
 			assert(data == &es[m].data);
 		}

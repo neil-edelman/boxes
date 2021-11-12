@@ -358,6 +358,8 @@ The data has been engineered for maximum effectiveness of the cache in reading a
 
 The `\O(log n)` running time is only when the trie has bounds on strings that are placed there. Worst-case $\{ a, aa, aaa, aaaa, ... \}$. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
 
+Tries are a fairly succinct encoding at low numbers, but at high numbers, the internal trees add up. In the limit, with bounded strings, we need $n \log_{\text{order}} n$ to store $n$ items? However, practically, if one sets the order high enough, this is not an issue?
+
 \subsection{Limits}
 
 This is valid, $\{ dictator \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to $\{ dictionary, dictionaries \}$: it is too long a skip value. There are several modifications that would allow this, but they are out of this scope.
@@ -367,13 +369,15 @@ Insertion: Any leaf on the sub-tree queried will do; in this implementation, fav
 on split, do we have to go locally and see if we can join them?
 
 we don't need to store any data if the leaf-trees are different from the branch-trees?
+$
 trie: root, height
 branch tree: bsize, +branchtree, branch[o-1], leaf[o]
 leaf tree: bsize, ?, branch[o-1], is_recursive_bmp[o/8], leaf[o]
 or
 leaf tree: bsize, ?, branch[o-1], leaf[o] { skip, union{ data, trie } }
 or
-leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data } } }
+leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data }
+$
 
 \bibliography{trie}
 
