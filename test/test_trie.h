@@ -430,7 +430,8 @@ static void PT_(test)(void) {
 		for(m = 0; m <= n; m++) {
 			if(!es[m].is_in) continue;
 			data = T_(trie_get)(&trie, PT_(to_key)(&es[m].data));
-			printf("test get(%s) = %s\n", PT_(to_key)(&es[m].data), data ? PT_(to_key)(data) : "<didn't find>");
+			/*printf("test get(%s) = %s\n", PT_(to_key)(&es[m].data),
+				data ? PT_(to_key)(data) : "<didn't find>");*/
 			assert(data == &es[m].data);
 		}
 		PT_(no)++;
