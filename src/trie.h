@@ -488,8 +488,6 @@ insert: /* Insert into unfilled tree. ****************************************/
 	/* PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv"); */
 	return 1;
 }
-#undef QUOTE
-#undef QUOTE_
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
  in <fn:<T>trie_policy_put>. */
@@ -581,6 +579,9 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	tree->bsize--;
 	return rm;
 }
+
+#undef QUOTE
+#undef QUOTE_
 
 /** Frees `tree` and it's children recursively. */
 static void PT_(clear)(struct PT_(tree) *const tree) {

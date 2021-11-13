@@ -164,7 +164,7 @@ static void contrived_test(void) {
 		}
 		trie_sz_no++;
 	}
-	trie_sz_grph(&szs, "graph/szs-full.gv");
+	trie_sz_grph(&szs, "graph/szs-contrived.gv");
 	/* "τ Ceti" "τ C" */
 	trie_star_no = 1;
 	for(i = 0; i < sizeof star / sizeof *star; i++) {
@@ -181,11 +181,11 @@ static void contrived_test(void) {
 int main(void) {
 	unsigned seed = 608126/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	str_trie_special_test();
 	contrived_test();
-	/*star_trie_test();*/
+	str_trie_special_test();
+	star_trie_test();
 	colour_trie_test();
-	/*str4_trie_test();
-	keyval_trie_test();*/
+	str4_trie_test();
+	keyval_trie_test();
 	return EXIT_SUCCESS;
 }
