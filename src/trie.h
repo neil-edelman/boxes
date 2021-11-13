@@ -610,8 +610,10 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	if(strcmp(key, PT_(to_key)(rm = tree->leaf[t.lf].data))) return 0;
 	printf("Yes, \"%s\" exists as leaf %u. Parent tree %s.\n",
 		key, t.lf, orcify(parent));
+	/* Deleting the data would cause an overflow. */
 	if(tree->branch[branches.parent].skip + 1
-		+ tree->branch[branches.twin].skip > 255) { errno = EILSEQ; return 0; }
+		+ tree->branch[branches.twin].skip > UCHAR_MAX)
+		{ errno = EILSEQ; return 0; }
 	/* Go down a second time and modify the tree. */
 	t.br0 = 0, t.br1 = tree->bsize; /* Now `lf` goes down. */
 	for( ; ; ) {
@@ -629,8 +631,8 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		+= 1 + tree->branch[branches.parent].skip;
 	memmove(tree->branch + branches.parent, tree->branch + branches.parent + 1,
 		sizeof tree->branch * (tree->bsize - branches.parent - 1));
-	tree->bsize--;
 	trie_bmp_remove(&tree->is_child, t.lf, 1);
+	tree->bsize--;
 	return rm;
 }
 

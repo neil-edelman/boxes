@@ -490,7 +490,8 @@ static void PT_(test)(void) {
 		printf("%u) Removing \"%s\" from trie.\n", PT_(no), key);
 		data = T_(trie_remove)(&trie, key);
 		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
-		assert(data);
+		assert(data == &es[n].data);
+		es[n].is_in = 0;
 		break;
 	}
 
