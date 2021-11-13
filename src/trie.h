@@ -314,13 +314,11 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 static int PT_(add_unique)(struct T_(trie) *const trie,
 	PT_(type) *const x) {
 	const char *const key = PT_(to_key)(x);
-	struct { struct PT_(tree) *tr; struct { size_t tr, diff; } bit; } i;
 	struct { unsigned br0, br1, lf; } t;
+	struct { struct PT_(tree) *tr; struct { size_t tr, diff; } bit; } i;
 	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
-	int start_over = 0; /* Debug: make sure we only go through twice. */
-	char a[128];
-	unsigned no = 1;
+	int restarts = 0; /* Debug: make sure we only go through twice. */
 	assert(trie && x && key);
 	printf("\n_add_: %s -> %s.\n", key, PT_(str)(trie));
 
@@ -460,9 +458,6 @@ found:
 		left->bsize = leaves_split - 1;
 		memmove(left->branch, left->branch + 1,
 			sizeof *left->branch * (left->bsize + 1));
-
-		sprintf(a, "graph/" QUOTE(TRIE_NAME) "-split-%u-%lu.gv", no, 99-full.n);
-		PT_(grph)(trie, a);
 	} while(--full.n); /* Split. --> */
 	printf("add.correct: before \"%s\", %s(bit %lu, diff %lu),"
 		" becoming parent %s(bit %lu)\n", key, orcify(i.tr), i.bit.tr,
@@ -470,23 +465,16 @@ found:
 	i.tr = full.a.tr, i.bit.tr = full.a.bit;
 	/* It was in the promoted bit's skip and "Might be full now," was true.
 	 Don't have enough information to recover, but ca'n't get here twice. */
-	if(TRIE_BRANCHES <= i.tr->bsize)
-		{ printf("add: START OVER! %s is full.\n", orcify(i.tr));
-			PT_(prnt)(i.tr);
-			sprintf(a, "graph/" QUOTE(TRIE_NAME) "-split-%u-%lu-over.gv",
-				no++, 99-full.n);
-			PT_(grph)(trie, a);
-			assert(!start_over++); goto start; }
+	if(TRIE_BRANCHES <= i.tr->bsize) { assert(!restarts++); goto start; }
 
 insert: /* Insert into unfilled tree. ****************************************/
 	{
-		struct { unsigned br0, br1, lf, is_right; } t;
 		union PT_(leaf) *leaf;
 		struct trie_branch *branch;
 		size_t bit0, bit1;
+		unsigned is_right;
 		assert(key && i.tr && i.tr->bsize < TRIE_BRANCHES
 			&& i.bit.tr <= i.bit.diff);
-
 		/* Modify the tree's left branches to account for the new leaf. */
 		t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
 		bit0 = i.bit.tr;
@@ -503,7 +491,7 @@ insert: /* Insert into unfilled tree. ****************************************/
 			bit0 = bit1 + 1;
 		}
 		assert(bit0 <= i.bit.diff && i.bit.diff - bit0 <= UCHAR_MAX);
-		if(t.is_right = !!TRIE_QUERY(key, i.bit.diff))
+		if(is_right = !!TRIE_QUERY(key, i.bit.diff))
 			t.lf += t.br1 - t.br0 + 1, printf("/R");
 		else
 			printf("/L");
@@ -519,7 +507,7 @@ insert: /* Insert into unfilled tree. ****************************************/
 		}
 		trie_bmp_insert(&i.tr->is_child, t.lf, 1);
 		memmove(branch + 1, branch, sizeof *branch * (i.tr->bsize - t.br0));
-		branch->left = t.is_right ? (unsigned char)(t.br1 - t.br0) : 0;
+		branch->left = is_right ? (unsigned char)(t.br1 - t.br0) : 0;
 		branch->skip = (unsigned char)(i.bit.diff - bit0);
 		i.tr->bsize++;
 		leaf->data = x;
