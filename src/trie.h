@@ -308,69 +308,16 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** All parameters to insert a node in a tree, minus the node, for use in the
- <fn:<PT>expand> function which is called in the <fn:<PT>add_unique>. */
-struct PT_(insert) {
-	const char *key;
-	struct PT_(tree) *tr;
-	struct { size_t tr, diff; } bit;
-};
-
-/* Expand an un-full tree. Helper method for <fn:<PT>add_unique>.
- @return Inserted spot, an uninitialized data leaf. (Should be the leaf one
- found.) */
-static union PT_(leaf) *PT_(expand)(const struct PT_(insert) i) {
-	struct { unsigned br0, br1, lf, is_right; } t;
-	union PT_(leaf) *leaf;
-	struct trie_branch *branch;
-	size_t bit0, bit1;
-	assert(i.key && i.tr && i.tr->bsize < TRIE_BRANCHES
-		&& i.bit.tr <= i.bit.diff);
-
-	/* Modify the tree's left branches to account for the new leaf. */
-	t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
-	bit0 = i.bit.tr;
-	printf("insert %s(bit %lu): ", orcify(i.tr), i.bit.tr);
-	while(t.br0 < t.br1) { /* Tree. */
-		branch = i.tr->branch + t.br0;
-		bit1 = bit0 + branch->skip;
-		/* Decision bits can never be the site of a difference. */
-		if(i.bit.diff <= bit1) { assert(i.bit.diff < bit1); break; }
-		if(!TRIE_QUERY(i.key, bit1))
-			t.br1 = ++t.br0 + branch->left++, printf("L");
-		else
-			t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
-		bit0 = bit1 + 1;
-	}
-	assert(bit0 <= i.bit.diff && i.bit.diff - bit0 <= UCHAR_MAX);
-	if(t.is_right = !!TRIE_QUERY(i.key, i.bit.diff))
-		t.lf += t.br1 - t.br0 + 1, printf("/R");
-	else
-		printf("/L");
-	printf("[%u,%u;%u] bit %lu\n", t.br0, t.br1, t.lf, i.bit.diff);
-
-	/* Expand the tree to include one more leaf and branch. */
-	leaf = i.tr->leaf + t.lf, assert(t.lf <= i.tr->bsize + 1);
-	memmove(leaf + 1, leaf, sizeof *leaf * ((i.tr->bsize + 1) - t.lf));
-	branch = i.tr->branch + t.br0;
-	if(t.br0 != t.br1) { /* Split with existing branch. */
-		assert(t.br0 < t.br1 && i.bit.diff + 1 <= bit0 + branch->skip);
-		branch->skip -= i.bit.diff - bit0 + 1;
-	}
-	trie_bmp_insert(&i.tr->is_child, t.lf, 1);
-	memmove(branch + 1, branch, sizeof *branch * (i.tr->bsize - t.br0));
-	branch->left = t.is_right ? (unsigned char)(t.br1 - t.br0) : 0;
-	branch->skip = (unsigned char)(i.bit.diff - bit0);
-	i.tr->bsize++;
-	return leaf;
-}
-
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[ERANGE] There is too many bytes similar for the data-type. */
 static int PT_(add_unique)(struct T_(trie) *const trie,
 	PT_(type) *const x) {
-	struct PT_(insert) i;
+	struct {
+		const char *key;
+		struct PT_(tree) *tr;
+		struct { size_t tr, diff; } bit;
+	} i; /* Insert */
 	struct { unsigned br0, br1, lf; } t;
 	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
@@ -537,7 +484,51 @@ found:
 			assert(!start_over++); goto start; }
 
 insert: /* Insert into unfilled tree. ****************************************/
-	PT_(expand)(i)->data = x;
+	{
+		struct { unsigned br0, br1, lf, is_right; } t;
+		union PT_(leaf) *leaf;
+		struct trie_branch *branch;
+		size_t bit0, bit1;
+		assert(i.key && i.tr && i.tr->bsize < TRIE_BRANCHES
+			&& i.bit.tr <= i.bit.diff);
+
+		/* Modify the tree's left branches to account for the new leaf. */
+		t.br0 = 0, t.br1 = i.tr->bsize, t.lf = 0;
+		bit0 = i.bit.tr;
+		printf("insert %s(bit %lu): ", orcify(i.tr), i.bit.tr);
+		while(t.br0 < t.br1) { /* Tree. */
+			branch = i.tr->branch + t.br0;
+			bit1 = bit0 + branch->skip;
+			/* Decision bits can never be the site of a difference. */
+			if(i.bit.diff <= bit1) { assert(i.bit.diff < bit1); break; }
+			if(!TRIE_QUERY(i.key, bit1))
+				t.br1 = ++t.br0 + branch->left++, printf("L");
+			else
+				t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
+			bit0 = bit1 + 1;
+		}
+		assert(bit0 <= i.bit.diff && i.bit.diff - bit0 <= UCHAR_MAX);
+		if(t.is_right = !!TRIE_QUERY(i.key, i.bit.diff))
+			t.lf += t.br1 - t.br0 + 1, printf("/R");
+		else
+			printf("/L");
+		printf("[%u,%u;%u] bit %lu\n", t.br0, t.br1, t.lf, i.bit.diff);
+
+		/* Expand the tree to include one more leaf and branch. */
+		leaf = i.tr->leaf + t.lf, assert(t.lf <= i.tr->bsize + 1);
+		memmove(leaf + 1, leaf, sizeof *leaf * ((i.tr->bsize + 1) - t.lf));
+		branch = i.tr->branch + t.br0;
+		if(t.br0 != t.br1) { /* Split with existing branch. */
+			assert(t.br0 < t.br1 && i.bit.diff + 1 <= bit0 + branch->skip);
+			branch->skip -= i.bit.diff - bit0 + 1;
+		}
+		trie_bmp_insert(&i.tr->is_child, t.lf, 1);
+		memmove(branch + 1, branch, sizeof *branch * (i.tr->bsize - t.br0));
+		branch->left = t.is_right ? (unsigned char)(t.br1 - t.br0) : 0;
+		branch->skip = (unsigned char)(i.bit.diff - bit0);
+		i.tr->bsize++;
+		leaf->data = x;
+	}
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
 	printf("add_unique(%s) completed, %s bsize %d\n",
 		i.key, orcify(i.tr), i.tr->bsize);
