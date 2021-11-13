@@ -578,84 +578,60 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 
 static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
-#if 0
-	struct PT_(tree) *parent_store;
-	PT_(type) *data;
-	struct PT_(tree) tree;
+	struct PT_(tree) *parent, *tree;
 	struct trie_branch *branch;
-	struct { unsigned br0, br1, lf; } in_tree;
+	struct { unsigned br0, br1, lf; } t;
 	struct { unsigned parent, twin; } branches;
-	unsigned leaf;
 	size_t bit;
 	struct { size_t cur, next; } byte;
 	PT_(type) *rm;
-#endif
 	assert(trie && key);
-	assert(0);
-#if 0
-	if(!store.info) return 0; /* Empty. */
+	if(!(tree = trie->root)) return 0; /* Empty. */
 	/* Preliminary exploration. Need parent tree and twin. */
-	for(bit = 0; ; ) {
-		PT_(extract)(store, &tree);
-		if(!tree.bsize) {
-			/* Not ensured . . . but should be? */
-			assert(!TRIE_BITTEST(tree.children, 0));
-			/* Delete this tree.
-			 This is messy, could have `parent` in another tree. */
-			assert(0);
-		}
-		in_tree.br0 = 0, in_tree.br1 = tree.bsize, in_tree.lf = 0;
-		do {
-			branch = tree.branches + (branches.parent = in_tree.br0);
+	for(parent = 0, bit = 0; ; parent = tree, tree = tree->leaf[t.lf].child) {
+		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
+		while(t.br0 < t.br1) {
+			branch = tree->branch + (branches.parent = t.br0);
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0;
-			if(!TRIE_BITTEST(key, bit))
-				branches.twin = in_tree.br0 + branch->left + 1,
-				in_tree.br1 = ++in_tree.br0 + branch->left;
-				/*if(is_write) branch->left--;*/
+			if(!TRIE_QUERY(key, bit))
+				branches.twin = t.br0 + branch->left + 1,
+				t.br1 = ++t.br0 + branch->left;
 			else
-				branches.twin = in_tree.br0 + 1,
-				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
+				branches.twin = t.br0 + 1,
+				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
-		} while(in_tree.br0 < in_tree.br1);
-		assert(in_tree.br0 == in_tree.br1 && in_tree.lf <= tree.bsize);
-		if(!TRIE_BITTEST(tree.children, in_tree.lf)) break;
-		parent_store = store;
-		store = tree.leaves[in_tree.lf].child;
+		}
+		assert(t.br0 == t.br1 && t.lf <= tree->bsize);
+		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
 	}
 	/* We have the candidate leaf. */
-	leaf = in_tree.lf;
-	data = tree.leaves[leaf].data;
-	if(strcmp(key, PT_(to_key)(rm = tree.leaves[leaf].data))) return 0;
-	printf("Yes, \"%s\" exists as leaf %u. Parent tree %p.\n",
-		key, leaf, (void *)parent_store.info);
-	if(tree.branches[branches.parent].skip + 1
-		+ tree.branches[branches.twin].skip > 255)
-		{ printf("Would make too long.\n"); return 0; }
+	if(strcmp(key, PT_(to_key)(rm = tree->leaf[t.lf].data))) return 0;
+	printf("Yes, \"%s\" exists as leaf %u. Parent tree %s.\n",
+		key, t.lf, orcify(parent));
+	if(tree->branch[branches.parent].skip + 1
+		+ tree->branch[branches.twin].skip > 255) { errno = EILSEQ; return 0; }
 	/* Go down a second time and modify the tree. */
-	in_tree.br0 = 0, in_tree.br1 = tree.bsize; /* Now `lf` goes down. */
+	t.br0 = 0, t.br1 = tree->bsize; /* Now `lf` goes down. */
 	for( ; ; ) {
-		branch = tree.branches + in_tree.br0;
-		if(branch->left >= in_tree.lf) { /* Pre-order binary search. */
+		branch = tree->branch + t.br0;
+		if(branch->left >= t.lf) {
 			if(!branch->left) break;
-			in_tree.br1 = ++in_tree.br0 + branch->left;
+			t.br1 = ++t.br0 + branch->left;
 			branch->left--;
 		} else {
-			if((in_tree.br0 += branch->left + 1) >= in_tree.br1) break;
-			in_tree.lf -= branch->left + 1;
+			if((t.br0 += branch->left + 1) >= t.br1) break;
+			t.lf -= branch->left + 1;
 		}
 	}
-	tree.branches[branches.twin].skip
-		+= 1 + tree.branches[branches.parent].skip;
-	memmove(tree.branches + branches.parent,
-		tree.branches + branches.parent + 1,
-		sizeof tree.branches * (tree.bsize - branches.parent - 1));
-	assert(store.info->bsize), store.info->bsize--;
-	/* fixme: Delete from the children bitmap. */
-	return data;
-#endif
-	return 0;
+	tree->branch[branches.twin].skip
+		+= 1 + tree->branch[branches.parent].skip;
+	memmove(tree->branch + branches.parent, tree->branch + branches.parent + 1,
+		sizeof tree->branch * (tree->bsize - branches.parent - 1));
+	tree->bsize--;
+	trie_bmp_remove(&tree->is_child, t.lf, 1);
+	return rm;
 }
 
 /** Frees `tree` and it's children recursively. */
@@ -757,7 +733,6 @@ static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
 
 /* iterate --> */
 
-
 /** Initializes `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
 	{ assert(trie); trie->root = 0; }
@@ -834,11 +809,11 @@ static void T_(trie_prefix)(const struct T_(trie) *const trie,
 
 /** Counts the of the items in the new `it`; iterator must be new,
  (calling <fn:<T>trie_next> causes it to become undefined.)
- @order \O(|`it`|) @allow */
+ @order \O(|`it`|) @allow @fixme Allow `<T>trie_next`. */
 static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 	{ return PT_(size)(it); }
 
-/** Advances `it`. @return The previous value or null. */
+/** Advances `it`. @return The previous value or null. @allow */
 static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 	struct PT_(iterator) shunt;
 	PT_(type) *x;
@@ -851,10 +826,6 @@ static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 	it->next = shunt.next, it->leaf = shunt.leaf;
 	return x;
 }
-
-/* typename std::unordered_map<Key,T,Hash,KeyEqual,Alloc>::size_type
-	erase_if(std::unordered_map<Key,T,Hash,KeyEqual,Alloc>& c, Pred pred);
- std::pair */
 
 /* Define these for traits. */
 #define BOX_ PT_

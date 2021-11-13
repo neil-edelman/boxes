@@ -437,9 +437,10 @@ static void PT_(test)(void) {
 		}
 		PT_(no)++;
 	}
-	for(n = 0; n < es_size; n++) if(es[n].is_in)
-		data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data)),
-		assert(data == &es[n].data);
+	for(n = 0; n < es_size; n++)
+		if(es[n].is_in) data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data)),
+			assert(data == &es[n].data);
+		else printf("es %lu duplicate\n", n);
 	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
 
 	/* Test prefix and size. */
@@ -458,9 +459,9 @@ static void PT_(test)(void) {
 	/* Replacement. */
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
 	assert(!ret);
-	ret = T_(trie_put)(&trie, &es[0].data, 0);
+	ret = T_(trie_put)(&trie, &es[0].data, 0); /* Replaces with itself. */
 	assert(ret);
-	ret = T_(trie_put)(&trie, &es[0].data, &data);
+	ret = T_(trie_put)(&trie, &es[0].data, &data); /* Replaces with itself. */
 	assert(ret && data == &es[0].data);
 	ret = T_(trie_policy_put)(&trie, &es[0].data, 0, 0); /* Does add. */
 	assert(ret);
@@ -476,6 +477,23 @@ static void PT_(test)(void) {
 	printf("Trie size: %lu before, replacement %lu.\n",
 		(unsigned long)n, (unsigned long)m);
 	assert(n == m);
+	/* Restore the original. */
+	ret = T_(trie_put)(&trie, &es[0].data, 0); /* Add. */
+	assert(ret && data == &es[0].data), es[0].is_in = 1;
+
+	printf("es_size %lu\n", es_size);
+	for(n = 3; n < es_size; n++) {
+		const char *key;
+		if(!es[n].is_in) { printf("es %lu is not in\n", n); continue; }
+		key = PT_(to_key)(&es[n].data);
+		PT_(no) = (unsigned)n;
+		printf("%u) Removing \"%s\" from trie.\n", PT_(no), key);
+		data = T_(trie_remove)(&trie, key);
+		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
+		assert(data);
+		break;
+	}
+
 	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
 	assert(!errno);
 }
