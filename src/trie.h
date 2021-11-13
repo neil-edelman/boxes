@@ -313,21 +313,16 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
  @throw[ERANGE] There is too many bytes similar for the data-type. */
 static int PT_(add_unique)(struct T_(trie) *const trie,
 	PT_(type) *const x) {
-	struct {
-		const char *key;
-		struct PT_(tree) *tr;
-		struct { size_t tr, diff; } bit;
-	} i; /* Insert */
+	const char *const key = PT_(to_key)(x);
+	struct { struct PT_(tree) *tr; struct { size_t tr, diff; } bit; } i;
 	struct { unsigned br0, br1, lf; } t;
 	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
 	int start_over = 0; /* Debug: make sure we only go through twice. */
 	char a[128];
 	unsigned no = 1;
-
-	assert(trie && x);
-	i.key = PT_(to_key)(x), assert(i.key);
-	printf("\n_add_: %s -> %s.\n", i.key, PT_(str)(trie));
+	assert(trie && x && key);
+	printf("\n_add_: %s -> %s.\n", key, PT_(str)(trie));
 
 start:
 	/* <!-- Solitary. ********************************************************/
@@ -350,8 +345,8 @@ start:
 			const struct trie_branch *const branch = i.tr->branch + t.br0;
 			const size_t bit1 = i.bit.diff + branch->skip;
 			for( ; i.bit.diff < bit1; i.bit.diff++)
-				if(TRIE_DIFF(i.key, sample, i.bit.diff)) goto found;
-			if(!TRIE_QUERY(i.key, i.bit.diff)) {
+				if(TRIE_DIFF(key, sample, i.bit.diff)) goto found;
+			if(!TRIE_QUERY(key, i.bit.diff)) {
 				t.br1 = ++t.br0 + branch->left;
 				printf("L");
 			} else {
@@ -369,13 +364,13 @@ start:
 	} /* Forest. */
 	{ /* Got to a leaf. */
 		const size_t limit = i.bit.diff + UCHAR_MAX;
-		while(!TRIE_DIFF(i.key, sample, i.bit.diff))
+		while(!TRIE_DIFF(key, sample, i.bit.diff))
 			if(++i.bit.diff > limit) return errno = EILSEQ, 0;
 	}
 found:
 	/* Account for choosing the left/right leaf.
 	 (Not strictly necessary here?) */
-	if(!!TRIE_QUERY(i.key, i.bit.diff))
+	if(!!TRIE_QUERY(key, i.bit.diff))
 		t.lf += t.br1 - t.br0 + 1, printf("/R");
 	else
 		printf("/L");
@@ -404,7 +399,7 @@ found:
 			while(t.br0 < t.br1) { /* Tree. */
 				branch = up->branch + t.br0;
 				full.a.bit += branch->skip, assert(full.a.bit < i.bit.diff);
-				if(!TRIE_QUERY(i.key, full.a.bit))
+				if(!TRIE_QUERY(key, full.a.bit))
 					t.br1 = ++t.br0 + branch->left++, printf("L");
 				else
 					t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
@@ -446,7 +441,7 @@ found:
 		if((with_promote_bit = full.a.bit + branch->skip) <= i.bit.diff) {
 			assert(with_promote_bit < i.bit.diff);
 			full.a.bit = with_promote_bit;
-			full.a.tr = !(TRIE_QUERY(i.key, full.a.bit)) ? left : right;
+			full.a.tr = !(TRIE_QUERY(key, full.a.bit)) ? left : right;
 			full.a.bit++;
 		} else {
 			assert(full.n == 1);
@@ -470,7 +465,7 @@ found:
 		PT_(grph)(trie, a);
 	} while(--full.n); /* Split. --> */
 	printf("add.correct: before \"%s\", %s(bit %lu, diff %lu),"
-		" becoming parent %s(bit %lu)\n", i.key, orcify(i.tr), i.bit.tr,
+		" becoming parent %s(bit %lu)\n", key, orcify(i.tr), i.bit.tr,
 		i.bit.diff, orcify(full.a.tr), full.a.bit);
 	i.tr = full.a.tr, i.bit.tr = full.a.bit;
 	/* It was in the promoted bit's skip and "Might be full now," was true.
@@ -489,7 +484,7 @@ insert: /* Insert into unfilled tree. ****************************************/
 		union PT_(leaf) *leaf;
 		struct trie_branch *branch;
 		size_t bit0, bit1;
-		assert(i.key && i.tr && i.tr->bsize < TRIE_BRANCHES
+		assert(key && i.tr && i.tr->bsize < TRIE_BRANCHES
 			&& i.bit.tr <= i.bit.diff);
 
 		/* Modify the tree's left branches to account for the new leaf. */
@@ -501,14 +496,14 @@ insert: /* Insert into unfilled tree. ****************************************/
 			bit1 = bit0 + branch->skip;
 			/* Decision bits can never be the site of a difference. */
 			if(i.bit.diff <= bit1) { assert(i.bit.diff < bit1); break; }
-			if(!TRIE_QUERY(i.key, bit1))
+			if(!TRIE_QUERY(key, bit1))
 				t.br1 = ++t.br0 + branch->left++, printf("L");
 			else
 				t.br0 += branch->left + 1, t.lf += branch->left + 1, printf("R");
 			bit0 = bit1 + 1;
 		}
 		assert(bit0 <= i.bit.diff && i.bit.diff - bit0 <= UCHAR_MAX);
-		if(t.is_right = !!TRIE_QUERY(i.key, i.bit.diff))
+		if(t.is_right = !!TRIE_QUERY(key, i.bit.diff))
 			t.lf += t.br1 - t.br0 + 1, printf("/R");
 		else
 			printf("/L");
@@ -531,7 +526,7 @@ insert: /* Insert into unfilled tree. ****************************************/
 	}
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv");
 	printf("add_unique(%s) completed, %s bsize %d\n",
-		i.key, orcify(i.tr), i.tr->bsize);
+		key, orcify(i.tr), i.tr->bsize);
 	return 1;
 }
 #undef QUOTE
