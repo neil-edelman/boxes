@@ -631,6 +631,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		+= 1 + tree->branch[branches.parent].skip;
 	memmove(tree->branch + branches.parent, tree->branch + branches.parent + 1,
 		sizeof tree->branch * (tree->bsize - branches.parent - 1));
+	/* Where's the leaf? */
 	trie_bmp_remove(&tree->is_child, t.lf, 1);
 	tree->bsize--;
 	return rm;
