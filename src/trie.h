@@ -522,51 +522,67 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	struct { unsigned br0, br1, lf; } t;
-	struct { unsigned parent, twin; } branches;
-	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } empty;
+	struct {
+		struct {
+			struct PT_(tree) *tr;
+			size_t bit;
+			struct { unsigned parent, ident, twin; } br;
+			unsigned lf;
+		} a;
+		size_t n;
+	} empty;
 	size_t bit;
 	struct { size_t cur, next; } byte;
-	struct PT_(tree) /**parent,*/ *tree;
+	struct PT_(tree) *tree;
 	PT_(type) *rm;
 	assert(trie && key);
 	if(!(tree = trie->root)) return 0; /* Empty. */
-	/* Preliminary exploration. Need parent tree and twin. Backtracking information. */
+	/* Preliminary exploration; backtracking information. */
 	empty.a.tr = 0, empty.a.bit = 0, empty.n = 0;
-	for(/*parent = 0,*/ bit = 0; ; /*parent = tree,*/ tree = tree->leaf[t.lf].child) {
+	for(bit = 0; ; tree = tree->leaf[t.lf].child) {
 		const int is_empty = !tree->bsize;
 		const size_t bit_tr = bit;
 		empty.n = is_empty ? empty.n + 1 : 0;
 		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
-			struct trie_branch *const branch = tree->branch + (branches.parent = t.br0);
+			struct trie_branch *const
+				branch = tree->branch + (empty.a.br.parent = t.br0);
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0;
 			if(!TRIE_QUERY(key, bit))
-				branches.twin = t.br0 + branch->left + 1,
-				t.br1 = ++t.br0 + branch->left;
+				empty.a.br.twin  = t.br0 + branch->left + 1,
+				empty.a.br.ident = t.br1 = ++t.br0 + branch->left;
 			else
-				branches.twin = t.br0 + 1,
-				t.br0 += branch->left + 1, t.lf += branch->left + 1;
+				empty.a.br.twin = t.br0 + 1,
+				empty.a.br.ident = (t.br0 += branch->left + 1),
+				t.lf += branch->left + 1;
 			bit++;
 		}
 		assert(t.br0 == t.br1 && t.lf <= tree->bsize);
+		if(!is_empty)
+			empty.a.tr = tree, empty.a.bit = bit_tr, empty.a.lf = t.lf;
 		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
-		if(!is_empty) empty.a.tr = tree, empty.a.bit = bit_tr;
 	}
-	/* We have the candidate leaf. */
+	/* We have the candidate leaf; check and see if it is a match. */
 	if(strcmp(key, PT_(to_key)(rm = tree->leaf[t.lf].data))) return 0;
-	printf("remove: \"%s\" exists as leaf %u in tree %s, parent tree %s."
+	printf("remove: \"%s\" exists as leaf %u in tree %s."
 		" Empty tree anchored by %s followed %lu trees.\n",
-		key, t.lf, orcify(tree), /*orcify(parent)*/"moo", orcify(empty.a.tr), empty.n);
+		key, t.lf, orcify(tree), orcify(empty.a.tr), empty.n);
+	/* Removed the whole trie. Fixme: 1/0/1/0... makes a lot of `malloc`. */
+	if(!empty.a.tr) {
+		assert(empty.n);
+		assert(0);
+		return 0;
+	}
 	/* Deleting the data would cause an overflow. */
-	if(tree->branch[branches.parent].skip + 1
-		+ tree->branch[branches.twin].skip > UCHAR_MAX)
+	if(empty.a.tr->branch[empty.a.br.parent].skip + 1
+		+ empty.a.tr->branch[empty.a.br.twin].skip > UCHAR_MAX)
 		{ errno = EILSEQ; return 0; }
 	/* Go down a second time and modify the tree. */
-	t.br0 = 0, t.br1 = tree->bsize; /* Now `lf` goes down. */
+	t.br0 = 0, t.br1 = empty.a.tr->bsize; /* Now `lf` goes down. */
 	for( ; ; ) {
-		struct trie_branch *const branch = tree->branch + t.br0;
+		struct trie_branch *const branch = empty.a.tr->branch + t.br0;
 		if(branch->left >= t.lf) {
 			if(!branch->left) break;
 			t.br1 = ++t.br0 + branch->left;
@@ -576,13 +592,14 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 			t.lf -= branch->left + 1;
 		}
 	}
-	tree->branch[branches.twin].skip
-		+= 1 + tree->branch[branches.parent].skip;
-	memmove(tree->branch + branches.parent, tree->branch + branches.parent + 1,
-		sizeof tree->branch * (tree->bsize - branches.parent - 1));
+	empty.a.tr->branch[empty.a.br.twin].skip
+		+= 1 + empty.a.tr->branch[empty.a.br.parent].skip;
+	memmove(empty.a.tr->branch + empty.a.br.parent, empty.a.tr->branch
+		+ empty.a.br.parent + 1, sizeof empty.a.tr->branch
+		* (empty.a.tr->bsize - empty.a.br.parent - 1));
 	/* Where's the leaf? */
-	trie_bmp_remove(&tree->is_child, t.lf, 1);
-	tree->bsize--;
+	trie_bmp_remove(&empty.a.tr->is_child, t.lf, 1);
+	empty.a.tr->bsize--;
 	return rm;
 }
 
