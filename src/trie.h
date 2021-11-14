@@ -579,8 +579,8 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	if(empty.a.tr->branch[empty.a.br.parent].skip + 1
 		+ empty.a.tr->branch[empty.a.br.twin].skip > UCHAR_MAX)
 		{ errno = EILSEQ; return 0; }
-	/* Go down a second time and modify the tree. */
-	t.br0 = 0, t.br1 = empty.a.tr->bsize; /* Now `lf` goes down. */
+	/* Go down a second time and modify the tree. Now `lf` goes down. */
+	t.br0 = 0, t.br1 = empty.a.tr->bsize, t.lf = empty.a.lf;
 	for( ; ; ) {
 		struct trie_branch *const branch = empty.a.tr->branch + t.br0;
 		if(branch->left >= t.lf) {
@@ -597,9 +597,26 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	memmove(empty.a.tr->branch + empty.a.br.parent, empty.a.tr->branch
 		+ empty.a.br.parent + 1, sizeof empty.a.tr->branch
 		* (empty.a.tr->bsize - empty.a.br.parent - 1));
-	/* Where's the leaf? */
+	/* Before we delete it. */
+	tree = empty.n ? (assert(trie_bmp_test(&empty.a.tr->is_child, empty.a.lf)),
+		empty.a.tr->leaf[empty.a.lf].child) : 0;
+	assert(empty.a.lf <= empty.a.tr->bsize);
+	memmove(empty.a.tr->leaf + empty.a.lf, empty.a.tr->leaf + empty.a.lf + 1,
+		sizeof empty.a.tr->leaf * (empty.a.tr->bsize - empty.a.lf));
 	trie_bmp_remove(&empty.a.tr->is_child, t.lf, 1);
 	empty.a.tr->bsize--;
+	/* Free all the unused trees. */
+	if(empty.n) for( ; ; ) {
+		union PT_(leaf) leaf;
+		printf("Freeing %s.\n", orcify(tree));
+		assert(tree && !tree->bsize
+			&& !!(empty.n - 1) == !!trie_bmp_test(&tree->is_child, 0));
+		leaf = tree->leaf[0];
+		free(tree);
+		if(!--empty.n) break;
+		tree = leaf.child;
+	}
+	/* No. This doesn't work yet -- forgot inter-tree collapse? */
 	return rm;
 }
 
