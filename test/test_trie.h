@@ -492,6 +492,8 @@ static void PT_(test)(void) {
 		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
 		assert(data == &es[n].data);
 		es[n].is_in = 0;
+		data = T_(trie_get)(&trie, key);
+		assert(!data);
 		break;
 	}
 
