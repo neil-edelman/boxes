@@ -521,20 +521,24 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 
 static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
-	struct PT_(tree) *parent, *tree;
-	struct trie_branch *branch;
 	struct { unsigned br0, br1, lf; } t;
 	struct { unsigned parent, twin; } branches;
+	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } empty;
 	size_t bit;
 	struct { size_t cur, next; } byte;
+	struct PT_(tree) /**parent,*/ *tree;
 	PT_(type) *rm;
 	assert(trie && key);
 	if(!(tree = trie->root)) return 0; /* Empty. */
-	/* Preliminary exploration. Need parent tree and twin. */
-	for(parent = 0, bit = 0; ; parent = tree, tree = tree->leaf[t.lf].child) {
+	/* Preliminary exploration. Need parent tree and twin. Backtracking information. */
+	empty.a.tr = 0, empty.a.bit = 0, empty.n = 0;
+	for(/*parent = 0,*/ bit = 0; ; /*parent = tree,*/ tree = tree->leaf[t.lf].child) {
+		const int is_empty = !tree->bsize;
+		const size_t bit_tr = bit;
+		empty.n = is_empty ? empty.n + 1 : 0;
 		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
-			branch = tree->branch + (branches.parent = t.br0);
+			struct trie_branch *const branch = tree->branch + (branches.parent = t.br0);
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0;
@@ -548,11 +552,13 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		}
 		assert(t.br0 == t.br1 && t.lf <= tree->bsize);
 		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
+		if(!is_empty) empty.a.tr = tree, empty.a.bit = bit_tr;
 	}
 	/* We have the candidate leaf. */
 	if(strcmp(key, PT_(to_key)(rm = tree->leaf[t.lf].data))) return 0;
-	printf("Yes, \"%s\" exists as leaf %u. Parent tree %s.\n",
-		key, t.lf, orcify(parent));
+	printf("remove: \"%s\" exists as leaf %u in tree %s, parent tree %s."
+		" Empty tree anchored by %s followed %lu trees.\n",
+		key, t.lf, orcify(tree), /*orcify(parent)*/"moo", orcify(empty.a.tr), empty.n);
 	/* Deleting the data would cause an overflow. */
 	if(tree->branch[branches.parent].skip + 1
 		+ tree->branch[branches.twin].skip > UCHAR_MAX)
@@ -560,7 +566,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	/* Go down a second time and modify the tree. */
 	t.br0 = 0, t.br1 = tree->bsize; /* Now `lf` goes down. */
 	for( ; ; ) {
-		branch = tree->branch + t.br0;
+		struct trie_branch *const branch = tree->branch + t.br0;
 		if(branch->left >= t.lf) {
 			if(!branch->left) break;
 			t.br1 = ++t.br0 + branch->left;
