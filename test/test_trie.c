@@ -132,18 +132,15 @@ static void contrived_str_test(void) {
 	trie_str_no = 0;
 	trie_str_grph(&strs, "graph/str-contrived.gv");
 	{
-		char *z = str_trie_get(&strs, "z");
-		assert(z);
-		printf("Sz \"%s\" will be removing.\n", z);
-		z = str_trie_remove(&strs, "z");
+		const char *const z = str_trie_remove(&strs, "z");
 		assert(z);
 		printf("Sz \"%s\" removed.\n", z);
 		trie_str_grph(&strs, "graph/str-deleted-z.gv");
 		for(j = 0; j <= i; j++) {
-			char *sz = str_trie_get(&strs, str_array[j]);
+			const char *sz = str_trie_get(&strs, str_array[j]);
 			printf("test get(%s) = %s\n",
 				str_array[j], sz ? sz : "<didn't find>");
-			assert(sz == z || sz == str_array[j]);
+			assert((sz == z) ^ (sz != str_array[j]));
 		}
 	}
 	str_trie_(&strs);
