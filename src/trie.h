@@ -96,7 +96,7 @@ static int trie_is_prefix(const char *a, const char *b) {
 #ifndef TRIE_TYPE /* <!-- !type */
 /** Default `char` uses `a` as the key, which makes it a set of strings. */
 static const char *PT_(raw)(const char *a) { return assert(a), a; }
-#define TRIE_TYPE char
+#define TRIE_TYPE const char
 #define TRIE_KEY &PT_(raw)
 #endif /* !type --> */
 /** Declared type of the trie; `char` default. */
