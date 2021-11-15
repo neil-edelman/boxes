@@ -7,23 +7,18 @@
 #include <time.h>   /* clock time */
 #include "orcish.h"
 
+/* A set of strings. `TRIE_TO_STRING` and `TRIE_TEST` are for graphing; one
+ doesn't need them otherwise. Manually tested in <fn:contrived_str_test>. */
+static void str_filler(char *c) { assert(c != 0); c = ""; }
 #define TRIE_NAME str
 #define TRIE_TO_STRING
+#define TRIE_TEST &str_filler
 #include "../src/trie.h"
 
-static void sz_filler(char *c) { assert(c != 0); c = ""; }
-static const char *sz_key(const char *const c) { return c; }
-
-#define TRIE_NAME sz
-#define TRIE_TYPE char
-#define TRIE_KEY &sz_key
-#define TRIE_TEST &sz_filler
-#define TRIE_TO_STRING
-#include "../src/trie.h"
-
+/* You can have an `enum` in a `trie`, pointing to a fixed set of strings. */
 #define PARAM(A) A
 #define STRINGIZE(A) #A
-#define COLOUR(X) /* Max 11 letters. */ \
+#define COLOUR(X) \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
 	X(Olive), X(Lime), X(Green), X(Aqua), X(Cyan), X(Teal), X(Salmon), \
@@ -43,7 +38,9 @@ static const char *colour_key(const enum colour *const c)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
-/* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and ly. */
+/* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
+ Sol. This is just a little bit more complex than colours, storing a pointer to
+ a static name and the distance in a struct. */
 #define PARAM2(A, B) { #A, B }
 #define STARS(X) \
 	X(Sun, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
@@ -70,7 +67,6 @@ static const char *colour_key(const enum colour *const c)
 	X(Merak, 79), X(Ankaa, 77), X(Girtab, 460), X(Enif, 670), X(Scheat, 200), \
 	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
 	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
-
 struct star { char *name; double distance; };
 static const struct star stars[] = { STARS(PARAM2) };
 static const size_t stars_size = sizeof stars / sizeof *stars;
@@ -89,7 +85,8 @@ static const char *star_key(const struct star *const star)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
-
+/* Stores a value in the item itself. If the string changes while in the trie,
+ the trie is now undefined, don't do that. */
 struct str4 { char value[4]; };
 static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }
@@ -101,13 +98,13 @@ static const char *str4_key(const struct str4 *const s) { return s->value; }
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
-/* This is organized by value; the key doesn't do anything. */
-struct keyval { int key; char value[12]; };
+/* This is organized, alphabetized, and supports range-queries by key. */
+struct keyval { char key[12]; int value; };
 static void keyval_filler(struct keyval *const kv)
-	{ kv->key = rand() / (RAND_MAX / 1098 + 1) - 99;
-	orcish(kv->value, sizeof kv->value); }
+	{ kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
+	orcish(kv->key, sizeof kv->key); }
 static const char *keyval_key(const struct keyval *const kv)
-	{ return kv->value; }
+	{ return kv->key; }
 #define TRIE_NAME keyval
 #define TRIE_TYPE struct keyval
 #define TRIE_KEY &keyval_key
@@ -115,77 +112,50 @@ static const char *keyval_key(const struct keyval *const kv)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
-/** Special; plain strings are not testable in this framework. */
-static void str_trie_special_test(void) {
+/** Manual testing for default string trie, that is, no associated information,
+ just a set of `char *`. */
+static void contrived_str_test(void) {
 	struct str_trie strs = TRIE_IDLE;
-	struct str_trie_iterator it;
-	const char *str;
-	const char *test[] = { "b", "f", "a", "" };
-	const size_t test_size = sizeof test / sizeof *test;
-	size_t i;
-	int success;
-	success = str_trie_add(&strs, "bar")
-		&& str_trie_add(&strs, "baz")
-		&& str_trie_add(&strs, "foo");
-	assert(success);
-	for(i = 0; i < test_size; i++) {
-		str = test[i];
-		str_trie_prefix(&strs, str, &it);
-		printf("%s: (%u, %u) size %lu\n",
-			str, it.leaf, it.leaf_end, (unsigned long)str_trie_size(&it));
-		while(str = str_trie_next(&it))
-			printf("got: %s.\n", str);
-	}
-	/* remove is temp fubar
-	 printf("Remove fooo: %s.\n", str_trie_remove(&strs, "fooo"));
-	printf("Remove foo: %s.\n", str_trie_remove(&strs, "foo"));*/
-	printf("Now size is %lu.\n",
-		(str_trie_prefix(&strs, "", &it), str_trie_size(&it)));
-	str_trie_(&strs);
-}
-
-static void contrived_test(void) {
-	struct star_trie strs = TRIE_IDLE;
-	struct star star[10], *s;
-	struct sz_trie szs = TRIE_IDLE;
 	size_t i, j;
-	char *szs_array[] = { "", "A", "Z", "a", "z", "â", "foobar", "foo" };
-	/*char *szs_array[] = { "a", "z", "b" };*/
-	char z[12];
-	trie_sz_no = 1;
-	for(i = 0; i < sizeof szs_array / sizeof *szs_array; i++) {
-		if(!sz_trie_add(&szs, szs_array[i]))
+	char *str_array[] = { "", "A", "Z", "a", "z", "â", "foobar", "foo" };
+	for(i = 0; i < sizeof str_array / sizeof *str_array; i++) {
+		/* The items in the array are unique, right? */
+		if(!str_trie_add(&strs, str_array[i]))
 			{ printf("This does not make sense.\n"); assert(0); continue; }
 		for(j = 0; j <= i; j++) {
-			char *sz = sz_trie_get(&szs, szs_array[j]);
+			char *sz = str_trie_get(&strs, str_array[j]);
 			printf("test get(%s) = %s\n",
-				szs_array[j], sz ? sz : "<didn't find>");
-			assert(sz == szs_array[j]);
+				str_array[j], sz ? sz : "<didn't find>");
+			assert(sz == str_array[j]);
 		}
-		trie_sz_no++;
 	}
-	trie_sz_grph(&szs, "graph/szs-contrived.gv");
-	/* "τ Ceti" "τ C" */
-	trie_star_no = 1;
-	for(i = 0; i < sizeof star / sizeof *star; i++) {
-		s = star + i;
-		star_filler(s);
-		trie_star_to_string(s, &z);
-		printf("--Star %s, %u--\n", z, trie_star_no);
-		if(!star_trie_add(&strs, s)) { assert(!errno); continue; }
-		trie_star_no++;
+	trie_str_no = 0;
+	trie_str_grph(&strs, "graph/str-contrived.gv");
+	{
+		char *z = str_trie_get(&strs, "z");
+		assert(z);
+		printf("Sz \"%s\" will be removing.\n", z);
+		z = str_trie_remove(&strs, "z");
+		assert(z);
+		printf("Sz \"%s\" removed.\n", z);
+		trie_str_grph(&strs, "graph/str-deleted-z.gv");
+		for(j = 0; j <= i; j++) {
+			char *sz = str_trie_get(&strs, str_array[j]);
+			printf("test get(%s) = %s\n",
+				str_array[j], sz ? sz : "<didn't find>");
+			assert(sz == z || sz == str_array[j]);
+		}
 	}
-	star_trie_(&strs);
+	str_trie_(&strs);
 }
 
 int main(void) {
 	unsigned seed = 608126/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	contrived_test();
-	str_trie_special_test();
+	contrived_str_test();
+	/*colour_trie_test();
 	star_trie_test();
-	colour_trie_test();
 	str4_trie_test();
-	keyval_trie_test();
+	keyval_trie_test();*/
 	return EXIT_SUCCESS;
 }

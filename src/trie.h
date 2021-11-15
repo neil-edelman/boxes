@@ -44,8 +44,8 @@
 #if defined(TRIE_TYPE) ^ defined(TRIE_KEY)
 #error TRIE_TYPE and TRIE_KEY have to be mutually defined.
 #endif
-#if defined(TRIE_TEST) && (!defined(TRIE_TO_STRING) || !defined(TRIE_TYPE))
-#error TRIE_TEST requires TRIE_TO_STRING and TRIE_TYPE.
+#if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
+#error TRIE_TEST requires TRIE_TO_STRING.
 #endif
 
 #include <stdlib.h>
@@ -74,7 +74,7 @@
  Prefer alignment `4n - 2`; cache `32n - 2`. (Easily, `{a, b, ..., A}`). */
 #define TRIE_MAX_LEFT 1/*6*//*254*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
-#error TRIE_MAX_LEFT parameter range `[0, UCHAR_MAX]` without modifications.
+#error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]` without modifications.
 #endif
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
 #define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
@@ -521,14 +521,9 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 
 static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
-	struct { unsigned br0, br1, lf; } t;
+	struct { unsigned br0, br1, lf; } t, twin;
 	struct {
-		struct {
-			struct PT_(tree) *tr;
-			size_t bit;
-			struct { unsigned parent, ident, twin; } br;
-			unsigned lf;
-		} a;
+		struct { struct PT_(tree) *tr; unsigned br, lf; } a;
 		size_t n;
 	} empty;
 	size_t bit;
@@ -538,30 +533,27 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	assert(trie && key);
 	if(!(tree = trie->root)) return 0; /* Empty. */
 	/* Preliminary exploration; backtracking information. */
-	empty.a.tr = 0, empty.a.bit = 0, empty.n = 0;
+	empty.a.tr = 0, empty.n = 0;
 	for(bit = 0; ; tree = tree->leaf[t.lf].child) {
 		const int is_empty = !tree->bsize;
-		const size_t bit_tr = bit;
 		empty.n = is_empty ? empty.n + 1 : 0;
 		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
-			struct trie_branch *const
-				branch = tree->branch + (empty.a.br.parent = t.br0);
+			struct trie_branch *const branch = tree->branch + t.br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0;
 			if(!TRIE_QUERY(key, bit))
-				empty.a.br.twin  = t.br0 + branch->left + 1,
-				empty.a.br.ident = t.br1 = ++t.br0 + branch->left;
+			/*empty.a.br.twin  = t.br0 + branch->left + 1,*/
+				t.br1 = ++t.br0 + branch->left;
 			else
-				empty.a.br.twin = t.br0 + 1,
-				empty.a.br.ident = (t.br0 += branch->left + 1),
-				t.lf += branch->left + 1;
+			/*empty.a.br.twin = t.br0 + 1,*/
+				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
 		}
 		assert(t.br0 == t.br1 && t.lf <= tree->bsize);
 		if(!is_empty)
-			empty.a.tr = tree, empty.a.bit = bit_tr, empty.a.lf = t.lf;
+			empty.a.tr = tree, empty.a.br = t.br0, empty.a.lf = t.lf;
 		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
 	}
 	/* We have the candidate leaf; check and see if it is a match. */
@@ -575,6 +567,8 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		assert(0);
 		return 0;
 	}
+	assert(0);
+#if 0
 	/* Deleting the data would cause an overflow. */
 	if(empty.a.tr->branch[empty.a.br.parent].skip + 1
 		+ empty.a.tr->branch[empty.a.br.twin].skip > UCHAR_MAX)
@@ -597,6 +591,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	memmove(empty.a.tr->branch + empty.a.br.parent, empty.a.tr->branch
 		+ empty.a.br.parent + 1, sizeof empty.a.tr->branch
 		* (empty.a.tr->bsize - empty.a.br.parent - 1));
+#endif
 	/* Before we delete it. */
 	tree = empty.n ? (assert(trie_bmp_test(&empty.a.tr->is_child, empty.a.lf)),
 		empty.a.tr->leaf[empty.a.lf].child) : 0;
