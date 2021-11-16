@@ -521,9 +521,14 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 
 static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
-	struct { unsigned br0, br1, lf; } t, twin;
+	struct { unsigned br0, br1, lf; } t;
 	struct {
-		struct { struct PT_(tree) *tr; unsigned br, lf; } a;
+		struct { struct PT_(tree) *tr; unsigned br, unused; } parent;
+		struct {
+			struct PT_(tree) *tr;
+			struct { unsigned br0, br1, lf; } twin;
+			int unused;
+		} a;
 		size_t n;
 	} empty;
 	size_t bit;
@@ -532,10 +537,10 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	PT_(type) *rm;
 	assert(trie && key);
 	if(!(tree = trie->root)) return 0; /* Empty. */
-	/* Preliminary exploration; backtracking information. */
-	empty.a.tr = 0, empty.n = 0;
+	/* Preliminary exploration; `parent` and `twin` are of the `empty.a_tr`. */
+	empty.parent.tr = 0, empty.a.tr = 0, empty.n = 0;
 	for(bit = 0; ; tree = tree->leaf[t.lf].child) {
-		const int is_empty = !tree->bsize;
+		const int is_empty = !tree->bsize; /* `is_empty ^ (twin, parent)` */
 		empty.n = is_empty ? empty.n + 1 : 0;
 		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
@@ -544,23 +549,25 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0;
 			if(!TRIE_QUERY(key, bit))
-			/*empty.a.br.twin  = t.br0 + branch->left + 1,*/
-				t.br1 = ++t.br0 + branch->left;
+				empty.a.twin.lf = t.lf + branch->left + 1,
+				empty.a.twin.br1 = t.br1,
+				empty.a.twin.br0 = t.br1 = ++t.br0 + branch->left;
 			else
-			/*empty.a.br.twin = t.br0 + 1,*/
-				t.br0 += branch->left + 1, t.lf += branch->left + 1;
+				empty.a.twin.br0 = ++t.br0,
+				empty.a.twin.br1 = (t.br0 += branch->left),
+				empty.a.twin.lf = t.lf, t.lf += branch->left + 1;
 			bit++;
 		}
 		assert(t.br0 == t.br1 && t.lf <= tree->bsize);
-		if(!is_empty)
-			empty.a.tr = tree, empty.a.br = t.br0, empty.a.lf = t.lf;
+		if(!is_empty) empty.a.tr = tree;
 		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
 	}
 	/* We have the candidate leaf; check and see if it is a match. */
 	if(strcmp(key, PT_(to_key)(rm = tree->leaf[t.lf].data))) return 0;
 	printf("remove: \"%s\" exists as leaf %u in tree %s."
-		" Empty tree anchored by %s followed %lu trees.\n",
-		key, t.lf, orcify(tree), orcify(empty.a.tr), empty.n);
+		" Empty tree anchored by %s (twin [%u,%u;%u]) "
+		"followed %lu trees.\n", key, t.lf, orcify(tree), orcify(empty.a.tr),
+		empty.a.twin.br0, empty.a.twin.br1, empty.a.twin.lf, empty.n);
 	/* Removed the whole trie. Fixme: 1/0/1/0... makes a lot of `malloc`. */
 	if(!empty.a.tr) {
 		assert(empty.n);
@@ -570,8 +577,8 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	assert(0);
 #if 0
 	/* Deleting the data would cause an overflow. */
-	if(empty.a.tr->branch[empty.a.br.parent].skip + 1
-		+ empty.a.tr->branch[empty.a.br.twin].skip > UCHAR_MAX)
+	if(empty.a.tr->branch[empty.a.parent.br0].skip + 1
+		+ empty.a.tr->branch[empty.a.twin.br0].skip > UCHAR_MAX)
 		{ errno = EILSEQ; return 0; }
 	/* Go down a second time and modify the tree. Now `lf` goes down. */
 	t.br0 = 0, t.br1 = empty.a.tr->bsize, t.lf = empty.a.lf;
@@ -591,15 +598,15 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	memmove(empty.a.tr->branch + empty.a.br.parent, empty.a.tr->branch
 		+ empty.a.br.parent + 1, sizeof empty.a.tr->branch
 		* (empty.a.tr->bsize - empty.a.br.parent - 1));
-#endif
 	/* Before we delete it. */
 	tree = empty.n ? (assert(trie_bmp_test(&empty.a.tr->is_child, empty.a.lf)),
 		empty.a.tr->leaf[empty.a.lf].child) : 0;
 	assert(empty.a.lf <= empty.a.tr->bsize);
 	memmove(empty.a.tr->leaf + empty.a.lf, empty.a.tr->leaf + empty.a.lf + 1,
 		sizeof empty.a.tr->leaf * (empty.a.tr->bsize - empty.a.lf));
-	trie_bmp_remove(&empty.a.tr->is_child, t.lf, 1);
+	trie_bmp_remove(&empty.a.tr->is_child, one.lf, 1);
 	empty.a.tr->bsize--;
+#endif
 	/* Free all the unused trees. */
 	if(empty.n) for( ; ; ) {
 		union PT_(leaf) leaf;
