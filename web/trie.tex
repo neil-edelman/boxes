@@ -342,6 +342,10 @@ instead of adding in one big trie, where the data type presents a limit of how b
 
 This is a fixed-maximum size trie within a B-tree. Because of overlapping terminology, some care must be used in describing the structure. We use the notion that a trie is a forest of trees. Nodes, in B-tree terminology, are trees. A complete path through the forest always visits the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness.
 
+\subsection{Trees}
+
+Patrica trie is a full binary tree. Non-empty. Issues with having zero, one, zero, one, zero, items always needing to allocate memory. Fixme: store the order instead of the branches.
+
 \subsection{Structure in Memory}
 
 Like a node in a B-trie, a tree structure is a contiguous chunk. As an example, refer to Figure~\ref{star-3:mem}. A tree whose $\mathit{size}$, the number of nodes, is composed of internal nodes, $\mathit{branch}$, and external nodes, $\mathit{leaf}$; $\mathit{size} = \mathit{branch} + \mathit{leaf}$. As a non-empty complete binary tree, $\mathit{leaf} = \mathit{branch} + 1 \rightarrow \mathit{size} = 2\mathit{branch} + 1$. We arrange the branches pre-order in an array, thus, forward read in topologically sorted order. If the number of branches remaining is initialized to $b = \mathit{branch}$, we can make the tree semi-implicit by storing the $\mathit{left}$ branches and calculating $\mathit{right} = b - \mathit{left}$. When $b = 0$, the accumulator, $l$, is the position of the leaf. This is a succinct encoding[?]. Programme.
