@@ -21,17 +21,18 @@ static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 static unsigned PT_(no);
 
 /** Is `lf` going to the right in `tr`? */
-static unsigned PT_(is_right)(const struct PT_(tree) *const tr,
+static const char *PT_(leaf_to_shape)(const struct PT_(tree) *const tr,
 	const unsigned lf) {
 	struct { unsigned br0, br1, lf; } t;
-	unsigned left, is_right = 0;
+	unsigned left;
+	const char *shape = "";
 	t.br0 = 0, t.br1 = tr->bsize, t.lf = 0;
 	while(t.br0 < t.br1) {
 		left = tr->branch[t.br0].left;
-		if(lf <= t.lf + left) t.br1 = ++t.br0 + left, is_right = 0;
-		else t.br0 += left + 1, t.lf += left + 1, is_right = 1;
+		if(lf <= t.lf + left) t.br1 = ++t.br0 + left, shape = "r";
+		else t.br0 += left + 1, t.lf += left + 1, shape = "l";
 	}
-	return is_right;
+	return shape;
 }
 
 /** Given a branch `b` in `tree` branches, calculate the right child branches.
@@ -117,9 +118,8 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dotted%s];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].child,
-		PT_(is_right)(tree, i) ? ", arrowhead = vee" : "");
+		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
+		(const void *)tree->leaf[i].child, PT_(leaf_to_shape)(tree, i));
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -151,10 +151,11 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"%u\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray75\">b%lu, %s</FONT></TD></TR>\n"
+		"<FONT COLOR=\"Gray75\">%s: %lu</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n",
-		(const void *)tree, tree->bsize + 2, treebit, orcify(tree));
+		(const void *)tree, tree->bsize + 2, orcify(tree),
+		(unsigned long)treebit);
 	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
 		fprintf(fp, "\t\t<TD BGCOLOR=\"Gray90\">%u</TD>\n", branch->left);
 	fprintf(fp, "\t</TR>\n"
@@ -178,9 +179,8 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dotted%s];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].child,
-		PT_(is_right)(tree, i) ? ", arrowhead = vee" : "");
+		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
+		(const void *)tree->leaf[i].child, PT_(leaf_to_shape)(tree, i));
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -217,28 +217,28 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 				"\ttree%pbranch%u -> ", (const void *)tree, b, branch->skip,
 				(const void *)tree, b);
 			if(left) {
-				fprintf(fp, "tree%pbranch%u;\n",
+				fprintf(fp, "tree%pbranch%u [arrowhead = rnormal];\n",
 					(const void *)tree, b + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b);
 				if(trie_bmp_test(&tree->is_child, leaf)) fprintf(fp,
-					"tree%pbranch0 [style = dotted];\n",
+					"tree%pbranch0 [style = dashed, arrowhead = rnormal];\n",
 					(const void *)tree->leaf[leaf].child);
 				else fprintf(fp,
-					"tree%pleaf%u [color = Gray];\n",
+					"tree%pleaf%u [color = Gray, arrowhead = rnormal];\n",
 					(const void *)tree, leaf);
 			}
 			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)tree, b);
 			if(right) {
-				fprintf(fp, "tree%pbranch%u [arrowhead = vee];\n",
+				fprintf(fp, "tree%pbranch%u [arrowhead = lnormal];\n",
 					(const void *)tree, b + left + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b) + left + 1;
 				if(trie_bmp_test(&tree->is_child, leaf)) fprintf(fp,
-					"tree%pbranch0 [style = dotted, arrowhead = vee];\n",
+					"tree%pbranch0 [style = dashed, arrowhead = lnormal];\n",
 					(const void *)tree->leaf[leaf].child);
 				else fprintf(fp,
-					"tree%pleaf%u [color = Gray, arrowhead = vee];\n",
+					"tree%pleaf%u [color = Gray, arrowhead = lnormal];\n",
 					(const void *)tree, leaf);
 			}
 		}
@@ -254,9 +254,9 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
 		 others may reference it. */
 		if(trie_bmp_test(&tree->is_child, 0)) {
-			fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle];\n"
-				"\ttree%pbranch0 -> tree%pbranch0"
-				" [style = dashed];\n",
+			fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle,"
+				" style = filled, fillcolor = Grey95];\n"
+				"\ttree%pbranch0 -> tree%pbranch0 [style = dashed];\n",
 				(const void *)tree, (const void *)tree,
 				(const void *)tree->leaf[0].child);
 		} else {

@@ -545,10 +545,12 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
 			struct trie_branch *const branch = tree->branch + t.br0;
+			const unsigned left = branch->left, right = t.br1 - t.br0 - 1 - left;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0;
 			if(!TRIE_QUERY(key, bit))
+				/*empty.a.twin.is_leaf = !!right,*/ /* _etc_ */
 				empty.a.twin.lf = t.lf + branch->left + 1,
 				empty.a.twin.br1 = t.br1,
 				empty.a.twin.br0 = t.br1 = ++t.br0 + branch->left;
