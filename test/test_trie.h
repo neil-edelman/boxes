@@ -88,8 +88,8 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\""
 			" PORT=\"%u\">%s%s%s⊔</FONT></TD>\n",
-			i, is_child ? "↓<FONT COLOR=\"Gray\">" : "", key,
-			is_child ? "" : "<FONT COLOR=\"Grey\">");
+			i, is_child ? "↓<FONT COLOR=\"Gray85\">" : "", key,
+			is_child ? "" : "<FONT COLOR=\"Gray85\">");
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
 			const unsigned bit = !!TRIE_QUERY(key, b);
@@ -151,7 +151,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"%u\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray75\">%s: %lu</FONT></TD></TR>\n"
+		"<FONT COLOR=\"Gray85\">%s: %lu</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n",
 		(const void *)tree, tree->bsize + 2, orcify(tree),
@@ -170,7 +170,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		if(trie_bmp_test(&tree->is_child, i))
 			fprintf(fp, "\t\t<TD PORT=\"%u\" BGCOLOR=\"Gray90\">...</TD>\n", i);
 		else
-			fprintf(fp, "\t\t<TD BGCOLOR=\"Grey90\">%s<FONT COLOR=\"Grey\">"
+			fprintf(fp, "\t\t<TD BGCOLOR=\"Grey90\">%s<FONT COLOR=\"Gray85\">"
 			"⊔</FONT></TD>\n", PT_(to_key)(tree->leaf[i].data));
 			/* Should really escape it . . . don't have weird characters. */
 	}
@@ -225,7 +225,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 					"tree%pbranch0 [style = dashed, arrowhead = rnormal];\n",
 					(const void *)tree->leaf[leaf].child);
 				else fprintf(fp,
-					"tree%pleaf%u [color = Gray, arrowhead = rnormal];\n",
+					"tree%pleaf%u [color = Gray85, arrowhead = rnormal];\n",
 					(const void *)tree, leaf);
 			}
 			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)tree, b);
@@ -238,7 +238,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 					"tree%pbranch0 [style = dashed, arrowhead = lnormal];\n",
 					(const void *)tree->leaf[leaf].child);
 				else fprintf(fp,
-					"tree%pleaf%u [color = Gray, arrowhead = lnormal];\n",
+					"tree%pleaf%u [color = Gray85, arrowhead = lnormal];\n",
 					(const void *)tree, leaf);
 			}
 		}
@@ -248,7 +248,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 	if(tree->bsize) {
 		/* \sqcup ⊔ was good, but it didn't leave much space. */
 		for(i = 0; i <= tree->bsize; i++) if(!trie_bmp_test(&tree->is_child, i))
-			fprintf(fp, "\ttree%pleaf%u [label = <%s<FONT COLOR=\"Grey\">⊔</FONT>>];\n",
+			fprintf(fp, "\ttree%pleaf%u [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
 			(const void *)tree, i, PT_(to_key)(tree->leaf[i].data));
 	} else {
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
@@ -260,7 +260,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 				(const void *)tree, (const void *)tree,
 				(const void *)tree->leaf[0].child);
 		} else {
-			fprintf(fp, "\ttree%pbranch0 [label = <%s<FONT COLOR=\"Grey\">⊔</FONT>>];\n",
+			fprintf(fp, "\ttree%pbranch0 [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
 				(const void *)tree, PT_(to_key)(tree->leaf[0].data));
 		}
 	}
