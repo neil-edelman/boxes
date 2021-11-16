@@ -117,7 +117,7 @@ static const char *keyval_key(const struct keyval *const kv)
 static void contrived_str_test(void) {
 	struct str_trie strs = TRIE_IDLE;
 	size_t i, j;
-	const char *str_array[] = { "", "A", "Z", "a", "z", "â", "foobar", "foo" };
+	const char *str_array[] = {"a","b","c"}/*{ "", "A", "Z", "a", "z", "â", "foobar", "foo" }*/;
 	for(i = 0; i < sizeof str_array / sizeof *str_array; i++) {
 		/* The items in the array are unique, right? */
 		if(!str_trie_add(&strs, str_array[i]))
@@ -132,15 +132,15 @@ static void contrived_str_test(void) {
 	trie_str_no = 0;
 	trie_str_grph(&strs, "graph/str-contrived.gv");
 	{
-		const char *const z = str_trie_remove(&strs, "z");
-		assert(z);
-		printf("Sz \"%s\" removed.\n", z);
+		const char *const rm = str_trie_remove(&strs, str_array[2]);
+		assert(rm);
+		printf("Sz \"%s\" removed.\n", rm);
 		trie_str_grph(&strs, "graph/str-deleted-z.gv");
 		for(j = 0; j <= i; j++) {
 			const char *sz = str_trie_get(&strs, str_array[j]);
 			printf("test get(%s) = %s\n",
 				str_array[j], sz ? sz : "<didn't find>");
-			assert((sz == z) ^ (sz != str_array[j]));
+			assert((sz == rm) ^ (sz != str_array[j]));
 		}
 	}
 	str_trie_(&strs);

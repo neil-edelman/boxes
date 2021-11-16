@@ -117,9 +117,9 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dashed%s];\n", (const void *)tree, i,
+		"[style = dotted%s];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child,
-		PT_(is_right)(tree, i) ? ", arrowhead = empty" : "");
+		PT_(is_right)(tree, i) ? ", arrowhead = vee" : "");
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -180,7 +180,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dotted%s];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child,
-		PT_(is_right)(tree, i) ? ", arrowhead = empty" : "");
+		PT_(is_right)(tree, i) ? ", arrowhead = vee" : "");
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -230,15 +230,15 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 			}
 			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)tree, b);
 			if(right) {
-				fprintf(fp, "tree%pbranch%u [arrowhead = empty];\n",
+				fprintf(fp, "tree%pbranch%u [arrowhead = vee];\n",
 					(const void *)tree, b + left + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b) + left + 1;
 				if(trie_bmp_test(&tree->is_child, leaf)) fprintf(fp,
-					"tree%pbranch0 [style = dotted, arrowhead = empty];\n",
+					"tree%pbranch0 [style = dotted, arrowhead = vee];\n",
 					(const void *)tree->leaf[leaf].child);
 				else fprintf(fp,
-					"tree%pleaf%u [color = Gray, arrowhead = empty];\n",
+					"tree%pleaf%u [color = Gray, arrowhead = vee];\n",
 					(const void *)tree, leaf);
 			}
 		}
