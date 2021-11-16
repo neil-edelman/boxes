@@ -20,33 +20,18 @@ static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 /* Debug number, which is the number printed next to the graphs, _etc_. */
 static unsigned PT_(no);
 
-/** Is `leaf` going to the right in `tree`? */
-static unsigned PT_(is_right)(const struct PT_(tree) *const tree,
-	const unsigned leaf) {
-
-	/* Okay, I would now write this: but I'd be wrong?
-	struct { unsigned br0, br1, lf; } in_tree;
-	in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
-	while(in_tree.br0 < leaf) {
-		const struct trie_branch *branch = tree->branch + in_tree.br0;
-		if(leaf <= in_tree.br0 + branch->left)
-			in_tree.br1 = ++in_tree.br0 + branch->left;
-		else
-			in_tree.br0 += branch->left + 1;
+/** Is `lf` going to the right in `tr`? */
+static unsigned PT_(is_right)(const struct PT_(tree) *const tr,
+	const unsigned lf) {
+	struct { unsigned br0, br1, lf; } t;
+	unsigned left, is_right = 0;
+	t.br0 = 0, t.br1 = tr->bsize, t.lf = 0;
+	while(t.br0 < t.br1) {
+		left = tr->branch[t.br0].left;
+		if(lf <= t.lf + left) t.br1 = ++t.br0 + left, is_right = 0;
+		else t.br0 += left + 1, t.lf += left + 1, is_right = 1;
 	}
-	return in_tree.br1 < leaf;*/
-
-	struct { unsigned br0, br1, lf; } in_tree;
-	unsigned left, right;
-	in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
-	while(in_tree.br0 < in_tree.br1) {
-		right = in_tree.br1 - (left = tree->branch[in_tree.br0].left) - 1;
-		assert(left < in_tree.br1 && right < in_tree.br1);
-		if(in_tree.br0 >= leaf) break;
-		if(leaf <= in_tree.br0 + left) in_tree.br1 = in_tree.br0 + left, in_tree.br0++;
-		else in_tree.br1 = right, in_tree.br0 += left + 1;
-	}
-	return in_tree.br1 < leaf;
+	return is_right;
 }
 
 /** Given a branch `b` in `tree` branches, calculate the right child branches.
@@ -104,7 +89,6 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 			" PORT=\"%u\">%s%s%s⊔</FONT></TD>\n",
 			i, is_child ? "↓<FONT COLOR=\"Gray\">" : "", key,
 			is_child ? "" : "<FONT COLOR=\"Grey\">");
-		/* &ZeroWidthSpace; still does crazy on empty */
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
 			const unsigned bit = !!TRIE_QUERY(key, b);
@@ -133,9 +117,9 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[color = \"Black:invis:Black\"%s];\n", (const void *)tree, i,
+		"[style = dashed%s];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child,
-		PT_(is_right)(tree, i) ? "" : " style = dashed");
+		PT_(is_right)(tree, i) ? ", arrowhead = empty" : "");
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -194,12 +178,10 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[color = \"Black:invis:Black\"%s];\n", (const void *)tree, i,
+		"[style = dotted%s];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].child,
-		PT_(is_right)(tree, i) ? "" : ", style = dashed");
+		PT_(is_right)(tree, i) ? ", arrowhead = empty" : "");
 	/* Recurse. */
-	/*for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
-		PT_(graph_tree_mem)(tree->leaf[i].child, 0, fp);*/
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i)) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
@@ -235,28 +217,28 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 				"\ttree%pbranch%u -> ", (const void *)tree, b, branch->skip,
 				(const void *)tree, b);
 			if(left) {
-				fprintf(fp, "tree%pbranch%u [style = dashed];\n",
+				fprintf(fp, "tree%pbranch%u;\n",
 					(const void *)tree, b + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b);
 				if(trie_bmp_test(&tree->is_child, leaf)) fprintf(fp,
-					"tree%pbranch0 [style = dashed, "
-					"color = \"Black:invis:Black\"];\n",
+					"tree%pbranch0 [style = dotted];\n",
 					(const void *)tree->leaf[leaf].child);
 				else fprintf(fp,
-					"tree%pleaf%u [style = dashed, color = Gray];\n",
+					"tree%pleaf%u [color = Gray];\n",
 					(const void *)tree, leaf);
 			}
 			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)tree, b);
 			if(right) {
-				fprintf(fp, "tree%pbranch%u;\n",
+				fprintf(fp, "tree%pbranch%u [arrowhead = empty];\n",
 					(const void *)tree, b + left + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tree, b) + left + 1;
 				if(trie_bmp_test(&tree->is_child, leaf)) fprintf(fp,
-					"tree%pbranch0 [color = \"Black:invis:Black\"];\n",
+					"tree%pbranch0 [style = dotted, arrowhead = empty];\n",
 					(const void *)tree->leaf[leaf].child);
-				else fprintf(fp, "tree%pleaf%u [color = Gray];\n",
+				else fprintf(fp,
+					"tree%pleaf%u [color = Gray, arrowhead = empty];\n",
 					(const void *)tree, leaf);
 			}
 		}
@@ -274,7 +256,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 		if(trie_bmp_test(&tree->is_child, 0)) {
 			fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle];\n"
 				"\ttree%pbranch0 -> tree%pbranch0"
-				" [color = \"Black:invis:Black\", style = dotted];\n",
+				" [style = dashed];\n",
 				(const void *)tree, (const void *)tree,
 				(const void *)tree->leaf[0].child);
 		} else {

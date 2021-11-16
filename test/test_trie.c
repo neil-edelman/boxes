@@ -9,7 +9,7 @@
 
 /* A set of strings. `TRIE_TO_STRING` and `TRIE_TEST` are for graphing; one
  doesn't need them otherwise. Manually tested in <fn:contrived_str_test>. */
-static void str_filler(char *c) { assert(c != 0); c = ""; }
+static void str_filler(const char *c) { assert(c != 0); c = ""; }
 #define TRIE_NAME str
 #define TRIE_TO_STRING
 #define TRIE_TEST &str_filler
