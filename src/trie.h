@@ -132,13 +132,6 @@ struct T_(trie) { struct PT_(tree) *root; };
 struct PT_(iterator)
 	{ struct PT_(tree) *root, *next; unsigned leaf, unused; };
 
-#if 0
-/* I don't know what I did. */
-struct PT_(iterator) {
-	size_t dont_care_bit; /* Constant. */
-};
-#endif
-
 /** Stores a range in the trie. Any changes in the topology of the trie
  invalidate it. @fixme Replacing `root` with `bit` would make it faster and
  allow size remaining; just have to fiddle with `end` to `above`. That makes it
@@ -521,58 +514,65 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 
 static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
-	struct { unsigned br0, br1, lf; } t;
 	struct {
-		struct { struct PT_(tree) *tr; unsigned br, unused; } parent;
-		struct {
-			struct PT_(tree) *tr;
-			struct { unsigned br0, br1, lf; } twin;
-			int unused;
-		} a;
-		size_t n;
-	} empty;
+		struct PT_(tree) *tr;
+		struct { unsigned br0, br1, lf, unused; } ego, twin;
+		size_t empty_followers;
+	} full;
+	struct PT_(tree) *tree;
+	unsigned lf;
 	size_t bit;
 	struct { size_t cur, next; } byte;
-	struct PT_(tree) *tree;
 	PT_(type) *rm;
 	assert(trie && key);
+	printf("remove: %s\n", key);
 	if(!(tree = trie->root)) return 0; /* Empty. */
 	/* Preliminary exploration; `parent` and `twin` are of the `empty.a_tr`. */
-	empty.parent.tr = 0, empty.a.tr = 0, empty.n = 0;
-	for(bit = 0; ; tree = tree->leaf[t.lf].child) {
-		const int is_empty = !tree->bsize; /* `is_empty ^ (twin, parent)` */
-		empty.n = is_empty ? empty.n + 1 : 0;
-		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
-		while(t.br0 < t.br1) {
-			struct trie_branch *const branch = tree->branch + t.br0;
-			const unsigned left = branch->left, right = t.br1 - t.br0 - 1 - left;
-			for(byte.next = (bit += branch->skip) / CHAR_BIT;
-				byte.cur < byte.next; byte.cur++)
-				if(key[byte.cur] == '\0') return 0;
-			if(!TRIE_QUERY(key, bit))
-				/*empty.a.twin.is_leaf = !!right,*/ /* _etc_ */
-				empty.a.twin.lf = t.lf + branch->left + 1,
-				empty.a.twin.br1 = t.br1,
-				empty.a.twin.br0 = t.br1 = ++t.br0 + branch->left;
-			else
-				empty.a.twin.br0 = ++t.br0,
-				empty.a.twin.br1 = (t.br0 += branch->left),
-				empty.a.twin.lf = t.lf, t.lf += branch->left + 1;
-			bit++;
+	full.tr = 0, full.empty_followers = 0;
+	for(bit = 0; ; tree = tree->leaf[lf].child) {
+		printf("Started at %s bit %lu.\n", orcify(tree), bit);
+		if(!tree->bsize) {
+			full.empty_followers++;
+			lf = 0;
+			printf("[empty %lu]\n", full.empty_followers);
+		} else {
+			full.empty_followers = 0;
+			full.tr = tree;
+			full.ego.br0 = 0, full.ego.br1 = tree->bsize, full.ego.lf = 0;
+			printf("[%u,%u;%u]<-init\n", full.ego.br0, full.ego.br1, full.ego.lf);
+			do {
+				struct trie_branch *const branch
+					= full.tr->branch + full.ego.br0;
+				for(byte.next = (bit += branch->skip) / CHAR_BIT;
+					byte.cur < byte.next; byte.cur++)
+					if(key[byte.cur] == '\0') return 0;
+				if(!TRIE_QUERY(key, bit))
+					full.twin.lf = full.ego.lf + branch->left + 1,
+					full.twin.br1 = full.ego.br1,
+					full.twin.br0 = full.ego.br1 = ++full.ego.br0 +branch->left;
+				else
+					full.twin.br0 = ++full.ego.br0,
+					full.twin.br1 = (full.ego.br0 += branch->left),
+					full.twin.lf = full.ego.lf, full.ego.lf += branch->left + 1;
+				bit++;
+				printf("[%u,%u;%u]\n", full.ego.br0, full.ego.br1, full.ego.lf);
+			} while(full.ego.br0 < full.ego.br1);
+			assert(full.ego.br0 == full.ego.br1
+				&& full.ego.lf <= full.tr->bsize);
+			lf = full.ego.lf;
 		}
-		assert(t.br0 == t.br1 && t.lf <= tree->bsize);
-		if(!is_empty) empty.a.tr = tree;
-		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
+		if(!trie_bmp_test(&tree->is_child, lf)) break;
 	}
 	/* We have the candidate leaf; check and see if it is a match. */
-	if(strcmp(key, PT_(to_key)(rm = tree->leaf[t.lf].data))) return 0;
+	if(strcmp(key, PT_(to_key)(rm = tree->leaf[lf].data))) return 0;
 	printf("remove: \"%s\" exists as leaf %u in tree %s."
-		" Empty tree anchored by %s (twin [%u,%u;%u]) "
-		"followed %lu trees.\n", key, t.lf, orcify(tree), orcify(empty.a.tr),
-		empty.a.twin.br0, empty.a.twin.br1, empty.a.twin.lf, empty.n);
+		" Empty tree anchored by %s (self [%u,%u;%u], twin [%u,%u;%u]) "
+		"followed %lu trees.\n", key, lf, orcify(tree), orcify(full.tr),
+		full.ego.br0, full.ego.br1, full.ego.lf,
+		full.twin.br0, full.twin.br1, full.twin.lf, full.empty_followers);
 	/* Removed the whole trie. Fixme: 1/0/1/0... makes a lot of `malloc`. */
-	if(!empty.a.tr) {
-		assert(empty.n);
+	if(!full.tr) {
+		assert(full.empty_followers);
 		assert(0);
 		return 0;
 	}
@@ -610,14 +610,14 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	empty.a.tr->bsize--;
 #endif
 	/* Free all the unused trees. */
-	if(empty.n) for( ; ; ) {
+	if(full.empty_followers) for( ; ; ) {
 		union PT_(leaf) leaf;
 		printf("Freeing %s.\n", orcify(tree));
-		assert(tree && !tree->bsize
-			&& !!(empty.n - 1) == !!trie_bmp_test(&tree->is_child, 0));
+		assert(tree && !tree->bsize && !!(full.empty_followers - 1)
+			== !!trie_bmp_test(&tree->is_child, 0));
 		leaf = tree->leaf[0];
 		free(tree);
-		if(!--empty.n) break;
+		if(!--full.empty_followers) break;
 		tree = leaf.child;
 	}
 	/* No. This doesn't work yet -- forgot inter-tree collapse? */
