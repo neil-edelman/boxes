@@ -516,18 +516,24 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	struct {
 		struct PT_(tree) *tr;
-		struct { unsigned br0, br1, lf, unused; } ego, twin;
+		unsigned parent_br, unused;
+		struct { unsigned br0, br1, lf; } ego, twin;
 		size_t empty_followers;
 	} full;
+	struct { unsigned br0, br1, lf; } mod;
 	struct PT_(tree) *tree;
+	struct trie_branch *twin;
 	unsigned lf;
 	size_t bit;
 	struct { size_t cur, next; } byte;
 	PT_(type) *rm;
 	assert(trie && key);
 	printf("remove: %s\n", key);
-	if(!(tree = trie->root)) return 0; /* Empty. */
-	/* Preliminary exploration; `parent` and `twin` are of the `empty.a_tr`. */
+
+	/* Empty. */
+	if(!(tree = trie->root)) return 0;
+
+	/* Preliminary exploration. */
 	full.tr = 0, full.empty_followers = 0;
 	for(bit = 0; ; tree = tree->leaf[lf].child) {
 		printf("Started at %s bit %lu.\n", orcify(tree), bit);
@@ -542,7 +548,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 			printf("[%u,%u;%u]<-init\n", full.ego.br0, full.ego.br1, full.ego.lf);
 			do {
 				struct trie_branch *const branch
-					= full.tr->branch + full.ego.br0;
+					= full.tr->branch + (full.parent_br = full.ego.br0);
 				for(byte.next = (bit += branch->skip) / CHAR_BIT;
 					byte.cur < byte.next; byte.cur++)
 					if(key[byte.cur] == '\0') return 0;
@@ -566,8 +572,9 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	/* We have the candidate leaf; check and see if it is a match. */
 	if(strcmp(key, PT_(to_key)(rm = tree->leaf[lf].data))) return 0;
 	printf("remove: \"%s\" exists as leaf %u in tree %s."
-		" Empty tree anchored by %s (self [%u,%u;%u], twin [%u,%u;%u]) "
-		"followed %lu trees.\n", key, lf, orcify(tree), orcify(full.tr),
+		" Empty tree anchored by %s (parent %u, self [%u,%u;%u],"
+		" twin [%u,%u;%u]) followed %lu trees.\n", key, lf, orcify(tree),
+		orcify(full.tr), full.parent_br,
 		full.ego.br0, full.ego.br1, full.ego.lf,
 		full.twin.br0, full.twin.br1, full.twin.lf, full.empty_followers);
 	/* Removed the whole trie. Fixme: 1/0/1/0... makes a lot of `malloc`. */
@@ -576,39 +583,68 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		assert(0);
 		return 0;
 	}
-	assert(0);
-#if 0
-	/* Deleting the data would cause an overflow. */
-	if(empty.a.tr->branch[empty.a.parent.br0].skip + 1
-		+ empty.a.tr->branch[empty.a.twin.br0].skip > UCHAR_MAX)
-		{ errno = EILSEQ; return 0; }
+
+	/* Branch we are deleting could have it's skip value taken up by another. */
+	twin = 0;
+	if(full.twin.br0 == full.twin.br1) {
+		printf("The twin is %s leaf %u.\n", orcify(full.tr), full.twin.lf);
+		if(trie_bmp_test(&full.tr->is_child, full.twin.lf)) {
+			struct PT_(tree) *next = full.tr->leaf[full.twin.lf].child;
+			printf("The twin is %s tree.\n", orcify(next));
+			if(next->bsize) {
+				twin = next->branch + 0;
+				printf("%s has a root branch skip %u.\n",
+					orcify(next), twin->skip);
+			}
+		} else {
+			printf("The twin is data.\n");
+		}
+	} else {
+		assert(full.twin.br0 < full.twin.br1);
+		twin = full.tr->branch + full.twin.br0;
+		printf("The twin is in the same %s tree, %u.\n",
+			orcify(full.tr), full.twin.br0);
+	}
+	if(twin) {
+		const unsigned collapse_br = full.tr->branch[full.parent_br].skip + 1
+			+ twin->skip;
+		printf("Collapsing (%u) + 1 + (%u) = %u\n",
+			full.tr->branch[full.parent_br].skip,
+			twin->skip, collapse_br);
+		/* Removing the data would cause an overflow in the trie. */
+		if(collapse_br > UCHAR_MAX) { errno = EILSEQ; return 0; }
+		twin->skip = (unsigned char)collapse_br;
+	} else {
+		printf("Shortening the trie.\n");
+	}
+
+	/* Save the future empty tree for freeing. */
+	tree = full.empty_followers ?
+		(assert(trie_bmp_test(&full.tr->is_child, full.ego.lf)),
+		full.tr->leaf[full.ego.lf].child) : 0;
+
 	/* Go down a second time and modify the tree. Now `lf` goes down. */
-	t.br0 = 0, t.br1 = empty.a.tr->bsize, t.lf = empty.a.lf;
+	mod.br0 = 0, mod.br1 = full.tr->bsize, mod.lf = full.ego.lf;
 	for( ; ; ) {
-		struct trie_branch *const branch = empty.a.tr->branch + t.br0;
-		if(branch->left >= t.lf) {
+		struct trie_branch *const branch = full.tr->branch + mod.br0;
+		if(branch->left >= mod.lf) {
 			if(!branch->left) break;
-			t.br1 = ++t.br0 + branch->left;
+			mod.br1 = ++mod.br0 + branch->left;
 			branch->left--;
 		} else {
-			if((t.br0 += branch->left + 1) >= t.br1) break;
-			t.lf -= branch->left + 1;
+			if((mod.br0 += branch->left + 1) >= mod.br1) break;
+			mod.lf -= branch->left + 1;
 		}
 	}
-	empty.a.tr->branch[empty.a.br.twin].skip
-		+= 1 + empty.a.tr->branch[empty.a.br.parent].skip;
-	memmove(empty.a.tr->branch + empty.a.br.parent, empty.a.tr->branch
-		+ empty.a.br.parent + 1, sizeof empty.a.tr->branch
-		* (empty.a.tr->bsize - empty.a.br.parent - 1));
-	/* Before we delete it. */
-	tree = empty.n ? (assert(trie_bmp_test(&empty.a.tr->is_child, empty.a.lf)),
-		empty.a.tr->leaf[empty.a.lf].child) : 0;
-	assert(empty.a.lf <= empty.a.tr->bsize);
-	memmove(empty.a.tr->leaf + empty.a.lf, empty.a.tr->leaf + empty.a.lf + 1,
-		sizeof empty.a.tr->leaf * (empty.a.tr->bsize - empty.a.lf));
-	trie_bmp_remove(&empty.a.tr->is_child, one.lf, 1);
-	empty.a.tr->bsize--;
-#endif
+	/*assert(mod.br0 == full.ego.br0 && mod.br1 == full.ego.br1); ???*/
+	memmove(full.tr->branch + full.parent_br, full.tr->branch
+		+ full.parent_br + 1, sizeof full.tr->branch
+		* (full.tr->bsize - full.parent_br - 1));
+	memmove(full.tr->leaf + full.ego.lf, full.tr->leaf + full.ego.lf + 1,
+		sizeof full.tr->leaf * (full.tr->bsize - full.ego.lf));
+	trie_bmp_remove(&full.tr->is_child, full.ego.lf, 1);
+	full.tr->bsize--;
+
 	/* Free all the unused trees. */
 	if(full.empty_followers) for( ; ; ) {
 		union PT_(leaf) leaf;
@@ -620,7 +656,9 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		if(!--full.empty_followers) break;
 		tree = leaf.child;
 	}
-	/* No. This doesn't work yet -- forgot inter-tree collapse? */
+
+	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-rm.gv");
+	assert(0);
 	return rm;
 }
 
