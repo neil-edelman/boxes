@@ -624,6 +624,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		full.tr->leaf[full.ego.lf].child) : 0;
 
 	/* Go down a second time and modify the tree. Now `lf` goes down. */
+	printf("modifying %s\n", orcify(full.tr));
 	mod.br0 = 0, mod.br1 = full.tr->bsize, mod.lf = full.ego.lf;
 	for( ; ; ) {
 		struct trie_branch *const branch = full.tr->branch + mod.br0;
