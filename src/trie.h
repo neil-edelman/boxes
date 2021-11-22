@@ -579,8 +579,8 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	/* Removed the whole trie. Fixme: 1/0/1/0... makes a lot of `malloc`. */
 	if(!full.tr) {
 		assert(full.empty_followers);
-		assert(0);
-		return 0;
+		tree = trie->root, trie->root = 0;
+		goto free;
 	}
 
 	/* Branch we are deleting could have it's skip value taken up by another. */
@@ -648,19 +648,18 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	trie_bmp_remove(&full.tr->is_child, full.ego.lf, 1);
 	full.tr->bsize--;
 
+free:
 	/* Free all the unused trees. */
 	if(full.empty_followers) for( ; ; ) {
 		union PT_(leaf) leaf;
 		printf("Freeing %s.\n", orcify(tree));
-		assert(tree && !tree->bsize && !!(full.empty_followers - 1)
-			== !!trie_bmp_test(&tree->is_child, 0));
+		assert(tree && !tree->bsize);
+		assert(!!(full.empty_followers - 1) == !!trie_bmp_test(&tree->is_child, 0));
 		leaf = tree->leaf[0];
 		free(tree);
 		if(!--full.empty_followers) break;
 		tree = leaf.child;
 	}
-
-	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-rm.gv");
 	return rm;
 }
 

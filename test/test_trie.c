@@ -129,12 +129,12 @@ static void contrived_str_test(void) {
 			assert(sz == str_array[j]);
 		}
 	}
-	trie_str_no = 1;
 	trie_str_grph(&strs, "graph/str-contrived.gv");
 	for( ; i; i--) {
 		const char *const rm = str_trie_remove(&strs, str_array[i-1]);
 		assert(rm);
 		printf("\"%s\" removed.\n", rm);
+		trie_str_no++;
 		trie_str_grph(&strs, "graph/str-deleted.gv");
 		for(j = 0; j < sizeof str_array / sizeof *str_array; j++) {
 			const char *get = str_trie_get(&strs, str_array[j]);
