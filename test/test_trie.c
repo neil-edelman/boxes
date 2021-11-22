@@ -117,7 +117,8 @@ static const char *keyval_key(const struct keyval *const kv)
 static void contrived_str_test(void) {
 	struct str_trie strs = TRIE_IDLE;
 	size_t i, j;
-	const char *str_array[] = {"a","b","c","ba","bb"}/*{ "", "A", "Z", "a", "z", "â", "foobar", "foo" }*/;
+	const char *str_array[] = {"a", "b", "c", "ba", "bb",
+		"", "A", "Z", /*"a",*/ "z", "â", "foobar", "foo" };
 	for(i = 0; i < sizeof str_array / sizeof *str_array; i++) {
 		/* The items in the array are unique, right? */
 		if(!str_trie_add(&strs, str_array[i]))
