@@ -661,7 +661,6 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	}
 
 	PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-rm.gv");
-	assert(0);
 	return rm;
 }
 
