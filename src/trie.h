@@ -5,15 +5,19 @@
 
  ![Example of trie.](../web/trie.png)
 
- A <tag:<T>trie> is a prefix tree, digital tree, or trie, implemented as an
- array of pointers-to-`T` and an index on the key string. It can be seen as a
- <Morrison, 1968 PATRICiA>: a compact
- [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
- storing the where the key bits are different. Strings can be any encoding with
- a byte null-terminator, including
+ A <tag:<T>trie> is a prefix-tree, digital-tree, or trie, implemented as an
+ array of pointers-to-`T` and an index on the key defined by
+ <typedef:<PT>key_fn>. Practically, this is an ordered set or map of immutable
+ key strings, which can be any encoding with a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
- Practically, this is a set or map of strings, in order, with performance
- comparable to that of a B-tree, allowing fast prefix matches.
+ Looking up a string for exact or range prefix matches can be done in
+ \O(|`string`|).
+
+ Internally, it can be seen as a <Morrison, 1968 PATRICiA>: a compact
+ [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
+ storing the where the key bits are different. To increase contiguous
+ cache-coherence but allow for insertion and deletion in \O(\log `size`), it
+ uses some B-tree techniques described in <Bayer, McCreight, 1972 Large>.
 
  @param[TRIE_NAME, TRIE_TYPE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
@@ -107,9 +111,8 @@ typedef TRIE_TYPE PT_(type);
 union PT_(leaf) { PT_(type) *data; struct PT_(tree) *child; };
 
 /** A trie is a forest of non-empty complete binary trees. In
- <Knuth, 1998 Art 3> terminology, this structure is similar to a node of
- `TRIE_ORDER` in a B-tree, described in <Bayer, McCreight, 1972 Large>, but
- node already has conflicting meaning. */
+ <Knuth, 1998 Art 3> terminology, this structure is similar to a B-tree node of
+ `TRIE_ORDER`, but 'node' already has conflicting meaning. */
 struct PT_(tree) {
 	unsigned char bsize, skip;
 	struct trie_branch branch[TRIE_BRANCHES];
