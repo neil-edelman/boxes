@@ -510,8 +510,7 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 	return 1;
 }
 
-/* join() */
-
+/** @fixme Join when combined-half <= ~TRIE_BRANCH / 2. */
 static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	struct {
