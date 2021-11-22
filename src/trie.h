@@ -520,7 +520,6 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		struct { unsigned br0, br1, lf; } ego, twin;
 		size_t empty_followers;
 	} full;
-	struct { unsigned br0, br1, lf; } mod;
 	struct PT_(tree) *tree;
 	struct trie_branch *twin;
 	unsigned lf;
@@ -625,19 +624,22 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 
 	/* Go down a second time and modify the tree. Now `lf` goes down. */
 	printf("modifying %s\n", orcify(full.tr));
-	mod.br0 = 0, mod.br1 = full.tr->bsize, mod.lf = full.ego.lf;
-	for( ; ; ) {
-		struct trie_branch *const branch = full.tr->branch + mod.br0;
-		if(branch->left >= mod.lf) {
-			if(!branch->left) break;
-			mod.br1 = ++mod.br0 + branch->left;
-			branch->left--;
-		} else {
-			if((mod.br0 += branch->left + 1) >= mod.br1) break;
-			mod.lf -= branch->left + 1;
+	{
+		struct { unsigned br0, br1, lf; }
+			mod = { 0, full.tr->bsize, full.ego.lf };
+		for( ; ; ) {
+			struct trie_branch *const branch = full.tr->branch + mod.br0;
+			if(branch->left >= mod.lf) {
+				if(!branch->left) break;
+				mod.br1 = ++mod.br0 + branch->left;
+				branch->left--;
+			} else {
+				if((mod.br0 += branch->left + 1) >= mod.br1) break;
+				mod.lf -= branch->left + 1;
+			}
 		}
+		/*assert(mod.br0 == full.ego.br0 && mod.br1 == full.ego.br1); ???*/
 	}
-	/*assert(mod.br0 == full.ego.br0 && mod.br1 == full.ego.br1); ???*/
 	memmove(full.tr->branch + full.parent_br, full.tr->branch
 		+ full.parent_br + 1, sizeof full.tr->branch
 		* (full.tr->bsize - full.parent_br - 1));
