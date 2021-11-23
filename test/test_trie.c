@@ -8,8 +8,10 @@
 #include "orcish.h"
 
 /* A set of strings. `TRIE_TO_STRING` and `TRIE_TEST` are for graphing; one
- doesn't need them otherwise. Manually tested in <fn:contrived_str_test>. */
-static void str_filler(const char *c) { assert(c != 0); c = ""; }
+ doesn't need them otherwise. */
+/** Manually tested in <fn:contrived_str_test>. This will not, and can not
+ work, leaving the strings uninitialized. Do _not_ call <fn:str_trie_test>. */
+static void str_filler(const char *c) { assert(c != 0); }
 #define TRIE_NAME str
 #define TRIE_TO_STRING
 #define TRIE_TEST &str_filler
@@ -130,13 +132,13 @@ static void contrived_str_test(void) {
 			assert(sz == str_array[j]);
 		}
 	}
-	trie_str_grph(&strs, "graph/str-contrived.gv");
+	trie_str_graph(&strs, "graph/str-contrived.gv");
 	for( ; i; i--) {
 		const char *const rm = str_trie_remove(&strs, str_array[i-1]);
 		assert(rm);
 		printf("\"%s\" removed.\n", rm);
 		trie_str_no++;
-		trie_str_grph(&strs, "graph/str-deleted.gv");
+		trie_str_graph(&strs, "graph/str-deleted.gv");
 		for(j = 0; j < sizeof str_array / sizeof *str_array; j++) {
 			const char *get = str_trie_get(&strs, str_array[j]);
 			printf("test get(%s) = %s\n",
@@ -150,6 +152,7 @@ static void contrived_str_test(void) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
+	(void)str_trie_test;
 	contrived_str_test();
 	colour_trie_test();
 	star_trie_test();

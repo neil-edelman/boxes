@@ -270,6 +270,8 @@ static struct PT_(tree) *PT_(tree)(void) {
 	return tree;
 }
 
+#if 0
+
 #ifdef TRIE_TO_STRING
 static const char *T_(trie_to_string)(const struct T_(trie) *);
 #endif
@@ -300,6 +302,8 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 	PT_(print)(tree);
 #endif
 }
+
+#endif
 
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
