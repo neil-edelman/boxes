@@ -583,13 +583,18 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	/* Branch we are deleting could have it's skip value taken up by another. */
 	twin = 0;
 	if(full.twin.br0 == full.twin.br1) { /* Twin is a leaf. */
+		printf("%s:%s: twin is a leaf.\n", key, orcify(full.tr));
 		/* If twin continues down another tree. */
 		if(trie_bmp_test(&full.tr->is_child, full.twin.lf)) {
 			struct PT_(tree) *next = full.tr->leaf[full.twin.lf].child;
-			if(next->bsize) twin = next->branch + 0;
+			while(!next->bsize && trie_bmp_test(&next->is_child, 0))
+				next = next->leaf[0].child;
+			printf("twin is next tree\n");
+			if(next->bsize) printf("twin is full\n"), twin = next->branch + 0;
 		}
 		/* Fall-through: reduce the size of the trie, twin is data-leaf-like. */
 	} else { /* Twin is a branch in the same tree. */
+		printf("%s:%s: twin is a branch.\n", key, orcify(tree));
 		assert(full.twin.br0 < full.twin.br1);
 		twin = full.tr->branch + full.twin.br0;
 	}
