@@ -76,7 +76,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root. Parameter sets the maximum tree size.
  Prefer alignment `4n - 2`; cache `32n - 2`. (Easily, `{a, b, ..., A}`). */
-#define TRIE_MAX_LEFT 1/*6*//*254*/
+#define TRIE_MAX_LEFT /*1*//*6*/254
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]` without modifications.
 #endif
@@ -270,7 +270,7 @@ static struct PT_(tree) *PT_(tree)(void) {
 	return tree;
 }
 
-#if 0
+#if 1
 
 #ifdef TRIE_TO_STRING
 static const char *T_(trie_to_string)(const struct T_(trie) *);
@@ -534,6 +534,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	PT_(type) *rm;
 	assert(trie && key);
 
+	printf("Remove: %s\n", key);
 	/* Empty. */
 	if(!(tree = trie->root)) return 0;
 
@@ -617,9 +618,12 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 			mod = { 0, full.tr->bsize, full.ego.lf };
 		for( ; ; ) {
 			struct trie_branch *const branch = full.tr->branch + mod.br0;
+			const unsigned br_idx = mod.br0;
 			if(branch->left >= mod.lf) {
 				if(!branch->left) break;
 				mod.br1 = ++mod.br0 + branch->left;
+				/*printf("modify branch %u: left %u->%u\n",
+					br_idx, branch->left, branch->left - 1);*/
 				branch->left--;
 			} else {
 				if((mod.br0 += branch->left + 1) >= mod.br1) break;
@@ -628,18 +632,32 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		}
 		/*assert(mod.br0 == full.ego.br0 && mod.br1 == full.ego.br1); ???*/
 	}
+	PT_(print)(full.tr);
+	/*printf("mv:\tbsize %u <- %u\n"
+		"\tbranch: %u <- %u, %u\n"
+		"\tleaf: %u <- %u, %u\n"
+		"sizeof branch %zu leaf %zu\n",
+		full.tr->bsize, full.tr->bsize - 1,
+		full.parent_br, full.parent_br + 1,
+		full.tr->bsize - full.parent_br - 1,
+		full.ego.lf, full.ego.lf + 1,
+		full.tr->bsize - full.ego.lf,
+		sizeof *full.tr->branch, sizeof *full.tr->leaf);*/
 	memmove(full.tr->branch + full.parent_br, full.tr->branch
-		+ full.parent_br + 1, sizeof full.tr->branch
+		+ full.parent_br + 1, sizeof *full.tr->branch
 		* (full.tr->bsize - full.parent_br - 1));
+	PT_(print)(full.tr);
 	memmove(full.tr->leaf + full.ego.lf, full.tr->leaf + full.ego.lf + 1,
-		sizeof full.tr->leaf * (full.tr->bsize - full.ego.lf));
+		sizeof *full.tr->leaf * (full.tr->bsize - full.ego.lf));
 	trie_bmp_remove(&full.tr->is_child, full.ego.lf, 1);
+	PT_(print)(full.tr);
 	full.tr->bsize--;
+	PT_(print)(full.tr);
 
 free: /* Free all the unused trees. */
 	if(full.empty_followers) for( ; ; ) {
 		union PT_(leaf) leaf;
-		/*printf("Freeing %s.\n", orcify(tree));*/
+		printf("(Freeing %s.)\n", orcify(tree));
 		assert(tree && !tree->bsize && !!(full.empty_followers - 1)
 			== !!trie_bmp_test(&tree->is_child, 0));
 		leaf = tree->leaf[0];
