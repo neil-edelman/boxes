@@ -45,7 +45,7 @@ static const char *colour_key(const enum colour *const c)
  a static name and the distance in a struct. */
 #define PARAM2(A, B) { #A, B }
 #define STARS(X) \
-	X(Sun, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
+	X(Sol, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
 	X(Toliman, 4.4), X(Arcturus, 37), X(Vega, 25), X(Capella, 43), \
 	X(Rigel, 860), X(Procyon, 11), X(Achernar, 139), X(Betelgeuse, 700), \
 	X(Hadar, 390), X(Altair, 17), X(Acrux, 320), X(Aldebaran, 65), \
@@ -69,6 +69,7 @@ static const char *colour_key(const enum colour *const c)
 	X(Merak, 79), X(Ankaa, 77), X(Girtab, 460), X(Enif, 670), X(Scheat, 200), \
 	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
 	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
+/* Tau Ceti? */
 struct star { char *name; double distance; };
 static const struct star stars[] = { STARS(PARAM2) };
 static const size_t stars_size = sizeof stars / sizeof *stars;

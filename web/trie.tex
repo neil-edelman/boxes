@@ -67,18 +67,18 @@
 }
 
 \author{Neil A. Edelman}
-\title{B-tree Tries as an Efficient Index of Key Strings}
+\title{Compact Radix B-trees as an Efficient Index}
 \date{2021-10-20}
 
 \begin{document}
 
 \maketitle
 
-\abstract{This is the abstract.}
+\abstract{A data structure based on a compact radix trees is introduced, with an index on key strings bits stored semi-implicitly. B-tree methods are used to group data in a sequential conglomeration, called a tree in a trie-forest. This increases cache-coherence, and presents an efficient ordered string set or map with prefix-matching capabilities. Tests comparing it to a hash map show the structure performs for . . .}
 
 \section{Introduction}
 
-A trie is, ``a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991],''\cite{askitis2011redesigning} so that, ``INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.''\cite{knuth1997sorting} It is ordered, and a prefix permits range queries.
+A trie is, ``a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991],''\cite{askitis2011redesigning} so that, ``INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.''\cite{knuth1997sorting} It is ordered, and allows prefix range queries.
 
 In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{fredkin1960trie}(but not really). For proper ordering, we traverse with most-significant bit first and the sentinel should be less-than the other numeric value of all the other characters. We use null-terminated, Modified~\mbox{UTF-8} strings, like in Figure~\ref{star-3:bits}. Keys are sorted in lexicographic order, but not by any collation algorithm. show a diagram
 
@@ -332,15 +332,13 @@ In practice, we talk about a string always terminated by a sentinel; this is an 
 	\caption{Split the 3-trie to put four items.\label{star-4}}
 \end{figure}
 
-
-
 \section{Implementation}
 
-A compact representation is a Patrica trie\cite{morrison1968patricia}: that is, a binary trie on the individual bits and skip values when bits offer no difference. In Figure~\ref{star-3:logic}, the branches indicate a \code{do not care} for all the skipped bits before, corresponding to Figure~\ref{star-3:bits} that offer no delineation. If a query might have a difference in the skipped values, one could also check the final result of a query for agreement with the found value.
+A compact representation is a Patrica trie\cite{morrison1968patricia}: that is, a binary radix tree and skip values when bits offer no difference. In Figure~\ref{star-3:logic}, the branches indicate a \code{do not care} for all the skipped bits before, corresponding to Figure~\ref{star-3:bits} that offer no delineation. If a query might have a difference in the skipped values, one could also check the final result of a query for agreement with the found value.
 
 instead of adding in one big trie, where the data type presents a limit of how big it is, we have pointers to sub-blocks. This is seen in ... This allows us to shrink the data-type significantly; for a non-empty complete binary tree that has `n` leaves (order `n`), it has `n - 1` the internal nodes, or branches. The maximum that the left branch count can be is when the right node of the root is a leaf, that is `n - 2`. If we set this left-branch maximum to the maximum of the data type, we can use all the range. Practically, we set it to 254 instead of 255; the branches take up 255, and the branch size number is 1, for alignment.
 
-This is a fixed-maximum size trie within a B-tree. Because of overlapping terminology, some care must be used in describing the structure. We use the notion that a trie is a forest of trees. Nodes, in B-tree terminology, are trees. A complete path through the forest always visits the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness.
+This is a fixed-maximum size trie within a B-tree. Because of overlapping terminology, some care must be used in describing the structure. We use the notion that a trie is a forest of trees. In B-tree terminology, nodes, are now trees, such that a complete path through the forest always visits the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness. Depending on the implementation, a complete path might be truncated; for example, \code{Sol} might require less than \code{Betelgeuse}, because it's shorter.[ref b-tree]
 
 \subsection{Trees}
 
@@ -366,7 +364,7 @@ Tries are a fairly succinct encoding at low numbers, but at high numbers, the in
 
 \subsection{Limits}
 
-This is valid, $\{ dictator \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to $\{ dictionary, dictionaries \}$: it is too long a skip value. There are several modifications that would allow this, but they are out of this scope.
+The skip value is limited by its range; in this case, 255 bits. For example, this trie is valid, $\{ dictionary \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to, $\{ dictionary, dictionaries \}$, because it is too long a skip value. There are several modifications that would allow this, but they are out of this scope.
 
 Insertion: Any leaf on the sub-tree queried will do; in this implementation, favours the left side.
 
@@ -383,7 +381,7 @@ or
 leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data }
 $
 
-ASCII and other encodings don't prioritize splitting the glyphs evenly between bits, therefore with a uniform distribution of strings, it's very unlikely that the trie will be balanced.
+ASCII and other encodings don't prioritize splitting the glyphs evenly between bits, therefore with a uniform distribution of strings, it's very unlikely that the trie will be balanced. On our trie, this results in wasted space.
 
 \bibliography{trie}
 
