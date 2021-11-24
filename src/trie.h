@@ -270,7 +270,7 @@ static struct PT_(tree) *PT_(tree)(void) {
 	return tree;
 }
 
-#if 1
+#if 0
 
 #ifdef TRIE_TO_STRING
 static const char *T_(trie_to_string)(const struct T_(trie) *);
@@ -534,7 +534,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	PT_(type) *rm;
 	assert(trie && key);
 
-	printf("Remove: %s\n", key);
+	/*printf("Remove: %s\n", key);*/
 	/* Empty. */
 	if(!(tree = trie->root)) return 0;
 
@@ -632,7 +632,6 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 		}
 		/*assert(mod.br0 == full.ego.br0 && mod.br1 == full.ego.br1); ???*/
 	}
-	PT_(print)(full.tr);
 	/*printf("mv:\tbsize %u <- %u\n"
 		"\tbranch: %u <- %u, %u\n"
 		"\tleaf: %u <- %u, %u\n"
@@ -646,13 +645,10 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	memmove(full.tr->branch + full.parent_br, full.tr->branch
 		+ full.parent_br + 1, sizeof *full.tr->branch
 		* (full.tr->bsize - full.parent_br - 1));
-	PT_(print)(full.tr);
 	memmove(full.tr->leaf + full.ego.lf, full.tr->leaf + full.ego.lf + 1,
 		sizeof *full.tr->leaf * (full.tr->bsize - full.ego.lf));
 	trie_bmp_remove(&full.tr->is_child, full.ego.lf, 1);
-	PT_(print)(full.tr);
 	full.tr->bsize--;
-	PT_(print)(full.tr);
 
 free: /* Free all the unused trees. */
 	if(full.empty_followers) for( ; ; ) {
