@@ -11,7 +11,7 @@
  key strings, which can be any encoding with a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
  Looking up a string for exact or range prefix matches can be done in
- \O(|`string`|).
+ \O(log `items`) <= \O(|`string`|).
 
  Internally, it can be seen as a <Morrison, 1968 PATRICiA>: a compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
