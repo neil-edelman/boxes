@@ -199,8 +199,6 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	}
 }
 
-static void PT_(print)(const struct PT_(tree) *const tree);
-
 /** Graphs `any` on `fp`. */
 static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
@@ -208,7 +206,6 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 	unsigned left, right, b, i;
 	(void)treebit;
 	assert(tree && fp);
-	PT_(print)(tree);
 	fprintf(fp, "\t// tree %p\n", (const void *)tree);
 	if(tree->bsize) {
 		fprintf(fp, "\t// branches\n");
@@ -322,7 +319,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 	PT_(graph_choose)(trie, temp, &PT_(graph_tree_bits));
 }
 
-#if 1
+#if 0
 
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;

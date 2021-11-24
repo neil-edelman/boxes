@@ -534,7 +534,6 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	PT_(type) *rm;
 	assert(trie && key);
 
-	/*printf("Remove: %s\n", key);*/
 	/* Empty. */
 	if(!(tree = trie->root)) return 0;
 
@@ -572,12 +571,6 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	}
 	/* We have the candidate leaf; check and see if it is a match. */
 	if(strcmp(key, PT_(to_key)(rm = tree->leaf[lf].data))) return 0;
-	/*printf("remove: \"%s\" exists as leaf %u in tree %s."
-		" Empty tree anchored by %s (parent %u, self [%u,%u;%u],"
-		" twin [%u,%u;%u]) followed %lu trees.\n", key, lf, orcify(tree),
-		orcify(full.tr), full.parent_br,
-		full.ego.br0, full.ego.br1, full.ego.lf,
-		full.twin.br0, full.twin.br1, full.twin.lf, full.empty_followers);*/
 	/* Removed the whole trie. Fixme: 1/0/1/0... makes a lot of `malloc`. */
 	if(!full.tr) {
 		assert(full.empty_followers);
@@ -618,30 +611,16 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 			mod = { 0, full.tr->bsize, full.ego.lf };
 		for( ; ; ) {
 			struct trie_branch *const branch = full.tr->branch + mod.br0;
-			const unsigned br_idx = mod.br0;
 			if(branch->left >= mod.lf) {
 				if(!branch->left) break;
 				mod.br1 = ++mod.br0 + branch->left;
-				/*printf("modify branch %u: left %u->%u\n",
-					br_idx, branch->left, branch->left - 1);*/
 				branch->left--;
 			} else {
 				if((mod.br0 += branch->left + 1) >= mod.br1) break;
 				mod.lf -= branch->left + 1;
 			}
 		}
-		/*assert(mod.br0 == full.ego.br0 && mod.br1 == full.ego.br1); ???*/
 	}
-	/*printf("mv:\tbsize %u <- %u\n"
-		"\tbranch: %u <- %u, %u\n"
-		"\tleaf: %u <- %u, %u\n"
-		"sizeof branch %zu leaf %zu\n",
-		full.tr->bsize, full.tr->bsize - 1,
-		full.parent_br, full.parent_br + 1,
-		full.tr->bsize - full.parent_br - 1,
-		full.ego.lf, full.ego.lf + 1,
-		full.tr->bsize - full.ego.lf,
-		sizeof *full.tr->branch, sizeof *full.tr->leaf);*/
 	memmove(full.tr->branch + full.parent_br, full.tr->branch
 		+ full.parent_br + 1, sizeof *full.tr->branch
 		* (full.tr->bsize - full.parent_br - 1));
