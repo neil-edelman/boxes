@@ -152,7 +152,6 @@ static void contrived_str_test(void) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	(void)str_trie_test;
 	contrived_str_test();
 	colour_trie_test();
 	star_trie_test();

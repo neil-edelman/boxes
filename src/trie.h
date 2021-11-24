@@ -98,6 +98,7 @@ static int trie_is_prefix(const char *a, const char *b) {
 #endif /* idempotent --> */
 
 #ifndef TRIE_TYPE /* <!-- !type */
+#define TRIE_SET /* Testing purposes; `const char *` is not really testable. */
 /** Default `char` uses `a` as the key, which makes it a set of strings. */
 static const char *PT_(raw)(const char *a) { return assert(a), a; }
 #define TRIE_TYPE const char
@@ -876,4 +877,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #undef TRIE_KEY
 #ifdef TRIE_TEST
 #undef TRIE_TEST
+#endif
+#ifdef TRIE_SET
+#undef TRIE_SET
 #endif

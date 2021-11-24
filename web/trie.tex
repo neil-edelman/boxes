@@ -383,6 +383,8 @@ or
 leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data }
 $
 
+ASCII and other encodings don't prioritize splitting the glyphs evenly between bits, therefore with a uniform distribution of strings, it's very unlikely that the trie will be balanced.
+
 \bibliography{trie}
 
 \end{document}
