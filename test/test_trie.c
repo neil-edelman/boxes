@@ -117,30 +117,40 @@ static const char *keyval_key(const struct keyval *const kv)
 static void contrived_str_test(void) {
 	struct str_trie strs = TRIE_IDLE;
 	size_t i, j;
+	int show;
 	const char *str_array[] = {"a", "b", "c", "ba", "bb",
-		"", "A", "Z", /*"a",*/ "z", "â", "foobar", "foo" };
+		"", "A", "Z", "z", "â", "foobar", "foo" };
+	size_t str_array_size = sizeof str_array / sizeof *str_array;
+	printf("Contrived manual test of string set trie.\n");
+	trie_str_no = 0;
 	for(i = 0; i < sizeof str_array / sizeof *str_array; i++) {
-		/* The items in the array are unique, right? */
+		show = !((i + 1) & i) || i + 1 == str_array_size;
+		if(show) trie_str_no++;
+		if(show) printf("%lu: adding \"%s\".\n",
+			(unsigned long)i, str_array[i]);
 		if(!str_trie_add(&strs, str_array[i]))
-			{ printf("This does not make sense.\n"); assert(0); continue; }
+			{ printf("%lu: %s not unique?\n", (unsigned long)i, str_array[i]);
+			assert(0); continue; }
+		if(show) trie_str_graph(&strs, "graph/str-add.gv");
 		for(j = 0; j <= i; j++) {
 			const char *sz = str_trie_get(&strs, str_array[j]);
-			printf("test get(%s) = %s\n",
-				str_array[j], sz ? sz : "<didn't find>");
+			/*printf("Test get(%s) = %s.\n",
+				str_array[j], sz ? sz : "<didn't find>");*/
 			assert(sz == str_array[j]);
 		}
 	}
-	trie_str_graph(&strs, "graph/str-contrived.gv");
 	for( ; i; i--) {
-		const char *const rm = str_trie_remove(&strs, str_array[i-1]);
+		const char *rm;
+		show = !(i & (i - 1));
+		if(show) trie_str_no++;
+		rm = str_trie_remove(&strs, str_array[i - 1]);
 		assert(rm);
-		printf("\"%s\" removed.\n", rm);
-		trie_str_no++;
-		trie_str_graph(&strs, "graph/str-deleted.gv");
+		if(show) printf("\"%s\" removed.\n", rm);
+		if(show) trie_str_graph(&strs, "graph/str-deleted.gv");
 		for(j = 0; j < sizeof str_array / sizeof *str_array; j++) {
 			const char *get = str_trie_get(&strs, str_array[j]);
-			printf("test get(%s) = %s\n",
-				str_array[j], get ? get : "<didn't find>");
+			/*printf("Test get(%s) = %s\n",
+				str_array[j], get ? get : "<didn't find>");*/
 			assert((j >= i-1) ^ (get == str_array[j]));
 		}
 	}

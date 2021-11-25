@@ -157,9 +157,9 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
 		"<FONT COLOR=\"Gray85\">%s: %lu</FONT></TD></TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">left</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">skip</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">leaves</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">left</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">skip</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">leaves</FONT></TD>\n"
 		"\t</TR>\n", (const void *)tree, orcify(tree),
 		(unsigned long)treebit);
 	for(i = 0; i <= tree->bsize; i++) {
@@ -394,7 +394,7 @@ static int PT_(true)(PT_(type) *const a, PT_(type) *const b)
 static void PT_(test)(void) {
 	struct T_(trie) trie = TRIE_IDLE;
 	struct T_(trie_iterator) it;
-	size_t n, m, count, sum;
+	size_t n, m, count;
 	struct { PT_(type) data;
 		/* Stupid warnings about struct alignment; there's got to be a better
 		 way to query the structures if you are interested. */
@@ -404,12 +404,8 @@ static void PT_(test)(void) {
 	PT_(type) dup;
 	const size_t es_size = sizeof es / sizeof *es;
 	PT_(type) *data;
-	int ret;
+	int ret, show;
 
-	printf(QUOTE(TRIE_NAME) " size %zu, int %zu, leaving %zu\n",
-		sizeof(PT_(type)), sizeof(int),
-		   sizeof(void *)
-			   - (sizeof(PT_(type)) + sizeof(int)) % sizeof(void *));
 	/* Idle. */
 	PT_(valid)(0);
 	PT_(valid)(&trie);
@@ -423,44 +419,47 @@ static void PT_(test)(void) {
 	for(n = 0; n < es_size; n++) PT_(filler)(&es[n].data);
 
 	/* Adding. */
+	PT_(no) = 0;
 	count = 0;
 	errno = 0;
-	for(n = 0, PT_(no) = 1; n < es_size; n++) {
-		printf("Adding %s.\n", PT_(to_key)(&es[n].data));
+	for(n = 0; n < es_size; n++) {
+		show = !((n + 1) & n) || n + 1 == es_size;
+		if(show) PT_(no)++;
+		if(show) printf("%lu: adding %s.\n",
+			(unsigned long)n, PT_(to_key)(&es[n].data));
 		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
-		if(!((n + 1) & n) || n + 1 == es_size)
-			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-sample.gv");
+		if(show) PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-sample.gv");
 		assert(!errno);
-		if(!es[n].is_in) { printf("Duplicate value.\n"); continue; };
+		if(!es[n].is_in) {
+			if(show) printf("%lu: duplicate value.\n", (unsigned long)n);
+			continue;
+		}
 		count++;
 		for(m = 0; m <= n; m++) {
 			if(!es[m].is_in) continue;
 			data = T_(trie_get)(&trie, PT_(to_key)(&es[m].data));
 			/* This is O(n^2) spam.
-			printf("test get(%s) = %s\n", PT_(to_key)(&es[m].data),
+			printf("%lu: test get(%s) = %s\n", (unsigned long)n,
+				PT_(to_key)(&es[m].data),
 				data ? PT_(to_key)(data) : "<didn't find>");*/
 			assert(data == &es[m].data);
 		}
-		PT_(no)++;
 	}
-	for(n = 0; n < es_size; n++)
-		if(es[n].is_in) data = T_(trie_get)(&trie, PT_(to_key)(&es[n].data)),
-			assert(data == &es[n].data);
-		else printf("es %lu duplicate\n", n);
-	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
 
 	/* Test prefix and size. */
-	sum = !!T_(trie_get)(&trie, "");
-	for(n = 1; n < 256; n++) {
-		char a[2] = { '\0', '\0' };
-		a[0] = (char)n;
-		T_(trie_prefix)(&trie, a, &it);
-		sum += T_(trie_size)(&it);
+	{
+		size_t sum = !!T_(trie_get)(&trie, "");
+		for(n = 1; n < 256; n++) {
+			char a[2] = { '\0', '\0' };
+			a[0] = (char)n;
+			T_(trie_prefix)(&trie, a, &it);
+			sum += T_(trie_size)(&it);
+		}
+		T_(trie_prefix)(&trie, "", &it), n = T_(trie_size)(&it);
+		printf("Trie %s, %lu items inserted; %lu items counted;"
+			" sum of sub-trees %lu.\n", T_(trie_to_string)(&trie), count, n,
+			sum), assert(n == count && n == sum);
 	}
-	T_(trie_prefix)(&trie, "", &it);
-	n = T_(trie_size)(&it);
-	printf("%lu items inserted; %lu items counted; sum of sub-trees %lu.\n",
-		count, n, sum), assert(n == count && n == sum);
 
 	/* Replacement. */
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
@@ -480,28 +479,29 @@ static void PT_(test)(void) {
 	assert(ret && data == &es[0].data), es[0].is_in = 0;
 	T_(trie_prefix)(&trie, "", &it);
 	m = T_(trie_size)(&it);
-	printf("Trie size: %lu before, replacement %lu.\n",
-		(unsigned long)n, (unsigned long)m);
+	printf("Trie %lu items added (some of them duplicates),"
+		" size: %lu before, replacement %lu.\n",
+		(unsigned long)es_size, (unsigned long)n, (unsigned long)m);
 	assert(n == m);
 	/* Restore the original. */
 	ret = T_(trie_put)(&trie, &es[0].data, 0); /* Add. */
 	assert(ret && data == &es[0].data), es[0].is_in = 1;
 
-	printf("es_size %lu\n", es_size);
 	for(n = 0; n < es_size; n++) {
 		const char *key;
-		if(!es[n].is_in) { printf("es %lu is not in\n", n); continue; }
+		if(!es[n].is_in) { /*printf("es %lu is not in\n", n);*/ continue; }
 		key = PT_(to_key)(&es[n].data);
 		data = T_(trie_remove)(&trie, key);
-		if(!((n + 1) & n)) {
-			PT_(no)++;
-			printf("%u: Removing \"%s\" from trie.\n", PT_(no), key);
-			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
-		}
 		assert(data == &es[n].data);
 		es[n].is_in = 0;
-		data = T_(trie_get)(&trie, key);
-		assert(!data);
+		data = T_(trie_get)(&trie, key), assert(!data);
+		T_(trie_prefix)(&trie, "", &it), count = T_(trie_size)(&it);
+		show = !((count + 1) & count);
+		if(show) {
+			PT_(no)++;
+			printf("%lu: removed \"%s\" from trie.\n", (unsigned long)n, key);
+			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
+		}
 	}
 
 	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
