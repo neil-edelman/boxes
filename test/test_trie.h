@@ -487,23 +487,22 @@ static void PT_(test)(void) {
 	ret = T_(trie_put)(&trie, &es[0].data, 0); /* Add. */
 	assert(ret && data == &es[0].data), es[0].is_in = 1;
 
-#if 1 /* Remove is buggy. */
 	printf("es_size %lu\n", es_size);
 	for(n = 0; n < es_size; n++) {
 		const char *key;
 		if(!es[n].is_in) { printf("es %lu is not in\n", n); continue; }
 		key = PT_(to_key)(&es[n].data);
-		PT_(no) = (unsigned)n;
-		printf("%u. Removing \"%s\" from trie.\n", PT_(no), key);
 		data = T_(trie_remove)(&trie, key);
-		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
+		if(!((n + 1) & n)) {
+			PT_(no)++;
+			printf("%u: Removing \"%s\" from trie.\n", PT_(no), key);
+			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
+		}
 		assert(data == &es[n].data);
 		es[n].is_in = 0;
 		data = T_(trie_get)(&trie, key);
 		assert(!data);
-		break;
 	}
-#endif
 
 	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
 	assert(!errno);
