@@ -14,8 +14,12 @@ typedef void (*PT_(action_fn))(PT_(type) *);
 /* Used in <fn:<PT>graph_choose>. */
 typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, FILE *);
 
+#ifndef TRIE_SET /* <!-- !set: Don't bother trying to test it automatically. */
+
 /* `TRIE_TEST` must be a function that implements <typedef:<PT>action_fn>. */
 static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
+
+#endif /* set --> */
 
 /* Debug number, which is the number printed next to the graphs, _etc_. */
 static unsigned PT_(no);
@@ -150,32 +154,38 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	fprintf(fp, "\ttree%pbranch0 [shape = box, "
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD COLSPAN=\"%u\" ALIGN=\"LEFT\">"
+		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
 		"<FONT COLOR=\"Gray85\">%s: %lu</FONT></TD></TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">left</TD>\n",
-		(const void *)tree, tree->bsize + 2, orcify(tree),
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">left</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">skip</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">leaves</FONT></TD>\n"
+		"\t</TR>\n", (const void *)tree, orcify(tree),
 		(unsigned long)treebit);
-	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
-		fprintf(fp, "\t\t<TD BGCOLOR=\"Gray90\">%u</TD>\n", branch->left);
-	fprintf(fp, "\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">skip</TD>\n");
-	for(b = 0; b < tree->bsize; b++) branch = tree->branch + b,
-		fprintf(fp, "\t\t<TD>%u</TD>\n", branch->skip);
-	fprintf(fp, "\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD ALIGN=\"right\" BORDER=\"0\">leaves</TD>\n");
-	for(i = 0; i <= tree->bsize; i++) {
-		if(trie_bmp_test(&tree->is_child, i))
-			fprintf(fp, "\t\t<TD PORT=\"%u\" BGCOLOR=\"Gray90\">...</TD>\n", i);
+	for(b = 0; b <= tree->bsize; b++) {
+		const char *const bgc = b & 1 ? "" : " BGCOLOR=\"Gray90\"";
+		if(b < tree->bsize) {
+			branch = tree->branch + b;
+			fprintf(fp, "\t<TR>\n"
+				"\t\t<TD ALIGN=\"RIGHT\"%s>%u</TD>\n"
+				"\t\t<TD ALIGN=\"RIGHT\"%s>%u</TD>\n",
+				bgc, branch->left,
+				bgc, branch->skip);
+		} else {
+			fprintf(fp, "\t<TR>\n"
+				"\t\t<TD>&#8205;</TD>"
+				"\t\t<TD>&#8205;</TD>");
+		}
+		if(trie_bmp_test(&tree->is_child, b))
+			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" PORT=\"%u\"%s>...</TD>\n",
+			b, bgc);
 		else
-			fprintf(fp, "\t\t<TD BGCOLOR=\"Grey90\">%s<FONT COLOR=\"Gray85\">"
-			"⊔</FONT></TD>\n", PT_(to_key)(tree->leaf[i].data));
+			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>%s<FONT COLOR=\"Gray85\">"
+			"⊔</FONT></TD>\n", bgc, PT_(to_key)(tree->leaf[b].data));
 			/* Should really escape it . . . don't have weird characters. */
+		fprintf(fp, "\t</TR>\n");
 	}
-	fprintf(fp, "\t</TR>\n"
-		"</TABLE>>];\n");
+	fprintf(fp, "</TABLE>>];\n");
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->is_child, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
