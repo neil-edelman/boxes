@@ -119,7 +119,9 @@ static void contrived_str_test(void) {
 	size_t i, j;
 	int show;
 	const char *str_array[] = {"a", "b", "c", "ba", "bb",
-		"", "A", "Z", "z", "â", "foobar", "foo" };
+		"", "A", "Z", "z", "â", "foobar", "foo",
+		"dictionary", "dictionaries"
+	};
 	size_t str_array_size = sizeof str_array / sizeof *str_array;
 	printf("Contrived manual test of string set trie.\n");
 	trie_str_no = 0;

@@ -364,7 +364,7 @@ Tries are a fairly succinct encoding at low numbers, but at high numbers, the in
 
 \subsection{Limits}
 
-The skip value is limited by its range; in this case, 255 bits. For example, this trie is valid, $\{ dictionary \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to, $\{ dictionary, dictionaries \}$, because it is too long a skip value. There are several modifications that would allow this, but they are out of this scope.
+The skip value is limited by its range; in this case, 255 bits. For example, this trie is valid, $\{ dictionary \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to, $\{ dictionary, dictionaries \}$, because it is too long a skip value. There are several modifications that would allow this, but they are out of this scope. (This is not true; 8 x 8 = 64; 8 x 32 = 256.)
 
 Insertion: Any leaf on the sub-tree queried will do; in this implementation, favours the left side.
 

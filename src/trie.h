@@ -211,8 +211,8 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	assert(prefix && it);
 	it->root = it->next = it->end = 0;
 	it->leaf = it->leaf_end = 0;
-	if(!trie) return;
-	for(tree = trie->root, byte.cur = 0, bit = 0; ; ) { /* Forest. */
+	if(!trie || !(tree = trie->root)) return;
+	for(byte.cur = 0, bit = 0; ; ) { /* Forest. */
 		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
 		while(t.br0 < t.br1) { /* Tree. */
 			const struct trie_branch *const branch = tree->branch + t.br0;
