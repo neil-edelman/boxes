@@ -146,7 +146,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
-	unsigned b, i;
+	unsigned i;
 	(void)treebit;
 	assert(tree && fp);
 	/* Tree is one record node in memory -- GraphViz says html is
@@ -162,10 +162,12 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">leaves</FONT></TD>\n"
 		"\t</TR>\n", (const void *)tree, orcify(tree),
 		(unsigned long)treebit);
-	for(b = 0; b <= tree->bsize; b++) {
-		const char *const bgc = b & 1 ? "" : " BGCOLOR=\"Gray90\"";
-		if(b < tree->bsize) {
-			branch = tree->branch + b;
+	for(i = 0; i <= tree->bsize; i++) {
+		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
+		int is_child = !!trie_bmp_test(&tree->is_child, i);
+		const char *key = PT_(sample)(tree, i);
+		if(i < tree->bsize) {
+			branch = tree->branch + i;
 			fprintf(fp, "\t<TR>\n"
 				"\t\t<TD ALIGN=\"RIGHT\"%s>%u</TD>\n"
 				"\t\t<TD ALIGN=\"RIGHT\"%s>%u</TD>\n",
@@ -176,14 +178,12 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 				"\t\t<TD>&#8205;</TD>"
 				"\t\t<TD>&#8205;</TD>");
 		}
-		if(trie_bmp_test(&tree->is_child, b))
-			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" PORT=\"%u\"%s>...</TD>\n",
-			b, bgc);
-		else
-			fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>%s<FONT COLOR=\"Gray85\">"
-			"⊔</FONT></TD>\n", bgc, PT_(to_key)(tree->leaf[b].data));
+		fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" PORT=\"%u\"%s>"
+			"%s%s%s⊔</FONT></TD>\n"
+			"\t</TR>\n",
+			i, bgc, is_child ? "↓<FONT COLOR=\"Gray85\">" : "", key,
+			is_child ? "" : "<FONT COLOR=\"Gray85\">");
 			/* Should really escape it . . . don't have weird characters. */
-		fprintf(fp, "\t</TR>\n");
 	}
 	fprintf(fp, "</TABLE>>];\n");
 	/* Draw the lines between trees. */
