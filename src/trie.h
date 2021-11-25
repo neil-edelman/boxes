@@ -524,7 +524,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	struct {
 		struct PT_(tree) *tr;
 		unsigned parent_br, unused;
-		struct { unsigned br0, br1, lf; } ego, twin;
+		struct { unsigned br0, br1, lf; } me, twin;
 		size_t empty_followers;
 	} full;
 	struct PT_(tree) *tree;
@@ -541,32 +541,32 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	/* Preliminary exploration. */
 	full.tr = 0, full.empty_followers = 0;
 	for(bit = 0; ; tree = tree->leaf[lf].child) {
-		if(!tree->bsize) {
+		if(!tree->bsize) { /* Tree is only one leaf: will be freed. */
 			full.empty_followers++;
 			lf = 0;
-		} else {
+		} else { /* Restart with non-empty (`full`) tree, `me`, and `twin`. */
 			full.empty_followers = 0;
 			full.tr = tree;
-			full.ego.br0 = 0, full.ego.br1 = tree->bsize, full.ego.lf = 0;
+			full.me.br0 = 0, full.me.br1 = tree->bsize, full.me.lf = 0;
 			do {
 				struct trie_branch *const branch
-					= full.tr->branch + (full.parent_br = full.ego.br0);
+					= full.tr->branch + (full.parent_br = full.me.br0);
 				for(byte.next = (bit += branch->skip) / CHAR_BIT;
 					byte.cur < byte.next; byte.cur++)
 					if(key[byte.cur] == '\0') return 0;
 				if(!TRIE_QUERY(key, bit))
-					full.twin.lf = full.ego.lf + branch->left + 1,
-					full.twin.br1 = full.ego.br1,
-					full.twin.br0 = full.ego.br1 = ++full.ego.br0 +branch->left;
+					full.twin.lf = full.me.lf + branch->left + 1,
+					full.twin.br1 = full.me.br1,
+					full.twin.br0 = full.me.br1 = ++full.me.br0 +branch->left;
 				else
-					full.twin.br0 = ++full.ego.br0,
-					full.twin.br1 = (full.ego.br0 += branch->left),
-					full.twin.lf = full.ego.lf, full.ego.lf += branch->left + 1;
+					full.twin.br0 = ++full.me.br0,
+					full.twin.br1 = (full.me.br0 += branch->left),
+					full.twin.lf = full.me.lf, full.me.lf += branch->left + 1;
 				bit++;
-			} while(full.ego.br0 < full.ego.br1);
-			assert(full.ego.br0 == full.ego.br1
-				&& full.ego.lf <= full.tr->bsize);
-			lf = full.ego.lf;
+			} while(full.me.br0 < full.me.br1);
+			assert(full.me.br0 == full.me.br1
+				&& full.me.lf <= full.tr->bsize);
+			lf = full.me.lf;
 		}
 		if(!trie_bmp_test(&tree->is_child, lf)) break;
 	}
@@ -597,19 +597,19 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	if(twin) { /* Collapsing, as determined previously. */
 		const unsigned collapse_br = full.tr->branch[full.parent_br].skip + 1
 			+ twin->skip;
-		/* Removing the data would cause an overflow in the trie. */
+		/* Removing the data would cause an overflow in `skip`. */
 		if(collapse_br > UCHAR_MAX) { errno = EILSEQ; return 0; }
 		twin->skip = (unsigned char)collapse_br;
 	}
 
 	/* Save the future empty tree for freeing. */
 	tree = full.empty_followers ?
-		(assert(trie_bmp_test(&full.tr->is_child, full.ego.lf)),
-		full.tr->leaf[full.ego.lf].child) : 0;
+		(assert(trie_bmp_test(&full.tr->is_child, full.me.lf)),
+		full.tr->leaf[full.me.lf].child) : 0;
 
 	{ /* Go down a second time and modify the tree. Now `lf` goes down. */
-		struct { unsigned br0, br1, lf; }
-			mod = { 0, full.tr->bsize, full.ego.lf };
+		struct { unsigned br0, br1, lf; } mod;
+		mod.br0 = 0, mod.br1 = full.tr->bsize, mod.lf = full.me.lf;
 		for( ; ; ) {
 			struct trie_branch *const branch = full.tr->branch + mod.br0;
 			if(branch->left >= mod.lf) {
@@ -625,9 +625,9 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	memmove(full.tr->branch + full.parent_br, full.tr->branch
 		+ full.parent_br + 1, sizeof *full.tr->branch
 		* (full.tr->bsize - full.parent_br - 1));
-	memmove(full.tr->leaf + full.ego.lf, full.tr->leaf + full.ego.lf + 1,
-		sizeof *full.tr->leaf * (full.tr->bsize - full.ego.lf));
-	trie_bmp_remove(&full.tr->is_child, full.ego.lf, 1);
+	memmove(full.tr->leaf + full.me.lf, full.tr->leaf + full.me.lf + 1,
+		sizeof *full.tr->leaf * (full.tr->bsize - full.me.lf));
+	trie_bmp_remove(&full.tr->is_child, full.me.lf, 1);
 	full.tr->bsize--;
 
 free: /* Free all the unused trees. */
@@ -840,7 +840,7 @@ static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 	return x;
 }
 
-/* Define these for traits. */
+/* <!-- box: Define these for traits. */
 #define BOX_ PT_
 #define BOX_CONTAINER struct T_(trie)
 #define BOX_CONTENTS PT_(type)
@@ -859,6 +859,11 @@ static void PT_(to_string)(const PT_(type) *const a, char (*const z)[12])
 #ifdef TRIE_TEST /* <!-- test */
 #include "../test/test_trie.h" /** \include */
 #endif /* test --> */
+
+#undef BOX_
+#undef BOX_CONTAINER
+#undef BOX_CONTENTS
+/* box --> */
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
