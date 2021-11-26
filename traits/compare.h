@@ -27,10 +27,10 @@
 
 #ifndef COMPARE_H /* <!-- idempotent */
 #define COMPARE_H
-/* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(COMPARE_CAT_) || defined(COMPARE_CAT) || defined(PCM_)
 #error Unexpected defines.
 #endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #define COMPARE_CAT_(n, m) n ## _ ## m
 #define COMPARE_CAT(n, m) COMPARE_CAT_(n, m)
 #define PCM_(n) COMPARE_CAT(compare, CM_(n))

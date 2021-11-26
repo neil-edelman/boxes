@@ -44,10 +44,10 @@
 #ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
 #include <string.h>
-/* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSZ_)
 #error Unexpected defines.
 #endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #define TO_STRING_CAT_(n, m) n ## _ ## m
 #define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
 #define PSZ_(n) TO_STRING_CAT(to_string, SZ_(n))
