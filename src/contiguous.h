@@ -21,10 +21,10 @@
 #ifndef CONTIGUOUS_H /* <!-- idempotent */
 #define CONTIGUOUS_H
 #include <limits.h>
-/* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(CONTIGUOUS_CAT_) || defined(CONTIGUOUS_CAT) || defined(PCG_)
 #error Unexpected defines.
 #endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #define CONTIGUOUS_CAT_(n, m) n ## _ ## m
 #define CONTIGUOUS_CAT(n, m) CONTIGUOUS_CAT_(n, m)
 #define PCG_(n) CONTIGUOUS_CAT(contiguous, CG_(n))
