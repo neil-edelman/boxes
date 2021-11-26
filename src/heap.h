@@ -46,7 +46,6 @@
  @std C89
  @fixme Add decrease priority. */
 
-
 #ifndef HEAP_NAME
 #error Generic HEAP_NAME undefined.
 #endif
@@ -59,28 +58,28 @@
 #if HEAP_TRAITS > 1
 #error Only one trait per include is allowed; use HEAP_EXPECT_TRAIT.
 #endif
-#if HEAP_TRAITS != 0 && (!defined(H_) || !defined(CAT) || !defined(CAT_))
-#error Use HEAP_EXPECT_TRAIT in include it again.
-#endif
 #if defined(HEAP_TO_STRING_NAME) && !defined(HEAP_TO_STRING)
 #error HEAP_TO_STRING_NAME requires HEAP_TO_STRING.
 #endif
+
+#ifndef HEAP_H /* <!-- idempotent */
+#define HEAP_H
+#if defined(HEAP_CAT_) || defined(HEAP_CAT) || defined(A_) || defined(PA_) \
+	|| defined(HEAP_IDLE)
+#error Unexpected defines.
+#endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define HEAP_CAT_(n, m) n ## _ ## m
+#define HEAP_CAT(n, m) HEAP_CAT_(n, m)
+#define H_(n) HEAP_CAT(HEAP_NAME, n)
+#define PH_(n) HEAP_CAT(heap, H_(n))
+#define HEAP_IDLE { ARRAY_IDLE }
+#endif /* idempotent --> */
 
 
 #if HEAP_TRAITS == 0 /* <!-- base code */
 
 
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(H_) || defined(PH_) \
-	|| (defined(HEAP_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?H_ or CAT_?; possible stray HEAP_EXPECT_TRAIT?
-#endif
-#ifndef HEAP_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define H_(n) CAT(HEAP_NAME, n)
-#define PH_(n) CAT(heap, H_(n))
 #ifndef HEAP_TYPE
 #define HEAP_TYPE unsigned
 #endif
@@ -125,7 +124,6 @@ typedef PH_(priority) PH_(node);
 /* This relies on `array.h` which must be in the same directory. */
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
-#define ARRAY_SUBTYPE
 #include "array.h"
 
 /** Stores the heap as an implicit binary tree in an array called `a`. To
@@ -337,19 +335,19 @@ static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	return 1;
 }
 
-/* <!-- iterate interface */
-#define BOX_ITERATE
-#define PA_(n) CAT(array, CAT(PH_(node), n))
+/* <!-- iterate interface: Forward the responsibility to array. */
+/* fixme: I'm sure it can be nicer. */
+#define PAH_(n) HEAP_CAT(array, HEAP_CAT(PH_(node), n))
 /** Contains all the iteration parameters. */
 struct PH_(iterator);
-struct PH_(iterator) { struct PA_(iterator) a; };
+struct PH_(iterator) { struct PAH_(iterator) a; };
 /** Begins the forward iteration `it` at `h`. */
 static void PH_(begin)(struct PH_(iterator) *const it,
-	const struct H_(heap) *const h) { PA_(begin)(&it->a, &h->a); }
+	const struct H_(heap) *const h) { PAH_(begin)(&it->a, &h->a); }
 /** @return The next `it` or null. */
 static PH_(node) *PH_(next)(struct PH_(iterator) *const it)
-	{ return PA_(next)(&it->a); }
-#undef PA_
+	{ return PAH_(next)(&it->a); }
+#undef PAH_
 /* iterate --> */
 
 /* Define these for traits. */
@@ -377,20 +375,19 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 
 #ifdef HEAP_TO_STRING_NAME /* <!-- name */
-#define Z_(n) CAT(H_(heap), CAT(HEAP_TO_STRING_NAME, n))
+#define SZ_(n) HEAP_CAT(H_(heap), HEAP_CAT(HEAP_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define Z_(n) CAT(H_(heap), n)
+#define SZ_(n) HEAP_CAT(H_(heap), n)
 #endif /* !name --> */
 #define TO_STRING HEAP_TO_STRING
 #include "to_string.h" /** \include */
-#ifdef HEAP_TEST /* <!-- expect: we've forward-declared these. */
+#ifdef HEAP_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef HEAP_TEST
-static void (*PH_(to_string))(const PH_(node) *, char (*)[12]) = PZ_(to_string);
+static PSZ_(to_string_fn) PH_(to_string) = PSZ_(to_string);
 static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
-	= &Z_(to_string);
+	= &SZ_(to_string);
 #endif /* expect --> */
-#undef PZ_
-#undef Z_
+#undef SZ_
 #undef HEAP_TO_STRING
 #ifdef HEAP_TO_STRING_NAME
 #undef HEAP_TO_STRING_NAME
@@ -401,6 +398,7 @@ static void PH_(unused_to_string)(void) { H_(heap_to_string)(0);
 	PH_(unused_to_string_coda)(); }
 static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 
+
 #endif /* traits --> */
 
 
@@ -408,28 +406,18 @@ static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 #undef HEAP_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
 #if defined(HEAP_TEST)
-#error No to string traits defined for test.
+#error No HEAP_TO_STRING traits defined for HEAP_TEST.
 #endif
-#ifndef HEAP_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef HEAP_SUBTYPE
-#endif /* sub-type --> */
-#undef H_
-#undef PH_
 #undef HEAP_NAME
 #undef HEAP_TYPE
 #undef HEAP_COMPARE
 #ifdef HEAP_VALUE
 #undef HEAP_VALUE
 #endif
-#ifdef HEAP_TEST
-#undef HEAP_TEST
-#endif
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
+/* box (multiple traits) --> */
 #endif /* !trait --> */
 #undef HEAP_TO_STRING_TRAIT
 #undef HEAP_TRAITS

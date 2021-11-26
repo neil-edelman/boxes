@@ -14,6 +14,10 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
+ @param[ARRAY_MIN_CAPACITY]
+ Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
+ below.
+
  @param[ARRAY_CONTIGUOUS]
  Include Contiguous trait contained in <contiguous.h>.
 
@@ -38,12 +42,6 @@
 
  @std C89 */
 
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <errno.h>
-
-
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
 #error Name ARRAY_NAME or tag type ARRAY_TYPE undefined.
 #endif
@@ -62,9 +60,6 @@
 #if ARRAY_TRAITS > 1
 #error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
-#if ARRAY_TRAITS != 0 && (!defined(A_) || !defined(CAT) || !defined(CAT_))
-#error Use ARRAY_EXPECT_TRAIT and include it again.
-#endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
 #endif
@@ -73,40 +68,43 @@
 #error ARRAY_COMPARE_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL not both.
 #endif
 
+#ifndef ARRAY_H /* <!-- idempotent */
+#define ARRAY_H
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+#include <assert.h>
+#if defined(ARRAY_CAT_) || defined(ARRAY_CAT) || defined(A_) || defined(PA_) \
+	|| defined(ARRAY_IDLE)
+#error Unexpected defines.
+#endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define ARRAY_CAT_(n, m) n ## _ ## m
+#define ARRAY_CAT(n, m) ARRAY_CAT_(n, m)
+#define A_(n) ARRAY_CAT(ARRAY_NAME, n)
+#define PA_(n) ARRAY_CAT(array, A_(n))
+#define ARRAY_IDLE { 0, 0, 0 }
+#endif /* idempotent --> */
+
 
 #if ARRAY_TRAITS == 0 /* <!-- base code */
 
 
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(A_) || defined(PA_) \
-	|| (defined(ARRAY_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?A_ or CAT_?; possible stray ARRAY_EXPECT_TRAIT?
-#endif
-#ifndef ARRAY_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define A_(n) CAT(ARRAY_NAME, n)
-#define PA_(n) CAT(array, A_(n))
-
+#ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
+#define ARRAY_MIN_CAPACITY 3 /* > 1 */
+#endif /* !min --> */
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
+
+/* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`. To initialize it to an
  idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
-struct A_(array);
-/* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
-#ifndef ARRAY_IDLE /* <!-- !zero; `{0}` is `C99`. */
-#define ARRAY_IDLE { 0, 0, 0 }
-#endif /* !zero --> */
-#ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
-#define ARRAY_MIN_CAPACITY 3 /* > 1 */
-#endif /* !min --> */
 
 /** Initialises `a` to idle. @order \Theta(1) @allow */
 static void A_(array)(struct A_(array) *const a)
@@ -251,9 +249,7 @@ static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
-		/*if(a->size > (size_t)-1 - diff) return errno = ERANGE, 0;*/
 		if(!A_(array_buffer)(a, diff)) return 0;
-		/*if(!A_(array_reserve)(a, a->size + diff)) return 0;*/
 		memmove(a->data + i1 + diff, a->data + i1,
 			(a->size - i1) * sizeof *a->data);
 		a->size += diff;
@@ -272,6 +268,10 @@ static int A_(array_copy)(struct A_(array) *const a,
 	const struct A_(array) *const b)
 	{ return A_(array_splice)(a, a->size, a->size, b); }
 
+/** Appends `n` items on the back of `a`. */
+static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
+	{ return A_(array_append)(a, n); }
+
 /* <!-- iterate interface */
 
 /** Contains all iteration parameters. */
@@ -287,34 +287,16 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
 
-/* iterate --><!-- reverse interface */
+/* iterate --> */
 
-/** Loads `a` into `it`. @implements begin */
-static void PA_(end)(struct PA_(iterator) *const it,
-	const struct A_(array) *const a)
-	{ assert(it && a), it->a = a, it->i = a->size; }
-
-/** Advances `it`. @implements next */
-static const PA_(type) *PA_(prev)(struct PA_(iterator) *const it) {
-	return assert(it && it->a && it->i <= it->a->size),
-		it->i ? it->a->data + --it->i : 0;
-}
-
-/* reverse --><!-- copy interface */
-
-/** Appends `n` items on the back of `a`. */
-static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
-	{ return A_(array_append)(a, n); }
-
-/* copy --> */
-
-/* Define these for traits. */
+/* <!-- box (multiple traits) */
 #define BOX_ PA_
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
 
+/******** FIXME **************/
 #ifdef ARRAY_FUNCTION /* <!-- contiguous */
-#define Z_(n) CAT(A_(array), n)
+#define CG_(n) ARRAY_CAT(A_(array), n)
 #include "contiguous.h" /** \include */
 #endif /* contiguous --> */
 
@@ -331,7 +313,7 @@ static void PA_(unused_base)(void) {
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0); PA_(begin)(0, 0);
-	PA_(next)(0); PA_(end)(0, 0); PA_(prev)(0); PA_(append)(0, 0);
+	PA_(next)(0); PA_(append)(0, 0);
 	PA_(unused_base_coda)();
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
@@ -341,20 +323,19 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #ifdef ARRAY_TO_STRING_NAME
-#define Z_(n) CAT(A_(array), CAT(ARRAY_TO_STRING_NAME, n))
+#define SZ_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_TO_STRING_NAME, n))
 #else
-#define Z_(n) CAT(A_(array), n)
+#define SZ_(n) ARRAY_CAT(A_(array), n)
 #endif
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
-#ifdef ARRAY_TEST /* <!-- expect: we've forward-declared these. */
+#ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef ARRAY_TEST
-static void (*PA_(to_string))(const PA_(type) *, char (*)[12]) = PZ_(to_string);
+static PSZ_(to_string_fn) PA_(to_string) = PSZ_(to_string);
 static const char *(*PA_(array_to_string))(const struct A_(array) *)
-	= &Z_(to_string);
+	= &SZ_(to_string);
 #endif /* expect --> */
-#undef PZ_
-#undef Z_
+#undef SZ_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
@@ -365,16 +346,13 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 
 
 #ifdef ARRAY_COMPARE_NAME /* <!-- name */
-#define Z_(n) CAT(A_(array), CAT(ARRAY_COMPARE_NAME, n))
+#define CM_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_COMPARE_NAME, n))
 #else /* name --><!-- !name */
-#define Z_(n) CAT(A_(array), n)
+#define CM_(n) ARRAY_CAT(A_(array), n)
 #endif /* !name --> */
 #ifdef ARRAY_COMPARE /* <!-- cmp */
 #define BOX_COMPARE ARRAY_COMPARE
 #else /* cmp --><!-- eq */
-#ifndef ARRAY_IS_EQUAL /* <!-- !eq */
-#error Got to the end of the #ifdef without matching. Something is wrong.
-#endif /* !eq --> */
 #define BOX_IS_EQUAL ARRAY_IS_EQUAL
 #endif /* eq --> */
 #include "compare.h" /** \include */
@@ -397,21 +375,14 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef ARRAY_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
 #if defined(ARRAY_TEST)
-#error No to string traits defined for test.
+#error No ARRAY_TO_STRING traits defined for ARRAY_TEST.
 #endif
-#ifndef ARRAY_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef ARRAY_SUBTYPE
-#endif /* sub-type --> */
-#undef A_
-#undef PA_
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
+/* box (multiple traits) --> */
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
