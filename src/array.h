@@ -74,11 +74,11 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-/* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(ARRAY_CAT_) || defined(ARRAY_CAT) || defined(A_) || defined(PA_) \
 	|| defined(ARRAY_IDLE)
 #error Unexpected defines.
 #endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
 #define ARRAY_CAT_(n, m) n ## _ ## m
 #define ARRAY_CAT(n, m) ARRAY_CAT_(n, m)
 #define A_(n) ARRAY_CAT(ARRAY_NAME, n)
