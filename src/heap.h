@@ -64,7 +64,7 @@
 
 #ifndef HEAP_H /* <!-- idempotent */
 #define HEAP_H
-#if defined(HEAP_CAT_) || defined(HEAP_CAT) || defined(A_) || defined(PA_) \
+#if defined(HEAP_CAT_) || defined(HEAP_CAT) || defined(H_) || defined(PH_) \
 	|| defined(HEAP_IDLE)
 #error Unexpected defines.
 #endif

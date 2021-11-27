@@ -16,6 +16,11 @@
  <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
+ @param[POOL_CHUNK_MIN_CAPACITY]
+ Default is 8; optional number in
+ `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PP>type]` that the capacity can
+ not go below.
+
  @param[POOL_TEST]
  To string trait contained in <../test/pool_test.h>; optional unit testing
  framework using `assert`. Must be defined equal to a (random) filler function,
@@ -34,14 +39,37 @@
  @depend [heap](https://github.com/neil-edelman/heap)
  @std C89 */
 
-#include <stdlib.h>	/* malloc free */
-#include <assert.h>	/* assert */
-#include <errno.h>	/* errno */
+#if !defined(POOL_NAME) || !defined(POOL_TYPE)
+#error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
+#endif
+#if defined(POOL_TO_STRING_NAME) || defined(POOL_TO_STRING)
+#define POOL_TO_STRING_TRAIT 1
+#else
+#define POOL_TO_STRING_TRAIT 0
+#endif
+#define POOL_TRAITS POOL_TO_STRING_TRAIT
+#if POOL_TRAITS > 1
+#error Only one trait per include is allowed; use POOL_EXPECT_TRAIT.
+#endif
+#if defined(POOL_TO_STRING_NAME) && !defined(POOL_TO_STRING)
+#error POOL_TO_STRING_NAME requires POOL_TO_STRING.
+#endif
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
-/* `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PP>type]` */
-#define POOL_CHUNK_MIN_CAPACITY 8
+#include <stdlib.h>
+#include <assert.h>
+#include <errno.h>
+#if defined(POOL_CAT_) || defined(POOL_CAT) || defined(P_) || defined(PP_) \
+	|| defined(POOL_IDLE)
+#error Unexpected defines.
+#endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define POOL_CAT_(n, m) n ## _ ## m
+#define POOL_CAT(n, m) POOL_CAT_(n, m)
+#define P_(n) POOL_CAT(POOL_NAME, n)
+#define PP_(n) POOL_CAT(pool, P_(n))
+#define POOL_IDLE { ARRAY_IDLE, HEAP_IDLE, (size_t)0 }
 /** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
 /** A slot is a pointer to a stable chunk. It makes the source much more
@@ -60,40 +88,13 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #endif /* idempotent --> */
 
 
-#if !defined(POOL_NAME) || !defined(POOL_TYPE)
-#error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
-#endif
-#if defined(POOL_TO_STRING_NAME) || defined(POOL_TO_STRING)
-#define POOL_TO_STRING_TRAIT 1
-#else
-#define POOL_TO_STRING_TRAIT 0
-#endif
-#define POOL_TRAITS POOL_TO_STRING_TRAIT
-#if POOL_TRAITS > 1
-#error Only one trait per include is allowed; use POOL_EXPECT_TRAIT.
-#endif
-#if POOL_TRAITS != 0 && (!defined(P_) || !defined(CAT) || !defined(CAT_))
-#error Use POOL_EXPECT_TRAIT and include it again.
-#endif
-#if defined(POOL_TO_STRING_NAME) && !defined(POOL_TO_STRING)
-#error POOL_TO_STRING_NAME requires POOL_TO_STRING.
-#endif
-
-
 #if POOL_TRAITS == 0 /* <!-- base code */
 
 
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(P_) || defined(PP_) \
-	|| (defined(POOL_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?P_ or CAT_?; possible stray POOL_EXPECT_TRAIT?
-#endif
-#ifndef POOL_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define P_(thing) CAT(POOL_NAME, thing)
-#define PP_(thing) CAT(pool, P_(thing))
+#ifndef POOL_CHUNK_MIN_CAPACITY /* <!-- !min */
+/* `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PP>type]` */
+#define POOL_CHUNK_MIN_CAPACITY 8
+#endif /* !min --> */
 
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE PP_(type);
@@ -109,10 +110,6 @@ struct P_(pool) {
 	struct pool_free_heap free0; /* Free-list in chunk-zero. */
 	size_t capacity0; /* Capacity of chunk-zero. */
 };
-/* `{0}` is `C99`. */
-#ifndef POOL_IDLE /* <!-- !zero */
-#define POOL_IDLE { ARRAY_IDLE, HEAP_IDLE, (size_t)0 }
-#endif /* !zero --> */
 
 /** @return Given a pointer to `chunk`, return the chunk data. */
 static PP_(type) *PP_(data)(struct pool_chunk *const chunk)
@@ -296,7 +293,6 @@ static void P_(pool_clear)(struct P_(pool) *const pool) {
 /* <!-- iterate interface: it's not actually possible to iterate though given
  the information that we have, but placing it here for testing purposes.
  Iterates through the zero-slot, ignoring the free list. Do not call. */
-#define BOX_ITERATE
 
 struct PP_(iterator);
 struct PP_(iterator) { struct pool_chunk *chunk0; size_t i; };
@@ -319,17 +315,17 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 
 /* iterate --> */
 
+/* <!-- box (multiple traits) */
+#define BOX_ PP_
+#define BOX_CONTAINER struct P_(pool)
+#define BOX_CONTENTS PP_(type)
+
 #ifdef POOL_TEST /* <!-- test */
 /* Forward-declare. */
 static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 #include "../test/test_pool.h" /** \include */
 #endif /* test --> */
-
-/* Define these for traits. */
-#define BOX_ PP_
-#define BOX_CONTAINER struct P_(pool)
-#define BOX_CONTENTS PP_(type)
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
@@ -344,20 +340,19 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
 
 #ifdef POOL_TO_STRING_NAME /* <!-- name */
-#define Z_(thing) CAT(P_(pool), CAT(POOL_TO_STRING_NAME, thing))
+#define SZ_(n) POOL_CAT(P_(pool), POOL_CAT(POOL_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define Z_(thing) CAT(P_(pool), thing)
+#define SZ_(n) POOL_CAT(P_(pool), n)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
 #include "to_string.h" /** \include */
-#ifdef POOL_TEST /* <!-- expect: we've forward-declared these. */
+#ifdef POOL_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef POOL_TEST
-static void (*PP_(to_string))(const PP_(type) *, char (*)[12]) = PZ_(to_string);
+static PSZ_(to_string_fn) PP_(to_string) = PSZ_(to_string);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
-	= &Z_(to_string);
+	= &SZ_(to_string);
 #endif /* expect --> */
-#undef PZ_
-#undef Z_
+#undef SZ_
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
 #undef POOL_TO_STRING_NAME
@@ -370,26 +365,15 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
 #ifdef POOL_EXPECT_TRAIT /* <!-- trait */
 #undef POOL_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
-#if defined(POOL_TEST)
-#error No to string traits defined for test.
+#ifdef POOL_TEST
+#error No POOL_TO_STRING traits defined for POOL_TEST.
 #endif
-#ifndef POOL_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef POOL_SUBTYPE
-#endif /* sub-type --> */
-#undef P_
-#undef PP_
 #undef POOL_NAME
 #undef POOL_TYPE
-#ifdef POOL_TEST
-#undef POOL_TEST
-#endif
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-#undef BOX_ITERATE
+/* box (multiple traits) --> */
 #endif /* !trait --> */
 #undef POOL_TO_STRING_TRAIT
 #undef POOL_TRAITS
