@@ -25,8 +25,8 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 		PH_(to_string)(heap->a.data + i, &a);
 		fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
 		if(!i) continue;
-		fprintf(fp, "\t\tn%lu -> n%lu;\n", (unsigned long)i,
-			(unsigned long)((i - 1) >> 1));
+		fprintf(fp, "\t\tn%lu -> n%lu;\n",
+			(unsigned long)((i - 1) / 2), (unsigned long)i);
 	}
 	fprintf(fp, "\tnode [colour=red];\n");
 	fprintf(fp, "}\n");
