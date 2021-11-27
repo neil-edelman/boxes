@@ -73,7 +73,7 @@ static void PH_(test_basic)(void *const param) {
 	PH_(value) v, result;
 	PH_(priority) last_priority = 0;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
-	size_t i, j;
+	size_t i, cum_size = 0;
 	char fn[64];
 	int success;
 
@@ -94,79 +94,76 @@ static void PH_(test_basic)(void *const param) {
 	printf("Test one.\n");
 	PH_(filler)(&add, param);
 	v = PH_(get_value)(&add);
-	assert(H_(heap_add)(&heap, add));
+	assert(H_(heap_add)(&heap, add)), cum_size++;
 	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
-	assert(heap.a.size == 1);
+	assert(heap.a.size == cum_size);
 	node = H_(heap_peek)(&heap);
 	PH_(valid)(&heap);
 	assert(PH_(get_priority)(node) == PH_(get_priority)(&add));
-	result = H_(heap_pop)(&heap);
-	assert(v == result && !heap.a.size);
+	result = H_(heap_pop)(&heap), cum_size--;
+	assert(v == result && heap.a.size == cum_size);
 	PH_(valid)(&heap);
 
 	printf("Test many.\n");
 	for(i = 0; i < test_size_1; i++) {
 		if(!i || !(i & (i - 1))) {
 			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv",
-				(unsigned long)i);
+				(unsigned long)cum_size);
 			PH_(graph)(&heap, fn);
 		}
 		PH_(valid)(&heap);
 		PH_(filler)(&add, param);
-		success = H_(heap_add)(&heap, add);
+		success = H_(heap_add)(&heap, add), cum_size++;
 		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv", (unsigned long)i);
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv",
+		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
-#if 0
-	assert(heap.a.size == test_size_1);
+	assert(heap.a.size == cum_size);
 	printf("Heap: %s.\n", PH_(heap_to_string)(&heap));
 	printf("Heap buffered add, before size = %lu.\n",
 		(unsigned long)heap.a.size);
 	node = H_(heap_buffer)(&heap, test_size_2);
 	assert(node);
 	for(i = 0; i < test_size_2; i++) PH_(filler)(node + i, param);
-	success = H_(heap_append)(&heap, test_size_2);
+	success = H_(heap_append)(&heap, test_size_2), cum_size += test_size_2;
 	printf("Now size = %lu.\n", (unsigned long)heap.a.size);
-	assert(heap.a.size == test_size_1 + test_size_2);
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv",
-		test_size_1 + test_size_2);
+	assert(heap.a.size == cum_size);
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv", cum_size);
 	PH_(graph)(&heap, fn);
 	PH_(valid)(&heap);
-	assert(heap.a.size == test_size_1 + test_size_2);
 	for(i = 0; i < test_size_3; i++) {
 		if(!i || !(i & (i - 1))) {
 			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv",
-				test_size_1 + test_size_2 + (unsigned long)i);
+				(unsigned long)cum_size);
 			PH_(graph)(&heap, fn);
 		}
 		PH_(valid)(&heap);
 		PH_(filler)(&add, param);
-		success = H_(heap_add)(&heap, add);
+		success = H_(heap_add)(&heap, add), cum_size++;
 		assert(success);
 	}
-#endif
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-heap.gv", (unsigned long)i);
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-heap.gv",
+		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
-	printf("Setting up merge at %lu.\n", (unsigned long)i);
-	for(j = 0; j < test_size_1; j++) {
+	printf("Setting up merge at %lu.\n", (unsigned long)cum_size);
+	for(i = 0; i < test_size_1; i++) {
 		PH_(filler)(&add, param);
 		success = H_(heap_add)(&merge, add);
 		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-merge.gv", (unsigned long)i);
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-merge.gv",
+		(unsigned long)cum_size);
 	PH_(graph)(&merge, fn);
 	PH_(valid)(&merge);
-	success = H_(heap_copy)(&heap, &merge);
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-combined.gv", (unsigned long)i);
+	success = H_(heap_copy)(&heap, &merge), cum_size += merge.a.size;
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-combined.gv",
+		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
-	assert(success && i + merge.a.size == heap.a.size);
+	assert(success && heap.a.size == cum_size);
 	PH_(valid)(&heap);
 	printf("Final heap: %s.\n", PH_(heap_to_string)(&heap));
-	assert(heap.a.size == test_size_1 + test_size_2 + test_size_3
-		+ merge.a.size);
-	for(i = test_size_1 + test_size_2 + test_size_3 + merge.a.size;
-		i > 0; i--) {
+	for(i = cum_size; i > 0; i--) {
 		char a[12];
 		node = H_(heap_peek)(&heap);
 		assert(node);
@@ -181,7 +178,7 @@ static void PH_(test_basic)(void *const param) {
 		}
 		assert(v == result && heap.a.size == i - 1);
 		PH_(valid)(&heap);
-		if(i != test_size_1 + test_size_2 + test_size_3)
+		if(i != cum_size)
 			assert(PH_(compare)(last_priority, PH_(get_priority)(node)) <= 0);
 		last_priority = PH_(get_priority)(node);
 	}

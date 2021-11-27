@@ -345,13 +345,9 @@ static int H_(heap_copy)(struct H_(heap) *const heap,
 	PH_(node) *n;
 	assert(heap);
 	if(!copy || !copy->a.size) return 1;
-	printf("copy: heap %s\n"
-		   "copy: copy %s\n", PH_(heap_to_string)(heap),
-		   PH_(heap_to_string)(copy));
 	if(!(n = PH_(node_array_buffer)(&heap->a, copy->a.size))) return 0;
 	memcpy(n, copy->a.data, sizeof *n * copy->a.size);
 	n = PH_(node_array_append)(&heap->a, copy->a.size), assert(n);
-	printf("copy: heap %s\n", PH_(heap_to_string)(heap));
 	PH_(heapify)(heap);
 	return 1;
 }
