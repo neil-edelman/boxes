@@ -73,7 +73,9 @@
 /** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
 /** A slot is a pointer to a stable chunk. It makes the source much more
- readable to have this instead of a `**chunk`. */
+ readable to have this instead of a `**chunk`.
+ @fixme: This is stupid; have the chunk size in here, then it doesn't have to
+ be in the chunk itself, only data. */
 typedef struct pool_chunk *pool_slot;
 /* <array.h> and <heap.h> must be in the same directory. */
 #define ARRAY_NAME pool_slot
@@ -315,17 +317,17 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 
 /* iterate --> */
 
-/* <!-- box (multiple traits) */
-#define BOX_ PP_
-#define BOX_CONTAINER struct P_(pool)
-#define BOX_CONTENTS PP_(type)
-
 #ifdef POOL_TEST /* <!-- test */
 /* Forward-declare. */
 static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 #include "../test/test_pool.h" /** \include */
 #endif /* test --> */
+
+/* <!-- box (multiple traits) */
+#define BOX_ PP_
+#define BOX_CONTAINER struct P_(pool)
+#define BOX_CONTENTS PP_(type)
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
