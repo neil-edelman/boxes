@@ -22,118 +22,153 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 	 "darkseagreen" "darkseagreen4" */
 	FILE *fp;
 	char str[12];
+	size_t i, j;
+	struct pool_chunk *chunk;
+	PP_(type) *data;
+
 	assert(pool && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
-		"\trankdir=LR;\n"
-		"\tnode [shape = record, style = filled, fillcolor = lightsteelblue];\n"
-		"\tpool [label=\"\\<" QUOTE(POOL_NAME) "\\>pool\\l|"
-		"%s slots %lu/%lu\\l"
-		"%s free[0] %lu/%lu\\l",
+		/*"\trankdir=LR;\n"*/
+		"\tnode [shape=box, style=filled, fillcolor=\"Grey95\"];\n"
+		"\tpool [label=<\n"
+		"<TABLE BORDER=\"0\">\n"
+		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
+		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(POOL_NAME)
+		"&gt;pool</FONT></TD></TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\">"
+		"<FONT FACE=\"Times-Italic\">status</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\" COLSPAN=\"2\">"
+		"<FONT FACE=\"Times-Italic\">of</FONT></TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%s slots"
+		"</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\""
+		" PORT=\"slots\">%lu</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%s free</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" PORT=\"free\">%lu</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">capacity0"
+		"</TD>\n"
+		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">&#8205;</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t</TR>\n"
+		"</TABLE>>];\n",
 		pool->slots.data ? "active" : "idle",
 		(unsigned long)pool->slots.size,
 		(unsigned long)pool->slots.capacity,
 		pool->free0.a.data ? "active" : "idle",
 		(unsigned long)pool->free0.a.size,
-		(unsigned long)pool->free0.a.capacity);
-	if(!pool->slots.size)
-		fprintf(fp, "idle slots.data[0].capacity: %lu\\l",
-		(unsigned long)pool->capacity0);
-	fprintf(fp, "\", fillcolor=lightgray];\n");
-	if(pool->slots.data) {
-		size_t i, j;
-		struct pool_chunk *chunk;
-		PP_(type) *data;
-		/* Slots are in one array. */
-		if(!pool->slots.size) {
-			fprintf(fp, "\tslot0 [label = \"no slots\", shape = record]\n");
-		} else {
-			fprintf(fp, "\tsubgraph cluster_slots {\n"
-				"\t\tstyle=filled;\n"
-				"\t\tlabel=\"slots %lu/%lu\";\n",
-				pool->slots.size, pool->slots.capacity);
-			for(i = 0; i < pool->slots.size; i++)
-				fprintf(fp, "\t\tslot%lu [label=\"[%lu] #%p\"];\n",
-				(unsigned long)i, (unsigned long)i, (void *)pool->slots.data[i]);
-			fprintf(fp, "\t}\n");
+		(unsigned long)pool->free0.a.capacity, (unsigned long)pool->capacity0);
+	if(!pool->slots.data) goto no_slots;
+	fprintf(fp, "\tpool:slots -> slots;\n"
+		"\tslots [label = <\n"
+		"<TABLE BORDER=\"0\">\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">chunk"
+		"</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\">"
+		"<FONT FACE=\"Times-Italic\">size</FONT></TD>\n"
+		"\t</TR>\n");
+	for(i = 0; i < pool->slots.size; i++) {
+		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
+		fprintf(fp, "\t<TR>\n"
+			"\t\t<TD ALIGN=\"RIGHT\"%s>%lu</TD>\n"
+			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
+			"\t\t<TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>%lu</TD>\n"
+			"\t</TR>\n",
+			bgc, (unsigned long)i, bgc, orcify(pool->slots.data[i]),
+			(unsigned long)i, bgc, pool->slots.data[i]->size);
+	}
+	fprintf(fp, "</TABLE>>];\n");
+	/* For each slot, there is a chunk array with data. */
+	for(i = 0; i < pool->slots.size; i++) {
+		struct { int is_free, unused; size_t free; } *data_temp;
+		chunk = pool->slots.data[i];
+		data = PP_(data)(chunk);
+		fprintf(fp,
+			"\tslots:%lu -> chunk%lu;\n"
+			"\tchunk%lu [label=<\n"
+			"<TABLE BORDER=\"0\">\n"
+			"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
+			"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n",
+			(unsigned long)i, (unsigned long)i,
+			(unsigned long)i, orcify(chunk));
+		if(i || !chunk->size) {
+			fprintf(fp, "\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
+				"<FONT FACE=\"Times-Italic\">count %lu</FONT></TD></TR>\n",
+				chunk->size);
+			goto no_chunk_data;
 		}
-		fprintf(fp, "\tpool -> slot0;\n");
-		/* For each slot, there is a chunk array. */
-		for(i = 0; i < pool->slots.size; i++) {
-			chunk = pool->slots.data[i];
-			data = PP_(data)(chunk);
-			fprintf(fp, "\tsubgraph cluster_chunk%lu {\n"
-				"\t\tstyle=filled;\n"
-				"\t\tlabel=\"chunk size %lu",
-				(unsigned long)i, (unsigned long)chunk->size);
-			if(!i) fprintf(fp, "/%lu", (unsigned long)pool->capacity0);
-			fprintf(fp, "\";\n"
-				"\t\t{ rank=same;\n");
-			if(i || !chunk->size) {
-				fprintf(fp, "\t\tdata%lu_0 [style=invis];\n", i);
+		/* Primary buffer: print rows. */
+		if(!(data_temp = calloc(chunk->size, sizeof *data_temp)))
+			{ perror("temp data"); assert(0); exit(EXIT_FAILURE); };
+		for(j = 0; j < pool->free0.a.size; j++) {
+			size_t *f0p = pool->free0.a.data + j;
+			assert(f0p && *f0p < chunk->size && !data_temp[*f0p].is_free);
+			data_temp[*f0p].is_free = 1, data_temp[*f0p].free = j;
+			/*fixme:free?is just the index?*/
+		}
+		for(j = 0; j < chunk->size; j++) {
+			const char *const bgc = j & 1 ? "" : " BGCOLOR=\"Gray90\"";
+			fprintf(fp, "\t<TR>\n"
+				"\t\t<TD");
+			if(data_temp[j].is_free)
+				fprintf(fp, " PORT=\"L%lu\"", (unsigned long)j);
+			fprintf(fp, " ALIGN=\"RIGHT\"%s>%lu</TD>\n", bgc, (unsigned long)j);
+			if(data_temp[j].is_free) {
+				fprintf(fp, "\t\t<TD PORT=\"R%lu\" ALIGN=\"LEFT\"%s>"
+					"<FONT COLOR=\"Gray75\">deleted"
+					"</FONT></TD>\n", (unsigned long)j, bgc);
 			} else {
-				struct { int is, unused; size_t free; } *rem
-					= calloc(chunk->size, sizeof *rem);
-				if(!rem) {
-					fprintf(fp, "\t\tdata%lu_0 [label=\"%s\", "
-						"fillcolor=red];\n", (unsigned long)i, strerror(errno));
-				} else {
-					size_t k;
-					for(k = 0; k < pool->free0.a.size; k++) {
-						size_t *kc = pool->free0.a.data + k;
-						assert(kc && *kc < chunk->size && !rem[*kc].is);
-						rem[*kc].is = 1, rem[*kc].free = k;
-					}
-					for(j = 0; j < chunk->size; j++) {
-						if(!rem[j].is) {
-							PP_(to_string)(data + j, &str);
-							fprintf(fp,
-								"\t\tdata%lu_%lu [label=\"[%lu] %s\"];\n",
-								(unsigned long)i, (unsigned long)j,
-								(unsigned long)j, str);
-						} else {
-							fprintf(fp, "\t\tdata%lu_%lu [label=\"[%lu]\" "
-								"shape=none, style=empty];\n",
-								(unsigned long)i, (unsigned long)j,
-								(unsigned long)j);
-							if(rem[j].free) fprintf(fp, "\t\tdata%lu_%lu -> "
-								"data%lu_%lu [constraint=false];\n",
-								(unsigned long)i, (unsigned long)(
-									pool->free0.a.data[(rem[j].free - 1) / 2]
-								), (unsigned long)i, (unsigned long)j);
-						}
-						if(j) fprintf(fp, "\t\tdata%lu_%lu -> data%lu_%lu "
-							"[style=invis];\n", (unsigned long)i,
-							(unsigned long)j, (unsigned long)i,
-							(unsigned long)j-1);
-					}
-					free(rem);
-				}
+				PP_(to_string)(data + j, &str);
+				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n", bgc, str);
 			}
-			fprintf(fp, "\t}}\n"
-				"\tslot%lu -> data%lu_0;\n",
-				(unsigned long)i, (unsigned long)i);
+			fprintf(fp, "\t</TR>\n");
+		}
+		free(data_temp);
+no_chunk_data:
+		fprintf(fp, "</TABLE>>];\n");
+		if(i) continue;
+		for(j = 0; ; j++) {
+			size_t *f0low, *f0high, high;
+			if((high = 2 * j + 1) >= pool->free0.a.size) break;
+			f0low = pool->free0.a.data + j;
+			f0high = pool->free0.a.data + high;
+			fprintf(fp, "\tchunk0:%lu -> chunk0:%lu;\n", *f0high, *f0low);
+			if(++high >= pool->free0.a.size) break;
+			f0high++;
+			fprintf(fp, "\tchunk0:%lu -> chunk0:%lu;\n", *f0high, *f0low);
 		}
 	}
-	if(pool->free0.a.size) {
-		size_t i;
-		fprintf(fp, "\tsubgraph cluster_free0 {\n"
-			"\t\trankdir=TB; // doesn't do anything\n"
-			"\t\tstyle=filled;\n"
-			"\t\tlabel=\"free0 %lu/%lu\";\n"
-			"\t\tnode [style=none, shape=none];\n",
-			(unsigned long)pool->free0.a.size,
-			(unsigned long)pool->free0.a.capacity);
-		for(i = 0; i < pool->free0.a.size; i++) {
-			fprintf(fp, "\t\tfree0_%lu [label=\"[%lu]\"];\n",
-				i, pool->free0.a.data[i]);
-			if(i) fprintf(fp, "\t\tfree0_%lu -> free0_%lu;\n",
-				(unsigned long)(i - 1 >> 1), i);
-		}
-		fprintf(fp, "\t}\n"
-			"\tpool -> free0_0;\n");
+no_slots:
+	if(!pool->free0.a.size) goto no_free0;
+	fprintf(fp, "\tsubgraph cluster_free0 {\n"
+		"\t\trankdir=TB; // doesn't do anything\n"
+		"\t\tstyle=filled;\n"
+		"\t\tlabel=\"free0 %lu/%lu\";\n"
+		"\t\tnode [style=none, shape=none];\n",
+		(unsigned long)pool->free0.a.size,
+		(unsigned long)pool->free0.a.capacity);
+	for(i = 0; i < pool->free0.a.size; i++) {
+		fprintf(fp, "\t\tfree0_%lu [label=\"[%lu]\"];\n",
+			i, pool->free0.a.data[i]);
+		if(i) fprintf(fp, "\t\tfree0_%lu -> free0_%lu;\n",
+			(unsigned long)(i - 1 >> 1), i);
 	}
+	fprintf(fp, "\t}\n"
+		"\tpool -> free0_0;\n");
+
+no_free0:
 	fprintf(fp, "\tnode [fillcolour=red];\n"
 		"}\n");
 	fclose(fp);

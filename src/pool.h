@@ -73,15 +73,17 @@
 /** Stable chunk followed by data; explicit naming to avoid confusion. */
 struct pool_chunk { size_t size; };
 /** A slot is a pointer to a stable chunk. It makes the source much more
- readable to have this instead of a `**chunk`. */
-typedef struct pool_chunk *pool_slot;
+ readable to have this instead of a `**chunk`.
+ @fixme: This is stupid; have the chunk size in here, then it doesn't have to
+ be in the chunk itself, only data. */
+typedef struct pool_chunk *poolslot;
 /* <array.h> and <heap.h> must be in the same directory. */
-#define ARRAY_NAME pool_slot
-#define ARRAY_TYPE pool_slot
+#define ARRAY_NAME poolslot
+#define ARRAY_TYPE poolslot
 #include "array.h"
 /** @return An order on `a`, `b` which specifies a max-heap. */
 static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
-#define HEAP_NAME pool_free
+#define HEAP_NAME poolfree
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &pool_index_compare
 #include "heap.h"
@@ -106,8 +108,8 @@ typedef POOL_TYPE PP_(type);
  ![States.](../web/states.png) */
 struct P_(pool);
 struct P_(pool) {
-	struct pool_slot_array slots; /* Pointers to stable chunks. */
-	struct pool_free_heap free0; /* Free-list in chunk-zero. */
+	struct poolslot_array slots; /* Pointers to stable chunks. */
+	struct poolfree_heap free0; /* Free-list in chunk-zero. */
 	size_t capacity0; /* Capacity of chunk-zero. */
 };
 
@@ -117,9 +119,9 @@ static PP_(type) *PP_(data)(struct pool_chunk *const chunk)
 
 /** @return Index of sorted slot[1..n] that is higher than `x` in `slots`.
  The `[0]` slot is unsorted. @order \O(\log `slots`) */
-static size_t PP_(upper)(const struct pool_slot_array *const slots,
+static size_t PP_(upper)(const struct poolslot_array *const slots,
 	const void *const x) {
-	const pool_slot *const base = slots->data;
+	const poolslot *const base = slots->data;
 	size_t n, b0, b1;
 	assert(slots && x);
 	if(!(n = slots->size)) return 0;
@@ -138,7 +140,7 @@ static size_t PP_(upper)(const struct pool_slot_array *const slots,
 /** Which slot is `datum` in `pool`? @order \O(\log \log `items`) */
 static size_t PP_(slot)(const struct P_(pool) *const pool,
 	const PP_(type) *const datum) {
-	pool_slot *const s0 = pool->slots.data;
+	poolslot *const s0 = pool->slots.data;
 	PP_(type) *cmp;
 	size_t up;
 	assert(pool && pool->slots.size && s0 && datum);
@@ -154,7 +156,7 @@ static size_t PP_(slot)(const struct P_(pool) *const pool,
 /** Makes sure there are space for `n` further items in `pool`.
  @return Success. */
 static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
-	pool_slot *slot;
+	poolslot *slot;
 	struct pool_chunk *chunk;
 	const size_t min_size = POOL_CHUNK_MIN_CAPACITY,
 		max_size = ((size_t)-1 - sizeof(struct pool_chunk)) / sizeof(PP_(type));
@@ -174,7 +176,7 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	/* The request is unsatisfiable. */
 	if(max_size < n) return errno = ERANGE, 1;
 	/* We will make a new slot. */
-	if(!pool_slot_array_buffer(&pool->slots, 1)) return 0;
+	if(!poolslot_array_buffer(&pool->slots, 1)) return 0;
 
 	/* Figure out the size of the next chunk and allocate it. */
 	c = pool->capacity0;
@@ -197,7 +199,7 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	if(!pool->slots.size) insert = 0;
 	else insert = PP_(upper)(&pool->slots, pool->slots.data[0]);
 	assert(insert <= pool->slots.size);
-	slot = pool_slot_array_append_at(&pool->slots, 1, insert);
+	slot = poolslot_array_append_at(&pool->slots, 1, insert);
 	assert(slot);
 	*slot = pool->slots.data[0], pool->slots.data[0] = chunk;
 	return 1;
@@ -219,31 +221,31 @@ static int PP_(remove)(struct P_(pool) *const pool,
 			&& idx < chunk->size);
 		if(idx + 1 == chunk->size) { /* It's at the end -- size goes down. */
 			while(--chunk->size) {
-				const size_t *const free = pool_free_heap_peek(&pool->free0);
+				const size_t *const free = poolfree_heap_peek(&pool->free0);
 				/* Another item on the free-heap is not exposed? */
 				if(!free || *free < chunk->size - 1) break;
 				assert(*free == chunk->size - 1);
-				pool_free_heap_pop(&pool->free0);
+				poolfree_heap_pop(&pool->free0);
 			}
-		} else if(!pool_free_heap_add(&pool->free0, idx)) return 0;
+		} else if(!poolfree_heap_add(&pool->free0, idx)) return 0;
 	} else if(assert(chunk->size), !--chunk->size)
-		pool_slot_array_remove(&pool->slots, pool->slots.data + s), free(chunk);
+		poolslot_array_remove(&pool->slots, pool->slots.data + s), free(chunk);
 	return 1;
 }
 
 /** Initializes `pool` to idle. @order \Theta(1) @allow */
 static void P_(pool)(struct P_(pool) *const pool) { assert(pool),
-	pool_slot_array(&pool->slots), pool_free_heap(&pool->free0),
+	poolslot_array(&pool->slots), poolfree_heap(&pool->free0),
 	pool->capacity0 = 0; }
 
 /** Destroys `pool` and returns it to idle. @order \O(\log `data`) @allow */
 static void P_(pool_)(struct P_(pool) *const pool) {
-	pool_slot *i, *i_end;
+	poolslot *i, *i_end;
 	assert(pool);
 	for(i = pool->slots.data, i_end = i + pool->slots.size; i < i_end; i++)
 		assert(*i), free(*i);
-	pool_slot_array_(&pool->slots);
-	pool_free_heap_(&pool->free0);
+	poolslot_array_(&pool->slots);
+	poolfree_heap_(&pool->free0);
 	P_(pool)(pool);
 }
 
@@ -264,7 +266,7 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	assert(pool->slots.size && (pool->free0.a.size ||
 		pool->slots.data[0]->size < pool->capacity0));
 	/* Array pop, towards minimum-ish index in the max-free-heap. */
-	if(free = heap_pool_free_node_array_pop(&pool->free0.a))
+	if(free = heap_poolfree_node_array_pop(&pool->free0.a))
 		return assert(free), PP_(data)(pool->slots.data[0]) + *free;
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
 	chunk0 = pool->slots.data[0];
@@ -280,14 +282,14 @@ static int P_(pool_remove)(struct P_(pool) *const pool,
 /** Removes all from `pool`, but keeps it's active state, only freeing the
  smaller blocks. @order \O(\log `items`) @allow */
 static void P_(pool_clear)(struct P_(pool) *const pool) {
-	pool_slot *i, *i_end;
+	poolslot *i, *i_end;
 	assert(pool);
 	if(!pool->slots.size) { assert(!pool->free0.a.size); return; }
 	for(i = pool->slots.data + 1, i_end = i - 1 + pool->slots.size;
 		i < i_end; i++) assert(*i), free(*i);
 	pool->slots.data[0]->size = 0;
 	pool->slots.size = 1;
-	pool_free_heap_clear(&pool->free0);
+	poolfree_heap_clear(&pool->free0);
 }
 
 /* <!-- iterate interface: it's not actually possible to iterate though given
