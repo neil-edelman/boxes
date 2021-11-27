@@ -92,7 +92,7 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 	fprintf(fp, "</TABLE>>];\n");
 	/* For each slot, there is a chunk array with data. */
 	for(i = 0; i < pool->slots.size; i++) {
-		struct { int is_free, unused; size_t free; } *data_temp;
+		char *bmp;
 		chunk = pool->slots.data[i];
 		data = PP_(data)(chunk);
 		fprintf(fp,
@@ -110,45 +110,38 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 			goto no_chunk_data;
 		}
 		/* Primary buffer: print rows. */
-		if(!(data_temp = calloc(chunk->size, sizeof *data_temp)))
-			{ perror("temp data"); assert(0); exit(EXIT_FAILURE); };
+		if(!(bmp = calloc(chunk->size, sizeof *bmp)))
+			{ perror("temp bitmap"); assert(0); exit(EXIT_FAILURE); };
 		for(j = 0; j < pool->free0.a.size; j++) {
 			size_t *f0p = pool->free0.a.data + j;
-			assert(f0p && *f0p < chunk->size && !data_temp[*f0p].is_free);
-			data_temp[*f0p].is_free = 1, data_temp[*f0p].free = j;
-			/*fixme:free?is just the index?*/
+			assert(f0p && *f0p < chunk->size);
+			bmp[*f0p] = 1;
 		}
 		for(j = 0; j < chunk->size; j++) {
 			const char *const bgc = j & 1 ? "" : " BGCOLOR=\"Gray90\"";
 			fprintf(fp, "\t<TR>\n"
-				"\t\t<TD");
-			if(data_temp[j].is_free)
-				fprintf(fp, " PORT=\"L%lu\"", (unsigned long)j);
-			fprintf(fp, " ALIGN=\"RIGHT\"%s>%lu</TD>\n", bgc, (unsigned long)j);
-			if(data_temp[j].is_free) {
-				fprintf(fp, "\t\t<TD PORT=\"R%lu\" ALIGN=\"LEFT\"%s>"
+				"\t\t<TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>%lu</TD>\n",
+				(unsigned long)j, bgc, (unsigned long)j);
+			if(bmp[j]) {
+				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>"
 					"<FONT COLOR=\"Gray75\">deleted"
-					"</FONT></TD>\n", (unsigned long)j, bgc);
+					"</FONT></TD>\n", bgc);
 			} else {
 				PP_(to_string)(data + j, &str);
 				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n", bgc, str);
 			}
 			fprintf(fp, "\t</TR>\n");
 		}
-		free(data_temp);
+		free(bmp);
 no_chunk_data:
 		fprintf(fp, "</TABLE>>];\n");
+		/* Too crowded!
 		if(i) continue;
-		for(j = 0; ; j++) {
-			size_t *f0low, *f0high, high;
-			if((high = 2 * j + 1) >= pool->free0.a.size) break;
-			f0low = pool->free0.a.data + j;
-			f0high = pool->free0.a.data + high;
-			fprintf(fp, "\tchunk0:%lu -> chunk0:%lu;\n", *f0high, *f0low);
-			if(++high >= pool->free0.a.size) break;
-			f0high++;
-			fprintf(fp, "\tchunk0:%lu -> chunk0:%lu;\n", *f0high, *f0low);
-		}
+		for(j = 1; j < pool->free0.a.size; j++) {
+			const size_t *const f0low = pool->free0.a.data + j / 2,
+				*const f0high = pool->free0.a.data + j;
+			fprintf(fp, "\tchunk0:%lu -> chunk0:%lu;\n", *f0low, *f0high);
+		} */
 	}
 no_slots:
 	if(!pool->free0.a.size) goto no_free0;
