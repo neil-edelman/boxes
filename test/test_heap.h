@@ -68,12 +68,12 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 
 /** @param[param] The parameter used for `HEAP_TEST`. */
 static void PH_(test_basic)(void *const param) {
-	struct H_(heap) heap = HEAP_IDLE;
+	struct H_(heap) heap = HEAP_IDLE, merge = HEAP_IDLE;
 	PH_(node) *node, add;
 	PH_(value) v, result;
 	PH_(priority) last_priority = 0;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
-	size_t i;
+	size_t i, j;
 	char fn[64];
 	int success;
 
@@ -118,6 +118,7 @@ static void PH_(test_basic)(void *const param) {
 	}
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv", (unsigned long)i);
 	PH_(graph)(&heap, fn);
+#if 0
 	assert(heap.a.size == test_size_1);
 	printf("Heap: %s.\n", PH_(heap_to_string)(&heap));
 	printf("Heap buffered add, before size = %lu.\n",
@@ -144,9 +145,28 @@ static void PH_(test_basic)(void *const param) {
 		success = H_(heap_add)(&heap, add);
 		assert(success);
 	}
+#endif
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-heap.gv", (unsigned long)i);
+	PH_(graph)(&heap, fn);
+	printf("Setting up merge at %lu.\n", (unsigned long)i);
+	for(j = 0; j < test_size_1; j++) {
+		PH_(filler)(&add, param);
+		success = H_(heap_add)(&merge, add);
+		assert(success);
+	}
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-merge.gv", (unsigned long)i);
+	PH_(graph)(&merge, fn);
+	PH_(valid)(&merge);
+	success = H_(heap_copy)(&heap, &merge);
+	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-combined.gv", (unsigned long)i);
+	PH_(graph)(&heap, fn);
+	assert(success && i + merge.a.size == heap.a.size);
+	PH_(valid)(&heap);
 	printf("Final heap: %s.\n", PH_(heap_to_string)(&heap));
-	assert(heap.a.size == test_size_1 + test_size_2 + test_size_3);
-	for(i = test_size_1 + test_size_2 + test_size_3; i > 0; i--) {
+	assert(heap.a.size == test_size_1 + test_size_2 + test_size_3
+		+ merge.a.size);
+	for(i = test_size_1 + test_size_2 + test_size_3 + merge.a.size;
+		i > 0; i--) {
 		char a[12];
 		node = H_(heap_peek)(&heap);
 		assert(node);
@@ -166,6 +186,7 @@ static void PH_(test_basic)(void *const param) {
 		last_priority = PH_(get_priority)(node);
 	}
 	printf("Destructor:\n");
+	H_(heap_)(&merge);
 	H_(heap_)(&heap);
 	assert(!H_(heap_peek)(&heap));
 }
