@@ -73,7 +73,7 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 			if(i || !chunk->size) {
 				fprintf(fp, "\t\tdata%lu_0 [style=invis];\n", i);
 			} else {
-				struct { int is; size_t free; } *rem
+				struct { int is, unused; size_t free; } *rem
 					= calloc(chunk->size, sizeof *rem);
 				if(!rem) {
 					fprintf(fp, "\t\tdata%lu_0 [label=\"%s\", "
@@ -262,7 +262,6 @@ static void PP_(test_states)(void) {
 
 #define ARRAY_NAME PP_(test)
 #define ARRAY_TYPE PP_(type) *
-#define ARRAY_SUBTYPE
 #include "../src/array.h"
 
 static void PP_(test_random)(void) {
