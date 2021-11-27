@@ -31,7 +31,7 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
 		/*"\trankdir=LR;\n"*/
-		"\tnode [shape=box, style=filled, fillcolor=\"Grey95\"];\n"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
 		"\tpool [label=<\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
@@ -51,7 +51,7 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 		" PORT=\"slots\">%lu</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%s free</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%s free0 heap</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" PORT=\"free\">%lu</TD>\n"
 		"\t</TR>\n"
@@ -145,22 +145,14 @@ no_chunk_data:
 	}
 no_slots:
 	if(!pool->free0.a.size) goto no_free0;
-	fprintf(fp, "\tsubgraph cluster_free0 {\n"
-		"\t\trankdir=TB; // doesn't do anything\n"
-		"\t\tstyle=filled;\n"
-		"\t\tlabel=\"free0 %lu/%lu\";\n"
-		"\t\tnode [style=none, shape=none];\n",
-		(unsigned long)pool->free0.a.size,
-		(unsigned long)pool->free0.a.capacity);
 	for(i = 0; i < pool->free0.a.size; i++) {
-		fprintf(fp, "\t\tfree0_%lu [label=\"[%lu]\"];\n",
-			i, pool->free0.a.data[i]);
-		if(i) fprintf(fp, "\t\tfree0_%lu -> free0_%lu;\n",
-			(unsigned long)(i - 1 >> 1), i);
+		fprintf(fp, "\tfree0_%lu [label=<<FONT COLOR=\"Gray75\">%lu</FONT>>,"
+			" shape=circle];\n", i, pool->free0.a.data[i]);
+		if(i) fprintf(fp, "\t\tfree0_%lu -> free0_%lu\n",
+			(unsigned long)((i - 1) / 2), i);
 	}
-	fprintf(fp, "\t}\n"
-		"\tpool -> free0_0;\n");
-
+	fprintf(fp, "\tpool:free -> slots -> chunk0 -> free0_0 [style=invis];\n"
+		"\tpool:free -> free0_0;\n");
 no_free0:
 	fprintf(fp, "\tnode [fillcolour=red];\n"
 		"}\n");
