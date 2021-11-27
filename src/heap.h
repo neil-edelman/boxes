@@ -330,8 +330,22 @@ static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
  @order \O(`heap.size` + `n`) @allow */
 static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	assert(heap);
-	PH_(node_array_append)(&heap->a, n);
+	if(!PH_(node_array_append)(&heap->a, n)) return 0;
 	if(n) PH_(heapify)(heap);
+	return 1;
+}
+
+/** Copies all the elements of `copy` into `heap`.
+ @param[copy] If null, does nothing. @return Success.
+ @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] */
+static int H_(heap_copy)(struct H_(heap) *const heap,
+	const struct H_(heap) *const copy) {
+	PH_(node) *n;
+	assert(heap);
+	if(!copy || !copy->a.size) return 1;
+	if(!(n = PH_(node_array_buffer)(&heap->a, copy->a.size))) return 0;
+	memcpy(n, copy->a.data, copy->a.size);
+	PH_(heapify)(heap);
 	return 1;
 }
 
@@ -366,6 +380,7 @@ static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_peek_value)(0);
 	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
+	H_(heap_copy)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
