@@ -30,9 +30,20 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
-		/*"\trankdir=LR;\n"*/
-		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
-		"\tpool [label=<\n"
+		"\trankdir=LR;\n"
+		"\tfontface=modern;"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
+	if(!pool->free0.a.size) goto no_free0;
+	for(i = 0; i < pool->free0.a.size; i++) {
+		fprintf(fp, "\tfree0_%lu [label=<<FONT COLOR=\"Gray75\">%lu</FONT>>,"
+			" shape=circle];\n", i, pool->free0.a.data[i]);
+		if(i) fprintf(fp, "\tfree0_%lu -> free0_%lu [dir=back];\n",
+			i, (unsigned long)((i - 1) / 2));
+	}
+	fprintf(fp, "\t{rank=same; pool; free0_0; }\n"
+		"\tpool:free -> free0_0;\n");
+no_free0:
+	fprintf(fp, "\tpool [label=<\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
 		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(POOL_NAME)
@@ -144,16 +155,6 @@ no_chunk_data:
 		} */
 	}
 no_slots:
-	if(!pool->free0.a.size) goto no_free0;
-	for(i = 0; i < pool->free0.a.size; i++) {
-		fprintf(fp, "\tfree0_%lu [label=<<FONT COLOR=\"Gray75\">%lu</FONT>>,"
-			" shape=circle];\n", i, pool->free0.a.data[i]);
-		if(i) fprintf(fp, "\t\tfree0_%lu -> free0_%lu\n",
-			(unsigned long)((i - 1) / 2), i);
-	}
-	fprintf(fp, "\tpool:free -> slots -> chunk0 -> free0_0 [style=invis];\n"
-		"\tpool:free -> free0_0;\n");
-no_free0:
 	fprintf(fp, "\tnode [fillcolour=red];\n"
 		"}\n");
 	fclose(fp);
