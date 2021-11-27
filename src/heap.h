@@ -278,6 +278,10 @@ static void H_(heap_)(struct H_(heap) *const heap)
 static void H_(heap_clear)(struct H_(heap) *const heap)
 	{ assert(heap), PH_(node_array_clear)(&heap->a); }
 
+/** Size of the `heap`. */
+static size_t H_(heap_size)(const struct H_(heap) *const heap)
+	{ return assert(heap), heap->a.size; }
+
 /** Copies `node` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
 static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
@@ -380,9 +384,9 @@ static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
 
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
-	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_peek_value)(0);
-	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
-	H_(heap_duplicate)(0, 0);
+	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
+	H_(heap_peek_value)(0); H_(heap_pop)(0); H_(heap_buffer)(0, 0);
+	H_(heap_append)(0, 0); H_(heap_duplicate)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
