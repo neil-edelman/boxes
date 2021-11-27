@@ -139,7 +139,7 @@ static void PH_(test_basic)(void *const param) {
 		(unsigned long)cum_size);
 	PH_(graph)(&merge, fn);
 	PH_(valid)(&merge);
-	success = H_(heap_copy)(&heap, &merge), cum_size += merge.a.size;
+	success = H_(heap_duplicate)(&heap, &merge), cum_size += merge.a.size;
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-combined.gv",
 		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
