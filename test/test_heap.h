@@ -15,35 +15,18 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 	const char *const fn) {
 	FILE *fp;
 	char a[12];
+	size_t i;
 	assert(heap && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\trankdir = BT;\n"
-		"\tnode [shape = record, style = filled];\n"
-		"\tHash [label=\"{\\<" QUOTE(HEAP_NAME) "\\>Hash: "
-#ifdef HEAP_VALUE
-		QUOTE(HEAP_VALUE)
-#else
-		"without value"
-#endif
-		"\\l|size: %lu\\lcapacity: %lu\\l}\"];\n", (unsigned long)heap->a.size,
-		(unsigned long)heap->a.capacity);
-	if(heap->a.data) {
-		PH_(node) *const n0 = heap->a.data;
-		size_t i;
-		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n");
-		if(heap->a.size) fprintf(fp, "\tn0 -> Hash [dir = back];\n");
-		fprintf(fp, "\tedge [style = dashed];\n"
-			"\tsubgraph cluster_data {\n"
-			"\t\tstyle=filled;\n");
-		for(i = 0; i < heap->a.size; i++) {
-			PH_(to_string)(n0 + i, &a);
-			fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
-			if(!i) continue;
-			fprintf(fp, "\t\tn%lu -> n%lu;\n", (unsigned long)i,
-				(unsigned long)((i - 1) >> 1));
-		}
-		fprintf(fp, "\t}\n");
+		/*"\trankdir = BT;\n"*/
+		"\tnode [shape = box, style = filled, fillcolor = Grey95];\n");
+	for(i = 0; i < heap->a.size; i++) {
+		PH_(to_string)(heap->a.data + i, &a);
+		fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
+		if(!i) continue;
+		fprintf(fp, "\t\tn%lu -> n%lu;\n", (unsigned long)i,
+			(unsigned long)((i - 1) >> 1));
 	}
 	fprintf(fp, "\tnode [colour=red];\n");
 	fprintf(fp, "}\n");
