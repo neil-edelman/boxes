@@ -25,7 +25,8 @@
  Optional function implementing <typedef:<PA>action_fn> that fills the
  <typedef:<PA>type> from uninitialized to random for unit testing framework
  using `assert`. Testing array contained in <../test/test_array.h>. Must have
- any To String trait included after all the tests.
+ at least one `to_string` trait included, and any tests of traits must come
+ before `to_string`.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -328,9 +329,6 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
-/* ARRAY_COMPARE might come after, so we need another variable; sigh.
- Just define ARRAY_TO_STRING after any ARRAY_COMPARE or ARRAY_IS_EQUAL if one
- is going to automatically test. This is confusing, but internal. */
 #ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef ARRAY_TEST
 static PSZ_(to_string_fn) PA_(to_string) = PSZ_(to_string);
