@@ -22,7 +22,7 @@
  * Parameter: ARRAY\_MIN\_CAPACITY  
    Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go below\.
  * Parameter: ARRAY\_CONTIGUOUS  
-   Include Contiguous trait contained in [contiguous\.h](contiguous.h)\.
+   Include the singleton trait contained in [contiguous\.h](contiguous.h) that takes no options\.
  * Parameter: ARRAY\_TEST  
    Optional function implementing [&lt;PA&gt;action_fn](#user-content-typedef-b531bc05) that fills the [&lt;PA&gt;type](#user-content-typedef-a8a4b08a) from uninitialized to random for unit testing framework using `assert`\. Testing array contained in [\.\./test/test\_array\.h](../test/test_array.h)\. Must have any To String trait included after all the tests\.
  * Parameter: ARRAY\_EXPECT\_TRAIT  
