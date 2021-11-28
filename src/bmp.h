@@ -32,9 +32,11 @@
 #define BMP_CAT(n, m) BMP_CAT_(n, m)
 #define B_(n) BMP_CAT(BMP_NAME, n)
 #define PB_(n) BMP_CAT(bmp, B_(n))
+/** The underlying array type. */
+typedef unsigned bmpchunk;
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
-#define BMP_MAX (~(PB_(chunk))0)
-#define BMP_CHUNK (sizeof(PB_(chunk)) * CHAR_BIT)
+#define BMP_MAX (~(bmpchunk)0)
+#define BMP_CHUNK (sizeof(bmpchunk) * CHAR_BIT)
 #define BMP_CHUNKS (((BMP_BITS) - 1) / BMP_CHUNK + 1)
 #define BMP_CHUNK_HI (1u << BMP_CHUNK - 1)
 #define BMP_MASK(x) (BMP_CHUNK_HI >> (x) % (unsigned)BMP_CHUNK)
@@ -46,11 +48,8 @@
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 #endif /* idempotent --> */
 
-/** The underlying array type. */
-typedef unsigned PB_(chunk);
-
 /** An array of `BMP_BITS` bits, taking up the next multiple chunk. */
-struct B_(bmp) { PB_(chunk) chunk[BMP_CHUNKS]; };
+struct B_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 
 /** Sets `a` to all false. @allow */
 static void B_(bmp_clear_all)(struct B_(bmp) *const a)
@@ -87,8 +86,9 @@ static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 /** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. @allow */
 static void B_(bmp_insert)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
-	/*const*/ PB_(chunk) store; PB_(chunk) temp;
+	struct { unsigned hi, lo; } move, first;
+	unsigned i;
+	bmpchunk store, temp;
 	assert(a && x + n <= BMP_BITS);
 	if(!n) return;
 	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;
@@ -114,8 +114,9 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
  @allow */
 static void B_(bmp_remove)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
-	/*const*/ PB_(chunk) store; PB_(chunk) temp;
+	struct { unsigned hi, lo; } move, first;
+	unsigned i;
+	bmpchunk store, temp;
 	assert(a && x + n <= BMP_BITS);
 	if(!n) return;
 	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;

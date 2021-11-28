@@ -1,7 +1,7 @@
 # bmp\.h #
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PB&gt;chunk](#user-content-typedef-b884252)
+ * [Typedef Aliases](#user-content-typedef): [bmpchunk](#user-content-typedef-1f500d15)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;B&gt;bmp](#user-content-tag-c8c9536a)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -23,9 +23,9 @@
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-b884252" name = "user-content-typedef-b884252">&lt;PB&gt;chunk</a> ###
+### <a id = "user-content-typedef-1f500d15" name = "user-content-typedef-1f500d15">bmpchunk</a> ###
 
-<code>typedef unsigned <strong>&lt;PB&gt;chunk</strong>;</code>
+<code>typedef unsigned <strong>bmpchunk</strong>;</code>
 
 The underlying array type\.
 
@@ -35,7 +35,7 @@ The underlying array type\.
 
 ### <a id = "user-content-tag-c8c9536a" name = "user-content-tag-c8c9536a">&lt;B&gt;bmp</a> ###
 
-<code>struct <strong>&lt;B&gt;bmp</strong> { &lt;PB&gt;chunk chunk[BMP_CHUNKS]; };</code>
+<code>struct <strong>&lt;B&gt;bmp</strong> { bmpchunk chunk[BMP_CHUNKS]; };</code>
 
 An array of `BMP_BITS` bits, taking up the next multiple chunk\.
 
