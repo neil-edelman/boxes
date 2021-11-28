@@ -294,8 +294,7 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
 
-/******** FIXME **************/
-#ifdef ARRAY_FUNCTION /* <!-- contiguous */
+#ifdef ARRAY_CONTIGUOUS /* <!-- contiguous */
 #define CG_(n) ARRAY_CAT(A_(array), n)
 #include "contiguous.h" /** \include */
 #endif /* contiguous --> */
