@@ -37,7 +37,7 @@ The underlying array type\.
 
 <code>struct <strong>&lt;B&gt;bmp</strong> { bmpchunk chunk[BMP_CHUNKS]; };</code>
 
-An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof(bmpchunk) &#215; CHARBIT`\.\)
+An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof(bmpchunk)` &#215; `CHARBIT`\.\)
 
 
 

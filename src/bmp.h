@@ -49,7 +49,7 @@ typedef unsigned bmpchunk;
 #endif /* idempotent --> */
 
 /** An array of `BMP_BITS` bits, (taking up the next multiple of
- `sizeof(bmpchunk) \times CHARBIT`.) */
+ `sizeof(bmpchunk)` \times `CHARBIT`.) */
 struct B_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 
 /** Sets `a` to all false. @allow */
