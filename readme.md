@@ -3,7 +3,7 @@
 ## Priority Queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;adjunct](#user-content-typedef-5aee1bc), [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;adjunct](#user-content-typedef-5aee1bc), [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_node](#user-content-tag-7243593c), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -28,7 +28,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&l
  * Parameter: HEAP\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); an optional unique `<Z>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)\.
+   To string trait contained in [to\_string\.h](to_string.h); an optional unique `<Z>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Standard:  
    C89
  * Dependancies:  
@@ -79,9 +79,9 @@ Internal nodes in the heap\. If `HEAP_VALUE` is set, this is a [&lt;H&gt;heap_no
 
 
 
-### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
 
 Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
@@ -141,7 +141,7 @@ Contains all the iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-2a4c2c14">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -287,9 +287,9 @@ Will be tested on stdout\. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not `NDEB
 
 
 
-### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
+### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
    Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.

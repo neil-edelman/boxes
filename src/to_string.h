@@ -8,8 +8,8 @@
  @param[SZ_]
  A one-argument macro producing a name that is responsible for the name of the
  to string function. Should be something like
- `SZ_(to_string) -> widget_foo_to_string`. Leaves `SZ_` and defined for any
- `EXPECTS_TO_STRING`; the caller is responsible for `#undef`.
+ `SZ_(to_string) -> widget_foo_to_string`. The caller is responsible for
+ undefining `SZ_`.
 
  @param[TO_STRING]
  Function implementing <typedef:<PZ>to_string_fn>.

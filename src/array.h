@@ -22,10 +22,10 @@
  Include Contiguous trait contained in <contiguous.h>.
 
  @param[ARRAY_TEST]
- Optional function implementing <typedef:<PZ>action_fn> that fills the
+ Optional function implementing <typedef:<PA>action_fn> that fills the
  <typedef:<PA>type> from uninitialized to random for unit testing framework
  using `assert`. Testing array contained in <../test/test_array.h>. Must have
- any To String trait.
+ any To String trait included after all the tests.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -33,12 +33,12 @@
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <compare.h>. An optional mangled name for
- uniqueness and a function implementing <typedef:<PZ>compare_fn> xor
- <typedef:<PZ>bipredicate_fn>.
+ uniqueness and a function implementing <typedef:<PCM>compare_fn> xor
+ <typedef:<PCM>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PZ>to_string_fn>.
+ uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
 
  @std C89 */
 
@@ -294,8 +294,7 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
 
-/******** FIXME **************/
-#ifdef ARRAY_FUNCTION /* <!-- contiguous */
+#ifdef ARRAY_CONTIGUOUS /* <!-- contiguous */
 #define CG_(n) ARRAY_CAT(A_(array), n)
 #include "contiguous.h" /** \include */
 #endif /* contiguous --> */
@@ -329,6 +328,9 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
+/* ARRAY_COMPARE might come after, so we need another variable; sigh.
+ Just define ARRAY_TO_STRING after any ARRAY_COMPARE or ARRAY_IS_EQUAL if one
+ is going to automatically test. This is confusing, but internal. */
 #ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef ARRAY_TEST
 static PSZ_(to_string_fn) PA_(to_string) = PSZ_(to_string);
@@ -356,7 +358,10 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #define BOX_IS_EQUAL ARRAY_IS_EQUAL
 #endif /* eq --> */
 #include "compare.h" /** \include */
-
+#ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
+#include "../test/test_array.h"
+#endif /* test --> */
+#undef CM_
 #ifdef ARRAY_COMPARE_NAME
 #undef ARRAY_COMPARE_NAME
 #endif
