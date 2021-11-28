@@ -31,13 +31,16 @@
 #define PCG_(n) CONTIGUOUS_CAT(contiguous, CG_(n))
 #endif /* idempotent --> */
 
+/** In <contiguous.h>, an alias to the box. */
 typedef BOX_CONTAINER PCG_(box);
+
+/** In <contiguous.h>, an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PCG_(type);
 
-/** Operates by side-effects on <typedef:<PZ>type>. */
+/** Operates by side-effects on <typedef:<PCG>type>. */
 typedef void (*PCG_(action_fn))(PCG_(type) *);
 
-/** Returns a boolean given read-only <typedef:<PZ>type>. */
+/** Returns a boolean given read-only <typedef:<PCG>type>. */
 typedef int (*PCG_(predicate_fn))(const PCG_(type) *);
 
 /** @return Converts `i` to an index in `box` from [0, `a.size`]. Negative

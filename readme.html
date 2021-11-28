@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PZ>action_fn">&lt;PZ&gt;action_fn</a>, <a href = "#typedef:<PZ>predicate_fn">&lt;PZ&gt;predicate_fn</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a>, <a href = "#typedef:<PZ>bipredicate_fn">&lt;PZ&gt;bipredicate_fn</a>, <a href = "#typedef:<PZ>biaction_fn">&lt;PZ&gt;biaction_fn</a>, <a href = "#typedef:<PZ>compare_fn">&lt;PZ&gt;compare_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PCG>box">&lt;PCG&gt;box</a>, <a href = "#typedef:<PCG>type">&lt;PCG&gt;type</a>, <a href = "#typedef:<PCG>action_fn">&lt;PCG&gt;action_fn</a>, <a href = "#typedef:<PCG>predicate_fn">&lt;PCG&gt;predicate_fn</a>, <a href = "#typedef:<PA>action_fn">&lt;PA&gt;action_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PCM>box">&lt;PCM&gt;box</a>, <a href = "#typedef:<PCM>type">&lt;PCM&gt;type</a>, <a href = "#typedef:<PCM>bipredicate_fn">&lt;PCM&gt;bipredicate_fn</a>, <a href = "#typedef:<PCM>biaction_fn">&lt;PCM&gt;biaction_fn</a>, <a href = "#typedef:<PCM>compare_fn">&lt;PCM&gt;compare_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<A>array">&lt;A&gt;array</a>, <a href = "#tag:<PA>iterator">&lt;PA&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -48,7 +48,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of array." src = "web/array.png" width = 310 height = 262></p>
+<p><img alt = "Example of array." src = "web/array.png" width = 428 height = 372></p>
 
 <p><a href = "#tag:&lt;A&gt;array">&lt;A&gt;array</a> is a dynamic array that stores contiguous <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>. Resizing may be necessary when increasing the size of the array; this incurs amortised cost, and any pointers to this memory may become stale.</p>
 
@@ -57,16 +57,18 @@
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
 	<dd><code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type, <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>, associated therewith; required. <code>&lt;PA&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dt>Parameter: ARRAY_MIN_CAPACITY</dt>
+	<dd>Default is 3; optional number in <code>[2, SIZE_MAX]</code> that the capacity can not go below.</dd>
 	<dt>Parameter: ARRAY_CONTIGUOUS</dt>
 	<dd>Include Contiguous trait contained in <a href = "contiguous.h">contiguous.h</a>.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
-	<dd>Optional function implementing <a href = "#typedef:&lt;PZ&gt;action_fn">&lt;PZ&gt;action_fn</a> that fills the <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a> from uninitialized to random for unit testing framework using <code>assert</code>. Testing array contained in <a href = "../test/test_array.h">../test/test_array.h</a>. Must have any To String trait.</dd>
+	<dd>Optional function implementing <a href = "#typedef:&lt;PA&gt;action_fn">&lt;PA&gt;action_fn</a> that fills the <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a> from uninitialized to random for unit testing framework using <code>assert</code>. Testing array contained in <a href = "../test/test_array.h">../test/test_array.h</a>. Must have any To String trait included after all the tests.</dd>
 	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL</dt>
-	<dd>Compare trait contained in <a href = "compare.h">compare.h</a>. An optional mangled name for uniqueness and a function implementing <a href = "#typedef:&lt;PZ&gt;compare_fn">&lt;PZ&gt;compare_fn</a> xor <a href = "#typedef:&lt;PZ&gt;bipredicate_fn">&lt;PZ&gt;bipredicate_fn</a>.</dd>
+	<dd>Compare trait contained in <a href = "compare.h">compare.h</a>. An optional mangled name for uniqueness and a function implementing <a href = "#typedef:&lt;PCM&gt;compare_fn">&lt;PCM&gt;compare_fn</a> xor <a href = "#typedef:&lt;PCM&gt;bipredicate_fn">&lt;PCM&gt;bipredicate_fn</a>.</dd>
 	<dt>Parameter: ARRAY_TO_STRING_NAME, ARRAY_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PZ&gt;to_string_fn">&lt;PZ&gt;to_string_fn</a>.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 </dl>
@@ -85,29 +87,59 @@
 
 <div>
 
-<h3><a id = "typedef:<PZ>action_fn" name = "typedef:<PZ>action_fn">&lt;PZ&gt;action_fn</a></h3>
+<h3><a id = "typedef:<PCG>box" name = "typedef:<PCG>box">&lt;PCG&gt;box</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PZ&gt;action_fn</strong>)(&lt;PZ&gt;type *);</code></p>
+<p><code>typedef BOX_CONTAINER <strong>&lt;PCG&gt;box</strong>;</code></p>
 
-<p>Operates by side-effects on <a href = "#typedef:&lt;PZ&gt;type">&lt;PZ&gt;type</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PZ>predicate_fn" name = "typedef:<PZ>predicate_fn">&lt;PZ&gt;predicate_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PZ&gt;predicate_fn</strong>)(const &lt;PZ&gt;type *);</code></p>
-
-<p>Returns a boolean given read-only <a href = "#typedef:&lt;PZ&gt;type">&lt;PZ&gt;type</a>.</p>
+<p>In <a href = "contiguous.h">contiguous.h</a>, an alias to the box.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PZ>to_string_fn" name = "typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></h3>
+<h3><a id = "typedef:<PCG>type" name = "typedef:<PCG>type">&lt;PCG&gt;type</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef BOX_CONTENTS <strong>&lt;PCG&gt;type</strong>;</code></p>
+
+<p>In <a href = "contiguous.h">contiguous.h</a>, an alias to the individual type contained in the box.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PCG>action_fn" name = "typedef:<PCG>action_fn">&lt;PCG&gt;action_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PCG&gt;action_fn</strong>)(&lt;PCG&gt;type *);</code></p>
+
+<p>Operates by side-effects on <a href = "#typedef:&lt;PCG&gt;type">&lt;PCG&gt;type</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PCG>predicate_fn" name = "typedef:<PCG>predicate_fn">&lt;PCG&gt;predicate_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PCG&gt;predicate_fn</strong>)(const &lt;PCG&gt;type *);</code></p>
+
+<p>Returns a boolean given read-only <a href = "#typedef:&lt;PCG&gt;type">&lt;PCG&gt;type</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PA>action_fn" name = "typedef:<PA>action_fn">&lt;PA&gt;action_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PA&gt;action_fn</strong>)(&lt;PA&gt;type *);</code></p>
+
+<p>Included in <code>ARRAY_TEST</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
 
 <p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
 
@@ -115,29 +147,49 @@
 
 <div>
 
-<h3><a id = "typedef:<PZ>bipredicate_fn" name = "typedef:<PZ>bipredicate_fn">&lt;PZ&gt;bipredicate_fn</a></h3>
+<h3><a id = "typedef:<PCM>box" name = "typedef:<PCM>box">&lt;PCM&gt;box</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PZ&gt;bipredicate_fn</strong>)(const &lt;PZ&gt;type *, const &lt;PZ&gt;type *);</code></p>
+<p><code>typedef BOX_CONTAINER <strong>&lt;PCM&gt;box</strong>;</code></p>
 
-<p>Returns a boolean given two read-only <a href = "#typedef:&lt;PZ&gt;type">&lt;PZ&gt;type</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PZ>biaction_fn" name = "typedef:<PZ>biaction_fn">&lt;PZ&gt;biaction_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PZ&gt;biaction_fn</strong>)(&lt;PZ&gt;type *, &lt;PZ&gt;type *);</code></p>
-
-<p>Returns a boolean given two <a href = "#typedef:&lt;PZ&gt;type">&lt;PZ&gt;type</a>.</p>
+<p>In <a href = "compare.h">compare.h</a>, an alias to the box.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PZ>compare_fn" name = "typedef:<PZ>compare_fn">&lt;PZ&gt;compare_fn</a></h3>
+<h3><a id = "typedef:<PCM>type" name = "typedef:<PCM>type">&lt;PCM&gt;type</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PZ&gt;compare_fn</strong>)(const &lt;PZ&gt;type *a, const &lt;PZ&gt;type *b);</code></p>
+<p><code>typedef BOX_CONTENTS <strong>&lt;PCM&gt;type</strong>;</code></p>
+
+<p>In <a href = "compare.h">compare.h</a>, an alias to the individual type contained in the box.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PCM>bipredicate_fn" name = "typedef:<PCM>bipredicate_fn">&lt;PCM&gt;bipredicate_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PCM&gt;bipredicate_fn</strong>)(const &lt;PCM&gt;type *, const &lt;PCM&gt;type *);</code></p>
+
+<p>In <a href = "compare.h">compare.h</a>, returns a boolean given two read-only <a href = "#typedef:&lt;PCM&gt;type">&lt;PCM&gt;type</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PCM>biaction_fn" name = "typedef:<PCM>biaction_fn">&lt;PCM&gt;biaction_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PCM&gt;biaction_fn</strong>)(&lt;PCM&gt;type *, &lt;PCM&gt;type *);</code></p>
+
+<p>In <a href = "compare.h">compare.h</a>, returns a boolean given two <a href = "#typedef:&lt;PCM&gt;type">&lt;PCM&gt;type</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PCM>compare_fn" name = "typedef:<PCM>compare_fn">&lt;PCM&gt;compare_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PCM&gt;compare_fn</strong>)(const &lt;PCM&gt;type *a, const &lt;PCM&gt;type *b);</code></p>
 
 <p>Three-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
@@ -149,7 +201,7 @@
 
 <h3><a id = "tag:<A>array" name = "tag:<A>array">&lt;A&gt;array</a></h3>
 
-<p><code>struct <strong>&lt;A&gt;array</strong>;</code></p>
+<p><code>struct <strong>&lt;A&gt;array</strong> { &lt;PA&gt;type *data; size_t size, capacity; };</code></p>
 
 <p>Manages the array field <code>data</code> which has <code>size</code> elements. The space is indexed up to <code>capacity</code>, which is at least <code>size</code>. To initialize it to an idle state, see <a href = "#fn:&lt;A&gt;array">&lt;A&gt;array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
@@ -199,39 +251,39 @@
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_pop">&lt;A&gt;array_pop</a></td><td>a</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<Z>clip">&lt;Z&gt;clip</a></td><td>box, i</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#fn:<CG>clip">&lt;CG&gt;clip</a></td><td>box, i</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<Z>copy_if">&lt;Z&gt;copy_if</a></td><td>a, copy, b</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<CG>copy_if">&lt;CG&gt;copy_if</a></td><td>a, copy, b</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>keep_if">&lt;Z&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CG>keep_if">&lt;CG&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>trim">&lt;Z&gt;trim</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CG>trim">&lt;CG&gt;trim</a></td><td>box, predicate</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>each">&lt;Z&gt;each</a></td><td>box, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CG>each">&lt;CG&gt;each</a></td><td>box, action</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>if_each">&lt;Z&gt;if_each</a></td><td>box, predicate, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CG>if_each">&lt;CG&gt;if_each</a></td><td>box, predicate, action</td></tr>
 
-<tr><td align = right>static const &lt;PZ&gt;type *</td><td><a href = "#fn:<Z>any">&lt;Z&gt;any</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static const &lt;PCG&gt;type *</td><td><a href = "#fn:<CG>any">&lt;CG&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<A>array_test">&lt;A&gt;array_test</a></td><td></td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<T>array<C>comparable_test">&lt;T&gt;array&lt;C&gt;comparable_test</a></td><td></td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CM>compare_test">&lt;CM&gt;compare_test</a></td><td></td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<Z>to_string">&lt;Z&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<Z>compare">&lt;Z&gt;compare</a></td><td>a, b</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<CM>compare">&lt;CM&gt;compare</a></td><td>a, b</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<Z>lower_bound">&lt;Z&gt;lower_bound</a></td><td>a, value</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#fn:<CM>lower_bound">&lt;CM&gt;lower_bound</a></td><td>a, value</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<Z>upper_bound">&lt;Z&gt;upper_bound</a></td><td>a, value</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#fn:<CM>upper_bound">&lt;CM&gt;upper_bound</a></td><td>a, value</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>sort">&lt;Z&gt;sort</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CM>sort">&lt;CM&gt;sort</a></td><td>a</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>reverse">&lt;Z&gt;reverse</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CM>reverse">&lt;CM&gt;reverse</a></td><td>a</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>unique_merge">&lt;Z&gt;unique_merge</a></td><td>a, merge</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CM>unique_merge">&lt;CM&gt;unique_merge</a></td><td>a, merge</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<Z>unique">&lt;Z&gt;unique</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<CM>unique">&lt;CM&gt;unique</a></td><td>a</td></tr>
 
 </table>
 
@@ -429,9 +481,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>clip" name = "fn:<Z>clip">&lt;Z&gt;clip</a></h3>
+<h3><a id = "fn:<CG>clip" name = "fn:<CG>clip">&lt;CG&gt;clip</a></h3>
 
-<p><code>static size_t <strong>&lt;Z&gt;clip</strong>(const &lt;PZ&gt;box *const <em>box</em>, const long <em>i</em>)</code></p>
+<p><code>static size_t <strong>&lt;CG&gt;clip</strong>(const &lt;PCG&gt;box *const <em>box</em>, const long <em>i</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -444,9 +496,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>copy_if" name = "fn:<Z>copy_if">&lt;Z&gt;copy_if</a></h3>
+<h3><a id = "fn:<CG>copy_if" name = "fn:<CG>copy_if">&lt;CG&gt;copy_if</a></h3>
 
-<p><code>static int <strong>&lt;Z&gt;copy_if</strong>(&lt;PZ&gt;box *const <em>a</em>, const &lt;PZ&gt;predicate_fn <em>copy</em>, const &lt;PZ&gt;box *const <em>b</em>)</code></p>
+<p><code>static int <strong>&lt;CG&gt;copy_if</strong>(&lt;PCG&gt;box *const <em>a</em>, const &lt;PCG&gt;predicate_fn <em>copy</em>, const &lt;PCG&gt;box *const <em>b</em>)</code></p>
 
 <p>For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
 
@@ -460,9 +512,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>keep_if" name = "fn:<Z>keep_if">&lt;Z&gt;keep_if</a></h3>
+<h3><a id = "fn:<CG>keep_if" name = "fn:<CG>keep_if">&lt;CG&gt;keep_if</a></h3>
 
-<p><code>static void <strong>&lt;Z&gt;keep_if</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>keep</em>, const &lt;PZ&gt;action_fn <em>destruct</em>)</code></p>
+<p><code>static void <strong>&lt;CG&gt;keep_if</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>keep</em>, const &lt;PCG&gt;action_fn <em>destruct</em>)</code></p>
 
 <p>For all elements of <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> if not-null.</p>
 
@@ -475,9 +527,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>trim" name = "fn:<Z>trim">&lt;Z&gt;trim</a></h3>
+<h3><a id = "fn:<CG>trim" name = "fn:<CG>trim">&lt;CG&gt;trim</a></h3>
 
-<p><code>static void <strong>&lt;Z&gt;trim</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static void <strong>&lt;CG&gt;trim</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p>Removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
 
@@ -490,9 +542,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>each" name = "fn:<Z>each">&lt;Z&gt;each</a></h3>
+<h3><a id = "fn:<CG>each" name = "fn:<CG>each">&lt;CG&gt;each</a></h3>
 
-<p><code>static void <strong>&lt;Z&gt;each</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;action_fn <em>action</em>)</code></p>
+<p><code>static void <strong>&lt;CG&gt;each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code></p>
 
 <p>Iterates through <code>box</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
 
@@ -505,9 +557,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>if_each" name = "fn:<Z>if_each">&lt;Z&gt;if_each</a></h3>
+<h3><a id = "fn:<CG>if_each" name = "fn:<CG>if_each">&lt;CG&gt;if_each</a></h3>
 
-<p><code>static void <strong>&lt;Z&gt;if_each</strong>(&lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>, const &lt;PZ&gt;action_fn <em>action</em>)</code></p>
+<p><code>static void <strong>&lt;CG&gt;if_each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code></p>
 
 <p>Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
 
@@ -520,9 +572,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>any" name = "fn:<Z>any">&lt;Z&gt;any</a></h3>
+<h3><a id = "fn:<CG>any" name = "fn:<CG>any">&lt;CG&gt;any</a></h3>
 
-<p><code>static const &lt;PZ&gt;type *<strong>&lt;Z&gt;any</strong>(const &lt;PZ&gt;box *const <em>box</em>, const &lt;PZ&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static const &lt;PCG&gt;type *<strong>&lt;CG&gt;any</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p>Requires iterate interface. Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
 
@@ -547,9 +599,9 @@
 
 <div>
 
-<h3><a id = "fn:<T>array<C>comparable_test" name = "fn:<T>array<C>comparable_test">&lt;T&gt;array&lt;C&gt;comparable_test</a></h3>
+<h3><a id = "fn:<CM>compare_test" name = "fn:<CM>compare_test">&lt;CM&gt;compare_test</a></h3>
 
-<p><code>static void <strong>&lt;T&gt;array&lt;C&gt;comparable_test</strong>(void)</code></p>
+<p><code>static void <strong>&lt;CM&gt;compare_test</strong>(void)</code></p>
 
 <p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
 
@@ -557,9 +609,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>to_string" name = "fn:<Z>to_string">&lt;Z&gt;to_string</a></h3>
+<h3><a id = "fn:<SZ>to_string" name = "fn:<SZ>to_string">&lt;SZ&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code></p>
+<p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -572,9 +624,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>compare" name = "fn:<Z>compare">&lt;Z&gt;compare</a></h3>
+<h3><a id = "fn:<CM>compare" name = "fn:<CM>compare">&lt;CM&gt;compare</a></h3>
 
-<p><code>static int <strong>&lt;Z&gt;compare</strong>(const &lt;PZ&gt;box *const <em>a</em>, const &lt;PZ&gt;box *const <em>b</em>)</code></p>
+<p><code>static int <strong>&lt;CM&gt;compare</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code></p>
 
 <p>Lexicographically compares <code>a</code> to <code>b</code>. Null values are before everything.</p>
 
@@ -589,9 +641,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>lower_bound" name = "fn:<Z>lower_bound">&lt;Z&gt;lower_bound</a></h3>
+<h3><a id = "fn:<CM>lower_bound" name = "fn:<CM>lower_bound">&lt;CM&gt;lower_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;Z&gt;lower_bound</strong>(const &lt;PZ&gt;box *const <em>a</em>, const &lt;PA&gt;type *const <em>value</em>)</code></p>
+<p><code>static size_t <strong>&lt;CM&gt;lower_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code></p>
 
 <p><code>a</code> should be partitioned true/false with less-then <code>value</code>.</p>
 
@@ -606,9 +658,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>upper_bound" name = "fn:<Z>upper_bound">&lt;Z&gt;upper_bound</a></h3>
+<h3><a id = "fn:<CM>upper_bound" name = "fn:<CM>upper_bound">&lt;CM&gt;upper_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;Z&gt;upper_bound</strong>(const &lt;PZ&gt;box *const <em>a</em>, const &lt;PA&gt;type *const <em>value</em>)</code></p>
+<p><code>static size_t <strong>&lt;CM&gt;upper_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code></p>
 
 <p><code>a</code> should be partitioned false/true with greater-than or equals <code>value</code>.</p>
 
@@ -623,9 +675,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>sort" name = "fn:<Z>sort">&lt;Z&gt;sort</a></h3>
+<h3><a id = "fn:<CM>sort" name = "fn:<CM>sort">&lt;CM&gt;sort</a></h3>
 
-<p><code>static void <strong>&lt;Z&gt;sort</strong>(&lt;PZ&gt;box *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;CM&gt;sort</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
 <p>Sorts <code>a</code> by <code>qsort</code> on <code>ARRAY_COMPARE</code>.</p>
 
@@ -638,9 +690,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>reverse" name = "fn:<Z>reverse">&lt;Z&gt;reverse</a></h3>
+<h3><a id = "fn:<CM>reverse" name = "fn:<CM>reverse">&lt;CM&gt;reverse</a></h3>
 
-<p><code>static void <strong>&lt;Z&gt;reverse</strong>(&lt;PZ&gt;box *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;CM&gt;reverse</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
 <p>Sorts <code>a</code> in reverse by <code>qsort</code> on <code>ARRAY_COMPARE</code>.</p>
 
@@ -653,9 +705,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>unique_merge" name = "fn:<Z>unique_merge">&lt;Z&gt;unique_merge</a></h3>
+<h3><a id = "fn:<CM>unique_merge" name = "fn:<CM>unique_merge">&lt;CM&gt;unique_merge</a></h3>
 
-<p><code>static void <strong>&lt;Z&gt;unique_merge</strong>(&lt;PZ&gt;box *const <em>a</em>, const &lt;PZ&gt;biaction_fn <em>merge</em>)</code></p>
+<p><code>static void <strong>&lt;CM&gt;unique_merge</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;biaction_fn <em>merge</em>)</code></p>
 
 <p>Removes consecutive duplicate elements in <code>a</code>.</p>
 
@@ -670,9 +722,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>unique" name = "fn:<Z>unique">&lt;Z&gt;unique</a></h3>
+<h3><a id = "fn:<CM>unique" name = "fn:<CM>unique">&lt;CM&gt;unique</a></h3>
 
-<p><code>static void <strong>&lt;Z&gt;unique</strong>(&lt;PZ&gt;box *const <em>a</em>)</code></p>
+<p><code>static void <strong>&lt;CM&gt;unique</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
 <p>Removes consecutive duplicate elements in <code>a</code>.</p>
 

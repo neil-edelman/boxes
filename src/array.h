@@ -22,7 +22,7 @@
  Include Contiguous trait contained in <contiguous.h>.
 
  @param[ARRAY_TEST]
- Optional function implementing <typedef:<PZ>action_fn> that fills the
+ Optional function implementing <typedef:<PA>action_fn> that fills the
  <typedef:<PA>type> from uninitialized to random for unit testing framework
  using `assert`. Testing array contained in <../test/test_array.h>. Must have
  any To String trait included after all the tests.
@@ -33,12 +33,12 @@
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <compare.h>. An optional mangled name for
- uniqueness and a function implementing <typedef:<PZ>compare_fn> xor
- <typedef:<PZ>bipredicate_fn>.
+ uniqueness and a function implementing <typedef:<PCM>compare_fn> xor
+ <typedef:<PCM>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PZ>to_string_fn>.
+ uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
 
  @std C89 */
 

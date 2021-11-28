@@ -6,8 +6,12 @@
 
 #if ARRAY_TRAITS == 0 /* <!-- !traits */
 
-/* `ARRAY_TEST` must be a function that implements <typedef:<PA>action_fn>. */
-static void (*PA_(filler))(PA_(type) *) = (ARRAY_TEST);
+/** Included in `ARRAY_TEST`. */
+typedef void (*PA_(action_fn))(PA_(type) *);
+
+/** `ARRAY_TEST` takes in an uninitialized <typedef:<PA>type> and makes up a
+ valid object for testing. */
+static PA_(action_fn) PA_(filler) = (ARRAY_TEST);
 
 /** @return Is `a` in a valid state? */
 static void PA_(valid_state)(const struct A_(array) *const a) {
@@ -28,6 +32,7 @@ static void PA_(graph)(const struct A_(array) *const ar, const char *const fn) {
 	assert(ar && fn && !errno);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); errno = 0; return; }
 	fprintf(fp, "digraph {\n"
+		"\trankdir=LR;\n"
 		"\tfontface=modern;"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
 		"\tarray [label=<\n"
