@@ -19,11 +19,36 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 	<td></td>
 </tr><tr>
 	<td>https://github.com/neil-edelman/bmp</td>
+	<td></td>
+	<td></td>
+</tr><tr>
+	<td>https://github.com/neil-edelman/heap</td>
 	<td>to_string</td>
 	<td>array</td>
 </tr><tr>
-	<td>https://github.com/neil-edelman/heap</td>
-	<td></td>
+<td>https://github.com/neil-edelman/heap</td>
+	<td>to_string</td>
+   <td>array</td>
+</tr><tr>
+<td>https://github.com/neil-edelman/list</td>
+   <td>to_string</td>
+   <td></td>
+</tr><tr>
+<td>https://github.com/neil-edelman/orcish</td>
+   <td></td>
+   <td></td>
+</tr><tr>
+<td>https://github.com/neil-edelman/pool</td>
+   <td>to_string</td>
+   <td>array, heap</td>
+</tr><tr>
+<td>https://github.com/neil-edelman/set</td>
+   <td>to_string, compare?</td>
+   <td></td>
+</tr><tr>
+<td>https://github.com/neil-edelman/trie</td>
+   <td>to_string, compare?</td>
+   <td>array?</td>
 </tr></table>
 
 ## Why boxes? ##
