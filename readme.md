@@ -15,11 +15,12 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 	<th>required dependancies</th>
 </tr><tr>
 	<td>https://github.com/neil-edelman/array</td>
-	<td>compare, contiguous, to string</td>
+	<td>compare, contiguous, to_string</td>
 	<td></td>
 </tr><tr>
 	<td>https://github.com/neil-edelman/bmp</td>
-	<td></td>
+	<td>to_string</td>
+	<td>array</td>
 </tr><tr>
 	<td>https://github.com/neil-edelman/heap</td>
 	<td></td>
