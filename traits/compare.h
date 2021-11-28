@@ -13,9 +13,9 @@
  @param[FUNCTION_COMPARABLE_NAME, FUNCTION_IS_EQUAL, FUNCTION_COMPARE]
  Optional unique name `<Z>` that satisfies `C` naming conventions when mangled,
  and a function implementing, for `FUNCTION_IS_EQUAL`
- <typedef:<PZ>bipredicate_fn> that establishes an equivalence relation, or for
- `FUNCTION_COMPARE` <typedef:<PZ>compare_fn> that establishes a total order.
- There can be multiple comparable functions, but only one can omit
+ <typedef:<PCM_>bipredicate_fn> that establishes an equivalence relation, or
+ for `FUNCTION_COMPARE` <typedef:<PCM_>compare_fn> that establishes a total
+ order. There can be multiple comparable functions, but only one can omit
  `FUNCTION_COMPARABLE_NAME`.
 
  @std C89 */
@@ -36,13 +36,17 @@
 #define PCM_(n) COMPARE_CAT(compare, CM_(n))
 #endif /* idempotent --> */
 
+/** In <compare.h>, an alias to the box. */
 typedef BOX_CONTAINER PCM_(box);
+
+/** In <compare.h>, an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PCM_(type);
 
-/** Returns a boolean given two read-only <typedef:<PZ>type>. */
+/** In <compare.h>, returns a boolean given two read-only
+ <typedef:<PCM>type>. */
 typedef int (*PCM_(bipredicate_fn))(const PCM_(type) *, const PCM_(type) *);
 
-/** Returns a boolean given two <typedef:<PZ>type>. */
+/** In <compare.h>, returns a boolean given two <typedef:<PCM>type>. */
 typedef int (*PCM_(biaction_fn))(PCM_(type) *, PCM_(type) *);
 
 #ifdef ARRAY_COMPARE /* <!-- compare */
@@ -53,7 +57,7 @@ typedef int (*PCM_(biaction_fn))(PCM_(type) *, PCM_(type) *);
 typedef int (*PCM_(compare_fn))(const PCM_(type) *a, const PCM_(type) *b);
 
 /* Check that `ARRAY_COMPARE` is a function implementing
- <typedef:<PZ>compare_fn>. */
+ <typedef:<PCM_>compare_fn>. */
 static const PCM_(compare_fn) PCM_(compare) = (ARRAY_COMPARE);
 
 /** Lexicographically compares `a` to `b`. Null values are before everything.
@@ -139,15 +143,15 @@ static void CM_(reverse)(PCM_(box) *const a)
 	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PCM_(vrevers)); }
 
 /** !compare(`a`, `b`) == equals(`a`, `b`) for not `ARRAY_IS_EQUAL`.
- @implements <typedef:<PZ>bipredicate_fn> */
+ @implements <typedef:<PCM>bipredicate_fn> */
 static int PCM_(is_equal)(const PCM_(type) *const a, const PCM_(type) *const b)
 	{ return !PCM_(compare)(a, b); }
 
 #else /* compare --><!-- is equal */
 
 /* Check that `ARRAY_IS_EQUAL` is a function implementing
- <typedef:<PZ>bipredicate_fn>. */
-static const PZ_(bipredicate_fn) PZ_(is_equal) = (ARRAY_IS_EQUAL);
+ <typedef:<PCM>bipredicate_fn>. */
+static const PCM__(bipredicate_fn) PCM__(is_equal) = (ARRAY_IS_EQUAL);
 
 #endif /* is equal --> */
 
