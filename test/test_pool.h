@@ -18,8 +18,6 @@ static const PP_(action_fn) PP_(filler) = (POOL_TEST);
 /** Tries to graphs `pool` output to `fn`. */
 static void PP_(graph)(const struct P_(pool) *const pool,
 	const char *const fn) {
-	/* "lightgray" "firebrick" "lightsteelblue"
-	 "darkseagreen" "darkseagreen4" */
 	FILE *fp;
 	char str[12];
 	size_t i, j;
@@ -55,30 +53,30 @@ no_free0:
 		"<FONT FACE=\"Times-Italic\">of</FONT></TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%s slots"
-		"</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\""
-		" PORT=\"slots\">%lu</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%s free0 heap</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" PORT=\"free\">%lu</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">capacity0"
-		"</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
+		"capacity0</TD>\n"
 		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">&#8205;</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
 		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">slots"
+		"</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
+		"\t\t<TD PORT=\"slots\" BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
+		"freeheap0</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t\t<TD PORT=\"free\" BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
+		"%lu</TD>\n"
+		"\t</TR>\n"
 		"</TABLE>>];\n",
-		pool->slots.data ? "active" : "idle",
+		(unsigned long)pool->capacity0,
 		(unsigned long)pool->slots.size,
 		(unsigned long)pool->slots.capacity,
-		pool->free0.a.data ? "active" : "idle",
 		(unsigned long)pool->free0.a.size,
-		(unsigned long)pool->free0.a.capacity, (unsigned long)pool->capacity0);
+		(unsigned long)pool->free0.a.capacity);
 	if(!pool->slots.data) goto no_slots;
 	fprintf(fp, "\tpool:slots -> slots;\n"
 		"\tslots [label = <\n"
