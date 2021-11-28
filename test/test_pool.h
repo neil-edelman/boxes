@@ -47,12 +47,6 @@ no_free0:
 		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(POOL_NAME)
 		"&gt;pool</FONT></TD></TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\">"
-		"<FONT FACE=\"Times-Italic\">status</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\" COLSPAN=\"2\">"
-		"<FONT FACE=\"Times-Italic\">of</FONT></TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
 		"capacity0</TD>\n"
 		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">&#8205;</TD>\n"
