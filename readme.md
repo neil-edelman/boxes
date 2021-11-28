@@ -2,18 +2,23 @@
 
 `boxes` is an automated dependancy and build system for a `C` data structure
 collection using the standard library. The `C89` code that is part of the individual
-projects are separate, independent, fairly standard, and should work on most
-systems and compilers. The build system (this) requires a shell that understands
-`sh`-scripts; it is useful in automated developing.
+projects are separate, independent, and should work on most systems and
+compilers. The build system (this) requires a shell that understands `sh`-scripts
+and `Makefile`; it is useful in automated developing of the code. If one has
+`git` set up, the script `autoclone` downloads them all.
 
-## Interface ##
+## Examples ##
 
-Projects are subdirectories of `boxes` and have separate `git` repositories.
-Each one must have `test` and `src`; the the `src` has `C` file(s) which are
-the same name as the project; this is the one-source-of-truth. `make` creates
-a test in `bin`. Traits are the same for every project and are stored globally
-in `boxes` under `traits`. The script `./autoclone` downloads them all, if
-one has `git` set up.
+<table><tr>
+	<td><https://github.com/neil-edelman/array></td>
+	<td></td>
+</tr><tr>
+	<td><https://github.com/neil-edelman/bmp></td>
+	<td></td>
+</tr><tr>
+	<td><https://github.com/neil-edelman/heap></td>
+	<td></td>
+</tr></table>
 
 ## Why boxes? ##
 
@@ -25,33 +30,42 @@ one has `git` set up.
 
 This is a middle ground. No libraries. Each stand-alone `C89` code. It's like
 rolling your own containers, but all the work of testing and documenting has
-already been done, (mostly, it is ongoing.) Where appropriate, the headers
-require `#define` parameters; see each for usage.
+already been done, (mostly, it is ongoing.) One can pick and choose which
+ones are appropriate for ones project. Where appropriate, the headers require
+`#define` parameters; see each for usage.
+
+## Interface ##
+
+Internal interface is projects are subdirectories of `boxes` and have separate
+`git` repositories. Each one must have `test` and `src`; the the `src` has `C`
+file(s) which are the same name as the project; this is the one-source-of-truth.
+`make` creates a test in `bin`. Traits are the same for every project and are
+stored globally in `boxes` under `traits`.
+
+The interface could change in future versions.
 
 ## Details ##
 
-No effort has been made to synchronize for multi-threaded execution.
+The documented parameters are preprocessor macros defined before
+including the file, and they are generally undefined automatically before
+the box is complete for convenience. See each project's `test` section
+for examples.
+
+Since `C` doesn't have interfaces, one can include anonymous and
+named traits with the `EXPECT_TRAIT`. This returns in a state of
+incompletion until one includes it again.
 
 Assertions are used to ensure data integrity at runtime; to stop them,
-define `#define NDEBUG` before `assert.h`, included in the files, (see
-`man assert`.)
+define `#define NDEBUG` before `assert.h`, included in the files.
 
 Errors are returned with the standard `errno`: `EDOM`, `ERANGE`, `EISEQ`
 (1994 Amendment 1 to `C90`); standard library functions provide their own
 values, which are passed on.
 
-The source files are `UTF-8`. Some terminals don't have this as a default
-(_eg_ `code::blocks`.)
+The source files are `UTF-8` and may contain multi-byte literals. Some
+terminals don't have this as a default.
 
-The documented parameters are preprocessor macros defined before
-including the file, and they are generally undefined automatically before
-the box is complete for convenience. (Except one can include traits by
-including the expect trait define and re-including.) See each project's
-`test` section for examples.
-
-There are optional shared files in `traits`. Some boxes support different
-named traits with the `EXPECT_TRAIT`, include the header, and continue
-defining a trait, and then include the header again.
+No effort has been made to synchronize for multi-threaded execution.
 
 ## License ##
 
@@ -60,12 +74,8 @@ defining a trait, and then include the header again.
 
 ## Todo ##
 
- `PERL` if one wants endless parentheses. `-Weverything` but without
- _eg_ `-Wno-comma`, `-Wno-logical-op-parentheses`,
- `-Wno-parentheses`, `-Wno-shift-op-parentheses`.
-
-TEST depends on RAND, but should probably be different for timing.
-
-Add support for custom allocators. Shouldn't #define malloc(n) cust(n)?
-
-Support multithreading where appropriate.
+Compiling with all warnings turned on in some compilers is an endless race
+with the `lint`-like warnings. Most of them are super-useful, but some are
+not. You may have issues with, for example, `_CRT_SECURE_NO_WARNINGS`,
+`-Wno-comma`, `-Wno-logical-op-parentheses`, `-Wno-parentheses`,
+`-Wno-shift-op-parentheses`.
