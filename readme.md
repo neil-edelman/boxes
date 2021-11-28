@@ -12,8 +12,10 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 <table><tr>
 	<th>link</th>
 	<th>possible traits</th>
+	<th>required dependancies</th>
 </tr><tr>
 	<td>https://github.com/neil-edelman/array</td>
+	<td>compare, contiguous, to string</td>
 	<td></td>
 </tr><tr>
 	<td>https://github.com/neil-edelman/bmp</td>
