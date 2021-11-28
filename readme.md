@@ -16,7 +16,7 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 	<td>compare, contiguous, to_string</td>
 	<td></td>
 </tr><tr>
-	<td><a href = "https://github.com/neil-edelman/bmp>bmp</a></td>
+	<td><a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
 	<td></td>
 	<td></td>
 </tr><tr>
