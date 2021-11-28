@@ -328,7 +328,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
-/* @fixme ARRAY_COMPARE might come after, so we need another variable; sigh.
+/* ARRAY_COMPARE might come after, so we need another variable; sigh.
  Just define ARRAY_TO_STRING after any ARRAY_COMPARE or ARRAY_IS_EQUAL if one
  is going to automatically test. This is confusing, but internal. */
 #ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */

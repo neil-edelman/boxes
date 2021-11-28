@@ -509,7 +509,7 @@ static void PCM_(test_bounds)(void) {
 	assert(high <= a.size);
 	assert(!high || PCM_(compare)(a.data + high - 1, &elem) <= 0);
 	assert(high == a.size || PCM_(compare)(&elem, a.data + high) < 0);
-	t = CM_(insert)(&a, &elem);
+	t = CM_(insert_after)(&a, &elem);
 	printf("insert: %s.\n", PA_(array_to_string)(&a));
 	assert(t && a.size == size + 1);
 	t = memcmp(&elem, a.data + low, sizeof elem);

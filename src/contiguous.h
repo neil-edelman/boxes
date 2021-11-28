@@ -121,7 +121,7 @@ static void CG_(keep_if)(PCG_(box) *const box,
 }
 
 /** Removes at either end of `box` of things that `predicate` returns true.
- @order \O(`box.size` \times `predicate`) @allow @fixme */
+ @order \O(`box.size` \times `predicate`) @allow */
 static void CG_(trim)(PCG_(box) *const box,
 	const PCG_(predicate_fn) predicate) {
 	size_t i;

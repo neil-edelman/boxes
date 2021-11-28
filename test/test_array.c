@@ -1,4 +1,4 @@
-/** Unit test of array.h. @author Neil @std C89/90 */
+/** Test of array.h. @author Neil @std C89/90 */
 
 #include <stdlib.h> /* EXIT_ */
 #include <stdio.h>  /* s?printf */
@@ -31,6 +31,7 @@ static void colour_filler(enum colour *const c)
 #include "../src/array.h"
 #define ARRAY_TO_STRING &colour_to_string
 #include "../src/array.h"
+
 
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
@@ -109,8 +110,8 @@ int main(void) {
 	int_array_test();
 	int_array_compare_test();
 	keyval_array_test();
-	/*keyval_array_comparable_test();
-	keyval_array_value_comparable_test();*/
+	keyval_array_compare_test();
+	keyval_array_value_compare_test();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
