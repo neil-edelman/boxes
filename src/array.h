@@ -328,6 +328,9 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
+/* @fixme ARRAY_COMPARE might come after, so we need another variable; sigh.
+ Just define ARRAY_TO_STRING after any ARRAY_COMPARE or ARRAY_IS_EQUAL if one
+ is going to automatically test. This is confusing, but internal. */
 #ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef ARRAY_TEST
 static PSZ_(to_string_fn) PA_(to_string) = PSZ_(to_string);
@@ -355,7 +358,10 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #define BOX_IS_EQUAL ARRAY_IS_EQUAL
 #endif /* eq --> */
 #include "compare.h" /** \include */
-
+#ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
+#include "../test/test_array.h"
+#endif /* test --> */
+#undef CM_
 #ifdef ARRAY_COMPARE_NAME
 #undef ARRAY_COMPARE_NAME
 #endif

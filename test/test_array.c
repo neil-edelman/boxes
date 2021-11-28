@@ -60,6 +60,7 @@ static int int_cmp(const int *const a, const int *const b)
 #define ARRAY_COMPARE &int_cmp
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
+/* Always include to string last, as it undefines ARRAY_TEST. */
 #define ARRAY_TO_STRING &int_to_string
 #include "../src/array.h"
 
@@ -82,18 +83,18 @@ static int keyval_value_cmp(const struct keyval *const a,
 #define ARRAY_TEST &keyval_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
-#define ARRAY_TO_STRING &keyval_key_to_string
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_TO_STRING_NAME value
-#define ARRAY_TO_STRING &keyval_value_to_string
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
 #define ARRAY_COMPARE &keyval_key_cmp
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
 #define ARRAY_COMPARE_NAME value
 #define ARRAY_COMPARE &keyval_value_cmp
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
+#define ARRAY_TO_STRING &keyval_key_to_string
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
+#define ARRAY_TO_STRING_NAME value
+#define ARRAY_TO_STRING &keyval_value_to_string
 #include "../src/array.h"
 
 
@@ -106,8 +107,7 @@ int main(void) {
 	colour_array_test();
 	str4_array_test();
 	int_array_test();
-	/* fixme
-	int_array_comparable_test();*/
+	int_array_compare_test();
 	keyval_array_test();
 	/*keyval_array_comparable_test();
 	keyval_array_value_comparable_test();*/

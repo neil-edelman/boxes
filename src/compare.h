@@ -8,7 +8,7 @@
 
  @param[CM_]
  A one-argument macro producing a name that is responsible for the name of the
- functions.
+ functions. The caller is responsible for undefining `CM_`.
 
  @param[FUNCTION_COMPARABLE_NAME, FUNCTION_IS_EQUAL, FUNCTION_COMPARE]
  Optional unique name `<Z>` that satisfies `C` naming conventions when mangled,
@@ -218,4 +218,3 @@ static void PCM_(unused_compare_coda)(void) { PCM_(unused_compare)(); }
 #ifdef BOX_COMPARE_NAME
 #undef BOX_COMPARE_NAME
 #endif
-#undef CM_

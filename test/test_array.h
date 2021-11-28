@@ -4,6 +4,8 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
+#if ARRAY_TRAITS == 0 /* <!-- !traits */
+
 /* `ARRAY_TEST` must be a function that implements <typedef:<PA>action_fn>. */
 static void (*PA_(filler))(PA_(type) *) = (ARRAY_TEST);
 
@@ -434,25 +436,22 @@ static void A_(array_test)(void) {
 }
 
 
-
-#if 0 /* <!-- no */
-
-/*defined(ARRAY_COMPARE) || defined(ARRAY_EQUAL) */
-/* to string --><!-- comparable */
+/* !traits --><!-- compare */
+#elif defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL)
 
 /** Fills `fill` that is not equal to `neq` if possible. */
-static int PTC_(fill_unique)(PA_(type) *const fill,
+static int PCM_(fill_unique)(PA_(type) *const fill,
 	const PA_(type) *const neq) {
 	size_t i;
 	assert(fill);
 	for(i = 0; i < 1000; i++) {
 		PA_(filler)(fill);
-		if(!neq || PTC_(compare)(neq, fill)) return 1;
+		if(!neq || PCM_(compare)(neq, fill)) return 1;
 	}
 	assert(0); return 0;
 }
 
-static void PTC_(test_compactify)(void) {
+static void PCM_(test_compactify)(void) {
 	struct A_(array) a = ARRAY_IDLE;
 	PA_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
@@ -462,30 +461,30 @@ static void PTC_(test_compactify)(void) {
 	/* Get elements. */
 	assert(ts_size % 3 == 0);
 	for(t_prev = 0, t = ts, t1 = t + ts_size; t < t1; t_prev = t, t += 3) {
-		if(!PTC_(fill_unique)(t, t_prev)) { assert(0); return; }
+		if(!PCM_(fill_unique)(t, t_prev)) { assert(0); return; }
 		memcpy(t + 1, t, sizeof *t);
 		memcpy(t + 2, t, sizeof *t);
 	}
 	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("Before: %s.\n", PA_(array_to_string)(&a));
-	T_C_(array, unique)(&a);
+	CM_(unique_merge)(&a, 0);
 	printf("Compactified: %s.\n", PA_(array_to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */
-	T_C_(array, sort)(&a);
+	CM_(sort)(&a);
 	printf("Sorted: %s.\n", PA_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(PTC_(compare)(t, t + 1) <= 0);
-	T_C_(array, reverse)(&a);
+		assert(PCM_(compare)(t, t + 1) <= 0);
+	CM_(reverse)(&a);
 	printf("Reverse: %s.\n", PA_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(PTC_(compare)(t, t + 1) >= 0);
+		assert(PCM_(compare)(t, t + 1) >= 0);
 #endif /* compare --> */
 	A_(array_)(&a);
 }
 
-static void PTC_(test_bounds)(void) {
+static void PCM_(test_bounds)(void) {
 #ifdef ARRAY_COMPARE /* <!-- compare */
 	struct A_(array) a = ARRAY_IDLE;
 	const size_t size = 10;
@@ -497,20 +496,20 @@ static void PTC_(test_bounds)(void) {
 	for(i = 0; i < size; i++) PA_(filler)(a.data + i);
 	PA_(filler)(&elem);
 	printf("bounds: %s\n", PA_(array_to_string)(&a));
-	T_C_(array, sort)(&a);
+	CM_(sort)(&a);
 	printf("sorted: %s.\n", PA_(array_to_string)(&a));
 	PA_(to_string)(&elem, &z), printf("elem: %s\n", z);
-	low = T_C_(array, lower_bound)(&a, &elem);
+	low = CM_(lower_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low <= a.size);
-	assert(!low || PTC_(compare)(a.data + low - 1, &elem) < 0);
-	assert(low == a.size || PTC_(compare)(&elem, a.data + low) <= 0);
-	high = T_C_(array, upper_bound)(&a, &elem);
+	assert(!low || PCM_(compare)(a.data + low - 1, &elem) < 0);
+	assert(low == a.size || PCM_(compare)(&elem, a.data + low) <= 0);
+	high = CM_(upper_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high <= a.size);
-	assert(!high || PTC_(compare)(a.data + high - 1, &elem) <= 0);
-	assert(high == a.size || PTC_(compare)(&elem, a.data + high) < 0);
-	t = T_C_(array, insert)(&a, &elem);
+	assert(!high || PCM_(compare)(a.data + high - 1, &elem) <= 0);
+	assert(high == a.size || PCM_(compare)(&elem, a.data + high) < 0);
+	t = CM_(insert)(&a, &elem);
 	printf("insert: %s.\n", PA_(array_to_string)(&a));
 	assert(t && a.size == size + 1);
 	t = memcmp(&elem, a.data + low, sizeof elem);
@@ -519,10 +518,10 @@ static void PTC_(test_bounds)(void) {
 	A_(array_append)(&a, size);
 	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
 	printf("bounds: %s.\n", PA_(array_to_string)(&a));
-	low = T_C_(array, lower_bound)(&a, &elem);
+	low = CM_(lower_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low == 0);
-	high = T_C_(array, upper_bound)(&a, &elem);
+	high = CM_(upper_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high == a.size);
 	A_(array_)(&a);
@@ -530,7 +529,7 @@ static void PTC_(test_bounds)(void) {
 }
 
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */
-static void PTC_(test_sort)(void) {
+static void PCM_(test_sort)(void) {
 #ifdef ARRAY_COMPARE /* <!-- comp */
 	struct A_(array) as[64], *a;
 	const size_t as_size = sizeof as / sizeof *as;
@@ -546,9 +545,9 @@ static void PTC_(test_sort)(void) {
 		if(!size) continue;
 		assert(x);
 		for(i = 0; i < size; i++) PA_(filler)(a->data + i);
-		T_C_(array, sort)(a);
+		CM_(sort)(a);
 		for(x = a->data; x < x_end - 1; x++)
-			cmp = PTC_(compare)(x, x + 1), assert(cmp <= 0);
+			cmp = PCM_(compare)(x, x + 1), assert(cmp <= 0);
 	}
 	/* Now sort the lists. */
 	qsort(as, as_size, sizeof *as,
@@ -568,30 +567,30 @@ static void PTC_(test_sort)(void) {
 
 /** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
  `NDEBUG` while defining `assert`. @allow */
-static void T_C_(array, comparable_test)(void) {
+static void CM_(compare_test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">array testing <"
 #ifdef ARRAY_ORDER
 		QUOTE(ARRAY_CONTRAST_NAME)
 #else
 		"anonymous"
 #endif
-		"> contrast "
+		"> "
 #ifdef ARRAY_COMPARE
 		"compare <" QUOTE(ARRAY_COMPARE)
 #elif defined(ARRAY_IS_EQUAL)
 		"is equal <" QUOTE(ARRAY_IS_EQUAL)
 #endif
 		">:\n");
-	/*PTC_(test_compactify)();
-	PTC_(test_bounds)();
-	PTC_(test_sort)();*/
+	PCM_(test_compactify)();
+	PCM_(test_bounds)();
+	PCM_(test_sort)();
 	assert(errno == 0);
-	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array contrast.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }
 
-/*#else*/ /* compare --><!-- */
-/*#error Test unsupported option; testing is out-of-sync? */
-/*#endif*/ /* --> */
+
+#else /* compare --><!-- no */
+#error Test should not be here.
 #endif /* no --> */
 
 #undef QUOTE
