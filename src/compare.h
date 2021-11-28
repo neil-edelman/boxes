@@ -109,16 +109,12 @@ static int CM_(insert)(PCM_(box) *const a,
 	const PCM_(type) *const datum) {
 	size_t bound;
 	assert(a && datum);
-	bound = CM_(lower_bound)(a, datum); /* @fixme: shouldn't it be upper? */
-	assert(0);
-#if 0
+	bound = CM_(upper_bound)(a, datum);
 	if(!A_(array_new)(a)) return 0;
 	memmove(a->data + bound + 1, a->data + bound,
 		sizeof *a->data * (a->size - bound - 1));
 	memcpy(a->data + bound, datum, sizeof *datum);
 	return 1;
-#endif
-	return 0;
 }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
