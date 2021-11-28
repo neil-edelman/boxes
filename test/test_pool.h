@@ -45,7 +45,7 @@ no_free0:
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
 		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(POOL_NAME)
-		"&gt;pool</FONT></TD></TR>\n"
+		"&gt;pool: " QUOTE(POOL_TYPE) "</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
 		"capacity0</TD>\n"
