@@ -102,14 +102,13 @@ static size_t CM_(upper_bound)(const PCM_(box) *const a,
 	return low;
 }
 
-/** Copies `datum` at the lower bound of a sorted `a`.
- @return Success. @order \O(`a.size`) @throws[realloc, ERANGE]
- @fixme No, have it insert `n` from the buffer space. */
-static int CM_(insert)(PCM_(box) *const a,
+/** Copies `datum` at the upper bound of a sorted `a`.
+ @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] */
+static int CM_(insert_after)(PCM_(box) *const a,
 	const PCM_(type) *const datum) {
 	size_t bound;
 	assert(a && datum);
-	bound = CM_(lower_bound)(a, datum); /* @fixme: shouldn't it be upper? */
+	bound = CM_(upper_bound)(a, datum);
 	assert(0);
 #if 0
 	if(!A_(array_new)(a)) return 0;
@@ -203,7 +202,7 @@ static void PCM_(unused_compare_coda)(void);
 static void PCM_(unused_compare)(void) {
 #ifdef ARRAY_COMPARE /* <!-- compare */
 	CM_(compare)(0, 0); CM_(lower_bound)(0, 0); CM_(upper_bound)(0, 0);
-	CM_(insert)(0, 0); CM_(sort)(0); CM_(reverse)(0);
+	CM_(insert_after)(0, 0); CM_(sort)(0); CM_(reverse)(0);
 #endif /* compare --> */
 	CM_(is_equal)(0, 0); CM_(unique_merge)(0, 0); CM_(unique)(0);
 	PCM_(unused_compare_coda)(); }
