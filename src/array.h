@@ -19,7 +19,7 @@
  below.
 
  @param[ARRAY_CONTIGUOUS]
- Include Contiguous trait contained in <contiguous.h>.
+ Include the singleton trait contained in <contiguous.h> that takes no options.
 
  @param[ARRAY_TEST]
  Optional function implementing <typedef:<PA>action_fn> that fills the

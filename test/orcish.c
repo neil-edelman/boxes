@@ -157,7 +157,7 @@ static unsigned rand_callback(unsigned long *const r)
 	{ (void)r; return (unsigned)rand(); }
 
 /** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
- (with a maximum of 255,) then puts a null terminator. Uses `rand` from
+ (with a maximum of 128,) then puts a null terminator. Uses `rand` from
  `stdlib.h`.
  @param[name] A valid pointer to at least `name_size` characters.
  @param[name_size] If zero, does nothing. */

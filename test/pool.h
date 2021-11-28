@@ -31,7 +31,7 @@
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
  To string trait contained in <to_string.h>; `<A>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
+ conventions when mangled and function implementing <typedef:<PSZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`.
 
