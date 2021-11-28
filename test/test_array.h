@@ -16,7 +16,50 @@ static void PA_(valid_state)(const struct A_(array) *const a) {
 	assert(a->size <= a->capacity && a->capacity <= max_size);
 }
 
-#if 0
+/** Draw a graph of `ar` to `fn` in Graphviz format. */
+static void PA_(graph)(const struct A_(array) *const ar, const char *const fn) {
+	FILE *fp;
+	size_t i;
+	char a[12];
+	/* This is a messy hack; require that `errno` is not set, if we can't open
+	 the file for writing, take it. Drawing graphs is usually not the point. */
+	assert(ar && fn && !errno);
+	if(!(fp = fopen(fn, "w"))) { perror(fn); errno = 0; return; }
+	fprintf(fp, "digraph {\n"
+		"\tfontface=modern;"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
+		"\tarray [label=<\n"
+		"<TABLE BORDER=\"0\">\n"
+		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
+		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(ARRAY_NAME)
+		"&gt;array: " QUOTE(ARRAY_TYPE) "</FONT></TD></TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">size</TD>\n"
+		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t</TR>\n"
+		"</TABLE>>];\n", (unsigned long)ar->size, (unsigned long)ar->capacity);
+	if(!ar->data) goto no_data;
+	fprintf(fp, "\tarray -> data;\n"
+		"\tdata [label=<\n"
+		"<TABLE BORDER=\"0\">\n"
+		"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
+		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n", orcify(ar->data));
+	for(i = 0; i < ar->size; i++) {
+		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
+		PA_(to_string)(ar->data + i, &a);
+		fprintf(fp, "\t<TR>\n"
+			"\t\t<TD ALIGN=\"RIGHT\"%s>%lu</TD>\n"
+			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
+			"\t</TR>\n", bgc, (unsigned long)i, bgc, a);
+	}
+	fprintf(fp, "</TABLE>>];\n");
+no_data:
+	fprintf(fp, "\tnode [colour=red];\n"
+		"}\n");
+	fclose(fp);
+}
+
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
 static int PA_(zero_filled)(const PA_(type) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
@@ -24,46 +67,13 @@ static int PA_(zero_filled)(const PA_(type) *const t) {
 	while(c < end) if(*c++) return 0;
 	return 1;
 }
-#endif
-
-/** Draw a graph of `ar` to `fn` in Graphviz format. */
-static void PA_(graph)(const struct A_(array) *const ar, const char *const fn) {
-	FILE *fp;
-	char a[12];
-	/* This is a messy hack; require that `errno` is not set, if we can't open
-	 the file for writing, just reset. Drawing graphs is not the point. */
-	assert(ar && fn && !errno);
-	if(!(fp = fopen(fn, "w"))) { perror(fn); errno = 0; return; }
-	fprintf(fp, "digraph {\n"
-		"\trankdir = LR;\n"
-		"\tnode [shape = record, style = filled];\n"
-		"\tArray [label=\"\\<" QUOTE(ARRAY_NAME) "\\>array: "
-		QUOTE(ARRAY_TYPE) "\\l|size: %lu\\lcapacity: %lu\\l\"];\n",
-		(unsigned long)ar->size, (unsigned long)ar->capacity);
-	if(ar->data) {
-		PA_(type) *const data = ar->data;
-		size_t i;
-		fprintf(fp, "\tnode [fillcolor=lightsteelblue];\n"
-			"\tArray -> p%p;\n"
-			"\tsubgraph cluster_data {\n"
-			"\t\tstyle=filled;\n", (void *)data);
-		for(i = 0; i < ar->size; i++) {
-			PA_(to_string)(data + i, &a);
-			fprintf(fp, "\t\tp%p [label=\"%s\"];\n", (void *)(data + i), a);
-		}
-		fprintf(fp, "\t}\n");
-	}
-	fprintf(fp, "\tnode [colour=red];\n");
-	fprintf(fp, "}\n");
-	fclose(fp);
-}
 
 static void PA_(test_basic)(void) {
 	struct A_(array) a;
 	PA_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
-	/*int is_zero;*/
+	int is_zero;
 
 	assert(errno == 0);
 	PA_(valid_state)(0);
@@ -143,7 +153,6 @@ static void PA_(test_basic)(void) {
 	A_(array_clear)(&a);
 	assert(a.size == 0);
 
-#if 0
 	/* Trim 1. */
 	t = A_(array_new)(&a);
 	assert(t);
@@ -163,7 +172,6 @@ static void PA_(test_basic)(void) {
 	memset(t, 0, sizeof *t);
 	A_(array_trim)(&a, &PA_(zero_filled));
 	assert(a.size == !is_zero);
-#endif
 
 	/* Big. */
 	for(i = 0; i < big; i++) {
@@ -229,7 +237,7 @@ static void PA_(test_random)(void) {
 		if(a.size < 1000000 && !(i & (i - 1))) {
 			char fn[32];
 			printf("%s.\n", PA_(array_to_string)(&a));
-			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "Array%lu.gv",
+			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "-array-%lu.gv",
 				(unsigned long)i);
 			PA_(graph)(&a, fn);
 		}
@@ -286,7 +294,7 @@ static void PA_(test_replace)(void) {
 	printf("Array after replacing [1, 2) %s: %s.\n", PA_(array_to_string)(&b),
 		PA_(array_to_string)(&a));
 	assert(success && a.size == ts_size + 1
-		   && !memcmp(t, a.data + 2, sizeof *t));
+		&& !memcmp(t, a.data + 2, sizeof *t));
 	/* Replacing a smaller size. */
 	success = A_(array_splice)(&a, 1, 4, &b);
 	printf("Array after replacing [1, 4) %s: %s.\n", PA_(array_to_string)(&b),
@@ -309,7 +317,6 @@ static void PA_(test_replace)(void) {
 	printf("2: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
 	assert(a.size == 7);
-#if 0
 	A_(array_splice)(&a, A_(array_clip)(&a, 2), A_(array_clip)(&a, -4), &b);
 	printf("3: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
@@ -317,19 +324,16 @@ static void PA_(test_replace)(void) {
 	A_(array_splice)(&a, 7, A_(array_clip)(&a, -1) + 1, &b);
 	printf("4: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
-	/* @fixme This is not enough coverage. */
 	assert(a.size == 9 &&
 		!memcmp(ts + 1, a.data, sizeof *t * 2) &&
 		!memcmp(ts + 2, a.data + 2, sizeof *t * 3) &&
 		!memcmp(ts + 0, a.data + 5, sizeof *t) &&
 		!memcmp(ts + 2, a.data + 6, sizeof *t) &&
 		!memcmp(ts + 2, a.data + 7, sizeof *t * 2));
-#endif
 	A_(array_)(&b);
 	A_(array_)(&a);
 }
 
-#if 0
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
 static int PA_(keep_deterministic)(const PA_(type) *const data) {
@@ -340,15 +344,13 @@ static int PA_(keep_deterministic)(const PA_(type) *const data) {
 	i %= sizeof things / sizeof *things;
 	return predicate;
 }
-#endif
 
 static void PA_(test_keep)(void) {
 	PA_(type) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct A_(array) a = ARRAY_IDLE, b = ARRAY_IDLE;
-	/*int ret;*/
-	/* Valgrind. */
-	memset(ts, 0, sizeof ts);
+	int ret;
+	memset(ts, 0, sizeof ts); /* Valgrind. */
 	PA_(valid_state)(&a);
 	for(t = ts, t1 = t + ts_size; t < t1; t++) {
 		PA_(filler)(t);
@@ -356,9 +358,8 @@ static void PA_(test_keep)(void) {
 		memcpy(e, t, sizeof *t);
 	}
 	printf("a = %s.\n", PA_(array_to_string)(&a));
-#if 0
 	A_(array_keep_if)(&a, &PA_(keep_deterministic), 0);
-	printf("a = k(a) = %s.\n", A_(array_to_string)(&a));
+	printf("a = k(a) = %s.\n", PA_(array_to_string)(&a));
 	assert(a.size == 7
 		&& !memcmp(ts + 0, a.data + 0, sizeof *t * 1)
 		&& !memcmp(ts + 5, a.data + 1, sizeof *t * 1)
@@ -367,22 +368,19 @@ static void PA_(test_keep)(void) {
 		&& !memcmp(ts + 13, a.data + 5, sizeof *t * 1)
 		&& !memcmp(ts + 15, a.data + 6, sizeof *t * 1));
 	PA_(valid_state)(&a);
-
 	ret = A_(array_copy_if)(&b, &PA_(keep_deterministic), 0);
 	assert(ret && !b.size);
 	ret = A_(array_copy_if)(&b, &PA_(keep_deterministic), &a);
-	printf("b = k(a) = %s.\n", A_(array_to_string)(&b));
+	printf("b = k(a) = %s.\n", PA_(array_to_string)(&b));
 	assert(ret && b.size == 2
 		&& !memcmp(ts + 0, b.data + 0, sizeof *t * 1)
 		&& !memcmp(ts + 13, b.data + 1, sizeof *t * 1));
-#endif
 	A_(array_)(&a);
 	A_(array_)(&b);
 }
 
 static int PA_(num);
 
-#if 0
 /** Increments a global variable, independent of `t`. @implements <PA>action */
 static void PA_(increment)(PA_(type) *const t) {
 	(void)t;
@@ -395,16 +393,14 @@ static int PA_(true)(const PA_(type) *const t) {
 	(void)t;
 	return 1;
 }
-#endif
 
 static void PA_(test_each)(void) {
-	struct A_(array) /*empty = ARRAY_IDLE,*/ one = ARRAY_IDLE;
-	PA_(type) *t;
+	struct A_(array) empty = ARRAY_IDLE, one = ARRAY_IDLE;
+	const PA_(type) *t;
 	t = A_(array_new)(&one);
 	assert(t);
 	if(!t) return;
 	PA_(num) = 0;
-#if 0
 	A_(array_each)(&empty, &PA_(increment));
 	assert(!PA_(num));
 	A_(array_each)(&one, &PA_(increment));
@@ -419,7 +415,6 @@ static void PA_(test_each)(void) {
 	assert(!t);
 	t = A_(array_any)(&one, &PA_(true));
 	assert(t == one.data);
-#endif
 	A_(array_)(&one);
 }
 

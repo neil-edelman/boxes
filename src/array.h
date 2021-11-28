@@ -45,17 +45,17 @@
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
 #error Name ARRAY_NAME or tag type ARRAY_TYPE undefined.
 #endif
-#if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING) /* <!-- str */
+#if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
 #define ARRAY_TO_STRING_TRAIT 1
-#else /* str --><!-- !str */
+#else
 #define ARRAY_TO_STRING_TRAIT 0
-#endif /* !str --> */
+#endif
 #if defined(ARRAY_COMPARE_NAME) || defined(ARRAY_COMPARE) \
-	|| defined(ARRAY_IS_EQUAL) /* <!-- cmp */
+	|| defined(ARRAY_IS_EQUAL)
 #define ARRAY_COMPARE_TRAIT 1
-#else /* cmp --><!-- !cmp */
+#else
 #define ARRAY_COMPARE_TRAIT 0
-#endif /* !cmp --> */
+#endif
 #define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARE_TRAIT
 #if ARRAY_TRAITS > 1
 #error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
@@ -374,8 +374,8 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #ifdef ARRAY_EXPECT_TRAIT /* <!-- trait */
 #undef ARRAY_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
-#if defined(ARRAY_TEST)
-#error No ARRAY_TO_STRING traits defined for test.
+#ifdef ARRAY_TEST
+#error No ARRAY_TO_STRING traits defined for ARRAY_TEST.
 #endif
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
