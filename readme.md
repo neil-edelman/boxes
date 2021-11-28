@@ -7,8 +7,6 @@ compilers. The build system (this) requires a shell that understands `sh`-script
 and `Makefile`; it is useful in automated developing of the code. If one has
 `git` set up, the script `autoclone` downloads them all.
 
-## Examples ##
-
 <table><tr>
 	<th>link</th>
 	<th>possible traits</th>
