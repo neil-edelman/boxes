@@ -4,8 +4,11 @@
 collection using the standard library. The `C89` code that is part of the individual
 projects are separate, independent, and should work on most systems and
 compilers. The build system (this) requires a shell that understands `sh`-scripts
-and `Makefile`; it is useful in automated developing of the code. If one has
-`git` set up, the script `autoclone` downloads them all.
+and GNU `Makefile`; it is useful in automated developing of the code.
+
+The headers of the boxes themselves sometimes require `#define` parameters
+for code generation; see each for usage. If one has `git` set up, the `sh`-script,
+`autoclone`, downloads them all, or download each project or file individually.
 
 <table><tr>
 	<th>link</th>
@@ -57,21 +60,19 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 > used to doing for every new application, or using overly complicated existing
 > frameworks that take over your application (nspr, apr, glib...).
 
-This is a middle ground. No libraries. Each stand-alone `C89` code. It's like
-rolling your own containers, but all the work of testing and documenting has
-already been done, (mostly, it is ongoing.) One can pick and choose which
-ones are appropriate for ones project. Where appropriate, the headers require
-`#define` parameters; see each for usage.
+This aims to be a middle ground. No libraries or frameworks, each fairly small,
+simple, stand-alone `C89` code. It's like rolling your own containers, but aims
+to have work of testing and documenting already done. In a project, one can
+pick and choose which ones are appropriate.
 
 ## Interface ##
 
 Internal interface is projects are subdirectories of `boxes` and have separate
 `git` repositories. Each one must have `test` and `src`; the the `src` has `C`
 file(s) which are the same name as the project; this is the one-source-of-truth.
-`make` creates a test in `bin`. Traits are the same for every project and are
-stored globally in `boxes` under `traits`.
-
-The interface could change in future versions.
+`make` creates a test in `bin` using `gcc` or `clang`. Traits are the same for
+every project and are stored globally in `boxes` under `traits`. The interface
+could change in future versions.
 
 ## Details ##
 
@@ -82,17 +83,19 @@ for examples.
 
 Since `C` doesn't have interfaces, one can include anonymous and
 named traits with the `EXPECT_TRAIT`. This returns in a state of
-incompletion until one includes it again.
+incompletion until one includes it again with the trait's parameters
+defined.
 
 Assertions are used to ensure data integrity at runtime; to stop them,
 define `#define NDEBUG` before `assert.h`, included in the files.
 
-Errors are returned with the standard `errno`: `EDOM`, `ERANGE`, `EISEQ`
-(1994 Amendment 1 to `C90`); standard library functions provide their own
-values, which are passed on.
+Errors are returned with the standard `errno`. Since this is portable `C89`
+code, we have limited options for returning our own errors, namely,
+`EDOM`, `ERANGE`, `EISEQ` (1994 Amendment 1 to `C90`); standard library
+functions may provide their own values, which are passed on.
 
 The source files are `UTF-8` and may contain multi-byte literals. Some
-terminals don't have this as a default.
+specific terminals don't have this as a default.
 
 No effort has been made to synchronize for multi-threaded execution.
 
