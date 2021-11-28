@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:pool_slot">pool_slot</a>, <a href = "#typedef:<PP>type">&lt;PP&gt;type</a>, <a href = "#typedef:<PP>action_fn">&lt;PP&gt;action_fn</a>, <a href = "#typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:poolslot">poolslot</a>, <a href = "#typedef:<PP>type">&lt;PP&gt;type</a>, <a href = "#typedef:<PP>action_fn">&lt;PP&gt;action_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:pool_chunk">pool_chunk</a>, <a href = "#tag:<P>pool">&lt;P&gt;pool</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -48,7 +48,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of Pool" src = "web/pool.png" width = 543 height = 309></p>
+<p><img alt = "Example of Pool" src = "web/pool.png" width = 712 height = 469></p>
 
 <p><a href = "#tag:&lt;P&gt;pool">&lt;P&gt;pool</a> is a memory pool that stores <a href = "#typedef:&lt;PP&gt;type">&lt;PP&gt;type</a>. Pointers to valid items in the pool are stable, but not generally in any order or contiguous. It uses geometrically increasing size-blocks, so, if data reaches a steady-state size, when the removal is uniformly sampled, it will settle in one allocated region.</p>
 
@@ -57,27 +57,36 @@
 <dl>
 	<dt>Parameter: POOL_NAME, POOL_TYPE</dt>
 	<dd><code>&lt;P&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag type, <a href = "#typedef:&lt;PP&gt;type">&lt;PP&gt;type</a>, associated therewith; required. <code>&lt;PP&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dt>Parameter: POOL_CHUNK_MIN_CAPACITY</dt>
+	<dd>Default is 8; optional number in <code>[2, (SIZE_MAX - sizeof pool_chunk) / sizeof &lt;PP&gt;type]</code> that the capacity can not go below.</dd>
 	<dt>Parameter: POOL_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/pool_test.h">../test/pool_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PP&gt;action_fn">&lt;PP&gt;action_fn</a>. Needs at least one to string trait.</dd>
 	<dt>Parameter: POOL_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PZ&gt;to_string_fn">&lt;PZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
 	<dd><a href = "https://github.com/neil-edelman/array">array</a>, <a href = "https://github.com/neil-edelman/heap">heap</a></dd>
+	<dt>Caveat:</dt>
+	<dd>(<a href = "#typedef:poolslot">poolslot</a>)</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
 
 <div>
 
-<h3><a id = "typedef:pool_slot" name = "typedef:pool_slot">pool_slot</a></h3>
+<h3><a id = "typedef:poolslot" name = "typedef:poolslot">poolslot</a></h3>
 
-<p><code>typedef struct pool_chunk *<strong>pool_slot</strong>;</code></p>
+<p><code>typedef struct pool_chunk *<strong>poolslot</strong>;</code></p>
 
 <p>A slot is a pointer to a stable chunk. It makes the source much more readable to have this instead of a <code>**chunk</code>.</p>
+
+<dl>
+	<dt>Caveat:</dt>
+	<dd>: This is stupid; have the chunk size in here, then it doesn't have to be in the chunk itself, only data.</dd>
+</dl>
 
 </div>
 
@@ -103,9 +112,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PZ>to_string_fn" name = "typedef:<PZ>to_string_fn">&lt;PZ&gt;to_string_fn</a></h3>
+<h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
 
 <p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
 
@@ -157,7 +166,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<P>pool_test">&lt;P&gt;pool_test</a></td><td></td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<Z>to_string">&lt;Z&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -275,9 +284,9 @@
 
 <div>
 
-<h3><a id = "fn:<Z>to_string" name = "fn:<Z>to_string">&lt;Z&gt;to_string</a></h3>
+<h3><a id = "fn:<SZ>to_string" name = "fn:<SZ>to_string">&lt;SZ&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code></p>
+<p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>

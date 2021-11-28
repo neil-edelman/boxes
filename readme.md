@@ -3,7 +3,7 @@
 ## Stable Pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [pool_slot](#user-content-typedef-9e92efe8), [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PP&gt;action_fn](#user-content-typedef-cefaf27a), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)
+ * [Typedef Aliases](#user-content-typedef): [poolslot](#user-content-typedef-79154f2f), [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PP&gt;action_fn](#user-content-typedef-cefaf27a), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [pool_chunk](#user-content-tag-667964d9), [&lt;P&gt;pool](#user-content-tag-8aba39cb)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -19,25 +19,33 @@
 
  * Parameter: POOL\_NAME, POOL\_TYPE  
    `<P>` that satisfies `C` naming conventions when mangled and a valid tag type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), associated therewith; required\. `<PP>` is private, whose names are prefixed in a manner to avoid collisions\.
+ * Parameter: POOL\_CHUNK\_MIN\_CAPACITY  
+   Default is 8; optional number in `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PP>type]` that the capacity can not go below\.
  * Parameter: POOL\_TEST  
    To string trait contained in [\.\./test/pool\_test\.h](../test/pool_test.h); optional unit testing framework using `assert`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PP&gt;action_fn](#user-content-typedef-cefaf27a)\. Needs at least one to string trait\.
  * Parameter: POOL\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\.
+   To string trait contained in [to\_string\.h](to_string.h); `<A>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\.
  * Standard:  
    C89
  * Dependancies:  
    [array](https://github.com/neil-edelman/array), [heap](https://github.com/neil-edelman/heap)
+ * Caveat:  
+   ([poolslot](#user-content-typedef-79154f2f))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-9e92efe8" name = "user-content-typedef-9e92efe8">pool_slot</a> ###
+### <a id = "user-content-typedef-79154f2f" name = "user-content-typedef-79154f2f">poolslot</a> ###
 
-<code>typedef struct pool_chunk *<strong>pool_slot</strong>;</code>
+<code>typedef struct pool_chunk *<strong>poolslot</strong>;</code>
 
 A slot is a pointer to a stable chunk\. It makes the source much more readable to have this instead of a `**chunk`\.
+
+ * Caveat:  
+   : This is stupid; have the chunk size in here, then it doesn't have to be in the chunk itself, only data\.
+
 
 
 
@@ -57,9 +65,9 @@ Operates by side\-effects\.
 
 
 
-### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
 
 Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
@@ -105,7 +113,7 @@ Consists of a map of several chunks of increasing size and a free\-list\. Zeroed
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d026a8f8">&lt;P&gt;pool_test</a></td><td></td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -199,9 +207,9 @@ The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`\.
 
 
 
-### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
+### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
    Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
