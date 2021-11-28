@@ -43,6 +43,10 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
 	<td>to_string, compare?</td>
 	<td>array?</td>
+</tr><tr>
+	<td>upcoming . . . disjoint?</td>
+	<td>to_string?, compare?</td>
+	<td>array?</td>
 </tr></table>
 
 ## Why boxes? ##
