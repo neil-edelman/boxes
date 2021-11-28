@@ -40,7 +40,7 @@
  @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
  To string trait contained in <to_string.h>; an optional unique `<Z>`
  that satisfies `C` naming conventions when mangled and function implementing
- <typedef:<PZ>to_string_fn>.
+ <typedef:<PSZ>to_string_fn>.
 
  @depend [array](https://github.com/neil-edelman/array)
  @std C89
@@ -340,7 +340,7 @@ static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 }
 
 /** Shallow-copies and heapifies all the elements of `master` into `heap`.
- @param[copy] If null, does nothing. @return Success.
+ @param[master] If null, does nothing. @return Success.
  @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] */
 static int H_(heap_duplicate)(struct H_(heap) *const heap,
 	const struct H_(heap) *const master) {
