@@ -9,7 +9,8 @@
 
  @param[CG_]
  A one-argument macro producing a name that is responsible for the name of the
- functions. Should be something like `CG_(x) -> foo_widget_x`.
+ functions. Should be something like `CG_(x) -> foo_widget_x`. The caller is
+ responsible for undefining `CG_`.
 
  @std C89 */
 
@@ -172,5 +173,3 @@ static void PCG_(unused_function)(void) {
 	CG_(each)(0, 0); CG_(if_each)(0, 0, 0); CG_(any)(0, 0);
 	PCG_(unused_function_coda)(); }
 static void PCG_(unused_function_coda)(void) { PCG_(unused_function)(); }
-
-#undef Z_
