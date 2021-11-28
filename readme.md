@@ -10,13 +10,13 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 ## Examples ##
 
 <table><tr>
-	<td><https://github.com/neil-edelman/array></td>
+	<td><a>https://github.com/neil-edelman/array</a></td>
 	<td></td>
 </tr><tr>
-	<td><https://github.com/neil-edelman/bmp></td>
+	<td>https://github.com/neil-edelman/bmp</td>
 	<td></td>
 </tr><tr>
-	<td><https://github.com/neil-edelman/heap></td>
+	<td>https://github.com/neil-edelman/heap</td>
 	<td></td>
 </tr></table>
 
