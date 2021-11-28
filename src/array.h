@@ -25,7 +25,7 @@
  Optional function implementing <typedef:<PZ>action_fn> that fills the
  <typedef:<PA>type> from uninitialized to random for unit testing framework
  using `assert`. Testing array contained in <../test/test_array.h>. Must have
- any To String trait.
+ any To String trait included after all the tests.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
