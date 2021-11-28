@@ -12,10 +12,6 @@
 
  @std C89/90 */
 
-#include <string.h> /* mem */
-#include <limits.h> /* CHAR_BIT */
-#include <assert.h>
-
 #if !defined(BMP_NAME) || !defined(BMP_BITS)
 #error Name BMP_NAME or unsigned number BMP_BITS undefined.
 #endif
@@ -23,20 +19,19 @@
 #error BMP_BITS too small.
 #endif
 
-/* <Kernighan and Ritchie, 1988, p. 231>; before idempotent _st_ `CAT`. */
-#if defined(B_) || defined(PB_) \
-	|| (defined(BMP_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?B_ or CAT_?
-#endif
-#ifndef BMP_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define B_(thing) CAT(BMP_NAME, thing)
-#define PB_(thing) CAT(bmp, B_(thing))
-
 #ifndef BMP_H /* <!-- idempotent */
 #define BMP_H
+#include <string.h>
+#include <limits.h>
+#include <assert.h>
+#if defined(BMP_CAT_) || defined(BMP_CAT) || defined(B_) || defined(PB_)
+#error Unexpected defines.
+#endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define BMP_CAT_(n, m) n ## _ ## m
+#define BMP_CAT(n, m) BMP_CAT_(n, m)
+#define B_(n) BMP_CAT(BMP_NAME, n)
+#define PB_(n) BMP_CAT(bmp, B_(n))
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
 #define BMP_MAX (~(PB_(chunk))0)
 #define BMP_CHUNK (sizeof(PB_(chunk)) * CHAR_BIT)
@@ -153,14 +148,6 @@ static void PB_(unused_base)(void) {
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 
-#ifndef BMP_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef BMP_SUBTYPE
-#endif /* sub-type --> */
-#undef B_
-#undef PB_
 #undef BMP_NAME
 #undef BMP_BITS
 #ifdef BMP_TEST
