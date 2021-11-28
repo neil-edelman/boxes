@@ -12,35 +12,35 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 	<th>possible traits</th>
 	<th>required dependancies</th>
 </tr><tr>
-	<td>https://github.com/neil-edelman/array</td>
+	<td><a href="https://github.com/neil-edelman/array">array</a></td>
 	<td>compare, contiguous, to_string</td>
 	<td></td>
 </tr><tr>
-	<td>https://github.com/neil-edelman/bmp</td>
+	<td><a href = "https://github.com/neil-edelman/bmp>bmp</a></td>
 	<td></td>
 	<td></td>
 </tr><tr>
-	<td>https://github.com/neil-edelman/heap</td>
+	<td><a href = "https://github.com/neil-edelman/heap">heap</a></td>
 	<td>to_string</td>
 	<td>array</td>
 </tr><tr>
-<td>https://github.com/neil-edelman/list</td>
+	<td><a href = "https://github.com/neil-edelman/list">list</a></td>
 	<td>to_string</td>
 	<td></td>
 </tr><tr>
-<td>https://github.com/neil-edelman/orcish</td>
+	<td><a href = "https://github.com/neil-edelman/orcish">orcish</a></td>
 	<td></td>
 	<td></td>
 </tr><tr>
-<td>https://github.com/neil-edelman/pool</td>
+	<td><a href = "https://github.com/neil-edelman/pool">pool</a></td>
 	<td>to_string</td>
 	<td>array, heap</td>
 </tr><tr>
-<td>https://github.com/neil-edelman/set</td>
+	<td><a href = "https://github.com/neil-edelman/set">set</a></td>
 	<td>to_string, compare?</td>
 	<td></td>
 </tr><tr>
-<td>https://github.com/neil-edelman/trie</td>
+	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
 	<td>to_string, compare?</td>
 	<td>array?</td>
 </tr></table>
