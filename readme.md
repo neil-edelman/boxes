@@ -10,7 +10,10 @@ and `Makefile`; it is useful in automated developing of the code. If one has
 ## Examples ##
 
 <table><tr>
-	<td><a>https://github.com/neil-edelman/array</a></td>
+	<th>link</th>
+	<th>possible traits</th>
+</tr><tr>
+	<td>https://github.com/neil-edelman/array</td>
 	<td></td>
 </tr><tr>
 	<td>https://github.com/neil-edelman/bmp</td>
