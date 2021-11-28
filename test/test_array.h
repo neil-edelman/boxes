@@ -473,7 +473,7 @@ static void PCM_(test_compactify)(void) {
 	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("Before: %s.\n", PA_(array_to_string)(&a));
-	CM_(unique_merge)(&a, 0);
+	CM_(unique)(&a);
 	printf("Compactified: %s.\n", PA_(array_to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */
