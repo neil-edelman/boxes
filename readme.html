@@ -50,7 +50,7 @@
 
 <dl>
 	<dt>Parameter: BMP_NAME, BMP_BITS</dt>
-	<dd><code>&lt;B&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a number of bits associated therewith; required. <code>&lt;PB&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dd><code>&lt;B&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a number of bits associated therewith, which must be positive; required. <code>&lt;PB&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: BMP_TEST</dt>
 	<dd>Optional unit testing framework using <code>assert</code>. Testing contained in <a href = "../test/test_bmp.h">../test/test_bmp.h</a>.</dd>
 	<dt>Standard:</dt>
@@ -79,7 +79,7 @@
 
 <p><code>struct <strong>&lt;B&gt;bmp</strong> { bmpchunk chunk[BMP_CHUNKS]; };</code></p>
 
-<p>An array of <code>BMP_BITS</code> bits, taking up the next multiple chunk.</p>
+<p>An array of <code>BMP_BITS</code> bits, (taking up the next multiple of <code>sizeof chunk</code>.)</p>
 
 </div>
 

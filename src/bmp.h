@@ -4,8 +4,8 @@
  `<B>bmp` is a bit-field of `BMP_BITS` bits.
 
  @param[BMP_NAME, BMP_BITS]
- `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith; required. `<PB>` is private, whose names are prefixed in
- a manner to avoid collisions.
+ `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required. `<PB>` is private,
+ whose names are prefixed in a manner to avoid collisions.
 
  @param[BMP_TEST]
  Optional unit testing framework using `assert`. Testing contained in <../test/test_bmp.h>.
@@ -48,7 +48,8 @@ typedef unsigned bmpchunk;
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 #endif /* idempotent --> */
 
-/** An array of `BMP_BITS` bits, taking up the next multiple chunk. */
+/** An array of `BMP_BITS` bits, (taking up the next multiple of
+ `sizeof chunk`.) */
 struct B_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 
 /** Sets `a` to all false. @allow */

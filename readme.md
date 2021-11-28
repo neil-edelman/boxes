@@ -12,7 +12,7 @@
 `<B>bmp` is a bit\-field of `BMP_BITS` bits\.
 
  * Parameter: BMP\_NAME, BMP\_BITS  
-   `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith; required\. `<PB>` is private, whose names are prefixed in a manner to avoid collisions\.
+   `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required\. `<PB>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: BMP\_TEST  
    Optional unit testing framework using `assert`\. Testing contained in [\.\./test/test\_bmp\.h](../test/test_bmp.h)\.
  * Standard:  
@@ -37,7 +37,7 @@ The underlying array type\.
 
 <code>struct <strong>&lt;B&gt;bmp</strong> { bmpchunk chunk[BMP_CHUNKS]; };</code>
 
-An array of `BMP_BITS` bits, taking up the next multiple chunk\.
+An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof chunk`\.\)
 
 
 
