@@ -14,12 +14,15 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
+ @param[ARRAY_CONTIGUOUS]
+ Include the singleton trait contained in <contiguous.h> that takes no options.
+ Rational for the design decision to make it a singleton class, instead of
+ including it always, is `array` is used as a backing for other boxes; it would
+ just increase compilation in most cases.
+
  @param[ARRAY_MIN_CAPACITY]
  Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
  below.
-
- @param[ARRAY_CONTIGUOUS]
- Include the singleton trait contained in <contiguous.h> that takes no options.
 
  @param[ARRAY_TEST]
  Optional function implementing <typedef:<PA>action_fn> that fills the
