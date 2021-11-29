@@ -256,7 +256,7 @@ Adds and heapifies `n` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https:/
  * Return:  
    Success\.
  * Exceptional return: ERANGE, realloc  
-   In practice, pushing uninitialized elements onto the heap does make sense, so [&lt;H&gt;heap_buffer](#user-content-fn-4355676a) `n` will be called first, in which case, one is guaranteed success\.
+   In practice, pushing uninitialized elements onto the heap does not make sense, so [&lt;H&gt;heap_buffer](#user-content-fn-4355676a) `n` will be called first, in which case, one is guaranteed success\.
  * Order:  
    &#927;\(`heap.size` \+ `n`\)
 

@@ -341,7 +341,7 @@
 	<dt>Return:</dt>
 	<dd>Success.</dd>
 	<dt>Exceptional return: ERANGE, realloc</dt>
-	<dd>In practice, pushing uninitialized elements onto the heap does make sense, so <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a> <code>n</code> will be called first, in which case, one is guaranteed success.</dd>
+	<dd>In practice, pushing uninitialized elements onto the heap does not make sense, so <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a> <code>n</code> will be called first, in which case, one is guaranteed success.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>heap.size</code> + <code>n</code>)</dd>
 </dl>

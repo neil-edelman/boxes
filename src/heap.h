@@ -321,7 +321,7 @@ static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 /** Shallow-copies and heapifies `master` into `heap`.
  @param[master] If null, does nothing. @return Success.
  @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] */
-static int H_(heap_reproduce)(struct H_(heap) *const heap,
+static int H_(heap_affix)(struct H_(heap) *const heap,
 	const struct H_(heap) *const master) {
 	PH_(node) *n;
 	assert(heap);
@@ -365,7 +365,7 @@ static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
 	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
-	H_(heap_reproduce)(0, 0);
+	H_(heap_affix)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
