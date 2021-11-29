@@ -220,25 +220,15 @@ static int PP_(remove)(struct P_(pool) *const pool,
 		assert(pool->capacity0 && chunk->size <= pool->capacity0
 			&& idx < chunk->size);
 		if(idx + 1 == chunk->size) { /* It's at the end -- size goes down. */
-#if 1
 			while(--chunk->size && poolfree_heap_size(&pool->free0)) {
 				const size_t free = poolfree_heap_peek(&pool->free0);
 				printf("size is %lu free and the top is %lu.\n",
 					   poolfree_heap_size(&pool->free0), free);
-				/* Another item on the free-heap is not exposed? */
 				if(free < chunk->size - 1) break;
+				/* Another item on the free-heap is exposed. */
 				assert(free == chunk->size - 1);
 				poolfree_heap_pop(&pool->free0);
 			}
-#else
-			while(--chunk->size) {
-				const size_t *const free = poolfree_heap_peek(&pool->free0);
-				/* Another item on the free-heap is not exposed? */
-				if(!free || *free < chunk->size - 1) break;
-				assert(*free == chunk->size - 1);
-				poolfree_heap_pop(&pool->free0);
-			}
-#endif
 		} else if(!poolfree_heap_add(&pool->free0, idx)) return 0;
 	} else if(assert(chunk->size), !--chunk->size)
 		poolslot_array_remove(&pool->slots, pool->slots.data + s), free(chunk);
