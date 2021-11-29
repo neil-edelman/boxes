@@ -323,7 +323,7 @@ static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	return 1;
 }
 
-/** Shallow-copies and heapifies all the elements of `master` into `heap`.
+/** Shallow-copies and heapifies `master` into `heap`.
  @param[master] If null, does nothing. @return Success.
  @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] */
 static int H_(heap_reproduce)(struct H_(heap) *const heap,
