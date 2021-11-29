@@ -130,7 +130,6 @@ typedef PH_(priority) PH_(node);
  or being `static`.
 
  ![States.](../web/states.png) */
-struct H_(heap);
 struct H_(heap) { struct PH_(node_array) a; };
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
@@ -273,7 +272,7 @@ static void H_(heap_)(struct H_(heap) *const heap)
 static void H_(heap_clear)(struct H_(heap) *const heap)
 	{ assert(heap), PH_(node_array_clear)(&heap->a); }
 
-/** Size of the `heap`. */
+/** Empty is `!size`. @return Size of the `heap`. @allow */
 static size_t H_(heap_size)(const struct H_(heap) *const heap)
 	{ return assert(heap), heap->a.size; }
 
@@ -287,7 +286,7 @@ static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 /** @return Lowest in `heap` according to `HEAP_COMPARE` or null if the heap is
  empty. This pointer is valid only until one makes structural changes to the
  heap. @order \O(1) @allow */
-static PH_(node) *H_(heap_peek)(const struct H_(heap) *const heap)
+static PH_(node) *H_(heap_top)(const struct H_(heap) *const heap)
 	{ return assert(heap), heap->a.size ? heap->a.data : 0; }
 
 /** This returns the <typedef:<PH>value> of the <typedef:<PH>node> returned by
@@ -296,7 +295,7 @@ static PH_(node) *H_(heap_peek)(const struct H_(heap) *const heap)
  @return Lowest <typedef:<PH>value> in `heap` element according to
  `HEAP_COMPARE`; if the heap is empty, null or zero. @order \O(1) @allow */
 static PH_(value) H_(heap_peek_value)(struct H_(heap) *const heap)
-	{ return PH_(value_or_null)(H_(heap_peek)(heap)); }
+	{ return PH_(value_or_null)(H_(heap_top)(heap)); }
 
 /** Remove the lowest element according to `HEAP_COMPARE`.
  @param[heap] If null, returns false. @return The <typedef:<PH>value> of the

@@ -68,7 +68,7 @@ static void PH_(test_basic)(void *const param) {
 	assert(!heap.a.size);
 	H_(heap)(&heap);
 	assert(!heap.a.size);
-	assert(!H_(heap_peek)(&heap));
+	assert(!H_(heap_top)(&heap));
 	assert(!H_(heap_peek_value(&heap)));
 	assert(!H_(heap_pop)(&heap));
 	PH_(valid)(&heap);
@@ -80,7 +80,7 @@ static void PH_(test_basic)(void *const param) {
 	assert(H_(heap_add)(&heap, add)), cum_size++;
 	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
 	assert(heap.a.size == cum_size);
-	node = H_(heap_peek)(&heap);
+	node = H_(heap_top)(&heap);
 	PH_(valid)(&heap);
 	assert(PH_(get_priority)(node) == PH_(get_priority)(&add));
 	result = H_(heap_pop)(&heap), cum_size--;
@@ -148,7 +148,7 @@ static void PH_(test_basic)(void *const param) {
 	printf("Final heap: %s.\n", PH_(heap_to_string)(&heap));
 	for(i = cum_size; i > 0; i--) {
 		char a[12];
-		node = H_(heap_peek)(&heap);
+		node = H_(heap_top)(&heap);
 		assert(node);
 		v = H_(heap_peek_value)(&heap);
 		PH_(to_string)(node, &a);
@@ -168,7 +168,7 @@ static void PH_(test_basic)(void *const param) {
 	printf("Destructor:\n");
 	H_(heap_)(&merge);
 	H_(heap_)(&heap);
-	assert(!H_(heap_peek)(&heap));
+	assert(!H_(heap_top)(&heap));
 }
 
 /** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
