@@ -131,6 +131,8 @@ Contains all the iteration parameters\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-9c9f1648">&lt;H&gt;heap_append</a></td><td>heap, n</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-380c6f8a">&lt;H&gt;heap_affix</a></td><td>heap, master</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-2a4c2c14">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
@@ -259,6 +261,23 @@ Adds and heapifies `n` elements to `heap`\. Uses [Doberkat, 1984, Floyd](https:/
    In practice, pushing uninitialized elements onto the heap does not make sense, so [&lt;H&gt;heap_buffer](#user-content-fn-4355676a) `n` will be called first, in which case, one is guaranteed success\.
  * Order:  
    &#927;\(`heap.size` \+ `n`\)
+
+
+
+
+### <a id = "user-content-fn-380c6f8a" name = "user-content-fn-380c6f8a">&lt;H&gt;heap_affix</a> ###
+
+<code>static int <strong>&lt;H&gt;heap_affix</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const struct &lt;H&gt;heap *const <em>master</em>)</code>
+
+Shallow\-copies and heapifies `master` into `heap`\.
+
+ * Parameter: _master_  
+   If null, does nothing\.
+ * Return:  
+   Success\.
+ * Exceptional return: ERANGE, realloc  
+ * Order:  
+   &#927;\(`heap.size` \+ `copy.size`\)
 
 
 

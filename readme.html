@@ -187,6 +187,8 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<H>heap_append">&lt;H&gt;heap_append</a></td><td>heap, n</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn:<H>heap_affix">&lt;H&gt;heap_affix</a></td><td>heap, master</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#fn:<H>heap_test">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
@@ -344,6 +346,26 @@
 	<dd>In practice, pushing uninitialized elements onto the heap does not make sense, so <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a> <code>n</code> will be called first, in which case, one is guaranteed success.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>heap.size</code> + <code>n</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<H>heap_affix" name = "fn:<H>heap_affix">&lt;H&gt;heap_affix</a></h3>
+
+<p><code>static int <strong>&lt;H&gt;heap_affix</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const struct &lt;H&gt;heap *const <em>master</em>)</code></p>
+
+<p>Shallow-copies and heapifies <code>master</code> into <code>heap</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>master</em></dt>
+	<dd>If null, does nothing.</dd>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: ERANGE, realloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>heap.size</code> + <code>copy.size</code>)</dd>
 </dl>
 
 </div>

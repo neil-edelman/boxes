@@ -320,7 +320,7 @@ static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 
 /** Shallow-copies and heapifies `master` into `heap`.
  @param[master] If null, does nothing. @return Success.
- @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] */
+ @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] @allow */
 static int H_(heap_affix)(struct H_(heap) *const heap,
 	const struct H_(heap) *const master) {
 	PH_(node) *n;
