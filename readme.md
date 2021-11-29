@@ -3,7 +3,7 @@
 ## Priority Queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_node](#user-content-tag-7243593c), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -22,7 +22,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
-   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\. If set, has no effect on the ranking, but affects the return [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
+   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\. If set, has no effect on the ranking, but affects [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
  * Parameter: HEAP\_TEST  
    To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Must be defined equal to a random filler function, satisfying `void (*<PH>biaction_fn)(<PH>node *, void *)` with the `param` of [&lt;H&gt;heap_test](#user-content-fn-2a4c2c14)\. Must have any To String trait\.
  * Parameter: HEAP\_EXPECT\_TRAIT  
@@ -60,6 +60,14 @@ Returns a positive result if `a` comes after `b`, inducing a strict pre\-order o
 <code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code>
 
 If `HEAP_VALUE` is set, \(priority, value\) set by [&lt;H&gt;heap_node](#user-content-tag-7243593c), otherwise it's a \(priority\) set directly by [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.
+
+
+
+### <a id = "user-content-typedef-7e815a45" name = "user-content-typedef-7e815a45">&lt;PH&gt;biaction_fn</a> ###
+
+<code>typedef void(*<strong>&lt;PH&gt;biaction_fn</strong>)(&lt;PH&gt;node *, void *);</code>
+
+Used for `HEAP_TEST`, operates by side\-effects\.
 
 
 

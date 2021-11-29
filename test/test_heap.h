@@ -4,11 +4,11 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/* Operates by side-effects. Used for `HEAP_TEST`. */
-/* typedef void (*PH_(biaction_fn))(PH_(node) *, void *); */
+/** Used for `HEAP_TEST`, operates by side-effects. */
+typedef void (*PH_(biaction_fn))(PH_(node) *, void *);
 
-/* `HEAP_TEST` must be a function that implements <typedef:<PA>biaction>. */
-static void (*PH_(filler))(PH_(node) *, void *) = (HEAP_TEST);
+/** `HEAP_TEST` must be a function that implements <typedef:<PH>biaction_fn>. */
+static PH_(biaction_fn) PH_(filler) = (HEAP_TEST);
 
 /** Draw a graph of `heap` to `fn` in Graphviz format. */
 static void PH_(graph)(const struct H_(heap) *const heap,

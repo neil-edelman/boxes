@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PH>biaction_fn">&lt;PH&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -60,7 +60,7 @@
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects the return <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
+	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a random filler function, satisfying <code>void (*&lt;PH&gt;biaction_fn)(&lt;PH&gt;node *, void *)</code> with the <code>param</code> of <a href = "#fn:&lt;H&gt;heap_test">&lt;H&gt;heap_test</a>. Must have any To String trait.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
@@ -104,6 +104,16 @@
 <p><code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code></p>
 
 <p>If <code>HEAP_VALUE</code> is set, (priority, value) set by <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>, otherwise it's a (priority) set directly by <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PH>biaction_fn" name = "typedef:<PH>biaction_fn">&lt;PH&gt;biaction_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PH&gt;biaction_fn</strong>)(&lt;PH&gt;node *, void *);</code></p>
+
+<p>Used for <code>HEAP_TEST</code>, operates by side-effects.</p>
 
 </div>
 
