@@ -52,13 +52,14 @@
 	<td>array?</td>
 </tr></table>
 
-`boxes` is a very simple automated dependancy and build system for separate,
-independent, `C89` data structure projects. The code in the projects should work
-on most systems and compilers. The build system (this) requires a shell that
-understands `sh`-scripts and GNU `Makefile`; it is useful in automated
-developing. If one has `git` set up, the `sh`-script, `autoclone`, downloads
-them all, or download each project or file individually. See each project for
-usage, and the `test` section for examples.
+`boxes` is a very simple automated dependancy and build system for separate
+`C89` data structure projects that are intended to provide lightweight,
+independent, and type-safe containers for existing code. The code in the
+projects should work on most systems and compilers. The build system (this)
+requires a shell that understands `sh`-scripts and GNU `Makefile`; it is useful
+in automated developing of these containers. If one has `git` set up, the
+`sh`-script, `autoclone`, downloads them all, or download each project or file
+individually. See each for usage, and each project's `test` section for examples.
 
 ## Why boxes? ##
 
