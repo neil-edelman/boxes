@@ -113,8 +113,8 @@ typedef PH_(value_data) *PH_(value);
 /** If `HEAP_VALUE` is set, a pair of (priority, value) that becomes
  <typedef:<PH>node>. */
 struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
-/** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heap_node>,
- otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
+/** If `HEAP_VALUE` is set, _(priority, value)_ set by <tag:<H>heap_node>,
+ otherwise it's a _(priority)_ set directly by <typedef:<PH>priority>. */
 typedef struct H_(heap_node) PH_(node);
 #else /* value --><!-- !value */
 typedef PH_(priority) PH_(value);
