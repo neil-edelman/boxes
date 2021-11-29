@@ -1,29 +1,19 @@
 # boxes #
 
-`boxes` is an automated dependancy and build system for a `C` data structure
-collection using the standard library. The `C89` code that is part of the individual
-projects are separate, independent, and should work on most systems and
-compilers. The build system (this) requires a shell that understands `sh`-scripts
-and GNU `Makefile`; it is useful in automated developing of the code.
-
-The headers of the boxes themselves sometimes require `#define` parameters
-for code generation; see each for usage. If one has `git` set up, the `sh`-script,
-`autoclone`, downloads them all, or download each project or file individually.
-
 <table><tr>
 	<th>link</th>
 	<th>possible traits</th>
 	<th>required dependancies</th>
 </tr><tr>
-	<td><a href="https://github.com/neil-edelman/array">array</a></td>
+	<td>contiguous <a href="https://github.com/neil-edelman/array">array</a></td>
 	<td>compare, contiguous, to_string</td>
 	<td></td>
 </tr><tr>
-	<td><a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
+	<td>bit-field <a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
 	<td></td>
 	<td></td>
 </tr><tr>
-	<td><a href = "https://github.com/neil-edelman/heap">heap</a></td>
+	<td>priority queue <a href = "https://github.com/neil-edelman/heap">heap</a></td>
 	<td>to_string</td>
 	<td>array</td>
 </tr><tr>
@@ -51,6 +41,16 @@ for code generation; see each for usage. If one has `git` set up, the `sh`-scrip
 	<td>to_string?, compare?</td>
 	<td>array?</td>
 </tr></table>
+
+`boxes` is an automated dependancy and build system for a `C` data structure
+collection using the standard library. The `C89` code that is part of the individual
+projects are separate, independent, and should work on most systems and
+compilers. The build system (this) requires a shell that understands `sh`-scripts
+and GNU `Makefile`; it is useful in automated developing of the code.
+
+The headers of the boxes themselves sometimes require `#define` parameters
+for code generation; see each for usage. If one has `git` set up, the `sh`-script,
+`autoclone`, downloads them all, or download each project or file individually.
 
 ## Why boxes? ##
 
