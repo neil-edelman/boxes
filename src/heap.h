@@ -89,10 +89,10 @@
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(priority);
 
-/** Returns a positive result if they are out-of-order, inducing a strict
- pre-order of `a` with respect to `b`. This is compatible, but less strict then
- the comparators from `bsearch` and `qsort`; it only needs to divide entries
- into two instead of three categories. */
+/** Returns a positive result if `a` is out-of-order with respect to `b`,
+ inducing a strict pre-order. This is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`; it only needs to divide entries into
+ two instead of three categories. */
 typedef int (*PH_(compare_fn))(const PH_(priority) a, const PH_(priority) b);
 #ifndef HEAP_COMPARE /* <!-- !cmp */
 /** The default `HEAP_COMPARE` on `a` and `b` is `a > b`, which makes a
