@@ -26,7 +26,7 @@
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in
  <tag:<H>heap_node>; declaring it is sufficient. If set, has no effect on the
- ranking, but affects the return <typedef:<PH>value>.
+ ranking, but affects <typedef:<PH>value>.
 
  @param[HEAP_TEST]
  To string trait contained in <../test/heap_test.h>; optional unit testing
