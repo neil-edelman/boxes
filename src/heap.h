@@ -93,7 +93,8 @@ typedef HEAP_TYPE PH_(priority);
 /** Returns a positive result if `a` comes after `b`, inducing a strict
  pre-order of `a` with respect to `b`; this is compatible, but less strict then
  the comparators from `bsearch` and `qsort`; it only needs to divide entries
- into two instead of three categories. */
+ into two instead of three categories. (Does one have to switch them to be in
+ order?) */
 typedef int (*PH_(compare_fn))(const PH_(priority) a, const PH_(priority) b);
 #ifndef HEAP_COMPARE /* <!-- !cmp */
 /** The default `HEAP_COMPARE` on `a` and `b` is `a > b`, which makes a
@@ -283,19 +284,12 @@ static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 	return PH_(node_array_new)(&heap->a) && (PH_(sift_up)(heap, &node), 1);
 }
 
-/** @return Lowest in `heap` according to `HEAP_COMPARE` or null if the heap is
- empty. This pointer is valid only until one makes structural changes to the
- heap. @order \O(1) @allow */
-static PH_(node) *H_(heap_top)(const struct H_(heap) *const heap)
-	{ return assert(heap), heap->a.size ? heap->a.data : 0; }
-
-/** This returns the <typedef:<PH>value> of the <typedef:<PH>node> returned by
- <fn:<H>heap_peek>, for convenience with some applications. If `HEAP_VALUE`,
- this is a child of <fn:<H>heap_peek>, otherwise it is a boolean `int`.
- @return Lowest <typedef:<PH>value> in `heap` element according to
- `HEAP_COMPARE`; if the heap is empty, null or zero. @order \O(1) @allow */
-static PH_(value) H_(heap_peek_value)(struct H_(heap) *const heap)
-	{ return PH_(value_or_null)(H_(heap_top)(heap)); }
+/** @return The <typedef:<PH>value> in `heap` that the <typedef:<PH>compare_fn>
+ associated to the heap ranks most true; defaults to lowest. If the heap is
+ empty, null or zero; one may have to call <fn:<H>heap_size> in order to
+ differentiate the two, on some heaps. @order \O(1) @allow */
+static PH_(value) H_(heap_peek)(const struct H_(heap) *const heap)
+	{ return assert(heap), heap->a.size ? PH_(get_value)(heap->a.data) : 0; }
 
 /** Remove the lowest element according to `HEAP_COMPARE`.
  @param[heap] If null, returns false. @return The <typedef:<PH>value> of the
@@ -379,8 +373,8 @@ static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
-	H_(heap_peek_value)(0); H_(heap_pop)(0); H_(heap_buffer)(0, 0);
-	H_(heap_append)(0, 0); H_(heap_duplicate)(0, 0);
+	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
+	H_(heap_duplicate)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }

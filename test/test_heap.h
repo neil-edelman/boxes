@@ -52,8 +52,8 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 /** @param[param] The parameter used for `HEAP_TEST`. */
 static void PH_(test_basic)(void *const param) {
 	struct H_(heap) heap = HEAP_IDLE, merge = HEAP_IDLE;
-	PH_(node) *node, add;
-	PH_(value) v, result;
+	PH_(node) add, *node;
+	PH_(value) v, w, x;
 	PH_(priority) last_priority = 0;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i, cum_size = 0;
@@ -68,8 +68,7 @@ static void PH_(test_basic)(void *const param) {
 	assert(!heap.a.size);
 	H_(heap)(&heap);
 	assert(!heap.a.size);
-	assert(!H_(heap_top)(&heap));
-	assert(!H_(heap_peek_value(&heap)));
+	assert(!H_(heap_peek)(&heap));
 	assert(!H_(heap_pop)(&heap));
 	PH_(valid)(&heap);
 	assert(!errno);
@@ -80,11 +79,12 @@ static void PH_(test_basic)(void *const param) {
 	assert(H_(heap_add)(&heap, add)), cum_size++;
 	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
 	assert(heap.a.size == cum_size);
-	node = H_(heap_top)(&heap);
+	w = H_(heap_peek)(&heap);
 	PH_(valid)(&heap);
-	assert(PH_(get_priority)(node) == PH_(get_priority)(&add));
-	result = H_(heap_pop)(&heap), cum_size--;
-	assert(v == result && heap.a.size == cum_size);
+	//FIXME
+	//assert(PH_(get_priority)(&v) == PH_(get_priority)(&add));
+	x = H_(heap_pop)(&heap), cum_size--;
+	assert(v == x && w == x && heap.a.size == cum_size);
 	PH_(valid)(&heap);
 
 	printf("Test many.\n");
@@ -148,18 +148,17 @@ static void PH_(test_basic)(void *const param) {
 	printf("Final heap: %s.\n", PH_(heap_to_string)(&heap));
 	for(i = cum_size; i > 0; i--) {
 		char a[12];
-		node = H_(heap_top)(&heap);
+		v = H_(heap_peek)(&heap);
 		assert(node);
-		v = H_(heap_peek_value)(&heap);
 		PH_(to_string)(node, &a);
-		result = H_(heap_pop)(&heap);
+		x = H_(heap_pop)(&heap);
 		if(!i || !(i & (i - 1))) {
 			printf("%lu: retreving %s.\n", (unsigned long)i, a);
 			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
 				(unsigned long)i);
 			PH_(graph)(&heap, fn);
 		}
-		assert(v == result && heap.a.size == i - 1);
+		assert(v == x && heap.a.size == i - 1);
 		PH_(valid)(&heap);
 		if(i != cum_size)
 			assert(PH_(compare)(last_priority, PH_(get_priority)(node)) <= 0);
@@ -168,7 +167,7 @@ static void PH_(test_basic)(void *const param) {
 	printf("Destructor:\n");
 	H_(heap_)(&merge);
 	H_(heap_)(&heap);
-	assert(!H_(heap_top)(&heap));
+	assert(!H_(heap_peek)(&heap));
 }
 
 /** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
