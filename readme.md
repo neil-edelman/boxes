@@ -2,14 +2,17 @@
 
 <table><tr>
 	<th>link</th>
+	<th>description</th>
 	<th>possible traits</th>
 	<th>required dependancies</th>
 </tr><tr>
-	<td>contiguous <a href="https://github.com/neil-edelman/array">array</a></td>
+	<td><a href="https://github.com/neil-edelman/array">array</a></td>
+	<td>contiguous array</td>
 	<td>compare, contiguous, to_string</td>
 	<td></td>
 </tr><tr>
-	<td>bit-field <a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
+	<td><a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
+	<td>bit-field</td>
 	<td></td>
 	<td></td>
 </tr><tr>
