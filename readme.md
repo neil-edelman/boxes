@@ -211,7 +211,7 @@ Copies `node` into `heap`\.
 <code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_peek</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
 
  * Return:  
-   The [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) in `heap` that the [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533) associated to the heap ranks most true; defaults to lowest\. If the heap is empty, null or zero; one may have to call [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) in order to differentiate the two, on some heaps\.
+   The lowest element in `heap` according to `HEAP_COMPARE` or null/zero if the heap is empty\. On some heaps, one may have to call [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) in order to differentiate\.
  * Order:  
    &#927;\(1\)
 
@@ -222,12 +222,10 @@ Copies `node` into `heap`\.
 
 <code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_pop</strong>(struct &lt;H&gt;heap *const <em>heap</em>)</code>
 
-Remove the lowest element according to `HEAP_COMPARE`\.
+Remove the lowest element in `heap` according to `HEAP_COMPARE`\.
 
- * Parameter: _heap_  
-   If null, returns false\.
  * Return:  
-   The [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) of the element that was removed; if the heap is empty, null or zero\.
+   The same as [&lt;H&gt;heap_peek](#user-content-fn-921d7df)\.
  * Order:  
    &#927;\(log `size`\)
 

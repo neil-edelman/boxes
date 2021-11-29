@@ -278,17 +278,14 @@ static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 	return PH_(node_array_new)(&heap->a) && (PH_(sift_up)(heap, &node), 1);
 }
 
-/** @return The <typedef:<PH>value> in `heap` that the <typedef:<PH>compare_fn>
- associated to the heap ranks most true; defaults to lowest. If the heap is
- empty, null or zero; one may have to call <fn:<H>heap_size> in order to
- differentiate the two, on some heaps. @order \O(1) @allow */
+/** @return The lowest element in `heap` according to `HEAP_COMPARE` or
+ null/zero if the heap is empty. On some heaps, one may have to call
+ <fn:<H>heap_size> in order to differentiate. @order \O(1) @allow */
 static PH_(value) H_(heap_peek)(const struct H_(heap) *const heap)
 	{ return assert(heap), heap->a.size ? PH_(get_value)(heap->a.data) : 0; }
 
-/** Remove the lowest element according to `HEAP_COMPARE`.
- @param[heap] If null, returns false. @return The <typedef:<PH>value> of the
- element that was removed; if the heap is empty, null or zero.
- @order \O(log `size`) @allow */
+/** Remove the lowest element in `heap` according to `HEAP_COMPARE`.
+ @return The same as <fn:<H>heap_peek>. @order \O(log `size`) @allow */
 static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
 	PH_(node) n;
 	return assert(heap), heap->a.size

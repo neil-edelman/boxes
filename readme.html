@@ -287,7 +287,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>The <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> in <code>heap</code> that the <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a> associated to the heap ranks most true; defaults to lowest. If the heap is empty, null or zero; one may have to call <a href = "#fn:&lt;H&gt;heap_size">&lt;H&gt;heap_size</a> in order to differentiate the two, on some heaps.</dd>
+	<dd>The lowest element in <code>heap</code> according to <code>HEAP_COMPARE</code> or null/zero if the heap is empty. On some heaps, one may have to call <a href = "#fn:&lt;H&gt;heap_size">&lt;H&gt;heap_size</a> in order to differentiate.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(1)</dd>
 </dl>
@@ -300,13 +300,11 @@
 
 <p><code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_pop</strong>(struct &lt;H&gt;heap *const <em>heap</em>)</code></p>
 
-<p>Remove the lowest element according to <code>HEAP_COMPARE</code>.</p>
+<p>Remove the lowest element in <code>heap</code> according to <code>HEAP_COMPARE</code>.</p>
 
 <dl>
-	<dt>Parameter: <em>heap</em></dt>
-	<dd>If null, returns false.</dd>
 	<dt>Return:</dt>
-	<dd>The <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> of the element that was removed; if the heap is empty, null or zero.</dd>
+	<dd>The same as <a href = "#fn:&lt;H&gt;heap_peek">&lt;H&gt;heap_peek</a>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log <code>size</code>)</dd>
 </dl>
