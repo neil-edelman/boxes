@@ -40,7 +40,7 @@ struct orc { unsigned health; char name[12]; };
 
 static void orc_to_string(const struct orc_heap_node *const node,
 	char (*const a)[12]) {
-	sprintf(*a, "%u%.9s", node->priority, node->value->name);
+	sprintf(*a, "%u%.9s", node->priority, node->payload->name);
 }
 
 #define POOL_NAME orc
@@ -53,7 +53,7 @@ static void test_orc(struct orc_heap_node *node, void *const vpool) {
 	orc->health = (unsigned)rand() / (RAND_MAX / 99 + 1);
 	orcish(orc->name, sizeof orc->name);
 	node->priority = orc->health;
-	node->value = orc;
+	node->payload = orc;
 }
 
 

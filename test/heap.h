@@ -9,7 +9,7 @@
  binary heap, proposed by <Williams, 1964, Heapsort, p. 347> and using
  terminology of <Knuth, 1973, Sorting>. Internally, it is an
  `<<H>heap_node>array` with implicit heap properties on <typedef:<PH>priority>
- and an optional <typedef:<PH>value> pointer payload. As such, one needs to
+ and an optional <typedef:<PH>payload> pointer value. As such, one needs to
  have <array.h> file in the same directory.
 
  @param[HEAP_NAME, HEAP_TYPE]
@@ -24,8 +24,8 @@
  type.
 
  @param[HEAP_VALUE]
- Optional payload <typedef:<PH>payload>, that is stored as a reference in
- <tag:<H>heap_node> as <typedef:<PH>value>; declaring it is sufficient.
+ Optional value <typedef:<PH>value>, that is stored as a reference in
+ <tag:<H>heap_node> as <typedef:<PH>payload>; declaring it is sufficient.
 
  @param[HEAP_TEST]
  To string trait contained in <../test/heap_test.h>; optional unit testing
@@ -104,22 +104,22 @@ static int PH_(default_compare)(const PH_(priority) a, const PH_(priority) b)
  <typedef:<PH>compare_fn>, if defined. */
 static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 
-#ifdef HEAP_VALUE /* <!-- value */
+#ifdef HEAP_VALUE /* <!-- payload */
 /** If `HEAP_VALUE` is set, a declared tag type. */
-typedef HEAP_VALUE PH_(payload);
+typedef HEAP_VALUE PH_(value);
 /** If `HEAP_VALUE` is set, this is a pointer to it, otherwise a boolean
- value that is true when there is an item. */
-typedef PH_(payload) *PH_(value);
-/** If `HEAP_VALUE` is set, creates a value as the payload of
+ payload that is true when there is an item. */
+typedef PH_(value) *PH_(payload);
+/** If `HEAP_VALUE` is set, creates a payload as the value of
  <typedef:<PH>node>. */
-struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
+struct H_(heap_node) { PH_(priority) priority; PH_(payload) payload; };
 /** Internal nodes in the heap. If `HEAP_VALUE` is set, this is a
  <tag:<H>heap_node>, otherwise it's the same as <typedef:<PH>priority>. */
 typedef struct H_(heap_node) PH_(node);
-#else /* value --><!-- !value */
-typedef int PH_(value);
+#else /* payload --><!-- !payload */
+typedef int PH_(payload);
 typedef PH_(priority) PH_(node);
-#endif /* !value --> */
+#endif /* !payload --> */
 
 /* This relies on `array.h` which must be in the same directory. */
 #define ARRAY_NAME PH_(node)
@@ -139,35 +139,35 @@ struct H_(heap) { struct PH_(node_array) a; };
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
 static PH_(priority) PH_(get_priority)(const PH_(node) *const node) {
-#ifdef HEAP_VALUE /* <-- value */
+#ifdef HEAP_VALUE /* <-- payload */
 	return node->priority;
-#else /* value --><!-- !value */
+#else /* payload --><!-- !payload */
 	return *node;
-#endif /* !value --> */
+#endif /* !payload --> */
 }
 
-/** Extracts the <typedef:<PH>value> of `node`, which must not be null. */
-static PH_(value) PH_(get_value)(const PH_(node) *const node) {
-#ifdef HEAP_VALUE /* <-- value */
-	return node->value;
-#else /* value --><!-- !value */
+/** Extracts the <typedef:<PH>payload> of `node`, which must not be null. */
+static PH_(payload) PH_(get_payload)(const PH_(node) *const node) {
+#ifdef HEAP_VALUE /* <-- payload */
+	return node->payload;
+#else /* payload --><!-- !payload */
 	(void)(node);
 	return 1;
-#endif /* !value --> */
+#endif /* !payload --> */
 }
 
-/** Extracts the <typedef:<PH>value> of `node`, which could be null. */
-static PH_(value) PH_(value_or_null)(const PH_(node) *const node)
-	{ return node ? PH_(get_value)(node) : 0; }
+/** Extracts the <typedef:<PH>payload> of `node`, which could be null. */
+static PH_(payload) PH_(payload_or_null)(const PH_(node) *const node)
+	{ return node ? PH_(get_payload)(node) : 0; }
 
 /** Copies `src` to `dest`. */
 static void PH_(copy)(const PH_(node) *const src, PH_(node) *const dest) {
-#ifdef HEAP_VALUE /* <!-- value */
+#ifdef HEAP_VALUE /* <!-- payload */
 	dest->priority = src->priority;
-	dest->value = src->value;
-#else /* value --><!-- !value */
+	dest->payload = src->payload;
+#else /* payload --><!-- !payload */
 	*dest = *src;
-#endif /* !value --> */
+#endif /* !payload --> */
 }
 
 /** Find the spot in `heap` where `node` goes and put it there.
@@ -212,7 +212,7 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
 }
 
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
- This reads from the an arbitrary leaf-node into a temporary value, so is
+ This reads from the an arbitrary leaf-node into a temporary payload, so is
  slightly more complex than <fn:<PH>sift_down>, but the same thing.
  @param[heap] At least `i + 1` entries. */
 static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
@@ -291,22 +291,22 @@ static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 static PH_(node) *H_(heap_peek)(const struct H_(heap) *const heap)
 	{ return assert(heap), heap->a.size ? heap->a.data : 0; }
 
-/** This returns the <typedef:<PH>value> of the <typedef:<PH>node> returned by
+/** This returns the <typedef:<PH>payload> of the <typedef:<PH>node> returned by
  <fn:<H>heap_peek>, for convenience with some applications. If `HEAP_VALUE`,
  this is a child of <fn:<H>heap_peek>, otherwise it is a boolean `int`.
- @return Lowest <typedef:<PH>value> in `heap` element according to
+ @return Lowest <typedef:<PH>payload> in `heap` element according to
  `HEAP_COMPARE`; if the heap is empty, null or zero. @order \O(1) @allow */
-static PH_(value) H_(heap_peek_value)(struct H_(heap) *const heap)
-	{ return PH_(value_or_null)(H_(heap_peek)(heap)); }
+static PH_(payload) H_(heap_peek_payload)(struct H_(heap) *const heap)
+	{ return PH_(payload_or_null)(H_(heap_peek)(heap)); }
 
 /** Remove the lowest element according to `HEAP_COMPARE`.
- @param[heap] If null, returns false. @return The <typedef:<PH>value> of the
+ @param[heap] If null, returns false. @return The <typedef:<PH>payload> of the
  element that was removed; if the heap is empty, null or zero.
  @order \O(log `size`) @allow */
-static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
+static PH_(payload) H_(heap_pop)(struct H_(heap) *const heap) {
 	PH_(node) n;
 	return assert(heap), heap->a.size
-		? (n = PH_(remove)(heap), PH_(get_value)(&n)) : 0;
+		? (n = PH_(remove)(heap), PH_(get_payload)(&n)) : 0;
 }
 
 /** The capacity of `heap` will be increased to at least `n` elements beyond
@@ -364,7 +364,7 @@ static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
 
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
-	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_peek_value)(0);
+	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_peek_payload)(0);
 	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }

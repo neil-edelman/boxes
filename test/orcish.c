@@ -55,10 +55,10 @@ static const char *suffixes[] = {
 static const unsigned max_name_size = 128;
 
 /** This is Poisson process in a similar manner to that proposed by Knuth. It
- uses floating point; the values were too small to reliably use fixed point.
+ uses floating point; the payloads were too small to reliably use fixed point.
  @param[r, recur] A pointer to the recurrence that will generate numbers in the
  range of `[0, RAND_MAX]`.
- @return A random number based on the expectation value `expect`.
+ @return A random number based on the expectation payload `expect`.
  @order \O(`expect`) */
 static unsigned poisson(double expect,
 	unsigned long *const r, unsigned (*recur)(unsigned long *)) {
@@ -73,7 +73,7 @@ static unsigned poisson(double expect,
 
 /** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
  (if zero, does nothing) then puts a null terminator. Uses `r` plugged into
- `recur` to generate random values in the range of `[0, RAND_MAX]`. */
+ `recur` to generate random payloads in the range of `[0, RAND_MAX]`. */
 static void orc_rand(char *const name, const size_t name_size,
 	unsigned long r, unsigned (*recur)(unsigned long *)) {
 	unsigned len, syl_len, suf_len, ten_len;
@@ -101,7 +101,7 @@ static void orc_rand(char *const name, const size_t name_size,
 	if(!len) goto suffix;
 
 	/* Reduce the length to a number drawn from a Poisson random variable
-	 having the expected value of half the syllable part. */
+	 having the expected payload of half the syllable part. */
 	ten_len = poisson((len + syl_len) / 2.0, &r, recur);
 	if(ten_len < len) { len = ten_len; if(!len) goto suffix; }
 
@@ -200,7 +200,7 @@ void orc_ptr(char *const name, const size_t name_size, const void *const p) {
 	}
 }
 
-/** Call <fn:orc_ptr> with `p` with default values and a small temporary buffer.
+/** Call <fn:orc_ptr> with `p` with default payloads and a small temporary buffer.
  @return A temporary string; can handle four names at a time. */
 const char *orcify(const void *const p) {
 	static char names[4][10];
