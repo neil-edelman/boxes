@@ -18,7 +18,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
 
 
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
-   `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith; `HEAP_TYPE` defaults to `unsigned int`\. `HEAP_NAME` is required\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
+   `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith\. `HEAP_TYPE` defaults to `unsigned int`; `HEAP_NAME` is required\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  

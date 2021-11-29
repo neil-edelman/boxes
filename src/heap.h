@@ -14,8 +14,8 @@
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
- type <typedef:<PH>priority> associated therewith; `HEAP_TYPE` defaults to
- `unsigned int`. `HEAP_NAME` is required. `<PH>` is private, whose names are
+ type <typedef:<PH>priority> associated therewith. `HEAP_TYPE` defaults to
+ `unsigned int`; `HEAP_NAME` is required. `<PH>` is private, whose names are
  prefixed in a manner to avoid collisions.
 
  @param[HEAP_COMPARE]
