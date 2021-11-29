@@ -19,12 +19,12 @@
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<A>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), associated therewith; required\. `<PA>` is private, whose names are prefixed in a manner to avoid collisions\.
+ * Parameter: ARRAY\_CONTIGUOUS  
+   Include the singleton trait contained in [contiguous\.h](contiguous.h) that takes no options\. Rational for the design decision to make it a singleton class, instead of including it always, is `array` is used as a backing for other boxes; it would just increase compilation in most cases\.
  * Parameter: ARRAY\_MIN\_CAPACITY  
    Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go below\.
- * Parameter: ARRAY\_CONTIGUOUS  
-   Include the singleton trait contained in [contiguous\.h](contiguous.h) that takes no options\.
  * Parameter: ARRAY\_TEST  
-   Optional function implementing [&lt;PA&gt;action_fn](#user-content-typedef-b531bc05) that fills the [&lt;PA&gt;type](#user-content-typedef-a8a4b08a) from uninitialized to random for unit testing framework using `assert`\. Testing array contained in [\.\./test/test\_array\.h](../test/test_array.h)\. Must have any To String trait included after all the tests\.
+   Optional function implementing [&lt;PA&gt;action_fn](#user-content-typedef-b531bc05) that fills the [&lt;PA&gt;type](#user-content-typedef-a8a4b08a) from uninitialized to random for unit testing framework using `assert`\. Testing array contained in [\.\./test/test\_array\.h](../test/test_array.h)\. Must have at least one `to_string` trait included, and any tests of traits must come before `to_string`\.
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: ARRAY\_COMPARE\_NAME, ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  

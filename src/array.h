@@ -101,14 +101,13 @@
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
 
-/* !data -> !size, data -> capacity >= min && size <= capacity <= max */
-
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`. To initialize it to an
  idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
+/* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
 /** Initialises `a` to idle. @order \Theta(1) @allow */
 static void A_(array)(struct A_(array) *const a)
@@ -121,8 +120,7 @@ static void A_(array_)(struct A_(array) *const a)
 /** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
  zero, does nothing. @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- doesn't follow POSIX.
- @throws[realloc] @allow */
+ doesn't follow POSIX. @throws[realloc] @allow */
 static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 	size_t c0;
 	PA_(type) *data;
@@ -267,12 +265,14 @@ static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
 }
 
 /** Copies `b`, which can be null, to the back of `a`.
- @return Success. @throws[realloc, ERANGE] */
-static int A_(array_copy)(struct A_(array) *const a,
+ @return Success. @throws[realloc, ERANGE]
+ @fixme Untested. */
+static int A_(array_affix)(struct A_(array) *const a,
 	const struct A_(array) *const b)
 	{ return A_(array_splice)(a, a->size, a->size, b); }
 
-/** Appends `n` items on the back of `a`. */
+/** Appends `n` items on the back of `a`.
+ @fixme It should be the other way around. */
 static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 	{ return A_(array_append)(a, n); }
 
@@ -315,7 +315,7 @@ static void PA_(unused_base)(void) {
 	A_(array_)(0); A_(array_append_at)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
-	A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0); PA_(begin)(0, 0);
+	A_(array_splice)(0, 0, 0, 0); A_(array_affix)(0, 0); PA_(begin)(0, 0);
 	PA_(next)(0); PA_(append)(0, 0);
 	PA_(unused_base_coda)();
 }
