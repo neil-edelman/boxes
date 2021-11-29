@@ -8,7 +8,7 @@
  A <tag:<H>heap> is a binary heap, proposed by
  <Williams, 1964, Heapsort, p. 347> and using terminology of
  <Knuth, 1973, Sorting>. It can be used as an implementation of a priority
- queue; internally, it is a `<<H>heap_priority>array` with implicit heap
+ queue; internally, it is a `<<H>heap_node>array` with implicit heap
  properties on <typedef:<PH>priority> and an optional <typedef:<PH>value>
  pointer payload.
 
@@ -24,8 +24,8 @@
  type.
 
  @param[HEAP_VALUE]
- Optional payload <typedef:<PH>adjunct>, that is stored as a reference in
- <tag:<H>heap_priority> as <typedef:<PH>value>; declaring it is sufficient.
+ Optional payload <typedef:<PH>payload>, that is stored as a reference in
+ <tag:<H>heap_node> as <typedef:<PH>value>; declaring it is sufficient.
 
  @param[HEAP_TEST]
  To string trait contained in <../test/heap_test.h>; optional unit testing
@@ -106,16 +106,16 @@ static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 
 #ifdef HEAP_VALUE /* <!-- value */
 /** If `HEAP_VALUE` is set, a declared tag type. */
-typedef HEAP_VALUE PH_(adjunct);
+typedef HEAP_VALUE PH_(payload);
 /** If `HEAP_VALUE` is set, this is a pointer to it, otherwise a boolean
  value that is true when there is an item. */
-typedef PH_(adjunct) *PH_(value);
+typedef PH_(payload) *PH_(value);
 /** If `HEAP_VALUE` is set, creates a value as the payload of
  <typedef:<PH>node>. */
-struct H_(heap_priority) { PH_(priority) priority; PH_(value) value; };
+struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
 /** Internal nodes in the heap. If `HEAP_VALUE` is set, this is a
- <tag:<H>heap_priority>, otherwise it's the same as <typedef:<PH>priority>. */
-typedef struct H_(heap_priority) PH_(node);
+ <tag:<H>heap_node>, otherwise it's the same as <typedef:<PH>priority>. */
+typedef struct H_(heap_node) PH_(node);
 #else /* value --><!-- !value */
 typedef int PH_(value);
 typedef PH_(priority) PH_(node);
