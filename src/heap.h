@@ -20,8 +20,7 @@
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>compare_fn>. Defaults to minimum-hash on
- `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable
- type.
+ `HEAP_TYPE`. Required if `HEAP_TYPE` is changed to an incomparable type.
 
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in

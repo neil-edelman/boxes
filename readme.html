@@ -58,7 +58,7 @@
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
 	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an assignable type <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> associated therewith. <code>HEAP_NAME</code> is required; <code>HEAP_TYPE</code> defaults to <code>unsigned int</code>. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>. Required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
 	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
