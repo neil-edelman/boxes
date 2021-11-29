@@ -24,9 +24,9 @@ static void test_int(unsigned *const i, void *const unused) {
 #include "../src/heap.h"
 
 
-struct orc_heap_node;
-static void orc_to_string(const struct orc_heap_node *, char (*)[12]);
-static void test_orc(struct orc_heap_node *, void *);
+struct orc_heap_priority;
+static void orc_to_string(const struct orc_heap_priority *, char (*)[12]);
+static void test_orc(struct orc_heap_priority *, void *);
 
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc
@@ -38,7 +38,7 @@ static void test_orc(struct orc_heap_node *, void *);
 
 struct orc { unsigned health; char name[12]; };
 
-static void orc_to_string(const struct orc_heap_node *const node,
+static void orc_to_string(const struct orc_heap_priority *const node,
 	char (*const a)[12]) {
 	sprintf(*a, "%u%.9s", node->priority, node->value->name);
 }
@@ -47,7 +47,7 @@ static void orc_to_string(const struct orc_heap_node *const node,
 #define POOL_TYPE struct orc
 #include "pool.h"
 
-static void test_orc(struct orc_heap_node *node, void *const vpool) {
+static void test_orc(struct orc_heap_priority *node, void *const vpool) {
 	struct orc *orc = orc_pool_new(vpool);
 	if(!orc) { assert(0); exit(EXIT_FAILURE); }
 	orc->health = (unsigned)rand() / (RAND_MAX / 99 + 1);

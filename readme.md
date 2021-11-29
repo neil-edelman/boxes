@@ -4,7 +4,7 @@
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;adjunct](#user-content-typedef-5aee1bc), [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_node](#user-content-tag-7243593c), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_priority](#user-content-tag-1be44aa8), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,7 +13,7 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&lt;H&gt;heap_node](#user-content-tag-7243593c)\. It is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. Internally, it is an `<<H>heap_node>array` with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload\. As such, one needs to have [array\.h](array.h) file in the same directory\.
+A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is a `<<H>heap_priority>array` with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload\.
 
 
 
@@ -22,7 +22,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a priority queue built from [&l
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
-   Optional payload [&lt;PH&gt;adjunct](#user-content-typedef-5aee1bc), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c) as [&lt;PH&gt;value](#user-content-typedef-a55b7cd4); declaring it is sufficient\.
+   Optional payload [&lt;PH&gt;adjunct](#user-content-typedef-5aee1bc), that is stored as a reference in [&lt;H&gt;heap_priority](#user-content-tag-1be44aa8) as [&lt;PH&gt;value](#user-content-typedef-a55b7cd4); declaring it is sufficient\.
  * Parameter: HEAP\_TEST  
    To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Must be defined equal to a random filler function, satisfying `void (*<PH>biaction_fn)(<PH>node *, void *)` with the `param` of [&lt;H&gt;heap_test](#user-content-fn-2a4c2c14)\. Must have any To String trait\.
  * Parameter: HEAP\_EXPECT\_TRAIT  
@@ -73,9 +73,9 @@ If `HEAP_VALUE` is set, this is a pointer to it, otherwise a boolean value that 
 
 ### <a id = "user-content-typedef-23ae637f" name = "user-content-typedef-23ae637f">&lt;PH&gt;node</a> ###
 
-<code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code>
+<code>typedef struct &lt;H&gt;heap_priority <strong>&lt;PH&gt;node</strong>;</code>
 
-Internal nodes in the heap\. If `HEAP_VALUE` is set, this is a [&lt;H&gt;heap_node](#user-content-tag-7243593c), otherwise it's the same as [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.
+Internal nodes in the heap\. If `HEAP_VALUE` is set, this is a [&lt;H&gt;heap_priority](#user-content-tag-1be44aa8), otherwise it's the same as [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.
 
 
 
@@ -89,9 +89,9 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-7243593c" name = "user-content-tag-7243593c">&lt;H&gt;heap_node</a> ###
+### <a id = "user-content-tag-1be44aa8" name = "user-content-tag-1be44aa8">&lt;H&gt;heap_priority</a> ###
 
-<code>struct <strong>&lt;H&gt;heap_node</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code>
+<code>struct <strong>&lt;H&gt;heap_priority</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code>
 
 If `HEAP_VALUE` is set, creates a value as the payload of [&lt;PH&gt;node](#user-content-typedef-23ae637f)\.
 

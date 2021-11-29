@@ -38,7 +38,7 @@
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>adjunct">&lt;PH&gt;adjunct</a>, <a href = "#typedef:<PH>value">&lt;PH&gt;value</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_priority">&lt;H&gt;heap_priority</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 527 height = 310></p>
 
-<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a priority queue built from <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>. It is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. Internally, it is an <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload. As such, one needs to have <a href = "array.h">array.h</a> file in the same directory.</p>
+<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;H&gt;heap_priority&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload.</p>
 
 </div>
 
@@ -60,7 +60,7 @@
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;adjunct">&lt;PH&gt;adjunct</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a> as <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>; declaring it is sufficient.</dd>
+	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;adjunct">&lt;PH&gt;adjunct</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_priority">&lt;H&gt;heap_priority</a> as <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>; declaring it is sufficient.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a random filler function, satisfying <code>void (*&lt;PH&gt;biaction_fn)(&lt;PH&gt;node *, void *)</code> with the <code>param</code> of <a href = "#fn:&lt;H&gt;heap_test">&lt;H&gt;heap_test</a>. Must have any To String trait.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
@@ -121,9 +121,9 @@
 
 <h3><a id = "typedef:<PH>node" name = "typedef:<PH>node">&lt;PH&gt;node</a></h3>
 
-<p><code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code></p>
+<p><code>typedef struct &lt;H&gt;heap_priority <strong>&lt;PH&gt;node</strong>;</code></p>
 
-<p>Internal nodes in the heap. If <code>HEAP_VALUE</code> is set, this is a <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>, otherwise it's the same as <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
+<p>Internal nodes in the heap. If <code>HEAP_VALUE</code> is set, this is a <a href = "#tag:&lt;H&gt;heap_priority">&lt;H&gt;heap_priority</a>, otherwise it's the same as <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
 
 </div>
 
@@ -141,9 +141,9 @@
 
 <div>
 
-<h3><a id = "tag:<H>heap_node" name = "tag:<H>heap_node">&lt;H&gt;heap_node</a></h3>
+<h3><a id = "tag:<H>heap_priority" name = "tag:<H>heap_priority">&lt;H&gt;heap_priority</a></h3>
 
-<p><code>struct <strong>&lt;H&gt;heap_node</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
+<p><code>struct <strong>&lt;H&gt;heap_priority</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
 
 <p>If <code>HEAP_VALUE</code> is set, creates a value as the payload of <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>.</p>
 
