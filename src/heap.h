@@ -151,10 +151,6 @@ static PH_(value) PH_(get_value)(const PH_(node) *const node) {
 #endif /* !value --> */
 }
 
-/** Extracts the <typedef:<PH>value> of `node`, which could be null. */
-static PH_(value) PH_(value_or_null)(const PH_(node) *const node)
-	{ return node ? PH_(get_value)(node) : 0; }
-
 /** Copies `src` to `dest`. */
 static void PH_(copy)(const PH_(node) *const src, PH_(node) *const dest) {
 #ifdef HEAP_VALUE /* <!-- value */
@@ -330,7 +326,7 @@ static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 /** Shallow-copies and heapifies all the elements of `master` into `heap`.
  @param[master] If null, does nothing. @return Success.
  @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] */
-static int H_(heap_duplicate)(struct H_(heap) *const heap,
+static int H_(heap_reproduce)(struct H_(heap) *const heap,
 	const struct H_(heap) *const master) {
 	PH_(node) *n;
 	assert(heap);
@@ -374,7 +370,7 @@ static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
 	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
-	H_(heap_duplicate)(0, 0);
+	H_(heap_reproduce)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
