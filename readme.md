@@ -57,8 +57,8 @@ independent, `C89` data structure projects. The code in the projects should work
 on most systems and compilers. The build system (this) requires a shell that
 understands `sh`-scripts and GNU `Makefile`; it is useful in automated
 developing. If one has `git` set up, the `sh`-script, `autoclone`, downloads
-them all, or download each project or file individually. See each project's `test`
-section for examples.
+them all, or download each project or file individually. See each project for
+usage, and the `test` section for examples.
 
 ## Why boxes? ##
 
@@ -82,8 +82,8 @@ as the project, and files in `traits`. `make` creates a test in `bin` using `gcc
 or `clang`.
 
 Most of the `C` code makes extensive use of the pre-processor for code
-generation; see each for usage. So much so, that traditional parsers get
-confused; thus, we used a custom lexer,
+generation. So much so, that traditional parsers get
+hopelessly confused; we use a custom lexer,
 [cdoc](https://github.com/neil-edelman/cdoc), for documentation.
 
 ## Details ##
