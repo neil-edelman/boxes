@@ -19,8 +19,8 @@
  prefixed in a manner to avoid collisions.
 
  @param[HEAP_COMPARE]
- A function satisfying <typedef:<PH>compare_fn>. Defaults to minimum-hash on
- `HEAP_TYPE`. Required if `HEAP_TYPE` is changed to an incomparable type.
+ A function satisfying <typedef:<PH>compare_fn>. Defaults to minimum-hash.
+ Required if `HEAP_TYPE` is changed to an incomparable type.
 
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in
@@ -30,8 +30,8 @@
  @param[HEAP_TEST]
  To string trait contained in <../test/heap_test.h>; optional unit testing
  framework using `assert`. Must be defined equal to a random filler function,
- satisfying <typedef:<PH>biaction_fn> with the `param` of <fn:<H>heap_test>. Must
- have any `to string` trait.
+ satisfying <typedef:<PH>biaction_fn> with the `param` of <fn:<H>heap_test>.
+ Must have any `to string` trait.
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -89,11 +89,10 @@
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(priority);
 
-/** Returns a positive result if `a` comes after `b`, inducing a strict
- pre-order of `a` with respect to `b`; this is compatible, but less strict then
- the comparators from `bsearch` and `qsort`; it only needs to divide entries
- into two instead of three categories. (If the return value is positive, they
- are out-of-order.) */
+/** Returns a positive result if they are out-of-order, inducing a strict
+ pre-order of `a` and `b`. This is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`; it only needs to divide entries into
+ two instead of three categories. */
 typedef int (*PH_(compare_fn))(const PH_(priority) a, const PH_(priority) b);
 #ifndef HEAP_COMPARE /* <!-- !cmp */
 /** The default `HEAP_COMPARE` on `a` and `b` is `a > b`, which makes a
@@ -109,8 +108,8 @@ static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 #ifdef HEAP_VALUE /* <!-- value */
 typedef HEAP_VALUE PH_(value_data);
 typedef PH_(value_data) *PH_(value);
-/** If `HEAP_VALUE` is set, a pair of (priority, value) that becomes
- <typedef:<PH>node>. */
+/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>. Memory management
+ for this structure is the responsibility of the caller. */
 struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
 /** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heap_node>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */

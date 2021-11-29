@@ -20,7 +20,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
    `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith\. `HEAP_NAME` is required; `HEAP_TYPE` defaults to `unsigned int`\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: HEAP\_COMPARE  
-   A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash on `HEAP_TYPE`\. Required if `HEAP_TYPE` is changed to an incomparable type\.
+   A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash\. Required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
    Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\. If set, has no effect on the ranking, but affects [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
  * Parameter: HEAP\_TEST  
@@ -51,7 +51,7 @@ Valid assignable type used for priority in [&lt;PH&gt;node](#user-content-typede
 
 <code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code>
 
-Returns a positive result if `a` comes after `b`, inducing a strict pre\-order of `a` with respect to `b`; this is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\. \(If the return value is positive, they are out\-of\-order\.\)
+Returns a positive result if they are out\-of\-order, inducing a strict pre\-order of `a` and `b`\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
 
 
 
@@ -85,7 +85,7 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>struct <strong>&lt;H&gt;heap_node</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code>
 
-If `HEAP_VALUE` is set, a pair of \(priority, value\) that becomes [&lt;PH&gt;node](#user-content-typedef-23ae637f)\.
+If `HEAP_VALUE` is set, this becomes [&lt;PH&gt;node](#user-content-typedef-23ae637f)\. Memory management for this structure is the responsibility of the caller\.
 
 
 

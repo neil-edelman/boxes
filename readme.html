@@ -58,7 +58,7 @@
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
 	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an assignable type <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> associated therewith. <code>HEAP_NAME</code> is required; <code>HEAP_TYPE</code> defaults to <code>unsigned int</code>. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>. Required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash. Required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
 	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
@@ -93,7 +93,7 @@
 
 <p><code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code></p>
 
-<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a strict pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. (If the return value is positive, they are out-of-order.)</p>
+<p>Returns a positive result if they are out-of-order, inducing a strict pre-order of <code>a</code> and <code>b</code>. This is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories.</p>
 
 </div>
 
@@ -135,7 +135,7 @@
 
 <p><code>struct <strong>&lt;H&gt;heap_node</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
 
-<p>If <code>HEAP_VALUE</code> is set, a pair of (priority, value) that becomes <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>.</p>
+<p>If <code>HEAP_VALUE</code> is set, this becomes <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>. Memory management for this structure is the responsibility of the caller.</p>
 
 </div>
 
