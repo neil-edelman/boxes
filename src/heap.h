@@ -107,16 +107,13 @@ static int PH_(default_compare)(const PH_(priority) a, const PH_(priority) b)
 static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 
 #ifdef HEAP_VALUE /* <!-- value */
-/** If `HEAP_VALUE` is set, used in <typedef:<PH>value>. */
 typedef HEAP_VALUE PH_(value_data);
-/** If `HEAP_VALUE` is set, a pointer to <typedef:<PH>value_data>, otherwise
- the value is the same as <typedef:<PH>priority>. */
 typedef PH_(value_data) *PH_(value);
 /** If `HEAP_VALUE` is set, a pair of (priority, value) that becomes
  <typedef:<PH>node>. */
 struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
 /** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heap_node>,
- otherwise it's a (priority) set by <typedef:<PH>priority>. */
+ otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
 typedef struct H_(heap_node) PH_(node);
 #else /* value --><!-- !value */
 typedef PH_(priority) PH_(value);
