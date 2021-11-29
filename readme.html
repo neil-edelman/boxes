@@ -93,7 +93,7 @@
 
 <p><code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code></p>
 
-<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a strict pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. (Does one have to switch them to be in order?)</p>
+<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a strict pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. (If the return value is positive, they are out-of-order.)</p>
 
 </div>
 
