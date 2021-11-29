@@ -7,40 +7,47 @@
 	<th>required dependancies</th>
 </tr><tr>
 	<td><a href="https://github.com/neil-edelman/array">array</a></td>
-	<td>contiguous array</td>
+	<td>contiguous dynamic array</td>
 	<td>compare, contiguous, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
-	<td>bit-field</td>
+	<td>fixed bit-field</td>
 	<td></td>
 	<td></td>
 </tr><tr>
-	<td>priority queue <a href = "https://github.com/neil-edelman/heap">heap</a></td>
+	<td><a href = "https://github.com/neil-edelman/heap">heap</a></td>
+	<td>priority-queue</td>
 	<td>to_string</td>
 	<td>array</td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/list">list</a></td>
+	<td>doubly-linked component</td>
 	<td>to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/orcish">orcish</a></td>
+	<td>name generator</td>
 	<td></td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/pool">pool</a></td>
+	<td>stable pool</td>
 	<td>to_string</td>
 	<td>array, heap</td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/set">set</a></td>
+	<td>Unordered associative array</td>
 	<td>to_string, compare?</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
+	<td>prefix tree</td>
 	<td>to_string, compare?</td>
 	<td>array?</td>
 </tr><tr>
-	<td>upcoming . . . disjoint?</td>
+	<td>disjoint</td>
+	<td>upcoming</td>
 	<td>to_string?, compare?</td>
 	<td>array?</td>
 </tr></table>
