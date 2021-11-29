@@ -3,8 +3,8 @@
 ## Priority Queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;adjunct](#user-content-typedef-5aee1bc), [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_priority](#user-content-tag-1be44aa8), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_node](#user-content-tag-7243593c), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,16 +13,16 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is a `<<H>heap_priority>array` with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer payload\.
+A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is a `<<H>heap_node>array` with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer value\.
 
 
 
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
-   `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith\. `HEAP_NAME` is required but `HEAP_TYPE` defaults to `unsigned int` if not specified\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
+   `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith; `HEAP_TYPE` defaults to `unsigned int`\. `HEAP_NAME` is required\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
-   Optional payload [&lt;PH&gt;adjunct](#user-content-typedef-5aee1bc), that is stored as a reference in [&lt;H&gt;heap_priority](#user-content-tag-1be44aa8) as [&lt;PH&gt;value](#user-content-typedef-a55b7cd4); declaring it is sufficient\.
+   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\. If set, has no effect on the ranking, but affects the return values of <typedef:??>\.
  * Parameter: HEAP\_TEST  
    To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Must be defined equal to a random filler function, satisfying `void (*<PH>biaction_fn)(<PH>node *, void *)` with the `param` of [&lt;H&gt;heap_test](#user-content-fn-2a4c2c14)\. Must have any To String trait\.
  * Parameter: HEAP\_EXPECT\_TRAIT  
@@ -34,7 +34,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Dependancies:  
    [array](https://github.com/neil-edelman/array)
  * Caveat:  
-   Add decrease priority\.
+   Add decrease priority\. Add replace\.
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -51,31 +51,15 @@ Valid assignable type used for priority in [&lt;PH&gt;node](#user-content-typede
 
 <code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code>
 
-Returns a positive result if `a` comes after `b`, inducing a strict pre\-order of `a` with respect to `b`; this is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\. The default `HEAP_COMPARE` is `a > b`, which makes a minimum\-hash\.
-
-
-
-### <a id = "user-content-typedef-5aee1bc" name = "user-content-typedef-5aee1bc">&lt;PH&gt;adjunct</a> ###
-
-<code>typedef HEAP_VALUE <strong>&lt;PH&gt;adjunct</strong>;</code>
-
-If `HEAP_VALUE` is set, a declared tag type\.
-
-
-
-### <a id = "user-content-typedef-a55b7cd4" name = "user-content-typedef-a55b7cd4">&lt;PH&gt;value</a> ###
-
-<code>typedef &lt;PH&gt;adjunct *<strong>&lt;PH&gt;value</strong>;</code>
-
-If `HEAP_VALUE` is set, this is a pointer to it, otherwise a boolean value that is true when there is an item\.
+Returns a positive result if `a` comes after `b`, inducing a strict pre\-order of `a` with respect to `b`; this is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\. \(Does one have to switch them to be in order?\)
 
 
 
 ### <a id = "user-content-typedef-23ae637f" name = "user-content-typedef-23ae637f">&lt;PH&gt;node</a> ###
 
-<code>typedef struct &lt;H&gt;heap_priority <strong>&lt;PH&gt;node</strong>;</code>
+<code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code>
 
-Internal nodes in the heap\. If `HEAP_VALUE` is set, this is a [&lt;H&gt;heap_priority](#user-content-tag-1be44aa8), otherwise it's the same as [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.
+If `HEAP_VALUE` is set, \(priority, value\) set by [&lt;H&gt;heap_node](#user-content-tag-7243593c), otherwise it's a \(priority\) set directly by [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.
 
 
 
@@ -89,17 +73,17 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-1be44aa8" name = "user-content-tag-1be44aa8">&lt;H&gt;heap_priority</a> ###
+### <a id = "user-content-tag-7243593c" name = "user-content-tag-7243593c">&lt;H&gt;heap_node</a> ###
 
-<code>struct <strong>&lt;H&gt;heap_priority</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code>
+<code>struct <strong>&lt;H&gt;heap_node</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code>
 
-If `HEAP_VALUE` is set, creates a value as the payload of [&lt;PH&gt;node](#user-content-typedef-23ae637f)\.
+If `HEAP_VALUE` is set, a pair of \(priority, value\) that becomes [&lt;PH&gt;node](#user-content-typedef-23ae637f)\.
 
 
 
 ### <a id = "user-content-tag-8ef1078f" name = "user-content-tag-8ef1078f">&lt;H&gt;heap</a> ###
 
-<code>struct <strong>&lt;H&gt;heap</strong>;</code>
+<code>struct <strong>&lt;H&gt;heap</strong> { struct &lt;PH&gt;node_array a; };</code>
 
 Stores the heap as an implicit binary tree in an array called `a`\. To initialize it to an idle state, see [&lt;H&gt;heap](#user-content-fn-8ef1078f), `HEAP_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
@@ -127,11 +111,11 @@ Contains all the iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d3572b1d">&lt;H&gt;heap_clear</a></td><td>heap</td></tr>
 
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-2f5a4cc1">&lt;H&gt;heap_size</a></td><td>heap</td></tr>
+
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-42cb2b13">&lt;H&gt;heap_add</a></td><td>heap, node</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;node *</td><td><a href = "#user-content-fn-921d7df">&lt;H&gt;heap_peek</a></td><td>heap</td></tr>
-
-<tr><td align = right>static &lt;PH&gt;value</td><td><a href = "#user-content-fn-c69b891">&lt;H&gt;heap_peek_value</a></td><td>heap</td></tr>
+<tr><td align = right>static &lt;PH&gt;value</td><td><a href = "#user-content-fn-921d7df">&lt;H&gt;heap_peek</a></td><td>heap</td></tr>
 
 <tr><td align = right>static &lt;PH&gt;value</td><td><a href = "#user-content-fn-2cd270b7">&lt;H&gt;heap_pop</a></td><td>heap</td></tr>
 
@@ -187,6 +171,18 @@ Sets `heap` to be empty\. That is, the size of `heap` will be zero, but if it wa
 
 
 
+### <a id = "user-content-fn-2f5a4cc1" name = "user-content-fn-2f5a4cc1">&lt;H&gt;heap_size</a> ###
+
+<code>static size_t <strong>&lt;H&gt;heap_size</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
+
+Empty is `!size`\.
+
+ * Return:  
+   Size of the `heap`\.
+
+
+
+
 ### <a id = "user-content-fn-42cb2b13" name = "user-content-fn-42cb2b13">&lt;H&gt;heap_add</a> ###
 
 <code>static int <strong>&lt;H&gt;heap_add</strong>(struct &lt;H&gt;heap *const <em>heap</em>, &lt;PH&gt;node <em>node</em>)</code>
@@ -204,24 +200,10 @@ Copies `node` into `heap`\.
 
 ### <a id = "user-content-fn-921d7df" name = "user-content-fn-921d7df">&lt;H&gt;heap_peek</a> ###
 
-<code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_peek</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
+<code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_peek</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
 
  * Return:  
-   Lowest in `heap` according to `HEAP_COMPARE` or null if the heap is empty\. This pointer is valid only until one makes structural changes to the heap\.
- * Order:  
-   &#927;\(1\)
-
-
-
-
-### <a id = "user-content-fn-c69b891" name = "user-content-fn-c69b891">&lt;H&gt;heap_peek_value</a> ###
-
-<code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_peek_value</strong>(struct &lt;H&gt;heap *const <em>heap</em>)</code>
-
-This returns the [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) of the [&lt;PH&gt;node](#user-content-typedef-23ae637f) returned by [&lt;H&gt;heap_peek](#user-content-fn-921d7df), for convenience with some applications\. If `HEAP_VALUE`, this is a child of [&lt;H&gt;heap_peek](#user-content-fn-921d7df), otherwise it is a boolean `int`\.
-
- * Return:  
-   Lowest [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) in `heap` element according to `HEAP_COMPARE`; if the heap is empty, null or zero\.
+   The [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) in `heap` that the [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533) associated to the heap ranks most true; defaults to lowest\. If the heap is empty, null or zero; one may have to call [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) in order to differentiate the two, on some heaps\.
  * Order:  
    &#927;\(1\)
 

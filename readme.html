@@ -37,8 +37,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>adjunct">&lt;PH&gt;adjunct</a>, <a href = "#typedef:<PH>value">&lt;PH&gt;value</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_priority">&lt;H&gt;heap_priority</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,17 +50,17 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 527 height = 310></p>
 
-<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;H&gt;heap_priority&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer payload.</p>
+<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer value.</p>
 
 </div>
 
 <dl>
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
-	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an assignable type <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> associated therewith. <code>HEAP_NAME</code> is required but <code>HEAP_TYPE</code> defaults to <code>unsigned int</code> if not specified. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an assignable type <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> associated therewith; <code>HEAP_TYPE</code> defaults to <code>unsigned int</code>. <code>HEAP_NAME</code> is required. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional payload <a href = "#typedef:&lt;PH&gt;adjunct">&lt;PH&gt;adjunct</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_priority">&lt;H&gt;heap_priority</a> as <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>; declaring it is sufficient.</dd>
+	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects the return values of &lt;typedef:??&gt;.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a random filler function, satisfying <code>void (*&lt;PH&gt;biaction_fn)(&lt;PH&gt;node *, void *)</code> with the <code>param</code> of <a href = "#fn:&lt;H&gt;heap_test">&lt;H&gt;heap_test</a>. Must have any To String trait.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
@@ -72,7 +72,7 @@
 	<dt>Dependancies:</dt>
 	<dd><a href = "https://github.com/neil-edelman/array">array</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Add decrease priority.</dd>
+	<dd>Add decrease priority. Add replace.</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -93,27 +93,7 @@
 
 <p><code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code></p>
 
-<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a strict pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. The default <code>HEAP_COMPARE</code> is <code>a &gt; b</code>, which makes a minimum-hash.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PH>adjunct" name = "typedef:<PH>adjunct">&lt;PH&gt;adjunct</a></h3>
-
-<p><code>typedef HEAP_VALUE <strong>&lt;PH&gt;adjunct</strong>;</code></p>
-
-<p>If <code>HEAP_VALUE</code> is set, a declared tag type.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PH>value" name = "typedef:<PH>value">&lt;PH&gt;value</a></h3>
-
-<p><code>typedef &lt;PH&gt;adjunct *<strong>&lt;PH&gt;value</strong>;</code></p>
-
-<p>If <code>HEAP_VALUE</code> is set, this is a pointer to it, otherwise a boolean value that is true when there is an item.</p>
+<p>Returns a positive result if <code>a</code> comes after <code>b</code>, inducing a strict pre-order of <code>a</code> with respect to <code>b</code>; this is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories. (Does one have to switch them to be in order?)</p>
 
 </div>
 
@@ -121,9 +101,9 @@
 
 <h3><a id = "typedef:<PH>node" name = "typedef:<PH>node">&lt;PH&gt;node</a></h3>
 
-<p><code>typedef struct &lt;H&gt;heap_priority <strong>&lt;PH&gt;node</strong>;</code></p>
+<p><code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code></p>
 
-<p>Internal nodes in the heap. If <code>HEAP_VALUE</code> is set, this is a <a href = "#tag:&lt;H&gt;heap_priority">&lt;H&gt;heap_priority</a>, otherwise it's the same as <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
+<p>If <code>HEAP_VALUE</code> is set, (priority, value) set by <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>, otherwise it's a (priority) set directly by <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
 
 </div>
 
@@ -141,11 +121,11 @@
 
 <div>
 
-<h3><a id = "tag:<H>heap_priority" name = "tag:<H>heap_priority">&lt;H&gt;heap_priority</a></h3>
+<h3><a id = "tag:<H>heap_node" name = "tag:<H>heap_node">&lt;H&gt;heap_node</a></h3>
 
-<p><code>struct <strong>&lt;H&gt;heap_priority</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
+<p><code>struct <strong>&lt;H&gt;heap_node</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
 
-<p>If <code>HEAP_VALUE</code> is set, creates a value as the payload of <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>.</p>
+<p>If <code>HEAP_VALUE</code> is set, a pair of (priority, value) that becomes <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>.</p>
 
 </div>
 
@@ -153,7 +133,7 @@
 
 <h3><a id = "tag:<H>heap" name = "tag:<H>heap">&lt;H&gt;heap</a></h3>
 
-<p><code>struct <strong>&lt;H&gt;heap</strong>;</code></p>
+<p><code>struct <strong>&lt;H&gt;heap</strong> { struct &lt;PH&gt;node_array a; };</code></p>
 
 <p>Stores the heap as an implicit binary tree in an array called <code>a</code>. To initialize it to an idle state, see <a href = "#fn:&lt;H&gt;heap">&lt;H&gt;heap</a>, <code>HEAP_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
@@ -185,11 +165,11 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<H>heap_clear">&lt;H&gt;heap_clear</a></td><td>heap</td></tr>
 
+<tr><td align = right>static size_t</td><td><a href = "#fn:<H>heap_size">&lt;H&gt;heap_size</a></td><td>heap</td></tr>
+
 <tr><td align = right>static int</td><td><a href = "#fn:<H>heap_add">&lt;H&gt;heap_add</a></td><td>heap, node</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;node *</td><td><a href = "#fn:<H>heap_peek">&lt;H&gt;heap_peek</a></td><td>heap</td></tr>
-
-<tr><td align = right>static &lt;PH&gt;value</td><td><a href = "#fn:<H>heap_peek_value">&lt;H&gt;heap_peek_value</a></td><td>heap</td></tr>
+<tr><td align = right>static &lt;PH&gt;value</td><td><a href = "#fn:<H>heap_peek">&lt;H&gt;heap_peek</a></td><td>heap</td></tr>
 
 <tr><td align = right>static &lt;PH&gt;value</td><td><a href = "#fn:<H>heap_pop">&lt;H&gt;heap_pop</a></td><td>heap</td></tr>
 
@@ -258,6 +238,21 @@
 
 <div>
 
+<h3><a id = "fn:<H>heap_size" name = "fn:<H>heap_size">&lt;H&gt;heap_size</a></h3>
+
+<p><code>static size_t <strong>&lt;H&gt;heap_size</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code></p>
+
+<p>Empty is <code>!size</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Size of the <code>heap</code>.</dd>
+</dl>
+
+</div>
+
+<div>
+
 <h3><a id = "fn:<H>heap_add" name = "fn:<H>heap_add">&lt;H&gt;heap_add</a></h3>
 
 <p><code>static int <strong>&lt;H&gt;heap_add</strong>(struct &lt;H&gt;heap *const <em>heap</em>, &lt;PH&gt;node <em>node</em>)</code></p>
@@ -278,28 +273,11 @@
 
 <h3><a id = "fn:<H>heap_peek" name = "fn:<H>heap_peek">&lt;H&gt;heap_peek</a></h3>
 
-<p><code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_peek</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code></p>
+<p><code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_peek</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Lowest in <code>heap</code> according to <code>HEAP_COMPARE</code> or null if the heap is empty. This pointer is valid only until one makes structural changes to the heap.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<H>heap_peek_value" name = "fn:<H>heap_peek_value">&lt;H&gt;heap_peek_value</a></h3>
-
-<p><code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_peek_value</strong>(struct &lt;H&gt;heap *const <em>heap</em>)</code></p>
-
-<p>This returns the <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> of the <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a> returned by <a href = "#fn:&lt;H&gt;heap_peek">&lt;H&gt;heap_peek</a>, for convenience with some applications. If <code>HEAP_VALUE</code>, this is a child of <a href = "#fn:&lt;H&gt;heap_peek">&lt;H&gt;heap_peek</a>, otherwise it is a boolean <code>int</code>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Lowest <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> in <code>heap</code> element according to <code>HEAP_COMPARE</code>; if the heap is empty, null or zero.</dd>
+	<dd>The <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> in <code>heap</code> that the <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a> associated to the heap ranks most true; defaults to lowest. If the heap is empty, null or zero; one may have to call <a href = "#fn:&lt;H&gt;heap_size">&lt;H&gt;heap_size</a> in order to differentiate the two, on some heaps.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(1)</dd>
 </dl>
