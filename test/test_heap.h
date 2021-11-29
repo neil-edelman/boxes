@@ -53,7 +53,7 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 static void PH_(test_basic)(void *const param) {
 	struct H_(heap) heap = HEAP_IDLE, merge = HEAP_IDLE;
 	PH_(node) *node, add;
-	PH_(payload) v, result;
+	PH_(value) v, result;
 	PH_(priority) last_priority = 0;
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i, cum_size = 0;
@@ -69,14 +69,14 @@ static void PH_(test_basic)(void *const param) {
 	H_(heap)(&heap);
 	assert(!heap.a.size);
 	assert(!H_(heap_peek)(&heap));
-	assert(!H_(heap_peek_payload(&heap)));
+	assert(!H_(heap_peek_value(&heap)));
 	assert(!H_(heap_pop)(&heap));
 	PH_(valid)(&heap);
 	assert(!errno);
 
 	printf("Test one.\n");
 	PH_(filler)(&add, param);
-	v = PH_(get_payload)(&add);
+	v = PH_(get_value)(&add);
 	assert(H_(heap_add)(&heap, add)), cum_size++;
 	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
 	assert(heap.a.size == cum_size);
@@ -150,7 +150,7 @@ static void PH_(test_basic)(void *const param) {
 		char a[12];
 		node = H_(heap_peek)(&heap);
 		assert(node);
-		v = H_(heap_peek_payload)(&heap);
+		v = H_(heap_peek_value)(&heap);
 		PH_(to_string)(node, &a);
 		result = H_(heap_pop)(&heap);
 		if(!i || !(i & (i - 1))) {
