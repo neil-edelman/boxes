@@ -24,11 +24,11 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Parameter: HEAP\_VALUE  
    Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\. If set, has no effect on the ranking, but affects [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
  * Parameter: HEAP\_TEST  
-   To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Must be defined equal to a random filler function, satisfying `void (*<PH>biaction_fn)(<PH>node *, void *)` with the `param` of [&lt;H&gt;heap_test](#user-content-fn-2a4c2c14)\. Must have any To String trait\.
+   To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Must be defined equal to a random filler function, satisfying [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45) with the `param` of [&lt;H&gt;heap_test](#user-content-fn-2a4c2c14)\. Must have any `to string` trait\.
  * Parameter: HEAP\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); an optional unique `<Z>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
+   To string trait contained in [to\_string\.h](to_string.h); an optional unique `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Standard:  
    C89
  * Dependancies:  

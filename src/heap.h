@@ -31,15 +31,15 @@
  @param[HEAP_TEST]
  To string trait contained in <../test/heap_test.h>; optional unit testing
  framework using `assert`. Must be defined equal to a random filler function,
- satisfying `void (*<PH>biaction_fn)(<PH>node *, void *)` with the `param` of
- <fn:<H>heap_test>. Must have any To String trait.
+ satisfying <typedef:<PH>biaction_fn> with the `param` of <fn:<H>heap_test>. Must
+ have any `to string` trait.
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
  trait.
 
  @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
- To string trait contained in <to_string.h>; an optional unique `<Z>`
+ To string trait contained in <to_string.h>; an optional unique `<SZ>`
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSZ>to_string_fn>.
 

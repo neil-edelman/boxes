@@ -62,11 +62,11 @@
 	<dt>Parameter: HEAP_VALUE</dt>
 	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a random filler function, satisfying <code>void (*&lt;PH&gt;biaction_fn)(&lt;PH&gt;node *, void *)</code> with the <code>param</code> of <a href = "#fn:&lt;H&gt;heap_test">&lt;H&gt;heap_test</a>. Must have any To String trait.</dd>
+	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a random filler function, satisfying <a href = "#typedef:&lt;PH&gt;biaction_fn">&lt;PH&gt;biaction_fn</a> with the <code>param</code> of <a href = "#fn:&lt;H&gt;heap_test">&lt;H&gt;heap_test</a>. Must have any <code>to string</code> trait.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; an optional unique <code>&lt;Z&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; an optional unique <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
