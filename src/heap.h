@@ -26,7 +26,7 @@
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in
  <tag:<H>heap_node>; declaring it is sufficient. If set, has no effect on the
- ranking, but affects the return values of <typedef:??>.
+ ranking, but affects the return <typedef:<PH>value>.
 
  @param[HEAP_TEST]
  To string trait contained in <../test/heap_test.h>; optional unit testing
@@ -113,8 +113,8 @@ typedef PH_(value_data) *PH_(value);
 /** If `HEAP_VALUE` is set, a pair of (priority, value) that becomes
  <typedef:<PH>node>. */
 struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
-/** If `HEAP_VALUE` is set, `(priority, value)` set by <tag:<H>heap_node>,
- otherwise it's a `(priority)` set directly by <typedef:<PH>priority>. */
+/** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heap_node>,
+ otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
 typedef struct H_(heap_node) PH_(node);
 #else /* value --><!-- !value */
 typedef PH_(priority) PH_(value);

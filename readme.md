@@ -22,7 +22,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash on `HEAP_TYPE`; as such, required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
-   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\. If set, has no effect on the ranking, but affects the return values of <typedef:??>\.
+   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\. If set, has no effect on the ranking, but affects the return [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
  * Parameter: HEAP\_TEST  
    To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Must be defined equal to a random filler function, satisfying `void (*<PH>biaction_fn)(<PH>node *, void *)` with the `param` of [&lt;H&gt;heap_test](#user-content-fn-2a4c2c14)\. Must have any To String trait\.
  * Parameter: HEAP\_EXPECT\_TRAIT  

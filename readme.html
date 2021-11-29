@@ -60,7 +60,7 @@
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash on <code>HEAP_TYPE</code>; as such, required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects the return values of &lt;typedef:??&gt;.</dd>
+	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects the return <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
 	<dt>Parameter: HEAP_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a random filler function, satisfying <code>void (*&lt;PH&gt;biaction_fn)(&lt;PH&gt;node *, void *)</code> with the <code>param</code> of <a href = "#fn:&lt;H&gt;heap_test">&lt;H&gt;heap_test</a>. Must have any To String trait.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
