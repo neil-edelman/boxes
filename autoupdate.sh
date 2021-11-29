@@ -8,6 +8,8 @@
 # but they are unsupported in Xcode and in general on Mac GUI.
 
 set -e
+C="\033[1;36m\033[1m"
+N="\033[0m"
 cd "$(dirname "$0")" || exit
 for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
 	for EXT in c h; do if [[ -r "$PROJ/src/$PROJ.$EXT" ]]; then
@@ -15,7 +17,7 @@ for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
 			&& ! -L "$OTHER" && "$OTHER" != "$PROJ" ]]; then
 			for SUB in src test; do
 				[ -r "$OTHER/$SUB/$PROJ.$EXT" ] \
-				&& echo "Updating Truth $PROJ/src/$PROJ.$EXT -> $OTHER/$SUB/$PROJ.$EXT." \
+				&& echo -e "Updating Truth ${C}$PROJ/src/$PROJ.$EXT${N} -> ${C}$OTHER/$SUB/$PROJ.$EXT${N}." \
 				&& cp "$PROJ/src/$PROJ.$EXT" "$OTHER/$SUB/$PROJ.$EXT"
 			done
 		fi done
@@ -25,7 +27,7 @@ for TRAITDIR in traits/*; do
 	TRAIT=$(basename "$TRAITDIR")
 	for PROJ in *; do if [[ -d "$PROJ" && -d "$PROJ/.git" && ! -L "$PROJ" ]]; then
 		for SUB in src test; do [ -r "$PROJ/$SUB/$TRAIT" ] \
-			&& echo "Updating Truth $TRAITDIR -> $PROJ/$SUB/$TRAIT." \
+			&& echo -e "Updating Truth ${C}$TRAITDIR${N} -> ${C}$PROJ/$SUB/$TRAIT${N}." \
 			&& cp "$TRAITDIR" "$PROJ/$SUB/$TRAIT"
 		done
 	fi done
