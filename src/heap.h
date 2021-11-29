@@ -308,7 +308,7 @@ static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
  \O(`new elements` \cdot log `heap.size`).
  @param[n] If zero, returns true without heapifying.
  @return Success. @throws[ERANGE, realloc] In practice, pushing uninitialized
- elements onto the heap does make sense, so <fn:<H>heap_buffer> `n` will be
+ elements onto the heap does not make sense, so <fn:<H>heap_buffer> `n` will be
  called first, in which case, one is guaranteed success.
  @order \O(`heap.size` + `n`) @allow */
 static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
