@@ -1,22 +1,22 @@
 /* @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Compare Trait
+ @subtitle Compare trait
 
  Requires contiguous data elements are stored in array `data` up to
- `size_t size` such that `memcpy` will work. `<BOX>append` function defined.
+ `size_t size` such that `memcpy` will work.
 
  @param[CM_]
  A one-argument macro producing a name that is responsible for the name of the
  functions. The caller is responsible for undefining `CM_`.
 
- @param[FUNCTION_COMPARABLE_NAME, FUNCTION_IS_EQUAL, FUNCTION_COMPARE]
- Optional unique name `<Z>` that satisfies `C` naming conventions when mangled,
- and a function implementing, for `FUNCTION_IS_EQUAL`
- <typedef:<PCM_>bipredicate_fn> that establishes an equivalence relation, or
- for `FUNCTION_COMPARE` <typedef:<PCM_>compare_fn> that establishes a total
+ @param[COMPARE_NAME, COMPARE_IS_EQUAL, COMPARE]
+ Optional unique name that satisfies `C` naming conventions when mangled,
+ and a function implementing, for `COMPARE_IS_EQUAL`,
+ <typedef:<PCM>bipredicate_fn> that establishes an equivalence relation, or
+ for `COMPARE`, <typedef:<PCM>compare_fn> that establishes a total
  order. There can be multiple comparable functions, but only one can omit
- `FUNCTION_COMPARABLE_NAME`.
+ `COMPARE_NAME`.
 
  @std C89 */
 
@@ -36,31 +36,31 @@
 #define PCM_(n) COMPARE_CAT(compare, CM_(n))
 #endif /* idempotent --> */
 
-/** In <compare.h>, an alias to the box. */
+/** <compare.h>: an alias to the box. */
 typedef BOX_CONTAINER PCM_(box);
 
-/** In <compare.h>, an alias to the individual type contained in the box. */
+/** <compare.h>: an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PCM_(type);
 
-/** In <compare.h>, returns a boolean given two read-only
- <typedef:<PCM>type>. */
+/** Returns a boolean given two read-only <typedef:<PCM>type>. */
 typedef int (*PCM_(bipredicate_fn))(const PCM_(type) *, const PCM_(type) *);
 
-/** In <compare.h>, returns a boolean given two <typedef:<PCM>type>. */
+/** Returns a boolean given two <typedef:<PCM>type>. */
 typedef int (*PCM_(biaction_fn))(PCM_(type) *, PCM_(type) *);
 
 #ifdef ARRAY_COMPARE /* <!-- compare */
 
-/** Three-way comparison on a totally order set; returns an integer value less
- then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`,
- respectively. */
+/** Three-way comparison on a totally order set of <typedef:<PCM>type>; returns
+ an integer value less then, equal to, greater then zero, if
+ `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*PCM_(compare_fn))(const PCM_(type) *a, const PCM_(type) *b);
 
 /* Check that `ARRAY_COMPARE` is a function implementing
- <typedef:<PCM_>compare_fn>. */
+ <typedef:<PCM>compare_fn>. @fixme Eliminate `ARRAY`. */
 static const PCM_(compare_fn) PCM_(compare) = (ARRAY_COMPARE);
 
-/** Lexicographically compares `a` to `b`. Null values are before everything.
+/** Lexicographically compares <typedef:<PCM>box> `a` to `b`. Null values are
+ before everything.
  @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
  @order \O(`a.size`) @allow */
 static int CM_(compare)(const PCM_(box) *const a, const PCM_(box) *const b) {
@@ -80,7 +80,8 @@ static int CM_(compare)(const PCM_(box) *const a, const PCM_(box) *const b) {
 	}
 }
 
-/** `a` should be partitioned true/false with less-then `value`.
+/** <typedef:<PCM>box> `a` should be partitioned true/false with less-then
+ <typedef:<PCM>type> `value`.
  @return The first index of `a` that is not less than `value`.
  @order \O(log `a.size`) @allow */
 static size_t CM_(lower_bound)(const PCM_(box) *const a,
@@ -93,9 +94,9 @@ static size_t CM_(lower_bound)(const PCM_(box) *const a,
 	return low;
 }
 
-/** `a` should be partitioned false/true with greater-than or equals `value`.
- @return The first index of `a` that is greater than `value`.
- @order \O(log `a.size`) @allow */
+/** <typedef:<PCM>box> `a` should be partitioned false/true with greater-than
+ or equal-to <typedef:<PCM>value> `value`. @return The first index of `a` that
+ is greater than `value`. @order \O(log `a.size`) @allow */
 static size_t CM_(upper_bound)(const PCM_(box) *const a,
 	const PCM_(type) *const value) {
 	size_t low = 0, high = a->size, mid;
@@ -106,14 +107,15 @@ static size_t CM_(upper_bound)(const PCM_(box) *const a,
 	return low;
 }
 
-/** Copies `datum` at the upper bound of a sorted `a`.
- @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] */
+/** Copies <typedef:<PCM>value> `datum` at the upper bound of a sorted
+ <typedef:<PCM>box> `a`.
+ @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
 static int CM_(insert_after)(PCM_(box) *const a,
 	const PCM_(type) *const datum) {
 	size_t bound;
 	assert(a && datum);
 	bound = CM_(upper_bound)(a, datum);
-	if(!A_(array_new)(a)) return 0;
+	if(!A_(array_new)(a)) return 0; /* @fixme Reference to array. */
 	memmove(a->data + bound + 1, a->data + bound,
 		sizeof *a->data * (a->size - bound - 1));
 	memcpy(a->data + bound, datum, sizeof *datum);
@@ -124,7 +126,7 @@ static int CM_(insert_after)(PCM_(box) *const a,
 static int PCM_(vcompar)(const void *const a, const void *const b)
 	{ return PCM_(compare)(a, b); }
 
-/** Sorts `a` by `qsort` on `ARRAY_COMPARE`.
+/** Sorts <typedef:<PCM>box> `a` by `qsort`.
  @order \O(`a.size` \log `a.size`) @allow */
 static void CM_(sort)(PCM_(box) *const a)
 	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PCM_(vcompar)); }
@@ -133,12 +135,12 @@ static void CM_(sort)(PCM_(box) *const a)
 static int PCM_(vrevers)(const void *const a, const void *const b)
 	{ return PCM_(compare)(b, a); }
 
-/** Sorts `a` in reverse by `qsort` on `ARRAY_COMPARE`.
+/** Sorts <typedef:<PCM>box> `a` in reverse by `qsort`.
  @order \O(`a.size` \log `a.size`) @allow */
 static void CM_(reverse)(PCM_(box) *const a)
 	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PCM_(vrevers)); }
 
-/** !compare(`a`, `b`) == equals(`a`, `b`) for not `ARRAY_IS_EQUAL`.
+/** !compare(`a`, `b`) == equals(`a`, `b`).
  @implements <typedef:<PCM>bipredicate_fn> */
 static int PCM_(is_equal)(const PCM_(type) *const a, const PCM_(type) *const b)
 	{ return !PCM_(compare)(a, b); }
@@ -146,13 +148,13 @@ static int PCM_(is_equal)(const PCM_(type) *const a, const PCM_(type) *const b)
 #else /* compare --><!-- is equal */
 
 /* Check that `ARRAY_IS_EQUAL` is a function implementing
- <typedef:<PCM>bipredicate_fn>. */
+ <typedef:<PCM>bipredicate_fn>. @fixme No `ARRAY`. */
 static const PCM__(bipredicate_fn) PCM__(is_equal) = (ARRAY_IS_EQUAL);
 
 #endif /* is equal --> */
 
-/** @return If `a` piecewise equals `b`, which both can be null.
- @order \O(`size`) */
+/** @return If <typedef:<PCM>box> `a` piecewise equals `b`, which both can be
+ null. @order \O(`size`) @allow */
 static int CM_(is_equal)(const PCM_(box) *const a, const PCM_(box) *const b) {
 	const PCM_(type) *ia, *ib, *end;
 	if(!a) return !b;
@@ -162,7 +164,7 @@ static int CM_(is_equal)(const PCM_(box) *const a, const PCM_(box) *const b) {
 	return 1;
 }
 
-/** Removes consecutive duplicate elements in `a`.
+/** Removes consecutive duplicate elements in <typedef:<PCM>box> `a`.
  @param[merge] Controls surjection. Called with duplicate elements, if false
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves
@@ -195,7 +197,8 @@ static void CM_(unique_merge)(PCM_(box) *const a, const PCM_(biaction_fn) merge)
 	a->size = target;
 }
 
-/** Removes consecutive duplicate elements in `a`. @order \O(`a.size`) @allow */
+/** Removes consecutive duplicate elements in <typedef:<PCM>box> `a`.
+ @order \O(`a.size`) @allow */
 static void CM_(unique)(PCM_(box) *const a) { CM_(unique_merge)(a, 0); }
 
 static void PCM_(unused_compare_coda)(void);

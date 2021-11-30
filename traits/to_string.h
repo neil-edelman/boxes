@@ -1,7 +1,7 @@
 /* @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle To String Trait
+ @subtitle To string trait
 
  A trait relying on the iterate interface (`iterator`, `begin`, `next`.)
 
@@ -78,18 +78,22 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
+/** <to_string.h>: an alias to the box. */
 typedef BOX_CONTAINER PSZ_(box);
+
+/** <to_string.h>: an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PSZ_(type);
 
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- output string. */
+/** Responsible for turning the argument <typedef:<PSZ>type> into a 12-`char`
+ null-terminated output string. */
 typedef void (*PSZ_(to_string_fn))(const PSZ_(type) *, char (*)[12]);
 
-/* Check that `TO_STRING` is a function implementing <typedef:<PZ>to_string>. */
+/* Check that `TO_STRING` is a function implementing
+ <typedef:<PSZ>to_string>. */
 static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
 
-/** @return Print the contents of `box` in a static string buffer of 256
- bytes with limitations of only printing 4 things at a time.
+/** @return Print the contents of <typedef:<PSZ>box> `box` in a static string
+ buffer of 256 bytes with limitations of only printing 4 things at a time.
  @order \Theta(1) @allow */
 static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	const char comma = ',', space = ' ', *const ellipsis = "…",
