@@ -53,11 +53,12 @@
 </tr></table>
 
 `boxes` is a very simple automated dependancy and build system for
-separate `C89` data structure projects that are intended to generate
-lightweight, independent, and type-safe containers for existing
-code. If one has `git` configured, the `sh`-script, `autoclone`,
-downloads them all, or download each project or file individually.
-See each for usage, and each project's `test` section for examples.
+separate `C89` data structure projects; these projects are intended
+to generate lightweight, independent, and type-safe containers for
+existing code. If one has `git` configured, the `sh`-script,
+`autoclone`, downloads them all, or download each project or file
+individually.  See each for usage, and each project's `test` section
+for examples.
 
 ## Why boxes? ##
 
