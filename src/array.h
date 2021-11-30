@@ -16,17 +16,13 @@
 
  @param[ARRAY_CONTIGUOUS]
  Include the singleton trait contained in <contiguous.h> that takes no options.
- Rational for the design decision to make it a singleton class, instead of
- including it always, is `array` is used as a backing for other boxes; it would
- just increase compilation in most cases.
 
  @param[ARRAY_MIN_CAPACITY]
  Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
  below.
 
  @param[ARRAY_TEST]
- Optional function implementing <typedef:<PA>action_fn> that fills the
- <typedef:<PA>type> from uninitialized to random for unit testing framework
+ Optional function satisfying <data:<PA>filler> for unit testing framework
  using `assert`. Testing array contained in <../test/test_array.h>. Must have
  at least one `to_string` trait included, and any tests of traits must come
  before `to_string`.

@@ -58,11 +58,11 @@
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
 	<dd><code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type, <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>, associated therewith; required. <code>&lt;PA&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: ARRAY_CONTIGUOUS</dt>
-	<dd>Include the singleton trait contained in <a href = "contiguous.h">contiguous.h</a> that takes no options. Rational for the design decision to make it a singleton class, instead of including it always, is <code>array</code> is used as a backing for other boxes; it would just increase compilation in most cases.</dd>
+	<dd>Include the singleton trait contained in <a href = "contiguous.h">contiguous.h</a> that takes no options.</dd>
 	<dt>Parameter: ARRAY_MIN_CAPACITY</dt>
 	<dd>Default is 3; optional number in <code>[2, SIZE_MAX]</code> that the capacity can not go below.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
-	<dd>Optional function implementing <a href = "#typedef:&lt;PA&gt;action_fn">&lt;PA&gt;action_fn</a> that fills the <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a> from uninitialized to random for unit testing framework using <code>assert</code>. Testing array contained in <a href = "../test/test_array.h">../test/test_array.h</a>. Must have at least one <code>to_string</code> trait included, and any tests of traits must come before <code>to_string</code>.</dd>
+	<dd>Optional function satisfying <a href = "#data:&lt;PA&gt;filler">&lt;PA&gt;filler</a> for unit testing framework using <code>assert</code>. Testing array contained in <a href = "../test/test_array.h">../test/test_array.h</a>. Must have at least one <code>to_string</code> trait included, and any tests of traits must come before <code>to_string</code>.</dd>
 	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL</dt>
