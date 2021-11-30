@@ -62,7 +62,7 @@
 	<dt>Parameter: ARRAY_MIN_CAPACITY</dt>
 	<dd>Default is 3; optional number in <code>[2, SIZE_MAX]</code> that the capacity can not go below.</dd>
 	<dt>Parameter: ARRAY_TEST</dt>
-	<dd>Optional function satisfying <a href = "#data:&lt;PA&gt;filler">&lt;PA&gt;filler</a> for unit testing framework using <code>assert</code>. Testing array contained in <a href = "../test/test_array.h">../test/test_array.h</a>. Must have at least one <code>to_string</code> trait included, and any tests of traits must come before <code>to_string</code>.</dd>
+	<dd>Optional function implementing <a href = "#typedef:&lt;PA&gt;action_fn">&lt;PA&gt;action_fn</a> that fills the <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a> from uninitialized to random for unit testing framework using <code>assert</code>. Testing array contained in <a href = "../test/test_array.h">../test/test_array.h</a>. Must have at least one <code>to_string</code> trait included, and any tests of traits must come before <code>to_string</code>.</dd>
 	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL</dt>
