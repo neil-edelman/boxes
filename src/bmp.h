@@ -141,7 +141,7 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 }
 
 #ifdef BMP_TEST /* <!-- test */
-#include "../test/test_bmp.h" /** \include */
+#include "../test/test_bmp.h" /* (not needed) \include */
 #endif /* test --> */
 
 static void PB_(unused_base_coda)(void);

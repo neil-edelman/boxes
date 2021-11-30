@@ -65,8 +65,6 @@ An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof(bmpchunk)`
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-9af1d333">&lt;B&gt;bmp_remove</a></td><td>a, x, n</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-53567fd8">&lt;B&gt;bmp_tests</a></td><td></td></tr>
-
 </table>
 
 
@@ -136,14 +134,6 @@ Inserts `n` zeros at `x` in `a`\. The `n` right bits are discarded\.
 <code>static void <strong>&lt;B&gt;bmp_remove</strong>(struct &lt;B&gt;bmp *const <em>a</em>, const unsigned <em>x</em>, const unsigned <em>n</em>)</code>
 
 Removes `n` at `x` in `a`\. The `n` bits coming from the right are zero\.
-
-
-
-### <a id = "user-content-fn-53567fd8" name = "user-content-fn-53567fd8">&lt;B&gt;bmp_tests</a> ###
-
-<code>static void <strong>&lt;B&gt;bmp_tests</strong>(void)</code>
-
-Will be tested on stdout\. Requires `BMP_TEST`, and not `NDEBUG` while defining `assert`\.
 
 
 
