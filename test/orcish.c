@@ -66,7 +66,7 @@ static unsigned poisson(double expect,
 	double prod = 1.0 * recur(r) / RAND_MAX;
 	unsigned n;
 	/* These are orc-specific; ensures that we don't spend too much time. */
-	assert(expect >= 0.0 && expect < 128.0 && r && recur);
+	assert(expect >= 0.0 && expect < 1.0 * max_name_size && r && recur);
 	for(n = 0; prod >= limit; n++) prod *= 1.0 * recur(r) / RAND_MAX;
 	return n;
 }
