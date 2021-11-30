@@ -2,9 +2,9 @@
  @std C89/90 */
 
 #include <stdlib.h> /* EXIT_ */
-#include <stdio.h>  /* s?printf */
-#include <string.h>	/* strcmp */
-#include <time.h>	/* clock */
+#include <stdio.h>  /* printf */
+#include <string.h> /* strcmp */
+#include <time.h>   /* clock */
 #include <assert.h> /* assert */
 #include "orcish.h"
 
