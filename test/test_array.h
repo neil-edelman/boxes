@@ -6,11 +6,11 @@
 
 #if ARRAY_TRAITS == 0 /* <!-- !traits */
 
-/** Included in `ARRAY_TEST`. */
+/** `ARRAY_TEST`: takes <typedef:<PA>type> and operates by side-effects. */
 typedef void (*PA_(action_fn))(PA_(type) *);
 
-/** `ARRAY_TEST` takes in an uninitialized <typedef:<PA>type> and makes up a
- valid object for testing. */
+/** `ARRAY_TEST`: a <typedef:<PA>action_fn> that takes in an uninitialized
+ <typedef:<PA>type> and makes up a valid object for testing. */
 static PA_(action_fn) PA_(filler) = (ARRAY_TEST);
 
 /** @return Is `a` in a valid state? */
@@ -425,8 +425,8 @@ static void PA_(test_each)(void) {
 	A_(array_)(&one);
 }
 
-/** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
- `NDEBUG` while defining `assert`. @allow */
+/** `ARRAY_TEST`, `ARRAY_TO_STRING`, !`NDEBUG`: will be tested on stdout.
+ @allow */
 static void A_(array_test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">array of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
@@ -570,8 +570,8 @@ static void PCM_(test_sort)(void) {
 #endif /* !comp --> */
 }
 
-/** Will be tested on stdout. Requires `ARRAY_TEST`, `ARRAY_TO_STRING`, and not
- `NDEBUG` while defining `assert`. @allow */
+/** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
+ tested on stdout. @allow */
 static void CM_(compare_test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">array testing <"
 #ifdef ARRAY_ORDER

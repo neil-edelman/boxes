@@ -33,7 +33,7 @@
 
 <h1>array.h</h1>
 
-<h2>Contiguous Dynamic Array (Vector)</h2>
+<h2>Contiguous dynamic array</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
@@ -131,7 +131,7 @@
 
 <p><code>typedef void(*<strong>&lt;PA&gt;action_fn</strong>)(&lt;PA&gt;type *);</code></p>
 
-<p>Included in <code>ARRAY_TEST</code>.</p>
+<p><code>ARRAY_TEST</code>: takes <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a> and operates by side-effects.</p>
 
 </div>
 
@@ -593,7 +593,7 @@
 
 <p><code>static void <strong>&lt;A&gt;array_test</strong>(void)</code></p>
 
-<p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
+<p><code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, !<code>NDEBUG</code>: will be tested on stdout.</p>
 
 </div>
 
@@ -603,7 +603,7 @@
 
 <p><code>static void <strong>&lt;CM&gt;compare_test</strong>(void)</code></p>
 
-<p>Will be tested on stdout. Requires <code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
+<p><code>ARRAY_TEST</code>, <code>ARRAY_COMPARE</code> -&gt; <code>ARRAY_TO_STRING</code>, !<code>NDEBUG</code>: will be tested on stdout.</p>
 
 </div>
 
