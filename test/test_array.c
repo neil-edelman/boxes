@@ -104,7 +104,7 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-    errno = 0;
+	errno = 0;
 	colour_array_test();
 	str4_array_test();
 	int_array_test();
