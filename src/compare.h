@@ -21,7 +21,7 @@
  @std C89 */
 
 #if !defined(BOX_) || !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
-	|| !defined(CM_)
+	|| !defined(CM_) || !(defined(BOX_IS_EQUAL) ^ defined(BOX_COMPARE))
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -48,16 +48,16 @@ typedef int (*PCM_(bipredicate_fn))(const PCM_(type) *, const PCM_(type) *);
 /** Returns a boolean given two <typedef:<PCM>type>. */
 typedef int (*PCM_(biaction_fn))(PCM_(type) *, PCM_(type) *);
 
-#ifdef ARRAY_COMPARE /* <!-- compare */
+#ifdef BOX_COMPARE /* <!-- compare */
 
 /** Three-way comparison on a totally order set of <typedef:<PCM>type>; returns
  an integer value less then, equal to, greater then zero, if
  `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*PCM_(compare_fn))(const PCM_(type) *a, const PCM_(type) *b);
 
-/* Check that `ARRAY_COMPARE` is a function implementing
- <typedef:<PCM>compare_fn>. @fixme Eliminate `ARRAY`. */
-static const PCM_(compare_fn) PCM_(compare) = (ARRAY_COMPARE);
+/* Check that `BOX_COMPARE` is a function implementing
+ <typedef:<PCM>compare_fn>. */
+static const PCM_(compare_fn) PCM_(compare) = (BOX_COMPARE);
 
 /** Lexicographically compares <typedef:<PCM>box> `a` to `b`. Null values are
  before everything.
@@ -147,9 +147,9 @@ static int PCM_(is_equal)(const PCM_(type) *const a, const PCM_(type) *const b)
 
 #else /* compare --><!-- is equal */
 
-/* Check that `ARRAY_IS_EQUAL` is a function implementing
- <typedef:<PCM>bipredicate_fn>. @fixme No `ARRAY`. */
-static const PCM__(bipredicate_fn) PCM__(is_equal) = (ARRAY_IS_EQUAL);
+/* Check that `BOX_IS_EQUAL` is a function implementing
+ <typedef:<PCM>bipredicate_fn>. */
+static const PCM__(bipredicate_fn) PCM__(is_equal) = (BOX_IS_EQUAL);
 
 #endif /* is equal --> */
 
@@ -203,7 +203,7 @@ static void CM_(unique)(PCM_(box) *const a) { CM_(unique_merge)(a, 0); }
 
 static void PCM_(unused_compare_coda)(void);
 static void PCM_(unused_compare)(void) {
-#ifdef ARRAY_COMPARE /* <!-- compare */
+#ifdef BOX_COMPARE /* <!-- compare */
 	CM_(compare)(0, 0); CM_(lower_bound)(0, 0); CM_(upper_bound)(0, 0);
 	CM_(insert_after)(0, 0); CM_(sort)(0); CM_(reverse)(0);
 #endif /* compare --> */
