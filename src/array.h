@@ -27,7 +27,7 @@
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <compare.h>. An optional mangled name for
- uniqueness and a function implementing <typedef:<PCM>compare_fn> xor
+ uniqueness and a function implementing either <typedef:<PCM>compare_fn> or
  <typedef:<PCM>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
