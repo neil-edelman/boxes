@@ -1,4 +1,5 @@
-/** Test of array.h. @author Neil @std C89/90 */
+/** Test of array.h.
+ @std C89/90 */
 
 #include <stdlib.h> /* EXIT_ */
 #include <stdio.h>  /* s?printf */
@@ -8,6 +9,13 @@
 #include "orcish.h"
 
 
+/* Not used because it's not set up for testing. The minimal array. */
+#define ARRAY_NAME number
+#define ARRAY_TYPE int
+#include "../src/array.h"
+
+
+/* Enum array with extra functions. */
 #define PARAM(A) A
 #define STRINGISE(A) #A
 #define COLOUR(X) /* Max 11 letters. */ \
@@ -33,6 +41,7 @@ static void colour_filler(enum colour *const c)
 #include "../src/array.h"
 
 
+/* Struct array. */
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
 	{ sprintf(*a, "%.11s", s->value); }
@@ -47,6 +56,7 @@ static void str4_filler(struct str4 *const s)
 #include "../src/array.h"
 
 
+/* Int array with compare. */
 static void int_to_string(const int *i, char (*const a)[12])
 	{ sprintf(*a, "%d", *i); }
 static void int_filler(int *const i)
@@ -66,6 +76,7 @@ static int int_cmp(const int *const a, const int *const b)
 #include "../src/array.h"
 
 
+/* Array with multiple of the same trait. */
 struct keyval { int key; char value[12]; };
 static void keyval_filler(struct keyval *const kv)
 	{ kv->key = rand() / (RAND_MAX / 1098 + 1) - 99;
@@ -99,7 +110,7 @@ static int keyval_value_cmp(const struct keyval *const a,
 #include "../src/array.h"
 
 
-/** Tests. @return `EXIT_SUCCESS`. */
+/** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
 
