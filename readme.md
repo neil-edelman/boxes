@@ -81,7 +81,7 @@ Returns a boolean given read\-only [&lt;PCG&gt;type](#user-content-typedef-1c7f4
 
 <code>typedef void(*<strong>&lt;PA&gt;action_fn</strong>)(&lt;PA&gt;type *);</code>
 
-`ARRAY_TEST`: takes [&lt;PA&gt;type](#user-content-typedef-a8a4b08a) and operates by side\-effects\.
+[test\_array\.h](test_array.h): operates by side\-effects on [&lt;PA&gt;type](#user-content-typedef-a8a4b08a)\.
 
 
 

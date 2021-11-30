@@ -22,14 +22,14 @@ static void PA_(valid_state)(const struct A_(array) *const a) {
 	assert(a->size <= a->capacity && a->capacity <= max_size);
 }
 
-/** Draw a graph of `ar` to `fn` in Graphviz format. */
-static void PA_(graph)(const struct A_(array) *const ar, const char *const fn) {
+/** Draw a graph of `a` to `fn` in Graphviz format. */
+static void PA_(graph)(const struct A_(array) *const a, const char *const fn) {
 	FILE *fp;
 	size_t i;
-	char a[12];
+	char z[12];
 	/* This is a messy hack; require that `errno` is not set, if we can't open
 	 the file for writing, take it. Drawing graphs is usually not the point. */
-	assert(ar && fn && !errno);
+	assert(a && fn && !errno);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); errno = 0; return; }
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
@@ -38,27 +38,27 @@ static void PA_(graph)(const struct A_(array) *const ar, const char *const fn) {
 		"\tarray [label=<\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(ARRAY_NAME)
-		"&gt;array: " QUOTE(ARRAY_TYPE) "</FONT></TD></TR>\n"
+		"<FONT COLOR=\"Gray85\">array&lt;" QUOTE(ARRAY_NAME)
+		"&gt;: " QUOTE(ARRAY_TYPE) "</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">size</TD>\n"
 		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">%lu</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
 		"\t</TR>\n"
-		"</TABLE>>];\n", (unsigned long)ar->size, (unsigned long)ar->capacity);
-	if(!ar->data) goto no_data;
+		"</TABLE>>];\n", (unsigned long)a->size, (unsigned long)a->capacity);
+	if(!a->data) goto no_data;
 	fprintf(fp, "\tarray -> data;\n"
 		"\tdata [label=<\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n", orcify(ar->data));
-	for(i = 0; i < ar->size; i++) {
+		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n", orcify(a->data));
+	for(i = 0; i < a->size; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
-		PA_(to_string)(ar->data + i, &a);
+		PA_(to_string)(a->data + i, &z);
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"RIGHT\"%s>%lu</TD>\n"
 			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
-			"\t</TR>\n", bgc, (unsigned long)i, bgc, a);
+			"\t</TR>\n", bgc, (unsigned long)i, bgc, z);
 	}
 	fprintf(fp, "</TABLE>>];\n");
 no_data:
@@ -428,7 +428,7 @@ static void PA_(test_each)(void) {
 /** `ARRAY_TEST`, `ARRAY_TO_STRING`, !`NDEBUG`: will be tested on stdout.
  @allow */
 static void A_(array_test)(void) {
-	printf("<" QUOTE(ARRAY_NAME) ">array of type <" QUOTE(ARRAY_TYPE)
+	printf("array<" QUOTE(ARRAY_NAME) "> of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
 		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; testing:\n");
 	assert(PA_(to_string) && PA_(array_to_string));
@@ -437,7 +437,7 @@ static void A_(array_test)(void) {
 	PA_(test_replace)();
 	PA_(test_keep)();
 	PA_(test_each)();
-	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">Array.\n\n");
+	fprintf(stderr, "Done tests of array<" QUOTE(ARRAY_NAME) ">.\n\n");
 }
 
 
