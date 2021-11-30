@@ -3,7 +3,7 @@
 ## Contiguous dynamic array ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PCG&gt;box](#user-content-typedef-9c8158f8), [&lt;PCG&gt;type](#user-content-typedef-1c7f487f), [&lt;PCG&gt;action_fn](#user-content-typedef-d8b6d30a), [&lt;PCG&gt;predicate_fn](#user-content-typedef-dfee9029), [&lt;PA&gt;action_fn](#user-content-typedef-b531bc05), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PCG&gt;box](#user-content-typedef-9c8158f8), [&lt;PCG&gt;type](#user-content-typedef-1c7f487f), [&lt;PCG&gt;action_fn](#user-content-typedef-d8b6d30a), [&lt;PCG&gt;predicate_fn](#user-content-typedef-dfee9029), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -23,8 +23,6 @@
    Include the singleton trait contained in [contiguous\.h](contiguous.h) that takes no options\.
  * Parameter: ARRAY\_MIN\_CAPACITY  
    Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go below\.
- * Parameter: ARRAY\_TEST  
-   Optional function implementing [&lt;PA&gt;action_fn](#user-content-typedef-b531bc05) that fills the [&lt;PA&gt;type](#user-content-typedef-a8a4b08a) from uninitialized to random for unit testing framework using `assert`\. Testing array contained in [\.\./test/test\_array\.h](../test/test_array.h)\. Must have at least one `to_string` trait included, and any tests of traits must come before `to_string`\.
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: ARRAY\_COMPARE\_NAME, ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
@@ -74,14 +72,6 @@ Operates by side\-effects on [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
 <code>typedef int(*<strong>&lt;PCG&gt;predicate_fn</strong>)(const &lt;PCG&gt;type *);</code>
 
 Returns a boolean given read\-only [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
-
-
-
-### <a id = "user-content-typedef-b531bc05" name = "user-content-typedef-b531bc05">&lt;PA&gt;action_fn</a> ###
-
-<code>typedef void(*<strong>&lt;PA&gt;action_fn</strong>)(&lt;PA&gt;type *);</code>
-
-[\.\./test/test\_array\.h](../test/test_array.h): operates by side\-effects on [&lt;PA&gt;type](#user-content-typedef-a8a4b08a)\.
 
 
 
@@ -204,10 +194,6 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-cfdb8e2e">&lt;CG&gt;if_each</a></td><td>box, predicate, action</td></tr>
 
 <tr><td align = right>static const &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-37394af1">&lt;CG&gt;any</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-c5d3559e">&lt;A&gt;array_test</a></td><td></td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-73575483">&lt;CM&gt;compare_test</a></td><td></td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -472,22 +458,6 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
  * Order:  
    &#927;\(`box.size` &#215; `predicate`\)
 
-
-
-
-### <a id = "user-content-fn-c5d3559e" name = "user-content-fn-c5d3559e">&lt;A&gt;array_test</a> ###
-
-<code>static void <strong>&lt;A&gt;array_test</strong>(void)</code>
-
-`ARRAY_TEST`, `ARRAY_TO_STRING`, \!`NDEBUG`: will be tested on stdout\.
-
-
-
-### <a id = "user-content-fn-73575483" name = "user-content-fn-73575483">&lt;CM&gt;compare_test</a> ###
-
-<code>static void <strong>&lt;CM&gt;compare_test</strong>(void)</code>
-
-`ARRAY_TEST`, `ARRAY_COMPARE` \-> `ARRAY_TO_STRING`, \!`NDEBUG`: will be tested on stdout\.
 
 
 

@@ -21,13 +21,6 @@
  Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
  below.
 
- @param[ARRAY_TEST]
- Optional function implementing <typedef:<PA>action_fn> that fills the
- <typedef:<PA>type> from uninitialized to random for unit testing framework
- using `assert`. Testing array contained in <../test/test_array.h>. Must have
- at least one `to_string` trait included, and any tests of traits must come
- before `to_string`.
-
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
  trait.
@@ -303,7 +296,7 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
 static const char *(*PA_(array_to_string))(const struct A_(array) *);
-#include "../test/test_array.h" /** \include */
+#include "../test/test_array.h" /* (this will needlessly confuse) \include */
 #endif /* test --> */
 
 static void PA_(unused_base_coda)(void);

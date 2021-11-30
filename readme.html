@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PCG>box">&lt;PCG&gt;box</a>, <a href = "#typedef:<PCG>type">&lt;PCG&gt;type</a>, <a href = "#typedef:<PCG>action_fn">&lt;PCG&gt;action_fn</a>, <a href = "#typedef:<PCG>predicate_fn">&lt;PCG&gt;predicate_fn</a>, <a href = "#typedef:<PA>action_fn">&lt;PA&gt;action_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>type">&lt;PSZ&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PCM>box">&lt;PCM&gt;box</a>, <a href = "#typedef:<PCM>type">&lt;PCM&gt;type</a>, <a href = "#typedef:<PCM>bipredicate_fn">&lt;PCM&gt;bipredicate_fn</a>, <a href = "#typedef:<PCM>biaction_fn">&lt;PCM&gt;biaction_fn</a>, <a href = "#typedef:<PCM>compare_fn">&lt;PCM&gt;compare_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PCG>box">&lt;PCG&gt;box</a>, <a href = "#typedef:<PCG>type">&lt;PCG&gt;type</a>, <a href = "#typedef:<PCG>action_fn">&lt;PCG&gt;action_fn</a>, <a href = "#typedef:<PCG>predicate_fn">&lt;PCG&gt;predicate_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>type">&lt;PSZ&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PCM>box">&lt;PCM&gt;box</a>, <a href = "#typedef:<PCM>type">&lt;PCM&gt;type</a>, <a href = "#typedef:<PCM>bipredicate_fn">&lt;PCM&gt;bipredicate_fn</a>, <a href = "#typedef:<PCM>biaction_fn">&lt;PCM&gt;biaction_fn</a>, <a href = "#typedef:<PCM>compare_fn">&lt;PCM&gt;compare_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<A>array">&lt;A&gt;array</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -61,8 +61,6 @@
 	<dd>Include the singleton trait contained in <a href = "contiguous.h">contiguous.h</a> that takes no options.</dd>
 	<dt>Parameter: ARRAY_MIN_CAPACITY</dt>
 	<dd>Default is 3; optional number in <code>[2, SIZE_MAX]</code> that the capacity can not go below.</dd>
-	<dt>Parameter: ARRAY_TEST</dt>
-	<dd>Optional function implementing <a href = "#typedef:&lt;PA&gt;action_fn">&lt;PA&gt;action_fn</a> that fills the <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a> from uninitialized to random for unit testing framework using <code>assert</code>. Testing array contained in <a href = "../test/test_array.h">../test/test_array.h</a>. Must have at least one <code>to_string</code> trait included, and any tests of traits must come before <code>to_string</code>.</dd>
 	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL</dt>
@@ -122,16 +120,6 @@
 <p><code>typedef int(*<strong>&lt;PCG&gt;predicate_fn</strong>)(const &lt;PCG&gt;type *);</code></p>
 
 <p>Returns a boolean given read-only <a href = "#typedef:&lt;PCG&gt;type">&lt;PCG&gt;type</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PA>action_fn" name = "typedef:<PA>action_fn">&lt;PA&gt;action_fn</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PA&gt;action_fn</strong>)(&lt;PA&gt;type *);</code></p>
-
-<p><a href = "../test/test_array.h">../test/test_array.h</a>: operates by side-effects on <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>.</p>
 
 </div>
 
@@ -274,10 +262,6 @@
 <tr><td align = right>static void</td><td><a href = "#fn:<CG>if_each">&lt;CG&gt;if_each</a></td><td>box, predicate, action</td></tr>
 
 <tr><td align = right>static const &lt;PCG&gt;type *</td><td><a href = "#fn:<CG>any">&lt;CG&gt;any</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<A>array_test">&lt;A&gt;array_test</a></td><td></td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<CM>compare_test">&lt;CM&gt;compare_test</a></td><td></td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -600,26 +584,6 @@
 	<dt>Order:</dt>
 	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code>)</dd>
 </dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<A>array_test" name = "fn:<A>array_test">&lt;A&gt;array_test</a></h3>
-
-<p><code>static void <strong>&lt;A&gt;array_test</strong>(void)</code></p>
-
-<p><code>ARRAY_TEST</code>, <code>ARRAY_TO_STRING</code>, !<code>NDEBUG</code>: will be tested on stdout.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<CM>compare_test" name = "fn:<CM>compare_test">&lt;CM&gt;compare_test</a></h3>
-
-<p><code>static void <strong>&lt;CM&gt;compare_test</strong>(void)</code></p>
-
-<p><code>ARRAY_TEST</code>, <code>ARRAY_COMPARE</code> -&gt; <code>ARRAY_TO_STRING</code>, !<code>NDEBUG</code>: will be tested on stdout.</p>
 
 </div>
 
