@@ -6,11 +6,11 @@
 
 #if ARRAY_TRAITS == 0 /* <!-- !traits */
 
-/** <test_array.h>: operates by side-effects on <typedef:<PA>type>. */
+/** <../test/test_array.h>: operates by side-effects on <typedef:<PA>type>. */
 typedef void (*PA_(action_fn))(PA_(type) *);
 
-/** <test_array.h>: a <typedef:<PA>action_fn> that takes in an uninitialized
- <typedef:<PA>type> and makes up a valid object for testing. */
+/** <../test/test_array.h>: a <typedef:<PA>action_fn> that takes in an
+ uninitialized <typedef:<PA>type> and makes up a valid object for testing. */
 static PA_(action_fn) PA_(filler) = (ARRAY_TEST);
 
 /** @return Is `a` in a valid state? */
