@@ -1,5 +1,7 @@
 # bmp\.h #
 
+## Fixed bit\-field ##
+
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [bmpchunk](#user-content-typedef-1f500d15)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;B&gt;bmp](#user-content-tag-c8c9536a)

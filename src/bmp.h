@@ -1,6 +1,8 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @subtitle Fixed bit-field
+
  `<B>bmp` is a bit-field of `BMP_BITS` bits.
 
  @param[BMP_NAME, BMP_BITS]
