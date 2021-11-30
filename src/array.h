@@ -22,7 +22,8 @@
  below.
 
  @param[ARRAY_TEST]
- Optional function satisfying <data:<PA>filler> for unit testing framework
+ Optional function implementing <typedef:<PA>action_fn> that fills the
+ <typedef:<PA>type> from uninitialized to random for unit testing framework
  using `assert`. Testing array contained in <../test/test_array.h>. Must have
  at least one `to_string` trait included, and any tests of traits must come
  before `to_string`.
