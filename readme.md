@@ -3,7 +3,7 @@
 ## Contiguous dynamic array ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PCG&gt;box](#user-content-typedef-9c8158f8), [&lt;PCG&gt;type](#user-content-typedef-1c7f487f), [&lt;PCG&gt;action_fn](#user-content-typedef-d8b6d30a), [&lt;PCG&gt;predicate_fn](#user-content-typedef-dfee9029), [&lt;PA&gt;action_fn](#user-content-typedef-b531bc05), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PCG&gt;box](#user-content-typedef-9c8158f8), [&lt;PCG&gt;type](#user-content-typedef-1c7f487f), [&lt;PCG&gt;action_fn](#user-content-typedef-d8b6d30a), [&lt;PCG&gt;predicate_fn](#user-content-typedef-dfee9029), [&lt;PA&gt;action_fn](#user-content-typedef-b531bc05), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -65,7 +65,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef void(*<strong>&lt;PCG&gt;action_fn</strong>)(&lt;PCG&gt;type *);</code>
 
-[contiguous\.h](contiguous.h): operates by side\-effects on [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
+Operates by side\-effects on [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
 
 
 
@@ -73,7 +73,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef int(*<strong>&lt;PCG&gt;predicate_fn</strong>)(const &lt;PCG&gt;type *);</code>
 
-[contiguous\.h](contiguous.h): returns a boolean given read\-only [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
+Returns a boolean given read\-only [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
 
 
 
@@ -85,11 +85,27 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 
 
+### <a id = "user-content-typedef-ace240bb" name = "user-content-typedef-ace240bb">&lt;PSZ&gt;box</a> ###
+
+<code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code>
+
+[to\_string\.h](to_string.h): an alias to the box\.
+
+
+
+### <a id = "user-content-typedef-d1a7c35e" name = "user-content-typedef-d1a7c35e">&lt;PSZ&gt;type</a> ###
+
+<code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code>
+
+[to\_string\.h](to_string.h): an alias to the individual type contained in the box\.
+
+
+
 ### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
 <code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
 
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e) into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -113,7 +129,7 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>typedef int(*<strong>&lt;PCM&gt;bipredicate_fn</strong>)(const &lt;PCM&gt;type *, const &lt;PCM&gt;type *);</code>
 
-[compare\.h](compare.h): returns a boolean given two read\-only [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
+Returns a boolean given two read\-only [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
 
 
 
@@ -121,7 +137,7 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>typedef int(*<strong>&lt;PCM&gt;biaction_fn</strong>)(&lt;PCM&gt;type *, &lt;PCM&gt;type *);</code>
 
-[compare\.h](compare.h): returns a boolean given two [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
+Returns a boolean given two [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
 
 
 
@@ -129,7 +145,7 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>typedef int(*<strong>&lt;PCM&gt;compare_fn</strong>)(const &lt;PCM&gt;type *a, const &lt;PCM&gt;type *b);</code>
 
-[compare\.h](compare.h): three\-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
+Three\-way comparison on a totally order set of [&lt;PCM&gt;type](#user-content-typedef-cee32005); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
@@ -480,7 +496,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 <code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   Print the contents of [&lt;PSZ&gt;box](#user-content-typedef-ace240bb) `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 
@@ -491,7 +507,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static int <strong>&lt;CM&gt;compare</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code>
 
-[compare\.h](compare.h): lexicographically compares `a` to `b`\. Null values are before everything\.
+Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` to `b`\. Null values are before everything\.
 
  * Return:  
    `a < b`: negative; `a == b`: zero; `a > b`: positive\.
@@ -505,7 +521,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static size_t <strong>&lt;CM&gt;lower_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code>
 
-[compare\.h](compare.h): `a` should be partitioned true/false with less\-then `value`\.
+[&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` should be partitioned true/false with less\-then [&lt;PCM&gt;type](#user-content-typedef-cee32005) `value`\.
 
  * Return:  
    The first index of `a` that is not less than `value`\.

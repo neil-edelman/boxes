@@ -10,13 +10,13 @@
  A one-argument macro producing a name that is responsible for the name of the
  functions. The caller is responsible for undefining `CM_`.
 
- @param[FUNCTION_COMPARABLE_NAME, FUNCTION_IS_EQUAL, FUNCTION_COMPARE]
+ @param[COMPARE_NAME, COMPARE_IS_EQUAL, COMPARE]
  Optional unique name that satisfies `C` naming conventions when mangled,
- and a function implementing, for `FUNCTION_IS_EQUAL`
- <typedef:<PCM_>bipredicate_fn> that establishes an equivalence relation, or
- for `FUNCTION_COMPARE` <typedef:<PCM_>compare_fn> that establishes a total
+ and a function implementing, for `COMPARE_IS_EQUAL`,
+ <typedef:<PCM>bipredicate_fn> that establishes an equivalence relation, or
+ for `COMPARE`, <typedef:<PCM>compare_fn> that establishes a total
  order. There can be multiple comparable functions, but only one can omit
- `FUNCTION_COMPARABLE_NAME`.
+ `COMPARE_NAME`.
 
  @std C89 */
 
@@ -42,16 +42,16 @@ typedef BOX_CONTAINER PCM_(box);
 /** <compare.h>: an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PCM_(type);
 
-/** <compare.h>: returns a boolean given two read-only <typedef:<PCM>type>. */
+/** Returns a boolean given two read-only <typedef:<PCM>type>. */
 typedef int (*PCM_(bipredicate_fn))(const PCM_(type) *, const PCM_(type) *);
 
-/** <compare.h>: returns a boolean given two <typedef:<PCM>type>. */
+/** Returns a boolean given two <typedef:<PCM>type>. */
 typedef int (*PCM_(biaction_fn))(PCM_(type) *, PCM_(type) *);
 
 #ifdef ARRAY_COMPARE /* <!-- compare */
 
-/** <compare.h>: three-way comparison on a totally order set; returns an
- integer value less then, equal to, greater then zero, if
+/** Three-way comparison on a totally order set of <typedef:<PCM>type>; returns
+ an integer value less then, equal to, greater then zero, if
  `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*PCM_(compare_fn))(const PCM_(type) *a, const PCM_(type) *b);
 
@@ -59,8 +59,9 @@ typedef int (*PCM_(compare_fn))(const PCM_(type) *a, const PCM_(type) *b);
  <typedef:<PCM>compare_fn>. @fixme Eliminate `ARRAY`. */
 static const PCM_(compare_fn) PCM_(compare) = (ARRAY_COMPARE);
 
-/** <compare.h>: lexicographically compares `a` to `b`. Null values are before
- everything. @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
+/** Lexicographically compares <typedef:<PCM>box> `a` to `b`. Null values are
+ before everything.
+ @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
  @order \O(`a.size`) @allow */
 static int CM_(compare)(const PCM_(box) *const a, const PCM_(box) *const b) {
 	PCM_(type) *ia, *ib, *end;
@@ -79,7 +80,8 @@ static int CM_(compare)(const PCM_(box) *const a, const PCM_(box) *const b) {
 	}
 }
 
-/** <compare.h>: `a` should be partitioned true/false with less-then `value`.
+/** <typedef:<PCM>box> `a` should be partitioned true/false with less-then
+ <typedef:<PCM>type> `value`.
  @return The first index of `a` that is not less than `value`.
  @order \O(log `a.size`) @allow */
 static size_t CM_(lower_bound)(const PCM_(box) *const a,

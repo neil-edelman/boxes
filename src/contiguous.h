@@ -36,10 +36,10 @@ typedef BOX_CONTAINER PCG_(box);
 /** <contiguous.h>: an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PCG_(type);
 
-/** <contiguous.h>: operates by side-effects on <typedef:<PCG>type>. */
+/** Operates by side-effects on <typedef:<PCG>type>. */
 typedef void (*PCG_(action_fn))(PCG_(type) *);
 
-/** <contiguous.h>: returns a boolean given read-only <typedef:<PCG>type>. */
+/** Returns a boolean given read-only <typedef:<PCG>type>. */
 typedef int (*PCG_(predicate_fn))(const PCG_(type) *);
 
 /** <contiguous.h> @return Converts `i` to an index in `box` from
