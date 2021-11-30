@@ -203,7 +203,7 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-179bac56">&lt;CM&gt;upper_bound</a></td><td>a, value</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-bfb5a80f">&lt;CM&gt;insert_after</a></td><td>a, datum</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-bfb5a80f">&lt;CM&gt;insert_after</a></td><td>a, value</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-3e4620eb">&lt;CM&gt;sort</a></td><td>a</td></tr>
 
@@ -376,10 +376,8 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static size_t <strong>&lt;CG&gt;clip</strong>(const &lt;PCG&gt;box *const <em>box</em>, const long <em>i</em>)</code>
 
-[contiguous\.h](contiguous.h)
-
  * Return:  
-   Converts `i` to an index in `box` from \[0, `a.size`\]\. Negative values are implicitly plus `box.size`\.
+   Converts `i` to an index in [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` from \[0, `a.size`\]\. Negative values are implicitly plus `box.size`\.
  * Order:  
    &#920;\(1\)
 
@@ -390,7 +388,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static int <strong>&lt;CG&gt;copy_if</strong>(&lt;PCG&gt;box *const <em>a</em>, const &lt;PCG&gt;predicate_fn <em>copy</em>, const &lt;PCG&gt;box *const <em>b</em>)</code>
 
-[contiguous\.h](contiguous.h): for all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
+For all elements of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: ERANGE, realloc  
  * Order:  
@@ -403,7 +401,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static void <strong>&lt;CG&gt;keep_if</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>keep</em>, const &lt;PCG&gt;action_fn <em>destruct</em>)</code>
 
-[contiguous\.h](contiguous.h): for all elements of `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
+For all elements of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
 
  * Order:  
    &#927;\(`a.size` &#215; `keep` &#215; `destruct`\)
@@ -415,7 +413,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static void <strong>&lt;CG&gt;trim</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code>
 
-[contiguous\.h](contiguous.h): removes at either end of `box` of things that `predicate` returns true\.
+Removes at either end of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` of things that `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate`\)
@@ -427,7 +425,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static void <strong>&lt;CG&gt;each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code>
 
-[contiguous\.h](contiguous.h): iterates through `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
+Iterates through [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
 
  * Order:  
    &#927;\(`box.size` &#215; `action`\)
@@ -439,7 +437,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static void <strong>&lt;CG&gt;if_each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code>
 
-[contiguous\.h](contiguous.h): iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
+Iterates through [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate` &#215; `action`\)
@@ -451,7 +449,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static const &lt;PCG&gt;type *<strong>&lt;CG&gt;any</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code>
 
-[contiguous\.h](contiguous.h): iterates through `box` and calls `predicate` until it returns true\.
+Iterates through [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` and calls `predicate` until it returns true\.
 
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
@@ -505,7 +503,7 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 <code>static size_t <strong>&lt;CM&gt;upper_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code>
 
-[compare\.h](compare.h): `a` should be partitioned false/true with greater\-than or equal `value`\.
+[&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` should be partitioned false/true with greater\-than or equal\-to [&lt;PCM&gt;type](#user-content-typedef-cee32005) `value`\.
 
  * Return:  
    The first index of `a` that is greater than `value`\.
@@ -517,9 +515,9 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 ### <a id = "user-content-fn-bfb5a80f" name = "user-content-fn-bfb5a80f">&lt;CM&gt;insert_after</a> ###
 
-<code>static int <strong>&lt;CM&gt;insert_after</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>datum</em>)</code>
+<code>static int <strong>&lt;CM&gt;insert_after</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code>
 
-[compare\.h](compare.h): copies `datum` at the upper bound of a sorted `a`\.
+Copies [&lt;PCM&gt;type](#user-content-typedef-cee32005) `value` at the upper bound of a sorted [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a`\.
 
  * Return:  
    Success\.
@@ -534,7 +532,7 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 <code>static void <strong>&lt;CM&gt;sort</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
 
-[compare\.h](compare.h): sorts `a` by `qsort`\.
+Sorts [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` by `qsort`\.
 
  * Order:  
    &#927;\(`a.size` \\log `a.size`\)
@@ -546,7 +544,7 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 <code>static void <strong>&lt;CM&gt;reverse</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
 
-[compare\.h](compare.h): sorts `a` in reverse by `qsort`\.
+Sorts [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` in reverse by `qsort`\.
 
  * Order:  
    &#927;\(`a.size` \\log `a.size`\)
@@ -558,10 +556,8 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 <code>static int <strong>&lt;CM&gt;is_equal</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code>
 
-[compare\.h](compare.h)
-
  * Return:  
-   If `a` piecewise equals `b`, which both can be null\.
+   If [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` piecewise equals `b`, which both can be null\.
  * Order:  
    &#927;\(`size`\)
 
@@ -572,7 +568,7 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 <code>static void <strong>&lt;CM&gt;unique_merge</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;biaction_fn <em>merge</em>)</code>
 
-[compare\.h](compare.h): removes consecutive duplicate elements in `a`\.
+Removes consecutive duplicate elements in [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a`\.
 
  * Parameter: _merge_  
    Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false\.
@@ -586,7 +582,7 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 <code>static void <strong>&lt;CM&gt;unique</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
 
-[compare\.h](compare.h): removes consecutive duplicate elements in `a`\.
+Removes consecutive duplicate elements in [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a`\.
 
  * Order:  
    &#927;\(`a.size`\)

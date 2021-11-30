@@ -94,9 +94,9 @@ static size_t CM_(lower_bound)(const PCM_(box) *const a,
 	return low;
 }
 
-/** <compare.h>: `a` should be partitioned false/true with greater-than or
- equal `value`. @return The first index of `a` that is greater than `value`.
- @order \O(log `a.size`) @allow */
+/** <typedef:<PCM>box> `a` should be partitioned false/true with greater-than
+ or equal-to <typedef:<PCM>type> `value`. @return The first index of `a` that
+ is greater than `value`. @order \O(log `a.size`) @allow */
 static size_t CM_(upper_bound)(const PCM_(box) *const a,
 	const PCM_(type) *const value) {
 	size_t low = 0, high = a->size, mid;
@@ -107,17 +107,18 @@ static size_t CM_(upper_bound)(const PCM_(box) *const a,
 	return low;
 }
 
-/** <compare.h>: copies `datum` at the upper bound of a sorted `a`.
+/** Copies <typedef:<PCM>type> `value` at the upper bound of a sorted
+ <typedef:<PCM>box> `a`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
 static int CM_(insert_after)(PCM_(box) *const a,
-	const PCM_(type) *const datum) {
+	const PCM_(type) *const value) {
 	size_t bound;
-	assert(a && datum);
-	bound = CM_(upper_bound)(a, datum);
-	if(!A_(array_new)(a)) return 0; /* @FIXME Reference to array. */
+	assert(a && value);
+	bound = CM_(upper_bound)(a, value);
+	if(!A_(array_new)(a)) return 0; /* @fixme Reference to array. */
 	memmove(a->data + bound + 1, a->data + bound,
 		sizeof *a->data * (a->size - bound - 1));
-	memcpy(a->data + bound, datum, sizeof *datum);
+	memcpy(a->data + bound, value, sizeof *value);
 	return 1;
 }
 
@@ -125,7 +126,7 @@ static int CM_(insert_after)(PCM_(box) *const a,
 static int PCM_(vcompar)(const void *const a, const void *const b)
 	{ return PCM_(compare)(a, b); }
 
-/** <compare.h>: sorts `a` by `qsort`.
+/** Sorts <typedef:<PCM>box> `a` by `qsort`.
  @order \O(`a.size` \log `a.size`) @allow */
 static void CM_(sort)(PCM_(box) *const a)
 	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PCM_(vcompar)); }
@@ -134,12 +135,12 @@ static void CM_(sort)(PCM_(box) *const a)
 static int PCM_(vrevers)(const void *const a, const void *const b)
 	{ return PCM_(compare)(b, a); }
 
-/** <compare.h>: sorts `a` in reverse by `qsort`.
+/** Sorts <typedef:<PCM>box> `a` in reverse by `qsort`.
  @order \O(`a.size` \log `a.size`) @allow */
 static void CM_(reverse)(PCM_(box) *const a)
 	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PCM_(vrevers)); }
 
-/** <compare.h>: !compare(`a`, `b`) == equals(`a`, `b`) for `ARRAY_COMPARE`.
+/** !compare(`a`, `b`) == equals(`a`, `b`).
  @implements <typedef:<PCM>bipredicate_fn> */
 static int PCM_(is_equal)(const PCM_(type) *const a, const PCM_(type) *const b)
 	{ return !PCM_(compare)(a, b); }
@@ -152,8 +153,8 @@ static const PCM__(bipredicate_fn) PCM__(is_equal) = (ARRAY_IS_EQUAL);
 
 #endif /* is equal --> */
 
-/** <compare.h> @return If `a` piecewise equals `b`, which both can be null.
- @order \O(`size`) @allow */
+/** @return If <typedef:<PCM>box> `a` piecewise equals `b`, which both can be
+ null. @order \O(`size`) @allow */
 static int CM_(is_equal)(const PCM_(box) *const a, const PCM_(box) *const b) {
 	const PCM_(type) *ia, *ib, *end;
 	if(!a) return !b;
@@ -163,7 +164,7 @@ static int CM_(is_equal)(const PCM_(box) *const a, const PCM_(box) *const b) {
 	return 1;
 }
 
-/** <compare.h>: removes consecutive duplicate elements in `a`.
+/** Removes consecutive duplicate elements in <typedef:<PCM>box> `a`.
  @param[merge] Controls surjection. Called with duplicate elements, if false
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves
@@ -196,7 +197,7 @@ static void CM_(unique_merge)(PCM_(box) *const a, const PCM_(biaction_fn) merge)
 	a->size = target;
 }
 
-/** <compare.h>: removes consecutive duplicate elements in `a`.
+/** Removes consecutive duplicate elements in <typedef:<PCM>box> `a`.
  @order \O(`a.size`) @allow */
 static void CM_(unique)(PCM_(box) *const a) { CM_(unique_merge)(a, 0); }
 

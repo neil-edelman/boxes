@@ -271,7 +271,7 @@
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<CM>upper_bound">&lt;CM&gt;upper_bound</a></td><td>a, value</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<CM>insert_after">&lt;CM&gt;insert_after</a></td><td>a, datum</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<CM>insert_after">&lt;CM&gt;insert_after</a></td><td>a, value</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<CM>sort">&lt;CM&gt;sort</a></td><td>a</td></tr>
 
@@ -483,11 +483,9 @@
 
 <p><code>static size_t <strong>&lt;CG&gt;clip</strong>(const &lt;PCG&gt;box *const <em>box</em>, const long <em>i</em>)</code></p>
 
-<p><a href = "contiguous.h">contiguous.h</a></p>
-
 <dl>
 	<dt>Return:</dt>
-	<dd>Converts <code>i</code> to an index in <code>box</code> from [0, <code>a.size</code>]. Negative values are implicitly plus <code>box.size</code>.</dd>
+	<dd>Converts <code>i</code> to an index in <a href = "#typedef:&lt;PCG&gt;box">&lt;PCG&gt;box</a> <code>box</code> from [0, <code>a.size</code>]. Negative values are implicitly plus <code>box.size</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -500,7 +498,7 @@
 
 <p><code>static int <strong>&lt;CG&gt;copy_if</strong>(&lt;PCG&gt;box *const <em>a</em>, const &lt;PCG&gt;predicate_fn <em>copy</em>, const &lt;PCG&gt;box *const <em>b</em>)</code></p>
 
-<p><a href = "contiguous.h">contiguous.h</a>: for all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
+<p>For all elements of <a href = "#typedef:&lt;PCG&gt;box">&lt;PCG&gt;box</a> <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
 
 <dl>
 	<dt>Exceptional return: ERANGE, realloc</dt>
@@ -516,7 +514,7 @@
 
 <p><code>static void <strong>&lt;CG&gt;keep_if</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>keep</em>, const &lt;PCG&gt;action_fn <em>destruct</em>)</code></p>
 
-<p><a href = "contiguous.h">contiguous.h</a>: for all elements of <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> (if not-null).</p>
+<p>For all elements of <a href = "#typedef:&lt;PCG&gt;box">&lt;PCG&gt;box</a> <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> (if not-null).</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -531,7 +529,7 @@
 
 <p><code>static void <strong>&lt;CG&gt;trim</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code></p>
 
-<p><a href = "contiguous.h">contiguous.h</a>: removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
+<p>Removes at either end of <a href = "#typedef:&lt;PCG&gt;box">&lt;PCG&gt;box</a> <code>box</code> of things that <code>predicate</code> returns true.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -546,7 +544,7 @@
 
 <p><code>static void <strong>&lt;CG&gt;each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code></p>
 
-<p><a href = "contiguous.h">contiguous.h</a>: iterates through <code>box</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
+<p>Iterates through <a href = "#typedef:&lt;PCG&gt;box">&lt;PCG&gt;box</a> <code>box</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -561,7 +559,7 @@
 
 <p><code>static void <strong>&lt;CG&gt;if_each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code></p>
 
-<p><a href = "contiguous.h">contiguous.h</a>: iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
+<p>Iterates through <a href = "#typedef:&lt;PCG&gt;box">&lt;PCG&gt;box</a> <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -576,7 +574,7 @@
 
 <p><code>static const &lt;PCG&gt;type *<strong>&lt;CG&gt;any</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code></p>
 
-<p><a href = "contiguous.h">contiguous.h</a>: iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
+<p>Iterates through <a href = "#typedef:&lt;PCG&gt;box">&lt;PCG&gt;box</a> <code>box</code> and calls <code>predicate</code> until it returns true.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -642,7 +640,7 @@
 
 <p><code>static size_t <strong>&lt;CM&gt;upper_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code></p>
 
-<p><a href = "compare.h">compare.h</a>: <code>a</code> should be partitioned false/true with greater-than or equal <code>value</code>.</p>
+<p><a href = "#typedef:&lt;PCM&gt;box">&lt;PCM&gt;box</a> <code>a</code> should be partitioned false/true with greater-than or equal-to <a href = "#typedef:&lt;PCM&gt;type">&lt;PCM&gt;type</a> <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -657,9 +655,9 @@
 
 <h3><a id = "fn:<CM>insert_after" name = "fn:<CM>insert_after">&lt;CM&gt;insert_after</a></h3>
 
-<p><code>static int <strong>&lt;CM&gt;insert_after</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>datum</em>)</code></p>
+<p><code>static int <strong>&lt;CM&gt;insert_after</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code></p>
 
-<p><a href = "compare.h">compare.h</a>: copies <code>datum</code> at the upper bound of a sorted <code>a</code>.</p>
+<p>Copies <a href = "#typedef:&lt;PCM&gt;type">&lt;PCM&gt;type</a> <code>value</code> at the upper bound of a sorted <a href = "#typedef:&lt;PCM&gt;box">&lt;PCM&gt;box</a> <code>a</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -677,7 +675,7 @@
 
 <p><code>static void <strong>&lt;CM&gt;sort</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
-<p><a href = "compare.h">compare.h</a>: sorts <code>a</code> by <code>qsort</code>.</p>
+<p>Sorts <a href = "#typedef:&lt;PCM&gt;box">&lt;PCM&gt;box</a> <code>a</code> by <code>qsort</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -692,7 +690,7 @@
 
 <p><code>static void <strong>&lt;CM&gt;reverse</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
-<p><a href = "compare.h">compare.h</a>: sorts <code>a</code> in reverse by <code>qsort</code>.</p>
+<p>Sorts <a href = "#typedef:&lt;PCM&gt;box">&lt;PCM&gt;box</a> <code>a</code> in reverse by <code>qsort</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -707,11 +705,9 @@
 
 <p><code>static int <strong>&lt;CM&gt;is_equal</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code></p>
 
-<p><a href = "compare.h">compare.h</a></p>
-
 <dl>
 	<dt>Return:</dt>
-	<dd>If <code>a</code> piecewise equals <code>b</code>, which both can be null.</dd>
+	<dd>If <a href = "#typedef:&lt;PCM&gt;box">&lt;PCM&gt;box</a> <code>a</code> piecewise equals <code>b</code>, which both can be null.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>size</code>)</dd>
 </dl>
@@ -724,7 +720,7 @@
 
 <p><code>static void <strong>&lt;CM&gt;unique_merge</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;biaction_fn <em>merge</em>)</code></p>
 
-<p><a href = "compare.h">compare.h</a>: removes consecutive duplicate elements in <code>a</code>.</p>
+<p>Removes consecutive duplicate elements in <a href = "#typedef:&lt;PCM&gt;box">&lt;PCM&gt;box</a> <code>a</code>.</p>
 
 <dl>
 	<dt>Parameter: <em>merge</em></dt>
@@ -741,7 +737,7 @@
 
 <p><code>static void <strong>&lt;CM&gt;unique</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
-<p><a href = "compare.h">compare.h</a>: removes consecutive duplicate elements in <code>a</code>.</p>
+<p>Removes consecutive duplicate elements in <a href = "#typedef:&lt;PCM&gt;box">&lt;PCM&gt;box</a> <code>a</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
