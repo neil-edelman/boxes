@@ -278,8 +278,7 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 
 /* <!-- iterate interface */
 
-/** Contains all iteration parameters. */
-struct PA_(iterator);
+/* Contains all iteration parameters. */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
 
 /** Loads `a` into `it`. @implements begin */

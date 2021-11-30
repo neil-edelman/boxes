@@ -4,7 +4,7 @@
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PCG&gt;box](#user-content-typedef-9c8158f8), [&lt;PCG&gt;type](#user-content-typedef-1c7f487f), [&lt;PCG&gt;action_fn](#user-content-typedef-d8b6d30a), [&lt;PCG&gt;predicate_fn](#user-content-typedef-dfee9029), [&lt;PA&gt;action_fn](#user-content-typedef-b531bc05), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d), [&lt;PA&gt;iterator](#user-content-tag-e6ddd8f0)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -49,7 +49,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef BOX_CONTAINER <strong>&lt;PCG&gt;box</strong>;</code>
 
-In [contiguous\.h](contiguous.h), an alias to the box\.
+[contiguous\.h](contiguous.h): an alias to the box\.
 
 
 
@@ -57,7 +57,7 @@ In [contiguous\.h](contiguous.h), an alias to the box\.
 
 <code>typedef BOX_CONTENTS <strong>&lt;PCG&gt;type</strong>;</code>
 
-In [contiguous\.h](contiguous.h), an alias to the individual type contained in the box\.
+[contiguous\.h](contiguous.h): an alias to the individual type contained in the box\.
 
 
 
@@ -65,7 +65,7 @@ In [contiguous\.h](contiguous.h), an alias to the individual type contained in t
 
 <code>typedef void(*<strong>&lt;PCG&gt;action_fn</strong>)(&lt;PCG&gt;type *);</code>
 
-Operates by side\-effects on [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
+[contiguous\.h](contiguous.h): operates by side\-effects on [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
 
 
 
@@ -73,7 +73,7 @@ Operates by side\-effects on [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
 
 <code>typedef int(*<strong>&lt;PCG&gt;predicate_fn</strong>)(const &lt;PCG&gt;type *);</code>
 
-Returns a boolean given read\-only [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
+[contiguous\.h](contiguous.h): returns a boolean given read\-only [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
 
 
 
@@ -142,14 +142,6 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 Manages the array field `data` which has `size` elements\. The space is indexed up to `capacity`, which is at least `size`\. To initialize it to an idle state, see [&lt;A&gt;array](#user-content-fn-8049be0d), `ARRAY_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](web/states.png)
-
-
-
-### <a id = "user-content-tag-e6ddd8f0" name = "user-content-tag-e6ddd8f0">&lt;PA&gt;iterator</a> ###
-
-<code>struct <strong>&lt;PA&gt;iterator</strong>;</code>
-
-Contains all iteration parameters\.
 
 
 
@@ -382,6 +374,8 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static size_t <strong>&lt;CG&gt;clip</strong>(const &lt;PCG&gt;box *const <em>box</em>, const long <em>i</em>)</code>
 
+[contiguous\.h](contiguous.h)
+
  * Return:  
    Converts `i` to an index in `box` from \[0, `a.size`\]\. Negative values are implicitly plus `box.size`\.
  * Order:  
@@ -394,7 +388,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 <code>static int <strong>&lt;CG&gt;copy_if</strong>(&lt;PCG&gt;box *const <em>a</em>, const &lt;PCG&gt;predicate_fn <em>copy</em>, const &lt;PCG&gt;box *const <em>b</em>)</code>
 
-For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
+[contiguous\.h](contiguous.h): for all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: ERANGE, realloc  
  * Order:  
@@ -407,7 +401,7 @@ For all elements of `b`, calls `copy`, and if true, lazily copies the elements t
 
 <code>static void <strong>&lt;CG&gt;keep_if</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>keep</em>, const &lt;PCG&gt;action_fn <em>destruct</em>)</code>
 
-For all elements of `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` if not\-null\.
+[contiguous\.h](contiguous.h): for all elements of `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
 
  * Order:  
    &#927;\(`a.size` &#215; `keep` &#215; `destruct`\)
@@ -419,7 +413,7 @@ For all elements of `box`, calls `keep`, and if false, lazy deletes that item, c
 
 <code>static void <strong>&lt;CG&gt;trim</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code>
 
-Removes at either end of `box` of things that `predicate` returns true\.
+[contiguous\.h](contiguous.h): removes at either end of `box` of things that `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate`\)
@@ -431,7 +425,7 @@ Removes at either end of `box` of things that `predicate` returns true\.
 
 <code>static void <strong>&lt;CG&gt;each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code>
 
-Iterates through `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
+[contiguous\.h](contiguous.h): iterates through `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
 
  * Order:  
    &#927;\(`box.size` &#215; `action`\)
@@ -443,7 +437,7 @@ Iterates through `box` and calls `action` on all the elements\. The topology of 
 
 <code>static void <strong>&lt;CG&gt;if_each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code>
 
-Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
+[contiguous\.h](contiguous.h): iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate` &#215; `action`\)
@@ -455,7 +449,7 @@ Iterates through `box` and calls `action` on all the elements for which `predica
 
 <code>static const &lt;PCG&gt;type *<strong>&lt;CG&gt;any</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code>
 
-Requires iterate interface\. Iterates through `box` and calls `predicate` until it returns true\.
+[contiguous\.h](contiguous.h): iterates through `box` and calls `predicate` until it returns true\.
 
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
