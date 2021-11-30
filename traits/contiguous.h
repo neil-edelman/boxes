@@ -42,7 +42,7 @@ typedef void (*PCG_(action_fn))(PCG_(type) *);
 /** Returns a boolean given read-only <typedef:<PCG>type>. */
 typedef int (*PCG_(predicate_fn))(const PCG_(type) *);
 
-/** <contiguous.h> @return Converts `i` to an index in `box` from
+/** @return Converts `i` to an index in <typedef:<PCG>box> `box` from
  [0, `a.size`]. Negative values are implicitly plus `box.size`.
  @order \Theta(1) @allow */
 static size_t CG_(clip)(const PCG_(box) *const box, const long i) {
@@ -54,9 +54,9 @@ static size_t CG_(clip)(const PCG_(box) *const box, const long i) {
 		: (size_t)i > box->size ? box->size : (size_t)i;
 }
 
-/** <contiguous.h>: for all elements of `b`, calls `copy`, and if true, lazily
- copies the elements to `a`. `a` and `b` can not be the same but `b` can be
- null, (in which case, it does nothing.)
+/** For all elements of <typedef:<PCG>box> `b`, calls `copy`, and if true,
+ lazily copies the elements to `a`. `a` and `b` can not be the same but `b` can
+ be null, (in which case, it does nothing.)
  @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
 static int CG_(copy_if)(PCG_(box) *const a, const PCG_(predicate_fn) copy,
 	const PCG_(box) *const b) {
@@ -86,8 +86,8 @@ static int CG_(copy_if)(PCG_(box) *const a, const PCG_(predicate_fn) copy,
 	return 1;
 }
 
-/** <contiguous.h>: for all elements of `box`, calls `keep`, and if false, lazy
- deletes that item, calling `destruct` (if not-null).
+/** For all elements of <typedef:<PCG>box> `box`, calls `keep`, and if false,
+ lazy deletes that item, calling `destruct` (if not-null).
  @order \O(`a.size` \times `keep` \times `destruct`) @allow */
 static void CG_(keep_if)(PCG_(box) *const box,
 	const PCG_(predicate_fn) keep, const PCG_(action_fn) destruct) {
@@ -123,8 +123,8 @@ static void CG_(keep_if)(PCG_(box) *const box,
 	box->size = (size_t)(erase - box->data);
 }
 
-/** <contiguous.h>: removes at either end of `box` of things that `predicate`
- returns true. @order \O(`box.size` \times `predicate`) @allow */
+/** Removes at either end of <typedef:<PCG>box> `box` of things that
+ `predicate` returns true. @order \O(`box.size` \times `predicate`) @allow */
 static void CG_(trim)(PCG_(box) *const box,
 	const PCG_(predicate_fn) predicate) {
 	size_t i;
@@ -136,7 +136,7 @@ static void CG_(trim)(PCG_(box) *const box,
 	memmove(box->data, box->data + i, sizeof *box->data * i), box->size -= i;
 }
 
-/** <contiguous.h>: iterates through `box` and calls `action` on all the
+/** Iterates through <typedef:<PCG>box> `box` and calls `action` on all the
  elements. The topology of the list should not change while in this function.
  @order \O(`box.size` \times `action`) @allow */
 static void CG_(each)(PCG_(box) *const box, const PCG_(action_fn) action) {
@@ -145,7 +145,7 @@ static void CG_(each)(PCG_(box) *const box, const PCG_(action_fn) action) {
 	for(i = box->data, end = i + box->size; i < end; i++) action(i);
 }
 
-/** <contiguous.h>: iterates through `box` and calls `action` on all the
+/** Iterates through <typedef:<PCG>box> `box` and calls `action` on all the
  elements for which `predicate` returns true. The topology of the list should
  not change while in this function.
  @order \O(`box.size` \times `predicate` \times `action`) @allow */
@@ -157,7 +157,7 @@ static void CG_(if_each)(PCG_(box) *const box,
 		if(predicate(i)) action(i);
 }
 
-/** <contiguous.h>: iterates through `box` and calls `predicate` until it
+/** Iterates through <typedef:<PCG>box> `box` and calls `predicate` until it
  returns true.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null. @order \O(`box.size` \times `predicate`) @allow */
