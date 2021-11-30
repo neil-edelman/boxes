@@ -97,7 +97,7 @@ Responsible for turning the first argument into a 12\-`char` null\-terminated ou
 
 <code>typedef BOX_CONTAINER <strong>&lt;PCM&gt;box</strong>;</code>
 
-In [compare\.h](compare.h), an alias to the box\.
+[compare\.h](compare.h): an alias to the box\.
 
 
 
@@ -105,7 +105,7 @@ In [compare\.h](compare.h), an alias to the box\.
 
 <code>typedef BOX_CONTENTS <strong>&lt;PCM&gt;type</strong>;</code>
 
-In [compare\.h](compare.h), an alias to the individual type contained in the box\.
+[compare\.h](compare.h): an alias to the individual type contained in the box\.
 
 
 
@@ -113,7 +113,7 @@ In [compare\.h](compare.h), an alias to the individual type contained in the box
 
 <code>typedef int(*<strong>&lt;PCM&gt;bipredicate_fn</strong>)(const &lt;PCM&gt;type *, const &lt;PCM&gt;type *);</code>
 
-In [compare\.h](compare.h), returns a boolean given two read\-only [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
+[compare\.h](compare.h): returns a boolean given two read\-only [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
 
 
 
@@ -121,7 +121,7 @@ In [compare\.h](compare.h), returns a boolean given two read\-only [&lt;PCM&gt;t
 
 <code>typedef int(*<strong>&lt;PCM&gt;biaction_fn</strong>)(&lt;PCM&gt;type *, &lt;PCM&gt;type *);</code>
 
-In [compare\.h](compare.h), returns a boolean given two [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
+[compare\.h](compare.h): returns a boolean given two [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
 
 
 
@@ -129,7 +129,7 @@ In [compare\.h](compare.h), returns a boolean given two [&lt;PCM&gt;type](#user-
 
 <code>typedef int(*<strong>&lt;PCM&gt;compare_fn</strong>)(const &lt;PCM&gt;type *a, const &lt;PCM&gt;type *b);</code>
 
-Three\-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
+[compare\.h](compare.h): three\-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
@@ -209,9 +209,13 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-179bac56">&lt;CM&gt;upper_bound</a></td><td>a, value</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-bfb5a80f">&lt;CM&gt;insert_after</a></td><td>a, datum</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-3e4620eb">&lt;CM&gt;sort</a></td><td>a</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-2022b037">&lt;CM&gt;reverse</a></td><td>a</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-30c13ca0">&lt;CM&gt;is_equal</a></td><td>a, b</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-a92a161f">&lt;CM&gt;unique_merge</a></td><td>a, merge</td></tr>
 
@@ -493,7 +497,7 @@ Requires iterate interface\. Iterates through `box` and calls `predicate` until 
 
 <code>static int <strong>&lt;CM&gt;compare</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code>
 
-Lexicographically compares `a` to `b`\. Null values are before everything\.
+[compare\.h](compare.h): lexicographically compares `a` to `b`\. Null values are before everything\.
 
  * Return:  
    `a < b`: negative; `a == b`: zero; `a > b`: positive\.
@@ -507,7 +511,7 @@ Lexicographically compares `a` to `b`\. Null values are before everything\.
 
 <code>static size_t <strong>&lt;CM&gt;lower_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code>
 
-`a` should be partitioned true/false with less\-then `value`\.
+[compare\.h](compare.h): `a` should be partitioned true/false with less\-then `value`\.
 
  * Return:  
    The first index of `a` that is not less than `value`\.
@@ -521,7 +525,7 @@ Lexicographically compares `a` to `b`\. Null values are before everything\.
 
 <code>static size_t <strong>&lt;CM&gt;upper_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code>
 
-`a` should be partitioned false/true with greater\-than or equals `value`\.
+[compare\.h](compare.h): `a` should be partitioned false/true with greater\-than or equal `value`\.
 
  * Return:  
    The first index of `a` that is greater than `value`\.
@@ -531,11 +535,26 @@ Lexicographically compares `a` to `b`\. Null values are before everything\.
 
 
 
+### <a id = "user-content-fn-bfb5a80f" name = "user-content-fn-bfb5a80f">&lt;CM&gt;insert_after</a> ###
+
+<code>static int <strong>&lt;CM&gt;insert_after</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>datum</em>)</code>
+
+[compare\.h](compare.h): copies `datum` at the upper bound of a sorted `a`\.
+
+ * Return:  
+   Success\.
+ * Exceptional return: realloc, ERANGE  
+ * Order:  
+   &#927;\(`a.size`\)
+
+
+
+
 ### <a id = "user-content-fn-3e4620eb" name = "user-content-fn-3e4620eb">&lt;CM&gt;sort</a> ###
 
 <code>static void <strong>&lt;CM&gt;sort</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
 
-Sorts `a` by `qsort` on `ARRAY_COMPARE`\.
+[compare\.h](compare.h): sorts `a` by `qsort`\.
 
  * Order:  
    &#927;\(`a.size` \\log `a.size`\)
@@ -547,10 +566,24 @@ Sorts `a` by `qsort` on `ARRAY_COMPARE`\.
 
 <code>static void <strong>&lt;CM&gt;reverse</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
 
-Sorts `a` in reverse by `qsort` on `ARRAY_COMPARE`\.
+[compare\.h](compare.h): sorts `a` in reverse by `qsort`\.
 
  * Order:  
    &#927;\(`a.size` \\log `a.size`\)
+
+
+
+
+### <a id = "user-content-fn-30c13ca0" name = "user-content-fn-30c13ca0">&lt;CM&gt;is_equal</a> ###
+
+<code>static int <strong>&lt;CM&gt;is_equal</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code>
+
+[compare\.h](compare.h)
+
+ * Return:  
+   If `a` piecewise equals `b`, which both can be null\.
+ * Order:  
+   &#927;\(`size`\)
 
 
 
@@ -559,7 +592,7 @@ Sorts `a` in reverse by `qsort` on `ARRAY_COMPARE`\.
 
 <code>static void <strong>&lt;CM&gt;unique_merge</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;biaction_fn <em>merge</em>)</code>
 
-Removes consecutive duplicate elements in `a`\.
+[compare\.h](compare.h): removes consecutive duplicate elements in `a`\.
 
  * Parameter: _merge_  
    Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false\.
@@ -573,7 +606,7 @@ Removes consecutive duplicate elements in `a`\.
 
 <code>static void <strong>&lt;CM&gt;unique</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
 
-Removes consecutive duplicate elements in `a`\.
+[compare\.h](compare.h): removes consecutive duplicate elements in `a`\.
 
  * Order:  
    &#927;\(`a.size`\)

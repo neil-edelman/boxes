@@ -6,7 +6,7 @@
  [MurmurHash](https://github.com/aappleby/smhasher)-derived code, placed in
  public domain by Austin Appleby.
 
- @subtitle Name Generator
+ @subtitle Name generator
 
  Orcish names originate or are inspired by [JRR Tolkien's Orcish
  ](http://en.wikipedia.org/wiki/Languages_constructed_by_J._R._R._Tolkien).

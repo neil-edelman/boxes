@@ -151,7 +151,7 @@
 
 <p><code>typedef BOX_CONTAINER <strong>&lt;PCM&gt;box</strong>;</code></p>
 
-<p>In <a href = "compare.h">compare.h</a>, an alias to the box.</p>
+<p><a href = "compare.h">compare.h</a>: an alias to the box.</p>
 
 </div>
 
@@ -161,7 +161,7 @@
 
 <p><code>typedef BOX_CONTENTS <strong>&lt;PCM&gt;type</strong>;</code></p>
 
-<p>In <a href = "compare.h">compare.h</a>, an alias to the individual type contained in the box.</p>
+<p><a href = "compare.h">compare.h</a>: an alias to the individual type contained in the box.</p>
 
 </div>
 
@@ -171,7 +171,7 @@
 
 <p><code>typedef int(*<strong>&lt;PCM&gt;bipredicate_fn</strong>)(const &lt;PCM&gt;type *, const &lt;PCM&gt;type *);</code></p>
 
-<p>In <a href = "compare.h">compare.h</a>, returns a boolean given two read-only <a href = "#typedef:&lt;PCM&gt;type">&lt;PCM&gt;type</a>.</p>
+<p><a href = "compare.h">compare.h</a>: returns a boolean given two read-only <a href = "#typedef:&lt;PCM&gt;type">&lt;PCM&gt;type</a>.</p>
 
 </div>
 
@@ -181,7 +181,7 @@
 
 <p><code>typedef int(*<strong>&lt;PCM&gt;biaction_fn</strong>)(&lt;PCM&gt;type *, &lt;PCM&gt;type *);</code></p>
 
-<p>In <a href = "compare.h">compare.h</a>, returns a boolean given two <a href = "#typedef:&lt;PCM&gt;type">&lt;PCM&gt;type</a>.</p>
+<p><a href = "compare.h">compare.h</a>: returns a boolean given two <a href = "#typedef:&lt;PCM&gt;type">&lt;PCM&gt;type</a>.</p>
 
 </div>
 
@@ -191,7 +191,7 @@
 
 <p><code>typedef int(*<strong>&lt;PCM&gt;compare_fn</strong>)(const &lt;PCM&gt;type *a, const &lt;PCM&gt;type *b);</code></p>
 
-<p>Three-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
+<p><a href = "compare.h">compare.h</a>: three-way comparison on a totally order set; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
 </div>
 
@@ -277,9 +277,13 @@
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<CM>upper_bound">&lt;CM&gt;upper_bound</a></td><td>a, value</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn:<CM>insert_after">&lt;CM&gt;insert_after</a></td><td>a, datum</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#fn:<CM>sort">&lt;CM&gt;sort</a></td><td>a</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<CM>reverse">&lt;CM&gt;reverse</a></td><td>a</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<CM>is_equal">&lt;CM&gt;is_equal</a></td><td>a, b</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<CM>unique_merge">&lt;CM&gt;unique_merge</a></td><td>a, merge</td></tr>
 
@@ -628,7 +632,7 @@
 
 <p><code>static int <strong>&lt;CM&gt;compare</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code></p>
 
-<p>Lexicographically compares <code>a</code> to <code>b</code>. Null values are before everything.</p>
+<p><a href = "compare.h">compare.h</a>: lexicographically compares <code>a</code> to <code>b</code>. Null values are before everything.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -645,7 +649,7 @@
 
 <p><code>static size_t <strong>&lt;CM&gt;lower_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code></p>
 
-<p><code>a</code> should be partitioned true/false with less-then <code>value</code>.</p>
+<p><a href = "compare.h">compare.h</a>: <code>a</code> should be partitioned true/false with less-then <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -662,7 +666,7 @@
 
 <p><code>static size_t <strong>&lt;CM&gt;upper_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code></p>
 
-<p><code>a</code> should be partitioned false/true with greater-than or equals <code>value</code>.</p>
+<p><a href = "compare.h">compare.h</a>: <code>a</code> should be partitioned false/true with greater-than or equal <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -675,11 +679,29 @@
 
 <div>
 
+<h3><a id = "fn:<CM>insert_after" name = "fn:<CM>insert_after">&lt;CM&gt;insert_after</a></h3>
+
+<p><code>static int <strong>&lt;CM&gt;insert_after</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>datum</em>)</code></p>
+
+<p><a href = "compare.h">compare.h</a>: copies <code>datum</code> at the upper bound of a sorted <code>a</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>a.size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
 <h3><a id = "fn:<CM>sort" name = "fn:<CM>sort">&lt;CM&gt;sort</a></h3>
 
 <p><code>static void <strong>&lt;CM&gt;sort</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
-<p>Sorts <code>a</code> by <code>qsort</code> on <code>ARRAY_COMPARE</code>.</p>
+<p><a href = "compare.h">compare.h</a>: sorts <code>a</code> by <code>qsort</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -694,7 +716,7 @@
 
 <p><code>static void <strong>&lt;CM&gt;reverse</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
-<p>Sorts <code>a</code> in reverse by <code>qsort</code> on <code>ARRAY_COMPARE</code>.</p>
+<p><a href = "compare.h">compare.h</a>: sorts <code>a</code> in reverse by <code>qsort</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -705,11 +727,28 @@
 
 <div>
 
+<h3><a id = "fn:<CM>is_equal" name = "fn:<CM>is_equal">&lt;CM&gt;is_equal</a></h3>
+
+<p><code>static int <strong>&lt;CM&gt;is_equal</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code></p>
+
+<p><a href = "compare.h">compare.h</a></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>If <code>a</code> piecewise equals <code>b</code>, which both can be null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
 <h3><a id = "fn:<CM>unique_merge" name = "fn:<CM>unique_merge">&lt;CM&gt;unique_merge</a></h3>
 
 <p><code>static void <strong>&lt;CM&gt;unique_merge</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;biaction_fn <em>merge</em>)</code></p>
 
-<p>Removes consecutive duplicate elements in <code>a</code>.</p>
+<p><a href = "compare.h">compare.h</a>: removes consecutive duplicate elements in <code>a</code>.</p>
 
 <dl>
 	<dt>Parameter: <em>merge</em></dt>
@@ -726,7 +765,7 @@
 
 <p><code>static void <strong>&lt;CM&gt;unique</strong>(&lt;PCM&gt;box *const <em>a</em>)</code></p>
 
-<p>Removes consecutive duplicate elements in <code>a</code>.</p>
+<p><a href = "compare.h">compare.h</a>: removes consecutive duplicate elements in <code>a</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
