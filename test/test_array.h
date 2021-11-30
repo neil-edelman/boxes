@@ -6,10 +6,10 @@
 
 #if ARRAY_TRAITS == 0 /* <!-- !traits */
 
-/** `ARRAY_TEST`: takes <typedef:<PA>type> and operates by side-effects. */
+/** <test_array.h>: operates by side-effects on <typedef:<PA>type>. */
 typedef void (*PA_(action_fn))(PA_(type) *);
 
-/** `ARRAY_TEST`: a <typedef:<PA>action_fn> that takes in an uninitialized
+/** <test_array.h>: a <typedef:<PA>action_fn> that takes in an uninitialized
  <typedef:<PA>type> and makes up a valid object for testing. */
 static PA_(action_fn) PA_(filler) = (ARRAY_TEST);
 
