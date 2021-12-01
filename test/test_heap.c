@@ -10,6 +10,12 @@
 #include "orcish.h"
 
 
+/* Minimal heap. This selects the default `unsigned int`. */
+#define HEAP_NAME min
+#include "../src/heap.h"
+
+
+/* Also an `unsigned int`, but with testing. */
 static void int_to_string(const unsigned *const i, char (*const z)[12])
 	{ sprintf(*z, "%u", *i); }
 static void test_int(unsigned *const i, void *const unused) {
@@ -24,30 +30,28 @@ static void test_int(unsigned *const i, void *const unused) {
 #include "../src/heap.h"
 
 
+/* A value pointer along with a priority; we have to have some place to put
+ them, so we use a pool. */
+struct orc { unsigned health; char name[12]; };
+static void orc_to_string(const struct orc *const orc, char (*const a)[12])
+	{ sprintf(*a, "%u%.9s", orc->health, orc->name); }
+/* Testing requires that we forward-declare. */
 struct orc_heap_node;
-static void orc_to_string(const struct orc_heap_node *, char (*)[12]);
-static void test_orc(struct orc_heap_node *, void *);
-
+static void test_orc_hn(struct orc_heap_node *, void *);
+static void orc_hn_to_string(const struct orc_heap_node *, char (*)[12]);
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc
-#define HEAP_TEST &test_orc
+#define HEAP_TEST &test_orc_hn
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
-#define HEAP_TO_STRING &orc_to_string
+#define HEAP_TO_STRING &orc_hn_to_string
 #include "../src/heap.h"
-
-struct orc { unsigned health; char name[12]; };
-
-static void orc_to_string(const struct orc_heap_node *const node,
-	char (*const a)[12]) {
-	sprintf(*a, "%u%.9s", node->priority, node->value->name);
-}
-
 #define POOL_NAME orc
 #define POOL_TYPE struct orc
 #include "pool.h"
-
-static void test_orc(struct orc_heap_node *node, void *const vpool) {
+static void orc_hn_to_string(const struct orc_heap_node *const node,
+	char (*const a)[12]) { orc_to_string(node->value, a); }
+static void test_orc_hn(struct orc_heap_node *node, void *const vpool) {
 	struct orc *orc = orc_pool_new(vpool);
 	if(!orc) { assert(0); exit(EXIT_FAILURE); }
 	orc->health = (unsigned)rand() / (RAND_MAX / 99 + 1);

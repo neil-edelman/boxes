@@ -354,9 +354,11 @@ static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
 
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
+	PH_(node) lol;
+	memset(&lol, 0, sizeof lol);
 	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
-	H_(heap_pop)(0); H_(heap_buffer)(0, 0); H_(heap_append)(0, 0);
-	H_(heap_affix)(0, 0);
+	H_(heap_add)(0, lol); H_(heap_peek)(0); H_(heap_pop)(0);
+	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }

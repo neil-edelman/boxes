@@ -149,7 +149,7 @@ static void PH_(test_basic)(void *const param) {
 	for(i = cum_size; i > 0; i--) {
 		char a[12];
 		v = H_(heap_peek)(&heap);
-		assert(node);
+		memcpy(add., <#const void *__src#>, <#size_t __n#>)
 		PH_(to_string)(node, &a);
 		x = H_(heap_pop)(&heap);
 		if(!i || !(i & (i - 1))) {
