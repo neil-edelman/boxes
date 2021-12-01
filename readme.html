@@ -37,8 +37,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PH>biaction_fn">&lt;PH&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>type">&lt;PSZ&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>type">&lt;PSZ&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heapnode">&lt;H&gt;heapnode</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 527 height = 310></p>
 
-<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;PH&gt;node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer value.</p>
+<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;PH&gt;node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer value.</p>
 
 </div>
 
@@ -60,7 +60,7 @@
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash. Required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
+	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heapnode">&lt;H&gt;heapnode</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
@@ -99,19 +99,9 @@
 
 <h3><a id = "typedef:<PH>node" name = "typedef:<PH>node">&lt;PH&gt;node</a></h3>
 
-<p><code>typedef struct &lt;H&gt;heap_node <strong>&lt;PH&gt;node</strong>;</code></p>
+<p><code>typedef struct &lt;H&gt;heapnode <strong>&lt;PH&gt;node</strong>;</code></p>
 
-<p>If <code>HEAP_VALUE</code> is set, (priority, value) set by <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>, otherwise it's a (priority) set directly by <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PH>biaction_fn" name = "typedef:<PH>biaction_fn">&lt;PH&gt;biaction_fn</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PH&gt;biaction_fn</strong>)(&lt;PH&gt;node *, void *);</code></p>
-
-<p>Used for <code>HEAP_TEST</code>, operates by side-effects.</p>
+<p>If <code>HEAP_VALUE</code> is set, (priority, value) set by <a href = "#tag:&lt;H&gt;heapnode">&lt;H&gt;heapnode</a>, otherwise it's a (priority) set directly by <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.</p>
 
 </div>
 
@@ -149,9 +139,9 @@
 
 <div>
 
-<h3><a id = "tag:<H>heap_node" name = "tag:<H>heap_node">&lt;H&gt;heap_node</a></h3>
+<h3><a id = "tag:<H>heapnode" name = "tag:<H>heapnode">&lt;H&gt;heapnode</a></h3>
 
-<p><code>struct <strong>&lt;H&gt;heap_node</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
+<p><code>struct <strong>&lt;H&gt;heapnode</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
 
 <p>If <code>HEAP_VALUE</code> is set, this becomes <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>. Memory management for this structure is the responsibility of the caller.</p>
 
@@ -203,11 +193,9 @@
 
 <tr><td align = right>static &lt;PH&gt;node *</td><td><a href = "#fn:<H>heap_buffer">&lt;H&gt;heap_buffer</a></td><td>heap, n</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<H>heap_append">&lt;H&gt;heap_append</a></td><td>heap, n</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<H>heap_append">&lt;H&gt;heap_append</a></td><td>heap, n</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<H>heap_affix">&lt;H&gt;heap_affix</a></td><td>heap, master</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<H>heap_test">&lt;H&gt;heap_test</a></td><td>param</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -337,7 +325,7 @@
 
 <p><code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_buffer</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code></p>
 
-<p>The capacity of <code>heap</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates pointers in <code>a</code>.</p>
+<p>The capacity of <code>heap</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates pointers in <code>heap.a</code>. All the elements in <code>heap.a.size</code> are part of the heap, but <code>heap.a.size</code> &lt;= <code>index</code> &lt; <code>heap.a.capacity</code> can be used to construct new elements without immediately making them part of the heap, then <a href = "#fn:&lt;H&gt;heap_append">&lt;H&gt;heap_append</a>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -351,19 +339,17 @@
 
 <h3><a id = "fn:<H>heap_append" name = "fn:<H>heap_append">&lt;H&gt;heap_append</a></h3>
 
-<p><code>static int <strong>&lt;H&gt;heap_append</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code></p>
+<p><code>static void <strong>&lt;H&gt;heap_append</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code></p>
 
-<p>Adds and heapifies <code>n</code> elements to <code>heap</code>. Uses <a href = "https://scholar.google.ca/scholar?q=Doberkat%2C+1984%2C+Floyd">Doberkat, 1984, Floyd</a> to sift-down all the internal nodes of heap, including any previous elements. As such, this function is most efficient on a heap of zero size, and becomes increasingly inefficient as the heap grows. For heaps that are already in use, it may be better to add each element individually, resulting in a run-time of &#927;(<code>new elements</code> &#183; log <code>heap.size</code>).</p>
+<p>Adds and heapifies <code>n</code> elements to <code>heap</code>. Uses <a href = "https://scholar.google.ca/scholar?q=Floyd%2C+1964%2C+Treesort">Floyd, 1964, Treesort</a> to sift-down all the internal nodes of heap. The heap elements must exist, see <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a>.</p>
 
 <dl>
 	<dt>Parameter: <em>n</em></dt>
 	<dd>If zero, returns true without heapifying.</dd>
 	<dt>Return:</dt>
 	<dd>Success.</dd>
-	<dt>Exceptional return: ERANGE, realloc</dt>
-	<dd>In practice, pushing uninitialized elements onto the heap does not make sense, so <a href = "#fn:&lt;H&gt;heap_buffer">&lt;H&gt;heap_buffer</a> <code>n</code> will be called first, in which case, one is guaranteed success.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(<code>heap.size</code> + <code>n</code>)</dd>
+	<dd>&#927;(<code>heap.size</code> + <code>n</code>) <a href = "https://scholar.google.ca/scholar?q=Doberkat%2C+1984%2C+Floyd">Doberkat, 1984, Floyd</a></dd>
 </dl>
 
 </div>
@@ -384,21 +370,6 @@
 	<dt>Exceptional return: ERANGE, realloc</dt>
 	<dt>Order:</dt>
 	<dd>&#927;(<code>heap.size</code> + <code>copy.size</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<H>heap_test" name = "fn:<H>heap_test">&lt;H&gt;heap_test</a></h3>
-
-<p><code>static void <strong>&lt;H&gt;heap_test</strong>(void *const <em>param</em>)</code></p>
-
-<p>Will be tested on stdout. Requires <code>HEAP_TEST</code>, <code>HEAP_TO_STRING</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
-
-<dl>
-	<dt>Parameter: <em>param</em></dt>
-	<dd>The <code>void *</code> parameter in <code>HEAP_TEST</code>. Can be null.</dd>
 </dl>
 
 </div>

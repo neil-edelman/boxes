@@ -372,15 +372,13 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define SZ_(n) HEAP_CAT(H_(heap), n)
 #endif /* !name --> */
 #ifdef HEAP_VALUE /* <!-- value */
-/* Check that `HEAP_TO_STRING` is a function implementing this prototype.
- This is terrible, but it allows <typedef:<PT>node> to forward it to
- <typedef:<PT>value> (except `const` so we need <typedef:<PT>value_data> *.) */
-static void (*const PH_(to_string_actual))(const PH_(value_data) *,
+/* Check that `HEAP_TO_STRING` is a function implementing this prototype. */
+static void (*const PH_(actual_to_string))(const PH_(value_data) *,
 	char (*const)[12]) = (HEAP_TO_STRING);
-/*static void (*PH_(to_string))(const PH_(node) *, char (*const)[12]);*/
-static void PH_(to_string_thunk)(const PH_(node) *const node,
-	char (*const a)[12]) { PH_(to_string_actual)(node->value, a); }
-#define TO_STRING &PH_(to_string_thunk)
+/** Call <data:<PH>actual_to_string> with just the value of `node` and `z`. */
+static void PH_(thunk_to_string)(const PH_(node) *const node,
+	char (*const z)[12]) { PH_(actual_to_string)(node->value, z); }
+#define TO_STRING &PH_(thunk_to_string)
 #else /* value --><!-- !value */
 #define TO_STRING HEAP_TO_STRING
 #endif /* !value --> */
