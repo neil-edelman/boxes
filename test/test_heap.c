@@ -31,11 +31,13 @@ static void test_int(unsigned *const i, void *const unused) {
 
 
 /* A value pointer along with a priority; we have to have some place to put
- them, so we use a pool. */
+ `orc_heapnode`s, so we use a pool. @fixme This is unnecessary if we change the
+ test. */
 struct orc { unsigned health; char name[12]; };
 static void orc_to_string(const struct orc *const orc, char (*const a)[12])
 	{ sprintf(*a, "%u%.9s", orc->health, orc->name); }
-/* Testing requires that we forward-declare. */
+/* Testing requires that we forward-declare setting the priority from the data;
+ see <fn:test_orcnode>. */
 struct orc_heapnode;
 static void test_orcnode(struct orc_heapnode *, void *);
 #define HEAP_NAME orc
