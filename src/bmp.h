@@ -3,14 +3,12 @@
 
  @subtitle Fixed bit-field
 
- `<B>bmp` is a bit-field of `BMP_BITS` bits.
+ `<B>bmp` is a bit-field of `BMP_BITS` bits. The representation in memory is
+ most-signifiant bit first.
 
  @param[BMP_NAME, BMP_BITS]
  `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required. `<PB>` is private,
  whose names are prefixed in a manner to avoid collisions.
-
- @param[BMP_TEST]
- Optional unit testing framework using `assert`. Testing contained in <../test/test_bmp.h>.
 
  @std C89/90 */
 
@@ -70,7 +68,7 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 }
 
 /** @return Projects the eigenvalue of bit `x` of `a`. Either zero of
- non-zero. @allow */
+ non-zero, but not necessarily one. @allow */
 static unsigned B_(bmp_test)(const struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); return BMP_AT(a->chunk, x); }
 

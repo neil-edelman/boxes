@@ -11,12 +11,10 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`<B>bmp` is a bit\-field of `BMP_BITS` bits\.
+`<B>bmp` is a bit\-field of `BMP_BITS` bits\. The representation in memory is most\-signifiant bit first\.
 
  * Parameter: BMP\_NAME, BMP\_BITS  
    `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required\. `<PB>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: BMP\_TEST  
-   Optional unit testing framework using `assert`\. Testing contained in [\.\./test/test\_bmp\.h](../test/test_bmp.h)\.
  * Standard:  
    C89/90
 
@@ -92,7 +90,7 @@ Inverts all entries of `a`\.
 <code>static unsigned <strong>&lt;B&gt;bmp_test</strong>(const struct &lt;B&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
 
  * Return:  
-   Projects the eigenvalue of bit `x` of `a`\. Either zero of non\-zero\.
+   Projects the eigenvalue of bit `x` of `a`\. Either zero of non\-zero, but not necessarily one\.
 
 
 

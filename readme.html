@@ -48,13 +48,11 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><code>&lt;B&gt;bmp</code> is a bit-field of <code>BMP_BITS</code> bits.</p>
+<p><code>&lt;B&gt;bmp</code> is a bit-field of <code>BMP_BITS</code> bits. The representation in memory is most-signifiant bit first.</p>
 
 <dl>
 	<dt>Parameter: BMP_NAME, BMP_BITS</dt>
 	<dd><code>&lt;B&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a number of bits associated therewith, which must be positive; required. <code>&lt;PB&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
-	<dt>Parameter: BMP_TEST</dt>
-	<dd>Optional unit testing framework using <code>assert</code>. Testing contained in <a href = "../test/test_bmp.h">../test/test_bmp.h</a>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89/90</dd>
 </dl>
@@ -145,7 +143,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Projects the eigenvalue of bit <code>x</code> of <code>a</code>. Either zero of non-zero.</dd>
+	<dd>Projects the eigenvalue of bit <code>x</code> of <code>a</code>. Either zero of non-zero, but not necessarily one.</dd>
 </dl>
 
 </div>
