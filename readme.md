@@ -192,7 +192,7 @@ Sets `heap` to be empty\. That is, the size of `heap` will be zero, but if it wa
 Empty is `!size`\.
 
  * Return:  
-   Size of the `heap`\.
+   Size of the `heap`, \(identically `heap.a.size`\.\)
 
 
 
