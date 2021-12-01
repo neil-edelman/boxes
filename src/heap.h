@@ -23,7 +23,7 @@
 
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in
- <tag:<H>heap_node>; declaring it is sufficient. If set, has no effect on the
+ <tag:<H>heapnode>; declaring it is sufficient. If set, has no effect on the
  ranking, but affects <typedef:<PH>value>.
 
  @param[HEAP_EXPECT_TRAIT]
@@ -103,10 +103,10 @@ typedef HEAP_VALUE PH_(value_data);
 typedef PH_(value_data) *PH_(value);
 /** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>. Memory management
  for this structure is the responsibility of the caller. */
-struct H_(heap_node) { PH_(priority) priority; PH_(value) value; };
-/** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heap_node>,
+struct H_(heapnode) { PH_(priority) priority; PH_(value) value; };
+/** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
-typedef struct H_(heap_node) PH_(node);
+typedef struct H_(heapnode) PH_(node);
 #else /* value --><!-- !value */
 typedef PH_(priority) PH_(value);
 typedef PH_(priority) PH_(node);
@@ -347,17 +347,16 @@ static PH_(node) *PH_(next)(struct PH_(iterator) *const it)
 
 #ifdef HEAP_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PH_(to_string))(const PH_(node) *, char (*)[12]);
+static void (*PH_(to_string))(const PH_(node) *, char (*const)[12]);
 static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
-#include "../test/test_heap.h" /** \include */
+#include "../test/test_heap.h"
 #endif /* test --> */
 
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
-	PH_(node) lol;
-	memset(&lol, 0, sizeof lol);
+	PH_(node) unused; memset(&unused, 0, sizeof unused);
 	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
-	H_(heap_add)(0, lol); H_(heap_peek)(0); H_(heap_pop)(0);
+	H_(heap_add)(0, unused); H_(heap_peek)(0); H_(heap_pop)(0);
 	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();
 }
@@ -372,7 +371,19 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #else /* name --><!-- !name */
 #define SZ_(n) HEAP_CAT(H_(heap), n)
 #endif /* !name --> */
+#ifdef HEAP_VALUE /* <!-- value */
+/* Check that `HEAP_TO_STRING` is a function implementing this prototype.
+ This is terrible, but it allows <typedef:<PT>node> to forward it to
+ <typedef:<PT>value> (except `const` so we need <typedef:<PT>value_data> *.) */
+static void (*const PH_(to_string_actual))(const PH_(value_data) *,
+	char (*const)[12]) = (HEAP_TO_STRING);
+/*static void (*PH_(to_string))(const PH_(node) *, char (*const)[12]);*/
+static void PH_(to_string_thunk)(const PH_(node) *const node,
+	char (*const a)[12]) { PH_(to_string_actual)(node->value, a); }
+#define TO_STRING &PH_(to_string_thunk)
+#else /* value --><!-- !value */
 #define TO_STRING HEAP_TO_STRING
+#endif /* !value --> */
 #include "to_string.h" /** \include */
 #ifdef HEAP_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef HEAP_TEST

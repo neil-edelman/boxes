@@ -81,8 +81,6 @@ static void PH_(test_basic)(void *const param) {
 	assert(heap.a.size == cum_size);
 	w = H_(heap_peek)(&heap);
 	PH_(valid)(&heap);
-	//FIXME
-	//assert(PH_(get_priority)(&v) == PH_(get_priority)(&add));
 	x = H_(heap_pop)(&heap), cum_size--;
 	assert(v == x && w == x && heap.a.size == cum_size);
 	PH_(valid)(&heap);
@@ -149,7 +147,11 @@ static void PH_(test_basic)(void *const param) {
 	for(i = cum_size; i > 0; i--) {
 		char a[12];
 		v = H_(heap_peek)(&heap);
-		memcpy(add., <#const void *__src#>, <#size_t __n#>)
+#ifdef HEAP_VALUE /* <!-- value: it's just re-extracting the value in thunk. */
+		node->value = v;
+#else /* value --><!-- !value: do it directly */
+		node = &v;
+#endif /* !value --> */
 		PH_(to_string)(node, &a);
 		x = H_(heap_pop)(&heap);
 		if(!i || !(i & (i - 1))) {
