@@ -183,7 +183,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<H>heap_clear">&lt;H&gt;heap_clear</a></td><td>heap</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<H>heap_size">&lt;H&gt;heap_size</a></td><td>heap</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<H>heap_is_empty">&lt;H&gt;heap_is_empty</a></td><td>heap</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<H>heap_add">&lt;H&gt;heap_add</a></td><td>heap, node</td></tr>
 
@@ -256,15 +256,15 @@
 
 <div>
 
-<h3><a id = "fn:<H>heap_size" name = "fn:<H>heap_size">&lt;H&gt;heap_size</a></h3>
+<h3><a id = "fn:<H>heap_is_empty" name = "fn:<H>heap_is_empty">&lt;H&gt;heap_is_empty</a></h3>
 
-<p><code>static size_t <strong>&lt;H&gt;heap_size</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code></p>
+<p><code>static int <strong>&lt;H&gt;heap_is_empty</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code></p>
 
-<p>Empty is <code>!size</code>.</p>
+<p>If the <code>heap</code> requires differentiation between empty and zero. (One may access it directly at <code>!heap.a.size</code>.)</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Size of the <code>heap</code>, (identically <code>heap.a.size</code>.)</dd>
+	<dd>If the heap is empty.</dd>
 </dl>
 
 </div>
@@ -295,7 +295,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>The lowest element in <code>heap</code> according to <code>HEAP_COMPARE</code> or null/zero if the heap is empty. On some heaps, one may have to call <a href = "#fn:&lt;H&gt;heap_size">&lt;H&gt;heap_size</a> in order to differentiate.</dd>
+	<dd>The lowest element in <code>heap</code> according to <code>HEAP_COMPARE</code> or null/zero if the heap is empty. On some heaps, one may have to call <a href = "#fn:&lt;H&gt;heap_is_empty">&lt;H&gt;heap_is_empty</a> in order to differentiate.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(1)</dd>
 </dl>

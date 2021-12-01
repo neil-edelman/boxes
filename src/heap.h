@@ -262,10 +262,10 @@ static void H_(heap_)(struct H_(heap) *const heap)
 static void H_(heap_clear)(struct H_(heap) *const heap)
 	{ assert(heap), PH_(node_array_clear)(&heap->a); }
 
-/** Empty is `!size`. @return Size of the `heap`, (identically `heap.a.size`.)
- @allow */
-static size_t H_(heap_size)(const struct H_(heap) *const heap)
-	{ return assert(heap), heap->a.size; }
+/** If the `heap` requires differentiation between empty and zero. (One may
+ access it directly at `!heap.a.size`.) @return If the heap is empty. @allow */
+static int H_(heap_is_empty)(const struct H_(heap) *const heap)
+	{ return assert(heap), !heap->a.size; }
 
 /** Copies `node` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
@@ -276,7 +276,7 @@ static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 
 /** @return The lowest element in `heap` according to `HEAP_COMPARE` or
  null/zero if the heap is empty. On some heaps, one may have to call
- <fn:<H>heap_size> in order to differentiate. @order \O(1) @allow */
+ <fn:<H>heap_is_empty> in order to differentiate. @order \O(1) @allow */
 static PH_(value) H_(heap_peek)(const struct H_(heap) *const heap)
 	{ return assert(heap), heap->a.size ? PH_(get_value)(heap->a.data) : 0; }
 
@@ -358,7 +358,7 @@ static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	PH_(node) unused; memset(&unused, 0, sizeof unused);
-	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
+	H_(heap)(0); H_(heap_)(0); H_(heap_clear)(0); H_(heap_is_empty)(0);
 	H_(heap_add)(0, unused); H_(heap_peek)(0); H_(heap_pop)(0);
 	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);
 	PH_(begin)(0, 0); PH_(next)(0); PH_(unused_base_coda)();

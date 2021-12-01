@@ -125,7 +125,7 @@ Contains all the iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d3572b1d">&lt;H&gt;heap_clear</a></td><td>heap</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-2f5a4cc1">&lt;H&gt;heap_size</a></td><td>heap</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-6137718e">&lt;H&gt;heap_is_empty</a></td><td>heap</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-42cb2b13">&lt;H&gt;heap_add</a></td><td>heap, node</td></tr>
 
@@ -185,14 +185,14 @@ Sets `heap` to be empty\. That is, the size of `heap` will be zero, but if it wa
 
 
 
-### <a id = "user-content-fn-2f5a4cc1" name = "user-content-fn-2f5a4cc1">&lt;H&gt;heap_size</a> ###
+### <a id = "user-content-fn-6137718e" name = "user-content-fn-6137718e">&lt;H&gt;heap_is_empty</a> ###
 
-<code>static size_t <strong>&lt;H&gt;heap_size</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
+<code>static int <strong>&lt;H&gt;heap_is_empty</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
 
-Empty is `!size`\.
+If the `heap` requires differentiation between empty and zero\. \(One may access it directly at `!heap.a.size`\.\)
 
  * Return:  
-   Size of the `heap`, \(identically `heap.a.size`\.\)
+   If the heap is empty\.
 
 
 
@@ -217,7 +217,7 @@ Copies `node` into `heap`\.
 <code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_peek</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
 
  * Return:  
-   The lowest element in `heap` according to `HEAP_COMPARE` or null/zero if the heap is empty\. On some heaps, one may have to call [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) in order to differentiate\.
+   The lowest element in `heap` according to `HEAP_COMPARE` or null/zero if the heap is empty\. On some heaps, one may have to call [&lt;H&gt;heap_is_empty](#user-content-fn-6137718e) in order to differentiate\.
  * Order:  
    &#927;\(1\)
 
