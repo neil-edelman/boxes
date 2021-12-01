@@ -33,11 +33,11 @@
 
 <h1>heap.h</h1>
 
-<h2>Priority Queue</h2>
+<h2>Priority-queue</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PH>biaction_fn">&lt;PH&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PH>priority">&lt;PH&gt;priority</a>, <a href = "#typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a>, <a href = "#typedef:<PH>node">&lt;PH&gt;node</a>, <a href = "#typedef:<PH>biaction_fn">&lt;PH&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>type">&lt;PSZ&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<H>heap_node">&lt;H&gt;heap_node</a>, <a href = "#tag:<H>heap">&lt;H&gt;heap</a>, <a href = "#tag:<PH>iterator">&lt;PH&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -50,7 +50,7 @@
 
 <p><img alt = "Example of heap." src = "web/heap.png" width = 527 height = 310></p>
 
-<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;H&gt;heap_node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer value.</p>
+<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> and using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;PH&gt;node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer value.</p>
 
 </div>
 
@@ -61,8 +61,6 @@
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash. Required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
 	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heap_node">&lt;H&gt;heap_node</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
-	<dt>Parameter: HEAP_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/heap_test.h">../test/heap_test.h</a>; optional unit testing framework using <code>assert</code>. Must be defined equal to a random filler function, satisfying <a href = "#typedef:&lt;PH&gt;biaction_fn">&lt;PH&gt;biaction_fn</a> with the <code>param</code> of <a href = "#fn:&lt;H&gt;heap_test">&lt;H&gt;heap_test</a>. Must have any <code>to string</code> trait.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
@@ -119,11 +117,31 @@
 
 <div>
 
+<h3><a id = "typedef:<PSZ>box" name = "typedef:<PSZ>box">&lt;PSZ&gt;box</a></h3>
+
+<p><code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code></p>
+
+<p><a href = "to_string.h">to_string.h</a>: an alias to the box.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PSZ>type" name = "typedef:<PSZ>type">&lt;PSZ&gt;type</a></h3>
+
+<p><code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code></p>
+
+<p><a href = "to_string.h">to_string.h</a>: an alias to the individual type contained in the box.</p>
+
+</div>
+
+<div>
+
 <h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
 
 <p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
 
-<p>Responsible for turning the first argument into a 12-<code>char</code> null-terminated output string.</p>
+<p>Responsible for turning the argument <a href = "#typedef:&lt;PSZ&gt;type">&lt;PSZ&gt;type</a> into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -393,7 +411,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Print the contents of <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
+	<dd>Print the contents of <a href = "#typedef:&lt;PSZ&gt;box">&lt;PSZ&gt;box</a> <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>

@@ -1,9 +1,9 @@
 # heap\.h #
 
-## Priority Queue ##
+## Priority\-queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heap_node](#user-content-tag-7243593c), [&lt;H&gt;heap](#user-content-tag-8ef1078f), [&lt;PH&gt;iterator](#user-content-tag-52985d65)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -13,7 +13,7 @@
 
 ![Example of heap.](web/heap.png)
 
-A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is a `<<H>heap_node>array` with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer value\.
+A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) and using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is a `<<PH>node>array` with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer value\.
 
 
 
@@ -23,8 +23,6 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
    A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash\. Required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
    Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heap_node](#user-content-tag-7243593c); declaring it is sufficient\. If set, has no effect on the ranking, but affects [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
- * Parameter: HEAP\_TEST  
-   To string trait contained in [\.\./test/heap\_test\.h](../test/heap_test.h); optional unit testing framework using `assert`\. Must be defined equal to a random filler function, satisfying [&lt;PH&gt;biaction_fn](#user-content-typedef-7e815a45) with the `param` of [&lt;H&gt;heap_test](#user-content-fn-2a4c2c14)\. Must have any `to string` trait\.
  * Parameter: HEAP\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
@@ -71,11 +69,27 @@ Used for `HEAP_TEST`, operates by side\-effects\.
 
 
 
+### <a id = "user-content-typedef-ace240bb" name = "user-content-typedef-ace240bb">&lt;PSZ&gt;box</a> ###
+
+<code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code>
+
+[to\_string\.h](to_string.h): an alias to the box\.
+
+
+
+### <a id = "user-content-typedef-d1a7c35e" name = "user-content-typedef-d1a7c35e">&lt;PSZ&gt;type</a> ###
+
+<code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code>
+
+[to\_string\.h](to_string.h): an alias to the individual type contained in the box\.
+
+
+
 ### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
 <code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
 
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e) into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -299,7 +313,7 @@ Will be tested on stdout\. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not `NDEB
 <code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   Print the contents of [&lt;PSZ&gt;box](#user-content-typedef-ace240bb) `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 

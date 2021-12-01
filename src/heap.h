@@ -1,16 +1,15 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Priority Queue
+ @subtitle Priority-queue
 
  ![Example of heap.](../web/heap.png)
 
  A <tag:<H>heap> is a binary heap, proposed by
- <Williams, 1964, Heapsort, p. 347> and using terminology of
+ <Williams, 1964, Heapsort, p. 347> using terminology of
  <Knuth, 1973, Sorting>. It can be used as an implementation of a priority
- queue; internally, it is a `<<H>heap_node>array` with implicit heap
- properties on <typedef:<PH>priority> and an optional <typedef:<PH>value>
- pointer value.
+ queue; internally, it is a `<<PH>node>array` with implicit heap properties on
+ <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer value.
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
@@ -26,12 +25,6 @@
  Optional value <typedef:<PH>value>, that is stored as a reference in
  <tag:<H>heap_node>; declaring it is sufficient. If set, has no effect on the
  ranking, but affects <typedef:<PH>value>.
-
- @param[HEAP_TEST]
- To string trait contained in <../test/heap_test.h>; optional unit testing
- framework using `assert`. Must be defined equal to a random filler function,
- satisfying <typedef:<PH>biaction_fn> with the `param` of <fn:<H>heap_test>.
- Must have any `to string` trait.
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -293,29 +286,29 @@ static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
 }
 
 /** The capacity of `heap` will be increased to at least `n` elements beyond
- the size. Invalidates pointers in `a`.
+ the size. Invalidates pointers in `heap.a`. All the elements in `heap.a.size`
+ are part of the heap, but `heap.a.size` <= `index` < `heap.a.capacity`
+ can be used to construct new elements without immediately making them part of
+ the heap, then <fn:<H>heap_append>.
  @return The start of the buffered space. If `a` is idle and `buffer` is zero,
  a null pointer is returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
 static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
 	const size_t n) { return PH_(node_array_buffer)(&heap->a, n); }
 
-/** Adds and heapifies `n` elements to `heap`. Uses <Doberkat, 1984, Floyd> to
- sift-down all the internal nodes of heap, including any previous elements. As
- such, this function is most efficient on a heap of zero size, and becomes
- increasingly inefficient as the heap grows. For heaps that are already in use,
- it may be better to add each element individually, resulting in a run-time of
- \O(`new elements` \cdot log `heap.size`).
+/** Adds and heapifies `n` elements to `heap`. Uses <Floyd, 1964, Treesort> to
+ sift-down all the internal nodes of heap. The heap elements must exist, see
+ <fn:<H>heap_buffer>.
  @param[n] If zero, returns true without heapifying.
- @return Success. @throws[ERANGE, realloc] In practice, pushing uninitialized
- elements onto the heap does not make sense, so <fn:<H>heap_buffer> `n` will be
- called first, in which case, one is guaranteed success.
- @order \O(`heap.size` + `n`) @allow */
-static int H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
-	assert(heap);
-	if(!PH_(node_array_append)(&heap->a, n)) return 0;
+ @return Success. @order \O(`heap.size` + `n`) <Doberkat, 1984, Floyd> @allow */
+static void H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
+	PH_(node) *more;
+	/* In practice, pushing uninitialized elements onto the heap does not make
+	 sense, so we assert that the elements exist first. */
+	assert(heap && n <= heap->a.capacity - heap->a.size);
+	more = PH_(node_array_append)(&heap->a, n);
+	assert(more);
 	if(n) PH_(heapify)(heap);
-	return 1;
 }
 
 /** Shallow-copies and heapifies `master` into `heap`.
@@ -335,7 +328,6 @@ static int H_(heap_affix)(struct H_(heap) *const heap,
 }
 
 /* <!-- iterate interface: Forward the responsibility to array. */
-/* fixme: I'm sure it can be nicer. */
 #define PAH_(n) HEAP_CAT(array, HEAP_CAT(PH_(node), n))
 /** Contains all the iteration parameters. */
 struct PH_(iterator);

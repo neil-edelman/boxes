@@ -1,7 +1,7 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Stable Pool
+ @subtitle Stable pool
 
  ![Example of Pool](../web/pool.png)
 

@@ -109,7 +109,7 @@ static void PH_(test_basic)(void *const param) {
 	node = H_(heap_buffer)(&heap, test_size_2);
 	assert(node);
 	for(i = 0; i < test_size_2; i++) PH_(filler)(node + i, param);
-	success = H_(heap_append)(&heap, test_size_2), cum_size += test_size_2;
+	H_(heap_append)(&heap, test_size_2), cum_size += test_size_2;
 	printf("Now size = %lu.\n", (unsigned long)heap.a.size);
 	assert(heap.a.size == cum_size);
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv", cum_size);
