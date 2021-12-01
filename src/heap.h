@@ -24,7 +24,8 @@
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in
  <tag:<H>heapnode>; declaring it is sufficient. If set, has no effect on the
- ranking, but affects <typedef:<PH>value>.
+ ranking, but affects <typedef:<PH>value>, (otherwise, it's the same field as
+ <typedef:<PH>priority>.)
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
