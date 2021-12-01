@@ -262,7 +262,8 @@ static void H_(heap_)(struct H_(heap) *const heap)
 static void H_(heap_clear)(struct H_(heap) *const heap)
 	{ assert(heap), PH_(node_array_clear)(&heap->a); }
 
-/** Empty is `!size`. @return Size of the `heap`. @allow */
+/** Empty is `!size`. @return Size of the `heap`, (identically `heap.a.size`.)
+ @allow */
 static size_t H_(heap_size)(const struct H_(heap) *const heap)
 	{ return assert(heap), heap->a.size; }
 
