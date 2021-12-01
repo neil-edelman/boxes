@@ -331,8 +331,6 @@ static int H_(heap_affix)(struct H_(heap) *const heap,
 
 /* <!-- iterate interface: Forward the responsibility to array. */
 #define PAH_(n) HEAP_CAT(array, HEAP_CAT(PH_(node), n))
-/** Contains all the iteration parameters. */
-struct PH_(iterator);
 struct PH_(iterator) { struct PAH_(iterator) a; };
 /** Begins the forward iteration `it` at `h`. */
 static void PH_(begin)(struct PH_(iterator) *const it,
