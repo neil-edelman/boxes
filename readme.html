@@ -60,7 +60,7 @@
 	<dt>Parameter: HEAP_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash. Required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heapnode">&lt;H&gt;heapnode</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
+	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored as a reference in <a href = "#tag:&lt;H&gt;heapnode">&lt;H&gt;heapnode</a>; declaring it is sufficient. If set, has no effect on the ranking, but affects <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, (otherwise, it's the same field as <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a>.)</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>

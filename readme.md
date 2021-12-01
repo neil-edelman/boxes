@@ -22,7 +22,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Parameter: HEAP\_COMPARE  
    A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash\. Required if `HEAP_TYPE` is changed to an incomparable type\.
  * Parameter: HEAP\_VALUE  
-   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heapnode](#user-content-tag-9938042f); declaring it is sufficient\. If set, has no effect on the ranking, but affects [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
+   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored as a reference in [&lt;H&gt;heapnode](#user-content-tag-9938042f); declaring it is sufficient\. If set, has no effect on the ranking, but affects [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), \(otherwise, it's the same field as [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.\)
  * Parameter: HEAP\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
