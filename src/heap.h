@@ -306,8 +306,7 @@ static void H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	/* In practice, pushing uninitialized elements onto the heap does not make
 	 sense, so we assert that the elements exist first. */
 	assert(heap && n <= heap->a.capacity - heap->a.size);
-	more = PH_(node_array_append)(&heap->a, n);
-	assert(more);
+	more = PH_(node_array_append)(&heap->a, n), assert(more);
 	if(n) PH_(heapify)(heap);
 }
 
