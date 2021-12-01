@@ -101,8 +101,9 @@ static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 #ifdef HEAP_VALUE /* <!-- value */
 typedef HEAP_VALUE PH_(value_data);
 typedef PH_(value_data) *PH_(value);
-/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>. Memory management
- for this structure is the responsibility of the caller. */
+/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>; make a temporary
+ structure to add a pointer to the value and a priority (which may be something
+ cached from the value) and copy it using <fn:<H>heap_add>. */
 struct H_(heapnode) { PH_(priority) priority; PH_(value) value; };
 /** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */

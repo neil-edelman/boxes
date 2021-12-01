@@ -91,7 +91,7 @@ Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a
 
 <code>struct <strong>&lt;H&gt;heapnode</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code>
 
-If `HEAP_VALUE` is set, this becomes [&lt;PH&gt;node](#user-content-typedef-23ae637f)\. Memory management for this structure is the responsibility of the caller\.
+If `HEAP_VALUE` is set, this becomes [&lt;PH&gt;node](#user-content-typedef-23ae637f); make a temporary structure to add a pointer to the value and a priority \(which may be something cached from the value\) and copy it using [&lt;H&gt;heap_add](#user-content-fn-42cb2b13)\.
 
 
 

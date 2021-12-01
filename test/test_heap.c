@@ -18,9 +18,8 @@
 /* Also an `unsigned int`, but with testing. */
 static void int_to_string(const unsigned *const i, char (*const z)[12])
 	{ sprintf(*z, "%u", *i); }
-static void test_int(unsigned *const i, void *const unused) {
-	(void)(unused);
-	*i = (unsigned)rand() / (RAND_MAX / 99 + 1) + 1;
+static unsigned test_int(void) {
+	return (unsigned)rand() / (RAND_MAX / 99 + 1) + 1;
 }
 #define HEAP_NAME int
 #define HEAP_TEST &test_int
@@ -30,44 +29,38 @@ static void test_int(unsigned *const i, void *const unused) {
 #include "../src/heap.h"
 
 
-/* A value pointer along with a priority; we have to have some place to put
- `orc_heapnode`s, so we use a pool. @fixme This is unnecessary if we change the
- test. */
+/* Value pointer along with a priority. We have to store values somewhere, so
+ we use a pool, (which depends on `heap`, it has evolved.) */
 struct orc { unsigned health; char name[12]; };
 static void orc_to_string(const struct orc *const orc, char (*const a)[12])
 	{ sprintf(*a, "%u%.9s", orc->health, orc->name); }
-/* Testing requires that we forward-declare setting the priority from the data;
- see <fn:test_orcnode>. */
-struct orc_heapnode;
-static void test_orcnode(struct orc_heapnode *, void *);
+#define POOL_NAME orc
+#define POOL_TYPE struct orc
+#include "pool.h"
+static struct orc_pool orcs;
+static unsigned test_orc(struct orc **const orc_ptr) {
+	struct orc *orc = orc_pool_new(&orcs);
+	if(!orc) { assert(0); exit(EXIT_FAILURE); }
+	orc->health = (unsigned)rand() / (RAND_MAX / 99 + 1);
+	orcish(orc->name, sizeof orc->name);
+	*orc_ptr = orc;
+	return orc->health;
+}
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc
-#define HEAP_TEST &test_orcnode
+#define HEAP_TEST &test_orc
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
 #define HEAP_TO_STRING &orc_to_string
 #include "../src/heap.h"
-#define POOL_NAME orc
-#define POOL_TYPE struct orc
-#include "pool.h"
-/*static void orc_hn_to_string(const struct orc_heap_node *const node,
-	char (*const a)[12]) { orc_to_string(node->value, a); }*/
-static void test_orcnode(struct orc_heapnode *node, void *const vpool) {
-	struct orc *orc = orc_pool_new(vpool);
-	if(!orc) { assert(0); exit(EXIT_FAILURE); }
-	orc->health = (unsigned)rand() / (RAND_MAX / 99 + 1);
-	orcish(orc->name, sizeof orc->name);
-	node->priority = orc->health;
-	node->value = orc;
-}
 
 
+/* Maximum heap with a `size_t`. */
 static void index_to_string(const size_t *const i, char (*const a)[12]) {
 	sprintf(*a, "%lu", (unsigned long)*i);
 }
-static void test_index(size_t *const i, void *const unused) {
-	(void)(unused);
-	*i = (unsigned)rand();
+static size_t test_index(void) {
+	return (size_t)rand();
 }
 static int index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_NAME index
@@ -81,10 +74,9 @@ static int index_compare(const size_t a, const size_t b) { return a < b; }
 
 
 int main(void) {
-	struct orc_pool orcs = POOL_IDLE;
 	rand();
-	int_heap_test(0);
-	orc_heap_test(&orcs), orc_pool_(&orcs);
-	index_heap_test(0);
+	int_heap_test();
+	orc_heap_test(), orc_pool_(&orcs);
+	index_heap_test();
 	return EXIT_SUCCESS;
 }

@@ -4,11 +4,16 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** Used for `HEAP_TEST`, operates by side-effects. */
-typedef void (*PH_(biaction_fn))(PH_(node) *, void *);
+/** Used for `HEAP_TEST`: either, `HEAP_VALUE` (*v)->p, or (v)->p, in which it
+ is just a wasted parameter, the return value is what's important. */
+#ifdef HEAP_VALUE
+typedef PH_(priority) (*PH_(test_fn))(PH_(value) *);
+#else
+typedef PH_(priority) (*PH_(test_fn))(void);
+#endif
 
-/** `HEAP_TEST` must be a function that implements <typedef:<PH>biaction_fn>. */
-static PH_(biaction_fn) PH_(filler) = (HEAP_TEST);
+/** `HEAP_TEST` must be a function that implements <typedef:<PH>test_fn>. */
+static PH_(test_fn) PH_(filler) = (HEAP_TEST);
 
 /** Draw a graph of `heap` to `fn` in Graphviz format. */
 static void PH_(graph)(const struct H_(heap) *const heap,
@@ -49,8 +54,16 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 	}
 }
 
-/** @param[param] The parameter used for `HEAP_TEST`. */
-static void PH_(test_basic)(void *const param) {
+/** Fills `node` whether it has `HEAP_VALUE` or not. */
+static void PH_(fill)(PH_(node) *const node) {
+#ifdef HEAP_VALUE
+	node->priority = PH_(filler)(&node->value);
+#else
+	*node = PH_(filler)();
+#endif
+}
+
+static void PH_(test_basic)(void) {
 	struct H_(heap) heap = HEAP_IDLE, merge = HEAP_IDLE;
 	PH_(node) add, *node;
 	PH_(value) v, w, x;
@@ -74,7 +87,7 @@ static void PH_(test_basic)(void *const param) {
 	assert(!errno);
 
 	printf("Test one.\n");
-	PH_(filler)(&add, param);
+	PH_(fill)(&add);
 	v = PH_(get_value)(&add);
 	assert(H_(heap_add)(&heap, add)), cum_size++;
 	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
@@ -93,7 +106,7 @@ static void PH_(test_basic)(void *const param) {
 			PH_(graph)(&heap, fn);
 		}
 		PH_(valid)(&heap);
-		PH_(filler)(&add, param);
+		PH_(fill)(&add);
 		success = H_(heap_add)(&heap, add), cum_size++;
 		assert(success);
 	}
@@ -106,7 +119,7 @@ static void PH_(test_basic)(void *const param) {
 		(unsigned long)heap.a.size);
 	node = H_(heap_buffer)(&heap, test_size_2);
 	assert(node);
-	for(i = 0; i < test_size_2; i++) PH_(filler)(node + i, param);
+	for(i = 0; i < test_size_2; i++) PH_(fill)(node + i);
 	H_(heap_append)(&heap, test_size_2), cum_size += test_size_2;
 	printf("Now size = %lu.\n", (unsigned long)heap.a.size);
 	assert(heap.a.size == cum_size);
@@ -120,7 +133,7 @@ static void PH_(test_basic)(void *const param) {
 			PH_(graph)(&heap, fn);
 		}
 		PH_(valid)(&heap);
-		PH_(filler)(&add, param);
+		PH_(fill)(&add);
 		success = H_(heap_add)(&heap, add), cum_size++;
 		assert(success);
 	}
@@ -129,7 +142,7 @@ static void PH_(test_basic)(void *const param) {
 	PH_(graph)(&heap, fn);
 	printf("Setting up merge at %lu.\n", (unsigned long)cum_size);
 	for(i = 0; i < test_size_1; i++) {
-		PH_(filler)(&add, param);
+		PH_(fill)(&add);
 		success = H_(heap_add)(&merge, add);
 		assert(success);
 	}
@@ -175,7 +188,7 @@ static void PH_(test_basic)(void *const param) {
 /** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
  `NDEBUG` while defining `assert`.
  @param[param] The `void *` parameter in `HEAP_TEST`. Can be null. @allow */
-static void H_(heap_test)(void *const param) {
+static void H_(heap_test)(void) {
 	printf("<" QUOTE(HEAP_NAME) ">heap"
 		" of priority type <" QUOTE(HEAP_TYPE) ">"
 		" was created using:"
@@ -185,7 +198,7 @@ static void H_(heap_test)(void *const param) {
 #endif
 		" HEAP_TEST <" QUOTE(HEAP_TEST) ">;"
 		" testing:\n");
-	PH_(test_basic)(param);
+	PH_(test_basic)();
 	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">heap.\n\n");
 }
 

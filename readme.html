@@ -143,7 +143,7 @@
 
 <p><code>struct <strong>&lt;H&gt;heapnode</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
 
-<p>If <code>HEAP_VALUE</code> is set, this becomes <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>. Memory management for this structure is the responsibility of the caller.</p>
+<p>If <code>HEAP_VALUE</code> is set, this becomes <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>; make a temporary structure to add a pointer to the value and a priority (which may be something cached from the value) and copy it using <a href = "#fn:&lt;H&gt;heap_add">&lt;H&gt;heap_add</a>.</p>
 
 </div>
 
