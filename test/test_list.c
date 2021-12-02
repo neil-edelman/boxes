@@ -8,10 +8,10 @@
 /* Minimal example. An order with no parent represents a permutation of
  nothing. */
 
-struct order_list_node;
-static void order_to_string(const struct order_list_node *const l,
+struct order_listnode;
+static void order_to_string(const struct order_listnode *const l,
 	char (*const a)[12]) { (void)(l); strcpy(*a, "∅"); }
-static void order_fill(struct order_list_node *const l) { (void)(l); }
+static void order_fill(struct order_listnode *const l) { (void)(l); }
 
 #define LIST_NAME order
 #define LIST_TEST &order_fill
@@ -21,12 +21,12 @@ static void order_fill(struct order_list_node *const l) { (void)(l); }
 #include "../src/list.h"
 
 #define POOL_NAME order_node
-#define POOL_TYPE struct order_list_node
+#define POOL_TYPE struct order_listnode
 #include "pool.h"
 
-static struct order_list_node *order_from_pool(void *const volls) {
+static struct order_listnode *order_from_pool(void *const volls) {
 	struct order_node_pool *const olls = volls;
-	struct order_list_node *oll = order_node_pool_new(olls);
+	struct order_listnode *oll = order_node_pool_new(olls);
 	assert(oll); if(!oll) return 0;
 	return oll;
 }
@@ -34,10 +34,10 @@ static struct order_list_node *order_from_pool(void *const volls) {
 
 /* This is the minimum useful example, (plus testing framework.) */
 
-struct no_list_node;
-static void no_to_string(const struct no_list_node *, char (*)[12]);
-static void no_fill(struct no_list_node *);
-static int no_compare(const struct no_list_node *, const struct no_list_node *);
+struct no_listnode;
+static void no_to_string(const struct no_listnode *, char (*)[12]);
+static void no_fill(struct no_listnode *);
+static int no_compare(const struct no_listnode *, const struct no_listnode *);
 
 #define LIST_NAME no
 #define LIST_COMPARE &no_compare
@@ -47,29 +47,29 @@ static int no_compare(const struct no_list_node *, const struct no_list_node *);
 #define LIST_TO_STRING &no_to_string
 #include "../src/list.h"
 
-struct no { struct no_list_node node; int i; };
+struct no { struct no_listnode node; int i, unused; };
 
-static int no_compare(const struct no_list_node *const all,
-	const struct no_list_node *const bll) {
+static int no_compare(const struct no_listnode *const all,
+	const struct no_listnode *const bll) {
 	/* Can do this because `node` is the first field. */
 	const struct no *const a = (const struct no *)all,
 		*const b = (const struct no *)bll;
 	return (a->i > b->i) - (b->i > a->i);
 }
-static void no_to_string(const struct no_list_node *const noll,
+static void no_to_string(const struct no_listnode *const noll,
 	char (*const a)[12]) {
 	const struct no *const no = (const struct no *)noll;
 	/*assert(RAND_MAX <= 99999999999l);*/
 	sprintf(*a, "%d", no->i);
 }
-static void no_fill(struct no_list_node *const noll) {
+static void no_fill(struct no_listnode *const noll) {
 	struct no *const no = (struct no *)noll;
 	no->i = rand() / (RAND_MAX / 100000 + 1);
 }
 #define POOL_NAME no
 #define POOL_TYPE struct no
 #include "pool.h"
-static struct no_list_node *no_from_pool(void *const vnos) {
+static struct no_listnode *no_from_pool(void *const vnos) {
 	struct no_pool *const nos = vnos;
 	struct no *no = no_pool_new(nos);
 	assert(no); if(!no) return 0;
@@ -79,11 +79,11 @@ static struct no_list_node *no_from_pool(void *const vnos) {
 
 /* For testing bin-ops just to be sure the examples were accurate. */
 
-struct letter_list_node;
-static void letter_to_string(const struct letter_list_node *, char (*)[12]);
-static void letter_fill(struct letter_list_node *);
-static int letter_compare(const struct letter_list_node *,
-	const struct letter_list_node *);
+struct letter_listnode;
+static void letter_to_string(const struct letter_listnode *, char (*)[12]);
+static void letter_fill(struct letter_listnode *);
+static int letter_compare(const struct letter_listnode *,
+	const struct letter_listnode *);
 
 #define LIST_NAME letter
 #define LIST_COMPARE &letter_compare
@@ -93,29 +93,29 @@ static int letter_compare(const struct letter_list_node *,
 #define LIST_TO_STRING &letter_to_string
 #include "../src/list.h"
 
-struct letter { struct letter_list_node node; char letter; };
+struct letter { struct letter_listnode node; char letter, unused[7]; };
 
-static int letter_compare(const struct letter_list_node *const all,
-	const struct letter_list_node *const bll) {
+static int letter_compare(const struct letter_listnode *const all,
+	const struct letter_listnode *const bll) {
 	/* Can do this because `node` is the first field in `struct No`. */
 	const struct letter *const a = (const struct letter *)all,
 		*const b = (const struct letter *)bll;
 	return (a->letter > b->letter) - (b->letter > a->letter);
 }
-static void letter_to_string(const struct letter_list_node *const lll,
+static void letter_to_string(const struct letter_listnode *const lll,
 	char (*const a)[12]) {
 	const struct letter *const l = (const struct letter *)lll;
 	(*a)[0] = l->letter;
 	(*a)[1] = '\0';
 }
-static void letter_fill(struct letter_list_node *const lll) {
+static void letter_fill(struct letter_listnode *const lll) {
 	struct letter *const l = (struct letter *)lll;
 	l->letter = 'A' + (char)(rand() / (RAND_MAX / 26 + 1));
 }
 #define POOL_NAME letter
 #define POOL_TYPE struct letter
 #include "pool.h"
-static struct letter_list_node *letter_from_pool(void *const vls) {
+static struct letter_listnode *letter_from_pool(void *const vls) {
 	struct letter_pool *const ls = vls;
 	struct letter *l = letter_pool_new(ls);
 	assert(l); if(!l) return 0;
@@ -125,11 +125,11 @@ static struct letter_list_node *letter_from_pool(void *const vls) {
 
 /* Multi-list. Three lists at once. */
 
-struct name_list_node;
-static void name_to_string(const struct name_list_node *, char (*)[12]);
-static void fill_panda_name(struct name_list_node *);
-static int name_compare(const struct name_list_node *,
-	const struct name_list_node *);
+struct name_listnode;
+static void name_to_string(const struct name_listnode *, char (*)[12]);
+static void fill_panda_name(struct name_listnode *);
+static int name_compare(const struct name_listnode *,
+	const struct name_listnode *);
 
 #define LIST_NAME name
 #define LIST_COMPARE &name_compare
@@ -139,11 +139,11 @@ static int name_compare(const struct name_list_node *,
 #define LIST_TO_STRING &name_to_string
 #include "../src/list.h"
 
-struct where_list_node;
-static void where_to_string(const struct where_list_node *, char (*)[12]);
-static void fill_panda_where(struct where_list_node *);
-static int where_compare(const struct where_list_node *,
-	const struct where_list_node *);
+struct where_listnode;
+static void where_to_string(const struct where_listnode *, char (*)[12]);
+static void fill_panda_where(struct where_listnode *);
+static int where_compare(const struct where_listnode *,
+	const struct where_listnode *);
 
 #define LIST_NAME where
 #define LIST_COMPARE &where_compare
@@ -153,11 +153,11 @@ static int where_compare(const struct where_list_node *,
 #define LIST_TO_STRING &where_to_string
 #include "../src/list.h"
 
-struct fero_list_node;
-static void fero_to_string(const struct fero_list_node *, char (*)[12]);
-static void fill_panda_fero(struct fero_list_node *);
-static int fero_compare(const struct fero_list_node *,
-	const struct fero_list_node *);
+struct fero_listnode;
+static void fero_to_string(const struct fero_listnode *, char (*)[12]);
+static void fill_panda_fero(struct fero_listnode *);
+static int fero_compare(const struct fero_listnode *,
+	const struct fero_listnode *);
 
 #define LIST_NAME fero
 #define LIST_COMPARE &fero_compare
@@ -168,65 +168,64 @@ static int fero_compare(const struct fero_list_node *,
 #include "../src/list.h"
 
 struct Panda {
-	char name[12];
-	struct name_list_node name_node;
-	int where;
-	struct where_list_node where_node;
-	int ferociousness;
-	struct fero_list_node fero_node;
+	char name[12], unused[4];
+	int where, ferociousness;
+	struct name_listnode name_node;
+	struct where_listnode where_node;
+	struct fero_listnode fero_node;
 };
 
-static struct Panda *name_upcast(struct name_list_node *const n) {
+static struct Panda *name_upcast(struct name_listnode *const n) {
 	return (struct Panda *)(void *)((char *)n
 		- offsetof(struct Panda, name_node));
 }
-static const struct Panda *name_upcast_c(const struct name_list_node *const n) {
+static const struct Panda *name_upcast_c(const struct name_listnode *const n) {
 	return (const struct Panda *)(const void *)((const char *)n
 		- offsetof(struct Panda, name_node));
 }
-static struct Panda *where_upcast(struct where_list_node *const w) {
+static struct Panda *where_upcast(struct where_listnode *const w) {
 	return (struct Panda *)(void *)((char *)w
 		- offsetof(struct Panda, where_node));
 }
-static const struct Panda *where_upcast_c(const struct where_list_node *const w)
+static const struct Panda *where_upcast_c(const struct where_listnode *const w)
 	{ return (const struct Panda *)(const void *)((const char *)w
 		- offsetof(struct Panda, where_node)); }
-static struct Panda *fero_upcast(struct fero_list_node *const f) {
+static struct Panda *fero_upcast(struct fero_listnode *const f) {
 	return (struct Panda *)(void *)((char *)f
 		- offsetof(struct Panda, fero_node));
 }
-static const struct Panda *fero_upcast_c(const struct fero_list_node *const f) {
+static const struct Panda *fero_upcast_c(const struct fero_listnode *const f) {
 	return (const struct Panda *)(const void *)((const char *)f
 		- offsetof(struct Panda, fero_node));
 }
 static void panda_to_string(const struct Panda *const p, char (*const a)[12]) {
 	sprintf(*a, "%.11s", p->name);
 }
-static void name_to_string(const struct name_list_node *const n,
+static void name_to_string(const struct name_listnode *const n,
 	char (*const a)[12]) {
 	panda_to_string(name_upcast_c(n), a);
 }
-static void where_to_string(const struct where_list_node *const w,
+static void where_to_string(const struct where_listnode *const w,
 	char (*const a)[12]) {
 	panda_to_string(where_upcast_c(w), a);
 }
-static void fero_to_string(const struct fero_list_node *const f,
+static void fero_to_string(const struct fero_listnode *const f,
 	char (*const a)[12]) {
 	panda_to_string(fero_upcast_c(f), a);
 }
-static int name_compare(const struct name_list_node *const a,
-	const struct name_list_node *const b) {
+static int name_compare(const struct name_listnode *const a,
+	const struct name_listnode *const b) {
 	return strcmp(name_upcast_c(a)->name, name_upcast_c(b)->name);
 }
 static int int_compare(const int a, const int b) {
 	return (a > b) - (b > a);
 }
-static int where_compare(const struct where_list_node *const a,
-	const struct where_list_node *const b) {
+static int where_compare(const struct where_listnode *const a,
+	const struct where_listnode *const b) {
 	return int_compare(where_upcast_c(a)->where, where_upcast_c(b)->where);
 }
-static int fero_compare(const struct fero_list_node *const a,
-	const struct fero_list_node *const b) {
+static int fero_compare(const struct fero_listnode *const a,
+	const struct fero_listnode *const b) {
 	return int_compare(fero_upcast_c(a)->ferociousness,
 		fero_upcast_c(b)->ferociousness);
 }
@@ -236,31 +235,31 @@ static void fill_panda(struct Panda *const p) {
 	p->where = rand() / (RAND_MAX / 198 + 1) - 99;
 	p->ferociousness = rand() / (RAND_MAX / 11 + 1);
 }
-static void fill_panda_name(struct name_list_node *const name) {
+static void fill_panda_name(struct name_listnode *const name) {
 	fill_panda(name_upcast(name));
 }
-static void fill_panda_where(struct where_list_node *const where) {
+static void fill_panda_where(struct where_listnode *const where) {
 	fill_panda(where_upcast(where));
 }
-static void fill_panda_fero(struct fero_list_node *const fero) {
+static void fill_panda_fero(struct fero_listnode *const fero) {
 	fill_panda(fero_upcast(fero));
 }
 #define POOL_NAME panda
 #define POOL_TYPE struct Panda
 #include "pool.h"
-static struct name_list_node *panda_name_from_pool(void *const vpool) {
+static struct name_listnode *panda_name_from_pool(void *const vpool) {
 	struct panda_pool *const pool = vpool;
 	struct Panda *p = panda_pool_new(pool);
 	assert(p); if(!p) return 0;
 	return &p->name_node;
 }
-static struct where_list_node *panda_where_from_pool(void *const vpool) {
+static struct where_listnode *panda_where_from_pool(void *const vpool) {
 	struct panda_pool *const pool = vpool;
 	struct Panda *p = panda_pool_new(pool);
 	assert(p); if(!p) return 0;
 	return &p->where_node;
 }
-static struct fero_list_node *panda_fero_from_pool(void *const vpool) {
+static struct fero_listnode *panda_fero_from_pool(void *const vpool) {
 	struct panda_pool *const pool = vpool;
 	struct Panda *p = panda_pool_new(pool);
 	assert(p); if(!p) return 0;
@@ -318,11 +317,11 @@ static void pandas_everywhere(void) {
 
 /* (Fixed width) skip list. (fixme: don't need all that) */
 
-struct layer0_list_node;
-static int l0_compare(const struct layer0_list_node *,
-	const struct layer0_list_node *);
-static void l0_to_string(const struct layer0_list_node *, char (*)[12]);
-static void fill_l0(struct layer0_list_node *);
+struct layer0_listnode;
+static int l0_compare(const struct layer0_listnode *,
+	const struct layer0_listnode *);
+static void l0_to_string(const struct layer0_listnode *, char (*)[12]);
+static void fill_l0(struct layer0_listnode *);
 #define LIST_NAME layer0
 #define LIST_COMPARE &l0_compare
 #define LIST_TEST &fill_l0
@@ -331,11 +330,11 @@ static void fill_l0(struct layer0_list_node *);
 #define LIST_TO_STRING &l0_to_string
 #include "../src/list.h"
 
-struct layer1_list_node;
-static int l1_compare(const struct layer1_list_node *,
-	const struct layer1_list_node *);
-static void l1_to_string(const struct layer1_list_node *, char (*)[12]);
-static void fill_l1(struct layer1_list_node *);
+struct layer1_listnode;
+static int l1_compare(const struct layer1_listnode *,
+	const struct layer1_listnode *);
+static void l1_to_string(const struct layer1_listnode *, char (*)[12]);
+static void fill_l1(struct layer1_listnode *);
 #define LIST_NAME layer1
 #define LIST_COMPARE &l1_compare
 #define LIST_TEST &fill_l1
@@ -344,11 +343,11 @@ static void fill_l1(struct layer1_list_node *);
 #define LIST_TO_STRING &l1_to_string
 #include "../src/list.h"
 
-struct layer2_list_node;
-static int l2_compare(const struct layer2_list_node *,
-	const struct layer2_list_node *);
-static void l2_to_string(const struct layer2_list_node *, char (*)[12]);
-static void fill_l2(struct layer2_list_node *);
+struct layer2_listnode;
+static int l2_compare(const struct layer2_listnode *,
+	const struct layer2_listnode *);
+static void l2_to_string(const struct layer2_listnode *, char (*)[12]);
+static void fill_l2(struct layer2_listnode *);
 #define LIST_NAME layer2
 #define LIST_COMPARE &l2_compare
 #define LIST_TEST &fill_l2
@@ -358,32 +357,32 @@ static void fill_l2(struct layer2_list_node *);
 #include "../src/list.h"
 
 struct Skip {
-	struct layer0_list_node l0;
-	struct layer1_list_node l1;
-	struct layer2_list_node l2;
-	unsigned value;
+	struct layer0_listnode l0;
+	struct layer1_listnode l1;
+	struct layer2_listnode l2;
+	unsigned value, unused;
 };
 
-static const struct Skip *l0_upcast_c(const struct layer0_list_node *const n) {
+static const struct Skip *l0_upcast_c(const struct layer0_listnode *const n) {
 	return (const struct Skip *)(const void *)((const char *)n
 		- offsetof(struct Skip, l0));
 }
-static const struct Skip *l1_upcast_c(const struct layer1_list_node *const n) {
+static const struct Skip *l1_upcast_c(const struct layer1_listnode *const n) {
 	return (const struct Skip *)(const void *)((const char *)n
 		- offsetof(struct Skip, l1));
 }
-static const struct Skip *l2_upcast_c(const struct layer2_list_node *const n) {
+static const struct Skip *l2_upcast_c(const struct layer2_listnode *const n) {
 	return (const struct Skip *)(const void *)((const char *)n
 		- offsetof(struct Skip, l2));
 }
 
-static struct Skip *l0_upcast(struct layer0_list_node *const n) {
+static struct Skip *l0_upcast(struct layer0_listnode *const n) {
 	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l0));
 }
-static struct Skip *l1_upcast(struct layer1_list_node *const n) {
+static struct Skip *l1_upcast(struct layer1_listnode *const n) {
 	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l1));
 }
-static struct Skip *l2_upcast(struct layer2_list_node *const n) {
+static struct Skip *l2_upcast(struct layer2_listnode *const n) {
 	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l2));
 }
 
@@ -391,16 +390,16 @@ static int skip_compare(const struct Skip *const a,
 	const struct Skip *const b) {
 	return (a->value > b->value) - (b->value > a->value);
 }
-static int l0_compare(const struct layer0_list_node *a,
-	const struct layer0_list_node *b) {
+static int l0_compare(const struct layer0_listnode *a,
+	const struct layer0_listnode *b) {
 	return skip_compare(l0_upcast_c(a), l0_upcast_c(b));
 }
-static int l1_compare(const struct layer1_list_node *a,
-	const struct layer1_list_node *b) {
+static int l1_compare(const struct layer1_listnode *a,
+	const struct layer1_listnode *b) {
 	return skip_compare(l1_upcast_c(a), l1_upcast_c(b));
 }
-static int l2_compare(const struct layer2_list_node *a,
-	const struct layer2_list_node *b) {
+static int l2_compare(const struct layer2_listnode *a,
+	const struct layer2_listnode *b) {
 	return skip_compare(l2_upcast_c(a), l2_upcast_c(b));
 }
 
@@ -409,15 +408,15 @@ static void skip_to_string(const struct Skip *const skip,
 	/*assert(RAND_MAX <= 99999999999l);*/
 	sprintf(*a, "%d", skip->value);
 }
-static void l0_to_string(const struct layer0_list_node *const l0,
+static void l0_to_string(const struct layer0_listnode *const l0,
 	char (*const a)[12]) {
 	skip_to_string(l0_upcast_c(l0), a);
 }
-static void l1_to_string(const struct layer1_list_node *const l1,
+static void l1_to_string(const struct layer1_listnode *const l1,
 	char (*const a)[12]) {
 	skip_to_string(l1_upcast_c(l1), a);
 }
-static void l2_to_string(const struct layer2_list_node *const l2,
+static void l2_to_string(const struct layer2_listnode *const l2,
 	char (*const a)[12]) {
 	skip_to_string(l2_upcast_c(l2), a);
 }
@@ -434,13 +433,13 @@ static void fill_skip(struct Skip *const skip) {
 	skip->l2.next = 0;
 	skip->value = (unsigned)rand();
 }
-static void fill_l0(struct layer0_list_node *const l0) {
+static void fill_l0(struct layer0_listnode *const l0) {
 	fill_skip(l0_upcast(l0));
 }
-static void fill_l1(struct layer1_list_node *const l1) {
+static void fill_l1(struct layer1_listnode *const l1) {
 	fill_skip(l1_upcast(l1));
 }
-static void fill_l2(struct layer2_list_node *const l2) {
+static void fill_l2(struct layer2_listnode *const l2) {
 	fill_skip(l2_upcast(l2));
 }
 
@@ -448,19 +447,19 @@ static void fill_l2(struct layer2_list_node *const l2) {
 #define POOL_TYPE struct Skip
 #include "pool.h"
 
-static struct layer0_list_node *l0_from_pool(void *const vpool) {
+static struct layer0_listnode *l0_from_pool(void *const vpool) {
 	struct skip_pool *const pool = vpool;
 	struct Skip *s = skip_pool_new(pool);
 	assert(s); if(!s) return 0;
 	return &s->l0;
 }
-static struct layer1_list_node *l1_from_pool(void *const vpool) {
+static struct layer1_listnode *l1_from_pool(void *const vpool) {
 	struct skip_pool *const pool = vpool;
 	struct Skip *s = skip_pool_new(pool);
 	assert(s); if(!s) return 0;
 	return &s->l1;
 }
-static struct layer2_list_node *l2_from_pool(void *const vpool) {
+static struct layer2_listnode *l2_from_pool(void *const vpool) {
 	struct skip_pool *const pool = vpool;
 	struct Skip *s = skip_pool_new(pool);
 	assert(s); if(!s) return 0;
@@ -509,9 +508,9 @@ static void skips_everywhere(void) {
 	for(i = 0; i < i_lim; i++) {
 		/* Add random data. */
 		struct Skip *const skip = skip_pool_new(&skips);
-		struct layer2_list_node *l2, *l2_pr;
-		struct layer1_list_node *l1, *l1_pr, *l1_lim;
-		struct layer0_list_node *l0, *l0_pr, *l0_lim;
+		struct layer2_listnode *l2, *l2_pr;
+		struct layer1_listnode *l1, *l1_pr, *l1_lim;
+		struct layer0_listnode *l0, *l0_pr, *l0_lim;
 		if(!skip) { assert(0); goto finally; }
 		fill_skip(skip);
 		/* Find the order. */
@@ -555,8 +554,8 @@ finally:
 /* Animals! See <../web/animals.gv>. */
 
 /* Id is the list that holds all the animals together. */
-struct id_list_node;
-static void id_to_string(const struct id_list_node *, char (*)[12]);
+struct id_listnode;
+static void id_to_string(const struct id_listnode *, char (*)[12]);
 #define LIST_NAME id
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
@@ -571,16 +570,17 @@ enum { BOTTOM, TOP, RIDING_END };
 struct animal_vt;
 struct animal {
 	const struct animal_vt *vt;
-	struct id_list_node id;
+	struct id_listnode id;
 	char name[16];
 	enum colour colour;
+	int unused;
 };
 static const size_t animal_name_size = sizeof ((struct animal *)0)->name;
-static struct animal *id_upcast(struct id_list_node *const id) {
+static struct animal *id_upcast(struct id_listnode *const id) {
 	return (struct animal *)(void *)((char *)id
 		- offsetof(struct animal, id));
 }
-static const struct animal *id_upcast_c(const struct id_list_node *const id) {
+static const struct animal *id_upcast_c(const struct id_listnode *const id) {
 	return (const struct animal *)(const void *)((const char *)id
 		- offsetof(struct animal, id));
 }
@@ -589,7 +589,7 @@ static void animal_to_string(const struct animal *const animal,
 	strncpy(*a, animal->name, sizeof *a - 1);
 	*a[sizeof *a - 1] = '\0';
 }
-static void id_to_string(const struct id_list_node *const id,
+static void id_to_string(const struct id_listnode *const id,
 	char (*const a)[12]) {
 	animal_to_string(id_upcast_c(id), a);
 }
@@ -599,6 +599,7 @@ struct mount;
 struct mount_info {
 	struct mount *steed_of, *riding;
 	enum allowed { STEED = 1, RIDER, RIDER_STEED } is_allowed; /* Bit-field. */
+	int unused;
 };
 struct mount {
 	struct animal *steed, *rider;
@@ -610,7 +611,7 @@ struct mount {
 /* `Sloth` extends `Animal`. */
 struct sloth {
 	struct animal animal;
-	unsigned hours_slept;
+	unsigned hours_slept, unused;
 };
 #define POOL_NAME sloth
 #define POOL_TYPE struct sloth
@@ -619,7 +620,7 @@ struct sloth {
 /* `Emu` extends `Animal`. */
 struct emu {
 	struct animal animal;
-	char favourite_letter;
+	char favourite_letter, unused[7];
 };
 #define POOL_NAME emu
 #define POOL_TYPE struct emu
@@ -629,7 +630,7 @@ struct emu {
 struct bad_emu {
 	struct emu emu;
 	struct mount_info mount_info;
-	char muhaha[12];
+	char muhaha[12], unused[4];
 };
 #define POOL_NAME bademu
 #define POOL_TYPE struct bad_emu
@@ -639,7 +640,7 @@ struct bad_emu {
 struct Llama {
 	struct animal animal;
 	struct mount_info mount_info;
-	unsigned chomps;
+	unsigned chomps, unused;
 };
 #define POOL_NAME llama
 #define POOL_TYPE struct Llama
@@ -657,7 +658,7 @@ struct Lemur {
 /* `Bear` extends `Animal`. We have always two or less. */
 struct bear {
 	struct animal animal;
-	int is_active;
+	int is_active, unused;
 	struct mount_info mount_info;
 };
 
@@ -698,7 +699,7 @@ static void animal_delete(struct animal *const animal) {
 	animal->vt->delete(animal);
 }
 /** @implements <Id>Action */
-static void id_delete(struct id_list_node *const id) {
+static void id_delete(struct id_listnode *const id) {
 	animal_delete(id_upcast(id));
 }
 static void sloth_delete(struct sloth *const sloth) {
@@ -739,7 +740,7 @@ static void animal_act(struct animal *const animal) {
 	animal->vt->act(animal);
 }
 /** @implements <Id>Action */
-static void id_act(struct id_list_node *const id) {
+static void id_act(struct id_listnode *const id) {
 	animal_act(id_upcast(id));
 }
 static void sloth_act(struct sloth *const sloth) {
@@ -1021,7 +1022,7 @@ static int ride(struct animal *const a, struct animal *const b) {
 /** Prints something out on all the `animals`. */
 static void animals_act(void) {
 	size_t count = 0;
-	struct id_list_node *id;
+	struct id_listnode *id;
 	for(id = id_list_first(&animals.list); id; id = id_list_next(id)) count++;
 	printf("There are %lu animals.\n", (unsigned long)count);
 	id_list_for_each(&animals.list, &id_act);
@@ -1042,7 +1043,7 @@ static int animals_everywhere(void) {
 	t = clock();
 	Animals();
 	do {
-		struct id_list_node *id = 0, *prev_id = 0;
+		struct id_listnode *id = 0, *prev_id = 0;
 		struct bear *w, *n;
 		const unsigned animal_no = 10000/*00*/;
 		unsigned i;

@@ -6,11 +6,11 @@
  ![Example of a stochastic skip-list.](../web/list.png)
 
  In parlance of <Thareja 2014, Data Structures>, <tag:<L>list> is a circular
- header doubly-linked list of <tag:<L>list_node>. The header, or sentinel,
+ header doubly-linked list of <tag:<L>listnode>. The header, or sentinel,
  resides in `<L>list`. This allows it to benefit from being closed structure,
  such that with with a pointer to any element, it is possible to extract the
  entire list in \O(`size`). It only provides an order component, and is not
- very useful without enclosing `<L>list_node` in another `struct`; this is
+ very useful without enclosing `<L>listnode` in another `struct`; this is
  useful for multi-linked elements.
 
  @param[LIST_NAME]
@@ -90,35 +90,35 @@ enum list_operation {
  integrity of the original list, see <fn:<L>list_remove>.
 
  ![States.](../web/node-states.png) */
-struct L_(list_node) { struct L_(list_node) *prev, *next; };
+struct L_(listnode) { struct L_(listnode) *prev, *next; };
 
-/** Serves as head and tail for linked-list of <tag:<L>list_node>. Use
+/** Serves as head and tail for linked-list of <tag:<L>listnode>. Use
  <fn:<L>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
  values are not allowed and it is _not_ the same as `{0}`. These are sentinels
  such that `head.prev` and `tail.next` are always and the only ones to be null.
 
  ![States.](../web/states.png) */
-struct L_(list) { struct L_(list_node) head, tail; };
+struct L_(list) { struct L_(listnode) head, tail; };
 
 /* *******FIXME move to trait*********/
 
 /** Operates by side-effects on the node. */
-typedef void (*PL_(action_fn))(struct L_(list_node) *);
+typedef void (*PL_(action_fn))(struct L_(listnode) *);
 
 /** Returns (Non-zero) true or (zero) false when given a node. */
-typedef int (*PL_(predicate_fn))(const struct L_(list_node) *);
+typedef int (*PL_(predicate_fn))(const struct L_(listnode) *);
 
 /** Returns less then, equal to, or greater then zero, inducing an ordering
  between `a` and `b`. */
-typedef int (*PL_(compare_fn))(const struct L_(list_node) *a,
-	const struct L_(list_node) *b);
+typedef int (*PL_(compare_fn))(const struct L_(listnode) *a,
+	const struct L_(listnode) *b);
 
 /** Cats all `from` in front of `node`, (don't make `node` `head`); `from` will
  be empty after. Careful that `node` is not in `from` because that will just
  erase the list. @order \Theta(1) */
 static void PL_(move)(struct L_(list) *const from,
-	struct L_(list_node) *const node) {
+	struct L_(listnode) *const node) {
 	assert(node && from && node->prev &&
 		!from->head.prev && from->head.next
 		&& from->tail.prev && !from->tail.next);
@@ -132,8 +132,8 @@ static void PL_(move)(struct L_(list) *const from,
 
 /** @return A pointer to the first element of `list`, if it exists.
  @order \Theta(1) @allow */
-static struct L_(list_node) *L_(list_first)(const struct L_(list) *const list) {
-	struct L_(list_node) *link;
+static struct L_(listnode) *L_(list_first)(const struct L_(list) *const list) {
+	struct L_(listnode) *link;
 	assert(list);
 	link = list->head.next, assert(link);
 	return link->next ? link : 0;
@@ -141,8 +141,8 @@ static struct L_(list_node) *L_(list_first)(const struct L_(list) *const list) {
 
 /** @return A pointer to the last element of `list`, if it exists.
  @order \Theta(1) @allow */
-static struct L_(list_node) *L_(list_last)(const struct L_(list) *const list) {
-	struct L_(list_node) *link;
+static struct L_(listnode) *L_(list_last)(const struct L_(list) *const list) {
+	struct L_(listnode) *link;
 	assert(list);
 	link = list->tail.prev, assert(link);
 	return link->prev ? link : 0;
@@ -150,7 +150,7 @@ static struct L_(list_node) *L_(list_last)(const struct L_(list) *const list) {
 
 /** @return The previous element. When `link` is the first element, returns
  null. @order \Theta(1) @allow */
-static struct L_(list_node) *L_(list_previous)(struct L_(list_node) *link) {
+static struct L_(listnode) *L_(list_previous)(struct L_(listnode) *link) {
 	assert(link && link->prev);
 	link = link->prev;
 	return link->prev ? link : 0;
@@ -158,7 +158,7 @@ static struct L_(list_node) *L_(list_previous)(struct L_(list_node) *link) {
 
 /** @return The next element. When `link` is the last element, returns null.
  @order \Theta(1) @allow */
-static struct L_(list_node) *L_(list_next)(struct L_(list_node) *link) {
+static struct L_(listnode) *L_(list_next)(struct L_(listnode) *link) {
 	assert(link && link->next);
 	link = link->next;
 	return link->next ? link : 0;
@@ -173,8 +173,8 @@ static void L_(list_clear)(struct L_(list) *const list) {
 }
 
 /** `add` before `anchor`. @order \Theta(1) @allow */
-static void L_(list_add_before)(struct L_(list_node) *const anchor,
-	struct L_(list_node) *const add) {
+static void L_(list_add_before)(struct L_(listnode) *const anchor,
+	struct L_(listnode) *const add) {
 	assert(anchor && add && anchor != add && anchor->prev);
 	add->prev = anchor->prev;
 	add->next = anchor;
@@ -183,8 +183,8 @@ static void L_(list_add_before)(struct L_(list_node) *const anchor,
 }
 
 /** `add` after `anchor`. @order \Theta(1) @allow */
-static void L_(list_add_after)(struct L_(list_node) *const anchor,
-	struct L_(list_node) *const add) {
+static void L_(list_add_after)(struct L_(listnode) *const anchor,
+	struct L_(listnode) *const add) {
 	assert(anchor && add && anchor != add && anchor->next);
 	add->prev = anchor;
 	add->next = anchor->next;
@@ -194,16 +194,16 @@ static void L_(list_add_after)(struct L_(list_node) *const anchor,
 
 /** Adds `add` to the beginning of `list`. @order \Theta(1) @allow */
 static void L_(list_unshift)(struct L_(list) *const list,
-	struct L_(list_node) *const add)
+	struct L_(listnode) *const add)
 	{ assert(list && add), L_(list_add_after)(&list->head, add); }
 
 /** Adds `add` to the end of `list`. @order \Theta(1) @allow */
 static void L_(list_push)(struct L_(list) *const list,
-	struct L_(list_node) *const add)
+	struct L_(listnode) *const add)
 	{ assert(list && add), L_(list_add_before)(&list->tail, add); }
 
 /** Remove `node`. @order \Theta(1) @allow */
-static void L_(list_remove)(struct L_(list_node) *const node) {
+static void L_(list_remove)(struct L_(listnode) *const node) {
 	assert(node && node->prev && node->next);
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
@@ -212,8 +212,8 @@ static void L_(list_remove)(struct L_(list_node) *const node) {
 
 /** Removes the first element of `list` and returns it, if any.
  @order \Theta(1) @allow */
-static struct L_(list_node) *L_(list_shift)(struct L_(list) *const list) {
-	struct L_(list_node) *node;
+static struct L_(listnode) *L_(list_shift)(struct L_(list) *const list) {
+	struct L_(listnode) *node;
 	assert(list && list->head.next);
 	if(!(node = list->head.next)->next) return 0;
 	L_(list_remove)(node);
@@ -222,8 +222,8 @@ static struct L_(list_node) *L_(list_shift)(struct L_(list) *const list) {
 
 /** Removes the last element of `list` and returns it, if any.
  @order \Theta(1) @allow */
-static struct L_(list_node) *L_(list_pop)(struct L_(list) *const list) {
-	struct L_(list_node) *node;
+static struct L_(listnode) *L_(list_pop)(struct L_(list) *const list) {
+	struct L_(listnode) *node;
 	assert(list && list->tail.prev);
 	if(!(node = list->tail.prev)->prev) return 0;
 	L_(list_remove)(node);
@@ -243,7 +243,7 @@ static void L_(list_to)(struct L_(list) *const from,
 /** Moves the elements `from` immediately before `anchor`.
  @order \Theta(1) @allow */
 static void L_(list_to_before)(struct L_(list) *const from,
-	struct L_(list_node) *const anchor) {
+	struct L_(listnode) *const anchor) {
 	assert(from && anchor);
 	PL_(move)(from, anchor);
 }
@@ -253,7 +253,7 @@ static void L_(list_to_before)(struct L_(list) *const from,
  @order \Theta(|`from`|) \times \O(`predicate`) @allow */
 static void L_(list_to_if)(struct L_(list) *const from,
 	struct L_(list) *const to, const PL_(predicate_fn) predicate) {
-	struct L_(list_node) *link, *next_link;
+	struct L_(listnode) *link, *next_link;
 	assert(from && from != to && predicate);
 	for(link = from->head.next; (next_link = link->next); link = next_link) {
 		if(!predicate(link)) continue;
@@ -267,7 +267,7 @@ static void L_(list_to_if)(struct L_(list) *const from,
  @order \Theta(|`list`|) \times O(`action`) @allow */
 static void L_(list_for_each)(struct L_(list) *const list,
 	const PL_(action_fn) action) {
-	struct L_(list_node) *x, *next_x;
+	struct L_(listnode) *x, *next_x;
 	assert(list && action);
 	for(x = list->head.next; (next_x = x->next); x = next_x)
 		action(x);
@@ -277,9 +277,9 @@ static void L_(list_for_each)(struct L_(list) *const list,
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
  @order \O(|`list`|) \times \O(`predicate`) @allow */
-static struct L_(list_node) *L_(list_any)(const struct L_(list) *const list,
+static struct L_(listnode) *L_(list_any)(const struct L_(list) *const list,
 	const PL_(predicate_fn) predicate) {
-	struct L_(list_node) *link, *next_link;
+	struct L_(listnode) *link, *next_link;
 	assert(list && predicate);
 	for(link = list->head.next; (next_link = link->next); link = next_link)
 		if(predicate(link)) return link;
@@ -311,7 +311,7 @@ static const PL_(compare_fn) PL_(compare) = (LIST_COMPARE);
 static void PL_(boolean)(struct L_(list) *const alist,
 	struct L_(list) *const blist, const enum list_operation mask,
 	struct L_(list) *const result) {
-	struct L_(list_node) *a = alist ? alist->head.next : 0,
+	struct L_(listnode) *a = alist ? alist->head.next : 0,
 		*b = blist ? blist->head.next : 0, *temp;
 	int comp;
 	assert((!result || (result != alist && result != blist))
@@ -355,7 +355,7 @@ static void PL_(boolean)(struct L_(list) *const alist,
 }
 
 /* A run is a sequence of values in the array that is weakly increasing. */
-struct PL_(Run) { struct L_(list_node) *head, *tail; size_t size; };
+struct PL_(Run) { struct L_(listnode) *head, *tail; size_t size; };
 /* Store the maximum capacity for the indexing with {size_t}. (Much more then
  we need, in most cases.) \${
  \> range(runs) = Sum_{k=0}^runs 2^{runs-k} - 1
@@ -373,12 +373,12 @@ struct PL_(Runs) {
 static void PL_(merge_runs)(struct PL_(Runs) *const r) {
 	struct PL_(Run) *const run_a = r->run + r->run_no - 2;
 	struct PL_(Run) *const run_b = run_a + 1;
-	struct L_(list_node) *a = run_a->tail, *b = run_b->head, *chosen;
+	struct L_(listnode) *a = run_a->tail, *b = run_b->head, *chosen;
 	assert(r->run_no >= 2);
 	/* In the absence of any real information, assume that the elements farther
 	 in the list are generally more apt to be at the back, _viz_, adaptive. */
 	if(run_a->size <= run_b->size) {
-		struct L_(list_node) *prev_chosen;
+		struct L_(listnode) *prev_chosen;
 		/* Run `a` is smaller: downwards insert `b.head` followed by upwards
 		 merge. Insert the first element of `b` downwards into `a`. */
 		for( ; ; ) {
@@ -399,7 +399,7 @@ static void PL_(merge_runs)(struct PL_(Runs) *const r) {
 		if(!a) b->prev = chosen, chosen->next = b, run_a->tail = run_b->tail;
 		else a->prev = chosen, chosen->next = a;
 	} else {
-		struct L_(list_node) *next_chosen;
+		struct L_(listnode) *next_chosen;
 		int is_a_tail = 0;
 		/* Run `b` is smaller; upwards insert followed by downwards merge.
 		 Insert the last element of `a` upwards into `b`. */
@@ -434,7 +434,7 @@ static void PL_(natural)(struct L_(list) *const list) {
 	/* Part of the state machine for classifying points. */
 	enum { UNSURE, INCREASING, DECREASING } mono;
 	/* The data that we are sorting. */
-	struct L_(list_node) *a, *b, *c, *first_iso_a;
+	struct L_(listnode) *a, *b, *c, *first_iso_a;
 	/* `run_count` is different from `runs.run_no` in that it only increases;
 	 only used for calculating the path up the tree. */
 	size_t run_count, rc;
@@ -473,7 +473,7 @@ static void PL_(natural)(struct L_(list) *const list) {
 			new_run->tail = a; /* Terminating an increasing sequence. */
 		} else { /* `a == b`. */
 			if(mono == DECREASING) { /* Extend. */
-				struct L_(list_node) *const a_next = a->next;
+				struct L_(listnode) *const a_next = a->next;
 				b->next = a_next;
 				a_next->prev = b;
 				a->next = b;
@@ -520,7 +520,7 @@ static void L_(list_sort)(struct L_(list) *const list)
  @order \O(|`from`| + |`to`|). */
 static void L_(list_merge)(struct L_(list) *const from,
 	struct L_(list) *const to) {
-	struct L_(list_node) *cur, *a, *b;
+	struct L_(listnode) *cur, *a, *b;
 	assert(from && from->head.next && to && to->head.next && from != to);
 	/* `blist` empty -- that was easy. */
 	if(!(b = from->head.next)->next) return;
@@ -552,7 +552,7 @@ static void L_(list_merge)(struct L_(list) *const from,
  @order \Theta(min(|`alist`|, |`blist`|)) @allow */
 static int L_(list_compare)(const struct L_(list) *const alist,
 	const struct L_(list) *const blist) {
-	struct L_(list_node) *a, *b;
+	struct L_(listnode) *a, *b;
 	int diff;
 	/* Null counts as `-\infty`. */
 	if(!alist) {
@@ -581,7 +581,7 @@ static int L_(list_compare)(const struct L_(list) *const alist,
  @order \O(|`from`|) @allow */
 static void L_(list_duplicates_to)(struct L_(list) *const from,
 	struct L_(list) *const to) {
-	struct L_(list_node) *a = from->head.next, *b, *temp;
+	struct L_(listnode) *a = from->head.next, *b, *temp;
 	assert(from);
 	if(!(b = a->next)) return;
 	while(b->next) {
@@ -650,7 +650,7 @@ static void L_(list_xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 /* <!-- iterate interface */
 
 /** Contains all iteration parameters. */
-struct PL_(iterator) { struct L_(list_node) *node; };
+struct PL_(iterator) { struct L_(listnode) *node; };
 
 /** Loads `list` into `it`. @implements begin */
 static void PL_(begin)(struct PL_(iterator) *const it,
@@ -658,8 +658,8 @@ static void PL_(begin)(struct PL_(iterator) *const it,
 	{ assert(it && list), it->node = list->head.next /*L_(list_first)(list)*/; }
 
 /** Advances `it`. @implements next */
-static const struct L_(list_node) *PL_(next)(struct PL_(iterator) *const it) {
-	struct L_(list_node) *n;
+static const struct L_(listnode) *PL_(next)(struct PL_(iterator) *const it) {
+	struct L_(listnode) *n;
 	return assert(it && it->node), (it->node = (n = it->node)->next) ? n : 0;
 	/* it->node = L_(list_next)(it->node) */
 }
@@ -672,9 +672,9 @@ static void PL_(end)(struct PL_(iterator) *const it,
 	{ assert(it && list), it->node = list->tail.prev; }
 
 /** Advances `it`. @implements next */
-static const struct L_(list_node) *PL_(previous)(struct PL_(iterator) *const it)
+static const struct L_(listnode) *PL_(previous)(struct PL_(iterator) *const it)
 {
-	struct L_(list_node) *n;
+	struct L_(listnode) *n;
 	return assert(it && it->node), (it->node = (n = it->node)->prev) ? n : 0;
 }
 
@@ -683,11 +683,11 @@ static const struct L_(list_node) *PL_(previous)(struct PL_(iterator) *const it)
 /* <!-- box (multiple traits) */
 #define BOX_ PL_
 #define BOX_CONTAINER struct L_(list)
-#define BOX_CONTENTS struct L_(list_node)
+#define BOX_CONTENTS struct L_(listnode)
 
 #ifdef LIST_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PL_(to_string))(const struct L_(list_node) *, char (*)[12]);
+static void (*PL_(to_string))(const struct L_(listnode) *, char (*)[12]);
 static const char *(*PL_(list_to_string))(const struct L_(list) *);
 #include "../test/test_list.h" /* (no) \include */
 #endif /* test --> */
