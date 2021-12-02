@@ -235,7 +235,7 @@
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_append">&lt;A&gt;array_append</a></td><td>a, n</td></tr>
 
-<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_append_at">&lt;A&gt;array_append_at</a></td><td>a, n, at</td></tr>
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_insert">&lt;A&gt;array_insert</a></td><td>a, n, at</td></tr>
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_new">&lt;A&gt;array_new</a></td><td>a</td></tr>
 
@@ -370,9 +370,9 @@
 
 <div>
 
-<h3><a id = "fn:<A>array_append_at" name = "fn:<A>array_append_at">&lt;A&gt;array_append_at</a></h3>
+<h3><a id = "fn:<A>array_insert" name = "fn:<A>array_insert">&lt;A&gt;array_insert</a></h3>
 
-<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_append_at</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code></p>
+<p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_insert</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code></p>
 
 <p>Adds <code>n</code> un-initialised elements at position <code>at</code> in <code>a</code>. The buffer holds enough elements or it will invalidate pointers in <code>a</code>.</p>
 

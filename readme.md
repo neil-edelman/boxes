@@ -167,7 +167,7 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-2d92b62">&lt;A&gt;array_append</a></td><td>a, n</td></tr>
 
-<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-bc954312">&lt;A&gt;array_append_at</a></td><td>a, n, at</td></tr>
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-c0c02447">&lt;A&gt;array_insert</a></td><td>a, n, at</td></tr>
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-1b423580">&lt;A&gt;array_new</a></td><td>a</td></tr>
 
@@ -284,9 +284,9 @@ Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n`
 
 
 
-### <a id = "user-content-fn-bc954312" name = "user-content-fn-bc954312">&lt;A&gt;array_append_at</a> ###
+### <a id = "user-content-fn-c0c02447" name = "user-content-fn-c0c02447">&lt;A&gt;array_insert</a> ###
 
-<code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_append_at</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code>
+<code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_insert</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code>
 
 Adds `n` un\-initialised elements at position `at` in `a`\. The buffer holds enough elements or it will invalidate pointers in `a`\.
 
