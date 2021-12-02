@@ -159,8 +159,10 @@ static void PP_(valid_state)(const struct P_(pool) *const pool) {
 	/* If there's no capacity, there's no slots. */
 	if(!pool->capacity0) assert(!pool->slots.size);
 	/* Every slot up to size is active. */
-	for(i = 0; i < pool->slots.size; i++)
-		assert(pool->slots.data[i].chunk && (pool->slots.data[i].size || !i));
+	for(i = 0; i < pool->slots.size; i++) {
+		assert(pool->slots.data[i].chunk);
+		assert(!i || pool->slots.data[i].size);
+	}
 	if(!pool->slots.size) {
 		/* There are no free0 without slots. */
 		assert(!pool->free0.a.size);
@@ -177,8 +179,10 @@ static void PP_(test_states)(void) {
 	struct P_(pool) pool = POOL_IDLE;
 	PP_(type) *t;
 	const size_t size[] = { 9, 14, 22 };
-	size_t i, j;
+	enum { CHUNK1_IS_ZERO, CHUNK2_IS_ZERO } conf = CHUNK1_IS_ZERO;
+	size_t i;
 	int r;
+	char z[12];
 
 	printf("Test null.\n");
 	errno = 0;
@@ -199,8 +203,8 @@ static void PP_(test_states)(void) {
 		PP_(valid_state)(&pool);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-03-remove.gv");
 
-	printf("Pool buffer 9.\n");
-	r = P_(pool_buffer)(&pool, 9), assert(r), PP_(valid_state)(&pool);
+	printf("Pool buffer %lu.\n", (unsigned long)size[0]);
+	r = P_(pool_buffer)(&pool, size[0]), assert(r), PP_(valid_state)(&pool);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-04-buffer.gv");
 
 	for(i = 0; i < size[0]; i++) t = P_(pool_new)(&pool), assert(t),
@@ -214,18 +218,26 @@ static void PP_(test_states)(void) {
 	t = P_(pool_new)(&pool), assert(t), PP_(filler)(t), PP_(valid_state)(&pool);
 	assert(pool.slots.size == 3);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-chunks.gv");
-	if(pool.slots.data[1].size == size[0]) i = 0;
+	/* It's essentially random, `i = { 0: { 2, 0, 1 }, 1: { 2, 1, 0 } }`. */
+	if(pool.slots.data[1].size == size[0]) conf = CHUNK1_IS_ZERO;
 	else assert(pool.slots.data[1].size == size[1]);
-	if(pool.slots.data[2].size == size[0]) i = 1;
+	if(pool.slots.data[2].size == size[0]) conf = CHUNK2_IS_ZERO;
 	else assert(pool.slots.data[2].size == size[1]);
-	PP_(valid_state)(&pool);
-	P_(pool_remove)(&pool, pool.slots.data[0].chunk + !i + 1);
-	PP_(valid_state)(&pool);
+	assert(pool.slots.data[0].size == 1);
+	printf("%s is %u, %s is %u.\n", orcify(pool.slots.data[1].chunk), conf,
+		orcify(pool.slots.data[2].chunk), !conf);
+	t = pool.slots.data[!conf + 1].chunk + 0, PP_(to_string)(t, &z);
+	printf("Removing index-zero %s from chunk %u %s.\n", z, !conf + 1,
+		orcify(pool.slots.data[!conf + 1].chunk));
+	P_(pool_remove)(&pool, t), PP_(valid_state)(&pool);
+	t = pool.slots.data[0].chunk + 0, PP_(to_string)(t, &z);
+	printf("Removing index-zero %s from chunk %u %s.\n", z, 0,
+		orcify(pool.slots.data[0].chunk));
 	P_(pool_remove)(&pool, pool.slots.data[0].chunk + 0);
 	PP_(valid_state)(&pool);
-	assert(pool.slots.data[i + 1].size == size[0]);
-	for(j = 0; j < size[0]; j++)
-		P_(pool_remove)(&pool, pool.slots.data[0].chunk + i /*+1??*/);
+	assert(pool.slots.data[conf + 1].size == size[0]);
+	for(i = 0; i < size[0]; i++)
+		P_(pool_remove)(&pool, pool.slots.data[conf + 1].chunk + i);
 	PP_(valid_state)(&pool);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-chunk.gv");
 	assert(pool.slots.size == 2);

@@ -190,9 +190,13 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	assert(secondary); /* Made space for it before. */
 	secondary->chunk = base[0].chunk, secondary->size = base[0].size;
 	base[0].chunk = data, base[0].size = 0;
+	printf("__now__\n");
+	for(c = 0; c < pool->slots.size; c++)
+		printf("chunk %s: %lu\n", orcify(base[c].chunk), base[c].size);
 	return 1;
 }
 
+/* fixme */
 static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
 
 /** Either `data` in `pool` is in a secondary chunk, in which case it
@@ -207,7 +211,7 @@ static int PP_(remove)(struct P_(pool) *const pool,
 	char z[12];
 	assert(pool && pool->slots.size && data);
 	PP_(to_string)(data, &z);
-	printf("remove: %p:%s\n", (const void *)data, z);
+	printf("remove: %s from chunk %lu\n", z, c);
 	if(!c) { /* It's in the zero-slot, we need to deal with the free-heap. */
 		const size_t idx = (size_t)(data - slot->chunk);
 		assert(pool->capacity0 && slot->size <= pool->capacity0
@@ -222,8 +226,10 @@ static int PP_(remove)(struct P_(pool) *const pool,
 			}
 		} else if(!poolfree_heap_add(&pool->free0, idx)) return 0;
 	} else if(assert(slot->size), !--slot->size) {
+		PP_(type) *const chunk = slot->chunk;
+		printf("Removing %s.\n", orcify(chunk));
 		PP_(slot_array_remove)(&pool->slots, pool->slots.data + c);
-		free(slot);
+		free(chunk);
 	}
 	return 1;
 }
@@ -254,15 +260,19 @@ static int P_(pool_buffer)(struct P_(pool) *const pool, const size_t n) {
  @return A pointer to a new uninitialized element from `pool`.
  @throws[ERANGE, malloc] @order amortised O(1) @allow */
 static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
-	size_t *free; /* FIXME: this is now simple. */
 	struct PP_(slot) *slot0;
 	assert(pool);
+	printf("(new)\n");
 	if(!PP_(buffer)(pool, 1)) return 0;
 	assert(pool->slots.size && (pool->free0.a.size ||
 		pool->slots.data[0].size < pool->capacity0));
-	/* Array pop, towards minimum-ish index in the max-free-heap. */
-	if(free = heap_poolfree_node_array_pop(&pool->free0.a))
+	if(!poolfree_heap_is_empty(&pool->free0)) {
+		/* Cheating: we prefer the minimum index from a max-heap, but it
+		 doesn't really matter, so take the one off the array used for heap. */
+		size_t *free;
+		free = heap_poolfree_node_array_pop(&pool->free0.a);
 		return assert(free), pool->slots.data[0].chunk + *free;
+	}
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
 	slot0 = pool->slots.data + 0;
 	assert(slot0 && slot0->size < pool->capacity0);
@@ -272,7 +282,7 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 /** Deletes `datum` from `pool`. Do not remove data that is not in `pool`.
  @return Success. @order \O(\log \log `items`) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
-	PP_(type) *const datum) { return PP_(remove)(pool, datum); }
+	PP_(type) *const data) { return PP_(remove)(pool, data); }
 
 /** Removes all from `pool`, but keeps it's active state, only freeing the
  smaller blocks. @order \O(\log `items`) @allow */
