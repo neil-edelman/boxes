@@ -218,7 +218,7 @@ static void PP_(test_states)(void) {
 	t = P_(pool_new)(&pool), assert(t), PP_(filler)(t), PP_(valid_state)(&pool);
 	assert(pool.slots.size == 3);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-chunks.gv");
-	/* It's essentially random, `i = { 0: { 2, 0, 1 }, 1: { 2, 1, 0 } }`. */
+	/* It's `malloc` whether, `conf = { 0: { 2, 0, 1 }, 1: { 2, 1, 0 } }`. */
 	if(pool.slots.data[1].size == size[0]) conf = CHUNK1_IS_ZERO;
 	else assert(pool.slots.data[1].size == size[1]);
 	if(pool.slots.data[2].size == size[0]) conf = CHUNK2_IS_ZERO;
@@ -237,9 +237,8 @@ static void PP_(test_states)(void) {
 	PP_(valid_state)(&pool);
 	assert(pool.slots.data[conf + 1].size == size[0]);
 	chunk = pool.slots.data[conf + 1].chunk;
-	printf("Removing all %s.\n", orcify(chunk));
-	for(i = 0; i < size[0]; i++)
-		P_(pool_remove)(&pool, chunk + i);
+	printf("Removing all in chunk %s.\n", orcify(chunk));
+	for(i = 0; i < size[0]; i++) P_(pool_remove)(&pool, chunk + i);
 	PP_(valid_state)(&pool);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-chunk.gv");
 	assert(pool.slots.size == 2);

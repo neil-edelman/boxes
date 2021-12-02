@@ -121,7 +121,7 @@ static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 		else if(base[b1 + 1].chunk <= x) { b0 = b1 + 1; n--; continue; }
 		else { return b1 + 1; }
 	}
-	return b0 + (x < base[slots->size - 1].chunk ? 0 : 1);
+	return b0 + (x >= base[slots->size - 1].chunk);
 }
 
 /** Which chunk is `item` in `pool`?
@@ -145,9 +145,9 @@ static size_t PP_(chunk_idx)(const struct P_(pool) *const pool,
 static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	const size_t min_size = POOL_CHUNK_MIN_CAPACITY,
 		max_size = (size_t)-1 / sizeof(PP_(type));
-	struct PP_(slot) *base = pool->slots.data, *secondary;
-	PP_(type) *data;
-	size_t c, insert;
+	struct PP_(slot) *base = pool->slots.data, *slot;
+	PP_(type) *chunk;
+	size_t c, insert, i;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
 		(!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
@@ -157,17 +157,18 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 		|| pool->free0.a.size < base[0].size
 		&& pool->free0.a.data[0] < base[0].size)));
 
-	printf("__buffer__\n");
-	for(c = 0; c < pool->slots.size; c++)
-		printf("chunk %s: %lu\n", orcify(base[c].chunk), base[c].size);
 	/* Ensure space for new slot. */
 	if(!n || pool->slots.size && n <= pool->capacity0
 		- base[0].size + pool->free0.a.size) return 1; /* Already enough. */
+	printf("__buffer__\n");
+	for(i = 0; i < pool->slots.size; i++)
+		printf("chunk %s: %lu\t\t%p\n",
+		orcify(base[i].chunk), base[i].size, (void *)base[i].chunk);
 	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
 	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */
 
-	/* Figure out the capacity of the next chunk and allocate it. */
+	/* Figure out the capacity of the next chunk. */
 	c = pool->capacity0;
 	if(pool->slots.size && base[0].size) { /* ~Golden ratio. */
 		size_t c1 = c + (c >> 1) + (c >> 3);
@@ -175,24 +176,33 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	}
 	if(c < min_size) c = min_size;
 	if(c < n) c = n;
+
+	/* Allocate it. */
 	if(pool->slots.size && !base[0].size)
-		is_recycled = 1, data = realloc(base[0].chunk, c * sizeof *data);
-	else data = malloc(c * sizeof *data);
-	if(!data) { if(!errno) errno = ERANGE; return 0; }
+		is_recycled = 1, chunk = realloc(base[0].chunk, c * sizeof *chunk);
+	else chunk = malloc(c * sizeof *chunk);
+	if(!chunk) { if(!errno) errno = ERANGE; return 0; }
 	pool->capacity0 = c; /* We only need to store the capacity of chunk 0. */
-	if(is_recycled) return base[0].size = 0, base[0].chunk = data, 1;
+	if(is_recycled) return base[0].size = 0, base[0].chunk = chunk, 1;
 
 	/* Evict chunk 0. */
+	printf("__new__\n"
+		"chunk %s: %lu\n", orcify(chunk), c);
 	if(!pool->slots.size) insert = 0;
 	else insert = PP_(upper)(&pool->slots, base[0].chunk);
+	printf("insert %lu\n", insert);
 	assert(insert <= pool->slots.size);
-	secondary = PP_(slot_array_append_at)(&pool->slots, 1, insert);
-	assert(secondary); /* Made space for it before. */
-	secondary->chunk = base[0].chunk, secondary->size = base[0].size;
-	base[0].chunk = data, base[0].size = 0;
+	slot = PP_(slot_array_insert)(&pool->slots, 1, insert);
+	assert(slot); /* Made space for it before. */
+	slot->chunk = base[0].chunk, slot->size = base[0].size;
+	printf("inserted %zu\n", slot - base);
+	printf("__insert__\n");
+	for(i = 0; i < pool->slots.size; i++)
+		printf("chunk %s: %lu\n", orcify(base[i].chunk), base[i].size);
+	base[0].chunk = chunk, base[0].size = 0;
 	printf("__now__\n");
-	for(c = 0; c < pool->slots.size; c++)
-		printf("chunk %s: %lu\n", orcify(base[c].chunk), base[c].size);
+	for(i = 0; i < pool->slots.size; i++)
+		printf("chunk %s: %lu\n", orcify(base[i].chunk), base[i].size);
 	return 1;
 }
 
