@@ -268,9 +268,8 @@ static void PP_(test_states)(void) {
 			}
 			bits |= rnd_bit;
 		}
-		for(i = 0; i < size[2]; i++)
-			if(bits & (1 << i))
-			P_(pool_remove)(&pool, pool.slots.data[2].chunk + i);
+		for(i = 0; i < size[2]; i++) if(bits & (1 << i))
+			P_(pool_remove)(&pool, pool.slots.data[0].chunk + i);
 		i = n0;
 	}
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-10-remove.gv");
