@@ -169,13 +169,13 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
  function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
  elements. @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_append_at)(struct A_(array) *const a,
+static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 	const size_t n, const size_t at) {
 	const size_t old_size = a->size;
 	PA_(type) *const buffer = A_(array_append)(a, n);
 	assert(a && at <= old_size);
 	if(!buffer) return 0;
-	memmove(a->data + at + n, a->data + at, sizeof a->data * (old_size - at));
+	memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
 	return a->data + at;
 }
 
@@ -301,7 +301,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	A_(array_)(0); A_(array_append_at)(0, 0, 0); A_(array_new)(0);
+	A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_splice)(0, 0, 0, 0); A_(array_affix)(0, 0); PA_(begin)(0, 0);
