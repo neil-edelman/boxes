@@ -3,6 +3,8 @@
 #include <string.h> /* strcmp */
 #include "orcish.h"
 
+
+
 /* Minimal example. An order with no parent represents a permutation of
  nothing. */
 

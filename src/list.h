@@ -1,17 +1,17 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Doubly-Linked List
+ @subtitle Doubly-linked component
 
  ![Example of a stochastic skip-list.](../web/list.png)
 
  In parlance of <Thareja 2014, Data Structures>, <tag:<L>list> is a circular
  header doubly-linked list of <tag:<L>list_node>. The header, or sentinel,
- resides in `<L>list`. This is a closed structure, such that with with a
- pointer to any element, it is possible to extract the entire list in
- \O(`size`). It only provides an order, and is not very useful without
- enclosing `<L>list_node` in another `struct`; this is useful for multi-linked
- elements.
+ resides in `<L>list`. This allows it to benefit from being closed structure,
+ such that with with a pointer to any element, it is possible to extract the
+ entire list in \O(`size`). It only provides an order component, and is not
+ very useful without enclosing `<L>list_node` in another `struct`; this is
+ useful for multi-linked elements.
 
  @param[LIST_NAME]
  `<L>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
@@ -38,9 +38,6 @@
 
  @std C89 */
 
-#include <assert.h>
-
-
 #ifndef LIST_NAME
 #error Name LIST_NAME undefined.
 #endif
@@ -53,28 +50,39 @@
 #if LIST_TRAITS > 1
 #error Only one trait per include is allowed; use LIST_EXPECT_TRAIT.
 #endif
-#if LIST_TRAITS != 0 && (!defined(L_) || !defined(CAT) || !defined(CAT_))
-#error Use LIST_EXPECT_TRAIT and include it again.
-#endif
 #if defined(LIST_TO_STRING_NAME) && !defined(LIST_TO_STRING)
 #error LIST_TO_STRING_NAME requires LIST_TO_STRING.
 #endif
 
 
-#if LIST_TRAITS == 0 /* <!-- base code */
-
-
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(L_) || defined(PL_) \
-	|| (defined(LIST_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?L_ or P?CAT_?; possible stray LIST_EXPECT_TRAIT?
+#ifndef LIST_H /* <!-- idempotent */
+#define LIST_H
+#include <assert.h>
+#if defined(LIST_CAT_) || defined(LIST_CAT) || defined(L_) || defined(PL_)
+#error Unexpected defines.
 #endif
-#ifndef LIST_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define L_(thing) CAT(LIST_NAME, thing)
-#define PL_(thing) CAT(list, L_(thing))
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define LIST_CAT_(n, m) n ## _ ## m
+#define LIST_CAT(n, m) LIST_CAT_(n, m)
+#define L_(n) LIST_CAT(LIST_NAME, n)
+#define PL_(n) LIST_CAT(list, L_(n))
+/* <fn:<PL>boolean> operations bit-vector; dummy `LO_` ensures closed. */
+enum ListOperation {
+	LO_SUBTRACTION_AB = 1,
+	LO_SUBTRACTION_BA = 2,
+	LO_A,
+	LO_INTERSECTION   = 4,
+	LO_B, LO_C, LO_D,
+	LO_DEFAULT_A      = 8,
+	LO_E, LO_F, LO_G, LO_H, LO_I, LO_J, LO_K,
+	LO_DEFAULT_B      = 16,
+	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
+	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
+};
+#endif /* idempotent --> */
+
+
+#if LIST_TRAITS == 0 /* <!-- base code */
 
 
 /** Storage of this structure is the responsibility of the caller. One can only
@@ -82,7 +90,6 @@
  integrity of the original list, see <fn:<L>list_remove>.
 
  ![States.](../web/node-states.png) */
-struct L_(list_node);
 struct L_(list_node) { struct L_(list_node) *prev, *next; };
 
 /** Serves as head and tail for linked-list of <tag:<L>list_node>. Use
@@ -92,8 +99,9 @@ struct L_(list_node) { struct L_(list_node) *prev, *next; };
  such that `head.prev` and `tail.next` are always and the only ones to be null.
 
  ![States.](../web/states.png) */
-struct L_(list);
 struct L_(list) { struct L_(list_node) head, tail; };
+
+/* *******FIXME move to trait*********/
 
 /** Operates by side-effects on the node. */
 typedef void (*PL_(action_fn))(struct L_(list_node) *);
@@ -293,23 +301,6 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 
 #ifdef LIST_COMPARE /* <!-- comp */
 
-/* Constants across multiple includes in the same translation unit. */
-#ifndef LIST_H /* <!-- h */
-#define LIST_H
-/* <fn:<PL>boolean> operations bit-vector; dummy `LO_` ensures closed. */
-enum ListOperation {
-	LO_SUBTRACTION_AB = 1,
-	LO_SUBTRACTION_BA = 2,
-	LO_A,
-	LO_INTERSECTION   = 4,
-	LO_B, LO_C, LO_D,
-	LO_DEFAULT_A      = 8,
-	LO_E, LO_F, LO_G, LO_H, LO_I, LO_J, LO_K,
-	LO_DEFAULT_B      = 16,
-	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
-	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
-};
-#endif /* h --> */
 
 /* Check that `LIST_COMPARE` is a function implementing
  <typedef:<PL>compare_fn>. */
@@ -657,10 +648,8 @@ static void L_(list_xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 #endif /* comp --> */
 
 /* <!-- iterate interface */
-#define BOX_ITERATE
 
 /** Contains all iteration parameters. */
-struct PL_(iterator);
 struct PL_(iterator) { struct L_(list_node) *node; };
 
 /** Loads `list` into `it`. @implements begin */
@@ -676,7 +665,6 @@ static const struct L_(list_node) *PL_(next)(struct PL_(iterator) *const it) {
 }
 
 /* iterate --><!-- reverse interface */
-#define BOX_REVERSE
 
 /** Loads `list` into `it`. @implements begin */
 static void PL_(end)(struct PL_(iterator) *const it,
@@ -684,14 +672,15 @@ static void PL_(end)(struct PL_(iterator) *const it,
 	{ assert(it && list), it->node = list->tail.prev; }
 
 /** Advances `it`. @implements next */
-static const struct L_(list_node) *PL_(prev)(struct PL_(iterator) *const it) {
+static const struct L_(list_node) *PL_(previous)(struct PL_(iterator) *const it)
+{
 	struct L_(list_node) *n;
 	return assert(it && it->node), (it->node = (n = it->node)->prev) ? n : 0;
 }
 
 /* reverse --> */
 
-/* Define these for traits. */
+/* <!-- box (multiple traits) */
 #define BOX_ PL_
 #define BOX_CONTAINER struct L_(list)
 #define BOX_CONTENTS struct L_(list_node)
@@ -700,7 +689,7 @@ static const struct L_(list_node) *PL_(prev)(struct PL_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PL_(to_string))(const struct L_(list_node) *, char (*)[12]);
 static const char *(*PL_(list_to_string))(const struct L_(list) *);
-#include "../test/test_list.h" /** \include */
+#include "../test/test_list.h" /* (no) \include */
 #endif /* test --> */
 
 static void PL_(unused_base_coda)(void);
@@ -717,7 +706,7 @@ static void PL_(unused_base)(void) {
 	L_(list_union_to)(0, 0, 0); L_(list_intersection_to)(0, 0, 0);
 	L_(list_xor_to)(0, 0, 0);
 #endif /* comp --> */
-	PL_(begin)(0, 0); PL_(next)(0); PL_(end)(0, 0); PL_(prev)(0);
+	PL_(begin)(0, 0); PL_(next)(0); PL_(end)(0, 0); PL_(previous)(0);
 	PL_(unused_base_coda)();
 }
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
@@ -727,21 +716,19 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
 
 #ifdef LIST_TO_STRING_NAME /* <!-- name */
-#define Z_(n) CAT(L_(list), CAT(LIST_TO_STRING_NAME, n))
+#define SZ_(n) LIST_CAT(L_(list), LIST_CAT(LIST_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define Z_(n) CAT(L_(list), n)
+#define SZ_(n) LIST_CAT(L_(list), n)
 #endif /* !name --> */
 #define TO_STRING LIST_TO_STRING
 #include "to_string.h" /** \include */
-#ifdef LIST_TEST /* <!-- expect: we've forward-declared these. */
+#ifdef LIST_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef LIST_TEST
-static void (*PL_(to_string))(const struct L_(list_node) *, char (*)[12])
-	= PZ_(to_string);
+static PSZ_(to_string_fn) PL_(to_string) = PSZ_(to_string);
 static const char *(*PL_(list_to_string))(const struct L_(list) *)
-	= &Z_(to_string);
+	= &SZ_(to_string);
 #endif /* expect --> */
-#undef PZ_
-#undef Z_
+#undef SZ_
 #undef LIST_TO_STRING
 #ifdef LIST_TO_STRING_NAME
 #undef LIST_TO_STRING_NAME
@@ -757,26 +744,13 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #if defined(LIST_TEST)
 #error No to string traits defined for test.
 #endif
-#ifndef LIST_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef LIST_SUBTYPE
-#endif /* sub-type --> */
-#undef L_
-#undef PL_
 #undef LIST_NAME
 #ifdef LIST_COMPARE
 #undef LIST_COMPARE
 #endif
-#ifdef LIST_TEST
-#undef LIST_TEST
-#endif
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-#undef BOX_ITERATE
-#undef BOX_REVERSE
 #endif /* !trait --> */
 #undef LIST_TO_STRING_TRAIT
 #undef LIST_TRAITS

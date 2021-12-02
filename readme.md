@@ -1,9 +1,9 @@
 # list\.h #
 
-## Doubly\-Linked List ##
+## Doubly\-linked component ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96), [&lt;PL&gt;predicate_fn](#user-content-typedef-9bb522f5), [&lt;PL&gt;compare_fn](#user-content-typedef-a22f279f), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96), [&lt;PL&gt;predicate_fn](#user-content-typedef-9bb522f5), [&lt;PL&gt;compare_fn](#user-content-typedef-a22f279f), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;L&gt;list_node](#user-content-tag-9604e632), [&lt;L&gt;list](#user-content-tag-eb84971d), [&lt;PL&gt;iterator](#user-content-tag-fe8215f1)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -57,11 +57,27 @@ Returns less then, equal to, or greater then zero, inducing an ordering between 
 
 
 
-### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-ace240bb" name = "user-content-typedef-ace240bb">&lt;PSZ&gt;box</a> ###
 
-<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
+<code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code>
 
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+[to\_string\.h](to_string.h): an alias to the box\.
+
+
+
+### <a id = "user-content-typedef-d1a7c35e" name = "user-content-typedef-d1a7c35e">&lt;PSZ&gt;type</a> ###
+
+<code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code>
+
+[to\_string\.h](to_string.h): an alias to the individual type contained in the box\.
+
+
+
+### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
+
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
+
+Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e) into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -153,7 +169,7 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-adcc04ce">&lt;L&gt;list_test</a></td><td>parent_new, parent</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -499,12 +515,12 @@ The linked\-list will be tested on stdout\. `LIST_TEST` has to be set\.
 
 
 
-### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
+### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   Print the contents of [&lt;PSZ&gt;box](#user-content-typedef-ace240bb) `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 
