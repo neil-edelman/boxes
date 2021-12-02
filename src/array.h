@@ -1,7 +1,7 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Contiguous Dynamic Array (Vector)
+ @subtitle Contiguous dynamic array
 
  ![Example of array.](../web/array.png)
 
@@ -14,18 +14,12 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[ARRAY_MIN_CAPACITY]
- Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
- below.
-
  @param[ARRAY_CONTIGUOUS]
  Include the singleton trait contained in <contiguous.h> that takes no options.
 
- @param[ARRAY_TEST]
- Optional function implementing <typedef:<PA>action_fn> that fills the
- <typedef:<PA>type> from uninitialized to random for unit testing framework
- using `assert`. Testing array contained in <../test/test_array.h>. Must have
- any To String trait included after all the tests.
+ @param[ARRAY_MIN_CAPACITY]
+ Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
+ below.
 
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -33,7 +27,7 @@
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <compare.h>. An optional mangled name for
- uniqueness and a function implementing <typedef:<PCM>compare_fn> xor
+ uniqueness and a function implementing either <typedef:<PCM>compare_fn> or
  <typedef:<PCM>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
@@ -97,14 +91,13 @@
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
 
-/* !data -> !size, data -> capacity >= min && size <= capacity <= max */
-
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`. To initialize it to an
  idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
 
  ![States.](../web/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
+/* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
 /** Initialises `a` to idle. @order \Theta(1) @allow */
 static void A_(array)(struct A_(array) *const a)
@@ -117,8 +110,7 @@ static void A_(array_)(struct A_(array) *const a)
 /** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
  zero, does nothing. @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
- doesn't follow POSIX.
- @throws[realloc] @allow */
+ doesn't follow POSIX. @throws[realloc] @allow */
 static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 	size_t c0;
 	PA_(type) *data;
@@ -263,19 +255,20 @@ static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
 }
 
 /** Copies `b`, which can be null, to the back of `a`.
- @return Success. @throws[realloc, ERANGE] */
-static int A_(array_copy)(struct A_(array) *const a,
+ @return Success. @throws[realloc, ERANGE]
+ @fixme Untested. */
+static int A_(array_affix)(struct A_(array) *const a,
 	const struct A_(array) *const b)
 	{ return A_(array_splice)(a, a->size, a->size, b); }
 
-/** Appends `n` items on the back of `a`. */
+/** Appends `n` items on the back of `a`.
+ @fixme It should be the other way around. */
 static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 	{ return A_(array_append)(a, n); }
 
 /* <!-- iterate interface */
 
-/** Contains all iteration parameters. */
-struct PA_(iterator);
+/* Contains all iteration parameters. */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
 
 /** Loads `a` into `it`. @implements begin */
@@ -303,7 +296,7 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
 static const char *(*PA_(array_to_string))(const struct A_(array) *);
-#include "../test/test_array.h" /** \include */
+#include "../test/test_array.h" /* (this will needlessly confuse) \include */
 #endif /* test --> */
 
 static void PA_(unused_base_coda)(void);
@@ -311,7 +304,7 @@ static void PA_(unused_base)(void) {
 	A_(array_)(0); A_(array_append_at)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
-	A_(array_splice)(0, 0, 0, 0); A_(array_copy)(0, 0); PA_(begin)(0, 0);
+	A_(array_splice)(0, 0, 0, 0); A_(array_affix)(0, 0); PA_(begin)(0, 0);
 	PA_(next)(0); PA_(append)(0, 0);
 	PA_(unused_base_coda)();
 }
@@ -328,9 +321,6 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
-/* ARRAY_COMPARE might come after, so we need another variable; sigh.
- Just define ARRAY_TO_STRING after any ARRAY_COMPARE or ARRAY_IS_EQUAL if one
- is going to automatically test. This is confusing, but internal. */
 #ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef ARRAY_TEST
 static PSZ_(to_string_fn) PA_(to_string) = PSZ_(to_string);

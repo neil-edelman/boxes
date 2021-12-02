@@ -1,9 +1,9 @@
 # pool\.h #
 
-## Stable Pool ##
+## Stable pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [poolslot](#user-content-typedef-79154f2f), [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PP&gt;action_fn](#user-content-typedef-cefaf27a), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [poolslot](#user-content-typedef-79154f2f), [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PP&gt;action_fn](#user-content-typedef-cefaf27a), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [pool_chunk](#user-content-tag-667964d9), [&lt;P&gt;pool](#user-content-tag-8aba39cb)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -65,11 +65,27 @@ Operates by side\-effects\.
 
 
 
+### <a id = "user-content-typedef-ace240bb" name = "user-content-typedef-ace240bb">&lt;PSZ&gt;box</a> ###
+
+<code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code>
+
+[to\_string\.h](to_string.h): an alias to the box\.
+
+
+
+### <a id = "user-content-typedef-d1a7c35e" name = "user-content-typedef-d1a7c35e">&lt;PSZ&gt;type</a> ###
+
+<code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code>
+
+[to\_string\.h](to_string.h): an alias to the individual type contained in the box\.
+
+
+
 ### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
 <code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
 
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e) into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -212,7 +228,7 @@ The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`\.
 <code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   Print the contents of [&lt;PSZ&gt;box](#user-content-typedef-ace240bb) `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 
