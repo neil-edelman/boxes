@@ -177,7 +177,7 @@ static void PP_(valid_state)(const struct P_(pool) *const pool) {
 
 static void PP_(test_states)(void) {
 	struct P_(pool) pool = POOL_IDLE;
-	PP_(type) *t;
+	PP_(type) *t, *chunk;
 	const size_t size[] = { 9, 14, 22 };
 	enum { CHUNK1_IS_ZERO, CHUNK2_IS_ZERO } conf = CHUNK1_IS_ZERO;
 	size_t i;
@@ -236,8 +236,10 @@ static void PP_(test_states)(void) {
 	P_(pool_remove)(&pool, pool.slots.data[0].chunk + 0);
 	PP_(valid_state)(&pool);
 	assert(pool.slots.data[conf + 1].size == size[0]);
+	chunk = pool.slots.data[conf + 1].chunk;
+	printf("Removing all %s.\n", orcify(chunk));
 	for(i = 0; i < size[0]; i++)
-		P_(pool_remove)(&pool, pool.slots.data[conf + 1].chunk + i);
+		P_(pool_remove)(&pool, chunk + i);
 	PP_(valid_state)(&pool);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-chunk.gv");
 	assert(pool.slots.size == 2);
