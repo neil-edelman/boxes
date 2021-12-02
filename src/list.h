@@ -67,7 +67,7 @@
 #define L_(n) LIST_CAT(LIST_NAME, n)
 #define PL_(n) LIST_CAT(list, L_(n))
 /* <fn:<PL>boolean> operations bit-vector; dummy `LO_` ensures closed. */
-enum ListOperation {
+enum list_operation {
 	LO_SUBTRACTION_AB = 1,
 	LO_SUBTRACTION_BA = 2,
 	LO_A,
@@ -309,7 +309,7 @@ static const PL_(compare_fn) PL_(compare) = (LIST_COMPARE);
 /** Private: `alist` `mask` `blist` -> `result`. Prefers `a` to `b` when equal.
  @order \O(|`a`| + |`b`|) */
 static void PL_(boolean)(struct L_(list) *const alist,
-	struct L_(list) *const blist, const enum ListOperation mask,
+	struct L_(list) *const blist, const enum list_operation mask,
 	struct L_(list) *const result) {
 	struct L_(list_node) *a = alist ? alist->head.next : 0,
 		*b = blist ? blist->head.next : 0, *temp;

@@ -10,7 +10,7 @@
 
 struct order_list_node;
 static void order_to_string(const struct order_list_node *const l,
-	char (*const a)[12]) { (void)(l); (*a)[0] = '0'; (*a)[1] = '\0'; }
+	char (*const a)[12]) { (void)(l); strcpy(*a, "∅"); }
 static void order_fill(struct order_list_node *const l) { (void)(l); }
 
 #define LIST_NAME order
