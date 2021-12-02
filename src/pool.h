@@ -147,7 +147,7 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 		max_size = (size_t)-1 / sizeof(PP_(type));
 	struct PP_(slot) *base = pool->slots.data, *slot;
 	PP_(type) *chunk;
-	size_t c, insert, i;
+	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
 		(!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
@@ -160,10 +160,6 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	/* Ensure space for new slot. */
 	if(!n || pool->slots.size && n <= pool->capacity0
 		- base[0].size + pool->free0.a.size) return 1; /* Already enough. */
-	printf("__buffer__\n");
-	for(i = 0; i < pool->slots.size; i++)
-		printf("chunk %s: %lu\t\t%p\n",
-		orcify(base[i].chunk), base[i].size, (void *)base[i].chunk);
 	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
 	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */
@@ -186,23 +182,13 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	if(is_recycled) return base[0].size = 0, base[0].chunk = chunk, 1;
 
 	/* Evict chunk 0. */
-	printf("__new__\n"
-		"chunk %s: %lu\n", orcify(chunk), c);
 	if(!pool->slots.size) insert = 0;
 	else insert = PP_(upper)(&pool->slots, base[0].chunk);
-	printf("insert %lu\n", insert);
 	assert(insert <= pool->slots.size);
 	slot = PP_(slot_array_insert)(&pool->slots, 1, insert);
 	assert(slot); /* Made space for it before. */
 	slot->chunk = base[0].chunk, slot->size = base[0].size;
-	printf("inserted %zu\n", slot - base);
-	printf("__insert__\n");
-	for(i = 0; i < pool->slots.size; i++)
-		printf("chunk %s: %lu\n", orcify(base[i].chunk), base[i].size);
 	base[0].chunk = chunk, base[0].size = 0;
-	printf("__now__\n");
-	for(i = 0; i < pool->slots.size; i++)
-		printf("chunk %s: %lu\n", orcify(base[i].chunk), base[i].size);
 	return 1;
 }
 
@@ -218,10 +204,7 @@ static int PP_(remove)(struct P_(pool) *const pool,
 	const PP_(type) *const data) {
 	size_t c = PP_(chunk_idx)(pool, data);
 	struct PP_(slot) *slot = pool->slots.data + c;
-	char z[12];
 	assert(pool && pool->slots.size && data);
-	PP_(to_string)(data, &z);
-	printf("remove: %s from chunk %lu\n", z, c);
 	if(!c) { /* It's in the zero-slot, we need to deal with the free-heap. */
 		const size_t idx = (size_t)(data - slot->chunk);
 		assert(pool->capacity0 && slot->size <= pool->capacity0
@@ -237,7 +220,6 @@ static int PP_(remove)(struct P_(pool) *const pool,
 		} else if(!poolfree_heap_add(&pool->free0, idx)) return 0;
 	} else if(assert(slot->size), !--slot->size) {
 		PP_(type) *const chunk = slot->chunk;
-		printf("Removing %s.\n", orcify(chunk));
 		PP_(slot_array_remove)(&pool->slots, pool->slots.data + c);
 		free(chunk);
 	}
@@ -272,7 +254,6 @@ static int P_(pool_buffer)(struct P_(pool) *const pool, const size_t n) {
 static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	struct PP_(slot) *slot0;
 	assert(pool);
-	printf("(new)\n");
 	if(!PP_(buffer)(pool, 1)) return 0;
 	assert(pool->slots.size && (pool->free0.a.size ||
 		pool->slots.data[0].size < pool->capacity0));
