@@ -425,6 +425,30 @@ static void PA_(test_each)(void) {
 	A_(array_)(&one);
 }
 
+static void PA_(test_insert)(void) {
+	struct A_(array) a = ARRAY_IDLE;
+	PA_(type) original[17], solitary, *t, *t1, *e;
+	const size_t original_size = sizeof original / sizeof *original;
+	size_t i;
+	printf("Test insert:\n");
+	memset(original, 0, sizeof original); /* Valgrind. */
+	PA_(valid_state)(&a);
+	for(t = original, t1 = t + original_size; t < t1; t++) PA_(filler)(t);
+	PA_(filler)(&solitary);
+	for(i = 0; i <= original_size; i++) {
+		e = A_(array_append)(&a, original_size), assert(e);
+		memcpy(e, original, sizeof original);
+		if(!i) printf("a = %s.\n", PA_(array_to_string)(&a));
+		PA_(valid_state)(&a);
+		e = A_(array_insert)(&a, 1, i), assert(e);
+		memcpy(e, &solitary, sizeof solitary);
+		printf("After insert(%lu) a = %s.\n",
+			(unsigned long)i, PA_(array_to_string)(&a));
+		A_(array_clear)(&a);
+	}
+	A_(array_)(&a);
+}
+
 /** `ARRAY_TEST`, `ARRAY_TO_STRING`, !`NDEBUG`: will be tested on stdout.
  @allow */
 static void A_(array_test)(void) {
@@ -437,6 +461,7 @@ static void A_(array_test)(void) {
 	PA_(test_replace)();
 	PA_(test_keep)();
 	PA_(test_each)();
+	PA_(test_insert)();
 	fprintf(stderr, "Done tests of array<" QUOTE(ARRAY_NAME) ">.\n\n");
 }
 
