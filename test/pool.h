@@ -192,7 +192,7 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	else insert = PP_(upper)(&pool->slots, base[0].chunk);
 	printf("insert %lu\n", insert);
 	assert(insert <= pool->slots.size);
-	slot = PP_(slot_array_insert)(&pool->slots, 1, insert);
+	slot = PP_(slot_array_append_at)(&pool->slots, 1, insert);
 	assert(slot); /* Made space for it before. */
 	slot->chunk = base[0].chunk, slot->size = base[0].size;
 	printf("inserted %zu\n", slot - base);
