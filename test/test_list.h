@@ -13,28 +13,68 @@
 #define QUOTE(name) QUOTE_(name)
 
 /* `LIST_TEST` must be a function implementing <typedef:<PL>action_fn>. */
-static void (*const PL_(filler))(struct L_(listnode) *) = (LIST_TEST);
+static void (*const PL_(filler))(struct L_(listlink) *) = (LIST_TEST);
 
 /** Given `l` and `offset`, calculate the graph node. */
-static const void *PL_(node)(const struct L_(listnode) *const l,
+/*static const void *PL_(node)(const struct L_(listlink) *const l,
 	const size_t offset) {
 	assert(l);
 	return (const char *)l - (l->prev && l->next ? offset : 0);
+}*/
+
+static const char *PL_(colour);
+static size_t PL_(offset); /* The list's offset to the parent. */
+
+/** Names `l`. `dir` is either 0, it names the node, or positive/negative to
+ name edges. */
+static char *PL_(name)(const struct L_(listlink) *const l, const int dir) {
+	static char z[8][64];
+	static unsigned n;
+	char *y = z[n];
+	n = (n + 1) % (sizeof z / sizeof *z);
+	assert(l);
+	/* Normal or sentinel. */
+	if(l->prev && l->next) {
+		const void *node = (const void *)((const char *)l - PL_(offset));
+		if(dir) sprintf(y, "n%p:%c", node, dir > 0 ? 'e' : 'w');
+		else sprintf(y, "n%p", node);
+	} else {
+		if(dir) sprintf(y, "list_%s:%s:%c", PL_(colour),
+			dir > 0 ? "head" : "tail", dir > 0 ? 'e' : 'w');
+		else sprintf(y, "list_%s", PL_(colour));
+	}
+	return y;
 }
 
-/** Digraph `list` to `fp`.
- @param[colour] A colour that can also have a 4 appended; suggest "royalblue",
- "firebrick" "darkseagreen" "orchid".
+/** Print `list` to `fp`.
+ @param[colour] A colour that can also have a 4 appended; _eg_ "royalblue",
+ "firebrick", "darkseagreen", "orchid".
  @param[offset] For printing multiple lists, offset to the parent type.
  @param[is_nodes] Print nodes; if one is printing the same list, different
  order, then this would be off. */
 static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 	const char *const colour, const size_t offset, const int is_nodes) {
-	struct L_(listnode) *link;
+	struct L_(listlink) *link;
 	char a[12];
 	assert(list && fp && colour);
-	fprintf(fp, "\t# fill %s for list %p\n"
-		"\tnode [style=filled, fillcolor=pink];\n"
+	PL_(colour) = colour;
+	PL_(offset) = offset;
+	fprintf(fp, "\t%s [label=<\n"
+		"<TABLE BORDER=\"0\">\n"
+		"\t<TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;" QUOTE(LIST_NAME)
+		"&gt;list</FONT></TD></TR>\n"
+		"\t<TR><TD PORT=\"tail\" BORDER=\"0\" ALIGN=\"LEFT\""
+		" BGCOLOR=\"Gray90\">tail</TD></TR>\n"
+		"\t<TR><TD PORT=\"head\" BORDER=\"0\" ALIGN=\"LEFT\">"
+		"head</TD></TR>\n"
+		"</TABLE>>];\n"
+		"\t%s -> %s [color=\"%s4\"];\n"
+		"\t%s -> %s [color=\"%s\"];\n",
+		PL_(name)(&list->head, 0),
+		PL_(name)(list->tail.prev, 1), PL_(name)(&list->tail, -1), colour,
+		PL_(name)(&list->head, 1), PL_(name)(list->head.next, -1), colour);
+
+	/*"\tnode [style=filled, fillcolor=pink];\n"
 		"\tsubgraph cluster_%p {\n"
 		"\t\tstyle=filled;\n"
 		"\t\tfillcolor=lightgray;\n"
@@ -55,29 +95,31 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 		PL_(node)(&list->head, offset), PL_(node)(list->head.next, offset),
 		colour,
 		PL_(node)(&list->tail, offset), PL_(node)(list->tail.prev, offset),
-		colour);
+		colour);*/
 	for(link = L_(list_first)(list); link; link = L_(list_next)(link)) {
 		if(is_nodes) {
 			PL_(to_string)(link, &a);
-			fprintf(fp, "\tp%p [label=\"%s\"];\n", PL_(node)(link, offset), a);
+			fprintf(fp, "\t%s [label=\"%s\"];\n", PL_(name)(link, 0), a);
 		}
-		fprintf(fp, "\tp%p -> p%p [color=%s];\n"
-			"\tp%p -> p%p [color=%s4];\n",
-			PL_(node)(link, offset), PL_(node)(link->next, offset), colour,
-			PL_(node)(link, offset), PL_(node)(link->prev, offset), colour);
+		fprintf(fp, "\t%s -> %s [color=\"%s\"];\n"
+			"\t%s -> %s [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n",
+			PL_(name)(link, 1), PL_(name)(link->next, -1), colour,
+			PL_(name)(link, 1), PL_(name)(link->prev, -1), colour);
 	}
 }
 
-/** Tries to graph `list` in `fn`. */
+/** Graph `list` in `fn`. */
 static void PL_(graph)(const struct L_(list) *const list, const char *const fn)
 {
 	FILE *fp;
 	assert(list && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	fprintf(fp, "digraph {\n");
+	fprintf(fp, "digraph {\n"
+		"\tfontface=modern;\n"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
 	PL_(subgraph)(list, fp, "royalblue", 0, 1);
-	fprintf(fp, "\tnode [colour=red, style=filled];\n");
-	fprintf(fp, "}\n");
+	fprintf(fp, "\tnode [colour=red, style=filled];\n"
+		"}\n");
 	fclose(fp);
 }
 
@@ -85,9 +127,9 @@ static void PL_(graph)(const struct L_(list) *const list, const char *const fn)
  on which `link` is a part and expect `count`. `list` must have at least one
  element, (it can't be the head of tail.)
  @order \O(|`list`|) */
-static void PL_(floyd)(const struct L_(listnode) *link, const size_t count) {
+static void PL_(floyd)(const struct L_(listlink) *link, const size_t count) {
 	size_t fw = 0, b1 = 0, b2 = 0;
-	const struct L_(listnode) *hare = link, *turtle = hare;
+	const struct L_(listlink) *hare = link, *turtle = hare;
 	assert(link && link->prev && link->next);
 	while(hare->prev->prev) {
 		hare = hare->prev;
@@ -111,7 +153,7 @@ static void PL_(floyd)(const struct L_(listnode) *link, const size_t count) {
 /** Debug: ensures that `list` has no cycles and that it has `count`
  elements. */
 static void PL_(count)(const struct L_(list) *const list, const size_t count) {
-	const struct L_(listnode) *const head = &list->head,
+	const struct L_(listlink) *const head = &list->head,
 		*const tail = &list->tail, *first;
 	assert(list && head && tail && !list->head.prev && !list->tail.next);
 	if((first = head->next) == tail)
@@ -120,23 +162,23 @@ static void PL_(count)(const struct L_(list) *const list, const size_t count) {
 }
 
 /** Returns `0,1,0,1,...` whatever `link`. */
-static int PL_(parity)(const struct L_(listnode) *const link) {
+static int PL_(parity)(const struct L_(listlink) *const link) {
 	static int p;
 	(void)(link);
 	return !(p = !p);
 }
 
 /** Returns true whatever `link`. */
-static int PL_(true)(const struct L_(listnode) *const link) {
+static int PL_(true)(const struct L_(listlink) *const link) {
 	(void)(link);
 	return 1;
 }
 
 /** Passed `parent_new` and `parent`, tests basic functionality. */
-static void PL_(test_basic)(struct L_(listnode) *(*const parent_new)(void *),
+static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
 	struct L_(list) l1, l2;
-	struct L_(listnode) *link, *link_first = 0, *link_last = 0;
+	struct L_(listlink) *link, *link_first = 0, *link_last = 0;
 	const size_t test_size = 10;
 	size_t i;
 	assert(parent_new && parent);
@@ -213,7 +255,7 @@ static void PL_(test_basic)(struct L_(listnode) *(*const parent_new)(void *),
 }
 
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */
-static void PL_(test_sort)(struct L_(listnode) *(*const parent_new)(void *),
+static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
 #ifdef LIST_COMPARE /* <!-- comp */
 	struct L_(list) lists[64], *list;
@@ -223,7 +265,7 @@ static void PL_(test_sort)(struct L_(listnode) *(*const parent_new)(void *),
 	/* Random lists. */
 	for(list = lists; list < lists_end; list++) {
 		size_t no_links = (unsigned)rand() / (RAND_MAX / 5 + 1);
-		struct L_(listnode) *link, *link_a, *link_b;
+		struct L_(listlink) *link, *link_a, *link_b;
 		L_(list_clear)(list);
 		while(no_links) {
 			if(!(link = parent_new(parent))) { assert(0); return; }
@@ -261,9 +303,9 @@ static void PL_(test_sort)(struct L_(listnode) *(*const parent_new)(void *),
  `a`, `b`, `b_alt`, `c`, `d` for <fn:<PL>test_binary>, where `a = ()`,
  `b = (A,B,D)`, and `c = (B,C)`. */
 static void PL_(reset_b)(struct L_(list) *const la, struct L_(list) *const lb,
-	struct L_(list) *const result, struct L_(listnode) *const a,
-	struct L_(listnode) *const b, struct L_(listnode) *const b_alt,
-	struct L_(listnode) *const c, struct L_(listnode) *const d) {
+	struct L_(list) *const result, struct L_(listlink) *const a,
+	struct L_(listlink) *const b, struct L_(listlink) *const b_alt,
+	struct L_(listlink) *const c, struct L_(listlink) *const d) {
 	assert(la && lb && result && a && b && b_alt && c && d);
 	L_(list_clear)(la), L_(list_clear)(lb), L_(list_clear)(result);
 	L_(list_push)(la, a), L_(list_push)(la, b), L_(list_push)(la, d);
@@ -271,9 +313,9 @@ static void PL_(reset_b)(struct L_(list) *const la, struct L_(list) *const lb,
 }
 /** Verifies that `list` is `a`, `b`, `c`, `d`, null. */
 static void PL_(exact)(const struct L_(list) *const list,
-	const struct L_(listnode) *const a, const struct L_(listnode) *const b,
-	const struct L_(listnode) *const c, const struct L_(listnode) *const d) {
-	struct L_(listnode) *i;
+	const struct L_(listlink) *const a, const struct L_(listlink) *const b,
+	const struct L_(listlink) *const c, const struct L_(listlink) *const d) {
+	struct L_(listlink) *i;
 	assert(list);
 	i = L_(list_first)(list), assert(i == a);
 	if(!i) return;
@@ -288,11 +330,11 @@ static void PL_(exact)(const struct L_(list) *const list,
 #endif /* comp --> */
 
 /** Passed `parent_new` and `parent`, tests binary operations. */
-static void PL_(test_binary)(struct L_(listnode) *(*const parent_new)(void *),
+static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
 #ifdef LIST_COMPARE /* <!-- comp */
 	struct L_(list) la, lb, result;
-	struct L_(listnode) *link, *a = 0, *b = 0, *b_alt = 0, *c = 0, *d = 0;
+	struct L_(listlink) *link, *a = 0, *b = 0, *b_alt = 0, *c = 0, *d = 0;
 	int cmp;
 	/* Test nulls, (Not comprehensive.) */
 	L_(list_clear)(&la);
@@ -383,7 +425,7 @@ static void PL_(test_binary)(struct L_(listnode) *(*const parent_new)(void *),
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list. @allow */
-static void L_(list_test)(struct L_(listnode) *(*const parent_new)(void *),
+static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(LIST_NAME) ">list was created using: "
 #ifdef LIST_COMPARE
