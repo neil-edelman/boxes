@@ -89,6 +89,8 @@ enum list_operation {
  parameterized at all. However, it's more type-safe to have separate types if
  we are coercing them. */
 
+/* ************* FIXME: update the images; they are from a version 10 years ago.
+ ***********/
 /** Storage of this structure is the responsibility of the caller. Generally,
  one encloses this in a host `struct`. Multiple independent lists can be in the
  same host structure, however one link can can only be a part of one list at a
