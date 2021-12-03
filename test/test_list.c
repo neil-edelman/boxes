@@ -812,7 +812,8 @@ static struct mount_info *bear_mount_info(struct bear *const bear) {
  is always the first item in every animal, we can cast them. This is not really
  a good design choice, in hindsight, (should have accepted all `Animal` and
  upcast.) */
-/* ******** fixme: this is technically UB, and doesn't have to be. Fix. *******/
+/* ******** fixme: this is technically UB, and doesn't have to be. Fix.
+ Also, upper-case now sucks. *******/
 static struct animal_vt sloth_vt = {
 	"Sloth",
 	(animal_action_fn)&sloth_delete,
