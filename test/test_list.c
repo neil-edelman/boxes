@@ -9,9 +9,11 @@
 #include "../src/list.h"
 
 
-/* An order with no parent represents a permutation. There is nothing we can
- do; it has no fields, (expect it's address.) As a general rule, one must
- forward-declare links. */
+/* A list represents a permutation. This is the same as `widget_list`, but
+ suitable for testing. One must forward-declare anything that uses
+ <typedef:<PL>action_fn>, <typedef:<PL>predicate_fn>, and
+ <typedef:<PL>compare_fn>, because <tag:<L>listlink> is defined and used after
+ inclusion. */
 struct permute_listlink;
 static void permute_to_string(const struct permute_listlink *const p,
 	char (*const z)[12]) { orc_ptr(*z, sizeof *z, p); }
@@ -22,7 +24,9 @@ static void permute_fill(struct permute_listlink *const p) { (void)(p); }
 #include "../src/list.h"
 #define LIST_TO_STRING &permute_to_string
 #include "../src/list.h"
-/* We have to have some way to store the test data. */
+
+/* We have to have some way to store the test data. One could store it however,
+ but it must be stable, so vectors (`<A>array`) are a problem. */
 #define POOL_NAME permutelink
 #define POOL_TYPE struct permute_listlink
 #include "pool.h"
@@ -33,7 +37,8 @@ static struct permute_listlink *permute_from_pool(void *const vpool) {
 }
 
 
-/* An integer linked-list that can be ordered. */
+/* An integer linked-list that can be ordered. This uses nested structures,
+ which is mostly what one wants. */
 struct no_listlink;
 static void no_to_string(const struct no_listlink *, char (*)[12]);
 static void no_fill(struct no_listlink *);
@@ -45,8 +50,10 @@ static int no_compare(const struct no_listlink *, const struct no_listlink *);
 #include "../src/list.h"
 #define LIST_TO_STRING &no_to_string
 #include "../src/list.h"
-/** Can do this because `link` is the first field in `struct no`. */
+
+/** Stick it inside a `no`. */
 struct no { struct no_listlink link; int i, unused; };
+/** Can do this because `nl` is the first field in <tag:no>. */
 static void no_to_string(const struct no_listlink *const nl,
 	char (*const a)[12]) {
 	const struct no *const n = (const struct no *)nl;
@@ -62,6 +69,8 @@ static void no_fill(struct no_listlink *const nl) {
 	struct no *const n = (struct no *)nl;
 	n->i = rand() / (RAND_MAX / 100000 + 1);
 }
+
+/* Pool is convenient to store <tag:no>. */
 #define POOL_NAME no
 #define POOL_TYPE struct no
 #include "pool.h"
@@ -73,7 +82,7 @@ static struct no_listlink *no_from_pool(void *const vns) {
 }
 
 
-/* For testing bin-ops just to be sure the examples were accurate. */
+/* 26 items is for testing binary-operations. */
 struct letter_listlink;
 static void letter_to_string(const struct letter_listlink *, char (*)[12]);
 static void letter_fill(struct letter_listlink *);
@@ -86,6 +95,7 @@ static int letter_compare(const struct letter_listlink *,
 #include "../src/list.h"
 #define LIST_TO_STRING &letter_to_string
 #include "../src/list.h"
+
 struct letter { struct letter_listlink link; char letter, unused[7]; };
 static int letter_compare(const struct letter_listlink *const al,
 	const struct letter_listlink *const bl) {
@@ -102,6 +112,7 @@ static void letter_fill(struct letter_listlink *const ll) {
 	struct letter *const l = (struct letter *)ll;
 	l->letter = 'A' + (char)(rand() / (RAND_MAX / 26 + 1));
 }
+
 #define POOL_NAME letter
 #define POOL_TYPE struct letter
 #include "pool.h"
@@ -113,9 +124,7 @@ static struct letter_listlink *letter_from_pool(void *const vls) {
 }
 
 
-/* Pandas multi-list with three orders at once. Can't have the fields all at
- the front; instead, basic `container_of`. */
-
+/* Name? */
 struct name_listlink;
 static void name_to_string(const struct name_listlink *, char (*)[12]);
 static void fill_panda_name(struct name_listlink *);
@@ -128,7 +137,7 @@ static int name_compare(const struct name_listlink *,
 #include "../src/list.h"
 #define LIST_TO_STRING &name_to_string
 #include "../src/list.h"
-
+/* Where? */
 struct where_listlink;
 static void where_to_string(const struct where_listlink *, char (*)[12]);
 static void fill_panda_where(struct where_listlink *);
@@ -141,7 +150,7 @@ static int where_compare(const struct where_listlink *,
 #include "../src/list.h"
 #define LIST_TO_STRING &where_to_string
 #include "../src/list.h"
-
+/* Ferocity? */
 struct fero_listlink;
 static void fero_to_string(const struct fero_listlink *, char (*)[12]);
 static void fill_panda_fero(struct fero_listlink *);
@@ -154,7 +163,10 @@ static int fero_compare(const struct fero_listlink *,
 #include "../src/list.h"
 #define LIST_TO_STRING &fero_to_string
 #include "../src/list.h"
-
+/* A struct containing multiple list nodes. Pandas have a multi-list with three
+ permutations at once, with a basic `container_of` in <fn:name_upcast>, _etc_.
+ We could even have different lists containing different elements in the same
+ structure. */
 struct panda {
 	char name[12], unused[4];
 	int where, ferociousness;
@@ -231,6 +243,7 @@ static void fill_panda_where(struct where_listlink *const where) {
 static void fill_panda_fero(struct fero_listlink *const fero) {
 	fill_panda(fero_upcast(fero));
 }
+
 #define POOL_NAME panda
 #define POOL_TYPE struct panda
 #include "pool.h"
@@ -252,7 +265,7 @@ static struct fero_listlink *panda_fero_from_pool(void *const vpool) {
 	assert(p); if(!p) return 0;
 	return &p->fero_node;
 }
-/** <fn:pandas_everywhere>, this is an example that's not in the auto-tests. */
+/** An example that spans automatic testing in <test_list.h>. */
 static struct panda *panda_from_pool_combined(struct panda_pool *const pool,
 	struct name_list *const n, struct where_list *const w,
 	struct fero_list *const f) {
@@ -271,18 +284,19 @@ static void panda_graph(const struct name_list *const n,
 	FILE *fp;
 	assert(n && w && f);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	fprintf(fp, "digraph {\n");
-	/* If it were not C, I would be overriding private. */
+	fprintf(fp, "digraph {\n"
+		"\tfontface=modern;\n"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
+	/* If it were not `C`, I would be overriding private. */
 	list_name_subgraph(n, fp, "Royalblue",
 		offsetof(struct panda, name_node), 1);
 	list_where_subgraph(w, fp, "Firebrick",
 		offsetof(struct panda, where_node), 0);
-	list_fero_subgraph(f, fp, "Darkseagreen",
+	list_fero_subgraph(f, fp, "DarkSeagreen",
 		offsetof(struct panda, fero_node), 0);
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
-	
 }
 static void pandas_everywhere(void) {
 	struct name_list names;
@@ -301,8 +315,7 @@ static void pandas_everywhere(void) {
 }
 
 
-/* (Fixed width) skip list. (fixme: don't need all that) */
-
+/* (Fixed width) skip list. */
 struct layer0_listlink;
 static int l0_compare(const struct layer0_listlink *,
 	const struct layer0_listlink *);
@@ -315,7 +328,6 @@ static void fill_l0(struct layer0_listlink *);
 #include "../src/list.h"
 #define LIST_TO_STRING &l0_to_string
 #include "../src/list.h"
-
 struct layer1_listlink;
 static int l1_compare(const struct layer1_listlink *,
 	const struct layer1_listlink *);
@@ -328,7 +340,6 @@ static void fill_l1(struct layer1_listlink *);
 #include "../src/list.h"
 #define LIST_TO_STRING &l1_to_string
 #include "../src/list.h"
-
 struct layer2_listlink;
 static int l2_compare(const struct layer2_listlink *,
 	const struct layer2_listlink *);
@@ -341,39 +352,35 @@ static void fill_l2(struct layer2_listlink *);
 #include "../src/list.h"
 #define LIST_TO_STRING &l2_to_string
 #include "../src/list.h"
-
-struct Skip {
+struct skip {
 	struct layer0_listlink l0;
 	struct layer1_listlink l1;
 	struct layer2_listlink l2;
 	unsigned value, unused;
 };
-
-static const struct Skip *l0_upcast_c(const struct layer0_listlink *const n) {
-	return (const struct Skip *)(const void *)((const char *)n
-		- offsetof(struct Skip, l0));
+static const struct skip *l0_upcast_c(const struct layer0_listlink *const n) {
+	return (const struct skip *)(const void *)((const char *)n
+		- offsetof(struct skip, l0));
 }
-static const struct Skip *l1_upcast_c(const struct layer1_listlink *const n) {
-	return (const struct Skip *)(const void *)((const char *)n
-		- offsetof(struct Skip, l1));
+static const struct skip *l1_upcast_c(const struct layer1_listlink *const n) {
+	return (const struct skip *)(const void *)((const char *)n
+		- offsetof(struct skip, l1));
 }
-static const struct Skip *l2_upcast_c(const struct layer2_listlink *const n) {
-	return (const struct Skip *)(const void *)((const char *)n
-		- offsetof(struct Skip, l2));
+static const struct skip *l2_upcast_c(const struct layer2_listlink *const n) {
+	return (const struct skip *)(const void *)((const char *)n
+		- offsetof(struct skip, l2));
 }
-
-static struct Skip *l0_upcast(struct layer0_listlink *const n) {
-	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l0));
+static struct skip *l0_upcast(struct layer0_listlink *const n) {
+	return (struct skip *)(void *)((char *)n - offsetof(struct skip, l0));
 }
-static struct Skip *l1_upcast(struct layer1_listlink *const n) {
-	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l1));
+static struct skip *l1_upcast(struct layer1_listlink *const n) {
+	return (struct skip *)(void *)((char *)n - offsetof(struct skip, l1));
 }
-static struct Skip *l2_upcast(struct layer2_listlink *const n) {
-	return (struct Skip *)(void *)((char *)n - offsetof(struct Skip, l2));
+static struct skip *l2_upcast(struct layer2_listlink *const n) {
+	return (struct skip *)(void *)((char *)n - offsetof(struct skip, l2));
 }
-
-static int skip_compare(const struct Skip *const a,
-	const struct Skip *const b) {
+static int skip_compare(const struct skip *const a,
+	const struct skip *const b) {
 	return (a->value > b->value) - (b->value > a->value);
 }
 static int l0_compare(const struct layer0_listlink *a,
@@ -388,8 +395,7 @@ static int l2_compare(const struct layer2_listlink *a,
 	const struct layer2_listlink *b) {
 	return skip_compare(l2_upcast_c(a), l2_upcast_c(b));
 }
-
-static void skip_to_string(const struct Skip *const skip,
+static void skip_to_string(const struct skip *const skip,
 	char (*const a)[12]) {
 	/*assert(RAND_MAX <= 99999999999l);*/
 	sprintf(*a, "%d", skip->value);
@@ -406,18 +412,9 @@ static void l2_to_string(const struct layer2_listlink *const l2,
 	char (*const a)[12]) {
 	skip_to_string(l2_upcast_c(l2), a);
 }
-
-static void fill_skip(struct Skip *const skip) {
+static void fill_skip(struct skip *const skip) {
 	assert(skip);
-	/* This is accessing data that we shouldn't; maybe have a fn? (another one
-	 that will be used so infrequently that it will only serve to confuse?) */
-	skip->l0.prev = 0;
-	skip->l0.next = 0;
-	skip->l1.prev = 0;
-	skip->l1.next = 0;
-	skip->l2.prev = 0;
-	skip->l2.next = 0;
-	skip->value = (unsigned)rand();
+	skip->value = (unsigned)rand() / (RAND_MAX / 999 + 1);
 }
 static void fill_l0(struct layer0_listlink *const l0) {
 	fill_skip(l0_upcast(l0));
@@ -430,70 +427,67 @@ static void fill_l2(struct layer2_listlink *const l2) {
 }
 
 #define POOL_NAME skip
-#define POOL_TYPE struct Skip
+#define POOL_TYPE struct skip
 #include "pool.h"
-
 static struct layer0_listlink *l0_from_pool(void *const vpool) {
 	struct skip_pool *const pool = vpool;
-	struct Skip *s = skip_pool_new(pool);
+	struct skip *s = skip_pool_new(pool);
 	assert(s); if(!s) return 0;
 	return &s->l0;
 }
 static struct layer1_listlink *l1_from_pool(void *const vpool) {
 	struct skip_pool *const pool = vpool;
-	struct Skip *s = skip_pool_new(pool);
+	struct skip *s = skip_pool_new(pool);
 	assert(s); if(!s) return 0;
 	return &s->l1;
 }
 static struct layer2_listlink *l2_from_pool(void *const vpool) {
 	struct skip_pool *const pool = vpool;
-	struct Skip *s = skip_pool_new(pool);
+	struct skip *s = skip_pool_new(pool);
 	assert(s); if(!s) return 0;
 	return &s->l2;
 }
-
-struct SkipList {
+struct skip_list {
 	struct layer0_list l0list;
 	struct layer1_list l1list;
 	struct layer2_list l2list;
 };
-
-static void skip_clear(struct SkipList *const skip) {
+static void skip_clear(struct skip_list *const skip) {
 	assert(skip);
 	layer0_list_clear(&skip->l0list);
 	layer1_list_clear(&skip->l1list);
 	layer2_list_clear(&skip->l2list);
 }
-
-static void skip_graph(const struct SkipList *const skip) {
+static void skip_graph(const struct skip_list *const skip) {
 	const char *fn = "graph/skip.gv";
 	FILE *fp;
 	assert(skip);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	fprintf(fp, "digraph {\n");
-	list_layer0_subgraph(&skip->l0list, fp, "royalblue",
-		offsetof(struct Skip, l0), 1);
-	list_layer1_subgraph(&skip->l1list, fp, "firebrick",
-		offsetof(struct Skip, l1), 0);
-	list_layer2_subgraph(&skip->l2list, fp, "darkseagreen",
-		offsetof(struct Skip, l2), 0);
-	fprintf(fp, "\tnode [colour=red];\n"
+	fprintf(fp, "digraph {\n"
+		"\tfontface=modern;\n"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
+	list_layer0_subgraph(&skip->l0list, fp, "Royalblue",
+		offsetof(struct skip, l0), 1);
+	list_layer1_subgraph(&skip->l1list, fp, "Firebrick",
+		offsetof(struct skip, l1), 0);
+	list_layer2_subgraph(&skip->l2list, fp, "DarkSeagreen",
+		offsetof(struct skip, l2), 0);
+	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
-	
 }
-
+/* Manual testing. */
 static void skips_everywhere(void) {
 	const size_t i_lim = 1000;
 	size_t i;
 	unsigned r;
 	struct skip_pool skips = POOL_IDLE;
-	struct SkipList s;
+	struct skip_list s;
 	skip_clear(&s);
 	assert(RAND_MAX / 16 > i_lim);
 	for(i = 0; i < i_lim; i++) {
 		/* Add random data. */
-		struct Skip *const skip = skip_pool_new(&skips);
+		struct skip *const skip = skip_pool_new(&skips);
 		struct layer2_listlink *l2, *l2_pr;
 		struct layer1_listlink *l1, *l1_pr, *l1_lim;
 		struct layer0_listlink *l0, *l0_pr, *l0_lim;
@@ -520,7 +514,7 @@ static void skips_everywhere(void) {
 		 \> n = \frac{\log size}{\log 1/p}
 		 \> n \log 1/p = \log size
 		 \> p = 2^n / size
-		 Apparently, some modificalion is required for `n` fixed. */
+		 Apparently, some modification is required for `n` fixed. */
 		l0 ? layer0_list_add_after(l0, &skip->l0)
 			: layer0_list_unshift(&s.l0list, &skip->l0);
 		r = (unsigned)rand();

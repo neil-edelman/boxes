@@ -27,21 +27,18 @@ static size_t PL_(offset); /* The list's offset to the parent. */
 
 /** Names `l`. `dir` is either 0, it names the node, or positive/negative to
  name edges. */
-static char *PL_(name)(const struct L_(listlink) *const l, const int dir) {
+static char *PL_(name)(const struct L_(listlink) *const l) {
 	static char z[8][64];
 	static unsigned n;
 	char *y = z[n];
 	n = (n + 1) % (sizeof z / sizeof *z);
 	assert(l);
-	/* Normal or sentinel, in which case, it doesn't matter which head, tail. */
+	/* Normal or sentinel. */
 	if(l->prev && l->next) {
 		const void *node = (const void *)((const char *)l - PL_(offset));
-		if(dir) sprintf(y, "n%p"/*":%c"*/, node/*, dir > 0 ? 'e' : 'w'*/);
-		else sprintf(y, "n%p", node);
+		sprintf(y, "n%p", node);
 	} else {
-		if(dir) sprintf(y, "list_%s:%s"/*":%c"*/, PL_(colour),
-			dir > 0 ? "head" : "tail"/*, dir > 0 ? 'e' : 'w'*/);
-		else sprintf(y, "list_%s", PL_(colour));
+		sprintf(y, "list_%s:%s", PL_(colour), l->next ? "head" : "tail");
 	}
 	return y;
 }
@@ -59,7 +56,7 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 	assert(list && fp && colour);
 	PL_(colour) = colour;
 	PL_(offset) = offset;
-	fprintf(fp, "\t%s [label=<\n"
+	fprintf(fp, "\tlist_%s [label=<\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;" QUOTE(LIST_NAME)
 		"&gt;list</FONT></TD></TR>\n"
@@ -67,13 +64,23 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 		" BGCOLOR=\"Gray90\">tail</TD></TR>\n"
 		"\t<TR><TD PORT=\"head\" BORDER=\"0\" ALIGN=\"LEFT\">"
 		"head</TD></TR>\n"
-		"</TABLE>>];\n"
-		"\t%s -> %s [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n"
-		"\t%s -> %s [color=\"%s\"];\n",
-		PL_(name)(&list->head, 0),
-		PL_(name)(&list->tail, -1), PL_(name)(list->tail.prev, 1), colour,
-		PL_(name)(&list->head, 1), PL_(name)(list->head.next, -1), colour);
-
+		"</TABLE>>];\n", PL_(colour));
+	assert(list->head.next && !list->head.prev
+		&& list->tail.prev && !list->tail.next);
+	if(!list->head.next->prev) { /* Empty: drawing has to make an exception. */
+		assert(!list->tail.prev->next);
+		fprintf(fp, "\tlist_%s:tail -> list_%s:head"
+			" [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n"
+			"\tlist_%s:head -> list_%s:tail [color=\"%s\"];\n",
+			PL_(colour), PL_(colour), PL_(colour),
+			PL_(colour), PL_(colour), PL_(colour));
+	} else {
+		fprintf(fp, "\tlist_%s:tail -> %s"
+			" [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n"
+			"\tlist_%s:head -> %s [color=\"%s\"];\n",
+			PL_(colour), PL_(name)(list->tail.prev), colour,
+			PL_(colour), PL_(name)(list->head.next), colour);
+	}
 	/*"\tnode [style=filled, fillcolor=pink];\n"
 		"\tsubgraph cluster_%p {\n"
 		"\t\tstyle=filled;\n"
@@ -99,12 +106,12 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 	for(link = L_(list_first)(list); link; link = L_(list_next)(link)) {
 		if(is_nodes) {
 			PL_(to_string)(link, &a);
-			fprintf(fp, "\t%s [label=\"%s\"];\n", PL_(name)(link, 0), a);
+			fprintf(fp, "\t%s [label=\"%s\"];\n", PL_(name)(link), a);
 		}
 		fprintf(fp, "\t%s -> %s [color=\"%s\"];\n"
 			"\t%s -> %s [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n",
-			PL_(name)(link, 1), PL_(name)(link->next, -1), colour,
-			PL_(name)(link, 1), PL_(name)(link->prev, -1), colour);
+			PL_(name)(link), PL_(name)(link->next), colour,
+			PL_(name)(link), PL_(name)(link->prev), colour);
 	}
 }
 
@@ -118,7 +125,7 @@ static void PL_(graph)(const struct L_(list) *const list, const char *const fn)
 		"\tfontface=modern;\n"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
 	PL_(subgraph)(list, fp, "royalblue", 0, 1);
-	fprintf(fp, "\tnode [colour=red, style=filled];\n"
+	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
 }
