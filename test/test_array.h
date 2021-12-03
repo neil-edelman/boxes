@@ -38,8 +38,8 @@ static void PA_(graph)(const struct A_(array) *const a, const char *const fn) {
 		"\tarray [label=<\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray85\">array&lt;" QUOTE(ARRAY_NAME)
-		"&gt;: " QUOTE(ARRAY_TYPE) "</FONT></TD></TR>\n"
+		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(ARRAY_NAME)
+		"&gt;array: " QUOTE(ARRAY_TYPE) "</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">size</TD>\n"
 		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">%lu</TD>\n"
