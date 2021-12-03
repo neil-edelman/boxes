@@ -33,14 +33,14 @@ static char *PL_(name)(const struct L_(listlink) *const l, const int dir) {
 	char *y = z[n];
 	n = (n + 1) % (sizeof z / sizeof *z);
 	assert(l);
-	/* Normal or sentinel. */
+	/* Normal or sentinel, in which case, it doesn't matter which head, tail. */
 	if(l->prev && l->next) {
 		const void *node = (const void *)((const char *)l - PL_(offset));
-		if(dir) sprintf(y, "n%p:%c", node, dir > 0 ? 'e' : 'w');
+		if(dir) sprintf(y, "n%p"/*":%c"*/, node/*, dir > 0 ? 'e' : 'w'*/);
 		else sprintf(y, "n%p", node);
 	} else {
-		if(dir) sprintf(y, "list_%s:%s:%c", PL_(colour),
-			dir > 0 ? "head" : "tail", dir > 0 ? 'e' : 'w');
+		if(dir) sprintf(y, "list_%s:%s"/*":%c"*/, PL_(colour),
+			dir > 0 ? "head" : "tail"/*, dir > 0 ? 'e' : 'w'*/);
 		else sprintf(y, "list_%s", PL_(colour));
 	}
 	return y;
@@ -68,10 +68,10 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 		"\t<TR><TD PORT=\"head\" BORDER=\"0\" ALIGN=\"LEFT\">"
 		"head</TD></TR>\n"
 		"</TABLE>>];\n"
-		"\t%s -> %s [color=\"%s4\"];\n"
+		"\t%s -> %s [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n"
 		"\t%s -> %s [color=\"%s\"];\n",
 		PL_(name)(&list->head, 0),
-		PL_(name)(list->tail.prev, 1), PL_(name)(&list->tail, -1), colour,
+		PL_(name)(&list->tail, -1), PL_(name)(list->tail.prev, 1), colour,
 		PL_(name)(&list->head, 1), PL_(name)(list->head.next, -1), colour);
 
 	/*"\tnode [style=filled, fillcolor=pink];\n"
