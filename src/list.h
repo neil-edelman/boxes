@@ -89,9 +89,10 @@ enum list_operation {
  parameterized at all. However, it's more type-safe to have separate types if
  we are coercing them. */
 
-/** Storage of this structure is the responsibility of the caller. One can only
- be in one list at a time; adding to another list while already in a list
- destroys the integrity of the original list.
+/** Storage of this structure is the responsibility of the caller. Generally,
+ one encloses this in a host `struct`. Multiple independent lists can be in the
+ same host structure, however one link can can only be a part of one list at a
+ time.
 
  ![States.](../web/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *prev, *next; };
@@ -100,7 +101,8 @@ struct L_(listlink) { struct L_(listlink) *prev, *next; };
  <fn:<L>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
  values are not allowed and it is _not_ the same as `{0}`. These are sentinels
- such that `head.prev` and `tail.next` are always and the only ones to be null.
+ such that `head.prev` and `tail.next` are always and the only ones to be null
+ in a valid list.
 
  ![States.](../web/states.png) */
 struct L_(list) { struct L_(listlink) head, tail; };

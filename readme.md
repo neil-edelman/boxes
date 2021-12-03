@@ -87,7 +87,7 @@ Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a
 
 <code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *prev, *next; };</code>
 
-Storage of this structure is the responsibility of the caller\. One can only be in one list at a time; adding to another list while already in a list destroys the integrity of the original list\.
+Storage of this structure is the responsibility of the caller\. Generally, one encloses this in a host `struct`\. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time\.
 
 ![States.](web/node-states.png)
 
@@ -97,7 +97,7 @@ Storage of this structure is the responsibility of the caller\. One can only be 
 
 <code>struct <strong>&lt;L&gt;list</strong> { struct &lt;L&gt;listlink head, tail; };</code>
 
-Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. These are sentinels such that `head.prev` and `tail.next` are always and the only ones to be null\.
+Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. These are sentinels such that `head.prev` and `tail.next` are always and the only ones to be null in a valid list\.
 
 ![States.](web/states.png)
 

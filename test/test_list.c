@@ -317,6 +317,7 @@ static void pandas_everywhere(void) {
 
 
 /* (Fixed width) skip list. Because why not? */
+/* ********* FIXME: this can be much simpler; layer1,2,3->layer->no ***********/
 struct layer0_listlink;
 static int l0_compare(const struct layer0_listlink *,
 	const struct layer0_listlink *);
