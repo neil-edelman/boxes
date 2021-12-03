@@ -534,7 +534,8 @@ finally:
 }
 
 
-/* Animals. Id is the list that holds all the animals together. */
+/* Animals, see <../web/animals.gv>. Id is the list that holds all the animals
+ together. */
 struct id_listlink;
 static void id_to_string(const struct id_listlink *, char (*)[12]);
 #define LIST_NAME id
