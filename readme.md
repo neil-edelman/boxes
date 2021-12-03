@@ -4,7 +4,7 @@
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96), [&lt;PL&gt;predicate_fn](#user-content-typedef-9bb522f5), [&lt;PL&gt;compare_fn](#user-content-typedef-a22f279f), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;L&gt;list_node](#user-content-tag-9604e632), [&lt;L&gt;list](#user-content-tag-eb84971d), [&lt;PL&gt;iterator](#user-content-tag-fe8215f1)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;L&gt;listlink](#user-content-tag-15769e01), [&lt;L&gt;list](#user-content-tag-eb84971d), [&lt;PL&gt;iterator](#user-content-tag-fe8215f1)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,9 +13,9 @@
 
 ![Example of a stochastic skip-list.](web/list.png)
 
-In parlance of <Thareja 2014, Data Structures>, [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header doubly\-linked list of [&lt;L&gt;list_node](#user-content-tag-9604e632)\. The header, or sentinel, resides in `<L>list`\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list in &#927;\(`size`\)\. It only provides an order, and is not very useful without enclosing `<L>list_node` in another `struct`; this is useful for multi\-linked elements\.
+In parlance of <Thareja 2014, Data Structures>, [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header doubly\-linked list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. The header, or sentinel, resides in `<L>list`\. This allows it to benefit from being closed structure, such that with with a pointer to any element, it is possible to extract the entire list in &#927;\(`size`\)\. It only provides an order component, and is not very useful without enclosing `<L>listlink` in another `struct`; this is useful for multi\-linked elements\.
 
-
+FIXME: don't duplicate; this should be the private implementation of the functions above [&lt;L&gt;list_next](#user-content-fn-40b28b9b), _etc_\.
 
  * Parameter: LIST\_NAME  
    `<L>` that satisfies `C` naming conventions when mangled; required\. `<PL>` is private, whose names are prefixed in a manner to avoid collisions\.
@@ -24,7 +24,7 @@ In parlance of <Thareja 2014, Data Structures>, [&lt;L&gt;list](#user-content-ta
  * Parameter: LIST\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); requires `ARRAY_ITERATE` and goes forwards\. An optional mangled name for uniqueness and function implementing [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)\.
+   To string trait contained in [to\_string\.h](to_string.h); requires `ARRAY_ITERATE` and goes forwards\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Parameter: LIST\_TEST  
    To string trait contained in [\.\./test/test\_list\.h](../test/test_list.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
  * Standard:  
@@ -35,7 +35,7 @@ In parlance of <Thareja 2014, Data Structures>, [&lt;L&gt;list](#user-content-ta
 
 ### <a id = "user-content-typedef-5aae0d96" name = "user-content-typedef-5aae0d96">&lt;PL&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PL&gt;action_fn</strong>)(struct &lt;L&gt;list_node *);</code>
+<code>typedef void(*<strong>&lt;PL&gt;action_fn</strong>)(struct &lt;L&gt;listlink *);</code>
 
 Operates by side\-effects on the node\.
 
@@ -43,7 +43,7 @@ Operates by side\-effects on the node\.
 
 ### <a id = "user-content-typedef-9bb522f5" name = "user-content-typedef-9bb522f5">&lt;PL&gt;predicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PL&gt;predicate_fn</strong>)(const struct &lt;L&gt;list_node *);</code>
+<code>typedef int(*<strong>&lt;PL&gt;predicate_fn</strong>)(const struct &lt;L&gt;listlink *);</code>
 
 Returns \(Non\-zero\) true or \(zero\) false when given a node\.
 
@@ -51,7 +51,7 @@ Returns \(Non\-zero\) true or \(zero\) false when given a node\.
 
 ### <a id = "user-content-typedef-a22f279f" name = "user-content-typedef-a22f279f">&lt;PL&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PL&gt;compare_fn</strong>)(const struct &lt;L&gt;list_node *a, const struct &lt;L&gt;list_node *b);</code>
+<code>typedef int(*<strong>&lt;PL&gt;compare_fn</strong>)(const struct &lt;L&gt;listlink *a, const struct &lt;L&gt;listlink *b);</code>
 
 Returns less then, equal to, or greater then zero, inducing an ordering between `a` and `b`\.
 
@@ -83,11 +83,11 @@ Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-9604e632" name = "user-content-tag-9604e632">&lt;L&gt;list_node</a> ###
+### <a id = "user-content-tag-15769e01" name = "user-content-tag-15769e01">&lt;L&gt;listlink</a> ###
 
-<code>struct <strong>&lt;L&gt;list_node</strong>;</code>
+<code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *prev, *next; };</code>
 
-Storage of this structure is the responsibility of the caller\. One can only be in one list at a time; adding to another list while in a list destroys the integrity of the original list, see [&lt;L&gt;list_remove](#user-content-fn-dfcb43e2)\.
+Storage of this structure is the responsibility of the caller\. One can only be in one list at a time; adding to another list while already in a list destroys the integrity of the original list\.
 
 ![States.](web/node-states.png)
 
@@ -95,9 +95,9 @@ Storage of this structure is the responsibility of the caller\. One can only be 
 
 ### <a id = "user-content-tag-eb84971d" name = "user-content-tag-eb84971d">&lt;L&gt;list</a> ###
 
-<code>struct <strong>&lt;L&gt;list</strong>;</code>
+<code>struct <strong>&lt;L&gt;list</strong> { struct &lt;L&gt;listlink head, tail; };</code>
 
-Serves as head and tail for linked\-list of [&lt;L&gt;list_node](#user-content-tag-9604e632)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. These are sentinels such that `head.prev` and `tail.next` are always and the only ones to be null\.
+Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. These are sentinels such that `head.prev` and `tail.next` are always and the only ones to be null\.
 
 ![States.](web/states.png)
 
@@ -105,7 +105,7 @@ Serves as head and tail for linked\-list of [&lt;L&gt;list_node](#user-content-t
 
 ### <a id = "user-content-tag-fe8215f1" name = "user-content-tag-fe8215f1">&lt;PL&gt;iterator</a> ###
 
-<code>struct <strong>&lt;PL&gt;iterator</strong>;</code>
+<code>struct <strong>&lt;PL&gt;iterator</strong> { struct &lt;L&gt;listlink *node; };</code>
 
 Contains all iteration parameters\.
 
@@ -117,13 +117,13 @@ Contains all iteration parameters\.
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#user-content-fn-44386a44">&lt;L&gt;list_first</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-44386a44">&lt;L&gt;list_first</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#user-content-fn-caeebaea">&lt;L&gt;list_last</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-caeebaea">&lt;L&gt;list_last</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#user-content-fn-93616d3b">&lt;L&gt;list_previous</a></td><td>link</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-93616d3b">&lt;L&gt;list_previous</a></td><td>link</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#user-content-fn-40b28b9b">&lt;L&gt;list_next</a></td><td>link</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-40b28b9b">&lt;L&gt;list_next</a></td><td>link</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-f965b937">&lt;L&gt;list_clear</a></td><td>list</td></tr>
 
@@ -137,9 +137,9 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-dfcb43e2">&lt;L&gt;list_remove</a></td><td>node</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#user-content-fn-1c88ead6">&lt;L&gt;list_shift</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-1c88ead6">&lt;L&gt;list_shift</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#user-content-fn-aeb1eac5">&lt;L&gt;list_pop</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-aeb1eac5">&lt;L&gt;list_pop</a></td><td>list</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-1171e3b">&lt;L&gt;list_to</a></td><td>from, to</td></tr>
 
@@ -149,7 +149,7 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-42fb011b">&lt;L&gt;list_for_each</a></td><td>list, action</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#user-content-fn-48bee118">&lt;L&gt;list_any</a></td><td>list, predicate</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-48bee118">&lt;L&gt;list_any</a></td><td>list, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-1ce0c229">&lt;L&gt;list_self_correct</a></td><td>list</td></tr>
 
@@ -167,8 +167,6 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-51bed9c1">&lt;L&gt;list_xor_to</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-adcc04ce">&lt;L&gt;list_test</a></td><td>parent_new, parent</td></tr>
-
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 </table>
@@ -179,7 +177,7 @@ Contains all iteration parameters\.
 
 ### <a id = "user-content-fn-44386a44" name = "user-content-fn-44386a44">&lt;L&gt;list_first</a> ###
 
-<code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_first</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_first</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code>
 
  * Return:  
    A pointer to the first element of `list`, if it exists\.
@@ -191,7 +189,7 @@ Contains all iteration parameters\.
 
 ### <a id = "user-content-fn-caeebaea" name = "user-content-fn-caeebaea">&lt;L&gt;list_last</a> ###
 
-<code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_last</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_last</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code>
 
  * Return:  
    A pointer to the last element of `list`, if it exists\.
@@ -203,7 +201,7 @@ Contains all iteration parameters\.
 
 ### <a id = "user-content-fn-93616d3b" name = "user-content-fn-93616d3b">&lt;L&gt;list_previous</a> ###
 
-<code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_previous</strong>(struct &lt;L&gt;list_node *<em>link</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_previous</strong>(struct &lt;L&gt;listlink *<em>link</em>)</code>
 
  * Return:  
    The previous element\. When `link` is the first element, returns null\.
@@ -215,7 +213,7 @@ Contains all iteration parameters\.
 
 ### <a id = "user-content-fn-40b28b9b" name = "user-content-fn-40b28b9b">&lt;L&gt;list_next</a> ###
 
-<code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_next</strong>(struct &lt;L&gt;list_node *<em>link</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_next</strong>(struct &lt;L&gt;listlink *<em>link</em>)</code>
 
  * Return:  
    The next element\. When `link` is the last element, returns null\.
@@ -239,7 +237,7 @@ Clears and initializes `list`\.
 
 ### <a id = "user-content-fn-b26385b9" name = "user-content-fn-b26385b9">&lt;L&gt;list_add_before</a> ###
 
-<code>static void <strong>&lt;L&gt;list_add_before</strong>(struct &lt;L&gt;list_node *const <em>anchor</em>, struct &lt;L&gt;list_node *const <em>add</em>)</code>
+<code>static void <strong>&lt;L&gt;list_add_before</strong>(struct &lt;L&gt;listlink *const <em>anchor</em>, struct &lt;L&gt;listlink *const <em>add</em>)</code>
 
 `add` before `anchor`\.
 
@@ -251,7 +249,7 @@ Clears and initializes `list`\.
 
 ### <a id = "user-content-fn-fee45e54" name = "user-content-fn-fee45e54">&lt;L&gt;list_add_after</a> ###
 
-<code>static void <strong>&lt;L&gt;list_add_after</strong>(struct &lt;L&gt;list_node *const <em>anchor</em>, struct &lt;L&gt;list_node *const <em>add</em>)</code>
+<code>static void <strong>&lt;L&gt;list_add_after</strong>(struct &lt;L&gt;listlink *const <em>anchor</em>, struct &lt;L&gt;listlink *const <em>add</em>)</code>
 
 `add` after `anchor`\.
 
@@ -263,7 +261,7 @@ Clears and initializes `list`\.
 
 ### <a id = "user-content-fn-bb35ae87" name = "user-content-fn-bb35ae87">&lt;L&gt;list_unshift</a> ###
 
-<code>static void <strong>&lt;L&gt;list_unshift</strong>(struct &lt;L&gt;list *const <em>list</em>, struct &lt;L&gt;list_node *const <em>add</em>)</code>
+<code>static void <strong>&lt;L&gt;list_unshift</strong>(struct &lt;L&gt;list *const <em>list</em>, struct &lt;L&gt;listlink *const <em>add</em>)</code>
 
 Adds `add` to the beginning of `list`\.
 
@@ -275,7 +273,7 @@ Adds `add` to the beginning of `list`\.
 
 ### <a id = "user-content-fn-8dc506e" name = "user-content-fn-8dc506e">&lt;L&gt;list_push</a> ###
 
-<code>static void <strong>&lt;L&gt;list_push</strong>(struct &lt;L&gt;list *const <em>list</em>, struct &lt;L&gt;list_node *const <em>add</em>)</code>
+<code>static void <strong>&lt;L&gt;list_push</strong>(struct &lt;L&gt;list *const <em>list</em>, struct &lt;L&gt;listlink *const <em>add</em>)</code>
 
 Adds `add` to the end of `list`\.
 
@@ -287,7 +285,7 @@ Adds `add` to the end of `list`\.
 
 ### <a id = "user-content-fn-dfcb43e2" name = "user-content-fn-dfcb43e2">&lt;L&gt;list_remove</a> ###
 
-<code>static void <strong>&lt;L&gt;list_remove</strong>(struct &lt;L&gt;list_node *const <em>node</em>)</code>
+<code>static void <strong>&lt;L&gt;list_remove</strong>(struct &lt;L&gt;listlink *const <em>node</em>)</code>
 
 Remove `node`\.
 
@@ -299,7 +297,7 @@ Remove `node`\.
 
 ### <a id = "user-content-fn-1c88ead6" name = "user-content-fn-1c88ead6">&lt;L&gt;list_shift</a> ###
 
-<code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_shift</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_shift</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
 
 Removes the first element of `list` and returns it, if any\.
 
@@ -311,7 +309,7 @@ Removes the first element of `list` and returns it, if any\.
 
 ### <a id = "user-content-fn-aeb1eac5" name = "user-content-fn-aeb1eac5">&lt;L&gt;list_pop</a> ###
 
-<code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_pop</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_pop</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
 
 Removes the last element of `list` and returns it, if any\.
 
@@ -337,7 +335,7 @@ Moves the elements `from` onto `to` at the end\.
 
 ### <a id = "user-content-fn-727db3d7" name = "user-content-fn-727db3d7">&lt;L&gt;list_to_before</a> ###
 
-<code>static void <strong>&lt;L&gt;list_to_before</strong>(struct &lt;L&gt;list *const <em>from</em>, struct &lt;L&gt;list_node *const <em>anchor</em>)</code>
+<code>static void <strong>&lt;L&gt;list_to_before</strong>(struct &lt;L&gt;list *const <em>from</em>, struct &lt;L&gt;listlink *const <em>anchor</em>)</code>
 
 Moves the elements `from` immediately before `anchor`\.
 
@@ -377,7 +375,7 @@ Performs `action` for each element in `list` in order\.
 
 ### <a id = "user-content-fn-48bee118" name = "user-content-fn-48bee118">&lt;L&gt;list_any</a> ###
 
-<code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_any</strong>(const struct &lt;L&gt;list *const <em>list</em>, const &lt;PL&gt;predicate_fn <em>predicate</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_any</strong>(const struct &lt;L&gt;list *const <em>list</em>, const &lt;PL&gt;predicate_fn <em>predicate</em>)</code>
 
 Iterates through `list` and calls `predicate` until it returns true\.
 
@@ -499,20 +497,6 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, b
 
  * Order:  
    O\(|`a`| \+ |`b`|\)
-
-
-### <a id = "user-content-fn-adcc04ce" name = "user-content-fn-adcc04ce">&lt;L&gt;list_test</a> ###
-
-<code>static void <strong>&lt;L&gt;list_test</strong>(struct &lt;L&gt;list_node *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code>
-
-The linked\-list will be tested on stdout\. `LIST_TEST` has to be set\.
-
- * Parameter: _parent\_new_  
-   Responsible for creating new objects and returning the list\.
- * Parameter: _parent_  
-   Responsible for creating new objects and returning the list\.
-
-
 
 
 ### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###

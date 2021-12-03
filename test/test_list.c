@@ -1,6 +1,7 @@
 #include <stdlib.h> /* EXIT rand */
 #include <stdio.h>  /* printf */
 #include <string.h> /* strcmp */
+#include <time.h>	/* clock */
 #include "orcish.h"
 
 
@@ -315,7 +316,7 @@ static void pandas_everywhere(void) {
 }
 
 
-/* (Fixed width) skip list. */
+/* (Fixed width) skip list. Because why not? */
 struct layer0_listlink;
 static int l0_compare(const struct layer0_listlink *,
 	const struct layer0_listlink *);
@@ -458,6 +459,7 @@ static void skip_clear(struct skip_list *const skip) {
 	layer1_list_clear(&skip->l1list);
 	layer2_list_clear(&skip->l2list);
 }
+/* See <graph/skip.gv>. */
 static void skip_graph(const struct skip_list *const skip) {
 	const char *fn = "graph/skip.gv";
 	FILE *fp;
@@ -476,7 +478,7 @@ static void skip_graph(const struct skip_list *const skip) {
 		"}\n");
 	fclose(fp);
 }
-/* Manual testing. */
+/* Manual example. */
 static void skips_everywhere(void) {
 	const size_t i_lim = 1000;
 	size_t i;
@@ -531,9 +533,7 @@ finally:
 }
 
 
-/* Animals! See <../web/animals.gv>. */
-
-/* Id is the list that holds all the animals together. */
+/* Animals. Id is the list that holds all the animals together. */
 struct id_listlink;
 static void id_to_string(const struct id_listlink *, char (*)[12]);
 #define LIST_NAME id
@@ -574,16 +574,14 @@ static void id_to_string(const struct id_listlink *const id,
 	animal_to_string(id_upcast_c(id), a);
 }
 
-/* `Mount` involves two animals. */
+/* `Mount` is a relation between two animals. */
 struct mount;
 struct mount_info {
 	struct mount *steed_of, *riding;
-	enum allowed { STEED = 1, RIDER, RIDER_STEED } is_allowed; /* Bit-field. */
+	enum allowed { STEED = 1, RIDER, RIDER_STEED } is_allowed;
 	int unused;
 };
-struct mount {
-	struct animal *steed, *rider;
-};
+struct mount { struct animal *steed, *rider; };
 #define POOL_NAME mount
 #define POOL_TYPE struct mount
 #include "pool.h"
@@ -635,7 +633,7 @@ struct Lemur {
 #define POOL_TYPE struct Lemur
 #include "pool.h"
 
-/* `Bear` extends `Animal`. We have always two or less. */
+/* `Bear` extends `Animal`. */
 struct bear {
 	struct animal animal;
 	int is_active, unused;
@@ -653,6 +651,9 @@ static struct animals {
 	struct lemur_pool lemurs;
 	struct bear bears[2];
 } animals;
+/* We have always `no_bears` or less: just because everything else was a
+ pool, but one doesn't need to have a pool, any space with stable pointers
+ will do. */
 static const unsigned no_bears = sizeof(((struct animals *)0)->bears)
 	/ sizeof(*((struct animals *)0)->bears);
 
@@ -683,12 +684,12 @@ static void id_delete(struct id_listlink *const id) {
 	animal_delete(id_upcast(id));
 }
 static void sloth_delete(struct sloth *const sloth) {
-	printf("Bye %s.\n", sloth->animal.name);
+	/*printf("Bye %s.\n", sloth->animal.name);*/
 	id_list_remove(&sloth->animal.id);
 	sloth_pool_remove(&animals.sloths, sloth);
 }
 static void emu_delete(struct emu *const emu) {
-	printf("Bye %s.\n", emu->animal.name);
+	/*printf("Bye %s.\n", emu->animal.name);*/
 	id_list_remove(&emu->animal.id);
 	emu_pool_remove(&animals.emus, emu);
 }
@@ -698,18 +699,18 @@ static void bad_emu_delete(struct bad_emu *const bad_emu) {
 	bademu_pool_remove(&animals.bad_emus, bad_emu);
 }
 static void lemur_delete(struct Lemur *const lemur) {
-	printf("Bye %s.\n", lemur->animal.name);
+	/*printf("Bye %s.\n", lemur->animal.name);*/
 	id_list_remove(&lemur->animal.id);
 	lemur_pool_remove(&animals.lemurs, lemur);
 }
 static void llama_delete(struct Llama *const llama) {
-	printf("Bye %s.\n", llama->animal.name);
+	/*printf("Bye %s.\n", llama->animal.name);*/
 	id_list_remove(&llama->animal.id);
 	llama_pool_remove(&animals.llamas, llama);
 }
 static void bear_delete(struct bear *const bear) {
 	if(!bear->is_active) return;
-	printf("Bye %s.\n", bear->animal.name);
+	/*printf("Bye %s.\n", bear->animal.name);*/
 	id_list_remove(&bear->animal.id);
 	bear->is_active = 0;
 }
@@ -809,8 +810,8 @@ static struct mount_info *bear_mount_info(struct bear *const bear) {
 /* Static data containing the functions defined above. Because `struct animal`
  is always the first item in every animal, we can cast them. This is not really
  a good design choice, in hindsight, (should have accepted all `Animal` and
- upcast.)
- fixme: this is technically UB, and doesn't have to be. Fix. */
+ upcast.) */
+/* ******** fixme: this is technically UB, and doesn't have to be. Fix. *******/
 static struct animal_vt sloth_vt = {
 	"Sloth",
 	(animal_action_fn)&sloth_delete,
@@ -962,8 +963,7 @@ static struct bear *bear(const unsigned no, const char *const name) {
 }
 
 /** Cause `a` to try to ride `b`. If `a` or `b` is null, causes that connection
- to be broken.
- @return Success. */
+ to be broken. @return Success. */
 static int ride(struct animal *const a, struct animal *const b) {
 	struct animal *erase, *steed = 0, *rider = 0;
 	struct mount *mount;
@@ -1012,9 +1012,6 @@ static void animals_clear(void) {
 	id_list_for_each(&animals.list, &id_delete);
 }
 
-
-#include <time.h>	/* clock */
-
 static int animals_everywhere(void) {
 	unsigned seed = (unsigned)clock();
 	int is_success = 0;
@@ -1025,7 +1022,7 @@ static int animals_everywhere(void) {
 	do {
 		struct id_listlink *id = 0, *prev_id = 0;
 		struct bear *w, *n;
-		const unsigned animal_no = 10000/*00*/;
+		const unsigned animal_no = 100/*0000*/;
 		unsigned i;
 		n = bear(1, "Napoleon");
 		for(i = 0; i < animal_no; i++) {

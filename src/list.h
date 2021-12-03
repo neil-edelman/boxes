@@ -27,7 +27,7 @@
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
  To string trait contained in <to_string.h>; requires `ARRAY_ITERATE` and goes
  forwards. An optional mangled name for uniqueness and function implementing
- <typedef:<PZ>to_string_fn>.
+ <typedef:<PSZ>to_string_fn>.
 
  @param[LIST_TEST]
  To string trait contained in <../test/test_list.h>; optional unit testing
@@ -358,6 +358,10 @@ static void PL_(boolean)(struct L_(list) *const alist,
 	}
 }
 
+/* ********** FIXME: this is way too complicated! true, natural merge sort is
+ cool, but merge sort could be implemented way simpler and copying it into an
+ array is always going to be faster. Move all this into `compare.h`. **********/
+
 /* A run is a sequence of values in the array that is weakly increasing. */
 struct PL_(Run) { struct L_(listlink) *head, *tail; size_t size; };
 /* Store the maximum capacity for the indexing with {size_t}. (Much more then
@@ -652,6 +656,9 @@ static void L_(list_xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 #endif /* comp --> */
 
 /* <!-- iterate interface */
+
+/********** FIXME: don't duplicate; this should be the private implementation
+ of the functions above <fn:<L>list_next>, _etc_. ***********/
 
 /** Contains all iteration parameters. */
 struct PL_(iterator) { struct L_(listlink) *node; };

@@ -38,7 +38,7 @@
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PL>action_fn">&lt;PL&gt;action_fn</a>, <a href = "#typedef:<PL>predicate_fn">&lt;PL&gt;predicate_fn</a>, <a href = "#typedef:<PL>compare_fn">&lt;PL&gt;compare_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>type">&lt;PSZ&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<L>list_node">&lt;L&gt;list_node</a>, <a href = "#tag:<L>list">&lt;L&gt;list</a>, <a href = "#tag:<PL>iterator">&lt;PL&gt;iterator</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<L>listlink">&lt;L&gt;listlink</a>, <a href = "#tag:<L>list">&lt;L&gt;list</a>, <a href = "#tag:<PL>iterator">&lt;PL&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -48,11 +48,11 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of a stochastic skip-list." src = "web/list.png" width = 577 height = 182></p>
+<p><img alt = "Example of a stochastic skip-list." src = "web/list.png" width = 785 height = 556></p>
 
-<p>In parlance of &lt;Thareja 2014, Data Structures&gt;, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header doubly-linked list of <a href = "#tag:&lt;L&gt;list_node">&lt;L&gt;list_node</a>. The header, or sentinel, resides in <code>&lt;L&gt;list</code>. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list in &#927;(<code>size</code>). It only provides an order, and is not very useful without enclosing <code>&lt;L&gt;list_node</code> in another <code>struct</code>; this is useful for multi-linked elements.</p>
+<p>In parlance of &lt;Thareja 2014, Data Structures&gt;, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header doubly-linked list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. The header, or sentinel, resides in <code>&lt;L&gt;list</code>. This allows it to benefit from being closed structure, such that with with a pointer to any element, it is possible to extract the entire list in &#927;(<code>size</code>). It only provides an order component, and is not very useful without enclosing <code>&lt;L&gt;listlink</code> in another <code>struct</code>; this is useful for multi-linked elements.</p>
 
-</div>
+FIXME: don't duplicate; this should be the private implementation of the functions above <a href = "#fn:&lt;L&gt;list_next">&lt;L&gt;list_next</a>, <em>etc</em>.</div>
 
 <dl>
 	<dt>Parameter: LIST_NAME</dt>
@@ -62,7 +62,7 @@
 	<dt>Parameter: LIST_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: LIST_TO_STRING_NAME, LIST_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; requires <code>ARRAY_ITERATE</code> and goes forwards. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PZ&gt;to_string_fn">&lt;PZ&gt;to_string_fn</a>.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; requires <code>ARRAY_ITERATE</code> and goes forwards. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>.</dd>
 	<dt>Parameter: LIST_TEST</dt>
 	<dd>To string trait contained in <a href = "../test/test_list.h">../test/test_list.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PL&gt;action_fn">&lt;PL&gt;action_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
 	<dt>Standard:</dt>
@@ -75,7 +75,7 @@
 
 <h3><a id = "typedef:<PL>action_fn" name = "typedef:<PL>action_fn">&lt;PL&gt;action_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PL&gt;action_fn</strong>)(struct &lt;L&gt;list_node *);</code></p>
+<p><code>typedef void(*<strong>&lt;PL&gt;action_fn</strong>)(struct &lt;L&gt;listlink *);</code></p>
 
 <p>Operates by side-effects on the node.</p>
 
@@ -85,7 +85,7 @@
 
 <h3><a id = "typedef:<PL>predicate_fn" name = "typedef:<PL>predicate_fn">&lt;PL&gt;predicate_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PL&gt;predicate_fn</strong>)(const struct &lt;L&gt;list_node *);</code></p>
+<p><code>typedef int(*<strong>&lt;PL&gt;predicate_fn</strong>)(const struct &lt;L&gt;listlink *);</code></p>
 
 <p>Returns (Non-zero) true or (zero) false when given a node.</p>
 
@@ -95,7 +95,7 @@
 
 <h3><a id = "typedef:<PL>compare_fn" name = "typedef:<PL>compare_fn">&lt;PL&gt;compare_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PL&gt;compare_fn</strong>)(const struct &lt;L&gt;list_node *a, const struct &lt;L&gt;list_node *b);</code></p>
+<p><code>typedef int(*<strong>&lt;PL&gt;compare_fn</strong>)(const struct &lt;L&gt;listlink *a, const struct &lt;L&gt;listlink *b);</code></p>
 
 <p>Returns less then, equal to, or greater then zero, inducing an ordering between <code>a</code> and <code>b</code>.</p>
 
@@ -135,11 +135,11 @@
 
 <div>
 
-<h3><a id = "tag:<L>list_node" name = "tag:<L>list_node">&lt;L&gt;list_node</a></h3>
+<h3><a id = "tag:<L>listlink" name = "tag:<L>listlink">&lt;L&gt;listlink</a></h3>
 
-<p><code>struct <strong>&lt;L&gt;list_node</strong>;</code></p>
+<p><code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *prev, *next; };</code></p>
 
-<p>Storage of this structure is the responsibility of the caller. One can only be in one list at a time; adding to another list while in a list destroys the integrity of the original list, see <a href = "#fn:&lt;L&gt;list_remove">&lt;L&gt;list_remove</a>.</p>
+<p>Storage of this structure is the responsibility of the caller. One can only be in one list at a time; adding to another list while already in a list destroys the integrity of the original list.</p>
 
 <p><img alt = "States." src = "web/node-states.png" width = 267 height = 213></p>
 
@@ -149,9 +149,9 @@
 
 <h3><a id = "tag:<L>list" name = "tag:<L>list">&lt;L&gt;list</a></h3>
 
-<p><code>struct <strong>&lt;L&gt;list</strong>;</code></p>
+<p><code>struct <strong>&lt;L&gt;list</strong> { struct &lt;L&gt;listlink head, tail; };</code></p>
 
-<p>Serves as head and tail for linked-list of <a href = "#tag:&lt;L&gt;list_node">&lt;L&gt;list_node</a>. Use <a href = "#fn:&lt;L&gt;list_clear">&lt;L&gt;list_clear</a> to initialize the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>. These are sentinels such that <code>head.prev</code> and <code>tail.next</code> are always and the only ones to be null.</p>
+<p>Serves as head and tail for linked-list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. Use <a href = "#fn:&lt;L&gt;list_clear">&lt;L&gt;list_clear</a> to initialize the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>. These are sentinels such that <code>head.prev</code> and <code>tail.next</code> are always and the only ones to be null.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 284 height = 260></p>
 
@@ -161,7 +161,7 @@
 
 <h3><a id = "tag:<PL>iterator" name = "tag:<PL>iterator">&lt;PL&gt;iterator</a></h3>
 
-<p><code>struct <strong>&lt;PL&gt;iterator</strong>;</code></p>
+<p><code>struct <strong>&lt;PL&gt;iterator</strong> { struct &lt;L&gt;listlink *node; };</code></p>
 
 <p>Contains all iteration parameters.</p>
 
@@ -175,13 +175,13 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#fn:<L>list_first">&lt;L&gt;list_first</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_first">&lt;L&gt;list_first</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#fn:<L>list_last">&lt;L&gt;list_last</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_last">&lt;L&gt;list_last</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#fn:<L>list_previous">&lt;L&gt;list_previous</a></td><td>link</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_previous">&lt;L&gt;list_previous</a></td><td>link</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#fn:<L>list_next">&lt;L&gt;list_next</a></td><td>link</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_next">&lt;L&gt;list_next</a></td><td>link</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_clear">&lt;L&gt;list_clear</a></td><td>list</td></tr>
 
@@ -195,9 +195,9 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_remove">&lt;L&gt;list_remove</a></td><td>node</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#fn:<L>list_shift">&lt;L&gt;list_shift</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_shift">&lt;L&gt;list_shift</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#fn:<L>list_pop">&lt;L&gt;list_pop</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_pop">&lt;L&gt;list_pop</a></td><td>list</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_to">&lt;L&gt;list_to</a></td><td>from, to</td></tr>
 
@@ -207,7 +207,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_for_each">&lt;L&gt;list_for_each</a></td><td>list, action</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;list_node *</td><td><a href = "#fn:<L>list_any">&lt;L&gt;list_any</a></td><td>list, predicate</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_any">&lt;L&gt;list_any</a></td><td>list, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_self_correct">&lt;L&gt;list_self_correct</a></td><td>list</td></tr>
 
@@ -225,8 +225,6 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_xor_to">&lt;L&gt;list_xor_to</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<L>list_test">&lt;L&gt;list_test</a></td><td>parent_new, parent</td></tr>
-
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 </table>
@@ -241,7 +239,7 @@
 
 <h3><a id = "fn:<L>list_first" name = "fn:<L>list_first">&lt;L&gt;list_first</a></h3>
 
-<p><code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_first</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_first</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -256,7 +254,7 @@
 
 <h3><a id = "fn:<L>list_last" name = "fn:<L>list_last">&lt;L&gt;list_last</a></h3>
 
-<p><code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_last</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_last</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -271,7 +269,7 @@
 
 <h3><a id = "fn:<L>list_previous" name = "fn:<L>list_previous">&lt;L&gt;list_previous</a></h3>
 
-<p><code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_previous</strong>(struct &lt;L&gt;list_node *<em>link</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_previous</strong>(struct &lt;L&gt;listlink *<em>link</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -286,7 +284,7 @@
 
 <h3><a id = "fn:<L>list_next" name = "fn:<L>list_next">&lt;L&gt;list_next</a></h3>
 
-<p><code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_next</strong>(struct &lt;L&gt;list_node *<em>link</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_next</strong>(struct &lt;L&gt;listlink *<em>link</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -316,7 +314,7 @@
 
 <h3><a id = "fn:<L>list_add_before" name = "fn:<L>list_add_before">&lt;L&gt;list_add_before</a></h3>
 
-<p><code>static void <strong>&lt;L&gt;list_add_before</strong>(struct &lt;L&gt;list_node *const <em>anchor</em>, struct &lt;L&gt;list_node *const <em>add</em>)</code></p>
+<p><code>static void <strong>&lt;L&gt;list_add_before</strong>(struct &lt;L&gt;listlink *const <em>anchor</em>, struct &lt;L&gt;listlink *const <em>add</em>)</code></p>
 
 <p><code>add</code> before <code>anchor</code>.</p>
 
@@ -331,7 +329,7 @@
 
 <h3><a id = "fn:<L>list_add_after" name = "fn:<L>list_add_after">&lt;L&gt;list_add_after</a></h3>
 
-<p><code>static void <strong>&lt;L&gt;list_add_after</strong>(struct &lt;L&gt;list_node *const <em>anchor</em>, struct &lt;L&gt;list_node *const <em>add</em>)</code></p>
+<p><code>static void <strong>&lt;L&gt;list_add_after</strong>(struct &lt;L&gt;listlink *const <em>anchor</em>, struct &lt;L&gt;listlink *const <em>add</em>)</code></p>
 
 <p><code>add</code> after <code>anchor</code>.</p>
 
@@ -346,7 +344,7 @@
 
 <h3><a id = "fn:<L>list_unshift" name = "fn:<L>list_unshift">&lt;L&gt;list_unshift</a></h3>
 
-<p><code>static void <strong>&lt;L&gt;list_unshift</strong>(struct &lt;L&gt;list *const <em>list</em>, struct &lt;L&gt;list_node *const <em>add</em>)</code></p>
+<p><code>static void <strong>&lt;L&gt;list_unshift</strong>(struct &lt;L&gt;list *const <em>list</em>, struct &lt;L&gt;listlink *const <em>add</em>)</code></p>
 
 <p>Adds <code>add</code> to the beginning of <code>list</code>.</p>
 
@@ -361,7 +359,7 @@
 
 <h3><a id = "fn:<L>list_push" name = "fn:<L>list_push">&lt;L&gt;list_push</a></h3>
 
-<p><code>static void <strong>&lt;L&gt;list_push</strong>(struct &lt;L&gt;list *const <em>list</em>, struct &lt;L&gt;list_node *const <em>add</em>)</code></p>
+<p><code>static void <strong>&lt;L&gt;list_push</strong>(struct &lt;L&gt;list *const <em>list</em>, struct &lt;L&gt;listlink *const <em>add</em>)</code></p>
 
 <p>Adds <code>add</code> to the end of <code>list</code>.</p>
 
@@ -376,7 +374,7 @@
 
 <h3><a id = "fn:<L>list_remove" name = "fn:<L>list_remove">&lt;L&gt;list_remove</a></h3>
 
-<p><code>static void <strong>&lt;L&gt;list_remove</strong>(struct &lt;L&gt;list_node *const <em>node</em>)</code></p>
+<p><code>static void <strong>&lt;L&gt;list_remove</strong>(struct &lt;L&gt;listlink *const <em>node</em>)</code></p>
 
 <p>Remove <code>node</code>.</p>
 
@@ -391,7 +389,7 @@
 
 <h3><a id = "fn:<L>list_shift" name = "fn:<L>list_shift">&lt;L&gt;list_shift</a></h3>
 
-<p><code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_shift</strong>(struct &lt;L&gt;list *const <em>list</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_shift</strong>(struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
 <p>Removes the first element of <code>list</code> and returns it, if any.</p>
 
@@ -406,7 +404,7 @@
 
 <h3><a id = "fn:<L>list_pop" name = "fn:<L>list_pop">&lt;L&gt;list_pop</a></h3>
 
-<p><code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_pop</strong>(struct &lt;L&gt;list *const <em>list</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_pop</strong>(struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
 <p>Removes the last element of <code>list</code> and returns it, if any.</p>
 
@@ -438,7 +436,7 @@
 
 <h3><a id = "fn:<L>list_to_before" name = "fn:<L>list_to_before">&lt;L&gt;list_to_before</a></h3>
 
-<p><code>static void <strong>&lt;L&gt;list_to_before</strong>(struct &lt;L&gt;list *const <em>from</em>, struct &lt;L&gt;list_node *const <em>anchor</em>)</code></p>
+<p><code>static void <strong>&lt;L&gt;list_to_before</strong>(struct &lt;L&gt;list *const <em>from</em>, struct &lt;L&gt;listlink *const <em>anchor</em>)</code></p>
 
 <p>Moves the elements <code>from</code> immediately before <code>anchor</code>.</p>
 
@@ -487,7 +485,7 @@
 
 <h3><a id = "fn:<L>list_any" name = "fn:<L>list_any">&lt;L&gt;list_any</a></h3>
 
-<p><code>static struct &lt;L&gt;list_node *<strong>&lt;L&gt;list_any</strong>(const struct &lt;L&gt;list *const <em>list</em>, const &lt;PL&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_any</strong>(const struct &lt;L&gt;list *const <em>list</em>, const &lt;PL&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p>Iterates through <code>list</code> and calls <code>predicate</code> until it returns true.</p>
 
@@ -635,23 +633,6 @@
 	<dt>Order:</dt>
 	<dd>O(|<code>a</code>| + |<code>b</code>|)</dd>
 </dl>
-
-<div>
-
-<h3><a id = "fn:<L>list_test" name = "fn:<L>list_test">&lt;L&gt;list_test</a></h3>
-
-<p><code>static void <strong>&lt;L&gt;list_test</strong>(struct &lt;L&gt;list_node *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code></p>
-
-<p>The linked-list will be tested on stdout. <code>LIST_TEST</code> has to be set.</p>
-
-<dl>
-	<dt>Parameter: <em>parent_new</em></dt>
-	<dd>Responsible for creating new objects and returning the list.</dd>
-	<dt>Parameter: <em>parent</em></dt>
-	<dd>Responsible for creating new objects and returning the list.</dd>
-</dl>
-
-</div>
 
 <div>
 
