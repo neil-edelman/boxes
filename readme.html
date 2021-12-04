@@ -139,9 +139,9 @@ FIXME: don't duplicate; this should be the private implementation of the functio
 
 <p><code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *prev, *next; };</code></p>
 
-<p>Storage of this structure is the responsibility of the caller. Generally, one encloses this in a host <code>struct</code>. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time.</p>
+<p>Storage of this structure is the responsibility of the caller. Generally, one encloses this in a host <code>struct</code>. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time; adding a link to a second list destroys the integrity of the original list.</p>
 
-<p><img alt = "States." src = "web/node-states.png" width = 267 height = 213></p>
+<p><img alt = "States." src = "web/node-states.png" width = 357 height = 231></p>
 
 </div>
 
@@ -153,7 +153,7 @@ FIXME: don't duplicate; this should be the private implementation of the functio
 
 <p>Serves as head and tail for linked-list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. Use <a href = "#fn:&lt;L&gt;list_clear">&lt;L&gt;list_clear</a> to initialize the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>. These are sentinels such that <code>head.prev</code> and <code>tail.next</code> are always and the only ones to be null in a valid list.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 284 height = 260></p>
+<p><img alt = "States." src = "web/states.png" width = 197 height = 409></p>
 
 </div>
 

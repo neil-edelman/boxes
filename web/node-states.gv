@@ -1,8 +1,9 @@
 digraph {
-	//rankdir = LR;
-	node [ shape=record, style=filled ];
-	not [ label = "{not in a list\l}" ];
-	in [ label = "{in a list\l}" ];
-	not -> in [ label = "<T>ListPush\l<T>ListUnshift\l...\l" ];
-	in -> not [ label = "<T>ListClear\l<T>ListRemove\l...\l" ];
+	fontface=modern;
+	node [shape=record, style=filled, fillcolor="Gray95"];
+	not [label="{not in a list\l|uninitialized or unupdated\l}"];
+	zero [label="{not in a list\l|null}"];
+	in [ label = "in a list" ];
+	not -> in [ label = "push\lunshift\l..." ];
+	in -> not [ label = "clear\lremove\l..." ];
 }

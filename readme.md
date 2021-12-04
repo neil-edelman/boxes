@@ -87,7 +87,7 @@ Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a
 
 <code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *prev, *next; };</code>
 
-Storage of this structure is the responsibility of the caller\. Generally, one encloses this in a host `struct`\. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time\.
+Storage of this structure is the responsibility of the caller\. Generally, one encloses this in a host `struct`\. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time; adding a link to a second list destroys the integrity of the original list\.
 
 ![States.](web/node-states.png)
 

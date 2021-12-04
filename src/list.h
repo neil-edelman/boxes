@@ -91,10 +91,14 @@ enum list_operation {
 
 /* ************* FIXME: update the images; they are from a version 10 years ago.
  ***********/
+/* ********** FIXME: have an option to throw an error if a link is not null
+ zero() clears and zeros, push(), add() makes sure it's zero,
+ no, have an option **********/
 /** Storage of this structure is the responsibility of the caller. Generally,
  one encloses this in a host `struct`. Multiple independent lists can be in the
  same host structure, however one link can can only be a part of one list at a
- time.
+ time; adding a link to a second list destroys the integrity of the original
+ list.
 
  ![States.](../web/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *prev, *next; };
@@ -366,6 +370,46 @@ static void PL_(boolean)(struct L_(list) *const alist,
  cool, but merge sort could be implemented way simpler and copying it into an
  array is always going to be faster. Move all this into `compare.h`. **********/
 
+/** Lists `a` and `b`, not-null, are merged, but only the next links;
+ the idea of not merging the `prev` was from <https://github.com/torvalds/linux/blob/master/lib/list_sort.c>. */
+static struct L_(listlink) *PL_(merge_nexts)(struct L_(listlink) *a,
+	struct L_(listlink) *b) {
+	struct L_(listlink) *first, **x = &first;
+	assert(a && b);
+	for( ; ; ) {
+		if(PL_(compare)(a, b) <= 0) {
+			*x = a, x = &a->next;
+			if(!(a = a->next)) { *x = b; break; }
+		} else {
+			*x = b, x = &b->next;
+			if(!(b = b->next)) { *x = a; break; }
+		}
+	}
+	return first;
+}
+
+/** Lists `a` and `b` are merged into and replacing `list` and `prev` is
+ restored. */
+static struct L_(listlink) *PL_(merge_final)(struct L_(listlink) *a,
+	struct L_(listlink) *b) {
+	struct L_(listlink) *first, *prev = 0, **x = &first, *c;
+	assert(a && b);
+	for( ; ; ) {
+		if(PL_(compare)(a, b) <= 0) {
+			a->prev = prev, prev = *x = a, x = &a->next;
+			if(!(a = a->next)) { c = *x = b; break; }
+		} else {
+			b->prev = prev, prev = *x = b, x = &b->next;
+			if(!(b = b->next)) { c = *x = a; break; }
+		}
+	}
+	do c->prev = prev, prev = c; while(c = c->next);
+	return first;
+}
+
+
+
+
 /* A run is a sequence of values in the array that is weakly increasing. */
 struct PL_(Run) { struct L_(listlink) *head, *tail; size_t size; };
 /* Store the maximum capacity for the indexing with {size_t}. (Much more then
@@ -526,6 +570,8 @@ static void PL_(natural)(struct L_(list) *const list) {
  @order \Omega(|`list`|), \O(|`list`| log |`list`|) @allow */
 static void L_(list_sort)(struct L_(list) *const list)
 	{ assert(list), PL_(natural)(list); }
+
+
 
 /** Merges from `from` into `to`. If the elements are sorted in both lists,
  then the elements of `list` will be sorted.
