@@ -1,8 +1,14 @@
 digraph {
-	//rankdir = LR;
-	node [ shape=record, style=filled ];
-	null [ label = "Uninitalised or statically uninitalised.\l" ];
-	init [ label = "Initialised.\l|Not our responsibility for \<T\>Link.\l" ];
-	null -> init [ label = "Initialise with LIST_EMPTY[_[2-4]]\l<T>ListClear\l" ];
-	init -> init [ label = "<T>ListClear\l" ];
+	fontface=modern;
+	node [shape=record, style=filled, fillcolor="Gray95"];
+	null [label="{uninitalised\lstatic\lzero\l|not in a valid state}"];
+	empty;
+	full [label="non-empty"];
+	null -> empty [label="clear\l"];
+	#empty -> empty [style=invis];
+	empty -> empty [label="clear\l..."];
+	empty -> full [label="push\lunshift\l..."];
+	full -> empty [label="clear\lremove\l..."];
+	full -> full [label="push\lunshift\lremove\l..."];
+	#{ rank=same; empty; full; }
 }

@@ -1,0 +1,9 @@
+digraph {
+	fontface=modern;
+	node [shape=record, style=filled, fillcolor="Gray95"];
+	not [label="{not in a list\l|uninitialized or unupdated\l}"];
+	zero [label="{not in a list\l|null}"];
+	in [ label = "in a list" ];
+	not -> in [ label = "push\lunshift\l..." ];
+	in -> not [ label = "clear\lremove\l..." ];
+}
