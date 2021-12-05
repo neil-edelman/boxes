@@ -7,9 +7,9 @@ digraph {
 
 	node [ shape=record, style=filled ];
 	null [ label = "Uninitalised|Random bytes.\lNo memory.\lNot in a valid state.\l", fillcolor = pink ];
-	static [ label = "Idle|No memory.\l\{0\} or POOL_ZERO\l" ];
+	static [ label = "Idle|No memory.\l\{0\} or POOL_IDLE\l" ];
 	dynamic [ label = "Active|Memory allocated.\lCould have size zero.\l" ];
-	null -> static [ label = "<T>Pool" ];
-	static -> dynamic [ label = "<T>PoolNew\l<T>PoolReserve" ];
-	dynamic -> static [ label = "<T>Pool_" ];
+	null -> static [ label = "<P>pool" ];
+	static -> dynamic [ label = "<P>pool_new\l<P>pool_reserve" ];
+	dynamic -> static [ label = "<P>pool_" ];
 }

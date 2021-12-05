@@ -10,7 +10,7 @@
 
 
 #define PARAM(A) A
-#define STRINGISE(A) #A
+#define STRINGIZE(A) #A
 #define COLOUR(X) /* Max 11 letters. */ \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
@@ -18,7 +18,7 @@
 	X(Orange), X(Powder), X(Sky), X(Steel), X(Royal), X(Blue), X(Navy), \
 	X(Fuchsia), X(Pink), X(Purple)
 enum colour { COLOUR(PARAM) };
-static const char *const colours[] = { COLOUR(STRINGISE) };
+static const char *const colours[] = { COLOUR(STRINGIZE) };
 static const size_t colour_size = sizeof colours / sizeof *colours;
 static void colour_to_string(const enum colour *c, char (*const a)[12])
 	{ assert(*c < colour_size); sprintf(*a, "%s", colours[*c]); }
@@ -91,7 +91,7 @@ static int keyval_value_cmp(const struct Keyval *const a,
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
-	unsigned seed = /*12395*/ /*2532*//*11632*/(unsigned)clock();
+	unsigned seed = (unsigned)clock();
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	colour_pool_test();
