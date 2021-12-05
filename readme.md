@@ -76,10 +76,12 @@ appropriate.
 
 ## Internal interface ##
 
-Most of the `C` code makes extensive use of the pre-processor for
-code generation. So much so, that traditional parsers get hopelessly
-confused; by default, a custom parser is used for documentation:
-[cdoc](https://github.com/neil-edelman/cdoc).
+Most of the projects make extensive use of code generation: in the
+background, it uses the `C89` pre-processor for very basic template
+meta-programming to do compile-time polymorphism. Such that, when
+the code is run through traditional parsers, they tend to get
+hopelessly confused; by default, a custom parser is used for
+documentation: [cdoc](https://github.com/neil-edelman/cdoc).
 
 The code in the individual projects should work on most systems and
 compilers. The build system (this) requires a shell that understands
