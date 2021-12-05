@@ -103,8 +103,8 @@ static void string_fill(const char **);
 
 /** Backing: we have to somewhere to store the strings. */
 struct str12 {
-	struct string_set_node elem;
-	char str[12];
+	struct string_setlink elem;
+	char str[12], unused[4];
 };
 static void str12_fill(struct str12 *const s12) {
 	s12->elem.key = s12->str;
@@ -117,7 +117,7 @@ static void string_fill(const char **const ps) {
 #define POOL_NAME string
 #define POOL_TYPE struct str12
 #include "pool.h"
-static struct string_set_node *string_from_pool(void *const vsp) {
+static struct string_setlink *string_from_pool(void *const vsp) {
 	struct string_pool *const sp = vsp;
 	struct str12 *const s = string_pool_new(sp);
 	assert(sp);
@@ -128,7 +128,7 @@ static struct string_set_node *string_from_pool(void *const vsp) {
 /* Vector; test of `SET_POINTER`. */
 
 struct vec4 {
-	char a[2];
+	char a[2], unused[2];
 	int n[2];
 };
 /* If we cheat a little, knowing that the numbers are 0-9, we can get a much
@@ -169,7 +169,7 @@ static void vec4_filler(struct vec4 *const v4) {
 /* I wrote Set to solve
  [this problem](https://stackoverflow.com/q/59091226/2472827). In general, one
  has to declare before defining if we want a hash map because the
- `<S>set_node` is not defined until after. */
+ `<S>setlink` is not defined until after. */
 
 static unsigned boat_id_hash(const int id) { return (unsigned)id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
@@ -188,7 +188,7 @@ static void fill_boat_id(int *const id);
 #define SET_TO_STRING &boat_id_to_string
 #include "../src/set.h"
 struct boat {
-	struct id_set_node id;
+	struct id_setlink id;
 	int best_time;
 	int points;
 };
@@ -197,7 +197,7 @@ static struct boat *id_upcast(int *const id) {
 	/* The `offsetof` are both (now) zero, see <tag:Boat>, so this could be
 	 written more succinctly. */
 	return (struct boat *)(void *)((char *)id - offsetof(struct boat, id)
-		- offsetof(struct id_set_node, key));
+		- offsetof(struct id_setlink, key));
 }
 /* `const` container of `id`. */
 static const struct boat *id_upcast_c(const int *const id) {
@@ -268,7 +268,7 @@ static void each_set_boat(struct id_set *const ids, struct boat *const bs,
 #define POOL_TYPE struct boat
 #include "pool.h"
 /** Parent-type for testing. */
-static struct id_set_node *id_from_pool(void *const vboats) {
+static struct id_setlink *id_from_pool(void *const vboats) {
 	struct boat_pool *const boats = vboats;
 	struct boat *b = boat_pool_new(boats);
 	assert(boats);
@@ -294,33 +294,33 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_TO_STRING &key_to_string
 #include "../src/set.h"
 
-struct key_list_node;
-static int key_compare(const struct key_list_node *,
-	const struct key_list_node *);
+struct key_listlink;
+static int key_compare(const struct key_listlink *,
+	const struct key_listlink *);
 #define LIST_NAME key
 #define LIST_COMPARE &key_compare
 #include "list.h"
 
 struct dict_entry {
-	struct key_set_node elem;
-	struct key_list_node node;
+	struct key_setlink elem;
+	struct key_listlink node;
 	char key[24];
 	char value[32];
 };
 
 /* Container of `elem`. */
-static struct dict_entry *elem_upcast(struct key_set_node *const elem) {
+static struct dict_entry *elem_upcast(struct key_setlink *const elem) {
 	return (struct dict_entry *)(void *)((char *)elem
 		- offsetof(struct dict_entry, elem));
 }
 /* `const` container of `node`. */
 static const struct dict_entry
-	*node_upcast_c(const struct key_list_node *const node)
+	*node_upcast_c(const struct key_listlink *const node)
 	{ return (const struct dict_entry *)(const void *)((const char *)node
 	- offsetof(struct dict_entry, node)); }
 /** @implements <key_list_node>compare */
-static int key_compare(const struct key_list_node *const a,
-	const struct key_list_node *const b) {
+static int key_compare(const struct key_listlink *const a,
+	const struct key_listlink *const b) {
 	return strcmp(node_upcast_c(a)->elem.key, node_upcast_c(b)->elem.key);
 }
 static void entry_fill(struct dict_entry *const e) {
@@ -330,12 +330,12 @@ static void entry_fill(struct dict_entry *const e) {
 	orcish(e->value, sizeof e->value);
 }
 static const struct dict_entry *entry_prev(struct dict_entry *const e) {
-	const struct key_list_node *const prev = key_list_previous(&e->node);
+	const struct key_listlink *const prev = key_list_previous(&e->node);
 	assert(e);
 	return prev ? node_upcast_c(prev) : 0;
 }
 static const struct dict_entry *entry_next(struct dict_entry *const e) {
-	const struct key_list_node *const next = key_list_next(&e->node);
+	const struct key_listlink *const next = key_list_next(&e->node);
 	assert(e);
 	return next ? node_upcast_c(next) : 0;
 }
@@ -376,7 +376,7 @@ int main(void) {
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
 		struct key_set kset = SET_IDLE;
 		struct key_list klist;
-		struct key_set_node *elem;
+		struct key_setlink *elem;
 		struct dict_entry *found;
 		size_t line, unique = 0;
 		int is_used = 1;
@@ -426,7 +426,7 @@ int main(void) {
 			sp_e_to_go = sp_es_size;
 		struct key_set kset = SET_IDLE;
 		struct key_list klist;
-		struct key_set_node *elem;
+		struct key_setlink *elem;
 		struct dict_entry *found;
 		size_t line = 1, words_to_go = 216555, key_len;
 		assert(RAND_MAX >= words_to_go);

@@ -1,10 +1,10 @@
 # set\.h #
 
-## Hash Set ##
+## Unordered associative array ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;type](#user-content-typedef-5ef437c0), [&lt;PS&gt;mtype](#user-content-typedef-39f53ca7), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;replace_fn](#user-content-typedef-ccec694d), [&lt;PS&gt;action_fn](#user-content-typedef-4d582877), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;S&gt;set_node](#user-content-tag-9b50f7a7), [&lt;S&gt;set](#user-content-tag-54aaac2), [&lt;PS&gt;iterator](#user-content-tag-d987a32)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;type](#user-content-typedef-5ef437c0), [&lt;PS&gt;mtype](#user-content-typedef-39f53ca7), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;replace_fn](#user-content-typedef-ccec694d), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;S&gt;setlink](#user-content-tag-3e55d3ba), [&lt;S&gt;set](#user-content-tag-54aaac2)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,9 +13,9 @@
 
 ![Example of &lt;String&gt;Set.](web/set.png)
 
-[&lt;S&gt;set](#user-content-tag-54aaac2) is a collection of elements of [&lt;S&gt;set_node](#user-content-tag-9b50f7a7) that doesn't allow duplication; it must be supplied an equality function, `SET_IS_EQUAL` [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), and a hash function, `SET_HASH` [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975)\.
+[&lt;S&gt;set](#user-content-tag-54aaac2) is a collection of elements of [&lt;S&gt;setlink](#user-content-tag-3e55d3ba) that doesn't allow duplication; it must be supplied an equality function, `SET_IS_EQUAL` [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), and a hash function, `SET_HASH` [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975)\.
 
-Internally, it is a separately chained hash table with a maximum load factor of `ln 2`, power\-of\-two resizes, with buckets as a forward linked list of [&lt;S&gt;set_node](#user-content-tag-9b50f7a7)\. This offers some independence of sets from set elements\. It can be expanded to an associative array by enclosing the `<S>set_node` in another `struct`\.
+Internally, it is a separately chained hash table with a maximum load factor of `ln 2`, power\-of\-two resizes, with buckets as a forward linked list of [&lt;S&gt;setlink](#user-content-tag-3e55d3ba)\. This offers some independence of sets from set elements\. It can be expanded to an associative array by enclosing the `<S>setlink` in another `struct`\.
 
 
 
@@ -36,11 +36,11 @@ Internally, it is a separately chained hash table with a maximum load factor of 
  * Parameter: SET\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: SET\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); `<Z>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1)\. There can be multiple to string traits, but only one can omit `SET_TO_STRING_NAME`\.
- * Parameter: SET\_TEST  
-   To string trait contained in [\.\./test/set\_test\.h](../test/set_test.h); optional unit testing framework using `assert`\. Can only be defined once _per_ set\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PS&gt;action_fn](#user-content-typedef-4d582877)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [to\_string\.h](to_string.h); `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `SET_TO_STRING_NAME`\.
  * Standard:  
    C89
+ * Caveat:  
+   ([&lt;PS&gt;mtype](#user-content-typedef-39f53ca7))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -57,7 +57,7 @@ Valid unsigned integer type used for hash values\. The hash map will saturate at
 
 <code>typedef SET_TYPE <strong>&lt;PS&gt;type</strong>;</code>
 
-Valid tag type defined by `SET_TYPE`\. Included in [&lt;S&gt;set_node](#user-content-tag-9b50f7a7)\.
+Valid tag type defined by `SET_TYPE`\. Included in [&lt;S&gt;setlink](#user-content-tag-3e55d3ba)\.
 
 
 
@@ -66,6 +66,10 @@ Valid tag type defined by `SET_TYPE`\. Included in [&lt;S&gt;set_node](#user-con
 <code>typedef const &lt;PS&gt;type *<strong>&lt;PS&gt;mtype</strong>;</code>
 
 `SET_POINTER` modifies `<PS>mtype` to be a pointer, otherwise it's the same as [&lt;PS&gt;type](#user-content-typedef-5ef437c0)\.
+
+ * Caveat:  
+   This is confusing\.
+
 
 
 
@@ -93,29 +97,37 @@ A di\-predicate; returns true if the `replace` replaces the `original`\.
 
 
 
-### <a id = "user-content-typedef-4d582877" name = "user-content-typedef-4d582877">&lt;PS&gt;action_fn</a> ###
+### <a id = "user-content-typedef-ace240bb" name = "user-content-typedef-ace240bb">&lt;PSZ&gt;box</a> ###
 
-<code>typedef void(*<strong>&lt;PS&gt;action_fn</strong>)(&lt;PS&gt;type *);</code>
+<code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code>
 
-Operates by side\-effects\. Used for `SET_TEST`\.
+[to\_string\.h](to_string.h): an alias to the box\.
 
 
 
-### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-d1a7c35e" name = "user-content-typedef-d1a7c35e">&lt;PSZ&gt;type</a> ###
 
-<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
+<code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code>
 
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+[to\_string\.h](to_string.h): an alias to the individual type contained in the box\.
+
+
+
+### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
+
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
+
+Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e) into a 12\-`char` null\-terminated output string\.
 
 
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-9b50f7a7" name = "user-content-tag-9b50f7a7">&lt;S&gt;set_node</a> ###
+### <a id = "user-content-tag-3e55d3ba" name = "user-content-tag-3e55d3ba">&lt;S&gt;setlink</a> ###
 
-<code>struct <strong>&lt;S&gt;set_node</strong>;</code>
+<code>struct <strong>&lt;S&gt;setlink</strong> { &lt;PS&gt;type key; struct &lt;S&gt;setlink *next; &lt;PS&gt;uint hash; };</code>
 
-Contains [&lt;PS&gt;type](#user-content-typedef-5ef437c0) as the first element `key`, along with data internal to the set\. Storage of the `<S>set_node` structure is the responsibility of the caller\.
+Contains [&lt;PS&gt;type](#user-content-typedef-5ef437c0) as the first element `key`, along with data internal to the set\. Storage of the `<S>setlink` structure is the responsibility of the caller\.
 
 
 
@@ -126,14 +138,6 @@ Contains [&lt;PS&gt;type](#user-content-typedef-5ef437c0) as the first element `
 An `<S>set` of `size`\. To initialise, see [&lt;S&gt;set](#user-content-fn-54aaac2), `SET_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](web/states.png)
-
-
-
-### <a id = "user-content-tag-d987a32" name = "user-content-tag-d987a32">&lt;PS&gt;iterator</a> ###
-
-<code>struct <strong>&lt;PS&gt;iterator</strong>;</code>
-
-Contains all iteration parameters\.
 
 
 
@@ -149,19 +153,17 @@ Contains all iteration parameters\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-b2194878">&lt;S&gt;set_clear</a></td><td>set</td></tr>
 
-<tr><td align = right>static struct &lt;S&gt;set_node *</td><td><a href = "#user-content-fn-4b32a391">&lt;S&gt;set_get</a></td><td>set, data</td></tr>
+<tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#user-content-fn-4b32a391">&lt;S&gt;set_get</a></td><td>set, data</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-7cc805b1">&lt;S&gt;set_reserve</a></td><td>set, reserve</td></tr>
 
-<tr><td align = right>static struct &lt;S&gt;set_node *</td><td><a href = "#user-content-fn-fd0e5a1c">&lt;S&gt;set_put</a></td><td>set, element</td></tr>
+<tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#user-content-fn-fd0e5a1c">&lt;S&gt;set_put</a></td><td>set, element</td></tr>
 
-<tr><td align = right>static struct &lt;S&gt;set_node *</td><td><a href = "#user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a></td><td>set, element, replace</td></tr>
+<tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a></td><td>set, element, replace</td></tr>
 
-<tr><td align = right>static struct &lt;S&gt;set_node *</td><td><a href = "#user-content-fn-f336902b">&lt;S&gt;set_remove</a></td><td>set, data</td></tr>
+<tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#user-content-fn-f336902b">&lt;S&gt;set_remove</a></td><td>set, data</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-773f8713">&lt;S&gt;set_test</a></td><td>parent_new, parent</td></tr>
-
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -205,7 +207,7 @@ Clears and removes all entries from `set`\. The capacity and memory of the hash 
 
 ### <a id = "user-content-fn-4b32a391" name = "user-content-fn-4b32a391">&lt;S&gt;set_get</a> ###
 
-<code>static struct &lt;S&gt;set_node *<strong>&lt;S&gt;set_get</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;mtype <em>data</em>)</code>
+<code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_get</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;mtype <em>data</em>)</code>
 
  * Parameter: _set_  
    If null, returns null\.
@@ -234,7 +236,7 @@ Reserve at least `reserve`, divided by the maximum load factor, space in the buc
 
 ### <a id = "user-content-fn-fd0e5a1c" name = "user-content-fn-fd0e5a1c">&lt;S&gt;set_put</a> ###
 
-<code>static struct &lt;S&gt;set_node *<strong>&lt;S&gt;set_put</strong>(struct &lt;S&gt;set *const <em>set</em>, struct &lt;S&gt;set_node *const <em>element</em>)</code>
+<code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_put</strong>(struct &lt;S&gt;set *const <em>set</em>, struct &lt;S&gt;setlink *const <em>element</em>)</code>
 
 Puts the `element` in `set`\.
 
@@ -254,7 +256,7 @@ Puts the `element` in `set`\.
 
 ### <a id = "user-content-fn-e5100be7" name = "user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a> ###
 
-<code>static struct &lt;S&gt;set_node *<strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>set</em>, struct &lt;S&gt;set_node *const <em>element</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code>
+<code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>set</em>, struct &lt;S&gt;setlink *const <em>element</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code>
 
 Puts the `element` in `set` only if the entry is absent or if calling `replace` returns true\.
 
@@ -276,7 +278,7 @@ Puts the `element` in `set` only if the entry is absent or if calling `replace` 
 
 ### <a id = "user-content-fn-f336902b" name = "user-content-fn-f336902b">&lt;S&gt;set_remove</a> ###
 
-<code>static struct &lt;S&gt;set_node *<strong>&lt;S&gt;set_remove</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;mtype <em>data</em>)</code>
+<code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_remove</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;mtype <em>data</em>)</code>
 
 Removes an element `data` from `set`\.
 
@@ -288,26 +290,12 @@ Removes an element `data` from `set`\.
 
 
 
-### <a id = "user-content-fn-773f8713" name = "user-content-fn-773f8713">&lt;S&gt;set_test</a> ###
+### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
 
-<code>static void <strong>&lt;S&gt;set_test</strong>(struct &lt;S&gt;set_node *(*const <em>parent_new</em>)(void *), void *const <em>parent</em>)</code>
-
-The list will be tested on `stdout`\. Requires `SET_TEST` to be a [&lt;PS&gt;action_fn](#user-content-typedef-4d582877) and `SET_TO_STRING`\.
-
- * Parameter: _parent\_new_  
-   Specifies the dynamic up\-level creator of the parent `struct`\. Could be null; then testing will be done statically on an array of [&lt;S&gt;set_node](#user-content-tag-9b50f7a7) and `SET_TEST` is not allowed to go over the limits of the data type\.
- * Parameter: _parent_  
-   The parameter passed to `parent_new`\. Ignored if `parent_new` is null\.
-
-
-
-
-### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
-
-<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   Print the contents of [&lt;PSZ&gt;box](#user-content-typedef-ace240bb) `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 

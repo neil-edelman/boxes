@@ -20,7 +20,7 @@ static const PS_(action_fn) PS_(filler) = (SET_TEST);
 
 /** Count how many are in the `bucket`. @order \O(`bucket.items`) */
 static size_t PS_(count)(struct PS_(bucket) *const bucket) {
-	const struct S_(set_node) *x;
+	const struct S_(setlink) *x;
 	size_t c = 0;
 	assert(bucket);
 	for(x = bucket->first; x; x = x->next) c++;
@@ -98,7 +98,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	fprintf(fp, "\"];\n");
 	if(set->buckets) {
 		struct PS_(bucket) *b, *b_end;
-		struct S_(set_node) *x, *x_prev, *xt;
+		struct S_(setlink) *x, *x_prev, *xt;
 		fprintf(fp, "\tsubgraph cluster_buckets {\n"
 			"\t\tstyle=filled;\n"
 			"\t\tnode [fillcolor=lightpink];\n");
@@ -180,11 +180,11 @@ static void PS_(histogram)(const struct S_(set) *const set,
 }
 
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */
-static void PS_(test_basic)(struct S_(set_node) *(*const parent_new)(void *),
+static void PS_(test_basic)(struct S_(setlink) *(*const parent_new)(void *),
 	void *const parent) {
 	struct Test {
-		struct S_(set_node) space, *elem;
-		int is_in;
+		struct S_(setlink) space, *elem;
+		int is_in, unused;
 	} test[10000], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
@@ -192,7 +192,7 @@ static void PS_(test_basic)(struct S_(set_node) *(*const parent_new)(void *),
 	size_t removed = 0, collision = 0;
 	struct PS_(bucket) *b, *b_end;
 	struct S_(set) set = SET_IDLE;
-	struct S_(set_node) *eject, *element;
+	struct S_(setlink) *eject, *element;
 	assert(test_size > 1);
 	memset(&test, 0, sizeof test);
 	/* Test empty. */
@@ -272,7 +272,7 @@ static void PS_(test_basic)(struct S_(set_node) *(*const parent_new)(void *),
 	printf(" ]\n");*/
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		const size_t n = (size_t)(t - test);
-		struct S_(set_node) *r;
+		struct S_(setlink) *r;
 		if(!(n & (n - 1))) {
 			PS_(to_string)(&t->elem->key, &a);
 			fprintf(stderr, "%lu: retrieving %s.\n", (unsigned long)n, a);
@@ -319,10 +319,10 @@ static void PS_(test_basic)(struct S_(set_node) *(*const parent_new)(void *),
  <typedef:<PS>action_fn> and `SET_TO_STRING`.
  @param[parent_new] Specifies the dynamic up-level creator of the parent
  `struct`. Could be null; then testing will be done statically on an array of
- <tag:<S>set_node> and `SET_TEST` is not allowed to go over the limits of the
+ <tag:<S>setlink> and `SET_TEST` is not allowed to go over the limits of the
  data type. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void S_(set_test)(struct S_(set_node) *(*const parent_new)(void *),
+static void S_(set_test)(struct S_(setlink) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(SET_NAME) ">set of type <" QUOTE(SET_TYPE)
 		"> was created using: SET_HASH <" QUOTE(SET_HASH) ">; "

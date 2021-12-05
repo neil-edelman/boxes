@@ -1,19 +1,19 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Hash Set
+ @subtitle Unordered associative array
 
  ![Example of <String>Set.](../web/set.png)
 
- <tag:<S>set> is a collection of elements of <tag:<S>set_node> that doesn't
+ <tag:<S>set> is a collection of elements of <tag:<S>setlink> that doesn't
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
  <typedef:<PS>is_equal_fn>, and a hash function, `SET_HASH`
  <typedef:<PS>hash_fn>.
 
  Internally, it is a separately chained hash table with a maximum load factor
  of `ln 2`, power-of-two resizes, with buckets as a forward linked list of
- <tag:<S>set_node>. This offers some independence of sets from set elements.
- It can be expanded to an associative array by enclosing the `<S>set_node` in
+ <tag:<S>setlink>. This offers some independence of sets from set elements.
+ It can be expanded to an associative array by enclosing the `<S>setlink` in
  another `struct`.
 
  @param[SET_NAME, SET_TYPE]
@@ -51,60 +51,51 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[SET_TO_STRING]
- To string trait contained in <to_string.h>; `<Z>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PZ>to_string_fn>.
- There can be multiple to string traits, but only one can omit
- `SET_TO_STRING_NAME`.
-
- @param[SET_TEST]
- To string trait contained in <../test/set_test.h>; optional unit testing
- framework using `assert`. Can only be defined once _per_ set. Must be defined
- equal to a (random) filler function, satisfying <typedef:<PS>action_fn>.
- Output will be shown with the to string trait in which it's defined; provides
- tests for the base code and all later traits.
+ To string trait contained in <to_string.h>; `<SZ>` that satisfies `C` naming
+ conventions when mangled and function implementing
+ <typedef:<PSZ>to_string_fn>. There can be multiple to string traits, but only
+ one can omit `SET_TO_STRING_NAME`.
 
  @std C89 */
-
-#include <stdlib.h> /* realloc free */
-#include <assert.h>	/* assert */
-#include <errno.h>  /* errno */
-
 
 #if !defined(SET_NAME) || !defined(SET_TYPE) || !defined(SET_IS_EQUAL) \
 	|| !defined(SET_HASH)
 #error Name SET_NAME, tag type SET_TYPE, fns SET_IS_EQUAL, SET_HASH undefined.
 #endif
-#if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING) /* <!-- str */
+#if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING)
 #define SET_TO_STRING_TRAIT 1
-#else /* str --><!-- !str */
+#else
 #define SET_TO_STRING_TRAIT 0
-#endif /* !str --> */
+#endif
 #define SET_TRAITS SET_TO_STRING_TRAIT
 #if SET_TRAITS > 1
 #error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
-#endif
-#if SET_TRAITS != 0 && (!defined(S_) || !defined(CAT) || !defined(CAT_))
-#error Use SET_EXPECT_TRAIT and include it again.
 #endif
 #if defined(SET_TO_STRING_NAME) && !defined(SET_TO_STRING)
 #error SET_TO_STRING_NAME requires SET_TO_STRING.
 #endif
 
+#ifndef SET_H /* <!-- idempotent */
+#define SET_H
+#include <stdlib.h>
+#include <errno.h>
+#include <assert.h>
+#if defined(SET_CAT_) || defined(SET_CAT) || defined(S_) || defined(PS_) \
+	|| defined(SET_IDLE)
+#error Unexpected defines.
+#endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define SET_CAT_(n, m) n ## _ ## m
+#define SET_CAT(n, m) SET_CAT_(n, m)
+#define S_(n) SET_CAT(SET_NAME, n)
+#define PS_(n) SET_CAT(set, S_(n))
+#define SET_IDLE { 0, 0, 0, 0 }
+#endif /* idempotent --> */
+
 
 #if SET_TRAITS == 0 /* <!-- base code */
 
 
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(S_) || defined(PS_) \
-	|| (defined(SET_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?S_ or CAT_?; possible stray SET_EXPECT_TRAIT?
-#endif
-#ifndef SET_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define S_(n) CAT(SET_NAME, n)
-#define PS_(n) CAT(set, CAT(SET_NAME, n))
 #ifndef SET_UINT
 #define SET_UINT unsigned
 #endif
@@ -115,11 +106,11 @@
  over the maximum. */
 typedef SET_UINT PS_(uint);
 
-/** Valid tag type defined by `SET_TYPE`. Included in <tag:<S>set_node>. */
+/** Valid tag type defined by `SET_TYPE`. Included in <tag:<S>setlink>. */
 typedef SET_TYPE PS_(type);
 #ifdef SET_POINTER /* <!-- !raw */
 /** `SET_POINTER` modifies `<PS>mtype` to be a pointer, otherwise it's
- the same as <typedef:<PS>type>. */
+ the same as <typedef:<PS>type>. @fixme This is confusing. */
 typedef const PS_(type)* PS_(mtype);
 #else /* !raw --><!-- raw */
 typedef PS_(type) PS_(mtype);
@@ -148,12 +139,11 @@ static int PS_(false)(PS_(type) *original, PS_(type) *replace)
 	{ (void)(original); (void)(replace); return 0; }
 
 /** Contains <typedef:<PS>type> as the first element `key`, along with data
- internal to the set. Storage of the `<S>set_node` structure is the
+ internal to the set. Storage of the `<S>setlink` structure is the
  responsibility of the caller. */
-struct S_(set_node);
-struct S_(set_node) {
-	PS_(type) key; /* This should be next, but offsetof key in set_node 0. */
-	struct S_(set_node) *next;
+struct S_(setlink) {
+	PS_(type) key; /* This should be next, but offsetof key in setlink 0. */
+	struct S_(setlink) *next;
 #ifndef SET_NO_CACHE /* <!-- cache */
 	PS_(uint) hash;
 #endif /* cache --> */
@@ -161,7 +151,7 @@ struct S_(set_node) {
 
 /* Singly-linked list head for `buckets`. Not really needed, but
  double-pointers are confusing. */
-struct PS_(bucket) { struct S_(set_node) *first; };
+struct PS_(bucket) { struct S_(setlink) *first; };
 
 /** An `<S>set` of `size`. To initialise, see <fn:<S>set>, `SET_IDLE`, `{0}`
  (`C99`,) or being `static`.
@@ -171,11 +161,8 @@ struct S_(set);
 struct S_(set) {
 	struct PS_(bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
 	size_t size;
-	unsigned log_capacity;
+	unsigned log_capacity, unused;
 };
-#ifndef SET_IDLE /* <!-- !zero */
-#define SET_IDLE { 0, 0, 0 }
-#endif /* !zero --> */
 
 #ifdef SET_POINTER /* <!-- !raw */
 /** @return `element`. */
@@ -188,7 +175,7 @@ static PS_(type) PS_(pointer)(const PS_(type) *const element)
 #endif /* raw --> */
 
 /** Gets the hash of `element`, which should be consistant. */
-static PS_(uint) PS_(get_hash)(struct S_(set_node) *element) {
+static PS_(uint) PS_(get_hash)(struct S_(setlink) *element) {
 	assert(element);
 #ifdef SET_NO_CACHE /* <!-- !cache */
 	return PS_(hash)(PS_(pointer)(&element->key));
@@ -209,9 +196,9 @@ static struct PS_(bucket) *PS_(get_bucket)(struct S_(set) *const set,
 /** Linear search for `data` in `bucket`.
  @param[hash] Must match the hash of `data`.
  @return The link that points to the `data` or null. */
-static struct S_(set_node) **PS_(bucket_to)(struct PS_(bucket) *const bucket,
+static struct S_(setlink) **PS_(bucket_to)(struct PS_(bucket) *const bucket,
 	const PS_(uint) hash, const PS_(mtype) data) {
-	struct S_(set_node) **to_x, *x;
+	struct S_(setlink) **to_x, *x;
 	assert(bucket);
 	for(to_x = &bucket->first; (x = *to_x); to_x = &x->next) {
 #ifndef SET_NO_CACHE /* <!-- cache: a quick out. */
@@ -233,7 +220,7 @@ static struct S_(set_node) **PS_(bucket_to)(struct PS_(bucket) *const bucket,
  @throws[realloc] */
 static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
 	struct PS_(bucket) *buckets, *b, *b_end, *new_b;
-	struct S_(set_node) **to_x, *x;
+	struct S_(setlink) **to_x, *x;
 	const unsigned log_c0 = set->log_capacity,
 		log_limit = sizeof(PS_(uint)) * 8 - 1;
 	unsigned log_c1;
@@ -287,10 +274,10 @@ static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
 /** General put, `element` in `set` and returns the collided element, if any,
  as long as `replace` is null or returns true. If `replace` returns false,
  returns `element`. */
-static struct S_(set_node) *PS_(put)(struct S_(set) *const set,
-	struct S_(set_node) *const element, const PS_(replace_fn) replace) {
+static struct S_(setlink) *PS_(put)(struct S_(set) *const set,
+	struct S_(setlink) *const element, const PS_(replace_fn) replace) {
 	struct PS_(bucket) *bucket;
-	struct S_(set_node) **to_x = 0, *x = 0;
+	struct S_(setlink) **to_x = 0, *x = 0;
 	PS_(uint) hash;
 	assert(set && element);
 	hash = PS_(hash)(PS_(pointer)(&element->key));
@@ -342,9 +329,9 @@ static void S_(set_clear)(struct S_(set) *const set) {
  `data`, or, if no such value exists, null.
  @param[set] If null, returns null. @order Average \O(1), (hash distributes
  elements uniformly); worst \O(n). @allow */
-static struct S_(set_node) *S_(set_get)(struct S_(set) *const set,
+static struct S_(setlink) *S_(set_get)(struct S_(set) *const set,
 	const PS_(mtype) data) {
-	struct S_(set_node) **to_x;
+	struct S_(setlink) **to_x;
 	PS_(uint) hash;
 	if(!set || !set->buckets) return 0;
 	hash = PS_(hash)(data);
@@ -369,8 +356,8 @@ static int S_(set_reserve)(struct S_(set) *const set, const size_t reserve)
  calling <fn:<S>set_reserve> with at least one before ensures that this does
  not happen. @order Average amortised \O(1), (hash distributes elements
  uniformly); worst \O(n). @allow */
-static struct S_(set_node) *S_(set_put)(struct S_(set) *const set,
-	struct S_(set_node) *const element) { return PS_(put)(set, element, 0); }
+static struct S_(setlink) *S_(set_put)(struct S_(set) *const set,
+	struct S_(setlink) *const element) { return PS_(put)(set, element, 0); }
 
 /** Puts the `element` in `set` only if the entry is absent or if calling
  `replace` returns true.
@@ -385,18 +372,18 @@ static struct S_(set_node) *S_(set_put)(struct S_(set) *const set,
  Successfully calling <fn:<S>set_reserve> with at least one before ensures that
  this does not happen. @order Average amortised \O(1), (hash distributes
  elements uniformly); worst \O(n). @allow */
-static struct S_(set_node) *S_(set_policy_put)(struct S_(set) *const set,
-	struct S_(set_node) *const element, const PS_(replace_fn) replace)
+static struct S_(setlink) *S_(set_policy_put)(struct S_(set) *const set,
+	struct S_(setlink) *const element, const PS_(replace_fn) replace)
 	{ return PS_(put)(set, element, replace ? replace : &PS_(false)); }
 
 /** Removes an element `data` from `set`.
  @return Successfully ejected element or null. This element is free to be put
  into another set or modify it's hash values. @order Average \O(1), (hash
  distributes elements uniformly); worst \O(n). @allow */
-static struct S_(set_node) *S_(set_remove)(struct S_(set) *const set,
+static struct S_(setlink) *S_(set_remove)(struct S_(set) *const set,
 	const PS_(mtype) data) {
 	PS_(uint) hash;
-	struct S_(set_node) **to_x, *x;
+	struct S_(setlink) **to_x, *x;
 	if(!set || !set->buckets) return 0;
 	hash = PS_(hash)(data);
 	if(!(to_x = PS_(bucket_to)(PS_(get_bucket)(set, hash), hash, data)))
@@ -409,12 +396,10 @@ static struct S_(set_node) *S_(set_remove)(struct S_(set) *const set,
 }
 
 /* <!-- iterate interface */
-#define BOX_ITERATE
 
-/** Contains all iteration parameters. */
-struct PS_(iterator);
+/* Contains all iteration parameters. */
 struct PS_(iterator)
-	{ const struct S_(set) *set; size_t b; struct S_(set_node) *e; };
+	{ const struct S_(set) *set; size_t b; struct S_(setlink) *e; };
 
 /** Loads `set` into `it`. @implements begin */
 static void PS_(begin)(struct PS_(iterator) *const it,
@@ -438,7 +423,7 @@ static const PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 
 /* iterate --> */
 
-/* Define these for traits. */
+/* <!-- box (multiple traits) */
 #define BOX_ PS_
 #define BOX_CONTAINER struct S_(set)
 #define BOX_CONTENTS PS_(type)
@@ -447,7 +432,7 @@ static const PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
 static const char *(*PS_(set_to_string))(const struct S_(set) *);
-#include "../test/test_set.h" /** \include */
+#include "../test/test_set.h"
 #endif /* test --> */
 
 static void PS_(unused_base_coda)(void);
@@ -464,25 +449,22 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #elif defined(SET_TO_STRING) /* base code --><!-- to string trait */
 
 
-#define ZI_ SET_FORWARD_
-#ifdef SET_TO_STRING_NAME /* <!-- name */
-#define Z_(n) CAT(S_(set), CAT(SET_TO_STRING_NAME, n))
-#else /* name --><!-- !name */
-#define Z_(n) CAT(S_(set), n)
-#endif /* !name --> */
+#ifdef SET_TO_STRING_NAME
+#define SZ_(n) SET_CAT(S_(set), SET_CAT(SET_TO_STRING_NAME, n))
+#else
+#define SZ_(n) SET_CAT(S_(set), n)
+#endif
 #define TO_STRING SET_TO_STRING
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
-#ifdef SET_TEST /* <!-- expect: we've forward-declared these. */
+#ifdef SET_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef SET_TEST
-static void (*PS_(to_string))(const PS_(type) *, char (*)[12])
-	= PZ_(to_string);
+static PSZ_(to_string_fn) PS_(to_string) = PSZ_(to_string);
 static const char *(*PS_(set_to_string))(const struct S_(set) *)
-	= &Z_(to_string);
+	= &SZ_(to_string);
 #endif /* expect --> */
-#undef PZ_
-#undef Z_
+#undef SZ_
 #undef SET_TO_STRING
 #ifdef SET_TO_STRING_NAME
 #undef SET_TO_STRING_NAME
@@ -495,41 +477,24 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *)
 #ifdef SET_EXPECT_TRAIT /* <!-- trait */
 #undef SET_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
-#if defined(SET_TEST)
-#error No to string traits defined for test.
+#ifdef SET_TEST
+#error No SET_TO_STRING traits defined for SET_TEST.
 #endif
-#ifndef SET_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef SET_SUBTYPE
-#endif /* sub-type --> */
-#undef S_
-#undef PS_
 #undef SET_NAME
 #undef SET_TYPE
 #undef SET_UINT
 #undef SET_HASH
 #undef SET_IS_EQUAL
-#ifdef SET_TO_STRING
-#undef SET_TO_STRING
-#endif
 #ifdef SET_POINTER
 #undef SET_POINTER
 #endif
 #ifdef SET_NO_CACHE
 #undef SET_NO_CACHE
 #endif
-#ifdef SET_TEST
-#undef SET_TEST
-#endif
-#ifdef SET_TEST_BASE
-#undef SET_TEST_BASE
-#endif
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-#undef BOX_ITERATE
+/* box (multiple traits) --> */
 #endif /* !trait --> */
 #undef SET_TO_STRING_TRAIT
 #undef SET_TRAITS
