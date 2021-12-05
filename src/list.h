@@ -370,6 +370,8 @@ static void PL_(boolean)(struct L_(list) *const alist,
  cool, but merge sort could be implemented way simpler and copying it into an
  array is always going to be faster. Move all this into `compare.h`. **********/
 
+#if 0
+
 /** Lists `a` and `b`, not-null, are merged, but only the next links;
  the idea of not merging the `prev` was from <https://github.com/torvalds/linux/blob/master/lib/list_sort.c>. */
 static struct L_(listlink) *PL_(merge_nexts)(struct L_(listlink) *a,
@@ -407,7 +409,7 @@ static struct L_(listlink) *PL_(merge_final)(struct L_(listlink) *a,
 	return first;
 }
 
-
+#endif
 
 
 /* A run is a sequence of values in the array that is weakly increasing. */
