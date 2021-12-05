@@ -1,0 +1,52 @@
+digraph {
+	fontname = "Bitstream Vera Sans";
+	fontsize = 8;
+	node [
+		fontname = "Bitstream Vera Sans",
+		fontsize = 8,
+		shape = record,
+		style = filled,
+		fillcolor = lightgrey
+	];
+	edge [
+		fontname = "Bitstream Vera Sans",
+		fontsize = 8
+	];
+	AnimalVt [ label = "{AnimalVt|-type\l|-delete()\l-act()\l-mount_info()\l}" ];
+
+	Animal [ label = "{Animal|- name\l- colour\l}" ];
+	Mount [ label = "{Mount|-steed\l-rider\l}" ]
+	MountInfo [label = "{MountInfo|-steed_of\l-riding\l-is_allowed\l}"]
+	Sloth [ label = "{Sloth|-hours_slept}" ];
+	Emu [ label = "{Emu|-favourite_letter}"];
+	BadEmu [label="{BadEmu|-muhaha}"];
+	Llama [label="{Llama|-chomps}"];
+	Lemur [label="{Lemur|}"];
+	Bear [label="{Bear|}"];
+
+	{ rank = same; Sloth; Emu; Llama; Lemur; Bear; }
+	{ rank = same; AnimalVt; IdListNode; }
+
+	# inheritance (nested `struct`s)
+	edge [ arrowhead = empty ];
+	Sloth -> Animal;
+	BadEmu -> Emu -> Animal;
+	Llama -> Animal;
+	Lemur -> Animal;
+	Bear -> Animal;
+	edge [ arrowhead = diamond ];
+	BadEmu -> MountInfo;
+	Llama -> MountInfo;
+	Lemur -> MountInfo;
+	Bear -> MountInfo;
+
+	# dependancy
+	edge [ style = dashed ]
+	Animal -> AnimalVt [ headlabel = "  1  ", taillabel = "  1  " ];
+	Mount -> MountInfo [ headlabel = "0..2", taillabel = "0..1" ];
+
+	# association
+	edge [ style = normal ];
+	Animal -> IdListNode [ headlabel = "  1  ", taillabel = "  1  " ];
+	Animal -> Mount [ headlabel = " 2  ", taillabel = "1     " ];
+}
