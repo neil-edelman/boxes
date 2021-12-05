@@ -21,7 +21,7 @@ PREFIX := /usr/local
 install := $(project)-`date +%Y-%m-%d`
 
 # extra stuff we should back up
-extra := $(project).xcodeproj
+extra :=
 
 # John Graham-Cumming: rwildcard is a recursive wildcard
 rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
@@ -63,13 +63,27 @@ zip   := zip
 bison := bison
 #lemon := lemon
 
-CC   := clang #gcc
-CF   := -Wall -Wextra -pedantic -Ofast -ffast-math -funroll-loops \
--Weverything -Wno-comma -Wno-logical-op-parentheses \
--Wno-parentheses -Wno-poison-system-directories -Wno-documentation-unknown-command \
--Wno-documentation -Wno-shift-op-parentheses -Wno-empty-body -Wno-padded \
--ansi # -std=c99 -mwindows 
-OF   := -O3 # -framework OpenGL -framework GLUT or -lglut -lGLEW
+target    := # -mwindows
+optimize  := -ffast-math -funroll-loops -Ofast # -O3 -g
+warnbasic := -Wall -pedantic -ansi # -std=c99
+# Some stuff is really new.
+warnclang := -Wextra \
+-Weverything \
+-Wno-comma \
+-Wno-logical-op-parentheses \
+-Wno-parentheses \
+-Wno-poison-system-directories \
+-Wno-documentation-unknown-command \
+-Wno-documentation \
+-Wno-shift-op-parentheses \
+-Wno-empty-body \
+-Wno-padded \
+-Wdisabled-macro-expansion
+warn := $(warnbasic) $(warnclang)
+
+CC   := clang # gcc
+CF   := $(target) $(optimize) $(warn)
+OF   := -Ofast # -O3 -framework OpenGL -framework GLUT or -lglut -lGLEW
 
 # Jakob Borg and Eldar Abusalimov
 # $(ARGS) is all the extra arguments; $(BRGS) is_all_the_extra_arguments
