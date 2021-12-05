@@ -54,10 +54,9 @@
 
 `boxes` is a very simple automated dependancy and build system for
 separate `C89` data structure projects; these projects are intended
-to generate lightweight, independent, and type-safe containers for
-existing code. If one has `git` configured, the `sh`-script,
-`autoclone`, downloads them all, or download each project or file
-individually.  See each for usage, and each project's `test` section
+to generate lightweight, independent, and statically type-safe
+containers for existing code. The `sh`-script `autoclone`, downloads
+them all.  See each for usage, and each project's `test` section
 for examples.
 
 ## Why boxes? ##
@@ -96,7 +95,7 @@ the `src` has which are the same name as the project, and files in
 
 ## Details ##
 
-The documented parameters are preprocessor macros defined before
+The documented parameters are pre-processor macros defined before
 including the file, and they are generally undefined automatically
 before the box is complete for convenience. Since `C` doesn't have
 interfaces, one can include anonymous and named traits with the
