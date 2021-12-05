@@ -1,0 +1,54 @@
+Separate chaining is a pain because you have to wrap your
+structure in a linked list, something that's hard to do in
+C automatically. This reduces the effectiveness of set.
+Also, after a year, I think it should be hash.
+
+I really like resizing only half the entries.
+
+Separate chaining with head records is even more restrictive,
+but we could have a set of linked-lists that point to the
+data. This increases the number of dereference operations.
+
+--
+
+Robin Hood open addressing is a no-brainer.
+
+The hash index could point to a linked-list with pointers
+within the linked-list.
+
+kh = hash(key)
+kb = buckets[h]
+if(!kb.data || hash(kb.key) != kh) return 0
+do {
+	if(key(kb.data) == key) return b.data
+	if(!kb.next) return 0
+	kb = kb.next
+}
+
+This would:
+slow down misses
+double space
+not let the load factor be higher than 1
+
+An almost-as-good method would be to hash into a byte array.
+
+kh = hash(key)
+kc = collision[h]
+if(!kc) return 0
+kb = buckets[kh]
+if(hash(kb.key) != kh) return 0
+do {
+	if(key(kb) == key) return kb
+	if(kc == 255) return 0
+	kb += kc
+	kc += kc
+	assert(kc)
+}
+
+This would save space, but it doesn't guarantee that the data is insertable
+If the data has 256 different values that hash to the same thing, this
+is unrepresentable, or 255 and 2 with the item next to it, etc. No, chaining
+effect with robin-hood in the next jump instead of the original . . .
+Would mean 255/254 spots will have to be filled. Double-null values are still
+a waste of space, however, the load-factor could be increased? Maybe signed?
+would be great for storing hashes.
