@@ -51,8 +51,8 @@ no_free0:
 		"capacity0</TD>\n"
 		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">&#8205;</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
+		"\t</TR>\n", (unsigned long)pool->capacity0);
+	fprintf(fp, "\t<TR>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">slots"
 		"</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
@@ -66,7 +66,6 @@ no_free0:
 		"%lu</TD>\n"
 		"\t</TR>\n"
 		"</TABLE>>];\n",
-		(unsigned long)pool->capacity0,
 		(unsigned long)pool->slots.size,
 		(unsigned long)pool->slots.capacity,
 		(unsigned long)pool->free0.a.size,
