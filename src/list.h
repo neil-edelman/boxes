@@ -311,7 +311,7 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 	}
 }
 
-#ifdef LIST_COMPARE /* <!-- comp */
+#ifdef LIST_COMPARE /* <!-- comp: fixme: move all this to compare.h. */
 
 
 /* Check that `LIST_COMPARE` is a function implementing
@@ -366,18 +366,12 @@ static void PL_(boolean)(struct L_(list) *const alist,
 	}
 }
 
-/* ********** FIXME: this is way too complicated! true, natural merge sort is
- cool, but merge sort could be implemented way simpler and copying it into an
- array is always going to be faster. Move all this into `compare.h`. **********/
-
-#if 0
-
-/** Lists `a` and `b`, not-null, are merged, but only the next links;
- the idea of not merging the `prev` was from <https://github.com/torvalds/linux/blob/master/lib/list_sort.c>. */
-static struct L_(listlink) *PL_(merge_nexts)(struct L_(listlink) *a,
-	struct L_(listlink) *b) {
-	struct L_(listlink) *first, **x = &first;
-	assert(a && b);
+/** Used in <fn:<PL>sort>: merges the two top runs referenced by `head_ptr` in
+ stack form. */
+static void PL_(merge_runs)(struct L_(listlink) **const head_ptr) {
+	struct L_(listlink) *head = *head_ptr, **x = &head,
+		*b = head, *a = b->prev, *const prev = a->prev;
+	assert(head_ptr && a && b);
 	for( ; ; ) {
 		if(PL_(compare)(a, b) <= 0) {
 			*x = a, x = &a->next;
@@ -387,193 +381,101 @@ static struct L_(listlink) *PL_(merge_nexts)(struct L_(listlink) *a,
 			if(!(b = b->next)) { *x = a; break; }
 		}
 	}
-	return first;
+	head->prev = prev, *head_ptr = head;
 }
 
-/** Lists `a` and `b` are merged into and replacing `list` and `prev` is
- restored. */
-static struct L_(listlink) *PL_(merge_final)(struct L_(listlink) *a,
-	struct L_(listlink) *b) {
-	struct L_(listlink) *first, *prev = 0, **x = &first, *c;
-	assert(a && b);
+/** The list form of `list` is restored from `head` in stack form with two
+ runs. */
+static void PL_(merge_final)(struct L_(list) *const list,
+	struct L_(listlink) *head) {
+	struct L_(listlink) *prev = 0, **x = &list->head.next,
+		*b = head, *a = head->prev;
+	assert(list && !list->head.prev && !list->tail.next && b && a && !a->prev);
 	for( ; ; ) {
 		if(PL_(compare)(a, b) <= 0) {
 			a->prev = prev, prev = *x = a, x = &a->next;
-			if(!(a = a->next)) { c = *x = b; break; }
+			if(!(a = a->next)) { a = *x = b; break; }
 		} else {
 			b->prev = prev, prev = *x = b, x = &b->next;
-			if(!(b = b->next)) { c = *x = a; break; }
+			if(!(b = b->next)) { *x = a; break; }
 		}
 	}
-	do c->prev = prev, prev = c; while(c = c->next);
-	return first;
+	do; while(a->prev = prev, prev = a, a = a->next);
+	prev->next = &list->tail, list->tail.prev = prev;
+	assert(list->head.next && list->head.next != &list->tail); /* Not empty. */
+	list->head.next->prev = &list->head;
 }
 
-#endif
-
-
-/* A run is a sequence of values in the array that is weakly increasing. */
-struct PL_(Run) { struct L_(listlink) *head, *tail; size_t size; };
-/* Store the maximum capacity for the indexing with {size_t}. (Much more then
- we need, in most cases.) \${
- \> range(runs) = Sum_{k=0}^runs 2^{runs-k} - 1
- \>             = 2^{runs+1} - 2
- \> 2^bits      = 2 (r^runs - 1)
- \> runs        = log(2^{bits-1} + 1) / log 2
- \> runs       <= 2^{bits - 1}, 2^{bits + 1} > 0} */
-struct PL_(Runs) {
-	struct PL_(Run) run[(sizeof(size_t) << 3) - 1];
-	size_t run_no;
-};
-
-/** Inserts the first element from the larger of two sorted `r`, then merges
- the rest. */
-static void PL_(merge_runs)(struct PL_(Runs) *const r) {
-	struct PL_(Run) *const run_a = r->run + r->run_no - 2;
-	struct PL_(Run) *const run_b = run_a + 1;
-	struct L_(listlink) *a = run_a->tail, *b = run_b->head, *chosen;
-	assert(r->run_no >= 2);
-	/* In the absence of any real information, assume that the elements farther
-	 in the list are generally more apt to be at the back, _viz_, adaptive. */
-	if(run_a->size <= run_b->size) {
-		struct L_(listlink) *prev_chosen;
-		/* Run `a` is smaller: downwards insert `b.head` followed by upwards
-		 merge. Insert the first element of `b` downwards into `a`. */
-		for( ; ; ) {
-			if(PL_(compare)(a, b) <= 0) { chosen = a; a = a->next; break; }
-			if(!a->prev) { run_a->head = run_b->head; chosen = b; b = b->next;
-				break; }
-			a = a->prev;
-		}
-		/* Merge upwards; while the lists are interleaved. */
-		while(chosen->next) {
-			prev_chosen = chosen;
-			if(PL_(compare)(a, b) > 0) chosen = b, b = b->next;
-			else chosen = a, a = a->next;
-			prev_chosen->next = chosen;
-			chosen->prev = prev_chosen;
-		}
-		/* Splice the one list left. */
-		if(!a) b->prev = chosen, chosen->next = b, run_a->tail = run_b->tail;
-		else a->prev = chosen, chosen->next = a;
-	} else {
-		struct L_(listlink) *next_chosen;
-		int is_a_tail = 0;
-		/* Run `b` is smaller; upwards insert followed by downwards merge.
-		 Insert the last element of `a` upwards into `b`. */
-		for( ; ; ) {
-			if(PL_(compare)(a, b) <= 0) { chosen = b; b = b->prev; break; }
-			/* Here, `a > b`. */
-			if(!b->next) { is_a_tail = -1; chosen = a; a = a->prev; break; }
-			b = b->next;
-		}
-		if(!is_a_tail) run_a->tail = run_b->tail;
-		/* Merge downwards, while the lists are interleaved. */
-		while(chosen->prev) {
-			next_chosen = chosen;
-			if(PL_(compare)(a, b) > 0) chosen = a, a = a->prev;
-			else chosen = b, b = b->prev;
-			next_chosen->prev = chosen;
-			chosen->next = next_chosen;
-		}
-		/* Splice the one list left. */
-		if(!a) b->next = chosen, chosen->prev = b, run_a->head = run_b->head;
-		else a->next = chosen, chosen->prev = a;
-	}
-	run_a->size += run_b->size;
-	r->run_no--;
-}
-
-/** Natural merge sorts `list`. */
-static void PL_(natural)(struct L_(list) *const list) {
-	/* fixme: This is half-a-KB; use recursion properly. */
-	struct PL_(Runs) runs;
-	struct PL_(Run) *new_run;
-	/* Part of the state machine for classifying points. */
-	enum { UNSURE, INCREASING, DECREASING } mono;
-	/* The data that we are sorting. */
-	struct L_(listlink) *a, *b, *c, *first_iso_a;
-	/* `run_count` is different from `runs.run_no` in that it only increases;
-	 only used for calculating the path up the tree. */
-	size_t run_count, rc;
-	/* The value of the comparison. */
-	int comp;
-	assert(list);
-	/* Needs an element. */
-	a = list->head.next, assert(a);
-	if(!(b = a->next)) return;
-	/* Reset the state machine and output to just `a` in the first run. */
-	mono = UNSURE;
-	runs.run_no = 1;
-	new_run = runs.run + 0, run_count = (size_t)1;
-	new_run->size = 1;
-	first_iso_a = new_run->head = new_run->tail = a;
-	/* While `a` and `b` are elements, (that are consecutive.) */
+/** Natural merge sort `list`; the requirement for \O(\log |`list`|) space is
+ satisfied by converting it to a singly-linked with `prev` as a stack of
+ increasing lists, which are merged. */
+static void PL_(sort)(struct L_(list) *const list) {
+	/* Add `[-1,0,1]`: unique identifier for nine weakly-ordered transitions. */
+	enum { DEC = 1, EQ = 4, INC = 7 };
+	int mono = EQ, cmp;
+	struct L_(listlink) *a, *b, *c, *dec_iso = /* Unused. */0;
+	struct { size_t count; struct L_(listlink) *head, *prev; } run;
+	/* Closed sentinel list. */
+	assert(list && list->head.next && list->tail.prev
+		&& !list->head.prev && !list->tail.next);
+	if(a = list->head.next, !(b = a->next)) return; /* Empty. */
+	/* Identify runs of monotonicity until `b` sentinel. */
+	run.count = 0, run.prev = 0, run.head = a;
 	for(c = b->next; c; a = b, b = c, c = c->next) {
-		comp = PL_(compare)(a, b);
-		/* State machine that considers runs in both directions -- in practice,
-		 slightly slower than only considering increasing runs on most cases. */
-		if(comp < 0) { /* `a < b`, increasing -- good. */
-			if(mono != DECREASING) { /* If decreasing, inflection. */
-				mono = INCREASING;
-				new_run->size++;
-				continue;
-			}
-		} else if(comp > 0) { /* Decreasing; reverse preserving stability. */
-			if(mono != INCREASING) { /* If increasing, inflection. */
-				mono = DECREASING;
-				b->next = first_iso_a;
-				first_iso_a->prev = b;
-				new_run->head = first_iso_a = b;
-				new_run->size++;
-				continue;
-			}
-			new_run->tail = a; /* Terminating an increasing sequence. */
-		} else { /* `a == b`. */
-			if(mono == DECREASING) { /* Extend. */
-				struct L_(listlink) *const a_next = a->next;
-				b->next = a_next;
-				a_next->prev = b;
-				a->next = b;
-				b->prev = a;
-			} else { /* Monotone or weakly increasing. */
-				new_run->tail = b;
-			}
-			new_run->size++;
-			continue;
+		cmp = PL_(compare)(b, a);
+		switch(mono + (0 < cmp) - (cmp < 0)) {
+			/* Valley and mountain inflection. */
+		case INC - 1: a->next = 0; /* _Sic_. */
+		case DEC + 1: break;
+			/* Decreasing more and levelled off from decreasing. */
+		case DEC - 1: b->next = dec_iso; dec_iso = run.head = b; continue;
+		case DEC + 0: b->next = a->next; a->next = b; continue;
+			/* Turning down and up. */
+		case EQ  - 1: a->next = 0; b->next = run.head; dec_iso = run.head = b;
+			mono = DEC; continue;
+		case EQ  + 1: mono = INC; continue;
+		case EQ  + 0: /* Same. _Sic_. */
+		case INC + 0: /* Levelled off from increasing. _Sic_. */
+		case INC + 1: continue; /* Increasing more. */
 		}
-		/* Head and tail don't necessarily correspond to the first and last. */
-		new_run->head->prev = new_run->tail->next = 0;
-		/* Greedy merge: keeps space to `O(log n)` instead of `O(n)`. */
-		for(rc = run_count; !(rc & 1) && runs.run_no >= 2; rc >>= 1)
-			PL_(merge_runs)(&runs);
-		/* Reset the state machine and output to just `b` at the next run. */
-		mono = UNSURE;
-		assert(runs.run_no < sizeof(runs.run) / sizeof(*runs.run));
-		new_run = runs.run + runs.run_no++, run_count++;
-		new_run->size = 1;
-		new_run->head = new_run->tail = first_iso_a = b;
+		/* Binary carry sequence, <https://oeis.org/A007814>, one delayed so
+		 always room for final merge. */
+		if(run.count) {
+			size_t rc;
+			for(rc = run.count - 1; rc & 1; rc >>= 1)
+				PL_(merge_runs)(&run.prev);
+		}
+		/* Add to runs, advance; `b` becomes `a` forthwith. */
+		run.head->prev = run.prev, run.prev = run.head, run.count++;
+		run.head = b, mono = EQ;
 	}
-	/* Terminating the last increasing sequence. */
-	if(mono == INCREASING) new_run->tail = a;
-	new_run->tail->next = new_run->head->prev = 0;
-	/* Clean up the rest; when only one, propagate `list_runs[0]` to head. */
-	while(runs.run_no > 1) PL_(merge_runs)(&runs);
-	runs.run[0].head->prev = &list->head;
-	runs.run[0].tail->next = &list->tail;
-	list->head.next = runs.run[0].head;
-	list->tail.prev = runs.run[0].tail;
+	/* Last run; go into an accepting state. */
+	if(mono != DEC) {
+		if(!run.count) return; /* Sorted already. */
+		a->next = 0; /* Last one of increasing or equal. */
+	} else { /* Decreasing. */
+		assert(dec_iso);
+		run.head = dec_iso;
+		if(!run.count) { /* Restore the pointers without having two runs. */
+			list->head.next = dec_iso, dec_iso->prev = &list->head;
+			for(a = dec_iso, b = a->next; b; a = b, b = b->next) b->prev = a;
+			list->tail.prev = a, a->next = &list->tail;
+			return; /* Reverse sorted; now good as well. */
+		}
+	}
+	assert(run.count);
+	/* (Actually slower to merge the last one eagerly. So do nothing.) */
+	run.head->prev = run.prev, run.count++;
+	/* Merge leftovers from the other direction, saving one for final. */
+	while(run.head->prev->prev) PL_(merge_runs)(&run.head);
+	PL_(merge_final)(list, run.head);
 }
 
 /** Performs a stable, adaptive sort of `list` according to `compare`. Requires
- `LIST_COMPARE`. <Peters 2002, Timsort>, _via_ <McIlroy 1993, Optimistic>, does
- long merges by galloping, but we don't have random access to the data because
- we are in a linked-list; this does natural merge sort.
+ `LIST_COMPARE`. Sorting a list is always going to be slower then sorting an
+ array for some number of items.
  @order \Omega(|`list`|), \O(|`list`| log |`list`|) @allow */
-static void L_(list_sort)(struct L_(list) *const list)
-	{ assert(list), PL_(natural)(list); }
-
-
+static void L_(list_sort)(struct L_(list) *const list) { PL_(sort)(list); }
 
 /** Merges from `from` into `to`. If the elements are sorted in both lists,
  then the elements of `list` will be sorted.
