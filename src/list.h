@@ -5,13 +5,10 @@
 
  ![Example of a stochastic skip-list.](../web/list.png)
 
- In parlance of <Thareja 2014, Data Structures>, <tag:<L>list> is a circular
- header doubly-linked list of <tag:<L>listlink>. The header, or sentinel,
- resides in `<L>list`. This allows it to benefit from being closed structure,
- such that with with a pointer to any element, it is possible to extract the
- entire list in \O(`size`). It only provides an order component, and is not
- very useful without enclosing `<L>listlink` in another `struct`; this is
- useful for multi-linked elements.
+ In parlance of <Thareja 2014, Structures>, <tag:<L>list> is a circular
+ header, or sentinel, to a doubly-linked list of <tag:<L>listlink>. This allows
+ it to benefit from being closed structure, such that with with a pointer to
+ any element, it is possible to extract the entire list.
 
  @param[LIST_NAME]
  `<L>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
@@ -73,20 +70,11 @@ enum list_operation {
 #if LIST_TRAITS == 0 /* <!-- base code */
 
 
-/* A note about <tag:<L>listlink> and <tag:<L>list>: these don't have to be
- parameterized at all. However, it's more type-safe to have separate types.
- They can always be a union. */
-
-/* ************* FIXME: update the images; they are from a version 10 years ago.
- ***********/
-/* ********** FIXME: have an option to throw an error if a link is not null
- zero() clears and zeros, push(), add() makes sure it's zero,
- no, have an option **********/
 /** Storage of this structure is the responsibility of the caller. Generally,
- one encloses this in a host `struct`. Multiple independent lists can be in the
- same host structure, however one link can can only be a part of one list at a
- time; adding a link to a second list destroys the integrity of the original
- list.
+ one encloses this in a host `struct` or `union`. Multiple independent lists
+ can be in the same host structure, however one link can can only be a part of
+ one list at a time; adding a link to a second list destroys the integrity of
+ the original list.
 
  ![States.](../web/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *prev, *next; };

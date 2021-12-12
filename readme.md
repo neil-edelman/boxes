@@ -13,20 +13,18 @@
 
 ![Example of a stochastic skip-list.](web/list.png)
 
-In parlance of <Thareja 2014, Data Structures>, [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header doubly\-linked list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. The header, or sentinel, resides in `<L>list`\. This allows it to benefit from being closed structure, such that with with a pointer to any element, it is possible to extract the entire list in &#927;\(`size`\)\. It only provides an order component, and is not very useful without enclosing `<L>listlink` in another `struct`; this is useful for multi\-linked elements\.
+In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures), [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header, or sentinel, to a doubly\-linked list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. This allows it to benefit from being closed structure, such that with with a pointer to any element, it is possible to extract the entire list\.
 
-FIXME: don't duplicate; this should be the private implementation of the functions above [&lt;L&gt;list_next](#user-content-fn-40b28b9b), _etc_\.
+
 
  * Parameter: LIST\_NAME  
    `<L>` that satisfies `C` naming conventions when mangled; required\. `<PL>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: LIST\_COMPARE  
-   Optional total\-order function satisfying [&lt;PL&gt;compare_fn](#user-content-typedef-a22f279f)\. \(fixme: move to trait\.\)
+   Optional total\-order function satisfying [&lt;PL&gt;compare_fn](#user-content-typedef-a22f279f)\. \(fixme: move to trait; wait, I thought it was already?\)
  * Parameter: LIST\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); requires `ARRAY_ITERATE` and goes forwards\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
- * Parameter: LIST\_TEST  
-   To string trait contained in [\.\./test/test\_list\.h](../test/test_list.h); optional unit testing framework using `assert`\. Can only be defined once _per_ `Array`\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96)\. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits\.
+   To string trait contained in [to\_string\.h](to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Standard:  
    C89
 
@@ -87,7 +85,7 @@ Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a
 
 <code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *prev, *next; };</code>
 
-Storage of this structure is the responsibility of the caller\. Generally, one encloses this in a host `struct`\. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time; adding a link to a second list destroys the integrity of the original list\.
+Storage of this structure is the responsibility of the caller\. Generally, one encloses this in a host `struct` or `union`\. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time; adding a link to a second list destroys the integrity of the original list\.
 
 ![States.](web/node-states.png)
 
@@ -107,7 +105,7 @@ Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-ta
 
 <code>struct <strong>&lt;PL&gt;iterator</strong> { struct &lt;L&gt;listlink *node; };</code>
 
-Contains all iteration parameters\.
+Contains all iteration parameters\. \(Since this is a permutation, the iteration is defined by none other then itself\. Used for traits\.\)
 
 
 
@@ -117,9 +115,9 @@ Contains all iteration parameters\.
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-44386a44">&lt;L&gt;list_first</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-9c1c2e10">&lt;L&gt;list_head</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-caeebaea">&lt;L&gt;list_last</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-668b9688">&lt;L&gt;list_tail</a></td><td>list</td></tr>
 
 <tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-93616d3b">&lt;L&gt;list_previous</a></td><td>link</td></tr>
 
@@ -175,9 +173,9 @@ Contains all iteration parameters\.
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
-### <a id = "user-content-fn-44386a44" name = "user-content-fn-44386a44">&lt;L&gt;list_first</a> ###
+### <a id = "user-content-fn-9c1c2e10" name = "user-content-fn-9c1c2e10">&lt;L&gt;list_head</a> ###
 
-<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_first</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_head</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code>
 
  * Return:  
    A pointer to the first element of `list`, if it exists\.
@@ -187,9 +185,9 @@ Contains all iteration parameters\.
 
 
 
-### <a id = "user-content-fn-caeebaea" name = "user-content-fn-caeebaea">&lt;L&gt;list_last</a> ###
+### <a id = "user-content-fn-668b9688" name = "user-content-fn-668b9688">&lt;L&gt;list_tail</a> ###
 
-<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_last</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code>
+<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_tail</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code>
 
  * Return:  
    A pointer to the last element of `list`, if it exists\.
@@ -403,7 +401,7 @@ Corrects `list` ends to compensate for memory relocation of the list itself\.
 
 <code>static void <strong>&lt;L&gt;list_sort</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
 
-Performs a stable, adaptive sort of `list` according to `compare`\. Requires `LIST_COMPARE`\. [Peters 2002, Timsort](https://scholar.google.ca/scholar?q=Peters+2002%2C+Timsort), _via_ [McIlroy 1993, Optimistic](https://scholar.google.ca/scholar?q=McIlroy+1993%2C+Optimistic), does long merges by galloping, but we don't have random access to the data because we are in a linked\-list; this does natural merge sort\.
+Performs a stable, adaptive sort of `list` according to `compare`\. Requires `LIST_COMPARE`\. Sorting a list is always going to be slower then sorting an array for some number of items\.
 
  * Order:  
    &#937;\(|`list`|\), &#927;\(|`list`| log |`list`|\)

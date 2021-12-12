@@ -50,21 +50,19 @@
 
 <p><img alt = "Example of a stochastic skip-list." src = "web/list.png" width = 785 height = 556></p>
 
-<p>In parlance of &lt;Thareja 2014, Data Structures&gt;, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header doubly-linked list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. The header, or sentinel, resides in <code>&lt;L&gt;list</code>. This allows it to benefit from being closed structure, such that with with a pointer to any element, it is possible to extract the entire list in &#927;(<code>size</code>). It only provides an order component, and is not very useful without enclosing <code>&lt;L&gt;listlink</code> in another <code>struct</code>; this is useful for multi-linked elements.</p>
+<p>In parlance of <a href = "https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures">Thareja 2014, Structures</a>, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header, or sentinel, to a doubly-linked list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. This allows it to benefit from being closed structure, such that with with a pointer to any element, it is possible to extract the entire list.</p>
 
-FIXME: don't duplicate; this should be the private implementation of the functions above <a href = "#fn:&lt;L&gt;list_next">&lt;L&gt;list_next</a>, <em>etc</em>.</div>
+</div>
 
 <dl>
 	<dt>Parameter: LIST_NAME</dt>
 	<dd><code>&lt;L&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PL&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: LIST_COMPARE</dt>
-	<dd>Optional total-order function satisfying <a href = "#typedef:&lt;PL&gt;compare_fn">&lt;PL&gt;compare_fn</a>. (fixme: move to trait.)</dd>
+	<dd>Optional total-order function satisfying <a href = "#typedef:&lt;PL&gt;compare_fn">&lt;PL&gt;compare_fn</a>. (fixme: move to trait; wait, I thought it was already?)</dd>
 	<dt>Parameter: LIST_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: LIST_TO_STRING_NAME, LIST_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; requires <code>ARRAY_ITERATE</code> and goes forwards. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>.</dd>
-	<dt>Parameter: LIST_TEST</dt>
-	<dd>To string trait contained in <a href = "../test/test_list.h">../test/test_list.h</a>; optional unit testing framework using <code>assert</code>. Can only be defined once <em>per</em> <code>Array</code>. Must be defined equal to a (random) filler function, satisfying <a href = "#typedef:&lt;PL&gt;action_fn">&lt;PL&gt;action_fn</a>. Output will be shown with the to string trait in which it's defined; provides tests for the base code and all later traits.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 </dl>
@@ -139,7 +137,7 @@ FIXME: don't duplicate; this should be the private implementation of the functio
 
 <p><code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *prev, *next; };</code></p>
 
-<p>Storage of this structure is the responsibility of the caller. Generally, one encloses this in a host <code>struct</code>. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time; adding a link to a second list destroys the integrity of the original list.</p>
+<p>Storage of this structure is the responsibility of the caller. Generally, one encloses this in a host <code>struct</code> or <code>union</code>. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time; adding a link to a second list destroys the integrity of the original list.</p>
 
 <p><img alt = "States." src = "web/node-states.png" width = 357 height = 231></p>
 
@@ -163,7 +161,7 @@ FIXME: don't duplicate; this should be the private implementation of the functio
 
 <p><code>struct <strong>&lt;PL&gt;iterator</strong> { struct &lt;L&gt;listlink *node; };</code></p>
 
-<p>Contains all iteration parameters.</p>
+<p>Contains all iteration parameters. (Since this is a permutation, the iteration is defined by none other then itself. Used for traits.)</p>
 
 </div>
 
@@ -175,9 +173,9 @@ FIXME: don't duplicate; this should be the private implementation of the functio
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_first">&lt;L&gt;list_first</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_head">&lt;L&gt;list_head</a></td><td>list</td></tr>
 
-<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_last">&lt;L&gt;list_last</a></td><td>list</td></tr>
+<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_tail">&lt;L&gt;list_tail</a></td><td>list</td></tr>
 
 <tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_previous">&lt;L&gt;list_previous</a></td><td>link</td></tr>
 
@@ -237,9 +235,9 @@ FIXME: don't duplicate; this should be the private implementation of the functio
 
 <div>
 
-<h3><a id = "fn:<L>list_first" name = "fn:<L>list_first">&lt;L&gt;list_first</a></h3>
+<h3><a id = "fn:<L>list_head" name = "fn:<L>list_head">&lt;L&gt;list_head</a></h3>
 
-<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_first</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_head</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -252,9 +250,9 @@ FIXME: don't duplicate; this should be the private implementation of the functio
 
 <div>
 
-<h3><a id = "fn:<L>list_last" name = "fn:<L>list_last">&lt;L&gt;list_last</a></h3>
+<h3><a id = "fn:<L>list_tail" name = "fn:<L>list_tail">&lt;L&gt;list_tail</a></h3>
 
-<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_last</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code></p>
+<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_tail</strong>(const struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -519,7 +517,7 @@ FIXME: don't duplicate; this should be the private implementation of the functio
 
 <p><code>static void <strong>&lt;L&gt;list_sort</strong>(struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
-<p>Performs a stable, adaptive sort of <code>list</code> according to <code>compare</code>. Requires <code>LIST_COMPARE</code>. <a href = "https://scholar.google.ca/scholar?q=Peters+2002%2C+Timsort">Peters 2002, Timsort</a>, <em>via</em> <a href = "https://scholar.google.ca/scholar?q=McIlroy+1993%2C+Optimistic">McIlroy 1993, Optimistic</a>, does long merges by galloping, but we don't have random access to the data because we are in a linked-list; this does natural merge sort.</p>
+<p>Performs a stable, adaptive sort of <code>list</code> according to <code>compare</code>. Requires <code>LIST_COMPARE</code>. Sorting a list is always going to be slower then sorting an array for some number of items.</p>
 
 <dl>
 	<dt>Order:</dt>
