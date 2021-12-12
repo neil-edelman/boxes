@@ -606,39 +606,21 @@ static void L_(list_xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 
 /* <!-- iterate interface */
 
-/********** FIXME: don't duplicate; this should be the private implementation
- of the functions above <fn:<L>list_next>, _etc_. ***********/
-
-/** Contains all iteration parameters. */
+/** Contains all iteration parameters. (Since this is a permutation, the
+ iteration is defined by none other then itself. Used for traits.) */
 struct PL_(iterator) { struct L_(listlink) *node; };
 
 /** Loads `list` into `it`. @implements begin */
 static void PL_(begin)(struct PL_(iterator) *const it,
 	const struct L_(list) *const list)
-	{ assert(it && list), it->node = list->head.next /*L_(list_first)(list)*/; }
+	{ assert(it && list), it->node = L_(list_head)(list); }
 
 /** Advances `it`. @implements next */
 static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
-	struct L_(listlink) *n;
-	return assert(it && it->node), (it->node = (n = it->node)->next) ? n : 0;
-	/* it->node = L_(list_next)(it->node) */
+	return assert(it), it->node ? it->node = L_(list_next)(it->node): 0;
 }
 
-/* iterate --><!-- reverse interface */
-
-/** Loads `list` into `it`. @implements begin */
-static void PL_(end)(struct PL_(iterator) *const it,
-	const struct L_(list) *const list)
-	{ assert(it && list), it->node = list->tail.prev; }
-
-/** Advances `it`. @implements next */
-static const struct L_(listlink) *PL_(previous)(struct PL_(iterator) *const it)
-{
-	struct L_(listlink) *n;
-	return assert(it && it->node), (it->node = (n = it->node)->prev) ? n : 0;
-}
-
-/* reverse --> */
+/* iterate --> */
 
 /* <!-- box (multiple traits) */
 #define BOX_ PL_
@@ -666,8 +648,7 @@ static void PL_(unused_base)(void) {
 	L_(list_union_to)(0, 0, 0); L_(list_intersection_to)(0, 0, 0);
 	L_(list_xor_to)(0, 0, 0);
 #endif /* comp --> */
-	PL_(begin)(0, 0); PL_(next)(0); PL_(end)(0, 0); PL_(previous)(0);
-	PL_(unused_base_coda)();
+	PL_(begin)(0, 0); PL_(next)(0); PL_(unused_base_coda)();
 }
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
