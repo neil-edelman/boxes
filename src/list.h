@@ -19,22 +19,14 @@
 
  @param[LIST_COMPARE]
  Optional total-order function satisfying <typedef:<PL>compare_fn>.
- (fixme: move to trait.)
+ (fixme: move to trait; wait, I thought it was already?)
 
  @param[LIST_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
- To string trait contained in <to_string.h>; requires `ARRAY_ITERATE` and goes
- forwards. An optional mangled name for uniqueness and function implementing
- <typedef:<PSZ>to_string_fn>.
-
- @param[LIST_TEST]
- To string trait contained in <../test/test_list.h>; optional unit testing
- framework using `assert`. Can only be defined once _per_ `Array`. Must be
- defined equal to a (random) filler function, satisfying
- <typedef:<PL>action_fn>. Output will be shown with the to string trait in
- which it's defined; provides tests for the base code and all later traits.
+ To string trait contained in <to_string.h>. An optional mangled name for
+ uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
 
  @std C89 */
 
@@ -298,17 +290,16 @@ static struct L_(listlink) *L_(list_any)(const struct L_(list) *const list,
  itself. @order \Theta(1) @allow */
 static void L_(list_self_correct)(struct L_(list) *const list) {
 	assert(list);
-	if(list->head.next == list->tail.prev + 1) {
+	if(list->head.next == list->tail.prev + 1) { /* Empty. */
 		list->head.next = &list->tail;
 		list->tail.prev = &list->head;
-	} else {
+	} else { /* Non-empty. */
 		list->head.next->prev = &list->head;
 		list->tail.prev->next = &list->tail;
 	}
 }
 
 #ifdef LIST_COMPARE /* <!-- comp: fixme: move all this to compare.h. */
-
 
 /* Check that `LIST_COMPARE` is a function implementing
  <typedef:<PL>compare_fn>. */
