@@ -103,7 +103,7 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 		colour,
 		PL_(node)(&list->tail, offset), PL_(node)(list->tail.prev, offset),
 		colour);*/
-	for(link = L_(list_first)(list); link; link = L_(list_next)(link)) {
+	for(link = L_(list_head)(list); link; link = L_(list_next)(link)) {
 		if(is_nodes) {
 			PL_(to_string)(link, &a);
 			fprintf(fp, "\t%s [label=\"%s\"];\n", PL_(name)(link), a);
@@ -195,8 +195,8 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	L_(list_clear)(&l2);
 	PL_(count)(&l1, 0);
 	/* Test positions null. */
-	link = L_(list_first)(&l1), assert(!link);
-	link = L_(list_last)(&l1), assert(!link);
+	link = L_(list_head)(&l1), assert(!link);
+	link = L_(list_tail)(&l1), assert(!link);
 	/* Test returns on null and empty. */
 	link = L_(list_shift)(&l1), assert(!link);
 	link = L_(list_pop)(&l1), assert(!link);
@@ -213,8 +213,8 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(count)(&l1, test_size);
 	printf("l1 = %s.\n", PL_(list_to_string)(&l1));
 	/* Test positions when contents. */
-	link = L_(list_first)(&l1), assert(link == link_first);
-	link = L_(list_last)(&l1), assert(link == link_last);
+	link = L_(list_head)(&l1), assert(link == link_first);
+	link = L_(list_tail)(&l1), assert(link == link_last);
 	link = L_(list_previous)(link), assert(link);
 	link = L_(list_next)(link), assert(link == link_last);
 	/* Test remove contents. */
@@ -224,8 +224,8 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	L_(list_unshift)(&l1, link_first);
 	L_(list_push)(&l1, link_last);
 	PL_(count)(&l1, test_size);
-	link = L_(list_first)(&l1), assert(link == link_first);
-	link = L_(list_last)(&l1), assert(link == link_last);
+	link = L_(list_head)(&l1), assert(link == link_first);
+	link = L_(list_tail)(&l1), assert(link == link_last);
 	/* Test movement. */
 	PL_(count)(&l1, test_size);
 	PL_(count)(&l2, 0);
@@ -234,28 +234,28 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 		PL_(list_to_string)(&l1), PL_(list_to_string)(&l2));
 	PL_(count)(&l1, test_size >> 1);
 	PL_(count)(&l2, test_size - (test_size >> 1));
-	assert(L_(list_first)(&l1) == link_first);
+	assert(L_(list_head)(&l1) == link_first);
 	L_(list_to_before)(&l2, link_first->next);
 	PL_(count)(&l1, test_size);
 	PL_(count)(&l2, 0);
-	assert(L_(list_first)(&l1) == link_first);
+	assert(L_(list_head)(&l1) == link_first);
 	L_(list_to)(&l1, &l2);
 	PL_(count)(&l1, 0);
 	PL_(count)(&l2, test_size);
-	assert(L_(list_first)(&l2) == link_first);
+	assert(L_(list_head)(&l2) == link_first);
 	/* Test any. */
 	link = L_(list_any)(&l1, &PL_(true)), assert(!link);
 	link = L_(list_any)(&l2, &PL_(true)), assert(link == link_first);
 	/* Test add before/after. */
 	if(!(link = parent_new(parent))) { assert(0); return; }
 	PL_(filler)(link);
-	L_(list_add_before)(L_(list_first)(&l2), link);
-	link_first = L_(list_first)(&l2);
+	L_(list_add_before)(L_(list_head)(&l2), link);
+	link_first = L_(list_head)(&l2);
 	assert(link == link_first);
 	PL_(count)(&l2, test_size + 1);
 	if(!(link = parent_new(parent))) { assert(0); return; }
 	PL_(filler)(link);
-	L_(list_add_before)(L_(list_last)(&l2), link);
+	L_(list_add_before)(L_(list_tail)(&l2), link);
 	PL_(count)(&l2, test_size + 2);
 	L_(list_clear)(&l2);
 	PL_(count)(&l2, 0);
@@ -281,7 +281,7 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 			no_links--;
 		}
 		L_(list_sort)(list);
-		for(link_a = 0, link_b = L_(list_first)(list); link_b;
+		for(link_a = 0, link_b = L_(list_head)(list); link_b;
 			link_a = link_b, link_b = L_(list_next)(link_b)) {
 			if(!link_a) continue;
 			cmp = PL_(compare)(link_a, link_b);
@@ -324,7 +324,7 @@ static void PL_(exact)(const struct L_(list) *const list,
 	const struct L_(listlink) *const c, const struct L_(listlink) *const d) {
 	struct L_(listlink) *i;
 	assert(list);
-	i = L_(list_first)(list), assert(i == a);
+	i = L_(list_head)(list), assert(i == a);
 	if(!i) return;
 	i = L_(list_next)(i), assert(i == b);
 	if(!i) return;
@@ -356,7 +356,7 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	L_(list_intersection_to)(0, 0, &la);
 	L_(list_xor_to)(0, 0, 0);
 	L_(list_xor_to)(0, 0, &la);
-	assert(!L_(list_first)(&la));
+	assert(!L_(list_head)(&la));
 	{
 		const size_t no_try = 5000;
 		struct L_(list) x, y;
@@ -374,8 +374,8 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 			printf("x = %s, y = %s\n", PL_(list_to_string)(&x), PL_(list_to_string)(&y));
 			/* Honestly, what am I doing? */
 			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
-			if(!(a = L_(list_first)(&x))) continue;
-			if(!(b = L_(list_first)(&y))) continue;
+			if(!(a = L_(list_head)(&x))) continue;
+			if(!(b = L_(list_head)(&y))) continue;
 			if(PL_(compare)(a, b) == 0 && !(b = L_(list_next)(b))) continue;
 			assert(PL_(compare)(a, b) < 0);
 			for(c = L_(list_next)(a); c && PL_(compare)(c, b) < 0;

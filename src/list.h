@@ -66,18 +66,14 @@
 #define LIST_CAT(n, m) LIST_CAT_(n, m)
 #define L_(n) LIST_CAT(LIST_NAME, n)
 #define PL_(n) LIST_CAT(list, L_(n))
-/* <fn:<PL>boolean> operations bit-vector; dummy `LO_` ensures closed. */
+/* <fn:<PL>boolean> operations bit-vector; dummy `LIST_` ensures closed. */
 enum list_operation {
-	LO_SUBTRACTION_AB = 1,
-	LO_SUBTRACTION_BA = 2,
-	LO_A,
-	LO_INTERSECTION   = 4,
-	LO_B, LO_C, LO_D,
-	LO_DEFAULT_A      = 8,
-	LO_E, LO_F, LO_G, LO_H, LO_I, LO_J, LO_K,
-	LO_DEFAULT_B      = 16,
-	LO_L, LO_M, LO_N, LO_O, LO_P, LO_Q, LO_R, LO_S,
-	LO_T, LO_U, LO_V, LO_W, LO_X, LO_Y, LO_Z
+	LIST_SUBTRACTION_AB = 1,
+	LIST_SUBTRACTION_BA = 2,  LISTA,
+	LIST_INTERSECTION   = 4,  LISTB, LISTC, LISTD,
+	LIST_DEFAULT_A      = 8,  LISTE, LISTF, LISTG, LISTH, LISTI, LISTJ, LISTK,
+	LIST_DEFAULT_B      = 16, LISTL, LISTM, LISTN, LISTO, LISTP, LISTQ, LISTR,
+	LISTS, LISTT, LISTU, LISTV, LISTW, LISTX, LISTY, LISTZ
 };
 #endif /* idempotent --> */
 
@@ -86,8 +82,8 @@ enum list_operation {
 
 
 /* A note about <tag:<L>listlink> and <tag:<L>list>: these don't have to be
- parameterized at all. However, it's more type-safe to have separate types if
- we are coercing them. */
+ parameterized at all. However, it's more type-safe to have separate types.
+ They can always be a union. */
 
 /* ************* FIXME: update the images; they are from a version 10 years ago.
  ***********/
@@ -144,7 +140,7 @@ static void PL_(move)(struct L_(list) *const from,
 
 /** @return A pointer to the first element of `list`, if it exists.
  @order \Theta(1) @allow */
-static struct L_(listlink) *L_(list_first)(const struct L_(list) *const list) {
+static struct L_(listlink) *L_(list_head)(const struct L_(list) *const list) {
 	struct L_(listlink) *link;
 	assert(list);
 	link = list->head.next, assert(link);
@@ -153,7 +149,7 @@ static struct L_(listlink) *L_(list_first)(const struct L_(list) *const list) {
 
 /** @return A pointer to the last element of `list`, if it exists.
  @order \Theta(1) @allow */
-static struct L_(listlink) *L_(list_last)(const struct L_(list) *const list) {
+static struct L_(listlink) *L_(list_tail)(const struct L_(list) *const list) {
 	struct L_(listlink) *link;
 	assert(list);
 	link = list->tail.prev, assert(link);
@@ -333,32 +329,32 @@ static void PL_(boolean)(struct L_(list) *const alist,
 			comp = PL_(compare)(a, b);
 			if(comp < 0) {
 				temp = a, a = a->next;
-				if(mask & LO_SUBTRACTION_AB) {
+				if(mask & LIST_SUBTRACTION_AB) {
 					L_(list_remove)(temp);
 					if(result) L_(list_add_before)(&result->tail, temp);
 				}
 			} else if(comp > 0) {
 				temp = b, b = b->next;
-				if(mask & LO_SUBTRACTION_BA) {
+				if(mask & LIST_SUBTRACTION_BA) {
 					L_(list_remove)(temp);
 					if(result) L_(list_add_before)(&result->tail, temp);
 				}
 			} else {
 				temp = a, a = a->next, b = b->next;
-				if(mask & LO_INTERSECTION) {
+				if(mask & LIST_INTERSECTION) {
 					L_(list_remove)(temp);
 					if(result) L_(list_add_before)(&result->tail, temp);
 				}
 			}
 		}
 	}
-	if(a && mask & LO_DEFAULT_A) {
+	if(a && mask & LIST_DEFAULT_A) {
 		while((temp = a, a = a->next)) {
 			L_(list_remove)(temp);
 			if(result) L_(list_add_before)(&result->tail, temp);
 		}
 	}
-	if(b && mask & LO_DEFAULT_B) {
+	if(b && mask & LIST_DEFAULT_B) {
 		while((temp = b, b = b->next)) {
 			L_(list_remove)(temp);
 			if(result) L_(list_add_before)(&result->tail, temp);
@@ -366,8 +362,7 @@ static void PL_(boolean)(struct L_(list) *const alist,
 	}
 }
 
-/** Used in <fn:<PL>sort>: merges the two top runs referenced by `head_ptr` in
- stack form. */
+/** Merges the two top runs referenced by `head_ptr` in stack form. */
 static void PL_(merge_runs)(struct L_(listlink) **const head_ptr) {
 	struct L_(listlink) *head = *head_ptr, **x = &head,
 		*b = head, *a = b->prev, *const prev = a->prev;
@@ -566,7 +561,7 @@ static void L_(list_duplicates_to)(struct L_(list) *const from,
  @order \O(|`a`| + |`b`|) @allow */
 static void L_(list_subtraction_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
-	PL_(boolean)(a, b, LO_SUBTRACTION_AB | LO_DEFAULT_A, result);
+	PL_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_DEFAULT_A, result);
 }
 
 /** Moves the union of `a` and `b` as sequential sorted individual elements to
@@ -578,8 +573,8 @@ static void L_(list_subtraction_to)(struct L_(list) *const a,
  @order \O(|`a`| + |`b`|) @allow */
 static void L_(list_union_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
-	PL_(boolean)(a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA | LO_INTERSECTION
-		| LO_DEFAULT_A | LO_DEFAULT_B, result);
+	PL_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
+		| LIST_INTERSECTION | LIST_DEFAULT_A | LIST_DEFAULT_B, result);
 }
 
 /** Moves the intersection of `a` and `b` as sequential sorted individual
@@ -591,7 +586,7 @@ static void L_(list_union_to)(struct L_(list) *const a,
  @order \O(|`a`| + |`b`|) @allow */
 static void L_(list_intersection_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
-	PL_(boolean)(a, b, LO_INTERSECTION, result);
+	PL_(boolean)(a, b, LIST_INTERSECTION, result);
 }
 
 /** Moves `a` exclusive-or `b` as sequential sorted individual elements to
@@ -603,8 +598,8 @@ static void L_(list_intersection_to)(struct L_(list) *const a,
  @order O(|`a`| + |`b`|) @allow */
 static void L_(list_xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 	struct L_(list) *const result) {
-	PL_(boolean)(a, b, LO_SUBTRACTION_AB | LO_SUBTRACTION_BA | LO_DEFAULT_A
-		| LO_DEFAULT_B, result);
+	PL_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
+		| LIST_DEFAULT_A | LIST_DEFAULT_B, result);
 }
 
 #endif /* comp --> */
@@ -659,7 +654,7 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *);
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
-	L_(list_first)(0); L_(list_last)(0); L_(list_previous)(0); L_(list_next)(0);
+	L_(list_head)(0); L_(list_tail)(0); L_(list_previous)(0); L_(list_next)(0);
 	L_(list_clear)(0); L_(list_add_before)(0, 0); L_(list_add_after)(0, 0);
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);
 	L_(list_shift)(0); L_(list_pop)(0); L_(list_to)(0, 0);

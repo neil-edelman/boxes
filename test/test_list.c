@@ -497,18 +497,18 @@ static void skips_tests(void) {
 		if(!skip) { assert(0); goto finally; }
 		fill_skip(skip);
 		/* Find the order. */
-		for(l2 = 0, l2_pr = layer2_list_first(&s.l2list);
+		for(l2 = 0, l2_pr = layer2_list_head(&s.l2list);
 			l2_pr && l2_compare(&skip->l2, l2_pr) > 0;
 			l2 = l2_pr, l2_pr = layer2_list_next(l2_pr));
 		l1 = l2 ? &l2_upcast(l2)->l1 : 0;
 		l1_lim = l2_pr ? &l2_upcast(l2_pr)->l1 : 0;
-		for(l1_pr = l1 ? layer1_list_next(l1) : layer1_list_first(&s.l1list);
+		for(l1_pr = l1 ? layer1_list_next(l1) : layer1_list_head(&s.l1list);
 			l1_pr && (l1_lim ? l1_pr != l1_lim : 1)
 			&& l1_compare(&skip->l1, l1_pr) > 0;
 			l1 = l1_pr, l1_pr = layer1_list_next(l1_pr));
 		l0 = l1 ? &l1_upcast(l1)->l0 : 0;
 		l0_lim = l1_pr ? &l1_upcast(l1_pr)->l0 : 0;
-		for(l0_pr = l0 ? layer0_list_next(l0) : layer0_list_first(&s.l0list);
+		for(l0_pr = l0 ? layer0_list_next(l0) : layer0_list_head(&s.l0list);
 			l0_pr && (l0_lim ? l0_pr != l0_lim : 1)
 			&& l0_compare(&skip->l0, l0_pr) > 0;
 			l0 = l0_pr, l0_pr = layer0_list_next(l0_pr));
@@ -1006,7 +1006,7 @@ static int ride(struct animal *const a, struct animal *const b) {
 static void animals_act(void) {
 	size_t count = 0;
 	struct id_listlink *id;
-	for(id = id_list_first(&animals.list); id; id = id_list_next(id)) count++;
+	for(id = id_list_head(&animals.list); id; id = id_list_next(id)) count++;
 	printf("There are %lu animals.\n", (unsigned long)count);
 	id_list_for_each(&animals.list, &id_act);
 }
@@ -1044,7 +1044,7 @@ static int animals_tests(void) {
 		}
 		if(i != animal_no) break;
 		w = bear(0, "Winnie");
-		for(id = id_list_first(&animals.list); id; id = id_list_next(id)) {
+		for(id = id_list_head(&animals.list); id; id = id_list_next(id)) {
 			if(prev_id && !ride(id_upcast(prev_id), id_upcast(id)))
 				ride(id_upcast(id), id_upcast(prev_id));
 			prev_id = id;
