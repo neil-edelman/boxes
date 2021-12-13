@@ -25,6 +25,7 @@
  To string trait contained in <to_string.h>. An optional mangled name for
  uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
 
+ @fixme Add LIST_NULL
  @std C89 */
 
 #ifndef LIST_NAME
@@ -97,8 +98,8 @@ struct L_(listlink) { struct L_(listlink) *next, *prev; };
  ![States.](../web/states.png) */
 struct L_(list) {
 	union {
-		struct { struct L_(listlink) head, *do_not_use; } as_head;
-		struct { struct L_(listlink) *do_not_use, tail; } as_tail;
+		struct { struct L_(listlink) head, *part_of_tail; } as_head;
+		struct { struct L_(listlink) *part_of_head, tail; } as_tail;
 		struct { struct L_(listlink) *next, *zero, *prev; } flat;
 	} u;
 };
