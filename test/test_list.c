@@ -45,8 +45,10 @@ static void no_to_string(const struct no_listlink *, char (*)[12]);
 static void no_fill(struct no_listlink *);
 static int no_compare(const struct no_listlink *, const struct no_listlink *);
 #define LIST_NAME no
-#define LIST_COMPARE &no_compare
 #define LIST_TEST &no_fill
+#define LIST_EXPECT_TRAIT
+#include "../src/list.h"
+#define LIST_COMPARE &no_compare
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &no_to_string
@@ -90,8 +92,10 @@ static void letter_fill(struct letter_listlink *);
 static int letter_compare(const struct letter_listlink *,
 	const struct letter_listlink *);
 #define LIST_NAME letter
-#define LIST_COMPARE &letter_compare
 #define LIST_TEST &letter_fill
+#define LIST_EXPECT_TRAIT
+#include "../src/list.h"
+#define LIST_COMPARE &letter_compare
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &letter_to_string
@@ -124,6 +128,8 @@ static struct letter_listlink *letter_from_pool(void *const vls) {
 	return &l->link;
 }
 
+
+#if 0
 
 /* Name? */
 struct name_listlink;
@@ -315,17 +321,20 @@ static void pandas_tests(void) {
 	panda_pool_(&pandas);
 }
 
+#endif
 
-/* (Fixed width) skip list. Because why not? */
-/* ********* FIXME: this can be much simpler; layer1,2,3->layer->no ***********/
+
+/* Fixed width skip list. Because why not? */
 struct layer0_listlink;
 static int l0_compare(const struct layer0_listlink *,
 	const struct layer0_listlink *);
 static void l0_to_string(const struct layer0_listlink *, char (*)[12]);
 static void fill_l0(struct layer0_listlink *);
 #define LIST_NAME layer0
-#define LIST_COMPARE &l0_compare
 #define LIST_TEST &fill_l0
+#define LIST_EXPECT_TRAIT
+#include "../src/list.h"
+#define LIST_COMPARE &l0_compare
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &l0_to_string
@@ -336,8 +345,10 @@ static int l1_compare(const struct layer1_listlink *,
 static void l1_to_string(const struct layer1_listlink *, char (*)[12]);
 static void fill_l1(struct layer1_listlink *);
 #define LIST_NAME layer1
-#define LIST_COMPARE &l1_compare
 #define LIST_TEST &fill_l1
+#define LIST_EXPECT_TRAIT
+#include "../src/list.h"
+#define LIST_COMPARE &l1_compare
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &l1_to_string
@@ -349,6 +360,8 @@ static void l2_to_string(const struct layer2_listlink *, char (*)[12]);
 static void fill_l2(struct layer2_listlink *);
 #define LIST_NAME layer2
 #define LIST_COMPARE &l2_compare
+#define LIST_EXPECT_TRAIT
+#include "../src/list.h"
 #define LIST_TEST &fill_l2
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
@@ -1067,20 +1080,20 @@ int main(void) {
 	struct permutelink_pool permutes = POOL_IDLE;
 	struct no_pool nos = POOL_IDLE;
 	struct letter_pool ls = POOL_IDLE;
-	struct panda_pool pandas = POOL_IDLE;
+	/*struct panda_pool pandas = POOL_IDLE;*/
 	struct skip_pool skips = POOL_IDLE;
 	permute_list_test(&permute_from_pool, &permutes),
 		permutelink_pool_(&permutes);
 	no_list_test(&no_from_pool, &nos), no_pool_(&nos);
 	letter_list_test(&letter_from_pool, &ls), letter_pool_(&ls);
-	name_list_test(&panda_name_from_pool, &pandas), panda_pool_(&pandas);
+	/*name_list_test(&panda_name_from_pool, &pandas), panda_pool_(&pandas);
 	where_list_test(&panda_where_from_pool, &pandas), panda_pool_(&pandas);
-	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_(&pandas);
+	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_(&pandas);*/
 	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer2_list_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
 	skip_pool_(&skips);
-	pandas_tests();
+	/*pandas_tests();*/
 	skips_tests();
 	animals_tests();
 	return EXIT_SUCCESS;

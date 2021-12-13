@@ -65,10 +65,9 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 		"\t<TR><TD PORT=\"head\" BORDER=\"0\" ALIGN=\"LEFT\">"
 		"head</TD></TR>\n"
 		"</TABLE>>];\n", PL_(colour));
-	assert(list->head.next && !list->head.prev
-		&& list->tail.prev && !list->tail.next);
-	if(!list->head.next->prev) { /* Empty: drawing has to make an exception. */
-		assert(!list->tail.prev->next);
+	assert(list->u.flat.next && !list->u.flat.zero && list->u.flat.prev);
+	if(!list->u.flat.next->prev) { /* Empty: drawing has to make an exception. */
+		assert(!list->u.flat.prev->next);
 		fprintf(fp, "\tlist_%s:tail -> list_%s:head"
 			" [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n"
 			"\tlist_%s:head -> list_%s:tail [color=\"%s\"];\n",
@@ -78,8 +77,8 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 		fprintf(fp, "\tlist_%s:tail -> %s"
 			" [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n"
 			"\tlist_%s:head -> %s [color=\"%s\"];\n",
-			PL_(colour), PL_(name)(list->tail.prev), colour,
-			PL_(colour), PL_(name)(list->head.next), colour);
+			PL_(colour), PL_(name)(list->u.flat.prev), colour,
+			PL_(colour), PL_(name)(list->u.flat.next), colour);
 	}
 	/*"\tnode [style=filled, fillcolor=pink];\n"
 		"\tsubgraph cluster_%p {\n"
@@ -160,9 +159,9 @@ static void PL_(floyd)(const struct L_(listlink) *link, const size_t count) {
 /** Debug: ensures that `list` has no cycles and that it has `count`
  elements. */
 static void PL_(count)(const struct L_(list) *const list, const size_t count) {
-	const struct L_(listlink) *const head = &list->head,
-		*const tail = &list->tail, *first;
-	assert(list && head && tail && !list->head.prev && !list->tail.next);
+	const struct L_(listlink) *const head = &list->u.as_head.head,
+		*const tail = &list->u.as_tail.tail, *first;
+	assert(list && head && tail && !list->u.flat.zero);
 	if((first = head->next) == tail)
 		{ assert(tail->prev == head && !count); return; }
 	PL_(floyd)(first, count);
@@ -239,6 +238,8 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(count)(&l1, test_size);
 	PL_(count)(&l2, 0);
 	assert(L_(list_head)(&l1) == link_first);
+	printf("Here . . . l1 = %s; l2 = %s.\n",
+		PL_(list_to_string)(&l1), PL_(list_to_string)(&l2));
 	L_(list_to)(&l1, &l2);
 	PL_(count)(&l1, 0);
 	PL_(count)(&l2, test_size);
@@ -260,6 +261,13 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	L_(list_clear)(&l2);
 	PL_(count)(&l2, 0);
 }
+
+/* FIXME */
+#ifdef LIST_COMPARE /* <!-- comp */
+static int PL_(list_compar)(const void *const a, const void *const b) {
+	return L_(list_compare)(a, b);
+}
+#endif /* comp --> */
 
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */
 static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
@@ -443,6 +451,7 @@ static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(test_basic)(parent_new, parent);
 	PL_(test_sort)(parent_new, parent);
 	PL_(test_binary)(parent_new, parent);
+	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");
 }
 
 #undef QUOTE

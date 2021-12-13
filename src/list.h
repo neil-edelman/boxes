@@ -35,12 +35,20 @@
 #else /* str --><!-- !str */
 #define LIST_TO_STRING_TRAIT 0
 #endif /* !str --> */
-#define LIST_TRAITS LIST_TO_STRING_TRAIT
+#if defined(LIST_COMPARE) || defined(LIST_COMPARE_NAME) /* <!-- comp */
+#define LIST_COMPARE_TRAIT 1
+#else /* comp --><!-- !comp */
+#define LIST_COMPARE_TRAIT 0
+#endif /* !comp --> */
+#define LIST_TRAITS LIST_TO_STRING_TRAIT + LIST_COMPARE_TRAIT
 #if LIST_TRAITS > 1
 #error Only one trait per include is allowed; use LIST_EXPECT_TRAIT.
 #endif
 #if defined(LIST_TO_STRING_NAME) && !defined(LIST_TO_STRING)
 #error LIST_TO_STRING_NAME requires LIST_TO_STRING.
+#endif
+#if defined(LIST_COMPARE_NAME) && !defined(LIST_COMPARE)
+#error LIST_COMPARE_NAME requires LIST_COMPARE.
 #endif
 
 
@@ -77,7 +85,7 @@ enum list_operation {
  the original list.
 
  ![States.](../web/node-states.png) */
-struct L_(listlink) { struct L_(listlink) *prev, *next; };
+struct L_(listlink) { struct L_(listlink) *next, *prev; };
 
 /** Serves as head and tail for linked-list of <tag:<L>listlink>. Use
  <fn:<L>list_clear> to initialize the list. Because this list is closed; that
@@ -87,9 +95,13 @@ struct L_(listlink) { struct L_(listlink) *prev, *next; };
  in a valid list.
 
  ![States.](../web/states.png) */
-struct L_(list) { struct L_(listlink) head, tail; };
-
-/* *******FIXME move to trait*********/
+struct L_(list) {
+	union {
+		struct { struct L_(listlink) head, *do_not_use; } as_head;
+		struct { struct L_(listlink) *do_not_use, tail; } as_tail;
+		struct { struct L_(listlink) *next, *zero, *prev; } flat;
+	} u;
+};
 
 /** Operates by side-effects on the node. */
 typedef void (*PL_(action_fn))(struct L_(listlink) *);
@@ -97,25 +109,26 @@ typedef void (*PL_(action_fn))(struct L_(listlink) *);
 /** Returns (Non-zero) true or (zero) false when given a node. */
 typedef int (*PL_(predicate_fn))(const struct L_(listlink) *);
 
-/** Returns less then, equal to, or greater then zero, inducing an ordering
- between `a` and `b`. */
-typedef int (*PL_(compare_fn))(const struct L_(listlink) *a,
-	const struct L_(listlink) *b);
+/** Clear `list`. */
+static void PL_(clear)(struct L_(list) *const list) {
+	list->u.flat.next = &list->u.as_tail.tail;
+	list->u.flat.zero = 0;
+	list->u.flat.prev = &list->u.as_head.head;
+}
 
-/** Cats all `from` in front of `node`, (don't make `node` `head`); `from` will
- be empty after. Careful that `node` is not in `from` because that will just
- erase the list. @order \Theta(1) */
+/** Cats all `from` in front of `after`; `from` will be empty after.
+ Careful that `after` is not in `from` because that will just erase the list.
+ @order \Theta(1) */
 static void PL_(move)(struct L_(list) *const from,
-	struct L_(listlink) *const node) {
-	assert(node && from && node->prev &&
-		!from->head.prev && from->head.next
-		&& from->tail.prev && !from->tail.next);
-	from->head.next->prev = node->prev;
-	node->prev->next = from->head.next;
-	from->tail.prev->next = node;
-	node->prev = from->tail.prev;
-	from->head.next = &from->tail;
-	from->tail.prev = &from->head;
+	struct L_(listlink) *const after) {
+	assert(from && from->u.flat.next && !from->u.flat.zero && from->u.flat.prev
+		&& after && after->prev);
+	from->u.flat.next->prev = after->prev;
+	after->prev->next = from->u.as_head.head.next;
+	from->u.flat.prev->next = after;
+	after->prev = from->u.as_tail.tail.prev;
+	from->u.flat.next = &from->u.as_tail.tail;
+	from->u.flat.prev = &from->u.as_head.head;
 }
 
 /** @return A pointer to the first element of `list`, if it exists.
@@ -123,7 +136,7 @@ static void PL_(move)(struct L_(list) *const from,
 static struct L_(listlink) *L_(list_head)(const struct L_(list) *const list) {
 	struct L_(listlink) *link;
 	assert(list);
-	link = list->head.next, assert(link);
+	link = list->u.flat.next, assert(link);
 	return link->next ? link : 0;
 }
 
@@ -132,7 +145,7 @@ static struct L_(listlink) *L_(list_head)(const struct L_(list) *const list) {
 static struct L_(listlink) *L_(list_tail)(const struct L_(list) *const list) {
 	struct L_(listlink) *link;
 	assert(list);
-	link = list->tail.prev, assert(link);
+	link = list->u.flat.prev, assert(link);
 	return link->prev ? link : 0;
 }
 
@@ -153,12 +166,8 @@ static struct L_(listlink) *L_(list_next)(struct L_(listlink) *link) {
 }
 
 /** Clears and initializes `list`.  @order \Theta(1) @allow */
-static void L_(list_clear)(struct L_(list) *const list) {
-	assert(list);
-	list->head.prev = list->tail.next = 0;
-	list->head.next = &list->tail;
-	list->tail.prev = &list->head;
-}
+static void L_(list_clear)(struct L_(list) *const list)
+	{ assert(list); PL_(clear)(list); }
 
 /** `add` before `anchor`. @order \Theta(1) @allow */
 static void L_(list_add_before)(struct L_(listlink) *const anchor,
@@ -183,12 +192,12 @@ static void L_(list_add_after)(struct L_(listlink) *const anchor,
 /** Adds `add` to the beginning of `list`. @order \Theta(1) @allow */
 static void L_(list_unshift)(struct L_(list) *const list,
 	struct L_(listlink) *const add)
-	{ assert(list && add), L_(list_add_after)(&list->head, add); }
+	{ assert(list && add), L_(list_add_after)(&list->u.as_head.head, add); }
 
 /** Adds `add` to the end of `list`. @order \Theta(1) @allow */
 static void L_(list_push)(struct L_(list) *const list,
 	struct L_(listlink) *const add)
-	{ assert(list && add), L_(list_add_before)(&list->tail, add); }
+	{ assert(list && add), L_(list_add_before)(&list->u.as_tail.tail, add); }
 
 /** Remove `node`. @order \Theta(1) @allow */
 static void L_(list_remove)(struct L_(listlink) *const node) {
@@ -202,8 +211,8 @@ static void L_(list_remove)(struct L_(listlink) *const node) {
  @order \Theta(1) @allow */
 static struct L_(listlink) *L_(list_shift)(struct L_(list) *const list) {
 	struct L_(listlink) *node;
-	assert(list && list->head.next);
-	if(!(node = list->head.next)->next) return 0;
+	assert(list && list->u.flat.next);
+	if(!(node = list->u.flat.next)->next) return 0;
 	L_(list_remove)(node);
 	return node;
 }
@@ -212,8 +221,8 @@ static struct L_(listlink) *L_(list_shift)(struct L_(list) *const list) {
  @order \Theta(1) @allow */
 static struct L_(listlink) *L_(list_pop)(struct L_(list) *const list) {
 	struct L_(listlink) *node;
-	assert(list && list->tail.prev);
-	if(!(node = list->tail.prev)->prev) return 0;
+	assert(list && list->u.flat.prev);
+	if(!(node = list->u.flat.prev)->prev) return 0;
 	L_(list_remove)(node);
 	return node;
 }
@@ -224,8 +233,8 @@ static struct L_(listlink) *L_(list_pop)(struct L_(list) *const list) {
 static void L_(list_to)(struct L_(list) *const from,
 	struct L_(list) *const to) {
 	assert(from && from != to);
-	if(!to) { L_(list_clear)(from); return; }
-	PL_(move)(from, &to->tail);
+	if(!to) { PL_(clear)(from); return; }
+	PL_(move)(from, &to->u.as_tail.tail);
 }
 
 /** Moves the elements `from` immediately before `anchor`.
@@ -243,10 +252,10 @@ static void L_(list_to_if)(struct L_(list) *const from,
 	struct L_(list) *const to, const PL_(predicate_fn) predicate) {
 	struct L_(listlink) *link, *next_link;
 	assert(from && from != to && predicate);
-	for(link = from->head.next; (next_link = link->next); link = next_link) {
+	for(link = from->u.flat.next; next_link = link->next; link = next_link) {
 		if(!predicate(link)) continue;
 		L_(list_remove)(link);
-		if(to) L_(list_add_before)(&to->tail, link);
+		if(to) L_(list_add_before)(&to->u.as_tail.tail, link);
 	}
 }
 
@@ -257,7 +266,7 @@ static void L_(list_for_each)(struct L_(list) *const list,
 	const PL_(action_fn) action) {
 	struct L_(listlink) *x, *next_x;
 	assert(list && action);
-	for(x = list->head.next; (next_x = x->next); x = next_x)
+	for(x = list->u.flat.next; next_x = x->next; x = next_x)
 		action(x);
 }
 
@@ -269,25 +278,31 @@ static struct L_(listlink) *L_(list_any)(const struct L_(list) *const list,
 	const PL_(predicate_fn) predicate) {
 	struct L_(listlink) *link, *next_link;
 	assert(list && predicate);
-	for(link = list->head.next; (next_link = link->next); link = next_link)
+	for(link = list->u.flat.next; next_link = link->next; link = next_link)
 		if(predicate(link)) return link;
 	return 0;
 }
 
 /** Corrects `list` ends to compensate for memory relocation of the list
- itself. @order \Theta(1) @allow */
+ itself. Because the `list` is part of the links, this will invalidate all
+ other copies. @order \Theta(1) @allow */
 static void L_(list_self_correct)(struct L_(list) *const list) {
-	assert(list);
-	if(list->head.next == list->tail.prev + 1) { /* Empty. */
-		list->head.next = &list->tail;
-		list->tail.prev = &list->head;
+	assert(list && !list->u.flat.zero);
+	if(list->u.flat.next + 2 == list->u.flat.prev) { /* Empty. */
+		list->u.flat.next = &list->u.as_tail.tail;
+		list->u.flat.prev = &list->u.as_head.head;
 	} else { /* Non-empty. */
-		list->head.next->prev = &list->head;
-		list->tail.prev->next = &list->tail;
+		list->u.flat.next->prev = &list->u.as_tail.tail;
+		list->u.flat.prev->next = &list->u.as_head.head;
 	}
 }
 
-#ifdef LIST_COMPARE /* <!-- comp: fixme: move all this to compare.h. */
+#ifdef LIST_COMPARE /* <!-- comp: fixme: move all this to compare.h? */
+
+/** Returns less then, equal to, or greater then zero, inducing an ordering
+ between `a` and `b`. */
+typedef int (*PL_(compare_fn))(const struct L_(listlink) *a,
+	const struct L_(listlink) *b);
 
 /* Check that `LIST_COMPARE` is a function implementing
  <typedef:<PL>compare_fn>. */
@@ -298,8 +313,8 @@ static const PL_(compare_fn) PL_(compare) = (LIST_COMPARE);
 static void PL_(boolean)(struct L_(list) *const alist,
 	struct L_(list) *const blist, const enum list_operation mask,
 	struct L_(list) *const result) {
-	struct L_(listlink) *a = alist ? alist->head.next : 0,
-		*b = blist ? blist->head.next : 0, *temp;
+	struct L_(listlink) *a = alist ? alist->u.flat.next : 0,
+		*b = blist ? blist->u.flat.next : 0, *temp;
 	int comp;
 	assert((!result || (result != alist && result != blist))
 		&& (!alist || (alist != blist)));
@@ -310,19 +325,19 @@ static void PL_(boolean)(struct L_(list) *const alist,
 				temp = a, a = a->next;
 				if(mask & LIST_SUBTRACTION_AB) {
 					L_(list_remove)(temp);
-					if(result) L_(list_add_before)(&result->tail, temp);
+					if(result) L_(list_push)(result, temp);
 				}
 			} else if(comp > 0) {
 				temp = b, b = b->next;
 				if(mask & LIST_SUBTRACTION_BA) {
 					L_(list_remove)(temp);
-					if(result) L_(list_add_before)(&result->tail, temp);
+					if(result) L_(list_push)(result, temp);
 				}
 			} else {
 				temp = a, a = a->next, b = b->next;
 				if(mask & LIST_INTERSECTION) {
 					L_(list_remove)(temp);
-					if(result) L_(list_add_before)(&result->tail, temp);
+					if(result) L_(list_push)(result, temp);
 				}
 			}
 		}
@@ -330,13 +345,13 @@ static void PL_(boolean)(struct L_(list) *const alist,
 	if(a && mask & LIST_DEFAULT_A) {
 		while((temp = a, a = a->next)) {
 			L_(list_remove)(temp);
-			if(result) L_(list_add_before)(&result->tail, temp);
+			if(result) L_(list_push)(result, temp);
 		}
 	}
 	if(b && mask & LIST_DEFAULT_B) {
 		while((temp = b, b = b->next)) {
 			L_(list_remove)(temp);
-			if(result) L_(list_add_before)(&result->tail, temp);
+			if(result) L_(list_push)(result, temp);
 		}
 	}
 }
@@ -362,9 +377,9 @@ static void PL_(merge_runs)(struct L_(listlink) **const head_ptr) {
  runs. */
 static void PL_(merge_final)(struct L_(list) *const list,
 	struct L_(listlink) *head) {
-	struct L_(listlink) *prev = 0, **x = &list->head.next,
+	struct L_(listlink) *prev = 0, **x = &list->u.flat.next,
 		*b = head, *a = head->prev;
-	assert(list && !list->head.prev && !list->tail.next && b && a && !a->prev);
+	assert(list && b && a && !a->prev);
 	for( ; ; ) {
 		if(PL_(compare)(a, b) <= 0) {
 			a->prev = prev, prev = *x = a, x = &a->next;
@@ -375,9 +390,10 @@ static void PL_(merge_final)(struct L_(list) *const list,
 		}
 	}
 	do; while(a->prev = prev, prev = a, a = a->next);
-	prev->next = &list->tail, list->tail.prev = prev;
-	assert(list->head.next && list->head.next != &list->tail); /* Not empty. */
-	list->head.next->prev = &list->head;
+	prev->next = &list->u.as_tail.tail, list->u.flat.prev = prev;
+	/* Not empty. */
+	assert(list->u.flat.next && list->u.flat.next != &list->u.as_tail.tail);
+	list->u.flat.next->prev = &list->u.as_head.head;
 }
 
 /** Natural merge sort `list`; the requirement for \O(\log |`list`|) space is
@@ -390,9 +406,9 @@ static void PL_(sort)(struct L_(list) *const list) {
 	struct L_(listlink) *a, *b, *c, *dec_iso = /* Unused. */0;
 	struct { size_t count; struct L_(listlink) *head, *prev; } run;
 	/* Closed sentinel list. */
-	assert(list && list->head.next && list->tail.prev
-		&& !list->head.prev && !list->tail.next);
-	if(a = list->head.next, !(b = a->next)) return; /* Empty. */
+	assert(list
+		&& list->u.flat.next && !list->u.flat.zero && list->u.flat.prev);
+	if(a = list->u.flat.next, !(b = a->next)) return; /* Empty. */
 	/* Identify runs of monotonicity until `b` sentinel. */
 	run.count = 0, run.prev = 0, run.head = a;
 	for(c = b->next; c; a = b, b = c, c = c->next) {
@@ -431,9 +447,9 @@ static void PL_(sort)(struct L_(list) *const list) {
 		assert(dec_iso);
 		run.head = dec_iso;
 		if(!run.count) { /* Restore the pointers without having two runs. */
-			list->head.next = dec_iso, dec_iso->prev = &list->head;
+			list->u.flat.next = dec_iso, dec_iso->prev = &list->u.as_head.head;
 			for(a = dec_iso, b = a->next; b; a = b, b = b->next) b->prev = a;
-			list->tail.prev = a, a->next = &list->tail;
+			list->u.flat.prev = a, a->next = &list->u.as_tail.tail;
 			return; /* Reverse sorted; now good as well. */
 		}
 	}
@@ -453,24 +469,24 @@ static void L_(list_sort)(struct L_(list) *const list) { PL_(sort)(list); }
 
 /** Merges from `from` into `to`. If the elements are sorted in both lists,
  then the elements of `list` will be sorted.
- @order \O(|`from`| + |`to`|). */
+ @order \O(|`from`| + |`to`|). @fixme */
 static void L_(list_merge)(struct L_(list) *const from,
 	struct L_(list) *const to) {
 	struct L_(listlink) *cur, *a, *b;
-	assert(from && from->head.next && to && to->head.next && from != to);
+	assert(from && from->u.flat.next && to && to->u.flat.next && from != to);
 	/* `blist` empty -- that was easy. */
-	if(!(b = from->head.next)->next) return;
+	if(!(b = from->u.flat.next)->next) return;
 	/* `alist` empty -- `O(1)` <fn:<PL>move> is more efficient. */
-	if(!(a = to->head.next)->next)
-	{ PL_(move)(from, &to->tail); return; }
+	if(!(a = to->u.flat.next)->next)
+	{ PL_(move)(from, &to->u.as_tail.tail); return; }
 	/* Merge */
-	for(cur = &to->head; ; ) {
+	for(cur = &to->u.as_head.head; ; ) {
 		if(PL_(compare)(a, b) < 0) {
 			a->prev = cur, cur = cur->next = a;
 			if(!(a = a->next)->next) {
 				b->prev = cur, cur->next = b;
-				from->tail.prev->next = &to->tail;
-				to->tail.prev = from->tail.prev;
+				from->u.flat.prev->next = &to->u.as_tail.tail;
+				to->u.flat.prev = from->u.flat.prev;
 				break;
 			}
 		} else {
@@ -478,7 +494,8 @@ static void L_(list_merge)(struct L_(list) *const from,
 			if(!(b = b->next)->next) { a->prev = cur, cur->next = a; break; }
 		}
 	}
-	from->head.next = &from->tail, from->tail.prev = &from->head;
+	from->u.flat.next = &from->u.as_tail.tail;
+	from->u.flat.prev = &from->u.as_head.head;
 }
 
 /** Compares `alist` to `blist` as sequences.
@@ -497,8 +514,8 @@ static int L_(list_compare)(const struct L_(list) *const alist,
 		return 1;
 	}
 	/* Compare element by element. */
-	for(a = alist->head.next, b = blist->head.next; ; a = a->next, b = b->next)
-	{
+	for(a = alist->u.flat.next, b = blist->u.flat.next; ;
+		a = a->next, b = b->next) {
 		if(!a->next) {
 			return b->next ? -1 : 0;
 		} else if(!b->next) {
@@ -517,7 +534,7 @@ static int L_(list_compare)(const struct L_(list) *const alist,
  @order \O(|`from`|) @allow */
 static void L_(list_duplicates_to)(struct L_(list) *const from,
 	struct L_(list) *const to) {
-	struct L_(listlink) *a = from->head.next, *b, *temp;
+	struct L_(listlink) *a = from->u.flat.next, *b, *temp;
 	assert(from);
 	if(!(b = a->next)) return;
 	while(b->next) {
@@ -526,7 +543,7 @@ static void L_(list_duplicates_to)(struct L_(list) *const from,
 		} else {
 			temp = b, b = b->next;
 			L_(list_remove)(temp);
-			if(to) L_(list_add_before)(&to->tail, temp);
+			if(to) L_(list_add_before)(&to->u.as_tail.tail, temp);
 		}
 	}
 }
@@ -610,7 +627,7 @@ static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PL_(to_string))(const struct L_(listlink) *, char (*)[12]);
 static const char *(*PL_(list_to_string))(const struct L_(list) *);
-#include "../test/test_list.h" /* (no) \include */
+#include "../test/test_list.h"
 #endif /* test --> */
 
 static void PL_(unused_base_coda)(void);
@@ -655,22 +672,27 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #endif
 
 
+#else /* to string trait --><!-- compare trait */
+
+
+#undef LIST_COMPARE
+
+
 #endif /* traits --> */
 
 
 #ifdef LIST_EXPECT_TRAIT /* <!-- trait */
 #undef LIST_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
-#if defined(LIST_TEST)
-#error No to string traits defined for test.
+#ifdef LIST_TEST
+#error No to LIST_TO_STRING traits defined for LIST_TEST.
 #endif
 #undef LIST_NAME
-#ifdef LIST_COMPARE
-#undef LIST_COMPARE
-#endif
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
+/* box (multiple traits) --> */
 #endif /* !trait --> */
 #undef LIST_TO_STRING_TRAIT
+#undef LIST_COMPARE_TRAIT
 #undef LIST_TRAITS
