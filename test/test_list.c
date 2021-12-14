@@ -324,7 +324,7 @@ static void pandas_tests(void) {
 #endif
 
 
-/* Fixed width skip list. Because why not? */
+/* Fixed width skip list. This is probably overkill on the type-safety. */
 struct layer0_listlink;
 static int l0_compare(const struct layer0_listlink *,
 	const struct layer0_listlink *);
@@ -373,73 +373,51 @@ struct skip {
 	struct layer2_listlink l2;
 	unsigned value, unused;
 };
-static const struct skip *l0_upcast_c(const struct layer0_listlink *const n) {
-	return (const struct skip *)(const void *)((const char *)n
-		- offsetof(struct skip, l0));
-}
-static const struct skip *l1_upcast_c(const struct layer1_listlink *const n) {
-	return (const struct skip *)(const void *)((const char *)n
-		- offsetof(struct skip, l1));
-}
-static const struct skip *l2_upcast_c(const struct layer2_listlink *const n) {
-	return (const struct skip *)(const void *)((const char *)n
-		- offsetof(struct skip, l2));
-}
-static struct skip *l0_upcast(struct layer0_listlink *const n) {
-	return (struct skip *)(void *)((char *)n - offsetof(struct skip, l0));
-}
-static struct skip *l1_upcast(struct layer1_listlink *const n) {
-	return (struct skip *)(void *)((char *)n - offsetof(struct skip, l1));
-}
-static struct skip *l2_upcast(struct layer2_listlink *const n) {
-	return (struct skip *)(void *)((char *)n - offsetof(struct skip, l2));
-}
+static const struct skip *l0_upcast_c(const struct layer0_listlink *const n)
+	{ return (const struct skip *)(const void *)((const char *)n
+		- offsetof(struct skip, l0)); }
+static const struct skip *l1_upcast_c(const struct layer1_listlink *const n)
+	{ return (const struct skip *)(const void *)((const char *)n
+		- offsetof(struct skip, l1)); }
+static const struct skip *l2_upcast_c(const struct layer2_listlink *const n)
+	{ return (const struct skip *)(const void *)((const char *)n
+		- offsetof(struct skip, l2)); }
+static struct skip *l0_upcast(struct layer0_listlink *const n)
+	{ return (struct skip *)(void *)((char *)n - offsetof(struct skip, l0)); }
+static struct skip *l1_upcast(struct layer1_listlink *const n)
+	{ return (struct skip *)(void *)((char *)n - offsetof(struct skip, l1)); }
+static struct skip *l2_upcast(struct layer2_listlink *const n)
+	{ return (struct skip *)(void *)((char *)n - offsetof(struct skip, l2)); }
 static int skip_compare(const struct skip *const a,
-	const struct skip *const b) {
-	return (a->value > b->value) - (b->value > a->value);
-}
+	const struct skip *const b)
+	{ return (a->value > b->value) - (b->value > a->value); }
 static int l0_compare(const struct layer0_listlink *a,
-	const struct layer0_listlink *b) {
-	return skip_compare(l0_upcast_c(a), l0_upcast_c(b));
-}
+	const struct layer0_listlink *b)
+	{ return skip_compare(l0_upcast_c(a), l0_upcast_c(b)); }
 static int l1_compare(const struct layer1_listlink *a,
-	const struct layer1_listlink *b) {
-	return skip_compare(l1_upcast_c(a), l1_upcast_c(b));
-}
+	const struct layer1_listlink *b)
+	{ return skip_compare(l1_upcast_c(a), l1_upcast_c(b)); }
 static int l2_compare(const struct layer2_listlink *a,
-	const struct layer2_listlink *b) {
-	return skip_compare(l2_upcast_c(a), l2_upcast_c(b));
-}
+	const struct layer2_listlink *b)
+	{ return skip_compare(l2_upcast_c(a), l2_upcast_c(b)); }
 static void skip_to_string(const struct skip *const skip,
-	char (*const a)[12]) {
-	/*assert(RAND_MAX <= 99999999999l);*/
-	sprintf(*a, "%d", skip->value);
-}
+	char (*const a)[12]) { sprintf(*a, "%d", skip->value); }
 static void l0_to_string(const struct layer0_listlink *const l0,
-	char (*const a)[12]) {
-	skip_to_string(l0_upcast_c(l0), a);
-}
+	char (*const a)[12]) { skip_to_string(l0_upcast_c(l0), a); }
 static void l1_to_string(const struct layer1_listlink *const l1,
-	char (*const a)[12]) {
-	skip_to_string(l1_upcast_c(l1), a);
-}
+	char (*const a)[12]) { skip_to_string(l1_upcast_c(l1), a); }
 static void l2_to_string(const struct layer2_listlink *const l2,
-	char (*const a)[12]) {
-	skip_to_string(l2_upcast_c(l2), a);
-}
+	char (*const a)[12]) { skip_to_string(l2_upcast_c(l2), a); }
 static void fill_skip(struct skip *const skip) {
 	assert(skip);
 	skip->value = (unsigned)rand() / (RAND_MAX / 999 + 1);
 }
-static void fill_l0(struct layer0_listlink *const l0) {
-	fill_skip(l0_upcast(l0));
-}
-static void fill_l1(struct layer1_listlink *const l1) {
-	fill_skip(l1_upcast(l1));
-}
-static void fill_l2(struct layer2_listlink *const l2) {
-	fill_skip(l2_upcast(l2));
-}
+static void fill_l0(struct layer0_listlink *const l0)
+	{ fill_skip(l0_upcast(l0)); }
+static void fill_l1(struct layer1_listlink *const l1)
+	{ fill_skip(l1_upcast(l1)); }
+static void fill_l2(struct layer2_listlink *const l2)
+	{ fill_skip(l2_upcast(l2)); }
 
 #define POOL_NAME skip
 #define POOL_TYPE struct skip
@@ -571,25 +549,21 @@ struct animal {
 	int unused;
 };
 static const size_t animal_name_size = sizeof ((struct animal *)0)->name;
-static struct animal *id_upcast(struct id_listlink *const id) {
-	return (struct animal *)(void *)((char *)id
-		- offsetof(struct animal, id));
-}
-static const struct animal *id_upcast_c(const struct id_listlink *const id) {
-	return (const struct animal *)(const void *)((const char *)id
-		- offsetof(struct animal, id));
-}
+static struct animal *id_upcast(struct id_listlink *const id)
+	{ return (struct animal *)(void *)((char *)id
+		- offsetof(struct animal, id)); }
+static const struct animal *id_upcast_c(const struct id_listlink *const id)
+	{ return (const struct animal *)(const void *)((const char *)id
+		- offsetof(struct animal, id)); }
 static void animal_to_string(const struct animal *const animal,
 	char (*const a)[12]) {
 	strncpy(*a, animal->name, sizeof *a - 1);
 	*a[sizeof *a - 1] = '\0';
 }
 static void id_to_string(const struct id_listlink *const id,
-	char (*const a)[12]) {
-	animal_to_string(id_upcast_c(id), a);
-}
+	char (*const a)[12]) { animal_to_string(id_upcast_c(id), a); }
 
-/* `Mount` is a relation between two animals. */
+/* `mount` is a relation between two animals. */
 struct mount;
 struct mount_info {
 	struct mount *steed_of, *riding;
@@ -601,7 +575,7 @@ struct mount { struct animal *steed, *rider; };
 #define POOL_TYPE struct mount
 #include "pool.h"
 
-/* `Sloth` extends `Animal`. */
+/* `sloth` extends `animal`. */
 struct sloth {
 	struct animal animal;
 	unsigned hours_slept, unused;
@@ -610,7 +584,7 @@ struct sloth {
 #define POOL_TYPE struct sloth
 #include "pool.h"
 
-/* `Emu` extends `Animal`. */
+/* `emu` extends `animal`. */
 struct emu {
 	struct animal animal;
 	char favourite_letter, unused[7];
@@ -619,7 +593,7 @@ struct emu {
 #define POOL_TYPE struct emu
 #include "pool.h"
 
-/* `BadEmu` extends `Emu`. */
+/* `bad_emu` extends `emu`. */
 struct bad_emu {
 	struct emu emu;
 	struct mount_info mount_info;
@@ -648,7 +622,7 @@ struct Lemur {
 #define POOL_TYPE struct Lemur
 #include "pool.h"
 
-/* `Bear` extends `Animal`. */
+/* `bear` extends `animal`. */
 struct bear {
 	struct animal animal;
 	int is_active, unused;
