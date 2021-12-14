@@ -16,7 +16,7 @@
 
  @param[LIST_COMPARE]
  Optional total-order function satisfying <typedef:<PL>compare_fn>.
- (fixme: move to trait; wait, I thought it was already?)
+ (fixme: LIST_IS_EQUAL.)
 
  @param[LIST_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -52,7 +52,6 @@
 #error LIST_COMPARE_NAME requires LIST_COMPARE.
 #endif
 
-
 #ifndef LIST_H /* <!-- idempotent */
 #define LIST_H
 #include <assert.h>
@@ -64,15 +63,6 @@
 #define LIST_CAT(n, m) LIST_CAT_(n, m)
 #define L_(n) LIST_CAT(LIST_NAME, n)
 #define PL_(n) LIST_CAT(list, L_(n))
-/* <fn:<PL>boolean> operations bit-vector; dummy `LIST_` ensures closed. */
-enum list_operation {
-	LIST_SUBTRACTION_AB = 1,
-	LIST_SUBTRACTION_BA = 2,  LISTA,
-	LIST_INTERSECTION   = 4,  LISTB, LISTC, LISTD,
-	LIST_DEFAULT_A      = 8,  LISTE, LISTF, LISTG, LISTH, LISTI, LISTJ, LISTK,
-	LIST_DEFAULT_B      = 16, LISTL, LISTM, LISTN, LISTO, LISTP, LISTQ, LISTR,
-	LISTS, LISTT, LISTU, LISTV, LISTW, LISTX, LISTY, LISTZ
-};
 #endif /* idempotent --> */
 
 
@@ -91,9 +81,8 @@ struct L_(listlink) { struct L_(listlink) *next, *prev; };
 /** Serves as head and tail for linked-list of <tag:<L>listlink>. Use
  <fn:<L>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
- values are not allowed and it is _not_ the same as `{0}`. These are sentinels
- such that `head.prev` and `tail.next` are always and the only ones to be null
- in a valid list.
+ values are not allowed and it is _not_ the same as `{0}`. In a valid list, `as_head.head.tail`, `as_tail.tail.head`, and `flat.zero`, refer to the same
+ sentinel element, and it's always the only one null.
 
  ![States.](../web/states.png) */
 struct L_(list) {
@@ -238,15 +227,16 @@ static void L_(list_to)(struct L_(list) *const from,
 	PL_(move)(from, &to->u.as_tail.tail);
 }
 
-/** Moves the elements `from` immediately before `anchor`.
- @order \Theta(1) @allow */
+/** Moves the elements `from` immediately before `anchor`, which can not be in
+ the same list. @order \Theta(1) @allow */
 static void L_(list_to_before)(struct L_(list) *const from,
 	struct L_(listlink) *const anchor) {
 	assert(from && anchor);
 	PL_(move)(from, anchor);
 }
 
-/** Moves all elements `from` onto `to` at the end if `predicate` is true.
+/** Moves all elements `from` onto `to` at the tail if `predicate` is true.
+ They ca'n't be the same list.
  @param[to] If null, then it removes elements.
  @order \Theta(|`from`|) \times \O(`predicate`) @allow */
 static void L_(list_to_if)(struct L_(list) *const from,
@@ -286,7 +276,8 @@ static struct L_(listlink) *L_(list_any)(const struct L_(list) *const list,
 
 /** Corrects `list` ends to compensate for memory relocation of the list
  itself. Because the `list` is part of the links, this will invalidate all
- other copies. @order \Theta(1) @allow */
+ other copies. @order \Theta(1) @allow @fixme This is suspect, now; `next+2`
+ could go off the side. */
 static void L_(list_self_correct)(struct L_(list) *const list) {
 	assert(list && !list->u.flat.zero);
 	if(list->u.flat.next + 2 == list->u.flat.prev) { /* Empty. */
@@ -298,323 +289,20 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 	}
 }
 
-#ifdef LIST_COMPARE /* <!-- comp: fixme: move all this to compare.h? */
-
-/** Returns less then, equal to, or greater then zero, inducing an ordering
- between `a` and `b`. */
-typedef int (*PL_(compare_fn))(const struct L_(listlink) *a,
-	const struct L_(listlink) *b);
-
-/* Check that `LIST_COMPARE` is a function implementing
- <typedef:<PL>compare_fn>. */
-static const PL_(compare_fn) PL_(compare) = (LIST_COMPARE);
-
-/** Private: `alist` `mask` `blist` -> `result`. Prefers `a` to `b` when equal.
- @order \O(|`a`| + |`b`|) */
-static void PL_(boolean)(struct L_(list) *const alist,
-	struct L_(list) *const blist, const enum list_operation mask,
-	struct L_(list) *const result) {
-	struct L_(listlink) *a = alist ? alist->u.flat.next : 0,
-		*b = blist ? blist->u.flat.next : 0, *temp;
-	int comp;
-	assert((!result || (result != alist && result != blist))
-		&& (!alist || (alist != blist)));
-	if(a && b) {
-		while(a->next && b->next) {
-			comp = PL_(compare)(a, b);
-			if(comp < 0) {
-				temp = a, a = a->next;
-				if(mask & LIST_SUBTRACTION_AB) {
-					L_(list_remove)(temp);
-					if(result) L_(list_push)(result, temp);
-				}
-			} else if(comp > 0) {
-				temp = b, b = b->next;
-				if(mask & LIST_SUBTRACTION_BA) {
-					L_(list_remove)(temp);
-					if(result) L_(list_push)(result, temp);
-				}
-			} else {
-				temp = a, a = a->next, b = b->next;
-				if(mask & LIST_INTERSECTION) {
-					L_(list_remove)(temp);
-					if(result) L_(list_push)(result, temp);
-				}
-			}
-		}
-	}
-	if(a && mask & LIST_DEFAULT_A) {
-		while((temp = a, a = a->next)) {
-			L_(list_remove)(temp);
-			if(result) L_(list_push)(result, temp);
-		}
-	}
-	if(b && mask & LIST_DEFAULT_B) {
-		while((temp = b, b = b->next)) {
-			L_(list_remove)(temp);
-			if(result) L_(list_push)(result, temp);
-		}
-	}
-}
-
-/** Merges the two top runs referenced by `head_ptr` in stack form. */
-static void PL_(merge_runs)(struct L_(listlink) **const head_ptr) {
-	struct L_(listlink) *head = *head_ptr, **x = &head,
-		*b = head, *a = b->prev, *const prev = a->prev;
-	assert(head_ptr && a && b);
-	for( ; ; ) {
-		if(PL_(compare)(a, b) <= 0) {
-			*x = a, x = &a->next;
-			if(!(a = a->next)) { *x = b; break; }
-		} else {
-			*x = b, x = &b->next;
-			if(!(b = b->next)) { *x = a; break; }
-		}
-	}
-	head->prev = prev, *head_ptr = head;
-}
-
-/** The list form of `list` is restored from `head` in stack form with two
- runs. */
-static void PL_(merge_final)(struct L_(list) *const list,
-	struct L_(listlink) *head) {
-	struct L_(listlink) *prev = 0, **x = &list->u.flat.next,
-		*b = head, *a = head->prev;
-	assert(list && b && a && !a->prev);
-	for( ; ; ) {
-		if(PL_(compare)(a, b) <= 0) {
-			a->prev = prev, prev = *x = a, x = &a->next;
-			if(!(a = a->next)) { a = *x = b; break; }
-		} else {
-			b->prev = prev, prev = *x = b, x = &b->next;
-			if(!(b = b->next)) { *x = a; break; }
-		}
-	}
-	do; while(a->prev = prev, prev = a, a = a->next);
-	prev->next = &list->u.as_tail.tail, list->u.flat.prev = prev;
-	/* Not empty. */
-	assert(list->u.flat.next && list->u.flat.next != &list->u.as_tail.tail);
-	list->u.flat.next->prev = &list->u.as_head.head;
-}
-
-/** Natural merge sort `list`; the requirement for \O(\log |`list`|) space is
- satisfied by converting it to a singly-linked with `prev` as a stack of
- increasing lists, which are merged. */
-static void PL_(sort)(struct L_(list) *const list) {
-	/* Add `[-1,0,1]`: unique identifier for nine weakly-ordered transitions. */
-	enum { DEC = 1, EQ = 4, INC = 7 };
-	int mono = EQ, cmp;
-	struct L_(listlink) *a, *b, *c, *dec_iso = /* Unused. */0;
-	struct { size_t count; struct L_(listlink) *head, *prev; } run;
-	/* Closed sentinel list. */
-	assert(list
-		&& list->u.flat.next && !list->u.flat.zero && list->u.flat.prev);
-	if(a = list->u.flat.next, !(b = a->next)) return; /* Empty. */
-	/* Identify runs of monotonicity until `b` sentinel. */
-	run.count = 0, run.prev = 0, run.head = a;
-	for(c = b->next; c; a = b, b = c, c = c->next) {
-		cmp = PL_(compare)(b, a);
-		switch(mono + (0 < cmp) - (cmp < 0)) {
-			/* Valley and mountain inflection. */
-		case INC - 1: a->next = 0; /* _Sic_. */
-		case DEC + 1: break;
-			/* Decreasing more and levelled off from decreasing. */
-		case DEC - 1: b->next = dec_iso; dec_iso = run.head = b; continue;
-		case DEC + 0: b->next = a->next; a->next = b; continue;
-			/* Turning down and up. */
-		case EQ  - 1: a->next = 0; b->next = run.head; dec_iso = run.head = b;
-			mono = DEC; continue;
-		case EQ  + 1: mono = INC; continue;
-		case EQ  + 0: /* Same. _Sic_. */
-		case INC + 0: /* Levelled off from increasing. _Sic_. */
-		case INC + 1: continue; /* Increasing more. */
-		}
-		/* Binary carry sequence, <https://oeis.org/A007814>, one delayed so
-		 always room for final merge. */
-		if(run.count) {
-			size_t rc;
-			for(rc = run.count - 1; rc & 1; rc >>= 1)
-				PL_(merge_runs)(&run.prev);
-		}
-		/* Add to runs, advance; `b` becomes `a` forthwith. */
-		run.head->prev = run.prev, run.prev = run.head, run.count++;
-		run.head = b, mono = EQ;
-	}
-	/* Last run; go into an accepting state. */
-	if(mono != DEC) {
-		if(!run.count) return; /* Sorted already. */
-		a->next = 0; /* Last one of increasing or equal. */
-	} else { /* Decreasing. */
-		assert(dec_iso);
-		run.head = dec_iso;
-		if(!run.count) { /* Restore the pointers without having two runs. */
-			list->u.flat.next = dec_iso, dec_iso->prev = &list->u.as_head.head;
-			for(a = dec_iso, b = a->next; b; a = b, b = b->next) b->prev = a;
-			list->u.flat.prev = a, a->next = &list->u.as_tail.tail;
-			return; /* Reverse sorted; now good as well. */
-		}
-	}
-	assert(run.count);
-	/* (Actually slower to merge the last one eagerly. So do nothing.) */
-	run.head->prev = run.prev, run.count++;
-	/* Merge leftovers from the other direction, saving one for final. */
-	while(run.head->prev->prev) PL_(merge_runs)(&run.head);
-	PL_(merge_final)(list, run.head);
-}
-
-/** Performs a stable, adaptive sort of `list` according to `compare`. Requires
- `LIST_COMPARE`. Sorting a list is always going to be slower then sorting an
- array for some number of items.
- @order \Omega(|`list`|), \O(|`list`| log |`list`|) @allow */
-static void L_(list_sort)(struct L_(list) *const list) { PL_(sort)(list); }
-
-/** Merges from `from` into `to`. If the elements are sorted in both lists,
- then the elements of `list` will be sorted.
- @order \O(|`from`| + |`to`|). @fixme */
-static void L_(list_merge)(struct L_(list) *const from,
-	struct L_(list) *const to) {
-	struct L_(listlink) *cur, *a, *b;
-	assert(from && from->u.flat.next && to && to->u.flat.next && from != to);
-	/* `blist` empty -- that was easy. */
-	if(!(b = from->u.flat.next)->next) return;
-	/* `alist` empty -- `O(1)` <fn:<PL>move> is more efficient. */
-	if(!(a = to->u.flat.next)->next)
-	{ PL_(move)(from, &to->u.as_tail.tail); return; }
-	/* Merge */
-	for(cur = &to->u.as_head.head; ; ) {
-		if(PL_(compare)(a, b) < 0) {
-			a->prev = cur, cur = cur->next = a;
-			if(!(a = a->next)->next) {
-				b->prev = cur, cur->next = b;
-				from->u.flat.prev->next = &to->u.as_tail.tail;
-				to->u.flat.prev = from->u.flat.prev;
-				break;
-			}
-		} else {
-			b->prev = cur, cur = cur->next = b;
-			if(!(b = b->next)->next) { a->prev = cur, cur->next = a; break; }
-		}
-	}
-	from->u.flat.next = &from->u.as_tail.tail;
-	from->u.flat.prev = &from->u.as_head.head;
-}
-
-/** Compares `alist` to `blist` as sequences.
- @return The first `LIST_COMPARE` that is not equal to zero, or 0 if they are
- equal. Null is considered as before everything else; two null pointers are
- considered equal. @implements <typedef:<PL>compare_fn>
- @order \Theta(min(|`alist`|, |`blist`|)) @allow */
-static int L_(list_compare)(const struct L_(list) *const alist,
-	const struct L_(list) *const blist) {
-	struct L_(listlink) *a, *b;
-	int diff;
-	/* Null counts as `-\infty`. */
-	if(!alist) {
-		return blist ? -1 : 0;
-	} else if(!blist) {
-		return 1;
-	}
-	/* Compare element by element. */
-	for(a = alist->u.flat.next, b = blist->u.flat.next; ;
-		a = a->next, b = b->next) {
-		if(!a->next) {
-			return b->next ? -1 : 0;
-		} else if(!b->next) {
-			return 1;
-		} else if((diff = PL_(compare)(a, b))) {
-			return diff;
-		}
-	}
-}
-
-/** Moves all local-duplicates of `from` to the end of `to`.
-
- For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `to`
- and leave `(A, B, A)` in `from`. If one <fn:<L>list_sort> `from` first,
- `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
- @order \O(|`from`|) @allow */
-static void L_(list_duplicates_to)(struct L_(list) *const from,
-	struct L_(list) *const to) {
-	struct L_(listlink) *a = from->u.flat.next, *b, *temp;
-	assert(from);
-	if(!(b = a->next)) return;
-	while(b->next) {
-		if(PL_(compare)(a, b)) {
-			a = b, b = b->next;
-		} else {
-			temp = b, b = b->next;
-			L_(list_remove)(temp);
-			if(to) L_(list_add_before)(&to->u.as_tail.tail, temp);
-		}
-	}
-}
-
-/** Subtracts `a` from `b`, as sequential sorted individual elements, and moves
- it to `result`. All elements are removed from `a`. All parameters must be
- unique or can be null.
-
- For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
- `(a:A, a:D)` would be moved to `result`.
- @order \O(|`a`| + |`b`|) @allow */
-static void L_(list_subtraction_to)(struct L_(list) *const a,
-	struct L_(list) *const b, struct L_(list) *const result) {
-	PL_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_DEFAULT_A, result);
-}
-
-/** Moves the union of `a` and `b` as sequential sorted individual elements to
- `result`. Equal elements are moved from `a`. All parameters must be unique or
- can be null.
-
- For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
- `(a:A, a:B, b:C, a:D)` would be moved to `result`.
- @order \O(|`a`| + |`b`|) @allow */
-static void L_(list_union_to)(struct L_(list) *const a,
-	struct L_(list) *const b, struct L_(list) *const result) {
-	PL_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
-		| LIST_INTERSECTION | LIST_DEFAULT_A | LIST_DEFAULT_B, result);
-}
-
-/** Moves the intersection of `a` and `b` as sequential sorted individual
- elements to `result`. Equal elements are moved from `a`. All parameters must
- be unique or can be null.
-
- For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
- `(a:B)` would be moved to `result`.
- @order \O(|`a`| + |`b`|) @allow */
-static void L_(list_intersection_to)(struct L_(list) *const a,
-	struct L_(list) *const b, struct L_(list) *const result) {
-	PL_(boolean)(a, b, LIST_INTERSECTION, result);
-}
-
-/** Moves `a` exclusive-or `b` as sequential sorted individual elements to
- `result`. Equal elements are moved from `a`. All parameters must be unique or
- can be null.
-
- For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
- `(a:A, b:C, a:D)` would be moved to `result`.
- @order O(|`a`| + |`b`|) @allow */
-static void L_(list_xor_to)(struct L_(list) *const a, struct L_(list) *const b,
-	struct L_(list) *const result) {
-	PL_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
-		| LIST_DEFAULT_A | LIST_DEFAULT_B, result);
-}
-
-#endif /* comp --> */
-
 /* <!-- iterate interface */
 
 /** Contains all iteration parameters. (Since this is a permutation, the
  iteration is defined by none other then itself. Used for traits.) */
-struct PL_(iterator) { struct L_(listlink) *node; };
+struct PL_(iterator) { struct L_(listlink) *link; };
 
 /** Loads `list` into `it`. @implements begin */
 static void PL_(begin)(struct PL_(iterator) *const it,
 	const struct L_(list) *const list)
-	{ assert(it && list), it->node = L_(list_head)(list); }
+	{ assert(it && list), it->link = L_(list_head)(list); }
 
 /** Advances `it`. @implements next */
 static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
-	return assert(it), it->node ? it->node = L_(list_next)(it->node): 0;
+	return assert(it), it->link ? it->link = L_(list_next)(it->link): 0;
 }
 
 /* iterate --> */
@@ -639,12 +327,6 @@ static void PL_(unused_base)(void) {
 	L_(list_shift)(0); L_(list_pop)(0); L_(list_to)(0, 0);
 	L_(list_to_before)(0, 0); L_(list_to_if)(0, 0, 0); L_(list_for_each)(0, 0);
 	L_(list_any)(0, 0); L_(list_self_correct)(0);
-#ifdef LIST_COMPARE /* <!-- comp */
-	L_(list_sort)(0); L_(list_merge)(0, 0); L_(list_compare)(0, 0);
-	L_(list_duplicates_to)(0, 0); L_(list_subtraction_to)(0, 0, 0);
-	L_(list_union_to)(0, 0, 0); L_(list_intersection_to)(0, 0, 0);
-	L_(list_xor_to)(0, 0, 0);
-#endif /* comp --> */
 	PL_(begin)(0, 0); PL_(next)(0); PL_(unused_base_coda)();
 }
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
@@ -676,7 +358,33 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #else /* to string trait --><!-- compare trait */
 
 
+#ifdef LIST_COMPARE_NAME /* <!-- name */
+#define RC_(n) LIST_CAT(L_(list), LIST_CAT(LIST_COMPARE_NAME, n))
+#else /* name --><!-- !name */
+#define RC_(n) LIST_CAT(L_(list), n)
+#endif /* !name --> */
+#ifdef LIST_COMPARE /* <!-- cmp */
+#define BOX_COMPARE LIST_COMPARE
+#else /* cmp --><!-- eq */
+#define BOX_IS_EQUAL LIST_IS_EQUAL
+#endif /* eq --> */
+#define BOX_HEAD &L_(list_head)
+#define BOX_REMOVE &L_(list_remove)
+#define BOX_PUSH &L_(list_push)
+#include "recur.h" /** \include */
+#ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
+#include "../test/test_list.h"
+#endif /* test --> */
+#undef RC_
+#ifdef LIST_COMPARE_NAME
+#undef LIST_COMPARE_NAME
+#endif
+#ifdef LIST_COMPARE
 #undef LIST_COMPARE
+#endif
+#ifdef LIST_IS_EQUAL
+#undef LIST_IS_EQUAL
+#endif
 
 
 #endif /* traits --> */
@@ -686,7 +394,7 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #undef LIST_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
 #ifdef LIST_TEST
-#error No to LIST_TO_STRING traits defined for LIST_TEST.
+#error No LIST_TO_STRING traits defined for LIST_TEST.
 #endif
 #undef LIST_NAME
 #undef BOX_

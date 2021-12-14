@@ -359,10 +359,10 @@ static int l2_compare(const struct layer2_listlink *,
 static void l2_to_string(const struct layer2_listlink *, char (*)[12]);
 static void fill_l2(struct layer2_listlink *);
 #define LIST_NAME layer2
-#define LIST_COMPARE &l2_compare
+#define LIST_TEST &fill_l2
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
-#define LIST_TEST &fill_l2
+#define LIST_COMPARE &l2_compare
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &l2_to_string

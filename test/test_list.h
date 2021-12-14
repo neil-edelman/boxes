@@ -1,16 +1,14 @@
-/* intended to be included by ../src/List.h on LIST_TEST */
+#if defined(QUOTE) || defined(QUOTE_)
+#error QUOTE_? cannot be defined.
+#endif
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+
+#if LIST_TRAITS == 0 /* <!-- !traits */
 
 #include <stdlib.h>	/* EXIT rand */
 #include <stdio.h>  /* printf */
 
-#ifdef QUOTE
-#undef QUOTE
-#endif
-#ifdef QUOTE_
-#undef QUOTE_
-#endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
 
 /* `LIST_TEST` must be a function implementing <typedef:<PL>action_fn>. */
 static void (*const PL_(filler))(struct L_(listlink) *) = (LIST_TEST);
@@ -262,9 +260,31 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(count)(&l2, 0);
 }
 
-/* FIXME */
+/** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
+ @param[parent_new, parent] Responsible for creating new objects and returning
+ the list. @allow */
+static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
+	void *const parent) {
+	printf("<" QUOTE(LIST_NAME) ">list was created using: "
+#ifdef LIST_COMPARE
+		"LIST_COMPARE: <" QUOTE(LIST_COMPARE) ">; "
+#endif
+		"LIST_TO_STRING<" QUOTE(LIST_TO_STRING) ">; "
+		"testing:\n");
+	PL_(test_basic)(parent_new, parent);
+	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");
+}
+
+
+/* !traits --><!-- compare */
+#elif defined(LIST_COMPARE) || defined(LIST_IS_EQUAL)
+
+
+#if 0 /* <!-- 0 */
+
+
 #ifdef LIST_COMPARE /* <!-- comp */
-static int PL_(list_compar)(const void *const a, const void *const b) {
+static int RC_(list_compar)(const void *const a, const void *const b) {
 	return L_(list_compare)(a, b);
 }
 #endif /* comp --> */
@@ -437,22 +457,39 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 #endif /* !comp --> */
 }
 
+#endif /* 0 --> */
+
+
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list. @allow */
-static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
+static void RC_(recur_test)(struct L_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
-	printf("<" QUOTE(LIST_NAME) ">list was created using: "
-#ifdef LIST_COMPARE
-		"LIST_COMPARE: <" QUOTE(LIST_COMPARE) ">; "
+	printf("<" QUOTE(LIST_NAME) ">list testing <"
+#ifdef LIST_COMPARE_NAME
+		QUOTE(LIST_COMPARE_NAME)
+#else
+		"anonymous"
 #endif
-		"LIST_TO_STRING<" QUOTE(LIST_TO_STRING) ">; "
-		"testing:\n");
-	PL_(test_basic)(parent_new, parent);
-	PL_(test_sort)(parent_new, parent);
-	PL_(test_binary)(parent_new, parent);
+		"> "
+#ifdef LIST_COMPARE
+		"compare <" QUOTE(LIST_COMPARE)
+#elif defined(LIST_IS_EQUAL)
+		"is equal <" QUOTE(LIST_IS_EQUAL)
+#endif
+		">:\n");
+	/*PL_(test_sort)(parent_new, parent);
+	PL_(test_binary)(parent_new, parent);*/
 	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");
 }
 
+
+#else /* compare --><!-- no */
+#error Test should not be here.
+#endif /* no --> */
+
 #undef QUOTE
 #undef QUOTE_
+
+/* We should *not* undef `LIST_TEST`, since it's used to pick the first
+ to_string. */
