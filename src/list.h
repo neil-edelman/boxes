@@ -99,13 +99,6 @@ typedef void (*PL_(action_fn))(struct L_(listlink) *);
 /** Returns (Non-zero) true or (zero) false when given a node. */
 typedef int (*PL_(predicate_fn))(const struct L_(listlink) *);
 
-/** Clear `list`. */
-static void PL_(clear)(struct L_(list) *const list) {
-	list->u.flat.next = &list->u.as_tail.tail;
-	list->u.flat.zero = 0;
-	list->u.flat.prev = &list->u.as_head.head;
-}
-
 /** Cats all `from` in front of `after`; `from` will be empty after.
  Careful that `after` is not in `from` because that will just erase the list.
  @order \Theta(1) */
@@ -155,47 +148,74 @@ static struct L_(listlink) *L_(list_next)(struct L_(listlink) *link) {
 	return link->next ? link : 0;
 }
 
-/** Clears and initializes `list`.  @order \Theta(1) @allow */
+/** Clear `list`. */
+static void PL_(clear)(struct L_(list) *const list) {
+	list->u.flat.next = &list->u.as_tail.tail;
+	list->u.flat.zero = 0;
+	list->u.flat.prev = &list->u.as_head.head;
+}
+
+/** Clears and initializes `list`. @order \Theta(1) @allow */
 static void L_(list_clear)(struct L_(list) *const list)
 	{ assert(list); PL_(clear)(list); }
 
-/** `add` before `anchor`. @order \Theta(1) @allow */
-static void L_(list_add_before)(struct L_(listlink) *const anchor,
+/** `add` before `anchor`. @order \Theta(1) */
+static void PL_(add_before)(struct L_(listlink) *const anchor,
 	struct L_(listlink) *const add) {
-	assert(anchor && add && anchor != add && anchor->prev);
 	add->prev = anchor->prev;
 	add->next = anchor;
 	anchor->prev->next = add;
 	anchor->prev = add;
 }
 
-/** `add` after `anchor`. @order \Theta(1) @allow */
-static void L_(list_add_after)(struct L_(listlink) *const anchor,
+/** `add` before `anchor`. @order \Theta(1) @allow */
+static void L_(list_add_before)(struct L_(listlink) *const anchor,
 	struct L_(listlink) *const add) {
-	assert(anchor && add && anchor != add && anchor->next);
+	assert(anchor && add && anchor != add && anchor->prev);
+	PL_(add_before)(anchor, add);
+}
+
+/** `add` after `anchor`. @order \Theta(1) */
+static void PL_(add_after)(struct L_(listlink) *const anchor,
+	struct L_(listlink) *const add) {
 	add->prev = anchor;
 	add->next = anchor->next;
 	anchor->next->prev = add;
 	anchor->next = add;
 }
 
-/** Adds `add` to the beginning of `list`. @order \Theta(1) @allow */
-static void L_(list_unshift)(struct L_(list) *const list,
+/** `add` after `anchor`. @order \Theta(1) @allow */
+static void L_(list_add_after)(struct L_(listlink) *const anchor,
+	struct L_(listlink) *const add) {
+	assert(anchor && add && anchor != add && anchor->next);
+	PL_(add_after)(anchor, add);
+}
+
+/** Adds `add` to the end of `list`. @order \Theta(1) */
+static void PL_(push)(struct L_(list) *const list,
 	struct L_(listlink) *const add)
-	{ assert(list && add), L_(list_add_after)(&list->u.as_head.head, add); }
+	{ PL_(add_before)(&list->u.as_tail.tail, add); }
 
 /** Adds `add` to the end of `list`. @order \Theta(1) @allow */
 static void L_(list_push)(struct L_(list) *const list,
 	struct L_(listlink) *const add)
-	{ assert(list && add), L_(list_add_before)(&list->u.as_tail.tail, add); }
+	{ assert(list && add), PL_(push)(list, add); }
 
-/** Remove `node`. @order \Theta(1) @allow */
-static void L_(list_remove)(struct L_(listlink) *const node) {
-	assert(node && node->prev && node->next);
+/** Adds `add` to the beginning of `list`. @order \Theta(1) @allow */
+static void L_(list_unshift)(struct L_(list) *const list,
+	struct L_(listlink) *const add)
+	{ assert(list && add), PL_(add_after)(&list->u.as_head.head, add); }
+
+/** Remove `node`. @order \Theta(1) */
+static void PL_(remove)(struct L_(listlink) *const node) {
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
 	node->prev = node->next = 0;
 }
+
+/** Remove `node`. @order \Theta(1) @allow */
+static void L_(list_remove)(struct L_(listlink) *const node)
+	{ assert(node && node->prev && node->next), PL_(remove)(node); }
 
 /** Removes the first element of `list` and returns it, if any.
  @order \Theta(1) @allow */
@@ -363,14 +383,6 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #else /* name --><!-- !name */
 #define RC_(n) LIST_CAT(L_(list), n)
 #endif /* !name --> */
-#ifdef LIST_COMPARE /* <!-- cmp */
-#define BOX_COMPARE LIST_COMPARE
-#else /* cmp --><!-- eq */
-#define BOX_IS_EQUAL LIST_IS_EQUAL
-#endif /* eq --> */
-#define BOX_HEAD &L_(list_head)
-#define BOX_REMOVE &L_(list_remove)
-#define BOX_PUSH &L_(list_push)
 #include "recur.h" /** \include */
 #ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_list.h"
