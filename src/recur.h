@@ -3,7 +3,7 @@
 
  @subtitle Recur trait
 
- Requires a lot. Fixme.
+ Included by `list.h`.
 
  @param[RC_]
  A one-argument macro producing a name that is responsible for the name of the
@@ -206,12 +206,13 @@ static void PRC_(sort)(struct L_(list) *const list) {
  @order \Omega(|`list`|), \O(|`list`| log |`list`|) @allow */
 static void RC_(sort)(struct L_(list) *const list) { PRC_(sort)(list); }
 
-/** Compares `alist` to `blist` as sequences.
+/** Compares `alist` to `blist` as sequences; both can be null.
  @return The first `LIST_COMPARE` that is not equal to zero, or 0 if they are
  equal. Null is considered as before everything else; two null pointers are
- considered equal. @implements <typedef:<PL>compare_fn>
+ considered equal. @implements <typedef:<PL>compare_fn> (one can `qsort` a
+ list, as long as one calls <fn:<L>list_self_correct>)
  @order \Theta(min(|`alist`|, |`blist`|)) @allow */
-static int PRC_(list_compare)(const struct L_(list) *const alist,
+static int RC_(compare)(const struct L_(list) *const alist,
 	const struct L_(list) *const blist) {
 	struct L_(listlink) *a, *b;
 	int diff;
@@ -468,10 +469,9 @@ static void CM_(unique)(struct L_(list) *const a) { CM_(unique_merge)(a, 0); }
 
 static void PRC_(unused_recur_coda)(void);
 static void PRC_(unused_recur)(void) {
-	RC_(sort)(0);
+	RC_(merge)(0, 0); RC_(sort)(0); RC_(compare)(0, 0);
 #if 0
 #ifdef BOX_COMPARE /* <!-- compare */
-	L_(list_merge)(0, 0); L_(list_compare)(0, 0);
 	L_(list_duplicates_to)(0, 0); L_(list_subtraction_to)(0, 0, 0);
 	L_(list_union_to)(0, 0, 0); L_(list_intersection_to)(0, 0, 0);
 	L_(list_xor_to)(0, 0, 0);*/
