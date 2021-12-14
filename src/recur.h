@@ -91,49 +91,47 @@ static const PRC_(compare_fn) PRC_(compare) = (BOX_COMPARE);
 /** Returns a boolean given two <typedef:<PCM>type>. */
 /*typedef int (*PRC_(biaction_fn))(PRC_(type) *, PRC_(type) *);*/
 
-/** Merges from `a` and `b`, which must not be empty; prefers elements from `a`
- go in the front. @return The new head. @order \O(|`a`| + |`b`|). */
-static PRC_(type) *PRC_(merge)(PRC_(type) *a, PRC_(type) *b) {
-	PRC_(type) *prev = 0, *head, **x = &head;
+/** Merges `from` into `to`, preferring elements from `to` go in the front.
+ @order \O(|`from`| + |`to`|). @fixme Assumes list. */
+static void RC_(merge)(PRC_(box) *const to, PRC_(box) *const from) {
+	PRC_(type) *head, **x = &head, *prev = &to->u.as_head.head, *t, *f;
+	assert(to && to->u.flat.next && to->u.flat.prev
+		&& from && from->u.flat.next && from->u.flat.prev && from != to);
+	/* Empty. */
+	if(!(f = from->u.flat.next)->next) return;
+	if(!(t = to->u.flat.next)->next)
+		{ PL_(move)(from, &to->u.as_tail.tail); return; }
+	/* Exclude sentinel. */
+	from->u.flat.prev->next = to->u.flat.prev->next = 0;
+	/* Merge. */
 	for( ; ; ) {
-		if(PRC_(compare)(a, b) <= 0) {
-			a->prev = prev, prev = *x = a, x = &a->next;
-			if(!(a = a->next)) { a = *x = b; break; }
+		if(PRC_(compare)(t, f) <= 0) {
+			t->prev = prev, prev = *x = t, x = &t->next;
+			if(!(t = t->next)) { *x = f; goto from_left; }
 		} else {
-			b->prev = prev, prev = *x = b, x = &b->next;
-			if(!(b = b->next)) { *x = a; break; }
+			f->prev = prev, prev = *x = f, x = &f->next;
+			if(!(f = f->next)) { *x = t; break; }
 		}
 	}
-
-	/* `blist` empty -- that was easy. */
-	if(!(b = from->u.flat.next)->next) return;
-	/* `alist` empty -- `O(1)` <fn:<PL>move> is more efficient. */
-	if(!(a = to->u.flat.next)->next)
-	{ PRC_(move)(from, &to->u.as_tail.tail); return; }
-	/* Merge */
-	for(cur = &to->u.as_head.head; ; ) {
-		if(PRC_(compare)(a, b) < 0) {
-			a->prev = cur, cur = cur->next = a;
-			if(!(a = a->next)->next) {
-				b->prev = cur, cur->next = b;
-				from->u.flat.prev->next = &to->u.as_tail.tail;
-				to->u.flat.prev = from->u.flat.prev;
-				break;
-			}
-		} else {
-			b->prev = cur, cur = cur->next = b;
-			if(!(b = b->next)->next) { a->prev = cur, cur->next = a; break; }
-		}
+	if(0) {
+from_left:
+		f->prev = prev;
+		/* Switch sentinels. */
+		f = from->u.flat.prev;
+		to->u.flat.prev = f;
+		f->next = &from->u.as_tail.tail;
+	} else {
+		t->prev = prev;
 	}
 	from->u.flat.next = &from->u.as_tail.tail;
 	from->u.flat.prev = &from->u.as_head.head;
 }
 
-
-/** Merges `next`'s from `a` and `b`, which must not be empty; prefers elements
- from `a` go in the front. @return The new head. @order \O(|`a`| + |`b`|). */
-static PRC_(type) *PRC_(merge_next)(PRC_(type) *a, PRC_(type) *b) {
-	PRC_(type) *head, **x = &head;
+/** Merges the two top runs referenced by `head_ptr` in stack form. */
+static void PRC_(merge_runs)(PRC_(type) **const head_ptr) {
+	PRC_(type) *head = *head_ptr, **x = &head, *b = head, *a = b->prev,
+		*const prev = a->prev;
+	assert(head_ptr && a && b);
 	for( ; ; ) {
 		if(PRC_(compare)(a, b) <= 0) {
 			*x = a, x = &a->next;
@@ -143,15 +141,7 @@ static PRC_(type) *PRC_(merge_next)(PRC_(type) *a, PRC_(type) *b) {
 			if(!(b = b->next)) { *x = a; break; }
 		}
 	}
-	return head;
-}
-
-/** Merges the two top runs referenced by `head_ptr` in stack form. */
-static void PRC_(merge_runs)(PRC_(type) **const head_ptr) {
-	PRC_(type) *b = *head_ptr, *a = b->prev,
-		*const prev = a->prev, *const head = PRC_(merge_next)(a, b);
-	assert(head_ptr && a && b);
-	head->prev = prev, *head_ptr = head;
+	head->prev = prev, *head_ptr = head; /* `prev` is the previous run. */
 }
 
 /** The list form of `list` is restored from `head` in stack form with two
@@ -173,36 +163,6 @@ static void PRC_(merge_final)(PRC_(box) *const list, PRC_(type) *head) {
 	/* Not empty. */
 	assert(list->u.flat.next && list->u.flat.next != &list->u.as_tail.tail);
 	list->u.flat.next->prev = &list->u.as_head.head;
-}
-
-/** Merges from `a` and `b`, preferring elements from `a` go in the front,
- without going to an intermediate form.
- @return The new head. @order \O(|`from`| + |`to`|). */
-static PRC_(type) *PRC_(merge)(PRC_(type) *const a, PRC_(type) *const b) {
-	struct PRC_(listlink) *cur, *a, *b;
-	assert(from && from->u.flat.next && to && to->u.flat.next && from != to);
-	/* `blist` empty -- that was easy. */
-	if(!(b = from->u.flat.next)->next) return;
-	/* `alist` empty -- `O(1)` <fn:<PL>move> is more efficient. */
-	if(!(a = to->u.flat.next)->next)
-	{ PRC_(move)(from, &to->u.as_tail.tail); return; }
-	/* Merge */
-	for(cur = &to->u.as_head.head; ; ) {
-		if(PRC_(compare)(a, b) < 0) {
-			a->prev = cur, cur = cur->next = a;
-			if(!(a = a->next)->next) {
-				b->prev = cur, cur->next = b;
-				from->u.flat.prev->next = &to->u.as_tail.tail;
-				to->u.flat.prev = from->u.flat.prev;
-				break;
-			}
-		} else {
-			b->prev = cur, cur = cur->next = b;
-			if(!(b = b->next)->next) { a->prev = cur, cur->next = a; break; }
-		}
-	}
-	from->u.flat.next = &from->u.as_tail.tail;
-	from->u.flat.prev = &from->u.as_head.head;
 }
 
 /** Natural merge sort `list`; the requirement for \O(\log |`list`|) space is
@@ -274,7 +234,6 @@ static void PRC_(sort)(PRC_(box) *const list) {
  @order \Omega(|`list`|), \O(|`list`| log |`list`|) @allow */
 static void RC_(sort)(PRC_(box) *const list) { PRC_(sort)(list); }
 
-
 /** Compares `alist` to `blist` as sequences.
  @return The first `LIST_COMPARE` that is not equal to zero, or 0 if they are
  equal. Null is considered as before everything else; two null pointers are
@@ -282,7 +241,7 @@ static void RC_(sort)(PRC_(box) *const list) { PRC_(sort)(list); }
  @order \Theta(min(|`alist`|, |`blist`|)) @allow */
 static int PRC_(list_compare)(const PRC_(box) *const alist,
 	const PRC_(box) *const blist) {
-	struct PRC_(listlink) *a, *b;
+	PRC_(type) *a, *b;
 	int diff;
 	/* Null counts as `-\infty`. */
 	if(!alist) {
@@ -309,9 +268,9 @@ static int PRC_(list_compare)(const PRC_(box) *const alist,
  and leave `(A, B, A)` in `from`. If one <fn:<L>list_sort> `from` first,
  `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
  @order \O(|`from`|) @allow */
-static void PRC_(list_duplicates_to)(PRC_(box) *const from,
+static void PRC_(duplicates_to)(PRC_(box) *const from,
 	PRC_(box) *const to) {
-	struct PRC_(listlink) *a = from->u.flat.next, *b, *temp;
+	PRC_(type) *a = from->u.flat.next, *b, *temp;
 	assert(from);
 	if(!(b = a->next)) return;
 	while(b->next) {
@@ -319,8 +278,8 @@ static void PRC_(list_duplicates_to)(PRC_(box) *const from,
 			a = b, b = b->next;
 		} else {
 			temp = b, b = b->next;
-			PRC_(list_remove)(temp);
-			if(to) PRC_(list_add_before)(&to->u.as_tail.tail, temp);
+			PRC_(remove)(temp);
+			if(to) L_(list_add_before)(&to->u.as_tail.tail, temp);
 		}
 	}
 }
@@ -383,7 +342,7 @@ static void PRC_(boolean)(PRC_(box) *const abox, PRC_(box) *const bbox,
  @order \O(|`a`| + |`b`|) @allow */
 static void PRC_(list_subtraction_to)(PRC_(box) *const a,
 	PRC_(box) *const b, PRC_(box) *const result) {
-	PRC_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_DEFAULT_A, result);
+	PRC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_DEFAULT_A, result);
 }
 
 /** Moves the union of `a` and `b` as sequential sorted individual elements to
@@ -395,8 +354,8 @@ static void PRC_(list_subtraction_to)(PRC_(box) *const a,
  @order \O(|`a`| + |`b`|) @allow */
 static void PRC_(list_union_to)(PRC_(box) *const a,
 	PRC_(box) *const b, PRC_(box) *const result) {
-	PRC_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
-		| LIST_INTERSECTION | LIST_DEFAULT_A | LIST_DEFAULT_B, result);
+	PRC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_SUBTRACTION_BA
+		| RECUR_INTERSECTION | RECUR_DEFAULT_A | RECUR_DEFAULT_B, result);
 }
 
 /** Moves the intersection of `a` and `b` as sequential sorted individual
@@ -408,7 +367,7 @@ static void PRC_(list_union_to)(PRC_(box) *const a,
  @order \O(|`a`| + |`b`|) @allow */
 static void PRC_(list_intersection_to)(PRC_(box) *const a,
 	PRC_(box) *const b, PRC_(box) *const result) {
-	PRC_(boolean)(a, b, LIST_INTERSECTION, result);
+	PRC_(boolean)(a, b, RECUR_INTERSECTION, result);
 }
 
 /** Moves `a` exclusive-or `b` as sequential sorted individual elements to
@@ -420,8 +379,8 @@ static void PRC_(list_intersection_to)(PRC_(box) *const a,
  @order O(|`a`| + |`b`|) @allow */
 static void PRC_(list_xor_to)(PRC_(box) *const a, PRC_(box) *const b,
 	PRC_(box) *const result) {
-	PRC_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
-		| LIST_DEFAULT_A | LIST_DEFAULT_B, result);
+	PRC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_SUBTRACTION_BA
+		| RECUR_DEFAULT_A | RECUR_DEFAULT_B, result);
 }
 
 
@@ -460,66 +419,6 @@ static int CM_(compare)(const PRC_(box) *const a, const PRC_(box) *const b) {
 		return -(a->size != b->size);
 	}
 }
-
-/** <typedef:<PCM>box> `a` should be partitioned true/false with less-then
- <typedef:<PCM>type> `value`.
- @return The first index of `a` that is not less than `value`.
- @order \O(log `a.size`) @allow */
-static size_t CM_(lower_bound)(const PRC_(box) *const a,
-	const PRC_(type) *const value) {
-	size_t low = 0, high = a->size, mid;
-	assert(a && value);
-	while(low < high) if(PRC_(compare)(value, a->data
-		+ (mid = low + ((high - low) >> 1))) <= 0) high = mid;
-		else low = mid + 1;
-	return low;
-}
-
-/** <typedef:<PCM>box> `a` should be partitioned false/true with greater-than
- or equal-to <typedef:<PCM>type> `value`. @return The first index of `a` that
- is greater than `value`. @order \O(log `a.size`) @allow */
-static size_t CM_(upper_bound)(const PRC_(box) *const a,
-	const PRC_(type) *const value) {
-	size_t low = 0, high = a->size, mid;
-	assert(a && value);
-	while(low < high) if(PRC_(compare)(value, a->data
-		+ (mid = low + ((high - low) >> 1))) >= 0) low = mid + 1;
-		else high = mid;
-	return low;
-}
-
-/** Copies <typedef:<PCM>type> `value` at the upper bound of a sorted
- <typedef:<PCM>box> `a`.
- @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
-static int CM_(insert_after)(PRC_(box) *const a,
-	const PRC_(type) *const value) {
-	size_t bound;
-	assert(a && value);
-	bound = CM_(upper_bound)(a, value);
-	if(!A_(array_new)(a)) return 0; /* @fixme Reference to array. */
-	memmove(a->data + bound + 1, a->data + bound,
-		sizeof *a->data * (a->size - bound - 1));
-	memcpy(a->data + bound, value, sizeof *value);
-	return 1;
-}
-
-/** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int PRC_(vcompar)(const void *const a, const void *const b)
-	{ return PRC_(compare)(a, b); }
-
-/** Sorts <typedef:<PCM>box> `a` by `qsort`.
- @order \O(`a.size` \log `a.size`) @allow */
-static void CM_(sort)(PRC_(box) *const a)
-	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PRC_(vcompar)); }
-
-/** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int PRC_(vrevers)(const void *const a, const void *const b)
-	{ return PRC_(compare)(b, a); }
-
-/** Sorts <typedef:<PCM>box> `a` in reverse by `qsort`.
- @order \O(`a.size` \log `a.size`) @allow */
-static void CM_(reverse)(PRC_(box) *const a)
-	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PRC_(vrevers)); }
 
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  @implements <typedef:<PCM>bipredicate_fn> */
