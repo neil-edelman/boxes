@@ -599,8 +599,8 @@ static void PCM_(test_sort)(void) {
  tested on stdout. @allow */
 static void CM_(compare_test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">array testing <"
-#ifdef ARRAY_ORDER
-		QUOTE(ARRAY_CONTRAST_NAME)
+#ifdef ARRAY_COMPARE_NAME
+		QUOTE(ARRAY_COMPARE_NAME)
 #else
 		"anonymous"
 #endif
