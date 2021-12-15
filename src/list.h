@@ -83,7 +83,8 @@ struct L_(listlink) { struct L_(listlink) *next, *prev; };
 /** Serves as head and tail for linked-list of <tag:<L>listlink>. Use
  <fn:<L>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
- values are not allowed and it is _not_ the same as `{0}`. In a valid list, `as_head.head.tail`, `as_tail.tail.head`, and `flat.zero`, refer to the same
+ values are not allowed and it is _not_ the same as `{0}`. In a valid list,
+ `as_head.head.tail`, `as_tail.tail.head`, and `flat.zero`, refer to the same
  sentinel element, and it's always the only one null.
 
  ![States.](../web/states.png) */
@@ -273,14 +274,14 @@ static void L_(list_to_if)(struct L_(list) *const from,
 }
 
 /** Performs `action` for each element in `list` in order.
- @param[action] Can be to delete the element.
+ @param[action] It makes a double of the next node, so it can be to delete the
+ element and even assign it's values null.
  @order \Theta(|`list`|) \times O(`action`) @allow */
 static void L_(list_for_each)(struct L_(list) *const list,
 	const PL_(action_fn) action) {
 	struct L_(listlink) *x, *next_x;
 	assert(list && action);
-	for(x = list->u.flat.next; next_x = x->next; x = next_x)
-		action(x);
+	for(x = list->u.flat.next; next_x = x->next; x = next_x) action(x);
 }
 
 /** Iterates through `list` and calls `predicate` until it returns true.

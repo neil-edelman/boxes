@@ -42,13 +42,13 @@ enum recur_operation {
 };
 #endif /* idempotent --> */
 
-/** Returns a boolean given two read-only <typedef:<L>listlink>. */
+/** Returns a boolean given two read-only <tag:<L>listlink>. */
 typedef int (*PRC_(bipredicate_fn))(const struct L_(listlink) *,
 	const struct L_(listlink) *);
 
 #ifdef LIST_COMPARE /* <!-- compare */
 
-/** Three-way comparison on a totally order set of <typedef:<L>listlink>;
+/** Three-way comparison on a totally order set of <tag:<L>listlink>;
  returns an integer value less then, equal to, greater then zero, if
  `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*PRC_(compare_fn))(const struct L_(listlink) *a,
@@ -61,7 +61,7 @@ static const PRC_(compare_fn) PRC_(compare) = (LIST_COMPARE);
 /** Lexicographically compares `alist` to `blist`. Null values are before
  everything.
  @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
- @implements <typedef:<PL>compare_fn> (one can `qsort` an array of lists, as
+ @implements <typedef:<PRC>compare_fn> (one can `qsort` an array of lists, as
  long as one calls <fn:<L>list_self_correct> on it's elements)
  @order \Theta(min(|`alist`|, |`blist`|)) @allow */
 static int RC_(compare)(const struct L_(list) *const alist,
@@ -364,7 +364,7 @@ static int RC_(is_equal)(const struct L_(list) *const lista,
 /** Moves all local-duplicates of `from` to the end of `to`.
 
  For example, if `from` is `(A, B, B, A)`, it would concatenate the second
- `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<L>list_sort> `from`
+ `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<RC>sort> `from`
  first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
  @order \O(|`from`|) @allow */
 static void RC_(duplicates_to)(struct L_(list) *const from,
