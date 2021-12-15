@@ -19,12 +19,9 @@
 
  @std C89 */
 
-#if !defined(RC_) || !(defined(LIST_IS_EQUAL) ^ defined(LIST_COMPARE))
+#if !defined(RC_) || !(defined(LIST_IS_EQUAL) ^ defined(LIST_COMPARE)) \
+	|| !defined(L_) || !defined(PL_)
 #error Unexpected preprocessor symbols.
-#endif
-
-#ifdef LIST_IS_EQUAL
-#error LIST_IS_EQUAL not implemented.
 #endif
 
 #ifndef RECUR_H /* <!-- idempotent */
@@ -45,8 +42,15 @@ enum recur_operation {
 };
 #endif /* idempotent --> */
 
-/** Returns less then, equal to, or greater then zero, inducing an ordering
- between `a` and `b`. */
+/** Returns a boolean given two read-only <typedef:<L>listlink>. */
+typedef int (*PRC_(bipredicate_fn))(const struct L_(listlink) *,
+	const struct L_(listlink) *);
+
+#ifdef LIST_COMPARE /* <!-- compare */
+
+/** Three-way comparison on a totally order set of <typedef:<L>listlink>;
+ returns an integer value less then, equal to, greater then zero, if
+ `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*PRC_(compare_fn))(const struct L_(listlink) *a,
 	const struct L_(listlink) *b);
 
@@ -54,11 +58,34 @@ typedef int (*PRC_(compare_fn))(const struct L_(listlink) *a,
  <typedef:<PRC>compare_fn>. */
 static const PRC_(compare_fn) PRC_(compare) = (LIST_COMPARE);
 
-/** Returns a boolean given two read-only <typedef:<PCM>type>. */
-/*typedef int (*PRC_(bipredicate_fn))(const struct L_(listlink) *, const struct L_(listlink) *);*/
-
-/** Returns a boolean given two <typedef:<PCM>type>. */
-/*typedef int (*PRC_(biaction_fn))(struct L_(listlink) *, struct L_(listlink) *);*/
+/** Lexicographically compares `alist` to `blist`. Null values are before
+ everything.
+ @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
+ @implements <typedef:<PL>compare_fn> (one can `qsort` an array of lists, as
+ long as one calls <fn:<L>list_self_correct> on it's elements)
+ @order \Theta(min(|`alist`|, |`blist`|)) @allow */
+static int RC_(compare)(const struct L_(list) *const alist,
+	const struct L_(list) *const blist) {
+	struct L_(listlink) *a, *b;
+	int diff;
+	/* Null counts as `-\infty`. */
+	if(!alist) {
+		return blist ? -1 : 0;
+	} else if(!blist) {
+		return 1;
+	}
+	/* Compare element by element. */
+	for(a = alist->u.flat.next, b = blist->u.flat.next; ;
+		a = a->next, b = b->next) {
+		if(!a->next) {
+			return b->next ? -1 : 0;
+		} else if(!b->next) {
+			return 1;
+		} else if((diff = PRC_(compare)(a, b))) {
+			return diff;
+		}
+	}
+}
 
 /** Merges `from` into `to`, preferring elements from `to` go in the front.
  @order \O(|`from`| + |`to`|). */
@@ -206,57 +233,6 @@ static void PRC_(sort)(struct L_(list) *const list) {
  @order \Omega(|`list`|), \O(|`list`| log |`list`|) @allow */
 static void RC_(sort)(struct L_(list) *const list) { PRC_(sort)(list); }
 
-/** Compares `alist` to `blist` as sequences; both can be null.
- @return The first `LIST_COMPARE` that is not equal to zero, or 0 if they are
- equal. Null is considered as before everything else; two null pointers are
- considered equal. @implements <typedef:<PL>compare_fn> (one can `qsort` a
- list, as long as one calls <fn:<L>list_self_correct>)
- @order \Theta(min(|`alist`|, |`blist`|)) @allow */
-static int RC_(compare)(const struct L_(list) *const alist,
-	const struct L_(list) *const blist) {
-	struct L_(listlink) *a, *b;
-	int diff;
-	/* Null counts as `-\infty`. */
-	if(!alist) {
-		return blist ? -1 : 0;
-	} else if(!blist) {
-		return 1;
-	}
-	/* Compare element by element. */
-	for(a = alist->u.flat.next, b = blist->u.flat.next; ;
-		a = a->next, b = b->next) {
-		if(!a->next) {
-			return b->next ? -1 : 0;
-		} else if(!b->next) {
-			return 1;
-		} else if((diff = PRC_(compare)(a, b))) {
-			return diff;
-		}
-	}
-}
-
-/** Moves all local-duplicates of `from` to the end of `to`.
-
- For example, if `from` is `(A, B, B, A)`, it would concatenate the second
- `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<L>list_sort> `from`
- first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
- @order \O(|`from`|) @allow */
-static void RC_(duplicates_to)(struct L_(list) *const from,
-	struct L_(list) *const to) {
-	struct L_(listlink) *a = from->u.flat.next, *b, *temp;
-	assert(from);
-	if(!(b = a->next)) return;
-	while(b->next) {
-		if(PRC_(compare)(a, b)) {
-			a = b, b = b->next;
-		} else {
-			temp = b, b = b->next;
-			PL_(remove)(temp);
-			if(to) PL_(push)(to, temp);
-		}
-	}
-}
-
 /** Private: `alist` `mask` `blist` -> `result`. Prefers `a` to `b` when equal.
  Either could be null.
  @order \O(|`a`| + |`b`|) */
@@ -357,11 +333,64 @@ static void RC_(xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 		| RECUR_DEFAULT_A | RECUR_DEFAULT_B, result);
 }
 
+/** !compare(`a`, `b`) == equals(`a`, `b`).
+ @implements <typedef:<PRC>bipredicate_fn> */
+static int PRC_(is_equal)(const struct L_(listlink) *const a,
+	const struct L_(listlink) *const b) { return !PRC_(compare)(a, b); }
+
+#else /* compare --><!-- is equal */
+
+/* Check that `LIST_IS_EQUAL` is a function implementing
+ <typedef:<PRC>bipredicate_fn>. */
+static const PRC_(bipredicate_fn) PRC_(is_equal) = (LIST_IS_EQUAL);
+
+#endif /* is equal --> */
+
+/** @return If `lista` piecewise equals `listb`, which both can be null.
+ @order \O(min(|`lista`|, |`listb`|)) @allow */
+static int RC_(is_equal)(const struct L_(list) *const lista,
+	const struct L_(list) *const listb) {
+	const struct L_(listlink) *a, *b;
+	if(!lista) return !listb;
+	if(!listb) return 0;
+	for(a = lista->u.flat.next, b = listb->u.flat.next; ;
+		a = a->next, b = b->next) {
+		if(!a->next) return !b->next;
+		if(!b->next) return 0;
+		if(!PRC_(is_equal)(a, b)) return 0;
+	}
+}
+
+/** Moves all local-duplicates of `from` to the end of `to`.
+
+ For example, if `from` is `(A, B, B, A)`, it would concatenate the second
+ `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<L>list_sort> `from`
+ first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
+ @order \O(|`from`|) @allow */
+static void RC_(duplicates_to)(struct L_(list) *const from,
+	struct L_(list) *const to) {
+	struct L_(listlink) *a = from->u.flat.next, *b, *temp;
+	assert(from);
+	if(!(b = a->next)) return;
+	while(b->next) {
+		if(!PRC_(is_equal)(a, b)) {
+			a = b, b = b->next;
+		} else {
+			temp = b, b = b->next;
+			PL_(remove)(temp);
+			if(to) PL_(push)(to, temp);
+		}
+	}
+}
+
 static void PRC_(unused_recur_coda)(void);
 static void PRC_(unused_recur)(void) {
-	RC_(merge)(0, 0); RC_(sort)(0); RC_(compare)(0, 0);
-	RC_(duplicates_to)(0, 0); RC_(subtraction_to)(0, 0, 0);
-	RC_(union_to)(0, 0, 0); RC_(intersection_to)(0, 0, 0); RC_(xor_to)(0, 0, 0);
+#ifdef LIST_COMPARE /* <!-- compare */
+	RC_(compare)(0, 0); RC_(merge)(0, 0); RC_(sort)(0);
+	RC_(subtraction_to)(0, 0, 0); RC_(union_to)(0, 0, 0);
+	RC_(intersection_to)(0, 0, 0); RC_(xor_to)(0, 0, 0);
+#endif /* compare --> */
+	RC_(is_equal)(0, 0); RC_(duplicates_to)(0, 0);
 	PRC_(unused_recur_coda)();
 }
 static void PRC_(unused_recur_coda)(void) { PRC_(unused_recur)(); }

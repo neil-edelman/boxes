@@ -254,7 +254,7 @@ static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
 #elif defined(LIST_COMPARE) || defined(LIST_IS_EQUAL)
 
 #ifdef LIST_IS_EQUAL
-#error Not implemented.
+#error Not implemented in testing.
 #endif
 
 static int PRC_(compar)(const void *const a, const void *const b)

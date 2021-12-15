@@ -14,18 +14,18 @@
  `<L>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
  private, whose names are prefixed in a manner to avoid collisions.
 
- @param[LIST_COMPARE]
- Optional total-order function satisfying <typedef:<PL>compare_fn>.
- (fixme: LIST_IS_EQUAL.)
-
  @param[LIST_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
+
+ @param[LIST_COMPARE_NAME, LIST_COMPARE, LIST_IS_EQUAL]
+ Compare trait contained in <recur.h>. An optional mangled name for uniqueness
+ and a function implementing either <typedef:<PRC>compare_fn> or
+ <typedef:<PRC>bipredicate_fn>.
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
  To string trait contained in <to_string.h>. An optional mangled name for
  uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
 
- @fixme Add LIST_NULL
  @std C89 */
 
 #ifndef LIST_NAME
@@ -36,7 +36,8 @@
 #else /* str --><!-- !str */
 #define LIST_TO_STRING_TRAIT 0
 #endif /* !str --> */
-#if defined(LIST_COMPARE) || defined(LIST_COMPARE_NAME) /* <!-- comp */
+#if defined(LIST_COMPARE_NAME) || defined(LIST_COMPARE) \
+	|| defined(LIST_IS_EQUAL) /* <!-- comp */
 #define LIST_COMPARE_TRAIT 1
 #else /* comp --><!-- !comp */
 #define LIST_COMPARE_TRAIT 0
@@ -48,8 +49,9 @@
 #if defined(LIST_TO_STRING_NAME) && !defined(LIST_TO_STRING)
 #error LIST_TO_STRING_NAME requires LIST_TO_STRING.
 #endif
-#if defined(LIST_COMPARE_NAME) && !defined(LIST_COMPARE)
-#error LIST_COMPARE_NAME requires LIST_COMPARE.
+#if defined(LIST_COMPARE_NAME) \
+	&& (!(!defined(LIST_COMPARE) ^ !defined(LIST_IS_EQUAL)))
+#error LIST_COMPARE_NAME requires LIST_COMPARE or LIST_IS_EQUAL not both.
 #endif
 
 #ifndef LIST_H /* <!-- idempotent */
