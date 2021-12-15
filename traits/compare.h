@@ -149,7 +149,7 @@ static int PCM_(is_equal)(const PCM_(type) *const a, const PCM_(type) *const b)
 
 /* Check that `BOX_IS_EQUAL` is a function implementing
  <typedef:<PCM>bipredicate_fn>. */
-static const PCM__(bipredicate_fn) PCM__(is_equal) = (BOX_IS_EQUAL);
+static const PCM_(bipredicate_fn) PCM_(is_equal) = (BOX_IS_EQUAL);
 
 #endif /* is equal --> */
 
