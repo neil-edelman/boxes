@@ -9,16 +9,8 @@
 #include <stdlib.h>	/* EXIT rand */
 #include <stdio.h>  /* printf */
 
-
 /* `LIST_TEST` must be a function implementing <typedef:<PL>action_fn>. */
 static void (*const PL_(filler))(struct L_(listlink) *) = (LIST_TEST);
-
-/** Given `l` and `offset`, calculate the graph node. */
-/*static const void *PL_(node)(const struct L_(listlink) *const l,
-	const size_t offset) {
-	assert(l);
-	return (const char *)l - (l->prev && l->next ? offset : 0);
-}*/
 
 static const char *PL_(colour);
 static size_t PL_(offset); /* The list's offset to the parent. */
@@ -78,35 +70,14 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 			PL_(colour), PL_(name)(list->u.flat.prev), colour,
 			PL_(colour), PL_(name)(list->u.flat.next), colour);
 	}
-	/*"\tnode [style=filled, fillcolor=pink];\n"
-		"\tsubgraph cluster_%p {\n"
-		"\t\tstyle=filled;\n"
-		"\t\tfillcolor=lightgray;\n"
-		"\t\tlabel=\"\\<" QUOTE(LIST_NAME) "\\>list\";\n",
-		colour, (const void *)((const char *)&list - offset),
-		(const void *)((const char *)&list - offset));
-	fprintf(fp,
-		"\t\tp%p [label=\"head\", shape=ellipse];\n"
-		"\t\tp%p [label=\"tail\", shape=ellipse];\n"
-		"\t\tp%p -> p%p [style=invis]; # vertical\n"
-		"\t}\n", PL_(node)(&list->head, offset), PL_(node)(&list->tail, offset),
-		PL_(node)(&list->head, offset), PL_(node)(&list->tail, offset));
-	fprintf(fp,
-		"\tnode [fillcolor=lightsteelblue];\n"
-		"\tnode [shape=box];\n"
-		"\tp%p -> p%p [color=%s];\n"
-		"\tp%p -> p%p [color=%s4];\n",
-		PL_(node)(&list->head, offset), PL_(node)(list->head.next, offset),
-		colour,
-		PL_(node)(&list->tail, offset), PL_(node)(list->tail.prev, offset),
-		colour);*/
 	for(link = L_(list_head)(list); link; link = L_(list_next)(link)) {
 		if(is_nodes) {
 			PL_(to_string)(link, &a);
 			fprintf(fp, "\t%s [label=\"%s\"];\n", PL_(name)(link), a);
 		}
 		fprintf(fp, "\t%s -> %s [color=\"%s\"];\n"
-			"\t%s -> %s [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n",
+			"\t%s -> %s [color=\"%s4\", style=\"dotted\","
+			" arrowhead=\"empty\"];\n",
 			PL_(name)(link), PL_(name)(link->next), colour,
 			PL_(name)(link), PL_(name)(link->prev), colour);
 	}
@@ -200,8 +171,11 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	/* Add */
 	printf("Adding %lu elements to l1.\n", (unsigned long)test_size);
 	for(i = 0; i < test_size; i++) {
+		char z[12];
 		if(!(link = parent_new(parent))) { assert(0); return; }
 		PL_(filler)(link);
+		PL_(to_string)(link, &z);
+		printf("Adding %s.\n", z);
 		L_(list_push)(&l1, link);
 		if(i == 0) link_first = link;
 		link_last = link;
@@ -223,20 +197,21 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(count)(&l1, test_size);
 	link = L_(list_head)(&l1), assert(link == link_first);
 	link = L_(list_tail)(&l1), assert(link == link_last);
+	printf("After removing and adding: l1 = %s.\n", PL_(list_to_string)(&l1));
 	/* Test movement. */
 	PL_(count)(&l1, test_size);
 	PL_(count)(&l2, 0);
 	L_(list_to_if)(&l1, &l2, &PL_(parity));
-	printf("Transferring . . . l1 = %s; l2 = %s.\n",
+	printf("Transferring all odds: l1 = %s; l2 = %s.\n",
 		PL_(list_to_string)(&l1), PL_(list_to_string)(&l2));
-	PL_(count)(&l1, test_size >> 1);
-	PL_(count)(&l2, test_size - (test_size >> 1));
+	PL_(count)(&l1, test_size / 2);
+	PL_(count)(&l2, test_size - test_size / 2);
 	assert(L_(list_head)(&l1) == link_first);
 	L_(list_to_before)(&l2, link_first->next);
 	PL_(count)(&l1, test_size);
 	PL_(count)(&l2, 0);
 	assert(L_(list_head)(&l1) == link_first);
-	printf("Here . . . l1 = %s; l2 = %s.\n",
+	printf("Back: l1 = %s; l2 = %s.\n",
 		PL_(list_to_string)(&l1), PL_(list_to_string)(&l2));
 	L_(list_to)(&l1, &l2);
 	PL_(count)(&l1, 0);
@@ -269,7 +244,6 @@ static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
 #ifdef LIST_COMPARE
 		"LIST_COMPARE: <" QUOTE(LIST_COMPARE) ">; "
 #endif
-		"LIST_TO_STRING<" QUOTE(LIST_TO_STRING) ">; "
 		"testing:\n");
 	PL_(test_basic)(parent_new, parent);
 	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");
@@ -279,24 +253,52 @@ static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
 /* !traits --><!-- compare */
 #elif defined(LIST_COMPARE) || defined(LIST_IS_EQUAL)
 
+#ifdef LIST_IS_EQUAL
+#error Not implemented.
+#endif
 
-#if 0 /* <!-- 0 */
-
-
-#ifdef LIST_COMPARE /* <!-- comp */
-static int RC_(list_compar)(const void *const a, const void *const b) {
-	return L_(list_compare)(a, b);
-}
-#endif /* comp --> */
+static int PRC_(compar)(const void *const a, const void *const b)
+	{ return RC_(compare)(a, b); }
 
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */
 static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
-#ifdef LIST_COMPARE /* <!-- comp */
 	struct L_(list) lists[64], *list;
 	const size_t lists_size = sizeof lists / sizeof *lists;
 	struct L_(list) *const lists_end = lists + lists_size;
 	int cmp;
+	{ /* Just one, so we can be sure <fn:<L>list_self_correct> works. */
+		struct L_(list) eg1, eg2;
+		struct L_(listlink) *link;
+		char z[12];
+		if(!(link = parent_new(parent))) { assert(0); return; }
+		PL_(filler)(link);
+		PL_(to_string)(link, &z);
+		printf("link: %s.\n", z);
+		L_(list_clear)(&eg1);
+		printf("empty eg1: %s, as_head %p, as_tail %p.\n", PL_(list_to_string)(&eg1), (void *)&eg1.u.as_head.head,
+			(void *)&eg1.u.as_tail.tail);
+		L_(list_self_correct)(&eg1);
+		printf("empty eg1: %s, as_head %p, as_tail %p.\n", PL_(list_to_string)(&eg1), (void *)&eg1.u.as_head.head,
+			(void *)&eg1.u.as_tail.tail);
+		L_(list_clear)(&eg2);
+		printf("empty eg2: %s, as_head %p, as_tail %p.\n", PL_(list_to_string)(&eg2), (void *)&eg2.u.as_head.head,
+			(void *)&eg2.u.as_tail.tail);
+		L_(list_push)(&eg1, link);
+		printf("link in eg1: %s, next %p, prev %p, next.next %p.\n",
+			PL_(list_to_string)(&eg1), (void *)eg1.u.flat.next,
+			(void *)eg1.u.flat.prev, (void *)eg1.u.flat.next->next);
+		/* Intentionally add it to another list! */
+		L_(list_push)(&eg2, link);
+		printf("link in eg2: %s, next %p, prev %p, next.next %p.\n",
+			PL_(list_to_string)(&eg2), (void *)eg2.u.flat.next,
+			(void *)eg2.u.flat.prev, (void *)eg2.u.flat.next->next);
+		/* Correct back to `eg1`, (`eg2` will now be invalid.) */
+		L_(list_self_correct)(&eg1);
+		printf("link in eg1: %s, next %p, prev %p, next.next %p.\n",
+			PL_(list_to_string)(&eg1), (void *)eg1.u.flat.next,
+			(void *)eg1.u.flat.prev, (void *)eg1.u.flat.next->next);
+	}
 	/* Random lists. */
 	for(list = lists; list < lists_end; list++) {
 		size_t no_links = (unsigned)rand() / (RAND_MAX / 5 + 1);
@@ -312,15 +314,14 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 		for(link_a = 0, link_b = L_(list_head)(list); link_b;
 			link_a = link_b, link_b = L_(list_next)(link_b)) {
 			if(!link_a) continue;
-			cmp = PL_(compare)(link_a, link_b);
+			cmp = PRC_(compare)(link_a, link_b);
 			assert(cmp <= 0);
 		}
 	}
 	/* Now sort the lists. */
-	qsort(lists, lists_size, sizeof *lists,
-		(int (*)(const void *, const void *))&L_(list_compare));
 	printf("Sorted array of sorted <" QUOTE(LIST_NAME) ">list by "
 		QUOTE(LIST_COMPARE) ":\n");
+	qsort(lists, lists_size, sizeof *lists, &PRC_(compar));
 	for(list = lists; list < lists_end; list++) {
 		L_(list_self_correct)(list); /* `qsort` moves the pointers. */
 		printf("list: %s.\n", PL_(list_to_string)(list));
@@ -328,12 +329,8 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 		cmp = L_(list_compare)(list - 1, list);
 		assert(cmp <= 0);
 	}
-#else /* comp --><!-- !comp */
-	(void)(parent_new), (void)(parent);
-#endif /* !comp --> */
 }
 
-#ifdef LIST_COMPARE /* <!-- comp */
 /** Set up the incredibly contrived example involving `la`, `lb`, `result`, and
  `a`, `b`, `b_alt`, `c`, `d` for <fn:<PL>test_binary>, where `a = ()`,
  `b = (A,B,D)`, and `c = (B,C)`. */
@@ -362,12 +359,10 @@ static void PL_(exact)(const struct L_(list) *const list,
 	if(!i) return;
 	i = L_(list_next)(i), assert(!i);
 }
-#endif /* comp --> */
 
 /** Passed `parent_new` and `parent`, tests binary operations. */
 static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
-#ifdef LIST_COMPARE /* <!-- comp */
 	struct L_(list) la, lb, result;
 	struct L_(listlink) *link, *a = 0, *b = 0, *b_alt = 0, *c = 0, *d = 0;
 	int cmp;
@@ -399,16 +394,17 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 			L_(list_sort)(&x);
 			L_(list_duplicates_to)(&x, &y);
 			/* fixme: list_duplicates_to is suspect? it keeps giving wrong. */
-			printf("x = %s, y = %s\n", PL_(list_to_string)(&x), PL_(list_to_string)(&y));
+			printf("x = %s, y = %s\n", PL_(list_to_string)(&x),
+				PL_(list_to_string)(&y));
 			/* Honestly, what am I doing? */
 			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
 			if(!(a = L_(list_head)(&x))) continue;
 			if(!(b = L_(list_head)(&y))) continue;
-			if(PL_(compare)(a, b) == 0 && !(b = L_(list_next)(b))) continue;
-			assert(PL_(compare)(a, b) < 0);
-			for(c = L_(list_next)(a); c && PL_(compare)(c, b) < 0;
+			if(PRC_(compare)(a, b) == 0 && !(b = L_(list_next)(b))) continue;
+			assert(PRC_(compare)(a, b) < 0);
+			for(c = L_(list_next)(a); c && PRC_(compare)(c, b) < 0;
 				c = L_(list_next)(c));
-			assert(c && PL_(compare)(c, b) == 0);
+			assert(c && PRC_(compare)(c, b) == 0);
 			b_alt = c;
 			if(!(c = L_(list_next)(c)) || !(d = L_(list_next)(c))) continue;
 			break;
@@ -451,14 +447,7 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(exact)(&la, b, 0, 0, 0);
 	PL_(exact)(&lb, b_alt, 0, 0, 0);
 	PL_(exact)(&result, a, c, d, 0);
-
-#else /* comp --><!-- !comp */
-	(void)(parent_new), (void)(parent);
-#endif /* !comp --> */
 }
-
-#endif /* 0 --> */
-
 
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
@@ -478,8 +467,8 @@ static void RC_(recur_test)(struct L_(listlink) *(*const parent_new)(void *),
 		"is equal <" QUOTE(LIST_IS_EQUAL)
 #endif
 		">:\n");
-	/*PL_(test_sort)(parent_new, parent);
-	PL_(test_binary)(parent_new, parent);*/
+	PL_(test_sort)(parent_new, parent);
+	PL_(test_binary)(parent_new, parent);
 	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");
 }
 
@@ -487,6 +476,7 @@ static void RC_(recur_test)(struct L_(listlink) *(*const parent_new)(void *),
 #else /* compare --><!-- no */
 #error Test should not be here.
 #endif /* no --> */
+
 
 #undef QUOTE
 #undef QUOTE_

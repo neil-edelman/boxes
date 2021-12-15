@@ -237,11 +237,11 @@ static int RC_(compare)(const struct L_(list) *const alist,
 
 /** Moves all local-duplicates of `from` to the end of `to`.
 
- For example, if `from` is `(A, B, B, A)`, it would concatenate `(B)` to `to`
- and leave `(A, B, A)` in `from`. If one <fn:<L>list_sort> `from` first,
- `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
+ For example, if `from` is `(A, B, B, A)`, it would concatenate the second
+ `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<L>list_sort> `from`
+ first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
  @order \O(|`from`|) @allow */
-static void PRC_(duplicates_to)(struct L_(list) *const from,
+static void RC_(duplicates_to)(struct L_(list) *const from,
 	struct L_(list) *const to) {
 	struct L_(listlink) *a = from->u.flat.next, *b, *temp;
 	assert(from);
@@ -257,14 +257,15 @@ static void PRC_(duplicates_to)(struct L_(list) *const from,
 	}
 }
 
-
 /** Private: `alist` `mask` `blist` -> `result`. Prefers `a` to `b` when equal.
+ Either could be null.
  @order \O(|`a`| + |`b`|) */
 static void PRC_(boolean)(struct L_(list) *const alist,
 	struct L_(list) *const blist,
 	const enum recur_operation mask, struct L_(list) *const result) {
 	struct L_(listlink) *temp,
-		*a = alist->u.flat.next, *b = blist->u.flat.next;
+		*a = alist ? alist->u.flat.next : 0,
+		*b = blist ? blist->u.flat.next : 0;
 	int comp;
 	assert((!result || (result != alist && result != blist))
 		&& (!alist || (alist != blist)));
@@ -306,14 +307,6 @@ static void PRC_(boolean)(struct L_(list) *const alist,
 	}
 }
 
-
-
-/**********HERE***********/
-
-
-
-
-
 /** Subtracts `a` from `b`, as sequential sorted individual elements, and moves
  it to `result`. All elements are removed from `a`. All parameters must be
  unique or can be null.
@@ -321,7 +314,7 @@ static void PRC_(boolean)(struct L_(list) *const alist,
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
  `(a:A, a:D)` would be moved to `result`.
  @order \O(|`a`| + |`b`|) @allow */
-static void PRC_(list_subtraction_to)(struct L_(list) *const a,
+static void RC_(subtraction_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
 	PRC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_DEFAULT_A, result);
 }
@@ -333,7 +326,7 @@ static void PRC_(list_subtraction_to)(struct L_(list) *const a,
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
  `(a:A, a:B, b:C, a:D)` would be moved to `result`.
  @order \O(|`a`| + |`b`|) @allow */
-static void PRC_(list_union_to)(struct L_(list) *const a,
+static void RC_(union_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
 	PRC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_SUBTRACTION_BA
 		| RECUR_INTERSECTION | RECUR_DEFAULT_A | RECUR_DEFAULT_B, result);
@@ -346,7 +339,7 @@ static void PRC_(list_union_to)(struct L_(list) *const a,
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
  `(a:B)` would be moved to `result`.
  @order \O(|`a`| + |`b`|) @allow */
-static void PRC_(list_intersection_to)(struct L_(list) *const a,
+static void RC_(intersection_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
 	PRC_(boolean)(a, b, RECUR_INTERSECTION, result);
 }
@@ -358,134 +351,17 @@ static void PRC_(list_intersection_to)(struct L_(list) *const a,
  For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
  `(a:A, b:C, a:D)` would be moved to `result`.
  @order O(|`a`| + |`b`|) @allow */
-static void PRC_(list_xor_to)(struct L_(list) *const a, struct L_(list) *const b,
+static void RC_(xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 	struct L_(list) *const result) {
 	PRC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_SUBTRACTION_BA
 		| RECUR_DEFAULT_A | RECUR_DEFAULT_B, result);
 }
 
-
-#if 0
-
-/* Array *************/
-
-#ifdef BOX_COMPARE /* <!-- compare */
-
-/** Three-way comparison on a totally order set of <typedef:<PCM>type>; returns
- an integer value less then, equal to, greater then zero, if
- `a < b`, `a == b`, `a > b`, respectively. */
-typedef int (*PRC_(compare_fn))(const struct L_(listlink) *a, const struct L_(listlink) *b);
-
-/* Check that `BOX_COMPARE` is a function implementing
- <typedef:<PCM>compare_fn>. */
-static const PRC_(compare_fn) PRC_(compare) = (BOX_COMPARE);
-
-/** Lexicographically compares <typedef:<PCM>box> `a` to `b`. Null values are
- before everything.
- @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
- @order \O(`a.size`) @allow */
-static int CM_(compare)(const struct L_(list) *const a, const struct L_(list) *const b) {
-	struct L_(listlink) *ia, *ib, *end;
-	int diff;
-	/* Null counts as `-\infty`. */
-	if(!a) return b ? -1 : 0;
-	else if(!b) return 1;
-	if(a->size > b->size) {
-		for(ia = a->data, ib = b->data, end = ib + b->size; ib < end;
-			ia++, ib++) if((diff = PRC_(compare)(ia, ib))) return diff;
-		return 1;
-	} else {
-		for(ia = a->data, ib = b->data, end = ia + a->size; ia < end;
-			ia++, ib++) if((diff = PRC_(compare)(ia, ib))) return diff;
-		return -(a->size != b->size);
-	}
-}
-
-/** !compare(`a`, `b`) == equals(`a`, `b`).
- @implements <typedef:<PCM>bipredicate_fn> */
-static int PRC_(is_equal)(const struct L_(listlink) *const a, const struct L_(listlink) *const b)
-	{ return !PRC_(compare)(a, b); }
-
-#else /* compare --><!-- is equal */
-
-/* Check that `BOX_IS_EQUAL` is a function implementing
- <typedef:<PCM>bipredicate_fn>. */
-static const PRC__(bipredicate_fn) PRC__(is_equal) = (BOX_IS_EQUAL);
-
-#endif /* is equal --> */
-
-/** @return If <typedef:<PCM>box> `a` piecewise equals `b`, which both can be
- null. @order \O(`size`) @allow */
-static int CM_(is_equal)(const struct L_(list) *const a, const struct L_(list) *const b) {
-	const struct L_(listlink) *ia, *ib, *end;
-	if(!a) return !b;
-	if(!b || a->size != b->size) return 0;
-	for(ia = a->data, ib = b->data, end = ia + a->size; ia < end; ia++, ib++)
-		if(!PRC_(is_equal)(ia, ib)) return 0;
-	return 1;
-}
-
-/** Removes consecutive duplicate elements in <typedef:<PCM>box> `a`.
- @param[merge] Controls surjection. Called with duplicate elements, if false
- `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
- can be simulated by mixing the two in the value returned. Can be null: behaves
- like false. @order \O(`a.size` \times `merge`) @allow */
-static void CM_(unique_merge)(struct L_(list) *const a, const PRC_(biaction_fn) merge) {
-	size_t target, from, cursor, choice, next, move;
-	const size_t last = a->size;
-	int is_first, is_last;
-	assert(a);
-	for(target = from = cursor = 0; cursor < last; cursor += next) {
-		/* Bijective `[from, cursor)` is moved lazily. */
-		for(choice = 0, next = 1; cursor + next < last && PRC_(is_equal)(a->data
-			+ cursor + choice, a->data + cursor + next); next++)
-			if(merge && merge(a->data + choice, a->data + next)) choice = next;
-		if(next == 1) continue;
-		/* Must move injective `cursor + choice \in [cursor, cursor + next)`. */
-		is_first = !choice;
-		is_last  = (choice == next - 1);
-		move = cursor - from + (size_t)is_first;
-		memmove(a->data + target, a->data + from, sizeof *a->data * move),
-		target += move;
-		if(!is_first && !is_last) memcpy(a->data + target,
-			a->data + cursor + choice, sizeof *a->data), target++;
-		from = cursor + next - (size_t)is_last;
-	}
-	/* Last differed move. */
-	move = last - from;
-	memmove(a->data + target, a->data + from, sizeof *a->data * move),
-	target += move, assert(a->size >= target);
-	a->size = target;
-}
-
-/** Removes consecutive duplicate elements in <typedef:<PCM>box> `a`.
- @order \O(`a.size`) @allow */
-static void CM_(unique)(struct L_(list) *const a) { CM_(unique_merge)(a, 0); }
-
-#endif /* 0 */
-
-
-
-
 static void PRC_(unused_recur_coda)(void);
 static void PRC_(unused_recur)(void) {
 	RC_(merge)(0, 0); RC_(sort)(0); RC_(compare)(0, 0);
-#if 0
-#ifdef BOX_COMPARE /* <!-- compare */
-	L_(list_duplicates_to)(0, 0); L_(list_subtraction_to)(0, 0, 0);
-	L_(list_union_to)(0, 0, 0); L_(list_intersection_to)(0, 0, 0);
-	L_(list_xor_to)(0, 0, 0);*/
-#endif /* compare --> */
-#endif
-
-#if 0 /* <!-- pasted from array */
-#ifdef BOX_COMPARE /* <!-- compare */
-	CM_(compare)(0, 0); CM_(lower_bound)(0, 0); CM_(upper_bound)(0, 0);
-	CM_(insert_after)(0, 0); CM_(sort)(0); CM_(reverse)(0);
-#endif /* compare --> */
-	CM_(is_equal)(0, 0); CM_(unique_merge)(0, 0); CM_(unique)(0);
-#endif /* pasted --> */
-
+	RC_(duplicates_to)(0, 0); RC_(subtraction_to)(0, 0, 0);
+	RC_(union_to)(0, 0, 0); RC_(intersection_to)(0, 0, 0); RC_(xor_to)(0, 0, 0);
 	PRC_(unused_recur_coda)();
 }
 static void PRC_(unused_recur_coda)(void) { PRC_(unused_recur)(); }
@@ -499,6 +375,3 @@ static void PRC_(unused_recur_coda)(void) { PRC_(unused_recur)(); }
 #ifdef BOX_COMPARE_NAME
 #undef BOX_COMPARE_NAME
 #endif
-#undef BOX_HEAD
-#undef BOX_REMOVE
-#undef BOX_PUSH

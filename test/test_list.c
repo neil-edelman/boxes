@@ -1058,7 +1058,8 @@ int main(void) {
 	struct skip_pool skips = POOL_IDLE;
 	permute_list_test(&permute_from_pool, &permutes),
 		permutelink_pool_(&permutes);
-	no_list_test(&no_from_pool, &nos), no_pool_(&nos);
+	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);
+	no_list_recur_test(&no_from_pool, &nos), no_pool_(&nos);
 	letter_list_test(&letter_from_pool, &ls), letter_pool_(&ls);
 	/*name_list_test(&panda_name_from_pool, &pandas), panda_pool_(&pandas);
 	where_list_test(&panda_where_from_pool, &pandas), panda_pool_(&pandas);

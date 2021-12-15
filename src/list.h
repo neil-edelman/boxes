@@ -296,16 +296,16 @@ static struct L_(listlink) *L_(list_any)(const struct L_(list) *const list,
 
 /** Corrects `list` ends to compensate for memory relocation of the list
  itself. Because the `list` is part of the links, this will invalidate all
- other copies. @order \Theta(1) @allow @fixme This is suspect, now; `next+2`
- could go off the side. */
+ other copies. @order \Theta(1) @allow */
 static void L_(list_self_correct)(struct L_(list) *const list) {
 	assert(list && !list->u.flat.zero);
-	if(list->u.flat.next + 2 == list->u.flat.prev) { /* Empty. */
+	if(!list->u.flat.next->next) { /* Empty. */
+		assert(!list->u.flat.prev->prev);
 		list->u.flat.next = &list->u.as_tail.tail;
 		list->u.flat.prev = &list->u.as_head.head;
 	} else { /* Non-empty. */
-		list->u.flat.next->prev = &list->u.as_tail.tail;
-		list->u.flat.prev->next = &list->u.as_head.head;
+		list->u.flat.prev->next = &list->u.as_tail.tail;
+		list->u.flat.next->prev = &list->u.as_head.head;
 	}
 }
 
@@ -322,7 +322,11 @@ static void PL_(begin)(struct PL_(iterator) *const it,
 
 /** Advances `it`. @implements next */
 static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
-	return assert(it), it->link ? it->link = L_(list_next)(it->link): 0;
+	struct L_(listlink) *here = it->link;
+	assert(it);
+	if(!here) return 0;
+	it->link = L_(list_next)(it->link);
+	return here;
 }
 
 /* iterate --> */
