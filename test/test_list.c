@@ -1060,13 +1060,17 @@ int main(void) {
 		permutelink_pool_(&permutes);
 	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);
 	no_list_recur_test(&no_from_pool, &nos), no_pool_(&nos);
-	letter_list_test(&letter_from_pool, &ls), letter_pool_(&ls);
+	letter_list_test(&letter_from_pool, &ls), letter_pool_clear(&ls);
+	letter_list_recur_test(&letter_from_pool, &ls), letter_pool_(&ls);
 	/*name_list_test(&panda_name_from_pool, &pandas), panda_pool_(&pandas);
 	where_list_test(&panda_where_from_pool, &pandas), panda_pool_(&pandas);
 	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_(&pandas);*/
 	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
+	layer0_list_recur_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
+	layer1_list_recur_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer2_list_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
+	layer2_list_recur_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
 	skip_pool_(&skips);
 	/*pandas_tests();*/
 	skips_tests();
