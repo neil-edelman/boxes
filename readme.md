@@ -67,9 +67,9 @@ for examples.
 > used to doing for every new application, or using overly complicated existing
 > frameworks that take over your application (nspr, apr, glib...).
 
-This aims to be a middle ground. No libraries or frameworks, each
+This aims to be a middle ground. No libraries or frameworks; each
 fairly small, simple, stand-alone `C89` code. It's like rolling
-your own containers, but aims to have work of testing and documenting
+one's own containers, but aims to have work of testing and documenting
 already done. In a project, one can pick and choose which ones are
 appropriate.
 
@@ -79,8 +79,8 @@ Most of the projects make extensive use of code generation: in the
 background, it uses the `C89` pre-processor for very basic template
 meta-programming to do compile-time polymorphism. Such that, when
 the code is run through traditional parsers, they tend to get
-hopelessly confused; by default, a custom parser is used for
-documentation: [cdoc](https://github.com/neil-edelman/cdoc).
+confused; by default, a custom parser is used for documentation:
+[cdoc](https://github.com/neil-edelman/cdoc).
 
 The code in the individual projects should work on most systems and
 compilers. The build system (this) requires a shell that understands
@@ -126,6 +126,6 @@ License](https://opensource.org/licenses/MIT).
 
 Compiling with all warnings turned on in some compilers is an endless
 race with the `lint`-like warnings. Most of them are super-useful,
-but some are not. You may have issues with, for example,
+but some are not. One may have issues with, for example,
 `_CRT_SECURE_NO_WARNINGS`, `-Wno-comma`, `-Wno-logical-op-parentheses`,
 `-Wno-parentheses`, `-Wno-shift-op-parentheses`.
