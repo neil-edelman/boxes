@@ -83,7 +83,7 @@
 #define SET_CAT(n, m) SET_CAT_(n, m)
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(set, S_(n))
-#define SET_IDLE { 0, 0, 0, { POOL_IDLE } }
+#define SET_IDLE { 0, 0, 0, 0, POOL_IDLE }
 #endif /* idempotent --> */
 
 
@@ -102,15 +102,16 @@ typedef SET_UINT PS_(uint);
 
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PS_(type);
+typedef const SET_TYPE PS_(ctype);
 
 /** A map from <typedef:<PS>type> onto <typedef:<PS>uint>. Usually should use
  all the the argument and output should be as close as possible to a discrete
  uniform distribution. */
-typedef PS_(uint) (*PS_(hash_fn))(const PS_(type));
+typedef PS_(uint) (*PS_(hash_fn))(PS_(ctype));
 
 /** Equivalence relation between <typedef:<PS>type> that satisfies
  `<PS>is_equal_fn(a, b) -> <PS>hash_fn(a) == <PS>hash_fn(b)`. */
-typedef int (*PS_(is_equal_fn))(const PS_(type) a, const PS_(type) b);
+typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
 
 /* Check that `SET_HASH` is a function implementing <typedef:<PS>hash_fn>. */
 static const PS_(hash_fn) PS_(hash) = (SET_HASH);
@@ -124,7 +125,7 @@ typedef int (*PS_(replace_fn))(PS_(type) original, PS_(type) replace);
 
 /** Used in <fn:<S>set_policy_put> when `replace` is null; `original` and
  `replace` are ignored. @implements `<PS>replace_fn` */
-static int PS_(false)(PS_(type) *original, PS_(type) *replace)
+static int PS_(false)(PS_(type) original, PS_(type) replace)
 	{ (void)(original); (void)(replace); return 0; }
 
 /** A bucket is a linked-list of entries, which store keys. */
@@ -150,6 +151,7 @@ struct PS_(bucket) { struct PS_(entry) *head; };
  ![States.](../web/states.png) */
 struct S_(set) {
 	struct PS_(bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
+	size_t size;
 	unsigned log_capacity, unused;
 	struct PS_(entry_pool) entries;
 };
@@ -205,7 +207,8 @@ static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
 	PS_(uint) c0 = (PS_(uint))(1 << log_c0), c1, mask;
 	/* One did set `<PS>uint` to an unsigned type, right? */
 	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
-		&& (PS_(uint))-1 > 0);
+		&& (PS_(uint))-1 > 0
+		&& (!set->buckets || set->size <= 1ul << set->log_capacity));
 	/* Ca'n't be expanded further; the load factor will increase. */
 	if(log_c0 >= log_limit) { assert(log_c0 == log_limit); return 1; }
 	/* `C99` `SIZE_MAX` min 65535 -> 5041; load factor `ln 2 ~= 0.693 ~= 9/13`.
@@ -239,7 +242,7 @@ static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
 	/* Initialize to contain no elements. */
 	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b = 0;
-	/* Expectation value of rehashing an entry is half. */
+	/* Expectation value of rehashing an entry is half, (usually.) */
 	for(b = buckets, b_end = buckets + c0; b < b_end; b++) {
 		struct PS_(entry) **to_x, *x;
 		PS_(uint) hash;
@@ -257,41 +260,45 @@ static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
 	return 1;
 }
 
-/** Put `key` in `set` and returns the collided element, if any, as long as
- `replace` is null or returns true. If `replace` returns false, returns
- `key`. */
-static struct PS_(entry) *PS_(put)(struct S_(set) *const set,
+/** Put `key` in `set`.
+ @return The collided element, if any, as long as `replace` is null or returns
+ true. If `replace` returns false, returns `key`.
+ @throws[malloc] */
+static PS_(type) PS_(put)(struct S_(set) *const set,
 	PS_(type) key, const PS_(replace_fn) replace) {
 	struct PS_(bucket) *bucket;
-	PS_(type) **to_x = 0, *x = 0;
+	struct PS_(entry) **to_x = 0, *x = 0;
+	PS_(type) prev_key = 0;
 	PS_(uint) hash;
 	assert(set && key);
 	hash = PS_(hash)(key);
-#ifndef SET_RECALCULATE /* <!-- cache */
-	//element->hash = hash;
-#endif /* cache --> */
 	if(!set->buckets) goto grow_table;
 	/* Deal with duplicates. */
 	bucket = PS_(get_bucket)(set, hash);
-	if(!(to_x = PS_(entry_in_bucket)(bucket, hash, key))) goto grow_table;
+	if(!(to_x = PS_(bucket_link)(bucket, hash, key))) goto grow_table;
 	x = *to_x;
-	if(replace && !replace(&x->key, &element->key)) return key;
-	*to_x = x->next, x->next = 0;
+	if(replace && !replace(x->key, key)) return key; /* Refuse. */
+	prev_key = x->key;
+	*to_x = x->next;
 	goto add_element;
 grow_table:
-	assert(set->size + 1 > set->size);
 	/* Didn't <fn:<PS>reserve>, now one can't tell error except `errno`. */
-	if(!PS_(reserve)(set, set->size + 1)) return 0;
-	bucket = PS_(get_bucket)(set, hash);
+	if((set->size < (size_t)-1 && !PS_(reserve)(set, set->size + 1))
+		|| !(x = PS_(entry_pool_new)(&set->entries))) return 0;
 	set->size++;
+	bucket = PS_(get_bucket)(set, hash); /* Possibly invalidated. */
 add_element:
-	element->next = bucket->first, bucket->first = element;
-	return x;
+	x->key = key;
+	x->next = bucket->head, bucket->head = x;
+#ifndef SET_RECALCULATE /* <!-- cache: quick out. */
+	x->hash = hash;
+#endif /* cache --> */
+	return prev_key;
 }
 
 /** Initialises `set` to idle. @order \Theta(1) @allow */
 static void S_(set)(struct S_(set) *const set)
-	{ assert(set); set->buckets = 0; set->log_capacity = 0;
+	{ assert(set); set->buckets = 0; set->size = 0; set->log_capacity = 0;
 	PS_(entry_pool)(&set->entries); }
 
 /** Destroys `set` and returns it to idle. @allow */
@@ -308,43 +315,45 @@ static void S_(set_clear)(struct S_(set) *const set) {
 	assert(set);
 	if(!set->log_capacity) return;
 	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
-		b->first = 0;
+		b->head = 0;
 	set->size = 0;
+	PS_(entry_pool_clear)(&set->entries);
 }
 
 /** @return The value in `set` which <typedef:<PS>is_equal_fn> `SET_IS_EQUAL`
- `data`, or, if no such value exists, null.
- @param[set] If null, returns null. @order Average \O(1), (hash distributes
- elements uniformly); worst \O(n). @allow */
-static struct S_(setlink) *S_(set_get)(struct S_(set) *const set,
-	const PS_(mtype) data) {
-	struct S_(setlink) **to_x;
+ `key`, or, if no such value exists, null.
+ @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
+ @allow */
+static PS_(type) S_(set_get)(struct S_(set) *const set, const PS_(type) key) {
+	struct PS_(entry) **to_x;
 	PS_(uint) hash;
-	if(!set || !set->buckets) return 0;
-	hash = PS_(hash)(data);
-	to_x = PS_(bucket_to)(PS_(get_bucket)(set, hash), hash, data);
-	return to_x ? *to_x : 0;
+	assert(set);
+	if(!set->buckets) return 0;
+	hash = PS_(hash)(key);
+	to_x = PS_(bucket_link)(PS_(get_bucket)(set, hash), hash, key);
+	return to_x ? (*to_x)->key : 0;
 }
 
+#if 0
 /** Reserve at least `reserve`, divided by the maximum load factor, space in
  the buckets of `set`. @return Success.
  @throws[ERANGE] `reserve` plus the size would take a bigger number then could
  fit in a `size_t`. @throws[realloc] @allow */
-static int S_(set_reserve)(struct S_(set) *const set, const size_t reserve)
+static int S_(set_reserve(buffer?))(struct S_(set) *const set, const size_t reserve)
 	{ return set ? reserve > (size_t)-1 - set->size ? (errno = ERANGE, 0) :
 	PS_(reserve)(set, set->size + reserve) : 0; }
+#endif
 
 /** Puts the `element` in `set`.
- @param[set, element] If null, returns null. @param[element] Should not be of a
- set because the integrity of that set will be compromised.
+ @param[set, element] If null, returns null.
  @return Any ejected element or null. (An ejected element has
  <typedef:<PS>is_equal_fn> `SET_IS_EQUAL` the `element`.)
  @throws[realloc, ERANGE] There was an error with a re-sizing. Successfully
  calling <fn:<S>set_reserve> with at least one before ensures that this does
  not happen. @order Average amortised \O(1), (hash distributes elements
  uniformly); worst \O(n). @allow */
-static struct S_(setlink) *S_(set_put)(struct S_(set) *const set,
-	struct S_(setlink) *const element) { return PS_(put)(set, element, 0); }
+static PS_(type) S_(set_put)(struct S_(set) *const set, const PS_(type) key)
+	{ return PS_(put)(set, key, 0); }
 
 /** Puts the `element` in `set` only if the entry is absent or if calling
  `replace` returns true.
@@ -359,10 +368,11 @@ static struct S_(setlink) *S_(set_put)(struct S_(set) *const set,
  Successfully calling <fn:<S>set_reserve> with at least one before ensures that
  this does not happen. @order Average amortised \O(1), (hash distributes
  elements uniformly); worst \O(n). @allow */
-static struct S_(setlink) *S_(set_policy_put)(struct S_(set) *const set,
-	struct S_(setlink) *const element, const PS_(replace_fn) replace)
-	{ return PS_(put)(set, element, replace ? replace : &PS_(false)); }
+static PS_(type) S_(set_policy_put)(struct S_(set) *const set,
+	const PS_(type) key, const PS_(replace_fn) replace)
+	{ return PS_(put)(set, key, replace ? replace : &PS_(false)); }
 
+#if 0
 /** Removes an element `data` from `set`.
  @return Successfully ejected element or null. This element is free to be put
  into another set or modify it's hash values. @order Average \O(1), (hash
@@ -381,30 +391,31 @@ static struct S_(setlink) *S_(set_remove)(struct S_(set) *const set,
 	set->size--;
 	return x;
 }
+#endif
 
 /* <!-- iterate interface */
 
 /* Contains all iteration parameters. */
 struct PS_(iterator)
-	{ const struct S_(set) *set; size_t b; struct S_(setlink) *e; };
+	{ const struct S_(set) *set; size_t bucket_idx; struct PS_(entry) *entry; };
 
 /** Loads `set` into `it`. @implements begin */
 static void PS_(begin)(struct PS_(iterator) *const it,
 	const struct S_(set) *const set)
-	{ assert(it && set), it->set = set, it->b = 0, it->e = 0; }
+	{ assert(it && set), it->set = set, it->bucket_idx = 0, it->entry = 0; }
 
 /** Advances `it`. @implements next */
-static const PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
-	const size_t b_end = 1 << it->set->log_capacity;
+static PS_(type) PS_(next)(struct PS_(iterator) *const it) {
+	const size_t bucket_end = 1 << it->set->log_capacity;
 	assert(it && it->set);
 	if(!it->set->buckets) return 0;
-	while(it->b < b_end) {
-		if(!it->e) it->e = it->set->buckets[it->b].first;
-		else it->e = it->e->next;
-		if(it->e) return &it->e->key; /*???*/
-		it->b++;
+	while(it->bucket_idx < bucket_end) {
+		if(!it->entry) it->entry = it->set->buckets[it->bucket_idx].head;
+		else it->entry = it->entry->next;
+		if(it->entry) return it->entry->key;
+		it->bucket_idx++;
 	}
-	it->set = 0, it->b = 0, it->e = 0;
+	it->set = 0, it->bucket_idx = 0, it->entry = 0;
 	return 0;
 }
 
@@ -425,8 +436,8 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *);
 static void PS_(unused_base_coda)(void);
 static void PS_(unused_base)(void) {
 	S_(set)(0); S_(set_)(0); S_(set_clear)(0); S_(set_get)(0, 0);
-	S_(set_reserve)(0, 0); S_(set_put)(0, 0);  S_(set_policy_put)(0, 0, 0);
-	S_(set_remove)(0, 0);
+	/*S_(set_reserve)(0, 0);*/ S_(set_put)(0, 0);  S_(set_policy_put)(0, 0, 0);
+	/*S_(set_remove)(0, 0);*/
 	PS_(begin)(0, 0); PS_(next)(0);
 	PS_(unused_base_coda)();
 }

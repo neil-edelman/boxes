@@ -13,17 +13,17 @@
 #include <string.h> /* memset */
 
 /** Operates by side-effects. Used for `SET_TEST`. */
-typedef void (*PS_(action_fn))(PS_(type) *);
+typedef void (*PS_(action_fn))(PS_(type));
 
 /* Check that `SET_TEST` is a function implementing `<PS>action_fn`. */
 static const PS_(action_fn) PS_(filler) = (SET_TEST);
 
 /** Count how many are in the `bucket`. @order \O(`bucket.items`) */
 static size_t PS_(count)(struct PS_(bucket) *const bucket) {
-	const struct S_(setlink) *x;
+	const struct PS_(entry) *x;
 	size_t c = 0;
 	assert(bucket);
-	for(x = bucket->first; x; x = x->next) c++;
+	for(x = bucket->head; x; x = x->next) c++;
 	return c;
 }
 
@@ -98,7 +98,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	fprintf(fp, "\"];\n");
 	if(set->buckets) {
 		struct PS_(bucket) *b, *b_end;
-		struct S_(setlink) *x, *x_prev, *xt;
+		struct PS_(entry) *x, *x_prev, *xt;
 		fprintf(fp, "\tsubgraph cluster_buckets {\n"
 			"\t\tstyle=filled;\n"
 			"\t\tnode [fillcolor=lightpink];\n");
@@ -112,13 +112,13 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
 			b < b_end; b++) {
 			fprintf(fp, "\t// bucket0x%x\n", (unsigned)(b - set->buckets));
-			for(xt = x = b->first, x_prev = 0; x; x_prev = x, x = x->next) {
+			for(xt = x = b->head, x_prev = 0; x; x_prev = x, x = x->next) {
 				int is_turtle = 0;
 				
 				PS_(to_string)(&x->key, &a);
 				/* May have to change the width if `SET_UINT`. */
-				fprintf(fp, "\tSetElement%p [label=\"#0x%x\\l|%s\\l\"];\n",
-					(void *)x, PS_(get_hash)(x), a);
+				fprintf(fp, "\tSetElement%p [label=\"#0x%lx\\l|%s\\l\"];\n",
+					(void *)x, (unsigned long)PS_(hash_from_entry)(x), a);
 				if(x_prev) {
 					fprintf(fp, "\tSetElement%p -> SetElement%p;\n",
 						(void *)x_prev, (void *)x);
@@ -180,15 +180,12 @@ static void PS_(histogram)(const struct S_(set) *const set,
 }
 
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */
-static void PS_(test_basic)(struct S_(setlink) *(*const parent_new)(void *),
+static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
-	struct Test {
-		struct S_(setlink) space, *elem;
-		int is_in, unused;
-	} test[10000], *t, *t_end;
+	struct test { PS_(type) elem; int is_in, unused; } test[10/*000*/], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
-	char a[12];
+	char z[12];
 	size_t removed = 0, collision = 0;
 	struct PS_(bucket) *b, *b_end;
 	struct S_(set) set = SET_IDLE;
@@ -204,14 +201,11 @@ static void PS_(test_basic)(struct S_(setlink) *(*const parent_new)(void *),
 	/* Test placing items. */
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		size_t n = (size_t)(t - test);
-		if(parent_new) {
-			/* Ignore `space` and allocate a parent pointer. */
-			if(!(t->elem = parent_new(parent))) { assert(0); return; }
-		} else {
-			t->elem = &t->space;
-		}
-		PS_(filler)(&t->elem->key);
-		PS_(to_string)(&t->elem->key, &a);
+		if(parent_new && !(t->elem = parent_new(parent))) { assert(0); return; }
+		/*PS_(filler)(t->elem);*/
+		PS_(to_string)(&t->elem, &z);
+		printf("%lu: came up with %s.\n", (unsigned long)n, z);
+#if 0
 		success = S_(set_reserve)(&set, 1);
 		assert(success && set.buckets);
 		if(n == 0) assert(set.log_capacity == 3 && !set.size
@@ -248,6 +242,7 @@ static void PS_(test_basic)(struct S_(setlink) *(*const parent_new)(void *),
 				(unsigned)n + 1);
 			PS_(graph)(&set, fn);
 		}
+#endif
 		PS_(legit)(&set);
 	}
 	{
@@ -270,6 +265,7 @@ static void PS_(test_basic)(struct S_(setlink) *(*const parent_new)(void *),
 			(unsigned long)(t - test), t->is_in ? "yes" : "no", a);
 	}
 	printf(" ]\n");*/
+#if 0
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		const size_t n = (size_t)(t - test);
 		struct S_(setlink) *r;
@@ -310,6 +306,7 @@ static void PS_(test_basic)(struct S_(setlink) *(*const parent_new)(void *),
 	for(b = set.buckets, b_end = b + (1 << set.log_capacity); b < b_end; b++)
 		assert(!PS_(count)(b));
 	assert(set.size == 0);
+#endif
 	printf("Clear: %s.\n", PS_(set_to_string)(&set));
 	S_(set_)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
@@ -322,17 +319,21 @@ static void PS_(test_basic)(struct S_(setlink) *(*const parent_new)(void *),
  <tag:<S>setlink> and `SET_TEST` is not allowed to go over the limits of the
  data type. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void S_(set_test)(struct S_(setlink) *(*const parent_new)(void *),
+static void S_(set_test)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
+	char z[12];
+	PS_(type) type;
 	printf("<" QUOTE(SET_NAME) ">set of type <" QUOTE(SET_TYPE)
 		"> was created using: SET_HASH <" QUOTE(SET_HASH) ">; "
 		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
 #ifdef SET_RECALCULATE
 		"SET_RECALCULATE; "
 #endif
-		"SET_TO_STRING<" QUOTE(SET_TO_STRING) ">; "
 		"SET_TEST<" QUOTE(SET_TEST) ">; "
 		"%stesting:\n", parent_new ? "parent type specified; " : "");
+	type = parent_new(parent);
+	PS_(to_string)(&type, &z);
+	printf("!!!%s!!!\n", z);
 	PS_(test_basic)(parent_new, parent);
 	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">set.\n\n");
 }

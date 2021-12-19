@@ -11,16 +11,17 @@
 #include <assert.h>
 #include <errno.h>
 #include <string.h> /* strncpy */
+#include <limits.h>
 #include "orcish.h"
 
-
+/* fixme: test size_t */
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on
  `str`. */
 static unsigned fnv_32a_str(const char *const str) {
 	const unsigned char *s = (const unsigned char *)str;
 	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, `FNV1_32A_INIT`. */
-	unsigned hval = 0x811c9dc5;
+	unsigned hval = 0x811c9dc5ul;
 	/* FNV magic prime `FNV_32_PRIME 0x01000193`. */
 	while(*s) {
 		hval ^= *s++;
@@ -39,27 +40,36 @@ static size_t fnv_64a_str(const char *const str) {
 	}
 	return hval;
 }
-
 /* String set. Backing: we have somewhere to store the strings. */
 struct str16 { char str[16]; };
-static void str16_fill(struct str16 *const s16)
-	{ orcish(s16->str, sizeof s16->str); }
+#define POOL_NAME string
+#define POOL_TYPE struct str16
+#include "../src/pool.h"
+static char *string_from_pool(void *const vstring) {
+	struct string_pool *const string = vstring;
+	struct str16 *s16 = string_pool_new(string);
+	if(!s16) return 0;
+	orcish(s16->str, sizeof s16->str);
+	assert(string);
+	return s16->str;
+}
 static int string_is_equal(const char *const a, const char *const b)
 	{ return !strcmp(a, b); }
 static void string_to_string(const char *const s, char (*const a)[12]) {
 	strncpy(*a, s, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-static void string_fill(char *const str) { str16_fill((struct str16 *)str); }
-
+static void pstring_to_string(char *const*const ps, char (*const a)[12])
+	{ string_to_string(*ps, a); }
+static void string_fill(char *const str) { assert(0); }
 #define SET_NAME string
-#define SET_TYPE const char *
+#define SET_TYPE char *
 #define SET_HASH &fnv_64a_str
 #define SET_IS_EQUAL &string_is_equal
 #define SET_TEST &string_fill
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
-#define SET_TO_STRING &string_to_string
+#define SET_TO_STRING &pstring_to_string
 #include "../src/set.h"
 
 
@@ -345,6 +355,8 @@ static const struct dict_entry *entry_next(struct dict_entry *const e) {
 
 
 int main(void) {
+	struct string_pool strings = POOL_IDLE;
+	string_set_test(&string_from_pool, &strings);
 #if 0
 	{ /* Automated tests. The ones that have no pool are self-contained sets,
 	 and we just test them on the stack. The ones that do require more memory
