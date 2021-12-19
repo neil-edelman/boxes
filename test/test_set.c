@@ -28,6 +28,48 @@ static unsigned fnv_32a_str(const char *const str) {
 	}
 	return hval;
 }
+static size_t fnv_64a_str(const char *const str) {
+	const unsigned char *s = (const unsigned char *)str;
+	/* 64 bit FNV-1a non-zero initial basis, `FNV1A_64_INIT`. */
+	size_t hval = 0xcbf29ce484222325ul;
+	/* FNV magic prime `FNV_64_PRIME 0x100000001b3ul`. */
+	while(*s) {
+		hval ^= *s++;
+		hval *= 0x100000001b3ul;
+	}
+	return hval;
+}
+
+/* String set. Backing: we have somewhere to store the strings. */
+struct str16 { char str[16]; };
+static void str16_fill(struct str16 *const s16)
+	{ orcish(s16->str, sizeof s16->str); }
+static int string_is_equal(const char *const a, const char *const b)
+	{ return !strcmp(a, b); }
+static void string_to_string(const char *const s, char (*const a)[12]) {
+	strncpy(*a, s, sizeof(*a) - 1);
+	(*a)[sizeof(*a) - 1] = '\0';
+}
+static void string_fill(char *const str) { str16_fill((struct str16 *)str); }
+
+#define SET_NAME string
+#define SET_TYPE const char *
+#define SET_HASH &fnv_64a_str
+#define SET_IS_EQUAL &string_is_equal
+#define SET_TEST &string_fill
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &string_to_string
+#include "../src/set.h"
+
+
+
+
+
+
+
+
+#if 0
 
 /** Hash `x` <https://stackoverflow.com/a/12996028> */
 static unsigned int int_hash(unsigned x) {
@@ -48,7 +90,6 @@ static void int_to_string(const unsigned *const x, char (*const a)[12])
 /** Fills `x` with random. */
 static void int_fill(unsigned *const x)
 	{ assert(RAND_MAX <= 99999999999l); *x = (unsigned)rand(); }
-/** This defines `struct IntSet` and `struct IntSetElement`. */
 #define SET_NAME int
 #define SET_TYPE unsigned
 #define SET_HASH &int_hash
@@ -79,50 +120,6 @@ static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
 #include "../src/set.h"
 
 
-/* String set. */
-
-static int string_is_equal(const char *const a, const char *const b) {
-	return !strcmp(a, b);
-}
-static void pstring_to_string(const char *const*const ps,
-	char (*const a)[12]) {
-	strncpy(*a, *ps, sizeof(*a) - 1);
-	(*a)[sizeof(*a) - 1] = '\0';
-}
-static void string_fill(const char **);
-
-#define SET_NAME string
-#define SET_TYPE const char *
-#define SET_HASH &fnv_32a_str
-#define SET_IS_EQUAL &string_is_equal
-#define SET_TEST &string_fill
-#define SET_EXPECT_TRAIT
-#include "../src/set.h"
-#define SET_TO_STRING &pstring_to_string
-#include "../src/set.h"
-
-/** Backing: we have to somewhere to store the strings. */
-struct str12 {
-	struct string_setlink elem;
-	char str[12], unused[4];
-};
-static void str12_fill(struct str12 *const s12) {
-	s12->elem.key = s12->str;
-	orcish(s12->str, sizeof s12->str);
-}
-static void string_fill(const char **const ps) {
-	/* Upcasts: const char * -> struct StringSetElement -> struct Str12. */
-	str12_fill((struct str12 *)ps);
-}
-#define POOL_NAME string
-#define POOL_TYPE struct str12
-#include "pool.h"
-static struct string_setlink *string_from_pool(void *const vsp) {
-	struct string_pool *const sp = vsp;
-	struct str12 *const s = string_pool_new(sp);
-	assert(sp);
-	return s ? &s->elem : 0;
-}
 
 
 /* Vector; test of `SET_POINTER`. */
@@ -179,7 +176,7 @@ static void fill_boat_id(int *const id);
 #define SET_NAME id
 #define SET_TYPE int
 /* Don't need two `int id; unsigned hash = id;` per datum. */
-#define SET_NO_CACHE
+#define SET_RECALCULATE
 #define SET_HASH &boat_id_hash
 #define SET_IS_EQUAL &boat_id_is_equal
 #define SET_TEST &fill_boat_id
@@ -344,8 +341,11 @@ static const struct dict_entry *entry_next(struct dict_entry *const e) {
 #define POOL_TYPE struct dict_entry
 #include "pool.h"
 
+#endif /* only one */
+
 
 int main(void) {
+#if 0
 	{ /* Automated tests. The ones that have no pool are self-contained sets,
 	 and we just test them on the stack. The ones that do require more memory
 	 from a parent node, which the internals to `Set` don't know of. */
@@ -495,5 +495,6 @@ finally:
 		key_set(&kset);
 		entry_pool_(&entries);
 	}
+#endif
 	return EXIT_SUCCESS;
 }

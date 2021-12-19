@@ -327,8 +327,8 @@ static void S_(set_test)(struct S_(setlink) *(*const parent_new)(void *),
 	printf("<" QUOTE(SET_NAME) ">set of type <" QUOTE(SET_TYPE)
 		"> was created using: SET_HASH <" QUOTE(SET_HASH) ">; "
 		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
-#ifdef SET_NO_CACHE
-		"SET_NO_CACHE; "
+#ifdef SET_RECALCULATE
+		"SET_RECALCULATE; "
 #endif
 		"SET_TO_STRING<" QUOTE(SET_TO_STRING) ">; "
 		"SET_TEST<" QUOTE(SET_TEST) ">; "
