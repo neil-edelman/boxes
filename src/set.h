@@ -263,7 +263,8 @@ static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
 /** Put `key` in `set`.
  @return The collided element, if any, as long as `replace` is null or returns
  true. If `replace` returns false, returns `key`.
- @throws[malloc] */
+ @throws[malloc]
+ @fixme Error mixing up with return; have one more var. */
 static PS_(type) PS_(put)(struct S_(set) *const set,
 	PS_(type) key, const PS_(replace_fn) replace) {
 	struct PS_(bucket) *bucket;

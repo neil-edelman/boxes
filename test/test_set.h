@@ -321,8 +321,6 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
  `parent_new` is null. @allow */
 static void S_(set_test)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
-	char z[12];
-	PS_(type) type;
 	printf("<" QUOTE(SET_NAME) ">set of type <" QUOTE(SET_TYPE)
 		"> was created using: SET_HASH <" QUOTE(SET_HASH) ">; "
 		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
@@ -331,9 +329,6 @@ static void S_(set_test)(PS_(type) (*const parent_new)(void *),
 #endif
 		"SET_TEST<" QUOTE(SET_TEST) ">; "
 		"%stesting:\n", parent_new ? "parent type specified; " : "");
-	type = parent_new(parent);
-	PS_(to_string)(&type, &z);
-	printf("!!!%s!!!\n", z);
 	PS_(test_basic)(parent_new, parent);
 	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">set.\n\n");
 }
