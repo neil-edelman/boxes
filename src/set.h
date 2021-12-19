@@ -405,14 +405,14 @@ static void PS_(begin)(struct PS_(iterator) *const it,
 	{ assert(it && set), it->set = set, it->bucket_idx = 0, it->entry = 0; }
 
 /** Advances `it`. @implements next */
-static PS_(type) PS_(next)(struct PS_(iterator) *const it) {
+static PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 	const size_t bucket_end = 1 << it->set->log_capacity;
 	assert(it && it->set);
 	if(!it->set->buckets) return 0;
 	while(it->bucket_idx < bucket_end) {
 		if(!it->entry) it->entry = it->set->buckets[it->bucket_idx].head;
 		else it->entry = it->entry->next;
-		if(it->entry) return it->entry->key;
+		if(it->entry) return &it->entry->key;
 		it->bucket_idx++;
 	}
 	it->set = 0, it->bucket_idx = 0, it->entry = 0;
