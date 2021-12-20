@@ -84,6 +84,44 @@
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0, POOL_IDLE }
+/* Some hash functions from .
+ It is pretty much impossible to write these in a device-independent way in
+ C89, but we make the assumption that `size_t` is the biggest integer. */
+#if 0x8000 * 2 == 0
+/** hash16_xm2 <https://github.com/skeeto/hash-prospector> */
+uint16_t hash16_xm2(uint16_t x)
+{
+	x ^= x >> 8; x *= 0x88b5u;
+	x ^= x >> 7; x *= 0xdb2du;
+	x ^= x >> 9;
+	return x;
+}
+#elif 0x80000000 * 2 == 0
+/** lowbias32 <https://nullprogram.com/blog/2018/07/31/>
+ <https://github.com/skeeto/hash-prospector> */
+static size_t lowbias32(size_t x) {
+	x ^= x >> 16;
+	x *= 0x7feb352d;
+	x ^= x >> 15;
+	x *= 0x846ca68b;
+	x ^= x >> 16;
+	return x;
+}
+#else /* 0x8000000000000000 * 2 == 0? doesn't matter; it's max 64bit. */
+static size_t set_fnv_64a_str(const char *const str) {
+	const unsigned char *s = (const unsigned char *)str;
+	/* 64 bit FNV-1a non-zero initial basis, `FNV1A_64_INIT`. */
+	size_t hval = 0xcbf29ce484222325ul;
+	/* FNV magic prime `FNV_64_PRIME 0x100000001b3ul`. */
+	while(*s) {
+		hval ^= *s++;
+		hval *= 0x100000001b3ul;
+	}
+	return hval;
+}
+#endif
+
+
 #endif /* idempotent --> */
 
 
@@ -106,7 +144,10 @@ typedef const SET_TYPE PS_(ctype);
 
 /** A map from <typedef:<PS>type> onto <typedef:<PS>uint>. Usually should use
  all the the argument and output should be as close as possible to a discrete
- uniform distribution. */
+ uniform distribution. This provides a hash table; it is up to the user to
+ provide an appropriate hash function. In general, see: <https://github.com/skeeto/hash-prospector>,
+ <https://github.com/aappleby/smhasher/>,
+ <https://github.com/sindresorhus/fnv1a>. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ctype));
 
 /** Equivalence relation between <typedef:<PS>type> that satisfies

@@ -14,7 +14,8 @@
 #include <limits.h>
 #include "orcish.h"
 
-/* fixme: test size_t */
+
+
 /** Perform a 32 bit
  [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on
  `str`. */
