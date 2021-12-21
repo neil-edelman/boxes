@@ -122,6 +122,9 @@ typedef const SET_TYPE PS_(ctype);
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ctype));
 
 #ifdef SET_INVERSE_HASH /* <!-- inv */
+/** When the <typedef:<PS>uint> forms a bijection with <typedef:<PS>type>, one
+ can inverse-map the <typedef:<PS>hash_fn> to save having to store the
+ <typedef:<PS>key>. */
 typedef PS_(type) (*PS_(inverse_hash_fn))(PS_(uint));
 #endif /* inv --> */
 
