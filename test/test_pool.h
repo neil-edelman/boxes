@@ -15,7 +15,7 @@ typedef void (*PP_(action_fn))(PP_(type) *);
 /** `POOL_TEST` must be a function that implements <typedef:<PP>action_fn>. */
 static const PP_(action_fn) PP_(filler) = (POOL_TEST);
 
-/** Tries to graphs `pool` output to `fn`. */
+/** Graphs `pool` output to `fn`. */
 static void PP_(graph)(const struct P_(pool) *const pool,
 	const char *const fn) {
 	FILE *fp;

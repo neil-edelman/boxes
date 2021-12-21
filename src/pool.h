@@ -192,9 +192,6 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	return 1;
 }
 
-/* fixme */
-static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
-
 /** Either `data` in `pool` is in a secondary chunk, in which case it
  decrements the size, or it's the zero-chunk, where it gets added to the
  free-heap.
