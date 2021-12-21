@@ -40,7 +40,8 @@
  <typedef:<PS>uint> _per_ entry.
 
  @param[SET_INVERSE_HASH]
- This avoids
+ Function satisfying <typedef:<PS>inverse_hash_fn> that avoids storing the key,
+ but calculates it from the hashed value.
 
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -94,14 +95,6 @@
 
 #if SET_TRAITS == 0 /* <!-- base code */
 
-
-/* Undocumented feature; one has enough to think about. */
-#ifndef SET_CHUNK_MIN_CAPACITY /* <!-- !min */
-#define SET_CHUNK_MIN_CAPACITY 8
-#endif /* !min --> */
-#if SET_CHUNK_MIN_CAPACITY < 2
-#error Set chunk capacity error.
-#endif
 
 #ifndef SET_UINT
 #define SET_UINT size_t
