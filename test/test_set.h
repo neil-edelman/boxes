@@ -16,7 +16,7 @@
 typedef void (*PS_(action_fn))(PS_(type));
 
 /* Check that `SET_TEST` is a function implementing `<PS>action_fn`. */
-static const PS_(action_fn) PS_(filler) = (SET_TEST);
+//static const PS_(action_fn) PS_(filler) = (SET_TEST); ****
 
 /** Count how many are in the `bucket`. @order \O(`bucket.items`) */
 static size_t PS_(count)(struct PS_(bucket) *const bucket) {
@@ -27,14 +27,12 @@ static size_t PS_(count)(struct PS_(bucket) *const bucket) {
 	return c;
 }
 
-/** Collect stats; <Welford1962Note>, on `set` and output them to `fp` with
- `delim`. @order \O(|`set.bins`| + |`set.items`|) */
-static void PS_(stats)(const struct S_(set) *const set,
-	const char *const delim, FILE *fp) {
+/** Collect stats; <Welford1962Note>, on `set` and output them to `fp`.
+ @order \O(|`set.bins`| + |`set.items`|) */
+static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 	struct { size_t n, cost, max_bin; double mean, ssdm; }
 		msr = { 0, 0, 0, 0.0, 0.0 };
 	size_t size = 0;
-	assert(delim);
 	if(set && set->buckets) {
 		struct PS_(bucket) *b = set->buckets,
 			*b_end = b + (1 << set->log_capacity);
@@ -51,18 +49,35 @@ static void PS_(stats)(const struct S_(set) *const set,
 		size = set->size;
 	}
 	/* Sample std dev. */
-	fprintf(fp, "entries = %lu%s"
-		"buckets = %lu%s"
-		"max bucket size = %lu%s"
-		"load factor(stderr) = %.2f(%.1f)%s"
-		"S(links traversed) = %.2f%s",
-		(unsigned long)size, delim,
-		(unsigned long)msr.n, delim,
-		(unsigned long)msr.max_bin, delim,
+
+	fprintf(fp,
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">entries</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">buckets</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket size</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">load factor(stderr)</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f(%.1f)</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">E(links traversed)</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%.2f</TD>\n"
+		"\t</TR>\n",
+		(unsigned long)size,
+		(unsigned long)msr.n,
+		(unsigned long)msr.max_bin,
 		msr.mean, msr.n > 1
-		? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN, delim,
+		? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN,
 		msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size
-		: (double)NAN, delim);
+		: (double)NAN);
 }
 
 /** Assertion function for seeing if `set` is in a valid state.
@@ -81,34 +96,167 @@ static void PS_(legit)(const struct S_(set) *const set) {
 	assert(set->size == size);
 }
 
+#define PPS_(n) SET_CAT(pool, PS_(n))
+/** Graphs `pool` output to `fn`. */
+static void PS_(pool_graph)(const struct PS_(entry_pool) *const pool,
+	FILE *fp) {
+	char str[12];
+	size_t i, j;
+	struct PPS_(entry_slot) *slot;
+	PPS_(entry_type) *chunk;
+
+	if(!pool->free0.a.size) goto no_free0;
+	for(i = 0; i < pool->free0.a.size; i++) {
+		fprintf(fp, "\tfree0_%lu [label=<<FONT COLOR=\"Gray75\">%lu</FONT>>,"
+			" shape=circle];\n", i, pool->free0.a.data[i]);
+		if(i) fprintf(fp, "\tfree0_%lu -> free0_%lu [dir=back];\n",
+			i, (unsigned long)((i - 1) / 2));
+	}
+	fprintf(fp, "\t{rank=same; pool; free0_0; }\n"
+		"\tpool:free -> free0_0;\n");
+no_free0:
+	fprintf(fp, "\tpool [label=<\n"
+		"<TABLE BORDER=\"0\">\n"
+		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
+		"<FONT COLOR=\"Gray85\">&lt;" "entry"
+		"&gt;pool: set_" QUOTE(SET_NAME) "_entry</FONT></TD></TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
+		"capacity0</TD>\n"
+		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">&#8205;</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t</TR>\n", (unsigned long)pool->capacity0);
+	fprintf(fp, "\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">slots"
+		"</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
+		"\t\t<TD PORT=\"slots\" BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
+		"freeheap0</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t\t<TD PORT=\"free\" BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
+		"%lu</TD>\n"
+		"\t</TR>\n"
+		"</TABLE>>];\n",
+		(unsigned long)pool->slots.size,
+		(unsigned long)pool->slots.capacity,
+		(unsigned long)pool->free0.a.size,
+		(unsigned long)pool->free0.a.capacity);
+	if(!pool->slots.data) return;
+	fprintf(fp, "\tpool:slots -> slots;\n"
+		"\tslots [label = <\n"
+		"<TABLE BORDER=\"0\">\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">chunk"
+		"</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\">"
+		"<FONT FACE=\"Times-Italic\">size</FONT></TD>\n"
+		"\t</TR>\n");
+	for(i = 0; i < pool->slots.size; i++) {
+		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
+		fprintf(fp, "\t<TR>\n"
+			"\t\t<TD ALIGN=\"RIGHT\"%s>%lu</TD>\n"
+			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
+			"\t\t<TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>%lu</TD>\n"
+			"\t</TR>\n",
+			bgc, (unsigned long)i, bgc, orcify(pool->slots.data[i].chunk),
+			(unsigned long)i, bgc, pool->slots.data[i].size);
+	}
+	fprintf(fp, "</TABLE>>];\n");
+	/* For each slot, there is a chunk array with data. */
+	for(i = 0; i < pool->slots.size; i++) {
+		char *bmp;
+		slot = pool->slots.data + i;
+		chunk = slot->chunk;
+		fprintf(fp,
+			"\tslots:%lu -> chunk%lu;\n"
+			"\tchunk%lu [label=<\n"
+			"<TABLE BORDER=\"0\">\n"
+			"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
+			"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n",
+			(unsigned long)i, (unsigned long)i,
+			(unsigned long)i, orcify(chunk));
+		if(i || !slot->size) {
+			fprintf(fp, "\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
+				"<FONT FACE=\"Times-Italic\">count %lu</FONT></TD></TR>\n",
+				slot->size);
+			goto no_chunk_data;
+		}
+		/* Primary buffer: print rows. */
+		if(!(bmp = calloc(slot->size, sizeof *bmp)))
+			{ perror("temp bitmap"); assert(0); exit(EXIT_FAILURE); };
+		for(j = 0; j < pool->free0.a.size; j++) {
+			size_t *f0p = pool->free0.a.data + j;
+			assert(f0p && *f0p < slot->size);
+			bmp[*f0p] = 1;
+		}
+		for(j = 0; j < slot->size; j++) {
+			const char *const bgc = j & 1 ? "" : " BGCOLOR=\"Gray90\"";
+			fprintf(fp, "\t<TR>\n"
+				"\t\t<TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>%lu</TD>\n",
+				(unsigned long)j, bgc, (unsigned long)j);
+			if(bmp[j]) {
+				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>"
+					"<FONT COLOR=\"Gray75\">deleted"
+					"</FONT></TD>\n", bgc);
+			} else {
+				//PS_(to_string)(chunk + j, &str);
+				str[0] = 'f', str[1] = '\0';
+				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n", bgc, str);
+			}
+			fprintf(fp, "\t</TR>\n");
+		}
+		free(bmp);
+no_chunk_data:
+		fprintf(fp, "</TABLE>>];\n");
+	}
+}
+#undef PPS_
+
 /** Draw a diagram of `set` written to `fn` in
  [Graphviz](https://www.graphviz.org/) format.
  @order \O(|`set.bins`| + |`set.items`|) */
 static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	FILE *fp;
-	char a[12];
+	char z[12];
 	assert(set && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
-		"\trankdir = LR;\n"
-		"\tnode [shape = record, style = filled];\n");
-	fprintf(fp, "\tSet [label=\"\\<" QUOTE(SET_NAME) "\\>Set: "
-		QUOTE(SET_TYPE) "\\l|");
-	PS_(stats)(set, "\\l", fp);
-	fprintf(fp, "\"];\n");
+		"\trankdir=LR;\n"
+		"\tfontface=modern;\n"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
+		"\tset [label=<\n"
+		"<TABLE BORDER=\"0\">\n"
+		"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
+		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(SET_NAME)
+		"&gt;set: " QUOTE(SET_TYPE) "</FONT></TD></TR>\n");
+	PS_(stats)(set, fp);
+	fprintf(fp, "</TABLE>>]\n");
 	if(set->buckets) {
-		struct PS_(bucket) *b, *b_end;
+		size_t i, i_end;
+		/*struct PS_(bucket) *b, *b_end;*/
 		struct PS_(entry) *x, *x_prev, *xt;
+		fprintf(fp, "\tset -> buckets;\n"
+			"\tbuckets [label = <\n"
+			"<TABLE BORDER=\"0\">\n"
+			"\t<TR><TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">"
+			"bucket</FONT></TD></TR>\n");
+		for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
+			const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
+			fprintf(fp, "\t<TR><TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>0x%lx"
+				"</TD></TR>\n", (unsigned long)i, bgc, (unsigned long)i);
+		}
+		fprintf(fp, "</TABLE>>];\n");
+#if 0
 		fprintf(fp, "\tsubgraph cluster_buckets {\n"
 			"\t\tstyle=filled;\n"
 			"\t\tnode [fillcolor=lightpink];\n");
-		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
-			b < b_end; b++) {
-			fprintf(fp, "\t\tbucket0x%x;\n",
-				(unsigned)(b - set->buckets));
-		}
 		fprintf(fp, "\t}\n"
-			"\tSet -> bucket0x0;\n");
+			"\tset -> bucket0x0;\n");
 		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
 			b < b_end; b++) {
 			fprintf(fp, "\t// bucket0x%x\n", (unsigned)(b - set->buckets));
@@ -135,8 +283,11 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 				}
 			}
 		}
+#endif
 	}
-	fprintf(fp, "\tnode [colour=red];\n");
+	PS_(pool_graph)(&set->entries, fp);
+	fprintf(fp, "\tset -> pool;\n"
+		"\tnode [colour=red];\n");
 	fprintf(fp, "}\n");
 	fclose(fp);
 }
@@ -189,7 +340,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	size_t removed = 0, collision = 0;
 	struct PS_(bucket) *b, *b_end;
 	struct S_(set) set = SET_IDLE;
-	struct S_(setlink) *eject, *element;
+	PS_(type) eject;
 	assert(test_size > 1);
 	memset(&test, 0, sizeof test);
 	/* Test empty. */
@@ -205,16 +356,16 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		/*PS_(filler)(t->elem);*/
 		PS_(to_string)(&t->elem, &z);
 		printf("%lu: came up with %s.\n", (unsigned long)n, z);
-#if 0
-		success = S_(set_reserve)(&set, 1);
+		/*success = S_(set_reserve)(&set, 1);
 		assert(success && set.buckets);
 		if(n == 0) assert(set.log_capacity == 3 && !set.size
 			&& !set.buckets[0].first && !set.buckets[1].first
 			&& !set.buckets[2].first && !set.buckets[3].first
 			&& !set.buckets[4].first && !set.buckets[5].first
-			&& !set.buckets[6].first && !set.buckets[7].first);
+			&& !set.buckets[6].first && !set.buckets[7].first); */
 		eject = S_(set_put)(&set, t->elem);
 		if(n == 0) assert(!eject && set.size == 1);
+#if 0
 		else if(eject) {
 			if(!parent_new) {
 				((struct Test *)(void *)((char *)eject
@@ -247,7 +398,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	}
 	{
 		char fn[64];
-		PS_(stats)(&set, "\n", stdout);
+		/*PS_(stats)(&set, "\n", stdout);*/
 		printf("\n");
 		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-final.gv",
 			(unsigned)test_size + 1);

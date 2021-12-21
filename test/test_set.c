@@ -15,32 +15,66 @@
 #include "orcish.h"
 
 
+/* Integer set. */
 
-/** Perform a 32 bit
- [Fowler/Noll/Vo FNV-1a](http://www.isthe.com/chongo/tech/comp/fnv/) hash on
- `str`. */
+/** Assume 32-bit; it's C89. <https://nullprogram.com/blog/2018/07/31/>
+ <https://github.com/skeeto/hash-prospector>. */
+static unsigned lowbias32(unsigned x) {
+	x ^= x >> 16;
+	x *= 0x7feb352d;
+	x ^= x >> 15;
+	x *= 0x846ca68b;
+	x ^= x >> 16;
+	return x;
+}
+/** `a` == `b`. */
+static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
+/** Outputs `x` to `a`. */
+static void int_to_string(const unsigned *const x, char (*const a)[12])
+	{ sprintf(*a, "%u", *x); }
+#define SET_NAME int
+#define SET_TYPE unsigned
+#define SET_UINT unsigned
+#define SET_HASH &lowbias32
+#define SET_IS_EQUAL &int_is_equal
+#define SET_TEST &int_fill
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &int_to_string
+#include "../src/set.h"
+static unsigned random_int(void *const zero) {
+	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
+	return (unsigned)rand();
+}
+
+
+/* http://www.isthe.com/chongo/tech/comp/fnv/
+ It is pretty much impossible to write these in a device-independent way in
+ C89, but we make the assumption that `size_t` is the biggest integer. */
+#if 0x8000 * 2 == 0
+/** hash16_xm2 <https://github.com/skeeto/hash-prospector> */
+uint16_t hash16_xm2(uint16_t x) {
+	x ^= x >> 8; x *= 0x88b5u;
+	x ^= x >> 7; x *= 0xdb2du;
+	x ^= x >> 9;
+	return x;
+}
+#elif 0x80000000 * 2 == 0
+/** Perform a 32 bit Fowler/Noll/Vo FNV-1a hash on `str`. */
 static unsigned fnv_32a_str(const char *const str) {
 	const unsigned char *s = (const unsigned char *)str;
-	/* 32 bit FNV-1 and FNV-1a non-zero initial basis, `FNV1_32A_INIT`. */
-	unsigned hval = 0x811c9dc5ul;
-	/* FNV magic prime `FNV_32_PRIME 0x01000193`. */
-	while(*s) {
-		hval ^= *s++;
-		hval += (hval<<1) + (hval<<4) + (hval<<7) + (hval<<8) + (hval<<24);
-	}
+	unsigned hval = 0x811c9dc5;
+	while(*s) hval ^= *s++, hval *= 0x01000193;
 	return hval;
 }
+#else /* 0x8000000000000000 * 2 == 0? doesn't matter; it's max 64bit. */
 static size_t fnv_64a_str(const char *const str) {
 	const unsigned char *s = (const unsigned char *)str;
-	/* 64 bit FNV-1a non-zero initial basis, `FNV1A_64_INIT`. */
-	size_t hval = 0xcbf29ce484222325ul;
-	/* FNV magic prime `FNV_64_PRIME 0x100000001b3ul`. */
-	while(*s) {
-		hval ^= *s++;
-		hval *= 0x100000001b3ul;
-	}
+	size_t hval = 0xcbf29ce484222325;
+	while(*s) hval ^= *s++, hval *= 0x100000001b3;
 	return hval;
 }
+#endif
 /* String set. Backing: we have somewhere to store the strings. */
 struct str16 { char str[16]; };
 #define POOL_NAME string
@@ -82,34 +116,6 @@ static void string_fill(char *const str) { assert(0); }
 
 #if 0
 
-/** Hash `x` <https://stackoverflow.com/a/12996028> */
-static unsigned int int_hash(unsigned x) {
-	x = ((x >> 16) ^ x) * 0x45d9f3b;
-	x = ((x >> 16) ^ x) * 0x45d9f3b;
-	x = (x >> 16) ^ x;
-	return x;
-}
-
-
-/* Integer set. */
-
-/** `a` == `b`. */
-static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
-/** Outputs `x` to `a`. */
-static void int_to_string(const unsigned *const x, char (*const a)[12])
-	{ sprintf(*a, "%u", *x); }
-/** Fills `x` with random. */
-static void int_fill(unsigned *const x)
-	{ assert(RAND_MAX <= 99999999999l); *x = (unsigned)rand(); }
-#define SET_NAME int
-#define SET_TYPE unsigned
-#define SET_HASH &int_hash
-#define SET_IS_EQUAL &int_is_equal
-#define SET_TEST &int_fill
-#define SET_EXPECT_TRAIT
-#include "../src/set.h"
-#define SET_TO_STRING &int_to_string
-#include "../src/set.h"
 
 
 /* Used to test `SET_UINT`; normally `unsigned int`, here `unsigned char`.
@@ -357,7 +363,8 @@ static const struct dict_entry *entry_next(struct dict_entry *const e) {
 
 int main(void) {
 	struct string_pool strings = POOL_IDLE;
-	string_set_test(&string_from_pool, &strings);
+	int_set_test(&random_int, 0);
+	string_set_test(&string_from_pool, &strings), string_pool_(&strings);
 #if 0
 	{ /* Automated tests. The ones that have no pool are self-contained sets,
 	 and we just test them on the stack. The ones that do require more memory
