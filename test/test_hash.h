@@ -27,15 +27,15 @@ static size_t PS_(count)(struct PS_(bucket) *const bucket) {
 	return c;
 }
 
-/** Collect stats; <Welford1962Note>, on `set` and output them to `fp`.
- @order \O(|`set.bins`| + |`set.items`|) */
-static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
+/** Collect stats; <Welford1962Note>, on `hash` and output them to `fp`.
+ @order \O(|`hash.bins`| + |`hash.items`|) */
+static void PS_(stats)(const struct S_(hash) *const hash, FILE *fp) {
 	struct { size_t n, cost, max_bin; double mean, ssdm; }
 		msr = { 0, 0, 0, 0.0, 0.0 };
 	size_t size = 0;
-	if(set && set->buckets) {
-		struct PS_(bucket) *b = set->buckets,
-			*b_end = b + (1 << set->log_capacity);
+	if(hash && hash->buckets) {
+		struct PS_(bucket) *b = hash->buckets,
+			*b_end = b + (1 << hash->log_capacity);
 		for( ; b < b_end; b++) {
 			double delta, x;
 			size_t items = PS_(count)(b);
@@ -46,7 +46,7 @@ static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 			msr.mean += delta / (double)(++msr.n);
 			msr.ssdm += delta * (x - msr.mean);
 		}
-		size = set->size;
+		size = hash->size;
 	}
 	/* Sample std dev. */
 
@@ -80,20 +80,20 @@ static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 		: (double)NAN);
 }
 
-/** Assertion function for seeing if `set` is in a valid state.
- @order \O(|`set.bins`| + |`set.items`|) */
-static void PS_(legit)(const struct S_(set) *const set) {
+/** Assertion function for seeing if `hash` is in a valid state.
+ @order \O(|`hash.bins`| + |`hash.items`|) */
+static void PS_(legit)(const struct S_(hash) *const hash) {
 	struct PS_(bucket) *b, *b_end;
 	size_t size = 0;
-	if(!set) return; /* Null state. */
-	if(!set->buckets) { /* Empty state. */
-		assert(!set->log_capacity && !set->size);
+	if(!hash) return; /* Null state. */
+	if(!hash->buckets) { /* Empty state. */
+		assert(!hash->log_capacity && !hash->size);
 		return;
 	}
-	assert(set->log_capacity >= 3 && set->log_capacity < 32);
-	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
+	assert(hash->log_capacity >= 3 && hash->log_capacity < 32);
+	for(b = hash->buckets, b_end = b + (1 << hash->log_capacity); b < b_end; b++)
 		size += PS_(count)(b);
-	assert(set->size == size);
+	assert(hash->size == size);
 }
 
 #define PPS_(n) SET_CAT(pool, PS_(n))
@@ -216,13 +216,13 @@ no_chunk_data:
 }
 #undef PPS_
 
-/** Draw a diagram of `set` written to `fn` in
+/** Draw a diagram of `hash` written to `fn` in
  [Graphviz](https://www.graphviz.org/) format.
- @order \O(|`set.bins`| + |`set.items`|) */
-static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
+ @order \O(|`hash.bins`| + |`hash.items`|) */
+static void PS_(graph)(const struct S_(hash) *const hash, const char *const fn) {
 	FILE *fp;
 	char z[12];
-	assert(set && fn);
+	assert(hash && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
@@ -233,10 +233,10 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
 		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(SET_NAME)
-		"&gt;set: " QUOTE(SET_TYPE) "</FONT></TD></TR>\n");
-	PS_(stats)(set, fp);
+		"&gt;hash: " QUOTE(SET_TYPE) "</FONT></TD></TR>\n");
+	PS_(stats)(hash, fp);
 	fprintf(fp, "</TABLE>>]\n");
-	if(set->buckets) {
+	if(hash->buckets) {
 		size_t i, i_end;
 		/*struct PS_(bucket) *b, *b_end;*/
 		struct PS_(entry) *x, *x_prev, *xt;
@@ -245,7 +245,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			"<TABLE BORDER=\"0\">\n"
 			"\t<TR><TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">"
 			"bucket</FONT></TD></TR>\n");
-		for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
+		for(i = 0, i_end = 1 << hash->log_capacity; i < i_end; i++) {
 			const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
 			fprintf(fp, "\t<TR><TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>0x%lx"
 				"</TD></TR>\n", (unsigned long)i, bgc, (unsigned long)i);
@@ -257,9 +257,9 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			"\t\tnode [fillcolor=lightpink];\n");
 		fprintf(fp, "\t}\n"
 			"\tset -> bucket0x0;\n");
-		for(b = set->buckets, b_end = b + (1 << set->log_capacity);
+		for(b = hash->buckets, b_end = b + (1 << hash->log_capacity);
 			b < b_end; b++) {
-			fprintf(fp, "\t// bucket0x%x\n", (unsigned)(b - set->buckets));
+			fprintf(fp, "\t// bucket0x%x\n", (unsigned)(b - hash->buckets));
 			for(xt = x = b->head, x_prev = 0; x; x_prev = x, x = x->next) {
 				int is_turtle = 0;
 				
@@ -272,7 +272,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 						(void *)x_prev, (void *)x);
 				} else {
 					fprintf(fp, "\tbucket0x%x -> SetElement%p;\n",
-						(unsigned)(b - set->buckets), (void *)x);
+						(unsigned)(b - hash->buckets), (void *)x);
 				}
 				if(is_turtle) xt = xt->next, is_turtle = 0; else is_turtle = 1;
 				if(xt == x->next) {
@@ -285,27 +285,27 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		}
 #endif
 	}
-	PS_(pool_graph)(&set->entries, fp);
+	PS_(pool_graph)(&hash->entries, fp);
 	fprintf(fp, "\tset -> pool;\n"
 		"\tnode [colour=red];\n");
 	fprintf(fp, "}\n");
 	fclose(fp);
 }
 
-/** Draw a histogram of `set` written to `fn` in
+/** Draw a histogram of `hash` written to `fn` in
  [Gnuplot](http://www.gnuplot.info/) format.
- @order \O(|`set.bins`| + |`set.items`|) */
-static void PS_(histogram)(const struct S_(set) *const set,
+ @order \O(|`hash.bins`| + |`hash.items`|) */
+static void PS_(histogram)(const struct S_(hash) *const hash,
 	const char *const fn) {
 	FILE *fp;
 	size_t histogram[64], hs, h;
 	const size_t histogram_size = sizeof histogram / sizeof *histogram;
-	assert(set && fn);
+	assert(hash && fn);
 	memset(histogram, 0, sizeof histogram);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	if(set->buckets) {
-		struct PS_(bucket) *b = set->buckets,
-			*b_end = b + (1 << set->log_capacity);
+	if(hash->buckets) {
+		struct PS_(bucket) *b = hash->buckets,
+			*b_end = b + (1 << hash->log_capacity);
 		for( ; b < b_end; b++) {
 			size_t items = PS_(count)(b);
 			/* The bins are `0,1,2,...,[histogram_size - 1, \infty]`. */
@@ -316,15 +316,15 @@ static void PS_(histogram)(const struct S_(set) *const set,
 	/* Hopefully `historgram_size` is much larger then it has to be. */
 	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
 	fprintf(fp, "# Size: %lu.\n"
-		"set term postscript eps enhanced color\n"
-		"set output \"%s.eps\"\n"
-		"set grid\n"
-		"set xlabel \"bucket occupancy\"\n"
-		"set ylabel \"frequency\"\n"
-		"set style histogram\n"
-		"set xrange [0:]\n"
+		"hash term postscript eps enhanced color\n"
+		"hash output \"%s.eps\"\n"
+		"hash grid\n"
+		"hash xlabel \"bucket occupancy\"\n"
+		"hash ylabel \"frequency\"\n"
+		"hash style histogram\n"
+		"hash xrange [0:]\n"
 		"plot \"-\" using 1:2 with boxes lw 3 title \"Histogram\"\n",
-		set->size, fn);
+		hash->size, fn);
 	for(h = 0; h < hs; h++) fprintf(fp, "%lu\t%lu\n",
 		(unsigned long)h, (unsigned long)histogram[h]);
 	fclose(fp);
@@ -339,16 +339,16 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	char z[12];
 	size_t removed = 0, collision = 0;
 	struct PS_(bucket) *b, *b_end;
-	struct S_(set) set = SET_IDLE;
+	struct S_(hash) hash = SET_IDLE;
 	PS_(type) eject;
 	assert(test_size > 1);
 	memset(&test, 0, sizeof test);
 	/* Test empty. */
-	PS_(legit)(&set);
-	S_(set)(&set);
-	assert(!set.buckets && !set.log_capacity && !set.size);
-	PS_(legit)(&set);
-	PS_(graph)(&set, "graph/" QUOTE(SET_NAME) "-0.gv");
+	PS_(legit)(&hash);
+	S_(hash)(&hash);
+	assert(!hash.buckets && !hash.log_capacity && !hash.size);
+	PS_(legit)(&hash);
+	PS_(graph)(&hash, "graph/" QUOTE(SET_NAME) "-0.gv");
 	/* Test placing items. */
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		size_t n = (size_t)(t - test);
@@ -356,15 +356,15 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		/*PS_(filler)(t->elem);*/
 		PS_(to_string)(&t->elem, &z);
 		printf("%lu: came up with %s.\n", (unsigned long)n, z);
-		/*success = S_(set_reserve)(&set, 1);
-		assert(success && set.buckets);
-		if(n == 0) assert(set.log_capacity == 3 && !set.size
-			&& !set.buckets[0].first && !set.buckets[1].first
-			&& !set.buckets[2].first && !set.buckets[3].first
-			&& !set.buckets[4].first && !set.buckets[5].first
-			&& !set.buckets[6].first && !set.buckets[7].first); */
-		eject = S_(set_put)(&set, t->elem);
-		if(n == 0) assert(!eject && set.size == 1);
+		/*success = S_(set_reserve)(&hash, 1);
+		assert(success && hash.buckets);
+		if(n == 0) assert(hash.log_capacity == 3 && !hash.size
+			&& !hash.buckets[0].first && !hash.buckets[1].first
+			&& !hash.buckets[2].first && !hash.buckets[3].first
+			&& !hash.buckets[4].first && !hash.buckets[5].first
+			&& !hash.buckets[6].first && !hash.buckets[7].first); */
+		eject = S_(set_put)(&hash, t->elem);
+		if(n == 0) assert(!eject && hash.size == 1);
 #if 0
 		else if(eject) {
 			if(!parent_new) {
@@ -385,29 +385,29 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 			}
 		}
 		t->is_in = 1;
-		if(set.size < 1000000 && !(n & (n - 1))) {
+		if(hash.size < 1000000 && !(n & (n - 1))) {
 			char fn[64];
-			fprintf(stderr, "%lu: %s added to set %s.\n",
-				(unsigned long)n, a, PS_(set_to_string)(&set));
+			fprintf(stderr, "%lu: %s added to hash %s.\n",
+				(unsigned long)n, a, PS_(set_to_string)(&hash));
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
 				(unsigned)n + 1);
-			PS_(graph)(&set, fn);
+			PS_(graph)(&hash, fn);
 		}
 #endif
-		PS_(legit)(&set);
+		PS_(legit)(&hash);
 	}
 	{
 		char fn[64];
-		/*PS_(stats)(&set, "\n", stdout);*/
+		/*PS_(stats)(&hash, "\n", stdout);*/
 		printf("\n");
 		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-final.gv",
 			(unsigned)test_size + 1);
-		PS_(graph)(&set, fn);
+		PS_(graph)(&hash, fn);
 		sprintf(fn, "graph/histogram-" QUOTE(SET_NAME) "-%u.gnu",
 			(unsigned)test_size + 1);
-		PS_(histogram)(&set, fn);
+		PS_(histogram)(&hash, fn);
 	}
-	printf("Testing get from set.\n");
+	printf("Testing get from hash.\n");
 	/* This is more debug info.
 	printf("[ ");
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
@@ -424,43 +424,43 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 			PS_(to_string)(&t->elem->key, &a);
 			fprintf(stderr, "%lu: retrieving %s.\n", (unsigned long)n, a);
 		}
-		element = S_(set_get)(&set, PS_(pointer)(&t->elem->key));
+		element = S_(set_get)(&hash, PS_(pointer)(&t->elem->key));
 		assert(element);
 		if(t->is_in) {
 			assert(element == t->elem);
 			if(rand() < RAND_MAX / 8) {
 				removed++;
-				r = S_(set_remove)(&set, PS_(pointer)(&t->elem->key));
+				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
 				assert(r);
-				r = S_(set_remove)(&set, PS_(pointer)(&t->elem->key));
+				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
 				assert(!r);
-				r = S_(set_policy_put)(&set, t->elem, 0);
+				r = S_(set_policy_put)(&hash, t->elem, 0);
 				assert(!r);
-				r = S_(set_policy_put)(&set, t->elem, 0);
+				r = S_(set_policy_put)(&hash, t->elem, 0);
 				assert(r == t->elem);
-				r = S_(set_remove)(&set, PS_(pointer)(&t->elem->key));
+				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
 				assert(r);
 			}
 		} else {
-			const size_t count = set.size;
+			const size_t count = hash.size;
 			collision++;
 			assert(t && element != t->elem);
-			r = S_(set_policy_put)(&set, t->elem, 0);
-			assert(r == t->elem && count == set.size);
+			r = S_(set_policy_put)(&hash, t->elem, 0);
+			assert(r == t->elem && count == hash.size);
 		}
 	}
 	printf("Collisions: %lu; removed: %lu.\n",
 		(unsigned long)collision, (unsigned long)removed);
-	PS_(legit)(&set);
-	PS_(stats)(&set, "\n", stdout);
-	S_(set_clear)(&set);
-	for(b = set.buckets, b_end = b + (1 << set.log_capacity); b < b_end; b++)
+	PS_(legit)(&hash);
+	PS_(stats)(&hash, "\n", stdout);
+	S_(set_clear)(&hash);
+	for(b = hash.buckets, b_end = b + (1 << hash.log_capacity); b < b_end; b++)
 		assert(!PS_(count)(b));
-	assert(set.size == 0);
+	assert(hash.size == 0);
 #endif
-	printf("Clear: %s.\n", PS_(set_to_string)(&set));
-	S_(set_)(&set);
-	assert(!set.buckets && !set.log_capacity && !set.size);
+	printf("Clear: %s.\n", PS_(set_to_string)(&hash));
+	S_(set_)(&hash);
+	assert(!hash.buckets && !hash.log_capacity && !hash.size);
 }
 
 /** The list will be tested on `stdout`. Requires `SET_TEST` to be a
@@ -472,7 +472,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
  `parent_new` is null. @allow */
 static void S_(set_test)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
-	printf("<" QUOTE(SET_NAME) ">set of type <" QUOTE(SET_TYPE)
+	printf("<" QUOTE(SET_NAME) ">hash of type <" QUOTE(SET_TYPE)
 		"> was created using: SET_HASH <" QUOTE(SET_HASH) ">; "
 		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
 #ifdef SET_RECALCULATE
@@ -481,7 +481,7 @@ static void S_(set_test)(PS_(type) (*const parent_new)(void *),
 		"SET_TEST<" QUOTE(SET_TEST) ">; "
 		"%stesting:\n", parent_new ? "parent type specified; " : "");
 	PS_(test_basic)(parent_new, parent);
-	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">set.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">hash.\n\n");
 }
 
 #undef QUOTE

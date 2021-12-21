@@ -1,9 +1,5 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
- [MIT License](https://opensource.org/licenses/MIT).
-
- Testing and example of `Set`.
-
- @std C89/90 */
+ [MIT License](https://opensource.org/licenses/MIT). */
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -15,7 +11,7 @@
 #include "orcish.h"
 
 
-/* Integer set. */
+/* Integer hash. */
 
 /** Assume 32-bit; it's C89. <https://nullprogram.com/blog/2018/07/31/>
  <https://github.com/skeeto/hash-prospector>. */
@@ -39,9 +35,9 @@ static void int_to_string(const unsigned *const x, char (*const a)[12])
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TEST &int_fill
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/hash.h"
 #define SET_TO_STRING &int_to_string
-#include "../src/set.h"
+#include "../src/hash.h"
 static unsigned random_int(void *const zero) {
 	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
 	return (unsigned)rand();
@@ -75,7 +71,7 @@ static size_t fnv_64a_str(const char *const str) {
 	return hval;
 }
 #endif
-/* String set. Backing: we have somewhere to store the strings. */
+/* String hash. Backing: we have somewhere to store the strings. */
 struct str16 { char str[16]; };
 #define POOL_NAME string
 #define POOL_TYPE struct str16
@@ -103,9 +99,9 @@ static void string_fill(char *const str) { assert(0); }
 #define SET_IS_EQUAL &string_is_equal
 #define SET_TEST &string_fill
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/hash.h"
 #define SET_TO_STRING &pstring_to_string
-#include "../src/set.h"
+#include "../src/hash.h"
 
 
 
@@ -132,9 +128,9 @@ static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TEST &int_fill
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/hash.h"
 #define SET_TO_STRING &int_to_string
-#include "../src/set.h"
+#include "../src/hash.h"
 
 
 
@@ -175,9 +171,9 @@ static void vec4_filler(struct vec4 *const v4) {
 #define SET_IS_EQUAL &vec4_is_equal
 #define SET_TEST &vec4_filler
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/hash.h"
 #define SET_TO_STRING &vec4_to_string
-#include "../src/set.h"
+#include "../src/hash.h"
 
 
 /* I wrote Set to solve
@@ -198,9 +194,9 @@ static void fill_boat_id(int *const id);
 #define SET_IS_EQUAL &boat_id_is_equal
 #define SET_TEST &fill_boat_id
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/hash.h"
 #define SET_TO_STRING &boat_id_to_string
-#include "../src/set.h"
+#include "../src/hash.h"
 struct boat {
 	struct id_setlink id;
 	int best_time;
@@ -258,11 +254,11 @@ static int add_up_score(int *const original, int *const replace) {
 	if(r->best_time < o->best_time) o->best_time = r->best_time;
 	return 0; /* Always false because we've sucked the points from `replace`. */
 }
-static void put_in_set(struct id_set *const set, struct boat *const b) {
+static void put_in_set(struct id_set *const hash, struct boat *const b) {
 	/* Should always reserve memory first if we may be expanding the buffer for
 	 error detection; otherwise it's awkward to tell. */
-	if(!id_set_reserve(set, 1)) { perror("put_in_set"); return; }
-	id_set_policy_put(set, &b->id, &add_up_score);
+	if(!id_set_reserve(hash, 1)) { perror("put_in_set"); return; }
+	id_set_policy_put(hash, &b->id, &add_up_score);
 }
 static void each_boat(struct boat *const bs, const size_t bs_size,
 	void (*const action)(struct boat *)) {
@@ -304,9 +300,9 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &key_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/hash.h"
 #define SET_TO_STRING &key_to_string
-#include "../src/set.h"
+#include "../src/hash.h"
 
 struct key_listlink;
 static int key_compare(const struct key_listlink *,
@@ -391,7 +387,7 @@ int main(void) {
 	}
 	{ /* Linked dictionary. */
 		struct entry_pool entries = POOL_IDLE;
-		const size_t limit = (size_t)500000/*0<-This takes a while to set up.*/;
+		const size_t limit = (size_t)500000/*0<-This takes a while to hash up.*/;
 		struct dict_entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
 		struct key_set kset = SET_IDLE;
@@ -407,7 +403,7 @@ int main(void) {
 			entry_fill(e);
 			if(!key_set_reserve(&kset, 1))
 				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
-			/* Don't go replacing elements; `elem` is set on collision. */
+			/* Don't go replacing elements; `elem` is hash on collision. */
 			elem = key_set_policy_put(&kset, &e->elem, 0);
 			if(elem) { assert(elem == &e->elem), is_used = 0; continue; }
 			is_used = 1;

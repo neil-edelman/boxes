@@ -23,7 +23,7 @@
 
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in
- <tag:<H>heapnode>; declaring it is sufficient. If set, has no effect on the
+ <tag:<H>heapnode>; declaring it is sufficient. If hash, has no effect on the
  ranking, but affects <typedef:<PH>value>, (otherwise, it's the same field as
  <typedef:<PH>priority>.)
 
@@ -80,7 +80,7 @@
 #endif
 
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
- `unsigned int` if not set by `HEAP_TYPE`. */
+ `unsigned int` if not hash by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(priority);
 
 /** Returns a positive result if `a` is out-of-order with respect to `b`,
@@ -102,12 +102,12 @@ static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 #ifdef HEAP_VALUE /* <!-- value */
 typedef HEAP_VALUE PH_(value_data);
 typedef PH_(value_data) *PH_(value);
-/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>; make a temporary
+/** If `HEAP_VALUE` is hash, this becomes <typedef:<PH>node>; make a temporary
  structure to add a pointer to the value and a priority (which may be something
  cached from the value) and copy it using <fn:<H>heap_add>. */
 struct H_(heapnode) { PH_(priority) priority; PH_(value) value; };
-/** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
- otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
+/** If `HEAP_VALUE` is hash, (priority, value) hash by <tag:<H>heapnode>,
+ otherwise it's a (priority) hash directly by <typedef:<PH>priority>. */
 typedef struct H_(heapnode) PH_(node);
 #else /* value --><!-- !value */
 typedef PH_(priority) PH_(value);

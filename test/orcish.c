@@ -151,7 +151,7 @@ static unsigned long fmix(unsigned long k) {
 static unsigned murmur_callback(unsigned long *const r)
 	{ return (*r = fmix(*r)) % (1lu + RAND_MAX); }
 
-/** Uses `rand`; ignores `r` and uses a global variable set by `srand`.
+/** Uses `rand`; ignores `r` and uses a global variable hash by `srand`.
  @return Number in `[0, RAND_MAX]`. @implements `orc_rand` */
 static unsigned rand_callback(unsigned long *const r)
 	{ (void)r; return (unsigned)rand(); }

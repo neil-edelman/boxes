@@ -84,7 +84,7 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #error Pool chunk capacity error.
 #endif
 
-/** A valid tag type set by `POOL_TYPE`. */
+/** A valid tag type hash by `POOL_TYPE`. */
 typedef POOL_TYPE PP_(type);
 
 /* Size and chunk, which goes into a sorted array. */

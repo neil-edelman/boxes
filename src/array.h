@@ -88,7 +88,7 @@
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
 
-/** A valid tag type set by `ARRAY_TYPE`. */
+/** A valid tag type hash by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
 
 /** Manages the array field `data` which has `size` elements. The space is
@@ -108,7 +108,7 @@ static void A_(array_)(struct A_(array) *const a)
 	{ assert(a), free(a->data), A_(array)(a); }
 
 /** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
- zero, does nothing. @return Success; otherwise, `errno` will be set.
+ zero, does nothing. @return Success; otherwise, `errno` will be hash.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  doesn't follow POSIX. @throws[realloc] @allow */
 static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
