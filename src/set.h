@@ -32,8 +32,7 @@
  A function satisfying <typedef:<PS>is_equal_fn>; required.
 
  @param[SET_UINT]
- This is <typedef:<PS>uint> and defaults to `size_t`; use when
- <typedef:<PS>hash_fn> is a specific hash length.
+ This is <typedef:<PS>uint>, the hash type, and defaults to `size_t`.
 
  @param[SET_RECALCULATE]
  Don't cache the hash, but calculate every time and discards it; for example,
@@ -90,6 +89,14 @@
 #if SET_TRAITS == 0 /* <!-- base code */
 
 
+/* Undocumented feature, but not very useful; one has enough to think about. */
+#ifndef SET_CHUNK_MIN_CAPACITY /* <!-- !min */
+#define SET_CHUNK_MIN_CAPACITY 8
+#endif /* !min --> */
+#if SET_CHUNK_MIN_CAPACITY < 2
+#error Set chunk capacity error.
+#endif
+
 #ifndef SET_UINT
 #define SET_UINT size_t
 #endif
@@ -97,8 +104,7 @@
 /** Unsigned integer type used for hash values. The hash map will saturate at
  `min(((ln 2)/2) \cdot range(<PS>uint), (1/8) \cdot range(size_t))`,
  at which point no new buckets can be added and the load factor will
- increase. For `C99` users, setting this to one of the types from `stdint.h`
- will probably be ideal. */
+ increase. Set this according to <typedef:<PS>hash_fn>. */
 typedef SET_UINT PS_(uint);
 
 /** Valid tag type defined by `SET_TYPE`. */
@@ -135,7 +141,7 @@ typedef int (*PS_(replace_fn))(PS_(type) original, PS_(type) replace);
 static int PS_(false)(PS_(type) original, PS_(type) replace)
 	{ (void)(original); (void)(replace); return 0; }
 
-/** A bucket is a linked-list of entries, which store keys. */
+/** Entries are a linked-list which store keys. */
 struct PS_(entry) {
 	struct PS_(entry) *next;
 #ifndef SET_RECALCULATE /* <!-- cache */
@@ -144,22 +150,15 @@ struct PS_(entry) {
 	PS_(type) key;
 };
 
-/** <typedef:<PS>entry> are stored in chunks in a sequence of fixed-size
- arrays, (like a pool, but with none of the complication of the free-list.) */
+/** <typedef:<PS>entry> are stored in a sequence of fixed-size arrays called
+ chunks, (like a pool, but with none of the complication of the free-list.) */
 struct PS_(slot) { size_t size; struct PS_(entry) *chunk; };
 
 #define ARRAY_NAME PS_(slot)
 #define ARRAY_TYPE struct PS_(slot)
 #include "array.h"
 
-
-
-/* Uses pool to store unordered <typedef:<PS>entry>. */
-#define POOL_NAME PS_(entry)
-#define POOL_TYPE struct PS_(entry)
-#include "pool.h"
-
-/** Don't feel like having confusing double-pointers. */
+/** A bucket consists of <typedef:<PS>entry> from <tag:<PS>slot>. */
 struct PS_(bucket) { struct PS_(entry) *head; };
 
 /** To initialize, see <fn:<S>set>, `SET_IDLE`, `{0}` (`C99`,) or being
@@ -167,11 +166,10 @@ struct PS_(bucket) { struct PS_(entry) *head; };
 
  ![States.](../web/states.png) */
 struct S_(set) {
-	struct PS_(bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */
-	size_t size;
-	unsigned log_capacity, unused;
+	struct PS_(bucket) *buckets;
+	unsigned log_bucket_size, unused;
+	size_t entry_size, slot0_capacity;
 	struct PS_(slot_array) slots;
-	struct PS_(entry_pool) entries;
 };
 
 /** Gets the hash of `entry`, which should be consistent. */
@@ -188,7 +186,7 @@ static PS_(uint) PS_(hash_from_entry)(const struct PS_(entry) *const entry) {
 static struct PS_(bucket) *PS_(get_bucket)(struct S_(set) *const set,
 	const PS_(uint) hash) {
 	assert(set && set->buckets);
-	return set->buckets + (hash & ((1 << set->log_capacity) - 1));
+	return set->buckets + (hash & ((1 << set->log_bucket_size) - 1));
 }
 
 /** Linear search for `key` in `bucket`.
@@ -216,16 +214,17 @@ static struct PS_(entry) **PS_(bucket_link)(struct PS_(bucket) *const bucket,
  allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
-static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
+static int PS_(bucket_reserve)(struct S_(set) *const set,
+	const size_t min_capacity) {
 	struct PS_(bucket) *buckets, *b, *b_end;
-	const unsigned log_c0 = set->log_capacity,
+	const unsigned log_c0 = set->log_bucket_size,
 		log_limit = sizeof(PS_(uint)) * CHAR_BIT - 1;
 	unsigned log_c1;
 	PS_(uint) c0 = (PS_(uint))(1 << log_c0), c1, mask;
 	/* One did set `<PS>uint` to an unsigned type, right? */
 	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
 		&& (PS_(uint))-1 > 0
-		&& (!set->buckets || set->size <= 1ul << set->log_capacity));
+		&& (!set->buckets || set->entry_size <= 1ul << set->log_bucket_size));
 	/* Ca'n't be expanded further; the load factor will increase. */
 	if(log_c0 >= log_limit) { assert(log_c0 == log_limit); return 1; }
 	/* `C99` `SIZE_MAX` min 65535 -> 5041; load factor `ln 2 ~= 0.693 ~= 9/13`.
@@ -253,7 +252,7 @@ static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
 	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
 	set->buckets = buckets;
-	set->log_capacity = log_c1;
+	set->log_bucket_size = log_c1;
 	/* The mask needs domain `c0 \in [1, max]`, but we want 0 for loops. */
 	mask = (c1 - 1) ^ (c0 - 1), assert(mask);
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
@@ -277,6 +276,58 @@ static int PS_(reserve)(struct S_(set) *const set, const size_t min_capacity) {
 	return 1;
 }
 
+/** Makes sure there are space for `n` further entries in `set`.
+ @return Success. @throws[ERANGE, malloc] */
+static int PS_(entry_buffer)(struct S_(set) *const set, const size_t n) {
+	const size_t min_size = SET_CHUNK_MIN_CAPACITY,
+		max_size = (size_t)-1 / sizeof(struct PS_(entry));
+	struct PS_(slot) *base = set->slots.data, *slot;
+	struct PS_(entry) *chunk;
+	size_t c, insert;
+	int is_recycled = 0;
+	assert(set && min_size <= max_size && set->slot0_capacity <= max_size &&
+		(!set->slots.size
+		|| set->slots.size && base && base[0].size <= set->slot0_capacity));
+	if(!n || set->slots.size && n <= set->slot0_capacity - base[0].size)
+		return 1; /* Already enough. */
+	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
+	if(!PS_(slot_array_buffer)(&set->slots, 1)) return 0; /* New slot. */
+	base = set->slots.data; /* It may have moved! */
+	
+	/* Figure out the capacity of the next chunk. */
+	c = set->slot0_capacity;
+	if(set->slots.size && base[0].size) { /* ~Golden ratio. */
+		size_t c1 = c + (c >> 1) + (c >> 3);
+		c = (c1 < c || c1 > max_size) ? max_size : c1;
+	}
+	if(c < min_size) c = min_size;
+	if(c < n) c = n;
+
+	/* Allocate it. */
+	if(set->slots.size && !base[0].size)
+		is_recycled = 1, chunk = realloc(base[0].chunk, c * sizeof *chunk);
+	else chunk = malloc(c * sizeof *chunk);
+	if(!chunk) { if(!errno) errno = ERANGE; return 0; }
+	set->slot0_capacity = c; /* Only need to store the capacity of chunk 0. */
+	if(is_recycled) return base[0].size = 0, base[0].chunk = chunk, 1;
+
+	/* Evict chunk 0. */
+	if(!set->slots.size) insert = 0;
+	else insert = PP_(upper)(&pool->slots, base[0].chunk);
+	assert(insert <= set->slots.size);
+	slot = PP_(slot_array_insert)(&pool->slots, 1, insert);
+	assert(slot); /* Made space for it before. */
+	slot->chunk = base[0].chunk, slot->size = base[0].size;
+	base[0].chunk = chunk, base[0].size = 0;
+	return 1;
+}
+
+
+static struct PS_(entry) *PS_(new_entry)(struct S_(set) *const set) {
+	assert(set);
+	set->entry_size++;
+}
+
 /** Put `key` in `set` as long as `replace` is null or returns true.
  @param[collide] If non-null, the collided element, if any. If `replace`
  returns false, the address of `key`.
@@ -292,17 +343,16 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	if(!set->buckets) goto grow_table;
 	bucket = PS_(get_bucket)(set, hash);
 	if(!(to_x = PS_(bucket_link)(bucket, hash, key))) goto grow_table;
-	/* Deal with duplicates. */
-	x = *to_x;
+	x = *to_x; /* Deal with duplicates. */
 	if(replace && !replace(x->key, key))
 		{ if(collide) *collide = key; return 1; }
 	if(collide) *collide = x->key;
 	*to_x = x->next;
 	goto add_element;
 grow_table:
-	if((set->size < (size_t)-1 && !PS_(reserve)(set, set->size + 1))
-		|| !(x = PS_(entry_pool_new)(&set->entries))) return 0;
-	set->size++;
+	if((set->entry_size < (size_t)-1
+		&& !PS_(bucket_reserve)(set, set->entry_size + 1))
+		|| !(x = PS_(new_entry)(set))) return 0;
 	bucket = PS_(get_bucket)(set, hash); /* Possibly invalidated. */
 add_element:
 	x->key = key;
@@ -315,7 +365,7 @@ add_element:
 
 /** Initialises `set` to idle. @order \Theta(1) @allow */
 static void S_(set)(struct S_(set) *const set)
-	{ assert(set); set->buckets = 0; set->size = 0; set->log_capacity = 0;
+	{ assert(set); set->buckets = 0; set->entry_size = 0; set->log_bucket_size = 0;
 	PS_(entry_pool)(&set->entries); }
 
 /** Destroys `set` and returns it to idle. @allow */
@@ -330,10 +380,10 @@ static void S_(set_)(struct S_(set) *const set)
 static void S_(set_clear)(struct S_(set) *const set) {
 	struct PS_(bucket) *b, *b_end;
 	assert(set);
-	if(!set->log_capacity) return;
-	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
+	if(!set->log_bucket_size) return;
+	for(b = set->buckets, b_end = b + (1 << set->log_bucket_size); b < b_end; b++)
 		b->head = 0;
-	set->size = 0;
+	set->entry_size = 0;
 	PS_(entry_pool_clear)(&set->entries);
 }
 
@@ -392,8 +442,7 @@ static PS_(type) S_(set_policy_put)(struct S_(set) *const set,
 
 #if 0
 /** Removes an element `data` from `set`.
- @return Successfully ejected element or null. This element is free to be put
- into another set or modify it's hash values. @order Average \O(1), (hash
+ @return Successfully ejected element or null. @order Average \O(1), (hash
  distributes elements uniformly); worst \O(n). @allow */
 static struct S_(setlink) *S_(set_remove)(struct S_(set) *const set,
 	const PS_(mtype) data) {
@@ -424,7 +473,7 @@ static void PS_(begin)(struct PS_(iterator) *const it,
 
 /** Advances `it`. @implements next */
 static PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
-	const size_t bucket_end = 1 << it->set->log_capacity;
+	const size_t bucket_end = 1 << it->set->log_bucket_size;
 	assert(it && it->set);
 	if(!it->set->buckets) return 0;
 	while(it->bucket_idx < bucket_end) {

@@ -52,3 +52,39 @@ effect with robin-hood in the next jump instead of the original . . .
 Would mean 255/254 spots will have to be filled. Double-null values are still
 a waste of space, however, the load-factor could be increased? Maybe signed?
 would be great for storing hashes.
+
+--
+
+SET_INVERSE_HASH, conflicts with SET_RECOMPUTE, the value is forgotten.
+
+--
+
+Very simple open table with a next and index to solve conflicts. Like coalesced hashing, but never coalesce, because that is stupid.
+
+0 a -
+1 b -
+2
+3
+conflict -1
+
+0 e 2
+1 b -
+2 a -
+3
+conflict 2
+
+0 e 2
+1 f 3
+2 a -
+3 b -
+conflict 3
+
+0 a
+1 b
+2
+3
+4 e
+5 f
+6
+7
+conflict -1
