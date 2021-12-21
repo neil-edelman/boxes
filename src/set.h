@@ -39,6 +39,9 @@
  should be used when the hash calculation is trivial to avoid storing duplicate
  <typedef:<PS>uint> _per_ entry.
 
+ @param[SET_INVERSE_HASH]
+ This avoids
+
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
@@ -62,6 +65,9 @@
 #define SET_TRAITS SET_TO_STRING_TRAIT
 #if SET_TRAITS > 1
 #error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
+#endif
+#if defined(SET_RECALCULATE) && defined(SET_INVERSE_HASH)
+#error SET_INVERSE_HASH has to cache the hash; conflicts with SET_RECALCULATE.
 #endif
 #if defined(SET_TO_STRING_NAME) && !defined(SET_TO_STRING)
 #error SET_TO_STRING_NAME requires SET_TO_STRING.
@@ -89,7 +95,7 @@
 #if SET_TRAITS == 0 /* <!-- base code */
 
 
-/* Undocumented feature, but not very useful; one has enough to think about. */
+/* Undocumented feature; one has enough to think about. */
 #ifndef SET_CHUNK_MIN_CAPACITY /* <!-- !min */
 #define SET_CHUNK_MIN_CAPACITY 8
 #endif /* !min --> */
@@ -122,6 +128,10 @@ typedef const SET_TYPE PS_(ctype);
  <https://github.com/sindresorhus/fnv1a>. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ctype));
 
+#ifdef SET_INVERSE_HASH /* <!-- inv */
+typedef PS_(type) (*PS_(inverse_hash_fn))(PS_(uint));
+#endif /* inv --> */
+
 /** Equivalence relation between <typedef:<PS>ctype> that satisfies
  `<PS>is_equal_fn(a, b) -> <PS>hash_fn(a) == <PS>hash_fn(b)`. */
 typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
@@ -147,7 +157,9 @@ struct PS_(entry) {
 #ifndef SET_RECALCULATE /* <!-- cache */
 	PS_(uint) hash;
 #endif /* cache --> */
+#ifndef SET_INVERSE_HASH /* <!-- !inv */
 	PS_(type) key;
+#endif /* !inv --> */
 };
 
 /** <typedef:<PS>entry> are stored in a sequence of fixed-size arrays called
