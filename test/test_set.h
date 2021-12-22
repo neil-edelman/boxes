@@ -29,7 +29,7 @@ static size_t PS_(count)(struct PS_(bucket) *const bucket) {
 
 /** Collect stats; <Welford1962Note>, on `hash` and output them to `fp`.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PS_(stats)(const struct S_(hash) *const hash, FILE *fp) {
+static void PS_(stats)(const struct S_(set) *const hash, FILE *fp) {
 	struct { size_t n, cost, max_bin; double mean, ssdm; }
 		msr = { 0, 0, 0, 0.0, 0.0 };
 	size_t size = 0;
@@ -82,7 +82,7 @@ static void PS_(stats)(const struct S_(hash) *const hash, FILE *fp) {
 
 /** Assertion function for seeing if `hash` is in a valid state.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PS_(legit)(const struct S_(hash) *const hash) {
+static void PS_(legit)(const struct S_(set) *const hash) {
 	struct PS_(bucket) *b, *b_end;
 	size_t size = 0;
 	if(!hash) return; /* Null state. */
@@ -219,7 +219,7 @@ no_chunk_data:
 /** Draw a diagram of `hash` written to `fn` in
  [Graphviz](https://www.graphviz.org/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PS_(graph)(const struct S_(hash) *const hash, const char *const fn) {
+static void PS_(graph)(const struct S_(set) *const hash, const char *const fn) {
 	FILE *fp;
 	char z[12];
 	assert(hash && fn);
@@ -295,7 +295,7 @@ static void PS_(graph)(const struct S_(hash) *const hash, const char *const fn) 
 /** Draw a histogram of `hash` written to `fn` in
  [Gnuplot](http://www.gnuplot.info/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PS_(histogram)(const struct S_(hash) *const hash,
+static void PS_(histogram)(const struct S_(set) *const hash,
 	const char *const fn) {
 	FILE *fp;
 	size_t histogram[64], hs, h;
@@ -339,13 +339,13 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	char z[12];
 	size_t removed = 0, collision = 0;
 	struct PS_(bucket) *b, *b_end;
-	struct S_(hash) hash = SET_IDLE;
+	struct S_(set) hash = SET_IDLE;
 	PS_(type) eject;
 	assert(test_size > 1);
 	memset(&test, 0, sizeof test);
 	/* Test empty. */
 	PS_(legit)(&hash);
-	S_(hash)(&hash);
+	S_(set)(&hash);
 	assert(!hash.buckets && !hash.log_capacity && !hash.size);
 	PS_(legit)(&hash);
 	PS_(graph)(&hash, "graph/" QUOTE(SET_NAME) "-0.gv");
