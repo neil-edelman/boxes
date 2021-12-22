@@ -159,26 +159,16 @@ struct PS_(bucket) {
 struct S_(set) {
 	struct PS_(bucket) *buckets;
 	unsigned log_capacity;
+	PS_(uint) size;
 	PS_(uint_token) top;
 };
-
-/* We cannot check for null in <typedef:<PS>type> because it possibly has no
- null element. We could require it to, or require a pointer, but this is
- potentially too useful in some sets; or write different cases or have
- `is_full` field in bucket. Design decision to shrink the range by half and use
- one bit from all the <typedef:<PS>info_uint> fields; if one needs a lot of
- entries, one is going to have to use a size bigger <typedef:<PS>uint>. We
- could use signed values, but that would probably be very confusing to the
- user. */
 
 /** Null-check for `token`. */
 static int PS_(token_exists)(const PS_(uint_token) token)
 	{ return !token; }
-
 /** Does `token` have a next? <fn:<PS>token_next> -> <fn:<PS>token_exists> */
 static int PS_(token_has_next)(const PS_(uint_token) token)
 	{ return token & 1; }
-
 /** Gets the <typedef:<PS>uint> value of `token`. !<fn:<PS>token_exists> -> 0 */
 static PS_(uint) PS_(token_value)(const PS_(uint_token) token)
 	{ return token >> 1; }
