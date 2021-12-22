@@ -35,9 +35,9 @@ static void int_to_string(const unsigned *const x, char (*const a)[12])
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TEST &int_fill
 #define SET_EXPECT_TRAIT
-#include "../src/hash.h"
+#include "../src/set.h"
 #define SET_TO_STRING &int_to_string
-#include "../src/hash.h"
+#include "../src/set.h"
 static unsigned random_int(void *const zero) {
 	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
 	return (unsigned)rand();

@@ -6,7 +6,8 @@
  ![Example of <string>set.](../web/set.png)
 
  <tag:<S>set> is a hash set of unordered <tag:<PS>key> that doesn't allow
- duplication. It must be supplied a hash function and equality function.
+ duplication. It must be supplied a hash function and equality function. It
+ accepts null.
 
  This code is simple by design. While enclosing a pointer <tag:<PS>key> in a
  larger `struct` can give an associative array, compile-time constant sets are
@@ -82,7 +83,7 @@
 #define SET_CAT_(n, m) n ## _ ## m
 #define SET_CAT(n, m) SET_CAT_(n, m)
 #define S_(n) SET_CAT(SET_NAME, n)
-#define PS_(n) SET_CAT(hash, S_(n))
+#define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0, POOL_IDLE }
 #endif /* idempotent --> */
 
@@ -95,9 +96,13 @@
 #endif
 
 /** Unsigned integer type used for hash values. Set this according to
- <typedef:<PS>SET_HASH>. The range of this type presents an upper-limit to how
- many entries are possible, (the maximum load factor is one.) */
+ <typedef:<PS>hash_fn>. Half the range of this type presents an upper-limit to
+ how many entries are possible. */
 typedef SET_UINT PS_(uint);
+
+/** This is the same type as <typedef:<PS>uint>, but one bit is reserved, thus
+ has half the range. */
+typedef SET_UINT PS_(uint_token);
 
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PS_(type);
@@ -114,32 +119,31 @@ typedef const SET_TYPE PS_(ctype);
  <https://github.com/sindresorhus/fnv1a>. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ctype));
 
+/* Check that `SET_HASH` is a function implementing <typedef:<PS>SET_HASH>. */
+static const PS_(hash_fn) PS_(hash) = (SET_HASH);
+
 #ifdef SET_INVERSE_HASH /* <!-- inv */
-/** When the <typedef:<PS>uint> forms a bijection with <typedef:<PS>type>, one
- can inverse-map the <typedef:<PS>SET_HASH> to save having to store the
- <typedef:<PS>key>. */
+/** Defining `SET_INVERSE_HASH` says that the <typedef:<PS>type> forms a
+ bijection with <typedef:<PS>uint>; this is inverse-mapping to
+ <typedef:<PS>hash_fn>. This saves having to store the <typedef:<PS>type>. */
 typedef PS_(type) (*PS_(inverse_hash_fn))(PS_(uint));
-#error I haven't gotten that far.
+#error Not working.
 #endif /* inv --> */
 
 /** Equivalence relation between <typedef:<PS>ctype> that satisfies
  `<PS>is_equal_fn(a, b) -> <PS>SET_HASH(a) == <PS>SET_HASH(b)`. */
 typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
 
-/* Check that `SET_HASH` is a function implementing <typedef:<PS>SET_HASH>. */
-static const PS_(hash_fn) PS_(set) = (SET_HASH);
-
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
-/** This is an open-addressing scheme, in that it stores collision keys
- in another bucket. However, like separate-chaining, each bucket is a
- linked-list of keys. Like coalesced-hashing, the unused buckets are used for
- collisions, but coalescing is not possible because the entry is moved. It is
- meant to be simple, not performant. */
+/** The structure is like coalesced-hashing: this is an open-addressing scheme,
+ in that it stores collision keys in another bucket; like separate-chaining,
+ each bucket is a linked-list of keys. However, coalescing is impossible
+ because of amortized work on insertion, so it's not that. */
 struct PS_(bucket) {
-	PS_(uint) next_plus_1;
+	PS_(uint_token) next;
 #ifndef SET_RECALCULATE /* <!-- cache */
 	PS_(uint) hash;
 #endif /* cache --> */
@@ -155,16 +159,48 @@ struct PS_(bucket) {
 struct S_(set) {
 	struct PS_(bucket) *buckets;
 	unsigned log_capacity;
-	PS_(uint) collision_top_plus_1;
+	PS_(uint_token) top;
 };
+
+/* We cannot check for null in <typedef:<PS>type> because it possibly has no
+ null element. We could require it to, or require a pointer, but this is
+ potentially too useful in some sets; or write different cases or have
+ `is_full` field in bucket. Design decision to shrink the range by half and use
+ one bit from all the <typedef:<PS>info_uint> fields; if one needs a lot of
+ entries, one is going to have to use a size bigger <typedef:<PS>uint>. We
+ could use signed values, but that would probably be very confusing to the
+ user. */
+
+/** Null-check for `token`. */
+static int PS_(token_exists)(const PS_(uint_token) token)
+	{ return !token; }
+
+/** Does `token` have a next? <fn:<PS>token_next> -> <fn:<PS>token_exists> */
+static int PS_(token_has_next)(const PS_(uint_token) token)
+	{ return token & 1; }
+
+/** Gets the <typedef:<PS>uint> value of `token`. !<fn:<PS>token_exists> -> 0 */
+static PS_(uint) PS_(token_value)(const PS_(uint_token) token)
+	{ return token >> 1; }
 
 /** Gets the hash of an occupied `bucket`, which should be consistent. */
 static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
+	assert(bucket && PS_(token_exists)(bucket->next));
 #ifdef SET_RECALCULATE /* <!-- !cache */
-	return PS_(set)(&bucket->data);
+	return PS_(hash)(&bucket->data);
 #else /* !cache --><!-- cache */
 	return bucket->hash;
 #endif /* cache --> */
+}
+
+/** Gets the key of an occupied `bucket`. */
+static PS_(type) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
+	assert(bucket && PS_(token_exists)(bucket->next));
+#ifdef SET_INVERSE_HASH
+	return PS_(inverse_hash_fn)(&bucket->hash);
+#else
+	return bucket->key;
+#endif
 }
 
 /** @return Indexes a bucket from `set` given the `hash`. */
@@ -175,66 +211,58 @@ static PS_(uint) PS_(hash_to_index)(struct S_(set) *const set,
 /** `to_bucket` will be search linearly for `key`.
  @param[hash] Must match the hash of `key`.
  @fixme Fix for inverse. */
-static PS_(type) *PS_(search_bucket)(struct S_(set) *const h,
-	struct PS_(bucket) **const to_bucket,
+static PS_(type) *PS_(get)(struct S_(set) *const set,
 	const PS_(type) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
-	for( ; bucket = *to_bucket; ) {
+	PS_(uint_token) next;
+	assert(set);
+	bucket = set->buckets + PS_(hash_to_index)(set, hash);
+	next = bucket->next;
+	if(!PS_(token_exists)(next)) return 0; /* This is not an occupied bucket. */
+	do {
 #ifndef SET_RECALCULATE /* <!-- cache: quick out. */
 		if(hash != bucket->hash) continue;
 #endif /* cache --> */
-		if(PS_(equal)(key, bucket->key)) return;
-	}
+		/* fixme: Move to front! */
+		if(PS_(equal)(key, bucket->key)) return &bucket->key;
+	} while(PS_(token_has_next)(next)
+		&& (bucket = set->buckets + PS_(token_value)(next),
+		next = bucket->next, 1));
 #ifdef SET_RECALCULATE /* <!-- !cache */
-	(void)(hash);
-#endif /* cache --> */
+	(void)(hash); /* Not used in this case. */
+#endif /* !cache --> */
+	return 0;
 }
 
-/** Ensures that `hash` has enough buckets to hold `ln 2` times `min_capacity`.
+/** Ensures that `set` has enough buckets to fill `min_capacity`.
  @param[min_capacity] If zero, does nothing.
  @return Success; otherwise, `errno` will be hash. @throws[ERANGE] Tried
  allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
-static int PS_(bucket_reserve)(struct S_(set) *const hash,
+static int PS_(reserve)(struct S_(set) *const set,
 	const size_t min_capacity) {
 	struct PS_(bucket) *buckets, *b, *b_end;
-	const unsigned log_c0 = hash->log_capacity,
+	const unsigned log_c0 = set->log_capacity,
 		log_limit = sizeof(PS_(uint)) * CHAR_BIT - 1;
 	unsigned log_c1;
-	PS_(uint) c0 = (PS_(uint))(1 << log_c0), c1, mask;
-	/* One did hash `<PS>uint` to an unsigned type, right? */
-	assert(hash && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
-		&& (PS_(uint))-1 > 0
-		&& (!hash->buckets || hash->entry_size <= 1ul << hash->log_bucket_size));
+	PS_(uint) c0 = (PS_(uint))1 << log_c0, c1, mask;
+	/* One did hash <typedef:<PS>uint> to an unsigned type, right? */
+	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
+		&& (PS_(uint))-1 > 0);
 	/* Ca'n't be expanded further; the load factor will increase. */
 	if(log_c0 >= log_limit) { assert(log_c0 == log_limit); return 1; }
-	/* `C99` `SIZE_MAX` min 65535 -> 5041; load factor `ln 2 ~= 0.693 ~= 9/13`.
-	 Bucket number is a power of 2 in `[8, 1 << log_limit]`. */
-	do {
-		size_t no_buckets;
-		/* Overflow multiplying numerator. */
-		if(min_capacity > (size_t)-1 / 13) {
-			if(min_capacity > 1ul << log_limit) {
-				log_c1 = log_limit, c1 = (PS_(uint))1 << log_c1;
-				break;
-			} else {
-				no_buckets = min_capacity / 9 * 13;
-			}
-		} else if((no_buckets = min_capacity * 13 / 9) > 1ul << log_limit) {
-			log_c1 = log_limit, c1 = (PS_(uint))1 << log_c1;
-			break;
-		}
+	{
 		if(log_c0 < 3) log_c1 = 3ul,    c1 = 8ul;
 		else           log_c1 = log_c0, c1 = c0;
 		while(c1 < no_buckets) log_c1++, c1 <<= 1;
-	} while(0);
+	}
 	/* It's under the critical load factor; don't need to do anything. */
 	if(log_c0 == log_c1) return 1;
-	if(!(buckets = realloc(hash->buckets, sizeof *buckets * c1)))
+	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	hash->buckets = buckets;
-	hash->log_capacity = log_c1;
+	set->buckets = buckets;
+	set->log_capacity = log_c1;
 	/* The mask needs domain `c0 \in [1, max]`, but we want 0 for loops. */
 	mask = (c1 - 1) ^ (c0 - 1), assert(mask);
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
@@ -258,58 +286,6 @@ static int PS_(bucket_reserve)(struct S_(set) *const hash,
 	return 1;
 }
 
-/** Makes sure there are space for `n` further entries in `hash`.
- @return Success. @throws[ERANGE, malloc] */
-static int PS_(entry_buffer)(struct S_(set) *const hash, const size_t n) {
-	const size_t min_size = SET_CHUNK_MIN_CAPACITY,
-		max_size = (size_t)-1 / sizeof(struct PS_(entry));
-	struct PS_(slot) *base = hash->slots.data, *slot;
-	struct PS_(entry) *chunk;
-	size_t c, insert;
-	int is_recycled = 0;
-	assert(hash && min_size <= max_size && hash->slot0_capacity <= max_size &&
-		(!hash->slots.size
-		|| hash->slots.size && base && base[0].size <= hash->slot0_capacity));
-	if(!n || hash->slots.size && n <= hash->slot0_capacity - base[0].size)
-		return 1; /* Already enough. */
-	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
-	if(!PS_(slot_array_buffer)(&hash->slots, 1)) return 0; /* New slot. */
-	base = hash->slots.data; /* It may have moved! */
-	
-	/* Figure out the capacity of the next chunk. */
-	c = hash->slot0_capacity;
-	if(hash->slots.size && base[0].size) { /* ~Golden ratio. */
-		size_t c1 = c + (c >> 1) + (c >> 3);
-		c = (c1 < c || c1 > max_size) ? max_size : c1;
-	}
-	if(c < min_size) c = min_size;
-	if(c < n) c = n;
-
-	/* Allocate it. */
-	if(hash->slots.size && !base[0].size)
-		is_recycled = 1, chunk = realloc(base[0].chunk, c * sizeof *chunk);
-	else chunk = malloc(c * sizeof *chunk);
-	if(!chunk) { if(!errno) errno = ERANGE; return 0; }
-	hash->slot0_capacity = c; /* Only need to store the capacity of chunk 0. */
-	if(is_recycled) return base[0].size = 0, base[0].chunk = chunk, 1;
-
-	/* Evict chunk 0. */
-	if(!hash->slots.size) insert = 0;
-	else insert = PP_(upper)(&pool->slots, base[0].chunk);
-	assert(insert <= hash->slots.size);
-	slot = PP_(slot_array_insert)(&pool->slots, 1, insert);
-	assert(slot); /* Made space for it before. */
-	slot->chunk = base[0].chunk, slot->size = base[0].size;
-	base[0].chunk = chunk, base[0].size = 0;
-	return 1;
-}
-
-
-static struct PS_(entry) *PS_(new_entry)(struct S_(set) *const hash) {
-	assert(hash);
-	hash->entry_size++;
-}
-
 /** A bi-predicate; returns true if the `replace` replaces the `original`. */
 typedef int (*PS_(replace_fn))(PS_(type) original, PS_(type) replace);
 
@@ -322,17 +298,17 @@ static int PS_(false)(PS_(type) original, PS_(type) replace)
  @param[collide] If non-null, the collided element, if any. If `replace`
  returns false, the address of `key`.
  @return Success. @throws[malloc] */
-static int PS_(put)(struct S_(set) *const hash, const PS_(replace_fn) replace,
+static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	PS_(type) key, PS_(type) *collide) {
 	struct PS_(bucket) *bucket;
 	struct PS_(entry) **to_x = 0, *x = 0;
 	PS_(uint) hash;
-	assert(hash && key);
-	hash = PS_(set)(key);
+	assert(set && key);
+	hash = PS_(hash)(key);
 	if(collide) *collide = 0;
-	if(!hash->buckets) goto grow_table;
-	bucket = PS_(get_bucket)(hash, hash);
-	if(!(to_x = PS_(bucket_link)(bucket, hash, key))) goto grow_table;
+	if(!set->buckets) goto grow_table;
+	bucket = PS_(get_bucket)(set, set);
+	if(!(to_x = PS_(bucket_link)(bucket, set, key))) goto grow_table;
 	x = *to_x; /* Deal with duplicates. */
 	if(replace && !replace(x->key, key))
 		{ if(collide) *collide = key; return 1; }
@@ -343,7 +319,7 @@ grow_table:
 	if((hash->entry_size < (size_t)-1
 		&& !PS_(bucket_reserve)(hash, hash->entry_size + 1))
 		|| !(x = PS_(new_entry)(hash))) return 0;
-	bucket = PS_(get_bucket)(hash, hash); /* Possibly invalidated. */
+	bucket = PS_(get_bucket)(set, set); /* Possibly invalidated. */
 add_element:
 	x->key = key;
 	x->next = bucket->head, bucket->head = x;
