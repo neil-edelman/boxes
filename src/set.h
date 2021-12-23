@@ -96,13 +96,24 @@
 #endif
 
 /** Unsigned integer type used for hash values. Set this according to
- <typedef:<PS>hash_fn>. Half the range of this type presents an upper-limit to
- how many entries are possible. */
+ <typedef:<PS>hash_fn>. */
 typedef SET_UINT PS_(uint);
 
-/** This is the same type as <typedef:<PS>uint>, but one bit is reserved, thus
- has half the range. */
+/** This is the same type as <typedef:<PS>uint>, but different meaning.
+ `struct { <PS>uint has_next : 1, index : sizeof(<PS>uint) * CHAR_BIT - 1; }`,
+ if we could do that portably. Thus, because of simplifications, half the range
+ of this type presents an upper-limit to how many entries are possible. */
 typedef SET_UINT PS_(uint_token);
+/** A `token` is null if it has no `next` and `index`. */
+static int PS_(token_exists)(const PS_(uint_token) token)
+	{ return !token; }
+/** Does `token` have a next?
+ <fn:<PS>token_has_next> -> <fn:<PS>token_exists> */
+static int PS_(token_has_next)(const PS_(uint_token) token)
+	{ return token & 1; }
+/** Gets the <typedef:<PS>uint> value of `token`. !<fn:<PS>token_exists> -> 0 */
+static PS_(uint) PS_(token_value)(const PS_(uint_token) token)
+	{ return token >> 1; }
 
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PS_(type);
@@ -138,10 +149,9 @@ typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
-/** The structure is like coalesced-hashing: this is an open-addressing scheme,
- in that it stores collision keys in another bucket; like separate-chaining,
- each bucket is a linked-list of keys. However, coalescing is impossible
- because of amortized work on insertion, so it's not that. */
+/** Like coalesced-hashing, in that, like open-addressing, in that it stores
+ collision keys in another bucket, and like separate-chaining, each bucket is a
+ linked-list of keys. However, we don't do coalescing. */
 struct PS_(bucket) {
 	PS_(uint_token) next;
 #ifndef SET_RECALCULATE /* <!-- cache */
@@ -162,16 +172,6 @@ struct S_(set) {
 	PS_(uint) size;
 	PS_(uint_token) top;
 };
-
-/** Null-check for `token`. */
-static int PS_(token_exists)(const PS_(uint_token) token)
-	{ return !token; }
-/** Does `token` have a next? <fn:<PS>token_next> -> <fn:<PS>token_exists> */
-static int PS_(token_has_next)(const PS_(uint_token) token)
-	{ return token & 1; }
-/** Gets the <typedef:<PS>uint> value of `token`. !<fn:<PS>token_exists> -> 0 */
-static PS_(uint) PS_(token_value)(const PS_(uint_token) token)
-	{ return token >> 1; }
 
 /** Gets the hash of an occupied `bucket`, which should be consistent. */
 static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
