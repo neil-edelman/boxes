@@ -6,20 +6,21 @@
  ![Example of <string>set.](../web/set.png)
 
  <tag:<S>set> is a hash set of unordered <tag:<PS>key> that doesn't allow
- duplication. It must be supplied a hash function and equality function. It
- accepts null.
+ duplication. It must be supplied a hash function and equality function.
 
- This code is simple by design. While enclosing a pointer <tag:<PS>key> in a
- larger `struct` can give an associative array, compile-time constant sets are
- better handled with [gperf](https://www.gnu.org/software/gperf/). Also,
+ This code is simple by design, and may not be suited for more complex
+ situations. While enclosing a pointer <tag:<PS>key> in a larger `struct` can
+ give an associative array, compile-time constant sets are better handled with
+ [gperf](https://www.gnu.org/software/gperf/). Also,
  [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library that
  may be more useful for large projects.
 
  @param[SET_NAME, SET_TYPE]
  `<S>` that satisfies `C` naming conventions when mangled and a valid
- <typedef:<PS>type> associated therewith; required. `<PS>` is private, whose
- names are prefixed in a manner to avoid collisions; any should be re-defined
- prior to use elsewhere.
+ <typedef:<PS>type> associated therewith; required. Type is copied extensively,
+ so if it's a large, making it a pointer may improve performance. `<PS>` is
+ private, whose names are prefixed in a manner to avoid collisions; any should
+ be re-defined prior to use elsewhere.
 
  @param[SET_HASH, SET_IS_EQUAL]
  A function satisfying <typedef:<PS>SET_HASH> and <typedef:<PS>is_equal_fn>;
@@ -63,7 +64,7 @@
 #error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
 #endif
 #if defined(SET_RECALCULATE) && defined(SET_INVERSE_HASH)
-#error SET_INVERSE_HASH has to cache the hash; conflicts with SET_RECALCULATE.
+#error SET_INVERSE_HASH has to store the hash; conflicts with SET_RECALCULATE.
 #endif
 #if defined(SET_TO_STRING_NAME) && !defined(SET_TO_STRING)
 #error SET_TO_STRING_NAME requires SET_TO_STRING.
@@ -99,27 +100,21 @@
  <typedef:<PS>hash_fn>. */
 typedef SET_UINT PS_(uint);
 
-/** This is the same type as <typedef:<PS>uint>, but different meaning.
- `struct { <PS>uint has_next : 1, index : sizeof(<PS>uint) * CHAR_BIT - 1; }`,
- if we could do that portably. Thus, because of simplifications, half the range
- of this type presents an upper-limit to how many entries are possible. */
-typedef SET_UINT PS_(uint_token);
-/** A `token` is null if it has no `next` and `index`. */
-static int PS_(token_exists)(const PS_(uint_token) token)
-	{ return !token; }
-/** Does `token` have a next?
- <fn:<PS>token_has_next> -> <fn:<PS>token_exists> */
-static int PS_(token_has_next)(const PS_(uint_token) token)
-	{ return token & 1; }
-/** Gets the <typedef:<PS>uint> value of `token`. !<fn:<PS>token_exists> -> 0 */
-static PS_(uint) PS_(token_value)(const PS_(uint_token) token)
-	{ return token >> 1; }
+/** This is the same type as <typedef:<PS>uint>, but different meaning. Roughly,
+ `struct { <PS>uint has_next : 1, value : sizeof(<PS>uint) * CHAR_BIT - 1; }`. */
+typedef SET_UINT PS_(index);
+/** A `idx` is 'null' if it has no `next` and `value`. */
+static int PS_(index_exists)(const PS_(index) idx) { return !idx; }
+/** Does `idx` have a next? */
+static int PS_(index_has_next)(const PS_(index) idx) { return idx & 1; }
+/** Gets the <typedef:<PS>uint> value of `idx`. Half the range of this type
+ presents an upper-limit to how many entries are possible. */
+static PS_(uint) PS_(index_value)(const PS_(index) idx) { return idx >> 1; }
 
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PS_(type);
-
 /** Used on read-only; including `const` annotation in `SET_TYPE` is not
- supported, (yet.) */
+ supported, (yet?) */
 typedef const SET_TYPE PS_(ctype);
 
 /** A map from <typedef:<PS>ctype> onto <typedef:<PS>uint>. Usually should use
@@ -129,7 +124,6 @@ typedef const SET_TYPE PS_(ctype);
  <https://github.com/aappleby/smhasher/>,
  <https://github.com/sindresorhus/fnv1a>. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ctype));
-
 /* Check that `SET_HASH` is a function implementing <typedef:<PS>SET_HASH>. */
 static const PS_(hash_fn) PS_(hash) = (SET_HASH);
 
@@ -149,11 +143,9 @@ typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
-/** Like coalesced-hashing, in that, like open-addressing, in that it stores
- collision keys in another bucket, and like separate-chaining, each bucket is a
- linked-list of keys. However, we don't do coalescing. */
+/** Like coalesced-hashing, but simplified, we don't do coalescing. */
 struct PS_(bucket) {
-	PS_(uint_token) next;
+	PS_(index) next;
 #ifndef SET_RECALCULATE /* <!-- cache */
 	PS_(uint) hash;
 #endif /* cache --> */
@@ -170,12 +162,12 @@ struct S_(set) {
 	struct PS_(bucket) *buckets;
 	unsigned log_capacity;
 	PS_(uint) size;
-	PS_(uint_token) top;
+	PS_(index) top;
 };
 
 /** Gets the hash of an occupied `bucket`, which should be consistent. */
 static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && PS_(token_exists)(bucket->next));
+	assert(bucket && PS_(index_exists)(bucket->next));
 #ifdef SET_RECALCULATE /* <!-- !cache */
 	return PS_(hash)(&bucket->data);
 #else /* !cache --><!-- cache */
@@ -185,7 +177,7 @@ static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
 
 /** Gets the key of an occupied `bucket`. */
 static PS_(type) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && PS_(token_exists)(bucket->next));
+	assert(bucket && PS_(index_exists)(bucket->next));
 #ifdef SET_INVERSE_HASH
 	return PS_(inverse_hash_fn)(&bucket->hash);
 #else
@@ -194,7 +186,7 @@ static PS_(type) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 }
 
 /** @return Indexes a bucket from `set` given the `hash`. */
-static PS_(uint) PS_(hash_to_index)(struct S_(set) *const set,
+static PS_(index) PS_(hash_to_index)(struct S_(set) *const set,
 	const PS_(uint) hash)
 	{ return hash & ((1 << set->log_capacity) - 1); }
 
