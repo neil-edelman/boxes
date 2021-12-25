@@ -192,27 +192,25 @@ static PS_(index) PS_(hash_to_index)(struct S_(set) *const set,
 
 /** `to_bucket` will be search linearly for `key`.
  @param[hash] Must match the hash of `key`.
- @fixme Fix for inverse. */
+ @fixme Fix for inverse. @fixme Move to front. */
 static PS_(type) *PS_(get)(struct S_(set) *const set,
 	const PS_(type) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
-	PS_(uint_token) next;
+	PS_(index) next;
 	assert(set);
 	bucket = set->buckets + PS_(hash_to_index)(set, hash);
 	next = bucket->next;
-	if(!PS_(token_exists)(next)) return 0; /* This is not an occupied bucket. */
+	if(!PS_(index_exists)(next)) return 0; /* Not an occupied bucket. */
 	do {
-#ifndef SET_RECALCULATE /* <!-- cache: quick out. */
+#ifdef SET_RECALCULATE /* <!-- !cache */
+		(void)(hash);
+#else /* !cache --><!-- cache: quick out. */
 		if(hash != bucket->hash) continue;
 #endif /* cache --> */
-		/* fixme: Move to front! */
 		if(PS_(equal)(key, bucket->key)) return &bucket->key;
-	} while(PS_(token_has_next)(next)
-		&& (bucket = set->buckets + PS_(token_value)(next),
-		next = bucket->next, 1));
-#ifdef SET_RECALCULATE /* <!-- !cache */
-	(void)(hash); /* Not used in this case. */
-#endif /* !cache --> */
+	} while(PS_(index_has_next)(next)
+		&& (bucket = set->buckets + PS_(index_value)(next),
+		next = bucket->next, assert(PS_(index_exists)(next)), 1));
 	return 0;
 }
 
@@ -222,34 +220,37 @@ static PS_(type) *PS_(get)(struct S_(set) *const set,
  allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
-static int PS_(reserve)(struct S_(set) *const set,
-	const size_t min_capacity) {
+static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	struct PS_(bucket) *buckets, *b, *b_end;
+	/* Not sure how the bits are more than the range works; just keep on doing
+	 this until someone points out otherwise. */
 	const unsigned log_c0 = set->log_capacity,
 		log_limit = sizeof(PS_(uint)) * CHAR_BIT - 1;
 	unsigned log_c1;
-	PS_(uint) c0 = (PS_(uint))1 << log_c0, c1, mask;
-	/* One did hash <typedef:<PS>uint> to an unsigned type, right? */
-	assert(set && c0 && log_c0 <= log_limit && (log_c0 >= 3 || !log_c0)
-		&& (PS_(uint))-1 > 0);
-	/* Ca'n't be expanded further; the load factor will increase. */
-	if(log_c0 >= log_limit) { assert(log_c0 == log_limit); return 1; }
-	{
-		if(log_c0 < 3) log_c1 = 3ul,    c1 = 8ul;
-		else           log_c1 = log_c0, c1 = c0;
-		while(c1 < no_buckets) log_c1++, c1 <<= 1;
-	}
-	/* It's under the critical load factor; don't need to do anything. */
+	const PS_(uint) max_uint = ~(PS_(uint))0,
+		limit_uint = (PS_(uint))1 << log_limit;
+	PS_(uint) c0 = (PS_(uint))1 << log_c0, c1, size1, mask;
+	/* One did set <typedef:<PS>uint> to an unsigned type, right? */
+	assert(set && c0 && log_c0 <= log_limit && (PS_(uint))-1 > 0
+		&& (log_c0 >= 3 && set->buckets || !log_c0 && !set->buckets)
+		&& n <= max_uint && set->size <= max_uint && limit_uint < max_uint);
+	printf("max %lu, limit %lu, n %lu\n",
+		(unsigned long)max_uint, (unsigned long)limit_uint, (unsigned long)n);
+	if(max_uint - set->size > n || limit_uint < (size1 = set->size + n))
+		return errno = ERANGE, 0;
+	if(set->buckets) log_c1 = log_c0, c1 = c0;
+	else             log_c1 = 3ul,    c1 = 8ul;
+	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
+	/* Need to allocate more. */
 	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	set->buckets = buckets;
-	set->log_capacity = log_c1;
-	/* The mask needs domain `c0 \in [1, max]`, but we want 0 for loops. */
+	set->buckets = buckets, set->log_capacity = log_c1;
+	/* The mask needs domain `c0 \in [1, max]`, want 0 for initialization. */
 	mask = (c1 - 1) ^ (c0 - 1), assert(mask);
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
 	/* Initialize to contain no elements. */
-	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->head = 0;
+	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->next = 0;
 	/* Expectation value of rehashing an entry is half, (usually.) */
 	for(b = buckets, b_end = buckets + c0; b < b_end; b++) {
 		struct PS_(entry) **to_x, *x;
