@@ -309,6 +309,9 @@ typedef int (*PS_(replace_fn))(PS_(type) original, PS_(type) replace);
 static int PS_(false)(PS_(type) original, PS_(type) replace)
 	{ (void)(original); (void)(replace); return 0; }
 
+/* **********fixme*/
+static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
+
 /** Put `key` in `hash` as long as `replace` is null or returns true.
  @param[equal] If non-null, the equal element, if any. If `replace`
  returns false, the address of `key`.
@@ -317,73 +320,61 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	PS_(type) key, PS_(type) *equal) {
 	struct PS_(bucket) *bucket;
 	PS_(uint) hash;
-	PS_(index) next = 0;
+	PS_(index) heir = 0;
+	char z[12];
 	assert(set && key);
+	PS_(to_string)(&key, &z);
+	printf("put %s\n", z);
 	if(equal) *equal = 0;
 	hash = PS_(hash)(key);
 	if(!set->buckets || !(bucket = PS_(get)(set, key, hash))) { /* Expand. */
+		printf("put: expand\n");
 		if(!PS_(buffer)(set, 1)) return 0;
 		bucket = set->buckets + PS_(hash_to_index)(set, hash);
-		assert(!PS_(index_is_occupied(bucket->next)));
+		assert(!bucket->heir);
 	} else { /* Equal element. */
-		if(equal) *equal = PS_(bucket_key)(bucket);
-		next = bucket->next;
-		bucket->next = 0;
+		printf("put: replace\n");
+		if(replace && !replace(PS_(bucket_key)(bucket), key))
+			{ if(equal) *equal = key; return 1; }
+		if(equal) *equal = PS_(bucket_key)(bucket); /* fixme: Duplicate. */
+		heir = bucket->heir, bucket->heir = 0;
 	}
-
-	if(!(to_x = PS_(bucket_link)(bucket, set, key))) goto grow_table;
-	x = *to_x; /* Deal with duplicates. */
-	if(replace && !replace(x->key, key))
-		{ if(equal) *equal = key; return 1; }
-	if(collide) *collide = x->key;
-	*to_x = x->next;
-	goto add_element;
-grow_table:
-add_element:
-	x->key = key;
-	x->next = bucket->head, bucket->head = x;
-#ifndef SET_RECALCULATE /* <!-- cache: quick out. */
-	x->hash = hash;
-#endif /* cache --> */
+	PS_(fill_bucket)(bucket, key, hash); /* fixme: Robin-hood. */
+	bucket->heir = heir;
 	return 1;
 }
 
-/** Initialises `hash` to idle. @order \Theta(1) @allow */
-static void S_(set)(struct S_(set) *const hash)
-	{ assert(hash); hash->buckets = 0; hash->entry_size = 0; hash->log_capacity = 0;
-	PS_(entry_pool)(&hash->entries); }
+/** Initialises `set` to idle. @order \Theta(1) @allow */
+static void S_(set)(struct S_(set) *const set) { assert(set); set->buckets = 0;
+	set->log_capacity = 0; set->size = 0; set->top = 0; }
 
-/** Destroys `hash` and returns it to idle. @allow */
-static void S_(set_)(struct S_(set) *const hash)
-	{ assert(hash), free(hash->buckets), PS_(entry_pool_)(&hash->entries);
-	S_(set)(hash); }
+/** Destroys `set` and returns it to idle. @allow */
+static void S_(set_)(struct S_(set) *const set)
+	{ assert(set), free(set->buckets); S_(set)(set); }
 
 /** Clears and removes all entries from `hash`. The capacity and memory of the
  hash table is preserved, but all previous values are un-associated. The load
  factor will be less until it reaches it's previous size.
- @param[hash] If null, does nothing. @order \Theta(`hash.buckets`) @allow */
-static void S_(set_clear)(struct S_(set) *const hash) {
+ @order \Theta(`set.buckets`) @allow */
+static void S_(set_clear)(struct S_(set) *const set) {
 	struct PS_(bucket) *b, *b_end;
-	assert(hash);
-	if(!hash->log_capacity) return;
-	for(b = hash->buckets, b_end = b + (1 << hash->log_bucket_size); b < b_end; b++)
-		b->head = 0;
-	hash->entry_size = 0;
-	PS_(entry_pool_clear)(&hash->entries);
+	assert(set);
+	if(!set->buckets) { assert(!set->log_capacity); return; }
+	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
+		b->heir = 0;
+	set->size = 0;
 }
 
 /** @return The value in `hash` which <typedef:<PS>is_equal_fn> `SET_IS_EQUAL`
  `key`, or, if no such value exists, null.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
-static PS_(type) S_(set_get)(struct S_(set) *const hash, const PS_(type) key) {
-	struct PS_(entry) **to_x;
-	PS_(uint) hash;
-	assert(hash);
-	if(!hash->buckets) return 0;
-	hash = PS_(set)(key);
-	to_x = PS_(bucket_link)(PS_(get_bucket)(hash, hash), hash, key);
-	return to_x ? (*to_x)->key : 0;
+static PS_(type) S_(set_get)(struct S_(set) *const set, const PS_(type) key) {
+	struct PS_(bucket) *b;
+	assert(set);
+	if(!set->buckets) { assert(!set->log_capacity); return 0; }
+	b = PS_(get)(set, key, PS_(hash)(key));
+	return b ? PS_(bucket_key)(b) : 0;
 }
 
 #if 0
@@ -448,26 +439,25 @@ static struct S_(setlink) *S_(set_remove)(struct S_(set) *const hash,
 /* <!-- iterate interface */
 
 /* Contains all iteration parameters. */
-struct PS_(iterator)
-	{ const struct S_(set) *hash; size_t bucket_idx; struct PS_(entry) *entry; };
+struct PS_(iterator) { const struct S_(set) *set; PS_(uint) idx; };
 
-/** Loads `hash` into `it`. @implements begin */
+/** Loads `set` (can be null) into `it`. @implements begin */
 static void PS_(begin)(struct PS_(iterator) *const it,
-	const struct S_(set) *const hash)
-	{ assert(it && hash), it->hash = hash, it->bucket_idx = 0, it->entry = 0; }
+	const struct S_(set) *const set)
+	{ assert(it), it->set = set, it->idx = 0; }
 
 /** Advances `it`. @implements next */
 static PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
-	const size_t bucket_end = 1 << it->hash->log_capacity;
-	assert(it && it->hash);
-	if(!it->hash->buckets) return 0;
-	while(it->bucket_idx < bucket_end) {
-		if(!it->entry) it->entry = it->hash->buckets[it->bucket_idx].head;
-		else it->entry = it->entry->next;
-		if(it->entry) return &it->entry->key;
-		it->bucket_idx++;
+	PS_(uint) bucket_end;
+	assert(it);
+	if(!it->set || !it->set->buckets) return 0;
+	bucket_end = 1 << it->set->log_capacity;
+	while(it->idx < bucket_end) {
+		struct PS_(bucket) *b = it->set->buckets + it->idx;
+		it->idx++;
+		if(b->heir) return &b->key; /* Fixme! */
 	}
-	it->hash = 0, it->bucket_idx = 0, it->entry = 0;
+	it->set = 0, it->idx = 0;
 	return 0;
 }
 
