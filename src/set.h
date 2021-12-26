@@ -103,8 +103,6 @@ typedef SET_UINT PS_(uint);
 /** This is the same type as <typedef:<PS>uint>, but different meaning. Roughly,
  `struct { <PS>uint has_next : 1, value : sizeof(<PS>uint) * CHAR_BIT - 1; }`.*/
 typedef SET_UINT PS_(index);
-/** `idx` is null if `next` and `value` are null. */
-static int PS_(index_is_occupied)(const PS_(index) idx) { return !idx; }
 /** Does `idx` have a next? */
 static int PS_(index_has_next)(const PS_(index) idx) { return idx & 1; }
 /** Gets the <typedef:<PS>uint> value of `idx`. Half the range of this type
@@ -148,9 +146,9 @@ typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
-/** One bucket holds (at most) one key. Next leads to collision stack. */
+/** One bucket holds (at most) one key. */
 struct PS_(bucket) {
-	PS_(index) next;
+	PS_(index) idx;
 #ifndef SET_RECALCULATE /* <!-- cache */
 	PS_(uint) hash;
 #endif /* cache --> */
@@ -162,7 +160,7 @@ struct PS_(bucket) {
 /** Fill `bucket` with `key` and `hash`. The bucket must be empty. */
 static void PS_(fill_bucket)(struct PS_(bucket) *const bucket,
 	const PS_(type) key, const PS_(uint) hash) {
-	assert(bucket && !PS_(index_is_occupied)(bucket->next));
+	assert(bucket && !bucket->idx);
 #ifndef SET_RECALCULATE /* <!-- cache */
 	bucket->hash = hash;
 #else /* cache --><!-- !cache */
@@ -173,12 +171,12 @@ static void PS_(fill_bucket)(struct PS_(bucket) *const bucket,
 #else /* !inv --><!-- inv */
 	(void)key;
 #endif /* inv --> */
-	PS_(set_index_occupied)(&bucket->next);
+	PS_(set_index_occupied)(&bucket->idx);
 }
 
 /** Gets the hash of an occupied `bucket`, which should be consistent. */
 static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && PS_(index_is_occupied)(bucket->next));
+	assert(bucket && bucket->idx);
 #ifdef SET_RECALCULATE
 	return PS_(hash)(&bucket->data);
 #else
@@ -188,7 +186,7 @@ static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
 
 /** Gets the key of an occupied `bucket`. */
 static PS_(type) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && PS_(index_is_occupied)(bucket->next));
+	assert(bucket && bucket->idx);
 #ifdef SET_INVERSE_HASH
 	return PS_(inverse_hash_fn)(&bucket->hash);
 #else
@@ -201,9 +199,9 @@ static PS_(type) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 
  ![States.](../web/states.png) */
 struct S_(set) {
-	struct PS_(bucket) *buckets; /* @ has zero/one key; next tells which. */
+	struct PS_(bucket) *buckets; /* @ has zero/one key. */
 	unsigned log_capacity; /* Applies to buckets. */
-	PS_(uint) size; /* How many keys. */
+	PS_(uint) size; /* How many keys, <= capacity. */
 	PS_(index) top; /* Stack of collided entries growing from the back. */
 };
 
@@ -216,13 +214,12 @@ static PS_(index) PS_(hash_to_index)(struct S_(set) *const set,
 static struct PS_(bucket) *PS_(get)(struct S_(set) *const set,
 	const PS_(type) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
-	PS_(index) idx, next;
+	PS_(index) idx, busy;
 	assert(set && set->buckets);
 	bucket = set->buckets + (idx = PS_(hash_to_index)(set, hash));
-	next = bucket->next;
+	busy = bucket->idx;
 	/* Not the start of a bucket: not occupied or in the collision stack. */
-	if(!PS_(index_is_occupied)(next)
-	   || PS_(index_is_occupied)(set->top) && set->top <= idx
+	if(!busy || set->top && PS_(index_value)(set->top) <= idx
 	   && idx != PS_(hash_to_index)(set, PS_(bucket_hash)(bucket))) return 0;
 	do {
 #ifdef SET_RECALCULATE /* <!-- !cache */
@@ -231,9 +228,9 @@ static struct PS_(bucket) *PS_(get)(struct S_(set) *const set,
 		if(hash != bucket->hash) continue;
 #endif /* cache --> */
 		if(PS_(equal)(key, bucket->key)) return bucket;
-	} while(PS_(index_has_next)(next)
-		&& (bucket = set->buckets + PS_(index_value)(next),
-		next = bucket->next, assert(PS_(index_is_occupied)(next)), 1));
+	} while(PS_(index_has_next)(busy)
+		&& (bucket = set->buckets + PS_(index_value)(busy),
+		busy = bucket->idx, assert(busy), 1));
 	return 0;
 }
 
