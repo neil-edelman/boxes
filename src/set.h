@@ -148,7 +148,7 @@ static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
 /** One bucket holds (at most) one key. */
 struct PS_(bucket) {
-	PS_(index) idx;
+	PS_(index) heir;
 #ifndef SET_RECALCULATE /* <!-- cache */
 	PS_(uint) hash;
 #endif /* cache --> */
@@ -160,7 +160,7 @@ struct PS_(bucket) {
 /** Fill `bucket` with `key` and `hash`. The bucket must be empty. */
 static void PS_(fill_bucket)(struct PS_(bucket) *const bucket,
 	const PS_(type) key, const PS_(uint) hash) {
-	assert(bucket && !bucket->idx);
+	assert(bucket && !bucket->heir);
 #ifndef SET_RECALCULATE /* <!-- cache */
 	bucket->hash = hash;
 #else /* cache --><!-- !cache */
@@ -171,12 +171,12 @@ static void PS_(fill_bucket)(struct PS_(bucket) *const bucket,
 #else /* !inv --><!-- inv */
 	(void)key;
 #endif /* inv --> */
-	PS_(set_index_occupied)(&bucket->idx);
+	PS_(set_index_occupied)(&bucket->heir);
 }
 
 /** Gets the hash of an occupied `bucket`, which should be consistent. */
 static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && bucket->idx);
+	assert(bucket && bucket->heir);
 #ifdef SET_RECALCULATE
 	return PS_(hash)(&bucket->data);
 #else
@@ -186,7 +186,7 @@ static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
 
 /** Gets the key of an occupied `bucket`. */
 static PS_(type) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && bucket->idx);
+	assert(bucket && bucket->heir);
 #ifdef SET_INVERSE_HASH
 	return PS_(inverse_hash_fn)(&bucket->hash);
 #else
@@ -214,24 +214,25 @@ static PS_(index) PS_(hash_to_index)(struct S_(set) *const set,
 static struct PS_(bucket) *PS_(get)(struct S_(set) *const set,
 	const PS_(type) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
-	PS_(index) idx, busy;
-	assert(set && set->buckets);
+	PS_(index) idx, heir;
+	assert(set && set->buckets && set->log_capacity);
 	bucket = set->buckets + (idx = PS_(hash_to_index)(set, hash));
-	busy = bucket->idx;
-	/* Not the start of a bucket: not occupied or in the collision stack. */
-	if(!busy || set->top && PS_(index_value)(set->top) <= idx
+	/* Not the start of a bucket: empty or in the collision stack. */
+	if(!(heir = bucket->heir) || set->top && PS_(index_value)(set->top) <= idx
 	   && idx != PS_(hash_to_index)(set, PS_(bucket_hash)(bucket))) return 0;
-	do {
-#ifdef SET_RECALCULATE /* <!-- !cache */
-		(void)(hash);
+	for( ; ; ) {
+#ifdef SET_RECALCULATE /* <!-- !cache: always go to next predicate. */
+		const int hashes_are_equal = ((void)(hash), 1);
 #else /* !cache --><!-- cache: quick out. */
-		if(hash != bucket->hash) continue;
+		const int hashes_are_equal = hash == bucket->hash;
 #endif /* cache --> */
-		if(PS_(equal)(key, bucket->key)) return bucket;
-	} while(PS_(index_has_next)(busy)
-		&& (bucket = set->buckets + PS_(index_value)(busy),
-		busy = bucket->idx, assert(busy), 1));
-	return 0;
+		if(hashes_are_equal && PS_(equal)(key, bucket->key)) return bucket;
+		if(!PS_(index_has_next)(heir)) return 0;
+		idx = PS_(index_value)(heir), assert(idx < 1 << set->log_capacity
+			&& set->top && PS_(index_value)(set->top) <= idx);
+		bucket = set->buckets + idx;
+		heir = bucket->heir, assert(heir); /* Not empty. */
+	}
 }
 
 /** Ensures that `set` has enough buckets to fill `n` more than the size.
@@ -266,19 +267,19 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	set->buckets = buckets, set->log_capacity = log_c1;
 	/* Want zero for initialization of extra buckets and stack is re-done. */
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
-	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->next = 0;
+	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->heir = 0;
 	set->top = 0;
 	/* Expectation value of rehashing a closed entry is the growth amount. */
 	for(i = 0; i < c0; i++) {
-		struct PS_(bucket) *b_closed;
+		struct PS_(bucket) *c;
 		PS_(index) j;
 		PS_(uint) hash;
 		b = buckets + i;
-		if(!PS_(index_is_occupied)(b->next)) {
-			assert(n > 1 /* Load factor is one, must have been asking more. */
-				&& (!PS_(index_is_occupied)(set->top) /* No stack. */
+		if(!b->heir) {
+			assert(n > 1 /* Must have been asking more. */
+				&& (!set->top /* No stack. */
 				|| PS_(index_has_next)(set->top) /* It always has next. */
-				&& b - buckets < PS_(index_value)(set->top) /* Stack full. */));
+				&& i < PS_(index_value)(set->top) /* But stack full. */));
 			printf("%lu: empty\n", (unsigned long)i);
 			continue; /* Empty bucket. */
 		}
@@ -286,10 +287,10 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			{ printf("%lu: right where it's supposed to be\n",
 			(unsigned long)i);
 			continue; /* Right where it's supposed to be. */ }
-		b_closed = buckets + j, assert(b < b_closed);
-		if(!PS_(index_is_occupied)(b_closed->next)) {
-			PS_(fill_bucket)(b_closed, b->key, b->hash);
-			b->next = 0;
+		c = buckets + j, assert(b < c);
+		if(!c->heir) {
+			PS_(fill_bucket)(c, b->key, b->hash);
+			b->heir = 0;
 			printf("%lu: moved to unoccupied %lu\n",
 				(unsigned long)i, (unsigned long)j);
 			continue; /* Moved the bucket to an unoccupied spot. */
