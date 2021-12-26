@@ -111,7 +111,7 @@ static int PS_(index_has_next)(const PS_(index) idx) { return idx & 1; }
  presents an upper-limit to how many entries are possible. */
 static PS_(uint) PS_(index_value)(const PS_(index) idx) { return idx >> 1; }
 /** Initialize `pidx` to a bucket with one key. */
-static void PS_(set_index_is_occupied)(PS_(index) *const pidx)
+static void PS_(set_index_occupied)(PS_(index) *const pidx)
 	{ assert(pidx); *pidx = 2; }
 /** Set `pidx` to have a `next`, thus `[2,]` keys. */
 static void PS_(set_index_next)(PS_(index) *const pidx, const PS_(index) next)
@@ -173,7 +173,7 @@ static void PS_(fill_bucket)(struct PS_(bucket) *const bucket,
 #else /* !inv --><!-- inv */
 	(void)key;
 #endif /* inv --> */
-	PS_(set_index_is_occupied)(&bucket->next);
+	PS_(set_index_occupied)(&bucket->next);
 }
 
 /** Gets the hash of an occupied `bucket`, which should be consistent. */
@@ -209,22 +209,20 @@ struct S_(set) {
 
 /** @return Indexes a bucket from `set` given the `hash`. */
 static PS_(index) PS_(hash_to_index)(struct S_(set) *const set,
-	const PS_(uint) hash)
-	{ return hash & ((1 << set->log_capacity) - 1); }
+	const PS_(uint) hash) { return hash & ((1 << set->log_capacity) - 1); }
 
-/** `to_bucket` will be search linearly for `key`.
- @param[hash] Must match the hash of `key`.
+/** `set` will be searched linearly for `key` which has `hash`.
  @fixme Fix for inverse. @fixme Move to front? */
-static PS_(type) *PS_(get)(struct S_(set) *const set,
+static struct PS_(bucket) *PS_(get)(struct S_(set) *const set,
 	const PS_(type) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
 	PS_(index) idx, next;
-	assert(set);
+	assert(set && set->buckets);
 	bucket = set->buckets + (idx = PS_(hash_to_index)(set, hash));
 	next = bucket->next;
-	/* Not the start of a bucket. */
-	if(!PS_(index_is_occupied)(next) /* Not occupied. */
-	   || PS_(index_is_occupied)(set->top) && set->top <= idx /* Collision stack. */
+	/* Not the start of a bucket: not occupied or in the collision stack. */
+	if(!PS_(index_is_occupied)(next)
+	   || PS_(index_is_occupied)(set->top) && set->top <= idx
 	   && idx != PS_(hash_to_index)(set, PS_(bucket_hash)(bucket))) return 0;
 	do {
 #ifdef SET_RECALCULATE /* <!-- !cache */
@@ -232,7 +230,7 @@ static PS_(type) *PS_(get)(struct S_(set) *const set,
 #else /* !cache --><!-- cache: quick out. */
 		if(hash != bucket->hash) continue;
 #endif /* cache --> */
-		if(PS_(equal)(key, bucket->key)) return &bucket->key;
+		if(PS_(equal)(key, bucket->key)) return bucket;
 	} while(PS_(index_has_next)(next)
 		&& (bucket = set->buckets + PS_(index_value)(next),
 		next = bucket->next, assert(PS_(index_is_occupied)(next)), 1));
@@ -253,7 +251,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) max_uint = (PS_(uint))~(PS_(uint))0,
 		limit_uint = (PS_(uint))1 << log_limit;
-	PS_(index) c0 = (PS_(uint))1 << log_c0, c1, size1, top, i;
+	PS_(index) c0 = (PS_(uint))1 << log_c0, c1, size1, i;
 	assert(set && c0 && log_c0 <= log_limit && (PS_(uint))-1 > 0
 		&& (log_c0 >= 3 && set->buckets || !log_c0 && !set->buckets)
 		&& n <= max_uint && set->size <= max_uint && limit_uint < max_uint);
@@ -314,32 +312,35 @@ static int PS_(false)(PS_(type) original, PS_(type) replace)
 	{ (void)(original); (void)(replace); return 0; }
 
 /** Put `key` in `hash` as long as `replace` is null or returns true.
- @param[collide] If non-null, the collided element, if any. If `replace`
+ @param[equal] If non-null, the equal element, if any. If `replace`
  returns false, the address of `key`.
  @return Success. @throws[malloc] */
 static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
-	PS_(type) key, PS_(type) *collide) {
+	PS_(type) key, PS_(type) *equal) {
 	struct PS_(bucket) *bucket;
 	PS_(uint) hash;
-	PS_(index) idx;
+	PS_(index) next = 0;
 	assert(set && key);
+	if(equal) *equal = 0;
 	hash = PS_(hash)(key);
-	if(collide) *collide = 0;
-	if(!set->buckets) { assert(!set->log_capacity); goto grow_table; }
-	idx = PS_(hash_to_index)(set, hash);
+	if(!set->buckets || !(bucket = PS_(get)(set, key, hash))) { /* Expand. */
+		if(!PS_(buffer)(set, 1)) return 0;
+		bucket = set->buckets + PS_(hash_to_index)(set, hash);
+		assert(!PS_(index_is_occupied(bucket->next)));
+	} else { /* Equal element. */
+		if(equal) *equal = PS_(bucket_key)(bucket);
+		next = bucket->next;
+		bucket->next = 0;
+	}
 
 	if(!(to_x = PS_(bucket_link)(bucket, set, key))) goto grow_table;
 	x = *to_x; /* Deal with duplicates. */
 	if(replace && !replace(x->key, key))
-		{ if(collide) *collide = key; return 1; }
+		{ if(equal) *equal = key; return 1; }
 	if(collide) *collide = x->key;
 	*to_x = x->next;
 	goto add_element;
 grow_table:
-	if((hash->entry_size < (size_t)-1
-		&& !PS_(bucket_reserve)(hash, hash->entry_size + 1))
-		|| !(x = PS_(new_entry)(hash))) return 0;
-	bucket = PS_(get_bucket)(set, set); /* Possibly invalidated. */
 add_element:
 	x->key = key;
 	x->next = bucket->head, bucket->head = x;
