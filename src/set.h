@@ -110,6 +110,12 @@ static int PS_(index_has_next)(const PS_(index) idx) { return idx & 1; }
 /** Gets the <typedef:<PS>uint> value of `idx`. Half the range of this type
  presents an upper-limit to how many entries are possible. */
 static PS_(uint) PS_(index_value)(const PS_(index) idx) { return idx >> 1; }
+/** Set `pidx` to existence but not next. */
+static void PS_(set_index_exists)(PS_(index) *const pidx)
+	{ assert(pidx); *pidx = 2; }
+/** Set `pidx` to have a `next`. */
+static void PS_(set_index_next)(PS_(index) *const pidx, const PS_(index) next)
+	{ assert(pidx); *pidx = (next << 1) + 1; }
 
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PS_(type);
@@ -143,7 +149,7 @@ typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
-/** Like coalesced-hashing, but simplified, we don't do coalescing. */
+/** Like coalesced-hashing, but don't do coalescing. */
 struct PS_(bucket) {
 	PS_(index) next;
 #ifndef SET_RECALCULATE /* <!-- cache */
@@ -154,16 +160,22 @@ struct PS_(bucket) {
 #endif /* !inv --> */
 };
 
-/** To initialize, see <fn:<S>hash>, `SET_IDLE`, `{0}` (`C99`,) or being
- `static`.
-
- ![States.](../web/states.png) */
-struct S_(set) {
-	struct PS_(bucket) *buckets;
-	unsigned log_capacity;
-	PS_(uint) size;
-	PS_(index) top;
-};
+/** Fill `bucket` with `key` and `hash`. The bucket must be empty. */
+static void PS_(fill_bucket)(struct PS_(bucket) *const bucket,
+	const PS_(type) key, const PS_(uint) hash) {
+	assert(bucket && !PS_(index_exists)(bucket->next));
+#ifndef SET_RECALCULATE /* <!-- cache */
+	bucket->hash = hash;
+#else /* cache --><!-- !cache */
+	(void)hash;
+#endif /* !cache --> */
+#ifndef SET_INVERSE_HASH /* <!-- !inv */
+	bucket->key = key;
+#else /* !inv --><!-- inv */
+	(void)key;
+#endif /* inv --> */
+	PS_(set_index_exists)(&bucket->next);
+}
 
 /** Gets the hash of an occupied `bucket`, which should be consistent. */
 static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
@@ -185,6 +197,17 @@ static PS_(type) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 #endif
 }
 
+/** To initialize, see <fn:<S>hash>, `SET_IDLE`, `{0}` (`C99`,) or being
+ `static`.
+
+ ![States.](../web/states.png) */
+struct S_(set) {
+	struct PS_(bucket) *buckets; /* @ has zero/one key; next tells which. */
+	unsigned log_capacity; /* Applies to buckets. */
+	PS_(uint) size; /* How many keys. */
+	PS_(index) top; /* Stack of collided entries growing from the back. */
+};
+
 /** @return Indexes a bucket from `set` given the `hash`. */
 static PS_(index) PS_(hash_to_index)(struct S_(set) *const set,
 	const PS_(uint) hash)
@@ -192,15 +215,18 @@ static PS_(index) PS_(hash_to_index)(struct S_(set) *const set,
 
 /** `to_bucket` will be search linearly for `key`.
  @param[hash] Must match the hash of `key`.
- @fixme Fix for inverse. @fixme Move to front. */
+ @fixme Fix for inverse. @fixme Move to front? */
 static PS_(type) *PS_(get)(struct S_(set) *const set,
 	const PS_(type) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
-	PS_(index) next;
+	PS_(index) idx, next;
 	assert(set);
-	bucket = set->buckets + PS_(hash_to_index)(set, hash);
+	bucket = set->buckets + (idx = PS_(hash_to_index)(set, hash));
 	next = bucket->next;
-	if(!PS_(index_exists)(next)) return 0; /* Not an occupied bucket. */
+	/* Not the start of a bucket. */
+	if(!PS_(index_exists)(next) /* Not occupied. */
+	   || PS_(index_exists)(set->top) && set->top <= idx /* Collision stack. */
+	   && idx != PS_(hash_to_index)(set, PS_(bucket_hash)(bucket))) return 0;
 	do {
 #ifdef SET_RECALCULATE /* <!-- !cache */
 		(void)(hash);
@@ -214,23 +240,21 @@ static PS_(type) *PS_(get)(struct S_(set) *const set,
 	return 0;
 }
 
-/** Ensures that `set` has enough buckets to fill `min_capacity`.
- @param[min_capacity] If zero, does nothing.
+/** Ensures that `set` has enough buckets to fill `n` more than the size.
  @return Success; otherwise, `errno` will be hash. @throws[ERANGE] Tried
- allocating more then can fit in `size_t` or `realloc` doesn't follow [POSIX
+ allocating more then can fit in half <typedef:<PS>uint> or `realloc` doesn't
+ follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
  @throws[realloc] */
 static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	struct PS_(bucket) *buckets, *b, *b_end;
-	/* Not sure how the bits are more than the range works; just keep on doing
-	 this until someone points out otherwise. */
+	/* This may not work if the type has padding; loop manually? */
 	const unsigned log_c0 = set->log_capacity,
 		log_limit = sizeof(PS_(uint)) * CHAR_BIT - 1;
 	unsigned log_c1;
-	const PS_(uint) max_uint = ~(PS_(uint))0,
+	const PS_(uint) max_uint = (PS_(uint))~(PS_(uint))0,
 		limit_uint = (PS_(uint))1 << log_limit;
-	PS_(uint) c0 = (PS_(uint))1 << log_c0, c1, size1, mask;
-	/* One did set <typedef:<PS>uint> to an unsigned type, right? */
+	PS_(index) c0 = (PS_(uint))1 << log_c0, c1, size1, top, i;
 	assert(set && c0 && log_c0 <= log_limit && (PS_(uint))-1 > 0
 		&& (log_c0 >= 3 && set->buckets || !log_c0 && !set->buckets)
 		&& n <= max_uint && set->size <= max_uint && limit_uint < max_uint);
@@ -239,32 +263,45 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	if(max_uint - set->size > n || limit_uint < (size1 = set->size + n))
 		return errno = ERANGE, 0;
 	if(set->buckets) log_c1 = log_c0, c1 = c0;
-	else             log_c1 = 3ul,    c1 = 8ul;
+	else             log_c1 = 3,      c1 = 8;
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
 	/* Need to allocate more. */
 	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
 	set->buckets = buckets, set->log_capacity = log_c1;
-	/* The mask needs domain `c0 \in [1, max]`, want 0 for initialization. */
-	mask = (c1 - 1) ^ (c0 - 1), assert(mask);
+	/* Want zero for initialization of extra buckets and stack is re-done. */
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
-	/* Initialize to contain no elements. */
 	for(b = buckets + c0, b_end = buckets + c1; b < b_end; b++) b->next = 0;
-	/* Expectation value of rehashing an entry is half, (usually.) */
-	for(b = buckets, b_end = buckets + c0; b < b_end; b++) {
-		struct PS_(entry) **to_x, *x;
+	set->top = 0;
+	/* Expectation value of rehashing a closed entry is the growth amount. */
+	for(i = 0; i < c0; i++) {
+		struct PS_(bucket) *b_closed;
+		PS_(index) j;
 		PS_(uint) hash;
-		assert(!((PS_(uint))(b - buckets) & mask));
-		to_x = &b->head;
-		while(x = *to_x) {
-			struct PS_(bucket) *new_b;
-			hash = PS_(hash_from_entry)(x);
-			if(!(hash & mask)) { to_x = &x->next; continue; }
-			*to_x = x->next; /* Remove. */
-			new_b = PS_(get_bucket)(hash, hash);
-			x->next = new_b->head, new_b->head = x;
+		b = buckets + i;
+		if(!PS_(index_exists)(b->next)) {
+			assert(n > 1 /* Load factor is one, must have been asking more. */
+				&& (!PS_(index_exists)(set->top) /* No stack. */
+				|| PS_(index_has_next)(set->top) /* It always has next. */
+				&& b - buckets < PS_(index_value)(set->top) /* Stack full. */));
+			printf("%lu: empty\n", (unsigned long)i);
+			continue; /* Empty bucket. */
 		}
+		if((j = PS_(hash_to_index)(set, hash = PS_(bucket_hash)(b))) == i)
+			{ printf("%lu: right where it's supposed to be\n",
+			(unsigned long)i);
+			continue; /* Right where it's supposed to be. */ }
+		b_closed = buckets + j, assert(b < b_closed);
+		if(!PS_(index_exists)(b_closed->next)) {
+			PS_(fill_bucket)(b_closed, b->key, b->hash);
+			b->next = 0;
+			printf("%lu: moved to unoccupied %lu\n",
+				(unsigned long)i, (unsigned long)j);
+			continue; /* Moved the bucket to an unoccupied spot. */
+		}
+		/* Collision. */
+		assert(0);
 	}
 	return 1;
 }
@@ -284,12 +321,13 @@ static int PS_(false)(PS_(type) original, PS_(type) replace)
 static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	PS_(type) key, PS_(type) *collide) {
 	struct PS_(bucket) *bucket;
-	struct PS_(entry) **to_x = 0, *x = 0;
 	PS_(uint) hash;
+	PS_(index) idx;
 	assert(set && key);
 	hash = PS_(hash)(key);
 	if(collide) *collide = 0;
 	if(!set->buckets) goto grow_table;
+	idx = PS_(hash_to_index)(set, hash);
 	bucket = PS_(get_bucket)(set, set);
 	if(!(to_x = PS_(bucket_link)(bucket, set, key))) goto grow_table;
 	x = *to_x; /* Deal with duplicates. */
