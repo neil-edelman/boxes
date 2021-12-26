@@ -101,19 +101,19 @@
 typedef SET_UINT PS_(uint);
 
 /** This is the same type as <typedef:<PS>uint>, but different meaning. Roughly,
- `struct { <PS>uint has_next : 1, value : sizeof(<PS>uint) * CHAR_BIT - 1; }`. */
+ `struct { <PS>uint has_next : 1, value : sizeof(<PS>uint) * CHAR_BIT - 1; }`.*/
 typedef SET_UINT PS_(index);
-/** A `idx` is 'null' if it has no `next` and `value`. */
-static int PS_(index_exists)(const PS_(index) idx) { return !idx; }
+/** `idx` is null if `next` and `value` are null. */
+static int PS_(index_is_occupied)(const PS_(index) idx) { return !idx; }
 /** Does `idx` have a next? */
 static int PS_(index_has_next)(const PS_(index) idx) { return idx & 1; }
 /** Gets the <typedef:<PS>uint> value of `idx`. Half the range of this type
  presents an upper-limit to how many entries are possible. */
 static PS_(uint) PS_(index_value)(const PS_(index) idx) { return idx >> 1; }
-/** Set `pidx` to existence but not next. */
-static void PS_(set_index_exists)(PS_(index) *const pidx)
+/** Initialize `pidx` to a bucket with one key. */
+static void PS_(set_index_is_occupied)(PS_(index) *const pidx)
 	{ assert(pidx); *pidx = 2; }
-/** Set `pidx` to have a `next`. */
+/** Set `pidx` to have a `next`, thus `[2,]` keys. */
 static void PS_(set_index_next)(PS_(index) *const pidx, const PS_(index) next)
 	{ assert(pidx); *pidx = (next << 1) + 1; }
 
@@ -130,7 +130,7 @@ typedef const SET_TYPE PS_(ctype);
  <https://github.com/aappleby/smhasher/>,
  <https://github.com/sindresorhus/fnv1a>. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ctype));
-/* Check that `SET_HASH` is a function implementing <typedef:<PS>SET_HASH>. */
+/* Check that `SET_HASH` is a function implementing <typedef:<PS>hash_fn>. */
 static const PS_(hash_fn) PS_(hash) = (SET_HASH);
 
 #ifdef SET_INVERSE_HASH /* <!-- inv */
@@ -138,18 +138,17 @@ static const PS_(hash_fn) PS_(hash) = (SET_HASH);
  bijection with <typedef:<PS>uint>; this is inverse-mapping to
  <typedef:<PS>hash_fn>. This saves having to store the <typedef:<PS>type>. */
 typedef PS_(type) (*PS_(inverse_hash_fn))(PS_(uint));
-#error Not working.
+#error Fixme.
 #endif /* inv --> */
 
 /** Equivalence relation between <typedef:<PS>ctype> that satisfies
  `<PS>is_equal_fn(a, b) -> <PS>SET_HASH(a) == <PS>SET_HASH(b)`. */
 typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
-
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
-/** Like coalesced-hashing, but don't do coalescing. */
+/** One bucket holds (at most) one key. Next leads to collision stack. */
 struct PS_(bucket) {
 	PS_(index) next;
 #ifndef SET_RECALCULATE /* <!-- cache */
@@ -163,7 +162,7 @@ struct PS_(bucket) {
 /** Fill `bucket` with `key` and `hash`. The bucket must be empty. */
 static void PS_(fill_bucket)(struct PS_(bucket) *const bucket,
 	const PS_(type) key, const PS_(uint) hash) {
-	assert(bucket && !PS_(index_exists)(bucket->next));
+	assert(bucket && !PS_(index_is_occupied)(bucket->next));
 #ifndef SET_RECALCULATE /* <!-- cache */
 	bucket->hash = hash;
 #else /* cache --><!-- !cache */
@@ -174,22 +173,22 @@ static void PS_(fill_bucket)(struct PS_(bucket) *const bucket,
 #else /* !inv --><!-- inv */
 	(void)key;
 #endif /* inv --> */
-	PS_(set_index_exists)(&bucket->next);
+	PS_(set_index_is_occupied)(&bucket->next);
 }
 
 /** Gets the hash of an occupied `bucket`, which should be consistent. */
 static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && PS_(index_exists)(bucket->next));
-#ifdef SET_RECALCULATE /* <!-- !cache */
+	assert(bucket && PS_(index_is_occupied)(bucket->next));
+#ifdef SET_RECALCULATE
 	return PS_(hash)(&bucket->data);
-#else /* !cache --><!-- cache */
+#else
 	return bucket->hash;
-#endif /* cache --> */
+#endif
 }
 
 /** Gets the key of an occupied `bucket`. */
 static PS_(type) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && PS_(index_exists)(bucket->next));
+	assert(bucket && PS_(index_is_occupied)(bucket->next));
 #ifdef SET_INVERSE_HASH
 	return PS_(inverse_hash_fn)(&bucket->hash);
 #else
@@ -224,8 +223,8 @@ static PS_(type) *PS_(get)(struct S_(set) *const set,
 	bucket = set->buckets + (idx = PS_(hash_to_index)(set, hash));
 	next = bucket->next;
 	/* Not the start of a bucket. */
-	if(!PS_(index_exists)(next) /* Not occupied. */
-	   || PS_(index_exists)(set->top) && set->top <= idx /* Collision stack. */
+	if(!PS_(index_is_occupied)(next) /* Not occupied. */
+	   || PS_(index_is_occupied)(set->top) && set->top <= idx /* Collision stack. */
 	   && idx != PS_(hash_to_index)(set, PS_(bucket_hash)(bucket))) return 0;
 	do {
 #ifdef SET_RECALCULATE /* <!-- !cache */
@@ -236,7 +235,7 @@ static PS_(type) *PS_(get)(struct S_(set) *const set,
 		if(PS_(equal)(key, bucket->key)) return &bucket->key;
 	} while(PS_(index_has_next)(next)
 		&& (bucket = set->buckets + PS_(index_value)(next),
-		next = bucket->next, assert(PS_(index_exists)(next)), 1));
+		next = bucket->next, assert(PS_(index_is_occupied)(next)), 1));
 	return 0;
 }
 
@@ -280,9 +279,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		PS_(index) j;
 		PS_(uint) hash;
 		b = buckets + i;
-		if(!PS_(index_exists)(b->next)) {
+		if(!PS_(index_is_occupied)(b->next)) {
 			assert(n > 1 /* Load factor is one, must have been asking more. */
-				&& (!PS_(index_exists)(set->top) /* No stack. */
+				&& (!PS_(index_is_occupied)(set->top) /* No stack. */
 				|| PS_(index_has_next)(set->top) /* It always has next. */
 				&& b - buckets < PS_(index_value)(set->top) /* Stack full. */));
 			printf("%lu: empty\n", (unsigned long)i);
@@ -293,7 +292,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			(unsigned long)i);
 			continue; /* Right where it's supposed to be. */ }
 		b_closed = buckets + j, assert(b < b_closed);
-		if(!PS_(index_exists)(b_closed->next)) {
+		if(!PS_(index_is_occupied)(b_closed->next)) {
 			PS_(fill_bucket)(b_closed, b->key, b->hash);
 			b->next = 0;
 			printf("%lu: moved to unoccupied %lu\n",
@@ -326,9 +325,9 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	assert(set && key);
 	hash = PS_(hash)(key);
 	if(collide) *collide = 0;
-	if(!set->buckets) goto grow_table;
+	if(!set->buckets) { assert(!set->log_capacity); goto grow_table; }
 	idx = PS_(hash_to_index)(set, hash);
-	bucket = PS_(get_bucket)(set, set);
+
 	if(!(to_x = PS_(bucket_link)(bucket, set, key))) goto grow_table;
 	x = *to_x; /* Deal with duplicates. */
 	if(replace && !replace(x->key, key))
