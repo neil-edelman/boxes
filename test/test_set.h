@@ -19,23 +19,25 @@ typedef void (*PS_(action_fn))(PS_(type));
 //static const PS_(action_fn) PS_(filler) = (SET_TEST); ****
 
 /** Count how many are in the `bucket`. @order \O(`bucket.items`) */
-static size_t PS_(count)(struct PS_(bucket) *const bucket) {
-	const struct PS_(entry) *x;
+static size_t PS_(count)(const struct S_(set) *const set,
+	struct PS_(entry) *e) {
 	size_t c = 0;
-	assert(bucket);
-	for(x = bucket->head; x; x = x->next) c++;
+	assert(e);
+	if(!e->heir) return 0;
+	for( ; ; e = set->entries + e->heir)
+		{ c++; if(!PS_(index_has_next)(e->heir)) break; }
 	return c;
 }
 
 /** Collect stats; <Welford1962Note>, on `hash` and output them to `fp`.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PS_(stats)(const struct S_(set) *const hash, FILE *fp) {
+static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 	struct { size_t n, cost, max_bin; double mean, ssdm; }
 		msr = { 0, 0, 0, 0.0, 0.0 };
 	size_t size = 0;
-	if(hash && hash->buckets) {
-		struct PS_(bucket) *b = hash->buckets,
-			*b_end = b + (1 << hash->log_capacity);
+	if(set && set->entries) {
+		struct PS_(entry) *b = set->entries,
+			*b_end = b + (1 << set->log_capacity);
 		for( ; b < b_end; b++) {
 			double delta, x;
 			size_t items = PS_(count)(b);
@@ -46,7 +48,7 @@ static void PS_(stats)(const struct S_(set) *const hash, FILE *fp) {
 			msr.mean += delta / (double)(++msr.n);
 			msr.ssdm += delta * (x - msr.mean);
 		}
-		size = hash->size;
+		size = set->size;
 	}
 	/* Sample std dev. */
 
