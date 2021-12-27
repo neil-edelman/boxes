@@ -19,7 +19,7 @@ typedef void (*PS_(action_fn))(PS_(type));
 //static const PS_(action_fn) PS_(filler) = (SET_TEST); ****
 
 static size_t PS_(count)(const struct S_(set) *const set,
-	const PS_(index) i) {
+	const PS_(uint) i) {
 	//PS_(uint) hash;
 	//PS_(index) i;
 	size_t d = 0;
@@ -36,11 +36,11 @@ static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 		msr = { 0, 0, 0, 0.0, 0.0 };
 	size_t size = 0;
 	if(set && set->entries) {
-		PS_(index) idx, idx_end = 1 << set->log_capacity;
+		PS_(uint) idx, idx_end = 1 << set->log_capacity;
 		for(idx = 0; idx < idx_end; idx++) {
 			double delta, x;
 			size_t displaced;
-			if(!set->entries[idx].heir) continue;
+			if(!set->entries[idx].next_p2) continue;
 			displaced = PS_(count)(set, idx);
 			if(msr.max < displaced) msr.max = displaced;
 			msr.cost += displaced;
@@ -95,7 +95,7 @@ static void PS_(legit)(const struct S_(set) *const set) {
 	}
 	assert(set->log_capacity >= 3);
 	for(e = set->entries, e_end = e + (1 << set->log_capacity); e < e_end; e++)
-		if(e->heir) size++;
+		if(e->next_p2) size++;
 	assert(set->size == size);
 }
 
@@ -132,13 +132,13 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			"\t</TR>\n");
 		for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
 			const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
-				*const top = set->top && PS_(index_value)(set->top) == i
+				*const top = set->top_p1 && set->top_p1 - 1 == i
 				? " BORDER=\"1\"" : "";
 			struct PS_(entry) *e = set->entries + i;
 			fprintf(fp, "\t<TR>\n"
 				"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",
 				top, bgc, (unsigned long)i);
-			if(e->heir) {
+			if(e->next_p2) {
 				const char *const collision
 					= PS_(hash_to_index)(set, PS_(entry_hash)(e)) != i ?
 					" BORDER=\"1\"" : "";
@@ -175,7 +175,7 @@ static void PS_(histogram)(const struct S_(set) *const set,
 		for(i = 0; i < i_end; i++) {
 			size_t items;
 			e = set->entries + i;
-			if(!e->heir || set->top && PS_(index_value)(set->top) <= i
+			if(!e->next_p2 || set->top_p1 && set->top_p1 - 1 <= i
 				&& i != PS_(hash_to_index)(set, PS_(entry_hash)(e)))
 				continue;
 			//= PS_(count)(set, b);
