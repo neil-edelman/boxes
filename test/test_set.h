@@ -56,31 +56,23 @@ static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 	fprintf(fp,
 		"\t<TR>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">size</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu/%lu</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">entries</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E(links)</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max entry size</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">load factor(stderr)</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f(%.1f)</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">E(links traversed)</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%.2f</TD>\n"
-		"\t</TR>\n",
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket</TD>\n"
+		 "\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		 "\t</TR>\n",
 		(unsigned long)set->size,
-		(unsigned long)msr.n,
-		(unsigned long)msr.max,
-		msr.mean, msr.n > 1
-		? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN,
-		msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size
-		: (double)NAN);
+		set->entries ? 1ul << set->log_capacity : 0,
+		/*(unsigned long)msr.n,*/
+		msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size : (double)NAN,
+		/*msr.mean, msr.n > 1
+		? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN,*/
+		(unsigned long)msr.max);
 }
 
 /** Assertion function for seeing if `set` is in a valid state.
