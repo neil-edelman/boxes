@@ -86,6 +86,7 @@
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0 }
+enum { SET_NEXT_NULL, SET_NEXT_END, SET_NEXT_OFFSET };
 #endif /* idempotent --> */
 
 
@@ -99,23 +100,6 @@
 /** Unsigned integer type used for hash values. Set this according to
  <typedef:<PS>hash_fn>. */
 typedef SET_UINT PS_(uint);
-
-/** This is the same type as <typedef:<PS>uint>, but different meaning. Roughly,
- `typedef struct {
-	<PS>uint has_next : 1, value : sizeof(<PS>uint)*CHAR_BIT - 1;
- } <PS>index`; take one bit out to say it's null for the linked-list. */
-typedef SET_UINT PS_(index);
-/** Does `idx` have a next? */
-static int PS_(index_has_next)(const PS_(index) idx) { return idx & 1; }
-/** Gets the <typedef:<PS>uint> value of `idx`. Half the range of this type
- presents an upper-limit to how many entries are possible. */
-static PS_(uint) PS_(index_value)(const PS_(index) idx) { return idx >> 1; }
-/** Initialize `pidx` to a entry with one key. */
-static void PS_(set_index_occupied)(PS_(index) *const pidx)
-	{ assert(pidx); *pidx = 2; /* Any non-zero even number. */ }
-/** Set `pidx` to have a `next`, thus `[2,]` keys. */
-static void PS_(set_index_next)(PS_(index) *const pidx, const PS_(index) next)
-	{ assert(pidx); *pidx = (next << 1) + 1; }
 
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PS_(type);
@@ -152,7 +136,7 @@ static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
  factor ca'n't go above one,) the buckets are linked. (However, there is no
  coalescing.) */
 struct PS_(entry) {
-	PS_(index) heir;
+	PS_(uint) next_offset;
 #ifndef SET_RECALCULATE /* <!-- cache */
 	PS_(uint) hash;
 #endif /* cache --> */
@@ -164,7 +148,7 @@ struct PS_(entry) {
 /** Fill `entry` with `key` and `hash`. The entry must be empty. */
 static void PS_(fill_entry)(struct PS_(entry) *const entry,
 	const PS_(type) key, const PS_(uint) hash) {
-	assert(entry && !entry->heir);
+	assert(entry && !entry->next_offset);
 #ifndef SET_RECALCULATE /* <!-- cache */
 	entry->hash = hash;
 #else /* cache --><!-- !cache */
@@ -175,14 +159,12 @@ static void PS_(fill_entry)(struct PS_(entry) *const entry,
 #else /* !inv --><!-- inv */
 	(void)key;
 #endif /* inv --> */
-	printf("****setting %lu\n", (unsigned long)hash);
-	PS_(set_index_occupied)(&entry->heir);
-	if(entry->heir) printf("success\n");
+	entry->next_offset = SET_NEXT_END;
 }
 
 /** Gets the hash of an occupied `entry`, which should be consistent. */
 static PS_(uint) PS_(entry_hash)(const struct PS_(entry) *const entry) {
-	assert(entry && entry->heir);
+	assert(entry && entry->next_offset);
 #ifdef SET_RECALCULATE
 	return PS_(hash)(&entry->data);
 #else
@@ -192,7 +174,7 @@ static PS_(uint) PS_(entry_hash)(const struct PS_(entry) *const entry) {
 
 /** Gets the key of an occupied `entry`. */
 static PS_(type) PS_(entry_key)(const struct PS_(entry) *const entry) {
-	assert(entry && entry->heir);
+	assert(entry && entry->next_offset);
 #ifdef SET_INVERSE_HASH
 	return PS_(inverse_hash_fn)(&entry->hash);
 #else
@@ -208,11 +190,11 @@ struct S_(set) {
 	struct PS_(entry) *entries; /* @ has zero/one key. */
 	unsigned log_capacity; /* Applies to entries. */
 	PS_(uint) size; /* How many keys, <= capacity. */
-	PS_(index) top; /* Stack of collided entries growing from the back. */
+	PS_(uint) top_offset; /* Stack of collided entries growing from the back. */
 };
 
 /** @return Indexes an entry from `set` given the `hash`. */
-static PS_(index) PS_(hash_to_index)(const struct S_(set) *const set,
+static PS_(uint) PS_(hash_to_index)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & ((1 << set->log_capacity) - 1); }
 
 /** `set` will be searched linearly for `key` which has `hash`.
@@ -220,12 +202,14 @@ static PS_(index) PS_(hash_to_index)(const struct S_(set) *const set,
 static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	const PS_(type) key, const PS_(uint) hash) {
 	struct PS_(entry) *entry;
-	PS_(index) idx, heir;
+	PS_(uint) idx, next_offset;
 	assert(set && set->entries && set->log_capacity);
 	entry = set->entries + (idx = PS_(hash_to_index)(set, hash));
 	/* Not the start of an entry: empty or in the collision stack. */
-	if(!(heir = entry->heir) || set->top && PS_(index_value)(set->top) <= idx
-	   && idx != PS_(hash_to_index)(set, PS_(entry_hash)(entry))) return 0;
+	if(!(next_offset = entry->next_offset)
+		|| set->top_offset >= SET_NEXT_OFFSET
+		&& set->top_offset - SET_NEXT_OFFSET <= idx /* Stack grows from end. */
+		&& idx != PS_(hash_to_index)(set, PS_(entry_hash)(entry))) return 0;
 	for( ; ; ) {
 #ifdef SET_RECALCULATE /* <!-- !cache: always go to next predicate. */
 		const int hashes_are_equal = ((void)(hash), 1);
@@ -233,11 +217,12 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 		const int hashes_are_equal = hash == entry->hash;
 #endif /* cache --> */
 		if(hashes_are_equal && PS_(equal)(key, entry->key)) return entry;
-		if(!PS_(index_has_next)(heir)) return 0;
-		idx = PS_(index_value)(heir), assert(idx < 1 << set->log_capacity
-			&& set->top && PS_(index_value)(set->top) <= idx);
+		if(next_offset < SET_NEXT_OFFSET) return 0;
+		idx = next_offset - SET_NEXT_OFFSET;
+		assert(idx < 1 << set->log_capacity
+			&& set->top_offset && PS_(index_value)(set->top) <= idx);
 		entry = set->entries + idx;
-		heir = entry->heir, assert(heir); /* Links are not empty. */
+		heir = entry->next_plus_2, assert(heir); /* Links are not empty. */
 	}
 }
 
@@ -255,7 +240,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) max_uint = (PS_(uint))~(PS_(uint))0,
 		limit_uint = (PS_(uint))1 << log_limit;
-	PS_(index) c0 = (PS_(uint))1 << log_c0, c1, size1, i;
+	PS_(uint) c0 = (PS_(uint))1 << log_c0, c1, size1, i;
 	assert(set && c0 && log_c0 <= log_limit && (PS_(uint))-1 > 0
 		&& (log_c0 >= 3 && set->entries || !log_c0 && !set->entries)
 		&& n <= max_uint && set->size <= max_uint && limit_uint < max_uint);
@@ -274,18 +259,18 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	set->entries = entries, set->log_capacity = log_c1;
 	/* Want zero for initialization of extra entries and stack is re-done. */
 	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
-	for(e = entries + c0, e_end = entries + c1; e < e_end; e++) e->heir = 0;
-	set->top = 0;
+	for(e = entries + c0, e_end = entries + c1; e < e_end; e++) e->next_plus_2 = 0;
+	set->top_offset = 0;
 	/* Expectation value of rehashing a closed entry is the growth amount. */
 	for(i = 0; i < c0; i++) {
 		struct PS_(entry) *c;
 		PS_(uint) hash, j;
 		e = entries + i;
-		if(!e->heir) {
+		if(!e->next_plus_2) {
 			assert(n > 1 /* Must have been asking more. */
-				&& (!set->top /* No stack. */
-				|| PS_(index_has_next)(set->top) /* It always has next. */
-				&& i < PS_(index_value)(set->top) /* But stack full. */));
+				&& (!set->top_offset /* No stack. */
+				|| PS_(index_has_next)(set->top_offset) /* It always has next. */
+				&& i < PS_(index_value)(set->top_offset) /* But stack full. */));
 			printf("%lu: empty\n", (unsigned long)i);
 			continue; /* Empty entry. */
 		}
@@ -294,9 +279,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			(unsigned long)i);
 			continue; /* Right where it's supposed to be. */ }
 		c = entries + j, assert(e < c);
-		if(!c->heir) {
+		if(!c->next_plus_2) {
 			PS_(fill_entry)(c, e->key, e->hash);
-			e->heir = 0;
+			e->next_plus_2 = 0;
 			printf("%lu: moved to unoccupied %lu\n",
 				(unsigned long)i, (unsigned long)j);
 			continue; /* Moved the entry to an unoccupied spot. */
@@ -326,7 +311,7 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	PS_(type) key, PS_(type) *equal) {
 	struct PS_(entry) *entry;
 	PS_(uint) hash;
-	PS_(index) heir = 1;
+	PS_(uint) heir = 1;
 	char z[12];
 	assert(set && key);
 	PS_(to_string)(&key, &z);
@@ -334,10 +319,10 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	if(equal) *equal = 0;
 	hash = PS_(hash)(key);
 	if(!set->entries || !(entry = PS_(get)(set, key, hash))) { /* Expand. */
-		PS_(index) idx;
+		PS_(uint) idx;
 		if(!PS_(buffer)(set, 1)) return 0;
 		entry = set->entries + (idx = PS_(hash_to_index)(set, hash));
-		assert(!entry->heir);
+		assert(!entry->next_plus_2);
 		printf("put: expand, hash 0x%lx, idx 0x%lu\n",
 			(unsigned long)hash, (unsigned long)idx);
 	} else { /* Equal element. */
@@ -345,18 +330,18 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 		if(replace && !replace(PS_(entry_key)(entry), key))
 			{ if(equal) *equal = key; return 1; }
 		if(equal) *equal = PS_(entry_key)(entry); /* fixme: Duplicate. */
-		heir = entry->heir, entry->heir = 0, assert(heir);
+		heir = entry->next_plus_2, entry->next_plus_2 = 0, assert(heir);
 	}
 	printf("put: assigning.\n");
 	PS_(fill_entry)(entry, key, hash); /* fixme: Robin-hood. */
-	entry->heir = heir;
+	entry->next_plus_2 = heir;
 	set->size++;
 	return 1;
 }
 
 /** Initialises `set` to idle. @order \Theta(1) @allow */
 static void S_(set)(struct S_(set) *const set) { assert(set); set->entries = 0;
-	set->log_capacity = 0; set->size = 0; set->top = 0; }
+	set->log_capacity = 0; set->size = 0; set->top_offset = 0; }
 
 /** Destroys `set` and returns it to idle. @allow */
 static void S_(set_)(struct S_(set) *const set)
@@ -371,7 +356,7 @@ static void S_(set_clear)(struct S_(set) *const set) {
 	assert(set);
 	if(!set->entries) { assert(!set->log_capacity); return; }
 	for(b = set->entries, b_end = b + (1 << set->log_capacity); b < b_end; b++)
-		b->heir = 0;
+		b->next_plus_2 = 0;
 	set->size = 0;
 }
 
@@ -465,7 +450,7 @@ static PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 	while(it->idx < entry_end) {
 		struct PS_(entry) *b = it->set->entries + it->idx;
 		it->idx++;
-		if(b->heir) return &b->key; /* Fixme! */
+		if(b->next_plus_2) return &b->key; /* Fixme! */
 	}
 	it->set = 0, it->idx = 0;
 	return 0;
