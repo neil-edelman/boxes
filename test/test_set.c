@@ -13,7 +13,7 @@
 
 /* Integer hash. */
 
-/** Assume 32-bit; it's C89. <https://nullprogram.com/blog/2018/07/31/>
+/** Assume 32-bit; it's just a test. <https://nullprogram.com/blog/2018/07/31/>
  <https://github.com/skeeto/hash-prospector>. */
 static unsigned lowbias32(unsigned x) {
 	x ^= x >> 16;
@@ -99,9 +99,9 @@ static void string_fill(char *const str) { assert(0); }
 #define SET_IS_EQUAL &string_is_equal
 #define SET_TEST &string_fill
 #define SET_EXPECT_TRAIT
-#include "../src/hash.h"
+#include "../src/set.h"
 #define SET_TO_STRING &pstring_to_string
-#include "../src/hash.h"
+#include "../src/set.h"
 
 
 
@@ -128,9 +128,9 @@ static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TEST &int_fill
 #define SET_EXPECT_TRAIT
-#include "../src/hash.h"
+#include "../src/set.h"
 #define SET_TO_STRING &int_to_string
-#include "../src/hash.h"
+#include "../src/set.h"
 
 
 
@@ -171,9 +171,9 @@ static void vec4_filler(struct vec4 *const v4) {
 #define SET_IS_EQUAL &vec4_is_equal
 #define SET_TEST &vec4_filler
 #define SET_EXPECT_TRAIT
-#include "../src/hash.h"
+#include "../src/set.h"
 #define SET_TO_STRING &vec4_to_string
-#include "../src/hash.h"
+#include "../src/set.h"
 
 
 /* I wrote Set to solve
@@ -194,9 +194,9 @@ static void fill_boat_id(int *const id);
 #define SET_IS_EQUAL &boat_id_is_equal
 #define SET_TEST &fill_boat_id
 #define SET_EXPECT_TRAIT
-#include "../src/hash.h"
+#include "../src/set.h"
 #define SET_TO_STRING &boat_id_to_string
-#include "../src/hash.h"
+#include "../src/set.h"
 struct boat {
 	struct id_setlink id;
 	int best_time;
@@ -300,9 +300,9 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &key_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/hash.h"
+#include "../src/set.h"
 #define SET_TO_STRING &key_to_string
-#include "../src/hash.h"
+#include "../src/set.h"
 
 struct key_listlink;
 static int key_compare(const struct key_listlink *,
