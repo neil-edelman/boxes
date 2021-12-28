@@ -18,15 +18,24 @@ typedef void (*PS_(action_fn))(PS_(type));
 /* Check that `SET_TEST` is a function implementing `<PS>action_fn`. */
 //static const PS_(action_fn) PS_(filler) = (SET_TEST); ****
 
-static size_t PS_(count)(const struct S_(set) *const set,
-	const PS_(uint) i) {
-	//PS_(uint) hash;
-	//PS_(index) i;
-	size_t d = 0;
-	//assert(set && idx && idx < set->log_capacity << 1);
-	//hash = PS_(entry_hash)(e);
-	//i = PS_(hash_to_index)(set, hash);
-	return d;
+static size_t PS_(count)(const struct S_(set) *const set, PS_(uint) idx) {
+	struct PS_(entry) *entry;
+	PS_(uint) next;
+	size_t no = 0;
+	assert(set && idx < PS_(capacity)(set));
+	entry = set->entries + idx;
+	if((next = entry->next) == SETm2
+		|| set->top != SETm1 && set->top <= idx /* In range of stack. */
+		&& idx != PS_(hash_to_index)(set, PS_(entry_hash)(entry))) return 0;
+	for( ; ; ) {
+		no++;
+		if(next == SETm1) return no;
+		idx = next;
+		assert(set->top <= idx && idx < 1 << set->log_capacity);
+		entry = set->entries + idx;
+		next = entry->next;
+		assert(next != SETm2); /* -2 null: linked-list integrity. */
+	}
 }
 
 /** Collect stats; <Welford1962Note>, on `set` and output them to `fp`.
@@ -101,6 +110,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	assert(set && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
+	/* fixme: why have two boxes? One would do. */
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
 		"\tfontface=modern;\n"

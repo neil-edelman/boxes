@@ -273,21 +273,20 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
  @throws[realloc] */
 static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	struct PS_(entry) *entries, *e, *e_end;
-	/* fixme: does sizeof include padding? This is very confusing. Might have
-	 to set it explicitly / loop manually on TI or Cray? */
+	/* fixme: sizeof does not lead to the correct results */
 	const unsigned log_c0 = set->log_capacity,
 		log_limit = sizeof(PS_(uint)) * CHAR_BIT - 1;
 	unsigned log_c1;
-	const PS_(uint) max_uint = SETm1,
-		limit_uint = (PS_(uint))1 << log_limit;
+	const PS_(uint) max = (PS_(uint))1 << log_limit;
 	PS_(uint) c0 = (PS_(uint))1 << log_c0, c1, size1, i;
 	assert(set && c0 && log_c0 <= log_limit
 		&& (log_c0 >= 3 && set->entries || !log_c0 && !set->entries)
-		&& n <= max_uint && set->size <= max_uint && limit_uint < max_uint);
+		&& n <= SETm1 && set->size <= SETm1 && max <= SETm1);
 	printf("buffer: max %lu, limit %lu, entries %lu/%lu, new %lu\n",
-		(unsigned long)max_uint, (unsigned long)limit_uint,
+		(unsigned long)SETm1, (unsigned long)max,
 		(unsigned long)set->size, (unsigned long)c0, (unsigned long)n);
-	if(max_uint - set->size < n || limit_uint < (size1 = set->size + n))
+	printf("but: %lu\n", (unsigned long)(SETm2 - SETm1));
+	if(SETm1 - set->size < n || max < (size1 = set->size + n))
 		return errno = ERANGE, 0;
 	if(set->entries) log_c1 = log_c0, c1 = c0;
 	else             log_c1 = 3,      c1 = 8;
