@@ -127,7 +127,7 @@ static const PS_(hash_fn) PS_(hash) = (SET_HASH);
  bijection with <typedef:<PS>uint>; this is inverse-mapping to
  <typedef:<PS>hash_fn>. This saves having to store the <typedef:<PS>type>. */
 typedef PS_(type) (*PS_(inverse_hash_fn))(PS_(uint));
-#error Fixme. Think about how to iterate.
+#error Fixme. Think about how to iterate. Maybe `it` has a temp field?
 #endif /* inv --> */
 
 /** Equivalence relation between <typedef:<PS>ctype> that satisfies

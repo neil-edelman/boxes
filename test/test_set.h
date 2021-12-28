@@ -55,15 +55,17 @@ static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 
 	fprintf(fp,
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">\\lambda</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load factor"
+		"</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu/%lu</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E(links)</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E(bucket)</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket"
+		"</TD>\n"
 		 "\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
 		 "\t</TR>\n",
 		(unsigned long)set->size,
@@ -249,7 +251,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(set.size < 1000000 && !(n & (n - 1))) {
+		if(set.size < 10/*00000*/ /*&& !(n & (n - 1))*/) {
 			char fn[64];
 			fprintf(stderr, "%lu: set %s.\n",
 				(unsigned long)n, PS_(set_to_string)(&set));
