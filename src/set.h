@@ -86,10 +86,10 @@
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0 }
-/* Use negative 2's compliment values of <typedef:<PS>uint> to store special
- things. (These work on mathematically-impaired representations, such that
- range of an index is 2 less than the maximum; in practice, it causes one bit
- loss anyway, so we might as well have defined them (PS_(uint))-1.) */
+/* Use negative values of <typedef:<PS>uint> to store special things. (These
+ work on mathematically-impaired representations, such that range of an index
+ is 2 less than the maximum; in practice, it causes one bit loss anyway, so we
+ might as well have defined them (PS_(uint))-1.) */
 #define SETm1 ((PS_(uint))~(PS_(uint))0)
 #define SETm2 (SETm1 - 1)
 #endif /* idempotent --> */
