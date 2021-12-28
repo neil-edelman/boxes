@@ -55,7 +55,7 @@ static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 
 	fprintf(fp,
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">size</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">\\lambda</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu/%lu</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
