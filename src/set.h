@@ -86,10 +86,9 @@
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0 }
-/* Use negative values of <typedef:<PS>uint> to store special things. (These
- work on mathematically-impaired representations, such that range of an index
- is 2 less than the maximum; in practice, it causes one bit loss anyway, so we
- might as well have defined them (PS_(uint))-1.) */
+/* Use negative values of <typedef:<PS>uint> to store special things, such that
+ range of an index is 2 less than the maximum. (I think these work on
+ mathematically-impaired representations (ones', s&m,) and odd TI padding.) */
 #define SETm1 ((PS_(uint))~(PS_(uint))0)
 #define SETm2 (SETm1 - 1)
 #endif /* idempotent --> */
@@ -208,17 +207,21 @@ static PS_(uint) PS_(capacity)(const struct S_(set) *const set)
 static PS_(uint) PS_(hash_to_index)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
-/** Moves the index `src` to the top of the collision stack in non-idle
- `set`. */
-static void PS_(move_to_top)(struct S_(set) *const set, const PS_(uint) x) {
+/** Moves the index `i` to the top of the collision stack in non-idle `set`. */
+static void PS_(move_to_top)(struct S_(set) *const set, const PS_(uint) i) {
 	struct PS_(entry) *dst, *src;
 	PS_(uint) top, link/*, next*/;
-	assert(set && set->size < PS_(capacity)(set) && x < PS_(capacity)(set));
+	assert(set && set->entries
+		&& set->size < PS_(capacity)(set) && i < PS_(capacity)(set));
 	/* Search for an empty entry. Amortized: `n` decrements for `n` entries. */
+	printf("move_to_top(%lu): top %lu\n",
+		(unsigned long)i, (unsigned long)set->top);
 	if((top = set->top) == SETm1) top = PS_(capacity)(set) - 1;
 	else assert(top), top--; /* By size < capacity. */;
-	while(set->entries[top].next) assert(top), top--;
-	dst = set->entries + (set->top = top) - 1, src = set->entries + x;
+	printf("top decremented %lu\n", (unsigned long)top);
+	while(set->entries[top].next != SETm2) assert(top), top--;
+	printf("linear search top %lu\n", (unsigned long)top);
+	dst = set->entries + (set->top = top) - 1, src = set->entries + i;
 	/* Occupied to unoccupied. */
 	assert(dst->next == SETm2 && src->next != SETm2);
 	/* Search for the previous link in the linked-list. */
@@ -293,9 +296,10 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	/* Need to allocate more. */
 	if(!(entries = realloc(set->entries, sizeof *entries * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
+	if(!set->entries) set->top = SETm1;
 	set->entries = entries, set->log_capacity = log_c1;
 	/* Want zero for initialization of extra entries and stack is re-done. */
-	if(c0 == 1) c0 = 0, assert(!c0 || c0 >= 8);
+	if(c0 == 1) c0 = 0;
 	for(e = entries + c0, e_end = entries + c1; e < e_end; e++) e->next = SETm2;
 	set->top = SETm1;
 	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
