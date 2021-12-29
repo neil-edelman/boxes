@@ -39,91 +39,35 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 	}
 }
 
-#if 0
+/** Mean: `mean`, population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`.
+ <Welford1962Note>. */
 static struct { size_t n, max; double mean, ssdm; }
 	PS_(stats) = { 0, 0, 0.0, 0.0 };
-static void PS_(update)(const double value) {
-	double d, d2;
-	PS_(stats).n++;
-	d = value - PS_(stats).mean;
-	PS_(stats).mean += d / PS_(stats).n;
-	d2 = value - PS_(stats).mean;
-	PS_(stats).ssdm += d * d2;
+static void PS_(reset)(void) {
+	PS_(stats).n = PS_(stats).max = 0;
+	PS_(stats).mean = PS_(stats).ssdm = 0.0;
 }
-static void PS_(fin)(void) {
-	if(PS_(stats).n < 2) { printf("nan\n"); return; }
-	printf("mean %f, variance %f, sample variance %f\n", PS_(stats).mean,
-		PS_(stats).ssdm / PS_(stats).n, PS_(stats).ssdm / (PS_(stats).n - 1));
+/** Update one sample point of `value`. */
+static void PS_(update)(const size_t value) {
+	double d, v = value;
+	if(PS_(stats).max < value) PS_(stats).max = value;
+	d = v - PS_(stats).mean;
+	PS_(stats).mean += d / ++PS_(stats).n;
+	PS_(stats).ssdm += d * (v - PS_(stats).mean);
 }
-#else
-static struct { size_t n, n2, max; double mean, ssdm; }
-	PS_(stats) = { 0, 0, 0, 0.0, 0.0 };
-static void PS_(update)(const double value) {
-	double d, d2;
-	PS_(stats).n++;
-	d = value - PS_(stats).mean;
-	PS_(stats).mean += d / PS_(stats).n;
-	d2 = value - PS_(stats).mean;
-	PS_(stats).ssdm += d * d2;
-}
-static void fin(void) {
-	if(PS_(stats).n < 2) { printf("nan\n"); return; }
-	printf("mean %f, variance %f, sample variance %f\n", PS_(stats).mean,
-		PS_(stats).ssdm / PS_(stats).n, PS_(stats).ssdm / (PS_(stats).n - 1));
-}
-#endif
-
-/** Collect stats; <Welford1962Note>, <West1979Updating> on `set`. */
+/** Collect stats on `set`. */
 static void PS_(collect)(const struct S_(set) *const set) {
-
-
-
-
 	size_t size = 0;
+	PS_(reset)();
 	if(set && set->entries) {
 		PS_(uint) idx, idx_end = 1 << set->log_capacity;
 		for(idx = 0; idx < idx_end; idx++) {
-
-
-
-
-			double delta, x;
-			size_t no = PS_(count_bucket)(set, idx);
-			PS_(stats).n += no;
-			if(PS_(stats).max < no) PS_(stats).max = no;
-			PS_(stats).cost += no * (no + 1) / 2;
-			x = (double)bucket;
-			delta = x - msr.mean;
-			msr.mean += delta / (double)(++msr.n);
-			msr.ssdm += delta * (x - msr.mean);
+			size_t no;
+			/* I'm sure there's a cheaper way to do it. */
+			for(no = PS_(count_bucket)(set, idx); no; no--) PS_(update)(no);
 		}
 		size = set->size;
 	}
-	/* Sample std dev. */
-	(unsigned long)set->size,
-	set->entries ? 1ul << set->log_capacity : 0,
-	/*(unsigned long)msr.n,*/
-	msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size : (double)NAN,
-	/*msr.mean, msr.n > 1
-	? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN,*/
-	(unsigned long)msr.max);
-
-}
-
-/** Assertion function for seeing if `set` is in a valid state.
- @order \O(|`set.bins`| + |`set.items`|) */
-static void PS_(legit)(const struct S_(set) *const set) {
-	struct PS_(entry) *e, *e_end;
-	size_t size = 0;
-	if(!set) return; /* Null state. */
-	if(!set->entries) { /* Empty state. */
-		assert(!set->log_capacity && !set->size);
-		return;
-	}
-	assert(set->log_capacity >= 3);
-	for(e = set->entries, e_end = e + (1 << set->log_capacity); e < e_end; e++)
-		if(e->next != SETm2) size++;
-	assert(set->size == size);
 }
 
 /** Draw a diagram of `set` written to `fn` in
@@ -131,82 +75,69 @@ static void PS_(legit)(const struct S_(set) *const set) {
  @order \O(|`set.bins`| + |`set.items`|) */
 static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	FILE *fp;
+	size_t i, i_end;
 	assert(set && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
-	/* fixme: why have two boxes? One would do. */
 	fprintf(fp, "digraph {\n"
-		"\trankdir=LR;\n"
-		"\tfontface=modern;\n"
-		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
-		"\tset [label=<\n"
-		"<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(SET_NAME)
-		"&gt;set: " QUOTE(SET_TYPE) "</FONT></TD></TR>\n");
-	PS_(stats)(set, fp);
-
+		"\tfontface=modern;\n");
+	if(!set->entries) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
+	PS_(collect)(set);
+	assert((size_t)set->size == PS_(stats).n);
 	fprintf(fp,
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
+		"\tset [label=<<TABLE BORDER=\"0\">\n"
+		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;" QUOTE(SET_NAME) "&gt;set: " QUOTE(SET_TYPE) "</FONT></TD></TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load factor"
-		"</TD>\n"
+		"\t\t<TD>&nbsp;</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load factor</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu/%lu</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
+		"\t\t<TD>&nbsp;</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E(bucket)</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f(%.1f)</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket"
-		"</TD>\n"
+		"\t\t<TD>&nbsp;</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket</TD>\n"
 		 "\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
 		 "\t</TR>\n",
-		(unsigned long)set->size,
+		(unsigned long)PS_(stats).n,
 		set->entries ? 1ul << set->log_capacity : 0,
-		/*(unsigned long)msr.n,*/
-		msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size : (double)NAN,
-		/*msr.mean, msr.n > 1
-		? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN,*/
-		(unsigned long)msr.max);
-
-
-
-	fprintf(fp, "</TABLE>>]\n");
-	if(set->entries) {
-		size_t i, i_end;
-		fprintf(fp, "\tset -> entries;\n"
-			"\tentries [label = <\n"
-			"<TABLE BORDER=\"0\">\n"
-			"\t<TR>\n"
-			"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
-			"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">hash</FONT></TD>"
-			"\n"
-			"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">data</FONT></TD>"
-			"\n"
-			"\t</TR>\n");
-		for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
-			const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
-				*const top = set->top == i ? " BORDER=\"1\"" : "";
-			struct PS_(entry) *e = set->entries + i;
-			fprintf(fp, "\t<TR>\n"
-				"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",
-				top, bgc, (unsigned long)i);
-			if(e->next != SETm2) {
-				const char *const collision
-					= PS_(hash_to_index)(set, PS_(entry_hash)(e)) != i ?
-					" BORDER=\"1\"" : "";
-				char z[12];
-				PS_(to_string)(&e->key, &z);
-				fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n"
-					"\t\t<TD ALIGN=\"LEFT\" PORT=\"%lu\"%s>%s</TD>\n",
-					collision, bgc, (unsigned long)e->hash,
-					(unsigned long)i, bgc, z);
-			}
-			fprintf(fp, "\t</TR>\n");
+		PS_(stats).n ? PS_(stats).mean : (double)NAN, PS_(stats).n > 1
+		? sqrt(PS_(stats).ssdm / (double)(PS_(stats).n - 1)) : (double)NAN,
+		(unsigned long)PS_(stats).max);
+	fprintf(fp, "\t<TR>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">hash</FONT></TD>"
+		"\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">data</FONT></TD>"
+		"\n"
+		"\t</TR>\n");
+	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
+		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
+			*const top = set->top == i ? " BORDER=\"1\"" : "";
+		struct PS_(entry) *e = set->entries + i;
+		fprintf(fp, "\t<TR>\n"
+			"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",
+			top, bgc, (unsigned long)i);
+		if(e->next != SETm2) {
+			const char *const collision
+				= PS_(hash_to_index)(set, PS_(entry_hash)(e)) != i ?
+				" BORDER=\"1\"" : "";
+			char z[12];
+			PS_(to_string)(&e->key, &z);
+			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n"
+				"\t\t<TD ALIGN=\"LEFT\" PORT=\"%lu\"%s>%s</TD>\n",
+				collision, bgc, (unsigned long)e->hash,
+				(unsigned long)i, bgc, z);
 		}
-		fprintf(fp, "</TABLE>>];\n");
+		fprintf(fp, "\t</TR>\n");
 	}
-	fprintf(fp, "\tnode [colour=red];\n"
+	fprintf(fp, "</TABLE>>];\n");
+end:
+	fprintf(fp, "\tnode [color=red];\n"
 		"}\n");
 	fclose(fp);
 }
@@ -253,6 +184,22 @@ static void PS_(histogram)(const struct S_(set) *const set,
 	for(h = 0; h < hs; h++) fprintf(fp, "%lu\t%lu\n",
 		(unsigned long)h, (unsigned long)histogram[h]);
 	fclose(fp);
+}
+
+/** Assertion function for seeing if `set` is in a valid state.
+ @order \O(|`set.bins`| + |`set.items`|) */
+static void PS_(legit)(const struct S_(set) *const set) {
+	struct PS_(entry) *e, *e_end;
+	size_t size = 0;
+	if(!set) return; /* Null state. */
+	if(!set->entries) { /* Empty state. */
+		assert(!set->log_capacity && !set->size);
+		return;
+	}
+	assert(set->log_capacity >= 3);
+	for(e = set->entries, e_end = e + (1 << set->log_capacity); e < e_end; e++)
+		if(e->next != SETm2) size++;
+	assert(set->size == size);
 }
 
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */
