@@ -273,20 +273,18 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
  @throws[realloc] */
 static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	struct PS_(entry) *entries, *e, *e_end;
-	/* fixme: sizeof does not lead to the correct results */
-	const unsigned log_c0 = set->log_capacity,
-		log_limit = sizeof(PS_(uint)) * CHAR_BIT - 1;
+	const unsigned log_c0 = set->log_capacity;
 	unsigned log_c1;
-	const PS_(uint) max = (PS_(uint))1 << log_limit;
+	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1); /* TI C6000, _etc_ works? */
 	PS_(uint) c0 = (PS_(uint))1 << log_c0, c1, size1, i;
-	assert(set && c0 && log_c0 <= log_limit
-		&& (log_c0 >= 3 && set->entries || !log_c0 && !set->entries)
-		&& n <= SETm1 && set->size <= SETm1 && max <= SETm1);
+	assert(set && c0
+		&& (set->entries && log_c0 >= 3 || !set->entries && !log_c0)
+		&& n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	printf("buffer: max %lu, limit %lu, entries %lu/%lu, new %lu\n",
-		(unsigned long)SETm1, (unsigned long)max,
+		(unsigned long)SETm1, (unsigned long)limit,
 		(unsigned long)set->size, (unsigned long)c0, (unsigned long)n);
-	printf("but: %lu\n", (unsigned long)(SETm2 - SETm1));
-	if(SETm1 - set->size < n || max < (size1 = set->size + n))
+	printf("but: %lu\n", (unsigned long)(SETm1 - (SETm1 >> 1)));
+	if(SETm1 - set->size < n || limit < (size1 = set->size + n))
 		return errno = ERANGE, 0;
 	if(set->entries) log_c1 = log_c0, c1 = c0;
 	else             log_c1 = 3,      c1 = 8;
