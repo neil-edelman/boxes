@@ -18,7 +18,8 @@ typedef void (*PS_(action_fn))(PS_(type));
 /* Check that `SET_TEST` is a function implementing `<PS>action_fn`. */
 //static const PS_(action_fn) PS_(filler) = (SET_TEST); ****
 
-static size_t PS_(count)(const struct S_(set) *const set, PS_(uint) idx) {
+static size_t PS_(count_bucket)(const struct S_(set) *const set,
+	PS_(uint) idx) {
 	struct PS_(entry) *entry;
 	PS_(uint) next;
 	size_t no = 0;
@@ -38,22 +39,60 @@ static size_t PS_(count)(const struct S_(set) *const set, PS_(uint) idx) {
 	}
 }
 
-/** Collect stats; <Welford1962Note>, on `set` and output them to `fp`.
- @order \O(|`set.bins`| + |`set.items`|) */
-static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
-	struct { size_t n, cost, max; double mean, ssdm; }
-		msr = { 0, 0, 0, 0.0, 0.0 };
+#if 0
+static struct { size_t n, max; double mean, ssdm; }
+	PS_(stats) = { 0, 0, 0.0, 0.0 };
+static void PS_(update)(const double value) {
+	double d, d2;
+	PS_(stats).n++;
+	d = value - PS_(stats).mean;
+	PS_(stats).mean += d / PS_(stats).n;
+	d2 = value - PS_(stats).mean;
+	PS_(stats).ssdm += d * d2;
+}
+static void PS_(fin)(void) {
+	if(PS_(stats).n < 2) { printf("nan\n"); return; }
+	printf("mean %f, variance %f, sample variance %f\n", PS_(stats).mean,
+		PS_(stats).ssdm / PS_(stats).n, PS_(stats).ssdm / (PS_(stats).n - 1));
+}
+#else
+static struct { size_t n, n2, max; double mean, ssdm; }
+	PS_(stats) = { 0, 0, 0, 0.0, 0.0 };
+static void PS_(update)(const double value) {
+	double d, d2;
+	PS_(stats).n++;
+	d = value - PS_(stats).mean;
+	PS_(stats).mean += d / PS_(stats).n;
+	d2 = value - PS_(stats).mean;
+	PS_(stats).ssdm += d * d2;
+}
+static void fin(void) {
+	if(PS_(stats).n < 2) { printf("nan\n"); return; }
+	printf("mean %f, variance %f, sample variance %f\n", PS_(stats).mean,
+		PS_(stats).ssdm / PS_(stats).n, PS_(stats).ssdm / (PS_(stats).n - 1));
+}
+#endif
+
+/** Collect stats; <Welford1962Note>, <West1979Updating> on `set`. */
+static void PS_(collect)(const struct S_(set) *const set) {
+
+
+
+
 	size_t size = 0;
 	if(set && set->entries) {
 		PS_(uint) idx, idx_end = 1 << set->log_capacity;
 		for(idx = 0; idx < idx_end; idx++) {
+
+
+
+
 			double delta, x;
-			size_t displaced;
-			if(set->entries[idx].next == SETm2) continue;
-			displaced = PS_(count)(set, idx);
-			if(msr.max < displaced) msr.max = displaced;
-			msr.cost += displaced;
-			x = (double)displaced;
+			size_t no = PS_(count_bucket)(set, idx);
+			PS_(stats).n += no;
+			if(PS_(stats).max < no) PS_(stats).max = no;
+			PS_(stats).cost += no * (no + 1) / 2;
+			x = (double)bucket;
 			delta = x - msr.mean;
 			msr.mean += delta / (double)(++msr.n);
 			msr.ssdm += delta * (x - msr.mean);
@@ -61,29 +100,14 @@ static void PS_(stats)(const struct S_(set) *const set, FILE *fp) {
 		size = set->size;
 	}
 	/* Sample std dev. */
+	(unsigned long)set->size,
+	set->entries ? 1ul << set->log_capacity : 0,
+	/*(unsigned long)msr.n,*/
+	msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size : (double)NAN,
+	/*msr.mean, msr.n > 1
+	? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN,*/
+	(unsigned long)msr.max);
 
-	fprintf(fp,
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load factor"
-		"</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu/%lu</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E(bucket)</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket"
-		"</TD>\n"
-		 "\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
-		 "\t</TR>\n",
-		(unsigned long)set->size,
-		set->entries ? 1ul << set->log_capacity : 0,
-		/*(unsigned long)msr.n,*/
-		msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size : (double)NAN,
-		/*msr.mean, msr.n > 1
-		? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN,*/
-		(unsigned long)msr.max);
 }
 
 /** Assertion function for seeing if `set` is in a valid state.
@@ -121,6 +145,32 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(SET_NAME)
 		"&gt;set: " QUOTE(SET_TYPE) "</FONT></TD></TR>\n");
 	PS_(stats)(set, fp);
+
+	fprintf(fp,
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load factor"
+		"</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu/%lu</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E(bucket)</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f</TD>\n"
+		"\t</TR>\n"
+		"\t<TR>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket"
+		"</TD>\n"
+		 "\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		 "\t</TR>\n",
+		(unsigned long)set->size,
+		set->entries ? 1ul << set->log_capacity : 0,
+		/*(unsigned long)msr.n,*/
+		msr.n ? 1.0 + 1.0 * (double)msr.cost / (double)size : (double)NAN,
+		/*msr.mean, msr.n > 1
+		? sqrt(msr.ssdm / (double)(msr.n - 1)) : (double)NAN,*/
+		(unsigned long)msr.max);
+
+
+
 	fprintf(fp, "</TABLE>>]\n");
 	if(set->entries) {
 		size_t i, i_end;
