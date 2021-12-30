@@ -9,11 +9,12 @@
  duplication. It must be supplied a hash function and equality function.
 
  This code is simple by design, and may not be suited for more complex
- situations. While enclosing a pointer <tag:<PS>key> in a larger `struct` can
- give an associative array, compile-time constant sets are better handled with
+ situations, where hash keys are expected to collide, or adversarial attacks.
+ While enclosing a pointer <tag:<PS>key> in a larger `struct` can give an
+ associative array, compile-time constant sets are better handled with
  [gperf](https://www.gnu.org/software/gperf/). Also,
- [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library that
- may be more useful, especially for large sets.
+ [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library
+ that provides performance for large sets.
 
  @param[SET_NAME, SET_TYPE]
  `<S>` that satisfies `C` naming conventions when mangled and a valid
@@ -35,7 +36,7 @@
  non-trivial to compute.
 
  @param[SET_INVERSE_HASH]
- Function satisfying <typedef:<PS>inverse_SET_HASH> that avoids storing the key,
+ Function satisfying <typedef:<PS>inverse_hash_fn> that avoids storing the key,
  but calculates it from the hashed value. As such, incompatible with
  `SET_RECALCULATE`.
 
@@ -73,7 +74,6 @@
 #ifndef SET_H /* <!-- idempotent */
 #define SET_H
 #include <stdlib.h>
-#include <limits.h>
 #include <errno.h>
 #include <assert.h>
 #if defined(SET_CAT_) || defined(SET_CAT) || defined(S_) || defined(PS_) \
@@ -85,7 +85,7 @@
 #define SET_CAT(n, m) SET_CAT_(n, m)
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(set, S_(n))
-#define SET_IDLE { 0, 0, 0, 0 }
+#define SET_IDLE { 0, 0, 0, 0, 0 }
 /* Use negative values of <typedef:<PS>uint> to store special things, such that
  range of an index is 2 less than the maximum. (I think these work on
  mathematically-impaired representations (ones', s&m,) and odd TI padding.) */
@@ -124,7 +124,8 @@ static const PS_(hash_fn) PS_(hash) = (SET_HASH);
 #ifdef SET_INVERSE_HASH /* <!-- inv */
 /** Defining `SET_INVERSE_HASH` says that the <typedef:<PS>type> forms a
  bijection with <typedef:<PS>uint>; this is inverse-mapping to
- <typedef:<PS>hash_fn>. This saves having to store the <typedef:<PS>type>. */
+ <typedef:<PS>hash_fn>. This is used to avoid having to store the
+ <typedef:<PS>type>, but may make it slower. */
 typedef PS_(type) (*PS_(inverse_hash_fn))(PS_(uint));
 #error Fixme. Think about how to iterate. Maybe `it` has a temp field?
 #endif /* inv --> */
@@ -195,7 +196,7 @@ struct S_(set) {
 	struct PS_(entry) *entries; /* @ has zero/one key. */
 	PS_(uint) size; /* How many keys, <= capacity. */
 	PS_(uint) top; /* -1 no stack; collided entries growing from the back. */
-	unsigned log_capacity; /* Applies to entries. */
+	unsigned log_capacity, unused; /* Applies to entries. */
 };
 
 /** The capacity of a non-idle `set` is always a power-of-two. */
@@ -268,6 +269,7 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	}
 }
 
+/** Rehashes the `i`th entry of `set`; used in <fn:<PS>buffer>. */
 static void PS_(rehash)(struct S_(set) *const set, const PS_(uint) i) {
 	struct PS_(entry) *e, *f;
 	PS_(uint) hash, j;
