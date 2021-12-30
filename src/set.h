@@ -207,36 +207,36 @@ static PS_(uint) PS_(capacity)(const struct S_(set) *const set)
 static PS_(uint) PS_(hash_to_index)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
-/** Moves the index `i` to the top of the collision stack in non-idle `set`. */
-static void PS_(move_to_top)(struct S_(set) *const set, const PS_(uint) i) {
+/** Moves the index `victim` to the top of the collision stack in non-idle
+ `set`. This is an inconsistent state; one is responsible for filling that
+ hole and linking it with top. */
+static void PS_(move_to_top)(struct S_(set) *const set,
+	const PS_(uint) victim) {
 	struct PS_(entry) *dst, *src;
-	PS_(uint) top, link/*, next*/;
-	assert(set && set->entries
-		&& set->size < PS_(capacity)(set) && i < PS_(capacity)(set));
-	/* Search for an empty entry. Amortized: `n` decrements for `n` entries. */
+	PS_(uint) top, link, next;
+	const PS_(uint) capacity = PS_(capacity)(set);
+	assert(set->size < capacity && victim < capacity);
+	/* Grow the stack with the first empty entry. Amortized. */
 	printf("move_to_top(%lu): top %lu\n",
-		(unsigned long)i, (unsigned long)set->top);
-	if((top = set->top) == SETm1) top = PS_(capacity)(set) - 1;
-	else assert(top), top--; /* By size < capacity. */;
+		(unsigned long)victim, (unsigned long)set->top);
+	if((top = set->top) == SETm1) top = capacity - 1;
+	else assert(top), top--;
 	printf("top decremented %lu\n", (unsigned long)top);
 	while(set->entries[top].next != SETm2) assert(top), top--;
 	printf("linear search top %lu\n", (unsigned long)top);
-	dst = set->entries + (set->top = top) - 1, src = set->entries + i;
+	dst = set->entries + (set->top = top), src = set->entries + victim;
 	/* Occupied to unoccupied. */
 	assert(dst->next == SETm2 && src->next != SETm2);
-	/* Search for the previous link in the linked-list. */
-	link = PS_(hash_to_index)(set, PS_(entry_hash)(src));
+	/* Search for the previous link in the linked-list. \O(n). */
+	for(link = SETm2, next = PS_(hash_to_index)(set, PS_(entry_hash)(src));
+		assert(next < capacity), next != victim;
+		link = next, next = set->entries[link].next);
+	if(link != SETm2) set->entries[link].next = src->next;
+	/* Robin Hood. */
+	PS_(fill_entry)(dst, PS_(entry_key)(src), PS_(entry_hash)(src));
+	dst->next = src->next, src->next = SETm2;
 
 	printf("foo\n");
-	struct PS_(entry) {
-		PS_(uint) next;
-	#ifndef SET_RECALCULATE /* <!-- cache */
-		PS_(uint) hash;
-	#endif /* cache --> */
-	#ifndef SET_INVERSE_HASH /* <!-- !inv */
-		PS_(type) key;
-	#endif /* !inv --> */
-	};
 }
 
 /** `set` will be searched linearly for `key` which has `hash`.
@@ -268,6 +268,33 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	}
 }
 
+static void PS_(rehash)(struct S_(set) *const set, const PS_(uint) i) {
+	struct PS_(entry) *e, *f;
+	PS_(uint) hash, j;
+	e = set->entries + i;
+	/* Empty. */
+	if(e->next == SETm2) {
+		assert(/*n > 1 don't have access*/1 /* Must have been asking more. */
+			&& (set->top == SETm1 || i < set->top) /* Stack full. */);
+		printf("\t%lu: empty.\n", (unsigned long)i);
+		return; /* Empty entry. */
+	}
+	/* Right where it's supposed to be. */
+	if((j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(e))) == i)
+		{ printf("\t%lu: no change.\n", (unsigned long)i); return; }
+	f = set->entries + j, assert(e < f); /* Rehash e=>f = entries + i=>j. */
+	/* Entry to which we're moving it is unoccupied. */
+	if(f->next == SETm2) {
+		PS_(fill_entry)(f, e->key, e->hash);
+		e->next = SETm2; /* Now this is unoccupied. */
+		printf("\t%lu: moved to unoccupied %lu\n",
+			(unsigned long)i, (unsigned long)j);
+		return; /* Moved the entry to an unoccupied spot. */
+	}
+	/* Collision. */
+	assert(0);
+}
+
 /** Ensures that `set` has enough entries to fill `n` more than the size.
  @return Success; otherwise, `errno` will be hash. @throws[ERANGE] Tried
  allocating more then can fit in half <typedef:<PS>uint> or `realloc` doesn't
@@ -278,57 +305,34 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	struct PS_(entry) *entries, *e, *e_end;
 	const unsigned log_c0 = set->log_capacity;
 	unsigned log_c1;
-	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1); /* TI C6000, _etc_ works? */
-	PS_(uint) c0 = (PS_(uint))1 << log_c0, c1, size1, i;
-	assert(set && c0
-		&& (set->entries && log_c0 >= 3 || !set->entries && !log_c0)
-		&& n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
+	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
+		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
+	PS_(uint) c1, size1, i;
+	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
+	assert((!set->entries && !set->size && !log_c0 && !c0
+		|| set->entries && set->size <= c0 && log_c0 >= 3));
 	printf("buffer: max %lu, limit %lu, entries %lu/%lu, new %lu\n",
 		(unsigned long)SETm1, (unsigned long)limit,
 		(unsigned long)set->size, (unsigned long)c0, (unsigned long)n);
-	printf("but: %lu\n", (unsigned long)(SETm1 - (SETm1 >> 1)));
 	if(SETm1 - set->size < n || limit < (size1 = set->size + n))
 		return errno = ERANGE, 0;
-	if(set->entries) log_c1 = log_c0, c1 = c0;
+	if(set->entries) log_c1 = log_c0, c1 = c0 ? c0 : 1;
 	else             log_c1 = 3,      c1 = 8;
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
+	printf("buffer: %lu -> %lu to satisfy %lu.\n",
+		(unsigned long)c0, (unsigned long)c1, (unsigned long)size1);
 	/* Need to allocate more. */
 	if(!(entries = realloc(set->entries, sizeof *entries * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	if(!set->entries) set->top = SETm1;
+	if(!set->entries) set->top = SETm1; /* `top` initialized here when idle. */
 	set->entries = entries, set->log_capacity = log_c1;
-	/* Want zero for initialization of extra entries and stack is re-done. */
-	if(c0 == 1) c0 = 0;
+	/* Initialize new values, reset stack. */
 	for(e = entries + c0, e_end = entries + c1; e < e_end; e++) e->next = SETm2;
 	set->top = SETm1;
 	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
 	/* Expectation value of rehashing a closed entry is the growth amount. */
-	for(i = 0; i < c0; i++) {
-		struct PS_(entry) *f;
-		PS_(uint) hash, j;
-		e = entries + i;
-		if(e->next == SETm2) { /* Empty. */
-			assert(n > 1 /* Must have been asking more, otherwise full. */
-				&& (set->top == SETm1 || i < set->top) /* Stack full. */);
-			printf("\t%lu: empty\n", (unsigned long)i);
-			continue; /* Empty entry. */
-		}
-		if((j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(e))) == i)
-			{ printf("\t%lu: right where it's supposed to be\n",
-			(unsigned long)i);
-			continue; /* Right where it's supposed to be. */ }
-		f = entries + j, assert(e < f); /* Rehash e=>f = entries + i=>j. */
-		if(f->next == SETm2) { /* One we're moving it to is unoccupied. */
-			PS_(fill_entry)(f, e->key, e->hash);
-			e->next = SETm2; /* Now this is unoccupied; the stack is further. */
-			printf("\t%lu: moved to unoccupied %lu\n",
-				(unsigned long)i, (unsigned long)j);
-			continue; /* Moved the entry to an unoccupied spot. */
-		}
-		/* Collision. */
-		assert(0);
-	}
+	for(i = 0; i < c0; i++) PS_(rehash)(set, i);
 	return 1;
 }
 
@@ -350,12 +354,14 @@ static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
 static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	PS_(type) key, PS_(type) *eject) {
 	struct PS_(entry) *entry;
-	PS_(uint) hash, idx, next = SETm1; /* The end of a linked-list. */
+	PS_(uint) hash, idx, next = SETm1 /* The end of a linked-list. */, size;
 	char z[12];
 	assert(set && key);
 	PS_(to_string)(&key, &z);
 	if(eject) *eject = 0;
 	hash = PS_(hash)(key);
+	size = set->size;
+	printf("put(%s): current size %lu.\n", z, (unsigned long)size);
 	if(set->entries && (entry = PS_(get)(set, key, hash))) goto replace;
 	else goto expand;
 replace:
@@ -371,14 +377,15 @@ expand:
 	entry = set->entries + (idx = PS_(hash_to_index)(set, hash));
 	printf("put::expand: index 0x%lu, hash 0x%lx, data %s\n",
 		(unsigned long)idx, (unsigned long)hash, z);
-	set->size++;
+	size++;
 	if(entry->next == SETm2) goto write; /* Unoccupied. */
 	PS_(move_to_top)(set, idx);
-	/*...*/
-	assert(entry->next != SETm2);
+	next = set->top;
+	assert(entry->next == SETm2 && set->entries[next].next != SETm2);
 write:
-	PS_(fill_entry)(entry, key, hash); /* fixme: Robin-hood. */
+	PS_(fill_entry)(entry, key, hash);
 	entry->next = next;
+	set->size = size;
 	return 1;
 }
 

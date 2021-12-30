@@ -129,13 +129,19 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			char z[12];
 			PS_(to_string)(&e->key, &z);
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n"
-				"\t\t<TD ALIGN=\"LEFT\" PORT=\"%lu\"%s>%s</TD>\n",
+				"\t\t<TD ALIGN=\"LEFT\" PORT=\"%lu\"%s%s>%s</TD>\n",
 				collision, bgc, (unsigned long)e->hash,
-				(unsigned long)i, bgc, z);
+				(unsigned long)i, collision, bgc, z);
 		}
 		fprintf(fp, "\t</TR>\n");
 	}
 	fprintf(fp, "</TABLE>>];\n");
+	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
+		struct PS_(entry) *const e = set->entries + i;
+		if(e->next >= SETm2) continue;
+		fprintf(fp, "\tset:%lu:e -> set:%lu:e;\n",
+			(unsigned long)i, (unsigned long)e->next);
+	}
 end:
 	fprintf(fp, "\tnode [color=red];\n"
 		"}\n");
