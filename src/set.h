@@ -208,8 +208,9 @@ static PS_(uint) PS_(hash_to_index)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
 /** Moves the index `victim` to the top of the collision stack in non-idle
- `set`. This is an inconsistent state; one is responsible for filling that
- hole and linking it with top. */
+ `set`, (which is actually the bottom, because the stack grows from the end.)
+ This is an inconsistent state; one is responsible for filling that hole and
+ linking it with top. */
 static void PS_(move_to_top)(struct S_(set) *const set,
 	const PS_(uint) victim) {
 	struct PS_(entry) *dst, *src;
@@ -345,7 +346,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	}
 
 	/* Pick up the open entries and put them in the stack. We do this backwards
-	 to preserve order, (approximately move-to-front.) */
+	 to preserve order, (approximately move-to-front, _cf_ splay trees.) */
 	for(i = c0;;) {
 		break;
 	}
