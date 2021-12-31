@@ -137,9 +137,8 @@ typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
-/** Although one entry holds at most one key, like open hashing, (thus the load
- factor ca'n't go above one,) the buckets are linked. There is no coalescing
- because . */
+/** Entries are stored in a hash table. When a collision occurs, we push the
+ entry out to an unoccupied entry, a stack growing from the back. */
 struct PS_(entry) {
 	PS_(uint) next; /* -2 null, -1 end */
 #ifndef SET_RECALCULATE /* <!-- cache */
@@ -288,25 +287,32 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	printf("buffer: max %lu, limit %lu, entries %lu/%lu, new %lu\n",
 		(unsigned long)SETm1, (unsigned long)limit,
 		(unsigned long)set->size, (unsigned long)c0, (unsigned long)n);
+
+	/* Can we satisfy `n` growth from the buffer? */
 	if(SETm1 - set->size < n || limit < (size1 = set->size + n))
 		return errno = ERANGE, 0;
 	if(set->entries) log_c1 = log_c0, c1 = c0 ? c0 : 1;
 	else             log_c1 = 3,      c1 = 8;
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
+
+	/* No; need to allocate more. */
 	printf("buffer: %lu -> %lu to satisfy %lu.\n",
 		(unsigned long)c0, (unsigned long)c1, (unsigned long)size1);
-	/* Need to allocate more. */
 	if(!(entries = realloc(set->entries, sizeof *entries * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
 	if(!set->entries) set->top = SETm1; /* `top` initialized here when idle. */
 	set->entries = entries, set->log_capacity = log_c1;
+
 	/* Initialize new values, reset stack. */
 	{ struct PS_(entry) *e = entries + c0, *const e_end = entries + c1;
 		for( ; e < e_end; e++) e->next = SETm2; }
 	old_top = set->top, set->top = SETm1;
 	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
-	/* Expectation value of rehashing a closed entry is the growth amount. */
+
+	/* All the closed entries will be set, (the first entry in the bucket.) For
+	 \O(n) time, the order of the buckets may be mixed. Expectation value of
+	 rehashing a closed entry is the growth amount. */
 	for(i = 0; i < c0; i++) {
 		struct PS_(entry) *ie, *je;
 		PS_(uint) hash, j, k;
@@ -338,7 +344,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		assert(0);
 		/* Swap `j`, which is destined to the stack, with `i`, closed. */
 	}
-	/* Pick up the open entries and put them in the stack. */
+
+	/* Pick up the open entries and put them in the stack. We do this backwards
+	 to preserve order, (approximately move-to-front.) */
 	for(i = c0;;) {
 		break;
 	}
