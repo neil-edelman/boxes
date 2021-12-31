@@ -264,7 +264,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(set.size < 10/*00000*/ /*&& !(n & (n - 1))*/) {
+		if(set.size < 10 || set.size < 1000000 && !(n & (n - 1))) {
 			char fn[64];
 			fprintf(stderr, "%lu: set %s.\n",
 				(unsigned long)n, PS_(set_to_string)(&set));

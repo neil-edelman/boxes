@@ -138,8 +138,8 @@ typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
 /** Although one entry holds at most one key, like open hashing, (thus the load
- factor ca'n't go above one,) the buckets are linked. (However, there is no
- coalescing.) */
+ factor ca'n't go above one,) the buckets are linked. There is no coalescing
+ because . */
 struct PS_(entry) {
 	PS_(uint) next; /* -2 null, -1 end */
 #ifndef SET_RECALCULATE /* <!-- cache */
@@ -272,7 +272,7 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 /** Rehashes the `i`th entry of `set`; used in <fn:<PS>buffer>. */
 static void PS_(rehash)(struct S_(set) *const set, const PS_(uint) i) {
 	struct PS_(entry) *e, *f;
-	PS_(uint) hash, j;
+	PS_(uint) hash, j, collide_idx;
 	e = set->entries + i;
 	/* Empty. */
 	if(e->next == SETm2) {
@@ -294,22 +294,27 @@ static void PS_(rehash)(struct S_(set) *const set, const PS_(uint) i) {
 		return; /* Moved the entry to an unoccupied spot. */
 	}
 	/* Collision. */
+	//if(j >= PS_(capacity)(set) / 2) goto stack; could be in the new stack
+	collide_idx = PS_(hash_to_index)(set, PS_(entry_hash)(f));
+	if(j == collide_idx) goto stack; /* Already placed. */
+	assert(0);
+stack:
 	assert(0);
 }
 
 /** Ensures that `set` has enough entries to fill `n` more than the size.
- @return Success; otherwise, `errno` will be hash. @throws[ERANGE] Tried
- allocating more then can fit in half <typedef:<PS>uint> or `realloc` doesn't
- follow [POSIX
- ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html).
- @throws[realloc] */
+ May invalidate `entries` and re-arrange the order.
+ @return Success; otherwise, `errno` will be set. @throws[realloc]
+ @throws[ERANGE] Tried allocating more then can fit in half <typedef:<PS>uint>
+ or `realloc` doesn't follow [POSIX
+ ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). */
 static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
-	struct PS_(entry) *entries, *e, *e_end;
+	struct PS_(entry) *entries;
 	const unsigned log_c0 = set->log_capacity;
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i;
+	PS_(uint) c1, size1, i, old_top;
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	assert((!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
@@ -330,11 +335,46 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	if(!set->entries) set->top = SETm1; /* `top` initialized here when idle. */
 	set->entries = entries, set->log_capacity = log_c1;
 	/* Initialize new values, reset stack. */
-	for(e = entries + c0, e_end = entries + c1; e < e_end; e++) e->next = SETm2;
-	set->top = SETm1;
+	{ struct PS_(entry) *e = entries + c0, *const e_end = entries + c1;
+		for( ; e < e_end; e++) e->next = SETm2; }
+	old_top = set->top, set->top = SETm1;
 	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
 	/* Expectation value of rehashing a closed entry is the growth amount. */
-	for(i = 0; i < c0; i++) PS_(rehash)(set, i);
+	for(i = 0; i < c0; i++) {
+		struct PS_(entry) *ie, *je;
+		PS_(uint) hash, j, k;
+		ie = set->entries + i;
+		/* `i` is empty? */
+		if(ie->next == SETm2) {
+			assert(n > 1 /* Must have been asking more. */
+				&& (old_top == SETm1 || i < old_top) /* Old stack full. */);
+			printf("\t%lu: empty.\n", (unsigned long)i);
+			continue;
+		}
+		/* `i` is closed? */
+		if((j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie))) == i)
+			{ printf("\t%lu: no change.\n", (unsigned long)i); continue; }
+		/* `j` is an unoccupied spot? (_Eg_ in new table or moved.) */
+		if((je = set->entries + j)->next == SETm2) {
+			PS_(fill_entry)(je, ie->key, ie->hash), ie->next = SETm2;
+			printf("\t%lu: moved to unoccupied %lu\n",
+				(unsigned long)i, (unsigned long)j);
+			continue;
+		}
+		/* `j` is closed; `i` goes on the stack later. */
+		if((k = PS_(hash_to_index)(set, PS_(entry_hash)(je))) == j) {
+			printf("\t%lu: %lu is full, wait to put in stack\n",
+				(unsigned long)i, (unsigned long)j);
+			continue;
+		}
+		/* Move `i` to `j` and `j` to `k`, each closed. */
+		assert(0);
+		/* Swap `j`, which is destined to the stack, with `i`, closed. */
+	}
+	/* Pick up the open entries and put them in the stack. */
+	for(i = c0;;) {
+		break;
+	}
 	return 1;
 }
 
