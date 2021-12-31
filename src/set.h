@@ -124,8 +124,7 @@ static const PS_(hash_fn) PS_(hash) = (SET_HASH);
 #ifdef SET_INVERSE_HASH /* <!-- inv */
 /** Defining `SET_INVERSE_HASH` says that the <typedef:<PS>type> forms a
  bijection with <typedef:<PS>uint>; this is inverse-mapping to
- <typedef:<PS>hash_fn>. This is used to avoid having to store the
- <typedef:<PS>type>, but may make it slower. */
+ <typedef:<PS>hash_fn>. Used to avoid having to store the <typedef:<PS>type>. */
 typedef PS_(type) (*PS_(inverse_hash_fn))(PS_(uint));
 #error Fixme. Think about how to iterate. Maybe `it` has a temp field?
 #endif /* inv --> */
@@ -137,8 +136,9 @@ typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
-/** Entries are stored in a hash table. When a collision occurs, we push the
- entry out to an unoccupied entry, a stack growing from the back. */
+/** Buckets are linked-lists of entries, and entries are stored in a hash
+ table. When a collision occurs, we push the entry out to an unoccupied stack,
+ growing from the back. */
 struct PS_(entry) {
 	PS_(uint) next; /* -2 null, -1 end */
 #ifndef SET_RECALCULATE /* <!-- cache */
@@ -296,12 +296,12 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
 
-	/* No; need to allocate more. */
+	/* Otherwise, need to allocate more. */
 	printf("buffer: %lu -> %lu to satisfy %lu.\n",
 		(unsigned long)c0, (unsigned long)c1, (unsigned long)size1);
 	if(!(entries = realloc(set->entries, sizeof *entries * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	if(!set->entries) set->top = SETm1; /* `top` initialized here when idle. */
+	if(!set->entries) set->top = SETm1; /* Idle `top` initialized here. */
 	set->entries = entries, set->log_capacity = log_c1;
 
 	/* Initialize new values, reset stack. */
@@ -310,8 +310,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	old_top = set->top, set->top = SETm1;
 	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
 
-	/* Closed entries are set, (the first entry in the bucket.) For \O(n) time,
-	 the order of the buckets may be mixed. */
+	/* Rehash the closed entries, (the first entry in the bucket.) For \O(n)
+	 time, the order of the buckets may be mixed. */
 	for(i = 0; i < c0; i++) {
 		struct PS_(entry) *ie, *je;
 		PS_(uint) hash, j, k;
@@ -452,9 +452,9 @@ static int S_(set_reserve(buffer?))(struct S_(set) *const hash, const size_t res
  @return Any ejected key or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. It is not
  always possible to tell the difference between an error and a unique key.
- Successfully calling <fn:<S>set_buffer> before ensures that this does not
- happen, setting `errno` to zero before also distinguishes.
- @order Average amortised \O(1), (hash distributes keys uniformly); worst \O(n). @allow */
+ If needed, before calling this, successfully calling <fn:<S>set_buffer>, or
+ setting `errno` to zero. @order Average amortised \O(1), (hash distributes
+ keys uniformly); worst \O(n) (are you sure that's up to date?). @allow */
 static PS_(type) S_(set_put)(struct S_(set) *const hash, const PS_(type) key) {
 	PS_(type) collide;
 	/* No error information. */
