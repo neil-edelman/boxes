@@ -269,39 +269,6 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	}
 }
 
-/** Rehashes the `i`th entry of `set`; used in <fn:<PS>buffer>. */
-static void PS_(rehash)(struct S_(set) *const set, const PS_(uint) i) {
-	struct PS_(entry) *e, *f;
-	PS_(uint) hash, j, collide_idx;
-	e = set->entries + i;
-	/* Empty. */
-	if(e->next == SETm2) {
-		assert(/*n > 1 don't have access*/1 /* Must have been asking more. */
-			&& (set->top == SETm1 || i < set->top) /* Stack full. */);
-		printf("\t%lu: empty.\n", (unsigned long)i);
-		return; /* Empty entry. */
-	}
-	/* Right where it's supposed to be. */
-	if((j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(e))) == i)
-		{ printf("\t%lu: no change.\n", (unsigned long)i); return; }
-	f = set->entries + j, assert(e < f); /* Rehash e=>f = entries + i=>j. */
-	/* Entry to which we're moving it is unoccupied. */
-	if(f->next == SETm2) {
-		PS_(fill_entry)(f, e->key, e->hash);
-		e->next = SETm2; /* Now this is unoccupied. */
-		printf("\t%lu: moved to unoccupied %lu\n",
-			(unsigned long)i, (unsigned long)j);
-		return; /* Moved the entry to an unoccupied spot. */
-	}
-	/* Collision. */
-	//if(j >= PS_(capacity)(set) / 2) goto stack; could be in the new stack
-	collide_idx = PS_(hash_to_index)(set, PS_(entry_hash)(f));
-	if(j == collide_idx) goto stack; /* Already placed. */
-	assert(0);
-stack:
-	assert(0);
-}
-
 /** Ensures that `set` has enough entries to fill `n` more than the size.
  May invalidate `entries` and re-arrange the order.
  @return Success; otherwise, `errno` will be set. @throws[realloc]
