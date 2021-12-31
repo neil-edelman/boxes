@@ -310,9 +310,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	old_top = set->top, set->top = SETm1;
 	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
 
-	/* All the closed entries will be set, (the first entry in the bucket.) For
-	 \O(n) time, the order of the buckets may be mixed. Expectation value of
-	 rehashing a closed entry is the growth amount. */
+	/* Closed entries are set, (the first entry in the bucket.) For \O(n) time,
+	 the order of the buckets may be mixed. */
 	for(i = 0; i < c0; i++) {
 		struct PS_(entry) *ie, *je;
 		PS_(uint) hash, j, k;
@@ -324,8 +323,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			printf("\t%lu: empty.\n", (unsigned long)i);
 			continue;
 		}
-		/* `i` is closed? */
-		if((j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie))) == i)
+		/* `i` is already closed? Expectation value is the growth amount. */
+		if(i == (j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie))))
 			{ printf("\t%lu: no change.\n", (unsigned long)i); continue; }
 		/* `j` is an unoccupied spot? (_Eg_ in new table or moved.) */
 		if((je = set->entries + j)->next == SETm2) {
