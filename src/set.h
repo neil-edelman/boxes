@@ -91,7 +91,6 @@
  mathematically-impaired representations, ones', s&m, and odd TI padding.) */
 #define SETm1 ((PS_(uint))~(PS_(uint))0)
 #define SETm2 (SETm1 - 1)
-#define SETm3 (SETm2 - 1)
 #endif /* idempotent --> */
 
 
@@ -293,7 +292,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, old_top;
+	PS_(uint) c1, size1, i, old_top, stack = SETm1;
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	assert((!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
@@ -329,7 +328,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		struct PS_(entry) *ie, *je;
 		PS_(uint) hash, j, k;
 		ie = set->entries + i;
-		/* `i` is empty? */
+		/* `i` is empty? Skip. */
 		if(ie->next == SETm2) {
 			assert(n > 1 /* Must have been asking more. */
 				&& (old_top == SETm1 || i < old_top) /* Old stack full. */);
@@ -339,7 +338,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		/* `i` is already closed? Expectation value is the growth amount. */
 		if(i == (j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie))))
 			{ ie->next = SETm1; printf("\t%lu: no change.\n", (unsigned long)i); continue; }
-		/* `j` is an unoccupied spot? */
+		/* `j` is an unoccupied spot? Just go to it. */
 		if((je = set->entries + j)->next == SETm2) {
 			PS_(fill_entry)(je, PS_(entry_key)(ie), PS_(entry_hash)(ie));
 			ie->next = SETm2;
@@ -347,9 +346,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 				(unsigned long)i, (unsigned long)j);
 			continue;
 		}
-		/* `j` is closed; `i` goes on the stack later. */
+		/* `j` is closed; `i` goes on the temporary stack. */
 		if((k = PS_(hash_to_index)(set, PS_(entry_hash)(je))) == j) {
-			ie->next = SETm3; /* Flag for pickup; the one time -3 is used. */
+			ie->next = stack, stack = i;
 			printf("\t%lu: %lu is full, wait to put in stack\n",
 				(unsigned long)i, (unsigned long)j);
 			continue;
@@ -360,7 +359,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	}
 
 	{ PS_(uint) j;
-	printf("intermediate:\n");
+	printf("intermediate: stack %lu\n", (unsigned long)stack);
 	for(j = 0; j < PS_(capacity)(set); j++) {
 		struct PS_(entry) *je = set->entries + j;
 		PS_(type) key;
@@ -371,7 +370,6 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		PS_(to_string)(&key, &z);
 		printf("\"%s\"", z);
 		if(je->next == SETm1) { printf("\n"); continue; }
-		if(je->next == SETm3) { printf(" (flaged)\n"); continue; }
 		printf(" -> %lu\n", (unsigned long)je->next);
 	}}
 
