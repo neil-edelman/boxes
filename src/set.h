@@ -292,7 +292,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, old_top, stack = SETm1;
+	PS_(uint) c1, size1, i, old_top, open;
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	assert((!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
@@ -316,14 +316,18 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	if(!set->entries) set->top = SETm1; /* Idle `top` initialized here. */
 	set->entries = entries, set->log_capacity = log_c1;
 
-	/* Initialize new values, reset stack. */
+	/* Initialize new values, reset stack. (Setting negative a whole bunch of
+	 negative values probabilistically takes more power then is optimal, but we
+	 aim for simplicity foremost.) */
 	{ struct PS_(entry) *e = entries + c0, *const e_end = entries + c1;
 		for( ; e < e_end; e++) e->next = SETm2; }
 	old_top = set->top, set->top = SETm1;
-	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
 
-	/* Rehash the closed entries, (the first entry in the bucket.) For \O(n)
-	 time, the order of the buckets may be mixed. */
+	/* Rehash the closed entries, (the first entry in the bucket); create a
+	 temporary stack out the `open` entries so they can quickly be filled in
+	 the new stack. For \O(n) time, the order of the buckets may be mixed. */
+	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
+	open = SETm1;
 	for(i = 0; i < c0; i++) {
 		struct PS_(entry) *ie, *je;
 		PS_(uint) hash, j, k;
@@ -335,7 +339,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			printf("\t%lu: empty.\n", (unsigned long)i);
 			continue;
 		}
-		/* `i` is already closed? Expectation value is the growth amount. */
+		/* `i` is already closed? E[1 / growth amount]. */
 		if(i == (j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie))))
 			{ ie->next = SETm1; printf("\t%lu: no change.\n", (unsigned long)i); continue; }
 		/* `j` is an unoccupied spot? Just go to it. */
@@ -346,10 +350,10 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 				(unsigned long)i, (unsigned long)j);
 			continue;
 		}
-		/* `j` is closed; `i` goes on the temporary stack. */
+		/* `j` is closed; `i` is open, goes on the temporary `open` stack. */
 		if((k = PS_(hash_to_index)(set, PS_(entry_hash)(je))) == j) {
-			ie->next = stack, stack = i;
-			printf("\t%lu: %lu is full, wait to put in stack\n",
+			ie->next = open, open = i;
+			printf("\t%lu: %lu is full,  to put in stack\n",
 				(unsigned long)i, (unsigned long)j);
 			continue;
 		}
@@ -359,7 +363,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	}
 
 	{ PS_(uint) j;
-	printf("intermediate: stack %lu\n", (unsigned long)stack);
+	printf("intermediate: open stack %lu\n", (unsigned long)open);
 	for(j = 0; j < PS_(capacity)(set); j++) {
 		struct PS_(entry) *je = set->entries + j;
 		PS_(type) key;
@@ -373,27 +377,35 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		printf(" -> %lu\n", (unsigned long)je->next);
 	}}
 
-	/* Pick up the open entries and put them in the stack. We do this backwards
-	 to preserve order, (approximately move-to-front.) Stack empty will skip. */
-	while(i > old_top) {
-		struct PS_(entry) *ie = set->entries + --i, *je;
-		PS_(uint) j, hash;
-		/* This is empty or closed. */
-		if(ie->next == SETm2
-			|| i == (j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie)))) {
-			printf("\t%lu: no change.\n", (unsigned long)i);
-			continue;
-		}
-		/* Otherwise, pick up and put on the stack. */
-		je = set->entries + j;
-		assert(PS_(entry_hash)(je) != SETm2
-			&& PS_(hash_to_index)(set, PS_(entry_hash)(je)) == j);
+	/* Move from the temporary `open` stack in the lower half to the real stack
+	 in the upper half. */
+	while(open != SETm1) {
+		struct PS_(entry) *open_e = set->entries + open;
 		PS_(grow_stack)(set);
-		PS_(fill_entry)(set->entries + set->top, PS_(entry_key)(ie), hash);
-		je->next = SETm2;
-		printf("\t%lu: moved to %lu\n",
-			(unsigned long)i, (unsigned long)set->top);
+		PS_(fill_entry)(set->entries + set->top,
+			PS_(entry_key)(open_e), PS_(entry_hash)(open_e));
+		open = open_e->next, open_e->next = SETm2;
+		/* ... link it with something. */
+		printf("\t%lu: moved to %lu; open %lu\n",
+			(unsigned long)i, (unsigned long)set->top, (unsigned long)open);
 	}
+
+	{ PS_(uint) j;
+	printf("intermediate: open stack %lu\n", (unsigned long)open);
+	for(j = 0; j < PS_(capacity)(set); j++) {
+		struct PS_(entry) *je = set->entries + j;
+		PS_(type) key;
+		char z[12];
+		printf("\t%lu: ", (unsigned long)j);
+		if(je->next == SETm2) { printf("--\n"); continue; }
+		key = PS_(entry_key)(je);
+		PS_(to_string)(&key, &z);
+		printf("\"%s\"", z);
+		if(je->next == SETm1) { printf("\n"); continue; }
+		printf(" -> %lu\n", (unsigned long)je->next);
+	}}
+
+	printf("still not right\n");
 	return 1;
 }
 

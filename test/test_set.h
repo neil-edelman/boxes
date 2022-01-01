@@ -95,7 +95,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		"\t</TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD>&nbsp;</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E(bucket)</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E[no bucket]</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f(%.1f)</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
