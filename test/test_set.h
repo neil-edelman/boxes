@@ -83,7 +83,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		"\tfontface=modern;\n");
 	if(!set->entries) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
 	PS_(collect)(set);
-	assert((size_t)set->size == PS_(stats).n);
+	//assert((size_t)set->size == PS_(stats).n);
 	fprintf(fp,
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
 		"\tset [label=<<TABLE BORDER=\"0\">\n"

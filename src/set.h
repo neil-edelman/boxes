@@ -1,7 +1,7 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Unordered hash set
+ @subtitle Hash set
 
  ![Example of <string>set.](../web/set.png)
 
@@ -207,6 +207,18 @@ static PS_(uint) PS_(capacity)(const struct S_(set) *const set)
 static PS_(uint) PS_(hash_to_index)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
+/** This is amortized; every value takes at most one top decrement.
+ @return The top of `set` will be empty. */
+static void PS_(grow_stack)(struct S_(set) *const set) {
+	PS_(uint) top = set->top;
+	assert(set && set->entries && top);
+	top = (top == SETm1 ? PS_(capacity)(set) : top) - 1;
+	printf("top decremented %lu\n", (unsigned long)top);
+	while(set->entries[top].next != SETm2) assert(top), top--;
+	printf("linear search top %lu\n", (unsigned long)top);
+	set->top = top;
+}
+
 /** Moves the index `victim` to the top of the collision stack in non-idle
  `set`, (which is actually the bottom, because the stack grows from the end.)
  This is an inconsistent state; one is responsible for filling that hole and
@@ -214,18 +226,14 @@ static PS_(uint) PS_(hash_to_index)(const struct S_(set) *const set,
 static void PS_(move_to_top)(struct S_(set) *const set,
 	const PS_(uint) victim) {
 	struct PS_(entry) *dst, *src;
-	PS_(uint) top, link, next;
+	PS_(uint) link, next;
 	const PS_(uint) capacity = PS_(capacity)(set);
 	assert(set->size < capacity && victim < capacity);
 	/* Grow the stack with the first empty entry. Amortized. */
 	printf("move_to_top(%lu): top %lu\n",
 		(unsigned long)victim, (unsigned long)set->top);
-	if((top = set->top) == SETm1) top = capacity - 1;
-	else assert(top), top--;
-	printf("top decremented %lu\n", (unsigned long)top);
-	while(set->entries[top].next != SETm2) assert(top), top--;
-	printf("linear search top %lu\n", (unsigned long)top);
-	dst = set->entries + (set->top = top), src = set->entries + victim;
+	PS_(grow_stack)(set);
+	dst = set->entries + set->top, src = set->entries + victim;
 	/* Occupied to unoccupied. */
 	assert(dst->next == SETm2 && src->next != SETm2);
 	/* Search for the previous link in the linked-list. \O(n). */
@@ -241,7 +249,7 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 }
 
 /** `set` will be searched linearly for `key` which has `hash`.
- @fixme Fix for inverse. @fixme Move to front? */
+ @fixme Fix for inverse. @fixme Move to front like splay trees? */
 static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	const PS_(type) key, const PS_(uint) hash) {
 	struct PS_(entry) *entry;
@@ -268,6 +276,9 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 		assert(next != SETm2); /* -2 null: linked-list integrity. */
 	}
 }
+
+/***********fixme*/
+static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
 
 /** Ensures that `set` has enough entries to fill `n` more than the size.
  May invalidate `entries` and re-arrange the order.
@@ -324,12 +335,14 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			printf("\t%lu: empty.\n", (unsigned long)i);
 			continue;
 		}
+		ie->next = SETm1;
 		/* `i` is already closed? Expectation value is the growth amount. */
 		if(i == (j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie))))
 			{ printf("\t%lu: no change.\n", (unsigned long)i); continue; }
-		/* `j` is an unoccupied spot? (_Eg_ in new table or moved.) */
+		/* `j` is an unoccupied spot? */
 		if((je = set->entries + j)->next == SETm2) {
-			PS_(fill_entry)(je, ie->key, ie->hash), ie->next = SETm2;
+			PS_(fill_entry)(je, PS_(entry_key)(ie), PS_(entry_hash)(ie));
+			ie->next = SETm2;
 			printf("\t%lu: moved to unoccupied %lu\n",
 				(unsigned long)i, (unsigned long)j);
 			continue;
@@ -340,15 +353,46 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 				(unsigned long)i, (unsigned long)j);
 			continue;
 		}
-		/* Move `i` to `j` and `j` to `k`, each closed. */
 		assert(0);
+		/* Move `i` to `j` and `j` to `k`, each closed. */
 		/* Swap `j`, which is destined to the stack, with `i`, closed. */
 	}
 
+	{ PS_(uint) j;
+	printf("intermediate:\n");
+	for(j = 0; j < PS_(capacity)(set); j++) {
+		struct PS_(entry) *je = set->entries + j;
+		PS_(type) key;
+		char z[12];
+		printf("\t%lu: ", (unsigned long)j);
+		if(je->next == SETm2) { printf("--\n"); continue; }
+		key = PS_(entry_key)(je);
+		PS_(to_string)(&key, &z);
+		printf("\"%s\"", z);
+		if(je->next == SETm1) { printf("\n"); continue; }
+		printf(" -> %lu\n", (unsigned long)je->next);
+	}}
+
 	/* Pick up the open entries and put them in the stack. We do this backwards
-	 to preserve order, (approximately move-to-front, _cf_ splay trees.) */
-	for(i = c0;;) {
-		break;
+	 to preserve order, (approximately move-to-front.) Stack empty will skip. */
+	while(i > old_top) {
+		struct PS_(entry) *ie = set->entries + --i, *je;
+		PS_(uint) j, hash;
+		/* This is empty or closed. */
+		if(ie->next == SETm2
+			|| i == (j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie)))) {
+			printf("\t%lu: no change.\n", (unsigned long)i);
+			continue;
+		}
+		/* Otherwise, pick up and put on the stack. */
+		je = set->entries + j;
+		assert(PS_(entry_hash)(je) != SETm2
+			&& PS_(hash_to_index)(set, PS_(entry_hash)(je)) == j);
+		PS_(grow_stack)(set);
+		PS_(fill_entry)(set->entries + set->top, PS_(entry_key)(ie), hash);
+		je->next = SETm2;
+		printf("\t%lu: moved to %lu\n",
+			(unsigned long)i, (unsigned long)set->top);
 	}
 	return 1;
 }
@@ -360,9 +404,6 @@ typedef int (*PS_(replace_fn))(PS_(type) original, PS_(type) replace);
  `replace` are ignored. @implements `<PS>replace_fn` */
 static int PS_(false)(PS_(type) original, PS_(type) replace)
 	{ (void)(original); (void)(replace); return 0; }
-
-/* **********fixme*/
-static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
 
 /** Put `key` in `hash` as long as `replace` is null or returns true.
  @param[equal] If non-null, the equal element, if any. If `replace`
