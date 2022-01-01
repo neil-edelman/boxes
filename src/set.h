@@ -87,10 +87,11 @@
 #define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0, 0 }
 /* Use negative values of <typedef:<PS>uint> to store special things, such that
- range of an index is 2 less than the maximum. (I think these work on
- mathematically-impaired representations (ones', s&m,) and odd TI padding.) */
+ range of an index is 3 less than the maximum. (I think these work on
+ mathematically-impaired representations, ones', s&m, and odd TI padding.) */
 #define SETm1 ((PS_(uint))~(PS_(uint))0)
 #define SETm2 (SETm1 - 1)
+#define SETm3 (SETm2 - 1)
 #endif /* idempotent --> */
 
 
@@ -335,10 +336,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			printf("\t%lu: empty.\n", (unsigned long)i);
 			continue;
 		}
-		ie->next = SETm1;
 		/* `i` is already closed? Expectation value is the growth amount. */
 		if(i == (j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie))))
-			{ printf("\t%lu: no change.\n", (unsigned long)i); continue; }
+			{ ie->next = SETm1; printf("\t%lu: no change.\n", (unsigned long)i); continue; }
 		/* `j` is an unoccupied spot? */
 		if((je = set->entries + j)->next == SETm2) {
 			PS_(fill_entry)(je, PS_(entry_key)(ie), PS_(entry_hash)(ie));
@@ -349,6 +349,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 		/* `j` is closed; `i` goes on the stack later. */
 		if((k = PS_(hash_to_index)(set, PS_(entry_hash)(je))) == j) {
+			ie->next = SETm3; /* Flag for pickup; the one time -3 is used. */
 			printf("\t%lu: %lu is full, wait to put in stack\n",
 				(unsigned long)i, (unsigned long)j);
 			continue;
@@ -370,6 +371,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		PS_(to_string)(&key, &z);
 		printf("\"%s\"", z);
 		if(je->next == SETm1) { printf("\n"); continue; }
+		if(je->next == SETm3) { printf(" (flaged)\n"); continue; }
 		printf(" -> %lu\n", (unsigned long)je->next);
 	}}
 
