@@ -27,7 +27,7 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 	entry = set->entries + idx;
 	if((next = entry->next) == SETm2
 		|| set->top != SETm1 && set->top <= idx /* In range of stack. */
-		&& idx != PS_(hash_to_index)(set, PS_(entry_hash)(entry))) return 0;
+		&& idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
 	for( ; ; ) {
 		no++;
 		if(next == SETm1) return no;
@@ -124,14 +124,18 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			top, bgc, (unsigned long)i);
 		if(e->next != SETm2) {
 			const char *const collision
-				= PS_(hash_to_index)(set, PS_(entry_hash)(e)) != i ?
+				= PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) != i ?
 				" BORDER=\"1\"" : "";
+			const char *const closed
+				= PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) == i ? "⬤" : "◯";
 			char z[12];
 			PS_(to_string)(&e->key, &z);
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n"
-				"\t\t<TD ALIGN=\"LEFT\" PORT=\"%lu\"%s%s>%s</TD>\n",
+				"\t\t<TD ALIGN=\"LEFT\"%s%s>%s</TD>\n"
+				"\t\t<TD ALIGN=\"RIGHT\" PORT=\"%lu\"%s%s>%s</TD>\n",
 				collision, bgc, (unsigned long)e->hash,
-				(unsigned long)i, collision, bgc, z);
+				collision, bgc, z,
+				(unsigned long)i, collision, bgc, closed);
 		}
 		fprintf(fp, "\t</TR>\n");
 	}
@@ -166,7 +170,7 @@ static void PS_(histogram)(const struct S_(set) *const set,
 			size_t items;
 			e = set->entries + i;
 			if(e->next == SETm2 || set->top != SETm1 && set->top <= i
-				&& i != PS_(hash_to_index)(set, PS_(entry_hash)(e)))
+				&& i != PS_(hash_to_bucket)(set, PS_(entry_hash)(e)))
 				continue;
 			//= PS_(count)(set, b);
 			continue;

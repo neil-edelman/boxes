@@ -203,8 +203,9 @@ static PS_(uint) PS_(capacity)(const struct S_(set) *const set)
 	{ return assert(set && set->entries && set->log_capacity >= 3),
 	(PS_(uint))1 << set->log_capacity; }
 
-/** @return Indexes an entry from non-idle `set` given the `hash`. */
-static PS_(uint) PS_(hash_to_index)(const struct S_(set) *const set,
+/** @return Indexes the first entry in the bucket (a closed entry) from
+ non-idle `set` given the `hash`. */
+static PS_(uint) PS_(hash_to_bucket)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
 /** This is amortized; every value takes at most one top decrement.
@@ -213,9 +214,9 @@ static void PS_(grow_stack)(struct S_(set) *const set) {
 	PS_(uint) top = set->top;
 	assert(set && set->entries && top);
 	top = (top == SETm1 ? PS_(capacity)(set) : top) - 1;
-	printf("top decremented %lu\n", (unsigned long)top);
+	/*printf("top decremented %lu\n", (unsigned long)top);*/
 	while(set->entries[top].next != SETm2) assert(top), top--;
-	printf("linear search top %lu\n", (unsigned long)top);
+	/*printf("linear search top %lu\n", (unsigned long)top);*/
 	set->top = top;
 }
 
@@ -225,27 +226,25 @@ static void PS_(grow_stack)(struct S_(set) *const set) {
  linking it with top. */
 static void PS_(move_to_top)(struct S_(set) *const set,
 	const PS_(uint) victim) {
-	struct PS_(entry) *dst, *src;
-	PS_(uint) link, next;
+	struct PS_(entry) *top, *vic;
+	PS_(uint) to_next, next;
 	const PS_(uint) capacity = PS_(capacity)(set);
 	assert(set->size < capacity && victim < capacity);
 	/* Grow the stack with the first empty entry. Amortized. */
 	printf("move_to_top(%lu): top %lu\n",
 		(unsigned long)victim, (unsigned long)set->top);
 	PS_(grow_stack)(set);
-	dst = set->entries + set->top, src = set->entries + victim;
+	top = set->entries + set->top, vic = set->entries + victim;
 	/* Occupied to unoccupied. */
-	assert(dst->next == SETm2 && src->next != SETm2);
-	/* Search for the previous link in the linked-list. \O(n). */
-	for(link = SETm2, next = PS_(hash_to_index)(set, PS_(entry_hash)(src));
+	assert(top->next == SETm2 && vic->next != SETm2);
+	/* Search for the previous link in the linked-list. \O(|bucket|). */
+	for(to_next = SETm2, next = PS_(hash_to_bucket)(set, PS_(entry_hash)(vic));
 		assert(next < capacity), next != victim;
-		link = next, next = set->entries[link].next);
-	if(link != SETm2) set->entries[link].next = src->next;
-	/* Robin Hood. */
-	PS_(fill_entry)(dst, PS_(entry_key)(src), PS_(entry_hash)(src));
-	dst->next = src->next, src->next = SETm2;
-
-	printf("foo\n");
+		to_next = next, next = set->entries[next].next);
+	/* Move `vic` to `top`. */
+	if(to_next != SETm2) set->entries[to_next].next = vic->next;
+	PS_(fill_entry)(top, PS_(entry_key)(vic), PS_(entry_hash)(vic)); /* fixme */
+	top->next = vic->next, vic->next = SETm2;
 }
 
 /** `set` will be searched linearly for `key` which has `hash`.
@@ -255,11 +254,11 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	struct PS_(entry) *entry;
 	PS_(uint) idx, next;
 	assert(set && set->entries && set->log_capacity);
-	entry = set->entries + (idx = PS_(hash_to_index)(set, hash));
+	entry = set->entries + (idx = PS_(hash_to_bucket)(set, hash));
 	/* Not the start of a bucket: empty or in the collision stack. */
 	if((next = entry->next) == SETm2
 		|| set->top != SETm1 && set->top <= idx /* In range of stack. */
-		&& idx != PS_(hash_to_index)(set, PS_(entry_hash)(entry))) return 0;
+		&& idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
 	for( ; ; ) {
 #ifdef SET_RECALCULATE /* <!-- !cache: always go to next predicate. */
 		const int hashes_are_equal = ((void)(hash), 1);
@@ -292,7 +291,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, old_top, open;
+	PS_(uint) c1, size1, i, old_top, op;
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	assert((!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
@@ -327,8 +326,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	 temporary stack out the `open` entries so they can quickly be filled in
 	 the new stack. For \O(n) time, the order of the buckets may be mixed. */
 	printf("buffer: rehash %lu entries\n", (unsigned long)c0);
-	open = SETm1;
+	op = SETm1;
 	for(i = 0; i < c0; i++) {
+		char z[12];
 		struct PS_(entry) *ie, *je;
 		PS_(uint) hash, j, k;
 		ie = set->entries + i;
@@ -339,22 +339,24 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			printf("\t%lu: empty.\n", (unsigned long)i);
 			continue;
 		}
+		/* Debug. */
+		{ PS_(type) key = PS_(entry_key)(ie); PS_(to_string)(&key, &z); }
 		/* `i` is already closed? E[1 / growth amount]. */
-		if(i == (j = PS_(hash_to_index)(set, hash = PS_(entry_hash)(ie))))
-			{ ie->next = SETm1; printf("\t%lu: no change.\n", (unsigned long)i); continue; }
+		if(i == (j = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(ie))))
+			{ ie->next = SETm1; printf("\t%lu: \"%s\" no change.\n", (unsigned long)i, z); continue; }
 		/* `j` is an unoccupied spot? Just go to it. */
 		if((je = set->entries + j)->next == SETm2) {
 			PS_(fill_entry)(je, PS_(entry_key)(ie), PS_(entry_hash)(ie));
 			ie->next = SETm2;
-			printf("\t%lu: moved to unoccupied %lu\n",
-				(unsigned long)i, (unsigned long)j);
+			printf("\t%lu: \"%s\" moved to unoccupied %lu\n",
+				(unsigned long)i, z, (unsigned long)j);
 			continue;
 		}
 		/* `j` is closed; `i` is open, goes on the temporary `open` stack. */
-		if((k = PS_(hash_to_index)(set, PS_(entry_hash)(je))) == j) {
-			ie->next = open, open = i;
-			printf("\t%lu: %lu is full,  to put in stack\n",
-				(unsigned long)i, (unsigned long)j);
+		if((k = PS_(hash_to_bucket)(set, PS_(entry_hash)(je))) == j) {
+			ie->next = op, op = i; /* Push `open`. */
+			printf("\t%lu: \"%s\" %lu is full, added to open stack\n",
+				(unsigned long)i, z, (unsigned long)j);
 			continue;
 		}
 		assert(0);
@@ -362,36 +364,28 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		/* Swap `j`, which is destined to the stack, with `i`, closed. */
 	}
 
-	{ PS_(uint) j;
-	printf("intermediate: open stack %lu\n", (unsigned long)open);
-	for(j = 0; j < PS_(capacity)(set); j++) {
-		struct PS_(entry) *je = set->entries + j;
-		PS_(type) key;
-		char z[12];
-		printf("\t%lu: ", (unsigned long)j);
-		if(je->next == SETm2) { printf("--\n"); continue; }
-		key = PS_(entry_key)(je);
-		PS_(to_string)(&key, &z);
-		printf("\"%s\"", z);
-		if(je->next == SETm1) { printf("\n"); continue; }
-		printf(" -> %lu\n", (unsigned long)je->next);
-	}}
-
 	/* Move from the temporary `open` stack in the lower half to the real stack
 	 in the upper half. */
-	while(open != SETm1) {
-		struct PS_(entry) *open_e = set->entries + open;
-		PS_(grow_stack)(set);
-		PS_(fill_entry)(set->entries + set->top,
-			PS_(entry_key)(open_e), PS_(entry_hash)(open_e));
-		open = open_e->next, open_e->next = SETm2;
-		/* ... link it with something. */
-		printf("\t%lu: moved to %lu; open %lu\n",
-			(unsigned long)i, (unsigned long)set->top, (unsigned long)open);
+	while(op != SETm1) {
+		char z[12];
+		struct PS_(entry) *open = set->entries + op, *top, *const first
+			= set->entries + PS_(hash_to_bucket)(set, PS_(entry_hash)(open));
+		assert(first->next != SETm2); /* All closed entries have been set. */
+		PS_(grow_stack)(set), top = set->entries + set->top;
+		PS_(fill_entry)(top, PS_(entry_key)(open), PS_(entry_hash)(open)); /*fixme*/
+		op = open->next, open->next = SETm2; /* Pop `open`. */
+		/* Maintain monotonic open entry access by placing it second. */
+		top->next = first->next, first->next = set->top;
+		{
+			PS_(type) key = PS_(entry_key)(top);
+			PS_(to_string)(&key, &z);
+			printf("\tstack top %lu filled with %s; open stack %lu\n",
+				(unsigned long)set->top, z, (unsigned long)op);
+		}
 	}
 
 	{ PS_(uint) j;
-	printf("intermediate: open stack %lu\n", (unsigned long)open);
+	printf("buffer::rehash: top %ld\n", (long)set->top);
 	for(j = 0; j < PS_(capacity)(set); j++) {
 		struct PS_(entry) *je = set->entries + j;
 		PS_(type) key;
@@ -404,8 +398,6 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		if(je->next == SETm1) { printf("\n"); continue; }
 		printf(" -> %lu\n", (unsigned long)je->next);
 	}}
-
-	printf("still not right\n");
 	return 1;
 }
 
@@ -444,7 +436,7 @@ replace:
 	goto write;
 expand:
 	if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
-	entry = set->entries + (idx = PS_(hash_to_index)(set, hash));
+	entry = set->entries + (idx = PS_(hash_to_bucket)(set, hash));
 	printf("put::expand: index 0x%lu, hash 0x%lx, data %s\n",
 		(unsigned long)idx, (unsigned long)hash, z);
 	size++;
