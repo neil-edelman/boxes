@@ -14,7 +14,7 @@
 
 ![Example of &lt;string&gt;set.](web/set.png)
 
-[&lt;S&gt;set](#user-content-tag-54aaac2) is a hash set of unordered [&lt;PS&gt;key](#user-content-tag-759eb157) that doesn't allow duplication\. It must be supplied a hash function and equality function\.
+[&lt;S&gt;set](#user-content-tag-54aaac2) is a hash set of unordered [&lt;PS&gt;type](#user-content-tag-5ef437c0) that doesn't allow duplication\. It must be supplied a hash function and equality function\.
 
 This code is simple by design, and may not be suited for more complex situations, where hash keys are expected to collide, or adversarial attacks\. While enclosing a pointer [&lt;PS&gt;key](#user-content-tag-759eb157) in a larger `struct` can give an associative array, compile\-time constant sets are better handled with [gperf](https://www.gnu.org/software/gperf/)\. Also, [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library that provides performance for large sets\.
 

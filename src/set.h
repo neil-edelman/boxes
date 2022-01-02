@@ -5,7 +5,7 @@
 
  ![Example of <string>set.](../web/set.png)
 
- <tag:<S>set> is a hash set of unordered <tag:<PS>key> that doesn't allow
+ <tag:<S>set> is a hash set of unordered <tag:<PS>type> that doesn't allow
  duplication. It must be supplied a hash function and equality function.
 
  This code is simple by design, and may not be suited for more complex

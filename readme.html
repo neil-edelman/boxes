@@ -49,9 +49,9 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of &lt;string&gt;set." src = "web/set.png" width = 583 height = 308></p>
+<p><img alt = "Example of &lt;string&gt;set." src = "web/set.png" width = 435 height = 615></p>
 
-<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a hash set of unordered <a href = "#tag:&lt;PS&gt;key">&lt;PS&gt;key</a> that doesn't allow duplication. It must be supplied a hash function and equality function.</p>
+<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a hash set of unordered <a href = "#tag:&lt;PS&gt;type">&lt;PS&gt;type</a> that doesn't allow duplication. It must be supplied a hash function and equality function.</p>
 
 <p>This code is simple by design, and may not be suited for more complex situations, where hash keys are expected to collide, or adversarial attacks. While enclosing a pointer <a href = "#tag:&lt;PS&gt;key">&lt;PS&gt;key</a> in a larger <code>struct</code> can give an associative array, compile-time constant sets are better handled with <a href = "https://www.gnu.org/software/gperf/">gperf</a>. Also, <a href = "http://cmph.sourceforge.net/">CMPH</a> is a minimal perfect hashing library that provides performance for large sets.</p>
 
