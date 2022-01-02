@@ -154,7 +154,7 @@ Ensure capacity of at least `n` items in `pool`\. Pre\-sizing is better for cont
 
 <code>static &lt;PP&gt;type *<strong>&lt;P&gt;pool_new</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code>
 
-This pointer is constant until it gets [&lt;PP&gt;pool_remove](#user-content-fn-cca17c22)\.
+This pointer is constant until it gets [&lt;P&gt;pool_remove](#user-content-fn-95972ccc)\.
 
  * Return:  
    A pointer to a new uninitialized element from `pool`\.
@@ -169,7 +169,7 @@ This pointer is constant until it gets [&lt;PP&gt;pool_remove](#user-content-fn-
 
 <code>static int <strong>&lt;P&gt;pool_remove</strong>(struct &lt;P&gt;pool *const <em>pool</em>, &lt;PP&gt;type *const <em>data</em>)</code>
 
-Deletes `datum` from `pool`\. Do not remove data that is not in `pool`\.
+Deletes `data` from `pool`\. Do not remove data that is not in `pool`\.
 
  * Return:  
    Success\.
