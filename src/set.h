@@ -5,12 +5,13 @@
 
  ![Example of <string>set.](../web/set.png)
 
- <tag:<S>set> is a hash set of unordered <typedef:<PS>type> that doesn't allow
- duplication. It must be supplied a hash function and equality function.
+ <tag:<S>set> is implemented as a hash table of unordered <typedef:<PS>type>
+ that doesn't allow duplication. It must be supplied a hash function and
+ equality function.
 
- This code is simple by design. Enclosing a pointer <typedef:<PS>type> in a
- larger `struct` can give an associative array. Compile-time constant sets are
- better handled with [gperf](https://www.gnu.org/software/gperf/). Also,
+ Enclosing a pointer <typedef:<PS>type> in a larger `struct` can give an
+ associative array. Compile-time constant sets are better handled with
+ [gperf](https://www.gnu.org/software/gperf/). Also,
  [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library
  that provides performance for large sets.
 
@@ -241,8 +242,7 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 		to_next = next, next = set->entries[next].next);
 	/* Move `vic` to `top`. */
 	if(to_next != SETm2) set->entries[to_next].next = vic->next;
-	PS_(fill_entry)(top, PS_(entry_key)(vic), PS_(entry_hash)(vic)); /* fixme */
-	top->next = vic->next, vic->next = SETm2;
+	memcpy(top, vic, sizeof *vic), vic->next = SETm2;
 }
 
 /** `set` will be searched linearly for `key` which has `hash`.
@@ -361,6 +361,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		/* Move `i` to `j` and `j` to `k`, each closed, (that was lucky? can
 		 this even happen?) */
 		if((ke = set->entries + k)->next == SETm2) {
+			/* fixme */
 			PS_(fill_entry)(ke, PS_(entry_key)(je), PS_(entry_hash)(je));
 			PS_(fill_entry)(je, PS_(entry_key)(ie), PS_(entry_hash)(ie));
 			ie->next = SETm2;
@@ -382,7 +383,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			= set->entries + PS_(hash_to_bucket)(set, PS_(entry_hash)(open));
 		assert(first->next != SETm2); /* All closed entries have been set. */
 		PS_(grow_stack)(set), top = set->entries + set->top;
-		PS_(fill_entry)(top, PS_(entry_key)(open), PS_(entry_hash)(open)); /*fixme*/
+		memcpy(top, open, sizeof *open), top->next = SETm1;
 		op = open->next, open->next = SETm2; /* Pop `open`. */
 		/* Maintain monotonic open entry access by placing it second. */
 		top->next = first->next, first->next = set->top;
@@ -524,7 +525,8 @@ static PS_(type) S_(set_put)(struct S_(set) *const hash, const PS_(type) key) {
  or `replace` is null, returns `key` and leaves the other element in the hash.
  @throws[realloc, ERANGE] There was an error with a re-sizing.
  Successfully calling <fn:<S>set_buffer> ensures that this does not happen.
- @order Average amortised \O(1), (hash distributes keys uniformly); worst \O(n). @allow */
+ @order Average amortised \O(1), (hash distributes keys uniformly); worst \O(n).
+ @allow */
 static PS_(type) S_(set_policy_put)(struct S_(set) *const hash,
 	const PS_(type) key, const PS_(replace_fn) replace) {
 	PS_(type) collide;
