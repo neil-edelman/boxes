@@ -336,26 +336,27 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		if(ie->next == SETm2) {
 			assert(n > 1 /* Must have been asking more. */
 				&& (old_top == SETm1 || i < old_top) /* Old stack full. */);
-			printf("\t%lu: empty.\n", (unsigned long)i);
+			printf("\t%lx: empty.\n", (unsigned long)i);
 			continue;
 		}
 		/* Debug. */
 		{ PS_(type) key = PS_(entry_key)(ie); PS_(to_string)(&key, &z); }
 		/* `i` is already closed? E[1 / growth amount]. */
 		if(i == (j = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(ie))))
-			{ ie->next = SETm1; printf("\t%lu: \"%s\" no change.\n", (unsigned long)i, z); continue; }
+			{ ie->next = SETm1; printf("\t%lx: \"%s\"->%lx, no change.\n",
+			(unsigned long)i, z, (unsigned long)j); continue; }
 		/* `j` is an unoccupied spot? Just go to it. */
 		if((je = set->entries + j)->next == SETm2) {
 			PS_(fill_entry)(je, PS_(entry_key)(ie), PS_(entry_hash)(ie));
 			ie->next = SETm2;
-			printf("\t%lu: \"%s\" moved to unoccupied %lu\n",
+			printf("\t%lx: \"%s\"->%lx moved to unoccupied\n",
 				(unsigned long)i, z, (unsigned long)j);
 			continue;
 		}
 		/* `j` is closed; `i` is open, goes on the temporary `open` stack. */
 		if((k = PS_(hash_to_bucket)(set, PS_(entry_hash)(je))) == j) {
 			ie->next = op, op = i; /* Push `open`. */
-			printf("\t%lu: \"%s\" %lu is full, added to open stack\n",
+			printf("\t%lx: \"%s\"->%lx destination is closed, added to open stack\n",
 				(unsigned long)i, z, (unsigned long)j);
 			continue;
 		}

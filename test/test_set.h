@@ -112,7 +112,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">hash</FONT></TD>"
 		"\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">data</FONT></TD>"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">key</FONT></TD>"
 		"\n"
 		"\t</TR>\n");
 	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
@@ -123,29 +123,30 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",
 			top, bgc, (unsigned long)i);
 		if(e->next != SETm2) {
-			const char *const collision
-				= PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) != i ?
-				" BORDER=\"1\"" : "";
 			const char *const closed
-				= PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) == i ? "⬤" : "◯";
+				= PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) == i
+				? "⬤" : "◯";
 			char z[12];
 			PS_(to_string)(&e->key, &z);
-			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n"
-				"\t\t<TD ALIGN=\"LEFT\"%s%s>%s</TD>\n"
-				"\t\t<TD ALIGN=\"RIGHT\" PORT=\"%lu\"%s%s>%s</TD>\n",
-				collision, bgc, (unsigned long)e->hash,
-				collision, bgc, z,
-				(unsigned long)i, collision, bgc, closed);
+			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
+				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
+				"\t\t<TD ALIGN=\"LEFT\" PORT=\"%lu\"%s>%s",
+				bgc, (unsigned long)e->hash,
+				bgc, z,
+				(unsigned long)i, bgc, closed);
+			if(e->next != SETm1) fprintf(fp, "→0x%lx", (unsigned long)e->next);
+			fprintf(fp, "</TD>\n");
 		}
 		fprintf(fp, "\t</TR>\n");
 	}
 	fprintf(fp, "</TABLE>>];\n");
+	/* fixme: This is such a mess.
 	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
 		struct PS_(entry) *const e = set->entries + i;
 		if(e->next >= SETm2) continue;
 		fprintf(fp, "\tset:%lu:e -> set:%lu:e;\n",
 			(unsigned long)i, (unsigned long)e->next);
-	}
+	}*/
 end:
 	fprintf(fp, "\tnode [color=red];\n"
 		"}\n");
@@ -215,7 +216,7 @@ static void PS_(legit)(const struct S_(set) *const set) {
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */
 static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
-	struct test { PS_(type) elem; int is_in, unused; } test[10/*000*/], *t, *t_end;
+	struct test { PS_(type) elem; int is_in, unused; } test[100/*00*/], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char z[12];
@@ -268,12 +269,11 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(set.size < 10 || set.size < 1000000 && !(n & (n - 1))) {
+		if(set.size == 16 || set.size < 1000000 && !(n & (n - 1))) {
 			char fn[64];
-			fprintf(stderr, "%lu: set %s.\n",
-				(unsigned long)n, PS_(set_to_string)(&set));
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
 				(unsigned)n + 1);
+			printf("*** graph %s: set %s.\n", fn, PS_(set_to_string)(&set));
 			PS_(graph)(&set, fn);
 		}
 		PS_(legit)(&set);
