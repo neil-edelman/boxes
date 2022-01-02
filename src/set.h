@@ -329,7 +329,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	op = SETm1;
 	for(i = 0; i < c0; i++) {
 		char z[12];
-		struct PS_(entry) *ie, *je;
+		struct PS_(entry) *ie, *je, *ke;
 		PS_(uint) hash, j, k;
 		ie = set->entries + i;
 		/* `i` is empty? Skip. */
@@ -360,8 +360,19 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 				(unsigned long)i, z, (unsigned long)j);
 			continue;
 		}
+		/* Move `i` to `j` and `j` to `k`, each closed, (that was lucky? can
+		 this even happen?) */
+		if((ke = set->entries + k)->next == SETm2) {
+			PS_(fill_entry)(ke, PS_(entry_key)(je), PS_(entry_hash)(je));
+			PS_(fill_entry)(je, PS_(entry_key)(ie), PS_(entry_hash)(ie));
+			ie->next = SETm2;
+			printf("\t%lx: \"%s\"->%lx->%lx moved to unoccupied\n",
+				(unsigned long)i, z, (unsigned long)j, (unsigned long)k);
+			continue;
+		}
+		printf("\t%lx: \"%s\" %lx %lx\n",
+			(unsigned long)i, z, (unsigned long)j, (unsigned long)k);
 		assert(0);
-		/* Move `i` to `j` and `j` to `k`, each closed. */
 		/* Swap `j`, which is destined to the stack, with `i`, closed. */
 	}
 
