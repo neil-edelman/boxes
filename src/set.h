@@ -5,14 +5,12 @@
 
  ![Example of <string>set.](../web/set.png)
 
- <tag:<S>set> is a hash set of unordered <tag:<PS>type> that doesn't allow
+ <tag:<S>set> is a hash set of unordered <typedef:<PS>type> that doesn't allow
  duplication. It must be supplied a hash function and equality function.
 
- This code is simple by design, and may not be suited for more complex
- situations, where hash keys are expected to collide, or adversarial attacks.
- While enclosing a pointer <tag:<PS>key> in a larger `struct` can give an
- associative array, compile-time constant sets are better handled with
- [gperf](https://www.gnu.org/software/gperf/). Also,
+ This code is simple by design. Enclosing a pointer <typedef:<PS>type> in a
+ larger `struct` can give an associative array. Compile-time constant sets are
+ better handled with [gperf](https://www.gnu.org/software/gperf/). Also,
  [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library
  that provides performance for large sets.
 
@@ -24,7 +22,7 @@
  be re-defined prior to use elsewhere.
 
  @param[SET_HASH, SET_IS_EQUAL]
- A function satisfying <typedef:<PS>SET_HASH> and <typedef:<PS>is_equal_fn>;
+ A function satisfying <typedef:<PS>hash_fn> and <typedef:<PS>is_equal_fn>;
  required.
 
  @param[SET_UINT]
@@ -187,7 +185,7 @@ static PS_(type) PS_(entry_key)(const struct PS_(entry) *const entry) {
 #endif
 }
 
-/** To initialize, see <fn:<S>hash>, `SET_IDLE`, `{0}` (`C99`,) or being
+/** To initialize, see <fn:<S>set>, `SET_IDLE`, `{0}` (`C99`,) or being
  `static`.
 
  ![States.](../web/states.png) */
@@ -421,8 +419,8 @@ typedef int (*PS_(replace_fn))(PS_(type) original, PS_(type) replace);
 static int PS_(false)(PS_(type) original, PS_(type) replace)
 	{ (void)(original); (void)(replace); return 0; }
 
-/** Put `key` in `hash` as long as `replace` is null or returns true.
- @param[equal] If non-null, the equal element, if any. If `replace`
+/** Put `key` in `set` as long as `replace` is null or returns true.
+ @param[eject] If non-null, the equal element, if any. If `replace`
  returns false, the address of `key`.
  @return Success. @throws[malloc] @order amortized \O(1) */
 static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
@@ -471,7 +469,7 @@ static void S_(set)(struct S_(set) *const set) { assert(set); set->entries = 0;
 static void S_(set_)(struct S_(set) *const set)
 	{ assert(set), free(set->entries); S_(set)(set); }
 
-/** Clears and removes all entries from `hash`. The capacity and memory of the
+/** Clears and removes all entries from `set`. The capacity and memory of the
  hash table is preserved, but all previous values are un-associated. The load
  factor will be less until it reaches it's previous size.
  @order \Theta(`set.entries`) @allow */
@@ -484,7 +482,7 @@ static void S_(set_clear)(struct S_(set) *const set) {
 	set->size = 0;
 }
 
-/** @return The value in `hash` which <typedef:<PS>is_equal_fn> `SET_IS_EQUAL`
+/** @return The value in `set` which <typedef:<PS>is_equal_fn> `SET_IS_EQUAL`
  `key`, or, if no such value exists, null.
  @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
  @allow */
@@ -501,7 +499,7 @@ static PS_(type) S_(set_get)(struct S_(set) *const set, const PS_(type) key) {
  the entries of `hash`. @return Success.
  @throws[ERANGE] `reserve` plus the size would take a bigger number then could
  fit in a `size_t`. @throws[realloc] @allow */
-static int S_(set_reserve(buffer?))(struct S_(set) *const hash, const size_t reserve)
+static int S_(set_buffer)(struct S_(set) *const hash, const size_t reserve)
 	{ return hash ? reserve > (size_t)-1 - hash->size ? (errno = ERANGE, 0) :
 	PS_(reserve)(hash, hash->size + reserve) : 0; }
 #endif
@@ -525,7 +523,7 @@ static PS_(type) S_(set_put)(struct S_(set) *const hash, const PS_(type) key) {
  @return Any ejected element or null. On collision, if `replace` returns false
  or `replace` is null, returns `key` and leaves the other element in the hash.
  @throws[realloc, ERANGE] There was an error with a re-sizing.
- Successfully calling <fn:<S>set_reserve> ensures that this does not happen.
+ Successfully calling <fn:<S>set_buffer> ensures that this does not happen.
  @order Average amortised \O(1), (hash distributes keys uniformly); worst \O(n). @allow */
 static PS_(type) S_(set_policy_put)(struct S_(set) *const hash,
 	const PS_(type) key, const PS_(replace_fn) replace) {

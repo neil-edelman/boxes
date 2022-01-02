@@ -39,7 +39,6 @@
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>type">&lt;PS&gt;type</a>, <a href = "#typedef:<PS>ctype">&lt;PS&gt;ctype</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>replace_fn">&lt;PS&gt;replace_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>type">&lt;PSZ&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<PS>entry">&lt;PS&gt;entry</a>, <a href = "#tag:<S>set">&lt;S&gt;set</a></li>
-	<li><a href = "#data:">General Declarations</a>: <a href = "#data:reserve">reserve</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -51,9 +50,9 @@
 
 <p><img alt = "Example of &lt;string&gt;set." src = "web/set.png" width = 435 height = 615></p>
 
-<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a hash set of unordered <a href = "#tag:&lt;PS&gt;type">&lt;PS&gt;type</a> that doesn't allow duplication. It must be supplied a hash function and equality function.</p>
+<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a hash set of unordered <a href = "#typedef:&lt;PS&gt;type">&lt;PS&gt;type</a> that doesn't allow duplication. It must be supplied a hash function and equality function.</p>
 
-<p>This code is simple by design, and may not be suited for more complex situations, where hash keys are expected to collide, or adversarial attacks. While enclosing a pointer <a href = "#tag:&lt;PS&gt;key">&lt;PS&gt;key</a> in a larger <code>struct</code> can give an associative array, compile-time constant sets are better handled with <a href = "https://www.gnu.org/software/gperf/">gperf</a>. Also, <a href = "http://cmph.sourceforge.net/">CMPH</a> is a minimal perfect hashing library that provides performance for large sets.</p>
+<p>This code is simple by design. Enclosing a pointer <a href = "#typedef:&lt;PS&gt;type">&lt;PS&gt;type</a> in a larger <code>struct</code> can give an associative array. Compile-time constant sets are better handled with <a href = "https://www.gnu.org/software/gperf/">gperf</a>. Also, <a href = "http://cmph.sourceforge.net/">CMPH</a> is a minimal perfect hashing library that provides performance for large sets.</p>
 
 </div>
 
@@ -61,7 +60,7 @@
 	<dt>Parameter: SET_NAME, SET_TYPE</dt>
 	<dd><code>&lt;S&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PS&gt;type">&lt;PS&gt;type</a> associated therewith; required. Type is copied extensively, so if it's a large, making it a pointer may improve performance. <code>&lt;PS&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
 	<dt>Parameter: SET_HASH, SET_IS_EQUAL</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PS&gt;SET_HASH">&lt;PS&gt;SET_HASH</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>; required.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>; required.</dd>
 	<dt>Parameter: SET_UINT</dt>
 	<dd>This is <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>, the unsigned hash type, and defaults to <code>size_t</code>.</dd>
 	<dt>Parameter: SET_RECALCULATE</dt>
@@ -203,21 +202,9 @@
 
 <p><code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;entry *entries; &lt;PS&gt;uint size; &lt;PS&gt;uint top; unsigned log_capacity, unused; };</code></p>
 
-<p>To initialize, see <a href = "#fn:&lt;S&gt;hash">&lt;S&gt;hash</a>, <code>SET_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
+<p>To initialize, see <a href = "#fn:&lt;S&gt;set">&lt;S&gt;set</a>, <code>SET_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 215 height = 293></p>
-
-</div>
-
-<h2><a id = "data:" name = "data:">General Declarations</a></h2>
-
-<div>
-
-<h3><a id = "data:reserve" name = "data:reserve">reserve</a></h3>
-
-<p><code>static int</code></p>
-
-<p>Reserve at least <code>reserve</code>, divided by the maximum load factor, space in the entries of <code>hash</code>. Puts <code>key</code> in <code>hash</code>. Puts <code>key</code> in <code>hash</code> only if the entry is absent or if calling <code>replace</code> returns true. Removes an element <code>data</code> from <code>hash</code>.</p>
 
 </div>
 
@@ -236,6 +223,14 @@
 <tr><td align = right>static void</td><td><a href = "#fn:<S>set_clear">&lt;S&gt;set_clear</a></td><td>set</td></tr>
 
 <tr><td align = right>static &lt;PS&gt;type</td><td><a href = "#fn:<S>set_get">&lt;S&gt;set_get</a></td><td>set, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<S>set_buffer">&lt;S&gt;set_buffer</a></td><td>hash, reserve</td></tr>
+
+<tr><td align = right>static &lt;PS&gt;type</td><td><a href = "#fn:<S>set_put">&lt;S&gt;set_put</a></td><td>hash, key</td></tr>
+
+<tr><td align = right>static &lt;PS&gt;type</td><td><a href = "#fn:<S>set_policy_put">&lt;S&gt;set_policy_put</a></td><td>hash, key, replace</td></tr>
+
+<tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#fn:<S>set_remove">&lt;S&gt;set_remove</a></td><td>hash, data</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -278,7 +273,7 @@
 
 <p><code>static void <strong>&lt;S&gt;set_clear</strong>(struct &lt;S&gt;set *const <em>set</em>)</code></p>
 
-<p>Clears and removes all entries from <code>hash</code>. The capacity and memory of the hash table is preserved, but all previous values are un-associated. The load factor will be less until it reaches it's previous size.</p>
+<p>Clears and removes all entries from <code>set</code>. The capacity and memory of the hash table is preserved, but all previous values are un-associated. The load factor will be less until it reaches it's previous size.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -295,7 +290,82 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>The value in <code>hash</code> which <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a> <code>SET_IS_EQUAL</code> <code>key</code>, or, if no such value exists, null.</dd>
+	<dd>The value in <code>set</code> which <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a> <code>SET_IS_EQUAL</code> <code>key</code>, or, if no such value exists, null.</dd>
+	<dt>Order:</dt>
+	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_buffer" name = "fn:<S>set_buffer">&lt;S&gt;set_buffer</a></h3>
+
+<p><code>static int <strong>&lt;S&gt;set_buffer</strong>(struct &lt;S&gt;set *const <em>hash</em>, const size_t <em>reserve</em>)</code></p>
+
+<p>Reserve at least <code>reserve</code>, divided by the maximum load factor, space in the entries of <code>hash</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd><code>reserve</code> plus the size would take a bigger number then could fit in a <code>size_t</code>.</dd>
+	<dt>Exceptional return: realloc</dt>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_put" name = "fn:<S>set_put">&lt;S&gt;set_put</a></h3>
+
+<p><code>static &lt;PS&gt;type <strong>&lt;S&gt;set_put</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;type <em>key</em>)</code></p>
+
+<p>Puts <code>key</code> in <code>hash</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Any ejected key or null.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with a re-sizing. It is not always possible to tell the difference between an error and a unique key. If needed, before calling this, successfully calling <a href = "#fn:&lt;S&gt;set_buffer">&lt;S&gt;set_buffer</a>, or setting <code>errno</code> to zero.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1), (hash distributes keys uniformly); worst &#927;(n) (are you sure that's up to date?).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_policy_put" name = "fn:<S>set_policy_put">&lt;S&gt;set_policy_put</a></h3>
+
+<p><code>static &lt;PS&gt;type <strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;type <em>key</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code></p>
+
+<p>Puts <code>key</code> in <code>hash</code> only if the entry is absent or if calling <code>replace</code> returns true.</p>
+
+<dl>
+	<dt>Parameter: <em>replace</em></dt>
+	<dd>If null, doesn't do any replacement on collision.</dd>
+	<dt>Return:</dt>
+	<dd>Any ejected element or null. On collision, if <code>replace</code> returns false or <code>replace</code> is null, returns <code>key</code> and leaves the other element in the hash.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with a re-sizing. Successfully calling <a href = "#fn:&lt;S&gt;set_buffer">&lt;S&gt;set_buffer</a> ensures that this does not happen.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1), (hash distributes keys uniformly); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_remove" name = "fn:<S>set_remove">&lt;S&gt;set_remove</a></h3>
+
+<p><code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_remove</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;mtype <em>data</em>)</code></p>
+
+<p>Removes an element <code>data</code> from <code>hash</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Successfully ejected element or null.</dd>
 	<dt>Order:</dt>
 	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
 </dl>

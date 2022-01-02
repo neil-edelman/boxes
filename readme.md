@@ -5,7 +5,6 @@
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;type](#user-content-typedef-5ef437c0), [&lt;PS&gt;ctype](#user-content-typedef-ed763cb9), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;replace_fn](#user-content-typedef-ccec694d), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;PS&gt;entry](#user-content-tag-3ef38eec), [&lt;S&gt;set](#user-content-tag-54aaac2)
- * [General Declarations](#user-content-data): [reserve](#user-content-data-27291b4b)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -14,16 +13,16 @@
 
 ![Example of &lt;string&gt;set.](web/set.png)
 
-[&lt;S&gt;set](#user-content-tag-54aaac2) is a hash set of unordered [&lt;PS&gt;type](#user-content-tag-5ef437c0) that doesn't allow duplication\. It must be supplied a hash function and equality function\.
+[&lt;S&gt;set](#user-content-tag-54aaac2) is a hash set of unordered [&lt;PS&gt;type](#user-content-typedef-5ef437c0) that doesn't allow duplication\. It must be supplied a hash function and equality function\.
 
-This code is simple by design, and may not be suited for more complex situations, where hash keys are expected to collide, or adversarial attacks\. While enclosing a pointer [&lt;PS&gt;key](#user-content-tag-759eb157) in a larger `struct` can give an associative array, compile\-time constant sets are better handled with [gperf](https://www.gnu.org/software/gperf/)\. Also, [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library that provides performance for large sets\.
+This code is simple by design\. Enclosing a pointer [&lt;PS&gt;type](#user-content-typedef-5ef437c0) in a larger `struct` can give an associative array\. Compile\-time constant sets are better handled with [gperf](https://www.gnu.org/software/gperf/)\. Also, [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library that provides performance for large sets\.
 
 
 
  * Parameter: SET\_NAME, SET\_TYPE  
    `<S>` that satisfies `C` naming conventions when mangled and a valid [&lt;PS&gt;type](#user-content-typedef-5ef437c0) associated therewith; required\. Type is copied extensively, so if it's a large, making it a pointer may improve performance\. `<PS>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: SET\_HASH, SET\_IS\_EQUAL  
-   A function satisfying [&lt;PS&gt;SET_HASH](#user-content-typedef-8bcabcc1) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c); required\.
+   A function satisfying [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c); required\.
  * Parameter: SET\_UINT  
    This is [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), the unsigned hash type, and defaults to `size_t`\.
  * Parameter: SET\_RECALCULATE  
@@ -140,19 +139,9 @@ Buckets are linked\-lists of entries, and entries are stored in a hash table\. W
 
 <code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;entry *entries; &lt;PS&gt;uint size; &lt;PS&gt;uint top; unsigned log_capacity, unused; };</code>
 
-To initialize, see [&lt;S&gt;hash](#user-content-fn-8b27cfa6), `SET_IDLE`, `{0}` \(`C99`,\) or being `static`\.
+To initialize, see [&lt;S&gt;set](#user-content-fn-54aaac2), `SET_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](web/states.png)
-
-
-
-## <a id = "user-content-data" name = "user-content-data">General Declarations</a> ##
-
-### <a id = "user-content-data-27291b4b" name = "user-content-data-27291b4b">reserve</a> ###
-
-<code>static int</code>
-
-Reserve at least `reserve`, divided by the maximum load factor, space in the entries of `hash`\. Puts `key` in `hash`\. Puts `key` in `hash` only if the entry is absent or if calling `replace` returns true\. Removes an element `data` from `hash`\.
 
 
 
@@ -169,6 +158,14 @@ Reserve at least `reserve`, divided by the maximum load factor, space in the ent
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-b2194878">&lt;S&gt;set_clear</a></td><td>set</td></tr>
 
 <tr><td align = right>static &lt;PS&gt;type</td><td><a href = "#user-content-fn-4b32a391">&lt;S&gt;set_get</a></td><td>set, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-d425739d">&lt;S&gt;set_buffer</a></td><td>hash, reserve</td></tr>
+
+<tr><td align = right>static &lt;PS&gt;type</td><td><a href = "#user-content-fn-fd0e5a1c">&lt;S&gt;set_put</a></td><td>hash, key</td></tr>
+
+<tr><td align = right>static &lt;PS&gt;type</td><td><a href = "#user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a></td><td>hash, key, replace</td></tr>
+
+<tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#user-content-fn-f336902b">&lt;S&gt;set_remove</a></td><td>hash, data</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -202,7 +199,7 @@ Destroys `set` and returns it to idle\.
 
 <code>static void <strong>&lt;S&gt;set_clear</strong>(struct &lt;S&gt;set *const <em>set</em>)</code>
 
-Clears and removes all entries from `hash`\. The capacity and memory of the hash table is preserved, but all previous values are un\-associated\. The load factor will be less until it reaches it's previous size\.
+Clears and removes all entries from `set`\. The capacity and memory of the hash table is preserved, but all previous values are un\-associated\. The load factor will be less until it reaches it's previous size\.
 
  * Order:  
    &#920;\(`set.entries`\)
@@ -215,7 +212,70 @@ Clears and removes all entries from `hash`\. The capacity and memory of the hash
 <code>static &lt;PS&gt;type <strong>&lt;S&gt;set_get</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;type <em>key</em>)</code>
 
  * Return:  
-   The value in `hash` which [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c) `SET_IS_EQUAL` `key`, or, if no such value exists, null\.
+   The value in `set` which [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c) `SET_IS_EQUAL` `key`, or, if no such value exists, null\.
+ * Order:  
+   Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
+
+
+
+
+### <a id = "user-content-fn-d425739d" name = "user-content-fn-d425739d">&lt;S&gt;set_buffer</a> ###
+
+<code>static int <strong>&lt;S&gt;set_buffer</strong>(struct &lt;S&gt;set *const <em>hash</em>, const size_t <em>reserve</em>)</code>
+
+Reserve at least `reserve`, divided by the maximum load factor, space in the entries of `hash`\.
+
+ * Return:  
+   Success\.
+ * Exceptional return: ERANGE  
+   `reserve` plus the size would take a bigger number then could fit in a `size_t`\.
+ * Exceptional return: realloc  
+
+
+
+
+### <a id = "user-content-fn-fd0e5a1c" name = "user-content-fn-fd0e5a1c">&lt;S&gt;set_put</a> ###
+
+<code>static &lt;PS&gt;type <strong>&lt;S&gt;set_put</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;type <em>key</em>)</code>
+
+Puts `key` in `hash`\.
+
+ * Return:  
+   Any ejected key or null\.
+ * Exceptional return: realloc, ERANGE  
+   There was an error with a re\-sizing\. It is not always possible to tell the difference between an error and a unique key\. If needed, before calling this, successfully calling [&lt;S&gt;set_buffer](#user-content-fn-d425739d), or setting `errno` to zero\.
+ * Order:  
+   Average amortised &#927;\(1\), \(hash distributes keys uniformly\); worst &#927;\(n\) \(are you sure that's up to date?\)\.
+
+
+
+
+### <a id = "user-content-fn-e5100be7" name = "user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a> ###
+
+<code>static &lt;PS&gt;type <strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;type <em>key</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code>
+
+Puts `key` in `hash` only if the entry is absent or if calling `replace` returns true\.
+
+ * Parameter: _replace_  
+   If null, doesn't do any replacement on collision\.
+ * Return:  
+   Any ejected element or null\. On collision, if `replace` returns false or `replace` is null, returns `key` and leaves the other element in the hash\.
+ * Exceptional return: realloc, ERANGE  
+   There was an error with a re\-sizing\. Successfully calling [&lt;S&gt;set_buffer](#user-content-fn-d425739d) ensures that this does not happen\.
+ * Order:  
+   Average amortised &#927;\(1\), \(hash distributes keys uniformly\); worst &#927;\(n\)\.
+
+
+
+
+### <a id = "user-content-fn-f336902b" name = "user-content-fn-f336902b">&lt;S&gt;set_remove</a> ###
+
+<code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_remove</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;mtype <em>data</em>)</code>
+
+Removes an element `data` from `hash`\.
+
+ * Return:  
+   Successfully ejected element or null\.
  * Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
