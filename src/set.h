@@ -50,6 +50,8 @@
 
  @fixme Implement move-to-front like splay-trees.
  @fixme Implement SET_RECALCULATE and SET_INVERSE_HASH.
+ @fixme SETm1,2 could be S&M, we are not using all the bits; this would require
+ less energy on average.
 
  @std C89 */
 
@@ -294,7 +296,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, old_top, op;
+	PS_(uint) c1, size1, i, old_top, op, cl;
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	assert((!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
@@ -371,6 +373,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 
 	/* Move from the temporary `open` stack in the lower half to a closed entry
 	 in the lower half or to `top` stack in the upper half. */
+	cl = SETm1;
 	while(op != SETm1) {
 		char z[12];
 		struct PS_(entry) *open = set->entries + op;
@@ -382,18 +385,21 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			printf("\topen stack 0x%lx: \"%s\" -- ", (unsigned long)op, z);
 		}
 		if(closed->next == SETm2) { /* Recently vacant. */
+			/* fixme: This is a mistake! Only if greater than `open`, otherwise
+			 we risk overriding the `open` list itself. */
 			memcpy(closed, open, sizeof *open), closed->next = SETm1;
 			printf("recently closed entry 0x%lx, top 0x%lx.\n",
 				(unsigned long)c, (unsigned long)set->top);
 		} else { /* Stick it on the stack. */
-			/************** something here ***************/
 			struct PS_(entry) *top;
 			PS_(grow_stack)(set), top = set->entries + set->top;
-			printf("grow stack to 0x%lx.\n", (unsigned long)set->top);
+			printf("closed 0x%lx, grow stack 0x%lx.\n",
+				(unsigned long)c, (unsigned long)set->top);
 			memcpy(top, open, sizeof *open);
 			top->next = closed->next, closed->next = set->top;
 		}
 		op = open->next, open->next = SETm2; /* Pop `open`. */
+		if(set->log_capacity >= 7) printf("set[0x47].next=%lx\n", set->entries[0x47].next);
 	}
 
 	{ PS_(uint) j;
