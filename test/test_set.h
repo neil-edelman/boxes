@@ -139,6 +139,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		fprintf(fp, "\t</TR>\n");
 	}
 	fprintf(fp, "</TABLE>>];\n");
+	fprintf(fp, "\tnode [shape=plain, fillcolor=none]\n");
 	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
 		struct PS_(entry) *e = set->entries + i;
 		PS_(uint) left, right;

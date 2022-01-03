@@ -360,6 +360,15 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		ie->next = op, op = i; /* Push `open`. */
 	}
 
+	{
+		PS_(uint) o = op;
+		printf("open stack now:\n");
+		while(o != SETm1) {
+			printf("\t0x%lx\n", (unsigned long)o);
+			o = set->entries[o].next;
+		}
+	}
+
 	/* Move from the temporary `open` stack in the lower half to a closed entry
 	 in the lower half or to `top` stack in the upper half. */
 	while(op != SETm1) {
@@ -374,11 +383,13 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 		if(closed->next == SETm2) { /* Recently vacant. */
 			memcpy(closed, open, sizeof *open), closed->next = SETm1;
-			printf("recently closed entry 0x%lx.\n", (unsigned long)c);
+			printf("recently closed entry 0x%lx, top 0x%lx.\n",
+				(unsigned long)c, (unsigned long)set->top);
 		} else { /* Stick it on the stack. */
+			/************** something here ***************/
 			struct PS_(entry) *top;
-			printf("grow stack.\n");
 			PS_(grow_stack)(set), top = set->entries + set->top;
+			printf("grow stack to 0x%lx.\n", (unsigned long)set->top);
 			memcpy(top, open, sizeof *open);
 			top->next = closed->next, closed->next = set->top;
 		}
