@@ -269,7 +269,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(set.size == 16 || set.size < 1000000 && !(n & (n - 1))) {
+		if(set.size == 21 || set.size < 1000000 && !(n & (n - 1))) {
 			char fn[64];
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
 				(unsigned)n + 1);
