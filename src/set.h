@@ -296,7 +296,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, old_top, op, cl;
+	PS_(uint) c1, size1, i, old_top, st1, st2;
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	assert((!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
@@ -327,43 +327,39 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		for( ; e < e_end; e++) e->next = SETm2; }
 	old_top = set->top, set->top = SETm1;
 
-	/* Create a temporary stack out the `open` entries using the next values as
-	 deeper; not to be confused with `top`, a different stack. Rehash the
-	 closed entries. */
+	/* Rehash the entries in the upper half: that are empty, E[1 / growth ratio]
+	 still closed, that are closed and belong in the second half, and that
+	 closed positions have been emptied by this process. The others go on a
+	 temporary stack `st1`, (not to be confused with `top`, which is empty.) */
 	printf("buffer::rehash %lu entries\n", (unsigned long)c0);
-	op = SETm1;
+	st1 = SETm1;
 	for(i = 0; i < c0; i++) {
 		char z[12];
 		struct PS_(entry) *ie, *je;
 		PS_(uint) hash, j;
 		ie = set->entries + i;
-		/* `i` is empty. */
 		if(ie->next == SETm2) {
 			assert(n > 1 /* Must have been asking more. */
 				&& (old_top == SETm1 || i < old_top) /* Old stack full. */);
 			printf("\t0x%lx: empty.\n", (unsigned long)i);
 			continue;
 		}
-		/* Debug. */
 		{ PS_(type) key = PS_(entry_key)(ie); PS_(to_string)(&key, &z); }
-		/* E[1 / growth amount] that `i` is already closed. */
 		if(i == (j = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(ie))))
 			{ ie->next = SETm1; printf("\t0x%lx: \"%s\"->0x%lx, no change.\n",
 			(unsigned long)i, z, (unsigned long)j); continue; }
-		/* `j` is an unoccupied spot. */
 		if((je = set->entries + j)->next == SETm2) {
 			memcpy(je, ie, sizeof *ie), je->next = SETm1, ie->next = SETm2;
 			printf("\t0x%lx: \"%s\"->0x%lx moved to unoccupied\n",
 				(unsigned long)i, z, (unsigned long)j);
 			continue;
 		}
-		/* Push `open`. */
 		printf("\t0x%lx: \"%s\" to stack.\n", (unsigned long)i, z);
-		ie->next = op, op = i; /* Push `open`. */
+		ie->next = st1, st1 = i; /* Push `open`. */
 	}
 
 	{
-		PS_(uint) o = op;
+		PS_(uint) o = st1;
 		printf("open stack now:\n");
 		while(o != SETm1) {
 			printf("\t0x%lx\n", (unsigned long)o);
@@ -373,16 +369,16 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 
 	/* Move from the temporary `open` stack in the lower half to a closed entry
 	 in the lower half or to `top` stack in the upper half. */
-	cl = SETm1;
-	while(op != SETm1) {
+	st2 = SETm1;
+	while(st1 != SETm1) {
 		char z[12];
-		struct PS_(entry) *open = set->entries + op;
+		struct PS_(entry) *open = set->entries + st1;
 		PS_(uint) c = PS_(hash_to_bucket)(set, PS_(entry_hash)(open));
 		struct PS_(entry) *const closed = set->entries + c;
 		{
 			PS_(type) key = PS_(entry_key)(open);
 			PS_(to_string)(&key, &z);
-			printf("\topen stack 0x%lx: \"%s\" -- ", (unsigned long)op, z);
+			printf("\topen stack 0x%lx: \"%s\" -- ", (unsigned long)st1, z);
 		}
 		if(closed->next == SETm2) { /* Recently vacant. */
 			/* fixme: This is a mistake! Only if greater than `open`, otherwise
@@ -398,8 +394,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			memcpy(top, open, sizeof *open);
 			top->next = closed->next, closed->next = set->top;
 		}
-		op = open->next, open->next = SETm2; /* Pop `open`. */
-		if(set->log_capacity >= 7) printf("set[0x47].next=%lx\n", set->entries[0x47].next);
+		st1 = open->next, open->next = SETm2; /* Pop `open`. */
+		if(set->log_capacity >= 7) printf("set[0x47].next=%lx\n", (unsigned long)set->entries[0x47].next);
 	}
 
 	{ PS_(uint) j;
