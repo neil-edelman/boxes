@@ -48,6 +48,9 @@
  <typedef:<PSZ>to_string_fn>. There can be multiple to string traits, but only
  one can omit `SET_TO_STRING_NAME`.
 
+ @fixme Implement move-to-front like splay-trees.
+ @fixme Implement SET_RECALCULATE and SET_INVERSE_HASH.
+
  @std C89 */
 
 #if !defined(SET_NAME) || !defined(SET_TYPE) || !defined(SET_IS_EQUAL) \

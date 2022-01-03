@@ -131,12 +131,10 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			PS_(to_string)(&e->key, &z);
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
 				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
-				"\t\t<TD ALIGN=\"LEFT\" PORT=\"%lu\"%s>%s",
+				"\t\t<TD PORT=\"%lu\"%s>%s</TD>\n",
 				bgc, (unsigned long)e->hash,
 				bgc, z,
 				(unsigned long)i, bgc, closed);
-			if(e->next != SETm1) fprintf(fp, "→0x%lx", (unsigned long)e->next);
-			fprintf(fp, "</TD>\n");
 		}
 		fprintf(fp, "\t</TR>\n");
 	}
@@ -148,7 +146,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		   || PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) != i) continue;
 		fprintf(fp,
 			"\te%lu [label=\"0x%lx\"];\n"
-			"\tset:%lu:e -> e%lu;\n",
+			"\tset:%lu -> e%lu [tailclip=false];\n",
 			(unsigned long)right, (unsigned long)right,
 			(unsigned long)i, (unsigned long)right);
 		while(left = right, e = set->entries + left,
@@ -230,7 +228,7 @@ static void PS_(legit)(const struct S_(set) *const set) {
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */
 static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
-	struct test { PS_(type) elem; int is_in, unused; } test[100/*00*/], *t, *t_end;
+	struct test { PS_(type) elem; int is_in, unused; } test[10000], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char z[12];
@@ -283,7 +281,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(set.size >= 5 && set.size <= 20
+		if(set.size == 130 || set.size == 129
 			|| set.size < 1000000 && !(n & (n - 1))) {
 			char fn[64];
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
