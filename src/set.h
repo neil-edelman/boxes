@@ -219,6 +219,9 @@ static void PS_(grow_stack)(struct S_(set) *const set) {
 	set->top = top;
 }
 
+/***********fixme*/
+static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
+
 /** Moves the index `victim` to the top of the collision stack in non-idle
  `set`, (which is actually the bottom, because the stack grows from the end.)
  This is an inconsistent state; one is responsible for filling that hole and
@@ -227,21 +230,24 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 	const PS_(uint) victim) {
 	struct PS_(entry) *top, *vic;
 	PS_(uint) to_next, next;
+	char z[12];
 	const PS_(uint) capacity = PS_(capacity)(set);
 	assert(set->size < capacity && victim < capacity);
-	/* Grow the stack with the first empty entry. Amortized. */
-	printf("move_to_top: victim 0x%lx, top 0x%lx\n",
-		(unsigned long)victim, (unsigned long)set->top);
+	/* Grow the stack with the first empty entry. */
 	PS_(grow_stack)(set);
-	top = set->entries + set->top, vic = set->entries + victim;
-	/* Occupied to unoccupied. */
-	assert(top->next == SETm2 && vic->next != SETm2);
+	vic = set->entries + victim, top = set->entries + set->top;
+	assert(vic->next != SETm2 && top->next == SETm2); /* Occupied to vacant. */
+	PS_(to_string)(&vic->key, &z);
+	printf("move_to_top: victim \"%s\" 0x%lx, top 0x%lx\n",
+		z, (unsigned long)victim, (unsigned long)set->top);
 	/* Search for the previous link in the linked-list. \O(|bucket|). */
 	for(to_next = SETm2, next = PS_(hash_to_bucket)(set, PS_(entry_hash)(vic));
-		assert(next < capacity), printf("next:0x%lx\n", (unsigned long)next), next != victim;
+		assert(next < capacity), PS_(to_string)(&set->entries[next].key, &z), printf("next:\"%s\" 0x%lx\n", z, (unsigned long)next), next != victim;
 		to_next = next, next = set->entries[next].next);
 	/* Move `vic` to `top`. */
-	if(to_next != SETm2) set->entries[to_next].next = vic->next;
+	if(to_next != SETm2) { PS_(to_string)(&set->entries[to_next].key, &z);
+		printf("setting %s\n", z);
+		set->entries[to_next].next = victim; }
 	memcpy(top, vic, sizeof *vic), vic->next = SETm2;
 }
 
@@ -273,9 +279,6 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 		assert(next != SETm2); /* -2 null: linked-list integrity. */
 	}
 }
-
-/***********fixme*/
-static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
 
 /** Ensures that `set` has enough entries to fill `n` more than the size.
  May invalidate `entries` and re-arrange the order.

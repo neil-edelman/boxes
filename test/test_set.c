@@ -359,8 +359,8 @@ static const struct dict_entry *entry_next(struct dict_entry *const e) {
 
 int main(void) {
 	struct string_pool strings = POOL_IDLE;
-	int_set_test(&random_int, 0);
 	string_set_test(&string_from_pool, &strings), string_pool_(&strings);
+	int_set_test(&random_int, 0);
 #if 0
 	{ /* Automated tests. The ones that have no pool are self-contained sets,
 	 and we just test them on the stack. The ones that do require more memory
