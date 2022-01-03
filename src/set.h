@@ -242,12 +242,11 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 		z, (unsigned long)victim, (unsigned long)set->top);
 	/* Search for the previous link in the linked-list. \O(|bucket|). */
 	for(to_next = SETm2, next = PS_(hash_to_bucket)(set, PS_(entry_hash)(vic));
-		assert(next < capacity), PS_(to_string)(&set->entries[next].key, &z), printf("next:\"%s\" 0x%lx\n", z, (unsigned long)next), next != victim;
+		assert(next < capacity), PS_(to_string)(&set->entries[next].key, &z), printf("searching for victim in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != victim;
 		to_next = next, next = set->entries[next].next);
+	printf("got \"%s\"\n", z);
 	/* Move `vic` to `top`. */
-	if(to_next != SETm2) { PS_(to_string)(&set->entries[to_next].key, &z);
-		printf("setting %s\n", z);
-		set->entries[to_next].next = victim; }
+	if(to_next != SETm2) set->entries[to_next].next = set->top;
 	memcpy(top, vic, sizeof *vic), vic->next = SETm2;
 }
 
@@ -440,9 +439,14 @@ expand:
 		z, (unsigned long)idx, (unsigned long)hash);
 	size++;
 	if(entry->next == SETm2) goto write; /* Unoccupied. */
-	PS_(move_to_top)(set, idx);
-	next = set->top;
-	assert(entry->next == SETm2 && set->entries[next].next != SETm2);
+	{
+		int is_in_stack = PS_(hash_to_bucket)(set, PS_(entry_hash)(entry)) != idx;
+		printf("\tis_in_stack 0x%lx: %d\n", (unsigned long)idx, is_in_stack);
+		PS_(move_to_top)(set, idx);
+		next = is_in_stack ? SETm1 : set->top;
+		assert(entry->next == SETm2
+			&& (next == SETm1 || set->entries[next].next != SETm2));
+	}
 write:
 	PS_(fill_entry)(entry, key, hash);
 	entry->next = next;
