@@ -213,17 +213,22 @@ static void PS_(histogram)(const struct S_(set) *const set,
 /** Assertion function for seeing if `set` is in a valid state.
  @order \O(|`set.bins`| + |`set.items`|) */
 static void PS_(legit)(const struct S_(set) *const set) {
-	struct PS_(entry) *e, *e_end;
-	size_t size = 0;
+	PS_(uint) i, i_end;
+	size_t size = 0, buckets = 0, closed = 0;
 	if(!set) return; /* Null state. */
 	if(!set->entries) { /* Empty state. */
 		assert(!set->log_capacity && !set->size);
 		return;
 	}
 	assert(set->log_capacity >= 3);
-	for(e = set->entries, e_end = e + (1 << set->log_capacity); e < e_end; e++)
-		if(e->next != SETm2) size++;
-	assert(set->size == size);
+	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
+		struct PS_(entry) *e = set->entries + i;
+		if(e->next == SETm2) continue;
+		size++;
+		if(e->next == SETm1) buckets++;
+		if(i == PS_(hash_to_bucket)(set, PS_(entry_hash)(e))) closed++;
+	}
+	assert(set->size == size && buckets == closed);
 }
 
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */

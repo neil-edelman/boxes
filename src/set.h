@@ -296,7 +296,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, old_top, st1, st2;
+	PS_(uint) c1, size1, i, old_top, wt;
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	assert((!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
@@ -320,19 +320,18 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	if(!set->entries) set->top = SETm1; /* Idle `top` initialized here. */
 	set->entries = entries, set->log_capacity = log_c1;
 
-	/* Initialize new values, reset stack. (Setting negative a whole bunch of
-	 negative values probabilistically takes more power then is optimal, but we
-	 aim for simplicity foremost.) */
+	/* Initialize new values, reset `top` stack.
+	 fixme: Think about the energy required. */
 	{ struct PS_(entry) *e = entries + c0, *const e_end = entries + c1;
 		for( ; e < e_end; e++) e->next = SETm2; }
 	old_top = set->top, set->top = SETm1;
 
-	/* Rehash the entries in the upper half: that are empty, E[1 / growth ratio]
-	 still closed, that are closed and belong in the second half, and that
-	 closed positions have been emptied by this process. The others go on a
-	 temporary stack `st1`, (not to be confused with `top`, which is empty.) */
+	/* Rehash closed entries in the lower half that are: empty, still closed
+	 E[1 / growth ratio], closed and belong in the upper half, and that have
+	 closed positions emptied by this process. The others go on a temporary
+	 stack for differed processing. */
 	printf("buffer::rehash %lu entries\n", (unsigned long)c0);
-	st1 = SETm1;
+	wt = SETm1;
 	for(i = 0; i < c0; i++) {
 		char z[12];
 		struct PS_(entry) *ie, *je;
@@ -346,56 +345,81 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 		{ PS_(type) key = PS_(entry_key)(ie); PS_(to_string)(&key, &z); }
 		if(i == (j = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(ie))))
-			{ ie->next = SETm1; printf("\t0x%lx: \"%s\"->0x%lx, no change.\n",
+			{ ie->next = SETm1; printf("\t0x%lx: \"%s\"->0x%lx chill.\n",
 			(unsigned long)i, z, (unsigned long)j); continue; }
 		if((je = set->entries + j)->next == SETm2) {
 			memcpy(je, ie, sizeof *ie), je->next = SETm1, ie->next = SETm2;
-			printf("\t0x%lx: \"%s\"->0x%lx moved to unoccupied\n",
+			printf("\t0x%lx: \"%s\"->0x%lx vacant.\n",
 				(unsigned long)i, z, (unsigned long)j);
 			continue;
 		}
-		printf("\t0x%lx: \"%s\" to stack.\n", (unsigned long)i, z);
-		ie->next = st1, st1 = i; /* Push `open`. */
+		printf("\t0x%lx: \"%s\"->0x%lx wait.\n",
+			(unsigned long)i, z, (unsigned long)j);
+		ie->next = wt, wt = i; /* Push. */
 	}
 
 	{
-		PS_(uint) o = st1;
-		printf("open stack now:\n");
-		while(o != SETm1) {
-			printf("\t0x%lx\n", (unsigned long)o);
-			o = set->entries[o].next;
+		PS_(uint) w = wt;
+		printf("wait stack now: { ");
+		while(w != SETm1) {
+			printf("0x%lx ", (unsigned long)w);
+			w = set->entries[w].next;
 		}
+		printf("} checking for stragglers.\n");
 	}
 
-	/* Move from the temporary `open` stack in the lower half to a closed entry
-	 in the lower half or to `top` stack in the upper half. */
-	st2 = SETm1;
-	while(st1 != SETm1) {
+	/* Do a full pass on wait to pick up stragglers from the recently-vacant.
+	 fixme: might as well differ that to here? */
+	{ PS_(uint) prev = SETm1, w = wt; while(w != SETm1) {
 		char z[12];
-		struct PS_(entry) *open = set->entries + st1;
-		PS_(uint) c = PS_(hash_to_bucket)(set, PS_(entry_hash)(open));
-		struct PS_(entry) *const closed = set->entries + c;
+		struct PS_(entry) *wait = set->entries + w;
+		PS_(uint) cl = PS_(hash_to_bucket)(set, PS_(entry_hash)(wait));
+		struct PS_(entry) *const closed = set->entries + cl;
+		assert(cl != w);
 		{
-			PS_(type) key = PS_(entry_key)(open);
+			PS_(type) key = PS_(entry_key)(wait);
 			PS_(to_string)(&key, &z);
-			printf("\topen stack 0x%lx: \"%s\" -- ", (unsigned long)st1, z);
+			printf("\t0x%lx: \"%s\" ", (unsigned long)w, z);
 		}
-		if(closed->next == SETm2) { /* Recently vacant. */
-			/* fixme: This is a mistake! Only if greater than `open`, otherwise
-			 we risk overriding the `open` list itself. */
-			memcpy(closed, open, sizeof *open), closed->next = SETm1;
-			printf("recently closed entry 0x%lx, top 0x%lx.\n",
-				(unsigned long)c, (unsigned long)set->top);
-		} else { /* Stick it on the stack. */
-			struct PS_(entry) *top;
-			PS_(grow_stack)(set), top = set->entries + set->top;
-			printf("closed 0x%lx, grow stack 0x%lx.\n",
-				(unsigned long)c, (unsigned long)set->top);
-			memcpy(top, open, sizeof *open);
-			top->next = closed->next, closed->next = set->top;
+		if(closed->next == SETm2) {
+			memcpy(closed, wait, sizeof *wait), closed->next = SETm1;
+			printf("vacant 0x%lx.\n", (unsigned long)cl);
+			if(prev != SETm1) set->entries[prev].next = wait->next;
+			if(wt == w) wt = wait->next; /* Modify head. */
+			w = wait->next, wait->next = SETm2;
+		} else {
+			printf("wait.\n");
+			prev = w, w = wait->next;
 		}
-		st1 = open->next, open->next = SETm2; /* Pop `open`. */
-		if(set->log_capacity >= 7) printf("set[0x47].next=%lx\n", (unsigned long)set->entries[0x47].next);
+	}}
+
+	{
+		PS_(uint) w = wt;
+		printf("wait stack now: { ");
+		while(w != SETm1) {
+			printf("0x%lx ", (unsigned long)w);
+			w = set->entries[w].next;
+		}
+		printf("} moving to new stack.\n");
+	}
+
+	while(wt != SETm1) {
+		char z[12];
+		struct PS_(entry) *wait = set->entries + wt;
+		PS_(uint) cl = PS_(hash_to_bucket)(set, PS_(entry_hash)(wait));
+		struct PS_(entry) *const closed = set->entries + cl;
+		struct PS_(entry) *top;
+		assert(cl != wt && closed->next != SETm2);
+		PS_(grow_stack)(set), top = set->entries + set->top;
+		{
+			PS_(type) key = PS_(entry_key)(wait);
+			PS_(to_string)(&key, &z);
+			printf("\t0x%lx: \"%s\" to stack 0x%lx.\n",
+				(unsigned long)wt, z, (unsigned long)set->top);
+		}
+		memcpy(top, wait, sizeof *wait);
+		top->next = closed->next, closed->next = set->top;
+		wt = wait->next, wait->next = SETm2; /* Pop `open`. */
 	}
 
 	{ PS_(uint) j;
