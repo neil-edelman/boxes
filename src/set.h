@@ -298,7 +298,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, wait, gap;
+	PS_(uint) c1, size1, i, wait;
 	char fn[64];
 
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
@@ -336,7 +336,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	 closed positions emptied by this process. The others go on a temporary
 	 stack for differed processing. */
 	printf("buffer::rehash %lu entries, top %lu\n", (unsigned long)c0, (unsigned long)set->top);
-	wait = gap = SETm1;
+	wait = SETm1;
 	for(i = 0; i < c0; i++) {
 		struct PS_(entry) *idx, *go;
 		PS_(uint) g;
@@ -357,10 +357,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 		if(i == g) { idx->next = SETm1; printf("chill.\n"); continue; }
 		if((go = set->entries + g)->next == SETm2) {
-			memcpy(go, idx, sizeof *idx), go->next = SETm1;
-			if(set->top != SETm1 && i <= set->top) idx->next = gap, gap = i;
-			else idx->next = SETm2;
-			printf("vacant.\n");
+			memcpy(go, idx, sizeof *idx), go->next = SETm1, idx->next = SETm2;
+			printf("to vacant.\n");
 			continue;
 		}
 		printf("wait.\n");
@@ -371,16 +369,11 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	PS_(graph)(set, fn);
 
 	{
-		PS_(uint) w = wait, g = gap;
+		PS_(uint) w = wait;
 		printf("waiting stack now: { ");
 		while(w != SETm1) {
 			printf("0x%lx ", (unsigned long)w);
 			w = set->entries[w].next;
-		}
-		printf("} gap { ");
-		while(g != SETm1) {
-			printf("0x%lx ", (unsigned long)g);
-			g = set->entries[g].next;
 		}
 		printf("} checking for stragglers.\n");
 	}
