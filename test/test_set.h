@@ -26,13 +26,13 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 	assert(set && idx < PS_(capacity)(set));
 	entry = set->entries + idx;
 	if((next = entry->next) == SETm2
-		|| set->top != SETm1 && idx <= set->top /* In range of stack. */
+		|| PS_(in_stack_range)(set, idx)
 		&& idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
 	for( ; ; ) {
 		no++;
 		if(next == SETm1) return no;
 		idx = next;
-		assert(idx <= set->top && idx < PS_(capacity)(set));
+		assert(idx < PS_(capacity)(set) && PS_(in_stack_range)(set, idx));
 		entry = set->entries + idx;
 		next = entry->next;
 		assert(next != SETm2); /* -2 null: linked-list integrity. */
@@ -186,7 +186,7 @@ static void PS_(histogram)(const struct S_(set) *const set,
 		for(i = 0; i < i_end; i++) {
 			size_t items;
 			e = set->entries + i;
-			if(e->next == SETm2 || set->top != SETm1 && set->top <= i
+			if(e->next == SETm2 || PS_(in_stack_range)(set, i)
 				&& i != PS_(hash_to_bucket)(set, PS_(entry_hash)(e)))
 				continue;
 			//= PS_(count)(set, b);

@@ -50,8 +50,6 @@
 
  @fixme Implement move-to-front like splay-trees.
  @fixme Implement SET_RECALCULATE and SET_INVERSE_HASH.
- @fixme SETm1,2 could be S&M, we are not using all the bits; this would require
- less energy on average.
 
  @std C89 */
 
@@ -91,7 +89,8 @@
 #define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0, 0 }
 /* fixme: ~0^(~0>>1)[+1] would be more energy efficient, since we're not using
- half the range. */
+ half the range. Make sure one splits <fn:<PS>buffer> from the rest, whose
+ value is reliant on -1. */
 /* Use negative values of <typedef:<PS>uint> to store special things, such that
  range of an index is 3 less than the maximum. (I think these work on
  mathematically-impaired representations, ones', s&m, and odd TI padding.) */
@@ -214,15 +213,21 @@ static PS_(uint) PS_(capacity)(const struct S_(set) *const set)
 static PS_(uint) PS_(hash_to_bucket)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
-/** This is amortized; every value takes at most one top increment. The top of
- `set` will be empty. */
+/** This is amortized; every value takes at most one top. On return, the `top`
+ of `set` will be empty. */
 static void PS_(grow_stack)(struct S_(set) *const set) {
 	PS_(uint) top = set->top;
-	assert(set && set->entries && set->size < PS_(capacity)(set));
-	do top++; while(assert(top < PS_(capacity)(set)),
-		set->entries[top].next != SETm2);
+	assert(set && set->entries && top);
+	top = (top == SETm1 ? PS_(capacity)(set) : top) - 1;
+	while(set->entries[top].next != SETm2) assert(top), top--;
 	set->top = top;
 }
+
+/** Is `idx` possibly on the stack? (Got tired of grepping every time I wanted
+ to change the direction.) */
+static int PS_(in_stack_range)(const struct S_(set) *const set,
+	const PS_(uint) idx)
+	{ return assert(set), set->top != SETm1 && set->top <= idx; }
 
 /***********fixme*/
 static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
@@ -263,7 +268,7 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	entry = set->entries + (idx = PS_(hash_to_bucket)(set, hash));
 	/* Not the start of a bucket: empty or in the collision stack. */
 	if((next = entry->next) == SETm2
-		|| set->top != SETm1 && set->top <= idx /* In range of stack. */
+		|| PS_(in_stack_range)(set, idx)
 		&& idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
 	for( ; ; ) {
 #ifdef SET_RECALCULATE /* <!-- !cache: always go to next predicate. */
@@ -274,8 +279,7 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 		if(hashes_are_equal && PS_(equal)(key, entry->key)) return entry;
 		if(next == SETm1) return 0; /* -1 used to end the bucket. */
 		idx = next;
-		/* We are now in the collision stack. */
-		assert(idx <= set->top && idx < PS_(capacity)(set));
+		assert(idx < PS_(capacity)(set) && PS_(in_stack_range)(set, idx));
 		entry = set->entries + idx;
 		next = entry->next;
 		assert(next != SETm2); /* -2 null: linked-list integrity. */
