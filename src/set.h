@@ -112,7 +112,7 @@ typedef SET_UINT PS_(uint);
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PS_(type);
 /** Used on read-only. @fixme Including `const` qualifier in `SET_TYPE` is not
- supported and will lead to errors. */
+ supported and will probably lead to warnings. */
 typedef const SET_TYPE PS_(ctype);
 
 /** A map from <typedef:<PS>ctype> onto <typedef:<PS>uint>. Usually should use
