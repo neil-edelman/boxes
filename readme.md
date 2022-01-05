@@ -55,9 +55,9 @@
 `boxes` is a very simple automated dependancy and build system for
 separate `C89` data structure projects; these projects are intended
 to generate lightweight, independent, and statically type-safe
-containers for existing code. The `sh`-script `autoclone`, downloads
-them all.  See each for usage, and each project's `test` section
-for examples.
+containers for new and existing code. The `sh`-script `autoclone`,
+downloads them all.  See each for usage, and each project's `test`
+section for examples.
 
 ## Why boxes? ##
 
@@ -67,11 +67,11 @@ for examples.
 > used to doing for every new application, or using overly complicated existing
 > frameworks that take over your application (nspr, apr, glib...).
 
-This aims to be a middle ground. No libraries or frameworks; each
-fairly small, simple, stand-alone `C89` code. It's like rolling
-one's own containers, but aims to have work of testing and documenting
-already done. In a project, one can pick and choose which ones are
-appropriate.
+This aims to be a middle ground for some popular containers. No
+libraries or frameworks; each fairly small, simple, stand-alone
+`C89` code. It's like rolling one's own, but aims to have work of
+testing and documenting already done. In a project, one can pick
+and choose which ones are appropriate.
 
 ## Internal interface ##
 
