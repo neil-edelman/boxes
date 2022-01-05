@@ -143,8 +143,11 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
 		struct PS_(entry) *e = set->entries + i;
 		PS_(uint) left, right;
-		if((right = e->next) >= SETm2
-		   || PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) != i) continue;
+		if((right = e->next) >= SETm2) continue;
+		if(PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) != i) {
+			fprintf(fp, "\tset:%lu -> i0x%lx;\n", i, (unsigned long)right);
+			continue;
+		}
 		fprintf(fp,
 			"\te%lu [label=\"0x%lx\"];\n"
 			"\tset:%lu -> e%lu [tailclip=false];\n",
@@ -287,8 +290,8 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(set.size >= 31 && set.size <= 34
-			|| set.size < 1000000 && !(n & (n - 1))) {
+		if(/*set.size >= 7 && set.size <= 9
+			||*/ set.size < 1000000 && !(n & (n - 1))) {
 			char fn[64];
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
 				(unsigned)n + 1);

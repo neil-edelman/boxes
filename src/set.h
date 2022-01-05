@@ -90,6 +90,8 @@
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0, 0 }
+/* fixme: ~0^(~0>>1)[+1] would be more energy efficient, since we're not using
+ half the range. */
 /* Use negative values of <typedef:<PS>uint> to store special things, such that
  range of an index is 3 less than the maximum. (I think these work on
  mathematically-impaired representations, ones', s&m, and odd TI padding.) */
@@ -280,6 +282,10 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	}
 }
 
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+static void PS_(graph)(const struct S_(set) *const set, const char *const fn);
+
 /** Ensures that `set` has enough entries to fill `n` more than the size.
  May invalidate `entries` and re-arrange the order.
  @return Success; otherwise, `errno` will be set. @throws[realloc]
@@ -292,7 +298,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	unsigned log_c1;
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, old_top, wait; /* Fixme: Instead have `gap`. */
+	PS_(uint) c1, size1, i, wait, gap;
+	char fn[64];
+
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
 	assert((!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
@@ -308,6 +316,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
 
+	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-a.gv", log_c0, log_c1);
+	PS_(graph)(set, fn);
+
 	/* Otherwise, need to allocate more. */
 	printf("buffer: %lu -> %lu to satisfy %lu.\n",
 		(unsigned long)c0, (unsigned long)c1, (unsigned long)size1);
@@ -316,50 +327,60 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	if(!set->entries) set->top = SETm1; /* Idle `top` initialized here. */
 	set->entries = entries, set->log_capacity = log_c1;
 
-	/* Initialize new values, reset `top` stack.
-	 fixme: Think about the energy required. */
+	/* Initialize new values, reset `top` stack. */
 	{ struct PS_(entry) *e = entries + c0, *const e_end = entries + c1;
 		for( ; e < e_end; e++) e->next = SETm2; }
-	old_top = set->top, set->top = SETm1;
 
 	/* Rehash closed entries in the lower half that are: empty, still closed
 	 E[1 / growth ratio], closed and belong in the upper half, and that have
 	 closed positions emptied by this process. The others go on a temporary
 	 stack for differed processing. */
-	printf("buffer::rehash %lu entries\n", (unsigned long)c0);
-	wait = SETm1;
+	printf("buffer::rehash %lu entries, top %lu\n", (unsigned long)c0, (unsigned long)set->top);
+	wait = gap = SETm1;
 	for(i = 0; i < c0; i++) {
-		char z[12];
-		struct PS_(entry) *ie, *je;
-		PS_(uint) hash, j;
-		ie = set->entries + i;
-		if(ie->next == SETm2) {
+		struct PS_(entry) *idx, *go;
+		PS_(uint) g;
+		idx = set->entries + i;
+		printf("A.\t0x%lx: ", (unsigned long)i);
+		if(idx->next == SETm2) {
 			assert(n > 1 /* Must have been asking more. */
-				&& (old_top == SETm1 || old_top < i) /* Old stack full. */);
-			printf("A.\t0x%lx: empty.\n", (unsigned long)i);
+				&& (set->top == SETm1 || set->top < i) /* Old stack full. */);
+			printf("empty.\n");
 			continue;
 		}
-		{ PS_(type) key = PS_(entry_key)(ie); PS_(to_string)(&key, &z); }
-		if(i == (j = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(ie))))
-			{ ie->next = SETm1; printf("A.\t0x%lx: \"%s\"->0x%lx chill.\n",
-			(unsigned long)i, z, (unsigned long)j); continue; }
-		if((je = set->entries + j)->next == SETm2) {
-			memcpy(je, ie, sizeof *ie), je->next = SETm1, ie->next = SETm2;
-			printf("A.\t0x%lx: \"%s\"->0x%lx vacant.\n",
-				(unsigned long)i, z, (unsigned long)j);
+		g = PS_(hash_to_bucket)(set, PS_(entry_hash)(idx));
+		{
+			PS_(type) key = PS_(entry_key)(idx);
+			char z[12];
+			PS_(to_string)(&key, &z);
+			printf("\"%s\"->0x%lx ", z, (unsigned long)g);
+		}
+		if(i == g) { idx->next = SETm1; printf("chill.\n"); continue; }
+		if((go = set->entries + g)->next == SETm2) {
+			memcpy(go, idx, sizeof *idx), go->next = SETm1;
+			if(set->top != SETm1 && i <= set->top) idx->next = gap, gap = i;
+			else idx->next = SETm2;
+			printf("vacant.\n");
 			continue;
 		}
-		printf("A.\t0x%lx: \"%s\"->0x%lx wait.\n",
-			(unsigned long)i, z, (unsigned long)j);
-		ie->next = wait, wait = i; /* Push. */
+		printf("wait.\n");
+		idx->next = wait, wait = i; /* Push. */
 	}
 
+	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-b.gv", log_c0, log_c1);
+	PS_(graph)(set, fn);
+
 	{
-		PS_(uint) w = wait;
+		PS_(uint) w = wait, g = gap;
 		printf("waiting stack now: { ");
 		while(w != SETm1) {
 			printf("0x%lx ", (unsigned long)w);
 			w = set->entries[w].next;
+		}
+		printf("} gap { ");
+		while(g != SETm1) {
+			printf("0x%lx ", (unsigned long)g);
+			g = set->entries[g].next;
 		}
 		printf("} checking for stragglers.\n");
 	}
@@ -433,6 +454,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	}}
 	return 1;
 }
+
+#undef QUOTE_
+#undef QUOTE
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`. */
 typedef int (*PS_(replace_fn))(PS_(type) original, PS_(type) replace);
