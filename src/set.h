@@ -296,6 +296,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	struct PS_(entry) *entries;
 	const unsigned log_c0 = set->log_capacity;
 	unsigned log_c1;
+	/* fixme: this will have to be updated because it relies on -1. */
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
 	PS_(uint) c1, size1, i, wait;

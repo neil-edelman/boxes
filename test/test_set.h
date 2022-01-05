@@ -143,7 +143,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
 		struct PS_(entry) *e = set->entries + i;
 		PS_(uint) left, right;
-		if((right = e->next) >= SETm2) continue;
+		if((right = e->next) == SETm2 || right == SETm1) continue;
 		if(PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) != i) {
 			fprintf(fp, "\tset:%lu -> i0x%lx;\n", i, (unsigned long)right);
 			continue;
