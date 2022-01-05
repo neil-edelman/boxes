@@ -26,13 +26,13 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 	assert(set && idx < PS_(capacity)(set));
 	entry = set->entries + idx;
 	if((next = entry->next) == SETm2
-		|| set->top != SETm1 && set->top <= idx /* In range of stack. */
+		|| set->top != SETm1 && idx <= set->top /* In range of stack. */
 		&& idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
 	for( ; ; ) {
 		no++;
 		if(next == SETm1) return no;
 		idx = next;
-		assert(set->top <= idx && idx < 1 << set->log_capacity);
+		assert(idx <= set->top && idx < PS_(capacity)(set));
 		entry = set->entries + idx;
 		next = entry->next;
 		assert(next != SETm2); /* -2 null: linked-list integrity. */
@@ -287,7 +287,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(set.size == 130 || set.size == 129
+		if(set.size >= 31 && set.size <= 34
 			|| set.size < 1000000 && !(n & (n - 1))) {
 			char fn[64];
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
