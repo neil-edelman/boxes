@@ -352,8 +352,6 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		idx = set->entries + i;
 		printf("A.\t0x%lx: ", (unsigned long)i);
 		if(idx->next == SETm2) {
-			assert(n > 1 /* Must have been asking more. */
-				/*&& !PS_(in_stack_range)(set, i) reset the stack */);
 			printf("empty.\n");
 			continue;
 		}
@@ -378,9 +376,12 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 				PS_(to_string)(&head->key, &y);
 				printf("future 0x%lx \"%s\"->0x%lx will go instead, ",
 					(unsigned long)h, y, (unsigned long)g);
-				/*fixme: actually do it; this will prevent any others*/
+				memcpy(go, head, sizeof *head);
+				go->next = SETm1, head->next = SETm2;
+				/* Fall-though -- the entry still needs to be put on waiting. */
 			} else {
-				memcpy(go, idx, sizeof *idx), go->next = SETm1, idx->next = SETm2;
+				memcpy(go, idx, sizeof *idx);
+				go->next = SETm1, idx->next = SETm2;
 				printf("to vacant.\n");
 				continue;
 			}
