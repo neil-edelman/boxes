@@ -184,18 +184,12 @@ static void PS_(histogram)(const struct S_(set) *const set,
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	if(set->entries) {
 		PS_(uint) i, i_end = 1 << set->log_capacity;
-		struct PS_(entry) *e;
 		for(i = 0; i < i_end; i++) {
-			size_t items;
-			e = set->entries + i;
-			if(e->next == SETm2 || PS_(in_stack_range)(set, i)
-				&& i != PS_(hash_to_bucket)(set, PS_(entry_hash)(e)))
-				continue;
-			//= PS_(count)(set, b);
-			continue;
+			size_t bucket = PS_(count_bucket)(set, i);
+			//if(!bucket) continue;
 			/* The bins are `0,1,2,...,[histogram_size - 1, \infty]`. */
-			if(items >= histogram_size) items = histogram_size - 1;
-			histogram[items]++;
+			if(bucket >= histogram_size) bucket = histogram_size - 1;
+			histogram[bucket]++;
 		}
 	}
 	/* Hopefully `historgram_size` is much larger then it has to be. */
@@ -208,6 +202,7 @@ static void PS_(histogram)(const struct S_(set) *const set,
 		"set ylabel \"frequency\"\n"
 		"set style histogram\n"
 		"set xrange [0:]\n"
+		"unset key\n"
 		"plot \"-\" using 1:2 with boxes lw 3 title \"Histogram\"\n",
 		(unsigned long)set->size, fn);
 	for(h = 0; h < hs; h++) fprintf(fp, "%lu\t%lu\n",
@@ -292,11 +287,9 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(/*set.size >= 7 && set.size <= 9
-			||*/ set.size < 1000000 && !(n & (n - 1))) {
+		if(set.size < 10000 && !(n & (n - 1))) {
 			char fn[64];
-			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u.gv",
-				(unsigned)n + 1);
+			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%lu.gv", (unsigned long)n);
 			printf("*** graph %s: set %s.\n", fn, PS_(set_to_string)(&set));
 			PS_(graph)(&set, fn);
 		}
