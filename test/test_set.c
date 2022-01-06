@@ -11,6 +11,70 @@
 #include "orcish.h"
 
 
+/* String hash. Backing: we have somewhere to store the strings. One could use
+ any storage, but a pool is convenient for testing. */
+struct str16 { char str[16]; };
+#define POOL_NAME string
+#define POOL_TYPE struct str16
+#include "../src/pool.h"
+/** For testing, we relax the type-safety: `vstring` is `string_pool`, but set
+ doesn't have to know about pool. */
+static char *string_from_pool(void *const vstring) {
+	struct string_pool *const string = vstring;
+	struct str16 *s16 = string_pool_new(string);
+	if(!s16) return 0;
+	orcish(s16->str, sizeof s16->str);
+	assert(string);
+	return s16->str;
+}
+/* It is pretty much impossible to write these in a device-independent way in
+ C89, but we make the assumption that `size_t` is the biggest integer (which
+ isn't at all guaranteed.) */
+#if 0x8000 * 2 == 0
+#error 16-bit max length is not supported in this test.
+#elif 0x80000000 * 2 == 0
+/** We support 32 and 64-bit `size_t`.
+ <http://www.isthe.com/chongo/tech/comp/fnv/> */
+static size_t fnv_32a_str(const char *const str) {
+	const unsigned char *s = (const unsigned char *)str;
+	unsigned hval = 0x811c9dc5;
+	while(*s) hval ^= *s++, hval *= 0x01000193;
+	return hval;
+}
+static size_t fnv_a_str(const char *const str) { return fnv_32a_str(str); }
+#else /* 0x8000000000000000 * 2 == 0? doesn't matter; it's max 64bit. */
+/** <http://www.isthe.com/chongo/tech/comp/fnv/> */
+static size_t fnv_64a_str(const char *const str) {
+	const unsigned char *s = (const unsigned char *)str;
+	size_t hval = 0xcbf29ce484222325;
+	while(*s) hval ^= *s++, hval *= 0x100000001b3;
+	return hval;
+}
+static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
+#endif
+static int string_is_equal(const char *const a, const char *const b)
+	{ return !strcmp(a, b); }
+static void string_to_string(const char *const s, char (*const a)[12]) {
+	strncpy(*a, s, sizeof(*a) - 1);
+	(*a)[sizeof(*a) - 1] = '\0';
+}
+/* The trouble with wanting it to work with pointers and regular data is that
+ it gets tricky generalizing them. fixme: Maybe have a &? */
+static void pstring_to_string(char *const*const ps, char (*const a)[12])
+	{ string_to_string(*ps, a); }
+/* This is not used anymore.
+ static void string_fill(char *const str) { assert(0); } */
+#define SET_NAME string
+#define SET_TYPE char * /* Parameter of <fn:fnv_a_str> (without `const`.) */
+#define SET_HASH &fnv_a_str
+#define SET_IS_EQUAL &string_is_equal
+#define SET_TEST &string_fill /* Not used. */
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &pstring_to_string
+#include "../src/set.h"
+
+
 /* Integer hash. */
 #if UINT_MAX < 4294967295
 #error These tests assume >= 32-bit integer; real applications would use fixed.
@@ -33,75 +97,20 @@ static unsigned random_int(void *const zero) {
 	return (unsigned)rand();
 }
 #define SET_NAME int
-#define SET_TYPE unsigned
-#define SET_UINT unsigned
+#define SET_TYPE unsigned /* Parameter of <fn:lowbias32>. */
+#define SET_UINT unsigned /* Return type of <fn:lowbias32>. */
 #define SET_HASH &lowbias32
 #define SET_IS_EQUAL &int_is_equal
-#define SET_TEST &int_fill
+#define SET_TEST &int_fill /* This is not used anymore. */
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &int_to_string
 #include "../src/set.h"
 
 
-/* http://www.isthe.com/chongo/tech/comp/fnv/
- It is pretty much impossible to write these in a device-independent way in
- C89, but we make the assumption that `size_t` is the biggest integer. */
-#if 0x8000 * 2 == 0
-/** hash16_xm2 <https://github.com/skeeto/hash-prospector> */
-uint16_t hash16_xm2(uint16_t x) {
-	x ^= x >> 8; x *= 0x88b5u;
-	x ^= x >> 7; x *= 0xdb2du;
-	x ^= x >> 9;
-	return x;
-}
-#elif 0x80000000 * 2 == 0
-/** Perform a 32 bit Fowler/Noll/Vo FNV-1a hash on `str`. */
-static unsigned fnv_32a_str(const char *const str) {
-	const unsigned char *s = (const unsigned char *)str;
-	unsigned hval = 0x811c9dc5;
-	while(*s) hval ^= *s++, hval *= 0x01000193;
-	return hval;
-}
-#else /* 0x8000000000000000 * 2 == 0? doesn't matter; it's max 64bit. */
-static size_t fnv_64a_str(const char *const str) {
-	const unsigned char *s = (const unsigned char *)str;
-	size_t hval = 0xcbf29ce484222325;
-	while(*s) hval ^= *s++, hval *= 0x100000001b3;
-	return hval;
-}
-#endif
-/* String hash. Backing: we have somewhere to store the strings. */
-struct str16 { char str[16]; };
-#define POOL_NAME string
-#define POOL_TYPE struct str16
-#include "../src/pool.h"
-static char *string_from_pool(void *const vstring) {
-	struct string_pool *const string = vstring;
-	struct str16 *s16 = string_pool_new(string);
-	if(!s16) return 0;
-	orcish(s16->str, sizeof s16->str);
-	assert(string);
-	return s16->str;
-}
-static int string_is_equal(const char *const a, const char *const b)
-	{ return !strcmp(a, b); }
-static void string_to_string(const char *const s, char (*const a)[12]) {
-	strncpy(*a, s, sizeof(*a) - 1);
-	(*a)[sizeof(*a) - 1] = '\0';
-}
-static void pstring_to_string(char *const*const ps, char (*const a)[12])
-	{ string_to_string(*ps, a); }
-static void string_fill(char *const str) { assert(0); }
-#define SET_NAME string
-#define SET_TYPE char *
-#define SET_HASH &fnv_64a_str
-#define SET_IS_EQUAL &string_is_equal
-#define SET_TEST &string_fill
-#define SET_EXPECT_TRAIT
-#include "../src/set.h"
-#define SET_TO_STRING &pstring_to_string
-#include "../src/set.h"
+
+
+
 
 
 
@@ -111,6 +120,13 @@ static void string_fill(char *const str) { assert(0); }
 
 
 #if 0
+/** <https://github.com/skeeto/hash-prospector> */
+uint16_t hash16_xm2(uint16_t x) {
+	x ^= x >> 8; x *= 0x88b5u;
+	x ^= x >> 7; x *= 0xdb2du;
+	x ^= x >> 9;
+	return x;
+}
 
 
 

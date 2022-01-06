@@ -214,9 +214,9 @@ static void PS_(histogram)(const struct S_(set) *const set,
  @order \O(|`set.bins`| + |`set.items`|) */
 static void PS_(legit)(const struct S_(set) *const set) {
 	PS_(uint) i, i_end;
-	size_t size = 0, buckets = 0, closed = 0;
-	if(!set) return; /* Null state. */
-	if(!set->entries) { /* Empty state. */
+	size_t size = 0, end = 0, start = 0;
+	if(!set) return; /* Null. */
+	if(!set->entries) { /* Idle. */
 		assert(!set->log_capacity && !set->size);
 		return;
 	}
@@ -225,10 +225,10 @@ static void PS_(legit)(const struct S_(set) *const set) {
 		struct PS_(entry) *e = set->entries + i;
 		if(e->next == SETm2) continue;
 		size++;
-		if(e->next == SETm1) buckets++;
-		if(i == PS_(hash_to_bucket)(set, PS_(entry_hash)(e))) closed++;
+		if(e->next == SETm1) end++;
+		if(i == PS_(hash_to_bucket)(set, PS_(entry_hash)(e))) start++;
 	}
-	assert(set->size == size && buckets == closed);
+	assert(set->size == size && end == start && size >= start);
 }
 
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */
@@ -265,7 +265,8 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 			&& !set.entries[4].first && !set.entries[5].first
 			&& !set.entries[6].first && !set.entries[7].first); */
 		eject = S_(set_put)(&set, t->elem);
-		if(n == 0) assert(!eject && set.size == 1);
+		assert(n || set.size == 1 && !eject);
+		/* How can we get a parent pointer? Probably have to have a pointer. */
 #if 0
 		else if(eject) {
 			if(!parent_new) {
