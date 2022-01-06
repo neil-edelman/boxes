@@ -339,10 +339,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	set->top = SETm1;
 	mask = (((PS_(uint))1 << log_c0) - 1) ^ (((PS_(uint))1 << log_c1) - 1);
 
-	/* Rehash closed entries in the lower half that are: empty, still closed
-	 E[1 / growth ratio], closed and belong in the upper half, and that have
-	 closed positions emptied by this process. The others go on a temporary
-	 stack for differed processing. */
+	/* Rehash most closed entries in the lower half. */
 	printf("buffer: rehash %lu entries; mask 0x%lx.\n",
 		(unsigned long)c0, (unsigned long)mask);
 	wait = SETm1;
@@ -351,10 +348,9 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		PS_(uint) g, hash;
 		idx = set->entries + i;
 		printf("A.\t0x%lx: ", (unsigned long)i);
-		if(idx->next == SETm2) {
-			printf("empty.\n");
-			continue;
-		}
+		/* Empty; don't have to do anything. */
+		if(idx->next == SETm2) { printf("empty.\n"); continue; }
+		/* Where it is closed. */
 		g = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(idx));
 		{
 			PS_(type) key = PS_(entry_key)(idx);
@@ -362,14 +358,14 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			PS_(to_string)(&key, &z);
 			printf("\"%s\"->0x%lx ", z, (unsigned long)g);
 		}
+		/* Like consistent hashing, because it's a power-of-two size,
+		 `E[old/new]` capacity that a closed entry will remain where it is. */
 		if(i == g) { idx->next = SETm1; printf("chill.\n"); continue; }
 		if((go = set->entries + g)->next == SETm2) {
-			/* `head` the in the bucket containing `idx`. Priority is given to
-			 the closed head entries, even in the future of this loop. This
-			 makes it simpler in next step. */
+			/* Priority is given to the closed head entries; simpler later. */
 			struct PS_(entry) *head;
 			PS_(uint) h = g & ~mask; assert(h <= g);
-			if(h < g && i < h /* Is this lookahead? */
+			if(h < g && i < h /* Lookahead to the first entry in the bucket. */
 				&& (head = set->entries + h, assert(head->next != SETm2),
 				g == PS_(hash_to_bucket)(set, PS_(entry_hash)(head)))) {
 				char y[12];
@@ -380,6 +376,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 				go->next = SETm1, head->next = SETm2;
 				/* Fall-though -- the entry still needs to be put on waiting. */
 			} else {
+				/* If the new entry is available and this entry is first. */
 				memcpy(go, idx, sizeof *idx);
 				go->next = SETm1, idx->next = SETm2;
 				printf("to vacant.\n");
@@ -387,7 +384,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			}
 		}
 		printf("wait.\n");
-		idx->next = wait, wait = i; /* Push. */
+		idx->next = wait, wait = i; /* Push for next sweep. */
 	}
 
 	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-b-waiting.gv",
@@ -404,7 +401,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		printf("} checking for stragglers.\n");
 	}
 
-	/* Do a full pass on wait to move stragglers from the recently-vacant. */
+	/* Search waiting stack for rest of the closed that moved concurrently. */
 	{ PS_(uint) prev = SETm1, w = wait; while(w != SETm1) {
 		char z[12];
 		struct PS_(entry) *waiting = set->entries + w;
@@ -421,7 +418,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			memcpy(closed, waiting, sizeof *waiting), closed->next = SETm1;
 			printf("to vacant.\n");
 			if(prev != SETm1) set->entries[prev].next = waiting->next;
-			if(wait == w) wait = waiting->next; /* Modify head. */
+			if(wait == w) wait = waiting->next; /* First, modify head. */
 			w = waiting->next, waiting->next = SETm2;
 		} else {
 			/* Not in the wait stack. */
@@ -441,13 +438,14 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		printf("} moving to stack.\n");
 	}
 
+	/* Rebuild the (smaller?) top stack (high) from the waiting (low). */
 	while(wait != SETm1) {
 		char z[12];
 		struct PS_(entry) *const waiting = set->entries + wait;
-		PS_(uint) cl = PS_(hash_to_bucket)(set, PS_(entry_hash)(waiting));
-		struct PS_(entry) *const closed = set->entries + cl;
+		PS_(uint) h = PS_(hash_to_bucket)(set, PS_(entry_hash)(waiting));
+		struct PS_(entry) *const head = set->entries + h;
 		struct PS_(entry) *top;
-		assert(cl != wait && closed->next != SETm2);
+		assert(h != wait && head->next != SETm2);
 		PS_(grow_stack)(set), top = set->entries + set->top;
 		{
 			PS_(type) key = PS_(entry_key)(waiting);
@@ -456,8 +454,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 				(unsigned long)wait, z, (unsigned long)set->top);
 		}
 		memcpy(top, waiting, sizeof *waiting);
-		top->next = closed->next, closed->next = set->top;
-		wait = waiting->next, waiting->next = SETm2; /* Pop `open`. */
+		top->next = head->next, head->next = set->top;
+		wait = waiting->next, waiting->next = SETm2; /* Pop. */
 	}
 
 	{ PS_(uint) j;
