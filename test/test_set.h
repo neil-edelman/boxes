@@ -32,7 +32,9 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 		no++;
 		if(next == SETm1) return no;
 		idx = next;
-		assert(idx < PS_(capacity)(set) && PS_(in_stack_range)(set, idx));
+		assert(idx < PS_(capacity)(set)
+			/* we want to count intermediates
+			 && PS_(in_stack_range)(set, idx) */);
 		entry = set->entries + idx;
 		next = entry->next;
 		assert(next != SETm2); /* -2 null: linked-list integrity. */

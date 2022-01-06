@@ -303,7 +303,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	/* fixme: this will have to be updated because it relies on -1. */
 	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
 		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
-	PS_(uint) c1, size1, i, wait;
+	PS_(uint) c1, size1, i, wait, mask;
 	char fn[64];
 
 	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
@@ -321,7 +321,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
 
-	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-a.gv", log_c0, log_c1);
+	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-a-before.gv",
+		log_c0, log_c1);
 	PS_(graph)(set, fn);
 
 	/* Otherwise, need to allocate more. */
@@ -332,28 +333,31 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	if(!set->entries) set->top = SETm1; /* Idle `top` initialized here. */
 	set->entries = entries, set->log_capacity = log_c1;
 
-	/* Initialize new values, reset `top` stack. */
+	/* Initialize new values. Reset the stack. Mask off the added bits. */
 	{ struct PS_(entry) *e = entries + c0, *const e_end = entries + c1;
 		for( ; e < e_end; e++) e->next = SETm2; }
+	set->top = SETm1;
+	mask = (((PS_(uint))1 << log_c0) - 1) ^ (((PS_(uint))1 << log_c1) - 1);
 
 	/* Rehash closed entries in the lower half that are: empty, still closed
 	 E[1 / growth ratio], closed and belong in the upper half, and that have
 	 closed positions emptied by this process. The others go on a temporary
 	 stack for differed processing. */
-	printf("buffer::rehash %lu entries, top %lu\n", (unsigned long)c0, (unsigned long)set->top);
+	printf("buffer: rehash %lu entries; mask 0x%lx.\n",
+		(unsigned long)c0, (unsigned long)mask);
 	wait = SETm1;
 	for(i = 0; i < c0; i++) {
 		struct PS_(entry) *idx, *go;
-		PS_(uint) g;
+		PS_(uint) g, hash;
 		idx = set->entries + i;
 		printf("A.\t0x%lx: ", (unsigned long)i);
 		if(idx->next == SETm2) {
 			assert(n > 1 /* Must have been asking more. */
-				&& (set->top == SETm1 || set->top < i) /* Old stack full. */);
+				/*&& !PS_(in_stack_range)(set, i) reset the stack */);
 			printf("empty.\n");
 			continue;
 		}
-		g = PS_(hash_to_bucket)(set, PS_(entry_hash)(idx));
+		g = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(idx));
 		{
 			PS_(type) key = PS_(entry_key)(idx);
 			char z[12];
@@ -362,20 +366,35 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 		if(i == g) { idx->next = SETm1; printf("chill.\n"); continue; }
 		if((go = set->entries + g)->next == SETm2) {
+			PS_(uint) f = g & ~mask;
+			assert(f <= g);
+			if(f != g && i < f) {
+				struct PS_(entry) *future = set->entries + f;
+				assert(future->next != SETm2);
+				if(g == PS_(hash_to_bucket)(set, PS_(entry_hash)(future))) {
+					char y[12];
+					PS_(to_string)(&future->key, &y);
+					printf("would have gone to vacant, but in the future 0x%lx \"%s\"->0x%lx will go instead, ", (unsigned long)f, y, (unsigned long)g);
+					/*fixme: actually do it; this will prevent any others*/
+					goto wait;
+				}
+			}
 			memcpy(go, idx, sizeof *idx), go->next = SETm1, idx->next = SETm2;
 			printf("to vacant.\n");
 			continue;
 		}
+wait:
 		printf("wait.\n");
 		idx->next = wait, wait = i; /* Push. */
 	}
 
-	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-b.gv", log_c0, log_c1);
+	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-b-waiting.gv",
+		log_c0, log_c1);
 	PS_(graph)(set, fn);
 
 	{
 		PS_(uint) w = wait;
-		printf("waiting stack now: { ");
+		printf("waiting: { ");
 		while(w != SETm1) {
 			printf("0x%lx ", (unsigned long)w);
 			w = set->entries[w].next;
@@ -383,7 +402,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		printf("} checking for stragglers.\n");
 	}
 
-	/* Do a full pass on wait to pick up stragglers from the recently-vacant. */
+	/* Do a full pass on wait to move stragglers from the recently-vacant. */
 	{ PS_(uint) prev = SETm1, w = wait; while(w != SETm1) {
 		char z[12];
 		struct PS_(entry) *waiting = set->entries + w;
@@ -393,15 +412,18 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		{
 			PS_(type) key = PS_(entry_key)(waiting);
 			PS_(to_string)(&key, &z);
-			printf("B.\t0x%lx: \"%s\" ", (unsigned long)w, z);
+			printf("B.\t0x%lx: \"%s\"->%lx ",
+				(unsigned long)w, z, (unsigned long)cl);
 		}
 		if(closed->next == SETm2) {
 			memcpy(closed, waiting, sizeof *waiting), closed->next = SETm1;
-			printf("vacant 0x%lx.\n", (unsigned long)cl);
+			printf("to vacant.\n");
 			if(prev != SETm1) set->entries[prev].next = waiting->next;
 			if(wait == w) wait = waiting->next; /* Modify head. */
 			w = waiting->next, waiting->next = SETm2;
 		} else {
+			/* Not in the wait stack. */
+			assert(closed->next == SETm1);
 			printf("wait.\n");
 			prev = w, w = waiting->next;
 		}
@@ -409,12 +431,12 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 
 	{
 		PS_(uint) w = wait;
-		printf("wait stack now: { ");
+		printf("waiting: { ");
 		while(w != SETm1) {
 			printf("0x%lx ", (unsigned long)w);
 			w = set->entries[w].next;
 		}
-		printf("} moving to new stack.\n");
+		printf("} moving to stack.\n");
 	}
 
 	while(wait != SETm1) {
