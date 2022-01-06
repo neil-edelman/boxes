@@ -366,24 +366,25 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 		if(i == g) { idx->next = SETm1; printf("chill.\n"); continue; }
 		if((go = set->entries + g)->next == SETm2) {
-			PS_(uint) f = g & ~mask;
-			assert(f <= g);
-			if(f != g && i < f) {
-				struct PS_(entry) *future = set->entries + f;
-				assert(future->next != SETm2);
-				if(g == PS_(hash_to_bucket)(set, PS_(entry_hash)(future))) {
-					char y[12];
-					PS_(to_string)(&future->key, &y);
-					printf("would have gone to vacant, but in the future 0x%lx \"%s\"->0x%lx will go instead, ", (unsigned long)f, y, (unsigned long)g);
-					/*fixme: actually do it; this will prevent any others*/
-					goto wait;
-				}
+			/* `head` the in the bucket containing `idx`. Priority is given to
+			 the closed head entries, even in the future of this loop. This
+			 makes it simpler in next step. */
+			struct PS_(entry) *head;
+			PS_(uint) h = g & ~mask; assert(h <= g);
+			if(h < g && i < h /* Is this lookahead? */
+				&& (head = set->entries + h, assert(head->next != SETm2),
+				g == PS_(hash_to_bucket)(set, PS_(entry_hash)(head)))) {
+				char y[12];
+				PS_(to_string)(&head->key, &y);
+				printf("future 0x%lx \"%s\"->0x%lx will go instead, ",
+					(unsigned long)h, y, (unsigned long)g);
+				/*fixme: actually do it; this will prevent any others*/
+			} else {
+				memcpy(go, idx, sizeof *idx), go->next = SETm1, idx->next = SETm2;
+				printf("to vacant.\n");
+				continue;
 			}
-			memcpy(go, idx, sizeof *idx), go->next = SETm1, idx->next = SETm2;
-			printf("to vacant.\n");
-			continue;
 		}
-wait:
 		printf("wait.\n");
 		idx->next = wait, wait = i; /* Push. */
 	}
