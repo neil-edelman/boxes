@@ -107,7 +107,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		 "\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
 		 "\t</TR>\n",
 		(unsigned long)PS_(stats).n,
-		set->entries ? 1ul << set->log_capacity : 0,
+		set->entries ? (unsigned long)PS_(capacity)(set) : 0,
 		PS_(stats).n ? PS_(stats).mean : (double)NAN, PS_(stats).n > 1
 		? sqrt(PS_(stats).ssdm / (double)(PS_(stats).n - 1)) : (double)NAN,
 		(unsigned long)PS_(stats).max);
@@ -186,7 +186,6 @@ static void PS_(histogram)(const struct S_(set) *const set,
 		PS_(uint) i, i_end = 1 << set->log_capacity;
 		for(i = 0; i < i_end; i++) {
 			size_t bucket = PS_(count_bucket)(set, i);
-			//if(!bucket) continue;
 			/* The bins are `0,1,2,...,[histogram_size - 1, \infty]`. */
 			if(bucket >= histogram_size) bucket = histogram_size - 1;
 			histogram[bucket]++;
@@ -194,6 +193,8 @@ static void PS_(histogram)(const struct S_(set) *const set,
 	}
 	/* `historgram_size` is much larger than it has to be, usually. */
 	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
+	/* Stats for fit. */
+	PS_(collect)(set);
 	fprintf(fp, "# Size: %lu.\n"
 		"set term postscript eps enhanced color\n"
 		"set output \"%s.eps\"\n"
@@ -203,8 +204,14 @@ static void PS_(histogram)(const struct S_(set) *const set,
 		"set style histogram\n"
 		"set xrange [0:]\n"
 		"unset key\n"
-		"plot \"-\" using 1:2 with boxes lw 3 title \"Histogram\"\n",
-		(unsigned long)set->size, fn);
+		"poisson(x) = entries*lambda**x/int(x)!*exp(-lambda)\n"
+		"lambda = %f\n"
+		"entries = %lu\n"
+		"# what I really want is the Gamma distribution\n"
+		"plot \"-\" using ($1+0.5):2 with boxes lw 3 title \"Histogram\", \\\n"
+		"\tpoisson(int(x)) with lines linestyle 2 title \"Fit\"\n",
+		(unsigned long)set->size, fn,
+		PS_(stats).mean, (unsigned long)PS_(stats).n);
 	for(h = 0; h < hs; h++) fprintf(fp, "%lu\t%lu\n",
 		(unsigned long)h, (unsigned long)histogram[h]);
 	fclose(fp);
