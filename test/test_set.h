@@ -192,13 +192,13 @@ static void PS_(histogram)(const struct S_(set) *const set,
 			histogram[bucket]++;
 		}
 	}
-	/* Hopefully `historgram_size` is much larger then it has to be. */
+	/* `historgram_size` is much larger than it has to be, usually. */
 	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
 	fprintf(fp, "# Size: %lu.\n"
 		"set term postscript eps enhanced color\n"
 		"set output \"%s.eps\"\n"
 		"set grid\n"
-		"set xlabel \"entry occupancy\"\n"
+		"set xlabel \"bucket occupancy\"\n"
 		"set ylabel \"frequency\"\n"
 		"set style histogram\n"
 		"set xrange [0:]\n"
@@ -234,7 +234,7 @@ static void PS_(legit)(const struct S_(set) *const set) {
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */
 static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
-	struct test { PS_(type) elem; int is_in, unused; } test[10000], *t, *t_end;
+	struct test { PS_(type) elem; int is_in, unused; } test[1000/*0*/], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char z[12];
@@ -300,10 +300,10 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		/*PS_(stats)(&set, "\n", stdout);*/
 		printf("\n");
 		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-final.gv",
-			(unsigned)test_size + 1);
+			(unsigned)test_size);
 		PS_(graph)(&set, fn);
 		sprintf(fn, "graph/histogram-" QUOTE(SET_NAME) "-%u.gnu",
-			(unsigned)test_size + 1);
+			(unsigned)test_size);
 		PS_(histogram)(&set, fn);
 	}
 	printf("Testing get from set.\n");

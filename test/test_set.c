@@ -12,8 +12,10 @@
 
 
 /* Integer hash. */
-
-/** Assume 32-bit; it's just a test. <https://nullprogram.com/blog/2018/07/31/>
+#if UINT_MAX < 4294967295
+#error These tests assume >= 32-bit integer; real applications would use fixed.
+#endif
+/** <https://nullprogram.com/blog/2018/07/31/>
  <https://github.com/skeeto/hash-prospector>. */
 static unsigned lowbias32(unsigned x) {
 	x ^= x >> 16;
@@ -23,11 +25,13 @@ static unsigned lowbias32(unsigned x) {
 	x ^= x >> 16;
 	return x;
 }
-/** `a` == `b`. */
 static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
-/** Outputs `x` to `a`. */
 static void int_to_string(const unsigned *const x, char (*const a)[12])
 	{ sprintf(*a, "%u", *x); }
+static unsigned random_int(void *const zero) {
+	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
+	return (unsigned)rand();
+}
 #define SET_NAME int
 #define SET_TYPE unsigned
 #define SET_UINT unsigned
@@ -38,10 +42,6 @@ static void int_to_string(const unsigned *const x, char (*const a)[12])
 #include "../src/set.h"
 #define SET_TO_STRING &int_to_string
 #include "../src/set.h"
-static unsigned random_int(void *const zero) {
-	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
-	return (unsigned)rand();
-}
 
 
 /* http://www.isthe.com/chongo/tech/comp/fnv/
