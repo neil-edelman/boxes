@@ -18,7 +18,7 @@
  @param[SET_NAME, SET_TYPE]
  `<S>` that satisfies `C` naming conventions when mangled and a valid
  <typedef:<PS>type> associated therewith; required. Type is copied extensively,
- so if it's a large, making it a pointer may improve performance. `<PS>` is
+ so if it's large, making it a pointer may improve performance. `<PS>` is
  private, whose names are prefixed in a manner to avoid collisions; any should
  be re-defined prior to use elsewhere.
 
