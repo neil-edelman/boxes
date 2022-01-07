@@ -377,7 +377,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 /* Check that `HEAP_TO_STRING` is a function implementing this prototype. */
 static void (*const TSZ_(actual_to_string))(const PH_(value_data) *,
 	char (*const)[12]) = (HEAP_TO_STRING);
-/** Call <data:<PH>actual_to_string> with just the value of `node` and `z`. */
+/** Call <data:<TSZ>actual_to_string> with just the value of `node` and `z`. */
 static void TSZ_(thunk_to_string)(const PH_(node) *const node,
 	char (*const z)[12]) { TSZ_(actual_to_string)(node->value, z); }
 #define TO_STRING &TSZ_(thunk_to_string)
