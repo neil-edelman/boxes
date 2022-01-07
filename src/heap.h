@@ -373,6 +373,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define SZ_(n) HEAP_CAT(H_(heap), n)
 #endif /* !name --> */
 #ifdef HEAP_VALUE /* <!-- value */
+/* fixme: shouldn't it be SZ_ to protect from collisions? */
 /* Check that `HEAP_TO_STRING` is a function implementing this prototype. */
 static void (*const PH_(actual_to_string))(const PH_(value_data) *,
 	char (*const)[12]) = (HEAP_TO_STRING);
