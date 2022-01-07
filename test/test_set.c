@@ -11,13 +11,13 @@
 #include "orcish.h"
 
 
-/* String hash. Backing: we have somewhere to store the strings. One could use
- any storage, but a pool is convenient for testing. */
+/* For testing: we have somewhere to store the strings. One could use any
+ storage, but a pool is convenient. */
 struct str16 { char str[16]; };
 #define POOL_NAME string
 #define POOL_TYPE struct str16
 #include "../src/pool.h"
-/** For testing, we relax the type-safety: `vstring` is `string_pool`, but set
+/** For testing: we relax the type-safety: `vstring` is `string_pool`, but set
  doesn't have to know about pool. */
 static char *string_from_pool(void *const vstring) {
 	struct string_pool *const string = vstring;
@@ -27,42 +27,29 @@ static char *string_from_pool(void *const vstring) {
 	assert(string);
 	return s16->str;
 }
-/* It is pretty much impossible to write these in a device-independent way in
- C89, but we make the assumption that `size_t` is the biggest integer (which
- isn't at all guaranteed.) */
-#if 0x8000 * 2 == 0
-#error 16-bit max length is not supported in this test.
-#elif 0x80000000 * 2 == 0
-/** We support 32 and 64-bit `size_t`.
- <http://www.isthe.com/chongo/tech/comp/fnv/> */
-static size_t fnv_32a_str(const char *const str) {
-	const unsigned char *s = (const unsigned char *)str;
-	unsigned hval = 0x811c9dc5;
-	while(*s) hval ^= *s++, hval *= 0x01000193;
-	return hval;
-}
-static size_t fnv_a_str(const char *const str) { return fnv_32a_str(str); }
-#else /* 0x8000000000000000 * 2 == 0? doesn't matter; it's max 64bit. */
-/** <http://www.isthe.com/chongo/tech/comp/fnv/> */
-static size_t fnv_64a_str(const char *const str) {
-	const unsigned char *s = (const unsigned char *)str;
-	size_t hval = 0xcbf29ce484222325;
-	while(*s) hval ^= *s++, hval *= 0x100000001b3;
-	return hval;
-}
-static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
-#endif
-static int string_is_equal(const char *const a, const char *const b)
-	{ return !strcmp(a, b); }
+/** For testing: passed to the automated output function. */
 static void string_to_string(const char *const s, char (*const a)[12]) {
 	strncpy(*a, s, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
+
+/* String hash */
+/** One must supply the hash. djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
+ a simple one that works adequately and is `size_t` agnostic. */
+static size_t djb2_hash(const char *s) {
+	const unsigned char *str = (const unsigned char *)s;
+	size_t hash = 5381, c;
+	while(c = *str++) hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	return hash;
+}
+static int string_is_equal(const char *const a, const char *const b)
+	{ return !strcmp(a, b); }
+
 #define SET_NAME string
-#define SET_TYPE char * /* Parameter of <fn:fnv_a_str> (without `const`.) */
-#define SET_HASH &fnv_a_str
+#define SET_TYPE char * /* Parameter of <fn:djb2_hash> (without `const`.) */
+#define SET_HASH &djb2_hash /* Default returns `size_t`. */
 #define SET_IS_EQUAL &string_is_equal
-#define SET_TEST &string_fill /* Not used. */
+#define SET_TEST &string_fill /* Not used. Requires to string for testing. */
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &string_to_string
@@ -104,6 +91,31 @@ static unsigned random_int(void *const zero) {
 
 
 
+/* It is pretty much impossible to write these in a device-independent way in
+ C89, but we make the assumption that `size_t` is the biggest integer (which
+ isn't at all guaranteed.) */
+#if 0x8000 * 2 == 0
+#error 16-bit max length is not supported in this test.
+#elif 0x80000000 * 2 == 0
+/** We support 32 and 64-bit `size_t`.
+ <http://www.isthe.com/chongo/tech/comp/fnv/> */
+static size_t fnv_32a_str(const char *const str) {
+	const unsigned char *s = (const unsigned char *)str;
+	unsigned hval = 0x811c9dc5;
+	while(*s) hval ^= *s++, hval *= 0x01000193;
+	return hval;
+}
+static size_t fnv_a_str(const char *const str) { return fnv_32a_str(str); }
+#else /* 0x8000000000000000 * 2 == 0? doesn't matter; it's max 64bit. */
+/** <http://www.isthe.com/chongo/tech/comp/fnv/> */
+static size_t fnv_64a_str(const char *const str) {
+	const unsigned char *s = (const unsigned char *)str;
+	size_t hval = 0xcbf29ce484222325;
+	while(*s) hval ^= *s++, hval *= 0x100000001b3;
+	return hval;
+}
+static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
+#endif
 
 
 

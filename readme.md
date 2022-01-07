@@ -13,9 +13,9 @@
 
 ![Example of &lt;string&gt;set.](web/set.png)
 
-[&lt;S&gt;set](#user-content-tag-54aaac2) is a hash set of unordered [&lt;PS&gt;type](#user-content-typedef-5ef437c0) that doesn't allow duplication\. It must be supplied a hash function and equality function\.
+[&lt;S&gt;set](#user-content-tag-54aaac2) is implemented as a hash table of unordered [&lt;PS&gt;type](#user-content-typedef-5ef437c0) that doesn't allow duplication\. It must be supplied a hash function and equality function\.
 
-This code is simple by design\. Enclosing a pointer [&lt;PS&gt;type](#user-content-typedef-5ef437c0) in a larger `struct` can give an associative array\. Compile\-time constant sets are better handled with [gperf](https://www.gnu.org/software/gperf/)\. Also, [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library that provides performance for large sets\.
+Enclosing a pointer [&lt;PS&gt;type](#user-content-typedef-5ef437c0) in a larger `struct` can give an associative array\. Compile\-time constant sets are better handled with [gperf](https://www.gnu.org/software/gperf/)\. Also, [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library that provides performance for large sets\.
 
 
 
@@ -64,7 +64,7 @@ Valid tag type defined by `SET_TYPE`\.
 Used on read\-only\.
 
  * Caveat:  
-   Including `const` qualifier in `SET_TYPE` is not supported and will lead to errors\.
+   Including `const` qualifier in `SET_TYPE` is not supported and will probably lead to warnings\.
 
 
 
@@ -131,7 +131,7 @@ Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a
 
 <code>struct <strong>&lt;PS&gt;entry</strong> { &lt;PS&gt;uint next; &lt;PS&gt;uint hash; &lt;PS&gt;type key; };</code>
 
-Buckets are linked\-lists of entries, and entries are stored in a hash table\. When a collision occurs, we push the entry out to an unoccupied stack, growing from the back\.
+Buckets are linked\-lists of entries, and entries are stored in a hash table\. When a collision occurs, we push the entry out to an unoccupied stack in the same table\.
 
 
 

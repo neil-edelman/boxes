@@ -48,11 +48,11 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of &lt;string&gt;set." src = "web/set.png" width = 435 height = 615></p>
+<p><img alt = "Example of &lt;string&gt;set." src = "web/set.png" width = 634 height = 474></p>
 
-<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a hash set of unordered <a href = "#typedef:&lt;PS&gt;type">&lt;PS&gt;type</a> that doesn't allow duplication. It must be supplied a hash function and equality function.</p>
+<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is implemented as a hash table of unordered <a href = "#typedef:&lt;PS&gt;type">&lt;PS&gt;type</a> that doesn't allow duplication. It must be supplied a hash function and equality function.</p>
 
-<p>This code is simple by design. Enclosing a pointer <a href = "#typedef:&lt;PS&gt;type">&lt;PS&gt;type</a> in a larger <code>struct</code> can give an associative array. Compile-time constant sets are better handled with <a href = "https://www.gnu.org/software/gperf/">gperf</a>. Also, <a href = "http://cmph.sourceforge.net/">CMPH</a> is a minimal perfect hashing library that provides performance for large sets.</p>
+<p>Enclosing a pointer <a href = "#typedef:&lt;PS&gt;type">&lt;PS&gt;type</a> in a larger <code>struct</code> can give an associative array. Compile-time constant sets are better handled with <a href = "https://www.gnu.org/software/gperf/">gperf</a>. Also, <a href = "http://cmph.sourceforge.net/">CMPH</a> is a minimal perfect hashing library that provides performance for large sets.</p>
 
 </div>
 
@@ -109,7 +109,7 @@
 
 <dl>
 	<dt>Caveat:</dt>
-	<dd>Including <code>const</code> qualifier in <code>SET_TYPE</code> is not supported and will lead to errors.</dd>
+	<dd>Including <code>const</code> qualifier in <code>SET_TYPE</code> is not supported and will probably lead to warnings.</dd>
 </dl>
 
 </div>
@@ -192,7 +192,7 @@
 
 <p><code>struct <strong>&lt;PS&gt;entry</strong> { &lt;PS&gt;uint next; &lt;PS&gt;uint hash; &lt;PS&gt;type key; };</code></p>
 
-<p>Buckets are linked-lists of entries, and entries are stored in a hash table. When a collision occurs, we push the entry out to an unoccupied stack, growing from the back.</p>
+<p>Buckets are linked-lists of entries, and entries are stored in a hash table. When a collision occurs, we push the entry out to an unoccupied stack in the same table.</p>
 
 </div>
 

@@ -48,10 +48,9 @@
  <typedef:<PSZ>to_string_fn>. There can be multiple to string traits, but only
  one can omit `SET_TO_STRING_NAME`.
 
- @fixme Implement move-to-front like splay-trees.
- @fixme Implement SET_RECALCULATE and SET_INVERSE_HASH.
-
  @std C89 */
+ /* Bug in cdoc. @fixme Implement move-to-front like splay-trees.
+ @fixme Implement SET_RECALCULATE and SET_INVERSE_HASH. */
 
 #if !defined(SET_NAME) || !defined(SET_TYPE) || !defined(SET_IS_EQUAL) \
 	|| !defined(SET_HASH)
@@ -223,8 +222,8 @@ static void PS_(grow_stack)(struct S_(set) *const set) {
 	set->top = top;
 }
 
-/** Is `idx` possibly on the stack? (Got tired of grepping every time I wanted
- to change the direction.) */
+/** Is `idx` is `set` possibly on the stack? (Got tired of changing every time
+ I wanted to change the direction.) */
 static int PS_(in_stack_range)(const struct S_(set) *const set,
 	const PS_(uint) idx)
 	{ return assert(set), set->top != SETm1 && set->top <= idx; }
@@ -501,32 +500,28 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	hash = PS_(hash)(key);
 	size = set->size;
 	printf("put: \"%s\" hash 0x%lx.\n", z, (unsigned long)hash);
-	if(set->entries && (entry = PS_(get)(set, key, hash))) goto replace;
-	else goto expand;
-replace:
-	printf("\tput replace\n");
-	if(replace && !replace(PS_(entry_key)(entry), key))
-		{ if(eject) *eject = key; return 1; }
-	if(eject) *eject = PS_(entry_key)(entry);
-	/* Cut the tail and put new element in the head. */
-	next = entry->next, entry->next = SETm2, assert(next != SETm2);
-	goto write;
-expand:
-	if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
-	entry = set->entries + (idx = PS_(hash_to_bucket)(set, hash));
-	printf("\tput expand: \"%s\" index 0x%lx from hash 0x%lx\n",
-		z, (unsigned long)idx, (unsigned long)hash);
-	size++;
-	if(entry->next == SETm2) goto write; /* Unoccupied. */
-	{
-		int is_in_stack = PS_(hash_to_bucket)(set, PS_(entry_hash)(entry)) != idx;
-		printf("\tis_in_stack 0x%lx: %d\n", (unsigned long)idx, is_in_stack);
-		PS_(move_to_top)(set, idx);
-		next = is_in_stack ? SETm1 : set->top;
-		assert(entry->next == SETm2
-			&& (next == SETm1 || set->entries[next].next != SETm2));
+	if(set->entries && (entry = PS_(get)(set, key, hash))) { /* Replace. */
+		if(replace && !replace(PS_(entry_key)(entry), key))
+			{ if(eject) *eject = key; return 1; } /* Decided not to replace. */
+		if(eject) *eject = PS_(entry_key)(entry);
+		/* Cut the tail and put new element in the head. */
+		next = entry->next, entry->next = SETm2, assert(next != SETm2);
+	} else { /* Expand. */
+		if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
+		entry = set->entries + (idx = PS_(hash_to_bucket)(set, hash));
+		/*printf("\tput expand: \"%s\" index 0x%lx from hash 0x%lx\n",
+			z, (unsigned long)idx, (unsigned long)hash);*/
+		size++;
+		if(entry->next != SETm2) { /* Unoccupied. */
+			int already_in_stack = PS_(hash_to_bucket)(set,
+				PS_(entry_hash)(entry)) != idx;
+			/*printf("\tis_in_stack 0x%lx: %d\n", (unsigned long)idx, is_in_stack);*/
+			PS_(move_to_top)(set, idx);
+			next = already_in_stack ? SETm1 : set->top;
+			assert(entry->next == SETm2
+				&& (next == SETm1 || set->entries[next].next != SETm2));
+		}
 	}
-write:
 	PS_(fill_entry)(entry, key, hash);
 	entry->next = next;
 	set->size = size;
@@ -576,6 +571,8 @@ static int S_(set_buffer)(struct S_(set) *const hash, const size_t reserve)
 	PS_(reserve)(hash, hash->size + reserve) : 0; }
 #endif
 
+/* fixme: Buffering changes the outcome if it's already in the table, it
+ creates a new hash anyway. This is not a pleasant situation. */
 /** Puts `key` in `hash`.
  @return Any ejected key or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. It is not
@@ -690,7 +687,7 @@ static void (*const TSZ_(actual_to_string))(const PS_(ctype),
 	char (*const)[12]) = (SET_TO_STRING);
 /** This is to line up the set, which can have <typedef:<PS>type> a pointer or
  not, with to string, which requires a pointer. Call
- <data:<SZ>actual_to_string> with a dereference on `indirect` and `z`. */
+ <data:<TSZ>actual_to_string> with a dereference on `indirect` and `z`. */
 static void TSZ_(thunk_to_string)(const PS_(ctype) *const indirect,
 	char (*const z)[12]) { TSZ_(actual_to_string)(*indirect, z); }
 #define TO_STRING &TSZ_(thunk_to_string)
