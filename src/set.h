@@ -684,7 +684,13 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #else
 #define SZ_(n) SET_CAT(S_(set), n)
 #endif
-#define TO_STRING SET_TO_STRING
+/* Check that `SET_TO_STRING` is a function implementing this prototype. */
+static void (*const SZ_(actual_to_string))(const PS_(type),
+	char (*const)[12]) = (SET_TO_STRING);
+/** Call <data:<SZ>actual_to_string> with dereference on `indirect` and `z`. */
+static void SZ_(thunk_to_string)(const PS_(type) *const indirect,
+	char (*const z)[12]) { SZ_(actual_to_string)(*indirect, z); }
+#define TO_STRING &SZ_(thunk_to_string)
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */

@@ -54,16 +54,11 @@ static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
 #endif
 static int string_is_equal(const char *const a, const char *const b)
 	{ return !strcmp(a, b); }
-static void string_to_string(const char *const s, char (*const a)[12]) {
+static void string_to_string(/*const fixme*/ char *const s,
+	char (*const a)[12]) {
 	strncpy(*a, s, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-/* The trouble with wanting it to work with pointers and regular data is that
- it gets tricky generalizing them. fixme: Maybe have a &? */
-static void pstring_to_string(char *const*const ps, char (*const a)[12])
-	{ string_to_string(*ps, a); }
-/* This is not used anymore.
- static void string_fill(char *const str) { assert(0); } */
 #define SET_NAME string
 #define SET_TYPE char * /* Parameter of <fn:fnv_a_str> (without `const`.) */
 #define SET_HASH &fnv_a_str
@@ -71,7 +66,7 @@ static void pstring_to_string(char *const*const ps, char (*const a)[12])
 #define SET_TEST &string_fill /* Not used. */
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
-#define SET_TO_STRING &pstring_to_string
+#define SET_TO_STRING &string_to_string
 #include "../src/set.h"
 
 
@@ -90,8 +85,8 @@ static unsigned lowbias32(unsigned x) {
 	return x;
 }
 static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
-static void int_to_string(const unsigned *const x, char (*const a)[12])
-	{ sprintf(*a, "%u", *x); }
+static void int_to_string(const unsigned x, char (*const a)[12])
+	{ sprintf(*a, "%u", x); }
 static unsigned random_int(void *const zero) {
 	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
 	return (unsigned)rand();
