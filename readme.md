@@ -20,7 +20,7 @@ Enclosing a pointer [&lt;PS&gt;type](#user-content-typedef-5ef437c0) in a larger
 
 
  * Parameter: SET\_NAME, SET\_TYPE  
-   `<S>` that satisfies `C` naming conventions when mangled and a valid [&lt;PS&gt;type](#user-content-typedef-5ef437c0) associated therewith; required\. Type is copied extensively, so if it's a large, making it a pointer may improve performance\. `<PS>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
+   `<S>` that satisfies `C` naming conventions when mangled and a valid [&lt;PS&gt;type](#user-content-typedef-5ef437c0) associated therewith; required\. Type is copied extensively, so if it's large, making it a pointer may improve performance\. `<PS>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
  * Parameter: SET\_HASH, SET\_IS\_EQUAL  
    A function satisfying [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c); required\.
  * Parameter: SET\_UINT  
