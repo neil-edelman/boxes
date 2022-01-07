@@ -54,8 +54,7 @@ static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
 #endif
 static int string_is_equal(const char *const a, const char *const b)
 	{ return !strcmp(a, b); }
-static void string_to_string(/*const fixme*/ char *const s,
-	char (*const a)[12]) {
+static void string_to_string(const char *const s, char (*const a)[12]) {
 	strncpy(*a, s, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }

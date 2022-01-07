@@ -686,12 +686,12 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #endif
 #define TSZ_(n) SET_CAT(set_sz, SZ_(n))
 /* Check that `SET_TO_STRING` is a function implementing this prototype. */
-static void (*const TSZ_(actual_to_string))(const PS_(type),
+static void (*const TSZ_(actual_to_string))(const PS_(ctype),
 	char (*const)[12]) = (SET_TO_STRING);
 /** This is to line up the set, which can have <typedef:<PS>type> a pointer or
  not, with to string, which requires a pointer. Call
  <data:<SZ>actual_to_string> with a dereference on `indirect` and `z`. */
-static void TSZ_(thunk_to_string)(const PS_(type) *const indirect,
+static void TSZ_(thunk_to_string)(const PS_(ctype) *const indirect,
 	char (*const z)[12]) { TSZ_(actual_to_string)(*indirect, z); }
 #define TO_STRING &TSZ_(thunk_to_string)
 #define TO_STRING_LEFT '{'
