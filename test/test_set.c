@@ -33,9 +33,9 @@ static void string_to_string(const char *const s, char (*const a)[12]) {
 	(*a)[sizeof(*a) - 1] = '\0';
 }
 
-/* String hash */
+/* String set hash. */
 /** One must supply the hash. djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
- a simple one that works adequately and is `size_t` agnostic. */
+ a simple one that works adequately and is mostly `size_t`-length agnostic. */
 static size_t djb2_hash(const char *s) {
 	const unsigned char *str = (const unsigned char *)s;
 	size_t hash = 5381, c;
@@ -44,12 +44,11 @@ static size_t djb2_hash(const char *s) {
 }
 static int string_is_equal(const char *const a, const char *const b)
 	{ return !strcmp(a, b); }
-
 #define SET_NAME string
-#define SET_TYPE char * /* Parameter of <fn:djb2_hash> (without `const`.) */
+#define SET_TYPE char * /* Parameter of <fn:djb2_hash> without `const`. */
 #define SET_HASH &djb2_hash /* Default returns `size_t`. */
 #define SET_IS_EQUAL &string_is_equal
-#define SET_TEST &string_fill /* Not used. Requires to string for testing. */
+#define SET_TEST /* Testing. Requires to string. */
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &string_to_string
@@ -82,7 +81,7 @@ static unsigned random_int(void *const zero) {
 #define SET_UINT unsigned /* Return type of <fn:lowbias32>. */
 #define SET_HASH &lowbias32
 #define SET_IS_EQUAL &int_is_equal
-#define SET_TEST &int_fill /* This is not used anymore. */
+#define SET_TEST
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &int_to_string
@@ -91,14 +90,19 @@ static unsigned random_int(void *const zero) {
 
 
 
-/* It is pretty much impossible to write these in a device-independent way in
- C89, but we make the assumption that `size_t` is the biggest integer (which
- isn't at all guaranteed.) */
+
+
+#if 0
+
+/* <https://github.com/aappleby/smhasher/> */
+
 #if 0x8000 * 2 == 0
 #error 16-bit max length is not supported in this test.
 #elif 0x80000000 * 2 == 0
-/** We support 32 and 64-bit `size_t`.
- <http://www.isthe.com/chongo/tech/comp/fnv/> */
+/** We support 32 and 64-bit `size_t` but only if `size_t` is used as the
+ maximum for integer constants, (not guaranteed.)
+ <http://www.isthe.com/chongo/tech/comp/fnv/>
+ <https://github.com/sindresorhus/fnv1a> */
 static size_t fnv_32a_str(const char *const str) {
 	const unsigned char *s = (const unsigned char *)str;
 	unsigned hval = 0x811c9dc5;
@@ -117,15 +121,6 @@ static size_t fnv_64a_str(const char *const str) {
 static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
 #endif
 
-
-
-
-
-
-
-
-
-#if 0
 /** <https://github.com/skeeto/hash-prospector> */
 uint16_t hash16_xm2(uint16_t x) {
 	x ^= x >> 8; x *= 0x88b5u;
@@ -134,7 +129,14 @@ uint16_t hash16_xm2(uint16_t x) {
 	return x;
 }
 
+#endif
 
+
+
+
+
+
+#if 0
 
 /* Used to test `SET_UINT`; normally `unsigned int`, here `unsigned char`.
  Useful if you want to use a specific hash length, _eg_, `C99`'s `uint32_t` or

@@ -112,15 +112,13 @@ typedef SET_UINT PS_(uint);
 /** Valid tag type defined by `SET_TYPE`. */
 typedef SET_TYPE PS_(type);
 /** Used on read-only. @fixme Including `const` qualifier in `SET_TYPE` is not
- supported and will probably lead to warnings. */
+ supported and will probably lead to warnings. This is a hack. */
 typedef const SET_TYPE PS_(ctype);
 
 /** A map from <typedef:<PS>ctype> onto <typedef:<PS>uint>. Usually should use
  all the the argument and output should be as close as possible to a discrete
  uniform distribution. It is up to the user to provide an appropriate hash
- function. In general, see: <https://github.com/skeeto/hash-prospector>,
- <https://github.com/aappleby/smhasher/>,
- <https://github.com/sindresorhus/fnv1a>. */
+ function. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ctype));
 /* Check that `SET_HASH` is a function implementing <typedef:<PS>hash_fn>. */
 static const PS_(hash_fn) PS_(hash) = (SET_HASH);

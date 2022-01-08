@@ -12,12 +12,6 @@
 #endif
 #include <string.h> /* memset */
 
-/** Operates by side-effects. Used for `SET_TEST`. */
-typedef void (*PS_(action_fn))(PS_(type));
-
-/* Check that `SET_TEST` is a function implementing `<PS>action_fn`. */
-//static const PS_(action_fn) PS_(filler) = (SET_TEST); ****
-
 static size_t PS_(count_bucket)(const struct S_(set) *const set,
 	PS_(uint) idx) {
 	struct PS_(entry) *entry;
@@ -26,19 +20,15 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 	assert(set && idx < PS_(capacity)(set));
 	entry = set->entries + idx;
 	if((next = entry->next) == SETm2
-		|| PS_(in_stack_range)(set, idx)
-		&& idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
-	for( ; ; ) {
-		no++;
-		if(next == SETm1) return no;
+		|| idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
+	for( ; no++, next != SETm1; next = entry->next, assert(next != SETm2)) {
 		idx = next;
 		assert(idx < PS_(capacity)(set)
-			/* we want to count intermediates
+			/* We want to count intermediates.
 			 && PS_(in_stack_range)(set, idx) */);
 		entry = set->entries + idx;
-		next = entry->next;
-		assert(next != SETm2); /* -2 null: linked-list integrity. */
 	}
+	return no;
 }
 
 /** Mean: `mean`, population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`.
@@ -46,6 +36,7 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 static struct { size_t n, max; double mean, ssdm; }
 	PS_(stats) = { 0, 0, 0.0, 0.0 };
 static void PS_(reset)(void) {
+	printf("reset()\n");
 	PS_(stats).n = PS_(stats).max = 0;
 	PS_(stats).mean = PS_(stats).ssdm = 0.0;
 }
@@ -56,19 +47,17 @@ static void PS_(update)(const size_t value) {
 	d = v - PS_(stats).mean;
 	PS_(stats).mean += d / ++PS_(stats).n;
 	PS_(stats).ssdm += d * (v - PS_(stats).mean);
+	printf("update(%lu) -- #%lu\n", value, PS_(stats).n);
 }
 /** Collect stats on `set`. */
 static void PS_(collect)(const struct S_(set) *const set) {
-	size_t size = 0;
+	PS_(uint) idx, idx_end;
 	PS_(reset)();
-	if(set && set->entries) {
-		PS_(uint) idx, idx_end = 1 << set->log_capacity;
-		for(idx = 0; idx < idx_end; idx++) {
-			size_t no;
-			/* I'm sure there's a cheaper way to do it. */
-			for(no = PS_(count_bucket)(set, idx); no; no--) PS_(update)(no);
-		}
-		size = set->size;
+	if(!set || !set->entries) return;
+	for(idx = 0, idx_end = PS_(capacity)(set); idx < idx_end; idx++) {
+		size_t no;
+		/* I'm sure there's a cheaper way to do it. */
+		for(no = PS_(count_bucket)(set, idx); no; no--) PS_(update)(no);
 	}
 }
 
@@ -85,8 +74,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		"\trankdir=LR;\n"
 		"\tfontface=modern;\n");
 	if(!set->entries) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
-	PS_(collect)(set);
-	//assert((size_t)set->size == PS_(stats).n);
+	PS_(collect)(set), assert((size_t)set->size >= PS_(stats).n /* Buckets. */);
 	fprintf(fp,
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
 		"\tset [label=<<TABLE BORDER=\"0\">\n"
