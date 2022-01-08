@@ -234,13 +234,10 @@ static void PS_(legit)(const struct S_(set) *const set) {
 static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
 	struct test { PS_(type) data; int is_in; }
-		test[1000/*0*/], *t, *t_end;
+		test[1000/*0*/], *t;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
-	int success;
 	char z[12];
-	size_t removed = 0, collision = 0;
-	struct PS_(entry) *e, *e_end;
 	struct S_(set) set = SET_IDLE;
 	PS_(type) eject, item;
 	assert(parent_new && parent && test_size > 1);

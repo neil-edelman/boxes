@@ -133,7 +133,7 @@ typedef PS_(type) (*PS_(inverse_hash_fn))(PS_(uint));
 
 /** Equivalence relation between <typedef:<PS>ctype> that satisfies
  `<PS>is_equal_fn(a, b) -> <PS>SET_HASH(a) == <PS>SET_HASH(b)`. */
-typedef int (*PS_(is_equal_fn))(const PS_(ctype) a, const PS_(ctype) b);
+typedef int (*PS_(is_equal_fn))(PS_(ctype) a, PS_(ctype) b);
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
@@ -227,7 +227,18 @@ static int PS_(in_stack_range)(const struct S_(set) *const set,
 	{ return assert(set), set->top != SETm1 && set->top <= idx; }
 
 /***********fixme*/
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+#ifdef SET_TEST
+static void PS_(graph)(const struct S_(set) *const set, const char *const fn);
 static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
+#else
+static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
+	(void)set, (void)fn;
+}
+static void PS_(to_string)(const PS_(type) *data, char (*z)[12])
+	{ (void)data, strcpy(*z, "noinfo"); }
+#endif
 
 /** Moves the index `victim` to the top of the collision stack in non-idle
  `set`. This is an inconsistent state; one is responsible for filling that hole
@@ -282,10 +293,6 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 		assert(next != SETm2); /* -2 null: linked-list integrity. */
 	}
 }
-
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
-static void PS_(graph)(const struct S_(set) *const set, const char *const fn);
 
 /** Ensures that `set` has enough entries to fill `n` more than the size.
  May invalidate `entries` and re-arrange the order.
@@ -682,12 +689,12 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #endif
 #define TSZ_(n) SET_CAT(set_sz, SZ_(n))
 /* Check that `SET_TO_STRING` is a function implementing this prototype. */
-static void (*const TSZ_(actual_to_string))(const PS_(ctype),
-	char (*const)[12]) = (SET_TO_STRING);
+static void (*const TSZ_(actual_to_string))(PS_(ctype), char (*const)[12])
+	= (SET_TO_STRING);
 /** This is to line up the set, which can have <typedef:<PS>type> a pointer or
  not, with to string, which requires a pointer. Call
  <data:<TSZ>actual_to_string> with a dereference on `indirect` and `z`. */
-static void TSZ_(thunk_to_string)(const PS_(ctype) *const indirect,
+static void TSZ_(thunk_to_string)(PS_(ctype) *const indirect,
 	char (*const z)[12]) { TSZ_(actual_to_string)(*indirect, z); }
 #define TO_STRING &TSZ_(thunk_to_string)
 #define TO_STRING_LEFT '{'

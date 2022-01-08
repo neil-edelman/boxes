@@ -13,30 +13,60 @@
 
 /* The minimalish set that does something useful; the words are grouped by
  their lengths'. */
-static int equallens(const char *const a, const char *const b)
+static int equal_lens(const char *const a, const char *const b)
 	{ return strlen(a) == strlen(b); }
 #define SET_NAME len
 #define SET_TYPE char *
 #define SET_HASH &strlen
-#define SET_IS_EQUAL &equallens
+#define SET_IS_EQUAL &equal_lens
 #include "../src/set.h"
-/* Associative array. */
-struct countlen { char *example; size_t count; };
-static int count_len(char *original, char *replace)
-	{ return (void)replace, ((struct countlen *)(void *)original)->count++, 0; }
+
+/* Can use it to count letters in words. */
+struct count_len { char example[16]; size_t collisions; };
+static int count_len(char *original, char *replace) { return (void)replace,
+	((struct count_len *)(void *)original)->collisions++, 0; }
 static void len(void) {
-	char *words[] = { "lol", "great", "get" };
-	/* The maximal size! We could do better with a dynamic array. */
-	struct countlen { char *example; size_t count; }
-		counts[sizeof words / sizeof *words], *count;
+	struct count_len words[] = {
+#define X(a) { #a, 0 }
+		X(Alpha),
+		X(Bravo),
+		X(Charlie),
+		X(Delta),
+		X(Echo),
+		X(Foxtrot),
+		X(Golf),
+		X(Hotel),
+		X(India),
+		X(Juliet),
+		X(Kilo),
+		X(Lima),
+		X(Mike),
+		X(November),
+		X(Oscar),
+		X(Papa),
+		X(Québec),
+		X(Romeo),
+		X(Sierra),
+		X(Tango),
+		X(Uniform),
+		X(Victor),
+		X(Whisky),
+		X(X-ray),
+		X(Yankee),
+		X(Zulu)
+#undef X
+	}, *word;
 	struct len_set lens = SET_IDLE;
+	struct set_len_iterator it; /* fixme */
+	char **w;
 	size_t i;
-	for(i = 0; i < sizeof words / sizeof *words; i++) {
-		count = counts + i;
-		count->count = 0;
-		count->example = words[i];
-		len_set_policy_put(&lens, count->example, &count_len);
-	}
+	for(i = 0; i < sizeof words / sizeof *words; i++)
+		len_set_policy_put(&lens, words[i].example, &count_len);
+	/* fixme: Needs a real iterator, that's atrocious. */
+	set_len_begin(&it, &lens);
+	while(w = set_len_next(&it)) word = (struct count_len *)(void *)*w,
+		printf("length %lu\tcount %lu\n", (unsigned long)strlen(word->example),
+		(unsigned long)word->collisions + 1);
 }
 
 
@@ -120,6 +150,7 @@ static unsigned int_from_void(void *const pool) { return int_from_pool(pool); }
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct int_pool ints = POOL_IDLE;
+	len();
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
 	int_set_test(&int_from_void, &ints), int_pool_(&ints);
 #if 0
@@ -275,6 +306,10 @@ finally:
 #endif
 	return EXIT_SUCCESS;
 }
+
+
+
+
 
 #if 0
 
