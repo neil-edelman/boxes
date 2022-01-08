@@ -253,7 +253,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	/* Test placing items. */
 	for(i = 0; i < test_size; i++) {
 		struct { PS_(uint) before, after; } size;
-		int is_in;
+		int is_grow;
 		t = test + i;
 		if(!(t->data = parent_new(parent))) { assert(0); return; }
 		PS_(to_string)(&t->data, &z);
@@ -266,17 +266,21 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 			&& !set.entries[4].first && !set.entries[5].first
 			&& !set.entries[6].first && !set.entries[7].first); */
 		size.before = set.size;
-		eject = S_(set_put)(&set, t->data);
+		eject = S_(set_replace)(&set, t->data);
 		assert(t - test || set.size == 1 && !eject);
 		/* We can't even verify that the eject is good, it has no null. */
 		item = S_(set_get)(&set, t->data);
+		/* Read back the item was something that was equal. */
 		assert(PS_(equal)(t->data, item));
 		/* How can we get a parent pointer? Probably have to have a pointer.
 		 Tried; I don't think that worked. */
 		size.after = set.size;
+		/* Either it grew or replaced. */
 		assert(size.before == size.after || size.after == size.before + 1);
-		is_in = !!(size.after - size.before);
-		assert(is_in || PS_(equal)(t->data, eject));
+		is_grow = !!(size.after - size.before);
+		/* If it replaced, `eject` must be equal to `data`. */
+		assert(is_grow || PS_(equal)(t->data, eject));
+		if(is_grow)
 #if 0
 		else if(eject) {
 			if(!parent_new) {

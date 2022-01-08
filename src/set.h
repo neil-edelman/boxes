@@ -571,14 +571,15 @@ static int S_(set_buffer)(struct S_(set) *const hash, const size_t reserve)
 
 /* fixme: Buffering changes the outcome if it's already in the table, it
  creates a new hash anyway. This is not a pleasant situation. */
-/** Puts `key` in `hash`.
+/** Puts `key` in `hash`, and, for keys already in the hash, replaces them.
  @return Any ejected key or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. It is not
  always possible to tell the difference between an error and a unique key.
  If needed, before calling this, successfully calling <fn:<S>set_buffer>, or
  setting `errno` to zero. @order Average amortised \O(1), (hash distributes
  keys uniformly); worst \O(n) (are you sure that's up to date?). @allow */
-static PS_(type) S_(set_put)(struct S_(set) *const hash, const PS_(type) key) {
+static PS_(type) S_(set_replace)(struct S_(set) *const hash,
+	const PS_(type) key) {
 	PS_(type) collide;
 	/* No error information. */
 	return PS_(put)(hash, 0, key, &collide) ? collide : 0;
@@ -663,7 +664,7 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *);
 static void PS_(unused_base_coda)(void);
 static void PS_(unused_base)(void) {
 	S_(set)(0); S_(set_)(0); S_(set_clear)(0); S_(set_get)(0, 0);
-	/*S_(set_reserve)(0, 0);*/ S_(set_put)(0, 0);  S_(set_policy_put)(0, 0, 0);
+	/*S_(set_reserve)(0, 0);*/ S_(set_replace)(0, 0);  S_(set_policy_put)(0, 0, 0);
 	/*S_(set_remove)(0, 0);*/
 	PS_(begin)(0, 0); PS_(next)(0);
 	PS_(unused_base_coda)();
