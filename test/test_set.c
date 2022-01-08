@@ -46,20 +46,23 @@ static void nato(void) {
 		X(Sierra), X(Tango), X(Uniform), X(Victor), X(Whisky), X(X-ray),
 		X(Yankee), X(Zulu)
 #undef X
-	}, *word;
+	}, *word, *w;
 	struct length_set lens = SET_IDLE;
 	struct set_length_iterator it; /* fixme */
-	char **w;
+	char **ugh;
 	size_t i;
 	for(i = 0; i < sizeof words / sizeof *words; i++)
 		length_set_policy_put(&lens, words[i].word, &length_collide);
 	/* fixme: Needs a real iterator, that's atrocious. */
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
-		"length\tcount\tfirst\n");
-	for(set_length_begin(&it, &lens); w = set_length_next(&it); )
-		word = length_upcast(*w), printf("%lu\t%lu\t%s\n",
-		(unsigned long)strlen(word->word), (unsigned long)word->collisions + 1,
-		word->word);
+		"length\tcount\twords\n");
+	for(set_length_begin(&it, &lens); ugh = set_length_next(&it); ) {
+		w = word = length_upcast(*ugh);
+		printf("%lu\t%lu\t{", (unsigned long)strlen(word->word),
+			(unsigned long)word->collisions + 1);
+		do printf("%s%s", w == word ? "" : ",", w->word); while(w = w->next);
+		printf("}\n");
+	}
 	length_set_(&lens);
 }
 
