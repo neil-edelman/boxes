@@ -21,39 +21,19 @@ static int equal_lens(const char *const a, const char *const b)
 #define SET_IS_EQUAL &equal_lens
 #include "../src/set.h"
 
-/* Can use it to count letters in words. */
-struct count_len { char example[16]; size_t collisions; };
+/* Donno; can use it to count letters in words in \O(n)? */
+struct count_len { char alpha[16]; size_t collisions; };
+/* fixme: this is awful. */
 static int count_len(char *original, char *replace) { return (void)replace,
 	((struct count_len *)(void *)original)->collisions++, 0; }
 static void len(void) {
 	struct count_len words[] = {
 #define X(a) { #a, 0 }
-		X(Alpha),
-		X(Bravo),
-		X(Charlie),
-		X(Delta),
-		X(Echo),
-		X(Foxtrot),
-		X(Golf),
-		X(Hotel),
-		X(India),
-		X(Juliet),
-		X(Kilo),
-		X(Lima),
-		X(Mike),
-		X(November),
-		X(Oscar),
-		X(Papa),
-		X(Québec),
-		X(Romeo),
-		X(Sierra),
-		X(Tango),
-		X(Uniform),
-		X(Victor),
-		X(Whisky),
-		X(X-ray),
-		X(Yankee),
-		X(Zulu)
+		X(Alpha), X(Bravo), X(Charlie), X(Delta), X(Echo), X(Foxtrot), X(Golf),
+		X(Hotel), X(India), X(Juliet), X(Kilo), X(Lima), X(Mike), X(November),
+		X(Oscar), X(Papa), X(Québec) /* `strlen` will report 7 */, X(Romeo),
+		X(Sierra), X(Tango), X(Uniform), X(Victor), X(Whisky), X(X-ray),
+		X(Yankee), X(Zulu)
 #undef X
 	}, *word;
 	struct len_set lens = SET_IDLE;
@@ -61,22 +41,24 @@ static void len(void) {
 	char **w;
 	size_t i;
 	for(i = 0; i < sizeof words / sizeof *words; i++)
-		len_set_policy_put(&lens, words[i].example, &count_len);
+		len_set_policy_put(&lens, words[i].alpha, &count_len);
 	/* fixme: Needs a real iterator, that's atrocious. */
-	set_len_begin(&it, &lens);
-	while(w = set_len_next(&it)) word = (struct count_len *)(void *)*w,
-		printf("length %lu\tcount %lu\n", (unsigned long)strlen(word->example),
+	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
+		"length\tcount\n");
+	for(set_len_begin(&it, &lens); w = set_len_next(&it); )
+		word = (struct count_len *)(void *)*w,
+		printf("%lu\t%lu\n", (unsigned long)strlen(word->alpha),
 		(unsigned long)word->collisions + 1);
 }
 
 
-/* String set hash. For testing, we have somewhere to store the strings. One
- could use any storage, but a pool is convenient for doing automated testing. */
+/* String set hash. For testing automated testing, we have somewhere to store
+ the strings. */
 struct str16 { char str[16]; };
 #define POOL_NAME str16
 #define POOL_TYPE struct str16
 #include "../src/pool.h"
-/** For testing: `s16s` is a pool of strings that can grow in the heap. */
+/** For testing: `s16s` is a convenient pool of strings. */
 static char *str16_from_pool(struct str16_pool *const s16s) {
 	struct str16 *s16 = str16_pool_new(s16s);
 	if(!s16) return 0;
@@ -84,8 +66,8 @@ static char *str16_from_pool(struct str16_pool *const s16s) {
 	return s16->str;
 }
 static char *str16_from_void(void *const s16s) { return str16_from_pool(s16s); }
-/** For testing: passed to the automated output function. */
-static void str16_to_string(const char *const s, char (*const a)[12]) {
+/** For testing: passed to output function. */
+static void string_to_string(const char *const s, char (*const a)[12]) {
 	strncpy(*a, s, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
@@ -106,7 +88,7 @@ static int string_is_equal(const char *const a, const char *const b)
 #define SET_TEST /* Testing requires to string. */
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
-#define SET_TO_STRING &str16_to_string
+#define SET_TO_STRING &string_to_string
 #include "../src/set.h"
 
 
