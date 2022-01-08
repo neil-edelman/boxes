@@ -694,8 +694,14 @@ static void (*const TSZ_(actual_to_string))(PS_(ctype), char (*const)[12])
 /** This is to line up the set, which can have <typedef:<PS>type> a pointer or
  not, with to string, which requires a pointer. Call
  <data:<TSZ>actual_to_string> with a dereference on `indirect` and `z`. */
-static void TSZ_(thunk_to_string)(PS_(ctype) *const indirect,
+static void TSZ_(thunk_to_string)(const PS_(type) *const indirect,
 	char (*const z)[12]) { TSZ_(actual_to_string)(*indirect, z); }
+/* "warning: incompatible function pointer types
+ initializing 'const to_string_string_set_to_string_fn' (aka 'void
+ (*const)(char *const *, char (*)[12])') with an expression of type 'void
+ (*)(set_string_ctype *const, char (*const)[12])' (aka 'void (*)(const char
+ **const, char (*const)[12])')", the levels of indirection are hurting my head.
+ Why can't we use `<PS>ctype`? This is not ideal. */
 #define TO_STRING &TSZ_(thunk_to_string)
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
