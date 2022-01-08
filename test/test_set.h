@@ -36,7 +36,6 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 static struct { size_t n, max; double mean, ssdm; }
 	PS_(stats) = { 0, 0, 0.0, 0.0 };
 static void PS_(reset)(void) {
-	printf("reset()\n");
 	PS_(stats).n = PS_(stats).max = 0;
 	PS_(stats).mean = PS_(stats).ssdm = 0.0;
 }
@@ -47,7 +46,6 @@ static void PS_(update)(const size_t value) {
 	d = v - PS_(stats).mean;
 	PS_(stats).mean += d / ++PS_(stats).n;
 	PS_(stats).ssdm += d * (v - PS_(stats).mean);
-	printf("update(%lu) -- #%lu\n", value, PS_(stats).n);
 }
 /** Collect stats on `set`. */
 static void PS_(collect)(const struct S_(set) *const set) {
