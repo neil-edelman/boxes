@@ -103,10 +103,8 @@ static void int_to_string(const unsigned x, char (*const a)[12])
 static unsigned int_from_pool(struct int_pool *const pool) {
 	assert(pool && RAND_MAX <= 99999999999l); /* For printing. */
 	return (unsigned)rand();
-	return 0;
 }
-static unsigned *int_from_void(void *const pool)
-	{ return int_from_pool(pool); }
+static unsigned int_from_void(void *const pool) { return int_from_pool(pool); }
 #define SET_NAME int
 #define SET_TYPE unsigned /* Parameter of <fn:lowbias32>. */
 #define SET_UINT unsigned /* Return type of <fn:lowbias32>. */

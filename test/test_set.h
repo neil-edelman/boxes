@@ -236,12 +236,13 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	struct test { PS_(type) data; int is_in; }
 		test[1000/*0*/], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
+	size_t i;
 	int success;
 	char z[12];
 	size_t removed = 0, collision = 0;
 	struct PS_(entry) *e, *e_end;
 	struct S_(set) set = SET_IDLE;
-	PS_(type) eject;
+	PS_(type) eject, item;
 	assert(parent_new && parent && test_size > 1);
 	/* Test empty. */
 	PS_(legit)(&set);
@@ -250,11 +251,13 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	PS_(legit)(&set);
 	PS_(graph)(&set, "graph/" QUOTE(SET_NAME) "-0.gv");
 	/* Test placing items. */
-	for(t = test, t_end = t + test_size; t < t_end; t++) {
-		size_t n = (size_t)(t - test);
+	for(i = 0; i < test_size; i++) {
+		struct { PS_(uint) before, after; } size;
+		int is_in;
+		t = test + i;
 		if(!(t->data = parent_new(parent))) { assert(0); return; }
 		PS_(to_string)(&t->data, &z);
-		printf("%lu: came up with %s.\n", (unsigned long)n, z);
+		printf("%lu: came up with %s.\n", (unsigned long)i, z);
 		/*success = S_(set_reserve)(&set, 1);
 		assert(success && set.entries);
 		if(n == 0) assert(set.log_capacity == 3 && !set.size
@@ -262,9 +265,18 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 			&& !set.entries[2].first && !set.entries[3].first
 			&& !set.entries[4].first && !set.entries[5].first
 			&& !set.entries[6].first && !set.entries[7].first); */
+		size.before = set.size;
 		eject = S_(set_put)(&set, t->data);
-		assert(n || set.size == 1 && !eject);
-		/* How can we get a parent pointer? Probably have to have a pointer. */
+		assert(t - test || set.size == 1 && !eject);
+		/* We can't even verify that the eject is good, it has no null. */
+		item = S_(set_get)(&set, t->data);
+		assert(PS_(equal)(t->data, item));
+		/* How can we get a parent pointer? Probably have to have a pointer.
+		 Tried; I don't think that worked. */
+		size.after = set.size;
+		assert(size.before == size.after || size.after == size.before + 1);
+		is_in = !!(size.after - size.before);
+		assert(is_in || PS_(equal)(t->data, eject));
 #if 0
 		else if(eject) {
 			if(!parent_new) {
@@ -286,17 +298,16 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		}
 		t->is_in = 1;
 #endif
-		if(set.size < 10000 && !(n & (n - 1))) {
+		if(set.size < 10000 && !(i & (i - 1))) {
 			char fn[64];
-			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%lu.gv", (unsigned long)n);
-			printf("*** graph %s: set %s.\n", fn, PS_(set_to_string)(&set));
+			printf("*** set %s.\n", PS_(set_to_string)(&set));
+			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%lu.gv", (unsigned long)i);
 			PS_(graph)(&set, fn);
 		}
 		PS_(legit)(&set);
 	}
 	{
 		char fn[64];
-		/*PS_(stats)(&set, "\n", stdout);*/
 		printf("\n");
 		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-final.gv",
 			(unsigned)test_size);
