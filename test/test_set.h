@@ -78,10 +78,13 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	fprintf(fp,
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
 		"\tset [label=<<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;" QUOTE(SET_NAME) "&gt;set: " QUOTE(SET_TYPE) "</FONT></TD></TR>\n"
+		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;"
+		QUOTE(SET_NAME) "&gt;set: " QUOTE(SET_TYPE) "</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD>&nbsp;</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load factor</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load"
+		" factor</TD>\n");
+	fprintf(fp,
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu/%lu</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
@@ -91,9 +94,10 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		"\t</TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD>&nbsp;</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max bucket</TD>\n"
-		 "\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
-		 "\t</TR>\n",
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max"
+		" bucket</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
+		"\t</TR>\n",
 		(unsigned long)PS_(stats).n,
 		set->entries ? (unsigned long)PS_(capacity)(set) : 0,
 		PS_(stats).n ? PS_(stats).mean : (double)NAN, PS_(stats).n > 1
@@ -229,16 +233,16 @@ static void PS_(legit)(const struct S_(set) *const set) {
 /** Passed `parent_new` and `parent` from <fn:<S>set_test>. */
 static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	void *const parent) {
-	struct test { PS_(type) elem; int is_in, unused; } test[1000/*0*/], *t, *t_end;
+	struct test { PS_(type) data; int is_in; }
+		test[1000/*0*/], *t, *t_end;
 	const size_t test_size = sizeof test / sizeof *test;
 	int success;
 	char z[12];
 	size_t removed = 0, collision = 0;
-	struct PS_(entry) *b, *b_end;
+	struct PS_(entry) *e, *e_end;
 	struct S_(set) set = SET_IDLE;
 	PS_(type) eject;
-	assert(test_size > 1);
-	memset(&test, 0, sizeof test);
+	assert(parent_new && parent && test_size > 1);
 	/* Test empty. */
 	PS_(legit)(&set);
 	S_(set)(&set);
@@ -248,9 +252,8 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 	/* Test placing items. */
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		size_t n = (size_t)(t - test);
-		if(parent_new && !(t->elem = parent_new(parent))) { assert(0); return; }
-		/*PS_(filler)(t->elem);*/
-		PS_(to_string)(&t->elem, &z);
+		if(!(t->data = parent_new(parent))) { assert(0); return; }
+		PS_(to_string)(&t->data, &z);
 		printf("%lu: came up with %s.\n", (unsigned long)n, z);
 		/*success = S_(set_reserve)(&set, 1);
 		assert(success && set.entries);
@@ -259,7 +262,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 			&& !set.entries[2].first && !set.entries[3].first
 			&& !set.entries[4].first && !set.entries[5].first
 			&& !set.entries[6].first && !set.entries[7].first); */
-		eject = S_(set_put)(&set, t->elem);
+		eject = S_(set_put)(&set, t->data);
 		assert(n || set.size == 1 && !eject);
 		/* How can we get a parent pointer? Probably have to have a pointer. */
 #if 0
