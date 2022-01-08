@@ -49,6 +49,7 @@ static void len(void) {
 		word = (struct count_len *)(void *)*w,
 		printf("%lu\t%lu\n", (unsigned long)strlen(word->alpha),
 		(unsigned long)word->collisions + 1);
+	len_set_(&lens);
 }
 
 
