@@ -29,6 +29,12 @@
  @param[SET_UINT]
  This is <typedef:<PS>uint>, the unsigned hash type, and defaults to `size_t`.
 
+ @param[SET_VALUE]
+ An optional type that has a payload of the key, thus making this an
+ associative array. Should be used when the key and the value are associated;
+ if the key is part of an aggregate value, it will be more efficient and more
+ robust to use a type conversion.
+
  @param[SET_RECALCULATE]
  Don't cache the hash, but calculate every time; this avoids storing
  <typedef:<PS>uint> _per_ entry, but can be slower when the hash is
@@ -139,6 +145,11 @@ typedef int (*PS_(is_equal_fn))(PS_(ctype) a, PS_(ctype) b);
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
+#ifdef SET_VALUE /* <!-- value */
+/** Defining `SET_VALUE` creates another entry for associative maps. */
+typedef SET_VALUE PS_(value);
+#endif /* value --> */
+
 /** Buckets are linked-lists of entries, and entries are stored in a hash
  table. When a collision occurs, we push the entry out to an unoccupied stack
  in the same table. */
@@ -150,6 +161,8 @@ struct PS_(entry) {
 #ifndef SET_INVERSE_HASH /* <!-- !inv */
 	PS_(type) key;
 #endif /* !inv --> */
+#ifdef SET_VALUE
+#endif
 };
 
 /** Fill `entry` with `key` and `hash`. The entry must be empty. */
