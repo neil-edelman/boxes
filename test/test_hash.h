@@ -103,11 +103,22 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 		(unsigned long)PM_(stats).max);
 	fprintf(fp, "\t<TR>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">code</FONT></TD>"
-		"\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">key</FONT></TD>"
-		"\n"
-		"\t</TR>\n");
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"%s\">hash</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"%s\">key</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">next</FONT></TD>\n"
+		"\t</TR>\n",
+#ifdef HASH_NO_CACHE
+		"Times-Italic"
+#else
+		"Times-Bold"
+#endif
+		,
+#ifdef HASH_INVERSE
+		"Times-Italic"
+#else
+		"Times-Bold"
+#endif
+		);
 	for(i = 0, i_end = 1 << hash->log_capacity; i < i_end; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
 			*const top = hash->top == i ? " BORDER=\"1\"" : "";
@@ -124,7 +135,7 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
 				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
 				"\t\t<TD PORT=\"%lu\"%s>%s</TD>\n",
-				bgc, (unsigned long)e->code,
+				bgc, (unsigned long)PM_(entry_code)(e),
 				bgc, z,
 				(unsigned long)i, bgc, closed);
 		}
@@ -385,8 +396,8 @@ static void M_(hash_test)(PM_(key) (*const parent_new)(void *),
 	printf("<" QUOTE(HASH_NAME) ">hash of key <" QUOTE(HASH_KEY)
 		"> was created using: HASH_CODE <" QUOTE(HASH_CODE) ">; "
 		"HASH_IS_EQUAL <" QUOTE(HASH_IS_EQUAL) ">; "
-#ifdef HASH_RECALCULATE
-		"HASH_RECALCULATE; "
+#ifdef HASH_NO_CACHE
+		"HASH_NO_CACHE; "
 #endif
 		"HASH_TEST<" QUOTE(HASH_TEST) ">; "
 		"%stesting:\n", parent_new ? "parent key specified; " : "");

@@ -13,7 +13,8 @@
 
 /* An X-macro, preferable to `HASH_KEY const char *`. */
 #define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
-	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces)
+	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
+	X(ZodiacCount)
 #define X(n) n
 enum zodiac { ZODIAC(X) };
 #undef X
@@ -28,6 +29,9 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define HASH_NAME zodiac
 #define HASH_KEY enum zodiac
 #define HASH_CODE &hash_zodiac
+/* <fn:hash_zodiac> is actually a pretty good hash function; a cache would be a
+ waste of space. */
+#define HASH_NO_CACHE
 #define HASH_IS_EQUAL &zodiac_is_equal
 #define HASH_TEST /* Testing requires to string. */
 #define HASH_EXPECT_TRAIT
@@ -35,7 +39,7 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define HASH_TO_STRING &zodiac_to_string
 #include "../src/hash.h"
 static enum zodiac random_zodiac(void *const zero)
-	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / 12 + 1)); }
+	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
 
 
 
@@ -57,7 +61,7 @@ static unsigned length2_is_equal(const unsigned a, const unsigned b)
 #define HASH_UINT unsigned
 #define HASH_CODE &length2_code
 #define HASH_IS_EQUAL &length2_is_equal
-#define HASH_RECALCULATE
+#define HASH_NO_CACHE
 #include "../src/hash.h"
 
 /* Can use it to count bytes in words in \O(\sum `bytes`). */
@@ -493,7 +497,7 @@ static void fill_boat_id(int *const id);
 #define HASH_NAME id
 #define HASH_KEY int
 /* Don't need two `int id; unsigned code = id;` per datum. */
-#define HASH_RECALCULATE
+#define HASH_NO_CACHE
 #define HASH_CODE &boat_id_code
 #define HASH_IS_EQUAL &boat_id_is_equal
 #define HASH_TEST &fill_boat_id

@@ -34,15 +34,14 @@
  This is <typedef:<PM>uint>, the unsigned type of hash code of the key given by
  <typedef:<PM>code_fn>; defaults to `size_t`.
 
- @param[HASH_RECALCULATE]
- Don't cache the hash code, but calculate every time; this avoids storing
- <typedef:<PM>uint> _per_ entry, but can be slower when the hash code is
- non-trivial to compute.
+ @param[HASH_NO_CACHE]
+ Calculate every time; this avoids storing <typedef:<PM>uint> _per_ entry, but
+ can be slower when the hash code is non-trivial to compute.
 
  @param[HASH_INVERSE]
  Function satisfying <typedef:<PM>inverse_code_fn> that avoids storing the key,
  but calculates it from the hashed value. As such, incompatible with
- `HASH_RECALCULATE`.
+ `HASH_NO_CACHE`.
 
  @param[HASH_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -55,7 +54,7 @@
 
  @std C89 */
  /* Bug in cdoc. @fixme Implement move-to-front like splay-trees.
- @fixme Implement HASH_RECALCULATE and HASH_INVERSE. */
+ @fixme Implement HASH_NO_CACHE and HASH_INVERSE. */
 
 #if !defined(HASH_NAME) || !defined(HASH_KEY) || !defined(HASH_IS_EQUAL) \
 	|| !defined(HASH_CODE)
@@ -70,8 +69,8 @@
 #if HASH_TRAITS > 1
 #error Only one trait per include is allowed; use HASH_EXPECT_TRAIT.
 #endif
-#if defined(HASH_RECALCULATE) && defined(HASH_INVERSE)
-#error HASH_INVERSE has to store the hash code; conflicts with HASH_RECALCULATE.
+#if defined(HASH_NO_CACHE) && defined(HASH_INVERSE)
+#error HASH_INVERSE has to store the hash code; conflicts with HASH_NO_CACHE.
 #endif
 #if defined(HASH_TO_STRING_NAME) && !defined(HASH_TO_STRING)
 #error HASH_TO_STRING_NAME requires HASH_TO_STRING.
@@ -159,13 +158,14 @@ typedef HASH_VALUE PM_(value);
  in the same table. */
 struct PM_(entry) {
 	PM_(uint) next; /* `SETnull`, `SETend`, accepted, half the size. */
-#ifndef HASH_RECALCULATE /* <!-- cache */
+#ifndef HASH_NO_CACHE /* <!-- cache */
 	PM_(uint) code;
 #endif /* cache --> */
 #ifndef HASH_INVERSE /* <!-- !inv */
 	PM_(key) key;
 #endif /* !inv --> */
 #ifdef HASH_VALUE
+	/*...place it with the key in a separate <tag:P_(entry)>. */
 #endif
 };
 
@@ -173,7 +173,7 @@ struct PM_(entry) {
 static void PM_(fill_entry)(struct PM_(entry) *const entry,
 	const PM_(key) key, const PM_(uint) code) {
 	assert(entry && entry->next == SETnull);
-#ifndef HASH_RECALCULATE /* <!-- cache */
+#ifndef HASH_NO_CACHE /* <!-- cache */
 	entry->code = code;
 #else /* cache --><!-- !cache */
 	(void)code;
@@ -189,7 +189,7 @@ static void PM_(fill_entry)(struct PM_(entry) *const entry,
 /** Gets the code of an occupied `entry`, which should be consistent. */
 static PM_(uint) PM_(entry_code)(const struct PM_(entry) *const entry) {
 	assert(entry && entry->next != SETnull);
-#ifdef HASH_RECALCULATE
+#ifdef HASH_NO_CACHE
 	return PM_(code)(entry->key);
 #else
 	return entry->code;
@@ -296,7 +296,7 @@ static struct PM_(entry) *PM_(get)(struct M_(hash) *const hash,
 		|| PM_(in_stack_range)(hash, idx)
 		&& idx != PM_(code_to_bucket)(hash, PM_(entry_code)(entry))) return 0;
 	for( ; ; ) {
-#ifdef HASH_RECALCULATE /* <!-- !cache: always go to next predicate. */
+#ifdef HASH_NO_CACHE /* <!-- !cache: always go to next predicate. */
 		const int codees_are_equal = ((void)(code), 1);
 #else /* !cache --><!-- cache: quick out. */
 		const int codees_are_equal = code == entry->code;
@@ -775,8 +775,8 @@ static const char *(*PM_(hash_to_string))(const struct M_(hash) *)
 #ifdef HASH_VALUE
 #undef HASH_VALUE
 #endif
-#ifdef HASH_RECALCULATE
-#undef HASH_RECALCULATE
+#ifdef HASH_NO_CACHE
+#undef HASH_NO_CACHE
 #endif
 #undef BOX_
 #undef BOX_CONTAINER
