@@ -186,7 +186,7 @@ static void PS_(fill_entry)(struct PS_(entry) *const entry,
 static PS_(uint) PS_(entry_hash)(const struct PS_(entry) *const entry) {
 	assert(entry && entry->next != SETnull);
 #ifdef SET_RECALCULATE
-	return PS_(hash)(&entry->data);
+	return PS_(hash)(entry->key);
 #else
 	return entry->hash;
 #endif

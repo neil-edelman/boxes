@@ -13,16 +13,27 @@
 
 /* The minimalish set that does something useful; the words are grouped by
  their lengths'. */
-static int equal_lengths(const char *const a, const char *const b)
+static int length1_equal(const char *const a, const char *const b)
 	{ return strlen(a) == strlen(b); } /* Calculating this is inefficient. */
-#define SET_NAME length
+#define SET_NAME length1
 #define SET_TYPE char *
 #define SET_HASH &strlen
-#define SET_IS_EQUAL &equal_lengths
+#define SET_IS_EQUAL &length1_equal
 #include "../src/set.h"
 
-/* Donno; can use it to count bytes in words in \O(\sum `bytes`)?
- `size_t` for 4 bytes seems wasteful. */
+
+static unsigned length2_hash(const unsigned length) { return length; }
+static unsigned length2_is_equal(const unsigned a, const unsigned b)
+	{ return a == b; }
+#define SET_NAME length2
+#define SET_TYPE unsigned
+#define SET_UINT unsigned
+#define SET_HASH &length2_hash
+#define SET_IS_EQUAL &length2_is_equal
+#define SET_RECALCULATE
+#include "../src/set.h"
+
+/* Can use it to count bytes in words in \O(\sum `bytes`). */
 struct length_node {
 	char word[16];
 	size_t collisions;
@@ -30,12 +41,15 @@ struct length_node {
 };
 static struct length_node *length_upcast(char *const a)
 	{ return (struct length_node *)(void *)a; }
-static int length_collide(char *a_original, char *b_replace) {
+static int length1_collide(char *a_original, char *b_replace) {
 	struct length_node *wa = length_upcast(a_original),
 		*wb = length_upcast(b_replace);
 	wb->next = wa;
 	wb->collisions = wa->collisions + 1;
 	return 1;
+}
+static int length2_collide(unsigned a, unsigned b) {
+	return 0;
 }
 static void nato(void) {
 	struct length_node words[] = {
@@ -47,16 +61,19 @@ static void nato(void) {
 		X(Yankee), X(Zulu)
 #undef X
 	};
-	struct length_set lens = SET_IDLE;
-	struct length_set_iterator it;
+	struct length1_set lens1 = SET_IDLE;
+	struct length1_set_iterator it1;
 	char *w;
 	size_t i;
+	struct length2_set lens2 = SET_IDLE;
+	struct length2_set_iterator it2;
+	unsigned count;
 	for(i = 0; i < sizeof words / sizeof *words; i++)
-		length_set_policy_put(&lens, words[i].word, &length_collide);
+		length1_set_policy_put(&lens1, words[i].word, &length1_collide);
 	/* fixme: Needs a real iterator, that's atrocious. */
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
 		"length\tcount\twords\n");
-	for(length_set_begin(&it, &lens); w = length_set_next_key(&it); ) {
+	for(length1_set_begin(&it1, &lens1); w = length1_set_next_key(&it1); ) {
 		struct length_node *word, *w1;
 		word = w1 = length_upcast(w);
 		printf("%lu\t%lu\t{", (unsigned long)strlen(w),
@@ -65,7 +82,16 @@ static void nato(void) {
 		while(w1 = w1->next);
 		printf("}\n");
 	}
-	length_set_(&lens);
+	length1_set_(&lens1);
+	printf("or really . . .\n");
+	for(i = 0; i < sizeof words / sizeof *words; i++) {
+		size_t len = strlen(words[i].word);
+		if(len > UINT_MAX) len = UINT_MAX;
+		length2_set_policy_put(&lens2, (unsigned)len, &length2_collide);
+	}
+	for(length2_set_begin(&it2, &lens2); count = length2_set_next_key(&it2); ) {
+		/*...*/
+	}
 }
 
 
