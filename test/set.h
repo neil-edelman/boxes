@@ -1,7 +1,7 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Hash Set
+ @subtitle Unordered associative array
 
  ![Example of <String>Set.](../web/set.png)
 

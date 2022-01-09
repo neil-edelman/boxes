@@ -148,7 +148,7 @@ static void PT_(test)(void) {
 	size = T_(trie_size)(&trie);
 	assert(size > 0 && size <= T_(trie_size)(&trie));
 	PT_(print)(&trie);
-	printf("Now trie is %s.\n", T_(trie_to_string)(&trie));
+	printf("Now trie is %s.\n", PT_(trie_to_string)(&trie));
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "Trie-test.gv");
 	/*...*/
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */

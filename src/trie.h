@@ -1,7 +1,7 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Prefix Tree
+ @subtitle Prefix tree
 
  ![Example of trie.](../web/trie.png)
 
@@ -42,10 +42,6 @@
  @depend <iterate.h>
  @std C89 */
 
-#include <string.h> /* size_t memmove strcmp memcpy */
-#include <limits.h> /* UINT_MAX */
-
-
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
@@ -58,76 +54,64 @@
 #endif
 #define TRIE_TRAITS 0
 
-
-#if TRIE_TRAITS == 0 /* <!-- base code */
-
-
-/* <Kernighan and Ritchie, 1988, p. 231>; before idempotent _st_ `CAT`. */
-#if defined(T_) || defined(PT_) \
-	|| (defined(TRIE_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?T_ or CAT_?; possible stray TRIE_EXPECT_TRAIT?
-#endif
-#ifndef TRIE_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define T_(thing) CAT(TRIE_NAME, thing)
-#define PT_(thing) CAT(trie, T_(thing))
-
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
-
+#include <string.h>
+#include <limits.h> /* UINT_MAX */
+#include <errno.h>
+#include <assert.h>
+#if defined(TRIE_CAT_) || defined(TRIE_CAT) || defined(T_) || defined(PT_) \
+	|| defined(TRIE_IDLE)
+#error Unexpected defines.
+#endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define TRIE_CAT_(n, m) n ## _ ## m
+#define TRIE_CAT(n, m) TRIE_CAT_(n, m)
+#define T_(n) TRIE_CAT(TRIE_NAME, n)
+#define PT_(n) TRIE_CAT(trie, T_(n))
+#define TRIE_IDLE { ARRAY_IDLE, ARRAY_IDLE }
 /* Trie internal nodes encode the branches semi-implicitly. Each contains two
  items of information in a `size_t`: left children branches are <fn:trie_left>
  immediately following, right children are the rest; <fn:trie_skip>, the length
  of the string trie branch in bytes beyond the first byte, don't care values
  for the index. */
-typedef size_t TrieBranch;
-
+typedef size_t trie_branch;
 #define ARRAY_NAME trie_branch
-#define ARRAY_TYPE TrieBranch
+#define ARRAY_TYPE trie_branch
 #define ARRAY_SUBTYPE
 #include "array.h"
-
 /* 12 makes the maximum skip length 512 bytes and the maximum size of a trie is
  `size_t` 64-bits: 4503599627370496, 32-bits: 1048576, 16-bits: 16, 8-bits: not
  supported at all, (unlikely since `C++` has additional constraints.) */
 #define TRIE_SKIP 12u
 #define TRIE_SKIP_MAX ((1u << TRIE_SKIP) - 1u)
 #define TRIE_LEFT_MAX (((size_t)1 << ((sizeof(size_t) << 3) - TRIE_SKIP)) - 1)
-
 /** @return Packs `skip` and `left` into a branch. */
-static TrieBranch trie_branch(const size_t skip, const size_t left) {
+static trie_branch trie_branch_set(const size_t skip, const size_t left) {
 	assert(skip <= TRIE_SKIP_MAX && left <= TRIE_LEFT_MAX);
 	return skip + (left << TRIE_SKIP);
 }
-
 /** @return Unpacks skip from `branch`. */
-static size_t trie_skip(const TrieBranch branch)
+static size_t trie_skip(const trie_branch branch)
 	{ return branch & TRIE_SKIP_MAX; }
-
 /** @return Unpacks left descendent branches from `branch`. */
-static size_t trie_left(const TrieBranch branch) { return branch >> TRIE_SKIP; }
-
+static size_t trie_left(const trie_branch branch) { return branch >> TRIE_SKIP; }
 /** Overwrites `skip` in `branch`. */
 static void trie_skip_set(size_t *const branch, size_t skip) {
 	assert(branch && skip <= TRIE_SKIP_MAX);
 	*branch &= ~TRIE_SKIP_MAX;
 	*branch += skip;
 }
-
 /** Increments the left descendants `branch` count. */
 static void trie_left_inc(size_t *const branch) {
 	assert(branch && *branch < ~(size_t)TRIE_SKIP_MAX);
 	*branch += TRIE_SKIP_MAX + 1;
 }
-
 /** Decrements the left descendants `branch` count. */
 static void trie_left_dec(size_t *const branch) {
 	assert(branch && *branch > TRIE_SKIP_MAX);
 	*branch -= TRIE_SKIP_MAX + 1;
 }
-
 /** Compares `bit` from the string `a` against `b`.
  @return In the `bit` position, positive if `a` is after `b`, negative if `a`
  is before `b`, or zero if `a` is equal to `b`. */
@@ -137,23 +121,28 @@ static int trie_strcmp_bit(const char *const a, const char *const b,
 	return !((unsigned char)b[byte] & mask)
 		- !((unsigned char)a[byte] & mask);
 }
-
 /** From string `a`, extract `bit`. */
 static int trie_is_bit(const char *const a, const size_t bit) {
 	const size_t byte = bit >> 3, mask = 128 >> (bit & 7);
 	return !!((unsigned char)a[byte] & mask);
 }
-
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
-static int trie_is_prefix(const char *a, const char *b) {
+static int trie_is_prefix2(const char *a, const char *b) {
 	for( ; ; a++, b++) {
 		if(*a == '\0') return 1;
 		if(*a != *b) return *b == '\0';
 	}
 }
-
+/** This was confusing to get it from array, hack. */
+static int trie_vcompar(const void *const va, const void *const vb) {
+	return strcmp(va, vb);
+}
 #endif /* idempotent --> */
+
+
+#if TRIE_TRAITS == 0 /* <!-- base code */
+
 
 /* Defaults. */
 #ifndef TRIE_TYPE /* <!-- !type */
@@ -199,34 +188,14 @@ static int PT_(false_replace)(PT_(type) *const a, PT_(type) *const b)
 static int PT_(compare)(const PT_(leaf) *const a, const PT_(leaf) *const b)
 	{ return strcmp(PT_(to_key)(*a), PT_(to_key)(*b)); }
 
-#ifdef TRIE_TO_STRING /* <!-- str */
-/** Uses the natural `datum` -> `a` that is defined by `TRIE_KEY`. */
-static void PT_(to_string)(PT_(ctype) *const datum, char (*const a)[12]) {
-	assert(datum && a);
-	sprintf(*a, "%.11s", PT_(to_key)(datum));
-}
-static void PT_(to_foo)(const PT_(leaf) *const leaf, char (*const a)[12]) {
-	assert(leaf && a);
-	sprintf(*a, "%.11s", "foo");
-}
-#endif /* str --> */
-
 /* Trie leaf array is sorted by key. */
 #define ARRAY_NAME PT_(leaf)
 #define ARRAY_TYPE PT_(leaf)
-#define ARRAY_ITERATE
-#define ARRAY_SUBTYPE
 #define ARRAY_EXPECT_TRAIT
 #include "array.h"
-#ifdef TRIE_TO_STRING /* <!-- str */
-#define ARRAY_TO_STRING &PT_(to_foo)
-#define ARRAY_EXPECT_TRAIT
-#include "array.h"
-#endif /* str --> */
 #define ARRAY_COMPARE &PT_(compare)
 #include "array.h"
-#define A_(n) CAT(PT_(leaf), n)
-#define PA_(n) CAT(CAT(compare, PT_(leaf_array)), n)
+#define ARRAY_NAME PT_(leaf) /* <!-- array: We need these. */
 
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
@@ -261,7 +230,7 @@ static void PT_(init_branches_r)(struct T_(trie) *const trie, size_t bit,
 	const size_t a, const size_t a_size) {
 	size_t b = a, b_size = a_size, half;
 	size_t skip = 0;
-	TrieBranch *branch;
+	trie_branch *branch;
 	assert(trie && a_size && a_size <= trie->leaves.size && trie->leaves.size
 		&& trie->branches.capacity >= trie->leaves.size - 1);
 	if(a_size <= 1) return;
@@ -277,7 +246,7 @@ static void PT_(init_branches_r)(struct T_(trie) *const trie, size_t bit,
 	b_size = b - a;
 	/* Should have space for all branches pre-allocated in <fn:<PT>init>. */
 	branch = trie_branch_array_new(&trie->branches), assert(branch);
-	*branch = trie_branch(skip, b_size - 1);
+	*branch = trie_branch_set(skip, b_size - 1);
 	bit++;
 	PT_(init_branches_r)(trie, bit, a, b_size);
 	PT_(init_branches_r)(trie, bit, b, a_size - b_size);
@@ -297,7 +266,7 @@ static int PT_(init)(struct T_(trie) *const trie, PT_(type) *const*const a,
 	memcpy(leaves, a, sizeof *a * a_size);
 	trie->leaves.size = a_size;
 	/* Sort, get rid of duplicates, and initialize branches, from `compare.h`. */
-	qsort(leaves, a_size, sizeof *a, &PA_(vcompar));
+	qsort(leaves, a_size, sizeof *a, &trie_vcompar/*&PA_(vcompar)*/);
 	A_(array_unique)(&trie->leaves);
 	PT_(init_branches_r)(trie, 0, 0, trie->leaves.size);
 	assert(trie->branches.size + 1 == trie->leaves.size);
@@ -335,7 +304,7 @@ static void T_(trie_clear)(struct T_(trie) *const trie)
 static int PT_(param_index_get)(const struct T_(trie) *const trie,
 	const char *const key, size_t *const result) {
 	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
-	TrieBranch branch;
+	trie_branch branch;
 	size_t n0_byte, str_byte = 0, bit = 0;
 	assert(trie && key && result);
 	if(!n1) return 0; /* Special case: there is nothing to match. */
@@ -400,7 +369,7 @@ static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 static void T_(trie_index_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, size_t *const low, size_t *const high) {
 	size_t n0 = 0, n1 = trie->leaves.size, i = 0, left;
-	TrieBranch branch;
+	trie_branch branch;
 	size_t n0_byte, str_byte = 0, bit = 0;
 	assert(trie && prefix && low && high && n1);
 	n1--, assert(n1 == trie->branches.size);
@@ -427,7 +396,7 @@ static int T_(trie_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, size_t *const low, size_t *const high) {
 	assert(trie && prefix && low && high);
 	return trie->leaves.size ? (T_(trie_index_prefix)(trie, prefix, low, high),
-		trie_is_prefix(prefix, PT_(to_key)(trie->leaves.data[*low]))) : 0;
+		trie_is_prefix2(prefix, PT_(to_key)(trie->leaves.data[*low]))) : 0;
 }
 
 /** Add `datum` to `trie`. Must not be the same as any key of `trie`; _ie_ it
@@ -439,7 +408,7 @@ static int T_(trie_prefix)(const struct T_(trie) *const trie,
 static int PT_(add)(struct T_(trie) *const trie, PT_(type) *const datum) {
 	const size_t leaf_size = trie->leaves.size, branch_size = leaf_size - 1;
 	size_t n0 = 0, n1 = branch_size, i = 0, left, bit = 0, bit0 = 0, bit1;
-	TrieBranch *branch = 0;
+	trie_branch *branch = 0;
 	const char *const data_key = PT_(to_key)(datum), *n0_key;
 	PT_(leaf) *leaf;
 	int cmp;
@@ -486,7 +455,7 @@ insert:
 		trie_skip_set(branch, branch_skip + bit0 - bit - !n0);
 	}
 	memmove(branch + 1, branch, sizeof *branch * (branch_size - n0));
-	*branch = trie_branch(bit - bit0 - !!n0, left), trie->branches.size++;
+	*branch = trie_branch_set(bit - bit0 - !!n0, left), trie->branches.size++;
 	return 1;
 }
 
@@ -609,6 +578,27 @@ static int T_(trie_shrink)(struct T_(trie) *const trie) {
 		&& A_(array_shrink)(&trie->leaves);
 }
 
+struct PT_(iterator) { struct PA_(iterator) it; };
+/** Loads `a` into `it`. @implements begin */
+static void PT_(begin)(struct PT_(iterator) *const it,
+	const struct T_(trie) *const t) { PA_(begin)(&it->it, &t->leaves); }
+/** Advances `it`. @implements next */
+static PT_(type) *PT_(next)(struct PT_(iterator) *const it)
+	{ return PA_(next)(&it->it); }
+
+#undef ARRAY_NAME /* array --> */
+
+/* <!-- box (multiple traits) */
+#define BOX_ PT_
+#define BOX_CONTAINER struct T_(trie)
+#define BOX_CONTENTS PT_(type)
+
+#ifdef TRIE_TEST /* <!-- test */
+/* Forward-declare. */
+static void (*PT_(to_string))(PT_(ctype) *, char (*)[12]);
+static const char *(*PT_(trie_to_string))(const struct T_(trie) *);
+#include "../test/test_trie.h"
+#endif /* test --> */
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
@@ -625,29 +615,21 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef TRIE_TO_STRING /* <!-- string */
 
 
-static const char *T_(trie_to_string)(const struct T_(trie) *const trie) {
-	(void)trie;
-	return "foo";
+/** Uses the natural `datum` -> `a` that is defined by `TRIE_KEY`. */
+static void PT_(key_string)(PT_(ctype) *const datum, char (*const a)[12]) {
+	assert(datum && a);
+	sprintf(*a, "%.11s", PT_(to_key)(datum));
 }
-
-#define Z_(n) CAT(T_(trie), n)
-
-#if 0
-#define TO_STRING &PT_(to_string)
-//#define ARRAY_FORWARD_(n) CAT(A_(array_forward), n)
-#define ZI_(n) CAT(A_(array_forward), n)
+#define SZ_(n) TRIE_CAT(T_(trie), n)
+#define TO_STRING &PT_(key_string)
 #include "to_string.h" /** \include */
-#endif
-
-
-#if !defined(TRIE_TEST_BASE) && defined(TRIE_TEST) /* <!-- test */
-#define TRIE_TEST_BASE /* Only one instance of base tests. */
-#include "../test/test_trie.h" /** \include */
-#endif /* test --> */
-
-#undef Z_
-
-
+#ifdef TRIE_TEST /* <!-- expect: greedy satisfy forward-declared. */
+#undef TRIE_TEST
+static PSZ_(to_string_fn) PT_(to_string) = PSZ_(to_string);
+static const char *(*PT_(trie_to_string))(const struct T_(trie) *)
+	= &SZ_(to_string);
+#endif /* expect --> */
+#undef SZ_
 #undef TRIE_TO_STRING
 
 	
@@ -660,30 +642,12 @@ static const char *T_(trie_to_string)(const struct T_(trie) *const trie) {
 #ifdef TRIE_EXPECT_TRAIT /* <!-- trait */
 #undef TRIE_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
-#ifndef TRIE_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef TRIE_SUBTYPE
-#endif /* sub-type --> */
-#undef T_
-#undef PT_
-#undef A_
-#undef PA_
 #undef TRIE_NAME
 #undef TRIE_TYPE
 #undef TRIE_KEY
-#ifdef TRIE_TEST
-#undef TRIE_TEST
-#endif
-#ifdef TRIE_TEST_BASE
-#undef TRIE_TEST_BASE
-#endif
-#undef ITERATE
-#undef ITERATE_BOX
-#undef ITERATE_TYPE
-#undef ITERATE_BEGIN
-#undef ITERATE_NEXT
+#undef BOX_
+#undef BOX_CONTAINER
+#undef BOX_CONTENTS
+/* box (multiple traits) --> */
 #endif /* !trait --> */
-
 #undef TRIE_TRAITS

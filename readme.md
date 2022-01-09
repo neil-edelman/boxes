@@ -1,9 +1,9 @@
 # trie\.h #
 
-## Prefix Tree ##
+## Prefix tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;ctype](#user-content-typedef-6317b018), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;ctype](#user-content-typedef-6317b018), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;trie](#user-content-tag-754a10a5)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -67,19 +67,27 @@ A bi\-predicate; returns true if the `replace` replaces the `original`; used in 
 
 
 
-### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-ace240bb" name = "user-content-typedef-ace240bb">&lt;PSZ&gt;box</a> ###
 
-<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
+<code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code>
 
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+[to\_string\.h](to_string.h): an alias to the box\.
 
 
 
-### <a id = "user-content-typedef-ba462b2e" name = "user-content-typedef-ba462b2e">&lt;PT&gt;action_fn</a> ###
+### <a id = "user-content-typedef-d1a7c35e" name = "user-content-typedef-d1a7c35e">&lt;PSZ&gt;type</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;type *);</code>
+<code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code>
 
-Only used if `TRIE_TEST`\.
+[to\_string\.h](to_string.h): an alias to the individual type contained in the box\.
+
+
+
+### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
+
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
+
+Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e) into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -131,9 +139,7 @@ A full binary tree stored semi\-implicitly in two Arrays: as `branches` backed b
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-2b8ab027">&lt;T&gt;trie_shrink</a></td><td>trie</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-ae9d3396">&lt;T&gt;trie_test</a></td><td></td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -342,23 +348,15 @@ Shrinks the capacity of `trie` to size\.
 
 
 
-### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
+### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   Print the contents of [&lt;PSZ&gt;box](#user-content-typedef-ace240bb) `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 
-
-
-
-### <a id = "user-content-fn-ae9d3396" name = "user-content-fn-ae9d3396">&lt;T&gt;trie_test</a> ###
-
-<code>static void <strong>&lt;T&gt;trie_test</strong>(void)</code>
-
-Will be tested on stdout\. Requires `TRIE_TEST`, and not `NDEBUG` while defining `assert`\.
 
 
 

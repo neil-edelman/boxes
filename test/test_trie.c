@@ -46,7 +46,7 @@ static void test_basic_trie_str(void) {
 	assert(str_trie_remove(&trie, "") == 0);
 
 	printf("%s\n", str_trie_to_string(&trie));
-	trie_str_print(&trie);
+	str_trie_to_string(&trie);
 	trie_str_graph(&trie, "graph/trie0.gv");
 	/*printf("Trie0: %s.\n\n", str_trie_to_string(&trie));*/
 
@@ -349,17 +349,17 @@ static void pointer_to_string(const char *const*const ps, char (*const a)[12]) {
 #define POOL_TYPE struct string_set_node
 #include "pool.h"
 
-/** Returns a time diffecence in microseconds from `then`. */
+/** Returns a time difference in microseconds from `then`. */
 static double diff_us(clock_t then)
 	{ return 1000000.0 / CLOCKS_PER_SEC * (clock() - then); }
 
 /** On-line numerically stable first-order statistics, <Welford, 1962, Note>. */
-struct Measure { size_t count; double mean, ssdm; };
+struct measure { size_t count; double mean, ssdm; };
 
-static void m_reset(struct Measure *const measure)
+static void m_reset(struct measure *const measure)
 	{ assert(measure); measure->count = 0, measure->mean = measure->ssdm = 0; }
 
-static void m_add(struct Measure *const measure, const double replica) {
+static void m_add(struct measure *const measure, const double replica) {
 	const size_t n = ++measure->count;
 	const double delta = replica - measure->mean;
 	assert(measure);
