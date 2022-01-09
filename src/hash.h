@@ -220,7 +220,7 @@ struct M_(hash) {
 /** The capacity of a non-idle `hash` is always a power-of-two. */
 static PM_(uint) PM_(capacity)(const struct M_(hash) *const hash)
 	{ return assert(hash && hash->entries && hash->log_capacity >= 3),
-	(PM_(uint))1 << hash->log_capacity; }
+	(PM_(uint))((PM_(uint))1 << hash->log_capacity); }
 
 /** @return Indexes the first `hash.entries` in the bucket (a closed entry) from
  non-idle `hash` given the `code`. */
@@ -322,7 +322,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 	const unsigned log_c0 = hash->log_capacity;
 	unsigned log_c1;
 	/* fixme: this will have to be updated because it relies on -1. */
-	const PM_(uint) c0 = log_c0 ? (PM_(uint))1 << log_c0 : 0;
+	const PM_(uint) c0 = log_c0 ? (PM_(uint))((PM_(uint))1 << log_c0) : 0;
 	PM_(uint) c1, size1, i, wait, mask;
 	char fn[64];
 	assert(hash && hash->size <= SETlimit
@@ -355,7 +355,8 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 	/* Initialize new values. Rehash the stack. Mask off the added bits. */
 	{ struct PM_(entry) *e = entries + c0, *const e_end = entries + c1;
 		for( ; e < e_end; e++) e->next = SETnull; }
-	mask = (((PM_(uint))1 << log_c0) - 1) ^ (((PM_(uint))1 << log_c1) - 1);
+	mask = (PM_(uint))((((PM_(uint))1 << log_c0) - 1)
+		^ (((PM_(uint))1 << log_c1) - 1));
 
 	/* Recode most closed entries in the lower half. */
 	printf("buffer: recode %lu entries; mask 0x%lx.\n",

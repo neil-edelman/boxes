@@ -21,7 +21,9 @@ enum zodiac { ZODIAC(X) };
 #define X(n) #n
 static const char *zodiac[] = { ZODIAC(X) };
 #undef X
-static size_t hash_zodiac(const enum zodiac z) { return z; }
+/** Monotonic values is a solid hash code. */
+static unsigned short hash_zodiac(const enum zodiac z)
+	{ return assert(z <= USHRT_MAX), (unsigned short)z; }
 static int zodiac_is_equal(const enum zodiac a, const enum zodiac b)
 	{ return a == b; }
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
@@ -29,9 +31,8 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define HASH_NAME zodiac
 #define HASH_KEY enum zodiac
 #define HASH_CODE &hash_zodiac
-/* <fn:hash_zodiac> is actually a pretty good hash function; a cache would be a
- waste of space. */
-#define HASH_NO_CACHE
+#define HASH_UINT unsigned short
+#define HASH_NO_CACHE /* A cache would be a waste of space. */
 #define HASH_IS_EQUAL &zodiac_is_equal
 #define HASH_TEST /* Testing requires to string. */
 #define HASH_EXPECT_TRAIT

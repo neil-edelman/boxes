@@ -184,7 +184,7 @@ static void PM_(histogram)(const struct M_(hash) *const hash,
 	memset(histogram, 0, sizeof histogram);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	if(hash->entries) {
-		PM_(uint) i, i_end = 1 << hash->log_capacity;
+		PM_(uint) i, i_end = PM_(capacity)(hash);
 		for(i = 0; i < i_end; i++) {
 			size_t bucket = PM_(count_bucket)(hash, i);
 			/* The bins are `0,1,2,...,[histogram_size - 1, \infty]`. */
@@ -229,7 +229,7 @@ static void PM_(legit)(const struct M_(hash) *const hash) {
 		return;
 	}
 	assert(hash->log_capacity >= 3);
-	for(i = 0, i_end = 1 << hash->log_capacity; i < i_end; i++) {
+	for(i = 0, i_end = PM_(capacity)(hash); i < i_end; i++) {
 		struct PM_(entry) *e = hash->entries + i;
 		if(e->next == SETnull) continue;
 		size++;
