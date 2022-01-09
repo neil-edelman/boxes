@@ -28,27 +28,23 @@ static size_t PM_(count_bucket)(const struct M_(hash) *const hash,
 			 && PM_(in_stack_range)(hash, idx) */);
 		entry = hash->entries + idx;
 	}
-	printf("*** %lu\n", no);
 	return no;
 }
 
 /** Mean: `mean`, population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`.
  <Welford1962Note>. */
-static struct { size_t n, total, total2, max; double mean, ssdm; }
-	PM_(stats) = { 0, 0, 0, 0, 0.0, 0.0 };
+static struct { size_t n, max; double mean, ssdm; }
+	PM_(stats) = { 0, 0, 0.0, 0.0 };
 static void PM_(rehash)(void) {
-	PM_(stats).n = PM_(stats).total = PM_(stats).total2 = PM_(stats).max = 0;
+	PM_(stats).n = PM_(stats).max = 0;
 	PM_(stats).mean = PM_(stats).ssdm = 0.0;
 }
 /** Update one sample point of `value`. */
 static void PM_(update)(const size_t value) {
-	double d, v = value, m = PM_(stats).mean;
+	double d, v = value;
 	if(PM_(stats).max < value) PM_(stats).max = value;
 	d = v - PM_(stats).mean;
-	PM_(stats).total += value;
-	PM_(stats).total2 += value * value;
-	/*PM_(stats).mean += d / ++PM_(stats).n;*/
-	PM_(stats).mean += m + (v / PM_(stats).total) * (v - m);
+	PM_(stats).mean += d / ++PM_(stats).n;
 	PM_(stats).ssdm += d * (v - PM_(stats).mean);
 }
 /** Collect stats on `hash`. */
@@ -92,7 +88,7 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 		"\t<TR>\n"
 		"\t\t<TD>&nbsp;</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E[no bucket]</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f(%.1f) %lu, %f</TD>\n"
+		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f(%.1f)</TD>\n"
 		"\t</TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD>&nbsp;</TD>\n"
@@ -104,7 +100,6 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 		hash->entries ? (unsigned long)PM_(capacity)(hash) : 0,
 		PM_(stats).n ? PM_(stats).mean : (double)NAN, PM_(stats).n > 1
 		? sqrt(PM_(stats).ssdm / (double)(PM_(stats).n - 1)) : (double)NAN,
-			PM_(stats).n, PM_(stats).ssdm,
 		(unsigned long)PM_(stats).max);
 	fprintf(fp, "\t<TR>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
