@@ -13,13 +13,13 @@
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
- type <typedef:<PH>priority> associated therewith. `HEAP_NAME` is required;
+ key <typedef:<PH>priority> associated therewith. `HEAP_NAME` is required;
  `HEAP_TYPE` defaults to `unsigned int`. `<PH>` is private, whose names are
  prefixed in a manner to avoid collisions.
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>compare_fn>. Defaults to minimum-hash.
- Required if `HEAP_TYPE` is changed to an incomparable type.
+ Required if `HEAP_TYPE` is changed to an incomparable key.
 
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in
@@ -79,7 +79,7 @@
 #define HEAP_TYPE unsigned
 #endif
 
-/** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
+/** Valid assignable key used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not hash by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(priority);
 

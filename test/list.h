@@ -86,7 +86,7 @@ enum list_operation {
 
 
 /* A note about <tag:<L>listlink> and <tag:<L>list>: these don't have to be
- parameterized at all. However, it's more type-safe to have separate types if
+ parameterized at all. However, it's more key-safe to have separate types if
  we are coercing them. */
 
 /* ************* FIXME: update the images; they are from a version 10 years ago.
