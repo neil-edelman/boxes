@@ -649,22 +649,56 @@ static void PS_(begin)(struct PS_(iterator) *const it,
 	const struct S_(set) *const set)
 	{ assert(it), it->set = set, it->idx = 0; }
 
+/** Helper to skip the entries of `it` that are not there.
+ @return Whether it found another index. */
+static int PS_(skip)(struct PS_(iterator) *const it) {
+	const struct S_(set) *const set = it->set;
+	const PS_(uint) limit = PS_(capacity)(set);
+	assert(it && it->set && it->set->entries);
+	while(it->idx < limit) {
+		struct PS_(entry) *const e = set->entries + it->idx;
+		if(e->next != SETnull) return 1;
+		it->idx++;
+	}
+	return 0;
+}
+
 /** Advances `it`. @implements next */
-static PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
-	PS_(uint) entry_end;
+static struct PS_(entry) *PS_(next)(struct PS_(iterator) *const it) {
 	assert(it);
 	if(!it->set || !it->set->entries) return 0;
-	entry_end = 1 << it->set->log_capacity;
-	while(it->idx < entry_end) {
-		struct PS_(entry) *b = it->set->entries + it->idx;
-		it->idx++;
-		if(b->next != SETnull) return &b->key; /* Fixme! how to return address? */
-	}
+	if(PS_(skip)(it)) return it->set->entries + it->idx++;
 	it->set = 0, it->idx = 0;
 	return 0;
 }
 
 /* iterate --> */
+
+/** Iteration usually not in any particular order, as it goes by entry. The
+ asymptotic runtime is proportional to the set capacity. (This will be the
+ power-of-two equal-to or greater then the maximum size plus buffering of the
+ history of the set.) */
+struct S_(set_iterator) { struct PS_(iterator) it; };
+
+/** Loads `set` (can be null) into `it`. */
+static void S_(set_begin)(struct S_(set_iterator) *const it,
+	const struct S_(set) *const set) { PS_(begin)(&it->it, set); }
+
+/** @return Whether the set specified by <fn:<S>set_begin> has a next entry. */
+static int S_(set_has_next)(struct S_(set_iterator) *const it) {
+	assert(it);
+	/* <tag:<PS>entry> is fine for private returning, but <typedef:<PS>type>
+	 may not even be nullable. */
+	return it->it.set && it->it.set->entries && PS_(skip)(&it->it);
+}
+
+/** Advances `it`. @return The next key or zero. */
+static PS_(type) S_(set_next_key)(struct S_(set_iterator) *const it) {
+	const struct PS_(entry) *e = PS_(next)(&it->it);
+	return e ? PS_(entry_key)(e) : 0;
+}
+
+/* fixme: and value, if VALUE? */
 
 /* <!-- box (multiple traits) */
 #define BOX_ PS_
@@ -683,7 +717,7 @@ static void PS_(unused_base)(void) {
 	S_(set)(0); S_(set_)(0); S_(set_clear)(0); S_(set_get)(0, 0);
 	/*S_(set_reserve)(0, 0);*/ S_(set_replace)(0, 0);  S_(set_policy_put)(0, 0, 0);
 	/*S_(set_remove)(0, 0);*/
-	PS_(begin)(0, 0); PS_(next)(0);
+	S_(set_begin)(0, 0); S_(set_has_next)(0); S_(set_next_key)(0);
 	PS_(unused_base_coda)();
 }
 static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
@@ -704,14 +738,8 @@ static void (*const TSZ_(actual_to_string))(PS_(ctype), char (*const)[12])
 /** This is to line up the set, which can have <typedef:<PS>type> a pointer or
  not, with to string, which requires a pointer. Call
  <data:<TSZ>actual_to_string> with a dereference on `indirect` and `z`. */
-static void TSZ_(thunk_to_string)(const PS_(type) *const indirect,
-	char (*const z)[12]) { TSZ_(actual_to_string)(*indirect, z); }
-/* "warning: incompatible function pointer types
- initializing 'const to_string_string_set_to_string_fn' (aka 'void
- (*const)(char *const *, char (*)[12])') with an expression of type 'void
- (*)(set_string_ctype *const, char (*const)[12])' (aka 'void (*)(const char
- **const, char (*const)[12])')", the levels of indirection are hurting my head.
- Why can't we use `<PS>ctype`? This is not ideal. */
+static void TSZ_(thunk_to_string)(const struct PS_(entry) *const entry,
+	char (*const z)[12]) { TSZ_(actual_to_string)(PS_(entry_key)(entry), z); }
 #define TO_STRING &TSZ_(thunk_to_string)
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
@@ -744,6 +772,9 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *)
 #undef SET_UINT
 #undef SET_HASH
 #undef SET_IS_EQUAL
+#ifdef SET_VALUE
+#undef SET_VALUE
+#endif
 #ifdef SET_RECALCULATE
 #undef SET_RECALCULATE
 #endif
