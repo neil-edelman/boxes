@@ -120,7 +120,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 				= PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) == i
 				? "⬤" : "◯";
 			char z[12];
-			PS_(to_string)(&e->key, &z);
+			PS_(to_string)(PS_(entry_key)(e), &z);
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
 				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
 				"\t\t<TD PORT=\"%lu\"%s>%s</TD>\n",
@@ -251,7 +251,7 @@ static void PS_(test_basic)(PS_(type) (*const parent_new)(void *),
 		int is_grow;
 		t = test + i;
 		if(!(t->data = parent_new(parent))) { assert(0); return; }
-		PS_(to_string)(&t->data, &z);
+		PS_(to_string)(t->data, &z);
 		printf("%lu: came up with %s.\n", (unsigned long)i, z);
 		/*success = S_(set_reserve)(&set, 1);
 		assert(success && set.entries);

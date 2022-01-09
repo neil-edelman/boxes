@@ -244,13 +244,13 @@ static int PS_(in_stack_range)(const struct S_(set) *const set,
 #define QUOTE(name) QUOTE_(name)
 #ifdef SET_TEST
 static void PS_(graph)(const struct S_(set) *const set, const char *const fn);
-static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
+static void (*PS_(to_string))(PS_(ctype), char (*)[12]);
 #else
 static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	(void)set, (void)fn;
 }
-static void PS_(to_string)(const PS_(type) *data, char (*z)[12])
-	{ (void)data, strcpy(*z, "noinfo"); }
+static void PS_(to_string)(PS_(ctype) data, char (*z)[12])
+	{ (void)data, strcpy(*z, "<key>"); }
 #endif
 
 /** Moves the index `victim` to the top of the collision stack in non-idle
@@ -266,12 +266,12 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 	PS_(grow_stack)(set);
 	vic = set->entries + victim, top = set->entries + set->top;
 	assert(vic->next != SETnull && top->next == SETnull); /* Occupied to vacant. */
-	PS_(to_string)(&vic->key, &z);
+	PS_(to_string)(PS_(entry_key)(vic), &z);
 	printf("move_to_top: victim \"%s\" moved from 0x%lx to top 0x%lx\n",
 		z, (unsigned long)victim, (unsigned long)set->top);
 	/* Search for the previous link in the linked-list. \O(|bucket|). */
 	for(to_next = SETnull, next = PS_(hash_to_bucket)(set, PS_(entry_hash)(vic));
-		assert(next < capacity), PS_(to_string)(&set->entries[next].key, &z), printf("searching for victim in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != victim;
+		assert(next < capacity), PS_(to_string)(set->entries[next].key, &z), printf("searching for victim in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != victim;
 		to_next = next, next = set->entries[next].next);
 	printf("got \"%s\"\n", z);
 	/* Move `vic` to `top`. */
@@ -367,9 +367,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		/* Where it is closed. */
 		g = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(idx));
 		{
-			PS_(type) key = PS_(entry_key)(idx);
 			char z[12];
-			PS_(to_string)(&key, &z);
+			PS_(to_string)(PS_(entry_key)(idx), &z);
 			printf("\"%s\"->0x%lx ", z, (unsigned long)g);
 		}
 		/* Like consistent hashing, because it's a power-of-two size,
@@ -383,7 +382,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 				&& (head = set->entries + h, assert(head->next != SETnull),
 				g == PS_(hash_to_bucket)(set, PS_(entry_hash)(head)))) {
 				char y[12];
-				PS_(to_string)(&head->key, &y);
+				PS_(to_string)(head->key, &y);
 				printf("future 0x%lx \"%s\"->0x%lx will go instead, ",
 					(unsigned long)h, y, (unsigned long)g);
 				memcpy(go, head, sizeof *head);
@@ -423,8 +422,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		struct PS_(entry) *const closed = set->entries + cl;
 		assert(cl != w);
 		{
-			PS_(type) key = PS_(entry_key)(waiting);
-			PS_(to_string)(&key, &z);
+			PS_(to_string)(PS_(entry_key)(waiting), &z);
 			printf("B.\t0x%lx: \"%s\"->%lx ",
 				(unsigned long)w, z, (unsigned long)cl);
 		}
@@ -462,8 +460,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		assert(h != wait && head->next != SETnull);
 		PS_(grow_stack)(set), top = set->entries + set->top;
 		{
-			PS_(type) key = PS_(entry_key)(waiting);
-			PS_(to_string)(&key, &z);
+			PS_(to_string)(PS_(entry_key)(waiting), &z);
 			printf("\t0x%lx: \"%s\" to stack 0x%lx.\n",
 				(unsigned long)wait, z, (unsigned long)set->top);
 		}
@@ -476,12 +473,10 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	printf("buffer::rehash: final top 0x%lx\n", (long)set->top);
 	for(j = 0; j < PS_(capacity)(set); j++) {
 		struct PS_(entry) *je = set->entries + j;
-		PS_(type) key;
 		char z[12];
 		printf("\t0x%lx: ", (unsigned long)j);
 		if(je->next == SETnull) { printf("--\n"); continue; }
-		key = PS_(entry_key)(je);
-		PS_(to_string)(&key, &z);
+		PS_(to_string)(PS_(entry_key)(je), &z);
 		printf("\"%s\"", z);
 		if(je->next == SETend) { printf("\n"); continue; }
 		printf(" -> 0x%lx\n", (unsigned long)je->next);
@@ -510,7 +505,7 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	PS_(uint) hash, idx, next = SETend /* The end of a linked-list. */, size;
 	char z[12];
 	assert(set && key);
-	PS_(to_string)(&key, &z);
+	PS_(to_string)(key, &z);
 	if(eject) *eject = 0;
 	hash = PS_(hash)(key);
 	size = set->size;
@@ -703,11 +698,11 @@ static PS_(type) S_(set_next_key)(struct S_(set_iterator) *const it) {
 /* <!-- box (multiple traits) */
 #define BOX_ PS_
 #define BOX_CONTAINER struct S_(set)
-#define BOX_CONTENTS PS_(type)
+#define BOX_CONTENTS struct PS_(entry)
 
 #ifdef SET_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PS_(to_string))(const PS_(type) *, char (*)[12]);
+static void (*PS_(to_string))(PS_(ctype), char (*)[12]);
 static const char *(*PS_(set_to_string))(const struct S_(set) *);
 #include "../test/test_set.h"
 #endif /* test --> */
@@ -737,7 +732,7 @@ static void (*const TSZ_(actual_to_string))(PS_(ctype), char (*const)[12])
 	= (SET_TO_STRING);
 /** This is to line up the set, which can have <typedef:<PS>type> a pointer or
  not, with to string, which requires a pointer. Call
- <data:<TSZ>actual_to_string> with a dereference on `indirect` and `z`. */
+ <data:<TSZ>actual_to_string> with key of `entry` and `z`. */
 static void TSZ_(thunk_to_string)(const struct PS_(entry) *const entry,
 	char (*const z)[12]) { TSZ_(actual_to_string)(PS_(entry_key)(entry), z); }
 #define TO_STRING &TSZ_(thunk_to_string)
@@ -746,7 +741,8 @@ static void TSZ_(thunk_to_string)(const struct PS_(entry) *const entry,
 #include "to_string.h" /** \include */
 #ifdef SET_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef SET_TEST
-static PSZ_(to_string_fn) PS_(to_string) = PSZ_(to_string);
+static void (*PS_(to_string))(PS_(ctype), char (*const)[12])
+	= TSZ_(actual_to_string);
 static const char *(*PS_(set_to_string))(const struct S_(set) *)
 	= &SZ_(to_string);
 #endif /* expect --> */
