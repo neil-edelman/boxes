@@ -87,14 +87,15 @@
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0, 0 }
-/* fixme: ~0^(~0>>1)[+1] would be more energy efficient, since we're not using
- half the range. Make sure one splits <fn:<PS>buffer> from the rest, whose
- value is reliant on -1. */
-/* Use negative values of <typedef:<PS>uint> to store special things, such that
- range of an index is 3 less than the maximum. (I think these work on
- mathematically-impaired representations, ones', s&m, and odd TI padding.) */
-#define SETm1 ((PS_(uint))~(PS_(uint))0)
-#define SETm2 (SETm1 - 1)
+/* When a <typedef:<PS>uint> represents an address in the table, use the sign
+ bit to store out-of-band flags, (such that range of an index is one bit less.)
+ Choose representations that probably save power, since there are lots. We
+ cannot save this in an `enum` because don't know maximum. */
+#define SETm1 ((PS_(uint))~(PS_(uint))0) /* 2's compliment -1. */
+#define SETmax (SETm1 >> 1) /* Minus sign bit. */
+#define SETlimit (SETmax + 1) /* Cardinality. */
+#define SETend (SETlimit)
+#define SETnull (SETlimit + 1)
 #endif /* idempotent --> */
 
 
@@ -142,7 +143,7 @@ static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
  table. When a collision occurs, we push the entry out to an unoccupied stack
  in the same table. */
 struct PS_(entry) {
-	PS_(uint) next; /* -2 null, -1 end */
+	PS_(uint) next; /* `SETnull`, `SETend`, accepted, half the size. */
 #ifndef SET_RECALCULATE /* <!-- cache */
 	PS_(uint) hash;
 #endif /* cache --> */
@@ -154,7 +155,7 @@ struct PS_(entry) {
 /** Fill `entry` with `key` and `hash`. The entry must be empty. */
 static void PS_(fill_entry)(struct PS_(entry) *const entry,
 	const PS_(type) key, const PS_(uint) hash) {
-	assert(entry && entry->next == SETm2);
+	assert(entry && entry->next == SETnull);
 #ifndef SET_RECALCULATE /* <!-- cache */
 	entry->hash = hash;
 #else /* cache --><!-- !cache */
@@ -165,13 +166,12 @@ static void PS_(fill_entry)(struct PS_(entry) *const entry,
 #else /* !inv --><!-- inv */
 	(void)key;
 #endif /* inv --> */
-	/* next of -1: _this_ entry's valid, but the next one isn't. */
-	entry->next = SETm1;
+	entry->next = SETend;
 }
 
 /** Gets the hash of an occupied `entry`, which should be consistent. */
 static PS_(uint) PS_(entry_hash)(const struct PS_(entry) *const entry) {
-	assert(entry && entry->next != SETm2);
+	assert(entry && entry->next != SETnull);
 #ifdef SET_RECALCULATE
 	return PS_(hash)(&entry->data);
 #else
@@ -181,7 +181,7 @@ static PS_(uint) PS_(entry_hash)(const struct PS_(entry) *const entry) {
 
 /** Gets the key of an occupied `entry`. */
 static PS_(type) PS_(entry_key)(const struct PS_(entry) *const entry) {
-	assert(entry && entry->next != SETm2);
+	assert(entry && entry->next != SETnull);
 #ifdef SET_INVERSE_HASH
 	return PS_(inverse_hash_fn)(&entry->hash);
 #else
@@ -196,7 +196,7 @@ static PS_(type) PS_(entry_key)(const struct PS_(entry) *const entry) {
 struct S_(set) {
 	struct PS_(entry) *entries; /* @ has zero/one key specified by `next`. */
 	PS_(uint) size; /* How many keys, <= capacity. */
-	PS_(uint) top; /* -1 no stack; collided entries. */
+	PS_(uint) top; /* Collided entries, `SETend` accepted. */
 	unsigned log_capacity, unused; /* Applies to entries. */
 };
 
@@ -215,8 +215,8 @@ static PS_(uint) PS_(hash_to_bucket)(const struct S_(set) *const set,
 static void PS_(grow_stack)(struct S_(set) *const set) {
 	PS_(uint) top = set->top;
 	assert(set && set->entries && top);
-	top = (top == SETm1 ? PS_(capacity)(set) : top) - 1;
-	while(set->entries[top].next != SETm2) assert(top), top--;
+	top = (top == SETend ? PS_(capacity)(set) : top) - 1;
+	while(set->entries[top].next != SETnull) assert(top), top--;
 	set->top = top;
 }
 
@@ -224,7 +224,7 @@ static void PS_(grow_stack)(struct S_(set) *const set) {
  I wanted to change the direction.) */
 static int PS_(in_stack_range)(const struct S_(set) *const set,
 	const PS_(uint) idx)
-	{ return assert(set), set->top != SETm1 && set->top <= idx; }
+	{ return assert(set), set->top != SETend && set->top <= idx; }
 
 /***********fixme*/
 #define QUOTE_(name) #name
@@ -252,18 +252,18 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 	assert(set->size < capacity && victim < capacity);
 	PS_(grow_stack)(set);
 	vic = set->entries + victim, top = set->entries + set->top;
-	assert(vic->next != SETm2 && top->next == SETm2); /* Occupied to vacant. */
+	assert(vic->next != SETnull && top->next == SETnull); /* Occupied to vacant. */
 	PS_(to_string)(&vic->key, &z);
 	printf("move_to_top: victim \"%s\" moved from 0x%lx to top 0x%lx\n",
 		z, (unsigned long)victim, (unsigned long)set->top);
 	/* Search for the previous link in the linked-list. \O(|bucket|). */
-	for(to_next = SETm2, next = PS_(hash_to_bucket)(set, PS_(entry_hash)(vic));
+	for(to_next = SETnull, next = PS_(hash_to_bucket)(set, PS_(entry_hash)(vic));
 		assert(next < capacity), PS_(to_string)(&set->entries[next].key, &z), printf("searching for victim in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != victim;
 		to_next = next, next = set->entries[next].next);
 	printf("got \"%s\"\n", z);
 	/* Move `vic` to `top`. */
-	if(to_next != SETm2) set->entries[to_next].next = set->top;
-	memcpy(top, vic, sizeof *vic), vic->next = SETm2;
+	if(to_next != SETnull) set->entries[to_next].next = set->top;
+	memcpy(top, vic, sizeof *vic), vic->next = SETnull;
 }
 
 /** `set` will be searched linearly for `key` which has `hash`.
@@ -275,7 +275,7 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 	assert(set && set->entries && set->log_capacity);
 	entry = set->entries + (idx = PS_(hash_to_bucket)(set, hash));
 	/* Not the start of a bucket: empty or in the collision stack. */
-	if((next = entry->next) == SETm2
+	if((next = entry->next) == SETnull
 		|| PS_(in_stack_range)(set, idx)
 		&& idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
 	for( ; ; ) {
@@ -285,12 +285,12 @@ static struct PS_(entry) *PS_(get)(struct S_(set) *const set,
 		const int hashes_are_equal = hash == entry->hash;
 #endif /* cache --> */
 		if(hashes_are_equal && PS_(equal)(key, entry->key)) return entry;
-		if(next == SETm1) return 0; /* -1 used to end the bucket. */
+		if(next == SETend) return 0; /* -1 used to end the bucket. */
 		idx = next;
 		assert(idx < PS_(capacity)(set) && PS_(in_stack_range)(set, idx));
 		entry = set->entries + idx;
 		next = entry->next;
-		assert(next != SETm2); /* -2 null: linked-list integrity. */
+		assert(next != SETnull); /* -2 null: linked-list integrity. */
 	}
 }
 
@@ -305,20 +305,18 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	const unsigned log_c0 = set->log_capacity;
 	unsigned log_c1;
 	/* fixme: this will have to be updated because it relies on -1. */
-	const PS_(uint) limit = SETm1 ^ (SETm1 >> 1) /* TI C6000, _etc_ works? */,
-		c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
+	const PS_(uint) c0 = log_c0 ? (PS_(uint))1 << log_c0 : 0;
 	PS_(uint) c1, size1, i, wait, mask;
 	char fn[64];
-
-	assert(set && n <= SETm1 && set->size <= SETm1 && limit && limit <= SETm1);
-	assert((!set->entries && !set->size && !log_c0 && !c0
+	assert(set && set->size <= SETlimit
+		&& (!set->entries && !set->size && !log_c0 && !c0
 		|| set->entries && set->size <= c0 && log_c0 >= 3));
-	printf("buffer: max %lu, limit %lu, entries %lu/%lu, new %lu\n",
-		(unsigned long)SETm1, (unsigned long)limit,
+	printf("buffer: limit %lu, entries %lu/%lu, new %lu\n",
+		(unsigned long)SETlimit,
 		(unsigned long)set->size, (unsigned long)c0, (unsigned long)n);
 
 	/* Can we satisfy `n` growth from the buffer? */
-	if(SETm1 - set->size < n || limit < (size1 = set->size + n))
+	if(SETm1 - set->size < n || SETlimit < (size1 = set->size + n))
 		return errno = ERANGE, 0;
 	if(set->entries) log_c1 = log_c0, c1 = c0 ? c0 : 1;
 	else             log_c1 = 3,      c1 = 8;
@@ -334,26 +332,25 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		(unsigned long)c0, (unsigned long)c1, (unsigned long)size1);
 	if(!(entries = realloc(set->entries, sizeof *entries * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	if(!set->entries) set->top = SETm1; /* Idle `top` initialized here. */
+	set->top = SETend; /* Idle `top` initialized, or reset. */
 	set->entries = entries, set->log_capacity = log_c1;
 
 	/* Initialize new values. Reset the stack. Mask off the added bits. */
 	{ struct PS_(entry) *e = entries + c0, *const e_end = entries + c1;
-		for( ; e < e_end; e++) e->next = SETm2; }
-	set->top = SETm1;
+		for( ; e < e_end; e++) e->next = SETnull; }
 	mask = (((PS_(uint))1 << log_c0) - 1) ^ (((PS_(uint))1 << log_c1) - 1);
 
 	/* Rehash most closed entries in the lower half. */
 	printf("buffer: rehash %lu entries; mask 0x%lx.\n",
 		(unsigned long)c0, (unsigned long)mask);
-	wait = SETm1;
+	wait = SETend;
 	for(i = 0; i < c0; i++) {
 		struct PS_(entry) *idx, *go;
 		PS_(uint) g, hash;
 		idx = set->entries + i;
 		printf("A.\t0x%lx: ", (unsigned long)i);
 		/* Empty; don't have to do anything. */
-		if(idx->next == SETm2) { printf("empty.\n"); continue; }
+		if(idx->next == SETnull) { printf("empty.\n"); continue; }
 		/* Where it is closed. */
 		g = PS_(hash_to_bucket)(set, hash = PS_(entry_hash)(idx));
 		{
@@ -364,25 +361,25 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 		/* Like consistent hashing, because it's a power-of-two size,
 		 `E[old/new]` capacity that a closed entry will remain where it is. */
-		if(i == g) { idx->next = SETm1; printf("chill.\n"); continue; }
-		if((go = set->entries + g)->next == SETm2) {
+		if(i == g) { idx->next = SETend; printf("chill.\n"); continue; }
+		if((go = set->entries + g)->next == SETnull) {
 			/* Priority is given to the closed head entries; simpler later. */
 			struct PS_(entry) *head;
 			PS_(uint) h = g & ~mask; assert(h <= g);
 			if(h < g && i < h /* Lookahead to the first entry in the bucket. */
-				&& (head = set->entries + h, assert(head->next != SETm2),
+				&& (head = set->entries + h, assert(head->next != SETnull),
 				g == PS_(hash_to_bucket)(set, PS_(entry_hash)(head)))) {
 				char y[12];
 				PS_(to_string)(&head->key, &y);
 				printf("future 0x%lx \"%s\"->0x%lx will go instead, ",
 					(unsigned long)h, y, (unsigned long)g);
 				memcpy(go, head, sizeof *head);
-				go->next = SETm1, head->next = SETm2;
+				go->next = SETend, head->next = SETnull;
 				/* Fall-though -- the entry still needs to be put on waiting. */
 			} else {
 				/* If the new entry is available and this entry is first. */
 				memcpy(go, idx, sizeof *idx);
-				go->next = SETm1, idx->next = SETm2;
+				go->next = SETend, idx->next = SETnull;
 				printf("to vacant.\n");
 				continue;
 			}
@@ -398,7 +395,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	{
 		PS_(uint) w = wait;
 		printf("waiting: { ");
-		while(w != SETm1) {
+		while(w != SETend) {
 			printf("0x%lx ", (unsigned long)w);
 			w = set->entries[w].next;
 		}
@@ -406,7 +403,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	}
 
 	/* Search waiting stack for rest of the closed that moved concurrently. */
-	{ PS_(uint) prev = SETm1, w = wait; while(w != SETm1) {
+	{ PS_(uint) prev = SETend, w = wait; while(w != SETend) {
 		char z[12];
 		struct PS_(entry) *waiting = set->entries + w;
 		PS_(uint) cl = PS_(hash_to_bucket)(set, PS_(entry_hash)(waiting));
@@ -418,15 +415,15 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			printf("B.\t0x%lx: \"%s\"->%lx ",
 				(unsigned long)w, z, (unsigned long)cl);
 		}
-		if(closed->next == SETm2) {
-			memcpy(closed, waiting, sizeof *waiting), closed->next = SETm1;
+		if(closed->next == SETnull) {
+			memcpy(closed, waiting, sizeof *waiting), closed->next = SETend;
 			printf("to vacant.\n");
-			if(prev != SETm1) set->entries[prev].next = waiting->next;
+			if(prev != SETend) set->entries[prev].next = waiting->next;
 			if(wait == w) wait = waiting->next; /* First, modify head. */
-			w = waiting->next, waiting->next = SETm2;
+			w = waiting->next, waiting->next = SETnull;
 		} else {
 			/* Not in the wait stack. */
-			assert(closed->next == SETm1);
+			assert(closed->next == SETend);
 			printf("wait.\n");
 			prev = w, w = waiting->next;
 		}
@@ -435,7 +432,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	{
 		PS_(uint) w = wait;
 		printf("waiting: { ");
-		while(w != SETm1) {
+		while(w != SETend) {
 			printf("0x%lx ", (unsigned long)w);
 			w = set->entries[w].next;
 		}
@@ -443,13 +440,13 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	}
 
 	/* Rebuild the (smaller?) top stack (high) from the waiting (low). */
-	while(wait != SETm1) {
+	while(wait != SETend) {
 		char z[12];
 		struct PS_(entry) *const waiting = set->entries + wait;
 		PS_(uint) h = PS_(hash_to_bucket)(set, PS_(entry_hash)(waiting));
 		struct PS_(entry) *const head = set->entries + h;
 		struct PS_(entry) *top;
-		assert(h != wait && head->next != SETm2);
+		assert(h != wait && head->next != SETnull);
 		PS_(grow_stack)(set), top = set->entries + set->top;
 		{
 			PS_(type) key = PS_(entry_key)(waiting);
@@ -459,7 +456,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 		memcpy(top, waiting, sizeof *waiting);
 		top->next = head->next, head->next = set->top;
-		wait = waiting->next, waiting->next = SETm2; /* Pop. */
+		wait = waiting->next, waiting->next = SETnull; /* Pop. */
 	}
 
 	{ PS_(uint) j;
@@ -469,11 +466,11 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		PS_(type) key;
 		char z[12];
 		printf("\t0x%lx: ", (unsigned long)j);
-		if(je->next == SETm2) { printf("--\n"); continue; }
+		if(je->next == SETnull) { printf("--\n"); continue; }
 		key = PS_(entry_key)(je);
 		PS_(to_string)(&key, &z);
 		printf("\"%s\"", z);
-		if(je->next == SETm1) { printf("\n"); continue; }
+		if(je->next == SETend) { printf("\n"); continue; }
 		printf(" -> 0x%lx\n", (unsigned long)je->next);
 	}}
 	return 1;
@@ -497,7 +494,7 @@ static int PS_(false)(PS_(type) original, PS_(type) replace)
 static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 	PS_(type) key, PS_(type) *eject) {
 	struct PS_(entry) *entry;
-	PS_(uint) hash, idx, next = SETm1 /* The end of a linked-list. */, size;
+	PS_(uint) hash, idx, next = SETend /* The end of a linked-list. */, size;
 	char z[12];
 	assert(set && key);
 	PS_(to_string)(&key, &z);
@@ -510,21 +507,21 @@ static int PS_(put)(struct S_(set) *const set, const PS_(replace_fn) replace,
 			{ if(eject) *eject = key; return 1; } /* Decided not to replace. */
 		if(eject) *eject = PS_(entry_key)(entry);
 		/* Cut the tail and put new element in the head. */
-		next = entry->next, entry->next = SETm2, assert(next != SETm2);
+		next = entry->next, entry->next = SETnull, assert(next != SETnull);
 	} else { /* Expand. */
 		if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
 		entry = set->entries + (idx = PS_(hash_to_bucket)(set, hash));
 		/*printf("\tput expand: \"%s\" index 0x%lx from hash 0x%lx\n",
 			z, (unsigned long)idx, (unsigned long)hash);*/
 		size++;
-		if(entry->next != SETm2) { /* Unoccupied. */
+		if(entry->next != SETnull) { /* Unoccupied. */
 			int already_in_stack = PS_(hash_to_bucket)(set,
 				PS_(entry_hash)(entry)) != idx;
 			/*printf("\tis_in_stack 0x%lx: %d\n", (unsigned long)idx, is_in_stack);*/
 			PS_(move_to_top)(set, idx);
-			next = already_in_stack ? SETm1 : set->top;
-			assert(entry->next == SETm2
-				&& (next == SETm1 || set->entries[next].next != SETm2));
+			next = already_in_stack ? SETend : set->top;
+			assert(entry->next == SETnull
+				&& (next == SETend || set->entries[next].next != SETnull));
 		}
 	}
 	PS_(fill_entry)(entry, key, hash);
@@ -550,7 +547,7 @@ static void S_(set_clear)(struct S_(set) *const set) {
 	assert(set);
 	if(!set->entries) { assert(!set->log_capacity); return; }
 	for(b = set->entries, b_end = b + (1 << set->log_capacity); b < b_end; b++)
-		b->next = SETm2;
+		b->next = SETnull;
 	set->size = 0;
 }
 
@@ -648,7 +645,7 @@ static PS_(type) *PS_(next)(struct PS_(iterator) *const it) {
 	while(it->idx < entry_end) {
 		struct PS_(entry) *b = it->set->entries + it->idx;
 		it->idx++;
-		if(b->next != SETm2) return &b->key; /* Fixme! how to return address? */
+		if(b->next != SETnull) return &b->key; /* Fixme! how to return address? */
 	}
 	it->set = 0, it->idx = 0;
 	return 0;

@@ -19,9 +19,9 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 	size_t no = 0;
 	assert(set && idx < PS_(capacity)(set));
 	entry = set->entries + idx;
-	if((next = entry->next) == SETm2
+	if((next = entry->next) == SETnull
 		|| idx != PS_(hash_to_bucket)(set, PS_(entry_hash)(entry))) return 0;
-	for( ; no++, next != SETm1; next = entry->next, assert(next != SETm2)) {
+	for( ; no++, next != SETend; next = entry->next, assert(next != SETnull)) {
 		idx = next;
 		assert(idx < PS_(capacity)(set)
 			/* We want to count intermediates.
@@ -115,7 +115,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",
 			top, bgc, (unsigned long)i);
-		if(e->next != SETm2) {
+		if(e->next != SETnull) {
 			const char *const closed
 				= PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) == i
 				? "⬤" : "◯";
@@ -135,7 +135,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
 		struct PS_(entry) *e = set->entries + i;
 		PS_(uint) left, right;
-		if((right = e->next) == SETm2 || right == SETm1) continue;
+		if((right = e->next) == SETnull || right == SETend) continue;
 		if(PS_(hash_to_bucket)(set, PS_(entry_hash)(e)) != i) {
 			fprintf(fp, "\tset:%lu -> i0x%lx;\n", i, (unsigned long)right);
 			continue;
@@ -146,8 +146,8 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			(unsigned long)right, (unsigned long)right,
 			(unsigned long)i, (unsigned long)right);
 		while(left = right, e = set->entries + left,
-			(right = e->next) != SETm1) {
-			assert(right != SETm2);
+			(right = e->next) != SETend) {
+			assert(right != SETnull);
 			fprintf(fp,
 				"\te%lu [label=\"0x%lx\"];\n"
 				"\te%lu -> e%lu;\n",
@@ -220,9 +220,9 @@ static void PS_(legit)(const struct S_(set) *const set) {
 	assert(set->log_capacity >= 3);
 	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
 		struct PS_(entry) *e = set->entries + i;
-		if(e->next == SETm2) continue;
+		if(e->next == SETnull) continue;
 		size++;
-		if(e->next == SETm1) end++;
+		if(e->next == SETend) end++;
 		if(i == PS_(hash_to_bucket)(set, PS_(entry_hash)(e))) start++;
 	}
 	assert(set->size == size && end == start && size >= start);
