@@ -394,13 +394,21 @@ static void PM_(test_basic)(PM_(key) (*const parent_new)(void *),
 static void M_(hash_test)(PM_(key) (*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(HASH_NAME) ">hash of key <" QUOTE(HASH_KEY)
-		"> was created using: HASH_CODE <" QUOTE(HASH_CODE) ">; "
+		"> was created using: "
+#ifdef HASH_VALUE
+		"HASH_VALUE <" QUOTE(HASH_VALUE) ">; "
+#endif
+		"HASH_UINT <" QUOTE(HASH_UINT) ">; "
+		"HASH_CODE <" QUOTE(HASH_CODE) ">; "
 		"HASH_IS_EQUAL <" QUOTE(HASH_IS_EQUAL) ">; "
 #ifdef HASH_NO_CACHE
 		"HASH_NO_CACHE; "
 #endif
-		"HASH_TEST<" QUOTE(HASH_TEST) ">; "
-		"%stesting:\n", parent_new ? "parent key specified; " : "");
+#ifdef HASH_INVERT
+		"HASH_INVERT; "
+#endif
+		"HASH_TEST; "
+		"testing%s:\n", parent ? "(pointer)" : "");
 	PM_(test_basic)(parent_new, parent);
 	fprintf(stderr, "Done tests of <" QUOTE(HASH_NAME) ">hash.\n\n");
 }

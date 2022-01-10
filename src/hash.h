@@ -131,11 +131,10 @@ typedef PM_(uint) (*PM_(code_fn))(PM_(ctype));
 static const PM_(code_fn) PM_(code) = (HASH_CODE);
 
 #ifdef HASH_INVERSE /* <!-- inv */
-/** Defining `HASH_INVERSE` says that the <typedef:<PM>key> forms a
- bijection with <typedef:<PM>uint>; this is inverse-mapping to
- <typedef:<PM>code_fn>. Used to avoid having to store the <typedef:<PM>key>. */
+/** Defining `HASH_INVERSE` says that the <typedef:<PM>key> forms a bijection
+ with <typedef:<PM>uint>; this is inverse-mapping to <typedef:<PM>code_fn>.
+ Used to avoid having to store the <typedef:<PM>key>. */
 typedef PM_(key) (*PM_(inverse_code_fn))(PM_(uint));
-#error Fixme. Think about how to iterate. Maybe `it` has a temp field?
 #endif /* inv --> */
 
 /*Type is copied extensively,
@@ -212,9 +211,8 @@ static PM_(key) PM_(entry_key)(const struct PM_(entry) *const entry) {
  ![States.](../web/states.png) */
 struct M_(hash) {
 	struct PM_(entry) *entries; /* @ has zero/one key specified by `next`. */
-	PM_(uint) size; /* How many keys, <= capacity. */
-	PM_(uint) top; /* Collided entries, `SETend` accepted. */
 	unsigned log_capacity, unused; /* Applies to entries. */
+	PM_(uint) size, top; /* size <= capacity; collided stack, `SETend` used. */
 };
 
 /** The capacity of a non-idle `hash` is always a power-of-two. */
@@ -544,8 +542,8 @@ static int PM_(put)(struct M_(hash) *const hash, const PM_(replace_fn) replace,
 }
 
 /** Initialises `hash` to idle. @order \Theta(1) @allow */
-static void M_(hash)(struct M_(hash) *const hash) { assert(hash); hash->entries = 0;
-	hash->log_capacity = 0; hash->size = 0; hash->top = 0; }
+static void M_(hash)(struct M_(hash) *const hash) { assert(hash);
+	hash->entries = 0; hash->log_capacity = 0; hash->size = 0; hash->top = 0; }
 
 /** Destroys `hash` and returns it to idle. @allow */
 static void M_(hash_)(struct M_(hash) *const hash)

@@ -11,7 +11,7 @@
 #include "orcish.h"
 
 
-/* An X-macro, preferable to `HASH_KEY const char *`. */
+/* An X-macro, much preferable to `HASH_KEY const char *`. */
 #define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
 	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
 	X(ZodiacCount)
@@ -21,24 +21,24 @@ enum zodiac { ZODIAC(X) };
 #define X(n) #n
 static const char *zodiac[] = { ZODIAC(X) };
 #undef X
-/** Monotonic values is a solid hash code. */
-static unsigned short hash_zodiac(const enum zodiac z)
-	{ return assert(z <= USHRT_MAX), (unsigned short)z; }
+static unsigned hash_zodiac(const enum zodiac z) { return z; } /* Monotonic! */
 static int zodiac_is_equal(const enum zodiac a, const enum zodiac b)
 	{ return a == b; }
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
-	{ strcpy(*a, zodiac[z]); }
+	{ strcpy(*a, zodiac[z]); /* strlen z <= 11 */ }
 #define HASH_NAME zodiac
 #define HASH_KEY enum zodiac
 #define HASH_CODE &hash_zodiac
-#define HASH_UINT unsigned short
-#define HASH_NO_CACHE /* A cache would be a waste of space. */
 #define HASH_IS_EQUAL &zodiac_is_equal
+/* The following are not really necessary: */
+#define HASH_UINT unsigned /* <tag:<PM>bucket>: uint next, enum key */
+#define HASH_NO_CACHE /* Caching `x -> x` would be a waste of space. */
 #define HASH_TEST /* Testing requires to string. */
 #define HASH_EXPECT_TRAIT
 #include "../src/hash.h"
 #define HASH_TO_STRING &zodiac_to_string
 #include "../src/hash.h"
+/* @implements  */
 static enum zodiac random_zodiac(void *const zero)
 	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
 
@@ -209,7 +209,7 @@ static unsigned int_from_void(void *const pool) { return int_from_pool(pool); }
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct int_pool ints = POOL_IDLE;
-	zodiac_hash_test(&random_zodiac, 0);
+	zodiac_hash_test(&random_zodiac, 0); /* Don't require any space. */
 	nato();
 	string_hash_test(&str16_from_void, &strings), str16_pool_(&strings);
 	int_hash_test(&int_from_void, &ints), int_pool_(&ints);
