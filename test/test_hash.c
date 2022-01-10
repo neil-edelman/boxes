@@ -43,7 +43,6 @@ static enum zodiac random_zodiac(void *const zero)
 	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
 
 
-
 /* A minimalish hash that does something useful, but needlessly repeating
  `strlen` a lot; the words are grouped by their lengths'. */
 static int length1_equal(const char *const a, const char *const b)
@@ -53,38 +52,39 @@ static int length1_equal(const char *const a, const char *const b)
 #define HASH_CODE &strlen
 #define HASH_IS_EQUAL &length1_equal
 #include "../src/hash.h"
-
-static unsigned length2_code(const unsigned length) { return length; }
-static unsigned length2_is_equal(const unsigned a, const unsigned b)
-	{ return a == b; }
-#define HASH_NAME length2
-#define HASH_KEY unsigned
-#define HASH_UINT unsigned
-#define HASH_CODE &length2_code
-#define HASH_IS_EQUAL &length2_is_equal
-#define HASH_NO_CACHE
-#include "../src/hash.h"
-
 /* Can use it to count bytes in words in \O(\sum `bytes`). */
-struct length_node {
+struct length1_node {
 	char word[16];
 	size_t collisions;
-	struct length_node *next;
+	struct length1_node *next;
 };
-static struct length_node *length_upcast(char *const a)
-	{ return (struct length_node *)(void *)a; }
+static struct length1_node *length1_upcast(char *const a)
+	{ return (struct length1_node *)(void *)a; }
 static int length1_collide(char *a_original, char *b_replace) {
-	struct length_node *wa = length_upcast(a_original),
-		*wb = length_upcast(b_replace);
+	struct length1_node *wa = length1_upcast(a_original),
+		*wb = length1_upcast(b_replace);
 	wb->next = wa;
 	wb->collisions = wa->collisions + 1;
 	return 1;
 }
+
+
+static unsigned length2_code(const unsigned length) { return length; }
+static int length2_is_equal(const unsigned a, const unsigned b)
+	{ return a == b; }
+#define HASH_NAME length2
+#define HASH_KEY unsigned
+#define HASH_VALUE unsigned /* Count collisions. */
+#define HASH_UINT unsigned
+#define HASH_NO_CACHE
+#define HASH_CODE &length2_code
+#define HASH_IS_EQUAL &length2_is_equal
+#include "../src/hash.h"
 static int length2_collide(unsigned a, unsigned b) {
 	return 0;
 }
 static void nato(void) {
-	struct length_node words[] = {
+	struct length1_node words[] = {
 #define X(a) { #a, 0, 0 }
 		X(Alpha), X(Bravo), X(Charlie), X(Delta), X(Echo), X(Foxtrot), X(Golf),
 		X(Hotel), X(India), X(Juliet), X(Kilo), X(Lima), X(Mike), X(November),
@@ -106,8 +106,8 @@ static void nato(void) {
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
 		"length\tcount\twords\n");
 	for(length1_hash_begin(&it1, &lens1); w = length1_hash_next_key(&it1); ) {
-		struct length_node *word, *w1;
-		word = w1 = length_upcast(w);
+		struct length1_node *word, *w1;
+		word = w1 = length1_upcast(w);
 		printf("%lu\t%lu\t{", (unsigned long)strlen(w),
 			(unsigned long)word->collisions + 1);
 		do printf("%s%s", word == w1 ? "" : ",", w1->word);
