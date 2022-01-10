@@ -93,8 +93,8 @@
 #define HASH_IDLE { 0, 0, 0, 0, 0 }
 /* When a <typedef:<PM>uint> represents an address in the table, use the sign
  bit to store out-of-band flags, (such that range of an index is one bit less.)
- Choose representations that probably save power, since there are lots. We
- cannot save this in an `enum` because don't know maximum. */
+ Choose representations that probably save power, since there are potently
+ lots. We cannot save this in an `enum` because don't know maximum. */
 #define SETm1 ((PM_(uint))~(PM_(uint))0) /* 2's compliment -1. */
 #define SETmax (SETm1 >> 1) /* Sign bit excluded. */
 #define SETlimit (SETmax + 1) /* Cardinality. */
@@ -137,9 +137,6 @@ static const PM_(code_fn) PM_(code) = (HASH_CODE);
 typedef PM_(key) (*PM_(inverse_code_fn))(PM_(uint));
 #endif /* inv --> */
 
-/*Type is copied extensively,
- so if it's large, making it a pointer may improve performance.*/
-
 /** Equivalence relation between <typedef:<PM>ctype> that satisfies
  `<PM>is_equal_fn(a, b) -> <PM>HASH_CODE(a) == <PM>HASH_CODE(b)`. */
 typedef int (*PM_(is_equal_fn))(PM_(ctype) a, PM_(ctype) b);
@@ -150,11 +147,16 @@ static const PM_(is_equal_fn) PM_(equal) = (HASH_IS_EQUAL);
 #ifdef HASH_VALUE /* <!-- value */
 /** Defining `HASH_VALUE` creates another entry for associative maps. */
 typedef HASH_VALUE PM_(value);
-#endif /* value --> */
+/** Defining `HASH_VALUE` creates this entry association from key to value. */
+struct M_(hash_entry) { PM_(key) key; PM_(value) value; };
+/** If `HASH_VALUE`, then this is a map, and this is <tag:<M>hash_entry>;
+ otherwise, it's a set, and this is <typedef:<PM>key>. */
+typedef struct M_(hash_entry) PM_(port);
+#else /* value --><!-- !value */
+typedef PM_(key) PM_(port);
+#endif /* !value --> */
 
-/** Buckets are linked-lists of entries, and entries are stored in a code
- table. When a collision occurs, we push the entry out to an unoccupied stack
- in the same table. */
+/** Private entries are what is stored in the <tag:<M>hash>. */
 struct PM_(entry) {
 	PM_(uint) next; /* `SETnull`, `SETend`, accepted, half the size. */
 #ifndef HASH_NO_CACHE /* <!-- cache */
@@ -164,25 +166,30 @@ struct PM_(entry) {
 	PM_(key) key;
 #endif /* !inv --> */
 #ifdef HASH_VALUE
-	/*...place it with the key in a separate <tag:P_(entry)>. */
+	PM_(value) value;
 #endif
 };
 
-/** Fill `entry` with `key` and `code`. The entry must be empty. */
+/** Fill `entry` with `port` and `code`. The entry must be empty. */
 static void PM_(fill_entry)(struct PM_(entry) *const entry,
-	const PM_(key) key, const PM_(uint) code) {
+	/*const PM_(port) port*/const PM_(key) key, const PM_(uint) code) {
 	assert(entry && entry->next == SETnull);
+	entry->next = SETend;
 #ifndef HASH_NO_CACHE /* <!-- cache */
 	entry->code = code;
 #else /* cache --><!-- !cache */
 	(void)code;
 #endif /* !cache --> */
+
 #ifndef HASH_INVERSE /* <!-- !inv */
-	entry->key = key;
+	/*memcpy(, e.);*/ entry->key = key;
 #else /* !inv --><!-- inv */
 	(void)key;
 #endif /* inv --> */
-	entry->next = SETend;
+
+#ifdef HASH_VALUE /* <!-- value */
+	/*memcpy();*/
+#endif /* value --> */
 }
 
 /** Gets the code of an occupied `entry`, which should be consistent. */
@@ -206,7 +213,8 @@ static PM_(key) PM_(entry_key)(const struct PM_(entry) *const entry) {
 }
 
 /** To initialize, see <fn:<M>hash>, `HASH_IDLE`, `{0}` (`C99`,) or being
- `static`.
+ `static`. Buckets are linked-lists of entries. When a collision occurs, we
+ push the entry out to an unoccupied stack in the same table.
 
  ![States.](../web/states.png) */
 struct M_(hash) {
