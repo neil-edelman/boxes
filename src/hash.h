@@ -339,8 +339,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 	if(log_c0 == log_c1) return 1;
 
 	sprintf(fn, "graph/" QUOTE(HASH_NAME) "-resize-%u-%u-a-before.gv",
-		log_c0, log_c1);
-	PM_(graph)(hash, fn);
+		log_c0, log_c1), PM_(graph)(hash, fn);
 
 	/* Otherwise, need to allocate more. */
 	printf("buffer: %lu -> %lu to satisfy %lu.\n",
@@ -403,11 +402,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 		idx->next = wait, wait = i; /* Push for next sweep. */
 	}
 
-	sprintf(fn, "graph/" QUOTE(HASH_NAME) "-resize-%u-%u-b-waiting.gv",
-		log_c0, log_c1);
-	PM_(graph)(hash, fn);
-
-	{
+	/*{
 		PM_(uint) w = wait;
 		printf("waiting: { ");
 		while(w != SETend) {
@@ -415,7 +410,9 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 			w = hash->entries[w].next;
 		}
 		printf("} checking for stragglers.\n");
-	}
+	}*/
+	sprintf(fn, "graph/" QUOTE(HASH_NAME) "-resize-%u-%u-b-obvious.gv",
+		log_c0, log_c1), PM_(graph)(hash, fn);
 
 	/* Search waiting stack for rest of the closed that moved concurrently. */
 	{ PM_(uint) prev = SETend, w = wait; while(w != SETend) {
@@ -443,7 +440,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 		}
 	}}
 
-	{
+	/*{
 		PM_(uint) w = wait;
 		printf("waiting: { ");
 		while(w != SETend) {
@@ -451,7 +448,9 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 			w = hash->entries[w].next;
 		}
 		printf("} moving to stack.\n");
-	}
+	}*/
+	sprintf(fn, "graph/" QUOTE(HASH_NAME) "-resize-%u-%u-c-closed.gv",
+		log_c0, log_c1), PM_(graph)(hash, fn);
 
 	/* Rebuild the (smaller?) top stack (high) from the waiting (low). */
 	while(wait != SETend) {
@@ -472,7 +471,10 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 		wait = waiting->next, waiting->next = SETnull; /* Pop. */
 	}
 
-	{ PM_(uint) j;
+	sprintf(fn, "graph/" QUOTE(HASH_NAME) "-resize-%u-%u-d-final.gv",
+		log_c0, log_c1), PM_(graph)(hash, fn);
+
+	/*{ PM_(uint) j;
 	printf("buffer::recode: final top 0x%lx\n", (long)hash->top);
 	for(j = 0; j < PM_(capacity)(hash); j++) {
 		struct PM_(entry) *je = hash->entries + j;
@@ -483,7 +485,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 		printf("\"%s\"", z);
 		if(je->next == SETend) { printf("\n"); continue; }
 		printf(" -> 0x%lx\n", (unsigned long)je->next);
-	}}
+	}}*/
 	return 1;
 }
 
