@@ -4,7 +4,6 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#include <stddef.h> /* offhashof */
 #include <stdio.h>  /* fprintf FILE */
 #include <math.h>   /* sqrt NAN? */
 #ifndef NAN /* <https://stackoverflow.com/questions/5714131/nan-literal-in-c> */
@@ -261,14 +260,15 @@ static void PM_(test_basic)(PM_(key) (*const parent_new)(void *),
 	for(i = 0; i < test_size; i++) {
 		struct { PM_(uint) before, after; } size;
 		int is_grow;
+		int success;
 		t = test + i;
 		/*if(!(t->data = parent_new(parent))) { assert(0); return; }*/
 		t->data = parent_new(parent); /* fixme: Completely unchecked! */
 		PM_(to_string)(t->data, &z);
 		printf("%lu: came up with %s.\n", (unsigned long)i, z);
-		/*success = M_(hash_reserve)(&hash, 1);
+		success = M_(hash_buffer)(&hash, 1);
 		assert(success && hash.entries);
-		if(n == 0) assert(hash.log_capacity == 3 && !hash.size
+		/*if(n == 0) assert(hash.log_capacity == 3 && !hash.size
 			&& !hash.entries[0].first && !hash.entries[1].first
 			&& !hash.entries[2].first && !hash.entries[3].first
 			&& !hash.entries[4].first && !hash.entries[5].first

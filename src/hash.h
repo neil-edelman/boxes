@@ -498,6 +498,13 @@ static void M_(hash)(struct M_(hash) *const hash) { assert(hash);
 static void M_(hash_)(struct M_(hash) *const hash)
 	{ assert(hash), free(hash->entries); M_(hash)(hash); }
 
+/** Reserve at least `n` space for entries of `hash`. This will ensure that
+ there is space for those entries and may increase iteration time.
+ @return Success.
+ @throws[ERANGE] The request was unsatisfiable. @throws[realloc] @allow */
+static int M_(hash_buffer)(struct M_(hash) *const hash, const PM_(uint) n)
+	{ return assert(hash), PM_(buffer)(hash, n); }
+
 /** Clears and removes all entries from `hash`. The capacity and memory of the
  code table is preserved, but all previous values are un-associated. The load
  factor will be less until it reaches it's previous size.
@@ -522,16 +529,6 @@ static PM_(key) M_(hash_get)(struct M_(hash) *const hash, const PM_(key) key) {
 	b = PM_(get)(hash, key, PM_(code)(key));
 	return b ? PM_(entry_key)(b) : 0;
 }
-
-#if 0
-/** Reserve at least `reserve`, divided by the maximum load factor, space in
- the entries of `code`. @return Success.
- @throws[ERANGE] `reserve` plus the size would take a bigger number then could
- fit in a `size_t`. @throws[realloc] @allow */
-static int M_(hash_buffer)(struct M_(hash) *const code, const size_t reserve)
-	{ return code ? reserve > (size_t)-1 - code->size ? (errno = ERANGE, 0) :
-	PM_(reserve)(code, code->size + reserve) : 0; }
-#endif
 
 /* fixme: Buffering changes the outcome if it's already in the table, it
  creates a new code anyway. This is not a pleasant situation. */
@@ -661,8 +658,9 @@ static const char *(*PM_(hash_to_string))(const struct M_(hash) *);
 
 static void PM_(unused_base_coda)(void);
 static void PM_(unused_base)(void) {
-	M_(hash)(0); M_(hash_)(0); M_(hash_clear)(0); M_(hash_get)(0, 0);
-	/*M_(hash_reserve)(0, 0);*/ M_(hash_replace)(0, 0);  M_(hash_policy_put)(0, 0, 0);
+	M_(hash)(0); M_(hash_)(0); M_(hash_buffer)(0, 0); M_(hash_clear)(0);
+	M_(hash_get)(0, 0);
+	M_(hash_replace)(0, 0);  M_(hash_policy_put)(0, 0, 0);
 	/*M_(hash_remove)(0, 0);*/
 	M_(hash_begin)(0, 0); M_(hash_has_next)(0); M_(hash_next_key)(0);
 	PM_(unused_base_coda)();
