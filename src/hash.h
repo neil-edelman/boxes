@@ -15,7 +15,7 @@
 
  @param[HASH_NAME, HASH_KEY]
  `<M>` that satisfies `C` naming conventions when mangled and a valid
- <typedef:<PM>domain> associated therewith; required. `<PM>` is private, whose
+ <typedef:<PM>key> associated therewith; required. `<PM>` is private, whose
  names are prefixed in a manner to avoid collisions; any should be re-defined
  prior to use elsewhere.
 
@@ -116,30 +116,30 @@
 typedef HASH_UINT PM_(uint);
 
 /** Valid tag type defined by `HASH_KEY`. */
-typedef HASH_KEY PM_(domain);
+typedef HASH_KEY PM_(key);
 /** Used on read-only. This code makes the simplifying assumption that this is
- not `const`-qualified. (Not to be confused with <typedef:<PM>codomain>.) */
-typedef const PM_(domain) PM_(cdomain);
+ not `const`-qualified. */
+typedef const HASH_KEY PM_(ckey);
 
-/** A map from <typedef:<PM>cdomain> onto <typedef:<PM>uint>. In general, a
- good hash should use all the the argument and should as close as possible to a
+/** A map from <typedef:<PM>ckey> onto <typedef:<PM>uint>. In general, a good
+ hash should use all the the argument and should as close as possible to a
  discrete uniform distribution. It is up to the user to provide an appropriate
  hash code function. */
-typedef PM_(uint) (*PM_(code_fn))(PM_(cdomain));
+typedef PM_(uint) (*PM_(code_fn))(PM_(ckey));
 /* Check that `HASH_CODE` is a function implementing <typedef:<PM>code_fn>. */
 static const PM_(code_fn) PM_(code) = (HASH_CODE);
 
 #ifdef HASH_INVERSE /* <!-- inv */
-/** Defining `HASH_INVERSE` says that the <typedef:<PM>domain> forms a
- bijection with <typedef:<PM>uint>; this is inverse-mapping to
- <typedef:<PM>code_fn>. Used to avoid storing the key itself. */
-typedef PM_(domain) (*PM_(inverse_code_fn))(PM_(uint));
+/** Defining `HASH_INVERSE` says that the <typedef:<PM>key> forms a bijection
+ with <typedef:<PM>uint>; this is inverse-mapping to <typedef:<PM>code_fn>.
+ Used to avoid storing the key itself. */
+typedef PM_(key) (*PM_(inverse_code_fn))(PM_(uint));
 static const PM_(inverse_code_fn) PM_(inverse_code) = (HASH_INVERSE);
 #endif /* inv --> */
 
-/** Equivalence relation between <typedef:<PM>cdomain> that satisfies
+/** Equivalence relation between <typedef:<PM>ckey> that satisfies
  `<PM>is_equal_fn(a, b) -> <PM>HASH_CODE(a) == <PM>HASH_CODE(b)`. */
-typedef int (*PM_(is_equal_fn))(PM_(cdomain) a, PM_(cdomain) b);
+typedef int (*PM_(is_equal_fn))(PM_(ckey) a, PM_(ckey) b);
 /* Check that `HASH_IS_EQUAL` is a function implementing
  <typedef:<PM>is_equal_fn>. */
 static const PM_(is_equal_fn) PM_(equal) = (HASH_IS_EQUAL);
@@ -147,17 +147,19 @@ static const PM_(is_equal_fn) PM_(equal) = (HASH_IS_EQUAL);
 #ifdef HASH_VALUE /* <!-- value */
 /** Defining `HASH_VALUE` creates another entry for associative maps. */
 typedef HASH_VALUE PM_(value);
-/** Defining `HASH_VALUE` creates this entry association from key to value. */
-struct M_(hash_map) { PM_(domain) key; PM_(value) value; };
-/** If `HASH_VALUE`, then this is a <tag:<M>hash_map>; otherwise, it's a set,
- and this is the same as <typedef:<PM>domain>. */
+/** Defining `HASH_VALUE` creates this entry association from key to value.
+ @fixme Ugly. */
+struct M_(hash_map) { PM_(key) key; PM_(value) value; };
+/** If `HASH_VALUE`, then this is a <tag:<M>hash_map> from <typedef:<PM>ckey>,
+ the domain, to <typedef:<PM>value>, the <typedef:<PM>codomain>; otherwise,
+ it's a set, and this is the same as <typedef:<PM>key>. */
 typedef struct M_(hash_map) PM_(map);
 /** If `HASH_VALUE`, then <typedef:<PM>value> is the codomain; otherwise, it is
- the same as <typedef:<PM>domain>. */
+ the same as <typedef:<PM>key>. */
 typedef PM_(value) PM_(codomain); /* Range \in image \in codomain. */
 #else /* value --><!-- !value */
-typedef PM_(domain) PM_(map);
-typedef PM_(domain) PM_(codomain);
+typedef PM_(key) PM_(map);
+typedef PM_(key) PM_(codomain);
 #endif /* !value --> */
 
 /** Entries are what makes up the hash table. A bucket is a set of all entries
@@ -170,7 +172,7 @@ struct PM_(entry) {
 	PM_(uint) code;
 #endif /* cache --> */
 #ifndef HASH_INVERSE /* <!-- !inv */
-	PM_(domain) key;
+	PM_(key) key;
 #endif /* !inv --> */
 #ifdef HASH_VALUE
 	PM_(value) value;
@@ -189,7 +191,7 @@ static void PM_(entry_to_map)(struct PM_(entry) *const entry,
  fixme: This is very confusing; only called in one place. Maybe a macro would
  help? */
 static void PM_(fill_entry)(struct PM_(entry) *const entry,
-	/*const PM_(port) port*/const PM_(domain) key, const PM_(uint) code) {
+	/*const PM_(port) port*/const PM_(key) key, const PM_(uint) code) {
 	assert(entry && entry->next == SETnull);
 	entry->next = SETend;
 #ifndef HASH_NO_CACHE /* <!-- cache */
@@ -220,7 +222,7 @@ static PM_(uint) PM_(entry_code)(const struct PM_(entry) *const entry) {
 }
 
 /** Gets the key of an occupied `entry`. */
-static PM_(domain) PM_(entry_key)(const struct PM_(entry) *const entry) {
+static PM_(key) PM_(entry_key)(const struct PM_(entry) *const entry) {
 	assert(entry && entry->next != SETnull);
 #ifdef HASH_INVERSE
 	return PM_(inverse_code_fn)(&entry->code);
@@ -269,12 +271,12 @@ static int PM_(in_stack_range)(const struct M_(hash) *const hash,
 #define QUOTE(name) QUOTE_(name)
 #ifdef HASH_TEST
 static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn);
-static void (*PM_(to_string))(PM_(cdomain), char (*)[12]);
+static void (*PM_(to_string))(PM_(ckey), char (*)[12]);
 #else
 static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) {
 	(void)hash, (void)fn;
 }
-static void PM_(to_string)(PM_(cdomain) data, char (*z)[12])
+static void PM_(to_string)(PM_(ckey) data, char (*z)[12])
 	{ (void)data, strcpy(*z, "<key>"); }
 #endif
 
@@ -303,7 +305,7 @@ static void PM_(move_to_top)(struct M_(hash) *const hash,
 /** `hash` will be searched linearly for `key` which has `code`.
  @fixme Move to front like splay trees? */
 static struct PM_(entry) *PM_(get)(struct M_(hash) *const hash,
-	const PM_(domain) key, const PM_(uint) code) {
+	const PM_(key) key, const PM_(uint) code) {
 	struct PM_(entry) *entry;
 	PM_(uint) idx, next;
 	assert(hash && hash->entries && hash->log_capacity);
@@ -452,11 +454,11 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 #undef QUOTE
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`. */
-typedef int (*PM_(replace_fn))(PM_(domain) original, PM_(domain) replace);
+typedef int (*PM_(replace_fn))(PM_(key) original, PM_(key) replace);
 
 /** Used in <fn:<M>hash_policy_put> when `replace` is null; `original` and
  `replace` are ignored. @implements `<PM>replace_fn` */
-static int PM_(false)(PM_(domain) original, PM_(domain) replace)
+static int PM_(false)(PM_(key) original, PM_(key) replace)
 	{ (void)(original); (void)(replace); return 0; }
 
 /** Put `key` in `hash` as long as `replace` is null or returns true.
@@ -464,7 +466,7 @@ static int PM_(false)(PM_(domain) original, PM_(domain) replace)
  returns false, the address of `key`.
  @return Success. @throws[malloc] @order amortized \O(1) */
 static int PM_(put)(struct M_(hash) *const hash, const PM_(replace_fn) replace,
-	PM_(domain) key, PM_(domain)/*map*/ *eject) {
+	PM_(key) key, PM_(key)/*map*/ *eject) {
 	struct PM_(entry) *entry;
 	PM_(uint) code, idx, next = SETend /* The end of a linked-list. */, size;
 	char z[12];
@@ -529,7 +531,7 @@ static void M_(hash_clear)(struct M_(hash) *const hash) {
 
 /** @param[map] If non-null, a <typedef:<PM>map> which gets filled on true.
  @return Is `key` in `hash` (which could be null)? */
-static int M_(hash_query)(struct M_(hash) *const hash, const PM_(domain) key,
+static int M_(hash_query)(struct M_(hash) *const hash, const PM_(key) key,
 	PM_(map) *const map) {
 	struct PM_(entry) *e;
 	if(!hash || !hash->entries || !(e = PM_(get)(hash, key, PM_(code)(key))))
@@ -538,14 +540,15 @@ static int M_(hash_query)(struct M_(hash) *const hash, const PM_(domain) key,
 	return 1;
 }
 
-/* fixme: get_or_default /\, otherwise have a get that has a parameter, so one
- could have multiple \/. "get" doesn't work with non-nullible types. */
+/* fixme: get_or_default (get_or?) /\, otherwise have a get that has a
+ parameter, so one could have multiple \/. "get" doesn't work with non-nullible
+ types, (in C++ they made it work returning zero? eww.) */
 
 /** @return The value in `hash` which is equal `key`, or, if no such value
  exists, null. @order Average \O(1), (code distributes elements uniformly);
  worst \O(n). @allow */
-static PM_(domain) M_(hash_get)(struct M_(hash) *const hash,
-	const PM_(domain) key) {
+static PM_(key) M_(hash_get)(struct M_(hash) *const hash,
+	const PM_(key) key) {
 	struct PM_(entry) *e;
 	assert(hash);
 	if(!hash->entries) { assert(!hash->log_capacity); return 0; }
@@ -555,6 +558,7 @@ static PM_(domain) M_(hash_get)(struct M_(hash) *const hash,
 
 /* fixme: Buffering changes the outcome if it's already in the table, it
  creates a new code anyway. This is not a pleasant situation. */
+/* fixme: also have a hash_try */
 /** Puts `key` in `code`, and, for keys already in the code, replaces them.
  @return Any ejected key or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. It is not
@@ -562,9 +566,9 @@ static PM_(domain) M_(hash_get)(struct M_(hash) *const hash,
  If needed, before calling this, successfully calling <fn:<M>hash_buffer>, or
  hashting `errno` to zero. @order Average amortised \O(1), (code distributes
  keys uniformly); worst \O(n) (are you sure that's up to date?). @allow */
-static PM_(domain) M_(hash_replace)(struct M_(hash) *const code,
-	const PM_(domain) key) {
-	PM_(domain) collide;
+static PM_(key) M_(hash_replace)(struct M_(hash) *const code,
+	const PM_(key) key) {
+	PM_(key) collide;
 	/* No error information. */
 	return PM_(put)(code, 0, key, &collide) ? collide : 0;
 }
@@ -578,9 +582,9 @@ static PM_(domain) M_(hash_replace)(struct M_(hash) *const code,
  Successfully calling <fn:<M>hash_buffer> ensures that this does not happen.
  @order Average amortised \O(1), (code distributes keys uniformly); worst \O(n).
  @allow */
-static PM_(domain) M_(hash_policy_put)(struct M_(hash) *const code,
-	const PM_(domain) key, const PM_(replace_fn) replace) {
-	PM_(domain) collide;
+static PM_(key) M_(hash_policy_put)(struct M_(hash) *const code,
+	const PM_(key) key, const PM_(replace_fn) replace) {
+	PM_(key) collide;
 	/* No error information. */
 	return PM_(put)(code, replace ? replace : &PM_(false), key, &collide)
 		? collide : 0;
@@ -654,13 +658,13 @@ static void M_(hash_begin)(struct M_(hash_iterator) *const it,
 /** @return Whether the hash specified by <fn:<M>hash_begin> has a next entry. */
 static int M_(hash_has_next)(struct M_(hash_iterator) *const it) {
 	assert(it);
-	/* <tag:<PM>entry> is fine for private returning, but <typedef:<PM>domain>
+	/* <tag:<PM>entry> is fine for private returning, but <typedef:<PM>key>
 	 may not even be nullable. */
 	return it->it.hash && it->it.hash->entries && PM_(skip)(&it->it);
 }
 
 /** Advances `it`. @return The next key or zero. */
-static PM_(domain) M_(hash_next_key)(struct M_(hash_iterator) *const it) {
+static PM_(key) M_(hash_next_key)(struct M_(hash_iterator) *const it) {
 	const struct PM_(entry) *e = PM_(next)(&it->it);
 	return e ? PM_(entry_key)(e) : 0;
 }
@@ -674,7 +678,7 @@ static PM_(domain) M_(hash_next_key)(struct M_(hash_iterator) *const it) {
 
 #ifdef HASH_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PM_(to_string))(PM_(cdomain), char (*)[12]);
+static void (*PM_(to_string))(PM_(ckey), char (*)[12]);
 static const char *(*PM_(hash_to_string))(const struct M_(hash) *);
 #include "../test/test_hash.h"
 #endif /* test --> */
@@ -682,7 +686,8 @@ static const char *(*PM_(hash_to_string))(const struct M_(hash) *);
 static void PM_(unused_base_coda)(void);
 static void PM_(unused_base)(void) {
 	M_(hash)(0); M_(hash_)(0); M_(hash_buffer)(0, 0); M_(hash_clear)(0);
-	M_(hash_get)(0, 0);
+	M_(hash_query)(0, 0, 0);/* @fixme Might not work. */
+	M_(hash_get)(0, 0); /* @fixme Parameterize. */
 	M_(hash_replace)(0, 0);  M_(hash_policy_put)(0, 0, 0);
 	/*M_(hash_remove)(0, 0);*/
 	M_(hash_begin)(0, 0); M_(hash_has_next)(0); M_(hash_next_key)(0);
@@ -701,9 +706,9 @@ static void PM_(unused_base_coda)(void) { PM_(unused_base)(); }
 #endif
 #define TSZ_(n) HASH_CAT(hash_sz, SZ_(n))
 /* Check that `HASH_TO_STRING` is a function implementing this prototype. */
-static void (*const TSZ_(actual_to_string))(PM_(cdomain), char (*const)[12])
+static void (*const TSZ_(actual_to_string))(PM_(ckey), char (*const)[12])
 	= (HASH_TO_STRING);
-/** This is to line up the hash, which can have <typedef:<PM>domain> a pointer or
+/** This is to line up the hash, which can have <typedef:<PM>key> a pointer or
  not, with to string, which requires a pointer. Call
  <data:<TSZ>actual_to_string> with key of `entry` and `z`. */
 static void TSZ_(thunk_to_string)(const struct PM_(entry) *const entry,
@@ -714,7 +719,7 @@ static void TSZ_(thunk_to_string)(const struct PM_(entry) *const entry,
 #include "to_string.h" /** \include */
 #ifdef HASH_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef HASH_TEST
-static void (*PM_(to_string))(PM_(cdomain), char (*const)[12])
+static void (*PM_(to_string))(PM_(ckey), char (*const)[12])
 	= TSZ_(actual_to_string);
 static const char *(*PM_(hash_to_string))(const struct M_(hash) *)
 	= &SZ_(to_string);

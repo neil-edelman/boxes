@@ -239,15 +239,15 @@ static void PM_(legit)(const struct M_(hash) *const hash) {
 }
 
 /** Passed `parent_new` and `parent` from <fn:<M>hash_test>. */
-static void PM_(test_basic)(PM_(domain) (*const parent_new)(void *),
+static void PM_(test_basic)(PM_(key) (*const parent_new)(void *),
 	void *const parent) {
-	struct test { PM_(domain) data; int is_in; }
+	struct test { PM_(key) data; int is_in; }
 		test[1000/*0*/], *t;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
 	char z[12];
 	struct M_(hash) hash = HASH_IDLE;
-	PM_(domain) eject, item;
+	PM_(key) eject, item;
 	assert(parent_new
 		/*&& parent static tests are possible*/ && test_size > 1);
 	/* Test empty. */
@@ -391,7 +391,7 @@ static void PM_(test_basic)(PM_(domain) (*const parent_new)(void *),
  <tag:<M>hashlink> and `HASH_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void M_(hash_test)(PM_(domain) (*const parent_new)(void *),
+static void M_(hash_test)(PM_(key) (*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(HASH_NAME) ">hash of key <" QUOTE(HASH_KEY)
 		"> was created using: "
