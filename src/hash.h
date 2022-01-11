@@ -117,7 +117,7 @@ typedef HASH_UINT PM_(uint);
 
 /** Valid tag type defined by `HASH_KEY`. This code makes the simplifying
  assumption that this is not `const`-qualified. */
-typedef HASH_KEY PM_(key);
+typedef HASH_KEY PM_(domain);
 /** Used on read-only. If one sees a duplicate `const` warning, consider
  X-macros defining an `enum` instead. */
 typedef const HASH_KEY PM_(ctype);
@@ -134,7 +134,7 @@ static const PM_(code_fn) PM_(code) = (HASH_CODE);
 /** Defining `HASH_INVERSE` says that the <typedef:<PM>key> forms a bijection
  with <typedef:<PM>uint>; this is inverse-mapping to <typedef:<PM>code_fn>.
  Used to avoid having to store the <typedef:<PM>key>. */
-typedef PM_(key) (*PM_(inverse_code_fn))(PM_(uint));
+typedef PM_(domain) (*PM_(inverse_code_fn))(PM_(uint));
 #endif /* inv --> */
 
 /** Equivalence relation between <typedef:<PM>ctype> that satisfies
@@ -148,12 +148,16 @@ static const PM_(is_equal_fn) PM_(equal) = (HASH_IS_EQUAL);
 /** Defining `HASH_VALUE` creates another entry for associative maps. */
 typedef HASH_VALUE PM_(value);
 /** Defining `HASH_VALUE` creates this entry association from key to value. */
-struct M_(hash_map) { PM_(key) key; PM_(value) value; };
-/** If `HASH_VALUE`, then this is a map, and this is <tag:<M>hash_map>;
- otherwise, it's a set, and this is <typedef:<PM>key>. */
-typedef struct M_(hash_map) PM_(port);
+struct M_(hash_map) { PM_(domain) key; PM_(value) value; };
+/** If `HASH_VALUE`, then this is a <tag:<M>hash_map>; otherwise, it's a set,
+ and this is the same as <typedef:<PM>domain>. */
+typedef struct M_(hash_map) PM_(map);
+/** If `HASH_VALUE`, then <typedef:<PM>value> is the codomain; otherwise, it is
+ the same as <typedef:<PM>domain>. */
+typedef PM_(value) PM_(codomain); /* Range \in image \in codomain. */
 #else /* value --><!-- !value */
-typedef PM_(key) PM_(port);
+typedef PM_(domain) PM_(map);
+typedef PM_(domain) PM_(codomain);
 #endif /* !value --> */
 
 /** Entries are what makes up the hash table. A bucket is a set of all entries
@@ -166,18 +170,26 @@ struct PM_(entry) {
 	PM_(uint) code;
 #endif /* cache --> */
 #ifndef HASH_INVERSE /* <!-- !inv */
-	PM_(key) key;
+	PM_(domain) key;
 #endif /* !inv --> */
 #ifdef HASH_VALUE
 	PM_(value) value;
 #endif
 };
 
+static void PM_(entry_to_map)(struct PM_(entry) *const entry,
+	PM_(map) *const map) {
+	assert(entry && map);
+#ifdef HASH_VALUE
+#else
+#endif
+}
+
 /** Fill `entry` with `port` and `code`. The entry must be empty.
  fixme: This is very confusing; only called in one place. Maybe a macro would
  help? */
 static void PM_(fill_entry)(struct PM_(entry) *const entry,
-	/*const PM_(port) port*/const PM_(key) key, const PM_(uint) code) {
+	/*const PM_(port) port*/const PM_(domain) key, const PM_(uint) code) {
 	assert(entry && entry->next == SETnull);
 	entry->next = SETend;
 #ifndef HASH_NO_CACHE /* <!-- cache */
@@ -208,7 +220,7 @@ static PM_(uint) PM_(entry_code)(const struct PM_(entry) *const entry) {
 }
 
 /** Gets the key of an occupied `entry`. */
-static PM_(key) PM_(entry_key)(const struct PM_(entry) *const entry) {
+static PM_(domain) PM_(entry_key)(const struct PM_(entry) *const entry) {
 	assert(entry && entry->next != SETnull);
 #ifdef HASH_INVERSE
 	return PM_(inverse_code_fn)(&entry->code);
@@ -291,7 +303,7 @@ static void PM_(move_to_top)(struct M_(hash) *const hash,
 /** `hash` will be searched linearly for `key` which has `code`.
  @fixme Move to front like splay trees? */
 static struct PM_(entry) *PM_(get)(struct M_(hash) *const hash,
-	const PM_(key) key, const PM_(uint) code) {
+	const PM_(domain) key, const PM_(uint) code) {
 	struct PM_(entry) *entry;
 	PM_(uint) idx, next;
 	assert(hash && hash->entries && hash->log_capacity);
@@ -440,11 +452,11 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 #undef QUOTE
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`. */
-typedef int (*PM_(replace_fn))(PM_(key) original, PM_(key) replace);
+typedef int (*PM_(replace_fn))(PM_(domain) original, PM_(domain) replace);
 
 /** Used in <fn:<M>hash_policy_put> when `replace` is null; `original` and
  `replace` are ignored. @implements `<PM>replace_fn` */
-static int PM_(false)(PM_(key) original, PM_(key) replace)
+static int PM_(false)(PM_(domain) original, PM_(domain) replace)
 	{ (void)(original); (void)(replace); return 0; }
 
 /** Put `key` in `hash` as long as `replace` is null or returns true.
@@ -452,7 +464,7 @@ static int PM_(false)(PM_(key) original, PM_(key) replace)
  returns false, the address of `key`.
  @return Success. @throws[malloc] @order amortized \O(1) */
 static int PM_(put)(struct M_(hash) *const hash, const PM_(replace_fn) replace,
-	PM_(key) key, PM_(key) *eject) {
+	PM_(domain) key, PM_(domain)/*map*/ *eject) {
 	struct PM_(entry) *entry;
 	PM_(uint) code, idx, next = SETend /* The end of a linked-list. */, size;
 	char z[12];
@@ -515,15 +527,30 @@ static void M_(hash_clear)(struct M_(hash) *const hash) {
 	hash->size = 0;
 }
 
+/** @param[map] If non-null, a <typedef:<PM>map> which gets filled on true.
+ @return Is `key` in `hash` (which could be null)? */
+static int M_(hash_query)(struct M_(hash) *const hash, const PM_(domain) key,
+	PM_(map) *const map) {
+	struct PM_(entry) *e;
+	if(!hash || !hash->entries || !(e = PM_(get)(hash, key, PM_(code)(key))))
+		return 0;
+	if(map) PM_(entry_to_map)(e, map);
+	return 1;
+}
+
+/* fixme: get_or_default /\, otherwise have a get that has a parameter, so one
+ could have multiple \/. "get" doesn't work with non-nullible types. */
+
 /** @return The value in `hash` which is equal `key`, or, if no such value
  exists, null. @order Average \O(1), (code distributes elements uniformly);
  worst \O(n). @allow */
-static PM_(key) M_(hash_get)(struct M_(hash) *const hash, const PM_(key) key) {
-	struct PM_(entry) *b;
+static PM_(domain) M_(hash_get)(struct M_(hash) *const hash,
+	const PM_(domain) key) {
+	struct PM_(entry) *e;
 	assert(hash);
 	if(!hash->entries) { assert(!hash->log_capacity); return 0; }
-	b = PM_(get)(hash, key, PM_(code)(key));
-	return b ? PM_(entry_key)(b) : 0;
+	e = PM_(get)(hash, key, PM_(code)(key));
+	return e ? PM_(entry_key)(e) : 0;
 }
 
 /* fixme: Buffering changes the outcome if it's already in the table, it
@@ -535,9 +562,9 @@ static PM_(key) M_(hash_get)(struct M_(hash) *const hash, const PM_(key) key) {
  If needed, before calling this, successfully calling <fn:<M>hash_buffer>, or
  hashting `errno` to zero. @order Average amortised \O(1), (code distributes
  keys uniformly); worst \O(n) (are you sure that's up to date?). @allow */
-static PM_(key) M_(hash_replace)(struct M_(hash) *const code,
-	const PM_(key) key) {
-	PM_(key) collide;
+static PM_(domain) M_(hash_replace)(struct M_(hash) *const code,
+	const PM_(domain) key) {
+	PM_(domain) collide;
 	/* No error information. */
 	return PM_(put)(code, 0, key, &collide) ? collide : 0;
 }
@@ -551,9 +578,9 @@ static PM_(key) M_(hash_replace)(struct M_(hash) *const code,
  Successfully calling <fn:<M>hash_buffer> ensures that this does not happen.
  @order Average amortised \O(1), (code distributes keys uniformly); worst \O(n).
  @allow */
-static PM_(key) M_(hash_policy_put)(struct M_(hash) *const code,
-	const PM_(key) key, const PM_(replace_fn) replace) {
-	PM_(key) collide;
+static PM_(domain) M_(hash_policy_put)(struct M_(hash) *const code,
+	const PM_(domain) key, const PM_(replace_fn) replace) {
+	PM_(domain) collide;
 	/* No error information. */
 	return PM_(put)(code, replace ? replace : &PM_(false), key, &collide)
 		? collide : 0;
@@ -633,7 +660,7 @@ static int M_(hash_has_next)(struct M_(hash_iterator) *const it) {
 }
 
 /** Advances `it`. @return The next key or zero. */
-static PM_(key) M_(hash_next_key)(struct M_(hash_iterator) *const it) {
+static PM_(domain) M_(hash_next_key)(struct M_(hash_iterator) *const it) {
 	const struct PM_(entry) *e = PM_(next)(&it->it);
 	return e ? PM_(entry_key)(e) : 0;
 }
