@@ -280,11 +280,11 @@ static void PM_(move_to_top)(struct M_(hash) *const hash,
 	vic = hash->entries + target, top = hash->entries + hash->top;
 	assert(vic->next != SETnull && top->next == SETnull);
 	PM_(to_string)(PM_(entry_key)(vic), &z);
-	printf("move_to_top: victim \"%s\" moved from 0x%lx to top 0x%lx\n",
+	printf("move_to_top: target \"%s\" moved from 0x%lx to top 0x%lx\n",
 		z, (unsigned long)target, (unsigned long)hash->top);
 	/* Search for the previous link in the linked-list. \O(|bucket|). */
 	for(to_next = SETnull, next = PM_(code_to_entry)(hash, PM_(entry_code)(vic));
-		assert(next < capacity), PM_(to_string)(hash->entries[next].key, &z), printf("searching for victim in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != target;
+		assert(next < capacity), PM_(to_string)(hash->entries[next].key, &z), printf("searching for target in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != target;
 		to_next = next, next = hash->entries[next].next);
 	printf("got \"%s\"\n", z);
 	/* Move `vic` to `top`. */
@@ -321,10 +321,10 @@ static struct PM_(entry) *PM_(get)(struct M_(hash) *const hash,
 			if(entries_are_equal) return entry;
 		}
 		if(next == SETend) return 0;
-		idx = next;
-		assert(idx < PM_(capacity)(hash) && PM_(in_stack_range)(hash, idx));
-		entry = hash->entries + idx;
-		assert(next != SETnull), next = entry->next;
+		entry = hash->entries + (idx = next);
+		assert(idx < PM_(capacity)(hash) && PM_(in_stack_range)(hash, idx) &&
+			idx != SETnull);
+		next = entry->next;
 	}
 }
 
@@ -338,22 +338,17 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 	struct PM_(entry) *entries;
 	const unsigned log_c0 = hash->log_capacity;
 	unsigned log_c1;
-	/* fixme: this will have to be updated because it relies on -1. */
 	const PM_(uint) c0 = log_c0 ? (PM_(uint))((PM_(uint))1 << log_c0) : 0;
 	PM_(uint) c1, size1, i, wait, mask;
 	char fn[64];
-	assert(hash && hash->size <= SETlimit
-		&& (!hash->entries && !hash->size && !log_c0 && !c0
-		|| hash->entries && hash->size <= c0 && log_c0 >= 3));
-	printf("buffer: limit %lu, entries %lu/%lu, new %lu\n",
-		(unsigned long)SETlimit,
-		(unsigned long)hash->size, (unsigned long)c0, (unsigned long)n);
+	assert(hash && hash->size <= SETlimit && (!hash->entries && !hash->size
+		&& !log_c0 && !c0 || hash->entries && hash->size <= c0 && log_c0 >= 3));
 
 	/* Can we satisfy `n` growth from the buffer? */
 	if(SETm1 - hash->size < n || SETlimit < (size1 = hash->size + n))
 		return errno = ERANGE, 0;
 	if(hash->entries) log_c1 = log_c0, c1 = c0 ? c0 : 1;
-	else             log_c1 = 3,      c1 = 8;
+	else              log_c1 = 3,      c1 = 8;
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
 
@@ -361,51 +356,35 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 		log_c0, log_c1), PM_(graph)(hash, fn);
 
 	/* Otherwise, need to allocate more. */
-	printf("buffer: %lu -> %lu to satisfy %lu.\n",
-		(unsigned long)c0, (unsigned long)c1, (unsigned long)size1);
 	if(!(entries = realloc(hash->entries, sizeof *entries * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	hash->top = SETend; /* Idle `top` initialized, or rehash. */
+	hash->top = SETend; /* Idle `top` initialized or reset. */
 	hash->entries = entries, hash->log_capacity = log_c1;
 
-	/* Initialize new values. Rehash the stack. Mask off the added bits. */
+	/* Initialize new values. Mask to identify the added bits. */
 	{ struct PM_(entry) *e = entries + c0, *const e_end = entries + c1;
 		for( ; e < e_end; e++) e->next = SETnull; }
 	mask = (PM_(uint))((((PM_(uint))1 << log_c0) - 1)
 		^ (((PM_(uint))1 << log_c1) - 1));
 
 	/* Recode most closed entries in the lower half. */
-	printf("buffer: recode %lu entries; mask 0x%lx.\n",
-		(unsigned long)c0, (unsigned long)mask);
 	wait = SETend;
 	for(i = 0; i < c0; i++) {
 		struct PM_(entry) *idx, *go;
 		PM_(uint) g, code;
 		idx = hash->entries + i;
-		printf("A.\t0x%lx: ", (unsigned long)i);
-		/* Empty; don't have to do anything. */
-		if(idx->next == SETnull) { printf("empty.\n"); continue; }
-		/* Where it is closed. */
+		if(idx->next == SETnull) continue;
 		g = PM_(code_to_entry)(hash, code = PM_(entry_code)(idx));
-		{
-			char z[12];
-			PM_(to_string)(PM_(entry_key)(idx), &z);
-			printf("\"%s\"->0x%lx ", z, (unsigned long)g);
-		}
-		/* Like consistent codeing, because it's a power-of-two size,
-		 `E[old/new]` capacity that a closed entry will remain where it is. */
-		if(i == g) { idx->next = SETend; printf("chill.\n"); continue; }
+		/* It's a power-of-two size, so, consistent hashing, `E[old/new]`
+		 capacity that a closed entry will remain where it is. */
+		if(i == g) { idx->next = SETend; continue; }
 		if((go = hash->entries + g)->next == SETnull) {
-			/* Priority is given to the closed head entries; simpler later. */
+			/* Priority is given to the first closed entry; simpler later. */
 			struct PM_(entry) *head;
 			PM_(uint) h = g & ~mask; assert(h <= g);
-			if(h < g && i < h /* Lookahead to the first entry in the bucket. */
+			if(h < g && i < h
 				&& (head = hash->entries + h, assert(head->next != SETnull),
-				g == PM_(code_to_entry)(hash, PM_(entry_code)(head)))) {
-				char y[12];
-				PM_(to_string)(head->key, &y);
-				printf("future 0x%lx \"%s\"->0x%lx will go instead, ",
-					(unsigned long)h, y, (unsigned long)g);
+				PM_(code_to_entry)(hash, PM_(entry_code)(head)) == g)) {
 				memcpy(go, head, sizeof *head);
 				go->next = SETend, head->next = SETnull;
 				/* Fall-though -- the entry still needs to be put on waiting. */
@@ -413,78 +392,43 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 				/* If the new entry is available and this entry is first. */
 				memcpy(go, idx, sizeof *idx);
 				go->next = SETend, idx->next = SETnull;
-				printf("to vacant.\n");
 				continue;
 			}
 		}
-		printf("wait.\n");
 		idx->next = wait, wait = i; /* Push for next sweep. */
 	}
 
-	/*{
-		PM_(uint) w = wait;
-		printf("waiting: { ");
-		while(w != SETend) {
-			printf("0x%lx ", (unsigned long)w);
-			w = hash->entries[w].next;
-		}
-		printf("} checking for stragglers.\n");
-	}*/
 	sprintf(fn, "graph/" QUOTE(HASH_NAME) "-resize-%u-%u-b-obvious.gv",
 		log_c0, log_c1), PM_(graph)(hash, fn);
 
-	/* Search waiting stack for rest of the closed that moved concurrently. */
+	/* Search waiting stack for entries that moved concurrently. */
 	{ PM_(uint) prev = SETend, w = wait; while(w != SETend) {
-		char z[12];
 		struct PM_(entry) *waiting = hash->entries + w;
 		PM_(uint) cl = PM_(code_to_entry)(hash, PM_(entry_code)(waiting));
 		struct PM_(entry) *const closed = hash->entries + cl;
 		assert(cl != w);
-		{
-			PM_(to_string)(PM_(entry_key)(waiting), &z);
-			printf("B.\t0x%lx: \"%s\"->%lx ",
-				(unsigned long)w, z, (unsigned long)cl);
-		}
 		if(closed->next == SETnull) {
 			memcpy(closed, waiting, sizeof *waiting), closed->next = SETend;
-			printf("to vacant.\n");
 			if(prev != SETend) hash->entries[prev].next = waiting->next;
 			if(wait == w) wait = waiting->next; /* First, modify head. */
 			w = waiting->next, waiting->next = SETnull;
 		} else {
-			/* Not in the wait stack. */
-			assert(closed->next == SETend);
-			printf("wait.\n");
+			assert(closed->next == SETend); /* Not in the wait stack. */
 			prev = w, w = waiting->next;
 		}
 	}}
 
-	/*{
-		PM_(uint) w = wait;
-		printf("waiting: { ");
-		while(w != SETend) {
-			printf("0x%lx ", (unsigned long)w);
-			w = hash->entries[w].next;
-		}
-		printf("} moving to stack.\n");
-	}*/
 	sprintf(fn, "graph/" QUOTE(HASH_NAME) "-resize-%u-%u-c-closed.gv",
 		log_c0, log_c1), PM_(graph)(hash, fn);
 
 	/* Rebuild the (smaller?) top stack (high) from the waiting (low). */
 	while(wait != SETend) {
-		char z[12];
 		struct PM_(entry) *const waiting = hash->entries + wait;
 		PM_(uint) h = PM_(code_to_entry)(hash, PM_(entry_code)(waiting));
 		struct PM_(entry) *const head = hash->entries + h;
 		struct PM_(entry) *top;
 		assert(h != wait && head->next != SETnull);
 		PM_(grow_stack)(hash), top = hash->entries + hash->top;
-		{
-			PM_(to_string)(PM_(entry_key)(waiting), &z);
-			printf("\t0x%lx: \"%s\" to stack 0x%lx.\n",
-				(unsigned long)wait, z, (unsigned long)hash->top);
-		}
 		memcpy(top, waiting, sizeof *waiting);
 		top->next = head->next, head->next = hash->top;
 		wait = waiting->next, waiting->next = SETnull; /* Pop. */
@@ -493,18 +437,6 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 	sprintf(fn, "graph/" QUOTE(HASH_NAME) "-resize-%u-%u-d-final.gv",
 		log_c0, log_c1), PM_(graph)(hash, fn);
 
-	/*{ PM_(uint) j;
-	printf("buffer::recode: final top 0x%lx\n", (long)hash->top);
-	for(j = 0; j < PM_(capacity)(hash); j++) {
-		struct PM_(entry) *je = hash->entries + j;
-		char z[12];
-		printf("\t0x%lx: ", (unsigned long)j);
-		if(je->next == SETnull) { printf("--\n"); continue; }
-		PM_(to_string)(PM_(entry_key)(je), &z);
-		printf("\"%s\"", z);
-		if(je->next == SETend) { printf("\n"); continue; }
-		printf(" -> 0x%lx\n", (unsigned long)je->next);
-	}}*/
 	return 1;
 }
 
