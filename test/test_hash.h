@@ -20,7 +20,7 @@ static size_t PM_(count_bucket)(const struct M_(hash) *const hash,
 	assert(hash && idx < PM_(capacity)(hash));
 	entry = hash->entries + idx;
 	if((next = entry->next) == SETnull
-		|| idx != PM_(code_to_bucket)(hash, PM_(entry_code)(entry))) return 0;
+		|| idx != PM_(code_to_entry)(hash, PM_(entry_code)(entry))) return 0;
 	for( ; no++, next != SETend; next = entry->next, assert(next != SETnull)) {
 		idx = next;
 		assert(idx < PM_(capacity)(hash)
@@ -128,7 +128,7 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 			top, bgc, (unsigned long)i);
 		if(e->next != SETnull) {
 			const char *const closed
-				= PM_(code_to_bucket)(hash, PM_(entry_code)(e)) == i
+				= PM_(code_to_entry)(hash, PM_(entry_code)(e)) == i
 				? "⬤" : "◯";
 			char z[12];
 			PM_(to_string)(PM_(entry_key)(e), &z);
@@ -147,7 +147,7 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 		struct PM_(entry) *e = hash->entries + i;
 		PM_(uint) left, right;
 		if((right = e->next) == SETnull || right == SETend) continue;
-		if(PM_(code_to_bucket)(hash, PM_(entry_code)(e)) != i) {
+		if(PM_(code_to_entry)(hash, PM_(entry_code)(e)) != i) {
 			fprintf(fp, "\thash:%lu -> i0x%lx;\n", i, (unsigned long)right);
 			continue;
 		}
@@ -234,7 +234,7 @@ static void PM_(legit)(const struct M_(hash) *const hash) {
 		if(e->next == SETnull) continue;
 		size++;
 		if(e->next == SETend) end++;
-		if(i == PM_(code_to_bucket)(hash, PM_(entry_code)(e))) start++;
+		if(i == PM_(code_to_entry)(hash, PM_(entry_code)(e))) start++;
 	}
 	assert(hash->size == size && end == start && size >= start);
 }

@@ -68,7 +68,6 @@ static int length1_collide(char *a_original, char *b_replace) {
 	return 1;
 }
 
-
 static unsigned length2_code(const unsigned length) { return length; }
 static int length2_is_equal(const unsigned a, const unsigned b)
 	{ return a == b; }
@@ -83,6 +82,7 @@ static int length2_is_equal(const unsigned a, const unsigned b)
 static int length2_collide(unsigned a, unsigned b) {
 	return 0;
 }
+
 static void nato(void) {
 	struct length1_node words[] = {
 #define X(a) { #a, 0, 0 }
@@ -102,7 +102,6 @@ static void nato(void) {
 	unsigned count;
 	for(i = 0; i < sizeof words / sizeof *words; i++)
 		length1_hash_policy_put(&lens1, words[i].word, &length1_collide);
-	/* fixme: Needs a real iterator, that's atrocious. */
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
 		"length\tcount\twords\n");
 	for(length1_hash_begin(&it1, &lens1); w = length1_hash_next_key(&it1); ) {

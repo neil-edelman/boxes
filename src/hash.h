@@ -148,17 +148,20 @@ static const PM_(is_equal_fn) PM_(equal) = (HASH_IS_EQUAL);
 /** Defining `HASH_VALUE` creates another entry for associative maps. */
 typedef HASH_VALUE PM_(value);
 /** Defining `HASH_VALUE` creates this entry association from key to value. */
-struct M_(hash_entry) { PM_(key) key; PM_(value) value; };
-/** If `HASH_VALUE`, then this is a map, and this is <tag:<M>hash_entry>;
+struct M_(hash_map) { PM_(key) key; PM_(value) value; };
+/** If `HASH_VALUE`, then this is a map, and this is <tag:<M>hash_map>;
  otherwise, it's a set, and this is <typedef:<PM>key>. */
-typedef struct M_(hash_entry) PM_(port);
+typedef struct M_(hash_map) PM_(port);
 #else /* value --><!-- !value */
 typedef PM_(key) PM_(port);
 #endif /* !value --> */
 
-/** Private entries are what is stored in the <tag:<M>hash>. */
+/** Entries are what makes up the hash table. A bucket is a set of all entries
+ having the same address, that is, hash code mod table capacity. Buckets are
+ represented by a linked-list of entries from a table; each occupied bucket has
+ a closed entry (address equals the index) at it's start. */
 struct PM_(entry) {
-	PM_(uint) next; /* `SETnull`, `SETend`, accepted, half the size. */
+	PM_(uint) next; /* Including `SETnull` and `SETend`. */
 #ifndef HASH_NO_CACHE /* <!-- cache */
 	PM_(uint) code;
 #endif /* cache --> */
@@ -170,7 +173,9 @@ struct PM_(entry) {
 #endif
 };
 
-/** Fill `entry` with `port` and `code`. The entry must be empty. */
+/** Fill `entry` with `port` and `code`. The entry must be empty.
+ fixme: This is very confusing; only called in one place. Maybe a macro would
+ help? */
 static void PM_(fill_entry)(struct PM_(entry) *const entry,
 	/*const PM_(port) port*/const PM_(key) key, const PM_(uint) code) {
 	assert(entry && entry->next == SETnull);
@@ -213,14 +218,13 @@ static PM_(key) PM_(entry_key)(const struct PM_(entry) *const entry) {
 }
 
 /** To initialize, see <fn:<M>hash>, `HASH_IDLE`, `{0}` (`C99`,) or being
- `static`. Buckets are linked-lists of entries. When a collision occurs, we
- push the entry out to an unoccupied stack in the same table.
+ `static`.
 
  ![States.](../web/states.png) */
 struct M_(hash) {
 	struct PM_(entry) *entries; /* @ has zero/one key specified by `next`. */
-	unsigned log_capacity, unused; /* Applies to entries. */
-	PM_(uint) size, top; /* size <= capacity; collided stack, `SETend` used. */
+	unsigned log_capacity, unused; /* Applies to entries. fixme: type? */
+	PM_(uint) size, top; /* size <= capacity; open stack, including `SETend`. */
 };
 
 /** The capacity of a non-idle `hash` is always a power-of-two. */
@@ -228,13 +232,13 @@ static PM_(uint) PM_(capacity)(const struct M_(hash) *const hash)
 	{ return assert(hash && hash->entries && hash->log_capacity >= 3),
 	(PM_(uint))((PM_(uint))1 << hash->log_capacity); }
 
-/** @return Indexes the first `hash.entries` in the bucket (a closed entry) from
- non-idle `hash` given the `code`. */
-static PM_(uint) PM_(code_to_bucket)(const struct M_(hash) *const hash,
+/** @return Indexes the first `hash.entries` (closed) from non-idle `hash`
+ given the `code`. */
+static PM_(uint) PM_(code_to_entry)(const struct M_(hash) *const hash,
 	const PM_(uint) code) { return code & (PM_(capacity)(hash) - 1); }
 
 /** This is amortized; every value takes at most one top. On return, the `top`
- of `hash` will be empty. */
+ of `hash` will be empty, but size is not incremented. */
 static void PM_(grow_stack)(struct M_(hash) *const hash) {
 	PM_(uint) top = hash->top;
 	assert(hash && hash->entries && top);
@@ -243,8 +247,7 @@ static void PM_(grow_stack)(struct M_(hash) *const hash) {
 	hash->top = top;
 }
 
-/** Is `idx` is `hash` possibly on the stack? (Got tired of changing every time
- I wanted to change the direction.) */
+/** Is `idx` is `hash` possibly on the stack? */
 static int PM_(in_stack_range)(const struct M_(hash) *const hash,
 	const PM_(uint) idx)
 	{ return assert(hash), hash->top != SETend && hash->top <= idx; }
@@ -263,25 +266,25 @@ static void PM_(to_string)(PM_(ctype) data, char (*z)[12])
 	{ (void)data, strcpy(*z, "<key>"); }
 #endif
 
-/** Moves the index `victim` to the top of the collision stack in non-idle
- `hash`. This is an inconsistent state; one is responsible for filling that hole
- and linking it with top. */
+/** Moves the `target` index in the collision stack to the top, in non-idle
+ `hash`. This results in an inconsistent state; one is responsible for filling
+ that hole and linking it with top. */
 static void PM_(move_to_top)(struct M_(hash) *const hash,
-	const PM_(uint) victim) {
+	const PM_(uint) target) {
 	struct PM_(entry) *top, *vic;
 	PM_(uint) to_next, next;
 	char z[12];
 	const PM_(uint) capacity = PM_(capacity)(hash);
-	assert(hash->size < capacity && victim < capacity);
+	assert(hash->size < capacity && target < capacity);
 	PM_(grow_stack)(hash);
-	vic = hash->entries + victim, top = hash->entries + hash->top;
-	assert(vic->next != SETnull && top->next == SETnull); /* Occupied to vacant. */
+	vic = hash->entries + target, top = hash->entries + hash->top;
+	assert(vic->next != SETnull && top->next == SETnull);
 	PM_(to_string)(PM_(entry_key)(vic), &z);
 	printf("move_to_top: victim \"%s\" moved from 0x%lx to top 0x%lx\n",
-		z, (unsigned long)victim, (unsigned long)hash->top);
+		z, (unsigned long)target, (unsigned long)hash->top);
 	/* Search for the previous link in the linked-list. \O(|bucket|). */
-	for(to_next = SETnull, next = PM_(code_to_bucket)(hash, PM_(entry_code)(vic));
-		assert(next < capacity), PM_(to_string)(hash->entries[next].key, &z), printf("searching for victim in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != victim;
+	for(to_next = SETnull, next = PM_(code_to_entry)(hash, PM_(entry_code)(vic));
+		assert(next < capacity), PM_(to_string)(hash->entries[next].key, &z), printf("searching for victim in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != target;
 		to_next = next, next = hash->entries[next].next);
 	printf("got \"%s\"\n", z);
 	/* Move `vic` to `top`. */
@@ -296,24 +299,32 @@ static struct PM_(entry) *PM_(get)(struct M_(hash) *const hash,
 	struct PM_(entry) *entry;
 	PM_(uint) idx, next;
 	assert(hash && hash->entries && hash->log_capacity);
-	entry = hash->entries + (idx = PM_(code_to_bucket)(hash, code));
+	entry = hash->entries + (idx = PM_(code_to_entry)(hash, code));
 	/* Not the start of a bucket: empty or in the collision stack. */
 	if((next = entry->next) == SETnull
 		|| PM_(in_stack_range)(hash, idx)
-		&& idx != PM_(code_to_bucket)(hash, PM_(entry_code)(entry))) return 0;
+		&& idx != PM_(code_to_entry)(hash, PM_(entry_code)(entry))) return 0;
 	for( ; ; ) {
-#ifdef HASH_NO_CACHE /* <!-- !cache: always go to next predicate. */
-		const int codees_are_equal = ((void)(code), 1);
-#else /* !cache --><!-- cache: quick out. */
-		const int codees_are_equal = code == entry->code;
-#endif /* cache --> */
-		if(codees_are_equal && PM_(equal)(key, entry->key)) return entry;
-		if(next == SETend) return 0; /* -1 used to end the bucket. */
+		int codes_are_equal;
+#ifdef HASH_NO_CACHE
+		codes_are_equal = ((void)(code), 1);
+#else
+		codes_are_equal = code == entry->code;
+#endif
+		if(codes_are_equal) {
+			int entries_are_equal;
+#ifdef HASH_INVERSE
+			entries_are_equal = ((void)(key), 1);
+#else
+			entries_are_equal = PM_(equal)(key, entry->key);
+#endif
+			if(entries_are_equal) return entry;
+		}
+		if(next == SETend) return 0;
 		idx = next;
 		assert(idx < PM_(capacity)(hash) && PM_(in_stack_range)(hash, idx));
 		entry = hash->entries + idx;
-		next = entry->next;
-		assert(next != SETnull); /* -2 null: linked-list integrity. */
+		assert(next != SETnull), next = entry->next;
 	}
 }
 
@@ -375,7 +386,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 		/* Empty; don't have to do anything. */
 		if(idx->next == SETnull) { printf("empty.\n"); continue; }
 		/* Where it is closed. */
-		g = PM_(code_to_bucket)(hash, code = PM_(entry_code)(idx));
+		g = PM_(code_to_entry)(hash, code = PM_(entry_code)(idx));
 		{
 			char z[12];
 			PM_(to_string)(PM_(entry_key)(idx), &z);
@@ -390,7 +401,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 			PM_(uint) h = g & ~mask; assert(h <= g);
 			if(h < g && i < h /* Lookahead to the first entry in the bucket. */
 				&& (head = hash->entries + h, assert(head->next != SETnull),
-				g == PM_(code_to_bucket)(hash, PM_(entry_code)(head)))) {
+				g == PM_(code_to_entry)(hash, PM_(entry_code)(head)))) {
 				char y[12];
 				PM_(to_string)(head->key, &y);
 				printf("future 0x%lx \"%s\"->0x%lx will go instead, ",
@@ -426,7 +437,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 	{ PM_(uint) prev = SETend, w = wait; while(w != SETend) {
 		char z[12];
 		struct PM_(entry) *waiting = hash->entries + w;
-		PM_(uint) cl = PM_(code_to_bucket)(hash, PM_(entry_code)(waiting));
+		PM_(uint) cl = PM_(code_to_entry)(hash, PM_(entry_code)(waiting));
 		struct PM_(entry) *const closed = hash->entries + cl;
 		assert(cl != w);
 		{
@@ -464,7 +475,7 @@ static int PM_(buffer)(struct M_(hash) *const hash, const PM_(uint) n) {
 	while(wait != SETend) {
 		char z[12];
 		struct PM_(entry) *const waiting = hash->entries + wait;
-		PM_(uint) h = PM_(code_to_bucket)(hash, PM_(entry_code)(waiting));
+		PM_(uint) h = PM_(code_to_entry)(hash, PM_(entry_code)(waiting));
 		struct PM_(entry) *const head = hash->entries + h;
 		struct PM_(entry) *top;
 		assert(h != wait && head->next != SETnull);
@@ -531,12 +542,12 @@ static int PM_(put)(struct M_(hash) *const hash, const PM_(replace_fn) replace,
 		next = entry->next, entry->next = SETnull, assert(next != SETnull);
 	} else { /* Expand. */
 		if(!PM_(buffer)(hash, 1)) return 0; /* Amortized. */
-		entry = hash->entries + (idx = PM_(code_to_bucket)(hash, code));
+		entry = hash->entries + (idx = PM_(code_to_entry)(hash, code));
 		/*printf("\tput expand: \"%s\" index 0x%lx from code 0x%lx\n",
 			z, (unsigned long)idx, (unsigned long)code);*/
 		size++;
 		if(entry->next != SETnull) { /* Unoccupied. */
-			int already_in_stack = PM_(code_to_bucket)(hash,
+			int already_in_stack = PM_(code_to_entry)(hash,
 				PM_(entry_code)(entry)) != idx;
 			/*printf("\tis_in_stack 0x%lx: %d\n", (unsigned long)idx, is_in_stack);*/
 			PM_(move_to_top)(hash, idx);
