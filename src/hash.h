@@ -271,29 +271,25 @@ static void PM_(to_string)(PM_(ctype) data, char (*z)[12])
  that hole and linking it with top. */
 static void PM_(move_to_top)(struct M_(hash) *const hash,
 	const PM_(uint) target) {
-	struct PM_(entry) *top, *vic;
+	struct PM_(entry) *tgt, *top;
 	PM_(uint) to_next, next;
-	char z[12];
 	const PM_(uint) capacity = PM_(capacity)(hash);
 	assert(hash->size < capacity && target < capacity);
 	PM_(grow_stack)(hash);
-	vic = hash->entries + target, top = hash->entries + hash->top;
-	assert(vic->next != SETnull && top->next == SETnull);
-	PM_(to_string)(PM_(entry_key)(vic), &z);
-	printf("move_to_top: target \"%s\" moved from 0x%lx to top 0x%lx\n",
-		z, (unsigned long)target, (unsigned long)hash->top);
-	/* Search for the previous link in the linked-list. \O(|bucket|). */
-	for(to_next = SETnull, next = PM_(code_to_entry)(hash, PM_(entry_code)(vic));
-		assert(next < capacity), PM_(to_string)(hash->entries[next].key, &z), printf("searching for target in bucket: \"%s\" 0x%lx\n", z, (unsigned long)next), next != target;
+	tgt = hash->entries + target, top = hash->entries + hash->top;
+	assert(tgt->next != SETnull && top->next == SETnull);
+	/* Search for the previous link in the bucket, \O(|bucket|). */
+	for(to_next = SETnull,
+		next = PM_(code_to_entry)(hash, PM_(entry_code)(tgt));
+		assert(next < capacity), next != target;
 		to_next = next, next = hash->entries[next].next);
-	printf("got \"%s\"\n", z);
-	/* Move `vic` to `top`. */
+	/* Move `tgt` to `top`. */
 	if(to_next != SETnull) hash->entries[to_next].next = hash->top;
-	memcpy(top, vic, sizeof *vic), vic->next = SETnull;
+	memcpy(top, tgt, sizeof *tgt), tgt->next = SETnull;
 }
 
 /** `hash` will be searched linearly for `key` which has `code`.
- @fixme Fix for inverse. @fixme Move to front like splay trees? */
+ @fixme Move to front like splay trees? */
 static struct PM_(entry) *PM_(get)(struct M_(hash) *const hash,
 	const PM_(key) key, const PM_(uint) code) {
 	struct PM_(entry) *entry;
