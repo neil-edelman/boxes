@@ -115,18 +115,17 @@
  of half the cardinality of this type. */
 typedef HASH_UINT PM_(uint);
 
-/** Valid tag type defined by `HASH_KEY`. This code makes the simplifying
- assumption that this is not `const`-qualified. */
+/** Valid tag type defined by `HASH_KEY`. */
 typedef HASH_KEY PM_(domain);
-/** Used on read-only. If one sees a duplicate `const` warning, consider
- X-macros defining an `enum` instead. */
-typedef const HASH_KEY PM_(ctype);
+/** Used on read-only. This code makes the simplifying assumption that this is
+ not `const`-qualified. */
+typedef const HASH_KEY PM_(cdomain);
 
 /** A map from <typedef:<PM>ctype> onto <typedef:<PM>uint>. Usually should use
  all the the argument and output should be as close as possible to a discrete
  uniform distribution. It is up to the user to provide an appropriate code
  function. */
-typedef PM_(uint) (*PM_(code_fn))(PM_(ctype));
+typedef PM_(uint) (*PM_(code_fn))(PM_(cdomain));
 /* Check that `HASH_CODE` is a function implementing <typedef:<PM>code_fn>. */
 static const PM_(code_fn) PM_(code) = (HASH_CODE);
 
@@ -139,7 +138,7 @@ typedef PM_(domain) (*PM_(inverse_code_fn))(PM_(uint));
 
 /** Equivalence relation between <typedef:<PM>ctype> that satisfies
  `<PM>is_equal_fn(a, b) -> <PM>HASH_CODE(a) == <PM>HASH_CODE(b)`. */
-typedef int (*PM_(is_equal_fn))(PM_(ctype) a, PM_(ctype) b);
+typedef int (*PM_(is_equal_fn))(PM_(cdomain) a, PM_(cdomain) b);
 /* Check that `HASH_IS_EQUAL` is a function implementing
  <typedef:<PM>is_equal_fn>. */
 static const PM_(is_equal_fn) PM_(equal) = (HASH_IS_EQUAL);
@@ -269,12 +268,12 @@ static int PM_(in_stack_range)(const struct M_(hash) *const hash,
 #define QUOTE(name) QUOTE_(name)
 #ifdef HASH_TEST
 static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn);
-static void (*PM_(to_string))(PM_(ctype), char (*)[12]);
+static void (*PM_(to_string))(PM_(cdomain), char (*)[12]);
 #else
 static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) {
 	(void)hash, (void)fn;
 }
-static void PM_(to_string)(PM_(ctype) data, char (*z)[12])
+static void PM_(to_string)(PM_(cdomain) data, char (*z)[12])
 	{ (void)data, strcpy(*z, "<key>"); }
 #endif
 
@@ -674,7 +673,7 @@ static PM_(domain) M_(hash_next_key)(struct M_(hash_iterator) *const it) {
 
 #ifdef HASH_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PM_(to_string))(PM_(ctype), char (*)[12]);
+static void (*PM_(to_string))(PM_(cdomain), char (*)[12]);
 static const char *(*PM_(hash_to_string))(const struct M_(hash) *);
 #include "../test/test_hash.h"
 #endif /* test --> */
@@ -701,7 +700,7 @@ static void PM_(unused_base_coda)(void) { PM_(unused_base)(); }
 #endif
 #define TSZ_(n) HASH_CAT(hash_sz, SZ_(n))
 /* Check that `HASH_TO_STRING` is a function implementing this prototype. */
-static void (*const TSZ_(actual_to_string))(PM_(ctype), char (*const)[12])
+static void (*const TSZ_(actual_to_string))(PM_(cdomain), char (*const)[12])
 	= (HASH_TO_STRING);
 /** This is to line up the hash, which can have <typedef:<PM>key> a pointer or
  not, with to string, which requires a pointer. Call
@@ -714,7 +713,7 @@ static void TSZ_(thunk_to_string)(const struct PM_(entry) *const entry,
 #include "to_string.h" /** \include */
 #ifdef HASH_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef HASH_TEST
-static void (*PM_(to_string))(PM_(ctype), char (*const)[12])
+static void (*PM_(to_string))(PM_(cdomain), char (*const)[12])
 	= TSZ_(actual_to_string);
 static const char *(*PM_(hash_to_string))(const struct M_(hash) *)
 	= &SZ_(to_string);
