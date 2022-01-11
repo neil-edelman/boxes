@@ -15,7 +15,7 @@
 
  @param[HASH_NAME, HASH_KEY]
  `<M>` that satisfies `C` naming conventions when mangled and a valid
- <typedef:<PM>key> associated therewith; required. `<PM>` is private, whose
+ <typedef:<PM>domain> associated therewith; required. `<PM>` is private, whose
  names are prefixed in a manner to avoid collisions; any should be re-defined
  prior to use elsewhere.
 
@@ -118,25 +118,26 @@ typedef HASH_UINT PM_(uint);
 /** Valid tag type defined by `HASH_KEY`. */
 typedef HASH_KEY PM_(domain);
 /** Used on read-only. This code makes the simplifying assumption that this is
- not `const`-qualified. */
-typedef const HASH_KEY PM_(cdomain);
+ not `const`-qualified. (Not to be confused with <typedef:<PM>codomain>.) */
+typedef const PM_(domain) PM_(cdomain);
 
-/** A map from <typedef:<PM>ctype> onto <typedef:<PM>uint>. Usually should use
- all the the argument and output should be as close as possible to a discrete
- uniform distribution. It is up to the user to provide an appropriate code
- function. */
+/** A map from <typedef:<PM>cdomain> onto <typedef:<PM>uint>. In general, a
+ good hash should use all the the argument and should as close as possible to a
+ discrete uniform distribution. It is up to the user to provide an appropriate
+ hash code function. */
 typedef PM_(uint) (*PM_(code_fn))(PM_(cdomain));
 /* Check that `HASH_CODE` is a function implementing <typedef:<PM>code_fn>. */
 static const PM_(code_fn) PM_(code) = (HASH_CODE);
 
 #ifdef HASH_INVERSE /* <!-- inv */
-/** Defining `HASH_INVERSE` says that the <typedef:<PM>key> forms a bijection
- with <typedef:<PM>uint>; this is inverse-mapping to <typedef:<PM>code_fn>.
- Used to avoid having to store the <typedef:<PM>key>. */
+/** Defining `HASH_INVERSE` says that the <typedef:<PM>domain> forms a
+ bijection with <typedef:<PM>uint>; this is inverse-mapping to
+ <typedef:<PM>code_fn>. Used to avoid storing the key itself. */
 typedef PM_(domain) (*PM_(inverse_code_fn))(PM_(uint));
+static const PM_(inverse_code_fn) PM_(inverse_code) = (HASH_INVERSE);
 #endif /* inv --> */
 
-/** Equivalence relation between <typedef:<PM>ctype> that satisfies
+/** Equivalence relation between <typedef:<PM>cdomain> that satisfies
  `<PM>is_equal_fn(a, b) -> <PM>HASH_CODE(a) == <PM>HASH_CODE(b)`. */
 typedef int (*PM_(is_equal_fn))(PM_(cdomain) a, PM_(cdomain) b);
 /* Check that `HASH_IS_EQUAL` is a function implementing
@@ -653,7 +654,7 @@ static void M_(hash_begin)(struct M_(hash_iterator) *const it,
 /** @return Whether the hash specified by <fn:<M>hash_begin> has a next entry. */
 static int M_(hash_has_next)(struct M_(hash_iterator) *const it) {
 	assert(it);
-	/* <tag:<PM>entry> is fine for private returning, but <typedef:<PM>key>
+	/* <tag:<PM>entry> is fine for private returning, but <typedef:<PM>domain>
 	 may not even be nullable. */
 	return it->it.hash && it->it.hash->entries && PM_(skip)(&it->it);
 }
@@ -702,7 +703,7 @@ static void PM_(unused_base_coda)(void) { PM_(unused_base)(); }
 /* Check that `HASH_TO_STRING` is a function implementing this prototype. */
 static void (*const TSZ_(actual_to_string))(PM_(cdomain), char (*const)[12])
 	= (HASH_TO_STRING);
-/** This is to line up the hash, which can have <typedef:<PM>key> a pointer or
+/** This is to line up the hash, which can have <typedef:<PM>domain> a pointer or
  not, with to string, which requires a pointer. Call
  <data:<TSZ>actual_to_string> with key of `entry` and `z`. */
 static void TSZ_(thunk_to_string)(const struct PM_(entry) *const entry,
