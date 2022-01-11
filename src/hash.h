@@ -145,21 +145,19 @@ typedef int (*PM_(is_equal_fn))(PM_(ckey) a, PM_(ckey) b);
 static const PM_(is_equal_fn) PM_(equal) = (HASH_IS_EQUAL);
 
 #ifdef HASH_VALUE /* <!-- value */
-/** Defining `HASH_VALUE` creates another entry for associative maps. */
+/** Defining `HASH_VALUE` creates another entry for associative maps, otherwise
+ it is the same as <typedef:<PM>key>. */
 typedef HASH_VALUE PM_(value);
 /** Defining `HASH_VALUE` creates this entry association from key to value.
- @fixme Ugly. */
+ @fixme Ugly. Maybe don't need? */
 struct M_(hash_map) { PM_(key) key; PM_(value) value; };
 /** If `HASH_VALUE`, then this is a <tag:<M>hash_map> from <typedef:<PM>ckey>,
- the domain, to <typedef:<PM>value>, the <typedef:<PM>codomain>; otherwise,
- it's a set, and this is the same as <typedef:<PM>key>. */
+ the domain, to <typedef:<PM>value>, the codomain; otherwise, it's a set, and
+ this is the same as <typedef:<PM>key>. */
 typedef struct M_(hash_map) PM_(map);
-/** If `HASH_VALUE`, then <typedef:<PM>value> is the codomain; otherwise, it
- is the same as <typedef:<PM>key>. */
-typedef PM_(value) PM_(codomain); /* Range \in image \in codomain. */
 #else /* value --><!-- !value */
+typedef PM_(key) PM_(value);
 typedef PM_(key) PM_(map);
-typedef PM_(key) PM_(codomain);
 #endif /* !value --> */
 
 /** Entries are what makes up the hash table. A bucket is a set of all entries
@@ -179,13 +177,48 @@ struct PM_(entry) {
 #endif
 };
 
-static void PM_(entry_to_map)(struct PM_(entry) *const entry,
-	PM_(map) *const map) {
-	assert(entry && map);
+#if 0
+/*
+typedef HASH_KEY PM_(key);
+!VALUE typedef PM_(key) PM_(map);
+VALUE typedef HASH_VALUE PM_(value);
+VALUE struct M_(hash_map) { PM_(key) key; PM_(value) value; };
+VALUE typedef struct M_(hash_map) PM_(map);
+*/
+static void PM_(map_to_entry)(const PM_(map) *const map,
+	struct PM_(entry) *const entry) {
+	entry->next = SETend;
+#ifndef HASH_NO_CACHE /* <!-- cache */
 #ifdef HASH_VALUE
+	entry->code = PM_(code)(map->key);
 #else
+	entry->code = PM_(code)(map);
 #endif
+#endif /* cache --> */
+#ifndef HASH_INVERSE /* <!-- !inv */
+	PM_(key) key;
+#endif /* !inv --> */
+#ifdef HASH_VALUE
+	PM_(value) value;
+#endif
+#ifdef HASH_VALUE /* <!-- value */
+#error Unfinished.
+#ifdef HASH_INVERSE /* <!-- inv */
+	entry->code = PM_(code)(map->key);
+#else /* inv --><!-- !inv */
+	memcpy(entry, map, sizeof *map);
+#endif /* !inv --> */
+#else /* value --><!-- !value */
+	assert(sizeof(PM_(key)) == sizeof(PM_(value))
+		&& sizeof(PM_(key)) == sizeof(PM_(map)));
+#ifdef HASH_INVERSE /* <!-- inv */
+	entry = PM_(inverse_code)(map);
+#else /* inv --><!-- !inv */
+	memcpy(entry, map, sizeof *map);
+#endif /* !inv --> */
+#endif /* !value --> */
 }
+#endif
 
 /** Fill `entry` with `port` and `code`. The entry must be empty.
  fixme: This is very confusing; only called in one place. Maybe a macro would
@@ -228,6 +261,17 @@ static PM_(key) PM_(entry_key)(const struct PM_(entry) *const entry) {
 	return PM_(inverse_code_fn)(&entry->code);
 #else
 	return entry->key;
+#endif
+}
+
+static void PM_(entry_to_map)(const struct PM_(entry) *const entry,
+	PM_(map) *const map) {
+	assert(entry && map);
+#ifdef HASH_VALUE /* map { <PM>key key; <PM>value value; } */
+	map->key = PM_(entry_key)(entry);
+	memcpy(&map->value, &entry->value, sizeof entry->value);
+#else /* map <PM>key */
+	*map = PM_(entry_key)(entry);
 #endif
 }
 
