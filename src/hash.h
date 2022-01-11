@@ -456,7 +456,7 @@ static int PM_(put)(struct M_(hash) *const hash, const PM_(replace_fn) replace,
 	struct PM_(entry) *entry;
 	PM_(uint) code, idx, next = SETend /* The end of a linked-list. */, size;
 	char z[12];
-	assert(hash /*&& key Null keys possible. */);
+	assert(hash);
 	PM_(to_string)(key, &z);
 	if(eject) *eject = 0;
 	code = PM_(code)(key);
@@ -471,13 +471,10 @@ static int PM_(put)(struct M_(hash) *const hash, const PM_(replace_fn) replace,
 	} else { /* Expand. */
 		if(!PM_(buffer)(hash, 1)) return 0; /* Amortized. */
 		entry = hash->entries + (idx = PM_(code_to_entry)(hash, code));
-		/*printf("\tput expand: \"%s\" index 0x%lx from code 0x%lx\n",
-			z, (unsigned long)idx, (unsigned long)code);*/
 		size++;
 		if(entry->next != SETnull) { /* Unoccupied. */
 			int already_in_stack = PM_(code_to_entry)(hash,
 				PM_(entry_code)(entry)) != idx;
-			/*printf("\tis_in_stack 0x%lx: %d\n", (unsigned long)idx, is_in_stack);*/
 			PM_(move_to_top)(hash, idx);
 			next = already_in_stack ? SETend : hash->top;
 			assert(entry->next == SETnull
@@ -506,9 +503,9 @@ static int M_(hash_buffer)(struct M_(hash) *const hash, const PM_(uint) n)
 	{ return assert(hash), PM_(buffer)(hash, n); }
 
 /** Clears and removes all entries from `hash`. The capacity and memory of the
- code table is preserved, but all previous values are un-associated. The load
- factor will be less until it reaches it's previous size.
- @order \Theta(`hash.entries`) @allow */
+ hash table is preserved, but all previous values are un-associated. (The load
+ factor will be less until it reaches it's previous size.)
+ @order \Theta(`hash.capacity`) @allow */
 static void M_(hash_clear)(struct M_(hash) *const hash) {
 	struct PM_(entry) *b, *b_end;
 	assert(hash);
@@ -518,10 +515,9 @@ static void M_(hash_clear)(struct M_(hash) *const hash) {
 	hash->size = 0;
 }
 
-/** @return The value in `hash` which <typedef:<PM>is_equal_fn> `HASH_IS_EQUAL`
- `key`, or, if no such value exists, null.
- @order Average \O(1), (code distributes elements uniformly); worst \O(n).
- @allow */
+/** @return The value in `hash` which is equal `key`, or, if no such value
+ exists, null. @order Average \O(1), (code distributes elements uniformly);
+ worst \O(n). @allow */
 static PM_(key) M_(hash_get)(struct M_(hash) *const hash, const PM_(key) key) {
 	struct PM_(entry) *b;
 	assert(hash);
