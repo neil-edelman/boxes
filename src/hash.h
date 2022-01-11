@@ -154,8 +154,8 @@ struct M_(hash_map) { PM_(key) key; PM_(value) value; };
  the domain, to <typedef:<PM>value>, the <typedef:<PM>codomain>; otherwise,
  it's a set, and this is the same as <typedef:<PM>key>. */
 typedef struct M_(hash_map) PM_(map);
-/** If `HASH_VALUE`, then <typedef:<PM>value> is the codomain; otherwise, it is
- the same as <typedef:<PM>key>. */
+/** If `HASH_VALUE`, then <typedef:<PM>value> is the codomain; otherwise, it
+ is the same as <typedef:<PM>key>. */
 typedef PM_(value) PM_(codomain); /* Range \in image \in codomain. */
 #else /* value --><!-- !value */
 typedef PM_(key) PM_(map);
@@ -686,7 +686,7 @@ static const char *(*PM_(hash_to_string))(const struct M_(hash) *);
 static void PM_(unused_base_coda)(void);
 static void PM_(unused_base)(void) {
 	M_(hash)(0); M_(hash_)(0); M_(hash_buffer)(0, 0); M_(hash_clear)(0);
-	M_(hash_query)(0, 0, 0);/* @fixme Might not work. */
+	M_(hash_query)(0, 0, 0);/* @fixme Might not work; key is whatever. */
 	M_(hash_get)(0, 0); /* @fixme Parameterize. */
 	M_(hash_replace)(0, 0);  M_(hash_policy_put)(0, 0, 0);
 	/*M_(hash_remove)(0, 0);*/
