@@ -72,7 +72,7 @@
 #endif /* idempotent --> */
 
 
-#if HEAP_TRAITS == 0 /* <!-- base code */
+#if HEAP_TRAITS == 0 /* <!-- base hash */
 
 
 #ifndef HEAP_TYPE
@@ -364,7 +364,7 @@ static void PH_(unused_base)(void) {
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 
-#elif defined(HEAP_TO_STRING) /* base code --><!-- to string trait */
+#elif defined(HEAP_TO_STRING) /* base hash --><!-- to string trait */
 
 
 #ifdef HEAP_TO_STRING_NAME /* <!-- name */

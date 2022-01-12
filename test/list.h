@@ -34,7 +34,7 @@
  framework using `assert`. Can only be defined once _per_ `Array`. Must be
  defined equal to a (random) filler function, satisfying
  <typedef:<PL>action_fn>. Output will be shown with the to string trait in
- which it's defined; provides tests for the base code and all later traits.
+ which it's defined; provides tests for the base hash and all later traits.
 
  @std C89 */
 
@@ -82,7 +82,7 @@ enum list_operation {
 #endif /* idempotent --> */
 
 
-#if LIST_TRAITS == 0 /* <!-- base code */
+#if LIST_TRAITS == 0 /* <!-- base hash */
 
 
 /* A note about <tag:<L>listlink> and <tag:<L>list>: these don't have to be
@@ -775,7 +775,7 @@ static void PL_(unused_base)(void) {
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
 
-#elif defined(LIST_TO_STRING) /* base code --><!-- to string trait */
+#elif defined(LIST_TO_STRING) /* base hash --><!-- to string trait */
 
 
 #ifdef LIST_TO_STRING_NAME /* <!-- name */

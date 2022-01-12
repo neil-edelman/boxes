@@ -3,7 +3,7 @@
  from [SMAUG](http://www.smaug.org/), which is a derivative of
  [Merc](http://dikumud.com/Children/merc2.asp), and
  [DikuMud](http://dikumud.com/); used under fair-use. Contains
- [MurmurHash](https://github.com/aappleby/smhasher)-derived code, placed in
+ [MurmurHash](https://github.com/aappleby/smhasher)-derived hash, placed in
  public domain by Austin Appleby.
 
  @subtitle Name generator

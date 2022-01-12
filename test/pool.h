@@ -74,7 +74,7 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #endif /* idempotent --> */
 
 
-#if POOL_TRAITS == 0 /* <!-- base code */
+#if POOL_TRAITS == 0 /* <!-- base hash */
 
 
 #ifndef POOL_CHUNK_MIN_CAPACITY /* <!-- !min */
@@ -331,7 +331,7 @@ static void PP_(unused_base)(void) {
 static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
 
-#elif defined(POOL_TO_STRING) /* base code --><!-- to string trait */
+#elif defined(POOL_TO_STRING) /* base hash --><!-- to string trait */
 
 
 #ifdef POOL_TO_STRING_NAME /* <!-- name */

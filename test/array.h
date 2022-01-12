@@ -81,7 +81,7 @@
 #endif /* idempotent --> */
 
 
-#if ARRAY_TRAITS == 0 /* <!-- base code */
+#if ARRAY_TRAITS == 0 /* <!-- base hash */
 
 
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
@@ -311,7 +311,7 @@ static void PA_(unused_base)(void) {
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
-#elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
+#elif defined(ARRAY_TO_STRING) /* base hash --><!-- to string trait */
 
 
 #ifdef ARRAY_TO_STRING_NAME

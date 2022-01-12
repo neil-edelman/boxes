@@ -28,7 +28,7 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 	{ strcpy(*a, zodiac[z]); /* strlen z <= 11 */ }
 #define SET_NAME zodiac
 #define SET_KEY enum zodiac
-#define SET_CODE &hash_zodiac
+#define SET_HASH &hash_zodiac
 #define SET_IS_EQUAL &zodiac_is_equal
 #define SET_NO_CACHE /* Don't bother caching `x -> x`. */
 /* <tag:<PS>bucket> more packed than `size_t`: `unsigned next, enum key`. */
@@ -49,7 +49,7 @@ static int length1_equal(const char *const a, const char *const b)
 	{ return strlen(a) == strlen(b); } /* Calculating this is inefficient. */
 #define SET_NAME length1
 #define SET_KEY char *
-#define SET_CODE &strlen
+#define SET_HASH &strlen
 #define SET_IS_EQUAL &length1_equal
 #include "../src/set.h"
 /* Can use it to count bytes in words in \O(\sum `bytes`). */
@@ -101,7 +101,7 @@ static void nato(void) {
 
 
 
-/* String hash code. For testing automated testing, we have somewhere to store
+/* String hash hash. For testing automated testing, we have somewhere to store
  the strings. */
 struct str16 { char str[16]; };
 #define POOL_NAME str16
@@ -120,19 +120,19 @@ static void string_to_string(const char *const s, char (*const a)[12]) {
 	strncpy(*a, s, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-/** One must supply the code. djb2 <http://www.cse.yorku.ca/~oz/code.html> is
+/** One must supply the hash. djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
  a simple one that works adequately and is mostly `size_t`-length agnostic. */
-static size_t djb2_code(const char *s) {
+static size_t djb2_hash(const char *s) {
 	const unsigned char *str = (const unsigned char *)s;
-	size_t code = 5381, c;
-	while(c = *str++) code = ((code << 5) + code) + c; /* code * 33 + c */
-	return code;
+	size_t hash = 5381, c;
+	while(c = *str++) hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	return hash;
 }
 static int string_is_equal(const char *const a, const char *const b)
 	{ return !strcmp(a, b); }
 #define SET_NAME string
-#define SET_KEY char * /* Parameter of <fn:djb2_code> (without `const`.) */
-#define SET_CODE &djb2_code /* Default returns `size_t`. */
+#define SET_KEY char * /* Parameter of <fn:djb2_hash> (without `const`.) */
+#define SET_HASH &djb2_hash /* Default returns `size_t`. */
 #define SET_IS_EQUAL &string_is_equal
 #define SET_TEST /* Testing requires to string. */
 #define SET_EXPECT_TRAIT
@@ -141,7 +141,7 @@ static int string_is_equal(const char *const a, const char *const b)
 #include "../src/set.h"
 
 
-/* Integer code. */
+/* Integer hash. */
 #if UINT_MAX < 4294967295
 #error These tests assume >= 32-bit integer; real applications would use fixed.
 #endif
@@ -149,7 +149,7 @@ static int string_is_equal(const char *const a, const char *const b)
 #define POOL_TYPE unsigned
 #include "pool.h"
 /** <https://nullprogram.com/blog/2018/07/31/>
- <https://github.com/skeeto/code-prospector>. */
+ <https://github.com/skeeto/hash-prospector>. */
 static unsigned lowbias32(unsigned x) {
 	x ^= x >> 16;
 	x *= 0x7feb352d;
@@ -169,7 +169,7 @@ static unsigned int_from_void(void *const pool) { return int_from_pool(pool); }
 #define SET_NAME int
 #define SET_KEY unsigned /* Parameter of <fn:lowbias32>. */
 #define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
-#define SET_CODE &lowbias32
+#define SET_HASH &lowbias32
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TEST
 #define SET_EXPECT_TRAIT
@@ -225,7 +225,7 @@ int main(void) {
 	}
 	{ /* Linked dictionary. */
 		struct entry_pool buckets = POOL_IDLE;
-		const size_t limit = (size_t)500000/*0<-This takes a while to code up.*/;
+		const size_t limit = (size_t)500000/*0<-This takes a while to hash up.*/;
 		struct dict_entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
 		struct key_hash khash = SET_IDLE;
@@ -241,12 +241,12 @@ int main(void) {
 			entry_fill(e);
 			if(!key_hash_reserve(&khash, 1))
 				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
-			/* Don't go replacing elements; `elem` is code on collision. */
+			/* Don't go replacing elements; `elem` is hash on collision. */
 			elem = key_hash_policy_put(&khash, &e->elem, 0);
 			if(elem) { assert(elem == &e->elem), is_used = 0; continue; }
 			is_used = 1;
 			unique++;
-			/* Keep the list up to date with the codemap. */
+			/* Keep the list up to date with the hashmap. */
 			key_list_push(&klist, &e->node);
 			/* Test if we can find `sp_e_lim` of them; presumably they will be
 			 randomised by sorting, but accessable to the `KeySet` on `O(1)`. */
@@ -359,7 +359,7 @@ finally:
 
 #if 0
 
-/* <https://github.com/aappleby/smcodeer/> */
+/* <https://github.com/aappleby/smhasher/> */
 
 #if 0x8000 * 2 == 0
 #error 16-bit max length is not supported in this test.
@@ -386,8 +386,8 @@ static size_t fnv_64a_str(const char *const str) {
 static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
 #endif
 
-/** <https://github.com/skeeto/code-prospector> */
-uint16_t code16_xm2(uint16_t x) {
+/** <https://github.com/skeeto/hash-prospector> */
+uint16_t hash16_xm2(uint16_t x) {
 	x ^= x >> 8; x *= 0x88b5u;
 	x ^= x >> 7; x *= 0xdb2du;
 	x ^= x >> 9;
@@ -399,16 +399,16 @@ uint16_t code16_xm2(uint16_t x) {
 #if 0
 
 /* Used to test `SET_UINT`; normally `unsigned int`, here `unsigned char`.
- Useful if you want to use a specific code length, _eg_, `C99`'s `uint32_t` or
+ Useful if you want to use a specific hash length, _eg_, `C99`'s `uint32_t` or
  `uint64_t`. */
 
-/** Fast code function. */
-static unsigned char byteint_code(unsigned x) { return (unsigned char)x; }
+/** Fast hash function. */
+static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
 /* All the same functions as above, otherwise. */
 #define SET_NAME byteint
 #define SET_KEY unsigned
 #define SET_UINT unsigned char
-#define SET_CODE &byteint_code
+#define SET_HASH &byteint_hash
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TEST &int_fill
 #define SET_EXPECT_TRAIT
@@ -423,8 +423,8 @@ struct vec4 {
 	int n[2];
 };
 /* If we cheat a little, knowing that the numbers are 0-9, we can get a much
- more evenly distributed code value. */
-static unsigned vec4_code(const struct vec4 *const v4) {
+ more evenly distributed hash value. */
+static unsigned vec4_hash(const struct vec4 *const v4) {
 	return (unsigned)(1 * v4->n[0] + 10 * v4->n[1]
 		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a'));
 }
@@ -444,11 +444,11 @@ static void vec4_filler(struct vec4 *const v4) {
 }
 #define SET_NAME vec4
 #define SET_KEY struct vec4
-/* <fn:vec4_code> and <fn:vec4_is_equal> have an extra level of indirection.
+/* <fn:vec4_hash> and <fn:vec4_is_equal> have an extra level of indirection.
  This means that we also have to get an object and fill it to use
  <fn:<S>hash_get>; not very convenient. */
 #define SET_POINTER
-#define SET_CODE &vec4_code
+#define SET_HASH &vec4_hash
 #define SET_IS_EQUAL &vec4_is_equal
 #define SET_TEST &vec4_filler
 #define SET_EXPECT_TRAIT
@@ -459,19 +459,19 @@ static void vec4_filler(struct vec4 *const v4) {
 
 /* I wrote Set to solve
  [this problem](https://stackoverflow.com/q/59091226/2472827). In general, one
- has to declare before defining if we want a code map because the
+ has to declare before defining if we want a hash map because the
  `<S>hashlink` is not defined until after. */
 
-static unsigned boat_id_code(const int id) { return (unsigned)id; }
+static unsigned boat_id_hash(const int id) { return (unsigned)id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
 static void boat_id_to_string(const int *const id, char (*const a)[12]);
 static void fill_boat_id(int *const id);
 /* Code generation for `id_hash`. */
 #define SET_NAME id
 #define SET_KEY int
-/* Don't need two `int id; unsigned code = id;` per datum. */
+/* Don't need two `int id; unsigned hash = id;` per datum. */
 #define SET_NO_CACHE
-#define SET_CODE &boat_id_code
+#define SET_HASH &boat_id_hash
 #define SET_IS_EQUAL &boat_id_is_equal
 #define SET_TEST &fill_boat_id
 #define SET_EXPECT_TRAIT
@@ -535,11 +535,11 @@ static int add_up_score(int *const original, int *const replace) {
 	if(r->best_time < o->best_time) o->best_time = r->best_time;
 	return 0; /* Always false because we've sucked the points from `replace`. */
 }
-static void put_in_hash(struct id_hash *const code, struct boat *const b) {
+static void put_in_hash(struct id_hash *const hash, struct boat *const b) {
 	/* Should always reserve memory first if we may be expanding the buffer for
 	 error detection; otherwise it's awkward to tell. */
-	if(!id_hash_reserve(code, 1)) { perror("put_in_hash"); return; }
-	id_hash_policy_put(code, &b->id, &add_up_score);
+	if(!id_hash_reserve(hash, 1)) { perror("put_in_hash"); return; }
+	id_hash_policy_put(hash, &b->id, &add_up_score);
 }
 static void each_boat(struct boat *const bs, const size_t bs_size,
 	void (*const action)(struct boat *)) {
@@ -578,7 +578,7 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 }
 #define SET_NAME key
 #define SET_KEY const char *
-#define SET_CODE &fnv_32a_str
+#define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &key_is_equal
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"

@@ -3,11 +3,11 @@
 
  @subtitle Hash table
 
- ![Example of <string>hash.](../web/hash.png)
+ ![Example of <string>set.](../web/set.png)
 
  <tag:<S>set> is an unordered set or map (associative array) of
- <typedef:<PS>bucket> implemented as a hash table. It must be supplied a hash
- and equality function.
+ <typedef:<PS>entry> implemented as a hash table. It must be supplied a
+ <typedef:<PS>hash_fn> and <typedef:<PS>is_equal_fn>.
 
  [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library
  that provides performance for large sets. Compile-time constant sets are
@@ -19,46 +19,44 @@
  names are prefixed in a manner to avoid collisions; any should be re-defined
  prior to use elsewhere.
 
+ @param[SET_HASH, SET_IS_EQUAL]
+ A function satisfying <typedef:<PS>hash_fn> and <typedef:<PS>is_equal_fn>;
+ required.
+
  @param[SET_VALUE]
  An optional type that is the payload of the set key, thus making this an
  associative array. Should be used when a map is desired and the key and value
  are associated but in independent memory locations; if the key is part of an
- aggregate value, it will be more efficient and more robust to use a type
- conversion from the key.
-
- @param[SET_CODE, SET_IS_EQUAL]
- A function satisfying <typedef:<PS>code_fn> and <typedef:<PS>is_equal_fn>;
- required.
+ aggregate value, it will be more efficient and robust to use a type conversion
+ from the key.
 
  @param[SET_UINT]
- This is <typedef:<PS>uint>, the unsigned type of hash code of the key given by
- <typedef:<PS>code_fn>; defaults to `size_t`.
+ This is <typedef:<PS>uint>, the unsigned type of hash hash of the key given by
+ <typedef:<PS>hash_fn>; defaults to `size_t`.
 
  @param[SET_NO_CACHE]
  Calculate every time; this avoids storing <typedef:<PS>uint> _per_ bucket, but
- can be slower when the hash code is non-trivial to compute.
+ can be slower when the hash is non-trivial to compute.
 
  @param[SET_INVERSE]
- Function satisfying <typedef:<PS>inverse_code_fn> that avoids storing the key,
+ Function satisfying <typedef:<PS>inverse_hash_fn> that avoids storing the key,
  but calculates it from the hashed value. As such, incompatible with
  `SET_NO_CACHE`.
 
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
- @param[SET_TO_STRING]
+ @param[SET_TO_STRING_NAME, SET_TO_STRING]
  To string trait contained in <to_string.h>; `<SZ>` that satisfies `C` naming
  conventions when mangled and function implementing
  <typedef:<PSZ>to_string_fn>. There can be multiple to string traits, but only
  one can omit `SET_TO_STRING_NAME`.
 
  @std C89 */
- /* Bug in cdoc. @fixme Implement move-to-front like splay-trees.
- @fixme Implement SET_NO_CACHE and SET_INVERSE. */
 
 #if !defined(SET_NAME) || !defined(SET_KEY) || !defined(SET_IS_EQUAL) \
-	|| !defined(SET_CODE)
-#error Name SET_NAME, tag type SET_KEY, fns SET_IS_EQUAL, or SET_CODE, undefined.
+	|| !defined(SET_HASH)
+#error Name SET_NAME, tag type SET_KEY, fns SET_IS_EQUAL, or SET_HASH, undefined.
 #endif
 #if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING)
 #define SET_TO_STRING_TRAIT 1
@@ -70,7 +68,7 @@
 #error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
 #endif
 #if defined(SET_NO_CACHE) && defined(SET_INVERSE)
-#error SET_INVERSE has to store the hash code; conflicts with SET_NO_CACHE.
+#error SET_INVERSE has to store the hash hash; conflicts with SET_NO_CACHE.
 #endif
 #if defined(SET_TO_STRING_NAME) && !defined(SET_TO_STRING)
 #error SET_TO_STRING_NAME requires SET_TO_STRING.
@@ -88,7 +86,7 @@
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define SET_CAT_(n, m) n ## _ ## m
 #define SET_CAT(n, m) SET_CAT_(n, m)
-#define S_(n) SET_CAT(SET_NAME, n) /* H is taken by heap; M map. */
+#define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(hash, S_(n))
 #define SET_IDLE { 0, 0, 0, 0, 0 }
 /* When a <typedef:<PS>uint> represents an address in the table, use the sign
@@ -102,72 +100,81 @@
 #endif /* idempotent --> */
 
 
-#if SET_TRAITS == 0 /* <!-- base code */
+#if SET_TRAITS == 0 /* <!-- base set */
 
 
 #ifndef SET_UINT
 #define SET_UINT size_t
 #endif
 
-/** Unsigned integer hash code; <typedef:<PS>code_fn> returns this type. Also
- places a simplifying limit on the maximum number of items in this hash table
- of half the cardinality of this type. */
+/** Unsigned integer hash type; <typedef:<PS>hash_fn> returns this type. Also
+ places a simplifying limit on the maximum number of items in this container of
+ half the cardinality of this type. */
 typedef SET_UINT PS_(uint);
 
 /** Valid tag type defined by `SET_KEY`. */
 typedef SET_KEY PS_(key);
-/** Used on read-only. This code makes the simplifying assumption that this is
+/** Used on read-only. This hash makes the simplifying assumption that this is
  not `const`-qualified. */
 typedef const SET_KEY PS_(ckey);
 
 /** A map from <typedef:<PS>ckey> onto <typedef:<PS>uint>. In general, a good
  hash should use all the the argument and should as close as possible to a
  discrete uniform distribution. It is up to the user to provide an appropriate
- hash code function. */
-typedef PS_(uint) (*PS_(code_fn))(PS_(ckey));
-/* Check that `SET_CODE` is a function implementing <typedef:<PS>code_fn>. */
-static const PS_(code_fn) PS_(code) = (SET_CODE);
+ hash function. */
+typedef PS_(uint) (*PS_(hash_fn))(PS_(ckey));
+/* Check that `SET_HASH` is a function implementing <typedef:<PS>hash_fn>. */
+static const PS_(hash_fn) PS_(hash) = (SET_HASH);
 
 #ifdef SET_INVERSE /* <!-- inv */
-/** Defining `SET_INVERSE` says that the <typedef:<PS>key> forms a bijection
- with <typedef:<PS>uint>; this is inverse-mapping to <typedef:<PS>code_fn>.
- Used to avoid storing the key itself. */
-typedef PS_(key) (*PS_(inverse_code_fn))(PS_(uint));
-static const PS_(inverse_code_fn) PS_(inverse_code) = (SET_INVERSE);
+/** Defining `SET_INVERSE` says <typedef:<PS>hash_fn> forms a bijection between
+ the range in <typedef:<PS>key> and the image in <typedef:<PS>uint>. This is
+ the inverse-mapping, which is used to avoid storing the key itself. */
+typedef PS_(key) (*PS_(inverse_hash_fn))(PS_(uint));
+/* Check that `SET_INVERSE` is a function implementing
+ <typedef:<PS>inverse_hash_fn>. */
+static const PS_(inverse_hash_fn) PS_(inverse_hash) = (SET_INVERSE);
 #endif /* inv --> */
 
-/** Equivalence relation between <typedef:<PS>ckey> that satisfies
- `<PS>is_equal_fn(a, b) -> <PS>SET_CODE(a) == <PS>SET_CODE(b)`. */
+/** Equivalence relation between <typedef:<PS>key> that satisfies
+ `<PS>is_equal_fn(a, b) -> <PS>hash(a) == <PS>hash(b)`. */
 typedef int (*PS_(is_equal_fn))(PS_(ckey) a, PS_(ckey) b);
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
 #ifdef SET_VALUE /* <!-- value */
-/** Defining `SET_VALUE` creates another bucket for associative maps, otherwise
- it is the same as <typedef:<PS>key>. */
+/** Defining `SET_VALUE` creates another field in the buckets for associative
+ maps, otherwise it is the same as <typedef:<PS>key>. */
 typedef SET_VALUE PS_(value);
-/** Defining `SET_VALUE` creates this bucket association from key to value.
- @fixme Ugly. Maybe don't need? */
-struct S_(set_map) { PS_(key) key; PS_(value) value; };
-/** If `SET_VALUE`, then this is a <tag:<S>hash_map> from <typedef:<PS>ckey>,
- the domain, to <typedef:<PS>value>, the codomain; otherwise, it's a set, and
- this is the same as <typedef:<PS>key>. */
-typedef struct S_(set_map) PS_(map);
-static PS_(key) PS_(map_key)(PS_(map) map) { return map.key; }
+/** Defining `SET_VALUE` creates this map from <typedef:<PS>ckey> to
+ <typedef:<PS>value> as an interface with set. */
+struct S_(set_entry) { PS_(key) key; PS_(value) value; };
+/** If `SET_VALUE`, then this is a map and this is <tag:<S>set_entry>;
+ otherwise, it's a set, and this is the same as <typedef:<PS>key>. */
+typedef struct S_(set_entry) PS_(entry);
 #else /* value --><!-- !value */
 typedef PS_(key) PS_(value);
-typedef PS_(key) PS_(map);
-static PS_(key) PS_(map_key)(PS_(map) map) { return map; }
+typedef PS_(key) PS_(entry);
 #endif /* !value --> */
 
-/** Entries are what make up the hash table. A linked bucket is a set of all
- buckets having the same address, that is, hash code mod table capacity. Each
- occupied bucket has a closed bucket (address equals the index) at it's start. */
+/** @return Key from `e`. */
+static PS_(key) PS_(entry_key)(PS_(entry) e) {
+#ifdef SET_VALUE
+	return e.key;
+#else
+	return e;
+#endif
+}
+
+/* Address is hash modulo size of table. Any occupied buckets at the start of
+ the linked structure are closed, that is, the address equals the index. These
+ form a linked set, possibly with other, open buckets that have the same
+ address in vacant buckets. */
 struct PS_(bucket) {
 	PS_(uint) next; /* In bucket, including `SET_NULL` and `SET_END`. */
 #ifndef SET_NO_CACHE
-	PS_(uint) code;
+	PS_(uint) hash;
 #endif
 #ifndef SET_INVERSE
 	PS_(key) key;
@@ -177,79 +184,37 @@ struct PS_(bucket) {
 #endif
 };
 
-/** Gets the code of an occupied `bucket`, which should be consistent. */
-static PS_(uint) PS_(entry_code)(const struct PS_(bucket) *const bucket) {
+/** Gets the hash of an occupied `bucket`, which should be consistent. */
+static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
 	assert(bucket && bucket->next != SET_NULL);
 #ifdef SET_NO_CACHE
-	return PS_(code)(bucket->key);
+	return PS_(hash)(bucket->key);
 #else
-	return bucket->code;
+	return bucket->hash;
 #endif
 }
 
 /** Gets the key of an occupied `bucket`. */
-static PS_(key) PS_(entry_key)(const struct PS_(bucket) *const bucket) {
+static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 	assert(bucket && bucket->next != SET_NULL);
 #ifdef SET_INVERSE
-	return PS_(inverse_code_fn)(&bucket->code);
+	return PS_(inverse_hash_fn)(&bucket->hash);
 #else
 	return bucket->key;
 #endif
 }
 
-static void PS_(entry_to_map)(const struct PS_(bucket) *const bucket,
-	PS_(map) *const map) {
-	assert(bucket && map);
+/** Fills `entry`, a public structure, with the information of `bucket`. */
+static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
+	PS_(entry) *const entry) {
+	assert(bucket && entry);
 #ifdef SET_VALUE /* map { <PS>key key; <PS>value value; } */
-	map->key = PS_(entry_key)(bucket);
-	memcpy(&map->value, &bucket->value, sizeof bucket->value);
+	entry->key = PS_(bucket_key)(bucket);
+	memcpy(&entry->value, &bucket->value, sizeof bucket->value);
 #else /* map <PS>key */
-	*map = PS_(entry_key)(bucket);
+	*entry = PS_(bucket_key)(bucket);
 #endif
 }
-
-#if 0
-/*
-typedef SET_KEY PS_(key);
-!VALUE typedef PS_(key) PS_(map);
-VALUE typedef SET_VALUE PS_(value);
-VALUE struct S_(set_map) { PS_(key) key; PS_(value) value; };
-VALUE typedef struct S_(set_map) PS_(map);
-*/
-static void PS_(map_to_entry)(const PS_(map) *const map,
-	struct PS_(bucket) *const bucket) {
-	bucket->next = SET_END;
-#ifndef SET_NO_CACHE /* <!-- cache */
-#ifdef SET_VALUE
-	bucket->code = PS_(code)(map->key);
-#else
-	bucket->code = PS_(code)(map);
-#endif
-#endif /* cache --> */
-#ifndef SET_INVERSE /* <!-- !inv */
-	PS_(key) key;
-#endif /* !inv --> */
-#ifdef SET_VALUE
-	PS_(value) value;
-#endif
-#ifdef SET_VALUE /* <!-- value */
-#error Unfinished.
-#ifdef SET_INVERSE /* <!-- inv */
-	bucket->code = PS_(code)(map->key);
-#else /* inv --><!-- !inv */
-	memcpy(bucket, map, sizeof *map);
-#endif /* !inv --> */
-#else /* value --><!-- !value */
-	assert(sizeof(PS_(key)) == sizeof(PS_(value))
-		&& sizeof(PS_(key)) == sizeof(PS_(map)));
-#ifdef SET_INVERSE /* <!-- inv */
-	bucket = PS_(inverse_code)(map);
-#else /* inv --><!-- !inv */
-	memcpy(bucket, map, sizeof *map);
-#endif /* !inv --> */
-#endif /* !value --> */
-}
-#endif
 
 /** To initialize, see <fn:<S>hash>, `SET_IDLE`, `{0}` (`C99`,) or being
  `static`.
@@ -258,33 +223,37 @@ static void PS_(map_to_entry)(const PS_(map) *const map,
 struct S_(set) {
 	struct PS_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	unsigned log_capacity, unused; /* Applies to buckets. fixme: type? */
-	PS_(uint) size, top; /* size <= capacity; open stack, including `SET_END`. */
+	PS_(uint) size, top; /* `size <= capty`; open stack, including `SET_END`. */
+	/* Size is not really needed for it to have the same asymptotic run-time,
+	 but is convenient to have and allows short-circuiting. */
 };
 
-/** The capacity of a non-idle `hash` is always a power-of-two. */
-static PS_(uint) PS_(capacity)(const struct S_(set) *const hash)
-	{ return assert(hash && hash->buckets && hash->log_capacity >= 3),
-	(PS_(uint))((PS_(uint))1 << hash->log_capacity); }
+/** The capacity of a non-idle `set` is always a power-of-two. */
+static PS_(uint) PS_(capacity)(const struct S_(set) *const set)
+	{ return assert(set && set->buckets && set->log_capacity >= 3),
+	(PS_(uint))((PS_(uint))1 << set->log_capacity); }
 
-/** @return Indexes the first `hash.buckets` (closed) from non-idle `hash`
- given the `code`. */
-static PS_(uint) PS_(code_to_entry)(const struct S_(set) *const hash,
-	const PS_(uint) code) { return code & (PS_(capacity)(hash) - 1); }
+/** @return Indexes the first closed bucket in the set of buckets with the same
+ address from non-idle `set` given the `hash`. If the bucket is empty, it have
+ `next = SET_NULL` or it's own <fn:<PS>to_bucket> not equal to the index. */
+static PS_(uint) PS_(to_bucket)(const struct S_(set) *const set,
+	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
-/** This is amortized; every value takes at most one top. On return, the `top`
- of `hash` will be empty, but size is not incremented. */
-static void PS_(grow_stack)(struct S_(set) *const hash) {
-	PS_(uint) top = hash->top;
-	assert(hash && hash->buckets && top);
-	top = (top == SET_END ? PS_(capacity)(hash) : top) - 1;
-	while(hash->buckets[top].next != SET_NULL) assert(top), top--;
-	hash->top = top;
+/** On return, the `top` of `hash` will be empty, but size is not incremented,
+ leaving it in intermediate state. This is amortized; every value takes at most
+ one. */
+static void PS_(grow_stack)(struct S_(set) *const set) {
+	PS_(uint) top = set->top;
+	assert(set && set->buckets && top);
+	top = (top == SET_END ? PS_(capacity)(set) : top) - 1;
+	while(set->buckets[top].next != SET_NULL) assert(top), top--;
+	set->top = top;
 }
 
-/** Is `idx` is `hash` possibly on the stack? */
-static int PS_(in_stack_range)(const struct S_(set) *const hash,
+/** Is `idx` in `set` possibly on the stack? */
+static int PS_(in_stack_range)(const struct S_(set) *const set,
 	const PS_(uint) idx)
-	{ return assert(hash), hash->top != SET_END && hash->top <= idx; }
+	{ return assert(set), set->top != SET_END && set->top <= idx; }
 
 /***********fixme*/
 #define QUOTE_(name) #name
@@ -300,48 +269,48 @@ static void PS_(to_string)(PS_(ckey) data, char (*z)[12])
 	{ (void)data, strcpy(*z, "<key>"); }
 #endif
 
-/** Moves the `target` index in the collision stack to the top, in non-idle
- `hash`. This results in an inconsistent state; one is responsible for filling
- that hole and linking it with top. */
-static void PS_(move_to_top)(struct S_(set) *const hash,
+/** Moves the `target` index in non-idle `set`, to the top of collision stack.
+ This may result in an inconsistent state; one is responsible for filling that
+ hole and linking it with top. */
+static void PS_(move_to_top)(struct S_(set) *const set,
 	const PS_(uint) target) {
 	struct PS_(bucket) *tgt, *top;
 	PS_(uint) to_next, next;
-	const PS_(uint) capacity = PS_(capacity)(hash);
-	assert(hash->size < capacity && target < capacity);
-	PS_(grow_stack)(hash);
-	tgt = hash->buckets + target, top = hash->buckets + hash->top;
+	const PS_(uint) capacity = PS_(capacity)(set);
+	assert(set->size < capacity && target < capacity);
+	PS_(grow_stack)(set);
+	tgt = set->buckets + target, top = set->buckets + set->top;
 	assert(tgt->next != SET_NULL && top->next == SET_NULL);
 	/* Search for the previous link in the bucket, \O(|bucket|). */
 	for(to_next = SET_NULL,
-		next = PS_(code_to_entry)(hash, PS_(entry_code)(tgt));
+		next = PS_(to_bucket)(set, PS_(bucket_hash)(tgt));
 		assert(next < capacity), next != target;
-		to_next = next, next = hash->buckets[next].next);
+		to_next = next, next = set->buckets[next].next);
 	/* Move `tgt` to `top`. */
-	if(to_next != SET_NULL) hash->buckets[to_next].next = hash->top;
+	if(to_next != SET_NULL) set->buckets[to_next].next = set->top;
 	memcpy(top, tgt, sizeof *tgt), tgt->next = SET_NULL;
 }
 
-/** `hash` will be searched linearly for `key` which has `code`.
+/** `set` will be searched linearly for `key` which has `hash`.
  @fixme Move to front like splay trees? */
-static struct PS_(bucket) *PS_(get)(struct S_(set) *const hash,
-	const PS_(key) key, const PS_(uint) code) {
+static struct PS_(bucket) *PS_(get)(struct S_(set) *const set,
+	const PS_(key) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
-	PS_(uint) idx, next;
-	assert(hash && hash->buckets && hash->log_capacity);
-	bucket = hash->buckets + (idx = PS_(code_to_entry)(hash, code));
+	PS_(uint) i, next;
+	assert(set && set->buckets && set->log_capacity);
+	bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
 	/* Not the start of a bucket: empty or in the collision stack. */
 	if((next = bucket->next) == SET_NULL
-		|| PS_(in_stack_range)(hash, idx)
-		&& idx != PS_(code_to_entry)(hash, PS_(entry_code)(bucket))) return 0;
+		|| PS_(in_stack_range)(set, i)
+		&& i != PS_(to_bucket)(set, PS_(bucket_hash)(bucket))) return 0;
 	for( ; ; ) {
-		int codes_are_equal;
+		int hashes_are_equal;
 #ifdef SET_NO_CACHE
-		codes_are_equal = ((void)(code), 1);
+		hashes_are_equal = ((void)(hash), 1);
 #else
-		codes_are_equal = code == bucket->code;
+		hashes_are_equal = hash == bucket->hash;
 #endif
-		if(codes_are_equal) {
+		if(hashes_are_equal) {
 			int entries_are_equal;
 #ifdef SET_INVERSE
 			entries_are_equal = ((void)(key), 1);
@@ -351,45 +320,45 @@ static struct PS_(bucket) *PS_(get)(struct S_(set) *const hash,
 			if(entries_are_equal) return bucket;
 		}
 		if(next == SET_END) return 0;
-		bucket = hash->buckets + (idx = next);
-		assert(idx < PS_(capacity)(hash) && PS_(in_stack_range)(hash, idx) &&
-			idx != SET_NULL);
+		bucket = set->buckets + (i = next);
+		assert(i < PS_(capacity)(set) && PS_(in_stack_range)(set, i) &&
+			i != SET_NULL);
 		next = bucket->next;
 	}
 }
 
-/** Ensures that `hash` has enough buckets to fill `n` more than the size.
- May invalidate `buckets` and re-arrange the order.
- @return Success; otherwise, `errno` will be hash. @throws[realloc]
+/** Ensures that `set` has enough buckets to fill `n` more than the size. May
+ invalidate and re-arrange the order.
+ @return Success; otherwise, `errno` will be set. @throws[realloc]
  @throws[ERANGE] Tried allocating more then can fit in half <typedef:<PS>uint>
  or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). */
-static int PS_(buffer)(struct S_(set) *const hash, const PS_(uint) n) {
+static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	struct PS_(bucket) *buckets;
-	const unsigned log_c0 = hash->log_capacity;
+	const unsigned log_c0 = set->log_capacity;
 	unsigned log_c1;
 	const PS_(uint) c0 = log_c0 ? (PS_(uint))((PS_(uint))1 << log_c0) : 0;
 	PS_(uint) c1, size1, i, wait, mask;
 	char fn[64];
-	assert(hash && hash->size <= SET_LIMIT && (!hash->buckets && !hash->size
-		&& !log_c0 && !c0 || hash->buckets && hash->size <= c0 && log_c0 >= 3));
+	assert(set && set->size <= SET_LIMIT && (!set->buckets && !set->size
+		&& !log_c0 && !c0 || set->buckets && set->size <= c0 && log_c0 >= 3));
 
 	/* Can we satisfy `n` growth from the buffer? */
-	if(SET_M1 - hash->size < n || SET_LIMIT < (size1 = hash->size + n))
+	if(SET_M1 - set->size < n || SET_LIMIT < (size1 = set->size + n))
 		return errno = ERANGE, 0;
-	if(hash->buckets) log_c1 = log_c0, c1 = c0 ? c0 : 1;
+	if(set->buckets)  log_c1 = log_c0, c1 = c0 ? c0 : 1;
 	else              log_c1 = 3,      c1 = 8;
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
 
 	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-a-before.gv",
-		log_c0, log_c1), PS_(graph)(hash, fn);
+		log_c0, log_c1), PS_(graph)(set, fn);
 
 	/* Otherwise, need to allocate more. */
-	if(!(buckets = realloc(hash->buckets, sizeof *buckets * c1)))
+	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	hash->top = SET_END; /* Idle `top` initialized or reset. */
-	hash->buckets = buckets, hash->log_capacity = log_c1;
+	set->top = SET_END; /* Idle `top` initialized or reset. */
+	set->buckets = buckets, set->log_capacity = log_c1;
 
 	/* Initialize new values. Mask to identify the added bits. */
 	{ struct PS_(bucket) *e = buckets + c0, *const e_end = buckets + c1;
@@ -397,24 +366,24 @@ static int PS_(buffer)(struct S_(set) *const hash, const PS_(uint) n) {
 	mask = (PS_(uint))((((PS_(uint))1 << log_c0) - 1)
 		^ (((PS_(uint))1 << log_c1) - 1));
 
-	/* Recode most closed buckets in the lower half. */
+	/* Rehash most closed buckets in the lower half. */
 	wait = SET_END;
 	for(i = 0; i < c0; i++) {
 		struct PS_(bucket) *idx, *go;
-		PS_(uint) g, code;
-		idx = hash->buckets + i;
+		PS_(uint) g, hash;
+		idx = set->buckets + i;
 		if(idx->next == SET_NULL) continue;
-		g = PS_(code_to_entry)(hash, code = PS_(entry_code)(idx));
-		/* It's a power-of-two size, so, consistent hashing, `E[old/new]`
+		g = PS_(to_bucket)(set, hash = PS_(bucket_hash)(idx));
+		/* It's a power-of-two size, so, like consistent hashing, `E[old/new]`
 		 capacity that a closed bucket will remain where it is. */
 		if(i == g) { idx->next = SET_END; continue; }
-		if((go = hash->buckets + g)->next == SET_NULL) {
+		if((go = set->buckets + g)->next == SET_NULL) {
 			/* Priority is given to the first closed bucket; simpler later. */
 			struct PS_(bucket) *head;
 			PS_(uint) h = g & ~mask; assert(h <= g);
 			if(h < g && i < h
-				&& (head = hash->buckets + h, assert(head->next != SET_NULL),
-				PS_(code_to_entry)(hash, PS_(entry_code)(head)) == g)) {
+				&& (head = set->buckets + h, assert(head->next != SET_NULL),
+				PS_(to_bucket)(set, PS_(bucket_hash)(head)) == g)) {
 				memcpy(go, head, sizeof *head);
 				go->next = SET_END, head->next = SET_NULL;
 				/* Fall-though -- the bucket still needs to be put on waiting. */
@@ -429,17 +398,17 @@ static int PS_(buffer)(struct S_(set) *const hash, const PS_(uint) n) {
 	}
 
 	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-b-obvious.gv",
-		log_c0, log_c1), PS_(graph)(hash, fn);
+		log_c0, log_c1), PS_(graph)(set, fn);
 
 	/* Search waiting stack for buckets that moved concurrently. */
 	{ PS_(uint) prev = SET_END, w = wait; while(w != SET_END) {
-		struct PS_(bucket) *waiting = hash->buckets + w;
-		PS_(uint) cl = PS_(code_to_entry)(hash, PS_(entry_code)(waiting));
-		struct PS_(bucket) *const closed = hash->buckets + cl;
+		struct PS_(bucket) *waiting = set->buckets + w;
+		PS_(uint) cl = PS_(to_bucket)(set, PS_(bucket_hash)(waiting));
+		struct PS_(bucket) *const closed = set->buckets + cl;
 		assert(cl != w);
 		if(closed->next == SET_NULL) {
 			memcpy(closed, waiting, sizeof *waiting), closed->next = SET_END;
-			if(prev != SET_END) hash->buckets[prev].next = waiting->next;
+			if(prev != SET_END) set->buckets[prev].next = waiting->next;
 			if(wait == w) wait = waiting->next; /* First, modify head. */
 			w = waiting->next, waiting->next = SET_NULL;
 		} else {
@@ -449,23 +418,23 @@ static int PS_(buffer)(struct S_(set) *const hash, const PS_(uint) n) {
 	}}
 
 	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-c-closed.gv",
-		log_c0, log_c1), PS_(graph)(hash, fn);
+		log_c0, log_c1), PS_(graph)(set, fn);
 
 	/* Rebuild the (smaller?) top stack (high) from the waiting (low). */
 	while(wait != SET_END) {
-		struct PS_(bucket) *const waiting = hash->buckets + wait;
-		PS_(uint) h = PS_(code_to_entry)(hash, PS_(entry_code)(waiting));
-		struct PS_(bucket) *const head = hash->buckets + h;
+		struct PS_(bucket) *const waiting = set->buckets + wait;
+		PS_(uint) h = PS_(to_bucket)(set, PS_(bucket_hash)(waiting));
+		struct PS_(bucket) *const head = set->buckets + h;
 		struct PS_(bucket) *top;
 		assert(h != wait && head->next != SET_NULL);
-		PS_(grow_stack)(hash), top = hash->buckets + hash->top;
+		PS_(grow_stack)(set), top = set->buckets + set->top;
 		memcpy(top, waiting, sizeof *waiting);
-		top->next = head->next, head->next = hash->top;
+		top->next = head->next, head->next = set->top;
 		wait = waiting->next, waiting->next = SET_NULL; /* Pop. */
 	}
 
 	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-d-final.gv",
-		log_c0, log_c1), PS_(graph)(hash, fn);
+		log_c0, log_c1), PS_(graph)(set, fn);
 
 	return 1;
 }
@@ -474,98 +443,96 @@ static int PS_(buffer)(struct S_(set) *const hash, const PS_(uint) n) {
 #undef QUOTE
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`. */
-typedef int (*PS_(replace_fn))(PS_(key) original, PS_(key) replace);
+typedef int (*PS_(replace_fn))(PS_(value) original, PS_(value) replace);
 
-/** Put `key` in `hash` as long as `replace` is null or returns true.
- @param[eject] If non-null, replaced with the equal element, if any. If
- `replace` returns false, the `map`.
+/** Put `entry` in `set`. For collisions, call `replace` and only if it exists
+ and returns true do and put it in `eject`, if non-null.
+ @param[eject] If `replace` returns false, the `entry` itself.
  @return True except exception. @throws[malloc] @order amortized \O(1) */
-static int PS_(put)(struct S_(set) *const hash, PS_(map) map, PS_(map) *eject,
-	const PS_(replace_fn) replace) {
+static int PS_(put)(struct S_(set) *const set,
+	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace) {
 	struct PS_(bucket) *bucket;
-	const PS_(key) key = PS_(map_key)(map);
-	PS_(uint) code, idx, next = SET_END /* The end of a linked-list. */, size;
-	assert(hash);
-	code = PS_(code)(key);
+	const PS_(key) key = PS_(entry_key)(entry);
+	PS_(uint) hash, i, next = SET_END, size;
+	assert(set);
+	hash = PS_(hash)(key);
 	{
 		char z[12];
 		PS_(to_string)(key, &z);
-		printf("put: \"%s\" code 0x%lx.\n", z, (unsigned long)code);
+		printf("put: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
 	}
-	size = hash->size;
-	if(hash->buckets && (bucket = PS_(get)(hash, key, code))) { /* Replace. */
-		/* Decided not to replace. */
-		if(replace && !replace(PS_(entry_key)(bucket), key))
-			{ if(eject) memcpy(eject, &map, sizeof map); return 1; }
-		if(eject) PS_(entry_to_map)(bucket, eject);
+	size = set->size;
+	if(set->buckets && (bucket = PS_(get)(set, key, hash))) { /* Equal. */
+		if(!replace || !replace(PS_(bucket_key)(bucket), key))
+			{ if(eject) memcpy(eject, &entry, sizeof entry); return 1; }
+		if(eject) PS_(to_entry)(bucket, eject);
 		/* Cut the tail and put new element in the head. */
 		next = bucket->next, bucket->next = SET_NULL, assert(next != SET_NULL);
 	} else { /* Expand. */
-		if(!PS_(buffer)(hash, 1)) return 0; /* Amortized. */
-		bucket = hash->buckets + (idx = PS_(code_to_entry)(hash, code));
+		if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
+		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
 		size++;
 		if(bucket->next != SET_NULL) { /* Unoccupied. */
-			int already_in_stack = PS_(code_to_entry)(hash,
-				PS_(entry_code)(bucket)) != idx;
-			PS_(move_to_top)(hash, idx);
-			next = already_in_stack ? SET_END : hash->top;
+			int in_stack = PS_(to_bucket)(set, PS_(bucket_hash)(bucket)) != i;
+			PS_(move_to_top)(set, i);
+			next = in_stack ? SET_END : set->top;
 			assert(bucket->next == SET_NULL
-				&& (next == SET_END || hash->buckets[next].next != SET_NULL));
+				&& (next == SET_END || set->buckets[next].next != SET_NULL));
 		}
 	}
 	/* Fill `bucket`. The bucket must be empty. */
 	assert(bucket && bucket->next == SET_NULL);
 	bucket->next = next;
-	#ifndef SET_NO_CACHE
-	bucket->code = code;
-	#endif
-	#ifndef SET_INVERSE
+#ifndef SET_NO_CACHE
+	bucket->hash = hash;
+#endif
+#ifndef SET_INVERSE
 	memcpy(&bucket->key, &key, sizeof key);
-	#endif
-	#ifdef SET_VALUE /* <!-- value */
+#endif
+#ifdef SET_VALUE /* <!-- value */
 	/*memcpy(&bucket->value, );*/
-//#error Pending.
-	#endif /* value --> */
-	hash->size = size;
+//#error Pending. fixme
+#endif /* value --> */
+	set->size = size;
 	return 1;
 }
 
-/** Initialises `hash` to idle. @order \Theta(1) @allow */
-static void S_(set)(struct S_(set) *const hash) { assert(hash);
-	hash->buckets = 0; hash->log_capacity = 0; hash->size = 0; hash->top = 0; }
+/** Initialises `set` to idle. @order \Theta(1) @allow */
+static void S_(set)(struct S_(set) *const set) { assert(set);
+	set->buckets = 0; set->log_capacity = 0; set->size = 0; set->top = 0; }
 
-/** Destroys `hash` and returns it to idle. @allow */
-static void S_(set_)(struct S_(set) *const hash)
-	{ assert(hash), free(hash->buckets); S_(set)(hash); }
+/** Destroys `set` and returns it to idle. @allow */
+static void S_(set_)(struct S_(set) *const set)
+	{ assert(set), free(set->buckets); S_(set)(set); }
 
-/** Reserve at least `n` space for buckets of `hash`. This will ensure that
+/** Reserve at least `n` space for buckets of `set`. This will ensure that
  there is space for those buckets and may increase iteration time.
  @return Success.
  @throws[ERANGE] The request was unsatisfiable. @throws[realloc] @allow */
-static int S_(set_buffer)(struct S_(set) *const hash, const PS_(uint) n)
-	{ return assert(hash), PS_(buffer)(hash, n); }
+static int S_(set_buffer)(struct S_(set) *const set, const PS_(uint) n)
+	{ return assert(set), PS_(buffer)(set, n); }
 
-/** Clears and removes all buckets from `hash`. The capacity and memory of the
- hash table is preserved, but all previous values are un-associated. (The load
+/** Clears and removes all buckets from `set`. The capacity and memory of the
+ `set` is preserved, but all previous values are un-associated. (The load
  factor will be less until it reaches it's previous size.)
- @order \Theta(`hash.capacity`) @allow */
-static void S_(set_clear)(struct S_(set) *const hash) {
+ @order \Theta(`set.capacity`) @allow */
+static void S_(set_clear)(struct S_(set) *const set) {
 	struct PS_(bucket) *b, *b_end;
-	assert(hash);
-	if(!hash->buckets) { assert(!hash->log_capacity); return; }
-	for(b = hash->buckets, b_end = b + (1 << hash->log_capacity); b < b_end; b++)
+	assert(set);
+	if(!set->buckets) { assert(!set->log_capacity); return; }
+	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
 		b->next = SET_NULL;
-	hash->size = 0;
+	set->size = 0;
 }
 
-/** @param[map] If non-null, a <typedef:<PS>map> which gets filled on true.
- @return Is `key` in `hash` (which could be null)? */
+/** @param[entry] If non-null, a <typedef:<PS>entry> which gets filled on true.
+ @return Is `key` in `set` (which could be null)? */
 static int S_(set_query)(struct S_(set) *const hash, const PS_(key) key,
-	PS_(map) *const map) {
-	struct PS_(bucket) *e;
-	if(!hash || !hash->buckets || !(e = PS_(get)(hash, key, PS_(code)(key))))
+	PS_(entry) *const entry) {
+	struct PS_(bucket) *b;
+	if(!hash || !hash->buckets || !(b = PS_(get)(hash, key, PS_(hash)(key))))
 		return 0;
-	if(map) PS_(entry_to_map)(e, map);
+	if(entry) PS_(to_entry)(b, entry);
 	return 1;
 }
 
@@ -575,41 +542,38 @@ static int S_(set_query)(struct S_(set) *const hash, const PS_(key) key,
  types, (in C++ they made it work returning zero? eww.) */
 
 /** @return The value in `hash` which is equal `key`, or, if no such value
- exists, null. @order Average \O(1), (code distributes elements uniformly);
+ exists, null. @order Average \O(1), (hash distributes elements uniformly);
  worst \O(n). @allow */
 static PS_(key) S_(set_get)(struct S_(set) *const hash,
 	const PS_(key) key) {
 	struct PS_(bucket) *e;
 	assert(hash);
 	if(!hash->buckets) { assert(!hash->log_capacity); return 0; }
-	e = PS_(get)(hash, key, PS_(code)(key));
+	e = PS_(get)(hash, key, PS_(hash)(key));
 	return e ? PS_(entry_key)(e) : 0;
 }
 #endif
 
-/** Puts `map` in `hash` only if the bucket is absent or if calling `replace`
+/** Puts `entry` in `set` only if the bucket is absent or if calling `replace`
  returns true.
  @param[replace] If null, doesn't do any replacement on collision.
- @return Any ejected element or null. On collision, if `replace` returns false
- or `replace` is null, returns `key` and leaves the other element in the code.
- @throws[realloc, ERANGE] There was an error with a re-sizing.
- Successfully calling <fn:<S>hash_buffer> ensures that this does not happen.
- @order Average amortised \O(1), (code distributes keys uniformly); worst \O(n).
- @allow */
-static int S_(set_policy_put)(struct S_(set) *const hash, PS_(map) map,
-	PS_(map) *eject, const PS_(replace_fn) replace)
-	{ return PS_(put)(hash, map, eject, replace); }
+ @return True except exception. @throws[realloc, ERANGE] There was an error
+ with a re-sizing. @order Average amortised \O(1), (hash distributes keys
+ uniformly); worst \O(n). @allow */
+static int S_(set_policy_put)(struct S_(set) *const set,
+	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace)
+	{ return PS_(put)(set, entry, eject, replace); }
 
 #if 0
 /* fixme: Buffering changes the outcome if it's already in the table, it
- creates a new code anyway. This is not a pleasant situation. */
+ creates a new hash anyway. This is not a pleasant situation. */
 /* fixme: also have a hash_try */
-/** Puts `key` in `code`, and, for keys already in the code, replaces them.
+/** Puts `key` in `hash`, and, for keys already in the hash, replaces them.
  @return Any ejected key or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. It is not
  always possible to tell the difference between an error and a unique key.
  If needed, before calling this, successfully calling <fn:<S>hash_buffer>, or
- hashting `errno` to zero. @order Average amortised \O(1), (code distributes
+ hashting `errno` to zero. @order Average amortised \O(1), (hash distributes
  keys uniformly); worst \O(n) (are you sure that's up to date?). @allow */
 static PS_(map) S_(set_replace)(struct S_(set) *const hash,
 	const PS_(map) map) {
@@ -618,21 +582,21 @@ static PS_(map) S_(set_replace)(struct S_(set) *const hash,
 	return PS_(put)(hash, 0, map, &collide) ? collide : 0;
 }
 
-/** Removes an element `data` from `code`.
- @return Successfully ejected element or null. @order Average \O(1), (code
+/** Removes an element `data` from `hash`.
+ @return Successfully ejected element or null. @order Average \O(1), (hash
  distributes elements uniformly); worst \O(n). @allow */
-static struct S_(setlink) *S_(set_remove)(struct S_(set) *const code,
+static struct S_(setlink) *S_(set_remove)(struct S_(set) *const hash,
 	const PS_(mtype) data) {
-	PS_(uint) code;
+	PS_(uint) hash;
 	struct S_(setlink) **to_x, *x;
-	if(!code || !code->buckets) return 0;
-	code = PS_(set)(data);
-	if(!(to_x = PS_(entry_to)(PS_(get_entry)(code, code), code, data)))
+	if(!hash || !hash->buckets) return 0;
+	hash = PS_(set)(data);
+	if(!(to_x = PS_(entry_to)(PS_(get_entry)(hash, hash), hash, data)))
 		return 0;
 	x = *to_x;
 	*to_x = x->next;
-	assert(code->size);
-	code->size--;
+	assert(hash->size);
+	hash->size--;
 	return x;
 }
 #endif
@@ -640,23 +604,23 @@ static struct S_(setlink) *S_(set_remove)(struct S_(set) *const code,
 /* <!-- iterate interface */
 
 /* Contains all iteration parameters. */
-struct PS_(iterator) { const struct S_(set) *hash; PS_(uint) idx; };
+struct PS_(iterator) { const struct S_(set) *set; PS_(uint) b; };
 
 /** Loads `hash` (can be null) into `it`. @implements begin */
 static void PS_(begin)(struct PS_(iterator) *const it,
 	const struct S_(set) *const hash)
-	{ assert(it), it->hash = hash, it->idx = 0; }
+	{ assert(it), it->set = hash, it->b = 0; }
 
 /** Helper to skip the buckets of `it` that are not there.
  @return Whether it found another index. */
 static int PS_(skip)(struct PS_(iterator) *const it) {
-	const struct S_(set) *const hash = it->hash;
+	const struct S_(set) *const hash = it->set;
 	const PS_(uint) limit = PS_(capacity)(hash);
-	assert(it && it->hash && it->hash->buckets);
-	while(it->idx < limit) {
-		struct PS_(bucket) *const e = hash->buckets + it->idx;
-		if(e->next != SET_NULL) return 1;
-		it->idx++;
+	assert(it && it->set && it->set->buckets);
+	while(it->b < limit) {
+		struct PS_(bucket) *const bucket = hash->buckets + it->b;
+		if(bucket->next != SET_NULL) return 1;
+		it->b++;
 	}
 	return 0;
 }
@@ -664,39 +628,38 @@ static int PS_(skip)(struct PS_(iterator) *const it) {
 /** Advances `it`. @implements next */
 static struct PS_(bucket) *PS_(next)(struct PS_(iterator) *const it) {
 	assert(it);
-	if(!it->hash || !it->hash->buckets) return 0;
-	if(PS_(skip)(it)) return it->hash->buckets + it->idx++;
-	it->hash = 0, it->idx = 0;
+	if(!it->set || !it->set->buckets) return 0;
+	if(PS_(skip)(it)) return it->set->buckets + it->b++;
+	it->set = 0, it->b = 0;
 	return 0;
 }
 
 /* iterate --> */
 
-/** Iteration usually not in any particular order, as it goes by bucket. The
- asymptotic runtime is proportional to the hash capacity. (This will be the
- power-of-two equal-to or greater then the maximum size plus buffering of the
- history of the hash.) */
+/** Iteration usually not in any particular order. The asymptotic runtime is
+ proportional to the hash capacity. (This will be the power-of-two equal-to or
+ greater than the maximum size plus buffering of the history of the set.) */
 struct S_(set_iterator) { struct PS_(iterator) it; };
 
-/** Loads `hash` (can be null) into `it`. */
+/** Loads `set` (can be null) into `it`. */
 static void S_(set_begin)(struct S_(set_iterator) *const it,
 	const struct S_(set) *const hash) { PS_(begin)(&it->it, hash); }
 
-/** @return Whether the hash specified by <fn:<S>hash_begin> has a next bucket. */
+/** @return Whether the set specified to `it` in <fn:<S>set_begin> has a next
+ bucket. */
 static int S_(set_has_next)(struct S_(set_iterator) *const it) {
 	assert(it);
-	/* <tag:<PS>bucket> is fine for private returning, but <typedef:<PS>key>
-	 may not even be nullable. */
-	return it->it.hash && it->it.hash->buckets && PS_(skip)(&it->it);
+	/* <tag:<PS>bucket> is fine for returning private, but <typedef:<PS>key>
+	 may not even be nullable, so we have this. */
+	return it->it.set && it->it.set->buckets && PS_(skip)(&it->it);
 }
 
+/* fixme: PS_(entry) */
 /** Advances `it`. @return The next key or zero. */
 static PS_(key) S_(set_next_key)(struct S_(set_iterator) *const it) {
-	const struct PS_(bucket) *e = PS_(next)(&it->it);
-	return e ? PS_(entry_key)(e) : 0;
+	const struct PS_(bucket) *b = PS_(next)(&it->it);
+	return b ? PS_(bucket_key)(b) : 0;
 }
-
-/* fixme: and value, if VALUE? */
 
 /* <!-- box (multiple traits) */
 #define BOX_ PS_
@@ -712,13 +675,13 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *);
 
 static void PS_(unused_base_coda)(void);
 static void PS_(unused_base)(void) {
-	PS_(map) m;
+	PS_(entry) e;
 	PS_(key) k;
-	memset(&m, 0, sizeof m);
+	memset(&e, 0, sizeof e);
 	memset(&k, 0, sizeof k);
 	S_(set)(0); S_(set_)(0); S_(set_buffer)(0, 0); S_(set_clear)(0);
 	S_(set_query)(0, k, 0);
-	S_(set_policy_put)(0, m, 0, 0);
+	S_(set_policy_put)(0, e, 0, 0);
 	/*S_(set_remove)(0, 0);*/
 	S_(set_begin)(0, 0); S_(set_has_next)(0); S_(set_next_key)(0);
 	PS_(unused_base_coda)();
@@ -726,7 +689,7 @@ static void PS_(unused_base)(void) {
 static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 
 
-#elif defined(SET_TO_STRING) /* base code --><!-- to string trait */
+#elif defined(SET_TO_STRING) /* base hash --><!-- to string trait */
 
 
 #ifdef SET_TO_STRING_NAME
@@ -742,7 +705,7 @@ static void (*const TSZ_(actual_to_string))(PS_(ckey), char (*const)[12])
  not, with to string, which requires a pointer. Call
  <data:<TSZ>actual_to_string> with key of `bucket` and `z`. */
 static void TSZ_(thunk_to_string)(const struct PS_(bucket) *const bucket,
-	char (*const z)[12]) { TSZ_(actual_to_string)(PS_(entry_key)(bucket), z); }
+	char (*const z)[12]) { TSZ_(actual_to_string)(PS_(bucket_key)(bucket), z); }
 #define TO_STRING &TSZ_(thunk_to_string)
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
@@ -774,7 +737,7 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *)
 #undef SET_NAME
 #undef SET_KEY
 #undef SET_UINT
-#undef SET_CODE
+#undef SET_HASH
 #undef SET_IS_EQUAL
 #ifdef SET_VALUE
 #undef SET_VALUE
