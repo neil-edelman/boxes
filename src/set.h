@@ -230,7 +230,7 @@ static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
  `static`.
 
  ![States.](../web/states.png) */
-struct S_(set) {
+struct S_(set) { /* "Padding size," very intentional. */
 	struct PS_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	/* Buckets; `size <= capacity`; open stack, including `SET_END`. */
 	PS_(uint) log_capacity, size, top;
@@ -619,7 +619,7 @@ static struct S_(setlink) *S_(set_remove)(struct S_(set) *const hash,
 struct PS_(iterator) {
 	const struct S_(set) *set;
 	union {
-		void *do_not_warn;
+		const void *const do_not_warn;
 		PS_(uint) b;
 	} _;
 };
