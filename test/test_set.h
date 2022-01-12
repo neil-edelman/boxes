@@ -1,6 +1,6 @@
 /** A call with the container unknown. This is so that the function is free to
  return a key which is part of a larger aggregate structure. */
-typedef PM_(map) (*const PM_(parent_new_fn))(void *);
+typedef PS_(map) (*const PS_(parent_new_fn))(void *);
 
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.
@@ -15,21 +15,21 @@ typedef PM_(map) (*const PM_(parent_new_fn))(void *);
 #endif
 #include <string.h> /* memset */
 
-static size_t PM_(count_bucket)(const struct M_(hash) *const hash,
-	PM_(uint) idx) {
-	struct PM_(entry) *entry;
-	PM_(uint) next;
+static size_t PS_(count_bucket)(const struct S_(set) *const hash,
+	PS_(uint) idx) {
+	struct PS_(bucket) *bucket;
+	PS_(uint) next;
 	size_t no = 0;
-	assert(hash && idx < PM_(capacity)(hash));
-	entry = hash->entries + idx;
-	if((next = entry->next) == SETnull
-		|| idx != PM_(code_to_entry)(hash, PM_(entry_code)(entry))) return 0;
-	for( ; no++, next != SETend; next = entry->next, assert(next != SETnull)) {
+	assert(hash && idx < PS_(capacity)(hash));
+	bucket = hash->buckets + idx;
+	if((next = bucket->next) == SET_NULL
+		|| idx != PS_(code_to_entry)(hash, PS_(entry_code)(bucket))) return 0;
+	for( ; no++, next != SET_END; next = bucket->next, assert(next != SET_NULL)) {
 		idx = next;
-		assert(idx < PM_(capacity)(hash)
+		assert(idx < PS_(capacity)(hash)
 			/* We want to count intermediates.
-			 && PM_(in_stack_range)(hash, idx) */);
-		entry = hash->entries + idx;
+			 && PS_(in_stack_range)(hash, idx) */);
+		bucket = hash->buckets + idx;
 	}
 	return no;
 }
@@ -37,35 +37,35 @@ static size_t PM_(count_bucket)(const struct M_(hash) *const hash,
 /** Mean: `mean`, population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`.
  <Welford1962Note>. */
 static struct { size_t n, max; double mean, ssdm; }
-	PM_(stats) = { 0, 0, 0.0, 0.0 };
-static void PM_(rehash)(void) {
-	PM_(stats).n = PM_(stats).max = 0;
-	PM_(stats).mean = PM_(stats).ssdm = 0.0;
+	PS_(stats) = { 0, 0, 0.0, 0.0 };
+static void PS_(rehash)(void) {
+	PS_(stats).n = PS_(stats).max = 0;
+	PS_(stats).mean = PS_(stats).ssdm = 0.0;
 }
 /** Update one sample point of `value`. */
-static void PM_(update)(const size_t value) {
+static void PS_(update)(const size_t value) {
 	double d, v = value;
-	if(PM_(stats).max < value) PM_(stats).max = value;
-	d = v - PM_(stats).mean;
-	PM_(stats).mean += d / ++PM_(stats).n;
-	PM_(stats).ssdm += d * (v - PM_(stats).mean);
+	if(PS_(stats).max < value) PS_(stats).max = value;
+	d = v - PS_(stats).mean;
+	PS_(stats).mean += d / ++PS_(stats).n;
+	PS_(stats).ssdm += d * (v - PS_(stats).mean);
 }
 /** Collect stats on `hash`. */
-static void PM_(collect)(const struct M_(hash) *const hash) {
-	PM_(uint) idx, idx_end;
-	PM_(rehash)();
-	if(!hash || !hash->entries) return;
-	for(idx = 0, idx_end = PM_(capacity)(hash); idx < idx_end; idx++) {
+static void PS_(collect)(const struct S_(set) *const hash) {
+	PS_(uint) idx, idx_end;
+	PS_(rehash)();
+	if(!hash || !hash->buckets) return;
+	for(idx = 0, idx_end = PS_(capacity)(hash); idx < idx_end; idx++) {
 		size_t no;
 		/* I'm sure there's a cheaper way to do it. */
-		for(no = PM_(count_bucket)(hash, idx); no; no--) PM_(update)(no);
+		for(no = PS_(count_bucket)(hash, idx); no; no--) PS_(update)(no);
 	}
 }
 
 /** Draw a diagram of `hash` written to `fn` in
  [Graphviz](https://www.graphviz.org/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) {
+static void PS_(graph)(const struct S_(set) *const hash, const char *const fn) {
 	FILE *fp;
 	size_t i, i_end;
 	assert(hash && fn);
@@ -74,13 +74,13 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
 		"\tfontface=modern;\n");
-	if(!hash->entries) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
-	PM_(collect)(hash), assert((size_t)hash->size >= PM_(stats).n /* Buckets. */);
+	if(!hash->buckets) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
+	PS_(collect)(hash), assert((size_t)hash->size >= PS_(stats).n /* Buckets. */);
 	fprintf(fp,
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
 		"\thash [label=<<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;"
-		QUOTE(HASH_NAME) "&gt;hash: " QUOTE(HASH_KEY) "</FONT></TD></TR>\n"
+		QUOTE(SET_NAME) "&gt;hash: " QUOTE(SET_KEY) "</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD>&nbsp;</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load"
@@ -99,24 +99,24 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 		" bucket</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
 		"\t</TR>\n",
-		(unsigned long)PM_(stats).n,
-		hash->entries ? (unsigned long)PM_(capacity)(hash) : 0,
-		PM_(stats).n ? PM_(stats).mean : (double)NAN, PM_(stats).n > 1
-		? sqrt(PM_(stats).ssdm / (double)(PM_(stats).n - 1)) : (double)NAN,
-		(unsigned long)PM_(stats).max);
+		(unsigned long)PS_(stats).n,
+		hash->buckets ? (unsigned long)PS_(capacity)(hash) : 0,
+		PS_(stats).n ? PS_(stats).mean : (double)NAN, PS_(stats).n > 1
+		? sqrt(PS_(stats).ssdm / (double)(PS_(stats).n - 1)) : (double)NAN,
+		(unsigned long)PS_(stats).max);
 	fprintf(fp, "\t<TR>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"%s\">hash</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"%s\">key</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">next</FONT></TD>\n"
 		"\t</TR>\n",
-#ifdef HASH_NO_CACHE
+#ifdef SET_NO_CACHE
 		"Times-Italic"
 #else
 		"Times-Bold"
 #endif
 		,
-#ifdef HASH_INVERSE
+#ifdef SET_INVERSE
 		"Times-Italic"
 #else
 		"Times-Bold"
@@ -125,20 +125,20 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 	for(i = 0, i_end = 1 << hash->log_capacity; i < i_end; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
 			*const top = hash->top == i ? " BORDER=\"1\"" : "";
-		struct PM_(entry) *e = hash->entries + i;
+		struct PS_(bucket) *e = hash->buckets + i;
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",
 			top, bgc, (unsigned long)i);
-		if(e->next != SETnull) {
+		if(e->next != SET_NULL) {
 			const char *const closed
-				= PM_(code_to_entry)(hash, PM_(entry_code)(e)) == i
+				= PS_(code_to_entry)(hash, PS_(entry_code)(e)) == i
 				? "⬤" : "◯";
 			char z[12];
-			PM_(to_string)(PM_(entry_key)(e), &z);
+			PS_(to_string)(PS_(entry_key)(e), &z);
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
 				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
 				"\t\t<TD PORT=\"%lu\"%s>%s</TD>\n",
-				bgc, (unsigned long)PM_(entry_code)(e),
+				bgc, (unsigned long)PS_(entry_code)(e),
 				bgc, z,
 				(unsigned long)i, bgc, closed);
 		}
@@ -147,10 +147,10 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 	fprintf(fp, "</TABLE>>];\n");
 	fprintf(fp, "\tnode [shape=plain, fillcolor=none]\n");
 	for(i = 0, i_end = 1 << hash->log_capacity; i < i_end; i++) {
-		struct PM_(entry) *e = hash->entries + i;
-		PM_(uint) left, right;
-		if((right = e->next) == SETnull || right == SETend) continue;
-		if(PM_(code_to_entry)(hash, PM_(entry_code)(e)) != i) {
+		struct PS_(bucket) *e = hash->buckets + i;
+		PS_(uint) left, right;
+		if((right = e->next) == SET_NULL || right == SET_END) continue;
+		if(PS_(code_to_entry)(hash, PS_(entry_code)(e)) != i) {
 			fprintf(fp, "\thash:%lu -> i0x%lx;\n", i, (unsigned long)right);
 			continue;
 		}
@@ -159,9 +159,9 @@ static void PM_(graph)(const struct M_(hash) *const hash, const char *const fn) 
 			"\thash:%lu -> e%lu [tailclip=false];\n",
 			(unsigned long)right, (unsigned long)right,
 			(unsigned long)i, (unsigned long)right);
-		while(left = right, e = hash->entries + left,
-			(right = e->next) != SETend) {
-			assert(right != SETnull);
+		while(left = right, e = hash->buckets + left,
+			(right = e->next) != SET_END) {
+			assert(right != SET_NULL);
 			fprintf(fp,
 				"\te%lu [label=\"0x%lx\"];\n"
 				"\te%lu -> e%lu;\n",
@@ -178,7 +178,7 @@ end:
 /** Draw a histogram of `hash` written to `fn` in
  [Gnuplot](http://www.gnuplot.info/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PM_(histogram)(const struct M_(hash) *const hash,
+static void PS_(histogram)(const struct S_(set) *const hash,
 	const char *const fn) {
 	FILE *fp;
 	size_t histogram[64], hs, h;
@@ -186,10 +186,10 @@ static void PM_(histogram)(const struct M_(hash) *const hash,
 	assert(hash && fn);
 	memset(histogram, 0, sizeof histogram);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	if(hash->entries) {
-		PM_(uint) i, i_end = PM_(capacity)(hash);
+	if(hash->buckets) {
+		PS_(uint) i, i_end = PS_(capacity)(hash);
 		for(i = 0; i < i_end; i++) {
-			size_t bucket = PM_(count_bucket)(hash, i);
+			size_t bucket = PS_(count_bucket)(hash, i);
 			/* The bins are `0,1,2,...,[histogram_size - 1, \infty]`. */
 			if(bucket >= histogram_size) bucket = histogram_size - 1;
 			histogram[bucket]++;
@@ -198,7 +198,7 @@ static void PM_(histogram)(const struct M_(hash) *const hash,
 	/* `historgram_size` is much larger than it has to be, usually. */
 	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
 	/* Stats for fit. */
-	PM_(collect)(hash);
+	PS_(collect)(hash);
 	fprintf(fp, "# Size: %lu.\n"
 		"set term postscript eps enhanced color\n"
 		"set output \"%s.eps\"\n"
@@ -208,14 +208,14 @@ static void PM_(histogram)(const struct M_(hash) *const hash,
 		"set style histogram\n"
 		"set xrange [0:]\n"
 		"unset key\n"
-		"poisson(x) = entries*lambda**x/int(x)!*exp(-lambda)\n"
+		"poisson(x) = buckets*lambda**x/int(x)!*exp(-lambda)\n"
 		"lambda = %f\n"
-		"entries = %lu\n"
+		"buckets = %lu\n"
 		"# what I really want is the Gamma distribution\n"
 		"plot \"-\" using ($1+0.5):2 with boxes lw 3 title \"Histogram\", \\\n"
 		"\tpoisson(int(x)) with lines linestyle 2 title \"Fit\"\n",
 		(unsigned long)hash->size, fn,
-		PM_(stats).mean, (unsigned long)PM_(stats).n);
+		PS_(stats).mean, (unsigned long)PS_(stats).n);
 	for(h = 0; h < hs; h++) fprintf(fp, "%lu\t%lu\n",
 		(unsigned long)h, (unsigned long)histogram[h]);
 	fclose(fp);
@@ -223,111 +223,90 @@ static void PM_(histogram)(const struct M_(hash) *const hash,
 
 /** Assertion function for seeing if `hash` is in a valid state.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PM_(legit)(const struct M_(hash) *const hash) {
-	PM_(uint) i, i_end;
+static void PS_(legit)(const struct S_(set) *const hash) {
+	PS_(uint) i, i_end;
 	size_t size = 0, end = 0, start = 0;
 	if(!hash) return; /* Null. */
-	if(!hash->entries) { /* Idle. */
+	if(!hash->buckets) { /* Idle. */
 		assert(!hash->log_capacity && !hash->size);
 		return;
 	}
 	assert(hash->log_capacity >= 3);
-	for(i = 0, i_end = PM_(capacity)(hash); i < i_end; i++) {
-		struct PM_(entry) *e = hash->entries + i;
-		if(e->next == SETnull) continue;
+	for(i = 0, i_end = PS_(capacity)(hash); i < i_end; i++) {
+		struct PS_(bucket) *e = hash->buckets + i;
+		if(e->next == SET_NULL) continue;
 		size++;
-		if(e->next == SETend) end++;
-		if(i == PM_(code_to_entry)(hash, PM_(entry_code)(e))) start++;
+		if(e->next == SET_END) end++;
+		if(i == PS_(code_to_entry)(hash, PS_(entry_code)(e))) start++;
 	}
 	assert(hash->size == size && end == start && size >= start);
 }
 
-/** Passed `parent_new` and `parent` from <fn:<M>hash_test>. */
-static void PM_(test_basic)(PM_(key) (*const parent_new)(void *),
+/** Passed `parent_new` and `parent` from <fn:<S>hash_test>. */
+static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
 	void *const parent) {
-	struct test { PM_(map) data; int is_in; }
+	struct test { PS_(map) data; int is_in; }
 		test[1000/*0*/], *t;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
 	char z[12];
-	struct M_(hash) hash = HASH_IDLE;
+	struct S_(set) set = SET_IDLE;
 	assert(parent_new
 		/*&& parent static tests are possible*/ && test_size > 1);
 	/* Test empty. */
-	PM_(legit)(&hash);
-	M_(hash)(&hash);
-	assert(!hash.entries && !hash.log_capacity && !hash.size);
-	PM_(legit)(&hash);
-	PM_(graph)(&hash, "graph/" QUOTE(HASH_NAME) "-0.gv");
+	PS_(legit)(&set);
+	S_(set)(&set);
+	assert(!set.buckets && !set.log_capacity && !set.size);
+	PS_(legit)(&set);
+	PS_(graph)(&set, "graph/" QUOTE(SET_NAME) "-0.gv");
 	/* Test placing items. */
 	for(i = 0; i < test_size; i++) {
+		struct { PS_(uint) before, after; } size;
+		int is_grow;
 		int ret;
 		t = test + i;
-		PM_(map) eject, item;
+		PS_(map) eject, item;
 		t->data = parent_new(parent); /* fixme: Completely unchecked! */
-		PM_(to_string)(PM_(map_key)(t->data), &z);
+		PS_(to_string)(PS_(map_key)(t->data), &z);
 		printf("%lu: came up with %s.\n", (unsigned long)i, z);
-		/*success = M_(hash_buffer)(&hash, 1);
-		assert(success && hash.entries);*/
-		ret = M_(hash_policy_put)(&hash, t->data, &eject, 0);
-		assert(ret && (i || hash.size == 1 && !eject));
-		success = M_(hash_query)();
-		/*item = M_(hash_get)(&hash, t->data);*/
-		/* Read back the item was something that was equal. */
-		assert(PM_(equal)(t->data, item));
-		/* How can we get a parent pointer? Probably have to have a pointer.
-		 Tried; I don't think that worked. */
-		size.after = hash.size;
-		/* Either it grew or replaced. */
+		/*success = S_(set_buffer)(&hash, 1);
+		assert(success && hash.buckets);*/
+		memset(&eject, 0, sizeof eject);
+		memset(&item, 0, sizeof item);
+		size.before = set.size;
+		ret = S_(set_policy_put)(&set, t->data, &eject, 0);
+		assert(ret && (i || set.size == 1
+			&& !memcmp(&eject, &item, sizeof item)));
+		size.after = set.size;
 		assert(size.before == size.after || size.after == size.before + 1);
 		is_grow = !!(size.after - size.before);
+		ret = S_(set_query)(&set, PS_(map_key)(t->data), &item);
+		assert(ret && PS_(equal)(t->data, item));
 		/* If it replaced, `eject` must be equal to `data`. */
-		assert(is_grow || PM_(equal)(t->data, eject));
-		if(is_grow)
-#if 0
-		else if(eject) {
-			if(!parent_new) {
-				((struct Test *)(void *)((char *)eject
-					- offhashof(struct Test, space)))->is_in = 0;
-			} else {
-				struct Test *sub_t, *sub_t_end;
-				/* Slow way; we have got a one-way `test -> elem` so it
-				 necessitates a linear search if we want to clear `is_in`. */
-				for(sub_t = test, sub_t_end = t; sub_t < sub_t_end; sub_t++) {
-					if(!sub_t->is_in
-						|| !PM_(equal)(PM_(pointer)(&eject->key),
-						PM_(pointer)(&sub_t->elem->key))) continue;
-					sub_t->is_in = 0;
-					break;
-				}
-				if(t == t_end) assert(0);
-			}
-		}
-		t->is_in = 1;
-#endif
-		if(hash.size < 10000 && !(i & (i - 1))) {
+		assert(is_grow || PS_(equal)(t->data, eject));
+		if(set.size < 10000 && !(i & (i - 1))) {
 			char fn[64];
-			printf("*** hash %s.\n", PM_(hash_to_string)(&hash));
-			sprintf(fn, "graph/" QUOTE(HASH_NAME) "-%lu.gv", (unsigned long)i);
-			PM_(graph)(&hash, fn);
+			printf("*** hash %s.\n", PS_(set_to_string)(&set));
+			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%lu.gv", (unsigned long)i);
+			PS_(graph)(&set, fn);
 		}
-		PM_(legit)(&hash);
+		PS_(legit)(&set);
 	}
 	{
 		char fn[64];
 		printf("\n");
-		sprintf(fn, "graph/" QUOTE(HASH_NAME) "-%u-final.gv",
+		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-final.gv",
 			(unsigned)test_size);
-		PM_(graph)(&hash, fn);
-		sprintf(fn, "graph/histogram-" QUOTE(HASH_NAME) "-%u.gnu",
+		PS_(graph)(&set, fn);
+		sprintf(fn, "graph/histogram-" QUOTE(SET_NAME) "-%u.gnu",
 			(unsigned)test_size);
-		PM_(histogram)(&hash, fn);
+		PS_(histogram)(&set, fn);
 	}
 	printf("Testing get from hash.\n");
 	/* This is more debug info.
 	printf("[ ");
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
-		PM_(to_string)(&t->elem->data, &a);
+		PS_(to_string)(&t->elem->data, &a);
 		printf("%s[%lu-%s]%s", t == test ? "" : ", ",
 			(unsigned long)(t - test), t->is_in ? "yes" : "no", a);
 	}
@@ -335,77 +314,77 @@ static void PM_(test_basic)(PM_(key) (*const parent_new)(void *),
 #if 0
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
 		const size_t n = (size_t)(t - test);
-		struct M_(hashlink) *r;
+		struct S_(setlink) *r;
 		if(!(n & (n - 1))) {
-			PM_(to_string)(&t->elem->key, &a);
+			PS_(to_string)(&t->elem->key, &a);
 			fprintf(stderr, "%lu: retrieving %s.\n", (unsigned long)n, a);
 		}
-		element = M_(hash_get)(&hash, PM_(pointer)(&t->elem->key));
+		element = S_(set_get)(&hash, PS_(pointer)(&t->elem->key));
 		assert(element);
 		if(t->is_in) {
 			assert(element == t->elem);
 			if(rand() < RAND_MAX / 8) {
 				removed++;
-				r = M_(hash_remove)(&hash, PM_(pointer)(&t->elem->key));
+				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
 				assert(r);
-				r = M_(hash_remove)(&hash, PM_(pointer)(&t->elem->key));
+				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
 				assert(!r);
-				r = M_(hash_policy_put)(&hash, t->elem, 0);
+				r = S_(set_policy_put)(&hash, t->elem, 0);
 				assert(!r);
-				r = M_(hash_policy_put)(&hash, t->elem, 0);
+				r = S_(set_policy_put)(&hash, t->elem, 0);
 				assert(r == t->elem);
-				r = M_(hash_remove)(&hash, PM_(pointer)(&t->elem->key));
+				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
 				assert(r);
 			}
 		} else {
 			const size_t count = hash.size;
 			collision++;
 			assert(t && element != t->elem);
-			r = M_(hash_policy_put)(&hash, t->elem, 0);
+			r = S_(set_policy_put)(&hash, t->elem, 0);
 			assert(r == t->elem && count == hash.size);
 		}
 	}
 	printf("Collisions: %lu; removed: %lu.\n",
 		(unsigned long)collision, (unsigned long)removed);
-	PM_(legit)(&hash);
-	PM_(stats)(&hash, "\n", stdout);
-	M_(hash_clear)(&hash);
-	for(b = hash.entries, b_end = b + (1 << hash.log_capacity); b < b_end; b++)
-		assert(!PM_(count)(b));
+	PS_(legit)(&hash);
+	PS_(stats)(&hash, "\n", stdout);
+	S_(set_clear)(&hash);
+	for(b = hash.buckets, b_end = b + (1 << hash.log_capacity); b < b_end; b++)
+		assert(!PS_(count)(b));
 	assert(hash.size == 0);
 #endif
-	printf("Clear: %s.\n", PM_(hash_to_string)(&hash));
-	M_(hash_)(&hash);
-	assert(!hash.entries && !hash.log_capacity && !hash.size);
+	printf("Clear: %s.\n", PS_(set_to_string)(&set));
+	S_(set_)(&set);
+	assert(!set.buckets && !set.log_capacity && !set.size);
 }
 
-/** The list will be tested on `stdout`. Requires `HASH_TEST` to be a
- <typedef:<PM>action_fn> and `HASH_TO_STRING`.
+/** The list will be tested on `stdout`. Requires `SET_TEST` to be a
+ <typedef:<PS>action_fn> and `SET_TO_STRING`.
  @param[parent_new] Specifies the dynamic up-level creator of the parent
  `struct`. Could be null; then testing will be done statically on an array of
- <tag:<M>hashlink> and `HASH_TEST` is not allowed to go over the limits of the
+ <tag:<S>hashlink> and `SET_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void M_(hash_test)(const PM_(parent_new_fn) parent_new,
+static void S_(set_test)(const PS_(parent_new_fn) parent_new,
 	void *const parent) {
-	printf("<" QUOTE(HASH_NAME) ">hash of key <" QUOTE(HASH_KEY)
+	printf("<" QUOTE(SET_NAME) ">hash of key <" QUOTE(SET_KEY)
 		"> was created using: "
-#ifdef HASH_VALUE
-		"HASH_VALUE <" QUOTE(HASH_VALUE) ">; "
+#ifdef SET_VALUE
+		"SET_VALUE <" QUOTE(SET_VALUE) ">; "
 #endif
-		"HASH_UINT <" QUOTE(HASH_UINT) ">; "
-		"HASH_CODE <" QUOTE(HASH_CODE) ">; "
-		"HASH_IS_EQUAL <" QUOTE(HASH_IS_EQUAL) ">; "
-#ifdef HASH_NO_CACHE
-		"HASH_NO_CACHE; "
+		"SET_UINT <" QUOTE(SET_UINT) ">; "
+		"SET_CODE <" QUOTE(SET_CODE) ">; "
+		"SET_IS_EQUAL <" QUOTE(SET_IS_EQUAL) ">; "
+#ifdef SET_NO_CACHE
+		"SET_NO_CACHE; "
 #endif
-#ifdef HASH_INVERT
-		"HASH_INVERT; "
+#ifdef SET_INVERT
+		"SET_INVERT; "
 #endif
-		"HASH_TEST; "
+		"SET_TEST; "
 		"testing%s:\n", parent ? "(pointer)" : "");
-	PM_(test_basic)(parent_new, parent);
-	fprintf(stderr, "Done tests of <" QUOTE(HASH_NAME) ">hash.\n\n");
+	PS_(test_basic)(parent_new, parent);
+	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">hash.\n\n");
 }
 
 #undef QUOTE

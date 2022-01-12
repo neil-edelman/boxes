@@ -11,7 +11,7 @@
 #include "orcish.h"
 
 
-/* An X-macro, much preferable to `HASH_KEY const char *`. */
+/* An X-macro, much preferable to `SET_KEY const char *`. */
 #define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
 	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
 	X(ZodiacCount)
@@ -26,18 +26,18 @@ static int zodiac_is_equal(const enum zodiac a, const enum zodiac b)
 	{ return a == b; }
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 	{ strcpy(*a, zodiac[z]); /* strlen z <= 11 */ }
-#define HASH_NAME zodiac
-#define HASH_KEY enum zodiac
-#define HASH_CODE &hash_zodiac
-#define HASH_IS_EQUAL &zodiac_is_equal
-#define HASH_NO_CACHE /* Don't bother caching `x -> x`. */
-/* <tag:<PM>bucket> more packed than `size_t`: `unsigned next, enum key`. */
-#define HASH_UINT unsigned
-#define HASH_TEST /* Testing requires to string. */
-#define HASH_EXPECT_TRAIT
-#include "../src/hash.h"
-#define HASH_TO_STRING &zodiac_to_string
-#include "../src/hash.h"
+#define SET_NAME zodiac
+#define SET_KEY enum zodiac
+#define SET_CODE &hash_zodiac
+#define SET_IS_EQUAL &zodiac_is_equal
+#define SET_NO_CACHE /* Don't bother caching `x -> x`. */
+/* <tag:<PS>bucket> more packed than `size_t`: `unsigned next, enum key`. */
+#define SET_UINT unsigned
+#define SET_TEST /* Testing requires to string. */
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &zodiac_to_string
+#include "../src/set.h"
 /* For testing. @implements <zodiac>parent_new_fn */
 static enum zodiac random_zodiac(void *const zero)
 	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
@@ -47,11 +47,11 @@ static enum zodiac random_zodiac(void *const zero)
  `strlen` a lot; the words are grouped by their lengths'. */
 static int length1_equal(const char *const a, const char *const b)
 	{ return strlen(a) == strlen(b); } /* Calculating this is inefficient. */
-#define HASH_NAME length1
-#define HASH_KEY char *
-#define HASH_CODE &strlen
-#define HASH_IS_EQUAL &length1_equal
-#include "../src/hash.h"
+#define SET_NAME length1
+#define SET_KEY char *
+#define SET_CODE &strlen
+#define SET_IS_EQUAL &length1_equal
+#include "../src/set.h"
 /* Can use it to count bytes in words in \O(\sum `bytes`). */
 struct length1_node {
 	char word[16];
@@ -68,21 +68,6 @@ static int length1_collide(char *a_original, char *b_replace) {
 	return 1;
 }
 
-static unsigned length2_code(const unsigned length) { return length; }
-static int length2_is_equal(const unsigned a, const unsigned b)
-	{ return a == b; }
-#define HASH_NAME length2
-#define HASH_KEY unsigned
-#define HASH_VALUE unsigned /* Count collisions. */
-#define HASH_UINT unsigned
-#define HASH_NO_CACHE
-#define HASH_CODE &length2_code
-#define HASH_IS_EQUAL &length2_is_equal
-#include "../src/hash.h"
-static int length2_collide(unsigned a, unsigned b) {
-	return 0;
-}
-
 static void nato(void) {
 	struct length1_node words[] = {
 #define X(a) { #a, 0, 0 }
@@ -93,18 +78,16 @@ static void nato(void) {
 		X(Yankee), X(Zulu)
 #undef X
 	};
-	struct length1_hash lens1 = HASH_IDLE;
-	struct length1_hash_iterator it1;
+	struct length1_set lens1 = SET_IDLE;
+	struct length1_set_iterator it1;
 	char *w;
 	size_t i;
-	struct length2_hash lens2 = HASH_IDLE;
-	struct length2_hash_iterator it2;
 	unsigned count;
 	for(i = 0; i < sizeof words / sizeof *words; i++)
-		length1_hash_policy_put(&lens1, words[i].word, &length1_collide);
+		length1_set_policy_put(&lens1, words[i].word, 0, &length1_collide);
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
 		"length\tcount\twords\n");
-	for(length1_hash_begin(&it1, &lens1); w = length1_hash_next_key(&it1); ) {
+	for(length1_set_begin(&it1, &lens1); w = length1_set_next_key(&it1); ) {
 		struct length1_node *word, *w1;
 		word = w1 = length1_upcast(w);
 		printf("%lu\t%lu\t{", (unsigned long)strlen(w),
@@ -113,16 +96,7 @@ static void nato(void) {
 		while(w1 = w1->next);
 		printf("}\n");
 	}
-	length1_hash_(&lens1);
-	printf("or really . . .\n");
-	for(i = 0; i < sizeof words / sizeof *words; i++) {
-		size_t len = strlen(words[i].word);
-		if(len > UINT_MAX) len = UINT_MAX;
-		length2_hash_policy_put(&lens2, (unsigned)len, &length2_collide);
-	}
-	for(length2_hash_begin(&it2, &lens2); count = length2_hash_next_key(&it2); ) {
-		/*...needs value!*/
-	}
+	length1_set_(&lens1);
 }
 
 
@@ -133,7 +107,7 @@ static void nato(void) {
 struct str16 { char str[16]; };
 #define POOL_NAME str16
 #define POOL_TYPE struct str16
-#include "../src/pool.h"
+#include "pool.h"
 /** For testing: `s16s` is a convenient pool of strings. */
 static char *str16_from_pool(struct str16_pool *const s16s) {
 	struct str16 *s16 = str16_pool_new(s16s);
@@ -157,15 +131,15 @@ static size_t djb2_code(const char *s) {
 }
 static int string_is_equal(const char *const a, const char *const b)
 	{ return !strcmp(a, b); }
-#define HASH_NAME string
-#define HASH_KEY char * /* Parameter of <fn:djb2_code> (without `const`.) */
-#define HASH_CODE &djb2_code /* Default returns `size_t`. */
-#define HASH_IS_EQUAL &string_is_equal
-#define HASH_TEST /* Testing requires to string. */
-#define HASH_EXPECT_TRAIT
-#include "../src/hash.h"
-#define HASH_TO_STRING &string_to_string
-#include "../src/hash.h"
+#define SET_NAME string
+#define SET_KEY char * /* Parameter of <fn:djb2_code> (without `const`.) */
+#define SET_CODE &djb2_code /* Default returns `size_t`. */
+#define SET_IS_EQUAL &string_is_equal
+#define SET_TEST /* Testing requires to string. */
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &string_to_string
+#include "../src/set.h"
 
 
 /* Integer code. */
@@ -174,7 +148,7 @@ static int string_is_equal(const char *const a, const char *const b)
 #endif
 #define POOL_NAME int
 #define POOL_TYPE unsigned
-#include "../src/pool.h"
+#include "pool.h"
 /** <https://nullprogram.com/blog/2018/07/31/>
  <https://github.com/skeeto/code-prospector>. */
 static unsigned lowbias32(unsigned x) {
@@ -193,25 +167,25 @@ static unsigned int_from_pool(struct int_pool *const pool) {
 	return (unsigned)rand();
 }
 static unsigned int_from_void(void *const pool) { return int_from_pool(pool); }
-#define HASH_NAME int
-#define HASH_KEY unsigned /* Parameter of <fn:lowbias32>. */
-#define HASH_UINT unsigned /* Return key of <fn:lowbias32>. */
-#define HASH_CODE &lowbias32
-#define HASH_IS_EQUAL &int_is_equal
-#define HASH_TEST
-#define HASH_EXPECT_TRAIT
-#include "../src/hash.h"
-#define HASH_TO_STRING &int_to_string
-#include "../src/hash.h"
+#define SET_NAME int
+#define SET_KEY unsigned /* Parameter of <fn:lowbias32>. */
+#define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
+#define SET_CODE &lowbias32
+#define SET_IS_EQUAL &int_is_equal
+#define SET_TEST
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &int_to_string
+#include "../src/set.h"
 
 
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct int_pool ints = POOL_IDLE;
-	zodiac_hash_test(&random_zodiac, 0); /* Don't require any space. */
+	zodiac_set_test(&random_zodiac, 0); /* Don't require any space. */
 	nato();
-	string_hash_test(&str16_from_void, &strings), str16_pool_(&strings);
-	int_hash_test(&int_from_void, &ints), int_pool_(&ints);
+	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
+	int_set_test(&int_from_void, &ints), int_pool_(&ints);
 
 
 
@@ -241,7 +215,7 @@ int main(void) {
 	{ /* Boats. */
 		struct boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
 		size_t bs_size = sizeof bs / sizeof *bs;
-		struct id_hash ids = HASH_IDLE;
+		struct id_hash ids = SET_IDLE;
 		each_boat(bs, bs_size, &fill_boat);
 		printf("Boat club races individually: ");
 		print_boats(bs, bs_size);
@@ -251,11 +225,11 @@ int main(void) {
 		id_hash_(&ids);
 	}
 	{ /* Linked dictionary. */
-		struct entry_pool entries = POOL_IDLE;
+		struct entry_pool buckets = POOL_IDLE;
 		const size_t limit = (size_t)500000/*0<-This takes a while to code up.*/;
 		struct dict_entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
-		struct key_hash khash = HASH_IDLE;
+		struct key_hash khash = SET_IDLE;
 		struct key_list klist;
 		struct key_hashlink *elem;
 		struct dict_entry *found;
@@ -263,7 +237,7 @@ int main(void) {
 		int is_used = 1;
 		key_list_clear(&klist);
 		for(line = 0; line < limit; line++) {
-			if(is_used && !(e = entry_pool_new(&entries)))
+			if(is_used && !(e = entry_pool_new(&buckets)))
 				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
 			entry_fill(e);
 			if(!key_hash_reserve(&khash, 1))
@@ -296,16 +270,16 @@ int main(void) {
 			assert(found == *sp_e);
 		}
 		key_hash_(&khash);
-		entry_pool_(&entries);
+		entry_pool_(&buckets);
 	}
 	{ /* Fill it with the actual dictionary. */
 		const char *const english = "test/Tutte_le_parole_inglesi.txt";
 		FILE *fp = fopen(english, "r");
-		struct entry_pool entries = POOL_IDLE;
+		struct entry_pool buckets = POOL_IDLE;
 		struct dict_entry *e, *sp_es[20], **sp_e;
 		size_t sp_es_size = sizeof sp_es / sizeof *sp_es,
 			sp_e_to_go = sp_es_size;
-		struct key_hash khash = HASH_IDLE;
+		struct key_hash khash = SET_IDLE;
 		struct key_list klist;
 		struct key_hashlink *elem;
 		struct dict_entry *found;
@@ -316,11 +290,11 @@ int main(void) {
 		/* Read file. */
 		for( ; ; line++) {
 			char *key_end;
-			if(!(e = entry_pool_new(&entries))) goto catch;
+			if(!(e = entry_pool_new(&buckets))) goto catch;
 			e->elem.key = e->key;
 			if(!fgets(e->key, sizeof e->key, fp)) {
 				/* Doesn't really do anything. */
-				entry_pool_remove(&entries, e);
+				entry_pool_remove(&buckets, e);
 				if(ferror(fp)) { if(!errno) errno = EILSEQ; goto catch; }
 				break;
 			}
@@ -336,7 +310,7 @@ int main(void) {
 			if(elem) {
 				fprintf(stderr, "%lu: ignoring %s already in word list.\n",
 					(unsigned long)line, e->key);
-				entry_pool_remove(&entries, e);
+				entry_pool_remove(&buckets, e);
 				words_to_go--;
 				continue;
 			}
@@ -374,7 +348,7 @@ catch:
 finally:
 		if(fp) fclose(fp);
 		key_hash(&khash);
-		entry_pool_(&entries);
+		entry_pool_(&buckets);
 	}
 #endif
 	return EXIT_SUCCESS;
@@ -425,26 +399,26 @@ uint16_t code16_xm2(uint16_t x) {
 
 #if 0
 
-/* Used to test `HASH_UINT`; normally `unsigned int`, here `unsigned char`.
+/* Used to test `SET_UINT`; normally `unsigned int`, here `unsigned char`.
  Useful if you want to use a specific code length, _eg_, `C99`'s `uint32_t` or
  `uint64_t`. */
 
 /** Fast code function. */
 static unsigned char byteint_code(unsigned x) { return (unsigned char)x; }
 /* All the same functions as above, otherwise. */
-#define HASH_NAME byteint
-#define HASH_KEY unsigned
-#define HASH_UINT unsigned char
-#define HASH_CODE &byteint_code
-#define HASH_IS_EQUAL &int_is_equal
-#define HASH_TEST &int_fill
-#define HASH_EXPECT_TRAIT
-#include "../src/hash.h"
-#define HASH_TO_STRING &int_to_string
-#include "../src/hash.h"
+#define SET_NAME byteint
+#define SET_KEY unsigned
+#define SET_UINT unsigned char
+#define SET_CODE &byteint_code
+#define SET_IS_EQUAL &int_is_equal
+#define SET_TEST &int_fill
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &int_to_string
+#include "../src/set.h"
 
 
-/* Vector; test of `HASH_POINTER`. */
+/* Vector; test of `SET_POINTER`. */
 struct vec4 {
 	char a[2], unused[2];
 	int n[2];
@@ -469,42 +443,42 @@ static void vec4_filler(struct vec4 *const v4) {
 	v4->n[0] = rand() / (RAND_MAX / 9 + 1);
 	v4->n[1] = rand() / (RAND_MAX / 9 + 1);
 }
-#define HASH_NAME vec4
-#define HASH_KEY struct vec4
+#define SET_NAME vec4
+#define SET_KEY struct vec4
 /* <fn:vec4_code> and <fn:vec4_is_equal> have an extra level of indirection.
  This means that we also have to get an object and fill it to use
- <fn:<M>hash_get>; not very convenient. */
-#define HASH_POINTER
-#define HASH_CODE &vec4_code
-#define HASH_IS_EQUAL &vec4_is_equal
-#define HASH_TEST &vec4_filler
-#define HASH_EXPECT_TRAIT
-#include "../src/hash.h"
-#define HASH_TO_STRING &vec4_to_string
-#include "../src/hash.h"
+ <fn:<S>hash_get>; not very convenient. */
+#define SET_POINTER
+#define SET_CODE &vec4_code
+#define SET_IS_EQUAL &vec4_is_equal
+#define SET_TEST &vec4_filler
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &vec4_to_string
+#include "../src/set.h"
 
 
 /* I wrote Set to solve
  [this problem](https://stackoverflow.com/q/59091226/2472827). In general, one
  has to declare before defining if we want a code map because the
- `<M>hashlink` is not defined until after. */
+ `<S>hashlink` is not defined until after. */
 
 static unsigned boat_id_code(const int id) { return (unsigned)id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
 static void boat_id_to_string(const int *const id, char (*const a)[12]);
 static void fill_boat_id(int *const id);
 /* Code generation for `id_hash`. */
-#define HASH_NAME id
-#define HASH_KEY int
+#define SET_NAME id
+#define SET_KEY int
 /* Don't need two `int id; unsigned code = id;` per datum. */
-#define HASH_NO_CACHE
-#define HASH_CODE &boat_id_code
-#define HASH_IS_EQUAL &boat_id_is_equal
-#define HASH_TEST &fill_boat_id
-#define HASH_EXPECT_TRAIT
-#include "../src/hash.h"
-#define HASH_TO_STRING &boat_id_to_string
-#include "../src/hash.h"
+#define SET_NO_CACHE
+#define SET_CODE &boat_id_code
+#define SET_IS_EQUAL &boat_id_is_equal
+#define SET_TEST &fill_boat_id
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &boat_id_to_string
+#include "../src/set.h"
 struct boat {
 	struct id_hashlink id;
 	int best_time;
@@ -603,14 +577,14 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 	strncpy(*a, *ps, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-#define HASH_NAME key
-#define HASH_KEY const char *
-#define HASH_CODE &fnv_32a_str
-#define HASH_IS_EQUAL &key_is_equal
-#define HASH_EXPECT_TRAIT
-#include "../src/hash.h"
-#define HASH_TO_STRING &key_to_string
-#include "../src/hash.h"
+#define SET_NAME key
+#define SET_KEY const char *
+#define SET_CODE &fnv_32a_str
+#define SET_IS_EQUAL &key_is_equal
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &key_to_string
+#include "../src/set.h"
 
 struct key_listlink;
 static int key_compare(const struct key_listlink *,
@@ -658,7 +632,7 @@ static const struct dict_entry *entry_next(struct dict_entry *const e) {
 	return next ? node_upcast_c(next) : 0;
 }
 
-#define POOL_NAME entry
+#define POOL_NAME bucket
 #define POOL_TYPE struct dict_entry
 #include "pool.h"
 

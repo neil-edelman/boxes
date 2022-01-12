@@ -85,7 +85,7 @@ typedef HEAP_TYPE PH_(priority);
 
 /** Returns a positive result if `a` is out-of-order with respect to `b`,
  inducing a strict pre-order. This is compatible, but less strict then the
- comparators from `bsearch` and `qsort`; it only needs to divide entries into
+ comparators from `bsearch` and `qsort`; it only needs to divide buckets into
  two instead of three categories. */
 typedef int (*PH_(compare_fn))(const PH_(priority) a, const PH_(priority) b);
 #ifndef HEAP_COMPARE /* <!-- !cmp */
@@ -155,7 +155,7 @@ static void PH_(copy)(const PH_(node) *const src, PH_(node) *const dest) {
 }
 
 /** Find the spot in `heap` where `node` goes and put it there.
- @param[heap] At least one entry; the last entry will be replaced by `node`.
+ @param[heap] At least one bucket; the last bucket will be replaced by `node`.
  @order \O(log `size`) */
 static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
 	PH_(node) *const n0 = heap->a.data;
@@ -174,7 +174,7 @@ static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
 }
 
 /** Pop the head of `heap` and restore the heap by sifting down the last
- element. @param[heap] At least one entry. The head is popped, and the size
+ element. @param[heap] At least one bucket. The head is popped, and the size
  will be one less. */
 static void PH_(sift_down)(struct H_(heap) *const heap) {
 	const size_t size = (assert(heap && heap->a.size), --heap->a.size),
@@ -198,7 +198,7 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
  This reads from the an arbitrary leaf-node into a temporary value, so is
  slightly more complex than <fn:<PH>sift_down>, but the same thing.
- @param[heap] At least `i + 1` entries. */
+ @param[heap] At least `i + 1` buckets. */
 static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 	const size_t size = (assert(heap && i < heap->a.size), heap->a.size),
 		half = size >> 1;
