@@ -82,7 +82,6 @@ static void nato(void) {
 	struct length1_set_iterator it1;
 	char *w;
 	size_t i;
-	unsigned count;
 	for(i = 0; i < sizeof words / sizeof *words; i++)
 		length1_set_policy_put(&lens1, words[i].word, 0, &length1_collide);
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"

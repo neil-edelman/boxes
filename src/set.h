@@ -476,11 +476,6 @@ static int PS_(buffer)(struct S_(set) *const hash, const PS_(uint) n) {
 /** A bi-predicate; returns true if the `replace` replaces the `original`. */
 typedef int (*PS_(replace_fn))(PS_(key) original, PS_(key) replace);
 
-/** Used in <fn:<S>hash_policy_put> when `replace` is null; `original` and
- `replace` are ignored. @implements `<PS>replace_fn` */
-static int PS_(false)(PS_(key) original, PS_(key) replace)
-	{ (void)(original); (void)(replace); return 0; }
-
 /** Put `key` in `hash` as long as `replace` is null or returns true.
  @param[eject] If non-null, replaced with the equal element, if any. If
  `replace` returns false, the `map`.
