@@ -216,7 +216,7 @@ static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
 #endif
 }
 
-/** To initialize, see <fn:<S>hash>, `SET_IDLE`, `{0}` (`C99`,) or being
+/** To initialize, see <fn:<S>set>, `SET_IDLE`, `{0}` (`C99`,) or being
  `static`.
 
  ![States.](../web/states.png) */
@@ -239,7 +239,7 @@ static PS_(uint) PS_(capacity)(const struct S_(set) *const set)
 static PS_(uint) PS_(to_bucket)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
-/** On return, the `top` of `hash` will be empty, but size is not incremented,
+/** On return, the `top` of `set` will be empty, but size is not incremented,
  leaving it in intermediate state. This is amortized; every value takes at most
  one. */
 static void PS_(grow_stack)(struct S_(set) *const set) {
@@ -259,13 +259,13 @@ static int PS_(in_stack_range)(const struct S_(set) *const set,
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 #ifdef SET_TEST
-static void PS_(graph)(const struct S_(set) *const hash, const char *const fn);
+static void PS_(graph)(const struct S_(set) *f, const char *g);
 static void (*PS_(to_string))(PS_(ckey), char (*)[12]);
 #else
-static void PS_(graph)(const struct S_(set) *const hash, const char *const fn) {
-	(void)hash, (void)fn;
+static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
+	(void)set, (void)fn;
 }
-static void PS_(to_string)(PS_(ckey) data, char (*z)[12])
+static void PS_(to_string)(PS_(ckey) key, char (*z)[12])
 	{ (void)data, strcpy(*z, "<key>"); }
 #endif
 
@@ -527,10 +527,10 @@ static void S_(set_clear)(struct S_(set) *const set) {
 
 /** @param[entry] If non-null, a <typedef:<PS>entry> which gets filled on true.
  @return Is `key` in `set` (which could be null)? */
-static int S_(set_query)(struct S_(set) *const hash, const PS_(key) key,
+static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
 	PS_(entry) *const entry) {
 	struct PS_(bucket) *b;
-	if(!hash || !hash->buckets || !(b = PS_(get)(hash, key, PS_(hash)(key))))
+	if(!set || !set->buckets || !(b = PS_(get)(set, key, PS_(hash)(key))))
 		return 0;
 	if(entry) PS_(to_entry)(b, entry);
 	return 1;
@@ -556,6 +556,8 @@ static PS_(key) S_(set_get)(struct S_(set) *const hash,
 
 /** Puts `entry` in `set` only if the bucket is absent or if calling `replace`
  returns true.
+ @param[eject] If non-null, filled with the entry that is ejected or the entry
+ itself if `replace` isn't true.
  @param[replace] If null, doesn't do any replacement on collision.
  @return True except exception. @throws[realloc, ERANGE] There was an error
  with a re-sizing. @order Average amortised \O(1), (hash distributes keys
@@ -568,15 +570,15 @@ static int S_(set_policy_put)(struct S_(set) *const set,
 /* fixme: Buffering changes the outcome if it's already in the table, it
  creates a new hash anyway. This is not a pleasant situation. */
 /* fixme: also have a hash_try */
-/** Puts `key` in `hash`, and, for keys already in the hash, replaces them.
+/** Puts `entry` in `set`, and, for keys already in the hash, replaces them.
  @return Any ejected key or null.
  @throws[realloc, ERANGE] There was an error with a re-sizing. It is not
  always possible to tell the difference between an error and a unique key.
- If needed, before calling this, successfully calling <fn:<S>hash_buffer>, or
+ If needed, before calling this, successfully calling <fn:<S>set_buffer>, or
  hashting `errno` to zero. @order Average amortised \O(1), (hash distributes
  keys uniformly); worst \O(n) (are you sure that's up to date?). @allow */
-static PS_(map) S_(set_replace)(struct S_(set) *const hash,
-	const PS_(map) map) {
+static PS_(map) S_(set_replace)(struct S_(set) *const set,
+	const PS_(entry) entry) {
 	PS_(map) collide;
 	/* No error information. */
 	return PS_(put)(hash, 0, map, &collide) ? collide : 0;
@@ -643,7 +645,7 @@ struct S_(set_iterator) { struct PS_(iterator) it; };
 
 /** Loads `set` (can be null) into `it`. */
 static void S_(set_begin)(struct S_(set_iterator) *const it,
-	const struct S_(set) *const hash) { PS_(begin)(&it->it, hash); }
+	const struct S_(set) *const set) { PS_(begin)(&it->it, set); }
 
 /** @return Whether the set specified to `it` in <fn:<S>set_begin> has a next
  bucket. */
