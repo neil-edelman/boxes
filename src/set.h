@@ -234,7 +234,7 @@ struct S_(set) {
 	struct PS_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	/* Buckets; `size <= capacity`; open stack, including `SET_END`. */
 	PS_(uint) log_capacity, size, top;
-	/* Size is not really needed but convenient and allows short-circuiting. */
+	/* Size is not needed but convenient and allows short-circuiting. */
 };
 
 /** The capacity of a non-idle `set` is always a power-of-two. */
@@ -349,7 +349,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	PS_(uint) log_c1, c1, size1, i, wait, mask;
 	char fn[64];
 	assert(set && set->size <= SET_LIMIT && (!set->buckets && !set->size
-		&& !log_c0 && !c0 || set->buckets && set->size <= c0 && log_c0 >= 3));
+		&& !log_c0 && !c0 || set->buckets && set->size <= c0 && log_c0>=3));
 	/* Can we satisfy `n` growth from the buffer? */
 	if(SET_M1 - set->size < n || SET_LIMIT < (size1 = set->size + n))
 		return errno = ERANGE, 0;
@@ -505,8 +505,11 @@ static int PS_(put)(struct S_(set) *const set,
 }
 
 /** Initialises `set` to idle. @order \Theta(1) @allow */
-static void S_(set)(struct S_(set) *const set) { assert(set);
-	set->buckets = 0; set->log_capacity = 0; set->size = 0; set->top = 0; }
+static void S_(set)(struct S_(set) *const set) {
+	assert(set);
+	set->buckets = 0;
+	set->log_capacity = 0; set->size = 0; set->top = 0;
+}
 
 /** Destroys `set` and returns it to idle. @allow */
 static void S_(set_)(struct S_(set) *const set)
@@ -527,7 +530,7 @@ static void S_(set_clear)(struct S_(set) *const set) {
 	struct PS_(bucket) *b, *b_end;
 	assert(set);
 	if(!set->buckets) { assert(!set->log_capacity); return; }
-	for(b = set->buckets, b_end = b + (1 << set->log_capacity); b < b_end; b++)
+	for(b = set->buckets, b_end = b + PS_(capacity)(set); b < b_end; b++)
 		b->next = SET_NULL;
 	set->size = 0;
 }
@@ -613,12 +616,18 @@ static struct S_(setlink) *S_(set_remove)(struct S_(set) *const hash,
 /* <!-- iterate interface */
 
 /* Contains all iteration parameters. */
-struct PS_(iterator) { const struct S_(set) *set; PS_(uint) b; };
+struct PS_(iterator) {
+	const struct S_(set) *set;
+	union {
+		void *do_not_warn;
+		PS_(uint) b;
+	} _;
+};
 
 /** Loads `hash` (can be null) into `it`. @implements begin */
 static void PS_(begin)(struct PS_(iterator) *const it,
 	const struct S_(set) *const hash)
-	{ assert(it), it->set = hash, it->b = 0; }
+	{ assert(it), it->set = hash, it->_.b = 0; }
 
 /** Helper to skip the buckets of `it` that are not there.
  @return Whether it found another index. */
@@ -626,10 +635,10 @@ static int PS_(skip)(struct PS_(iterator) *const it) {
 	const struct S_(set) *const hash = it->set;
 	const PS_(uint) limit = PS_(capacity)(hash);
 	assert(it && it->set && it->set->buckets);
-	while(it->b < limit) {
-		struct PS_(bucket) *const bucket = hash->buckets + it->b;
+	while(it->_.b < limit) {
+		struct PS_(bucket) *const bucket = hash->buckets + it->_.b;
 		if(bucket->next != SET_NULL) return 1;
-		it->b++;
+		it->_.b++;
 	}
 	return 0;
 }
@@ -638,8 +647,8 @@ static int PS_(skip)(struct PS_(iterator) *const it) {
 static struct PS_(bucket) *PS_(next)(struct PS_(iterator) *const it) {
 	assert(it);
 	if(!it->set || !it->set->buckets) return 0;
-	if(PS_(skip)(it)) return it->set->buckets + it->b++;
-	it->set = 0, it->b = 0;
+	if(PS_(skip)(it)) return it->set->buckets + it->_.b++;
+	it->set = 0, it->_.b = 0;
 	return 0;
 }
 

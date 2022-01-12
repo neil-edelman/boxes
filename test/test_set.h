@@ -122,7 +122,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		"Times-Bold"
 #endif
 		);
-	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
+	for(i = 0, i_end = PS_(capacity)(set); i < i_end; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
 			*const top = set->top == i ? " BORDER=\"1\"" : "";
 		struct PS_(bucket) *b = set->buckets + i;
@@ -146,7 +146,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	}
 	fprintf(fp, "</TABLE>>];\n");
 	fprintf(fp, "\tnode [shape=plain, fillcolor=none]\n");
-	for(i = 0, i_end = 1 << set->log_capacity; i < i_end; i++) {
+	for(i = 0, i_end = PS_(capacity)(set); i < i_end; i++) {
 		struct PS_(bucket) *b = set->buckets + i;
 		PS_(uint) left, right;
 		if((right = b->next) == SET_NULL || right == SET_END) continue;
@@ -245,8 +245,13 @@ static void PS_(legit)(const struct S_(set) *const set) {
 /** Passed `parent_new` and `parent` from <fn:<S>hash_test>. */
 static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
 	void *const parent) {
-	struct test { PS_(entry) entry; int is_in; }
-		test[1000/*0*/], *t;
+	struct test {
+		union {
+			void *unused;
+			PS_(entry) entry;
+		} _;
+		int is_in, unused;
+	} test[1000/*0*/], *t;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
 	char z[12];
@@ -266,24 +271,24 @@ static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
 		int ret;
 		t = test + i;
 		PS_(entry) eject, zero, entry;
-		t->entry = parent_new(parent); /* fixme: Completely unchecked! */
-		PS_(to_string)(PS_(entry_key)(t->entry), &z);
+		t->_.entry = parent_new(parent); /* fixme: Completely unchecked! */
+		PS_(to_string)(PS_(entry_key)(t->_.entry), &z);
 		printf("%lu: came up with %s.\n", (unsigned long)i, z);
 		/*success = S_(set_buffer)(&hash, 1);
 		assert(success && hash.buckets);*/
 		memset(&eject, 0, sizeof eject);
 		memset(&zero, 0, sizeof zero);
 		size.before = set.size;
-		ret = S_(set_policy_put)(&set, t->entry, &eject, 0);
+		ret = S_(set_policy_put)(&set, t->_.entry, &eject, 0);
 		assert(ret && (i || set.size == 1
 			&& !memcmp(&eject, &zero, sizeof zero)));
 		size.after = set.size;
 		assert(size.before == size.after || size.after == size.before + 1);
 		is_grow = !!(size.after - size.before);
-		ret = S_(set_query)(&set, PS_(entry_key)(t->entry), &entry);
-		assert(ret && PS_(equal)(t->entry, entry));
+		ret = S_(set_query)(&set, PS_(entry_key)(t->_.entry), &entry);
+		assert(ret && PS_(equal)(t->_.entry, entry));
 		/* If it replaced, `eject` must be equal to `data`. */
-		assert(is_grow || PS_(equal)(t->entry, eject));
+		assert(is_grow || PS_(equal)(t->_.entry, eject));
 		if(set.size < 10000 && !(i & (i - 1))) {
 			char fn[64];
 			printf("*** hash %s.\n", PS_(set_to_string)(&set));

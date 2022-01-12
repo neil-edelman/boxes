@@ -16,6 +16,8 @@ static int nato_equal(const char *const a, const char *const b) {
 	/* Calculating this multiple times is inefficient. */
 	return strlen(a) == strlen(b);
 }
+/*static void nato_string(const char *const a, char (*const z)[12])
+	{ strncpy(*z, a, sizeof *z - 1), (*z)[11] = '\0'; }*/
 #define SET_NAME nato
 #define SET_KEY char *
 #define SET_HASH &strlen
