@@ -5,13 +5,14 @@
 
  ![Example of <string>set.](../web/set.png)
 
- <tag:<S>set> is an unordered set or map (associative array) of
- <typedef:<PS>entry> implemented as a hash table. It must be supplied a
- <typedef:<PS>hash_fn> and <typedef:<PS>is_equal_fn>.
+ <tag:<S>set> is a set or map of <typedef:<PS>entry> implemented as a hash
+ table. It must be supplied a <typedef:<PS>hash_fn> and
+ <typedef:<PS>is_equal_fn>. This data structure could have been named several
+ things, depending on the use: table, dictionary, association, map, hash.
 
- [CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library
- that provides performance for large sets. Compile-time constant sets are
- can be better handled with [gperf](https://www.gnu.org/software/gperf/).
+ Compile-time constant data are better handled with
+ [gperf](https://www.gnu.org/software/gperf/). Almost-constant and large data,
+ consider dynamic minimal perfect hashing [CMPH](http://cmph.sourceforge.net/).
 
  @param[SET_NAME, SET_KEY]
  `<S>` that satisfies `C` naming conventions when mangled and a valid
@@ -24,11 +25,10 @@
  required.
 
  @param[SET_VALUE]
- An optional type that is the payload of the set key, thus making this an
- associative array. Should be used when a map is desired and the key and value
- are associated but in independent memory locations; if the key is part of an
- aggregate value, it will be more efficient and robust to use a type conversion
- from the key.
+ An optional type that is the payload of the key, thus making this an
+ associative array. Should be used when one has a value that is associated, but
+ in an independent memory location from the key; if the key is part of an
+ aggregate value, it will be more efficient and robust to use a type conversion.
 
  @param[SET_UINT]
  This is <typedef:<PS>uint>, the unsigned type of hash hash of the key given by
@@ -88,7 +88,7 @@
 #define SET_CAT(n, m) SET_CAT_(n, m)
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(hash, S_(n))
-#define SET_IDLE { 0, 0, 0, 0, 0 }
+#define SET_IDLE { 0, 0, 0, 0 }
 /* When a <typedef:<PS>uint> represents an address in the table, use the sign
  bit to store out-of-band flags, (such that range of an index is one bit less.)
  Choose representations that probably save power, since there are potently
@@ -204,6 +204,16 @@ static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 #endif
 }
 
+/** Gets the value of an occupied `bucket`. */
+static PS_(value) PS_(bucket_value)(const struct PS_(bucket) *const bucket) {
+	assert(bucket && bucket->next != SET_NULL);
+#ifdef SET_VALUE
+	return bucket->value;
+#else
+	return PS_(bucket_key)(bucket);
+#endif
+}
+
 /** Fills `entry`, a public structure, with the information of `bucket`. */
 static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
 	PS_(entry) *const entry) {
@@ -222,10 +232,9 @@ static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
  ![States.](../web/states.png) */
 struct S_(set) {
 	struct PS_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
-	unsigned log_capacity, unused; /* Applies to buckets. fixme: type? */
-	PS_(uint) size, top; /* `size <= capty`; open stack, including `SET_END`. */
-	/* Size is not really needed for it to have the same asymptotic run-time,
-	 but is convenient to have and allows short-circuiting. */
+	/* Buckets; `size <= capacity`; open stack, including `SET_END`. */
+	PS_(uint) log_capacity, size, top;
+	/* Size is not really needed but convenient and allows short-circuiting. */
 };
 
 /** The capacity of a non-idle `set` is always a power-of-two. */
@@ -266,7 +275,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	(void)set, (void)fn;
 }
 static void PS_(to_string)(PS_(ckey) key, char (*z)[12])
-	{ (void)data, strcpy(*z, "<key>"); }
+	{ (void)key, strcpy(*z, "<key>"); }
 #endif
 
 /** Moves the `target` index in non-idle `set`, to the top of collision stack.
@@ -293,7 +302,7 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 
 /** `set` will be searched linearly for `key` which has `hash`.
  @fixme Move to front like splay trees? */
-static struct PS_(bucket) *PS_(get)(struct S_(set) *const set,
+static struct PS_(bucket) *PS_(query)(struct S_(set) *const set,
 	const PS_(key) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
 	PS_(uint) i, next;
@@ -335,14 +344,12 @@ static struct PS_(bucket) *PS_(get)(struct S_(set) *const set,
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). */
 static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	struct PS_(bucket) *buckets;
-	const unsigned log_c0 = set->log_capacity;
-	unsigned log_c1;
-	const PS_(uint) c0 = log_c0 ? (PS_(uint))((PS_(uint))1 << log_c0) : 0;
-	PS_(uint) c1, size1, i, wait, mask;
+	const PS_(uint) log_c0 = set->log_capacity,
+		c0 = log_c0 ? (PS_(uint))((PS_(uint))1 << log_c0) : 0;
+	PS_(uint) log_c1, c1, size1, i, wait, mask;
 	char fn[64];
 	assert(set && set->size <= SET_LIMIT && (!set->buckets && !set->size
 		&& !log_c0 && !c0 || set->buckets && set->size <= c0 && log_c0 >= 3));
-
 	/* Can we satisfy `n` growth from the buffer? */
 	if(SET_M1 - set->size < n || SET_LIMIT < (size1 = set->size + n))
 		return errno = ERANGE, 0;
@@ -351,8 +358,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	while(c1 < size1) log_c1++, c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
 
-	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-a-before.gv",
-		log_c0, log_c1), PS_(graph)(set, fn);
+	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%lu-%lu-a-before.gv",
+		(unsigned long)log_c0, (unsigned long)log_c1), PS_(graph)(set, fn);
 
 	/* Otherwise, need to allocate more. */
 	if(!(buckets = realloc(set->buckets, sizeof *buckets * c1)))
@@ -366,7 +373,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	mask = (PS_(uint))((((PS_(uint))1 << log_c0) - 1)
 		^ (((PS_(uint))1 << log_c1) - 1));
 
-	/* Rehash most closed buckets in the lower half. */
+	/* Rehash most closed buckets in the lower half. Create waiting
+	 linked-stack by borrowing next. */
 	wait = SET_END;
 	for(i = 0; i < c0; i++) {
 		struct PS_(bucket) *idx, *go;
@@ -397,8 +405,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		idx->next = wait, wait = i; /* Push for next sweep. */
 	}
 
-	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-b-obvious.gv",
-		log_c0, log_c1), PS_(graph)(set, fn);
+	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%lu-%lu-b-obvious.gv",
+		(unsigned long)log_c0, (unsigned long)log_c1), PS_(graph)(set, fn);
 
 	/* Search waiting stack for buckets that moved concurrently. */
 	{ PS_(uint) prev = SET_END, w = wait; while(w != SET_END) {
@@ -417,10 +425,10 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		}
 	}}
 
-	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-c-closed.gv",
-		log_c0, log_c1), PS_(graph)(set, fn);
+	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%lu-%lu-c-closed.gv",
+		(unsigned long)log_c0, (unsigned long)log_c1), PS_(graph)(set, fn);
 
-	/* Rebuild the (smaller?) top stack (high) from the waiting (low). */
+	/* Rebuild the top stack at the high numbers from the waiting at low. */
 	while(wait != SET_END) {
 		struct PS_(bucket) *const waiting = set->buckets + wait;
 		PS_(uint) h = PS_(to_bucket)(set, PS_(bucket_hash)(waiting));
@@ -433,8 +441,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		wait = waiting->next, waiting->next = SET_NULL; /* Pop. */
 	}
 
-	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%u-%u-d-final.gv",
-		log_c0, log_c1), PS_(graph)(set, fn);
+	sprintf(fn, "graph/" QUOTE(SET_NAME) "-resize-%lu-%lu-d-final.gv",
+		(unsigned long)log_c0, (unsigned long)log_c1), PS_(graph)(set, fn);
 
 	return 1;
 }
@@ -462,7 +470,7 @@ static int PS_(put)(struct S_(set) *const set,
 		printf("put: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
 	}
 	size = set->size;
-	if(set->buckets && (bucket = PS_(get)(set, key, hash))) { /* Equal. */
+	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
 		if(!replace || !replace(PS_(bucket_key)(bucket), key))
 			{ if(eject) memcpy(eject, &entry, sizeof entry); return 1; }
 		if(eject) PS_(to_entry)(bucket, eject);
@@ -490,8 +498,7 @@ static int PS_(put)(struct S_(set) *const set,
 	memcpy(&bucket->key, &key, sizeof key);
 #endif
 #ifdef SET_VALUE /* <!-- value */
-	/*memcpy(&bucket->value, );*/
-//#error Pending. fixme
+	memcpy(&bucket->value, &entry.value, sizeof entry.value);
 #endif /* value --> */
 	set->size = size;
 	return 1;
@@ -530,7 +537,7 @@ static void S_(set_clear)(struct S_(set) *const set) {
 static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
 	PS_(entry) *const entry) {
 	struct PS_(bucket) *b;
-	if(!set || !set->buckets || !(b = PS_(get)(set, key, PS_(hash)(key))))
+	if(!set || !set->buckets || !(b = PS_(query)(set, key, PS_(hash)(key))))
 		return 0;
 	if(entry) PS_(to_entry)(b, entry);
 	return 1;
@@ -647,21 +654,29 @@ struct S_(set_iterator) { struct PS_(iterator) it; };
 static void S_(set_begin)(struct S_(set_iterator) *const it,
 	const struct S_(set) *const set) { PS_(begin)(&it->it, set); }
 
-/** @return Whether the set specified to `it` in <fn:<S>set_begin> has a next
- bucket. */
+/** Advances `it`.
+ @param[entry] If non-null, the entry is filled with the next element only if
+ it has a next.
+ @return Whether it had a next element. */
+static int S_(set_next)(struct S_(set_iterator) *const it, PS_(entry) *entry) {
+	const struct PS_(bucket) *b = PS_(next)(&it->it);
+	return b ? (PS_(to_entry)(b, entry), 1) : 0;
+}
+
+/** @return Whether the set specified to `it` in <fn:<S>set_begin> has a next.
+ @order Amortized on the capacity, \O(1). */
 static int S_(set_has_next)(struct S_(set_iterator) *const it) {
 	assert(it);
-	/* <tag:<PS>bucket> is fine for returning private, but <typedef:<PS>key>
-	 may not even be nullable, so we have this. */
 	return it->it.set && it->it.set->buckets && PS_(skip)(&it->it);
 }
 
-/* fixme: PS_(entry) */
-/** Advances `it`. @return The next key or zero. */
-static PS_(key) S_(set_next_key)(struct S_(set_iterator) *const it) {
-	const struct PS_(bucket) *b = PS_(next)(&it->it);
-	return b ? PS_(bucket_key)(b) : 0;
-}
+/** Advances `it` when <fn:<S>set_has_next>. @return The next key. */
+static PS_(key) S_(set_next_key)(struct S_(set_iterator) *const it)
+	{ return PS_(bucket_key)(PS_(next)(&it->it)); }
+
+/** Advances `it` when <fn:<S>set_has_next>. @return The next value. */
+static PS_(value) S_(set_next_value)(struct S_(set_iterator) *const it)
+	{ return PS_(bucket_value)(PS_(next)(&it->it)); }
 
 /* <!-- box (multiple traits) */
 #define BOX_ PS_
@@ -685,7 +700,8 @@ static void PS_(unused_base)(void) {
 	S_(set_query)(0, k, 0);
 	S_(set_policy_put)(0, e, 0, 0);
 	/*S_(set_remove)(0, 0);*/
-	S_(set_begin)(0, 0); S_(set_has_next)(0); S_(set_next_key)(0);
+	S_(set_begin)(0, 0); S_(set_next)(0, 0); S_(set_has_next)(0);
+	S_(set_next_key)(0); S_(set_next_value)(0);
 	PS_(unused_base_coda)();
 }
 static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }

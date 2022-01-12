@@ -11,6 +11,63 @@
 #include "orcish.h"
 
 
+/* A map fixme. */
+static int nato_equal(const char *const a, const char *const b) {
+	/* Calculating this multiple times is inefficient. */
+	return strlen(a) == strlen(b);
+}
+#define SET_NAME nato
+#define SET_KEY char *
+#define SET_HASH &strlen
+#define SET_IS_EQUAL &nato_equal
+#include "../src/set.h"
+
+/* Can use it to count bytes in words in \O(\sum `bytes`), but the simplicity
+ of the definition is holding us back: would have been much easier to have a
+ value. */
+struct nato_node {
+	char word[16];
+	size_t collisions;
+	struct nato_node *next;
+};
+static struct nato_node *nato_upcast(char *const a)
+	{ return (struct nato_node *)(void *)a; }
+static int nato_collide(char *a_original, char *b_replace) {
+	struct nato_node *wa = nato_upcast(a_original),
+		*wb = nato_upcast(b_replace);
+	wb->next = wa;
+	wb->collisions = wa->collisions + 1;
+	return 1;
+}
+static void nato(void) {
+	struct nato_node words[] = {
+#define X(a) { #a, 0, 0 }
+		X(Alpha), X(Bravo), X(Charlie), X(Delta), X(Echo), X(Foxtrot), X(Golf),
+		X(Hotel), X(India), X(Juliet), X(Kilo), X(Lima), X(Mike), X(November),
+		X(Oscar), X(Papa), X(Québec) /* `strlen` will report 7 */, X(Romeo),
+		X(Sierra), X(Tango), X(Uniform), X(Victor), X(Whisky), X(X-ray),
+		X(Yankee), X(Zulu)
+#undef X
+	};
+	struct nato_set nato = SET_IDLE;
+	struct nato_set_iterator it;
+	size_t i;
+	for(i = 0; i < sizeof words / sizeof *words; i++)
+		nato_set_policy_put(&nato, words[i].word, 0, &nato_collide);
+	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
+		"length\tcount\twords\n");
+	for(nato_set_begin(&it, &nato); nato_set_has_next(&it); ) {
+		struct nato_node
+			*const word = nato_upcast(nato_set_next_key(&it)), *w = word;
+		printf("%lu\t%lu\t{", (unsigned long)strlen(word->word),
+			(unsigned long)word->collisions + 1);
+		do printf("%s%s", word == w ? "" : ",", w->word); while(w = w->next);
+		printf("}\n");
+	}
+	nato_set_(&nato);
+}
+
+
 /* An X-macro, much preferable to `SET_KEY const char *`. */
 #define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
 	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
@@ -41,64 +98,6 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 /* For testing. @implements <zodiac>parent_new_fn */
 static enum zodiac random_zodiac(void *const zero)
 	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
-
-
-/* A minimalish hash that does something useful, but needlessly repeating
- `strlen` a lot; the words are grouped by their lengths'. */
-static int length1_equal(const char *const a, const char *const b)
-	{ return strlen(a) == strlen(b); } /* Calculating this is inefficient. */
-#define SET_NAME length1
-#define SET_KEY char *
-#define SET_HASH &strlen
-#define SET_IS_EQUAL &length1_equal
-#include "../src/set.h"
-/* Can use it to count bytes in words in \O(\sum `bytes`). */
-struct length1_node {
-	char word[16];
-	size_t collisions;
-	struct length1_node *next;
-};
-static struct length1_node *length1_upcast(char *const a)
-	{ return (struct length1_node *)(void *)a; }
-static int length1_collide(char *a_original, char *b_replace) {
-	struct length1_node *wa = length1_upcast(a_original),
-		*wb = length1_upcast(b_replace);
-	wb->next = wa;
-	wb->collisions = wa->collisions + 1;
-	return 1;
-}
-
-static void nato(void) {
-	struct length1_node words[] = {
-#define X(a) { #a, 0, 0 }
-		X(Alpha), X(Bravo), X(Charlie), X(Delta), X(Echo), X(Foxtrot), X(Golf),
-		X(Hotel), X(India), X(Juliet), X(Kilo), X(Lima), X(Mike), X(November),
-		X(Oscar), X(Papa), X(Québec) /* `strlen` will report 7 */, X(Romeo),
-		X(Sierra), X(Tango), X(Uniform), X(Victor), X(Whisky), X(X-ray),
-		X(Yankee), X(Zulu)
-#undef X
-	};
-	struct length1_set lens1 = SET_IDLE;
-	struct length1_set_iterator it1;
-	char *w;
-	size_t i;
-	for(i = 0; i < sizeof words / sizeof *words; i++)
-		length1_set_policy_put(&lens1, words[i].word, 0, &length1_collide);
-	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
-		"length\tcount\twords\n");
-	for(length1_set_begin(&it1, &lens1); w = length1_set_next_key(&it1); ) {
-		struct length1_node *word, *w1;
-		word = w1 = length1_upcast(w);
-		printf("%lu\t%lu\t{", (unsigned long)strlen(w),
-			(unsigned long)word->collisions + 1);
-		do printf("%s%s", word == w1 ? "" : ",", w1->word);
-		while(w1 = w1->next);
-		printf("}\n");
-	}
-	length1_set_(&lens1);
-}
-
-
 
 
 /* String hash hash. For testing automated testing, we have somewhere to store
@@ -181,8 +180,8 @@ static unsigned int_from_void(void *const pool) { return int_from_pool(pool); }
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct int_pool ints = POOL_IDLE;
-	zodiac_set_test(&random_zodiac, 0); /* Don't require any space. */
 	nato();
+	zodiac_set_test(&random_zodiac, 0); /* Don't require any space. */
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
 	int_set_test(&int_from_void, &ints), int_pool_(&ints);
 
