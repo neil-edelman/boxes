@@ -1,3 +1,7 @@
+/** A call with the container unknown. This is so that the function is free to
+ return a key which is part of a larger aggregate structure. */
+typedef PM_(map) (*const PM_(parent_new_fn))(void *);
+
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.
 #endif
@@ -241,13 +245,12 @@ static void PM_(legit)(const struct M_(hash) *const hash) {
 /** Passed `parent_new` and `parent` from <fn:<M>hash_test>. */
 static void PM_(test_basic)(PM_(key) (*const parent_new)(void *),
 	void *const parent) {
-	struct test { PM_(key) data; int is_in; }
+	struct test { PM_(map) data; int is_in; }
 		test[1000/*0*/], *t;
 	const size_t test_size = sizeof test / sizeof *test;
 	size_t i;
 	char z[12];
 	struct M_(hash) hash = HASH_IDLE;
-	PM_(key) eject, item;
 	assert(parent_new
 		/*&& parent static tests are possible*/ && test_size > 1);
 	/* Test empty. */
@@ -258,26 +261,18 @@ static void PM_(test_basic)(PM_(key) (*const parent_new)(void *),
 	PM_(graph)(&hash, "graph/" QUOTE(HASH_NAME) "-0.gv");
 	/* Test placing items. */
 	for(i = 0; i < test_size; i++) {
-		struct { PM_(uint) before, after; } size;
-		int is_grow;
-		int success;
+		int ret;
 		t = test + i;
-		/*if(!(t->data = parent_new(parent))) { assert(0); return; }*/
+		PM_(map) eject, item;
 		t->data = parent_new(parent); /* fixme: Completely unchecked! */
-		PM_(to_string)(t->data, &z);
+		PM_(to_string)(PM_(map_key)(t->data), &z);
 		printf("%lu: came up with %s.\n", (unsigned long)i, z);
-		success = M_(hash_buffer)(&hash, 1);
-		assert(success && hash.entries);
-		/*if(n == 0) assert(hash.log_capacity == 3 && !hash.size
-			&& !hash.entries[0].first && !hash.entries[1].first
-			&& !hash.entries[2].first && !hash.entries[3].first
-			&& !hash.entries[4].first && !hash.entries[5].first
-			&& !hash.entries[6].first && !hash.entries[7].first); */
-		size.before = hash.size;
-		eject = M_(hash_replace)(&hash, t->data);
-		assert(t - test || hash.size == 1 && !eject);
-		/* We can't even verify that the eject is good, it has no null. */
-		item = M_(hash_get)(&hash, t->data);
+		/*success = M_(hash_buffer)(&hash, 1);
+		assert(success && hash.entries);*/
+		ret = M_(hash_policy_put)(&hash, t->data, &eject, 0);
+		assert(ret && (i || hash.size == 1 && !eject));
+		success = M_(hash_query)();
+		/*item = M_(hash_get)(&hash, t->data);*/
 		/* Read back the item was something that was equal. */
 		assert(PM_(equal)(t->data, item));
 		/* How can we get a parent pointer? Probably have to have a pointer.
@@ -391,7 +386,7 @@ static void PM_(test_basic)(PM_(key) (*const parent_new)(void *),
  <tag:<M>hashlink> and `HASH_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void M_(hash_test)(PM_(key) (*const parent_new)(void *),
+static void M_(hash_test)(const PM_(parent_new_fn) parent_new,
 	void *const parent) {
 	printf("<" QUOTE(HASH_NAME) ">hash of key <" QUOTE(HASH_KEY)
 		"> was created using: "

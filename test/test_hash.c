@@ -30,15 +30,15 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define HASH_KEY enum zodiac
 #define HASH_CODE &hash_zodiac
 #define HASH_IS_EQUAL &zodiac_is_equal
-/* The following are not really necessary: */
-#define HASH_UINT unsigned /* <tag:<PM>bucket>: uint next, enum key */
-#define HASH_NO_CACHE /* Caching `x -> x` would be a waste of space. */
+#define HASH_NO_CACHE /* Don't bother caching `x -> x`. */
+/* <tag:<PM>bucket> more packed than `size_t`: `unsigned next, enum key`. */
+#define HASH_UINT unsigned
 #define HASH_TEST /* Testing requires to string. */
 #define HASH_EXPECT_TRAIT
 #include "../src/hash.h"
 #define HASH_TO_STRING &zodiac_to_string
 #include "../src/hash.h"
-/* @implements  */
+/* For testing. @implements <zodiac>parent_new_fn */
 static enum zodiac random_zodiac(void *const zero)
 	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
 

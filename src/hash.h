@@ -155,27 +155,59 @@ struct M_(hash_map) { PM_(key) key; PM_(value) value; };
  the domain, to <typedef:<PM>value>, the codomain; otherwise, it's a set, and
  this is the same as <typedef:<PM>key>. */
 typedef struct M_(hash_map) PM_(map);
+static PM_(key) PM_(map_key)(PM_(map) map) { return map.key; }
 #else /* value --><!-- !value */
 typedef PM_(key) PM_(value);
 typedef PM_(key) PM_(map);
+static PM_(key) PM_(map_key)(PM_(map) map) { return map; }
 #endif /* !value --> */
 
-/** Entries are what makes up the hash table. A bucket is a set of all entries
- having the same address, that is, hash code mod table capacity. Buckets are
- represented by a linked-list of entries from a table; each occupied bucket has
- a closed entry (address equals the index) at it's start. */
+/** Entries are what make up the hash table. A linked bucket is a set of all
+ entries having the same address, that is, hash code mod table capacity. Each
+ occupied bucket has a closed entry (address equals the index) at it's start. */
 struct PM_(entry) {
-	PM_(uint) next; /* Including `SETnull` and `SETend`. */
-#ifndef HASH_NO_CACHE /* <!-- cache */
+	PM_(uint) next; /* In bucket, including `SETnull` and `SETend`. */
+#ifndef HASH_NO_CACHE
 	PM_(uint) code;
-#endif /* cache --> */
-#ifndef HASH_INVERSE /* <!-- !inv */
+#endif
+#ifndef HASH_INVERSE
 	PM_(key) key;
-#endif /* !inv --> */
+#endif
 #ifdef HASH_VALUE
 	PM_(value) value;
 #endif
 };
+
+/** Gets the code of an occupied `entry`, which should be consistent. */
+static PM_(uint) PM_(entry_code)(const struct PM_(entry) *const entry) {
+	assert(entry && entry->next != SETnull);
+#ifdef HASH_NO_CACHE
+	return PM_(code)(entry->key);
+#else
+	return entry->code;
+#endif
+}
+
+/** Gets the key of an occupied `entry`. */
+static PM_(key) PM_(entry_key)(const struct PM_(entry) *const entry) {
+	assert(entry && entry->next != SETnull);
+#ifdef HASH_INVERSE
+	return PM_(inverse_code_fn)(&entry->code);
+#else
+	return entry->key;
+#endif
+}
+
+static void PM_(entry_to_map)(const struct PM_(entry) *const entry,
+	PM_(map) *const map) {
+	assert(entry && map);
+#ifdef HASH_VALUE /* map { <PM>key key; <PM>value value; } */
+	map->key = PM_(entry_key)(entry);
+	memcpy(&map->value, &entry->value, sizeof entry->value);
+#else /* map <PM>key */
+	*map = PM_(entry_key)(entry);
+#endif
+}
 
 #if 0
 /*
@@ -219,61 +251,6 @@ static void PM_(map_to_entry)(const PM_(map) *const map,
 #endif /* !value --> */
 }
 #endif
-
-/** Fill `entry` with `port` and `code`. The entry must be empty.
- fixme: This is very confusing; only called in one place. Maybe a macro would
- help? */
-static void PM_(fill_entry)(struct PM_(entry) *const entry,
-	/*const PM_(port) port*/const PM_(key) key, const PM_(uint) code) {
-	assert(entry && entry->next == SETnull);
-	entry->next = SETend;
-#ifndef HASH_NO_CACHE /* <!-- cache */
-	entry->code = code;
-#else /* cache --><!-- !cache */
-	(void)code;
-#endif /* !cache --> */
-
-#ifndef HASH_INVERSE /* <!-- !inv */
-	/*memcpy(, e.);*/ entry->key = key;
-#else /* !inv --><!-- inv */
-	(void)key;
-#endif /* inv --> */
-
-#ifdef HASH_VALUE /* <!-- value */
-	/*memcpy();*/
-#endif /* value --> */
-}
-
-/** Gets the code of an occupied `entry`, which should be consistent. */
-static PM_(uint) PM_(entry_code)(const struct PM_(entry) *const entry) {
-	assert(entry && entry->next != SETnull);
-#ifdef HASH_NO_CACHE
-	return PM_(code)(entry->key);
-#else
-	return entry->code;
-#endif
-}
-
-/** Gets the key of an occupied `entry`. */
-static PM_(key) PM_(entry_key)(const struct PM_(entry) *const entry) {
-	assert(entry && entry->next != SETnull);
-#ifdef HASH_INVERSE
-	return PM_(inverse_code_fn)(&entry->code);
-#else
-	return entry->key;
-#endif
-}
-
-static void PM_(entry_to_map)(const struct PM_(entry) *const entry,
-	PM_(map) *const map) {
-	assert(entry && map);
-#ifdef HASH_VALUE /* map { <PM>key key; <PM>value value; } */
-	map->key = PM_(entry_key)(entry);
-	memcpy(&map->value, &entry->value, sizeof entry->value);
-#else /* map <PM>key */
-	*map = PM_(entry_key)(entry);
-#endif
-}
 
 /** To initialize, see <fn:<M>hash>, `HASH_IDLE`, `{0}` (`C99`,) or being
  `static`.
@@ -506,24 +483,27 @@ static int PM_(false)(PM_(key) original, PM_(key) replace)
 	{ (void)(original); (void)(replace); return 0; }
 
 /** Put `key` in `hash` as long as `replace` is null or returns true.
- @param[eject] If non-null, the equal element, if any. If `replace`
- returns false, the address of `key`.
- @return Success. @throws[malloc] @order amortized \O(1) */
-static int PM_(put)(struct M_(hash) *const hash, const PM_(replace_fn) replace,
-	PM_(key) key, PM_(key)/*map*/ *eject) {
+ @param[eject] If non-null, replaced with the equal element, if any. If
+ `replace` returns false, the `map`.
+ @return True except exception. @throws[malloc] @order amortized \O(1) */
+static int PM_(put)(struct M_(hash) *const hash, PM_(map) map, PM_(map) *eject,
+	const PM_(replace_fn) replace) {
 	struct PM_(entry) *entry;
+	const PM_(key) key = PM_(map_key)(map);
 	PM_(uint) code, idx, next = SETend /* The end of a linked-list. */, size;
-	char z[12];
 	assert(hash);
-	PM_(to_string)(key, &z);
-	if(eject) *eject = 0;
 	code = PM_(code)(key);
+	{
+		char z[12];
+		PM_(to_string)(key, &z);
+		printf("put: \"%s\" code 0x%lx.\n", z, (unsigned long)code);
+	}
 	size = hash->size;
-	printf("put: \"%s\" code 0x%lx.\n", z, (unsigned long)code);
 	if(hash->entries && (entry = PM_(get)(hash, key, code))) { /* Replace. */
+		/* Decided not to replace. */
 		if(replace && !replace(PM_(entry_key)(entry), key))
-			{ if(eject) *eject = key; return 1; } /* Decided not to replace. */
-		if(eject) *eject = PM_(entry_key)(entry);
+			{ if(eject) memcpy(eject, &map, sizeof map); return 1; }
+		if(eject) PM_(entry_to_map)(entry, eject);
 		/* Cut the tail and put new element in the head. */
 		next = entry->next, entry->next = SETnull, assert(next != SETnull);
 	} else { /* Expand. */
@@ -539,8 +519,19 @@ static int PM_(put)(struct M_(hash) *const hash, const PM_(replace_fn) replace,
 				&& (next == SETend || hash->entries[next].next != SETnull));
 		}
 	}
-	PM_(fill_entry)(entry, key, code);
+	/* Fill `entry`. The entry must be empty. */
+	assert(entry && entry->next == SETnull);
 	entry->next = next;
+	#ifndef HASH_NO_CACHE
+	entry->code = code;
+	#endif
+	#ifndef HASH_INVERSE
+	memcpy(&entry->key, &key, sizeof key);
+	#endif
+	#ifdef HASH_VALUE /* <!-- value */
+	/*memcpy(&entry->value, );*/
+//#error Pending.
+	#endif /* value --> */
 	hash->size = size;
 	return 1;
 }
@@ -584,6 +575,7 @@ static int M_(hash_query)(struct M_(hash) *const hash, const PM_(key) key,
 	return 1;
 }
 
+#if 0
 /* fixme: get_or_default (get_or?) /\, otherwise have a get that has a
  parameter, so one could have multiple \/. "get" doesn't work with non-nullible
  types, (in C++ they made it work returning zero? eww.) */
@@ -599,7 +591,22 @@ static PM_(key) M_(hash_get)(struct M_(hash) *const hash,
 	e = PM_(get)(hash, key, PM_(code)(key));
 	return e ? PM_(entry_key)(e) : 0;
 }
+#endif
 
+/** Puts `map` in `hash` only if the entry is absent or if calling `replace`
+ returns true.
+ @param[replace] If null, doesn't do any replacement on collision.
+ @return Any ejected element or null. On collision, if `replace` returns false
+ or `replace` is null, returns `key` and leaves the other element in the code.
+ @throws[realloc, ERANGE] There was an error with a re-sizing.
+ Successfully calling <fn:<M>hash_buffer> ensures that this does not happen.
+ @order Average amortised \O(1), (code distributes keys uniformly); worst \O(n).
+ @allow */
+static int M_(hash_policy_put)(struct M_(hash) *const hash, PM_(map) map,
+	PM_(map) *eject, const PM_(replace_fn) replace)
+	{ return PM_(put)(hash, map, eject, replace); }
+
+#if 0
 /* fixme: Buffering changes the outcome if it's already in the table, it
  creates a new code anyway. This is not a pleasant situation. */
 /* fixme: also have a hash_try */
@@ -610,31 +617,13 @@ static PM_(key) M_(hash_get)(struct M_(hash) *const hash,
  If needed, before calling this, successfully calling <fn:<M>hash_buffer>, or
  hashting `errno` to zero. @order Average amortised \O(1), (code distributes
  keys uniformly); worst \O(n) (are you sure that's up to date?). @allow */
-static PM_(key) M_(hash_replace)(struct M_(hash) *const code,
-	const PM_(key) key) {
-	PM_(key) collide;
+static PM_(map) M_(hash_replace)(struct M_(hash) *const hash,
+	const PM_(map) map) {
+	PM_(map) collide;
 	/* No error information. */
-	return PM_(put)(code, 0, key, &collide) ? collide : 0;
+	return PM_(put)(hash, 0, map, &collide) ? collide : 0;
 }
 
-/** Puts `key` in `code` only if the entry is absent or if calling `replace`
- returns true.
- @param[replace] If null, doesn't do any replacement on collision.
- @return Any ejected element or null. On collision, if `replace` returns false
- or `replace` is null, returns `key` and leaves the other element in the code.
- @throws[realloc, ERANGE] There was an error with a re-sizing.
- Successfully calling <fn:<M>hash_buffer> ensures that this does not happen.
- @order Average amortised \O(1), (code distributes keys uniformly); worst \O(n).
- @allow */
-static PM_(key) M_(hash_policy_put)(struct M_(hash) *const code,
-	const PM_(key) key, const PM_(replace_fn) replace) {
-	PM_(key) collide;
-	/* No error information. */
-	return PM_(put)(code, replace ? replace : &PM_(false), key, &collide)
-		? collide : 0;
-}
-
-#if 0
 /** Removes an element `data` from `code`.
  @return Successfully ejected element or null. @order Average \O(1), (code
  distributes elements uniformly); worst \O(n). @allow */
