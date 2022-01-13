@@ -3,8 +3,8 @@
 ## Hash table ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;key](#user-content-typedef-759eb157), [&lt;PS&gt;ckey](#user-content-typedef-6ff89358), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;value](#user-content-typedef-2830cf59), [&lt;PS&gt;entry](#user-content-typedef-3ef38eec), [&lt;PS&gt;replace_fn](#user-content-typedef-ccec694d), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;key](#user-content-typedef-bd74ee05), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;S&gt;set_entry](#user-content-tag-ef912361), [&lt;S&gt;set](#user-content-tag-54aaac2), [&lt;S&gt;set_iterator](#user-content-tag-f91e42cd)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;key](#user-content-typedef-759eb157), [&lt;PS&gt;ckey](#user-content-typedef-6ff89358), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;value](#user-content-typedef-2830cf59), [&lt;PS&gt;entry](#user-content-typedef-3ef38eec), [&lt;PS&gt;replace_fn](#user-content-typedef-ccec694d), [&lt;PS&gt;compute_fn](#user-content-typedef-3f00e14e), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;key](#user-content-typedef-bd74ee05), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [set_result](#user-content-tag-f250624d), [&lt;S&gt;set_entry](#user-content-tag-ef912361), [&lt;S&gt;set](#user-content-tag-54aaac2), [&lt;S&gt;set_iterator](#user-content-tag-f91e42cd)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,9 +13,9 @@
 
 ![Example of &lt;string&gt;set.](web/set.png)
 
-[&lt;S&gt;set](#user-content-tag-54aaac2) is an unordered set or map \(associative array\) of [&lt;PS&gt;entry](#user-content-typedef-3ef38eec) implemented as a hash table\. It must be supplied a [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c)\.
+[&lt;S&gt;set](#user-content-tag-54aaac2) is a set or map of [&lt;PS&gt;entry](#user-content-typedef-3ef38eec) implemented as a hash table\. It must be supplied a [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c)\. This data structure could have been named several things, depending on the use: table, dictionary, association, map, hash\.
 
-[CMPH](http://cmph.sourceforge.net/) is a minimal perfect hashing library that provides performance for large sets\. Compile\-time constant sets are can be better handled with [gperf](https://www.gnu.org/software/gperf/)\.
+Compile\-time constant data are better handled with [gperf](https://www.gnu.org/software/gperf/)\. Almost\-constant and large data, consider dynamic minimal perfect hashing [CMPH](http://cmph.sourceforge.net/)\.
 
 fixme
 
@@ -24,7 +24,7 @@ fixme
  * Parameter: SET\_HASH, SET\_IS\_EQUAL  
    A function satisfying [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c); required\.
  * Parameter: SET\_VALUE  
-   An optional type that is the payload of the set key, thus making this an associative array\. Should be used when a map is desired and the key and value are associated but in independent memory locations; if the key is part of an aggregate value, it will be more efficient and robust to use a type conversion from the key\.
+   An optional type that is the payload of the key, thus making this an associative array\. Should be used when one has a value that is associated, but in an independent memory location from the key; if the key is part of an aggregate value, it will be more efficient and robust to use a type conversion\.
  * Parameter: SET\_UINT  
    This is [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), the unsigned type of hash hash of the key given by [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975); defaults to `size_t`\.
  * Parameter: SET\_NO\_CACHE  
@@ -45,7 +45,7 @@ fixme
 
 <code>typedef SET_UINT <strong>&lt;PS&gt;uint</strong>;</code>
 
-Unsigned integer hash type; [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) returns this type\. Also places a simplifying limit on the maximum number of items in this container of half the cardinality of this type\.
+Unsigned integer type where the hash resides; [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) returns this type\. Also places a simplifying limit on the maximum number of items in this container of half the cardinality of this type\.
 
 
 
@@ -107,9 +107,17 @@ If `SET_VALUE`, then this is a map and this is [&lt;S&gt;set_entry](#user-conten
 
 ### <a id = "user-content-typedef-ccec694d" name = "user-content-typedef-ccec694d">&lt;PS&gt;replace_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PS&gt;replace_fn</strong>)(&lt;PS&gt;value original, &lt;PS&gt;value replace);</code>
+<code>typedef int(*<strong>&lt;PS&gt;replace_fn</strong>)(&lt;PS&gt;entry original, &lt;PS&gt;entry replace);</code>
 
-A bi\-predicate; returns true if the `replace` replaces the `original`\.
+Opens the values up to modification and returns true if the `replace` replaces the `original`\.
+
+
+
+### <a id = "user-content-typedef-3f00e14e" name = "user-content-typedef-3f00e14e">&lt;PS&gt;compute_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PS&gt;compute_fn</strong>)(&lt;PS&gt;key original, &lt;PS&gt;key replace, &lt;PS&gt;value value);</code>
+
+\.\.\.
 
 
 
@@ -139,6 +147,14 @@ Responsible for turning the argument [&lt;PSZ&gt;key](#user-content-typedef-bd74
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
+### <a id = "user-content-tag-f250624d" name = "user-content-tag-f250624d">set_result</a> ###
+
+<code>enum <strong>set_result</strong> { SET_ERROR, SET_YIELD, SET_REPLACE_KEY, SET_REPLACE_VALUE, SET_REPLACE, SET_GROW };</code>
+
+![A diagram of the put states.](web/put.png)
+
+
+
 ### <a id = "user-content-tag-ef912361" name = "user-content-tag-ef912361">&lt;S&gt;set_entry</a> ###
 
 <code>struct <strong>&lt;S&gt;set_entry</strong> { &lt;PS&gt;key key; &lt;PS&gt;value value; };</code>
@@ -149,7 +165,7 @@ Defining `SET_VALUE` creates this map from [&lt;PS&gt;ckey](#user-content-typede
 
 ### <a id = "user-content-tag-54aaac2" name = "user-content-tag-54aaac2">&lt;S&gt;set</a> ###
 
-<code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;bucket *buckets; unsigned log_capacity, unused; &lt;PS&gt;uint size, top; };</code>
+<code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;bucket *buckets; &lt;PS&gt;uint log_capacity, size, top; };</code>
 
 To initialize, see [&lt;S&gt;set](#user-content-fn-54aaac2), `SET_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 

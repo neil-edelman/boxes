@@ -271,12 +271,15 @@ static int PS_(in_stack_range)(const struct S_(set) *const set,
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 #ifdef SET_TEST
+/** `f` `g` */
 static void PS_(graph)(const struct S_(set) *f, const char *g);
 static void (*PS_(to_string))(PS_(ckey), char (*)[12]);
 #else
+/** `set` `fn` */
 static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	(void)set, (void)fn;
 }
+/** `key` `z` */
 static void PS_(to_string)(PS_(ckey) key, char (*z)[12])
 	{ (void)key, strcpy(*z, "<key>"); }
 #endif
@@ -453,6 +456,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 #undef QUOTE_
 #undef QUOTE
 
+/** Replace the `key` and `hash` of `bucket`. Don't touch next. */
 static void PS_(replace_key)(struct PS_(bucket) *const bucket,
 	const PS_(key) key, const PS_(uint) hash) {
 #ifndef SET_NO_CACHE
@@ -465,6 +469,8 @@ static void PS_(replace_key)(struct PS_(bucket) *const bucket,
 #endif
 }
 
+/** Replace the entire `entry` and `hash` of `bucket`. Don't touch next.
+ @fixme `memcpy`? */
 static void PS_(replace_entry)(struct PS_(bucket) *const bucket,
 	const PS_(entry) entry, const PS_(uint) hash) {
 	PS_(replace_key)(bucket, PS_(entry_key)(entry), hash);
@@ -524,6 +530,7 @@ static int PS_(put)(struct S_(set) *const set,
 typedef int (*PS_(compute_fn))(PS_(key) original, PS_(key) replace,
 	PS_(value) value);
 
+/** Try to put `key` into `set`, and `compute` the result. `eject`. */
 static int PS_(compute)(struct S_(set) *const set,
 	PS_(key) key, PS_(key) *eject, const PS_(compute_fn) compute) {
 	struct PS_(bucket) *bucket;
@@ -633,12 +640,13 @@ static int S_(set_policy_put)(struct S_(set) *const set,
 	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace)
 	{ return PS_(put)(set, entry, eject, replace); }
 
-#if 0
+/** `compute` `key` in `set`, and `eject`. */
 static int S_(set_compute_put)(struct S_(set) *const set,
 	PS_(key) key, PS_(key) *eject, const PS_(compute_fn) compute) {
 	return 0;
 }
 
+#if 0
 /* fixme: Buffering changes the outcome if it's already in the table, it
  creates a new hash anyway. This is not a pleasant situation. */
 /* fixme: also have a hash_try */

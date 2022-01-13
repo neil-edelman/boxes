@@ -37,8 +37,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>key">&lt;PS&gt;key</a>, <a href = "#typedef:<PS>ckey">&lt;PS&gt;ckey</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>value">&lt;PS&gt;value</a>, <a href = "#typedef:<PS>entry">&lt;PS&gt;entry</a>, <a href = "#typedef:<PS>replace_fn">&lt;PS&gt;replace_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>key">&lt;PSZ&gt;key</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<S>set_entry">&lt;S&gt;set_entry</a>, <a href = "#tag:<S>set">&lt;S&gt;set</a>, <a href = "#tag:<S>set_iterator">&lt;S&gt;set_iterator</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>key">&lt;PS&gt;key</a>, <a href = "#typedef:<PS>ckey">&lt;PS&gt;ckey</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>value">&lt;PS&gt;value</a>, <a href = "#typedef:<PS>entry">&lt;PS&gt;entry</a>, <a href = "#typedef:<PS>replace_fn">&lt;PS&gt;replace_fn</a>, <a href = "#typedef:<PS>compute_fn">&lt;PS&gt;compute_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>key">&lt;PSZ&gt;key</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:set_result">set_result</a>, <a href = "#tag:<S>set_entry">&lt;S&gt;set_entry</a>, <a href = "#tag:<S>set">&lt;S&gt;set</a>, <a href = "#tag:<S>set_iterator">&lt;S&gt;set_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,9 +50,9 @@
 
 <p><img alt = "Example of &lt;string&gt;set." src = "web/set.png" width = 634 height = 474></p>
 
-<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is an unordered set or map (associative array) of <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> implemented as a hash table. It must be supplied a <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>.</p>
+<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a set or map of <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> implemented as a hash table. It must be supplied a <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>. This data structure could have been named several things, depending on the use: table, dictionary, association, map, hash.</p>
 
-<p><a href = "http://cmph.sourceforge.net/">CMPH</a> is a minimal perfect hashing library that provides performance for large sets. Compile-time constant sets are can be better handled with <a href = "https://www.gnu.org/software/gperf/">gperf</a>.</p>
+<p>Compile-time constant data are better handled with <a href = "https://www.gnu.org/software/gperf/">gperf</a>. Almost-constant and large data, consider dynamic minimal perfect hashing <a href = "http://cmph.sourceforge.net/">CMPH</a>.</p>
 
 fixme</div>
 
@@ -62,7 +62,7 @@ fixme</div>
 	<dt>Parameter: SET_HASH, SET_IS_EQUAL</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>; required.</dd>
 	<dt>Parameter: SET_VALUE</dt>
-	<dd>An optional type that is the payload of the set key, thus making this an associative array. Should be used when a map is desired and the key and value are associated but in independent memory locations; if the key is part of an aggregate value, it will be more efficient and robust to use a type conversion from the key.</dd>
+	<dd>An optional type that is the payload of the key, thus making this an associative array. Should be used when one has a value that is associated, but in an independent memory location from the key; if the key is part of an aggregate value, it will be more efficient and robust to use a type conversion.</dd>
 	<dt>Parameter: SET_UINT</dt>
 	<dd>This is <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>, the unsigned type of hash hash of the key given by <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a>; defaults to <code>size_t</code>.</dd>
 	<dt>Parameter: SET_NO_CACHE</dt>
@@ -85,7 +85,7 @@ fixme</div>
 
 <p><code>typedef SET_UINT <strong>&lt;PS&gt;uint</strong>;</code></p>
 
-<p>Unsigned integer hash type; <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> returns this type. Also places a simplifying limit on the maximum number of items in this container of half the cardinality of this type.</p>
+<p>Unsigned integer type where the hash resides; <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> returns this type. Also places a simplifying limit on the maximum number of items in this container of half the cardinality of this type.</p>
 
 </div>
 
@@ -163,9 +163,19 @@ fixme</div>
 
 <h3><a id = "typedef:<PS>replace_fn" name = "typedef:<PS>replace_fn">&lt;PS&gt;replace_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PS&gt;replace_fn</strong>)(&lt;PS&gt;value original, &lt;PS&gt;value replace);</code></p>
+<p><code>typedef int(*<strong>&lt;PS&gt;replace_fn</strong>)(&lt;PS&gt;entry original, &lt;PS&gt;entry replace);</code></p>
 
-<p>A bi-predicate; returns true if the <code>replace</code> replaces the <code>original</code>.</p>
+<p>Opens the values up to modification and returns true if the <code>replace</code> replaces the <code>original</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PS>compute_fn" name = "typedef:<PS>compute_fn">&lt;PS&gt;compute_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PS&gt;compute_fn</strong>)(&lt;PS&gt;key original, &lt;PS&gt;key replace, &lt;PS&gt;value value);</code></p>
+
+<p>...</p>
 
 </div>
 
@@ -203,6 +213,16 @@ fixme</div>
 
 <div>
 
+<h3><a id = "tag:set_result" name = "tag:set_result">set_result</a></h3>
+
+<p><code>enum <strong>set_result</strong> { SET_ERROR, SET_YIELD, SET_REPLACE_KEY, SET_REPLACE_VALUE, SET_REPLACE, SET_GROW };</code></p>
+
+<p><img alt = "A diagram of the put states." src = "web/put.png" width = 675 height = 368></p>
+
+</div>
+
+<div>
+
 <h3><a id = "tag:<S>set_entry" name = "tag:<S>set_entry">&lt;S&gt;set_entry</a></h3>
 
 <p><code>struct <strong>&lt;S&gt;set_entry</strong> { &lt;PS&gt;key key; &lt;PS&gt;value value; };</code></p>
@@ -215,11 +235,11 @@ fixme</div>
 
 <h3><a id = "tag:<S>set" name = "tag:<S>set">&lt;S&gt;set</a></h3>
 
-<p><code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;bucket *buckets; unsigned log_capacity, unused; &lt;PS&gt;uint size, top; };</code></p>
+<p><code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;bucket *buckets; &lt;PS&gt;uint log_capacity, size, top; };</code></p>
 
 <p>To initialize, see <a href = "#fn:&lt;S&gt;set">&lt;S&gt;set</a>, <code>SET_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 215 height = 293></p>
+<p><img alt = "States." src = "web/states.png" width = 761 height = 135></p>
 
 </div>
 
