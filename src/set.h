@@ -100,7 +100,8 @@
 #define SET_RESULT X(ERROR), X(YIELD), \
 	X(REPLACE_KEY), X(REPLACE_VALUE), X(REPLACE), X(GROW)
 #define X(n) SET_##n
-/** An `enum` of `SET_*`.
+/** An `enum` of `SET_*`. `C` doesn't have a standard out-of-band communication
+ channel like exceptions, so this is the result of modifying the table.
  ![A diagram of the put states.](../web/put.png) */
 enum set_result { SET_RESULT };
 #undef X

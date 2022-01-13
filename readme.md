@@ -149,9 +149,9 @@ Responsible for turning the argument [&lt;PSZ&gt;key](#user-content-typedef-bd74
 
 ### <a id = "user-content-tag-f250624d" name = "user-content-tag-f250624d">set_result</a> ###
 
-<code>enum <strong>set_result</strong> { SET_ERROR, SET_YIELD, SET_REPLACE_KEY, SET_REPLACE_VALUE, SET_REPLACE, SET_GROW };</code>
+<code>enum <strong>set_result</strong> { SET_RESULT };</code>
 
-![A diagram of the put states.](web/put.png)
+An `enum` of `SET_*`\. `C` doesn't have a standard out\-of\-band communication channel like exceptions, so this is the result of modifying the table\. ![A diagram of the put states.](web/put.png)
 
 
 
@@ -197,7 +197,7 @@ Iteration usually not in any particular order\. The asymptotic runtime is propor
 
 <tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#user-content-fn-4b32a391">&lt;S&gt;set_get</a></td><td>hash, key</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a></td><td>set, entry, eject, replace</td></tr>
+<tr><td align = right>static enum set_result</td><td><a href = "#user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a></td><td>set, entry, eject, replace</td></tr>
 
 <tr><td align = right>static &lt;PS&gt;map</td><td><a href = "#user-content-fn-7982ba81">&lt;S&gt;set_replace</a></td><td>set, entry</td></tr>
 
@@ -272,7 +272,7 @@ Clears and removes all buckets from `set`\. The capacity and memory of the `set`
 
 ### <a id = "user-content-fn-e5100be7" name = "user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a> ###
 
-<code>static int <strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code>
+<code>static enum set_result <strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code>
 
 Puts `entry` in `set` only if the bucket is absent or if calling `replace` returns true\.
 

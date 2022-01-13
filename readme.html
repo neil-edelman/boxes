@@ -215,9 +215,9 @@ fixme</div>
 
 <h3><a id = "tag:set_result" name = "tag:set_result">set_result</a></h3>
 
-<p><code>enum <strong>set_result</strong> { SET_ERROR, SET_YIELD, SET_REPLACE_KEY, SET_REPLACE_VALUE, SET_REPLACE, SET_GROW };</code></p>
+<p><code>enum <strong>set_result</strong> { SET_RESULT };</code></p>
 
-<p><img alt = "A diagram of the put states." src = "web/put.png" width = 675 height = 368></p>
+<p>An <code>enum</code> of <code>SET_*</code>. <code>C</code> doesn't have a standard out-of-band communication channel like exceptions, so this is the result of modifying the table. <img alt = "A diagram of the put states." src = "web/put.png" width = 675 height = 368></p>
 
 </div>
 
@@ -271,7 +271,7 @@ fixme</div>
 
 <tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#fn:<S>set_get">&lt;S&gt;set_get</a></td><td>hash, key</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<S>set_policy_put">&lt;S&gt;set_policy_put</a></td><td>set, entry, eject, replace</td></tr>
+<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_policy_put">&lt;S&gt;set_policy_put</a></td><td>set, entry, eject, replace</td></tr>
 
 <tr><td align = right>static &lt;PS&gt;map</td><td><a href = "#fn:<S>set_replace">&lt;S&gt;set_replace</a></td><td>set, entry</td></tr>
 
@@ -364,7 +364,7 @@ fixme</div>
 
 <h3><a id = "fn:<S>set_policy_put" name = "fn:<S>set_policy_put">&lt;S&gt;set_policy_put</a></h3>
 
-<p><code>static int <strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code></p>
+<p><code>static enum set_result <strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code></p>
 
 <p>Puts <code>entry</code> in <code>set</code> only if the bucket is absent or if calling <code>replace</code> returns true.</p>
 
