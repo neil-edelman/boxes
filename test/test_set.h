@@ -267,6 +267,7 @@ static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
 	/* Test placing items. */
 	for(i = 0; i < test_size; i++) {
 		struct { PS_(uint) before, after; } size;
+		enum set_result res;
 		int is_grow;
 		int ret;
 		t = test + i;
@@ -279,8 +280,9 @@ static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
 		memset(&eject, 0, sizeof eject);
 		memset(&zero, 0, sizeof zero);
 		size.before = set.size;
-		ret = S_(set_policy_put)(&set, t->_.entry, &eject, 0);
-		assert(ret && (i || set.size == 1
+		res = S_(set_policy_put)(&set, t->_.entry, &eject, 0);
+		printf("res: %s\n", set_result_str[res]);
+		assert(res && (i || set.size == 1
 			&& !memcmp(&eject, &zero, sizeof zero)));
 		size.after = set.size;
 		assert(size.before == size.after || size.after == size.before + 1);

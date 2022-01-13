@@ -97,9 +97,18 @@
 #define SET_LIMIT ((SET_M1 >> 1) + 1) /* Cardinality. */
 #define SET_END (SET_LIMIT)
 #define SET_NULL (SET_LIMIT + 1)
-/** ![A diagram of the put states.](../web/put.png) */
-enum set_result { SET_ERROR, SET_YIELD, SET_REPLACE_KEY, SET_REPLACE_VALUE,
-	SET_REPLACE, SET_GROW };
+#define SET_RESULT X(ERROR), X(YIELD), \
+	X(REPLACE_KEY), X(REPLACE_VALUE), X(REPLACE), X(GROW)
+#define X(n) SET_##n
+/** An `enum` of `SET_*`.
+ ![A diagram of the put states.](../web/put.png) */
+enum set_result { SET_RESULT };
+#undef X
+#define X(n) #n
+/** A static array of string describing the <tag:set_result>. */
+static const char *const set_result_str[] = { SET_RESULT };
+#undef X
+#undef SET_RESULT
 #endif /* idempotent --> */
 
 
@@ -487,11 +496,12 @@ typedef int (*PS_(replace_fn))(PS_(entry) original, PS_(entry) replace);
  and returns true do and put it in `eject`, if non-null.
  @param[eject] If `replace` returns false, the `entry` itself.
  @return True except exception. @throws[malloc] @order amortized \O(1) */
-static int PS_(put)(struct S_(set) *const set,
+static enum set_result PS_(put)(struct S_(set) *const set,
 	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace) {
 	struct PS_(bucket) *bucket;
 	const PS_(key) key = PS_(entry_key)(entry);
 	PS_(uint) hash, i, next = SET_END, size;
+	enum set_result ret;
 	assert(set);
 	hash = PS_(hash)(key);
 	{
@@ -502,12 +512,13 @@ static int PS_(put)(struct S_(set) *const set,
 	size = set->size;
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
 		if(!replace || !replace(PS_(bucket_key)(bucket), key))
-			{ if(eject) memcpy(eject, &entry, sizeof entry); return 1; }
+			{ if(eject) memcpy(eject, &entry, sizeof entry); return SET_YIELD; }
 		if(eject) PS_(to_entry)(bucket, eject);
 		/* Cut the tail and put new element in the head. */
 		next = bucket->next, bucket->next = SET_NULL, assert(next != SET_NULL);
+		ret = SET_REPLACE;
 	} else { /* Expand. */
-		if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
+		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
 		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
 		size++;
 		if(bucket->next != SET_NULL) { /* Unoccupied. */
@@ -517,13 +528,14 @@ static int PS_(put)(struct S_(set) *const set,
 			assert(bucket->next == SET_NULL
 				&& (next == SET_END || set->buckets[next].next != SET_NULL));
 		}
+		ret = SET_REPLACE;
 	}
 	/* Fill `bucket`. The bucket must be empty. */
 	assert(bucket && bucket->next == SET_NULL);
 	bucket->next = next;
 	PS_(replace_entry)(bucket, entry, hash);
 	set->size = size;
-	return 1;
+	return ret;
 }
 
 /** ... */
@@ -531,11 +543,12 @@ typedef int (*PS_(compute_fn))(PS_(key) original, PS_(key) replace,
 	PS_(value) value);
 
 /** Try to put `key` into `set`, and `compute` the result. `eject`. */
-static int PS_(compute)(struct S_(set) *const set,
+static enum set_result PS_(compute)(struct S_(set) *const set,
 	PS_(key) key, PS_(key) *eject, const PS_(compute_fn) compute) {
 	struct PS_(bucket) *bucket;
 	PS_(uint) hash, i, next = SET_END, size;
-	assert(set);
+	enum set_result ret;
+	assert(set && compute);
 	hash = PS_(hash)(key);
 	{
 		char z[12];
@@ -544,13 +557,20 @@ static int PS_(compute)(struct S_(set) *const set,
 	}
 	size = set->size;
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
-		if(!compute || !compute(PS_(bucket_key)(bucket), key, PS_(bucket_value)(bucket)))
-			{ if(eject) memcpy(eject, &key, sizeof key); return 1; }
+		/* ComputeIfPresent */
+		if(!compute(PS_(bucket_key)(bucket), key, PS_(bucket_value)(bucket)))
+			{ if(eject) memcpy(eject, &key, sizeof key); return SET_YIELD; }
 		if(eject) PS_(to_entry)(bucket, eject);
 		/* Cut the tail and put new element in the head. */
 		next = bucket->next, bucket->next = SET_NULL, assert(next != SET_NULL);
+		ret =
+#ifdef SET_VALUE
+			SET_REPLACE_VALUE;
+#else
+			SET_REPLACE;
+#endif
 	} else { /* Expand. */
-		if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
+		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
 		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
 		size++;
 		if(bucket->next != SET_NULL) { /* Unoccupied. */
@@ -560,12 +580,15 @@ static int PS_(compute)(struct S_(set) *const set,
 			assert(bucket->next == SET_NULL
 				&& (next == SET_END || set->buckets[next].next != SET_NULL));
 		}
+		/* fixme: This may not be nullable; fix `compute_fn`. */
+		compute(0, key, PS_(bucket_value)(bucket));
+		ret = SET_GROW;
 	}
 	/* Fill `bucket`. The bucket must be empty. */
 	assert(bucket && bucket->next == SET_NULL);
 	bucket->next = next;
 	set->size = size;
-	return 1;
+	return ret;
 }
 
 /** Initialises `set` to idle. @order \Theta(1) @allow */
@@ -636,14 +659,14 @@ static PS_(key) S_(set_get)(struct S_(set) *const hash,
  @return True except exception. @throws[realloc, ERANGE] There was an error
  with a re-sizing. @order Average amortised \O(1), (hash distributes keys
  uniformly); worst \O(n). @allow */
-static int S_(set_policy_put)(struct S_(set) *const set,
+static enum set_result S_(set_policy_put)(struct S_(set) *const set,
 	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace)
 	{ return PS_(put)(set, entry, eject, replace); }
 
 /** `compute` `key` in `set`, and `eject`. */
-static int S_(set_compute_put)(struct S_(set) *const set,
+static enum set_result S_(set_compute_put)(struct S_(set) *const set,
 	PS_(key) key, PS_(key) *eject, const PS_(compute_fn) compute) {
-	return 0;
+	{ return PS_(compute)(set, key, eject, compute); }
 }
 
 #if 0
@@ -777,7 +800,7 @@ static void PS_(unused_base)(void) {
 	memset(&k, 0, sizeof k);
 	S_(set)(0); S_(set_)(0); S_(set_buffer)(0, 0); S_(set_clear)(0);
 	S_(set_query)(0, k, 0);
-	S_(set_policy_put)(0, e, 0, 0);
+	S_(set_policy_put)(0, e, 0, 0); S_(set_compute_put)(0, k, 0, 0);
 	/*S_(set_remove)(0, 0);*/
 	S_(set_begin)(0, 0); S_(set_next)(0, 0); S_(set_has_next)(0);
 	S_(set_next_key)(0); S_(set_next_value)(0);
