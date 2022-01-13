@@ -1,15 +1,18 @@
 digraph {
-	//rankdir = LR;
-	fontname = "Bitstream Vera Sans"
-	fontsize = 8
-	node [ fontname = "Bitstream Vera Sans" fontsize = 8 shape = "record" ]
-	edge [ fontname = "Bitstream Vera Sans" fontsize = 8 ]
+	rankdir = LR;
+	node [shape = "record", style=filled, fillcolor="Grey95"];
+	fontname = "Bitstream Vera Sans";
+	fontsize = 12;
+	node [fontname = "Bitstream Vera Sans", fontsize = 12];
+	edge [fontname = "Bitstream Vera Sans" fontsize = 12];
 
-	node [ shape=record, style=filled ];
-	null [ label = "Uninitalised|Random bytes.\lNo memory.\lNot in a valid state.\l", fillcolor = pink ];
-	static [ label = "Idle|No memory.\l\{0\} or SET_IDLE\l" ];
-	dynamic [ label = "Active|Memory allocated.\lCould have size zero.\l" ];
-	null -> static [ label = "<E>Set" ];
-	static -> dynamic [ label = "<E>SetPut\l<E>SetReserve" ];
-	dynamic -> static [ label = "<E>Set_" ];
+	node [shape=record, style=filled];
+	null [label="uninitialized|random bytes\lno memory\lnot in a valid state\l", fillcolor="Pink"];
+	static [ label = "idle|no dynamic memory\l\{0\} or SET_IDLE\l" ];
+	dynamic [ label = "active|memory allocated\lcould have size zero.\l" ];
+	null -> static [ label = "<S>set" ];
+	static -> dynamic [ label = "<S>set_put\l<S>set_reserve\l..." ];
+	dynamic -> static [ label = "<S>set_" ];
+	dynamic -> dynamic [ label = "<S>set_clear" ];
+	static -> static [ label = "<S>set_clear" ];
 }

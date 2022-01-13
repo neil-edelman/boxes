@@ -107,9 +107,9 @@
 #define SET_UINT size_t
 #endif
 
-/** Unsigned integer hash type; <typedef:<PS>hash_fn> returns this type. Also
- places a simplifying limit on the maximum number of items in this container of
- half the cardinality of this type. */
+/** Unsigned integer type where the hash resides; <typedef:<PS>hash_fn> returns
+ this type. Also places a simplifying limit on the maximum number of items in
+ this container of half the cardinality of this type. */
 typedef SET_UINT PS_(uint);
 
 /** Valid tag type defined by `SET_KEY`. */
@@ -204,7 +204,7 @@ static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 #endif
 }
 
-/** Gets the value of an occupied `bucket`. */
+/** Gets the value of an occupied `bucket`. (Which may be the key.) */
 static PS_(value) PS_(bucket_value)(const struct PS_(bucket) *const bucket) {
 	assert(bucket && bucket->next != SET_NULL);
 #ifdef SET_VALUE
@@ -218,10 +218,10 @@ static PS_(value) PS_(bucket_value)(const struct PS_(bucket) *const bucket) {
 static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
 	PS_(entry) *const entry) {
 	assert(bucket && entry);
-#ifdef SET_VALUE /* map { <PS>key key; <PS>value value; } */
+#ifdef SET_VALUE /* entry { <PS>key key; <PS>value value; } */
 	entry->key = PS_(bucket_key)(bucket);
 	memcpy(&entry->value, &bucket->value, sizeof bucket->value);
-#else /* map <PS>key */
+#else /* entry <PS>key */
 	*entry = PS_(bucket_key)(bucket);
 #endif
 }
@@ -243,8 +243,8 @@ static PS_(uint) PS_(capacity)(const struct S_(set) *const set)
 	(PS_(uint))((PS_(uint))1 << set->log_capacity); }
 
 /** @return Indexes the first closed bucket in the set of buckets with the same
- address from non-idle `set` given the `hash`. If the bucket is empty, it have
- `next = SET_NULL` or it's own <fn:<PS>to_bucket> not equal to the index. */
+ address from non-idle `set` given the `hash`. If the bucket is empty, it will
+ have `next = SET_NULL` or it's own <fn:<PS>to_bucket> not equal to the index.*/
 static PS_(uint) PS_(to_bucket)(const struct S_(set) *const set,
 	const PS_(uint) hash) { return hash & (PS_(capacity)(set) - 1); }
 
@@ -259,10 +259,10 @@ static void PS_(grow_stack)(struct S_(set) *const set) {
 	set->top = top;
 }
 
-/** Is `idx` in `set` possibly on the stack? */
+/** Is `i` in `set` possibly on the stack? (The stack grows from the high.) */
 static int PS_(in_stack_range)(const struct S_(set) *const set,
-	const PS_(uint) idx)
-	{ return assert(set), set->top != SET_END && set->top <= idx; }
+	const PS_(uint) i)
+	{ return assert(set), set->top != SET_END && set->top <= i; }
 
 /***********fixme*/
 #define QUOTE_(name) #name
@@ -450,27 +450,29 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 #undef QUOTE_
 #undef QUOTE
 
+static void PS_(replace_key)(struct PS_(bucket) *const bucket,
+	const PS_(key) key, const PS_(uint) hash) {
+#ifndef SET_NO_CACHE
+	bucket->hash = hash;
+	(void)key;
+#endif
+#ifndef SET_INVERSE
+	memcpy(&bucket->key, &key, sizeof key);
+	(void)hash;
+#endif
+}
+
+static void PS_(replace_entry)(struct PS_(bucket) *const bucket,
+	const PS_(entry) entry, const PS_(uint) hash) {
+	PS_(replace_key)(bucket, PS_(entry_key)(entry), hash);
+#ifdef SET_VALUE
+	memcpy(&bucket->value, entry.value, sizeof(entry.value));
+#endif
+}
+
 /** Opens the values up to modification and returns true if the `replace`
  replaces the `original`. */
 typedef int (*PS_(replace_fn))(PS_(entry) original, PS_(entry) replace);
-
-/** ... */
-typedef int (*PS_(compute_fn))(PS_(key) original, PS_(key) replace,
-	PS_(value) *value);
-
-#if 0
-
-static void PS_(replace_first_key)(struct PS_(bucket) *const bucket,
-								   const PS_(key) key) {
-}
-
-static void PS_(replace_first_entry)(struct S_(set) *const set,
-	const PS_(uint) address, const PS_(entry) *const entry) {
-
-}
-
-#endif
-
 
 /** Put `entry` in `set`. For collisions, call `replace` and only if it exists
  and returns true do and put it in `eject`, if non-null.
@@ -510,6 +512,50 @@ static int PS_(put)(struct S_(set) *const set,
 	/* Fill `bucket`. The bucket must be empty. */
 	assert(bucket && bucket->next == SET_NULL);
 	bucket->next = next;
+	PS_(replace_entry)(bucket, entry, hash);
+	set->size = size;
+	return 1;
+}
+
+/** ... */
+typedef int (*PS_(compute_fn))(PS_(key) original, PS_(key) replace,
+	PS_(value) value);
+
+static int PS_(compute)(struct S_(set) *const set,
+	PS_(key) key, PS_(key) *eject, const PS_(compute_fn) compute) {
+	struct PS_(bucket) *bucket;
+	PS_(uint) hash, i, next = SET_END, size;
+	assert(set);
+	hash = PS_(hash)(key);
+	{
+		char z[12];
+		PS_(to_string)(key, &z);
+		printf("put: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
+	}
+	size = set->size;
+	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
+		if(!compute || !compute(PS_(bucket_key)(bucket), key, PS_(bucket_value)(bucket)))
+			{ if(eject) memcpy(eject, &entry, sizeof entry); return 1; }
+		if(eject) PS_(to_entry)(bucket, eject);
+		/* Cut the tail and put new element in the head. */
+		next = bucket->next, bucket->next = SET_NULL, assert(next != SET_NULL);
+	} else { /* Expand. */
+		if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
+		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
+		size++;
+		if(bucket->next != SET_NULL) { /* Unoccupied. */
+			int in_stack = PS_(to_bucket)(set, PS_(bucket_hash)(bucket)) != i;
+			PS_(move_to_top)(set, i);
+			next = in_stack ? SET_END : set->top;
+			assert(bucket->next == SET_NULL
+				&& (next == SET_END || set->buckets[next].next != SET_NULL));
+		}
+	}
+	/* Fill `bucket`. The bucket must be empty. */
+	assert(bucket && bucket->next == SET_NULL);
+	bucket->next = next;
+	PS_(replace_entry)(bucket, entry, hash);
+#if 0
 #ifndef SET_NO_CACHE
 	bucket->hash = hash;
 #endif
@@ -519,6 +565,8 @@ static int PS_(put)(struct S_(set) *const set,
 #ifdef SET_VALUE /* <!-- value */
 	memcpy(&bucket->value, &entry.value, sizeof entry.value);
 #endif /* value --> */
+#endif
+
 	set->size = size;
 	return 1;
 }
