@@ -11,25 +11,10 @@ digraph {
 	put -> equal;
 	equal -> yield;
 	equal -> replace;
-	//subgraph cluster_replace {
-	//	replace;
-		replace -> key;
-		replace -> value;
-		replace -> both;
-	//}
-	//equal -> abort_key;
-	//equal -> replace_key;
-	//subgraph cluster_key {
-	//	abort_key;
-	//	replace_key;
-	//}
-	//equal -> abort_value;
-	//equal -> replace_value;
-	//subgraph cluster_replace {
-	//	abort_value;
-	//	replace_value;
-	//}
-	error [label="ERROR", fillcolor="Pink"];
+	replace -> key;
+	replace -> value;
+	replace -> both;
+	error [label="{ERROR|set errno}", fillcolor="Pink"];
 	equal [label="{equal|values possibly recomputed}"];
 	grow [label="{GROW|value default or passed}"];
 	yield [label="YIELD"];

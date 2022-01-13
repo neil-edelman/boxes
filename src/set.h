@@ -530,12 +530,12 @@ static int PS_(compute)(struct S_(set) *const set,
 	{
 		char z[12];
 		PS_(to_string)(key, &z);
-		printf("put: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
+		printf("compute: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
 	}
 	size = set->size;
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
 		if(!compute || !compute(PS_(bucket_key)(bucket), key, PS_(bucket_value)(bucket)))
-			{ if(eject) memcpy(eject, &entry, sizeof entry); return 1; }
+			{ if(eject) memcpy(eject, &key, sizeof key); return 1; }
 		if(eject) PS_(to_entry)(bucket, eject);
 		/* Cut the tail and put new element in the head. */
 		next = bucket->next, bucket->next = SET_NULL, assert(next != SET_NULL);
@@ -554,19 +554,6 @@ static int PS_(compute)(struct S_(set) *const set,
 	/* Fill `bucket`. The bucket must be empty. */
 	assert(bucket && bucket->next == SET_NULL);
 	bucket->next = next;
-	PS_(replace_entry)(bucket, entry, hash);
-#if 0
-#ifndef SET_NO_CACHE
-	bucket->hash = hash;
-#endif
-#ifndef SET_INVERSE
-	memcpy(&bucket->key, &key, sizeof key);
-#endif
-#ifdef SET_VALUE /* <!-- value */
-	memcpy(&bucket->value, &entry.value, sizeof entry.value);
-#endif /* value --> */
-#endif
-
 	set->size = size;
 	return 1;
 }
