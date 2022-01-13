@@ -114,15 +114,15 @@ static const char *const set_result_str[] = { SET_RESULT };
 #define SET_UINT size_t
 #endif
 
-/** Hash needs to be unsigned integer; <typedef:<PS>hash_fn> returns this type.
- Places a simplifying limit on the maximum number of items in this container of
- half the cardinality of this type. */
+/** <typedef:<PS>hash_fn> returns this hash type by `SET_UINT`, which must be
+ be an unsigned integer. Places a simplifying limit on the maximum number of
+ items in this container of half the cardinality. */
 typedef SET_UINT PS_(uint);
 
-/** Valid tag type defined by `SET_KEY`. */
+/** Valid tag type defined by `SET_KEY` used for keys. */
 typedef SET_KEY PS_(key);
-/** <typedef:<PS>key> but read-only. Makes the simplifying assumption that this
- is not `const`-qualified. */
+/** Read-only <typedef:<PS>key>. Makes the simplifying assumption that this is
+ not `const`-qualified. */
 typedef const SET_KEY PS_(ckey);
 
 /** A map from <typedef:<PS>ckey> onto <typedef:<PS>uint>. In general, a good
@@ -157,8 +157,8 @@ typedef SET_VALUE PS_(value);
 /** Defining `SET_VALUE` creates this map from <typedef:<PS>key> to
  <typedef:<PS>value> as an interface with set. */
 struct S_(set_entry) { PS_(key) key; PS_(value) value; };
-/** If `SET_VALUE`, then this is a map and this is <tag:<S>set_entry>;
- otherwise, it's a set, and this is the same as <typedef:<PS>key>. */
+/** If `SET_VALUE`, this is <tag:<S>set_entry>; otherwise, it's the same as
+ <typedef:<PS>key>. */
 typedef struct S_(set_entry) PS_(entry);
 #else /* value --><!-- !value */
 typedef PS_(key) PS_(value);
@@ -744,8 +744,7 @@ static struct PS_(bucket) *PS_(next)(struct PS_(iterator) *const it) {
 /* iterate --> */
 
 /** Iteration usually not in any particular order. The asymptotic runtime is
- proportional to the hash capacity. (This will be the power-of-two equal-to or
- greater than the maximum size plus buffering of the history of the set.) */
+ proportional to the hash capacity. */
 struct S_(set_iterator) { struct PS_(iterator) it; };
 
 /** Loads `set` (can be null) into `it`. */
