@@ -151,7 +151,7 @@ Responsible for turning the argument [&lt;PSZ&gt;key](#user-content-typedef-bd74
 
 <code>enum <strong>set_result</strong> { SET_RESULT };</code>
 
-An `enum` of `SET_*` of which `SET_ERROR` is false\. `C` doesn't have a standard out\-of\-band communication channel like exceptions, so this is the result of modifying the table\. ![A diagram of the put states.](web/put.png)
+This is the result of modifying the table\. An `enum` of `SET_*`, of which `SET_ERROR` is false\. \(In the absence of a standard out\-of\-band communication channels, like exceptions\.\) ![A diagram of the put states.](web/put.png)
 
 
 
