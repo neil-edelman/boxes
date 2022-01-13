@@ -151,7 +151,10 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		PS_(uint) left, right;
 		if((right = b->next) == SET_NULL || right == SET_END) continue;
 		if(PS_(to_bucket)(set, PS_(bucket_hash)(b)) != i) {
-			fprintf(fp, "\thash:%lu -> i0x%lx;\n", i, (unsigned long)right);
+			fprintf(fp, "\ti0x%lx [label=\"0x%lx\", fontcolor=\"Gray\"];\n"
+				"\thash:%lu -> i0x%lx [color=\"Gray\"];\n",
+				(unsigned long)right, (unsigned long)right,
+				i, (unsigned long)right);
 			continue;
 		}
 		fprintf(fp,
