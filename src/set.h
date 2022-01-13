@@ -22,15 +22,15 @@
  An optional type that is the payload of the key, thus making this an
  associative array. If the key is part of an aggregate value, it will be
  more efficient and robust to use a type conversion instead of storing
- duplicate pointers.
+ related pointers.
 
  @param[SET_UINT]
  This is <typedef:<PS>uint>, the unsigned type of hash hash of the key given by
  <typedef:<PS>hash_fn>; defaults to `size_t`.
 
  @param[SET_NO_CACHE]
- Calculate every time; this avoids storing <typedef:<PS>uint> _per_ bucket, but
- can be slower when computing the hash is non-trivial.
+ Calculate the hash every time, thus avoid storing <typedef:<PS>uint> _per_
+ entry. Can be slower when computation is non-trivial.
 
  @param[SET_INVERSE]
  Function satisfying <typedef:<PS>inverse_hash_fn>; this avoids storing the
