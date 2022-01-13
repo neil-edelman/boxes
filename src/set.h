@@ -230,7 +230,7 @@ static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
  `static`.
 
  ![States.](../web/states.png) */
-struct S_(set) { /* "Padding size," very intentional. */
+struct S_(set) { /* "Padding size," good. */
 	struct PS_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	/* Buckets; `size <= capacity`; open stack, including `SET_END`. */
 	PS_(uint) log_capacity, size, top;
@@ -450,8 +450,27 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 #undef QUOTE_
 #undef QUOTE
 
-/** A bi-predicate; returns true if the `replace` replaces the `original`. */
-typedef int (*PS_(replace_fn))(PS_(value) original, PS_(value) replace);
+/** Opens the values up to modification and returns true if the `replace`
+ replaces the `original`. */
+typedef int (*PS_(replace_fn))(PS_(entry) original, PS_(entry) replace);
+
+/** ... */
+typedef int (*PS_(compute_fn))(PS_(key) original, PS_(key) replace,
+	PS_(value) *value);
+
+#if 0
+
+static void PS_(replace_first_key)(struct PS_(bucket) *const bucket,
+								   const PS_(key) key) {
+}
+
+static void PS_(replace_first_entry)(struct S_(set) *const set,
+	const PS_(uint) address, const PS_(entry) *const entry) {
+
+}
+
+#endif
+
 
 /** Put `entry` in `set`. For collisions, call `replace` and only if it exists
  and returns true do and put it in `eject`, if non-null.
@@ -577,6 +596,11 @@ static int S_(set_policy_put)(struct S_(set) *const set,
 	{ return PS_(put)(set, entry, eject, replace); }
 
 #if 0
+static int S_(set_compute_put)(struct S_(set) *const set,
+	PS_(key) key, PS_(key) *eject, const PS_(compute_fn) compute) {
+	return 0;
+}
+
 /* fixme: Buffering changes the outcome if it's already in the table, it
  creates a new hash anyway. This is not a pleasant situation. */
 /* fixme: also have a hash_try */
