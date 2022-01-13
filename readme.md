@@ -13,24 +13,22 @@
 
 ![Example of &lt;string&gt;set.](web/set.png)
 
-[&lt;S&gt;set](#user-content-tag-54aaac2) is a set or map of [&lt;PS&gt;entry](#user-content-typedef-3ef38eec) implemented as a hash table\. It must be supplied a [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c)\. This data structure could have been named several things, depending on the use: table, dictionary, association, map, hash\.
-
-Compile\-time constant data are better handled with [gperf](https://www.gnu.org/software/gperf/)\. Almost\-constant and large data, consider dynamic minimal perfect hashing [CMPH](http://cmph.sourceforge.net/)\.
+[&lt;S&gt;set](#user-content-tag-54aaac2) is a set or map of [&lt;PS&gt;entry](#user-content-typedef-3ef38eec) implemented as a hash table\. It must be supplied a [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c)\.
 
 fixme
 
  * Parameter: SET\_NAME, SET\_KEY  
-   `<S>` that satisfies `C` naming conventions when mangled and a valid [&lt;PS&gt;key](#user-content-typedef-759eb157) associated therewith; required\. `<PS>` is private, whose names are prefixed in a manner to avoid collisions; any should be re\-defined prior to use elsewhere\.
+   `<S>` that satisfies `C` naming conventions when mangled and a valid [&lt;PS&gt;key](#user-content-typedef-759eb157) associated therewith; required\. `<PS>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: SET\_HASH, SET\_IS\_EQUAL  
    A function satisfying [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c); required\.
  * Parameter: SET\_VALUE  
-   An optional type that is the payload of the key, thus making this an associative array\. Should be used when one has a value that is associated, but in an independent memory location from the key; if the key is part of an aggregate value, it will be more efficient and robust to use a type conversion\.
+   An optional type that is the payload of the key, thus making this an associative array\. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing duplicate pointers\.
  * Parameter: SET\_UINT  
    This is [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), the unsigned type of hash hash of the key given by [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975); defaults to `size_t`\.
  * Parameter: SET\_NO\_CACHE  
-   Calculate every time; this avoids storing [&lt;PS&gt;uint](#user-content-typedef-f1ed2088) _per_ bucket, but can be slower when the hash is non\-trivial to compute\.
+   Calculate every time; this avoids storing [&lt;PS&gt;uint](#user-content-typedef-f1ed2088) _per_ bucket, but can be slower when computing the hash is non\-trivial\.
  * Parameter: SET\_INVERSE  
-   Function satisfying [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba) that avoids storing the key, but calculates it from the hashed value\. As such, incompatible with `SET_NO_CACHE`\.
+   Function satisfying [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba); this avoids storing the key, but calculates it from the hashed value\. As such, incompatible with `SET_NO_CACHE`\.
  * Parameter: SET\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: SET\_TO\_STRING\_NAME, SET\_TO\_STRING  
@@ -45,7 +43,7 @@ fixme
 
 <code>typedef SET_UINT <strong>&lt;PS&gt;uint</strong>;</code>
 
-Unsigned integer type where the hash resides; [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) returns this type\. Also places a simplifying limit on the maximum number of items in this container of half the cardinality of this type\.
+Hash needs to be unsigned integer; [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) returns this type\. Places a simplifying limit on the maximum number of items in this container of half the cardinality of this type\.
 
 
 
@@ -61,7 +59,7 @@ Valid tag type defined by `SET_KEY`\.
 
 <code>typedef const SET_KEY <strong>&lt;PS&gt;ckey</strong>;</code>
 
-Used on read\-only\. This hash makes the simplifying assumption that this is not `const`\-qualified\.
+[&lt;PS&gt;key](#user-content-typedef-759eb157) but read\-only\. Makes the simplifying assumption that this is not `const`\-qualified\.
 
 
 
@@ -77,7 +75,7 @@ A map from [&lt;PS&gt;ckey](#user-content-typedef-6ff89358) onto [&lt;PS&gt;uint
 
 <code>typedef &lt;PS&gt;key(*<strong>&lt;PS&gt;inverse_hash_fn</strong>)(&lt;PS&gt;uint);</code>
 
-Defining `SET_INVERSE` says [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) forms a bijection between the range in [&lt;PS&gt;key](#user-content-typedef-759eb157) and the image in [&lt;PS&gt;uint](#user-content-typedef-f1ed2088)\. This is the inverse\-mapping, which is used to avoid storing the key itself\.
+Defining `SET_INVERSE` says [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) forms a bijection between the range in [&lt;PS&gt;key](#user-content-typedef-759eb157) and the image in [&lt;PS&gt;uint](#user-content-typedef-f1ed2088)\. This is the inverse\-mapping\.
 
 
 
@@ -93,7 +91,7 @@ Equivalence relation between [&lt;PS&gt;key](#user-content-typedef-759eb157) tha
 
 <code>typedef SET_VALUE <strong>&lt;PS&gt;value</strong>;</code>
 
-Defining `SET_VALUE` creates another field in the buckets for associative maps, otherwise it is the same as [&lt;PS&gt;key](#user-content-typedef-759eb157)\.
+Defining `SET_VALUE` produces an associative map, otherwise it is the same as [&lt;PS&gt;key](#user-content-typedef-759eb157)\.
 
 
 
@@ -151,7 +149,7 @@ Responsible for turning the argument [&lt;PSZ&gt;key](#user-content-typedef-bd74
 
 <code>enum <strong>set_result</strong> { SET_RESULT };</code>
 
-This is the result of modifying the table\. An `enum` of `SET_*`, of which `SET_ERROR` is false\. \(In the absence of a standard out\-of\-band communication channels, like exceptions\.\) ![A diagram of the put states.](web/put.png)
+This is the result of modifying the table\. An `enum` of `SET_*`, of which `SET_ERROR` is false\. \(In the absence of a standard out\-of\-band communication channels, like exceptions\.\) ![A diagram of the result states.](web/put.png)
 
 
 
@@ -159,7 +157,7 @@ This is the result of modifying the table\. An `enum` of `SET_*`, of which `SET_
 
 <code>struct <strong>&lt;S&gt;set_entry</strong> { &lt;PS&gt;key key; &lt;PS&gt;value value; };</code>
 
-Defining `SET_VALUE` creates this map from [&lt;PS&gt;ckey](#user-content-typedef-6ff89358) to [&lt;PS&gt;value](#user-content-typedef-2830cf59) as an interface with set\.
+Defining `SET_VALUE` creates this map from [&lt;PS&gt;key](#user-content-typedef-759eb157) to [&lt;PS&gt;value](#user-content-typedef-2830cf59) as an interface with set\.
 
 
 

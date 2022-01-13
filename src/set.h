@@ -7,18 +7,12 @@
 
  <tag:<S>set> is a set or map of <typedef:<PS>entry> implemented as a hash
  table. It must be supplied a <typedef:<PS>hash_fn> and
- <typedef:<PS>is_equal_fn>. This data structure could have been named several
- things, depending on the use: table, dictionary, association, map, hash.
-
- Compile-time constant data are better handled with
- [gperf](https://www.gnu.org/software/gperf/). Almost-constant and large data,
- consider dynamic minimal perfect hashing [CMPH](http://cmph.sourceforge.net/).
+ <typedef:<PS>is_equal_fn>.
 
  @param[SET_NAME, SET_KEY]
  `<S>` that satisfies `C` naming conventions when mangled and a valid
  <typedef:<PS>key> associated therewith; required. `<PS>` is private, whose
- names are prefixed in a manner to avoid collisions; any should be re-defined
- prior to use elsewhere.
+ names are prefixed in a manner to avoid collisions.
 
  @param[SET_HASH, SET_IS_EQUAL]
  A function satisfying <typedef:<PS>hash_fn> and <typedef:<PS>is_equal_fn>;
@@ -26,9 +20,9 @@
 
  @param[SET_VALUE]
  An optional type that is the payload of the key, thus making this an
- associative array. Should be used when one has a value that is associated, but
- in an independent memory location from the key; if the key is part of an
- aggregate value, it will be more efficient and robust to use a type conversion.
+ associative array. If the key is part of an aggregate value, it will be
+ more efficient and robust to use a type conversion instead of storing
+ duplicate pointers.
 
  @param[SET_UINT]
  This is <typedef:<PS>uint>, the unsigned type of hash hash of the key given by
@@ -36,11 +30,11 @@
 
  @param[SET_NO_CACHE]
  Calculate every time; this avoids storing <typedef:<PS>uint> _per_ bucket, but
- can be slower when the hash is non-trivial to compute.
+ can be slower when computing the hash is non-trivial.
 
  @param[SET_INVERSE]
- Function satisfying <typedef:<PS>inverse_hash_fn> that avoids storing the key,
- but calculates it from the hashed value. As such, incompatible with
+ Function satisfying <typedef:<PS>inverse_hash_fn>; this avoids storing the
+ key, but calculates it from the hashed value. As such, incompatible with
  `SET_NO_CACHE`.
 
  @param[SET_EXPECT_TRAIT]
@@ -56,7 +50,7 @@
 
 #if !defined(SET_NAME) || !defined(SET_KEY) || !defined(SET_IS_EQUAL) \
 	|| !defined(SET_HASH)
-#error Name SET_NAME, tag type SET_KEY, fns SET_IS_EQUAL, or SET_HASH, undefined.
+#error Id SET_NAME, tag type SET_KEY, fns SET_IS_EQUAL, or SET_HASH, undefined.
 #endif
 #if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING)
 #define SET_TO_STRING_TRAIT 1
@@ -89,10 +83,10 @@
 #define S_(n) SET_CAT(SET_NAME, n)
 #define PS_(n) SET_CAT(hash, S_(n))
 #define SET_IDLE { 0, 0, 0, 0 }
-/* When a <typedef:<PS>uint> represents an address in the table, use the sign
- bit to store out-of-band flags, (such that range of an index is one bit less.)
- Choose representations that probably save power, since there are potently
- lots. We cannot save this in an `enum` because don't know maximum. */
+/* Use the sign bit to store out-of-band flags when a <typedef:<PS>uint>
+ represents an address in the table, (such that range of an index is one bit
+ less.) Choose representations that probably save power. We cannot save this in
+ an `enum` because we don't know maximum. */
 #define SET_M1 ((PS_(uint))~(PS_(uint))0) /* 2's compliment -1. */
 #define SET_LIMIT ((SET_M1 >> 1) + 1) /* Cardinality. */
 #define SET_END (SET_LIMIT)
@@ -102,11 +96,11 @@
 #define X(n) SET_##n
 /** This is the result of modifying the table. An `enum` of `SET_*`, of which
  `SET_ERROR` is false. (In the absence of a standard out-of-band communication channels, like exceptions.)
- ![A diagram of the put states.](../web/put.png) */
+ ![A diagram of the result states.](../web/put.png) */
 enum set_result { SET_RESULT };
 #undef X
 #define X(n) #n
-/** A static array of string describing the <tag:set_result>. */
+/** A static array of strings describing the <tag:set_result>. */
 static const char *const set_result_str[] = { SET_RESULT };
 #undef X
 #undef SET_RESULT
@@ -120,15 +114,15 @@ static const char *const set_result_str[] = { SET_RESULT };
 #define SET_UINT size_t
 #endif
 
-/** Unsigned integer type where the hash resides; <typedef:<PS>hash_fn> returns
- this type. Also places a simplifying limit on the maximum number of items in
- this container of half the cardinality of this type. */
+/** Hash needs to be unsigned integer; <typedef:<PS>hash_fn> returns this type.
+ Places a simplifying limit on the maximum number of items in this container of
+ half the cardinality of this type. */
 typedef SET_UINT PS_(uint);
 
 /** Valid tag type defined by `SET_KEY`. */
 typedef SET_KEY PS_(key);
-/** Used on read-only. This hash makes the simplifying assumption that this is
- not `const`-qualified. */
+/** <typedef:<PS>key> but read-only. Makes the simplifying assumption that this
+ is not `const`-qualified. */
 typedef const SET_KEY PS_(ckey);
 
 /** A map from <typedef:<PS>ckey> onto <typedef:<PS>uint>. In general, a good
@@ -142,7 +136,7 @@ static const PS_(hash_fn) PS_(hash) = (SET_HASH);
 #ifdef SET_INVERSE /* <!-- inv */
 /** Defining `SET_INVERSE` says <typedef:<PS>hash_fn> forms a bijection between
  the range in <typedef:<PS>key> and the image in <typedef:<PS>uint>. This is
- the inverse-mapping, which is used to avoid storing the key itself. */
+ the inverse-mapping. */
 typedef PS_(key) (*PS_(inverse_hash_fn))(PS_(uint));
 /* Check that `SET_INVERSE` is a function implementing
  <typedef:<PS>inverse_hash_fn>. */
@@ -157,10 +151,10 @@ typedef int (*PS_(is_equal_fn))(PS_(ckey) a, PS_(ckey) b);
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
 
 #ifdef SET_VALUE /* <!-- value */
-/** Defining `SET_VALUE` creates another field in the buckets for associative
- maps, otherwise it is the same as <typedef:<PS>key>. */
+/** Defining `SET_VALUE` produces an associative map, otherwise it is the same
+ as <typedef:<PS>key>. */
 typedef SET_VALUE PS_(value);
-/** Defining `SET_VALUE` creates this map from <typedef:<PS>ckey> to
+/** Defining `SET_VALUE` creates this map from <typedef:<PS>key> to
  <typedef:<PS>value> as an interface with set. */
 struct S_(set_entry) { PS_(key) key; PS_(value) value; };
 /** If `SET_VALUE`, then this is a map and this is <tag:<S>set_entry>;
@@ -217,7 +211,7 @@ static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 #endif
 }
 
-/** Gets the value of an occupied `bucket`. (Which may be the key.) */
+/** Gets the value of an occupied `bucket`. */
 static PS_(value) PS_(bucket_value)(const struct PS_(bucket) *const bucket) {
 	assert(bucket && bucket->next != SET_NULL);
 #ifdef SET_VALUE
@@ -466,7 +460,8 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 #undef QUOTE_
 #undef QUOTE
 
-/** Replace the `key` and `hash` of `bucket`. Don't touch next. */
+/** Replace the `key` and `hash` of `bucket`. Don't touch next.
+ @fixme `memcpy`? */
 static void PS_(replace_key)(struct PS_(bucket) *const bucket,
 	const PS_(key) key, const PS_(uint) hash) {
 #ifndef SET_NO_CACHE
@@ -496,7 +491,7 @@ typedef int (*PS_(replace_fn))(PS_(entry) original, PS_(entry) replace);
 /** Put `entry` in `set`. For collisions, call `replace` and only if it exists
  and returns true do and put it in `eject`, if non-null.
  @param[eject] If `replace` returns false, the `entry` itself.
- @return True except exception. @throws[malloc] @order amortized \O(1) */
+ @return A <tag:set_result>. @throws[malloc] @order amortized \O(1) */
 static enum set_result PS_(put)(struct S_(set) *const set,
 	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace) {
 	struct PS_(bucket) *bucket;

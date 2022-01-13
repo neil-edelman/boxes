@@ -50,25 +50,23 @@
 
 <p><img alt = "Example of &lt;string&gt;set." src = "web/set.png" width = 634 height = 474></p>
 
-<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a set or map of <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> implemented as a hash table. It must be supplied a <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>. This data structure could have been named several things, depending on the use: table, dictionary, association, map, hash.</p>
-
-<p>Compile-time constant data are better handled with <a href = "https://www.gnu.org/software/gperf/">gperf</a>. Almost-constant and large data, consider dynamic minimal perfect hashing <a href = "http://cmph.sourceforge.net/">CMPH</a>.</p>
+<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a set or map of <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> implemented as a hash table. It must be supplied a <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>.</p>
 
 fixme</div>
 
 <dl>
 	<dt>Parameter: SET_NAME, SET_KEY</dt>
-	<dd><code>&lt;S&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> associated therewith; required. <code>&lt;PS&gt;</code> is private, whose names are prefixed in a manner to avoid collisions; any should be re-defined prior to use elsewhere.</dd>
+	<dd><code>&lt;S&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> associated therewith; required. <code>&lt;PS&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: SET_HASH, SET_IS_EQUAL</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>; required.</dd>
 	<dt>Parameter: SET_VALUE</dt>
-	<dd>An optional type that is the payload of the key, thus making this an associative array. Should be used when one has a value that is associated, but in an independent memory location from the key; if the key is part of an aggregate value, it will be more efficient and robust to use a type conversion.</dd>
+	<dd>An optional type that is the payload of the key, thus making this an associative array. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing duplicate pointers.</dd>
 	<dt>Parameter: SET_UINT</dt>
 	<dd>This is <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>, the unsigned type of hash hash of the key given by <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a>; defaults to <code>size_t</code>.</dd>
 	<dt>Parameter: SET_NO_CACHE</dt>
-	<dd>Calculate every time; this avoids storing <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> <em>per</em> bucket, but can be slower when the hash is non-trivial to compute.</dd>
+	<dd>Calculate every time; this avoids storing <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> <em>per</em> bucket, but can be slower when computing the hash is non-trivial.</dd>
 	<dt>Parameter: SET_INVERSE</dt>
-	<dd>Function satisfying <a href = "#typedef:&lt;PS&gt;inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a> that avoids storing the key, but calculates it from the hashed value. As such, incompatible with <code>SET_NO_CACHE</code>.</dd>
+	<dd>Function satisfying <a href = "#typedef:&lt;PS&gt;inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>; this avoids storing the key, but calculates it from the hashed value. As such, incompatible with <code>SET_NO_CACHE</code>.</dd>
 	<dt>Parameter: SET_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: SET_TO_STRING_NAME, SET_TO_STRING</dt>
@@ -85,7 +83,7 @@ fixme</div>
 
 <p><code>typedef SET_UINT <strong>&lt;PS&gt;uint</strong>;</code></p>
 
-<p>Unsigned integer type where the hash resides; <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> returns this type. Also places a simplifying limit on the maximum number of items in this container of half the cardinality of this type.</p>
+<p>Hash needs to be unsigned integer; <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> returns this type. Places a simplifying limit on the maximum number of items in this container of half the cardinality of this type.</p>
 
 </div>
 
@@ -105,7 +103,7 @@ fixme</div>
 
 <p><code>typedef const SET_KEY <strong>&lt;PS&gt;ckey</strong>;</code></p>
 
-<p>Used on read-only. This hash makes the simplifying assumption that this is not <code>const</code>-qualified.</p>
+<p><a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> but read-only. Makes the simplifying assumption that this is not <code>const</code>-qualified.</p>
 
 </div>
 
@@ -125,7 +123,7 @@ fixme</div>
 
 <p><code>typedef &lt;PS&gt;key(*<strong>&lt;PS&gt;inverse_hash_fn</strong>)(&lt;PS&gt;uint);</code></p>
 
-<p>Defining <code>SET_INVERSE</code> says <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> and the image in <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>. This is the inverse-mapping, which is used to avoid storing the key itself.</p>
+<p>Defining <code>SET_INVERSE</code> says <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> and the image in <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>. This is the inverse-mapping.</p>
 
 </div>
 
@@ -145,7 +143,7 @@ fixme</div>
 
 <p><code>typedef SET_VALUE <strong>&lt;PS&gt;value</strong>;</code></p>
 
-<p>Defining <code>SET_VALUE</code> creates another field in the buckets for associative maps, otherwise it is the same as <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>.</p>
+<p>Defining <code>SET_VALUE</code> produces an associative map, otherwise it is the same as <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>.</p>
 
 </div>
 
@@ -217,7 +215,7 @@ fixme</div>
 
 <p><code>enum <strong>set_result</strong> { SET_RESULT };</code></p>
 
-<p>This is the result of modifying the table. An <code>enum</code> of <code>SET_*</code>, of which <code>SET_ERROR</code> is false. (In the absence of a standard out-of-band communication channels, like exceptions.) <img alt = "A diagram of the put states." src = "web/put.png" width = 675 height = 368></p>
+<p>This is the result of modifying the table. An <code>enum</code> of <code>SET_*</code>, of which <code>SET_ERROR</code> is false. (In the absence of a standard out-of-band communication channels, like exceptions.) <img alt = "A diagram of the result states." src = "web/put.png" width = 675 height = 368></p>
 
 </div>
 
@@ -227,7 +225,7 @@ fixme</div>
 
 <p><code>struct <strong>&lt;S&gt;set_entry</strong> { &lt;PS&gt;key key; &lt;PS&gt;value value; };</code></p>
 
-<p>Defining <code>SET_VALUE</code> creates this map from <a href = "#typedef:&lt;PS&gt;ckey">&lt;PS&gt;ckey</a> to <a href = "#typedef:&lt;PS&gt;value">&lt;PS&gt;value</a> as an interface with set.</p>
+<p>Defining <code>SET_VALUE</code> creates this map from <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> to <a href = "#typedef:&lt;PS&gt;value">&lt;PS&gt;value</a> as an interface with set.</p>
 
 </div>
 
