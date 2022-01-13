@@ -18,7 +18,7 @@ digraph {
 	equal [label="{equal|values possibly recomputed}"];
 	grow [label="{GROW|value default or passed}"];
 	yield [label="YIELD"];
-	key [label="KEY"];
-	value [label="VALUE"];
-	both [label="BOTH"];
+	key [label="REPLACE_KEY"];
+	value [label="REPLACE_VALUE"];
+	both [label="REPLACE"];
 }

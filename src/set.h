@@ -97,6 +97,9 @@
 #define SET_LIMIT ((SET_M1 >> 1) + 1) /* Cardinality. */
 #define SET_END (SET_LIMIT)
 #define SET_NULL (SET_LIMIT + 1)
+/** ![A diagram of the put states.](../web/put.png) */
+enum set_result { SET_ERROR, SET_YIELD, SET_REPLACE_KEY, SET_REPLACE_VALUE,
+	SET_REPLACE, SET_GROW };
 #endif /* idempotent --> */
 
 
