@@ -91,7 +91,7 @@ static char *str16_from_void(void *const s16s) { return str16_from_pool(s16s); }
 
 
 /* Integer set with inverse hash to avoid storing the hash at all. */
-#if UINT_MAX >= 4294967295 /* >= 32-bits */
+#if UINT_MAX >/*=fixme*/ 4294967295 /* >= 32-bits */
 /** <https://nullprogram.com/blog/2018/07/31/>
  <https://github.com/skeeto/hash-prospector>. It was meant to work on
  `uint32_t`, but that's not guaranteed to exist in the C90 standard.
@@ -114,20 +114,21 @@ static unsigned lowbias32_r(unsigned x) {
 	return x;
 }
 #else /* < 32 bits */
-/** Uniform values actually don't need a hash, but depending on one's use case,
- this might be bad?
+/** Uniform values don't need a hash, and I'm lazy.
  @implements <int>hash_fn */
 static unsigned lowbias32(unsigned x) { return x; }
 /** @implements <int>inverse_hash_fn */
 static unsigned lowbias32_r(unsigned x) { return x; }
 #endif /* < 32 bits */
 /** @implements <int>is_equal_fn */
-static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
+static int int_is_equal(const unsigned a, const unsigned b) {
+	printf("$$$ %u ?= %u\n", a, b);
+	return a == b; }
 /** @implements <int>to_string_fn */
 static void int_to_string(const unsigned x, char (*const a)[12])
 	{ sprintf(*a, "%u", x); }
 #define SET_NAME int
-#define SET_KEY unsigned /* Parameter of <fn:lowbias32>. fixme: int! */
+#define SET_KEY unsigned /* Parameter of <fn:lowbias32>. */
 #define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
 #define SET_HASH &lowbias32
 #define SET_INVERSE &lowbias32_r /* Invertible means no key storage at all. */
@@ -144,8 +145,31 @@ static unsigned int_from_void(void *const zero) {
 }
 
 
-
-
+/* Check to see that the prototypes are correct by making a signed integer. It
+ was a really bad idea for the default to be signed, but now it's everywhere. */
+/** @implements <sint>hash_fn */
+static unsigned sint_hash(int d) { return lowbias32((unsigned)(d - INT_MIN)); }
+/** @implements <sint>inverse_hash_fn */
+static int sint_inv_hash(unsigned u) { return (int)lowbias32_r(u) + INT_MIN; }
+/** @implements <sint>to_string_fn */
+static void sint_to_string(const int d, char (*const a)[12])
+	{ sprintf(*a, "%d", d); }
+#define SET_NAME sint
+#define SET_KEY int
+#define SET_UINT unsigned
+#define SET_HASH &sint_hash
+#define SET_INVERSE &sint_inv_hash
+#define SET_IS_EQUAL &int_is_equal /* Compare is done in hash space, now. */
+#define SET_TEST
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &sint_to_string
+#include "../src/set.h"
+/** @implements <int>test_new_fn */
+static int sint_from_void(void *const zero) {
+	assert(!zero && RAND_MAX <= 9999999999l); /* For printing with '-'. */
+	return rand() - RAND_MAX / 2;
+}
 
 
 
@@ -229,6 +253,7 @@ int main(void) {
 	zodiac_set_test(&random_zodiac, 0); /* Don't require any space. */
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
 	int_set_test(&int_from_void, 0);
+	sint_set_test(&sint_from_void, 0);
 	nato();
 
 

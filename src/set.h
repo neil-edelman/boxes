@@ -141,11 +141,17 @@ typedef PS_(key) (*PS_(inverse_hash_fn))(PS_(uint));
 /* Check that `SET_INVERSE` is a function implementing
  <typedef:<PS>inverse_hash_fn>. */
 static const PS_(inverse_hash_fn) PS_(inverse_hash) = (SET_INVERSE);
-#endif /* inv --> */
+typedef PS_(uint) PS_(ckey_or_uint);
+#else /* inv --><!-- !inv */
+typedef PS_(ckey) PS_(ckey_or_uint);
+#endif /* !inv --> */
 
 /** Equivalence relation between <typedef:<PS>key> that satisfies
- `<PS>is_equal_fn(a, b) -> <PS>hash(a) == <PS>hash(b)`. */
-typedef int (*PS_(is_equal_fn))(PS_(ckey) a, PS_(ckey) b);
+ `<PS>is_equal_fn(a, b) -> <PS>hash(a) == <PS>hash(b)`. Defining `SET_INVERSE`
+ makes it possible to compare hashes instead of keys; since, in that case, we
+ don't store the keys, it will likely be faster to compare the
+ <typedef:<PS>uint> hash instead. */
+typedef int (*PS_(is_equal_fn))(PS_(ckey_or_uint) a, PS_(ckey_or_uint) b);
 /* Check that `SET_IS_EQUAL` is a function implementing
  <typedef:<PS>is_equal_fn>. */
 static const PS_(is_equal_fn) PS_(equal) = (SET_IS_EQUAL);
@@ -237,7 +243,7 @@ static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
  `static`.
 
  ![States.](../web/states.png) */
-struct S_(set) { /* "Padding size," good. */
+struct S_(set) { /* "Padding size," is good. */
 	struct PS_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	/* Buckets; `size <= capacity`; open stack, including `SET_END`. */
 	PS_(uint) log_capacity, size, top;
@@ -332,6 +338,7 @@ static struct PS_(bucket) *PS_(query)(struct S_(set) *const set,
 		if(hashes_are_equal) {
 			int entries_are_equal;
 #ifdef SET_INVERSE
+			/* PS_(equal)(hash, PS_(bucket_hash)(bucket)) no...*/
 			/* fixme: compare the hash: requires modification of equal */
 			entries_are_equal = ((void)(key), 1);
 #else
