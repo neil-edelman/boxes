@@ -90,7 +90,7 @@ static char *str16_from_pool(struct str16_pool *const s16s) {
 static char *str16_from_void(void *const s16s) { return str16_from_pool(s16s); }
 
 
-/* Integer set. */
+/* Integer set with inverse hash to avoid storing the hash at all. */
 #if UINT_MAX >= 4294967295 /* >= 32-bits */
 /** <https://nullprogram.com/blog/2018/07/31/>
  <https://github.com/skeeto/hash-prospector>. It was meant to work on
@@ -114,7 +114,9 @@ static unsigned lowbias32_r(unsigned x) {
 	return x;
 }
 #else /* < 32 bits */
-/** Fixme. @implements <int>hash_fn */
+/** Uniform values actually don't need a hash, but depending on one's use case,
+ this might be bad?
+ @implements <int>hash_fn */
 static unsigned lowbias32(unsigned x) { return x; }
 /** @implements <int>inverse_hash_fn */
 static unsigned lowbias32_r(unsigned x) { return x; }
@@ -125,10 +127,10 @@ static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
 static void int_to_string(const unsigned x, char (*const a)[12])
 	{ sprintf(*a, "%u", x); }
 #define SET_NAME int
-#define SET_KEY unsigned /* Parameter of <fn:lowbias32>. */
+#define SET_KEY unsigned /* Parameter of <fn:lowbias32>. fixme: int! */
 #define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
 #define SET_HASH &lowbias32
-#define SET_INVERSE &lowbias32_r
+#define SET_INVERSE &lowbias32_r /* Invertible means no key storage at all. */
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TEST
 #define SET_EXPECT_TRAIT
