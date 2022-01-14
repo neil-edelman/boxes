@@ -15,7 +15,8 @@
  names are prefixed in a manner to avoid collisions.
 
  @param[SET_HASH, SET_IS_EQUAL]
- A function satisfying <typedef:<PS>hash_fn> and <typedef:<PS>is_equal_fn>;
+ A function satisfying <typedef:<PS>hash_fn> and <typedef:<PS>is_equal_fn>.
+ `SET_HASH` and either `SET_IS_EQUAL` or `SET_INVERSE`, but not both, are
  required.
 
  @param[SET_VALUE]
@@ -35,7 +36,8 @@
  @param[SET_INVERSE]
  Function satisfying <typedef:<PS>inverse_hash_fn>; this avoids storing the
  key, but calculates it from the hashed value. As such, incompatible with
- `SET_NO_CACHE`.
+ `SET_NO_CACHE`. The hashes can now be compared directly, so there is no need
+ for a `SET_IS_EQUAL`.
 
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.

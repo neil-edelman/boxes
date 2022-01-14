@@ -120,10 +120,6 @@ static unsigned lowbias32(unsigned x) { return x; }
 /** @implements <int>inverse_hash_fn */
 static unsigned lowbias32_r(unsigned x) { return x; }
 #endif /* < 32 bits */
-/** @implements <int>is_equal_fn */
-static int int_is_equal(const unsigned a, const unsigned b) {
-	printf("$$$ %u ?= %u\n", a, b);
-	return a == b; }
 /** @implements <int>to_string_fn */
 static void int_to_string(const unsigned x, char (*const a)[12])
 	{ sprintf(*a, "%u", x); }
@@ -132,7 +128,6 @@ static void int_to_string(const unsigned x, char (*const a)[12])
 #define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
 #define SET_HASH &lowbias32
 #define SET_INVERSE &lowbias32_r /* Invertible means no key storage at all. */
-//#define SET_IS_EQUAL &int_is_equal
 #define SET_TEST
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
@@ -159,7 +154,6 @@ static void sint_to_string(const int d, char (*const a)[12])
 #define SET_UINT unsigned
 #define SET_HASH &sint_hash
 #define SET_INVERSE &sint_inv_hash
-#define SET_IS_EQUAL &int_is_equal /* Compare is done in hash space, now. */
 #define SET_TEST
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"

@@ -224,6 +224,16 @@ static void PS_(histogram)(const struct S_(set) *const set,
 	fclose(fp);
 }
 
+/** @return Equality of entries `a` and `b`. */
+static int PS_(eq_en)(PS_(entry) a, PS_(entry) b) {
+	PS_(ckey) ka = PS_(entry_key)(a), kb = PS_(entry_key)(b);
+#ifndef SET_INVERSE
+	return PS_(equal)(ka, kb);
+#else /* Compare in <typedef:<PS>uint> space. */
+	return PS_(hash)(ka) == PS_(hash)(kb);
+#endif
+}
+
 /** Assertion function for seeing if `hash` is in a valid state.
  @order \O(|`hash.bins`| + |`hash.items`|) */
 static void PS_(legit)(const struct S_(set) *const set) {
@@ -291,9 +301,9 @@ static void PS_(test_basic)(const PS_(test_new_fn) test_new,
 		assert(size.before == size.after || size.after == size.before + 1);
 		is_grow = !!(size.after - size.before);
 		ret = S_(set_query)(&set, PS_(entry_key)(t->_.entry), &entry);
-		assert(ret && PS_(equal)(t->_.entry, entry));
+		assert(ret && PS_(eq_en)(t->_.entry, entry));
 		/* If it replaced, `eject` must be equal to `data`. */
-		assert(is_grow || PS_(equal)(t->_.entry, eject));
+		assert(is_grow || PS_(eq_en)(t->_.entry, eject));
 		if(set.size < 10000 && !(i & (i - 1))) {
 			char fn[64];
 			printf("*** hash %s.\n", PS_(set_to_string)(&set));
