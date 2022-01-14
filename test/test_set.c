@@ -132,7 +132,7 @@ static void int_to_string(const unsigned x, char (*const a)[12])
 #define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
 #define SET_HASH &lowbias32
 #define SET_INVERSE &lowbias32_r /* Invertible means no key storage at all. */
-#define SET_IS_EQUAL &int_is_equal
+//#define SET_IS_EQUAL &int_is_equal
 #define SET_TEST
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
