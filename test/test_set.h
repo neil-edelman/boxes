@@ -1,6 +1,6 @@
 /** A call with the container unknown. This is so that the function is free to
  return a key which is part of a larger aggregate structure. */
-typedef PS_(entry) (*const PS_(parent_new_fn))(void *);
+typedef PS_(entry) (*const PS_(test_new_fn))(void *);
 
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.
@@ -246,7 +246,7 @@ static void PS_(legit)(const struct S_(set) *const set) {
 }
 
 /** Passed `parent_new` and `parent` from <fn:<S>hash_test>. */
-static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
+static void PS_(test_basic)(const PS_(test_new_fn) test_new,
 	void *const parent) {
 	struct test {
 		union {
@@ -259,7 +259,7 @@ static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
 	size_t i;
 	char z[12];
 	struct S_(set) set = SET_IDLE;
-	assert(parent_new
+	assert(test_new
 		/*&& parent static tests are possible*/ && test_size > 1);
 	/* Test empty. */
 	PS_(legit)(&set);
@@ -275,7 +275,7 @@ static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
 		int ret;
 		t = test + i;
 		PS_(entry) eject, zero, entry;
-		t->_.entry = parent_new(parent); /* fixme: Completely unchecked! */
+		t->_.entry = test_new(parent); /* fixme: Completely unchecked! */
 		PS_(to_string)(PS_(entry_key)(t->_.entry), &z);
 		printf("%lu: came up with %s.\n", (unsigned long)i, z);
 		/*success = S_(set_buffer)(&hash, 1);
@@ -375,7 +375,7 @@ static void PS_(test_basic)(PS_(key) (*const parent_new)(void *),
  <tag:<S>hashlink> and `SET_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void S_(set_test)(const PS_(parent_new_fn) parent_new,
+static void S_(set_test)(const PS_(test_new_fn) test_new,
 	void *const parent) {
 	printf("<" QUOTE(SET_NAME) ">hash of key <" QUOTE(SET_KEY)
 		"> was created using: "
@@ -393,7 +393,7 @@ static void S_(set_test)(const PS_(parent_new_fn) parent_new,
 #endif
 		"SET_TEST; "
 		"testing%s:\n", parent ? "(pointer)" : "");
-	PS_(test_basic)(parent_new, parent);
+	PS_(test_basic)(test_new, parent);
 	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">hash.\n\n");
 }
 

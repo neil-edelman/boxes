@@ -81,7 +81,7 @@
 #define SET_CAT_(n, m) n ## _ ## m
 #define SET_CAT(n, m) SET_CAT_(n, m)
 #define S_(n) SET_CAT(SET_NAME, n)
-#define PS_(n) SET_CAT(hash, S_(n))
+#define PS_(n) SET_CAT(set, S_(n))
 #define SET_IDLE { 0, 0, 0, 0 }
 /* Use the sign bit to store out-of-band flags when a <typedef:<PS>uint>
  represents an address in the table, (such that range of an index is one bit
@@ -95,8 +95,8 @@
 	X(REPLACE_KEY), X(REPLACE_VALUE), X(REPLACE), X(GROW)
 #define X(n) SET_##n
 /** This is the result of modifying the table. An `enum` of `SET_*`, of which
- `SET_ERROR` is false. (In the absence of a standard out-of-band communication channels, like exceptions.)
- ![A diagram of the result states.](../web/put.png) */
+ `SET_ERROR` is false. (In the absence of a standard out-of-band communication channels, like exceptions.) Note that depending on the set, this is duplicate
+ or in too much detail. ![A diagram of the result states.](../web/put.png) */
 enum set_result { SET_RESULT };
 #undef X
 #define X(n) #n
@@ -205,7 +205,7 @@ static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
 static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 	assert(bucket && bucket->next != SET_NULL);
 #ifdef SET_INVERSE
-	return PS_(inverse_hash_fn)(&bucket->hash);
+	return PS_(inverse_hash)(bucket->hash);
 #else
 	return bucket->key;
 #endif
@@ -332,6 +332,7 @@ static struct PS_(bucket) *PS_(query)(struct S_(set) *const set,
 		if(hashes_are_equal) {
 			int entries_are_equal;
 #ifdef SET_INVERSE
+			/* fixme: compare the hash: requires modification of equal */
 			entries_are_equal = ((void)(key), 1);
 #else
 			entries_are_equal = PS_(equal)(key, bucket->key);
@@ -859,6 +860,9 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *)
 #endif
 #ifdef SET_NO_CACHE
 #undef SET_NO_CACHE
+#endif
+#ifdef SET_INVERSE
+#undef SET_INVERSE
 #endif
 #undef BOX_
 #undef BOX_CONTAINER

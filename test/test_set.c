@@ -1,14 +1,154 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT). */
 
-#include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
 #include <errno.h>
-#include <string.h> /* strncpy */
+#include <string.h>
 #include <limits.h>
 #include "orcish.h"
+
+
+/* Zodiac is a bounded set of `enum`. An X-macro allows printing. This is
+ preferable to `SET_KEY const char *`, (both for the warning from `set.h` about
+ duplicate `const` and `enum` is much cleaner in `C`.) */
+#define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
+	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
+	X(ZodiacCount)
+#define X(n) n
+enum zodiac { ZODIAC(X) };
+#undef X
+#define X(n) #n
+static const char *zodiac[] = { ZODIAC(X) };
+#undef X
+/** @implements <zodiac>hash_fn */
+static unsigned hash_zodiac(const enum zodiac z) { return z; } /* Monotonic! */
+/** @implements <zodiac>is_equal_fn */
+static int zodiac_is_equal(const enum zodiac a, const enum zodiac b)
+	{ return a == b; }
+/** This is not necessary except for testing.
+@implements <zodiac>to_string_fn */
+static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
+	{ strcpy(*a, zodiac[z]); /* strlen z < 12 */ }
+#define SET_NAME zodiac
+#define SET_KEY enum zodiac
+#define SET_HASH &hash_zodiac
+#define SET_IS_EQUAL &zodiac_is_equal
+#define SET_NO_CACHE /* Don't bother caching `x -> x`. */
+/* <tag:<PS>bucket> more packed than `size_t`: `unsigned next, enum key`. */
+#define SET_UINT unsigned
+#define SET_TEST /* Testing requires to string. */
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &zodiac_to_string
+#include "../src/set.h"
+/* For testing; there is no extra memory required to generate random `enum`.
+ @implements <zodiac>test_new_fn */
+static enum zodiac random_zodiac(void *const zero)
+	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
+
+
+/* String set. */
+/** One must supply the hash: djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
+ a simple one (fast) that is mostly `size_t`-length agnostic.
+ @implements <string>hash_fn */
+static size_t djb2_hash(const char *s) {
+	const unsigned char *str = (const unsigned char *)s;
+	size_t hash = 5381, c;
+	while(c = *str++) hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	return hash;
+}
+/** @implements <string>is_equal_fn */
+static int string_is_equal(const char *const a, const char *const b)
+	{ return !strcmp(a, b); }
+/** @implements <string>to_string_fn */
+static void string_to_string(const char *const s, char (*const a)[12])
+	{ strncpy(*a, s, sizeof(*a) - 1), (*a)[sizeof(*a) - 1] = '\0'; }
+#define SET_NAME string
+#define SET_KEY char * /* Parameter of <fn:djb2_hash> (without `const`.) */
+#define SET_HASH &djb2_hash /* Default returns `size_t`. */
+#define SET_IS_EQUAL &string_is_equal
+#define SET_TEST /* Testing requires to string. */
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &string_to_string
+#include "../src/set.h"
+/* A pool is convenient for testing because it allows deletion at random. */
+struct str16 { char str[16]; };
+#define POOL_NAME str16
+#define POOL_TYPE struct str16
+#include "pool.h"
+/** For testing: `s16s` is a pool of `str16`. */
+static char *str16_from_pool(struct str16_pool *const s16s) {
+	struct str16 *s16 = str16_pool_new(s16s);
+	if(!s16) return 0;
+	orcish(s16->str, sizeof s16->str);
+	return s16->str;
+}
+/** @implements <string>test_new_fn */
+static char *str16_from_void(void *const s16s) { return str16_from_pool(s16s); }
+
+
+/* Integer set. */
+#if UINT_MAX >= 4294967295 /* >= 32-bits */
+/** <https://nullprogram.com/blog/2018/07/31/>
+ <https://github.com/skeeto/hash-prospector>. It was meant to work on
+ `uint32_t`, but that's not guaranteed to exist in the C90 standard.
+ @implements <int>hash_fn */
+static unsigned lowbias32(unsigned x) {
+	x ^= x >> 16;
+	x *= 0x7feb352dU;
+	x ^= x >> 15;
+	x *= 0x846ca68bU;
+	x ^= x >> 16;
+	return x;
+}
+/** @implements <int>inverse_hash_fn */
+static unsigned lowbias32_r(unsigned x) {
+	x ^= x >> 16;
+	x *= 0x43021123U;
+	x ^= x >> 15 ^ x >> 30;
+	x *= 0x1d69e2a5U;
+	x ^= x >> 16;
+	return x;
+}
+#else /* < 32 bits */
+/** Fixme. @implements <int>hash_fn */
+static unsigned lowbias32(unsigned x) { return x; }
+/** @implements <int>inverse_hash_fn */
+static unsigned lowbias32_r(unsigned x) { return x; }
+#endif /* < 32 bits */
+/** @implements <int>is_equal_fn */
+static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
+/** @implements <int>to_string_fn */
+static void int_to_string(const unsigned x, char (*const a)[12])
+	{ sprintf(*a, "%u", x); }
+#define SET_NAME int
+#define SET_KEY unsigned /* Parameter of <fn:lowbias32>. */
+#define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
+#define SET_HASH &lowbias32
+#define SET_INVERSE &lowbias32_r
+#define SET_IS_EQUAL &int_is_equal
+#define SET_TEST
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &int_to_string
+#include "../src/set.h"
+/** @implements <int>test_new_fn */
+static unsigned int_from_void(void *const zero) {
+	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
+	return (unsigned)rand();
+}
+
+
+
+
+
+
+
+
+
 
 
 /* A map fixme. */
@@ -16,14 +156,11 @@ static int nato_equal(const char *const a, const char *const b) {
 	/* Calculating this multiple times is inefficient. */
 	return strlen(a) == strlen(b);
 }
-/*static void nato_string(const char *const a, char (*const z)[12])
-	{ strncpy(*z, a, sizeof *z - 1), (*z)[11] = '\0'; }*/
 #define SET_NAME nato
 #define SET_KEY char *
 #define SET_HASH &strlen
 #define SET_IS_EQUAL &nato_equal
 #include "../src/set.h"
-
 /* Can use it to count bytes in words in \O(\sum `bytes`), but the simplicity
  of the definition is holding us back: would have been much easier to have a
  value. */
@@ -79,122 +216,18 @@ static void nato(void) {
 }
 
 
-/* An X-macro, much preferable to `SET_KEY const char *`. */
-#define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
-	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
-	X(ZodiacCount)
-#define X(n) n
-enum zodiac { ZODIAC(X) };
-#undef X
-#define X(n) #n
-static const char *zodiac[] = { ZODIAC(X) };
-#undef X
-static unsigned hash_zodiac(const enum zodiac z) { return z; } /* Monotonic! */
-static int zodiac_is_equal(const enum zodiac a, const enum zodiac b)
-	{ return a == b; }
-static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
-	{ strcpy(*a, zodiac[z]); /* strlen z <= 11 */ }
-#define SET_NAME zodiac
-#define SET_KEY enum zodiac
-#define SET_HASH &hash_zodiac
-#define SET_IS_EQUAL &zodiac_is_equal
-#define SET_NO_CACHE /* Don't bother caching `x -> x`. */
-/* <tag:<PS>bucket> more packed than `size_t`: `unsigned next, enum key`. */
-#define SET_UINT unsigned
-#define SET_TEST /* Testing requires to string. */
-#define SET_EXPECT_TRAIT
-#include "../src/set.h"
-#define SET_TO_STRING &zodiac_to_string
-#include "../src/set.h"
-/* For testing. @implements <zodiac>parent_new_fn */
-static enum zodiac random_zodiac(void *const zero)
-	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
 
 
-/* String hash hash. For testing automated testing, we have somewhere to store
- the strings. */
-struct str16 { char str[16]; };
-#define POOL_NAME str16
-#define POOL_TYPE struct str16
-#include "pool.h"
-/** For testing: `s16s` is a convenient pool of strings. */
-static char *str16_from_pool(struct str16_pool *const s16s) {
-	struct str16 *s16 = str16_pool_new(s16s);
-	if(!s16) return 0;
-	orcish(s16->str, sizeof s16->str);
-	return s16->str;
-}
-static char *str16_from_void(void *const s16s) { return str16_from_pool(s16s); }
-/** For testing: passed to output function. */
-static void string_to_string(const char *const s, char (*const a)[12]) {
-	strncpy(*a, s, sizeof(*a) - 1);
-	(*a)[sizeof(*a) - 1] = '\0';
-}
-/** One must supply the hash. djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
- a simple one that works adequately and is mostly `size_t`-length agnostic. */
-static size_t djb2_hash(const char *s) {
-	const unsigned char *str = (const unsigned char *)s;
-	size_t hash = 5381, c;
-	while(c = *str++) hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-	return hash;
-}
-static int string_is_equal(const char *const a, const char *const b)
-	{ return !strcmp(a, b); }
-#define SET_NAME string
-#define SET_KEY char * /* Parameter of <fn:djb2_hash> (without `const`.) */
-#define SET_HASH &djb2_hash /* Default returns `size_t`. */
-#define SET_IS_EQUAL &string_is_equal
-#define SET_TEST /* Testing requires to string. */
-#define SET_EXPECT_TRAIT
-#include "../src/set.h"
-#define SET_TO_STRING &string_to_string
-#include "../src/set.h"
 
 
-/* Integer hash. */
-#if UINT_MAX < 4294967295
-#error These tests assume >= 32-bit integer; real applications would use fixed.
-#endif
-#define POOL_NAME int
-#define POOL_TYPE unsigned
-#include "pool.h"
-/** <https://nullprogram.com/blog/2018/07/31/>
- <https://github.com/skeeto/hash-prospector>. */
-static unsigned lowbias32(unsigned x) {
-	x ^= x >> 16;
-	x *= 0x7feb352d;
-	x ^= x >> 15;
-	x *= 0x846ca68b;
-	x ^= x >> 16;
-	return x;
-}
-static int int_is_equal(const unsigned a, const unsigned b) { return a == b; }
-static void int_to_string(const unsigned x, char (*const a)[12])
-	{ sprintf(*a, "%u", x); }
-static unsigned int_from_pool(struct int_pool *const pool) {
-	assert(pool && RAND_MAX <= 99999999999l); /* For printing. */
-	return (unsigned)rand();
-}
-static unsigned int_from_void(void *const pool) { return int_from_pool(pool); }
-#define SET_NAME int
-#define SET_KEY unsigned /* Parameter of <fn:lowbias32>. */
-#define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
-#define SET_HASH &lowbias32
-#define SET_IS_EQUAL &int_is_equal
-#define SET_TEST
-#define SET_EXPECT_TRAIT
-#include "../src/set.h"
-#define SET_TO_STRING &int_to_string
-#include "../src/set.h"
 
 
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
-	struct int_pool ints = POOL_IDLE;
-	nato();
 	zodiac_set_test(&random_zodiac, 0); /* Don't require any space. */
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
-	int_set_test(&int_from_void, &ints), int_pool_(&ints);
+	int_set_test(&int_from_void, 0);
+	nato();
 
 
 
