@@ -208,11 +208,6 @@ struct nato_count {
 	size_t collisions;
 	struct note_next *next;
 };
-#if 0
-static int foo(char *a, char *b, struct nato_count *const c) {
-	return 0;
-}
-#endif
 static void nato(void) {
 	struct nato_node words[] = {
 #define X(a) { #a, 0, 0 }
