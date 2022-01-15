@@ -278,7 +278,8 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 	struct S_(set) set = SET_IDLE;
 	int success;
 	assert(fill && trial_size > 1);
-	/* Pre-computation. O(element_size*(element_size-1)/2) */
+	/* Pre-computation. O(element_size*(element_size-1)/2); this places a limit
+	 on how much a reasonable test is. */
 	for(i = 0; i < trial_size; i++) {
 		struct sample *s = trials.sample + i;
 		size_t j;
@@ -335,53 +336,6 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 			(unsigned)trial_size);
 		PS_(histogram)(&set, fn);
 	}
-	/* This is more debug info.
-	printf("[ ");
-	for(t = test, t_end = t + test_size; t < t_end; t++) {
-		PS_(to_string)(&t->elem->data, &a);
-		printf("%s[%lu-%s]%s", t == test ? "" : ", ",
-			(unsigned long)(t - test), t->is_in ? "yes" : "no", a);
-	}
-	printf(" ]\n");*/
-#if 0
-	for(t = test, t_end = t + test_size; t < t_end; t++) {
-		const size_t n = (size_t)(t - test);
-		struct S_(setlink) *r;
-		if(!(n & (n - 1))) {
-			PS_(to_string)(&t->elem->key, &a);
-			fprintf(stderr, "%lu: retrieving %s.\n", (unsigned long)n, a);
-		}
-		element = S_(set_get)(&hash, PS_(pointer)(&t->elem->key));
-		assert(element);
-		if(t->is_in) {
-			assert(element == t->elem);
-			if(rand() < RAND_MAX / 8) {
-				removed++;
-				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
-				assert(r);
-				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
-				assert(!r);
-				r = S_(set_policy_put)(&hash, t->elem, 0);
-				assert(!r);
-				r = S_(set_policy_put)(&hash, t->elem, 0);
-				assert(r == t->elem);
-				r = S_(set_remove)(&hash, PS_(pointer)(&t->elem->key));
-				assert(r);
-			}
-		} else {
-			const size_t count = hash.size;
-			collision++;
-			assert(t && element != t->elem);
-			r = S_(set_policy_put)(&hash, t->elem, 0);
-			assert(r == t->elem && count == hash.size);
-		}
-	}
-	printf("Collisions: %lu; removed: %lu.\n",
-		(unsigned long)collision, (unsigned long)removed);
-	PS_(legit)(&hash);
-	PS_(stats)(&hash, "\n", stdout);
-#endif
-
 	S_(set_clear)(&set);
 	for(b = 0, b_end = b + PS_(capacity)(&set); b < b_end; b++)
 		assert(set.buckets[b].next == SET_NULL);
