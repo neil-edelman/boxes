@@ -323,7 +323,7 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 		if(set.size < 10000 && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
 			printf("Hash to far: %s.\n", PS_(set_to_string)(&set));
-			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%lu.gv", (unsigned long)i);
+			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%lu.gv", (unsigned long)i+1);
 			PS_(graph)(&set, fn);
 		}
 		PS_(legit)(&set);

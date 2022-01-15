@@ -95,7 +95,7 @@ static int str16_from_void(void *const s16s, char **const string) {
 
 
 /* Integer set with inverse hash to avoid storing the hash at all. */
-#if UINT_MAX >/*=fixme*/ 4294967295 /* >= 32-bits */
+#if UINT_MAX >= 4294967295 /* >= 32-bits */
 /** <https://nullprogram.com/blog/2018/07/31/>
  <https://github.com/skeeto/hash-prospector>. It was meant to work on
  `uint32_t`, but that's not guaranteed to exist in the C90 standard.
