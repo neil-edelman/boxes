@@ -531,7 +531,7 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 			assert(bucket->next == SET_NULL
 				&& (next == SET_END || set->buckets[next].next != SET_NULL));
 		}
-		ret = SET_REPLACE;
+		ret = SET_GROW;
 	}
 	/* Fill `bucket`. The bucket must be empty. */
 	assert(bucket && bucket->next == SET_NULL);
