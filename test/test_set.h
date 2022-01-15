@@ -1,6 +1,6 @@
 /** A call with the container unknown. This is so that the function is free to
  return a key which is part of a larger aggregate structure. */
-typedef PS_(entry) (*const PS_(test_new_fn))(void *);
+typedef int (*const PS_(fill_fn))(void *, PS_(entry) *);
 
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.
@@ -227,10 +227,14 @@ static void PS_(histogram)(const struct S_(set) *const set,
 /** @return Equality of entries `a` and `b`. */
 static int PS_(eq_en)(PS_(entry) a, PS_(entry) b) {
 	PS_(ckey) ka = PS_(entry_key)(a), kb = PS_(entry_key)(b);
-#ifndef SET_INVERSE
-	return PS_(equal)(ka, kb);
-#else /* Compare in <typedef:<PS>uint> space. */
+#ifdef SET_INVERSE /* Compare in <typedef:<PS>uint> space. */
 	return PS_(hash)(ka) == PS_(hash)(kb);
+#else
+	/*char sa[12], sb[12];
+	PS_(to_string)(ka, &sa);
+	PS_(to_string)(kb, &sb);
+	printf("return %s, %s == %d\n", sa, sb, PS_(equal)(ka, kb));*/
+	return PS_(equal)(ka, kb);
 #endif
 }
 
@@ -256,57 +260,69 @@ static void PS_(legit)(const struct S_(set) *const set) {
 }
 
 /** Passed `parent_new` and `parent` from <fn:<S>hash_test>. */
-static void PS_(test_basic)(const PS_(test_new_fn) test_new,
-	void *const parent) {
-	struct test {
-		union {
-			void *unused;
-			PS_(entry) entry;
-		} _;
-		int is_in, unused;
-	} test[1000/*0*/], *t;
-	const size_t test_size = sizeof test / sizeof *test;
+static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
+	struct {
+		struct sample {
+			union {
+				void *unused;
+				PS_(entry) entry;
+			} _;
+			int is_in, unused;
+		} sample[10];
+		size_t count;
+	} trials;
+	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample;
 	size_t i;
 	char z[12];
 	struct S_(set) set = SET_IDLE;
-	assert(test_new
-		/*&& parent static tests are possible*/ && test_size > 1);
+	int success;
+	assert(fill && trial_size > 1);
+	/* Pre-computation. O(element_size*(element_size-1)/2) */
+	for(i = 0; i < trial_size; i++) {
+		struct sample *s = trials.sample + i;
+		size_t j;
+		if(!fill(parent, &s->_.entry)) { assert(0); return; }
+		PS_(to_string)(PS_(entry_key)(s->_.entry), &z);
+		s->is_in = 0;
+		for(j = 0; j < i && !PS_(eq_en)(s->_.entry, trials.sample[j]._.entry);
+			j++);
+		if(j == i) s->is_in = 1;
+	}
 	/* Test empty. */
 	PS_(legit)(&set);
 	S_(set)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
 	PS_(legit)(&set);
 	PS_(graph)(&set, "graph/" QUOTE(SET_NAME) "-0.gv");
+	success = S_(set_buffer)(&set, 1);
+	assert(success && set.buckets && set.log_capacity == 3 && !set.size);
+	success = S_(set_buffer)(&set, 1);
+	assert(success && set.buckets && set.log_capacity == 3 && !set.size);
+	S_(set_clear)(&set);
+	assert(set.buckets && set.log_capacity == 3 && !set.size);
+	S_(set_)(&set);
+	assert(!set.buckets && set.log_capacity == 0 && !set.size);
 	/* Test placing items. */
-	for(i = 0; i < test_size; i++) {
+	for(i = 0; i < trial_size; i++) {
 		struct { PS_(uint) before, after; } size;
-		enum set_result res;
-		int is_grow;
-		int ret;
-		t = test + i;
+		enum set_result result;
+		const struct sample *s = trials.sample + i;
 		PS_(entry) eject, zero, entry;
-		t->_.entry = test_new(parent); /* fixme: Completely unchecked! */
-		PS_(to_string)(PS_(entry_key)(t->_.entry), &z);
-		printf("%lu: came up with %s.\n", (unsigned long)i, z);
-		/*success = S_(set_buffer)(&hash, 1);
-		assert(success && hash.buckets);*/
 		memset(&eject, 0, sizeof eject);
 		memset(&zero, 0, sizeof zero);
 		size.before = set.size;
-		res = S_(set_policy_put)(&set, t->_.entry, &eject, 0);
-		printf("res: %s\n", set_result_str[res]);
-		assert(res && (i || set.size == 1
-			&& !memcmp(&eject, &zero, sizeof zero)));
+		PS_(to_string)(PS_(entry_key)(s->_.entry), &z);
+		result = S_(set_policy_put)(&set, s->_.entry, &eject, 0);
+		printf("storing %s in set, result: %s\n", z, set_result_str[result]);
 		size.after = set.size;
-		assert(size.before == size.after || size.after == size.before + 1);
-		is_grow = !!(size.after - size.before);
-		ret = S_(set_query)(&set, PS_(entry_key)(t->_.entry), &entry);
-		assert(ret && PS_(eq_en)(t->_.entry, entry));
-		/* If it replaced, `eject` must be equal to `data`. */
-		assert(is_grow || PS_(eq_en)(t->_.entry, eject));
-		if(set.size < 10000 && !(i & (i - 1))) {
+		assert(s->is_in && !memcmp(&eject, &zero, sizeof zero)
+			&& result == SET_GROW && size.after == size.before + 1
+			|| !s->is_in && result == SET_YIELD && size.before == size.after);
+		success = S_(set_query)(&set, PS_(entry_key)(s->_.entry), &entry);
+		assert(success && PS_(eq_en)(s->_.entry, entry));
+		if(set.size < 10000 && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
-			printf("*** hash %s.\n", PS_(set_to_string)(&set));
+			printf("Hash to far: %s.\n", PS_(set_to_string)(&set));
 			sprintf(fn, "graph/" QUOTE(SET_NAME) "-%lu.gv", (unsigned long)i);
 			PS_(graph)(&set, fn);
 		}
@@ -314,15 +330,10 @@ static void PS_(test_basic)(const PS_(test_new_fn) test_new,
 	}
 	{
 		char fn[64];
-		printf("\n");
-		sprintf(fn, "graph/" QUOTE(SET_NAME) "-%u-final.gv",
-			(unsigned)test_size);
-		PS_(graph)(&set, fn);
 		sprintf(fn, "graph/histogram-" QUOTE(SET_NAME) "-%u.gnu",
-			(unsigned)test_size);
+			(unsigned)trial_size);
 		PS_(histogram)(&set, fn);
 	}
-	printf("Testing get from hash.\n");
 	/* This is more debug info.
 	printf("[ ");
 	for(t = test, t_end = t + test_size; t < t_end; t++) {
@@ -385,8 +396,7 @@ static void PS_(test_basic)(const PS_(test_new_fn) test_new,
  <tag:<S>hashlink> and `SET_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void S_(set_test)(const PS_(test_new_fn) test_new,
-	void *const parent) {
+static void S_(set_test)(const PS_(fill_fn) fill, void *const parent) {
 	printf("<" QUOTE(SET_NAME) ">hash of key <" QUOTE(SET_KEY)
 		"> was created using: "
 #ifdef SET_VALUE
@@ -403,7 +413,8 @@ static void S_(set_test)(const PS_(test_new_fn) test_new,
 #endif
 		"SET_TEST; "
 		"testing%s:\n", parent ? "(pointer)" : "");
-	PS_(test_basic)(test_new, parent);
+	assert(fill);
+	PS_(test_basic)(fill, parent);
 	fprintf(stderr, "Done tests of <" QUOTE(SET_NAME) ">hash.\n\n");
 }
 

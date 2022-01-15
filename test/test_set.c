@@ -26,7 +26,7 @@ static const char *zodiac[] = { ZODIAC(X) };
 static unsigned hash_zodiac(const enum zodiac z) { return z; } /* Monotonic! */
 /** @implements <zodiac>is_equal_fn */
 static int zodiac_is_equal(const enum zodiac a, const enum zodiac b)
-	{ return a == b; }
+	{ /*printf("%s == %s\n", zodiac[a], zodiac[b]);*/ return a == b; }
 /** This is not necessary except for testing.
 @implements <zodiac>to_string_fn */
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
@@ -45,8 +45,10 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #include "../src/set.h"
 /* For testing; there is no extra memory required to generate random `enum`.
  @implements <zodiac>test_new_fn */
-static enum zodiac random_zodiac(void *const zero)
-	{ return (void)zero, (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1)); }
+static int fill_zodiac(void *const zero, enum zodiac *const z) {
+	(void)zero, *z = (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1));
+	return 1;
+}
 
 
 /* String set. */
@@ -87,7 +89,9 @@ static char *str16_from_pool(struct str16_pool *const s16s) {
 	return s16->str;
 }
 /** @implements <string>test_new_fn */
-static char *str16_from_void(void *const s16s) { return str16_from_pool(s16s); }
+static int str16_from_void(void *const s16s, char **const string) {
+	return !!(*string = str16_from_pool(s16s));
+}
 
 
 /* Integer set with inverse hash to avoid storing the hash at all. */
@@ -134,9 +138,10 @@ static void int_to_string(const unsigned x, char (*const a)[12])
 #define SET_TO_STRING &int_to_string
 #include "../src/set.h"
 /** @implements <int>test_new_fn */
-static unsigned int_from_void(void *const zero) {
+static int int_from_void(void *const zero, unsigned *const u) {
 	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
-	return (unsigned)rand();
+	*u = (unsigned)rand();
+	return 1;
 }
 
 
@@ -160,9 +165,10 @@ static void sint_to_string(const int d, char (*const a)[12])
 #define SET_TO_STRING &sint_to_string
 #include "../src/set.h"
 /** @implements <int>test_new_fn */
-static int sint_from_void(void *const zero) {
+static int sint_from_void(void *const zero, int *const s) {
 	assert(!zero && RAND_MAX <= 9999999999l); /* For printing with '-'. */
-	return rand() - RAND_MAX / 2;
+	*s = rand() - RAND_MAX / 2;
+	return 1;
 }
 
 
@@ -244,7 +250,7 @@ static void nato(void) {
 
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
-	zodiac_set_test(&random_zodiac, 0); /* Don't require any space. */
+	zodiac_set_test(&fill_zodiac, 0); /* Don't require any space. */
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
 	int_set_test(&int_from_void, 0);
 	sint_set_test(&sint_from_void, 0);
