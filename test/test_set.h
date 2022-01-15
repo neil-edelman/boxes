@@ -268,11 +268,12 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 				PS_(entry) entry;
 			} _;
 			int is_in, unused;
-		} sample[10];
+		} sample[1000];
 		size_t count;
 	} trials;
 	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample;
 	size_t i;
+	PS_(uint) b, b_end;
 	char z[12];
 	struct S_(set) set = SET_IDLE;
 	int success;
@@ -379,11 +380,12 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 		(unsigned long)collision, (unsigned long)removed);
 	PS_(legit)(&hash);
 	PS_(stats)(&hash, "\n", stdout);
-	S_(set_clear)(&hash);
-	for(b = hash.buckets, b_end = b + (1 << hash.log_capacity); b < b_end; b++)
-		assert(!PS_(count)(b));
-	assert(hash.size == 0);
 #endif
+
+	S_(set_clear)(&set);
+	for(b = 0, b_end = b + PS_(capacity)(&set); b < b_end; b++)
+		assert(set.buckets[b].next == SET_NULL);
+	assert(set.size == 0);
 	printf("Clear: %s.\n", PS_(set_to_string)(&set));
 	S_(set_)(&set);
 	assert(!set.buckets && !set.log_capacity && !set.size);
