@@ -184,7 +184,12 @@ static PS_(key) PS_(entry_key)(PS_(entry) e) {
 /* Address is hash modulo size of table. Any occupied buckets at the start of
  the linked structure are closed, that is, the address equals the index. These
  form a linked set, possibly with other, open buckets that have the same
- address in vacant buckets. */
+ address in vacant buckets. This is conceptually like separate-chaining, but
+ spatially like open-addressing. Entries do not cluster, and the maximum load
+ factor is 1, by definition. The need to store data in the entries themselves
+ has been erased, as is the double allocation of the hash table and the
+ entries. However, the table entry requires an address more. This is suitable
+ for a language like `C` because it has less memory management. */
 struct PS_(bucket) {
 	PS_(uint) next; /* In bucket, including `SET_NULL` and `SET_END`. */
 #ifndef SET_NO_CACHE
@@ -495,10 +500,12 @@ static void PS_(replace_entry)(struct PS_(bucket) *const bucket,
  replaces the `original`. */
 typedef int (*PS_(replace_fn))(PS_(entry) original, PS_(entry) replace);
 
-/** Put `entry` in `set`. For collisions, call `replace` and only if it exists
- and returns true do and put it in `eject`, if non-null.
- @param[eject] If `replace` returns false, the `entry` itself.
- @return A <tag:set_result>. @throws[malloc] @order amortized \O(1) */
+/** Put `entry` in `set`. For collisions, only if `replace` exists and returns
+ true do and displace it to `eject`, if non-null.
+ @param[eject] If `replace` returns false, the `entry` itself. (this is useless)
+ @return A <tag:set_result>. @throws[malloc]
+ @order Amortized \O(max bucket length); the key to another bucket may have to
+ be moved to the top;  */
 static enum set_result PS_(put)(struct S_(set) *const set,
 	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace) {
 	struct PS_(bucket) *bucket;
@@ -625,22 +632,25 @@ static void S_(set_clear)(struct S_(set) *const set) {
 	set->size = 0;
 }
 
+/* set_shrink: if shrinkable, reserve the exact amount in a separate buffer
+ and move all. Does not, and indeed cannot, respect the most-recently used
+ heuristic. */
+
+/* set_is */
+
 /** @param[entry] If non-null, a <typedef:<PS>entry> which gets filled on true.
- @return Is `key` in `set` (which could be null)? */
+ @return Is `key` in `set`? (Both of which could be null.) */
 static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
-	PS_(entry) *const entry) {
+	PS_(entry) *const result) {
 	struct PS_(bucket) *b;
 	if(!set || !set->buckets || !(b = PS_(query)(set, key, PS_(hash)(key))))
 		return 0;
-	if(entry) PS_(to_entry)(b, entry);
+	if(result) PS_(to_entry)(b, result);
 	return 1;
 }
 
+/* set_get_or, set_<P>_get */
 #if 0
-/* fixme: get_or_default (get_or?) /\, otherwise have a get that has a
- parameter, so one could have multiple \/. "get" doesn't work with non-nullible
- types, (in C++ they made it work returning zero? eww.) */
-
 /** @return The value in `hash` which is equal `key`, or, if no such value
  exists, null. @order Average \O(1), (hash distributes elements uniformly);
  worst \O(n). @allow */
@@ -654,6 +664,7 @@ static PS_(key) S_(set_get)(struct S_(set) *const hash,
 }
 #endif
 
+/* set_try(), set_replace(), set_policy(), set_compute() */
 /** Puts `entry` in `set` only if the bucket is absent or if calling `replace`
  returns true.
  @param[eject] If non-null, filled with the entry that is ejected or the entry

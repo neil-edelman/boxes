@@ -315,7 +315,7 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 		size.before = set.size;
 		PS_(to_string)(PS_(entry_key)(s->_.entry), &z);
 		result = S_(set_policy_put)(&set, s->_.entry, &eject, 0);
-		printf("storing %s in set, result: %s\n", z, set_result_str[result]);
+		printf("Store \"%s\" in set, result: %s.\n", z, set_result_str[result]);
 		size.after = set.size;
 		assert(s->is_in && !memcmp(&eject, &zero, sizeof zero)
 			&& result == SET_GROW && size.after == size.before + 1
@@ -335,6 +335,13 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 		sprintf(fn, "graph/histogram-" QUOTE(SET_NAME) "-%u.gnu",
 			(unsigned)trial_size);
 		PS_(histogram)(&set, fn);
+	}
+	printf("Go through the set and see if we can get all the items out.\n");
+	for(i = 0; i < trial_size; i++) {
+		const struct sample *s = trials.sample + i;
+		PS_(entry) result;
+		success = S_(set_query)(&set, PS_(entry_key)(s->_.entry), &result);
+		assert(success && PS_(eq_en)(s->_.entry, result));
 	}
 	S_(set_clear)(&set);
 	for(b = 0, b_end = b + PS_(capacity)(&set); b < b_end; b++)
