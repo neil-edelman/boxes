@@ -314,7 +314,7 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 		memset(&zero, 0, sizeof zero);
 		size.before = set.size;
 		PS_(to_string)(PS_(entry_key)(s->_.entry), &z);
-		result = S_(set_policy_put)(&set, s->_.entry, &eject, 0);
+		result = S_(set_update)(&set, s->_.entry, &eject, 0);
 		printf("Store \"%s\" in set, result: %s.\n", z, set_result_str[result]);
 		size.after = set.size;
 		assert(s->is_in && !memcmp(&eject, &zero, sizeof zero)

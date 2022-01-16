@@ -248,7 +248,8 @@ static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
 }
 
 /** To initialize, see <fn:<S>set>, `SET_IDLE`, `{0}` (`C99`,) or being
- `static`.
+ `static`. The fields should be treated as read-only; any modification is
+ liable to cause the set to go into an invalid state.
 
  ![States.](../web/states.png) */
 struct S_(set) { /* "Padding size," good. */
@@ -498,21 +499,19 @@ static void PS_(replace_entry)(struct PS_(bucket) *const bucket,
 #endif
 }
 
-/** Opens the values up to modification and returns true if the `replace`
- replaces the `original`. */
-typedef int (*PS_(replace_fn))(PS_(entry) original, PS_(entry) replace);
+/** Returns true if the `replace` replaces the `original`. */
+typedef int (*PS_(policy_fn))(PS_(entry) original, PS_(entry) replace);
 
-/** Put `entry` in `set`. For collisions, only if `replace` exists and returns
+/** Put `entry` in `set`. For collisions, only if `update` exists and returns
  true do and displace it to `eject`, if non-null.
- @param[eject] If `replace` returns false, the `entry` itself. (this is useless)
  @return A <tag:set_result>. @throws[malloc]
  @order Amortized \O(max bucket length); the key to another bucket may have to
- be moved to the top;  */
+ be moved to the top; the table might be full and have to be resized. */
 static enum set_result PS_(put)(struct S_(set) *const set,
-	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace) {
+	PS_(entry) entry, PS_(entry) *eject, const PS_(policy_fn) update) {
 	struct PS_(bucket) *bucket;
 	const PS_(key) key = PS_(entry_key)(entry);
-	PS_(uint) hash, i, next = SET_END, size;
+	PS_(uint) hash, i, next = SET_END;
 	enum set_result ret;
 	assert(set);
 	hash = PS_(hash)(key);
@@ -521,9 +520,8 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 		PS_(to_string)(key, &z);
 		printf("put: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
 	}
-	size = set->size;
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
-		if(!replace || !replace(PS_(bucket_key)(bucket), key))
+		if(!update || !update(PS_(bucket_key)(bucket), key))
 			{ if(eject) memcpy(eject, &entry, sizeof entry); return SET_YIELD; }
 		if(eject) PS_(to_entry)(bucket, eject);
 		/* Cut the tail and put new element in the head. */
@@ -532,7 +530,6 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 	} else { /* Expand. */
 		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
 		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
-		size++;
 		if(bucket->next != SET_NULL) { /* Unoccupied. */
 			int in_stack = PS_(to_bucket)(set, PS_(bucket_hash)(bucket)) != i;
 			PS_(move_to_top)(set, i);
@@ -540,27 +537,27 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 			assert(bucket->next == SET_NULL
 				&& (next == SET_END || set->buckets[next].next != SET_NULL));
 		}
+		set->size++;
 		ret = SET_GROW;
 	}
 	/* Fill `bucket`. The bucket must be empty. */
 	assert(bucket && bucket->next == SET_NULL);
 	bucket->next = next;
 	PS_(replace_entry)(bucket, entry, hash);
-	set->size = size;
 	return ret;
 }
 
-/** ... */
-typedef int (*PS_(compute_fn))(PS_(key) original, PS_(key) replace,
-	PS_(value) *value);
+#ifdef SET_VALUE /* <!-- value */
 
-/** Try to put `key` into `set`, and `compute` the result. `eject`. */
+/** Try to put `key` into `set`.
+ @return `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be
+ uninitialized; `SET_YIELD`, gets the current `value`. @throws[malloc] */
 static enum set_result PS_(compute)(struct S_(set) *const set,
-	PS_(key) key, PS_(key) *eject, const PS_(compute_fn) compute) {
+	PS_(key) key, PS_(value) *value) {
 	struct PS_(bucket) *bucket;
 	PS_(uint) hash, i, next = SET_END, size;
 	enum set_result ret;
-	assert(set && compute);
+	assert(set);
 	hash = PS_(hash)(key);
 	{
 		char z[12];
@@ -569,19 +566,9 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 	}
 	size = set->size;
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
-		PS_(value) value = PS_(bucket_value)(bucket);
-		/* ComputeIfPresent */
+		if(value) value = &bucket->value;
 		if(!compute(PS_(bucket_key)(bucket), key, &value))
-			{ if(eject) memcpy(eject, &key, sizeof key); return SET_YIELD; }
-		if(eject) PS_(to_entry)(bucket, eject);
-		/* Cut the tail and put new element in the head. */
-		next = bucket->next, bucket->next = SET_NULL, assert(next != SET_NULL);
-		ret =
-#ifdef SET_VALUE
-			SET_REPLACE_VALUE;
-#else
-			SET_REPLACE;
-#endif
+			{ if(value) memcpy(value, &key, sizeof key); return SET_YIELD; }
 	} else { /* Expand. */
 		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
 		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
@@ -603,6 +590,8 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 	set->size = size;
 	return ret;
 }
+
+#endif /* value --> */
 
 /** Initialises `set` to idle. @order \Theta(1) @allow */
 static void S_(set)(struct S_(set) *const set) {
@@ -639,7 +628,9 @@ static void S_(set_clear)(struct S_(set) *const set) {
  and move all. Does not, and indeed cannot, respect the most-recently used
  heuristic. */
 
-/* set_is */
+/** @return Is `key` in `set`? (Both of which could be null.) */
+static int S_(set_is)(struct S_(set) *const set, const PS_(key) key)
+	{ return set && set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
 
 /** @param[entry] If non-null, a <typedef:<PS>entry> which gets filled on true.
  @return Is `key` in `set`? (Both of which could be null.) */
@@ -668,23 +659,28 @@ static PS_(key) S_(set_get)(struct S_(set) *const hash,
 #endif
 
 /* set_try(), set_replace(), set_policy(), set_compute() */
-/** Puts `entry` in `set` only if the bucket is absent or if calling `replace`
- returns true.
- @param[eject] If non-null, filled with the entry that is ejected or the entry
- itself if `replace` isn't true.
- @param[replace] If null, doesn't do any replacement on collision.
- @return True except exception. @throws[realloc, ERANGE] There was an error
- with a re-sizing. @order Average amortised \O(1), (hash distributes keys
- uniformly); worst \O(n). @allow */
-static enum set_result S_(set_policy_put)(struct S_(set) *const set,
-	PS_(entry) entry, PS_(entry) *eject, const PS_(replace_fn) replace)
-	{ return PS_(put)(set, entry, eject, replace); }
 
-/** `compute` `key` in `set`, and `eject`. */
-static enum set_result S_(set_compute_put)(struct S_(set) *const set,
-	PS_(key) key, PS_(key) *eject, const PS_(compute_fn) compute) {
-	{ return PS_(compute)(set, key, eject, compute); }
-}
+/** Puts `entry` in `set` only if absent or if calling `update` returns true.
+ @return One of: `SET_ERROR` the set is not modified; `SET_REPLACE` if
+ `update` is non-null and returns true, `eject`, if non-null, will be filled;
+ `SET_YIELD` if `replace` is null or false; `SET_GROW`, on unique entry.
+ @throws[realloc, ERANGE] There was an error with resizing.
+ @order Average amortised \O(1), (hash distributes keys uniformly); worst \O(n).
+ @allow */
+static enum set_result S_(set_update)(struct S_(set) *const set,
+	PS_(entry) entry, PS_(entry) *eject, const PS_(policy_fn) update)
+	{ return PS_(put)(set, entry, eject, update); }
+
+#ifdef SET_VALUE /* <!-- value */
+
+/** Only defined if `SET_VALUE`. Try to put `key` into `set`.
+ @return `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be
+ uninitialized; `SET_YIELD`, gets the current `value`. @throws[malloc] */
+static enum set_result S_(set_compute)(struct S_(set) *const set,
+	PS_(key) key, PS_(value) *value)
+	{ return PS_(compute)(set, key, value); }
+
+#endif /* value --> */
 
 #if 0
 /* fixme: Buffering changes the outcome if it's already in the table, it
@@ -816,7 +812,10 @@ static void PS_(unused_base)(void) {
 	memset(&k, 0, sizeof k);
 	S_(set)(0); S_(set_)(0); S_(set_buffer)(0, 0); S_(set_clear)(0);
 	S_(set_query)(0, k, 0);
-	S_(set_policy_put)(0, e, 0, 0); S_(set_compute_put)(0, k, 0, 0);
+	S_(set_update)(0, e, 0, 0);
+#ifdef SET_VALUE
+	S_(set_compute)(0, k, 0, 0);
+#endif
 	/*S_(set_remove)(0, 0);*/
 	S_(set_begin)(0, 0); S_(set_next)(0, 0); S_(set_has_next)(0);
 	S_(set_next_key)(0); S_(set_next_value)(0);
