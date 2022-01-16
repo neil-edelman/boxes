@@ -183,17 +183,11 @@ struct nato_value { size_t occurrences; struct nato_list *head; };
 /** Being a bijection, it is common to implement both.
  @implements <nato>hash_fn, <nato>inverse_hash_fn */
 static size_t nato_hash(const size_t n) { return n; }
-/** @implements <nato>to_string_fn */
-static void nato_to_string(const size_t s, char (*const a)[12])
-	{ sprintf(*a, "%lu", (unsigned long)s); }
 #define SET_NAME nato
 #define SET_KEY size_t
 #define SET_VALUE struct nato_value
 #define SET_INVERSE &nato_hash
 #define SET_HASH &nato_hash
-#define SET_EXPECT_TRAIT
-#include "../src/set.h"
-#define SET_TO_STRING &nato_to_string
 #include "../src/set.h"
 static void nato(void) {
 	const char *const alphabet[] = { "Alpha", "Bravo", "Charlie", "Delta",
@@ -214,14 +208,11 @@ static void nato(void) {
 		case SET_ERROR: goto catch;
 		case SET_GROW: value->occurrences = 1, value->head = 0; break;
 		case SET_YIELD: value->occurrences++; break;
-		case SET_REPLACE_KEY:
-		case SET_REPLACE_VALUE:
-		case SET_REPLACE:
-		assert(0);
+		case SET_REPLACE_KEY: case SET_REPLACE_VALUE: case SET_REPLACE:
+			assert(0);
 		}
 		item->alpha = alphabet[i];
-		item->next = value->head;
-		value->head = item;
+		item->next = value->head, value->head = item;
 	}
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
 		"length\tcount\twords\n");
@@ -234,8 +225,7 @@ static void nato(void) {
 	}
 	goto finally;
 catch:
-	perror("nato");
-	assert(0);
+	perror("nato"), assert(0);
 finally:
 	nato_set_(&nato);
 }
