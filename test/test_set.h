@@ -23,7 +23,7 @@ static size_t PS_(count_bucket)(const struct S_(set) *const set,
 	assert(set && idx < PS_(capacity)(set));
 	bucket = set->buckets + idx;
 	if((next = bucket->next) == SET_NULL
-		|| idx != PS_(to_bucket)(set, PS_(bucket_hash)(bucket))) return 0;
+		|| idx != PS_(to_bucket)(set, bucket->hash)) return 0;
 	for( ; no++, next != SET_END; next = bucket->next, assert(next != SET_NULL)) {
 		idx = next;
 		assert(idx < PS_(capacity)(set)
@@ -132,14 +132,14 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 			top, bgc, (unsigned long)i);
 		if(b->next != SET_NULL) {
 			const char *const closed
-				= PS_(to_bucket)(set, PS_(bucket_hash)(b)) == i
+				= PS_(to_bucket)(set, b->hash) == i
 				? "⬤" : "◯";
 			char z[12];
 			PS_(to_string)(PS_(bucket_key)(b), &z);
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
 				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
 				"\t\t<TD PORT=\"%lu\"%s>%s</TD>\n",
-				bgc, (unsigned long)PS_(bucket_hash)(b),
+				bgc, (unsigned long)b->hash,
 				bgc, z,
 				(unsigned long)i, bgc, closed);
 		}
@@ -151,7 +151,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 		struct PS_(bucket) *b = set->buckets + i;
 		PS_(uint) left, right;
 		if((right = b->next) == SET_NULL || right == SET_END) continue;
-		if(PS_(to_bucket)(set, PS_(bucket_hash)(b)) != i) {
+		if(PS_(to_bucket)(set, b->hash) != i) {
 			fprintf(fp, "\ti0x%lx [label=\"0x%lx\", fontcolor=\"Gray\"];\n"
 				"\thash:%lu -> i0x%lx [color=\"Gray\"];\n",
 				(unsigned long)right, (unsigned long)right,
@@ -255,7 +255,7 @@ static void PS_(legit)(const struct S_(set) *const set) {
 		if(b->next == SET_NULL) continue;
 		size++;
 		if(b->next == SET_END) end++;
-		if(i == PS_(to_bucket)(set, PS_(bucket_hash)(b))) start++;
+		if(i == PS_(to_bucket)(set, b->hash)) start++;
 	}
 	assert(set->size == size && end == start && size >= start);
 }

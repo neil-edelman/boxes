@@ -29,17 +29,10 @@
  This is <typedef:<PS>uint>, the unsigned type of hash hash of the key given by
  <typedef:<PS>hash_fn>; defaults to `size_t`.
 
- @param[SET_NO_CACHE]
- Calculate the hash every time, thus avoid storing <typedef:<PS>uint> _per_
- entry. Can be slower when computation is non-trivial. (fixme: Is
- `SET_NO_CACHE` _always_ going to be better implemented using `SET_INVERSE`?
- In which case, this is a parameter that's kind of useless.)
-
  @param[SET_INVERSE]
  Function satisfying <typedef:<PS>inverse_hash_fn>; this avoids storing the
- key, but calculates it from the hashed value. As such, incompatible with
- `SET_NO_CACHE`. The hashes can now be compared directly, so there is no need
- for a `SET_IS_EQUAL`.
+ key, but calculates it from the hashed value. The hashes are now unique, so
+ there is no need for a `SET_IS_EQUAL`.
 
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -65,9 +58,6 @@
 #define SET_TRAITS SET_TO_STRING_TRAIT
 #if SET_TRAITS > 1
 #error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
-#endif
-#if defined(SET_NO_CACHE) && defined(SET_INVERSE)
-#error SET_INVERSE has to store the hash hash; conflicts with SET_NO_CACHE.
 #endif
 #if defined(SET_TO_STRING_NAME) && !defined(SET_TO_STRING)
 #error SET_TO_STRING_NAME requires SET_TO_STRING.
@@ -194,10 +184,8 @@ static PS_(key) PS_(entry_key)(PS_(entry) e) {
  entries. However, the table entry requires an address more. This is suitable
  for a language like `C` because it has less memory management. */
 struct PS_(bucket) {
-	PS_(uint) next; /* In bucket, including `SET_NULL` and `SET_END`. */
-#ifndef SET_NO_CACHE
+	PS_(uint) next; /* Bucket index, including `SET_NULL` and `SET_END`. */
 	PS_(uint) hash;
-#endif
 #ifndef SET_INVERSE
 	PS_(key) key;
 #endif
@@ -205,16 +193,6 @@ struct PS_(bucket) {
 	PS_(value) value;
 #endif
 };
-
-/** Gets the hash of an occupied `bucket`, which should be consistent. */
-static PS_(uint) PS_(bucket_hash)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && bucket->next != SET_NULL);
-#ifdef SET_NO_CACHE
-	return PS_(hash)(bucket->key);
-#else
-	return bucket->hash;
-#endif
-}
 
 /** Gets the key of an occupied `bucket`. */
 static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
@@ -318,7 +296,7 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 	assert(tgt->next != SET_NULL && top->next == SET_NULL);
 	/* Search for the previous link in the bucket, \O(|bucket|). */
 	for(to_next = SET_NULL,
-		next = PS_(to_bucket)(set, PS_(bucket_hash)(tgt));
+		next = PS_(to_bucket)(set, tgt->hash);
 		assert(next < capacity), next != target;
 		to_next = next, next = set->buckets[next].next);
 	/* Move `tgt` to `top`. */
@@ -337,18 +315,12 @@ static struct PS_(bucket) *PS_(query)(struct S_(set) *const set,
 	/* Not the start of a bucket: empty or in the collision stack. */
 	if((next = bucket->next) == SET_NULL
 		|| PS_(in_stack_range)(set, i)
-		&& i != PS_(to_bucket)(set, PS_(bucket_hash)(bucket))) return 0;
+		&& i != PS_(to_bucket)(set, bucket->hash)) return 0;
 	for( ; ; ) {
-		int hashes_are_equal;
-#ifdef SET_NO_CACHE
-		hashes_are_equal = ((void)(hash), 1);
-#else
-		hashes_are_equal = hash == bucket->hash;
-#endif
-		if(hashes_are_equal) {
+		if(hash == bucket->hash) {
 			int entries_are_equal;
 #ifdef SET_INVERSE
-			entries_are_equal = ((void)(key), 1);
+			entries_are_equal = ((void)(key), 1); /* Injective. */
 #else
 			entries_are_equal = PS_(equal)(key, bucket->key);
 #endif
@@ -407,7 +379,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 		PS_(uint) g, hash;
 		idx = set->buckets + i;
 		if(idx->next == SET_NULL) continue;
-		g = PS_(to_bucket)(set, hash = PS_(bucket_hash)(idx));
+		g = PS_(to_bucket)(set, hash = idx->hash);
 		/* It's a power-of-two size, so, like consistent hashing, `E[old/new]`
 		 capacity that a closed bucket will remain where it is. */
 		if(i == g) { idx->next = SET_END; continue; }
@@ -417,7 +389,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 			PS_(uint) h = g & ~mask; assert(h <= g);
 			if(h < g && i < h
 				&& (head = set->buckets + h, assert(head->next != SET_NULL),
-				PS_(to_bucket)(set, PS_(bucket_hash)(head)) == g)) {
+				PS_(to_bucket)(set, head->hash) == g)) {
 				memcpy(go, head, sizeof *head);
 				go->next = SET_END, head->next = SET_NULL;
 				/* Fall-though -- the bucket still needs to be put on waiting. */
@@ -437,7 +409,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	/* Search waiting stack for buckets that moved concurrently. */
 	{ PS_(uint) prev = SET_END, w = wait; while(w != SET_END) {
 		struct PS_(bucket) *waiting = set->buckets + w;
-		PS_(uint) cl = PS_(to_bucket)(set, PS_(bucket_hash)(waiting));
+		PS_(uint) cl = PS_(to_bucket)(set, waiting->hash);
 		struct PS_(bucket) *const closed = set->buckets + cl;
 		assert(cl != w);
 		if(closed->next == SET_NULL) {
@@ -457,7 +429,7 @@ static int PS_(buffer)(struct S_(set) *const set, const PS_(uint) n) {
 	/* Rebuild the top stack at the high numbers from the waiting at low. */
 	while(wait != SET_END) {
 		struct PS_(bucket) *const waiting = set->buckets + wait;
-		PS_(uint) h = PS_(to_bucket)(set, PS_(bucket_hash)(waiting));
+		PS_(uint) h = PS_(to_bucket)(set, waiting->hash);
 		struct PS_(bucket) *const head = set->buckets + h;
 		struct PS_(bucket) *top;
 		assert(h != wait && head->next != SET_NULL);
@@ -532,7 +504,7 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
 		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
 		if(bucket->next != SET_NULL) { /* Unoccupied. */
-			int in_stack = PS_(to_bucket)(set, PS_(bucket_hash)(bucket)) != i;
+			int in_stack = PS_(to_bucket)(set, bucket->hash) != i;
 			PS_(move_to_top)(set, i);
 			next = in_stack ? SET_END : set->top;
 			assert(bucket->next == SET_NULL
@@ -571,7 +543,7 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
 		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
 		if(bucket->next != SET_NULL) { /* Occupied. */
-			int in_stack = PS_(to_bucket)(set, PS_(bucket_hash)(bucket)) != i;
+			int in_stack = PS_(to_bucket)(set, bucket->hash) != i;
 			PS_(move_to_top)(set, i);
 			bucket->next = in_stack ? SET_END : set->top;
 		} else { /* Unoccupied. */
@@ -870,9 +842,6 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *)
 #undef SET_IS_EQUAL
 #ifdef SET_VALUE
 #undef SET_VALUE
-#endif
-#ifdef SET_NO_CACHE
-#undef SET_NO_CACHE
 #endif
 #ifdef SET_INVERSE
 #undef SET_INVERSE
