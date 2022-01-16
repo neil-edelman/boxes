@@ -176,14 +176,8 @@ static int sint_from_void(void *const zero, int *const s) {
 }
 
 
-#if 0
 /* A histogram of lengths' defined as a map with the pointers to the keys
  recorded as a linked-list. */
-#define NATO(X) X(Alpha), X(Bravo), X(Charlie), X(Delta), X(Echo), X(Foxtrot), \
-	X(Golf), X(Hotel), X(India), X(Juliet), X(Kilo), X(Lima), X(Mike), \
-	X(November), X(Oscar), X(Papa), X(Québec) /* `strlen` will report 7 */, \
-	X(Romeo), X(Sierra), X(Tango), X(Uniform), X(Victor), X(Whisky), X(X-ray), \
-	X(Yankee), X(Zulu)
 struct nato_list { const char *alpha; struct nato_list *next; };
 struct nato_value { size_t occurrences; struct nato_list *head; };
 /** Being a bijection, it is common to implement both.
@@ -197,41 +191,55 @@ static void nato_to_string(const size_t s, char (*const a)[12])
 #define SET_VALUE struct nato_value
 #define SET_INVERSE &nato_hash
 #define SET_HASH &nato_hash
+#define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &nato_to_string
 #include "../src/set.h"
-/** @implements <nato>compute_fn */
-static void nato_count(const size_t size, const int existing,
-	size_t *const count) {
-	(void)size;
-	if(!existing) *count = 1;
-	else (*count)++;
-}
 static void nato(void) {
-#define X(a) #a
-	const char *const alphabet[] = { NATO(X) };
-#undef X
-	const struct nato_list list[sizeof alphabet / sizeof *alphabet];
-
+	const char *const alphabet[] = { "Alpha", "Bravo", "Charlie", "Delta",
+		"Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima",
+		"Mike", "November", "Oscar", "Papa",
+		"Québec" /* `strlen` will report 7 */, "Romeo", "Sierra", "Tango",
+		"Uniform", "Victor", "Whisky", "X-ray", "Yankee", "Zulu" };
+	struct nato_list list[sizeof alphabet / sizeof *alphabet];
 	struct nato_set nato = SET_IDLE;
 	struct nato_set_iterator it;
+	struct nato_set_entry entry;
 	size_t i;
-	for(i = 0; i < sizeof alphabet / sizeof *alphabet; i++)
-		nato_set_policy_put(&nato, alphabet[i].word, 0, &nato_collide);
+	for(i = 0; i < sizeof alphabet / sizeof *alphabet; i++) {
+		size_t length = strlen(alphabet[i]);
+		struct nato_value *value = 0;
+		struct nato_list *item = list + i;
+		switch(nato_set_compute(&nato, length, &value)) {
+		case SET_ERROR: goto catch;
+		case SET_GROW: value->occurrences = 1, value->head = 0; break;
+		case SET_YIELD: value->occurrences++; break;
+		case SET_REPLACE_KEY:
+		case SET_REPLACE_VALUE:
+		case SET_REPLACE:
+		assert(0);
+		}
+		item->alpha = alphabet[i];
+		item->next = value->head;
+		value->head = item;
+	}
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
 		"length\tcount\twords\n");
-	for(nato_set_begin(&it, &nato); nato_set_has_next(&it); ) {
-		struct nato_node
-			*const word = nato_upcast(nato_set_next_key(&it)), *w = word;
-		printf("%lu\t%lu\t{", (unsigned long)strlen(word->word),
-			(unsigned long)word->collisions + 1);
-		do printf("%s%s", word == w ? "" : ",", w->word); while(w = w->next);
+	for(nato_set_begin(&it, &nato); nato_set_next(&it, &entry); ) {
+		struct nato_list *const head = entry.value.head, *w = head;
+		printf("%lu\t%lu\t{", (unsigned long)entry.key,
+			(unsigned long)entry.value.occurrences);
+		do printf("%s%s", head == w ? "" : ",", w->alpha); while(w = w->next);
 		printf("}\n");
 	}
+	goto finally;
+catch:
+	perror("nato");
+	assert(0);
+finally:
 	nato_set_(&nato);
 }
 
-#endif
 
 
 
@@ -244,7 +252,7 @@ int main(void) {
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
 	int_set_test(&int_from_void, 0);
 	sint_set_test(&sint_from_void, 0);
-	//nato();
+	nato();
 
 
 

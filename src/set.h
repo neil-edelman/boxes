@@ -326,7 +326,7 @@ static void PS_(move_to_top)(struct S_(set) *const set,
 }
 
 /** `set` will be searched linearly for `key` which has `hash`.
- @fixme Move to front like splay trees? */
+ @fixme Move to front like splay trees? this is awkward. */
 static struct PS_(bucket) *PS_(query)(struct S_(set) *const set,
 	const PS_(key) key, const PS_(uint) hash) {
 	struct PS_(bucket) *bucket;
@@ -495,12 +495,12 @@ static void PS_(replace_entry)(struct PS_(bucket) *const bucket,
 	const PS_(entry) entry, const PS_(uint) hash) {
 	PS_(replace_key)(bucket, PS_(entry_key)(entry), hash);
 #ifdef SET_VALUE
-	memcpy(&bucket->value, entry.value, sizeof(entry.value));
+	memcpy(&bucket->value, &entry.value, sizeof(entry.value));
 #endif
 }
 
 /** Returns true if the `replace` replaces the `original`. */
-typedef int (*PS_(policy_fn))(PS_(entry) original, PS_(entry) replace);
+typedef int (*PS_(policy_fn))(PS_(key) original, PS_(key) replace);
 
 /** Put `entry` in `set`. For collisions, only if `update` exists and returns
  true do and displace it to `eject`, if non-null.
@@ -553,10 +553,10 @@ static enum set_result PS_(put)(struct S_(set) *const set,
  @return `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be
  uninitialized; `SET_YIELD`, gets the current `value`. @throws[malloc] */
 static enum set_result PS_(compute)(struct S_(set) *const set,
-	PS_(key) key, PS_(value) *value) {
+	PS_(key) key, PS_(value) **const value) {
 	struct PS_(bucket) *bucket;
-	PS_(uint) hash, i, next = SET_END, size;
-	enum set_result ret;
+	PS_(uint) hash, i;
+	enum set_result result;
 	assert(set);
 	hash = PS_(hash)(key);
 	{
@@ -564,31 +564,24 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 		PS_(to_string)(key, &z);
 		printf("compute: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
 	}
-	size = set->size;
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
-		if(value) value = &bucket->value;
-		if(!compute(PS_(bucket_key)(bucket), key, &value))
-			{ if(value) memcpy(value, &key, sizeof key); return SET_YIELD; }
+		result = SET_YIELD;
 	} else { /* Expand. */
 		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
 		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
-		size++;
-		if(bucket->next != SET_NULL) { /* Unoccupied. */
+		if(bucket->next != SET_NULL) { /* Occupied. */
 			int in_stack = PS_(to_bucket)(set, PS_(bucket_hash)(bucket)) != i;
 			PS_(move_to_top)(set, i);
-			next = in_stack ? SET_END : set->top;
-			assert(bucket->next == SET_NULL
-				&& (next == SET_END || set->buckets[next].next != SET_NULL));
+			bucket->next = in_stack ? SET_END : set->top;
+		} else { /* Unoccupied. */
+			bucket->next = SET_END;
 		}
-		/* fixme: This may not be nullable; fix `compute_fn`. */
-		compute(0, key, PS_(bucket_value)(bucket));
-		ret = SET_GROW;
+		PS_(replace_key)(bucket, key, hash);
+		set->size++;
+		result = SET_GROW;
 	}
-	/* Fill `bucket`. The bucket must be empty. */
-	assert(bucket && bucket->next == SET_NULL);
-	bucket->next = next;
-	set->size = size;
-	return ret;
+	if(value) *value = &bucket->value;
+	return result;
 }
 
 #endif /* value --> */
@@ -628,17 +621,17 @@ static void S_(set_clear)(struct S_(set) *const set) {
  and move all. Does not, and indeed cannot, respect the most-recently used
  heuristic. */
 
-/** @return Is `key` in `set`? (Both of which could be null.) */
+/** @return Is `key` in `set`? */
 static int S_(set_is)(struct S_(set) *const set, const PS_(key) key)
-	{ return set && set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
+	{ return assert(set),set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
 
 /** @param[entry] If non-null, a <typedef:<PS>entry> which gets filled on true.
- @return Is `key` in `set`? (Both of which could be null.) */
+ @return Is `key` in `set`? */
 static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
 	PS_(entry) *const result) {
 	struct PS_(bucket) *b;
-	if(!set || !set->buckets || !(b = PS_(query)(set, key, PS_(hash)(key))))
-		return 0;
+	assert(set);
+	if(!set->buckets || !(b = PS_(query)(set, key, PS_(hash)(key)))) return 0;
 	if(result) PS_(to_entry)(b, result);
 	return 1;
 }
@@ -658,7 +651,7 @@ static PS_(key) S_(set_get)(struct S_(set) *const hash,
 }
 #endif
 
-/* set_try(), set_replace(), set_policy(), set_compute() */
+/* set_try(), set_replace(), set_update(), set_compute() */
 
 /** Puts `entry` in `set` only if absent or if calling `update` returns true.
  @return One of: `SET_ERROR` the set is not modified; `SET_REPLACE` if
@@ -677,7 +670,7 @@ static enum set_result S_(set_update)(struct S_(set) *const set,
  @return `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be
  uninitialized; `SET_YIELD`, gets the current `value`. @throws[malloc] */
 static enum set_result S_(set_compute)(struct S_(set) *const set,
-	PS_(key) key, PS_(value) *value)
+	PS_(key) key, PS_(value) **const value)
 	{ return PS_(compute)(set, key, value); }
 
 #endif /* value --> */
@@ -811,10 +804,10 @@ static void PS_(unused_base)(void) {
 	memset(&e, 0, sizeof e);
 	memset(&k, 0, sizeof k);
 	S_(set)(0); S_(set_)(0); S_(set_buffer)(0, 0); S_(set_clear)(0);
-	S_(set_query)(0, k, 0);
+	S_(set_is)(0, k); S_(set_query)(0, k, 0);
 	S_(set_update)(0, e, 0, 0);
 #ifdef SET_VALUE
-	S_(set_compute)(0, k, 0, 0);
+	S_(set_compute)(0, k, 0);
 #endif
 	/*S_(set_remove)(0, 0);*/
 	S_(set_begin)(0, 0); S_(set_next)(0, 0); S_(set_has_next)(0);
