@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <string.h>
 #include <limits.h>
+#include <ctype.h>
 #include "orcish.h"
 
 
@@ -189,19 +190,26 @@ static size_t nato_hash(const size_t n) { return n; }
 #define SET_INVERSE &nato_hash
 #define SET_HASH &nato_hash
 #include "../src/set.h"
+/** Counts code-points except non-alnums of `s`, being careful.
+ (You are working in UTF-8, right?) */
+static size_t utf_letter_count(const char *s) {
+	size_t c = 0;
+	while(*s != '\0')
+		c += *s & 0x80 ? (*s++ & 0xC0) != 0x80 : !!isalnum(*s), s++;
+	return c;
+}
 static void nato(void) {
 	const char *const alphabet[] = { "Alpha", "Bravo", "Charlie", "Delta",
 		"Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima",
-		"Mike", "November", "Oscar", "Papa",
-		"Québec" /* `strlen` will report 7 */, "Romeo", "Sierra", "Tango",
-		"Uniform", "Victor", "Whisky", "X-ray", "Yankee", "Zulu" };
+		"Mike", "November", "Oscar", "Papa", "Québec", "Romeo", "Sierra",
+		"Tango", "Uniform", "Victor", "Whisky", "X-ray", "Yankee", "Zulu" };
 	struct nato_list list[sizeof alphabet / sizeof *alphabet];
 	struct nato_set nato = SET_IDLE;
 	struct nato_set_iterator it;
 	struct nato_set_entry entry;
 	size_t i;
 	for(i = 0; i < sizeof alphabet / sizeof *alphabet; i++) {
-		size_t length = strlen(alphabet[i]);
+		size_t length = utf_letter_count(alphabet[i]);
 		struct nato_value *value = 0;
 		struct nato_list *item = list + i;
 		switch(nato_set_compute(&nato, length, &value)) {
@@ -214,7 +222,7 @@ static void nato(void) {
 		item->alpha = alphabet[i];
 		item->next = value->head, value->head = item;
 	}
-	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
+	printf("NATO phonetic alphabet letter count histogram\n"
 		"length\tcount\twords\n");
 	for(nato_set_begin(&it, &nato); nato_set_next(&it, &entry); ) {
 		struct nato_list *const head = entry.value.head, *w = head;

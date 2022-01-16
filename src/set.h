@@ -562,7 +562,7 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 	{
 		char z[12];
 		PS_(to_string)(key, &z);
-		printf("compute: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
+		printf("compute: \"%s\" hash 0x%lx.\n", z, (unsigned long)hash);
 	}
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
 		result = SET_YIELD;
