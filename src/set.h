@@ -31,7 +31,9 @@
 
  @param[SET_NO_CACHE]
  Calculate the hash every time, thus avoid storing <typedef:<PS>uint> _per_
- entry. Can be slower when computation is non-trivial.
+ entry. Can be slower when computation is non-trivial. (fixme: Is
+ `SET_NO_CACHE` _always_ going to be better implemented using `SET_INVERSE`?
+ In which case, this is a parameter that's kind of useless.)
 
  @param[SET_INVERSE]
  Function satisfying <typedef:<PS>inverse_hash_fn>; this avoids storing the
@@ -550,7 +552,7 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 
 /** ... */
 typedef int (*PS_(compute_fn))(PS_(key) original, PS_(key) replace,
-	PS_(value) value);
+	PS_(value) *value);
 
 /** Try to put `key` into `set`, and `compute` the result. `eject`. */
 static enum set_result PS_(compute)(struct S_(set) *const set,
@@ -567,8 +569,9 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 	}
 	size = set->size;
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
+		PS_(value) value = PS_(bucket_value)(bucket);
 		/* ComputeIfPresent */
-		if(!compute(PS_(bucket_key)(bucket), key, PS_(bucket_value)(bucket)))
+		if(!compute(PS_(bucket_key)(bucket), key, &value))
 			{ if(eject) memcpy(eject, &key, sizeof key); return SET_YIELD; }
 		if(eject) PS_(to_entry)(bucket, eject);
 		/* Cut the tail and put new element in the head. */

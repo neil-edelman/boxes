@@ -11,8 +11,7 @@
 
 
 /* Zodiac is a bounded set of `enum`. An X-macro allows printing. This is
- preferable to `SET_KEY const char *`, (both for the warning from `set.h` about
- duplicate `const` and `enum` is much cleaner in `C`.) */
+ preferable to `SET_KEY const char *`. */
 #define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
 	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
 	X(ZodiacCount)
@@ -22,11 +21,14 @@ enum zodiac { ZODIAC(X) };
 #define X(n) #n
 static const char *zodiac[] = { ZODIAC(X) };
 #undef X
-/** @implements <zodiac>hash_fn */
-static unsigned hash_zodiac(const enum zodiac z) { return z; } /* Monotonic! */
-/** @implements <zodiac>is_equal_fn */
-static int zodiac_is_equal(const enum zodiac a, const enum zodiac b)
-	{ /*printf("%s == %s\n", zodiac[a], zodiac[b]);*/ return a == b; }
+/** Sequential monotonic values make a pretty good hash.
+ @implements <zodiac>hash_fn */
+static unsigned hash_zodiac(const enum zodiac z) { return z; }
+/** This is a discrete set with a homomorphism between keys and hash values,
+ therefore it's simpler to work in hash space. This saves us from having to
+ define <typedef:<PS>is_equal_fn> and saves the key from even being stored.
+ @implements <zodiac>inverse_hash_fn */
+static enum zodiac hash_inv_zodiac(const unsigned z) { return z; }
 /** This is not necessary except for testing.
 @implements <zodiac>to_string_fn */
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
@@ -34,19 +36,22 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define SET_NAME zodiac
 #define SET_KEY enum zodiac
 #define SET_HASH &hash_zodiac
-#define SET_IS_EQUAL &zodiac_is_equal
-#define SET_NO_CACHE /* Don't bother caching `x -> x`. */
-/* <tag:<PS>bucket> more packed than `size_t`: `unsigned next, enum key`. */
-#define SET_UINT unsigned
+#define SET_INVERSE &hash_inv_zodiac
+/* <tag:<PS>bucket>: <typedef:<PS>uint> `next`, `hash`. `enum` values really
+ are overkill to represent with a `size_t`. There are less then 128 keys, so
+ a byte would suffice (/2). Lengthening them as they come out is probably
+ slower. */
+#define SET_UINT unsigned /*char*/
 #define SET_TEST /* Testing requires to string. */
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
 #define SET_TO_STRING &zodiac_to_string
 #include "../src/set.h"
 /* For testing; there is no extra memory required to generate random `enum`.
- @implements <zodiac>test_new_fn */
+ @implements <zodiac>fill_fn */
 static int fill_zodiac(void *const zero, enum zodiac *const z) {
-	(void)zero, *z = (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1));
+	(void)zero;
+	*z = (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1));
 	return 1;
 }
 
@@ -145,8 +150,7 @@ static int int_from_void(void *const zero, unsigned *const u) {
 }
 
 
-/* Check to see that the prototypes are correct by making a signed integer. It
- was a really bad idea for the default to be signed, but now it's everywhere. */
+/* Check to see that the prototypes are correct by making a signed integer. */
 /** @implements <sint>hash_fn */
 static unsigned sint_hash(int d) { return lowbias32((unsigned)(d - INT_MIN)); }
 /** @implements <sint>inverse_hash_fn */
@@ -172,57 +176,48 @@ static int sint_from_void(void *const zero, int *const s) {
 }
 
 
-
-
-
-
-
-/* A map fixme. */
-static int nato_equal(const char *const a, const char *const b) {
-	/* Calculating this multiple times is inefficient. */
-	return strlen(a) == strlen(b);
-}
+#if 0
+/* A histogram of lengths' defined as a map with the pointers to the keys
+ recorded as a linked-list. */
+#define NATO(X) X(Alpha), X(Bravo), X(Charlie), X(Delta), X(Echo), X(Foxtrot), \
+	X(Golf), X(Hotel), X(India), X(Juliet), X(Kilo), X(Lima), X(Mike), \
+	X(November), X(Oscar), X(Papa), X(Québec) /* `strlen` will report 7 */, \
+	X(Romeo), X(Sierra), X(Tango), X(Uniform), X(Victor), X(Whisky), X(X-ray), \
+	X(Yankee), X(Zulu)
+struct nato_list { const char *alpha; struct nato_list *next; };
+struct nato_value { size_t occurrences; struct nato_list *head; };
+/** Being a bijection, it is common to implement both.
+ @implements <nato>hash_fn, <nato>inverse_hash_fn */
+static size_t nato_hash(const size_t n) { return n; }
+/** @implements <nato>to_string_fn */
+static void nato_to_string(const size_t s, char (*const a)[12])
+	{ sprintf(*a, "%lu", (unsigned long)s); }
 #define SET_NAME nato
-#define SET_KEY char *
-#define SET_HASH &strlen
-#define SET_IS_EQUAL &nato_equal
+#define SET_KEY size_t
+#define SET_VALUE struct nato_value
+#define SET_INVERSE &nato_hash
+#define SET_HASH &nato_hash
 #include "../src/set.h"
-/* Can use it to count bytes in words in \O(\sum `bytes`), but the simplicity
- of the definition is holding us back: would have been much easier to have a
- value. */
-struct nato_node {
-	char word[16];
-	size_t collisions;
-	struct nato_node *next;
-};
-static struct nato_node *nato_upcast(char *const a)
-	{ return (struct nato_node *)(void *)a; }
-static int nato_collide(char *a_original, char *b_replace) {
-	struct nato_node *wa = nato_upcast(a_original),
-		*wb = nato_upcast(b_replace);
-	wb->next = wa;
-	wb->collisions = wa->collisions + 1;
-	return 1;
+#define SET_TO_STRING &nato_to_string
+#include "../src/set.h"
+/** @implements <nato>compute_fn */
+static void nato_count(const size_t size, const int existing,
+	size_t *const count) {
+	(void)size;
+	if(!existing) *count = 1;
+	else (*count)++;
 }
-struct nato_count {
-	size_t collisions;
-	struct note_next *next;
-};
 static void nato(void) {
-	struct nato_node words[] = {
-#define X(a) { #a, 0, 0 }
-		X(Alpha), X(Bravo), X(Charlie), X(Delta), X(Echo), X(Foxtrot), X(Golf),
-		X(Hotel), X(India), X(Juliet), X(Kilo), X(Lima), X(Mike), X(November),
-		X(Oscar), X(Papa), X(Québec) /* `strlen` will report 7 */, X(Romeo),
-		X(Sierra), X(Tango), X(Uniform), X(Victor), X(Whisky), X(X-ray),
-		X(Yankee), X(Zulu)
+#define X(a) #a
+	const char *const alphabet[] = { NATO(X) };
 #undef X
-	};
+	const struct nato_list list[sizeof alphabet / sizeof *alphabet];
+
 	struct nato_set nato = SET_IDLE;
 	struct nato_set_iterator it;
 	size_t i;
-	for(i = 0; i < sizeof words / sizeof *words; i++)
-		nato_set_policy_put(&nato, words[i].word, 0, &nato_collide);
+	for(i = 0; i < sizeof alphabet / sizeof *alphabet; i++)
+		nato_set_policy_put(&nato, alphabet[i].word, 0, &nato_collide);
 	printf("NATO phonetic alphabet byte count histogram (~word length)\n"
 		"length\tcount\twords\n");
 	for(nato_set_begin(&it, &nato); nato_set_has_next(&it); ) {
@@ -236,7 +231,7 @@ static void nato(void) {
 	nato_set_(&nato);
 }
 
-
+#endif
 
 
 
@@ -249,7 +244,7 @@ int main(void) {
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
 	int_set_test(&int_from_void, 0);
 	sint_set_test(&sint_from_void, 0);
-	nato();
+	//nato();
 
 
 
