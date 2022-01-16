@@ -1,5 +1,6 @@
 digraph {
 	rankdir = LR;
+	graph [truecolor=true, bgcolor=transparent];
 	node [shape = "record", style=filled, fillcolor="Grey95"];
 	fontname = "Bitstream Vera Sans";
 	fontsize = 12;

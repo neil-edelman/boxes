@@ -73,6 +73,7 @@ static void PS_(graph)(const struct S_(set) *const set, const char *const fn) {
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
+		"\tgraph [truecolor=true, bgcolor=transparent];\n"
 		"\tfontface=modern;\n");
 	if(!set->buckets) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
 	PS_(collect)(set), assert((size_t)set->size >= PS_(stats).n /* Buckets. */);

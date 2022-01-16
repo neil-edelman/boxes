@@ -12,14 +12,15 @@ digraph {
 	put -> equal;
 	equal -> yield;
 	equal -> replace;
-	replace -> key;
-	replace -> value;
-	replace -> both;
+	//replace -> key;
+	//replace -> value;
+	//replace -> both;
 	error [label="{ERROR|set errno}", fillcolor="Pink"];
 	equal [label="{equal|values possibly recomputed}"];
 	grow [label="{GROW|value default or passed}"];
 	yield [label="YIELD"];
-	key [label="{REPLACE_KEY|not implemented}", color=Grey, fontcolor=Grey];
-	value [label="{REPLACE_VALUE|not implemented}", color=Grey, fontcolor=Grey];
-	both [label="REPLACE"];
+	//key [label="{REPLACE_KEY|not implemented}", color=Grey, fontcolor=Grey];
+	//value [label="{REPLACE_VALUE|not implemented}", color=Grey, fontcolor=Grey];
+	//both [label="REPLACE"];
+	replace [label="REPLACE"];
 }
