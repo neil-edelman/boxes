@@ -191,7 +191,7 @@ static size_t nato_hash(const size_t n) { return n; }
 #define SET_HASH &nato_hash
 #include "../src/set.h"
 /** Counts code-points except non-alnums of `s`, being careful.
- (You are working in UTF-8, right?) */
+ (You are working in UTF-8, right?) <https://stackoverflow.com/a/32936928> */
 static size_t utf_letter_count(const char *s) {
 	size_t c = 0;
 	while(*s != '\0')
@@ -216,8 +216,7 @@ static void nato(void) {
 		case SET_ERROR: goto catch;
 		case SET_GROW: value->occurrences = 1, value->head = 0; break;
 		case SET_YIELD: value->occurrences++; break;
-		case SET_REPLACE_KEY: case SET_REPLACE_VALUE: case SET_REPLACE:
-			assert(0);
+		case SET_REPLACE: assert(0); /* Impossible with <fn:<S>set_compute>. */
 		}
 		item->alpha = alphabet[i];
 		item->next = value->head, value->head = item;

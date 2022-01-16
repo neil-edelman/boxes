@@ -96,8 +96,9 @@
 #define SET_LIMIT ((SET_M1 >> 1) + 1) /* Cardinality. */
 #define SET_END (SET_LIMIT)
 #define SET_NULL (SET_LIMIT + 1)
-#define SET_RESULT X(ERROR), X(YIELD), \
-	X(REPLACE_KEY), X(REPLACE_VALUE), X(REPLACE), X(GROW)
+#define SET_RESULT X(ERROR), X(GROW), X(YIELD), X(REPLACE)
+/* These are not returned by any of the editing functions.
+ X(REPLACE_KEY), X(REPLACE_VALUE) */
 #define X(n) SET_##n
 /** This is the result of modifying the table. An `enum` of `SET_*`, of which
  `SET_ERROR` is false. (In the absence of a standard out-of-band communication channels, like exceptions.) Note that depending on the set, this is duplicate

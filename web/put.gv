@@ -1,4 +1,5 @@
 digraph {
+	graph [truecolor=true, bgcolor=transparent];
 	node [shape=record, style=filled, fillcolor=Grey95];
 	fontname = "Bitstream Vera Sans";
 	fontsize = 12;
@@ -18,7 +19,7 @@ digraph {
 	equal [label="{equal|values possibly recomputed}"];
 	grow [label="{GROW|value default or passed}"];
 	yield [label="YIELD"];
-	key [label="REPLACE_KEY"];
-	value [label="REPLACE_VALUE"];
+	key [label="{REPLACE_KEY|not implemented}", color=Grey, fontcolor=Grey];
+	value [label="{REPLACE_VALUE|not implemented}", color=Grey, fontcolor=Grey];
 	both [label="REPLACE"];
 }
