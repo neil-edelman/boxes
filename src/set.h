@@ -497,8 +497,7 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 		printf("put: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
 	}
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
-		if(!update || !update(PS_(bucket_key)(bucket), key))
-			{ if(eject) memcpy(eject, &entry, sizeof entry); return SET_YIELD; }
+		if(!update || !update(PS_(bucket_key)(bucket), key)) return SET_YIELD;
 		if(eject) PS_(to_entry)(bucket, eject);
 		result = SET_REPLACE;
 	} else { /* Expand. */

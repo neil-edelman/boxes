@@ -210,7 +210,6 @@ static void nato(void) {
 		size_t length = utf_alnum_count(alphabet[i]);
 		struct nato_value *value = 0;
 		struct nato_list *item = list + i;
-		/* This is approximately `ComputeIfAbsent` and `ComputeIfPresent`. */
 		switch(nato_set_compute(&nato, length, &value)) {
 		case SET_ERROR: goto catch;
 		case SET_ABSENT: value->occurrences = 1, value->head = 0; break;
