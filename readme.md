@@ -3,7 +3,7 @@
 ## Hash table ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;key](#user-content-typedef-759eb157), [&lt;PS&gt;ckey](#user-content-typedef-6ff89358), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;value](#user-content-typedef-2830cf59), [&lt;PS&gt;entry](#user-content-typedef-3ef38eec), [&lt;PS&gt;replace_fn](#user-content-typedef-ccec694d), [&lt;PS&gt;compute_fn](#user-content-typedef-3f00e14e), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;key](#user-content-typedef-bd74ee05), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;key](#user-content-typedef-759eb157), [&lt;PS&gt;ckey](#user-content-typedef-6ff89358), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;value](#user-content-typedef-2830cf59), [&lt;PS&gt;entry](#user-content-typedef-3ef38eec), [&lt;PS&gt;policy_fn](#user-content-typedef-ff188dd7), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;key](#user-content-typedef-bd74ee05), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [set_result](#user-content-tag-f250624d), [&lt;S&gt;set_entry](#user-content-tag-ef912361), [&lt;S&gt;set](#user-content-tag-54aaac2), [&lt;S&gt;set_iterator](#user-content-tag-f91e42cd)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -20,15 +20,13 @@ fixme
  * Parameter: SET\_NAME, SET\_KEY  
    `<S>` that satisfies `C` naming conventions when mangled and a valid [&lt;PS&gt;key](#user-content-typedef-759eb157) associated therewith; required\. `<PS>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: SET\_HASH, SET\_IS\_EQUAL  
-   A function satisfying [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c); required\.
+   A function satisfying [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) and [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c)\. `SET_HASH` and either `SET_IS_EQUAL` or `SET_INVERSE`, but not both, are required\.
  * Parameter: SET\_VALUE  
-   An optional type that is the payload of the key, thus making this an associative array\. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing duplicate pointers\.
+   An optional type that is the payload of the key, thus making this an associative array\. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers\.
  * Parameter: SET\_UINT  
    This is [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), the unsigned type of hash hash of the key given by [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975); defaults to `size_t`\.
- * Parameter: SET\_NO\_CACHE  
-   Calculate every time; this avoids storing [&lt;PS&gt;uint](#user-content-typedef-f1ed2088) _per_ bucket, but can be slower when computing the hash is non\-trivial\.
  * Parameter: SET\_INVERSE  
-   Function satisfying [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba); this avoids storing the key, but calculates it from the hashed value\. As such, incompatible with `SET_NO_CACHE`\.
+   Function satisfying [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba); this avoids storing the key, but calculates it from the hashed value\. The hashes are now unique, so there is no need for a `SET_IS_EQUAL`\.
  * Parameter: SET\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: SET\_TO\_STRING\_NAME, SET\_TO\_STRING  
@@ -43,7 +41,7 @@ fixme
 
 <code>typedef SET_UINT <strong>&lt;PS&gt;uint</strong>;</code>
 
-Hash needs to be unsigned integer; [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) returns this type\. Places a simplifying limit on the maximum number of items in this container of half the cardinality of this type\.
+[&lt;PS&gt;hash_fn](#user-content-typedef-87d76975) returns this hash type by `SET_UINT`, which must be be an unsigned integer\. Places a simplifying limit on the maximum number of items in this container of half the cardinality\.
 
 
 
@@ -51,7 +49,7 @@ Hash needs to be unsigned integer; [&lt;PS&gt;hash_fn](#user-content-typedef-87d
 
 <code>typedef SET_KEY <strong>&lt;PS&gt;key</strong>;</code>
 
-Valid tag type defined by `SET_KEY`\.
+Valid tag type defined by `SET_KEY` used for keys\.
 
 
 
@@ -59,7 +57,7 @@ Valid tag type defined by `SET_KEY`\.
 
 <code>typedef const SET_KEY <strong>&lt;PS&gt;ckey</strong>;</code>
 
-[&lt;PS&gt;key](#user-content-typedef-759eb157) but read\-only\. Makes the simplifying assumption that this is not `const`\-qualified\.
+Read\-only [&lt;PS&gt;key](#user-content-typedef-759eb157)\. Makes the simplifying assumption that this is not `const`\-qualified\.
 
 
 
@@ -67,7 +65,7 @@ Valid tag type defined by `SET_KEY`\.
 
 <code>typedef &lt;PS&gt;uint(*<strong>&lt;PS&gt;hash_fn</strong>)(&lt;PS&gt;ckey);</code>
 
-A map from [&lt;PS&gt;ckey](#user-content-typedef-6ff89358) onto [&lt;PS&gt;uint](#user-content-typedef-f1ed2088)\. In general, a good hash should use all the the argument and should as close as possible to a discrete uniform distribution\. It is up to the user to provide an appropriate hash function\.
+A map from [&lt;PS&gt;ckey](#user-content-typedef-6ff89358) onto [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), \(any will do, but the performance may suffer if too many entries are hashed to the same buckets\.\) If [&lt;PS&gt;key](#user-content-typedef-759eb157) is a pointer, one is permitted to have null in the domain\.
 
 
 
@@ -99,23 +97,15 @@ Defining `SET_VALUE` produces an associative map, otherwise it is the same as [&
 
 <code>typedef struct &lt;S&gt;set_entry <strong>&lt;PS&gt;entry</strong>;</code>
 
-If `SET_VALUE`, then this is a map and this is [&lt;S&gt;set_entry](#user-content-tag-ef912361); otherwise, it's a set, and this is the same as [&lt;PS&gt;key](#user-content-typedef-759eb157)\.
+If `SET_VALUE`, this is [&lt;S&gt;set_entry](#user-content-tag-ef912361); otherwise, it's the same as [&lt;PS&gt;key](#user-content-typedef-759eb157)\.
 
 
 
-### <a id = "user-content-typedef-ccec694d" name = "user-content-typedef-ccec694d">&lt;PS&gt;replace_fn</a> ###
+### <a id = "user-content-typedef-ff188dd7" name = "user-content-typedef-ff188dd7">&lt;PS&gt;policy_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PS&gt;replace_fn</strong>)(&lt;PS&gt;entry original, &lt;PS&gt;entry replace);</code>
+<code>typedef int(*<strong>&lt;PS&gt;policy_fn</strong>)(&lt;PS&gt;key original, &lt;PS&gt;key replace);</code>
 
-Opens the values up to modification and returns true if the `replace` replaces the `original`\.
-
-
-
-### <a id = "user-content-typedef-3f00e14e" name = "user-content-typedef-3f00e14e">&lt;PS&gt;compute_fn</a> ###
-
-<code>typedef int(*<strong>&lt;PS&gt;compute_fn</strong>)(&lt;PS&gt;key original, &lt;PS&gt;key replace, &lt;PS&gt;value value);</code>
-
-\.\.\.
+Returns true if the `replace` replaces the `original`\.
 
 
 
@@ -149,7 +139,7 @@ Responsible for turning the argument [&lt;PSZ&gt;key](#user-content-typedef-bd74
 
 <code>enum <strong>set_result</strong> { SET_RESULT };</code>
 
-This is the result of modifying the table\. An `enum` of `SET_*`, of which `SET_ERROR` is false\. \(In the absence of a standard out\-of\-band communication channels, like exceptions\.\) ![A diagram of the result states.](web/put.png)
+This is the result of modifying the table\. An `enum` of `SET_*`, of which `SET_ERROR` is false\. ![A diagram of the result states.](web/put.png)
 
 
 
@@ -165,7 +155,7 @@ Defining `SET_VALUE` creates this map from [&lt;PS&gt;key](#user-content-typedef
 
 <code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;bucket *buckets; &lt;PS&gt;uint log_capacity, size, top; };</code>
 
-To initialize, see [&lt;S&gt;set](#user-content-fn-54aaac2), `SET_IDLE`, `{0}` \(`C99`,\) or being `static`\.
+To initialize, see [&lt;S&gt;set](#user-content-fn-54aaac2), `SET_IDLE`, `{0}` \(`C99`,\) or being `static`\. The fields should be treated as read\-only; any modification is liable to cause the set to go into an invalid state\.
 
 ![States.](web/states.png)
 
@@ -175,7 +165,7 @@ To initialize, see [&lt;S&gt;set](#user-content-fn-54aaac2), `SET_IDLE`, `{0}` \
 
 <code>struct <strong>&lt;S&gt;set_iterator</strong> { struct &lt;PS&gt;iterator it; };</code>
 
-Iteration usually not in any particular order\. The asymptotic runtime is proportional to the hash capacity\. \(This will be the power\-of\-two equal\-to or greater than the maximum size plus buffering of the history of the set\.\)
+Iteration usually not in any particular order\. The asymptotic runtime is proportional to the hash capacity\.
 
 
 
@@ -195,9 +185,7 @@ Iteration usually not in any particular order\. The asymptotic runtime is propor
 
 <tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#user-content-fn-4b32a391">&lt;S&gt;set_get</a></td><td>hash, key</td></tr>
 
-<tr><td align = right>static enum set_result</td><td><a href = "#user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a></td><td>set, entry, eject, replace</td></tr>
-
-<tr><td align = right>static &lt;PS&gt;map</td><td><a href = "#user-content-fn-7982ba81">&lt;S&gt;set_replace</a></td><td>set, entry</td></tr>
+<tr><td align = right>static enum set_result</td><td><a href = "#user-content-fn-8d876df6">&lt;S&gt;set_update</a></td><td>set, entry, eject, update</td></tr>
 
 <tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#user-content-fn-f336902b">&lt;S&gt;set_remove</a></td><td>hash, data</td></tr>
 
@@ -268,38 +256,18 @@ Clears and removes all buckets from `set`\. The capacity and memory of the `set`
 
 
 
-### <a id = "user-content-fn-e5100be7" name = "user-content-fn-e5100be7">&lt;S&gt;set_policy_put</a> ###
+### <a id = "user-content-fn-8d876df6" name = "user-content-fn-8d876df6">&lt;S&gt;set_update</a> ###
 
-<code>static enum set_result <strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code>
+<code>static enum set_result <strong>&lt;S&gt;set_update</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;policy_fn <em>update</em>)</code>
 
-Puts `entry` in `set` only if the bucket is absent or if calling `replace` returns true\.
+Puts `entry` in `set` only if absent or if calling `update` returns true\.
 
- * Parameter: _eject_  
-   If non\-null, filled with the entry that is ejected or the entry itself if `replace` isn't true\.
- * Parameter: _replace_  
-   If null, doesn't do any replacement on collision\.
  * Return:  
-   True except exception\.
+   One of: `SET_ERROR` the set is not modified; `SET_REPLACE` if `update` is non\-null and returns true, `eject`, if non\-null, will be filled; `SET_YIELD` if `replace` is null or false; `SET_GROW`, on unique entry\.
  * Exceptional return: realloc, ERANGE  
-   There was an error with a re\-sizing\.
+   There was an error with resizing\.
  * Order:  
    Average amortised &#927;\(1\), \(hash distributes keys uniformly\); worst &#927;\(n\)\.
-
-
-
-
-### <a id = "user-content-fn-7982ba81" name = "user-content-fn-7982ba81">&lt;S&gt;set_replace</a> ###
-
-<code>static &lt;PS&gt;map <strong>&lt;S&gt;set_replace</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;entry <em>entry</em>)</code>
-
-Puts `entry` in `set`, and, for keys already in the hash, replaces them\.
-
- * Return:  
-   Any ejected key or null\.
- * Exceptional return: realloc, ERANGE  
-   There was an error with a re\-sizing\. It is not always possible to tell the difference between an error and a unique key\. If needed, before calling this, successfully calling [&lt;S&gt;set_buffer](#user-content-fn-d425739d), or hashting `errno` to zero\.
- * Order:  
-   Average amortised &#927;\(1\), \(hash distributes keys uniformly\); worst &#927;\(n\) \(are you sure that's up to date?\)\.
 
 
 

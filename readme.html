@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>key">&lt;PS&gt;key</a>, <a href = "#typedef:<PS>ckey">&lt;PS&gt;ckey</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>value">&lt;PS&gt;value</a>, <a href = "#typedef:<PS>entry">&lt;PS&gt;entry</a>, <a href = "#typedef:<PS>replace_fn">&lt;PS&gt;replace_fn</a>, <a href = "#typedef:<PS>compute_fn">&lt;PS&gt;compute_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>key">&lt;PSZ&gt;key</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>key">&lt;PS&gt;key</a>, <a href = "#typedef:<PS>ckey">&lt;PS&gt;ckey</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>value">&lt;PS&gt;value</a>, <a href = "#typedef:<PS>entry">&lt;PS&gt;entry</a>, <a href = "#typedef:<PS>policy_fn">&lt;PS&gt;policy_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>key">&lt;PSZ&gt;key</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:set_result">set_result</a>, <a href = "#tag:<S>set_entry">&lt;S&gt;set_entry</a>, <a href = "#tag:<S>set">&lt;S&gt;set</a>, <a href = "#tag:<S>set_iterator">&lt;S&gt;set_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -58,15 +58,13 @@ fixme</div>
 	<dt>Parameter: SET_NAME, SET_KEY</dt>
 	<dd><code>&lt;S&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> associated therewith; required. <code>&lt;PS&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: SET_HASH, SET_IS_EQUAL</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>; required.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>. <code>SET_HASH</code> and either <code>SET_IS_EQUAL</code> or <code>SET_INVERSE</code>, but not both, are required.</dd>
 	<dt>Parameter: SET_VALUE</dt>
-	<dd>An optional type that is the payload of the key, thus making this an associative array. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing duplicate pointers.</dd>
+	<dd>An optional type that is the payload of the key, thus making this an associative array. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers.</dd>
 	<dt>Parameter: SET_UINT</dt>
 	<dd>This is <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>, the unsigned type of hash hash of the key given by <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a>; defaults to <code>size_t</code>.</dd>
-	<dt>Parameter: SET_NO_CACHE</dt>
-	<dd>Calculate every time; this avoids storing <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> <em>per</em> bucket, but can be slower when computing the hash is non-trivial.</dd>
 	<dt>Parameter: SET_INVERSE</dt>
-	<dd>Function satisfying <a href = "#typedef:&lt;PS&gt;inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>; this avoids storing the key, but calculates it from the hashed value. As such, incompatible with <code>SET_NO_CACHE</code>.</dd>
+	<dd>Function satisfying <a href = "#typedef:&lt;PS&gt;inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>; this avoids storing the key, but calculates it from the hashed value. The hashes are now unique, so there is no need for a <code>SET_IS_EQUAL</code>.</dd>
 	<dt>Parameter: SET_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: SET_TO_STRING_NAME, SET_TO_STRING</dt>
@@ -83,7 +81,7 @@ fixme</div>
 
 <p><code>typedef SET_UINT <strong>&lt;PS&gt;uint</strong>;</code></p>
 
-<p>Hash needs to be unsigned integer; <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> returns this type. Places a simplifying limit on the maximum number of items in this container of half the cardinality of this type.</p>
+<p><a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> returns this hash type by <code>SET_UINT</code>, which must be be an unsigned integer. Places a simplifying limit on the maximum number of items in this container of half the cardinality.</p>
 
 </div>
 
@@ -93,7 +91,7 @@ fixme</div>
 
 <p><code>typedef SET_KEY <strong>&lt;PS&gt;key</strong>;</code></p>
 
-<p>Valid tag type defined by <code>SET_KEY</code>.</p>
+<p>Valid tag type defined by <code>SET_KEY</code> used for keys.</p>
 
 </div>
 
@@ -103,7 +101,7 @@ fixme</div>
 
 <p><code>typedef const SET_KEY <strong>&lt;PS&gt;ckey</strong>;</code></p>
 
-<p><a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> but read-only. Makes the simplifying assumption that this is not <code>const</code>-qualified.</p>
+<p>Read-only <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>. Makes the simplifying assumption that this is not <code>const</code>-qualified.</p>
 
 </div>
 
@@ -113,7 +111,7 @@ fixme</div>
 
 <p><code>typedef &lt;PS&gt;uint(*<strong>&lt;PS&gt;hash_fn</strong>)(&lt;PS&gt;ckey);</code></p>
 
-<p>A map from <a href = "#typedef:&lt;PS&gt;ckey">&lt;PS&gt;ckey</a> onto <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>. In general, a good hash should use all the the argument and should as close as possible to a discrete uniform distribution. It is up to the user to provide an appropriate hash function.</p>
+<p>A map from <a href = "#typedef:&lt;PS&gt;ckey">&lt;PS&gt;ckey</a> onto <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>, (any will do, but the performance may suffer if too many entries are hashed to the same buckets.) If <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
 
 </div>
 
@@ -153,27 +151,17 @@ fixme</div>
 
 <p><code>typedef struct &lt;S&gt;set_entry <strong>&lt;PS&gt;entry</strong>;</code></p>
 
-<p>If <code>SET_VALUE</code>, then this is a map and this is <a href = "#tag:&lt;S&gt;set_entry">&lt;S&gt;set_entry</a>; otherwise, it's a set, and this is the same as <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>.</p>
+<p>If <code>SET_VALUE</code>, this is <a href = "#tag:&lt;S&gt;set_entry">&lt;S&gt;set_entry</a>; otherwise, it's the same as <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PS>replace_fn" name = "typedef:<PS>replace_fn">&lt;PS&gt;replace_fn</a></h3>
+<h3><a id = "typedef:<PS>policy_fn" name = "typedef:<PS>policy_fn">&lt;PS&gt;policy_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PS&gt;replace_fn</strong>)(&lt;PS&gt;entry original, &lt;PS&gt;entry replace);</code></p>
+<p><code>typedef int(*<strong>&lt;PS&gt;policy_fn</strong>)(&lt;PS&gt;key original, &lt;PS&gt;key replace);</code></p>
 
-<p>Opens the values up to modification and returns true if the <code>replace</code> replaces the <code>original</code>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PS>compute_fn" name = "typedef:<PS>compute_fn">&lt;PS&gt;compute_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PS&gt;compute_fn</strong>)(&lt;PS&gt;key original, &lt;PS&gt;key replace, &lt;PS&gt;value value);</code></p>
-
-<p>...</p>
+<p>Returns true if the <code>replace</code> replaces the <code>original</code>.</p>
 
 </div>
 
@@ -215,7 +203,7 @@ fixme</div>
 
 <p><code>enum <strong>set_result</strong> { SET_RESULT };</code></p>
 
-<p>This is the result of modifying the table. An <code>enum</code> of <code>SET_*</code>, of which <code>SET_ERROR</code> is false. (In the absence of a standard out-of-band communication channels, like exceptions.) <img alt = "A diagram of the result states." src = "web/put.png" width = 675 height = 368></p>
+<p>This is the result of modifying the table. An <code>enum</code> of <code>SET_*</code>, of which <code>SET_ERROR</code> is false. <img alt = "A diagram of the result states." src = "web/put.png" width = 535 height = 271></p>
 
 </div>
 
@@ -235,7 +223,7 @@ fixme</div>
 
 <p><code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;bucket *buckets; &lt;PS&gt;uint log_capacity, size, top; };</code></p>
 
-<p>To initialize, see <a href = "#fn:&lt;S&gt;set">&lt;S&gt;set</a>, <code>SET_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
+<p>To initialize, see <a href = "#fn:&lt;S&gt;set">&lt;S&gt;set</a>, <code>SET_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the set to go into an invalid state.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 761 height = 135></p>
 
@@ -247,7 +235,7 @@ fixme</div>
 
 <p><code>struct <strong>&lt;S&gt;set_iterator</strong> { struct &lt;PS&gt;iterator it; };</code></p>
 
-<p>Iteration usually not in any particular order. The asymptotic runtime is proportional to the hash capacity. (This will be the power-of-two equal-to or greater than the maximum size plus buffering of the history of the set.)</p>
+<p>Iteration usually not in any particular order. The asymptotic runtime is proportional to the hash capacity.</p>
 
 </div>
 
@@ -269,9 +257,7 @@ fixme</div>
 
 <tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#fn:<S>set_get">&lt;S&gt;set_get</a></td><td>hash, key</td></tr>
 
-<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_policy_put">&lt;S&gt;set_policy_put</a></td><td>set, entry, eject, replace</td></tr>
-
-<tr><td align = right>static &lt;PS&gt;map</td><td><a href = "#fn:<S>set_replace">&lt;S&gt;set_replace</a></td><td>set, entry</td></tr>
+<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_update">&lt;S&gt;set_update</a></td><td>set, entry, eject, update</td></tr>
 
 <tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#fn:<S>set_remove">&lt;S&gt;set_remove</a></td><td>hash, data</td></tr>
 
@@ -360,42 +346,19 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_policy_put" name = "fn:<S>set_policy_put">&lt;S&gt;set_policy_put</a></h3>
+<h3><a id = "fn:<S>set_update" name = "fn:<S>set_update">&lt;S&gt;set_update</a></h3>
 
-<p><code>static enum set_result <strong>&lt;S&gt;set_policy_put</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;replace_fn <em>replace</em>)</code></p>
+<p><code>static enum set_result <strong>&lt;S&gt;set_update</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;policy_fn <em>update</em>)</code></p>
 
-<p>Puts <code>entry</code> in <code>set</code> only if the bucket is absent or if calling <code>replace</code> returns true.</p>
+<p>Puts <code>entry</code> in <code>set</code> only if absent or if calling <code>update</code> returns true.</p>
 
 <dl>
-	<dt>Parameter: <em>eject</em></dt>
-	<dd>If non-null, filled with the entry that is ejected or the entry itself if <code>replace</code> isn't true.</dd>
-	<dt>Parameter: <em>replace</em></dt>
-	<dd>If null, doesn't do any replacement on collision.</dd>
 	<dt>Return:</dt>
-	<dd>True except exception.</dd>
+	<dd>One of: <code>SET_ERROR</code> the set is not modified; <code>SET_REPLACE</code> if <code>update</code> is non-null and returns true, <code>eject</code>, if non-null, will be filled; <code>SET_YIELD</code> if <code>replace</code> is null or false; <code>SET_GROW</code>, on unique entry.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dd>There was an error with a re-sizing.</dd>
+	<dd>There was an error with resizing.</dd>
 	<dt>Order:</dt>
 	<dd>Average amortised &#927;(1), (hash distributes keys uniformly); worst &#927;(n).</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<S>set_replace" name = "fn:<S>set_replace">&lt;S&gt;set_replace</a></h3>
-
-<p><code>static &lt;PS&gt;map <strong>&lt;S&gt;set_replace</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;entry <em>entry</em>)</code></p>
-
-<p>Puts <code>entry</code> in <code>set</code>, and, for keys already in the hash, replaces them.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Any ejected key or null.</dd>
-	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dd>There was an error with a re-sizing. It is not always possible to tell the difference between an error and a unique key. If needed, before calling this, successfully calling <a href = "#fn:&lt;S&gt;set_buffer">&lt;S&gt;set_buffer</a>, or hashting <code>errno</code> to zero.</dd>
-	<dt>Order:</dt>
-	<dd>Average amortised &#927;(1), (hash distributes keys uniformly); worst &#927;(n) (are you sure that's up to date?).</dd>
 </dl>
 
 </div>

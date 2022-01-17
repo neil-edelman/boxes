@@ -487,20 +487,14 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 	PS_(entry) entry, PS_(entry) *eject, const PS_(policy_fn) update) {
 	struct PS_(bucket) *bucket;
 	const PS_(key) key = PS_(entry_key)(entry);
-	PS_(uint) hash;
+	const PS_(uint) hash = PS_(hash)(key);
 	enum set_result result;
 	assert(set);
-	hash = PS_(hash)(key);
-	{
-		char z[12];
-		PS_(to_string)(key, &z);
-		printf("put: \"%s\" hash 0x%lx.\n", z, (unsigned long)set);
-	}
-	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
+	if(set->buckets && (bucket = PS_(query)(set, key, hash))) {
 		if(!update || !update(PS_(bucket_key)(bucket), key)) return SET_YIELD;
 		if(eject) PS_(to_entry)(bucket, eject);
 		result = SET_REPLACE;
-	} else { /* Expand. */
+	} else {
 		if(!(bucket = PS_(evict)(set, hash))) return SET_ERROR;
 		result = SET_ABSENT;
 	}
@@ -512,7 +506,7 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 
 /** On `SET_VALUE`, try to put `key` into `set`, and update `value` to be
  a pointer to the current value.
- @return `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be
+ @return `SET_ERROR` does not set `value`; `SET_ABSENT`, the `value` will be
  uninitialized; `SET_YIELD`, gets the current `value`. @throws[malloc] */
 static enum set_result PS_(compute)(struct S_(set) *const set,
 	PS_(key) key, PS_(value) **const value) {
@@ -520,9 +514,9 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 	const PS_(uint) hash = PS_(hash)(key);
 	enum set_result result;
 	assert(set && value);
-	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
+	if(set->buckets && (bucket = PS_(query)(set, key, hash))) {
 		result = SET_YIELD;
-	} else { /* Expand. */
+	} else {
 		if(!(bucket = PS_(evict)(set, hash))) return SET_ERROR;
 		PS_(replace_key)(bucket, key, hash);
 		result = SET_ABSENT;
@@ -572,7 +566,7 @@ static void S_(set_clear)(struct S_(set) *const set) {
 static int S_(set_is)(struct S_(set) *const set, const PS_(key) key)
 	{ return assert(set),set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
 
-/** @param[entry] If non-null, a <typedef:<PS>entry> which gets filled on true.
+/** @param[result] If non-null, a <typedef:<PS>entry> which gets filled on true.
  @return Is `key` in `set`? */
 static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
 	PS_(entry) *const result) {
