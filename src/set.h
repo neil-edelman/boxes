@@ -122,9 +122,10 @@ typedef SET_KEY PS_(key);
 typedef const SET_KEY PS_(ckey);
 
 /** A map from <typedef:<PS>ckey> onto <typedef:<PS>uint>. In general, a good
- hash should use all the the argument and should as close as possible to a
- discrete uniform distribution. It is up to the user to provide an appropriate
- hash function. */
+ strategy for a general hashing function is to use all the the argument and
+ turn it into as close as possible to a discrete uniform distribution. If
+ <typedef:<PS>key> is a pointer, one could choose to have null in the domain,
+ if the hashing function permits it. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ckey));
 /* Check that `SET_HASH` is a function implementing <typedef:<PS>hash_fn>. */
 static const PS_(hash_fn) PS_(hash) = (SET_HASH);
@@ -527,21 +528,16 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 
 #ifdef SET_VALUE /* <!-- value */
 
-/** Try to put `key` into `set`.
+/** On `SET_VALUE`, try to put `key` into `set`, and update `value` to be
+ a pointer to the current value.
  @return `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be
  uninitialized; `SET_YIELD`, gets the current `value`. @throws[malloc] */
 static enum set_result PS_(compute)(struct S_(set) *const set,
 	PS_(key) key, PS_(value) **const value) {
 	struct PS_(bucket) *bucket;
-	PS_(uint) hash;
+	const PS_(uint) hash = PS_(hash)(key);
 	enum set_result result;
-	assert(set);
-	hash = PS_(hash)(key);
-	{
-		char z[12];
-		PS_(to_string)(key, &z);
-		printf("compute: \"%s\" hash 0x%lx.\n", z, (unsigned long)hash);
-	}
+	assert(set && value);
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
 		result = SET_YIELD;
 	} else { /* Expand. */
@@ -549,7 +545,7 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 		PS_(replace_key)(bucket, key, hash);
 		result = SET_GROW;
 	}
-	if(value) *value = &bucket->value;
+	*value = &bucket->value;
 	return result;
 }
 
