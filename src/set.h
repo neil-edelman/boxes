@@ -87,12 +87,11 @@
 #define SET_END (SET_LIMIT)
 #define SET_NULL (SET_LIMIT + 1)
 #define SET_RESULT X(ERROR), X(GROW), X(YIELD), X(REPLACE)
-/* These are not returned by any of the editing functions.
- X(REPLACE_KEY), X(REPLACE_VALUE) */
+/* These are not returned by any of the editing functions; micromanaging has
+ been simplified. X(REPLACE_KEY), X(REPLACE_VALUE) */
 #define X(n) SET_##n
 /** This is the result of modifying the table. An `enum` of `SET_*`, of which
- `SET_ERROR` is false. (In the absence of a standard out-of-band communication channels, like exceptions.) Note that depending on the set, this is duplicate
- or in too much detail. ![A diagram of the result states.](../web/put.png) */
+ `SET_ERROR` is false. ![A diagram of the result states.](../web/put.png) */
 enum set_result { SET_RESULT };
 #undef X
 #define X(n) #n
@@ -121,11 +120,10 @@ typedef SET_KEY PS_(key);
  not `const`-qualified. */
 typedef const SET_KEY PS_(ckey);
 
-/** A map from <typedef:<PS>ckey> onto <typedef:<PS>uint>. In general, a good
- strategy for a general hashing function is to use all the the argument and
- turn it into as close as possible to a discrete uniform distribution. If
- <typedef:<PS>key> is a pointer, one could choose to have null in the domain,
- if the hashing function permits it. */
+/** A map from <typedef:<PS>ckey> onto <typedef:<PS>uint>, (any will do, but
+ the performance may suffer if too many entries are hashed to the same
+ buckets.) If <typedef:<PS>key> is a pointer, one is permitted to have null in
+ the domain. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ckey));
 /* Check that `SET_HASH` is a function implementing <typedef:<PS>hash_fn>. */
 static const PS_(hash_fn) PS_(hash) = (SET_HASH);
@@ -178,12 +176,7 @@ static PS_(key) PS_(entry_key)(PS_(entry) e) {
 /* Address is hash modulo size of table. Any occupied buckets at the start of
  the linked structure are closed, that is, the address equals the index. These
  form a linked set, possibly with other, open buckets that have the same
- address in vacant buckets. This is conceptually like separate-chaining, but
- spatially like open-addressing. Entries do not cluster, and the maximum load
- factor is 1, by definition. The need to store data in the entries themselves
- has been erased, as is the double allocation of the hash table and the
- entries. However, the table entry requires an address more. This is suitable
- for a language like `C` because it has less memory management. */
+ address in vacant buckets. */
 struct PS_(bucket) {
 	PS_(uint) next; /* Bucket index, including `SET_NULL` and `SET_END`. */
 	PS_(uint) hash;
@@ -206,14 +199,14 @@ static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 }
 
 /** Gets the value of an occupied `bucket`. */
-static PS_(value) PS_(bucket_value)(const struct PS_(bucket) *const bucket) {
+/*static PS_(value) PS_(bucket_value)(const struct PS_(bucket) *const bucket) {
 	assert(bucket && bucket->next != SET_NULL);
 #ifdef SET_VALUE
 	return bucket->value;
 #else
 	return PS_(bucket_key)(bucket);
 #endif
-}
+}*/
 
 /** Fills `entry`, a public structure, with the information of `bucket`. */
 static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
@@ -742,13 +735,19 @@ static int S_(set_has_next)(struct S_(set_iterator) *const it) {
 	return it->it.set && it->it.set->buckets && PS_(skip)(&it->it);
 }
 
-/** Advances `it` when <fn:<S>set_has_next>. @return The next key. */
+#ifdef SET_VALUE /* <!-- value */
+
+/** If `SET_VALUE`, advances `it` when <fn:<S>set_has_next>.
+ @return The next key. */
 static PS_(key) S_(set_next_key)(struct S_(set_iterator) *const it)
 	{ return PS_(bucket_key)(PS_(next)(&it->it)); }
 
-/** Advances `it` when <fn:<S>set_has_next>. @return The next value. */
+/** If `SET_VALUE`, advances `it` when <fn:<S>set_has_next>.
+ @return The next value. */
 static PS_(value) S_(set_next_value)(struct S_(set_iterator) *const it)
-	{ return PS_(bucket_value)(PS_(next)(&it->it)); }
+	{ return PS_(next)(&it->it)->value; }
+
+#endif /* value --> */
 
 /* <!-- box (multiple traits) */
 #define BOX_ PS_
@@ -772,11 +771,10 @@ static void PS_(unused_base)(void) {
 	S_(set_is)(0, k); S_(set_query)(0, k, 0);
 	S_(set_update)(0, e, 0, 0);
 #ifdef SET_VALUE
-	S_(set_compute)(0, k, 0);
+	S_(set_compute)(0, k, 0); S_(set_next_key)(0); S_(set_next_value)(0);
 #endif
 	/*S_(set_remove)(0, 0);*/
 	S_(set_begin)(0, 0); S_(set_next)(0, 0); S_(set_has_next)(0);
-	S_(set_next_key)(0); S_(set_next_value)(0);
 	PS_(unused_base_coda)();
 }
 static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
