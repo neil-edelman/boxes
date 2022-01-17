@@ -198,16 +198,6 @@ static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 #endif
 }
 
-/** Gets the value of an occupied `bucket`. */
-/*static PS_(value) PS_(bucket_value)(const struct PS_(bucket) *const bucket) {
-	assert(bucket && bucket->next != SET_NULL);
-#ifdef SET_VALUE
-	return bucket->value;
-#else
-	return PS_(bucket_key)(bucket);
-#endif
-}*/
-
 /** Fills `entry`, a public structure, with the information of `bucket`. */
 static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
 	PS_(entry) *const entry) {
@@ -219,6 +209,9 @@ static void PS_(to_entry)(const struct PS_(bucket) *const bucket,
 	*entry = PS_(bucket_key)(bucket);
 #endif
 }
+
+/** Returns true if the `replace` replaces the `original`. */
+typedef int (*PS_(policy_fn))(PS_(key) original, PS_(key) replace);
 
 /** To initialize, see <fn:<S>set>, `SET_IDLE`, `{0}` (`C99`,) or being
  `static`. The fields should be treated as read-only; any modification is
@@ -485,9 +478,6 @@ static struct PS_(bucket) *PS_(evict)(struct S_(set) *const set,
 	return bucket;
 }
 
-/** Returns true if the `replace` replaces the `original`. */
-typedef int (*PS_(policy_fn))(PS_(key) original, PS_(key) replace);
-
 /** Put `entry` in `set`. For collisions, only if `update` exists and returns
  true do and displace it to `eject`, if non-null.
  @return A <tag:set_result>. @throws[malloc]
@@ -609,7 +599,7 @@ static PS_(key) S_(set_get)(struct S_(set) *const hash,
 }
 #endif
 
-/* set_try(), set_replace(), set_update(), set_compute() */
+/* set_try(), set_replace() */
 
 /** Puts `entry` in `set` only if absent or if calling `update` returns true.
  @return One of: `SET_ERROR` the set is not modified; `SET_REPLACE` if
@@ -623,34 +613,16 @@ static enum set_result S_(set_update)(struct S_(set) *const set,
 	{ return PS_(put)(set, entry, eject, update); }
 
 #ifdef SET_VALUE /* <!-- value */
-
-/** Only defined if `SET_VALUE`. Try to put `key` into `set`.
+/** If `SET_VALUE`, try to put `key` into `set`, and store the value in `value`.
  @return `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be
- uninitialized; `SET_YIELD`, gets the current `value`. @throws[malloc] */
+ uninitialized; `SET_YIELD`, gets the current `value`.
+ @throws[malloc] On `SET_ERROR`. */
 static enum set_result S_(set_compute)(struct S_(set) *const set,
 	PS_(key) key, PS_(value) **const value)
 	{ return PS_(compute)(set, key, value); }
-
 #endif /* value --> */
 
 #if 0
-/* fixme: Buffering changes the outcome if it's already in the table, it
- creates a new hash anyway. This is not a pleasant situation. */
-/* fixme: also have a hash_try */
-/** Puts `entry` in `set`, and, for keys already in the hash, replaces them.
- @return Any ejected key or null.
- @throws[realloc, ERANGE] There was an error with a re-sizing. It is not
- always possible to tell the difference between an error and a unique key.
- If needed, before calling this, successfully calling <fn:<S>set_buffer>, or
- hashting `errno` to zero. @order Average amortised \O(1), (hash distributes
- keys uniformly); worst \O(n) (are you sure that's up to date?). @allow */
-static PS_(map) S_(set_replace)(struct S_(set) *const set,
-	const PS_(entry) entry) {
-	PS_(map) collide;
-	/* No error information. */
-	return PS_(put)(hash, 0, map, &collide) ? collide : 0;
-}
-
 /** Removes an element `data` from `hash`.
  @return Successfully ejected element or null. @order Average \O(1), (hash
  distributes elements uniformly); worst \O(n). @allow */
@@ -721,8 +693,7 @@ static void S_(set_begin)(struct S_(set_iterator) *const it,
 
 /** Advances `it`.
  @param[entry] If non-null, the entry is filled with the next element only if
- it has a next.
- @return Whether it had a next element. */
+ it has a next. @return Whether it had a next element. */
 static int S_(set_next)(struct S_(set_iterator) *const it, PS_(entry) *entry) {
 	const struct PS_(bucket) *b = PS_(next)(&it->it);
 	return b ? (PS_(to_entry)(b, entry), 1) : 0;

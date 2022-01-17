@@ -210,6 +210,7 @@ static void nato(void) {
 		size_t length = utf_alnum_count(alphabet[i]);
 		struct nato_value *value = 0;
 		struct nato_list *item = list + i;
+		/* This is approximately `ComputeIfAbsent` and `ComputeIfPresent`. */
 		switch(nato_set_compute(&nato, length, &value)) {
 		case SET_ERROR: goto catch;
 		case SET_GROW: value->occurrences = 1, value->head = 0; break;
@@ -227,6 +228,24 @@ static void nato(void) {
 			(unsigned long)entry.value.occurrences);
 		do printf("%s%s", head == w ? "" : ",", w->alpha); while(w = w->next);
 		printf("}\n");
+	}
+	{ /* Check. */
+		struct nato_set_entry e;
+		int success;
+		success = nato_set_query(&nato, 0, &e);
+		assert(!success);
+		success = nato_set_query(&nato, 3, &e);
+		assert(!success);
+		success = nato_set_query(&nato, 4, &e);
+		assert(success && e.value.occurrences == 8);
+		success = nato_set_query(&nato, 5, &e);
+		assert(success && e.value.occurrences == 8);
+		success = nato_set_query(&nato, 6, &e);
+		assert(success && e.value.occurrences == 6);
+		success = nato_set_query(&nato, 7, &e);
+		assert(success && e.value.occurrences == 3);
+		success = nato_set_query(&nato, 8, &e);
+		assert(success && e.value.occurrences == 1);
 	}
 	goto finally;
 catch:
