@@ -255,11 +255,27 @@ fixme</div>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<S>set_clear">&lt;S&gt;set_clear</a></td><td>set</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn:<S>set_is">&lt;S&gt;set_is</a></td><td>set, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<S>set_query">&lt;S&gt;set_query</a></td><td>set, key, result</td></tr>
+
 <tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#fn:<S>set_get">&lt;S&gt;set_get</a></td><td>hash, key</td></tr>
 
 <tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_update">&lt;S&gt;set_update</a></td><td>set, entry, eject, update</td></tr>
 
+<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_compute">&lt;S&gt;set_compute</a></td><td>set, key, value</td></tr>
+
 <tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#fn:<S>set_remove">&lt;S&gt;set_remove</a></td><td>hash, data</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<S>set_begin">&lt;S&gt;set_begin</a></td><td>it, set</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<S>set_next">&lt;S&gt;set_next</a></td><td>it, entry</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<S>set_has_next">&lt;S&gt;set_has_next</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#fn:<S>set_next_key">&lt;S&gt;set_next_key</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PS&gt;value</td><td><a href = "#fn:<S>set_next_value">&lt;S&gt;set_next_value</a></td><td>it</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -331,6 +347,34 @@ fixme</div>
 
 <div>
 
+<h3><a id = "fn:<S>set_is" name = "fn:<S>set_is">&lt;S&gt;set_is</a></h3>
+
+<p><code>static int <strong>&lt;S&gt;set_is</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Is <code>key</code> in <code>set</code>?</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_query" name = "fn:<S>set_query">&lt;S&gt;set_query</a></h3>
+
+<p><code>static int <strong>&lt;S&gt;set_query</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>, &lt;PS&gt;entry *const <em>result</em>)</code></p>
+
+<dl>
+	<dt>Parameter: <em>result</em></dt>
+	<dd>If non-null, a <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> which gets filled on true.</dd>
+	<dt>Return:</dt>
+	<dd>Is <code>key</code> in <code>set</code>?</dd>
+</dl>
+
+</div>
+
+<div>
+
 <h3><a id = "fn:<S>set_get" name = "fn:<S>set_get">&lt;S&gt;set_get</a></h3>
 
 <p><code>static &lt;PS&gt;key <strong>&lt;S&gt;set_get</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;key <em>key</em>)</code></p>
@@ -365,6 +409,23 @@ fixme</div>
 
 <div>
 
+<h3><a id = "fn:<S>set_compute" name = "fn:<S>set_compute">&lt;S&gt;set_compute</a></h3>
+
+<p><code>static enum set_result <strong>&lt;S&gt;set_compute</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;key <em>key</em>, &lt;PS&gt;value **const <em>value</em>)</code></p>
+
+<p>If <code>SET_VALUE</code>, try to put <code>key</code> into <code>set</code>, and store the value in <code>value</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd><code>SET_ERROR</code> does not set <code>value</code>; <code>SET_GROW</code>, the <code>value</code> will be uninitialized; <code>SET_YIELD</code>, gets the current <code>value</code>.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dd>On <code>SET_ERROR</code>.</dd>
+</dl>
+
+</div>
+
+<div>
+
 <h3><a id = "fn:<S>set_remove" name = "fn:<S>set_remove">&lt;S&gt;set_remove</a></h3>
 
 <p><code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_remove</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;mtype <em>data</em>)</code></p>
@@ -376,6 +437,78 @@ fixme</div>
 	<dd>Successfully ejected element or null.</dd>
 	<dt>Order:</dt>
 	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_begin" name = "fn:<S>set_begin">&lt;S&gt;set_begin</a></h3>
+
+<p><code>static void <strong>&lt;S&gt;set_begin</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>, const struct &lt;S&gt;set *const <em>set</em>)</code></p>
+
+<p>Loads <code>set</code> (can be null) into <code>it</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_next" name = "fn:<S>set_next">&lt;S&gt;set_next</a></h3>
+
+<p><code>static int <strong>&lt;S&gt;set_next</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>, &lt;PS&gt;entry *<em>entry</em>)</code></p>
+
+<p>Advances <code>it</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>entry</em></dt>
+	<dd>If non-null, the entry is filled with the next element only if it has a next.</dd>
+	<dt>Return:</dt>
+	<dd>Whether it had a next element.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_has_next" name = "fn:<S>set_has_next">&lt;S&gt;set_has_next</a></h3>
+
+<p><code>static int <strong>&lt;S&gt;set_has_next</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Whether the set specified to <code>it</code> in <a href = "#fn:&lt;S&gt;set_begin">&lt;S&gt;set_begin</a> has a next.</dd>
+	<dt>Order:</dt>
+	<dd>Amortized on the capacity, &#927;(1).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_next_key" name = "fn:<S>set_next_key">&lt;S&gt;set_next_key</a></h3>
+
+<p><code>static &lt;PS&gt;key <strong>&lt;S&gt;set_next_key</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code></p>
+
+<p>If <code>SET_VALUE</code>, advances <code>it</code> when <a href = "#fn:&lt;S&gt;set_has_next">&lt;S&gt;set_has_next</a>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The next key.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_next_value" name = "fn:<S>set_next_value">&lt;S&gt;set_next_value</a></h3>
+
+<p><code>static &lt;PS&gt;value <strong>&lt;S&gt;set_next_value</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code></p>
+
+<p>If <code>SET_VALUE</code>, advances <code>it</code> when <a href = "#fn:&lt;S&gt;set_has_next">&lt;S&gt;set_has_next</a>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The next value.</dd>
 </dl>
 
 </div>

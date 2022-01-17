@@ -562,12 +562,12 @@ static void S_(set_clear)(struct S_(set) *const set) {
  and move all. Does not, and indeed cannot, respect the most-recently used
  heuristic. */
 
-/** @return Is `key` in `set`? */
+/** @return Is `key` in `set`? @allow */
 static int S_(set_is)(struct S_(set) *const set, const PS_(key) key)
 	{ return assert(set),set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
 
 /** @param[result] If non-null, a <typedef:<PS>entry> which gets filled on true.
- @return Is `key` in `set`? */
+ @return Is `key` in `set`? @allow */
 static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
 	PS_(entry) *const result) {
 	struct PS_(bucket) *b;
@@ -609,7 +609,7 @@ static enum set_result S_(set_update)(struct S_(set) *const set,
 /** If `SET_VALUE`, try to put `key` into `set`, and store the value in `value`.
  @return `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be
  uninitialized; `SET_YIELD`, gets the current `value`.
- @throws[malloc] On `SET_ERROR`. */
+ @throws[malloc] On `SET_ERROR`. @allow */
 static enum set_result S_(set_compute)(struct S_(set) *const set,
 	PS_(key) key, PS_(value) **const value)
 	{ return PS_(compute)(set, key, value); }
@@ -680,20 +680,20 @@ static struct PS_(bucket) *PS_(next)(struct PS_(iterator) *const it) {
  proportional to the hash capacity. */
 struct S_(set_iterator) { struct PS_(iterator) it; };
 
-/** Loads `set` (can be null) into `it`. */
+/** Loads `set` (can be null) into `it`. @allow */
 static void S_(set_begin)(struct S_(set_iterator) *const it,
 	const struct S_(set) *const set) { PS_(begin)(&it->it, set); }
 
 /** Advances `it`.
  @param[entry] If non-null, the entry is filled with the next element only if
- it has a next. @return Whether it had a next element. */
+ it has a next. @return Whether it had a next element. @allow */
 static int S_(set_next)(struct S_(set_iterator) *const it, PS_(entry) *entry) {
 	const struct PS_(bucket) *b = PS_(next)(&it->it);
 	return b ? (PS_(to_entry)(b, entry), 1) : 0;
 }
 
 /** @return Whether the set specified to `it` in <fn:<S>set_begin> has a next.
- @order Amortized on the capacity, \O(1). */
+ @order Amortized on the capacity, \O(1). @allow */
 static int S_(set_has_next)(struct S_(set_iterator) *const it) {
 	assert(it);
 	return it->it.set && it->it.set->buckets && PS_(skip)(&it->it);
@@ -702,12 +702,12 @@ static int S_(set_has_next)(struct S_(set_iterator) *const it) {
 #ifdef SET_VALUE /* <!-- value */
 
 /** If `SET_VALUE`, advances `it` when <fn:<S>set_has_next>.
- @return The next key. */
+ @return The next key. @allow */
 static PS_(key) S_(set_next_key)(struct S_(set_iterator) *const it)
 	{ return PS_(bucket_key)(PS_(next)(&it->it)); }
 
 /** If `SET_VALUE`, advances `it` when <fn:<S>set_has_next>.
- @return The next value. */
+ @return The next value. @allow */
 static PS_(value) S_(set_next_value)(struct S_(set_iterator) *const it)
 	{ return PS_(next)(&it->it)->value; }
 

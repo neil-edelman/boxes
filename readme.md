@@ -183,11 +183,27 @@ Iteration usually not in any particular order\. The asymptotic runtime is propor
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-b2194878">&lt;S&gt;set_clear</a></td><td>set</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-ca9a4e3b">&lt;S&gt;set_is</a></td><td>set, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-6462ca0d">&lt;S&gt;set_query</a></td><td>set, key, result</td></tr>
+
 <tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#user-content-fn-4b32a391">&lt;S&gt;set_get</a></td><td>hash, key</td></tr>
 
 <tr><td align = right>static enum set_result</td><td><a href = "#user-content-fn-8d876df6">&lt;S&gt;set_update</a></td><td>set, entry, eject, update</td></tr>
 
+<tr><td align = right>static enum set_result</td><td><a href = "#user-content-fn-2b37ccb0">&lt;S&gt;set_compute</a></td><td>set, key, value</td></tr>
+
 <tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#user-content-fn-f336902b">&lt;S&gt;set_remove</a></td><td>hash, data</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-d14ffcb8">&lt;S&gt;set_begin</a></td><td>it, set</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-c0aec2a6">&lt;S&gt;set_next</a></td><td>it, entry</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-38ff0ca3">&lt;S&gt;set_has_next</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#user-content-fn-3b50d302">&lt;S&gt;set_next_key</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PS&gt;value</td><td><a href = "#user-content-fn-6cade0d8">&lt;S&gt;set_next_value</a></td><td>it</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -244,6 +260,28 @@ Clears and removes all buckets from `set`\. The capacity and memory of the `set`
 
 
 
+### <a id = "user-content-fn-ca9a4e3b" name = "user-content-fn-ca9a4e3b">&lt;S&gt;set_is</a> ###
+
+<code>static int <strong>&lt;S&gt;set_is</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>)</code>
+
+ * Return:  
+   Is `key` in `set`?
+
+
+
+
+### <a id = "user-content-fn-6462ca0d" name = "user-content-fn-6462ca0d">&lt;S&gt;set_query</a> ###
+
+<code>static int <strong>&lt;S&gt;set_query</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>, &lt;PS&gt;entry *const <em>result</em>)</code>
+
+ * Parameter: _result_  
+   If non\-null, a [&lt;PS&gt;entry](#user-content-typedef-3ef38eec) which gets filled on true\.
+ * Return:  
+   Is `key` in `set`?
+
+
+
+
 ### <a id = "user-content-fn-4b32a391" name = "user-content-fn-4b32a391">&lt;S&gt;set_get</a> ###
 
 <code>static &lt;PS&gt;key <strong>&lt;S&gt;set_get</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;key <em>key</em>)</code>
@@ -272,6 +310,20 @@ Puts `entry` in `set` only if absent or if calling `update` returns true\.
 
 
 
+### <a id = "user-content-fn-2b37ccb0" name = "user-content-fn-2b37ccb0">&lt;S&gt;set_compute</a> ###
+
+<code>static enum set_result <strong>&lt;S&gt;set_compute</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;key <em>key</em>, &lt;PS&gt;value **const <em>value</em>)</code>
+
+If `SET_VALUE`, try to put `key` into `set`, and store the value in `value`\.
+
+ * Return:  
+   `SET_ERROR` does not set `value`; `SET_GROW`, the `value` will be uninitialized; `SET_YIELD`, gets the current `value`\.
+ * Exceptional return: malloc  
+   On `SET_ERROR`\.
+
+
+
+
 ### <a id = "user-content-fn-f336902b" name = "user-content-fn-f336902b">&lt;S&gt;set_remove</a> ###
 
 <code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_remove</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;mtype <em>data</em>)</code>
@@ -282,6 +334,64 @@ Removes an element `data` from `hash`\.
    Successfully ejected element or null\.
  * Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
+
+
+
+
+### <a id = "user-content-fn-d14ffcb8" name = "user-content-fn-d14ffcb8">&lt;S&gt;set_begin</a> ###
+
+<code>static void <strong>&lt;S&gt;set_begin</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>, const struct &lt;S&gt;set *const <em>set</em>)</code>
+
+Loads `set` \(can be null\) into `it`\.
+
+
+
+### <a id = "user-content-fn-c0aec2a6" name = "user-content-fn-c0aec2a6">&lt;S&gt;set_next</a> ###
+
+<code>static int <strong>&lt;S&gt;set_next</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>, &lt;PS&gt;entry *<em>entry</em>)</code>
+
+Advances `it`\.
+
+ * Parameter: _entry_  
+   If non\-null, the entry is filled with the next element only if it has a next\.
+ * Return:  
+   Whether it had a next element\.
+
+
+
+
+### <a id = "user-content-fn-38ff0ca3" name = "user-content-fn-38ff0ca3">&lt;S&gt;set_has_next</a> ###
+
+<code>static int <strong>&lt;S&gt;set_has_next</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   Whether the set specified to `it` in [&lt;S&gt;set_begin](#user-content-fn-d14ffcb8) has a next\.
+ * Order:  
+   Amortized on the capacity, &#927;\(1\)\.
+
+
+
+
+### <a id = "user-content-fn-3b50d302" name = "user-content-fn-3b50d302">&lt;S&gt;set_next_key</a> ###
+
+<code>static &lt;PS&gt;key <strong>&lt;S&gt;set_next_key</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code>
+
+If `SET_VALUE`, advances `it` when [&lt;S&gt;set_has_next](#user-content-fn-38ff0ca3)\.
+
+ * Return:  
+   The next key\.
+
+
+
+
+### <a id = "user-content-fn-6cade0d8" name = "user-content-fn-6cade0d8">&lt;S&gt;set_next_value</a> ###
+
+<code>static &lt;PS&gt;value <strong>&lt;S&gt;set_next_value</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code>
+
+If `SET_VALUE`, advances `it` when [&lt;S&gt;set_has_next](#user-content-fn-38ff0ca3)\.
+
+ * Return:  
+   The next value\.
 
 
 
