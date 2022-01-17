@@ -38,10 +38,8 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define SET_KEY enum zodiac
 #define SET_HASH &hash_zodiac
 #define SET_INVERSE &hash_inv_zodiac
-/* <tag:<PS>bucket>: <typedef:<PS>uint> `next`, `hash`. `enum` values really
- are overkill to represent with a `size_t`. There are less then 128 keys, so
- a byte would suffice (/2). Lengthening them as they come out is probably
- slower. */
+/* There are less than 256/2 keys, so a byte would suffice. Speed-wise, we
+ expect type coercion between different sizes to be slower. */
 #define SET_UINT unsigned /*char*/
 #define SET_TEST /* Testing requires to string. */
 #define SET_EXPECT_TRAIT
@@ -51,7 +49,7 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 /* For testing; there is no extra memory required to generate random `enum`.
  @implements <zodiac>fill_fn */
 static int fill_zodiac(void *const zero, enum zodiac *const z) {
-	(void)zero;
+	assert(!zero);
 	*z = (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1));
 	return 1;
 }
@@ -124,7 +122,7 @@ static unsigned lowbias32_r(unsigned x) {
 	return x;
 }
 #else /* < 32 bits */
-/** Uniform values don't need a hash, and I'm lazy.
+/** Uniform values don't really need a hash, and I'm lazy.
  @implements <int>hash_fn */
 static unsigned lowbias32(unsigned x) { return x; }
 /** @implements <int>inverse_hash_fn */
@@ -192,7 +190,7 @@ static size_t nato_hash(const size_t n) { return n; }
 #include "../src/set.h"
 /** Counts code-points except non-alnums of `s`, being careful.
  (You are working in UTF-8, right?) <https://stackoverflow.com/a/32936928> */
-static size_t utf_letter_count(const char *s) {
+static size_t utf_alnum_count(const char *s) {
 	size_t c = 0;
 	while(*s != '\0')
 		c += *s & 0x80 ? (*s++ & 0xC0) != 0x80 : !!isalnum(*s), s++;
@@ -209,7 +207,7 @@ static void nato(void) {
 	struct nato_set_entry entry;
 	size_t i;
 	for(i = 0; i < sizeof alphabet / sizeof *alphabet; i++) {
-		size_t length = utf_letter_count(alphabet[i]);
+		size_t length = utf_alnum_count(alphabet[i]);
 		struct nato_value *value = 0;
 		struct nato_list *item = list + i;
 		switch(nato_set_compute(&nato, length, &value)) {

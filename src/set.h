@@ -472,6 +472,25 @@ static void PS_(replace_entry)(struct PS_(bucket) *const bucket,
 #endif
 }
 
+/** Evicts the spot where `hash` goes in `set`. Must have at least one free
+ bucket. This results in a space in the table, with the next set. */
+static struct PS_(bucket) *PS_(evict)(struct S_(set) *const set,
+	const PS_(uint) hash) {
+	PS_(uint) i;
+	struct PS_(bucket) *bucket;
+	if(!PS_(buffer)(set, 1)) return 0; /* Amortized. */
+	bucket = set->buckets + (i = PS_(to_bucket)(set, hash)); /* Closed. */
+	if(bucket->next != SET_NULL) { /* Occupied. */
+		int in_stack = PS_(to_bucket)(set, bucket->hash) != i;
+		PS_(move_to_top)(set, i);
+		bucket->next = in_stack ? SET_END : set->top;
+	} else { /* Unoccupied. */
+		bucket->next = SET_END;
+	}
+	set->size++;
+	return bucket;
+}
+
 /** Returns true if the `replace` replaces the `original`. */
 typedef int (*PS_(policy_fn))(PS_(key) original, PS_(key) replace);
 
@@ -484,8 +503,8 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 	PS_(entry) entry, PS_(entry) *eject, const PS_(policy_fn) update) {
 	struct PS_(bucket) *bucket;
 	const PS_(key) key = PS_(entry_key)(entry);
-	PS_(uint) hash, i, next = SET_END;
-	enum set_result ret;
+	PS_(uint) hash;
+	enum set_result result;
 	assert(set);
 	hash = PS_(hash)(key);
 	{
@@ -497,27 +516,13 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 		if(!update || !update(PS_(bucket_key)(bucket), key))
 			{ if(eject) memcpy(eject, &entry, sizeof entry); return SET_YIELD; }
 		if(eject) PS_(to_entry)(bucket, eject);
-		/* Cut the tail and put new element in the head. */
-		next = bucket->next, bucket->next = SET_NULL, assert(next != SET_NULL);
-		ret = SET_REPLACE;
+		result = SET_REPLACE;
 	} else { /* Expand. */
-		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
-		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
-		if(bucket->next != SET_NULL) { /* Unoccupied. */
-			int in_stack = PS_(to_bucket)(set, bucket->hash) != i;
-			PS_(move_to_top)(set, i);
-			next = in_stack ? SET_END : set->top;
-			assert(bucket->next == SET_NULL
-				&& (next == SET_END || set->buckets[next].next != SET_NULL));
-		}
-		set->size++;
-		ret = SET_GROW;
+		if(!(bucket = PS_(evict)(set, hash))) return SET_ERROR;
+		result = SET_GROW;
 	}
-	/* Fill `bucket`. The bucket must be empty. */
-	assert(bucket && bucket->next == SET_NULL);
-	bucket->next = next;
 	PS_(replace_entry)(bucket, entry, hash);
-	return ret;
+	return result;
 }
 
 #ifdef SET_VALUE /* <!-- value */
@@ -528,7 +533,7 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 static enum set_result PS_(compute)(struct S_(set) *const set,
 	PS_(key) key, PS_(value) **const value) {
 	struct PS_(bucket) *bucket;
-	PS_(uint) hash, i;
+	PS_(uint) hash;
 	enum set_result result;
 	assert(set);
 	hash = PS_(hash)(key);
@@ -540,17 +545,8 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 	if(set->buckets && (bucket = PS_(query)(set, key, hash))) { /* Equal. */
 		result = SET_YIELD;
 	} else { /* Expand. */
-		if(!PS_(buffer)(set, 1)) return SET_ERROR; /* Amortized. */
-		bucket = set->buckets + (i = PS_(to_bucket)(set, hash));
-		if(bucket->next != SET_NULL) { /* Occupied. */
-			int in_stack = PS_(to_bucket)(set, bucket->hash) != i;
-			PS_(move_to_top)(set, i);
-			bucket->next = in_stack ? SET_END : set->top;
-		} else { /* Unoccupied. */
-			bucket->next = SET_END;
-		}
+		if(!(bucket = PS_(evict)(set, hash))) return SET_ERROR;
 		PS_(replace_key)(bucket, key, hash);
-		set->size++;
 		result = SET_GROW;
 	}
 	if(value) *value = &bucket->value;
