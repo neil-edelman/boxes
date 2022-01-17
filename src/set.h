@@ -86,7 +86,7 @@
 #define SET_LIMIT ((SET_M1 >> 1) + 1) /* Cardinality. */
 #define SET_END (SET_LIMIT)
 #define SET_NULL (SET_LIMIT + 1)
-#define SET_RESULT X(ERROR), X(ABSENT), X(YIELD), X(REPLACE)
+#define SET_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
 /* These are not returned by any of the editing functions; micromanaging has
  been simplified. X(REPLACE_KEY), X(REPLACE_VALUE) */
 #define X(n) SET_##n
@@ -496,7 +496,7 @@ static enum set_result PS_(put)(struct S_(set) *const set,
 		result = SET_REPLACE;
 	} else {
 		if(!(bucket = PS_(evict)(set, hash))) return SET_ERROR;
-		result = SET_ABSENT;
+		result = SET_UNIQUE;
 	}
 	PS_(replace_entry)(bucket, entry, hash);
 	return result;
@@ -519,7 +519,7 @@ static enum set_result PS_(compute)(struct S_(set) *const set,
 	} else {
 		if(!(bucket = PS_(evict)(set, hash))) return SET_ERROR;
 		PS_(replace_key)(bucket, key, hash);
-		result = SET_ABSENT;
+		result = SET_UNIQUE;
 	}
 	*value = &bucket->value;
 	return result;

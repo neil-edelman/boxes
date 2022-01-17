@@ -17,7 +17,7 @@ digraph {
 	//replace -> both;
 	error [label="{ERROR|set errno}", fillcolor="Pink"];
 	equal [label="{equal|values possibly recomputed}"];
-	grow [label="{GROW|value default or passed}"];
+	grow [label="{UNIQUE|value default, passed,\lor uninitialized}"];
 	yield [label="YIELD"];
 	//key [label="{REPLACE_KEY|not implemented}", color=Grey, fontcolor=Grey];
 	//value [label="{REPLACE_VALUE|not implemented}", color=Grey, fontcolor=Grey];

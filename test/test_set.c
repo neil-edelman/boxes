@@ -212,7 +212,9 @@ static void nato(void) {
 		struct nato_list *item = list + i;
 		switch(nato_set_compute(&nato, length, &value)) {
 		case SET_ERROR: goto catch;
-		case SET_ABSENT: value->occurrences = 1, value->head = 0; break;
+			/* PutIfAbsent */
+		case SET_UNIQUE: value->occurrences = 1, value->head = 0; break;
+			/* PutIfPresent */
 		case SET_YIELD: value->occurrences++; break;
 		case SET_REPLACE: assert(0); /* Impossible with <fn:<S>set_compute>. */
 		}
