@@ -213,7 +213,7 @@ static void nato(void) {
 		/* This is approximately `ComputeIfAbsent` and `ComputeIfPresent`. */
 		switch(nato_set_compute(&nato, length, &value)) {
 		case SET_ERROR: goto catch;
-		case SET_GROW: value->occurrences = 1, value->head = 0; break;
+		case SET_ABSENT: value->occurrences = 1, value->head = 0; break;
 		case SET_YIELD: value->occurrences++; break;
 		case SET_REPLACE: assert(0); /* Impossible with <fn:<S>set_compute>. */
 		}

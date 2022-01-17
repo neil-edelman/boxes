@@ -319,7 +319,7 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 		printf("Store \"%s\" in set, result: %s.\n", z, set_result_str[result]);
 		size.after = set.size;
 		assert(s->is_in && !memcmp(&eject, &zero, sizeof zero)
-			&& result == SET_GROW && size.after == size.before + 1
+			&& result == SET_ABSENT && size.after == size.before + 1
 			|| !s->is_in && result == SET_YIELD && size.before == size.after);
 		success = S_(set_query)(&set, PS_(entry_key)(s->_.entry), &entry);
 		assert(success && PS_(eq_en)(s->_.entry, entry));
