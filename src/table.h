@@ -97,8 +97,8 @@
 /* These are not returned by any of the editing functions; micromanaging has
  been simplified. X(REPLACE_KEY), X(REPLACE_VALUE) */
 #define X(n) TABLE_##n
-/** This is the result of modifying the table. An `enum` of `TABLE_*`, of which
- `TABLE_ERROR` is false. ![A diagram of the result states.](../web/put.png) */
+/** This is the result of modifying the table, of which `TABLE_ERROR` is false.
+ ![A diagram of the result states.](../web/put.png) */
 enum table_result { TABLE_RESULT };
 #undef X
 #define X(n) #n
