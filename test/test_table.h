@@ -77,12 +77,12 @@ static void PN_(graph)(const struct N_(table) *const table,
 		"\tgraph [truecolor=true, bgcolor=transparent];\n"
 		"\tfontface=modern;\n");
 	if(!table->buckets) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
-	PN_(collect)(table), assert((size_t)table->size >= PN_(stats).n /* Buckets. */);
+	PN_(collect)(table), assert((size_t)table->size >= PN_(stats).n);
 	fprintf(fp,
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
 		"\thash [label=<<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;"
-		QUOTE(TABLE_NAME) "&gt;hash: " QUOTE(TABLE_KEY) "</FONT></TD></TR>\n"
+		QUOTE(TABLE_NAME) "&gt;table: " QUOTE(TABLE_KEY) "</FONT></TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD>&nbsp;</TD>\n"
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load"
