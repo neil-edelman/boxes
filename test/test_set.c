@@ -129,9 +129,9 @@ static unsigned lowbias32(unsigned x) { return x; }
 static unsigned lowbias32_r(unsigned x) { return x; }
 #endif /* < 32 bits */
 /** @implements <int>to_string_fn */
-static void int_to_string(const unsigned x, char (*const a)[12])
+static void uint_to_string(const unsigned x, char (*const a)[12])
 	{ sprintf(*a, "%u", x); }
-#define SET_NAME int
+#define SET_NAME uint
 #define SET_KEY unsigned /* Parameter of <fn:lowbias32>. */
 #define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
 #define SET_HASH &lowbias32
@@ -139,36 +139,44 @@ static void int_to_string(const unsigned x, char (*const a)[12])
 #define SET_TEST
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
-#define SET_TO_STRING &int_to_string
+#define SET_TO_STRING &uint_to_string
 #include "../src/set.h"
 /** @implements <int>test_new_fn */
-static int int_from_void(void *const zero, unsigned *const u) {
+static int uint_from_void(void *const zero, unsigned *const u) {
 	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
 	*u = (unsigned)rand();
 	return 1;
 }
 
 
-/* Check to see that the prototypes are correct by making a signed integer. */
-/** @implements <sint>hash_fn */
-static unsigned sint_hash(int d) { return lowbias32((unsigned)(d - INT_MIN)); }
-/** @implements <sint>inverse_hash_fn */
-static int sint_inv_hash(unsigned u) { return (int)lowbias32_r(u) + INT_MIN; }
-/** @implements <sint>to_string_fn */
-static void sint_to_string(const int d, char (*const a)[12])
+/* Check to see that the prototypes are correct by making a signed integer.
+ Also testing `SET_DEFAULT`. */
+/** @implements <int>hash_fn */
+static unsigned int_hash(int d) { return lowbias32((unsigned)(d - INT_MIN)); }
+/** @implements <int>inverse_hash_fn */
+static int int_inv_hash(unsigned u) { return (int)lowbias32_r(u) + INT_MIN; }
+/** @implements <int>to_string_fn */
+static void int_to_string(const int d, char (*const a)[12])
 	{ sprintf(*a, "%d", d); }
-#define SET_NAME sint
+#define SET_NAME int
 #define SET_KEY int
 #define SET_UINT unsigned
-#define SET_HASH &sint_hash
-#define SET_INVERSE &sint_inv_hash
+#define SET_HASH &int_hash
+#define SET_INVERSE &int_inv_hash
 #define SET_TEST
 #define SET_EXPECT_TRAIT
 #include "../src/set.h"
-#define SET_TO_STRING &sint_to_string
+#define SET_DEFAULT 0
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_DEFAULT 42
+#define SET_DEFAULT_NAME 42
+#define SET_EXPECT_TRAIT
+#include "../src/set.h"
+#define SET_TO_STRING &int_to_string
 #include "../src/set.h"
 /** @implements <int>test_new_fn */
-static int sint_from_void(void *const zero, int *const s) {
+static int int_from_void(void *const zero, int *const s) {
 	assert(!zero && RAND_MAX <= 9999999999l); /* For printing with '-'. */
 	*s = rand() - RAND_MAX / 2;
 	return 1;
@@ -263,18 +271,34 @@ finally:
 
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
-	struct int_set is = SET_IDLE;
 	zodiac_set_test(&fill_zodiac, 0); /* Don't require any space. */
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
+	uint_set_test(&uint_from_void, 0);
 	int_set_test(&int_from_void, 0);
-	sint_set_test(&sint_from_void, 0);
 	nato();
-	int_set_update(&is, 1, 0, 0);
-	int_set_update(&is, 2, 0, 0);
-	printf("%s: 1:%u, 2:%u, 3:%u\n", int_set_to_string(&is),
-		int_set_get_or(&is, 1, 0), int_set_get_or(&is, 2, 0),
-		int_set_get_or(&is, 3, 0));
-	int_set_(&is);
+	{ /* Too lazy to do separate tests. */
+		struct int_set is = SET_IDLE;
+		int one, two, def;
+		int_set_update(&is, 1, 0, 0);
+		int_set_update(&is, 2, 0, 0);
+		printf("Set %s.\n", int_set_to_string(&is));
+		one = int_set_get_or(&is, 1, 7);
+		two = int_set_get_or(&is, 2, 7);
+		def = int_set_get_or(&is, 3, 7);
+		printf("get or default(7): 1:%u, 2:%u, 3:%u\n", one, two, def);
+		assert(one == 1 && two == 2 && def == 7);
+		one = int_set_get(&is, 1);
+		two = int_set_get(&is, 2);
+		def = int_set_get(&is, 3);
+		printf("get or 0: 1:%u, 2:%u, 3:%u\n", one, two, def);
+		assert(one == 1 && two == 2 && def == 0);
+		one = int_set_42_get(&is, 1);
+		two = int_set_42_get(&is, 2);
+		def = int_set_42_get(&is, 3);
+		printf("get or 42: 1:%u, 2:%u, 3:%u\n", one, two, def);
+		assert(one == 1 && two == 2 && def == 42);
+		int_set_(&is);
+	}
 
 
 

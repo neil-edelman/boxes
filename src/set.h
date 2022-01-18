@@ -37,6 +37,11 @@
  @param[SET_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
+ @param[SET_DEFAULT_NAME, SET_DEFAULT]
+ A name that satisfies `C` naming conventions when mangled and a
+ <typedef:<PS>value> used in <fn:<DS>get>. There can be multiple to defaults,
+ but only one can omit `SET_DEFAULT_NAME`.
+
  @param[SET_TO_STRING_NAME, SET_TO_STRING]
  To string trait contained in <to_string.h>; `<SZ>` that satisfies `C` naming
  conventions when mangled and function implementing
@@ -50,14 +55,22 @@
 #error Name SET_NAME, tag type SET_KEY, functions SET_HASH, and, \
 	SET_IS_EQUAL or SET_INVERSE (but not both) undefined.
 #endif
+#if defined(SET_DEFAULT_NAME) || defined(SET_DEFAULT)
+#define SET_DEFAULT_TRAIT 1
+#else
+#define SET_DEFAULT_TRAIT 0
+#endif
 #if defined(SET_TO_STRING_NAME) || defined(SET_TO_STRING)
 #define SET_TO_STRING_TRAIT 1
 #else
 #define SET_TO_STRING_TRAIT 0
 #endif
-#define SET_TRAITS SET_TO_STRING_TRAIT
+#define SET_TRAITS SET_DEFAULT_TRAIT + SET_TO_STRING_TRAIT
 #if SET_TRAITS > 1
 #error Only one trait per include is allowed; use SET_EXPECT_TRAIT.
+#endif
+#if defined(SET_DEFAULT_NAME) && !defined(SET_DEFAULT)
+#error SET_DEFAULT_NAME requires SET_DEFAULT.
 #endif
 #if defined(SET_TO_STRING_NAME) && !defined(SET_TO_STRING)
 #error SET_TO_STRING_NAME requires SET_TO_STRING.
@@ -576,8 +589,10 @@ static void S_(set_clear)(struct S_(set) *const set) {
 /** @return Is `key` in `set`? (which can be null.) @allow */
 static int S_(set_is)(struct S_(set) *const set, const PS_(key) key)
 	{ return set && set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
+/* Fixme: a lot of copying for nothing, are you sure it's optimized? */
 
-/** @param[result] If non-null, a <typedef:<PS>entry> which gets filled on true.
+/** @param[result] If null, behaves like <fn:<PS>set_is>, otherwise, a
+ <typedef:<PS>entry> which gets filled on true.
  @return Is `key` in `set`? (which can be null.) @allow */
 static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
 	PS_(entry) *const result) {
@@ -588,12 +603,11 @@ static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
 	return 1;
 }
 
-/* set_get_or, set_<P>_get */
+/* set_<P>_get */
 
-/** @return The value associated with `key` in `set`, (if `SET_VALUE` is not
- set, the value and the key are the same.) If no such value exists, the
- `default_value` is returned.
- @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
+/** @return The value associated with `key` in `set`, (which can be null.) If
+ no such value exists, the `default_value` is returned.
+ @order Average \O(1); worst \O(n).
  @allow */
 static PS_(value) S_(set_get_or)(struct S_(set) *const set,
 	const PS_(key) key, PS_(value) default_value) {
@@ -602,14 +616,37 @@ static PS_(value) S_(set_get_or)(struct S_(set) *const set,
 		? PS_(bucket_value)(b) : default_value;
 }
 
-/* set_try(), set_replace() */
+/** Puts `entry` in `set` only if absent.
+ @return One of: `SET_ERROR` the set is not modified; `SET_YIELD` not modified
+ if there is another entry with the same key; `SET_UNIQUE`, put an entry in the
+ set.
+ @throws[realloc, ERANGE] There was an error with resizing.
+ @order Average amortised \O(1); worst \O(n).
+ @allow */
+static enum set_result S_(set_try)(struct S_(set) *const set,
+	PS_(entry) entry) { return PS_(put)(set, entry, 0, 0); }
+
+/** Used in <fn:<S>set_replace>. @implements <PS>policy_fn */
+static int PS_(always_replace)(const PS_(key) original,
+	const PS_(key) replace) { return (void)original, (void)replace, 1; }
+
+/** Puts `entry` in `set`.
+ @return One of: `SET_ERROR` the set is not modified; `SET_REPLACE`, `eject`,
+ if non-null, will be filled; `SET_UNIQUE`, on a unique entry.
+ @throws[realloc, ERANGE] There was an error with resizing.
+ @order Average amortised \O(1); worst \O(n).
+ @allow */
+static enum set_result S_(set_replace)(struct S_(set) *const set,
+	PS_(entry) entry, PS_(entry) *eject) {
+	return PS_(put)(set, entry, eject, &PS_(always_replace));
+}
 
 /** Puts `entry` in `set` only if absent or if calling `update` returns true.
  @return One of: `SET_ERROR` the set is not modified; `SET_REPLACE` if
  `update` is non-null and returns true, `eject`, if non-null, will be filled;
- `SET_YIELD` if `replace` is null or false; `SET_GROW`, on unique entry.
+ `SET_YIELD` if `update` is null or false; `SET_UNIQUE`, on unique entry.
  @throws[realloc, ERANGE] There was an error with resizing.
- @order Average amortised \O(1), (hash distributes keys uniformly); worst \O(n).
+ @order Average amortised \O(1); worst \O(n).
  @allow */
 static enum set_result S_(set_update)(struct S_(set) *const set,
 	PS_(entry) entry, PS_(entry) *eject, const PS_(policy_fn) update)
@@ -745,7 +782,7 @@ static void PS_(unused_base)(void) {
 	memset(&v, 0, sizeof v);
 	S_(set)(0); S_(set_)(0); S_(set_buffer)(0, 0); S_(set_clear)(0);
 	S_(set_is)(0, k); S_(set_query)(0, k, 0); S_(set_get_or)(0, k, v);
-	S_(set_update)(0, e, 0, 0);
+	S_(set_try)(0, e); S_(set_replace)(0, e, 0); S_(set_update)(0, e, 0, 0);
 	/*S_(set_remove)(0, 0);*/
 	S_(set_begin)(0, 0); S_(set_next)(0, 0); S_(set_has_next)(0);
 	PS_(unused_base_coda)();
@@ -756,7 +793,42 @@ static void PS_(unused_base)(void) {
 static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 
 
-#elif defined(SET_TO_STRING) /* base hash --><!-- to string trait */
+#elif defined(SET_DEFAULT) /* base --><!-- default */
+
+#ifdef SET_DEFAULT_NAME
+#define SD_(n, m) SET_CAT(S_(n), SET_CAT(SET_DEFAULT_NAME, m))
+#else
+#define SD_(n, m) SET_CAT(S_(n), m)
+#endif
+#define PSD_(n) SET_CAT(set_d, SD_(private, n))
+
+/* Check that `SET_DEFAULT` is a valid <tag:<PS>value> and that only one time
+ can the `SET_DEFAULT_NAME` be omitted. */
+static const PS_(value) PSD_(default_value) = (SET_DEFAULT);
+
+/** @return The value associated with `key` in `set`, (which can be null.) If
+ no such value exists, the `SET_DEFAULT` is returned.
+ @order Average \O(1); worst \O(n).
+ @allow */
+static PS_(value) SD_(set, get)(struct S_(set) *const set, const PS_(key) key) {
+	struct PS_(bucket) *b;
+	return set && set->buckets && (b = PS_(query)(set, key, PS_(hash)(key)))
+		? PS_(bucket_value)(b) : PSD_(default_value);
+}
+
+static void PSD_(unused_default_coda)(void);
+static void PSD_(unused_default)(void) { PS_(key) k; memset(&k, 0, sizeof k);
+	SD_(set, get)(0, k); PSD_(unused_default_coda)(); }
+static void PSD_(unused_default_coda)(void) { PSD_(unused_default)(); }
+
+#undef SD_
+#undef SET_DEFAULT
+#ifdef SET_DEFAULT_NAME
+#undef SET_DEFAULT_NAME
+#endif
+
+
+#elif defined(SET_TO_STRING) /* default --><!-- to string trait */
 
 
 #ifdef SET_TO_STRING_NAME
@@ -764,7 +836,7 @@ static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 #else
 #define SZ_(n) SET_CAT(S_(set), n)
 #endif
-#define TSZ_(n) SET_CAT(hash_sz, SZ_(n))
+#define TSZ_(n) SET_CAT(set_sz, SZ_(n))
 /* Check that `SET_TO_STRING` is a function implementing this prototype. */
 static void (*const TSZ_(actual_to_string))(PS_(ckey), char (*const)[12])
 	= (SET_TO_STRING);
@@ -805,17 +877,19 @@ static const char *(*PS_(set_to_string))(const struct S_(set) *)
 #undef SET_KEY
 #undef SET_UINT
 #undef SET_HASH
+#ifdef SET_IS_EQUAL
 #undef SET_IS_EQUAL
+#else
+#undef SET_INVERSE
+#endif
 #ifdef SET_VALUE
 #undef SET_VALUE
-#endif
-#ifdef SET_INVERSE
-#undef SET_INVERSE
 #endif
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
 /* box (multiple traits) --> */
 #endif /* !trait --> */
+#undef SET_DEFAULT_TRAIT
 #undef SET_TO_STRING_TRAIT
 #undef SET_TRAITS
