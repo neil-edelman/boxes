@@ -39,8 +39,8 @@
 
  @param[SET_DEFAULT_NAME, SET_DEFAULT]
  A name that satisfies `C` naming conventions when mangled and a
- <typedef:<PS>value> used in <fn:<DS>get>. There can be multiple to defaults,
- but only one can omit `SET_DEFAULT_NAME`.
+ <typedef:<PS>value> used in <fn:<S>set<D>get>. There can be multiple to
+ defaults, but only one can omit `SET_DEFAULT_NAME`.
 
  @param[SET_TO_STRING_NAME, SET_TO_STRING]
  To string trait contained in <to_string.h>; `<SZ>` that satisfies `C` naming
@@ -591,7 +591,7 @@ static int S_(set_is)(struct S_(set) *const set, const PS_(key) key)
 	{ return set && set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
 /* Fixme: a lot of copying for nothing, are you sure it's optimized? */
 
-/** @param[result] If null, behaves like <fn:<PS>set_is>, otherwise, a
+/** @param[result] If null, behaves like <fn:<S>set_is>, otherwise, a
  <typedef:<PS>entry> which gets filled on true.
  @return Is `key` in `set`? (which can be null.) @allow */
 static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
@@ -626,7 +626,8 @@ static PS_(value) S_(set_get_or)(struct S_(set) *const set,
 static enum set_result S_(set_try)(struct S_(set) *const set,
 	PS_(entry) entry) { return PS_(put)(set, entry, 0, 0); }
 
-/** Used in <fn:<S>set_replace>. @implements <PS>policy_fn */
+/* Callback in <fn:<S>set_replace>.
+ @return `original` and `replace` ignored, true. @implements <PS>policy_fn */
 static int PS_(always_replace)(const PS_(key) original,
 	const PS_(key) replace) { return (void)original, (void)replace, 1; }
 

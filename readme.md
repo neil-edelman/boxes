@@ -5,6 +5,7 @@
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), [&lt;PS&gt;key](#user-content-typedef-759eb157), [&lt;PS&gt;ckey](#user-content-typedef-6ff89358), [&lt;PS&gt;hash_fn](#user-content-typedef-87d76975), [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba), [&lt;PS&gt;is_equal_fn](#user-content-typedef-bbf0b37c), [&lt;PS&gt;value](#user-content-typedef-2830cf59), [&lt;PS&gt;entry](#user-content-typedef-3ef38eec), [&lt;PS&gt;policy_fn](#user-content-typedef-ff188dd7), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;key](#user-content-typedef-bd74ee05), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [set_result](#user-content-tag-f250624d), [&lt;S&gt;set_entry](#user-content-tag-ef912361), [&lt;S&gt;set](#user-content-tag-54aaac2), [&lt;S&gt;set_iterator](#user-content-tag-f91e42cd)
+ * [General Declarations](#user-content-data): [key](#user-content-data-6815c86c)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -29,6 +30,8 @@ fixme
    Function satisfying [&lt;PS&gt;inverse_hash_fn](#user-content-typedef-1c193eba); this avoids storing the key, but calculates it from the hashed value\. The hashes are now unique, so there is no need for a `SET_IS_EQUAL`\.
  * Parameter: SET\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
+ * Parameter: SET\_DEFAULT\_NAME, SET\_DEFAULT  
+   A name that satisfies `C` naming conventions when mangled and a [&lt;PS&gt;value](#user-content-typedef-2830cf59) used in [&lt;S&gt;set&lt;D&gt;get](#user-content-fn-a900f658)\. There can be multiple to defaults, but only one can omit `SET_DEFAULT_NAME`\.
  * Parameter: SET\_TO\_STRING\_NAME, SET\_TO\_STRING  
    To string trait contained in [to\_string\.h](to_string.h); `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `SET_TO_STRING_NAME`\.
  * Standard:  
@@ -65,7 +68,7 @@ Read\-only [&lt;PS&gt;key](#user-content-typedef-759eb157)\. Makes the simplifyi
 
 <code>typedef &lt;PS&gt;uint(*<strong>&lt;PS&gt;hash_fn</strong>)(&lt;PS&gt;ckey);</code>
 
-A map from [&lt;PS&gt;ckey](#user-content-typedef-6ff89358) onto [&lt;PS&gt;uint](#user-content-typedef-f1ed2088), \(any will do, but the performance may suffer if too many entries are hashed to the same buckets\.\) If [&lt;PS&gt;key](#user-content-typedef-759eb157) is a pointer, one is permitted to have null in the domain\.
+A map from [&lt;PS&gt;ckey](#user-content-typedef-6ff89358) onto [&lt;PS&gt;uint](#user-content-typedef-f1ed2088) that, ideally, should be easy to compute while minimizing duplications of [&lt;PS&gt;uint](#user-content-typedef-f1ed2088) mod hash table capacity for the domain of the [&lt;PS&gt;key](#user-content-typedef-759eb157)\. Must be consistent while in the set\. If [&lt;PS&gt;key](#user-content-typedef-759eb157) is a pointer, one is permitted to have null in the domain\.
 
 
 
@@ -169,6 +172,14 @@ Iteration usually not in any particular order\. The asymptotic runtime is propor
 
 
 
+## <a id = "user-content-data" name = "user-content-data">General Declarations</a> ##
+
+### <a id = "user-content-data-6815c86c" name = "user-content-data-6815c86c">key</a> ###
+
+<code>static &lt;PS&gt;value</code>
+
+
+
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
@@ -187,7 +198,11 @@ Iteration usually not in any particular order\. The asymptotic runtime is propor
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-6462ca0d">&lt;S&gt;set_query</a></td><td>set, key, result</td></tr>
 
-<tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#user-content-fn-4b32a391">&lt;S&gt;set_get</a></td><td>hash, key</td></tr>
+<tr><td align = right>static &lt;PS&gt;value</td><td><a href = "#user-content-fn-f176c37">&lt;S&gt;set_get_or</a></td><td>set, key, default_value</td></tr>
+
+<tr><td align = right>static enum set_result</td><td><a href = "#user-content-fn-5010a2a8">&lt;S&gt;set_try</a></td><td>set, entry</td></tr>
+
+<tr><td align = right>static enum set_result</td><td><a href = "#user-content-fn-7982ba81">&lt;S&gt;set_replace</a></td><td>set, entry, eject</td></tr>
 
 <tr><td align = right>static enum set_result</td><td><a href = "#user-content-fn-8d876df6">&lt;S&gt;set_update</a></td><td>set, entry, eject, update</td></tr>
 
@@ -265,7 +280,7 @@ Clears and removes all buckets from `set`\. The capacity and memory of the `set`
 <code>static int <strong>&lt;S&gt;set_is</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>)</code>
 
  * Return:  
-   Is `key` in `set`?
+   Is `key` in `set`? \(which can be null\.\)
 
 
 
@@ -275,21 +290,53 @@ Clears and removes all buckets from `set`\. The capacity and memory of the `set`
 <code>static int <strong>&lt;S&gt;set_query</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>, &lt;PS&gt;entry *const <em>result</em>)</code>
 
  * Parameter: _result_  
-   If non\-null, a [&lt;PS&gt;entry](#user-content-typedef-3ef38eec) which gets filled on true\.
+   If null, behaves like [&lt;S&gt;set_is](#user-content-fn-ca9a4e3b), otherwise, a [&lt;PS&gt;entry](#user-content-typedef-3ef38eec) which gets filled on true\.
  * Return:  
-   Is `key` in `set`?
+   Is `key` in `set`? \(which can be null\.\)
 
 
 
 
-### <a id = "user-content-fn-4b32a391" name = "user-content-fn-4b32a391">&lt;S&gt;set_get</a> ###
+### <a id = "user-content-fn-f176c37" name = "user-content-fn-f176c37">&lt;S&gt;set_get_or</a> ###
 
-<code>static &lt;PS&gt;key <strong>&lt;S&gt;set_get</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;key <em>key</em>)</code>
+<code>static &lt;PS&gt;value <strong>&lt;S&gt;set_get_or</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>, &lt;PS&gt;value <em>default_value</em>)</code>
 
  * Return:  
-   The value in `hash` which is equal `key`, or, if no such value exists, null\.
+   The value associated with `key` in `set`, \(which can be null\.\) If no such value exists, the `default_value` is returned\.
  * Order:  
-   Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
+   Average &#927;\(1\); worst &#927;\(n\)\.
+
+
+
+
+### <a id = "user-content-fn-5010a2a8" name = "user-content-fn-5010a2a8">&lt;S&gt;set_try</a> ###
+
+<code>static enum set_result <strong>&lt;S&gt;set_try</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>)</code>
+
+Puts `entry` in `set` only if absent\.
+
+ * Return:  
+   One of: `SET_ERROR` the set is not modified; `SET_YIELD` not modified if there is another entry with the same key; `SET_UNIQUE`, put an entry in the set\.
+ * Exceptional return: realloc, ERANGE  
+   There was an error with resizing\.
+ * Order:  
+   Average amortised &#927;\(1\); worst &#927;\(n\)\.
+
+
+
+
+### <a id = "user-content-fn-7982ba81" name = "user-content-fn-7982ba81">&lt;S&gt;set_replace</a> ###
+
+<code>static enum set_result <strong>&lt;S&gt;set_replace</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>)</code>
+
+Puts `entry` in `set`\.
+
+ * Return:  
+   One of: `SET_ERROR` the set is not modified; `SET_REPLACE`, `eject`, if non\-null, will be filled; `SET_UNIQUE`, on a unique entry\.
+ * Exceptional return: realloc, ERANGE  
+   There was an error with resizing\.
+ * Order:  
+   Average amortised &#927;\(1\); worst &#927;\(n\)\.
 
 
 
@@ -301,11 +348,11 @@ Clears and removes all buckets from `set`\. The capacity and memory of the `set`
 Puts `entry` in `set` only if absent or if calling `update` returns true\.
 
  * Return:  
-   One of: `SET_ERROR` the set is not modified; `SET_REPLACE` if `update` is non\-null and returns true, `eject`, if non\-null, will be filled; `SET_YIELD` if `replace` is null or false; `SET_GROW`, on unique entry\.
+   One of: `SET_ERROR` the set is not modified; `SET_REPLACE` if `update` is non\-null and returns true, `eject`, if non\-null, will be filled; `SET_YIELD` if `update` is null or false; `SET_UNIQUE`, on unique entry\.
  * Exceptional return: realloc, ERANGE  
    There was an error with resizing\.
  * Order:  
-   Average amortised &#927;\(1\), \(hash distributes keys uniformly\); worst &#927;\(n\)\.
+   Average amortised &#927;\(1\); worst &#927;\(n\)\.
 
 
 

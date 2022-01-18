@@ -39,6 +39,7 @@
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>key">&lt;PS&gt;key</a>, <a href = "#typedef:<PS>ckey">&lt;PS&gt;ckey</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>value">&lt;PS&gt;value</a>, <a href = "#typedef:<PS>entry">&lt;PS&gt;entry</a>, <a href = "#typedef:<PS>policy_fn">&lt;PS&gt;policy_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>key">&lt;PSZ&gt;key</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:set_result">set_result</a>, <a href = "#tag:<S>set_entry">&lt;S&gt;set_entry</a>, <a href = "#tag:<S>set">&lt;S&gt;set</a>, <a href = "#tag:<S>set_iterator">&lt;S&gt;set_iterator</a></li>
+	<li><a href = "#data:">General Declarations</a>: <a href = "#data:key">key</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -67,6 +68,8 @@ fixme</div>
 	<dd>Function satisfying <a href = "#typedef:&lt;PS&gt;inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>; this avoids storing the key, but calculates it from the hashed value. The hashes are now unique, so there is no need for a <code>SET_IS_EQUAL</code>.</dd>
 	<dt>Parameter: SET_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
+	<dt>Parameter: SET_DEFAULT_NAME, SET_DEFAULT</dt>
+	<dd>A name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PS&gt;value">&lt;PS&gt;value</a> used in <a href = "#fn:&lt;S&gt;set&lt;D&gt;get">&lt;S&gt;set&lt;D&gt;get</a>. There can be multiple to defaults, but only one can omit <code>SET_DEFAULT_NAME</code>.</dd>
 	<dt>Parameter: SET_TO_STRING_NAME, SET_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>SET_TO_STRING_NAME</code>.</dd>
 	<dt>Standard:</dt>
@@ -111,7 +114,7 @@ fixme</div>
 
 <p><code>typedef &lt;PS&gt;uint(*<strong>&lt;PS&gt;hash_fn</strong>)(&lt;PS&gt;ckey);</code></p>
 
-<p>A map from <a href = "#typedef:&lt;PS&gt;ckey">&lt;PS&gt;ckey</a> onto <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>, (any will do, but the performance may suffer if too many entries are hashed to the same buckets.) If <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
+<p>A map from <a href = "#typedef:&lt;PS&gt;ckey">&lt;PS&gt;ckey</a> onto <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> that, ideally, should be easy to compute while minimizing duplications of <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> mod hash table capacity for the domain of the <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>. Must be consistent while in the set. If <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
 
 </div>
 
@@ -239,6 +242,16 @@ fixme</div>
 
 </div>
 
+<h2><a id = "data:" name = "data:">General Declarations</a></h2>
+
+<div>
+
+<h3><a id = "data:key" name = "data:key">key</a></h3>
+
+<p><code>static &lt;PS&gt;value</code></p>
+
+</div>
+
 <div>
 
 <h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
@@ -259,7 +272,11 @@ fixme</div>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<S>set_query">&lt;S&gt;set_query</a></td><td>set, key, result</td></tr>
 
-<tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#fn:<S>set_get">&lt;S&gt;set_get</a></td><td>hash, key</td></tr>
+<tr><td align = right>static &lt;PS&gt;value</td><td><a href = "#fn:<S>set_get_or">&lt;S&gt;set_get_or</a></td><td>set, key, default_value</td></tr>
+
+<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_try">&lt;S&gt;set_try</a></td><td>set, entry</td></tr>
+
+<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_replace">&lt;S&gt;set_replace</a></td><td>set, entry, eject</td></tr>
 
 <tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_update">&lt;S&gt;set_update</a></td><td>set, entry, eject, update</td></tr>
 
@@ -353,7 +370,7 @@ fixme</div>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Is <code>key</code> in <code>set</code>?</dd>
+	<dd>Is <code>key</code> in <code>set</code>? (which can be null.)</dd>
 </dl>
 
 </div>
@@ -366,24 +383,62 @@ fixme</div>
 
 <dl>
 	<dt>Parameter: <em>result</em></dt>
-	<dd>If non-null, a <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> which gets filled on true.</dd>
+	<dd>If null, behaves like <a href = "#fn:&lt;S&gt;set_is">&lt;S&gt;set_is</a>, otherwise, a <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> which gets filled on true.</dd>
 	<dt>Return:</dt>
-	<dd>Is <code>key</code> in <code>set</code>?</dd>
+	<dd>Is <code>key</code> in <code>set</code>? (which can be null.)</dd>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<S>set_get" name = "fn:<S>set_get">&lt;S&gt;set_get</a></h3>
+<h3><a id = "fn:<S>set_get_or" name = "fn:<S>set_get_or">&lt;S&gt;set_get_or</a></h3>
 
-<p><code>static &lt;PS&gt;key <strong>&lt;S&gt;set_get</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;key <em>key</em>)</code></p>
+<p><code>static &lt;PS&gt;value <strong>&lt;S&gt;set_get_or</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>, &lt;PS&gt;value <em>default_value</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>The value in <code>hash</code> which is equal <code>key</code>, or, if no such value exists, null.</dd>
+	<dd>The value associated with <code>key</code> in <code>set</code>, (which can be null.) If no such value exists, the <code>default_value</code> is returned.</dd>
 	<dt>Order:</dt>
-	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
+	<dd>Average &#927;(1); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_try" name = "fn:<S>set_try">&lt;S&gt;set_try</a></h3>
+
+<p><code>static enum set_result <strong>&lt;S&gt;set_try</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>)</code></p>
+
+<p>Puts <code>entry</code> in <code>set</code> only if absent.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>One of: <code>SET_ERROR</code> the set is not modified; <code>SET_YIELD</code> not modified if there is another entry with the same key; <code>SET_UNIQUE</code>, put an entry in the set.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with resizing.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<S>set_replace" name = "fn:<S>set_replace">&lt;S&gt;set_replace</a></h3>
+
+<p><code>static enum set_result <strong>&lt;S&gt;set_replace</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>)</code></p>
+
+<p>Puts <code>entry</code> in <code>set</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>One of: <code>SET_ERROR</code> the set is not modified; <code>SET_REPLACE</code>, <code>eject</code>, if non-null, will be filled; <code>SET_UNIQUE</code>, on a unique entry.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>There was an error with resizing.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
 </dl>
 
 </div>
@@ -398,11 +453,11 @@ fixme</div>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>One of: <code>SET_ERROR</code> the set is not modified; <code>SET_REPLACE</code> if <code>update</code> is non-null and returns true, <code>eject</code>, if non-null, will be filled; <code>SET_YIELD</code> if <code>replace</code> is null or false; <code>SET_GROW</code>, on unique entry.</dd>
+	<dd>One of: <code>SET_ERROR</code> the set is not modified; <code>SET_REPLACE</code> if <code>update</code> is non-null and returns true, <code>eject</code>, if non-null, will be filled; <code>SET_YIELD</code> if <code>update</code> is null or false; <code>SET_UNIQUE</code>, on unique entry.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dd>There was an error with resizing.</dd>
 	<dt>Order:</dt>
-	<dd>Average amortised &#927;(1), (hash distributes keys uniformly); worst &#927;(n).</dd>
+	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
 </dl>
 
 </div>
