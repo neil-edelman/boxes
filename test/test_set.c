@@ -263,12 +263,18 @@ finally:
 
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
+	struct int_set is = SET_IDLE;
 	zodiac_set_test(&fill_zodiac, 0); /* Don't require any space. */
 	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
 	int_set_test(&int_from_void, 0);
 	sint_set_test(&sint_from_void, 0);
 	nato();
-
+	int_set_update(&is, 1, 0, 0);
+	int_set_update(&is, 2, 0, 0);
+	printf("%s: 1:%u, 2:%u, 3:%u\n", int_set_to_string(&is),
+		int_set_get_or(&is, 1, 0), int_set_get_or(&is, 2, 0),
+		int_set_get_or(&is, 3, 0));
+	int_set_(&is);
 
 
 

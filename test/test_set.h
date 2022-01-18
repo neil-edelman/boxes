@@ -338,12 +338,27 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 		PS_(histogram)(&set, fn);
 	}
 	printf("Go through the set and see if we can get all the items out.\n");
-	for(i = 0; i < trial_size; i++) {
+	{ PS_(value) def; memset(&def, 0, sizeof def);
+		for(i = 0; i < trial_size; i++) {
 		const struct sample *s = trials.sample + i;
+		const PS_(key) key = PS_(entry_key)(s->_.entry);
 		PS_(entry) result;
-		success = S_(set_query)(&set, PS_(entry_key)(s->_.entry), &result);
+		PS_(value) value;
+		const PS_(value) *array_value;
+		int is, cmp;
+		is = S_(set_is)(&set, key);
+		assert(is);
+		success = S_(set_query)(&set, key, &result);
 		assert(success && PS_(eq_en)(s->_.entry, result));
-	}
+		value = S_(set_get_or)(&set, key, def);
+#ifdef SET_VALUE
+		array_value = &s->_.entry.value;
+#else
+		array_value = &s->_.entry;
+#endif
+		cmp = memcmp(&value, array_value, sizeof value);
+		assert(!cmp);
+	}}
 	S_(set_clear)(&set);
 	for(b = 0, b_end = b + PS_(capacity)(&set); b < b_end; b++)
 		assert(set.buckets[b].next == SET_NULL);

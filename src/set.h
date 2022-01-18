@@ -120,10 +120,11 @@ typedef SET_KEY PS_(key);
  not `const`-qualified. */
 typedef const SET_KEY PS_(ckey);
 
-/** A map from <typedef:<PS>ckey> onto <typedef:<PS>uint>, (any will do, but
- the performance may suffer if too many entries are hashed to the same
- buckets.) If <typedef:<PS>key> is a pointer, one is permitted to have null in
- the domain. */
+/** A map from <typedef:<PS>ckey> onto <typedef:<PS>uint> that, ideally, should
+ be easy to compute while minimizing duplications of <typedef:<PS>uint> mod
+ hash table capacity for the domain of the <typedef:<PS>key>. Must be
+ consistent while in the set. If <typedef:<PS>key> is a pointer, one is
+ permitted to have null in the domain. */
 typedef PS_(uint) (*PS_(hash_fn))(PS_(ckey));
 /* Check that `SET_HASH` is a function implementing <typedef:<PS>hash_fn>. */
 static const PS_(hash_fn) PS_(hash) = (SET_HASH);
@@ -195,6 +196,16 @@ static PS_(key) PS_(bucket_key)(const struct PS_(bucket) *const bucket) {
 	return PS_(inverse_hash)(bucket->hash);
 #else
 	return bucket->key;
+#endif
+}
+
+/** Gets the value of an occupied `bucket`. */
+static PS_(value) PS_(bucket_value)(const struct PS_(bucket) *const bucket) {
+	assert(bucket && bucket->next != SET_NULL);
+#ifdef SET_VALUE
+	return bucket->value;
+#else
+	return PS_(bucket_key)(bucket);
 #endif
 }
 
@@ -562,35 +573,34 @@ static void S_(set_clear)(struct S_(set) *const set) {
  and move all. Does not, and indeed cannot, respect the most-recently used
  heuristic. */
 
-/** @return Is `key` in `set`? @allow */
+/** @return Is `key` in `set`? (which can be null.) @allow */
 static int S_(set_is)(struct S_(set) *const set, const PS_(key) key)
-	{ return assert(set),set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
+	{ return set && set->buckets && PS_(query)(set, key, PS_(hash)(key)); }
 
 /** @param[result] If non-null, a <typedef:<PS>entry> which gets filled on true.
- @return Is `key` in `set`? @allow */
+ @return Is `key` in `set`? (which can be null.) @allow */
 static int S_(set_query)(struct S_(set) *const set, const PS_(key) key,
 	PS_(entry) *const result) {
 	struct PS_(bucket) *b;
-	assert(set);
-	if(!set->buckets || !(b = PS_(query)(set, key, PS_(hash)(key)))) return 0;
+	if(!set || !set->buckets || !(b = PS_(query)(set, key, PS_(hash)(key))))
+		return 0;
 	if(result) PS_(to_entry)(b, result);
 	return 1;
 }
 
 /* set_get_or, set_<P>_get */
-#if 0
-/** @return The value in `hash` which is equal `key`, or, if no such value
- exists, null. @order Average \O(1), (hash distributes elements uniformly);
- worst \O(n). @allow */
-static PS_(key) S_(set_get)(struct S_(set) *const hash,
-	const PS_(key) key) {
-	struct PS_(bucket) *e;
-	assert(hash);
-	if(!hash->buckets) { assert(!hash->log_capacity); return 0; }
-	e = PS_(get)(hash, key, PS_(hash)(key));
-	return e ? PS_(entry_key)(e) : 0;
+
+/** @return The value associated with `key` in `set`, (if `SET_VALUE` is not
+ set, the value and the key are the same.) If no such value exists, the
+ `default_value` is returned.
+ @order Average \O(1), (hash distributes elements uniformly); worst \O(n).
+ @allow */
+static PS_(value) S_(set_get_or)(struct S_(set) *const set,
+	const PS_(key) key, PS_(value) default_value) {
+	struct PS_(bucket) *b;
+	return set && set->buckets && (b = PS_(query)(set, key, PS_(hash)(key)))
+		? PS_(bucket_value)(b) : default_value;
 }
-#endif
 
 /* set_try(), set_replace() */
 
@@ -729,17 +739,19 @@ static void PS_(unused_base_coda)(void);
 static void PS_(unused_base)(void) {
 	PS_(entry) e;
 	PS_(key) k;
+	PS_(value) v;
 	memset(&e, 0, sizeof e);
 	memset(&k, 0, sizeof k);
+	memset(&v, 0, sizeof v);
 	S_(set)(0); S_(set_)(0); S_(set_buffer)(0, 0); S_(set_clear)(0);
-	S_(set_is)(0, k); S_(set_query)(0, k, 0);
+	S_(set_is)(0, k); S_(set_query)(0, k, 0); S_(set_get_or)(0, k, v);
 	S_(set_update)(0, e, 0, 0);
-#ifdef SET_VALUE
-	S_(set_compute)(0, k, 0); S_(set_next_key)(0); S_(set_next_value)(0);
-#endif
 	/*S_(set_remove)(0, 0);*/
 	S_(set_begin)(0, 0); S_(set_next)(0, 0); S_(set_has_next)(0);
 	PS_(unused_base_coda)();
+#ifdef SET_VALUE
+	S_(set_compute)(0, k, 0); S_(set_next_key)(0); S_(set_next_value)(0);
+#endif
 }
 static void PS_(unused_base_coda)(void) { PS_(unused_base)(); }
 
