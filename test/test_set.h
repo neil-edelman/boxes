@@ -303,6 +303,15 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 	assert(success && set.buckets && set.log_capacity == 3 && !set.size);
 	S_(set_clear)(&set);
 	assert(set.buckets && set.log_capacity == 3 && !set.size);
+	{ /* Test negative `get_or`. */
+		PS_(key) key = PS_(entry_key)(trials.sample[0]._.entry);
+		PS_(value) ret, def;
+		int cmp;
+		memset(&def, 1, sizeof def);
+		ret = S_(set_get_or)(&set, key, def);
+		cmp = memcmp(&ret, &def, sizeof def);
+		assert(!cmp);
+	}
 	S_(set_)(&set);
 	assert(!set.buckets && set.log_capacity == 0 && !set.size);
 	/* Test placing items. */
@@ -358,6 +367,7 @@ static void PS_(test_basic)(const PS_(fill_fn) fill, void *const parent) {
 #endif
 		cmp = memcmp(&value, array_value, sizeof value);
 		assert(!cmp);
+		/* printf("%u: %u\n", (unsigned *)*array_value, (unsigned *)value); */
 	}}
 	S_(set_clear)(&set);
 	for(b = 0, b_end = b + PS_(capacity)(&set); b < b_end; b++)
