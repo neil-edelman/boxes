@@ -26,20 +26,19 @@
 		padding:          4px;
 	}
 </style>
-<title>set.h</title>
+<title>table.h</title>
 </head>
 
 <body>
 
-<h1>set.h</h1>
+<h1>table.h</h1>
 
 <h2>Hash table</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PS>uint">&lt;PS&gt;uint</a>, <a href = "#typedef:<PS>key">&lt;PS&gt;key</a>, <a href = "#typedef:<PS>ckey">&lt;PS&gt;ckey</a>, <a href = "#typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a>, <a href = "#typedef:<PS>inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>, <a href = "#typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a>, <a href = "#typedef:<PS>value">&lt;PS&gt;value</a>, <a href = "#typedef:<PS>entry">&lt;PS&gt;entry</a>, <a href = "#typedef:<PS>policy_fn">&lt;PS&gt;policy_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>key">&lt;PSZ&gt;key</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:set_result">set_result</a>, <a href = "#tag:<S>set_entry">&lt;S&gt;set_entry</a>, <a href = "#tag:<S>set">&lt;S&gt;set</a>, <a href = "#tag:<S>set_iterator">&lt;S&gt;set_iterator</a></li>
-	<li><a href = "#data:">General Declarations</a>: <a href = "#data:key">key</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>uint">&lt;PN&gt;uint</a>, <a href = "#typedef:<PN>key">&lt;PN&gt;key</a>, <a href = "#typedef:<PN>ckey">&lt;PN&gt;ckey</a>, <a href = "#typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a>, <a href = "#typedef:<PN>inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>, <a href = "#typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a>, <a href = "#typedef:<PN>value">&lt;PN&gt;value</a>, <a href = "#typedef:<PN>entry">&lt;PN&gt;entry</a>, <a href = "#typedef:<PN>policy_fn">&lt;PN&gt;policy_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>key">&lt;PSZ&gt;key</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:table_result">table_result</a>, <a href = "#tag:<N>table_entry">&lt;N&gt;table_entry</a>, <a href = "#tag:<N>table">&lt;N&gt;table</a>, <a href = "#tag:<N>table_iterator">&lt;N&gt;table_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -49,29 +48,27 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of &lt;string&gt;set." src = "web/set.png" width = 388 height = 391></p>
+<p><img alt = "Example of &lt;string&gt;table." src = "web/table.png" width = 388 height = 391></p>
 
-<p><a href = "#tag:&lt;S&gt;set">&lt;S&gt;set</a> is a set or map of <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> implemented as a hash table. It must be supplied a <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>.</p>
+<p><a href = "#tag:&lt;N&gt;table">&lt;N&gt;table</a> implements a set or map of <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> as a hash table. It must be supplied a <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> and, <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</p>
 
 fixme</div>
 
 <dl>
-	<dt>Parameter: SET_NAME, SET_KEY</dt>
-	<dd><code>&lt;S&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> associated therewith; required. <code>&lt;PS&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
-	<dt>Parameter: SET_HASH, SET_IS_EQUAL</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> and <a href = "#typedef:&lt;PS&gt;is_equal_fn">&lt;PS&gt;is_equal_fn</a>. <code>SET_HASH</code> and either <code>SET_IS_EQUAL</code> or <code>SET_INVERSE</code>, but not both, are required.</dd>
-	<dt>Parameter: SET_VALUE</dt>
+	<dt>Parameter: TABLE_NAME, TABLE_KEY</dt>
+	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> associated therewith; required. <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dt>Parameter: TABLE_HASH, TABLE_IS_EQUAL, TABLE_INVERSE</dt>
+	<dd><code>TABLE_HASH</code>, and either <code>TABLE_IS_EQUAL</code> or <code>TABLE_INVERSE</code>, but not both, are required. Function satisfying <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a>, and <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</dd>
+	<dt>Parameter: TABLE_VALUE</dt>
 	<dd>An optional type that is the payload of the key, thus making this an associative array. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers.</dd>
-	<dt>Parameter: SET_UINT</dt>
-	<dd>This is <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>, the unsigned type of hash hash of the key given by <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a>; defaults to <code>size_t</code>.</dd>
-	<dt>Parameter: SET_INVERSE</dt>
-	<dd>Function satisfying <a href = "#typedef:&lt;PS&gt;inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a>; this avoids storing the key, but calculates it from the hashed value. The hashes are now unique, so there is no need for a <code>SET_IS_EQUAL</code>.</dd>
-	<dt>Parameter: SET_EXPECT_TRAIT</dt>
+	<dt>Parameter: TABLE_UINT</dt>
+	<dd>This is <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>, the unsigned type of hash hash of the key given by <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a>; defaults to <code>size_t</code>.</dd>
+	<dt>Parameter: TABLE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
-	<dt>Parameter: SET_DEFAULT_NAME, SET_DEFAULT</dt>
-	<dd>A name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PS&gt;value">&lt;PS&gt;value</a> used in <a href = "#fn:&lt;S&gt;set&lt;D&gt;get">&lt;S&gt;set&lt;D&gt;get</a>. There can be multiple to defaults, but only one can omit <code>SET_DEFAULT_NAME</code>.</dd>
-	<dt>Parameter: SET_TO_STRING_NAME, SET_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>SET_TO_STRING_NAME</code>.</dd>
+	<dt>Parameter: TABLE_DEFAULT_NAME, TABLE_DEFAULT</dt>
+	<dd>A name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> used in <a href = "#fn:&lt;N&gt;table&lt;D&gt;get">&lt;N&gt;table&lt;D&gt;get</a>. There can be multiple to defaults, but only one can omit <code>TABLE_DEFAULT_NAME</code>.</dd>
+	<dt>Parameter: TABLE_TO_STRING_NAME, TABLE_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>TABLE_TO_STRING_NAME</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 </dl>
@@ -80,89 +77,89 @@ fixme</div>
 
 <div>
 
-<h3><a id = "typedef:<PS>uint" name = "typedef:<PS>uint">&lt;PS&gt;uint</a></h3>
+<h3><a id = "typedef:<PN>uint" name = "typedef:<PN>uint">&lt;PN&gt;uint</a></h3>
 
-<p><code>typedef SET_UINT <strong>&lt;PS&gt;uint</strong>;</code></p>
+<p><code>typedef TABLE_UINT <strong>&lt;PN&gt;uint</strong>;</code></p>
 
-<p><a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> returns this hash type by <code>SET_UINT</code>, which must be be an unsigned integer. Places a simplifying limit on the maximum number of items in this container of half the cardinality.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PS>key" name = "typedef:<PS>key">&lt;PS&gt;key</a></h3>
-
-<p><code>typedef SET_KEY <strong>&lt;PS&gt;key</strong>;</code></p>
-
-<p>Valid tag type defined by <code>SET_KEY</code> used for keys.</p>
+<p><a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> returns this hash type by <code>TABLE_UINT</code>, which must be be an unsigned integer. Places a simplifying limit on the maximum number of items in this container of half the cardinality.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PS>ckey" name = "typedef:<PS>ckey">&lt;PS&gt;ckey</a></h3>
+<h3><a id = "typedef:<PN>key" name = "typedef:<PN>key">&lt;PN&gt;key</a></h3>
 
-<p><code>typedef const SET_KEY <strong>&lt;PS&gt;ckey</strong>;</code></p>
+<p><code>typedef TABLE_KEY <strong>&lt;PN&gt;key</strong>;</code></p>
 
-<p>Read-only <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>. Makes the simplifying assumption that this is not <code>const</code>-qualified.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PS>hash_fn" name = "typedef:<PS>hash_fn">&lt;PS&gt;hash_fn</a></h3>
-
-<p><code>typedef &lt;PS&gt;uint(*<strong>&lt;PS&gt;hash_fn</strong>)(&lt;PS&gt;ckey);</code></p>
-
-<p>A map from <a href = "#typedef:&lt;PS&gt;ckey">&lt;PS&gt;ckey</a> onto <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> that, ideally, should be easy to compute while minimizing duplications of <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a> mod hash table capacity for the domain of the <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>. Must be consistent while in the set. If <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
+<p>Valid tag type defined by <code>TABLE_KEY</code> used for keys.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PS>inverse_hash_fn" name = "typedef:<PS>inverse_hash_fn">&lt;PS&gt;inverse_hash_fn</a></h3>
+<h3><a id = "typedef:<PN>ckey" name = "typedef:<PN>ckey">&lt;PN&gt;ckey</a></h3>
 
-<p><code>typedef &lt;PS&gt;key(*<strong>&lt;PS&gt;inverse_hash_fn</strong>)(&lt;PS&gt;uint);</code></p>
+<p><code>typedef const TABLE_KEY <strong>&lt;PN&gt;ckey</strong>;</code></p>
 
-<p>Defining <code>SET_INVERSE</code> says <a href = "#typedef:&lt;PS&gt;hash_fn">&lt;PS&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> and the image in <a href = "#typedef:&lt;PS&gt;uint">&lt;PS&gt;uint</a>. This is the inverse-mapping.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PS>is_equal_fn" name = "typedef:<PS>is_equal_fn">&lt;PS&gt;is_equal_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PS&gt;is_equal_fn</strong>)(&lt;PS&gt;ckey a, &lt;PS&gt;ckey b);</code></p>
-
-<p>Equivalence relation between <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> that satisfies <code>&lt;PS&gt;is_equal_fn(a, b) -&gt; &lt;PS&gt;hash(a) == &lt;PS&gt;hash(b)</code>.</p>
+<p>Read-only <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a>. Makes the simplifying assumption that this is not <code>const</code>-qualified.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PS>value" name = "typedef:<PS>value">&lt;PS&gt;value</a></h3>
+<h3><a id = "typedef:<PN>hash_fn" name = "typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a></h3>
 
-<p><code>typedef SET_VALUE <strong>&lt;PS&gt;value</strong>;</code></p>
+<p><code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;ckey);</code></p>
 
-<p>Defining <code>SET_VALUE</code> produces an associative map, otherwise it is the same as <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PS>entry" name = "typedef:<PS>entry">&lt;PS&gt;entry</a></h3>
-
-<p><code>typedef struct &lt;S&gt;set_entry <strong>&lt;PS&gt;entry</strong>;</code></p>
-
-<p>If <code>SET_VALUE</code>, this is <a href = "#tag:&lt;S&gt;set_entry">&lt;S&gt;set_entry</a>; otherwise, it's the same as <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a>.</p>
+<p>A map from <a href = "#typedef:&lt;PN&gt;ckey">&lt;PN&gt;ckey</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses, (that is, hash modulo size of table.) Must be consistent while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PS>policy_fn" name = "typedef:<PS>policy_fn">&lt;PS&gt;policy_fn</a></h3>
+<h3><a id = "typedef:<PN>inverse_hash_fn" name = "typedef:<PN>inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PS&gt;policy_fn</strong>)(&lt;PS&gt;key original, &lt;PS&gt;key replace);</code></p>
+<p><code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code></p>
+
+<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>. The keys are not stored in the hash table at all, but rely on this, the inverse-mapping.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>is_equal_fn" name = "typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;ckey a, &lt;PN&gt;ckey b);</code></p>
+
+<p>Equivalence relation between <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> that satisfies <code>&lt;PN&gt;is_equal_fn(a, b) -&gt; &lt;PN&gt;hash(a) == &lt;PN&gt;hash(b)</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>value" name = "typedef:<PN>value">&lt;PN&gt;value</a></h3>
+
+<p><code>typedef TABLE_VALUE <strong>&lt;PN&gt;value</strong>;</code></p>
+
+<p>Defining <code>TABLE_VALUE</code> produces an associative map, otherwise it is the same as <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>entry" name = "typedef:<PN>entry">&lt;PN&gt;entry</a></h3>
+
+<p><code>typedef struct &lt;N&gt;table_entry <strong>&lt;PN&gt;entry</strong>;</code></p>
+
+<p>If <code>TABLE_VALUE</code>, this is <a href = "#tag:&lt;N&gt;table_entry">&lt;N&gt;table_entry</a>; otherwise, it's the same as <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PN>policy_fn" name = "typedef:<PN>policy_fn">&lt;PN&gt;policy_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PN&gt;policy_fn</strong>)(&lt;PN&gt;key original, &lt;PN&gt;key replace);</code></p>
 
 <p>Returns true if the <code>replace</code> replaces the <code>original</code>.</p>
 
@@ -202,31 +199,31 @@ fixme</div>
 
 <div>
 
-<h3><a id = "tag:set_result" name = "tag:set_result">set_result</a></h3>
+<h3><a id = "tag:table_result" name = "tag:table_result">table_result</a></h3>
 
-<p><code>enum <strong>set_result</strong> { SET_RESULT };</code></p>
+<p><code>enum <strong>table_result</strong> { TABLE_RESULT };</code></p>
 
-<p>This is the result of modifying the table. An <code>enum</code> of <code>SET_*</code>, of which <code>SET_ERROR</code> is false. <img alt = "A diagram of the result states." src = "web/put.png" width = 527 height = 288></p>
-
-</div>
-
-<div>
-
-<h3><a id = "tag:<S>set_entry" name = "tag:<S>set_entry">&lt;S&gt;set_entry</a></h3>
-
-<p><code>struct <strong>&lt;S&gt;set_entry</strong> { &lt;PS&gt;key key; &lt;PS&gt;value value; };</code></p>
-
-<p>Defining <code>SET_VALUE</code> creates this map from <a href = "#typedef:&lt;PS&gt;key">&lt;PS&gt;key</a> to <a href = "#typedef:&lt;PS&gt;value">&lt;PS&gt;value</a> as an interface with set.</p>
+<p>This is the result of modifying the table. An <code>enum</code> of <code>TABLE_*</code>, of which <code>TABLE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "web/put.png" width = 527 height = 288></p>
 
 </div>
 
 <div>
 
-<h3><a id = "tag:<S>set" name = "tag:<S>set">&lt;S&gt;set</a></h3>
+<h3><a id = "tag:<N>table_entry" name = "tag:<N>table_entry">&lt;N&gt;table_entry</a></h3>
 
-<p><code>struct <strong>&lt;S&gt;set</strong> { struct &lt;PS&gt;bucket *buckets; &lt;PS&gt;uint log_capacity, size, top; };</code></p>
+<p><code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value value; };</code></p>
 
-<p>To initialize, see <a href = "#fn:&lt;S&gt;set">&lt;S&gt;set</a>, <code>SET_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the set to go into an invalid state.</p>
+<p>Defining <code>TABLE_VALUE</code> creates this map from <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> to <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> as an interface with table. In general, reducing the size of these elements will be better for performance.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<N>table" name = "tag:<N>table">&lt;N&gt;table</a></h3>
+
+<p><code>struct <strong>&lt;N&gt;table</strong> { struct &lt;PN&gt;bucket *buckets; &lt;PN&gt;uint log_capacity, size, top; };</code></p>
+
+<p>To initialize, see <a href = "#fn:&lt;N&gt;table">&lt;N&gt;table</a>, <code>TABLE_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the table to go into an invalid state.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 761 height = 135></p>
 
@@ -234,21 +231,11 @@ fixme</div>
 
 <div>
 
-<h3><a id = "tag:<S>set_iterator" name = "tag:<S>set_iterator">&lt;S&gt;set_iterator</a></h3>
+<h3><a id = "tag:<N>table_iterator" name = "tag:<N>table_iterator">&lt;N&gt;table_iterator</a></h3>
 
-<p><code>struct <strong>&lt;S&gt;set_iterator</strong> { struct &lt;PS&gt;iterator it; };</code></p>
+<p><code>struct <strong>&lt;N&gt;table_iterator</strong> { struct &lt;PN&gt;iterator it; };</code></p>
 
-<p>Iteration usually not in any particular order. The asymptotic runtime is proportional to the hash capacity.</p>
-
-</div>
-
-<h2><a id = "data:" name = "data:">General Declarations</a></h2>
-
-<div>
-
-<h3><a id = "data:key" name = "data:key">key</a></h3>
-
-<p><code>static &lt;PS&gt;value</code></p>
+<p>Iteration usually not in any particular order. The asymptotic runtime is proportional to the table capacity.</p>
 
 </div>
 
@@ -260,39 +247,41 @@ fixme</div>
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<S>set">&lt;S&gt;set</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<N>table">&lt;N&gt;table</a></td><td>table</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<S>set_">&lt;S&gt;set_</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<N>table_">&lt;N&gt;table_</a></td><td>table</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<S>set_buffer">&lt;S&gt;set_buffer</a></td><td>set, n</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_buffer">&lt;N&gt;table_buffer</a></td><td>table, n</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<S>set_clear">&lt;S&gt;set_clear</a></td><td>set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<N>table_clear">&lt;N&gt;table_clear</a></td><td>table</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<S>set_is">&lt;S&gt;set_is</a></td><td>set, key</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_is">&lt;N&gt;table_is</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<S>set_query">&lt;S&gt;set_query</a></td><td>set, key, result</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_query">&lt;N&gt;table_query</a></td><td>table, key, result</td></tr>
 
-<tr><td align = right>static &lt;PS&gt;value</td><td><a href = "#fn:<S>set_get_or">&lt;S&gt;set_get_or</a></td><td>set, key, default_value</td></tr>
+<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table_get_or">&lt;N&gt;table_get_or</a></td><td>table, key, default_value</td></tr>
 
-<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_try">&lt;S&gt;set_try</a></td><td>set, entry</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_try">&lt;N&gt;table_try</a></td><td>table, entry</td></tr>
 
-<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_replace">&lt;S&gt;set_replace</a></td><td>set, entry, eject</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_replace">&lt;N&gt;table_replace</a></td><td>table, entry, eject</td></tr>
 
-<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_update">&lt;S&gt;set_update</a></td><td>set, entry, eject, update</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_update">&lt;N&gt;table_update</a></td><td>table, entry, eject, update</td></tr>
 
-<tr><td align = right>static enum set_result</td><td><a href = "#fn:<S>set_compute">&lt;S&gt;set_compute</a></td><td>set, key, value</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_compute">&lt;N&gt;table_compute</a></td><td>table, key, value</td></tr>
 
-<tr><td align = right>static struct &lt;S&gt;setlink *</td><td><a href = "#fn:<S>set_remove">&lt;S&gt;set_remove</a></td><td>hash, data</td></tr>
+<tr><td align = right>static struct &lt;N&gt;setlink *</td><td><a href = "#fn:<N>set_remove">&lt;N&gt;set_remove</a></td><td>hash, data</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<S>set_begin">&lt;S&gt;set_begin</a></td><td>it, set</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<N>table_begin">&lt;N&gt;table_begin</a></td><td>it, table</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<S>set_next">&lt;S&gt;set_next</a></td><td>it, entry</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_next">&lt;N&gt;table_next</a></td><td>it, entry</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<S>set_has_next">&lt;S&gt;set_has_next</a></td><td>it</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_has_next">&lt;N&gt;table_has_next</a></td><td>it</td></tr>
 
-<tr><td align = right>static &lt;PS&gt;key</td><td><a href = "#fn:<S>set_next_key">&lt;S&gt;set_next_key</a></td><td>it</td></tr>
+<tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#fn:<N>table_next_key">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
 
-<tr><td align = right>static &lt;PS&gt;value</td><td><a href = "#fn:<S>set_next_value">&lt;S&gt;set_next_value</a></td><td>it</td></tr>
+<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table_next_value">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -306,11 +295,11 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set" name = "fn:<S>set">&lt;S&gt;set</a></h3>
+<h3><a id = "fn:<N>table" name = "fn:<N>table">&lt;N&gt;table</a></h3>
 
-<p><code>static void <strong>&lt;S&gt;set</strong>(struct &lt;S&gt;set *const <em>set</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;table</strong>(struct &lt;N&gt;table *const <em>table</em>)</code></p>
 
-<p>Initialises <code>set</code> to idle.</p>
+<p>Initialises <code>table</code> to idle.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -321,21 +310,21 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_" name = "fn:<S>set_">&lt;S&gt;set_</a></h3>
+<h3><a id = "fn:<N>table_" name = "fn:<N>table_">&lt;N&gt;table_</a></h3>
 
-<p><code>static void <strong>&lt;S&gt;set_</strong>(struct &lt;S&gt;set *const <em>set</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;table_</strong>(struct &lt;N&gt;table *const <em>table</em>)</code></p>
 
-<p>Destroys <code>set</code> and returns it to idle.</p>
+<p>Destroys <code>table</code> and returns it to idle.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<S>set_buffer" name = "fn:<S>set_buffer">&lt;S&gt;set_buffer</a></h3>
+<h3><a id = "fn:<N>table_buffer" name = "fn:<N>table_buffer">&lt;N&gt;table_buffer</a></h3>
 
-<p><code>static int <strong>&lt;S&gt;set_buffer</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;uint <em>n</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_buffer</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;uint <em>n</em>)</code></p>
 
-<p>Reserve at least <code>n</code> space for buckets of <code>set</code>. This will ensure that there is space for those buckets and may increase iteration time.</p>
+<p>Reserve at least <code>n</code> space for buckets of <code>table</code>. This will ensure that there is space for those buckets and may increase iteration time.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -349,56 +338,56 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_clear" name = "fn:<S>set_clear">&lt;S&gt;set_clear</a></h3>
+<h3><a id = "fn:<N>table_clear" name = "fn:<N>table_clear">&lt;N&gt;table_clear</a></h3>
 
-<p><code>static void <strong>&lt;S&gt;set_clear</strong>(struct &lt;S&gt;set *const <em>set</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;table_clear</strong>(struct &lt;N&gt;table *const <em>table</em>)</code></p>
 
-<p>Clears and removes all buckets from <code>set</code>. The capacity and memory of the <code>set</code> is preserved, but all previous values are un-associated. (The load factor will be less until it reaches it's previous size.)</p>
+<p>Clears and removes all buckets from <code>table</code>. The capacity and memory of the <code>table</code> is preserved, but all previous values are un-associated. (The load factor will be less until it reaches it's previous size.)</p>
 
 <dl>
 	<dt>Order:</dt>
-	<dd>&#920;(<code>set.capacity</code>)</dd>
+	<dd>&#920;(<code>table.capacity</code>)</dd>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<S>set_is" name = "fn:<S>set_is">&lt;S&gt;set_is</a></h3>
+<h3><a id = "fn:<N>table_is" name = "fn:<N>table_is">&lt;N&gt;table_is</a></h3>
 
-<p><code>static int <strong>&lt;S&gt;set_is</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_is</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Is <code>key</code> in <code>set</code>? (which can be null.)</dd>
+	<dd>Is <code>key</code> in <code>table</code>? (which can be null.)</dd>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<S>set_query" name = "fn:<S>set_query">&lt;S&gt;set_query</a></h3>
+<h3><a id = "fn:<N>table_query" name = "fn:<N>table_query">&lt;N&gt;table_query</a></h3>
 
-<p><code>static int <strong>&lt;S&gt;set_query</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>, &lt;PS&gt;entry *const <em>result</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;entry *const <em>result</em>)</code></p>
 
 <dl>
 	<dt>Parameter: <em>result</em></dt>
-	<dd>If null, behaves like <a href = "#fn:&lt;S&gt;set_is">&lt;S&gt;set_is</a>, otherwise, a <a href = "#typedef:&lt;PS&gt;entry">&lt;PS&gt;entry</a> which gets filled on true.</dd>
+	<dd>If null, behaves like <a href = "#fn:&lt;N&gt;table_is">&lt;N&gt;table_is</a>, otherwise, a <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> which gets filled on true.</dd>
 	<dt>Return:</dt>
-	<dd>Is <code>key</code> in <code>set</code>? (which can be null.)</dd>
+	<dd>Is <code>key</code> in <code>table</code>? (which can be null.)</dd>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<S>set_get_or" name = "fn:<S>set_get_or">&lt;S&gt;set_get_or</a></h3>
+<h3><a id = "fn:<N>table_get_or" name = "fn:<N>table_get_or">&lt;N&gt;table_get_or</a></h3>
 
-<p><code>static &lt;PS&gt;value <strong>&lt;S&gt;set_get_or</strong>(struct &lt;S&gt;set *const <em>set</em>, const &lt;PS&gt;key <em>key</em>, &lt;PS&gt;value <em>default_value</em>)</code></p>
+<p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table_get_or</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value <em>default_value</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>The value associated with <code>key</code> in <code>set</code>, (which can be null.) If no such value exists, the <code>default_value</code> is returned.</dd>
+	<dd>The value associated with <code>key</code> in <code>table</code>, (which can be null.) If no such value exists, the <code>default_value</code> is returned.</dd>
 	<dt>Order:</dt>
 	<dd>Average &#927;(1); worst &#927;(n).</dd>
 </dl>
@@ -407,15 +396,15 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_try" name = "fn:<S>set_try">&lt;S&gt;set_try</a></h3>
+<h3><a id = "fn:<N>table_try" name = "fn:<N>table_try">&lt;N&gt;table_try</a></h3>
 
-<p><code>static enum set_result <strong>&lt;S&gt;set_try</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>)</code></p>
+<p><code>static enum table_result <strong>&lt;N&gt;table_try</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>)</code></p>
 
-<p>Puts <code>entry</code> in <code>set</code> only if absent.</p>
+<p>Puts <code>entry</code> in <code>table</code> only if absent.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>One of: <code>SET_ERROR</code> the set is not modified; <code>SET_YIELD</code> not modified if there is another entry with the same key; <code>SET_UNIQUE</code>, put an entry in the set.</dd>
+	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_YIELD</code>, not modified if there is another entry with the same key; <code>TABLE_UNIQUE</code>, put an entry in the table.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dd>There was an error with resizing.</dd>
 	<dt>Order:</dt>
@@ -426,15 +415,15 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_replace" name = "fn:<S>set_replace">&lt;S&gt;set_replace</a></h3>
+<h3><a id = "fn:<N>table_replace" name = "fn:<N>table_replace">&lt;N&gt;table_replace</a></h3>
 
-<p><code>static enum set_result <strong>&lt;S&gt;set_replace</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>)</code></p>
+<p><code>static enum table_result <strong>&lt;N&gt;table_replace</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>)</code></p>
 
-<p>Puts <code>entry</code> in <code>set</code>.</p>
+<p>Puts <code>entry</code> in <code>table</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>One of: <code>SET_ERROR</code> the set is not modified; <code>SET_REPLACE</code>, <code>eject</code>, if non-null, will be filled; <code>SET_UNIQUE</code>, on a unique entry.</dd>
+	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_REPLACE</code>, the <code>entry</code> is put if the table, and, if non-null, <code>eject</code> will be filled; <code>TABLE_UNIQUE</code>, on a unique entry.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dd>There was an error with resizing.</dd>
 	<dt>Order:</dt>
@@ -445,15 +434,15 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_update" name = "fn:<S>set_update">&lt;S&gt;set_update</a></h3>
+<h3><a id = "fn:<N>table_update" name = "fn:<N>table_update">&lt;N&gt;table_update</a></h3>
 
-<p><code>static enum set_result <strong>&lt;S&gt;set_update</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;entry <em>entry</em>, &lt;PS&gt;entry *<em>eject</em>, const &lt;PS&gt;policy_fn <em>update</em>)</code></p>
+<p><code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>, const &lt;PN&gt;policy_fn <em>update</em>)</code></p>
 
-<p>Puts <code>entry</code> in <code>set</code> only if absent or if calling <code>update</code> returns true.</p>
+<p>Puts <code>entry</code> in <code>table</code> only if absent or if calling <code>update</code> returns true.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>One of: <code>SET_ERROR</code> the set is not modified; <code>SET_REPLACE</code> if <code>update</code> is non-null and returns true, <code>eject</code>, if non-null, will be filled; <code>SET_YIELD</code> if <code>update</code> is null or false; <code>SET_UNIQUE</code>, on unique entry.</dd>
+	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_REPLACE</code>, if <code>update</code> is non-null and returns true, if non-null, <code>eject</code> will be filled; <code>TABLE_YIELD</code>, if <code>update</code> is null or false; <code>TABLE_UNIQUE</code>, on unique entry.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dd>There was an error with resizing.</dd>
 	<dt>Order:</dt>
@@ -464,26 +453,26 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_compute" name = "fn:<S>set_compute">&lt;S&gt;set_compute</a></h3>
+<h3><a id = "fn:<N>table_compute" name = "fn:<N>table_compute">&lt;N&gt;table_compute</a></h3>
 
-<p><code>static enum set_result <strong>&lt;S&gt;set_compute</strong>(struct &lt;S&gt;set *const <em>set</em>, &lt;PS&gt;key <em>key</em>, &lt;PS&gt;value **const <em>value</em>)</code></p>
+<p><code>static enum table_result <strong>&lt;N&gt;table_compute</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>value</em>)</code></p>
 
-<p>If <code>SET_VALUE</code>, try to put <code>key</code> into <code>set</code>, and store the value in <code>value</code>.</p>
+<p>If <code>TABLE_VALUE</code>, try to put <code>key</code> into <code>table</code>, and store the value in <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd><code>SET_ERROR</code> does not set <code>value</code>; <code>SET_GROW</code>, the <code>value</code> will be uninitialized; <code>SET_YIELD</code>, gets the current <code>value</code>.</dd>
+	<dd><code>TABLE_ERROR</code> does not set <code>value</code>; <code>TABLE_GROW</code>, the <code>value</code> will be uninitialized; <code>TABLE_YIELD</code>, gets the current <code>value</code>.</dd>
 	<dt>Exceptional return: malloc</dt>
-	<dd>On <code>SET_ERROR</code>.</dd>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<S>set_remove" name = "fn:<S>set_remove">&lt;S&gt;set_remove</a></h3>
+<h3><a id = "fn:<N>set_remove" name = "fn:<N>set_remove">&lt;N&gt;set_remove</a></h3>
 
-<p><code>static struct &lt;S&gt;setlink *<strong>&lt;S&gt;set_remove</strong>(struct &lt;S&gt;set *const <em>hash</em>, const &lt;PS&gt;mtype <em>data</em>)</code></p>
+<p><code>static struct &lt;N&gt;setlink *<strong>&lt;N&gt;set_remove</strong>(struct &lt;N&gt;set *const <em>hash</em>, const &lt;PN&gt;mtype <em>data</em>)</code></p>
 
 <p>Removes an element <code>data</code> from <code>hash</code>.</p>
 
@@ -498,19 +487,19 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_begin" name = "fn:<S>set_begin">&lt;S&gt;set_begin</a></h3>
+<h3><a id = "fn:<N>table_begin" name = "fn:<N>table_begin">&lt;N&gt;table_begin</a></h3>
 
-<p><code>static void <strong>&lt;S&gt;set_begin</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>, const struct &lt;S&gt;set *const <em>set</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, const struct &lt;N&gt;table *const <em>table</em>)</code></p>
 
-<p>Loads <code>set</code> (can be null) into <code>it</code>.</p>
+<p>Loads <code>table</code> (can be null) into <code>it</code>.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<S>set_next" name = "fn:<S>set_next">&lt;S&gt;set_next</a></h3>
+<h3><a id = "fn:<N>table_next" name = "fn:<N>table_next">&lt;N&gt;table_next</a></h3>
 
-<p><code>static int <strong>&lt;S&gt;set_next</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>, &lt;PS&gt;entry *<em>entry</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code></p>
 
 <p>Advances <code>it</code>.</p>
 
@@ -525,13 +514,13 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_has_next" name = "fn:<S>set_has_next">&lt;S&gt;set_has_next</a></h3>
+<h3><a id = "fn:<N>table_has_next" name = "fn:<N>table_has_next">&lt;N&gt;table_has_next</a></h3>
 
-<p><code>static int <strong>&lt;S&gt;set_has_next</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Whether the set specified to <code>it</code> in <a href = "#fn:&lt;S&gt;set_begin">&lt;S&gt;set_begin</a> has a next.</dd>
+	<dd>Whether the table specified to <code>it</code> in <a href = "#fn:&lt;N&gt;table_begin">&lt;N&gt;table_begin</a> has a next element.</dd>
 	<dt>Order:</dt>
 	<dd>Amortized on the capacity, &#927;(1).</dd>
 </dl>
@@ -540,11 +529,11 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_next_key" name = "fn:<S>set_next_key">&lt;S&gt;set_next_key</a></h3>
+<h3><a id = "fn:<N>table_next_key" name = "fn:<N>table_next_key">&lt;N&gt;table_next_key</a></h3>
 
-<p><code>static &lt;PS&gt;key <strong>&lt;S&gt;set_next_key</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code></p>
+<p><code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
 
-<p>If <code>SET_VALUE</code>, advances <code>it</code> when <a href = "#fn:&lt;S&gt;set_has_next">&lt;S&gt;set_has_next</a>.</p>
+<p>If <code>TABLE_VALUE</code>, advances <code>it</code> when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -555,15 +544,30 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<S>set_next_value" name = "fn:<S>set_next_value">&lt;S&gt;set_next_value</a></h3>
+<h3><a id = "fn:<N>table_next_value" name = "fn:<N>table_next_value">&lt;N&gt;table_next_value</a></h3>
 
-<p><code>static &lt;PS&gt;value <strong>&lt;S&gt;set_next_value</strong>(struct &lt;S&gt;set_iterator *const <em>it</em>)</code></p>
+<p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
 
-<p>If <code>SET_VALUE</code>, advances <code>it</code> when <a href = "#fn:&lt;S&gt;set_has_next">&lt;S&gt;set_has_next</a>.</p>
+<p>If <code>TABLE_VALUE</code>, advances <code>it</code> when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
 
 <dl>
 	<dt>Return:</dt>
 	<dd>The next value.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table<D>get" name = "fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></h3>
+
+<p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The value associated with <code>key</code> in <code>table</code>, (which can be null.) If no such value exists, the <code>TABLE_DEFAULT</code> is returned.</dd>
+	<dt>Order:</dt>
+	<dd>Average &#927;(1); worst &#927;(n).</dd>
 </dl>
 
 </div>

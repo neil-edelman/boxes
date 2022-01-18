@@ -38,7 +38,7 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define TABLE_KEY enum zodiac
 #define TABLE_HASH &hash_zodiac
 #define TABLE_INVERSE &hash_inv_zodiac
-/* There are less than 256/2 keys, so a byte would suffice. Speed-wise, we
+/* There are less than 256/2 keys, so a byte would suffice, but speed-wise, we
  expect type coercion between different sizes to be slower. */
 #define TABLE_UINT unsigned /*char*/
 #define TABLE_TEST /* Testing requires to string. */
@@ -187,15 +187,14 @@ static int int_from_void(void *const zero, int *const s) {
  recorded as a linked-list. */
 struct nato_list { const char *alpha; struct nato_list *next; };
 struct nato_value { size_t occurrences; struct nato_list *head; };
-/** Being a bijection, it is common to implement both.
- @implements <nato>hash_fn, <nato>inverse_hash_fn */
+/** Symmetric bijection. @implements <nato>hash_fn, <nato>inverse_hash_fn */
 static size_t nato_hash(const size_t n) { return n; }
 #define TABLE_NAME nato
 #define TABLE_KEY size_t
 #define TABLE_VALUE struct nato_value
 #define TABLE_INVERSE &nato_hash
 #define TABLE_HASH &nato_hash
-#include "../src/table.h"
+#include "../src/table.h" /* (Manual testing.) */
 /** Counts code-points except non-alnums of `s`, being careful.
  (You are working in UTF-8, right?) <https://stackoverflow.com/a/32936928> */
 static size_t utf_alnum_count(const char *s) {
@@ -227,7 +226,7 @@ static void nato(void) {
 		case TABLE_REPLACE: assert(0); /* Impossible, <fn:<N>table_compute>. */
 		}
 		item->alpha = alphabet[i];
-		item->next = value->head, value->head = item;
+		item->next = value->head, value->head = item; /* Linked-list append. */
 	}
 	printf("NATO phonetic alphabet letter count histogram\n"
 		"length\tcount\twords\n");
@@ -264,11 +263,6 @@ finally:
 }
 
 
-
-
-
-
-
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	zodiac_table_test(&fill_zodiac, 0); /* Don't require any space. */
@@ -299,12 +293,6 @@ int main(void) {
 		assert(one == 1 && two == 2 && def == 42);
 		int_table_(&is);
 	}
-
-
-
-
-
-
 
 
 

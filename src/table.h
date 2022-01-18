@@ -14,10 +14,9 @@
  <typedef:<PN>key> associated therewith; required. `<PN>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[TABLE_HASH, TABLE_IS_EQUAL]
- A function satisfying <typedef:<PN>hash_fn> and <typedef:<PN>is_equal_fn>.
- `TABLE_HASH` and either `TABLE_IS_EQUAL` or `TABLE_INVERSE`, but not both, are
- required.
+ @param[TABLE_HASH, TABLE_IS_EQUAL, TABLE_INVERSE]
+ `TABLE_HASH`, and either `TABLE_IS_EQUAL` or `TABLE_INVERSE`, but not both,
+ are required. Function satisfying <typedef:<PN>hash_fn>, and <typedef:<PN>is_equal_fn> or <typedef:<PN>inverse_hash_fn>.
 
  @param[TABLE_VALUE]
  An optional type that is the payload of the key, thus making this an
@@ -28,11 +27,6 @@
  @param[TABLE_UINT]
  This is <typedef:<PN>uint>, the unsigned type of hash hash of the key given by
  <typedef:<PN>hash_fn>; defaults to `size_t`.
-
- @param[TABLE_INVERSE]
- Function satisfying <typedef:<PN>inverse_hash_fn>; this avoids storing the
- key, but calculates it from the hashed value. The hashes are now unique, so
- there is no need for a `TABLE_IS_EQUAL`.
 
  @param[TABLE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
@@ -134,19 +128,19 @@ typedef TABLE_KEY PN_(key);
 typedef const TABLE_KEY PN_(ckey);
 
 /** A map from <typedef:<PN>ckey> onto <typedef:<PN>uint> that, ideally, should
- be easy to compute while minimizing duplications of <typedef:<PN>uint> mod
- hash table capacity for the domain of the <typedef:<PN>key>. Must be
- consistent while in the table. If <typedef:<PN>key> is a pointer, one is
- permitted to have null in the domain. */
+ be easy to compute while minimizing duplicate addresses, (that is, hash modulo
+ size of table.) Must be consistent while in the table. If <typedef:<PN>key> is
+ a pointer, one is permitted to have null in the domain. */
 typedef PN_(uint) (*PN_(hash_fn))(PN_(ckey));
 /* Check that `TABLE_HASH` is a function implementing <typedef:<PN>hash_fn>. */
 static const PN_(hash_fn) PN_(hash) = (TABLE_HASH);
 
 #ifdef TABLE_INVERSE /* <!-- inv */
 
-/** Defining `TABLE_INVERSE` says <typedef:<PN>hash_fn> forms a bijection between
- the range in <typedef:<PN>key> and the image in <typedef:<PN>uint>. This is
- the inverse-mapping. */
+/** Defining `TABLE_INVERSE` says <typedef:<PN>hash_fn> forms a bijection
+ between the range in <typedef:<PN>key> and the image in <typedef:<PN>uint>.
+ The keys are not stored in the hash table at all, but rely on this, the
+ inverse-mapping. */
 typedef PN_(key) (*PN_(inverse_hash_fn))(PN_(uint));
 /* Check that `TABLE_INVERSE` is a function implementing
  <typedef:<PN>inverse_hash_fn>. */
@@ -164,11 +158,12 @@ static const PN_(is_equal_fn) PN_(equal) = (TABLE_IS_EQUAL);
 #endif /* !inv --> */
 
 #ifdef TABLE_VALUE /* <!-- value */
-/** Defining `TABLE_VALUE` produces an associative map, otherwise it is the same
- as <typedef:<PN>key>. */
+/** Defining `TABLE_VALUE` produces an associative map, otherwise it is the
+ same as <typedef:<PN>key>. */
 typedef TABLE_VALUE PN_(value);
 /** Defining `TABLE_VALUE` creates this map from <typedef:<PN>key> to
- <typedef:<PN>value> as an interface with table. */
+ <typedef:<PN>value> as an interface with table. In general, reducing the size
+ of these elements will be better for performance. */
 struct N_(table_entry) { PN_(key) key; PN_(value) value; };
 /** If `TABLE_VALUE`, this is <tag:<N>table_entry>; otherwise, it's the same as
  <typedef:<PN>key>. */
@@ -212,7 +207,8 @@ static PN_(key) PN_(bucket_key)(const struct PN_(bucket) *const bucket) {
 #endif
 }
 
-/** Gets the value of an occupied `bucket`. */
+/** Gets the value of an occupied `bucket`, which might be the same as the
+ key. */
 static PN_(value) PN_(bucket_value)(const struct PN_(bucket) *const bucket) {
 	assert(bucket && bucket->next != TABLE_NULL);
 #ifdef TABLE_VALUE
@@ -257,7 +253,7 @@ static PN_(uint) PN_(capacity)(const struct N_(table) *const table)
 /** @return Indexes the first closed bucket in the set of buckets with the same
  address from non-idle `table` given the `hash`. If the bucket is empty, it
  will have `next = TABLE_NULL` or it's own <fn:<PN>to_bucket> not equal to the
- index.*/
+ index. */
 static PN_(uint) PN_(to_bucket)(const struct N_(table) *const table,
 	const PN_(uint) hash) { return hash & (PN_(capacity)(table) - 1); }
 
@@ -587,10 +583,10 @@ static void N_(table_clear)(struct N_(table) *const table) {
  and move all. Does not, and indeed cannot, respect the most-recently used
  heuristic. */
 
+/* fixme: Are you sure it's optimized? */
 /** @return Is `key` in `table`? (which can be null.) @allow */
 static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
 	{ return table && table->buckets && PN_(query)(table, key, PN_(hash)(key));}
-/* Are you sure it's optimized? */
 
 /** @param[result] If null, behaves like <fn:<N>table_is>, otherwise, a
  <typedef:<PN>entry> which gets filled on true.
@@ -603,8 +599,6 @@ static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
 	if(result) PN_(to_entry)(b, result);
 	return 1;
 }
-
-/* table_<P>_get */
 
 /** @return The value associated with `key` in `table`, (which can be null.) If
  no such value exists, the `default_value` is returned.
@@ -683,7 +677,7 @@ static struct N_(setlink) *N_(set_remove)(struct N_(set) *const hash,
 }
 #endif
 
-/* <!-- iterate interface */
+/* <!-- private iterate interface */
 
 /* Contains all iteration parameters. */
 struct PN_(iterator) {
@@ -725,7 +719,7 @@ static struct PN_(bucket) *PN_(next)(struct PN_(iterator) *const it) {
 /* iterate --> */
 
 /** Iteration usually not in any particular order. The asymptotic runtime is
- proportional to the hash capacity. */
+ proportional to the table capacity. */
 struct N_(table_iterator) { struct PN_(iterator) it; };
 
 /** Loads `table` (can be null) into `it`. @allow */
@@ -776,12 +770,8 @@ static const char *(*PN_(table_to_string))(const struct N_(table) *);
 
 static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
-	PN_(entry) e;
-	PN_(key) k;
-	PN_(value) v;
-	memset(&e, 0, sizeof e);
-	memset(&k, 0, sizeof k);
-	memset(&v, 0, sizeof v);
+	PN_(entry) e; PN_(key) k; PN_(value) v;
+	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_clear)(0);
 	N_(table_is)(0, k); N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v);
 	N_(table_try)(0, e); N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
@@ -798,34 +788,36 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 #elif defined(TABLE_DEFAULT) /* base --><!-- default */
 
 #ifdef TABLE_DEFAULT_NAME
-#define ND_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_DEFAULT_NAME, m))
+#define N_D_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_DEFAULT_NAME, m))
+#define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m))
 #else
-#define ND_(n, m) TABLE_CAT(N_(n), m)
+#define N_D_(n, m) TABLE_CAT(N_(n), m)
+#define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m))
 #endif
-#define PND_(n) TABLE_CAT(table_d, ND_(private, n))
 
 /* Check that `TABLE_DEFAULT` is a valid <tag:<PN>value> and that only one time
  can the `TABLE_DEFAULT_NAME` be omitted. */
-static const PN_(value) PND_(default_value) = (TABLE_DEFAULT);
+static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
 
 /** @return The value associated with `key` in `table`, (which can be null.) If
  no such value exists, the `TABLE_DEFAULT` is returned.
  @order Average \O(1); worst \O(n).
  @allow */
-static PN_(value) ND_(table, get)(struct N_(table) *const table,
+static PN_(value) N_D_(table, get)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *b;
 	return table && table->buckets
 		&& (b = PN_(query)(table, key, PN_(hash)(key)))
-		? PN_(bucket_value)(b) : PND_(default_value);
+		? PN_(bucket_value)(b) : PN_D_(default, value);
 }
 
-static void PND_(unused_default_coda)(void);
-static void PND_(unused_default)(void) { PN_(key) k; memset(&k, 0, sizeof k);
-	ND_(table, get)(0, k); PND_(unused_default_coda)(); }
-static void PND_(unused_default_coda)(void) { PND_(unused_default)(); }
+static void PN_D_(unused, default_coda)(void);
+static void PN_D_(unused, default)(void) { PN_(key) k; memset(&k, 0, sizeof k);
+	N_D_(table, get)(0, k); PN_D_(unused, default_coda)(); }
+static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 
-#undef ND_
+#undef N_D_
+#undef PN_D_
 #undef TABLE_DEFAULT
 #ifdef TABLE_DEFAULT_NAME
 #undef TABLE_DEFAULT_NAME
