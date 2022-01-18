@@ -12,7 +12,7 @@
 
 
 /* Zodiac is a bounded set of `enum`. An X-macro allows printing. This is
- preferable to `SET_KEY const char *`. */
+ preferable to `TABLE_KEY const char *`. */
 #define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
 	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
 	X(ZodiacCount)
@@ -27,24 +27,24 @@ static const char *zodiac[] = { ZODIAC(X) };
 static unsigned hash_zodiac(const enum zodiac z) { return z; }
 /** This is a discrete set with a homomorphism between keys and hash values,
  therefore it's simpler to work in hash space. This saves us from having to
- define <typedef:<PS>is_equal_fn> and saves the key from even being stored.
+ define <typedef:<PN>is_equal_fn> and saves the key from even being stored.
  @implements <zodiac>inverse_hash_fn */
 static enum zodiac hash_inv_zodiac(const unsigned z) { return z; }
 /** This is not necessary except for testing.
 @implements <zodiac>to_string_fn */
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 	{ strcpy(*a, zodiac[z]); /* strlen z < 12 */ }
-#define SET_NAME zodiac
-#define SET_KEY enum zodiac
-#define SET_HASH &hash_zodiac
-#define SET_INVERSE &hash_inv_zodiac
+#define TABLE_NAME zodiac
+#define TABLE_KEY enum zodiac
+#define TABLE_HASH &hash_zodiac
+#define TABLE_INVERSE &hash_inv_zodiac
 /* There are less than 256/2 keys, so a byte would suffice. Speed-wise, we
  expect type coercion between different sizes to be slower. */
-#define SET_UINT unsigned /*char*/
-#define SET_TEST /* Testing requires to string. */
-#define SET_EXPECT_TRAIT
+#define TABLE_UINT unsigned /*char*/
+#define TABLE_TEST /* Testing requires to string. */
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_TO_STRING &zodiac_to_string
+#define TABLE_TO_STRING &zodiac_to_string
 #include "../src/table.h"
 /* For testing; there is no extra memory required to generate random `enum`.
  @implements <zodiac>fill_fn */
@@ -71,14 +71,14 @@ static int string_is_equal(const char *const a, const char *const b)
 /** @implements <string>to_string_fn */
 static void string_to_string(const char *const s, char (*const a)[12])
 	{ strncpy(*a, s, sizeof(*a) - 1), (*a)[sizeof(*a) - 1] = '\0'; }
-#define SET_NAME string
-#define SET_KEY char * /* Parameter of <fn:djb2_hash> (without `const`.) */
-#define SET_HASH &djb2_hash /* Default returns `size_t`. */
-#define SET_IS_EQUAL &string_is_equal
-#define SET_TEST /* Testing requires to string. */
-#define SET_EXPECT_TRAIT
+#define TABLE_NAME string
+#define TABLE_KEY char * /* Parameter of <fn:djb2_hash> (without `const`.) */
+#define TABLE_HASH &djb2_hash /* Default returns `size_t`. */
+#define TABLE_IS_EQUAL &string_is_equal
+#define TABLE_TEST /* Testing requires to string. */
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_TO_STRING &string_to_string
+#define TABLE_TO_STRING &string_to_string
 #include "../src/table.h"
 /* A pool is convenient for testing because it allows deletion at random. */
 struct str16 { char str[16]; };
@@ -131,15 +131,15 @@ static unsigned lowbias32_r(unsigned x) { return x; }
 /** @implements <int>to_string_fn */
 static void uint_to_string(const unsigned x, char (*const a)[12])
 	{ sprintf(*a, "%u", x); }
-#define SET_NAME uint
-#define SET_KEY unsigned /* Parameter of <fn:lowbias32>. */
-#define SET_UINT unsigned /* Return key of <fn:lowbias32>. */
-#define SET_HASH &lowbias32
-#define SET_INVERSE &lowbias32_r /* Invertible means no key storage at all. */
-#define SET_TEST
-#define SET_EXPECT_TRAIT
+#define TABLE_NAME uint
+#define TABLE_KEY unsigned /* Parameter of <fn:lowbias32>. */
+#define TABLE_UINT unsigned /* Return key of <fn:lowbias32>. */
+#define TABLE_HASH &lowbias32
+#define TABLE_INVERSE &lowbias32_r /* Invertible means no key storage at all. */
+#define TABLE_TEST
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_TO_STRING &uint_to_string
+#define TABLE_TO_STRING &uint_to_string
 #include "../src/table.h"
 /** @implements <int>test_new_fn */
 static int uint_from_void(void *const zero, unsigned *const u) {
@@ -150,7 +150,7 @@ static int uint_from_void(void *const zero, unsigned *const u) {
 
 
 /* Check to see that the prototypes are correct by making a signed integer.
- Also testing `SET_DEFAULT`. */
+ Also testing `TABLE_DEFAULT`. */
 /** @implements <int>hash_fn */
 static unsigned int_hash(int d) { return lowbias32((unsigned)(d - INT_MIN)); }
 /** @implements <int>inverse_hash_fn */
@@ -158,22 +158,22 @@ static int int_inv_hash(unsigned u) { return (int)lowbias32_r(u) + INT_MIN; }
 /** @implements <int>to_string_fn */
 static void int_to_string(const int d, char (*const a)[12])
 	{ sprintf(*a, "%d", d); }
-#define SET_NAME int
-#define SET_KEY int
-#define SET_UINT unsigned
-#define SET_HASH &int_hash
-#define SET_INVERSE &int_inv_hash
-#define SET_TEST
-#define SET_EXPECT_TRAIT
+#define TABLE_NAME int
+#define TABLE_KEY int
+#define TABLE_UINT unsigned
+#define TABLE_HASH &int_hash
+#define TABLE_INVERSE &int_inv_hash
+#define TABLE_TEST
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_DEFAULT 0
-#define SET_EXPECT_TRAIT
+#define TABLE_DEFAULT 0
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_DEFAULT 42
-#define SET_DEFAULT_NAME 42
-#define SET_EXPECT_TRAIT
+#define TABLE_DEFAULT 42
+#define TABLE_DEFAULT_NAME 42
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_TO_STRING &int_to_string
+#define TABLE_TO_STRING &int_to_string
 #include "../src/table.h"
 /** @implements <int>test_new_fn */
 static int int_from_void(void *const zero, int *const s) {
@@ -190,11 +190,11 @@ struct nato_value { size_t occurrences; struct nato_list *head; };
 /** Being a bijection, it is common to implement both.
  @implements <nato>hash_fn, <nato>inverse_hash_fn */
 static size_t nato_hash(const size_t n) { return n; }
-#define SET_NAME nato
-#define SET_KEY size_t
-#define SET_VALUE struct nato_value
-#define SET_INVERSE &nato_hash
-#define SET_HASH &nato_hash
+#define TABLE_NAME nato
+#define TABLE_KEY size_t
+#define TABLE_VALUE struct nato_value
+#define TABLE_INVERSE &nato_hash
+#define TABLE_HASH &nato_hash
 #include "../src/table.h"
 /** Counts code-points except non-alnums of `s`, being careful.
  (You are working in UTF-8, right?) <https://stackoverflow.com/a/32936928> */
@@ -210,7 +210,7 @@ static void nato(void) {
 		"Mike", "November", "Oscar", "Papa", "Québec", "Romeo", "Sierra",
 		"Tango", "Uniform", "Victor", "Whisky", "X-ray", "Yankee", "Zulu" };
 	struct nato_list list[sizeof alphabet / sizeof *alphabet];
-	struct nato_set nato = SET_IDLE;
+	struct nato_set nato = TABLE_IDLE;
 	struct nato_set_iterator it;
 	struct nato_set_entry entry;
 	size_t i;
@@ -219,12 +219,12 @@ static void nato(void) {
 		struct nato_value *value = 0;
 		struct nato_list *item = list + i;
 		switch(nato_set_compute(&nato, length, &value)) {
-		case SET_ERROR: goto catch;
+		case TABLE_ERROR: goto catch;
 			/* PutIfAbsent */
-		case SET_UNIQUE: value->occurrences = 1, value->head = 0; break;
+		case TABLE_UNIQUE: value->occurrences = 1, value->head = 0; break;
 			/* PutIfPresent */
-		case SET_YIELD: value->occurrences++; break;
-		case SET_REPLACE: assert(0); /* Impossible with <fn:<S>set_compute>. */
+		case TABLE_YIELD: value->occurrences++; break;
+		case TABLE_REPLACE: assert(0); /* Impossible with <fn:<N>set_compute>. */
 		}
 		item->alpha = alphabet[i];
 		item->next = value->head, value->head = item;
@@ -277,7 +277,7 @@ int main(void) {
 	int_set_test(&int_from_void, 0);
 	nato();
 	{ /* Too lazy to do separate tests. */
-		struct int_set is = SET_IDLE;
+		struct int_set is = TABLE_IDLE;
 		int one, two, def;
 		int_set_update(&is, 1, 0, 0);
 		int_set_update(&is, 2, 0, 0);
@@ -327,7 +327,7 @@ int main(void) {
 	{ /* Boats. */
 		struct boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
 		size_t bs_size = sizeof bs / sizeof *bs;
-		struct id_hash ids = SET_IDLE;
+		struct id_hash ids = TABLE_IDLE;
 		each_boat(bs, bs_size, &fill_boat);
 		printf("Boat club races individually: ");
 		print_boats(bs, bs_size);
@@ -341,7 +341,7 @@ int main(void) {
 		const size_t limit = (size_t)500000/*0<-This takes a while to hash up.*/;
 		struct dict_entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
-		struct key_hash khash = SET_IDLE;
+		struct key_hash khash = TABLE_IDLE;
 		struct key_list klist;
 		struct key_hashlink *elem;
 		struct dict_entry *found;
@@ -391,7 +391,7 @@ int main(void) {
 		struct dict_entry *e, *sp_es[20], **sp_e;
 		size_t sp_es_size = sizeof sp_es / sizeof *sp_es,
 			sp_e_to_go = sp_es_size;
-		struct key_hash khash = SET_IDLE;
+		struct key_hash khash = TABLE_IDLE;
 		struct key_list klist;
 		struct key_hashlink *elem;
 		struct dict_entry *found;
@@ -511,26 +511,26 @@ uint16_t hash16_xm2(uint16_t x) {
 
 #if 0
 
-/* Used to test `SET_UINT`; normally `unsigned int`, here `unsigned char`.
+/* Used to test `TABLE_UINT`; normally `unsigned int`, here `unsigned char`.
  Useful if you want to use a specific hash length, _eg_, `C99`'s `uint32_t` or
  `uint64_t`. */
 
 /** Fast hash function. */
 static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
 /* All the same functions as above, otherwise. */
-#define SET_NAME byteint
-#define SET_KEY unsigned
-#define SET_UINT unsigned char
-#define SET_HASH &byteint_hash
-#define SET_IS_EQUAL &int_is_equal
-#define SET_TEST &int_fill
-#define SET_EXPECT_TRAIT
+#define TABLE_NAME byteint
+#define TABLE_KEY unsigned
+#define TABLE_UINT unsigned char
+#define TABLE_HASH &byteint_hash
+#define TABLE_IS_EQUAL &int_is_equal
+#define TABLE_TEST &int_fill
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_TO_STRING &int_to_string
+#define TABLE_TO_STRING &int_to_string
 #include "../src/table.h"
 
 
-/* Vector; test of `SET_POINTER`. */
+/* Vector; test of `TABLE_POINTER`. */
 struct vec4 {
 	char a[2], unused[2];
 	int n[2];
@@ -555,41 +555,41 @@ static void vec4_filler(struct vec4 *const v4) {
 	v4->n[0] = rand() / (RAND_MAX / 9 + 1);
 	v4->n[1] = rand() / (RAND_MAX / 9 + 1);
 }
-#define SET_NAME vec4
-#define SET_KEY struct vec4
+#define TABLE_NAME vec4
+#define TABLE_KEY struct vec4
 /* <fn:vec4_hash> and <fn:vec4_is_equal> have an extra level of indirection.
  This means that we also have to get an object and fill it to use
- <fn:<S>hash_get>; not very convenient. */
-#define SET_POINTER
-#define SET_HASH &vec4_hash
-#define SET_IS_EQUAL &vec4_is_equal
-#define SET_TEST &vec4_filler
-#define SET_EXPECT_TRAIT
+ <fn:<N>hash_get>; not very convenient. */
+#define TABLE_POINTER
+#define TABLE_HASH &vec4_hash
+#define TABLE_IS_EQUAL &vec4_is_equal
+#define TABLE_TEST &vec4_filler
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_TO_STRING &vec4_to_string
+#define TABLE_TO_STRING &vec4_to_string
 #include "../src/table.h"
 
 
 /* I wrote Set to solve
  [this problem](https://stackoverflow.com/q/59091226/2472827). In general, one
  has to declare before defining if we want a hash map because the
- `<S>hashlink` is not defined until after. */
+ `<N>hashlink` is not defined until after. */
 
 static unsigned boat_id_hash(const int id) { return (unsigned)id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
 static void boat_id_to_string(const int *const id, char (*const a)[12]);
 static void fill_boat_id(int *const id);
 /* Code generation for `id_hash`. */
-#define SET_NAME id
-#define SET_KEY int
+#define TABLE_NAME id
+#define TABLE_KEY int
 /* Don't need two `int id; unsigned hash = id;` per datum. */
-#define SET_NO_CACHE
-#define SET_HASH &boat_id_hash
-#define SET_IS_EQUAL &boat_id_is_equal
-#define SET_TEST &fill_boat_id
-#define SET_EXPECT_TRAIT
+#define TABLE_NO_CACHE
+#define TABLE_HASH &boat_id_hash
+#define TABLE_IS_EQUAL &boat_id_is_equal
+#define TABLE_TEST &fill_boat_id
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_TO_STRING &boat_id_to_string
+#define TABLE_TO_STRING &boat_id_to_string
 #include "../src/table.h"
 struct boat {
 	struct id_hashlink id;
@@ -689,13 +689,13 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 	strncpy(*a, *ps, sizeof(*a) - 1);
 	(*a)[sizeof(*a) - 1] = '\0';
 }
-#define SET_NAME key
-#define SET_KEY const char *
-#define SET_HASH &fnv_32a_str
-#define SET_IS_EQUAL &key_is_equal
-#define SET_EXPECT_TRAIT
+#define TABLE_NAME key
+#define TABLE_KEY const char *
+#define TABLE_HASH &fnv_32a_str
+#define TABLE_IS_EQUAL &key_is_equal
+#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define SET_TO_STRING &key_to_string
+#define TABLE_TO_STRING &key_to_string
 #include "../src/table.h"
 
 struct key_listlink;
