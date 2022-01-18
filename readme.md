@@ -139,7 +139,7 @@ Responsible for turning the argument [&lt;PSZ&gt;key](#user-content-typedef-bd74
 
 <code>enum <strong>table_result</strong> { TABLE_RESULT };</code>
 
-This is the result of modifying the table\. An `enum` of `TABLE_*`, of which `TABLE_ERROR` is false\. ![A diagram of the result states.](web/put.png)
+This is the result of modifying the table, of which `TABLE_ERROR` is false\. ![A diagram of the result states.](web/put.png)
 
 
 

@@ -8,12 +8,12 @@ digraph {
 	edge [fontname = "Bitstream Vera Sans" fontsize = 12];
 
 	node [shape=record, style=filled];
-	null [label="uninitialized|random bytes\lno memory\lnot in a valid state\l", fillcolor="Pink"];
-	static [ label = "idle|no dynamic memory\l\{0\} or SET_IDLE\l" ];
-	dynamic [ label = "active|memory allocated\lcould have size zero.\l" ];
-	null -> static [ label = "<S>set" ];
-	static -> dynamic [ label = "<S>set_put\l<S>set_reserve\l..." ];
-	dynamic -> static [ label = "<S>set_" ];
-	dynamic -> dynamic [ label = "<S>set_clear" ];
-	static -> static [ label = "<S>set_clear" ];
+	null [label="uninitialized|uninitialized;\lno dynamic memory;\lundetermined state\l", fillcolor="Pink"];
+	static [ label = "idle|no dynamic memory;\l\{0\} or SET_IDLE\l" ];
+	dynamic [ label = "active|memory allocated;\lcould have size zero\l" ];
+	null -> static [ label = "<N>table" ];
+	static -> dynamic [ label = "<N>table_buffer\l<N>table_try\n<N>table_replace\n<N>table_update\l..." ];
+	dynamic -> static [ label = "<S>table_" ];
+	dynamic -> dynamic [ label = "<S>table_clear" ];
+	static -> static [ label = "<S>table_clear" ];
 }
