@@ -5,9 +5,9 @@
 
  ![Example of <string>set.](../web/set.png)
 
- <tag:<S>set> is a set or map of <typedef:<PS>entry> implemented as a hash
- table. It must be supplied a <typedef:<PS>hash_fn> and
- <typedef:<PS>is_equal_fn>.
+ <tag:<S>set> implements a set or map of <typedef:<PS>entry> as a hash table.
+ It must be supplied a <typedef:<PS>hash_fn> and, <typedef:<PS>is_equal_fn> or
+ <typedef:<PS>inverse_hash_fn>.
 
  @param[SET_NAME, SET_KEY]
  `<S>` that satisfies `C` naming conventions when mangled and a valid
@@ -770,7 +770,7 @@ static PS_(value) S_(set_next_value)(struct S_(set_iterator) *const it)
 /* Forward-declare. */
 static void (*PS_(to_string))(PS_(ckey), char (*)[12]);
 static const char *(*PS_(set_to_string))(const struct S_(set) *);
-#include "../test/test_set.h"
+#include "../test/test_table.h"
 #endif /* test --> */
 
 static void PS_(unused_base_coda)(void);

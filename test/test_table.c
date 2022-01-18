@@ -43,9 +43,9 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define SET_UINT unsigned /*char*/
 #define SET_TEST /* Testing requires to string. */
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_TO_STRING &zodiac_to_string
-#include "../src/set.h"
+#include "../src/table.h"
 /* For testing; there is no extra memory required to generate random `enum`.
  @implements <zodiac>fill_fn */
 static int fill_zodiac(void *const zero, enum zodiac *const z) {
@@ -77,9 +77,9 @@ static void string_to_string(const char *const s, char (*const a)[12])
 #define SET_IS_EQUAL &string_is_equal
 #define SET_TEST /* Testing requires to string. */
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_TO_STRING &string_to_string
-#include "../src/set.h"
+#include "../src/table.h"
 /* A pool is convenient for testing because it allows deletion at random. */
 struct str16 { char str[16]; };
 #define POOL_NAME str16
@@ -138,9 +138,9 @@ static void uint_to_string(const unsigned x, char (*const a)[12])
 #define SET_INVERSE &lowbias32_r /* Invertible means no key storage at all. */
 #define SET_TEST
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_TO_STRING &uint_to_string
-#include "../src/set.h"
+#include "../src/table.h"
 /** @implements <int>test_new_fn */
 static int uint_from_void(void *const zero, unsigned *const u) {
 	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
@@ -165,16 +165,16 @@ static void int_to_string(const int d, char (*const a)[12])
 #define SET_INVERSE &int_inv_hash
 #define SET_TEST
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_DEFAULT 0
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_DEFAULT 42
 #define SET_DEFAULT_NAME 42
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_TO_STRING &int_to_string
-#include "../src/set.h"
+#include "../src/table.h"
 /** @implements <int>test_new_fn */
 static int int_from_void(void *const zero, int *const s) {
 	assert(!zero && RAND_MAX <= 9999999999l); /* For printing with '-'. */
@@ -195,7 +195,7 @@ static size_t nato_hash(const size_t n) { return n; }
 #define SET_VALUE struct nato_value
 #define SET_INVERSE &nato_hash
 #define SET_HASH &nato_hash
-#include "../src/set.h"
+#include "../src/table.h"
 /** Counts code-points except non-alnums of `s`, being careful.
  (You are working in UTF-8, right?) <https://stackoverflow.com/a/32936928> */
 static size_t utf_alnum_count(const char *s) {
@@ -525,9 +525,9 @@ static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
 #define SET_IS_EQUAL &int_is_equal
 #define SET_TEST &int_fill
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_TO_STRING &int_to_string
-#include "../src/set.h"
+#include "../src/table.h"
 
 
 /* Vector; test of `SET_POINTER`. */
@@ -565,9 +565,9 @@ static void vec4_filler(struct vec4 *const v4) {
 #define SET_IS_EQUAL &vec4_is_equal
 #define SET_TEST &vec4_filler
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_TO_STRING &vec4_to_string
-#include "../src/set.h"
+#include "../src/table.h"
 
 
 /* I wrote Set to solve
@@ -588,9 +588,9 @@ static void fill_boat_id(int *const id);
 #define SET_IS_EQUAL &boat_id_is_equal
 #define SET_TEST &fill_boat_id
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_TO_STRING &boat_id_to_string
-#include "../src/set.h"
+#include "../src/table.h"
 struct boat {
 	struct id_hashlink id;
 	int best_time;
@@ -694,9 +694,9 @@ static void key_to_string(const char *const*const ps, char (*const a)[12]) {
 #define SET_HASH &fnv_32a_str
 #define SET_IS_EQUAL &key_is_equal
 #define SET_EXPECT_TRAIT
-#include "../src/set.h"
+#include "../src/table.h"
 #define SET_TO_STRING &key_to_string
-#include "../src/set.h"
+#include "../src/table.h"
 
 struct key_listlink;
 static int key_compare(const struct key_listlink *,
