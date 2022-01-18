@@ -15,21 +15,21 @@ typedef int (*const PN_(fill_fn))(void *, PN_(entry) *);
 #endif
 #include <string.h> /* memset */
 
-static size_t PN_(count_bucket)(const struct N_(set) *const set,
+static size_t PN_(count_bucket)(const struct N_(table) *const table,
 	PN_(uint) idx) {
 	struct PN_(bucket) *bucket;
 	PN_(uint) next;
 	size_t no = 0;
-	assert(set && idx < PN_(capacity)(set));
-	bucket = set->buckets + idx;
+	assert(table && idx < PN_(capacity)(table));
+	bucket = table->buckets + idx;
 	if((next = bucket->next) == TABLE_NULL
-		|| idx != PN_(to_bucket)(set, bucket->hash)) return 0;
+		|| idx != PN_(to_bucket)(table, bucket->hash)) return 0;
 	for( ; no++, next != TABLE_END; next = bucket->next, assert(next != TABLE_NULL)) {
 		idx = next;
-		assert(idx < PN_(capacity)(set)
+		assert(idx < PN_(capacity)(table)
 			/* We want to count intermediates.
 			 && PN_(in_stack_range)(hash, idx) */);
-		bucket = set->buckets + idx;
+		bucket = table->buckets + idx;
 	}
 	return no;
 }
@@ -51,32 +51,33 @@ static void PN_(update)(const size_t value) {
 	PN_(stats).ssdm += d * (v - PN_(stats).mean);
 }
 /** Collect stats on `hash`. */
-static void PN_(collect)(const struct N_(set) *const set) {
+static void PN_(collect)(const struct N_(table) *const table) {
 	PN_(uint) i, i_end;
 	PN_(rehash)();
-	if(!set || !set->buckets) return;
-	for(i = 0, i_end = PN_(capacity)(set); i < i_end; i++) {
+	if(!table || !table->buckets) return;
+	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
 		size_t no;
 		/* I'm sure there's a cheaper way to do it. */
-		for(no = PN_(count_bucket)(set, i); no; no--) PN_(update)(no);
+		for(no = PN_(count_bucket)(table, i); no; no--) PN_(update)(no);
 	}
 }
 
 /** Draw a diagram of `hash` written to `fn` in
  [Graphviz](https://www.graphviz.org/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PN_(graph)(const struct N_(set) *const set, const char *const fn) {
+static void PN_(graph)(const struct N_(table) *const table,
+	const char *const fn) {
 	FILE *fp;
 	size_t i, i_end;
-	assert(set && fn);
+	assert(table && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
 		"\tgraph [truecolor=true, bgcolor=transparent];\n"
 		"\tfontface=modern;\n");
-	if(!set->buckets) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
-	PN_(collect)(set), assert((size_t)set->size >= PN_(stats).n /* Buckets. */);
+	if(!table->buckets) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
+	PN_(collect)(table), assert((size_t)table->size >= PN_(stats).n /* Buckets. */);
 	fprintf(fp,
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
 		"\thash [label=<<TABLE BORDER=\"0\">\n"
@@ -101,7 +102,7 @@ static void PN_(graph)(const struct N_(set) *const set, const char *const fn) {
 		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
 		"\t</TR>\n",
 		(unsigned long)PN_(stats).n,
-		set->buckets ? (unsigned long)PN_(capacity)(set) : 0,
+		table->buckets ? (unsigned long)PN_(capacity)(table) : 0,
 		PN_(stats).n ? PN_(stats).mean : (double)NAN, PN_(stats).n > 1
 		? sqrt(PN_(stats).ssdm / (double)(PN_(stats).n - 1)) : (double)NAN,
 		(unsigned long)PN_(stats).max);
@@ -123,16 +124,16 @@ static void PN_(graph)(const struct N_(set) *const set, const char *const fn) {
 		"Times-Bold"
 #endif
 		);
-	for(i = 0, i_end = PN_(capacity)(set); i < i_end; i++) {
+	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
-			*const top = set->top == i ? " BORDER=\"1\"" : "";
-		struct PN_(bucket) *b = set->buckets + i;
+			*const top = table->top == i ? " BORDER=\"1\"" : "";
+		struct PN_(bucket) *b = table->buckets + i;
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",
 			top, bgc, (unsigned long)i);
 		if(b->next != TABLE_NULL) {
 			const char *const closed
-				= PN_(to_bucket)(set, b->hash) == i
+				= PN_(to_bucket)(table, b->hash) == i
 				? "⬤" : "◯";
 			char z[12];
 			PN_(to_string)(PN_(bucket_key)(b), &z);
@@ -147,11 +148,11 @@ static void PN_(graph)(const struct N_(set) *const set, const char *const fn) {
 	}
 	fprintf(fp, "</TABLE>>];\n");
 	fprintf(fp, "\tnode [shape=plain, fillcolor=none]\n");
-	for(i = 0, i_end = PN_(capacity)(set); i < i_end; i++) {
-		struct PN_(bucket) *b = set->buckets + i;
+	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
+		struct PN_(bucket) *b = table->buckets + i;
 		PN_(uint) left, right;
 		if((right = b->next) == TABLE_NULL || right == TABLE_END) continue;
-		if(PN_(to_bucket)(set, b->hash) != i) {
+		if(PN_(to_bucket)(table, b->hash) != i) {
 			fprintf(fp, "\ti0x%lx [label=\"0x%lx\", fontcolor=\"Gray\"];\n"
 				"\thash:%lu -> i0x%lx [color=\"Gray\"];\n",
 				(unsigned long)right, (unsigned long)right,
@@ -163,7 +164,7 @@ static void PN_(graph)(const struct N_(set) *const set, const char *const fn) {
 			"\thash:%lu -> e%lu [tailclip=false];\n",
 			(unsigned long)right, (unsigned long)right,
 			(unsigned long)i, (unsigned long)right);
-		while(left = right, b = set->buckets + left,
+		while(left = right, b = table->buckets + left,
 			(right = b->next) != TABLE_END) {
 			assert(right != TABLE_NULL);
 			fprintf(fp,
@@ -182,18 +183,18 @@ end:
 /** Draw a histogram of `hash` written to `fn` in
  [Gnuplot](http://www.gnuplot.info/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PN_(histogram)(const struct N_(set) *const set,
+static void PN_(histogram)(const struct N_(table) *const table,
 	const char *const fn) {
 	FILE *fp;
 	size_t histogram[64], hs, h;
 	const size_t histogram_size = sizeof histogram / sizeof *histogram;
-	assert(set && fn);
+	assert(table && fn);
 	memset(histogram, 0, sizeof histogram);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	if(set->buckets) {
-		PN_(uint) i, i_end = PN_(capacity)(set);
+	if(table->buckets) {
+		PN_(uint) i, i_end = PN_(capacity)(table);
 		for(i = 0; i < i_end; i++) {
-			size_t bucket = PN_(count_bucket)(set, i);
+			size_t bucket = PN_(count_bucket)(table, i);
 			/* The bins are `0,1,2,...,[histogram_size - 1, \infty]`. */
 			if(bucket >= histogram_size) bucket = histogram_size - 1;
 			histogram[bucket]++;
@@ -202,7 +203,7 @@ static void PN_(histogram)(const struct N_(set) *const set,
 	/* `historgram_size` is much larger than it has to be, usually. */
 	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
 	/* Stats for fit. */
-	PN_(collect)(set);
+	PN_(collect)(table);
 	fprintf(fp, "# Size: %lu.\n"
 		"set term postscript eps enhanced color\n"
 		"set output \"%s.eps\"\n"
@@ -218,7 +219,7 @@ static void PN_(histogram)(const struct N_(set) *const set,
 		"# what I really want is the Gamma distribution\n"
 		"plot \"-\" using ($1+0.5):2 with boxes lw 3 title \"Histogram\", \\\n"
 		"\tpoisson(int(x)) with lines linestyle 2 title \"Fit\"\n",
-		(unsigned long)set->size, fn,
+		(unsigned long)table->size, fn,
 		PN_(stats).mean, (unsigned long)PN_(stats).n);
 	for(h = 0; h < hs; h++) fprintf(fp, "%lu\t%lu\n",
 		(unsigned long)h, (unsigned long)histogram[h]);
@@ -241,23 +242,23 @@ static int PN_(eq_en)(PN_(entry) a, PN_(entry) b) {
 
 /** Assertion function for seeing if `hash` is in a valid state.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PN_(legit)(const struct N_(set) *const set) {
+static void PN_(legit)(const struct N_(table) *const table) {
 	PN_(uint) i, i_end;
 	size_t size = 0, end = 0, start = 0;
-	if(!set) return; /* Null. */
-	if(!set->buckets) { /* Idle. */
-		assert(!set->log_capacity && !set->size);
+	if(!table) return; /* Null. */
+	if(!table->buckets) { /* Idle. */
+		assert(!table->log_capacity && !table->size);
 		return;
 	}
-	assert(set->log_capacity >= 3);
-	for(i = 0, i_end = PN_(capacity)(set); i < i_end; i++) {
-		struct PN_(bucket) *b = set->buckets + i;
+	assert(table->log_capacity >= 3);
+	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
+		struct PN_(bucket) *b = table->buckets + i;
 		if(b->next == TABLE_NULL) continue;
 		size++;
 		if(b->next == TABLE_END) end++;
-		if(i == PN_(to_bucket)(set, b->hash)) start++;
+		if(i == PN_(to_bucket)(table, b->hash)) start++;
 	}
-	assert(set->size == size && end == start && size >= start);
+	assert(table->size == size && end == start && size >= start);
 }
 
 /** Passed `parent_new` and `parent` from <fn:<N>hash_test>. */
@@ -276,7 +277,7 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 	size_t i;
 	PN_(uint) b, b_end;
 	char z[12];
-	struct N_(set) set = TABLE_IDLE;
+	struct N_(table) table = TABLE_IDLE;
 	int success;
 	assert(fill && trial_size > 1);
 	/* Pre-computation. O(element_size*(element_size-1)/2); this places a limit
@@ -292,61 +293,62 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 		if(j == i) s->is_in = 1;
 	}
 	/* Test empty. */
-	PN_(legit)(&set);
-	N_(set)(&set);
-	assert(!set.buckets && !set.log_capacity && !set.size);
-	PN_(legit)(&set);
-	PN_(graph)(&set, "graph/" QUOTE(TABLE_NAME) "-0.gv");
-	success = N_(set_buffer)(&set, 1);
-	assert(success && set.buckets && set.log_capacity == 3 && !set.size);
-	success = N_(set_buffer)(&set, 1);
-	assert(success && set.buckets && set.log_capacity == 3 && !set.size);
-	N_(set_clear)(&set);
-	assert(set.buckets && set.log_capacity == 3 && !set.size);
+	PN_(legit)(&table);
+	N_(table)(&table);
+	assert(!table.buckets && !table.log_capacity && !table.size);
+	PN_(legit)(&table);
+	PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-0.gv");
+	success = N_(table_buffer)(&table, 1);
+	assert(success && table.buckets && table.log_capacity == 3 && !table.size);
+	success = N_(table_buffer)(&table, 1);
+	assert(success && table.buckets && table.log_capacity == 3 && !table.size);
+	N_(table_clear)(&table);
+	assert(table.buckets && table.log_capacity == 3 && !table.size);
 	{ /* Test negative `get_or`. */
 		PN_(key) key = PN_(entry_key)(trials.sample[0]._.entry);
 		PN_(value) ret, def;
 		int cmp;
 		memset(&def, 1, sizeof def);
-		ret = N_(set_get_or)(&set, key, def);
+		ret = N_(table_get_or)(&table, key, def);
 		cmp = memcmp(&ret, &def, sizeof def);
 		assert(!cmp);
 	}
-	N_(set_)(&set);
-	assert(!set.buckets && set.log_capacity == 0 && !set.size);
+	N_(table_)(&table);
+	assert(!table.buckets && table.log_capacity == 0 && !table.size);
 	/* Test placing items. */
 	for(i = 0; i < trial_size; i++) {
 		struct { PN_(uint) before, after; } size;
-		enum set_result result;
+		enum table_result result;
 		const struct sample *s = trials.sample + i;
 		PN_(entry) eject, zero, entry;
 		memset(&eject, 0, sizeof eject);
 		memset(&zero, 0, sizeof zero);
-		size.before = set.size;
+		size.before = table.size;
 		PN_(to_string)(PN_(entry_key)(s->_.entry), &z);
-		result = N_(set_update)(&set, s->_.entry, &eject, 0);
-		printf("Store \"%s\" in set, result: %s.\n", z, set_result_str[result]);
-		size.after = set.size;
+		result = N_(table_update)(&table, s->_.entry, &eject, 0);
+		printf("Store \"%s\" in table, result: %s.\n",
+			z, table_result_str[result]);
+		size.after = table.size;
 		assert(s->is_in && !memcmp(&eject, &zero, sizeof zero)
 			&& result == TABLE_UNIQUE && size.after == size.before + 1
 			|| !s->is_in && result == TABLE_YIELD && size.before == size.after);
-		success = N_(set_query)(&set, PN_(entry_key)(s->_.entry), &entry);
+		success = N_(table_query)(&table, PN_(entry_key)(s->_.entry), &entry);
 		assert(success && PN_(eq_en)(s->_.entry, entry));
-		if(set.size < 10000 && !(i & (i - 1)) || i + 1 == trial_size) {
+		if(table.size < 10000 && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
-			printf("Hash to far: %s.\n", PN_(set_to_string)(&set));
+			printf("Hash to far: %s.\n", PN_(table_to_string)(&table));
 			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-%lu.gv", (unsigned long)i+1);
-			PN_(graph)(&set, fn);
+			PN_(graph)(&table, fn);
 		}
-		PN_(legit)(&set);
+		PN_(legit)(&table);
 	}
 	{
 		char fn[64];
 		sprintf(fn, "graph/histogram-" QUOTE(TABLE_NAME) "-%u.gnu",
 			(unsigned)trial_size);
-		PN_(histogram)(&set, fn);
+		PN_(histogram)(&table, fn);
 	}
-	printf("Go through the set and see if we can get all the items out.\n");
+	printf("Go through the table and see if we can get all the items out.\n");
 	{ PN_(value) def; memset(&def, 0, sizeof def);
 		for(i = 0; i < trial_size; i++) {
 		const struct sample *s = trials.sample + i;
@@ -355,11 +357,11 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 		PN_(value) value;
 		const PN_(value) *array_value;
 		int is, cmp;
-		is = N_(set_is)(&set, key);
+		is = N_(table_is)(&table, key);
 		assert(is);
-		success = N_(set_query)(&set, key, &result);
+		success = N_(table_query)(&table, key, &result);
 		assert(success && PN_(eq_en)(s->_.entry, result));
-		value = N_(set_get_or)(&set, key, def);
+		value = N_(table_get_or)(&table, key, def);
 #ifdef TABLE_VALUE
 		array_value = &s->_.entry.value;
 #else
@@ -369,13 +371,13 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 		assert(!cmp);
 		/* printf("%u: %u\n", (unsigned *)*array_value, (unsigned *)value); */
 	}}
-	N_(set_clear)(&set);
-	for(b = 0, b_end = b + PN_(capacity)(&set); b < b_end; b++)
-		assert(set.buckets[b].next == TABLE_NULL);
-	assert(set.size == 0);
-	printf("Clear: %s.\n", PN_(set_to_string)(&set));
-	N_(set_)(&set);
-	assert(!set.buckets && !set.log_capacity && !set.size);
+	N_(table_clear)(&table);
+	for(b = 0, b_end = b + PN_(capacity)(&table); b < b_end; b++)
+		assert(table.buckets[b].next == TABLE_NULL);
+	assert(table.size == 0);
+	printf("Clear: %s.\n", PN_(table_to_string)(&table));
+	N_(table_)(&table);
+	assert(!table.buckets && !table.log_capacity && !table.size);
 }
 
 /** The list will be tested on `stdout`. Requires `TABLE_TEST` to be a
@@ -385,20 +387,18 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
  <tag:<N>hashlink> and `TABLE_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void N_(set_test)(const PN_(fill_fn) fill, void *const parent) {
-	printf("<" QUOTE(TABLE_NAME) ">hash of key <" QUOTE(TABLE_KEY)
+static void N_(table_test)(const PN_(fill_fn) fill, void *const parent) {
+	printf("<" QUOTE(TABLE_NAME) ">table of key <" QUOTE(TABLE_KEY)
 		"> was created using: "
-#ifdef TABLE_VALUE
-		"TABLE_VALUE <" QUOTE(TABLE_VALUE) ">; "
-#endif
 		"TABLE_UINT <" QUOTE(TABLE_UINT) ">; "
 		"TABLE_HASH <" QUOTE(TABLE_HASH) ">; "
+#ifdef TABLE_IS_EQUAL
 		"TABLE_IS_EQUAL <" QUOTE(TABLE_IS_EQUAL) ">; "
-#ifdef TABLE_NO_CACHE
-		"TABLE_NO_CACHE; "
+#else
+		"TABLE_INVERSE <" QUOTE(TABLE_INVERSE) ">; "
 #endif
-#ifdef TABLE_INVERT
-		"TABLE_INVERT; "
+#ifdef TABLE_VALUE
+		"TABLE_VALUE <" QUOTE(TABLE_VALUE) ">; "
 #endif
 		"TABLE_TEST; "
 		"testing%s:\n", parent ? "(pointer)" : "");

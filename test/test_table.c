@@ -210,28 +210,28 @@ static void nato(void) {
 		"Mike", "November", "Oscar", "Papa", "Québec", "Romeo", "Sierra",
 		"Tango", "Uniform", "Victor", "Whisky", "X-ray", "Yankee", "Zulu" };
 	struct nato_list list[sizeof alphabet / sizeof *alphabet];
-	struct nato_set nato = TABLE_IDLE;
-	struct nato_set_iterator it;
-	struct nato_set_entry entry;
+	struct nato_table nato = TABLE_IDLE;
+	struct nato_table_iterator it;
+	struct nato_table_entry entry;
 	size_t i;
 	for(i = 0; i < sizeof alphabet / sizeof *alphabet; i++) {
 		size_t length = utf_alnum_count(alphabet[i]);
 		struct nato_value *value = 0;
 		struct nato_list *item = list + i;
-		switch(nato_set_compute(&nato, length, &value)) {
+		switch(nato_table_compute(&nato, length, &value)) {
 		case TABLE_ERROR: goto catch;
 			/* PutIfAbsent */
 		case TABLE_UNIQUE: value->occurrences = 1, value->head = 0; break;
 			/* PutIfPresent */
 		case TABLE_YIELD: value->occurrences++; break;
-		case TABLE_REPLACE: assert(0); /* Impossible with <fn:<N>set_compute>. */
+		case TABLE_REPLACE: assert(0); /* Impossible, <fn:<N>table_compute>. */
 		}
 		item->alpha = alphabet[i];
 		item->next = value->head, value->head = item;
 	}
 	printf("NATO phonetic alphabet letter count histogram\n"
 		"length\tcount\twords\n");
-	for(nato_set_begin(&it, &nato); nato_set_next(&it, &entry); ) {
+	for(nato_table_begin(&it, &nato); nato_table_next(&it, &entry); ) {
 		struct nato_list *const head = entry.value.head, *w = head;
 		printf("%lu\t%lu\t{", (unsigned long)entry.key,
 			(unsigned long)entry.value.occurrences);
@@ -239,28 +239,28 @@ static void nato(void) {
 		printf("}\n");
 	}
 	{ /* Check. */
-		struct nato_set_entry e;
+		struct nato_table_entry e;
 		int success;
-		success = nato_set_query(&nato, 0, &e);
+		success = nato_table_query(&nato, 0, &e);
 		assert(!success);
-		success = nato_set_query(&nato, 3, &e);
+		success = nato_table_query(&nato, 3, &e);
 		assert(!success);
-		success = nato_set_query(&nato, 4, &e);
+		success = nato_table_query(&nato, 4, &e);
 		assert(success && e.value.occurrences == 8);
-		success = nato_set_query(&nato, 5, &e);
+		success = nato_table_query(&nato, 5, &e);
 		assert(success && e.value.occurrences == 8);
-		success = nato_set_query(&nato, 6, &e);
+		success = nato_table_query(&nato, 6, &e);
 		assert(success && e.value.occurrences == 6);
-		success = nato_set_query(&nato, 7, &e);
+		success = nato_table_query(&nato, 7, &e);
 		assert(success && e.value.occurrences == 3);
-		success = nato_set_query(&nato, 8, &e);
+		success = nato_table_query(&nato, 8, &e);
 		assert(success && e.value.occurrences == 1);
 	}
 	goto finally;
 catch:
 	perror("nato"), assert(0);
 finally:
-	nato_set_(&nato);
+	nato_table_(&nato);
 }
 
 
@@ -271,33 +271,33 @@ finally:
 
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
-	zodiac_set_test(&fill_zodiac, 0); /* Don't require any space. */
-	string_set_test(&str16_from_void, &strings), str16_pool_(&strings);
-	uint_set_test(&uint_from_void, 0);
-	int_set_test(&int_from_void, 0);
+	zodiac_table_test(&fill_zodiac, 0); /* Don't require any space. */
+	string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
+	uint_table_test(&uint_from_void, 0);
+	int_table_test(&int_from_void, 0);
 	nato();
 	{ /* Too lazy to do separate tests. */
-		struct int_set is = TABLE_IDLE;
+		struct int_table is = TABLE_IDLE;
 		int one, two, def;
-		int_set_update(&is, 1, 0, 0);
-		int_set_update(&is, 2, 0, 0);
-		printf("Set %s.\n", int_set_to_string(&is));
-		one = int_set_get_or(&is, 1, 7);
-		two = int_set_get_or(&is, 2, 7);
-		def = int_set_get_or(&is, 3, 7);
+		int_table_update(&is, 1, 0, 0);
+		int_table_update(&is, 2, 0, 0);
+		printf("Table %s.\n", int_table_to_string(&is));
+		one = int_table_get_or(&is, 1, 7);
+		two = int_table_get_or(&is, 2, 7);
+		def = int_table_get_or(&is, 3, 7);
 		printf("get or default(7): 1:%u, 2:%u, 3:%u\n", one, two, def);
 		assert(one == 1 && two == 2 && def == 7);
-		one = int_set_get(&is, 1);
-		two = int_set_get(&is, 2);
-		def = int_set_get(&is, 3);
+		one = int_table_get(&is, 1);
+		two = int_table_get(&is, 2);
+		def = int_table_get(&is, 3);
 		printf("get or 0: 1:%u, 2:%u, 3:%u\n", one, two, def);
 		assert(one == 1 && two == 2 && def == 0);
-		one = int_set_42_get(&is, 1);
-		two = int_set_42_get(&is, 2);
-		def = int_set_42_get(&is, 3);
+		one = int_table_42_get(&is, 1);
+		two = int_table_42_get(&is, 2);
+		def = int_table_42_get(&is, 3);
 		printf("get or 42: 1:%u, 2:%u, 3:%u\n", one, two, def);
 		assert(one == 1 && two == 2 && def == 42);
-		int_set_(&is);
+		int_table_(&is);
 	}
 
 
@@ -313,7 +313,7 @@ int main(void) {
 
 
 #if 0
-	{ /* Automated tests. The ones that have no pool are self-contained hashs,
+	{ /* Automated tests. The ones that have no pool are self-contained hashes,
 	 and we just test them on the stack. The ones that do require more memory
 	 from a parent node, which the internals to `Set` don't know of. */
 		struct string_pool strings = POOL_IDLE;
@@ -570,10 +570,8 @@ static void vec4_filler(struct vec4 *const v4) {
 #include "../src/table.h"
 
 
-/* I wrote Set to solve
- [this problem](https://stackoverflow.com/q/59091226/2472827). In general, one
- has to declare before defining if we want a hash map because the
- `<N>hashlink` is not defined until after. */
+/* I wrote to solve
+ [this problem](https://stackoverflow.com/q/59091226/2472827). */
 
 static unsigned boat_id_hash(const int id) { return (unsigned)id; }
 static int boat_id_is_equal(const int a, const int b) { return a == b; }
