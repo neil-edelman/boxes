@@ -149,7 +149,7 @@ To initialize, see [&lt;N&gt;table](#user-content-fn-8f317be5), `TABLE_IDLE`, `{
 
 <code>struct <strong>&lt;N&gt;table_iterator</strong> { struct &lt;PN&gt;iterator it; };</code>
 
-Iteration usually not in any particular order\. The asymptotic runtime is proportional to the table capacity\.
+Iteration usually not in any particular order\. The asymptotic runtime of iterating though the whole table is proportional to the capacity\.
 
 
 
@@ -421,6 +421,8 @@ If `TABLE_VALUE`, advances `it` when [&lt;N&gt;table_has_next](#user-content-fn-
 ### <a id = "user-content-fn-92774ccb" name = "user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a> ###
 
 <code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
+
+This is functionally identical to [&lt;N&gt;table_get_or](#user-content-fn-638dcc26), but a with a trait specifying a constant default value, \(such as zero\.\)
 
  * Return:  
    The value associated with `key` in `table`, \(which can be null\.\) If no such value exists, the `TABLE_DEFAULT` is returned\.

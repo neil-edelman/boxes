@@ -205,7 +205,7 @@ fixme</div>
 
 <p>To initialize, see <a href = "#fn:&lt;N&gt;table">&lt;N&gt;table</a>, <code>TABLE_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the table to go into an invalid state.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 808 height = 143></p>
+<p><img alt = "States." src = "web/states.png" width = 808 height = 135></p>
 
 </div>
 
@@ -215,7 +215,7 @@ fixme</div>
 
 <p><code>struct <strong>&lt;N&gt;table_iterator</strong> { struct &lt;PN&gt;iterator it; };</code></p>
 
-<p>Iteration usually not in any particular order. The asymptotic runtime is proportional to the table capacity.</p>
+<p>Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
 
 </div>
 
@@ -542,6 +542,8 @@ fixme</div>
 <h3><a id = "fn:<N>table<D>get" name = "fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></h3>
 
 <p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code></p>
+
+<p>This is functionally identical to <a href = "#fn:&lt;N&gt;table_get_or">&lt;N&gt;table_get_or</a>, but a with a trait specifying a constant default value, (such as zero.)</p>
 
 <dl>
 	<dt>Return:</dt>

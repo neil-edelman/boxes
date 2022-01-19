@@ -8,7 +8,7 @@ digraph {
 	edge [fontname = "Bitstream Vera Sans" fontsize = 12];
 
 	node [shape=record, style=filled];
-	null [label="uninitialized|uninitialized;\lno dynamic memory;\lundetermined state\l", fillcolor="Pink"];
+	null [label="uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor="Pink"];
 	static [ label = "idle|no dynamic memory;\l\{0\} or SET_IDLE\l" ];
 	dynamic [ label = "active|memory allocated;\lcould have size zero\l" ];
 	null -> static [ label = "<N>table" ];

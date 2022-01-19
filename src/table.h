@@ -621,8 +621,9 @@ static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 static enum table_result N_(table_try)(struct N_(table) *const table,
 	PN_(entry) entry) { return PN_(put)(table, entry, 0, 0); }
 
-/* Callback in <fn:<N>table_replace>.
- @return `original` and `replace` ignored, true. @implements <PN>policy_fn */
+/** Callback in <fn:<N>table_replace>.
+ @return `original` and `replace` ignored, true.
+ @implements <typedef:<PN>policy_fn> */
 static int PN_(always_replace)(const PN_(key) original,
 	const PN_(key) replace) { return (void)original, (void)replace, 1; }
 
@@ -718,8 +719,8 @@ static struct PN_(bucket) *PN_(next)(struct PN_(iterator) *const it) {
 
 /* iterate --> */
 
-/** Iteration usually not in any particular order. The asymptotic runtime is
- proportional to the table capacity. */
+/** Iteration usually not in any particular order. The asymptotic runtime of
+ iterating though the whole table is proportional to the capacity. */
 struct N_(table_iterator) { struct PN_(iterator) it; };
 
 /** Loads `table` (can be null) into `it`. @allow */
@@ -800,7 +801,9 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
  `TABLE_DEFAULT_NAME` is omitted. */
 static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
 
-/** @return The value associated with `key` in `table`, (which can be null.) If
+/** This is functionally identical to <fn:<N>table_get_or>, but a with a trait
+ specifying a constant default value, (such as zero.)
+ @return The value associated with `key` in `table`, (which can be null.) If
  no such value exists, the `TABLE_DEFAULT` is returned.
  @order Average \O(1); worst \O(n). @allow */
 static PN_(value) N_D_(table, get)(struct N_(table) *const table,
