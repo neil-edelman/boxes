@@ -32,7 +32,7 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[TABLE_DEFAULT_NAME, TABLE_DEFAULT]
- A name that satisfies `C` naming conventions when mangled and a
+ Default trait; a name that satisfies `C` naming conventions when mangled and a
  <typedef:<PN>value> used in <fn:<N>table<D>get>. There can be multiple to
  defaults, but only one can omit `TABLE_DEFAULT_NAME`.
 
@@ -787,6 +787,7 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
 #elif defined(TABLE_DEFAULT) /* base --><!-- default */
 
+
 #ifdef TABLE_DEFAULT_NAME
 #define N_D_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_DEFAULT_NAME, m))
 #define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m))
@@ -795,14 +796,13 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 #define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m))
 #endif
 
-/* Check that `TABLE_DEFAULT` is a valid <tag:<PN>value> and that only one time
- can the `TABLE_DEFAULT_NAME` be omitted. */
+/* Check that `TABLE_DEFAULT` is a valid <tag:<PN>value> and that only one
+ `TABLE_DEFAULT_NAME` is omitted. */
 static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
 
 /** @return The value associated with `key` in `table`, (which can be null.) If
  no such value exists, the `TABLE_DEFAULT` is returned.
- @order Average \O(1); worst \O(n).
- @allow */
+ @order Average \O(1); worst \O(n). @allow */
 static PN_(value) N_D_(table, get)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *b;

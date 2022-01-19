@@ -78,30 +78,32 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-/** <to_string.h>: an alias to the box. */
+/* <to_string.h>: an alias to the box. */
 typedef BOX_CONTAINER PSZ_(box);
 
-/** <to_string.h>: an alias to the individual key contained in the box. */
-typedef BOX_CONTENTS PSZ_(key);
+/* <to_string.h>: an alias to the individual type contained in the box. */
+typedef BOX_CONTENTS PSZ_(type);
 
-/** Responsible for turning the argument <typedef:<PSZ>key> into a 12-`char`
- null-terminated output string. */
-typedef void (*PSZ_(to_string_fn))(const PSZ_(key) *, char (*)[12]);
-
+/** <to_string.h>: responsible for turning the argument into a 12-`char`
+ null-terminated output string. `<PSZ>type` is contracted to be an internal
+ iteration type of the box. */
+typedef void (*PSZ_(to_string_fn))(const PSZ_(type) *, char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
  <typedef:<PSZ>to_string>. */
 static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
 
-/** @return Print the contents of <typedef:<PSZ>box> `box` in a static string
- buffer of 256 bytes with limitations of only printing 4 things at a time.
- @order \Theta(1) @allow */
+/** <to_string.h>: print the contents of `box` in a static string buffer of
+ 256 bytes, with limitations of only printing 4 things at a time. `<PSZ>box` is
+ contracted to be the box itself. `<SZ>` is loosely contracted to be a name
+ `<X>box[<X_TO_STRING_NAME>]`.
+ @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	const char comma = ',', space = ' ', *const ellipsis = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = strlen(ellipsis);
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
-	const PSZ_(key) *x;
+	const PSZ_(type) *x;
 	struct BOX_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */

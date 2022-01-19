@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>uint">&lt;PN&gt;uint</a>, <a href = "#typedef:<PN>key">&lt;PN&gt;key</a>, <a href = "#typedef:<PN>ckey">&lt;PN&gt;ckey</a>, <a href = "#typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a>, <a href = "#typedef:<PN>inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>, <a href = "#typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a>, <a href = "#typedef:<PN>value">&lt;PN&gt;value</a>, <a href = "#typedef:<PN>entry">&lt;PN&gt;entry</a>, <a href = "#typedef:<PN>policy_fn">&lt;PN&gt;policy_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>key">&lt;PSZ&gt;key</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>uint">&lt;PN&gt;uint</a>, <a href = "#typedef:<PN>key">&lt;PN&gt;key</a>, <a href = "#typedef:<PN>ckey">&lt;PN&gt;ckey</a>, <a href = "#typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a>, <a href = "#typedef:<PN>inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>, <a href = "#typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a>, <a href = "#typedef:<PN>value">&lt;PN&gt;value</a>, <a href = "#typedef:<PN>entry">&lt;PN&gt;entry</a>, <a href = "#typedef:<PN>policy_fn">&lt;PN&gt;policy_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:table_result">table_result</a>, <a href = "#tag:<N>table_entry">&lt;N&gt;table_entry</a>, <a href = "#tag:<N>table">&lt;N&gt;table</a>, <a href = "#tag:<N>table_iterator">&lt;N&gt;table_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -66,7 +66,7 @@ fixme</div>
 	<dt>Parameter: TABLE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: TABLE_DEFAULT_NAME, TABLE_DEFAULT</dt>
-	<dd>A name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> used in <a href = "#fn:&lt;N&gt;table&lt;D&gt;get">&lt;N&gt;table&lt;D&gt;get</a>. There can be multiple to defaults, but only one can omit <code>TABLE_DEFAULT_NAME</code>.</dd>
+	<dd>Default trait; a name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> used in <a href = "#fn:&lt;N&gt;table&lt;D&gt;get">&lt;N&gt;table&lt;D&gt;get</a>. There can be multiple to defaults, but only one can omit <code>TABLE_DEFAULT_NAME</code>.</dd>
 	<dt>Parameter: TABLE_TO_STRING_NAME, TABLE_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>TABLE_TO_STRING_NAME</code>.</dd>
 	<dt>Standard:</dt>
@@ -167,31 +167,11 @@ fixme</div>
 
 <div>
 
-<h3><a id = "typedef:<PSZ>box" name = "typedef:<PSZ>box">&lt;PSZ&gt;box</a></h3>
-
-<p><code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code></p>
-
-<p><a href = "to_string.h">to_string.h</a>: an alias to the box.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PSZ>key" name = "typedef:<PSZ>key">&lt;PSZ&gt;key</a></h3>
-
-<p><code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;key</strong>;</code></p>
-
-<p><a href = "to_string.h">to_string.h</a>: an alias to the individual key contained in the box.</p>
-
-</div>
-
-<div>
-
 <h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;key *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
 
-<p>Responsible for turning the argument <a href = "#typedef:&lt;PSZ&gt;key">&lt;PSZ&gt;key</a> into a 12-<code>char</code> null-terminated output string.</p>
+<p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
 
 </div>
 
@@ -578,9 +558,11 @@ fixme</div>
 
 <p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
 
+<p><a href = "to_string.h">to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+
 <dl>
 	<dt>Return:</dt>
-	<dd>Print the contents of <a href = "#typedef:&lt;PSZ&gt;box">&lt;PSZ&gt;box</a> <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
+	<dd>Address of the static buffer.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>

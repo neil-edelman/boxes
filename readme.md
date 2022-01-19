@@ -3,7 +3,7 @@
 ## Hash table ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;ckey](#user-content-typedef-c325bde5), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;key](#user-content-typedef-bd74ee05), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;ckey](#user-content-typedef-c325bde5), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [table_result](#user-content-tag-4f1ea759), [&lt;N&gt;table_entry](#user-content-tag-b491b196), [&lt;N&gt;table](#user-content-tag-8f317be5), [&lt;N&gt;table_iterator](#user-content-tag-f67540e4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -28,7 +28,7 @@ fixme
  * Parameter: TABLE\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: TABLE\_DEFAULT\_NAME, TABLE\_DEFAULT  
-   A name that satisfies `C` naming conventions when mangled and a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\. There can be multiple to defaults, but only one can omit `TABLE_DEFAULT_NAME`\.
+   Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\. There can be multiple to defaults, but only one can omit `TABLE_DEFAULT_NAME`\.
  * Parameter: TABLE\_TO\_STRING\_NAME, TABLE\_TO\_STRING  
    To string trait contained in [to\_string\.h](to_string.h); `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `TABLE_TO_STRING_NAME`\.
  * Standard:  
@@ -109,27 +109,11 @@ Returns true if the `replace` replaces the `original`\.
 
 
 
-### <a id = "user-content-typedef-ace240bb" name = "user-content-typedef-ace240bb">&lt;PSZ&gt;box</a> ###
-
-<code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code>
-
-[to\_string\.h](to_string.h): an alias to the box\.
-
-
-
-### <a id = "user-content-typedef-bd74ee05" name = "user-content-typedef-bd74ee05">&lt;PSZ&gt;key</a> ###
-
-<code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;key</strong>;</code>
-
-[to\_string\.h](to_string.h): an alias to the individual key contained in the box\.
-
-
-
 ### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;key *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
 
-Responsible for turning the argument [&lt;PSZ&gt;key](#user-content-typedef-bd74ee05) into a 12\-`char` null\-terminated output string\.
+[to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
 
 
 
@@ -450,8 +434,10 @@ If `TABLE_VALUE`, advances `it` when [&lt;N&gt;table_has_next](#user-content-fn-
 
 <code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
+[to\_string\.h](to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+
  * Return:  
-   Print the contents of [&lt;PSZ&gt;box](#user-content-typedef-ace240bb) `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   Address of the static buffer\.
  * Order:  
    &#920;\(1\)
 

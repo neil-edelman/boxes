@@ -5,19 +5,19 @@
 
  ![Example of Pool](../web/pool.png)
 
- <tag:<P>pool> is a memory pool that stores <typedef:<PP>key>. Pointers to
+ <tag:<P>pool> is a memory pool that stores <typedef:<PP>type>. Pointers to
  valid items in the pool are stable, but not generally in any order. When
  removal is ongoing and uniformly sampled while reaching a steady-state size,
  it will eventually settle in one contiguous region.
 
  @param[POOL_NAME, POOL_TYPE]
- `<P>` that satisfies `C` naming conventions when mangled and a valid tag key,
- <typedef:<PP>key>, associated therewith; required. `<PP>` is private, whose
+ `<P>` that satisfies `C` naming conventions when mangled and a valid tag type,
+ <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
  @param[POOL_CHUNK_MIN_CAPACITY]
  Default is 8; optional number in
- `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PP>key]` that the capacity can
+ `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PP>type]` that the capacity can
  not go below.
 
  @param[POOL_EXPECT_TRAIT]
@@ -35,7 +35,7 @@
  @std C89 */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
-#error Name POOL_NAME undefined or tag key POOL_TYPE undefined.
+#error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
 #endif
 #if defined(POOL_TO_STRING_NAME) || defined(POOL_TO_STRING)
 #define POOL_TO_STRING_TRAIT 1
@@ -74,7 +74,7 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #endif /* idempotent --> */
 
 
-#if POOL_TRAITS == 0 /* <!-- base hash */
+#if POOL_TRAITS == 0 /* <!-- base code */
 
 
 #ifndef POOL_CHUNK_MIN_CAPACITY /* <!-- !min */
@@ -84,11 +84,11 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #error Pool chunk capacity error.
 #endif
 
-/** A valid tag key hash by `POOL_TYPE`. */
-typedef POOL_TYPE PP_(key);
+/** A valid tag type set by `POOL_TYPE`. */
+typedef POOL_TYPE PP_(type);
 
 /* Size and chunk, which goes into a sorted array. */
-struct PP_(slot) { size_t size; PP_(key) *chunk; };
+struct PP_(slot) { size_t size; PP_(type) *chunk; };
 #define ARRAY_NAME PP_(slot)
 #define ARRAY_TYPE struct PP_(slot)
 #include "array.h"
@@ -104,10 +104,10 @@ struct P_(pool) {
 	size_t capacity0; /* Capacity of chunk-zero. */
 };
 
-/** @return Index of sorted chunk that is higher than `x` in `chunks`, but
+/** @return Index of sorted chunk that is higher than `x` in `slots`, but
  treating zero as special. @order \O(\log `chunks`) */
 static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
-	const PP_(key) *const x) {
+	const PP_(type) *const x) {
 	const struct PP_(slot) *const base = slots->data;
 	size_t n, b0, b1;
 	assert(slots && x);
@@ -124,10 +124,10 @@ static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 	return b0 + (x >= base[slots->size - 1].chunk);
 }
 
-/** Which chunk is `item` in `pool`?
+/** Which chunk is `x` in `pool`?
  @order \O(\log `chunks`), \O(\log \log `size`)? */
 static size_t PP_(chunk_idx)(const struct P_(pool) *const pool,
-	const PP_(key) *const x) {
+	const PP_(type) *const x) {
 	struct PP_(slot) *const base = pool->slots.data;
 	size_t up;
 	assert(pool && pool->slots.size && base && x);
@@ -144,9 +144,9 @@ static size_t PP_(chunk_idx)(const struct P_(pool) *const pool,
  @return Success. */
 static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	const size_t min_size = POOL_CHUNK_MIN_CAPACITY,
-		max_size = (size_t)-1 / sizeof(PP_(key));
+		max_size = (size_t)-1 / sizeof(PP_(type));
 	struct PP_(slot) *base = pool->slots.data, *slot;
-	PP_(key) *chunk;
+	PP_(type) *chunk;
 	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
@@ -198,7 +198,7 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
  @return Success. It may fail due to a free-heap memory allocation error.
  @order Amortized \O(\log \log `items`) @throws[realloc] */
 static int PP_(remove)(struct P_(pool) *const pool,
-	const PP_(key) *const data) {
+	const PP_(type) *const data) {
 	size_t c = PP_(chunk_idx)(pool, data);
 	struct PP_(slot) *slot = pool->slots.data + c;
 	assert(pool && pool->slots.size && data);
@@ -216,7 +216,7 @@ static int PP_(remove)(struct P_(pool) *const pool,
 			}
 		} else if(!poolfree_heap_add(&pool->free0, idx)) return 0;
 	} else if(assert(slot->size), !--slot->size) {
-		PP_(key) *const chunk = slot->chunk;
+		PP_(type) *const chunk = slot->chunk;
 		PP_(slot_array_remove)(&pool->slots, pool->slots.data + c);
 		free(chunk);
 	}
@@ -245,10 +245,10 @@ static int P_(pool_buffer)(struct P_(pool) *const pool, const size_t n) {
 	return assert(pool), PP_(buffer)(pool, n);
 }
 
-/** This pointer is constant until it gets <fn:<PP>pool_remove>.
+/** This pointer is constant until it gets <fn:<P>pool_remove>.
  @return A pointer to a new uninitialized element from `pool`.
  @throws[ERANGE, malloc] @order amortised O(1) @allow */
-static PP_(key) *P_(pool_new)(struct P_(pool) *const pool) {
+static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	struct PP_(slot) *slot0;
 	assert(pool);
 	if(!PP_(buffer)(pool, 1)) return 0;
@@ -267,10 +267,10 @@ static PP_(key) *P_(pool_new)(struct P_(pool) *const pool) {
 	return slot0->chunk + slot0->size++;
 }
 
-/** Deletes `datum` from `pool`. Do not remove data that is not in `pool`.
+/** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
  @return Success. @order \O(\log \log `items`) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
-	PP_(key) *const data) { return PP_(remove)(pool, data); }
+	PP_(type) *const data) { return PP_(remove)(pool, data); }
 
 /** Removes all from `pool`, but keeps it's active state, only freeing the
  smaller blocks. @order \O(\log `items`) @allow */
@@ -302,7 +302,7 @@ static void PP_(begin)(struct PP_(iterator) *const it,
 }
 
 /** Advances `it`. @implements next */
-static const PP_(key) *PP_(next)(struct PP_(iterator) *const it) {
+static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 	assert(it);
 	return it->slot0 && it->i < it->slot0->size
 		? it->slot0->chunk + it->i++ : 0;
@@ -312,7 +312,7 @@ static const PP_(key) *PP_(next)(struct PP_(iterator) *const it) {
 
 #ifdef POOL_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PP_(to_string))(const PP_(key) *, char (*)[12]);
+static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 #include "../test/test_pool.h" /** \include */
 #endif /* test --> */
@@ -320,7 +320,7 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 /* <!-- box (multiple traits) */
 #define BOX_ PP_
 #define BOX_CONTAINER struct P_(pool)
-#define BOX_CONTENTS PP_(key)
+#define BOX_CONTENTS PP_(type)
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
@@ -331,7 +331,7 @@ static void PP_(unused_base)(void) {
 static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
 
-#elif defined(POOL_TO_STRING) /* base hash --><!-- to string trait */
+#elif defined(POOL_TO_STRING) /* base code --><!-- to string trait */
 
 
 #ifdef POOL_TO_STRING_NAME /* <!-- name */

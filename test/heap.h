@@ -13,17 +13,17 @@
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
- key <typedef:<PH>priority> associated therewith. `HEAP_NAME` is required;
+ type <typedef:<PH>priority> associated therewith. `HEAP_NAME` is required;
  `HEAP_TYPE` defaults to `unsigned int`. `<PH>` is private, whose names are
  prefixed in a manner to avoid collisions.
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>compare_fn>. Defaults to minimum-hash.
- Required if `HEAP_TYPE` is changed to an incomparable key.
+ Required if `HEAP_TYPE` is changed to an incomparable type.
 
  @param[HEAP_VALUE]
  Optional value <typedef:<PH>value>, that is stored as a reference in
- <tag:<H>heapnode>; declaring it is sufficient. If hash, has no effect on the
+ <tag:<H>heapnode>; declaring it is sufficient. If set, has no effect on the
  ranking, but affects <typedef:<PH>value>, (otherwise, it's the same field as
  <typedef:<PH>priority>.)
 
@@ -72,20 +72,20 @@
 #endif /* idempotent --> */
 
 
-#if HEAP_TRAITS == 0 /* <!-- base hash */
+#if HEAP_TRAITS == 0 /* <!-- base code */
 
 
 #ifndef HEAP_TYPE
 #define HEAP_TYPE unsigned
 #endif
 
-/** Valid assignable key used for priority in <typedef:<PH>node>. Defaults to
- `unsigned int` if not hash by `HEAP_TYPE`. */
+/** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
+ `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(priority);
 
 /** Returns a positive result if `a` is out-of-order with respect to `b`,
  inducing a strict pre-order. This is compatible, but less strict then the
- comparators from `bsearch` and `qsort`; it only needs to divide buckets into
+ comparators from `bsearch` and `qsort`; it only needs to divide entries into
  two instead of three categories. */
 typedef int (*PH_(compare_fn))(const PH_(priority) a, const PH_(priority) b);
 #ifndef HEAP_COMPARE /* <!-- !cmp */
@@ -102,12 +102,12 @@ static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 #ifdef HEAP_VALUE /* <!-- value */
 typedef HEAP_VALUE PH_(value_data);
 typedef PH_(value_data) *PH_(value);
-/** If `HEAP_VALUE` is hash, this becomes <typedef:<PH>node>; make a temporary
+/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>; make a temporary
  structure to add a pointer to the value and a priority (which may be something
  cached from the value) and copy it using <fn:<H>heap_add>. */
 struct H_(heapnode) { PH_(priority) priority; PH_(value) value; };
-/** If `HEAP_VALUE` is hash, (priority, value) hash by <tag:<H>heapnode>,
- otherwise it's a (priority) hash directly by <typedef:<PH>priority>. */
+/** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
+ otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
 typedef struct H_(heapnode) PH_(node);
 #else /* value --><!-- !value */
 typedef PH_(priority) PH_(value);
@@ -155,7 +155,7 @@ static void PH_(copy)(const PH_(node) *const src, PH_(node) *const dest) {
 }
 
 /** Find the spot in `heap` where `node` goes and put it there.
- @param[heap] At least one bucket; the last bucket will be replaced by `node`.
+ @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
 static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
 	PH_(node) *const n0 = heap->a.data;
@@ -174,7 +174,7 @@ static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
 }
 
 /** Pop the head of `heap` and restore the heap by sifting down the last
- element. @param[heap] At least one bucket. The head is popped, and the size
+ element. @param[heap] At least one entry. The head is popped, and the size
  will be one less. */
 static void PH_(sift_down)(struct H_(heap) *const heap) {
 	const size_t size = (assert(heap && heap->a.size), --heap->a.size),
@@ -198,7 +198,7 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
  This reads from the an arbitrary leaf-node into a temporary value, so is
  slightly more complex than <fn:<PH>sift_down>, but the same thing.
- @param[heap] At least `i + 1` buckets. */
+ @param[heap] At least `i + 1` entries. */
 static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 	const size_t size = (assert(heap && i < heap->a.size), heap->a.size),
 		half = size >> 1;
@@ -364,7 +364,7 @@ static void PH_(unused_base)(void) {
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 
-#elif defined(HEAP_TO_STRING) /* base hash --><!-- to string trait */
+#elif defined(HEAP_TO_STRING) /* base code --><!-- to string trait */
 
 
 #ifdef HEAP_TO_STRING_NAME /* <!-- name */
@@ -372,14 +372,15 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #else /* name --><!-- !name */
 #define SZ_(n) HEAP_CAT(H_(heap), n)
 #endif /* !name --> */
+#define TSZ_(n) HEAP_CAT(heap_sz, SZ_(n))
 #ifdef HEAP_VALUE /* <!-- value */
 /* Check that `HEAP_TO_STRING` is a function implementing this prototype. */
-static void (*const PH_(actual_to_string))(const PH_(value_data) *,
+static void (*const TSZ_(actual_to_string))(const PH_(value_data) *,
 	char (*const)[12]) = (HEAP_TO_STRING);
-/** Call <data:<PH>actual_to_string> with just the value of `node` and `z`. */
-static void PH_(thunk_to_string)(const PH_(node) *const node,
-	char (*const z)[12]) { PH_(actual_to_string)(node->value, z); }
-#define TO_STRING &PH_(thunk_to_string)
+/** Call <data:<TSZ>actual_to_string> with just the value of `node` and `z`. */
+static void TSZ_(thunk_to_string)(const PH_(node) *const node,
+	char (*const z)[12]) { TSZ_(actual_to_string)(node->value, z); }
+#define TO_STRING &TSZ_(thunk_to_string)
 #else /* value --><!-- !value */
 #define TO_STRING HEAP_TO_STRING
 #endif /* !value --> */
@@ -390,6 +391,7 @@ static PSZ_(to_string_fn) PH_(to_string) = PSZ_(to_string);
 static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
 	= &SZ_(to_string);
 #endif /* expect --> */
+#undef TSZ_
 #undef SZ_
 #undef HEAP_TO_STRING
 #ifdef HEAP_TO_STRING_NAME

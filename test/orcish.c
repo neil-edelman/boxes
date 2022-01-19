@@ -3,7 +3,7 @@
  from [SMAUG](http://www.smaug.org/), which is a derivative of
  [Merc](http://dikumud.com/Children/merc2.asp), and
  [DikuMud](http://dikumud.com/); used under fair-use. Contains
- [MurmurHash](https://github.com/aappleby/smhasher)-derived hash, placed in
+ [MurmurHash](https://github.com/aappleby/smhasher)-derived code, placed in
  public domain by Austin Appleby.
 
  @subtitle Name generator
@@ -151,7 +151,7 @@ static unsigned long fmix(unsigned long k) {
 static unsigned murmur_callback(unsigned long *const r)
 	{ return (*r = fmix(*r)) % (1lu + RAND_MAX); }
 
-/** Uses `rand`; ignores `r` and uses a global variable hash by `srand`.
+/** Uses `rand`; ignores `r` and uses a global variable set by `srand`.
  @return Number in `[0, RAND_MAX]`. @implements `orc_rand` */
 static unsigned rand_callback(unsigned long *const r)
 	{ (void)r; return (unsigned)rand(); }
