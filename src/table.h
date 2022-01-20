@@ -117,9 +117,13 @@ static const char *const table_result_str[] = { TABLE_RESULT };
 #endif
 
 /** <typedef:<PN>hash_fn> returns this hash type by `TABLE_UINT`, which must be
- be an unsigned integer. Places a simplifying limit on the maximum number of
- items in this container of half the cardinality. */
+ be an unsigned integer. */
 typedef TABLE_UINT PN_(uint);
+
+/** A different meaning to <typedef:<PN>uint>. Places a simplifying limit on
+ the maximum number of elements of half the cardinality of `TABLE_UINT`. Offset
+ such that zero is null. The address is only valid until modifying the table. */
+typedef PN_(uint) PN_(address);
 
 /** Valid tag type defined by `TABLE_KEY` used for keys. */
 typedef TABLE_KEY PN_(key);
@@ -128,9 +132,9 @@ typedef TABLE_KEY PN_(key);
 typedef const TABLE_KEY PN_(ckey);
 
 /** A map from <typedef:<PN>ckey> onto <typedef:<PN>uint> that, ideally, should
- be easy to compute while minimizing duplicate addresses, (that is, hash modulo
- size of table.) Must be consistent while in the table. If <typedef:<PN>key> is
- a pointer, one is permitted to have null in the domain. */
+ be easy to compute while minimizing duplicate addresses. Must be consistent
+ while in the table. If <typedef:<PN>key> is a pointer, one is permitted to
+ have null in the domain. */
 typedef PN_(uint) (*PN_(hash_fn))(PN_(ckey));
 /* Check that `TABLE_HASH` is a function implementing <typedef:<PN>hash_fn>. */
 static const PN_(hash_fn) PN_(hash) = (TABLE_HASH);
@@ -313,7 +317,7 @@ static void PN_(move_to_top)(struct N_(table) *const table,
 
 /** `table` will be searched linearly for `key` which has `hash`.
  @fixme Move to front like splay trees? this is awkward. */
-static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
+static PN_(address) PN_(query)(struct N_(table) *const table,
 	const PN_(key) key, const PN_(uint) hash) {
 	struct PN_(bucket) *bucket;
 	PN_(uint) i, next;
@@ -331,7 +335,7 @@ static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 #else
 			entries_are_equal = PN_(equal)(key, bucket->key);
 #endif
-			if(entries_are_equal) return bucket;
+			if(entries_are_equal) return i + 1;
 		}
 		if(next == TABLE_END) return 0;
 		bucket = table->buckets + (i = next);
@@ -480,9 +484,9 @@ static void PN_(replace_entry)(struct PN_(bucket) *const bucket,
 #endif
 }
 
-/** Evicts the spot where `hash` goes in `table`. Must have at least one free
- bucket. This results in a space in the table. */
-static struct PN_(bucket) *PN_(evict)(struct N_(table) *const table,
+/** Evicts the spot where `hash` goes in `table`. This results in a space in
+ the table. */
+static PN_(address) PN_(evict)(struct N_(table) *const table,
 	const PN_(uint) hash) {
 	PN_(uint) i;
 	struct PN_(bucket) *bucket;
@@ -496,7 +500,7 @@ static struct PN_(bucket) *PN_(evict)(struct N_(table) *const table,
 		bucket->next = TABLE_END;
 	}
 	table->size++;
-	return bucket;
+	return i + 1;
 }
 
 /** Put `entry` in `table`. For collisions, only if `update` exists and returns
@@ -509,14 +513,17 @@ static enum table_result PN_(put)(struct N_(table) *const table,
 	struct PN_(bucket) *bucket;
 	const PN_(key) key = PN_(entry_key)(entry);
 	const PN_(uint) hash = PN_(hash)(key);
+	PN_(address) addr;
 	enum table_result result;
 	assert(table);
-	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
+	if(table->buckets && (addr = PN_(query)(table, key, hash))) {
+		bucket = table->buckets + addr - 1;
 		if(!update || !update(PN_(bucket_key)(bucket), key)) return TABLE_YIELD;
 		if(eject) PN_(to_entry)(bucket, eject);
 		result = TABLE_REPLACE;
 	} else {
-		if(!(bucket = PN_(evict)(table, hash))) return TABLE_ERROR;
+		if(!(addr = PN_(evict)(table, hash))) return TABLE_ERROR;
+		bucket = table->buckets + addr - 1;
 		result = TABLE_UNIQUE;
 	}
 	PN_(replace_entry)(bucket, entry, hash);
@@ -533,12 +540,15 @@ static enum table_result PN_(compute)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const value) {
 	struct PN_(bucket) *bucket;
 	const PN_(uint) hash = PN_(hash)(key);
+	PN_(address) addr;
 	enum table_result result;
 	assert(table && value);
-	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
+	if(table->buckets && (addr = PN_(query)(table, key, hash))) {
+		bucket = table->buckets + addr - 1;
 		result = TABLE_YIELD;
 	} else {
-		if(!(bucket = PN_(evict)(table, hash))) return TABLE_ERROR;
+		if(!(addr = PN_(evict)(table, hash))) return TABLE_ERROR;
+		bucket = table->buckets + addr - 1;
 		PN_(replace_key)(bucket, key, hash);
 		result = TABLE_UNIQUE;
 	}
@@ -593,10 +603,10 @@ static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
  @return Is `key` in `table`? (which can be null.) @allow */
 static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
 	PN_(entry) *const result) {
-	struct PN_(bucket) *b;
+	PN_(address) addr;
 	if(!table || !table->buckets
-		|| !(b = PN_(query)(table, key, PN_(hash)(key)))) return 0;
-	if(result) PN_(to_entry)(b, result);
+		|| !(addr = PN_(query)(table, key, PN_(hash)(key)))) return 0;
+	if(result) PN_(to_entry)(table->buckets + addr - 1, result);
 	return 1;
 }
 
@@ -606,10 +616,10 @@ static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
  @allow */
 static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 	const PN_(key) key, PN_(value) default_value) {
-	struct PN_(bucket) *b;
+	PN_(address) addr;
 	return table && table->buckets
-		&& (b = PN_(query)(table, key, PN_(hash)(key)))
-		? PN_(bucket_value)(b) : default_value;
+		&& (addr = PN_(query)(table, key, PN_(hash)(key)))
+		? PN_(bucket_value)(table->buckets + addr - 1) : default_value;
 }
 
 /** Puts `entry` in `table` only if absent.
@@ -809,10 +819,10 @@ static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
  @order Average \O(1); worst \O(n). @allow */
 static PN_(value) N_D_(table, get)(struct N_(table) *const table,
 	const PN_(key) key) {
-	struct PN_(bucket) *b;
+	PN_(address) addr;
 	return table && table->buckets
-		&& (b = PN_(query)(table, key, PN_(hash)(key)))
-		? PN_(bucket_value)(b) : PN_D_(default, value);
+		&& (addr = PN_(query)(table, key, PN_(hash)(key)))
+		? PN_(bucket_value)(table->buckets + addr - 1) : PN_D_(default, value);
 }
 
 static void PN_D_(unused, default_coda)(void);
