@@ -659,16 +659,17 @@ static enum table_result N_(table_compute)(struct N_(table) *const table,
 #endif /* value --> */
 
 #if 0
-/** Removes an element `data` from `hash`.
+/** Removes an element `key` from `table`.
  @return Successfully ejected element or null. @order Average \O(1), (hash
  distributes elements uniformly); worst \O(n). @allow */
-static struct N_(setlink) *N_(set_remove)(struct N_(set) *const hash,
-	const PN_(mtype) data) {
-	PN_(uint) hash;
-	struct N_(setlink) **to_x, *x;
-	if(!hash || !hash->buckets) return 0;
-	hash = PN_(set)(data);
-	if(!(to_x = PN_(entry_to)(PN_(get_entry)(hash, hash), hash, data)))
+static int N_(set_remove)(struct N_(table) *const table,
+	const PN_(key) key) {
+	struct PN_(bucket) *b;
+	PN_(uint) i, next;
+	assert(table);
+	if(!table->buckets) return 0;
+	b = table->buckets + (i = PN_(to_bucket)(table, PN_(hash)(key)));
+	if(!(to_x = PN_(entry_to)(PN_(get_entry)(hash, hash), hash, key)))
 		return 0;
 	x = *to_x;
 	*to_x = x->next;
