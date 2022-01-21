@@ -383,6 +383,7 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 			//printf("%s:", z);
 		}
 		printf("\n");
+		PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-end.gv");
 		assert(b == table.size);
 	}
 	/* Clear. */

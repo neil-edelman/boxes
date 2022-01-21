@@ -311,10 +311,20 @@ static void PN_(move_to_top)(struct N_(table) *const table,
 	memcpy(top, tgt, sizeof *tgt), tgt->next = TABLE_NULL;
 }
 
+/** `TABLE_INVERSE` is injective, so in that case, we only compare hashes.
+ @return `a` and `b`. */
+static int PN_(equal_buckets)(const PN_(ckey) a, const PN_(ckey) b) {
+#ifdef TABLE_INVERSE
+	return (void)a, (void)b, 1;
+#else
+	return PN_(equal)(a, b);
+#endif
+}
+
 /** `table` will be searched linearly for `key` which has `hash`.
  @fixme Move to front like splay trees? this is awkward. */
 static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
-	const PN_(key) key, const PN_(uint) hash) {
+	const PN_(ckey) key, const PN_(uint) hash) {
 	struct PN_(bucket) *bucket;
 	PN_(uint) i, next;
 	assert(table && table->buckets && table->log_capacity);
@@ -323,22 +333,15 @@ static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 	if((next = bucket->next) == TABLE_NULL
 		|| PN_(in_stack_range)(table, i)
 		&& i != PN_(to_bucket)(table, bucket->hash)) return 0;
-	for( ; ; ) {
-		if(hash == bucket->hash) {
-			int entries_are_equal;
-#ifdef TABLE_INVERSE
-			entries_are_equal = ((void)(key), 1); /* Injective. */
-#else
-			entries_are_equal = PN_(equal)(key, bucket->key);
-#endif
-			if(entries_are_equal) return bucket;
-		}
+	while(hash != bucket->hash
+		|| !PN_(equal_buckets)(key, PN_(bucket_key)(bucket))) {
 		if(next == TABLE_END) return 0;
 		bucket = table->buckets + (i = next);
 		assert(i < PN_(capacity)(table) && PN_(in_stack_range)(table, i) &&
 			i != TABLE_NULL);
 		next = bucket->next;
 	}
+	return bucket;
 }
 
 /** Ensures that `table` has enough buckets to fill `n` more than the size. May
@@ -663,35 +666,34 @@ static enum table_result N_(table_compute)(struct N_(table) *const table,
  distributes elements uniformly); worst \O(n). @allow */
 static int N_(table_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
-	struct PN_(bucket) *bucket;
+	struct PN_(bucket) *target;
 	PN_(uint) i, prev = TABLE_NULL, next, hash = PN_(hash)(key);
 	char z[12];
 	assert(table);
 	if(!table || !table->buckets) return 0;
 	/* Code reuse. */
-	bucket = table->buckets + (i = PN_(to_bucket)(table, hash));
-	if((next = bucket->next) == TABLE_NULL
+	target = table->buckets + (i = PN_(to_bucket)(table, hash));
+	if((next = target->next) == TABLE_NULL
 		|| PN_(in_stack_range)(table, i)
-		&& i != PN_(to_bucket)(table, bucket->hash)) return 0;
-	for( ; ; ) {
-		if(hash == bucket->hash) {
-			int entries_are_equal;
-#ifdef TABLE_INVERSE
-			entries_are_equal = ((void)(key), 1); /* Injective. */
-#else
-			entries_are_equal = PN_(equal)(key, bucket->key);
-#endif
-			if(entries_are_equal) break;
-		}
+		&& i != PN_(to_bucket)(table, target->hash)) return 0;
+	while(hash != target->hash
+		|| !PN_(equal_buckets)(key, PN_(bucket_key)(target))) {
 		if(next == TABLE_END) return 0;
 		prev = i, i = next;
-		bucket = table->buckets + i;
+		target = table->buckets + i;
 		assert(i < PN_(capacity)(table) && PN_(in_stack_range)(table, i) &&
 			i != TABLE_NULL);
-		next = bucket->next;
+		next = target->next;
 	}
 	PN_(to_string)(key, &z);
 	printf("key %s: prev %lx, i %lx, next %lx\n", z, (unsigned long)prev, (unsigned long)i, (unsigned long)next);
+	if(prev != TABLE_NULL) {
+		struct PN_(bucket) *previous = table->buckets + prev;
+		PN_(to_string)(PN_(bucket_key)(previous), &z);
+		printf("prev was %s, making it point to next\n", z);
+		previous->next = target->next, target->next = TABLE_NULL;
+		table->size--;
+	}
 	/*x = *to_x;
 	*to_x = x->next;
 	assert(hash->size);
@@ -798,9 +800,8 @@ static void PN_(unused_base)(void) {
 	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_clear)(0);
 	N_(table_is)(0, k); N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v);
 	N_(table_try)(0, e); N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
-	N_(table_remove)(0, 0);
-	N_(table_begin)(0, 0); N_(table_next)(0, 0); N_(table_has_next)(0);
-	PN_(unused_base_coda)();
+	N_(table_remove)(0, 0); N_(table_begin)(0, 0); N_(table_next)(0, 0);
+	N_(table_has_next)(0); PN_(unused_base_coda)();
 #ifdef TABLE_VALUE
 	N_(table_compute)(0, k, 0); N_(table_next_key)(0); N_(table_next_value)(0);
 #endif
