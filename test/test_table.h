@@ -353,16 +353,14 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 		for(i = 0; i < trial_size; i++) {
 		const struct sample *s = trials.sample + i;
 		const PN_(key) key = PN_(entry_key)(s->_.entry);
-		PN_(entry) result, r1;
+		PN_(entry) result;
 		PN_(value) value;
 		const PN_(value) *array_value;
-		int cmp;
-		PN_(at) at = N_(table_at)(&table, key),
-			at2 = N_(table_query)(&table, key, &result);
-		assert(at && at2 && at == at2);
-		assert(PN_(eq_en)(s->_.entry, result));
-		r1 = N_(table_key)(&table, at);
-		assert(PN_(eq_en)(s->_.entry, r1));
+		int cmp, is;
+		is = N_(table_is)(&table, key);
+		assert(is);
+		is = N_(table_query)(&table, key, &result);
+		assert(is && PN_(eq_en)(s->_.entry, result));
 		value = N_(table_get_or)(&table, key, def);
 #ifdef TABLE_VALUE
 		array_value = &s->_.entry.value;
