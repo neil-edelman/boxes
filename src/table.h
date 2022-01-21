@@ -122,8 +122,8 @@ typedef TABLE_UINT PN_(uint);
 
 /** A different meaning to <typedef:<PN>uint>. Places a simplifying limit on
  the maximum number of elements of half the cardinality of `TABLE_UINT`. Offset
- such that zero is null. The address is only valid until modifying the table. */
-typedef PN_(uint) PN_(address);
+ such that zero is null. The at is only valid until modifying the table. */
+typedef PN_(uint) PN_(at);
 
 /** Valid tag type defined by `TABLE_KEY` used for keys. */
 typedef TABLE_KEY PN_(key);
@@ -317,7 +317,7 @@ static void PN_(move_to_top)(struct N_(table) *const table,
 
 /** `table` will be searched linearly for `key` which has `hash`.
  @fixme Move to front like splay trees? this is awkward. */
-static PN_(address) PN_(query)(struct N_(table) *const table,
+static PN_(at) PN_(index)(struct N_(table) *const table,
 	const PN_(key) key, const PN_(uint) hash) {
 	struct PN_(bucket) *bucket;
 	PN_(uint) i, next;
@@ -486,7 +486,7 @@ static void PN_(replace_entry)(struct PN_(bucket) *const bucket,
 
 /** Evicts the spot where `hash` goes in `table`. This results in a space in
  the table. */
-static PN_(address) PN_(evict)(struct N_(table) *const table,
+static PN_(at) PN_(evict)(struct N_(table) *const table,
 	const PN_(uint) hash) {
 	PN_(uint) i;
 	struct PN_(bucket) *bucket;
@@ -513,17 +513,17 @@ static enum table_result PN_(put)(struct N_(table) *const table,
 	struct PN_(bucket) *bucket;
 	const PN_(key) key = PN_(entry_key)(entry);
 	const PN_(uint) hash = PN_(hash)(key);
-	PN_(address) addr;
+	PN_(at) at;
 	enum table_result result;
 	assert(table);
-	if(table->buckets && (addr = PN_(query)(table, key, hash))) {
-		bucket = table->buckets + addr - 1;
+	if(table->buckets && (at = PN_(index)(table, key, hash))) {
+		bucket = table->buckets + at - 1;
 		if(!update || !update(PN_(bucket_key)(bucket), key)) return TABLE_YIELD;
 		if(eject) PN_(to_entry)(bucket, eject);
 		result = TABLE_REPLACE;
 	} else {
-		if(!(addr = PN_(evict)(table, hash))) return TABLE_ERROR;
-		bucket = table->buckets + addr - 1;
+		if(!(at = PN_(evict)(table, hash))) return TABLE_ERROR;
+		bucket = table->buckets + at - 1;
 		result = TABLE_UNIQUE;
 	}
 	PN_(replace_entry)(bucket, entry, hash);
@@ -540,15 +540,15 @@ static enum table_result PN_(compute)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const value) {
 	struct PN_(bucket) *bucket;
 	const PN_(uint) hash = PN_(hash)(key);
-	PN_(address) addr;
+	PN_(at) at;
 	enum table_result result;
 	assert(table && value);
-	if(table->buckets && (addr = PN_(query)(table, key, hash))) {
-		bucket = table->buckets + addr - 1;
+	if(table->buckets && (at = PN_(index)(table, key, hash))) {
+		bucket = table->buckets + at - 1;
 		result = TABLE_YIELD;
 	} else {
-		if(!(addr = PN_(evict)(table, hash))) return TABLE_ERROR;
-		bucket = table->buckets + addr - 1;
+		if(!(at = PN_(evict)(table, hash))) return TABLE_ERROR;
+		bucket = table->buckets + at - 1;
 		PN_(replace_key)(bucket, key, hash);
 		result = TABLE_UNIQUE;
 	}
@@ -593,20 +593,28 @@ static void N_(table_clear)(struct N_(table) *const table) {
  and move all. Does not, and indeed cannot, respect the most-recently used
  heuristic. */
 
-/* fixme: Are you sure it's optimized? */
-/** @return Is `key` in `table`? (which can be null.) @allow */
-static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
-	{ return table && table->buckets && PN_(query)(table, key, PN_(hash)(key));}
+/** @return The index of `key` in `table` (which can be null,) or zero if the
+ key does not occur. @allow */
+static PN_(at) N_(table_at)(struct N_(table) *const table, const PN_(key) key)
+	{ return table && table->buckets
+		? PN_(index)(table, key, PN_(hash)(key)) : 0; }
 
-/** @param[result] If null, behaves like <fn:<N>table_is>, otherwise, a
+/** There must not have been any changes to the `table` from the time `at` was
+ acquired. @return The key associated with `at`. */
+static PN_(key) N_(table_key)(struct N_(table) *const table, const PN_(at) at) {
+	assert(table && at && at - 1 < PN_(capacity)(table));
+	return PN_(bucket_key)(table->buckets + at);
+}
+
+/** @param[result] If null, behaves like <fn:<N>table_at>, otherwise, a
  <typedef:<PN>entry> which gets filled on true.
  @return Is `key` in `table`? (which can be null.) @allow */
-static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
+static PN_(at) N_(table_query)(struct N_(table) *const table, const PN_(key) key,
 	PN_(entry) *const result) {
-	PN_(address) addr;
+	PN_(at) at;
 	if(!table || !table->buckets
-		|| !(addr = PN_(query)(table, key, PN_(hash)(key)))) return 0;
-	if(result) PN_(to_entry)(table->buckets + addr - 1, result);
+		|| !(at = PN_(index)(table, key, PN_(hash)(key)))) return 0;
+	if(result) PN_(to_entry)(table->buckets + at - 1, result);
 	return 1;
 }
 
@@ -616,10 +624,10 @@ static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
  @allow */
 static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 	const PN_(key) key, PN_(value) default_value) {
-	PN_(address) addr;
+	PN_(at) at;
 	return table && table->buckets
-		&& (addr = PN_(query)(table, key, PN_(hash)(key)))
-		? PN_(bucket_value)(table->buckets + addr - 1) : default_value;
+		&& (at = PN_(index)(table, key, PN_(hash)(key)))
+		? PN_(bucket_value)(table->buckets + at - 1) : default_value;
 }
 
 /** Puts `entry` in `table` only if absent.
@@ -675,7 +683,7 @@ static enum table_result N_(table_compute)(struct N_(table) *const table,
 static int N_(set_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *b;
-	PN_(uint) i, next;
+	PN_(at) i = 0, next;
 	assert(table);
 	if(!table->buckets) return 0;
 	b = table->buckets + (i = PN_(to_bucket)(table, PN_(hash)(key)));
@@ -785,7 +793,7 @@ static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_clear)(0);
-	N_(table_is)(0, k); N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v);
+	N_(table_at)(0, k); N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v);
 	N_(table_try)(0, e); N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
 	/*N_(table_remove)(0, 0);*/
 	N_(table_begin)(0, 0); N_(table_next)(0, 0); N_(table_has_next)(0);
@@ -819,10 +827,10 @@ static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
  @order Average \O(1); worst \O(n). @allow */
 static PN_(value) N_D_(table, get)(struct N_(table) *const table,
 	const PN_(key) key) {
-	PN_(address) addr;
+	PN_(at) at;
 	return table && table->buckets
-		&& (addr = PN_(query)(table, key, PN_(hash)(key)))
-		? PN_(bucket_value)(table->buckets + addr - 1) : PN_D_(default, value);
+		&& (at = PN_(index)(table, key, PN_(hash)(key)))
+		? PN_(bucket_value)(table->buckets + at - 1) : PN_D_(default, value);
 }
 
 static void PN_D_(unused, default_coda)(void);
