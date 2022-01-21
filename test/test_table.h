@@ -376,11 +376,8 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 		PN_(entry) entry;
 		b = 0;
 		for(N_(table_begin)(&it, &table); N_(table_next)(&it, &entry); ) {
-			PN_(key) key = PN_(entry_key)(entry);
 			b++;
-			//PN_(to_string)(key, &z);
-			N_(table_remove)(&table, key);
-			//printf("%s:", z);
+			N_(table_remove)(&table, PN_(entry_key)(entry));
 		}
 		printf("\n");
 		PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-end.gv");
