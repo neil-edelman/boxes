@@ -313,7 +313,7 @@ static void PN_(move_to_top)(struct N_(table) *const table,
 
 /** `table` will be searched linearly for `key` which has `hash`.
  @fixme Move to front like splay trees? this is awkward. */
-static struct PN_(bucket) *PN_(index)(struct N_(table) *const table,
+static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 	const PN_(key) key, const PN_(uint) hash) {
 	struct PN_(bucket) *bucket;
 	PN_(uint) i, next;
@@ -511,7 +511,7 @@ static enum table_result PN_(put)(struct N_(table) *const table,
 	const PN_(uint) hash = PN_(hash)(key);
 	enum table_result result;
 	assert(table);
-	if(table->buckets && (bucket = PN_(index)(table, key, hash))) {
+	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
 		if(!update || !update(PN_(bucket_key)(bucket), key)) return TABLE_YIELD;
 		if(eject) PN_(to_entry)(bucket, eject);
 		result = TABLE_REPLACE;
@@ -535,7 +535,7 @@ static enum table_result PN_(compute)(struct N_(table) *const table,
 	const PN_(uint) hash = PN_(hash)(key);
 	enum table_result result;
 	assert(table && value);
-	if(table->buckets && (bucket = PN_(index)(table, key, hash))) {
+	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
 		result = TABLE_YIELD;
 	} else {
 		if(!(bucket = PN_(evict)(table, hash))) return TABLE_ERROR;
@@ -586,7 +586,7 @@ static void N_(table_clear)(struct N_(table) *const table) {
 /** @return Whether `key` is in `table` (which can be null.) @allow */
 static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
 	{ return table && table->buckets
-		? !!PN_(index)(table, key, PN_(hash)(key)) : 0; }
+		? !!PN_(query)(table, key, PN_(hash)(key)) : 0; }
 
 /** @param[result] If null, behaves like <fn:<N>table_at>, otherwise, a
  <typedef:<PN>entry> which gets filled on true.
@@ -595,7 +595,7 @@ static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
 	PN_(entry) *const result) {
 	struct PN_(bucket) *bucket;
 	if(!table || !table->buckets
-		|| !(bucket = PN_(index)(table, key, PN_(hash)(key)))) return 0;
+		|| !(bucket = PN_(query)(table, key, PN_(hash)(key)))) return 0;
 	if(result) PN_(to_entry)(bucket, result);
 	return 1;
 }
@@ -608,7 +608,7 @@ static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 	const PN_(key) key, PN_(value) default_value) {
 	struct PN_(bucket) *bucket;
 	return table && table->buckets
-		&& (bucket = PN_(index)(table, key, PN_(hash)(key)))
+		&& (bucket = PN_(query)(table, key, PN_(hash)(key)))
 		? PN_(bucket_value)(bucket) : default_value;
 }
 
@@ -658,26 +658,47 @@ static enum table_result N_(table_compute)(struct N_(table) *const table,
 	{ return PN_(compute)(table, key, value); }
 #endif /* value --> */
 
-#if 0
-/** Removes an element `key` from `table`.
- @return Successfully ejected element or null. @order Average \O(1), (hash
+/** Removes `key` from `table` (which could be null.)
+ @return Whether that `key` was in `table`. @order Average \O(1), (hash
  distributes elements uniformly); worst \O(n). @allow */
-static int N_(set_remove)(struct N_(table) *const table,
+static int N_(table_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
-	struct PN_(bucket) *b;
-	PN_(at) i = 0, next;
+	struct PN_(bucket) *bucket;
+	PN_(uint) i, prev = TABLE_NULL, next, hash = PN_(hash)(key);
+	char z[12];
 	assert(table);
-	if(!table->buckets) return 0;
-	b = table->buckets + (i = PN_(to_bucket)(table, PN_(hash)(key)));
-	if(!(to_x = PN_(entry_to)(PN_(get_entry)(hash, hash), hash, key)))
-		return 0;
-	x = *to_x;
+	if(!table || !table->buckets) return 0;
+	/* Code reuse. */
+	bucket = table->buckets + (i = PN_(to_bucket)(table, hash));
+	if((next = bucket->next) == TABLE_NULL
+		|| PN_(in_stack_range)(table, i)
+		&& i != PN_(to_bucket)(table, bucket->hash)) return 0;
+	for( ; ; ) {
+		if(hash == bucket->hash) {
+			int entries_are_equal;
+#ifdef TABLE_INVERSE
+			entries_are_equal = ((void)(key), 1); /* Injective. */
+#else
+			entries_are_equal = PN_(equal)(key, bucket->key);
+#endif
+			if(entries_are_equal) break;
+		}
+		if(next == TABLE_END) return 0;
+		prev = i, i = next;
+		bucket = table->buckets + i;
+		assert(i < PN_(capacity)(table) && PN_(in_stack_range)(table, i) &&
+			i != TABLE_NULL);
+		next = bucket->next;
+	}
+	PN_(to_string)(key, &z);
+	printf("key %s: prev %lx, i %lx, next %lx\n", z, (unsigned long)prev, (unsigned long)i, (unsigned long)next);
+	/*x = *to_x;
 	*to_x = x->next;
 	assert(hash->size);
 	hash->size--;
-	return x;
+	return x;*/
+	return 0;
 }
-#endif
 
 /* <!-- private iterate interface */
 
@@ -777,7 +798,7 @@ static void PN_(unused_base)(void) {
 	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_clear)(0);
 	N_(table_is)(0, k); N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v);
 	N_(table_try)(0, e); N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
-	/*N_(table_remove)(0, 0);*/
+	N_(table_remove)(0, 0);
 	N_(table_begin)(0, 0); N_(table_next)(0, 0); N_(table_has_next)(0);
 	PN_(unused_base_coda)();
 #ifdef TABLE_VALUE
@@ -811,7 +832,7 @@ static PN_(value) N_D_(table, get)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *bucket;
 	return table && table->buckets
-		&& (bucket = PN_(index)(table, key, PN_(hash)(key)))
+		&& (bucket = PN_(query)(table, key, PN_(hash)(key)))
 		? PN_(bucket_value)(bucket) : PN_D_(default, value);
 }
 

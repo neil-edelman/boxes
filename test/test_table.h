@@ -270,7 +270,7 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 				PN_(entry) entry;
 			} _;
 			int is_in, unused;
-		} sample[1000];
+		} sample[10/*00*/];
 		size_t count;
 	} trials;
 	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample;
@@ -371,6 +371,21 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 		assert(!cmp);
 		/* printf("%u: %u\n", (unsigned *)*array_value, (unsigned *)value); */
 	}}
+	{
+		struct N_(table_iterator) it;
+		PN_(entry) entry;
+		b = 0;
+		for(N_(table_begin)(&it, &table); N_(table_next)(&it, &entry); ) {
+			PN_(key) key = PN_(entry_key)(entry);
+			b++;
+			//PN_(to_string)(key, &z);
+			N_(table_remove)(&table, key);
+			//printf("%s:", z);
+		}
+		printf("\n");
+		assert(b == table.size);
+	}
+	/* Clear. */
 	N_(table_clear)(&table);
 	for(b = 0, b_end = b + PN_(capacity)(&table); b < b_end; b++)
 		assert(table.buckets[b].next == TABLE_NULL);
