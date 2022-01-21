@@ -671,7 +671,7 @@ static int N_(table_remove)(struct N_(table) *const table,
 	char z[12];
 	assert(table);
 	if(!table || !table->buckets) return 0;
-	/* Code reuse. */
+	/* Code reuse because we want to keep track of `prev`. */
 	target = table->buckets + (i = PN_(to_bucket)(table, hash));
 	if((next = target->next) == TABLE_NULL
 		|| PN_(in_stack_range)(table, i)
@@ -679,20 +679,28 @@ static int N_(table_remove)(struct N_(table) *const table,
 	while(hash != target->hash
 		|| !PN_(equal_buckets)(key, PN_(bucket_key)(target))) {
 		if(next == TABLE_END) return 0;
-		prev = i, i = next;
-		target = table->buckets + i;
+		prev = i, target = table->buckets + (i = next);
 		assert(i < PN_(capacity)(table) && PN_(in_stack_range)(table, i) &&
 			i != TABLE_NULL);
 		next = target->next;
 	}
 	PN_(to_string)(key, &z);
 	printf("key %s: prev %lx, i %lx, next %lx\n", z, (unsigned long)prev, (unsigned long)i, (unsigned long)next);
-	if(prev != TABLE_NULL) {
+	if(prev != TABLE_NULL) { /* Open entry. */
 		struct PN_(bucket) *previous = table->buckets + prev;
 		PN_(to_string)(PN_(bucket_key)(previous), &z);
 		printf("prev was %s, making it point to next\n", z);
 		previous->next = target->next, target->next = TABLE_NULL;
 		table->size--;
+	} else if(target->next != TABLE_END) { /* Head closed entry and others. */
+		printf("fixme: copy!\n");
+	} else { /* Closed entry is the only one. */
+		target->next = TABLE_NULL;
+		table->size--;
+	}
+	if(PN_(in_stack_range)(table, i)) {
+		/* fixme: Deal with the stack. */
+		printf("Stack corrupted.\n");
 	}
 	/*x = *to_x;
 	*to_x = x->next;
