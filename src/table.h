@@ -90,12 +90,10 @@
  less.) Choose representations that probably save power. We cannot save this in
  an `enum` because we don't know maximum. */
 #define TABLE_M1 ((PN_(uint))~(PN_(uint))0) /* 2's compliment -1. */
-#define TABLE_LIMIT ((TABLE_M1 >> 1) + 1) /* Cardinality. */
-#define TABLE_END (TABLE_LIMIT)
-#define TABLE_NULL (TABLE_LIMIT + 1)
+#define TABLE_HIGH ((TABLE_M1 >> 1) + 1) /* Cardinality. */
+#define TABLE_END (TABLE_HIGH)
+#define TABLE_NULL (TABLE_HIGH + 1)
 #define TABLE_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
-/* These are not returned by any of the editing functions; micromanaging has
- been simplified. X(REPLACE_KEY), X(REPLACE_VALUE) */
 #define X(n) TABLE_##n
 /** This is the result of modifying the table, of which `TABLE_ERROR` is false.
  ![A diagram of the result states.](../web/put.png) */
@@ -270,8 +268,10 @@ static void PN_(grow_stack)(struct N_(table) *const table) {
 
 /** Is `i` in `table` possibly on the stack? (The stack grows from the high.) */
 static int PN_(in_stack_range)(const struct N_(table) *const table,
-	const PN_(uint) i)
-	{ return assert(table), table->top != TABLE_END && table->top <= i; }
+	const PN_(uint) i) {
+	return assert(table && table->buckets),
+		table->top != TABLE_HIGH && table->top <= i;
+}
 
 /***********fixme*/
 #define QUOTE_(name) #name
@@ -356,11 +356,11 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		c0 = log_c0 ? (PN_(uint))((PN_(uint))1 << log_c0) : 0;
 	PN_(uint) log_c1, c1, size1, i, wait, mask;
 	char fn[64];
-	assert(table && table->size <= TABLE_LIMIT
+	assert(table && table->size <= TABLE_HIGH
 		&& (!table->buckets && !table->size && !log_c0 && !c0
 		|| table->buckets && table->size <= c0 && log_c0>=3));
 	/* Can we satisfy `n` growth from the buffer? */
-	if(TABLE_M1 - table->size < n || TABLE_LIMIT < (size1 = table->size + n))
+	if(TABLE_M1 - table->size < n || TABLE_HIGH < (size1 = table->size + n))
 		return errno = ERANGE, 0;
 	if(table->buckets)  log_c1 = log_c0, c1 = c0 ? c0 : 1;
 	else              log_c1 = 3,      c1 = 8;
@@ -373,7 +373,9 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 	/* Otherwise, need to allocate more. */
 	if(!(buckets = realloc(table->buckets, sizeof *buckets * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	table->top = TABLE_END; /* Idle `top` initialized or reset. */
+	/* How `top` works: since the range is half the maximum, we have enough
+	 space to be lazy. */
+	table->top = /*(c1 - 1) |*/ TABLE_HIGH; /* Idle `top` reset. */
 	table->buckets = buckets, table->log_capacity = log_c1;
 
 	/* Initialize new values. Mask to identify the added bits. */
@@ -580,7 +582,7 @@ static void N_(table_clear)(struct N_(table) *const table) {
 	for(b = table->buckets, b_end = b + PN_(capacity)(table); b < b_end; b++)
 		b->next = TABLE_NULL;
 	table->size = 0;
-	table->top = TABLE_LIMIT;
+	table->top = 0;
 }
 
 /* table_shrink: if shrinkable, reserve the exact amount in a separate buffer
