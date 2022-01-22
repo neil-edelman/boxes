@@ -127,7 +127,7 @@ static void PN_(graph)(const struct N_(table) *const table,
 	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
 			*const top = (table->top & ~TABLE_HIGH) == i
-			? (table->top & TABLE_HIGH) ? " BORDER=\"2\"" : " BORDER=\"1\"" : "";
+			? (table->top & TABLE_HIGH) ? " BORDER=\"1\"" : " BORDER=\"2\"" : "";
 		struct PN_(bucket) *b = table->buckets + i;
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",

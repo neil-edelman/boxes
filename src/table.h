@@ -238,9 +238,13 @@ typedef int (*PN_(policy_fn))(PN_(key) original, PN_(key) replace);
  ![States.](../web/states.png) */
 struct N_(table) { /* "Padding size," good. */
 	struct PN_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
-	/* Buckets; `size <= capacity`; open stack, including `TABLE_END`. */
+	/* `size <= capacity`; size is not needed but convenient and allows
+	 short-circuiting. Open stack; would have been a bit-field, but we're
+	 actually not sure it's width. Msb: is the top a step ahead? Other: index
+	 of top of the stack, increasing downwards. */
 	PN_(uint) log_capacity, size, top;
-	/* Size is not needed but convenient and allows short-circuiting. */
+	/*  */
+	/***/
 };
 
 /** The capacity of a non-idle `table` is always a power-of-two. */
@@ -259,9 +263,11 @@ static PN_(uint) PN_(to_bucket)(const struct N_(table) *const table,
  leaving it in intermediate state. This is amortized; every value takes at most
  one. */
 static void PN_(grow_stack)(struct N_(table) *const table) {
-	PN_(uint) top = table->top;
-	assert(table && table->buckets && top);
-	top = (top == TABLE_END ? PN_(capacity)(table) : top) - 1;
+	const PN_(uint) bf = table->top;
+	PN_(uint) top = bf & ~TABLE_HIGH;
+	const int advance = !!(bf & TABLE_HIGH);
+	assert(table && table->buckets && bf && top < PN_(capacity)(table));
+	top = top - !advance;
 	while(table->buckets[top].next != TABLE_NULL) assert(top), top--;
 	table->top = top;
 }
@@ -362,9 +368,9 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 	/* Can we satisfy `n` growth from the buffer? */
 	if(TABLE_M1 - table->size < n || TABLE_HIGH < (size1 = table->size + n))
 		return errno = ERANGE, 0;
-	if(table->buckets)  log_c1 = log_c0, c1 = c0 ? c0 : 1;
-	else              log_c1 = 3,      c1 = 8;
-	while(c1 < size1) log_c1++, c1 <<= 1;
+	if(table->buckets) log_c1 = log_c0, c1 = c0 ? c0 : 1;
+	else               log_c1 = 3,      c1 = 8;
+	while(c1 < size1)  log_c1++,        c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
 
 	sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-resize-%lu-%lu-a-before.gv",
@@ -373,9 +379,7 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 	/* Otherwise, need to allocate more. */
 	if(!(buckets = realloc(table->buckets, sizeof *buckets * c1)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	/* How `top` works: since the range is half the maximum, we have enough
-	 space to be lazy. */
-	table->top = /*(c1 - 1) |*/ TABLE_HIGH; /* Idle `top` reset. */
+	table->top = (c1 - 1) | TABLE_HIGH; /* No stack. */
 	table->buckets = buckets, table->log_capacity = log_c1;
 
 	/* Initialize new values. Mask to identify the added bits. */
@@ -579,10 +583,11 @@ static void N_(table_clear)(struct N_(table) *const table) {
 	struct PN_(bucket) *b, *b_end;
 	assert(table);
 	if(!table->buckets) { assert(!table->log_capacity); return; }
+	assert(table->log_capacity);
 	for(b = table->buckets, b_end = b + PN_(capacity)(table); b < b_end; b++)
 		b->next = TABLE_NULL;
 	table->size = 0;
-	table->top = 0;
+	table->top = (PN_(capacity)(table) - 1) & TABLE_HIGH;
 }
 
 /* table_shrink: if shrinkable, reserve the exact amount in a separate buffer
