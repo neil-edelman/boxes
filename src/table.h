@@ -243,6 +243,21 @@ struct N_(table) { /* "Padding size," good. */
 	 lazy, so MSB store is the top a step ahead? Thereby, hysteresis. */
 	PN_(uint) log_capacity, size, top;
 };
+/***********fixme*/
+#define QUOTE_(name) #name
+#define QUOTE(name) QUOTE_(name)
+#ifdef TABLE_TEST
+/** `f` `g` */
+static void PN_(graph)(const struct N_(table) *f, const char *g);
+static void (*PN_(to_string))(PN_(ckey), char (*)[12]);
+#else
+/** `table` `fn` */
+static void PN_(graph)(const struct N_(table) *const table,
+	const char *const fn) { (void)table, (void)fn; }
+/** `key` `z` */
+static void PN_(to_string)(PN_(ckey) key, char (*z)[12])
+	{ (void)key, strcpy(*z, "<key>"); }
+#endif
 
 /** The capacity of a non-idle `table` is always a power-of-two. */
 static PN_(uint) PN_(capacity)(const struct N_(table) *const table)
@@ -256,16 +271,15 @@ static PN_(uint) PN_(capacity)(const struct N_(table) *const table)
 static PN_(uint) PN_(to_bucket)(const struct N_(table) *const table,
 	const PN_(uint) hash) { return hash & (PN_(capacity)(table) - 1); }
 
-/** @return For `target` in `table`, determine which is the one before it in
- the linked-list collisions, if any. @order \O(`bucket size`) */
+/** @return Search for the previous link in the bucket to `b` in `table`, if it
+ exists, (by restarting and going though the list.) @order \O(`bucket size`) */
 static struct PN_(bucket) *PN_(prev)(const struct N_(table) *const table,
 	const PN_(uint) b) {
 	const struct PN_(bucket) *const bucket = table->buckets + b;
 	const PN_(uint) capacity = PN_(capacity)(table);
 	PN_(uint) to_next = TABLE_NULL, next;
 	assert(table && bucket->next != TABLE_NULL);
-	/* Search for the previous link in the bucket, \O(|bucket|).
-	 Note that this does not check for corrupted tables; would get assert. */
+	/* Note that this does not check for corrupted tables; would get assert. */
 	for(next = PN_(to_bucket)(table, bucket->hash);
 		assert(next < capacity), next != b;
 		to_next = next, next = table->buckets[next].next);
@@ -274,30 +288,35 @@ static struct PN_(bucket) *PN_(prev)(const struct N_(table) *const table,
 
 /* <!-- stack */
 
-/** On return, the `top` of `table` will be empty, but size is not incremented,
- leaving it in intermediate state. Amortized if you grow only. */
+/** On return, the `top` of `table` will be empty and eager, but size is not
+ incremented, leaving it in intermediate state. Amortized if you grow only. */
 static void PN_(grow_stack)(struct N_(table) *const table) {
-	const PN_(uint) bf = table->top;
-	const int advance = !!(bf & TABLE_HIGH);
-	PN_(uint) top = bf & ~TABLE_HIGH;
-	assert(table && table->buckets && bf && top < PN_(capacity)(table));
-	top = top - !advance;
-	while(table->buckets[top].next != TABLE_NULL) assert(top), top--;
-	table->top = top;
+	/* Subtract one for eager. */
+	PN_(uint) top = (table->top & ~TABLE_HIGH) - !(table->top & TABLE_HIGH);
+	char z[12];
+	assert(table && table->buckets && table->top && top < PN_(capacity)(table));
+	while(table->buckets[top].next != TABLE_NULL)
+		assert(top), PN_(to_string)(PN_(bucket_key)(table->buckets + top), &z),
+		printf("grow_stack: skipping %lu: %s.\n", (unsigned long)top, z),
+		top--;
+	table->top = top; /* Eager, since one is allegedly going to fill it. */
 }
 
-/** Shrinks the stack of `table`. Must be able to shrink it before calling. */
-static void PN_(shrink_stack)(struct N_(table) *const table) {
-	const PN_(uint) bf = table->top, cap = PN_(capacity)(table);
-	const int advance = !!(bf & TABLE_HIGH);
-	PN_(uint) top = bf & ~TABLE_HIGH;
-	assert(table && table->buckets);
-	if(!advance) { table->top |= TABLE_HIGH; return; }
-	do top++, assert(top < cap); while(table->buckets[top].next != TABLE_NULL);
-	table->top = top | TABLE_HIGH;
-}
-
-static void PN_(collapse_hysteresis_stack)(struct N_(table) *const table) {
+/** Force the evaluation of the stack of `table`, thereby making it eager. This
+ is like searching for a bucket in open-addressing. @order \O(`buckets`) */
+static void PN_(force_stack)(struct N_(table) *const table) {
+	PN_(uint) top = table->top;
+	if(top & TABLE_HIGH) { /* Lazy. */
+		const PN_(uint) cap = PN_(capacity)(table);
+		struct PN_(bucket) *bucket;
+		char z[12];
+		top &= ~TABLE_HIGH;
+		do bucket = table->buckets + ++top,
+			PN_(to_string)(PN_(bucket_key)(bucket), &z), printf("skip %s\n", z),
+			assert(top < cap && bucket->next != TABLE_NULL);
+		while(PN_(to_bucket)(table, bucket->hash) == top);
+		table->top = top; /* Eager. */
+	}
 }
 
 /** Is `i` in `table` possibly on the stack? (The stack grows from the high.) */
@@ -307,29 +326,33 @@ static int PN_(in_stack_range)(const struct N_(table) *const table,
 		(table->top & ~TABLE_HIGH) + !!(table->top & TABLE_HIGH) <= i;
 }
 
-/** Moves the `target` index in non-idle `table`, to the top of collision
- stack. This may result in an inconsistent state; one is responsible for
- filling that hole and linking it with top. */
-static void PN_(move_to_top)(struct N_(table) *const table,
-	const PN_(uint) target) {
-	struct PN_(bucket) *tgt, *top, *tonext;
-	PN_(uint) to_next, next;
+/** Shrinks the stack of `table` by removing index `i`. */
+static void PN_(shrink_stack)(struct N_(table) *const table,
+	const PN_(uint) i) {
+	if(!PN_(in_stack_range)(table, i)) return;
+	PN_(force_stack)(table); /* Only have room for 1 step of laziness. */
+	assert(PN_(in_stack_range)(table, i)); /* I think this is impossible? */
+	///// and... copy the top to i
+	if(i != table->top) {
+		printf("no\n");
+	} else {
+		table->buckets[table->top].next = TABLE_NULL;
+	}
+	table->top |= TABLE_HIGH; /* Lazy. */
+}
+
+/** Moves the `m` index in non-idle `table`, to the top of collision stack.
+ This may result in an inconsistent state; one is responsible for filling that
+ hole and linking it with top. */
+static void PN_(move_to_top)(struct N_(table) *const table, const PN_(uint) m) {
+	struct PN_(bucket) *move, *top, *prev;
 	const PN_(uint) capacity = PN_(capacity)(table);
-	assert(table->size < capacity && target < capacity);
-	PN_(grow_stack)(table);
-	tgt = table->buckets + target, top = table->buckets + table->top;
-	assert(tgt->next != TABLE_NULL && top->next == TABLE_NULL);
-	if(tonext = PN_(prev)(table, target)) tonext->next = table->top;
-#if 0
-	/* Search for the previous link in the bucket, \O(|bucket|). */
-	for(to_next = TABLE_NULL,
-		next = PN_(to_bucket)(table, tgt->hash);
-		assert(next < capacity), next != target;
-		to_next = next, next = table->buckets[next].next);
-	/* Move `tgt` to `top`. */
-	if(to_next != TABLE_NULL) table->buckets[to_next].next = table->top;
-#endif
-	memcpy(top, tgt, sizeof *tgt), tgt->next = TABLE_NULL;
+	assert(table->size < capacity && m < capacity);
+	PN_(grow_stack)(table); /* Leaves it in an eager state. */
+	move = table->buckets + m, top = table->buckets + table->top;
+	assert(move->next != TABLE_NULL && top->next == TABLE_NULL);
+	if(prev = PN_(prev)(table, m)) prev->next = table->top; /* \O(|`bucket`|) */
+	memcpy(top, move, sizeof *move), move->next = TABLE_NULL;
 }
 
 /* stack --> */
@@ -367,22 +390,6 @@ static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 	}
 	return bucket;
 }
-
-/***********fixme*/
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
-#ifdef TABLE_TEST
-/** `f` `g` */
-static void PN_(graph)(const struct N_(table) *f, const char *g);
-static void (*PN_(to_string))(PN_(ckey), char (*)[12]);
-#else
-/** `table` `fn` */
-static void PN_(graph)(const struct N_(table) *const table,
-	const char *const fn) { (void)table, (void)fn; }
-/** `key` `z` */
-static void PN_(to_string)(PN_(ckey) key, char (*z)[12])
-	{ (void)key, strcpy(*z, "<key>"); }
-#endif
 
 /** Ensures that `table` has enough buckets to fill `n` more than the size. May
  invalidate and re-arrange the order.
@@ -733,23 +740,21 @@ static int N_(table_remove)(struct N_(table) *const table,
 		struct PN_(bucket) *previous = table->buckets + prv;
 		PN_(to_string)(PN_(bucket_key)(previous), &z);
 		printf("prev was %s, making it point to next\n", z);
-		previous->next = target->next, target->next = TABLE_NULL;
+		previous->next = target->next, target->next = TABLE_NULL; /* this should be after! */
 	} else if(target->next != TABLE_END) { /* Head closed entry and others. */
 		struct PN_(bucket) *const second = table->buckets + (i = target->next);
 		assert(target->next < PN_(capacity)(table));
 		memcpy(target, second, sizeof *second);
-		second->next = TABLE_NULL;
+		second->next = TABLE_NULL; /* this should be after! */
 		target = second;
 	} else { /* Closed entry is the only one. */
-		target->next = TABLE_NULL;
+		target->next = TABLE_NULL; /* this should be after! */
 	}
-	table->size--;
+	table->size--; /* this could be after */
+	/* target->next = SET_END? wouldn't make much difference */
 	/* Deal with the stack; note that this is `2n` instead of `n`, a
 	 disadvantage of this approach. */
-	if(!PN_(in_stack_range)(table, i)) return 1;
-	/*top = table->top & ~TABLE_HIGH;
-	...*/
-	PN_(shrink_stack)(table);
+	PN_(shrink_stack)(table, i); /* this is in an intermediate state! */
 	return 1;
 }
 

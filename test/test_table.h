@@ -372,6 +372,7 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 		assert(!cmp);
 		/* printf("%u: %u\n", (unsigned *)*array_value, (unsigned *)value); */
 	}}
+	printf("Remove:\n");
 	{
 		struct N_(table_iterator) it;
 		PN_(entry) entry;
