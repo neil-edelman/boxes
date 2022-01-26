@@ -311,10 +311,9 @@ static void PN_(force_stack)(struct N_(table) *const table) {
 		struct PN_(bucket) *bucket;
 		char z[12];
 		top &= ~TABLE_HIGH;
-		do bucket = table->buckets + ++top,
-			assert(top < cap && bucket->next != TABLE_NULL),
-			PN_(to_string)(PN_(bucket_key)(bucket), &z), printf("skip %s\n", z);
-		while(PN_(to_bucket)(table, bucket->hash) == top);
+		do bucket = table->buckets + ++top, assert(top < cap);
+		while(bucket->next != TABLE_NULL
+			&& (PN_(to_string)(PN_(bucket_key)(bucket), &z), printf("skip %s\n", z), PN_(to_bucket)(table, bucket->hash) == top));
 		table->top = top; /* Eager. */
 	}
 }
@@ -326,12 +325,13 @@ static int PN_(in_stack_range)(const struct N_(table) *const table,
 		(table->top & ~TABLE_HIGH) + !!(table->top & TABLE_HIGH) <= i;
 }
 
-/** Deletes `i` from `table` taking into account the stack. */
+/** Corrects newly-deleted `i` from `table` in the stack. */
 static void PN_(shrink_stack)(struct N_(table) *const table,
 	const PN_(uint) i) {
-	printf("shrink_stack %lx\n", (unsigned long)i);
-	if(!PN_(in_stack_range)(table, i))
-		{ table->buckets[i].next = TABLE_NULL; goto size; }
+	assert(table && table->buckets && i < PN_(capacity)(table));
+	assert(table->buckets[i].next == TABLE_NULL);
+	printf("shrink_stack(%lx)\n", (unsigned long)i);
+	if(!PN_(in_stack_range)(table, i)) return;
 	PN_(force_stack)(table); /* Only have room for 1 step of laziness. */
 	assert(PN_(in_stack_range)(table, i)); /* I think this is assured? Think. */
 	if(i != table->top) {
@@ -342,13 +342,9 @@ static void PN_(shrink_stack)(struct N_(table) *const table,
 		printf("top 0x%lx\n", (unsigned long)table->top);
 		printf("i 0x%lx\n", (unsigned long)i);
 		printf("prev 0x%lx\n", (unsigned long)(prev - table->buckets));
-
-		printf("");
 	}
 	table->buckets[table->top].next = TABLE_NULL;
 	table->top |= TABLE_HIGH; /* Lazy. */
-size:
-	table->size--;
 }
 
 /** Moves the `m` index in non-idle `table`, to the top of collision stack.
@@ -758,10 +754,7 @@ static int N_(table_remove)(struct N_(table) *const table,
 		memcpy(target, second, sizeof *second);
 		target = second;
 	}
-	/***** Fixme: put it back; it *has* to be accommodating to an null spot,
-	 _eg_ lazy, closed, end. Has to closed->null because otherwise the top
-	 will overflow. */
-	PN_(shrink_stack)(table, i);
+	target->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, i);
 	return 1;
 }
 
