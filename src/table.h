@@ -637,9 +637,11 @@ static void N_(table_clear)(struct N_(table) *const table) {
 	table->top = (PN_(capacity)(table) - 1) & TABLE_HIGH;
 }
 
-/* table_shrink: if shrinkable, reserve the exact amount in a separate buffer
+/* ***table_shrink: if shrinkable, reserve the exact amount in a separate buffer
  and move all. Does not, and indeed cannot, respect the most-recently used
  heuristic. */
+
+
 
 /** @return Whether `key` is in `table` (which can be null.) @allow */
 static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
@@ -659,9 +661,8 @@ static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
 }
 
 /** @return The value associated with `key` in `table`, (which can be null.) If
- no such value exists, the `default_value` is returned.
- @order Average \O(1); worst \O(n).
- @allow */
+ no such value exists, `default_value` is returned.
+ @order Average \O(1); worst \O(n). @allow */
 static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 	const PN_(key) key, PN_(value) default_value) {
 	struct PN_(bucket) *bucket;
@@ -707,10 +708,10 @@ static enum table_result N_(table_update)(struct N_(table) *const table,
 	{ return PN_(put)(table, entry, eject, update); }
 
 #ifdef TABLE_VALUE /* <!-- value */
-/** If `TABLE_VALUE`, try to put `key` into `table`, and store the value in
- `value`. @return `TABLE_ERROR` does not set `value`; `TABLE_GROW`, the `value`
- will be uninitialized; `TABLE_YIELD`, gets the current `value`.
- @throws[malloc] On `TABLE_ERROR`. @allow */
+/** If `TABLE_VALUE` is defined. Try to put `key` into `table`, and store the
+ value in `value`. @return `TABLE_ERROR` does not set `value`; `TABLE_GROW`,
+ the `value` will be uninitialized; `TABLE_YIELD`, gets the current `value` but
+ doesn't use the `key`. @throws[malloc] On `TABLE_ERROR`. @allow */
 static enum table_result N_(table_compute)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const value)
 	{ return PN_(compute)(table, key, value); }
@@ -745,11 +746,11 @@ static int N_(table_remove)(struct N_(table) *const table,
 	if(prv != TABLE_NULL) { /* Open entry. */
 		struct PN_(bucket) *previous = table->buckets + prv;
 		PN_(to_string)(PN_(bucket_key)(previous), &z);
-		printf("prev was %s, making it point to next\n", z);
+		printf("\tprev was %s, making it point to next\n", z);
 		previous->next = target->next;
 	} else if(target->next != TABLE_END) { /* Head closed entry and others. */
 		struct PN_(bucket) *const second = table->buckets + (i = target->next);
-		printf("closed head %s, replacing it with next\n", z);
+		printf("\tclosed head %s, replacing it with next\n", z);
 		assert(target->next < PN_(capacity)(table));
 		memcpy(target, second, sizeof *second);
 		target = second;
@@ -763,10 +764,7 @@ static int N_(table_remove)(struct N_(table) *const table,
 /* Contains all iteration parameters. */
 struct PN_(iterator) {
 	const struct N_(table) *table;
-	union {
-		const void *const do_not_warn;
-		PN_(uint) b;
-	} _;
+	union { const void *const do_not_warn; PN_(uint) b; } _;
 };
 
 /** Loads `hash` (can be null) into `it`. @implements begin */
@@ -881,7 +879,7 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
 
 /** This is functionally identical to <fn:<N>table_get_or>, but a with a trait
- specifying a constant default value, (such as zero.)
+ specifying a constant default value.
  @return The value associated with `key` in `table`, (which can be null.) If
  no such value exists, the `TABLE_DEFAULT` is returned.
  @order Average \O(1); worst \O(n). @allow */

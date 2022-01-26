@@ -271,7 +271,7 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 				PN_(entry) entry;
 			} _;
 			int is_in, unused;
-		} sample[10/*00*/];
+		} sample[10000];
 		size_t count;
 	} trials;
 	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample;
@@ -376,17 +376,18 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 	{
 		struct N_(table_iterator) it;
 		PN_(entry) entry;
-		char fn[64];
-		unsigned count = 0;
+		/*char fn[64];
+		unsigned count = 0;*/
 		b = 0;
 		for(N_(table_begin)(&it, &table); N_(table_next)(&it, &entry); b++);
 		assert(b == table.size);
 		for(N_(table_begin)(&it, &table); N_(table_next)(&it, &entry); ) {
 			b++;
 			N_(table_remove)(&table, PN_(entry_key)(entry));
-			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-end-%u.gv", ++count);
-			PN_(graph)(&table, fn);
+			/*sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-end-%u.gv", ++count);
+			PN_(graph)(&table, fn);*/
 		}
+		PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-end.gv");
 	}
 	/* Clear. */
 	N_(table_clear)(&table);
