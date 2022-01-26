@@ -109,16 +109,10 @@ static void PN_(graph)(const struct N_(table) *const table,
 		(unsigned long)PN_(stats).max);
 	fprintf(fp, "\t<TR>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"%s\">hash</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">hash</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"%s\">key</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">next</FONT></TD>\n"
 		"\t</TR>\n",
-#ifdef TABLE_NO_CACHE
-		"Times-Italic"
-#else
-		"Times-Bold"
-#endif
-		,
 #ifdef TABLE_INVERSE
 		"Times-Italic"
 #else

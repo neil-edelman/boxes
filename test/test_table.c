@@ -572,7 +572,7 @@ static void fill_boat_id(int *const id);
 #define TABLE_NAME id
 #define TABLE_KEY int
 /* Don't need two `int id; unsigned hash = id;` per datum. */
-#define TABLE_NO_CACHE
+#define TABLE_NO_CACHE // no
 #define TABLE_HASH &boat_id_hash
 #define TABLE_IS_EQUAL &boat_id_is_equal
 #define TABLE_TEST &fill_boat_id
