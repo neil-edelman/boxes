@@ -243,6 +243,7 @@ struct N_(table) { /* "Padding size," good. */
 	 lazy, so MSB store is the top a step ahead? Thereby, hysteresis. */
 	PN_(uint) log_capacity, size, top;
 };
+
 /***********fixme*/
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
@@ -339,9 +340,6 @@ static void PN_(shrink_stack)(struct N_(table) *const table,
 		memcpy(table->buckets + i, table->buckets + table->top,
 			sizeof *table->buckets);
 		prev->next = i;
-		printf("top 0x%lx\n", (unsigned long)table->top);
-		printf("i 0x%lx\n", (unsigned long)i);
-		printf("prev 0x%lx\n", (unsigned long)(prev - table->buckets));
 	}
 	table->buckets[table->top].next = TABLE_NULL;
 	table->top |= TABLE_HIGH; /* Lazy. */
@@ -408,7 +406,6 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 	const PN_(uint) log_c0 = table->log_capacity,
 		c0 = log_c0 ? (PN_(uint))((PN_(uint))1 << log_c0) : 0;
 	PN_(uint) log_c1, c1, size1, i, wait, mask;
-	char fn[64];
 	assert(table && table->size <= TABLE_HIGH
 		&& (!table->buckets && !table->size && !log_c0 && !c0
 		|| table->buckets && table->size <= c0 && log_c0>=3));
@@ -419,9 +416,6 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 	else               log_c1 = 3,      c1 = 8;
 	while(c1 < size1)  log_c1++,        c1 <<= 1;
 	if(log_c0 == log_c1) return 1;
-
-	sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-resize-%lu-%lu-a-before.gv",
-		(unsigned long)log_c0, (unsigned long)log_c1), PN_(graph)(table, fn);
 
 	/* Otherwise, need to allocate more. */
 	if(!(buckets = realloc(table->buckets, sizeof *buckets * c1)))
@@ -467,9 +461,6 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		idx->next = wait, wait = i; /* Push for next sweep. */
 	}
 
-	sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-resize-%lu-%lu-b-obvious.gv",
-		(unsigned long)log_c0, (unsigned long)log_c1), PN_(graph)(table, fn);
-
 	/* Search waiting stack for buckets that moved concurrently. */
 	{ PN_(uint) prev = TABLE_END, w = wait; while(w != TABLE_END) {
 		struct PN_(bucket) *waiting = table->buckets + w;
@@ -487,9 +478,6 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		}
 	}}
 
-	sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-resize-%lu-%lu-c-closed.gv",
-		(unsigned long)log_c0, (unsigned long)log_c1), PN_(graph)(table, fn);
-
 	/* Rebuild the top stack at the high numbers from the waiting at low. */
 	while(wait != TABLE_END) {
 		struct PN_(bucket) *const waiting = table->buckets + wait;
@@ -502,9 +490,6 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		top->next = head->next, head->next = table->top;
 		wait = waiting->next, waiting->next = TABLE_NULL; /* Pop. */
 	}
-
-	sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-resize-%lu-%lu-d-final.gv",
-		(unsigned long)log_c0, (unsigned long)log_c1), PN_(graph)(table, fn);
 
 	return 1;
 }

@@ -271,7 +271,7 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
 				PN_(entry) entry;
 			} _;
 			int is_in, unused;
-		} sample[10000];
+		} sample[10/*000*/];
 		size_t count;
 	} trials;
 	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample;
