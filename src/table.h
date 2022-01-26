@@ -303,8 +303,9 @@ static void PN_(grow_stack)(struct N_(table) *const table) {
 	assert(table && table->buckets && table->top && top < PN_(capacity)(table));
 	while(table->buckets[top].next != TABLE_NULL)
 		assert(top), PN_(to_string)(PN_(bucket_key)(table->buckets + top), &z),
-		printf("grow_stack: skipping %lu: %s.\n", (unsigned long)top, z),
+		printf("grow_stack: skip top %lu: %s.\n", (unsigned long)top, z),
 		top--;
+	printf("grow_stack: top %lu.\n", (unsigned long)top);
 	table->top = top; /* Eager, since one is allegedly going to fill it. */
 }
 
@@ -319,7 +320,9 @@ static void PN_(force_stack)(struct N_(table) *const table) {
 		top &= ~TABLE_HIGH;
 		do bucket = table->buckets + ++top, assert(top < cap);
 		while(bucket->next != TABLE_NULL
-			&& (PN_(to_string)(PN_(bucket_key)(bucket), &z), printf("skip %s\n", z), PN_(to_bucket)(table, bucket->hash) == top));
+			&& (PN_(to_string)(PN_(bucket_key)(bucket), &z),
+			printf("force_stack: skipping %s\n", z),
+			PN_(to_bucket)(table, bucket->hash) == top));
 		table->top = top; /* Eager. */
 	}
 }
@@ -336,7 +339,8 @@ static void PN_(shrink_stack)(struct N_(table) *const table,
 	const PN_(uint) i) {
 	assert(table && table->buckets && i < PN_(capacity)(table));
 	assert(table->buckets[i].next == TABLE_NULL);
-	printf("shrink_stack(%lx)\n", (unsigned long)i);
+	printf("shrink_stack(%lx), top %lx\n",
+		(unsigned long)i, (unsigned long)table->top);
 	if(!PN_(in_stack_range)(table, i)) return;
 	PN_(force_stack)(table); /* Only have room for 1 step of laziness. */
 	assert(PN_(in_stack_range)(table, i)); /* I think this is assured? Think. */
@@ -378,7 +382,7 @@ static int PN_(equal_buckets)(PN_(ckey) a, PN_(ckey) b) {
 }
 
 /** `table` will be searched linearly for `key` which has `hash`.
- @fixme Move to front like splay trees? this is awkward. */
+ @fixme Move to front like splay trees? */
 static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 	PN_(ckey) key, const PN_(uint) hash) {
 	struct PN_(bucket) *bucket;
@@ -427,6 +431,8 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		{ if(!errno) errno = ERANGE; return 0; }
 	table->top = (c1 - 1) | TABLE_HIGH; /* No stack. */
 	table->buckets = buckets, table->log_capacity = log_c1;
+	printf("buffer: expanding from %lu to %lu.\n",
+		(unsigned long)c0, (unsigned long)c1);
 
 	/* Initialize new values. Mask to identify the added bits. */
 	{ struct PN_(bucket) *e = buckets + c0, *const e_end = buckets + c1;
@@ -496,6 +502,7 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		wait = waiting->next, waiting->next = TABLE_NULL; /* Pop. */
 	}
 
+	printf("buffer: now stack top is 0x%lx.\n", (unsigned long)table->top);
 	return 1;
 }
 

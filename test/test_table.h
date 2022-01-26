@@ -238,7 +238,7 @@ static int PN_(eq_en)(PN_(entry) a, PN_(entry) b) {
 	/*char sa[12], sb[12];
 	PN_(to_string)(ka, &sa);
 	PN_(to_string)(kb, &sb);
-	printf("return %s, %s == %d\n", sa, sb, PN_(equal)(ka, kb));*/
+	printf("<PN>eq_en, return (%s, %s) == %d.\n", sa, sb, PN_(equal)(ka, kb));*/
 	return PN_(equal)(ka, kb);
 #endif
 }
@@ -273,7 +273,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 				PN_(entry) entry;
 			} _;
 			int is_in, unused;
-		} sample[10/*000*/];
+		} sample[10000];
 		size_t count;
 	} trials;
 	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample;
@@ -336,8 +336,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 			&& result == TABLE_UNIQUE && size.after == size.before + 1
 			|| !s->is_in && result == TABLE_YIELD && size.before == size.after);
 		success = N_(table_query)(&table, PN_(entry_key)(s->_.entry), &entry);
-		assert(success /* fixme: this is not doing what I think it's doing.
-			&& PN_(eq_en)(s->_.entry, entry)*/);
+		assert(success && PN_(eq_en)(s->_.entry, entry));
 		if(table.size < 10000 && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
 			printf("Hash to far: %s.\n", PN_(table_to_string)(&table));
@@ -360,21 +359,21 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		PN_(entry) result;
 		PN_(value) value;
 		const PN_(value) *array_value;
-		int cmp, is;
+		int /*cmp, */is;
 		is = N_(table_is)(&table, key);
 		assert(is);
 		is = N_(table_query)(&table, key, &result);
-		assert(is /*fixme: this is not doing what I think.
-				   && PN_(eq_en)(s->_.entry, result)*/);
+		assert(is && PN_(eq_en)(s->_.entry, result));
 		value = N_(table_get_or)(&table, key, def);
 #ifdef TABLE_VALUE
 		array_value = &s->_.entry.value;
 #else
 		array_value = &s->_.entry;
 #endif
-		cmp = memcmp(&value, array_value, sizeof value);
-		/*assert(!cmp); <- not doing what I think */
-		/* printf("%u: %u\n", (unsigned *)*array_value, (unsigned *)value); */
+		/*cmp = memcmp(&value, array_value, sizeof value);
+		printf("sizeof %ul\n", sizeof value);
+		printf("%u, %u\n", (unsigned *)value, (unsigned *)*array_value);
+		assert(!cmp);*/ /* <- not doing what I think */
 	}}
 	printf("Remove:\n");
 	{
