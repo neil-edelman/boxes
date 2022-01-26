@@ -237,8 +237,6 @@ static void nato(void) {
 		do printf("%s%s", head == w ? "" : ",", w->alpha); while(w = w->next);
 		printf("}\n");
 	}
-	printf("fuck************\n\n");
-	table_nato_graph(&nato, "graph/nato.gv");
 	{ /* Check. */
 		struct nato_table_entry e;
 		int success;

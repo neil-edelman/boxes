@@ -256,6 +256,11 @@ static void (*PN_(to_string))(PN_(ckey), char (*)[12]);
 /** `table` `fn` */
 static void PN_(graph)(const struct N_(table) *const table,
 	const char *const fn) { (void)table, (void)fn; }
+static void PN_(unused_graph_coda)(void);
+static void PN_(unused_graph)(void) {
+	PN_(graph)(0, 0); PN_(unused_graph_coda)();
+}
+static void PN_(unused_graph_coda)(void) { PN_(unused_graph)(); }
 /** `key` `z` */
 static void PN_(to_string)(PN_(ckey) key, char (*z)[12])
 	{ (void)key, strcpy(*z, "<key>"); }
