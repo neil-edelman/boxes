@@ -187,12 +187,9 @@ static int int_from_void(void *const zero, int *const s) {
 
 
 /** Vector hash implemented as a pointer. This is kind of a silly example
- because it's homomorphic to a set of integers, but pretend we had a big
- problem space. */
-struct vec4 {
-	char a[2], unused[2];
-	int n[2];
-};
+ because it's easily homomorphic to a set of integers, but pretend we had a big
+ problem space, (such an example would be difficult to describe succinctly.) */
+struct vec4 { char a[2], unused[2]; int n[2]; };
 /** @implements <vec4>hash_fn */
 static unsigned vec4_hash(const struct vec4 *const v4) {
 	return (unsigned)(1 * v4->n[0] + 10 * v4->n[1]
@@ -221,7 +218,7 @@ static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12])
 #define POOL_NAME vec4
 #define POOL_TYPE struct vec4
 #include "pool.h"
-/** For testing: `s16s` is a pool of `str16`. */
+/** For testing: `s4s` is a pool of vectors. */
 static struct vec4 *vec4_from_pool(struct vec4_pool *const v4s) {
 	struct vec4 *v4 = vec4_pool_new(v4s);
 	if(!v4) return 0;
