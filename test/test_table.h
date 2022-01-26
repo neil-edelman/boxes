@@ -24,7 +24,8 @@ static size_t PN_(count_bucket)(const struct N_(table) *const table,
 	bucket = table->buckets + idx;
 	if((next = bucket->next) == TABLE_NULL
 		|| idx != PN_(to_bucket)(table, bucket->hash)) return 0;
-	for( ; no++, next != TABLE_END; next = bucket->next, assert(next != TABLE_NULL)) {
+	for( ; no++, next != TABLE_END;
+		next = bucket->next, assert(next != TABLE_NULL)) {
 		idx = next;
 		assert(idx < PN_(capacity)(table)
 			/* We want to count intermediates.
@@ -203,7 +204,8 @@ static void PN_(histogram)(const struct N_(table) *const table,
 	}
 	/* `historgram_size` is much larger than it has to be, usually. */
 	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
-	/* Stats for fit. */
+	/* Stats for fit. fixme: This is stats for expected value, I don't think
+	 they are the same. */
 	PN_(collect)(table);
 	fprintf(fp, "# Size: %lu.\n"
 		"set term postscript eps enhanced color\n"
