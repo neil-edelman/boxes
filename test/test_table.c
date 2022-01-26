@@ -37,6 +37,7 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define TABLE_NAME zodiac
 #define TABLE_KEY enum zodiac
 #define TABLE_HASH &hash_zodiac
+/* Generally, if you can, inverse is less space and simpler then equals. */
 #define TABLE_INVERSE &hash_inv_zodiac
 /* There are less than 256/2 keys, so a byte would suffice, but speed-wise, we
  expect type coercion between different sizes to be slower. */
@@ -185,6 +186,56 @@ static int int_from_void(void *const zero, int *const s) {
 }
 
 
+/** Vector hash implemented as a pointer. This is kind of a silly example
+ because it's homomorphic to a set of integers, but pretend we had a big
+ problem space. */
+struct vec4 {
+	char a[2], unused[2];
+	int n[2];
+};
+/** @implements <vec4>hash_fn */
+static unsigned vec4_hash(const struct vec4 *const v4) {
+	return (unsigned)(1 * v4->n[0] + 10 * v4->n[1]
+		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a'));
+}
+/** @implements <vec4>is_equal_fn */
+static int vec4_is_equal(const struct vec4 *a, const struct vec4 *const b) {
+	return a->a[0] == b->a[0] && a->a[1] == b->a[1]
+		&& a->n[0] == b->n[0] && a->n[1] == b->n[1];
+}
+/** @implements <vec4>to_string_fn */
+static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12])
+	{ sprintf(*a, "%c%d%c%d",
+	v4->a[0], v4->n[0] % 100, v4->a[1], v4->n[1] % 100); }
+#define TABLE_NAME vec4
+#define TABLE_KEY struct vec4 *
+#define TABLE_HASH &vec4_hash
+#define TABLE_IS_EQUAL &vec4_is_equal
+/* Because of alignment, doesn't buy anything in terms of space savings. */
+#define TABLE_UINT unsigned
+#define TABLE_TEST
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_TO_STRING &vec4_to_string
+#include "../src/table.h"
+#define POOL_NAME vec4
+#define POOL_TYPE struct vec4
+#include "pool.h"
+/** For testing: `s16s` is a pool of `str16`. */
+static struct vec4 *vec4_from_pool(struct vec4_pool *const v4s) {
+	struct vec4 *v4 = vec4_pool_new(v4s);
+	if(!v4) return 0;
+	v4->a[0] = 'A' + (char)(rand() / (RAND_MAX / 26 + 1));
+	v4->a[1] = 'a' + (char)(rand() / (RAND_MAX / 26 + 1));
+	v4->n[0] = rand() / (RAND_MAX / 9 + 1);
+	v4->n[1] = rand() / (RAND_MAX / 9 + 1);
+	return v4;
+}
+/** @implements <vec4>test_new_fn */
+static int vec4_from_void(void *const vec4s, struct vec4 **const v)
+	{ return assert(vec4s), !!(*v = vec4_from_pool(vec4s)); }
+
+
 /* A histogram of lengths' defined as a map with the pointers to the keys
  recorded as a linked-list. */
 struct nato_list { const char *alpha; struct nato_list *next; };
@@ -267,10 +318,12 @@ finally:
 
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
+	struct vec4_pool vec4s = POOL_IDLE;
 	zodiac_table_test(&fill_zodiac, 0); /* Don't require any space. */
 	string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
+	vec4_table_test(&vec4_from_void, &vec4s);
 	nato();
 	printf("Testing get.\n");
 	{ /* Too lazy to do separate tests. */
@@ -297,7 +350,20 @@ int main(void) {
 		int_table_(&is);
 	}
 
-
+#if 0
+	{ /* Boats. */
+		struct boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
+		size_t bs_size = sizeof bs / sizeof *bs;
+		struct id_hash ids = TABLE_IDLE;
+		each_boat(bs, bs_size, &fill_boat);
+		printf("Boat club races individually: ");
+		print_boats(bs, bs_size);
+		printf("Now adding up:\n");
+		each_hash_boat(&ids, bs, bs_size, &put_in_hash);
+		/*printf("Final score: %s.\n", id_hash_to_string(&ids));*/
+		id_hash_(&ids);
+	}
+#endif
 
 
 
@@ -314,18 +380,6 @@ int main(void) {
 		string_hash_test(&string_from_pool, &strings), string_pool_(&strings);
 		vec4_hash_test(0, 0);
 		id_hash_test(&id_from_pool, &boats), boat_pool_(&boats);
-	}
-	{ /* Boats. */
-		struct boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
-		size_t bs_size = sizeof bs / sizeof *bs;
-		struct id_hash ids = TABLE_IDLE;
-		each_boat(bs, bs_size, &fill_boat);
-		printf("Boat club races individually: ");
-		print_boats(bs, bs_size);
-		printf("Now adding up:\n");
-		each_hash_boat(&ids, bs, bs_size, &put_in_hash);
-		/*printf("Final score: %s.\n", id_hash_to_string(&ids));*/
-		id_hash_(&ids);
 	}
 	{ /* Linked dictionary. */
 		struct entry_pool buckets = POOL_IDLE;
@@ -502,63 +556,8 @@ uint16_t hash16_xm2(uint16_t x) {
 
 #if 0
 
-/* Used to test `TABLE_UINT`; normally `unsigned int`, here `unsigned char`.
- Useful if you want to use a specific hash length, _eg_, `C99`'s `uint32_t` or
- `uint64_t`. */
-
-/** Fast hash function. */
-static unsigned char byteint_hash(unsigned x) { return (unsigned char)x; }
-/* All the same functions as above, otherwise. */
-#define TABLE_NAME byteint
-#define TABLE_KEY unsigned
-#define TABLE_UINT unsigned char
-#define TABLE_HASH &byteint_hash
-#define TABLE_IS_EQUAL &int_is_equal
-#define TABLE_TEST &int_fill
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &int_to_string
-#include "../src/table.h"
 
 
-/* Vector; test of `TABLE_POINTER`. */
-struct vec4 {
-	char a[2], unused[2];
-	int n[2];
-};
-/* If we cheat a little, knowing that the numbers are 0-9, we can get a much
- more evenly distributed hash value. */
-static unsigned vec4_hash(const struct vec4 *const v4) {
-	return (unsigned)(1 * v4->n[0] + 10 * v4->n[1]
-		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a'));
-}
-static int vec4_is_equal(const struct vec4 *a, const struct vec4 *const b) {
-	return a->a[0] == b->a[0] && a->a[1] == b->a[1]
-		&& a->n[0] == b->n[0] && a->n[1] == b->n[1];
-}
-static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12]) {
-	sprintf(*a, "(%c,%c,%d,%d)",
-		v4->a[0], v4->a[1], v4->n[0] % 100, v4->n[1] % 100);
-}
-static void vec4_filler(struct vec4 *const v4) {
-	v4->a[0] = 'A' + (char)(rand() / (RAND_MAX / 26 + 1));
-	v4->a[1] = 'a' + (char)(rand() / (RAND_MAX / 26 + 1));
-	v4->n[0] = rand() / (RAND_MAX / 9 + 1);
-	v4->n[1] = rand() / (RAND_MAX / 9 + 1);
-}
-#define TABLE_NAME vec4
-#define TABLE_KEY struct vec4
-/* <fn:vec4_hash> and <fn:vec4_is_equal> have an extra level of indirection.
- This means that we also have to get an object and fill it to use
- <fn:<N>hash_get>; not very convenient. */
-#define TABLE_POINTER
-#define TABLE_HASH &vec4_hash
-#define TABLE_IS_EQUAL &vec4_is_equal
-#define TABLE_TEST &vec4_filler
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &vec4_to_string
-#include "../src/table.h"
 
 
 /* I wrote to solve

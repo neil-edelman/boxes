@@ -500,30 +500,25 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		wait = waiting->next, waiting->next = TABLE_NULL; /* Pop. */
 	}
 
-	printf("buffer: expanded from %lu to %lu.\n",
-		(unsigned long)c0, (unsigned long)c1);
+	/*printf("buffer: expanded from %lu to %lu.\n",
+		(unsigned long)c0, (unsigned long)c1);*/
 	return 1;
 }
 
 #undef QUOTE_
 #undef QUOTE
 
-/** Replace the `key` and `hash` of `bucket`. Don't touch next.
- @fixme `memcpy`? */
+/** Replace the `key` and `hash` of `bucket`. Don't touch next. */
 static void PN_(replace_key)(struct PN_(bucket) *const bucket,
 	const PN_(key) key, const PN_(uint) hash) {
-#ifndef TABLE_NO_CACHE
-	bucket->hash = hash;
 	(void)key;
-#endif
+	bucket->hash = hash;
 #ifndef TABLE_INVERSE
 	memcpy(&bucket->key, &key, sizeof key);
-	(void)hash;
 #endif
 }
 
-/** Replace the entire `entry` and `hash` of `bucket`. Don't touch next.
- @fixme `memcpy`? */
+/** Replace the entire `entry` and `hash` of `bucket`. Don't touch next. */
 static void PN_(replace_entry)(struct PN_(bucket) *const bucket,
 	const PN_(entry) entry, const PN_(uint) hash) {
 	PN_(replace_key)(bucket, PN_(entry_key)(entry), hash);
@@ -738,16 +733,16 @@ static int N_(table_remove)(struct N_(table) *const table,
 		nxt = target->next;
 	}
 	PN_(to_string)(key, &z);
-	printf("remove key %s: prev %lx, i %lx, next %lx\n",
-		z, (unsigned long)prv, (unsigned long)i, (unsigned long)nxt);
+	/*printf("remove key %s: prev %lx, i %lx, next %lx\n",
+		z, (unsigned long)prv, (unsigned long)i, (unsigned long)nxt);*/
 	if(prv != TABLE_NULL) { /* Open entry. */
 		struct PN_(bucket) *previous = table->buckets + prv;
 		PN_(to_string)(PN_(bucket_key)(previous), &z);
-		printf("\tprev was %s, making it point to next\n", z);
+		/*printf("\tprev was %s, making it point to next\n", z);*/
 		previous->next = target->next;
 	} else if(target->next != TABLE_END) { /* Head closed entry and others. */
 		struct PN_(bucket) *const second = table->buckets + (i = target->next);
-		printf("\tclosed head %s, replacing it with next\n", z);
+		/*printf("\tclosed head %s, replacing it with next\n", z);*/
 		assert(target->next < PN_(capacity)(table));
 		memcpy(target, second, sizeof *second);
 		target = second;

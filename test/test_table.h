@@ -321,10 +321,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		memset(&eject, 0, sizeof eject);
 		memset(&zero, 0, sizeof zero);
 		size.before = table.size;
-		PN_(to_string)(PN_(entry_key)(s->_.entry), &z);
 		result = N_(table_update)(&table, s->_.entry, &eject, 0);
-		printf("Store \"%s\" in table, result: %s.\n",
-			z, table_result_str[result]);
 		size.after = table.size;
 		assert(s->is_in && !memcmp(&eject, &zero, sizeof zero)
 			&& result == TABLE_UNIQUE && size.after == size.before + 1
@@ -333,7 +330,9 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		assert(success && PN_(eq_en)(s->_.entry, entry));
 		if(table.size < 10000 && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
-			printf("Hash to far: %s.\n", PN_(table_to_string)(&table));
+			PN_(to_string)(PN_(entry_key)(s->_.entry), &z);
+			printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,
+				z, table_result_str[result], PN_(table_to_string)(&table));
 			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-%lu.gv", (unsigned long)i+1);
 			PN_(graph)(&table, fn);
 		}
