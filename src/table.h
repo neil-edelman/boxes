@@ -312,8 +312,8 @@ static void PN_(force_stack)(struct N_(table) *const table) {
 		char z[12];
 		top &= ~TABLE_HIGH;
 		do bucket = table->buckets + ++top,
-			PN_(to_string)(PN_(bucket_key)(bucket), &z), printf("skip %s\n", z),
-			assert(top < cap && bucket->next != TABLE_NULL);
+			assert(top < cap && bucket->next != TABLE_NULL),
+			PN_(to_string)(PN_(bucket_key)(bucket), &z), printf("skip %s\n", z);
 		while(PN_(to_bucket)(table, bucket->hash) == top);
 		table->top = top; /* Eager. */
 	}
@@ -326,19 +326,29 @@ static int PN_(in_stack_range)(const struct N_(table) *const table,
 		(table->top & ~TABLE_HIGH) + !!(table->top & TABLE_HIGH) <= i;
 }
 
-/** Shrinks the stack of `table` by removing index `i`. */
+/** Deletes `i` from `table` taking into account the stack. */
 static void PN_(shrink_stack)(struct N_(table) *const table,
 	const PN_(uint) i) {
-	if(!PN_(in_stack_range)(table, i)) return;
+	printf("shrink_stack %lx\n", (unsigned long)i);
+	if(!PN_(in_stack_range)(table, i))
+		{ table->buckets[i].next = TABLE_NULL; goto size; }
 	PN_(force_stack)(table); /* Only have room for 1 step of laziness. */
-	assert(PN_(in_stack_range)(table, i)); /* I think this is impossible? */
-	///// and... copy the top to i
+	assert(PN_(in_stack_range)(table, i)); /* I think this is assured? Think. */
 	if(i != table->top) {
-		printf("no\n");
-	} else {
-		table->buckets[table->top].next = TABLE_NULL;
+		struct PN_(bucket) *const prev = PN_(prev)(table, table->top);
+		memcpy(table->buckets + i, table->buckets + table->top,
+			sizeof *table->buckets);
+		prev->next = i;
+		printf("top 0x%lx\n", (unsigned long)table->top);
+		printf("i 0x%lx\n", (unsigned long)i);
+		printf("prev 0x%lx\n", (unsigned long)(prev - table->buckets));
+
+		printf("");
 	}
+	table->buckets[table->top].next = TABLE_NULL;
 	table->top |= TABLE_HIGH; /* Lazy. */
+size:
+	table->size--;
 }
 
 /** Moves the `m` index in non-idle `table`, to the top of collision stack.
@@ -734,27 +744,21 @@ static int N_(table_remove)(struct N_(table) *const table,
 		nxt = target->next;
 	}
 	PN_(to_string)(key, &z);
-	printf("key %s: prev %lx, i %lx, next %lx\n",
+	printf("remove key %s: prev %lx, i %lx, next %lx\n",
 		z, (unsigned long)prv, (unsigned long)i, (unsigned long)nxt);
 	if(prv != TABLE_NULL) { /* Open entry. */
 		struct PN_(bucket) *previous = table->buckets + prv;
 		PN_(to_string)(PN_(bucket_key)(previous), &z);
 		printf("prev was %s, making it point to next\n", z);
-		previous->next = target->next, target->next = TABLE_NULL; /* this should be after! */
+		previous->next = target->next;
 	} else if(target->next != TABLE_END) { /* Head closed entry and others. */
 		struct PN_(bucket) *const second = table->buckets + (i = target->next);
+		printf("closed head %s, replacing it with next\n", z);
 		assert(target->next < PN_(capacity)(table));
 		memcpy(target, second, sizeof *second);
-		second->next = TABLE_NULL; /* this should be after! */
 		target = second;
-	} else { /* Closed entry is the only one. */
-		target->next = TABLE_NULL; /* this should be after! */
 	}
-	table->size--; /* this could be after */
-	/* target->next = SET_END? wouldn't make much difference */
-	/* Deal with the stack; note that this is `2n` instead of `n`, a
-	 disadvantage of this approach. */
-	PN_(shrink_stack)(table, i); /* this is in an intermediate state! */
+	PN_(shrink_stack)(table, i);
 	return 1;
 }
 
