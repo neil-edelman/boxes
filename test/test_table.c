@@ -152,9 +152,11 @@ static int uint_from_void(void *const zero, unsigned *const u) {
 /* Check to see that the prototypes are correct by making a signed integer.
  Also testing `TABLE_DEFAULT`. */
 /** @implements <int>hash_fn */
-static unsigned int_hash(int d) { return lowbias32((unsigned)(d - INT_MIN)); }
+static unsigned int_hash(int d)
+	{ return lowbias32((unsigned)d - (unsigned)INT_MIN); }
 /** @implements <int>inverse_hash_fn */
-static int int_inv_hash(unsigned u) { return (int)lowbias32_r(u) + INT_MIN; }
+static int int_inv_hash(unsigned u)
+	{ return (int)(lowbias32_r(u) + (unsigned)INT_MIN); }
 /** @implements <int>to_string_fn */
 static void int_to_string(const int d, char (*const a)[12])
 	{ sprintf(*a, "%d", d); }
@@ -272,12 +274,10 @@ int main(void) {
 	nato();
 	printf("Testing get.\n");
 	{ /* Too lazy to do separate tests. */
-		/* fixme: `int` is *not* invertible when optimizations are turned on? */
 		struct int_table is = TABLE_IDLE;
 		int one, two, def;
 		int_table_try(&is, 1);
 		int_table_try(&is, 2);
-		assert(int_table_get(&is, 1) && int_table_get(&is, 1));
 		printf("Table %s.\n", int_table_to_string(&is));
 		one = int_table_get_or(&is, 1, 7);
 		two = int_table_get_or(&is, 2, 7);
