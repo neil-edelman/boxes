@@ -70,9 +70,8 @@ static void PN_(graph)(const struct N_(table) *const table,
 	FILE *fp;
 	size_t i, i_end;
 	assert(table && fn);
-	printf("*** %s\n", fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	printf("$$$ %s\n", fn);
+	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
 		"\tgraph [truecolor=true, bgcolor=transparent];\n"

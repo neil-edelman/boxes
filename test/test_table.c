@@ -270,11 +270,14 @@ int main(void) {
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	nato();
+	printf("Testing get.\n");
 	{ /* Too lazy to do separate tests. */
+		/* fixme: `int` is *not* invertible when optimizations are turned on? */
 		struct int_table is = TABLE_IDLE;
 		int one, two, def;
-		int_table_update(&is, 1, 0, 0);
-		int_table_update(&is, 2, 0, 0);
+		int_table_try(&is, 1);
+		int_table_try(&is, 2);
+		assert(int_table_get(&is, 1) && int_table_get(&is, 1));
 		printf("Table %s.\n", int_table_to_string(&is));
 		one = int_table_get_or(&is, 1, 7);
 		two = int_table_get_or(&is, 2, 7);
