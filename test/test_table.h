@@ -263,7 +263,7 @@ static void PN_(legit)(const struct N_(table) *const table) {
 }
 
 /** Passed `parent_new` and `parent` from <fn:<N>hash_test>. */
-static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
+static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 	struct {
 		struct sample {
 			union {
@@ -406,7 +406,7 @@ static void PN_(test_basic)(const PN_(fill_fn) fill, void *const parent) {
  <tag:<N>hashlink> and `TABLE_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void N_(table_test)(const PN_(fill_fn) fill, void *const parent) {
+static void N_(table_test)(PN_(fill_fn) fill, void *const parent) {
 	printf("<" QUOTE(TABLE_NAME) ">table of key <" QUOTE(TABLE_KEY)
 		"> was created using: "
 		"TABLE_UINT <" QUOTE(TABLE_UINT) ">; "

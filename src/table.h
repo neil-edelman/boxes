@@ -119,7 +119,8 @@ static const char *const table_result_str[] = { TABLE_RESULT };
  elements of half the cardinality. */
 typedef TABLE_UINT PN_(uint);
 
-/** Valid tag type defined by `TABLE_KEY` used for keys. */
+/** Valid tag type defined by `TABLE_KEY` used for keys. If `TABLE_INVERSE` is
+ not defined, this will be part of the buckets. */
 typedef TABLE_KEY PN_(key);
 /** Read-only <typedef:<PN>key>. Makes the simplifying assumption that this is
  not `const`-qualified. */
@@ -127,8 +128,8 @@ typedef const TABLE_KEY PN_(ckey);
 
 /** A map from <typedef:<PN>ckey> onto <typedef:<PN>uint> that, ideally, should
  be easy to compute while minimizing duplicate addresses. Must be consistent
- while in the table. If <typedef:<PN>key> is a pointer, one is permitted to
- have null in the domain. */
+ for each value while in the table. If <typedef:<PN>key> is a pointer, one is
+ permitted to have null in the domain. */
 typedef PN_(uint) (*PN_(hash_fn))(PN_(ckey));
 /* Check that `TABLE_HASH` is a function implementing <typedef:<PN>hash_fn>. */
 static const PN_(hash_fn) PN_(hash) = (TABLE_HASH);
@@ -364,7 +365,7 @@ static void PN_(move_to_top)(struct N_(table) *const table, const PN_(uint) m) {
 
 /** `TABLE_INVERSE` is injective, so in that case, we only compare hashes.
  @return `a` and `b`. */
-static int PN_(equal_buckets)(const PN_(ckey) a, const PN_(ckey) b) {
+static int PN_(equal_buckets)(PN_(ckey) a, PN_(ckey) b) {
 #ifdef TABLE_INVERSE
 	return (void)a, (void)b, 1;
 #else
@@ -375,7 +376,7 @@ static int PN_(equal_buckets)(const PN_(ckey) a, const PN_(ckey) b) {
 /** `table` will be searched linearly for `key` which has `hash`.
  @fixme Move to front like splay trees? this is awkward. */
 static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
-	const PN_(ckey) key, const PN_(uint) hash) {
+	PN_(ckey) key, const PN_(uint) hash) {
 	struct PN_(bucket) *bucket;
 	PN_(uint) i, next;
 	assert(table && table->buckets && table->log_capacity);
@@ -694,8 +695,9 @@ static enum table_result N_(table_update)(struct N_(table) *const table,
 
 #ifdef TABLE_VALUE /* <!-- value */
 /** If `TABLE_VALUE` is defined. Try to put `key` into `table`, and store the
- value in `value`. @return `TABLE_ERROR` does not set `value`; `TABLE_GROW`,
- the `value` will be uninitialized; `TABLE_YIELD`, gets the current `value` but
+ associated value in a pointer `value`.
+ @return `TABLE_ERROR` does not set `value`; `TABLE_GROW`, the `value` will
+ point to uninitialized memory; `TABLE_YIELD`, gets the current `value` but
  doesn't use the `key`. @throws[malloc] On `TABLE_ERROR`. @allow */
 static enum table_result N_(table_compute)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const value)
@@ -819,6 +821,8 @@ static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it)
 	{ return PN_(next)(&it->it)->value; }
 
 #endif /* value --> */
+
+/* *** <N>table_iterator_remove */
 
 /* <!-- box (multiple traits) */
 #define BOX_ PN_
