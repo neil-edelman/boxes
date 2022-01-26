@@ -41,7 +41,7 @@ fixme
 
 <code>typedef TABLE_UINT <strong>&lt;PN&gt;uint</strong>;</code>
 
-[&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) returns this hash type by `TABLE_UINT`, which must be be an unsigned integer\. Places a simplifying limit on the maximum number of items in this container of half the cardinality\.
+[&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) returns this hash type by `TABLE_UINT`, which must be be an unsigned integer\. Places a simplifying limit on the maximum number of elements of half the cardinality\.
 
 
 
@@ -65,7 +65,7 @@ Read\-only [&lt;PN&gt;key](#user-content-typedef-e7af8dc0)\. Makes the simplifyi
 
 <code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;ckey);</code>
 
-A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad) that, ideally, should be easy to compute while minimizing duplicate addresses, \(that is, hash modulo size of table\.\) Must be consistent while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
+A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad) that, ideally, should be easy to compute while minimizing duplicate addresses\. Must be consistent while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
 
 
 
@@ -181,7 +181,7 @@ Iteration usually not in any particular order\. The asymptotic runtime of iterat
 
 <tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-f9e3ef3">&lt;N&gt;table_compute</a></td><td>table, key, value</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;setlink *</td><td><a href = "#user-content-fn-4f0ac85e">&lt;N&gt;set_remove</a></td><td>hash, data</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f3d5d82a">&lt;N&gt;table_remove</a></td><td>table, key</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-89645eb3">&lt;N&gt;table_begin</a></td><td>it, table</td></tr>
 
@@ -255,7 +255,7 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
 <code>static int <strong>&lt;N&gt;table_is</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
 
  * Return:  
-   Is `key` in `table`? \(which can be null\.\)
+   Whether `key` is in `table` \(which can be null\.\)
 
 
 
@@ -277,7 +277,7 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
 <code>static &lt;PN&gt;value <strong>&lt;N&gt;table_get_or</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value <em>default_value</em>)</code>
 
  * Return:  
-   The value associated with `key` in `table`, \(which can be null\.\) If no such value exists, the `default_value` is returned\.
+   The value associated with `key` in `table`, \(which can be null\.\) If no such value exists, `default_value` is returned\.
  * Order:  
    Average &#927;\(1\); worst &#927;\(n\)\.
 
@@ -336,24 +336,24 @@ Puts `entry` in `table` only if absent or if calling `update` returns true\.
 
 <code>static enum table_result <strong>&lt;N&gt;table_compute</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>value</em>)</code>
 
-If `TABLE_VALUE`, try to put `key` into `table`, and store the value in `value`\.
+If `TABLE_VALUE` is defined\. Try to put `key` into `table`, and store the value in `value`\.
 
  * Return:  
-   `TABLE_ERROR` does not set `value`; `TABLE_GROW`, the `value` will be uninitialized; `TABLE_YIELD`, gets the current `value`\.
+   `TABLE_ERROR` does not set `value`; `TABLE_GROW`, the `value` will be uninitialized; `TABLE_YIELD`, gets the current `value` but doesn't use the `key`\.
  * Exceptional return: malloc  
    On `TABLE_ERROR`\.
 
 
 
 
-### <a id = "user-content-fn-4f0ac85e" name = "user-content-fn-4f0ac85e">&lt;N&gt;set_remove</a> ###
+### <a id = "user-content-fn-f3d5d82a" name = "user-content-fn-f3d5d82a">&lt;N&gt;table_remove</a> ###
 
-<code>static struct &lt;N&gt;setlink *<strong>&lt;N&gt;set_remove</strong>(struct &lt;N&gt;set *const <em>hash</em>, const &lt;PN&gt;mtype <em>data</em>)</code>
+<code>static int <strong>&lt;N&gt;table_remove</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
 
-Removes an element `data` from `hash`\.
+Removes `key` from `table` \(which could be null\.\)
 
  * Return:  
-   Successfully ejected element or null\.
+   Whether that `key` was in `table`\.
  * Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
 
@@ -422,7 +422,7 @@ If `TABLE_VALUE`, advances `it` when [&lt;N&gt;table_has_next](#user-content-fn-
 
 <code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
 
-This is functionally identical to [&lt;N&gt;table_get_or](#user-content-fn-638dcc26), but a with a trait specifying a constant default value, \(such as zero\.\)
+This is functionally identical to [&lt;N&gt;table_get_or](#user-content-fn-638dcc26), but a with a trait specifying a constant default value\.
 
  * Return:  
    The value associated with `key` in `table`, \(which can be null\.\) If no such value exists, the `TABLE_DEFAULT` is returned\.

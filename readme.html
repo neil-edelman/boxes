@@ -81,7 +81,7 @@ fixme</div>
 
 <p><code>typedef TABLE_UINT <strong>&lt;PN&gt;uint</strong>;</code></p>
 
-<p><a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> returns this hash type by <code>TABLE_UINT</code>, which must be be an unsigned integer. Places a simplifying limit on the maximum number of items in this container of half the cardinality.</p>
+<p><a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> returns this hash type by <code>TABLE_UINT</code>, which must be be an unsigned integer. Places a simplifying limit on the maximum number of elements of half the cardinality.</p>
 
 </div>
 
@@ -111,7 +111,7 @@ fixme</div>
 
 <p><code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;ckey);</code></p>
 
-<p>A map from <a href = "#typedef:&lt;PN&gt;ckey">&lt;PN&gt;ckey</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses, (that is, hash modulo size of table.) Must be consistent while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
+<p>A map from <a href = "#typedef:&lt;PN&gt;ckey">&lt;PN&gt;ckey</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
 
 </div>
 
@@ -249,7 +249,7 @@ fixme</div>
 
 <tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_compute">&lt;N&gt;table_compute</a></td><td>table, key, value</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;setlink *</td><td><a href = "#fn:<N>set_remove">&lt;N&gt;set_remove</a></td><td>hash, data</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_remove">&lt;N&gt;table_remove</a></td><td>table, key</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>table_begin">&lt;N&gt;table_begin</a></td><td>it, table</td></tr>
 
@@ -339,7 +339,7 @@ fixme</div>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Is <code>key</code> in <code>table</code>? (which can be null.)</dd>
+	<dd>Whether <code>key</code> is in <code>table</code> (which can be null.)</dd>
 </dl>
 
 </div>
@@ -367,7 +367,7 @@ fixme</div>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>The value associated with <code>key</code> in <code>table</code>, (which can be null.) If no such value exists, the <code>default_value</code> is returned.</dd>
+	<dd>The value associated with <code>key</code> in <code>table</code>, (which can be null.) If no such value exists, <code>default_value</code> is returned.</dd>
 	<dt>Order:</dt>
 	<dd>Average &#927;(1); worst &#927;(n).</dd>
 </dl>
@@ -437,11 +437,11 @@ fixme</div>
 
 <p><code>static enum table_result <strong>&lt;N&gt;table_compute</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>value</em>)</code></p>
 
-<p>If <code>TABLE_VALUE</code>, try to put <code>key</code> into <code>table</code>, and store the value in <code>value</code>.</p>
+<p>If <code>TABLE_VALUE</code> is defined. Try to put <code>key</code> into <code>table</code>, and store the value in <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd><code>TABLE_ERROR</code> does not set <code>value</code>; <code>TABLE_GROW</code>, the <code>value</code> will be uninitialized; <code>TABLE_YIELD</code>, gets the current <code>value</code>.</dd>
+	<dd><code>TABLE_ERROR</code> does not set <code>value</code>; <code>TABLE_GROW</code>, the <code>value</code> will be uninitialized; <code>TABLE_YIELD</code>, gets the current <code>value</code> but doesn't use the <code>key</code>.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dd>On <code>TABLE_ERROR</code>.</dd>
 </dl>
@@ -450,15 +450,15 @@ fixme</div>
 
 <div>
 
-<h3><a id = "fn:<N>set_remove" name = "fn:<N>set_remove">&lt;N&gt;set_remove</a></h3>
+<h3><a id = "fn:<N>table_remove" name = "fn:<N>table_remove">&lt;N&gt;table_remove</a></h3>
 
-<p><code>static struct &lt;N&gt;setlink *<strong>&lt;N&gt;set_remove</strong>(struct &lt;N&gt;set *const <em>hash</em>, const &lt;PN&gt;mtype <em>data</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_remove</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code></p>
 
-<p>Removes an element <code>data</code> from <code>hash</code>.</p>
+<p>Removes <code>key</code> from <code>table</code> (which could be null.)</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Successfully ejected element or null.</dd>
+	<dd>Whether that <code>key</code> was in <code>table</code>.</dd>
 	<dt>Order:</dt>
 	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
 </dl>
@@ -543,7 +543,7 @@ fixme</div>
 
 <p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code></p>
 
-<p>This is functionally identical to <a href = "#fn:&lt;N&gt;table_get_or">&lt;N&gt;table_get_or</a>, but a with a trait specifying a constant default value, (such as zero.)</p>
+<p>This is functionally identical to <a href = "#fn:&lt;N&gt;table_get_or">&lt;N&gt;table_get_or</a>, but a with a trait specifying a constant default value.</p>
 
 <dl>
 	<dt>Return:</dt>

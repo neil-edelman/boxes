@@ -633,7 +633,7 @@ static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
 	{ return table && table->buckets
 		? !!PN_(query)(table, key, PN_(hash)(key)) : 0; }
 
-/** @param[result] If null, behaves like <fn:<N>table_at>, otherwise, a
+/** @param[result] If null, behaves like <fn:<N>table_is>, otherwise, a
  <typedef:<PN>entry> which gets filled on true.
  @return Is `key` in `table`? (which can be null.) @allow */
 static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
