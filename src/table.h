@@ -33,7 +33,7 @@
 
  @param[TABLE_DEFAULT_NAME, TABLE_DEFAULT]
  Default trait; a name that satisfies `C` naming conventions when mangled and a
- <typedef:<PN>value> used in <fn:<N>table<D>get>. There can be multiple to
+ <typedef:<PN>value> used in <fn:<N>table<D>get>. There can be multiple
  defaults, but only one can omit `TABLE_DEFAULT_NAME`.
 
  @param[TABLE_TO_STRING_NAME, TABLE_TO_STRING]
