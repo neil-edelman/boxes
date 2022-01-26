@@ -758,6 +758,9 @@ static int N_(table_remove)(struct N_(table) *const table,
 		memcpy(target, second, sizeof *second);
 		target = second;
 	}
+	/***** Fixme: put it back; it *has* to be accommodating to an null spot,
+	 _eg_ lazy, closed, end. Has to closed->null because otherwise the top
+	 will overflow. */
 	PN_(shrink_stack)(table, i);
 	return 1;
 }
