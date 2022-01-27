@@ -341,7 +341,8 @@ static void test_default(void) {
 
 
 struct boat_record { int best_time, points; };
-static void boat_to_string(int, char (*)[12]);
+struct boat_table_entry;
+static void boat_to_string(struct boat_table_entry, char (*)[12]);
 #define TABLE_NAME boat
 #define TABLE_KEY int
 #define TABLE_UINT unsigned
@@ -353,11 +354,11 @@ static void boat_to_string(int, char (*)[12]);
 #define TABLE_TO_STRING &boat_to_string
 #include "../src/table.h"
 /** @implements <boat>to_string_fn */
-static void boat_to_string(const int id, char (*const a)[12]) {
+static void boat_to_string(const struct boat_table_entry e, char (*const a)[12]) {
 	/* Should be more careful about overflow? */
 	/*sprintf(*a, "#%d(%d)", b->id.key, b->points);*/
-	struct boat_record *r;
-	sprintf(*a, "#%d", id);
+	
+	sprintf(*a, "#%d(%d)", e.key, e.value.points);
 }
 /** <https://stackoverflow.com/q/59091226/2472827>. */
 static void boat_club(void) {
