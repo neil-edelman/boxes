@@ -330,7 +330,7 @@ static void boat_club(void) {
 	printf("Boat club races:\n");
 	for(i = 0; i < 1000; i++) {
 		/* Pigeon-hole principle ensures collisions. */
-		const int id = rand() / (RAND_MAX / 89 + 1) + 10,
+		const int id = rand() / (RAND_MAX / /*89*/49 + 1) + 10,
 			time = rand() / (RAND_MAX / 100 + 1) + 50,
 			points = 151 - time;
 		struct boat_record *record;
@@ -351,12 +351,12 @@ static void boat_club(void) {
 		case TABLE_ERROR: case TABLE_REPLACE: goto catch;
 		}
 	}
-	printf("Final score:\n"
-		"id\tbest\tpoints\n");
 	{
 		struct boat_table_entry e;
 		struct boat_table_iterator it;
 		boat_table_begin(&it, &boats);
+		printf("Final score:\n"
+			"id\tbest\tpoints\n");
 		while(boat_table_next(&it, &e))
 			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
 	}
