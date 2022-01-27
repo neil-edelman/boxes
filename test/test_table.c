@@ -123,6 +123,15 @@ static unsigned lowbias32_r(unsigned x) {
 	return x;
 }
 #else /* < 32 bits */
+#if 0
+/** <https://github.com/skeeto/hash-prospector>; it doesn't say the inverse. */
+uint16_t hash16_xm2(uint16_t x) {
+	x ^= x >> 8; x *= 0x88b5u;
+	x ^= x >> 7; x *= 0xdb2du;
+	x ^= x >> 9;
+	return x;
+}
+#endif
 /** Uniform values don't really need a hash, and I'm lazy.
  @implements <int>hash_fn */
 static unsigned lowbias32(unsigned x) { return x; }
@@ -314,6 +323,7 @@ finally:
 }
 
 
+/** This is stored in the value of a table. */
 struct boat_record { int best_time, points; };
 #define TABLE_NAME boat
 #define TABLE_KEY int
@@ -354,13 +364,12 @@ static void boat_club(void) {
 	{
 		struct boat_table_entry e;
 		struct boat_table_iterator it;
-		boat_table_begin(&it, &boats);
 		printf("Final score:\n"
 			"id\tbest\tpoints\n");
+		boat_table_begin(&it, &boats);
 		while(boat_table_next(&it, &e))
 			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
 	}
-
 	{ success = 1; goto finally; }
 catch:
 	perror("boats"), assert(0);
@@ -425,7 +434,7 @@ int main(void) {
 #if 0
 	{ /* Linked dictionary. */
 		struct entry_pool buckets = POOL_IDLE;
-		const size_t limit = (size_t)500000/*0<-This takes a while to hash up.*/;
+		const size_t limit = (size_t)500000/*0<-This takes a while to set up.*/;
 		struct dict_entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
 			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
 		struct key_hash khash = TABLE_IDLE;
@@ -585,13 +594,6 @@ static size_t fnv_64a_str(const char *const str) {
 static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
 #endif
 
-/** <https://github.com/skeeto/hash-prospector> */
-uint16_t hash16_xm2(uint16_t x) {
-	x ^= x >> 8; x *= 0x88b5u;
-	x ^= x >> 7; x *= 0xdb2du;
-	x ^= x >> 9;
-	return x;
-}
 
 #endif
 
