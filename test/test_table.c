@@ -310,14 +310,71 @@ catch:
 	perror("nato"), assert(0);
 finally:
 	nato_table_(&nato);
+	printf("\n");
+}
+
+
+struct boat_record { int best_time, points; };
+#define TABLE_NAME boat
+#define TABLE_KEY int
+#define TABLE_UINT unsigned
+#define TABLE_VALUE struct boat_record
+#define TABLE_HASH &int_hash
+#define TABLE_INVERSE &int_inv_hash
+#include "../src/table.h"
+/** <https://stackoverflow.com/q/59091226/2472827>. */
+static void boat_club(void) {
+	struct boat_table boats = TABLE_IDLE;
+	size_t i;
+	int success = 0;
+	printf("Boat club races:\n");
+	for(i = 0; i < 1000; i++) {
+		/* Pigeon-hole principle ensures collisions. */
+		const int id = rand() / (RAND_MAX / 89 + 1) + 10,
+			time = rand() / (RAND_MAX / 100 + 1) + 50,
+			points = 151 - time;
+		struct boat_record *record;
+		/*printf("Boat #%d had a time of %d, giving them %d points.\n",
+			id, time, points);*/
+		switch(boat_table_compute(&boats, id, &record)) {
+		case TABLE_UNIQUE:
+			record->best_time = time; record->points = points; break;
+		case TABLE_YIELD:
+			if(time < record->best_time) {
+				printf("#%d best time %d -> %d.\n", id, record->best_time, time);
+				record->best_time = time;
+			}
+			/*printf("#%d points %d -> %d.\n",
+				id, record->points, record->points + points);*/
+			record->points += points;
+			break;
+		case TABLE_ERROR: case TABLE_REPLACE: goto catch;
+		}
+	}
+	printf("Final score:\n"
+		"id\tbest\tpoints\n");
+	{
+		struct boat_table_entry e;
+		struct boat_table_iterator it;
+		boat_table_begin(&it, &boats);
+		while(boat_table_next(&it, &e))
+			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
+	}
+
+	{ success = 1; goto finally; }
+catch:
+	perror("boats"), assert(0);
+finally:
+	boat_table_(&boats);
+	printf("\n");
 }
 
 
 /** Too lazy to do separate tests. */
 static void test_default(void) {
-	printf("Testing get.\n");
 	struct int_table t = TABLE_IDLE;
 	int one, two, def;
+	printf("Testing get defaults.\n");
 	int_table_try(&t, 1);
 	int_table_try(&t, 2);
 	printf("Table %s.\n", int_table_to_string(&t));
@@ -337,61 +394,7 @@ static void test_default(void) {
 	printf("get or 42: 1:%u, 2:%u, 3:%u\n", one, two, def);
 	assert(one == 1 && two == 2 && def == 42);
 	int_table_(&t);
-}
-
-
-struct boat_record { int best_time, points; };
-struct boat_table_entry;
-static void boat_to_string(struct boat_table_entry, char (*)[12]);
-#define TABLE_NAME boat
-#define TABLE_KEY int
-#define TABLE_UINT unsigned
-#define TABLE_VALUE struct boat_record
-#define TABLE_HASH &int_hash
-#define TABLE_INVERSE &int_inv_hash
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &boat_to_string
-#include "../src/table.h"
-/** @implements <boat>to_string_fn */
-static void boat_to_string(const struct boat_table_entry e, char (*const a)[12]) {
-	/* Should be more careful about overflow? */
-	/*sprintf(*a, "#%d(%d)", b->id.key, b->points);*/
-	
-	sprintf(*a, "#%d(%d)", e.key, e.value.points);
-}
-/** <https://stackoverflow.com/q/59091226/2472827>. */
-static void boat_club(void) {
-	/* fixme: TABLE_IDLE does not have enough info; how does this not give
-	 a warning? */
-	struct boat_table boats = TABLE_IDLE;
-	size_t i;
-	int success = 0;
-	printf("Boat club races:\n");
-	for(i = 0; i < 10; i++) {
-		/* Pigeon-hole principle ensures collisions. */
-		const int id = rand() / (RAND_MAX / 89 + 1) + 10,
-			time = rand() / (RAND_MAX / 100 + 1) + 50,
-			points = 151 - time;
-		struct boat_record *record;
-		printf("Boat #%d had a time of %d, giving them %d points.\n",
-			id, time, points);
-		switch(boat_table_compute(&boats, id, &record)) {
-		case TABLE_UNIQUE:
-			record->best_time = time; record->points = points; break;
-		case TABLE_YIELD:
-			if(time < record->best_time) record->best_time = time;
-			record->points += points;
-			break;
-		case TABLE_ERROR: case TABLE_REPLACE: goto catch;
-		}
-	}
-	printf("Final score: %s\n", boat_table_to_string(&boats));
-	{ success = 1; goto finally; }
-catch:
-	perror("boats"), assert(0);
-finally:
-	boat_table_(&boats);
+	printf("\n");
 }
 
 
@@ -403,9 +406,9 @@ int main(void) {
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s);
-	test_default();
 	nato();
 	boat_club();
+	test_default();
 
 	return EXIT_SUCCESS;
 
