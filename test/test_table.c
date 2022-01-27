@@ -313,6 +313,87 @@ finally:
 }
 
 
+/** Too lazy to do separate tests. */
+static void test_default(void) {
+	printf("Testing get.\n");
+	struct int_table t = TABLE_IDLE;
+	int one, two, def;
+	int_table_try(&t, 1);
+	int_table_try(&t, 2);
+	printf("Table %s.\n", int_table_to_string(&t));
+	one = int_table_get_or(&t, 1, 7);
+	two = int_table_get_or(&t, 2, 7);
+	def = int_table_get_or(&t, 3, 7);
+	printf("get or default(7): 1:%u, 2:%u, 3:%u\n", one, two, def);
+	assert(one == 1 && two == 2 && def == 7);
+	one = int_table_get(&t, 1);
+	two = int_table_get(&t, 2);
+	def = int_table_get(&t, 3);
+	printf("get or 0: 1:%u, 2:%u, 3:%u\n", one, two, def);
+	assert(one == 1 && two == 2 && def == 0);
+	one = int_table_42_get(&t, 1);
+	two = int_table_42_get(&t, 2);
+	def = int_table_42_get(&t, 3);
+	printf("get or 42: 1:%u, 2:%u, 3:%u\n", one, two, def);
+	assert(one == 1 && two == 2 && def == 42);
+	int_table_(&t);
+}
+
+
+struct boat_record { int best_time, points; };
+static void boat_to_string(int, char (*)[12]);
+#define TABLE_NAME boat
+#define TABLE_KEY int
+#define TABLE_UINT unsigned
+#define TABLE_VALUE struct boat_record
+#define TABLE_HASH &int_hash
+#define TABLE_INVERSE &int_inv_hash
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_TO_STRING &boat_to_string
+#include "../src/table.h"
+/** @implements <boat>to_string_fn */
+static void boat_to_string(const int id, char (*const a)[12]) {
+	/* Should be more careful about overflow? */
+	/*sprintf(*a, "#%d(%d)", b->id.key, b->points);*/
+	struct boat_record *r;
+	sprintf(*a, "#%d", id);
+}
+/** <https://stackoverflow.com/q/59091226/2472827>. */
+static void boat_club(void) {
+	/* fixme: TABLE_IDLE does not have enough info; how does this not give
+	 a warning? */
+	struct boat_table boats = TABLE_IDLE;
+	size_t i;
+	int success = 0;
+	printf("Boat club races:\n");
+	for(i = 0; i < 10; i++) {
+		/* Pigeon-hole principle ensures collisions. */
+		const int id = rand() / (RAND_MAX / 89 + 1) + 10,
+			time = rand() / (RAND_MAX / 100 + 1) + 50,
+			points = 151 - time;
+		struct boat_record *record;
+		printf("Boat #%d had a time of %d, giving them %d points.\n",
+			id, time, points);
+		switch(boat_table_compute(&boats, id, &record)) {
+		case TABLE_UNIQUE:
+			record->best_time = time; record->points = points; break;
+		case TABLE_YIELD:
+			if(time < record->best_time) record->best_time = time;
+			record->points += points;
+			break;
+		case TABLE_ERROR: case TABLE_REPLACE: goto catch;
+		}
+	}
+	printf("Final score: %s\n", boat_table_to_string(&boats));
+	{ success = 1; goto finally; }
+catch:
+	perror("boats"), assert(0);
+finally:
+	boat_table_(&boats);
+}
+
+
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct vec4_pool vec4s = POOL_IDLE;
@@ -321,63 +402,23 @@ int main(void) {
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s);
+	test_default();
 	nato();
-	printf("Testing get.\n");
-	{ /* Too lazy to do separate tests. */
-		struct int_table is = TABLE_IDLE;
-		int one, two, def;
-		int_table_try(&is, 1);
-		int_table_try(&is, 2);
-		printf("Table %s.\n", int_table_to_string(&is));
-		one = int_table_get_or(&is, 1, 7);
-		two = int_table_get_or(&is, 2, 7);
-		def = int_table_get_or(&is, 3, 7);
-		printf("get or default(7): 1:%u, 2:%u, 3:%u\n", one, two, def);
-		assert(one == 1 && two == 2 && def == 7);
-		one = int_table_get(&is, 1);
-		two = int_table_get(&is, 2);
-		def = int_table_get(&is, 3);
-		printf("get or 0: 1:%u, 2:%u, 3:%u\n", one, two, def);
-		assert(one == 1 && two == 2 && def == 0);
-		one = int_table_42_get(&is, 1);
-		two = int_table_42_get(&is, 2);
-		def = int_table_42_get(&is, 3);
-		printf("get or 42: 1:%u, 2:%u, 3:%u\n", one, two, def);
-		assert(one == 1 && two == 2 && def == 42);
-		int_table_(&is);
-	}
+	boat_club();
 
-#if 0
-	{ /* Boats. */
-		struct boat bs[60000]; /* <- Non-trivial stack requirement. Please? */
-		size_t bs_size = sizeof bs / sizeof *bs;
-		struct id_hash ids = TABLE_IDLE;
-		each_boat(bs, bs_size, &fill_boat);
-		printf("Boat club races individually: ");
-		print_boats(bs, bs_size);
-		printf("Now adding up:\n");
-		each_hash_boat(&ids, bs, bs_size, &put_in_hash);
-		/*printf("Final score: %s.\n", id_hash_to_string(&ids));*/
-		id_hash_(&ids);
-	}
-#endif
+	return EXIT_SUCCESS;
+
+
+
+
+
+
 
 
 
 
 
 #if 0
-	{ /* Automated tests. The ones that have no pool are self-contained hashes,
-	 and we just test them on the stack. The ones that do require more memory
-	 from a parent node, which the internals to `Set` don't know of. */
-		struct string_pool strings = POOL_IDLE;
-		struct boat_pool boats = POOL_IDLE;
-		int_hash_test(0, 0);
-		byteint_hash_test(0, 0);
-		string_hash_test(&string_from_pool, &strings), string_pool_(&strings);
-		vec4_hash_test(0, 0);
-		id_hash_test(&id_from_pool, &boats), boat_pool_(&boats);
-	}
 	{ /* Linked dictionary. */
 		struct entry_pool buckets = POOL_IDLE;
 		const size_t limit = (size_t)500000/*0<-This takes a while to hash up.*/;
@@ -505,7 +546,6 @@ finally:
 		entry_pool_(&buckets);
 	}
 #endif
-	return EXIT_SUCCESS;
 }
 
 
@@ -557,112 +597,6 @@ uint16_t hash16_xm2(uint16_t x) {
 
 
 
-/* I wrote to solve
- [this problem](https://stackoverflow.com/q/59091226/2472827). */
-
-static unsigned boat_id_hash(const int id) { return (unsigned)id; }
-static int boat_id_is_equal(const int a, const int b) { return a == b; }
-static void boat_id_to_string(const int *const id, char (*const a)[12]);
-static void fill_boat_id(int *const id);
-/* Code generation for `id_hash`. */
-#define TABLE_NAME id
-#define TABLE_KEY int
-/* Don't need two `int id; unsigned hash = id;` per datum. */
-#define TABLE_NO_CACHE // no
-#define TABLE_HASH &boat_id_hash
-#define TABLE_IS_EQUAL &boat_id_is_equal
-#define TABLE_TEST &fill_boat_id
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &boat_id_to_string
-#include "../src/table.h"
-struct boat {
-	struct id_hashlink id;
-	int best_time;
-	int points;
-};
-/* Container of `id`. */
-static struct boat *id_upcast(int *const id) {
-	/* The `offhashof` are both (now) zero, see <tag:Boat>, so this could be
-	 written more succinctly. */
-	return (struct boat *)(void *)((char *)id - offhashof(struct boat, id)
-		- offhashof(struct id_hashlink, key));
-}
-/* `const` container of `id`. */
-static const struct boat *id_upcast_c(const int *const id) {
-	/* As this: (or cast) */
-	return (const struct boat *)(const void *)((const char *)id);
-}
-static void boat_to_string(const struct boat *const b, char (*const a)[12]) {
-	/* Should be more careful about overflow? */
-	sprintf(*a, "#%d(%d)", b->id.key, b->points);
-}
-static void boat_id_to_string(const int *const id, char (*const a)[12]) {
-	boat_to_string(id_upcast_c(id), a);
-}
-/** <http://c-faq.com/lib/randrange.html>. Pigeon-hole principle ensures
- collisions > 89; this is good because we want `b` to be involved in several
- races. */
-static void fill_boat(struct boat *const b) {
-	assert(b);
-	b->id.key = rand() / (RAND_MAX / 89 + 1) + 10;
-	b->best_time = rand() / (RAND_MAX / 100 + 1) + 50;
-	b->points = 151 - b->best_time;
-}
-static void fill_boat_id(int *const id) { fill_boat(id_upcast(id)); }
-/* Individual races. */
-static void print_boats(const struct boat *const bs, const size_t bs_size) {
-	const size_t bs_eff_size = bs_size > 1000 ? 1000 : bs_size;
-	char a[12];
-	size_t b;
-	assert(bs);
-	printf("[ ");
-	for(b = 0; b < bs_eff_size; b++)
-		boat_to_string(bs + b, &a),
-		printf("%s%s", b ? ", " : "", a);
-	printf("%s]\n", bs_size > bs_eff_size ? ",…" : " ");
-}
-/** @implements <id>bi_predicate */
-static int add_up_score(int *const original, int *const replace) {
-	struct boat *const o = id_upcast(original), *const r = id_upcast(replace);
-	char a[12];
-	boat_to_string(o, &a);
-	/*printf("Adding %d to %s.\n", r->points, a); Takes too long to print. */
-	o->points += r->points;
-	r->points = 0;
-	if(r->best_time < o->best_time) o->best_time = r->best_time;
-	return 0; /* Always false because we've sucked the points from `replace`. */
-}
-static void put_in_hash(struct id_hash *const hash, struct boat *const b) {
-	/* Should always reserve memory first if we may be expanding the buffer for
-	 error detection; otherwise it's awkward to tell. */
-	if(!id_hash_reserve(hash, 1)) { perror("put_in_hash"); return; }
-	id_hash_policy_put(hash, &b->id, &add_up_score);
-}
-static void each_boat(struct boat *const bs, const size_t bs_size,
-	void (*const action)(struct boat *)) {
-	size_t b;
-	assert(bs);
-	for(b = 0; b < bs_size; b++) action(bs + b);
-}
-static void each_hash_boat(struct id_hash *const ids, struct boat *const bs,
-	const size_t bs_size,
-	void (*const action)(struct id_hash *const, struct boat *)) {
-	size_t b;
-	assert(bs);
-	for(b = 0; b < bs_size; b++) action(ids, bs + b);
-}
-/* Dynamic memory pool for storing boats, `boat_pool`. */
-#define POOL_NAME boat
-#define POOL_TYPE struct boat
-#include "pool.h"
-/** Parent-key for testing. */
-static struct id_hashlink *id_from_pool(void *const vboats) {
-	struct boat_pool *const boats = vboats;
-	struct boat *b = boat_pool_new(boats);
-	assert(boats);
-	return b ? &b->id : 0;
-}
 
 
 /* Linked dictionary. */
