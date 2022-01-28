@@ -407,6 +407,174 @@ static void test_default(void) {
 }
 
 
+/** Linked dictionary value with file. */
+struct dict_link { struct dict_link *prev, *next; };
+struct dict_table_entry;
+static void dict_to_string(struct dict_table_entry, char (*)[12]);
+#define TABLE_NAME dict
+#define TABLE_KEY char *
+#define TABLE_VALUE struct dict_link
+#define TABLE_HASH &djb2_hash
+#define TABLE_IS_EQUAL &string_is_equal
+#define TABLE_TEST
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_TO_STRING &dict_to_string
+#include "../src/table.h"
+/** @implements <dict>to_string_fn */
+static void dict_to_string(const struct dict_table_entry e, char (*const a)[12])
+	{ strncpy(*a, e.key, sizeof(*a) - 1), (*a)[sizeof(*a) - 1] = '\0'; }
+/** We are testing it twice, once with made up words.
+ @implements <dict>fill_fn */
+static int dict_from_void(void *const s16s, struct dict_table_entry *d) {
+	d->value.prev = d->value.next = 0;
+	return !!(d->key = str16_from_pool(s16s));
+}
+/* This holds the real dictionary. */
+#define ARRAY_NAME char
+#define ARRAY_TYPE char
+#include "array.h"
+/** Append a text file, `fn`, to `c`, and add a '\0'. A partial read may occur.
+ @return Success.
+ @throws[EISEQ] The text file has embedded nulls. @throws[fopen, fread, malloc]
+ @throws[ERANGE, EISEQ] May if the standard library does not follow POSIX. */
+static int append_file(struct char_array *c, const char *const fn) {
+	FILE *fp = 0;
+	const size_t granularity = 1024;
+	size_t nread, zero_len, file_size;
+	char *cursor, *terminating, *buffer;
+	int success = 0;
+	assert(c && fn);
+	if(!(fp = fopen(fn, "r"))) goto catch;
+	do if(!(cursor = char_array_buffer(c, granularity))
+		|| (nread = fread(cursor, 1, granularity, fp), ferror(fp))
+		|| !char_array_append(c, nread)) goto catch;
+	while(nread == granularity);
+	fclose(fp), fp = 0;
+	if(!(terminating = char_array_new(c))) goto catch;
+	*terminating = '\0'; /* Embed '\0'. */
+	/* The file can have no embedded '\0'. */
+	buffer = c->data;
+	zero_len = (size_t)(strchr(buffer, '\0') - buffer);
+	file_size = c->size, assert(file_size > 0);
+	if(zero_len != file_size - 1) { errno = EILSEQ; goto catch; }
+	{ success = 1; goto finally; }
+catch:
+	if(!errno) errno = EILSEQ; /* On POSIX, this will never be true. */
+finally:
+	if(fp) fclose(fp);
+	return success;
+}
+#include "lex.h" /*  */
+/** The manual test. */
+static void dict(void) {
+	struct char_array english = ARRAY_IDLE;
+	const char *const inglesi = "test/Tutte_le_parole_inglesi.txt";
+	struct dict_table dict = TABLE_IDLE;
+	struct lex_state state = { 0, 0, 0 };
+	printf("Testing dictionary.\n");
+	if(!append_file(&english, inglesi)) goto catch;
+	printf("Dictionary initially: %s\n",
+		/*english.data spammm*/dict_table_to_string(&dict));
+	state.cursor = english.data, state.line = 1;
+	printf("{\n");
+	while(lex(&state)) printf("\t\"%s\"\n", state.word);
+	printf("}\n");
+	/*printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
+		prev ? prev->key : "start", found->key,
+		next ? next->key : "end");
+	assert(found == *sp_e);*/
+	goto finally;
+catch:
+	perror("dict"), assert(0);
+finally:
+	dict_table_(&dict);
+	char_array_(&english);
+	printf("\n");
+}
+
+#if 0
+{ /* Fill it with the actual dictionary. */
+	const char *const english = "test/Tutte_le_parole_inglesi.txt";
+	FILE *fp = fopen(english, "r");
+	struct entry_pool buckets = POOL_IDLE;
+	struct dict_entry *e, *sp_es[20], **sp_e;
+	size_t sp_es_size = sizeof sp_es / sizeof *sp_es,
+		sp_e_to_go = sp_es_size;
+	struct key_hash khash = TABLE_IDLE;
+	struct key_list klist;
+	struct key_hashlink *elem;
+	struct dict_entry *found;
+	size_t line = 1, words_to_go = 216555, key_len;
+	assert(RAND_MAX >= words_to_go);
+	key_list_clear(&klist);
+	if(!fp) goto catch;
+	/* Read file. */
+	for( ; ; line++) {
+		char *key_end;
+		if(!(e = entry_pool_new(&buckets))) goto catch;
+		e->elem.key = e->key;
+		if(!fgets(e->key, sizeof e->key, fp)) {
+			/* Doesn't really do anything. */
+			entry_pool_remove(&buckets, e);
+			if(ferror(fp)) { if(!errno) errno = EILSEQ; goto catch; }
+			break;
+		}
+		key_len = strlen(e->key);
+		assert(key_len);
+		key_end = e->key + key_len - 1;
+		/* Words > sizeof e->key - 2, (I guess electroencapholographist is
+		 not on there.) */
+		if(*key_end != '\n') { errno = ERANGE; goto catch; }
+		*key_end = '\0';
+		/* Never mind about the value; it is not used. */
+		elem = key_hash_policy_put(&khash, &e->elem, 0);
+		if(elem) {
+			fprintf(stderr, "%lu: ignoring %s already in word list.\n",
+				(unsigned long)line, e->key);
+			entry_pool_remove(&buckets, e);
+			words_to_go--;
+			continue;
+		}
+		key_list_push(&klist, &e->node);
+		/* In order already: must do the probability thing. */
+		if(!words_to_go) {
+			fprintf(stderr, "%lu: count inaccurate.\n",
+				(unsigned long)line);
+			continue;
+		}
+		if((unsigned)rand() / (RAND_MAX / (unsigned)words_to_go-- + 1)
+			>= sp_e_to_go) continue;
+		printf("Looking for %s.\n", e->key);
+		sp_es[sp_es_size - sp_e_to_go--] = e;
+	}
+	printf("Sorting %lu lines, (they are presumably already sorted.)\n",
+		(unsigned long)line - 1);
+	key_list_sort(&klist);
+	for(sp_e = sp_es; sp_e < sp_es + sp_es_size; sp_e++) {
+		const struct dict_entry *prev, *next;
+		elem = key_hash_get(&khash, (*sp_e)->key);
+		assert(elem);
+		found = elem_upcast(elem);
+		prev = entry_prev(found);
+		next = entry_next(found);
+		printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
+			prev ? prev->key : "start", found->key,
+			next ? next->key : "end");
+		assert(found == *sp_e);
+	}
+	goto finally;
+catch:
+	fprintf(stderr, "%lu:", (unsigned long)line);
+	perror(english);
+finally:
+	if(fp) fclose(fp);
+	key_hash(&khash);
+	entry_pool_(&buckets);
+}
+#endif
+
+
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct vec4_pool vec4s = POOL_IDLE;
@@ -415,150 +583,13 @@ int main(void) {
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s);
+	dict_table_test(&dict_from_void, &strings), str16_pool_(&strings);
 	nato();
 	boat_club();
 	test_default();
+	dict();
 
 	return EXIT_SUCCESS;
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-	{ /* Linked dictionary. */
-		struct entry_pool buckets = POOL_IDLE;
-		const size_t limit = (size_t)500000/*0<-This takes a while to set up.*/;
-		struct dict_entry *e = 0, *sp_es[20], **sp_e, **sp_e_end = sp_es,
-			*const*const sp_e_lim = sp_es + sizeof sp_es / sizeof *sp_es;
-		struct key_hash khash = TABLE_IDLE;
-		struct key_list klist;
-		struct key_hashlink *elem;
-		struct dict_entry *found;
-		size_t line, unique = 0;
-		int is_used = 1;
-		key_list_clear(&klist);
-		for(line = 0; line < limit; line++) {
-			if(is_used && !(e = entry_pool_new(&buckets)))
-				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
-			entry_fill(e);
-			if(!key_hash_reserve(&khash, 1))
-				{ perror("Memory error"); assert(0); return EXIT_FAILURE; }
-			/* Don't go replacing elements; `elem` is hash on collision. */
-			elem = key_hash_policy_put(&khash, &e->elem, 0);
-			if(elem) { assert(elem == &e->elem), is_used = 0; continue; }
-			is_used = 1;
-			unique++;
-			/* Keep the list up to date with the hashmap. */
-			key_list_push(&klist, &e->node);
-			/* Test if we can find `sp_e_lim` of them; presumably they will be
-			 randomised by sorting, but accessable to the `KeySet` on `O(1)`. */
-			if(sp_e_end >= sp_e_lim) continue;
-			printf("Looking for %s.\n", e->key);
-			*(sp_e_end++) = e;
-		}
-		printf("Sorting %lu elements.\n", (unsigned long)unique);
-		key_list_sort(&klist);
-		for(sp_e = sp_es; sp_e < sp_e_end; sp_e++) {
-			const struct dict_entry *prev, *next;
-			elem = key_hash_get(&khash, (*sp_e)->key);
-			assert(elem);
-			found = elem_upcast(elem);
-			prev = entry_prev(found);
-			next = entry_next(found);
-			printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
-				prev ? prev->key : "start", found->key,
-				next ? next->key : "end");
-			assert(found == *sp_e);
-		}
-		key_hash_(&khash);
-		entry_pool_(&buckets);
-	}
-	{ /* Fill it with the actual dictionary. */
-		const char *const english = "test/Tutte_le_parole_inglesi.txt";
-		FILE *fp = fopen(english, "r");
-		struct entry_pool buckets = POOL_IDLE;
-		struct dict_entry *e, *sp_es[20], **sp_e;
-		size_t sp_es_size = sizeof sp_es / sizeof *sp_es,
-			sp_e_to_go = sp_es_size;
-		struct key_hash khash = TABLE_IDLE;
-		struct key_list klist;
-		struct key_hashlink *elem;
-		struct dict_entry *found;
-		size_t line = 1, words_to_go = 216555, key_len;
-		assert(RAND_MAX >= words_to_go);
-		key_list_clear(&klist);
-		if(!fp) goto catch;
-		/* Read file. */
-		for( ; ; line++) {
-			char *key_end;
-			if(!(e = entry_pool_new(&buckets))) goto catch;
-			e->elem.key = e->key;
-			if(!fgets(e->key, sizeof e->key, fp)) {
-				/* Doesn't really do anything. */
-				entry_pool_remove(&buckets, e);
-				if(ferror(fp)) { if(!errno) errno = EILSEQ; goto catch; }
-				break;
-			}
-			key_len = strlen(e->key);
-			assert(key_len);
-			key_end = e->key + key_len - 1;
-			/* Words > sizeof e->key - 2, (I guess electroencapholographist is
-			 not on there.) */
-			if(*key_end != '\n') { errno = ERANGE; goto catch; }
-			*key_end = '\0';
-			/* Never mind about the value; it is not used. */
-			elem = key_hash_policy_put(&khash, &e->elem, 0);
-			if(elem) {
-				fprintf(stderr, "%lu: ignoring %s already in word list.\n",
-					(unsigned long)line, e->key);
-				entry_pool_remove(&buckets, e);
-				words_to_go--;
-				continue;
-			}
-			key_list_push(&klist, &e->node);
-			/* In order already: must do the probability thing. */
-			if(!words_to_go) {
-				fprintf(stderr, "%lu: count inaccurate.\n",
-					(unsigned long)line);
-				continue;
-			}
-			if((unsigned)rand() / (RAND_MAX / (unsigned)words_to_go-- + 1)
-				>= sp_e_to_go) continue;
-			printf("Looking for %s.\n", e->key);
-			sp_es[sp_es_size - sp_e_to_go--] = e;
-		}
-		printf("Sorting %lu lines, (they are presumably already sorted.)\n",
-			(unsigned long)line - 1);
-		key_list_sort(&klist);
-		for(sp_e = sp_es; sp_e < sp_es + sp_es_size; sp_e++) {
-			const struct dict_entry *prev, *next;
-			elem = key_hash_get(&khash, (*sp_e)->key);
-			assert(elem);
-			found = elem_upcast(elem);
-			prev = entry_prev(found);
-			next = entry_next(found);
-			printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
-				prev ? prev->key : "start", found->key,
-				next ? next->key : "end");
-			assert(found == *sp_e);
-		}
-		goto finally;
-catch:
-		fprintf(stderr, "%lu:", (unsigned long)line);
-		perror(english);
-finally:
-		if(fp) fclose(fp);
-		key_hash(&khash);
-		entry_pool_(&buckets);
-	}
-#endif
 }
 
 

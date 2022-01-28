@@ -258,13 +258,13 @@ static void (*PN_(to_string))(PN_(entry_c), char (*)[12]);
 /** `table` `fn` */
 static void PN_(graph)(const struct N_(table) *const table,
 	const char *const fn) { (void)table, (void)fn; }
-static void PN_(unused_graph_coda)(void);
-static void PN_(unused_graph)(void)
-	{ PN_(graph)(0, 0); PN_(unused_graph_coda)(); }
-static void PN_(unused_graph_coda)(void) { PN_(unused_graph)(); }
 /** `key` `z` */
 static void PN_(to_string)(PN_(key_c) key, char (*z)[12])
 	{ (void)key, strcpy(*z, "<key>"); }
+static void PN_(unused_temp_coda)(void);
+static void PN_(unused_temp)(void)
+	{ PN_(graph)(0, 0); PN_(to_string)(0, 0); PN_(unused_temp_coda)(); }
+static void PN_(unused_temp_coda)(void) { PN_(unused_temp)(); }
 #endif
 
 /** The capacity of a non-idle `table` is always a power-of-two. */
@@ -716,7 +716,7 @@ static int N_(table_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *target;
 	PN_(uint) i, prv = TABLE_NULL, nxt, hash = PN_(hash)(key);
-	char z[12];
+	/*char z[12];*/
 	assert(table);
 	if(!table || !table->buckets || !table->size) return 0;
 	/* Find item and keep track of previous. */
@@ -732,13 +732,13 @@ static int N_(table_remove)(struct N_(table) *const table,
 			&& i != TABLE_NULL);
 		nxt = target->next;
 	}
-	PN_(to_string)(key, &z);
-	/*printf("remove key %s: prev %lx, i %lx, next %lx\n",
+	/*PN_(to_entry)(table, ) PN_(to_string)(, &z);...
+	printf("remove key %s: prev %lx, i %lx, next %lx\n",
 		z, (unsigned long)prv, (unsigned long)i, (unsigned long)nxt);*/
 	if(prv != TABLE_NULL) { /* Open entry. */
 		struct PN_(bucket) *previous = table->buckets + prv;
-		PN_(to_string)(PN_(bucket_key)(previous), &z);
-		/*printf("\tprev was %s, making it point to next\n", z);*/
+		/*PN_(to_string)(PN_(bucket_entry)(previous), &z);
+		printf("\tprev was %s, making it point to next\n", z);*/
 		previous->next = target->next;
 	} else if(target->next != TABLE_END) { /* Head closed entry and others. */
 		struct PN_(bucket) *const second = table->buckets + (i = target->next);
