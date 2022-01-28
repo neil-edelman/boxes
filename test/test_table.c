@@ -474,12 +474,21 @@ static void dict(void) {
 	struct lex_state state = { 0, 0, 0 };
 	printf("Testing dictionary.\n");
 	if(!append_file(&english, inglesi)) goto catch;
-	printf("Dictionary initially: %s\n",
-		/*english.data spammm*/dict_table_to_string(&dict));
+	printf("Dictionary initially: %s\n", dict_table_to_string(&dict));
 	state.cursor = english.data, state.line = 1;
-	printf("{\n");
-	while(lex(&state)) printf("\t\"%s\"\n", state.word);
-	printf("}\n");
+	while(lex_dict(&state)) {
+		struct dict_link *link;
+		/*printf("\"%s\" -> line %lu\n",
+			state.word, (unsigned long)state.line);*/
+		switch(dict_table_compute(&dict, state.word, &link)) {
+		case TABLE_ERROR: goto catch;
+		case TABLE_YIELD: printf("Next line %lu: duplicate \"%s\"; ignoring.\n",
+			(unsigned long)state.line, state.word); break;
+		case TABLE_UNIQUE: link->prev = 0, link->next = 0; break;
+		case TABLE_REPLACE: assert(0);
+		}
+	}
+	printf("Dictionary finally: %s\n", dict_table_to_string(&dict));
 	/*printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
 		prev ? prev->key : "start", found->key,
 		next ? next->key : "end");

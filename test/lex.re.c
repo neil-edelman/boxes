@@ -2,9 +2,7 @@
 #include <assert.h>
 #include "../../test/lex.h"
 
-#include <stdio.h>
-
-int lex(struct lex_state *lex) {
+int lex_dict(struct lex_state *lex) {
 	unsigned char *YYCURSOR = (unsigned char *)lex->cursor, *YYMARKER, *s0, *s1;
 	int success = 0;
 	/*!stags:re2c format = 'unsigned char *@@;\n'; */
