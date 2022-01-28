@@ -130,9 +130,8 @@ static void PN_(graph)(const struct N_(table) *const table,
 		if(b->next != TABLE_NULL) {
 			const char *const closed
 				= PN_(to_bucket)(table, b->hash) == i ? "⬤" : "◯";
-			PN_(entry) entry;
 			char z[12];
-			PN_(to_entry)(b, &entry), PN_(to_string)(entry, &z);
+			PN_(to_string)(PN_(bucket_key)(b), &z);
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
 				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
 				"\t\t<TD PORT=\"%lu\"%s>%s</TD>\n",
@@ -279,8 +278,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		struct sample *s = trials.sample + i;
 		size_t j;
 		if(!fill(parent, &s->_.entry)) { assert(0); return; }
-		/*PN_(to_string)(PN_(entry_key)(s->_.entry), &z);*/
-		PN_(to_string)(s->_.entry, &z);
+		PN_(to_string)(PN_(entry_key)(s->_.entry), &z);
 		s->is_in = 0;
 		for(j = 0; j < i && !PN_(eq_en)(s->_.entry, trials.sample[j]._.entry);
 			j++);
@@ -327,7 +325,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		assert(success && PN_(eq_en)(s->_.entry, entry));
 		if(table.size < 10000 && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
-			PN_(to_string)(/*PN_(entry_key)(*/s->_.entry, &z);
+			PN_(to_string)(PN_(entry_key)(s->_.entry), &z);
 			printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,
 				z, table_result_str[result], PN_(table_to_string)(&table));
 			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-%lu.gv", (unsigned long)i+1);

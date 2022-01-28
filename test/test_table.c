@@ -476,7 +476,7 @@ finally:
 #define TABLE_DEFAULT 0
 #define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define TABLE_TO_STRING &dict_to_string
+#define TABLE_TO_STRING &string_to_string
 #include "../src/table.h"
 
 
@@ -520,7 +520,7 @@ static void dict(void) {
 		printf("%s\n", link_upcast(i)->word);
 	}*/
 	{
-		char *rando[] = { "HIPPOPOTAMUSES", "EMU", "ZYGON", "GEKO" },
+		char *rando[] = { "HIPPOPOTAMUSES", "EMU", "ZYGON", "LIZARDS" },
 			**r, **r_end;
 		for(r = rando, r_end = r + sizeof rando / sizeof *rando;
 			r < r_end; r++) {
@@ -530,8 +530,8 @@ static void dict(void) {
 			printf("Chosen word: %s.\n", look);
 			if(!(found = string_table_get(&words, look)))
 				{ printf("That's weird.\n"); assert(0); continue; }
-			d = word_upcast(found);
-			printf("%s??\n", d->word);
+			/*d = word_upcast(found);
+			printf("%s??\n", d->word);*/
 		}
 	}
 	/*printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,

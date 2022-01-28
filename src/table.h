@@ -253,7 +253,7 @@ struct N_(table) { /* "Padding size," good. */
 #ifdef TABLE_TEST
 /** `f` `g` */
 static void PN_(graph)(const struct N_(table) *f, const char *g);
-static void (*PN_(to_string))(PN_(entry_c), char (*)[12]);
+static void (*PN_(to_string))(PN_(key_c), char (*)[12]);
 #else
 /** `table` `fn` */
 static void PN_(graph)(const struct N_(table) *const table,
@@ -836,7 +836,7 @@ static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it)
 
 #ifdef TABLE_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PN_(to_string))(PN_(entry_c), char (*)[12]);
+static void (*PN_(to_string))(PN_(key_c), char (*)[12]);
 static const char *(*PN_(table_to_string))(const struct N_(table) *);
 #include "../test/test_table.h"
 #endif /* test --> */
@@ -908,24 +908,21 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #endif
 #define TSZ_(n) TABLE_CAT(table_sz, SZ_(n))
 /* Check that `TABLE_TO_STRING` is a function implementing this prototype. */
-static void (*const TSZ_(actual_to_string))(PN_(entry_c), char (*)[12])
+static void (*const TSZ_(actual_to_string))(PN_(key_c), char (*)[12])
 	= (TABLE_TO_STRING);
 /** This is to line up the hash, which can have <typedef:<PN>key> a pointer or
  not, with to string, which requires a pointer. Call
  <data:<TSZ>actual_to_string> with key of `bucket` and `z`. */
 static void TSZ_(thunk_to_string)(const struct PN_(bucket) *const bucket,
-	char (*const z)[12]) {
-	PN_(entry) e;
-	PN_(to_entry)(bucket, &e);
-	TSZ_(actual_to_string)(e, z);
-}
+	char (*const z)[12])
+	{ TSZ_(actual_to_string)(PN_(bucket_key)(bucket), z); }
 #define TO_STRING &TSZ_(thunk_to_string)
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
 #ifdef TABLE_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef TABLE_TEST
-static void (*PN_(to_string))(PN_(entry_c), char (*const)[12])
+static void (*PN_(to_string))(PN_(key_c), char (*const)[12])
 	= TSZ_(actual_to_string);
 static const char *(*PN_(table_to_string))(const struct N_(table) *)
 	= &SZ_(to_string);
