@@ -513,6 +513,7 @@ static void dict(void) {
 		char *rando[] = { "HIPPOPOTAMUSES", "EMU", "ZYGON" }, **r, **r_end;
 		for(r = rando, r_end = r + sizeof rando / sizeof *rando;
 			r < r_end; r++) {
+			/* Have this, and a listnode, in a pool. Lots of waste. */
 			char *look = *r, *found;
 			struct dict *d;
 			printf("Chosen word: %s.\n", look);
@@ -615,6 +616,9 @@ finally:
 	entry_pool_(&buckets);
 }
 #endif
+
+
+/* Have an unsigned set that is a subclass of a larger parent. */
 
 
 int main(void) {
