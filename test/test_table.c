@@ -79,6 +79,9 @@ static void string_to_string(const char *const s, char (*const a)[12])
 #define TABLE_TEST /* Testing requires to string. */
 #define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
+#define TABLE_DEFAULT 0
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
 #define TABLE_TO_STRING &string_to_string
 #include "../src/table.h"
 /* A pool is convenient for testing because it allows deletion at random. */
@@ -407,30 +410,10 @@ static void test_default(void) {
 }
 
 
-/** Linked dictionary value with file. */
-struct dict_link { struct dict_link *prev, *next; };
-struct dict_table_entry;
-static void dict_to_string(struct dict_table_entry, char (*)[12]);
-#define TABLE_NAME dict
-#define TABLE_KEY char *
-#define TABLE_VALUE struct dict_link
-#define TABLE_HASH &djb2_hash
-#define TABLE_IS_EQUAL &string_is_equal
-#define TABLE_TEST
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &dict_to_string
-#include "../src/table.h"
-/** @implements <dict>to_string_fn */
-static void dict_to_string(const struct dict_table_entry e, char (*const a)[12])
-	{ strncpy(*a, e.key, sizeof(*a) - 1), (*a)[sizeof(*a) - 1] = '\0'; }
-/** We are testing it twice, once with made up words.
- @implements <dict>fill_fn */
-static int dict_from_void(void *const s16s, struct dict_table_entry *d) {
-	d->value.prev = d->value.next = 0;
-	return !!(d->key = str16_from_pool(s16s));
-}
-/* This holds the real dictionary. */
+/* Linked dictionary using string above. But first, this holds the words of a
+ real dictionary. Which we get from a file, and then parse. Usually an array is
+ unstable, but if there's a maximum size it reaches before we take pointers to
+ it, it's fine. */
 #define ARRAY_NAME char
 #define ARRAY_TYPE char
 #include "array.h"
@@ -453,7 +436,7 @@ static int append_file(struct char_array *c, const char *const fn) {
 	fclose(fp), fp = 0;
 	if(!(terminating = char_array_new(c))) goto catch;
 	*terminating = '\0'; /* Embed '\0'. */
-	/* The file can have no embedded '\0'. */
+	/* The file can have no embedded '\0'; check. */
 	buffer = c->data;
 	zero_len = (size_t)(strchr(buffer, '\0') - buffer);
 	file_size = c->size, assert(file_size > 0);
@@ -465,30 +448,80 @@ finally:
 	if(fp) fclose(fp);
 	return success;
 }
-#include "lex.h" /*  */
+/* This is the linked-list with a comparison order. */
+struct dict_listlink;
+static int dict_compare(const struct dict_listlink *,
+	const struct dict_listlink *);
+#define LIST_NAME dict
+#define LIST_EXPECT_TRAIT
+#include "list.h"
+#define LIST_COMPARE &dict_compare
+#include "list.h"
+/** This is the parent of the string, for which we also need a stable place.
+ This is a bound size as well, but we take them on-line, so we need a pool. */
+struct dict { char *word; struct dict_listlink link; };
+#define POOL_NAME dict
+#define POOL_TYPE struct dict
+#include "pool.h"
+/** `container_of` `word`. */
+static struct dict *word_upcast(char *const word)
+	{ return (struct dict *)(void *)(word - offsetof(struct dict, word)); }
+/** `container_of` `link`. */
+static const struct dict *link_upcast(const struct dict_listlink *const link)
+	{ return (const struct dict *)(const void *)
+	((const char *)link - offsetof(struct dict, link)); }
+/** Compare `a` and `b`. */
+static int dict_compare(const struct dict_listlink *const a,
+	const struct dict_listlink *const b)
+	{ return strcmp(link_upcast(a)->word, link_upcast(b)->word); }
+#include "lex.h" /* `re2c` is very useful for file input. */
 /** The manual test. */
 static void dict(void) {
 	struct char_array english = ARRAY_IDLE;
 	const char *const inglesi = "test/Tutte_le_parole_inglesi.txt";
-	struct dict_table dict = TABLE_IDLE;
+	struct string_table words = TABLE_IDLE;
+	struct dict_pool backing = POOL_IDLE;
+	struct dict_list order;
+	struct dict_listlink *i;
 	struct lex_state state = { 0, 0, 0 };
 	printf("Testing dictionary.\n");
+	/* Read all. */
 	if(!append_file(&english, inglesi)) goto catch;
-	printf("Dictionary initially: %s\n", dict_table_to_string(&dict));
+	/* Then parse. */
 	state.cursor = english.data, state.line = 1;
-	while(lex_dict(&state)) {
-		struct dict_link *link;
+	dict_list_clear(&order);
+	while(lex_dict(&state)) { /* Cut off the string in the `char` array. */
+		struct dict *d;
 		/*printf("\"%s\" -> line %lu\n",
 			state.word, (unsigned long)state.line);*/
-		switch(dict_table_compute(&dict, state.word, &link)) {
-		case TABLE_ERROR: goto catch;
-		case TABLE_YIELD: printf("Next line %lu: duplicate \"%s\"; ignoring.\n",
-			(unsigned long)state.line, state.word); break;
-		case TABLE_UNIQUE: link->prev = 0, link->next = 0; break;
-		case TABLE_REPLACE: assert(0);
+		if(string_table_is(&words, state.word))
+			{ printf("Next line %lu: duplicate \"%s\"; ignoring.\n",
+			(unsigned long)state.line, state.word); continue; }
+		if(!(d = dict_pool_new(&backing))) goto catch;
+		d->word = state.word;
+		if(!string_table_try(&words, d->word)) goto catch;
+		dict_list_push(&order, &d->link);
+	}
+	printf("Dictionary finally: %s.\n"
+		"Sorting.\n", string_table_to_string(&words));
+	dict_list_sort(&order); /* `O(n)` when it's (almost?) in order. */
+	/*for(i = dict_list_head(&order); i; i = dict_list_next(i)) {
+		const struct dict *d = link_upcast(i);
+		printf("%s\n", link_upcast(i)->word);
+	}*/
+	{
+		char *rando[] = { "HIPPOPOTAMUSES", "EMU", "ZYGON" }, **r, **r_end;
+		for(r = rando, r_end = r + sizeof rando / sizeof *rando;
+			r < r_end; r++) {
+			char *look = *r, *found;
+			struct dict *d;
+			printf("Chosen word: %s.\n", look);
+			if(!(found = string_table_get(&words, look)))
+				{ printf("That's weird.\n"); assert(0); continue; }
+			d = word_upcast(found);
+			printf("%s??\n", d->word);
 		}
 	}
-	printf("Dictionary finally: %s\n", dict_table_to_string(&dict));
 	/*printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
 		prev ? prev->key : "start", found->key,
 		next ? next->key : "end");
@@ -497,7 +530,7 @@ static void dict(void) {
 catch:
 	perror("dict"), assert(0);
 finally:
-	dict_table_(&dict);
+	string_table_(&words);
 	char_array_(&english);
 	printf("\n");
 }
@@ -592,7 +625,6 @@ int main(void) {
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s);
-	dict_table_test(&dict_from_void, &strings), str16_pool_(&strings);
 	nato();
 	boat_club();
 	test_default();
