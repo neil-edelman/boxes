@@ -410,17 +410,34 @@ static void test_default(void) {
 }
 
 
-/* Linked dictionary using string above. But first, this holds the words of a
- real dictionary. Which we get from a file, and then parse. Usually an array is
- unstable, but if there's a maximum size it reaches before we take pointers to
- it, it's fine. */
+/* Linked dictionary: linked-list with a comparison order. */
+struct dict_listlink;
+static int dict_compare(const struct dict_listlink *,
+	const struct dict_listlink *);
+#define LIST_NAME dict
+#define LIST_EXPECT_TRAIT
+#include "list.h"
+#define LIST_COMPARE &dict_compare
+#include "list.h"
+/** Associated with the word, but also a link to other words. */
+struct dict { struct dict_listlink link; char *word; };
+/* We need space for this. We take them on-line, so we need a stable pool. */
+#define POOL_NAME dict
+#define POOL_TYPE struct dict
+#include "pool.h"
+/** `container_of` `link`; `offsetof`, in this case, is zero; we could have
+ used a cast. */
+static const struct dict *link_upcast(const struct dict_listlink *const link)
+	{ return (const struct dict *)(const void *)
+	((const char *)link - offsetof(struct dict, link)); }
+/* These are the words. */
 #define ARRAY_NAME char
 #define ARRAY_TYPE char
 #include "array.h"
 /** Append a text file, `fn`, to `c`, and add a '\0'. A partial read may occur.
  @return Success.
  @throws[EISEQ] The text file has embedded nulls. @throws[fopen, fread, malloc]
- @throws[ERANGE, EISEQ] May if the standard library does not follow POSIX. */
+ @throws[ERANGE, EISEQ] Or, if the standard library does not follow POSIX. */
 static int append_file(struct char_array *c, const char *const fn) {
 	FILE *fp = 0;
 	const size_t granularity = 1024;
@@ -448,28 +465,21 @@ finally:
 	if(fp) fclose(fp);
 	return success;
 }
-/* This is the linked-list with a comparison order. */
-struct dict_listlink;
-static int dict_compare(const struct dict_listlink *,
-	const struct dict_listlink *);
-#define LIST_NAME dict
-#define LIST_EXPECT_TRAIT
-#include "list.h"
-#define LIST_COMPARE &dict_compare
-#include "list.h"
-/** This is the parent of the string, for which we also need a stable place.
- This is a bound size as well, but we take them on-line, so we need a pool. */
-struct dict { char *word; struct dict_listlink link; };
-#define POOL_NAME dict
-#define POOL_TYPE struct dict
-#include "pool.h"
-/** `container_of` `word`. */
-static struct dict *word_upcast(char *const word)
-	{ return (struct dict *)(void *)(word - offsetof(struct dict, word)); }
-/** `container_of` `link`. */
-static const struct dict *link_upcast(const struct dict_listlink *const link)
-	{ return (const struct dict *)(const void *)
-	((const char *)link - offsetof(struct dict, link)); }
+
+#define TABLE_NAME dict
+#define TABLE_KEY char *
+#define TABLE_VALUE struct dict *
+#define TABLE_HASH &djb2_hash
+#define TABLE_IS_EQUAL &string_is_equal
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_DEFAULT 0
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_TO_STRING &dict_to_string
+#include "../src/table.h"
+
+
 /** Compare `a` and `b`. */
 static int dict_compare(const struct dict_listlink *const a,
 	const struct dict_listlink *const b)
@@ -502,7 +512,7 @@ static void dict(void) {
 		if(!string_table_try(&words, d->word)) goto catch;
 		dict_list_push(&order, &d->link);
 	}
-	printf("Dictionary finally: %s.\n"
+	printf("Dictionary: %s.\n"
 		"Sorting.\n", string_table_to_string(&words));
 	dict_list_sort(&order); /* `O(n)` when it's (almost?) in order. */
 	/*for(i = dict_list_head(&order); i; i = dict_list_next(i)) {
@@ -510,7 +520,8 @@ static void dict(void) {
 		printf("%s\n", link_upcast(i)->word);
 	}*/
 	{
-		char *rando[] = { "HIPPOPOTAMUSES", "EMU", "ZYGON" }, **r, **r_end;
+		char *rando[] = { "HIPPOPOTAMUSES", "EMU", "ZYGON", "GEKO" },
+			**r, **r_end;
 		for(r = rando, r_end = r + sizeof rando / sizeof *rando;
 			r < r_end; r++) {
 			/* Have this, and a listnode, in a pool. Lots of waste. */
