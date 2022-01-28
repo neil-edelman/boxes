@@ -245,6 +245,240 @@ static int vec4_from_void(void *const vec4s, struct vec4 **const v)
 	{ return assert(vec4s), !!(*v = vec4_from_pool(vec4s)); }
 
 
+/** Too lazy to do separate tests. */
+static void test_default(void) {
+	struct int_table t = TABLE_IDLE;
+	int one, two, def;
+	printf("Testing get defaults.\n");
+	int_table_try(&t, 1);
+	int_table_try(&t, 2);
+	printf("Table %s.\n", int_table_to_string(&t));
+	one = int_table_get_or(&t, 1, 7);
+	two = int_table_get_or(&t, 2, 7);
+	def = int_table_get_or(&t, 3, 7);
+	printf("get or default(7): 1:%u, 2:%u, 3:%u\n", one, two, def);
+	assert(one == 1 && two == 2 && def == 7);
+	one = int_table_get(&t, 1);
+	two = int_table_get(&t, 2);
+	def = int_table_get(&t, 3);
+	printf("get or 0: 1:%u, 2:%u, 3:%u\n", one, two, def);
+	assert(one == 1 && two == 2 && def == 0);
+	one = int_table_42_get(&t, 1);
+	two = int_table_42_get(&t, 2);
+	def = int_table_42_get(&t, 3);
+	printf("get or 42: 1:%u, 2:%u, 3:%u\n", one, two, def);
+	assert(one == 1 && two == 2 && def == 42);
+	int_table_(&t);
+	printf("\n");
+}
+
+
+/** This is stored in the value of a table. */
+struct boat_record { int best_time, points; };
+#define TABLE_NAME boat
+#define TABLE_KEY int
+#define TABLE_UINT unsigned
+#define TABLE_VALUE struct boat_record
+#define TABLE_HASH &int_hash
+#define TABLE_INVERSE &int_inv_hash
+#include "../src/table.h"
+/** <https://stackoverflow.com/q/59091226/2472827>. */
+static void boat_club(void) {
+	struct boat_table boats = TABLE_IDLE;
+	size_t i;
+	int success = 0;
+	printf("Boat club races:\n");
+	for(i = 0; i < 1000; i++) {
+		/* Pigeon-hole principle ensures collisions. */
+		const int id = rand() / (RAND_MAX / /*89<-spam*/29 + 1) + 10,
+			time = rand() / (RAND_MAX / 100 + 1) + 50,
+			points = 151 - time;
+		struct boat_record *record;
+		/*printf("Boat #%d had a time of %d, giving them %d points.\n",
+			id, time, points);*/
+		switch(boat_table_compute(&boats, id, &record)) {
+		case TABLE_UNIQUE:
+			record->best_time = time; record->points = points; break;
+		case TABLE_YIELD:
+			if(time < record->best_time) {
+				printf("#%d best time %d -> %d.\n", id, record->best_time, time);
+				record->best_time = time;
+			}
+			/*printf("#%d points %d -> %d.\n",
+				id, record->points, record->points + points);*/
+			record->points += points;
+			break;
+		case TABLE_ERROR: case TABLE_REPLACE: goto catch;
+		}
+	}
+	{
+		struct boat_table_entry e;
+		struct boat_table_iterator it;
+		printf("Final score:\n"
+			"id\tbest\tpoints\n");
+		boat_table_begin(&it, &boats);
+		while(boat_table_next(&it, &e))
+			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
+	}
+	{ success = 1; goto finally; }
+catch:
+	perror("boats"), assert(0);
+finally:
+	boat_table_(&boats);
+	printf("\n");
+}
+
+
+/* Linked dictionary: linked-list with a comparison order indexed by a map.
+ This is just the thing we said in `TABLE_VALUE` to avoid, and probably is the
+ worst-case in terms of design of the table. It's associated, so we don't
+ really have a nice choice; were we to aggregate it, then it would be a fixed
+ size or face alignment issues. */
+struct dict_listlink;
+static int dict_compare(const struct dict_listlink *,
+	const struct dict_listlink *);
+#define LIST_NAME dict
+#define LIST_EXPECT_TRAIT
+#include "list.h"
+#define LIST_COMPARE &dict_compare
+#include "list.h"
+/** Associated with the word and a link to other words. */
+struct dict { struct dict_listlink link; char *word; };
+/** `container_of` `link`; `offsetof`, in this case, is zero; we could have
+ used a cast. */
+static const struct dict *link_upcast(const struct dict_listlink *const link)
+	{ return (const struct dict *)(const void *)
+	((const char *)link - offsetof(struct dict, link)); }
+/** Compare `a` and `b`. */
+static int dict_compare(const struct dict_listlink *const a,
+	const struct dict_listlink *const b)
+	{ return strcmp(link_upcast(a)->word, link_upcast(b)->word); }
+/* We take them on-line as they come, so we need a stable pool. */
+#define POOL_NAME dict
+#define POOL_TYPE struct dict
+#include "pool.h"
+/* Words which we read all at once from a file, modify them in-place. */
+#define ARRAY_NAME char
+#define ARRAY_TYPE char
+#include "array.h"
+/** Append a text file, `fn`, to `c`, and add a '\0'.
+ @return Success. A partial read is failure. @throws[fopen, fread, malloc]
+ @throws[EISEQ] The text file has embedded nulls.
+ @throws[ERANGE] If the standard library does not follow POSIX. */
+static int append_file(struct char_array *c, const char *const fn) {
+	FILE *fp = 0;
+	const size_t granularity = 1024;
+	size_t nread, zero_len, file_size;
+	char *cursor, *terminating, *buffer;
+	int success = 0;
+	assert(c && fn);
+	if(!(fp = fopen(fn, "r"))) goto catch;
+	do if(!(cursor = char_array_buffer(c, granularity))
+		|| (nread = fread(cursor, 1, granularity, fp), ferror(fp))
+		|| !char_array_append(c, nread)) goto catch;
+	while(nread == granularity);
+	fclose(fp), fp = 0;
+	if(!(terminating = char_array_new(c))) goto catch;
+	*terminating = '\0'; /* Embed '\0'. */
+	/* The file can have no embedded '\0'; check. */
+	buffer = c->data;
+	zero_len = (size_t)(strchr(buffer, '\0') - buffer);
+	file_size = c->size, assert(file_size > 0);
+	if(zero_len != file_size - 1) { errno = EILSEQ; goto catch; }
+	{ success = 1; goto finally; }
+catch:
+	if(!errno) errno = EILSEQ; /* On POSIX, this will never be true. */
+finally:
+	if(fp) fclose(fp);
+	return success;
+}
+/* A string set with a pointer to dict map. It duplicates data from `key` and
+ `value->word`, but table is complicated enough as it is. It has to be a
+ pointer because a table is not stable, (not guaranteed stability even looking
+ at it.) */
+#define TABLE_NAME dict
+#define TABLE_KEY char *
+#define TABLE_VALUE struct dict *
+#define TABLE_HASH &djb2_hash
+#define TABLE_IS_EQUAL &string_is_equal
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_DEFAULT 0
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_TO_STRING &string_to_string
+#include "../src/table.h"
+/* `re2c` is very useful for file input. */
+#include "lex.h"
+/** Manual test. */
+static void linked_dict(void) {
+	struct char_array english = ARRAY_IDLE;
+	const char *const inglesi_fn = "test/Tutte_le_parole_inglesi.txt";
+	struct dict_table words = TABLE_IDLE;
+	struct dict_pool backing = POOL_IDLE;
+	struct dict_list order;
+	struct lex_state state = { 0, 0, 0 }; /* Defined in <lex.h>. */
+	printf("Testing linked-dictionary.\n");
+	if(!append_file(&english, inglesi_fn)) goto catch;
+	dict_list_clear(&order);
+	state.cursor = english.data, state.line = 1;
+	while(lex_dict(&state)) { /* Cut off the string in the `char` array. */
+		struct dict **ptr, *d;
+		switch(dict_table_compute(&words, state.word, &ptr)) {
+		case TABLE_ERROR: goto catch;
+		case TABLE_REPLACE: assert(0); break; /* This can never happen. */
+		case TABLE_YIELD: printf("Next line %lu: duplicate \"%s\"; ignoring.\n",
+			(unsigned long)state.line, state.word); continue;
+		case TABLE_UNIQUE:
+			if(!(d = *ptr = dict_pool_new(&backing))) goto catch;
+			d->word = state.word;
+			dict_list_push(&order, &d->link);
+		}
+	}
+	/* Natural merge sort, `O(n)` when it's (almost?) in order. (They are
+	 presumably already sorted.) */
+	dict_list_sort(&order);
+	printf("Dictionary: %s.\n", dict_table_to_string(&words));
+	/* Print all.
+	for(i = dict_list_head(&order); i; i = dict_list_next(i))
+		printf("%s\n", link_upcast(i)->word); */
+	{
+		char *rando[] = { "HIPPOPOTAMI", "EMU", "ZYGON", "LIZARDS", "APE" },
+			*befs[] = { "HIPPOLOGY", "EMS", "ZYGOMORPHY", "LIZARD", "APAYS" },
+			*afts[] = { "HIPPOPOTAMUS","EMULATE","ZYGOPHYTE","LLAMA","APEAK" },
+			**r, **r_end;
+		for(r = rando, r_end = r + sizeof rando / sizeof *rando;
+			r < r_end; r++) {
+			struct dict *found;
+			char *look = *r, *before, *after;
+			if(!(found = dict_table_get(&words, look))) { printf(
+				"That's weird; \"%s\" wasn't found in the dictionary.\n", look);
+				assert(0); continue; }
+			before = found->link.prev
+				? link_upcast(found->link.prev)->word : "start";
+			after = found->link.next
+				? link_upcast(found->link.next)->word : "end";
+			printf("Found \"%s\" between …%s, %s, %s…\n",
+				look, before, found->word, after);
+			assert(!strcmp(look, found->word)
+				&& !strcmp(befs[r - rando], before)
+				&& !strcmp(afts[r - rando], after));
+		}
+	}
+	goto finally;
+catch:
+	perror("dict"), assert(0);
+finally:
+	dict_table_(&words);
+	dict_pool_(&backing);
+	char_array_(&english);
+	printf("\n");
+}
+
+
+/* Have an unsigned set that is a subclass of a larger parent. */
+
+
 /* A histogram of lengths' defined as a map with the pointers to the keys
  recorded as a linked-list. */
 struct nato_list { const char *alpha; struct nato_list *next; };
@@ -326,312 +560,6 @@ finally:
 }
 
 
-/** This is stored in the value of a table. */
-struct boat_record { int best_time, points; };
-#define TABLE_NAME boat
-#define TABLE_KEY int
-#define TABLE_UINT unsigned
-#define TABLE_VALUE struct boat_record
-#define TABLE_HASH &int_hash
-#define TABLE_INVERSE &int_inv_hash
-#include "../src/table.h"
-/** <https://stackoverflow.com/q/59091226/2472827>. */
-static void boat_club(void) {
-	struct boat_table boats = TABLE_IDLE;
-	size_t i;
-	int success = 0;
-	printf("Boat club races:\n");
-	for(i = 0; i < 1000; i++) {
-		/* Pigeon-hole principle ensures collisions. */
-		const int id = rand() / (RAND_MAX / /*89*/49 + 1) + 10,
-			time = rand() / (RAND_MAX / 100 + 1) + 50,
-			points = 151 - time;
-		struct boat_record *record;
-		/*printf("Boat #%d had a time of %d, giving them %d points.\n",
-			id, time, points);*/
-		switch(boat_table_compute(&boats, id, &record)) {
-		case TABLE_UNIQUE:
-			record->best_time = time; record->points = points; break;
-		case TABLE_YIELD:
-			if(time < record->best_time) {
-				printf("#%d best time %d -> %d.\n", id, record->best_time, time);
-				record->best_time = time;
-			}
-			/*printf("#%d points %d -> %d.\n",
-				id, record->points, record->points + points);*/
-			record->points += points;
-			break;
-		case TABLE_ERROR: case TABLE_REPLACE: goto catch;
-		}
-	}
-	{
-		struct boat_table_entry e;
-		struct boat_table_iterator it;
-		printf("Final score:\n"
-			"id\tbest\tpoints\n");
-		boat_table_begin(&it, &boats);
-		while(boat_table_next(&it, &e))
-			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
-	}
-	{ success = 1; goto finally; }
-catch:
-	perror("boats"), assert(0);
-finally:
-	boat_table_(&boats);
-	printf("\n");
-}
-
-
-/** Too lazy to do separate tests. */
-static void test_default(void) {
-	struct int_table t = TABLE_IDLE;
-	int one, two, def;
-	printf("Testing get defaults.\n");
-	int_table_try(&t, 1);
-	int_table_try(&t, 2);
-	printf("Table %s.\n", int_table_to_string(&t));
-	one = int_table_get_or(&t, 1, 7);
-	two = int_table_get_or(&t, 2, 7);
-	def = int_table_get_or(&t, 3, 7);
-	printf("get or default(7): 1:%u, 2:%u, 3:%u\n", one, two, def);
-	assert(one == 1 && two == 2 && def == 7);
-	one = int_table_get(&t, 1);
-	two = int_table_get(&t, 2);
-	def = int_table_get(&t, 3);
-	printf("get or 0: 1:%u, 2:%u, 3:%u\n", one, two, def);
-	assert(one == 1 && two == 2 && def == 0);
-	one = int_table_42_get(&t, 1);
-	two = int_table_42_get(&t, 2);
-	def = int_table_42_get(&t, 3);
-	printf("get or 42: 1:%u, 2:%u, 3:%u\n", one, two, def);
-	assert(one == 1 && two == 2 && def == 42);
-	int_table_(&t);
-	printf("\n");
-}
-
-
-/* Linked dictionary: linked-list with a comparison order. */
-struct dict_listlink;
-static int dict_compare(const struct dict_listlink *,
-	const struct dict_listlink *);
-#define LIST_NAME dict
-#define LIST_EXPECT_TRAIT
-#include "list.h"
-#define LIST_COMPARE &dict_compare
-#include "list.h"
-/** Associated with the word, but also a link to other words. */
-struct dict { struct dict_listlink link; char *word; };
-/* We need space for this. We take them on-line, so we need a stable pool. */
-#define POOL_NAME dict
-#define POOL_TYPE struct dict
-#include "pool.h"
-/** `container_of` `link`; `offsetof`, in this case, is zero; we could have
- used a cast. */
-static const struct dict *link_upcast(const struct dict_listlink *const link)
-	{ return (const struct dict *)(const void *)
-	((const char *)link - offsetof(struct dict, link)); }
-/* These are the words. */
-#define ARRAY_NAME char
-#define ARRAY_TYPE char
-#include "array.h"
-/** Append a text file, `fn`, to `c`, and add a '\0'. A partial read may occur.
- @return Success.
- @throws[EISEQ] The text file has embedded nulls. @throws[fopen, fread, malloc]
- @throws[ERANGE, EISEQ] Or, if the standard library does not follow POSIX. */
-static int append_file(struct char_array *c, const char *const fn) {
-	FILE *fp = 0;
-	const size_t granularity = 1024;
-	size_t nread, zero_len, file_size;
-	char *cursor, *terminating, *buffer;
-	int success = 0;
-	assert(c && fn);
-	if(!(fp = fopen(fn, "r"))) goto catch;
-	do if(!(cursor = char_array_buffer(c, granularity))
-		|| (nread = fread(cursor, 1, granularity, fp), ferror(fp))
-		|| !char_array_append(c, nread)) goto catch;
-	while(nread == granularity);
-	fclose(fp), fp = 0;
-	if(!(terminating = char_array_new(c))) goto catch;
-	*terminating = '\0'; /* Embed '\0'. */
-	/* The file can have no embedded '\0'; check. */
-	buffer = c->data;
-	zero_len = (size_t)(strchr(buffer, '\0') - buffer);
-	file_size = c->size, assert(file_size > 0);
-	if(zero_len != file_size - 1) { errno = EILSEQ; goto catch; }
-	{ success = 1; goto finally; }
-catch:
-	if(!errno) errno = EILSEQ; /* On POSIX, this will never be true. */
-finally:
-	if(fp) fclose(fp);
-	return success;
-}
-
-#define TABLE_NAME dict
-#define TABLE_KEY char *
-#define TABLE_VALUE struct dict *
-#define TABLE_HASH &djb2_hash
-#define TABLE_IS_EQUAL &string_is_equal
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_DEFAULT 0
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &string_to_string
-#include "../src/table.h"
-
-
-/** Compare `a` and `b`. */
-static int dict_compare(const struct dict_listlink *const a,
-	const struct dict_listlink *const b)
-	{ return strcmp(link_upcast(a)->word, link_upcast(b)->word); }
-#include "lex.h" /* `re2c` is very useful for file input. */
-/** The manual test. */
-static void dict(void) {
-	struct char_array english = ARRAY_IDLE;
-	const char *const inglesi = "test/Tutte_le_parole_inglesi.txt";
-	struct string_table words = TABLE_IDLE;
-	struct dict_pool backing = POOL_IDLE;
-	struct dict_list order;
-	struct dict_listlink *i;
-	struct lex_state state = { 0, 0, 0 };
-	printf("Testing dictionary.\n");
-	/* Read all. */
-	if(!append_file(&english, inglesi)) goto catch;
-	/* Then parse. */
-	state.cursor = english.data, state.line = 1;
-	dict_list_clear(&order);
-	while(lex_dict(&state)) { /* Cut off the string in the `char` array. */
-		struct dict *d;
-		/*printf("\"%s\" -> line %lu\n",
-			state.word, (unsigned long)state.line);*/
-		if(string_table_is(&words, state.word))
-			{ printf("Next line %lu: duplicate \"%s\"; ignoring.\n",
-			(unsigned long)state.line, state.word); continue; }
-		if(!(d = dict_pool_new(&backing))) goto catch;
-		d->word = state.word;
-		if(!string_table_try(&words, d->word)) goto catch;
-		dict_list_push(&order, &d->link);
-	}
-	printf("Dictionary: %s.\n"
-		"Sorting.\n", string_table_to_string(&words));
-	dict_list_sort(&order); /* `O(n)` when it's (almost?) in order. */
-	/*for(i = dict_list_head(&order); i; i = dict_list_next(i)) {
-		const struct dict *d = link_upcast(i);
-		printf("%s\n", link_upcast(i)->word);
-	}*/
-	{
-		char *rando[] = { "HIPPOPOTAMUSES", "EMU", "ZYGON", "LIZARDS" },
-			**r, **r_end;
-		for(r = rando, r_end = r + sizeof rando / sizeof *rando;
-			r < r_end; r++) {
-			/* Have this, and a listnode, in a pool. Lots of waste. */
-			char *look = *r, *found;
-			struct dict *d;
-			printf("Chosen word: %s.\n", look);
-			if(!(found = string_table_get(&words, look)))
-				{ printf("That's weird.\n"); assert(0); continue; }
-			/*d = word_upcast(found);
-			printf("%s??\n", d->word);*/
-		}
-	}
-	/*printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
-		prev ? prev->key : "start", found->key,
-		next ? next->key : "end");
-	assert(found == *sp_e);*/
-	goto finally;
-catch:
-	perror("dict"), assert(0);
-finally:
-	string_table_(&words);
-	char_array_(&english);
-	printf("\n");
-}
-
-#if 0
-{ /* Fill it with the actual dictionary. */
-	const char *const english = "test/Tutte_le_parole_inglesi.txt";
-	FILE *fp = fopen(english, "r");
-	struct entry_pool buckets = POOL_IDLE;
-	struct dict_entry *e, *sp_es[20], **sp_e;
-	size_t sp_es_size = sizeof sp_es / sizeof *sp_es,
-		sp_e_to_go = sp_es_size;
-	struct key_hash khash = TABLE_IDLE;
-	struct key_list klist;
-	struct key_hashlink *elem;
-	struct dict_entry *found;
-	size_t line = 1, words_to_go = 216555, key_len;
-	assert(RAND_MAX >= words_to_go);
-	key_list_clear(&klist);
-	if(!fp) goto catch;
-	/* Read file. */
-	for( ; ; line++) {
-		char *key_end;
-		if(!(e = entry_pool_new(&buckets))) goto catch;
-		e->elem.key = e->key;
-		if(!fgets(e->key, sizeof e->key, fp)) {
-			/* Doesn't really do anything. */
-			entry_pool_remove(&buckets, e);
-			if(ferror(fp)) { if(!errno) errno = EILSEQ; goto catch; }
-			break;
-		}
-		key_len = strlen(e->key);
-		assert(key_len);
-		key_end = e->key + key_len - 1;
-		/* Words > sizeof e->key - 2, (I guess electroencapholographist is
-		 not on there.) */
-		if(*key_end != '\n') { errno = ERANGE; goto catch; }
-		*key_end = '\0';
-		/* Never mind about the value; it is not used. */
-		elem = key_hash_policy_put(&khash, &e->elem, 0);
-		if(elem) {
-			fprintf(stderr, "%lu: ignoring %s already in word list.\n",
-				(unsigned long)line, e->key);
-			entry_pool_remove(&buckets, e);
-			words_to_go--;
-			continue;
-		}
-		key_list_push(&klist, &e->node);
-		/* In order already: must do the probability thing. */
-		if(!words_to_go) {
-			fprintf(stderr, "%lu: count inaccurate.\n",
-				(unsigned long)line);
-			continue;
-		}
-		if((unsigned)rand() / (RAND_MAX / (unsigned)words_to_go-- + 1)
-			>= sp_e_to_go) continue;
-		printf("Looking for %s.\n", e->key);
-		sp_es[sp_es_size - sp_e_to_go--] = e;
-	}
-	printf("Sorting %lu lines, (they are presumably already sorted.)\n",
-		(unsigned long)line - 1);
-	key_list_sort(&klist);
-	for(sp_e = sp_es; sp_e < sp_es + sp_es_size; sp_e++) {
-		const struct dict_entry *prev, *next;
-		elem = key_hash_get(&khash, (*sp_e)->key);
-		assert(elem);
-		found = elem_upcast(elem);
-		prev = entry_prev(found);
-		next = entry_next(found);
-		printf("Found %s between …%s, %s, %s…\n", (*sp_e)->key,
-			prev ? prev->key : "start", found->key,
-			next ? next->key : "end");
-		assert(found == *sp_e);
-	}
-	goto finally;
-catch:
-	fprintf(stderr, "%lu:", (unsigned long)line);
-	perror(english);
-finally:
-	if(fp) fclose(fp);
-	key_hash(&khash);
-	entry_pool_(&buckets);
-}
-#endif
-
-
-/* Have an unsigned set that is a subclass of a larger parent. */
-
-
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct vec4_pool vec4s = POOL_IDLE;
@@ -640,10 +568,10 @@ int main(void) {
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s);
-	nato();
-	boat_club();
 	test_default();
-	dict();
+	boat_club();
+	linked_dict();
+	nato();
 
 	return EXIT_SUCCESS;
 }
