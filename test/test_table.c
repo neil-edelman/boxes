@@ -576,14 +576,10 @@ int main(void) {
 	return EXIT_SUCCESS;
 }
 
-
-
-
-
 #if 0
 
-/* <https://github.com/aappleby/smhasher/> */
-
+/* We never did use this hash, but it's cool. Also:
+ <https://github.com/aappleby/smhasher/>. */
 #if 0x8000 * 2 == 0
 #error 16-bit max length is not supported in this test.
 #elif 0x80000000 * 2 == 0
@@ -609,84 +605,4 @@ static size_t fnv_64a_str(const char *const str) {
 static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
 #endif
 
-
 #endif
-
-#if 0
-
-
-
-
-
-
-
-/* Linked dictionary. */
-
-static int key_is_equal(const char *const a, const char *const b) {
-	return !strcmp(a, b);
-}
-static void key_to_string(const char *const*const ps, char (*const a)[12]) {
-	strncpy(*a, *ps, sizeof(*a) - 1);
-	(*a)[sizeof(*a) - 1] = '\0';
-}
-#define TABLE_NAME key
-#define TABLE_KEY const char *
-#define TABLE_HASH &fnv_32a_str
-#define TABLE_IS_EQUAL &key_is_equal
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &key_to_string
-#include "../src/table.h"
-
-struct key_listlink;
-static int key_compare(const struct key_listlink *,
-	const struct key_listlink *);
-#define LIST_NAME key
-#define LIST_COMPARE &key_compare
-#include "list.h"
-
-struct dict_entry {
-	struct key_hashlink elem;
-	struct key_listlink node;
-	char key[24];
-	char value[32];
-};
-
-/* Container of `elem`. */
-static struct dict_entry *elem_upcast(struct key_hashlink *const elem) {
-	return (struct dict_entry *)(void *)((char *)elem
-		- offhashof(struct dict_entry, elem));
-}
-/* `const` container of `node`. */
-static const struct dict_entry
-	*node_upcast_c(const struct key_listlink *const node)
-	{ return (const struct dict_entry *)(const void *)((const char *)node
-	- offhashof(struct dict_entry, node)); }
-/** @implements <key_list_node>compare */
-static int key_compare(const struct key_listlink *const a,
-	const struct key_listlink *const b) {
-	return strcmp(node_upcast_c(a)->elem.key, node_upcast_c(b)->elem.key);
-}
-static void entry_fill(struct dict_entry *const e) {
-	assert(e);
-	e->elem.key = e->key;
-	orcish(e->key, sizeof e->key);
-	orcish(e->value, sizeof e->value);
-}
-static const struct dict_entry *entry_prev(struct dict_entry *const e) {
-	const struct key_listlink *const prev = key_list_previous(&e->node);
-	assert(e);
-	return prev ? node_upcast_c(prev) : 0;
-}
-static const struct dict_entry *entry_next(struct dict_entry *const e) {
-	const struct key_listlink *const next = key_list_next(&e->node);
-	assert(e);
-	return next ? node_upcast_c(next) : 0;
-}
-
-#define POOL_NAME bucket
-#define POOL_TYPE struct dict_entry
-#include "pool.h"
-
-#endif /* only one */
-
