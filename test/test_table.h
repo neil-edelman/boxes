@@ -224,7 +224,7 @@ static void PN_(histogram)(const struct N_(table) *const table,
 
 /** @return Equality of entries `a` and `b`. */
 static int PN_(eq_en)(PN_(entry) a, PN_(entry) b) {
-	PN_(key_c) ka = PN_(entry_key)(a), kb = PN_(entry_key)(b);
+	PN_(ckey) ka = PN_(entry_key)(a), kb = PN_(entry_key)(b);
 #ifdef TABLE_INVERSE /* Compare in <typedef:<PN>uint> space. */
 	return PN_(hash)(ka) == PN_(hash)(kb);
 #else

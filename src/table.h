@@ -124,13 +124,13 @@ typedef TABLE_UINT PN_(uint);
 typedef TABLE_KEY PN_(key);
 /** Read-only <typedef:<PN>key>. Makes the simplifying assumption that this is
  not `const`-qualified. */
-typedef const TABLE_KEY PN_(key_c);
+typedef const TABLE_KEY PN_(ckey);
 
-/** A map from <typedef:<PN>key_c> onto <typedef:<PN>uint> that, ideally,
+/** A map from <typedef:<PN>ckey> onto <typedef:<PN>uint> that, ideally,
  should be easy to compute while minimizing duplicate addresses. Must be
  consistent for each value while in the table. If <typedef:<PN>key> is a
  pointer, one is permitted to have null in the domain. */
-typedef PN_(uint) (*PN_(hash_fn))(PN_(key_c));
+typedef PN_(uint) (*PN_(hash_fn))(PN_(ckey));
 /* Check that `TABLE_HASH` is a function implementing <typedef:<PN>hash_fn>. */
 static const PN_(hash_fn) PN_(hash) = (TABLE_HASH);
 
@@ -149,7 +149,7 @@ static const PN_(inverse_hash_fn) PN_(inverse_hash) = (TABLE_INVERSE);
 
 /** Equivalence relation between <typedef:<PN>key> that satisfies
  `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`. */
-typedef int (*PN_(is_equal_fn))(PN_(key_c) a, PN_(key_c) b);
+typedef int (*PN_(is_equal_fn))(PN_(ckey) a, PN_(ckey) b);
 /* Check that `TABLE_IS_EQUAL` is a function implementing
  <typedef:<PN>is_equal_fn>. */
 static const PN_(is_equal_fn) PN_(equal) = (TABLE_IS_EQUAL);
@@ -167,11 +167,9 @@ struct N_(table_entry) { PN_(key) key; PN_(value) value; };
 /** If `TABLE_VALUE`, this is <tag:<N>table_entry>; otherwise, it's the same as
  <typedef:<PN>key>. */
 typedef struct N_(table_entry) PN_(entry);
-typedef const struct N_(table_entry) PN_(entry_c);
 #else /* value --><!-- !value */
 typedef PN_(key) PN_(value);
 typedef PN_(key) PN_(entry);
-typedef PN_(key_c) PN_(entry_c);
 #endif /* !value --> */
 
 /** @return Key from `e`. */
@@ -253,13 +251,13 @@ struct N_(table) { /* "Padding size," good. */
 #ifdef TABLE_TEST
 /** `f` `g` */
 static void PN_(graph)(const struct N_(table) *f, const char *g);
-static void (*PN_(to_string))(PN_(key_c), char (*)[12]);
+static void (*PN_(to_string))(PN_(ckey), char (*)[12]);
 #else
 /** `table` `fn` */
 static void PN_(graph)(const struct N_(table) *const table,
 	const char *const fn) { (void)table, (void)fn; }
 /** `key` `z` */
-static void PN_(to_string)(PN_(key_c) key, char (*z)[12])
+static void PN_(to_string)(PN_(ckey) key, char (*z)[12])
 	{ (void)key, strcpy(*z, "<key>"); }
 static void PN_(unused_temp_coda)(void);
 static void PN_(unused_temp)(void)
@@ -375,7 +373,7 @@ static void PN_(move_to_top)(struct N_(table) *const table, const PN_(uint) m) {
 
 /** `TABLE_INVERSE` is injective, so in that case, we only compare hashes.
  @return `a` and `b`. */
-static int PN_(equal_buckets)(PN_(key_c) a, PN_(key_c) b) {
+static int PN_(equal_buckets)(PN_(ckey) a, PN_(ckey) b) {
 #ifdef TABLE_INVERSE
 	return (void)a, (void)b, 1;
 #else
@@ -386,7 +384,7 @@ static int PN_(equal_buckets)(PN_(key_c) a, PN_(key_c) b) {
 /** `table` will be searched linearly for `key` which has `hash`.
  @fixme Move to front like splay trees? */
 static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
-	PN_(key_c) key, const PN_(uint) hash) {
+	PN_(ckey) key, const PN_(uint) hash) {
 	struct PN_(bucket) *bucket;
 	PN_(uint) i, next;
 	assert(table && table->buckets && table->log_capacity);
@@ -836,7 +834,7 @@ static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it)
 
 #ifdef TABLE_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PN_(to_string))(PN_(key_c), char (*)[12]);
+static void (*PN_(to_string))(PN_(ckey), char (*)[12]);
 static const char *(*PN_(table_to_string))(const struct N_(table) *);
 #include "../test/test_table.h"
 #endif /* test --> */
@@ -908,7 +906,7 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #endif
 #define TSZ_(n) TABLE_CAT(table_sz, SZ_(n))
 /* Check that `TABLE_TO_STRING` is a function implementing this prototype. */
-static void (*const TSZ_(actual_to_string))(PN_(key_c), char (*)[12])
+static void (*const TSZ_(actual_to_string))(PN_(ckey), char (*)[12])
 	= (TABLE_TO_STRING);
 /** This is to line up the hash, which can have <typedef:<PN>key> a pointer or
  not, with to string, which requires a pointer. Call
@@ -922,7 +920,7 @@ static void TSZ_(thunk_to_string)(const struct PN_(bucket) *const bucket,
 #include "to_string.h" /** \include */
 #ifdef TABLE_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef TABLE_TEST
-static void (*PN_(to_string))(PN_(key_c), char (*const)[12])
+static void (*PN_(to_string))(PN_(ckey), char (*const)[12])
 	= TSZ_(actual_to_string);
 static const char *(*PN_(table_to_string))(const struct N_(table) *)
 	= &SZ_(to_string);
